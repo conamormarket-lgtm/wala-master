@@ -1,5 +1,6 @@
 import React from 'react';
 import Boton from './Boton';
+import { EtiquetaColgante, Garabatos } from './Marca';
 import s from './Seccion.module.css';
 
 /**
@@ -50,16 +51,23 @@ export function BloqueSeccion({ ajustes = {}, ancho = 'contenido', children, cla
  *  - titulo, subtitulo, antetitulo
  *  - alinear: 'left' | 'center' (titleAlign del builder)
  *  - accion: { texto, url } enlace "Ver todo" a la derecha (buttonText/buttonLink)
+ *  - antetitulo: va en una etiqueta colgante (eyebrow del builder)
+ *  - adorno: destellos de marca junto al título
  */
-export function TituloSeccion({ titulo, subtitulo, antetitulo, alinear = 'left', accion, nivel = 2 }) {
+export function TituloSeccion({ titulo, subtitulo, antetitulo, alinear = 'left', accion, nivel = 2, adorno = false }) {
   if (!titulo && !subtitulo) return null;
   const H = `h${nivel}`;
   const centrado = alinear === 'center';
   return (
     <header className={[s.titulo, centrado && s.centrado].filter(Boolean).join(' ')}>
-      <div>
-        {antetitulo && <p className={s.antetitulo}>{antetitulo}</p>}
-        {titulo && <H className={s.h}>{titulo}</H>}
+      <div className={s.tituloTextos}>
+        {antetitulo && <p className={s.antetitulo}><EtiquetaColgante tono="suave">{antetitulo}</EtiquetaColgante></p>}
+        {titulo && (
+          <H className={s.h}>
+            {titulo}
+            {adorno && <Garabatos variante="titulo" />}
+          </H>
+        )}
         {subtitulo && <p className={s.subtitulo}>{subtitulo}</p>}
       </div>
       {accion?.texto && accion?.url && (
@@ -73,6 +81,7 @@ export function TituloSeccion({ titulo, subtitulo, antetitulo, alinear = 'left',
 export const tituloDesdeAjustes = (a = {}) => ({
   titulo: a.title,
   subtitulo: a.subtitle,
+  antetitulo: a.eyebrow,
   alinear: a.titleAlign || 'left',
   accion: a.buttonText && a.buttonLink ? { texto: a.buttonText, url: a.buttonLink } : undefined,
 });

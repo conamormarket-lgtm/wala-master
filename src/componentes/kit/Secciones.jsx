@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Truck, ShieldCheck, Clock, CreditCard, RotateCcw, Heart, Star, CheckCircle2, Zap, BadgeCheck, Quote,
+  Truck, ShieldCheck, Clock, CreditCard, RotateCcw, Heart, Star, CheckCircle2, Zap, BadgeCheck,
 } from 'lucide-react';
 import Boton from './Boton';
 import Carrusel from './Carrusel';
@@ -12,6 +12,7 @@ import TarjetaProducto from './TarjetaProducto';
 import { Enlace } from './Enlace';
 import { tarjetaDesdeProducto } from './adaptadores';
 import { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
+import { EtiquetaColgante } from './Marca';
 import { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados } from './SeccionesContenido';
 import { BannerPrincipal, ListaBeneficios, Ubicacion, NavCategorias, GrillaProductos, CatalogoConFiltros, PiePagina } from './SeccionesExtra';
 import s from './Secciones.module.css';
@@ -185,11 +186,11 @@ export function Testimonios({ ajustes = {} }) {
   if (!lista.length) return null;
   return (
     <>
-      <TituloSeccion {...tituloDesdeAjustes(ajustes)} />
+      <TituloSeccion {...tituloDesdeAjustes(ajustes)} adorno />
       <Carrusel visibles={{ escritorio: 3, tablet: 2, movil: 1.1 }} espacio="1rem" etiqueta="Opiniones de clientes">
         {lista.map((t, k) => (
-          <figure key={k} className={s.testimonio}>
-            <Quote className={s.comillas} aria-hidden="true" />
+          <figure key={k} className={s.testimonio} style={{ '--giro': `${[-0.8, 0.6, -0.4, 0.9][k % 4]}deg` }}>
+            <span className={s.comillas} aria-hidden="true">“</span>
             {t.topic && <p className={s.tema}>{t.topic}</p>}
             {t.rating > 0 && (
               <p className={s.estrellas} aria-label={`${t.rating} de 5 estrellas`}>
@@ -203,7 +204,7 @@ export function Testimonios({ ajustes = {} }) {
                 <strong>{t.author}</strong>
                 {(t.city || t.location) && <small>{t.city || t.location}</small>}
               </span>
-              {t.verified && <span className={s.verificado}><BadgeCheck aria-hidden="true" /> Compra verificada</span>}
+              {t.verified && <span className={s.verificado}><EtiquetaColgante tono="verde" tamano="sm" icono={<BadgeCheck aria-hidden="true" />}>Verificada</EtiquetaColgante></span>}
             </figcaption>
           </figure>
         ))}
@@ -219,7 +220,15 @@ export function PreguntasFrecuentes({ ajustes = {} }) {
   const dividido = (ajustes.layout || 'split') === 'split';
   return (
     <div className={dividido ? s.faqDividido : undefined}>
-      <TituloSeccion titulo={ajustes.title} subtitulo={ajustes.subtitle} alinear={dividido ? 'left' : ajustes.titleAlign || 'left'} />
+      <div className={s.faqCabeza}>
+        <TituloSeccion titulo={ajustes.title} subtitulo={ajustes.subtitle} antetitulo={ajustes.eyebrow} alinear={dividido ? 'left' : ajustes.titleAlign || 'left'} />
+        {dividido && (
+          <div className={s.faqKapi}>
+            <img src="/assets/kapi/kapi-happy.webp" alt="" width="84" height="84" loading="lazy" decoding="async" />
+            <p>¿Te quedó otra duda? <strong>Escríbenos</strong>, te respondemos rapidito.</p>
+          </div>
+        )}
+      </div>
       <Acordeon items={items} abiertoInicial={ajustes.defaultOpen ? true : false} />
     </div>
   );

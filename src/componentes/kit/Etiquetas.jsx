@@ -1,17 +1,24 @@
 import React, { forwardRef } from 'react';
 import { Check } from 'lucide-react';
 import { useContador } from './Efectos';
+import { EtiquetaColgante } from './Marca';
 import s from './Etiquetas.module.css';
 
 const MONEDA = '/assets/monedas/moneda-64.webp';
 const miles = (n) => Math.round(n).toLocaleString('es-PE');
 
+const TONO_COLGANTE = { violeta: 'violeta', oscuro: 'noche', exito: 'verde', aviso: 'oro', peligro: 'rojo', neutro: 'suave' };
+
 /**
  * Etiqueta corta de estado o promoción.
  * tono: violeta | oscuro | exito | aviso | peligro | neutro.
- * Las sólidas llevan un destello que pasa cada pocos segundos.
+ * Las sólidas (descuento, "Nuevo", "Tu diseño") son etiquetas colgantes como
+ * la del logo; las suaves, píldoras para estados.
  */
 export function Etiqueta({ tono = 'violeta', icono, solida = false, children }) {
+  if (solida) {
+    return <EtiquetaColgante tono={TONO_COLGANTE[tono] || 'violeta'} tamano="md" icono={icono}>{children}</EtiquetaColgante>;
+  }
   return (
     <span className={[s.etiqueta, s[tono], solida && s.solida].filter(Boolean).join(' ')}>
       {icono}

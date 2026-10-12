@@ -59,9 +59,11 @@ const fondo = () => ({ tipo: 'fondo', pestana: 'avanzado' });
 const espaciado = () => ({ tipo: 'espaciado', pestana: 'avanzado' });
 
 const titulo = (etiqueta = 'Título de la sección', placeholder) => ({ tipo: 'texto', campo: 'title', etiqueta, placeholder });
+/** Texto corto sobre el título; se dibuja en una etiqueta colgante (opcional). */
+const etiquetaSuperior = () => ({ tipo: 'texto', campo: 'eyebrow', etiqueta: 'Etiqueta sobre el título', placeholder: 'Ej: Lo más pedido', ayuda: 'Opcional. Sale en una etiqueta colgante, como la del logo.' });
 
 /** Lo que llevan casi todas las secciones con productos o tarjetas. */
-const cabeceraSeccion = (etiqueta) => [titulo(etiqueta), estiloTexto('title', 'Estilo del título'), boton()];
+const cabeceraSeccion = (etiqueta) => [etiquetaSuperior(), titulo(etiqueta), estiloTexto('title', 'Estilo del título'), boton()];
 const pieComun = () => [fondo(), espaciado()];
 
 const autoplay = (unidad = 'ms') => [
@@ -93,6 +95,7 @@ export const ESQUEMAS = {
       { tipo: 'opciones', campo: 'mediaType', etiqueta: 'Fondo', opciones: [{ valor: 'image', texto: 'Imagen' }, { valor: 'gif', texto: 'GIF' }, { valor: 'video', texto: 'Video' }] },
       { tipo: 'imagen', campo: 'mediaUrl', etiqueta: 'Imagen o video', acepta: 'image/*,video/*', carpeta: 'storefront/hero-banner' },
       { tipo: 'imagen', campo: 'thumbnailUrl', etiqueta: 'Portada mientras carga el video', si: (a) => a.mediaType === 'video', carpeta: 'storefront/hero-banner' },
+      etiquetaSuperior(),
       titulo('Título'),
       { tipo: 'parrafo', campo: 'subtitle', etiqueta: 'Subtítulo', filas: 2 },
       { tipo: 'texto', campo: 'buttonText', etiqueta: 'Texto del botón' },
@@ -189,6 +192,7 @@ export const ESQUEMAS = {
     nombre: 'Encabezado', icono: Heading, grupo: 'Contenido',
     descripcion: 'Un título grande con subtítulo y botón.',
     campos: [
+      etiquetaSuperior(),
       titulo('Título'),
       { tipo: 'texto', campo: 'titleHighlight', etiqueta: 'Resaltar estas palabras', ayuda: 'Se pintan en otro color dentro del título.' },
       { tipo: 'parrafo', campo: 'subtitle', etiqueta: 'Subtítulo', filas: 2 },
@@ -437,6 +441,7 @@ export const ESQUEMAS = {
   feature_list: {
     nombre: 'Lista de beneficios', icono: ListChecks, grupo: 'Contenido', descripcion: 'Por qué elegirnos, en puntos.',
     campos: [
+      etiquetaSuperior(),
       titulo('Título'),
       { tipo: 'texto', campo: 'subtitle', etiqueta: 'Subtítulo' },
       {
@@ -458,6 +463,7 @@ export const ESQUEMAS = {
   faq_accordion: {
     nombre: 'Preguntas frecuentes', icono: CircleHelp, grupo: 'Contenido', descripcion: 'Dudas comunes en un acordeón.',
     campos: [
+      etiquetaSuperior(),
       titulo(),
       { tipo: 'texto', campo: 'subtitle', etiqueta: 'Texto de apoyo' },
       {

@@ -10,6 +10,7 @@ import { TituloSeccion, tituloDesdeAjustes } from './Seccion';
 import { tarjetaDesdeProducto } from './adaptadores';
 import { TextoCampo, BotonDeAjustes, fuenteDe, prefiereQuieto } from './SeccionesContenido';
 import { toDirectImageUrl } from '../../utils/imageUrl';
+import { EtiquetaColgante, Garabatos, LogoWala } from './Marca';
 import s from './SeccionesExtra.module.css';
 
 /*
@@ -66,6 +67,7 @@ export function BannerPrincipal({ ajustes = {}, primera = false, onClicBoton }) 
           />
         ) : null}
       </div>
+      <Garabatos variante="banner" className={s.bannerGarabatos} />
       <span
         className={s.bannerVelo}
         style={{ background: `linear-gradient(to bottom, rgba(0,0,0,${velo * 0.2}), rgba(0,0,0,${velo * 0.7}) 50%, rgba(0,0,0,${velo}))` }}
@@ -74,6 +76,7 @@ export function BannerPrincipal({ ajustes = {}, primera = false, onClicBoton }) 
         className={s.bannerTexto}
         style={{ justifyContent: POSICION_VERTICAL[textPosition] || 'center', alignItems: alinear, textAlign }}
       >
+        {ajustes.eyebrow && <EtiquetaColgante tono="blanco" tamano="lg">{ajustes.eyebrow}</EtiquetaColgante>}
         <TextoCampo ajustes={ajustes} campo="title" como="h1" className={s.bannerTitulo} style={{ color: titleColor || '#fff', ...fuenteDe(ajustes, 'title') }}>
           {title}
         </TextoCampo>
@@ -107,7 +110,7 @@ export function ListaBeneficios({ ajustes = {} }) {
         <img className={s.beneficiosFoto} src={toDirectImageUrl(ajustes.imageUrl)} alt={ajustes.imageAlt || ''} loading="lazy" decoding="async" />
       )}
       <div>
-        <TituloSeccion titulo={ajustes.title} subtitulo={ajustes.subtitle} />
+        <TituloSeccion titulo={ajustes.title} subtitulo={ajustes.subtitle} antetitulo={ajustes.eyebrow} adorno />
         {items.length > 0 && (
           <ul className={s.beneficiosLista}>
             {items.map((it, k) => (
@@ -436,6 +439,12 @@ export function PiePagina({ ajustes = {}, pieLegal }) {
   if (!columnas.length) return null;
   return (
     <footer className={s.pie}>
+      <Garabatos variante="pie" />
+      <img className={s.pieKapi} src="/assets/kapi/kapi-happy.webp" alt="" width="96" height="96" loading="lazy" decoding="async" />
+      <div className={s.pieMarca}>
+        <LogoWala tamano={34} tono="blanco" />
+        <EtiquetaColgante tono="magenta" tamano="sm">Hecho con amor en Perú</EtiquetaColgante>
+      </div>
       <div className={s.pieColumnas}>
         {columnas.map((c, i) => (
           <div key={c.id || i} className={s.pieColumna}>

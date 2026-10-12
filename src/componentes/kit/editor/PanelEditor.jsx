@@ -7,6 +7,7 @@ import {
 import Boton from '../Boton';
 import { Buscador } from '../Formulario';
 import { Pestanas } from '../Navegacion';
+import { IsoWala } from '../Marca';
 import { ESQUEMAS, GRUPOS_MODULOS, ajustesIniciales, esquemaDe, resumenDe } from './esquemas';
 import { FormularioSeccion, ProveedorEditor } from './CamposEditor';
 import s from './Editor.module.css';
@@ -245,6 +246,7 @@ export default function PanelEditor({
       >
         <header className={s.panelCabeza}>
           <span className={s.agarre} aria-hidden="true" />
+          <IsoWala tamano={26} className={s.panelIso} />
           <div className={s.panelTitulo}>
             <strong>Editor</strong>
             <span>{titulo}</span>
@@ -320,8 +322,9 @@ export default function PanelEditor({
                     {cabecera}
                     {lista.length === 0 && (
                       <div className={s.vacio}>
-                        <strong>La página está vacía</strong>
-                        <span>Empieza con un banner o un título y ve sumando secciones.</span>
+                        <img src="/assets/kapi/kapi-hungry.webp" alt="" width="88" height="88" />
+                        <strong>Esta página tiene hambre</strong>
+                        <span>Dale de comer un banner o un título y ve sumando secciones.</span>
                       </div>
                     )}
                     <Reorder.Group

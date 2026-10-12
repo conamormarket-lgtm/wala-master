@@ -22,6 +22,27 @@ import { Boton, TarjetaProducto, Cabecera, useToast } from '../componentes/kit';
 - **Se arma con sus propias piezas.** La `Cabecera` usa `Boton`, `Buscador`,
   `SaldoMonedas`, `Contador`, `Desplegable` y los menús; no repite estilos.
 
+## Lenguaje de marca (`Marca.jsx`)
+
+Lo que hace que una pieza se vea "de Walá" y no de cualquier plantilla. Sale
+del logo (la W vive en una etiqueta de precio con su hilo; la tilde de la Á
+también es una etiqueta) y de los banners de la tienda.
+
+- **Etiqueta colgante** (`EtiquetaColgante`): descuentos, "Nuevo", "Tu
+  diseño", antetítulos (`eyebrow` en el builder), "Universo Walá", "Compra
+  verificada". Un poco inclinada; se mece al pasar el ratón por la tarjeta.
+  Las `Etiqueta solida` ya salen así.
+- **Letra del logo**: `--fuente-marca` (Montserrat 900, tracking -0.035em) en
+  títulos, precios, nombres de marca y del editor. Poppins para el resto.
+- **Sellos**: íconos blancos en un círculo con el degradado del logo
+  (`--degradado-logo`), girados -8°. Nada de cuadritos lila.
+- **Garabatos** (`Garabatos`, `Destello`, `Corazon`, `Puntos`, `Trazo`):
+  destellos ✦, corazones, puntos de medio tono y subrayado a mano para las
+  palabras resaltadas. Siempre quietos.
+- **Kapi** con voz propia: FAQ ("¿Te quedó otra duda?"), pie de página
+  asomándose, vacíos del editor ("Esta página tiene hambre").
+- **Noche violeta** (`--noche-wala: #14121c`), no gris carbón.
+
 ## Proveedores (una vez, arriba de todo)
 
 ```jsx

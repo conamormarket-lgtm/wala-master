@@ -166,7 +166,7 @@ const SECCIONES_DEMO = [
     ],
   } },
   { id: 's6', type: 'featured_carousel', order: 5, settings: {
-    title: 'Lo más pedido', visibleItems: 4, autoPlay: false, buttonText: 'Ver todo', buttonLink: '/tienda', paddingTop: '1.5rem', paddingBottom: '1.5rem',
+    eyebrow: 'Favoritos de la semana', title: 'Lo más pedido', visibleItems: 4, autoPlay: false, buttonText: 'Ver todo', buttonLink: '/tienda', paddingTop: '1.5rem', paddingBottom: '1.5rem',
   } },
   { id: 's10', type: 'banner_grid', order: 5.5, settings: {
     dataSource: 'brands', title: 'Explora nuestros mundos', subtitle: 'Encuentra productos de tus marcas favoritas',
@@ -184,7 +184,7 @@ const SECCIONES_DEMO = [
     ],
   } },
   { id: 's12', type: 'header', order: 6.2, settings: {
-    title: 'Hecho en Perú, con amor', titleHighlight: 'con amor', subtitle: 'Cada pedido se estampa a mano en nuestro taller de Lima.',
+    eyebrow: 'Nuestro taller', title: 'Hecho en Perú, con amor', titleHighlight: 'con amor', subtitle: 'Cada pedido se estampa a mano en nuestro taller de Lima.',
     textAlign: 'center', titleColor: '', subtitleColor: '', paddingTop: '2.5rem', paddingBottom: '0.5rem',
   } },
   { id: 's13', type: 'text', order: 6.3, settings: {
@@ -200,7 +200,7 @@ const SECCIONES_DEMO = [
     paddingTop: '0rem', paddingBottom: '2rem',
   } },
   { id: 's7', type: 'testimonials', order: 6.7, settings: {
-    title: 'Lo que dicen nuestros clientes', backgroundColor: 'rgba(139, 92, 246, 0.06)', paddingTop: '2rem', paddingBottom: '2rem',
+    eyebrow: 'Clientes felices', title: 'Lo que dicen nuestros clientes', backgroundColor: 'rgba(139, 92, 246, 0.06)', paddingTop: '2rem', paddingBottom: '2rem',
     testimonials: [
       { topic: 'Calidad del producto', text: 'La polera llegó igualita al diseño y la tela es súper suave. Ya pedí otra para mi hermana.', author: 'Andrea P.', city: 'Lima', rating: 5, verified: true },
       { topic: 'Regalo', text: 'Le regalé la taza a mi mamá con nuestra foto y lloró de emoción. Llegó en 3 días.', author: 'Luis R.', city: 'Arequipa', rating: 5, verified: true },
@@ -218,7 +218,7 @@ const SECCIONES_DEMO = [
     paddingTop: '1.5rem', paddingBottom: '1.5rem',
   } },
   { id: 's9', type: 'faq_accordion', order: 8, settings: {
-    title: 'Preguntas frecuentes', subtitle: 'Resolvemos las dudas más comunes antes de tu compra.', layout: 'split', defaultOpen: true,
+    eyebrow: '¿Dudas?', title: 'Preguntas frecuentes', subtitle: 'Resolvemos las dudas más comunes antes de tu compra.', layout: 'split', defaultOpen: true,
     items: [
       { id: 'faq_shipping', question: '¿Realizan envíos a todo el Perú?', answer: 'Sí. Atendemos pedidos para Lima y provincias. El costo y el plazo estimado se confirman según el destino antes de completar el pedido.' },
       { id: 'faq_production', question: '¿Cuánto demora un producto personalizado?', answer: 'Depende del producto, la cantidad y el diseño. Te confirmamos el plazo de producción antes de empezar tu pedido.' },

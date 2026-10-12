@@ -55,19 +55,17 @@
 }
 
 .antetitulo {
-  margin: 0 0 0.2rem;
-  color: var(--primary-color);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  margin: 0 0 0.55rem;
 }
 
 .h {
+  position: relative;
+  display: inline-block;
   margin: 0;
-  font-size: var(--section-title-size);
-  font-weight: var(--section-title-weight);
-  letter-spacing: var(--section-title-tracking);
+  font-family: var(--fuente-marca);
+  font-size: calc(var(--section-title-size) * 1.05);
+  font-weight: 900;
+  letter-spacing: -0.035em;
   line-height: 1.15;
   color: var(--color-text);
 }

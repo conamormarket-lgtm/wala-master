@@ -440,7 +440,12 @@ function ControlLista({ campo: def, valor, onCambiar }) {
           );
         })}
       </AnimatePresence>
-      {items.length === 0 && <p className={s.vacioLista}>Aún no hay {def.etiqueta.toLowerCase()}.</p>}
+      {items.length === 0 && (
+        <p className={s.vacioLista}>
+          <img src="/assets/kapi/kapi-sad.webp" alt="" width="40" height="40" />
+          Aún no hay {def.etiqueta.toLowerCase()}. Añade la primera.
+        </p>
+      )}
       <div className={s.listaPie}>
         {!lleno && (
           <button type="button" className={s.agregar} onClick={() => { poner([...items, def.nuevo ? def.nuevo() : {}]); setAbierto(items.length); }}>

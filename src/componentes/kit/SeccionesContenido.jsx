@@ -5,6 +5,7 @@ import Carrusel from './Carrusel';
 import { Enlace } from './Enlace';
 import { TituloSeccion, tituloDesdeAjustes } from './Seccion';
 import { tarjetaDesdeMarca } from './adaptadores';
+import { EtiquetaColgante, Garabatos, Trazo } from './Marca';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import s from './SeccionesContenido.module.css';
 
@@ -79,14 +80,17 @@ export function BotonDeAjustes({ ajustes }) {
   );
 }
 
-/** Parte el título para pintar `resalte` (titleHighlight) en otro color. */
+/** Parte el título para pintar `resalte` (titleHighlight) en otro color, subrayado a mano. */
 function conResalte(titulo, resalte, color) {
   const i = resalte ? titulo.indexOf(resalte) : -1;
   if (i < 0) return titulo;
   return (
     <>
       {titulo.slice(0, i)}
-      <span className={s.resalte} style={{ color: color || undefined }}>{resalte}</span>
+      <span className={s.resalte} style={{ color: color || undefined }}>
+        {resalte}
+        <Trazo className={s.trazo} />
+      </span>
       {titulo.slice(i + resalte.length)}
     </>
   );
@@ -98,6 +102,8 @@ export function Encabezado({ ajustes = {} }) {
   if (!title && !subtitle) return null;
   return (
     <div className={[s.encabezado, compact && s.compacto, textAlign === 'center' && s.centrado, textAlign === 'right' && s.derecha].filter(Boolean).join(' ')} style={{ textAlign }}>
+      {ajustes.eyebrow && <p className={s.encabezadoEtiqueta}><EtiquetaColgante tono="suave">{ajustes.eyebrow}</EtiquetaColgante></p>}
+      {!compact && textAlign === 'center' && <Garabatos variante="titulo" className={s.encabezadoGarabatos} />}
       <TextoCampo
         ajustes={ajustes}
         campo="title"
@@ -293,7 +299,7 @@ function TarjetaMarca({ marca, indice, estilo, mostrarNombre }) {
           : <span aria-hidden="true">{iniciales(marca.nombre)}</span>}
       </span>
       <span className={s.marcaTexto}>
-        <small>Universo Walá</small>
+        <EtiquetaColgante tono={estilo === 'outline' ? 'violeta' : 'blanco'} tamano="sm" className={s.marcaEtiqueta}>Universo Walá</EtiquetaColgante>
         {mostrarNombre && <strong>{marca.nombre}</strong>}
         <span className={s.marcaCta}>Explorar colección <ArrowRight aria-hidden="true" /></span>
       </span>

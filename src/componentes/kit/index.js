@@ -27,3 +27,4 @@ export { default as PanelEditor, useBorrador, actualizarAjustes, insertarSeccion
 export { SeccionEditable, InsertarAqui } from './editor/SeccionEditable';
 export { FormularioSeccion, ProveedorEditor } from './editor/CamposEditor';
 export { ESQUEMAS, GRUPOS_MODULOS, esquemaDe, ajustesIniciales, resumenDe } from './editor/esquemas';
+export { EtiquetaColgante, IsoWala, LogoWala, Garabatos, Destello, Corazon, Puntos, Trazo } from './Marca';

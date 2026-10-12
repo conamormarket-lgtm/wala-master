@@ -16,22 +16,45 @@
 }
 
 .resalte {
+  position: relative;
+  display: inline-block;
   color: var(--primary-color);
+  white-space: nowrap;
+}
+
+/* Subrayado a mano bajo las palabras resaltadas. */
+.trazo {
+  position: absolute;
+  left: -2%;
+  bottom: -0.16em;
+  width: 104%;
+  height: 0.3em;
+  color: #f59e0b;
 }
 
 /* ── Encabezado ── */
 .encabezado {
+  position: relative;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.encabezadoEtiqueta {
+  margin: 0 0 0.75rem;
+}
+
+.encabezado .encabezadoGarabatos {
+  inset: -0.5rem auto auto calc(50% + min(34vw, 300px));
 }
 
 .encabezadoTitulo {
   margin: 0;
   color: var(--color-text);
-  font-size: clamp(2rem, 5vw, 3rem);
-  font-weight: 800;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  font-family: var(--fuente-marca);
+  font-size: clamp(2.1rem, 5.4vw, 3.4rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
   text-wrap: balance;
 }
 
@@ -69,10 +92,11 @@
 .textoTitulo {
   margin: 0 0 1rem;
   color: var(--color-text);
-  font-size: clamp(1.5rem, 3.5vw, 2rem);
-  font-weight: 800;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+  font-family: var(--fuente-marca);
+  font-size: clamp(1.6rem, 3.8vw, 2.2rem);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
   text-wrap: balance;
 }
 
@@ -198,12 +222,13 @@
 
 .marcaNumero {
   position: absolute;
-  top: 1rem;
-  left: 1.25rem;
-  opacity: 0.6;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
+  top: 0.7rem;
+  left: 1.1rem;
+  opacity: 0.22;
+  font-family: var(--fuente-marca);
+  font-size: 2.6rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
 }
 
 /* El logo va sobre un círculo blanco: sirve igual para logos con fondo
@@ -242,20 +267,17 @@
   padding-top: 2.5rem;
 }
 
-.marcaTexto small {
-  margin-bottom: 0.35rem;
-  opacity: 0.75;
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
+.marcaEtiqueta {
+  margin-bottom: 0.7rem;
 }
 
 .marcaTexto strong {
   max-width: 13ch;
-  font-size: clamp(1.3rem, 2vw, 1.8rem);
-  line-height: 1.05;
-  letter-spacing: -0.03em;
+  font-family: var(--fuente-marca);
+  font-size: clamp(1.4rem, 2.2vw, 1.95rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.04em;
   overflow-wrap: anywhere;
 }
 
@@ -318,11 +340,6 @@
 
 .marcaBorde .marcaLogo {
   box-shadow: 0 0 0 1px var(--color-border);
-}
-
-.marcaBorde .marcaTexto small {
-  color: var(--primary-color);
-  opacity: 1;
 }
 
 .marcaBorde .marcaCta {

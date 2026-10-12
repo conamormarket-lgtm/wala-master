@@ -116,8 +116,16 @@
   line-height: 1.2;
 }
 
+.panelIso {
+  flex-shrink: 0;
+  transform: rotate(-6deg);
+}
+
 .panelTitulo strong {
-  font-size: 0.95rem;
+  font-family: var(--fuente-marca);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
 }
 
 .panelTitulo span {
@@ -239,7 +247,10 @@
 
 .vistaCabeza h3 {
   margin: 0;
-  font-size: 1.05rem;
+  font-family: var(--fuente-marca);
+  font-size: 1.2rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
 }
 
 .volver {
@@ -359,9 +370,10 @@
   justify-content: center;
   width: 34px;
   height: 34px;
-  border-radius: 10px;
-  background: var(--ed-acento-suave);
-  color: var(--ed-acento);
+  border-radius: 50%;
+  background: var(--degradado-logo);
+  color: #fff;
+  transform: rotate(-8deg);
 }
 
 .filaIcono svg {
@@ -378,6 +390,7 @@
 
 .filaTextos strong {
   font-size: 0.86rem;
+  font-weight: 700;
 }
 
 .filaTextos small {
@@ -444,12 +457,26 @@
 
 .vacio {
   display: grid;
+  justify-items: center;
   gap: 0.25rem;
   margin-bottom: 0.6rem;
   padding: 1rem;
-  border-radius: 14px;
-  background: var(--ed-suave);
+  border-radius: 18px;
+  background: var(--ed-acento-suave);
   text-align: center;
+}
+
+.vacio img {
+  width: 88px;
+  height: 88px;
+  transform: rotate(-6deg);
+}
+
+.vacio strong {
+  font-family: var(--fuente-marca);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
 }
 
 .vacio span {
@@ -465,12 +492,12 @@
 }
 
 .catalogoGrupo h4 {
-  margin: 0 0 0.5rem;
-  color: var(--ed-tenue);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  margin: 0 0 0.6rem;
+  color: var(--ed-texto);
+  font-family: var(--fuente-marca);
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
 }
 
 .catalogoRejilla {
@@ -522,11 +549,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: var(--ed-acento-suave);
-  color: var(--ed-acento);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--degradado-logo);
+  color: #fff;
+  transform: rotate(-8deg);
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .modulo:hover .moduloIcono {
+    transform: rotate(6deg) scale(1.08);
+  }
 }
 
 .moduloIcono svg {
@@ -1189,8 +1224,12 @@
 }
 
 .vacioLista {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   margin: 0;
-  padding: 0.7rem;
+  padding: 0.6rem 0.7rem;
   border-radius: 12px;
   background: var(--ed-suave);
   color: var(--ed-tenue);
@@ -1242,23 +1281,50 @@
   transition: opacity var(--dur-rapida) ease;
 }
 
+/* La barra de cada sección es una etiqueta colgante, como la del logo. */
 .barra {
   position: absolute;
   z-index: 4;
-  top: 8px;
-  left: 8px;
+  top: 10px;
+  left: 22px;
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 3px;
-  border-radius: 12px;
+  padding: 3px 3px 3px 14px;
+  border-radius: 4px 12px 12px 4px;
   background: var(--violet-700, #6d28d9);
   color: #fff;
   box-shadow: 0 6px 16px -8px rgba(30, 17, 64, 0.6);
   opacity: 0;
-  transform: translateY(-4px);
+  transform: rotate(-2deg) translateY(-4px);
+  transform-origin: 0 50%;
   pointer-events: none;
   transition: opacity var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature);
+}
+
+.barra::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 0;
+  width: 27px;
+  height: 27px;
+  border-radius: 5px;
+  background: inherit;
+  transform: translate(-36%, -50%) scaleX(0.7) rotate(45deg);
+}
+
+.barra::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff;
+  transform: translateY(-50%);
 }
 
 .barra button {
@@ -1291,6 +1357,9 @@
 
 .barraNombre {
   padding: 0 0.6rem !important;
+  font-family: var(--fuente-marca);
+  font-weight: 900 !important;
+  letter-spacing: -0.01em;
 }
 
 .barraLapiz {
@@ -1309,7 +1378,7 @@
 
   .editable:hover .barra {
     opacity: 1;
-    transform: none;
+    transform: rotate(-2deg);
     pointer-events: auto;
   }
 
@@ -1329,7 +1398,7 @@
 .editableActiva .barra,
 .editableResaltada .barra {
   opacity: 1;
-  transform: none;
+  transform: rotate(-2deg);
   pointer-events: auto;
 }
 

@@ -1,0 +1,180 @@
+:global(:root) {
+  /* Letra del logo (Montserrat 900 apretada). Títulos, precios y etiquetas. */
+  --fuente-marca: 'Montserrat', 'Poppins', system-ui, sans-serif;
+  /* Degradado del isotipo (wala 900x900): violeta profundo → violeta magenta. */
+  --degradado-logo: linear-gradient(135deg, #a855f7 0%, #7c3aed 45%, #5b21b6 100%);
+  --magenta-wala: #c026d3;
+  --noche-wala: #14121c;
+}
+
+/* ── Logo ── */
+.logo {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: calc(var(--logo) * 0.12);
+  line-height: 1;
+}
+
+.logoTexto {
+  background: var(--degradado-logo);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-family: var(--fuente-marca);
+  font-size: calc(var(--logo) * 0.95);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+}
+
+.logoBlanco .logoTexto {
+  background: none;
+  color: #fff;
+}
+
+/* ── Etiqueta colgante ── */
+.colgante {
+  --t-fondo: var(--violet-700, #6d28d9);
+  --t-texto: #fff;
+  --t-hueco: #fff;
+  --t-hilo: var(--violet-400, #a78bfa);
+
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-left: 0.6em;
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  transform: rotate(var(--inclinar, 0deg));
+  transform-origin: 0.4em 50%;
+  transition: transform var(--dur-media, 0.35s) var(--ease-signature, ease);
+}
+
+.sm { font-size: 0.6rem; }
+.md { font-size: 0.7rem; }
+.lg { font-size: 0.86rem; }
+
+.cuerpo {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.45em 0.75em 0.45em 0.95em;
+  border-radius: 0.18em 0.45em 0.45em 0.18em;
+  background: var(--t-fondo);
+  color: var(--t-texto);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* La punta de la etiqueta (rombo achatado y con la punta suave). */
+.cuerpo::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 0;
+  width: 1.32em;
+  height: 1.32em;
+  border-radius: 0.2em;
+  background: var(--t-fondo);
+  transform: translate(-38%, -50%) scaleX(0.7) rotate(45deg);
+}
+
+/* El agujero (ojal) por donde pasa el hilo. */
+.cuerpo::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0.14em;
+  width: 0.36em;
+  height: 0.36em;
+  border-radius: 50%;
+  background: var(--t-hueco);
+  transform: translateY(-50%);
+}
+
+.cuerpo svg {
+  width: 1.15em;
+  height: 1.15em;
+  flex-shrink: 0;
+}
+
+/* El hilo: un arco que sale del ojal hacia arriba. */
+.conHilo::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -0.62em;
+  left: -0.42em;
+  width: 0.8em;
+  height: 1.05em;
+  border-top: 0.12em solid var(--t-hilo);
+  border-left: 0.12em solid var(--t-hilo);
+  border-top-left-radius: 100%;
+  transform: rotate(18deg);
+}
+
+.violeta { --t-fondo: var(--violet-700, #6d28d9); }
+.magenta { --t-fondo: var(--magenta-wala); --t-hilo: #f0abfc; }
+.oro { --t-fondo: #f59e0b; --t-texto: #3b2300; --t-hilo: #d97706; }
+.rojo { --t-fondo: #e11d48; --t-hilo: #fda4af; }
+.blanco { --t-fondo: #fff; --t-texto: var(--violet-800, #5b21b6); --t-hueco: var(--violet-200, #ddd6fe); --t-hilo: rgba(255, 255, 255, 0.75); }
+.noche { --t-fondo: var(--noche-wala); --t-hilo: var(--violet-400, #a78bfa); }
+.verde { --t-fondo: #059669; --t-hilo: #6ee7b7; }
+.suave { --t-fondo: var(--violet-100, #ede9fe); --t-texto: var(--violet-800, #5b21b6); --t-hilo: var(--violet-300, #c4b5fd); }
+
+:global([data-theme='dark']) .suave {
+  --t-fondo: rgba(167, 139, 250, 0.18);
+  --t-texto: #ddd6fe;
+  --t-hueco: var(--noche-wala);
+}
+
+:global([data-theme='dark']) .violeta,
+:global([data-theme='dark']) .magenta,
+:global([data-theme='dark']) .rojo,
+:global([data-theme='dark']) .verde {
+  --t-hueco: var(--noche-wala);
+}
+
+/* ── Garabatos ── */
+.garabatos {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.garabatos svg {
+  position: absolute;
+}
+
+.g1 { top: 12%; right: 8%; width: 26px; color: #fde68a; }
+.g2 { top: 30%; right: 3%; width: 14px; color: #fff; opacity: 0.8; }
+.g3 { bottom: 16%; left: 4%; width: 26px; color: #f9a8d4; transform: rotate(-14deg); }
+.g4 { top: 10%; left: 46%; width: 16px; color: #fb7185; transform: rotate(12deg); }
+.g5 { bottom: 6%; right: 5%; width: 70px; color: rgba(255, 255, 255, 0.35); }
+
+/* Al lado de un título: más chicos y en violeta. */
+.g_titulo { inset: -10px -18px auto auto; width: 70px; height: 50px; overflow: visible; }
+.g_titulo .g1 { top: 0; right: 30px; width: 18px; color: var(--violet-400, #a78bfa); }
+.g_titulo .g2 { top: 18px; right: 12px; width: 11px; color: #f59e0b; opacity: 1; }
+.g_titulo .g3,
+.g_titulo .g4,
+.g_titulo .g5 { display: none; }
+
+/* Pie de página: puntos y destellos tenues sobre la noche. */
+.g_pie .g1 { color: var(--violet-400, #a78bfa); opacity: 0.6; }
+.g_pie .g2 { color: #f59e0b; opacity: 0.7; }
+.g_pie .g3 { display: none; }
+.g_pie .g4 { display: none; }
+.g_pie .g5 { color: rgba(167, 139, 250, 0.2); width: 110px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .colgante {
+    transition: none;
+  }
+}

@@ -78,12 +78,13 @@
 }
 
 .heroTexto h2 {
-  max-width: 18ch;
+  max-width: 16ch;
   margin: 0;
-  font-size: clamp(1.7rem, 4.5vw, 3.2rem);
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
+  font-family: var(--fuente-marca);
+  font-size: clamp(1.8rem, 4.8vw, 3.4rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.04em;
 }
 
 .heroTexto p {
@@ -109,30 +110,41 @@
 .insignias li {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.85rem 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
+  gap: 0.7rem;
+  padding: 0.7rem 0.9rem 0.7rem 0.7rem;
+  border-radius: 999px;
   background: var(--color-surface);
-  font-size: 0.88rem;
-  font-weight: 600;
+  box-shadow: 0 0 0 1px var(--color-border);
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
+/* Sello redondo con el degradado del logo (como en la tienda en vivo). */
 .insigniaIcono {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: var(--primary-light);
-  color: var(--primary-color);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--degradado-logo);
+  color: #fff;
+  transform: rotate(-8deg);
+  transition: transform var(--dur-media) var(--ease-signature);
 }
 
 .insigniaIcono svg {
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 1.15rem;
+  height: 1.15rem;
+  stroke-width: 2.4;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .insignias li:hover .insigniaIcono {
+    transform: rotate(6deg) scale(1.06);
+  }
 }
 
 /* ── Ofertas flash ── */
@@ -157,9 +169,10 @@
   align-items: center;
   gap: 0.4rem;
   margin: 0;
-  font-size: var(--section-title-size);
-  font-weight: var(--section-title-weight);
-  letter-spacing: var(--section-title-tracking);
+  font-family: var(--fuente-marca);
+  font-size: calc(var(--section-title-size) * 1.05);
+  font-weight: 900;
+  letter-spacing: -0.035em;
 }
 
 .flashTitulo svg {
@@ -175,25 +188,36 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  height: 100%;
-  margin: 0;
-  padding: 1.15rem;
+  height: calc(100% - 12px);
+  margin: 6px 4px;
+  padding: 1.25rem 1.15rem 1.1rem;
   border: 1px solid var(--color-border);
-  border-radius: 18px;
+  border-radius: 6px 22px 22px 22px;
   background: var(--color-surface);
+  transform: rotate(var(--giro, 0deg));
+  transition: transform var(--dur-media) var(--ease-signature);
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .testimonio:hover {
+    transform: rotate(0deg) translateY(-3px);
+  }
+}
+
+/* Comilla grande con la letra del logo. */
 .comillas {
   position: absolute;
-  top: 0.9rem;
+  top: -0.35rem;
   right: 0.9rem;
-  width: 1.6rem;
-  height: 1.6rem;
-  color: var(--violet-200);
+  color: var(--violet-300);
+  font-family: var(--fuente-marca);
+  font-size: 4.2rem;
+  font-weight: 900;
+  line-height: 1;
 }
 
 :global([data-theme='dark']) .comillas {
-  color: rgba(167, 139, 250, 0.3);
+  color: rgba(167, 139, 250, 0.45);
 }
 
 .tema {
@@ -266,21 +290,47 @@
 }
 
 .verificado {
-  flex-direction: row !important;
-  align-items: center;
-  gap: 0.25rem;
   margin-left: auto;
-  color: #059669;
-  font-size: 0.74rem;
-  font-weight: 600;
-}
-
-.verificado svg {
-  width: 0.95rem;
-  height: 0.95rem;
 }
 
 /* ── FAQ ── */
+.faqKapi {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 340px;
+  margin-top: 0.5rem;
+}
+
+.faqKapi img {
+  flex-shrink: 0;
+  width: 84px;
+  height: 84px;
+  transform: rotate(-6deg);
+}
+
+/* Globo de diálogo de Kapi. */
+.faqKapi p {
+  position: relative;
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border-radius: 16px 16px 16px 4px;
+  background: var(--primary-light);
+  color: var(--color-text);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.faqKapi strong {
+  color: var(--primary-color);
+}
+
+@container (max-width: 860px) {
+  .faqKapi {
+    display: none;
+  }
+}
+
 .faqDividido {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);

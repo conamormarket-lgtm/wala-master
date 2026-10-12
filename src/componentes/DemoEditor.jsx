@@ -13,14 +13,14 @@ import s from './DemoEditor.module.css';
 
 const crearPagina = (img) => [
   { id: 'e1', type: 'hero_banner', order: 0, settings: {
-    mediaType: 'image', mediaUrl: '/crear/banner-crear-1200.webp', title: 'Regalos que se recuerdan', subtitle: 'Tu foto, tu frase y nuestro taller. Listo en 48 horas.',
+    mediaType: 'image', mediaUrl: '/crear/banner-crear-1200.webp', eyebrow: 'Con Amor', title: 'Regalos que se recuerdan', subtitle: 'Tu foto, tu frase y nuestro taller. Listo en 48 horas.',
     buttonText: 'Crear el mío', buttonLink: '/personalizar', textAlign: 'left', textPosition: 'center', overlayOpacity: 55, minHeight: '420px',
     paddingTop: '1rem', paddingBottom: '0.5rem',
   } },
   { id: 'e2', type: 'categories_nav', order: 1, settings: { brandId: 'conamor', paddingTop: '1rem', paddingBottom: '0.5rem' } },
   { id: 'e3', type: 'sidebar_catalog', order: 2, settings: { title: 'Catálogo Con Amor', brandId: 'conamor', paddingTop: '1rem', paddingBottom: '2rem' } },
   { id: 'e4', type: 'feature_list', order: 3, settings: {
-    title: '¿Por qué elegirnos?', subtitle: 'Lo que nos dicen que nos hace distintos.', imageUrl: img.taller,
+    eyebrow: 'Hecho a mano', title: '¿Por qué elegirnos?', subtitle: 'Lo que nos dicen que nos hace distintos.', imageUrl: img.taller,
     items: [{ icon: '✓', text: 'Estampado que no se cuartea al lavar' }, { icon: '🚚', text: 'Envío a todo el Perú' }, { icon: '💬', text: 'Te ayudamos con tu diseño por WhatsApp' }],
     quote: 'Pedí tres poleras para el cumple de mi papá y llegaron perfectas.', quoteAuthor: 'Andrea, Lima', paddingTop: '2rem', paddingBottom: '2rem',
   } },
