@@ -30,6 +30,7 @@ const claveCache = (userId) => (userId != null ? String(userId) : '');
 const esPedidoWala = (p) =>
   !!p &&
   (p.canalVenta === 'Portal Web' ||
+    p.canalVenta === 'Tienda Virtual' ||
     p.web === true ||
     p.activador === 'portal_web' ||
     p.vendedor === 'Portal Web' ||

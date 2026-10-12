@@ -532,6 +532,13 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
  * @param {object} [p.payment]      campos sueltos que ya usaban el ERP/la tienda
  *                                  (culqiChargeId, montoPagado, paypalOrderId…).
  */
+// Cómo llega un pedido de Walá al formulario de validación del ERP. Canal: el de
+// la tienda en su lista. Pagado online, no lo atendió nadie: vendedor "Portal Web"
+// (los filtros de Walá también lo usan). Por WhatsApp lo atiende una asesora, que
+// elige vendedor y activador al validar.
+const ERP_CANAL_WALA = "Tienda Virtual";
+const ERP_VENDEDOR_WALA = "Portal Web";
+
 async function createPaidWebOrderFromIntent({ intentId, context, pago, payment = {} }) {
   const checkout = await readCheckoutIntent(intentId, context);
   const erpDb = getErpDb();
@@ -587,6 +594,9 @@ async function createPaidWebOrderFromIntent({ intentId, context, pago, payment =
       ...(docNorm ? { dniRaw: docRaw, clienteNumeroDocumento: docNorm, dni: docNorm } : {}),
       ...(uid ? { userId: uid, buyerUid: uid } : {}),
       web: true,
+      canalVenta: ERP_CANAL_WALA,
+      vendedor: ERP_VENDEDOR_WALA,
+      activador: "",
       estadoValidacion: "pendiente",
       ...montos,
       metodoPago: pago.metodo,
@@ -660,7 +670,9 @@ exports.crearSolicitudWhatsappSecure = functions.https.onCall(async (data, conte
       ...(docNorm ? { dniRaw: docRaw, clienteNumeroDocumento: docNorm, dni: docNorm } : {}),
       ...(checkout.intent.uid ? { userId: checkout.intent.uid, buyerUid: checkout.intent.uid } : {}),
       metodoPago: "whatsapp",
-      canalVenta: "WhatsApp",
+      canalVenta: ERP_CANAL_WALA,
+      vendedor: "",
+      activador: "",
       web: true,
       estadoValidacion: "pendiente",
       pagado: false,
