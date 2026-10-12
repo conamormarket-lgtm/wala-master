@@ -44,14 +44,14 @@
 }
 
 .encabezado .encabezadoGarabatos {
-  inset: -0.5rem auto auto calc(50% + min(34vw, 300px));
+  inset: -0.5rem auto auto calc(50% + min(34cqi, 300px));
 }
 
 .encabezadoTitulo {
   margin: 0;
   color: var(--color-text);
   font-family: var(--fuente-marca);
-  font-size: clamp(2.1rem, 5.4vw, 3.4rem);
+  font-size: clamp(2.1rem, 5.4cqi, 3.4rem);
   font-weight: 900;
   line-height: 1.05;
   letter-spacing: -0.04em;
@@ -62,7 +62,7 @@
   max-width: 800px;
   margin: 0.5rem 0 0;
   color: var(--color-text-muted);
-  font-size: clamp(1rem, 2vw, 1.25rem);
+  font-size: clamp(1rem, 2cqi, 1.25rem);
   line-height: 1.5;
   text-wrap: pretty;
 }
@@ -93,7 +93,7 @@
   margin: 0 0 1rem;
   color: var(--color-text);
   font-family: var(--fuente-marca);
-  font-size: clamp(1.6rem, 3.8vw, 2.2rem);
+  font-size: clamp(1.6rem, 3.8cqi, 2.2rem);
   font-weight: 900;
   line-height: 1.1;
   letter-spacing: -0.035em;
@@ -274,7 +274,7 @@
 .marcaTexto strong {
   max-width: 13ch;
   font-family: var(--fuente-marca);
-  font-size: clamp(1.4rem, 2.2vw, 1.95rem);
+  font-size: clamp(1.4rem, 2.2cqi, 1.95rem);
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.04em;

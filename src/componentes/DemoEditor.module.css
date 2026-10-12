@@ -11,6 +11,9 @@
 .estudio {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 380px;
+  /* Fila de alto fijo: sin esto, al abrir el catálogo la fila crecía al alto
+     del panel y todo se salía de la caja. */
+  grid-template-rows: minmax(0, 1fr);
   gap: 1rem;
   height: 780px;
 }
@@ -21,6 +24,7 @@
 
 .lienzo {
   min-width: 0;
+  min-height: 0;
   border: 1px solid var(--color-border);
   border-radius: 20px;
   background: var(--color-bg, var(--gris-fondo));
@@ -31,7 +35,8 @@
 .pagina {
   min-height: 100%;
   margin: 0 auto;
-  padding-bottom: 1.5rem;
+  /* Aire arriba para que el "+" de la primera sección no quede cortado. */
+  padding: 1.25rem 0 1.5rem;
 }
 
 /* Vista de celular: ancho de teléfono dentro del lienzo. */
@@ -43,6 +48,7 @@
 
 .lado {
   min-width: 0;
+  min-height: 0;
   height: 100%;
 }
 
@@ -58,7 +64,7 @@
 @media (max-width: 960px) {
   .estudio {
     grid-template-columns: 1fr;
-    grid-template-rows: 62svh 600px;
+    grid-template-rows: minmax(0, 62svh) minmax(0, 600px);
     height: auto;
   }
 }

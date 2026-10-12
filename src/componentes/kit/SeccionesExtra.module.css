@@ -39,7 +39,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding: clamp(1.5rem, 6vw, 4rem);
+  padding: clamp(1.5rem, 6cqi, 4rem);
 }
 
 .bannerGarabatos {
@@ -50,7 +50,7 @@
   max-width: 15ch;
   margin: 0;
   font-family: var(--fuente-marca);
-  font-size: clamp(2.1rem, 6.4vw, 4.4rem);
+  font-size: clamp(2.1rem, 6.4cqi, 4.4rem);
   font-weight: 900;
   line-height: 0.98;
   letter-spacing: -0.045em;
@@ -60,7 +60,7 @@
 .bannerSubtitulo {
   max-width: 42ch;
   margin: 0;
-  font-size: clamp(1rem, 2vw, 1.2rem);
+  font-size: clamp(1rem, 2cqi, 1.2rem);
   line-height: 1.5;
   opacity: 0.95;
 }
@@ -72,7 +72,7 @@
 /* ── Beneficios ── */
 .beneficios {
   display: grid;
-  gap: clamp(1.25rem, 4vw, 3rem);
+  gap: clamp(1.25rem, 4cqi, 3rem);
   align-items: center;
 }
 
@@ -174,7 +174,7 @@
 /* ── Mapa ── */
 .mapa {
   display: flex;
-  gap: clamp(1rem, 4vw, 2.5rem);
+  gap: clamp(1rem, 4cqi, 2.5rem);
   align-items: center;
 }
 
@@ -368,7 +368,7 @@
 .grilla {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(200px, 46%), 1fr));
-  gap: clamp(0.6rem, 2vw, 1rem);
+  gap: clamp(0.6rem, 2cqi, 1rem);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -393,7 +393,7 @@
 .catalogo {
   display: grid;
   grid-template-columns: 230px minmax(0, 1fr);
-  gap: clamp(1rem, 3vw, 2rem);
+  gap: clamp(1rem, 3cqi, 2rem);
   align-items: start;
 }
 
@@ -556,7 +556,7 @@
   position: relative;
   isolation: isolate;
   margin-top: 3.2rem;
-  padding: clamp(1.75rem, 5vw, 3rem) clamp(1.25rem, 4vw, 2.5rem);
+  padding: clamp(1.75rem, 5cqi, 3rem) clamp(1.25rem, 4cqi, 2.5rem);
   border-radius: 28px;
   background:
     radial-gradient(120% 90% at 100% 0%, rgba(124, 58, 237, 0.35), transparent 60%),
@@ -568,7 +568,7 @@
 .pieKapi {
   position: absolute;
   top: -62px;
-  right: clamp(1.25rem, 6vw, 4rem);
+  right: clamp(1.25rem, 6cqi, 4rem);
   width: 96px;
   height: 96px;
   transform: rotate(8deg);
