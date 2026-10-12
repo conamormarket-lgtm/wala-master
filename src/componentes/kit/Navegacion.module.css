@@ -451,9 +451,10 @@
   height: 1.3rem;
 }
 
+/* Contador junto al icono (el icono va centrado en una píldora de 56 px). */
 .tabIcono > span:not(.tabPildora) {
   top: -5px;
-  right: 6px;
+  right: 7px;
   z-index: 2;
 }
 

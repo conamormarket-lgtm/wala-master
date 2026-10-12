@@ -618,8 +618,10 @@ function Contenido({ tema, cambiarTema }) {
                   <span className={s.telefonoIconos}>
                     <Search aria-hidden="true" />
                     <button type="button" className={s.telefonoCampana} onClick={abrirCentro} aria-label={`Notificaciones (${noLeidas} sin leer)`}>
-                      <Bell aria-hidden="true" />
-                      <Contador valor={noLeidas} />
+                      <span className={s.iconoConContador}>
+                        <Bell aria-hidden="true" />
+                        <Contador valor={noLeidas} />
+                      </span>
                     </button>
                   </span>
                 </div>

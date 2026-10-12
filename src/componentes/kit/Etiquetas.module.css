@@ -322,10 +322,12 @@
 }
 
 /* ── Contador ──────────────────────────────────────────── */
+/* Se ancla a la esquina superior derecha del icono (su contenedor debe
+   tener position: relative) y la monta un poco, como en las apps. */
 .contador {
   position: absolute;
-  top: -3px;
-  right: -3px;
+  top: -8px;
+  right: -11px;
   z-index: 3;
   min-width: 18px;
   height: 18px;

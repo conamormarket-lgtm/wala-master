@@ -77,8 +77,11 @@ const Boton = forwardRef(function Boton({
         {cargando ? <Loader2 className={s.spin} aria-hidden="true" /> : icono && <span className={s.icono}>{icono}</span>}
         {children != null && <span className={s.texto}>{children}</span>}
         {!cargando && iconoFin && <span className={s.iconoFin}>{iconoFin}</span>}
+        {/* En botones de solo icono la insignia se pega al icono, no a la
+            esquina del botón (que es más grande y la dejaba suelta). */}
+        {soloIcono && insignia}
       </span>
-      {insignia}
+      {!soloIcono && insignia}
     </>
   );
 

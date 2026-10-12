@@ -1014,6 +1014,11 @@
   cursor: pointer;
 }
 
+.iconoConContador {
+  position: relative;
+  display: inline-flex;
+}
+
 .telefonoCampana:active {
   background: var(--color-hover);
 }
