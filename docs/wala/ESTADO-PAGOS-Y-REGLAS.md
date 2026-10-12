@@ -126,6 +126,19 @@ Con Cloud Monitoring (`node scripts/metricas-reglas.cjs <clave> <inicio> <fin>`)
   autorizados en Auth: conamor.pe, yox-tau.vercel.app, portal-clientes-regala-con-amor.vercel.app).
 - Reversión: `firestore.rules` con `allow read, write: if true` + `firebase deploy --only firestore:rules`
   (con `--config` a una carpeta aparte). Claude Code no la puede correr (el clasificador la bloquea): la corre el dueño.
+- 2026-10-12 12:00: se agregó `wala_direcciones/{uid}` (libreta de direcciones del cliente, solo su dueño) a las
+  reglas y a `esSoloWala`. Probado antes con `node scripts/probar-reglas-api.cjs` (servicio de pruebas de reglas de
+  Google, sin desplegar; usa la sesión de Firebase CLI): 15/15, incluidos ERP, visor y tienda. Copia igual en el ERP
+  (`fb911c0c`). Para cambiar reglas: editar las dos copias, correr ese script, comparar las vivas con el último
+  commit (que nadie las haya cambiado) y desplegar desde `wala-master`.
+
+### Checkout (2026-10-12)
+- Pago: precalentamiento de las funciones (`{ precalentar: true }` hace una lectura mínima de Firestore), paso de
+  pago rediseñado, scroll bloqueado con Culqi abierto, monedas/cupón en el paso de pago re-preparan el cobro.
+- Datos: un invitado solo queda guardado si marca "Recordar mis datos"; con cuenta, `checkout_customer_info` va
+  atado al uid. Con cuenta y direcciones guardadas, tarjeta "Enviar a" + Cambiar; `/cuenta/direcciones`.
+- Pendiente: modo regalo a medias (el enlace `/regalo/<pedido>` no se envía y el ERP no muestra que es regalo);
+  las landings siguen recordando datos de invitados en `landing_checkout_customer_info`.
 
 ## 3. Lo que falta (en orden)
 
