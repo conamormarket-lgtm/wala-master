@@ -169,20 +169,36 @@ const getDesignReferences = (item) => {
   return { images: uniqueImageUrls(refs), views };
 };
 
-const getWhatsAppReferenceLinks = (item) => {
-  const links = [];
-  const seen = new Set();
-  const push = (url, label) => {
-    if (typeof url !== 'string' || !/^https?:\/\//i.test(url) || seen.has(url)) return;
-    seen.add(url);
-    links.push({ url, label });
-  };
-  (item?.productReferenceImages || []).forEach((reference, index) => {
-    push(reference?.url || reference, reference?.lado || `Vista ${index + 1}`);
-  });
-  getDesignReferences(item).images.forEach((url) => push(url, 'Diseño'));
-  return links.slice(0, 6);
-};
+// Lo que ve el cliente en la pestaña nueva mientras el servidor crea el pedido y
+// antes de que cargue WhatsApp (misma presentación que la pantalla de carga).
+const PANTALLA_ABRIENDO_WHATSAPP = `<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Abriendo WhatsApp… · Walá</title>
+<style>
+  html,body{height:100%;margin:0}
+  body{display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+    background:radial-gradient(circle at 25% 15%,#9b6bf5 0%,#6d34d6 45%,#4a1fa8 100%);color:#fff;text-align:center;padding:24px}
+  .marca{font-size:34px;font-weight:900;letter-spacing:2px;margin-bottom:28px}
+  .anillo{width:54px;height:54px;margin:0 auto 22px;border-radius:50%;border:4px solid rgba(255,255,255,.25);
+    border-top-color:#fff;animation:g .8s linear infinite}
+  @keyframes g{to{transform:rotate(360deg)}}
+  h1{font-size:20px;margin:0 0 8px}
+  p{margin:0;font-size:15px;opacity:.85;line-height:1.5}
+  .wa{display:inline-flex;align-items:center;gap:8px;margin-top:26px;padding:8px 14px;border-radius:999px;
+    background:rgba(255,255,255,.14);font-size:13px}
+  .punto{width:8px;height:8px;border-radius:50%;background:#25d366}
+</style></head><body><div>
+  <div class="marca">WALÁ</div>
+  <div class="anillo"></div>
+  <h1>Creando tu pedido…</h1>
+  <p>En un momento te llevamos a WhatsApp<br>con tu pedido listo para enviar.</p>
+  <div class="wa"><span class="punto"></span>Un asesor te atenderá por WhatsApp</div>
+</div></body></html>`;
+
+// Imagen para el mensaje de WhatsApp: solo la del diseño personalizado (la prenda
+// completa). Las fotos de catálogo no van: eran enlaces larguísimos de Firebase,
+// repetidos, y el enlace al producto ya lleva al asesor a esas fotos.
+const getWhatsAppDesignLink = (item) =>
+  getDesignReferences(item).images.find((u) => typeof u === 'string' && /^https?:\/\//i.test(u)) || null;
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -225,8 +241,9 @@ const CheckoutPage = () => {
     const popup = window.open('', '_blank');
     try {
       if (popup) {
-        popup.document.title = 'Abriendo WhatsApp…';
-        popup.document.body.innerHTML = '<p style="font-family:system-ui,sans-serif;text-align:center;margin-top:40vh;color:#444;font-size:16px">Creando tu pedido y abriendo WhatsApp…</p>';
+        popup.document.open();
+        popup.document.write(PANTALLA_ABRIENDO_WHATSAPP);
+        popup.document.close();
       }
     } catch (_) { /* ventana de otro origen: se ignora */ }
     return popup;
@@ -1110,10 +1127,8 @@ const CheckoutPage = () => {
           }
           const price = item.customization?.finalPrice || item.price;
           message += `   Subtotal: S/ ${(price * item.quantity).toFixed(2)}\n`;
-          const referenceLinks = getWhatsAppReferenceLinks(item);
-          referenceLinks.forEach(({ url, label }) => {
-            message += `   Imagen ${label}: ${url}\n`;
-          });
+          const disenoUrl = getWhatsAppDesignLink(item);
+          if (disenoUrl) message += `   Diseño: ${disenoUrl}\n`;
           message += `   Link: ${window.location.origin}/producto/${item.productId}\n\n`;
         });
 
@@ -1176,10 +1191,8 @@ const CheckoutPage = () => {
             const price = item.customization?.finalPrice || item.price;
             sub += price * item.quantity;
             m += `   Subtotal: S/ ${(price * item.quantity).toFixed(2)}\n`;
-            getWhatsAppReferenceLinks(item)
-              .forEach(({ url, label }) => {
-                m += `   Imagen ${label}: ${url}\n`;
-              });
+            const disenoUrl = getWhatsAppDesignLink(item);
+            if (disenoUrl) m += `   Diseño: ${disenoUrl}\n`;
             m += `   Link: ${window.location.origin}/producto/${item.productId}\n\n`;
           });
           m += `Subtotal${brandLabel ? ` de ${brandLabel}` : ''}: S/ ${sub.toFixed(2)}\n`;
