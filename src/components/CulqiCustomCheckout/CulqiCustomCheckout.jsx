@@ -41,7 +41,7 @@ const isCulqiModalVisible = () => {
   return false;
 };
 
-const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = false, reopenKey = 0, buttonLabel }) => {
+const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = false, reopenKey = 0, buttonLabel, title: tituloModal }) => {
   const toast = useGlobalToast();
   const [isReady, setIsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -97,7 +97,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
     if (!isReady || !window.CulqiCheckout) return;
 
     const isEnlace = !!enlace;
-    const title = isEnlace ? 'Pago Seguro' : 'Pago de Saldo - Walá';
+    const title = tituloModal || (isEnlace ? 'Pago Seguro' : 'Pago de Saldo - Walá');
     const currency = isEnlace ? (enlace.moneda || 'USD') : 'PEN';
     const amountFloat = isEnlace ? Number(enlace.monto || enlace.montoUSD || enlace.montoPEN || 0) : Number(pedido?.montoDeuda || 0);
     const amountInt = Math.round(amountFloat * 100);
@@ -226,7 +226,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
     // Si estuvieran aquí, la instancia de Culqi se recrearía en cada render del
     // padre (arrows inline) y el modal "saltaría dos veces".
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isReady, pedido, enlace]);
+  }, [isReady, pedido, enlace, tituloModal]);
 
   const handleOpenCheckout = () => {
     if (!isReady) {

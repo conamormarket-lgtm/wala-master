@@ -1121,6 +1121,7 @@ const LandingPaymentBlock = ({ config = {} }) => {
                       <CulqiCustomCheckout
                         pedido={paymentPedido}
                         autoOpen={culqiAutoOpen}
+                        title={isAdelanto ? 'Adelanto de tu compra - Walá' : 'Compra en Walá'}
                         onSuccess={(data) => handlePagoExitoso(data, 'culqi')}
                       />
                     ) : (

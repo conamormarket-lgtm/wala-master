@@ -1643,6 +1643,7 @@ const CheckoutPage = () => {
                       reopenKey={culqiKey}
                       pedido={paymentStepData}
                       autoOpen={true}
+                      title="Compra en Walá"
                       buttonLabel={`Pagar S/ ${Number(paymentStepData.montoDeuda || 0).toFixed(2)}`}
                       onSuccess={(result) => finishGatewayOrder('culqi', result)}
                       onClose={() => setCulqiClosed(true)}
