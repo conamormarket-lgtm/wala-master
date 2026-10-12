@@ -387,19 +387,53 @@ a.anuncio:hover {
   }
 }
 
-/* ── Ofertas flash: un evento en la noche violeta ── */
+/* ── Ofertas flash: un evento que sigue el tema ──
+   Claro: panel luminoso cálido (crema → rosa → lila) con acentos rojo y oro.
+   Noche: la noche violeta de Walá con brillo rojo y violeta. */
 .flash {
+  --f-fondo:
+    radial-gradient(70% 90% at 100% 0%, rgba(251, 113, 133, 0.22), transparent 60%),
+    radial-gradient(60% 80% at 0% 100%, rgba(167, 139, 250, 0.28), transparent 65%),
+    linear-gradient(135deg, #fff7ed 0%, #fdf2f8 55%, #f5f3ff 100%);
+  --f-borde: rgba(225, 29, 72, 0.18);
+  --f-texto: var(--color-text, #1e1b2e);
+  --f-tenue: var(--color-text-muted, #6b6480);
+  --f-franjas: rgba(245, 158, 11, 0.16);
+  --f-acento: #e11d48;
+  --f-pista: rgba(30, 17, 64, 0.08);
+  /* Cuenta regresiva */
+  --cr-caja: #fff;
+  --cr-caja-texto: #1e1b2e;
+  --cr-caja-borde: rgba(225, 29, 72, 0.18);
+  --cr-rotulo: var(--color-text-muted, #6b6480);
+  --cr-dos-puntos: rgba(225, 29, 72, 0.55);
+
   position: relative;
   isolation: isolate;
   padding: clamp(1.1rem, 3cqi, 1.75rem);
-  border: 1px solid rgba(167, 139, 250, 0.25);
+  border: 1px solid var(--f-borde);
   border-radius: 28px;
-  background:
+  background: var(--f-fondo);
+  color: var(--f-texto);
+  overflow: hidden;
+}
+
+:global([data-theme='dark']) .flash {
+  --f-fondo:
     radial-gradient(70% 90% at 100% 0%, rgba(225, 29, 72, 0.32), transparent 60%),
     radial-gradient(60% 80% at 0% 100%, rgba(124, 58, 237, 0.4), transparent 65%),
     var(--noche-wala, #14121c);
-  color: #fff;
-  overflow: hidden;
+  --f-borde: rgba(167, 139, 250, 0.25);
+  --f-texto: #fff;
+  --f-tenue: rgba(255, 255, 255, 0.72);
+  --f-franjas: rgba(251, 191, 36, 0.12);
+  --f-acento: #fbbf24;
+  --f-pista: rgba(255, 255, 255, 0.14);
+  --cr-caja: #fff;
+  --cr-caja-texto: #14121c;
+  --cr-caja-borde: transparent;
+  --cr-rotulo: rgba(255, 255, 255, 0.7);
+  --cr-dos-puntos: rgba(255, 255, 255, 0.55);
 }
 
 /* Franjas diagonales de energía (quietas) en la esquina. */
@@ -410,7 +444,7 @@ a.anuncio:hover {
   right: 0;
   width: 46%;
   height: 160px;
-  background: repeating-linear-gradient(-55deg, rgba(251, 191, 36, 0.12) 0 10px, transparent 10px 26px);
+  background: repeating-linear-gradient(-55deg, var(--f-franjas) 0 10px, transparent 10px 26px);
   -webkit-mask-image: linear-gradient(to left, #000, transparent);
   mask-image: linear-gradient(to left, #000, transparent);
   pointer-events: none;
@@ -447,7 +481,7 @@ a.anuncio:hover {
 
 .flashTitulo {
   margin: 0;
-  color: #fff;
+  color: var(--f-texto);
   font-family: var(--fuente-marca);
   font-size: calc(var(--section-title-size) * 1.2);
   font-weight: 900;
@@ -457,7 +491,7 @@ a.anuncio:hover {
 
 .flashSubtitulo {
   margin: 0.35rem 0 0;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--f-tenue);
   font-size: 0.9rem;
 }
 
@@ -468,7 +502,7 @@ a.anuncio:hover {
 }
 
 .flashTermina {
-  color: #fbbf24;
+  color: var(--f-acento);
   font-family: var(--fuente-marca);
   font-size: 0.72rem;
   font-weight: 900;
@@ -497,13 +531,13 @@ a.anuncio:hover {
 }
 
 .quedanTexto {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--f-tenue);
   font-size: 0.78rem;
   font-weight: 600;
 }
 
 .quedanTexto strong {
-  color: #fbbf24;
+  color: var(--f-acento);
   font-family: var(--fuente-marca);
   font-weight: 900;
 }
@@ -511,7 +545,7 @@ a.anuncio:hover {
 .quedanBarra {
   height: 6px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--f-pista);
   overflow: hidden;
 }
 
