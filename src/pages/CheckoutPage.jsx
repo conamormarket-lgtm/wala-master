@@ -43,7 +43,7 @@ import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../constants/d
 // Uso SOLO presentacional (aditivo); no altera lógica de compra/pago/totales.
 import { GlassCard, GlassButton, Badge, AuroraBackground } from '../components/ui';
 import { DEPARTAMENTOS, getProvincias } from '../constants/peruUbigeo';
-import { ubicacionErp, lugarLegible, distritosSugeridos } from '../utils/ubicacionErp';
+import { ubicacionErp, lugarLegible, distritosSugeridos, distritoEnLugar } from '../utils/ubicacionErp';
 import styles from './CheckoutPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
@@ -1563,6 +1563,14 @@ const CheckoutPage = () => {
     && !!String(formik.values.customerName).trim() && !!String(formik.values.dni).trim()
     && !!String(formik.values.phone).trim();
 
+  // Cambiar ciudad/departamento/provincia: el distrito escrito se borra si ya no es de
+  // ese lugar (si no, quedaba "Rímac" con provincia Huaral).
+  const cambiarLugar = (cambios) => {
+    const siguiente = { ...formik.values, ...cambios };
+    const conDistrito = distritoEnLugar(siguiente, siguiente.district) ? cambios : { ...cambios, district: '' };
+    Object.entries(conDistrito).forEach(([campo, valor]) => setFieldValue(campo, valor, false));
+  };
+
   // Distrito: texto libre con los distritos del lugar elegido como sugerencias.
   const sugerenciasDistrito = distritosSugeridos(formik.values);
   const campoDistrito = (
@@ -2155,7 +2163,7 @@ const CheckoutPage = () => {
                 <select
                   name="city"
                   value={formik.values.city}
-                  onChange={formik.handleChange}
+                  onChange={(e) => cambiarLugar({ city: e.target.value })}
                   onBlur={formik.handleBlur}
                   className={styles.selectInput}
                   style={{ padding: '0.8rem 1rem', border: '2px solid var(--gris-borde)', borderRadius: 'var(--radio-pequeno)', fontSize: '1rem' }}
@@ -2174,10 +2182,7 @@ const CheckoutPage = () => {
                   <select
                     name="department"
                     value={formik.values.department}
-                    onChange={(e) => {
-                      setFieldValue('department', e.target.value);
-                      setFieldValue('province', '', false);
-                    }}
+                    onChange={(e) => cambiarLugar({ department: e.target.value, province: '', district: '' })}
                     onBlur={formik.handleBlur}
                     className={styles.selectInput}
                     style={{ padding: '0.8rem 1rem', border: '2px solid var(--gris-borde)', borderRadius: 'var(--radio-pequeno)', fontSize: '1rem' }}
@@ -2199,7 +2204,7 @@ const CheckoutPage = () => {
                   <select
                     name="province"
                     value={formik.values.province}
-                    onChange={formik.handleChange}
+                    onChange={(e) => cambiarLugar({ province: e.target.value })}
                     onBlur={formik.handleBlur}
                     disabled={!formik.values.department}
                     className={styles.selectInput}

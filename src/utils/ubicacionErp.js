@@ -27,6 +27,19 @@ export function lugarLegible({ city, district, department, province } = {}) {
   return partes.map((p) => String(p || '').trim()).filter(Boolean).join(', ');
 }
 
+const normLugar = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
+
+/**
+ * ¿El distrito escrito pertenece al lugar elegido? Sin lista para ese lugar (aún no
+ * eligió provincia) o sin distrito, no hay nada que contradecir. Sin tildes: el
+ * ubigeo dice "Rimac" y el cliente escribe "Rímac".
+ */
+export function distritoEnLugar(lugar, distrito) {
+  const lista = distritosSugeridos(lugar);
+  if (!distrito || lista.length === 0) return true;
+  return lista.some((d) => normLugar(d) === normLugar(distrito));
+}
+
 /** Distritos sugeridos para el campo distrito según la ciudad elegida. */
 export function distritosSugeridos({ city, department, province } = {}) {
   if (city === 'Callao') return getDistritos('Callao', 'Callao');

@@ -6,7 +6,7 @@ import { GlassCard } from '../../components/ui';
 import { T } from '../../i18n/useTranslatedText';
 import { obtenerDirecciones, guardarDirecciones, MAX_DIRECCIONES } from '../../services/direcciones';
 import { DEPARTAMENTOS, getProvincias } from '../../constants/peruUbigeo';
-import { lugarLegible, distritosSugeridos } from '../../utils/ubicacionErp';
+import { lugarLegible, distritosSugeridos, distritoEnLugar } from '../../utils/ubicacionErp';
 import styles from './MisDireccionesPage.module.css';
 
 const CIUDADES = { Lima: 'Lima Metropolitana', Callao: 'Callao', Provincias: 'Otras Provincias' };
@@ -103,7 +103,12 @@ const MisDireccionesPage = () => {
   const campo = (nombre) => ({
     name: nombre,
     value: form[nombre],
-    onChange: (e) => setForm((f) => ({ ...f, [nombre]: e.target.value })),
+    onChange: (e) => setForm((f) => {
+      const siguiente = { ...f, [nombre]: e.target.value };
+      // Cambió el lugar y el distrito escrito ya no es de ahí: se borra.
+      if ((nombre === 'city' || nombre === 'province') && !distritoEnLugar(siguiente, siguiente.district)) siguiente.district = '';
+      return siguiente;
+    }),
   });
 
   // Distrito: texto libre con los distritos del lugar elegido como sugerencias.
@@ -216,7 +221,7 @@ const MisDireccionesPage = () => {
                   <select
                     name="department"
                     value={form.department}
-                    onChange={(e) => setForm((f) => ({ ...f, department: e.target.value, province: '' }))}
+                    onChange={(e) => setForm((f) => ({ ...f, department: e.target.value, province: '', district: '' }))}
                   >
                     <option value="">Elige…</option>
                     {DEPARTAMENTOS.filter((d) => d !== 'Callao').map((d) => <option key={d} value={d}>{d}</option>)}
