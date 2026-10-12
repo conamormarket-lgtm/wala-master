@@ -194,12 +194,6 @@ const PANTALLA_ABRIENDO_WHATSAPP = `<!doctype html><html lang="es"><head><meta c
   <div class="wa"><span class="punto"></span>Un asesor te atenderá por WhatsApp</div>
 </div></body></html>`;
 
-// Imagen para el mensaje de WhatsApp: solo la del diseño personalizado (la prenda
-// completa). Las fotos de catálogo no van: eran enlaces larguísimos de Firebase,
-// repetidos, y el enlace al producto ya lleva al asesor a esas fotos.
-const getWhatsAppDesignLink = (item) =>
-  getDesignReferences(item).images.find((u) => typeof u === 'string' && /^https?:\/\//i.test(u)) || null;
-
 const CheckoutPage = () => {
   const navigate = useNavigate();
   // eslint-disable-next-line no-unused-vars
@@ -1127,8 +1121,7 @@ const CheckoutPage = () => {
           }
           const price = item.customization?.finalPrice || item.price;
           message += `   Subtotal: S/ ${(price * item.quantity).toFixed(2)}\n`;
-          const disenoUrl = getWhatsAppDesignLink(item);
-          if (disenoUrl) message += `   Diseño: ${disenoUrl}\n`;
+          // Sin enlaces de imágenes (Firebase): el enlace del producto basta.
           message += `   Link: ${window.location.origin}/producto/${item.productId}\n\n`;
         });
 
@@ -1191,8 +1184,6 @@ const CheckoutPage = () => {
             const price = item.customization?.finalPrice || item.price;
             sub += price * item.quantity;
             m += `   Subtotal: S/ ${(price * item.quantity).toFixed(2)}\n`;
-            const disenoUrl = getWhatsAppDesignLink(item);
-            if (disenoUrl) m += `   Diseño: ${disenoUrl}\n`;
             m += `   Link: ${window.location.origin}/producto/${item.productId}\n\n`;
           });
           m += `Subtotal${brandLabel ? ` de ${brandLabel}` : ''}: S/ ${sub.toFixed(2)}\n`;
