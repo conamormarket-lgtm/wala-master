@@ -157,8 +157,9 @@
   padding: 4px 0;
   overflow-x: auto;
   scrollbar-width: none;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 22px, #000 calc(100% - 22px), transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 22px, #000 calc(100% - 22px), transparent);
+  /* Solo se desvanece el borde derecho (el izquierdo cortaba la píldora activa). */
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
 }
 
 .indice::-webkit-scrollbar {
@@ -177,7 +178,9 @@
   transition: color var(--dur-media) ease;
 }
 
-.indice a > span {
+/* Solo el texto va encima de la píldora (la píldora también es un span:
+   sin el :not perdía su position absolute y quedaba en tamaño cero). */
+.indice a > span:not(.indicePildora) {
   position: relative;
   z-index: 1;
 }
@@ -1158,7 +1161,7 @@
   cursor: pointer;
 }
 
-.vistas button > span {
+.vistas button > span:not(.vistaPildora) {
   position: relative;
   z-index: 1;
 }
@@ -1196,7 +1199,32 @@
   line-height: 1.6;
 }
 
+.logoCorto {
+  display: none;
+  transform: rotate(-6deg);
+}
+
 @media (max-width: 720px) {
+  /* En el celular: isotipo, selector y tema en una fila; el índice debajo. */
+  .logoLargo {
+    display: none;
+  }
+
+  .logoCorto {
+    display: block;
+  }
+
+  .vistas button {
+    min-height: 34px;
+    padding: 0 0.65rem;
+    font-size: 0.78rem;
+  }
+
+  .tema {
+    width: 38px;
+    height: 38px;
+  }
+
   .barraTopDentro {
     flex-wrap: wrap;
     height: auto;

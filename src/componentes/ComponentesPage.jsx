@@ -15,7 +15,7 @@ import {
   EASE, RESORTE, Revelar, Contador,
   ProveedorEnlaces, MenuTienda, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito, AgregarRapido,
   accionDeProducto, tarjetaDesdeProducto, opcionesDeProducto, RenderSecciones,
-  IconoWala, ICONOS_WALA,
+  IconoWala, ICONOS_WALA, IsoWala,
 } from './kit';
 import s from './ComponentesPage.module.css';
 import DemoEditor from './DemoEditor';
@@ -426,8 +426,9 @@ function BarraSuperior({ tema, cambiarTema, vista, onVista }) {
   return (
     <div className={s.barraTop}>
       <div className={s.barraTopDentro}>
-        <a href="#inicio" className={s.marca}>
-          <Logo alto={32} />
+        <a href="#inicio" className={s.marca} aria-label="Walá · inicio">
+          <span className={s.logoLargo}><Logo alto={32} /></span>
+          <IsoWala tamano={26} className={s.logoCorto} />
         </a>
         <div className={s.vistas} role="tablist" aria-label="Vista">
           {VISTAS.map(([id, t]) => (
