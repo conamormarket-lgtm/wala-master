@@ -2432,6 +2432,11 @@ exports.misPedidosSecure = functions
       // línea (saldo de cobranza + delivery del restante), no un montoPendiente
       // que el ERP recalcula recién al guardar.
       const conSaldoReal = visibles.map((p) => {
+        // Pedido web sin validar en el ERP (p. ej. por WhatsApp): objetivoSaldo no
+        // deja pagarlo en línea, así que no se ofrece "Pagar deuda" (daba error).
+        if (p._coleccion === "pedidos_web" && p.pagoOnline?.verificadoPor !== "servidor") {
+          return { ...p, conDeuda: false };
+        }
         if (p._coleccion !== "pedidos") return p;
         const saldo = p.deletedAt || p.estadoGeneral === "Anulado" ? 0 : erpCobranza.saldoCobrableOnline(p);
         return { ...p, montoDeuda: saldo, conDeuda: saldo > 0 };
