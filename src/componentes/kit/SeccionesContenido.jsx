@@ -5,7 +5,7 @@ import Carrusel from './Carrusel';
 import { Enlace } from './Enlace';
 import { TituloSeccion, tituloDesdeAjustes } from './Seccion';
 import { tarjetaDesdeMarca } from './adaptadores';
-import { EtiquetaColgante, Garabatos, Trazo, Destello, pastel } from './Marca';
+import { EtiquetaColgante, Garabatos, Trazo, Destello, acento } from './Marca';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import s from './SeccionesContenido.module.css';
 
@@ -380,7 +380,7 @@ export function FilaDestacados({ ajustes = {} }) {
       >
         {tarjetas.map((c, k) => (
           <Enlace key={c.id || k} to={c.link} className={s.destacado}>
-            <span className={s.destacadoFoto} style={{ background: pastel(k) }}>
+            <span className={s.destacadoFoto} style={{ '--acento': acento(k) }}>
               <EtiquetaColgante tono={k === 0 ? 'oro' : 'violeta'} className={s.destacadoPuesto}>#{k + 1}</EtiquetaColgante>
               {c.imageUrl && <img src={toDirectImageUrl(c.imageUrl)} alt="" loading="lazy" decoding="async" draggable={false} />}
             </span>

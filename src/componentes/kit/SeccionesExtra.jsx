@@ -10,7 +10,7 @@ import { TituloSeccion, tituloDesdeAjustes } from './Seccion';
 import { tarjetaDesdeProducto } from './adaptadores';
 import { TextoCampo, BotonDeAjustes, fuenteDe, prefiereQuieto } from './SeccionesContenido';
 import { toDirectImageUrl } from '../../utils/imageUrl';
-import { EtiquetaColgante, Garabatos, LogoWala, Destello, Corazon, pastel } from './Marca';
+import { EtiquetaColgante, Garabatos, LogoWala, Destello, Corazon, acento } from './Marca';
 import { IconoWala } from './IconosWala';
 import s from './SeccionesExtra.module.css';
 
@@ -228,7 +228,7 @@ export function NavCategorias({ ajustes = {}, categorias = [], activa = null, on
     const sel = activa === id;
     const contenido = (
       <>
-        <span className={s.burbujaFoto} style={id ? { background: c.imageUrl ? pastel(k - 1) : tonoDe(c.name) } : undefined}>
+        <span className={s.burbujaFoto} style={id ? { '--acento': acento(k - 1), background: c.imageUrl ? undefined : tonoDe(c.name) } : undefined}>
           {id == null ? <LayoutGrid aria-hidden="true" />
             : c.imageUrl ? <img src={toDirectImageUrl(c.imageUrl)} alt="" loading="lazy" decoding="async" />
               : <span aria-hidden="true">{c.name.trim()[0]?.toUpperCase()}</span>}

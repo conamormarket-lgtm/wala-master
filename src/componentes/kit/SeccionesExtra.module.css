@@ -473,7 +473,8 @@
   height: 64px;
   border-radius: 50%;
   background: #f5f4f8;
-  box-shadow: 0 0 0 2px transparent, 0 0 0 4px transparent;
+  /* Aro del color de la categoría (la foto queda en neutro). */
+  box-shadow: inset 0 0 0 2px var(--acento, transparent);
   overflow: hidden;
   color: var(--violet-800);
   font-size: 1.3rem;

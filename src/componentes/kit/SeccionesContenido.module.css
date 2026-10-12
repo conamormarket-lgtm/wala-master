@@ -528,6 +528,8 @@
 /* Puesto (#1, #2…) en una etiqueta colgante sobre la foto. */
 .destacadoFoto {
   position: relative;
+  /* Línea del color arriba de la foto; la foto queda en el escenario neutro. */
+  box-shadow: inset 0 4px 0 0 var(--acento, transparent);
 }
 
 .destacadoPuesto {

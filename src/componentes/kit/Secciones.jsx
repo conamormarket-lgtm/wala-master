@@ -11,7 +11,7 @@ import TarjetaProducto from './TarjetaProducto';
 import { Enlace } from './Enlace';
 import { tarjetaDesdeProducto } from './adaptadores';
 import { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
-import { EtiquetaColgante, Destello, pastel } from './Marca';
+import { EtiquetaColgante, Destello, acento } from './Marca';
 import { IconoWala, iconoDesde } from './IconosWala';
 import { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados } from './SeccionesContenido';
 import { BannerPrincipal, ListaBeneficios, Ubicacion, NavCategorias, GrillaProductos, CatalogoConFiltros, PiePagina } from './SeccionesExtra';
@@ -438,7 +438,7 @@ export function GrillaCategorias({ ajustes = {}, categorias }) {
         {lista.map((c, k) => (
           <li key={c.categoryId || c.name}>
             <Enlace to={c.url || `?categoria=${c.categoryId}`} className={s.categoria} style={{ '--giro': k % 2 ? '2.5deg' : '-2.5deg' }}>
-              <span className={s.categoriaFoto} style={{ background: c.backgroundColor || ajustes.tileBackgroundColor || pastel(k) }}>
+              <span className={s.categoriaFoto} style={{ background: c.backgroundColor || ajustes.tileBackgroundColor || undefined, '--acento': acento(k) }}>
                 {c.imageUrl && <img src={c.imageUrl} alt="" loading="lazy" />}
               </span>
               <span className={s.categoriaNombre}>{c.name}</span>

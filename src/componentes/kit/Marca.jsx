@@ -19,6 +19,14 @@ import s from './Marca.module.css';
 export const PASTELES = ['#ede9fe', '#fce7f3', '#fef3c7', '#ccfbf1', '#e0f2fe'];
 export const pastel = (k) => PASTELES[((k % PASTELES.length) + PASTELES.length) % PASTELES.length];
 
+/**
+ * Acentos (los mismos colores, más vivos) para aros y bordes. Las fotos de
+ * producto NO van sobre color: con multiply el pastel teñía la prenda (una
+ * polera blanca se veía lila). El color va alrededor, la foto en neutro.
+ */
+export const ACENTOS = ['#c4b5fd', '#f9a8d4', '#fcd34d', '#5eead4', '#7dd3fc'];
+export const acento = (k) => ACENTOS[((k % ACENTOS.length) + ACENTOS.length) % ACENTOS.length];
+
 /** Forma exacta de la etiqueta del logo (public/logo-wala.svg, tagBaseGlobal). */
 const ETIQUETA_LOGO = 'M 32 42 L 28 88 C 27 92 30 94 34 93 L 85 80 C 89 79 91 76 89 72 L 76 18 C 75 13 68 11 65 14 L 36 34 C 32 37 31 40 32 42 Z';
 
