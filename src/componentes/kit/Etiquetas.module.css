@@ -3,24 +3,27 @@
   --e-fondo: var(--violet-100);
   --e-texto: var(--violet-800);
 
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.28rem 0.55rem;
+  padding: 0.3rem 0.58rem;
   border-radius: 999px;
   background: var(--e-fondo);
   color: var(--e-texto);
   font-size: 0.7rem;
   font-weight: 700;
   line-height: 1;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   white-space: nowrap;
+  overflow: hidden;
 }
 
 .etiqueta svg {
   width: 0.9rem;
   height: 0.9rem;
+  flex-shrink: 0;
 }
 
 .oscuro {
@@ -48,6 +51,10 @@
   --e-texto: var(--color-text-muted);
 }
 
+.solida {
+  box-shadow: 0 4px 12px -4px var(--e-fondo);
+}
+
 .solida.violeta {
   --e-fondo: var(--violet-700);
   --e-texto: #fff;
@@ -59,13 +66,35 @@
 }
 
 .solida.peligro {
-  --e-fondo: #dc2626;
+  --e-fondo: #e11d48;
   --e-texto: #fff;
 }
 
 .solida.aviso {
   --e-fondo: #f59e0b;
   --e-texto: #451a03;
+}
+
+/* Destello periódico en las sólidas (ofertas, "nuevo"). */
+.solida::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 25%, rgba(255, 255, 255, 0.55) 50%, transparent 75%);
+  transform: translateX(-120%);
+  animation: destello 3.4s var(--ease-entrance) infinite;
+}
+
+@keyframes destello {
+  0%,
+  55% {
+    transform: translateX(-120%);
+  }
+
+  85%,
+  100% {
+    transform: translateX(120%);
+  }
 }
 
 :global([data-theme='dark']) .violeta:not(.solida) {
@@ -88,6 +117,10 @@
   --e-texto: #fca5a5;
 }
 
+:global([data-theme='dark']) .solida.violeta {
+  --e-fondo: var(--violet-600);
+}
+
 :global([data-theme='dark']) .oscuro {
   --e-fondo: #f1eef9;
   --e-texto: #14121c;
@@ -98,8 +131,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  min-height: 38px;
-  padding: 0 0.9rem;
+  min-height: 40px;
+  padding: 0 0.95rem;
   border: 1.5px solid var(--color-border);
   border-radius: 999px;
   background: var(--color-surface);
@@ -108,8 +141,13 @@
   font-size: 0.86rem;
   font-weight: 500;
   cursor: pointer;
-  transition: border-color var(--dur-rapida) ease, background-color var(--dur-rapida) ease,
-    color var(--dur-rapida) ease;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color var(--dur-media) var(--ease-signature),
+    background-color var(--dur-media) var(--ease-signature),
+    color var(--dur-rapida) ease,
+    box-shadow var(--dur-media) var(--ease-signature),
+    transform var(--dur-media) var(--ease-signature);
 }
 
 .chip svg {
@@ -117,8 +155,17 @@
   height: 1rem;
 }
 
-.chip:hover {
-  border-color: var(--violet-400);
+@media (hover: hover) and (pointer: fine) {
+  .chip:hover {
+    border-color: var(--violet-400);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px -10px rgba(124, 58, 237, 0.45);
+  }
+}
+
+.chip:active {
+  transform: scale(0.94);
+  transition-duration: 90ms;
 }
 
 .chip:focus-visible {
@@ -130,15 +177,45 @@
   border-color: var(--violet-700);
   background: var(--violet-700);
   color: #fff;
+  box-shadow: 0 8px 18px -10px rgba(109, 40, 217, 0.7);
+  animation: rebote 0.45s var(--ease-signature);
 }
 
-.chipActivo:hover {
-  border-color: var(--violet-800);
+@media (hover: hover) and (pointer: fine) {
+  .chipActivo:hover {
+    border-color: var(--violet-600);
+    background: var(--violet-600);
+  }
+}
+
+.check {
+  animation: checkEntra 0.4s var(--ease-signature);
 }
 
 :global([data-theme='dark']) .chipActivo {
   border-color: var(--violet-600);
   background: var(--violet-600);
+}
+
+@keyframes rebote {
+  0% {
+    transform: scale(0.92);
+  }
+
+  55% {
+    transform: scale(1.06);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes checkEntra {
+  from {
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
 }
 
 /* ── Monedas ───────────────────────────────────────────── */
@@ -147,7 +224,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.25rem 0.55rem 0.25rem 0.45rem;
+  padding: 0.28rem 0.6rem 0.28rem 0.45rem;
   border-radius: 999px;
   font-size: 0.82rem;
   line-height: 1;
@@ -174,6 +251,16 @@
   color: #065f46;
 }
 
+.ganancia img {
+  animation: flotar 2.4s ease-in-out infinite;
+}
+
+@keyframes flotar {
+  50% {
+    transform: translateY(-3px) rotate(8deg);
+  }
+}
+
 :global([data-theme='dark']) .costo {
   color: #fcd34d;
   border-color: rgba(252, 211, 77, 0.25);
@@ -185,24 +272,59 @@
 }
 
 .saldo {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   min-height: 36px;
-  padding: 0 0.75rem 0 0.4rem;
-  border: 1px solid rgba(217, 119, 6, 0.25);
+  padding: 0 0.8rem 0 0.4rem;
+  border: 1px solid rgba(217, 119, 6, 0.3);
   border-radius: 999px;
-  background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
+  background: linear-gradient(180deg, #fffbeb 0%, #fde68a 140%);
   color: var(--gold-text);
   font: inherit;
   font-weight: 700;
   font-size: 0.88rem;
   cursor: pointer;
-  transition: transform var(--dur-rapida) var(--ease-signature);
+  overflow: hidden;
+  box-shadow: 0 6px 16px -10px rgba(217, 119, 6, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-media) var(--ease-signature), box-shadow var(--dur-media) ease;
 }
 
-.saldo:hover {
-  transform: translateY(-1px);
+.saldo img {
+  position: relative;
+  z-index: 1;
+  transition: transform 0.7s var(--ease-signature);
+}
+
+.saldoNumero {
+  position: relative;
+  z-index: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.saldoDestello {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 25%, rgba(255, 255, 255, 0.85) 50%, transparent 75%);
+  transform: translateX(-120%);
+  animation: destello 4.2s var(--ease-entrance) 0.6s infinite;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .saldo:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px -10px rgba(217, 119, 6, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  .saldo:hover img {
+    transform: rotateY(360deg) scale(1.1);
+  }
+}
+
+.saldo:active {
+  transform: scale(0.95);
 }
 
 .saldo:focus-visible {
@@ -211,29 +333,56 @@
 }
 
 :global([data-theme='dark']) .saldo {
-  background: rgba(245, 158, 11, 0.14);
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
   color: #fcd34d;
+  box-shadow: 0 0 18px -6px rgba(245, 158, 11, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+:global([data-theme='dark']) .saldoDestello {
+  background: linear-gradient(110deg, transparent 25%, rgba(255, 220, 140, 0.3) 50%, transparent 75%);
 }
 
 /* ── Contador ──────────────────────────────────────────── */
 .contador {
   position: absolute;
-  top: 2px;
-  right: 2px;
+  top: 1px;
+  right: 1px;
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: var(--violet-700);
+  background: linear-gradient(135deg, #f43f5e, #e11d48);
   color: #fff;
   font-size: 0.66rem;
   font-weight: 700;
   line-height: 18px;
   text-align: center;
-  box-shadow: 0 0 0 2px var(--color-surface);
+  box-shadow: 0 0 0 2px var(--color-surface), 0 4px 10px -2px rgba(225, 29, 72, 0.6);
   pointer-events: none;
+  animation: contadorPop 0.5s var(--ease-signature);
 }
 
-:global([data-theme='dark']) .contador {
-  background: var(--violet-500);
+@keyframes contadorPop {
+  0% {
+    transform: scale(0);
+  }
+
+  60% {
+    transform: scale(1.3);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solida::after,
+  .saldoDestello,
+  .ganancia img,
+  .contador,
+  .chipActivo,
+  .check {
+    animation: none;
+  }
 }

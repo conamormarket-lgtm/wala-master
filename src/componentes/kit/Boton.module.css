@@ -1,17 +1,21 @@
 .boton {
   --b-fondo: var(--violet-700);
-  --b-fondo-hover: var(--violet-800);
+  --b-fondo-hover: var(--violet-600);
   --b-texto: #fff;
   --b-borde: transparent;
+  --b-halo: rgba(124, 58, 237, 0.55);
+  --b-onda: rgba(255, 255, 255, 0.38);
+  --b-destello: rgba(255, 255, 255, 0.5);
 
+  position: relative;
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
   min-height: var(--touch-target, 44px);
-  padding: 0 1.15rem;
+  padding: 0 1.2rem;
   border: 1.5px solid var(--b-borde);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--b-fondo);
   color: var(--b-texto);
   font: inherit;
@@ -21,13 +25,23 @@
   letter-spacing: -0.01em;
   white-space: nowrap;
   cursor: pointer;
+  overflow: hidden;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
   transition:
-    background-color var(--dur-rapida) ease,
-    border-color var(--dur-rapida) ease,
+    background-color var(--dur-media) var(--ease-signature),
+    border-color var(--dur-media) var(--ease-signature),
     color var(--dur-rapida) ease,
-    box-shadow var(--dur-rapida) ease,
-    transform var(--dur-rapida) var(--ease-signature);
+    box-shadow var(--dur-media) var(--ease-signature),
+    transform var(--dur-media) var(--ease-signature);
+}
+
+.contenido {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .boton svg {
@@ -36,17 +50,88 @@
   flex-shrink: 0;
 }
 
-.boton:hover:not(:disabled) {
-  background: var(--b-fondo-hover);
+.icono,
+.iconoFin {
+  display: inline-flex;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.texto {
+  display: inline-block;
+}
+
+/* ── Destello: banda de luz que cruza el botón ─────────── */
+.destello {
+  position: absolute;
+  inset: -2px;
+  z-index: 1;
+  background: linear-gradient(110deg, transparent 30%, var(--b-destello) 48%, transparent 66%);
+  transform: translateX(-130%);
+  pointer-events: none;
+}
+
+.brilloAuto .destello {
+  animation: destelloAuto 3.6s var(--ease-entrance) 1s infinite;
+}
+
+@keyframes destelloAuto {
+  0% {
+    transform: translateX(-130%);
+  }
+
+  35%,
+  100% {
+    transform: translateX(130%);
+  }
+}
+
+/* ── Onda donde se toca ────────────────────────────────── */
+.onda {
+  position: absolute;
+  z-index: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--b-onda) 0%, var(--b-onda) 40%, transparent 70%);
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+  animation: onda 0.65s var(--ease-signature) forwards;
+}
+
+@keyframes onda {
+  to {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+/* ── Interacción ───────────────────────────────────────── */
+@media (hover: hover) and (pointer: fine) {
+  .boton:hover:not(:disabled) {
+    background: var(--b-fondo-hover);
+    transform: translateY(-2px);
+  }
+
+  .boton:hover:not(:disabled) .destello {
+    transform: translateX(130%);
+    transition: transform 0.85s var(--ease-entrance);
+  }
+
+  .boton:hover:not(:disabled) .icono {
+    transform: scale(1.12) rotate(-6deg);
+  }
+
+  .boton:hover:not(:disabled) .iconoFin {
+    transform: translateX(4px);
+  }
 }
 
 .boton:active:not(:disabled) {
-  transform: scale(0.97);
+  transform: translateY(0) scale(0.96);
+  transition-duration: 90ms;
 }
 
 .boton:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--color-bg, var(--gris-fondo)), 0 0 0 5px var(--violet-500);
+  box-shadow: 0 0 0 3px var(--color-bg, var(--gris-fondo)), 0 0 0 5px var(--violet-500), 0 0 22px 2px var(--b-halo);
 }
 
 .boton:disabled {
@@ -56,58 +141,104 @@
 
 .boton[aria-busy='true'] {
   cursor: progress;
-  opacity: 0.85;
-}
-
-.texto {
-  display: inline-block;
+  opacity: 0.88;
 }
 
 /* ── Variantes ─────────────────────────────────────────── */
 .primario {
-  box-shadow: 0 6px 16px -8px rgba(76, 29, 149, 0.55);
+  box-shadow:
+    0 8px 20px -10px var(--b-halo),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .primario:hover:not(:disabled) {
+    box-shadow:
+      0 14px 30px -10px var(--b-halo),
+      0 0 0 4px rgba(139, 92, 246, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.28),
+      inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+  }
 }
 
 .secundario {
   --b-fondo: var(--violet-100);
   --b-fondo-hover: var(--violet-200);
   --b-texto: var(--violet-800);
+  --b-onda: rgba(124, 58, 237, 0.22);
+  --b-destello: rgba(255, 255, 255, 0.75);
+  --b-halo: rgba(124, 58, 237, 0.3);
 }
 
 .contorno {
-  --b-fondo: transparent;
-  --b-fondo-hover: var(--primary-light);
+  --b-fondo: var(--color-surface);
+  --b-fondo-hover: var(--color-surface);
   --b-texto: var(--color-text);
   --b-borde: var(--color-border);
-}
-
-.contorno:hover:not(:disabled) {
-  border-color: var(--violet-400);
+  --b-onda: rgba(124, 58, 237, 0.18);
+  --b-destello: rgba(167, 139, 250, 0.22);
+  --b-halo: rgba(124, 58, 237, 0.25);
 }
 
 .fantasma {
   --b-fondo: transparent;
   --b-fondo-hover: var(--primary-light);
   --b-texto: var(--primary-color);
+  --b-onda: rgba(124, 58, 237, 0.2);
+  --b-destello: rgba(167, 139, 250, 0.2);
 }
 
 .peligro {
   --b-fondo: var(--danger);
   --b-fondo-hover: var(--danger-hover);
+  --b-halo: rgba(239, 68, 68, 0.55);
+}
+
+.secundario,
+.contorno,
+.fantasma {
+  box-shadow: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .secundario:hover:not(:disabled),
+  .contorno:hover:not(:disabled) {
+    box-shadow: 0 10px 24px -12px var(--b-halo);
+  }
+
+  .contorno:hover:not(:disabled) {
+    border-color: var(--violet-400);
+    color: var(--primary-color);
+  }
+
+  .fantasma:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .peligro:hover:not(:disabled) {
+    box-shadow: 0 14px 30px -12px var(--b-halo);
+  }
 }
 
 /* En noche el violeta 700 se apaga contra el fondo; 600 mantiene contraste
-   con texto blanco (≈5.7:1). */
+   con texto blanco (≈5.7:1) y el halo se hace más visible. */
 :global([data-theme='dark']) .primario {
   --b-fondo: var(--violet-600);
-  --b-fondo-hover: var(--violet-500);
-  box-shadow: 0 6px 18px -8px rgba(139, 92, 246, 0.6);
+  --b-fondo-hover: #8b5cf6;
+  --b-halo: rgba(139, 92, 246, 0.75);
 }
 
 :global([data-theme='dark']) .secundario {
   --b-fondo: rgba(167, 139, 250, 0.16);
   --b-fondo-hover: rgba(167, 139, 250, 0.26);
   --b-texto: var(--violet-200);
+  --b-destello: rgba(255, 255, 255, 0.18);
+}
+
+:global([data-theme='dark']) .contorno {
+  --b-fondo: rgba(255, 255, 255, 0.03);
+  --b-fondo-hover: rgba(167, 139, 250, 0.08);
 }
 
 /* ── Tamaños ───────────────────────────────────────────── */
@@ -115,14 +246,14 @@
   min-height: 36px;
   padding: 0 0.85rem;
   font-size: 0.85rem;
-  border-radius: 10px;
+  border-radius: 11px;
 }
 
 .lg {
-  min-height: 52px;
-  padding: 0 1.5rem;
+  min-height: 54px;
+  padding: 0 1.6rem;
   font-size: 1.02rem;
-  border-radius: 14px;
+  border-radius: 16px;
 }
 
 .bloque {
@@ -139,7 +270,7 @@
 }
 
 .soloIcono.lg {
-  width: 52px;
+  width: 54px;
 }
 
 /* ── Spinner ───────────────────────────────────────────── */
@@ -154,12 +285,15 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .boton {
+  .boton,
+  .icono,
+  .iconoFin {
     transition: none;
   }
 
-  .boton:active:not(:disabled) {
-    transform: none;
+  .destello,
+  .onda {
+    display: none;
   }
 
   .spin {

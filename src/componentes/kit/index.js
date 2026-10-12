@@ -5,3 +5,4 @@ export { default as TarjetaProducto, TarjetaProductoEsqueleto, soles } from './T
 export { Cabecera, BarraInferior, Pestanas, Logo } from './Navegacion';
 export { SeguimientoPedido, ItemCarrito, BarraEnvioGratis, ResumenPedido, PASOS_PEDIDO } from './Pedido';
 export { Aviso, ProveedorToasts, useToast, EstadoVacio, HojaInferior } from './Feedback';
+export { EASE, RESORTE, useContador, seguirPuntero, Estallido, Revelar } from './Efectos';

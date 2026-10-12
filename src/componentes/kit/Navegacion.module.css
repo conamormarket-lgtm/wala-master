@@ -1,21 +1,8 @@
-/* ── Cabecera ──────────────────────────────────────────── */
-.cabecera {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  height: 68px;
-  padding: 0 1.25rem;
-  border: var(--glass-border);
-  border-radius: 18px;
-  background: var(--glass-bg-strong);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
-  box-shadow: var(--glass-shadow), var(--glass-inset-top);
-}
-
+/* ── Logo ──────────────────────────────────────────────── */
 .logo {
   display: inline-flex;
   flex-shrink: 0;
+  transition: transform var(--dur-media) var(--ease-signature);
 }
 
 .logoMarca {
@@ -26,23 +13,85 @@
 }
 
 .logoForma,
-.logoHuecos {
+.logoHuecos,
+.logoDestello {
   position: absolute;
   inset: 0;
   -webkit-mask: center / contain no-repeat;
   mask: center / contain no-repeat;
 }
 
-.logoForma {
-  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+.logoForma,
+.logoDestello {
   -webkit-mask-image: url('/assets/marca/logo-header-v2.webp');
   mask-image: url('/assets/marca/logo-header-v2.webp');
+}
+
+.logoForma {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #5b21b6 100%);
 }
 
 .logoHuecos {
   background: #fff;
   -webkit-mask-image: url('/assets/marca/logo-header-huecos-v2.webp');
   mask-image: url('/assets/marca/logo-header-huecos-v2.webp');
+}
+
+/* Destello recortado con la forma del logo. */
+.logoDestello {
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.85) 50%, transparent 65%);
+  background-size: 250% 100%;
+  background-position: 150% 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .logo:hover {
+    transform: translateY(-1px) rotate(-3deg) scale(1.04);
+  }
+
+  .logo:hover .logoDestello {
+    background-position: -60% 0;
+    transition: background-position 0.9s var(--ease-entrance);
+  }
+}
+
+/* ── Cabecera ──────────────────────────────────────────── */
+.cabecera {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  height: 70px;
+  padding: 0 1rem 0 1.25rem;
+  border: var(--glass-border);
+  border-radius: 20px;
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur-solid);
+  backdrop-filter: var(--glass-blur-solid);
+  box-shadow: var(--glass-shadow-lg), var(--glass-inset-top);
+}
+
+/* Línea de luz de marca que recorre el borde inferior. */
+.cabecera::after {
+  content: '';
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #8b5cf6, #d946ef, #6366f1, #8b5cf6, transparent);
+  background-size: 200% 100%;
+  opacity: 0.8;
+  filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.6));
+  animation: lineaLuz 6s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes lineaLuz {
+  to {
+    background-position: -200% 0;
+  }
 }
 
 .enlaces {
@@ -52,61 +101,107 @@
 
 .enlace {
   position: relative;
-  padding: 0.5rem 0.75rem;
-  border-radius: 10px;
+  padding: 0.55rem 0.85rem;
+  border-radius: 12px;
   color: var(--color-text-muted);
   font-size: 0.9rem;
   font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
-  transition: color var(--dur-rapida) ease, background-color var(--dur-rapida) ease;
+  transition: color var(--dur-media) ease;
 }
 
-.enlace:hover {
+.enlaceTexto {
+  position: relative;
+  z-index: 1;
+}
+
+.pildoraSobre {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: var(--primary-light);
+}
+
+.subrayado {
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  bottom: 3px;
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #8b5cf6, #d946ef);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.8);
+}
+
+.enlace:hover,
+.enlace:focus-visible {
   color: var(--color-text);
-  background: var(--color-hover);
+  outline: none;
 }
 
 .enlaceActivo,
 .enlaceActivo:hover {
   color: var(--primary-color);
-  background: var(--primary-light);
   font-weight: 600;
 }
 
 .buscador {
+  position: relative;
   display: flex;
   flex: 1;
   align-items: center;
   gap: 0.5rem;
   min-width: 0;
-  max-width: 360px;
-  height: 42px;
+  max-width: 300px;
+  height: 44px;
   margin-left: auto;
-  padding: 0 0.5rem 0 0.85rem;
+  padding: 0 0.5rem 0 0.9rem;
   border: 1.5px solid transparent;
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--color-hover);
   color: var(--color-text-muted);
-  transition: border-color var(--dur-rapida) ease, background-color var(--dur-rapida) ease;
+  transition:
+    max-width 0.5s var(--ease-signature),
+    border-color var(--dur-media) ease,
+    background-color var(--dur-media) ease,
+    box-shadow var(--dur-media) var(--ease-signature);
+}
+
+.buscador:hover {
+  border-color: var(--violet-200);
 }
 
 .buscador:focus-within {
+  max-width: 380px;
   border-color: var(--violet-500);
   background: var(--color-surface);
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.14), 0 10px 30px -12px rgba(124, 58, 237, 0.55);
+  color: var(--primary-color);
+}
+
+:global([data-theme='dark']) .buscador:hover {
+  border-color: rgba(167, 139, 250, 0.25);
 }
 
 .buscador svg {
   width: 1.05rem;
   height: 1.05rem;
   flex-shrink: 0;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.buscador:focus-within svg {
+  transform: scale(1.12) rotate(-8deg);
 }
 
 .buscador input {
   flex: 1;
   min-width: 0;
   border: 0;
-  background: transparent;
+  /* globals.css pinta todos los inputs en noche con un selector muy específico;
+     aquí el input vive dentro de una caja que ya tiene su fondo. */
+  background-color: transparent !important;
   color: var(--color-text);
   font: inherit;
   font-size: 0.9rem;
@@ -121,12 +216,18 @@
   font: inherit;
   font-size: 0.72rem;
   color: var(--color-text-muted);
+  transition: opacity var(--dur-media) ease, transform var(--dur-media) var(--ease-signature);
+}
+
+.buscador:focus-within kbd {
+  opacity: 0;
+  transform: scale(0.8);
 }
 
 .acciones {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.2rem;
 }
 
 .iconoBtn {
@@ -137,11 +238,12 @@
   width: 42px;
   height: 42px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 13px;
   background: transparent;
   color: var(--color-text);
   cursor: pointer;
-  transition: background-color var(--dur-rapida) ease;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--dur-media) ease, color var(--dur-media) ease, transform var(--dur-media) var(--ease-signature);
 }
 
 .iconoBtn svg {
@@ -149,8 +251,73 @@
   height: 1.3rem;
 }
 
-.iconoBtn:hover {
-  background: var(--color-hover);
+@media (hover: hover) and (pointer: fine) {
+  .iconoBtn:hover {
+    background: var(--primary-light);
+    color: var(--primary-color);
+    transform: translateY(-2px);
+  }
+
+  .campana:hover svg {
+    animation: mecer 0.7s ease-in-out;
+    transform-origin: 50% 10%;
+  }
+
+  .corazon:hover svg {
+    animation: palpitar 0.8s ease-in-out;
+    fill: rgba(225, 29, 72, 0.15);
+    color: #e11d48;
+  }
+
+  .bolsa:hover svg {
+    animation: saltar 0.6s var(--ease-signature);
+  }
+}
+
+.iconoBtn:active {
+  transform: scale(0.9);
+}
+
+@keyframes mecer {
+  20% {
+    transform: rotate(16deg);
+  }
+
+  40% {
+    transform: rotate(-12deg);
+  }
+
+  60% {
+    transform: rotate(8deg);
+  }
+
+  80% {
+    transform: rotate(-4deg);
+  }
+}
+
+@keyframes palpitar {
+  30% {
+    transform: scale(1.22);
+  }
+
+  50% {
+    transform: scale(0.95);
+  }
+
+  70% {
+    transform: scale(1.12);
+  }
+}
+
+@keyframes saltar {
+  40% {
+    transform: translateY(-5px) rotate(-6deg);
+  }
+
+  70% {
+    transform: translateY(1px);
+  }
 }
 
 .iconoBtn:focus-visible,
@@ -161,19 +328,64 @@
   outline-offset: 2px;
 }
 
+/* Avatar con anillo de marca que gira. */
 .avatar {
-  width: 38px;
-  height: 38px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
   margin-left: 0.35rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: conic-gradient(from var(--angulo, 0deg), #8b5cf6, #d946ef, #f59e0b, #6366f1, #8b5cf6);
+  cursor: pointer;
+  animation: girarAnillo 6s linear infinite;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.avatar span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   border: 2px solid var(--color-surface);
   border-radius: 50%;
-  background: var(--violet-200);
+  background: var(--violet-100);
   color: var(--violet-800);
-  font: inherit;
   font-size: 0.8rem;
   font-weight: 700;
-  box-shadow: 0 0 0 1.5px var(--violet-300);
-  cursor: pointer;
+}
+
+:global([data-theme='dark']) .avatar span {
+  background: #2d2645;
+  color: var(--violet-200);
+}
+
+@property --angulo {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes girarAnillo {
+  to {
+    --angulo: 360deg;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .avatar:hover {
+    transform: scale(1.08);
+  }
+}
+
+.soloMovil {
+  display: none;
 }
 
 @media (max-width: 1100px) {
@@ -183,9 +395,19 @@
 }
 
 @media (max-width: 760px) {
+  .cabecera {
+    height: 62px;
+    padding: 0 0.6rem 0 0.9rem;
+    border-radius: 18px;
+  }
+
   .buscador,
-  .acciones > :not(:last-child):not(:nth-last-child(2)) {
+  .ocultarMovil {
     display: none;
+  }
+
+  .soloMovil {
+    display: inline-flex;
   }
 
   .acciones {
@@ -195,16 +417,17 @@
 
 /* ── Barra inferior móvil ──────────────────────────────── */
 .barra {
+  position: relative;
   display: flex;
   justify-content: space-around;
   align-items: stretch;
-  height: 64px;
+  height: 68px;
   padding: 0 0.25rem;
   border-top: var(--glass-border);
   background: var(--glass-bg-strong);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
-  box-shadow: 0 -8px 24px -12px rgba(76, 29, 149, 0.18), var(--glass-inset-top);
+  -webkit-backdrop-filter: var(--glass-blur-solid);
+  backdrop-filter: var(--glass-blur-solid);
+  box-shadow: 0 -10px 30px -14px rgba(76, 29, 149, 0.3), var(--glass-inset-top);
 }
 
 .tab {
@@ -213,7 +436,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
   border: 0;
   background: transparent;
@@ -221,6 +444,7 @@
   font: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-media) ease;
 }
 
 .tabIcono {
@@ -228,60 +452,111 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 54px;
-  height: 30px;
+  width: 56px;
+  height: 32px;
   border-radius: 999px;
-  transition: background-color var(--dur-media) var(--ease-signature), transform var(--dur-rapida) ease;
+  transition: transform var(--dur-rapida) ease;
 }
 
 .tabIcono svg {
+  position: relative;
+  z-index: 1;
   width: 1.3rem;
   height: 1.3rem;
 }
 
-.tabIcono > span {
-  top: -4px;
+.tabIcono > span:not(.tabPildora):not(.halo) {
+  top: -5px;
   right: 6px;
+  z-index: 2;
+}
+
+.tabPildora {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(217, 70, 239, 0.14));
+  box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.18);
 }
 
 .tab:active .tabIcono {
-  transform: scale(0.92);
+  transform: scale(0.88);
+}
+
+.rebota {
+  animation: rebota 0.5s var(--ease-signature);
+}
+
+@keyframes rebota {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+
+  35% {
+    transform: translateY(-6px) scale(1.15);
+  }
+
+  70% {
+    transform: translateY(1px) scale(0.96);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+  }
 }
 
 .tabTexto {
   font-size: 0.68rem;
   font-weight: 500;
   line-height: 1;
+  transition: transform var(--dur-media) var(--ease-signature);
 }
 
 .tabActivo {
   color: var(--primary-color);
 }
 
-.tabActivo .tabIcono {
-  background: var(--primary-light);
-}
-
 .tabActivo .tabTexto {
   font-weight: 700;
 }
 
+/* "Crear" flota al centro. */
 .tabDestacado .tabIcono {
-  width: 46px;
-  height: 46px;
-  margin-top: -18px;
-  border-radius: 16px;
+  width: 50px;
+  height: 50px;
+  margin-top: -22px;
+  border-radius: 18px;
   background: var(--violet-700);
   color: #fff;
-  box-shadow: 0 8px 18px -6px rgba(76, 29, 149, 0.55), 0 0 0 4px var(--color-surface);
+  box-shadow: 0 10px 22px -6px rgba(76, 29, 149, 0.7), 0 0 0 4px var(--color-surface), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .tabDestacado.tabActivo .tabIcono {
-  background: var(--violet-800);
+  background: var(--violet-600);
+}
+
+.tabDestacado .tabIcono svg {
+  color: #fff;
+}
+
+/* Halo cónico que gira detrás del botón "Crear". */
+.halo {
+  position: absolute;
+  inset: -7px;
+  z-index: -1;
+  border-radius: 22px;
+  background: conic-gradient(from var(--angulo, 0deg), #8b5cf6, #d946ef, #f59e0b, #6366f1, #8b5cf6);
+  filter: blur(8px);
+  opacity: 0.55;
+  animation: girarAnillo 4s linear infinite;
 }
 
 :global([data-theme='dark']) .tabDestacado .tabIcono {
   background: var(--violet-600);
+}
+
+:global([data-theme='dark']) .halo {
+  opacity: 0.8;
 }
 
 /* ── Pestañas segmentadas ──────────────────────────────── */
@@ -289,20 +564,21 @@
   display: inline-flex;
   max-width: 100%;
   padding: 4px;
-  border-radius: 14px;
+  border-radius: 15px;
   background: var(--color-hover);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.06);
   overflow-x: auto;
   scrollbar-width: none;
 }
 
 .pestana {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  min-height: 38px;
-  padding: 0 0.95rem;
+  min-height: 40px;
+  padding: 0 1rem;
   border: 0;
-  border-radius: 10px;
+  border-radius: 11px;
   background: transparent;
   color: var(--color-text-muted);
   font: inherit;
@@ -310,8 +586,29 @@
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color var(--dur-media) var(--ease-signature), color var(--dur-rapida) ease,
-    box-shadow var(--dur-media) ease;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-media) ease;
+}
+
+.pestanaTexto {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pestanaFondo {
+  position: absolute;
+  inset: 0;
+  border-radius: 11px;
+  background: var(--color-surface);
+  box-shadow: 0 2px 8px -2px rgba(76, 29, 149, 0.22), 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+:global([data-theme='dark']) .pestanaFondo {
+  background: var(--color-surface-2);
+  box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.2), 0 6px 16px -6px rgba(0, 0, 0, 0.6);
 }
 
 .pestana:hover {
@@ -320,13 +617,7 @@
 
 .pestanaActiva,
 .pestanaActiva:hover {
-  background: var(--color-surface);
   color: var(--color-text);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1), 0 1px 2px rgba(15, 23, 42, 0.06);
-}
-
-:global([data-theme='dark']) .pestanaActiva {
-  background: var(--color-surface-2);
 }
 
 .cuenta {
@@ -338,14 +629,29 @@
   font-size: 0.7rem;
   line-height: 20px;
   text-align: center;
+  transition: background-color var(--dur-media) ease, color var(--dur-media) ease;
 }
 
 .pestanaActiva .cuenta {
-  background: var(--violet-100);
-  color: var(--violet-800);
+  background: var(--violet-700);
+  color: #fff;
 }
 
 :global([data-theme='dark']) .pestanaActiva .cuenta {
-  background: rgba(167, 139, 250, 0.2);
-  color: var(--violet-200);
+  background: var(--violet-600);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cabecera::after,
+  .avatar,
+  .halo,
+  .rebota {
+    animation: none;
+  }
+
+  .campana:hover svg,
+  .corazon:hover svg,
+  .bolsa:hover svg {
+    animation: none;
+  }
 }

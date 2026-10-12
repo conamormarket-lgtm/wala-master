@@ -10,32 +10,64 @@
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text);
+  transition: color var(--dur-media) ease;
+}
+
+.campo:focus-within .etiqueta {
+  color: var(--primary-color);
 }
 
 .control {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  min-height: 48px;
-  padding: 0 0.9rem;
+  gap: 0.55rem;
+  min-height: 50px;
+  padding: 0 0.95rem;
   border: 1.5px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--color-surface);
-  transition: border-color var(--dur-rapida) ease, box-shadow var(--dur-rapida) ease;
+  transition:
+    border-color var(--dur-media) var(--ease-signature),
+    box-shadow var(--dur-media) var(--ease-signature),
+    transform var(--dur-media) var(--ease-signature);
 }
 
-.control:hover {
-  border-color: var(--violet-300);
+@media (hover: hover) and (pointer: fine) {
+  .control:hover {
+    border-color: var(--violet-300);
+  }
 }
 
 .control:focus-within {
   border-color: var(--violet-600);
-  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.14);
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.14), 0 10px 26px -14px rgba(124, 58, 237, 0.6);
+}
+
+/* Línea de luz que recorre el borde inferior al enfocar. */
+.brilloFoco {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: -1.5px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--violet-400), #d946ef, var(--violet-400), transparent);
+  transform: scaleX(0);
+  opacity: 0;
+  transition: transform 0.5s var(--ease-signature), opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.control:focus-within .brilloFoco {
+  transform: scaleX(1);
+  opacity: 1;
 }
 
 .conError,
 .conError:hover {
   border-color: var(--danger);
+  animation: sacudir 0.42s var(--ease-signature);
 }
 
 .conError:focus-within {
@@ -43,9 +75,37 @@
   box-shadow: 0 0 0 4px var(--danger-soft);
 }
 
+.conError .brilloFoco {
+  background: linear-gradient(90deg, transparent, #f87171, transparent);
+}
+
+@keyframes sacudir {
+  20% {
+    transform: translateX(-5px);
+  }
+
+  40% {
+    transform: translateX(5px);
+  }
+
+  60% {
+    transform: translateX(-3px);
+  }
+
+  80% {
+    transform: translateX(2px);
+  }
+}
+
 .icono {
   display: inline-flex;
   color: var(--color-text-muted);
+  transition: color var(--dur-media) ease, transform var(--dur-media) var(--ease-signature);
+}
+
+.control:focus-within .icono {
+  color: var(--primary-color);
+  transform: scale(1.12);
 }
 
 .icono svg {
@@ -56,9 +116,11 @@
 .input {
   flex: 1;
   min-width: 0;
-  height: 44px;
+  height: 46px;
   border: 0;
-  background: transparent;
+  /* globals.css pinta todos los inputs en noche con un selector muy específico;
+     aquí el input vive dentro de una caja que ya tiene su fondo. */
+  background-color: transparent !important;
   color: var(--color-text);
   font: inherit;
   /* 16px evita el zoom automático de iOS al enfocar */
@@ -69,6 +131,11 @@
 .input::placeholder {
   color: var(--color-text-muted);
   opacity: 0.7;
+  transition: opacity var(--dur-media) ease;
+}
+
+.input:focus::placeholder {
+  opacity: 0.35;
 }
 
 .sufijo {
@@ -94,6 +161,7 @@
 .error {
   color: var(--danger-hover);
   font-weight: 500;
+  animation: entraArriba 0.35s var(--ease-signature);
 }
 
 .error svg {
@@ -104,6 +172,13 @@
 
 :global([data-theme='dark']) .error {
   color: #fca5a5;
+}
+
+@keyframes entraArriba {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }
 
 /* ── Grupos (talla / color) ────────────────────────────── */
@@ -120,7 +195,7 @@
   justify-content: space-between;
   width: 100%;
   padding: 0;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.65rem;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text);
@@ -132,6 +207,7 @@
 }
 
 .enlace {
+  position: relative;
   border: 0;
   padding: 0;
   background: none;
@@ -139,9 +215,24 @@
   font: inherit;
   font-size: 0.8rem;
   font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
   cursor: pointer;
+}
+
+.enlace::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 1.5px;
+  background: currentColor;
+  transform: scaleX(0.35);
+  transform-origin: left;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.enlace:hover::after {
+  transform: scaleX(1);
 }
 
 .tallas {
@@ -153,22 +244,53 @@
 .talla {
   position: relative;
   min-width: 52px;
-  height: 44px;
+  height: 46px;
   padding: 0 0.75rem;
   border: 1.5px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: border-color var(--dur-rapida) ease, background-color var(--dur-rapida) ease,
-    color var(--dur-rapida) ease;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color var(--dur-media) var(--ease-signature),
+    color var(--dur-media) ease,
+    transform var(--dur-media) var(--ease-signature),
+    box-shadow var(--dur-media) var(--ease-signature);
 }
 
-.talla:hover:not(:disabled) {
-  border-color: var(--violet-400);
+.tallaTexto {
+  position: relative;
+  z-index: 1;
+}
+
+.tallaFondo {
+  position: absolute;
+  inset: -1.5px;
+  border-radius: 12px;
+  background: var(--violet-700);
+  box-shadow: 0 8px 18px -8px rgba(109, 40, 217, 0.75);
+}
+
+:global([data-theme='dark']) .tallaFondo {
+  background: var(--violet-600);
+  box-shadow: 0 0 20px -4px rgba(139, 92, 246, 0.7);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .talla:hover:not(:disabled):not(.tallaActiva) {
+    border-color: var(--violet-400);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px -10px rgba(124, 58, 237, 0.5);
+  }
+}
+
+.talla:active:not(:disabled) {
+  transform: scale(0.93);
+  transition-duration: 90ms;
 }
 
 .talla:focus-visible,
@@ -177,16 +299,9 @@
   outline-offset: 2px;
 }
 
-.tallaActiva,
-.tallaActiva:hover:not(:disabled) {
-  border-color: var(--violet-700);
-  background: var(--violet-700);
+.tallaActiva {
+  border-color: transparent;
   color: #fff;
-}
-
-:global([data-theme='dark']) .tallaActiva {
-  border-color: var(--violet-600);
-  background: var(--violet-600);
 }
 
 .tallaAgotada {
@@ -211,36 +326,45 @@
 .colores {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 0.65rem;
 }
 
 .color {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: var(--muestra);
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.35), transparent 45%), var(--muestra);
   box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.14);
   color: #fff;
   cursor: pointer;
-  transition: box-shadow var(--dur-rapida) ease, transform var(--dur-rapida) var(--ease-signature);
+  -webkit-tap-highlight-color: transparent;
+  transition: box-shadow var(--dur-media) var(--ease-signature), transform var(--dur-media) var(--ease-signature);
 }
 
-.color:hover {
-  transform: scale(1.06);
+@media (hover: hover) and (pointer: fine) {
+  .color:hover {
+    transform: translateY(-2px) scale(1.08);
+  }
+}
+
+.color:active {
+  transform: scale(0.9);
 }
 
 .color svg {
   width: 1.1rem;
   height: 1.1rem;
+  animation: checkPop 0.4s var(--ease-signature);
 }
 
 .colorActivo {
-  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.14), 0 0 0 3px var(--color-bg, var(--gris-fondo)), 0 0 0 5px var(--violet-600);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.14), 0 0 0 3px var(--color-bg, var(--gris-fondo)), 0 0 0 5px var(--violet-600),
+    0 8px 20px -6px var(--muestra);
 }
 
 :global([data-theme='dark']) .color {
@@ -255,13 +379,19 @@
   color: #0f172a;
 }
 
+@keyframes checkPop {
+  from {
+    transform: scale(0) rotate(-30deg);
+  }
+}
+
 /* ── Cantidad ──────────────────────────────────────────── */
 .cantidad {
   display: inline-flex;
   align-items: center;
-  height: 44px;
+  height: 46px;
   border: 1.5px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--color-surface);
   overflow: hidden;
 }
@@ -270,18 +400,27 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
+  width: 44px;
   height: 100%;
   border: 0;
   background: transparent;
   color: var(--color-text);
   cursor: pointer;
-  transition: background-color var(--dur-rapida) ease;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--dur-rapida) ease, color var(--dur-rapida) ease;
+}
+
+.cantidad button svg {
+  transition: transform var(--dur-rapida) var(--ease-signature);
 }
 
 .cantidad button:hover:not(:disabled) {
   background: var(--primary-light);
   color: var(--primary-color);
+}
+
+.cantidad button:active:not(:disabled) svg {
+  transform: scale(0.75);
 }
 
 .cantidad button:disabled {
@@ -300,21 +439,26 @@
   height: 1rem;
 }
 
-.cantidad output {
+.cantidadValor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 2rem;
+  height: 100%;
+  overflow: hidden;
   font-weight: 700;
   font-size: 0.95rem;
-  text-align: center;
   font-variant-numeric: tabular-nums;
 }
 
 .cantidadSm {
-  height: 36px;
-  border-radius: 10px;
+  height: 38px;
+  border-radius: 11px;
 }
 
 .cantidadSm button {
-  width: 34px;
+  width: 36px;
 }
 
 /* ── Interruptor ───────────────────────────────────────── */
@@ -326,6 +470,7 @@
   gap: 1rem;
   min-height: 44px;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .interruptorTexto {
@@ -353,34 +498,55 @@
 .pista {
   position: relative;
   flex-shrink: 0;
-  width: 46px;
-  height: 28px;
+  width: 50px;
+  height: 30px;
   border-radius: 999px;
   background: var(--color-border);
-  transition: background-color var(--dur-media) var(--ease-signature);
+  transition: background-color var(--dur-media) var(--ease-signature), box-shadow var(--dur-media) ease;
 }
 
 .perilla {
   position: absolute;
   top: 3px;
   left: 3px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
   background: #fff;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
-  transition: transform var(--dur-media) var(--ease-signature);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.3);
+  transition: transform var(--dur-media) var(--ease-signature), width var(--dur-rapida) var(--ease-signature);
+}
+
+.interruptor:active .perilla {
+  width: 30px;
 }
 
 .interruptor input:checked + .pista {
   background: var(--violet-600);
+  box-shadow: 0 0 16px -2px rgba(124, 58, 237, 0.6), inset 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 .interruptor input:checked + .pista .perilla {
-  transform: translateX(18px);
+  transform: translateX(20px);
+}
+
+.interruptor:active input:checked + .pista .perilla {
+  transform: translateX(14px);
 }
 
 .interruptor input:focus-visible + .pista {
   outline: 2px solid var(--violet-500);
   outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .conError,
+  .error,
+  .color svg {
+    animation: none;
+  }
+
+  .brilloFoco {
+    transition: none;
+  }
 }

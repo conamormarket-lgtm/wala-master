@@ -1,14 +1,42 @@
 /* ── Seguimiento de pedido ─────────────────────────────── */
 .pedido {
   container-type: inline-size;
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
-  padding: 1.1rem;
+  padding: 1.15rem;
   border: 1px solid var(--color-border);
-  border-radius: 18px;
+  border-radius: 20px;
   background: var(--color-surface);
-  box-shadow: var(--sombra-suave);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 30px -22px rgba(76, 29, 149, 0.4);
+  transition: transform var(--dur-media) var(--ease-signature), box-shadow var(--dur-media) var(--ease-signature),
+    border-color var(--dur-media) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pedido:hover {
+    transform: translateY(-3px);
+    border-color: var(--violet-200);
+    box-shadow: 0 24px 44px -26px rgba(76, 29, 149, 0.5);
+  }
+
+  :global([data-theme='dark']) .pedido:hover {
+    border-color: rgba(167, 139, 250, 0.3);
+    box-shadow: 0 24px 50px -24px rgba(0, 0, 0, 0.8), 0 0 30px -14px rgba(139, 92, 246, 0.5);
+  }
+}
+
+/* Borde ámbar que respira cuando falta pagar. */
+.pedidoPendiente {
+  border-color: rgba(245, 158, 11, 0.45);
+  animation: respirarAmbar 2.8s ease-in-out infinite;
+}
+
+@keyframes respirarAmbar {
+  50% {
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12), 0 14px 34px -20px rgba(245, 158, 11, 0.55);
+  }
 }
 
 .cabeza {
@@ -37,14 +65,34 @@
   width: 46px;
   height: 46px;
   margin-left: -14px;
-  border-radius: 12px;
-  background: var(--color-hover);
-  box-shadow: 0 0 0 2px var(--color-surface);
+  border-radius: 13px;
+  background: linear-gradient(180deg, #f3f0fb, #e9e4f7);
+  box-shadow: 0 0 0 2px var(--color-surface), 0 4px 10px -4px rgba(76, 29, 149, 0.3);
   object-fit: contain;
+  transition: transform var(--dur-media) var(--ease-signature), margin var(--dur-media) var(--ease-signature);
+}
+
+:global([data-theme='dark']) .miniaturas img,
+:global([data-theme='dark']) .miniaturas span {
+  background: linear-gradient(180deg, #2a2440, #1e1a2e);
 }
 
 .miniaturas > :first-child {
   margin-left: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pedido:hover .miniaturas > :not(:first-child) {
+    margin-left: -6px;
+  }
+
+  .pedido:hover .miniaturas > :nth-child(2) {
+    transform: rotate(4deg);
+  }
+
+  .pedido:hover .miniaturas > :first-child {
+    transform: rotate(-4deg);
+  }
 }
 
 .miniaturas span {
@@ -63,35 +111,67 @@
 
 .codigo {
   display: flex;
-  white-space: nowrap;
   align-items: center;
   gap: 0.25rem;
   margin: 0;
   font-size: 0.92rem;
+  white-space: nowrap;
   color: var(--color-text);
 }
 
 .copiar {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 9px;
   background: transparent;
   color: var(--color-text-muted);
   cursor: pointer;
+  transition: background-color var(--dur-rapida) ease, color var(--dur-rapida) ease, transform var(--dur-rapida) ease;
 }
 
 .copiar:hover {
-  background: var(--color-hover);
+  background: var(--primary-light);
   color: var(--primary-color);
+}
+
+.copiar:active {
+  transform: scale(0.88);
 }
 
 .copiar svg {
   width: 0.9rem;
   height: 0.9rem;
+}
+
+.copiadoIcono {
+  color: #059669;
+  animation: aparecer 0.35s var(--ease-signature);
+}
+
+@keyframes aparecer {
+  from {
+    transform: scale(0) rotate(-40deg);
+  }
+}
+
+.burbuja {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  translate: -50% 0;
+  padding: 0.3rem 0.55rem;
+  border-radius: 8px;
+  background: #1e1b2e;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .meta {
@@ -103,6 +183,7 @@
   white-space: nowrap;
 }
 
+/* ── Línea de tiempo ───────────────────────────────────── */
 .linea {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -120,25 +201,34 @@
   text-align: center;
 }
 
-/* Tramo que une cada punto con el anterior. */
-.paso + .paso::before {
+/* Tramo gris de fondo + relleno de color que se dibuja al entrar en pantalla. */
+.paso + .paso::before,
+.paso + .paso::after {
   content: '';
   position: absolute;
-  top: 11px;
-  left: calc(-50% + 17px);
-  right: calc(50% + 17px);
+  top: 12px;
+  left: calc(-50% + 18px);
+  right: calc(50% + 18px);
   height: 3px;
   border-radius: 3px;
   background: var(--color-border);
 }
 
-.paso.hecho::before,
-.paso.actual::before {
-  background: var(--violet-600);
+.paso.hecho::after,
+.paso.actual::after {
+  background: linear-gradient(90deg, var(--violet-500), var(--violet-700));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.45s var(--ease-signature);
+  transition-delay: calc(var(--i) * 180ms);
 }
 
-.paso.espera::before {
-  background: #f59e0b;
+.paso.espera::after {
+  background: linear-gradient(90deg, var(--violet-500), #f59e0b);
+}
+
+.lineaVisible .paso::after {
+  transform: scaleX(1);
 }
 
 .punto {
@@ -147,12 +237,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 25px;
-  height: 25px;
+  width: 27px;
+  height: 27px;
   border: 2px solid var(--color-border);
   border-radius: 50%;
   background: var(--color-surface);
   color: #fff;
+  transform: scale(0.6);
+  opacity: 0;
+  transition: transform 0.5s var(--ease-signature), opacity 0.3s ease;
+  transition-delay: calc(var(--i) * 180ms + 120ms);
+}
+
+.lineaVisible .punto {
+  transform: scale(1);
+  opacity: 1;
 }
 
 .punto svg {
@@ -164,14 +263,15 @@
 .hecho .punto {
   border-color: var(--violet-600);
   background: var(--violet-600);
+  box-shadow: 0 4px 10px -3px rgba(109, 40, 217, 0.6);
 }
 
 .actual .punto {
   border-color: var(--violet-600);
-  box-shadow: 0 0 0 5px rgba(124, 58, 237, 0.16);
 }
 
-.actual .punto::after {
+.actual .punto::after,
+.espera .punto::after {
   content: '';
   width: 9px;
   height: 9px;
@@ -179,17 +279,39 @@
   background: var(--violet-600);
 }
 
+/* Onda que late alrededor del paso actual. */
+.actual .punto::before,
+.espera .punto::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 2px solid var(--violet-500);
+  animation: latir 1.8s var(--ease-signature) infinite;
+}
+
+@keyframes latir {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
 .espera .punto {
   border-color: #f59e0b;
-  box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.18);
 }
 
 .espera .punto::after {
-  content: '';
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
   background: #f59e0b;
+}
+
+.espera .punto::before {
+  border-color: #f59e0b;
 }
 
 .nombrePaso {
@@ -209,6 +331,10 @@
   font-weight: 700;
 }
 
+.actual .nombrePaso {
+  color: var(--primary-color);
+}
+
 .espera .nombrePaso {
   color: var(--gold-text);
 }
@@ -220,19 +346,43 @@
 .estimado {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   margin: 0;
-  padding: 0.65rem 0.8rem;
-  border-radius: 12px;
-  background: var(--primary-light);
+  padding: 0.7rem 0.85rem;
+  border-radius: 14px;
+  background: linear-gradient(90deg, var(--primary-light), transparent);
   color: var(--color-text);
   font-size: 0.85rem;
 }
 
-.estimado svg {
-  width: 1.1rem;
-  height: 1.1rem;
+.camion {
+  display: inline-flex;
   color: var(--primary-color);
+  animation: conducir 1.2s ease-in-out infinite;
+}
+
+.camion svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+@keyframes conducir {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  25% {
+    transform: translate(1px, -1.5px);
+  }
+
+  50% {
+    transform: translate(3px, 0);
+  }
+
+  75% {
+    transform: translate(1px, -1px);
+  }
 }
 
 .pagoAviso {
@@ -241,10 +391,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.8rem;
+  padding: 0.85rem;
   border: 1px solid rgba(245, 158, 11, 0.35);
-  border-radius: 14px;
-  background: var(--warning-soft);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(245, 158, 11, 0.04));
 }
 
 .pagoAviso p {
@@ -263,6 +413,7 @@
   align-items: center;
   align-self: flex-start;
   gap: 0.25rem;
+  min-height: 32px;
   padding: 0;
   border: 0;
   background: none;
@@ -279,6 +430,10 @@
   transition: transform var(--dur-media) var(--ease-signature);
 }
 
+.verDetalle:hover svg {
+  transform: translateY(2px);
+}
+
 .verDetalle[aria-expanded='true'] svg {
   transform: rotate(180deg);
 }
@@ -287,10 +442,10 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  margin: -0.35rem 0 0;
-  padding: 0.75rem 0 0;
-  border-top: 1px dashed var(--color-border);
+  margin: -0.5rem 0 0;
+  padding: 0;
   list-style: none;
+  overflow: hidden;
 }
 
 .detalle li {
@@ -298,6 +453,11 @@
   align-items: center;
   gap: 0.7rem;
   font-size: 0.86rem;
+}
+
+.detalle li:first-child {
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--color-border);
 }
 
 .detalle img {
@@ -335,17 +495,34 @@
   border-bottom: 1px solid var(--color-border);
 }
 
-.item:last-child {
-  border-bottom: 0;
+.itemImgCaja {
+  width: 84px;
+  height: 100px;
+  border-radius: 16px;
+  background:
+    radial-gradient(80% 60% at 50% 35%, rgba(255, 255, 255, 0.9), transparent 70%),
+    linear-gradient(180deg, #f3f0fb, #e9e4f7);
+  overflow: hidden;
+}
+
+:global([data-theme='dark']) .itemImgCaja {
+  background:
+    radial-gradient(80% 60% at 50% 35%, rgba(139, 92, 246, 0.2), transparent 70%),
+    linear-gradient(180deg, #2a2440, #1e1a2e);
 }
 
 .itemImg {
-  width: 84px;
-  height: 100px;
-  border-radius: 14px;
-  background: var(--color-hover);
+  width: 100%;
+  height: 100%;
   object-fit: contain;
-  padding: 6px;
+  padding: 8px;
+  transition: transform var(--dur-lenta) var(--ease-signature);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .item:hover .itemImg {
+    transform: scale(1.08) rotate(-3deg);
+  }
 }
 
 .itemInfo {
@@ -381,18 +558,37 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 11px;
   background: transparent;
   color: var(--color-text-muted);
   cursor: pointer;
+  transition: background-color var(--dur-rapida) ease, color var(--dur-rapida) ease, transform var(--dur-rapida) ease;
 }
 
 .quitar:hover {
   background: var(--danger-soft);
   color: var(--danger);
+}
+
+.quitar:hover svg {
+  animation: tambalear 0.4s ease-in-out;
+}
+
+.quitar:active {
+  transform: scale(0.88);
+}
+
+@keyframes tambalear {
+  25% {
+    transform: rotate(-12deg);
+  }
+
+  75% {
+    transform: rotate(12deg);
+  }
 }
 
 .quitar svg {
@@ -407,23 +603,28 @@
   font-variant-numeric: tabular-nums;
 }
 
-.itemPrecio strong {
-  font-size: 0.98rem;
+.itemPrecioActual {
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .itemPrecio s {
   font-size: 0.78rem;
   color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 /* ── Envío gratis ──────────────────────────────────────── */
 .envio {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
-  padding: 0.8rem 0.9rem;
-  border-radius: 14px;
-  background: var(--primary-light);
+  gap: 0.7rem;
+  padding: 0.85rem 0.95rem 1rem;
+  border: 1px solid rgba(139, 92, 246, 0.18);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(217, 70, 239, 0.06));
+  transition: background var(--dur-lenta) ease, border-color var(--dur-lenta) ease;
 }
 
 .envio p {
@@ -434,54 +635,112 @@
   font-size: 0.85rem;
 }
 
-.envio svg {
+.envio p > svg {
   width: 1.1rem;
   height: 1.1rem;
   flex-shrink: 0;
   color: var(--primary-color);
 }
 
-.pista {
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(124, 58, 237, 0.14);
-  overflow: hidden;
+.fuerte {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.pista span {
+.pista {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(124, 58, 237, 0.14);
+}
+
+.relleno {
+  position: relative;
   display: block;
   height: 100%;
+  min-width: 10px;
   border-radius: inherit;
-  background: var(--violet-600);
-  transition: width var(--dur-lenta) var(--ease-signature);
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.22) 0 8px, transparent 8px 16px),
+    linear-gradient(90deg, var(--violet-500), var(--violet-700));
+  background-size: 22px 22px, 100% 100%;
+  box-shadow: 0 0 14px -2px rgba(139, 92, 246, 0.7);
+  animation: rayas 0.9s linear infinite;
+}
+
+@keyframes rayas {
+  to {
+    background-position: 22px 0, 0 0;
+  }
+}
+
+/* Camión (o check) que va en la punta de la barra. */
+.marcador {
+  position: absolute;
+  right: -14px;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--primary-color);
+  box-shadow: 0 4px 12px -2px rgba(76, 29, 149, 0.45), 0 0 0 2px var(--violet-500);
+  transform: translateY(-50%);
+}
+
+.marcador svg {
+  width: 0.95rem;
+  height: 0.95rem;
 }
 
 .envioOk {
-  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(52, 211, 153, 0.05));
 }
 
-.envioOk svg {
+.envioOk p > svg {
   color: #059669;
+  animation: aparecer 0.5s var(--ease-signature);
 }
 
 .envioOk .pista {
   background: rgba(16, 185, 129, 0.18);
 }
 
-.envioOk .pista span {
-  background: #10b981;
+.envioOk .relleno {
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.22) 0 8px, transparent 8px 16px),
+    linear-gradient(90deg, #34d399, #059669);
+  background-size: 22px 22px, 100% 100%;
+  box-shadow: 0 0 14px -2px rgba(16, 185, 129, 0.7);
+}
+
+.envioOk .marcador {
+  color: #fff;
+  background: #059669;
+  box-shadow: 0 4px 12px -2px rgba(5, 150, 105, 0.6), 0 0 0 2px #34d399;
+}
+
+:global([data-theme='dark']) .envioOk p > svg {
+  color: #34d399;
 }
 
 /* ── Resumen ───────────────────────────────────────────── */
 .resumen {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
-  padding: 1.2rem;
+  padding: 1.25rem;
   border: 1px solid var(--color-border);
-  border-radius: 18px;
-  background: var(--color-surface);
-  box-shadow: var(--sombra-suave);
+  border-radius: 22px;
+  background: var(--glass-bg-solid);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow-lg), var(--glass-inset-top);
 }
 
 .resumen h3 {
@@ -496,10 +755,11 @@
   margin: 0;
 }
 
-.resumen dl div {
+.resumen dl > div {
   display: flex;
   justify-content: space-between;
   font-size: 0.9rem;
+  overflow: hidden;
 }
 
 .resumen dt {
@@ -530,19 +790,46 @@
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  height: 46px;
-  padding: 0 0.3rem 0 0.75rem;
+  height: 48px;
+  padding: 0 0.3rem 0 0.8rem;
   border: 1.5px dashed var(--color-border);
-  border-radius: 12px;
+  border-radius: 14px;
   color: var(--color-text-muted);
+  transition: border-color var(--dur-media) ease, box-shadow var(--dur-media) ease, background-color var(--dur-media) ease;
 }
 
 .cupon:focus-within {
   border-style: solid;
   border-color: var(--violet-500);
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.12);
 }
 
-.cupon svg {
+.cuponOk {
+  border-style: solid;
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.cuponError {
+  border-color: var(--danger);
+  animation: sacudir 0.4s var(--ease-signature);
+}
+
+@keyframes sacudir {
+  25% {
+    transform: translateX(-5px);
+  }
+
+  50% {
+    transform: translateX(5px);
+  }
+
+  75% {
+    transform: translateX(-3px);
+  }
+}
+
+.cupon > svg {
   width: 1rem;
   height: 1rem;
   flex-shrink: 0;
@@ -552,52 +839,88 @@
   flex: 1;
   min-width: 0;
   border: 0;
-  background: transparent;
+  /* globals.css pinta todos los inputs en noche con un selector muy específico;
+     aquí el input vive dentro de una caja que ya tiene su fondo. */
+  background-color: transparent !important;
   color: var(--color-text);
   font: inherit;
   font-size: 16px;
+  text-transform: uppercase;
   outline: none;
 }
 
+.cupon input::placeholder {
+  text-transform: none;
+}
+
 .cupon button {
-  height: 36px;
-  padding: 0 0.85rem;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 38px;
+  padding: 0 0.9rem;
   border: 0;
-  border-radius: 9px;
-  background: var(--color-hover);
-  color: var(--color-text);
+  border-radius: 10px;
+  background: var(--violet-700);
+  color: #fff;
   font: inherit;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
+  transition: background-color var(--dur-media) ease, transform var(--dur-rapida) ease, opacity var(--dur-media) ease;
+}
+
+.cupon button svg {
+  width: 0.95rem;
+  height: 0.95rem;
 }
 
 .cupon button:not(:disabled):hover {
-  background: var(--primary-light);
-  color: var(--primary-color);
+  background: var(--violet-600);
+}
+
+.cupon button:not(:disabled):active {
+  transform: scale(0.94);
 }
 
 .cupon button:disabled {
   cursor: default;
-  opacity: 0.6;
+  background: var(--color-hover);
+  color: var(--color-text-muted);
+}
+
+.cuponOk button:disabled {
+  background: #059669;
+  color: #fff;
+  opacity: 1;
 }
 
 .total {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding-top: 0.85rem;
+  padding-top: 0.9rem;
   border-top: 1px solid var(--color-border);
 }
 
-.total span {
+.total > span:first-child {
   font-weight: 600;
 }
 
-.total strong {
-  font-size: 1.4rem;
-  letter-spacing: -0.02em;
+.totalMonto {
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, var(--color-text) 30%, var(--violet-600));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+:global([data-theme='dark']) .totalMonto {
+  background-image: linear-gradient(135deg, #fff 30%, var(--violet-300));
 }
 
 .ganas {
@@ -609,13 +932,27 @@
   color: var(--gold-text);
 }
 
-:global([data-theme='dark']) .ganas {
-  color: #fcd34d;
+.ganas img {
+  animation: girarMoneda 3s ease-in-out infinite;
 }
 
-.ganas svg {
-  width: 1rem;
-  height: 1rem;
+@keyframes girarMoneda {
+  0%,
+  70% {
+    transform: rotateY(0);
+  }
+
+  85% {
+    transform: rotateY(180deg);
+  }
+
+  100% {
+    transform: rotateY(360deg);
+  }
+}
+
+:global([data-theme='dark']) .ganas {
+  color: #fcd34d;
 }
 
 .seguro {
@@ -623,4 +960,22 @@
   font-size: 0.76rem;
   color: var(--color-text-muted);
   text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pedidoPendiente,
+  .camion,
+  .relleno,
+  .ganas img,
+  .actual .punto::before,
+  .espera .punto::before,
+  .cuponError,
+  .quitar:hover svg {
+    animation: none;
+  }
+
+  .punto,
+  .paso::after {
+    transition: none;
+  }
 }

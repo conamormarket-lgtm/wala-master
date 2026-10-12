@@ -1,0 +1,64 @@
+.estallido {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 4;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.estallido span {
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c);
+  animation: estallar 0.7s var(--ease-signature) forwards;
+}
+
+.confeti span {
+  left: -3px;
+  top: -5px;
+  width: 6px;
+  height: 10px;
+  border-radius: 2px;
+  animation-name: confeti;
+  animation-duration: 1s;
+}
+
+@keyframes estallar {
+  0% {
+    transform: rotate(var(--ang)) translateX(0) scale(1.2);
+    opacity: 1;
+  }
+
+  100% {
+    transform: rotate(var(--ang)) translateX(var(--dist)) scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes confeti {
+  0% {
+    transform: rotate(var(--ang)) translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: rotate(var(--ang)) translateX(var(--dist)) rotate(var(--giro)) translateY(14px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .estallido {
+    display: none;
+  }
+}

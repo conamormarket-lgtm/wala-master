@@ -1,8 +1,10 @@
-import React, { useId } from 'react';
+import React, { useEffect, useId, useRef } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle, Minus, Plus, Check } from 'lucide-react';
+import { RESORTE } from './Efectos';
 import s from './Formulario.module.css';
 
-/** Campo de texto con etiqueta, ayuda y error accesibles. */
+/** Campo de texto con etiqueta, ayuda y error accesibles. El error entra con una sacudida. */
 export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, ...input }) {
   const autoId = useId();
   const campoId = id || autoId;
@@ -20,6 +22,7 @@ export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, ...input }) {
           {...input}
         />
         {sufijo && <span className={s.sufijo}>{sufijo}</span>}
+        <span className={s.brilloFoco} aria-hidden="true" />
       </div>
       {error ? (
         <p id={ayudaId} className={s.error}><AlertCircle aria-hidden="true" />{error}</p>
@@ -30,8 +33,9 @@ export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, ...input }) {
   );
 }
 
-/** Selector de talla. Las agotadas se ven tachadas y no se pueden elegir. */
+/** Selector de talla. El fondo violeta se desliza a la talla elegida; las agotadas van tachadas. */
 export function SelectorTalla({ tallas, valor, onChange, agotadas = [], guia }) {
+  const grupo = useId();
   return (
     <fieldset className={s.grupo}>
       <legend className={s.leyenda}>
@@ -41,18 +45,20 @@ export function SelectorTalla({ tallas, valor, onChange, agotadas = [], guia }) 
       <div className={s.tallas} role="radiogroup">
         {tallas.map((t) => {
           const agotada = agotadas.includes(t);
+          const activa = valor === t;
           return (
             <button
               key={t}
               type="button"
               role="radio"
-              aria-checked={valor === t}
+              aria-checked={activa}
               disabled={agotada}
-              className={[s.talla, valor === t && s.tallaActiva, agotada && s.tallaAgotada].filter(Boolean).join(' ')}
+              className={[s.talla, activa && s.tallaActiva, agotada && s.tallaAgotada].filter(Boolean).join(' ')}
               onClick={() => onChange(t)}
               title={agotada ? `${t} agotada` : undefined}
             >
-              {t}
+              {activa && <motion.span layoutId={`talla-${grupo}`} className={s.tallaFondo} transition={RESORTE} />}
+              <span className={s.tallaTexto}>{t}</span>
             </button>
           );
         })}
@@ -67,7 +73,23 @@ export function SelectorColor({ colores, valor, onChange }) {
   return (
     <fieldset className={s.grupo}>
       <legend className={s.leyenda}>
-        <span>Color{actual && <strong>: {actual.nombre}</strong>}</span>
+        <span>
+          Color
+          <AnimatePresence mode="wait" initial={false}>
+            {actual && (
+              <motion.strong
+                key={actual.nombre}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.18 }}
+                style={{ display: 'inline-block' }}
+              >
+                : {actual.nombre}
+              </motion.strong>
+            )}
+          </AnimatePresence>
+        </span>
       </legend>
       <div className={s.colores} role="radiogroup">
         {colores.map((c) => (
@@ -89,14 +111,29 @@ export function SelectorColor({ colores, valor, onChange }) {
   );
 }
 
-/** Cantidad con − / +. */
+/** Cantidad con − / +. El número rueda hacia arriba o abajo según el cambio. */
 export function Cantidad({ valor, onChange, min = 1, max = 99, tamano = 'md' }) {
+  const previo = useRef(valor);
+  const sube = valor >= previo.current;
+  useEffect(() => { previo.current = valor; }, [valor]);
   return (
     <div className={[s.cantidad, tamano === 'sm' && s.cantidadSm].filter(Boolean).join(' ')}>
       <button type="button" aria-label="Quitar uno" disabled={valor <= min} onClick={() => onChange(valor - 1)}>
         <Minus aria-hidden="true" />
       </button>
-      <output aria-live="polite">{valor}</output>
+      <output aria-live="polite" className={s.cantidadValor}>
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.span
+            key={valor}
+            initial={{ y: sube ? 16 : -16, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: sube ? -16 : 16, opacity: 0 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {valor}
+          </motion.span>
+        </AnimatePresence>
+      </output>
       <button type="button" aria-label="Agregar uno" disabled={valor >= max} onClick={() => onChange(valor + 1)}>
         <Plus aria-hidden="true" />
       </button>
@@ -104,7 +141,7 @@ export function Cantidad({ valor, onChange, min = 1, max = 99, tamano = 'md' }) 
   );
 }
 
-/** Interruptor encendido/apagado. */
+/** Interruptor encendido/apagado; la perilla se estira al presionarla. */
 export function Interruptor({ activo, onChange, etiqueta, descripcion }) {
   const id = useId();
   return (
