@@ -24,13 +24,19 @@ const validar = (d) => {
  * Libreta de direcciones de la cuenta (wala_direcciones/{uid}). El checkout
  * muestra la principal como tarjeta "Enviar a" y deja elegir otra.
  */
+// Destinatario completo: nombre, documento y teléfono.
+const destinatarioCompleto = (d) => !!(d.customerName.trim() && d.dni.trim() && d.phone.trim());
+
 const MisDireccionesPage = () => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const toast = useGlobalToast();
   const [lista, setLista] = useState(null);
   const [editando, setEditando] = useState(null); // null | 'nueva' | id
   const [form, setForm] = useState(VACIA);
   const [guardando, setGuardando] = useState(false);
+  // Quien recibe casi siempre es el mismo cliente: sus datos vienen del perfil y
+  // se muestran resumidos; los campos solo aparecen si toca "Cambiar".
+  const [editarDestinatario, setEditarDestinatario] = useState(false);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -55,7 +61,15 @@ const MisDireccionesPage = () => {
   };
 
   const abrir = (d) => {
-    setForm(d ? { ...VACIA, ...d } : VACIA);
+    const base = d ? { ...VACIA, ...d } : {
+      ...VACIA,
+      customerName: userProfile?.displayName || user?.displayName || '',
+      docType: userProfile?.docType || 'DNI',
+      dni: userProfile?.dni || '',
+      phone: userProfile?.phone || '',
+    };
+    setForm(base);
+    setEditarDestinatario(!destinatarioCompleto(base));
     setEditando(d ? d.id : 'nueva');
   };
 
@@ -137,8 +151,21 @@ const MisDireccionesPage = () => {
         </div>
 
         {editando !== null ? (
-          <form className={styles.formulario} onSubmit={guardarFormulario}>
+          <form className={`${styles.formulario} ${lista.length === 0 ? styles.formularioSolo : ''}`} onSubmit={guardarFormulario}>
             <p className={styles.formTitulo}>{editando === 'nueva' ? 'Nueva dirección' : 'Editar dirección'}</p>
+            {!editarDestinatario ? (
+              <div className={styles.destinatario}>
+                <div className={styles.destinatarioTexto}>
+                  <span className={styles.destinatarioEtiqueta}>Recibe</span>
+                  <strong>{form.customerName}</strong>
+                  <span>{form.docType} {form.dni} · {form.phone}</span>
+                </div>
+                <button type="button" className={styles.enlace} onClick={() => setEditarDestinatario(true)}>
+                  Cambiar
+                </button>
+              </div>
+            ) : (
+            <>
             <label className={styles.campo}>
               <span>Nombre de quien recibe</span>
               <input {...campo('customerName')} autoComplete="name" />
@@ -160,6 +187,8 @@ const MisDireccionesPage = () => {
                 <input {...campo('phone')} type="tel" autoComplete="tel-national" />
               </label>
             </div>
+            </>
+            )}
             <div className={styles.fila}>
               <label className={styles.campo}>
                 <span>Ciudad / Región</span>

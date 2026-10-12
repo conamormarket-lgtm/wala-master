@@ -297,3 +297,59 @@
 :global([data-theme='dark']) .formulario {
   border-color: var(--color-border);
 }
+
+/* Sin direcciones todavía: el formulario no necesita separarse de una lista vacía. */
+.formularioSolo {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+/* Quien recibe, resumido (datos del perfil). */
+.destinatario {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: #faf7ff;
+}
+
+.destinatarioTexto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.88rem;
+  color: #475569;
+}
+
+.destinatarioTexto strong {
+  font-size: 0.98rem;
+  color: #1e293b;
+}
+
+.destinatarioEtiqueta {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8b5cf6;
+}
+
+:global([data-theme='dark']) .destinatario {
+  background: rgba(124, 77, 222, 0.12);
+}
+
+:global([data-theme='dark']) .destinatarioTexto {
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .destinatarioTexto strong {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .destinatarioEtiqueta {
+  color: #c4b5fd;
+}
