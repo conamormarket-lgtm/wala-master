@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight, Loader2, LogOut, RefreshCw, ShoppingBag, Heart, Sparkles, Coins, CalendarClock, Trophy } from 'lucide-react';
 import { Enlace } from './Enlace';
+import Boton from './Boton';
 import { soles } from './TarjetaProducto';
 import s from './MenusCabecera.module.css';
 
@@ -136,8 +137,8 @@ export function AyudaMonedas({
         <li><Trophy aria-hidden="true" /><span>Gana más con misiones, sorteos y referidos</span></li>
       </ul>
       <div className={s.monedasAcciones}>
-        <Enlace to={urlCanjear} className={s.botonPrimario} onClick={onNavegar}>Canjear</Enlace>
-        <Enlace to={urlGanar} className={s.botonSecundario} onClick={onNavegar}>Ganar más</Enlace>
+        <Boton to={urlCanjear} variante="primario" bloque onClick={onNavegar}>Canjear</Boton>
+        <Boton to={urlGanar} variante="contorno" bloque onClick={onNavegar}>Ganar más</Boton>
       </div>
     </div>
   );
@@ -160,8 +161,8 @@ export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNave
         <h3>Tu cuenta Walá</h3>
         <p>Inicia sesión para ver tus pedidos, monedas y diseños guardados.</p>
         <div className={s.botones}>
-          <Enlace to={urlLogin} className={s.botonPrimario} onClick={onNavegar}>Iniciar sesión</Enlace>
-          <Enlace to={urlRegistro} className={s.botonSecundario} onClick={onNavegar}>Crear cuenta</Enlace>
+          <Boton to={urlLogin} variante="primario" bloque onClick={onNavegar}>Iniciar sesión</Boton>
+          <Boton to={urlRegistro} variante="contorno" bloque onClick={onNavegar}>Crear cuenta</Boton>
         </div>
       </div>
     );
@@ -221,8 +222,8 @@ export function VistaFavoritos({ items = [], sesion = true, urlLista = '/cuenta/
         <h3>Tus favoritos</h3>
         <p>Inicia sesión para guardar lo que te gusta y verlo desde cualquier lado.</p>
         <div className={s.botones}>
-          <Enlace to="/login" className={s.botonPrimario} onClick={onNavegar}>Iniciar sesión</Enlace>
-          <Enlace to="/tienda" className={s.botonSecundario} onClick={onNavegar}>Explorar tienda</Enlace>
+          <Boton to="/login" variante="primario" bloque onClick={onNavegar}>Iniciar sesión</Boton>
+          <Boton to="/tienda" variante="contorno" bloque onClick={onNavegar}>Explorar tienda</Boton>
         </div>
       </div>
     );
@@ -233,7 +234,7 @@ export function VistaFavoritos({ items = [], sesion = true, urlLista = '/cuenta/
         <Heart aria-hidden="true" />
         <h3>Aún no tienes favoritos</h3>
         <p>Toca el corazón de un producto y lo guardamos aquí.</p>
-        <Enlace to="/tienda" className={s.botonPrimario} onClick={onNavegar}>Mira lo que te puede interesar</Enlace>
+        <Boton to="/tienda" variante="primario" bloque onClick={onNavegar}>Mira lo que te puede interesar</Boton>
       </div>
     );
   }
@@ -272,7 +273,7 @@ export function VistaFavoritos({ items = [], sesion = true, urlLista = '/cuenta/
           </li>
         )}
       </ul>
-      <Enlace to={urlLista} className={s.botonPrimario} onClick={onNavegar}>Ver mi lista</Enlace>
+      <Boton to={urlLista} variante="primario" bloque onClick={onNavegar}>Ver mi lista</Boton>
     </div>
   );
 }
@@ -290,7 +291,7 @@ export function VistaCarrito({ items = [], urlCarrito = '/carrito', urlPagar = '
         <ShoppingBag aria-hidden="true" />
         <h3>Tu carrito está vacío</h3>
         <p>Explora la tienda y agrega lo que te guste.</p>
-        <Enlace to="/tienda" className={s.botonPrimario} onClick={onNavegar}>Explorar tienda</Enlace>
+        <Boton to="/tienda" variante="primario" bloque onClick={onNavegar}>Explorar tienda</Boton>
       </div>
     );
   }
@@ -322,8 +323,8 @@ export function VistaCarrito({ items = [], urlCarrito = '/carrito', urlPagar = '
         <strong>{soles(total)}</strong>
       </div>
       <div className={s.botones}>
-        <Enlace to={urlCarrito} className={s.botonSecundario} onClick={onNavegar}>Ver carrito</Enlace>
-        <Enlace to={urlPagar} className={s.botonPrimario} onClick={onNavegar}>Pagar</Enlace>
+        <Boton to={urlCarrito} variante="contorno" bloque onClick={onNavegar}>Ver carrito</Boton>
+        <Boton to={urlPagar} variante="primario" bloque onClick={onNavegar}>Pagar</Boton>
       </div>
     </div>
   );

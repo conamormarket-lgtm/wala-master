@@ -19,6 +19,8 @@ import { Boton, TarjetaProducto, Cabecera, useToast } from '../componentes/kit';
 - **Pensado para la app (Capacitor).** Todo funciona sin hover; los menús en
   celular abren como hoja inferior; el botón atrás de Android cierra la hoja.
 - **Liviano.** Animaciones con `transform`/`opacity`; brillo solo al interactuar.
+- **Se arma con sus propias piezas.** La `Cabecera` usa `Boton`, `Buscador`,
+  `SaldoMonedas`, `Contador`, `Desplegable` y los menús; no repite estilos.
 
 ## Proveedores (una vez, arriba de todo)
 
@@ -37,13 +39,14 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 
 | Archivo | Componentes | Para qué |
 |---|---|---|
-| `Boton.jsx` | `Boton` | Botón violeta liso; variantes, tamaños, cargando, `brillo` para CTA de pago |
+| `Boton.jsx` | `Boton` | Botón violeta liso; variantes, tamaños, cargando, `brillo` para CTA de pago. Con `to` es un enlace; con `insignia` lleva un contador en la esquina |
 | `Etiquetas.jsx` | `Etiqueta`, `Chip`, `CostoMonedas`, `GananciaMonedas`, `SaldoMonedas`, `Contador` | Badges, filtros y monedas |
-| `Formulario.jsx` | `Campo`, `SelectorTalla`, `SelectorColor`, `Cantidad`, `Interruptor` | Formularios y variantes de producto |
+| `Formulario.jsx` | `Campo`, `Buscador`, `SelectorTalla`, `SelectorColor`, `Cantidad`, `Interruptor` | Formularios, búsqueda (atajo "/") y variantes de producto |
 | `TarjetaProducto.jsx` | `TarjetaProducto`, `TarjetaProductoEsqueleto`, `soles` | Tarjeta de la tienda (fotos con fondo blanco, alturas parejas) |
 | `Navegacion.jsx` | `Cabecera`, `BarraInferior`, `Pestanas`, `Logo` | Navegación |
 | `Desplegable.jsx` | `Desplegable` | Base de todos los menús: hover en escritorio, hoja/globo en celular |
 | `MenusCabecera.jsx` | `MenuTienda`, `AyudaMonedas`, `MenuCuenta`, `VistaFavoritos`, `VistaCarrito` | Contenido de los menús de la cabecera |
+| `AgregarRapido.jsx` | `AgregarRapido` | Elegir talla, color y cantidad antes de agregar al carrito |
 | `Pedido.jsx` | `SeguimientoPedido`, `ItemCarrito`, `BarraEnvioGratis`, `ResumenPedido` | Carrito y Mis pedidos |
 | `Feedback.jsx` | `Aviso`, `ProveedorToasts`, `useToast`, `useNotificaciones`, `ListaNotificaciones`, `EstadoVacio`, `HojaInferior` | Avisos, notificaciones y modales |
 | `Enlace.jsx` | `Enlace`, `ProveedorEnlaces` | Enlace que usa el router de la app |

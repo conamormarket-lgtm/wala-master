@@ -38,6 +38,21 @@
     transform var(--dur-media) var(--ease-signature);
 }
 
+/* Cuando es enlace (prop `to`): sin subrayado y con su color también en
+   :hover (globals.css tiene un a:hover que lo pintaría de violeta). */
+.boton,
+.boton:hover,
+.boton:focus {
+  color: var(--b-texto);
+  text-decoration: none;
+}
+
+.boton[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 .contenido {
   position: relative;
   z-index: 2;

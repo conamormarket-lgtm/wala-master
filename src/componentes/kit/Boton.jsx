@@ -1,25 +1,29 @@
-import React, { useState } from 'react';
+import React, { forwardRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { Enlace } from './Enlace';
 import s from './Boton.module.css';
 
 /**
  * Botón de Walá. Violeta liso (sin degradado) con brillo que lo cruza al pasar
- * el ratón, halo violeta al levantarse y una onda donde se toca (también en
- * móvil). 44px de alto táctil mínimo.
+ * el ratón y una onda donde se toca (también en móvil). 44px de alto táctil.
  *
  *  - variante: 'primario' | 'secundario' | 'contorno' | 'fantasma' | 'peligro'
  *  - tamano: 'sm' | 'md' | 'lg'
+ *  - to: si se pasa, es un enlace (usa el router de la app vía <Enlace>)
  *  - icono / iconoFin: nodos a izquierda / derecha (la flecha final se desliza)
+ *  - insignia: nodo en la esquina (p. ej. <Contador valor={3} />)
  *  - cargando: spinner en lugar del icono y bloquea el clic
- *  - brillo: el destello pasa solo cada pocos segundos (CTA que debe llamar la atención)
+ *  - brillo: el destello pasa solo cada pocos segundos (CTA de pago)
  *  - bloque: ocupa todo el ancho
  *  - soloIcono: botón cuadrado; exige aria-label
  */
-export default function Boton({
+const Boton = forwardRef(function Boton({
   variante = 'primario',
   tamano = 'md',
+  to,
   icono,
   iconoFin,
+  insignia,
   cargando = false,
   brillo = false,
   bloque = false,
@@ -29,8 +33,9 @@ export default function Boton({
   className,
   children,
   onPointerDown,
+  onClick,
   ...rest
-}) {
+}, ref) {
   const [ondas, setOndas] = useState([]);
   const inactivo = disabled || cargando;
 
@@ -53,15 +58,8 @@ export default function Boton({
     className,
   ].filter(Boolean).join(' ');
 
-  return (
-    <button
-      type={type}
-      className={cls}
-      disabled={inactivo}
-      aria-busy={cargando || undefined}
-      onPointerDown={tocar}
-      {...rest}
-    >
+  const contenido = (
+    <>
       <span className={s.destello} aria-hidden="true" />
       {ondas.map((o) => (
         <span
@@ -77,6 +75,41 @@ export default function Boton({
         {children != null && <span className={s.texto}>{children}</span>}
         {!cargando && iconoFin && <span className={s.iconoFin}>{iconoFin}</span>}
       </span>
+      {insignia}
+    </>
+  );
+
+  if (to != null) {
+    return (
+      <Enlace
+        ref={ref}
+        to={to}
+        className={cls}
+        aria-disabled={inactivo || undefined}
+        aria-busy={cargando || undefined}
+        onPointerDown={tocar}
+        onClick={(e) => { if (inactivo) { e.preventDefault(); return; } onClick?.(e); }}
+        {...rest}
+      >
+        {contenido}
+      </Enlace>
+    );
+  }
+
+  return (
+    <button
+      ref={ref}
+      type={type}
+      className={cls}
+      disabled={inactivo}
+      aria-busy={cargando || undefined}
+      onPointerDown={tocar}
+      onClick={onClick}
+      {...rest}
+    >
+      {contenido}
     </button>
   );
-}
+});
+
+export default Boton;

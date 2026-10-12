@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertCircle, Minus, Plus, Check } from 'lucide-react';
+import { AlertCircle, Minus, Plus, Check, Search } from 'lucide-react';
 import s from './Formulario.module.css';
 
 /** Campo de texto con etiqueta, ayuda y error accesibles. El error entra con una sacudida. */
@@ -150,5 +150,39 @@ export function Interruptor({ activo, onChange, etiqueta, descripcion }) {
       <input id={id} type="checkbox" role="switch" checked={activo} onChange={(e) => onChange(e.target.checked)} />
       <span className={s.pista} aria-hidden="true"><span className={s.perilla} /></span>
     </label>
+  );
+}
+
+/**
+ * Buscador (cabecera, tienda, admin). Se ilumina al enfocarlo y, con
+ * `atajo`, la tecla "/" lo enfoca desde cualquier parte de la página.
+ *  - onBuscar(texto) al presionar Enter.
+ */
+export function Buscador({ placeholder = 'Buscar…', atajo = '/', onBuscar, defaultValue = '', className, ...input }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!atajo) return undefined;
+    const alTeclear = (e) => {
+      if (e.key !== atajo || e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target;
+      if (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName)) return;
+      e.preventDefault();
+      ref.current?.focus();
+    };
+    document.addEventListener('keydown', alTeclear);
+    return () => document.removeEventListener('keydown', alTeclear);
+  }, [atajo]);
+
+  return (
+    <form
+      role="search"
+      className={[s.buscador, className].filter(Boolean).join(' ')}
+      onSubmit={(e) => { e.preventDefault(); onBuscar?.(ref.current.value.trim()); }}
+    >
+      <Search aria-hidden="true" />
+      <input ref={ref} type="search" placeholder={placeholder} aria-label={placeholder} defaultValue={defaultValue} {...input} />
+      {atajo && <kbd aria-hidden="true">{atajo}</kbd>}
+    </form>
   );
 }

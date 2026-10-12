@@ -2,6 +2,8 @@ import React, { useId, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Home, ShoppingBag, Brush, Gamepad2, User, Search, Heart, Bell, ChevronDown } from 'lucide-react';
 import { Contador, SaldoMonedas } from './Etiquetas';
+import Boton from './Boton';
+import { Buscador } from './Formulario';
 import { RESORTE } from './Efectos';
 import { ListaNotificaciones } from './Feedback';
 import { Enlace } from './Enlace';
@@ -54,6 +56,7 @@ export function Cabecera({
   onCerrarSesion,
   favoritos = [],
   carrito = [],
+  onBuscar,
 }) {
   const uid = useId();
   const [sobre, setSobre] = useState(null);
@@ -128,16 +131,14 @@ export function Cabecera({
         })}
       </nav>
 
-      <label className={s.buscador}>
-        <Search aria-hidden="true" />
-        <input type="search" placeholder="Buscar polos, tazas, regalos…" aria-label="Buscar productos" />
-        <kbd>/</kbd>
-      </label>
+      <div className={s.buscadorCaja}>
+        <Buscador placeholder="Buscar polos, tazas, regalos…" onBuscar={onBuscar} />
+      </div>
 
       <div className={s.acciones}>
-        <button type="button" className={`${s.iconoBtn} ${s.soloMovil}`} aria-label="Buscar">
+        <Boton soloIcono variante="fantasma" className={`${s.iconoBtn} ${s.soloMovil}`} aria-label="Buscar">
           <Search aria-hidden="true" />
-        </button>
+        </Boton>
 
         <span className={s.ocultarMovil}>
           <Desplegable
@@ -158,29 +159,32 @@ export function Cabecera({
             ancho={370}
             {...control('notificaciones')}
             disparador={(props) => (
-              <button
-                type="button"
+              <Boton
+                soloIcono
+                variante="fantasma"
                 {...props}
                 className={[s.iconoBtn, s.campana, abierto === 'notificaciones' && s.iconoActivo].filter(Boolean).join(' ')}
                 aria-label={`Notificaciones (${noLeidas} sin leer)`}
+                insignia={<Contador valor={noLeidas} />}
               >
                 <Bell aria-hidden="true" />
-                <Contador valor={noLeidas} />
-              </button>
+              </Boton>
             )}
           >
             {(cerrar) => (
               <div className={s.bandeja}>
                 <div className={s.bandejaCabeza}>
                   <span>{noLeidas ? `${noLeidas} sin leer` : 'Todo al día'}</span>
-                  {noLeidas > 0 && <button type="button" onClick={onMarcarLeidas}>Marcar leídas</button>}
+                  {noLeidas > 0 && <Boton variante="fantasma" tamano="sm" onClick={onMarcarLeidas}>Marcar leídas</Boton>}
                 </div>
                 <div className={s.bandejaLista}>
                   <ListaNotificaciones items={notificaciones} limite={5} onAbrir={(n) => onLeer?.(n.id)} />
                 </div>
-                <button type="button" className={s.bandejaTodas} onClick={() => { cerrar(); onVerTodas?.(); }}>
-                  Ver todas las notificaciones
-                </button>
+                <div className={s.bandejaPie}>
+                  <Boton variante="contorno" bloque onClick={() => { cerrar(); onVerTodas?.(); }}>
+                    Ver todas las notificaciones
+                  </Boton>
+                </div>
               </div>
             )}
           </Desplegable>
@@ -192,10 +196,17 @@ export function Cabecera({
             ancho={330}
             {...control('favoritos')}
             disparador={(props) => (
-              <Enlace to="/cuenta/wishlist" {...props} className={`${s.iconoBtn} ${s.corazon}`} aria-label={`Favoritos (${favoritos.length})`}>
+              <Boton
+                to="/cuenta/wishlist"
+                soloIcono
+                variante="fantasma"
+                {...props}
+                className={[s.iconoBtn, s.corazon, abierto === 'favoritos' && s.iconoActivo].filter(Boolean).join(' ')}
+                aria-label={`Favoritos (${favoritos.length})`}
+                insignia={<Contador valor={favoritos.length} />}
+              >
                 <Heart aria-hidden="true" />
-                <Contador valor={favoritos.length} />
-              </Enlace>
+              </Boton>
             )}
           >
             {(cerrar) => <VistaFavoritos items={favoritos} sesion={Boolean(usuario)} onNavegar={cerrar} />}
@@ -207,10 +218,17 @@ export function Cabecera({
           ancho={360}
           {...control('carrito')}
           disparador={(props) => (
-            <Enlace to="/carrito" {...props} className={`${s.iconoBtn} ${s.bolsa}`} aria-label={`Carrito (${enCarrito})`}>
+            <Boton
+              to="/carrito"
+              soloIcono
+              variante="fantasma"
+              {...props}
+              className={[s.iconoBtn, s.bolsa, abierto === 'carrito' && s.iconoActivo].filter(Boolean).join(' ')}
+              aria-label={`Carrito (${enCarrito})`}
+              insignia={<Contador valor={enCarrito} />}
+            >
               <ShoppingBag aria-hidden="true" />
-              <Contador valor={enCarrito} />
-            </Enlace>
+            </Boton>
           )}
         >
           {(cerrar) => <VistaCarrito items={carrito} onNavegar={cerrar} />}

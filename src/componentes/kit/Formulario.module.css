@@ -529,6 +529,88 @@
   outline-offset: 2px;
 }
 
+/* ── Buscador ──────────────────────────────────────────── */
+.buscador {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: 300px;
+  height: 44px;
+  padding: 0 0.5rem 0 0.9rem;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  background: var(--color-hover);
+  color: var(--color-text-muted);
+  transition:
+    max-width 0.5s var(--ease-signature),
+    border-color var(--dur-media) ease,
+    background-color var(--dur-media) ease,
+    box-shadow var(--dur-media) var(--ease-signature);
+}
+
+.buscador:hover {
+  border-color: var(--violet-200);
+}
+
+.buscador:focus-within {
+  max-width: 380px;
+  border-color: var(--violet-500);
+  background: var(--color-surface);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+  color: var(--primary-color);
+}
+
+:global([data-theme='dark']) .buscador:hover {
+  border-color: rgba(167, 139, 250, 0.25);
+}
+
+.buscador svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.buscador:focus-within svg {
+  transform: scale(1.12) rotate(-8deg);
+}
+
+.buscador input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  /* globals.css pinta todos los inputs en noche con un selector muy específico;
+     aquí el input vive dentro de una caja que ya tiene su fondo. */
+  background-color: transparent !important;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.buscador kbd {
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  transition: opacity var(--dur-media) ease, transform var(--dur-media) var(--ease-signature);
+}
+
+.buscador:focus-within kbd {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+:global([data-theme='dark']) .buscador:hover {
+  border-color: rgba(167, 139, 250, 0.25);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .conError,
   .error,
