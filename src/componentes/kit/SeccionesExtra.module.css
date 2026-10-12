@@ -504,6 +504,21 @@
   box-shadow: 0 0 0 2px var(--color-bg, var(--gris-fondo)), 0 0 0 4px var(--primary-color);
 }
 
+/* "Todos": sello con el degradado del logo. */
+.burbuja:first-child .burbujaFoto {
+  background: var(--degradado-logo);
+}
+
+.burbuja:first-child .burbujaFoto svg {
+  color: #fff;
+}
+
+.burbujaNombre {
+  font-family: var(--fuente-marca);
+  font-weight: 900 !important;
+  letter-spacing: -0.01em;
+}
+
 .burbujaActiva .burbujaNombre {
   color: var(--primary-color);
 }

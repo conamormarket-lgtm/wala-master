@@ -1,5 +1,5 @@
 import React, { useId, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import s from './Acordeon.module.css';
 
 /**
@@ -36,7 +36,7 @@ export default function Acordeon({ items = [], abiertoInicial = false, multiple 
                 onClick={() => alternar(id)}
               >
                 <span>{it.question}</span>
-                <ChevronDown className={s.flecha} aria-hidden="true" />
+                <span className={s.signo} aria-hidden="true"><Plus /></span>
               </button>
             </h3>
             <div id={`${uid}-r-${i}`} role="region" aria-labelledby={`${uid}-b-${i}`} className={s.cuerpo}>

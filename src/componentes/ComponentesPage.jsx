@@ -19,6 +19,7 @@ import {
 } from './kit';
 import s from './ComponentesPage.module.css';
 import DemoEditor from './DemoEditor';
+import DemoSecciones, { GRUPOS_CATALOGO } from './DemoSecciones';
 // La mayoría de productos reales vienen con fondo blanco: estas fotos lo simulan.
 import FRENTE_BLANCO from './demo/polera-fondo-blanco.jpg';
 import ESPALDA_BLANCO from './demo/polera-fondo-blanco-espalda.jpg';
@@ -30,20 +31,40 @@ const ESPALDA = '/prendas/hoodie-espalda.webp';
 const MONEDA = '/assets/monedas/moneda-160.webp';
 const META_ENVIO = 150;
 
-const SECCIONES = [
-  ['base', 'Base'],
-  ['botones', 'Botones'],
-  ['etiquetas', 'Etiquetas'],
-  ['formularios', 'Formularios'],
-  ['productos', 'Productos'],
-  ['navegacion', 'Navegación'],
-  ['menus', 'Menús'],
-  ['builder', 'Builder'],
-  ['editor', 'Editor'],
-  ['carrito', 'Carrito'],
-  ['pedidos', 'Pedidos'],
-  ['avisos', 'Avisos'],
+/*
+ * Tres vistas separadas:
+ *  - Piezas: los componentes sueltos (botones, etiquetas, formularios…).
+ *  - Secciones: cada sección del builder por separado, como en el editor.
+ *  - Páginas: composiciones completas (landing, editor, carrito, pedidos).
+ */
+const VISTAS = [
+  ['piezas', 'Piezas'],
+  ['secciones', 'Secciones'],
+  ['paginas', 'Páginas'],
 ];
+
+const INDICES = {
+  piezas: [
+    ['base', 'Base'],
+    ['botones', 'Botones'],
+    ['etiquetas', 'Etiquetas e íconos'],
+    ['formularios', 'Formularios'],
+    ['productos', 'Producto'],
+    ['navegacion', 'Navegación'],
+    ['menus', 'Menús'],
+    ['avisos', 'Avisos'],
+  ],
+  secciones: GRUPOS_CATALOGO,
+  paginas: [
+    ['landing', 'Landing'],
+    ['editor', 'Editor'],
+    ['carrito', 'Carrito'],
+    ['pedidos', 'Mis pedidos'],
+  ],
+};
+
+/** Vista en la que vive un id del índice (para abrir enlaces #id). */
+const vistaDe = (id) => Object.keys(INDICES).find((v) => INDICES[v].some(([x]) => x === id)) || null;
 
 /*
  * Productos de ejemplo con la misma forma que la colección productos_wala
@@ -194,7 +215,7 @@ const SECCIONES_DEMO = [
     paddingTop: '0.5rem', paddingBottom: '1.5rem',
   } },
   { id: 's14', type: 'video', order: 6.4, settings: {
-    url: '/landing-matador/video/video-01.mp4', aspectRatio: '9:16', autoplay: true, loop: true, paddingTop: '0.5rem', paddingBottom: '2rem',
+    url: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ', aspectRatio: '16:9', paddingTop: '0.5rem', paddingBottom: '2rem',
   } },
   { id: 's15', type: 'image', order: 6.5, settings: {
     url: '/crear/banner-crear-1200.webp', alt: 'Crea tu polera en Walá', link: '/personalizar', maxWidth: '960px', alignment: 'center', borderRadius: '20px',
@@ -238,6 +259,12 @@ const MARCAS_DEMO = [
   { id: 'geeks', name: 'Con Amor Geeks', slug: 'geeks', active: true },
   { id: 'nova', name: 'Nova', slug: 'nova', active: true },
   { id: 'oculta', name: 'Marca oculta', slug: 'oculta', visible: false },
+];
+
+const CATEGORIAS_DEMO = SECCIONES_DEMO.find((x) => x.type === 'category_grid').settings.items;
+const GRUPOS_FILTRO_DEMO = [
+  { id: 'tipo', titulo: 'Tipo', opciones: ['Poleras', 'Tazas', 'Peluches', 'Cuadros', 'Parejas'].map((n) => ({ valor: n, nombre: n, cuenta: PRODUCTOS_DEMO.filter((p) => EXTRAS_DEMO[p.id]?.categoria === n).length })), de: (p) => EXTRAS_DEMO[p.id]?.categoria },
+  { id: 'personalizable', titulo: 'Personalizable', opciones: [{ valor: 'si', nombre: 'Con tu diseño' }], de: (p) => (p.customizable || p.esPrendaBase ? 'si' : 'no') },
 ];
 
 const productosParaSeccion = (sec) => {
@@ -371,8 +398,9 @@ function Muestra({ nombre, valor, variable, oscuro }) {
 }
 
 /** Índice fijo: píldora que se desliza a la sección visible + barra de progreso. */
-function BarraSuperior({ tema, cambiarTema }) {
-  const [activa, setActiva] = useState('base');
+function BarraSuperior({ tema, cambiarTema, vista, onVista }) {
+  const indice = INDICES[vista];
+  const [activa, setActiva] = useState(indice[0][0]);
   const navRef = useRef(null);
   const { scrollYProgress } = useScroll();
   const progreso = useSpring(scrollYProgress, { stiffness: 200, damping: 30, restDelta: 0.001 });
@@ -382,9 +410,10 @@ function BarraSuperior({ tema, cambiarTema }) {
       (entradas) => entradas.forEach((e) => { if (e.isIntersecting) setActiva(e.target.id); }),
       { rootMargin: '-40% 0px -55% 0px' },
     );
-    SECCIONES.forEach(([id]) => { const el = document.getElementById(id); if (el) obs.observe(el); });
+    indice.forEach(([id]) => { const el = document.getElementById(id); if (el) obs.observe(el); });
+    setActiva(indice[0][0]);
     return () => obs.disconnect();
-  }, []);
+  }, [indice]);
 
   // En móvil el índice se desplaza solo para que el activo quede a la vista.
   useEffect(() => {
@@ -399,10 +428,17 @@ function BarraSuperior({ tema, cambiarTema }) {
       <div className={s.barraTopDentro}>
         <a href="#inicio" className={s.marca}>
           <Logo alto={32} />
-          <span className={s.marcaTexto}>Componentes</span>
         </a>
-        <nav ref={navRef} className={s.indice} aria-label="Secciones">
-          {SECCIONES.map(([id, t]) => (
+        <div className={s.vistas} role="tablist" aria-label="Vista">
+          {VISTAS.map(([id, t]) => (
+            <button key={id} type="button" role="tab" aria-selected={vista === id} className={vista === id ? s.vistaActiva : undefined} onClick={() => onVista(id)}>
+              {vista === id && <motion.span layoutId="vista-activa" className={s.vistaPildora} transition={RESORTE} />}
+              <span>{t}</span>
+            </button>
+          ))}
+        </div>
+        <nav ref={navRef} className={s.indice} aria-label="Índice">
+          {indice.map(([id, t]) => (
             <a key={id} href={`#${id}`} data-id={id} className={activa === id ? s.indiceActivo : undefined}>
               {activa === id && <motion.span layoutId="indice-activo" className={s.indicePildora} transition={RESORTE} />}
               <span>{t}</span>
@@ -525,8 +561,20 @@ const EnlaceDemo = React.forwardRef(function EnlaceDemo({ to, onClick, children,
   );
 });
 
+function vistaInicial() {
+  const porHash = vistaDe(window.location.hash.slice(1));
+  if (porHash) return porHash;
+  try { return localStorage.getItem('wala-componentes-vista') || 'piezas'; } catch (e) { return 'piezas'; }
+}
+
 function Contenido({ tema, cambiarTema }) {
   const toast = useToast();
+  const [vista, setVista] = useState(vistaInicial);
+  const cambiarVista = (v) => {
+    setVista(v);
+    try { localStorage.setItem('wala-componentes-vista', v); } catch (e) { /* sin storage */ }
+    window.scrollTo({ top: 0 });
+  };
   const [conSesion, setConSesion] = useState(true);
   const [seleccion, setSeleccion] = useState(null); // producto en el selector rápido
   const [tiendaCargando, setTiendaCargando] = useState(false);
@@ -587,11 +635,34 @@ function Contenido({ tema, cambiarTema }) {
         <span className={s.b3} />
       </div>
 
-      <BarraSuperior tema={tema} cambiarTema={cambiarTema} />
+      <BarraSuperior tema={tema} cambiarTema={cambiarTema} vista={vista} onVista={cambiarVista} />
 
       <main className={s.main}>
-        <Portada tema={tema} cambiarTema={cambiarTema} manejarAgregar={manejarAgregar} />
+        {vista === 'piezas' && <Portada tema={tema} cambiarTema={cambiarTema} manejarAgregar={manejarAgregar} />}
+        {vista !== 'piezas' && (
+          <header id="inicio" className={s.cabezaVista}>
+            <h1>{vista === 'secciones' ? 'Secciones del builder' : 'Páginas'}</h1>
+            <p>
+              {vista === 'secciones'
+                ? 'Cada sección que se puede añadir en el editor, por separado y con sus variantes. Los ajustes son los mismos campos que guarda Firestore.'
+                : 'Las piezas y secciones ya armadas: una landing completa, el editor del builder, el carrito y Mis pedidos.'}
+            </p>
+          </header>
+        )}
+        {vista === 'secciones' && (
+          <DemoSecciones
+            datos={{
+              productos: PRODUCTOS_DEMO,
+              categorias: CATEGORIAS_DEMO,
+              marcas: MARCAS_DEMO,
+              grupos: GRUPOS_FILTRO_DEMO,
+              imagenes: { frente: FRENTE_BLANCO, espalda: ESPALDA_BLANCO, taza: TAZA, cuadro: CUADRO },
+              onAgregar: manejarAgregar,
+            }}
+          />
+        )}
 
+        {vista === 'piezas' && (<>
         {/* ── BASE ── */}
         <Seccion
           id="base" numero="01" titulo="Base"
@@ -875,10 +946,13 @@ function Contenido({ tema, cambiarTema }) {
           </div>
         </Seccion>
 
-        {/* ── BUILDER ── */}
+        </>)}
+
+        {vista === 'paginas' && (<>
+        {/* ── LANDING DE EJEMPLO ── */}
         <Seccion
-          id="builder" numero="08" titulo="Secciones del builder"
-          descripcion="Esta mini página está escrita como la guarda Firestore: una lista de secciones { type, settings } con los mismos campos que hoy usa el editor visual. RenderSecciones la dibuja con piezas del kit: un solo carrusel, una sola marquesina, una sola cuenta regresiva, un solo título y un solo bloque para relleno y fondo."
+          id="landing" numero="01" titulo="Landing de ejemplo"
+          descripcion="Una página completa armada con secciones del builder, escrita como la guarda Firestore (una lista de { type, settings }). RenderSecciones la dibuja con las mismas piezas del catálogo de Secciones."
           mejoras={['1 carrusel en vez de 6', '1 marquesina en vez de 3', '1 cuenta regresiva en vez de 2', 'Títulos y fondos iguales en todas', 'Enlaces internos, externos y #ancla con una regla', 'Textos viejos en negro se adaptan al modo noche', 'Videos que se pausan fuera de pantalla']}
         >
           <Revelar className={s.paginaBuilder}>
@@ -893,7 +967,7 @@ function Contenido({ tema, cambiarTema }) {
 
         {/* ── EDITOR DEL BUILDER ── */}
         <Seccion
-          id="editor" numero="09" titulo="Editor del builder"
+          id="editor" numero="02" titulo="Editor del builder"
           descripcion="El mismo editor para todas las secciones: cada tipo describe sus campos una vez y el panel los dibuja. Toca una sección de la página o elígela en el panel, cambia textos, colores o fotos y mira el cambio al instante. Arrastra las filas para reordenar, usa el + entre secciones para insertar y Ctrl+Z para deshacer."
           mejoras={['1 formulario por esquema en vez de 30 copiados', 'Colores con opción «del tema» (modo noche)', 'Fechas en hora de Perú', 'Deshacer y rehacer', 'Eliminar sin ventanas del navegador', 'Hoja inferior en el celular']}
         >
@@ -909,7 +983,7 @@ function Contenido({ tema, cambiarTema }) {
 
         {/* ── CARRITO ── */}
         <Seccion
-          id="carrito" numero="10" titulo="Carrito y resumen"
+          id="carrito" numero="03" titulo="Carrito y resumen"
           descripcion="Funciona de verdad: sube la cantidad hasta pasar S/ 150 y mira qué pasa. Prueba el cupón WALA10."
           mejoras={['Camión que avanza hacia el envío gratis', 'Confeti al llegar a la meta', 'Totales que corren', 'Quitar con animación']}
         >
@@ -957,7 +1031,7 @@ function Contenido({ tema, cambiarTema }) {
 
         {/* ── PEDIDOS ── */}
         <Seccion
-          id="pedidos" numero="11" titulo="Mis pedidos"
+          id="pedidos" numero="04" titulo="Mis pedidos"
           descripcion="Una sola tarjeta con resumen, seguimiento y la acción que toca."
           mejoras={['La línea se dibuja al aparecer', 'El paso actual late', 'Si falta pagar, el borde respira en ámbar', 'Copiar con burbuja']}
         >
@@ -991,9 +1065,12 @@ function Contenido({ tema, cambiarTema }) {
           </div>
         </Seccion>
 
+        </>)}
+
+        {vista === 'piezas' && (<>
         {/* ── AVISOS ── */}
         <Seccion
-          id="avisos" numero="12" titulo="Avisos y estados"
+          id="avisos" numero="08" titulo="Avisos y estados"
           descripcion="Si llegan varias notificaciones se apilan como en el celular; tócalas (o pasa el ratón) para desplegarlas y usa “Ver todas” para abrir el centro."
           mejoras={['Avisos limpios, sin franjas', 'Notificaciones apiladas', 'Centro con todas las notificaciones', 'Desliza un toast para cerrarlo']}
         >
@@ -1054,6 +1131,8 @@ function Contenido({ tema, cambiarTema }) {
             </Panel>
           </div>
         </Seccion>
+
+        </>)}
 
         <footer className={s.pie}>
           <Logo alto={26} />

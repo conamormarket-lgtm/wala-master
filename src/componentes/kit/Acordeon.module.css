@@ -6,13 +6,14 @@
 
 .item {
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: 6px 18px 18px 18px;
   background: var(--color-surface);
   transition: border-color var(--dur-media) ease, box-shadow var(--dur-media) ease;
 }
 
 .abierto {
-  border-color: var(--violet-200);
+  border-color: var(--violet-300, #c4b5fd);
+  background: color-mix(in srgb, var(--primary-light) 55%, var(--color-surface));
   box-shadow: 0 8px 22px -18px rgba(76, 29, 149, 0.5);
 }
 
@@ -50,17 +51,40 @@
   border-radius: 14px;
 }
 
-.flecha {
+/* "+" en un sello con el degradado del logo: al abrir gira y queda "×". */
+.signo {
+  display: inline-flex;
   flex-shrink: 0;
-  width: 1.15rem;
-  height: 1.15rem;
-  color: var(--color-text-muted);
-  transition: transform var(--dur-media) var(--ease-signature), color var(--dur-rapida) ease;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary-color);
+  transition: transform var(--dur-media) var(--ease-signature), background-color var(--dur-rapida) ease, color var(--dur-rapida) ease;
 }
 
-.abierto .flecha {
-  transform: rotate(180deg);
-  color: var(--primary-color);
+.signo svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  stroke-width: 2.6;
+}
+
+.abierto .signo {
+  background: var(--degradado-logo, #7c3aed);
+  color: #fff;
+  transform: rotate(135deg);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cabeza button:hover .signo {
+    transform: rotate(90deg);
+  }
+
+  .abierto .cabeza button:hover .signo {
+    transform: rotate(135deg);
+  }
 }
 
 /* Alto real animado sin medir: grid de 0fr a 1fr. */
@@ -89,7 +113,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .cuerpo,
-  .flecha {
+  .signo {
     transition: none;
   }
 }

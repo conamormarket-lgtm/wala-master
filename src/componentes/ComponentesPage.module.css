@@ -1130,3 +1130,92 @@
   color: var(--color-text-muted);
   font-size: 0.68rem;
 }
+
+/* ── Selector de vista: Piezas · Secciones · Páginas ── */
+.vistas {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 14px;
+  background: var(--color-hover, rgba(124, 58, 237, 0.08));
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.vistas button {
+  position: relative;
+  min-height: 36px;
+  padding: 0 0.85rem;
+  border: 0;
+  border-radius: 11px;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-family: var(--fuente-marca);
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+}
+
+.vistas button > span {
+  position: relative;
+  z-index: 1;
+}
+
+.vistas .vistaActiva {
+  color: #fff;
+}
+
+.vistaPildora {
+  position: absolute;
+  inset: 0;
+  border-radius: 11px;
+  background: var(--violet-700, #6d28d9);
+}
+
+/* Cabecera de las vistas Secciones y Páginas. */
+.cabezaVista {
+  max-width: 760px;
+  padding: clamp(2rem, 6vw, 3.5rem) 0 clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.cabezaVista h1 {
+  margin: 0 0 0.6rem;
+  font-family: var(--fuente-marca);
+  font-size: clamp(2.2rem, 6vw, 3.6rem);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+
+.cabezaVista p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 1.02rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+  .barraTopDentro {
+    flex-wrap: wrap;
+    height: auto;
+    padding-top: 0.5rem;
+    padding-bottom: 0.4rem;
+    row-gap: 0.4rem;
+  }
+
+  .vistas {
+    order: 1;
+  }
+
+  .indice {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .tema {
+    order: 2;
+    margin-left: auto;
+  }
+}

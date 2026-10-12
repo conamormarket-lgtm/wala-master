@@ -5,7 +5,7 @@ import Carrusel from './Carrusel';
 import { Enlace } from './Enlace';
 import { TituloSeccion, tituloDesdeAjustes } from './Seccion';
 import { tarjetaDesdeMarca } from './adaptadores';
-import { EtiquetaColgante, Garabatos, Trazo } from './Marca';
+import { EtiquetaColgante, Garabatos, Trazo, Destello, pastel } from './Marca';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import s from './SeccionesContenido.module.css';
 
@@ -237,6 +237,10 @@ export function BloqueVideo({ ajustes = {} }) {
     : undefined;
 
   return (
+    <div className={s.videoMarco} style={{ maxWidth: estilo?.maxWidth }}>
+      <span className={`${s.videoCinta} ${s.videoCinta1}`} aria-hidden="true" />
+      <span className={`${s.videoCinta} ${s.videoCinta2}`} aria-hidden="true" />
+      <Destello className={s.videoChispa} />
     <div className={[s.video, formato && s.videoFijo].filter(Boolean).join(' ')} style={estilo}>
       {incrustado ? (
         <iframe
@@ -259,6 +263,7 @@ export function BloqueVideo({ ajustes = {} }) {
           preload={automatico ? 'none' : 'metadata'}
         />
       )}
+    </div>
     </div>
   );
 }
@@ -375,7 +380,8 @@ export function FilaDestacados({ ajustes = {} }) {
       >
         {tarjetas.map((c, k) => (
           <Enlace key={c.id || k} to={c.link} className={s.destacado}>
-            <span className={s.destacadoFoto}>
+            <span className={s.destacadoFoto} style={{ background: pastel(k) }}>
+              <EtiquetaColgante tono={k === 0 ? 'oro' : 'violeta'} className={s.destacadoPuesto}>#{k + 1}</EtiquetaColgante>
               {c.imageUrl && <img src={toDirectImageUrl(c.imageUrl)} alt="" loading="lazy" decoding="async" draggable={false} />}
             </span>
             <span className={s.destacadoTexto}>

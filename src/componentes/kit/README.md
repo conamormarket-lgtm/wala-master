@@ -1,7 +1,14 @@
 # Kit de componentes Walá
 
-Piezas de interfaz reutilizables. Se ven todas juntas en `/componentes.html`
-(`npm run dev` → http://localhost:3000/componentes.html).
+Piezas de interfaz reutilizables. Se ven en `/componentes.html`
+(`npm run dev` → http://localhost:3000/componentes.html), en tres vistas:
+
+- **Piezas**: componentes sueltos (botones, etiquetas, íconos, formularios,
+  tarjeta de producto, navegación, menús, avisos).
+- **Secciones**: cada tipo del builder por separado, agrupado como en el
+  catálogo del editor, con su `type` y sus variantes (`DemoSecciones.jsx`).
+- **Páginas**: composiciones completas: una landing, el editor del builder,
+  el carrito y Mis pedidos.
 
 Todo se importa desde un solo lugar:
 

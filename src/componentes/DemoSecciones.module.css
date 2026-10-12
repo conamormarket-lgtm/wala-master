@@ -1,0 +1,109 @@
+.catalogo {
+  display: grid;
+  gap: clamp(2.5rem, 6vw, 4rem);
+}
+
+.grupo {
+  scroll-margin-top: 90px;
+}
+
+.grupoCabeza {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 1.1rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 2px dashed var(--color-border);
+}
+
+.grupoCabeza h2 {
+  margin: 0;
+  font-family: var(--fuente-marca);
+  font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.grupoCabeza span {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.fichas {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* Cada sección en su ficha: cabecera con nombre y `type`, y el lienzo. */
+.ficha {
+  border: 1px solid var(--color-border);
+  border-radius: 6px 24px 24px 24px;
+  background: var(--color-surface);
+  overflow: hidden;
+  scroll-margin-top: 90px;
+}
+
+.fichaCabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1.1rem;
+}
+
+.fichaIcono {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--degradado-logo);
+  color: #fff;
+  transform: rotate(-8deg);
+}
+
+.fichaIcono svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.fichaTextos {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.fichaTextos h3 {
+  margin: 0;
+  font-family: var(--fuente-marca);
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.fichaTextos p {
+  margin: 0.1rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.fichaTipo {
+  padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+  background: var(--primary-light);
+  color: var(--primary-color);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.fichaVariantes {
+  padding: 0 1.1rem 0.9rem;
+}
+
+/* El lienzo imita la página de la tienda (su fondo y su ancho). */
+.fichaLienzo {
+  border-top: 1px dashed var(--color-border);
+  background: var(--color-bg, var(--gris-fondo));
+}

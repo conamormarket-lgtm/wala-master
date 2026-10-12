@@ -12,7 +12,7 @@ import TarjetaProducto from './TarjetaProducto';
 import { Enlace } from './Enlace';
 import { tarjetaDesdeProducto } from './adaptadores';
 import { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
-import { EtiquetaColgante, Destello, Puntos } from './Marca';
+import { EtiquetaColgante, Destello, Puntos, pastel } from './Marca';
 import { IconoWala, iconoDesde } from './IconosWala';
 import { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados } from './SeccionesContenido';
 import { BannerPrincipal, ListaBeneficios, Ubicacion, NavCategorias, GrillaProductos, CatalogoConFiltros, PiePagina } from './SeccionesExtra';
@@ -392,7 +392,7 @@ export function MarcasMarquesina({ ajustes = {} }) {
       <Marquesina segundos={ajustes.speed || 30} espacio="2.5rem" etiqueta="Marcas">
         {items.map((m, k) => {
           const logo = (
-            <span className={[s.marca, m.shape === 'circle' && s.marcaCirculo].filter(Boolean).join(' ')} title={m.name}>
+            <span className={[s.marca, m.shape === 'circle' && s.marcaCirculo].filter(Boolean).join(' ')} title={m.name} style={{ '--giro': k % 2 ? '5deg' : '-5deg' }}>
               {m.imageUrl ? <img src={m.imageUrl} alt={m.alt || m.name || ''} loading="lazy" /> : <strong>{m.name}</strong>}
             </span>
           );
@@ -413,10 +413,10 @@ export function GrillaCategorias({ ajustes = {}, categorias }) {
     <>
       <TituloSeccion {...tituloDesdeAjustes(ajustes)} />
       <ul className={[s.categorias, redonda && s.categoriasRedondas].filter(Boolean).join(' ')} style={{ '--columnas': columnas }}>
-        {lista.map((c) => (
+        {lista.map((c, k) => (
           <li key={c.categoryId || c.name}>
-            <Enlace to={c.url || `?categoria=${c.categoryId}`} className={s.categoria}>
-              <span className={s.categoriaFoto} style={{ background: c.backgroundColor || ajustes.tileBackgroundColor || undefined }}>
+            <Enlace to={c.url || `?categoria=${c.categoryId}`} className={s.categoria} style={{ '--giro': k % 2 ? '2.5deg' : '-2.5deg' }}>
+              <span className={s.categoriaFoto} style={{ background: c.backgroundColor || ajustes.tileBackgroundColor || pastel(k) }}>
                 {c.imageUrl && <img src={c.imageUrl} alt="" loading="lazy" />}
               </span>
               <span className={s.categoriaNombre}>{c.name}</span>

@@ -11,6 +11,14 @@ import s from './Marca.module.css';
  *    Siempre quietos (sin bucles): dan vida sin gastar batería.
  */
 
+/**
+ * Pasteles de la marca (lila, rosa, oro, menta, cielo) para fondos que se
+ * alternan: categorías, burbujas, destacados. Las fotos con fondo blanco se
+ * funden con multiply y quedan sobre el color.
+ */
+export const PASTELES = ['#ede9fe', '#fce7f3', '#fef3c7', '#ccfbf1', '#e0f2fe'];
+export const pastel = (k) => PASTELES[((k % PASTELES.length) + PASTELES.length) % PASTELES.length];
+
 /** Forma exacta de la etiqueta del logo (public/logo-wala.svg, tagBaseGlobal). */
 const ETIQUETA_LOGO = 'M 32 42 L 28 88 C 27 92 30 94 34 93 L 85 80 C 89 79 91 76 89 72 L 76 18 C 75 13 68 11 65 14 L 36 34 C 32 37 31 40 32 42 Z';
 

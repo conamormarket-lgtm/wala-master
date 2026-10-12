@@ -650,40 +650,69 @@ a.anuncio:hover {
   }
 }
 
-/* ── Marcas ── */
+/* ── Marcas: cada logo en una etiqueta blanca, girada como la del logo ── */
 .marca {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 64px;
-  min-width: 64px;
-  padding: 0 0.5rem;
-  color: var(--color-text-muted);
+  width: 84px;
+  height: 84px;
+  margin: 12px 0;
+  padding: 18px 10px 10px;
+  border-radius: 22%;
+  background: #fff;
+  color: var(--violet-800, #5b21b6);
+  box-shadow: 0 0 0 1px rgba(30, 17, 64, 0.08), 0 10px 20px -14px rgba(30, 17, 64, 0.5);
+  transform: rotate(var(--giro, -5deg));
   transition: transform var(--dur-media) var(--ease-signature);
 }
 
-.marca:hover {
-  transform: scale(1.06);
+/* Ojal de la etiqueta. */
+.marca::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-bg, var(--gris-fondo));
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+  transform: translateX(-50%);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .marca:hover {
+    transform: rotate(0deg) scale(1.08);
+  }
 }
 
 .marca img {
-  max-height: 100%;
-  max-width: 140px;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 
+.marca strong {
+  font-family: var(--fuente-marca);
+  font-size: 0.8rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+/* Logos redondos: sticker circular (sin ojal). */
 .marcaCirculo {
-  width: 64px;
-  padding: 0;
+  padding: 6px;
   border-radius: 50%;
-  overflow: hidden;
-  background: #fff;
-  box-shadow: 0 0 0 1px var(--color-border);
+}
+
+.marcaCirculo::before {
+  display: none;
 }
 
 .marcaCirculo img {
-  width: 100%;
-  height: 100%;
+  border-radius: 50%;
   object-fit: cover;
 }
 
@@ -732,14 +761,21 @@ a.anuncio:hover {
   display: block;
   width: 100%;
   aspect-ratio: 1;
+  border-radius: 22px !important;
   border-radius: 16px;
   background: #f5f4f8;
   overflow: hidden;
   transition: transform var(--dur-media) var(--ease-signature);
 }
 
-.categoria:hover .categoriaFoto {
-  transform: translateY(-2px);
+@media (hover: hover) and (pointer: fine) {
+  .categoria:hover .categoriaFoto {
+    transform: rotate(var(--giro, -2deg)) translateY(-4px);
+  }
+}
+
+.categoria:active .categoriaFoto {
+  transform: scale(0.96);
 }
 
 .categoriaFoto img {
@@ -750,13 +786,18 @@ a.anuncio:hover {
   mix-blend-mode: multiply;
 }
 
+/* Círculos: aro punteado como un sello. */
 .categoriasRedondas .categoriaFoto {
   border-radius: 50%;
+  outline: 2px dashed var(--violet-300, #c4b5fd);
+  outline-offset: 4px;
 }
 
 .categoriaNombre {
-  font-size: 0.86rem;
-  font-weight: 600;
+  font-family: var(--fuente-marca);
+  font-size: 0.92rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
 }
 
 .categoria small {
