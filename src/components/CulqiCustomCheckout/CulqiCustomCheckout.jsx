@@ -310,7 +310,9 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, onOpen, autoO
     if (closePollRef.current) clearInterval(closePollRef.current);
     let ticksSinModal = 0;
     closePollRef.current = setInterval(() => {
-      if (isCulqiModalVisible()) { sawModal = true; goneTicks = 0; return; }
+      // Re-bloquea en cada tick visible: al reabrir, Culqi oculta y muestra su
+      // iframe un instante y ese parpadeo soltaba el scroll.
+      if (isCulqiModalVisible()) { sawModal = true; goneTicks = 0; bloquearScrollDeFondo(true); return; }
       if (!sawModal) {
         // El modal aún no aparece; si no aparece en ~10 s (bloqueador, error del
         // SDK), se suelta el scroll y se deja de vigilar.
