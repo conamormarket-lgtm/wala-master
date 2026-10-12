@@ -52,7 +52,7 @@ function MensajeAnuncio({ m, acento }) {
   const cuerpo = (
     <>
       {m.imageUrl ? <img src={m.imageUrl} alt="" className={s.anuncioImagen} />
-        : icono ? <IconoWala nombre={icono} tamano={24} sticker={false} girar={-8} className={s.anuncioIcono} />
+        : icono ? <IconoWala nombre={icono} tamano={24} sticker={false} className={s.anuncioIcono} />
           : emoji ? <span aria-hidden="true">{emoji}</span>
             : acento ? <Destello className={s.anuncioDestello} /> : null}
       <span className={s.anuncioTexto} style={estilo}>{texto}</span>
@@ -227,7 +227,7 @@ export function InsigniasConfianza({ ajustes = {} }) {
     <ul className={s.insignias}>
       {badges.map((b, k) => (
         <li key={k}>
-          <IconoWala nombre={b.icon} tamano={46} girar={k % 2 ? 6 : -6} className={s.insigniaIcono} />
+          <IconoWala nombre={b.icon} tamano={46} className={s.insigniaIcono} />
           <span>{b.text}</span>
         </li>
       ))}

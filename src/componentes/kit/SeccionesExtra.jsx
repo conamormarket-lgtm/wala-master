@@ -133,7 +133,7 @@ export function ListaBeneficios({ ajustes = {} }) {
           <ol className={s.beneficiosLista}>
             {items.map((it, k) => (
               <li key={k}>
-                <IconoWala nombre={it.icon} tamano={48} girar={k % 2 ? 6 : -6} />
+                <IconoWala nombre={it.icon} tamano={48} />
                 <span className={s.beneficioTexto}>{it.text}</span>
                 <span className={s.beneficioNumero} aria-hidden="true">{String(k + 1).padStart(2, '0')}</span>
               </li>
