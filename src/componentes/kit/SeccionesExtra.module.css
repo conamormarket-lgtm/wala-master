@@ -426,7 +426,9 @@
   overflow-x: auto;
   scrollbar-width: none;
   scroll-snap-type: x proximity;
-  padding: 0.25rem 0.1rem 0.5rem;
+  /* Aire para el aro de la burbuja activa (si no, se cortaba). */
+  padding: 8px 8px 10px;
+  scroll-padding-inline: 8px;
 }
 
 .burbujas::-webkit-scrollbar {
@@ -442,6 +444,9 @@
 .burbuja {
   display: inline-flex;
   flex: 0 0 auto;
+  /* En la cinta (marquesina) el aro activo también necesita aire. */
+  padding-top: 6px !important;
+  padding-bottom: 4px !important;
   flex-direction: column;
   align-items: center;
   gap: 0.4rem;
