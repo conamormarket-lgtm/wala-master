@@ -66,9 +66,9 @@
   border: var(--glass-border);
   border-radius: 20px;
   background: var(--glass-bg-strong);
-  -webkit-backdrop-filter: var(--glass-blur-solid);
-  backdrop-filter: var(--glass-blur-solid);
-  box-shadow: var(--glass-shadow-lg), var(--glass-inset-top);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
 }
 
 /* Línea de luz de marca que recorre el borde inferior. */
@@ -80,18 +80,9 @@
   bottom: -1px;
   height: 2px;
   border-radius: 2px;
-  background: linear-gradient(90deg, transparent, #8b5cf6, #d946ef, #6366f1, #8b5cf6, transparent);
-  background-size: 200% 100%;
-  opacity: 0.8;
-  filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.6));
-  animation: lineaLuz 6s linear infinite;
+  background: linear-gradient(90deg, transparent, #8b5cf6, #d946ef, #8b5cf6, transparent);
+  opacity: 0.55;
   pointer-events: none;
-}
-
-@keyframes lineaLuz {
-  to {
-    background-position: -200% 0;
-  }
 }
 
 .enlaces {
@@ -130,8 +121,7 @@
   bottom: 3px;
   height: 3px;
   border-radius: 3px;
-  background: linear-gradient(90deg, #8b5cf6, #d946ef);
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.8);
+  background: var(--primary-color);
 }
 
 .enlace:hover,
@@ -176,7 +166,7 @@
   max-width: 380px;
   border-color: var(--violet-500);
   background: var(--color-surface);
-  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.14), 0 10px 30px -12px rgba(124, 58, 237, 0.55);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
   color: var(--primary-color);
 }
 
@@ -328,7 +318,75 @@
   outline-offset: 2px;
 }
 
-/* Avatar con anillo de marca que gira. */
+/* ── Bandeja de notificaciones (escritorio) ── */
+.bandejaCaja {
+  position: relative;
+}
+
+.iconoActivo {
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.bandeja {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: -8px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  width: 360px;
+  max-height: 460px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 20px 44px -18px rgba(15, 23, 42, 0.35);
+  overflow: hidden;
+  transform-origin: top right;
+}
+
+:global([data-theme='dark']) .bandeja {
+  background: var(--color-surface-2);
+  box-shadow: 0 20px 44px -16px rgba(0, 0, 0, 0.7);
+}
+
+.bandejaCabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem 0.5rem;
+  font-size: 0.95rem;
+}
+
+.bandejaCabeza button,
+.bandejaTodas {
+  border: 0;
+  background: none;
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bandejaLista {
+  flex: 1;
+  padding: 0 0.5rem 0.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.bandejaTodas {
+  padding: 0.8rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.85rem;
+}
+
+.bandejaTodas:hover {
+  background: var(--color-hover);
+}
+
+/* Avatar con anillo de marca. */
 .avatar {
   position: relative;
   display: inline-flex;
@@ -340,9 +398,8 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: conic-gradient(from var(--angulo, 0deg), #8b5cf6, #d946ef, #f59e0b, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #8b5cf6, #d946ef);
   cursor: pointer;
-  animation: girarAnillo 6s linear infinite;
   -webkit-tap-highlight-color: transparent;
   transition: transform var(--dur-media) var(--ease-signature);
 }
@@ -366,21 +423,9 @@
   color: var(--violet-200);
 }
 
-@property --angulo {
-  syntax: '<angle>';
-  inherits: false;
-  initial-value: 0deg;
-}
-
-@keyframes girarAnillo {
-  to {
-    --angulo: 360deg;
-  }
-}
-
 @media (hover: hover) and (pointer: fine) {
   .avatar:hover {
-    transform: scale(1.08);
+    transform: scale(1.05);
   }
 }
 
@@ -421,13 +466,13 @@
   display: flex;
   justify-content: space-around;
   align-items: stretch;
-  height: 68px;
-  padding: 0 0.25rem;
+  height: calc(64px + var(--safe-bottom, 0px));
+  padding: 0 0.25rem var(--safe-bottom, 0px);
   border-top: var(--glass-border);
   background: var(--glass-bg-strong);
   -webkit-backdrop-filter: var(--glass-blur-solid);
   backdrop-filter: var(--glass-blur-solid);
-  box-shadow: 0 -10px 30px -14px rgba(76, 29, 149, 0.3), var(--glass-inset-top);
+  box-shadow: 0 -6px 20px -14px rgba(76, 29, 149, 0.3);
 }
 
 .tab {
@@ -465,7 +510,7 @@
   height: 1.3rem;
 }
 
-.tabIcono > span:not(.tabPildora):not(.halo) {
+.tabIcono > span:not(.tabPildora) {
   top: -5px;
   right: 6px;
   z-index: 2;
@@ -475,8 +520,7 @@
   position: absolute;
   inset: 0;
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(217, 70, 239, 0.14));
-  box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.18);
+  background: var(--primary-light);
 }
 
 .tab:active .tabIcono {
@@ -528,7 +572,7 @@
   border-radius: 18px;
   background: var(--violet-700);
   color: #fff;
-  box-shadow: 0 10px 22px -6px rgba(76, 29, 149, 0.7), 0 0 0 4px var(--color-surface), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 0 4px var(--color-surface), 0 4px 10px -4px rgba(76, 29, 149, 0.45);
 }
 
 .tabDestacado.tabActivo .tabIcono {
@@ -539,24 +583,8 @@
   color: #fff;
 }
 
-/* Halo cónico que gira detrás del botón "Crear". */
-.halo {
-  position: absolute;
-  inset: -7px;
-  z-index: -1;
-  border-radius: 22px;
-  background: conic-gradient(from var(--angulo, 0deg), #8b5cf6, #d946ef, #f59e0b, #6366f1, #8b5cf6);
-  filter: blur(8px);
-  opacity: 0.55;
-  animation: girarAnillo 4s linear infinite;
-}
-
 :global([data-theme='dark']) .tabDestacado .tabIcono {
   background: var(--violet-600);
-}
-
-:global([data-theme='dark']) .halo {
-  opacity: 0.8;
 }
 
 /* ── Pestañas segmentadas ──────────────────────────────── */
@@ -642,9 +670,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cabecera::after,
-  .avatar,
-  .halo,
   .rebota {
     animation: none;
   }

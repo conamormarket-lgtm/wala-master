@@ -1,20 +1,25 @@
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion, useDragControls } from 'framer-motion';
-import { CheckCircle2, Info, AlertTriangle, XCircle, X, Sparkles } from 'lucide-react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion, useDragControls, useMotionValue, useTransform } from 'framer-motion';
+import { CheckCircle2, Info, AlertTriangle, XCircle, X, Sparkles, BellOff, CheckCheck } from 'lucide-react';
+import { useBloquearScroll, useCerrarConAtras } from './Efectos';
 import s from './Feedback.module.css';
 
 const ICONOS = { exito: CheckCircle2, info: Info, aviso: AlertTriangle, error: XCircle };
 
-/** Aviso dentro de la página (no flotante). El icono entra con un rebote. */
+/** Curvas de hoja nativa (iOS/Android): sale rápido y asienta sin rebote. */
+const ENTRA = { type: 'tween', duration: 0.42, ease: [0.32, 0.72, 0, 1] };
+const SALE = { type: 'tween', duration: 0.26, ease: [0.4, 0, 1, 1] };
+
+/** Aviso dentro de la página (no flotante). */
 export function Aviso({ tipo = 'info', titulo, children, accion, onCerrar }) {
   const Icono = ICONOS[tipo];
   return (
     <div className={`${s.caja} ${s[tipo]}`} role={tipo === 'error' ? 'alert' : 'status'}>
-      <span className={s.avisoIconoCaja}><Icono className={s.avisoIcono} aria-hidden="true" /></span>
+      <span className={s.avisoIcono}><Icono aria-hidden="true" /></span>
       <div className={s.avisoTexto}>
         {titulo && <p className={s.avisoTitulo}>{titulo}</p>}
         {children && <p>{children}</p>}
-        {accion}
+        {accion && <div className={s.avisoAccion}>{accion}</div>}
       </div>
       {onCerrar && (
         <button type="button" className={s.cerrar} onClick={onCerrar} aria-label="Cerrar aviso">
@@ -25,79 +30,234 @@ export function Aviso({ tipo = 'info', titulo, children, accion, onCerrar }) {
   );
 }
 
-/* ── Toasts ─────────────────────────────────────────────── */
-const ToastCtx = createContext(() => {});
-export const useToast = () => useContext(ToastCtx);
+/* ── Notificaciones ─────────────────────────────────────── */
 
-const DURACION = 3500;
+const NotifCtx = createContext(null);
 
-export function ProveedorToasts({ children }) {
-  const [toasts, setToasts] = useState([]);
-  const idRef = useRef(0);
+/** Muestra un toast (y lo guarda en el centro de notificaciones). */
+export const useToast = () => useContext(NotifCtx).mostrar;
+/** Todo el sistema: historial, no leídas, abrir el centro… */
+export const useNotificaciones = () => useContext(NotifCtx);
 
-  const cerrar = useCallback((id) => setToasts((t) => t.filter((x) => x.id !== id)), []);
-  const mostrar = useCallback((toast) => {
-    const id = ++idRef.current;
-    const duracion = toast.duracion || DURACION;
-    setToasts((t) => [...t.slice(-2), { id, tipo: 'exito', duracion, ...toast }]);
-    window.setTimeout(() => cerrar(id), duracion);
-  }, [cerrar]);
+const DURACION = 4000;
+const VISIBLES = 3;
+const ALTO_TOAST = 64;
+
+const haceCuanto = (fecha) => {
+  const min = Math.round((Date.now() - fecha) / 60000);
+  if (min < 1) return 'Ahora';
+  if (min < 60) return `Hace ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `Hace ${h} h`;
+  const d = Math.round(h / 24);
+  return d === 1 ? 'Ayer' : `Hace ${d} días`;
+};
+
+/** Lista de notificaciones agrupadas (Hoy / Antes), con punto de no leída. */
+export function ListaNotificaciones({ items, onAbrir, limite }) {
+  const lista = limite ? items.slice(0, limite) : items;
+  if (!lista.length) {
+    return (
+      <div className={s.listaVacia}>
+        <BellOff aria-hidden="true" />
+        <p>No tienes notificaciones</p>
+      </div>
+    );
+  }
+  const hoy = new Date().toDateString();
+  const grupos = [
+    ['Hoy', lista.filter((n) => new Date(n.fecha).toDateString() === hoy)],
+    ['Antes', lista.filter((n) => new Date(n.fecha).toDateString() !== hoy)],
+  ].filter(([, g]) => g.length);
 
   return (
-    <ToastCtx.Provider value={mostrar}>
-      {children}
-      <div className={s.toasts} aria-live="polite">
-        <AnimatePresence initial={false}>
-          {toasts.map((t) => {
-            const Icono = ICONOS[t.tipo];
-            return (
-              <motion.div
-                key={t.id}
-                layout
-                className={`${s.toast} ${s[t.tipo]}`}
-                initial={{ opacity: 0, y: 40, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                transition={{ type: 'spring', stiffness: 500, damping: 32 }}
-                drag="x"
-                dragSnapToOrigin
-                dragElastic={0.6}
-                onDragEnd={(_, info) => { if (Math.abs(info.offset.x) > 90) cerrar(t.id); }}
-              >
-                {t.imagen ? (
-                  <span className={s.toastImgCaja}><img src={t.imagen} alt="" className={s.toastImg} /></span>
-                ) : (
-                  <span className={s.toastIcono}><Icono aria-hidden="true" /></span>
-                )}
-                <div className={s.toastTexto}>
-                  <strong>{t.titulo}</strong>
-                  {t.texto && <span>{t.texto}</span>}
-                </div>
-                {t.accion && (
-                  <button type="button" className={s.toastAccion} onClick={() => cerrar(t.id)}>{t.accion}</button>
-                )}
-                <button type="button" className={s.cerrar} onClick={() => cerrar(t.id)} aria-label="Cerrar">
-                  <X aria-hidden="true" />
-                </button>
-                <span className={s.tiempo} style={{ animationDuration: `${t.duracion}ms` }} aria-hidden="true" />
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-      </div>
-    </ToastCtx.Provider>
+    <div className={s.lista}>
+      {grupos.map(([nombre, grupo]) => (
+        <section key={nombre}>
+          <h4 className={s.grupo}>{nombre}</h4>
+          <ul>
+            {grupo.map((n) => {
+              const Icono = ICONOS[n.tipo] || Info;
+              return (
+                <li key={n.id}>
+                  <button type="button" className={[s.notif, !n.leida && s.noLeida].filter(Boolean).join(' ')} onClick={() => onAbrir?.(n)}>
+                    {n.imagen ? (
+                      <span className={s.notifImg}><img src={n.imagen} alt="" /></span>
+                    ) : (
+                      <span className={`${s.notifIcono} ${s[n.tipo]}`}><Icono aria-hidden="true" /></span>
+                    )}
+                    <span className={s.notifTexto}>
+                      <strong>{n.titulo}</strong>
+                      {n.texto && <span>{n.texto}</span>}
+                      <small>{haceCuanto(n.fecha)}</small>
+                    </span>
+                    {!n.leida && <span className={s.punto} aria-label="Sin leer" />}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+    </div>
   );
 }
 
-/** Estado vacío con Kapi flotando, chispas y una salida clara. */
+/**
+ * Proveedor de notificaciones: toasts apilados abajo + centro con el
+ * historial. Si llegan varias, se apilan (como en Android/iOS); al pasar el
+ * ratón o tocarlas se despliegan, y "Ver todas" abre el centro.
+ */
+export function ProveedorToasts({ children, iniciales = [] }) {
+  const [toasts, setToasts] = useState([]);
+  const [historial, setHistorial] = useState(iniciales);
+  const [abierto, setAbierto] = useState(false);
+  const [desplegado, setDesplegado] = useState(false);
+  const idRef = useRef(0);
+  const desplegadoRef = useRef(false);
+  desplegadoRef.current = desplegado;
+
+  const cerrar = useCallback((id) => setToasts((t) => t.filter((x) => x.id !== id)), []);
+
+  const mostrar = useCallback((toast) => {
+    const id = `t${++idRef.current}`;
+    const nueva = { id, tipo: 'exito', fecha: Date.now(), leida: false, ...toast };
+    setToasts((t) => [...t, { ...nueva, vence: Date.now() + (toast.duracion || DURACION) }]);
+    setHistorial((h) => [nueva, ...h]);
+  }, []);
+
+  // Un solo reloj para todos: vencen solos, salvo mientras están desplegados.
+  useEffect(() => {
+    if (!toasts.length) return undefined;
+    const reloj = window.setInterval(() => {
+      if (desplegadoRef.current) {
+        setToasts((t) => t.map((x) => ({ ...x, vence: x.vence + 400 })));
+      } else {
+        setToasts((t) => t.filter((x) => x.vence > Date.now()));
+      }
+    }, 400);
+    return () => window.clearInterval(reloj);
+  }, [toasts.length]);
+
+  useEffect(() => { if (toasts.length < 2) setDesplegado(false); }, [toasts.length]);
+
+  const noLeidas = historial.filter((n) => !n.leida).length;
+  const marcarLeidas = useCallback(() => setHistorial((h) => h.map((n) => ({ ...n, leida: true }))), []);
+  const leer = useCallback((id) => setHistorial((h) => h.map((n) => (n.id === id ? { ...n, leida: true } : n))), []);
+  const abrirCentro = useCallback(() => { setToasts([]); setAbierto(true); }, []);
+  const cerrarCentro = useCallback(() => setAbierto(false), []);
+
+  const valor = useMemo(
+    () => ({ mostrar, historial, noLeidas, marcarLeidas, leer, abrirCentro }),
+    [mostrar, historial, noLeidas, marcarLeidas, leer, abrirCentro],
+  );
+
+  const visibles = toasts.slice(-VISIBLES).reverse(); // el más nuevo primero
+  const ocultos = toasts.length - visibles.length;
+
+  return (
+    <NotifCtx.Provider value={valor}>
+      {children}
+
+      <div
+        className={s.toasts}
+        aria-live="polite"
+        onMouseEnter={() => toasts.length > 1 && setDesplegado(true)}
+        onMouseLeave={() => setDesplegado(false)}
+      >
+        <div className={s.pila} style={{ height: ALTO_TOAST }}>
+          <AnimatePresence>
+            {visibles.length > 1 && (
+              <motion.button
+                type="button"
+                key="ver-todas"
+                className={s.verTodas}
+                onClick={abrirCentro}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: desplegado ? -(visibles.length * (ALTO_TOAST + 8)) : -(ALTO_TOAST + 6 + (visibles.length - 1) * 8) }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={ENTRA}
+              >
+                Ver todas{noLeidas ? ` (${noLeidas})` : ''}
+              </motion.button>
+            )}
+            {visibles.map((t, i) => {
+              const Icono = ICONOS[t.tipo] || Info;
+              const atras = desplegado ? 0 : i;
+              return (
+                <motion.div
+                  key={t.id}
+                  className={`${s.toast} ${s[t.tipo]}`}
+                  style={{ zIndex: VISIBLES - i, height: ALTO_TOAST }}
+                  initial={{ opacity: 0, y: 30, scale: 0.96 }}
+                  animate={{
+                    opacity: 1,
+                    y: desplegado ? -i * (ALTO_TOAST + 8) : -i * 8,
+                    scale: 1 - atras * 0.05,
+                  }}
+                  exit={{ opacity: 0, scale: 0.94, transition: { duration: 0.18 } }}
+                  transition={ENTRA}
+                  drag={i === 0 || desplegado ? 'x' : false}
+                  dragSnapToOrigin
+                  dragElastic={0.5}
+                  onDragEnd={(_, info) => { if (Math.abs(info.offset.x) > 80) cerrar(t.id); }}
+                  onClick={() => { if (!desplegado && toasts.length > 1) setDesplegado(true); }}
+                >
+                  <div className={s.toastFila} aria-hidden={!desplegado && i > 0}>
+                    {t.imagen ? (
+                      <span className={s.toastImg}><img src={t.imagen} alt="" /></span>
+                    ) : (
+                      <span className={s.toastIcono}><Icono aria-hidden="true" /></span>
+                    )}
+                    <div className={s.toastTexto}>
+                      <strong>{t.titulo}</strong>
+                      {t.texto && <span>{t.texto}</span>}
+                    </div>
+                    {t.accion && (
+                      <button type="button" className={s.toastAccion} onClick={(e) => { e.stopPropagation(); cerrar(t.id); }}>{t.accion}</button>
+                    )}
+                    <button type="button" className={s.cerrar} onClick={(e) => { e.stopPropagation(); cerrar(t.id); }} aria-label="Cerrar">
+                      <X aria-hidden="true" />
+                    </button>
+                  </div>
+                  {i === 0 && (
+                    <span
+                      className={s.tiempo}
+                      style={{ animationDuration: `${t.duracion || DURACION}ms`, animationPlayState: desplegado ? 'paused' : 'running' }}
+                      aria-hidden="true"
+                    />
+                  )}
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </div>
+        {ocultos > 0 && desplegado && <span className={s.ocultos}>+{ocultos} más</span>}
+      </div>
+
+      <HojaInferior
+        abierta={abierto}
+        onCerrar={cerrarCentro}
+        titulo="Notificaciones"
+        acciones={noLeidas > 0 && (
+          <button type="button" className={s.marcar} onClick={marcarLeidas}>
+            <CheckCheck aria-hidden="true" /> Marcar leídas
+          </button>
+        )}
+      >
+        <ListaNotificaciones items={historial} onAbrir={(n) => leer(n.id)} />
+      </HojaInferior>
+    </NotifCtx.Provider>
+  );
+}
+
+/** Estado vacío con Kapi y una salida clara. */
 export function EstadoVacio({ imagen = '/assets/kapi/kapi-sad.webp', titulo, texto, children }) {
   return (
     <div className={s.vacio}>
       <div className={s.kapi}>
-        <Sparkles className={`${s.chispa} ${s.chispa1}`} aria-hidden="true" />
-        <Sparkles className={`${s.chispa} ${s.chispa2}`} aria-hidden="true" />
-        <img src={imagen} alt="" width="120" height="120" />
-        <span className={s.sombra} aria-hidden="true" />
+        <Sparkles className={s.chispa} aria-hidden="true" />
+        <img src={imagen} alt="" width="112" height="112" />
       </div>
       <h3>{titulo}</h3>
       {texto && <p>{texto}</p>}
@@ -106,46 +266,51 @@ export function EstadoVacio({ imagen = '/assets/kapi/kapi-sad.webp', titulo, tex
   );
 }
 
-const esEscritorio = () => typeof window !== 'undefined' && window.matchMedia('(min-width: 720px)').matches;
+const enEscritorio = () => typeof window !== 'undefined' && window.matchMedia('(min-width: 720px)').matches;
 
 /**
- * Hoja inferior en móvil (se arrastra hacia abajo para cerrar) y modal
- * centrado en escritorio. Cierra con Escape o tocando fuera, y devuelve el
- * foco a quien la abrió.
+ * Hoja inferior (móvil / app) y modal centrado (escritorio).
+ * Móvil: sube desde abajo con la curva de las hojas nativas, sin rebote;
+ * se cierra arrastrando hacia abajo (el fondo se aclara mientras arrastras),
+ * tocando fuera, con Esc o con el botón atrás de Android. El fondo de la
+ * página no se mueve mientras está abierta.
+ * `contenida`: se dibuja dentro de su marco (la maqueta de teléfono).
  */
-export function HojaInferior({ abierta, onCerrar, titulo, children, pie, contenida = false }) {
+export function HojaInferior({ abierta, onCerrar, titulo, acciones, children, pie, contenida = false }) {
   const panelRef = useRef(null);
   const controles = useDragControls();
-  const modal = !contenida && esEscritorio();
+  const modal = !contenida && enEscritorio();
+  const arrastre = useMotionValue(0);
+  const opacidadFondo = useTransform(arrastre, (v) => (typeof v === 'number' ? Math.max(0.15, 1 - v / 420) : 1));
+
+  useBloquearScroll(abierta && !contenida);
+  useCerrarConAtras(abierta && !contenida, onCerrar);
 
   useEffect(() => {
     if (!abierta) return undefined;
     const previo = document.activeElement;
-    const t = window.setTimeout(() => panelRef.current?.focus(), 30);
+    const t = window.setTimeout(() => panelRef.current?.focus({ preventScroll: true }), 40);
     const onKey = (e) => { if (e.key === 'Escape') onCerrar(); };
     document.addEventListener('keydown', onKey);
     return () => {
       window.clearTimeout(t);
       document.removeEventListener('keydown', onKey);
-      previo?.focus?.();
+      previo?.focus?.({ preventScroll: true });
     };
   }, [abierta, onCerrar]);
 
-  const variantes = modal
-    ? { oculto: { opacity: 0, scale: 0.94, y: 16 }, visible: { opacity: 1, scale: 1, y: 0 } }
-    : { oculto: { y: '100%' }, visible: { y: 0 } };
+  const empezarArrastre = (e) => { if (!modal) controles.start(e); };
 
   return (
     <AnimatePresence>
       {abierta && (
         <motion.div
           className={[s.fondo, contenida && s.fondoContenido, modal && s.fondoModal].filter(Boolean).join(' ')}
-          onClick={onCerrar}
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.25 }}
+          animate={{ opacity: 1, transition: { duration: 0.3 } }}
+          exit={{ opacity: 0, transition: { duration: 0.24 } }}
         >
+          <motion.div className={s.velo} style={{ opacity: opacidadFondo }} onClick={onCerrar} />
           <motion.div
             ref={panelRef}
             className={[s.hoja, modal && s.hojaModal].filter(Boolean).join(' ')}
@@ -153,29 +318,32 @@ export function HojaInferior({ abierta, onCerrar, titulo, children, pie, conteni
             aria-modal="true"
             aria-label={titulo}
             tabIndex={-1}
-            onClick={(e) => e.stopPropagation()}
-            variants={variantes}
-            initial="oculto"
-            animate="visible"
-            exit="oculto"
-            transition={{ type: 'spring', stiffness: 380, damping: 36 }}
+            style={modal ? undefined : { y: arrastre }}
+            initial={modal ? { opacity: 0, scale: 0.97, y: 8 } : { y: '100%' }}
+            animate={modal ? { opacity: 1, scale: 1, y: 0, transition: { duration: 0.22, ease: [0.16, 1, 0.3, 1] } } : { y: 0, transition: ENTRA }}
+            exit={modal ? { opacity: 0, scale: 0.98, transition: { duration: 0.16 } } : { y: '100%', transition: SALE }}
             drag={modal ? false : 'y'}
             dragControls={controles}
             dragListener={false}
             dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={{ top: 0.05, bottom: 0.8 }}
-            onDragEnd={(_, info) => { if (info.offset.y > 110 || info.velocity.y > 600) onCerrar(); }}
+            dragElastic={{ top: 0, bottom: 1 }}
+            dragMomentum={false}
+            dragTransition={{ bounceStiffness: 500, bounceDamping: 45 }}
+            onDragEnd={(_, info) => { if (info.offset.y > 100 || info.velocity.y > 500) onCerrar(); }}
           >
             {!modal && (
-              <div className={s.asaZona} onPointerDown={(e) => controles.start(e)} aria-hidden="true">
+              <div className={s.asaZona} onPointerDown={empezarArrastre} aria-hidden="true">
                 <span className={s.asa} />
               </div>
             )}
-            <header className={s.hojaCabeza} onPointerDown={(e) => !modal && controles.start(e)}>
+            <header className={s.hojaCabeza} onPointerDown={empezarArrastre}>
               <h3>{titulo}</h3>
-              <button type="button" className={s.cerrar} onClick={onCerrar} aria-label="Cerrar" onPointerDown={(e) => e.stopPropagation()}>
-                <X aria-hidden="true" />
-              </button>
+              <div className={s.hojaAcciones} onPointerDown={(e) => e.stopPropagation()}>
+                {acciones}
+                <button type="button" className={s.cerrar} onClick={onCerrar} aria-label="Cerrar">
+                  <X aria-hidden="true" />
+                </button>
+              </div>
             </header>
             <div className={s.hojaCuerpo}>{children}</div>
             {pie && <footer className={s.hojaPie}>{pie}</footer>}
@@ -185,4 +353,3 @@ export function HojaInferior({ abierta, onCerrar, titulo, children, pie, conteni
     </AnimatePresence>
   );
 }
-

@@ -52,7 +52,7 @@
 }
 
 .solida {
-  box-shadow: 0 4px 12px -4px var(--e-fondo);
+  box-shadow: 0 2px 6px -2px var(--e-fondo);
 }
 
 .solida.violeta {
@@ -73,28 +73,6 @@
 .solida.aviso {
   --e-fondo: #f59e0b;
   --e-texto: #451a03;
-}
-
-/* Destello periódico en las sólidas (ofertas, "nuevo"). */
-.solida::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(110deg, transparent 25%, rgba(255, 255, 255, 0.55) 50%, transparent 75%);
-  transform: translateX(-120%);
-  animation: destello 3.4s var(--ease-entrance) infinite;
-}
-
-@keyframes destello {
-  0%,
-  55% {
-    transform: translateX(-120%);
-  }
-
-  85%,
-  100% {
-    transform: translateX(120%);
-  }
 }
 
 :global([data-theme='dark']) .violeta:not(.solida) {
@@ -158,8 +136,7 @@
 @media (hover: hover) and (pointer: fine) {
   .chip:hover {
     border-color: var(--violet-400);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 18px -10px rgba(124, 58, 237, 0.45);
+    transform: translateY(-1px);
   }
 }
 
@@ -177,7 +154,6 @@
   border-color: var(--violet-700);
   background: var(--violet-700);
   color: #fff;
-  box-shadow: 0 8px 18px -10px rgba(109, 40, 217, 0.7);
   animation: rebote 0.45s var(--ease-signature);
 }
 
@@ -251,16 +227,6 @@
   color: #065f46;
 }
 
-.ganancia img {
-  animation: flotar 2.4s ease-in-out infinite;
-}
-
-@keyframes flotar {
-  50% {
-    transform: translateY(-3px) rotate(8deg);
-  }
-}
-
 :global([data-theme='dark']) .costo {
   color: #fcd34d;
   border-color: rgba(252, 211, 77, 0.25);
@@ -287,7 +253,7 @@
   font-size: 0.88rem;
   cursor: pointer;
   overflow: hidden;
-  box-shadow: 0 6px 16px -10px rgba(217, 119, 6, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 8px -4px rgba(217, 119, 6, 0.45);
   -webkit-tap-highlight-color: transparent;
   transition: transform var(--dur-media) var(--ease-signature), box-shadow var(--dur-media) ease;
 }
@@ -309,17 +275,30 @@
   inset: 0;
   background: linear-gradient(110deg, transparent 25%, rgba(255, 255, 255, 0.85) 50%, transparent 75%);
   transform: translateX(-120%);
-  animation: destello 4.2s var(--ease-entrance) 0.6s infinite;
+}
+
+@keyframes destello {
+  from {
+    transform: translateX(-120%);
+  }
+
+  to {
+    transform: translateX(120%);
+  }
 }
 
 @media (hover: hover) and (pointer: fine) {
   .saldo:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 22px -10px rgba(217, 119, 6, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px -6px rgba(217, 119, 6, 0.55);
   }
 
   .saldo:hover img {
-    transform: rotateY(360deg) scale(1.1);
+    transform: rotateY(360deg);
+  }
+
+  .saldo:hover .saldoDestello {
+    animation: destello 0.8s var(--ease-entrance);
   }
 }
 
@@ -335,7 +314,7 @@
 :global([data-theme='dark']) .saldo {
   background: linear-gradient(180deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
   color: #fcd34d;
-  box-shadow: 0 0 18px -6px rgba(245, 158, 11, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: none;
 }
 
 :global([data-theme='dark']) .saldoDestello {
@@ -357,7 +336,7 @@
   font-weight: 700;
   line-height: 18px;
   text-align: center;
-  box-shadow: 0 0 0 2px var(--color-surface), 0 4px 10px -2px rgba(225, 29, 72, 0.6);
+  box-shadow: 0 0 0 2px var(--color-surface);
   pointer-events: none;
   animation: contadorPop 0.5s var(--ease-signature);
 }
@@ -377,9 +356,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .solida::after,
-  .saldoDestello,
-  .ganancia img,
+  .saldo:hover .saldoDestello,
   .contador,
   .chipActivo,
   .check {

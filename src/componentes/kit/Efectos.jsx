@@ -32,6 +32,49 @@ export function useContador(valor, duracion = 0.7) {
   return mostrado;
 }
 
+/** true dentro de la app de Capacitor (Android/iOS), false en la web. */
+export const esApp = () => typeof window !== 'undefined' && Boolean(window.Capacitor?.isNativePlatform?.());
+
+/** Bloquea el scroll de la página mientras hay un modal abierto, sin saltos por la barra. */
+export function useBloquearScroll(activo) {
+  useEffect(() => {
+    if (!activo) return undefined;
+    const raiz = document.documentElement;
+    const barra = window.innerWidth - raiz.clientWidth;
+    const previo = { overflow: raiz.style.overflow, padding: raiz.style.paddingRight };
+    raiz.style.overflow = 'hidden';
+    if (barra > 0) raiz.style.paddingRight = `${barra}px`;
+    return () => {
+      raiz.style.overflow = previo.overflow;
+      raiz.style.paddingRight = previo.padding;
+    };
+  }, [activo]);
+}
+
+/**
+ * El botón "atrás" (Android en Capacitor, o el del navegador) cierra el modal
+ * en vez de salir de la pantalla. Capacitor, sin un listener propio de
+ * backButton, retrocede en el historial: por eso basta con apilar un estado.
+ */
+export function useCerrarConAtras(activo, onCerrar) {
+  const cerrar = useRef(onCerrar);
+  cerrar.current = onCerrar;
+  useEffect(() => {
+    if (!activo) return undefined;
+    let porAtras = false;
+    window.history.pushState({ walaModal: true }, '');
+    const alVolver = () => {
+      porAtras = true;
+      cerrar.current();
+    };
+    window.addEventListener('popstate', alVolver);
+    return () => {
+      window.removeEventListener('popstate', alVolver);
+      if (!porAtras && window.history.state?.walaModal) window.history.back();
+    };
+  }, [activo]);
+}
+
 /** Guarda la posición del puntero en --mx / --my para luces que lo siguen. */
 export function seguirPuntero(e) {
   const el = e.currentTarget;

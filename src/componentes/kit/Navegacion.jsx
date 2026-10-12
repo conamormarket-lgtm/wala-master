@@ -1,8 +1,9 @@
-import React, { useId, useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useId, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Home, ShoppingBag, Brush, Gamepad2, User, Search, Heart, Bell } from 'lucide-react';
 import { Contador, SaldoMonedas } from './Etiquetas';
 import { RESORTE } from './Efectos';
+import { ListaNotificaciones } from './Feedback';
 import s from './Navegacion.module.css';
 
 /**
@@ -23,10 +24,26 @@ export function Logo({ alto = 32 }) {
  * Cabecera de escritorio: logo, enlaces con píldora que sigue al ratón,
  * buscador que se ilumina al enfocarlo y accesos animados.
  */
-export function Cabecera({ enCarrito = 0, monedas = 0, notificaciones = 0 }) {
+export function Cabecera({ enCarrito = 0, monedas = 0, notificaciones = [], onLeer, onMarcarLeidas, onVerTodas }) {
   const uid = useId();
   const [activo, setActivo] = useState('Tienda');
   const [sobre, setSobre] = useState(null);
+  const [bandeja, setBandeja] = useState(false);
+  const bandejaRef = useRef(null);
+  const noLeidas = notificaciones.filter((n) => !n.leida).length;
+
+  // Cierra la bandeja al tocar fuera o con Esc.
+  useEffect(() => {
+    if (!bandeja) return undefined;
+    const fuera = (e) => { if (!bandejaRef.current?.contains(e.target)) setBandeja(false); };
+    const esc = (e) => { if (e.key === 'Escape') setBandeja(false); };
+    document.addEventListener('pointerdown', fuera);
+    document.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('pointerdown', fuera);
+      document.removeEventListener('keydown', esc);
+    };
+  }, [bandeja]);
   const enlaces = ['Tienda', 'Suscripciones', 'Crear', 'Minijuegos'];
 
   return (
@@ -64,10 +81,40 @@ export function Cabecera({ enCarrito = 0, monedas = 0, notificaciones = 0 }) {
           <Search aria-hidden="true" />
         </button>
         <span className={s.ocultarMovil}><SaldoMonedas saldo={monedas} /></span>
-        <button type="button" className={`${s.iconoBtn} ${s.campana} ${s.ocultarMovil}`} aria-label={`Notificaciones (${notificaciones})`}>
-          <Bell aria-hidden="true" />
-          <Contador valor={notificaciones} />
-        </button>
+        <div className={`${s.bandejaCaja} ${s.ocultarMovil}`} ref={bandejaRef}>
+          <button
+            type="button"
+            className={[s.iconoBtn, s.campana, bandeja && s.iconoActivo].filter(Boolean).join(' ')}
+            aria-label={`Notificaciones (${noLeidas} sin leer)`}
+            aria-expanded={bandeja}
+            onClick={() => setBandeja((v) => !v)}
+          >
+            <Bell aria-hidden="true" />
+            <Contador valor={noLeidas} />
+          </button>
+          <AnimatePresence>
+            {bandeja && (
+              <motion.div
+                className={s.bandeja}
+                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <div className={s.bandejaCabeza}>
+                  <strong>Notificaciones</strong>
+                  {noLeidas > 0 && <button type="button" onClick={onMarcarLeidas}>Marcar leídas</button>}
+                </div>
+                <div className={s.bandejaLista}>
+                  <ListaNotificaciones items={notificaciones} limite={5} onAbrir={(n) => onLeer?.(n.id)} />
+                </div>
+                <button type="button" className={s.bandejaTodas} onClick={() => { setBandeja(false); onVerTodas?.(); }}>
+                  Ver todas las notificaciones
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
         <button type="button" className={`${s.iconoBtn} ${s.corazon} ${s.ocultarMovil}`} aria-label="Deseos">
           <Heart aria-hidden="true" />
         </button>
@@ -93,7 +140,7 @@ const TABS = [
 
 /**
  * Barra inferior móvil. La píldora del activo se desliza entre tabs, el
- * icono rebota al elegirlo y "Crear" flota al centro con un halo que gira.
+ * icono rebota al elegirlo y "Crear" va destacado al centro.
  */
 export function BarraInferior({ carrito = 0 }) {
   const uid = useId();
@@ -114,7 +161,6 @@ export function BarraInferior({ carrito = 0 }) {
               {esActivo && !destacado && (
                 <motion.span layoutId={`${uid}-tab`} className={s.tabPildora} transition={RESORTE} />
               )}
-              {destacado && <span className={s.halo} aria-hidden="true" />}
               <Icono key={esActivo ? 'on' : 'off'} className={esActivo ? s.rebota : undefined} aria-hidden="true" />
               {id === 'tienda' && <Contador valor={carrito} />}
             </span>

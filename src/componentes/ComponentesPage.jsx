@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { AnimatePresence, MotionConfig, motion, useScroll, useSpring } from 'framer-motion';
 import {
-  ArrowRight, CheckCircle2, Heart, Mail, Moon, Phone, Plus, RotateCcw, Search, ShoppingBag, Sparkles, Sun, Trash2, Wand2, User,
+  ArrowRight, Bell, BellRing, CheckCircle2, Heart, Mail, Moon, Phone, Plus, RotateCcw, Search, ShoppingBag, Sparkles, Sun, Trash2, Wand2, User,
 } from 'lucide-react';
 import {
   Boton, Etiqueta, Chip, CostoMonedas, GananciaMonedas, SaldoMonedas,
@@ -9,10 +10,13 @@ import {
   TarjetaProducto, TarjetaProductoEsqueleto,
   Cabecera, BarraInferior, Pestanas, Logo,
   SeguimientoPedido, ItemCarrito, BarraEnvioGratis, ResumenPedido,
-  Aviso, ProveedorToasts, useToast, EstadoVacio, HojaInferior, soles,
-  EASE, RESORTE, Revelar, seguirPuntero,
+  Aviso, ProveedorToasts, useToast, useNotificaciones, ListaNotificaciones, EstadoVacio, HojaInferior, soles,
+  EASE, RESORTE, Revelar, Contador,
 } from './kit';
 import s from './ComponentesPage.module.css';
+// La mayoría de productos reales vienen con fondo blanco: estas fotos lo simulan.
+import FRENTE_BLANCO from './demo/polera-fondo-blanco.jpg';
+import ESPALDA_BLANCO from './demo/polera-fondo-blanco-espalda.jpg';
 
 const FRENTE = '/prendas/hoodie-frente.webp';
 const ESPALDA = '/prendas/hoodie-espalda.webp';
@@ -39,8 +43,16 @@ const COLORES_PRENDA = [
   { nombre: 'Rojo vino', hex: '#7f1d1d' },
 ];
 
+const ahora = Date.now();
+const NOTIFICACIONES_INICIALES = [
+  { id: 'n1', tipo: 'info', titulo: 'Tu pedido #WL-20377 va en camino', texto: 'Llega mañana, 14 oct', fecha: ahora - 12 * 60000, leida: false },
+  { id: 'n2', tipo: 'exito', titulo: '¡Pago recibido!', texto: 'Pedido #WL-20481 · S/ 129.80', fecha: ahora - 95 * 60000, leida: false },
+  { id: 'n3', tipo: 'aviso', titulo: 'Tu cupón WALA10 vence hoy', texto: 'Úsalo en tu próxima compra', fecha: ahora - 5 * 3600000, leida: true },
+  { id: 'n4', tipo: 'exito', titulo: 'Kapi te regaló 45 monedas', texto: 'Por completar la misión semanal', fecha: ahora - 26 * 3600000, leida: true },
+];
+
 const CARRITO_INICIAL = [
-  { id: 'essentials', imagen: FRENTE, nombre: 'Polera Walá Essentials con capucha', variante: 'Negro · M', precio: 89.9, precioAntes: 129.9, cantidad: 1 },
+  { id: 'essentials', imagen: FRENTE_BLANCO, nombre: 'Polera Walá Essentials con capucha', variante: 'Negro · M', precio: 89.9, precioAntes: 129.9, cantidad: 1 },
   { id: 'diseno', imagen: ESPALDA, nombre: 'Polera con tu diseño en la espalda', variante: 'Lila · L', precio: 39.9, cantidad: 1, personalizado: true },
 ];
 
@@ -74,14 +86,10 @@ function Seccion({ id, numero, titulo, descripcion, mejoras, children }) {
   );
 }
 
-/** Panel de cristal: aparece al hacer scroll y una luz sigue al ratón. */
+/** Panel: aparece suave al hacer scroll. Superficie sólida (sin blur): más liviano en la app. */
 function Panel({ titulo, children, className, retraso = 0 }) {
   return (
-    <Revelar
-      retraso={retraso}
-      className={[s.panel, className].filter(Boolean).join(' ')}
-      onPointerMove={seguirPuntero}
-    >
+    <Revelar retraso={retraso} className={[s.panel, className].filter(Boolean).join(' ')}>
       {titulo && <p className={s.panelTitulo}>{titulo}</p>}
       {children}
     </Revelar>
@@ -212,7 +220,7 @@ function Portada({ tema, cambiarTema, avisarAgregado }) {
         <span className={s.anillo} aria-hidden="true" />
         <div className={s.escenaTarjeta}>
           <TarjetaProducto
-            imagen={FRENTE} imagenHover={ESPALDA}
+            imagen={FRENTE_BLANCO} imagenHover={ESPALDA_BLANCO}
             categoria="Más vendido" nombre="Polera Walá Essentials con capucha"
             precio={89.9} precioAntes={129.9} puntuacion={4.8} resenas={124}
             colores={['#111827', '#f8fafc', '#c4b5fd', '#4d5b3a']}
@@ -239,6 +247,7 @@ function Portada({ tema, cambiarTema, avisarAgregado }) {
 
 function Contenido({ tema, cambiarTema }) {
   const toast = useToast();
+  const { historial, noLeidas, marcarLeidas, leer, abrirCentro } = useNotificaciones();
   const [talla, setTalla] = useState('M');
   const [color, setColor] = useState('Negro');
   const [cantidad, setCantidad] = useState(1);
@@ -254,7 +263,7 @@ function Contenido({ tema, cambiarTema }) {
   const cerrarHoja = useCallback(() => setHoja(false), []);
   const cerrarHojaMovil = useCallback(() => setHojaMovil(false), []);
 
-  const avisarAgregado = (nombre, imagen = FRENTE) => () =>
+  const avisarAgregado = (nombre, imagen = FRENTE_BLANCO) => () =>
     toast({ titulo: 'Agregado al carrito', texto: nombre, imagen, accion: 'Ver' });
 
   const alternarFiltro = (f) =>
@@ -432,14 +441,14 @@ function Contenido({ tema, cambiarTema }) {
         {/* ── PRODUCTOS ── */}
         <Seccion
           id="productos" numero="05" titulo="Tarjeta de producto"
-          descripcion="Mueve el ratón encima: la tarjeta se inclina, la luz te sigue y aparece la espalda. Dale al corazón."
-          mejoras={['Inclinación 3D y reflejo', 'Borde de luz que sigue al puntero', 'Corazón que estalla', '"+1" al agregar']}
+          descripcion="Las dos primeras usan fotos con fondo blanco (como la mayoría de productos) y las otras, sin fondo: se ven iguales. Todas las tarjetas miden lo mismo aunque falten datos."
+          mejoras={['Fotos con fondo blanco sin recuadro', 'Alturas parejas en la cuadrícula', 'Inclinación suave y espalda al pasar el ratón', 'Corazón que estalla']}
         >
           <div className={s.gridProductos}>
             {[
               <TarjetaProducto
                 key="a"
-                imagen={FRENTE} imagenHover={ESPALDA}
+                imagen={FRENTE_BLANCO} imagenHover={ESPALDA_BLANCO}
                 categoria="Poleras" nombre="Polera Walá Essentials con capucha"
                 precio={89.9} precioAntes={129.9} puntuacion={4.8} resenas={124} vendidos="1,2 mil"
                 colores={['#111827', '#f8fafc', '#c4b5fd', '#4d5b3a', '#7f1d1d', '#1e3a8a']}
@@ -447,7 +456,7 @@ function Contenido({ tema, cambiarTema }) {
               />,
               <TarjetaProducto
                 key="b"
-                imagen={ESPALDA} imagenHover={FRENTE}
+                imagen={ESPALDA_BLANCO} imagenHover={FRENTE_BLANCO}
                 categoria="Personalizable" nombre="Polera con tu diseño en la espalda"
                 precio={99.9} puntuacion={4.9} resenas={58} personalizable
                 colores={['#111827', '#f8fafc', '#c4b5fd']}
@@ -457,7 +466,7 @@ function Contenido({ tema, cambiarTema }) {
                 key="c"
                 imagen={FRENTE}
                 categoria="Parejas" nombre="Combo polera x2 · Él y Ella"
-                precio={169.9} nuevo puntuacion={5} resenas={12}
+                precio={169.9} nuevo
                 colores={['#111827', '#7f1d1d']}
                 onAgregar={avisarAgregado('Combo polera x2 · Él y Ella')}
               />,
@@ -469,7 +478,7 @@ function Contenido({ tema, cambiarTema }) {
               />,
               <TarjetaProductoEsqueleto key="e" />,
             ].map((el, i) => (
-              <Revelar key={el.key} retraso={i * 0.08}>{el}</Revelar>
+              <Revelar key={el.key} retraso={i * 0.06} className={s.celda}>{el}</Revelar>
             ))}
           </div>
         </Seccion>
@@ -480,7 +489,14 @@ function Contenido({ tema, cambiarTema }) {
           mejoras={['Línea de luz de marca en la cabecera', 'Píldora que sigue al ratón', 'Logo con destello y avatar con anillo', 'Barra móvil con indicador deslizante']}
         >
           <Panel titulo="Cabecera" className={s.panelFondo}>
-            <Cabecera enCarrito={enCarrito} monedas={saldo} notificaciones={2} />
+            <Cabecera
+              enCarrito={enCarrito}
+              monedas={saldo}
+              notificaciones={historial}
+              onLeer={leer}
+              onMarcarLeidas={marcarLeidas}
+              onVerTodas={abrirCentro}
+            />
           </Panel>
           <div className={s.gridNav}>
             <Panel titulo="Pestañas (Mis pedidos)">
@@ -510,13 +526,19 @@ function Contenido({ tema, cambiarTema }) {
                 <span className={s.isla} aria-hidden="true" />
                 <div className={s.telefonoTop}>
                   <Logo alto={28} />
-                  <Search aria-hidden="true" />
+                  <span className={s.telefonoIconos}>
+                    <Search aria-hidden="true" />
+                    <button type="button" className={s.telefonoCampana} onClick={abrirCentro} aria-label={`Notificaciones (${noLeidas} sin leer)`}>
+                      <Bell aria-hidden="true" />
+                      <Contador valor={noLeidas} />
+                    </button>
+                  </span>
                 </div>
                 <div className={s.telefonoContenido}>
                   <BarraEnvioGratis actual={cuentas.neto} meta={META_ENVIO} />
                   <div className={s.telefonoGrid}>
-                    <TarjetaProducto imagen={FRENTE} nombre="Polera Essentials" precio={89.9} precioAntes={129.9} inclinar={false} onAgregar={avisarAgregado('Polera Essentials')} />
-                    <TarjetaProducto imagen={ESPALDA} nombre="Con tu diseño" precio={99.9} personalizable inclinar={false} onAgregar={avisarAgregado('Polera con tu diseño', ESPALDA)} />
+                    <TarjetaProducto imagen={FRENTE_BLANCO} categoria="Poleras" nombre="Polera Essentials" precio={89.9} precioAntes={129.9} puntuacion={4.8} resenas={124} inclinar={false} onAgregar={avisarAgregado('Polera Essentials')} />
+                    <TarjetaProducto imagen={ESPALDA} categoria="Personalizable" nombre="Con tu diseño" precio={99.9} personalizable inclinar={false} onAgregar={avisarAgregado('Polera con tu diseño', ESPALDA)} />
                   </div>
                 </div>
                 <BarraInferior carrito={enCarrito} />
@@ -621,7 +643,8 @@ function Contenido({ tema, cambiarTema }) {
         {/* ── AVISOS ── */}
         <Seccion
           id="avisos" numero="09" titulo="Avisos y estados"
-          mejoras={['Toasts con resorte y barra de tiempo', 'Deslízalos a un lado para descartarlos', 'Kapi flota en los estados vacíos']}
+          descripcion="Si llegan varias notificaciones se apilan como en el celular; tócalas (o pasa el ratón) para desplegarlas y usa “Ver todas” para abrir el centro."
+          mejoras={['Avisos limpios, sin franjas', 'Notificaciones apiladas', 'Centro con todas las notificaciones', 'Desliza un toast para cerrarlo']}
         >
           <div className={s.grid2}>
             <Panel titulo="Avisos en página">
@@ -636,16 +659,37 @@ function Contenido({ tema, cambiarTema }) {
             </Panel>
             <Panel titulo="Toasts" retraso={0.08}>
               <div className={s.columna}>
-                <p className={s.nota}>Aparecen abajo al centro, se van solos a los 3,5 s y se pueden deslizar para cerrarlos.</p>
+                <p className={s.nota}>Aparecen abajo (en el celular, encima de la barra de navegación) y se van solos a los 4 s.</p>
                 <div className={s.fila}>
                   <Boton variante="secundario" onClick={() => toast({ titulo: 'Agregado al carrito', texto: 'Polera Essentials · M', imagen: FRENTE, accion: 'Ver' })}>Producto</Boton>
                   <Boton variante="secundario" onClick={() => toast({ tipo: 'exito', titulo: 'Cupón aplicado', texto: 'Ahorras S/ 15.00' })}>Éxito</Boton>
                   <Boton variante="secundario" onClick={() => toast({ tipo: 'info', titulo: 'Guardado en deseos' })}>Info</Boton>
                   <Boton variante="secundario" onClick={() => toast({ tipo: 'error', titulo: 'Sin conexión', texto: 'Revisa tu internet' })}>Error</Boton>
                 </div>
+                <Boton
+                  icono={<BellRing aria-hidden="true" />}
+                  onClick={() => {
+                    const lote = [
+                      { tipo: 'info', titulo: 'Tu pedido salió del taller', texto: '#WL-20481 · En producción' },
+                      { tipo: 'exito', titulo: 'Cupón aplicado', texto: 'Ahorras S/ 10.00' },
+                      { titulo: 'Agregado al carrito', texto: 'Polera Essentials · M', imagen: FRENTE_BLANCO },
+                      { tipo: 'aviso', titulo: 'Quedan 3 en tu talla', texto: 'Polera oversize · L' },
+                    ];
+                    lote.forEach((n, i) => window.setTimeout(() => toast(n), i * 350));
+                  }}
+                >
+                  Lanzar 4 notificaciones
+                </Boton>
               </div>
             </Panel>
           </div>
+          <Panel titulo={`Centro de notificaciones · ${noLeidas} sin leer`} className={s.angostoAncho}>
+            <ListaNotificaciones items={historial} limite={4} onAbrir={(n) => leer(n.id)} />
+            <div className={s.fila}>
+              <Boton variante="secundario" onClick={abrirCentro}>Ver todas</Boton>
+              <Boton variante="fantasma" onClick={marcarLeidas} disabled={!noLeidas}>Marcar todas como leídas</Boton>
+            </div>
+          </Panel>
           <div className={s.grid2}>
             <Panel>
               <EstadoVacio titulo="Aún no tienes deseos" texto="Toca el corazón de lo que te guste y lo guardamos aquí.">
@@ -697,18 +741,22 @@ export default function ComponentesPage() {
 
   const cambiarTema = () => {
     const nuevo = tema === 'dark' ? 'light' : 'dark';
-    const raiz = document.documentElement;
-    // Transición suave de colores solo durante el cambio de tema.
-    raiz.classList.add('cambiando-tema');
-    raiz.setAttribute('data-theme', nuevo);
-    window.setTimeout(() => raiz.classList.remove('cambiando-tema'), 450);
+    const aplicar = () => {
+      document.documentElement.setAttribute('data-theme', nuevo);
+      flushSync(() => setTema(nuevo));
+    };
     try { localStorage.setItem('wala-componentes-tema', nuevo); } catch (e) { /* sin storage: solo esta visita */ }
-    setTema(nuevo);
+    // View Transitions: el navegador toma una foto de la pantalla y funde las
+    // dos (una sola capa en la GPU). Antes se animaba el color de cada
+    // elemento a la vez y en celulares se trababa.
+    const reducir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (document.startViewTransition && !reducir) document.startViewTransition(aplicar);
+    else aplicar();
   };
 
   return (
     <MotionConfig reducedMotion="user">
-      <ProveedorToasts>
+      <ProveedorToasts iniciales={NOTIFICACIONES_INICIALES}>
         <Contenido tema={tema} cambiarTema={cambiarTema} />
       </ProveedorToasts>
     </MotionConfig>

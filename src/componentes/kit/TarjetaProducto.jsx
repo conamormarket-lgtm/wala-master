@@ -6,13 +6,21 @@ import s from './TarjetaProducto.module.css';
 
 export const soles = (n) => `S/ ${n.toFixed(2)}`;
 
-const INCLINACION = 7; // grados máximos
+const INCLINACION = 4; // grados máximos, suave
 
 /**
  * Tarjeta de producto de la tienda.
- * Con ratón: se inclina hacia el puntero, un reflejo y el borde lo siguen,
- * y se ve la espalda de la prenda. En táctil: sin inclinación, el botón
- * "Agregar" siempre visible y respuesta al toque.
+ *
+ * Fotos: casi todos los productos vienen con fondo blanco. La foto va sobre
+ * un "escenario" gris muy claro y se mezcla con `multiply`, así el blanco de
+ * la foto desaparece y todas las tarjetas se ven iguales (con o sin fondo).
+ *
+ * Alturas: cada fila del cuerpo reserva su alto (categoría 1 línea, nombre 2,
+ * puntuación 1, precio anterior 1) aunque falte el dato. En una cuadrícula
+ * todas las tarjetas quedan parejas.
+ *
+ * Con ratón: inclinación leve y la espalda de la prenda. En táctil: sin
+ * inclinación, "Agregar" siempre visible y respuesta al toque.
  */
 export default function TarjetaProducto({
   imagen,
@@ -40,17 +48,15 @@ export default function TarjetaProducto({
   const descuento = precioAntes ? Math.round((1 - precio / precioAntes) * 100) : 0;
 
   const mover = (e) => {
-    if (e.pointerType !== 'mouse') return;
+    if (e.pointerType !== 'mouse' || !inclinar) return;
     const el = ref.current;
     const r = el.getBoundingClientRect();
     const x = (e.clientX - r.left) / r.width;
     const y = (e.clientY - r.top) / r.height;
     el.style.setProperty('--mx', `${x * 100}%`);
     el.style.setProperty('--my', `${y * 100}%`);
-    if (inclinar) {
-      el.style.setProperty('--ry', `${(x - 0.5) * INCLINACION * 2}deg`);
-      el.style.setProperty('--rx', `${(0.5 - y) * INCLINACION * 2}deg`);
-    }
+    el.style.setProperty('--ry', `${(x - 0.5) * INCLINACION * 2}deg`);
+    el.style.setProperty('--rx', `${(0.5 - y) * INCLINACION * 2}deg`);
   };
 
   const salir = () => {
@@ -81,17 +87,16 @@ export default function TarjetaProducto({
       <span className={s.bordeLuz} aria-hidden="true" />
       <div className={s.media}>
         <a href="#producto" className={s.enlaceImagen} aria-label={nombre}>
-          <img src={imagen} alt="" className={s.img} loading="lazy" />
-          {imagenHover && <img src={imagenHover} alt="" className={`${s.img} ${s.imgHover}`} loading="lazy" />}
+          <img src={imagen} alt="" className={s.img} loading="lazy" decoding="async" />
+          {imagenHover && <img src={imagenHover} alt="" className={`${s.img} ${s.imgHover}`} loading="lazy" decoding="async" />}
         </a>
-        <span className={s.reflejo} aria-hidden="true" />
         <span className={s.barrido} aria-hidden="true" />
 
         <div className={s.badges}>
           {descuento > 0 && <Etiqueta tono="peligro" solida>-{descuento}%</Etiqueta>}
           {nuevo && <Etiqueta tono="violeta" solida>Nuevo</Etiqueta>}
           {personalizable && !nuevo && descuento === 0 && (
-            <Etiqueta tono="violeta" icono={<Palette aria-hidden="true" />}>Tu diseño</Etiqueta>
+            <Etiqueta tono="violeta" solida icono={<Palette aria-hidden="true" />}>Tu diseño</Etiqueta>
           )}
         </div>
 
@@ -103,7 +108,7 @@ export default function TarjetaProducto({
           onClick={alternarDeseo}
         >
           <Heart aria-hidden="true" />
-          <Estallido disparo={latidos} cantidad={10} distancia={26} colores={['#f43f5e', '#fb7185', '#8b5cf6', '#f59e0b']} />
+          <Estallido disparo={latidos} cantidad={8} distancia={22} colores={['#f43f5e', '#fb7185', '#8b5cf6']} />
         </button>
 
         {agotado ? (
@@ -118,36 +123,40 @@ export default function TarjetaProducto({
             <span className={s.agregarIcono}>
               {agregado ? <Check key="ok" aria-hidden="true" /> : <Plus key="mas" aria-hidden="true" />}
             </span>
-            <span>{agregado ? 'Listo' : 'Agregar'}</span>
+            <span className={s.agregarTexto}>{agregado ? 'Listo' : 'Agregar'}</span>
             {sumas > 0 && <span key={sumas} className={s.masUno} aria-hidden="true">+1</span>}
           </button>
         )}
       </div>
 
       <div className={s.cuerpo}>
-        {categoria && <p className={s.categoria}>{categoria}</p>}
+        <p className={s.categoria}>{categoria || ' '}</p>
         <h3 className={s.nombre}><a href="#producto">{nombre}</a></h3>
 
-        {puntuacion != null && (
-          <p className={s.puntuacion}>
-            <Star aria-hidden="true" />
-            <strong>{puntuacion.toFixed(1)}</strong>
-            {resenas != null && <span>({resenas})</span>}
-            {vendidos && <span className={s.vendidos}>{vendidos} vendidos</span>}
-          </p>
-        )}
+        <p className={s.puntuacion}>
+          {puntuacion != null ? (
+            <>
+              <Star aria-hidden="true" />
+              <strong>{puntuacion.toFixed(1)}</strong>
+              {resenas != null && <span>({resenas})</span>}
+              {vendidos && <span className={s.vendidos}>· {vendidos} vendidos</span>}
+            </>
+          ) : (
+            <span className={s.sinResenas}>Nuevo en Walá</span>
+          )}
+        </p>
 
         <div className={s.pie}>
-          <p className={s.precios}>
+          <div className={s.precios}>
+            <s className={s.precioAntes} aria-hidden={!precioAntes}>{precioAntes ? soles(precioAntes) : ' '}</s>
             <span className={[s.precio, descuento > 0 && s.precioOferta].filter(Boolean).join(' ')}>{soles(precio)}</span>
-            {precioAntes && <s className={s.precioAntes}>{soles(precioAntes)}</s>}
-          </p>
+          </div>
           {colores.length > 0 && (
             <ul className={s.colores} aria-label={`${colores.length} colores`}>
-              {colores.slice(0, 4).map((c) => (
+              {colores.slice(0, 3).map((c) => (
                 <li key={c} style={{ background: c }} />
               ))}
-              {colores.length > 4 && <li className={s.masColores}>+{colores.length - 4}</li>}
+              {colores.length > 3 && <li className={s.masColores}>+{colores.length - 3}</li>}
             </ul>
           )}
         </div>
@@ -156,16 +165,17 @@ export default function TarjetaProducto({
   );
 }
 
-/** Esqueleto con la misma silueta que la tarjeta, para la carga. */
+/** Esqueleto con la misma silueta y alturas que la tarjeta, para la carga. */
 export function TarjetaProductoEsqueleto() {
   return (
     <div className={`${s.tarjeta} ${s.esqueleto}`} aria-hidden="true">
       <div className={`${s.media} ${s.brillo}`} />
       <div className={s.cuerpo}>
         <span className={`${s.linea} ${s.brillo}`} style={{ width: '40%' }} />
-        <span className={`${s.linea} ${s.brillo}`} style={{ width: '85%', height: 14 }} />
-        <span className={`${s.linea} ${s.brillo}`} style={{ width: '55%', height: 14 }} />
-        <span className={`${s.linea} ${s.brillo}`} style={{ width: '35%', height: 18, marginTop: 6 }} />
+        <span className={`${s.linea} ${s.brillo}`} style={{ width: '90%', height: 14 }} />
+        <span className={`${s.linea} ${s.brillo}`} style={{ width: '60%', height: 14 }} />
+        <span className={`${s.linea} ${s.brillo}`} style={{ width: '45%' }} />
+        <span className={`${s.linea} ${s.brillo}`} style={{ width: '38%', height: 18, marginTop: 'auto' }} />
       </div>
     </div>
   );
