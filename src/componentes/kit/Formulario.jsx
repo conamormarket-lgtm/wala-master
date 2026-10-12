@@ -1,7 +1,6 @@
 import React, { useEffect, useId, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle, Minus, Plus, Check } from 'lucide-react';
-import { RESORTE } from './Efectos';
 import s from './Formulario.module.css';
 
 /** Campo de texto con etiqueta, ayuda y error accesibles. El error entra con una sacudida. */
@@ -33,9 +32,8 @@ export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, ...input }) {
   );
 }
 
-/** Selector de talla. El fondo violeta se desliza a la talla elegida; las agotadas van tachadas. */
+/** Selector de talla. La elegida se pinta de violeta al instante; las agotadas van tachadas. */
 export function SelectorTalla({ tallas, valor, onChange, agotadas = [], guia }) {
-  const grupo = useId();
   return (
     <fieldset className={s.grupo}>
       <legend className={s.leyenda}>
@@ -57,8 +55,7 @@ export function SelectorTalla({ tallas, valor, onChange, agotadas = [], guia }) 
               onClick={() => onChange(t)}
               title={agotada ? `${t} agotada` : undefined}
             >
-              {activa && <motion.span layoutId={`talla-${grupo}`} className={s.tallaFondo} transition={RESORTE} />}
-              <span className={s.tallaTexto}>{t}</span>
+              {t}
             </button>
           );
         })}

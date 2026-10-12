@@ -117,7 +117,12 @@ export function ProveedorToasts({ children, iniciales = [] }) {
   const desplegadoRef = useRef(false);
   desplegadoRef.current = desplegado;
 
-  const cerrar = useCallback((id) => setToasts((t) => t.filter((x) => x.id !== id)), []);
+  // Cerrar (X o deslizar) cuenta como vista: baja el contador de no leídas.
+  // Si se va sola por tiempo, sigue sin leer en el centro.
+  const cerrar = useCallback((id) => {
+    setToasts((t) => t.filter((x) => x.id !== id));
+    setHistorial((h) => h.map((n) => (n.id === id ? { ...n, leida: true } : n)));
+  }, []);
 
   const mostrar = useCallback((toast) => {
     const id = `t${++idRef.current}`;
@@ -174,7 +179,7 @@ export function ProveedorToasts({ children, iniciales = [] }) {
                 className={s.verTodas}
                 onClick={abrirCentro}
                 initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: desplegado ? -(visibles.length * (ALTO_TOAST + 8)) : -(ALTO_TOAST + 6 + (visibles.length - 1) * 8) }}
+                animate={{ opacity: 1, y: desplegado ? -(visibles.length * (ALTO_TOAST + 8)) : -(ALTO_TOAST + 8 + (visibles.length - 1) * 6) }}
                 exit={{ opacity: 0, y: 10 }}
                 transition={ENTRA}
               >
@@ -192,7 +197,7 @@ export function ProveedorToasts({ children, iniciales = [] }) {
                   initial={{ opacity: 0, y: 30, scale: 0.96 }}
                   animate={{
                     opacity: 1,
-                    y: desplegado ? -i * (ALTO_TOAST + 8) : -i * 8,
+                    y: desplegado ? -i * (ALTO_TOAST + 8) : -i * 6,
                     scale: 1 - atras * 0.05,
                   }}
                   exit={{ opacity: 0, scale: 0.94, transition: { duration: 0.18 } }}

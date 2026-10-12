@@ -96,7 +96,7 @@ export default function TarjetaProducto({
           {descuento > 0 && <Etiqueta tono="peligro" solida>-{descuento}%</Etiqueta>}
           {nuevo && <Etiqueta tono="violeta" solida>Nuevo</Etiqueta>}
           {personalizable && !nuevo && descuento === 0 && (
-            <Etiqueta tono="violeta" solida icono={<Palette aria-hidden="true" />}>Tu diseño</Etiqueta>
+            <Etiqueta tono="violeta" solida icono={<Palette aria-label="Personalizable" />}><span className={s.badgeTexto}>Tu diseño</span></Etiqueta>
           )}
         </div>
 
