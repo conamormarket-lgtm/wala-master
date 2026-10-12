@@ -628,9 +628,20 @@ async function prendasErpDelPedido(payload) {
 // Campos que el formulario del ERP lee con otro nombre: la marca (lista del ERP),
 // la dirección de entrega en Lima/Callao (envioDireccionLima; la tienda manda
 // envioDireccion y el ERP la mostraba vacía) y las prendas como lista.
+// Las columnas "Pedido" del ERP leen productos[].nombre; la tienda lo manda en "producto".
+function productosConNombreErp(productos) {
+  if (!productos || typeof productos !== "object") return null;
+  const conNombre = (p) => (p && !p.nombre && p.producto ? { ...p, nombre: p.producto } : p);
+  return Array.isArray(productos)
+    ? productos.map(conNombre)
+    : Object.fromEntries(Object.entries(productos).map(([k, p]) => [k, conNombre(p)]));
+}
+
 async function camposErpWala(payload) {
   const prendas = await prendasErpDelPedido(payload);
+  const productos = productosConNombreErp(payload.productos);
   return {
+    ...(productos ? { productos } : {}),
     marca: payload.marca || await marcaErpDelPedido(payload),
     ...(payload.envioProvincia === "No" && payload.envioDireccion && !payload.envioDireccionLima
       ? { envioDireccionLima: payload.envioDireccion } : {}),
