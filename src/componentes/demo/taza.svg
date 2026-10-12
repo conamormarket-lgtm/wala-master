@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <!-- Ilustración de ejemplo para la página del kit (no es una foto de producto real). -->
+  <rect width="400" height="400" fill="#ffffff"/>
+  <ellipse cx="190" cy="318" rx="104" ry="16" fill="#e9e6f2"/>
+  <path d="M288 160c40 0 56 22 56 50s-18 52-60 54" fill="none" stroke="#dcd7ea" stroke-width="22" stroke-linecap="round"/>
+  <path d="M92 116h196l-12 180c-2 16-14 26-30 26H134c-16 0-28-10-30-26L92 116z" fill="#f7f6fb" stroke="#dcd7ea" stroke-width="4"/>
+  <ellipse cx="190" cy="116" rx="98" ry="18" fill="#efecf7" stroke="#dcd7ea" stroke-width="4"/>
+  <path d="M190 236c-22-14-38-26-38-44 0-12 9-21 20-21 8 0 14 4 18 10 4-6 10-10 18-10 11 0 20 9 20 21 0 18-16 30-38 44z" fill="#8b5cf6"/>
+  <text x="190" y="276" text-anchor="middle" font-family="Poppins, Arial, sans-serif" font-size="20" font-weight="700" fill="#5b21b6">Feliz día</text>
+</svg>

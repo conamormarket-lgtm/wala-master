@@ -32,12 +32,16 @@ export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, ...input }) {
   );
 }
 
-/** Selector de talla. La elegida se pinta de violeta al instante; las agotadas van tachadas. */
-export function SelectorTalla({ tallas, valor, onChange, agotadas = [], guia }) {
+/**
+ * Selector de opción (talla, medida, número, modelo…). La elegida se pinta
+ * de violeta al instante; las agotadas van tachadas. `etiqueta` cambia el
+ * título ("Talla" por defecto).
+ */
+export function SelectorTalla({ tallas, valor, onChange, agotadas = [], guia, etiqueta = 'Talla' }) {
   return (
     <fieldset className={s.grupo}>
       <legend className={s.leyenda}>
-        <span>Talla{valor && <strong>: {valor}</strong>}</span>
+        <span>{etiqueta}{valor && <strong>: {valor}</strong>}</span>
         {guia && <button type="button" className={s.enlace} onClick={guia}>Guía de tallas</button>}
       </legend>
       <div className={s.tallas} role="radiogroup">
@@ -65,13 +69,13 @@ export function SelectorTalla({ tallas, valor, onChange, agotadas = [], guia }) 
 }
 
 /** Selector de color con el nombre visible del color elegido. */
-export function SelectorColor({ colores, valor, onChange }) {
+export function SelectorColor({ colores, valor, onChange, etiqueta = 'Color' }) {
   const actual = colores.find((c) => c.nombre === valor);
   return (
     <fieldset className={s.grupo}>
       <legend className={s.leyenda}>
         <span>
-          Color
+          {etiqueta}
           <AnimatePresence mode="wait" initial={false}>
             {actual && (
               <motion.strong

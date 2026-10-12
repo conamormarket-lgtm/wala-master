@@ -10,3 +10,4 @@ export { Enlace, ProveedorEnlaces } from './Enlace';
 export { default as Desplegable } from './Desplegable';
 export { MenuTienda, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito } from './MenusCabecera';
 export { default as AgregarRapido } from './AgregarRapido';
+export { accionDeProducto, tarjetaDesdeProducto, opcionesDeProducto } from './adaptadores';

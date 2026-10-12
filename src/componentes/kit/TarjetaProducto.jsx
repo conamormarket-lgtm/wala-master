@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Heart, Star, Plus, Check, Palette } from 'lucide-react';
+import { Heart, Star, Plus, Check, Palette, SlidersHorizontal } from 'lucide-react';
 import { Etiqueta } from './Etiquetas';
 import { Estallido } from './Efectos';
 import { Enlace } from './Enlace';
@@ -10,6 +10,18 @@ const formatoSoles = new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, 
 export const soles = (n) => `S/ ${formatoSoles.format(n)}`;
 
 const INCLINACION = 4; // grados máximos, suave
+
+/**
+ * Qué hace el botón de la tarjeta según el producto (ver accionDeProducto):
+ *  - agregar: no tiene opciones → se agrega directo (taza, llavero…).
+ *  - elegir:  tiene color/estilo, talla, medida o es combo → abre el selector.
+ *  - crear:   prenda base del estudio "Crear" → va a diseñarla.
+ */
+const ACCIONES = {
+  agregar: { texto: 'Agregar', Icono: Plus, aria: 'Agregar al carrito:' },
+  elegir: { texto: 'Elegir', Icono: SlidersHorizontal, aria: 'Elegir opciones de' },
+  crear: { texto: 'Diseñar', Icono: Palette, aria: 'Diseñar' },
+};
 
 /**
  * Tarjeta de producto de la tienda.
@@ -41,6 +53,7 @@ export default function TarjetaProducto({
   vendidos,
   inclinar = true,
   url = '#producto',
+  accion = 'agregar',
   onAgregar,
 }) {
   const ref = useRef(null);
@@ -73,10 +86,11 @@ export default function TarjetaProducto({
     setDeseado(!deseado);
   };
 
-  // Si onAgregar devuelve false (p. ej. abrió el selector de talla), la
-  // tarjeta no se marca como agregada: eso lo confirma el selector.
+  // Solo "agregar" (producto sin opciones) se marca como agregado en la
+  // tarjeta. "elegir" abre el selector y "crear" va al estudio: eso lo
+  // confirma quien recibe onAgregar. También si onAgregar devuelve false.
   const agregar = () => {
-    if (onAgregar?.() === false) return;
+    if (onAgregar?.() === false || accion !== 'agregar') return;
     setAgregado(true);
     setSumas((n) => n + 1);
     window.clearTimeout(temporizador.current);
@@ -124,12 +138,12 @@ export default function TarjetaProducto({
             type="button"
             className={[s.agregar, agregado && s.agregarOk].filter(Boolean).join(' ')}
             onClick={agregar}
-            aria-label={agregado ? 'Agregado al carrito' : `Agregar ${nombre} al carrito`}
+            aria-label={agregado ? 'Agregado al carrito' : `${ACCIONES[accion].aria} ${nombre}`}
           >
             <span className={s.agregarIcono}>
-              {agregado ? <Check key="ok" aria-hidden="true" /> : <Plus key="mas" aria-hidden="true" />}
+              {agregado ? <Check key="ok" aria-hidden="true" /> : React.createElement(ACCIONES[accion].Icono, { key: accion, 'aria-hidden': true })}
             </span>
-            <span className={s.agregarTexto}>{agregado ? 'Agregado' : 'Agregar'}</span>
+            <span className={s.agregarTexto}>{agregado ? 'Agregado' : ACCIONES[accion].texto}</span>
             {sumas > 0 && <span key={sumas} className={s.masUno} aria-hidden="true">+1</span>}
           </button>
         )}
