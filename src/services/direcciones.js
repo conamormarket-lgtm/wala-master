@@ -58,4 +58,11 @@ export async function agregarDireccion(uid, direccion, { principal = false } = {
   return guardarDirecciones(uid, lista);
 }
 
+// Cambia los datos de una dirección guardada (la misma entrada, mismo id).
+export async function actualizarDireccion(uid, id, cambios) {
+  const actuales = await obtenerDirecciones(uid);
+  if (!actuales.some((d) => d.id === id)) return agregarDireccion(uid, cambios);
+  return guardarDirecciones(uid, actuales.map((d) => (d.id === id ? { ...d, ...cambios, id, principal: d.principal } : d)));
+}
+
 export const direccionPrincipal = (lista) => lista.find((d) => d.principal) || lista[0] || null;

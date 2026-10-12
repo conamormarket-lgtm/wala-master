@@ -27,7 +27,7 @@ import PhoneIntlInput from '../components/intl/PhoneIntlInput';
 import Button from '../components/common/Button';
 import CulqiCustomCheckout, { precargarCulqi } from '../components/CulqiCustomCheckout/CulqiCustomCheckout';
 import { CreditCard, MessageCircle, ShieldCheck, MapPin, Plus } from 'lucide-react';
-import { obtenerDirecciones, agregarDireccion, direccionPrincipal } from '../services/direcciones';
+import { obtenerDirecciones, agregarDireccion, actualizarDireccion, direccionPrincipal } from '../services/direcciones';
 import PaypalCheckout from '../components/PaypalCheckout/PaypalCheckout';
 // ── Internacionalización de cobro (aditivo) ───────────────────────────────────
 // getFx/penToUsd/penToLocal: tasa de cambio (config/fx + fallback en cascada).
@@ -1263,7 +1263,8 @@ const CheckoutPage = () => {
           if (user?.uid) {
             localStorage.setItem(DATOS_CHECKOUT_KEY, JSON.stringify({ ...savedInfo, uid: user.uid }));
             if (modoDireccion === 'formulario' && guardarEnLibreta) {
-              agregarDireccion(user.uid, { ...savedInfo, country: values.country })
+              const campos = { ...savedInfo, country: values.country };
+              (editandoId ? actualizarDireccion(user.uid, editandoId, campos) : agregarDireccion(user.uid, campos))
                 .then((lista) => setLibreta(lista))
                 .catch((e) => console.warn('No se pudo guardar la dirección:', e));
             }
@@ -1432,10 +1433,21 @@ const CheckoutPage = () => {
   const [modoDireccion, setModoDireccion] = useState('formulario'); // 'tarjeta' | 'lista' | 'formulario'
   const [direccionId, setDireccionId] = useState(null);
   const [guardarEnLibreta, setGuardarEnLibreta] = useState(true);
+  // Dirección guardada que se está editando desde el checkout (null = nueva).
+  const [editandoId, setEditandoId] = useState(null);
+  // Quien recibe, resumido con los datos del perfil; los campos salen con "Cambiar".
+  const [editarDestinatario, setEditarDestinatario] = useState(false);
+  // A dónde vuelve "Cancelar" de la lista.
+  const modoAntesDeListaRef = useRef('tarjeta');
+
+  // Campo por campo (sobre el estado actual de formik): un setValues con una copia
+  // de los valores podía pisar lo que se sembró mientras cargaba la libreta.
+  const ponerCampos = (campos) => {
+    Object.entries(campos).forEach(([campo, valor]) => setFieldValue(campo, valor, false));
+  };
 
   const aplicarDireccion = (d) => {
-    formik.setValues({
-      ...formik.values,
+    ponerCampos({
       customerName: d.customerName || '',
       docType: d.docType || 'DNI',
       dni: d.dni || '',
@@ -1444,9 +1456,38 @@ const CheckoutPage = () => {
       city: d.city || 'Lima',
       district: d.district || '',
       address: d.address || '',
-    }, false);
+    });
     setPhoneFull('');
     setDireccionId(d.id);
+  };
+
+  const abrirLista = () => {
+    modoAntesDeListaRef.current = modoDireccion;
+    setModoDireccion('lista');
+  };
+
+  // Cancelar la lista: si venía de escribir una dirección, vuelve a ese formulario;
+  // si no, a la tarjeta, con la dirección elegida restaurada.
+  const cancelarLista = () => {
+    if (modoAntesDeListaRef.current === 'formulario') {
+      setModoDireccion('formulario');
+      return;
+    }
+    const actual = libreta.find((d) => d.id === direccionId) || direccionPrincipal(libreta);
+    if (actual) {
+      aplicarDireccion(actual);
+      setModoDireccion('tarjeta');
+    } else {
+      setModoDireccion('formulario');
+    }
+  };
+
+  const editarDireccion = (d) => {
+    aplicarDireccion(d);
+    setEditandoId(d.id);
+    setGuardarEnLibreta(true);
+    setEditarDestinatario(false);
+    setModoDireccion('formulario');
   };
 
   useEffect(() => {
@@ -1470,19 +1511,25 @@ const CheckoutPage = () => {
 
   const nuevaDireccion = () => {
     // Parte de los datos del perfil (quien compra), no de la última dirección elegida.
-    formik.setValues({
-      ...formik.values,
+    ponerCampos({
       customerName: userProfile?.displayName || user?.displayName || '',
       dni: userProfile?.dni || '',
       docType: userProfile?.docType || 'DNI',
       phone: userProfile?.phone || '',
       district: '',
       address: '',
-    }, false);
+    });
     setDireccionId(null);
+    setEditandoId(null);
     setGuardarEnLibreta(true);
+    setEditarDestinatario(false);
     setModoDireccion('formulario');
   };
+
+  // Con cuenta y los datos de quien recibe completos, se muestran resumidos.
+  const resumirDestinatario = !!user && modoDireccion === 'formulario' && !editarDestinatario
+    && !!String(formik.values.customerName).trim() && !!String(formik.values.dni).trim()
+    && !!String(formik.values.phone).trim();
 
   // ── Analytics: contexto de usuario reutilizable para los eventos del embudo ──
   const analyticsUserCtx = React.useMemo(
@@ -1861,6 +1908,7 @@ const CheckoutPage = () => {
                 toast.error('Revisa los campos marcados en rojo para continuar.');
                 // Con la tarjeta "Enviar a", los campos están ocultos: se muestran.
                 if (modoDireccion !== 'formulario') setModoDireccion('formulario');
+                setEditarDestinatario(true);
                 const firstKey = Object.keys(errs)[0];
                 setTimeout(() => {
                   const el = document.querySelector(`[name="${firstKey}"]`);
@@ -1875,7 +1923,11 @@ const CheckoutPage = () => {
             }}
             className={styles.form}
           >
-            <h2>{modoDireccion === 'formulario' ? <T>Detalles de Envío</T> : <T>Enviar a</T>}</h2>
+            <h2>
+              {modoDireccion !== 'formulario' ? <T>Enviar a</T>
+                : editandoId ? <T>Editar dirección</T>
+                  : libreta.length > 0 ? <T>Nueva dirección</T> : <T>Detalles de Envío</T>}
+            </h2>
 
             {modoDireccion === 'tarjeta' && (
               <div className={styles.envioCard}>
@@ -1890,7 +1942,7 @@ const CheckoutPage = () => {
                   </p>
                   <p className={styles.envioDoc}>{formik.values.docType} {formik.values.dni}</p>
                 </div>
-                <button type="button" className={styles.envioCambiar} onClick={() => setModoDireccion('lista')}>
+                <button type="button" className={styles.envioCambiar} onClick={abrirLista}>
                   Cambiar
                 </button>
               </div>
@@ -1899,31 +1951,38 @@ const CheckoutPage = () => {
             {modoDireccion === 'lista' && (
               <div className={styles.libreta}>
                 {libreta.map((d) => (
-                  <button
-                    type="button"
+                  <div
                     key={d.id}
-                    className={`${styles.libretaItem} ${d.id === direccionId ? styles.libretaItemActiva : ''}`}
-                    onClick={() => { aplicarDireccion(d); setModoDireccion('tarjeta'); }}
+                    className={`${styles.libretaFila} ${d.id === direccionId ? styles.libretaItemActiva : ''}`}
                   >
-                    <span className={styles.libretaNombre}>
-                      {d.customerName}
-                      {d.principal && <span className={styles.libretaPrincipal}>Principal</span>}
-                    </span>
-                    <span>{d.address}, {d.district}</span>
-                    <span>{d.phone}</span>
-                  </button>
+                    <button
+                      type="button"
+                      className={styles.libretaItem}
+                      onClick={() => { aplicarDireccion(d); setEditandoId(null); setModoDireccion('tarjeta'); }}
+                    >
+                      <span className={styles.libretaNombre}>
+                        {d.customerName}
+                        {d.principal && <span className={styles.libretaPrincipal}>Principal</span>}
+                      </span>
+                      <span>{d.address}, {d.district}</span>
+                      <span>{d.phone}</span>
+                    </button>
+                    <button type="button" className={styles.libretaEditar} onClick={() => editarDireccion(d)}>
+                      Editar
+                    </button>
+                  </div>
                 ))}
                 <button type="button" className={styles.libretaNueva} onClick={nuevaDireccion}>
                   <Plus size={18} aria-hidden="true" /> Agregar una dirección nueva
                 </button>
-                <button type="button" className={styles.libretaCancelar} onClick={() => setModoDireccion('tarjeta')}>
+                <button type="button" className={styles.libretaCancelar} onClick={cancelarLista}>
                   Cancelar
                 </button>
               </div>
             )}
 
             {modoDireccion === 'formulario' && libreta.length > 0 && (
-              <button type="button" className={styles.libretaVolver} onClick={() => setModoDireccion('lista')}>
+              <button type="button" className={styles.libretaVolver} onClick={abrirLista}>
                 ← Usar una dirección guardada
               </button>
             )}
@@ -1944,6 +2003,19 @@ const CheckoutPage = () => {
               )}
             </div>
 
+            {resumirDestinatario && (
+              <div className={styles.destinatario}>
+                <div className={styles.destinatarioTexto}>
+                  <span className={styles.destinatarioEtiqueta}>Recibe</span>
+                  <strong>{formik.values.customerName}</strong>
+                  <span>{formik.values.docType} {formik.values.dni} · {formik.values.phone}</span>
+                </div>
+                <button type="button" className={styles.envioCambiar} onClick={() => setEditarDestinatario(true)}>
+                  Cambiar
+                </button>
+              </div>
+            )}
+            <div className={styles.camposDireccion} hidden={resumirDestinatario}>
             <div className={styles.field}>
               <label><T>Nombre Completo *</T></label>
               <input
@@ -2022,6 +2094,7 @@ const CheckoutPage = () => {
                 )}
               </div>
             </div>
+            </div>
 
 
             <div className={styles.row}>
@@ -2077,7 +2150,7 @@ const CheckoutPage = () => {
             </div>
             </div>
 
-            {(modoDireccion === 'formulario' || !formik.values.email) && (
+            {(!user || !formik.values.email) && (
             <div className={styles.field}>
               <label>Email *</label>
               <input
@@ -2103,8 +2176,8 @@ const CheckoutPage = () => {
                   onChange={(e) => setGuardarEnLibreta(e.target.checked)}
                 />
                 <span>
-                  <strong>Guardar esta dirección en mi cuenta</strong>
-                  <small>La verás la próxima vez y en «Mis direcciones».</small>
+                  <strong>{editandoId ? 'Guardar los cambios en esta dirección' : 'Guardar esta dirección en mi cuenta'}</strong>
+                  <small>{editandoId ? 'Se actualiza en «Mis direcciones».' : 'La verás la próxima vez y en «Mis direcciones».'}</small>
                 </span>
               </label>
             )}
