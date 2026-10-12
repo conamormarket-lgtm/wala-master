@@ -1,0 +1,351 @@
+/* ── Cabecera ──────────────────────────────────────────── */
+.cabecera {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  height: 68px;
+  padding: 0 1.25rem;
+  border: var(--glass-border);
+  border-radius: 18px;
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow), var(--glass-inset-top);
+}
+
+.logo {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.logoMarca {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  aspect-ratio: 431 / 168;
+}
+
+.logoForma,
+.logoHuecos {
+  position: absolute;
+  inset: 0;
+  -webkit-mask: center / contain no-repeat;
+  mask: center / contain no-repeat;
+}
+
+.logoForma {
+  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+  -webkit-mask-image: url('/assets/marca/logo-header-v2.webp');
+  mask-image: url('/assets/marca/logo-header-v2.webp');
+}
+
+.logoHuecos {
+  background: #fff;
+  -webkit-mask-image: url('/assets/marca/logo-header-huecos-v2.webp');
+  mask-image: url('/assets/marca/logo-header-huecos-v2.webp');
+}
+
+.enlaces {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.enlace {
+  position: relative;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--dur-rapida) ease, background-color var(--dur-rapida) ease;
+}
+
+.enlace:hover {
+  color: var(--color-text);
+  background: var(--color-hover);
+}
+
+.enlaceActivo,
+.enlaceActivo:hover {
+  color: var(--primary-color);
+  background: var(--primary-light);
+  font-weight: 600;
+}
+
+.buscador {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: 360px;
+  height: 42px;
+  margin-left: auto;
+  padding: 0 0.5rem 0 0.85rem;
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  background: var(--color-hover);
+  color: var(--color-text-muted);
+  transition: border-color var(--dur-rapida) ease, background-color var(--dur-rapida) ease;
+}
+
+.buscador:focus-within {
+  border-color: var(--violet-500);
+  background: var(--color-surface);
+}
+
+.buscador svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+}
+
+.buscador input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.buscador kbd {
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.iconoBtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background-color var(--dur-rapida) ease;
+}
+
+.iconoBtn svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.iconoBtn:hover {
+  background: var(--color-hover);
+}
+
+.iconoBtn:focus-visible,
+.avatar:focus-visible,
+.tab:focus-visible,
+.pestana:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  margin-left: 0.35rem;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  background: var(--violet-200);
+  color: var(--violet-800);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 0 0 1.5px var(--violet-300);
+  cursor: pointer;
+}
+
+@media (max-width: 1100px) {
+  .enlaces {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .buscador,
+  .acciones > :not(:last-child):not(:nth-last-child(2)) {
+    display: none;
+  }
+
+  .acciones {
+    margin-left: auto;
+  }
+}
+
+/* ── Barra inferior móvil ──────────────────────────────── */
+.barra {
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  height: 64px;
+  padding: 0 0.25rem;
+  border-top: var(--glass-border);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: 0 -8px 24px -12px rgba(76, 29, 149, 0.18), var(--glass-inset-top);
+}
+
+.tab {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tabIcono {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 30px;
+  border-radius: 999px;
+  transition: background-color var(--dur-media) var(--ease-signature), transform var(--dur-rapida) ease;
+}
+
+.tabIcono svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.tabIcono > span {
+  top: -4px;
+  right: 6px;
+}
+
+.tab:active .tabIcono {
+  transform: scale(0.92);
+}
+
+.tabTexto {
+  font-size: 0.68rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.tabActivo {
+  color: var(--primary-color);
+}
+
+.tabActivo .tabIcono {
+  background: var(--primary-light);
+}
+
+.tabActivo .tabTexto {
+  font-weight: 700;
+}
+
+.tabDestacado .tabIcono {
+  width: 46px;
+  height: 46px;
+  margin-top: -18px;
+  border-radius: 16px;
+  background: var(--violet-700);
+  color: #fff;
+  box-shadow: 0 8px 18px -6px rgba(76, 29, 149, 0.55), 0 0 0 4px var(--color-surface);
+}
+
+.tabDestacado.tabActivo .tabIcono {
+  background: var(--violet-800);
+}
+
+:global([data-theme='dark']) .tabDestacado .tabIcono {
+  background: var(--violet-600);
+}
+
+/* ── Pestañas segmentadas ──────────────────────────────── */
+.pestanas {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--color-hover);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pestana {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 38px;
+  padding: 0 0.95rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--dur-media) var(--ease-signature), color var(--dur-rapida) ease,
+    box-shadow var(--dur-media) ease;
+}
+
+.pestana:hover {
+  color: var(--color-text);
+}
+
+.pestanaActiva,
+.pestanaActiva:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1), 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+:global([data-theme='dark']) .pestanaActiva {
+  background: var(--color-surface-2);
+}
+
+.cuenta {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--color-border);
+  font-size: 0.7rem;
+  line-height: 20px;
+  text-align: center;
+}
+
+.pestanaActiva .cuenta {
+  background: var(--violet-100);
+  color: var(--violet-800);
+}
+
+:global([data-theme='dark']) .pestanaActiva .cuenta {
+  background: rgba(167, 139, 250, 0.2);
+  color: var(--violet-200);
+}

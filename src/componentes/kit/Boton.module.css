@@ -1,0 +1,168 @@
+.boton {
+  --b-fondo: var(--violet-700);
+  --b-fondo-hover: var(--violet-800);
+  --b-texto: #fff;
+  --b-borde: transparent;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: var(--touch-target, 44px);
+  padding: 0 1.15rem;
+  border: 1.5px solid var(--b-borde);
+  border-radius: 12px;
+  background: var(--b-fondo);
+  color: var(--b-texto);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--dur-rapida) ease,
+    border-color var(--dur-rapida) ease,
+    color var(--dur-rapida) ease,
+    box-shadow var(--dur-rapida) ease,
+    transform var(--dur-rapida) var(--ease-signature);
+}
+
+.boton svg {
+  width: 1.15em;
+  height: 1.15em;
+  flex-shrink: 0;
+}
+
+.boton:hover:not(:disabled) {
+  background: var(--b-fondo-hover);
+}
+
+.boton:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.boton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-bg, var(--gris-fondo)), 0 0 0 5px var(--violet-500);
+}
+
+.boton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.boton[aria-busy='true'] {
+  cursor: progress;
+  opacity: 0.85;
+}
+
+.texto {
+  display: inline-block;
+}
+
+/* ── Variantes ─────────────────────────────────────────── */
+.primario {
+  box-shadow: 0 6px 16px -8px rgba(76, 29, 149, 0.55);
+}
+
+.secundario {
+  --b-fondo: var(--violet-100);
+  --b-fondo-hover: var(--violet-200);
+  --b-texto: var(--violet-800);
+}
+
+.contorno {
+  --b-fondo: transparent;
+  --b-fondo-hover: var(--primary-light);
+  --b-texto: var(--color-text);
+  --b-borde: var(--color-border);
+}
+
+.contorno:hover:not(:disabled) {
+  border-color: var(--violet-400);
+}
+
+.fantasma {
+  --b-fondo: transparent;
+  --b-fondo-hover: var(--primary-light);
+  --b-texto: var(--primary-color);
+}
+
+.peligro {
+  --b-fondo: var(--danger);
+  --b-fondo-hover: var(--danger-hover);
+}
+
+/* En noche el violeta 700 se apaga contra el fondo; 600 mantiene contraste
+   con texto blanco (≈5.7:1). */
+:global([data-theme='dark']) .primario {
+  --b-fondo: var(--violet-600);
+  --b-fondo-hover: var(--violet-500);
+  box-shadow: 0 6px 18px -8px rgba(139, 92, 246, 0.6);
+}
+
+:global([data-theme='dark']) .secundario {
+  --b-fondo: rgba(167, 139, 250, 0.16);
+  --b-fondo-hover: rgba(167, 139, 250, 0.26);
+  --b-texto: var(--violet-200);
+}
+
+/* ── Tamaños ───────────────────────────────────────────── */
+.sm {
+  min-height: 36px;
+  padding: 0 0.85rem;
+  font-size: 0.85rem;
+  border-radius: 10px;
+}
+
+.lg {
+  min-height: 52px;
+  padding: 0 1.5rem;
+  font-size: 1.02rem;
+  border-radius: 14px;
+}
+
+.bloque {
+  width: 100%;
+}
+
+.soloIcono {
+  padding: 0;
+  width: var(--touch-target, 44px);
+}
+
+.soloIcono.sm {
+  width: 36px;
+}
+
+.soloIcono.lg {
+  width: 52px;
+}
+
+/* ── Spinner ───────────────────────────────────────────── */
+.spin {
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boton {
+    transition: none;
+  }
+
+  .boton:active:not(:disabled) {
+    transform: none;
+  }
+
+  .spin {
+    animation-duration: 2.4s;
+  }
+}

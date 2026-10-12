@@ -1,0 +1,239 @@
+/* ── Etiqueta ──────────────────────────────────────────── */
+.etiqueta {
+  --e-fondo: var(--violet-100);
+  --e-texto: var(--violet-800);
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  background: var(--e-fondo);
+  color: var(--e-texto);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.etiqueta svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.oscuro {
+  --e-fondo: #0f172a;
+  --e-texto: #fff;
+}
+
+.exito {
+  --e-fondo: #d1fae5;
+  --e-texto: #065f46;
+}
+
+.aviso {
+  --e-fondo: #fef3c7;
+  --e-texto: #92400e;
+}
+
+.peligro {
+  --e-fondo: #fee2e2;
+  --e-texto: #991b1b;
+}
+
+.neutro {
+  --e-fondo: var(--color-hover);
+  --e-texto: var(--color-text-muted);
+}
+
+.solida.violeta {
+  --e-fondo: var(--violet-700);
+  --e-texto: #fff;
+}
+
+.solida.exito {
+  --e-fondo: #059669;
+  --e-texto: #fff;
+}
+
+.solida.peligro {
+  --e-fondo: #dc2626;
+  --e-texto: #fff;
+}
+
+.solida.aviso {
+  --e-fondo: #f59e0b;
+  --e-texto: #451a03;
+}
+
+:global([data-theme='dark']) .violeta:not(.solida) {
+  --e-fondo: rgba(167, 139, 250, 0.18);
+  --e-texto: var(--violet-200);
+}
+
+:global([data-theme='dark']) .exito:not(.solida) {
+  --e-fondo: rgba(16, 185, 129, 0.16);
+  --e-texto: #6ee7b7;
+}
+
+:global([data-theme='dark']) .aviso:not(.solida) {
+  --e-fondo: rgba(245, 158, 11, 0.16);
+  --e-texto: #fcd34d;
+}
+
+:global([data-theme='dark']) .peligro:not(.solida) {
+  --e-fondo: rgba(239, 68, 68, 0.16);
+  --e-texto: #fca5a5;
+}
+
+:global([data-theme='dark']) .oscuro {
+  --e-fondo: #f1eef9;
+  --e-texto: #14121c;
+}
+
+/* ── Chip ──────────────────────────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 38px;
+  padding: 0 0.9rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color var(--dur-rapida) ease, background-color var(--dur-rapida) ease,
+    color var(--dur-rapida) ease;
+}
+
+.chip svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.chip:hover {
+  border-color: var(--violet-400);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+.chipActivo {
+  border-color: var(--violet-700);
+  background: var(--violet-700);
+  color: #fff;
+}
+
+.chipActivo:hover {
+  border-color: var(--violet-800);
+}
+
+:global([data-theme='dark']) .chipActivo {
+  border-color: var(--violet-600);
+  background: var(--violet-600);
+}
+
+/* ── Monedas ───────────────────────────────────────────── */
+.costo,
+.ganancia {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem 0.25rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.costo {
+  background: var(--gold-soft);
+  color: var(--gold-text);
+  border: 1px solid rgba(217, 119, 6, 0.25);
+}
+
+.costoTexto {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  padding-right: 0.1rem;
+}
+
+.ganancia {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+:global([data-theme='dark']) .costo {
+  color: #fcd34d;
+  border-color: rgba(252, 211, 77, 0.25);
+}
+
+:global([data-theme='dark']) .ganancia {
+  background: rgba(16, 185, 129, 0.16);
+  color: #6ee7b7;
+}
+
+.saldo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 36px;
+  padding: 0 0.75rem 0 0.4rem;
+  border: 1px solid rgba(217, 119, 6, 0.25);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
+  color: var(--gold-text);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: transform var(--dur-rapida) var(--ease-signature);
+}
+
+.saldo:hover {
+  transform: translateY(-1px);
+}
+
+.saldo:focus-visible {
+  outline: 2px solid var(--gold-500);
+  outline-offset: 2px;
+}
+
+:global([data-theme='dark']) .saldo {
+  background: rgba(245, 158, 11, 0.14);
+  color: #fcd34d;
+}
+
+/* ── Contador ──────────────────────────────────────────── */
+.contador {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--violet-700);
+  color: #fff;
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--color-surface);
+  pointer-events: none;
+}
+
+:global([data-theme='dark']) .contador {
+  background: var(--violet-500);
+}
