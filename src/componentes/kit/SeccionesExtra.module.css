@@ -510,12 +510,14 @@
   box-shadow: 0 0 0 2px var(--color-bg, var(--gris-fondo)), 0 0 0 4px var(--primary-color);
 }
 
-/* "Todos": sello con el degradado del logo. */
-.burbuja:first-child .burbujaFoto {
+/* "Todos": sello con el degradado del logo. Con clase propia (no
+   :first-child): en la cinta cada burbuja va en su envoltorio y todas eran
+   "la primera". */
+.burbujaTodos .burbujaFoto {
   background: var(--degradado-logo);
 }
 
-.burbuja:first-child .burbujaFoto svg {
+.burbujaTodos .burbujaFoto svg {
   color: #fff;
 }
 

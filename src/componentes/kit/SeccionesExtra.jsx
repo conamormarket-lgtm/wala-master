@@ -236,7 +236,7 @@ export function NavCategorias({ ajustes = {}, categorias = [], activa = null, on
         <span className={s.burbujaNombre}>{c.name}</span>
       </>
     );
-    const cls = [s.burbuja, sel && s.burbujaActiva].filter(Boolean).join(' ');
+    const cls = [s.burbuja, sel && s.burbujaActiva, id == null && s.burbujaTodos].filter(Boolean).join(' ');
     return filtra ? (
       <button key={`${id}-${k}`} type="button" className={cls} aria-pressed={sel} onClick={() => onSeleccionar(id)}>{contenido}</button>
     ) : (
