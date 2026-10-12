@@ -1,0 +1,143 @@
+.carrusel {
+  --visibles: var(--visibles-escritorio);
+
+  position: relative;
+}
+
+@media (max-width: 1024px) {
+  .carrusel {
+    --visibles: var(--visibles-tablet);
+  }
+}
+
+@media (max-width: 640px) {
+  .carrusel {
+    --visibles: var(--visibles-movil);
+  }
+}
+
+.pista {
+  display: flex;
+  gap: var(--espacio);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  /* Aire para sombras y para que el foco no se corte. */
+  padding: 6px 2px 10px;
+  margin: -6px -2px -10px;
+}
+
+.pista::-webkit-scrollbar {
+  display: none;
+}
+
+.elemento {
+  flex: 0 0 calc((100% - (var(--visibles) - 1) * var(--espacio)) / var(--visibles));
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+/* Flechas: solo con ratón (en táctil se desliza). */
+.flecha {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 6px 16px -8px rgba(15, 23, 42, 0.35);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: opacity var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature), border-color var(--dur-rapida) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .flecha {
+    display: inline-flex;
+  }
+}
+
+.flecha svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.flecha:hover:not(:disabled) {
+  border-color: var(--violet-300);
+  color: var(--primary-color);
+}
+
+.flecha:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.flecha:focus-visible,
+.punto:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+.anterior {
+  left: -14px;
+}
+
+.siguiente {
+  right: -14px;
+}
+
+.puntos {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 0.9rem;
+}
+
+.punto {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-border);
+  cursor: pointer;
+  transition: width var(--dur-media) var(--ease-signature), background-color var(--dur-rapida) ease;
+}
+
+.puntoActivo {
+  width: 22px;
+  background: var(--violet-600);
+}
+
+/* Variante "hero": una a la vista, flechas y puntos encima de la imagen. */
+.hero .anterior {
+  left: 14px;
+}
+
+.hero .siguiente {
+  right: 14px;
+}
+
+.hero .puntos {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  margin: 0;
+}
+
+.hero .punto {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.hero .puntoActivo {
+  background: #fff;
+}

@@ -49,7 +49,14 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `AgregarRapido.jsx` | `AgregarRapido` | Elegir talla, color y cantidad antes de agregar al carrito |
 | `Pedido.jsx` | `SeguimientoPedido`, `ItemCarrito`, `BarraEnvioGratis`, `ResumenPedido` | Carrito y Mis pedidos |
 | `Feedback.jsx` | `Aviso`, `ProveedorToasts`, `useToast`, `useNotificaciones`, `ListaNotificaciones`, `EstadoVacio`, `HojaInferior` | Avisos, notificaciones y modales |
-| `Enlace.jsx` | `Enlace`, `ProveedorEnlaces` | Enlace que usa el router de la app |
+| `Enlace.jsx` | `Enlace`, `ProveedorEnlaces`, `tipoDeEnlace` | La única regla de enlaces: internos por el router, externos en otra pestaña, `#ancla` con scroll suave |
+| `adaptadores.js` | `accionDeProducto`, `tarjetaDesdeProducto`, `opcionesDeProducto` | Traducen un producto de `productos_wala` (Firestore) a props del kit |
+| `Carrusel.jsx` | `Carrusel` | El único carrusel: deslizar nativo, flechas, puntos, autoplay con pausas |
+| `Marquesina.jsx` | `Marquesina` | Cinta sin fin (logos, anuncios, burbujas) |
+| `CuentaRegresiva.jsx` | `CuentaRegresiva` | Hasta una fecha o "siempre activa" por visitante |
+| `Acordeon.jsx` | `Acordeon` | Preguntas frecuentes y detalles plegables |
+| `Seccion.jsx` | `BloqueSeccion`, `TituloSeccion`, `tituloDesdeAjustes` | Relleno, fondo y título iguales en todas las secciones |
+| `Secciones.jsx` | `BarraAnuncios`, `HeroCarrusel`, `InsigniasConfianza`, `CarruselProductos`, `OfertaRelampago`, `Testimonios`, `PreguntasFrecuentes`, `MarcasMarquesina`, `GrillaCategorias`, `RenderSecciones`, `REGISTRO_SECCIONES` | Secciones del builder; reciben el mismo `settings` que guarda Firestore |
 | `Efectos.jsx` | `Revelar`, `useContador`, `Estallido`, `useBloquearScroll`, `useCerrarConAtras`, `esApp` | Utilidades de animación y de app |
 
 ## Ejemplos rápidos
@@ -81,6 +88,41 @@ toast({ titulo: 'Agregado al carrito', texto: 'Polera · M', imagen: foto, accio
 />
 // puntuacion / resenas: pasarlas solo cuando haya reseñas reales.
 ```
+
+## Productos que no son ropa
+
+El botón de la tarjeta depende del producto (`accionDeProducto`, misma regla
+que `productNeedsVariantSelection`):
+
+- **Agregar**: sin opciones (taza, llavero, producto con una sola variante).
+- **Elegir**: varias variantes (color o estilo), opciones con su etiqueta
+  (Talla, Medida, Número…) o combo → abre `AgregarRapido`.
+- **Diseñar**: prenda base del estudio Crear (`esPrendaBase`).
+
+```jsx
+<TarjetaProducto {...tarjetaDesdeProducto(producto)} onAgregar={() => …} />
+<AgregarRapido abierto {...opcionesDeProducto(producto, { subproductos })} onConfirmar={…} />
+```
+
+## Builder
+
+Una página del builder (`pages/{pageId}` en Firestore) se dibuja así:
+
+```jsx
+<RenderSecciones
+  secciones={config.sections}               // [{ id, type, order, settings }]
+  productosPara={(sec) => productosDe(sec)}  // productos_wala de esa sección
+  categoriasPara={(sec) => categoriasDe(sec)}
+  onAgregar={(producto) => () => …}
+  respaldo={(sec) => renderSectionViejo(sec)} // tipos que el kit aún no tiene
+/>
+```
+
+Ya cubiertos: `announcement_bar`, `hero_carousel`, `trust_badges`,
+`featured_carousel`, `new_arrivals_carousel`, `sale_carousel`,
+`category_carousel`, `collection_carousel`, `flash_sales`, `testimonials`,
+`faq_accordion`, `marquee`, `category_grid`. El resto sigue con el switch de
+`TiendaPage.jsx` mediante `respaldo`.
 
 ## Llevarlo a la tienda
 

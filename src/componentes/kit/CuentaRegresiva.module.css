@@ -1,0 +1,55 @@
+.bloques {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.etiqueta {
+  margin-right: 0.3rem;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.bloque {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1px;
+  min-width: 2.6rem;
+  justify-content: center;
+  padding: 0.35rem 0.45rem;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #fff;
+}
+
+:global([data-theme='dark']) .bloque {
+  background: #f1eef9;
+  color: #14121c;
+}
+
+.bloque strong {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.bloque small {
+  font-size: 0.68rem;
+  opacity: 0.7;
+}
+
+.separador {
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.texto {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.fin {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}

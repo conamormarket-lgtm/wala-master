@@ -11,3 +11,13 @@ export { default as Desplegable } from './Desplegable';
 export { MenuTienda, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito } from './MenusCabecera';
 export { default as AgregarRapido } from './AgregarRapido';
 export { accionDeProducto, tarjetaDesdeProducto, opcionesDeProducto } from './adaptadores';
+export { tipoDeEnlace } from './Enlace';
+export { default as Carrusel } from './Carrusel';
+export { default as Marquesina } from './Marquesina';
+export { default as CuentaRegresiva } from './CuentaRegresiva';
+export { default as Acordeon } from './Acordeon';
+export { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
+export {
+  BarraAnuncios, HeroCarrusel, InsigniasConfianza, CarruselProductos, OfertaRelampago,
+  Testimonios, PreguntasFrecuentes, MarcasMarquesina, GrillaCategorias, REGISTRO_SECCIONES, RenderSecciones,
+} from './Secciones';

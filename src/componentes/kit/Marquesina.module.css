@@ -1,0 +1,56 @@
+.marquesina {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+
+.cinta {
+  display: flex;
+  width: max-content;
+  animation: desplazar var(--duracion) linear infinite;
+  will-change: transform;
+}
+
+.invertir .cinta {
+  animation-direction: reverse;
+}
+
+.marquesina:hover .cinta,
+.marquesina:focus-within .cinta {
+  animation-play-state: paused;
+}
+
+.grupo {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--espacio);
+  padding-right: var(--espacio);
+}
+
+.item {
+  flex-shrink: 0;
+}
+
+/* Recorre exactamente un grupo (1 / copias del total) y vuelve sin salto. */
+@keyframes desplazar {
+  to {
+    transform: translateX(calc(-100% / var(--copias)));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquesina {
+    overflow-x: auto;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .cinta {
+    animation: none;
+  }
+
+  .grupo[aria-hidden='true'] {
+    display: none;
+  }
+}

@@ -14,7 +14,7 @@ import {
   Aviso, ProveedorToasts, useToast, useNotificaciones, ListaNotificaciones, EstadoVacio, HojaInferior, soles,
   EASE, RESORTE, Revelar, Contador,
   ProveedorEnlaces, MenuTienda, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito, AgregarRapido,
-  accionDeProducto, tarjetaDesdeProducto, opcionesDeProducto,
+  accionDeProducto, tarjetaDesdeProducto, opcionesDeProducto, RenderSecciones,
 } from './kit';
 import s from './ComponentesPage.module.css';
 // La mayoría de productos reales vienen con fondo blanco: estas fotos lo simulan.
@@ -36,6 +36,7 @@ const SECCIONES = [
   ['productos', 'Productos'],
   ['navegacion', 'Navegación'],
   ['menus', 'Menús'],
+  ['builder', 'Builder'],
   ['carrito', 'Carrito'],
   ['pedidos', 'Pedidos'],
   ['avisos', 'Avisos'],
@@ -121,6 +122,84 @@ const EXTRAS_DEMO = {
   oversize: { categoria: 'Poleras', puntuacion: 4.7, resenas: 33 },
 };
 const productoDemo = (id) => PRODUCTOS_DEMO.find((p) => p.id === id);
+
+/*
+ * Una página del builder tal como la guarda Firestore (pages/{pageId}):
+ * [{ id, type, order, settings }]. Los settings usan los mismos campos que
+ * getDefaultSettings (src/pages/Tienda/services/storefront.js).
+ */
+const SECCIONES_DEMO = [
+  { id: 's1', type: 'announcement_bar', order: 0, settings: {
+    messages: [
+      { text: '🚚 Envío gratis desde S/ 150 a todo el Perú', link: '' },
+      { text: '🎁 Usa WALA10 y ahorra S/ 10 en tu primera compra', link: '/tienda' },
+      { text: '⚡ Ofertas relámpago solo por hoy', link: '#oferta-flash' },
+    ],
+    speed: 4000, bgColor: '#6d28d9', textColor: '#ffffff', animationType: 'fade',
+  } },
+  { id: 's2', type: 'hero_carousel', order: 1, settings: {
+    slides: [
+      { imageUrl: '/crear/banner-crear-1200.webp', mobileImageUrl: '/crear/banner-crear-movil.webp', title: 'Diseña tu polera en 2 minutos', subtitle: 'Sube tu foto, escribe tu frase y nosotros la estampamos.', buttonText: 'Empezar a crear', buttonLink: '/personalizar', contentPosition: 'left', verticalPosition: 'center', overlayColor: '#1e1b2e', overlayOpacity: 35, buttonBgColor: '#ffffff', buttonTextColor: '#4c1d95' },
+      { imageUrl: '/assets/kapi/banners/ruleta.webp', title: 'Gira la ruleta de Kapi', subtitle: 'Gana monedas y cupones todos los días.', buttonText: 'Jugar', buttonLink: '/minijuegos', contentPosition: 'left', overlayOpacity: 25 },
+    ],
+    autoPlay: true, autoPlaySpeed: 6000, showArrows: true, showDots: true, heightDesktop: '380px', heightMobile: '300px', borderRadius: '20px', paddingTop: '1rem', paddingBottom: '0.5rem',
+  } },
+  { id: 's3', type: 'trust_badges', order: 2, settings: {
+    badges: [{ icon: 'truck', text: 'Envío a todo el Perú' }, { icon: 'shield', text: 'Pago seguro' }, { icon: 'return', text: 'Cambios fáciles' }, { icon: 'heart', text: 'Hecho con amor' }],
+    paddingTop: '1rem', paddingBottom: '1rem',
+  } },
+  { id: 's4', type: 'flash_sales', order: 3, settings: {
+    title: 'Ofertas relámpago', collection: 'ofertas', endTime: new Date(Date.now() + 5 * 3600 * 1000 + 17 * 60 * 1000).toISOString(),
+    anchorId: 'oferta-flash', paddingTop: '1.5rem', paddingBottom: '1.5rem',
+  } },
+  { id: 's5', type: 'category_grid', order: 4, settings: {
+    title: '¿Qué estás buscando?', dataSource: 'manual', columns: 6, cardStyle: 'compact', paddingTop: '1rem', paddingBottom: '1rem',
+    items: [
+      { categoryId: 'poleras', name: 'Poleras', imageUrl: FRENTE_BLANCO },
+      { categoryId: 'tazas', name: 'Tazas', imageUrl: TAZA },
+      { categoryId: 'peluches', name: 'Peluches', imageUrl: '/assets/kapi/kapi-happy.webp' },
+      { categoryId: 'cuadros', name: 'Cuadros', imageUrl: CUADRO },
+      { categoryId: 'parejas', name: 'Para parejas', imageUrl: ESPALDA_BLANCO },
+      { categoryId: 'crear', name: 'Crea la tuya', imageUrl: ESPALDA },
+    ],
+  } },
+  { id: 's6', type: 'featured_carousel', order: 5, settings: {
+    title: 'Lo más pedido', visibleItems: 4, autoPlay: false, buttonText: 'Ver todo', buttonLink: '/tienda', paddingTop: '1.5rem', paddingBottom: '1.5rem',
+  } },
+  { id: 's7', type: 'testimonials', order: 6, settings: {
+    title: 'Lo que dicen nuestros clientes', backgroundColor: 'rgba(139, 92, 246, 0.06)', paddingTop: '2rem', paddingBottom: '2rem',
+    testimonials: [
+      { topic: 'Calidad del producto', text: 'La polera llegó igualita al diseño y la tela es súper suave. Ya pedí otra para mi hermana.', author: 'Andrea P.', city: 'Lima', rating: 5, verified: true },
+      { topic: 'Regalo', text: 'Le regalé la taza a mi mamá con nuestra foto y lloró de emoción. Llegó en 3 días.', author: 'Luis R.', city: 'Arequipa', rating: 5, verified: true },
+      { topic: 'Atención', text: 'Me ayudaron por WhatsApp a ajustar mi diseño. Muy buena atención.', author: 'Camila T.', city: 'Trujillo', rating: 4 },
+      { topic: 'Envío', text: 'Pensé que demoraría más a provincia, pero llegó rapidísimo y bien empacado.', author: 'Jorge M.', city: 'Cusco', rating: 5, verified: true },
+    ],
+  } },
+  { id: 's8', type: 'marquee', order: 7, settings: {
+    title: 'Nuestras marcas', speed: 25,
+    items: [
+      { imageUrl: '/marcas/con-amor.png', name: 'Con Amor', link: '/conamor', shape: 'circle' },
+      { imageUrl: '/marcas/catas.png', name: 'Catas', link: '/catas', shape: 'circle' },
+      { imageUrl: '/logo-wala-192.png', name: 'Walá', link: '/', shape: 'circle' },
+    ],
+    paddingTop: '1.5rem', paddingBottom: '1.5rem',
+  } },
+  { id: 's9', type: 'faq_accordion', order: 8, settings: {
+    title: 'Preguntas frecuentes', subtitle: 'Resolvemos las dudas más comunes antes de tu compra.', layout: 'split', defaultOpen: true,
+    items: [
+      { id: 'faq_shipping', question: '¿Realizan envíos a todo el Perú?', answer: 'Sí. Atendemos pedidos para Lima y provincias. El costo y el plazo estimado se confirman según el destino antes de completar el pedido.' },
+      { id: 'faq_production', question: '¿Cuánto demora un producto personalizado?', answer: 'Depende del producto, la cantidad y el diseño. Te confirmamos el plazo de producción antes de empezar tu pedido.' },
+      { id: 'faq_customization', question: '¿Cómo personalizo mi producto?', answer: 'Puedes crear tu diseño desde Walá o escribirnos para orientarte con imágenes, textos, colores y acabados.' },
+      { id: 'faq_changes', question: '¿Puedo pedir un cambio o devolución?', answer: 'Si tu pedido llega con un error o daño, escríbenos con tu número de pedido y fotos. Lo revisamos según nuestras políticas.' },
+    ],
+    paddingTop: '1.5rem', paddingBottom: '2rem',
+  } },
+];
+
+const productosParaSeccion = (sec) => {
+  if (sec.type === 'flash_sales') return ['essentials', 'taza', 'kapi', 'combo', 'cuadro'].map(productoDemo);
+  return PRODUCTOS_DEMO;
+};
 
 const COLORES_PRENDA = [
   { nombre: 'Negro', hex: '#111827' },
@@ -741,9 +820,24 @@ function Contenido({ tema, cambiarTema }) {
           </div>
         </Seccion>
 
+        {/* ── BUILDER ── */}
+        <Seccion
+          id="builder" numero="08" titulo="Secciones del builder"
+          descripcion="Esta mini página está escrita como la guarda Firestore: una lista de secciones { type, settings } con los mismos campos que hoy usa el editor visual. RenderSecciones la dibuja con piezas del kit: un solo carrusel, una sola marquesina, una sola cuenta regresiva, un solo título y un solo bloque para relleno y fondo."
+          mejoras={['1 carrusel en vez de 6', '1 marquesina en vez de 3', '1 cuenta regresiva en vez de 2', 'Títulos y fondos iguales en todas', 'Enlaces internos, externos y #ancla con una regla']}
+        >
+          <Revelar className={s.paginaBuilder}>
+            <RenderSecciones
+              secciones={SECCIONES_DEMO}
+              productosPara={productosParaSeccion}
+              onAgregar={manejarAgregar}
+            />
+          </Revelar>
+        </Seccion>
+
         {/* ── CARRITO ── */}
         <Seccion
-          id="carrito" numero="08" titulo="Carrito y resumen"
+          id="carrito" numero="09" titulo="Carrito y resumen"
           descripcion="Funciona de verdad: sube la cantidad hasta pasar S/ 150 y mira qué pasa. Prueba el cupón WALA10."
           mejoras={['Camión que avanza hacia el envío gratis', 'Confeti al llegar a la meta', 'Totales que corren', 'Quitar con animación']}
         >
@@ -791,7 +885,7 @@ function Contenido({ tema, cambiarTema }) {
 
         {/* ── PEDIDOS ── */}
         <Seccion
-          id="pedidos" numero="09" titulo="Mis pedidos"
+          id="pedidos" numero="10" titulo="Mis pedidos"
           descripcion="Una sola tarjeta con resumen, seguimiento y la acción que toca."
           mejoras={['La línea se dibuja al aparecer', 'El paso actual late', 'Si falta pagar, el borde respira en ámbar', 'Copiar con burbuja']}
         >
@@ -827,7 +921,7 @@ function Contenido({ tema, cambiarTema }) {
 
         {/* ── AVISOS ── */}
         <Seccion
-          id="avisos" numero="10" titulo="Avisos y estados"
+          id="avisos" numero="11" titulo="Avisos y estados"
           descripcion="Si llegan varias notificaciones se apilan como en el celular; tócalas (o pasa el ratón) para desplegarlas y usa “Ver todas” para abrir el centro."
           mejoras={['Avisos limpios, sin franjas', 'Notificaciones apiladas', 'Centro con todas las notificaciones', 'Desliza un toast para cerrarlo']}
         >

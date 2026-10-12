@@ -1,0 +1,86 @@
+.bloque {
+  position: relative;
+  isolation: isolate;
+  padding: var(--section-gap, 2rem) 0;
+}
+
+.contenido {
+  position: relative;
+  width: 100%;
+  max-width: var(--content-max, 1280px);
+  margin: 0 auto;
+  padding: 0 var(--page-padding-movil, 1rem);
+}
+
+.completo .contenido {
+  max-width: none;
+  padding: 0;
+}
+
+.fondo,
+.fondo > span {
+  position: absolute;
+  inset: 0;
+}
+
+.fondo {
+  z-index: -1;
+  overflow: hidden;
+}
+
+.fondoImagen {
+  background-position: center;
+  background-size: cover;
+}
+
+/* ── Título ── */
+.titulo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.centrado {
+  justify-content: center;
+  text-align: center;
+}
+
+.centrado .accion {
+  display: none;
+}
+
+.antetitulo {
+  margin: 0 0 0.2rem;
+  color: var(--primary-color);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.h {
+  margin: 0;
+  font-size: var(--section-title-size);
+  font-weight: var(--section-title-weight);
+  letter-spacing: var(--section-title-tracking);
+  line-height: 1.15;
+  color: var(--color-text);
+}
+
+.subtitulo {
+  max-width: 60ch;
+  margin: 0.3rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+}
+
+.centrado .subtitulo {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.accion {
+  flex-shrink: 0;
+}
