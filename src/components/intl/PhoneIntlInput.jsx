@@ -13,9 +13,10 @@
 //
 // El dropdown de código y el de país pueden moverse de forma independiente:
 // si el usuario cambia el código aquí, se refleja en 'dialCode'/'full'; el
-// 'countryCode' externo sólo fija el valor inicial del selector de código.
+// 'countryCode' externo fija el código mientras no haya número escrito ni código
+// elegido a mano.
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { COUNTRIES, dialCodeByCountry } from '../../constants/countries';
 
 // Quita todo lo que no sea dígito del número local.
@@ -33,10 +34,18 @@ export default function PhoneIntlInput({
   // dialCode efectivo del selector. Se inicializa desde countryCode y puede
   // cambiar localmente sin depender del país elegido arriba.
   const [dialCode, setDialCode] = useState(() => dialCodeByCountry(countryCode));
+  // true si la persona eligió el código a mano: el país de envío ya no lo cambia.
+  const codigoElegidoRef = useRef(false);
 
-  // Si cambia el país externo, sincroniza el dialCode mostrado.
+  // Si cambia el país externo, el código lo sigue solo mientras no haya número
+  // ni código elegido: quien envía a Chile puede tener celular peruano, y antes
+  // se le cambiaba a +56 el número que ya había escrito.
   useEffect(() => {
-    setDialCode(dialCodeByCountry(countryCode));
+    if (codigoElegidoRef.current || onlyDigits(value)) return;
+    const siguiente = dialCodeByCountry(countryCode);
+    setDialCode(siguiente);
+    if (onChange) onChange({ localNumber: '', dialCode: siguiente, full: siguiente });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [countryCode]);
 
   // Opciones del dropdown de código: flag + dialCode. De-duplicadas por
@@ -59,6 +68,7 @@ export default function PhoneIntlInput({
 
   const handleDialChange = (e) => {
     const next = e.target.value;
+    codigoElegidoRef.current = true;
     setDialCode(next);
     emit(next, value);
   };

@@ -98,7 +98,7 @@ const validationSchema = Yup.object({
   address: Yup.string().required('Dirección requerida'),
   // En el Perú el distrito sale de la lista del lugar elegido; fuera, es la ciudad escrita.
   district: Yup.string()
-    .required('Distrito requerido')
+    .when('country', ([country], s) => s.required(esExtranjero(country) ? 'Ciudad requerida' : 'Distrito requerido'))
     .test('distrito-del-lugar', 'Elige un distrito de la lista', function (valor) {
       return distritoEnLugar(this.parent, valor);
     }),
