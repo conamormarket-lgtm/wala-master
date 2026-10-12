@@ -145,6 +145,37 @@ const ejemplos = (img, logos = []) => ({
   ],
 });
 
+/** Piezas del kit con las que se arma cada sección (cadena piezas → secciones → páginas). */
+const PIEZAS_DE = {
+  announcement_bar: ['IconoWala', 'Marquesina', 'Enlace'],
+  hero_carousel: ['Carrusel', 'Boton'],
+  hero_banner: ['EtiquetaColgante', 'Boton', 'Garabatos'],
+  header: ['EtiquetaColgante', 'Trazo', 'Boton'],
+  text: ['Boton'],
+  image: ['Enlace'],
+  video: ['Destello'],
+  featured_products: ['TituloSeccion', 'TarjetaProducto', 'Boton'],
+  featured_carousel: ['TituloSeccion', 'Carrusel', 'TarjetaProducto'],
+  new_arrivals_carousel: ['TituloSeccion', 'Carrusel', 'TarjetaProducto'],
+  sale_carousel: ['TituloSeccion', 'Carrusel', 'TarjetaProducto'],
+  category_carousel: ['TituloSeccion', 'Carrusel', 'TarjetaProducto'],
+  collection_carousel: ['TituloSeccion', 'Carrusel', 'TarjetaProducto'],
+  flash_sales: ['IconoWala', 'EtiquetaColgante', 'CuentaRegresiva', 'Carrusel', 'TarjetaProducto', 'StockBajo'],
+  bestsellers_row: ['TituloSeccion', 'Carrusel', 'TarjetaDestacado'],
+  product_grid: ['TituloSeccion', 'TarjetaProducto', 'Boton'],
+  sidebar_catalog: ['Chip', 'Buscador', 'Campo', 'HojaInferior', 'TarjetaProducto'],
+  category_grid: ['TituloSeccion', 'TarjetaCategoria'],
+  categories_nav: ['TarjetaCategoria', 'Marquesina'],
+  banner_grid: ['TituloSeccion', 'Carrusel', 'TarjetaMarca'],
+  trust_badges: ['Beneficio', 'IconoWala'],
+  testimonials: ['TituloSeccion', 'Carrusel', 'TarjetaTestimonio'],
+  marquee: ['TituloSeccion', 'Marquesina', 'LogoMarca'],
+  feature_list: ['TituloSeccion', 'Beneficio'],
+  faq_accordion: ['TituloSeccion', 'Acordeon'],
+  map_location: ['EtiquetaColgante', 'Boton'],
+  footer_columns: ['LogoWala', 'EtiquetaColgante', 'Enlace'],
+};
+
 /** Índice del catálogo (para la barra de arriba). */
 export const GRUPOS_CATALOGO = GRUPOS_MODULOS.map((g) => [`g-${g.toLowerCase().replace(/[^a-z]/g, '')}`, g]);
 
@@ -176,6 +207,9 @@ function Ficha({ tipo, variantes, datos }) {
           <p>{esquema.descripcion}</p>
         </div>
         <code className={s.fichaTipo}>{tipo}</code>
+        {PIEZAS_DE[tipo] && (
+          <p className={s.fichaPiezas}><span>Hecha con</span>{PIEZAS_DE[tipo].map((x) => <code key={x}>{x}</code>)}</p>
+        )}
       </header>
       {variantes.length > 1 && (
         <div className={s.fichaVariantes}>

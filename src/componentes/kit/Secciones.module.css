@@ -367,25 +367,6 @@ a.anuncio:hover {
   list-style: none;
 }
 
-.insignias li {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 1rem 0.5rem 0.5rem;
-  border-radius: 999px;
-  background: var(--color-surface);
-  box-shadow: 0 0 0 1px var(--color-border);
-  font-size: 0.86rem;
-  font-weight: 700;
-  line-height: 1.25;
-}
-
-/* El ícono (IconoWala) se endereza y crece un poco al pasar. */
-@media (hover: hover) and (pointer: fine) {
-  .insignias li:hover .insigniaIcono {
-    transform: rotate(0deg) scale(1.08);
-  }
-}
 
 /* ── Ofertas flash: un evento que sigue el tema ──
    Claro: panel luminoso cálido (crema → rosa → lila) con acentos rojo y oro.
@@ -401,6 +382,10 @@ a.anuncio:hover {
   --f-franjas: rgba(245, 158, 11, 0.16);
   --f-acento: #e11d48;
   --f-pista: rgba(30, 17, 64, 0.08);
+  /* Barra de stock (BarraProgreso) */
+  --bp-texto: var(--f-tenue);
+  --bp-acento: var(--f-acento);
+  --bp-pista: var(--f-pista);
   /* Cuenta regresiva */
   --cr-caja: #fff;
   --cr-caja-texto: #1e1b2e;
@@ -522,40 +507,6 @@ a.anuncio:hover {
   flex: 1;
 }
 
-.quedan {
-  display: grid;
-  align-content: start;
-  gap: 0.3rem;
-  min-height: 2.05rem;
-  padding: 0 0.2rem;
-}
-
-.quedanTexto {
-  color: var(--f-tenue);
-  font-size: 0.78rem;
-  font-weight: 600;
-}
-
-.quedanTexto strong {
-  color: var(--f-acento);
-  font-family: var(--fuente-marca);
-  font-weight: 900;
-}
-
-.quedanBarra {
-  height: 6px;
-  border-radius: 6px;
-  background: var(--f-pista);
-  overflow: hidden;
-}
-
-.quedanBarra span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #f59e0b, #e11d48);
-}
-
 .flashPie {
   display: flex;
   justify-content: center;
@@ -574,117 +525,6 @@ a.anuncio:hover {
   .flashFranjas {
     width: 70%;
   }
-}
-
-/* ── Testimonios ── */
-.testimonio {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  height: calc(100% - 12px);
-  margin: 6px 4px;
-  padding: 1.25rem 1.15rem 1.1rem;
-  border: 1px solid var(--color-border);
-  border-radius: 6px 22px 22px 22px;
-  background: var(--color-surface);
-  transform: rotate(var(--giro, 0deg));
-  transition: transform var(--dur-media) var(--ease-signature);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .testimonio:hover {
-    transform: rotate(0deg) translateY(-3px);
-  }
-}
-
-/* Comilla grande con la letra del logo. */
-.comillas {
-  position: absolute;
-  top: -0.35rem;
-  right: 0.9rem;
-  color: var(--violet-300);
-  font-family: var(--fuente-marca);
-  font-size: 4.2rem;
-  font-weight: 900;
-  line-height: 1;
-}
-
-:global([data-theme='dark']) .comillas {
-  color: rgba(167, 139, 250, 0.45);
-}
-
-.tema {
-  margin: 0;
-  color: var(--primary-color);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.estrellas {
-  display: flex;
-  gap: 2px;
-  margin: 0;
-}
-
-.estrellas svg {
-  width: 0.95rem;
-  height: 0.95rem;
-  color: var(--color-border);
-  fill: currentColor;
-}
-
-.estrellas .llena {
-  color: #f59e0b;
-}
-
-.testimonio blockquote {
-  flex: 1;
-  margin: 0;
-  color: var(--color-text);
-  font-size: 0.92rem;
-  line-height: 1.55;
-}
-
-.testimonio figcaption {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.6rem;
-  font-size: 0.85rem;
-}
-
-.testimonio figcaption img,
-.inicial {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.inicial {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--violet-100);
-  color: var(--violet-800);
-  font-weight: 700;
-}
-
-.testimonio figcaption span {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.25;
-}
-
-.testimonio figcaption small {
-  color: var(--color-text-muted);
-}
-
-.verificado {
-  margin-left: auto;
 }
 
 /* ── FAQ ── */
@@ -738,93 +578,6 @@ a.anuncio:hover {
   }
 }
 
-/* ── Marcas: cada logo es un sticker con borde blanco, girado un poco ── */
-.marcaEnlace,
-.marcaEnlace:hover {
-  color: inherit;
-  text-decoration: none;
-}
-
-.marca {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.7rem;
-  width: 112px;
-  padding: 12px 0 6px;
-}
-
-/* El borde blanco va por fuera (box-shadow): así el zoom del logo nunca lo tapa. */
-.marcaForma {
-  display: block;
-  width: 80px;
-  height: 80px;
-  border-radius: 22px;
-  background: #fff;
-  box-shadow: 0 0 0 4px #fff, 0 0 0 5px rgba(30, 17, 64, 0.08), 0 14px 22px -12px rgba(30, 17, 64, 0.55);
-  overflow: hidden;
-  transform: rotate(var(--giro, -4deg));
-  transition: transform var(--dur-media) var(--ease-signature);
-}
-
-.marcaForma img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.marcaForma strong {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  background: var(--degradado-logo);
-  color: #fff;
-  font-family: var(--fuente-marca);
-  font-size: 1.4rem;
-  font-weight: 900;
-}
-
-.forma_circle {
-  border-radius: 50%;
-}
-
-/* Estrella y pentágono: la forma recorta el logo (sin borde blanco). */
-.forma_star,
-.forma_pentagon {
-  padding: 0;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-/* Nombre en hasta dos líneas (los "Con Amor …" son largos). */
-.marcaNombre {
-  display: -webkit-box;
-  max-width: 100%;
-  min-height: 2.3em;
-  overflow: hidden;
-  color: var(--color-text);
-  font-family: var(--fuente-marca);
-  font-size: 0.74rem;
-  font-weight: 900;
-  letter-spacing: -0.01em;
-  line-height: 1.15;
-  text-align: center;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .marcaEnlace:hover .marcaForma {
-    transform: rotate(0deg) scale(1.08);
-  }
-
-  .marcaEnlace:hover .marcaNombre {
-    color: var(--primary-color);
-  }
-}
-
 /* ── Categorías ── */
 .categorias {
   display: grid;
@@ -854,69 +607,4 @@ a.anuncio:hover {
     flex: 0 0 34%;
     scroll-snap-align: start;
   }
-}
-
-.categoria {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.45rem;
-  color: var(--color-text);
-  text-align: center;
-  text-decoration: none;
-}
-
-.categoria:hover {
-  color: var(--primary-color);
-}
-
-.categoriaFoto {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 22px;
-  background: #f5f4f8;
-  /* El color de la categoría va en un aro, no detrás de la foto. */
-  box-shadow: inset 0 0 0 2px var(--acento, transparent);
-  overflow: hidden;
-  transition: transform var(--dur-media) var(--ease-signature);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .categoria:hover .categoriaFoto {
-    transform: rotate(var(--giro, -2deg)) translateY(-4px);
-  }
-}
-
-.categoria:active .categoriaFoto {
-  transform: scale(0.96);
-}
-
-.categoriaFoto img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  padding: 10%;
-  mix-blend-mode: multiply;
-}
-
-/* Círculos: aro punteado como un sello. */
-.categoriasRedondas .categoriaFoto {
-  border-radius: 50%;
-  outline: 2px dashed var(--acento, var(--violet-300, #c4b5fd));
-  box-shadow: none; /* solo el aro punteado: con los dos se veía recargado */
-  outline-offset: 4px;
-}
-
-.categoriaNombre {
-  font-family: var(--fuente-marca);
-  font-size: 0.92rem;
-  font-weight: 900;
-  letter-spacing: -0.01em;
-}
-
-.categoria small {
-  margin-top: -0.3rem;
-  color: var(--color-text-muted);
-  font-size: 0.74rem;
 }

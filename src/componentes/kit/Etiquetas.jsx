@@ -1,5 +1,5 @@
 import React, { forwardRef } from 'react';
-import { Check } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { useContador } from './Efectos';
 import { EtiquetaColgante } from './Marca';
 import s from './Etiquetas.module.css';
@@ -27,17 +27,31 @@ export function Etiqueta({ tono = 'violeta', icono, solida = false, children }) 
   );
 }
 
-/** Chip seleccionable (filtros, categorías). Rebota y dibuja el check al activarse. */
-export function Chip({ activo = false, onClick, icono, children }) {
+/**
+ * Chip seleccionable (filtros, categorías). Rebota y dibuja el check al activarse.
+ *  - cuenta: número a la derecha (productos de ese filtro)
+ *  - tamano: 'md' | 'sm'
+ *  - onQuitar: chip de un filtro ya aplicado (violeta suave con ×); al tocarlo se quita
+ */
+export function Chip({ activo = false, onClick, onQuitar, icono, cuenta, tamano = 'md', children }) {
+  if (onQuitar) {
+    return (
+      <button type="button" className={[s.chip, s.chipQuitar, tamano === 'sm' && s.chipSm].filter(Boolean).join(' ')} onClick={onQuitar}>
+        {children}
+        <X aria-label="Quitar" />
+      </button>
+    );
+  }
   return (
     <button
       type="button"
-      className={[s.chip, activo && s.chipActivo].filter(Boolean).join(' ')}
+      className={[s.chip, activo && s.chipActivo, tamano === 'sm' && s.chipSm, cuenta != null && s.chipConCuenta].filter(Boolean).join(' ')}
       aria-pressed={activo}
       onClick={onClick}
     >
       {activo ? <Check key="check" className={s.check} aria-hidden="true" /> : icono}
       {children}
+      {cuenta != null && <small className={s.chipCuenta}>{cuenta}</small>}
     </button>
   );
 }

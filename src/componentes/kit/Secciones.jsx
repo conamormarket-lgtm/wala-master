@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Star, BadgeCheck, ArrowRight, ChevronLeft, ChevronRight,
+  ArrowRight, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import Boton from './Boton';
 import Carrusel from './Carrusel';
@@ -10,10 +10,10 @@ import Acordeon from './Acordeon';
 import TarjetaProducto from './TarjetaProducto';
 import { Enlace } from './Enlace';
 import { tarjetaDesdeProducto } from './adaptadores';
-import { toDirectImageUrl } from '../../utils/imageUrl';
 import { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
 import { EtiquetaColgante, Destello, acento } from './Marca';
 import { IconoWala, iconoDesde } from './IconosWala';
+import { Beneficio, TarjetaTestimonio, LogoMarca, TarjetaCategoria, StockBajo } from './piezas';
 import { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados } from './SeccionesContenido';
 import { BannerPrincipal, ListaBeneficios, Ubicacion, NavCategorias, GrillaProductos, CatalogoConFiltros, PiePagina } from './SeccionesExtra';
 import s from './Secciones.module.css';
@@ -248,12 +248,7 @@ export function InsigniasConfianza({ ajustes = {} }) {
   if (!badges.length) return null;
   return (
     <ul className={s.insignias}>
-      {badges.map((b, k) => (
-        <li key={k}>
-          <IconoWala nombre={b.icon} tamano={46} className={s.insigniaIcono} />
-          <span>{b.text}</span>
-        </li>
-      ))}
+      {badges.map((b, k) => <Beneficio key={k} icono={b.icon} texto={b.text} />)}
     </ul>
   );
 }
@@ -287,19 +282,6 @@ const mayorDescuento = (productos) => productos.reduce((max, p) => {
   const ahora = Number(p.salePrice) || 0;
   return antes > 0 && ahora > 0 && ahora < antes ? Math.max(max, Math.round((1 - ahora / antes) * 100)) : max;
 }, 0);
-
-/** "¡Quedan 6!" con barra, solo cuando el stock es bajo (inStock numérico ≤ 20). */
-function Quedan({ stock }) {
-  const n = Number(stock);
-  // Sin stock bajo igual se reserva el lugar: así todas las tarjetas miden lo mismo.
-  if (!Number.isFinite(n) || n <= 0 || n > 20) return <div className={s.quedan} aria-hidden="true" />;
-  return (
-    <div className={s.quedan}>
-      <span className={s.quedanTexto}>{n <= 5 ? <>¡Solo quedan <strong>{n}</strong>!</> : <>Quedan <strong>{n}</strong></>}</span>
-      <span className={s.quedanBarra} aria-hidden="true"><span style={{ width: `${Math.max(8, (n / 20) * 100)}%` }} /></span>
-    </div>
-  );
-}
 
 /**
  * Ofertas relámpago: un evento dentro de la página. Panel en la noche violeta
@@ -338,7 +320,7 @@ export function OfertaRelampago({ ajustes = {}, productos = [], onAgregar }) {
         {lista.map((p) => (
           <div key={p.id} className={s.flashItem}>
             <TarjetaProducto inclinar={false} {...tarjetaDesdeProducto(p)} onAgregar={onAgregar?.(p)} />
-            <Quedan stock={p.inStock} />
+            <StockBajo stock={p.inStock} />
           </div>
         ))}
       </Carrusel>
@@ -360,24 +342,17 @@ export function Testimonios({ ajustes = {} }) {
       <TituloSeccion {...tituloDesdeAjustes(ajustes)} adorno />
       <Carrusel visibles={{ escritorio: 3, tablet: 2, movil: 1.1 }} espacio="1rem" etiqueta="Opiniones de clientes">
         {lista.map((t, k) => (
-          <figure key={k} className={s.testimonio} style={{ '--giro': `${[-0.8, 0.6, -0.4, 0.9][k % 4]}deg` }}>
-            <span className={s.comillas} aria-hidden="true">“</span>
-            {t.topic && <p className={s.tema}>{t.topic}</p>}
-            {t.rating > 0 && (
-              <p className={s.estrellas} aria-label={`${t.rating} de 5 estrellas`}>
-                {Array.from({ length: 5 }, (_, n) => <Star key={n} className={n < t.rating ? s.llena : undefined} aria-hidden="true" />)}
-              </p>
-            )}
-            <blockquote>{t.text}</blockquote>
-            <figcaption>
-              {t.avatar ? <img src={t.avatar} alt="" /> : <span className={s.inicial}>{(t.author || '?')[0]}</span>}
-              <span>
-                <strong>{t.author}</strong>
-                {(t.city || t.location) && <small>{t.city || t.location}</small>}
-              </span>
-              {t.verified && <span className={s.verificado}><EtiquetaColgante tono="verde" tamano="sm" icono={<BadgeCheck aria-hidden="true" />}>Verificada</EtiquetaColgante></span>}
-            </figcaption>
-          </figure>
+          <TarjetaTestimonio
+            key={k}
+            texto={t.text}
+            autor={t.author}
+            ciudad={t.city || t.location}
+            tema={t.topic}
+            puntuacion={t.rating}
+            avatar={t.avatar}
+            verificado={t.verified}
+            giro={[-0.8, 0.6, -0.4, 0.9][k % 4]}
+          />
         ))}
       </Carrusel>
     </>
@@ -407,12 +382,6 @@ export function PreguntasFrecuentes({ ajustes = {} }) {
 
 /* ── Marcas en movimiento (marquee) ─────────────────────── */
 
-/** Formas que guarda el editor (MarqueeBrandItem): circle | square | star | pentagon. */
-const FORMAS_LOGO = {
-  star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
-  pentagon: 'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)',
-};
-
 /**
  * Logos en una cinta sin fin. Cada logo es un sticker con la forma, el zoom
  * y el encuadre que se eligen en el editor, y su nombre debajo.
@@ -427,29 +396,20 @@ export function MarcasMarquesina({ ajustes = {} }) {
     <>
       <TituloSeccion titulo={ajustes.title ?? 'Empresas con las que trabajamos'} subtitulo={ajustes.subtitle} antetitulo={ajustes.eyebrow} alinear="center" />
       <Marquesina segundos={Math.max(10, segundos * (items.length / 6 || 1))} espacio="1.75rem" etiqueta="Marcas">
-        {items.map((m, k) => {
-          const forma = m.shape || 'square';
-          const logo = (
-            <span className={s.marca} style={{ '--giro': k % 2 ? '4deg' : '-4deg' }} title={m.name}>
-              <span className={[s.marcaForma, s[`forma_${forma}`]].filter(Boolean).join(' ')} style={FORMAS_LOGO[forma] ? { clipPath: FORMAS_LOGO[forma] } : undefined}>
-                {m.imageUrl ? (
-                  <img
-                    src={toDirectImageUrl(m.imageUrl)}
-                    alt={m.alt || m.name || ''}
-                    loading="lazy"
-                    decoding="async"
-                    style={{
-                      objectPosition: `${m.posX ?? 50}% ${m.posY ?? 50}%`,
-                      transform: Number(m.zoom) > 1 ? `scale(${m.zoom})` : undefined,
-                    }}
-                  />
-                ) : <strong>{(m.name || '?').trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase()}</strong>}
-              </span>
-              {m.name && <small className={s.marcaNombre}>{m.name}</small>}
-            </span>
-          );
-          return m.link ? <Enlace key={k} to={m.link} className={s.marcaEnlace}>{logo}</Enlace> : <React.Fragment key={k}>{logo}</React.Fragment>;
-        })}
+        {items.map((m, k) => (
+          <LogoMarca
+            key={k}
+            nombre={m.name}
+            imagen={m.imageUrl}
+            alt={m.alt}
+            url={m.link}
+            forma={m.shape || 'square'}
+            zoom={m.zoom}
+            posX={m.posX}
+            posY={m.posY}
+            giro={k % 2 ? 4 : -4}
+          />
+        ))}
       </Marquesina>
     </>
   );
@@ -464,16 +424,19 @@ export function GrillaCategorias({ ajustes = {}, categorias }) {
   return (
     <>
       <TituloSeccion {...tituloDesdeAjustes(ajustes)} />
-      <ul className={[s.categorias, redonda && s.categoriasRedondas].filter(Boolean).join(' ')} style={{ '--columnas': columnas }}>
+      <ul className={s.categorias} style={{ '--columnas': columnas }}>
         {lista.map((c, k) => (
           <li key={c.categoryId || c.name}>
-            <Enlace to={c.url || `?categoria=${c.categoryId}`} className={s.categoria} style={{ '--giro': k % 2 ? '2.5deg' : '-2.5deg' }}>
-              <span className={s.categoriaFoto} style={{ background: c.backgroundColor || ajustes.tileBackgroundColor || undefined, '--acento': acento(k) }}>
-                {c.imageUrl && <img src={c.imageUrl} alt="" loading="lazy" />}
-              </span>
-              <span className={s.categoriaNombre}>{c.name}</span>
-              {ajustes.showProductCount && c.cuenta != null && <small>{c.cuenta} productos</small>}
-            </Enlace>
+            <TarjetaCategoria
+              forma={redonda ? 'circulo' : 'cuadro'}
+              nombre={c.name}
+              imagen={c.imageUrl}
+              url={c.url || `?categoria=${c.categoryId}`}
+              cuenta={ajustes.showProductCount ? c.cuenta : undefined}
+              fondo={c.backgroundColor || ajustes.tileBackgroundColor}
+              acento={acento(k)}
+              giro={k % 2 ? 2.5 : -2.5}
+            />
           </li>
         ))}
       </ul>

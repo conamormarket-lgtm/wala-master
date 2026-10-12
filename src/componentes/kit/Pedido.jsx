@@ -224,7 +224,7 @@ export function BarraEnvioGratis({ actual, meta }) {
 }
 
 /** Resumen del pedido con cupón y total que corre. */
-export function ResumenPedido({ subtotal, descuento = 0, envio = 0, monedas = 0, cupones = { WALA10: 10 } }) {
+export function ResumenPedido({ subtotal, descuento = 0, envio = 0, monedas = 0, cupones = { WALA10: 10 }, onPagar }) {
   const [cupon, setCupon] = useState('');
   const [aplicado, setAplicado] = useState(null);
   const [errorCupon, setErrorCupon] = useState(false);
@@ -289,7 +289,7 @@ export function ResumenPedido({ subtotal, descuento = 0, envio = 0, monedas = 0,
       {monedas > 0 && (
         <p className={s.ganas}><img src="/assets/monedas/moneda-64.webp" alt="" width="18" height="18" /> Con esta compra ganas <strong>{monedas} monedas</strong></p>
       )}
-      <Boton tamano="lg" bloque brillo>Ir a pagar</Boton>
+      <Boton tamano="lg" bloque brillo onClick={onPagar}>Ir a pagar</Boton>
       <p className={s.seguro}>Pago seguro con tarjeta, Yape o PayPal</p>
     </section>
   );

@@ -1,0 +1,169 @@
+/* ── Cuadro y círculo ── */
+.categoria {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--color-text);
+  text-align: center;
+  text-decoration: none;
+}
+
+.categoria:hover {
+  color: var(--primary-color);
+}
+
+.foto {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 22px;
+  background: #f5f4f8;
+  /* El color de la categoría va en un aro, no detrás de la foto. */
+  box-shadow: inset 0 0 0 2px var(--acento, transparent);
+  overflow: hidden;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .categoria:hover .foto {
+    transform: rotate(var(--giro, -2deg)) translateY(-4px);
+  }
+}
+
+.categoria:active .foto {
+  transform: scale(0.96);
+}
+
+.foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 10%;
+  mix-blend-mode: multiply;
+}
+
+/* Círculo: aro punteado como un sello. */
+.circulo .foto {
+  border-radius: 50%;
+  outline: 2px dashed var(--acento, var(--violet-300, #c4b5fd));
+  box-shadow: none;
+  outline-offset: 4px;
+}
+
+.nombre {
+  font-family: var(--fuente-marca);
+  font-size: 0.92rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.categoria small {
+  margin-top: -0.3rem;
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+}
+
+/* ── Burbuja ── */
+.burbuja {
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  width: 76px;
+  /* Aire para el aro de la burbuja activa (también dentro de la cinta). */
+  padding: 6px 0 4px;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  scroll-snap-align: start;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.burbuja:hover {
+  color: var(--color-text);
+}
+
+.burbujaFoto {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #f5f4f8;
+  /* Aro del color de la categoría (la foto queda en neutro). */
+  box-shadow: inset 0 0 0 2px var(--acento, transparent);
+  overflow: hidden;
+  color: var(--violet-800);
+  font-size: 1.3rem;
+  font-weight: 800;
+  transition: transform var(--dur-media) var(--ease-signature), box-shadow var(--dur-rapida) ease;
+}
+
+.burbujaFoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 12%;
+  mix-blend-mode: multiply;
+}
+
+.burbujaFoto svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--primary-color);
+}
+
+.burbujaNombre {
+  max-width: 100%;
+  overflow: hidden;
+  font-family: var(--fuente-marca);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.burbujaActiva .burbujaFoto {
+  box-shadow: 0 0 0 2px var(--color-bg, var(--gris-fondo)), 0 0 0 4px var(--primary-color);
+}
+
+.burbujaActiva .burbujaNombre {
+  color: var(--primary-color);
+}
+
+/* "Todos": sello con el degradado del logo. */
+.burbujaTodos .burbujaFoto {
+  background: var(--degradado-logo);
+}
+
+.burbujaTodos .burbujaFoto svg {
+  color: #fff;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .burbuja:hover .burbujaFoto {
+    transform: translateY(-2px);
+  }
+}
+
+.burbuja:active .burbujaFoto {
+  transform: scale(0.94);
+}
+
+.burbujaEsqueleto .burbujaFoto {
+  background: var(--color-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .foto,
+  .burbujaFoto {
+    transition: none;
+  }
+}

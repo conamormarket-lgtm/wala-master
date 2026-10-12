@@ -183,59 +183,6 @@
   list-style: none;
 }
 
-.beneficiosLista li {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  min-height: 68px;
-  padding: 0.65rem 4.4rem 0.65rem 0.7rem;
-  border: 1px solid var(--color-border);
-  border-radius: 6px 20px 20px 20px;
-  background: var(--color-surface);
-  overflow: hidden;
-  transition: transform var(--dur-media) var(--ease-signature), border-color var(--dur-rapida) ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .beneficiosLista li:hover {
-    border-color: var(--violet-300, #c4b5fd);
-    transform: translateX(4px);
-  }
-}
-
-.beneficioTexto {
-  font-size: 0.96rem;
-  font-weight: 600;
-  line-height: 1.35;
-}
-
-/* Número con la letra del logo: sólido y tenue, completo y centrado
-   (el contorno dejaba ver líneas internas de la letra). */
-.beneficioNumero {
-  position: absolute;
-  top: 50%;
-  right: 1rem;
-  color: var(--violet-200, #ddd6fe);
-  font-family: var(--fuente-marca);
-  font-size: 1.9rem;
-  font-weight: 900;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  transform: translateY(-50%);
-  transition: color var(--dur-rapida) ease;
-}
-
-:global([data-theme='dark']) .beneficioNumero {
-  color: rgba(167, 139, 250, 0.32);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .beneficiosLista li:hover .beneficioNumero {
-    color: var(--violet-400, #a78bfa);
-  }
-}
-
 .cita {
   position: relative;
   margin: 1.25rem 0 0;
@@ -441,110 +388,6 @@
 .alinear_right > :first-child { margin-left: auto; }
 .alinear_justify { justify-content: space-between; }
 
-.burbuja {
-  display: inline-flex;
-  flex: 0 0 auto;
-  /* En la cinta (marquesina) el aro activo también necesita aire. */
-  padding-top: 6px !important;
-  padding-bottom: 4px !important;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  width: 76px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--color-text);
-  font: inherit;
-  text-decoration: none;
-  cursor: pointer;
-  scroll-snap-align: start;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.burbuja:hover {
-  color: var(--color-text);
-}
-
-.burbujaFoto {
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: #f5f4f8;
-  /* Aro del color de la categoría (la foto queda en neutro). */
-  box-shadow: inset 0 0 0 2px var(--acento, transparent);
-  overflow: hidden;
-  color: var(--violet-800);
-  font-size: 1.3rem;
-  font-weight: 800;
-  transition: transform var(--dur-media) var(--ease-signature), box-shadow var(--dur-rapida) ease;
-}
-
-.burbujaFoto img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  padding: 12%;
-  mix-blend-mode: multiply;
-}
-
-.burbujaFoto svg {
-  width: 1.5rem;
-  height: 1.5rem;
-  color: var(--primary-color);
-}
-
-.burbujaNombre {
-  max-width: 100%;
-  overflow: hidden;
-  font-size: 0.76rem;
-  font-weight: 600;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.burbujaActiva .burbujaFoto {
-  box-shadow: 0 0 0 2px var(--color-bg, var(--gris-fondo)), 0 0 0 4px var(--primary-color);
-}
-
-/* "Todos": sello con el degradado del logo. Con clase propia (no
-   :first-child): en la cinta cada burbuja va en su envoltorio y todas eran
-   "la primera". */
-.burbujaTodos .burbujaFoto {
-  background: var(--degradado-logo);
-}
-
-.burbujaTodos .burbujaFoto svg {
-  color: #fff;
-}
-
-.burbujaNombre {
-  font-family: var(--fuente-marca);
-  font-weight: 900 !important;
-  letter-spacing: -0.01em;
-}
-
-.burbujaActiva .burbujaNombre {
-  color: var(--primary-color);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .burbuja:hover .burbujaFoto {
-    transform: translateY(-2px);
-  }
-}
-
-.burbuja:active .burbujaFoto {
-  transform: scale(0.94);
-}
-
-.burbujaEsqueleto .burbujaFoto {
-  background: var(--color-border);
-}
-
 /* ── Grilla de productos ── */
 .grilla {
   display: grid;
@@ -704,70 +547,6 @@
   gap: 0.4rem;
 }
 
-/* Cada opción es un chip con su contador; el elegido se pinta violeta. */
-.filtro {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-height: 36px;
-  padding: 0 0.45rem 0 0.8rem;
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font: inherit;
-  font-size: 0.84rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color var(--dur-rapida) ease, transform var(--dur-rapida) ease;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.filtro:not(:has(small)) {
-  padding-right: 0.8rem;
-}
-
-.filtro small {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 0.35rem;
-  border-radius: 999px;
-  background: var(--color-hover, rgba(124, 58, 237, 0.08));
-  color: var(--color-text-muted);
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.filtroCheck {
-  width: 0.95rem;
-  height: 0.95rem;
-  stroke-width: 3;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .filtro:hover {
-    border-color: var(--violet-400, #a78bfa);
-  }
-}
-
-.filtro:active {
-  transform: scale(0.96);
-}
-
-.filtroActivo {
-  border-color: transparent;
-  background: var(--violet-700, #6d28d9);
-  color: #fff;
-}
-
-.filtroActivo small {
-  background: rgba(255, 255, 255, 0.22);
-  color: #fff;
-}
-
 .precio {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -781,27 +560,6 @@
   align-items: center;
   gap: 0.45rem;
   margin-bottom: 1rem;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  min-height: 32px;
-  padding: 0 0.55rem 0 0.8rem;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  background: var(--primary-light);
-  color: var(--primary-color);
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.chip svg {
-  width: 0.9rem;
-  height: 0.9rem;
 }
 
 .limpiar {

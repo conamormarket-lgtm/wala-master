@@ -1,0 +1,98 @@
+/* Tarjeta con foto, título y enlace (fila "Lo más vendido"). */
+.destacado {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.destacado:hover {
+  color: var(--color-text);
+}
+
+/* Escenario claro: las fotos casi siempre traen fondo blanco. */
+.destacadoFoto {
+  display: block;
+  aspect-ratio: 1;
+  background: #f5f4f8;
+  overflow: hidden;
+}
+
+.destacadoFoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  user-select: none;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.destacadoTexto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.7rem 0.8rem 0.85rem;
+}
+
+.destacadoTexto strong {
+  font-size: 0.86rem;
+  line-height: 1.25;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+
+.destacadoTexto small {
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  a.destacado:hover {
+    transform: translateY(-3px);
+  }
+
+  a.destacado:hover .destacadoFoto img {
+    transform: scale(1.04);
+  }
+}
+
+/* Puesto (#1, #2…) en una etiqueta colgante sobre la foto. */
+.destacadoFoto {
+  position: relative;
+  /* Línea del color arriba de la foto; la foto queda en el escenario neutro. */
+  box-shadow: inset 0 4px 0 0 var(--acento, transparent);
+}
+
+.destacadoPuesto {
+  position: absolute !important;
+  z-index: 1;
+  top: 12px;
+  left: 10px;
+}
+
+.destacadoTexto strong {
+  font-family: var(--fuente-marca);
+  font-weight: 900 !important;
+  letter-spacing: -0.02em !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  a.destacado:hover .destacadoPuesto {
+    --inclinar: -10deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .destacado,
+  .destacadoFoto img {
+    transition: none;
+  }
+}

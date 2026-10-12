@@ -1,0 +1,74 @@
+/* Ícono + texto: píldora (íconos de confianza) o fila numerada (beneficios). */
+.pildora {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem 0.5rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-surface);
+  box-shadow: 0 0 0 1px var(--color-border);
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+/* El ícono (IconoWala) se endereza y crece un poco al pasar. */
+@media (hover: hover) and (pointer: fine) {
+  .pildora:hover .icono {
+    transform: rotate(0deg) scale(1.08);
+  }
+}
+
+.fila {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-height: 68px;
+  padding: 0.65rem 4.4rem 0.65rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 20px 20px 20px;
+  background: var(--color-surface);
+  overflow: hidden;
+  transition: transform var(--dur-media) var(--ease-signature), border-color var(--dur-rapida) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fila:hover {
+    border-color: var(--violet-300, #c4b5fd);
+    transform: translateX(4px);
+  }
+}
+
+.texto {
+  font-size: 0.96rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+/* Número con la letra del logo: sólido y tenue, completo y centrado
+   (el contorno dejaba ver líneas internas de la letra). */
+.numero {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  color: var(--violet-200, #ddd6fe);
+  font-family: var(--fuente-marca);
+  font-size: 1.9rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  transform: translateY(-50%);
+  transition: color var(--dur-rapida) ease;
+}
+
+:global([data-theme='dark']) .numero {
+  color: rgba(167, 139, 250, 0.32);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fila:hover .numero {
+    color: var(--violet-400, #a78bfa);
+  }
+}
+

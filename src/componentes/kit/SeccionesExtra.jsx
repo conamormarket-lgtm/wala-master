@@ -1,17 +1,18 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Clock, LayoutGrid, MapPin, SlidersHorizontal, X, MessageCircle, Music2, Mail } from 'lucide-react';
+import { Clock, MapPin, SlidersHorizontal, MessageCircle, Music2, Mail } from 'lucide-react';
 import Boton from './Boton';
 import Marquesina from './Marquesina';
 import TarjetaProducto, { TarjetaProductoEsqueleto } from './TarjetaProducto';
 import { Enlace } from './Enlace';
 import { Buscador, Campo } from './Formulario';
+import { Chip } from './Etiquetas';
 import { EstadoVacio, HojaInferior } from './Feedback';
 import { TituloSeccion, tituloDesdeAjustes } from './Seccion';
 import { tarjetaDesdeProducto } from './adaptadores';
 import { TextoCampo, BotonDeAjustes, fuenteDe, prefiereQuieto } from './SeccionesContenido';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import { EtiquetaColgante, Garabatos, LogoWala, Destello, Corazon, acento } from './Marca';
-import { IconoWala } from './IconosWala';
+import { TarjetaCategoria, TarjetaCategoriaEsqueleto, Beneficio } from './piezas';
 import s from './SeccionesExtra.module.css';
 
 /*
@@ -131,13 +132,7 @@ export function ListaBeneficios({ ajustes = {} }) {
         <TituloSeccion titulo={ajustes.title} subtitulo={ajustes.subtitle} antetitulo={ajustes.eyebrow} adorno />
         {items.length > 0 && (
           <ol className={s.beneficiosLista}>
-            {items.map((it, k) => (
-              <li key={k}>
-                <IconoWala nombre={it.icon} tamano={48} />
-                <span className={s.beneficioTexto}>{it.text}</span>
-                <span className={s.beneficioNumero} aria-hidden="true">{String(k + 1).padStart(2, '0')}</span>
-              </li>
-            ))}
+            {items.map((it, k) => <Beneficio key={k} variante="fila" icono={it.icon} texto={it.text} numero={k + 1} />)}
           </ol>
         )}
         {ajustes.quote && (
@@ -195,13 +190,6 @@ export function Ubicacion({ ajustes = {} }) {
 
 /* ── Navegación de categorías (categories_nav) ──────────── */
 
-/** Color estable para la burbuja sin foto (mismo nombre → mismo color). */
-const tonoDe = (texto) => {
-  let h = 0;
-  for (const c of String(texto || '')) h = (h * 31 + c.charCodeAt(0)) | 0;
-  return `hsl(${Math.abs(h) % 360} 55% 82%)`;
-};
-
 /**
  * Burbujas con miniatura. Dos modos, como en la tienda:
  *  - con `onSeleccionar`: filtran el catálogo de la misma página (botones);
@@ -216,7 +204,7 @@ export function NavCategorias({ ajustes = {}, categorias = [], activa = null, on
   if (cargando) {
     return (
       <div className={s.burbujas} aria-hidden="true">
-        {[0, 1, 2, 3, 4].map((k) => <span key={k} className={`${s.burbuja} ${s.burbujaEsqueleto}`}><span className={s.burbujaFoto} /></span>)}
+        {[0, 1, 2, 3, 4].map((k) => <TarjetaCategoriaEsqueleto key={k} />)}
       </div>
     );
   }
@@ -225,22 +213,18 @@ export function NavCategorias({ ajustes = {}, categorias = [], activa = null, on
   const filtra = typeof onSeleccionar === 'function';
   const burbuja = (c, k) => {
     const id = c.categoryId ?? c.id ?? null;
-    const sel = activa === id;
-    const contenido = (
-      <>
-        <span className={s.burbujaFoto} style={id ? { '--acento': acento(k - 1), background: c.imageUrl ? undefined : tonoDe(c.name) } : undefined}>
-          {id == null ? <LayoutGrid aria-hidden="true" />
-            : c.imageUrl ? <img src={toDirectImageUrl(c.imageUrl)} alt="" loading="lazy" decoding="async" />
-              : <span aria-hidden="true">{c.name.trim()[0]?.toUpperCase()}</span>}
-        </span>
-        <span className={s.burbujaNombre}>{c.name}</span>
-      </>
-    );
-    const cls = [s.burbuja, sel && s.burbujaActiva, id == null && s.burbujaTodos].filter(Boolean).join(' ');
-    return filtra ? (
-      <button key={`${id}-${k}`} type="button" className={cls} aria-pressed={sel} onClick={() => onSeleccionar(id)}>{contenido}</button>
-    ) : (
-      <Enlace key={`${id}-${k}`} to={c.url || (id ? `?categoria=${encodeURIComponent(id)}` : '?')} className={cls} aria-current={sel ? 'page' : undefined}>{contenido}</Enlace>
+    return (
+      <TarjetaCategoria
+        key={`${id}-${k}`}
+        forma="burbuja"
+        nombre={c.name}
+        imagen={c.imageUrl}
+        todos={id == null}
+        activa={activa === id}
+        acento={acento(k - 1)}
+        url={filtra ? undefined : c.url || (id ? `?categoria=${encodeURIComponent(id)}` : '?')}
+        onClick={filtra ? () => onSeleccionar(id) : undefined}
+      />
     );
   };
   const todas = [{ categoryId: null, name: 'Todos' }, ...lista];
@@ -394,11 +378,7 @@ export function CatalogoConFiltros({
             {g.opciones.map((o) => {
               const marcada = sel[g.id] === o.valor;
               return (
-                <button key={String(o.valor)} type="button" className={[s.filtro, marcada && s.filtroActivo].filter(Boolean).join(' ')} aria-pressed={marcada} onClick={() => filtrar(g.id, o.valor)}>
-                  {marcada && <Check className={s.filtroCheck} aria-hidden="true" />}
-                  <span>{o.nombre}</span>
-                  {o.cuenta != null && <small>{o.cuenta}</small>}
-                </button>
+                <Chip key={String(o.valor)} tamano="sm" activo={marcada} cuenta={o.cuenta} onClick={() => filtrar(g.id, o.valor)}>{o.nombre}</Chip>
               );
             })}
           </div>
@@ -410,10 +390,7 @@ export function CatalogoConFiltros({
           {RANGOS.map(([min, max, texto]) => {
             const marcado = rango.min === min && rango.max === max;
             return (
-              <button key={texto} type="button" className={[s.filtro, marcado && s.filtroActivo].filter(Boolean).join(' ')} aria-pressed={marcado} onClick={() => cambiarPrecio(marcado ? { min: '', max: '' } : { min, max })}>
-                {marcado && <Check className={s.filtroCheck} aria-hidden="true" />}
-                <span>{texto}</span>
-              </button>
+              <Chip key={texto} tamano="sm" activo={marcado} onClick={() => cambiarPrecio(marcado ? { min: '', max: '' } : { min, max })}>{texto}</Chip>
             );
           })}
         </div>
@@ -439,14 +416,10 @@ export function CatalogoConFiltros({
         {(activos.length > 0 || hayPrecio) && (
           <div className={s.chips}>
             {activos.map((a) => (
-              <button key={`${a.grupo}-${a.valor}`} type="button" className={s.chip} onClick={() => filtrar(a.grupo, a.valor)}>
-                {a.nombre} <X aria-label="Quitar" />
-              </button>
+              <Chip key={`${a.grupo}-${a.valor}`} tamano="sm" onQuitar={() => filtrar(a.grupo, a.valor)}>{a.nombre}</Chip>
             ))}
             {hayPrecio && (
-              <button type="button" className={s.chip} onClick={() => cambiarPrecio({ min: '', max: '' })}>
-                S/ {rango.min || 0} – {rango.max || '∞'} <X aria-label="Quitar" />
-              </button>
+              <Chip tamano="sm" onQuitar={() => cambiarPrecio({ min: '', max: '' })}>S/ {rango.min || 0} – {rango.max || '∞'}</Chip>
             )}
             <button type="button" className={s.limpiar} onClick={limpiar}>Limpiar todo</button>
           </div>

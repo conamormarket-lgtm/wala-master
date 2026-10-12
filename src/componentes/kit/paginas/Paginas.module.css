@@ -1,0 +1,92 @@
+/* ── Marco de la tienda ── */
+.marco {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--color-bg, var(--gris-fondo));
+}
+
+/* Cabecera pegada arriba mientras se baja por la página. */
+.cabecera {
+  position: sticky;
+  z-index: 30;
+  top: 0;
+  padding: 0.6rem var(--page-padding-movil, 1rem) 0;
+}
+
+.contenido {
+  flex: 1;
+}
+
+/* Barra inferior solo en el celular (container query: también en la vista
+   de celular del editor). */
+.barraInferior {
+  position: sticky;
+  z-index: 30;
+  bottom: 0;
+  display: none;
+}
+
+@container (max-width: 720px) {
+  .barraInferior {
+    display: block;
+  }
+}
+
+.cabezaPagina {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+/* ── Carrito ── */
+.carrito {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 370px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.carritoLista {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 22px 22px 22px;
+  background: var(--color-surface);
+}
+
+.carritoResumen {
+  position: sticky;
+  top: 1rem;
+}
+
+@container (max-width: 860px) {
+  .carrito {
+    /* minmax(0, …): sin esto la columna no encoge y el resumen se salía. */
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .carritoLista {
+    padding: 0.75rem;
+  }
+
+  .carritoResumen {
+    position: static;
+  }
+}
+
+/* ── Mis pedidos ── */
+.pestanas {
+  margin-bottom: 1.1rem;
+}
+
+.pedidos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 1rem;
+  align-items: start;
+}

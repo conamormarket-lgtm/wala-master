@@ -16,10 +16,12 @@ import {
   ProveedorEnlaces, MenuTienda, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito, AgregarRapido,
   accionDeProducto, tarjetaDesdeProducto, opcionesDeProducto, RenderSecciones,
   IconoWala, ICONOS_WALA, IsoWala,
+  PaginaTienda, PaginaCarrito, PaginaPedidos,
 } from './kit';
 import s from './ComponentesPage.module.css';
 import DemoEditor from './DemoEditor';
 import DemoSecciones, { GRUPOS_CATALOGO } from './DemoSecciones';
+import DemoPiezas from './DemoPiezas';
 // La mayoría de productos reales vienen con fondo blanco: estas fotos lo simulan.
 import FRENTE_BLANCO from './demo/polera-fondo-blanco.jpg';
 import ESPALDA_BLANCO from './demo/polera-fondo-blanco-espalda.jpg';
@@ -52,6 +54,7 @@ const INDICES = {
     ['etiquetas', 'Etiquetas e íconos'],
     ['formularios', 'Formularios'],
     ['productos', 'Producto'],
+    ['piezas-seccion', 'Piezas de sección'],
     ['navegacion', 'Navegación'],
     ['menus', 'Menús'],
     ['avisos', 'Avisos'],
@@ -322,6 +325,38 @@ const GRUPOS_CUENTA = [
   ] },
 ];
 const PROMO_CUENTA = { texto: 'Cuéntanos de ti y gana 50 monedas', url: '/encuesta-suscripcion' };
+
+const PIE_DEMO = {
+  columns: [
+    { id: 'c1', title: 'Walá', type: 'text', content: 'Prendas y regalos personalizados con amor y dedicación.' },
+    { id: 'c2', title: 'Tienda', type: 'links', links: [{ text: 'Catálogo', url: '/tienda' }, { text: 'Crear', url: '/personalizar' }, { text: 'Mi cuenta', url: '/cuenta' }] },
+    { id: 'c3', title: 'Síguenos', type: 'social', links: [{ text: 'Instagram', url: 'https://instagram.com/wala.pe' }, { text: 'TikTok', url: 'https://tiktok.com/@wala.pe' }, { text: 'WhatsApp', url: 'https://wa.me/51900000000' }] },
+  ],
+};
+
+const PEDIDOS_DEMO = [
+  { codigo: 'WL-20481', fecha: '10 oct', paso: 1, total: 129.8, pagoPendiente: true, items: [
+    { imagen: FRENTE, nombre: 'Polera Essentials', variante: 'Negro · M', cantidad: 1, precio: 89.9 },
+    { imagen: ESPALDA, nombre: 'Polera con tu diseño', variante: 'Lila · L', cantidad: 1, precio: 39.9 },
+  ] },
+  { codigo: 'WL-20377', fecha: '7 oct', paso: 3, total: 169.9, entregaEstimada: 'mañana, 14 oct', items: [
+    { imagen: FRENTE, nombre: 'Combo Él y Ella', variante: 'Negro / Rojo vino', cantidad: 1, precio: 169.9 },
+  ] },
+  { codigo: 'WL-19902', fecha: '28 sep', paso: 4, total: 359.6, items: [
+    { imagen: ESPALDA, nombre: 'Polera oversize', variante: 'Negro · L', cantidad: 2, precio: 99.9 },
+    { imagen: FRENTE, nombre: 'Polera Essentials', variante: 'Blanco · S', cantidad: 1, precio: 59.9 },
+  ] },
+];
+
+/** "Hecha con": qué secciones y piezas del kit arman cada página. */
+function HechaCon({ secciones = [], piezas = [] }) {
+  return (
+    <div className={s.hechaCon}>
+      {secciones.length > 0 && <p><strong>Secciones</strong>{secciones.map((x) => <code key={x}>{x}</code>)}</p>}
+      {piezas.length > 0 && <p><strong>Piezas</strong>{piezas.map((x) => <code key={x}>{x}</code>)}</p>}
+    </div>
+  );
+}
 
 const CARRITO_INICIAL = [
   { id: 'essentials', imagen: FRENTE_BLANCO, nombre: 'Polera Walá Essentials con capucha', variante: 'Negro · M', precio: 89.9, precioAntes: 129.9, cantidad: 1 },
@@ -816,9 +851,18 @@ function Contenido({ tema, cambiarTema }) {
           </div>
         </Seccion>
 
+        {/* ── PIEZAS DE SECCIÓN ── */}
+        <Seccion
+          id="piezas-seccion" numero="06" titulo="Piezas de las secciones"
+          descripcion="Las tarjetas, chips y barras con las que se arman las secciones del builder. Son las mismas en todas: cambia una aquí y cambia en cada sección (y en cada página) que la use."
+          mejoras={['Cadena: piezas → secciones → páginas', 'Una tarjeta de categoría para cuadros, círculos y burbujas', 'Un Chip para todos los filtros', 'Un Beneficio para confianza y beneficios']}
+        >
+          <DemoPiezas categorias={CATEGORIAS_DEMO} marcas={MARCAS_DEMO} imagenes={{ frente: FRENTE_BLANCO, taza: TAZA }} />
+        </Seccion>
+
         {/* ── NAVEGACIÓN ── */}
         <Seccion
-          id="navegacion" numero="06" titulo="Navegación"
+          id="navegacion" numero="07" titulo="Navegación"
           mejoras={['Línea de luz de marca en la cabecera', 'Píldora que sigue al ratón', 'Logo con destello y avatar con anillo', 'Barra móvil con indicador deslizante']}
         >
           <Panel titulo="Cabecera" className={s.panelFondo}>
@@ -904,7 +948,7 @@ function Contenido({ tema, cambiarTema }) {
 
         {/* ── MENÚS DE LA CABECERA ── */}
         <Seccion
-          id="menus" numero="07" titulo="Menús de la cabecera"
+          id="menus" numero="08" titulo="Menús de la cabecera"
           descripcion="El contenido de cada menú, por separado. Son los mismos componentes que se abren en la cabecera: en escritorio como panel al pasar el ratón y en el celular como hoja inferior."
           mejoras={['Un solo componente base (Desplegable)', 'Estados de carga, vacío y sin sesión', 'Enlaces del router sin recargar']}
         >
@@ -940,17 +984,28 @@ function Contenido({ tema, cambiarTema }) {
         {/* ── LANDING DE EJEMPLO ── */}
         <Seccion
           id="landing" numero="01" titulo="Landing de ejemplo"
-          descripcion="Una página completa armada con secciones del builder, escrita como la guarda Firestore (una lista de { type, settings }). RenderSecciones la dibuja con las mismas piezas del catálogo de Secciones."
+          descripcion="PaginaTienda: cabecera, las secciones que guarda Firestore (una lista de { type, settings }), pie de página y, en el celular, la barra inferior. Desplázate dentro del marco."
           mejoras={['1 carrusel en vez de 6', '1 marquesina en vez de 3', '1 cuenta regresiva en vez de 2', 'Títulos y fondos iguales en todas', 'Enlaces internos, externos y #ancla con una regla', 'Textos viejos en negro se adaptan al modo noche', 'Videos que se pausan fuera de pantalla']}
         >
-          <Revelar className={s.paginaBuilder}>
-            <RenderSecciones
+          <HechaCon
+            secciones={['BarraAnuncios', 'HeroCarrusel', 'OfertaRelampago', 'GrillaCategorias', 'CarruselProductos', 'MosaicoBanners', 'FilaDestacados', 'Testimonios', 'MarcasMarquesina', 'PreguntasFrecuentes', 'PiePagina']}
+            piezas={['Cabecera', 'BarraInferior', 'TarjetaProducto', 'TarjetaCategoria', 'TarjetaMarca', 'TarjetaDestacado', 'TarjetaTestimonio', 'LogoMarca', 'StockBajo', 'Carrusel', 'Boton']}
+          />
+          <div className={s.marcoPagina}>
+            <PaginaTienda
+              cabecera={{
+                activo: 'tienda', menuTienda: MENU_TIENDA, monedas: saldo, notificaciones: historial, onLeer: leer,
+                onMarcarLeidas: marcarLeidas, onVerTodas: abrirCentro, usuario: USUARIO_DEMO, gruposCuenta: GRUPOS_CUENTA,
+                promoCuenta: PROMO_CUENTA, favoritos: FAVORITOS_DEMO, carrito,
+              }}
+              pie={PIE_DEMO}
+              barraInferior={{ carrito: enCarrito }}
               secciones={SECCIONES_DEMO}
               productosPara={productosParaSeccion}
               marcasPara={() => MARCAS_DEMO}
               onAgregar={manejarAgregar}
             />
-          </Revelar>
+          </div>
         </Seccion>
 
         {/* ── EDITOR DEL BUILDER ── */}
@@ -971,85 +1026,35 @@ function Contenido({ tema, cambiarTema }) {
 
         {/* ── CARRITO ── */}
         <Seccion
-          id="carrito" numero="03" titulo="Carrito y resumen"
-          descripcion="Funciona de verdad: sube la cantidad hasta pasar S/ 150 y mira qué pasa. Prueba el cupón WALA10."
+          id="carrito" numero="03" titulo="Carrito"
+          descripcion="PaginaCarrito: funciona de verdad. Sube la cantidad hasta pasar S/ 150 y mira qué pasa; prueba el cupón WALA10. Abajo, la misma sección de carrusel del builder sugiere productos."
           mejoras={['Camión que avanza hacia el envío gratis', 'Confeti al llegar a la meta', 'Totales que corren', 'Quitar con animación']}
         >
-          <div className={s.gridCarrito}>
-            <Panel>
-              <BarraEnvioGratis actual={cuentas.neto} meta={META_ENVIO} />
-              <div>
-                <AnimatePresence initial={false}>
-                  {carrito.map((it) => (
-                    <motion.div
-                      key={it.id}
-                      layout
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0, x: -40 }}
-                      transition={{ duration: 0.4, ease: EASE }}
-                      style={{ overflow: 'hidden' }}
-                    >
-                      <ItemCarrito
-                        {...it}
-                        cantidad={it.cantidad}
-                        onCantidad={cambiarCantidad(it.id)}
-                        onQuitar={quitar(it.id)}
-                      />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-                {carrito.length === 0 && (
-                  <EstadoVacio titulo="Tu carrito está vacío" texto="Lo quitaste todo. Vuelve a llenarlo para seguir probando.">
-                    <Boton icono={<RotateCcw aria-hidden="true" />} onClick={() => setCarrito(CARRITO_INICIAL)}>Restaurar carrito</Boton>
-                  </EstadoVacio>
-                )}
-              </div>
-            </Panel>
-            <Revelar retraso={0.1}>
-              <ResumenPedido
-                subtotal={cuentas.bruto}
-                descuento={cuentas.descuento}
-                envio={cuentas.envio}
-                monedas={Math.round(cuentas.neto)}
-              />
-            </Revelar>
+          <HechaCon secciones={['CarruselProductos']} piezas={['BarraEnvioGratis', 'ItemCarrito', 'ResumenPedido', 'EstadoVacio', 'TituloSeccion', 'Boton']} />
+          <div className={s.marcoPaginaLibre}>
+            <PaginaCarrito
+              items={carrito}
+              onCantidad={(id, n) => cambiarCantidad(id)(n)}
+              onQuitar={(id) => quitar(id)()}
+              metaEnvio={META_ENVIO}
+              recomendados={['taza', 'kapi', 'cuadro', 'lienzo', 'oversize'].map(productoDemo)}
+              onAgregar={manejarAgregar}
+              onPagar={() => toast({ tipo: 'info', titulo: 'En la tienda iría al checkout', texto: '/checkout', duracion: 2200 })}
+              onSeguirComprando={() => setCarrito(CARRITO_INICIAL)}
+              vacio={{ texto: 'Lo quitaste todo. Vuelve a llenarlo para seguir probando.', accion: <Boton icono={<RotateCcw aria-hidden="true" />} onClick={() => setCarrito(CARRITO_INICIAL)}>Restaurar carrito</Boton> }}
+            />
           </div>
         </Seccion>
 
         {/* ── PEDIDOS ── */}
         <Seccion
           id="pedidos" numero="04" titulo="Mis pedidos"
-          descripcion="Una sola tarjeta con resumen, seguimiento y la acción que toca."
+          descripcion="PaginaPedidos: pestañas En curso / Entregados con cuántos hay; cada pedido con su seguimiento y la acción que toca."
           mejoras={['La línea se dibuja al aparecer', 'El paso actual late', 'Si falta pagar, el borde respira en ámbar', 'Copiar con burbuja']}
         >
-          <div className={s.gridPedidos}>
-            <Revelar>
-              <SeguimientoPedido
-                codigo="WL-20481" fecha="10 oct" paso={1} total={129.8} pagoPendiente
-                items={[
-                  { imagen: FRENTE, nombre: 'Polera Essentials', variante: 'Negro · M', cantidad: 1, precio: 89.9 },
-                  { imagen: ESPALDA, nombre: 'Polera con tu diseño', variante: 'Lila · L', cantidad: 1, precio: 39.9 },
-                ]}
-              />
-            </Revelar>
-            <Revelar retraso={0.08}>
-              <SeguimientoPedido
-                codigo="WL-20377" fecha="7 oct" paso={3} total={169.9} entregaEstimada="mañana, 14 oct"
-                items={[{ imagen: FRENTE, nombre: 'Combo Él y Ella', variante: 'Negro / Rojo vino', cantidad: 1, precio: 169.9 }]}
-              />
-            </Revelar>
-            <Revelar retraso={0.16}>
-              <SeguimientoPedido
-                codigo="WL-19902" fecha="28 sep" paso={4} total={359.6}
-                items={[
-                  { imagen: ESPALDA, nombre: 'Polera oversize', variante: 'Negro · L', cantidad: 2, precio: 99.9 },
-                  { imagen: FRENTE, nombre: 'Polera Essentials', variante: 'Blanco · S', cantidad: 1, precio: 59.9 },
-                  { imagen: ESPALDA, nombre: 'Polera con tu diseño', variante: 'Lila · M', cantidad: 1, precio: 99.9 },
-                  { imagen: FRENTE, nombre: 'Regalo sorpresa', variante: 'Única', cantidad: 1, precio: 0 },
-                ]}
-              />
-            </Revelar>
+          <HechaCon piezas={['Pestanas', 'SeguimientoPedido', 'EstadoVacio', 'TituloSeccion', 'Boton']} />
+          <div className={s.marcoPaginaLibre}>
+            <PaginaPedidos pedidos={PEDIDOS_DEMO} onIrATienda={() => toast({ tipo: 'info', titulo: 'En la tienda iría a', texto: '/tienda', duracion: 2200 })} />
           </div>
         </Seccion>
 
@@ -1058,7 +1063,7 @@ function Contenido({ tema, cambiarTema }) {
         {vista === 'piezas' && (<>
         {/* ── AVISOS ── */}
         <Seccion
-          id="avisos" numero="08" titulo="Avisos y estados"
+          id="avisos" numero="09" titulo="Avisos y estados"
           descripcion="Si llegan varias notificaciones se apilan como en el celular; tócalas (o pasa el ratón) para desplegarlas y usa “Ver todas” para abrir el centro."
           mejoras={['Avisos limpios, sin franjas', 'Notificaciones apiladas', 'Centro con todas las notificaciones', 'Desliza un toast para cerrarlo']}
         >

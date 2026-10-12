@@ -29,4 +29,6 @@ export { FormularioSeccion, ProveedorEditor } from './editor/CamposEditor';
 export { ESQUEMAS, GRUPOS_MODULOS, esquemaDe, ajustesIniciales, resumenDe } from './editor/esquemas';
 export { EtiquetaColgante, IsoWala, LogoWala, Garabatos, Destello, Corazon, Puntos, Trazo } from './Marca';
 export { IconoWala, ICONOS_WALA, iconoDesde } from './IconosWala';
-export { PASTELES, pastel } from './Marca';
+export { PASTELES, pastel, ACENTOS, acento } from './Marca';
+export * from './piezas';
+export { MarcoTienda, PaginaTienda, PaginaCarrito, PaginaPedidos } from './paginas/Paginas';

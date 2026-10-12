@@ -1,0 +1,111 @@
+/* Opinión de un cliente: nota un poco girada con comilla grande. */
+.testimonio {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  height: calc(100% - 12px);
+  margin: 6px 4px;
+  padding: 1.25rem 1.15rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 22px 22px 22px;
+  background: var(--color-surface);
+  transform: rotate(var(--giro, 0deg));
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .testimonio:hover {
+    transform: rotate(0deg) translateY(-3px);
+  }
+}
+
+/* Comilla grande con la letra del logo. */
+.comillas {
+  position: absolute;
+  top: -0.35rem;
+  right: 0.9rem;
+  color: var(--violet-300);
+  font-family: var(--fuente-marca);
+  font-size: 4.2rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+:global([data-theme='dark']) .comillas {
+  color: rgba(167, 139, 250, 0.45);
+}
+
+.tema {
+  margin: 0;
+  color: var(--primary-color);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.estrellas {
+  display: flex;
+  gap: 2px;
+  margin: 0;
+}
+
+.estrellas svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--color-border);
+  fill: currentColor;
+}
+
+.estrellas .llena {
+  color: #f59e0b;
+}
+
+.testimonio blockquote {
+  flex: 1;
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.testimonio figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.testimonio figcaption img,
+.inicial {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.inicial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--violet-100);
+  color: var(--violet-800);
+  font-weight: 700;
+}
+
+.testimonio figcaption span {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.testimonio figcaption small {
+  color: var(--color-text-muted);
+}
+
+.verificado {
+  margin-left: auto;
+}
+

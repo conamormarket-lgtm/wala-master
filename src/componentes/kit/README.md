@@ -16,6 +16,26 @@ Todo se importa desde un solo lugar:
 import { Boton, TarjetaProducto, Cabecera, useToast } from '../componentes/kit';
 ```
 
+## La cadena: piezas → secciones → páginas
+
+Todo se arma con lo del nivel de abajo; nada se dibuja dos veces.
+
+1. **Piezas**: `Boton`, `Chip`, `Etiqueta(Colgante)`, `IconoWala`, `Carrusel`,
+   `TarjetaProducto`, y las de `piezas/`: `TarjetaCategoria` (cuadro · círculo
+   · burbuja), `TarjetaTestimonio`, `TarjetaMarca`, `LogoMarca`,
+   `TarjetaDestacado`, `Beneficio` (píldora · fila), `BarraProgreso` /
+   `StockBajo`.
+2. **Secciones** (`Secciones*.jsx`): cada tipo del builder, hecho solo con
+   piezas. En `/componentes.html` (vista Secciones) cada ficha dice con qué
+   piezas está hecha.
+3. **Páginas** (`paginas/Paginas.jsx`): `MarcoTienda` (cabecera, pie y barra
+   inferior), `PaginaTienda` (marco + secciones del builder), `PaginaCarrito`
+   (piezas del pedido + la sección de carrusel para recomendar) y
+   `PaginaPedidos`.
+
+Si una sección necesita algo nuevo (una tarjeta, un chip…), va primero como
+pieza en `piezas/` y después se usa en la sección.
+
 ## Reglas del kit
 
 - **Los datos entran por props.** Ningún componente lee Firestore, AuthContext

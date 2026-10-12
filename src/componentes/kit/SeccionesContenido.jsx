@@ -7,6 +7,7 @@ import { TituloSeccion, tituloDesdeAjustes } from './Seccion';
 import { tarjetaDesdeMarca } from './adaptadores';
 import { EtiquetaColgante, Garabatos, Trazo, Destello, acento } from './Marca';
 import { toDirectImageUrl } from '../../utils/imageUrl';
+import { TarjetaMarca, TarjetaDestacado } from './piezas';
 import s from './SeccionesContenido.module.css';
 
 /*
@@ -270,53 +271,6 @@ export function BloqueVideo({ ajustes = {} }) {
 
 /* ── Mosaico de banners o marcas (banner_grid) ──────────── */
 
-/* Colores de las tarjetas de marca sin color propio (bgColor). */
-const PALETA_MARCAS = [
-  ['#5b21b6', '#ddd6fe'],
-  ['#9f1239', '#ffe4e6'],
-  ['#075985', '#e0f2fe'],
-  ['#065f46', '#d1fae5'],
-  ['#9a3412', '#ffedd5'],
-  ['#1e3a8a', '#e0e7ff'],
-];
-
-const iniciales = (nombre) => String(nombre || '').split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
-
-function TarjetaMarca({ marca, indice, estilo, mostrarNombre }) {
-  const [color, suave] = PALETA_MARCAS[indice % PALETA_MARCAS.length];
-  return (
-    <Enlace
-      to={marca.url}
-      className={[s.marca, estilo === 'outline' && s.marcaBorde].filter(Boolean).join(' ')}
-      style={{
-        '--marca-color': marca.color || color,
-        '--marca-suave': suave,
-        backgroundImage: marca.fondo && estilo !== 'outline'
-          ? `linear-gradient(120deg, rgba(15,23,42,.86), rgba(15,23,42,.34)), url("${toDirectImageUrl(marca.fondo)}")`
-          : undefined,
-      }}
-      aria-label={`Explorar ${marca.nombre}`}
-    >
-      <span className={s.marcaNumero} aria-hidden="true">{String(indice + 1).padStart(2, '0')}</span>
-      {/* El logo cuelga de una etiqueta (como la del logo de Walá): sirve
-          igual para logos cuadrados, redondos o con fondo transparente. */}
-      <span className={s.marcaColgante}>
-        <span className={s.marcaHilo} aria-hidden="true" />
-        <span className={s.marcaLogo}>
-          {marca.logo
-            ? <img src={toDirectImageUrl(marca.logo)} alt="" loading="lazy" decoding="async" />
-            : <span className={s.marcaIniciales} aria-hidden="true">{iniciales(marca.nombre)}</span>}
-        </span>
-      </span>
-      <span className={s.marcaTexto}>
-        <EtiquetaColgante tono={estilo === 'outline' ? 'violeta' : 'blanco'} tamano="sm" className={s.marcaEtiqueta}>Universo Walá</EtiquetaColgante>
-        {mostrarNombre && <strong>{marca.nombre}</strong>}
-        <span className={s.marcaCta}>Explorar colección <ArrowRight aria-hidden="true" /></span>
-      </span>
-    </Enlace>
-  );
-}
-
 /**
  * Dos fuentes, como en el builder:
  *  - dataSource 'brands': tarjetas de las marcas (prop `marcas` = documentos
@@ -379,16 +333,17 @@ export function FilaDestacados({ ajustes = {} }) {
         etiqueta={ajustes.title || 'Destacados'}
       >
         {tarjetas.map((c, k) => (
-          <Enlace key={c.id || k} to={c.link} className={s.destacado}>
-            <span className={s.destacadoFoto} style={{ '--acento': acento(k) }}>
-              <EtiquetaColgante tono={k === 0 ? 'oro' : 'violeta'} className={s.destacadoPuesto}>#{k + 1}</EtiquetaColgante>
-              {c.imageUrl && <img src={toDirectImageUrl(c.imageUrl)} alt="" loading="lazy" decoding="async" draggable={false} />}
-            </span>
-            <span className={s.destacadoTexto}>
-              {c.title && <strong style={{ textAlign: c.titleAlign || undefined }}>{c.title}</strong>}
-              {c.subtitle && <small style={{ textAlign: c.subtitleAlign || undefined }}>{c.subtitle}</small>}
-            </span>
-          </Enlace>
+          <TarjetaDestacado
+            key={c.id || k}
+            titulo={c.title}
+            subtitulo={c.subtitle}
+            imagen={c.imageUrl}
+            url={c.link}
+            puesto={k + 1}
+            acento={acento(k)}
+            alinearTitulo={c.titleAlign}
+            alinearSubtitulo={c.subtitleAlign}
+          />
         ))}
       </Carrusel>
     </>

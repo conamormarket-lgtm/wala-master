@@ -1,0 +1,35 @@
+/* Barra de progreso con texto ("Quedan 6", metas…). */
+.barra {
+  display: grid;
+  align-content: start;
+  gap: 0.3rem;
+  min-height: 2.05rem;
+  padding: 0 0.2rem;
+}
+
+.texto {
+  color: var(--bp-texto, var(--color-text-muted));
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.texto strong {
+  color: var(--bp-acento, #e11d48);
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+}
+
+.pista {
+  height: 6px;
+  border-radius: 6px;
+  background: var(--bp-pista, rgba(30, 17, 64, 0.08));
+  overflow: hidden;
+}
+
+.pista span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f59e0b, #e11d48);
+}
+

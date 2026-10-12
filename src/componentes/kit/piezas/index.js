@@ -1,0 +1,8 @@
+/* Piezas que arman las secciones del builder (y se pueden usar sueltas). */
+export { TarjetaCategoria, TarjetaCategoriaEsqueleto } from './TarjetaCategoria';
+export { TarjetaTestimonio } from './TarjetaTestimonio';
+export { TarjetaMarca } from './TarjetaMarca';
+export { LogoMarca } from './LogoMarca';
+export { TarjetaDestacado } from './TarjetaDestacado';
+export { Beneficio } from './Beneficio';
+export { BarraProgreso, BarraProgresoVacia, StockBajo } from './BarraProgreso';
