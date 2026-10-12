@@ -79,6 +79,42 @@ Reglas de trabajo del dueño: desplegar uno mismo las functions que cambian y de
   `utils/conciliarComprobantes.js`. Las pruebas del emulador simulaban al ERP con la sesión ya iniciada,
   por eso no lo detectaron.
 
+### Diagnóstico del 2026-10-12: las métricas no muestran que las reglas le cortaran los datos al ERP
+Con Cloud Monitoring (`node scripts/metricas-reglas.cjs <clave> <inicio> <fin>`), comparando las dos caídas:
+
+| | 02-10 (reglas solo Walá) | 10-10 (reglas fusionadas, 17:20–17:30 UTC) |
+|---|---|---|
+| Listeners abiertos | de ~430 a **~60** | se mantuvieron en ~440-500 |
+| Rechazos/errores de reglas | ~30 000 cada 5 min | **~50 en total** |
+| Lecturas rechazadas por la API | ~27 000 `RunAggregationQuery` cada 5 min | 5 `ListDocuments` |
+
+- La sesión anónima del ERP sí funciona: Anonymous está activado, y el ERP crea usuarios anónimos desde el
+  28-07 (`a4c549d1`); 19 se renovaron en las últimas 24 h. Firestore espera a que Auth cargue la sesión
+  guardada, así que la carrera de `ensureFirestoreAuth` solo afecta a un navegador **sin** sesión guardada
+  (primera vez, incógnito, datos borrados). Es un bug real y hay que arreglarlo, pero no explica una caída general.
+- Ninguna colección "solo Walá" la usa el ERP (solo un comentario menciona `portal_clientes_users`).
+- **Coincidencia:** Vercel publicó una versión nueva del ERP (`3168fda6`) a las **17:21:44 UTC**, 80 s después
+  de las reglas (17:20:25). `b3e2b747` había salido a las 16:45. Las pestañas abiertas con la versión
+  anterior pueden fallar al cargar partes nuevas, y recargar lo arregla.
+- No hay acceso a los logs (la clave de servicio no puede leer Cloud Logging), así que no se sabe qué fueron
+  los ~50 rechazos: pueden ser 2-3 navegadores sin sesión, o visitas de la tienda.
+- Antes del 02-10 la base `(default)` tenía las reglas del ERP con `allow read: if true` y escritura sin
+  sesión (rulesets del 21-09 y 29-09). El ERP **nunca** había corrido en `(default)` con reglas que exijan sesión.
+- Lo que vio el equipo: "no dejaba moverse y no cargaba", a todos los que estaban en el ERP; Kevin lo atribuye
+  al login. Para el próximo intento: no publicar el ERP a la vez, con el equipo atento y
+  `scripts/metricas-reglas.cjs` corriendo.
+
+### Arreglo del ERP (2026-10-12, ERP `8cad6b7e`, en producción)
+- Reproducido en local y en un navegador sin sesión guardada: con el código anterior, Firestore abría el
+  Listen a los 5,2 s y la sesión anónima recién terminaba a los 5,8 s.
+- `lib/firebase.ts`: `ensureFirestoreAuth()` ahora espera `authStateReady()` (antes `currentUser` siempre era
+  null al cargar el módulo) y devuelve una promesa; nueva `waitForFirestoreAuth(8000)`.
+- `app-wrapper.tsx`: AppWrapper muestra "Cargando..." hasta `waitForFirestoreAuth()` y recién monta
+  AuthProvider/OrdersProvider (todo lo que lee Firestore, incluida FinanzaPro, está debajo). Si la sesión
+  falla o tarda más de 8 s, sigue como antes.
+- Verificado en aimunayerp.com con un navegador limpio: sesión lista a 1,1 s, Firestore a 1,7 s.
+- Siguiente paso: redesplegar las reglas fusionadas en un horario acordado (§3 P0.4).
+
 ## 3. Lo que falta (en orden)
 
 ### P0 — Reglas (la base sigue abierta a todo internet)
