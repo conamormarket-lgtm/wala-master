@@ -46,14 +46,30 @@ export function getProductosPedido(pedido) {
 
 /**
  * Código / número visible del pedido para mostrar al cliente.
- * Prioriza el número oficial del ERP, luego el pseudo-id del portal, luego el id.
+ * En un pedido de la tienda es siempre su código de Walá (PD-…), también después
+ * de que el ERP lo aprueba y le pone su propio número: el cliente ve el mismo
+ * código en la compra, WhatsApp, los avisos y "Mis pedidos". Los pedidos hechos
+ * directo en el ERP usan su número.
  *
  * @param {object} pedido
  * @returns {string}
  */
 export function getCodigoPedido(pedido) {
   if (!pedido || typeof pedido !== 'object') return '';
-  return pedido.numeroPedido || pedido.portalPseudoOrderId || pedido.id || '';
+  return pedido.origenPedidoWebId || pedido.portalPseudoOrderId || pedido.numeroPedido || pedido.id || '';
+}
+
+/**
+ * Número de producción del ERP cuando es distinto del código de Walá (pedido web
+ * ya aprobado), para dárselo a una asesora. Vacío si no hay o es el mismo.
+ *
+ * @param {object} pedido
+ * @returns {string}
+ */
+export function getNumeroProduccion(pedido) {
+  if (!pedido || typeof pedido !== 'object') return '';
+  const numero = String(pedido.numeroPedido || '').trim();
+  return numero && numero !== String(getCodigoPedido(pedido)) ? numero : '';
 }
 
 /* ────────────────────────────────────────────────────────────────────────────

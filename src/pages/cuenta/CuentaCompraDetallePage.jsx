@@ -16,6 +16,7 @@ import {
   derivarEstadoCompra,
   getProductosPedido,
   getCodigoPedido,
+  getNumeroProduccion,
   getBrandIdsDePedido,
 } from '../../utils/estadoCompra';
 import { formatCurrency } from '../../utils/formatters';
@@ -51,10 +52,11 @@ function normalizarWhatsapp(num) {
 }
 
 /** Construye el enlace wa.me con el mensaje de consulta de estado. */
-function construirWaLink(numero, codigo) {
+function construirWaLink(numero, codigo, numeroProduccion) {
   const n = normalizarWhatsapp(numero);
   if (!n) return null;
-  const mensaje = `Hola, quiero consultar el estado de mi pedido #${codigo}`;
+  // Con el número del ERP la asesora lo encuentra sin buscar el código web.
+  const mensaje = `Hola, quiero consultar el estado de mi pedido #${codigo}${numeroProduccion ? ` (N.º de producción ${numeroProduccion})` : ''}`;
   return `https://wa.me/${n}?text=${encodeURIComponent(mensaje)}`;
 }
 
@@ -321,6 +323,7 @@ const CuentaCompraDetallePage = () => {
 
   const estado = derivarEstadoCompra(pedido);
   const codigo = getCodigoPedido(pedido);
+  const numeroProduccion = getNumeroProduccion(pedido);
   const lineas = getProductosPedido(pedido);
 
   // ¿El pedido ya tiene fase REAL de producción del ERP (para mostrar el
@@ -397,12 +400,12 @@ const CuentaCompraDetallePage = () => {
     .map((bid) => {
       const b = (brands || []).find((x) => x.id === bid);
       const numero = b?.whatsappNumber ? normalizarWhatsapp(b.whatsappNumber) : '';
-      return numero ? { id: bid, name: b?.name || 'la marca', link: construirWaLink(numero, codigo) } : null;
+      return numero ? { id: bid, name: b?.name || 'la marca', link: construirWaLink(numero, codigo, numeroProduccion) } : null;
     })
     .filter(Boolean);
 
   // Si ninguna marca tiene número, caemos al número general de la cuenta.
-  const waGeneralLink = construirWaLink(numeroGeneral, codigo);
+  const waGeneralLink = construirWaLink(numeroGeneral, codigo, numeroProduccion);
 
   // ── Relacionados (por categoría con fallback a destacados) ───────────────
   // Excluye los productoId ya comprados en ESTE pedido, filtra visible!==false
@@ -434,6 +437,9 @@ const CuentaCompraDetallePage = () => {
               <div className={styles.headerTop}>
                 <div className={styles.headerMeta}>
                   <span className={styles.codigo}>Pedido #{codigo || '—'}</span>
+                  {numeroProduccion && (
+                    <span className={styles.fecha}>N.º de producción: {numeroProduccion}</span>
+                  )}
                   {fechaLegible && (
                     <span className={styles.fecha}>Realizado el {fechaLegible}</span>
                   )}
