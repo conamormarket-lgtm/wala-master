@@ -113,7 +113,19 @@ Con Cloud Monitoring (`node scripts/metricas-reglas.cjs <clave> <inicio> <fin>`)
   AuthProvider/OrdersProvider (todo lo que lee Firestore, incluida FinanzaPro, está debajo). Si la sesión
   falla o tarda más de 8 s, sigue como antes.
 - Verificado en aimunayerp.com con un navegador limpio: sesión lista a 1,1 s, Firestore a 1,7 s.
-- Siguiente paso: redesplegar las reglas fusionadas en un horario acordado (§3 P0.4).
+
+### Reglas fusionadas VIVAS desde 2026-10-12 09:14 (Lima)
+- Desplegadas desde `wala-master`. El ERP siguió normal (listeners ~420, sin rechazos propios).
+- Se rompió el **visor de pedidos** (repo `conamormarket-lgtm/visordepedidos`, tablets, visordepedidos.vercel.app):
+  no iniciaba ninguna sesión. Arreglado en `5119f99` (sesión anónima antes de montar la app), publicado en Vercel.
+  Las tablets con la versión vieja deben recargar.
+- Su **servidor de impresión** (`servidor-impresion-nube.js`, en una PC del local junto a la Zebra 192.168.18.71,
+  se abre con `iniciar-servidor-impresion.bat`) escucha `print_queue`; arreglado en el mismo commit, pero hay que
+  actualizarlo y reiniciarlo EN ESA PC (lo ve Kevin). Hasta entonces los tickets quedan `pending` y salen al reiniciar.
+- Lección: hay otros sistemas que usan la base sin sesión. Antes de cerrar algo más, buscarlos (dominios
+  autorizados en Auth: conamor.pe, yox-tau.vercel.app, portal-clientes-regala-con-amor.vercel.app).
+- Reversión: `firestore.rules` con `allow read, write: if true` + `firebase deploy --only firestore:rules`
+  (con `--config` a una carpeta aparte). Claude Code no la puede correr (el clasificador la bloquea): la corre el dueño.
 
 ## 3. Lo que falta (en orden)
 
