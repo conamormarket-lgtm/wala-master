@@ -1,103 +1,96 @@
 /* ── Barra de anuncios ── */
 .anuncios {
   --a-fondo: color-mix(in srgb, var(--anuncio-color) 12%, var(--color-surface, #fff));
-  --a-texto: color-mix(in srgb, var(--anuncio-color) 78%, var(--color-text, #1e1b2e));
+  --a-texto: color-mix(in srgb, var(--anuncio-color) 80%, var(--color-text, #1e1b2e));
+  --a-borde: color-mix(in srgb, var(--anuncio-color) 22%, transparent);
   --a-cta-fondo: var(--anuncio-color);
   --a-cta-texto: #fff;
-  --a-adorno: color-mix(in srgb, var(--anuncio-color) 35%, transparent);
+  --a-control: color-mix(in srgb, var(--anuncio-color) 14%, transparent);
+  --a-alto: 42px;
 
   position: relative;
-  isolation: isolate;
   overflow: hidden;
+  border-bottom: 1px solid var(--a-borde);
   background: var(--a-fondo);
   color: var(--a-texto);
   font-size: 0.84rem;
   font-weight: 600;
+  line-height: 1.2;
 }
 
 /* Sólida: el color del builder tal cual, con su texto. */
 .anuncio_solid {
   --a-fondo: var(--anuncio-color);
   --a-texto: var(--anuncio-texto);
+  --a-borde: transparent;
   --a-cta-fondo: #fff;
   --a-cta-texto: var(--anuncio-color);
-  --a-adorno: rgba(255, 255, 255, 0.28);
+  --a-control: rgba(255, 255, 255, 0.18);
 }
 
-/* Oscura: la noche violeta de Walá con el color como acento. */
+/* Oscura: la noche violeta de Walá; el color del builder queda de acento
+   (borde de abajo, botón y puntos). */
 .anuncio_dark {
   --a-fondo: var(--noche-wala, #14121c);
-  --a-texto: #fff;
-  --a-adorno: color-mix(in srgb, var(--anuncio-color) 55%, transparent);
-
-  border-bottom: 1px solid color-mix(in srgb, var(--anuncio-color) 45%, transparent);
+  --a-texto: #f4f1fb;
+  --a-borde: color-mix(in srgb, var(--anuncio-color) 60%, transparent);
+  --a-control: rgba(255, 255, 255, 0.1);
 }
 
 :global([data-theme='dark']) .anuncio_soft {
-  --a-fondo: color-mix(in srgb, var(--anuncio-color) 22%, var(--noche-wala, #14121c));
-  --a-texto: color-mix(in srgb, var(--anuncio-color) 30%, #fff);
+  --a-fondo: color-mix(in srgb, var(--anuncio-color) 20%, var(--noche-wala, #14121c));
+  --a-texto: color-mix(in srgb, var(--anuncio-color) 25%, #fff);
 }
 
-/* Textura quieta de marca en los bordes: destello y puntos de medio tono. */
-.anuncioAdorno1,
-.anuncioAdorno2 {
-  position: absolute;
-  z-index: -1;
-  top: 50%;
-  color: var(--a-adorno);
-  pointer-events: none;
-  transform: translateY(-50%);
+.anuncioComodo {
+  --a-alto: 50px;
 }
 
-/* Por dentro de las flechas, para no quedar debajo de ellas. */
-.anuncioAdorno1 {
-  left: 52px;
-  width: 16px;
-}
-
-.anuncioAdorno2 {
-  right: 48px;
-  width: 64px;
-}
-
-@container (max-width: 640px) {
-  .anuncioAdorno1,
-  .anuncioAdorno2 {
-    display: none;
-  }
-}
-
+/* Una fila: el mensaje centrado de verdad y los controles a la derecha,
+   sobre la misma línea. */
 .anuncioFijo {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  min-height: 40px;
-  padding: 0 2.6rem;
-  text-align: center;
+  min-height: var(--a-alto);
+  padding: 0 1rem;
   touch-action: pan-y;
 }
 
-.anuncioComodo .anuncioFijo,
-.anuncioComodo :global([role='region']) {
-  min-height: 48px;
+.anuncioConControles {
+  padding: 0 7.5rem;
+}
+
+.anuncioCentro {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.anuncioMarco {
+  display: flex;
+  min-width: 0;
 }
 
 .anuncios :global([role='region']) {
   display: flex;
   align-items: center;
-  min-height: 40px;
+  min-height: var(--a-alto);
 }
 
-.anuncioMarco {
-  min-width: 0;
+/* En la cinta, cada envoltorio de la marquesina centra su contenido (si no,
+   la línea de texto deja aire abajo y el mensaje queda alto). */
+.anuncios :global([role='region']) div {
+  display: flex;
+  align-items: center;
 }
 
 .anuncio {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
+  min-width: 0;
   max-width: 100%;
   white-space: nowrap;
 }
@@ -114,10 +107,11 @@ a.anuncio:hover {
 }
 
 .anuncioIcono {
-  margin: -6px 0;
+  flex-shrink: 0;
 }
 
 .anuncioImagen {
+  flex-shrink: 0;
   width: 20px;
   height: 20px;
   object-fit: contain;
@@ -125,8 +119,8 @@ a.anuncio:hover {
 
 .anuncioDestello {
   flex-shrink: 0;
-  width: 13px;
-  color: #fbbf24;
+  width: 12px;
+  color: #f59e0b;
 }
 
 /* Llamado a la acción: píldora que contrasta con la barra. */
@@ -135,14 +129,16 @@ a.anuncio:hover {
   flex-shrink: 0;
   align-items: center;
   gap: 0.2rem;
-  padding: 0.22rem 0.55rem 0.22rem 0.7rem;
+  height: 24px;
+  padding: 0 0.55rem 0 0.7rem;
   border-radius: 999px;
   background: var(--a-cta-fondo);
   color: var(--a-cta-texto);
   font-family: var(--fuente-marca);
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 900;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+  line-height: 1;
   text-transform: uppercase;
 }
 
@@ -158,79 +154,113 @@ a.anuncio:hover {
   }
 }
 
-/* Flechas (solo con ratón; en el celular se desliza con el dedo). */
-.anuncioFlecha {
+/* Controles agrupados: ‹ • • › */
+.anuncioControles {
   position: absolute;
   top: 50%;
-  display: none;
+  right: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  transform: translateY(-50%);
+}
+
+.anuncioFlecha {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: transparent;
+  background: var(--a-control);
   color: inherit;
-  opacity: 0.7;
   cursor: pointer;
-  transform: translateY(-50%);
-  transition: opacity var(--dur-rapida) ease, background-color var(--dur-rapida) ease;
+  transition: transform var(--dur-rapida) ease;
 }
 
 .anuncioFlecha svg {
-  width: 1rem;
-  height: 1rem;
+  width: 0.95rem;
+  height: 0.95rem;
 }
-
-.anuncioAnterior { left: 0.5rem; }
-.anuncioSiguiente { right: 0.5rem; }
 
 @media (hover: hover) and (pointer: fine) {
-  .anuncioFlecha {
-    display: inline-flex;
-  }
-
   .anuncioFlecha:hover {
-    background: color-mix(in srgb, currentColor 14%, transparent);
-    opacity: 1;
+    transform: scale(1.1);
   }
 }
 
-/* Puntos de avance, abajo y discretos. */
+.anuncioFlecha:active {
+  transform: scale(0.92);
+}
+
 .anuncioPuntos {
-  position: absolute;
-  bottom: 4px;
-  left: 50%;
   display: flex;
-  gap: 3px;
-  transform: translateX(-50%);
+  align-items: center;
+  gap: 4px;
+  padding: 0 0.2rem;
 }
 
 .anuncioPuntos span {
-  width: 4px;
-  height: 4px;
-  border-radius: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 6px;
   background: currentColor;
   opacity: 0.3;
   transition: width var(--dur-media) var(--ease-signature), opacity var(--dur-rapida) ease;
 }
 
 .anuncioPuntos .anuncioPuntoActivo {
-  width: 12px;
-  opacity: 0.85;
+  width: 16px;
+  opacity: 0.9;
 }
 
+.anuncio_dark .anuncioPuntos .anuncioPuntoActivo {
+  background: var(--anuncio-color);
+  opacity: 1;
+}
+
+/* Cinta: los mensajes separados por el destello de la marca. */
+.anuncioTramo {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.6rem;
+  padding-right: 1.6rem;
+}
+
+.anuncioSeparador {
+  flex-shrink: 0;
+  width: 13px;
+  color: #fbbf24;
+}
+
+.anuncio_soft .anuncioSeparador {
+  color: var(--anuncio-color);
+}
+
+/* Celular: sin flechas (se desliza), solo los puntos; el mensaje puede
+   bajar a dos líneas en vez de cortarse. */
 @container (max-width: 640px) {
   .anuncioFijo {
-    padding: 0.35rem 0.75rem 9px;
+    padding: 0.45rem 0.85rem;
   }
 
-  /* En el celular el mensaje baja a dos líneas en vez de cortarse. */
+  .anuncioConControles {
+    padding-right: 3.25rem;
+  }
+
+  .anuncioCentro {
+    justify-content: flex-start;
+  }
+
+  .anuncioFlecha {
+    display: none;
+  }
+
   .anuncioFijo .anuncio {
     white-space: normal;
     line-height: 1.3;
-    text-align: left;
   }
 
   .anuncioFijo .anuncioTexto {

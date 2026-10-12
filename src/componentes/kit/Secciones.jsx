@@ -12,7 +12,7 @@ import TarjetaProducto from './TarjetaProducto';
 import { Enlace } from './Enlace';
 import { tarjetaDesdeProducto } from './adaptadores';
 import { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
-import { EtiquetaColgante, Destello, Puntos, pastel } from './Marca';
+import { EtiquetaColgante, Destello, pastel } from './Marca';
 import { IconoWala, iconoDesde } from './IconosWala';
 import { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados } from './SeccionesContenido';
 import { BannerPrincipal, ListaBeneficios, Ubicacion, NavCategorias, GrillaProductos, CatalogoConFiltros, PiePagina } from './SeccionesExtra';
@@ -113,16 +113,18 @@ export function BarraAnuncios({ ajustes = {} }) {
       onPointerEnter={(e) => { if (e.pointerType === 'mouse') pausa.current = true; }}
       onPointerLeave={() => { pausa.current = false; }}
     >
-      <Destello className={s.anuncioAdorno1} />
-      <Puntos className={s.anuncioAdorno2} filas={3} columnas={8} />
       {animationType === 'scroll' ? (
-        <Marquesina segundos={Math.max(14, total * 7)} espacio="2.5rem" etiqueta="Anuncios">
-          {mensajes.map((m, k) => <MensajeAnuncio key={k} m={m} acento={showAccent} />)}
+        <Marquesina segundos={Math.max(14, total * 7)} espacio="0px" etiqueta="Anuncios">
+          {mensajes.map((m, k) => (
+            <span key={k} className={s.anuncioTramo}>
+              <MensajeAnuncio m={m} acento={false} />
+              <Destello className={s.anuncioSeparador} />
+            </span>
+          ))}
         </Marquesina>
       ) : (
         <div
-          className={s.anuncioFijo}
-          aria-live="polite"
+          className={[s.anuncioFijo, total > 1 && s.anuncioConControles].filter(Boolean).join(' ')}
           onTouchStart={(e) => { toque.current = e.touches[0]?.clientX ?? null; pausa.current = true; }}
           onTouchEnd={(e) => {
             pausa.current = false;
@@ -132,33 +134,33 @@ export function BarraAnuncios({ ajustes = {} }) {
             if (Math.abs(dx) > 40) ir(dx < 0 ? 1 : -1);
           }}
         >
+          <div className={s.anuncioCentro} aria-live="polite">
+            <AnimatePresence mode="wait" initial={false} custom={dir}>
+              <motion.div
+                key={i}
+                className={s.anuncioMarco}
+                custom={dir}
+                initial={{ opacity: 0, x: dir * 18 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: dir * -18 }}
+                transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
+              >
+                <MensajeAnuncio m={actual} acento={showAccent} />
+              </motion.div>
+            </AnimatePresence>
+          </div>
           {total > 1 && (
-            <button type="button" className={`${s.anuncioFlecha} ${s.anuncioAnterior}`} onClick={() => ir(-1)} aria-label="Anuncio anterior">
-              <ChevronLeft aria-hidden="true" />
-            </button>
-          )}
-          <AnimatePresence mode="wait" initial={false} custom={dir}>
-            <motion.div
-              key={i}
-              className={s.anuncioMarco}
-              custom={dir}
-              initial={{ opacity: 0, x: dir * 18 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: dir * -18 }}
-              transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
-            >
-              <MensajeAnuncio m={actual} acento={showAccent} />
-            </motion.div>
-          </AnimatePresence>
-          {total > 1 && (
-            <>
-              <button type="button" className={`${s.anuncioFlecha} ${s.anuncioSiguiente}`} onClick={() => ir(1)} aria-label="Anuncio siguiente">
-                <ChevronRight aria-hidden="true" />
+            <div className={s.anuncioControles}>
+              <button type="button" className={s.anuncioFlecha} onClick={() => ir(-1)} aria-label="Anuncio anterior">
+                <ChevronLeft aria-hidden="true" />
               </button>
               <span className={s.anuncioPuntos} aria-hidden="true">
                 {mensajes.map((_, k) => <span key={k} className={k === i % total ? s.anuncioPuntoActivo : undefined} />)}
               </span>
-            </>
+              <button type="button" className={s.anuncioFlecha} onClick={() => ir(1)} aria-label="Anuncio siguiente">
+                <ChevronRight aria-hidden="true" />
+              </button>
+            </div>
           )}
         </div>
       )}
