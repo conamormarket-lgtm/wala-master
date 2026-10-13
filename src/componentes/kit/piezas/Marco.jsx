@@ -39,11 +39,12 @@ export function AvisoSistema({ tipo = 'aviso', children, onCerrar }) {
 /**
  * Banner para bajar la app (solo en el navegador del celular).
  *  - url: tienda de apps  · onCerrar: la X
- *  - icono: el ícono real de la app (el mismo de Android, Play Store y la
- *    PWA: public/icons). No se redibuja: tiene que verse igual que en el
- *    celular.
+ *  - icono: el ícono de la app en el violeta de la cabecera
+ *    (public/assets/marca/app-icono.webp: el de public/icons con el fondo
+ *    magenta cambiado al degradado del logo). Los íconos de Android, Play
+ *    Store y la PWA siguen magenta hasta que se actualicen.
  */
-export function BannerApp({ titulo = 'Walá App', texto = 'Para una mejor experiencia', accion = 'Obtener', url, onCerrar, icono = '/icons/icon-192.webp' }) {
+export function BannerApp({ titulo = 'Walá App', texto = 'Para una mejor experiencia', accion = 'Obtener', url, onCerrar, icono = '/assets/marca/app-icono.webp' }) {
   return (
     <div className={s.app}>
       {onCerrar && (
