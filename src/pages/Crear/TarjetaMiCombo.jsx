@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Trash2, Paintbrush, ShoppingBag, Clock, Users } from 'lucide-react';
 import { getComboCrear } from '../../services/combosCrear';
+import { useAlVerUnaVez } from '../../hooks/useAlVerUnaVez';
 import { precioBase } from '../../utils/prendaBase';
 import NombreEditable from './NombreEditable';
 import AccionesComunidad, { InsigniaPublicada } from '../Comunidad/AccionesComunidad';
@@ -20,6 +21,8 @@ const soles = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
  */
 const TarjetaMiCombo = ({ design, onEliminar, onRenombrado, onComunidad }) => {
   const { pathname } = useLocation();
+  const fotoRef = useRef(null);
+  const visto = useAlVerUnaVez(fotoRef);
   const { data: combo } = useQuery({
     queryKey: ['combo-crear', design.comboId],
     enabled: Boolean(design.comboId),
@@ -34,7 +37,7 @@ const TarjetaMiCombo = ({ design, onEliminar, onRenombrado, onComunidad }) => {
     <li className={styles.card}>
       <div className={styles.media}>
         <Link to={url} className={styles.foto} aria-label={`Abrir el combo ${design.name || ''}`}>
-          <span className={propios.prendas} style={{ '--n': Math.max(previas.length, 1) }}>
+          <span ref={fotoRef} className={`${propios.prendas} ${visto ? propios.saludo : ''}`} style={{ '--n': Math.max(previas.length, 1) }}>
             {previas.map((src, i) => <img key={`${src}-${i}`} src={src} alt="" loading="lazy" />)}
           </span>
         </Link>

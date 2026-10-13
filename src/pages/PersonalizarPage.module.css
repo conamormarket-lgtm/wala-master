@@ -712,3 +712,24 @@
   font-size: 0.95rem;
   color: var(--gris-texto-principal);
 }
+
+/* Al aparecer en pantalla las prendas se mueven una vez (como al pasar el
+   mouse), también en el celular. Sin bucles. */
+@keyframes saludoIzq {
+  0%, 100% { transform: rotate(0); }
+  40% { transform: rotate(-4deg); }
+  70% { transform: rotate(1deg); }
+}
+
+@keyframes saludoDer {
+  0%, 100% { transform: rotate(0); }
+  40% { transform: rotate(4deg); }
+  70% { transform: rotate(-1deg); }
+}
+
+.saludo img:nth-child(odd) { animation: saludoIzq 0.9s ease-out; }
+.saludo img:nth-child(even) { animation: saludoDer 0.9s ease-out 0.08s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .saludo img { animation: none; }
+}

@@ -9,6 +9,7 @@ import { EtiquetaColgante } from '../componentes/kit/Marca';
 import { getDesignsByUser } from '../services/designs';
 import { useAuth } from '../contexts/AuthContext';
 import { useAlternarFotos } from '../hooks/useAlternarFotos';
+import { useAlVerUnaVez } from '../hooks/useAlVerUnaVez';
 import { leerPrendaBase, precioBase, colorDisponible, fondoMuestra } from '../utils/prendaBase';
 import { useEliminarCreacion } from './Crear/useEliminarCreacion';
 import TusBorradores, { useBorradoresCrear } from './Crear/TusBorradores';
@@ -87,11 +88,13 @@ const TarjetaPrenda = ({ prenda }) => {
 const TarjetaCombo = ({ combo, prendas }) => {
   const { precio, sueltas, ahorro } = preciosDeCombo(combo, prendas);
   const nombres = [...new Set(prendas.map((p) => p.name))];
+  const fotoRef = useRef(null);
+  const visto = useAlVerUnaVez(fotoRef);
   return (
     <Link to={`/combo/${combo.id}`} className={styles.tarjeta}>
       <div className={styles.foto}>
         {!combo.publicado && <span className={styles.borrador}>Borrador</span>}
-        <span className={styles.prendasCombo} style={{ '--n': prendas.length }}>
+        <span ref={fotoRef} className={`${styles.prendasCombo} ${visto ? styles.saludo : ''}`} style={{ '--n': prendas.length }}>
           {prendas.map((p, i) => {
             const img = leerPrendaBase(p).vistas[0]?.imagen || p.mainImage;
             return img ? <img key={`${p.id}-${i}`} src={img} alt="" aria-hidden="true" loading="lazy" /> : null;

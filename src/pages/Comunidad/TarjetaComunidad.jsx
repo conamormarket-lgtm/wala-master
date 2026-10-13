@@ -5,6 +5,7 @@ import { ImageOff, Paintbrush, Users } from 'lucide-react';
 import { listarComunidad } from '../../services/comunidad';
 import { fondoColorGuardado } from '../../utils/prendaBase';
 import { useAlternarFotos } from '../../hooks/useAlternarFotos';
+import { useAlVerUnaVez } from '../../hooks/useAlVerUnaVez';
 import styles from '../cuenta/MisCreacionesPage.module.css';
 import duo from '../Crear/TarjetaMiCombo.module.css';
 import propios from './Comunidad.module.css';
@@ -35,6 +36,7 @@ const TarjetaComunidad = ({ diseno }) => {
   const frente = previas[0]?.url || diseno.imagenConjunta || diseno.previewUrl || '';
   const espalda = previas[1]?.url || '';
   const verEspalda = useAlternarFotos(mediaRef, Boolean(frente && espalda));
+  const visto = useAlVerUnaVez(mediaRef);
   const lados = previas.map((p) => p.nombre).filter(Boolean);
   const color = diseno.color?.nombre ? diseno.color : null;
   const url = urlUsarDiseno(diseno);
@@ -48,7 +50,7 @@ const TarjetaComunidad = ({ diseno }) => {
       <div ref={mediaRef} className={`${styles.media} ${verEspalda ? styles.mediaEspalda : ''}`}>
         <Link to={url} className={styles.foto} aria-label={`Usar el diseño ${diseno.nombre}`}>
           {esCombo && fotosCombo.length ? (
-            <span className={duo.prendas} style={{ '--n': fotosCombo.length }}>
+            <span className={`${duo.prendas} ${visto ? duo.saludo : ''}`} style={{ '--n': fotosCombo.length }}>
               {fotosCombo.map((src, i) => <img key={`${src}-${i}`} src={src} alt="" loading="lazy" />)}
             </span>
           ) : frente ? (
