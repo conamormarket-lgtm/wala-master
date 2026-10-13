@@ -3,6 +3,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  min-width: 0;
   color: var(--color-text);
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
@@ -237,10 +238,29 @@
 }
 
 .nombre {
+  max-width: 100%;
+  overflow: hidden;
   font-family: var(--fuente-marca);
   font-size: 0.92rem;
   font-weight: 900;
   letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.categoria {
+  min-width: 0;
+}
+
+/* Celular: nombre un poco más chico para que quepan los largos. */
+@container (max-width: 640px) {
+  .circulo .nombre {
+    font-size: 0.8rem;
+  }
+
+  .categoria small {
+    font-size: 0.7rem;
+  }
 }
 
 .categoria small {

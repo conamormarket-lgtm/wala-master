@@ -569,6 +569,10 @@ a.anuncio:hover {
 }
 
 /* ── Categorías ── */
+.categorias li {
+  min-width: 0;
+}
+
 .categorias {
   display: grid;
   grid-template-columns: repeat(var(--columnas), minmax(0, 1fr));
@@ -593,9 +597,11 @@ a.anuncio:hover {
     scroll-padding-inline: var(--page-padding-movil, 1rem);
   }
 
-  /* Se ven 3 y medio: el último asoma para invitar a deslizar. */
+  /* Se ven 3 y medio: el último asoma para invitar a deslizar. min-width: 0
+     para que un nombre largo ("Limpiadores") no agrande su categoría. */
   .categorias li {
     flex: 0 0 28%;
+    min-width: 0;
     scroll-snap-align: start;
   }
 }
