@@ -235,16 +235,8 @@ paso. En la tienda, importar **directo del archivo**
 (`componentes/kit/Boton`), no de `kit/index.js`: el índice arrastraría el CSS
 de todo el kit al paquete principal.
 
-1. ✓ Proveedores y `Boton`: `ProveedorEnlaces` envuelve el router en
-   `App.jsx`; `ToastProvider` (`contexts/ToastContext.jsx`) ahora es un puente
-   a `ProveedorToasts`, así que todos los `useGlobalToast()` de la tienda ya
-   muestran los toasts del kit sin cambiar sus llamadas. Carrito y checkout
-   usan `Boton` (el verde de WhatsApp y "Aplicar" del cupón siguen igual).
-2. Avisos, toasts y `HojaInferior` (reemplazan modales sueltos).
-3. `TarjetaProducto` en las grillas (adaptando los campos del producto).
-4. Carrito, checkout y Mis pedidos.
-5. `Cabecera` y `BarraInferior` (alimentadas por AuthContext, CartContext y la
-   configuración de Firestore).
+Qué usa ya la tienda y el orden de los pasos: [`guia/MIGRACION.md`](guia/MIGRACION.md)
+(el único plan; cada ficha de `guia/` agrega lo propio de su página).
 
 ## Editor del builder (`editor/`)
 

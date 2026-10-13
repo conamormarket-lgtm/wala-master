@@ -12,6 +12,10 @@ Una ficha por página real de wala.pe. Cada ficha tiene:
   diferencias a propósito y los pasos. La migración todavía NO se hace: es
   la hoja de ruta para cuando se decida.
 
+Lo común a todas las páginas (qué usa ya la tienda, cómo se importa y el
+orden de los pasos) está en [MIGRACION.md](MIGRACION.md): es el único plan;
+las fichas lo siguen.
+
 Numeración: **M** = marco (cabecera, pie, barra inferior, flotantes: igual en
 todas las páginas), **S** = secciones del builder en su orden, **P** =
 contenido propio de una página que no es del builder (carrito, pedidos).

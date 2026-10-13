@@ -193,6 +193,9 @@ día si cambia un componente del kit o su forma de recibir datos.
 
 ### Pasos (cada uno se verifica solo y se puede volver atrás)
 
+Siguen el orden común de [MIGRACION.md](MIGRACION.md); aquí, lo que le toca
+al inicio.
+
 1. Marco: `BarraAdmin`, `AvisoSistema`, `BannerApp`, flotantes, `PieLegal`. Bajo riesgo; cada uno reemplaza a un componente.
 2. `TarjetaProducto` en los carruseles (con lo que le falta, arriba).
 3. Secciones del inicio con `RenderSecciones` + `respaldo`, conservando `DeferredSection` y las excepciones. Comparar capturas antes y después.
