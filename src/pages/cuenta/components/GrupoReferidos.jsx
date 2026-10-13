@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Check, Clock, Coins, Receipt, AlertCircle, UserPlus } from 'lucide-react';
 import { GlassCard } from '../../../components/ui';
 import { IconoWala } from '../../../componentes/kit/IconosWala';
@@ -8,6 +9,7 @@ import {
   VENTANA_REFERIDO_MS,
   VENTANA_INVITACION_MS,
   BONO_BIENVENIDA_INVITACION,
+  getReferralOrderDetail,
 } from '../../../services/referrals';
 import DetallePedidoReferido from './DetallePedidoReferido';
 import styles from '../CuentaReferidosPage.module.css';
@@ -27,6 +29,16 @@ export const restanteLegible = (resta) => {
   if (horas > 0) return `${horas} h ${totalMin % 60} min`;
   if (totalMin > 0) return `${totalMin} min`;
   return 'menos de 1 min';
+};
+
+// Etapa del pedido (detalleReferidoSecure → referidosLogic.estadoPedidoReferido).
+const ETAPAS = {
+  por_confirmar: { label: 'Por confirmar', chip: 'chipOff' },
+  confirmado: { label: 'Confirmado', chip: 'chipEtapa' },
+  produccion: { label: 'En producción', chip: 'chipEtapa' },
+  enviado: { label: 'En camino', chip: 'chipEtapa' },
+  entregado: { label: 'Entregado', chip: 'chipOk' },
+  anulado: { label: 'Anulado', chip: 'chipOff' },
 };
 
 const fechaCorta = (t) => {
@@ -57,6 +69,20 @@ const Persona = ({ r, nombre, ahora, abierto, onToggle, onClaim, reclamando }) =
   const ganancia = confirmada ? (r.earnedCoins || 0) : estimateReferralReward(r.orderTotal, r);
   const restante = restanteLegible(e.resta);
   const puedeReclamar = r.status === 'purchased' || r.status === 'completed';
+
+  // En qué va el pedido: "Reclamar" solo se activa cuando el ERP lo marca
+  // Finalizado (el servidor igual lo rechaza antes, pero un botón activo que
+  // siempre responde "todavía no" confunde). Misma consulta que "Ver pedido".
+  const { data: pedido, isLoading: cargandoPedido } = useQuery({
+    queryKey: ['referralOrder', r.id],
+    queryFn: () => getReferralOrderDetail(r.id),
+    enabled: puedeReclamar,
+    staleTime: 60 * 1000,
+    retry: false,
+  });
+  const etapa = puedeReclamar && pedido ? ETAPAS[pedido.etapa] : null;
+  const listoParaReclamar = !!pedido?.finalizado;
+  const anulado = pedido?.etapa === 'anulado';
 
   let detalle;
   if (e.clave === 'entro') detalle = `Entró el ${fechaCorta(r.clickedAt)} · le quedan ${restante} para comprar`;
@@ -92,6 +118,9 @@ const Persona = ({ r, nombre, ahora, abierto, onToggle, onClaim, reclamando }) =
             {e.clave === 'vencido' && (
               <span className={`${styles.estadoChip} ${styles.chipOff}`}>Plazo vencido</span>
             )}
+            {etapa && (
+              <span className={`${styles.estadoChip} ${styles[etapa.chip]}`}>{etapa.label}</span>
+            )}
             {e.clave === 'no_califico' && (
               <span className={`${styles.estadoChip} ${styles.chipOff}`}><AlertCircle size={12} aria-hidden="true" /> No calificó</span>
             )}
@@ -99,7 +128,7 @@ const Persona = ({ r, nombre, ahora, abierto, onToggle, onClaim, reclamando }) =
           <span className={styles.personaEstado}>{detalle}</span>
         </div>
 
-        {e.conCompra && (
+        {e.conCompra && !anulado && (
           <span className={styles.rewardBadge}>
             <span className={styles.rewardLabel}>{confirmada ? 'Ganas' : 'Ganarías'}</span>
             <span className={styles.rewardAmount}><Moneda />+{ganancia}</span>
@@ -115,11 +144,24 @@ const Persona = ({ r, nombre, ahora, abierto, onToggle, onClaim, reclamando }) =
               {abierto ? 'Ocultar pedido' : 'Ver pedido'}
             </button>
           )}
-          {puedeReclamar && (
-            <button type="button" className={styles.btnSolido} onClick={onClaim} disabled={reclamando}>
+          {puedeReclamar && !anulado && (
+            <button
+              type="button"
+              className={styles.btnSolido}
+              onClick={onClaim}
+              disabled={reclamando || !listoParaReclamar}
+              title={listoParaReclamar ? undefined : 'Se activa cuando el pedido se entrega'}
+            >
               <Coins size={16} aria-hidden="true" />
-              {reclamando ? 'Reclamando…' : 'Reclamar monedas'}
+              {reclamando
+                ? 'Reclamando…'
+                : listoParaReclamar
+                  ? 'Reclamar monedas'
+                  : cargandoPedido ? 'Revisando pedido…' : 'Reclamar al entregarse'}
             </button>
+          )}
+          {anulado && (
+            <span className={styles.personaEstado}>El pedido se anuló, así que no genera monedas.</span>
           )}
         </div>
       )}
