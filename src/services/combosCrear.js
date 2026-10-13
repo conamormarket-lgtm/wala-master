@@ -35,7 +35,9 @@ export const getCombosCrear = async ({ incluirBorradores = false } = {}) => {
 
 export const getComboCrear = async (id) => {
   const { data, error } = await getDocument(COLLECTION, id);
-  if (error || !data || data.esComboCrear !== true) return { data: null, error: error || 'No encontrado' };
+  // Un fallo de red no es "no existe": se distingue para poder reintentar.
+  if (error) return { data: null, error, noEncontrado: false };
+  if (!data || data.esComboCrear !== true) return { data: null, error: 'No encontrado', noEncontrado: true };
   return { data: leerCombo({ id, ...data }), error: null };
 };
 

@@ -39,9 +39,13 @@ const ComboCrearPage = () => {
   const toast = useGlobalToast();
   const [eligiendo, setEligiendo] = useState(null);
 
-  const { data: combo, isLoading } = useQuery({
+  const { data: combo, isLoading, isError: errorCombo } = useQuery({
     queryKey: ['combo-crear', id],
-    queryFn: async () => (await getComboCrear(id)).data,
+    queryFn: async () => {
+      const { data, error, noEncontrado } = await getComboCrear(id);
+      if (error && !noEncontrado) throw new Error(error);
+      return data;
+    },
   });
   const piezasCombo = combo?.piezas || [];
 
@@ -98,6 +102,16 @@ const ComboCrearPage = () => {
       <div className={styles.estado}>
         <Loader2 className={styles.girando} size={28} aria-hidden="true" />
         <p>Cargando el combo…</p>
+      </div>
+    );
+  }
+
+  if (errorCombo || prendasQ.some((q) => q.isError)) {
+    return (
+      <div className={styles.estado}>
+        <h1 className={styles.estadoTitulo}>No pudimos cargar el combo</h1>
+        <p>Revisa tu conexión e inténtalo otra vez.</p>
+        <button type="button" className={styles.principal} onClick={() => window.location.reload()}>Reintentar</button>
       </div>
     );
   }
@@ -233,7 +247,14 @@ const ComboCrearPage = () => {
                       </div>
                     )}
                     <div className={styles.acciones}>
-                      <Link to={urlEstudio(p.i, `&designId=${p.designId}`)} state={estadoEstudio} className={styles.secundario}>
+                      {/* Si otra pieza lleva este mismo diseño, se edita una copia:
+                          cambiarlo aquí no debe cambiar la otra prenda. */}
+                      <Link
+                        to={urlEstudio(p.i, piezas.some((o) => o.i !== p.i && o.designId === p.designId)
+                          ? `&copiar=${p.designId}` : `&designId=${p.designId}`)}
+                        state={estadoEstudio}
+                        className={styles.secundario}
+                      >
                         <Pencil size={15} aria-hidden="true" /> Editar
                       </Link>
                       {vaciasIguales > 0 && p.lista && (

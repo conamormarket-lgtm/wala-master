@@ -1658,3 +1658,38 @@
   gap: 0.15rem 0.35rem;
   min-width: 0;
 }
+
+/* Combo: llevar el mismo diseño a las otras prendas iguales. */
+.copiarCombo {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 12px;
+  border: 1.5px solid var(--violet-200, #ddd6fe);
+  background: var(--primary-light, #f5f3ff);
+  color: var(--gris-texto-principal);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.copiarCombo input {
+  width: 18px;
+  height: 18px;
+  margin-top: 0.1rem;
+  accent-color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.copiarCombo small {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--gris-texto-secundario);
+}
+
+:global([data-theme="dark"]) .copiarCombo {
+  border-color: rgba(167, 139, 250, 0.35);
+  background: rgba(139, 92, 246, 0.12);
+}

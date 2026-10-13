@@ -29,7 +29,8 @@ import {
 import RecorteImagen from './RecorteImagen';
 import QuitarFondo from './QuitarFondo';
 import { itemDeCreacion } from './creacionCarrito';
-import { ponerPieza } from './comboCrear';
+import { ponerPieza, leerArmado } from './comboCrear';
+import { getComboCrear } from '../../services/combosCrear';
 import AtajosTeclado, { MOD } from './AtajosTeclado';
 import CapaModal from './CapaModal';
 import MenuContextual from './MenuContextual';
@@ -149,6 +150,22 @@ const CrearStudioPage = () => {
   const enCombo = Boolean(comboParam) && Number.isInteger(piezaParam) && piezaParam >= 0;
   const sufijoCombo = enCombo ? `&combo=${encodeURIComponent(comboParam)}&pieza=${piezaParam}` : '';
   const copiarParam = enCombo ? searchParams.get('copiar') : null;
+  const { data: comboActual } = useQuery({
+    queryKey: ['combo-crear', comboParam],
+    enabled: enCombo,
+    queryFn: async () => (await getComboCrear(comboParam)).data,
+  });
+  // Las otras piezas del combo que son esta misma prenda y siguen sin diseño:
+  // con un clic llevan el mismo (en una pareja de poleras, la otra polera).
+  const otrasIguales = (() => {
+    if (!enCombo || !comboActual) return [];
+    const armado = leerArmado(comboParam, comboActual.piezas.length);
+    return comboActual.piezas
+      .map((p, i) => ({ ...p, i }))
+      .filter((p) => p.i !== piezaParam && p.prendaId === id && !armado[p.i]?.designId)
+      .map((p) => p.i);
+  })();
+  const [copiarALasOtras, setCopiarALasOtras] = useState(true);
 
   const { data: prenda, isLoading, error } = useQuery({
     queryKey: ['prenda-base', id],
@@ -2042,10 +2059,18 @@ const CrearStudioPage = () => {
     setDialogoGuardar(true);
   };
 
+  /** Pone la creación en su pieza del combo (y en las iguales, si se pidió). */
+  const ponerEnCombo = (idPieza) => {
+    ponerPieza(comboParam, piezaParam, { designId: idPieza });
+    if (copiarALasOtras) otrasIguales.forEach((i) => ponerPieza(comboParam, i, { designId: idPieza }));
+  };
+
   const confirmarGuardar = async (nombreFinal = nombreEditado, { actualizar = false } = {}) => {
     setDialogoGuardar(false);
     try {
       const creacion = await guardarCreacion(nombreFinal);
+      // Dentro de un combo, guardar también la deja puesta en su pieza.
+      if (enCombo) ponerEnCombo(creacion.id);
       // Al actualizar basta un aviso; la primera vez, la ventana con "Ver mi creación".
       if (actualizar) toast.success('Cambios guardados.');
       else setGuardada(creacion);
@@ -2082,7 +2107,7 @@ const CrearStudioPage = () => {
         const creacion = await guardarCreacion(nombre, talla);
         idPieza = creacion.id;
       }
-      ponerPieza(comboParam, piezaParam, { designId: idPieza });
+      ponerEnCombo(idPieza);
       try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
       navigate(`/combo/${comboParam}`);
     } catch (err) {
@@ -2972,6 +2997,15 @@ const CrearStudioPage = () => {
           </div>
 
           <div className={styles.acciones}>
+            {enCombo && otrasIguales.length > 0 && (
+              <label className={styles.copiarCombo}>
+                <input type="checkbox" checked={copiarALasOtras} onChange={(e) => setCopiarALasOtras(e.target.checked)} />
+                <span>
+                  Ponerlo también en la {otrasIguales.map((i) => `prenda ${i + 1}`).join(' y la ')}
+                  <small>Luego puedes cambiarle el color o editarla aparte.</small>
+                </span>
+              </label>
+            )}
             {enCombo ? (
               <button type="button" className={styles.botonPrincipal} onClick={usarEnCombo} disabled={!!procesando}>
                 <CheckCircle2 size={18} aria-hidden="true" />
@@ -3104,7 +3138,11 @@ const CrearStudioPage = () => {
             <h2 id="crear-guardada-titulo" className={styles.estadoTitulo}>¡Creación guardada!</h2>
             {guardada.imagenConjunta && <img src={guardada.imagenConjunta} alt={guardada.name} className={styles.imagenGuardada} />}
             <p><strong>{guardada.name}</strong></p>
-            <Link to={`/creacion/${guardada.id}`} className={styles.botonPrincipal}>Ver mi creación</Link>
+            {enCombo ? (
+              <Link to={`/combo/${comboParam}`} className={styles.botonPrincipal}>Volver al combo</Link>
+            ) : (
+              <Link to={`/creacion/${guardada.id}`} className={styles.botonPrincipal}>Ver mi creación</Link>
+            )}
             <button type="button" className={styles.botonTexto} onClick={() => setGuardada(null)}>Seguir diseñando</button>
           </div>
         </CapaModal>

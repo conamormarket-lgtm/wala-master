@@ -660,3 +660,55 @@
 .tachado {
   white-space: nowrap;
 }
+
+/* ── Combos a medias ("Sigue armando tu combo") ── */
+.combosEnCurso {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 0.75rem;
+}
+
+.comboEnCurso {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 16px;
+  border: 1.5px solid var(--violet-200, #ddd6fe);
+  background: var(--color-surface, var(--blanco));
+  box-shadow: var(--sombra-suave);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s ease;
+}
+
+.comboEnCurso:hover {
+  border-color: #8b5cf6;
+  color: inherit;
+}
+
+.comboEnCursoIcono {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-light, #f5f3ff);
+  color: var(--primary-color);
+}
+
+.comboEnCursoTexto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.82rem;
+  color: var(--gris-texto-secundario);
+}
+
+.comboEnCursoTexto strong {
+  font-size: 0.95rem;
+  color: var(--gris-texto-principal);
+}
