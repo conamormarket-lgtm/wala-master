@@ -2,17 +2,18 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Clock, MapPin, SlidersHorizontal, MessageCircle, Music2, Mail } from 'lucide-react';
 import Boton from './Boton';
 import Marquesina from './Marquesina';
+import Acordeon from './Acordeon';
 import TarjetaProducto, { TarjetaProductoEsqueleto } from './TarjetaProducto';
 import { Enlace } from './Enlace';
 import { Buscador, Campo } from './Formulario';
 import { Chip } from './Etiquetas';
 import { EstadoVacio, HojaInferior } from './Feedback';
 import { TituloSeccion, tituloDesdeAjustes } from './Seccion';
-import { tarjetaDesdeProducto } from './adaptadores';
+import { tarjetaDesdeProducto, precioEfectivo, limitesDePrecio } from './adaptadores';
 import { TextoCampo, BotonDeAjustes, fuenteDe, prefiereQuieto } from './SeccionesContenido';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import { EtiquetaColgante, Garabatos, LogoWala, Destello, Corazon, acento } from './Marca';
-import { TarjetaCategoria, TarjetaCategoriaEsqueleto, Beneficio, FotoProducto } from './piezas';
+import { TarjetaCategoria, TarjetaCategoriaEsqueleto, Beneficio, FotoProducto, OpcionesFiltro } from './piezas';
 import s from './SeccionesExtra.module.css';
 
 /*
@@ -263,8 +264,11 @@ function useCargarAlLlegar(activo, alLlegar) {
  *  - hayMas / onCargarMas / cargandoMas: paginación de la tienda (cursor).
  *    Sin onCargarMas se muestran de 12 en 12 en memoria.
  *  - vacio: { titulo, texto } cuando no hay nada.
+ *  - columnas: { escritorio, celular } fijas (las del admin, storeConfig.layout;
+ *    grillaDesdeConfiguracion). Sin ellas, tantas como quepan.
+ *  - segundaFoto: la segunda foto al pasar el ratón (true por defecto).
  */
-export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargando = false, hayMas, onCargarMas, cargandoMas, onAgregar, vacio }) {
+export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargando = false, hayMas, onCargarMas, cargandoMas, onAgregar, vacio, columnas, segundaFoto = true }) {
   const servidor = typeof onCargarMas === 'function';
   const [visibles, setVisibles] = useState(12);
   useEffect(() => { if (!servidor) setVisibles(12); }, [productos, servidor]);
@@ -281,11 +285,14 @@ export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargan
   return (
     <>
       <TituloSeccion {...tituloDesdeAjustes(ajustes)} />
-      <ul className={s.grilla}>
+      <ul
+        className={[s.grilla, Number(columnas?.celular) > 0 && s.colsCelular, Number(columnas?.escritorio) > 0 && s.colsEscritorio].filter(Boolean).join(' ')}
+        style={columnas ? { '--cols-celular': Number(columnas.celular) || undefined, '--cols-escritorio': Number(columnas.escritorio) || undefined } : undefined}
+      >
         {cargando
           ? Array.from({ length: 8 }, (_, k) => <li key={k}><TarjetaProductoEsqueleto /></li>)
           : lista.map((p) => (
-            <li key={p.id}><TarjetaProducto {...tarjetaDesdeProducto(p, { catalogo })} onAgregar={onAgregar?.(p)} /></li>
+            <li key={p.id}><TarjetaProducto {...tarjetaDesdeProducto(p, { catalogo })} {...(segundaFoto ? {} : { imagenHover: undefined })} onAgregar={onAgregar?.(p)} /></li>
           ))}
         {cargandoMas && Array.from({ length: 4 }, (_, k) => <li key={`m${k}`}><TarjetaProductoEsqueleto /></li>)}
       </ul>
@@ -300,20 +307,32 @@ export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargan
 
 /* ── Catálogo con filtros (sidebar_catalog) ─────────────── */
 
+const RANGOS_PRECIO = [['', '50', 'Hasta S/ 50'], ['50', '100', 'S/ 50 – 100'], ['100', '', 'Más de S/ 100']];
+
 /**
- * Catálogo: filtros a la izquierda en escritorio; en el celular un botón
- * "Filtros" abre la hoja inferior y los elegidos quedan como chips.
+ * Catálogo: el título del builder arriba; en escritorio los filtros a la
+ * izquierda (grupos plegables, pegados al bajar) y en el celular un botón
+ * "Filtros" que abre la hoja inferior. Los elegidos quedan como chips.
  *
  *  - grupos: [{ id, titulo, opciones: [{ valor, nombre, cuenta? }], de?(producto) }]
- *    `de` (opcional) devuelve el valor (o valores) del producto para filtrar
- *    aquí mismo; sin `de` el filtrado lo hace la página (paginación en servidor).
+ *    (gruposDeCatalogo los arma desde las listas de la tienda). `de` devuelve
+ *    el valor (o valores) del producto para filtrar aquí mismo; sin `de` el
+ *    filtrado lo hace la página (paginación en servidor).
  *  - seleccion / onFiltrar(grupoId, valor|null): controlado; sin ellos el
- *    catálogo guarda su propio estado.
- *  - busqueda / onBuscar, precio {min, max} / onPrecio: igual.
+ *    catálogo guarda su propio estado. Una opción por grupo, como la tienda.
+ *  - filtrarAqui: filtra en el navegador con `de` (por defecto solo cuando
+ *    no es controlado). Con paginación en servidor la página filtra.
+ *  - conBuscador: buscador por nombre arriba de la grilla (la tienda solo lo
+ *    muestra en la página de una marca). busqueda / onBuscar: controlado.
+ *  - precio {min, max} / onPrecio: controlado. limitesPrecio {min, max}: lo
+ *    que se ve de guía en los campos (sin él se calcula de los productos).
+ *  - total: cuántos productos hay (con paginación en servidor); sin él se
+ *    cuentan los de la lista.
  *  - resto: como GrillaProductos (hayMas, onCargarMas, onAgregar…).
  */
 export function CatalogoConFiltros({
-  ajustes = {}, productos = [], grupos = [], seleccion, onFiltrar, busqueda, onBuscar, precio, onPrecio, ...grilla
+  ajustes = {}, productos = [], grupos = [], seleccion, onFiltrar, filtrarAqui = !onFiltrar, conBuscador = true,
+  busqueda, onBuscar, precio, onPrecio, limitesPrecio, total, ...grilla
 }) {
   const [propia, setPropia] = useState({});
   const [textoPropio, setTextoPropio] = useState('');
@@ -323,23 +342,21 @@ export function CatalogoConFiltros({
   const texto = busqueda ?? textoPropio;
   const rango = precio ?? precioPropio;
 
-  const filtrar = (grupo, valor) => {
-    const nuevo = sel[grupo] === valor ? null : valor;
-    if (onFiltrar) onFiltrar(grupo, nuevo);
-    else setPropia((p) => ({ ...p, [grupo]: nuevo }));
+  const elegir = (grupo, valor) => {
+    if (onFiltrar) onFiltrar(grupo, valor);
+    else setPropia((p) => ({ ...p, [grupo]: valor }));
   };
   const buscar = (t) => (onBuscar ? onBuscar(t) : setTextoPropio(t));
   const cambiarPrecio = (r) => (onPrecio ? onPrecio(r) : setPrecioPropio(r));
 
-  // Filtrado aquí mismo solo cuando el catálogo maneja su estado.
   const visibles = useMemo(() => {
-    if (onFiltrar) return productos;
+    if (!filtrarAqui) return productos;
     const q = texto.trim().toLowerCase();
     const min = Number(rango.min) || 0;
     const max = Number(rango.max) || Infinity;
     return productos.filter((p) => {
       if (q && !String(p.name || '').toLowerCase().includes(q)) return false;
-      const pr = p.salePrice || p.price || 0;
+      const pr = precioEfectivo(p);
       if (pr < min || pr > max) return false;
       return grupos.every((g) => {
         const v = sel[g.id];
@@ -347,21 +364,27 @@ export function CatalogoConFiltros({
         return [].concat(g.de(p) ?? []).includes(v);
       });
     });
-  }, [onFiltrar, productos, texto, rango, grupos, sel]);
+  }, [filtrarAqui, productos, texto, rango, grupos, sel]);
 
+  const limites = limitesPrecio || limitesDePrecio(productos);
   const activos = grupos.flatMap((g) => {
     const v = sel[g.id];
     const op = v != null && g.opciones.find((o) => o.valor === v);
     return op ? [{ grupo: g.id, valor: v, nombre: op.nombre }] : [];
   });
   const hayPrecio = rango.min !== '' || rango.max !== '';
+  const cuantos = activos.length + (hayPrecio ? 1 : 0);
   const limpiar = () => {
-    activos.forEach((a) => filtrar(a.grupo, a.valor));
+    activos.forEach((a) => elegir(a.grupo, null));
     cambiarPrecio({ min: '', max: '' });
   };
+  const cantidad = total ?? (filtrarAqui ? visibles.length : null);
+  const textoCantidad = cantidad === 1 ? '1 producto' : `${cantidad} productos`;
+  const elegidoEn = (g) => activos.find((a) => a.grupo === g)?.nombre;
+  const textoPrecio = `S/ ${rango.min || 0} – ${rango.max || '∞'}`;
 
-  const cuantos = activos.length + (hayPrecio ? 1 : 0);
-  const RANGOS = [['', '50', 'Hasta S/ 50'], ['50', '100', 'S/ 50 – 100'], ['100', '', 'Más de S/ 100']];
+  // Abiertos al empezar: el primer grupo y los que ya tienen algo elegido.
+  const abiertos = [grupos[0]?.id, ...activos.map((a) => a.grupo), hayPrecio && 'precio'].filter(Boolean);
   const filtros = (
     <div className={s.filtros}>
       <div className={s.filtrosCabeza}>
@@ -369,65 +392,83 @@ export function CatalogoConFiltros({
         <strong>Filtros</strong>
         {cuantos > 0 && <button type="button" className={s.limpiar} onClick={limpiar}>Limpiar ({cuantos})</button>}
       </div>
-      {grupos.filter((g) => g.opciones?.length).map((g) => (
-        <fieldset key={g.id} className={s.filtroGrupo}>
-          <legend>{g.titulo}</legend>
-          <div className={s.opciones}>
-            {g.opciones.map((o) => {
-              const marcada = sel[g.id] === o.valor;
-              return (
-                <Chip key={String(o.valor)} tamano="sm" activo={marcada} cuenta={o.cuenta} onClick={() => filtrar(g.id, o.valor)}>{o.nombre}</Chip>
-              );
-            })}
-          </div>
-        </fieldset>
-      ))}
-      <fieldset className={s.filtroGrupo}>
-        <legend>Precio</legend>
-        <div className={s.opciones}>
-          {RANGOS.map(([min, max, texto]) => {
-            const marcado = rango.min === min && rango.max === max;
-            return (
-              <Chip key={texto} tamano="sm" activo={marcado} onClick={() => cambiarPrecio(marcado ? { min: '', max: '' } : { min, max })}>{texto}</Chip>
-            );
-          })}
-        </div>
-        <div className={s.precio}>
-          <Campo type="number" inputMode="numeric" min="0" placeholder="Mín." aria-label="Precio mínimo" icono="S/" value={rango.min} onChange={(e) => cambiarPrecio({ ...rango, min: e.target.value })} />
-          <Campo type="number" inputMode="numeric" min="0" placeholder="Máx." aria-label="Precio máximo" icono="S/" value={rango.max} onChange={(e) => cambiarPrecio({ ...rango, max: e.target.value })} />
-        </div>
-      </fieldset>
+      <Acordeon
+        variante="lista"
+        multiple
+        abiertoInicial={abiertos}
+        items={[
+          ...grupos.filter((g) => g.opciones?.length).map((g) => ({
+            id: g.id,
+            question: g.titulo,
+            extra: elegidoEn(g.id) && <span className={s.filtroElegido}>{elegidoEn(g.id)}</span>,
+            answer: <OpcionesFiltro opciones={g.opciones} elegida={sel[g.id] ?? null} onElegir={(v) => elegir(g.id, v)} />,
+          })),
+          {
+            id: 'precio',
+            question: 'Precio',
+            extra: hayPrecio && <span className={s.filtroElegido}>{textoPrecio}</span>,
+            answer: (
+              <>
+                <div className={s.opciones}>
+                  {RANGOS_PRECIO.map(([min, max, nombre]) => {
+                    const marcado = rango.min === min && rango.max === max;
+                    return (
+                      <Chip key={nombre} tamano="sm" activo={marcado} onClick={() => cambiarPrecio(marcado ? { min: '', max: '' } : { min, max })}>{nombre}</Chip>
+                    );
+                  })}
+                </div>
+                <div className={s.precio}>
+                  <Campo type="number" inputMode="numeric" min="0" placeholder={limites ? String(limites.min) : 'Mín.'} aria-label="Precio mínimo" icono="S/" value={rango.min} onChange={(e) => cambiarPrecio({ ...rango, min: e.target.value })} />
+                  <Campo type="number" inputMode="numeric" min="0" placeholder={limites ? String(limites.max) : 'Máx.'} aria-label="Precio máximo" icono="S/" value={rango.max} onChange={(e) => cambiarPrecio({ ...rango, max: e.target.value })} />
+                </div>
+              </>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 
   return (
-    <div className={s.catalogo}>
-      <aside className={s.catalogoLado} aria-label="Filtros">{filtros}</aside>
-      <div className={s.catalogoPrincipal}>
-        <div className={s.catalogoBarra}>
-          {ajustes.title && <h2 className={s.catalogoTitulo}>{ajustes.title}</h2>}
-          <Buscador placeholder="Buscar en el catálogo" atajo={null} defaultValue={texto} onBuscar={buscar} onChange={onBuscar ? undefined : (e) => setTextoPropio(e.target.value)} className={s.catalogoBuscador} />
-          <Boton variante="contorno" className={s.botonFiltros} icono={<SlidersHorizontal aria-hidden="true" />} onClick={() => setHoja(true)}>
-            Filtros{activos.length + (hayPrecio ? 1 : 0) ? ` (${activos.length + (hayPrecio ? 1 : 0)})` : ''}
-          </Boton>
-        </div>
-        {(activos.length > 0 || hayPrecio) && (
-          <div className={s.chips}>
-            {activos.map((a) => (
-              <Chip key={`${a.grupo}-${a.valor}`} tamano="sm" onQuitar={() => filtrar(a.grupo, a.valor)}>{a.nombre}</Chip>
-            ))}
-            {hayPrecio && (
-              <Chip tamano="sm" onQuitar={() => cambiarPrecio({ min: '', max: '' })}>S/ {rango.min || 0} – {rango.max || '∞'}</Chip>
+    <>
+      <TituloSeccion {...tituloDesdeAjustes(ajustes)} />
+      <div className={s.catalogo}>
+        <aside className={s.catalogoLado} aria-label="Filtros">{filtros}</aside>
+        <div className={s.catalogoPrincipal}>
+          <div className={s.catalogoBarra}>
+            {cantidad != null && (
+              <p className={s.catalogoCuenta} role="status">
+                <strong>{cantidad}</strong> {cantidad === 1 ? 'producto' : 'productos'}
+              </p>
             )}
-            <button type="button" className={s.limpiar} onClick={limpiar}>Limpiar todo</button>
+            {conBuscador && (
+              <Buscador placeholder="Buscar en el catálogo" atajo={null} defaultValue={texto} onBuscar={buscar} onChange={onBuscar ? undefined : (e) => setTextoPropio(e.target.value)} className={s.catalogoBuscador} />
+            )}
+            <Boton variante="contorno" className={s.botonFiltros} icono={<SlidersHorizontal aria-hidden="true" />} onClick={() => setHoja(true)}>
+              Filtros{cuantos ? ` (${cuantos})` : ''}
+            </Boton>
           </div>
-        )}
-        <GrillaProductos {...grilla} productos={visibles} vacio={grilla.vacio || { titulo: 'Nada coincide con tu búsqueda', texto: 'Prueba con otros filtros o quítalos.' }} />
+          {cuantos > 0 && (
+            <div className={s.chips}>
+              {activos.map((a) => (
+                <Chip key={`${a.grupo}-${a.valor}`} tamano="sm" onQuitar={() => elegir(a.grupo, null)}>{a.nombre}</Chip>
+              ))}
+              {hayPrecio && <Chip tamano="sm" onQuitar={() => cambiarPrecio({ min: '', max: '' })}>{textoPrecio}</Chip>}
+              <button type="button" className={s.limpiar} onClick={limpiar}>Limpiar todo</button>
+            </div>
+          )}
+          <GrillaProductos {...grilla} productos={visibles} vacio={grilla.vacio || { titulo: 'Nada coincide con tu búsqueda', texto: 'Prueba con otros filtros o quítalos.' }} />
+        </div>
+        <HojaInferior
+          abierta={hoja}
+          onCerrar={() => setHoja(false)}
+          titulo="Filtros"
+          pie={<Boton bloque onClick={() => setHoja(false)}>{cantidad != null ? `Ver ${textoCantidad}` : 'Ver productos'}</Boton>}
+        >
+          <div className={s.filtrosEnHoja}>{filtros}</div>
+        </HojaInferior>
       </div>
-      <HojaInferior abierta={hoja} onCerrar={() => setHoja(false)} titulo="Filtros" pie={<Boton bloque onClick={() => setHoja(false)}>Ver {visibles.length} productos</Boton>}>
-        <div className={s.filtrosEnHoja}>{filtros}</div>
-      </HojaInferior>
-    </div>
+    </>
   );
 }
 

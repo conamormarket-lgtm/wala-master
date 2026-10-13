@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   TarjetaCategoria, TarjetaTestimonio, TarjetaMarca, LogoMarca, TarjetaDestacado, Beneficio, StockBajo, Chip, tarjetaDesdeMarca, acento,
-  FotoProducto, Avatar, Moneda, EtiquetaColgante,
+  FotoProducto, Avatar, Moneda, EtiquetaColgante, OpcionesFiltro, Acordeon,
 } from './kit';
 import s from './DemoPiezas.module.css';
 
@@ -22,8 +22,13 @@ function Ficha({ nombre, usadaEn, children, ancho }) {
   );
 }
 
+/* Opciones de ejemplo para los filtros (nombres reales de personajes). */
+const PERSONAJES = ['Akaza', 'Asta', 'Eren Yeager', 'Gohan', 'Goku', 'Inosuke', 'Itachi Uchiha', 'Kakashi', 'Luffy', 'Nezuko', 'Rengoku', 'Zoro', 'Sanji', 'Tanjiro']
+  .map((nombre, k) => ({ valor: nombre, nombre, cuenta: (k % 4) + 1 }));
+
 export default function DemoPiezas({ categorias, marcas, imagenes }) {
   const [activa, setActiva] = useState(null);
+  const [personaje, setPersonaje] = useState('Goku');
   const [filtro, setFiltro] = useState('Poleras');
   const marca = (k) => tarjetaDesdeMarca(marcas[k]);
   return (
@@ -80,6 +85,23 @@ export default function DemoPiezas({ categorias, marcas, imagenes }) {
           <Avatar className={s.avatarMini} nombre="Andrea P." letras={1} />
           <Avatar className={s.avatarMini} />
         </div>
+      </Ficha>
+
+      <Ficha nombre="OpcionesFiltro" usadaEn="Catálogo con filtros (cada grupo), búsqueda">
+        <OpcionesFiltro opciones={PERSONAJES} elegida={personaje} onElegir={setPersonaje} limite={6} />
+      </Ficha>
+
+      <Ficha nombre={'Acordeon variante="lista"'} usadaEn="Grupos de filtros del catálogo (las preguntas frecuentes usan la variante de tarjetas)">
+        <Acordeon
+          variante="lista"
+          multiple
+          abiertoInicial={['personajes']}
+          items={[
+            { id: 'categorias', question: 'Categorías', answer: <OpcionesFiltro opciones={[{ valor: 'casacas', nombre: 'Casacas', cuenta: 21 }, { valor: 'relojes', nombre: 'Relojes', cuenta: 1 }]} /> },
+            { id: 'personajes', question: 'Personajes', extra: personaje && <small className={s.elegido}>{personaje}</small>, answer: <OpcionesFiltro opciones={PERSONAJES} elegida={personaje} onElegir={setPersonaje} limite={4} /> },
+            { id: 'nota', question: 'Con texto', answer: 'Una respuesta de texto se ve como párrafo, igual que en preguntas frecuentes.' },
+          ]}
+        />
       </Ficha>
 
       <Ficha nombre="Moneda" usadaEn="Saldo, costo y ganancia en monedas, Mis monedas, resumen del pedido">

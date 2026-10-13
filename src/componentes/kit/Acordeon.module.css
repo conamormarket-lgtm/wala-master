@@ -111,6 +111,61 @@
   white-space: pre-line;
 }
 
+.pregunta {
+  flex: 1;
+  min-width: 0;
+}
+
+.contenido {
+  padding: 0 1rem 1rem;
+}
+
+/* ── Lista: filas compactas separadas por una línea (filtros, detalles) ── */
+.lista {
+  gap: 0;
+}
+
+.lista .item,
+.lista .abierto {
+  border: 0;
+  border-top: 1px dashed var(--color-border);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.lista .item:first-child {
+  border-top: 0;
+}
+
+.lista .cabeza button {
+  gap: 0.6rem;
+  min-height: 48px;
+  padding: 0.55rem 0;
+  font-family: var(--fuente-marca);
+  font-size: 0.88rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.lista .signo {
+  width: 26px;
+  height: 26px;
+}
+
+.lista .signo svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.lista .contenido {
+  padding: 0.1rem 3px 0.95rem; /* 3px: que no se corte el foco de los chips */
+}
+
+.lista .interior p {
+  padding: 0 0 0.95rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cuerpo,
   .signo {

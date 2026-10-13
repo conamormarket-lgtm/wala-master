@@ -1,0 +1,48 @@
+.opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* "Ver N más": enlace de la marca, no otro chip (se distingue de una opción). */
+.mas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 34px;
+  padding: 0.3rem 0.35rem;
+  border: 0;
+  background: none;
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:global([data-theme='dark']) .mas {
+  color: var(--violet-300);
+}
+
+.mas svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.menos svg {
+  transform: rotate(180deg);
+}
+
+.mas:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mas svg {
+    transition: none;
+  }
+}

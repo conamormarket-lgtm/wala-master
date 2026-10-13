@@ -78,6 +78,9 @@ export default function TarjetaProducto({
   const descuento = precioAntes ? Math.round((1 - precio / precioAntes) * 100) : 0;
   const quedan = Number(stock) > 0 && Number(stock) <= STOCK_BAJO ? Number(stock) : 0;
   const esCombo = piezas.length > 0;
+  // Combo sin foto propia: sus piezas juntas (la tienda compone una imagen
+  // con ellas; aquí van como cartas, cada una sobre su escenario).
+  const collage = imagen ? [] : piezas.filter((pz) => pz.imagen).slice(0, 3);
 
   const mover = (e) => {
     if (e.pointerType !== 'mouse' || !inclinar) return;
@@ -122,8 +125,13 @@ export default function TarjetaProducto({
       <span className={s.bordeLuz} aria-hidden="true" />
       <div className={s.media}>
         <Enlace to={url} className={s.enlaceImagen} aria-label={nombre}>
-          <img src={imagen} alt="" className={s.img} loading="lazy" decoding="async" />
-          {imagenHover && <img src={imagenHover} alt="" className={`${s.img} ${s.imgHover}`} loading="lazy" decoding="async" />}
+          {imagen && <img src={imagen} alt="" className={s.img} loading="lazy" decoding="async" />}
+          {imagen && imagenHover && <img src={imagenHover} alt="" className={`${s.img} ${s.imgHover}`} loading="lazy" decoding="async" />}
+          {collage.length > 0 && (
+            <span className={[s.collage, collage.length === 3 && s.collageTres].filter(Boolean).join(' ')} style={{ '--piezas': collage.length }}>
+              {collage.map((pz, i) => <FotoProducto key={pz.nombre || i} className={s.collagePieza} src={pz.imagen} relleno="6%" />)}
+            </span>
+          )}
         </Enlace>
         <span className={s.barrido} aria-hidden="true" />
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RenderSecciones, ESQUEMAS, GRUPOS_MODULOS, Pestanas } from './kit';
+import { RenderSecciones, ESQUEMAS, GRUPOS_MODULOS, Pestanas, grillaDesdeConfiguracion } from './kit';
 import s from './DemoSecciones.module.css';
 import INICIO from './demo/inicio.json';
 
@@ -79,7 +79,11 @@ const ejemplos = (img, logos = []) => ({
       ],
     }],
   ],
-  product_grid: [['Todos', { title: 'Toda la tienda' }]],
+  product_grid: [
+    ['Todos', { title: 'Toda la tienda' }],
+    // Columnas fijas del admin (storeConfig.layout → grillaDesdeConfiguracion); solo para esta demo.
+    ['Columnas del admin (3 · 1)', { title: 'Toda la tienda', demoLayout: { productGridColumnsDesktop: 3, productGridColumnsMobile: 1, showHoverSecondaryMedia: false } }],
+  ],
   sidebar_catalog: [['Con filtros', { title: 'Catálogo Con Amor' }]],
   category_grid: [
     ['Cuadros', { title: '¿Qué estás buscando?', dataSource: 'manual', columns: 6, cardStyle: 'compact', showProductCount: true, items: CATEGORIAS_REALES }],
@@ -173,7 +177,7 @@ const PIEZAS_DE = {
   flash_sales: ['IconoWala', 'EtiquetaColgante', 'CuentaRegresiva', 'Carrusel', 'TarjetaProducto', 'StockBajo'],
   bestsellers_row: ['TituloSeccion', 'Carrusel', 'TarjetaDestacado'],
   product_grid: ['TituloSeccion', 'TarjetaProducto', 'Boton'],
-  sidebar_catalog: ['Chip', 'Buscador', 'Campo', 'HojaInferior', 'TarjetaProducto'],
+  sidebar_catalog: ['TituloSeccion', 'Acordeon', 'OpcionesFiltro', 'Chip', 'Campo', 'Buscador', 'HojaInferior', 'TarjetaProducto'],
   category_grid: ['TituloSeccion', 'TarjetaCategoria'],
   categories_nav: ['TarjetaCategoria', 'Marquesina'],
   banner_grid: ['TituloSeccion', 'Carrusel', 'TarjetaMarca'],
@@ -199,6 +203,7 @@ function Ficha({ tipo, variantes, datos }) {
   const propsPara = (sec) => {
     if (sec.type === 'categories_nav') return { activa: categoria, onSeleccionar: setCategoria };
     if (sec.type === 'sidebar_catalog') return { grupos: datos.grupos };
+    if (sec.type === 'product_grid' && sec.settings?.demoLayout) return grillaDesdeConfiguracion(sec.settings.demoLayout);
     return undefined;
   };
   const productosPara = (sec) => {

@@ -88,6 +88,13 @@
   height: 36px;
 }
 
+/* Lo elegido junto al título del grupo (como en el catálogo). */
+.elegido {
+  color: var(--primary-color);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
 .celda {
   flex: 0 0 150px;
 }

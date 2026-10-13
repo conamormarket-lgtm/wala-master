@@ -3,17 +3,22 @@ import { Plus } from 'lucide-react';
 import s from './Acordeon.module.css';
 
 /**
- * Acordeón de preguntas (FAQ, detalles de producto, políticas).
- * Uno abierto a la vez (o varios con `multiple`). Abre/cierra con una
- * transición de alto real (grid 0fr → 1fr), sin medir en JS.
+ * Acordeón: preguntas frecuentes, detalles de producto, políticas, grupos
+ * de filtros del catálogo. Uno abierto a la vez (o varios con `multiple`).
+ * Abre/cierra con una transición de alto real (grid 0fr → 1fr), sin medir en
+ * JS; lo cerrado no se puede enfocar (inert).
  *
- *  - items: [{ id, question, answer }]  (mismos campos que el builder)
- *  - abiertoInicial: id o true (el primero).
+ *  - items: [{ id, question, answer, extra? }]  (mismos campos que el builder).
+ *    `answer` puede ser texto (párrafo) o cualquier contenido (chips, campos…);
+ *    `extra` va junto al título (p. ej. cuántos filtros hay elegidos).
+ *  - abiertoInicial: id, lista de ids o true (el primero).
+ *  - variante: 'tarjetas' (por defecto: cada pregunta en su tarjeta, FAQ) |
+ *    'lista' (filas compactas separadas por una línea: filtros, detalles).
  */
-export default function Acordeon({ items = [], abiertoInicial = false, multiple = false }) {
+export default function Acordeon({ items = [], abiertoInicial = false, multiple = false, variante = 'tarjetas' }) {
   const uid = useId();
-  const inicial = abiertoInicial === true ? items[0]?.id : abiertoInicial || null;
-  const [abiertos, setAbiertos] = useState(() => (inicial ? [inicial] : []));
+  const inicial = abiertoInicial === true ? [items[0]?.id] : [].concat(abiertoInicial || []);
+  const [abiertos, setAbiertos] = useState(() => inicial.filter((x) => x != null));
 
   const alternar = (id) => setAbiertos((a) => {
     if (a.includes(id)) return a.filter((x) => x !== id);
@@ -21,7 +26,7 @@ export default function Acordeon({ items = [], abiertoInicial = false, multiple 
   });
 
   return (
-    <div className={s.acordeon}>
+    <div className={[s.acordeon, variante === 'lista' && s.lista].filter(Boolean).join(' ')}>
       {items.map((it, i) => {
         const id = it.id ?? `p${i}`;
         const abierto = abiertos.includes(id);
@@ -35,13 +40,14 @@ export default function Acordeon({ items = [], abiertoInicial = false, multiple 
                 aria-controls={`${uid}-r-${i}`}
                 onClick={() => alternar(id)}
               >
-                <span>{it.question}</span>
+                <span className={s.pregunta}>{it.question}</span>
+                {it.extra}
                 <span className={s.signo} aria-hidden="true"><Plus /></span>
               </button>
             </h3>
-            <div id={`${uid}-r-${i}`} role="region" aria-labelledby={`${uid}-b-${i}`} className={s.cuerpo}>
+            <div id={`${uid}-r-${i}`} role="region" aria-labelledby={`${uid}-b-${i}`} className={s.cuerpo} inert={abierto ? undefined : ''}>
               <div className={s.interior}>
-                <p>{it.answer}</p>
+                {typeof it.answer === 'string' ? <p>{it.answer}</p> : <div className={s.contenido}>{it.answer}</div>}
               </div>
             </div>
           </div>

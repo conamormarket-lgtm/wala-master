@@ -42,8 +42,8 @@ Cada paso en su propio commit, verificable por separado.
 4. **`TarjetaProducto`** en carruseles y grillas, con `tarjetaDesdeProducto`
    (antes, lo que le falta: favorito controlado e impresión; ver INICIO.md).
 5. **Secciones del builder**, página por página, con `RenderSecciones` (o
-   `PaginaTienda`) + `respaldo`. Primero el inicio. Comparar capturas antes y
-   después.
+   `PaginaTienda`) + `respaldo`. Primero el inicio (INICIO.md), después
+   `/tienda` con el catálogo (TIENDA.md). Comparar capturas antes y después.
 6. **Carrito, checkout y Mis pedidos** (`PaginaCarrito`, `PaginaPedidos` y las
    piezas de `Pedido.jsx`). Sus fichas (P1, P2) todavía faltan.
 7. **`BarraInferior` y luego `Cabecera`**: la más conectada (AuthContext,

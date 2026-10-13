@@ -164,3 +164,96 @@ export function testimonioDesdeAjuste(t = {}) {
     verificado: t.verified === true,
   };
 }
+
+/* ── Catálogo con filtros ───────────────────────────────── */
+
+/** Id de una referencia (texto o { id | slug | name }), como idOf de SidebarCatalogLayout. */
+const idDe = (c) => (c && typeof c === 'object' ? c.id || c.slug || c.name || '' : c || '');
+
+/** Precio que paga el cliente: la oferta si es menor que el precio normal. */
+export const precioEfectivo = (p) => {
+  const normal = Number(p?.price) || 0;
+  const oferta = Number(p?.salePrice) || 0;
+  return oferta > 0 && (!normal || oferta < normal) ? oferta : normal;
+};
+
+/** Precio más bajo y más alto de una lista de productos (enteros), o null. */
+export function limitesDePrecio(productos = []) {
+  const precios = productos.map(precioEfectivo).filter((n) => n > 0);
+  if (!precios.length) return null;
+  return { min: Math.floor(Math.min(...precios)), max: Math.ceil(Math.max(...precios)) };
+}
+
+/* Temporadas: colecciones cuyo nombre es una fecha o estación (la tienda no
+   tiene un campo propio; misma regla que SidebarCatalogLayout). */
+const PALABRAS_TEMPORADA = ['verano', 'invierno', 'otoño', 'otono', 'primavera', 'navidad', 'navideno', 'fiestas',
+  'pascua', 'halloween', 'valentín', 'valentin', 'temporada', 'spring', 'summer', 'autumn', 'fall', 'winter', 'holiday', 'xmas', 'christmas', 'easter'];
+const FRASES_TEMPORADA = ['año nuevo', 'ano nuevo', 'san valentín', 'san valentin', 'día de la madre', 'dia de la madre', 'día del padre', 'dia del padre'];
+export const esTemporada = (c) => {
+  const nombre = String(c?.name || '').toLowerCase();
+  const palabras = nombre.split(/[^a-záéíóúüñ]+/i).filter(Boolean);
+  return palabras.some((w) => PALABRAS_TEMPORADA.includes(w) || w.startsWith('navideñ'))
+    || FRASES_TEMPORADA.some((f) => nombre.includes(f));
+};
+
+/**
+ * Grupos de filtros del catálogo (props `grupos` de CatalogoConFiltros) desde
+ * las listas de la tienda, en el orden de la tienda: Categorías, Temporadas,
+ * Colecciones, Marcas, Tipo de producto, Etiquetas, Personajes.
+ *  - categorias (tienda_categories), colecciones (tienda_collections), marcas
+ *    (tienda_brands), tipos (productTypes), etiquetas (tags), personajes
+ *    (characters): [{ id, name }]
+ *  - productos: los de la página (o todos los de la marca). Con ellos cada
+ *    opción lleva su cuenta y se quitan las que no tienen productos.
+ *  - marcaActual: id de la marca de la página; entonces no hay grupo Marcas.
+ * Cada grupo trae `de(producto)` para filtrar en el navegador.
+ */
+export function gruposDeCatalogo({ categorias = [], colecciones = [], marcas = [], tipos = [], etiquetas = [], personajes = [], productos = [], marcaActual } = {}) {
+  const lista = (v) => [].concat(v ?? []).map(idDe).filter(Boolean);
+  const de = {
+    categorias: (p) => [...new Set([...lista(p.categories), ...lista(p.categoryId), ...lista(p.category)])],
+    colecciones: (p) => lista(p.collections),
+    marcas: (p) => lista(p.brandId),
+    tipos: (p) => lista(p.productType),
+    etiquetas: (p) => lista(p.tags),
+    personajes: (p) => lista(p.characters),
+  };
+  const contar = (fn) => {
+    const cuenta = new Map();
+    productos.forEach((p) => fn(p).forEach((v) => cuenta.set(v, (cuenta.get(v) || 0) + 1)));
+    return cuenta;
+  };
+  const opciones = (docs, fn) => {
+    const cuenta = productos.length ? contar(fn) : null;
+    return docs
+      .filter((d) => d?.name && idDe(d))
+      .map((d) => ({ valor: idDe(d), nombre: d.name, cuenta: cuenta ? cuenta.get(idDe(d)) || 0 : undefined }))
+      .filter((o) => !cuenta || o.cuenta > 0);
+  };
+  const temporadas = colecciones.filter(esTemporada);
+  const otras = temporadas.length ? colecciones.filter((c) => !esTemporada(c)) : colecciones;
+  return [
+    { id: 'categoria', titulo: 'Categorías', opciones: opciones(categorias, de.categorias), de: de.categorias },
+    { id: 'temporada', titulo: 'Temporadas', opciones: opciones(temporadas, de.colecciones), de: de.colecciones },
+    { id: 'coleccion', titulo: 'Colecciones', opciones: opciones(otras, de.colecciones), de: de.colecciones },
+    ...(marcaActual ? [] : [{ id: 'marca', titulo: 'Marcas', opciones: opciones(marcas, de.marcas), de: de.marcas }]),
+    { id: 'tipo', titulo: 'Tipo de producto', opciones: opciones(tipos, de.tipos), de: de.tipos },
+    { id: 'etiqueta', titulo: 'Etiquetas', opciones: opciones(etiquetas, de.etiquetas), de: de.etiquetas },
+    { id: 'personaje', titulo: 'Personajes', opciones: opciones(personajes, de.personajes), de: de.personajes },
+  ].filter((g) => g.opciones.length);
+}
+
+/**
+ * Columnas y segunda foto de las grillas desde la configuración de la tienda
+ * (storeConfig.layout, la que usa ProductGrid): props de GrillaProductos y
+ * CatalogoConFiltros. 'auto' (o nada) = tantas como quepan.
+ */
+export function grillaDesdeConfiguracion(layout = {}) {
+  const num = (v) => (Number(v) > 0 ? Number(v) : undefined);
+  const escritorio = num(layout?.productGridColumnsDesktop);
+  const celular = num(layout?.productGridColumnsMobile);
+  return {
+    columnas: escritorio || celular ? { escritorio, celular } : undefined,
+    segundaFoto: layout?.showHoverSecondaryMedia ?? true,
+  };
+}

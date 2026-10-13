@@ -129,14 +129,15 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `Pedido.jsx` | `SeguimientoPedido`, `ItemCarrito`, `BarraEnvioGratis`, `ResumenPedido` | Carrito y Mis pedidos |
 | `Feedback.jsx` | `Aviso`, `ProveedorToasts`, `useToast`, `useNotificaciones`, `ListaNotificaciones`, `EstadoVacio`, `HojaInferior` | Avisos, notificaciones y modales |
 | `Enlace.jsx` | `Enlace`, `ProveedorEnlaces`, `tipoDeEnlace` | La única regla de enlaces: internos por el router, externos en otra pestaña, `#ancla` con scroll suave |
-| `adaptadores.js` | `accionDeProducto`, `tarjetaDesdeProducto`, `opcionesDeProducto`, `rutaDeMarca`, `tarjetaDesdeMarca` | Traducen un producto de `productos_wala` o una marca de `tienda_brands` (Firestore) a props del kit |
+| `adaptadores.js` | `accionDeProducto`, `tarjetaDesdeProducto`, `opcionesDeProducto`, `rutaDeMarca`, `tarjetaDesdeMarca`, `testimonioDesdeAjuste`, `precioEfectivo`, `limitesDePrecio`, `esTemporada`, `gruposDeCatalogo`, `grillaDesdeConfiguracion` | Traducen datos de Firestore a props del kit: un producto de `productos_wala`, una marca de `tienda_brands`, las listas de filtros del catálogo (categorías, colecciones, etiquetas, personajes, tipos) y `storeConfig.layout` |
 | `Carrusel.jsx` | `Carrusel` | El único carrusel: deslizar nativo, flechas, puntos, autoplay con pausas |
 | `Marquesina.jsx` | `Marquesina` | Cinta sin fin (logos, anuncios, burbujas) |
 | `CuentaRegresiva.jsx` | `CuentaRegresiva` | Hasta una fecha o "siempre activa" por visitante; variantes bloques, texto y evento (dígitos grandes para fondos oscuros) |
-| `Acordeon.jsx` | `Acordeon` | Preguntas frecuentes y detalles plegables |
+| `Acordeon.jsx` | `Acordeon` | Plegables: preguntas frecuentes (variante de tarjetas) y grupos de filtros o detalles (`variante="lista"`); la respuesta puede ser texto o cualquier contenido |
 | `Seccion.jsx` | `BloqueSeccion`, `TituloSeccion`, `tituloDesdeAjustes` | Relleno, fondo y título iguales en todas las secciones |
 | `piezas/FotoProducto.jsx` | `FotoProducto` | Foto de producto sobre su escenario (`src`, `relleno`, `respaldo` sin foto, `children` encima) |
 | `piezas/Avatar.jsx` | `Avatar`, `iniciales` | Foto o iniciales de una persona |
+| `piezas/OpcionesFiltro.jsx` | `OpcionesFiltro` | Opciones de un filtro como chips con su cuenta; una a la vez y "Ver N más" |
 | `piezas/LogoMarca.jsx` | `LogoMarca` | Logo de una marca: `sticker` (con nombre) o `sello` (círculo chico girado) |
 | `piezas/Flotantes.jsx` | `PilaFlotante`, `BotonWhatsApp`, `KapiFlotante`, `BurbujaRegalos`, `PildoraRecompensa` | Lo que flota sobre la página (sobre la barra inferior en el celular) |
 | `piezas/Marco.jsx` | `AvisoSistema`, `BannerApp`, `BarraAdmin`, `PieLegal`, `AvisoIdioma`, `VentanaCampana`, `BotonTema` | Lo que rodea a las secciones: avisos arriba, barra de admin, pie legal, ventanas |
@@ -225,8 +226,10 @@ que TiendaPage), más `categorias`, `marcas` y `marcaActual`. Con `marcas` y
 (`catalogo` en `RenderSecciones` / `tarjetaDesdeProducto`).
 
 Props de página por sección con `propsPara(sec)`: `{ cargando, hayMas,
-onCargarMas, cargandoMas }` en grillas, `{ grupos, seleccion, onFiltrar,
-busqueda, onBuscar, precio, onPrecio }` en el catálogo, `{ activa,
+onCargarMas, cargandoMas, columnas, segundaFoto }` en grillas
+(`grillaDesdeConfiguracion(storeConfig.layout)`), `{ grupos, seleccion,
+onFiltrar, filtrarAqui, conBuscador, busqueda, onBuscar, precio, onPrecio,
+limitesPrecio, total }` en el catálogo (`gruposDeCatalogo` arma los grupos), `{ activa,
 onSeleccionar }` en categories_nav y `{ onClicBoton }` en hero_banner.
 
 Las secciones se acomodan al ancho de su contenedor (container queries en

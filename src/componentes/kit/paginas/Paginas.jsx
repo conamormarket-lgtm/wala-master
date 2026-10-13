@@ -60,7 +60,9 @@ export function MarcoTienda({ arriba, cabecera, pie, pieLegal, kapiEnPie = true,
 /**
  * Qué lista de productos va en cada tipo de sección, igual que en
  * TiendaPage: destacados (featured), más nuevos (new_arrivals), con
- * salePrice (sale y flash_sales), por categoría o colección, o todos.
+ * salePrice (sale y flash_sales), por categoría o colección, o todos. Un
+ * catálogo o grilla fijado a una marca (settings.brandId) toma solo los de esa
+ * marca.
  */
 export function productosDeSeccion(productos = {}, sec) {
   const st = sec?.settings || {};
@@ -72,6 +74,8 @@ export function productosDeSeccion(productos = {}, sec) {
     case 'flash_sales': return productos.ofertas || [];
     case 'category_carousel': return productos.porCategoria?.[st.categoryId] || [];
     case 'collection_carousel': return productos.porColeccion?.[st.collection] || [];
+    case 'sidebar_catalog':
+    case 'product_grid': return st.brandId ? (productos.todos || []).filter((p) => p.brandId === st.brandId) : productos.todos || [];
     default: return productos.todos || [];
   }
 }

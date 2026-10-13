@@ -4,10 +4,11 @@ import {
   PaginaTienda, MarcoTienda, PaginaCarrito, PaginaPedidos, Pestanas, Chip, Interruptor, Boton,
   BarraAdmin, AvisoSistema, BannerApp, BotonWhatsApp, KapiFlotante, BurbujaRegalos, PildoraRecompensa,
   VentanaCampana, AvisoIdioma, ProveedorEnlaces, PanelEditor, useBorrador, SeccionEditable, InsertarAqui,
-  moverSeccion, duplicarSeccion, rutaDeMarca, tarjetaDesdeProducto, REGISTRO_SECCIONES, enlaceWhatsApp,
+  moverSeccion, duplicarSeccion, rutaDeMarca, tarjetaDesdeProducto, REGISTRO_SECCIONES, enlaceWhatsApp, gruposDeCatalogo,
 } from './kit';
 import { empresa } from '../config/empresa';
 import INICIO from './demo/inicio.json';
+import TIENDA from './demo/tienda.json';
 import cs from './ComponentesPage.module.css';
 import s from './DemoTienda.module.css';
 
@@ -16,11 +17,15 @@ import s from './DemoTienda.module.css';
  * y flotantes) para todas las páginas, y los enlaces navegan entre ellas.
  *  - Inicio: las secciones de pages/home. Viendo como admin, "Editar esta
  *    página" abre el editor del builder sobre esta misma página.
+ *  - Tienda (/tienda): las secciones de pages/tienda; el catálogo filtra
+ *    con las listas reales (categorías, colecciones, etiquetas…). El menú
+ *    Tienda de la cabecera lleva aquí con la categoría ya elegida.
  *  - Carrito y Mis pedidos: con los mismos productos reales.
  * "Ver componentes" marca cada parte con su número y su componente; los
  * números son los de kit/guia/INICIO.md.
  * Datos: demo/inicio.json (copia de pages/home, pages/footer y una muestra
- * de productos_wala y tienda_brands).
+ * de productos_wala y tienda_brands) y demo/tienda.json (pages/tienda, 35
+ * productos variados y las listas de filtros).
  */
 
 const ROLES = [
@@ -31,15 +36,16 @@ const ROLES = [
 
 const PAGINAS = [
   { id: 'inicio', texto: 'Inicio', ruta: '/' },
+  { id: 'tienda', texto: 'Tienda', ruta: '/tienda' },
   { id: 'carrito', texto: 'Carrito', ruta: '/carrito' },
   { id: 'pedidos', texto: 'Mis pedidos', ruta: '/cuenta/pedidos' },
 ];
 
 /** Ruta de la tienda → página de esta demo (las demás solo avisan). */
-const PAGINA_DE_RUTA = { '/': 'inicio', '/carrito': 'carrito', '/cuenta': 'pedidos', '/cuenta/pedidos': 'pedidos' };
+const PAGINA_DE_RUTA = { '/': 'inicio', '/tienda': 'tienda', '/carrito': 'carrito', '/cuenta': 'pedidos', '/cuenta/pedidos': 'pedidos' };
 
 /** Pestaña de la barra inferior que se enciende en cada página. */
-const PESTANA_DE_PAGINA = { inicio: 'inicio', carrito: 'tienda', pedidos: 'cuenta' };
+const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', carrito: 'tienda', pedidos: 'cuenta' };
 
 const EXTRAS = [
   ['aviso', 'Aviso del sistema'],
@@ -115,6 +121,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [anatomia, setAnatomia] = useState(false);
   const [pildora, setPildora] = useState(true);
   const [carrito, setCarrito] = useState(CARRITO_INICIAL);
+  // Filtros del catálogo de /tienda (el menú Tienda llega con ?categoria=).
+  const [filtros, setFiltros] = useState({});
   const marcoRef = useRef(null);
 
   // Editor del builder (solo admin, sobre el inicio).
@@ -142,9 +150,13 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   // avisan adónde irían.
   const navegar = useRef(null);
   navegar.current = (to) => {
-    const ruta = String(to || '').split('?')[0];
-    if (PAGINA_DE_RUTA[ruta]) irA(PAGINA_DE_RUTA[ruta]);
-    else avisar('En la tienda iría a', to);
+    const [ruta, query = ''] = String(to || '').split('?');
+    if (!PAGINA_DE_RUTA[ruta]) { avisar('En la tienda iría a', to); return; }
+    if (ruta === '/tienda') {
+      const categoria = new URLSearchParams(query).get('categoria');
+      setFiltros(categoria ? { categoria } : {});
+    }
+    irA(PAGINA_DE_RUTA[ruta]);
   };
   const EnlaceTienda = useMemo(() => forwardRef(function EnlaceTienda({ to, onClick, children, ...rest }, ref) {
     return (
@@ -174,6 +186,15 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   }, [borrador, toast]);
 
   const visibles = useMemo(() => marcas.filter((m) => m.active !== false && m.visible !== false), [marcas]);
+  const gruposTienda = useMemo(() => gruposDeCatalogo({
+    categorias: TIENDA.categorias,
+    colecciones: TIENDA.colecciones,
+    marcas: visibles,
+    tipos: TIENDA.tipos,
+    etiquetas: TIENDA.etiquetas,
+    personajes: TIENDA.personajes,
+    productos: TIENDA.productos,
+  }), [visibles]);
   const enCarrito = carrito.reduce((a, it) => a + it.cantidad, 0);
 
   /* ── Marco: igual en todas las páginas ── */
@@ -184,7 +205,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       { id: 'marcas', texto: 'Marcas', url: '/marcas', menu: 'marcas' },
       { id: 'minijuegos', texto: 'Minijuegos', url: '/minijuegos' },
     ],
-    activo: null,
+    activo: pagina === 'tienda' ? 'tienda' : null,
     menuTienda: {
       categorias: INICIO.categorias.slice(0, 10).map((c) => ({ id: c.categoryId, nombre: c.name, url: `/tienda?categoria=${c.categoryId}` })),
     },
@@ -296,7 +317,31 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     return anatomia ? <Parte n={`S${i + 1}`} nombre={`${componenteDe(sec.type)} (${sec.type})`}>{n}</Parte> : n;
   } : undefined;
 
-  const contenido = pagina === 'inicio' ? (
+  /* ── Tienda (/tienda): pages/tienda con el catálogo filtrando de verdad ── */
+  const envolverTienda = anatomia
+    ? (sec, nodo, i) => <Parte n={`S${i + 1}`} nombre={`${componenteDe(sec.type)} (${sec.type})`}>{nodo}</Parte>
+    : undefined;
+  const propsTienda = (sec) => (sec.type === 'sidebar_catalog' ? {
+    grupos: gruposTienda,
+    seleccion: filtros,
+    onFiltrar: (grupo, valor) => setFiltros((f) => ({ ...f, [grupo]: valor })),
+    filtrarAqui: true,
+    // Como la tienda: el buscador del catálogo solo en la página de una marca.
+    conBuscador: Boolean(sec.settings?.brandId),
+  } : undefined);
+
+  const contenido = pagina === 'tienda' ? (
+    <PaginaTienda
+      {...marco}
+      secciones={TIENDA.secciones}
+      productos={{ todos: TIENDA.productos }}
+      categorias={TIENDA.categorias}
+      marcas={marcas}
+      onAgregar={onAgregar}
+      propsPara={propsTienda}
+      envolver={envolverTienda}
+    />
+  ) : pagina === 'inicio' ? (
     <PaginaTienda
       {...marco}
       secciones={secciones}

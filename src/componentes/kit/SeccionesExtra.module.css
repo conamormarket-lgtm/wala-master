@@ -389,6 +389,21 @@
   list-style: none;
 }
 
+/* Columnas fijas del admin (storeConfig.layout): celular y escritorio. */
+.colsCelular {
+  grid-template-columns: repeat(var(--cols-celular), minmax(0, 1fr));
+}
+
+@container (min-width: 640px) {
+  .colsCelular {
+    grid-template-columns: repeat(auto-fill, minmax(min(200px, 46%), 1fr));
+  }
+
+  .colsEscritorio {
+    grid-template-columns: repeat(var(--cols-escritorio), minmax(0, 1fr));
+  }
+}
+
 .grilla > li {
   display: flex;
   min-width: 0;
@@ -412,13 +427,18 @@
   align-items: start;
 }
 
+/* Pegado al bajar; si los grupos abiertos no caben, se desliza por dentro. */
 .catalogoLado {
   position: sticky;
   top: calc(var(--altura-cabecera, 72px) + 1rem);
-  padding: 1rem 1rem 1.15rem;
+  max-height: calc(100dvh - var(--altura-cabecera, 72px) - 2rem);
+  padding: 1rem 1rem 0.4rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--color-border);
   border-radius: 6px 22px 22px 22px;
   background: var(--color-surface);
+  scrollbar-width: thin;
 }
 
 .catalogoPrincipal {
@@ -433,22 +453,31 @@
   margin-bottom: 1rem;
 }
 
-.catalogoTitulo {
-  flex: 1 1 100%;
+/* Cuántos productos hay: texto simple, no una etiqueta (las etiquetas
+   colgantes son de los productos: descuento, "Combo", "Nuevo"). */
+.catalogoCuenta {
+  flex: none;
   margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+}
+
+.catalogoCuenta strong {
+  color: var(--color-text);
   font-family: var(--fuente-marca);
-  font-size: calc(var(--section-title-size) * 1.05);
+  font-size: 1.05rem;
   font-weight: 900;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.02em;
 }
 
 .catalogoBuscador {
   flex: 1;
-  min-width: 0;
+  min-width: min(100%, 220px);
 }
 
 .botonFiltros {
   display: none;
+  margin-left: auto;
 }
 
 @container (max-width: 900px) {
@@ -467,16 +496,11 @@
 
 .filtros {
   display: grid;
-  gap: 1.15rem;
+  gap: 0.5rem;
 }
 
 .filtrosEnHoja .filtrosCabeza {
   display: none; /* la hoja ya trae su título */
-}
-
-.filtrosEnHoja .filtroGrupo:first-of-type {
-  padding-top: 0;
-  border-top: 0;
 }
 
 .filtrosCabeza {
@@ -510,26 +534,19 @@
   height: 1rem;
 }
 
-.filtroGrupo {
-  display: grid;
-  gap: 0.55rem;
-  min-width: 0;
-  margin: 0;
-  padding: 0.95rem 0 0;
-  border: 0;
-  border-top: 1px dashed var(--color-border);
+/* Lo elegido en un grupo, junto a su título: se lee aunque esté cerrado. */
+.filtroElegido {
+  max-width: 48%;
+  overflow: hidden;
+  color: var(--primary-color);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.filtroGrupo legend {
-  float: left;
-  width: 100%;
-  margin-bottom: 0.15rem;
-  padding: 0;
-  color: var(--color-text);
-  font-family: var(--fuente-marca);
-  font-size: 0.86rem;
-  font-weight: 900;
-  letter-spacing: -0.01em;
+:global([data-theme='dark']) .filtroElegido {
+  color: var(--violet-300);
 }
 
 .opciones {
@@ -540,9 +557,9 @@
 
 .precio {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 0.5rem;
-  margin-top: 0.25rem;
+  margin-top: 0.6rem;
 }
 
 .chips {
