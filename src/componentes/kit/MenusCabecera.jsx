@@ -17,30 +17,26 @@ import s from './MenusCabecera.module.css';
  * dentro de una hoja inferior (celular / app).
  */
 
-/* ── Tienda: categorías + marcas ────────────────────────── */
+/* ── Tienda: categorías ─────────────────────────────────── */
 
 /**
- * Menú grande de "Tienda".
+ * Menú grande de "Tienda": solo categorías, como en la tienda real. Las
+ * marcas tienen su propia pestaña con su menú (MenuMarcas); no se repiten aquí.
  *  - categorias: [{ id, nombre, url }]
- *  - marcas: [{ id, nombre, url }]  (se muestran 5 y "+N marcas")
  *  - activa: id de la categoría actual (se resalta)
  *  - cargando / error / onReintentar: estados mientras llegan de Firestore
  *  - destacado: { titulo, texto, url, imagen } tarjeta opcional a la derecha
  */
 export function MenuTienda({
   categorias = [],
-  marcas = [],
   activa,
   cargando = false,
   error = false,
   onReintentar,
   verTodo = { texto: 'Ver todo el catálogo', url: '/tienda' },
-  urlMarcas = '/marcas',
   destacado,
   onNavegar,
 }) {
-  const visibles = marcas.slice(0, 5);
-  const restantes = marcas.length - visibles.length;
   return (
     <div className={[s.tienda, destacado && s.tiendaConDestacado].filter(Boolean).join(' ')}>
       <section>
@@ -75,24 +71,6 @@ export function MenuTienda({
           {verTodo.texto} <ArrowRight aria-hidden="true" />
         </Enlace>
       </section>
-
-      {marcas.length > 0 && (
-        <section className={s.columnaMarcas}>
-          <h4 className={s.titulo}>Universo Walá</h4>
-          <ul className={s.listaMarcas}>
-            {visibles.map((m) => (
-              <li key={m.id}>
-                <Enlace to={m.url} className={s.enlace} onClick={onNavegar}>{m.nombre}</Enlace>
-              </li>
-            ))}
-          </ul>
-          {restantes > 0 && (
-            <Enlace to={urlMarcas} className={s.verTodo} onClick={onNavegar}>
-              +{restantes} marcas más <ArrowRight aria-hidden="true" />
-            </Enlace>
-          )}
-        </section>
-      )}
 
       {destacado && (
         <Enlace to={destacado.url} className={s.destacado} onClick={onNavegar}>

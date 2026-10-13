@@ -270,7 +270,7 @@ export function Cabecera({
 
 /** Menús que puede abrir un enlace de la cabecera (enlace.menu). */
 const MENUS = {
-  tienda: { Componente: MenuTienda, ancho: (p) => (p.destacado ? 720 : 560) },
+  tienda: { Componente: MenuTienda, ancho: (p) => (p.destacado ? 600 : 420) },
   marcas: { Componente: MenuMarcas, ancho: () => 500 },
 };
 

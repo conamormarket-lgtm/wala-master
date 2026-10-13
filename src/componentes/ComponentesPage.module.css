@@ -718,10 +718,6 @@
   align-items: start;
 }
 
-.menuAncho {
-  grid-column: 1 / -1;
-}
-
 .marcoMenu {
   border: 1px solid var(--color-border);
   border-radius: 16px;

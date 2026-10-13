@@ -187,7 +187,6 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     activo: null,
     menuTienda: {
       categorias: INICIO.categorias.slice(0, 10).map((c) => ({ id: c.categoryId, nombre: c.name, url: `/tienda?categoria=${c.categoryId}` })),
-      marcas: visibles.map((m) => ({ id: m.id, nombre: m.name, url: `/${rutaDeMarca(m)}` })),
     },
     menuMarcas: { marcas: visibles.map((m) => ({ id: m.id, nombre: m.name, url: `/${rutaDeMarca(m)}`, logo: m.logoUrl })) },
     tema: tema === 'dark' ? 'noche' : 'claro',

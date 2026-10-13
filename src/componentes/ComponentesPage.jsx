@@ -13,7 +13,7 @@ import {
   SeguimientoPedido, ItemCarrito, BarraEnvioGratis, ResumenPedido,
   Aviso, ProveedorToasts, useToast, useNotificaciones, ListaNotificaciones, EstadoVacio, HojaInferior, soles,
   EASE, RESORTE, Revelar, Contador,
-  ProveedorEnlaces, MenuTienda, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito, AgregarRapido,
+  ProveedorEnlaces, MenuTienda, MenuMarcas, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito, AgregarRapido,
   accionDeProducto, tarjetaDesdeProducto, opcionesDeProducto, RenderSecciones,
   IconoWala, ICONOS_WALA, IsoWala,
 } from './kit';
@@ -214,7 +214,6 @@ const MENU_TIENDA = {
     { id: 'llaveros', nombre: 'Llaveros', url: '/tienda?categoria=llaveros' },
   ],
   activa: 'poleras',
-  marcas: MARCAS_TIENDA.map((b) => ({ id: b.id, nombre: b.name, url: `/${b.slug}` })),
 };
 
 const FAVORITOS_DEMO = [
@@ -847,12 +846,17 @@ function Contenido({ tema, cambiarTema }) {
           mejoras={['Un solo componente base (Desplegable)', 'Estados de carga, vacío y sin sesión', 'Enlaces del router sin recargar']}
         >
           <div className={s.gridMenus}>
-            <Panel titulo="Tienda (categorías y marcas)" className={s.menuAncho}>
+            <Panel titulo="Tienda (categorías)">
               <div className={s.fila}>
                 <Interruptor etiqueta="Simular carga" activo={tiendaCargando} onChange={setTiendaCargando} />
               </div>
               <div className={s.marcoMenu}>
                 <MenuTienda {...MENU_TIENDA} cargando={tiendaCargando} />
+              </div>
+            </Panel>
+            <Panel titulo="Marcas (Universo Walá)">
+              <div className={s.marcoMenu}>
+                <MenuMarcas marcas={MARCAS_TIENDA.slice(0, 8).map((b) => ({ id: b.id, nombre: b.name, url: `/${b.slug}`, logo: b.logoUrl }))} />
               </div>
             </Panel>
             <Panel titulo="Monedas">
