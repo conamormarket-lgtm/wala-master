@@ -110,6 +110,97 @@ Viendo como Admin → "Editar esta página":
 Es el mismo `PanelEditor`: en la tienda va fijo a la pantalla; en la demo,
 dentro del marco (`incrustado`). Diseño en `editor/Editor.module.css`.
 
+## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
+
+Plan para cuando se decida pasar el inicio real (`/`) a este diseño. Hoy la
+tienda sigue con sus componentes; esto es solo la hoja de ruta. Mantenerla al
+día si cambia un componente del kit o su forma de recibir datos.
+
+### Reemplazos
+
+| Parte | Hoy en la tienda | Pasa a (kit) |
+|---|---|---|
+| Secciones (S1-S10) | `pages/Tienda/TiendaPage.jsx`: `renderSection` (switch desde ~914) + el bucle de ~1504 | `PaginaTienda` / `RenderSecciones` con `respaldo` para lo que no está en el kit |
+| Tarjeta de producto | `PremiumProductCard` (carruseles), `ProductCard` (grillas) | `TarjetaProducto` + `tarjetaDesdeProducto` |
+| Cabecera (M4) | `components/common/Header/Header.jsx` (+ `HeaderSearch`, `NotificationTray`, `ThemeToggle`) | `Cabecera` + menús de `MenusCabecera` |
+| Barra inferior (M6) | `components/common/BottomNav/BottomNav.jsx` | `BarraInferior` |
+| Pie (M5) | `components/common/Footer/Footer.jsx` | `PiePagina` + `PieLegal` (dentro de `MarcoTienda`) |
+| Barra de admin (M3) | `components/common/AdminBar/AdminBar.jsx` | `BarraAdmin` |
+| Aviso del sistema (M1) | `components/common/SystemAlert` | `AvisoSistema` |
+| Banner de la app (M2) | `pages/Tienda/components/AppDownloadBanner.jsx` | `BannerApp` |
+| Flotantes (M7-M10) | `WhatsAppButton`, `KapiPet` (solo el botón), `PackageBubble` (solo el botón), píldora de la encuesta en `Header.jsx` ~1333-1359, `.floating-action-stack` de `App.jsx` | `PilaFlotante` + `BotonWhatsApp`, `KapiFlotante`, `BurbujaRegalos`, `PildoraRecompensa` (las ventanas de Kapi y de regalos siguen siendo de la tienda) |
+| Anuncio de campaña (M11) | `components/common/CampaignPopup/PopupCard.jsx` | `VentanaCampana` (las reglas de `services/popupsLogic.mjs` se quedan) |
+| Idioma (M12) | `components/i18n/LanguagePopup.jsx` | `AvisoIdioma` |
+| Editor | `VisualEditorPanel`, `EditableSection`, `ModuleInserter` | `PanelEditor`, `SeccionEditable`, `InsertarAqui`, `useBorrador` |
+| Toasts | ya hecho: `contexts/ToastContext.jsx` usa `ProveedorToasts` | — |
+
+### De dónde sale cada dato
+
+| Prop del kit | En la tienda |
+|---|---|
+| `secciones` | `loadStorefrontPage('home')` / `getStorefrontConfig` (`pages/home`), ya en React Query (`storefront-config`) |
+| `productos.destacados` | `getFeaturedProducts(marca)` (query `featured-products`) |
+| `productos.nuevos` | `getStoreProductsPage({ sort: 'newest', pageSize: 12 })` (como `ProductQueryCarousel`) |
+| `productos.ofertas` | `getOnSaleProducts(marca)` |
+| `productos.porCategoria` / `porColeccion` | las mismas consultas de `ProductQueryCarousel` / `CollectionCarousel` |
+| `categorias` | `getCategories()` + cuenta de productos (lo que hoy arma `automaticCategoryProducts`, ~450) |
+| `marcas` | `getBrands()` (hoy `automaticGridBrands`, ~365) |
+| imagen de cada tarjeta | `useProductThumbnailVariant(product)` (miniatura elegida y `recordImpression`) |
+| `cabecera.usuario`, `monedas`, `onCerrarSesion` | `AuthContext` (`user`, `userProfile`, `activeMainCoins`) |
+| `cabecera.carrito`, `barraInferior.carrito` | `CartContext` (items seleccionados) |
+| `cabecera.favoritos` | `WishlistContext` |
+| `cabecera.notificaciones` | `NotificationsContext` (`users/{uid}/notifications`) |
+| `cabecera.enlaces`, textos de menús | `storeConfig/homePage` (`header.navLinks`, `accountPopup`, `favoritesPopup`) |
+| `menuTienda`, `menuMarcas` | `getCategories` (con productos) y `getBrands` (visibles) |
+| `gruposCuenta` | `useCuentaNavGroups` filtrado por `ACCESOS_RAPIDOS_HEADER` (`Header.jsx` ~54) |
+| `pie` | `getStorefrontConfig('footer')` (`pages/footer`) |
+| `pieLegal.empresa` | `config/empresa.js` |
+| `BotonWhatsApp.numero` | Firestore `messages` (`whatsapp_number_tienda`…), marca y producto como hoy |
+| `BurbujaRegalos.cantidad` | `suggested_packages` sin ver (como `PackageBubble`) |
+| `PildoraRecompensa` | `userProfile.hasCompletedSurvey` y `surveyFabHiddenUntil` (3 días) |
+| `AvisoSistema` | `configuracion/estado_app` en tiempo real |
+| `onAgregar` | `CartContext.addToCart`; "elegir" abre `AgregarRapido` con `opcionesDeProducto` |
+| `contacto` de Preguntas frecuentes (`propsPara`) | el mismo número de WhatsApp de la zona |
+
+### Comportamiento que no se puede perder
+
+- **Carga:** `DeferredSection` (las secciones de abajo se cargan al acercarse), `BrandLoaderOverlay` hasta que el hero está listo, y el `prefetchQuery` de `index.jsx`.
+- **Excepciones:** `isKcheroLanding` (cacherito: títulos y secciones que se ocultan o cambian) se filtra ANTES de pasar `secciones`; `conversion_fold` y `landing_payment` siguen por `respaldo`.
+- **Visibilidad:** quién ve cada parte (columna "Quién lo ve" del Marco): sesión, admin, rutas sin WhatsApp (admin, checkout, landings), Capacitor sin pie ni banner de app, landings sin cabecera (`LayoutContext`).
+- **Página de marca:** `pageBrandId` acota productos y oculta el sello de la marca (`catalogo.marcaActual`).
+- **Analítica:** `recordImpression` de las miniaturas, `trackAddToCart` (ya en `CartContext`), eventos de popups.
+- **Traducción:** la tienda envuelve los textos en `<T>` y el kit no traduce. Hay que pasar los textos ya traducidos o agregar un proveedor de traducción.
+- **Edición:** `VisualEditorContext` (borrador, `isEditModeActive`), `CustomFontsInjector`.
+- **App:** safe areas, botón atrás que cierra hojas, `DeepLinkHandler`.
+
+### Diferencias a propósito (no "corregirlas" al migrar)
+
+- Barra inferior siempre de 5 pestañas, sin "Admin": el panel se abre desde `BarraAdmin`.
+- "¡Quedan N!" solo con 10 unidades o menos (hoy dice "N disponibles" en todos).
+- Sin puntuación ni reseñas inventadas (`ProductCard.jsx:169`): solo si hay reseñas reales.
+- Píldora de la encuesta con moneda (no regalo), para no confundirse con los regalos sugeridos.
+- Distancia mínima entre secciones aunque el builder guarde 0.
+- Anuncio de campaña de solo imagen, centrado también en el celular.
+- Ícono del banner de la app en el violeta de la cabecera.
+
+### Qué le falta al kit antes de migrar
+
+- `TarjetaProducto`: favorito controlado desde fuera (hoy guarda `deseado` por dentro: necesita `deseado` + `onDeseo` para `WishlistContext`) y avisar la impresión (`recordImpression`).
+- `Cabecera`: buscador con panel de sugerencias (`HeaderSearch`), selector de idioma en `MenuCuenta`, aviso para activar notificaciones push.
+- Traducción de textos (`<T>`).
+- `imageSource: 'product'` de las categorías: la página debe pasar `imagenProducto`.
+- La `TrustBadges` vieja no entiende los íconos nuevos del editor del kit (`camion`, `escudo`…): mientras convivan, usar `iconoDesde`.
+
+### Pasos (cada uno se verifica solo y se puede volver atrás)
+
+1. Marco: `BarraAdmin`, `AvisoSistema`, `BannerApp`, flotantes, `PieLegal`. Bajo riesgo; cada uno reemplaza a un componente.
+2. `TarjetaProducto` en los carruseles (con lo que le falta, arriba).
+3. Secciones del inicio con `RenderSecciones` + `respaldo`, conservando `DeferredSection` y las excepciones. Comparar capturas antes y después.
+4. `BarraInferior` y luego `Cabecera` (la más conectada).
+5. Editor del kit en lugar de `VisualEditorPanel`.
+
+Para volver atrás: cada paso en su propio commit, y el componente viejo no se borra hasta que el nuevo lleve un tiempo en producción.
+
 ## Datos del ejemplo
 
 `demo/inicio.json` es una copia de solo lectura de `pages/home`,

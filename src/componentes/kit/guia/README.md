@@ -6,7 +6,11 @@ Una ficha por página real de wala.pe. Cada ficha tiene:
   **Ver componentes** en `/componentes.html` → Páginas → Tienda de prueba);
 - una tabla por parte: componente del kit, piezas que usa, archivo donde se
   cambia su diseño, de dónde salen los datos en la tienda y quién la ve;
-- qué piezas se repiten en varias partes (cambiar una cambia todas).
+- qué piezas se repiten en varias partes (cambiar una cambia todas);
+- "Llevar a la tienda (a futuro)": qué componente viejo reemplaza cada uno,
+  de dónde salen los datos, qué comportamiento no se puede perder, las
+  diferencias a propósito y los pasos. La migración todavía NO se hace: es
+  la hoja de ruta para cuando se decida.
 
 Numeración: **M** = marco (cabecera, pie, barra inferior, flotantes: igual en
 todas las páginas), **S** = secciones del builder en su orden, **P** =
@@ -14,7 +18,7 @@ contenido propio de una página que no es del builder (carrito, pedidos).
 
 | Página | Ficha | Estado |
 |---|---|---|
-| Inicio (`/`) | [INICIO.md](INICIO.md) | armada en la Tienda de prueba |
+| Inicio (`/`) | [INICIO.md](INICIO.md) | armada en la Tienda de prueba; con plan de migración (a futuro) |
 | Carrito (`/carrito`) | — | armada (P1 `PaginaCarrito`); falta su ficha |
 | Mis pedidos (`/cuenta/pedidos`) | — | armada (P2 `PaginaPedidos`); falta su ficha |
 
