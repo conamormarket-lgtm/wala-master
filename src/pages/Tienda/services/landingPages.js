@@ -32,6 +32,13 @@ export const getLandingPageBySlug = async (slug) => {
       (d) => String((d.data() || {}).slug || d.id).toLowerCase() === target
     );
     if (hit) return { id: hit.id, ...hit.data() };
+    // 3) Slug ANTERIOR: la landing se renombró (ej. /mussa → /lumi). Los links
+    //    viejos (QR, anuncios, compartidos) se devuelven marcados para que
+    //    DynamicLandingPage redirija a la URL nueva en vez de mandar al inicio.
+    const renombrada = all.docs.find((d) =>
+      ((d.data() || {}).slugsAnteriores || []).some((s) => String(s).toLowerCase() === target)
+    );
+    if (renombrada) return { id: renombrada.id, ...renombrada.data(), redirigirA: renombrada.data().slug };
     return null;
   } catch (error) {
     console.error("Error obteniendo landing page por slug:", error);
@@ -70,6 +77,27 @@ export const saveLandingPage = async (id, data) => {
     return { success: true, id: docId };
   } catch (error) {
     console.error("Error guardando landing page:", error);
+    return { error: error.message };
+  }
+};
+
+/**
+ * El diseño de una landing vive en pages/<slug>: al cambiarle el slug, la
+ * página nueva quedaba vacía aunque el diseño siguiera en pages/<slug viejo>.
+ * Copia el diseño al slug nuevo (si ahí todavía no hay nada) y deja el viejo
+ * intacto como respaldo.
+ */
+export const moverDisenoDeLanding = async (slugViejo, slugNuevo) => {
+  try {
+    if (!slugViejo || !slugNuevo || slugViejo === slugNuevo) return { success: true };
+    const destino = doc(db, 'pages', slugNuevo);
+    if ((await getDoc(destino)).exists()) return { success: true };
+    const origen = await getDoc(doc(db, 'pages', slugViejo));
+    if (!origen.exists()) return { success: true };
+    await setDoc(destino, { ...origen.data(), updatedAt: new Date().toISOString() });
+    return { success: true };
+  } catch (error) {
+    console.error("Error moviendo el diseño de la landing:", error);
     return { error: error.message };
   }
 };

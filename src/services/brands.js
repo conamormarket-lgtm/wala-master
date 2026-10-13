@@ -258,9 +258,10 @@ export const ensureBrandLanding = async (brandId, slug, name, opts = {}) => {
       { field: 'brandId', operator: '==', value: brandId }
     ]);
     const landingPrevia = Array.isArray(existentes) && existentes.length > 0 ? existentes[0] : null;
-    // El layout vive en pages/{id de la landing}: si la landing ya existía con
-    // otro slug, hay que escribir la página de ESE slug y no la de uno nuevo.
-    const pageId = landingPrevia ? (landingPrevia.id || landingPrevia.slug || slug) : slug;
+    // El layout vive en pages/{slug de la landing} (así lo lee DynamicLandingPage):
+    // si la landing ya existía con otro slug, hay que escribir la página de ESE
+    // slug y no la de uno nuevo. El id no sirve: puede ser 'lp_…' o un slug viejo.
+    const pageId = landingPrevia ? (landingPrevia.slug || landingPrevia.id || slug) : slug;
 
     if (!landingPrevia) {
       // Landing: el eslabón que resuelve /<slug> → marca (vía DynamicLandingPage).

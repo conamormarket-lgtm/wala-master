@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, useLocation, Navigate } from 'react-router-dom';
 import { getLandingPageBySlug } from './services/landingPages';
 import { getThemeById } from './services/themes';
 import { useLayoutContext } from '../../contexts/LayoutContext';
@@ -12,6 +12,7 @@ import './landing-mobile.css';
 
 const DynamicLandingPage = () => {
   const { slug } = useParams();
+  const location = useLocation();
   const { setHeaderVisible, setFooterVisible } = useLayoutContext();
   const { setActivePageId, storeConfigDraft } = useVisualEditor();
   const { loading: authLoading } = useAuth();
@@ -110,6 +111,11 @@ const DynamicLandingPage = () => {
     // Landing pública no encontrada: a home si hay sesión; si no, home también
     // (no mandar a /login: las LP deben ser visibles sin cuenta).
     return <Navigate to="/" replace />;
+  }
+
+  // URL vieja de una landing renombrada (ej. /mussa → /lumi).
+  if (landingPage.redirigirA) {
+    return <Navigate to={`/${landingPage.redirigirA}${location.search}`} replace />;
   }
 
   return (

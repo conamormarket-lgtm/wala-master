@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getLandingPages, saveLandingPage, deleteLandingPage } from '../services/landingPages';
+import { getLandingPages, saveLandingPage, deleteLandingPage, moverDisenoDeLanding } from '../services/landingPages';
 import { getThemes } from '../services/themes';
 import { getProducts } from '../../../services/products';
 import { getBrands } from '../../../services/brands';
@@ -99,9 +99,25 @@ const AdminLandingPages = () => {
       return;
     }
 
+    // Cambio de URL: el diseño se va con la landing y la URL vieja queda
+    // anotada para redirigir los links ya compartidos.
+    const previa = pages.find(p => p.id === formData.id);
+    const slugViejo = previa?.slug || '';
+    let slugsAnteriores = previa?.slugsAnteriores || [];
+    if (slugViejo && slugViejo !== cleanSlug) {
+      const { error: errorDiseno } = await moverDisenoDeLanding(slugViejo, cleanSlug);
+      if (errorDiseno) {
+        alert("No se pudo mover el diseño a la nueva URL: " + errorDiseno);
+        return;
+      }
+      slugsAnteriores = [...new Set([...slugsAnteriores, slugViejo])];
+    }
+    slugsAnteriores = slugsAnteriores.filter(s => s !== cleanSlug);
+
     const { error } = await saveLandingPage(formData.id, {
       ...formData,
-      slug: cleanSlug
+      slug: cleanSlug,
+      slugsAnteriores
     });
 
     if (error) {
