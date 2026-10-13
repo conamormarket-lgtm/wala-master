@@ -5,12 +5,30 @@ import {
   recordReferralClick,
   leerReferidoGuardado,
   guardarReferido,
+  getNombreInvitacion,
 } from '../../services/referrals';
+
+// Completa el enlace guardado con el primer nombre de quien invitó, para que
+// AvisoInvitacion muestre "María te invitó a Walá". Si no llega, el aviso sale
+// sin nombre ("Llegaste con una invitación").
+async function completarNombre(referralId) {
+  const nombre = await getNombreInvitacion(referralId);
+  const actual = leerReferidoGuardado();
+  // null también se guarda: así no se vuelve a preguntar en cada carga.
+  if (actual?.referralId === referralId) guardarReferido({ ...actual, nombre: nombre || null });
+}
 
 const ReferralTracker = () => {
   const location = useLocation();
   const { userProfile, loading } = useAuth();
   const miCodigo = (userProfile?.referralCode || '').toUpperCase();
+
+  // Enlaces guardados antes de existir el aviso (o cuyo nombre no llegó):
+  // se completa una vez al cargar.
+  useEffect(() => {
+    const guardado = leerReferidoGuardado();
+    if (guardado && guardado.nombre === undefined) completarNombre(guardado.referralId);
+  }, []);
 
   useEffect(() => {
     // Buscar en los query params "?ref=CODE"
@@ -42,6 +60,7 @@ const ReferralTracker = () => {
           referralId: id, // El docId de Firestore (etapa 2)
           timestamp: Date.now(),
         });
+        completarNombre(id);
       }
     };
 

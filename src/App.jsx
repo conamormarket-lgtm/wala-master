@@ -17,6 +17,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import AdminRoute from './components/AdminRoute/AdminRoute';
 import RouteTracker from './components/analytics/RouteTracker';
 import ReferralTracker from './components/analytics/ReferralTracker';
+import AvisoInvitacion from './components/common/AvisoInvitacion/AvisoInvitacion';
 import PushLinkHandler from './components/common/PushLinkHandler/PushLinkHandler';
 import ErrorBoundary from './components/common/ErrorBoundary/ErrorBoundary';
 import AppErrorBoundary from './components/system/AppErrorBoundary';
@@ -304,6 +305,7 @@ const GlobalLayout = ({ children }) => {
       <RouteTracker />
       <PushLinkHandler />
       <ReferralTracker />
+      <AvisoInvitacion />
       <ScrollTracker />
       <AdminBar />
       {isEditModeActive && (

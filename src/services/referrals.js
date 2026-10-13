@@ -23,7 +23,17 @@ export const REFERRAL_STORAGE_KEY = 'wala_referral';
 // VENTANA_REFERIDO_MS en functions/referidosLogic.js).
 export const VENTANA_REFERIDO_MS = 36 * 60 * 60 * 1000;
 
-/** { referrerCode, referralId, timestamp } si el enlace abierto sigue vigente; si no, null. */
+// Avisa a la página (AvisoInvitacion, checkout) que el enlace guardado cambió.
+export const EVENTO_REFERIDO = 'wala:referido';
+const avisarCambio = () => {
+  try { window.dispatchEvent(new Event(EVENTO_REFERIDO)); } catch { /* sin window */ }
+};
+
+/**
+ * { referrerCode, referralId, timestamp, nombre? } si el enlace abierto sigue
+ * vigente; si no, null. `nombre` es el primer nombre de quien invitó
+ * (invitacionReferidoSecure), para "María te invitó".
+ */
 export function leerReferidoGuardado() {
   try {
     const data = JSON.parse(localStorage.getItem(REFERRAL_STORAGE_KEY) || 'null');
@@ -38,6 +48,7 @@ export function guardarReferido(data) {
   try {
     localStorage.setItem(REFERRAL_STORAGE_KEY, JSON.stringify(data));
   } catch { /* modo privado: la compra sale sin referido */ }
+  avisarCambio();
 }
 
 /** Tras una compra: un enlace = una compra, así que no se reutiliza. */
@@ -45,6 +56,17 @@ export function olvidarReferido() {
   try {
     localStorage.removeItem(REFERRAL_STORAGE_KEY);
   } catch { /* nada que limpiar */ }
+  avisarCambio();
+}
+
+/** Primer nombre de quien invitó (o null). Nunca lanza: el aviso es opcional. */
+export async function getNombreInvitacion(referralId) {
+  try {
+    const res = await httpsCallable(getFunctions(), 'invitacionReferidoSecure')({ referralId });
+    return res?.data?.nombre || null;
+  } catch {
+    return null;
+  }
 }
 
 /**

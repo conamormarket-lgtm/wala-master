@@ -114,4 +114,19 @@ check("resumen: productos como mapa (pedido web)", () => {
   assert.strictEqual(res.etapa, "por_confirmar");
 });
 
+check("primerNombre: solo el primero, con mayúscula inicial", () => {
+  assert.strictEqual(r.primerNombre({ displayName: "JOSÉ ALEJANDRO MINAYA" }), "José");
+  assert.strictEqual(r.primerNombre({ displayName: "flor huaman huaman" }), "Flor");
+  assert.strictEqual(r.primerNombre({ displayName: "  Ñato  Pérez" }), "Ñato");
+  assert.strictEqual(r.primerNombre({ clienteNombre: "María" }), "María");
+});
+
+check("primerNombre: nunca correo ni vacío", () => {
+  assert.strictEqual(r.primerNombre({ displayName: "ana@gmail.com" }), null);
+  assert.strictEqual(r.primerNombre({ displayName: "ana@gmail.com", name: "Ana" }), "Ana");
+  assert.strictEqual(r.primerNombre({ displayName: "" }), null);
+  assert.strictEqual(r.primerNombre({ displayName: "1 2 3" }), null);
+  assert.strictEqual(r.primerNombre(null), null);
+});
+
 console.log(`referidosLogic: ${count} pruebas OK`);

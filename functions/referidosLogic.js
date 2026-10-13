@@ -126,8 +126,27 @@ function resumenPedidoReferido(orderData, coleccion) {
   };
 }
 
+/**
+ * Primer nombre de quien refirió, para "María te invitó" en la tienda. Solo
+ * el primero (nunca apellidos ni correo) y con mayúscula inicial: los perfiles
+ * lo traen como lo escribieron ("JOSÉ ALEJANDRO…", "flor huaman…"). null si
+ * no hay un nombre usable.
+ */
+function primerNombre(perfil) {
+  const p = perfil || {};
+  const crudo = [p.displayName, p.clienteNombre, p.name, p.nombre]
+    .map((v) => String(v == null ? "" : v).trim())
+    .find((v) => v && !v.includes("@"));
+  if (!crudo) return null;
+  const palabra = crudo.split(/\s+/)[0].replace(/[^\p{L}'-]/gu, "");
+  if (palabra.length < 2) return null;
+  const nombre = palabra.slice(0, 20).toLocaleLowerCase("es");
+  return nombre.charAt(0).toLocaleUpperCase("es") + nombre.slice(1);
+}
+
 module.exports = {
   VENTANA_REFERIDO_MS,
+  primerNombre,
   calcularRecompensaReferido,
   referidoVigenteParaCheckout,
   pedidoEsDelReferido,

@@ -3760,6 +3760,27 @@ exports.claimReferralSecure = functions.https.onCall(async (data, context) => {
   }
 });
 
+// Quién invitó: quien llega por un enlace ve "María te invitó a Walá" mientras
+// navega y al pagar. Sin sesión (quien abre el link puede no tener cuenta) y
+// solo el primer nombre: lo ve únicamente quien tiene el enlace, que es a quien
+// esa persona se lo mandó. Las reglas no dejan leer perfiles sin sesión, por
+// eso pasa por acá.
+exports.invitacionReferidoSecure = functions.https.onCall(async (data) => {
+  const id = String((data && data.referralId) || "").trim();
+  if (!id || id.includes("/")) return { nombre: null };
+  try {
+    const snap = await db.collection("referrals").doc(id).get();
+    const r = snap.exists ? snap.data() || {} : {};
+    if (!r.referrerCode || r.status === "claimed") return { nombre: null };
+    const dueno = await db.collection(PORTAL_USERS_COLLECTION)
+      .where("referralCode", "==", r.referrerCode).limit(1).get();
+    return { nombre: dueno.empty ? null : referidos.primerNombre(dueno.docs[0].data()) };
+  } catch (e) {
+    console.warn(`invitacionReferidoSecure: ${id}:`, e.message);
+    return { nombre: null };
+  }
+});
+
 // "Ver pedido" en Mis Referidos: qué compró la persona referida, cuánto y en
 // qué etapa va, sin ningún dato suyo (referidos.resumenPedidoReferido).
 exports.detalleReferidoSecure = functions.https.onCall(async (data, context) => {

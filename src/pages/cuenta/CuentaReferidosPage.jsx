@@ -290,7 +290,8 @@ const CuentaReferidosPage = () => {
             </button>
             <p className={styles.generateHint}>
               El enlace se copia solo. Genera uno nuevo por cada persona: si mandas
-              el mismo a varias, todas cuentan como un único referido.
+              el mismo a varias, todas cuentan como un único referido. Quien lo
+              abra verá tu primer nombre y sabrá que su compra te suma monedas.
             </p>
           </div>
         </GlassCard>

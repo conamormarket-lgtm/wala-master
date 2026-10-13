@@ -12,6 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getMessage } from '../services/messages';
 import { getBrands } from '../services/brands';
 import { leerReferidoGuardado, olvidarReferido } from '../services/referrals';
+import { NotaInvitacion } from '../components/common/AvisoInvitacion/AvisoInvitacion';
 import { prepareCheckoutPayment, precalentarFunciones } from '../services/checkoutPayment';
 import { markItemAsGifted } from '../services/wishlist';
 import { marcarCreacionesEnPedido } from '../services/designs';
@@ -2581,6 +2582,9 @@ const CheckoutPage = () => {
               {/* Perú: 'S/ total' (como hoy). El total real SIEMPRE se procesa en PEN. */}
               <span>S/ {total.toFixed(2)}</span>
             </div>
+
+            {/* Quien llegó por un enlace de referido ve con qué invitación compra. */}
+            <NotaInvitacion />
 
             {/* ── Bloque informativo internacional (solo si NO es Perú) ──────────
                 Muestra el equivalente local (display) y deja claro el cobro en USD.
