@@ -280,3 +280,18 @@
   width: 28px;
   color: #f59e0b;
 }
+
+/* Lo propio de la página debajo del subtítulo (estado del día, invitación). */
+.encabezadoExtra {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 1rem;
+}
+
+.centrado .encabezadoExtra {
+  justify-content: center;
+}
+
+.derecha .encabezadoExtra {
+  justify-content: flex-end;
+}

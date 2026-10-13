@@ -24,6 +24,7 @@ contenido propio de una página que no es del builder (carrito, pedidos).
 |---|---|---|
 | Inicio (`/`) | [INICIO.md](INICIO.md) | armada en la Tienda de prueba; con plan de migración (a futuro) |
 | Tienda (`/tienda`) | [TIENDA.md](TIENDA.md) | armada en la Tienda de prueba (catálogo con filtros reales); con plan de migración (a futuro) |
+| Minijuegos (`/minijuegos`) | [MINIJUEGOS.md](MINIJUEGOS.md) | armada (P3 `PaginaMinijuegos`, con los estados de cada juego); con plan de migración (a futuro) |
 | Carrito (`/carrito`) | — | armada (P1 `PaginaCarrito`); falta su ficha |
 | Mis pedidos (`/cuenta/pedidos`) | — | armada (P2 `PaginaPedidos`); falta su ficha |
 

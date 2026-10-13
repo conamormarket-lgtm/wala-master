@@ -15,13 +15,17 @@ const TONO_COLGANTE = { violeta: 'violeta', oscuro: 'noche', exito: 'verde', avi
  * tono: violeta | oscuro | exito | aviso | peligro | neutro.
  * Las sólidas (descuento, "Nuevo", "Tu diseño") son etiquetas colgantes como
  * la del logo; las suaves, píldoras para estados.
+ *  - punto: un punto del color del texto antes (estado "en vivo": "● Disponible hoy").
+ *  - sobreFoto: fondo opaco (el tono sobre la superficie) para que se lea
+ *    encima de una imagen, también en modo noche.
  */
-export function Etiqueta({ tono = 'violeta', icono, solida = false, children }) {
+export function Etiqueta({ tono = 'violeta', icono, solida = false, punto = false, sobreFoto = false, children }) {
   if (solida) {
     return <EtiquetaColgante tono={TONO_COLGANTE[tono] || 'violeta'} tamano="md" icono={icono}>{children}</EtiquetaColgante>;
   }
   return (
-    <span className={[s.etiqueta, s[tono], solida && s.solida].filter(Boolean).join(' ')}>
+    <span className={[s.etiqueta, s[tono], solida && s.solida, sobreFoto && s.sobreFoto].filter(Boolean).join(' ')}>
+      {punto && <span className={s.punto} aria-hidden="true" />}
       {icono}
       {children}
     </span>
@@ -76,12 +80,17 @@ export function CostoMonedas({ monto }) {
   );
 }
 
-/** Lo que el usuario gana (signo + y verde, la moneda flota). */
-export function GananciaMonedas({ monto }) {
+/**
+ * Lo que el usuario gana (verde, la moneda flota).
+ *  - monto: "+N" (por defecto)
+ *  - children: en vez de "+N", una frase ("Hasta +4 monedas al acertar")
+ *  - icono: en vez de la moneda (p. ej. <IconoWala nombre="regalo" /> de un premio)
+ */
+export function GananciaMonedas({ monto, children, icono }) {
   return (
     <span className={s.ganancia}>
-      <Moneda />
-      <strong>+{miles(monto)}</strong>
+      {icono || <Moneda />}
+      {children ? <span className={s.gananciaTexto}>{children}</span> : <strong>+{miles(monto)}</strong>}
     </span>
   );
 }

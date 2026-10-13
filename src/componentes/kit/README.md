@@ -25,15 +25,16 @@ Todo se arma con lo del nivel de abajo; nada se dibuja dos veces.
    `TarjetaProducto`, y las de `piezas/`: `TarjetaCategoria` (cuadro · círculo
    · burbuja), `TarjetaTestimonio`, `TarjetaMarca`, `LogoMarca`,
    `TarjetaDestacado`, `Beneficio` (píldora · fila), `BarraProgreso` /
-   `StockBajo`, `TarjetaAyuda` (Kapi asomado), `FotoProducto`, `Avatar`, y
-   las del marco (`piezas/Flotantes.jsx`, `piezas/Marco.jsx`).
+   `StockBajo`, `TarjetaAyuda` (Kapi asomado), `FotoProducto`, `Avatar`,
+   `OpcionesFiltro`, `TarjetaJuego`, y las del marco (`piezas/Flotantes.jsx`, `piezas/Marco.jsx`).
 2. **Secciones** (`Secciones*.jsx`): cada tipo del builder, hecho solo con
    piezas. En `/componentes.html` (vista Secciones) cada ficha dice con qué
    piezas está hecha.
 3. **Páginas** (`paginas/Paginas.jsx`): `MarcoTienda` (cabecera, pie y barra
    inferior), `PaginaTienda` (marco + secciones del builder), `PaginaCarrito`
-   (piezas del pedido + la sección de carrusel para recomendar) y
-   `PaginaPedidos`.
+   (piezas del pedido + la sección de carrusel para recomendar),
+   `PaginaPedidos` y `PaginaMinijuegos` (Zona Arcade: `Encabezado` +
+   `TarjetaJuego`).
 
 Si una sección necesita algo nuevo (una tarjeta, un chip…), va primero como
 pieza en `piezas/` y después se usa en la sección.
@@ -129,7 +130,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `Pedido.jsx` | `SeguimientoPedido`, `ItemCarrito`, `BarraEnvioGratis`, `ResumenPedido` | Carrito y Mis pedidos |
 | `Feedback.jsx` | `Aviso`, `ProveedorToasts`, `useToast`, `useNotificaciones`, `ListaNotificaciones`, `EstadoVacio`, `HojaInferior` | Avisos, notificaciones y modales |
 | `Enlace.jsx` | `Enlace`, `ProveedorEnlaces`, `tipoDeEnlace` | La única regla de enlaces: internos por el router, externos en otra pestaña, `#ancla` con scroll suave |
-| `adaptadores.js` | `accionDeProducto`, `tarjetaDesdeProducto`, `opcionesDeProducto`, `rutaDeMarca`, `tarjetaDesdeMarca`, `testimonioDesdeAjuste`, `precioEfectivo`, `limitesDePrecio`, `esTemporada`, `gruposDeCatalogo`, `grillaDesdeConfiguracion` | Traducen datos de Firestore a props del kit: un producto de `productos_wala`, una marca de `tienda_brands`, las listas de filtros del catálogo (categorías, colecciones, etiquetas, personajes, tipos) y `storeConfig.layout` |
+| `adaptadores.js` | `accionDeProducto`, `tarjetaDesdeProducto`, `opcionesDeProducto`, `rutaDeMarca`, `tarjetaDesdeMarca`, `testimonioDesdeAjuste`, `precioEfectivo`, `limitesDePrecio`, `esTemporada`, `gruposDeCatalogo`, `grillaDesdeConfiguracion`, `juegosDelArcade` | Traducen datos de Firestore a props del kit: un producto de `productos_wala`, una marca de `tienda_brands`, las listas de filtros del catálogo (categorías, colecciones, etiquetas, personajes, tipos), `storeConfig.layout` y el perfil del cliente en la Zona Arcade |
 | `Carrusel.jsx` | `Carrusel` | El único carrusel: deslizar nativo, flechas, puntos, autoplay con pausas |
 | `Marquesina.jsx` | `Marquesina` | Cinta sin fin (logos, anuncios, burbujas) |
 | `CuentaRegresiva.jsx` | `CuentaRegresiva` | Hasta una fecha o "siempre activa" por visitante; variantes bloques, texto y evento (dígitos grandes para fondos oscuros) |
@@ -138,6 +139,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `piezas/FotoProducto.jsx` | `FotoProducto` | Foto de producto sobre su escenario (`src`, `relleno`, `respaldo` sin foto, `children` encima) |
 | `piezas/Avatar.jsx` | `Avatar`, `iniciales` | Foto o iniciales de una persona |
 | `piezas/OpcionesFiltro.jsx` | `OpcionesFiltro` | Opciones de un filtro como chips con su cuenta; una a la vez y "Ver N más" |
+| `piezas/TarjetaJuego.jsx` | `TarjetaJuego` | Tarjeta de un minijuego: banner, estado, recompensa, racha, nota, botón y cuenta atrás (recibe datos; `juegosDelArcade` los arma) |
 | `piezas/LogoMarca.jsx` | `LogoMarca` | Logo de una marca: `sticker` (con nombre) o `sello` (círculo chico girado) |
 | `piezas/Flotantes.jsx` | `PilaFlotante`, `BotonWhatsApp`, `KapiFlotante`, `BurbujaRegalos`, `PildoraRecompensa` | Lo que flota sobre la página (sobre la barra inferior en el celular) |
 | `piezas/Marco.jsx` | `AvisoSistema`, `BannerApp`, `BarraAdmin`, `PieLegal`, `AvisoIdioma`, `VentanaCampana`, `BotonTema` | Lo que rodea a las secciones: avisos arriba, barra de admin, pie legal, ventanas |

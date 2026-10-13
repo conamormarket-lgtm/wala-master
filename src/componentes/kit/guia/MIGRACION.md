@@ -44,8 +44,10 @@ Cada paso en su propio commit, verificable por separado.
 5. **Secciones del builder**, página por página, con `RenderSecciones` (o
    `PaginaTienda`) + `respaldo`. Primero el inicio (INICIO.md), después
    `/tienda` con el catálogo (TIENDA.md). Comparar capturas antes y después.
-6. **Carrito, checkout y Mis pedidos** (`PaginaCarrito`, `PaginaPedidos` y las
-   piezas de `Pedido.jsx`). Sus fichas (P1, P2) todavía faltan.
+6. **Páginas propias** (no son del builder): carrito, checkout y Mis pedidos
+   (`PaginaCarrito`, `PaginaPedidos` y las piezas de `Pedido.jsx`; sus fichas
+   P1 y P2 todavía faltan) y la Zona Arcade (`PaginaMinijuegos`,
+   MINIJUEGOS.md).
 7. **`BarraInferior` y luego `Cabecera`**: la más conectada (AuthContext,
    CartContext, WishlistContext, notificaciones y la configuración de
    Firestore).

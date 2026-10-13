@@ -741,3 +741,24 @@
     animation: none;
   }
 }
+
+/* Aviso compacto: nota de una línea dentro de una tarjeta. */
+.caja.compacto {
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+}
+
+.compacto .avisoIcono {
+  width: auto;
+  height: auto;
+  background: none;
+  color: var(--a-color);
+}
+
+.compacto .avisoIcono svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}

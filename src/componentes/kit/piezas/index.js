@@ -12,3 +12,4 @@ export { TarjetaAyuda } from './TarjetaAyuda';
 export { FotoProducto } from './FotoProducto';
 export { Avatar, iniciales } from './Avatar';
 export { OpcionesFiltro } from './OpcionesFiltro';
+export { TarjetaJuego } from './TarjetaJuego';

@@ -1,12 +1,13 @@
 import React, { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
 import { RotateCcw, User, Package, Settings, Gift, Ticket, Sparkles } from 'lucide-react';
 import {
-  PaginaTienda, MarcoTienda, PaginaCarrito, PaginaPedidos, Pestanas, Chip, Interruptor, Boton,
+  PaginaTienda, MarcoTienda, PaginaCarrito, PaginaPedidos, PaginaMinijuegos, juegosDelArcade, Pestanas, Chip, Interruptor, Boton,
   BarraAdmin, AvisoSistema, BannerApp, BotonWhatsApp, KapiFlotante, BurbujaRegalos, PildoraRecompensa,
   VentanaCampana, AvisoIdioma, ProveedorEnlaces, PanelEditor, useBorrador, SeccionEditable, InsertarAqui,
   moverSeccion, duplicarSeccion, rutaDeMarca, tarjetaDesdeProducto, REGISTRO_SECCIONES, enlaceWhatsApp, gruposDeCatalogo,
 } from './kit';
 import { empresa } from '../config/empresa';
+import { msHastaMananaLima, msHastaLunesLima } from '../utils/fechaLima';
 import INICIO from './demo/inicio.json';
 import TIENDA from './demo/tienda.json';
 import cs from './ComponentesPage.module.css';
@@ -21,6 +22,8 @@ import s from './DemoTienda.module.css';
  *    con las listas reales (categorías, colecciones, etiquetas…). El menú
  *    Tienda de la cabecera lleva aquí con la categoría ya elegida.
  *  - Carrito y Mis pedidos: con los mismos productos reales.
+ *  - Minijuegos (Zona Arcade): las cuatro tarjetas con juegosDelArcade; con
+ *    sesión, chips para ver cada estado (como el modo diseño de la tienda).
  * "Ver componentes" marca cada parte con su número y su componente; los
  * números son los de kit/guia/INICIO.md.
  * Datos: demo/inicio.json (copia de pages/home, pages/footer y una muestra
@@ -37,15 +40,26 @@ const ROLES = [
 const PAGINAS = [
   { id: 'inicio', texto: 'Inicio', ruta: '/' },
   { id: 'tienda', texto: 'Tienda', ruta: '/tienda' },
+  { id: 'minijuegos', texto: 'Minijuegos', ruta: '/minijuegos' },
   { id: 'carrito', texto: 'Carrito', ruta: '/carrito' },
   { id: 'pedidos', texto: 'Mis pedidos', ruta: '/cuenta/pedidos' },
 ];
 
 /** Ruta de la tienda → página de esta demo (las demás solo avisan). */
-const PAGINA_DE_RUTA = { '/': 'inicio', '/tienda': 'tienda', '/carrito': 'carrito', '/cuenta': 'pedidos', '/cuenta/pedidos': 'pedidos' };
+const PAGINA_DE_RUTA = { '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/carrito': 'carrito', '/cuenta': 'pedidos', '/cuenta/pedidos': 'pedidos' };
 
 /** Pestaña de la barra inferior que se enciende en cada página. */
-const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', carrito: 'tienda', pedidos: 'cuenta' };
+const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', minijuegos: 'juegos', carrito: 'tienda', pedidos: 'cuenta' };
+
+/* Estados de la Zona Arcade para probar (como el modo diseño de la tienda). */
+const RULETAS = [
+  { id: 'bloqueada', texto: 'Ruleta bloqueada', ruleta: { dias: 0 } },
+  { id: 'racha', texto: 'Racha 4/7', ruleta: { dias: 4, empezada: true } },
+  { id: 'lista', texto: 'Lista para girar', ruleta: { dias: 7, empezada: true, desbloqueada: true } },
+  { id: 'girada', texto: 'Girada', ruleta: { dias: 7, empezada: true, girada: true } },
+  { id: 'perdida', texto: 'Semana perdida', ruleta: { dias: 3, empezada: true, perdida: true } },
+];
+const HECHOS = [['palabra', 'Palabra jugada'], ['kapi', 'Kapi alimentado'], ['bolitas', 'Bolitas hechas'], ['cargando', 'Cargando sesión']];
 
 const EXTRAS = [
   ['aviso', 'Aviso del sistema'],
@@ -123,6 +137,9 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [carrito, setCarrito] = useState(CARRITO_INICIAL);
   // Filtros del catálogo de /tienda (el menú Tienda llega con ?categoria=).
   const [filtros, setFiltros] = useState({});
+  // Zona Arcade: qué está hecho hoy y en qué va la ruleta.
+  const [hechos, setHechos] = useState(['kapi']);
+  const [ruletaDemo, setRuletaDemo] = useState('racha');
   const marcoRef = useRef(null);
 
   // Editor del builder (solo admin, sobre el inicio).
@@ -205,7 +222,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       { id: 'marcas', texto: 'Marcas', url: '/marcas', menu: 'marcas' },
       { id: 'minijuegos', texto: 'Minijuegos', url: '/minijuegos' },
     ],
-    activo: pagina === 'tienda' ? 'tienda' : null,
+    activo: pagina === 'tienda' || pagina === 'minijuegos' ? pagina : null,
     menuTienda: {
       categorias: INICIO.categorias.slice(0, 10).map((c) => ({ id: c.categoryId, nombre: c.name, url: `/tienda?categoria=${c.categoryId}` })),
     },
@@ -330,7 +347,30 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     conBuscador: Boolean(sec.settings?.brandId),
   } : undefined);
 
-  const contenido = pagina === 'tienda' ? (
+  /* ── Minijuegos: la Zona Arcade con el estado elegido en los chips ── */
+  const arcade = juegosDelArcade({
+    sesion: conSesion,
+    cargando: conSesion && hechos.includes('cargando'),
+    palabraHecha: hechos.includes('palabra'),
+    kapiReclamado: hechos.includes('kapi'),
+    bolitasHechas: hechos.includes('bolitas'),
+    ruleta: RULETAS.find((r) => r.id === ruletaDemo).ruleta,
+    hasta: {
+      manana: new Date(Date.now() + msHastaMananaLima()).toISOString(),
+      lunes: new Date(Date.now() + msHastaLunesLima()).toISOString(),
+    },
+    onAlimentar: () => (hechos.includes('kapi')
+      ? toast({ tipo: 'info', titulo: '¡Ya alimentaste a Kapi hoy!', texto: 'Vuelve mañana por tu moneda.' })
+      : avisar('En la tienda se abre Kapi', 'Su ventana para alimentarlo y reclamar la moneda')),
+  });
+
+  const contenido = pagina === 'minijuegos' ? (
+    <MarcoTienda {...marco}>
+      <Parte n="P3" nombre="PaginaMinijuegos">
+        <PaginaMinijuegos {...arcade} sesion={conSesion} cargando={conSesion && hechos.includes('cargando')} />
+      </Parte>
+    </MarcoTienda>
+  ) : pagina === 'tienda' ? (
     <PaginaTienda
       {...marco}
       secciones={TIENDA.secciones}
@@ -387,6 +427,19 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
           <span className={cs.controlesTitulo}>Ver como</span>
           <Pestanas opciones={ROLES} valor={rol} onChange={(r) => { setRol(r); if (r !== 'admin') setEditando(false); }} etiqueta="Ver la página como" />
         </div>
+        {pagina === 'minijuegos' && conSesion && (
+          <div>
+            <span className={cs.controlesTitulo}>Juegos de hoy</span>
+            <div className={cs.controlesChips}>
+              {HECHOS.map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={hechos.includes(id)} onClick={() => setHechos((h) => (h.includes(id) ? h.filter((x) => x !== id) : [...h, id]))}>{texto}</Chip>
+              ))}
+            </div>
+            <div className={cs.controlesChips}>
+              {RULETAS.map((r) => <Chip key={r.id} tamano="sm" activo={ruletaDemo === r.id} onClick={() => setRuletaDemo(r.id)}>{r.texto}</Chip>)}
+            </div>
+          </div>
+        )}
         <div>
           <span className={cs.controlesTitulo}>Mostrar también</span>
           <div className={cs.controlesChips}>

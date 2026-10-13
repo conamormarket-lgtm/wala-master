@@ -33,3 +33,31 @@
   background: linear-gradient(90deg, #f59e0b, #e11d48);
 }
 
+
+/* Por pasos (racha de días): el texto a los lados y una cajita por paso. */
+.conPasos .texto {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.pasos {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 4px;
+}
+
+.pasos > span {
+  height: 7px;
+  border-radius: 6px;
+  background: var(--bp-pista, rgba(30, 17, 64, 0.08));
+}
+
+.pasos > .pasoOn {
+  background: linear-gradient(90deg, #f59e0b, #e11d48);
+}
+
+:global([data-theme='dark']) .pasos > span:not(.pasoOn) {
+  background: rgba(255, 255, 255, 0.1);
+}

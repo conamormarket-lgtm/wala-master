@@ -116,3 +116,10 @@
     transition: none;
   }
 }
+
+/* Frase ("Disponible de nuevo en 7 h 56 min"): texto chico y tranquilo. */
+.frase {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}

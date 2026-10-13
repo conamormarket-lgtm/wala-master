@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import s from './CuentaRegresiva.module.css';
+import { textoEspera } from '../../utils/fechaLima';
 
 /**
  * Cuenta regresiva (antes había 2: FlashSales y ConversionFold).
@@ -11,7 +12,8 @@ import s from './CuentaRegresiva.module.css';
  *  - textoFin: lo que se muestra al terminar. onTerminar: aviso.
  *  - variante: 'bloques' (cajitas HH MM SS) | 'texto' (02:14:09) |
  *    'evento' (dígitos grandes con la letra del logo y rótulos; para fondos
- *    oscuros como el de las ofertas relámpago).
+ *    oscuros como el de las ofertas relámpago) | 'frase' ("Disponible de
+ *    nuevo en 7 h 56 min": `etiqueta` + el tiempo; cambia cada medio minuto).
  */
 export default function CuentaRegresiva({ hasta, horas, clave = 'wala_oferta_fin', textoFin = '¡Terminó!', onTerminar, variante = 'bloques', etiqueta = 'Termina en' }) {
   const [fin] = useState(() => calcularFin({ hasta, horas, clave }));
@@ -23,7 +25,7 @@ export default function CuentaRegresiva({ hasta, horas, clave = 'wala_oferta_fin
       const r = Math.max(0, fin - Date.now());
       setRestante(r);
       if (r === 0) { window.clearInterval(id); onTerminar?.(); }
-    }, 1000);
+    }, variante === 'frase' ? 30000 : 1000);
     return () => window.clearInterval(id);
   }, [fin]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -65,6 +67,10 @@ export default function CuentaRegresiva({ hasta, horas, clave = 'wala_oferta_fin
         ))}
       </div>
     );
+  }
+
+  if (variante === 'frase') {
+    return <span className={s.frase} role="timer">{etiqueta} {textoEspera(restante)}</span>;
   }
 
   if (variante === 'texto') {

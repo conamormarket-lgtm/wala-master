@@ -7,8 +7,21 @@ import s from './BarraProgreso.module.css';
  *  - valor, max
  *  - texto: nodo sobre la barra (usar <strong> para el número)
  *  - minimo: % mínimo visible de la barra
+ *  - pasos: en vez de una barra continua, `max` pasos y se encienden `valor`
+ *    (días de una racha: se cuentan de un vistazo). El texto va a los lados.
  */
-export function BarraProgreso({ valor, max = 100, texto, minimo = 8 }) {
+export function BarraProgreso({ valor, max = 100, texto, minimo = 8, pasos = false }) {
+  if (pasos) {
+    const n = Math.max(0, Math.min(max, Number(valor) || 0));
+    return (
+      <div className={`${s.barra} ${s.conPasos}`}>
+        {texto && <span className={s.texto}>{texto}</span>}
+        <span className={s.pasos} role="progressbar" aria-valuemin={0} aria-valuemax={max} aria-valuenow={n}>
+          {Array.from({ length: max }, (_, i) => <span key={i} className={i < n ? s.pasoOn : undefined} />)}
+        </span>
+      </div>
+    );
+  }
   const pct = Math.max(minimo, Math.min(100, (Number(valor) / max) * 100));
   return (
     <div className={s.barra}>

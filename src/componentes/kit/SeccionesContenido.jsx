@@ -102,7 +102,13 @@ function conResalte(titulo, resalte, color) {
 /** Word joiner (U+2060): pega lo que sigue a la última palabra, sin espacio. */
 const UNIR = String.fromCharCode(0x2060);
 
-export function Encabezado({ ajustes = {} }) {
+/**
+ * Título grande de una página (header del builder).
+ *  - ajustes: los del builder (title, titleHighlight, subtitle, botón…)
+ *  - children: algo propio de la página debajo del subtítulo (un estado,
+ *    una invitación a iniciar sesión…); el builder no lo usa.
+ */
+export function Encabezado({ ajustes = {}, children }) {
   const { title, subtitle, titleHighlight, titleHighlightColor, textAlign = 'center', compact } = ajustes;
   if (!title && !subtitle) return null;
   return (
@@ -136,6 +142,7 @@ export function Encabezado({ ajustes = {} }) {
       >
         {subtitle}
       </TextoCampo>
+      {children && <div className={s.encabezadoExtra}>{children}</div>}
       <BotonDeAjustes ajustes={ajustes} />
     </div>
   );

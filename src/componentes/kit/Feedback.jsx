@@ -12,12 +12,17 @@ const ICONOS = { exito: CheckCircle2, info: Info, aviso: AlertTriangle, error: X
 const ENTRA = { type: 'tween', duration: 0.42, ease: [0.32, 0.72, 0, 1] };
 const SALE = { type: 'tween', duration: 0.26, ease: [0.4, 0, 1, 1] };
 
-/** Aviso dentro de la página (no flotante). */
-export function Aviso({ tipo = 'info', titulo, children, accion, onCerrar }) {
+/**
+ * Aviso dentro de la página (no flotante).
+ *  - tipo: info | exito | aviso | error
+ *  - icono: otro ícono en vez del del tipo (p. ej. un candado)
+ *  - compacto: una línea chica, sin sello (notas dentro de una tarjeta)
+ */
+export function Aviso({ tipo = 'info', titulo, children, accion, onCerrar, icono, compacto = false }) {
   const Icono = ICONOS[tipo];
   return (
-    <div className={`${s.caja} ${s[tipo]}`} role={tipo === 'error' ? 'alert' : 'status'}>
-      <span className={s.avisoIcono}><Icono aria-hidden="true" /></span>
+    <div className={[s.caja, s[tipo], compacto && s.compacto].filter(Boolean).join(' ')} role={tipo === 'error' ? 'alert' : 'status'}>
+      <span className={s.avisoIcono}>{icono || <Icono aria-hidden="true" />}</span>
       <div className={s.avisoTexto}>
         {titulo && <p className={s.avisoTitulo}>{titulo}</p>}
         {children && <p>{children}</p>}

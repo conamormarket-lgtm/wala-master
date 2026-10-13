@@ -411,3 +411,24 @@
     animation: none;
   }
 }
+
+/* Punto de estado ("● Disponible hoy"): del color del texto. */
+.punto {
+  width: 0.42rem;
+  height: 0.42rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Ganancia con frase: más liviana que el "+N". */
+.gananciaTexto {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* Sobre una foto: el tono encima de la superficie (opaco en los dos temas). */
+.sobreFoto {
+  background: linear-gradient(var(--e-fondo), var(--e-fondo)), var(--color-surface);
+  box-shadow: 0 4px 10px -6px rgba(15, 23, 42, 0.45);
+}

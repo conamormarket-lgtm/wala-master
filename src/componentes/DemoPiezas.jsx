@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import {
   TarjetaCategoria, TarjetaTestimonio, TarjetaMarca, LogoMarca, TarjetaDestacado, Beneficio, StockBajo, Chip, tarjetaDesdeMarca, acento,
-  FotoProducto, Avatar, Moneda, EtiquetaColgante, OpcionesFiltro, Acordeon,
+  FotoProducto, Avatar, Moneda, EtiquetaColgante, OpcionesFiltro, Acordeon, TarjetaJuego, Etiqueta, GananciaMonedas,
+  Aviso, CuentaRegresiva, IconoWala, BarraProgreso,
 } from './kit';
+import { Lock } from 'lucide-react';
 import s from './DemoPiezas.module.css';
 
 /*
@@ -102,6 +104,46 @@ export default function DemoPiezas({ categorias, marcas, imagenes }) {
             { id: 'nota', question: 'Con texto', answer: 'Una respuesta de texto se ve como párrafo, igual que en preguntas frecuentes.' },
           ]}
         />
+      </Ficha>
+
+      <Ficha nombre="TarjetaJuego" usadaEn="Zona Arcade (/minijuegos)" ancho="1 / -1">
+        <div className={s.juegos}>
+          <TarjetaJuego
+            imagen="/assets/kapi/banners/bolitas.webp"
+            titulo="Las Bolitas de Kapi"
+            descripcion="Ordena los colores en los tubos para ganar 2 monedas al día."
+            estado={{ texto: 'Disponible hoy', tono: 'violeta', punto: true }}
+            recompensa={{ texto: '+2 monedas al día' }}
+            accion={{ tipo: 'jugar', texto: 'Jugar ahora', url: '/ball-sort' }}
+          />
+          <TarjetaJuego
+            imagen="/assets/kapi/banners/ruleta.webp"
+            titulo="Ruleta Semanal"
+            descripcion="Reclama tu moneda los 7 días para girar la ruleta."
+            estado={{ texto: 'Bloqueada', tono: 'neutro' }}
+            recompensa={{ texto: 'Premio semanal', icono: 'regalo' }}
+            racha={{ dias: 4 }}
+            nota={{ tipo: 'bloqueo', texto: 'Reclama 7 días seguidos para desbloquearla.' }}
+            accion={{ tipo: 'bloqueado', texto: 'Bloqueada' }}
+            espera="Te faltan 3 días de racha"
+            atenuada
+            bloqueada
+          />
+        </div>
+      </Ficha>
+
+      <Ficha nombre="Para la Zona Arcade (mejoras)" usadaEn="Etiqueta punto · sobreFoto, GananciaMonedas con texto, BarraProgreso pasos, Aviso compacto, CuentaRegresiva frase">
+        <div className={s.columna}>
+          <div className={s.filaCentrada}>
+            <Etiqueta tono="aviso" punto>Disponible hoy</Etiqueta>
+            <Etiqueta tono="exito" sobreFoto>Hecho hoy</Etiqueta>
+            <GananciaMonedas>Hasta +4 monedas al acertar</GananciaMonedas>
+            <GananciaMonedas icono={<IconoWala nombre="regalo" tamano={18} />}>Premio semanal</GananciaMonedas>
+          </div>
+          <BarraProgreso pasos valor={4} max={7} texto={<><span>Días reclamados</span><strong>4/7</strong></>} />
+          <Aviso compacto icono={<Lock aria-hidden="true" />}>Reclama 7 días seguidos para desbloquearla.</Aviso>
+          <CuentaRegresiva variante="frase" hasta={new Date(Date.now() + 7.8 * 3600 * 1000).toISOString()} etiqueta="Disponible de nuevo en" />
+        </div>
       </Ficha>
 
       <Ficha nombre="Moneda" usadaEn="Saldo, costo y ganancia en monedas, Mis monedas, resumen del pedido">

@@ -88,6 +88,18 @@
   height: 36px;
 }
 
+/* Dos tarjetas de juego lado a lado (una sola columna en el celular). */
+.juegos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 1rem;
+}
+
+.columna {
+  display: grid;
+  gap: 0.9rem;
+}
+
 /* Lo elegido junto al título del grupo (como en el catálogo). */
 .elegido {
   color: var(--primary-color);
