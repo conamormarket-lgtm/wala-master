@@ -156,7 +156,7 @@ día si cambia un componente del kit o su forma de recibir datos.
 | `cabecera.favoritos` | `WishlistContext` |
 | `cabecera.notificaciones` | `NotificationsContext` (`users/{uid}/notifications`) |
 | `cabecera.enlaces`, textos de menús | `storeConfig/homePage` (`header.navLinks`, `accountPopup`, `favoritesPopup`) |
-| `menuTienda`, `menuMarcas` | `getCategories` (con productos) y `getBrands` (visibles) |
+| `menuTienda`, `menuMarcas` | `getCategories` (con productos) y `getBrands` (visibles); en `menuMarcas`, `limite: 6` y `activa: brandActual?.id` |
 | `gruposCuenta` | `useCuentaNavGroups` filtrado por `ACCESOS_RAPIDOS_HEADER` (`Header.jsx` ~54) |
 | `pie` | `getStorefrontConfig('footer')` (`pages/footer`) |
 | `pieLegal.empresa` | `config/empresa.js` |
@@ -187,6 +187,11 @@ día si cambia un componente del kit o su forma de recibir datos.
 - Distancia mínima entre secciones aunque el builder guarde 0.
 - Anuncio de campaña de solo imagen, centrado también en el celular.
 - Ícono del banner de la app en el violeta de la cabecera.
+- Menú Marcas: 6 marcas con su logo y "Ver N marcas más" las abre en el mismo
+  menú (hoy son 5 y "Ver todas las marcas" abre un panel al costado que solo
+  sale al pasar el ratón: en el celular y con teclado no funcionaba). No hay
+  enlace a `/marcas` porque esa página pública no existe.
+- El menú Tienda solo lleva categorías (las marcas tienen su menú).
 
 ### Qué le falta al kit antes de migrar
 

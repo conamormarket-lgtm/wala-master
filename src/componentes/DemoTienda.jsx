@@ -265,7 +265,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     menuTienda: {
       categorias: INICIO.categorias.slice(0, 10).map((c) => ({ id: c.categoryId, nombre: c.name, url: `/tienda?categoria=${c.categoryId}` })),
     },
-    menuMarcas: { marcas: visibles.map((m) => ({ id: m.id, nombre: m.name, url: `/${rutaDeMarca(m)}`, logo: m.logoUrl })) },
+    // Como la tienda: 6 a la vista y "Ver N marcas más" en el mismo menú.
+    menuMarcas: { limite: 6, marcas: visibles.map((m) => ({ id: m.id, nombre: m.name, url: `/${rutaDeMarca(m)}`, logo: m.logoUrl })) },
     tema: tema === 'dark' ? 'noche' : 'claro',
     onTema: cambiarTema,
     usuario: conSesion ? usuario : null,

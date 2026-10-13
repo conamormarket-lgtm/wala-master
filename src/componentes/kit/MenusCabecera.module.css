@@ -655,9 +655,10 @@
   padding: 0.9rem 1rem 1rem;
 }
 
+/* Dos columnas donde caben (menú, hoja del celular); una si es angosto. */
 .listaLogos {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr));
   gap: 0.2rem 0.5rem;
   margin: 0;
   padding: 0;
@@ -713,13 +714,107 @@
   transform: rotate(0deg) scale(1.06);
 }
 
+/* La marca en la que estás (página de esa marca). */
+.marcaActiva,
+.marcaActiva:hover {
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+:global([data-theme='dark']) .marcaActiva {
+  background: rgba(167, 139, 250, 0.14);
+  color: var(--violet-200);
+}
+
+/* "Más marcas": se abren debajo, separadas por una línea punteada. */
+.masMarcas {
+  margin-top: 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--color-border);
+  animation: aparecerMarcas var(--dur-media) var(--ease-signature);
+}
+
+@keyframes aparecerMarcas {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.masMarcasTitulo {
+  margin: 0 0 0.35rem;
+  padding: 0 0.45rem;
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* "Ver N marcas más": un botón (funciona con el dedo y el teclado). */
+.verMasMarcas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 40px;
+  margin-top: 0.4rem;
+  padding: 0.3rem 0.45rem;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:global([data-theme='dark']) .verMasMarcas {
+  color: var(--violet-300);
+}
+
+.verMasMarcas svg {
+  width: 1rem;
+  height: 1rem;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.verMenosMarcas svg {
+  transform: rotate(180deg);
+}
+
+.verMasMarcas:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .verMasMarcas:hover {
+    background: var(--primary-light);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .masMarcas {
+    animation: none;
+  }
+
+  .verMasMarcas svg {
+    transition: none;
+  }
+}
+
+/* Hasta dos líneas: "Con Amor Parejas" entra entero en la hoja del celular. */
 .marcaNombre {
+  display: -webkit-box;
   min-width: 0;
   overflow: hidden;
   font-family: var(--fuente-marca);
   font-size: 0.92rem;
   font-weight: 900;
   letter-spacing: -0.02em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.15;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }

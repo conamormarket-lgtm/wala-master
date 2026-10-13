@@ -1,5 +1,5 @@
-import React from 'react';
-import { ArrowRight, Loader2, LogOut, RefreshCw, ShoppingBag, Heart, Sparkles, Coins, CalendarClock, Trophy } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowRight, ChevronDown, Loader2, LogOut, RefreshCw, ShoppingBag, Heart, Sparkles, Coins, CalendarClock, Trophy } from 'lucide-react';
 import { Enlace } from './Enlace';
 import Boton from './Boton';
 import { soles } from './TarjetaProducto';
@@ -94,23 +94,53 @@ const finDeMes = () => {
 /**
  * Menú de "Marcas": cada marca con su logo, en dos columnas.
  *  - marcas: [{ id, nombre, url, logo }]
- *  - verTodas: { texto, url } enlace al final (o null)
+ *  - limite: cuántas se ven de entrada (0 = todas). Las demás se abren en el
+ *    mismo menú con "Ver N marcas más" (en la tienda: 6)
+ *  - activa: id de la marca de la página (resaltada; nunca queda escondida)
+ *  - verTodas: { texto, url } enlace al final, solo si hay una página de
+ *    marcas (hoy la tienda no tiene /marcas pública: no se pasa)
  */
-export function MenuMarcas({ marcas = [], verTodas = { texto: 'Ver todas las marcas', url: '/marcas' }, onNavegar }) {
+export function MenuMarcas({ marcas = [], limite = 0, activa, verTodas, onNavegar }) {
+  // Las que no entran se abren AQUÍ MISMO con "Ver N marcas más" (la tienda
+  // usaba un panel al costado que solo salía al pasar el ratón: en el celular
+  // y con teclado no se podía). La marca en la que estás nunca queda escondida.
+  const larga = limite > 0 && marcas.length > limite + 1;
+  const indiceActiva = marcas.findIndex((m) => m.id === activa);
+  const [todas, setTodas] = useState(indiceActiva >= limite);
+  const primeras = larga ? marcas.slice(0, limite) : marcas;
+  const resto = larga ? marcas.slice(limite) : [];
+
+  const fila = (m) => (
+    <li key={m.id}>
+      <Enlace
+        to={m.url}
+        className={[s.marcaFila, m.id === activa && s.marcaActiva].filter(Boolean).join(' ')}
+        aria-current={m.id === activa ? 'page' : undefined}
+        onClick={onNavegar}
+      >
+        <LogoMarca variante="sello" className={s.marcaLogo} nombre={m.nombre} imagen={m.logo} alt="" giro={-6} />
+        <span className={s.marcaNombre}>{m.nombre}</span>
+      </Enlace>
+    </li>
+  );
+
   return (
     <div className={s.marcas}>
       <h4 className={s.titulo}>Universo Walá</h4>
-      <ul className={s.listaLogos}>
-        {marcas.map((m) => (
-          <li key={m.id}>
-            <Enlace to={m.url} className={s.marcaFila} onClick={onNavegar}>
-              <LogoMarca variante="sello" className={s.marcaLogo} nombre={m.nombre} imagen={m.logo} alt="" giro={-6} />
-              <span className={s.marcaNombre}>{m.nombre}</span>
-            </Enlace>
-          </li>
-        ))}
-      </ul>
-      {verTodas && (
+      <ul className={s.listaLogos}>{primeras.map(fila)}</ul>
+      {larga && todas && (
+        <div className={s.masMarcas}>
+          <h5 className={s.masMarcasTitulo}>Más marcas</h5>
+          <ul className={s.listaLogos}>{resto.map(fila)}</ul>
+        </div>
+      )}
+      {larga && (
+        <button type="button" className={[s.verMasMarcas, todas && s.verMenosMarcas].filter(Boolean).join(' ')} aria-expanded={todas} onClick={() => setTodas((v) => !v)}>
+          {todas ? 'Ver menos' : `Ver ${resto.length} ${resto.length === 1 ? 'marca' : 'marcas'} más`}
+          <ChevronDown aria-hidden="true" />
+        </button>
+      )}
+      {verTodas?.url && (
         <Enlace to={verTodas.url} className={s.verTodo} onClick={onNavegar}>
           {verTodas.texto} <ArrowRight aria-hidden="true" />
         </Enlace>

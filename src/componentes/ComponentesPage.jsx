@@ -856,7 +856,7 @@ function Contenido({ tema, cambiarTema }) {
             </Panel>
             <Panel titulo="Marcas (Universo Walá)">
               <div className={s.marcoMenu}>
-                <MenuMarcas marcas={MARCAS_TIENDA.slice(0, 8).map((b) => ({ id: b.id, nombre: b.name, url: `/${b.slug}`, logo: b.logoUrl }))} />
+                <MenuMarcas limite={6} marcas={MARCAS_TIENDA.filter((b) => b.active !== false && b.visible !== false).map((b) => ({ id: b.id, nombre: b.name, url: `/${b.slug}`, logo: b.logoUrl }))} />
               </div>
             </Panel>
             <Panel titulo="Monedas">
