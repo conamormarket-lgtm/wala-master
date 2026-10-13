@@ -9,7 +9,7 @@ import { getComboCrear } from '../../services/combosCrear';
 import { getPrendaBase } from '../../services/prendasBase';
 import { getDesignById, getDesignsByUser } from '../../services/designs';
 import { leerPrendaBase, tallasDeColor } from '../../utils/prendaBase';
-import { useAlVerUnaVez } from '../../hooks/useAlVerUnaVez';
+import { useAlternarFotos } from '../../hooks/useAlternarFotos';
 import { creacionLista } from './creacionCarrito';
 import { leerArmado, guardarArmado, olvidarArmado, preciosDeCombo, itemDeCombo, leerMetaArmado, guardarMetaArmado } from './comboCrear';
 import { guardarMiCombo } from '../../services/misCombos';
@@ -29,22 +29,39 @@ const tallasPara = (prenda, creacion) => {
   return color ? tallasDeColor(color, cfg) : cfg.tallas;
 };
 
+/** Frente y espalda de una pieza: su diseño, el de la comunidad o la prenda en blanco. */
+const ladosDePieza = (p) => {
+  const previas = (p.creacion?.vistasPrevias || p.plantilla?.vistasPrevias || []).filter((v) => v?.url);
+  if (previas.length) return previas.map((v) => ({ url: v.url, nombre: v.nombre }));
+  const conjunta = p.creacion?.imagenConjunta || p.plantilla?.imagenConjunta;
+  if (conjunta) return [{ url: conjunta, nombre: '' }];
+  return leerPrendaBase(p.prenda).vistas.filter((v) => v.imagen).map((v) => ({ url: v.imagen, nombre: v.nombre }));
+};
+
 /**
- * Foto de una pieza: al aparecer se abre hacia su lado (la segunda un poco
- * después), como las tarjetas de combos al pasar el mouse.
+ * Foto de una pieza, como las tarjetas de Mis creaciones: al pasar el mouse
+ * se ve la espalda y en el celular alternan solas (con dos puntos de qué
+ * lado se ve). Lleva el número de la pieza y el check cuando está lista.
  */
-const FotoPieza = ({ src, alt, vacia, indice }) => {
+const FotoPieza = ({ lados, alt, vacia, children }) => {
   const ref = useRef(null);
-  const visto = useAlVerUnaVez(ref);
+  const frente = lados[0]?.url;
+  const espalda = lados[1]?.url;
+  const verEspalda = useAlternarFotos(ref, Boolean(frente && espalda));
+  const nombres = lados.map((l) => l.nombre).filter(Boolean);
   return (
-    <img
-      ref={ref}
-      src={src}
-      alt={alt}
-      className={`${vacia ? styles.fotoVacia : ''} ${visto ? styles.saludo : ''}`}
-      style={{ '--retraso': `${indice * 0.12}s` }}
-      loading="lazy"
-    />
+    <div ref={ref} className={`${styles.piezaFoto} ${verEspalda ? styles.conEspalda : ''} ${vacia ? styles.fotoVacia : ''}`}>
+      {frente && <img src={frente} alt={alt} className={styles.fotoFrente} loading="lazy" />}
+      {espalda && <img src={espalda} alt="" aria-hidden="true" className={styles.fotoEspalda} loading="lazy" />}
+      {frente && espalda && (
+        <span className={styles.puntosFoto} aria-hidden="true">
+          <span className={`${styles.puntoFoto} ${!verEspalda ? styles.puntoFotoActivo : ''}`} />
+          <span className={`${styles.puntoFoto} ${verEspalda ? styles.puntoFotoActivo : ''}`} />
+        </span>
+      )}
+      {nombres.length > 1 && <span className={styles.lados}>{nombres.join(' + ')}</span>}
+      {children}
+    </div>
   );
 };
 
@@ -340,19 +357,15 @@ const ComboCrearPage = () => {
 
       <ol className={styles.piezas}>
         {piezas.map((p) => {
-          const foto = p.creacion?.vistasPrevias?.[0]?.url || p.creacion?.imagenConjunta
-            || p.plantilla?.vistasPrevias?.[0]?.url || p.plantilla?.imagenConjunta
-            || leerPrendaBase(p.prenda).vistas[0]?.imagen || p.prenda?.mainImage;
           const otraConDiseno = piezas.find((o) => o.i !== p.i && o.creacion && creacionLista(o.creacion));
           const vaciasIguales = piezas.filter((o) => o.i !== p.i && !o.designId
             && piezasCombo[o.i].prendaId === piezasCombo[p.i].prendaId).length;
           return (
             <li key={p.i} className={`${styles.pieza} ${p.lista ? styles.piezaLista : ''}`}>
-              <div className={styles.piezaFoto}>
-                {foto && <FotoPieza src={foto} alt={p.prenda?.name || ''} vacia={!p.creacion && !p.plantilla} indice={p.i} />}
+              <FotoPieza lados={ladosDePieza(p)} alt={p.prenda?.name || ''} vacia={!p.creacion && !p.plantilla}>
                 <span className={styles.numero}>{p.i + 1}</span>
                 {p.lista && <CheckCircle2 className={styles.check} size={22} aria-label="Lista" />}
-              </div>
+              </FotoPieza>
               <div className={styles.piezaInfo}>
                 <span className={styles.piezaPrenda}>Prenda {p.i + 1} · {p.prenda?.name}</span>
                 {p.cargando ? (

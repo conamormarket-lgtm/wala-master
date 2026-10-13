@@ -132,32 +132,71 @@
   width: 88%;
   height: 88%;
   object-fit: contain;
-  transition: transform var(--dur-media, 320ms) ease;
+  transition: opacity var(--dur-media, 320ms) ease, transform var(--dur-media, 320ms) ease;
 }
 
-/* Al aparecer, las prendas se abren hacia los lados (la primera a la
-   izquierda, la segunda a la derecha), como las tarjetas de combos al pasar
-   el mouse, y se quedan así. */
-@keyframes abrirIzq {
-  from { transform: rotate(0); }
-  to { transform: rotate(-3deg); }
+/* Frente y espalda, como las tarjetas de Mis creaciones: al pasar el mouse
+   por la prenda se ve la espalda; en el celular alternan solas. */
+.fotoEspalda {
+  opacity: 0;
 }
 
-@keyframes abrirDer {
-  from { transform: rotate(0); }
-  to { transform: rotate(3deg); }
+.conEspalda .fotoEspalda { opacity: 1; }
+.conEspalda .fotoFrente:has(+ .fotoEspalda) { opacity: 0; }
+
+@media (hover: hover) {
+  .pieza:hover .piezaFoto img { transform: scale(1.03); }
+  .pieza:hover .fotoEspalda { opacity: 1; }
+  .pieza:hover .fotoFrente:has(+ .fotoEspalda) { opacity: 0; }
 }
 
-.pieza:nth-child(odd) .saludo { animation: abrirIzq 0.5s ease-out var(--retraso, 0s) forwards; }
-.pieza:nth-child(even) .saludo { animation: abrirDer 0.5s ease-out var(--retraso, 0s) forwards; }
+.puntosFoto {
+  position: absolute;
+  top: 0.95rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  display: none;
+  gap: 5px;
+  pointer-events: none;
+}
 
-@media (prefers-reduced-motion: reduce) {
-  .piezaFoto img { animation: none !important; }
+@media (hover: none) {
+  .puntosFoto { display: flex; }
+}
+
+.puntoFoto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.3);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.puntoFotoActivo {
+  background: #8b5cf6;
+  transform: scale(1.3);
+}
+
+/* Lados que se ven ("Frente + Espalda"). */
+.lados {
+  position: absolute;
+  left: 0.7rem;
+  bottom: 0.7rem;
+  z-index: 1;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--primary-color, #6d28d9);
+  font-size: 0.72rem;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(20, 18, 28, 0.08);
 }
 
 /* La prenda en blanco, mientras no tiene diseño. */
-.fotoVacia {
-  opacity: 0.55;
+.fotoVacia img {
+  /* filter y no opacity: la opacidad ya la usa el cambio frente/espalda. */
+  filter: opacity(0.55);
 }
 
 .numero {
