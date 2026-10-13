@@ -1,0 +1,105 @@
+.ventana {
+  display: grid;
+  gap: 0.95rem;
+  text-align: center;
+}
+
+.frase {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+/* Kapi suelto: sin círculo detrás, con una sombra en el piso y destellos
+   quietos. */
+.retrato {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 170px;
+}
+
+.retrato::after {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  width: 120px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(46, 16, 101, 0.22), transparent);
+  transform: translateX(-50%);
+}
+
+.kapi {
+  position: relative;
+  z-index: 1;
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+  user-select: none;
+}
+
+/* Comiendo: unos saltitos mientras responde el servidor (solo transform). */
+.comiendo {
+  animation: masticar 0.45s var(--ease-signature) 4 alternate;
+}
+
+@keyframes masticar {
+  to {
+    transform: translateY(-6px) scale(1.04, 0.97);
+  }
+}
+
+.destello1,
+.destello2 {
+  position: absolute;
+  z-index: 0;
+}
+
+.destello1 {
+  top: 12px;
+  left: calc(50% - 105px);
+  width: 22px;
+  color: var(--violet-400, #a78bfa);
+}
+
+.destello2 {
+  top: 42px;
+  right: calc(50% - 100px);
+  width: 14px;
+  color: #f59e0b;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.lleno {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  text-align: center;
+}
+
+.lleno strong {
+  color: #059669;
+  font-family: var(--fuente-marca);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+:global([data-theme='dark']) .lleno strong {
+  color: #6ee7b7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .comiendo {
+    animation: none;
+  }
+}

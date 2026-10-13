@@ -1,13 +1,15 @@
 import React, { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
 import { RotateCcw, User, Package, Settings, Gift, Ticket, Sparkles } from 'lucide-react';
 import {
-  PaginaTienda, MarcoTienda, PaginaCarrito, PaginaPedidos, PaginaMinijuegos, juegosDelArcade, Pestanas, Chip, Interruptor, Boton,
+  PaginaTienda, MarcoTienda, PaginaCarrito, PaginaPedidos, PaginaMinijuegos, juegosDelArcade, VentanaKapi, kapiDesdePerfil,
+  retoDesdePerfil, Pestanas, Chip, Interruptor, Boton,
   BarraAdmin, AvisoSistema, BannerApp, BotonWhatsApp, KapiFlotante, BurbujaRegalos, PildoraRecompensa,
   VentanaCampana, AvisoIdioma, ProveedorEnlaces, PanelEditor, useBorrador, SeccionEditable, InsertarAqui,
   moverSeccion, duplicarSeccion, rutaDeMarca, tarjetaDesdeProducto, REGISTRO_SECCIONES, enlaceWhatsApp, gruposDeCatalogo,
 } from './kit';
 import { empresa } from '../config/empresa';
-import { msHastaMananaLima, msHastaLunesLima } from '../utils/fechaLima';
+import { msHastaMananaLima, msHastaLunesLima, limaTodayStr } from '../utils/fechaLima';
+import { volarMonedasGanadas } from '../utils/animations';
 import INICIO from './demo/inicio.json';
 import TIENDA from './demo/tienda.json';
 import cs from './ComponentesPage.module.css';
@@ -66,7 +68,28 @@ const EXTRAS = [
   ['app', 'Banner de la app'],
   ['idioma', 'Sugerencia de idioma'],
   ['campana', 'Ventana de campaña'],
+  ['reto', 'Reto semanal'],
+  ['triste', 'Kapi triste'],
 ];
+
+/* Reto de ejemplo (mismos campos que globals/activeChallenge; hoy no hay uno
+   activo en la tienda, así que este es inventado para ver el bloque). */
+const RETO_DEMO = {
+  challengeId: 'demo-comparte',
+  title: 'Comparte tu diseño',
+  description: 'Sube una historia con tu polera de Walá y pega aquí el enlace.',
+  actionType: 'manual_story',
+  goal: 1,
+  rewardType: 'main',
+  rewardCoins: 10,
+};
+
+/** Fecha (AAAA-MM-DD, Lima) de hace `dias` días. */
+const haceDias = (dias) => {
+  const d = new Date(`${limaTodayStr()}T12:00:00`);
+  d.setDate(d.getDate() - dias);
+  return d.toISOString().slice(0, 10);
+};
 
 const PIE_LEGAL = {
   empresa: { nombre: empresa.nombreComercial, email: empresa.email, telefono: empresa.telefono, direccion: empresa.domicilioFiscal },
@@ -139,6 +162,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [filtros, setFiltros] = useState({});
   // Zona Arcade: qué está hecho hoy y en qué va la ruleta.
   const [hechos, setHechos] = useState(['kapi']);
+  const [kapiAbierta, setKapiAbierta] = useState(false);
+  const [monedas, setMonedas] = useState(43);
   const [ruletaDemo, setRuletaDemo] = useState('racha');
   const marcoRef = useRef(null);
 
@@ -203,6 +228,20 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   }, [borrador, toast]);
 
   const visibles = useMemo(() => marcas.filter((m) => m.active !== false && m.visible !== false), [marcas]);
+
+  // Kapi: el mismo perfil para el botón flotante, su ventana y la Zona Arcade.
+  const kapiAlimentado = hechos.includes('kapi');
+  const kapi = kapiDesdePerfil({
+    lastKapiClaimDate: kapiAlimentado ? limaTodayStr() : haceDias(ver('triste') ? 5 : 1),
+    kapiHappiness: ver('triste') ? 50 : 60,
+    kapiTutorialVisto: true,
+  });
+  const alimentarKapi = async (boton) => {
+    await new Promise((r) => setTimeout(r, 600)); // lo que tardaría el servidor
+    setHechos((h) => (h.includes('kapi') ? h : [...h, 'kapi']));
+    volarMonedasGanadas(boton, kapi.recompensa);
+    setMonedas((m) => m + kapi.recompensa);
+  };
   const gruposTienda = useMemo(() => gruposDeCatalogo({
     categorias: TIENDA.categorias,
     colecciones: TIENDA.colecciones,
@@ -233,7 +272,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     gruposCuenta: GRUPOS_CUENTA,
     promoCuenta: pildora ? PROMO_CUENTA : undefined,
     onCerrarSesion: () => setRol('visitante'),
-    monedas: 43,
+    monedas,
     notificaciones,
     onLeer,
     onMarcarLeidas,
@@ -251,7 +290,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         </Parte>
         {conSesion && (
           <Parte n="M8" nombre="KapiFlotante" bloque={false}>
-            <KapiFlotante estado="hambre" aviso onAbrir={() => avisar('En la tienda se abre Kapi', 'Su ventana para alimentarlo')} />
+            <KapiFlotante estado={kapi.estado} aviso={kapi.aviso} onAbrir={() => setKapiAbierta(true)} />
           </Parte>
         )}
         {conSesion && (
@@ -360,8 +399,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       lunes: new Date(Date.now() + msHastaLunesLima()).toISOString(),
     },
     onAlimentar: () => (hechos.includes('kapi')
-      ? toast({ tipo: 'info', titulo: '¡Ya alimentaste a Kapi hoy!', texto: 'Vuelve mañana por tu moneda.' })
-      : avisar('En la tienda se abre Kapi', 'Su ventana para alimentarlo y reclamar la moneda')),
+      ? toast({ tipo: 'info', titulo: '¡Ya alimentaste a Kapi hoy!', texto: 'Vuelve mañana por su moneda.' })
+      : setKapiAbierta(true)),
   });
 
   const contenido = pagina === 'minijuegos' ? (
@@ -513,6 +552,17 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         titulo="Queremos conocerte mejor"
         onAccion={() => { alternar('campana'); avisar('En la tienda iría a', '/encuesta-suscripcion'); }}
       />
+      {/* Kapi: como en la tienda, solo con sesión (sin perfil no hay mascota). */}
+      {conSesion && (
+        <VentanaKapi
+          abierta={kapiAbierta}
+          onCerrar={() => setKapiAbierta(false)}
+          {...kapi}
+          hasta={new Date(Date.now() + msHastaMananaLima()).toISOString()}
+          onAlimentar={alimentarKapi}
+          reto={ver('reto') ? { ...retoDesdePerfil(RETO_DEMO, {}), onEnviar: () => new Promise((r) => setTimeout(r, 800)) } : undefined}
+        />
+      )}
     </>
   );
 }

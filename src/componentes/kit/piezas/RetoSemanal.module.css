@@ -1,0 +1,72 @@
+/* Reto semanal: una tarjeta suave con el sello de la estrella. */
+.reto {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.9rem 1rem 1rem;
+  border: 1px dashed var(--violet-300, #c4b5fd);
+  border-radius: 6px 20px 20px 20px;
+  background: color-mix(in srgb, var(--primary-light) 60%, var(--color-surface));
+  text-align: left;
+}
+
+:global([data-theme='dark']) .reto {
+  border-color: rgba(167, 139, 250, 0.35);
+  background: rgba(167, 139, 250, 0.08);
+}
+
+.cabeza {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.textos {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.antetitulo {
+  margin: 0;
+  color: var(--primary-color);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:global([data-theme='dark']) .antetitulo {
+  color: var(--violet-300);
+}
+
+.titulo {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.premio {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.premio strong {
+  color: var(--color-text);
+}
+
+.descripcion {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.evidencia {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+}

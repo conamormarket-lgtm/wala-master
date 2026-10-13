@@ -27,7 +27,7 @@ el carrito y Mis pedidos.
 | M5 | Pie | `PiePagina` (`footer_columns`) + `PieLegal` | `LogoWala`, `EtiquetaColgante`, `Garabatos`, `Enlace` | `SeccionesExtra.module.css` (`.pie…`) y `piezas/Marco.module.css` (`.legal…`) | columnas: `pages/footer`; contacto: `config/empresa.js` | todos (no en la app) |
 | M6 | Barra inferior | `BarraInferior` (siempre 5 pestañas, "Crear" al centro; en "Mi cuenta" las iniciales o la foto en un aro del mismo trazo que los íconos) | `Enlace`, `Contador` | `Navegacion.module.css` (`.barra`, `.tab…`) | ruta actual, AuthContext | celular |
 | M7 | WhatsApp flotante | `BotonWhatsApp` (dentro de `PilaFlotante`) | `Enlace` | `piezas/Flotantes.module.css` | Firestore `messages` (número por zona) | todos (no admin, checkout ni landings) |
-| M8 | Kapi | `KapiFlotante` | — | `piezas/Flotantes.module.css` | perfil (comida del día, tutorial) | con sesión |
+| M8 | Kapi | `KapiFlotante` (abre `VentanaKapi`, ficha en [KAPI.md](KAPI.md)) | `CARAS_KAPI` | `piezas/Flotantes.module.css`, `piezas/VentanaKapi.module.css` | perfil (`kapiDesdePerfil`: comida del día, felicidad, tutorial) | con sesión |
 | M9 | Regalos sugeridos | `BurbujaRegalos` | `IconoWala`, `Contador` | `piezas/Flotantes.module.css` | `suggested_packages` sin ver | con sesión, si hay |
 | M10 | "Gana 15 monedas" | `PildoraRecompensa` | `IconoWala` (moneda), `Enlace` | `piezas/Flotantes.module.css` | perfil sin encuesta | con sesión. Sello blanco con aro dorado y "+15": no confundir con M9 (regalo violeta) |
 | M11 | Anuncio de campaña | `VentanaCampana` (`formato: 'imagen'`, como la tienda: solo la imagen, que es el botón, y una X; tocar afuera cierra) o `'tarjeta'` | `EtiquetaColgante`, `Boton`, `HojaInferior` (solo en tarjeta) | `piezas/Marco.module.css` (`.anuncio…`) | `storeConfig/popups` (las reglas siguen en la tienda) | según reglas |
@@ -133,7 +133,7 @@ día si cambia un componente del kit o su forma de recibir datos.
 | Barra de admin (M3) | `components/common/AdminBar/AdminBar.jsx` | `BarraAdmin` |
 | Aviso del sistema (M1) | `components/common/SystemAlert` | `AvisoSistema` |
 | Banner de la app (M2) | `pages/Tienda/components/AppDownloadBanner.jsx` | `BannerApp` |
-| Flotantes (M7-M10) | `WhatsAppButton`, `KapiPet` (solo el botón), `PackageBubble` (solo el botón), píldora de la encuesta en `Header.jsx` ~1333-1359, `.floating-action-stack` de `App.jsx` | `PilaFlotante` + `BotonWhatsApp`, `KapiFlotante`, `BurbujaRegalos`, `PildoraRecompensa` (las ventanas de Kapi y de regalos siguen siendo de la tienda) |
+| Flotantes (M7-M10) | `WhatsAppButton`, `KapiPet` (solo el botón), `PackageBubble` (solo el botón), píldora de la encuesta en `Header.jsx` ~1333-1359, `.floating-action-stack` de `App.jsx` | `PilaFlotante` + `BotonWhatsApp`, `KapiFlotante`, `BurbujaRegalos`, `PildoraRecompensa` (la ventana de Kapi ya está en el kit: `VentanaKapi`, ver KAPI.md; la de regalos sigue siendo de la tienda) |
 | Anuncio de campaña (M11) | `components/common/CampaignPopup/PopupCard.jsx` | `VentanaCampana` (las reglas de `services/popupsLogic.mjs` se quedan) |
 | Idioma (M12) | `components/i18n/LanguagePopup.jsx` | `AvisoIdioma` |
 | Editor | `VisualEditorPanel`, `EditableSection`, `ModuleInserter` | `PanelEditor`, `SeccionEditable`, `InsertarAqui`, `useBorrador` |

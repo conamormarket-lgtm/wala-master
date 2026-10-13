@@ -63,7 +63,8 @@ export function BotonWhatsApp({ numero, mensaje, etiqueta = '¿Te ayudamos?' }) 
   );
 }
 
-const CARAS_KAPI = {
+/** Caras de Kapi por estado (el botón flotante y su ventana). */
+export const CARAS_KAPI = {
   feliz: '/assets/kapi/kapi-happy.webp',
   hambre: '/assets/kapi/kapi-hungry.webp',
   triste: '/assets/kapi/kapi-sad.webp',

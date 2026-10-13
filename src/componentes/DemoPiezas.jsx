@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   TarjetaCategoria, TarjetaTestimonio, TarjetaMarca, LogoMarca, TarjetaDestacado, Beneficio, StockBajo, Chip, tarjetaDesdeMarca, acento,
   FotoProducto, Avatar, Moneda, EtiquetaColgante, OpcionesFiltro, Acordeon, TarjetaJuego, Etiqueta, GananciaMonedas,
-  Aviso, CuentaRegresiva, IconoWala, BarraProgreso,
+  Aviso, CuentaRegresiva, IconoWala, BarraProgreso, RetoSemanal, VentanaKapi, Boton,
 } from './kit';
 import { Lock } from 'lucide-react';
 import s from './DemoPiezas.module.css';
@@ -31,6 +31,8 @@ const PERSONAJES = ['Akaza', 'Asta', 'Eren Yeager', 'Gohan', 'Goku', 'Inosuke', 
 export default function DemoPiezas({ categorias, marcas, imagenes }) {
   const [activa, setActiva] = useState(null);
   const [personaje, setPersonaje] = useState('Goku');
+  const [kapiAbierta, setKapiAbierta] = useState(false);
+  const [kapiComio, setKapiComio] = useState(false);
   const [filtro, setFiltro] = useState('Poleras');
   const marca = (k) => tarjetaDesdeMarca(marcas[k]);
   return (
@@ -140,10 +142,38 @@ export default function DemoPiezas({ categorias, marcas, imagenes }) {
             <GananciaMonedas>Hasta +4 monedas al acertar</GananciaMonedas>
             <GananciaMonedas icono={<IconoWala nombre="regalo" tamano={18} />}>Premio semanal</GananciaMonedas>
           </div>
-          <BarraProgreso pasos valor={4} max={7} texto={<><span>Días reclamados</span><strong>4/7</strong></>} />
+          <BarraProgreso pasos valor={4} max={7} etiqueta="Días reclamados" />
           <Aviso compacto icono={<Lock aria-hidden="true" />}>Reclama 7 días seguidos para desbloquearla.</Aviso>
           <CuentaRegresiva variante="frase" hasta={new Date(Date.now() + 7.8 * 3600 * 1000).toISOString()} etiqueta="Disponible de nuevo en" />
         </div>
+      </Ficha>
+
+      <Ficha nombre="RetoSemanal" usadaEn="Ventana de Kapi (reto de la semana)">
+        <RetoSemanal
+          titulo="Comparte tu diseño"
+          descripcion="Sube una historia con tu polera de Walá y pega aquí el enlace."
+          recompensa="10 monedas"
+          progreso={0}
+          meta={1}
+          conEvidencia
+          onEnviar={() => new Promise((r) => setTimeout(r, 700))}
+        />
+      </Ficha>
+
+      <Ficha nombre="VentanaKapi" usadaEn="Kapi flotante (M8), «Reclamar moneda» de la Zona Arcade">
+        <div className={s.filaCentrada}>
+          <Boton onClick={() => setKapiAbierta(true)}>Abrir la ventana de Kapi</Boton>
+          {kapiComio && <Boton variante="fantasma" onClick={() => setKapiComio(false)}>Volver a darle hambre</Boton>}
+        </div>
+        <VentanaKapi
+          abierta={kapiAbierta}
+          onCerrar={() => setKapiAbierta(false)}
+          estado={kapiComio ? 'feliz' : 'hambre'}
+          felicidad={kapiComio ? 70 : 60}
+          alimentado={kapiComio}
+          hasta={new Date(Date.now() + 7.5 * 3600 * 1000).toISOString()}
+          onAlimentar={() => new Promise((r) => setTimeout(() => { setKapiComio(true); r(); }, 600))}
+        />
       </Ficha>
 
       <Ficha nombre="Moneda" usadaEn="Saldo, costo y ganancia en monedas, Mis monedas, resumen del pedido">

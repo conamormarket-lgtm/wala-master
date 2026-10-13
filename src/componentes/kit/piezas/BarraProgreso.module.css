@@ -34,13 +34,7 @@
 }
 
 
-/* Por pasos (racha de días): el texto a los lados y una cajita por paso. */
-.conPasos .texto {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
+/* Por pasos (racha de días): una cajita por paso. */
 .pasos {
   display: grid;
   grid-auto-columns: minmax(0, 1fr);
@@ -60,4 +54,11 @@
 
 :global([data-theme='dark']) .pasos > span:not(.pasoOn) {
   background: rgba(255, 255, 255, 0.1);
+}
+
+/* Etiqueta a la izquierda y "valor/max" a la derecha. */
+.fila {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
 }

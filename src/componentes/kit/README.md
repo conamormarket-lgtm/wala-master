@@ -130,7 +130,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `Pedido.jsx` | `SeguimientoPedido`, `ItemCarrito`, `BarraEnvioGratis`, `ResumenPedido` | Carrito y Mis pedidos |
 | `Feedback.jsx` | `Aviso`, `ProveedorToasts`, `useToast`, `useNotificaciones`, `ListaNotificaciones`, `EstadoVacio`, `HojaInferior` | Avisos, notificaciones y modales |
 | `Enlace.jsx` | `Enlace`, `ProveedorEnlaces`, `tipoDeEnlace` | La única regla de enlaces: internos por el router, externos en otra pestaña, `#ancla` con scroll suave |
-| `adaptadores.js` | `accionDeProducto`, `tarjetaDesdeProducto`, `opcionesDeProducto`, `rutaDeMarca`, `tarjetaDesdeMarca`, `testimonioDesdeAjuste`, `precioEfectivo`, `limitesDePrecio`, `esTemporada`, `gruposDeCatalogo`, `grillaDesdeConfiguracion`, `juegosDelArcade` | Traducen datos de Firestore a props del kit: un producto de `productos_wala`, una marca de `tienda_brands`, las listas de filtros del catálogo (categorías, colecciones, etiquetas, personajes, tipos), `storeConfig.layout` y el perfil del cliente en la Zona Arcade |
+| `adaptadores.js` | `accionDeProducto`, `tarjetaDesdeProducto`, `opcionesDeProducto`, `rutaDeMarca`, `tarjetaDesdeMarca`, `testimonioDesdeAjuste`, `precioEfectivo`, `limitesDePrecio`, `esTemporada`, `gruposDeCatalogo`, `grillaDesdeConfiguracion`, `juegosDelArcade`, `kapiDesdePerfil`, `retoDesdePerfil` | Traducen datos de Firestore a props del kit: un producto de `productos_wala`, una marca de `tienda_brands`, las listas de filtros del catálogo (categorías, colecciones, etiquetas, personajes, tipos), `storeConfig.layout` y el perfil del cliente (Zona Arcade, Kapi y su reto) |
 | `Carrusel.jsx` | `Carrusel` | El único carrusel: deslizar nativo, flechas, puntos, autoplay con pausas |
 | `Marquesina.jsx` | `Marquesina` | Cinta sin fin (logos, anuncios, burbujas) |
 | `CuentaRegresiva.jsx` | `CuentaRegresiva` | Hasta una fecha o "siempre activa" por visitante; variantes bloques, texto y evento (dígitos grandes para fondos oscuros) |
@@ -139,9 +139,11 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `piezas/FotoProducto.jsx` | `FotoProducto` | Foto de producto sobre su escenario (`src`, `relleno`, `respaldo` sin foto, `children` encima) |
 | `piezas/Avatar.jsx` | `Avatar`, `iniciales` | Foto o iniciales de una persona |
 | `piezas/OpcionesFiltro.jsx` | `OpcionesFiltro` | Opciones de un filtro como chips con su cuenta; una a la vez y "Ver N más" |
+| `piezas/VentanaKapi.jsx` | `VentanaKapi` | La ventana de Kapi: ánimo, felicidad, moneda del día, alimentar y el reto (hoja en el celular, centrada en escritorio) |
+| `piezas/RetoSemanal.jsx` | `RetoSemanal` | El reto de la semana: premio, avance y envío de evidencia |
 | `piezas/TarjetaJuego.jsx` | `TarjetaJuego` | Tarjeta de un minijuego: banner, estado, recompensa, racha, nota, botón y cuenta atrás (recibe datos; `juegosDelArcade` los arma) |
 | `piezas/LogoMarca.jsx` | `LogoMarca` | Logo de una marca: `sticker` (con nombre) o `sello` (círculo chico girado) |
-| `piezas/Flotantes.jsx` | `PilaFlotante`, `BotonWhatsApp`, `KapiFlotante`, `BurbujaRegalos`, `PildoraRecompensa` | Lo que flota sobre la página (sobre la barra inferior en el celular) |
+| `piezas/Flotantes.jsx` | `PilaFlotante`, `BotonWhatsApp`, `KapiFlotante`, `CARAS_KAPI`, `BurbujaRegalos`, `PildoraRecompensa` | Lo que flota sobre la página (sobre la barra inferior en el celular) |
 | `piezas/Marco.jsx` | `AvisoSistema`, `BannerApp`, `BarraAdmin`, `PieLegal`, `AvisoIdioma`, `VentanaCampana`, `BotonTema` | Lo que rodea a las secciones: avisos arriba, barra de admin, pie legal, ventanas |
 | `Secciones.jsx` | `BarraAnuncios`, `HeroCarrusel`, `InsigniasConfianza`, `CarruselProductos`, `OfertaRelampago`, `Testimonios`, `PreguntasFrecuentes`, `MarcasMarquesina`, `GrillaCategorias`, `RenderSecciones`, `REGISTRO_SECCIONES` | Secciones del builder; reciben el mismo `settings` que guarda Firestore |
 | `SeccionesContenido.jsx` | `Encabezado`, `BloqueTexto`, `BloqueImagen`, `BloqueVideo`, `MosaicoBanners`, `FilaDestacados`, `videoIncrustado` | Secciones de contenido del builder (header, text, image, video, banner_grid, bestsellers_row) |

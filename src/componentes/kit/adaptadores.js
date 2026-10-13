@@ -6,6 +6,8 @@
  * para usar <TarjetaProducto> y <AgregarRapido> con productos reales.
  */
 
+import { limaTodayStr, felicidadKapiHoy } from '../../utils/fechaLima';
+
 const variantesDe = (p) => (p?.hasVariants ? p.variants || [] : []);
 
 /**
@@ -384,4 +386,52 @@ export function juegosDelArcade({
     return { listos, juegos: juegos.map((j) => ({ ...j, estado: undefined, espera: undefined, nota: undefined, atenuada: false, bloqueada: false })) };
   }
   return { juegos, listos };
+}
+
+/* ── Kapi, la mascota ───────────────────────────────────── */
+
+/**
+ * Cómo está Kapi hoy, desde el perfil (misma regla que KapiPet y que
+ * feedKapiSecure): props de KapiFlotante y VentanaKapi.
+ *  - alimentado: lastKapiClaimDate es hoy (hora de Lima)
+ *  - felicidad: la guardada con el mismo decaimiento que aplicará el servidor
+ *  - estado: 'feliz' si comió hoy; si no, 'triste' con felicidad < 40 y
+ *    'hambre' si solo falta la de hoy
+ *  - recompensa: 2 con el multiplicador kapi_double_3d vigente, si no 1
+ *  - aviso: el "!" del botón (comida pendiente o tutorial sin ver)
+ */
+export function kapiDesdePerfil(perfil, { hoy = limaTodayStr(), ahora = new Date() } = {}) {
+  if (!perfil) return null;
+  const alimentado = perfil.lastKapiClaimDate === hoy;
+  const felicidad = felicidadKapiHoy(perfil.kapiHappiness, perfil.lastKapiClaimDate, hoy);
+  const estado = alimentado ? 'feliz' : felicidad < 40 ? 'triste' : 'hambre';
+  const doble = perfil.activeMultiplier === 'kapi_double_3d'
+    && Boolean(perfil.multiplierExpiresAt) && new Date(perfil.multiplierExpiresAt) > ahora;
+  return {
+    estado,
+    felicidad,
+    alimentado,
+    recompensa: doble ? 2 : 1,
+    aviso: !alimentado || !perfil.kapiTutorialVisto,
+  };
+}
+
+/**
+ * Props de RetoSemanal desde el reto activo (globals/activeChallenge) y el
+ * avance del perfil (weeklyChallengeProgress, challengeEvidencesApproved).
+ * Sin reto activo devuelve null.
+ */
+export function retoDesdePerfil(reto, perfil = {}) {
+  if (!reto) return null;
+  const avance = perfil?.weeklyChallengeProgress || {};
+  const esEste = avance.challengeId === reto.challengeId;
+  return {
+    titulo: reto.title,
+    descripcion: reto.description,
+    recompensa: reto.rewardType === 'main' ? `${reto.rewardCoins} monedas` : 'Doble monedas al alimentar a Kapi',
+    progreso: esEste ? Number(avance.progress) || 0 : 0,
+    meta: Number(reto.goal) || 1,
+    completado: (esEste && Boolean(avance.completed)) || Boolean(perfil?.challengeEvidencesApproved?.includes(reto.challengeId)),
+    conEvidencia: String(reto.actionType || '').startsWith('manual_'),
+  };
 }

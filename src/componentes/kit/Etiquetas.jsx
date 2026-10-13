@@ -99,7 +99,9 @@ export function GananciaMonedas({ monto, children, icono }) {
 export const SaldoMonedas = forwardRef(function SaldoMonedas({ saldo, ...rest }, ref) {
   const mostrado = useContador(saldo, 0.9);
   return (
-    <button ref={ref} type="button" className={s.saldo} aria-label={`Tienes ${saldo} monedas`} {...rest}>
+    // global-coins-target: adonde vuelan las monedas ganadas (volarMonedasGanadas
+    // de utils/animations busca esa clase, como en la cabecera de la tienda).
+    <button ref={ref} type="button" className={`${s.saldo} global-coins-target`} aria-label={`Tienes ${saldo} monedas`} {...rest}>
       <span className={s.saldoDestello} aria-hidden="true" />
       <Moneda tamano={20} />
       <span className={s.saldoNumero}>{miles(mostrado)}</span>

@@ -66,7 +66,7 @@ export function TarjetaJuego({ imagen, titulo, descripcion, estado, recompensa, 
             pasos
             valor={racha.dias}
             max={racha.de || 7}
-            texto={<><span>{racha.texto || 'Días reclamados'}</span><strong>{racha.dias}/{racha.de || 7}</strong></>}
+            etiqueta={racha.texto || 'Días reclamados'}
           />
         )}
 

@@ -8,9 +8,14 @@ import s from './BarraProgreso.module.css';
  *  - texto: nodo sobre la barra (usar <strong> para el número)
  *  - minimo: % mínimo visible de la barra
  *  - pasos: en vez de una barra continua, `max` pasos y se encienden `valor`
- *    (días de una racha: se cuentan de un vistazo). El texto va a los lados.
+ *    (días de una racha: se cuentan de un vistazo).
+ *  - etiqueta: en vez de `texto`, una fila con la etiqueta a la izquierda y
+ *    "valor/max" a la derecha ("Felicidad … 40/100", "Días reclamados … 4/7").
  */
-export function BarraProgreso({ valor, max = 100, texto, minimo = 8, pasos = false }) {
+export function BarraProgreso({ valor, max = 100, texto: textoPropio, minimo = 8, pasos = false, etiqueta }) {
+  const texto = etiqueta
+    ? <span className={s.fila}><span>{etiqueta}</span><strong>{Number(valor) || 0}/{max}</strong></span>
+    : textoPropio;
   if (pasos) {
     const n = Math.max(0, Math.min(max, Number(valor) || 0));
     return (

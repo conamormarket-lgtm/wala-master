@@ -34,7 +34,8 @@ Cada paso en su propio commit, verificable por separado.
 
 1. ✓ Proveedores y `Boton` (arriba).
 2. **Marco**: `BarraAdmin`, `AvisoSistema`, `BannerApp`, flotantes
-   (`PilaFlotante` y compañía), `PieLegal`, `VentanaCampana`, `AvisoIdioma`.
+   (`PilaFlotante` y compañía; Kapi con su ventana, KAPI.md), `PieLegal`,
+   `VentanaCampana`, `AvisoIdioma`.
    Bajo riesgo: cada uno reemplaza a un componente y sirve en todas las
    páginas.
 3. **Avisos y hojas**: `Aviso` y `HojaInferior` en lugar de los modales

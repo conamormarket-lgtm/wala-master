@@ -10,7 +10,7 @@ export { Enlace, ProveedorEnlaces } from './Enlace';
 export { default as Desplegable } from './Desplegable';
 export { MenuTienda, MenuMarcas, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito } from './MenusCabecera';
 export { default as AgregarRapido } from './AgregarRapido';
-export { accionDeProducto, tarjetaDesdeProducto, esNuevo, opcionesDeProducto, rutaDeMarca, tarjetaDesdeMarca, testimonioDesdeAjuste, precioEfectivo, limitesDePrecio, esTemporada, gruposDeCatalogo, grillaDesdeConfiguracion, juegosDelArcade } from './adaptadores';
+export { accionDeProducto, tarjetaDesdeProducto, esNuevo, opcionesDeProducto, rutaDeMarca, tarjetaDesdeMarca, testimonioDesdeAjuste, precioEfectivo, limitesDePrecio, esTemporada, gruposDeCatalogo, grillaDesdeConfiguracion, juegosDelArcade, kapiDesdePerfil, retoDesdePerfil } from './adaptadores';
 export { tipoDeEnlace } from './Enlace';
 export { default as Carrusel } from './Carrusel';
 export { default as Marquesina } from './Marquesina';
