@@ -80,3 +80,39 @@ test("subtotal uses server prices and never lets personalized lines go below cat
   ]);
   assert.equal(subtotal, 90 + 25 + 60 + 45);
 });
+
+// Combos de Crear: una línea por pieza, que juntas suman el precio del combo.
+const combo = { price: 150, salePrice: 135, esComboCrear: true, visible: false,
+  comboCrear: { publicado: true, piezas: [{ prendaId: "polo" }, { prendaId: "polo" }] } };
+const prendas = { polo: { price: 75, inStock: 10, esPrendaBase: true, prendaBase: { vistas: [] } } };
+const pieza = (i, precio, extra = {}) => ({
+  productoId: "polo", cantidad: 1, precio, personalizado: true, combo: "Pareja",
+  comboCrear: { comboId: "pareja", grupo: 0, pieza: i, de: 2 }, ...extra,
+});
+
+test("combo pieces are charged together at the combo price", async () => {
+  const f = fixture({ ...prendas, pareja: combo });
+  const { subtotal } = await f.validate([pieza(0, 67.5), pieza(1, 67.5), line("polo", 1, { precio: 75 })]);
+  assert.equal(subtotal, 210);
+  assert.deepEqual(f.calls[1].ids, ["pareja"]);
+});
+
+test("combo pieces cannot lower the combo price or change its garments", async () => {
+  const f = fixture({ ...prendas, otra: { price: 10, inStock: 5 }, pareja: combo });
+  await assert.rejects(f.validate([pieza(0, 1), pieza(1, 1)]), /precio.*cambió/);
+  await assert.rejects(f.validate([pieza(0, 67.5)]), /cambió/);
+  await assert.rejects(f.validate([pieza(0, 67.5), pieza(1, 67.5, { productoId: "otra" })]), /cambió/);
+  await assert.rejects(f.validate([pieza(0, 67.5), pieza(1, 67.5, { cantidad: 3 })]), /cambió/);
+});
+
+test("unpublished, deleted or missing combos are not sold", async () => {
+  for (const c of [undefined, { ...combo, deleted: true }, { ...combo, comboCrear: { ...combo.comboCrear, publicado: false } }]) {
+    const f = fixture({ ...prendas, pareja: c });
+    await assert.rejects(f.validate([pieza(0, 67.5), pieza(1, 67.5)]), /disponible/);
+  }
+});
+
+test("combo pieces still consume their garment stock", async () => {
+  const f = fixture({ polo: { ...prendas.polo, inStock: 3 }, pareja: combo });
+  await assert.rejects(f.validate([pieza(0, 67.5, { cantidad: 2 }), pieza(1, 67.5, { cantidad: 2 })]), /stock suficiente/);
+});

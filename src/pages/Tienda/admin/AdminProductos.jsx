@@ -744,14 +744,17 @@ const AdminProductos = () => {
                     {p.esPrendaBase === true && (
                       <span className={styles.badgeCombo}>Crear</span>
                     )}
-                    {!isVisible && !p.isComboPiece && (
+                    {p.esComboCrear === true && (
+                      <span className={styles.badgeCombo}>Combo de Crear</span>
+                    )}
+                    {!isVisible && !p.isComboPiece && !p.esComboCrear && (
                       <span className={styles.badgeOculto}>{p.deleted === true ? 'Archivado' : 'Oculto'}</span>
                     )}
                   </div>
                 </div>
                 <div className={styles.cardActions}>
                   <Link
-                    to={`/admin/productos/${p.id}`}
+                    to={p.esComboCrear === true ? '/admin/combos-crear' : `/admin/productos/${p.id}`}
                     className={styles.btnEdit}
                     title="Editar producto"
                   >

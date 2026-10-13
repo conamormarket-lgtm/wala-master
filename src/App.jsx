@@ -101,6 +101,7 @@ if (typeof window !== 'undefined') {
 const ProductPage = lazy(() => import('./pages/ProductPage'));
 const PersonalizarPage = lazy(() => import('./pages/PersonalizarPage'));
 const CrearStudioPage = lazy(() => import('./pages/Crear/CrearStudioPage'));
+const ComboCrearPage = lazy(() => import('./pages/Crear/ComboCrearPage'));
 const CreacionPage = lazy(() => import('./pages/Crear/CreacionPage'));
 const ComunidadPage = lazy(() => import('./pages/Comunidad/ComunidadPage'));
 const CartPage = lazy(() => import('./pages/CartPage'));
@@ -163,6 +164,7 @@ const DesignSystemPage = lazy(() => import('./pages/admin/DesignSystemPage'));
 // ── Admin pages ───────────────────────────────────────────────────────────────
 const AdminProductos = lazy(() => import('./pages/Tienda/admin/AdminProductos'));
 const AdminInventario = lazy(() => import('./pages/Tienda/admin/AdminInventario'));
+const AdminCombosCrear = lazy(() => import('./pages/admin/AdminCombosCrear'));
 const AdminMockups = lazy(() => import('./pages/Tienda/admin/AdminMockups'));
 const AdminReferidos = lazy(() => import('./pages/admin/AdminReferidos'));
 const AdminProductoFormV2 = lazy(() => import('./pages/Tienda/admin/AdminProductoFormV2'));
@@ -406,6 +408,7 @@ function App() {
                                   <Route path="/producto/:id" element={<ProductPage />} />
                                   <Route path="/personalizar" element={<PersonalizarPage />} />
                                   <Route path="/crear/:id" element={<CrearStudioPage />} />
+                                  <Route path="/combo/:id" element={<ComboCrearPage />} />
                                   <Route path="/creacion/:id" element={<CreacionPage />} />
                                   <Route path="/comunidad" element={<ComunidadPage />} />
                                   <Route path="/editor/:id" element={<EditorPage />} />
@@ -459,6 +462,7 @@ function App() {
                                       <Route path="design" element={<DesignSystemPage />} />
 
                                       <Route path="productos" element={<AdminProductos />} />
+                                      <Route path="combos-crear" element={<AdminCombosCrear />} />
                                       <Route path="inventario" element={<AdminInventario />} />
                                       <Route path="mockups" element={<AdminMockups />} />
                                       <Route path="productos/nuevo" element={<AdminProductoFormV2 />} />

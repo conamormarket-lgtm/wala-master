@@ -40,9 +40,13 @@ const CartItem = ({ item, incompleto = false }) => {
 
   // Una creación del apartado Crear abre su propia página (la del cliente),
   // no la prenda en blanco.
-  const enlace = item.customization?.tipo === 'crear' && item.customization?.designId
-    ? `/creacion/${item.customization.designId}`
-    : `/producto/${item.productId}`;
+  // Un combo de Crear vuelve a su página (para armar otro igual).
+  const piezasCombo = item.customization?.tipo === 'comboCrear' ? (item.customization.piezas || []) : null;
+  const enlace = piezasCombo
+    ? `/combo/${item.productId}`
+    : item.customization?.tipo === 'crear' && item.customization?.designId
+      ? `/creacion/${item.customization.designId}`
+      : `/producto/${item.productId}`;
 
   return (
     <div className={`${styles.item} ${!isSelected ? styles.itemDeselected : ''} ${incompleto ? styles.itemIncompleto : ''}`}>
@@ -81,13 +85,25 @@ const CartItem = ({ item, incompleto = false }) => {
         <Link to={enlace} className={styles.name}>
           {/* Nombre dinámico del producto (viene de la BD): se traduce con <T>. */}
           <T>{item.productName}</T>
-          {isCombo && (
+          {(isCombo || piezasCombo) && (
             <Badge tone="violet" variant="soft" size="sm" className={styles.comboBadge}>
               Combo
             </Badge>
           )}
         </Link>
         
+        {piezasCombo && (
+          <ul className={styles.comboVariants}>
+            {piezasCombo.map((p, i) => (
+              <li key={i} className={styles.comboVariantItem}>
+                {p.color?.hex && <span className={styles.swatch} style={{ background: p.color.hex }} aria-hidden="true" />}
+                {p.prendaNombre}{p.color?.nombre ? ` · ${p.color.nombre}` : ''}{p.talla ? ` · Talla ${p.talla}` : ''}
+                {p.nombre && !p.nombre.toLowerCase().includes(String(p.prendaNombre || '').toLowerCase()) ? ` · “${p.nombre}”` : ''}
+              </li>
+            ))}
+          </ul>
+        )}
+
         {isCombo && item.comboItems && item.comboItems.length > 0 && (
           <div className={styles.comboInfo}>
             <span className={styles.comboLabel}>Incluye {item.comboItems.length} producto{item.comboItems.length !== 1 ? 's' : ''}</span>

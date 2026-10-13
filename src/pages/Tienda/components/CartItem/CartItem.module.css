@@ -449,3 +449,15 @@
     font-size: 1rem;
   }
 }
+/* Piezas de un combo de Crear: prenda, color, talla y nombre del diseño. */
+ul.comboVariants {
+  list-style: none;
+  margin: 0.3rem 0 0;
+  padding: 0;
+}
+
+.comboVariantItem .swatch {
+  display: inline-block;
+  vertical-align: -2px;
+  margin-right: 0.35rem;
+}

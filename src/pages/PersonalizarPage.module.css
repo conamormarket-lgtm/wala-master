@@ -560,3 +560,41 @@
     font-size: 0.95rem;
   }
 }
+
+/* ── Combos (pareja, trío…) ──
+   Las prendas del combo, una junto a otra y un poco superpuestas. */
+.prendasCombo {
+  position: absolute;
+  inset: 8% 4%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.prendasCombo img {
+  width: calc(100% / var(--n, 2) + 12%);
+  max-height: 100%;
+  object-fit: contain;
+  margin-left: -9%;
+  transition: transform var(--dur-media, 320ms) ease;
+}
+
+.prendasCombo img:first-child {
+  margin-left: 0;
+}
+
+@media (hover: hover) {
+  .tarjeta:hover .prendasCombo img:nth-child(odd) { transform: rotate(-3deg); }
+  .tarjeta:hover .prendasCombo img:nth-child(even) { transform: rotate(3deg); }
+}
+
+.lados svg {
+  vertical-align: -1px;
+}
+
+.ahorroCombo {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 1;
+}

@@ -1,8 +1,11 @@
 import React, { useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Shirt, Upload, ShoppingBag, ArrowRight, Paintbrush } from 'lucide-react';
+import { Shirt, Upload, ShoppingBag, ArrowRight, Paintbrush, Users } from 'lucide-react';
 import { getPrendasBase } from '../services/prendasBase';
+import { getCombosCrear } from '../services/combosCrear';
+import { preciosDeCombo } from './Crear/comboCrear';
+import { EtiquetaColgante } from '../componentes/kit/Marca';
 import { getDesignsByUser } from '../services/designs';
 import { useAuth } from '../contexts/AuthContext';
 import { useAlternarFotos } from '../hooks/useAlternarFotos';
@@ -69,6 +72,43 @@ const TarjetaPrenda = ({ prenda }) => {
             <span className={styles.precio}>S/ {precioBase(prenda).toFixed(2)}</span>
           </div>
           <span className={styles.cta}><Paintbrush size={15} aria-hidden="true" /> Diseñar</span>
+        </div>
+      </div>
+    </Link>
+  );
+};
+
+/**
+ * Un combo (pareja, trío…): sus prendas juntas, el precio del paquete y
+ * cuánto se ahorra frente a comprarlas sueltas.
+ */
+const TarjetaCombo = ({ combo, prendas }) => {
+  const { precio, sueltas, ahorro } = preciosDeCombo(combo, prendas);
+  const nombres = [...new Set(prendas.map((p) => p.name))];
+  return (
+    <Link to={`/combo/${combo.id}`} className={styles.tarjeta}>
+      <div className={styles.foto}>
+        {!combo.publicado && <span className={styles.borrador}>Borrador</span>}
+        <span className={styles.prendasCombo} style={{ '--n': prendas.length }}>
+          {prendas.map((p, i) => {
+            const img = leerPrendaBase(p).vistas[0]?.imagen || p.mainImage;
+            return img ? <img key={`${p.id}-${i}`} src={img} alt="" aria-hidden="true" loading="lazy" /> : null;
+          })}
+        </span>
+        <span className={styles.lados}><Users size={12} aria-hidden="true" /> {prendas.length} prendas</span>
+        {ahorro > 0 && (
+          <EtiquetaColgante tono="magenta" tamano="sm" className={styles.ahorroCombo}>Ahorras S/ {ahorro.toFixed(2)}</EtiquetaColgante>
+        )}
+      </div>
+      <div className={styles.info}>
+        <h2 className={styles.nombre}>{combo.name}</h2>
+        <p className={styles.cantidadColores}>{nombres.join(' + ')} · cada una con su diseño</p>
+        <div className={styles.pie}>
+          <div className={styles.precios}>
+            {ahorro > 0 && <span className={styles.desde}>Por separado <s>S/ {sueltas.toFixed(2)}</s></span>}
+            <span className={styles.precio}>S/ {precio.toFixed(2)}</span>
+          </div>
+          <span className={styles.cta}><Paintbrush size={15} aria-hidden="true" /> Armar</span>
         </div>
       </div>
     </Link>
@@ -160,6 +200,16 @@ const PersonalizarPage = () => {
     },
   });
 
+  const { data: combos = [] } = useQuery({
+    queryKey: ['combos-crear', Boolean(isAdmin)],
+    queryFn: async () => (await getCombosCrear({ incluirBorradores: Boolean(isAdmin) })).data,
+  });
+  // Solo los combos cuyas prendas están a la venta (o en borrador, para el admin).
+  const prendaPorId = useMemo(() => new Map(prendas.map((p) => [p.id, p])), [prendas]);
+  const combosListos = combos
+    .map((c) => ({ combo: c, prendas: c.piezas.map((p) => prendaPorId.get(p.prendaId)) }))
+    .filter(({ prendas: ps }) => ps.every(Boolean));
+
   return (
     <div className={styles.container}>
       <div className={styles.hero}>
@@ -202,7 +252,20 @@ const PersonalizarPage = () => {
       {user && <TusBorradores uid={user.uid} />}
       {user && <TusCreaciones uid={user.uid} />}
       <DisenosComunidad />
-      {(creaciones.length > 0 || borradores.length > 0 || comunidad.length > 0) && (
+      {combosListos.length > 0 && (
+        <section className={styles.seccion} aria-label="Combos para compartir">
+          <div className={styles.seccionCabecera}>
+            <div>
+              <h2 className={styles.seccionTitulo}><T>Combos para compartir</T></h2>
+              <p className={styles.seccionAyuda}><T>Para tu pareja, tus amigos o tu familia: cada prenda con su diseño, a precio de combo.</T></p>
+            </div>
+          </div>
+          <div className={styles.grilla}>
+            {combosListos.map(({ combo, prendas: ps }) => <TarjetaCombo key={combo.id} combo={combo} prendas={ps} />)}
+          </div>
+        </section>
+      )}
+      {(creaciones.length > 0 || borradores.length > 0 || comunidad.length > 0 || combosListos.length > 0) && (
         <div className={styles.seccionCabecera}>
           <div>
             <h2 className={styles.seccionTitulo}><T>Empieza una nueva</T></h2>

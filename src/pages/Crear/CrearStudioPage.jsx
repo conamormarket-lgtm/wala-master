@@ -29,6 +29,7 @@ import {
 import RecorteImagen from './RecorteImagen';
 import QuitarFondo from './QuitarFondo';
 import { itemDeCreacion } from './creacionCarrito';
+import { ponerPieza } from './comboCrear';
 import AtajosTeclado, { MOD } from './AtajosTeclado';
 import CapaModal from './CapaModal';
 import MenuContextual from './MenuContextual';
@@ -140,6 +141,14 @@ const CrearStudioPage = () => {
   // Diseño de la comunidad de punto de partida (/crear/:id?plantilla=X): se
   // abre como un diseño nuevo y al guardarlo es una creación propia.
   const plantillaParam = searchParams.get('plantilla');
+  // Pieza de un combo (/crear/:id?combo=X&pieza=N): al terminar vuelve al
+  // combo en vez de ir al carrito. Con &copiar=Y empieza con el diseño de
+  // otra pieza (una creación del cliente), como nuevo.
+  const comboParam = searchParams.get('combo');
+  const piezaParam = Number(searchParams.get('pieza'));
+  const enCombo = Boolean(comboParam) && Number.isInteger(piezaParam) && piezaParam >= 0;
+  const sufijoCombo = enCombo ? `&combo=${encodeURIComponent(comboParam)}&pieza=${piezaParam}` : '';
+  const copiarParam = enCombo ? searchParams.get('copiar') : null;
 
   const { data: prenda, isLoading, error } = useQuery({
     queryKey: ['prenda-base', id],
@@ -460,6 +469,26 @@ const CrearStudioPage = () => {
           sessionStorage.removeItem(claveBorrador(id));
         }
       } catch { /* sin borrador */ }
+      if (copiarParam && user && !designIdRef.current) {
+        if (borrador) return aplicar(borrador);
+        const { data: origen } = await getDesignById(copiarParam);
+        if (cancelado) return undefined;
+        if (origen && origen.userId === user.uid && origen.tipo === 'crear') {
+          // Solo las zonas que existen en esta prenda (otra prenda tiene las suyas).
+          const colorOrigen = cfg.colores.find((c) => c.id === origen.color?.id || c.nombre === origen.color?.nombre);
+          const vistasDestino = vistasDelColor(cfg.vistas, colorOrigen);
+          const ids = new Set(listarZonas(vistasDestino).map((z) => z.id));
+          const capas = Object.fromEntries(Object.entries(origen.layersByView || {})
+            .filter(([zId, c]) => ids.has(zId) && Array.isArray(c) && c.length));
+          const primeraZona = Object.keys(capas)[0];
+          if (primeraZona) {
+            const vistaDeZona = vistasDestino.find((v) => v.zonas.some((z) => z.id === primeraZona));
+            return aplicar({ capasPorZona: capas, vistaId: vistaDeZona?.id, zonaId: primeraZona, colorId: colorOrigen?.id });
+          }
+        }
+        toast.info('Ese diseño no encaja en esta prenda. Puedes empezar desde cero.');
+        return aplicar(null);
+      }
       if (plantillaParam && !designIdRef.current) {
         basadoEnRef.current = plantillaParam;
         // Volviendo de iniciar sesión (o al recargar) sigue lo que ya cambió.
@@ -483,7 +512,7 @@ const CrearStudioPage = () => {
       return aplicar(borrador);
     })();
     return () => { cancelado = true; };
-  }, [cfgPrenda, listo, authLoading, designIdParam, plantillaParam, user, id]);
+  }, [cfgPrenda, listo, authLoading, designIdParam, plantillaParam, copiarParam, user, id]);
 
   // Las fuentes del selector se cargan en segundo plano para la vista previa.
   useEffect(() => { FUENTES.forEach((f) => { asegurarFuente(f); }); }, []);
@@ -1913,7 +1942,7 @@ const CrearStudioPage = () => {
           setDesignId(guardadoId);
           setEsBorrador(true);
           // Recargar la página reabre este mismo borrador.
-          navigate(`/crear/${id}?designId=${guardadoId}`, { replace: true, state: location.state });
+          navigate(`/crear/${id}?designId=${guardadoId}${sufijoCombo}`, { replace: true, state: location.state });
         }
       }
       if (montadoRef.current) setEstadoBorrador('guardado');
@@ -1938,7 +1967,7 @@ const CrearStudioPage = () => {
   const empezarNuevo = async () => {
     await terminarBorrador();
     try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
-    window.location.assign(`/crear/${id}`);
+    window.location.assign(enCombo ? `/crear/${id}?${sufijoCombo.slice(1)}` : `/crear/${id}`);
   };
 
   /**
@@ -1984,7 +2013,7 @@ const CrearStudioPage = () => {
     setDesignId(idFinal);
     setEsBorrador(false);
     setEstadoBorrador(null);
-    if (idFinal !== designIdParam) navigate(`/crear/${id}?designId=${idFinal}`, { replace: true, state: location.state });
+    if (idFinal !== designIdParam) navigate(`/crear/${id}?designId=${idFinal}${sufijoCombo}`, { replace: true, state: location.state });
     quitarBorradorDeCache(queryClient, user.uid, idFinal);
     queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'], refetchType: 'all' });
     queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'], refetchType: 'all' });
@@ -2039,6 +2068,28 @@ const CrearStudioPage = () => {
       return;
     }
     comprar('');
+  };
+
+  /**
+   * Pieza de un combo: guarda la creación (si cambió) y vuelve al combo con
+   * ella puesta. La talla se elige allá, junto a las demás piezas.
+   */
+  const usarEnCombo = async () => {
+    if (!validar()) return;
+    try {
+      let idPieza = designIdRef.current;
+      if (!idPieza || esBorradorRef.current || hayCambios) {
+        const creacion = await guardarCreacion(nombre, talla);
+        idPieza = creacion.id;
+      }
+      ponerPieza(comboParam, piezaParam, { designId: idPieza });
+      try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
+      navigate(`/combo/${comboParam}`);
+    } catch (err) {
+      toast.error(`No pudimos preparar tu diseño: ${err?.message || err}`);
+    } finally {
+      setProcesando(null);
+    }
   };
 
   const comprar = async (tallaElegida) => {
@@ -2369,10 +2420,12 @@ const CrearStudioPage = () => {
   // La flecha vuelve a la página desde la que se abrió el estudio (Mis
   // creaciones, la página de la creación…), que la manda en `state.desde`;
   // si se entró directo, a las prendas de Crear.
-  const volverA = typeof location.state?.desde === 'string' ? location.state.desde : '/personalizar';
+  const volverA = typeof location.state?.desde === 'string' ? location.state.desde
+    : enCombo ? `/combo/${comboParam}` : '/personalizar';
   const etiquetaVolver = volverA.startsWith('/cuenta')
     ? 'Volver a Mis creaciones'
-    : volverA.startsWith('/creacion') ? 'Volver a tu creación' : 'Volver a las prendas';
+    : volverA.startsWith('/creacion') ? 'Volver a tu creación'
+      : volverA.startsWith('/combo') ? 'Volver al combo' : 'Volver a las prendas';
 
   return (
     <div className={`${styles.studio} ${editandoAlgo ? styles.enfoque : ''}`}>
@@ -2382,9 +2435,9 @@ const CrearStudioPage = () => {
         </Link>
         <div className={styles.tituloBloque}>
           <h1 className={styles.titulo}>{prenda.name}</h1>
-          <span className={styles.subtitulo}>{color.nombre}</span>
+          <span className={styles.subtitulo}>{color.nombre}{enCombo ? ` · Prenda ${piezaParam + 1} de tu combo` : ''}</span>
         </div>
-        <span className={styles.precioMovil}>{soles(total)}</span>
+        {!enCombo && <span className={styles.precioMovil}>{soles(total)}</span>}
         {user && (
           <Link to="/cuenta/creaciones" className={styles.misCreaciones} aria-label="Mis creaciones" title="Mis creaciones">
             <Images size={18} aria-hidden="true" />
@@ -2919,11 +2972,18 @@ const CrearStudioPage = () => {
           </div>
 
           <div className={styles.acciones}>
-            <button type="button" className={styles.botonPrincipal} onClick={agregarAlCarrito} disabled={!!procesando || agotado}>
-              <ShoppingBag size={18} aria-hidden="true" />
-              {agotado ? 'Agotado por ahora' : 'Agregar al carrito'}
-              {!agotado && <span className={styles.precioBoton}>{soles(total)}</span>}
-            </button>
+            {enCombo ? (
+              <button type="button" className={styles.botonPrincipal} onClick={usarEnCombo} disabled={!!procesando}>
+                <CheckCircle2 size={18} aria-hidden="true" />
+                Listo, usar en el combo
+              </button>
+            ) : (
+              <button type="button" className={styles.botonPrincipal} onClick={agregarAlCarrito} disabled={!!procesando || agotado}>
+                <ShoppingBag size={18} aria-hidden="true" />
+                {agotado ? 'Agotado por ahora' : 'Agregar al carrito'}
+                {!agotado && <span className={styles.precioBoton}>{soles(total)}</span>}
+              </button>
+            )}
             <div className={styles.accionesSecundarias}>
               <button
                 type="button"

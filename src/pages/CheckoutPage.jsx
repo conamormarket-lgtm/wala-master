@@ -16,6 +16,7 @@ import { NotaInvitacion } from '../components/common/AvisoInvitacion/AvisoInvita
 import { prepareCheckoutPayment, precalentarFunciones } from '../services/checkoutPayment';
 import { markItemAsGifted } from '../services/wishlist';
 import { marcarCreacionesEnPedido } from '../services/designs';
+import { esComboCrear, repartirPrecio, resumenPiezas } from './Crear/comboCrear';
 // Cupones: el valor lo decide el servidor (validarCuponSecure), igual que las
 // monedas. Aquí solo se pinta el descuento y se consume el cupón al crear el
 // pedido; el navegador nunca decide cuánto vale.
@@ -680,6 +681,7 @@ const CheckoutPage = () => {
         // Solo los items seleccionados ("comprar esta vez") entran en el pedido.
         const prendasStr = selectedItems
           .map((item) => {
+            if (esComboCrear(item)) return `[COMBO] ${item.productName}: ${resumenPiezas(item)} x${item.quantity}`;
             if (item.isComboProduct) {
               // Para combos: listar cada sub-producto con su talla y color
               const comboVariantSelections = item.comboVariantSelections || {};
@@ -708,7 +710,42 @@ const CheckoutPage = () => {
           const subtotalItem = precioItem * (item.quantity || 1);
           const designReferences = getDesignReferences(item);
 
-          if (item.isComboProduct) {
+          if (esComboCrear(item)) {
+            // ── Combo de Crear: una línea por pieza ───────────────────────
+            // Cada pieza llega al ERP como una prenda de Crear normal (sus
+            // archivos de impresión, color y talla) y descuenta su prenda del
+            // inventario. Entre todas suman el precio del combo; el servidor
+            // lo comprueba por grupo (functions/cartValidation.js).
+            const piezas = item.customization.piezas || [];
+            const precios = repartirPrecio(precioItem, piezas.length);
+            piezas.forEach((pieza, k) => {
+              const refs = getDesignReferences({ productImage: pieza.imageURL, customization: pieza });
+              productosMap[`item_${idx}_${k}`] = {
+                productoId: pieza.prendaId || '',
+                producto: `${item.productName} · ${pieza.prendaNombre || 'Prenda'} (${k + 1} de ${piezas.length})`,
+                combo: item.productName || '',
+                comboCrear: { comboId: item.productId || '', grupo: idx, pieza: k, de: piezas.length },
+                brandId: item.brandId || null,
+                urlImagen: pieza.imageURL || '',
+                imagenReferencial: pieza.imageURL || '',
+                imagenesReferencia: refs.images,
+                imagenesPorLado: [],
+                cantidad: item.quantity || 1,
+                talla: pieza.talla || '',
+                color: pieza.color?.nombre || '',
+                colorHex: pieza.color?.hex || '',
+                precio: precios[k],
+                subtotal: precios[k] * (item.quantity || 1),
+                personalizado: true,
+                textoPersonalizado: '',
+                urlImagenPersonalizada: pieza.imageURL || '',
+                disenoVistas: refs.views,
+                designId: pieza.designId || '',
+                vistasPersonalizadas: pieza.vistasUsadas || [],
+                colorPrenda: pieza.color?.nombre || '',
+              };
+            });
+          } else if (item.isComboProduct) {
             // ── Extraer datos por sub-producto del combo ──────────────────
             const comboVariantSelections = item.comboVariantSelections || {};
             const comboItemCustomization = item.customization?.comboItemCustomization || [];
@@ -1692,7 +1729,10 @@ const CheckoutPage = () => {
     }
     // Las creaciones compradas no pueden borrar sus archivos: el pedido los usa para imprimir.
     if (user) {
-      await marcarCreacionesEnPedido(snapshot.map((i) => i?.customization?.designId)).catch(() => {});
+      await marcarCreacionesEnPedido(snapshot.flatMap((i) => [
+        i?.customization?.designId,
+        ...(i?.customization?.piezas || []).map((p) => p?.designId),
+      ])).catch(() => {});
     }
     // El referido lo vinculó el servidor al crear el pedido. El enlace ya se usó:
     // se olvida para que otra compra de este navegador no lo vuelva a mandar.

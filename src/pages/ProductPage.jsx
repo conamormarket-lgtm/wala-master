@@ -34,6 +34,10 @@ const ProductPage = () => {
   if (product?.esPrendaBase === true && !noDisponible) {
     return <Navigate to={`/crear/${id}`} replace />;
   }
+  // Los combos de Crear tampoco: se arman pieza por pieza.
+  if (product?.esComboCrear === true) {
+    return <Navigate to={`/combo/${id}`} replace />;
+  }
 
   if (noDisponible) {
     return (

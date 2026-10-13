@@ -50,6 +50,68 @@ function precioDePrendaPersonalizada(product, zonasUsadas) {
   return Math.round((base + extra) * 100) / 100;
 }
 
+// Combos de Crear (esComboCrear): "Pareja", "Trío"... Un combo es un doc de
+// productos_wala con su precio de paquete y sus piezas (comboCrear.piezas,
+// una prenda de Crear cada una). En el pedido llega como una línea por pieza
+// (así el ERP recibe los archivos de impresión y la prenda de cada una) con
+// comboCrear: { comboId, grupo, pieza, de }. El precio de las piezas de un
+// mismo grupo suma el del combo; cada pieza sigue consumiendo el stock de su
+// prenda. El combo está oculto de la tienda (visible: false): se vende solo si
+// comboCrear.publicado.
+function gruposDeCombo(items) {
+  const grupos = new Map();
+  for (const item of items) {
+    const combo = item && item.comboCrear;
+    if (!combo || typeof combo !== "object") continue;
+    const comboId = String(combo.comboId || "").trim();
+    const clave = `${comboId}__${String(combo.grupo ?? "")}`;
+    if (!grupos.has(clave)) grupos.set(clave, { comboId, nombre: item.combo || comboId, piezas: [] });
+    grupos.get(clave).piezas.push(item);
+  }
+  return [...grupos.values()];
+}
+
+async function validarCombos(grupos, { db, reader, HttpsError }) {
+  let subtotal = 0;
+  if (!grupos.length) return subtotal;
+  const ids = [...new Set(grupos.map((g) => g.comboId).filter(Boolean))];
+  const snapshots = ids.length
+    ? await reader.getAll(...ids.map((id) => db.collection("productos_wala").doc(id)), {
+      fieldMask: ["price", "salePrice", "deleted", "esComboCrear", "comboCrear"],
+    })
+    : [];
+  const byId = new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
+  for (const grupo of grupos) {
+    const snapshot = byId.get(grupo.comboId);
+    const combo = snapshot && snapshot.exists ? snapshot.data() || {} : null;
+    const nombre = grupo.nombre;
+    if (!combo || combo.esComboCrear !== true || combo.deleted === true || !combo.comboCrear || combo.comboCrear.publicado !== true) {
+      throw new HttpsError("failed-precondition", `"${nombre}" ya no está disponible. Actualiza tu carrito.`);
+    }
+    const esperadas = Array.isArray(combo.comboCrear.piezas) ? combo.comboCrear.piezas : [];
+    const piezas = [...grupo.piezas].sort((a, b) => Number(a.comboCrear.pieza) - Number(b.comboCrear.pieza));
+    const cantidad = Math.max(1, Number(piezas[0].cantidad) || 1);
+    const coinciden = piezas.length === esperadas.length
+      && piezas.every((p, i) => String(p.productoId || "").trim() === String(esperadas[i] && esperadas[i].prendaId)
+        && Number(p.comboCrear.pieza) === i
+        && Math.max(1, Number(p.cantidad) || 1) === cantidad);
+    if (!coinciden) {
+      throw new HttpsError("failed-precondition", `"${nombre}" cambió. Vuelve a armarlo y agrégalo al carrito.`);
+    }
+    const price = precioDeCatalogo(combo);
+    const precioCliente = piezas.reduce((total, p) => total + (Number(p.precio) || 0), 0);
+    if (price === null) {
+      throw new HttpsError("failed-precondition", `"${nombre}" ya no está disponible. Actualiza tu carrito.`);
+    }
+    if (Math.abs(price - precioCliente) > 0.01) {
+      throw new HttpsError("failed-precondition",
+        `El precio de "${nombre}" cambió a S/ ${price.toFixed(2)}. Vuelve a agregarlo al carrito.`);
+    }
+    subtotal += price * cantidad;
+  }
+  return subtotal;
+}
+
 // Una lectura por producto distinto, dentro de la transacción si se proporciona.
 // El stock pertenece al producto: varias líneas/variantes consumen el mismo saldo.
 //
@@ -77,9 +139,15 @@ function createCartValidator({ db, HttpsError }) {
       subtotal += Math.max(0, Number(precio) || 0) * cantidad;
     };
     for (const item of items) {
-      if (item && !String(item.productoId || "").trim()) sumar(item, item.precio);
+      if (item && !item.comboCrear && !String(item.productoId || "").trim()) sumar(item, item.precio);
     }
-    if (!ids.length) return { subtotal: redondear(subtotal) };
+    if (!ids.length) {
+      // Una pieza de combo siempre trae su prenda: sin ella no hay combo que cobrar.
+      if (items.some((item) => item && item.comboCrear)) {
+        throw new HttpsError("failed-precondition", "Tu combo está incompleto. Vuelve a armarlo.");
+      }
+      return { subtotal: redondear(subtotal) };
+    }
     const refs = ids.map((id) => db.collection("productos_wala").doc(id));
     const reader = transaction || db;
     const snapshots = await reader.getAll(...refs, {
@@ -101,6 +169,8 @@ function createCartValidator({ db, HttpsError }) {
         throw new HttpsError("failed-precondition",
           `"${nombre}" ya no tiene stock suficiente (quedan ${Math.max(0, stock)}). Actualiza tu carrito.`);
       }
+      // Las piezas de un combo se cobran juntas, al precio del combo (abajo).
+      if (item.comboCrear) continue;
       const clientPrice = Number(item.precio);
       if (item.personalizado && product.esPrendaBase === true) {
         const price = precioDePrendaPersonalizada(product, vistasDelDiseno(item));
@@ -121,6 +191,7 @@ function createCartValidator({ db, HttpsError }) {
         sumar(item, Math.max(Number.isFinite(clientPrice) ? clientPrice : 0, price || 0));
       }
     }
+    subtotal += await validarCombos(gruposDeCombo(items), { db, reader, HttpsError });
     return { subtotal: redondear(subtotal) };
   };
 }

@@ -1,0 +1,450 @@
+/* ═══════════════════════════════════════════
+   CREAR — armar un combo (pareja, trío…)
+   Mismas tarjetas y botón violeta plano que Crear.
+   ═══════════════════════════════════════════ */
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+  padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 7rem);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--gris-texto-secundario);
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none;
+  margin-bottom: 1rem;
+}
+
+.cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--primary-color);
+  font-weight: 800;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.titulo {
+  margin: 0.25rem 0 0;
+  font-family: var(--fuente-marca, 'Montserrat', sans-serif);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  font-size: clamp(1.7rem, 4vw, 2.3rem);
+  line-height: 1.1;
+  color: var(--gris-texto-principal);
+}
+
+.descripcion {
+  margin: 0.5rem 0 0;
+  max-width: 520px;
+  color: var(--gris-texto-secundario);
+  line-height: 1.5;
+}
+
+.borrador {
+  display: inline-block;
+  margin-top: 0.6rem;
+  background: #FEF3C7;
+  color: #92400E;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+
+.precioCaja {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+
+.precio {
+  font-family: var(--fuente-marca, 'Montserrat', sans-serif);
+  font-weight: 900;
+  font-size: 1.9rem;
+  color: var(--gris-texto-principal);
+  line-height: 1;
+}
+
+.sueltas {
+  font-size: 0.85rem;
+  color: var(--gris-texto-secundario);
+}
+
+.tachado {
+  text-decoration: line-through;
+}
+
+/* ── Piezas ── */
+.piezas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.1rem;
+}
+
+.pieza {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface, var(--blanco));
+  border: 1.5px solid var(--gris-borde);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--sombra-suave);
+  transition: border-color 0.2s ease;
+}
+
+.piezaLista {
+  border-color: var(--violet-300, #c4b5fd);
+}
+
+.piezaFoto {
+  position: relative;
+  aspect-ratio: 1;
+  background: #f5f4f8;
+}
+
+.piezaFoto img {
+  position: absolute;
+  inset: 6%;
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+}
+
+/* La prenda en blanco, mientras no tiene diseño. */
+.fotoVacia {
+  opacity: 0.55;
+}
+
+.numero {
+  position: absolute;
+  top: 0.7rem;
+  left: 0.7rem;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-color);
+  color: #fff;
+  font-family: var(--fuente-marca, 'Montserrat', sans-serif);
+  font-weight: 900;
+  font-size: 0.95rem;
+}
+
+.check {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  color: #16a34a;
+  background: #fff;
+  border-radius: 50%;
+}
+
+.piezaInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.95rem 1rem 1.1rem;
+  flex: 1;
+}
+
+.piezaPrenda {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.piezaNombre {
+  font-size: 1rem;
+  color: var(--gris-texto-principal);
+}
+
+.ayuda {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--gris-texto-secundario);
+}
+
+.aviso {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.tallas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+}
+
+.talla {
+  min-width: 42px;
+  height: 38px;
+  padding: 0 0.6rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--gris-borde);
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.tallaActiva {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+.principal,
+.secundario,
+.texto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 38px;
+  padding: 0 0.9rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Violeta plano, como "Diseñar" en Crear. */
+.principal {
+  border: none;
+  background: #8b5cf6;
+  color: #fff;
+}
+
+.principal:hover {
+  background: #7c3aed;
+  color: #fff;
+}
+
+.secundario {
+  border: 1.5px solid var(--gris-borde);
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+}
+
+.secundario:hover {
+  border-color: var(--violet-300, #c4b5fd);
+  color: var(--gris-texto-principal);
+}
+
+.texto {
+  border: none;
+  background: transparent;
+  color: var(--gris-texto-secundario);
+  padding: 0 0.5rem;
+}
+
+/* ── Barra de compra, fija abajo ── */
+.barra {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--bottom-nav-height, 0px) + var(--safe-bottom, 0px) + 0.75rem);
+  z-index: 50;
+  width: min(928px, calc(100% - 1.5rem));
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0.75rem 0.75rem 1.1rem;
+  border-radius: 18px;
+  background: var(--color-surface, var(--blanco));
+  border: 1px solid var(--gris-borde);
+  box-shadow: 0 12px 32px -12px rgba(20, 18, 28, 0.35);
+}
+
+.barraTexto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 0.82rem;
+  color: var(--gris-texto-secundario);
+}
+
+.barraTexto strong {
+  color: var(--gris-texto-principal);
+  font-size: 0.95rem;
+}
+
+.botonCarrito {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 50px;
+  padding: 0 1.1rem;
+  border: none;
+  border-radius: 14px;
+  background: var(--primary-color);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.botonCarrito:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.botonCarrito:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 560px) {
+  .barra {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .botonCarrito {
+    justify-content: center;
+  }
+  .precioCaja {
+    align-items: flex-start;
+  }
+}
+
+:global([data-theme="dark"]) .botonCarrito,
+:global([data-theme="dark"]) .principal,
+:global([data-theme="dark"]) .tallaActiva {
+  color: #14121C;
+}
+
+/* ── Estados ── */
+.estado {
+  max-width: 480px;
+  margin: 80px auto;
+  padding: 0 1.25rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--gris-texto-secundario);
+}
+
+.estadoTitulo {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--gris-texto-principal);
+}
+
+.girando {
+  animation: girar 0.9s linear infinite;
+  color: var(--primary-color);
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Elegir de Mis creaciones ── */
+.capa {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  background: rgba(20, 18, 28, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.caja {
+  width: min(560px, 100%);
+  max-height: 85vh;
+  overflow: auto;
+  box-sizing: border-box;
+  background: var(--color-surface, var(--blanco));
+  border-radius: 20px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  color: var(--gris-texto-secundario);
+}
+
+.opciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.opcion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  border-radius: 14px;
+  border: 1.5px solid var(--gris-borde);
+  background: var(--blanco);
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--gris-texto-principal);
+  text-align: left;
+}
+
+.opcion:hover {
+  border-color: var(--primary-color);
+}
+
+.opcion img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: #f5f4f8;
+  border-radius: 10px;
+}
