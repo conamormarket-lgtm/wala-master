@@ -1,27 +1,25 @@
-/* "Mi combo" y combos de la comunidad: las prendas juntas, un poco superpuestas. */
+/* "Mi combo" y combos de la comunidad: las prendas juntas, lado a lado. */
 .prendas {
   position: absolute;
-  inset: 8% 4%;
+  inset: 8% 3%;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 2%;
 }
 
+/* Lado a lado, sin encimarse: las vistas previas traen su propio fondo y
+   encimadas se veía el borde de una sobre la otra. */
 .prendas img {
-  width: calc(100% / var(--n, 2) + 12%);
+  width: calc((100% - 2% * (var(--n, 2) - 1)) / var(--n, 2));
   max-height: 100%;
   object-fit: contain;
-  margin-left: -9%;
   transition: transform var(--dur-media, 320ms) ease;
 }
 
-.prendas img:first-child {
-  margin-left: 0;
-}
-
+/* Sin girarlas: con su fondo, girada se le verían las esquinas. */
 @media (hover: hover) {
-  a:hover .prendas img:nth-child(odd) { transform: rotate(-3deg); }
-  a:hover .prendas img:nth-child(even) { transform: rotate(3deg); }
+  a:hover .prendas img { transform: scale(1.03); }
 }
 
 .insignia {

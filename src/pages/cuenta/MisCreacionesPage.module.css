@@ -394,13 +394,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* Un precio largo (un combo: S/ 355.00) no se tapa: los botones bajan. */
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
 .precios {
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  flex-shrink: 0;
 }
 
 .precio {
@@ -421,6 +423,7 @@
   align-items: center;
   gap: 0.4rem;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .botonPrincipal {
