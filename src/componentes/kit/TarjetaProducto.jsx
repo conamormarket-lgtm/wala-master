@@ -45,7 +45,10 @@ const ACCIONES = {
  *    marcas; dentro de la página de una marca no se pasa).
  *  - stock: unidades; "¡Quedan N!" aparece solo si son pocas (≤ STOCK_BAJO).
  *  - piezas: [{ nombre, imagen }] de un combo → etiqueta "Combo" y, con
- *    ratón, qué trae.
+ *    ratón, qué trae. Si el combo no trae `imagen`, sus piezas van como cartas.
+ *
+ * Etiquetas de la foto, por importancia: descuento, Combo, Nuevo, Tu diseño.
+ * En una tarjeta angosta (2 columnas del celular) solo se ven las dos primeras.
  */
 export default function TarjetaProducto({
   imagen,
@@ -135,10 +138,12 @@ export default function TarjetaProducto({
         </Enlace>
         <span className={s.barrido} aria-hidden="true" />
 
+        {/* En orden de importancia: en una tarjeta angosta solo caben las dos
+            primeras (CSS), así que "Nuevo" es la que sobra antes. */}
         <div className={s.badges}>
           {descuento > 0 && <Etiqueta tono="peligro" solida>-{descuento}%</Etiqueta>}
-          {nuevo && <Etiqueta tono="violeta" solida>Nuevo</Etiqueta>}
           {esCombo && <Etiqueta tono="violeta" solida>Combo · {piezas.length}</Etiqueta>}
+          {nuevo && <Etiqueta tono="violeta" solida>Nuevo</Etiqueta>}
           {personalizable && !nuevo && !esCombo && descuento === 0 && (
             <Etiqueta tono="violeta" solida icono={<Palette aria-label="Personalizable" />}><span className={s.badgeTexto}>Tu diseño</span></Etiqueta>
           )}

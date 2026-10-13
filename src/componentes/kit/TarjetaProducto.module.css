@@ -503,6 +503,15 @@
     display: none;
   }
 
+  /* Tres etiquetas tapaban la foto: solo las dos más importantes. */
+  .badges {
+    gap: 6px;
+  }
+
+  .badges > :nth-child(n + 3) {
+    display: none;
+  }
+
   /* No caben junto al precio: los colores se eligen al agregar.
      (.pie .colores para ganarle a la regla de .colores, que va más abajo). */
   .pie .colores {
