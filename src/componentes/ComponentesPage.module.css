@@ -1305,3 +1305,42 @@
     height: 80svh;
   }
 }
+
+/* ── Controles de la página de inicio ("Ver como") ───────── */
+.controlesInicio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem 2rem;
+  margin-bottom: 1rem;
+}
+
+.controlesInicio > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.controlesTitulo {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.controlesChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.avisoIdiomaDemo {
+  position: fixed;
+  left: 50%;
+  bottom: calc(18px + var(--safe-bottom, 0px));
+  z-index: 960;
+  width: min(560px, calc(100vw - 24px));
+  transform: translateX(-50%);
+}

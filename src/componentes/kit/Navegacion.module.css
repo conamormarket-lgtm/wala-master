@@ -380,14 +380,45 @@
   }
 }
 
+/* Celular: dos filas, como la tienda. Arriba logo y accesos; abajo el
+   buscador a todo el ancho. */
 @media (max-width: 760px) {
   .cabecera {
-    height: 62px;
-    padding: 0 0.6rem 0 0.9rem;
+    flex-wrap: wrap;
+    column-gap: 0.5rem;
+    row-gap: 0.15rem;
+    height: auto;
+    padding: 0.3rem 0.5rem 0.6rem 0.9rem;
     border-radius: 18px;
   }
 
-  .buscadorCaja,
+  .logo {
+    align-items: center;
+    min-height: 52px;
+  }
+
+  .buscadorCaja {
+    order: 3;
+    flex: 1 0 100%;
+    justify-content: stretch;
+    margin-left: 0;
+    padding-right: 0.1rem;
+  }
+
+  .buscadorCaja form {
+    flex: 1;
+    max-width: none;
+  }
+
+  /* Monedas, campana, favoritos y carrito caben junto al logo. */
+  .acciones {
+    gap: 0;
+  }
+
+  .acciones .iconoBtn {
+    width: 38px;
+  }
+
   .ocultarMovil {
     display: none;
   }
@@ -489,6 +520,48 @@
   100% {
     transform: translateY(0) scale(1);
   }
+}
+
+/* Las pestañas son enlaces: globals.css pinta a:hover, aquí se repite. */
+.tab,
+.tab:hover,
+.tab:focus {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.tabActivo,
+.tabActivo:hover,
+.tabActivo:focus {
+  color: var(--primary-color);
+}
+
+/* Foto o iniciales en "Mi cuenta", con anillo violeta. */
+.tabAvatar {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--violet-300);
+  border-radius: 50%;
+  background: var(--violet-600);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  overflow: hidden;
+}
+
+.tabActivo .tabAvatar {
+  border-color: var(--primary-color);
+}
+
+.tabAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .tabTexto {

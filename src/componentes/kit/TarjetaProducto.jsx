@@ -10,6 +10,7 @@ const formatoSoles = new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, 
 export const soles = (n) => `S/ ${formatoSoles.format(n)}`;
 
 const INCLINACION = 4; // grados máximos, suave
+const STOCK_BAJO = 10; // desde aquí se avisa "¡Quedan N!"
 
 /**
  * Qué hace el botón de la tarjeta según el producto (ver accionDeProducto):
@@ -36,6 +37,12 @@ const ACCIONES = {
  *
  * Con ratón: inclinación leve y la espalda de la prenda. En táctil: sin
  * inclinación, "Agregar" siempre visible y respuesta al toque.
+ *
+ *  - marca: { nombre, logo } → sello con el logo (solo en listados de varias
+ *    marcas; dentro de la página de una marca no se pasa).
+ *  - stock: unidades; "¡Quedan N!" aparece solo si son pocas (≤ STOCK_BAJO).
+ *  - piezas: [{ nombre, imagen }] de un combo → etiqueta "Combo" y, con
+ *    ratón, qué trae.
  */
 export default function TarjetaProducto({
   imagen,
@@ -51,6 +58,9 @@ export default function TarjetaProducto({
   personalizable = false,
   agotado = false,
   vendidos,
+  marca,
+  stock,
+  piezas = [],
   inclinar = true,
   url = '#producto',
   accion = 'agregar',
@@ -63,6 +73,8 @@ export default function TarjetaProducto({
   const [agregado, setAgregado] = useState(false);
   const [sumas, setSumas] = useState(0);
   const descuento = precioAntes ? Math.round((1 - precio / precioAntes) * 100) : 0;
+  const quedan = Number(stock) > 0 && Number(stock) <= STOCK_BAJO ? Number(stock) : 0;
+  const esCombo = piezas.length > 0;
 
   const mover = (e) => {
     if (e.pointerType !== 'mouse' || !inclinar) return;
@@ -115,10 +127,32 @@ export default function TarjetaProducto({
         <div className={s.badges}>
           {descuento > 0 && <Etiqueta tono="peligro" solida>-{descuento}%</Etiqueta>}
           {nuevo && <Etiqueta tono="violeta" solida>Nuevo</Etiqueta>}
-          {personalizable && !nuevo && descuento === 0 && (
+          {esCombo && <Etiqueta tono="violeta" solida>Combo · {piezas.length}</Etiqueta>}
+          {personalizable && !nuevo && !esCombo && descuento === 0 && (
             <Etiqueta tono="violeta" solida icono={<Palette aria-label="Personalizable" />}><span className={s.badgeTexto}>Tu diseño</span></Etiqueta>
           )}
         </div>
+
+        {esCombo && (
+          <div className={s.incluye} aria-hidden="true">
+            <span className={s.incluyeTitulo}>Incluye</span>
+            <ul>
+              {piezas.slice(0, 3).map((pz, i) => (
+                <li key={pz.nombre || i}>
+                  <span className={s.incluyeFoto}>{pz.imagen ? <img src={pz.imagen} alt="" loading="lazy" decoding="async" /> : (pz.nombre || '?').charAt(0)}</span>
+                  <span className={s.incluyeNombre}>{pz.nombre}</span>
+                </li>
+              ))}
+              {piezas.length > 3 && <li><span className={`${s.incluyeFoto} ${s.incluyeMas}`}>+{piezas.length - 3}</span></li>}
+            </ul>
+          </div>
+        )}
+
+        {marca?.logo && (
+          <span className={s.sello} title={marca.nombre}>
+            <img src={marca.logo} alt={marca.nombre || ''} loading="lazy" decoding="async" />
+          </span>
+        )}
 
         <button
           type="button"
@@ -161,9 +195,11 @@ export default function TarjetaProducto({
               {resenas != null && <span>({resenas})</span>}
               {vendidos && <span className={s.vendidos}>· {vendidos} vendidos</span>}
             </>
-          ) : (
+          ) : quedan ? (
+            <span className={s.quedan}>{quedan === 1 ? '¡Queda 1!' : `¡Quedan ${quedan}!`}</span>
+          ) : nuevo ? (
             <span className={s.sinResenas}>Nuevo en Walá</span>
-          )}
+          ) : ' '}
         </p>
 
         <div className={s.pie}>

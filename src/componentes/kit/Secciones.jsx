@@ -254,7 +254,7 @@ export function InsigniasConfianza({ ajustes = {} }) {
 }
 
 /* ── Carrusel de productos (featured / new_arrivals / sale / category / collection) ── */
-export function CarruselProductos({ ajustes = {}, productos = [], onAgregar }) {
+export function CarruselProductos({ ajustes = {}, productos = [], catalogo, onAgregar }) {
   if (!productos.length) return null;
   const visibles = Math.min(6, Math.max(2, Number(ajustes.visibleItems) || 5));
   return (
@@ -267,7 +267,7 @@ export function CarruselProductos({ ajustes = {}, productos = [], onAgregar }) {
         etiqueta={ajustes.title || 'Productos'}
       >
         {productos.map((p) => (
-          <TarjetaProducto key={p.id} {...tarjetaDesdeProducto(p)} onAgregar={onAgregar?.(p)} />
+          <TarjetaProducto key={p.id} {...tarjetaDesdeProducto(p, { catalogo })} onAgregar={onAgregar?.(p)} />
         ))}
       </Carrusel>
     </>
@@ -288,7 +288,7 @@ const mayorDescuento = (productos) => productos.reduce((max, p) => {
  * de Walá (en claro y en noche), rayo en sticker, etiqueta "Hasta -X%",
  * cuenta regresiva grande y, bajo cada producto, cuántos quedan.
  */
-export function OfertaRelampago({ ajustes = {}, productos = [], onAgregar }) {
+export function OfertaRelampago({ ajustes = {}, productos = [], catalogo, onAgregar }) {
   const [terminada, setTerminada] = useState(false);
   if (!productos.length || terminada) return null;
   const lista = productos.slice(0, 8);
@@ -319,7 +319,7 @@ export function OfertaRelampago({ ajustes = {}, productos = [], onAgregar }) {
       <Carrusel visibles={{ escritorio: 4, tablet: 3, movil: 2.15 }} espacio="0.85rem" etiqueta={ajustes.title || 'Ofertas'}>
         {lista.map((p) => (
           <div key={p.id} className={s.flashItem}>
-            <TarjetaProducto {...tarjetaDesdeProducto(p)} onAgregar={onAgregar?.(p)} />
+            <TarjetaProducto {...tarjetaDesdeProducto(p, { catalogo })} onAgregar={onAgregar?.(p)} />
             <StockBajo stock={p.inStock} />
           </div>
         ))}
@@ -494,6 +494,9 @@ export const REGISTRO_SECCIONES = {
  *  - categoriasPara(seccion) → [{ categoryId, name, imageUrl }]
  *  - marcasPara(seccion) → marcas de tienda_brands (banner_grid con
  *    dataSource 'brands'); la sección las traduce con tarjetaDesdeMarca.
+ *  - catalogo → { marcas, categorias, marcaActual } para las tarjetas de
+ *    producto (sello de la marca y nombre de la categoría); ver
+ *    tarjetaDesdeProducto.
  *  - onAgregar(producto) → devuelve el handler del botón de esa tarjeta
  *  - propsPara(seccion) → props extra de esa sección que dependen de la
  *    página: { cargando, hayMas, onCargarMas } en grillas, { grupos,
@@ -502,7 +505,7 @@ export const REGISTRO_SECCIONES = {
  *  - envolver(seccion, nodo, indice) → para el editor: envuelve cada sección
  *    (p. ej. con <SeccionEditable>) sin que RenderSecciones lo conozca.
  */
-export function RenderSecciones({ secciones = [], productosPara, categoriasPara, marcasPara, propsPara, onAgregar, respaldo, envolver }) {
+export function RenderSecciones({ secciones = [], productosPara, categoriasPara, marcasPara, catalogo, propsPara, onAgregar, respaldo, envolver }) {
   return [...secciones]
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
     .map((sec, indice) => {
@@ -515,7 +518,7 @@ export function RenderSecciones({ secciones = [], productosPara, categoriasPara,
       if (reg.categorias) extra.categorias = categoriasPara?.(sec);
       if (reg.marcas) extra.marcas = marcasPara?.(sec) || [];
       if (indice === 0) extra.primera = true; // lo primero que se ve: sin carga diferida
-      if (reg.productos) extra.onAgregar = onAgregar;
+      if (reg.productos) Object.assign(extra, { onAgregar, catalogo });
       Object.assign(extra, propsPara?.(sec));
       const ajustes = sec.settings || {};
       return conMarco(

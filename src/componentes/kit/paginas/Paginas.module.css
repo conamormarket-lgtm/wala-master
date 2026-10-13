@@ -19,6 +19,16 @@
   flex: 1;
 }
 
+.arriba {
+  position: relative;
+  z-index: 31;
+}
+
+/* Sin caja propia: solo pasa variables a la pila de flotantes. */
+.flotantes {
+  display: contents;
+}
+
 /* Barra inferior solo en el celular (container query: también en la vista
    de celular del editor). */
 .barraInferior {
@@ -31,6 +41,11 @@
 @container (max-width: 720px) {
   .barraInferior {
     display: block;
+  }
+
+  /* Los flotantes (contenidos) suben por encima de la barra inferior. */
+  .flotantes {
+    --pila-abajo: 84px;
   }
 }
 

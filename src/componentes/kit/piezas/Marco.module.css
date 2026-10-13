@@ -1,0 +1,410 @@
+/* ── Aviso del sistema ─────────────────────────────────── */
+.aviso {
+  --a-fondo: #fef3c7;
+  --a-texto: #92400e;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.55rem 2.6rem 0.55rem 1rem;
+  position: relative;
+  background: var(--a-fondo);
+  color: var(--a-texto);
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.aviso > svg {
+  flex-shrink: 0;
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.aviso p {
+  margin: 0;
+}
+
+.aviso_info {
+  --a-fondo: var(--violet-100);
+  --a-texto: var(--violet-800);
+}
+
+.aviso_error {
+  --a-fondo: #fee2e2;
+  --a-texto: #991b1b;
+}
+
+:global([data-theme='dark']) .aviso {
+  --a-fondo: rgba(251, 191, 36, 0.14);
+  --a-texto: #fcd34d;
+}
+
+:global([data-theme='dark']) .aviso_info {
+  --a-fondo: rgba(139, 92, 246, 0.18);
+  --a-texto: var(--violet-200);
+}
+
+:global([data-theme='dark']) .aviso_error {
+  --a-fondo: rgba(248, 113, 113, 0.16);
+  --a-texto: #fca5a5;
+}
+
+.avisoCerrar {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  display: inline-flex;
+  padding: 0.35rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.avisoCerrar svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* ── Banner de la app ──────────────────────────────────── */
+.app {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.85rem 0.55rem 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.appCerrar {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 0.3rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.appCerrar svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Ícono de app: el isotipo blanco sobre el degradado del logo. */
+.appIcono {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--degradado-logo, var(--violet-600));
+}
+
+.appTexto {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.appTexto strong {
+  font-family: var(--fuente-marca);
+  font-size: 0.92rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.appTexto span {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Barra de admin ────────────────────────────────────── */
+.admin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 46px;
+  padding: 0.4rem max(1rem, calc((100% - 1280px) / 2));
+  background: var(--noche-wala, #14121c);
+  color: #fff;
+}
+
+.adminTexto {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--fuente-marca);
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.adminTexto svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--violet-300);
+}
+
+.adminAcciones {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.adminPanel,
+.adminPanel:hover,
+.adminPanel:focus {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.adminPanel:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* En el celular solo queda el botón del editor. */
+@media (max-width: 768px) {
+  .adminTexto span,
+  .adminPanel {
+    display: none;
+  }
+}
+
+/* ── Pie legal ─────────────────────────────────────────── */
+/* Toma el color de donde se ponga (en el pie: texto claro sobre la noche
+   violeta); la línea de arriba la pone el pie. */
+.legal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: inherit;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.legal p {
+  margin: 0;
+}
+
+.legal a,
+.legal a:hover,
+.legal a:focus {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--dur-rapida, 0.15s) ease;
+}
+
+.legal a:hover {
+  color: var(--violet-300);
+}
+
+.legalEnlaces {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 1.1rem;
+}
+
+.libro {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.libro svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--violet-300);
+}
+
+.legalCopia {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+/* ── Sugerencia de idioma ──────────────────────────────── */
+.idioma {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  max-width: 560px;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+  box-shadow: 0 16px 36px -20px rgba(15, 23, 42, 0.45);
+}
+
+:global([data-theme='dark']) .idioma {
+  background: var(--color-surface-2);
+}
+
+.idiomaCodigo {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--degradado-logo, var(--violet-600));
+  color: #fff;
+  font-family: var(--fuente-marca);
+  font-size: 0.85rem;
+  font-weight: 900;
+  transform: rotate(-8deg);
+}
+
+.idiomaTexto {
+  display: flex;
+  flex: 1 1 200px;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.idiomaTexto strong {
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.idiomaTexto span {
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.idiomaAcciones {
+  display: flex;
+  gap: 0.4rem;
+}
+
+/* ── Ventana de campaña ────────────────────────────────── */
+.campanaImagen {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  background: none;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.campanaImagen img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.campana {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.campanaFoto {
+  width: 100%;
+  margin-bottom: 0.5rem;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.campanaFoto img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.campanaTexto {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.campanaAcciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+/* ── Botón de tema ─────────────────────────────────────── */
+.tema {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background-color var(--dur-rapida, 0.15s) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tema:hover {
+    background: var(--primary-light);
+    color: var(--primary-color);
+  }
+}
+
+.tema:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+.temaIcono {
+  display: inline-flex;
+  animation: temaGira 0.45s var(--ease-signature, ease);
+}
+
+.temaIcono svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+@keyframes temaGira {
+  from {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .temaIcono {
+    animation: none;
+  }
+}

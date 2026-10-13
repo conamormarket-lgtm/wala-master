@@ -23,17 +23,51 @@ export function accionDeProducto(p) {
   return 'agregar';
 }
 
-/** Props de <TarjetaProducto> desde un producto. */
-export function tarjetaDesdeProducto(p, { imagen } = {}) {
+const DIAS_NUEVO = 30;
+
+/** Fecha de creación en ms (Timestamp de Firestore, texto ISO o número). */
+const msDe = (f) => {
+  if (!f) return 0;
+  if (typeof f.toMillis === 'function') return f.toMillis();
+  if (typeof f.seconds === 'number') return f.seconds * 1000;
+  const n = typeof f === 'number' ? f : Date.parse(f);
+  return Number.isFinite(n) ? n : 0;
+};
+
+/** Creado hace menos de 30 días (misma regla que PremiumProductCard). */
+export const esNuevo = (p, ahora = Date.now()) => {
+  const ms = msDe(p?.createdAt) || Number(p?.createdAtMs) || 0;
+  return ms > 0 && ahora - ms < DIAS_NUEVO * 86400000;
+};
+
+/**
+ * Props de <TarjetaProducto> desde un producto.
+ *  - imagen: miniatura ya elegida por la tienda (useProductThumbnailVariant)
+ *  - catalogo: { marcas, categorias, marcaActual } para el sello de la marca
+ *    y el nombre de la categoría. marcaActual = id de la marca de la página
+ *    (dentro de una marca no se repite su logo en cada tarjeta).
+ */
+export function tarjetaDesdeProducto(p, { imagen, catalogo = {} } = {}) {
   const vs = variantesDe(p);
+  const { marcas = [], categorias = [], marcaActual = null } = catalogo;
+  const m = !marcaActual && p.brandId ? marcas.find((x) => x.id === p.brandId) : null;
+  const cat = (p.categories || []).map((id) => categorias.find((c) => (c.categoryId || c.id) === id)).find(Boolean);
+  const principal = vs.find((v) => String(v.id) === String(p.defaultVariantId)) || vs[0];
+  const fotos = [principal?.imageUrl, ...(principal?.images || []), p.mainImage, ...(p.images || [])].filter(Boolean);
   return {
     url: p.esPrendaBase ? `/crear/${p.id}` : `/producto/${p.id}`,
-    imagen: imagen || p.mainImage || p.images?.[0],
+    imagen: imagen || fotos[0],
+    imagenHover: fotos.find((f) => f !== (imagen || fotos[0])),
     nombre: p.name,
+    categoria: cat?.name,
     precio: p.salePrice || p.price,
     precioAntes: p.salePrice ? p.price : undefined,
     personalizable: Boolean(p.customizable),
     agotado: !p.inStock,
+    stock: typeof p.inStock === 'number' ? p.inStock : undefined,
+    nuevo: esNuevo(p),
+    marca: m?.logoUrl ? { nombre: m.name, logo: m.logoUrl } : undefined,
+    piezas: p.isComboProduct ? (p.comboItems || []).map((it) => ({ nombre: it.name, imagen: it.imageUrl })) : [],
     // Con una sola variante (la "Principal" que crea el admin por defecto) no
     // hay colores que mostrar.
     colores: vs.length > 1 ? vs.filter((v) => v.colorHex).map((v) => v.colorHex) : [],

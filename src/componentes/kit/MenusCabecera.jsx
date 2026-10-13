@@ -111,6 +111,36 @@ const finDeMes = () => {
 };
 
 /**
+ * Menú de "Marcas": cada marca con su logo, en dos columnas.
+ *  - marcas: [{ id, nombre, url, logo }]
+ *  - verTodas: { texto, url } enlace al final (o null)
+ */
+export function MenuMarcas({ marcas = [], verTodas = { texto: 'Ver todas las marcas', url: '/marcas' }, onNavegar }) {
+  return (
+    <div className={s.marcas}>
+      <h4 className={s.titulo}>Universo Walá</h4>
+      <ul className={s.listaLogos}>
+        {marcas.map((m) => (
+          <li key={m.id}>
+            <Enlace to={m.url} className={s.marcaFila} onClick={onNavegar}>
+              <span className={s.marcaLogo}>
+                {m.logo ? <img src={m.logo} alt="" loading="lazy" decoding="async" /> : String(m.nombre || '?').charAt(0)}
+              </span>
+              <span className={s.marcaNombre}>{m.nombre}</span>
+            </Enlace>
+          </li>
+        ))}
+      </ul>
+      {verTodas && (
+        <Enlace to={verTodas.url} className={s.verTodo} onClick={onNavegar}>
+          {verTodas.texto} <ArrowRight aria-hidden="true" />
+        </Enlace>
+      )}
+    </div>
+  );
+}
+
+/**
  * Explicación de las monedas (lo que hoy dice el tooltip del header):
  * saldo grande, cuánto vale, cuándo vencen y dónde canjearlas o ganar más.
  */

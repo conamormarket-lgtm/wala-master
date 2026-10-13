@@ -9,6 +9,8 @@ import { EASE } from '../Efectos';
 import { BloqueSeccion, TituloSeccion } from '../Seccion';
 import { RenderSecciones, CarruselProductos } from '../Secciones';
 import { PiePagina } from '../SeccionesExtra';
+import { PilaFlotante } from '../piezas/Flotantes';
+import { PieLegal } from '../piezas/Marco';
 import s from './Paginas.module.css';
 
 /*
@@ -19,21 +21,31 @@ import s from './Paginas.module.css';
  */
 
 /**
- * Marco de cualquier página de la tienda: cabecera arriba, contenido y pie
- * de página; en el celular, la barra inferior.
+ * Marco de cualquier página de la tienda: avisos arriba, cabecera, contenido
+ * y pie de página; en el celular, la barra inferior; y lo que flota encima.
+ *  - arriba: nodos sobre la cabecera (AvisoSistema, BannerApp, BarraAdmin)
  *  - cabecera: props de <Cabecera> (o null para landings sin menú)
- *  - pie: ajustes de footer_columns (o null)
+ *  - pie: ajustes de footer_columns (o null)  · pieLegal: props de <PieLegal>
  *  - barraInferior: props de <BarraInferior> (o null)
+ *  - flotantes: { derecha, izquierda } → <PilaFlotante> (WhatsApp, Kapi…)
+ *  - contenida: el marco vive dentro de algo con su propio scroll (demo,
+ *    editor): los flotantes se pegan al marco y no a la ventana.
  */
-export function MarcoTienda({ cabecera, pie, barraInferior, children }) {
+export function MarcoTienda({ arriba, cabecera, pie, pieLegal, barraInferior, flotantes, contenida = false, children }) {
   return (
     <div className={s.marco}>
+      {arriba && <div className={s.arriba}>{arriba}</div>}
       {cabecera && <div className={s.cabecera}><Cabecera {...cabecera} /></div>}
       <main className={s.contenido}>{children}</main>
-      {pie && (
+      {(pie || pieLegal) && (
         <BloqueSeccion ajustes={{ paddingTop: '1rem', paddingBottom: '1.5rem' }}>
-          <PiePagina ajustes={pie} />
+          <PiePagina ajustes={pie || {}} pieLegal={pieLegal && <PieLegal {...pieLegal} />} />
         </BloqueSeccion>
+      )}
+      {flotantes && (
+        <div className={s.flotantes}>
+          <PilaFlotante contenida={contenida} izquierda={flotantes.izquierda}>{flotantes.derecha}</PilaFlotante>
+        </div>
       )}
       {barraInferior && <div className={s.barraInferior}><BarraInferior {...barraInferior} /></div>}
     </div>
@@ -41,13 +53,53 @@ export function MarcoTienda({ cabecera, pie, barraInferior, children }) {
 }
 
 /**
- * Página del builder (home, tienda, landings): el marco + las secciones
- * guardadas en Firestore. Recibe lo mismo que <RenderSecciones>.
+ * Qué lista de productos va en cada tipo de sección, igual que en
+ * TiendaPage: destacados (featured), más nuevos (new_arrivals), con
+ * salePrice (sale y flash_sales), por categoría o colección, o todos.
  */
-export function PaginaTienda({ cabecera, pie, barraInferior, ...secciones }) {
+export function productosDeSeccion(productos = {}, sec) {
+  const st = sec?.settings || {};
+  switch (sec?.type) {
+    case 'featured_carousel':
+    case 'featured_products': return productos.destacados || [];
+    case 'new_arrivals_carousel': return productos.nuevos || [];
+    case 'sale_carousel':
+    case 'flash_sales': return productos.ofertas || [];
+    case 'category_carousel': return productos.porCategoria?.[st.categoryId] || [];
+    case 'collection_carousel': return productos.porColeccion?.[st.collection] || [];
+    default: return productos.todos || [];
+  }
+}
+
+/**
+ * Página del builder (inicio, tienda, landings): el marco + las secciones
+ * guardadas en Firestore (`pages/{id}`).
+ *  - productos: { destacados, nuevos, ofertas, porCategoria, porColeccion,
+ *    todos } → cada sección toma la suya (productosDeSeccion). O, para
+ *    decidir a mano, productosPara(seccion) como en <RenderSecciones>.
+ *  - categorias: [{ categoryId, name, imageUrl, cuenta }] con productos,
+ *    en el orden del admin (category_grid automático, categories_nav).
+ *  - marcas: tienda_brands (banner_grid de marcas, sello en las tarjetas).
+ *  - marcaActual: id de la marca de la página (landing de marca).
+ *  - El resto: props del marco (cabecera, pie, flotantes…) y de
+ *    <RenderSecciones> (onAgregar, propsPara, respaldo, envolver).
+ */
+export function PaginaTienda({
+  arriba, cabecera, pie, pieLegal, barraInferior, flotantes, contenida,
+  productos, productosPara, categorias = [], marcas = [], marcaActual = null, ...secciones
+}) {
+  const catalogo = useMemo(() => ({ marcas, categorias, marcaActual }), [marcas, categorias, marcaActual]);
   return (
-    <MarcoTienda cabecera={cabecera} pie={pie} barraInferior={barraInferior}>
-      <RenderSecciones {...secciones} />
+    <MarcoTienda {...{ arriba, cabecera, pie, pieLegal, barraInferior, flotantes, contenida }}>
+      <RenderSecciones
+        productosPara={productosPara || ((sec) => productosDeSeccion(productos, sec))}
+        // Con items puestos a mano en el editor mandan esos; si no, las
+        // categorías automáticas.
+        categoriasPara={(sec) => (sec.settings?.items?.length && sec.settings.dataSource !== 'products' ? undefined : categorias)}
+        marcasPara={() => marcas}
+        catalogo={catalogo}
+        {...secciones}
+      />
     </MarcoTienda>
   );
 }

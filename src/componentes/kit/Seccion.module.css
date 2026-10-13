@@ -2,6 +2,9 @@
   position: relative;
   isolation: isolate;
   padding: var(--section-gap, 2rem) 0;
+  /* Los garabatos que cuelgan de un título no deben ensanchar la página
+     (clip, no hidden: no crea scroll ni rompe sticky). */
+  overflow-x: clip;
 }
 
 .contenido {

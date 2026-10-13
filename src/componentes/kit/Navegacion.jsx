@@ -1,6 +1,6 @@
 import React, { useId, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Home, ShoppingBag, Brush, Gamepad2, User, Search, Heart, Bell, ChevronDown } from 'lucide-react';
+import { Home, ShoppingBag, Brush, Gamepad2, User, Heart, Bell, ChevronDown, Shield } from 'lucide-react';
 import { Contador, SaldoMonedas } from './Etiquetas';
 import Boton from './Boton';
 import { Buscador } from './Formulario';
@@ -8,7 +8,8 @@ import { RESORTE } from './Efectos';
 import { ListaNotificaciones } from './Feedback';
 import { Enlace } from './Enlace';
 import Desplegable from './Desplegable';
-import { MenuTienda, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito } from './MenusCabecera';
+import { MenuTienda, MenuMarcas, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito } from './MenusCabecera';
+import { BotonTema } from './piezas/Marco';
 import s from './Navegacion.module.css';
 
 /**
@@ -35,16 +36,24 @@ export function Logo({ alto = 32 }) {
  * carrito navegan directo. Solo hay un menú abierto a la vez.
  *
  * Todo llega por props (en la app: AuthContext, CartContext, Firestore…):
- *  - enlaces: [{ id, texto, url, menu?: 'tienda' }]   activo: id actual
- *  - menuTienda: props de <MenuTienda>
+ *  - enlaces: [{ id, texto, url, menu?: 'tienda' | 'marcas' }]   activo: id actual
+ *  - menuTienda: props de <MenuTienda>  · menuMarcas: props de <MenuMarcas>
+ *  - tema: 'claro' | 'noche' + onTema → botón de tema (solo escritorio)
  *  - monedas, notificaciones (+ onLeer, onMarcarLeidas, onVerTodas)
  *  - usuario, gruposCuenta, promoCuenta, onCerrarSesion
  *  - favoritos: [{ id, nombre, imagen }]   carrito: [{ id, nombre, imagen, precio, cantidad, variante }]
+ *
+ * Monedas y notificaciones solo aparecen con sesión. En el celular la
+ * cabecera tiene dos filas (como la tienda): logo y accesos arriba, el
+ * buscador abajo; la cuenta va en la barra inferior.
  */
 export function Cabecera({
   enlaces = ENLACES_POR_DEFECTO,
   activo = 'tienda',
   menuTienda = {},
+  menuMarcas = {},
+  tema,
+  onTema,
   monedas = 0,
   notificaciones = [],
   onLeer,
@@ -57,6 +66,7 @@ export function Cabecera({
   favoritos = [],
   carrito = [],
   onBuscar,
+  placeholder = 'Buscar productos y marcas',
 }) {
   const uid = useId();
   const [sobre, setSobre] = useState(null);
@@ -86,18 +96,20 @@ export function Cabecera({
       <nav className={s.enlaces} aria-label="Principal" onMouseLeave={() => setSobre(null)}>
         {enlaces.map((e) => {
           const clases = [s.enlace, activo === e.id && s.enlaceActivo].filter(Boolean).join(' ');
-          if (e.menu === 'tienda') {
+          const menu = MENUS[e.menu];
+          if (menu) {
+            const props = e.menu === 'tienda' ? menuTienda : menuMarcas;
             return (
               <Desplegable
                 key={e.id}
                 titulo={e.texto}
                 alinear="izquierda"
-                ancho={menuTienda.destacado ? 720 : 560}
-                {...control('tienda')}
-                disparador={(props) => (
+                ancho={menu.ancho(props)}
+                {...control(e.menu)}
+                disparador={(dp) => (
                   <button
                     type="button"
-                    {...props}
+                    {...dp}
                     className={clases}
                     aria-current={activo === e.id ? 'page' : undefined}
                     onMouseEnter={() => setSobre(e.id)}
@@ -106,12 +118,12 @@ export function Cabecera({
                     {pildoras(e.id)}
                     <span className={s.enlaceTexto}>
                       {e.texto}
-                      <ChevronDown className={[s.chevron, abierto === 'tienda' && s.chevronAbierto].filter(Boolean).join(' ')} aria-hidden="true" />
+                      <ChevronDown className={[s.chevron, abierto === e.menu && s.chevronAbierto].filter(Boolean).join(' ')} aria-hidden="true" />
                     </span>
                   </button>
                 )}
               >
-                {(cerrar) => <MenuTienda {...menuTienda} onNavegar={cerrar} />}
+                {(cerrar) => React.createElement(menu.Componente, { ...props, onNavegar: cerrar })}
               </Desplegable>
             );
           }
@@ -132,15 +144,13 @@ export function Cabecera({
       </nav>
 
       <div className={s.buscadorCaja}>
-        <Buscador placeholder="Buscar polos, tazas, regalos…" onBuscar={onBuscar} />
+        <Buscador placeholder={placeholder} onBuscar={onBuscar} />
       </div>
 
       <div className={s.acciones}>
-        <Boton soloIcono variante="fantasma" className={`${s.iconoBtn} ${s.soloMovil}`} aria-label="Buscar">
-          <Search aria-hidden="true" />
-        </Boton>
+        {onTema && <span className={s.ocultarMovil}><BotonTema tema={tema} onCambiar={onTema} /></span>}
 
-        <span className={s.ocultarMovil}>
+        {usuario && (
           <Desplegable
             alTocar="globo"
             variante="globo"
@@ -151,9 +161,9 @@ export function Cabecera({
           >
             {(cerrar) => <AyudaMonedas saldo={monedas} onNavegar={cerrar} />}
           </Desplegable>
-        </span>
+        )}
 
-        <span className={s.ocultarMovil}>
+        {usuario && (
           <Desplegable
             titulo="Notificaciones"
             ancho={370}
@@ -188,9 +198,9 @@ export function Cabecera({
               </div>
             )}
           </Desplegable>
-        </span>
+        )}
 
-        <span className={s.ocultarMovil}>
+        <span>
           <Desplegable
             alTocar="nada"
             ancho={330}
@@ -234,6 +244,7 @@ export function Cabecera({
           {(cerrar) => <VistaCarrito items={carrito} onNavegar={cerrar} />}
         </Desplegable>
 
+        <span className={s.ocultarMovil}>
         <Desplegable
           titulo="Mi cuenta"
           ancho={320}
@@ -252,10 +263,17 @@ export function Cabecera({
             <MenuCuenta usuario={usuario} grupos={gruposCuenta} promo={promoCuenta} onCerrarSesion={onCerrarSesion} onNavegar={cerrar} />
           )}
         </Desplegable>
+        </span>
       </div>
     </header>
   );
 }
+
+/** Menús que puede abrir un enlace de la cabecera (enlace.menu). */
+const MENUS = {
+  tienda: { Componente: MenuTienda, ancho: (p) => (p.destacado ? 720 : 560) },
+  marcas: { Componente: MenuMarcas, ancho: () => 500 },
+};
 
 const iniciales = (nombre) => String(nombre || '?').trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
 
@@ -267,41 +285,60 @@ const ENLACES_POR_DEFECTO = [
 ];
 
 const TABS = [
-  { id: 'inicio', texto: 'Inicio', Icono: Home },
-  { id: 'tienda', texto: 'Tienda', Icono: ShoppingBag },
-  { id: 'crear', texto: 'Crear', Icono: Brush, destacado: true },
-  { id: 'juegos', texto: 'Juegos', Icono: Gamepad2 },
-  { id: 'cuenta', texto: 'Cuenta', Icono: User },
+  { id: 'inicio', texto: 'Inicio', url: '/', Icono: Home },
+  { id: 'tienda', texto: 'Tienda', url: '/tienda', Icono: ShoppingBag },
+  { id: 'crear', texto: 'Crear', url: '/personalizar', Icono: Brush, destacado: true },
+  { id: 'juegos', texto: 'Juegos', url: '/minijuegos', Icono: Gamepad2 },
+  { id: 'cuenta', texto: 'Mi cuenta', url: '/cuenta', Icono: User },
 ];
+
+const TAB_ADMIN = { id: 'admin', texto: 'Admin', url: '/admin', Icono: Shield };
 
 /**
  * Barra inferior móvil. La píldora del activo se desliza entre tabs, el
  * icono rebota al elegirlo y "Crear" va destacado al centro.
+ *  - activo: id de la pestaña de la ruta actual (la tienda lo saca de la
+ *    URL). Sin él, la barra recuerda la última tocada (demo).
+ *  - usuario: { nombre, avatar } → su foto o iniciales en "Mi cuenta"
+ *  - admin: agrega la pestaña Admin
+ *  - items: para cambiar las pestañas ({ id, texto, url, Icono, destacado })
  */
-export function BarraInferior({ carrito = 0 }) {
+export function BarraInferior({ items = TABS, activo, usuario, admin = false, carrito = 0, onNavegar }) {
   const uid = useId();
-  const [activo, setActivo] = useState('tienda');
+  const [propio, setPropio] = useState('inicio');
+  const actual = activo ?? propio;
+  const tabs = admin ? [...items, TAB_ADMIN] : items;
   return (
     <nav className={s.barra} aria-label="Navegación principal">
-      {TABS.map(({ id, texto, Icono, destacado }) => {
-        const esActivo = activo === id;
+      {tabs.map(({ id, texto, url, Icono, destacado }) => {
+        const esActivo = actual === id;
+        const conAvatar = id === 'cuenta' && usuario;
         return (
-          <button
+          <Enlace
             key={id}
-            type="button"
+            to={url}
             className={[s.tab, esActivo && s.tabActivo, destacado && s.tabDestacado].filter(Boolean).join(' ')}
             aria-current={esActivo ? 'page' : undefined}
-            onClick={() => setActivo(id)}
+            onClick={(e) => {
+              if (activo === undefined) { e.preventDefault(); setPropio(id); }
+              onNavegar?.(id);
+            }}
           >
             <span className={s.tabIcono}>
               {esActivo && !destacado && (
                 <motion.span layoutId={`${uid}-tab`} className={s.tabPildora} transition={RESORTE} />
               )}
-              <Icono key={esActivo ? 'on' : 'off'} className={esActivo ? s.rebota : undefined} aria-hidden="true" />
+              {conAvatar ? (
+                <span className={[s.tabAvatar, esActivo && s.rebota].filter(Boolean).join(' ')} aria-hidden="true">
+                  {usuario.avatar ? <img src={usuario.avatar} alt="" referrerPolicy="no-referrer" /> : iniciales(usuario.nombre)}
+                </span>
+              ) : (
+                <Icono key={esActivo ? 'on' : 'off'} className={esActivo ? s.rebota : undefined} aria-hidden="true" />
+              )}
               {id === 'tienda' && <Contador valor={carrito} />}
             </span>
             <span className={s.tabTexto}>{texto}</span>
-          </button>
+          </Enlace>
         );
       })}
     </nav>

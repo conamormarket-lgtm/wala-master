@@ -266,7 +266,7 @@ function useCargarAlLlegar(activo, alLlegar) {
  *    Sin onCargarMas se muestran de 12 en 12 en memoria.
  *  - vacio: { titulo, texto } cuando no hay nada.
  */
-export function GrillaProductos({ ajustes = {}, productos = [], cargando = false, hayMas, onCargarMas, cargandoMas, onAgregar, vacio }) {
+export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargando = false, hayMas, onCargarMas, cargandoMas, onAgregar, vacio }) {
   const servidor = typeof onCargarMas === 'function';
   const [visibles, setVisibles] = useState(12);
   useEffect(() => { if (!servidor) setVisibles(12); }, [productos, servidor]);
@@ -287,7 +287,7 @@ export function GrillaProductos({ ajustes = {}, productos = [], cargando = false
         {cargando
           ? Array.from({ length: 8 }, (_, k) => <li key={k}><TarjetaProductoEsqueleto /></li>)
           : lista.map((p) => (
-            <li key={p.id}><TarjetaProducto {...tarjetaDesdeProducto(p)} onAgregar={onAgregar?.(p)} /></li>
+            <li key={p.id}><TarjetaProducto {...tarjetaDesdeProducto(p, { catalogo })} onAgregar={onAgregar?.(p)} /></li>
           ))}
         {cargandoMas && Array.from({ length: 4 }, (_, k) => <li key={`m${k}`}><TarjetaProductoEsqueleto /></li>)}
       </ul>

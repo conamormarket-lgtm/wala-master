@@ -36,6 +36,10 @@ Todo se arma con lo del nivel de abajo; nada se dibuja dos veces.
 Si una sección necesita algo nuevo (una tarjeta, un chip…), va primero como
 pieza en `piezas/` y después se usa en la sección.
 
+`MAPA.md` es el inventario de cada página real (qué apartados tiene, de qué
+archivo salen hoy y con qué se arman en el kit). La página de inicio ya está
+mapeada y armada: vista Páginas → "Inicio de wala.pe".
+
 ## Reglas del kit
 
 - **Los datos entran por props.** Ningún componente lee Firestore, AuthContext
@@ -99,7 +103,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `TarjetaProducto.jsx` | `TarjetaProducto`, `TarjetaProductoEsqueleto`, `soles` | Tarjeta de la tienda (fotos con fondo blanco, alturas parejas) |
 | `Navegacion.jsx` | `Cabecera`, `BarraInferior`, `Pestanas`, `Logo` | Navegación |
 | `Desplegable.jsx` | `Desplegable` | Base de todos los menús: hover en escritorio, hoja/globo en celular |
-| `MenusCabecera.jsx` | `MenuTienda`, `AyudaMonedas`, `MenuCuenta`, `VistaFavoritos`, `VistaCarrito` | Contenido de los menús de la cabecera |
+| `MenusCabecera.jsx` | `MenuTienda`, `MenuMarcas`, `AyudaMonedas`, `MenuCuenta`, `VistaFavoritos`, `VistaCarrito` | Contenido de los menús de la cabecera |
 | `AgregarRapido.jsx` | `AgregarRapido` | Elegir talla, color y cantidad antes de agregar al carrito |
 | `Pedido.jsx` | `SeguimientoPedido`, `ItemCarrito`, `BarraEnvioGratis`, `ResumenPedido` | Carrito y Mis pedidos |
 | `Feedback.jsx` | `Aviso`, `ProveedorToasts`, `useToast`, `useNotificaciones`, `ListaNotificaciones`, `EstadoVacio`, `HojaInferior` | Avisos, notificaciones y modales |
@@ -110,6 +114,8 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `CuentaRegresiva.jsx` | `CuentaRegresiva` | Hasta una fecha o "siempre activa" por visitante; variantes bloques, texto y evento (dígitos grandes para fondos oscuros) |
 | `Acordeon.jsx` | `Acordeon` | Preguntas frecuentes y detalles plegables |
 | `Seccion.jsx` | `BloqueSeccion`, `TituloSeccion`, `tituloDesdeAjustes` | Relleno, fondo y título iguales en todas las secciones |
+| `piezas/Flotantes.jsx` | `PilaFlotante`, `BotonWhatsApp`, `KapiFlotante`, `BurbujaRegalos`, `PildoraRecompensa` | Lo que flota sobre la página (sobre la barra inferior en el celular) |
+| `piezas/Marco.jsx` | `AvisoSistema`, `BannerApp`, `BarraAdmin`, `PieLegal`, `AvisoIdioma`, `VentanaCampana`, `BotonTema` | Lo que rodea a las secciones: avisos arriba, barra de admin, pie legal, ventanas |
 | `Secciones.jsx` | `BarraAnuncios`, `HeroCarrusel`, `InsigniasConfianza`, `CarruselProductos`, `OfertaRelampago`, `Testimonios`, `PreguntasFrecuentes`, `MarcasMarquesina`, `GrillaCategorias`, `RenderSecciones`, `REGISTRO_SECCIONES` | Secciones del builder; reciben el mismo `settings` que guarda Firestore |
 | `SeccionesContenido.jsx` | `Encabezado`, `BloqueTexto`, `BloqueImagen`, `BloqueVideo`, `MosaicoBanners`, `FilaDestacados`, `videoIncrustado` | Secciones de contenido del builder (header, text, image, video, banner_grid, bestsellers_row) |
 | `SeccionesExtra.jsx` | `BannerPrincipal`, `ListaBeneficios`, `Ubicacion`, `NavCategorias`, `GrillaProductos`, `CatalogoConFiltros`, `PiePagina` | Resto de secciones (hero_banner, feature_list, map_location, categories_nav, featured_products, product_grid, sidebar_catalog, footer_columns) |
@@ -186,6 +192,13 @@ Una página del builder (`pages/{pageId}` en Firestore) se dibuja así:
 Ya cubiertos: todos los tipos del builder menos `conversion_fold` y
 `landing_payment`, que son de la landing del reloj (cacherito) y siguen con su
 componente vía `respaldo`.
+
+Con `PaginaTienda` no hace falta repartir los productos a mano: recibe
+`productos = { destacados, nuevos, ofertas, porCategoria, porColeccion,
+todos }` y cada sección toma la suya (`productosDeSeccion`, la misma regla
+que TiendaPage), más `categorias`, `marcas` y `marcaActual`. Con `marcas` y
+`categorias` las tarjetas muestran el sello de la marca y la categoría
+(`catalogo` en `RenderSecciones` / `tarjetaDesdeProducto`).
 
 Props de página por sección con `propsPara(sec)`: `{ cargando, hayMas,
 onCargarMas, cargandoMas }` en grillas, `{ grupos, seleccion, onFiltrar,

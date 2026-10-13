@@ -607,6 +607,13 @@
   transform: scale(0.8);
 }
 
+/* Sin teclado físico el atajo no sirve. */
+@media (hover: none) and (pointer: coarse) {
+  .buscador kbd {
+    display: none;
+  }
+}
+
 :global([data-theme='dark']) .buscador:hover {
   border-color: rgba(167, 139, 250, 0.25);
 }

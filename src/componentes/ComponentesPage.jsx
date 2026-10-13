@@ -29,6 +29,7 @@ import TAZA from './demo/taza.svg';
 import CUADRO from './demo/cuadro.svg';
 // Marcas reales de la tienda (copia de tienda_brands, solo lectura).
 import MARCAS_TIENDA from './demo/marcas.json';
+import DemoInicio from './DemoInicio';
 
 const FRENTE = '/prendas/hoodie-frente.webp';
 const ESPALDA = '/prendas/hoodie-espalda.webp';
@@ -61,6 +62,7 @@ const INDICES = {
   ],
   secciones: GRUPOS_CATALOGO,
   paginas: [
+    ['inicio', 'Inicio'],
     ['landing', 'Landing'],
     ['editor', 'Editor'],
     ['carrito', 'Carrito'],
@@ -981,9 +983,36 @@ function Contenido({ tema, cambiarTema }) {
         </>)}
 
         {vista === 'paginas' && (<>
+        {/* ── INICIO DE WALA.PE ── */}
+        <Seccion
+          id="inicio" numero="01" titulo="Inicio de wala.pe"
+          descripcion="La página de inicio real armada solo con el kit: las 10 secciones de pages/home, el pie de pages/footer y una copia de productos, categorías y marcas. Cambia «Ver como» para ver qué aparece con sesión o siendo admin. El mapa completo de lo que hay en la página está en kit/MAPA.md."
+          mejoras={['Sello de la marca en cada producto', '«¡Quedan N!» solo si quedan pocas', 'Combos con lo que traen', 'Barra inferior por rutas', 'Flotantes sobre la barra inferior', 'Sin emojis: íconos de Walá']}
+        >
+          <HechaCon
+            secciones={['BarraAnuncios', 'HeroCarrusel', 'MosaicoBanners', 'GrillaCategorias', 'CarruselProductos', 'InsigniasConfianza', 'Testimonios', 'PreguntasFrecuentes', 'PiePagina']}
+            piezas={['Cabecera', 'MenuTienda', 'MenuMarcas', 'BotonTema', 'BarraInferior', 'BarraAdmin', 'AvisoSistema', 'BannerApp', 'PieLegal', 'PilaFlotante', 'BotonWhatsApp', 'KapiFlotante', 'BurbujaRegalos', 'PildoraRecompensa', 'VentanaCampana', 'AvisoIdioma', 'TarjetaProducto', 'TarjetaMarca', 'TarjetaCategoria', 'TarjetaTestimonio', 'Beneficio']}
+          />
+          <DemoInicio
+            marcas={MARCAS_DEMO}
+            usuario={USUARIO_DEMO}
+            tema={tema}
+            cambiarTema={cambiarTema}
+            notificaciones={historial}
+            onLeer={leer}
+            onMarcarLeidas={marcarLeidas}
+            onVerTodas={abrirCentro}
+            carrito={carrito}
+            enCarrito={enCarrito}
+            favoritos={FAVORITOS_DEMO}
+            onAgregar={manejarAgregar}
+            toast={toast}
+          />
+        </Seccion>
+
         {/* ── LANDING DE EJEMPLO ── */}
         <Seccion
-          id="landing" numero="01" titulo="Landing de ejemplo"
+          id="landing" numero="02" titulo="Landing de ejemplo"
           descripcion="PaginaTienda: cabecera, las secciones que guarda Firestore (una lista de { type, settings }), pie de página y, en el celular, la barra inferior. Desplázate dentro del marco."
           mejoras={['1 carrusel en vez de 6', '1 marquesina en vez de 3', '1 cuenta regresiva en vez de 2', 'Títulos y fondos iguales en todas', 'Enlaces internos, externos y #ancla con una regla', 'Textos viejos en negro se adaptan al modo noche', 'Videos que se pausan fuera de pantalla']}
         >
@@ -1010,7 +1039,7 @@ function Contenido({ tema, cambiarTema }) {
 
         {/* ── EDITOR DEL BUILDER ── */}
         <Seccion
-          id="editor" numero="02" titulo="Editor del builder"
+          id="editor" numero="03" titulo="Editor del builder"
           descripcion="El mismo editor para todas las secciones: cada tipo describe sus campos una vez y el panel los dibuja. Toca una sección de la página o elígela en el panel, cambia textos, colores o fotos y mira el cambio al instante. Arrastra las filas para reordenar, usa el + entre secciones para insertar y Ctrl+Z para deshacer."
           mejoras={['1 formulario por esquema en vez de 30 copiados', 'Colores con opción «del tema» (modo noche)', 'Fechas en hora de Perú', 'Deshacer y rehacer', 'Eliminar sin ventanas del navegador', 'Hoja inferior en el celular']}
         >
@@ -1026,7 +1055,7 @@ function Contenido({ tema, cambiarTema }) {
 
         {/* ── CARRITO ── */}
         <Seccion
-          id="carrito" numero="03" titulo="Carrito"
+          id="carrito" numero="04" titulo="Carrito"
           descripcion="PaginaCarrito: funciona de verdad. Sube la cantidad hasta pasar S/ 150 y mira qué pasa; prueba el cupón WALA10. Abajo, la misma sección de carrusel del builder sugiere productos."
           mejoras={['Camión que avanza hacia el envío gratis', 'Confeti al llegar a la meta', 'Totales que corren', 'Quitar con animación']}
         >
@@ -1048,7 +1077,7 @@ function Contenido({ tema, cambiarTema }) {
 
         {/* ── PEDIDOS ── */}
         <Seccion
-          id="pedidos" numero="04" titulo="Mis pedidos"
+          id="pedidos" numero="05" titulo="Mis pedidos"
           descripcion="PaginaPedidos: pestañas En curso / Entregados con cuántos hay; cada pedido con su seguimiento y la acción que toca."
           mejoras={['La línea se dibuja al aparecer', 'El paso actual late', 'Si falta pagar, el borde respira en ámbar', 'Copiar con burbuja']}
         >

@@ -1,0 +1,355 @@
+/* ── Capa y pila ───────────────────────────────────────── */
+.capa {
+  --flotante-abajo: calc(18px + var(--safe-bottom, 0px));
+
+  position: fixed;
+  inset: auto 0 var(--flotante-abajo) 0;
+  z-index: 950;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 18px;
+  pointer-events: none;
+}
+
+/* En el celular, sobre la barra inferior. */
+@media (max-width: 768px) {
+  .capa {
+    --flotante-abajo: calc(var(--bottom-nav-height, 56px) + 14px + var(--safe-bottom, 0px));
+
+    padding: 0 14px;
+  }
+}
+
+/* Dentro de un marco con scroll propio: se pega abajo del marco. */
+.capaContenida {
+  position: sticky;
+  inset: auto;
+  bottom: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+.capaContenida .izquierda,
+.capaContenida .pila {
+  position: absolute;
+  bottom: var(--pila-abajo, 16px);
+}
+
+.capaContenida .izquierda {
+  left: 14px;
+}
+
+.capaContenida .pila {
+  right: 14px;
+}
+
+.izquierda {
+  margin-right: auto;
+  pointer-events: auto;
+}
+
+.pila {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  pointer-events: auto;
+}
+
+/* ── Botón flotante base ───────────────────────────────── */
+.flotante {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: 0 10px 24px -12px rgba(15, 23, 42, 0.45);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-media, 0.25s) var(--ease-signature, ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .flotante:hover {
+    transform: translateY(-3px) scale(1.04);
+  }
+}
+
+.flotante:active {
+  transform: scale(0.92);
+}
+
+.flotante:focus-visible {
+  outline: 3px solid var(--violet-500);
+  outline-offset: 3px;
+}
+
+/* ── WhatsApp ──────────────────────────────────────────── */
+.whatsapp,
+.whatsapp:hover,
+.whatsapp:focus {
+  background: #25d366;
+  color: #fff;
+  text-decoration: none;
+}
+
+.whatsapp svg {
+  width: 30px;
+  height: 30px;
+}
+
+/* Burbuja que asoma a la izquierda (solo con ratón). */
+.burbuja {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px 999px 4px 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 8px 20px -12px rgba(15, 23, 42, 0.35);
+  opacity: 0;
+  transform: translate(8px, -50%);
+  pointer-events: none;
+  transition: opacity var(--dur-media, 0.25s) ease, transform var(--dur-media, 0.25s) var(--ease-signature, ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .whatsapp:hover .burbuja,
+  .whatsapp:focus-visible .burbuja {
+    opacity: 1;
+    transform: translate(0, -50%);
+  }
+}
+
+/* ── Kapi ──────────────────────────────────────────────── */
+.kapi {
+  width: 60px;
+  height: 60px;
+  border: 3px solid var(--violet-200);
+  background: #fff;
+}
+
+.kapi img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  user-select: none;
+}
+
+:global([data-theme='dark']) .kapi {
+  border-color: var(--violet-500);
+}
+
+/* "!" en un sello con el degradado del logo. */
+.exclamacion {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--degradado-logo, var(--violet-600));
+  color: #fff;
+  font-family: system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 900;
+  line-height: 1;
+  transform: rotate(-8deg);
+}
+
+/* ── Regalos sugeridos ─────────────────────────────────── */
+.regalos {
+  background: var(--degradado-logo, var(--violet-600));
+}
+
+.regalos > span:first-child {
+  transform: rotate(-8deg);
+}
+
+.insignia {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+}
+
+/* ── Píldora de recompensa ─────────────────────────────── */
+.pildora {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 300px;
+  border-radius: 999px;
+  background: var(--violet-700);
+  color: #fff;
+  box-shadow: 0 12px 26px -14px rgba(76, 29, 149, 0.7);
+  transition: transform var(--dur-media, 0.25s) var(--ease-signature, ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pildora:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.pildoraEnlace,
+.pildoraEnlace:hover,
+.pildoraEnlace:focus {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 6px 2.4rem 6px 6px;
+  border-radius: inherit;
+  color: #fff;
+  text-decoration: none;
+}
+
+.pildoraEnlace:focus-visible {
+  outline: 3px solid var(--violet-300);
+  outline-offset: 2px;
+}
+
+.pildoraSello {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--degradado-logo, var(--violet-500));
+  transform: rotate(-8deg);
+}
+
+.pildoraMonedas {
+  position: absolute;
+  right: -6px;
+  bottom: -4px;
+  padding: 0 5px;
+  border: 2px solid var(--violet-700);
+  border-radius: 999px;
+  background: #fbbf24;
+  color: #2e1065;
+  font-family: var(--fuente-marca);
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1.35;
+  transform: rotate(8deg);
+}
+
+.pildoraTexto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.pildoraTexto strong {
+  font-family: var(--fuente-marca);
+  font-size: 0.9rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.pildoraTexto span {
+  overflow: hidden;
+  font-size: 0.74rem;
+  opacity: 0.9;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pildoraCerrar {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.pildoraCerrar svg {
+  width: 15px;
+  height: 15px;
+}
+
+.pildoraCerrar:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Celular: solo el sello con "+15"; la X queda como puntito en la esquina. */
+@media (max-width: 768px) {
+  .pildora {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .pildoraEnlace,
+  .pildoraEnlace:hover,
+  .pildoraEnlace:focus {
+    padding: 0;
+  }
+
+  .pildoraSello {
+    width: 52px;
+    height: 52px;
+    box-shadow: 0 10px 22px -12px rgba(76, 29, 149, 0.8);
+  }
+
+  .pildoraTexto {
+    display: none;
+  }
+
+  .pildoraCerrar {
+    top: -6px;
+    right: -6px;
+    width: 22px;
+    height: 22px;
+    background: var(--color-text);
+    color: var(--color-surface);
+    transform: none;
+  }
+
+  .pildoraCerrar svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flotante,
+  .burbuja,
+  .pildora {
+    transition: none;
+  }
+}

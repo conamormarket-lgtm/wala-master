@@ -230,6 +230,131 @@
   }
 }
 
+/* Sello de la marca: el logo en un círculo blanco, girado como los sellos
+   de Walá. Abajo a la izquierda para no chocar con "Agregar". */
+.sello {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 3px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 3px 10px -4px rgba(15, 23, 42, 0.35);
+  overflow: hidden;
+  transform: rotate(-8deg);
+  pointer-events: none;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.sello img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: contain;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tarjeta:hover .sello {
+    transform: rotate(0deg) scale(1.06);
+  }
+}
+
+/* Qué trae un combo: sube desde abajo al pasar el ratón (solo con ratón;
+   en táctil basta la etiqueta "Combo"). */
+.incluye {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: none;
+  padding: 0.6rem 0.65rem 3.4rem;
+  background: linear-gradient(to top, rgba(20, 18, 28, 0.86) 55%, rgba(20, 18, 28, 0));
+  color: #fff;
+  opacity: 0;
+  transform: translateY(14px);
+  pointer-events: none;
+  transition: opacity var(--dur-media) ease, transform var(--dur-media) var(--ease-signature);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .incluye {
+    display: block;
+  }
+
+  .tarjeta:hover .incluye {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.incluyeTitulo {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-family: var(--fuente-marca);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.incluye ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.incluye li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.incluyeFoto {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--escenario);
+  color: var(--violet-800);
+  font-size: 0.7rem;
+  font-weight: 800;
+  overflow: hidden;
+}
+
+.incluyeFoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
+.incluyeMas {
+  background: var(--violet-600);
+  color: #fff;
+}
+
+.incluyeNombre {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── Agregar ───────────────────────────────────────────── */
 .agregar {
   position: absolute;
@@ -465,6 +590,27 @@
   opacity: 0.8;
 }
 
+/* Pocas unidades: ámbar, con un punto delante (sin parpadeos). */
+.quedan {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #b45309;
+  font-weight: 700;
+}
+
+.quedan::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+:global([data-theme='dark']) .quedan {
+  color: #fbbf24;
+}
+
 .pie {
   display: flex;
   align-items: flex-end;
@@ -573,7 +719,9 @@
 
   .tarjeta,
   .img,
-  .agregar {
+  .agregar,
+  .sello,
+  .incluye {
     transition: none;
   }
 
