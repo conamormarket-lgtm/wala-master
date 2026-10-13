@@ -279,7 +279,8 @@ export function BloqueVideo({ ajustes = {} }) {
  */
 export function MosaicoBanners({ ajustes = {}, marcas = [] }) {
   const columnas = Math.min(4, Math.max(1, Number(ajustes.columns) || 3));
-  const titulo = <TituloSeccion titulo={ajustes.title} subtitulo={ajustes.subtitle} alinear="center" />;
+  // Centrado como en la tienda, salvo que el editor diga otra cosa.
+  const titulo = <TituloSeccion {...tituloDesdeAjustes(ajustes)} alinear={ajustes.titleAlign || 'center'} />;
 
   if (ajustes.dataSource === 'brands') {
     const lista = (marcas || []).map(tarjetaDesdeMarca).filter(Boolean);

@@ -1,4 +1,153 @@
-/* ── Cuadro y círculo ── */
+/* ── Cuadro ── */
+.cuadro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  color: var(--color-text);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cuadro:hover,
+.cuadro:focus {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.cuadroFoto {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 24px;
+  background: #f5f4f8;
+  /* Sombra suave (el color lo pone la foto). */
+  box-shadow: 0 12px 24px -18px rgba(46, 16, 101, 0.55);
+  overflow: hidden;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+/* Filo blanco de sticker, por encima de la foto. */
+.cuadroFoto::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+}
+
+.cuadroFoto img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  mix-blend-mode: multiply;
+  transition: transform 0.6s var(--ease-signature);
+}
+
+.cuadroFoto > span[aria-hidden='true'] {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  color: var(--violet-700);
+  font-family: var(--fuente-marca);
+  font-size: 2rem;
+  font-weight: 900;
+}
+
+/* La cantidad cuelga de la esquina del cuadro. */
+.cuadroCuenta {
+  position: absolute;
+  top: 12px;
+  left: 10px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.cuadroNombre {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0 0.2rem;
+  font-family: var(--fuente-marca);
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: -0.015em;
+}
+
+.cuadroNombre span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cuadroNombre svg {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  color: var(--primary-color);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity var(--dur-media) ease, transform var(--dur-media) var(--ease-signature);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cuadro:hover .cuadroFoto {
+    transform: rotate(var(--giro, -2deg)) translateY(-4px);
+  }
+
+  .cuadro:hover .cuadroFoto img {
+    transform: scale(1.06);
+  }
+
+  .cuadro:hover .cuadroCuenta > * {
+    --inclinar: -9deg;
+  }
+
+  .cuadro:hover .cuadroNombre {
+    color: var(--primary-color);
+  }
+
+  .cuadro:hover .cuadroNombre svg {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* En táctil la flecha queda a la vista (no hay "pasar el ratón"). */
+@media (hover: none), (pointer: coarse) {
+  .cuadroNombre svg {
+    opacity: 0.7;
+    transform: none;
+  }
+}
+
+.cuadro:active .cuadroFoto {
+  transform: scale(0.96);
+}
+
+.cuadro:focus-visible {
+  outline: none;
+}
+
+.cuadro:focus-visible .cuadroFoto {
+  outline: 3px solid var(--violet-500);
+  outline-offset: 3px;
+}
+
+:global([data-theme='dark']) .cuadroFoto {
+  box-shadow: 0 12px 24px -16px rgba(0, 0, 0, 0.7);
+}
+
+:global([data-theme='dark']) .cuadroFoto::after {
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.12);
+}
+
+/* ── Círculo ── */
 .categoria {
   display: flex;
   flex-direction: column;
@@ -165,7 +314,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .foto,
-  .burbujaFoto {
+  .burbujaFoto,
+  .cuadroFoto,
+  .cuadroFoto img,
+  .cuadroNombre svg {
     transition: none;
   }
 }

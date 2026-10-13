@@ -9,7 +9,7 @@ import CuentaRegresiva from './CuentaRegresiva';
 import Acordeon from './Acordeon';
 import TarjetaProducto from './TarjetaProducto';
 import { Enlace } from './Enlace';
-import { tarjetaDesdeProducto } from './adaptadores';
+import { tarjetaDesdeProducto, testimonioDesdeAjuste } from './adaptadores';
 import { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
 import { EtiquetaColgante, Destello, acento } from './Marca';
 import { IconoWala, iconoDesde } from './IconosWala';
@@ -34,6 +34,9 @@ function separarIcono(texto = '') {
   const m = String(texto).match(EMOJI_INICIAL);
   return m ? { emoji: m[1], texto: String(texto).slice(m[0].length) } : { emoji: null, texto: String(texto) };
 }
+
+/** textAlign de cada mensaje (editor) → dónde queda en la barra. */
+const ALINEAR_ANUNCIO = { left: 'flex-start', center: 'center', right: 'flex-end' };
 
 /** Un mensaje: ícono de Walá (o imagen), texto con su estilo y "Ver →" si lleva enlace. */
 function MensajeAnuncio({ m, acento, oculto = false }) {
@@ -70,7 +73,8 @@ function MensajeAnuncio({ m, acento, oculto = false }) {
  *    la barra (sólida) o su acento (suave y oscura); textColor, el texto en sólida.
  *  - density: 'compact' | 'comfortable'; showAccent: destello si no hay ícono.
  *  - animationType: 'fade' (uno a la vez: flechas, deslizar y puntos) | 'scroll' (cinta).
- *  - messages: [{ text, link, icon, imageUrl, fontFamily, fontSize, bold, italic, underline, textBg }]
+ *  - messages: [{ text, link, icon, imageUrl, fontFamily, fontSize, bold, italic, underline, textBg, textAlign }]
+ *  - speed (ms): cada cuánto cambia (fade) o lo que tarda una vuelta (cinta).
  */
 export function BarraAnuncios({ ajustes = {} }) {
   const {
@@ -86,6 +90,9 @@ export function BarraAnuncios({ ajustes = {} }) {
   const total = mensajes.length;
   const i = estado.i % Math.max(1, total);
   const intervalo = Math.max(2500, speed);
+  // Cinta: speed (ms) es lo que tarda una vuelta, como en la tienda, pero sin
+  // bajar de 4 s por mensaje para que se alcance a leer.
+  const segundosCinta = Math.max(total * 4, (Number(speed) || 0) / 1000);
 
   const ir = (paso) => setEstado((e) => ({ i: (e.i + paso + total) % total, previo: e.i, dir: paso }));
 
@@ -145,7 +152,7 @@ export function BarraAnuncios({ ajustes = {} }) {
       onPointerLeave={() => { pausa.current = false; }}
     >
       {animationType === 'scroll' ? (
-        <Marquesina segundos={Math.max(14, total * 7)} espacio="0px" etiqueta="Anuncios">
+        <Marquesina segundos={segundosCinta} espacio="0px" etiqueta="Anuncios">
           {mensajes.map((m, k) => (
             <span key={k} className={s.anuncioTramo}>
               <MensajeAnuncio m={m} acento={false} />
@@ -165,7 +172,7 @@ export function BarraAnuncios({ ajustes = {} }) {
               más largo y no salta de alto al cambiar. */}
           <div ref={pila} className={s.anuncioPila} aria-live="polite">
             {mensajes.map((m, k) => (
-              <div key={k} className={s.anuncioItem} data-pos={posicion(k)} aria-hidden={k !== i || undefined}>
+              <div key={k} className={s.anuncioItem} data-pos={posicion(k)} aria-hidden={k !== i || undefined} style={{ justifyContent: ALINEAR_ANUNCIO[m.textAlign] }}>
                 <MensajeAnuncio m={m} acento={showAccent} oculto={k !== i} />
               </div>
             ))}
@@ -192,7 +199,7 @@ export function BarraAnuncios({ ajustes = {} }) {
 /* ── Carrusel principal (hero_carousel) ─────────────────── */
 export function HeroCarrusel({ ajustes = {} }) {
   const {
-    slides = [], autoPlay = true, autoPlaySpeed = 5000, showArrows = true, showDots = true,
+    slides = [], autoPlay = true, autoPlaySpeed = 5000, showArrows = true, showDots = true, pauseOnHover = true,
     heightDesktop = '450px', heightMobile = '350px', borderRadius = '16px',
   } = ajustes;
   const diapos = slides.filter((d) => d.imageUrl);
@@ -206,6 +213,7 @@ export function HeroCarrusel({ ajustes = {} }) {
         flechas={showArrows}
         puntos={showDots}
         autoplay={autoPlay ? autoPlaySpeed : 0}
+        pausarConRaton={pauseOnHover !== false}
         variante="hero"
         etiqueta="Destacados"
       >
@@ -256,12 +264,13 @@ export function InsigniasConfianza({ ajustes = {} }) {
 /* ── Carrusel de productos (featured / new_arrivals / sale / category / collection) ── */
 export function CarruselProductos({ ajustes = {}, productos = [], catalogo, onAgregar }) {
   if (!productos.length) return null;
-  const visibles = Math.min(6, Math.max(2, Number(ajustes.visibleItems) || 5));
+  // 1 a 8 a la vista, como en la tienda.
+  const visibles = Math.min(8, Math.max(1, Number(ajustes.visibleItems) || 5));
   return (
     <>
       <TituloSeccion {...tituloDesdeAjustes(ajustes)} />
       <Carrusel
-        visibles={{ escritorio: visibles, tablet: Math.min(3, visibles), movil: 2.15 }}
+        visibles={{ escritorio: visibles, tablet: Math.min(3, visibles), movil: visibles === 1 ? 1.1 : 2.15 }}
         espacio="0.85rem"
         autoplay={ajustes.autoPlay ? ajustes.autoPlaySpeed || 5000 : 0}
         etiqueta={ajustes.title || 'Productos'}
@@ -342,17 +351,7 @@ export function Testimonios({ ajustes = {} }) {
       <TituloSeccion {...tituloDesdeAjustes(ajustes)} adorno />
       <Carrusel visibles={{ escritorio: 3, tablet: 2, movil: 1.1 }} espacio="1rem" etiqueta="Opiniones de clientes">
         {lista.map((t, k) => (
-          <TarjetaTestimonio
-            key={k}
-            texto={t.text}
-            autor={t.author}
-            ciudad={t.city || t.location}
-            tema={t.topic}
-            puntuacion={t.rating}
-            avatar={t.avatar}
-            verificado={t.verified}
-            giro={[-0.8, 0.6, -0.4, 0.9][k % 4]}
-          />
+          <TarjetaTestimonio key={k} {...testimonioDesdeAjuste(t)} giro={[-0.8, 0.6, -0.4, 0.9][k % 4]} />
         ))}
       </Carrusel>
     </>
@@ -373,7 +372,7 @@ export function PreguntasFrecuentes({ ajustes = {}, contacto }) {
   return (
     <div className={dividido ? s.faqDividido : s.faqApilado}>
       <div className={s.faqTitulo}>
-        <TituloSeccion titulo={ajustes.title} subtitulo={ajustes.subtitle} antetitulo={ajustes.eyebrow} alinear={dividido ? 'left' : ajustes.titleAlign || 'left'} />
+        <TituloSeccion {...tituloDesdeAjustes(ajustes)} alinear={dividido ? 'left' : ajustes.titleAlign || 'left'} />
       </div>
       <div className={s.faqPreguntas}>
         <Acordeon items={items} abiertoInicial={ajustes.defaultOpen ? true : false} />
@@ -424,11 +423,29 @@ export function MarcasMarquesina({ ajustes = {} }) {
 }
 
 /* ── Cuadrícula de categorías (category_grid) ───────────── */
+
+const ORDEN_CATEGORIAS = {
+  products: (x, y) => (y.cuenta || 0) - (x.cuenta || 0),
+  alphabetical: (x, y) => String(x.name || '').localeCompare(String(y.name || ''), 'es'),
+};
+
+/**
+ * Categorías en cuadros o círculos.
+ *  - categorias: las automáticas que pasa la página ([{ categoryId, name,
+ *    imageUrl, imagenProducto, cuenta }], en el orden del admin). Con ellas
+ *    se aplican sortMode, limit (6 por defecto) e imageSource ('product' usa
+ *    imagenProducto si llega). Sin ellas, los items puestos a mano, todos.
+ *  - Si hay menos categorías que columnas, se reparten en las que hay.
+ */
 export function GrillaCategorias({ ajustes = {}, categorias }) {
-  const lista = (categorias || ajustes.items || []).slice(0, ajustes.limit || 12);
+  const auto = Boolean(categorias);
+  const base = auto ? [...categorias] : [...(ajustes.items || [])];
+  if (auto && ORDEN_CATEGORIAS[ajustes.sortMode]) base.sort(ORDEN_CATEGORIAS[ajustes.sortMode]);
+  const lista = auto ? base.slice(0, Number(ajustes.limit) || 6) : base;
   if (!lista.length) return null;
-  const columnas = Math.min(6, Math.max(2, Number(ajustes.columns) || 6));
+  const columnas = Math.min(lista.length, Math.min(6, Math.max(2, Number(ajustes.columns) || 6)));
   const redonda = ajustes.cardStyle === 'round';
+  const fotoDe = (c) => (auto && ajustes.imageSource === 'product' && c.imagenProducto) || c.imageUrl;
   return (
     <>
       <TituloSeccion {...tituloDesdeAjustes(ajustes)} />
@@ -438,7 +455,7 @@ export function GrillaCategorias({ ajustes = {}, categorias }) {
             <TarjetaCategoria
               forma={redonda ? 'circulo' : 'cuadro'}
               nombre={c.name}
-              imagen={c.imageUrl}
+              imagen={fotoDe(c)}
               url={c.url || `?categoria=${c.categoryId}`}
               cuenta={ajustes.showProductCount ? c.cuenta : undefined}
               fondo={c.backgroundColor || ajustes.tileBackgroundColor}

@@ -22,7 +22,8 @@ const iniciales = (nombre) => String(nombre || '').split(/\s+/).filter(Boolean).
  * "Explorar colección".
  *  - marca: { nombre, logo, url, color, fondo } (tarjetaDesdeMarca)
  *  - indice: posición (número 01, 02… y color de la paleta si no trae)
- *  - estilo: 'editorial' (de color) | 'outline' (con borde)
+ *  - estilo: 'editorial' (cada marca con su color) | 'uniform' (todas en el
+ *    violeta del logo) | 'outline' (superficie con borde)
  *  - mostrarNombre
  */
 export function TarjetaMarca({ marca, indice = 0, estilo = 'editorial', mostrarNombre = true }) {
@@ -30,11 +31,11 @@ export function TarjetaMarca({ marca, indice = 0, estilo = 'editorial', mostrarN
   return (
     <Enlace
       to={marca.url}
-      className={[s.marca, estilo === 'outline' && s.marcaBorde].filter(Boolean).join(' ')}
+      className={[s.marca, estilo === 'outline' && s.marcaBorde, estilo === 'uniform' && s.marcaUniforme].filter(Boolean).join(' ')}
       style={{
-        '--marca-color': marca.color || color,
+        '--marca-color': estilo === 'uniform' ? '#6d28d9' : marca.color || color,
         '--marca-suave': suave,
-        backgroundImage: marca.fondo && estilo !== 'outline'
+        backgroundImage: marca.fondo && estilo === 'editorial'
           ? `linear-gradient(120deg, rgba(15,23,42,.86), rgba(15,23,42,.34)), url("${toDirectImageUrl(marca.fondo)}")`
           : undefined,
       }}

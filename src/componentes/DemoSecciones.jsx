@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { RenderSecciones, ESQUEMAS, GRUPOS_MODULOS, Pestanas } from './kit';
 import s from './DemoSecciones.module.css';
+import INICIO from './demo/inicio.json';
+
+/* Las 6 primeras categorías reales de la tienda, con su cantidad de productos. */
+const CATEGORIAS_REALES = INICIO.categorias.slice(0, 6);
 
 /*
  * Catálogo de secciones del builder: cada tipo por separado, con su nombre,
@@ -50,6 +54,11 @@ const ejemplos = (img, logos = []) => ({
   ],
   featured_carousel: [
     ['Carrusel', { eyebrow: 'Favoritos de la semana', title: 'Lo más pedido', visibleItems: 4, buttonText: 'Ver todo', buttonLink: '/tienda' }],
+    ['Título con estilo', {
+      title: 'Lo más pedido', titleUnderline: true, titleLink: '/tienda', visibleItems: 5,
+      buttonText: 'Ver todo', buttonLink: '/tienda', buttonBgColor: '#db2777', buttonTextColor: '#ffffff',
+    }],
+    ['Título resaltado a la derecha', { title: 'Para regalar', titleBg: '#fde68a', titleAlign: 'right', visibleItems: 3 }],
   ],
   new_arrivals_carousel: [['Carrusel', { eyebrow: 'Recién llegados', title: 'Novedades', visibleItems: 4 }]],
   sale_carousel: [['Carrusel', { title: 'Ofertas', visibleItems: 4, buttonText: 'Ver ofertas', buttonLink: '/ofertas' }]],
@@ -73,12 +82,13 @@ const ejemplos = (img, logos = []) => ({
   product_grid: [['Todos', { title: 'Toda la tienda' }]],
   sidebar_catalog: [['Con filtros', { title: 'Catálogo Con Amor' }]],
   category_grid: [
-    ['Cuadros', { title: '¿Qué estás buscando?', dataSource: 'manual', columns: 6, cardStyle: 'compact' }],
-    ['Círculos', { title: '¿Qué estás buscando?', dataSource: 'manual', columns: 6, cardStyle: 'round' }],
+    ['Cuadros', { title: '¿Qué estás buscando?', dataSource: 'manual', columns: 6, cardStyle: 'compact', showProductCount: true, items: CATEGORIAS_REALES }],
+    ['Círculos', { title: '¿Qué estás buscando?', dataSource: 'manual', columns: 6, cardStyle: 'round', showProductCount: true, items: CATEGORIAS_REALES }],
   ],
   categories_nav: [['Burbujas', { brandId: 'conamor', align: 'center' }], ['Cinta', { brandId: 'conamor', animation: 'slider' }]],
   banner_grid: [
     ['Marcas', { dataSource: 'brands', title: 'Explora nuestros mundos', subtitle: 'Encuentra productos de tus marcas favoritas', columns: 3, brandCardStyle: 'editorial', autoPlay: false }],
+    ['Marcas uniformes', { dataSource: 'brands', title: 'Explora nuestros mundos', columns: 3, brandCardStyle: 'uniform', autoPlay: false }],
     ['Marcas con borde', { dataSource: 'brands', title: 'Explora nuestros mundos', columns: 3, brandCardStyle: 'outline', autoPlay: false }],
     ['Banners a mano', {
       dataSource: 'manual', title: 'Juega con Kapi', columns: 2,

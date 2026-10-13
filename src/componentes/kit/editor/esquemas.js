@@ -87,6 +87,9 @@ const carruselProductos = (descripcion, extra = []) => ({
 
 /* ── Esquemas por tipo ── */
 
+/** category_grid automático. Sin dataSource guardado cuenta como "a mano", igual que el editor de la tienda. */
+const categoriasAuto = (a) => a.dataSource === 'products';
+
 export const ESQUEMAS = {
   hero_banner: {
     nombre: 'Banner principal', icono: Image, grupo: 'Portada',
@@ -321,15 +324,15 @@ export const ESQUEMAS = {
   category_grid: {
     nombre: 'Cuadrícula de categorías', icono: LayoutGrid, grupo: 'Navegación', descripcion: '¿Qué estás buscando? con fotos.',
     campos: [
-      { tipo: 'opciones', campo: 'dataSource', etiqueta: 'Contenido', opciones: [{ valor: 'products', texto: 'Automático' }, { valor: 'manual', texto: 'A mano' }] },
-      { tipo: 'nota', texto: 'Se arma sola con las categorías que tienen productos.', si: (a) => a.dataSource !== 'manual' },
+      { tipo: 'opciones', campo: 'dataSource', etiqueta: 'Contenido', porDefecto: 'manual', opciones: [{ valor: 'products', texto: 'Automático' }, { valor: 'manual', texto: 'A mano' }] },
+      { tipo: 'nota', texto: 'Se arma sola con las categorías que tienen productos.', si: categoriasAuto },
       titulo(),
       estiloTexto('title', 'Estilo del título'),
-      { tipo: 'numero', campo: 'limit', etiqueta: 'Máximo de categorías', min: 2, max: 12, si: (a) => a.dataSource !== 'manual' },
-      { tipo: 'opciones', campo: 'imageSource', etiqueta: 'Foto', opciones: [{ valor: 'product', texto: 'De un producto' }, { valor: 'category', texto: 'De la categoría' }], si: (a) => a.dataSource !== 'manual' },
-      { tipo: 'opciones', campo: 'sortMode', etiqueta: 'Orden', opciones: [{ valor: 'admin', texto: 'El de administración' }, { valor: 'products', texto: 'Más productos primero' }, { valor: 'alphabetical', texto: 'Alfabético' }], si: (a) => a.dataSource !== 'manual' },
+      { tipo: 'numero', campo: 'limit', etiqueta: 'Máximo de categorías', min: 2, max: 12, si: categoriasAuto },
+      { tipo: 'opciones', campo: 'imageSource', etiqueta: 'Foto', opciones: [{ valor: 'product', texto: 'De un producto' }, { valor: 'category', texto: 'De la categoría' }], si: categoriasAuto },
+      { tipo: 'opciones', campo: 'sortMode', etiqueta: 'Orden', opciones: [{ valor: 'admin', texto: 'El de administración' }, { valor: 'products', texto: 'Más productos primero' }, { valor: 'alphabetical', texto: 'Alfabético' }], si: categoriasAuto },
       {
-        tipo: 'lista', campo: 'items', etiqueta: 'Categorías', si: (a) => a.dataSource === 'manual', titulo: (c) => c.name || 'Categoría', miniatura: (c) => c.imageUrl,
+        tipo: 'lista', campo: 'items', etiqueta: 'Categorías', si: (a) => !categoriasAuto(a), titulo: (c) => c.name || 'Categoría', miniatura: (c) => c.imageUrl,
         desde: { datos: 'categorias', etiqueta: 'Añadir una categoría', crear: (c) => ({ categoryId: c.id, name: c.name || '', imageUrl: c.imageUrl || '' }), clave: 'categoryId' },
         nuevo: () => ({ categoryId: '', name: 'Nueva categoría', imageUrl: '' }),
         campos: [
@@ -340,7 +343,7 @@ export const ESQUEMAS = {
       },
       { tipo: 'numero', campo: 'columns', etiqueta: 'Columnas (escritorio)', min: 2, max: 6, pestana: 'diseno' },
       { tipo: 'opciones', campo: 'cardStyle', etiqueta: 'Forma', opciones: [{ valor: 'compact', texto: 'Cuadros' }, { valor: 'round', texto: 'Círculos' }], pestana: 'diseno' },
-      { tipo: 'interruptor', campo: 'showProductCount', etiqueta: 'Mostrar cuántos productos hay', pestana: 'diseno', si: (a) => a.dataSource !== 'manual' },
+      { tipo: 'interruptor', campo: 'showProductCount', etiqueta: 'Mostrar cuántos productos hay', pestana: 'diseno', si: categoriasAuto },
       { tipo: 'color', campo: 'tileBackgroundColor', etiqueta: 'Color de los cuadros', automatico: true, pestana: 'diseno' },
       ...pieComun(),
     ],
@@ -358,7 +361,7 @@ export const ESQUEMAS = {
   banner_grid: {
     nombre: 'Mosaico de marcas o banners', icono: Rows3, grupo: 'Navegación', descripcion: 'Tarjetas de cada marca o banners a mano.',
     campos: [
-      { tipo: 'opciones', campo: 'dataSource', etiqueta: 'Contenido', opciones: [{ valor: 'brands', texto: 'Marcas (automático)' }, { valor: 'manual', texto: 'Banners a mano' }] },
+      { tipo: 'opciones', campo: 'dataSource', etiqueta: 'Contenido', porDefecto: 'manual', opciones: [{ valor: 'brands', texto: 'Marcas (automático)' }, { valor: 'manual', texto: 'Banners a mano' }] },
       titulo(),
       { tipo: 'texto', campo: 'subtitle', etiqueta: 'Subtítulo' },
       {
@@ -371,7 +374,7 @@ export const ESQUEMAS = {
         ],
       },
       { tipo: 'numero', campo: 'columns', etiqueta: 'Columnas (escritorio)', min: 1, max: 4, pestana: 'diseno' },
-      { tipo: 'opciones', campo: 'brandCardStyle', etiqueta: 'Tarjetas', opciones: [{ valor: 'editorial', texto: 'De color' }, { valor: 'outline', texto: 'Con borde' }], pestana: 'diseno', si: (a) => a.dataSource === 'brands' },
+      { tipo: 'opciones', campo: 'brandCardStyle', etiqueta: 'Tarjetas', opciones: [{ valor: 'editorial', texto: 'De color' }, { valor: 'uniform', texto: 'Uniformes' }, { valor: 'outline', texto: 'Con borde' }], pestana: 'diseno', si: (a) => a.dataSource === 'brands' },
       { tipo: 'interruptor', campo: 'showBrandName', etiqueta: 'Mostrar el nombre de la marca', porDefecto: true, pestana: 'diseno', si: (a) => a.dataSource === 'brands' },
       { tipo: 'interruptor', campo: 'autoPlay', etiqueta: 'Avanzar solo', porDefecto: true, pestana: 'diseno', si: (a) => a.dataSource === 'brands' },
       { tipo: 'numero', campo: 'autoPlaySpeed', etiqueta: 'Cambiar cada', sufijo: 's', escala: 1000, min: 2, max: 30, pestana: 'diseno', si: (a) => a.dataSource === 'brands' && a.autoPlay !== false },

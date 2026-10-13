@@ -82,8 +82,10 @@ export function productosDeSeccion(productos = {}, sec) {
  *  - productos: { destacados, nuevos, ofertas, porCategoria, porColeccion,
  *    todos } → cada sección toma la suya (productosDeSeccion). O, para
  *    decidir a mano, productosPara(seccion) como en <RenderSecciones>.
- *  - categorias: [{ categoryId, name, imageUrl, cuenta }] con productos,
- *    en el orden del admin (category_grid automático, categories_nav).
+ *  - categorias: [{ categoryId, name, imageUrl, imagenProducto, cuenta }]
+ *    con productos, en el orden del admin (category_grid automático, que
+ *    aplica su orden, límite y foto; categories_nav). imagenProducto = foto
+ *    de un producto de la categoría (imageSource 'product').
  *  - marcas: tienda_brands (banner_grid de marcas, sello en las tarjetas).
  *  - marcaActual: id de la marca de la página (landing de marca).
  *  - El resto: props del marco (cabecera, pie, flotantes…) y de

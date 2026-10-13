@@ -13,8 +13,9 @@ import s from './Carrusel.module.css';
  *    para que asome el siguiente en el celular).
  *  - flechas, puntos: mostrar controles.
  *  - autoplay: milisegundos entre pasos (0 = quieto). Se pausa con el ratón
- *    encima, al tocar (1,5 s), con foco de teclado, con la pestaña oculta y
- *    con "reducir movimiento". Al final vuelve al inicio.
+ *    encima (salvo pausarConRaton={false}, pauseOnHover del builder), al
+ *    tocar (1,5 s), con foco de teclado, con la pestaña oculta y con
+ *    "reducir movimiento". Al final vuelve al inicio.
  *  - espacio: separación entre elementos (CSS).
  *  - etiqueta: nombre accesible del carrusel.
  *  - variante: 'hero' → flechas y puntos encima de la imagen.
@@ -28,6 +29,7 @@ export default function Carrusel({
   espacio = '1rem',
   etiqueta = 'Carrusel',
   variante,
+  pausarConRaton = true,
   className,
 }) {
   const pista = useRef(null);
@@ -106,7 +108,7 @@ export default function Carrusel({
       role="region"
       aria-roledescription="carrusel"
       aria-label={etiqueta}
-      onPointerEnter={(e) => { if (e.pointerType === 'mouse') pausa.current.raton = true; }}
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse' && pausarConRaton) pausa.current.raton = true; }}
       onPointerLeave={() => { pausa.current.raton = false; }}
       onFocus={() => { pausa.current.foco = true; }}
       onBlur={() => { pausa.current.foco = false; }}

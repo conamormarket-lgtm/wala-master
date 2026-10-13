@@ -1,6 +1,7 @@
 import React from 'react';
-import { LayoutGrid } from 'lucide-react';
+import { ArrowRight, LayoutGrid } from 'lucide-react';
 import { Enlace } from '../Enlace';
+import { EtiquetaColgante } from '../Marca';
 import { toDirectImageUrl } from '../../../utils/imageUrl';
 import s from './TarjetaCategoria.module.css';
 
@@ -20,7 +21,7 @@ const tonoDe = (texto) => {
  *  - url (enlace) u onClick (botón, p. ej. filtrar la misma página)
  *  - activa: resaltada (burbuja elegida)
  *  - todos: la burbuja "Todos" (sello con el degradado del logo)
- *  - acento: color del aro (la foto queda en neutro: nunca se tiñe)
+ *  - acento: color del aro del círculo y la burbuja (la foto nunca se tiñe)
  *  - fondo: color propio del cuadro (tileBackgroundColor del builder)
  *  - giro: grados al pasar el ratón (cuadros y círculos)
  */
@@ -42,16 +43,37 @@ export function TarjetaCategoria({ forma = 'cuadro', nombre, imagen, cuenta, url
       : <Enlace to={url} className={cls} aria-current={activa ? 'page' : undefined}>{contenido}</Enlace>;
   }
 
+  // Cuadro: la cantidad cuelga del cuadro en una etiqueta (como el precio de
+  // una prenda) y el nombre va abajo con una flecha.
+  if (forma === 'cuadro') {
+    return (
+      <Enlace to={url} onClick={onClick} className={[s.cuadro, className].filter(Boolean).join(' ')} style={{ '--giro': `${giro}deg` }}>
+        <span className={s.cuadroFoto} style={{ background: fondo || undefined }}>
+          {foto}
+          {cuenta != null && (
+            <span className={s.cuadroCuenta}>
+              <EtiquetaColgante tono="blanco" tamano="sm">{cuenta === 1 ? '1 producto' : `${cuenta} productos`}</EtiquetaColgante>
+            </span>
+          )}
+        </span>
+        <span className={s.cuadroNombre}>
+          <span>{nombre}</span>
+          <ArrowRight aria-hidden="true" />
+        </span>
+      </Enlace>
+    );
+  }
+
   return (
     <Enlace
       to={url}
       onClick={onClick}
-      className={[s.categoria, forma === 'circulo' && s.circulo, className].filter(Boolean).join(' ')}
+      className={[s.categoria, s.circulo, className].filter(Boolean).join(' ')}
       style={{ '--giro': `${giro}deg` }}
     >
       <span className={s.foto} style={{ background: fondo || undefined, '--acento': acento }}>{foto}</span>
       <span className={s.nombre}>{nombre}</span>
-      {cuenta != null && <small>{cuenta} productos</small>}
+      {cuenta != null && <small>{cuenta === 1 ? '1 producto' : `${cuenta} productos`}</small>}
     </Enlace>
   );
 }

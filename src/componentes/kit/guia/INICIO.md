@@ -43,8 +43,8 @@ Se dibujan con `PaginaTienda` → `RenderSecciones`. Cada una va dentro de
 |---|---|---|---|---|---|---|---|
 | S1 | Barra de anuncios | `announcement_bar` | `BarraAnuncios` | `IconoWala`, `Marquesina`, `Enlace` | `Secciones.module.css` (`.anuncios…`) | settings | messages (text, link, icon), animationType, speed, variant, bgColor, textColor |
 | S2 | Carrusel principal | `hero_carousel` | `HeroCarrusel` | `Carrusel`, `Boton` | `Secciones.module.css` (`.hero…`) | settings | slides (imageUrl, mobileImageUrl, title, subtitle, buttonText, buttonLink), autoPlaySpeed, heightDesktop, heightMobile |
-| S3 | "Explora nuestros mundos" | `banner_grid` (`dataSource: 'brands'`) | `MosaicoBanners` | `TituloSeccion`, `Carrusel`, `TarjetaMarca` (`EtiquetaColgante`, `LogoMarca`) | `SeccionesContenido.module.css` + `piezas/TarjetaMarca.module.css` | `tienda_brands` | title, subtitle, columns, brandCardStyle, showBrandName |
-| S4 | "¿Qué estás buscando?" | `category_grid` (`cardStyle: 'round'`) | `GrillaCategorias` | `TituloSeccion`, `TarjetaCategoria` | `Secciones.module.css` (`.categorias`) + `piezas/TarjetaCategoria.module.css` | categorías con productos, orden del admin | title, limit, columns, cardStyle, showProductCount |
+| S3 | "Explora nuestros mundos" | `banner_grid` (`dataSource: 'brands'`) | `MosaicoBanners` | `TituloSeccion`, `Carrusel`, `TarjetaMarca` (`EtiquetaColgante`, `LogoMarca`) | `SeccionesContenido.module.css` + `piezas/TarjetaMarca.module.css` | `tienda_brands` | title, subtitle, columns, brandCardStyle (editorial = de color · uniform = todas violeta · outline = con borde), showBrandName, autoPlay |
+| S4 | "¿Qué estás buscando?" | `category_grid` (`cardStyle: 'round'`) | `GrillaCategorias` | `TituloSeccion`, `TarjetaCategoria` (cuadro: cantidad en etiqueta colgante · círculo: aro punteado) | `Secciones.module.css` (`.categorias`) + `piezas/TarjetaCategoria.module.css` | categorías con productos, orden del admin | dataSource (sin valor = a mano), sortMode (admin · más productos · alfabético), limit (solo automático), imageSource (producto · categoría), columns (se ajusta si hay menos), cardStyle (compact = cuadros · round = círculos), showProductCount |
 | S5 | "Lo más buscado en Walá" | `featured_carousel` | `CarruselProductos` | `TituloSeccion`, `Carrusel`, `TarjetaProducto` | `TarjetaProducto.module.css` | productos con `featured`, por `featuredOrder` | eyebrow, title, visibleItems, autoPlay |
 | S6 | "Recién llegaron" | `new_arrivals_carousel` | `CarruselProductos` | igual que S5 | `TarjetaProducto.module.css` | los más nuevos | igual que S5 |
 | S7 | "Ofertas para ti" | `sale_carousel` | `CarruselProductos` | igual que S5 | `TarjetaProducto.module.css` | con `salePrice` | igual que S5 |
@@ -61,6 +61,12 @@ pegada a propósito es la barra de anuncios (S1).
 
 Qué lista de productos va en S5, S6 y S7 lo decide `productosDeSeccion`
 (`paginas/Paginas.jsx`), con la misma regla que TiendaPage.
+
+**Título de las secciones (`TituloSeccion`):** todas las que llevan título
+entienden los campos de estilo del editor: `titleAlign` (izquierda · centro ·
+derecha), `titleUnderline` (trazo a mano), `titleBg` (resaltado), `titleLink`
+(el título lleva a una ruta, con flecha), `eyebrow` (etiqueta colgante) y el
+botón `buttonText` / `buttonLink` con sus colores si el editor los fijó.
 
 ## Para cambiar el diseño rápido: qué se repite
 

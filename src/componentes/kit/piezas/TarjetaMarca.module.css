@@ -196,6 +196,12 @@
   transform: scale(0.985);
 }
 
+/* Variante "uniformes": todas las tarjetas en el violeta del logo, sin el
+   color ni la foto de cada marca (mosaico parejo). */
+.marcaUniforme {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 52%, #5b21b6 100%);
+}
+
 /* Variante "con borde": superficie del tema con un toque del color de la marca. */
 .marcaBorde {
   --marca-texto: var(--color-text);

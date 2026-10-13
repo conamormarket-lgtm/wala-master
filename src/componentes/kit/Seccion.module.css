@@ -61,6 +61,60 @@
   display: none;
 }
 
+/* Derecha: el título se va al otro lado y el botón queda a la izquierda. */
+.derecha {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+/* Título con fondo (titleBg): como pasado con resaltador. */
+.resaltado {
+  padding: 0.05em 0.35em 0.1em;
+  border-radius: 0.3em;
+  background: var(--resaltado);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* Subrayado a mano (titleUnderline): el trazo de la marca. */
+.subrayado {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.32em;
+  width: 100%;
+  height: 0.38em;
+  color: var(--violet-400, #a78bfa);
+  pointer-events: none;
+}
+
+/* Título que es enlace (titleLink): flecha que avanza al pasar el ratón. */
+.hEnlace,
+.hEnlace:hover,
+.hEnlace:focus {
+  color: inherit;
+  text-decoration: none;
+}
+
+.flecha {
+  width: 0.7em;
+  height: 0.7em;
+  margin-left: 0.25em;
+  vertical-align: 0.02em;
+  color: var(--primary-color);
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.hEnlace:hover .flecha {
+  transform: translateX(4px);
+}
+
+.hEnlace:focus-visible {
+  outline: 3px solid var(--violet-500);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
 .antetitulo {
   margin: 0 0 0.55rem;
 }

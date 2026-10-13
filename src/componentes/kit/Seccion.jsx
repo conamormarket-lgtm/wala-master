@@ -1,6 +1,8 @@
 import React from 'react';
+import { ArrowRight } from 'lucide-react';
 import Boton from './Boton';
-import { EtiquetaColgante, Garabatos } from './Marca';
+import { Enlace } from './Enlace';
+import { EtiquetaColgante, Garabatos, Trazo } from './Marca';
 import s from './Seccion.module.css';
 
 /**
@@ -66,30 +68,50 @@ export function BloqueSeccion({ ajustes = {}, ancho = 'contenido', pegado = fals
 /**
  * Título de sección único (antes ~8 tamaños distintos). Usa los tokens
  * --section-title-size / -weight / -tracking de tokens.css.
- *  - titulo, subtitulo, antetitulo
- *  - alinear: 'left' | 'center' (titleAlign del builder)
- *  - accion: { texto, url } enlace "Ver todo" a la derecha (buttonText/buttonLink)
- *  - antetitulo: va en una etiqueta colgante (eyebrow del builder)
+ *  - titulo, subtitulo, antetitulo (este va en una etiqueta colgante)
+ *  - alinear: 'left' | 'center' | 'right' (titleAlign del builder)
+ *  - subrayado: trazo a mano bajo el título (titleUnderline)
+ *  - fondo: color detrás del título, como un resaltador (titleBg)
+ *  - enlace: el título lleva a una ruta, con flecha (titleLink)
+ *  - accion: { texto, url, colorFondo, colorTexto } botón "Ver todo"
+ *    (buttonText/buttonLink y, si el editor los fijó, sus colores)
  *  - adorno: destellos de marca junto al título
  */
-export function TituloSeccion({ titulo, subtitulo, antetitulo, alinear = 'left', accion, nivel = 2, adorno = false }) {
+export function TituloSeccion({ titulo, subtitulo, antetitulo, alinear = 'left', subrayado = false, fondo, enlace, accion, nivel = 2, adorno = false }) {
   if (!titulo && !subtitulo) return null;
   const H = `h${nivel}`;
   const centrado = alinear === 'center';
+  const derecha = alinear === 'right';
+  const texto = (
+    <>
+      <span className={fondo ? s.resaltado : undefined} style={fondo ? { '--resaltado': fondo } : undefined}>{titulo}</span>
+      {enlace && <ArrowRight className={s.flecha} aria-hidden="true" />}
+      {subrayado && <Trazo className={s.subrayado} />}
+      {adorno && <Garabatos variante="titulo" />}
+    </>
+  );
+  const conColores = accion?.colorFondo || accion?.colorTexto;
   return (
-    <header className={[s.titulo, centrado && s.centrado].filter(Boolean).join(' ')}>
+    <header className={[s.titulo, centrado && s.centrado, derecha && s.derecha].filter(Boolean).join(' ')}>
       <div className={s.tituloTextos}>
         {antetitulo && <p className={s.antetitulo}><EtiquetaColgante tono="suave">{antetitulo}</EtiquetaColgante></p>}
         {titulo && (
           <H className={s.h}>
-            {titulo}
-            {adorno && <Garabatos variante="titulo" />}
+            {enlace ? <Enlace to={enlace} className={s.hEnlace}>{texto}</Enlace> : texto}
           </H>
         )}
         {subtitulo && <p className={s.subtitulo}>{subtitulo}</p>}
       </div>
       {accion?.texto && accion?.url && (
-        <Boton to={accion.url} variante="fantasma" tamano="sm" className={s.accion}>{accion.texto}</Boton>
+        <Boton
+          to={accion.url}
+          variante={conColores ? 'primario' : 'fantasma'}
+          tamano="sm"
+          className={s.accion}
+          style={conColores ? { '--b-fondo': accion.colorFondo, '--b-fondo-hover': accion.colorFondo, '--b-texto': accion.colorTexto } : undefined}
+        >
+          {accion.texto}
+        </Boton>
       )}
     </header>
   );
@@ -101,5 +123,10 @@ export const tituloDesdeAjustes = (a = {}) => ({
   subtitulo: a.subtitle,
   antetitulo: a.eyebrow,
   alinear: a.titleAlign || 'left',
-  accion: a.buttonText && a.buttonLink ? { texto: a.buttonText, url: a.buttonLink } : undefined,
+  subrayado: Boolean(a.titleUnderline),
+  fondo: a.titleBg || undefined,
+  enlace: a.titleLink || undefined,
+  accion: a.buttonText && a.buttonLink
+    ? { texto: a.buttonText, url: a.buttonLink, colorFondo: a.buttonBgColor || undefined, colorTexto: a.buttonTextColor || undefined }
+    : undefined,
 });

@@ -140,3 +140,27 @@ export function tarjetaDesdeMarca(m) {
     fondo: m.bgImage || '',
   };
 }
+
+/* Temas que el editor viejo guardaba en "author" (misma lista que
+   normalizeTestimonial en pages/Tienda/components/Testimonials). */
+const TEMAS_VIEJOS = new Set([
+  'calidad de impresión', 'personalización', 'atención al cliente', 'envío', 'calidad de la prenda', 'experiencia general',
+]);
+
+/**
+ * Props de <TarjetaTestimonio> desde un testimonio del builder. Los guardados
+ * con el tema en el campo del autor pasan el tema a su lugar y firman
+ * "Cliente de Walá" (como hace la tienda).
+ */
+export function testimonioDesdeAjuste(t = {}) {
+  const autorEraTema = !t.topic && TEMAS_VIEJOS.has(String(t.author || '').trim().toLocaleLowerCase('es'));
+  return {
+    texto: t.text,
+    autor: autorEraTema ? 'Cliente de Walá' : (t.author || 'Cliente de Walá'),
+    tema: autorEraTema ? t.author : (t.topic || ''),
+    ciudad: t.city || t.location,
+    puntuacion: t.rating,
+    avatar: t.avatar,
+    verificado: t.verified === true,
+  };
+}

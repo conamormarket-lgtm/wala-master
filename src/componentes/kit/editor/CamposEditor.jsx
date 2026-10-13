@@ -505,7 +505,7 @@ function CampoEsquema({ def, ajustes, cambiar }) {
     case 'color': return <ControlColor {...def} valor={v} onCambiar={poner} />;
     case 'imagen': return <ControlImagen {...def} valor={v} onCambiar={poner} />;
     case 'enlace': return <ControlEnlace etiqueta={def.etiqueta} ayuda={def.ayuda} placeholder={def.placeholder} valor={v} onCambiar={poner} />;
-    case 'opciones': return <ControlOpciones etiqueta={def.etiqueta} ayuda={def.ayuda} opciones={def.opciones} valor={v ?? def.opciones[0]?.valor} onCambiar={poner} />;
+    case 'opciones': return <ControlOpciones etiqueta={def.etiqueta} ayuda={def.ayuda} opciones={def.opciones} valor={v ?? def.porDefecto ?? def.opciones[0]?.valor} onCambiar={poner} />;
     case 'interruptor': return <ControlInterruptor etiqueta={def.etiqueta} descripcion={def.descripcion} valor={v ?? def.porDefecto ?? false} onCambiar={poner} />;
     case 'fecha': return <ControlFecha etiqueta={def.etiqueta} valor={v} onCambiar={poner} />;
     case 'icono': return <ControlIcono etiqueta={def.etiqueta} valor={v} onCambiar={poner} ninguno={def.ninguno} />;
