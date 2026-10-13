@@ -39,6 +39,97 @@ export function useBusquedasRecientes(clave = CLAVE_RECIENTES) {
   return { recientes, guardar, limpiar, releer: () => setRecientes(leer()) };
 }
 
+const sinTildes = (t) => String(t || '').normalize('NFC').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+/**
+ * Un texto con lo buscado resaltado (sin importar tildes ni mayúsculas):
+ * "Casaca One Piece" con "casaca" → la palabra en violeta y negrita.
+ *  - texto, buscado
+ */
+export function TextoResaltado({ texto = '', buscado = '' }) {
+  const original = String(texto).normalize('NFC');
+  const base = sinTildes(original);
+  const palabras = sinTildes(buscado).split(/\s+/).filter((p) => p.length >= 2);
+  if (!palabras.length || base.length !== original.length) return original;
+  const marca = new Array(original.length).fill(false);
+  palabras.forEach((p) => {
+    let i = base.indexOf(p);
+    while (i !== -1) { for (let k = i; k < i + p.length; k++) marca[k] = true; i = base.indexOf(p, i + p.length); }
+  });
+  const trozos = [];
+  for (let i = 0; i < original.length;) {
+    let j = i;
+    while (j < original.length && marca[j] === marca[i]) j++;
+    trozos.push(marca[i] ? <mark key={i} className={s.coincide}>{original.slice(i, j)}</mark> : original.slice(i, j));
+    i = j;
+  }
+  return <>{trozos}</>;
+}
+
+/**
+ * Chips para buscar o afinar: recientes (reloj), ideas (violeta suave),
+ * categorías para afinar (con su foto y su cuenta; la elegida, llena).
+ *  - items: [{ id?, texto, onClick, imagen?, cuenta?, activo? }]
+ *  - tipo: 'reciente' | 'idea' | 'afinar'
+ */
+export function ChipsBusqueda({ items = [], tipo = 'idea' }) {
+  if (!items.length) return null;
+  return (
+    <ul className={s.chips}>
+      {items.map((it) => (
+        <li key={it.id || it.texto}>
+          <button
+            type="button"
+            className={[s.chip, s[`chip_${tipo}`], it.activo && s.chipActivo].filter(Boolean).join(' ')}
+            aria-pressed={tipo === 'afinar' ? Boolean(it.activo) : undefined}
+            onClick={it.onClick}
+          >
+            {tipo === 'reciente' && <Clock aria-hidden="true" />}
+            {tipo === 'idea' && <Search aria-hidden="true" />}
+            {tipo === 'afinar' && it.imagen && <img src={it.imagen} alt="" loading="lazy" decoding="async" className={s.chipFoto} />}
+            <span className={s.chipTexto}>{it.texto}</span>
+            {it.cuenta != null && <span className={s.chipCuenta}>{it.cuenta}</span>}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * Lo que se está buscando, con la voz de Walá. Sin término: "¿Qué se te
+ * antoja hoy?"; con término: "Resultados para" y «el término» en grande con
+ * su subrayado a mano. La usan el panel vacío y la página de resultados.
+ *  - termino · grande (página) · como: etiqueta del título ('p' o 'h1')
+ *  - titulo: otro título sin término (el que guarde el admin); sin él, la
+ *    pregunta de Walá
+ *  - texto: la línea de abajo (sin término)
+ */
+export function InvitacionBusqueda({ termino = '', grande = false, como: Titulo = 'p', titulo, texto = 'Escribe un producto, una marca o tu personaje favorito.' }) {
+  return (
+    <div className={[s.invitacion, grande && s.invitacionGrande].filter(Boolean).join(' ')}>
+      <IconoWala nombre={termino ? 'estrella' : 'destello'} tamano={grande ? 58 : 46} girar={-8} />
+      <div className={s.invitacionTexto}>
+        {termino ? (
+          <>
+            <p className={s.invitacionAntes}>Resultados para</p>
+            <Titulo className={s.invitacionTitulo}>
+              <span className={s.resaltado}>«{termino}»<Trazo className={s.trazo} /></span>
+            </Titulo>
+          </>
+        ) : (
+          <>
+            <Titulo className={s.invitacionTitulo}>
+              {titulo || <>¿Qué se te <span className={s.resaltado}>antoja<Trazo className={s.trazo} /></span> hoy?</>}
+            </Titulo>
+            {texto && <p className={s.pista}>{texto}</p>}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /**
  * Panel del buscador: con el campo vacío, lo que buscaste antes; escribiendo,
  * productos (con foto y precio), marcas y categorías que casan, y "Ver todos
@@ -96,17 +187,7 @@ export function PanelBusqueda({
       )}
 
       {/* Sin nada que recordar: una invitación de Walá, no una línea gris. */}
-      {!escribiendo && recientes.length === 0 && (
-        <div className={s.invitacion}>
-          <IconoWala nombre="destello" tamano={46} girar={-8} />
-          <div className={s.invitacionTexto}>
-            <p className={s.invitacionTitulo}>
-              ¿Qué se te <span className={s.resaltado}>antoja<Trazo className={s.trazo} /></span> hoy?
-            </p>
-            <p className={s.pista}>Escribe un producto, una marca o tu personaje favorito.</p>
-          </div>
-        </div>
-      )}
+      {!escribiendo && recientes.length === 0 && <InvitacionBusqueda />}
 
       {!escribiendo && recientes.length > 0 && (
         <section className={s.bloque}>
@@ -114,37 +195,21 @@ export function PanelBusqueda({
             <h3 className={s.bloqueTitulo}>Buscaste hace poco</h3>
             {onLimpiarRecientes && <button type="button" className={s.enlaceChico} onClick={onLimpiarRecientes}>Borrar</button>}
           </div>
-          <ul className={s.recientes}>
-            {recientes.map((r) => (
-              <li key={r}>
-                <button type="button" className={s.reciente} onClick={() => onBuscar?.(r)}>
-                  <Clock aria-hidden="true" />{r}
-                </button>
-              </li>
-            ))}
-          </ul>
+          <ChipsBusqueda tipo="reciente" items={recientes.map((r) => ({ texto: r, onClick: () => onBuscar?.(r) }))} />
         </section>
       )}
 
       {!escribiendo && ideas.length > 0 && (
         <section className={s.bloque}>
           <h3 className={s.bloqueTitulo}>Lo más buscado</h3>
-          <ul className={s.recientes}>
-            {ideas.map((idea) => (
-              <li key={idea}>
-                <button type="button" className={`${s.reciente} ${s.idea}`} onClick={() => onBuscar?.(idea)}>
-                  <Search aria-hidden="true" />{idea}
-                </button>
-              </li>
-            ))}
-          </ul>
+          <ChipsBusqueda tipo="idea" items={ideas.map((idea) => ({ texto: idea, onClick: () => onBuscar?.(idea) }))} />
         </section>
       )}
 
       {escribiendo && (
         <div className={s.columnas} aria-busy={buscando}>
           <section className={s.bloque}>
-            <h3 className={s.bloqueTitulo}>Productos</h3>
+            <h3 className={s.seccionTitulo}>Productos{total > 0 && <span> · {total}</span>}</h3>
             {productos.length === 0 ? (
               <p className={s.pista}>{buscando ? 'Buscando…' : 'Nada con ese nombre.'}</p>
             ) : (
@@ -153,7 +218,7 @@ export function PanelBusqueda({
                   <li key={p.id}>
                     <Enlace to={p.url} className={s.producto} onClick={onNavegar}>
                       <FotoProducto className={s.productoFoto} src={p.imagen} relleno="3px" />
-                      <span className={s.productoNombre}>{p.nombre}</span>
+                      <span className={s.productoNombre}><TextoResaltado texto={p.nombre} buscado={texto} /></span>
                       {p.precio != null && <span className={s.productoPrecio}>{soles(p.precio)}</span>}
                     </Enlace>
                   </li>
@@ -166,7 +231,7 @@ export function PanelBusqueda({
             <div className={s.atajos}>
               {marcas.length > 0 && (
                 <section className={s.bloque}>
-                  <h3 className={s.bloqueTitulo}>Marcas</h3>
+                  <h3 className={s.seccionTitulo}>Marcas</h3>
                   <ul className={s.lista}>
                     {marcas.map((m) => (
                       <li key={m.id}>
@@ -182,13 +247,14 @@ export function PanelBusqueda({
               )}
               {categorias.length > 0 && (
                 <section className={s.bloque}>
-                  <h3 className={s.bloqueTitulo}>Categorías</h3>
-                  <ul className={s.lista}>
+                  <h3 className={s.seccionTitulo}>Categorías</h3>
+                  <ul className={s.chips}>
                     {categorias.map((c) => (
                       <li key={c.id}>
-                        <Enlace to={c.url} className={s.atajo} onClick={onNavegar}>
-                          <span className={s.atajoNombre}>{c.nombre}</span>
-                          {c.cuenta != null && <span className={s.cuenta}>{c.cuenta}</span>}
+                        <Enlace to={c.url} className={`${s.chip} ${s.chip_afinar}`} onClick={onNavegar}>
+                          {c.imagen && <img src={c.imagen} alt="" loading="lazy" decoding="async" className={s.chipFoto} />}
+                          <span className={s.chipTexto}>{c.nombre}</span>
+                          {c.cuenta != null && <span className={s.chipCuenta}>{c.cuenta}</span>}
                         </Enlace>
                       </li>
                     ))}
@@ -202,9 +268,11 @@ export function PanelBusqueda({
 
       {escribiendo && (
         <button type="button" className={s.verTodo} onClick={() => onBuscar?.(texto.trim())}>
-          <span>Ver todos los resultados de <strong>«{texto.trim()}»</strong></span>
-          {total > 0 && <span className={s.cuenta}>{total}</span>}
-          <ArrowRight aria-hidden="true" />
+          <span className={s.verTodoTexto}>
+            {total > 0 ? <>Ver {total === 1 ? 'el resultado' : <>los <strong>{total}</strong> resultados</>} de </> : 'Buscar '}
+            <strong>«{texto.trim()}»</strong>
+          </span>
+          <span className={s.verTodoSello} aria-hidden="true"><ArrowRight /></span>
         </button>
       )}
     </div>

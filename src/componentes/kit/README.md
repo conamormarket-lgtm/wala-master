@@ -139,7 +139,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `piezas/FotoProducto.jsx` | `FotoProducto` | Foto de producto sobre su escenario (`src`, `relleno`, `respaldo` sin foto, `children` encima) |
 | `piezas/Avatar.jsx` | `Avatar`, `iniciales` | Foto o iniciales de una persona |
 | `piezas/OpcionesFiltro.jsx` | `OpcionesFiltro` | Opciones de un filtro como chips con su cuenta; una a la vez y "Ver N más" |
-| `piezas/PanelBusqueda.jsx` | `PanelBusqueda`, `useBusquedasRecientes` | Sugerencias del buscador: recientes, productos con foto y precio, marcas y categorías, "Ver todos los resultados" |
+| `piezas/PanelBusqueda.jsx` | `PanelBusqueda`, `useBusquedasRecientes`, `TextoResaltado`, `ChipsBusqueda`, `InvitacionBusqueda` | Sugerencias del buscador: recientes, productos con foto y precio, marcas y categorías, "Ver todos los resultados" |
 | `piezas/VentanaKapi.jsx` | `VentanaKapi` | La ventana de Kapi: ánimo, felicidad, moneda del día, alimentar y el reto (hoja en el celular, centrada en escritorio) |
 | `piezas/RetoSemanal.jsx` | `RetoSemanal` | El reto de la semana: premio, avance y envío de evidencia |
 | `piezas/TarjetaJuego.jsx` | `TarjetaJuego` | Tarjeta de un minijuego: banner, estado, recompensa, racha, nota, botón y cuenta atrás (recibe datos; `juegosDelArcade` los arma) |

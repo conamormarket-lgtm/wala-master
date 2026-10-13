@@ -15,4 +15,4 @@ export { OpcionesFiltro } from './OpcionesFiltro';
 export { TarjetaJuego } from './TarjetaJuego';
 export { RetoSemanal } from './RetoSemanal';
 export { VentanaKapi } from './VentanaKapi';
-export { PanelBusqueda, useBusquedasRecientes } from './PanelBusqueda';
+export { PanelBusqueda, useBusquedasRecientes, TextoResaltado, ChipsBusqueda, InvitacionBusqueda } from './PanelBusqueda';

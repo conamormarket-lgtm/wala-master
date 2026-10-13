@@ -101,40 +101,6 @@
   cursor: pointer;
 }
 
-/* Recientes: chips con un reloj. */
-.recientes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.reciente {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-height: 36px;
-  max-width: 100%;
-  padding: 0 0.8rem;
-  border: 1.5px solid var(--color-border);
-  border-radius: 999px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font: inherit;
-  font-size: 0.86rem;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.reciente svg {
-  width: 0.9rem;
-  height: 0.9rem;
-  flex-shrink: 0;
-  color: var(--color-text-muted);
-}
-
 /* Escribiendo: productos a la izquierda; marcas y categorías a la derecha. */
 .columnas {
   display: grid;
@@ -245,19 +211,13 @@
 
 @media (hover: hover) and (pointer: fine) {
   .producto:hover,
-  .atajo:hover,
-  .reciente:hover {
+  .atajo:hover {
     background: var(--primary-light);
-  }
-
-  .reciente:hover {
-    border-color: var(--violet-200);
   }
 }
 
 .producto:focus-visible,
 .atajo:focus-visible,
-.reciente:focus-visible,
 .verTodo:focus-visible,
 .enlaceChico:focus-visible,
 .limpiarCampo:focus-visible {
@@ -273,8 +233,6 @@
   min-height: 48px;
   padding: 0.5rem 0.9rem;
   border: 0;
-  border-top: 1px dashed var(--color-border);
-  border-radius: 0 0 12px 12px;
   background: none;
   color: var(--primary-color);
   font: inherit;
@@ -283,37 +241,11 @@
   cursor: pointer;
 }
 
-.verTodo > span:first-child {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.verTodo > svg {
-  width: 1rem;
-  height: 1rem;
-  flex-shrink: 0;
-  transition: transform var(--dur-media) var(--ease-signature);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .verTodo:hover > svg {
-    transform: translateX(3px);
-  }
-}
-
 :global([data-theme='dark']) .verTodo,
 :global([data-theme='dark']) .enlaceChico {
   color: var(--violet-300);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .verTodo > svg {
-    transition: none;
-  }
-}
 
 /* Invitación (campo vacío y sin recientes): sello de Walá + pregunta con la
    letra del logo y la palabra subrayada a mano. */
@@ -359,25 +291,249 @@
   color: #f59e0b;
 }
 
-/* Ideas: chips en violeta suave (se distinguen de lo que buscaste tú). */
-.idea {
+
+/* ── Escribiendo ── */
+
+/* Títulos de cada bloque con la letra del logo y la cuenta en gris. */
+.seccionTitulo {
+  margin: 0 0 0.15rem;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 0.92rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.seccionTitulo span {
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-weight: 700;
+}
+
+/* Lo que coincide con lo escrito. */
+.coincide {
+  padding: 0;
+  background: none;
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+:global([data-theme='dark']) .coincide {
+  color: var(--violet-300);
+}
+
+.productoFoto {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+
+.producto {
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+}
+
+/* ── Chips (recientes, ideas, categorías para afinar) ── */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip,
+.chip:hover {
+  text-decoration: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 38px;
+  max-width: 100%;
+  padding: 0 0.8rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color var(--dur-rapida) ease, background-color var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature);
+}
+
+.chip > svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex-shrink: 0;
+}
+
+.chipTexto {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip_reciente {
+  font-weight: 500;
+}
+
+.chip_reciente > svg {
+  color: var(--color-text-muted);
+}
+
+.chip_idea {
   border-color: transparent;
   background: var(--primary-light);
   color: var(--primary-color);
-  font-weight: 600;
 }
 
-.idea svg {
-  color: currentColor;
-}
-
-:global([data-theme='dark']) .idea {
+:global([data-theme='dark']) .chip_idea {
   background: rgba(167, 139, 250, 0.14);
   color: var(--violet-200);
 }
 
+/* Afinar por categoría: con su foto (llena el círculo, como las categorías). */
+.chip_afinar {
+  padding-left: 0.3rem;
+}
+
+.chipFoto {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--escenario-foto, #f5f4f8);
+}
+
+.chipCuenta {
+  flex-shrink: 0;
+  min-width: 1.4rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: var(--color-hover);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.chipActivo {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.chipActivo .chipCuenta {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
 @media (hover: hover) and (pointer: fine) {
-  .idea:hover {
+  .chip:hover {
     border-color: var(--violet-300);
+    transform: translateY(-1px);
   }
+
+  .chipActivo:hover {
+    color: #fff;
+  }
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+/* ── "Ver los N resultados": bloque lila con el sello de la flecha ── */
+.verTodo {
+  justify-content: space-between;
+  min-height: 52px;
+  margin-top: 0.1rem;
+  padding: 0.45rem 0.5rem 0.45rem 1rem;
+  border: 0;
+  border-radius: 16px;
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+:global([data-theme='dark']) .verTodo {
+  background: rgba(167, 139, 250, 0.12);
+}
+
+.verTodoTexto {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.verTodoTexto strong {
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+}
+
+.verTodoSello {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--degradado-logo);
+  color: #fff;
+  transform: rotate(-8deg);
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.verTodoSello svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .verTodo:hover .verTodoSello {
+    transform: rotate(0deg) translateX(2px);
+  }
+}
+
+/* ── Invitación grande (página de resultados) ── */
+.invitacionGrande {
+  gap: 1rem;
+}
+
+.invitacionGrande .invitacionTitulo {
+  font-size: clamp(1.7rem, 4.6cqi, 2.6rem);
+  letter-spacing: -0.04em;
+  overflow-wrap: anywhere;
+}
+
+.invitacionAntes {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.invitacionTitulo {
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip,
+  .verTodoSello {
+    transition: none;
+  }
+}
+
+/* El subrayado a mano del título necesita aire antes de la línea de abajo. */
+.invitacionTitulo + .pista {
+  margin-top: 0.3rem;
 }

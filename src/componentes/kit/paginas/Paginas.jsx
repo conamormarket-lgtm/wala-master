@@ -7,6 +7,8 @@ import { ItemCarrito, BarraEnvioGratis, ResumenPedido, SeguimientoPedido } from 
 import { EstadoVacio, Aviso } from '../Feedback';
 import { Encabezado } from '../SeccionesContenido';
 import { TarjetaJuego } from '../piezas/TarjetaJuego';
+import { ChipsBusqueda, InvitacionBusqueda } from '../piezas/PanelBusqueda';
+import { Destello } from '../Marca';
 import { EASE } from '../Efectos';
 import { BloqueSeccion, TituloSeccion } from '../Seccion';
 import { RenderSecciones, CarruselProductos } from '../Secciones';
@@ -312,13 +314,17 @@ export function PaginaMinijuegos({
  *    resultados) · seleccion / onFiltrar (filtran aquí, sobre los resultados)
  *  - orden, onOrden · ordenes (ORDENES_BUSQUEDA)
  *  - marcaFiltro: { nombre, urlTodo } si la búsqueda está acotada a una marca
+ *  - ideas: términos para empezar ("Lo más buscado", sin término) y para
+ *    probar cuando no hay resultados
  *  - catalogo, onAgregar: para las tarjetas
  *  - textos: { titulo, subtitulo, marcador, boton, vacioTitulo, vacioTexto,
- *    vacioConFiltros } (los edita el admin en storeConfig/homePage.searchPage)
+ *    vacioConFiltros } (los edita el admin en storeConfig/homePage.searchPage).
+ *    Sin `titulo` del admin, el encabezado pregunta "¿Qué se te antoja hoy?".
  */
 export function PaginaBusqueda({
   termino = '', onBuscar, productos = [], cargando = false, hayMas, onCargarMas, cargandoMas,
   grupos = [], seleccion, onFiltrar, orden = 'newest', onOrden, ordenes = [], marcaFiltro, catalogo, onAgregar, textos = {},
+  ideas = [],
 }) {
   // En pantallas angostas la frase con ejemplos se cortaba ("…(pol"): ahí
   // va la pregunta corta, como el buscador de la tienda en el celular.
@@ -334,15 +340,30 @@ export function PaginaBusqueda({
     ...textos,
   };
   const hayFiltros = Object.values(seleccion || {}).some((v) => v != null);
+  // Con término: las categorías de los resultados como atajos para afinar (el
+  // mismo filtro de la columna). Sin término: lo más buscado.
+  const categorias = grupos.find((g) => g.id === 'categoria');
+  const conResultados = (categorias?.opciones || []).filter((o) => o.cuenta == null || o.cuenta > 0);
+  const afinar = termino && productos.length > 0 && conResultados.length > 1
+    ? conResultados.slice(0, 6).map((o) => ({
+      id: o.valor,
+      texto: o.nombre,
+      cuenta: o.cuenta,
+      imagen: catalogo?.categorias?.find((c) => (c.categoryId || c.id) === o.valor)?.imageUrl,
+      activo: seleccion?.categoria === o.valor,
+      onClick: () => onFiltrar?.('categoria', seleccion?.categoria === o.valor ? null : o.valor),
+    }))
+    : [];
+  const sugeridas = ideas.map((idea) => ({ texto: idea, onClick: () => onBuscar?.(idea) }));
   return (
     <>
       <BloqueSeccion ajustes={{ paddingTop: '1.5rem', paddingBottom: '0.75rem' }}>
+        {/* El "mostrador" de la búsqueda: lo buscado en grande con la voz de
+            Walá, el buscador y los atajos, en una tarjeta propia. */}
         <div className={s.busquedaCabeza}>
-          <TituloSeccion
-            nivel={1}
-            titulo={t.titulo}
-            subtitulo={termino ? <>Resultados para <strong>«{termino}»</strong></> : t.subtitulo}
-          />
+          <Destello className={s.busquedaDestello1} />
+          <Destello className={s.busquedaDestello2} />
+          <InvitacionBusqueda grande como="h1" termino={termino} titulo={textos.titulo} texto={t.subtitulo} />
           {marcaFiltro && (
             <Aviso compacto icono={<Store aria-hidden="true" />} accion={marcaFiltro.urlTodo && <Boton to={marcaFiltro.urlTodo} variante="fantasma" tamano="sm">Buscar en todo el catálogo</Boton>}>
               Buscando solo en <strong>{marcaFiltro.nombre}</strong>
@@ -357,11 +378,30 @@ export function PaginaBusqueda({
             defaultValue={termino}
             onBuscar={onBuscar}
           />
+          {afinar.length > 0 && (
+            <div className={s.busquedaAtajos}>
+              <span className={s.busquedaAtajosTitulo}>Afina por categoría</span>
+              <ChipsBusqueda tipo="afinar" items={afinar} />
+            </div>
+          )}
+          {!termino && sugeridas.length > 0 && (
+            <div className={s.busquedaAtajos}>
+              <span className={s.busquedaAtajosTitulo}>Lo más buscado</span>
+              <ChipsBusqueda tipo="idea" items={sugeridas} />
+            </div>
+          )}
         </div>
       </BloqueSeccion>
       <BloqueSeccion ajustes={{ paddingTop: '0.75rem', paddingBottom: '2.5rem' }}>
         {!cargando && productos.length === 0 && !hayFiltros ? (
-          <EstadoVacio imagen="/assets/kapi/kapi-sad.webp" titulo={t.vacioTitulo} texto={termino ? t.vacioTexto : t.subtitulo} />
+          <EstadoVacio imagen="/assets/kapi/kapi-sad.webp" titulo={t.vacioTitulo} texto={termino ? t.vacioTexto : t.subtitulo}>
+            {sugeridas.length > 0 && (
+              <div className={s.busquedaProbar}>
+                <span className={s.busquedaAtajosTitulo}>Prueba con</span>
+                <ChipsBusqueda tipo="idea" items={sugeridas} />
+              </div>
+            )}
+          </EstadoVacio>
         ) : (
           <CatalogoConFiltros
             key={termino}

@@ -468,7 +468,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   });
 
   const contenido = pagina === 'buscar' ? (
-    <MarcoTienda {...marco}>
+    // Sin resultados ya habla Kapi (el estado vacío): el pie no lo asoma (uno solo a la vista).
+    <MarcoTienda {...marco} kapiEnPie={resultados.length > 0}>
       <Parte n="P4" nombre="PaginaBusqueda">
         <PaginaBusqueda
           termino={consulta.q}
@@ -485,6 +486,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
           marcaFiltro={marcaBusqueda && { nombre: marcaBusqueda.name, urlTodo: consulta.q ? `/buscar?q=${encodeURIComponent(consulta.q)}` : '/buscar' }}
           catalogo={{ marcas: visibles, categorias: TIENDA.categorias, marcaActual: consulta.marca || null }}
           onAgregar={onAgregar}
+          ideas={ideasBusqueda}
         />
       </Parte>
     </MarcoTienda>

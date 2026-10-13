@@ -460,7 +460,7 @@ export function sugerenciasDesdeBusqueda(resultado, { marcas = [], categorias = 
     }),
     categorias: (resultado.categorias || []).map((c) => {
       const doc = categorias.find((x) => (x.categoryId || x.id) === c.id);
-      return { id: c.id, nombre: doc?.name || c.id, cuenta: c.total, url: `/tienda?categoria=${encodeURIComponent(c.id)}` };
+      return { id: c.id, nombre: doc?.name || c.id, imagen: doc?.imageUrl || undefined, cuenta: c.total, url: `/tienda?categoria=${encodeURIComponent(c.id)}` };
     }),
     total: resultado.total || 0,
   };

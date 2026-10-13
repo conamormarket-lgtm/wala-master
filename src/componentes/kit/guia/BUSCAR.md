@@ -42,25 +42,38 @@ categoría o marca y sin tildes, como `services/search.js`.
   "Borrar". En los dos casos, **"Lo más buscado"**: chips violeta con ideas
   (`ideasBusqueda` de la `Cabecera`; en la demo, las 5 categorías con más
   productos). Sin Kapi a propósito: ya está el flotante (uno solo a la vista).
-- **Escribiendo:** productos con foto y precio (`FotoProducto`), y a la derecha
-  las marcas (con su sello) y categorías de esos productos con su cuenta.
+- **Escribiendo:** "Productos · 21" (títulos con la letra del logo) con foto,
+  precio y la parte que coincide con lo escrito en violeta (`TextoResaltado`);
+  a la derecha las marcas (con su sello) y las categorías como chips con su
+  foto y su cuenta.
   Elegir una marca busca solo en ella (`/buscar?q=…&brand=…`); una categoría
   lleva a `/tienda?categoria=…`.
-- **Siempre:** "Ver todos los resultados de «…»" con el total.
+- **Siempre:** "Ver los 21 resultados de «…»", un bloque lila con el sello de
+  la flecha (degradado del logo).
 - Cierra al tocar afuera o con Esc; en el celular, como cualquier hoja
   (arrastrar, tocar afuera, botón atrás).
 
 ### Lo que hace la página
 
-- Título, "Resultados para «…»" y un buscador grande con su botón.
+- **El mostrador:** una tarjeta con la esquina de Walá y destellos quietos.
+  Con término: sello de la estrella, "Resultados para" y **«el término»** en
+  grande con su subrayado a mano (`InvitacionBusqueda`); sin término, "¿Qué se
+  te antoja hoy?" (o el título que guarde el admin). Debajo, el buscador grande
+  con su botón.
+- **Afina por categoría:** si los resultados caen en más de una categoría,
+  chips con su foto y su cuenta que aplican el mismo filtro de la columna (el
+  elegido, lleno). En el celular, en una fila deslizable. Sin término, en su
+  lugar "Lo más buscado".
 - Acotada a una marca (`?brand=`): "Buscando solo en …" con "Buscar en todo el
   catálogo".
 - Los resultados en el catálogo de /tienda: "N resultados" (con "+" si hay más
   por cargar), "Ordenar por" (más nuevos, precio, nombre), filtros con
   **Modalidad** (personalizado / en stock) primero, y los grupos de la tienda
   solo con lo que hay en los resultados.
-- Sin resultados ni filtros: Kapi triste y "Prueba con otra palabra…". Con
-  filtros, el catálogo sigue a la vista para poder quitarlos.
+- Sin resultados ni filtros: Kapi triste, "Prueba con otra palabra…" y
+  "Prueba con" (las ideas). Ahí el pie no asoma a Kapi (`kapiEnPie={false}`):
+  uno solo a la vista. Con filtros, el catálogo sigue a la vista para poder
+  quitarlos.
 
 ## Para cambiar el diseño rápido: qué se repite
 
@@ -93,6 +106,8 @@ recibir datos.
 
 | Prop del kit | En la tienda |
 |---|---|
+| `ideas` (página) | las mismas de `ideasBusqueda` |
+| `kapiEnPie` (marco) | `resultados.length > 0` en /buscar |
 | `ideasBusqueda` | las categorías con más productos (`categoriesData` + la cuenta de `automaticCategoryProducts`) o, si se quiere, los términos más buscados de `trackSearchQuery` |
 | `buscarSugerencias(texto)` | `getSearchSuggestions(texto)` y `sugerenciasDesdeBusqueda(r, { marcas: brandsData, categorias: categoriesData, termino: texto })` (queries `brands` y `categories`, ya en caché) |
 | `onBuscar(q)` (cabecera) | `navigate('/buscar?q=…')` + `trackSearchQuery(q, user)`; desde una página de marca, con `&brand=brandActual.id` |
@@ -122,6 +137,11 @@ recibir datos.
   completa).
 - Productos con foto y precio en el panel (hoy solo el nombre).
 - Panel vacío con invitación y "Lo más buscado" (hoy, una línea de texto).
+- Lo escrito resaltado en los nombres; categorías con foto; "Ver los N
+  resultados" como bloque con sello.
+- Página: el término en grande en un mostrador (hoy "Buscar productos" y una
+  línea); "Afina por categoría" arriba (hoy solo en la columna); sin
+  resultados, ideas para probar.
 - Recientes como chips; marcas con su sello.
 - "Ordenar por" con el selector de Walá; en el celular comparte fila con
   "Filtros".
