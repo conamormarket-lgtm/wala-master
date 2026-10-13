@@ -3997,7 +3997,7 @@ exports.rankingReferidosSecure = functions.https.onCall(async (data, context) =>
   const limaAhora = new Date(Date.now() - 5 * 60 * 60 * 1000);
   const inicioMes = new Date(Date.UTC(limaAhora.getUTCFullYear(), limaAhora.getUTCMonth(), 1, 5));
   const snap = await db.collection("referrals")
-    .where("claimedAt", ">=", admin.firestore.Timestamp.fromDate(inicioMes)).get();
+    .where("claimedAt", ">=", inicioMes).get();
   const porCodigo = {};
   snap.docs.forEach((d) => {
     const r = d.data() || {};

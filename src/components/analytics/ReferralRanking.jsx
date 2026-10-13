@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Trophy, Gift } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 import { getTopReferrersOfMonth } from '../../services/referrals';
 import { GlassCard } from '../ui';
 import styles from './ReferralRanking.module.css';
@@ -55,29 +55,10 @@ const ReferralRanking = () => {
     );
   }
 
-  const top1 = top10[0];
-
+  // Solo el top: sin premio para el primer lugar (decisión del 2026-10-13).
   return (
     <GlassCard variant="solid" padding="lg" animate={false} className={styles.container}>
       <Cabecera />
-
-      {top1 && (
-        <div className={styles.top1Banner}>
-          <div className={styles.prizeIcon}>
-            <Gift size={22} aria-hidden="true" />
-          </div>
-          <div className={styles.prizeInfo}>
-            <h4><T>Premio al 1er lugar: ¡Wala Box gratis!</T></h4>
-            <p>
-              <strong>{top1.referrerCode}</strong> lidera con {top1.count}{' '}
-              {top1.count === 1 ? 'referido completado' : 'referidos completados'} este mes.
-            </p>
-            <span className={styles.prizeDisclaimer}>
-              <T>El premio lo asigna el administrador al cerrar el mes.</T>
-            </span>
-          </div>
-        </div>
-      )}
 
       <ol className={styles.rankingList}>
         {top10.map((user, index) => (
