@@ -494,8 +494,11 @@
   }
 }
 
+/* minmax(0, 1fr): sin esto un texto largo (lo elegido en un grupo, un chip)
+   ensanchaba la columna y empujaba "Limpiar" y los "+" fuera de los filtros. */
 .filtros {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.5rem;
 }
 
@@ -536,8 +539,10 @@
 
 /* Lo elegido en un grupo, junto a su título: se lee aunque esté cerrado. */
 .filtroElegido {
-  max-width: 48%;
+  flex: 1 1 0;
+  min-width: 0;
   overflow: hidden;
+  text-align: right;
   color: var(--primary-color);
   font-size: 0.74rem;
   font-weight: 800;

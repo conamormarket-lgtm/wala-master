@@ -2,6 +2,13 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+  min-width: 0;
+}
+
+/* Un nombre muy largo se parte dentro de su chip, nunca lo saca del filtro. */
+.opciones > * {
+  max-width: 100%;
+  text-align: left;
 }
 
 /* "Ver N más": enlace de la marca, no otro chip (se distingue de una opción). */

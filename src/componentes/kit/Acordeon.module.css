@@ -148,9 +148,16 @@
   letter-spacing: -0.01em;
 }
 
+/* El título toma su ancho; lo que va al lado (extra) usa el espacio libre y
+   el signo queda siempre a la derecha, aunque no haya extra. */
+.lista .pregunta {
+  flex: 0 1 auto;
+}
+
 .lista .signo {
   width: 26px;
   height: 26px;
+  margin-left: auto;
 }
 
 .lista .signo svg {
