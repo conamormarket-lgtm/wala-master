@@ -1,6 +1,6 @@
 import React, { useId, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Home, ShoppingBag, Brush, Gamepad2, User, Heart, Bell, ChevronDown, Shield } from 'lucide-react';
+import { Home, ShoppingBag, Brush, Gamepad2, User, Heart, Bell, ChevronDown } from 'lucide-react';
 import { Contador, SaldoMonedas } from './Etiquetas';
 import Boton from './Boton';
 import { Buscador } from './Formulario';
@@ -294,22 +294,21 @@ const TABS = [
   { id: 'cuenta', texto: 'Mi cuenta', url: '/cuenta', Icono: User },
 ];
 
-const TAB_ADMIN = { id: 'admin', texto: 'Admin', url: '/admin', Icono: Shield };
-
 /**
  * Barra inferior móvil. La píldora del activo se desliza entre tabs, el
  * icono rebota al elegirlo y "Crear" va destacado al centro.
  *  - activo: id de la pestaña de la ruta actual (la tienda lo saca de la
  *    URL). Sin él, la barra recuerda la última tocada (demo).
  *  - usuario: { nombre, avatar } → su foto o iniciales en "Mi cuenta"
- *  - admin: agrega la pestaña Admin
+ *  - Siempre 5 pestañas con "Crear" al centro: el acceso de admin va en
+ *    <BarraAdmin> (arriba), no aquí (una sexta pestaña descentraba Crear).
  *  - items: para cambiar las pestañas ({ id, texto, url, Icono, destacado })
  */
-export function BarraInferior({ items = TABS, activo, usuario, admin = false, carrito = 0, onNavegar }) {
+export function BarraInferior({ items = TABS, activo, usuario, carrito = 0, onNavegar }) {
   const uid = useId();
   const [propio, setPropio] = useState('inicio');
   const actual = activo ?? propio;
-  const tabs = admin ? [...items, TAB_ADMIN] : items;
+  const tabs = items;
   return (
     <nav className={s.barra} aria-label="Navegación principal">
       {tabs.map(({ id, texto, url, Icono, destacado }) => {

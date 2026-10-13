@@ -174,15 +174,33 @@
   text-decoration: none;
 }
 
+.adminPanel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.adminPanel svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
 .adminPanel:hover {
   border-color: rgba(255, 255, 255, 0.5);
 }
 
-/* En el celular solo queda el botón del editor. */
+/* En el celular: el texto se va y "Panel" queda como botón con escudo (la
+   barra inferior no lleva pestaña de admin). */
 @media (max-width: 768px) {
   .adminTexto span,
-  .adminPanel {
+  .adminPanel span {
     display: none;
+  }
+
+  .adminPanel,
+  .adminPanel:hover,
+  .adminPanel:focus {
+    padding: 0.45rem;
   }
 }
 

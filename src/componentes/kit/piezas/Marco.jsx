@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, BookOpen, Info, Moon, Settings, Sun, X, XCircle } from 'lucide-react';
+import { AlertTriangle, BookOpen, Info, Moon, Settings, Shield, Sun, X, XCircle } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { HojaInferior } from '../Feedback';
@@ -77,7 +77,11 @@ export function BarraAdmin({ editando = false, onEditor, panel = '/admin', texto
       </span>
       <div className={s.adminAcciones}>
         {extra}
-        {panel && <Enlace to={panel} className={s.adminPanel}>Panel</Enlace>}
+        {panel && (
+          <Enlace to={panel} className={s.adminPanel} aria-label="Panel de administración">
+            <Shield aria-hidden="true" /><span>Panel</span>
+          </Enlace>
+        )}
         {onEditor && (
           <Boton tamano="sm" variante={editando ? 'secundario' : 'primario'} onClick={onEditor}>
             {textoEditor || (editando ? 'Guardar y salir' : 'Editar esta página')}
