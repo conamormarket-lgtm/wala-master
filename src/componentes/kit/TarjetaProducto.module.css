@@ -92,6 +92,9 @@
   border-radius: 13px;
   background: var(--escenario);
   overflow: hidden;
+  /* Con la tarjeta inclinada, Chromium puede perder el recorte redondeado de
+     las fotos con multiply; aislar la mezcla lo mantiene. */
+  isolation: isolate;
 }
 
 .enlaceImagen {
