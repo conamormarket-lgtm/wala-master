@@ -115,8 +115,17 @@ const TarjetaCombo = ({ combo, prendas }) => {
   );
 };
 
-/** Nombre de cada opción del selector "¿Para cuántos?". */
-const etiquetaPara = (n) => (n === 1 ? 'Para ti' : n === 2 ? 'En pareja' : `Para ${n}`);
+/**
+ * Nombre de cada opción del selector "¿Para cuántos?". Si los combos de ese
+ * tamaño mezclan prendas distintas (casaca + polo + jogger) son un conjunto
+ * para una persona, no prendas iguales para varias.
+ */
+const etiquetaPara = (n, conjunto) => {
+  if (n === 1) return 'Para ti';
+  if (conjunto) return 'Conjunto';
+  return n === 2 ? 'En pareja' : `Para ${n}`;
+};
+const esConjunto = (combo) => new Set(combo.piezas.map((p) => p.prendaId)).size > 1;
 
 /**
  * Las últimas creaciones del cliente, arriba de las prendas: así vuelve a lo
@@ -224,6 +233,10 @@ const PersonalizarPage = () => {
     setParams(siguiente, { replace: true });
   };
   const combosDePara = combosListos.filter(({ combo }) => combo.piezas.length === para);
+  const soloConjuntos = (n) => {
+    const deN = combosListos.filter(({ combo }) => combo.piezas.length === n);
+    return deN.length > 0 && deN.every(({ combo }) => esConjunto(combo));
+  };
 
   return (
     <div className={styles.container}>
@@ -291,8 +304,8 @@ const PersonalizarPage = () => {
               className={`${styles.opcionPara} ${para === n ? styles.opcionParaActiva : ''}`}
               onClick={() => elegirPara(n)}
             >
-              {n === 1 ? <User size={17} aria-hidden="true" /> : <Users size={17} aria-hidden="true" />}
-              <T>{etiquetaPara(n)}</T>
+              {n === 1 || soloConjuntos(n) ? <User size={17} aria-hidden="true" /> : <Users size={17} aria-hidden="true" />}
+              <T>{etiquetaPara(n, soloConjuntos(n))}</T>
               {n > 1 && <span className={styles.ahorraPara}><T>Ahorras</T></span>}
             </button>
           ))}
