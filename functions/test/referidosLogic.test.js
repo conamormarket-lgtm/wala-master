@@ -129,4 +129,47 @@ check("primerNombre: nunca correo ni vacío", () => {
   assert.strictEqual(r.primerNombre(null), null);
 });
 
+const DIA = 24 * HORA;
+
+check("invitación aceptada: vale 30 días y solo para la cuenta invitada", () => {
+  const inv = { referrerCode: "KS-AAA", tipo: "invitacion", status: "registered", invitadoUid: "u-ana", aceptadaAt: ts(AHORA - 10 * DIA), clickedAt: ts(AHORA - 11 * DIA) };
+  assert.strictEqual(r.referidoVigenteParaCheckout(inv, { ahoraMs: AHORA, uid: "u-ana", intentId: "PD-1" }), true);
+  assert.strictEqual(r.referidoVigenteParaCheckout(inv, { ahoraMs: AHORA, uid: "u-otro", intentId: "PD-1" }), false);
+  assert.strictEqual(r.referidoVigenteParaCheckout(inv, { ahoraMs: AHORA, intentId: "PD-1" }), false);
+  const vieja = { ...inv, aceptadaAt: ts(AHORA - 31 * DIA) };
+  assert.strictEqual(r.referidoVigenteParaCheckout(vieja, { ahoraMs: AHORA, uid: "u-ana" }), false);
+  const usada = { ...inv, status: "purchased", orderId: "PD-0" };
+  assert.strictEqual(r.referidoVigenteParaCheckout(usada, { ahoraMs: AHORA, uid: "u-ana", intentId: "PD-1" }), false);
+});
+
+check("invitación sin aceptar: funciona como link de 36 h", () => {
+  const inv = { referrerCode: "KS-AAA", tipo: "invitacion", status: "clicked", clickedAt: ts(AHORA - 2 * HORA) };
+  assert.strictEqual(r.referidoVigenteParaCheckout(inv, { ahoraMs: AHORA, uid: "u-luis" }), true);
+  assert.strictEqual(r.premioReferido(inv, 100), 5);
+});
+
+check("premio: invitación aceptada paga 15 o el %, lo que sea mayor", () => {
+  const inv = { tipo: "invitacion", invitadoUid: "u-ana" };
+  assert.strictEqual(r.premioReferido(inv, 80), 15);
+  assert.strictEqual(r.premioReferido(inv, 500), 50);
+  assert.strictEqual(r.premioReferido(inv, 0), 0);
+  assert.strictEqual(r.premioReferido({ tipo: "producto" }, 80), 4);
+});
+
+check("cuenta nueva: creada después de abrir el link y dentro de 7 días", () => {
+  const clic = AHORA - 3 * DIA;
+  assert.strictEqual(r.cuentaCreadaPorInvitacion({ clicMs: clic, creadaMs: clic + HORA }), true);
+  assert.strictEqual(r.cuentaCreadaPorInvitacion({ clicMs: clic, creadaMs: clic - 5 * 60 * 1000 }), true);
+  assert.strictEqual(r.cuentaCreadaPorInvitacion({ clicMs: clic, creadaMs: clic - DIA }), false);
+  assert.strictEqual(r.cuentaCreadaPorInvitacion({ clicMs: clic, creadaMs: clic + 8 * DIA }), false);
+  assert.strictEqual(r.cuentaCreadaPorInvitacion({ clicMs: 0, creadaMs: clic }), false);
+});
+
+check("teléfonos: mismas formas que guardan el ERP y la tienda", () => {
+  assert.deepStrictEqual(r.variantesTelefono("+51 999 888 777"), ["999888777", "51999888777", "+51999888777", "+51 999888777"]);
+  assert.deepStrictEqual(r.variantesTelefono("999888777"), ["999888777", "51999888777", "+51999888777", "+51 999888777"]);
+  assert.deepStrictEqual(r.variantesTelefono(""), []);
+  assert.strictEqual(r.normDocumento(" 12.345.678 "), "12345678");
+});
+
 console.log(`referidosLogic: ${count} pruebas OK`);

@@ -1,82 +1,50 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Users,
-  Link2,
-  Copy,
-  Check,
-  Coins,
-  MousePointerClick,
-  ShoppingBag,
-  Send,
-  AlertCircle,
-  Clock,
-  Receipt,
-} from 'lucide-react';
+import { Users, Copy, Coins, MousePointerClick, ShoppingBag, Share2, Send } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import {
   getReferralsByReferrer,
-  createReferralShare,
   claimReferralCoins,
-  estimateReferralReward,
+  linkInvitacion,
+  VENTANA_REFERIDO_MS,
+  BONO_BIENVENIDA_INVITACION,
+  PREMIO_INVITACION,
 } from '../../services/referrals';
+import { getProduct } from '../../services/products';
 import ReferralRanking from '../../components/analytics/ReferralRanking';
-import DetallePedidoReferido from './components/DetallePedidoReferido';
 import { GlassCard, Reveal, Stagger, StaggerItem } from '../../components/ui';
+import { IconoWala } from '../../componentes/kit/IconosWala';
+import GrupoReferidos from './components/GrupoReferidos';
 import styles from './CuentaReferidosPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
-import Moneda from '../../components/common/Moneda';
 
-const STAGES = {
-  sent: 1,
-  clicked: 2,
-  purchased: 3,
-  completed: 4,
-  claimed: 4,
-  ineligible: 3,
+// Cada doc de `referrals` es UNA persona que abrió un link. Se agrupan por link:
+//  - 'invitacion': tu link de invitación (/invitar/TU-CODIGO).
+//  - 'producto:ID': el link de un producto (botón Compartir del producto).
+//  - 'tienda': ?ref= sin producto (la tienda, los sorteos).
+//  - 'anteriores': los links que se generaban uno por persona (sistema anterior).
+const grupoDe = (r) => {
+  if (r.tipo === 'invitacion') return 'invitacion';
+  if (r.productId) return `producto:${r.productId}`;
+  if (r.linkId || !r.tipo) return 'anteriores';
+  return 'tienda';
 };
 
-// Etiquetas del stepper. Antes eran cuatro palabras sueltas ("Enviado / Clic /
-// Compra / Reclamar") sin decir de quién es cada acción; con el sujeto delante
-// se entiende de un vistazo que las dos del medio dependen de la otra persona.
-const PASOS = [
-  { key: 'sent', label: 'Enlace creado' },
-  { key: 'clicked', label: 'Entró al link' },
-  { key: 'purchased', label: 'Compró' },
-  { key: 'claimed', label: 'Reclamas' },
-];
-
-// Ventana para comprar, contada desde que la otra persona ABRE el enlace (no
-// desde que se genera: el enlace en sí no caduca). Es el mismo plazo que
-// aplican ReferralTracker.jsx -guarda el clic en el localStorage del visitante-
-// y CheckoutPage.jsx, que solo vincula la compra si el clic sigue dentro de él.
-const VENTANA_COMPRA_MS = 36 * 60 * 60 * 1000;
-
-// "12 h 30 min" / "45 min" / "menos de 1 min". Devuelve null si ya venció.
-const restanteLegible = (ms) => {
-  if (!(ms > 0)) return null;
-  const totalMin = Math.floor(ms / 60000);
-  const horas = Math.floor(totalMin / 60);
-  const minutos = totalMin % 60;
-  if (horas > 0) return `${horas} h ${minutos} min`;
-  if (totalMin > 0) return `${totalMin} min`;
-  return 'menos de 1 min';
-};
+const ms = (t) => t?.toMillis?.() || 0;
+const actividad = (r) => Math.max(ms(r.claimedAt), ms(r.purchasedAt), ms(r.aceptadaAt), ms(r.clickedAt), ms(r.createdAt));
 
 const CuentaReferidosPage = () => {
   const { userProfile } = useAuth();
   const toast = useGlobalToast();
   const queryClient = useQueryClient();
-  const [generating, setGenerating] = useState(false);
   const [claimingId, setClaimingId] = useState(null);
-  // Referidos con el detalle del pedido desplegado ("Ver pedido").
   const [detallesAbiertos, setDetallesAbiertos] = useState({});
-  const toggleDetalle = (id) =>
-    setDetallesAbiertos((prev) => ({ ...prev, [id]: !prev[id] }));
   const [ahora, setAhora] = useState(() => Date.now());
 
   const referralCode = userProfile?.referralCode || '';
+  const miLink = referralCode ? linkInvitacion(referralCode) : '';
 
   const { data: referrals, isLoading } = useQuery({
     queryKey: ['myReferrals', referralCode],
@@ -88,128 +56,116 @@ const CuentaReferidosPage = () => {
     enabled: !!referralCode,
   });
 
-  // Notificaciones al cargar la página (música figurativa)
-  useEffect(() => {
-    if (referrals && referrals.length > 0) {
-      // Mostrar notificaciones de las actividades más recientes (últimos 3 días)
-      const now = new Date();
-      const recent = referrals.filter(r => {
-        const d = r.updatedAt?.toDate() || r.createdAt?.toDate();
-        if (!d) return false;
-        return (now - d) / (1000 * 60 * 60 * 24) <= 3;
-      });
+  // Personas = los que abrieron algún link. Los links del sistema anterior que
+  // nadie abrió ('sent') no son personas: solo se cuentan.
+  const personas = useMemo(() => (referrals || []).filter((r) => r.status !== 'sent'), [referrals]);
+  const sinAbrir = (referrals || []).length - personas.length;
 
-      const unnotifiedKey = 'notified_referrals_' + referralCode;
-      const notifiedStr = localStorage.getItem(unnotifiedKey) || '[]';
-      const notified = JSON.parse(notifiedStr);
-      let newNotified = [...notified];
+  const grupos = useMemo(() => {
+    const mapa = new Map();
+    personas.forEach((r) => {
+      const k = grupoDe(r);
+      if (!mapa.has(k)) mapa.set(k, []);
+      mapa.get(k).push(r);
+    });
+    mapa.forEach((lista) => lista.sort((a, b) => actividad(b) - actividad(a)));
+    return mapa;
+  }, [personas]);
 
-      recent.forEach(r => {
-        if (!notified.includes(r.id + '_' + r.status)) {
-          if (r.status === 'clicked') {
-            toast.info('👀 Alguien acaba de ver un producto desde tu enlace.');
-          } else if (r.status === 'purchased' || r.status === 'completed') {
-            toast.success('🎉 ¡Vendiste! Alguien compró por tu enlace.');
-          }
-          newNotified.push(r.id + '_' + r.status);
-        }
-      });
-
-      if (newNotified.length > notified.length) {
-        localStorage.setItem(unnotifiedKey, JSON.stringify(newNotified));
-      }
-    }
-  }, [referrals, referralCode, toast]);
-
-  // El enlace de un referido se puede reconstruir en cualquier momento: el
-  // `shareId` ES el id del documento de `referrals`, así que cada fila del
-  // historial sabe cuál era su enlace. Por eso olvidarse de mandarlo no
-  // obliga a generar otro (que gastaría uno del cupo de 50 al mes).
-  const buildShareUrl = (shareId) =>
-    `${window.location.origin}?ref=${referralCode}&shareId=${shareId}`;
-
-  const copyShareUrl = (shareId) =>
-    navigator.clipboard.writeText(buildShareUrl(shareId))
-      .then(() => toast.success('¡Enlace copiado! Mándaselo a una sola persona.'))
-      .catch(() => toast.error('Error copiando al portapapeles'));
-
-  const generateLink = async () => {
-    if (!referralCode) return;
-    setGenerating(true);
-    const { id, error } = await createReferralShare(referralCode);
-    if (error) {
-      toast.error('Error al generar enlace');
-      setGenerating(false);
-      return;
-    }
-
-    // react-query v5 espera un objeto de filtros. Con el array suelto que
-    // había antes, `filters.queryKey` quedaba undefined y se invalidaba TODA
-    // la caché de la app (productos, pedidos…), no solo esta lista.
-    queryClient.invalidateQueries({ queryKey: ['myReferrals', referralCode] });
-
-    await copyShareUrl(id);
-    setGenerating(false);
-  };
-
-  const handleClaim = async (referralDoc) => {
-    if (!['completed', 'purchased'].includes(referralDoc.status)) return;
-
-    // claimReferralCoins solo necesita el id: el monto real (5%/10% del
-    // pedido) lo calcula y valida claimReferralSecure server-side contra el
-    // ERP, no lo que haya en earnedCoins/monedas del cliente.
-    setClaimingId(referralDoc.id);
-    const { earned, error } = await claimReferralCoins(referralDoc.id);
-    setClaimingId(null);
-
-    if (error) {
-      // Lo normal es que el pedido todavía no esté entregado: se muestra el
-      // motivo real del servidor ("Podrás reclamar cuando…"), no un genérico.
-      toast.error(error || 'Error al reclamar monedas');
-      // Y se abre el pedido para que vea en qué etapa va.
-      setDetallesAbiertos((prev) => ({ ...prev, [referralDoc.id]: true }));
-    } else {
-      toast.success(`¡Has reclamado ${earned ?? ''} monedas con éxito!`);
-      queryClient.invalidateQueries({ queryKey: ['myReferrals', referralCode] });
-      queryClient.invalidateQueries({ queryKey: ['referralOrder', referralDoc.id] });
-      // También se actualiza el userProfile globalmente a través del effect en AuthContext
-    }
-  };
-
-  const copyCodeOnly = () => {
-    navigator.clipboard.writeText(referralCode)
-      .then(() => toast.success('Código copiado'))
-      .catch(() => toast.error('Error al copiar'));
-  };
-
-  // Cálculos de estadísticas.
-  // Ojo con el vocabulario: cada documento de `referrals` es UN enlace
-  // generado, no una persona. Por eso no son "visitas" (un mismo enlace
-  // abierto diez veces sigue siendo un documento en estado 'clicked'), sino
-  // enlaces que alguien llegó a abrir.
-  const enlacesTotales = referrals?.length || 0;
-  const enlacesAbiertos = referrals?.filter(r => STAGES[r.status] >= 2).length || 0;
-  const totalCompras = referrals?.filter(r => STAGES[r.status] >= 3 && r.status !== 'ineligible').length || 0;
-  const totalMonedas = referrals?.reduce((acc, r) => acc + (r.earnedCoins || 0), 0) || 0;
-  const porReclamar = referrals?.filter(r => r.status === 'completed' || r.status === 'purchased').length || 0;
-
-  // ¿Hay alguna ventana de 36 h corriendo ahora mismo? Solo en ese caso vale la
-  // pena mantener un reloj vivo; cuando todas vencieron no queda nada que
-  // contar y el intervalo se limpia solo.
-  const hayCuentaRegresiva = (referrals || []).some(
-    (r) => r.status === 'clicked'
-      && (r.clickedAt?.toMillis?.() || 0) + VENTANA_COMPRA_MS > ahora
+  // Nombre y foto de cada producto compartido (catálogo público).
+  const productIds = useMemo(
+    () => [...grupos.keys()].filter((k) => k.startsWith('producto:')).map((k) => k.slice(9)).sort(),
+    [grupos]
   );
+  const { data: productos } = useQuery({
+    queryKey: ['referidosProductos', productIds],
+    queryFn: async () => {
+      const pares = await Promise.all(productIds.map(async (id) => [id, (await getProduct(id)).data || null]));
+      return Object.fromEntries(pares);
+    },
+    enabled: productIds.length > 0,
+    staleTime: 10 * 60 * 1000,
+  });
 
+  // Avisos al entrar: lo que pasó con tus links en los últimos 3 días.
+  useEffect(() => {
+    if (!personas.length) return;
+    const clave = 'notified_referrals_' + referralCode;
+    let avisados = [];
+    try { avisados = JSON.parse(localStorage.getItem(clave) || '[]'); } catch { /* vacío */ }
+    const nuevos = [];
+    personas
+      .filter((r) => Date.now() - actividad(r) <= 3 * 24 * 60 * 60 * 1000)
+      .forEach((r) => {
+        const marca = `${r.id}_${r.status}`;
+        if (avisados.includes(marca)) return;
+        const quien = r.visitanteNombre || 'Alguien';
+        if (r.status === 'clicked') toast.info(`${quien} entró a tu link.`);
+        else if (r.status === 'registered') toast.success(`${quien} creó su cuenta con tu invitación.`);
+        else if (r.status === 'purchased') toast.success(`¡${quien} compró con tu link!`);
+        nuevos.push(marca);
+      });
+    if (nuevos.length) {
+      try { localStorage.setItem(clave, JSON.stringify([...avisados, ...nuevos].slice(-300))); } catch { /* lleno */ }
+    }
+  }, [personas, referralCode, toast]);
+
+  // Reloj vivo solo mientras alguien tenga un plazo de 36 h corriendo.
+  const hayCuentaRegresiva = personas.some(
+    (r) => r.status === 'clicked' && ms(r.clickedAt) + VENTANA_REFERIDO_MS > ahora
+  );
   useEffect(() => {
     if (!hayCuentaRegresiva) return undefined;
     const id = setInterval(() => setAhora(Date.now()), 60000);
     return () => clearInterval(id);
   }, [hayCuentaRegresiva]);
 
+  const copiar = (texto, ok) =>
+    navigator.clipboard.writeText(texto)
+      .then(() => toast.success(ok))
+      .catch(() => toast.error('No se pudo copiar'));
+
+  const compartirInvitacion = async () => {
+    const texto = `Te invito a Walá: crea tu cuenta con mi link y recibe ${BONO_BIENVENIDA_INVITACION} monedas para tu primera compra.`;
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Walá', text: texto, url: miLink }); return; } catch { /* cancelado */ }
+    }
+    copiar(`${texto} ${miLink}`, '¡Mensaje con tu link copiado!');
+  };
+
+  const handleClaim = async (r) => {
+    // El monto real (y si ya se puede) lo decide claimReferralSecure contra el
+    // ERP: el pedido tiene que haber salido de ese link y estar entregado.
+    setClaimingId(r.id);
+    const { earned, error } = await claimReferralCoins(r.id);
+    setClaimingId(null);
+    if (error) {
+      toast.error(error || 'Error al reclamar monedas');
+      // Se abre el pedido para que vea en qué etapa va.
+      setDetallesAbiertos((prev) => ({ ...prev, [r.id]: true }));
+      return;
+    }
+    toast.success(`¡Has reclamado ${earned ?? ''} monedas con éxito!`);
+    queryClient.invalidateQueries({ queryKey: ['myReferrals', referralCode] });
+    queryClient.invalidateQueries({ queryKey: ['referralOrder', r.id] });
+  };
+
+  const toggleDetalle = (id) => setDetallesAbiertos((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  // Marcadores
+  const totalCompras = personas.filter((r) => ['purchased', 'completed', 'claimed'].includes(r.status)).length;
+  const porReclamar = personas.filter((r) => ['purchased', 'completed'].includes(r.status)).length;
+  const totalMonedas = personas.reduce((acc, r) => acc + (r.status === 'claimed' ? r.earnedCoins || 0 : 0), 0);
+  const cuentasNuevas = personas.filter((r) => r.invitadoUid).length;
+
+  const comunes = { ahora, detallesAbiertos, onToggleDetalle: toggleDetalle, onClaim: handleClaim, claimingId };
+  const otrosGrupos = [...grupos.entries()]
+    .filter(([k]) => k !== 'invitacion')
+    .sort(([, a], [, b]) => actividad(b[0]) - actividad(a[0]));
+
   return (
     <div className={styles.page}>
-      {/* ── Cabecera ─────────────────────────────────────────────────────── */}
+      {/* ── Cabecera: las dos formas de ganar ────────────────────────────── */}
       <Reveal>
         <GlassCard variant="solid" padding="lg" animate={false} className={styles.card}>
           <div className={styles.cardHeader}>
@@ -219,79 +175,73 @@ const CuentaReferidosPage = () => {
             <h2>Invita y gana monedas</h2>
           </div>
           <p className={styles.headerSub}>
-            Comparte tu enlace. Cuando esa persona compra, ganas el{' '}
-            <strong>5&nbsp;% de su compra en monedas</strong> — el{' '}
-            <strong>10&nbsp;%</strong> si supera los S/&nbsp;200. Cada moneda vale
-            S/&nbsp;1 de descuento.
+            Hay dos formas. Cada moneda vale S/&nbsp;1 de descuento, y las ganas cuando el pedido se entrega.
           </p>
 
-          {/* Cómo funciona: el flujo tiene cuatro pasos y dos de ellos dependen
-              de la otra persona. Sin esto, el stepper del historial no se
-              entiende hasta que ya pasó algo. */}
-          <ol className={styles.pasos}>
-            <li className={styles.paso}>
-              <span className={styles.pasoNum}>1</span>
+          <div className={styles.formas}>
+            <div className={styles.forma}>
+              <IconoWala nombre="regalo" tamano={40} />
               <div>
-                <p className={styles.pasoTitle}>Genera un enlace</p>
-                <p className={styles.pasoText}>Uno por cada persona a la que se lo mandes.</p>
+                <p className={styles.pasoTitle}>Invita a alguien nuevo</p>
+                <p className={styles.pasoText}>
+                  Con tu link de invitación crea su cuenta y recibe <strong>{BONO_BIENVENIDA_INVITACION} monedas</strong>.
+                  Con su primera compra (tiene 30 días) tú ganas <strong>{PREMIO_INVITACION} monedas</strong>, o
+                  el 5&nbsp;% / 10&nbsp;% si es más.
+                </p>
               </div>
-            </li>
-            <li className={styles.paso}>
-              <span className={styles.pasoNum}>2</span>
+            </div>
+            <div className={styles.forma}>
+              <IconoWala nombre="polera" tamano={40} />
               <div>
-                <p className={styles.pasoTitle}>Esa persona compra</p>
-                <p className={styles.pasoText}>Tiene 36 horas desde que abre tu enlace.</p>
+                <p className={styles.pasoTitle}>Comparte un producto</p>
+                <p className={styles.pasoText}>
+                  Cualquiera que compre dentro de las 36&nbsp;h desde que abre tu link te suma el{' '}
+                  <strong>5&nbsp;%</strong> de su compra, o el <strong>10&nbsp;%</strong> si supera los S/&nbsp;200.
+                </p>
               </div>
-            </li>
-            <li className={styles.paso}>
-              <span className={styles.pasoNum}>3</span>
-              <div>
-                <p className={styles.pasoTitle}>Reclamas tus monedas</p>
-                <p className={styles.pasoText}>Cuando el pedido queda entregado.</p>
-              </div>
-            </li>
-          </ol>
+            </div>
+          </div>
+          <p className={styles.codeNote}>
+            Cada persona que entra cuenta aparte: puedes mandar el mismo link a un grupo o ponerlo en tu estado.
+            Si alguien abrió varios links, cuenta el último. Quien lo abra verá tu primer nombre.
+          </p>
         </GlassCard>
       </Reveal>
 
-      {/* ── Código + generación de enlace ────────────────────────────────── */}
+      {/* ── Tu link de invitación ────────────────────────────────────────── */}
       <Reveal>
         <GlassCard variant="solid" padding="lg" animate={false} className={styles.card}>
-          <p className={styles.codeLabel}>Tu código de referido</p>
-
-          {/* El código es único y permanente: antes había un lápiz "Cambiar"
-              que permitía editarlo una sola vez (referralCodeEdited). Se quitó
-              a pedido — un código que puede cambiar deja enlaces ya compartidos
-              apuntando a un código que ya no existe. */}
+          <p className={styles.codeLabel}>Tu link de invitación</p>
           <div className={styles.codeRow}>
-            <span className={styles.codeText}>{referralCode || '—'}</span>
-            <button
-              type="button"
-              className={styles.btnGhost}
-              onClick={copyCodeOnly}
-              disabled={!referralCode}
-            >
-              <Copy size={15} aria-hidden="true" />
-              Copiar código
-            </button>
+            <span className={styles.linkText}>{miLink || '—'}</span>
           </div>
-
-          <p className={styles.codeNote}>Este es tu código y no cambia.</p>
-
           <div className={styles.generateRow}>
             <button
               type="button"
               className={`${styles.btnSolido} ${styles.btnGenerate}`}
-              onClick={generateLink}
-              disabled={generating || !referralCode}
+              onClick={compartirInvitacion}
+              disabled={!referralCode}
             >
-              <Link2 size={17} aria-hidden="true" />
-              {generating ? 'Generando…' : 'Generar y copiar enlace'}
+              <Share2 size={17} aria-hidden="true" />
+              Compartir invitación
+            </button>
+            <button
+              type="button"
+              className={styles.btnGhost}
+              onClick={() => copiar(miLink, '¡Link copiado!')}
+              disabled={!referralCode}
+            >
+              <Copy size={15} aria-hidden="true" />
+              Copiar link
             </button>
             <p className={styles.generateHint}>
-              El enlace se copia solo. Genera uno nuevo por cada persona: si mandas
-              el mismo a varias, todas cuentan como un único referido. Quien lo
-              abra verá tu primer nombre y sabrá que su compra te suma monedas.
+              No caduca y es siempre el mismo. Si quien lo abre ya tiene cuenta, igual te suma si compra en 36&nbsp;h.
+            </p>
+          </div>
+          <div className={styles.generateRow}>
+            <p className={styles.generateHint}>
+              Para un producto: ábrelo en la <Link to="/tienda">tienda</Link> y toca el botón de compartir.
+              Tu código es <strong>{referralCode || '—'}</strong>.
             </p>
           </div>
         </GlassCard>
@@ -304,10 +254,12 @@ const CuentaReferidosPage = () => {
             <div className={`${styles.statIcon} ${styles.statIconViolet}`}>
               <MousePointerClick size={18} aria-hidden="true" />
             </div>
-            <span className={styles.statLabel}>Enlaces abiertos</span>
-            <span className={styles.statValue}>{enlacesAbiertos}</span>
+            <span className={styles.statLabel}>Personas que entraron</span>
+            <span className={styles.statValue}>{personas.length}</span>
             <span className={styles.statHint}>
-              de {enlacesTotales} {enlacesTotales === 1 ? 'generado' : 'generados'}
+              {cuentasNuevas > 0
+                ? `${cuentasNuevas} ${cuentasNuevas === 1 ? 'creó su cuenta' : 'crearon su cuenta'} con tu invitación`
+                : 'Por cualquiera de tus links.'}
             </span>
           </GlassCard>
         </StaggerItem>
@@ -320,9 +272,7 @@ const CuentaReferidosPage = () => {
             <span className={styles.statLabel}>Compras</span>
             <span className={styles.statValue}>{totalCompras}</span>
             <span className={styles.statHint}>
-              {porReclamar > 0
-                ? `${porReclamar} por reclamar`
-                : 'Compras hechas con tus enlaces.'}
+              {porReclamar > 0 ? `${porReclamar} por reclamar` : 'Compras hechas con tus links.'}
             </span>
           </GlassCard>
         </StaggerItem>
@@ -334,232 +284,68 @@ const CuentaReferidosPage = () => {
             </div>
             <span className={styles.statLabel}>Monedas ganadas</span>
             <span className={styles.statValue}>{totalMonedas}</span>
-            <span className={styles.statHint}>
-              Saldo actual: {userProfile?.monedas || 0}
-            </span>
+            <span className={styles.statHint}>Saldo actual: {userProfile?.monedas || 0}</span>
           </GlassCard>
         </StaggerItem>
       </Stagger>
 
-      {/* ── Historial ────────────────────────────────────────────────────── */}
+      {/* ── Quiénes entraron, por link ───────────────────────────────────── */}
       <div className={styles.listHead}>
-        <h3 className={styles.listTitle}><T>Historial de referidos</T></h3>
-        {!isLoading && enlacesTotales > 0 && (
+        <h3 className={styles.listTitle}><T>Quiénes entraron a tus links</T></h3>
+        {!isLoading && personas.length > 0 && (
           <span className={styles.listCount}>
-            {enlacesTotales} {enlacesTotales === 1 ? 'enlace' : 'enlaces'}
+            {personas.length} {personas.length === 1 ? 'persona' : 'personas'}
           </span>
         )}
       </div>
 
       {isLoading ? (
         <div className={styles.skeletonList} aria-hidden="true">
-          {[1, 2].map((n) => (
-            <div key={n} className={styles.skeletonItem} />
-          ))}
+          {[1, 2].map((n) => <div key={n} className={styles.skeletonItem} />)}
         </div>
-      ) : !referrals || referrals.length === 0 ? (
-        <Reveal>
-          <GlassCard variant="solid" padding="lg" animate={false} className={styles.empty} bodyClassName={styles.emptyBody}>
-            <div className={styles.emptyIcon}>
-              <Send size={26} aria-hidden="true" />
-            </div>
-            <p className={styles.emptyTitle}>Todavía no compartiste ningún enlace.</p>
-            <p className={styles.emptyText}>
-              Genera el primero aquí arriba y mándaselo a alguien que quiera regalar algo.
-            </p>
-          </GlassCard>
-        </Reveal>
       ) : (
-        // OJO: acá NO va <Stagger>/<StaggerItem>. El contenedor <Stagger>
-        // revela a sus hijos con whileInView + viewport={{ once: true }}, y
-        // <StaggerItem> no trae observador propio: depende de que el padre le
-        // propague "show". Como el padre ya disparó su única pasada, las filas
-        // que se montan DESPUÉS (justo lo que pasa al generar un enlace nuevo)
-        // se quedaban en `opacity: 0; translateY(24px)` — un hueco en blanco
-        // hasta recargar la página. <Reveal as="li"> monta su propio
-        // observador por fila, así que una fila nueva se revela sola; la
-        // cascada se conserva con el delay escalonado (tope de 6 para que una
-        // lista larga no arranque con un segundo de espera).
-        <ul className={styles.list}>
-          {referrals.map((ref, i) => {
-            const currentStage = STAGES[ref.status] || 1;
-            // Se puede intentar reclamar desde que compró: claimReferralSecure
-            // revisa en el ERP que el pedido haya salido de este enlace y esté
-            // entregado, y si todavía no, lo dice (ver handleClaim). No hace
-            // falta una aprobación manual. 'completed' queda por los referidos
-            // que aprobaba antes el panel de admin.
-            const canClaim = ref.status === 'completed' || ref.status === 'purchased';
-            const isClaimed = ref.status === 'claimed';
-            const isIneligible = ref.status === 'ineligible';
-            // Antes de reclamar no hay earnedCoins confirmado (lo fija el
-            // servidor recién al reclamar) — se muestra un estimado con la
-            // misma fórmula que usa el backend.
-            const esConfirmada = isClaimed || ref.status === 'completed';
-            const gananciaMostrada = esConfirmada
-              ? (ref.earnedCoins || 0)
-              : estimateReferralReward(ref.orderTotal);
+        <div className={styles.grupos}>
+          <GrupoReferidos
+            {...comunes}
+            titulo="Tu invitación"
+            icono="regalo"
+            personas={grupos.get('invitacion') || []}
+          />
 
-            // Lo que queda de la ventana de 36 h. Solo tiene sentido mientras
-            // el referido está en 'clicked': antes de que abran el enlace no
-            // hay reloj corriendo, y si ya compró el plazo dejó de importar.
-            const clickMs = ref.clickedAt?.toMillis?.() || 0;
-            const venceEnMs = ref.status === 'clicked' && clickMs
-              ? clickMs + VENTANA_COMPRA_MS - ahora
-              : null;
-            const restante = venceEnMs == null ? null : restanteLegible(venceEnMs);
-            const ventanaVencida = venceEnMs != null && !restante;
-
-            const d = ref.clickedAt?.toDate() || ref.createdAt?.toDate();
-            const dateStr = d ? d.toLocaleDateString('es-PE', { day: 'numeric', month: 'long' }) : 'Sin fecha';
-
+          {otrosGrupos.map(([clave, lista]) => {
+            const productId = clave.startsWith('producto:') ? clave.slice(9) : null;
+            const producto = productId ? productos?.[productId] : null;
+            const titulo = productId
+              ? (producto?.name || 'Producto compartido')
+              : clave === 'tienda' ? 'Links a la tienda y sorteos' : 'Links anteriores';
             return (
-              <Reveal
-                as="li"
-                key={ref.id}
-                delay={Math.min(i, 6) * 0.06}
-                className={styles.listItem}
-              >
-                <GlassCard
-                  as="article"
-                  variant="solid"
-                  padding="md"
-                  animate={false}
-                  className={`${styles.referralCard} ${isClaimed ? styles.cardClaimed : ''} ${isIneligible ? styles.cardIneligible : ''}`}
-                  bodyClassName={styles.referralBody}
-                >
-                  <div className={styles.rowTop}>
-                    <span className={styles.dateText}>{dateStr}</span>
-                    <div className={styles.rowTags}>
-                      {ref.orderId && (
-                        <span className={styles.orderLabel}>Pedido #{ref.orderId}</span>
-                      )}
-                      {isClaimed && (
-                        <span className={`${styles.estadoChip} ${styles.chipOk}`}>
-                          <Check size={13} aria-hidden="true" /> Reclamado
-                        </span>
-                      )}
-                      {isIneligible && (
-                        <span className={`${styles.estadoChip} ${styles.chipOff}`}>
-                          <AlertCircle size={13} aria-hidden="true" /> No calificó
-                        </span>
-                      )}
-                      {restante && (
-                        <span className={`${styles.estadoChip} ${styles.chipTiempo}`}>
-                          <Clock size={13} aria-hidden="true" /> Quedan {restante}
-                        </span>
-                      )}
-                      {ventanaVencida && (
-                        <span className={`${styles.estadoChip} ${styles.chipOff}`}>
-                          <Clock size={13} aria-hidden="true" /> Plazo vencido
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Stepper */}
-                  <ol className={styles.stepper}>
-                    {PASOS.map((paso, i) => {
-                      const n = i + 1;
-                      const hecho = currentStage >= n && !(isIneligible && n === 4);
-                      const esActual = currentStage === n && !isClaimed;
-                      return (
-                        <li
-                          key={paso.key}
-                          className={[
-                            styles.step,
-                            hecho ? styles.stepDone : '',
-                            esActual ? styles.stepCurrent : '',
-                          ].filter(Boolean).join(' ')}
-                        >
-                          <span className={styles.stepCircle} aria-hidden="true">
-                            {hecho ? <Check size={14} /> : n}
-                          </span>
-                          <span className={styles.stepLabel}>{paso.label}</span>
-                        </li>
-                      );
-                    })}
-                  </ol>
-
-                  {/* Pie: qué está pasando y qué puede hacer el usuario.
-                      Un solo contenedor para los tres casos (no calificó /
-                      hay monedas que reclamar / todavía esperando), con el
-                      texto a la izquierda y la acción a la derecha. */}
-                  <div className={styles.actionBox}>
-                    {isIneligible ? (
-                      <p className={styles.pieNota}>
-                        Esta compra no calificó para el premio de referido.
-                      </p>
-                    ) : canClaim || isClaimed ? (
-                      <div className={styles.montos}>
-                        <span className={styles.montoLinea}>
-                          Compra: <strong>S/ {ref.orderTotal?.toFixed(2) || '0.00'}</strong>
-                        </span>
-                        <span className={styles.rewardBadge}>
-                          <span className={styles.rewardLabel}>
-                            {esConfirmada ? 'Ganas' : 'Ganarías'}
-                          </span>
-                          <span className={styles.rewardAmount}><Moneda />+{gananciaMostrada}</span>
-                        </span>
-                      </div>
-                    ) : (
-                      <p className={styles.pieNota}>
-                        {currentStage < 2
-                          ? 'Enlace generado. Todavía nadie lo abrió — el enlace no caduca.'
-                          : restante
-                            ? `Ya entraron a tu enlace. Le quedan ${restante} para comprar y que cuente como tu referido.`
-                            : 'Pasaron las 36 horas desde que abrió tu enlace. Si compra ahora ya no cuenta: mándale un enlace nuevo.'}
-                      </p>
-                    )}
-
-                    {canClaim && (
-                      <button
-                        type="button"
-                        className={styles.btnSolido}
-                        onClick={() => handleClaim(ref)}
-                        disabled={claimingId === ref.id}
-                      >
-                        <Coins size={16} aria-hidden="true" />
-                        {claimingId === ref.id ? 'Reclamando…' : 'Reclamar monedas'}
-                      </button>
-                    )}
-
-                    {ref.orderId && (
-                      <button
-                        type="button"
-                        className={styles.btnGhost}
-                        onClick={() => toggleDetalle(ref.id)}
-                        aria-expanded={!!detallesAbiertos[ref.id]}
-                      >
-                        <Receipt size={15} aria-hidden="true" />
-                        {detallesAbiertos[ref.id] ? 'Ocultar pedido' : 'Ver pedido'}
-                      </button>
-                    )}
-
-                    {/* Solo mientras nadie lo abrió: es el caso de "lo generé
-                        y me olvidé de mandarlo". Una vez que alguien entró, el
-                        enlace ya tiene dueño — recopiarlo y mandárselo a otra
-                        persona haría que ambas compartan el mismo seguimiento
-                        y solo una compra quedaría registrada. */}
-                    {ref.status === 'sent' && (
-                      <button
-                        type="button"
-                        className={styles.btnGhost}
-                        onClick={() => copyShareUrl(ref.id)}
-                      >
-                        <Copy size={15} aria-hidden="true" />
-                        Copiar enlace
-                      </button>
-                    )}
-                  </div>
-
-                  {ref.orderId && detallesAbiertos[ref.id] && (
-                    <DetallePedidoReferido referralId={ref.id} />
-                  )}
-                </GlassCard>
-              </Reveal>
+              <GrupoReferidos
+                key={clave}
+                {...comunes}
+                titulo={titulo}
+                icono={productId ? 'polera' : 'destello'}
+                imagen={producto?.mainImage || producto?.images?.[0] || null}
+                descripcion={clave === 'anteriores' ? 'Los links que se generaban uno por persona. Siguen funcionando.' : null}
+                personas={lista}
+                extra={clave === 'anteriores' && sinAbrir > 0
+                  ? <p className={styles.pieNota}>{sinAbrir} {sinAbrir === 1 ? 'link generado sigue' : 'links generados siguen'} sin abrir.</p>
+                  : null}
+              />
             );
           })}
-        </ul>
+
+          {otrosGrupos.length === 0 && (
+            <GlassCard variant="solid" padding="lg" animate={false} className={styles.empty} bodyClassName={styles.emptyBody}>
+              <div className={styles.emptyIcon}>
+                <Send size={26} aria-hidden="true" />
+              </div>
+              <p className={styles.emptyTitle}>Todavía no compartiste productos.</p>
+              <p className={styles.emptyText}>
+                Abre un producto en la tienda y toca compartir: aquí verás quién entró y quién compró.
+              </p>
+            </GlassCard>
+          )}
+        </div>
       )}
 
       {/* Ranking mensual */}

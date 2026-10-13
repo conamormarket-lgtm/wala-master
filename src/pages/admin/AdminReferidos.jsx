@@ -12,6 +12,7 @@ import styles from './AdminReferidos.module.css';
 const ETIQUETAS = {
   sent: 'Enlace creado (nadie lo abrió)',
   clicked: 'Abrió el enlace',
+  registered: 'Creó su cuenta (invitación)',
   purchased: 'Compró (esperando entrega)',
   completed: 'Aprobado (sistema anterior)',
   claimed: 'Monedas reclamadas',
@@ -45,6 +46,8 @@ const AdminReferidos = () => {
             <tr>
               <th>Fecha</th>
               <th>Código Referente</th>
+              <th>Link</th>
+              <th>Quién entró</th>
               <th>Pedido web</th>
               <th>Monto Venta</th>
               <th>Monedas</th>
@@ -53,7 +56,7 @@ const AdminReferidos = () => {
           </thead>
           <tbody>
             {referidos?.length === 0 && (
-              <tr><td colSpan="6" style={{ textAlign: 'center' }}>No hay referidos registrados aún.</td></tr>
+              <tr><td colSpan="8" style={{ textAlign: 'center' }}>No hay referidos registrados aún.</td></tr>
             )}
             {referidos?.map(ref => {
               const d = ref.createdAt?.toDate()?.toLocaleDateString() || 'N/A';
@@ -61,12 +64,17 @@ const AdminReferidos = () => {
               // misma fórmula que claimReferralSecure.
               const monedas = ref.status === 'claimed'
                 ? (ref.earnedCoins || 0)
-                : estimateReferralReward(ref.orderTotal);
+                : estimateReferralReward(ref.orderTotal, ref);
+              const link = ref.tipo === 'invitacion' ? 'Invitación'
+                : ref.productId ? `Producto ${ref.productId}`
+                : ref.linkId || !ref.tipo ? 'Link anterior' : 'Tienda';
 
               return (
                 <tr key={ref.id}>
                   <td>{d}</td>
                   <td><strong>{ref.referrerCode}</strong></td>
+                  <td>{link}</td>
+                  <td>{ref.status === 'sent' ? '-' : (ref.visitanteNombre || 'Visitante sin cuenta')}</td>
                   <td>{ref.orderId || '-'}</td>
                   <td>{ref.orderTotal ? `S/ ${Number(ref.orderTotal).toFixed(2)}` : '-'}</td>
                   <td style={{ color: '#d35400', fontWeight: 'bold' }}>

@@ -6,7 +6,7 @@ import { useGlobalToast } from '../../../../contexts/ToastContext';
 import { useCart } from '../../../../contexts/CartContext';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 import { T, useTranslatedHtml, useTranslatedText } from '../../../../i18n/useTranslatedText';
-import { createReferralShare } from '../../../../services/referrals';
+import { linkProducto } from '../../../../services/referrals';
 import { toDirectImageUrl } from '../../../../utils/imageUrl';
 import { isComboProduct } from '../../../../utils/comboProductUtils';
 import { recordProductClick, recordVariantViewTime } from '../../../../utils/productVariantBehavior';
@@ -250,7 +250,6 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   const [comboSize, setComboSize] = useState('');
   const [imgIdx, setImgIdx] = useState(0);
   const [cuestionario, setCuestionario] = useState(null);
-  const [sharing, setSharing] = useState(false);
   const [showYoryoPersonalizado, setShowYoryoPersonalizado] = useState(false);
   const [pastDesigns, setPastDesigns] = useState([]);
   const [showPastDesignsModal, setShowPastDesignsModal] = useState(false);
@@ -530,11 +529,9 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   const handleShare = async () => {
     if (!user) { toast.error('Inicia sesión para compartir y ganar monedas'); return; }
     if (!referralCode) { toast.error('Tu cuenta todavía está cargando. Inténtalo en un momento.'); return; }
-    setSharing(true);
-    const { id, error } = await createReferralShare(referralCode);
-    setSharing(false);
-    if (error) { toast.error('Error al generar enlace'); return; }
-    const url = `${window.location.origin}/producto/${product.id}?ref=${referralCode}&shareId=${id}`;
+    // Un link fijo por producto: sirve para mandarlo a muchos (un grupo, un
+    // estado). Cada persona que lo abre cuenta aparte, con sus propias 36 h.
+    const url = linkProducto(product.id, referralCode);
     navigator.clipboard.writeText(url)
       .then(() => toast.success('¡Enlace copiado! Compártelo y gana monedas.'))
       .catch(() => toast.error('Error al copiar'));
@@ -583,7 +580,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
           <div className={styles.titleRow}>
             <h1 className={styles.pdpTitle}><T>{product.name}</T></h1>
             {user && (
-              <button className={styles.shareIconBtn} onClick={handleShare} disabled={sharing} title={t('card.compartirGanar', 'Compartir y ganar monedas')}>
+              <button className={styles.shareIconBtn} onClick={handleShare} title={t('card.compartirGanar', 'Compartir y ganar monedas')}>
                 <Share2 size={16} strokeWidth={1.8} />
               </button>
             )}

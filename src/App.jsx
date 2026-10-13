@@ -106,6 +106,7 @@ const ComunidadPage = lazy(() => import('./pages/Comunidad/ComunidadPage'));
 const CartPage = lazy(() => import('./pages/CartPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const InvitarPage = lazy(() => import('./pages/InvitarPage'));
 const CompleteProfilePage = lazy(() => import('./pages/CompleteProfilePage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const PoliticasPrivacidadPage = lazy(() => import('./pages/PoliticasPrivacidadPage'));
@@ -527,6 +528,7 @@ function App() {
 
                                   <Route path="/login" element={<LoginPage />} />
                                   <Route path="/registro" element={<RegisterPage />} />
+                                  <Route path="/invitar/:codigo" element={<InvitarPage />} />
                                   <Route path="/completar-perfil" element={<CompleteProfilePage />} />
                                   <Route path="/palabra-del-dia" element={<WordlePage />} />
                                   <Route path="/minijuegos" element={<MinijuegosPage />} />

@@ -21,6 +21,24 @@ const { hitoDeEstadoErp } = require("./ordersLogic");
 // ReferralTracker.jsx y CuentaReferidosPage.jsx.
 const VENTANA_REFERIDO_MS = 36 * 60 * 60 * 1000;
 
+// ── Invitación a cuentas nuevas ──────────────────────────────────────────────
+// Dos tipos de referido (ver docs en CuentaReferidosPage):
+//   - 'producto' (o la tienda): cualquiera que compre dentro de 36 h desde que
+//     ESA persona abrió el link. Premio: 5 % / 10 % del pedido.
+//   - 'invitacion': si quien abre el link crea una cuenta NUEVA, recibe un bono
+//     de bienvenida y su primera compra dentro de 30 días le paga a quien
+//     invitó (fijo o el %, lo que sea mayor). Si no es cuenta nueva, el link
+//     funciona como uno de producto (36 h y %).
+// Una compra paga a un solo link: el último abierto. Si no hay ninguno
+// vigente, la invitación de la cuenta.
+const BONO_BIENVENIDA_INVITACION = 10;
+const PREMIO_INVITACION = 15;
+const VENTANA_INVITACION_MS = 30 * 24 * 60 * 60 * 1000;
+// La cuenta tiene que haberse creado DESPUÉS de abrir el link (con 10 min de
+// margen por relojes) y dentro de los 7 días siguientes.
+const MARGEN_CUENTA_NUEVA_MS = 10 * 60 * 1000;
+const PLAZO_CREAR_CUENTA_MS = 7 * 24 * 60 * 60 * 1000;
+
 function normalizar(v) {
   return String(v == null ? "" : v)
     .toLowerCase()
@@ -55,14 +73,59 @@ function calcularRecompensaReferido(montoTotal) {
  * abierto el enlace hace menos de 36 h y no estar ya usado por otra compra (un
  * enlace = una compra; si se vuelve a preparar el MISMO pedido, sigue valiendo).
  */
-function referidoVigenteParaCheckout(r, { ahoraMs, intentId } = {}) {
+function referidoVigenteParaCheckout(r, { ahoraMs, intentId, uid } = {}) {
   if (!r || !String(r.referrerCode || "").trim()) return false;
   if (r.orderId && String(r.orderId) !== String(intentId || "")) return false;
+  const ahora = Number(ahoraMs) || Date.now();
+  // Invitación aceptada: vale para ESA cuenta durante 30 días.
+  if (r.invitadoUid) {
+    if (!uid || String(r.invitadoUid) !== String(uid)) return false;
+    if (!["registered", "purchased"].includes(r.status)) return false;
+    const aceptada = aMs(r.aceptadaAt);
+    return !!aceptada && ahora - aceptada < VENTANA_INVITACION_MS;
+  }
   if (!["clicked", "purchased"].includes(r.status)) return false;
   const clic = aMs(r.clickedAt);
   if (!clic) return false;
-  const ahora = Number(ahoraMs) || Date.now();
   return ahora - clic < VENTANA_REFERIDO_MS;
+}
+
+/**
+ * Premio de quien refirió por este pedido. Invitación aceptada: 15 monedas o el
+ * %, lo que sea mayor (una invitación nunca paga menos que un link de producto).
+ */
+function premioReferido(r, montoTotal) {
+  const porcentaje = calcularRecompensaReferido(montoTotal);
+  if (r && r.tipo === "invitacion" && r.invitadoUid) {
+    return Number(montoTotal) > 0 ? Math.max(PREMIO_INVITACION, porcentaje) : 0;
+  }
+  return porcentaje;
+}
+
+/** ¿La cuenta se creó después de abrir la invitación y a tiempo? */
+function cuentaCreadaPorInvitacion({ creadaMs, clicMs }) {
+  const creada = Number(creadaMs) || 0;
+  const clic = Number(clicMs) || 0;
+  if (!creada || !clic) return false;
+  return creada >= clic - MARGEN_CUENTA_NUEVA_MS && creada <= clic + PLAZO_CREAR_CUENTA_MS;
+}
+
+/** Documento normalizado: sin espacios ni puntos, en mayúsculas. */
+function normDocumento(v) {
+  return String(v == null ? "" : v).replace(/[\s.-]/g, "").toUpperCase();
+}
+
+/**
+ * Formas en que el ERP y la tienda guardan un mismo celular de Perú
+ * ("999888777", "51999888777", "+51999888777", "+51 999888777"), para buscar
+ * si ya compró con él. Los de otros países se buscan tal cual.
+ */
+function variantesTelefono(v) {
+  const digitos = String(v == null ? "" : v).replace(/\D/g, "");
+  if (!digitos) return [];
+  const local = digitos.length === 11 && digitos.startsWith("51") ? digitos.slice(2) : digitos;
+  if (local.length !== 9) return [String(v).trim(), digitos].filter((x, i, a) => x && a.indexOf(x) === i);
+  return [local, `51${local}`, `+51${local}`, `+51 ${local}`];
 }
 
 /** ¿El pedido dice que vino de este referido? */
@@ -146,6 +209,13 @@ function primerNombre(perfil) {
 
 module.exports = {
   VENTANA_REFERIDO_MS,
+  BONO_BIENVENIDA_INVITACION,
+  PREMIO_INVITACION,
+  VENTANA_INVITACION_MS,
+  premioReferido,
+  cuentaCreadaPorInvitacion,
+  normDocumento,
+  variantesTelefono,
   primerNombre,
   calcularRecompensaReferido,
   referidoVigenteParaCheckout,

@@ -1,10 +1,12 @@
 import React, { useLayoutEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { IconoWala } from '../../../componentes/kit/IconosWala';
 import { Trazo } from '../../../componentes/kit/Marca';
+import { useAuth } from '../../../contexts/AuthContext';
 import useInvitacionReferido, { plazoLegible } from '../../../hooks/useInvitacionReferido';
+import { BONO_BIENVENIDA_INVITACION } from '../../../services/referrals';
 import styles from './AvisoInvitacion.module.css';
 
 const CERRADO_KEY = 'wala_aviso_invitacion_cerrado';
@@ -23,14 +25,44 @@ const Resaltado = ({ children }) => (
 );
 
 /**
- * Franja sobre la cabecera para quien llegó por un enlace de referido:
- * "María te invitó a Walá · Compra hasta mañana 9:20 p. m. y María gana
- * monedas con tu pedido". Se ve en cada página mientras el plazo de 36 h siga
- * abierto; se puede cerrar (vuelve en la próxima visita). En el checkout no
- * sale: ahí va NotaInvitacion, junto al total.
+ * Qué decirle a quien llegó por un link, según el tipo:
+ *  - invitación, sin cuenta: crear cuenta y recibir el bono de bienvenida.
+ *  - invitación aceptada (cuenta nueva): ya tiene el bono; su primera compra
+ *    (30 días) le suma a quien invitó.
+ *  - link de producto / tienda, o invitación que no aplicó (ya tenía cuenta):
+ *    comprar dentro de las 36 h.
+ */
+function textos(invitacion, conCuenta) {
+  const { nombre, tipo, invitacion: estado, vence } = invitacion;
+  const quien = nombre || 'quien te invitó';
+  if (tipo === 'invitacion' && estado === 'aceptada') {
+    return {
+      detalle: `Ya tienes tus ${BONO_BIENVENIDA_INVITACION} monedas de bienvenida. Tu primera compra hasta ${plazoLegible(vence)} le suma monedas a ${quien}.`,
+      corto: `Ya tienes tus ${BONO_BIENVENIDA_INVITACION} monedas de bienvenida.`,
+    };
+  }
+  if (tipo === 'invitacion' && !estado && !conCuenta) {
+    return {
+      detalle: `Crea tu cuenta y recibe ${BONO_BIENVENIDA_INVITACION} monedas de bienvenida para tu primera compra.`,
+      corto: `Crea tu cuenta y recibe ${BONO_BIENVENIDA_INVITACION} monedas.`,
+      crearCuenta: true,
+    };
+  }
+  return {
+    detalle: `Compra hasta ${plazoLegible(vence)} y ${quien} gana monedas con tu pedido. A ti no te cuesta nada.`,
+    corto: `Compra hasta ${plazoLegible(vence)} y ${quien} gana monedas.`,
+  };
+}
+
+/**
+ * Franja sobre la cabecera para quien llegó por un link de referido: "María te
+ * invitó a Walá" y qué gana cada uno. Se ve en cada página mientras el link
+ * siga vigente; se puede cerrar (vuelve en la próxima visita). En el checkout
+ * no sale: ahí va NotaInvitacion, junto al total.
  */
 const AvisoInvitacion = () => {
   const invitacion = useInvitacionReferido();
+  const { user } = useAuth();
   const { pathname } = useLocation();
   const [cerrado, setCerrado] = useState(leerCerrado);
   const [destino, setDestino] = useState(null);
@@ -48,6 +80,8 @@ const AvisoInvitacion = () => {
     setCerrado(invitacion.referralId);
   };
   const { nombre } = invitacion;
+  const t = textos(invitacion, !!(user && !user.isAnonymous));
+  const mostrarCrearCuenta = t.crearCuenta && pathname !== '/registro';
 
   return createPortal(
     <aside className={styles.aviso} aria-label="Invitación">
@@ -59,11 +93,12 @@ const AvisoInvitacion = () => {
               ? <><Resaltado>{nombre}</Resaltado> te invitó a Walá</>
               : <>Llegaste con una <Resaltado>invitación</Resaltado></>}
           </span>
-          <span className={styles.detalle}>
-            Compra hasta {plazoLegible(invitacion.vence)} y {nombre || 'quien te invitó'} gana
-            monedas<span className={styles.soloAncho}> con tu pedido. A ti no te cuesta nada</span>.
-          </span>
+          <span className={`${styles.detalle} ${styles.soloAncho}`}>{t.detalle}</span>
+          <span className={`${styles.detalle} ${styles.soloAngosto}`}>{t.corto}</span>
         </p>
+        {mostrarCrearCuenta && (
+          <Link to="/registro" className={styles.accion}>Crear cuenta</Link>
+        )}
         <button type="button" className={styles.cerrar} onClick={cerrar} aria-label="Cerrar aviso de invitación">
           <X size={18} aria-hidden="true" />
         </button>
@@ -77,14 +112,17 @@ const AvisoInvitacion = () => {
 export const NotaInvitacion = ({ className }) => {
   const invitacion = useInvitacionReferido();
   if (!invitacion) return null;
-  const { nombre } = invitacion;
+  const { nombre, tipo, invitacion: estado } = invitacion;
+  const quien = nombre || 'quien te invitó';
   return (
     <div className={[styles.nota, className].filter(Boolean).join(' ')}>
       <IconoWala nombre="corazon" tamano={30} className={styles.icono} />
       <p className={styles.notaTexto}>
-        {nombre
-          ? <>Compras con la invitación de <strong>{nombre}</strong>. Cuando recibas tu pedido, {nombre} gana monedas.</>
-          : <>Compras con una invitación. Cuando recibas tu pedido, quien te invitó gana monedas.</>}
+        {tipo === 'invitacion' && estado === 'aceptada'
+          ? <>Es tu primera compra con la invitación de {nombre ? <strong>{nombre}</strong> : 'quien te invitó'}. Cuando la recibas, {quien} gana monedas.</>
+          : nombre
+            ? <>Compras con la invitación de <strong>{nombre}</strong>. Cuando recibas tu pedido, {nombre} gana monedas.</>
+            : <>Compras con una invitación. Cuando recibas tu pedido, quien te invitó gana monedas.</>}
         {' '}A ti no te cuesta nada.
       </p>
     </div>

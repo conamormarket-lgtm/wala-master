@@ -143,45 +143,68 @@ const CHECKOUT_RESERVA_VENCE_MS = 48 * 60 * 60 * 1000;
 // `referido`; el ERP lo copia al pedido aprobado, y reclamar y "Ver pedido"
 // exigen que coincida (ver functions/referidosLogic.js). Nunca frena la compra:
 // ante cualquier duda, el pedido sale sin referido.
+async function duenoDeCodigo(codigo) {
+  const code = String(codigo || "").trim().toUpperCase();
+  if (!code || code.length > 20) return null;
+  const q = await db.collection(PORTAL_USERS_COLLECTION).where("referralCode", "==", code).limit(1).get();
+  return q.empty ? null : { uid: q.docs[0].id, perfil: q.docs[0].data() || {}, code };
+}
+
+// Lo que tenga el pedido: el último link que abrió este navegador si sigue
+// vigente; si no, la invitación con la que se creó la cuenta (30 días, hasta
+// su primera compra). Una compra paga a un solo link.
 async function referidoParaCheckout(referralId, uid, intentId) {
-  const id = String(referralId || "").trim();
-  if (!id || id.includes("/")) return null;
+  const ahoraMs = Date.now();
+  const valido = async (id, r) => {
+    if (!referidos.referidoVigenteParaCheckout(r, { ahoraMs, intentId, uid })) return null;
+    const dueno = await duenoDeCodigo(r.referrerCode);
+    if (!dueno || (uid && dueno.uid === uid)) return null; // su propio link
+    return { referralId: id, referrerCode: r.referrerCode, tipo: r.tipo || "producto" };
+  };
   try {
-    const snap = await db.collection("referrals").doc(id).get();
-    if (!snap.exists) return null;
-    const r = snap.data() || {};
-    if (!referidos.referidoVigenteParaCheckout(r, { ahoraMs: Date.now(), intentId })) return null;
-    const dueno = await db.collection(PORTAL_USERS_COLLECTION)
-      .where("referralCode", "==", r.referrerCode).limit(1).get();
-    if (dueno.empty) return null;
-    if (uid && dueno.docs[0].id === uid) return null; // su propio enlace
-    return { referralId: id, referrerCode: r.referrerCode };
+    const id = String(referralId || "").trim();
+    if (id && !id.includes("/")) {
+      const snap = await db.collection("referrals").doc(id).get();
+      const directo = snap.exists ? await valido(id, snap.data() || {}) : null;
+      if (directo) return directo;
+    }
+    if (!uid) return null;
+    const inv = await db.collection("referrals").where("invitadoUid", "==", uid).limit(1).get();
+    return inv.empty ? null : await valido(inv.docs[0].id, inv.docs[0].data() || {});
   } catch (e) {
-    console.warn(`referidoParaCheckout: no se pudo validar ${id}:`, e.message);
+    console.warn(`referidoParaCheckout: no se pudo validar ${referralId}:`, e.message);
     return null;
   }
 }
 
 // Al crearse el pedido (WhatsApp o pago aprobado), el referido pasa a
 // "Compró". Antes lo escribía el navegador después de la compra, con el monto
-// que quisiera y sobre cualquier referido. Un enlace = una compra: si el
-// referido ya tiene otro pedido, no se toca.
+// que quisiera y sobre cualquier referido. Cada referido es UNA persona y UNA
+// compra: si ya tiene otro pedido, no se toca.
 async function vincularCompraReferido(orderId, payload) {
   const referralId = payload && payload.referido && payload.referido.referralId;
   if (!referralId) return;
   const ref = db.collection("referrals").doc(String(referralId));
   try {
+    // Quién compró, para que quien refirió vea "Ana compró" (solo el primer nombre).
+    let nombre = null;
+    if (payload.userId) {
+      const perfil = await db.collection(PORTAL_USERS_COLLECTION).doc(String(payload.userId)).get();
+      nombre = perfil.exists ? referidos.primerNombre(perfil.data()) : null;
+    }
+    if (!nombre) nombre = referidos.primerNombre({ displayName: payload.clienteNombre || payload.clienteNombreCompleto });
     await db.runTransaction(async (t) => {
       const snap = await t.get(ref);
       if (!snap.exists) return;
       const r = snap.data() || {};
       if (r.orderId && String(r.orderId) !== String(orderId)) return;
-      if (!["sent", "clicked", "purchased"].includes(r.status)) return;
+      if (!["sent", "clicked", "registered", "purchased"].includes(r.status)) return;
       t.update(ref, {
         status: "purchased",
         orderId: String(orderId),
         orderTotal: Number(payload.montoTotal) || 0,
         ...(r.purchasedAt ? {} : { purchasedAt: FieldValue.serverTimestamp() }),
+        ...(!r.visitanteNombre && nombre ? { visitanteNombre: nombre } : {}),
         updatedAt: FieldValue.serverTimestamp(),
       });
     });
@@ -3707,7 +3730,7 @@ exports.claimReferralSecure = functions.https.onCall(async (data, context) => {
       "Podrás reclamar cuando el pedido esté entregado. Revisa en qué va con «Ver pedido».");
   }
   // Monto del ERP, NUNCA de referrals/orderTotal (lo puede escribir cualquiera).
-  const reward = referidos.calcularRecompensaReferido(orderData.montoTotal);
+  const reward = referidos.premioReferido(r, orderData.montoTotal);
   if (reward <= 0) {
     throw new functions.https.HttpsError("failed-precondition", "Esta compra no genera premio de referido.");
   }
@@ -3760,6 +3783,185 @@ exports.claimReferralSecure = functions.https.onCall(async (data, context) => {
   }
 });
 
+// ── Cada persona que abre un link es un referido propio ───────────────────────
+// Antes cada link era UN registro: la segunda persona que lo abría no dejaba
+// rastro y su compra no contaba. Ahora cada visitante tiene su propio doc en
+// `referrals` (sus 36 h, su compra, su premio). Lo crea el servidor: así el
+// visitante con sesión queda identificado de verdad (su uid sale del token) y
+// el código se valida contra un dueño real.
+//   tipo 'producto': link de un producto (productId) o de la tienda.
+//   tipo 'invitacion': link de invitación; si crea una cuenta nueva, ver
+//   aceptarInvitacionSecure.
+//   shareId: links generados con el sistema anterior (uno por persona); el
+//   primero que lo abre lo estrena, los siguientes cuentan aparte (linkId).
+function uidCuentaReal(context) {
+  const a = context && context.auth;
+  if (!a) return null;
+  const proveedor = a.token && a.token.firebase && a.token.firebase.sign_in_provider;
+  return proveedor === "anonymous" ? null : a.uid;
+}
+const limpiarId = (v) => {
+  const s = String(v || "").trim();
+  return s && s.length <= 120 && !s.includes("/") ? s : null;
+};
+
+exports.registrarVisitaReferidoSecure = functions.https.onCall(async (data, context) => {
+  const dueno = await duenoDeCodigo(data && data.code);
+  if (!dueno) return { id: null, motivo: "codigo" };
+  const uid = uidCuentaReal(context);
+  if (uid && uid === dueno.uid) return { id: null, motivo: "propio" };
+  const tipo = data.tipo === "invitacion" ? "invitacion" : "producto";
+  const productId = tipo === "producto" ? limpiarId(data.productId) : null;
+  const shareId = limpiarId(data.shareId);
+  const nombreDueno = referidos.primerNombre(dueno.perfil);
+  const ahora = FieldValue.serverTimestamp();
+
+  let visitante = {};
+  if (uid) {
+    const p = await db.collection(PORTAL_USERS_COLLECTION).doc(uid).get();
+    const nombre = p.exists ? referidos.primerNombre(p.data()) : null;
+    visitante = { visitanteUid: uid, ...(nombre ? { visitanteNombre: nombre } : {}) };
+  }
+
+  // 1) Link generado del sistema anterior que nadie abrió: lo estrena esta persona.
+  if (shareId) {
+    const ref = db.collection("referrals").doc(shareId);
+    const estrenado = await db.runTransaction(async (t) => {
+      const s = await t.get(ref);
+      const r = s.exists ? s.data() || {} : null;
+      if (!r || r.referrerCode !== dueno.code || r.status !== "sent") return false;
+      t.update(ref, { status: "clicked", clickedAt: ahora, updatedAt: ahora, tipo, linkId: shareId, ...visitante });
+      return true;
+    });
+    if (estrenado) return { id: shareId, nombre: nombreDueno };
+  }
+
+  // 2) La misma cuenta ya abrió este mismo link hace menos de 36 h: es esa visita.
+  if (uid) {
+    const previas = await db.collection("referrals")
+      .where("referrerCode", "==", dueno.code).where("visitanteUid", "==", uid).get();
+    const ahoraMs = Date.now();
+    const misma = previas.docs.find((d) => {
+      const r = d.data() || {};
+      const clic = r.clickedAt && r.clickedAt.toMillis ? r.clickedAt.toMillis() : 0;
+      return r.status === "clicked" && !r.orderId && (r.tipo || "producto") === tipo &&
+        (r.productId || null) === productId && (r.linkId || null) === (shareId || null) &&
+        ahoraMs - clic < referidos.VENTANA_REFERIDO_MS;
+    });
+    if (misma) return { id: misma.id, nombre: nombreDueno };
+  }
+
+  // 3) Visita nueva.
+  const nueva = await db.collection("referrals").add({
+    referrerCode: dueno.code,
+    tipo,
+    ...(productId ? { productId } : {}),
+    ...(shareId ? { linkId: shareId } : {}),
+    status: "clicked",
+    clickedAt: ahora,
+    createdAt: ahora,
+    ...visitante,
+  });
+  return { id: nueva.id, nombre: nombreDueno };
+});
+
+// ── Invitación aceptada: cuenta nueva ────────────────────────────────────────
+// La llama la tienda cuando quien llegó con un link de invitación ya tiene
+// cuenta con DNI y teléfono. Es cuenta nueva si se creó después de abrir el
+// link y su DNI y su teléfono no están en otra cuenta ni en pedidos anteriores
+// (hay cuentas que comparten DNI: el registro lo revisa en el navegador, pero
+// el perfil lo escribe el usuario). Si lo es: 10 monedas de bienvenida y su
+// primera compra dentro de 30 días le paga a quien invitó. Si no, el link
+// sigue valiendo como uno de producto (36 h).
+exports.aceptarInvitacionSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireCuentaReal(context);
+  const id = limpiarId(data && data.referralId);
+  if (!id) throw new functions.https.HttpsError("invalid-argument", "Falta la invitación.");
+  const ref = db.collection("referrals").doc(id);
+  const snap = await ref.get();
+  const r = snap.exists ? snap.data() || {} : null;
+  if (!r || r.tipo !== "invitacion") return { aceptada: false, motivo: "no_es_invitacion" };
+  if (r.invitadoUid) {
+    return r.invitadoUid === uid ? { aceptada: true, yaEstaba: true } : { aceptada: false, motivo: "usada" };
+  }
+  if (r.invitacionRechazada && r.invitacionRechazada.uid === uid) {
+    return { aceptada: false, motivo: r.invitacionRechazada.motivo };
+  }
+
+  const rechazar = async (motivo) => {
+    await ref.update({ invitacionRechazada: { uid, motivo, at: FieldValue.serverTimestamp() } }).catch(() => {});
+    return { aceptada: false, motivo };
+  };
+
+  const dueno = await duenoDeCodigo(r.referrerCode);
+  if (!dueno || dueno.uid === uid) return rechazar("propia");
+  const perfilSnap = await db.collection(PORTAL_USERS_COLLECTION).doc(uid).get();
+  const perfil = perfilSnap.exists ? perfilSnap.data() || {} : {};
+  const dni = referidos.normDocumento(perfil.dni);
+  const telefonos = referidos.variantesTelefono(perfil.phone);
+  // Sin DNI o teléfono todavía (p. ej. entró con Google): se vuelve a intentar
+  // cuando complete el perfil. No es un rechazo.
+  if (!dni || !telefonos.length) return { aceptada: false, pendiente: "perfil" };
+
+  const ya = await db.collection("referrals").where("invitadoUid", "==", uid).limit(1).get();
+  if (!ya.empty) return rechazar("ya_invitada");
+
+  const usuario = await admin.auth().getUser(uid);
+  const clicMs = r.clickedAt && r.clickedAt.toMillis ? r.clickedAt.toMillis() : 0;
+  if (!referidos.cuentaCreadaPorInvitacion({ creadaMs: Date.parse(usuario.metadata.creationTime), clicMs })) {
+    return rechazar("cuenta_antigua");
+  }
+  if (dni === referidos.normDocumento(dueno.perfil.dni) ||
+      referidos.variantesTelefono(dueno.perfil.phone).some((t) => telefonos.includes(t))) {
+    return rechazar("misma_persona");
+  }
+  const enOtraCuenta = async (campo, valores) => {
+    const q = await db.collection(PORTAL_USERS_COLLECTION).where(campo, "in", valores.slice(0, 10)).get();
+    return q.docs.some((d) => d.id !== uid);
+  };
+  const dnis = [...new Set([dni, String(perfil.dni || "").trim()].filter(Boolean))];
+  if (await enOtraCuenta("dni", dnis)) return rechazar("dni_en_otra_cuenta");
+  if (await enOtraCuenta("phone", telefonos)) return rechazar("telefono_en_otra_cuenta");
+  // Pedidos anteriores con ese DNI o teléfono. Los que hizo ESTA cuenta no
+  // cuentan (pudo comprar antes de que se aceptara la invitación).
+  const erpDb = getErpDb();
+  const deOtraCuenta = (d) => {
+    const o = d.data() || {};
+    return o.userId !== uid && o.buyerUid !== uid;
+  };
+  for (const coll of ["pedidos", "pedidos_web", WALA_ORDERS_COLLECTION]) {
+    for (const [campo, valores] of [["dni", dnis], ["clienteNumeroDocumento", dnis], ["clienteContacto", telefonos]]) {
+      const q = await erpDb.collection(coll).where(campo, "in", valores.slice(0, 10)).limit(10).get();
+      if (q.docs.some(deOtraCuenta)) return rechazar("ya_compro");
+    }
+  }
+
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  const bono = referidos.BONO_BIENVENIDA_INVITACION;
+  const nombre = referidos.primerNombre(perfil);
+  const resultado = await db.runTransaction(async (t) => {
+    const [s, u, otra] = await Promise.all([
+      t.get(ref), t.get(userRef),
+      t.get(db.collection("referrals").where("invitadoUid", "==", uid).limit(1)),
+    ]);
+    const rr = s.data() || {};
+    if (rr.invitadoUid || !otra.empty) return { aceptada: rr.invitadoUid === uid, yaEstaba: true };
+    const saldo = (Number((u.data() || {}).monedas) || 0) + bono;
+    t.update(ref, {
+      invitadoUid: uid,
+      visitanteUid: uid,
+      ...(nombre ? { visitanteNombre: nombre } : {}),
+      status: "registered",
+      aceptadaAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    t.update(userRef, { monedas: saldo });
+    writeLedger(t, uid, { type: "earn", amount: bono, source: "invitacion_bienvenida_" + id, balanceAfter: saldo });
+    return { aceptada: true, bono };
+  });
+  return { ...resultado, nombre: referidos.primerNombre(dueno.perfil) };
+});
+
 // Quién invitó: quien llega por un enlace ve "María te invitó a Walá" mientras
 // navega y al pagar. Sin sesión (quien abre el link puede no tener cuenta) y
 // solo el primer nombre: lo ve únicamente quien tiene el enlace, que es a quien
@@ -3789,7 +3991,7 @@ exports.detalleReferidoSecure = functions.https.onCall(async (data, context) => 
   const resumen = referidos.resumenPedidoReferido(pedido.data, pedido.coleccion);
   return {
     ...resumen,
-    premio: referidos.calcularRecompensaReferido(resumen.montoTotal),
+    premio: referidos.premioReferido(r, resumen.montoTotal),
     reclamado: r.status === "claimed",
   };
 });

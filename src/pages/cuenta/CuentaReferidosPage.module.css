@@ -75,46 +75,6 @@
   font-weight: 700;
 }
 
-/* Tres pasos del programa. En móvil se apilan; en desktop van en fila. */
-.pasos {
-  list-style: none;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.6rem;
-  margin: 1rem 0 0 0;
-  padding: 0;
-}
-
-@media (min-width: 720px) {
-  .pasos {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-.paso {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
-  padding: 0.75rem 0.85rem;
-  border-radius: var(--radio-pequeno, 10px);
-  border: 1px solid var(--gris-borde, #e2e8f0);
-  background: rgba(139, 92, 246, 0.04);
-}
-
-.pasoNum {
-  flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: #fff;
-  background: #8b5cf6;
-}
-
 .pasoTitle {
   margin: 0;
   font-size: 0.86rem;
@@ -151,19 +111,6 @@
 
 /* El código es el dato protagonista de la tarjeta: monoespaciado y con
    tracking para que se pueda leer/dictar letra por letra. */
-.codeText {
-  font-family: var(--fuente-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace);
-  font-size: 1.15rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  color: #6d28d9;
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.22);
-  border-radius: var(--radio-pequeno, 10px);
-  padding: 0.5rem 0.9rem;
-  white-space: nowrap;
-}
-
 .codeNote {
   margin: 0.55rem 0 0 0;
   font-size: 0.78rem;
@@ -341,73 +288,8 @@
 }
 
 /* =========================================================================
-   Tarjetas del historial
+   Chips de estado
    ========================================================================= */
-.list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.listItem {
-  list-style: none;
-  display: flex;
-}
-
-.referralCard {
-  width: 100%;
-}
-
-.referralBody {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-
-.cardClaimed {
-  background: rgba(16, 185, 129, 0.07);
-  border-color: rgba(16, 185, 129, 0.24);
-}
-
-.cardIneligible {
-  opacity: 0.85;
-}
-
-.rowTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.dateText {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--gris-texto-secundario, #64748b);
-}
-
-.rowTags {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.orderLabel {
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.25rem 0.55rem;
-  border-radius: 999px;
-  background: var(--gris-hover, #f1f5f9);
-  border: 1px solid var(--gris-borde, #e2e8f0);
-  color: var(--gris-texto-secundario, #475569);
-  font-variant-numeric: tabular-nums;
-}
-
 .estadoChip {
   display: inline-flex;
   align-items: center;
@@ -441,97 +323,9 @@
 }
 
 /* =========================================================================
-   Stepper
-   -------------------------------------------------------------------------
-   Antes: círculos numerados unidos por líneas absolutas con un
-   `transform: translateY(-10px)` para calzarlas a mano con los círculos —
-   frágil en cuanto cambiaba el tamaño del texto. Ahora la línea es un
-   ::before de cada paso (mitad izquierda / mitad derecha), así se alinea sola
-   con el círculo sin importar el alto de la etiqueta.
+   Notas y premio
    ========================================================================= */
-.stepper {
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  margin: 0;
-  padding: 0;
-}
-
-.step {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  text-align: center;
-  min-width: 0;
-}
-
-/* Riel: cruza todo el ancho del paso por detrás, a la altura del círculo. */
-.step::before {
-  content: '';
-  position: absolute;
-  top: 13px;
-  left: -50%;
-  right: 50%;
-  height: 3px;
-  background: var(--gris-borde, #e2e8f0);
-}
-
-.step:first-child::before {
-  display: none;
-}
-
-/* El tramo se enciende cuando el paso al que LLEGA ya está hecho. */
-.stepDone::before {
-  background: #8b5cf6;
-}
-
-.stepCircle {
-  position: relative;
-  z-index: 1;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: var(--gris-texto-secundario, #94a3b8);
-  background: var(--color-surface, #fff);
-  border: 2px solid var(--gris-borde, #e2e8f0);
-  transition: var(--transicion-suave, all 0.2s ease);
-}
-
-.stepDone .stepCircle {
-  color: #fff;
-  background: #8b5cf6;
-  border-color: #8b5cf6;
-}
-
-/* Paso en curso: aro violeta tenue para señalar "acá está parado ahora". */
-.stepCurrent .stepCircle {
-  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.18);
-}
-
-.stepLabel {
-  font-size: 0.7rem;
-  font-weight: 700;
-  line-height: 1.25;
-  color: var(--gris-texto-secundario, #94a3b8);
-}
-
-.stepDone .stepLabel {
-  color: var(--gris-texto-principal, #0f172a);
-}
-
-/* =========================================================================
-   Pie de la tarjeta: nota de estado o zona de reclamo
-   ========================================================================= */
-/* Texto del pie. El filete y el padding superior los pone .actionBox, que
-   ahora envuelve los tres casos del pie (antes .pieNota era un <p> suelto
-   fuera de la caja y traía filete propio). */
+/* Texto suelto de una tarjeta (grupo sin personas, links sin abrir). */
 .pieNota {
   flex: 1 1 240px;
   margin: 0;
@@ -539,34 +333,6 @@
   font-size: 0.82rem;
   line-height: 1.4;
   color: var(--gris-texto-secundario, #64748b);
-}
-
-.actionBox {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.85rem;
-  flex-wrap: wrap;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--gris-borde, #e2e8f0);
-}
-
-.montos {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.montoLinea {
-  font-size: 0.85rem;
-  color: var(--gris-texto-secundario, #475569);
-}
-
-.montoLinea strong {
-  color: var(--gris-texto-principal, #0f172a);
-  font-variant-numeric: tabular-nums;
 }
 
 /* Mismo badge etiquetado que en Misiones: el número junto al ícono de moneda
@@ -863,6 +629,222 @@
 }
 
 /* =========================================================================
+   Las dos formas de ganar (cabecera)
+   ========================================================================= */
+.formas {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+@media (min-width: 720px) {
+  .formas {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.forma {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 12px;
+  border: 1px solid var(--gris-borde, #e2e8f0);
+  background: rgba(139, 92, 246, 0.04);
+}
+
+.forma strong {
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+/* El link de invitación: se lee entero y se puede seleccionar a mano. */
+.linkText {
+  display: block;
+  max-width: 100%;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #6d28d9;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  border-radius: 10px;
+  padding: 0.55rem 0.8rem;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+/* =========================================================================
+   Grupos: un link y las personas que entraron por él
+   ========================================================================= */
+.grupos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.grupoCard {
+  width: 100%;
+}
+
+.grupoBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.grupoHead {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Foto del producto en el escenario neutro (las fotos traen fondo blanco). */
+.grupoFoto {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: #f5f4f8;
+  border: 1px solid var(--gris-borde, #e2e8f0);
+  mix-blend-mode: multiply;
+}
+
+.grupoTexto {
+  min-width: 0;
+}
+
+.grupoTitulo {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.grupoMeta {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gris-texto-secundario, #64748b);
+  font-variant-numeric: tabular-nums;
+}
+
+.grupoDescripcion {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+.personas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.persona {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--gris-borde, #e2e8f0);
+}
+
+.personaFila {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.personaAvatar {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--fuente-marca, 'Montserrat', sans-serif);
+  font-weight: 900;
+  font-size: 0.95rem;
+  color: #6d28d9;
+  background: #ede9fe;
+}
+
+.personaAnonima {
+  color: var(--gris-texto-secundario, #64748b);
+  background: var(--gris-hover, #f1f5f9);
+}
+
+.personaInfo {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.personaNombre {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.personaEstado {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+.personaAcciones {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding-left: calc(34px + 0.7rem);
+}
+
+.verTodas {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  padding: 0.3rem 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #7c3aed;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.verTodas:hover {
+  color: #5b21b6;
+}
+
+.verTodas:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .personaFila {
+    flex-wrap: wrap;
+  }
+
+  .personaFila .rewardBadge {
+    margin-left: calc(34px + 0.7rem);
+  }
+
+  .personaAcciones {
+    padding-left: 0;
+  }
+}
+
+/* =========================================================================
    MODO NOCHE
    -------------------------------------------------------------------------
    Casi todo sale por tokens (--gris-*, --glass-*, --color-*). Acá solo lo que
@@ -886,16 +868,6 @@
   background: rgba(245, 158, 11, 0.18);
 }
 
-:global([data-theme='dark']) .codeText {
-  color: #ddd6fe;
-  background: rgba(139, 92, 246, 0.18);
-  border-color: rgba(167, 139, 250, 0.35);
-}
-
-:global([data-theme='dark']) .paso {
-  background: rgba(139, 92, 246, 0.08);
-}
-
 :global([data-theme='dark']) .btnGhost {
   color: #c4b5fd;
 }
@@ -914,11 +886,6 @@
   border-color: rgba(245, 158, 11, 0.35);
 }
 
-:global([data-theme='dark']) .cardClaimed {
-  background: rgba(16, 185, 129, 0.12);
-  border-color: rgba(16, 185, 129, 0.28);
-}
-
 :global([data-theme='dark']) .rewardBadge {
   background: rgba(245, 158, 11, 0.18);
   border-color: rgba(245, 158, 11, 0.35);
@@ -929,14 +896,33 @@
   color: #fcd34d;
 }
 
-:global([data-theme='dark']) .stepCircle {
-  background: var(--color-surface-2, #272338);
-}
-
 :global([data-theme='dark']) .chipEtapa {
   color: #c4b5fd;
   background: rgba(139, 92, 246, 0.18);
   border-color: rgba(167, 139, 250, 0.35);
+}
+
+:global([data-theme='dark']) .forma {
+  background: rgba(139, 92, 246, 0.08);
+}
+
+:global([data-theme='dark']) .linkText {
+  color: #ddd6fe;
+  background: rgba(139, 92, 246, 0.16);
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+:global([data-theme='dark']) .personaAvatar {
+  color: #ddd6fe;
+  background: rgba(139, 92, 246, 0.22);
+}
+
+:global([data-theme='dark']) .grupoFoto {
+  mix-blend-mode: normal;
+}
+
+:global([data-theme='dark']) .verTodas {
+  color: #c4b5fd;
 }
 
 :global([data-theme='dark']) .detalle {
@@ -949,7 +935,7 @@
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   .card,
   .statCard,
-  .referralCard,
+  .grupoCard,
   .empty {
     background: var(--color-surface, #ffffff);
     border-color: var(--color-border, rgba(226, 232, 240, 0.9));
@@ -962,7 +948,7 @@
 @media (prefers-reduced-motion: reduce) {
   .btnSolido,
   .btnGhost,
-  .stepCircle {
+  .verTodas {
     transition: none;
   }
 
