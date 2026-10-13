@@ -222,8 +222,27 @@
   text-transform: uppercase;
 }
 
-/* Celular: los atajos en una fila deslizable (no ocupan media pantalla). */
+/* Celular: los atajos en una fila deslizable (no ocupan media pantalla) y
+   los destellos en la esquina, donde el título no llega. */
 @container (max-width: 520px) {
+  /* Franja propia para los destellos junto al título: el texto nunca llega
+     ahí (el buscador y los atajos siguen a todo el ancho). */
+  .busquedaTitulo {
+    padding-right: 1.25rem;
+  }
+
+  .busquedaDestello1 {
+    top: 12px;
+    right: 8px;
+    width: 18px;
+  }
+
+  .busquedaDestello2 {
+    top: 36px;
+    right: 12px;
+    width: 10px;
+  }
+
   .busquedaAtajos ul {
     flex-wrap: nowrap;
     margin: 0 calc(-1 * clamp(1.1rem, 3cqi, 1.75rem));

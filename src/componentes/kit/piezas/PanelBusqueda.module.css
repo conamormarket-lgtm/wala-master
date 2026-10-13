@@ -533,7 +533,8 @@
   }
 }
 
-/* El subrayado a mano del título necesita aire antes de la línea de abajo. */
-.invitacionTitulo + .pista {
-  margin-top: 0.3rem;
+/* El subrayado a mano cuelga por debajo del título: el aire va en `em` del
+   propio título, así alcanza tanto en el panel como en la página (grande). */
+.invitacionTitulo:has(.trazo) {
+  padding-bottom: 0.48em;
 }

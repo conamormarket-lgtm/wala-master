@@ -363,7 +363,9 @@ export function PaginaBusqueda({
         <div className={s.busquedaCabeza}>
           <Destello className={s.busquedaDestello1} />
           <Destello className={s.busquedaDestello2} />
-          <InvitacionBusqueda grande como="h1" termino={termino} titulo={textos.titulo} texto={t.subtitulo} />
+          <div className={s.busquedaTitulo}>
+            <InvitacionBusqueda grande como="h1" termino={termino} titulo={textos.titulo} texto={t.subtitulo} />
+          </div>
           {marcaFiltro && (
             <Aviso compacto icono={<Store aria-hidden="true" />} accion={marcaFiltro.urlTodo && <Boton to={marcaFiltro.urlTodo} variante="fantasma" tamano="sm">Buscar en todo el catálogo</Boton>}>
               Buscando solo en <strong>{marcaFiltro.nombre}</strong>
