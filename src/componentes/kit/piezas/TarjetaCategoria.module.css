@@ -150,7 +150,9 @@
   }
 
   .cuadroNombre {
-    font-size: 0.82rem;
+    padding: 0;
+    font-size: 0.78rem;
+    letter-spacing: -0.02em;
   }
 
   /* Sin flecha: el nombre necesita el espacio y todo el cuadro es tocable. */
