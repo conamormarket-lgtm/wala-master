@@ -43,8 +43,25 @@
   margin: 0 0 0.75rem;
 }
 
+/* Ancla sin ancho al final del título: los destellos salen de ahí. */
+.encabezadoAncla {
+  position: relative;
+  display: inline-block;
+  width: 0;
+  height: 1em;
+  vertical-align: top;
+}
+
 .encabezado .encabezadoGarabatos {
-  inset: -0.5rem auto auto calc(50% + min(34cqi, 300px));
+  inset: -0.3em auto auto -0.9rem;
+}
+
+/* Angosto: el título suele llenar el ancho y a la derecha no hay lugar; los
+   destellos se apoyan encima del final de la última palabra. */
+@container (max-width: 520px) {
+  .encabezado .encabezadoGarabatos {
+    inset: -0.7em auto auto -1.9rem;
+  }
 }
 
 .encabezadoTitulo {

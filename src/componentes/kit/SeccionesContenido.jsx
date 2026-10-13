@@ -98,13 +98,16 @@ function conResalte(titulo, resalte, color) {
 }
 
 /* ── Encabezado (header) ────────────────────────────────── */
+
+/** Word joiner (U+2060): pega lo que sigue a la última palabra, sin espacio. */
+const UNIR = String.fromCharCode(0x2060);
+
 export function Encabezado({ ajustes = {} }) {
   const { title, subtitle, titleHighlight, titleHighlightColor, textAlign = 'center', compact } = ajustes;
   if (!title && !subtitle) return null;
   return (
     <div className={[s.encabezado, compact && s.compacto, textAlign === 'center' && s.centrado, textAlign === 'right' && s.derecha].filter(Boolean).join(' ')} style={{ textAlign }}>
       {ajustes.eyebrow && <p className={s.encabezadoEtiqueta}><EtiquetaColgante tono="suave">{ajustes.eyebrow}</EtiquetaColgante></p>}
-      {!compact && textAlign === 'center' && <Garabatos variante="titulo" className={s.encabezadoGarabatos} />}
       <TextoCampo
         ajustes={ajustes}
         campo="title"
@@ -112,7 +115,18 @@ export function Encabezado({ ajustes = {} }) {
         className={s.encabezadoTitulo}
         style={{ color: colorPropio(ajustes.titleColor), ...fuenteDe(ajustes, 'title') }}
       >
-        {title ? conResalte(title, titleHighlight, titleHighlightColor) : null}
+        {/* Los destellos van justo después de la última palabra (no en la
+            esquina de la sección): pegados al título sea corto o de dos
+            líneas. UNIR (word joiner, U+2060) impide que queden solos en una
+            línea. */}
+        {title ? (
+          <>
+            {conResalte(title, titleHighlight, titleHighlightColor)}
+            {!compact && textAlign === 'center' && (
+              <>{UNIR}<span className={s.encabezadoAncla}><Garabatos variante="titulo" className={s.encabezadoGarabatos} /></span></>
+            )}
+          </>
+        ) : null}
       </TextoCampo>
       <TextoCampo
         ajustes={ajustes}
