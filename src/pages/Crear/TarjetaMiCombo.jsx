@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Trash2, Paintbrush, ShoppingBag, Clock, Users } from 'lucide-react';
+import { Trash2, Paintbrush, ShoppingBag, Clock, Users, ArrowRight } from 'lucide-react';
 import { getComboCrear } from '../../services/combosCrear';
 import { useAlVerUnaVez } from '../../hooks/useAlVerUnaVez';
 import { precioBase } from '../../utils/prendaBase';
@@ -32,6 +32,9 @@ const TarjetaMiCombo = ({ design, onEliminar, onRenombrado, onComunidad }) => {
   const url = `/combo/${design.comboId}?mio=${design.id}`;
   const disponible = Boolean(combo) && combo.publicado && combo.deleted !== true;
   const fecha = fechaDeCreacion(design);
+  // Un combo sin terminar va en "Tus borradores": se continúa, no se compra.
+  const borrador = design.estado === 'borrador';
+  const conDiseno = (design.piezas || []).filter((p) => p.designId).length;
 
   return (
     <li className={styles.card}>
@@ -45,6 +48,7 @@ const TarjetaMiCombo = ({ design, onEliminar, onRenombrado, onComunidad }) => {
           <span className={propios.insignia}>
             <Users size={12} strokeWidth={2.5} aria-hidden="true" /> Combo · {(design.piezas || []).length} prendas
           </span>
+          {borrador && <span className={propios.insigniaBorrador}>Borrador</span>}
           <InsigniaPublicada design={design} />
         </div>
         {onEliminar && (
@@ -69,18 +73,29 @@ const TarjetaMiCombo = ({ design, onEliminar, onRenombrado, onComunidad }) => {
           onCambiado={(nuevo) => onRenombrado?.(design.id, nuevo)}
         />
         <p className={styles.prenda}>
-          <span className={styles.prendaTexto}>{design.comboNombre || 'Combo'}</span>
+          <span className={styles.prendaTexto}>
+            {borrador
+              ? `${conDiseno} de ${(design.piezas || []).length} prendas con diseño · sin terminar`
+              : design.comboNombre || 'Combo'}
+          </span>
         </p>
         {fecha && (
           <p className={styles.fecha}>
-            <Clock size={12} aria-hidden="true" /> {guardadaHace(fecha)}
+            <Clock size={12} aria-hidden="true" /> {borrador ? guardadaHace(fecha).replace(/^Guardada/, 'Editado') : guardadaHace(fecha)}
           </p>
         )}
         <div className={styles.pie}>
           <div className={styles.precios}>
             {combo && <span className={styles.precio}>{soles(precioBase(combo))}</span>}
           </div>
-          {disponible && (
+          {disponible && borrador && (
+            <div className={styles.acciones}>
+              <Link to={url} state={{ desde: pathname }} className={styles.botonPrincipal}>
+                Continuar <ArrowRight size={15} aria-hidden="true" />
+              </Link>
+            </div>
+          )}
+          {disponible && !borrador && (
             <div className={styles.acciones}>
               <Link to={url} state={{ desde: pathname }} className={styles.botonEditar} aria-label="Editar el combo" title="Editar el combo">
                 <Paintbrush size={16} aria-hidden="true" />

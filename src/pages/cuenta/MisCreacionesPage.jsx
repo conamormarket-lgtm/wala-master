@@ -55,8 +55,8 @@ const MisCreacionesPage = () => {
   // creaciones antiguas no tienen esa fecha bien guardada (ver fechaDeCreacion).
   // Cada combo es UNA tarjeta: sus prendas no se repiten sueltas.
   const ordenados = useMemo(
-    () => agruparCombos(designs).sort((a, b) => (fechaDeCreacion(b) || 0) - (fechaDeCreacion(a) || 0)),
-    [designs]
+    () => agruparCombos(designs, borradores).sort((a, b) => (fechaDeCreacion(b) || 0) - (fechaDeCreacion(a) || 0)),
+    [designs, borradores]
   );
   const quitarCombo = async (combo) => {
     if (!window.confirm(`¿Quitar el combo "${combo.name || 'Mi combo'}"? Sus prendas siguen en tus creaciones.`)) return;

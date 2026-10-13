@@ -29,7 +29,8 @@ import {
 import RecorteImagen from './RecorteImagen';
 import QuitarFondo from './QuitarFondo';
 import { itemDeCreacion } from './creacionCarrito';
-import { ponerPieza, leerArmado, leerMetaArmado } from './comboCrear';
+import { ponerPieza, leerArmado, leerMetaArmado, guardarMetaArmado } from './comboCrear';
+import { sincronizarMiCombo } from '../../services/misCombos';
 import { getComboCrear } from '../../services/combosCrear';
 import AtajosTeclado, { MOD } from './AtajosTeclado';
 import CapaModal from './CapaModal';
@@ -1954,6 +1955,8 @@ const CrearStudioPage = () => {
         color: datosColor(),
         miniatura,
         ...(!designIdRef.current && basadoEnRef.current && { basadoEn: basadoEnRef.current }),
+        // Pieza de un combo: el borrador sabe de qué combo es (se reabre en él).
+        ...(enCombo && { combo: { id: comboParam, nombre: comboActual?.name || '', pieza: piezaParam } }),
       };
       // La lista de borradores se ve al día al instante (por si el cliente
       // ya retrocedió), sin esperar a que Firestore termine.
@@ -1967,6 +1970,12 @@ const CrearStudioPage = () => {
         if (basadoEnRef.current) registrarUsoComunidad(basadoEnRef.current);
         designIdRef.current = guardadoId;
         esBorradorRef.current = true;
+        // Dentro de un combo, el borrador ya va en su pieza y el combo queda
+        // guardado como borrador en la cuenta (como una prenda suelta).
+        if (enCombo) {
+          ponerPieza(comboParam, piezaParam, { designId: guardadoId });
+          await sincronizarCombo();
+        }
         if (montadoRef.current) {
           setDesignId(guardadoId);
           setEsBorrador(true);
@@ -2074,6 +2083,28 @@ const CrearStudioPage = () => {
     setDialogoGuardar(true);
   };
 
+  /**
+   * Guarda "Mi combo" en la cuenta con lo que lleva cada pieza (borrador
+   * mientras falte algo). Se espera antes de salir del estudio: si no, la
+   * página del combo podría crear otro igual al mismo tiempo.
+   */
+  const sincronizarCombo = async () => {
+    if (!enCombo || !user) return;
+    const combo = comboActual || (await getComboCrear(comboParam)).data;
+    if (!combo) return;
+    const meta = leerMetaArmado(comboParam);
+    try {
+      const { id: miComboId } = await sincronizarMiCombo(user.uid, {
+        id: meta.miComboId || undefined,
+        combo,
+        piezas: leerArmado(comboParam, combo.piezas.length),
+      });
+      if (miComboId && miComboId !== meta.miComboId) guardarMetaArmado(comboParam, { miComboId });
+      queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'], refetchType: 'all' });
+    } catch { /* se vuelve a intentar desde la página del combo */ }
+  };
+
   /** Pone la creación en su pieza del combo (y en las iguales, si se pidió). */
   const ponerEnCombo = (idPieza) => {
     ponerPieza(comboParam, piezaParam, { designId: idPieza });
@@ -2085,7 +2116,10 @@ const CrearStudioPage = () => {
     try {
       const creacion = await guardarCreacion(nombreFinal);
       // Dentro de un combo, guardar también la deja puesta en su pieza.
-      if (enCombo) ponerEnCombo(creacion.id);
+      if (enCombo) {
+        ponerEnCombo(creacion.id);
+        await sincronizarCombo();
+      }
       // Al actualizar basta un aviso; la primera vez, la ventana con "Ver mi creación".
       if (actualizar) toast.success('Cambios guardados.');
       else setGuardada(creacion);
@@ -2123,6 +2157,7 @@ const CrearStudioPage = () => {
         idPieza = creacion.id;
       }
       ponerEnCombo(idPieza);
+      await sincronizarCombo();
       try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
       navigate(`/combo/${comboParam}`);
     } catch (err) {
@@ -2146,6 +2181,7 @@ const CrearStudioPage = () => {
         let idPieza = designIdRef.current;
         if (!idPieza || esBorradorRef.current || hayCambios) idPieza = (await guardarCreacion(nombre, talla)).id;
         ponerEnCombo(idPieza);
+        await sincronizarCombo();
       }
     } catch (err) {
       toast.error(`No pudimos guardar esta prenda: ${err?.message || err}`);

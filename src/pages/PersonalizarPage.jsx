@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Shirt, Upload, ShoppingBag, ArrowRight, Paintbrush, Users, User } from 'lucide-react';
 import { getPrendasBase } from '../services/prendasBase';
 import { getCombosCrear } from '../services/combosCrear';
-import { preciosDeCombo, leerArmado } from './Crear/comboCrear';
+import { preciosDeCombo } from './Crear/comboCrear';
 import { EtiquetaColgante } from '../componentes/kit/Marca';
 import { getDesignsByUser } from '../services/designs';
 import { useAuth } from '../contexts/AuthContext';
@@ -91,7 +91,8 @@ const TarjetaCombo = ({ combo, prendas }) => {
   const fotoRef = useRef(null);
   const visto = useAlVerUnaVez(fotoRef);
   return (
-    <Link to={`/combo/${combo.id}`} className={styles.tarjeta}>
+    // "Armar" empieza un combo limpio, como "Diseñar" en una prenda suelta.
+    <Link to={`/combo/${combo.id}?nuevo=1`} className={styles.tarjeta}>
       <div className={styles.foto}>
         {!combo.publicado && <span className={styles.borrador}>Borrador</span>}
         <span ref={fotoRef} className={`${styles.prendasCombo} ${visto ? styles.saludo : ''}`} style={{ '--n': prendas.length }}>
@@ -151,12 +152,13 @@ const useCreacionesCrear = (uid) => useQuery({
 
 const TusCreaciones = ({ uid }) => {
   const { data: creaciones = [] } = useCreacionesCrear(uid);
+  const { data: borradores = [] } = useBorradoresCrear(uid);
   const queryClient = useQueryClient();
   const { pedir: pedirEliminar, dialogo: dialogoEliminar } = useEliminarCreacion();
   // Las mismas tarjetas que Mis creaciones, la más reciente primero.
   const tarjetas = useMemo(
-    () => agruparCombos(creaciones).sort((a, b) => (fechaDeCreacion(b) || 0) - (fechaDeCreacion(a) || 0)),
-    [creaciones]
+    () => agruparCombos(creaciones, borradores).sort((a, b) => (fechaDeCreacion(b) || 0) - (fechaDeCreacion(a) || 0)),
+    [creaciones, borradores]
   );
   const recientes = tarjetas.slice(0, 8);
   const quitarCombo = async (combo) => {
@@ -247,12 +249,6 @@ const PersonalizarPage = () => {
     setParams(siguiente, { replace: true });
   };
   const combosDePara = combosListos.filter(({ combo }) => combo.piezas.length === para);
-  // Combos que el cliente dejó a medias en este navegador (lo armado vive en
-  // localStorage mientras va y viene del estudio): para que vuelva a ellos.
-  const combosEnCurso = combosListos
-    .map(({ combo }) => ({ combo, conDiseno: leerArmado(combo.id, combo.piezas.length).filter((a) => a.designId).length }))
-    // Completo ya es "Mi combo" (una tarjeta en Tus creaciones).
-    .filter(({ combo, conDiseno }) => conDiseno > 0 && conDiseno < combo.piezas.length);
   const soloConjuntos = (n) => {
     const deN = combosListos.filter(({ combo }) => combo.piezas.length === n);
     return deN.length > 0 && deN.every(({ combo }) => esConjunto(combo));
@@ -298,28 +294,6 @@ const PersonalizarPage = () => {
       </div>
 
       {user && <TusBorradores uid={user.uid} />}
-      {combosEnCurso.length > 0 && (
-        <section className={styles.seccion} aria-label="Tus combos a medias">
-          <div className={styles.seccionCabecera}>
-            <div>
-              <h2 className={styles.seccionTitulo}><T>Sigue armando tu combo</T></h2>
-              <p className={styles.seccionAyuda}><T>Lo que ya diseñaste sigue guardado.</T></p>
-            </div>
-          </div>
-          <div className={styles.combosEnCurso}>
-            {combosEnCurso.map(({ combo, conDiseno }) => (
-              <Link key={combo.id} to={`/combo/${combo.id}`} className={styles.comboEnCurso}>
-                <span className={styles.comboEnCursoIcono}><Users size={18} aria-hidden="true" /></span>
-                <span className={styles.comboEnCursoTexto}>
-                  <strong>{combo.name}</strong>
-                  <span>{conDiseno} de {combo.piezas.length} prendas con diseño</span>
-                </span>
-                <span className={styles.cta}><T>Continuar</T> <ArrowRight size={15} aria-hidden="true" /></span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
       {user && <TusCreaciones uid={user.uid} />}
       <DisenosComunidad />
       {(creaciones.length > 0 || borradores.length > 0 || comunidad.length > 0 || opcionesPara.length > 1) && (

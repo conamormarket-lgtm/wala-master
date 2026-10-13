@@ -58,3 +58,14 @@
   background: #ede9fe;
   color: #6d28d9;
 }
+
+/* Mismo color que la etiqueta "Borrador" de las prendas sueltas. */
+.insigniaBorrador {
+  display: inline-flex;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: #FEF3C7;
+  color: #92400E;
+  font-size: 0.72rem;
+  font-weight: 800;
+}

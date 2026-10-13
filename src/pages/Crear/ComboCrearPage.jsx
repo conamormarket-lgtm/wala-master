@@ -83,6 +83,9 @@ const ComboCrearPage = () => {
   const [params, setParams] = useSearchParams();
   const mioParam = params.get('mio');
   const plantillaParam = params.get('plantilla');
+  // ?nuevo=1 ("Armar" en Crear): empieza un combo limpio. Lo que tenía a medias
+  // sigue en su cuenta como borrador.
+  const nuevoParam = params.get('nuevo');
 
   const { data: combo, isLoading, isError: errorCombo } = useQuery({
     queryKey: ['combo-crear', id],
@@ -110,6 +113,12 @@ const ComboCrearPage = () => {
   const [meta, setMeta] = useState({ miComboId: '', plantilla: '' });
   useEffect(() => {
     if (!piezasCombo.length) return;
+    if (nuevoParam) {
+      olvidarArmado(id);
+      const sin = new URLSearchParams(params);
+      sin.delete('nuevo');
+      setParams(sin, { replace: true });
+    }
     // Un combo de la comunidad nuevo empieza limpio (las creaciones que ya
     // hizo siguen en su cuenta).
     if (plantillaParam && plantillaParam !== leerMetaArmado(id).plantilla) {
@@ -118,7 +127,8 @@ const ComboCrearPage = () => {
     }
     setArmado(leerArmado(id, piezasCombo.length));
     setMeta(leerMetaArmado(id));
-  }, [id, piezasCombo.length, plantillaParam]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, piezasCombo.length, plantillaParam, nuevoParam]);
   const cambiarArmado = (siguiente) => {
     setArmado(siguiente);
     guardarArmado(id, siguiente);
@@ -189,10 +199,14 @@ const ComboCrearPage = () => {
 
   const { precio, sueltas, ahorro } = combo ? preciosDeCombo(combo, prendas) : { precio: 0, sueltas: 0, ahorro: 0 };
 
-  // En cuanto todas las piezas tienen diseño, el combo se guarda en la cuenta
-  // como UNA creación ("Mi combo") y se mantiene al día con cada cambio.
-  const todasConDiseno = Boolean(user && combo && armado.length && armado.every((a, i) => a.designId && creaciones[i]));
-  const firmaArmado = armado.map((a) => `${a.designId}:${a.talla}`).join('|');
+  // En cuanto una pieza tiene diseño, el combo se guarda en la cuenta como UNA
+  // creación ("Mi combo"): borrador mientras falte algo, terminado cuando
+  // todas sus piezas estén guardadas. Se mantiene al día con cada cambio.
+  const todasConDiseno = Boolean(user && combo && armado.some((a) => a.designId)
+    && armado.every((a, i) => !a.designId || creaciones[i]));
+  const firmaArmado = armado.map((a, i) => [
+    a.designId, a.talla, creaciones[i]?.estado || '', (creaciones[i]?.archivosImpresion || []).length,
+  ].join(':')).join('|');
   const firmaGuardadaRef = useRef('');
   const guardandoComboRef = useRef(false);
   useEffect(() => {
@@ -207,6 +221,7 @@ const ComboCrearPage = () => {
           setMeta((m) => ({ ...m, miComboId: guardadoId }));
         }
         queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'], refetchType: 'all' });
+        queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'], refetchType: 'all' });
         queryClient.invalidateQueries({ queryKey: ['creacion', guardadoId] });
       })
       .finally(() => { guardandoComboRef.current = false; });
@@ -336,7 +351,12 @@ const ComboCrearPage = () => {
           )}
           {miCombo && (
             <div className={styles.miCombo}>
-              <span><CheckCircle2 size={15} aria-hidden="true" /> Guardado en Mis creaciones como un combo.</span>
+              <span>
+                <CheckCircle2 size={15} aria-hidden="true" />
+                {miCombo.estado === 'borrador'
+                  ? 'Borrador guardado: lo encuentras en Crear para continuarlo después.'
+                  : 'Guardado en Mis creaciones como un combo.'}
+              </span>
               <AccionesComunidad
                 design={miCombo}
                 onCambio={() => queryClient.invalidateQueries({ queryKey: ['creacion', meta.miComboId] })}
@@ -374,7 +394,13 @@ const ComboCrearPage = () => {
                   <>
                     <strong className={styles.piezaNombre}>{p.creacion.name || 'Mi creación'}</strong>
                     {p.creacion.color?.nombre && <span className={styles.ayuda}>{p.creacion.color.nombre}</span>}
-                    {!p.lista && <p className={styles.aviso}>Ábrelo y guárdalo otra vez para prepararlo para imprimir.</p>}
+                    {!p.lista && (
+                      <p className={styles.aviso}>
+                        {p.creacion.estado === 'borrador'
+                          ? 'Sin terminar: continúa y guárdala para tenerla lista.'
+                          : 'Ábrelo y guárdalo otra vez para prepararlo para imprimir.'}
+                      </p>
+                    )}
                     {p.tallas.length > 0 && (
                       <div className={styles.tallas} role="radiogroup" aria-label={`Talla de la prenda ${p.i + 1}`}>
                         {p.tallas.map((t) => (
@@ -400,7 +426,7 @@ const ComboCrearPage = () => {
                         state={estadoEstudio}
                         className={styles.secundario}
                       >
-                        <Pencil size={15} aria-hidden="true" /> Editar
+                        <Pencil size={15} aria-hidden="true" /> {p.creacion.estado === 'borrador' ? 'Continuar' : 'Editar'}
                       </Link>
                       {vaciasIguales > 0 && p.lista && (
                         <button type="button" className={styles.secundario} onClick={() => usarEnLasDemas(p.i)}>
