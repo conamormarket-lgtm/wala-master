@@ -194,42 +194,12 @@ export async function claimReferralCoins(referralId) {
  * Obtiene el ranking Top 10 del mes actual
  */
 export async function getTopReferrersOfMonth() {
+  // Lo arma rankingReferidosSecure: los registros de referidos llevan el nombre
+  // de quien entró y su pedido, así que el navegador ya no lee los de otras
+  // cuentas. Solo vuelve código, compras y monedas del mes.
   try {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    
-    // Cuenta las monedas reclamadas este mes (claimedAt lo pone el servidor al
-    // pagar). Antes filtraba por completedAt, que solo ponía la aprobación del
-    // admin, y además pedía un índice compuesto que no existía: el ranking salía
-    // siempre vacío. Se piden los 'claimed' (las reglas solo dejan listar esos
-    // de otras cuentas) y el mes se filtra acá, sin índice compuesto.
-    const q = query(
-      collection(db, REFERRALS_COLLECTION),
-      where('status', '==', 'claimed')
-    );
-
-    const snapshot = await getDocs(q);
-    const desde = startOfMonth.getTime();
-
-    // Agrupar por código de referido
-    const userStats = {};
-    snapshot.docs.forEach(doc => {
-      const data = doc.data();
-      if (!((data.claimedAt?.toMillis?.() || 0) >= desde)) return;
-      const code = data.referrerCode;
-      if (!userStats[code]) {
-        userStats[code] = { referrerCode: code, count: 0, coins: 0 };
-      }
-      userStats[code].count += 1;
-      userStats[code].coins += data.earnedCoins || 0;
-    });
-    
-    // Ordenar y tomar Top 10
-    const top10 = Object.values(userStats)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
-      
-    return { data: top10, error: null };
+    const res = await httpsCallable(getFunctions(), 'rankingReferidosSecure')({});
+    return { data: res?.data?.top || [], error: null };
   } catch (error) {
     return { data: [], error: error.message };
   }

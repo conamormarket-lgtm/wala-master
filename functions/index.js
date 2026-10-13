@@ -3983,6 +3983,29 @@ exports.invitacionReferidoSecure = functions.https.onCall(async (data) => {
   }
 });
 
+// Ranking del mes (Mis Referidos): quiénes cobraron más referidos desde el día
+// 1 (hora de Lima). Lo arma el servidor y devuelve solo código, compras y
+// monedas: los registros de `referrals` llevan el nombre de quien entró y su
+// pedido, así que las reglas ya no dejan que otras cuentas los lean.
+exports.rankingReferidosSecure = functions.https.onCall(async (data, context) => {
+  requireAuth(context);
+  const limaAhora = new Date(Date.now() - 5 * 60 * 60 * 1000);
+  const inicioMes = new Date(Date.UTC(limaAhora.getUTCFullYear(), limaAhora.getUTCMonth(), 1, 5));
+  const snap = await db.collection("referrals")
+    .where("claimedAt", ">=", admin.firestore.Timestamp.fromDate(inicioMes)).get();
+  const porCodigo = {};
+  snap.docs.forEach((d) => {
+    const r = d.data() || {};
+    if (r.status !== "claimed" || !r.referrerCode) return;
+    const fila = porCodigo[r.referrerCode] || (porCodigo[r.referrerCode] = { referrerCode: r.referrerCode, count: 0, coins: 0 });
+    fila.count += 1;
+    fila.coins += Number(r.earnedCoins) || 0;
+  });
+  return {
+    top: Object.values(porCodigo).sort((a, b) => b.count - a.count || b.coins - a.coins).slice(0, 10),
+  };
+});
+
 // "Ver pedido" en Mis Referidos: qué compró la persona referida, cuánto y en
 // qué etapa va, sin ningún dato suyo (referidos.resumenPedidoReferido).
 exports.detalleReferidoSecure = functions.https.onCall(async (data, context) => {

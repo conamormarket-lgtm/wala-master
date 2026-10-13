@@ -223,47 +223,20 @@ service cloud.firestore {
     // cliente solo necesita leerlas como admin.
     match /challengeEvidences/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
 
-    // Referidos (un doc = un enlace). El navegador solo crea el enlace y marca
-    // "Entró al link"; la compra (purchased/orderId/orderTotal) y el cobro
-    // (claimed/earnedCoins/claimedAt) los escribe SOLO el servidor
-    // (functions/index.js: vincularCompraReferido, claimReferralSecure). Antes
-    // cualquiera podía reescribir cualquier enlace: cambiarle el código para
-    // llevarse la compra de otro, o inflar el ranking.
+    // Referidos: un doc = una persona que abrió un link. Todo lo escribe el
+    // servidor (registrarVisitaReferidoSecure, aceptarInvitacionSecure,
+    // vincularCompraReferido, claimReferralSecure), con el admin SDK. Antes el
+    // navegador podía crear y reescribir enlaces: cambiarles el código para
+    // llevarse la compra de otro, o inflar el ranking. Cada doc lleva el
+    // nombre de quien entró y su pedido: lo leen solo quien compartió el link
+    // (Mis Referidos) y el admin. El ranking lo arma rankingReferidosSecure.
     function miCodigoReferido() {
       return get(/databases/$(database)/documents/portal_clientes_users/$(request.auth.uid)).data.get('referralCode', '');
     }
-    function codigoReferidoValido(c) {
-      return c is string && c.size() > 0 && c.size() <= 20;
-    }
     match /referrals/{id} {
-      // Un enlace por su id: lo abre quien recibió el link (con o sin sesión).
-      allow get: if true;
-      // Listas: las propias (Mis Referidos), las ya cobradas (ranking del mes)
-      // y todas para el admin.
-      allow list: if isAdmin()
-        || (isAuthenticated() && resource.data.referrerCode == miCodigoReferido())
-        || (isAuthenticated() && resource.data.status == 'claimed');
-      // Generar enlace: con sesión y con TU código.
-      // Abrir un link ?ref=CODIGO sin shareId (sorteos): nace ya abierto, sin sesión.
-      allow create: if (
-          isAuthenticated()
-          && request.resource.data.keys().hasOnly(['referrerCode', 'status', 'createdAt'])
-          && request.resource.data.status == 'sent'
-          && request.resource.data.createdAt == request.time
-          && request.resource.data.referrerCode == miCodigoReferido()
-        ) || (
-          request.resource.data.keys().hasOnly(['referrerCode', 'status', 'clickedAt', 'createdAt'])
-          && request.resource.data.status == 'clicked'
-          && codigoReferidoValido(request.resource.data.referrerCode)
-          && request.resource.data.clickedAt == request.time
-          && request.resource.data.createdAt == request.time
-        );
-      // Abrir un enlace generado: solo "Enlace creado" → "Entró al link", una vez.
-      allow update: if resource.data.status == 'sent'
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'clickedAt', 'updatedAt'])
-        && request.resource.data.status == 'clicked'
-        && request.resource.data.clickedAt == request.time
-        && request.resource.data.get('updatedAt', request.time) == request.time;
+      allow read: if isAdmin()
+        || (isAuthenticated() && resource.data.referrerCode == miCodigoReferido());
+      allow create, update: if false;
       allow delete: if isAdmin();
     }
 
