@@ -3,6 +3,7 @@ import { ArrowRight, Loader2, LogOut, RefreshCw, ShoppingBag, Heart, Sparkles, C
 import { Enlace } from './Enlace';
 import Boton from './Boton';
 import { soles } from './TarjetaProducto';
+import { IconoWala } from './IconosWala';
 import s from './MenusCabecera.module.css';
 
 /*
@@ -182,7 +183,9 @@ const iniciales = (nombre) => String(nombre || '?').trim().split(/\s+/).slice(0,
  * Menú de cuenta.
  *  - usuario: { nombre, email, avatar } o null (sin sesión)
  *  - grupos: [{ titulo, items: [{ to, texto, Icono }] }]
- *  - promo: { texto, url } enlace destacado opcional (p. ej. la encuesta)
+ *  - promo: { texto, url } enlace destacado opcional, o con título:
+ *    { titulo, texto, url, monedas, icono } (p. ej. la encuesta: "Perfil de
+ *    regalos · Gana 15 monedas")
  */
 export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNavegar, urlLogin = '/login', urlRegistro = '/registro' }) {
   if (!usuario) {
@@ -212,7 +215,18 @@ export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNave
       </div>
       {promo && (
         <Enlace to={promo.url} className={s.promo} onClick={onNavegar}>
-          <Sparkles aria-hidden="true" /> {promo.texto}
+          {promo.titulo ? (
+            <>
+              <IconoWala nombre={promo.icono || 'regalo'} tamano={34} />
+              <span className={s.promoTexto}>
+                <strong>{promo.titulo}</strong>
+                {promo.texto && <span>{promo.texto}</span>}
+              </span>
+              {promo.monedas ? <span className={s.promoMonedas}>+{promo.monedas}</span> : null}
+            </>
+          ) : (
+            <><Sparkles aria-hidden="true" /> {promo.texto}</>
+          )}
         </Enlace>
       )}
       <nav aria-label="Accesos de cuenta">

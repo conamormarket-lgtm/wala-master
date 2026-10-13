@@ -1,10 +1,10 @@
 import React, { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, User, Package, Settings, Gift, Ticket, Sparkles } from 'lucide-react';
 import {
   PaginaTienda, MarcoTienda, PaginaCarrito, PaginaPedidos, Pestanas, Chip, Interruptor, Boton,
   BarraAdmin, AvisoSistema, BannerApp, BotonWhatsApp, KapiFlotante, BurbujaRegalos, PildoraRecompensa,
   VentanaCampana, AvisoIdioma, ProveedorEnlaces, PanelEditor, useBorrador, SeccionEditable, InsertarAqui,
-  moverSeccion, duplicarSeccion, rutaDeMarca, tarjetaDesdeProducto, REGISTRO_SECCIONES,
+  moverSeccion, duplicarSeccion, rutaDeMarca, tarjetaDesdeProducto, REGISTRO_SECCIONES, enlaceWhatsApp,
 } from './kit';
 import { empresa } from '../config/empresa';
 import INICIO from './demo/inicio.json';
@@ -55,6 +55,24 @@ const PIE_LEGAL = {
     { texto: 'Políticas de Privacidad', url: '/politicas-de-privacidad' },
   ],
 };
+
+/* Menú de la cuenta: los mismos accesos que el header de la tienda
+   (ACCESOS_RAPIDOS_HEADER sobre useCuentaNavGroups). */
+const GRUPOS_CUENTA = [
+  { titulo: 'Cuenta', items: [
+    { to: '/cuenta/perfil', texto: 'Mi perfil', Icono: User },
+    { to: '/cuenta/pedidos', texto: 'Mis pedidos', Icono: Package },
+    { to: '/cuenta/ajustes', texto: 'Ajustes', Icono: Settings },
+  ] },
+  { titulo: 'Recompensas', items: [
+    { to: '/cuenta/catalogo', texto: 'Catálogo de recompensas', Icono: Gift },
+    { to: '/cuenta/cupones', texto: 'Mis cupones', Icono: Ticket },
+  ] },
+  { titulo: 'Personalización', items: [
+    { to: '/cuenta/creaciones', texto: 'Mis creaciones', Icono: Sparkles },
+  ] },
+];
+const PROMO_CUENTA = { titulo: 'Perfil de regalos', texto: 'Completa la encuesta', monedas: 15, url: '/encuesta-suscripcion' };
 
 const META_ENVIO = 150;
 const { destacados, nuevos, ofertas } = INICIO.productos;
@@ -175,6 +193,9 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     tema: tema === 'dark' ? 'noche' : 'claro',
     onTema: cambiarTema,
     usuario: conSesion ? usuario : null,
+    gruposCuenta: GRUPOS_CUENTA,
+    promoCuenta: pildora ? PROMO_CUENTA : undefined,
+    onCerrarSesion: () => setRol('visitante'),
     monedas: 43,
     notificaciones,
     onLeer,
@@ -283,6 +304,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       categorias={INICIO.categorias}
       marcas={marcas}
       onAgregar={onAgregar}
+      propsPara={(sec) => (sec.type === 'faq_accordion' ? { contacto: enlaceWhatsApp(empresa.whatsapp, '¡Hola Walá! Tengo una duda.') } : undefined)}
       envolver={envolver}
     />
   ) : (

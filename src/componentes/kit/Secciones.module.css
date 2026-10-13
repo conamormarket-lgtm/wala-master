@@ -528,53 +528,33 @@ a.anuncio:hover {
 }
 
 /* ── FAQ ── */
-.faqKapi {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  max-width: 340px;
-  margin-top: 0.5rem;
-}
+.faqTitulo { grid-area: titulo; }
+.faqPreguntas { grid-area: preguntas; min-width: 0; }
+.faqAyuda { grid-area: ayuda; }
 
-.faqKapi img {
-  flex-shrink: 0;
-  width: 84px;
-  height: 84px;
-  transform: rotate(-6deg);
-}
-
-/* Globo de diálogo de Kapi. */
-.faqKapi p {
-  position: relative;
-  margin: 0;
-  padding: 0.7rem 0.85rem;
-  border-radius: 16px 16px 16px 4px;
-  background: var(--primary-light);
-  color: var(--color-text);
-  font-size: 0.85rem;
-  line-height: 1.4;
-}
-
-.faqKapi strong {
-  color: var(--primary-color);
-}
-
-@container (max-width: 860px) {
-  .faqKapi {
-    display: none;
-  }
-}
-
+/* Dividido: título y ayuda a la izquierda, preguntas a la derecha. */
 .faqDividido {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
-  gap: clamp(1rem, 4cqi, 3rem);
+  grid-template-areas:
+    'titulo preguntas'
+    'ayuda preguntas';
+  grid-template-rows: auto 1fr;
+  column-gap: clamp(1rem, 4cqi, 3rem);
   align-items: start;
+}
+
+/* Apilado (y celular): título, preguntas y la ayuda al final. */
+.faqApilado {
+  display: grid;
+  grid-template-areas: 'titulo' 'preguntas' 'ayuda';
 }
 
 @container (max-width: 860px) {
   .faqDividido {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'titulo' 'preguntas' 'ayuda';
+    grid-template-rows: auto;
   }
 }
 

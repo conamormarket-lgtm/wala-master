@@ -25,7 +25,8 @@ Todo se arma con lo del nivel de abajo; nada se dibuja dos veces.
    `TarjetaProducto`, y las de `piezas/`: `TarjetaCategoria` (cuadro · círculo
    · burbuja), `TarjetaTestimonio`, `TarjetaMarca`, `LogoMarca`,
    `TarjetaDestacado`, `Beneficio` (píldora · fila), `BarraProgreso` /
-   `StockBajo`.
+   `StockBajo`, `TarjetaAyuda` (Kapi asomado), y las del marco
+   (`piezas/Flotantes.jsx`, `piezas/Marco.jsx`).
 2. **Secciones** (`Secciones*.jsx`): cada tipo del builder, hecho solo con
    piezas. En `/componentes.html` (vista Secciones) cada ficha dice con qué
    piezas está hecha.

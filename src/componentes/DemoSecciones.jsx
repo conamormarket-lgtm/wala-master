@@ -171,7 +171,7 @@ const PIEZAS_DE = {
   testimonials: ['TituloSeccion', 'Carrusel', 'TarjetaTestimonio'],
   marquee: ['TituloSeccion', 'Marquesina', 'LogoMarca'],
   feature_list: ['TituloSeccion', 'Beneficio'],
-  faq_accordion: ['TituloSeccion', 'Acordeon'],
+  faq_accordion: ['TituloSeccion', 'Acordeon', 'TarjetaAyuda'],
   map_location: ['EtiquetaColgante', 'Boton'],
   footer_columns: ['LogoWala', 'EtiquetaColgante', 'Enlace'],
 };

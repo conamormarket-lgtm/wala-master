@@ -28,6 +28,7 @@ import CUADRO from './demo/cuadro.svg';
 // Marcas reales de la tienda (copia de tienda_brands, solo lectura).
 import MARCAS_TIENDA from './demo/marcas.json';
 import DemoTienda from './DemoTienda';
+import INICIO from './demo/inicio.json';
 
 const FRENTE = '/prendas/hoodie-frente.webp';
 const ESPALDA = '/prendas/hoodie-espalda.webp';
@@ -73,6 +74,9 @@ const vistaDe = (id) => Object.keys(INDICES).find((v) => INDICES[v].some(([x]) =
  * los adaptadores del kit, igual que se haría en la tienda.
  */
 const TALLAS = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+/** Foto real de una categoría de la tienda (demo/inicio.json). */
+const fotoCategoria = (nombre) => INICIO.categorias.find((c) => c.name === nombre)?.imageUrl;
+
 const PRODUCTOS_DEMO = [
   {
     id: 'essentials', name: 'Polera Walá Essentials con capucha', price: 129.9, salePrice: 89.9, inStock: 24,
@@ -114,6 +118,17 @@ const PRODUCTOS_DEMO = [
     // Combo: un color por pieza y talla compartida.
     id: 'combo', name: 'Combo polera x2 · Él y Ella', price: 169.9, inStock: 6, isComboProduct: true, mainImage: FRENTE,
     comboItems: [{ productId: 'el', name: 'Polera Él' }, { productId: 'ella', name: 'Polera Ella' }],
+  },
+  {
+    // Combo de 3 piezas (fotos reales de las categorías de la tienda): al
+    // pasar el ratón, "Incluye 3 piezas" en fila.
+    id: 'combo-regalo', name: 'Combo regalo · Reloj, billetera y lentes', price: 240, salePrice: 199, inStock: 3, isComboProduct: true,
+    mainImage: fotoCategoria('Combos'),
+    comboItems: [
+      { productId: 'reloj', name: 'Reloj', imageUrl: fotoCategoria('Relojes') },
+      { productId: 'billetera', name: 'Billetera', imageUrl: fotoCategoria('Billeteras') },
+      { productId: 'lentes', name: 'Lentes', imageUrl: fotoCategoria('Lentes') },
+    ],
   },
   {
     // Prenda base del estudio Crear: se diseña desde cero.

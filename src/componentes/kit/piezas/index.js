@@ -8,3 +8,4 @@ export { Beneficio } from './Beneficio';
 export { BarraProgreso, BarraProgresoVacia, StockBajo } from './BarraProgreso';
 export { PilaFlotante, BotonWhatsApp, enlaceWhatsApp, KapiFlotante, BurbujaRegalos, PildoraRecompensa } from './Flotantes';
 export { AvisoSistema, BannerApp, BarraAdmin, PieLegal, AvisoIdioma, VentanaCampana, BotonTema } from './Marco';
+export { TarjetaAyuda } from './TarjetaAyuda';

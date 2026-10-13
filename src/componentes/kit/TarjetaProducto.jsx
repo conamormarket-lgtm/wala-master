@@ -134,17 +134,33 @@ export default function TarjetaProducto({
         </div>
 
         {esCombo && (
-          <div className={s.incluye} aria-hidden="true">
-            <span className={s.incluyeTitulo}>Incluye</span>
-            <ul>
-              {piezas.slice(0, 3).map((pz, i) => (
-                <li key={pz.nombre || i}>
-                  <span className={s.incluyeFoto}>{pz.imagen ? <img src={pz.imagen} alt="" loading="lazy" decoding="async" /> : (pz.nombre || '?').charAt(0)}</span>
-                  <span className={s.incluyeNombre}>{pz.nombre}</span>
-                </li>
-              ))}
-              {piezas.length > 3 && <li><span className={`${s.incluyeFoto} ${s.incluyeMas}`}>+{piezas.length - 3}</span></li>}
-            </ul>
+          // Con 1 o 2 piezas, una fila por pieza. Con 3 o más, fotos en fila
+          // (hasta 4 y "+N") y los nombres en un renglón: el panel no crece
+          // y no tapa la foto aunque el combo traiga muchas piezas.
+          <div className={[s.incluye, piezas.length >= 3 && s.incluyeCompacto].filter(Boolean).join(' ')} aria-hidden="true">
+            <span className={s.incluyeTitulo}>{piezas.length >= 3 ? `Incluye ${piezas.length} piezas` : 'Incluye'}</span>
+            {piezas.length >= 3 ? (
+              <>
+                <ul className={s.incluyeFotos}>
+                  {piezas.slice(0, 4).map((pz, i) => (
+                    <li key={pz.nombre || i}>
+                      <span className={s.incluyeFoto}>{pz.imagen ? <img src={pz.imagen} alt="" loading="lazy" decoding="async" /> : (pz.nombre || '?').charAt(0)}</span>
+                    </li>
+                  ))}
+                  {piezas.length > 4 && <li><span className={`${s.incluyeFoto} ${s.incluyeMas}`}>+{piezas.length - 4}</span></li>}
+                </ul>
+                <span className={s.incluyeNombres}>{piezas.map((pz) => pz.nombre).filter(Boolean).join(' · ')}</span>
+              </>
+            ) : (
+              <ul>
+                {piezas.map((pz, i) => (
+                  <li key={pz.nombre || i}>
+                    <span className={s.incluyeFoto}>{pz.imagen ? <img src={pz.imagen} alt="" loading="lazy" decoding="async" /> : (pz.nombre || '?').charAt(0)}</span>
+                    <span className={s.incluyeNombre}>{pz.nombre}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
 

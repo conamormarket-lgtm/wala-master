@@ -248,7 +248,7 @@ export function Cabecera({
         <span className={s.ocultarMovil}>
         <Desplegable
           titulo="Mi cuenta"
-          ancho={320}
+          ancho={340}
           {...control('cuenta')}
           disparador={(props) => (
             <button type="button" {...props} className={s.avatar} aria-label="Mi cuenta">

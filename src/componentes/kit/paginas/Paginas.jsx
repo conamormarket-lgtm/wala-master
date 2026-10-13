@@ -26,6 +26,7 @@ import s from './Paginas.module.css';
  *  - arriba: nodos sobre la cabecera (AvisoSistema, BannerApp, BarraAdmin)
  *  - cabecera: props de <Cabecera> (o null para landings sin menú)
  *  - pie: ajustes de footer_columns (o null)  · pieLegal: props de <PieLegal>
+ *  - kapiEnPie: Kapi asomado por el pie (false si la página ya termina con uno)
  *  - barraInferior: props de <BarraInferior> (o null)
  *  - flotantes: { derecha, izquierda } → <PilaFlotante> (WhatsApp, Kapi…)
  *  - contenida: el marco vive dentro de algo con su propio scroll (demo,
@@ -33,7 +34,7 @@ import s from './Paginas.module.css';
  * Cada parte lleva data-componente (Cabecera, PiePagina, BarraInferior) para
  * ubicarla en la guía (kit/guia) y en "Ver componentes".
  */
-export function MarcoTienda({ arriba, cabecera, pie, pieLegal, barraInferior, flotantes, contenida = false, children }) {
+export function MarcoTienda({ arriba, cabecera, pie, pieLegal, kapiEnPie = true, barraInferior, flotantes, contenida = false, children }) {
   return (
     <div className={s.marco}>
       {arriba && <div className={s.arriba}>{arriba}</div>}
@@ -42,7 +43,7 @@ export function MarcoTienda({ arriba, cabecera, pie, pieLegal, barraInferior, fl
       {(pie || pieLegal) && (
         <div data-componente="PiePagina">
           <BloqueSeccion ajustes={{ paddingTop: '1rem', paddingBottom: '1.5rem' }}>
-            <PiePagina ajustes={pie || {}} pieLegal={pieLegal && <PieLegal {...pieLegal} />} />
+            <PiePagina ajustes={pie || {}} pieLegal={pieLegal && <PieLegal {...pieLegal} />} kapi={kapiEnPie} />
           </BloqueSeccion>
         </div>
       )}
@@ -93,8 +94,12 @@ export function PaginaTienda({
   productos, productosPara, categorias = [], marcas = [], marcaActual = null, ...secciones
 }) {
   const catalogo = useMemo(() => ({ marcas, categorias, marcaActual }), [marcas, categorias, marcaActual]);
+  // Un solo Kapi a la vista: si la página termina con Preguntas frecuentes
+  // (su tarjeta de ayuda trae a Kapi), el pie no lo repite.
+  const orden = [...(secciones.secciones || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const kapiEnPie = orden[orden.length - 1]?.type !== 'faq_accordion';
   return (
-    <MarcoTienda {...{ arriba, cabecera, pie, pieLegal, barraInferior, flotantes, contenida }}>
+    <MarcoTienda {...{ arriba, cabecera, pie, pieLegal, kapiEnPie, barraInferior, flotantes, contenida }}>
       <RenderSecciones
         productosPara={productosPara || ((sec) => productosDeSeccion(productos, sec))}
         // Con items puestos a mano en el editor mandan esos; si no, las

@@ -13,7 +13,7 @@ import { tarjetaDesdeProducto } from './adaptadores';
 import { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
 import { EtiquetaColgante, Destello, acento } from './Marca';
 import { IconoWala, iconoDesde } from './IconosWala';
-import { Beneficio, TarjetaTestimonio, LogoMarca, TarjetaCategoria, StockBajo } from './piezas';
+import { Beneficio, TarjetaTestimonio, LogoMarca, TarjetaCategoria, StockBajo, TarjetaAyuda } from './piezas';
 import { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados } from './SeccionesContenido';
 import { BannerPrincipal, ListaBeneficios, Ubicacion, NavCategorias, GrillaProductos, CatalogoConFiltros, PiePagina } from './SeccionesExtra';
 import s from './Secciones.module.css';
@@ -360,22 +360,30 @@ export function Testimonios({ ajustes = {} }) {
 }
 
 /* ── Preguntas frecuentes (faq_accordion) ───────────────── */
-export function PreguntasFrecuentes({ ajustes = {} }) {
+/**
+ * Preguntas en acordeón y, al lado (o debajo en el celular), la tarjeta de
+ * ayuda con Kapi.
+ *  - contacto: URL para "Escríbenos" (en la tienda, el WhatsApp de la zona;
+ *    llega por propsPara). Sin ella la tarjeta no lleva botón.
+ */
+export function PreguntasFrecuentes({ ajustes = {}, contacto }) {
   const items = (ajustes.items || []).filter((i) => i?.question);
   if (!items.length) return null;
   const dividido = (ajustes.layout || 'split') === 'split';
   return (
-    <div className={dividido ? s.faqDividido : undefined}>
-      <div className={s.faqCabeza}>
+    <div className={dividido ? s.faqDividido : s.faqApilado}>
+      <div className={s.faqTitulo}>
         <TituloSeccion titulo={ajustes.title} subtitulo={ajustes.subtitle} antetitulo={ajustes.eyebrow} alinear={dividido ? 'left' : ajustes.titleAlign || 'left'} />
-        {dividido && (
-          <div className={s.faqKapi}>
-            <img src="/assets/kapi/kapi-happy.webp" alt="" width="84" height="84" loading="lazy" decoding="async" />
-            <p>¿Te quedó otra duda? <strong>Escríbenos</strong>, te respondemos rapidito.</p>
-          </div>
-        )}
       </div>
-      <Acordeon items={items} abiertoInicial={ajustes.defaultOpen ? true : false} />
+      <div className={s.faqPreguntas}>
+        <Acordeon items={items} abiertoInicial={ajustes.defaultOpen ? true : false} />
+      </div>
+      <div className={s.faqAyuda}>
+        <TarjetaAyuda
+          texto="Kapi y el equipo te responden rapidito."
+          accion={contacto ? { texto: 'Escríbenos', url: contacto } : undefined}
+        />
+      </div>
     </div>
   );
 }

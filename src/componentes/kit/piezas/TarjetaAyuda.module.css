@@ -1,0 +1,74 @@
+/* Tarjeta lila con Kapi asomado arriba a la derecha (sale del borde). */
+.ayuda {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  max-width: 380px;
+  margin-top: 3rem;
+  padding: 1.15rem 7rem 1.2rem 1.2rem;
+  border: 1px solid var(--violet-200);
+  border-radius: 22px;
+  background: var(--primary-light);
+}
+
+:global([data-theme='dark']) .ayuda {
+  border-color: rgba(167, 139, 250, 0.22);
+  background: rgba(139, 92, 246, 0.12);
+}
+
+/* Kapi suelto (su imagen ya es transparente): sin aro ni círculo. */
+.kapi {
+  position: absolute;
+  top: -2.6rem;
+  right: 0.6rem;
+  width: 104px;
+  height: auto;
+  filter: drop-shadow(0 6px 8px rgba(46, 16, 101, 0.18));
+  transform: rotate(-6deg);
+  transform-origin: 50% 100%;
+  transition: transform var(--dur-media) var(--ease-signature);
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ayuda:hover .kapi {
+    transform: rotate(0deg) translateY(-3px);
+  }
+}
+
+.titulo {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.texto {
+  margin: 0 0 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+/* Angosta (celular): Kapi más chico y más arriba para no tocar el título. */
+@container (max-width: 520px) {
+  .ayuda {
+    padding-right: 5.6rem;
+  }
+
+  .kapi {
+    top: -3rem;
+    right: 0.4rem;
+    width: 86px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kapi {
+    transition: none;
+  }
+}

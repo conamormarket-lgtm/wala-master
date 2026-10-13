@@ -454,14 +454,16 @@ const redDe = (url) => REDES.find(([re]) => re.test(url || '')) || [null, null, 
 /**
  * Columnas del pie: `type` 'text' (content), 'links' (links: [{ text, url,
  * color, bold }]) o 'social' (links con íconos según la red).
+ *  - kapi: Kapi asomado por el borde (la página lo apaga si justo arriba ya
+ *    hay otro Kapi, p. ej. la tarjeta de ayuda de Preguntas frecuentes)
  */
-export function PiePagina({ ajustes = {}, pieLegal }) {
+export function PiePagina({ ajustes = {}, pieLegal, kapi = true }) {
   const columnas = (ajustes.columns || []).filter((c) => c?.title || c?.content || c?.links?.length);
   if (!columnas.length) return null;
   return (
     <footer className={s.pie}>
       <Garabatos variante="pie" />
-      <img className={s.pieKapi} src="/assets/kapi/kapi-happy.webp" alt="" width="96" height="96" loading="lazy" decoding="async" />
+      {kapi && <img className={s.pieKapi} src="/assets/kapi/kapi-happy.webp" alt="" width="96" height="96" loading="lazy" decoding="async" />}
       <div className={s.pieMarca}>
         <LogoWala tamano={34} tono="blanco" />
         <EtiquetaColgante tono="magenta" tamano="sm">Hecho con amor en Perú</EtiquetaColgante>

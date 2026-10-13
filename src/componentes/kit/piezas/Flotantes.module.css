@@ -136,30 +136,29 @@
 }
 
 /* ── Kapi ──────────────────────────────────────────────── */
+/* Kapi suelto, como sticker (su imagen ya es transparente): sin círculo. */
 .kapi {
-  width: 60px;
-  height: 60px;
-  border: 3px solid var(--violet-200);
-  background: #fff;
+  width: 64px;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .kapi img {
+  display: block;
   width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
+  height: auto;
+  filter: drop-shadow(0 6px 8px rgba(46, 16, 101, 0.28));
   user-select: none;
-}
-
-:global([data-theme='dark']) .kapi {
-  border-color: var(--violet-500);
+  transform: rotate(-6deg);
 }
 
 /* "!" en un sello con el degradado del logo. */
 .exclamacion {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  top: -2px;
+  right: -2px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

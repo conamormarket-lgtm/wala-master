@@ -346,6 +346,29 @@
   color: #fff;
 }
 
+/* 3 piezas o más: fotos en fila y nombres en un renglón. */
+.incluye .incluyeFotos {
+  flex-direction: row;
+  gap: 0.35rem;
+}
+
+.incluyeCompacto .incluyeFoto {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+}
+
+.incluyeNombres {
+  display: block;
+  margin-top: 0.35rem;
+  overflow: hidden;
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0.9;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .incluyeNombre {
   min-width: 0;
   overflow: hidden;

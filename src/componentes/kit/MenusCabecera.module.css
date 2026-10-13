@@ -388,6 +388,40 @@
   flex-shrink: 0;
 }
 
+/* Promo con título (p. ej. la encuesta): sello de regalo, dos líneas y las
+   monedas que se ganan. */
+.promoTexto {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.promoTexto strong {
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.promoTexto span {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.promoMonedas {
+  flex-shrink: 0;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: #fbbf24;
+  color: #2e1065;
+  font-family: var(--fuente-marca);
+  font-size: 0.74rem;
+  font-weight: 900;
+  transform: rotate(4deg);
+}
+
 .grupo + .grupo {
   margin-top: 0.6rem;
 }
@@ -405,6 +439,7 @@
 
 .cuentaPie {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
@@ -412,8 +447,10 @@
   border-top: 1px solid var(--color-border);
 }
 
-.cuentaPie .verTodo {
+.cuentaPie .verTodo,
+.cuentaPie .salir {
   margin-top: 0;
+  white-space: nowrap;
 }
 
 .salir {
