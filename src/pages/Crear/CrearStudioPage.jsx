@@ -2203,40 +2203,6 @@ const CrearStudioPage = () => {
     }
   };
 
-  /**
-   * Pestañas "Prenda 1 · Prenda 2": pasar a otra pieza del combo sin volver
-   * a la página del combo. Lo de esta pieza se guarda antes (si tiene diseño)
-   * y la otra se abre con lo suyo: su creación, el diseño de la comunidad que
-   * le toca o en blanco. Recarga la página para abrir el estudio limpio.
-   */
-  const irAPieza = async (j) => {
-    if (!enCombo || !comboActual || j === piezaParam || procesando) return;
-    try {
-      if (zonasUsadas.length) {
-        if (!validar()) return;
-        let idPieza = designIdRef.current;
-        if (!idPieza || esBorradorRef.current || hayCambios) idPieza = (await guardarCreacion(nombre, talla)).id;
-        ponerEnCombo(idPieza);
-        await sincronizarCombo();
-      }
-    } catch (err) {
-      toast.error(`No pudimos guardar esta prenda: ${err?.message || err}`);
-      setProcesando(null);
-      return;
-    }
-    const armado = await piezasDelCombo(comboActual);
-    const { plantilla } = leerMetaArmado(comboParam);
-    const destino = armado[j]?.designId;
-    // Si otra pieza lleva el mismo diseño, se edita una copia (no cambia la otra).
-    const compartido = destino && armado.some((a, k) => k !== j && a.designId === destino);
-    let url = `/crear/${comboActual.piezas[j].prendaId}?combo=${encodeURIComponent(comboParam)}&pieza=${j}`;
-    if (destino) url += compartido ? `&copiar=${destino}` : `&designId=${destino}`;
-    else if (plantilla) url += `&plantilla=${plantilla}&plantillaPieza=${j}`;
-    url += conMio();
-    try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
-    window.location.assign(url);
-  };
-
   const comprar = async (tallaElegida) => {
     setPidiendoTalla(false);
     setTalla(tallaElegida);
@@ -2590,27 +2556,6 @@ const CrearStudioPage = () => {
           </Link>
         )}
       </div>
-
-      {enCombo && comboActual?.piezas?.length > 1 && (
-        <nav className={styles.piezasCombo} aria-label="Prendas del combo">
-          <span className={styles.piezasComboTitulo}>{comboActual.name}</span>
-          <div className={styles.piezasComboTabs} role="tablist">
-            {comboActual.piezas.map((p, j) => (
-              <button
-                key={j}
-                type="button"
-                role="tab"
-                aria-selected={j === piezaParam}
-                className={`${styles.piezaComboTab} ${j === piezaParam ? styles.piezaComboTabActiva : ''}`}
-                onClick={() => irAPieza(j)}
-                disabled={!!procesando}
-              >
-                Prenda {j + 1}
-              </button>
-            ))}
-          </div>
-        </nav>
-      )}
 
       {designId && (
         <div className={styles.editando}>
