@@ -9,6 +9,7 @@ import { getComboCrear } from '../../services/combosCrear';
 import { getPrendaBase } from '../../services/prendasBase';
 import { getDesignById, getDesignsByUser } from '../../services/designs';
 import { leerPrendaBase, tallasDeColor } from '../../utils/prendaBase';
+import { useAlVerUnaVez } from '../../hooks/useAlVerUnaVez';
 import { creacionLista } from './creacionCarrito';
 import { leerArmado, guardarArmado, olvidarArmado, preciosDeCombo, itemDeCombo, leerMetaArmado, guardarMetaArmado } from './comboCrear';
 import { guardarMiCombo } from '../../services/misCombos';
@@ -26,6 +27,25 @@ const tallasPara = (prenda, creacion) => {
   const cfg = leerPrendaBase(prenda);
   const color = cfg.colores.find((c) => c.id === creacion?.color?.id || c.nombre === creacion?.color?.nombre);
   return color ? tallasDeColor(color, cfg) : cfg.tallas;
+};
+
+/**
+ * Foto de una pieza: se mueve una vez al aparecer (la segunda un poco
+ * después, como saludando) y se inclina al pasar el mouse por la tarjeta.
+ */
+const FotoPieza = ({ src, alt, vacia, indice }) => {
+  const ref = useRef(null);
+  const visto = useAlVerUnaVez(ref);
+  return (
+    <img
+      ref={ref}
+      src={src}
+      alt={alt}
+      className={`${vacia ? styles.fotoVacia : ''} ${visto ? styles.saludo : ''}`}
+      style={{ '--retraso': `${indice * 0.12}s` }}
+      loading="lazy"
+    />
+  );
 };
 
 /**
@@ -329,7 +349,7 @@ const ComboCrearPage = () => {
           return (
             <li key={p.i} className={`${styles.pieza} ${p.lista ? styles.piezaLista : ''}`}>
               <div className={styles.piezaFoto}>
-                {foto && <img src={foto} alt={p.prenda?.name || ''} className={p.creacion || p.plantilla ? '' : styles.fotoVacia} loading="lazy" />}
+                {foto && <FotoPieza src={foto} alt={p.prenda?.name || ''} vacia={!p.creacion && !p.plantilla} indice={p.i} />}
                 <span className={styles.numero}>{p.i + 1}</span>
                 {p.lista && <CheckCircle2 className={styles.check} size={22} aria-label="Lista" />}
               </div>
