@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
+import { volarMonedasGanadas } from '../../utils/animations';
 import {
   registrarVisita,
   aceptarInvitacion,
@@ -32,7 +33,7 @@ async function completarNombre(referralId) {
  */
 const ReferralTracker = () => {
   const location = useLocation();
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading, reloadProfile } = useAuth();
   const toast = useGlobalToast();
   const miCodigo = (userProfile?.referralCode || '').toUpperCase();
   const aceptando = useRef(false);
@@ -101,6 +102,8 @@ const ReferralTracker = () => {
         if (res?.aceptada) {
           guardarReferido({ ...actual, invitacion: 'aceptada', aceptadaMs: Date.now() });
           if (res.bono) {
+            // El bono se ve al instante: saldo nuevo y monedas volando al contador.
+            Promise.resolve(reloadProfile?.()).then(() => volarMonedasGanadas(null, res.bono));
             const quien = res.nombre || actual.nombre;
             toast.success(quien
               ? `¡${quien} te regaló ${res.bono} monedas de bienvenida!`
@@ -113,7 +116,7 @@ const ReferralTracker = () => {
       })
       .catch(() => { /* sin red: se reintenta en la próxima carga */ })
       .finally(() => { aceptando.current = false; });
-  }, [conCuenta, loading, location.pathname, user?.uid, userProfile?.dni, userProfile?.phone, miCodigo, toast]);
+  }, [conCuenta, loading, location.pathname, user?.uid, userProfile?.dni, userProfile?.phone, miCodigo, toast, reloadProfile]);
 
   return null;
 };

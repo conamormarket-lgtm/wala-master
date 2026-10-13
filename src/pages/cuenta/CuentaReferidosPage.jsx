@@ -19,6 +19,7 @@ import { IconoWala } from '../../componentes/kit/IconosWala';
 import GrupoReferidos from './components/GrupoReferidos';
 import styles from './CuentaReferidosPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
+import { volarMonedasGanadas } from '../../utils/animations';
 
 // Cada doc de `referrals` es UNA persona que abrió un link. Se agrupan por link:
 //  - 'invitacion': tu link de invitación (/invitar/TU-CODIGO).
@@ -36,7 +37,7 @@ const ms = (t) => t?.toMillis?.() || 0;
 const actividad = (r) => Math.max(ms(r.claimedAt), ms(r.purchasedAt), ms(r.aceptadaAt), ms(r.clickedAt), ms(r.createdAt));
 
 const CuentaReferidosPage = () => {
-  const { userProfile } = useAuth();
+  const { userProfile, reloadProfile } = useAuth();
   const toast = useGlobalToast();
   const queryClient = useQueryClient();
   const [claimingId, setClaimingId] = useState(null);
@@ -133,9 +134,11 @@ const CuentaReferidosPage = () => {
     copiar(`${texto} ${miLink}`, '¡Mensaje con tu link copiado!');
   };
 
-  const handleClaim = async (r) => {
+  const handleClaim = async (r, ev) => {
     // El monto real (y si ya se puede) lo decide claimReferralSecure contra el
     // ERP: el pedido tiene que haber salido de ese link y estar entregado.
+    // El botón se toma ANTES del await: después React ya soltó el evento.
+    const boton = ev?.currentTarget || null;
     setClaimingId(r.id);
     const { earned, error } = await claimReferralCoins(r.id);
     setClaimingId(null);
@@ -145,6 +148,10 @@ const CuentaReferidosPage = () => {
       setDetallesAbiertos((prev) => ({ ...prev, [r.id]: true }));
       return;
     }
+    // Saldo nuevo en la cabecera y las monedas volando del botón al contador
+    // (sin recargar la página). La cabecera las suma al aterrizar.
+    await reloadProfile?.();
+    volarMonedasGanadas(boton, Number(earned) || 0);
     toast.success(`¡Has reclamado ${earned ?? ''} monedas con éxito!`);
     queryClient.invalidateQueries({ queryKey: ['myReferrals', referralCode] });
     queryClient.invalidateQueries({ queryKey: ['referralOrder', r.id] });

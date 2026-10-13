@@ -148,7 +148,7 @@ const Persona = ({ r, nombre, ahora, abierto, onToggle, onClaim, reclamando }) =
             <button
               type="button"
               className={styles.btnSolido}
-              onClick={onClaim}
+              onClick={(ev) => onClaim(ev)}
               disabled={reclamando || !listoParaReclamar}
               title={listoParaReclamar ? undefined : 'Se activa cuando el pedido se entrega'}
             >
@@ -218,7 +218,7 @@ const GrupoReferidos = ({
               ahora={ahora}
               abierto={!!detallesAbiertos[r.id]}
               onToggle={() => onToggleDetalle(r.id)}
-              onClaim={() => onClaim(r)}
+              onClaim={(ev) => onClaim(r, ev)}
               reclamando={claimingId === r.id}
             />
           ))}
