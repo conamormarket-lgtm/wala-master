@@ -1,5 +1,7 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
+// Los enlaces del kit (Boton con `to`, secciones…) navegan con el router.
+import { ProveedorEnlaces } from './componentes/kit/Enlace';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { AuthProvider } from './contexts/AuthContext';
@@ -360,6 +362,7 @@ function App() {
                     <CartProvider>
                       <LayoutProvider>
                         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                         <ProveedorEnlaces componente={Link}>
                           <CustomFontsInjector routeFonts />
                           <DeepLinkHandler />
                           <ScrollToTop />
@@ -575,6 +578,7 @@ function App() {
                               </Suspense>
                             </ErrorBoundary>
                           </GlobalLayout>
+                         </ProveedorEnlaces>
                         </Router>
                       </LayoutProvider>
                     </CartProvider>

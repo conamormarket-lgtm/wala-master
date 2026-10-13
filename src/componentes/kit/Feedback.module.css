@@ -148,7 +148,8 @@
   position: fixed;
   left: 50%;
   bottom: calc(var(--toasts-abajo) + var(--safe-bottom, 0px));
-  z-index: 1000;
+  /* Por encima de las ventanas de Crear (10050) en la tienda. */
+  z-index: 10100;
   width: min(420px, calc(100vw - 24px));
   transform: translateX(-50%);
   pointer-events: none;
@@ -291,6 +292,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Mensaje de una sola línea de texto (los de la tienda): hasta dos renglones
+   antes de cortarse, para que un error no quede a medias. */
+.toastTexto strong:only-child {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
 }
 
 .toastTexto span {

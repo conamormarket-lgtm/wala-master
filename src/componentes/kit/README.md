@@ -214,10 +214,16 @@ Notas de las secciones de contenido:
 
 ## Llevarlo a la tienda
 
-La tienda todavía no usa el kit. Conviene migrar por partes, de lo más
-simple a lo más conectado, comprobando cada paso:
+Se migra por partes, de lo más simple a lo más conectado, comprobando cada
+paso. En la tienda, importar **directo del archivo**
+(`componentes/kit/Boton`), no de `kit/index.js`: el índice arrastraría el CSS
+de todo el kit al paquete principal.
 
-1. Proveedores (`ProveedorEnlaces` + `ProveedorToasts`) y `Boton`.
+1. ✓ Proveedores y `Boton`: `ProveedorEnlaces` envuelve el router en
+   `App.jsx`; `ToastProvider` (`contexts/ToastContext.jsx`) ahora es un puente
+   a `ProveedorToasts`, así que todos los `useGlobalToast()` de la tienda ya
+   muestran los toasts del kit sin cambiar sus llamadas. Carrito y checkout
+   usan `Boton` (el verde de WhatsApp y "Aplicar" del cupón siguen igual).
 2. Avisos, toasts y `HojaInferior` (reemplazan modales sueltos).
 3. `TarjetaProducto` en las grillas (adaptando los campos del producto).
 4. Carrito, checkout y Mis pedidos.

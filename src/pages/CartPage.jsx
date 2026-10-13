@@ -1,15 +1,13 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import Cart from './Tienda/components/Cart';
-// Design System "Aurora Violeta Serena": CTA premium + fondo de marca suave.
-// Uso SOLO presentacional (aditivo); no toca la lógica del carrito (vive en <Cart/>).
-import { GlassButton, AuroraBackground } from '../components/ui';
+// Fondo de marca suave (presentacional; la lógica del carrito vive en <Cart/>).
+import { AuroraBackground } from '../components/ui';
+import Boton from '../componentes/kit/Boton';
 import styles from './CartPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
 const CartPage = () => {
-  const navigate = useNavigate();
   const { isEmpty } = useCart();
 
   return (
@@ -21,9 +19,9 @@ const CartPage = () => {
       <div className={styles.header}>
         <h1><T>Carrito de Compras</T></h1>
         {!isEmpty && (
-          <GlassButton variant="ghost" onClick={() => navigate('/tienda')}>
-            Continuar Comprando
-          </GlassButton>
+          <Boton variante="fantasma" to="/tienda">
+            <T>Continuar comprando</T>
+          </Boton>
         )}
       </div>
       <Cart />

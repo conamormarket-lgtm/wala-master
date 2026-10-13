@@ -10,12 +10,9 @@ import { costoEnvio } from '../../../../constants/envio';
 // del mismo embudo de compra, así que debe verse como la MISMA pagina en vez
 // de una pantalla suelta con su propio estilo. Uso presentacional (aditivo):
 // no toca la logica de items/totales/seleccion, vive toda en <Cart/>.
-// El CTA es un botón PLANO (fondo violeta sólido, sin degradado ni brillo):
-// el mismo look que ".primaryButton" del Header ("Ver mi lista" del popup de
-// wishlist, "Mi Perfil", etc.), que es el botón que de verdad se repite por
-// todo el sitio. Ni Button (gradiente rojo->violeta) ni GlassButton (vidrio
-// con brillo) calzaban con eso -se veían "aparte" del resto de la página-.
+// Los CTA son el Boton del kit de Walá (violeta liso, sin degradado).
 import { GlassCard, Badge, Stagger, StaggerItem } from '../../../../components/ui';
+import Boton from '../../../../componentes/kit/Boton';
 import styles from './Cart.module.css';
 import { T } from '../../../../i18n/useTranslatedText';
 import Moneda from '../../../../components/common/Moneda';
@@ -111,9 +108,9 @@ const Cart = () => {
         <div className={styles.emptyIcon}>🛍️</div>
         <h2><T>Tu carrito está vacío</T></h2>
         <p><T>Parece que aún no has agregado productos.</T></p>
-        <button type="button" className={styles.ctaButton} onClick={() => navigate('/tienda')}>
+        <Boton to="/tienda" tamano="lg">
           <T>Ir a la Tienda</T>
-        </button>
+        </Boton>
       </GlassCard>
     );
   }
@@ -232,9 +229,9 @@ const Cart = () => {
               <span><T>Total</T></span>
               <span>S/ {theFinalTotal.toFixed(2)}</span>
             </div>
-            <button
-              type="button"
-              className={`${styles.ctaButton} ${styles.ctaButtonFull}`}
+            <Boton
+              tamano="lg"
+              bloque
               onClick={() => navigate('/checkout')}
               disabled={isPendingConfirmation || incompletosACobrar.length > 0 || selectedCount === 0}
             >
@@ -245,7 +242,7 @@ const Cart = () => {
                   : incompletosACobrar.length > 0
                     ? `Falta elegir ${faltanteTexto}`
                     : `Proceder al Pago (${selectedCount})`}
-            </button>
+            </Boton>
           </GlassCard>
         </div>
       </div>

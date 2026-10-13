@@ -24,7 +24,7 @@ import { detectCountry } from '../services/geo';
 import { trackCheckoutStart, trackPurchaseComplete } from '../services/analytics/tracker';
 import CountrySelect from '../components/intl/CountrySelect';
 import PhoneIntlInput from '../components/intl/PhoneIntlInput';
-import Button from '../components/common/Button';
+import Boton from '../componentes/kit/Boton';
 import CulqiCustomCheckout, { precargarCulqi } from '../components/CulqiCustomCheckout/CulqiCustomCheckout';
 import { CreditCard, MessageCircle, ShieldCheck, MapPin, Plus } from 'lucide-react';
 import { obtenerDirecciones, agregarDireccion, actualizarDireccion, direccionPrincipal } from '../services/direcciones';
@@ -41,7 +41,7 @@ import { getCurrency, formatMoney } from '../constants/currencies';
 import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../constants/documentTypes';
 // Design System "Aurora Violeta Serena": superficies de vidrio y CTAs premium.
 // Uso SOLO presentacional (aditivo); no altera lógica de compra/pago/totales.
-import { GlassCard, GlassButton, Badge, AuroraBackground } from '../components/ui';
+import { GlassCard, Badge, AuroraBackground } from '../components/ui';
 import { DEPARTAMENTOS, getProvincias } from '../constants/peruUbigeo';
 import { ubicacionErp, lugarLegible, distritosSugeridos, distritoEnLugar, distritoDeLista, esExtranjero } from '../utils/ubicacionErp';
 import styles from './CheckoutPage.module.css';
@@ -272,10 +272,11 @@ const CheckoutPage = () => {
             Tu pedido tiene productos de varias marcas. Envía cada parte a su asesor:
           </p>
           {groups.map((g, i) => (
-            <GlassButton
+            <Boton
               key={i}
-              variant="ghost"
-              fullWidth
+              variante="contorno"
+              bloque
+              icono={<MessageCircle aria-hidden="true" />}
               disabled={processing}
               onClick={async () => {
                 const popup = abrirVentanaWhatsApp();
@@ -284,18 +285,18 @@ const CheckoutPage = () => {
                 if (popup) popup.location.href = g.link; else window.open(g.link, '_blank');
               }}
             >
-              <MessageCircle size={18} aria-hidden="true" /> Enviar a {g.label} ({g.count})
-            </GlassButton>
+              Enviar a {g.label} ({g.count})
+            </Boton>
           ))}
           {/* FIX analítica: este botón confirmaba el pedido SIN emitir purchase_complete
               si el cliente no tocaba ningún botón de marca. emitPurchaseComplete es
               idempotente (purchaseSentRef) y fire-and-forget: no toca pagos/montos. */}
-          <button type="button" className={styles.solidButton} disabled={processing} onClick={async () => {
+          <Boton tamano="lg" bloque disabled={processing} onClick={async () => {
             const pedidoWebId = await ensureWhatsAppOrder();
             if (pedidoWebId) finalize();
           }}>
             Listo, ya envié mis pedidos
-          </button>
+          </Boton>
         </div>
       );
     }
@@ -1834,7 +1835,7 @@ const CheckoutPage = () => {
     return (
       <div className={styles.empty}>
         <h2><T>Tu carrito está vacío</T></h2>
-        <Button onClick={() => navigate('/tienda')}><T>Ir a la Tienda</T></Button>
+        <Boton to="/tienda" tamano="lg"><T>Ir a la Tienda</T></Boton>
       </div>
     );
   }
@@ -2443,14 +2444,12 @@ const CheckoutPage = () => {
               </p>
             )}
             <div className={styles.buttonGroup}>
-              <Button type="button" variant="outline" onClick={() => navigate('/carrito')} disabled={processing} fullWidth>
+              <Boton variante="contorno" tamano="lg" bloque onClick={() => navigate('/carrito')} disabled={processing}>
                 Volver al carrito
-              </Button>
-              <button type="submit" className={styles.solidButton} disabled={processing || !hasSelectedItems}>
-                {processing
-                  ? <><span className={styles.spinner} aria-hidden="true" /> Preparando tu pago…</>
-                  : 'Continuar al pago'}
-              </button>
+              </Boton>
+              <Boton type="submit" tamano="lg" bloque cargando={processing} disabled={!hasSelectedItems}>
+                {processing ? 'Preparando tu pago…' : 'Continuar al pago'}
+              </Boton>
             </div>
           </form>
           )}
