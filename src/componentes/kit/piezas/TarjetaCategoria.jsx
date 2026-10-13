@@ -3,6 +3,7 @@ import { ArrowRight, LayoutGrid } from 'lucide-react';
 import { Enlace } from '../Enlace';
 import { EtiquetaColgante } from '../Marca';
 import { toDirectImageUrl } from '../../../utils/imageUrl';
+import { FotoProducto } from './FotoProducto';
 import s from './TarjetaCategoria.module.css';
 
 /** Color estable para una categoría sin foto (mismo nombre → mismo color). */
@@ -34,7 +35,13 @@ export function TarjetaCategoria({ forma = 'cuadro', nombre, imagen, cuenta, url
     const cls = [s.burbuja, activa && s.burbujaActiva, todos && s.burbujaTodos, className].filter(Boolean).join(' ');
     const contenido = (
       <>
-        <span className={s.burbujaFoto} style={todos ? undefined : { '--acento': acento, background: imagen ? fondo : tonoDe(nombre) }}>{foto}</span>
+        <FotoProducto
+          className={s.burbujaFoto}
+          style={todos ? undefined : { '--acento': acento, background: imagen ? fondo : tonoDe(nombre) }}
+          src={!todos && imagen ? toDirectImageUrl(imagen) : undefined}
+          relleno="12%"
+          respaldo={foto}
+        />
         <span className={s.burbujaNombre}>{nombre}</span>
       </>
     );

@@ -3,9 +3,9 @@
   --ry: 0deg;
   --mx: 50%;
   --my: 30%;
-  /* Escenario de la foto: gris casi blanco. Con multiply, el blanco de la
-     foto toma este color y no se nota el recuadro. */
-  --escenario: #f5f4f8;
+  /* Escenario de la foto (token de tokens.css, el mismo de FotoProducto;
+     en noche baja solo). Con multiply no se nota el recuadro de la foto. */
+  --escenario: var(--escenario-foto, #f5f4f8);
 
   container: tarjeta / inline-size;
   position: relative;
@@ -23,13 +23,6 @@
     transform 0.5s var(--ease-signature),
     box-shadow var(--dur-media) var(--ease-signature),
     border-color var(--dur-media) ease;
-}
-
-:global([data-theme='dark']) .tarjeta {
-  /* En noche el escenario sigue claro (las fotos con fondo blanco se verían
-     como un recuadro blanco sobre oscuro), pero un punto más bajo para que
-     no deslumbre. */
-  --escenario: #e9e7f0;
 }
 
 /* Canto de luz que sigue al puntero, suave. */
@@ -239,27 +232,7 @@
   position: absolute;
   left: 8px;
   bottom: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  padding: 3px;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 3px 10px -4px rgba(15, 23, 42, 0.35);
-  overflow: hidden;
-  transform: rotate(-8deg);
   pointer-events: none;
-  transition: transform var(--dur-media) var(--ease-signature);
-}
-
-.sello img {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: contain;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -330,18 +303,9 @@
   width: 26px;
   height: 26px;
   border-radius: 7px;
-  background: var(--escenario);
   color: var(--violet-800);
   font-size: 0.7rem;
   font-weight: 800;
-  overflow: hidden;
-}
-
-.incluyeFoto img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  mix-blend-mode: multiply;
 }
 
 .incluyeMas {

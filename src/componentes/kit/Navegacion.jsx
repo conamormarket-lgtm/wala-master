@@ -10,6 +10,7 @@ import { Enlace } from './Enlace';
 import Desplegable from './Desplegable';
 import { MenuTienda, MenuMarcas, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito } from './MenusCabecera';
 import { BotonTema } from './piezas/Marco';
+import { Avatar } from './piezas/Avatar';
 import s from './Navegacion.module.css';
 
 /**
@@ -252,11 +253,7 @@ export function Cabecera({
           {...control('cuenta')}
           disparador={(props) => (
             <button type="button" {...props} className={s.avatar} aria-label="Mi cuenta">
-              {usuario?.avatar ? (
-                <img src={usuario.avatar} alt="" referrerPolicy="no-referrer" />
-              ) : (
-                <span>{usuario ? iniciales(usuario.nombre) : <User aria-hidden="true" />}</span>
-              )}
+              <Avatar className={s.avatarCara} nombre={usuario?.nombre} imagen={usuario?.avatar}><User aria-hidden="true" /></Avatar>
             </button>
           )}
         >
@@ -276,8 +273,6 @@ const MENUS = {
   tienda: { Componente: MenuTienda, ancho: (p) => (p.destacado ? 720 : 560) },
   marcas: { Componente: MenuMarcas, ancho: () => 500 },
 };
-
-const iniciales = (nombre) => String(nombre || '?').trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
 
 const ENLACES_POR_DEFECTO = [
   { id: 'tienda', texto: 'Tienda', url: '/tienda', menu: 'tienda' },
@@ -330,9 +325,7 @@ export function BarraInferior({ items = TABS, activo, usuario, carrito = 0, onNa
                 <motion.span layoutId={`${uid}-tab`} className={s.tabPildora} transition={RESORTE} />
               )}
               {conAvatar ? (
-                <span className={[s.tabAvatar, esActivo && s.rebota].filter(Boolean).join(' ')} aria-hidden="true">
-                  {usuario.avatar ? <img src={usuario.avatar} alt="" referrerPolicy="no-referrer" /> : iniciales(usuario.nombre)}
-                </span>
+                <Avatar className={[s.tabAvatar, esActivo && s.rebota].filter(Boolean).join(' ')} nombre={usuario.nombre} imagen={usuario.avatar} />
               ) : (
                 <Icono key={esActivo ? 'on' : 'off'} className={esActivo ? s.rebota : undefined} aria-hidden="true" />
               )}

@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useInView } from 'framer-motion';
 import { Check, Copy, CreditCard, Truck, Trash2, Gift, ChevronDown, Clock, Tag, Sparkles } from 'lucide-react';
 import Boton from './Boton';
-import { Etiqueta } from './Etiquetas';
+import { Etiqueta, Moneda } from './Etiquetas';
+import { FotoProducto } from './piezas/FotoProducto';
 import { Cantidad } from './Formulario';
 import { soles } from './TarjetaProducto';
 import { EASE, Estallido, useContador } from './Efectos';
@@ -39,7 +40,7 @@ export function SeguimientoPedido({ codigo, fecha, paso, total, items, pagoPendi
       <header className={s.cabeza}>
         <div className={s.miniaturas}>
           {items.slice(0, 3).map((it, i) => (
-            <span key={i} className={s.miniatura}><img src={it.imagen} alt="" /></span>
+            <FotoProducto key={i} className={s.miniatura} src={it.imagen} relleno="3px" />
           ))}
           {items.length > 3 && <span className={`${s.miniatura} ${s.miniaturaMas}`}>+{items.length - 3}</span>}
         </div>
@@ -131,7 +132,7 @@ export function SeguimientoPedido({ codigo, fecha, paso, total, items, pagoPendi
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.05 * i + 0.1, duration: 0.35, ease: EASE }}
               >
-                <img src={it.imagen} alt="" />
+                <FotoProducto className={s.detalleFoto} src={it.imagen} relleno="3px" />
                 <span className={s.detalleNombre}>{it.nombre}<small>{it.variante} · x{it.cantidad}</small></span>
                 <strong>{it.precio === 0 ? 'Gratis' : soles(it.precio * it.cantidad)}</strong>
               </motion.li>
@@ -156,7 +157,7 @@ export function ItemCarrito({
   const cambiar = onCantidad ?? setPropia;
   return (
     <div className={s.item}>
-      <div className={s.itemImgCaja}><img src={imagen} alt="" className={s.itemImg} /></div>
+      <FotoProducto como="div" className={s.itemImgCaja} src={imagen} relleno="8px" />
       <div className={s.itemInfo}>
         <p className={s.itemNombre}>{nombre}</p>
         <p className={s.itemVariante}>{variante}</p>
@@ -287,7 +288,7 @@ export function ResumenPedido({ subtotal, descuento = 0, envio = 0, monedas = 0,
         <Monto valor={total} className={s.totalMonto} />
       </div>
       {monedas > 0 && (
-        <p className={s.ganas}><img src="/assets/monedas/moneda-64.webp" alt="" width="18" height="18" /> Con esta compra ganas <strong>{monedas} monedas</strong></p>
+        <p className={s.ganas}><Moneda tamano={18} /> Con esta compra ganas <strong>{monedas} monedas</strong></p>
       )}
       <Boton tamano="lg" bloque brillo onClick={onPagar}>Ir a pagar</Boton>
       <p className={s.seguro}>Pago seguro con tarjeta, Yape o PayPal</p>

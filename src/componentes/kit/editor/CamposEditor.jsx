@@ -9,6 +9,7 @@ import { Pestanas } from '../Navegacion';
 import { tipoDeEnlace } from '../Enlace';
 import { FUENTES_TIPOGRAFIA, esquemaDe } from './esquemas';
 import { IconoWala, ICONOS_WALA, iconoDesde } from '../IconosWala';
+import { FotoProducto } from '../piezas/FotoProducto';
 import s from './Editor.module.css';
 
 /*
@@ -446,7 +447,7 @@ function ControlLista({ campo: def, valor, onCambiar }) {
             >
               <div className={s.elementoCabeza}>
                 <button type="button" className={s.elementoTitulo} aria-expanded={abiertoEste} onClick={() => setAbierto(abiertoEste ? null : i)}>
-                  {def.miniatura && <span className={s.miniatura}>{mini && <img src={mini} alt="" />}</span>}
+                  {def.miniatura && <FotoProducto className={s.miniatura} src={mini} />}
                   <span>{def.titulo ? def.titulo(it, i) : `${def.etiqueta} ${i + 1}`}</span>
                   <ChevronDown aria-hidden="true" />
                 </button>

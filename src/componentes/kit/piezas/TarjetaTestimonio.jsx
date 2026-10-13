@@ -1,6 +1,7 @@
 import React from 'react';
 import { BadgeCheck, Star } from 'lucide-react';
 import { EtiquetaColgante } from '../Marca';
+import { Avatar } from './Avatar';
 import s from './TarjetaTestimonio.module.css';
 
 /**
@@ -20,7 +21,7 @@ export function TarjetaTestimonio({ texto, autor, ciudad, tema, puntuacion = 0, 
       )}
       <blockquote>{texto}</blockquote>
       <figcaption>
-        {avatar ? <img src={avatar} alt="" /> : <span className={s.inicial}>{(autor || '?')[0]}</span>}
+        <Avatar className={s.avatar} nombre={autor} imagen={avatar} letras={1} />
         <span>
           <strong>{autor}</strong>
           {ciudad && <small>{ciudad}</small>}

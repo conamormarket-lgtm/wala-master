@@ -4,6 +4,10 @@ import { Enlace } from './Enlace';
 import Boton from './Boton';
 import { soles } from './TarjetaProducto';
 import { IconoWala } from './IconosWala';
+import { Moneda } from './Etiquetas';
+import { FotoProducto } from './piezas/FotoProducto';
+import { LogoMarca } from './piezas/LogoMarca';
+import { Avatar } from './piezas/Avatar';
 import s from './MenusCabecera.module.css';
 
 /*
@@ -12,8 +16,6 @@ import s from './MenusCabecera.module.css';
  * cerrar el menú). Funcionan igual dentro de un Desplegable (escritorio) que
  * dentro de una hoja inferior (celular / app).
  */
-
-const MONEDA = '/assets/monedas/moneda-64.webp';
 
 /* ── Tienda: categorías + marcas ────────────────────────── */
 
@@ -94,7 +96,7 @@ export function MenuTienda({
 
       {destacado && (
         <Enlace to={destacado.url} className={s.destacado} onClick={onNavegar}>
-          <span className={s.destacadoImg}><img src={destacado.imagen} alt="" loading="lazy" /></span>
+          <FotoProducto className={s.destacadoImg} src={destacado.imagen} />
           <strong>{destacado.titulo}</strong>
           <span>{destacado.texto}</span>
         </Enlace>
@@ -124,9 +126,7 @@ export function MenuMarcas({ marcas = [], verTodas = { texto: 'Ver todas las mar
         {marcas.map((m) => (
           <li key={m.id}>
             <Enlace to={m.url} className={s.marcaFila} onClick={onNavegar}>
-              <span className={s.marcaLogo}>
-                {m.logo ? <img src={m.logo} alt="" loading="lazy" decoding="async" /> : String(m.nombre || '?').charAt(0)}
-              </span>
+              <LogoMarca variante="sello" className={s.marcaLogo} nombre={m.nombre} imagen={m.logo} alt="" giro={-6} />
               <span className={s.marcaNombre}>{m.nombre}</span>
             </Enlace>
           </li>
@@ -155,7 +155,7 @@ export function AyudaMonedas({
   return (
     <div className={s.monedas}>
       <div className={s.monedasSaldo}>
-        <img src={MONEDA} alt="" width="40" height="40" />
+        <Moneda tamano={40} />
         <div>
           <span className={s.monedasEtiqueta}>Tus monedas</span>
           <strong>{saldo.toLocaleString('es-PE')}</strong>
@@ -176,8 +176,6 @@ export function AyudaMonedas({
 }
 
 /* ── Cuenta ─────────────────────────────────────────────── */
-
-const iniciales = (nombre) => String(nombre || '?').trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
 
 /**
  * Menú de cuenta.
@@ -203,11 +201,7 @@ export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNave
   return (
     <div className={s.cuenta}>
       <div className={s.identidad}>
-        {usuario.avatar ? (
-          <img src={usuario.avatar} alt="" className={s.avatar} referrerPolicy="no-referrer" />
-        ) : (
-          <span className={s.avatar} aria-hidden="true">{iniciales(usuario.nombre)}</span>
-        )}
+        <Avatar className={s.avatar} nombre={usuario.nombre} imagen={usuario.avatar} />
         <div className={s.identidadTexto}>
           <strong>Hola, {usuario.nombre}</strong>
           <span>{usuario.email}</span>
@@ -305,7 +299,7 @@ export function VistaFavoritos({ items = [], sesion = true, urlLista = '/cuenta/
         {visibles.map((it, i) => (
           <li key={it.id} style={naipe(i)}>
             <Enlace to={urlLista} title={it.nombre} className={s.naipe} onClick={onNavegar}>
-              <img src={it.imagen} alt={it.nombre} loading="lazy" />
+              <FotoProducto className={s.naipeFoto} src={it.imagen} alt={it.nombre} relleno="4px" />
             </Enlace>
           </li>
         ))}
@@ -352,7 +346,7 @@ export function VistaCarrito({ items = [], urlCarrito = '/carrito', urlPagar = '
       <ul className={s.listaCarrito}>
         {visibles.map((it) => (
           <li key={it.id}>
-            <span className={s.miniatura}><img src={it.imagen} alt="" loading="lazy" /></span>
+            <FotoProducto className={s.miniatura} src={it.imagen} relleno="6%" />
             <span className={s.lineaTexto}>
               <strong>{it.nombre}</strong>
               {it.variante && <small>{it.variante}</small>}

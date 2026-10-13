@@ -45,6 +45,49 @@
   gap: 1rem;
 }
 
+.filaCentrada {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* FotoProducto y Avatar: el tamaño y la forma los pone quien los usa. */
+.fotoGrande {
+  position: relative;
+  width: 120px;
+  aspect-ratio: 1;
+  border-radius: 16px;
+}
+
+.fotoEtiqueta {
+  position: absolute;
+  top: 8px;
+  left: 6px;
+  z-index: 1;
+}
+
+.fotoMini {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  color: var(--violet-800);
+  font-weight: 800;
+}
+
+.avatarGrande {
+  width: 52px;
+  height: 52px;
+  font-size: 1.05rem;
+}
+
+.avatarMini {
+  width: 36px;
+  height: 36px;
+}
+
 .celda {
   flex: 0 0 150px;
 }

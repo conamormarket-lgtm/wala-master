@@ -78,21 +78,10 @@
   font-size: 0.85rem;
 }
 
-.testimonio figcaption img,
-.inicial {
+/* Avatar (piezas/Avatar): aquí solo su tamaño. */
+.avatar {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.inicial {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--violet-100);
-  color: var(--violet-800);
-  font-weight: 700;
 }
 
 .testimonio figcaption span {

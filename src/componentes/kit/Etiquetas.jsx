@@ -4,7 +4,8 @@ import { useContador } from './Efectos';
 import { EtiquetaColgante } from './Marca';
 import s from './Etiquetas.module.css';
 
-const MONEDA = '/assets/monedas/moneda-64.webp';
+/** La moneda de Walá (una sola imagen para todo el kit). */
+export const MONEDA = '/assets/monedas/moneda-64.webp';
 const miles = (n) => Math.round(n).toLocaleString('es-PE');
 
 const TONO_COLGANTE = { violeta: 'violeta', oscuro: 'noche', exito: 'verde', aviso: 'oro', peligro: 'rojo', neutro: 'suave' };
@@ -56,6 +57,11 @@ export function Chip({ activo = false, onClick, onQuitar, icono, cuenta, tamano 
   );
 }
 
+/** La moneda sola, del tamaño pedido (px). Decorativa: el número va al lado. */
+export function Moneda({ tamano = 16, className }) {
+  return <img src={MONEDA} alt="" width={tamano} height={tamano} className={className} />;
+}
+
 /**
  * Lo que algo cuesta en monedas. Lleva "CUESTA" escrito: una moneda + número
  * a secas se lee como algo que ganas, no como algo que pagas.
@@ -64,7 +70,7 @@ export function CostoMonedas({ monto }) {
   return (
     <span className={s.costo}>
       <span className={s.costoTexto}>Cuesta</span>
-      <img src={MONEDA} alt="" width="16" height="16" />
+      <Moneda />
       <strong>{miles(monto)}</strong>
     </span>
   );
@@ -74,7 +80,7 @@ export function CostoMonedas({ monto }) {
 export function GananciaMonedas({ monto }) {
   return (
     <span className={s.ganancia}>
-      <img src={MONEDA} alt="" width="16" height="16" />
+      <Moneda />
       <strong>+{miles(monto)}</strong>
     </span>
   );
@@ -86,7 +92,7 @@ export const SaldoMonedas = forwardRef(function SaldoMonedas({ saldo, ...rest },
   return (
     <button ref={ref} type="button" className={s.saldo} aria-label={`Tienes ${saldo} monedas`} {...rest}>
       <span className={s.saldoDestello} aria-hidden="true" />
-      <img src={MONEDA} alt="" width="20" height="20" />
+      <Moneda tamano={20} />
       <span className={s.saldoNumero}>{miles(mostrado)}</span>
     </button>
   );

@@ -82,13 +82,18 @@ esta tabla:
 | `EtiquetaColgante` | descuentos y "Nuevo" de S5-S7, "Universo Walá" de S3, antetítulos, M11 | `Marca.module.css` |
 | `Boton` | M2, M3, M4, M11, M12, S2, carrito, Mis pedidos | `Boton.module.css` |
 | `IconoWala` | S1, S8, M9, M10 | `IconosWala.jsx` (dibujos) + `IconosWala.module.css` |
+| `FotoProducto` (escenario + `multiply`) | M4 (menús de tienda, favoritos y carrito; notificaciones), toasts, "Agregar rápido", piezas de un combo en S5-S7, carrito, Mis pedidos. Fuera del inicio: burbujas de `categories_nav`, polaroid de `feature_list`, `TarjetaDestacado` | `piezas/FotoProducto.module.css`; el color, `--escenario-foto` en `tokens.css` (también lo usan la foto grande de `TarjetaProducto` y el fondo vacío de los cuadros de S4) |
+| `LogoMarca` `sello` | sello de la marca en S5-S7 y menú Marcas de M4 | `piezas/LogoMarca.module.css` (`.sello`) |
+| `Avatar` | M4 (botón y menú de la cuenta), M6 (pestaña Cuenta), S9 (testimonios) | `piezas/Avatar.module.css` |
+| `Moneda` | M4 (saldo y Mis monedas), costo y ganancia en monedas, resumen del carrito | `Etiquetas.jsx` |
 | Colores, radios, sombras | todo | `src/styles/variables.css`, `src/theme/tokens.css` |
 | Letra del logo (`--fuente-marca`) | títulos, precios, marcas | `Marca.module.css` / variables |
 
 Reglas que no hay que romper al cambiar algo (ver `README.md` del kit):
-botones violeta lisos, brillo solo al interactuar, fotos de producto sobre
-`#f5f4f8` con `multiply` (nunca color detrás), modo claro y noche, nada de
-emojis (usar `IconoWala`), y probar en celular (390 px).
+botones violeta lisos, brillo solo al interactuar, fotos de producto con
+`FotoProducto` (escenario `--escenario-foto` con `multiply`, nunca color
+detrás; en noche baja a `#e9e7f0`), modo claro y noche, nada de emojis (usar
+`IconoWala`), y probar en celular (390 px).
 
 ## El editor en el celular
 

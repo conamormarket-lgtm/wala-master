@@ -979,7 +979,7 @@
   padding: 0;
   border: 1.5px dashed var(--ed-borde);
   border-radius: 12px;
-  background: #f5f4f8;
+  background: var(--escenario-foto, #f5f4f8);
   color: var(--violet-700, #6d28d9);
   font: inherit;
   font-size: 0.7rem;
@@ -1243,15 +1243,6 @@
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: #f5f4f8;
-  overflow: hidden;
-}
-
-.miniatura img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  mix-blend-mode: multiply;
 }
 
 .elementoAcciones {

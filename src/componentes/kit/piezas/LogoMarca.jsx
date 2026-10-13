@@ -1,6 +1,7 @@
 import React from 'react';
 import { Enlace } from '../Enlace';
 import { toDirectImageUrl } from '../../../utils/imageUrl';
+import { iniciales } from './Avatar';
 import s from './LogoMarca.module.css';
 
 /** Formas que guarda el editor (MarqueeBrandItem): circle | square | star | pentagon. */
@@ -10,15 +11,31 @@ const FORMAS = {
 };
 
 /**
- * Logo de una marca como sticker con borde blanco y su nombre debajo.
- *  - nombre, imagen, url
- *  - forma: 'square' | 'circle' | 'star' | 'pentagon' (los del editor)
- *  - zoom, posX, posY: encuadre elegido en el editor
- *  - giro: grados
+ * Logo de una marca.
+ *  - variante: 'sticker' (por defecto: sticker con borde blanco y el nombre
+ *    debajo, como en "Logos en movimiento") | 'sello' (círculo blanco chico y
+ *    girado, sin nombre a la vista: el sello de la marca en la tarjeta de
+ *    producto y en el menú de marcas)
+ *  - nombre, imagen, url, alt
+ *  - forma: 'square' | 'circle' | 'star' | 'pentagon' (los del editor; solo sticker)
+ *  - zoom, posX, posY: encuadre elegido en el editor (solo sticker)
+ *  - giro: grados (sticker -4, sello -8 si no se pasa)
+ *  - className: en el sello, la posición y el tamaño los pone quien lo usa
  */
-export function LogoMarca({ nombre, imagen, url, alt, forma = 'square', zoom = 1, posX = 50, posY = 50, giro = -4 }) {
+export function LogoMarca({ variante = 'sticker', nombre, imagen, url, alt, forma = 'square', zoom = 1, posX = 50, posY = 50, giro, className }) {
+  if (variante === 'sello') {
+    const sello = (
+      <span className={[s.sello, className].filter(Boolean).join(' ')} style={giro != null ? { '--giro': `${giro}deg` } : undefined} title={nombre}>
+        {imagen
+          ? <img src={toDirectImageUrl(imagen)} alt={alt ?? nombre ?? ''} loading="lazy" decoding="async" />
+          : iniciales(nombre, 1) || '?'}
+      </span>
+    );
+    return url ? <Enlace to={url} className={s.marcaEnlace}>{sello}</Enlace> : sello;
+  }
+
   const logo = (
-    <span className={s.marca} style={{ '--giro': `${giro}deg` }} title={nombre}>
+    <span className={[s.marca, className].filter(Boolean).join(' ')} style={{ '--giro': `${giro ?? -4}deg` }} title={nombre}>
       <span className={[s.marcaForma, s[`forma_${forma}`]].filter(Boolean).join(' ')} style={FORMAS[forma] ? { clipPath: FORMAS[forma] } : undefined}>
         {imagen ? (
           <img
@@ -28,7 +45,7 @@ export function LogoMarca({ nombre, imagen, url, alt, forma = 'square', zoom = 1
             decoding="async"
             style={{ objectPosition: `${posX}% ${posY}%`, transform: Number(zoom) > 1 ? `scale(${zoom})` : undefined }}
           />
-        ) : <strong>{String(nombre || '?').trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase()}</strong>}
+        ) : <strong>{iniciales(nombre) || '?'}</strong>}
       </span>
       {nombre && <small className={s.marcaNombre}>{nombre}</small>}
     </span>

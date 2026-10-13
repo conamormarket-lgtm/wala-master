@@ -338,36 +338,17 @@
   transition: transform var(--dur-media) var(--ease-signature);
 }
 
-.avatar img {
+/* La cara (piezas/Avatar) dentro del anillo: tamaño y filo blanco. */
+.avatarCara {
   width: 36px;
   height: 36px;
   border: 2px solid var(--color-surface);
-  border-radius: 50%;
-  object-fit: cover;
+  font-size: 0.8rem;
 }
 
-.avatar span svg {
+.avatarCara svg {
   width: 1.1rem;
   height: 1.1rem;
-}
-
-.avatar span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: 2px solid var(--color-surface);
-  border-radius: 50%;
-  background: var(--violet-100);
-  color: var(--violet-800);
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-:global([data-theme='dark']) .avatar span {
-  background: #2d2645;
-  color: var(--violet-200);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -569,13 +550,6 @@
 /* Con foto, el aro va en el color de la pestaña y la foto adentro. */
 .tabAvatar:has(img) {
   padding: 1.5px;
-}
-
-.tabAvatar img {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
 }
 
 .tabTexto {

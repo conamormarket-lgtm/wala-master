@@ -3,6 +3,9 @@ import { Heart, Star, Plus, Check, Palette, SlidersHorizontal } from 'lucide-rea
 import { Etiqueta } from './Etiquetas';
 import { Estallido } from './Efectos';
 import { Enlace } from './Enlace';
+import { FotoProducto } from './piezas/FotoProducto';
+import { LogoMarca } from './piezas/LogoMarca';
+import { iniciales } from './piezas/Avatar';
 import s from './TarjetaProducto.module.css';
 
 // Formato peruano: separador de miles y 2 decimales (S/ 1,250.00).
@@ -144,7 +147,7 @@ export default function TarjetaProducto({
                 <ul className={s.incluyeFotos}>
                   {piezas.slice(0, 4).map((pz, i) => (
                     <li key={pz.nombre || i}>
-                      <span className={s.incluyeFoto}>{pz.imagen ? <img src={pz.imagen} alt="" loading="lazy" decoding="async" /> : (pz.nombre || '?').charAt(0)}</span>
+                      <FotoProducto className={s.incluyeFoto} src={pz.imagen} respaldo={iniciales(pz.nombre, 1) || '?'} />
                     </li>
                   ))}
                   {piezas.length > 4 && <li><span className={`${s.incluyeFoto} ${s.incluyeMas}`}>+{piezas.length - 4}</span></li>}
@@ -155,7 +158,7 @@ export default function TarjetaProducto({
               <ul>
                 {piezas.map((pz, i) => (
                   <li key={pz.nombre || i}>
-                    <span className={s.incluyeFoto}>{pz.imagen ? <img src={pz.imagen} alt="" loading="lazy" decoding="async" /> : (pz.nombre || '?').charAt(0)}</span>
+                    <FotoProducto className={s.incluyeFoto} src={pz.imagen} respaldo={iniciales(pz.nombre, 1) || '?'} />
                     <span className={s.incluyeNombre}>{pz.nombre}</span>
                   </li>
                 ))}
@@ -165,9 +168,7 @@ export default function TarjetaProducto({
         )}
 
         {marca?.logo && (
-          <span className={s.sello} title={marca.nombre}>
-            <img src={marca.logo} alt={marca.nombre || ''} loading="lazy" decoding="async" />
-          </span>
+          <LogoMarca variante="sello" className={s.sello} nombre={marca.nombre} imagen={marca.logo} />
         )}
 
         <button

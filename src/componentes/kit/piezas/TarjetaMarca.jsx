@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { Enlace } from '../Enlace';
 import { EtiquetaColgante } from '../Marca';
 import { toDirectImageUrl } from '../../../utils/imageUrl';
+import { iniciales } from './Avatar';
 import s from './TarjetaMarca.module.css';
 
 /* Colores de las tarjetas de marca sin color propio (bgColor). */
@@ -14,8 +15,6 @@ const PALETA_MARCAS = [
   ['#9a3412', '#ffedd5'],
   ['#1e3a8a', '#e0e7ff'],
 ];
-
-const iniciales = (nombre) => String(nombre || '').split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
 
 /**
  * Tarjeta de una marca: color, número, logo colgando de una etiqueta y

@@ -25,8 +25,8 @@ Todo se arma con lo del nivel de abajo; nada se dibuja dos veces.
    `TarjetaProducto`, y las de `piezas/`: `TarjetaCategoria` (cuadro · círculo
    · burbuja), `TarjetaTestimonio`, `TarjetaMarca`, `LogoMarca`,
    `TarjetaDestacado`, `Beneficio` (píldora · fila), `BarraProgreso` /
-   `StockBajo`, `TarjetaAyuda` (Kapi asomado), y las del marco
-   (`piezas/Flotantes.jsx`, `piezas/Marco.jsx`).
+   `StockBajo`, `TarjetaAyuda` (Kapi asomado), `FotoProducto`, `Avatar`, y
+   las del marco (`piezas/Flotantes.jsx`, `piezas/Marco.jsx`).
 2. **Secciones** (`Secciones*.jsx`): cada tipo del builder, hecho solo con
    piezas. En `/componentes.html` (vista Secciones) cada ficha dice con qué
    piezas está hecha.
@@ -37,6 +37,24 @@ Todo se arma con lo del nivel de abajo; nada se dibuja dos veces.
 
 Si una sección necesita algo nuevo (una tarjeta, un chip…), va primero como
 pieza en `piezas/` y después se usa en la sección.
+
+Lo pequeño también es una sola pieza; no se vuelve a dibujar a mano:
+
+- **Foto de producto** (escenario `--escenario-foto` + `multiply`):
+  `FotoProducto`. La usan las miniaturas del carrito, pedidos, toasts,
+  notificaciones, menús, "Agregar rápido", las piezas de un combo,
+  `TarjetaDestacado`, el polaroid de beneficios y las burbujas de categoría.
+  Solo la foto grande de `TarjetaProducto` tiene la suya (dos fotos y
+  barrido), con el mismo token.
+- **Persona** (foto o iniciales): `Avatar`, con `iniciales()` para todo lo
+  que muestre iniciales (marcas incluidas).
+- **Logo de marca**: `LogoMarca` (sticker con nombre, o `variante="sello"`
+  en la tarjeta de producto y el menú de marcas).
+- **Moneda**: `Moneda` / `MONEDA` (`Etiquetas.jsx`).
+
+Las piezas base (`FotoProducto`, `Avatar`, el sello) escriben sus reglas con
+`:where()`: no pesan, y la clase de quien las usa (tamaño, radio, borde)
+siempre gana.
 
 `guia/` dice qué componente va en cada parte de cada página real, con
 capturas numeradas y en qué archivo se cambia el diseño de cada parte
@@ -101,7 +119,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | Archivo | Componentes | Para qué |
 |---|---|---|
 | `Boton.jsx` | `Boton` | Botón violeta liso; variantes, tamaños, cargando, `brillo` para CTA de pago. Con `to` es un enlace; con `insignia` lleva un contador en la esquina |
-| `Etiquetas.jsx` | `Etiqueta`, `Chip`, `CostoMonedas`, `GananciaMonedas`, `SaldoMonedas`, `Contador` | Badges, filtros y monedas |
+| `Etiquetas.jsx` | `Etiqueta`, `Chip`, `Moneda`, `MONEDA`, `CostoMonedas`, `GananciaMonedas`, `SaldoMonedas`, `Contador` | Badges, filtros y monedas |
 | `Formulario.jsx` | `Campo`, `Buscador`, `SelectorTalla`, `SelectorColor`, `Cantidad`, `Interruptor` | Formularios, búsqueda (atajo "/") y variantes de producto |
 | `TarjetaProducto.jsx` | `TarjetaProducto`, `TarjetaProductoEsqueleto`, `soles` | Tarjeta de la tienda (fotos con fondo blanco, alturas parejas) |
 | `Navegacion.jsx` | `Cabecera`, `BarraInferior`, `Pestanas`, `Logo` | Navegación |
@@ -117,6 +135,9 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `CuentaRegresiva.jsx` | `CuentaRegresiva` | Hasta una fecha o "siempre activa" por visitante; variantes bloques, texto y evento (dígitos grandes para fondos oscuros) |
 | `Acordeon.jsx` | `Acordeon` | Preguntas frecuentes y detalles plegables |
 | `Seccion.jsx` | `BloqueSeccion`, `TituloSeccion`, `tituloDesdeAjustes` | Relleno, fondo y título iguales en todas las secciones |
+| `piezas/FotoProducto.jsx` | `FotoProducto` | Foto de producto sobre su escenario (`src`, `relleno`, `respaldo` sin foto, `children` encima) |
+| `piezas/Avatar.jsx` | `Avatar`, `iniciales` | Foto o iniciales de una persona |
+| `piezas/LogoMarca.jsx` | `LogoMarca` | Logo de una marca: `sticker` (con nombre) o `sello` (círculo chico girado) |
 | `piezas/Flotantes.jsx` | `PilaFlotante`, `BotonWhatsApp`, `KapiFlotante`, `BurbujaRegalos`, `PildoraRecompensa` | Lo que flota sobre la página (sobre la barra inferior en el celular) |
 | `piezas/Marco.jsx` | `AvisoSistema`, `BannerApp`, `BarraAdmin`, `PieLegal`, `AvisoIdioma`, `VentanaCampana`, `BotonTema` | Lo que rodea a las secciones: avisos arriba, barra de admin, pie legal, ventanas |
 | `Secciones.jsx` | `BarraAnuncios`, `HeroCarrusel`, `InsigniasConfianza`, `CarruselProductos`, `OfertaRelampago`, `Testimonios`, `PreguntasFrecuentes`, `MarcasMarquesina`, `GrillaCategorias`, `RenderSecciones`, `REGISTRO_SECCIONES` | Secciones del builder; reciben el mismo `settings` que guarda Firestore |

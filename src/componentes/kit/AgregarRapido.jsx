@@ -4,6 +4,7 @@ import Boton from './Boton';
 import { HojaInferior } from './Feedback';
 import { SelectorTalla, SelectorColor, Cantidad } from './Formulario';
 import { soles } from './TarjetaProducto';
+import { FotoProducto } from './piezas/FotoProducto';
 import s from './AgregarRapido.module.css';
 
 /**
@@ -95,7 +96,7 @@ export default function AgregarRapido({
     >
       <div className={s.contenido}>
         <div className={s.producto}>
-          <span className={s.foto}><img src={variante?.imagen || producto.imagen} alt="" /></span>
+          <FotoProducto className={s.foto} src={variante?.imagen || producto.imagen} relleno="4px" loading="eager" />
           <div>
             <strong>{producto.nombre}</strong>
             <span className={s.precio}>

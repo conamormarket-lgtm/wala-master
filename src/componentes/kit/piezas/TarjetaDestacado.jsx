@@ -2,6 +2,7 @@ import React from 'react';
 import { Enlace } from '../Enlace';
 import { EtiquetaColgante } from '../Marca';
 import { toDirectImageUrl } from '../../../utils/imageUrl';
+import { FotoProducto } from './FotoProducto';
 import s from './TarjetaDestacado.module.css';
 
 /**
@@ -14,10 +15,9 @@ import s from './TarjetaDestacado.module.css';
 export function TarjetaDestacado({ titulo, subtitulo, imagen, url, puesto, acento, alinearTitulo, alinearSubtitulo }) {
   return (
     <Enlace to={url} className={s.destacado}>
-      <span className={s.destacadoFoto} style={{ '--acento': acento }}>
+      <FotoProducto className={s.destacadoFoto} style={{ '--acento': acento }} src={imagen && toDirectImageUrl(imagen)}>
         {puesto != null && <EtiquetaColgante tono={puesto === 1 ? 'oro' : 'violeta'} className={s.destacadoPuesto}>#{puesto}</EtiquetaColgante>}
-        {imagen && <img src={toDirectImageUrl(imagen)} alt="" loading="lazy" decoding="async" draggable={false} />}
-      </span>
+      </FotoProducto>
       <span className={s.destacadoTexto}>
         {titulo && <strong style={{ textAlign: alinearTitulo || undefined }}>{titulo}</strong>}
         {subtitulo && <small style={{ textAlign: alinearSubtitulo || undefined }}>{subtitulo}</small>}

@@ -12,7 +12,7 @@ import { tarjetaDesdeProducto } from './adaptadores';
 import { TextoCampo, BotonDeAjustes, fuenteDe, prefiereQuieto } from './SeccionesContenido';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import { EtiquetaColgante, Garabatos, LogoWala, Destello, Corazon, acento } from './Marca';
-import { TarjetaCategoria, TarjetaCategoriaEsqueleto, Beneficio } from './piezas';
+import { TarjetaCategoria, TarjetaCategoriaEsqueleto, Beneficio, FotoProducto } from './piezas';
 import s from './SeccionesExtra.module.css';
 
 /*
@@ -118,9 +118,7 @@ export function ListaBeneficios({ ajustes = {} }) {
         <div className={s.beneficiosArte}>
           <figure className={s.polaroid}>
             <span className={s.washi} aria-hidden="true" />
-            <span className={s.polaroidFoto}>
-              <img src={toDirectImageUrl(ajustes.imageUrl)} alt={ajustes.imageAlt || ''} loading="lazy" decoding="async" />
-            </span>
+            <FotoProducto className={s.polaroidFoto} src={toDirectImageUrl(ajustes.imageUrl)} alt={ajustes.imageAlt || ''} />
             {ajustes.imageAlt && <figcaption>{ajustes.imageAlt}</figcaption>}
           </figure>
           <Destello className={s.arte1} />

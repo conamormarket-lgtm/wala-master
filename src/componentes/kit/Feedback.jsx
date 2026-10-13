@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useDragControls, useMotionValue, useTransform } from 'framer-motion';
 import { CheckCircle2, Info, AlertTriangle, XCircle, X, Sparkles, BellOff, CheckCheck } from 'lucide-react';
 import { useBloquearScroll, useCerrarConAtras } from './Efectos';
+import { FotoProducto } from './piezas/FotoProducto';
 import s from './Feedback.module.css';
 
 const ICONOS = { exito: CheckCircle2, info: Info, aviso: AlertTriangle, error: XCircle };
@@ -83,7 +84,7 @@ export function ListaNotificaciones({ items, onAbrir, limite }) {
                 <li key={n.id}>
                   <button type="button" className={[s.notif, !n.leida && s.noLeida].filter(Boolean).join(' ')} onClick={() => onAbrir?.(n)}>
                     {n.imagen ? (
-                      <span className={s.notifImg}><img src={n.imagen} alt="" /></span>
+                      <FotoProducto className={s.notifImg} src={n.imagen} relleno="3px" />
                     ) : (
                       <span className={`${s.notifIcono} ${s[n.tipo]}`}><Icono aria-hidden="true" /></span>
                     )}
@@ -208,7 +209,7 @@ export function ProveedorToasts({ children, iniciales = [] }) {
                 >
                   <div className={s.toastFila} aria-hidden={!desplegado && i > 0}>
                     {t.imagen ? (
-                      <span className={s.toastImg}><img src={t.imagen} alt="" /></span>
+                      <FotoProducto className={s.toastImg} src={t.imagen} relleno="3px" loading="eager" />
                     ) : (
                       <span className={s.toastIcono}><Icono aria-hidden="true" /></span>
                     )}

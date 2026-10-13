@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   TarjetaCategoria, TarjetaTestimonio, TarjetaMarca, LogoMarca, TarjetaDestacado, Beneficio, StockBajo, Chip, tarjetaDesdeMarca, acento,
+  FotoProducto, Avatar, Moneda, EtiquetaColgante,
 } from './kit';
 import s from './DemoPiezas.module.css';
 
@@ -52,6 +53,40 @@ export default function DemoPiezas({ categorias, marcas, imagenes }) {
       <Ficha nombre="LogoMarca" usadaEn="Logos en movimiento">
         <div className={s.fila}>
           {[0, 4, 5].map((k, i) => <LogoMarca key={k} nombre={marcas[k].name} imagen={marcas[k].logoUrl} forma={['square', 'circle', 'square'][i]} giro={i % 2 ? 4 : -4} url={`/${marcas[k].slug}`} />)}
+        </div>
+      </Ficha>
+
+      <Ficha nombre={'LogoMarca variante="sello"'} usadaEn="Sello de la marca en TarjetaProducto, menú Marcas de la cabecera">
+        <div className={s.filaCentrada}>
+          {[0, 4, 5].map((k) => <LogoMarca key={k} variante="sello" nombre={marcas[k].name} imagen={marcas[k].logoUrl} />)}
+          <LogoMarca variante="sello" nombre="Marca sin logo" />
+        </div>
+      </Ficha>
+
+      <Ficha nombre="FotoProducto" usadaEn="Miniaturas del carrito, pedidos, toasts, notificaciones, menús, Agregar rápido, piezas de un combo, TarjetaDestacado, burbujas de categoría">
+        <div className={s.filaCentrada}>
+          <FotoProducto className={s.fotoGrande} src={imagenes.frente} relleno="6%">
+            <EtiquetaColgante tono="violeta" tamano="sm" className={s.fotoEtiqueta}>#1</EtiquetaColgante>
+          </FotoProducto>
+          <FotoProducto className={s.fotoMini} src={imagenes.taza} relleno="4px" />
+          <FotoProducto className={s.fotoMini} src={imagenes.frente} relleno="3px" />
+          <FotoProducto className={s.fotoMini} respaldo="P" />
+        </div>
+      </Ficha>
+
+      <Ficha nombre="Avatar" usadaEn="Cabecera, barra inferior, menú de la cuenta, testimonios">
+        <div className={s.filaCentrada}>
+          <Avatar className={s.avatarGrande} nombre="Isaac Castro" />
+          <Avatar className={s.avatarMini} nombre="Andrea P." letras={1} />
+          <Avatar className={s.avatarMini} />
+        </div>
+      </Ficha>
+
+      <Ficha nombre="Moneda" usadaEn="Saldo, costo y ganancia en monedas, Mis monedas, resumen del pedido">
+        <div className={s.filaCentrada}>
+          <Moneda />
+          <Moneda tamano={20} />
+          <Moneda tamano={40} />
         </div>
       </Ficha>
 

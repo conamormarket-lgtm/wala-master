@@ -1,0 +1,18 @@
+/* Escenario de la foto. isolation: la mezcla queda dentro del cuadro, así
+   Chromium/Edge no pierde el recorte redondeado aunque el padre se mueva. */
+:where(.foto) {
+  display: block;
+  overflow: hidden;
+  background: var(--escenario-foto, #f5f4f8);
+  isolation: isolate;
+}
+
+:where(.foto) > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: var(--relleno, 0);
+  mix-blend-mode: multiply;
+  user-select: none;
+}

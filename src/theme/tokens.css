@@ -26,6 +26,11 @@
   --violet-800: #5B21B6; /* espejo de --primary-hover, fin del gradiente */
   --violet-900: #4C1D95;
 
+  /* Escenario de las fotos de producto: gris casi blanco. Con multiply, el
+     blanco de la foto toma este color y no se nota el recuadro (kit:
+     FotoProducto y TarjetaProducto). En noche, un punto más bajo (abajo). */
+  --escenario-foto: #f5f4f8;
+
   /* ---------------------------------------------------------------------
      GRADIENTES DE MARCA
      --------------------------------------------------------------------- */
@@ -204,6 +209,11 @@
    cristal (Header, GlassCard, dropdowns, modales) sea oscura y legible.
    ═════════════════════════════════════════════════════════════════════════ */
 [data-theme="dark"] {
+  /* Escenario de las fotos de producto: sigue claro (una foto con fondo
+     blanco sobre oscuro se vería como un recuadro), un punto más bajo para
+     que no deslumbre. */
+  --escenario-foto: #e9e7f0;
+
   /* Fondos translúcidos -> violeta profundo translúcido */
   --glass-bg:        rgba(30, 27, 46, 0.62);
   --glass-bg-solid:  rgba(30, 27, 46, 0.74);

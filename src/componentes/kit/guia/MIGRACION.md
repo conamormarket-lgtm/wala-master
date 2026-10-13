@@ -24,7 +24,9 @@ principal (y a la APK de Capacitor).
 | `IconoWala` y `Trazo` en referidos | `components/common/AvisoInvitacion/AvisoInvitacion.jsx`, `pages/cuenta/components/GrupoReferidos.jsx`, `pages/cuenta/CuentaReferidosPage.jsx` |
 
 Cambiar `Boton`, `Feedback`, `Enlace`, `IconosWala` o `Marca` ya cambia la
-tienda real: revisar también esas pantallas.
+tienda real: revisar también esas pantallas. `Feedback` usa
+`piezas/FotoProducto` para la foto de los toasts, así que esa pieza (y el
+token `--escenario-foto` de `tokens.css`) también está ya en la tienda.
 
 ## Orden
 
