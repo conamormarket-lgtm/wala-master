@@ -90,6 +90,26 @@ botones violeta lisos, brillo solo al interactuar, fotos de producto sobre
 `#f5f4f8` con `multiply` (nunca color detrás), modo claro y noche, nada de
 emojis (usar `IconoWala`), y probar en celular (390 px).
 
+## El editor en el celular
+
+Viendo como Admin → "Editar esta página":
+
+1. El editor sube como **hoja inferior** (la mitad baja); la página sigue a
+   la vista arriba y se puede desplazar.
+2. Se toca una sección en la página (o en la lista) y la página la deja
+   arriba, visible sobre la hoja; la hoja muestra su formulario con las
+   pestañas Contenido · Diseño · Fondo y espacio.
+3. Cada cambio se ve al instante en la página de arriba ("Cambios sin
+   publicar" hasta tocar **Publicar**).
+4. El botón de flechas agranda la hoja casi a pantalla completa (para
+   formularios largos) y la vuelve a achicar; deslizarla no cierra nada.
+5. Mientras se edita se esconden los flotantes (WhatsApp, Kapi, regalos,
+   monedas) para que no tapen el panel. En el celular no aparece el botón
+   "ver en celular/escritorio" (ya estás en uno).
+
+Es el mismo `PanelEditor`: en la tienda va fijo a la pantalla; en la demo,
+dentro del marco (`incrustado`). Diseño en `editor/Editor.module.css`.
+
 ## Datos del ejemplo
 
 `demo/inicio.json` es una copia de solo lectura de `pages/home`,

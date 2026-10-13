@@ -69,6 +69,24 @@
     height: 92svh;
   }
 
+  /* Incrustado (demo, vista previa): la misma hoja, pero dentro de su marco. */
+  .incrustado {
+    position: absolute;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 56%;
+    border-width: 1px 0 0;
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -10px 30px -16px rgba(30, 17, 64, 0.35);
+    transition: height var(--dur-media) var(--ease-signature);
+  }
+
+  .incrustado.grande {
+    height: 92%;
+  }
+
   .soloEscritorio {
     display: none !important;
   }
@@ -86,7 +104,8 @@
 
 @media (max-width: 719px) {
   .derecha .agarre,
-  .izquierda .agarre {
+  .izquierda .agarre,
+  .incrustado .agarre {
     position: absolute;
     top: 6px;
     left: 50%;

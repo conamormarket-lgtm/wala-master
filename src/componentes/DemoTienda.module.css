@@ -66,6 +66,38 @@
   }
 }
 
+/* Celular: como en la tienda, el editor es una hoja inferior sobre la
+   página (la página sigue a la vista y se desplaza arriba). */
+@media (max-width: 719px) {
+  .estudio {
+    position: relative;
+    display: block;
+    height: 82svh;
+  }
+
+  .estudio .lienzo {
+    height: 100%;
+  }
+
+  .lado {
+    position: absolute;
+    inset: 0;
+    z-index: 70;
+    overflow: hidden;
+    border-radius: 24px;
+    pointer-events: none;
+  }
+
+  .lado > * {
+    pointer-events: auto;
+  }
+
+  /* Que lo último de la página pueda subir por encima de la hoja. */
+  .paginaEditor {
+    padding-bottom: 50svh;
+  }
+}
+
 /* ── "Ver componentes": cada parte con su número y su componente ── */
 .anatomia .parte,
 .anatomia .parteEnLinea,

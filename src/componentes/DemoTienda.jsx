@@ -265,7 +265,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     pie: INICIO.pie,
     pieLegal: PIE_LEGAL,
     barraInferior: { activo: PESTANA_DE_PAGINA[pagina], usuario: conSesion ? usuario : null, admin: esAdmin, carrito: enCarrito },
-    flotantes,
+    // Editando, los flotantes (WhatsApp, Kapi…) se esconden: taparían el panel.
+    flotantes: enEditor ? undefined : flotantes,
   };
 
   /* ── Inicio: secciones del builder (con editor y "Ver componentes") ── */

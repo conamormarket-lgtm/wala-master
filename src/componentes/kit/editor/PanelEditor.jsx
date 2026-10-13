@@ -255,7 +255,7 @@ export default function PanelEditor({
             {onDeshacer && <button type="button" className={s.iconoBoton} onClick={onDeshacer} disabled={!puedeDeshacer} aria-label="Deshacer" title="Deshacer (Ctrl+Z)"><Undo2 aria-hidden="true" /></button>}
             {onRehacer && <button type="button" className={s.iconoBoton} onClick={onRehacer} disabled={!puedeRehacer} aria-label="Rehacer" title="Rehacer (Ctrl+Shift+Z)"><Redo2 aria-hidden="true" /></button>}
             {onVista && (
-              <button type="button" className={s.iconoBoton} onClick={() => onVista(vista === 'movil' ? 'escritorio' : 'movil')} aria-label={vista === 'movil' ? 'Ver en escritorio' : 'Ver en celular'} title={vista === 'movil' ? 'Ver en escritorio' : 'Ver en celular'}>
+              <button type="button" className={`${s.iconoBoton} ${s.soloEscritorio}`} onClick={() => onVista(vista === 'movil' ? 'escritorio' : 'movil')} aria-label={vista === 'movil' ? 'Ver en escritorio' : 'Ver en celular'} title={vista === 'movil' ? 'Ver en escritorio' : 'Ver en celular'}>
                 {vista === 'movil' ? <Monitor aria-hidden="true" /> : <Smartphone aria-hidden="true" />}
               </button>
             )}
@@ -264,11 +264,10 @@ export default function PanelEditor({
                 {lado === 'derecha' ? <PanelLeft aria-hidden="true" /> : <PanelRight aria-hidden="true" />}
               </button>
             )}
-            {!incrustado && (
-              <button type="button" className={`${s.iconoBoton} ${s.soloMovil}`} onClick={() => setGrande((v) => !v)} aria-label={grande ? 'Achicar el panel' : 'Agrandar el panel'}>
-                {grande ? <Minimize2 aria-hidden="true" /> : <Maximize2 aria-hidden="true" />}
-              </button>
-            )}
+            {/* Agrandar la hoja: solo en el celular (también en la demo). */}
+            <button type="button" className={`${s.iconoBoton} ${s.soloMovil}`} onClick={() => setGrande((v) => !v)} aria-label={grande ? 'Achicar el panel' : 'Agrandar el panel'}>
+              {grande ? <Minimize2 aria-hidden="true" /> : <Maximize2 aria-hidden="true" />}
+            </button>
             {onCerrar && <button type="button" className={s.iconoBoton} onClick={onCerrar} aria-label="Cerrar el editor"><X aria-hidden="true" /></button>}
           </div>
         </header>
