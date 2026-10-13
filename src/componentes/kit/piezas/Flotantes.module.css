@@ -233,22 +233,23 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
+  border: 2.5px solid #fbbf24;
   border-radius: 50%;
-  background: var(--degradado-logo, var(--violet-500));
+  background: #fff;
   transform: rotate(-8deg);
 }
 
 .pildoraMonedas {
   position: absolute;
-  right: -6px;
-  bottom: -4px;
+  right: -8px;
+  bottom: -5px;
   padding: 0 5px;
-  border: 2px solid var(--violet-700);
+  border: 2px solid #fff;
   border-radius: 999px;
-  background: #fbbf24;
-  color: #2e1065;
+  background: var(--violet-700);
+  color: #fff;
   font-family: var(--fuente-marca);
   font-size: 0.66rem;
   font-weight: 900;
@@ -324,7 +325,7 @@
   .pildoraSello {
     width: 52px;
     height: 52px;
-    box-shadow: 0 10px 22px -12px rgba(76, 29, 149, 0.8);
+    box-shadow: 0 10px 22px -12px rgba(146, 64, 14, 0.7);
   }
 
   .pildoraTexto {

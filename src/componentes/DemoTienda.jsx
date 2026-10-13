@@ -72,7 +72,7 @@ const GRUPOS_CUENTA = [
     { to: '/cuenta/creaciones', texto: 'Mis creaciones', Icono: Sparkles },
   ] },
 ];
-const PROMO_CUENTA = { titulo: 'Perfil de regalos', texto: 'Completa la encuesta', monedas: 15, url: '/encuesta-suscripcion' };
+const PROMO_CUENTA = { titulo: 'Perfil de regalos', texto: 'Completa la encuesta', monedas: 15, url: '/encuesta-suscripcion', icono: 'moneda' };
 
 const META_ENVIO = 150;
 const { destacados, nuevos, ofertas } = INICIO.productos;
@@ -406,14 +406,13 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         </div>
       )}
 
+      {/* Como el popup de la tienda: solo la imagen, que es el botón. */}
       <VentanaCampana
         abierta={ver('campana')}
         onCerrar={() => alternar('campana')}
+        formato="imagen"
         imagen="/images/popups/encuesta-conocerte-mejor.webp"
-        antetitulo="Gana 15 monedas"
         titulo="Queremos conocerte mejor"
-        texto="Responde 5 preguntas y te recomendamos regalos que sí van contigo."
-        accion="Responder la encuesta"
         onAccion={() => { alternar('campana'); avisar('En la tienda iría a', '/encuesta-suscripcion'); }}
       />
     </>

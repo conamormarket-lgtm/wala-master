@@ -100,15 +100,17 @@ export function BurbujaRegalos({ cantidad = 0, onAbrir, etiqueta = 'Regalos pens
 
 /**
  * Píldora de recompensa ("Gana 15 monedas · Completa tu perfil de regalos").
- * En el celular se recoge en un círculo con "+15".
+ * Va con la moneda en un sello blanco de aro dorado: así no se confunde con
+ * la burbuja violeta de regalos sugeridos (otra cosa). En el celular se
+ * recoge en ese sello con "+15".
  *  - to: adónde lleva  · onCerrar: la X (la tienda decide cuánto se oculta)
  */
-export function PildoraRecompensa({ titulo, texto, monedas, to, onCerrar, icono = 'regalo' }) {
+export function PildoraRecompensa({ titulo, texto, monedas, to, onCerrar, icono = 'moneda' }) {
   return (
     <div className={s.pildora}>
       <Enlace to={to} className={s.pildoraEnlace} aria-label={[titulo, texto].filter(Boolean).join('. ')}>
         <span className={s.pildoraSello}>
-          <IconoWala nombre={icono} tamano={30} sticker={false} />
+          <IconoWala nombre={icono} tamano={36} sticker={false} />
           {monedas ? <span className={s.pildoraMonedas} aria-hidden="true">+{monedas}</span> : null}
         </span>
         <span className={s.pildoraTexto}>

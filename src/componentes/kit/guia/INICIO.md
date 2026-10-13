@@ -29,8 +29,8 @@ el carrito y Mis pedidos.
 | M7 | WhatsApp flotante | `BotonWhatsApp` (dentro de `PilaFlotante`) | `Enlace` | `piezas/Flotantes.module.css` | Firestore `messages` (número por zona) | todos (no admin, checkout ni landings) |
 | M8 | Kapi | `KapiFlotante` | — | `piezas/Flotantes.module.css` | perfil (comida del día, tutorial) | con sesión |
 | M9 | Regalos sugeridos | `BurbujaRegalos` | `IconoWala`, `Contador` | `piezas/Flotantes.module.css` | `suggested_packages` sin ver | con sesión, si hay |
-| M10 | "Gana 15 monedas" | `PildoraRecompensa` | `IconoWala`, `Enlace` | `piezas/Flotantes.module.css` | perfil sin encuesta | con sesión |
-| M11 | Ventana de campaña | `VentanaCampana` | `HojaInferior`, `EtiquetaColgante`, `Boton` | `piezas/Marco.module.css` | `storeConfig/popups` (las reglas siguen en la tienda) | según reglas |
+| M10 | "Gana 15 monedas" | `PildoraRecompensa` | `IconoWala` (moneda), `Enlace` | `piezas/Flotantes.module.css` | perfil sin encuesta | con sesión. Sello blanco con aro dorado y "+15": no confundir con M9 (regalo violeta) |
+| M11 | Anuncio de campaña | `VentanaCampana` (`formato: 'imagen'`, como la tienda: solo la imagen, que es el botón, y una X; tocar afuera cierra) o `'tarjeta'` | `EtiquetaColgante`, `Boton`, `HojaInferior` (solo en tarjeta) | `piezas/Marco.module.css` (`.anuncio…`) | `storeConfig/popups` (las reglas siguen en la tienda) | según reglas |
 | M12 | Sugerencia de idioma | `AvisoIdioma` | `Boton` | `piezas/Marco.module.css` | idioma del navegador | una vez, si no es español |
 
 ## Secciones (S): las de `pages/home`, en orden

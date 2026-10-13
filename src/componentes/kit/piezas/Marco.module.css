@@ -306,24 +306,88 @@
   gap: 0.4rem;
 }
 
-/* ── Ventana de campaña ────────────────────────────────── */
-.campanaImagen {
+/* ── Ventana de campaña ─────────────────────────────────── */
+/* Anuncio de solo imagen: ventana centrada (también en el celular). */
+.anuncio {
+  position: fixed;
+  inset: 0;
+  /* Sobre la cabecera y la barra de admin; los toasts (10100) van encima. */
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(20, 18, 28, 0.6);
+}
+
+.anuncioContenido {
+  position: absolute;
+}
+
+.anuncioCaja {
+  position: relative;
+  width: min(440px, 100%);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 30px 60px -24px rgba(15, 23, 42, 0.55);
+  outline: none;
+}
+
+.anuncioImagen {
   display: block;
   width: 100%;
   padding: 0;
   border: 0;
-  border-radius: 14px;
-  background: none;
+  background: transparent;
   cursor: pointer;
-  overflow: hidden;
 }
 
-.campanaImagen img {
+.anuncioImagen img {
   display: block;
   width: 100%;
   height: auto;
+  max-height: calc(100svh - 2rem);
+  object-fit: contain;
 }
 
+.anuncioImagen:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.anuncioImagen:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: -6px;
+}
+
+.anuncioCerrar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  color: #1f1b2e;
+  cursor: pointer;
+  box-shadow: 0 4px 12px -6px rgba(15, 23, 42, 0.5);
+}
+
+.anuncioCerrar svg {
+  width: 18px;
+  height: 18px;
+}
+
+.anuncioCerrar:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+/* Tarjeta (formato 'tarjeta'). */
 .campana {
   display: flex;
   flex-direction: column;

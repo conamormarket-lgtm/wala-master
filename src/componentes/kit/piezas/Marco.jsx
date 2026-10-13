@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, BookOpen, Info, Moon, Settings, Sun, X, XCircle } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { HojaInferior } from '../Feedback';
+import { useBloquearScroll, useCerrarConAtras } from '../Efectos';
 import { IsoWala, EtiquetaColgante } from '../Marca';
 import s from './Marco.module.css';
 
@@ -137,31 +140,84 @@ export function AvisoIdioma({ idioma = {}, onCambiar, onMantener }) {
 }
 
 /**
- * Ventana de campaña (encuesta, promo…): en escritorio un diálogo, en el
- * celular una hoja inferior. Las reglas de cuándo aparece viven en la tienda.
- *  - formato: 'imagen' (toda la imagen es el botón) | 'tarjeta'
- *  - titulo: en la cabecera de la ventana  · antetitulo: etiqueta colgante
+ * Anuncio de solo imagen, como el popup de la tienda: la imagen ya trae su
+ * texto y TODA ella es el botón; una X arriba y tocar afuera lo cierra. Igual
+ * en escritorio y en el celular (ventana centrada, no hoja).
+ */
+function AnuncioImagen({ abierta, onCerrar, imagen, titulo, onAccion, contenida }) {
+  const ref = useRef(null);
+  useBloquearScroll(abierta && !contenida);
+  useCerrarConAtras(abierta && !contenida, onCerrar);
+  useEffect(() => {
+    if (!abierta) return undefined;
+    ref.current?.focus({ preventScroll: true });
+    const alTeclear = (e) => { if (e.key === 'Escape') onCerrar(); };
+    document.addEventListener('keydown', alTeclear);
+    return () => document.removeEventListener('keydown', alTeclear);
+  }, [abierta, onCerrar]);
+
+  const ventana = (
+    <AnimatePresence>
+      {abierta && (
+        <motion.div
+          className={[s.anuncio, contenida && s.anuncioContenido].filter(Boolean).join(' ')}
+          onClick={onCerrar}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <motion.div
+            ref={ref}
+            className={s.anuncioCaja}
+            role="dialog"
+            aria-modal="true"
+            aria-label={titulo || 'Anuncio'}
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+            initial={{ opacity: 0, scale: 0.94, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0, transition: { duration: 0.26, ease: [0.16, 1, 0.3, 1] } }}
+            exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.15 } }}
+          >
+            <button type="button" className={s.anuncioCerrar} onClick={onCerrar} aria-label="Cerrar">
+              <X aria-hidden="true" />
+            </button>
+            <button type="button" className={s.anuncioImagen} onClick={onAccion}>
+              <img src={imagen} alt={titulo || ''} />
+            </button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+  if (contenida || typeof document === 'undefined') return ventana;
+  return createPortal(ventana, document.body);
+}
+
+/**
+ * Ventana de campaña (encuesta, promo…). Las reglas de cuándo aparece viven
+ * en la tienda (storeConfig/popups); aquí solo se dibuja.
+ *  - formato 'imagen' (el de la tienda): solo la imagen, que es el botón.
+ *  - formato 'tarjeta': imagen opcional, antetítulo (etiqueta colgante),
+ *    texto y botones; en el celular sube como hoja.
  */
 export function VentanaCampana({
-  abierta, onCerrar, formato = 'tarjeta', imagen, antetitulo, titulo, texto, accion = 'Ver más', onAccion, contenida = false,
+  abierta, onCerrar, formato = 'imagen', imagen, antetitulo, titulo, texto, accion = 'Ver más', onAccion, contenida = false,
 }) {
+  if (formato === 'imagen' && imagen) {
+    return <AnuncioImagen {...{ abierta, onCerrar, imagen, titulo, onAccion, contenida }} />;
+  }
   return (
     <HojaInferior abierta={abierta} onCerrar={onCerrar} contenida={contenida} titulo={titulo}>
-      {formato === 'imagen' ? (
-        <button type="button" className={s.campanaImagen} onClick={onAccion} aria-label={titulo || accion}>
-          <img src={imagen} alt="" />
-        </button>
-      ) : (
-        <div className={s.campana}>
-          {imagen && <div className={s.campanaFoto}><img src={imagen} alt="" /></div>}
-          {antetitulo && <EtiquetaColgante tamano="sm">{antetitulo}</EtiquetaColgante>}
-          {texto && <p className={s.campanaTexto}>{texto}</p>}
-          <div className={s.campanaAcciones}>
-            <Boton bloque tamano="lg" onClick={onAccion}>{accion}</Boton>
-            <Boton bloque variante="fantasma" onClick={onCerrar}>Ahora no</Boton>
-          </div>
+      <div className={s.campana}>
+        {imagen && <div className={s.campanaFoto}><img src={imagen} alt="" /></div>}
+        {antetitulo && <EtiquetaColgante tamano="sm">{antetitulo}</EtiquetaColgante>}
+        {texto && <p className={s.campanaTexto}>{texto}</p>}
+        <div className={s.campanaAcciones}>
+          <Boton bloque tamano="lg" onClick={onAccion}>{accion}</Boton>
+          <Boton bloque variante="fantasma" onClick={onCerrar}>Ahora no</Boton>
         </div>
-      )}
+      </div>
     </HojaInferior>
   );
 }
