@@ -125,6 +125,9 @@ const ComboCrearPage = () => {
       olvidarArmado(id);
       guardarMetaArmado(id, { plantilla: plantillaParam });
     }
+    // La dirección es de OTRO combo que lo del navegador (otra pestaña): se
+    // espera a cargarlo de la cuenta (efecto de abajo) en vez de mostrar este.
+    if (mioParam && !nuevoParam && leerMetaArmado(id).miComboId !== mioParam) return;
     setArmado(leerArmado(id, piezasCombo.length));
     setMeta(leerMetaArmado(id));
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -134,24 +137,34 @@ const ComboCrearPage = () => {
     guardarArmado(id, siguiente);
   };
 
-  // "Mi combo" abierto desde Mis creaciones: sus piezas y tallas pasan al armado.
+  // ?mio=X es la dirección de UN combo del cliente ("Mi combo"): al abrirla
+  // (o recargarla) sus piezas y tallas salen de su cuenta, no del navegador.
+  // Así cada combo tiene su enlace y dos pestañas no se pisan. Si no es suyo
+  // (un enlace ajeno), empieza uno limpio.
+  const mioPropioRef = useRef('');
   useEffect(() => {
     if (!mioParam || !user || !piezasCombo.length) return;
+    // Lo puso esta misma página al crear el combo: ya está al día.
+    if (mioParam === mioPropioRef.current) return;
     let cancelado = false;
     (async () => {
       const { data } = await getDesignById(mioParam);
       if (cancelado) return;
+      olvidarArmado(id);
       if (data && data.tipo === 'comboCrear' && data.userId === user.uid && data.comboId === id) {
         const siguiente = Array.from({ length: piezasCombo.length }, (_, i) => ({
           designId: data.piezas?.[i]?.designId || '',
           talla: data.piezas?.[i]?.talla || '',
         }));
-        olvidarArmado(id);
+        const conMeta = { miComboId: mioParam, plantilla: plantillaParam || '' };
         guardarArmado(id, siguiente);
-        guardarMetaArmado(id, { miComboId: mioParam, plantilla: '' });
+        guardarMetaArmado(id, conMeta);
         setArmado(siguiente);
-        setMeta({ miComboId: mioParam, plantilla: '' });
+        setMeta(conMeta);
+        return;
       }
+      setArmado(leerArmado(id, piezasCombo.length));
+      setMeta(leerMetaArmado(id));
       const sin = new URLSearchParams(params);
       sin.delete('mio');
       setParams(sin, { replace: true });
@@ -159,6 +172,15 @@ const ComboCrearPage = () => {
     return () => { cancelado = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mioParam, user?.uid, id, piezasCombo.length]);
+
+  /** Al crear "Mi combo", su id queda en la dirección (?mio=). */
+  const ponerMioEnDireccion = (miComboId) => {
+    mioPropioRef.current = miComboId;
+    const con = new URLSearchParams(window.location.search);
+    con.set('mio', miComboId);
+    con.delete('nuevo');
+    setParams(con, { replace: true });
+  };
 
   // El combo de la comunidad del que partió: cada pieza sin diseño propio
   // muestra el suyo y se personaliza desde ahí.
@@ -202,7 +224,8 @@ const ComboCrearPage = () => {
   // En cuanto una pieza tiene diseño, el combo se guarda en la cuenta como UNA
   // creación ("Mi combo"): borrador mientras falte algo, terminado cuando
   // todas sus piezas estén guardadas. Se mantiene al día con cada cambio.
-  const todasConDiseno = Boolean(user && combo && armado.some((a) => a.designId)
+  // (Con "Mi combo" ya creado también se guarda si quita todas sus piezas.)
+  const todasConDiseno = Boolean(user && combo && (armado.some((a) => a.designId) || meta.miComboId)
     && armado.every((a, i) => !a.designId || creaciones[i]));
   const firmaArmado = armado.map((a, i) => [
     a.designId, a.talla, creaciones[i]?.estado || '', (creaciones[i]?.archivosImpresion || []).length,
@@ -220,6 +243,7 @@ const ComboCrearPage = () => {
           guardarMetaArmado(id, { miComboId: guardadoId });
           setMeta((m) => ({ ...m, miComboId: guardadoId }));
         }
+        if (guardadoId && guardadoId !== new URLSearchParams(window.location.search).get('mio')) ponerMioEnDireccion(guardadoId);
         queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'], refetchType: 'all' });
         queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'], refetchType: 'all' });
         queryClient.invalidateQueries({ queryKey: ['creacion', guardadoId] });
@@ -269,8 +293,10 @@ const ComboCrearPage = () => {
   }
 
   const agotada = (p) => typeof p?.inStock === 'number' && p.inStock <= 0;
-  const urlEstudio = (i, extra = '') => `/crear/${piezasCombo[i].prendaId}?combo=${id}&pieza=${i}${extra}`;
-  const estadoEstudio = { desde: `/combo/${id}` };
+  // El estudio recibe también este combo (?mio=) para guardar y volver a él.
+  const urlEstudio = (i, extra = '') => `/crear/${piezasCombo[i].prendaId}?combo=${id}&pieza=${i}`
+    + `${meta.miComboId ? `&mio=${meta.miComboId}` : ''}${extra}`;
+  const estadoEstudio = { desde: `/combo/${id}${meta.miComboId ? `?mio=${meta.miComboId}` : ''}` };
 
   const piezas = armado.map((a, i) => {
     const creacion = creaciones[i];

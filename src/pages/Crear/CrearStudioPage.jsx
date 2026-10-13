@@ -29,7 +29,7 @@ import {
 import RecorteImagen from './RecorteImagen';
 import QuitarFondo from './QuitarFondo';
 import { itemDeCreacion } from './creacionCarrito';
-import { ponerPieza, leerArmado, leerMetaArmado, guardarMetaArmado } from './comboCrear';
+import { ponerPieza, leerArmado, guardarArmado, leerMetaArmado, guardarMetaArmado } from './comboCrear';
 import { sincronizarMiCombo } from '../../services/misCombos';
 import { getComboCrear } from '../../services/combosCrear';
 import AtajosTeclado, { MOD } from './AtajosTeclado';
@@ -170,6 +170,16 @@ const CrearStudioPage = () => {
       .map((p) => p.i);
   })();
   const [copiarALasOtras, setCopiarALasOtras] = useState(true);
+  // "Mi combo" que se está armando (?mio=): con él se guarda y se vuelve a ESE
+  // combo aunque otra pestaña esté armando otro (lo del navegador es compartido).
+  const mioRef = useRef(enCombo ? searchParams.get('mio') || '' : '');
+  const conMio = () => (mioRef.current ? `&mio=${mioRef.current}` : '');
+  // Qué creación puso esta pestaña en cada pieza (para no pisar las demás).
+  const cambiosPiezasRef = useRef({});
+  const urlCombo = () => {
+    const miComboId = mioRef.current || leerMetaArmado(comboParam).miComboId;
+    return `/combo/${comboParam}${miComboId ? `?mio=${miComboId}` : ''}`;
+  };
 
   const { data: prenda, isLoading, error } = useQuery({
     queryKey: ['prenda-base', id],
@@ -1974,13 +1984,14 @@ const CrearStudioPage = () => {
         // guardado como borrador en la cuenta (como una prenda suelta).
         if (enCombo) {
           ponerPieza(comboParam, piezaParam, { designId: guardadoId });
+          cambiosPiezasRef.current[piezaParam] = guardadoId;
           await sincronizarCombo();
         }
         if (montadoRef.current) {
           setDesignId(guardadoId);
           setEsBorrador(true);
           // Recargar la página reabre este mismo borrador.
-          navigate(`/crear/${id}?designId=${guardadoId}${sufijoCombo}`, { replace: true, state: location.state });
+          navigate(`/crear/${id}?designId=${guardadoId}${sufijoCombo}${conMio()}`, { replace: true, state: location.state });
         }
       }
       if (montadoRef.current) setEstadoBorrador('guardado');
@@ -2005,7 +2016,7 @@ const CrearStudioPage = () => {
   const empezarNuevo = async () => {
     await terminarBorrador();
     try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
-    window.location.assign(enCombo ? `/crear/${id}?${sufijoCombo.slice(1)}` : `/crear/${id}`);
+    window.location.assign(enCombo ? `/crear/${id}?${sufijoCombo.slice(1)}${conMio()}` : `/crear/${id}`);
   };
 
   /**
@@ -2054,7 +2065,7 @@ const CrearStudioPage = () => {
     setDesignId(idFinal);
     setEsBorrador(false);
     setEstadoBorrador(null);
-    if (idFinal !== designIdParam) navigate(`/crear/${id}?designId=${idFinal}${sufijoCombo}`, { replace: true, state: location.state });
+    if (idFinal !== designIdParam) navigate(`/crear/${id}?designId=${idFinal}${sufijoCombo}${conMio()}`, { replace: true, state: location.state });
     quitarBorradorDeCache(queryClient, user.uid, idFinal);
     queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'], refetchType: 'all' });
     queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'], refetchType: 'all' });
@@ -2088,18 +2099,37 @@ const CrearStudioPage = () => {
    * mientras falte algo). Se espera antes de salir del estudio: si no, la
    * página del combo podría crear otro igual al mismo tiempo.
    */
+  /**
+   * Las piezas del combo: las de "Mi combo" en la cuenta (si ya existe) con
+   * lo que puso esta pestaña encima; si no, las del navegador.
+   */
+  const piezasDelCombo = async (combo) => {
+    const n = combo.piezas.length;
+    if (mioRef.current) {
+      const { data } = await getDesignById(mioRef.current);
+      if (data?.tipo === 'comboCrear' && data.userId === user?.uid && data.comboId === comboParam) {
+        return Array.from({ length: n }, (_, i) => ({
+          designId: cambiosPiezasRef.current[i] ?? data.piezas?.[i]?.designId ?? '',
+          talla: data.piezas?.[i]?.talla || '',
+        }));
+      }
+    }
+    return leerArmado(comboParam, n);
+  };
+
   const sincronizarCombo = async () => {
     if (!enCombo || !user) return;
     const combo = comboActual || (await getComboCrear(comboParam)).data;
     if (!combo) return;
-    const meta = leerMetaArmado(comboParam);
     try {
-      const { id: miComboId } = await sincronizarMiCombo(user.uid, {
-        id: meta.miComboId || undefined,
-        combo,
-        piezas: leerArmado(comboParam, combo.piezas.length),
-      });
-      if (miComboId && miComboId !== meta.miComboId) guardarMetaArmado(comboParam, { miComboId });
+      const piezas = await piezasDelCombo(combo);
+      const previo = mioRef.current || leerMetaArmado(comboParam).miComboId;
+      const { id: miComboId } = await sincronizarMiCombo(user.uid, { id: previo || undefined, combo, piezas });
+      if (miComboId) {
+        mioRef.current = miComboId;
+        guardarArmado(comboParam, piezas);
+        guardarMetaArmado(comboParam, { miComboId });
+      }
       queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'], refetchType: 'all' });
     } catch { /* se vuelve a intentar desde la página del combo */ }
@@ -2108,7 +2138,13 @@ const CrearStudioPage = () => {
   /** Pone la creación en su pieza del combo (y en las iguales, si se pidió). */
   const ponerEnCombo = (idPieza) => {
     ponerPieza(comboParam, piezaParam, { designId: idPieza });
-    if (copiarALasOtras) otrasIguales.forEach((i) => ponerPieza(comboParam, i, { designId: idPieza }));
+    cambiosPiezasRef.current[piezaParam] = idPieza;
+    if (copiarALasOtras) {
+      otrasIguales.forEach((i) => {
+        ponerPieza(comboParam, i, { designId: idPieza });
+        cambiosPiezasRef.current[i] = idPieza;
+      });
+    }
   };
 
   const confirmarGuardar = async (nombreFinal = nombreEditado, { actualizar = false } = {}) => {
@@ -2159,7 +2195,7 @@ const CrearStudioPage = () => {
       ponerEnCombo(idPieza);
       await sincronizarCombo();
       try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
-      navigate(`/combo/${comboParam}`);
+      navigate(urlCombo());
     } catch (err) {
       toast.error(`No pudimos preparar tu diseño: ${err?.message || err}`);
     } finally {
@@ -2188,7 +2224,7 @@ const CrearStudioPage = () => {
       setProcesando(null);
       return;
     }
-    const armado = leerArmado(comboParam, comboActual.piezas.length);
+    const armado = await piezasDelCombo(comboActual);
     const { plantilla } = leerMetaArmado(comboParam);
     const destino = armado[j]?.designId;
     // Si otra pieza lleva el mismo diseño, se edita una copia (no cambia la otra).
@@ -2196,6 +2232,7 @@ const CrearStudioPage = () => {
     let url = `/crear/${comboActual.piezas[j].prendaId}?combo=${encodeURIComponent(comboParam)}&pieza=${j}`;
     if (destino) url += compartido ? `&copiar=${destino}` : `&designId=${destino}`;
     else if (plantilla) url += `&plantilla=${plantilla}&plantillaPieza=${j}`;
+    url += conMio();
     try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
     window.location.assign(url);
   };
@@ -2529,7 +2566,7 @@ const CrearStudioPage = () => {
   // creaciones, la página de la creación…), que la manda en `state.desde`;
   // si se entró directo, a las prendas de Crear.
   const volverA = typeof location.state?.desde === 'string' ? location.state.desde
-    : enCombo ? `/combo/${comboParam}` : '/personalizar';
+    : enCombo ? urlCombo() : '/personalizar';
   const etiquetaVolver = volverA.startsWith('/cuenta')
     ? 'Volver a Mis creaciones'
     : volverA.startsWith('/creacion') ? 'Volver a tu creación'
@@ -3243,7 +3280,7 @@ const CrearStudioPage = () => {
             {guardada.imagenConjunta && <img src={guardada.imagenConjunta} alt={guardada.name} className={styles.imagenGuardada} />}
             <p><strong>{guardada.name}</strong></p>
             {enCombo ? (
-              <Link to={`/combo/${comboParam}`} className={styles.botonPrincipal}>Volver al combo</Link>
+              <Link to={urlCombo()} className={styles.botonPrincipal}>Volver al combo</Link>
             ) : (
               <Link to={`/creacion/${guardada.id}`} className={styles.botonPrincipal}>Ver mi creación</Link>
             )}
