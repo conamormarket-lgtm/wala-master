@@ -30,24 +30,28 @@ import s from './Paginas.module.css';
  *  - flotantes: { derecha, izquierda } → <PilaFlotante> (WhatsApp, Kapi…)
  *  - contenida: el marco vive dentro de algo con su propio scroll (demo,
  *    editor): los flotantes se pegan al marco y no a la ventana.
+ * Cada parte lleva data-componente (Cabecera, PiePagina, BarraInferior) para
+ * ubicarla en la guía (kit/guia) y en "Ver componentes".
  */
 export function MarcoTienda({ arriba, cabecera, pie, pieLegal, barraInferior, flotantes, contenida = false, children }) {
   return (
     <div className={s.marco}>
       {arriba && <div className={s.arriba}>{arriba}</div>}
-      {cabecera && <div className={s.cabecera}><Cabecera {...cabecera} /></div>}
+      {cabecera && <div className={s.cabecera} data-componente="Cabecera"><Cabecera {...cabecera} /></div>}
       <main className={s.contenido}>{children}</main>
       {(pie || pieLegal) && (
-        <BloqueSeccion ajustes={{ paddingTop: '1rem', paddingBottom: '1.5rem' }}>
-          <PiePagina ajustes={pie || {}} pieLegal={pieLegal && <PieLegal {...pieLegal} />} />
-        </BloqueSeccion>
+        <div data-componente="PiePagina">
+          <BloqueSeccion ajustes={{ paddingTop: '1rem', paddingBottom: '1.5rem' }}>
+            <PiePagina ajustes={pie || {}} pieLegal={pieLegal && <PieLegal {...pieLegal} />} />
+          </BloqueSeccion>
+        </div>
       )}
       {flotantes && (
         <div className={s.flotantes}>
           <PilaFlotante contenida={contenida} izquierda={flotantes.izquierda}>{flotantes.derecha}</PilaFlotante>
         </div>
       )}
-      {barraInferior && <div className={s.barraInferior}><BarraInferior {...barraInferior} /></div>}
+      {barraInferior && <div className={s.barraInferior} data-componente="BarraInferior"><BarraInferior {...barraInferior} /></div>}
     </div>
   );
 }

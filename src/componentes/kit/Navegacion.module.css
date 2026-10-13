@@ -56,6 +56,12 @@
 }
 
 /* ── Cabecera ──────────────────────────────────────────── */
+/* La cabecera se acomoda a SU ancho (container query), no al de la ventana:
+   en la vista de celular del editor se ve como en un celular. */
+.cabeceraCaja {
+  container: cabecera / inline-size;
+}
+
 .cabecera {
   position: relative;
   /* Los menús que cuelgan de la cabecera deben quedar encima de lo que viene
@@ -374,7 +380,7 @@
   display: none;
 }
 
-@media (max-width: 1100px) {
+@container cabecera (max-width: 1100px) {
   .enlaces {
     display: none;
   }
@@ -382,7 +388,7 @@
 
 /* Celular: dos filas, como la tienda. Arriba logo y accesos; abajo el
    buscador a todo el ancho. */
-@media (max-width: 760px) {
+@container cabecera (max-width: 760px) {
   .cabecera {
     flex-wrap: wrap;
     column-gap: 0.5rem;

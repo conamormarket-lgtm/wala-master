@@ -7,8 +7,9 @@ Piezas de interfaz reutilizables. Se ven en `/componentes.html`
   tarjeta de producto, navegación, menús, avisos).
 - **Secciones**: cada tipo del builder por separado, agrupado como en el
   catálogo del editor, con su `type` y sus variantes (`DemoSecciones.jsx`).
-- **Páginas**: composiciones completas: una landing, el editor del builder,
-  el carrito y Mis pedidos.
+- **Páginas**: la Tienda de prueba: inicio, carrito y Mis pedidos con el
+  mismo marco, el editor del builder sobre el inicio (como admin) y "Ver
+  componentes".
 
 Todo se importa desde un solo lugar:
 
@@ -36,9 +37,10 @@ Todo se arma con lo del nivel de abajo; nada se dibuja dos veces.
 Si una sección necesita algo nuevo (una tarjeta, un chip…), va primero como
 pieza en `piezas/` y después se usa en la sección.
 
-`MAPA.md` es el inventario de cada página real (qué apartados tiene, de qué
-archivo salen hoy y con qué se arman en el kit). La página de inicio ya está
-mapeada y armada: vista Páginas → "Inicio de wala.pe".
+`guia/` dice qué componente va en cada parte de cada página real, con
+capturas numeradas y en qué archivo se cambia el diseño de cada parte
+(empieza por `guia/README.md`). En `/componentes.html` → Páginas → Tienda de
+prueba, **Ver componentes** muestra esos mismos números sobre la página.
 
 ## Reglas del kit
 
@@ -249,7 +251,8 @@ Reemplaza a VisualEditorPanel + EditableSection + ModuleInserter. Cada tipo
 de sección describe sus campos una sola vez en `editor/esquemas.js` (mismos
 nombres que guarda Firestore y que escribe el editor de hoy) y
 `FormularioSeccion` los dibuja en tres pestañas: Contenido, Diseño y Fondo y
-espacio. Se ve en `/componentes.html#editor`.
+espacio. Se ve en `/componentes.html#tienda` viendo como Admin → "Editar esta
+página".
 
 ```jsx
 const borrador = useBorrador(seccionesDeFirestore);   // deshacer/rehacer y "sin publicar"

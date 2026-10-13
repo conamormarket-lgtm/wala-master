@@ -307,8 +307,10 @@
   outline-offset: 2px;
 }
 
-/* Celular: solo el sello con "+15"; la X queda como puntito en la esquina. */
-@media (max-width: 768px) {
+/* Celular: solo el sello con "+15"; la X queda como puntito en la esquina.
+   Container query: dentro del marco de la tienda (o la vista celular del
+   editor) responde al ancho de la página. */
+@container (max-width: 720px) {
   .pildora {
     background: transparent;
     box-shadow: none;

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom';
 import { AnimatePresence, MotionConfig, motion, useScroll, useSpring } from 'framer-motion';
 import {
-  ArrowRight, Bell, BellRing, CheckCircle2, Heart, Mail, Moon, Phone, Plus, RotateCcw, Search, ShoppingBag, Sparkles, Sun, Trash2, Wand2, User,
+  ArrowRight, Bell, BellRing, CheckCircle2, Heart, Mail, Moon, Phone, Plus, Search, ShoppingBag, Sparkles, Sun, Trash2, Wand2, User,
   UserRound, Package, Settings, Gift, Ticket, Palette,
 } from 'lucide-react';
 import {
@@ -16,10 +16,8 @@ import {
   ProveedorEnlaces, MenuTienda, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito, AgregarRapido,
   accionDeProducto, tarjetaDesdeProducto, opcionesDeProducto, RenderSecciones,
   IconoWala, ICONOS_WALA, IsoWala,
-  PaginaTienda, PaginaCarrito, PaginaPedidos,
 } from './kit';
 import s from './ComponentesPage.module.css';
-import DemoEditor from './DemoEditor';
 import DemoSecciones, { GRUPOS_CATALOGO } from './DemoSecciones';
 import DemoPiezas from './DemoPiezas';
 // La mayoría de productos reales vienen con fondo blanco: estas fotos lo simulan.
@@ -29,7 +27,7 @@ import TAZA from './demo/taza.svg';
 import CUADRO from './demo/cuadro.svg';
 // Marcas reales de la tienda (copia de tienda_brands, solo lectura).
 import MARCAS_TIENDA from './demo/marcas.json';
-import DemoInicio from './DemoInicio';
+import DemoTienda from './DemoTienda';
 
 const FRENTE = '/prendas/hoodie-frente.webp';
 const ESPALDA = '/prendas/hoodie-espalda.webp';
@@ -62,11 +60,7 @@ const INDICES = {
   ],
   secciones: GRUPOS_CATALOGO,
   paginas: [
-    ['inicio', 'Inicio'],
-    ['landing', 'Landing'],
-    ['editor', 'Editor'],
-    ['carrito', 'Carrito'],
-    ['pedidos', 'Mis pedidos'],
+    ['tienda', 'Tienda de prueba'],
   ],
 };
 
@@ -154,105 +148,6 @@ const EXTRAS_DEMO = {
 };
 const productoDemo = (id) => PRODUCTOS_DEMO.find((p) => p.id === id);
 
-/*
- * Una página del builder tal como la guarda Firestore (pages/{pageId}):
- * [{ id, type, order, settings }]. Los settings usan los mismos campos que
- * getDefaultSettings (src/pages/Tienda/services/storefront.js).
- */
-const SECCIONES_DEMO = [
-  { id: 's1', type: 'announcement_bar', order: 0, settings: {
-    messages: [
-      { text: '🚚 Envío gratis desde S/ 150 a todo el Perú', link: '' },
-      { text: '🎁 Usa WALA10 y ahorra S/ 10 en tu primera compra', link: '/tienda' },
-      { text: '⚡ Ofertas relámpago solo por hoy', link: '#oferta-flash' },
-    ],
-    speed: 4000, bgColor: '#6d28d9', textColor: '#ffffff', animationType: 'fade', variant: 'solid', density: 'compact', showAccent: true,
-  } },
-  { id: 's2', type: 'hero_carousel', order: 1, settings: {
-    slides: [
-      { imageUrl: '/crear/banner-crear-1200.webp', mobileImageUrl: '/crear/banner-crear-movil.webp', title: 'Diseña tu polera en 2 minutos', subtitle: 'Sube tu foto, escribe tu frase y nosotros la estampamos.', buttonText: 'Empezar a crear', buttonLink: '/personalizar', contentPosition: 'left', verticalPosition: 'center', overlayColor: '#1e1b2e', overlayOpacity: 35, buttonBgColor: '#ffffff', buttonTextColor: '#4c1d95' },
-      { imageUrl: '/assets/kapi/banners/ruleta.webp', title: 'Gira la ruleta de Kapi', subtitle: 'Gana monedas y cupones todos los días.', buttonText: 'Jugar', buttonLink: '/minijuegos', contentPosition: 'left', overlayOpacity: 25 },
-    ],
-    autoPlay: true, autoPlaySpeed: 6000, showArrows: true, showDots: true, heightDesktop: '380px', heightMobile: '300px', borderRadius: '20px', paddingTop: '1rem', paddingBottom: '0.5rem',
-  } },
-  { id: 's3', type: 'trust_badges', order: 2, settings: {
-    badges: [{ icon: 'truck', text: 'Envío a todo el Perú' }, { icon: 'shield', text: 'Pago seguro' }, { icon: 'return', text: 'Cambios fáciles' }, { icon: 'heart', text: 'Hecho con amor' }],
-    paddingTop: '1rem', paddingBottom: '1rem',
-  } },
-  { id: 's4', type: 'flash_sales', order: 3, settings: {
-    title: 'Ofertas relámpago', subtitle: 'Precios que se van a medianoche.', collection: 'ofertas', endTime: new Date(Date.now() + 5 * 3600 * 1000 + 17 * 60 * 1000).toISOString(),
-    anchorId: 'oferta-flash', paddingTop: '1.5rem', paddingBottom: '1.5rem',
-  } },
-  { id: 's5', type: 'category_grid', order: 4, settings: {
-    title: '¿Qué estás buscando?', dataSource: 'manual', columns: 6, cardStyle: 'compact', paddingTop: '1rem', paddingBottom: '1rem',
-    items: [
-      { categoryId: 'poleras', name: 'Poleras', imageUrl: FRENTE_BLANCO },
-      { categoryId: 'tazas', name: 'Tazas', imageUrl: TAZA },
-      { categoryId: 'peluches', name: 'Peluches', imageUrl: '/assets/kapi/kapi-happy.webp' },
-      { categoryId: 'cuadros', name: 'Cuadros', imageUrl: CUADRO },
-      { categoryId: 'parejas', name: 'Para parejas', imageUrl: ESPALDA_BLANCO },
-      { categoryId: 'crear', name: 'Crea la tuya', imageUrl: ESPALDA },
-    ],
-  } },
-  { id: 's6', type: 'featured_carousel', order: 5, settings: {
-    eyebrow: 'Favoritos de la semana', title: 'Lo más pedido', visibleItems: 4, autoPlay: false, buttonText: 'Ver todo', buttonLink: '/tienda', paddingTop: '1.5rem', paddingBottom: '1.5rem',
-  } },
-  { id: 's10', type: 'banner_grid', order: 5.5, settings: {
-    dataSource: 'brands', title: 'Explora nuestros mundos', subtitle: 'Encuentra productos de tus marcas favoritas',
-    showBrandName: true, brandCardStyle: 'editorial', columns: 3, autoPlay: true, autoPlaySpeed: 6000, gap: '1rem',
-    paddingTop: '2rem', paddingBottom: '2rem',
-  } },
-  { id: 's11', type: 'bestsellers_row', order: 5.7, settings: {
-    title: 'Los más regalados', paddingTop: '1rem', paddingBottom: '1.5rem',
-    cards: [
-      { id: 'card1', title: 'Polera con tu foto', subtitle: 'Estampado de alta duración', imageUrl: FRENTE_BLANCO, link: '/tienda?categoria=poleras' },
-      { id: 'card2', title: 'Taza mágica', subtitle: 'Aparece el diseño con el calor', imageUrl: TAZA, link: '/tienda?categoria=tazas' },
-      { id: 'card3', title: 'Kapi de peluche', subtitle: 'Suave y con lazo', imageUrl: '/assets/kapi/kapi-happy.webp', link: '/kapi' },
-      { id: 'card4', title: 'Cuadro decorativo', subtitle: 'Tu foto en lienzo', imageUrl: CUADRO, link: '/tienda?categoria=cuadros' },
-      { id: 'card5', title: 'Para parejas', subtitle: 'Diseños que combinan', imageUrl: ESPALDA_BLANCO, link: '/tienda?categoria=parejas' },
-    ],
-  } },
-  { id: 's12', type: 'header', order: 6.2, settings: {
-    eyebrow: 'Nuestro taller', title: 'Hecho en Perú, con amor', titleHighlight: 'con amor', subtitle: 'Cada pedido se estampa a mano en nuestro taller de Lima.',
-    textAlign: 'center', titleColor: '', subtitleColor: '', paddingTop: '2.5rem', paddingBottom: '0.5rem',
-  } },
-  { id: 's13', type: 'text', order: 6.3, settings: {
-    heading: '', content: 'Empezamos con una plancha y muchas ganas. Hoy enviamos a todo el Perú, pero cada prenda pasa por las mismas manos: revisamos tu diseño, lo probamos en tela y recién ahí lo estampamos.\nSi algo no queda como esperabas, lo rehacemos.',
-    textAlign: 'center', textColor: '#333333', headingColor: '#000000', maxWidth: '680px', buttonText: 'Conoce el taller', buttonLink: '#oferta-flash',
-    paddingTop: '0.5rem', paddingBottom: '1.5rem',
-  } },
-  { id: 's14', type: 'video', order: 6.4, settings: {
-    url: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ', aspectRatio: '16:9', paddingTop: '0.5rem', paddingBottom: '2rem',
-  } },
-  { id: 's15', type: 'image', order: 6.5, settings: {
-    url: '/crear/banner-crear-1200.webp', alt: 'Crea tu polera en Walá', link: '/personalizar', maxWidth: '960px', alignment: 'center', borderRadius: '20px',
-    paddingTop: '0rem', paddingBottom: '2rem',
-  } },
-  { id: 's7', type: 'testimonials', order: 6.7, settings: {
-    eyebrow: 'Clientes felices', title: 'Lo que dicen nuestros clientes', backgroundColor: 'rgba(139, 92, 246, 0.06)', paddingTop: '2rem', paddingBottom: '2rem',
-    testimonials: [
-      { topic: 'Calidad del producto', text: 'La polera llegó igualita al diseño y la tela es súper suave. Ya pedí otra para mi hermana.', author: 'Andrea P.', city: 'Lima', rating: 5, verified: true },
-      { topic: 'Regalo', text: 'Le regalé la taza a mi mamá con nuestra foto y lloró de emoción. Llegó en 3 días.', author: 'Luis R.', city: 'Arequipa', rating: 5, verified: true },
-      { topic: 'Atención', text: 'Me ayudaron por WhatsApp a ajustar mi diseño. Muy buena atención.', author: 'Camila T.', city: 'Trujillo', rating: 4 },
-      { topic: 'Envío', text: 'Pensé que demoraría más a provincia, pero llegó rapidísimo y bien empacado.', author: 'Jorge M.', city: 'Cusco', rating: 5, verified: true },
-    ],
-  } },
-  { id: 's8', type: 'marquee', order: 7, settings: {
-    title: 'Nuestras marcas', speed: 30000,
-    items: MARCAS_TIENDA.map((b) => ({ name: b.name, imageUrl: b.logoUrl, link: `/${b.slug}`, shape: 'square', zoom: 1, posX: 50, posY: 50, brandId: b.id })),
-    paddingTop: '1.5rem', paddingBottom: '1.5rem',
-  } },
-  { id: 's9', type: 'faq_accordion', order: 8, settings: {
-    eyebrow: '¿Dudas?', title: 'Preguntas frecuentes', subtitle: 'Resolvemos las dudas más comunes antes de tu compra.', layout: 'split', defaultOpen: true,
-    items: [
-      { id: 'faq_shipping', question: '¿Realizan envíos a todo el Perú?', answer: 'Sí. Atendemos pedidos para Lima y provincias. El costo y el plazo estimado se confirman según el destino antes de completar el pedido.' },
-      { id: 'faq_production', question: '¿Cuánto demora un producto personalizado?', answer: 'Depende del producto, la cantidad y el diseño. Te confirmamos el plazo de producción antes de empezar tu pedido.' },
-      { id: 'faq_customization', question: '¿Cómo personalizo mi producto?', answer: 'Puedes crear tu diseño desde Walá o escribirnos para orientarte con imágenes, textos, colores y acabados.' },
-      { id: 'faq_changes', question: '¿Puedo pedir un cambio o devolución?', answer: 'Si tu pedido llega con un error o daño, escríbenos con tu número de pedido y fotos. Lo revisamos según nuestras políticas.' },
-    ],
-    paddingTop: '1.5rem', paddingBottom: '2rem',
-  } },
-];
 
 /* Marcas como las guarda tienda_brands (copia de la tienda real). */
 const MARCAS_DEMO = MARCAS_TIENDA;
@@ -260,16 +155,20 @@ const MARCAS_DEMO = MARCAS_TIENDA;
 /** Logos en movimiento como los arma el editor con "Añadir todas las marcas". */
 const LOGOS_MARCAS = MARCAS_TIENDA.map((b) => ({ name: b.name, imageUrl: b.logoUrl, link: `/${b.slug}`, shape: 'square', zoom: 1, posX: 50, posY: 50, brandId: b.id }));
 
-const CATEGORIAS_DEMO = SECCIONES_DEMO.find((x) => x.type === 'category_grid').settings.items;
+/* Categorías de ejemplo (como category_grid.items del builder). */
+const CATEGORIAS_DEMO = [
+  { categoryId: 'poleras', name: 'Poleras', imageUrl: FRENTE_BLANCO },
+  { categoryId: 'tazas', name: 'Tazas', imageUrl: TAZA },
+  { categoryId: 'peluches', name: 'Peluches', imageUrl: '/assets/kapi/kapi-happy.webp' },
+  { categoryId: 'cuadros', name: 'Cuadros', imageUrl: CUADRO },
+  { categoryId: 'parejas', name: 'Para parejas', imageUrl: ESPALDA_BLANCO },
+  { categoryId: 'crear', name: 'Crea la tuya', imageUrl: ESPALDA },
+];
 const GRUPOS_FILTRO_DEMO = [
   { id: 'tipo', titulo: 'Tipo', opciones: ['Poleras', 'Tazas', 'Peluches', 'Cuadros', 'Parejas'].map((n) => ({ valor: n, nombre: n, cuenta: PRODUCTOS_DEMO.filter((p) => EXTRAS_DEMO[p.id]?.categoria === n).length })), de: (p) => EXTRAS_DEMO[p.id]?.categoria },
   { id: 'personalizable', titulo: 'Personalizable', opciones: [{ valor: 'si', nombre: 'Con tu diseño' }], de: (p) => (p.customizable || p.esPrendaBase ? 'si' : 'no') },
 ];
 
-const productosParaSeccion = (sec) => {
-  if (sec.type === 'flash_sales') return ['essentials', 'taza', 'kapi', 'combo', 'cuadro'].map(productoDemo);
-  return PRODUCTOS_DEMO;
-};
 
 const COLORES_PRENDA = [
   { nombre: 'Negro', hex: '#111827' },
@@ -328,27 +227,7 @@ const GRUPOS_CUENTA = [
 ];
 const PROMO_CUENTA = { texto: 'Cuéntanos de ti y gana 50 monedas', url: '/encuesta-suscripcion' };
 
-const PIE_DEMO = {
-  columns: [
-    { id: 'c1', title: 'Walá', type: 'text', content: 'Prendas y regalos personalizados con amor y dedicación.' },
-    { id: 'c2', title: 'Tienda', type: 'links', links: [{ text: 'Catálogo', url: '/tienda' }, { text: 'Crear', url: '/personalizar' }, { text: 'Mi cuenta', url: '/cuenta' }] },
-    { id: 'c3', title: 'Síguenos', type: 'social', links: [{ text: 'Instagram', url: 'https://instagram.com/wala.pe' }, { text: 'TikTok', url: 'https://tiktok.com/@wala.pe' }, { text: 'WhatsApp', url: 'https://wa.me/51900000000' }] },
-  ],
-};
 
-const PEDIDOS_DEMO = [
-  { codigo: 'WL-20481', fecha: '10 oct', paso: 1, total: 129.8, pagoPendiente: true, items: [
-    { imagen: FRENTE, nombre: 'Polera Essentials', variante: 'Negro · M', cantidad: 1, precio: 89.9 },
-    { imagen: ESPALDA, nombre: 'Polera con tu diseño', variante: 'Lila · L', cantidad: 1, precio: 39.9 },
-  ] },
-  { codigo: 'WL-20377', fecha: '7 oct', paso: 3, total: 169.9, entregaEstimada: 'mañana, 14 oct', items: [
-    { imagen: FRENTE, nombre: 'Combo Él y Ella', variante: 'Negro / Rojo vino', cantidad: 1, precio: 169.9 },
-  ] },
-  { codigo: 'WL-19902', fecha: '28 sep', paso: 4, total: 359.6, items: [
-    { imagen: ESPALDA, nombre: 'Polera oversize', variante: 'Negro · L', cantidad: 2, precio: 99.9 },
-    { imagen: FRENTE, nombre: 'Polera Essentials', variante: 'Blanco · S', cantidad: 1, precio: 59.9 },
-  ] },
-];
 
 /** "Hecha con": qué secciones y piezas del kit arman cada página. */
 function HechaCon({ secciones = [], piezas = [] }) {
@@ -613,7 +492,7 @@ function Contenido({ tema, cambiarTema }) {
   const [hoja, setHoja] = useState(false);
   const [hojaMovil, setHojaMovil] = useState(false);
   const [cargando, setCargando] = useState(false);
-  const [carrito, setCarrito] = useState(CARRITO_INICIAL);
+  const [carrito] = useState(CARRITO_INICIAL);
   const [saldo, setSaldo] = useState(1250);
   const cerrarHoja = useCallback(() => setHoja(false), []);
   const cerrarHojaMovil = useCallback(() => setHojaMovil(false), []);
@@ -648,8 +527,6 @@ function Contenido({ tema, cambiarTema }) {
   }, [carrito]);
   const enCarrito = carrito.reduce((a, it) => a + it.cantidad, 0);
 
-  const cambiarCantidad = (id) => (n) => setCarrito((c) => c.map((it) => (it.id === id ? { ...it, cantidad: n } : it)));
-  const quitar = (id) => () => setCarrito((c) => c.filter((it) => it.id !== id));
 
   return (
     <div className={s.pagina}>
@@ -983,17 +860,17 @@ function Contenido({ tema, cambiarTema }) {
         </>)}
 
         {vista === 'paginas' && (<>
-        {/* ── INICIO DE WALA.PE ── */}
+        {/* ── TIENDA DE PRUEBA ── */}
         <Seccion
-          id="inicio" numero="01" titulo="Inicio de wala.pe"
-          descripcion="La página de inicio real armada solo con el kit: las 10 secciones de pages/home, el pie de pages/footer y una copia de productos, categorías y marcas. Cambia «Ver como» para ver qué aparece con sesión o siendo admin. El mapa completo de lo que hay en la página está en kit/MAPA.md."
-          mejoras={['Sello de la marca en cada producto', '«¡Quedan N!» solo si quedan pocas', 'Combos con lo que traen', 'Barra inferior por rutas', 'Flotantes sobre la barra inferior', 'Sin emojis: íconos de Walá']}
+          id="tienda" numero="01" titulo="Tienda de prueba"
+          descripcion="Las páginas reales armadas solo con el kit, todas con el mismo marco (cabecera, pie, barra inferior y flotantes). Los enlaces navegan: el carrito de la cabecera lleva al Carrito y «Inicio» vuelve. Viendo como Admin, «Editar esta página» abre el editor del builder sobre el inicio. «Ver componentes» marca cada parte con el número de la guía (src/componentes/kit/guia)."
+          mejoras={['Un solo marco para todas las páginas', 'El editor sobre la misma página', 'Datos reales de wala.pe', 'Guía con número por parte', 'Sello de la marca en cada producto', '«¡Quedan N!» solo si quedan pocas']}
         >
           <HechaCon
             secciones={['BarraAnuncios', 'HeroCarrusel', 'MosaicoBanners', 'GrillaCategorias', 'CarruselProductos', 'InsigniasConfianza', 'Testimonios', 'PreguntasFrecuentes', 'PiePagina']}
-            piezas={['Cabecera', 'MenuTienda', 'MenuMarcas', 'BotonTema', 'BarraInferior', 'BarraAdmin', 'AvisoSistema', 'BannerApp', 'PieLegal', 'PilaFlotante', 'BotonWhatsApp', 'KapiFlotante', 'BurbujaRegalos', 'PildoraRecompensa', 'VentanaCampana', 'AvisoIdioma', 'TarjetaProducto', 'TarjetaMarca', 'TarjetaCategoria', 'TarjetaTestimonio', 'Beneficio']}
+            piezas={['Cabecera', 'BarraInferior', 'PilaFlotante', 'BarraAdmin', 'PieLegal', 'TarjetaProducto', 'PanelEditor', 'PaginaCarrito', 'PaginaPedidos']}
           />
-          <DemoInicio
+          <DemoTienda
             marcas={MARCAS_DEMO}
             usuario={USUARIO_DEMO}
             tema={tema}
@@ -1002,91 +879,10 @@ function Contenido({ tema, cambiarTema }) {
             onLeer={leer}
             onMarcarLeidas={marcarLeidas}
             onVerTodas={abrirCentro}
-            carrito={carrito}
-            enCarrito={enCarrito}
-            favoritos={FAVORITOS_DEMO}
             onAgregar={manejarAgregar}
             toast={toast}
           />
         </Seccion>
-
-        {/* ── LANDING DE EJEMPLO ── */}
-        <Seccion
-          id="landing" numero="02" titulo="Landing de ejemplo"
-          descripcion="PaginaTienda: cabecera, las secciones que guarda Firestore (una lista de { type, settings }), pie de página y, en el celular, la barra inferior. Desplázate dentro del marco."
-          mejoras={['1 carrusel en vez de 6', '1 marquesina en vez de 3', '1 cuenta regresiva en vez de 2', 'Títulos y fondos iguales en todas', 'Enlaces internos, externos y #ancla con una regla', 'Textos viejos en negro se adaptan al modo noche', 'Videos que se pausan fuera de pantalla']}
-        >
-          <HechaCon
-            secciones={['BarraAnuncios', 'HeroCarrusel', 'OfertaRelampago', 'GrillaCategorias', 'CarruselProductos', 'MosaicoBanners', 'FilaDestacados', 'Testimonios', 'MarcasMarquesina', 'PreguntasFrecuentes', 'PiePagina']}
-            piezas={['Cabecera', 'BarraInferior', 'TarjetaProducto', 'TarjetaCategoria', 'TarjetaMarca', 'TarjetaDestacado', 'TarjetaTestimonio', 'LogoMarca', 'StockBajo', 'Carrusel', 'Boton']}
-          />
-          <div className={s.marcoPagina}>
-            <PaginaTienda
-              cabecera={{
-                activo: 'tienda', menuTienda: MENU_TIENDA, monedas: saldo, notificaciones: historial, onLeer: leer,
-                onMarcarLeidas: marcarLeidas, onVerTodas: abrirCentro, usuario: USUARIO_DEMO, gruposCuenta: GRUPOS_CUENTA,
-                promoCuenta: PROMO_CUENTA, favoritos: FAVORITOS_DEMO, carrito,
-              }}
-              pie={PIE_DEMO}
-              barraInferior={{ carrito: enCarrito }}
-              secciones={SECCIONES_DEMO}
-              productosPara={productosParaSeccion}
-              marcasPara={() => MARCAS_DEMO}
-              onAgregar={manejarAgregar}
-            />
-          </div>
-        </Seccion>
-
-        {/* ── EDITOR DEL BUILDER ── */}
-        <Seccion
-          id="editor" numero="03" titulo="Editor del builder"
-          descripcion="El mismo editor para todas las secciones: cada tipo describe sus campos una vez y el panel los dibuja. Toca una sección de la página o elígela en el panel, cambia textos, colores o fotos y mira el cambio al instante. Arrastra las filas para reordenar, usa el + entre secciones para insertar y Ctrl+Z para deshacer."
-          mejoras={['1 formulario por esquema en vez de 30 copiados', 'Colores con opción «del tema» (modo noche)', 'Fechas en hora de Perú', 'Deshacer y rehacer', 'Eliminar sin ventanas del navegador', 'Hoja inferior en el celular']}
-        >
-          <DemoEditor
-            productos={PRODUCTOS_DEMO}
-            marcas={MARCAS_DEMO}
-            categorias={SECCIONES_DEMO.find((x) => x.type === 'category_grid').settings.items}
-            categoriaDe={(p) => EXTRAS_DEMO[p.id]?.categoria}
-            imagenes={{ taller: ESPALDA_BLANCO }}
-            onAgregar={manejarAgregar}
-          />
-        </Seccion>
-
-        {/* ── CARRITO ── */}
-        <Seccion
-          id="carrito" numero="04" titulo="Carrito"
-          descripcion="PaginaCarrito: funciona de verdad. Sube la cantidad hasta pasar S/ 150 y mira qué pasa; prueba el cupón WALA10. Abajo, la misma sección de carrusel del builder sugiere productos."
-          mejoras={['Camión que avanza hacia el envío gratis', 'Confeti al llegar a la meta', 'Totales que corren', 'Quitar con animación']}
-        >
-          <HechaCon secciones={['CarruselProductos']} piezas={['BarraEnvioGratis', 'ItemCarrito', 'ResumenPedido', 'EstadoVacio', 'TituloSeccion', 'Boton']} />
-          <div className={s.marcoPaginaLibre}>
-            <PaginaCarrito
-              items={carrito}
-              onCantidad={(id, n) => cambiarCantidad(id)(n)}
-              onQuitar={(id) => quitar(id)()}
-              metaEnvio={META_ENVIO}
-              recomendados={['taza', 'kapi', 'cuadro', 'lienzo', 'oversize'].map(productoDemo)}
-              onAgregar={manejarAgregar}
-              onPagar={() => toast({ tipo: 'info', titulo: 'En la tienda iría al checkout', texto: '/checkout', duracion: 2200 })}
-              onSeguirComprando={() => setCarrito(CARRITO_INICIAL)}
-              vacio={{ texto: 'Lo quitaste todo. Vuelve a llenarlo para seguir probando.', accion: <Boton icono={<RotateCcw aria-hidden="true" />} onClick={() => setCarrito(CARRITO_INICIAL)}>Restaurar carrito</Boton> }}
-            />
-          </div>
-        </Seccion>
-
-        {/* ── PEDIDOS ── */}
-        <Seccion
-          id="pedidos" numero="05" titulo="Mis pedidos"
-          descripcion="PaginaPedidos: pestañas En curso / Entregados con cuántos hay; cada pedido con su seguimiento y la acción que toca."
-          mejoras={['La línea se dibuja al aparecer', 'El paso actual late', 'Si falta pagar, el borde respira en ámbar', 'Copiar con burbuja']}
-        >
-          <HechaCon piezas={['Pestanas', 'SeguimientoPedido', 'EstadoVacio', 'TituloSeccion', 'Boton']} />
-          <div className={s.marcoPaginaLibre}>
-            <PaginaPedidos pedidos={PEDIDOS_DEMO} onIrATienda={() => toast({ tipo: 'info', titulo: 'En la tienda iría a', texto: '/tienda', duracion: 2200 })} />
-          </div>
-        </Seccion>
-
         </>)}
 
         {vista === 'piezas' && (<>

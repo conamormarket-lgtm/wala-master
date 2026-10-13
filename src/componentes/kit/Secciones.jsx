@@ -446,35 +446,39 @@ export function GrillaCategorias({ ajustes = {}, categorias }) {
 
 /* ── Registro: tipo de sección → componente ─────────────── */
 
-/** Tipos del builder que el kit ya sabe dibujar. */
+/**
+ * Tipos del builder que el kit ya sabe dibujar. `nombre` es el del
+ * componente escrito a mano (el build minifica Componente.name); lo usan la
+ * guía y "Ver componentes".
+ */
 export const REGISTRO_SECCIONES = {
-  announcement_bar: { Componente: BarraAnuncios, ancho: 'completo', sinRelleno: true },
-  hero_carousel: { Componente: HeroCarrusel },
-  trust_badges: { Componente: InsigniasConfianza },
-  featured_carousel: { Componente: CarruselProductos, productos: true },
-  new_arrivals_carousel: { Componente: CarruselProductos, productos: true },
-  sale_carousel: { Componente: CarruselProductos, productos: true },
-  category_carousel: { Componente: CarruselProductos, productos: true },
-  collection_carousel: { Componente: CarruselProductos, productos: true },
-  flash_sales: { Componente: OfertaRelampago, productos: true },
-  testimonials: { Componente: Testimonios },
-  faq_accordion: { Componente: PreguntasFrecuentes },
-  marquee: { Componente: MarcasMarquesina },
-  category_grid: { Componente: GrillaCategorias, categorias: true },
-  header: { Componente: Encabezado },
-  text: { Componente: BloqueTexto },
-  image: { Componente: BloqueImagen },
-  video: { Componente: BloqueVideo },
-  banner_grid: { Componente: MosaicoBanners, marcas: true },
-  bestsellers_row: { Componente: FilaDestacados },
-  hero_banner: { Componente: BannerPrincipal },
-  feature_list: { Componente: ListaBeneficios },
-  map_location: { Componente: Ubicacion },
-  categories_nav: { Componente: NavCategorias, categorias: true },
-  featured_products: { Componente: GrillaProductos, productos: true },
-  product_grid: { Componente: GrillaProductos, productos: true },
-  sidebar_catalog: { Componente: CatalogoConFiltros, productos: true },
-  footer_columns: { Componente: PiePagina },
+  announcement_bar: { Componente: BarraAnuncios, nombre: 'BarraAnuncios', ancho: 'completo', sinRelleno: true },
+  hero_carousel: { Componente: HeroCarrusel, nombre: 'HeroCarrusel' },
+  trust_badges: { Componente: InsigniasConfianza, nombre: 'InsigniasConfianza' },
+  featured_carousel: { Componente: CarruselProductos, nombre: 'CarruselProductos', productos: true },
+  new_arrivals_carousel: { Componente: CarruselProductos, nombre: 'CarruselProductos', productos: true },
+  sale_carousel: { Componente: CarruselProductos, nombre: 'CarruselProductos', productos: true },
+  category_carousel: { Componente: CarruselProductos, nombre: 'CarruselProductos', productos: true },
+  collection_carousel: { Componente: CarruselProductos, nombre: 'CarruselProductos', productos: true },
+  flash_sales: { Componente: OfertaRelampago, nombre: 'OfertaRelampago', productos: true },
+  testimonials: { Componente: Testimonios, nombre: 'Testimonios' },
+  faq_accordion: { Componente: PreguntasFrecuentes, nombre: 'PreguntasFrecuentes' },
+  marquee: { Componente: MarcasMarquesina, nombre: 'MarcasMarquesina' },
+  category_grid: { Componente: GrillaCategorias, nombre: 'GrillaCategorias', categorias: true },
+  header: { Componente: Encabezado, nombre: 'Encabezado' },
+  text: { Componente: BloqueTexto, nombre: 'BloqueTexto' },
+  image: { Componente: BloqueImagen, nombre: 'BloqueImagen' },
+  video: { Componente: BloqueVideo, nombre: 'BloqueVideo' },
+  banner_grid: { Componente: MosaicoBanners, nombre: 'MosaicoBanners', marcas: true },
+  bestsellers_row: { Componente: FilaDestacados, nombre: 'FilaDestacados' },
+  hero_banner: { Componente: BannerPrincipal, nombre: 'BannerPrincipal' },
+  feature_list: { Componente: ListaBeneficios, nombre: 'ListaBeneficios' },
+  map_location: { Componente: Ubicacion, nombre: 'Ubicacion' },
+  categories_nav: { Componente: NavCategorias, nombre: 'NavCategorias', categorias: true },
+  featured_products: { Componente: GrillaProductos, nombre: 'GrillaProductos', productos: true },
+  product_grid: { Componente: GrillaProductos, nombre: 'GrillaProductos', productos: true },
+  sidebar_catalog: { Componente: CatalogoConFiltros, nombre: 'CatalogoConFiltros', productos: true },
+  footer_columns: { Componente: PiePagina, nombre: 'PiePagina' },
 };
 
 /*

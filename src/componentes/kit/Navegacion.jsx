@@ -88,6 +88,7 @@ export function Cabecera({
   );
 
   return (
+    <div className={s.cabeceraCaja}>
     <header className={s.cabecera}>
       <Enlace to="/" className={s.logo} aria-label="Walá, inicio">
         <Logo alto={36} />
@@ -266,6 +267,7 @@ export function Cabecera({
         </span>
       </div>
     </header>
+    </div>
   );
 }
 
