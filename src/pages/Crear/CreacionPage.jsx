@@ -1,15 +1,17 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Paintbrush, Download, Loader2, Trash2, Truck, RefreshCw, ShieldCheck, Check, Minus, Plus } from 'lucide-react';
+import { Paintbrush, Download, Loader2, Trash2, Truck, RefreshCw, ShieldCheck, Check, Minus, Plus, Users, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getDesignById, guardarTallaCreacion } from '../../services/designs';
 import { getPrendaBase } from '../../services/prendasBase';
-import { leerPrendaBase, precioPersonalizado, tallasDeColor, fondoColorGuardado } from '../../utils/prendaBase';
+import { leerPrendaBase, precioPersonalizado, precioBase, tallasDeColor, fondoColorGuardado } from '../../utils/prendaBase';
 import { useTranslatedHtml } from '../../i18n/useTranslatedText';
 import { itemDeCreacion, creacionLista } from './creacionCarrito';
+import { usarCreacionEnCombo, ponerPieza, leerArmado } from './comboCrear';
+import { getCombosCrear } from '../../services/combosCrear';
 import { useEliminarCreacion } from './useEliminarCreacion';
 import NombreEditable from './NombreEditable';
 import AccionesComunidad, { InsigniaPublicada, usePuedePublicar } from '../Comunidad/AccionesComunidad';
@@ -132,6 +134,13 @@ const CreacionPage = () => {
       if (error) throw new Error(error);
       return data;
     },
+  });
+
+  // Combos publicados que llevan esta prenda: para llevar la creación a uno.
+  const { data: combos = [] } = useQuery({
+    queryKey: ['combos-crear', false],
+    enabled: Boolean(esMia),
+    queryFn: async () => (await getCombosCrear()).data,
   });
 
   const cfg = useMemo(() => (prenda ? leerPrendaBase(prenda) : null), [prenda]);
@@ -278,6 +287,41 @@ const CreacionPage = () => {
           </div>
         )}
         {disponible && <p className={styles.incluye}>Incluye la impresión de todos tus diseños.</p>}
+
+        {creacion.combo?.id ? (
+          <div className={styles.combo}>
+            <span className={styles.comboIcono}><Users size={18} aria-hidden="true" /></span>
+            <span className={styles.comboTexto}>
+              <strong>Es parte de tu combo{creacion.combo.nombre ? ` ${creacion.combo.nombre}` : ''}</strong>
+              <span>Cómprala junto a las demás prendas del combo, a precio de combo.</span>
+            </span>
+            <Link
+              to={`/combo/${creacion.combo.id}`}
+              className={styles.comboBoton}
+              onClick={() => {
+                const pieza = creacion.combo.pieza || 0;
+                if (!leerArmado(creacion.combo.id, pieza + 1)[pieza]?.designId) ponerPieza(creacion.combo.id, pieza, { designId: id });
+              }}
+            >
+              Ir al combo <ArrowRight size={15} aria-hidden="true" />
+            </Link>
+          </div>
+        ) : disponible && combos.filter((c) => c.piezas.some((p) => p.prendaId === creacion.productId)).map((c) => (
+          <div key={c.id} className={styles.combo}>
+            <span className={styles.comboIcono}><Users size={18} aria-hidden="true" /></span>
+            <span className={styles.comboTexto}>
+              <strong>Llévala en combo: {c.name}</strong>
+              <span>{c.piezas.length} prendas por {soles(precioBase(c))}. Ponemos este diseño y luego lo cambias si quieres.</span>
+            </span>
+            <button
+              type="button"
+              className={styles.comboBoton}
+              onClick={() => { if (usarCreacionEnCombo(c, { ...creacion, id })) navigate(`/combo/${c.id}`); }}
+            >
+              Usar en el combo <ArrowRight size={15} aria-hidden="true" />
+            </button>
+          </div>
+        ))}
 
         <hr className={styles.divisor} />
 

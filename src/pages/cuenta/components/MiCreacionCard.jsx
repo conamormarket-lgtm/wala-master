@@ -211,6 +211,11 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado, onComun
           )}
           {noDisponible && <span className={styles.insigniaNoDisponible}>Ya no disponible</span>}
           <InsigniaPublicada design={design} />
+          {esDeCrear && design.combo?.id && (
+            <span className={styles.insigniaCombo} title="Parte de un combo">
+              Combo{design.combo.nombre ? ` · ${design.combo.nombre}` : ''}
+            </span>
+          )}
         </div>
 
         {lados.length > 0 && (

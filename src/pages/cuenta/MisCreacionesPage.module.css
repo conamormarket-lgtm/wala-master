@@ -602,3 +602,19 @@
 :global([data-theme='dark']) .skeletonLinea::after {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
 }
+
+/* Pieza de un combo de Crear (pareja, conjunto…). */
+.insigniaCombo {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  max-width: 100%;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: #ede9fe;
+  color: #6d28d9;
+}

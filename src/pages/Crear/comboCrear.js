@@ -34,6 +34,23 @@ export const ponerPieza = (comboId, indice, cambios) => {
   guardarArmado(comboId, piezas);
 };
 
+/**
+ * Lleva una creación ya hecha a un combo: va en la primera pieza libre de su
+ * misma prenda y, como al diseñar, también en las otras piezas iguales que
+ * sigan vacías. Devuelve false si el combo no lleva esa prenda.
+ */
+export const usarCreacionEnCombo = (combo, creacion) => {
+  const piezas = leerArmado(combo.id, combo.piezas.length);
+  const iguales = combo.piezas.map((p, i) => (p.prendaId === creacion.productId ? i : -1)).filter((i) => i >= 0);
+  if (!iguales.length) return false;
+  if (!iguales.some((i) => piezas[i].designId === creacion.id)) {
+    const libres = iguales.filter((i) => !piezas[i].designId);
+    (libres.length ? libres : [iguales[0]]).forEach((i) => { piezas[i] = { ...piezas[i], designId: creacion.id }; });
+    guardarArmado(combo.id, piezas);
+  }
+  return true;
+};
+
 export const olvidarArmado = (comboId) => {
   try { localStorage.removeItem(clave(comboId)); } catch { /* sin almacenamiento */ }
 };

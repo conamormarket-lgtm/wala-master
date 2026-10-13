@@ -462,6 +462,13 @@ const CrearStudioPage = () => {
           const primeraZona = Object.keys(diseno.layersByView || {})[0];
           const vistaDeZona = vistasDelColor(cfg.vistas, colorGuardado).find((v) => v.zonas.some((z) => z.id === primeraZona));
           if (!deBorrador) setNombre(diseno.name || '');
+          // Una pieza de combo abierta desde Mis creaciones vuelve a su combo.
+          if (diseno.combo?.id && !enCombo) {
+            const pieza = diseno.combo.pieza || 0;
+            navigate(`/crear/${id}?designId=${designIdParam}&combo=${encodeURIComponent(diseno.combo.id)}&pieza=${pieza}`,
+              { replace: true, state: location.state });
+            if (!leerArmado(diseno.combo.id, pieza + 1)[pieza]?.designId) ponerPieza(diseno.combo.id, pieza, { designId: designIdParam });
+          }
           return aplicar({
             capasPorZona: diseno.layersByView || {},
             vistaId: vistaDeZona?.id,
@@ -2005,6 +2012,8 @@ const CrearStudioPage = () => {
     const designIdActual = designIdRef.current;
     const capas = capasParaGuardar(capasRef.current);
     const archivos = await generarArchivos(capas);
+    // Si el combo aún no había cargado, su nombre se pide ahora (va en la creación).
+    const nombreCombo = enCombo && !comboActual?.name ? ((await getComboCrear(comboParam)).data?.name || '') : '';
     setProcesando('Guardando tu creación…');
     const creacion = {
       designId: designIdActual || undefined,
@@ -2020,6 +2029,7 @@ const CrearStudioPage = () => {
       color: datosColor(),
       ...archivos,
       ...(!designIdActual && basadoEnRef.current && { basadoEn: basadoEnRef.current }),
+      ...(enCombo && { combo: { id: comboParam, nombre: comboActual?.name || nombreCombo, pieza: piezaParam } }),
     };
     const { id: guardadoId, error: err } = await saveDesign(user.uid, creacion);
     if (err) throw new Error(err);
