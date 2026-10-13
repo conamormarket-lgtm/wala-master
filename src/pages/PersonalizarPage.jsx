@@ -105,7 +105,7 @@ const TarjetaCombo = ({ combo, prendas }) => {
         <p className={styles.cantidadColores}>{nombres.join(' + ')} · cada una con su diseño</p>
         <div className={styles.pie}>
           <div className={styles.precios}>
-            {ahorro > 0 && <span className={styles.desde}>Por separado <s>S/ {sueltas.toFixed(2)}</s></span>}
+            {ahorro > 0 && <span className={styles.desde}>Por separado <s className={styles.tachado}>S/ {sueltas.toFixed(2)}</s></span>}
             <span className={styles.precio}>S/ {precio.toFixed(2)}</span>
           </div>
           <span className={styles.cta}><Paintbrush size={15} aria-hidden="true" /> Armar</span>

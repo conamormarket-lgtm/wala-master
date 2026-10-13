@@ -655,3 +655,8 @@
 :global([data-theme="dark"]) .opcionParaActiva {
   color: #14121C;
 }
+
+/* "Por separado S/ 258.00": el precio tachado no se parte en dos líneas. */
+.tachado {
+  white-space: nowrap;
+}
