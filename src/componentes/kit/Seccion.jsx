@@ -12,7 +12,22 @@ import s from './Seccion.module.css';
  *   paddingTop, paddingBottom, backgroundColor, backgroundGradient,
  *   backgroundImageUrl, backgroundBlur, backgroundOverlay, anchorId, fullWidth
  */
-export function BloqueSeccion({ ajustes = {}, ancho = 'contenido', children, className }) {
+/**
+ * Espacio arriba o abajo con un mínimo: el valor del builder manda si es
+ * mayor; si es 0 o no hay, queda el mínimo (--seccion-min). Los componentes
+ * viejos de la tienda traían su propio margen interno, así que un "0em" del
+ * builder nunca dejaba dos secciones pegadas; aquí tampoco.
+ *  - pegado: sin mínimo (barra de anuncios, que va justo bajo la cabecera)
+ */
+function espacio(valor, pegado) {
+  const v = String(valor ?? '').trim();
+  if (pegado) return v || undefined;
+  if (!v || parseFloat(v) === 0) return 'var(--seccion-min)';
+  const conUnidad = /^[\d.]+$/.test(v) ? `${v}px` : v;
+  return `max(var(--seccion-min), ${conUnidad})`;
+}
+
+export function BloqueSeccion({ ajustes = {}, ancho = 'contenido', pegado = false, children, className }) {
   const {
     paddingTop, paddingBottom, backgroundColor, backgroundGradient,
     backgroundImageUrl, backgroundBlur, backgroundOverlay, anchorId, fullWidth,
@@ -25,7 +40,10 @@ export function BloqueSeccion({ ajustes = {}, ancho = 'contenido', children, cla
     <section
       id={anchorId || undefined}
       className={[s.bloque, completo && s.completo, className].filter(Boolean).join(' ')}
-      style={{ paddingTop: paddingTop || undefined, paddingBottom: paddingBottom || undefined }}
+      style={{
+        paddingTop: paddingTop != null && paddingTop !== '' ? espacio(paddingTop, pegado) : undefined,
+        paddingBottom: paddingBottom != null && paddingBottom !== '' ? espacio(paddingBottom, pegado) : undefined,
+      }}
     >
       {hayFondo && (
         <div className={s.fondo} aria-hidden="true">

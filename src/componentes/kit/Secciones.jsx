@@ -538,6 +538,7 @@ export function RenderSecciones({ secciones = [], productosPara, categoriasPara,
           key={sec.id}
           ajustes={reg.sinRelleno ? { ...ajustes, paddingTop: '0', paddingBottom: '0' } : ajustes}
           ancho={reg.ancho}
+          pegado={reg.sinRelleno}
         >
           <Componente ajustes={ajustes} {...extra} />
         </BloqueSeccion>

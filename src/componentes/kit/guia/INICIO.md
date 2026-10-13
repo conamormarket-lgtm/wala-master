@@ -52,6 +52,13 @@ Se dibujan con `PaginaTienda` → `RenderSecciones`. Cada una va dentro de
 | S9 | "Lo que dicen nuestros clientes" | `testimonials` | `Testimonios` | `TituloSeccion`, `Carrusel`, `TarjetaTestimonio` | `piezas/TarjetaTestimonio.module.css` | settings | title, testimonials (text, author, topic, rating, avatar, verified) |
 | S10 | "Preguntas frecuentes" | `faq_accordion` | `PreguntasFrecuentes` | `TituloSeccion`, `Acordeon`, `TarjetaAyuda` (Kapi asomado) | `Secciones.module.css` (`.faq…`), `Acordeon.module.css`, `piezas/TarjetaAyuda.module.css` | settings; el botón "Escríbenos" usa el WhatsApp de la tienda (`contacto` por `propsPara`) | title, items (question, answer), layout, defaultOpen |
 
+**Distancias entre secciones:** las pone el builder (espacio arriba y abajo
+de cada sección, `paddingTop` / `paddingBottom`), pero nunca bajan de
+`--seccion-min` (1 a 1.5rem según el ancho): si el builder guarda `0`, manda
+el mínimo, y si guarda más, manda el builder. Así dos secciones nunca quedan
+pegadas (los componentes viejos traían ese aire por dentro). La única que va
+pegada a propósito es la barra de anuncios (S1).
+
 Qué lista de productos va en S5, S6 y S7 lo decide `productosDeSeccion`
 (`paginas/Paginas.jsx`), con la misma regla que TiendaPage.
 
@@ -64,7 +71,7 @@ esta tabla:
 |---|---|---|
 | `TarjetaProducto` | S5, S6, S7, "También te puede gustar" del carrito | `TarjetaProducto.module.css` |
 | `TituloSeccion` | S3, S4, S5, S6, S7, S9, S10 | `Seccion.module.css` |
-| `BloqueSeccion` (relleno y fondo) | todas las S | `Seccion.module.css` |
+| `BloqueSeccion` (relleno y fondo) | todas las S | `Seccion.module.css` (`--seccion-min`) |
 | `Carrusel` (flechas, puntos) | S2, S3, S5, S6, S7, S9 | `Carrusel.module.css` |
 | `EtiquetaColgante` | descuentos y "Nuevo" de S5-S7, "Universo Walá" de S3, antetítulos, M11 | `Marca.module.css` |
 | `Boton` | M2, M3, M4, M11, M12, S2, carrito, Mis pedidos | `Boton.module.css` |

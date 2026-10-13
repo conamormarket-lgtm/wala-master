@@ -544,6 +544,11 @@ a.anuncio:hover {
   align-items: start;
 }
 
+/* La ayuda baja hasta la última pregunta: sin hueco a mitad de columna. */
+.faqDividido .faqAyuda {
+  align-self: end;
+}
+
 /* Apilado (y celular): título, preguntas y la ayuda al final. */
 .faqApilado {
   display: grid;
@@ -555,6 +560,10 @@ a.anuncio:hover {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: 'titulo' 'preguntas' 'ayuda';
     grid-template-rows: auto;
+  }
+
+  .faqDividido .faqAyuda {
+    align-self: start;
   }
 }
 

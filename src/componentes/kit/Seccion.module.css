@@ -1,4 +1,8 @@
 .bloque {
+  /* Mínimo entre secciones aunque el builder guarde 0 (ver espacio() en
+     Seccion.jsx). Dos secciones seguidas quedan al menos a 2 × este valor. */
+  --seccion-min: clamp(1rem, 2.5cqi, 1.5rem);
+
   position: relative;
   isolation: isolate;
   padding: var(--section-gap, 2rem) 0;
