@@ -30,8 +30,8 @@ const tallasPara = (prenda, creacion) => {
 };
 
 /**
- * Foto de una pieza: se mueve una vez al aparecer (la segunda un poco
- * después, como saludando) y se inclina al pasar el mouse por la tarjeta.
+ * Foto de una pieza: al aparecer se abre hacia su lado (la segunda un poco
+ * después), como las tarjetas de combos al pasar el mouse.
  */
 const FotoPieza = ({ src, alt, vacia, indice }) => {
   const ref = useRef(null);

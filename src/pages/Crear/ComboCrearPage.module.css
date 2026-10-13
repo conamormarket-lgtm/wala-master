@@ -135,28 +135,21 @@
   transition: transform var(--dur-media, 320ms) ease;
 }
 
-/* Como las tarjetas de combos de Crear: se inclinan al pasar el mouse
-   (la primera a un lado, la segunda al otro)… */
-@media (hover: hover) {
-  .pieza:nth-child(odd):hover .piezaFoto img { transform: rotate(-3deg); }
-  .pieza:nth-child(even):hover .piezaFoto img { transform: rotate(3deg); }
+/* Al aparecer, las prendas se abren hacia los lados (la primera a la
+   izquierda, la segunda a la derecha), como las tarjetas de combos al pasar
+   el mouse, y se quedan así. */
+@keyframes abrirIzq {
+  from { transform: rotate(0); }
+  to { transform: rotate(-3deg); }
 }
 
-/* …y se mueven una vez al aparecer, también en el celular. */
-@keyframes saludoIzq {
-  0%, 100% { transform: rotate(0); }
-  40% { transform: rotate(-4deg); }
-  70% { transform: rotate(1deg); }
+@keyframes abrirDer {
+  from { transform: rotate(0); }
+  to { transform: rotate(3deg); }
 }
 
-@keyframes saludoDer {
-  0%, 100% { transform: rotate(0); }
-  40% { transform: rotate(4deg); }
-  70% { transform: rotate(-1deg); }
-}
-
-.pieza:nth-child(odd) .saludo { animation: saludoIzq 0.9s ease-out var(--retraso, 0s); }
-.pieza:nth-child(even) .saludo { animation: saludoDer 0.9s ease-out var(--retraso, 0s); }
+.pieza:nth-child(odd) .saludo { animation: abrirIzq 0.5s ease-out var(--retraso, 0s) forwards; }
+.pieza:nth-child(even) .saludo { animation: abrirDer 0.5s ease-out var(--retraso, 0s) forwards; }
 
 @media (prefers-reduced-motion: reduce) {
   .piezaFoto img { animation: none !important; }
