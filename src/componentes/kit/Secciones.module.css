@@ -362,6 +362,7 @@ a.anuncio:hover {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(140px, 45%), 1fr));
   gap: 0.75rem;
+  align-items: stretch;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -592,8 +593,9 @@ a.anuncio:hover {
     scroll-padding-inline: var(--page-padding-movil, 1rem);
   }
 
+  /* Se ven 3 y medio: el último asoma para invitar a deslizar. */
   .categorias li {
-    flex: 0 0 34%;
+    flex: 0 0 28%;
     scroll-snap-align: start;
   }
 }

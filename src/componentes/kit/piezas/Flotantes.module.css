@@ -1,6 +1,9 @@
 /* ── Capa y pila ───────────────────────────────────────── */
 .capa {
   --flotante-abajo: calc(18px + var(--safe-bottom, 0px));
+  /* Un solo tamaño para todos los flotantes (Kapi un poco más ancho: su cara
+     no es un círculo y así pesa lo mismo a la vista). */
+  --flotante-tam: 56px;
 
   position: fixed;
   inset: auto 0 var(--flotante-abajo) 0;
@@ -17,6 +20,7 @@
 @media (max-width: 768px) {
   .capa {
     --flotante-abajo: calc(var(--bottom-nav-height, 56px) + 14px + var(--safe-bottom, 0px));
+    --flotante-tam: 50px;
 
     padding: 0 14px;
   }
@@ -67,8 +71,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
+  width: var(--flotante-tam, 56px);
+  height: var(--flotante-tam, 56px);
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -103,8 +107,8 @@
 }
 
 .whatsapp svg {
-  width: 30px;
-  height: 30px;
+  width: 54%;
+  height: 54%;
 }
 
 /* Burbuja que asoma a la izquierda (solo con ratón). */
@@ -138,7 +142,7 @@
 /* ── Kapi ──────────────────────────────────────────────── */
 /* Kapi suelto, como sticker (su imagen ya es transparente): sin círculo. */
 .kapi {
-  width: 64px;
+  width: calc(var(--flotante-tam, 56px) + 4px);
   height: auto;
   border-radius: 0;
   background: transparent;
@@ -229,6 +233,7 @@
 
 .pildoraSello {
   position: relative;
+  box-sizing: border-box;
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -323,8 +328,8 @@
   }
 
   .pildoraSello {
-    width: 52px;
-    height: 52px;
+    width: var(--flotante-tam, 50px);
+    height: var(--flotante-tam, 50px);
     box-shadow: 0 10px 22px -12px rgba(146, 64, 14, 0.7);
   }
 

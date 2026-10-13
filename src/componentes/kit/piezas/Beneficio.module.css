@@ -12,6 +12,28 @@
   line-height: 1.25;
 }
 
+.pildoraTexto {
+  min-width: 0;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Angosto (celular): la píldora pasa a tarjeta, ícono arriba y texto
+   centrado debajo, para que "Productos personalizados" o "Atención por
+   WhatsApp" quepan sin salirse. */
+@container (max-width: 560px) {
+  .pildora {
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.45rem;
+    height: 100%;
+    padding: 0.85rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    text-align: center;
+  }
+}
+
 /* El ícono (IconoWala) se endereza y crece un poco al pasar. */
 @media (hover: hover) and (pointer: fine) {
   .pildora:hover .icono {

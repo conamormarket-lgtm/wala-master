@@ -123,6 +123,33 @@
   }
 }
 
+/* Cuadro chico (celular): etiqueta y nombre más chicos, esquinas acordes. */
+@container (max-width: 640px) {
+  .cuadro {
+    gap: 0.45rem;
+  }
+
+  .cuadroFoto {
+    border-radius: 18px;
+  }
+
+  .cuadroCuenta {
+    top: 8px;
+    left: 6px;
+    transform: scale(0.82);
+    transform-origin: 0 0;
+  }
+
+  .cuadroNombre {
+    font-size: 0.82rem;
+  }
+
+  .cuadroNombre svg {
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+}
+
 /* En táctil la flecha queda a la vista (no hay "pasar el ratón"). */
 @media (hover: none), (pointer: coarse) {
   .cuadroNombre svg {

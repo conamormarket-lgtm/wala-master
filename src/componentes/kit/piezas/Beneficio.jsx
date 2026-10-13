@@ -21,8 +21,8 @@ export function Beneficio({ icono, texto, variante = 'pildora', numero, como: Et
   }
   return (
     <Etiqueta className={s.pildora}>
-      <IconoWala nombre={icono} tamano={46} className={s.icono} />
-      <span>{texto}</span>
+      <IconoWala nombre={icono} tamano={42} className={s.icono} />
+      <span className={s.pildoraTexto}>{texto}</span>
     </Etiqueta>
   );
 }

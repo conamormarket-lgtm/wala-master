@@ -92,7 +92,7 @@ export function BurbujaRegalos({ cantidad = 0, onAbrir, etiqueta = 'Regalos pens
   if (!cantidad) return null;
   return (
     <button type="button" className={`${s.flotante} ${s.regalos}`} onClick={onAbrir} aria-label={`${etiqueta} (${cantidad})`}>
-      <IconoWala nombre="regalo" tamano={40} sticker={false} />
+      <IconoWala nombre="regalo" tamano={34} sticker={false} />
       <span className={s.insignia}><Contador valor={cantidad} /></span>
     </button>
   );
