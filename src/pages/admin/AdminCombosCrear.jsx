@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Pencil, Eye, Loader2 } from 'lucide-react';
-import { getCombosCrear, guardarComboCrear, archivarComboCrear, MIN_PIEZAS, MAX_PIEZAS } from '../../services/combosCrear';
+import { Plus, Trash2, Pencil, Eye, Loader2, Sparkles } from 'lucide-react';
+import { getCombosCrear, guardarComboCrear, archivarComboCrear, sugerirCombos, MIN_PIEZAS, MAX_PIEZAS } from '../../services/combosCrear';
 import { getPrendasBase } from '../../services/prendasBase';
 import { precioBase } from '../../utils/prendaBase';
 import { useGlobalToast } from '../../contexts/ToastContext';
@@ -21,6 +21,9 @@ const AdminCombosCrear = () => {
   const toast = useGlobalToast();
   const [editandoId, setEditandoId] = useState(null);
   const [form, setForm] = useState(null);
+  // Combos sugeridos (pareja y trío de cada prenda), para crearlos de una vez.
+  const [sugeridos, setSugeridos] = useState(null);
+  const [publicarSugeridos, setPublicarSugeridos] = useState(true);
 
   const { data: combos = [], isLoading } = useQuery({
     queryKey: ['admin-combos-crear'],
@@ -55,7 +58,31 @@ const AdminCombosCrear = () => {
     onError: (e) => toast.error(`No se pudo archivar: ${e.message}`),
   });
 
+  const crearSugeridos = useMutation({
+    mutationFn: async () => {
+      const elegidos = sugeridos.filter((c) => c.elegido);
+      for (const c of elegidos) {
+        // Uno por uno: si uno falla, los anteriores ya quedaron creados.
+        await guardarComboCrear(null, { ...c, publicado: publicarSugeridos });
+      }
+      return elegidos.length;
+    },
+    onSuccess: (n) => {
+      refrescar();
+      toast.success(n === 1 ? 'Se creó 1 combo.' : `Se crearon ${n} combos.`);
+      setSugeridos(null);
+    },
+    onError: (e) => { refrescar(); toast.error(`No se pudieron crear todos: ${e.message}`); },
+  });
+
+  const abrirSugeridos = () => {
+    setForm(null);
+    setSugeridos(sugerirCombos(prendas.filter((p) => p.visible !== false), combos, precioBase).map((c) => ({ ...c, elegido: true })));
+  };
+  const cambiarSugerido = (clave, cambios) => setSugeridos((lista) => lista.map((c) => (c.clave === clave ? { ...c, ...cambios } : c)));
+
   const abrir = (combo) => {
+    setSugeridos(null);
     setEditandoId(combo?.id || null);
     setForm(combo ? {
       name: combo.name || '',
@@ -92,12 +119,82 @@ const AdminCombosCrear = () => {
             No aparecen en la tienda: se ofrecen en Crear cuando están publicados.
           </p>
         </div>
-        {!form && (
-          <button type="button" className={styles.principal} onClick={() => abrir(null)}>
-            <Plus size={16} aria-hidden="true" /> Nuevo combo
-          </button>
+        {!form && !sugeridos && (
+          <div className={styles.acciones}>
+            <button type="button" className={styles.principal} onClick={abrirSugeridos} disabled={!prendas.length}>
+              <Sparkles size={16} aria-hidden="true" /> Sugerir combos
+            </button>
+            <button type="button" className={styles.secundario} onClick={() => abrir(null)}>
+              <Plus size={16} aria-hidden="true" /> Nuevo combo
+            </button>
+          </div>
         )}
       </div>
+
+      {sugeridos && (
+        <div className={styles.tarjeta}>
+          <h2 className={styles.subtitulo}>Combos sugeridos</h2>
+          {sugeridos.length === 0 ? (
+            <p className={styles.ayuda}>Ya tienes una pareja y un trío de cada prenda publicada.</p>
+          ) : (
+            <>
+              <p className={styles.ayuda}>
+                Una pareja y un trío de cada prenda personalizable publicada. El precio sugerido es 10% menos en pareja
+                y 15% menos en trío, redondeado. Cambia lo que quieras antes de crearlos.
+              </p>
+              <ul className={styles.sugeridos}>
+                {sugeridos.map((c) => (
+                  <li key={c.clave} className={`${styles.sugerido} ${c.elegido ? '' : styles.sugeridoApagado}`}>
+                    <input
+                      type="checkbox"
+                      checked={c.elegido}
+                      onChange={(e) => cambiarSugerido(c.clave, { elegido: e.target.checked })}
+                      aria-label={`Crear ${c.name}`}
+                    />
+                    <input
+                      className={styles.sugeridoNombre}
+                      value={c.name}
+                      onChange={(e) => cambiarSugerido(c.clave, { name: e.target.value })}
+                      aria-label="Nombre del combo"
+                      maxLength={80}
+                    />
+                    <span className={styles.sugeridoSueltas}>Sueltas {soles(c.sueltas)}</span>
+                    <label className={styles.sugeridoPrecio}>
+                      <span>S/</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={c.price}
+                        onChange={(e) => cambiarSugerido(c.clave, { price: e.target.value })}
+                        aria-label={`Precio de ${c.name}`}
+                      />
+                    </label>
+                  </li>
+                ))}
+              </ul>
+              <label className={styles.check}>
+                <input type="checkbox" checked={publicarSugeridos} onChange={(e) => setPublicarSugeridos(e.target.checked)} />
+                <span>Publicarlos de una vez (si no, quedan en borrador y solo los ves tú)</span>
+              </label>
+            </>
+          )}
+          <div className={styles.acciones}>
+            {sugeridos.length > 0 && (
+              <button
+                type="button"
+                className={styles.principal}
+                disabled={crearSugeridos.isPending || !sugeridos.some((c) => c.elegido && Number(c.price) > 0 && c.name.trim())}
+                onClick={() => crearSugeridos.mutate()}
+              >
+                {crearSugeridos.isPending && <Loader2 size={15} className={styles.girando} aria-hidden="true" />}
+                Crear {sugeridos.filter((c) => c.elegido).length} combos
+              </button>
+            )}
+            <button type="button" className={styles.texto} onClick={() => setSugeridos(null)}>Cancelar</button>
+          </div>
+        </div>
+      )}
 
       {form && (
         <form className={styles.tarjeta} onSubmit={enviar}>

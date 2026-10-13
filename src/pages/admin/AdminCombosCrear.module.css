@@ -247,3 +247,74 @@
 @keyframes girar {
   to { transform: rotate(360deg); }
 }
+
+.principal:disabled {
+  cursor: not-allowed;
+}
+
+.sugeridos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.sugerido {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 12px;
+  border: 1px solid var(--gris-borde);
+  background: var(--blanco);
+}
+
+.sugeridoApagado {
+  opacity: 0.5;
+}
+
+.sugeridoNombre,
+.sugeridoPrecio input {
+  font: inherit;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--gris-borde);
+  background: var(--color-surface, var(--blanco));
+  color: var(--gris-texto-principal);
+}
+
+.sugeridoNombre {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.sugeridoSueltas {
+  font-size: 0.8rem;
+  color: var(--gris-texto-secundario);
+  white-space: nowrap;
+  text-decoration: line-through;
+}
+
+.sugeridoPrecio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal);
+}
+
+.sugeridoPrecio input {
+  width: 90px;
+}
+
+@media (max-width: 560px) {
+  .sugerido {
+    flex-wrap: wrap;
+  }
+  .sugeridoNombre {
+    flex-basis: calc(100% - 2rem);
+  }
+}

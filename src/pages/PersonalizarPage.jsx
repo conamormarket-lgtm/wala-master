@@ -1,7 +1,7 @@
 import React, { useMemo, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Shirt, Upload, ShoppingBag, ArrowRight, Paintbrush, Users } from 'lucide-react';
+import { Shirt, Upload, ShoppingBag, ArrowRight, Paintbrush, Users, User } from 'lucide-react';
 import { getPrendasBase } from '../services/prendasBase';
 import { getCombosCrear } from '../services/combosCrear';
 import { preciosDeCombo } from './Crear/comboCrear';
@@ -115,6 +115,9 @@ const TarjetaCombo = ({ combo, prendas }) => {
   );
 };
 
+/** Nombre de cada opción del selector "¿Para cuántos?". */
+const etiquetaPara = (n) => (n === 1 ? 'Para ti' : n === 2 ? 'En pareja' : `Para ${n}`);
+
 /**
  * Las últimas creaciones del cliente, arriba de las prendas: así vuelve a lo
  * suyo desde donde empieza a diseñar, sin pasar por su cuenta.
@@ -210,6 +213,18 @@ const PersonalizarPage = () => {
     .map((c) => ({ combo: c, prendas: c.piezas.map((p) => prendaPorId.get(p.prendaId)) }))
     .filter(({ prendas: ps }) => ps.every(Boolean));
 
+  // "¿Para cuántos?": 1 son las prendas sueltas; 2, 3… los combos con esas
+  // piezas. Va en la dirección (?para=2) para que al volver siga elegido.
+  const [params, setParams] = useSearchParams();
+  const opcionesPara = [1, ...[...new Set(combosListos.map(({ combo }) => combo.piezas.length))].sort((a, b) => a - b)];
+  const para = opcionesPara.includes(Number(params.get('para'))) ? Number(params.get('para')) : 1;
+  const elegirPara = (n) => {
+    const siguiente = new URLSearchParams(params);
+    if (n === 1) siguiente.delete('para'); else siguiente.set('para', String(n));
+    setParams(siguiente, { replace: true });
+  };
+  const combosDePara = combosListos.filter(({ combo }) => combo.piezas.length === para);
+
   return (
     <div className={styles.container}>
       <div className={styles.hero}>
@@ -252,29 +267,43 @@ const PersonalizarPage = () => {
       {user && <TusBorradores uid={user.uid} />}
       {user && <TusCreaciones uid={user.uid} />}
       <DisenosComunidad />
-      {combosListos.length > 0 && (
-        <section className={styles.seccion} aria-label="Combos para compartir">
-          <div className={styles.seccionCabecera}>
-            <div>
-              <h2 className={styles.seccionTitulo}><T>Combos para compartir</T></h2>
-              <p className={styles.seccionAyuda}><T>Para tu pareja, tus amigos o tu familia: cada prenda con su diseño, a precio de combo.</T></p>
-            </div>
-          </div>
-          <div className={styles.grilla}>
-            {combosListos.map(({ combo, prendas: ps }) => <TarjetaCombo key={combo.id} combo={combo} prendas={ps} />)}
-          </div>
-        </section>
-      )}
-      {(creaciones.length > 0 || borradores.length > 0 || comunidad.length > 0 || combosListos.length > 0) && (
+      {(creaciones.length > 0 || borradores.length > 0 || comunidad.length > 0 || opcionesPara.length > 1) && (
         <div className={styles.seccionCabecera}>
           <div>
             <h2 className={styles.seccionTitulo}><T>Empieza una nueva</T></h2>
-            <p className={styles.seccionAyuda}><T>Elige la prenda que quieres diseñar.</T></p>
+            <p className={styles.seccionAyuda}>
+              {para === 1
+                ? <T>Elige la prenda que quieres diseñar.</T>
+                : <T>Cada prenda con su propio diseño, color y talla, a precio de combo.</T>}
+            </p>
           </div>
         </div>
       )}
 
-      {isLoading ? (
+      {opcionesPara.length > 1 && (
+        <div className={styles.selectorPara} role="radiogroup" aria-label="¿Para cuántas personas?">
+          {opcionesPara.map((n) => (
+            <button
+              key={n}
+              type="button"
+              role="radio"
+              aria-checked={para === n}
+              className={`${styles.opcionPara} ${para === n ? styles.opcionParaActiva : ''}`}
+              onClick={() => elegirPara(n)}
+            >
+              {n === 1 ? <User size={17} aria-hidden="true" /> : <Users size={17} aria-hidden="true" />}
+              <T>{etiquetaPara(n)}</T>
+              {n > 1 && <span className={styles.ahorraPara}><T>Ahorras</T></span>}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {para > 1 ? (
+        <div className={styles.grilla}>
+          {combosDePara.map(({ combo, prendas: ps }) => <TarjetaCombo key={combo.id} combo={combo} prendas={ps} />)}
+        </div>
+      ) : isLoading ? (
         <div className={styles.grilla}>
           {[0, 1, 2].map((i) => <div key={i} className={styles.esqueleto} />)}
         </div>

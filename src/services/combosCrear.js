@@ -70,3 +70,37 @@ export const archivarComboCrear = async (id) => {
   if (res.error) throw new Error(res.error);
   clearProductCaches();
 };
+
+// Descuento sugerido por cantidad de prendas (el admin lo cambia antes de crear).
+export const DESCUENTO_SUGERIDO = { 2: 0.1, 3: 0.15 };
+
+const firmaPiezas = (piezas) => piezas.map((p) => p.prendaId).sort().join('|');
+
+/**
+ * Combos que se pueden armar con las prendas de Crear: pareja y trío de cada
+ * una, con un precio sugerido (suma de las sueltas con descuento, redondeado
+ * hacia abajo de 5 en 5). Deja fuera los que ya existen con esas prendas.
+ */
+export const sugerirCombos = (prendas, existentes = [], precioDe) => {
+  const yaHay = new Set(existentes.map((c) => firmaPiezas(c.piezas || [])));
+  const sugeridos = [];
+  prendas.forEach((prenda) => {
+    [2, 3].forEach((n) => {
+      const piezas = Array.from({ length: n }, () => ({ prendaId: prenda.id }));
+      if (yaHay.has(firmaPiezas(piezas))) return;
+      const sueltas = precioDe(prenda) * n;
+      const precio = Math.max(5, Math.floor((sueltas * (1 - DESCUENTO_SUGERIDO[n])) / 5) * 5);
+      sugeridos.push({
+        clave: `${prenda.id}-${n}`,
+        name: `${n === 2 ? 'Pareja' : 'Trío'} · ${prenda.name}`,
+        description: n === 2
+          ? 'Dos prendas, cada una con su propio diseño, color y talla. Para ti y tu persona favorita.'
+          : 'Tres prendas, cada una con su propio diseño, color y talla. Para tus amigos o tu familia.',
+        piezas,
+        sueltas,
+        price: precio,
+      });
+    });
+  });
+  return sugeridos;
+};
