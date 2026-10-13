@@ -35,6 +35,7 @@ const { totalEsperadoCheckout, topeMonedasCheckout, toleranciaCheckout } = requi
 const { puedeUsarPuente, tieneClaimAdmin } = require("./adminAuth");
 const pagos = require("./pagosLogic");
 const erpCobranza = require("./erpCobranzaLogic");
+const referidos = require("./referidosLogic");
 
 admin.initializeApp();
 const auth = admin.auth();
@@ -135,6 +136,78 @@ async function precalentar() {
 
 // Una reserva de monedas sin pedido en el ERP se devuelve pasado este plazo.
 const CHECKOUT_RESERVA_VENCE_MS = 48 * 60 * 60 * 1000;
+
+// ── Referidos en el checkout ─────────────────────────────────────────────────
+// El navegador manda el referralId que guardó al abrir el enlace. Si el enlace
+// sigue vigente y no es de quien compra, el servidor lo deja en el pedido como
+// `referido`; el ERP lo copia al pedido aprobado, y reclamar y "Ver pedido"
+// exigen que coincida (ver functions/referidosLogic.js). Nunca frena la compra:
+// ante cualquier duda, el pedido sale sin referido.
+async function referidoParaCheckout(referralId, uid, intentId) {
+  const id = String(referralId || "").trim();
+  if (!id || id.includes("/")) return null;
+  try {
+    const snap = await db.collection("referrals").doc(id).get();
+    if (!snap.exists) return null;
+    const r = snap.data() || {};
+    if (!referidos.referidoVigenteParaCheckout(r, { ahoraMs: Date.now(), intentId })) return null;
+    const dueno = await db.collection(PORTAL_USERS_COLLECTION)
+      .where("referralCode", "==", r.referrerCode).limit(1).get();
+    if (dueno.empty) return null;
+    if (uid && dueno.docs[0].id === uid) return null; // su propio enlace
+    return { referralId: id, referrerCode: r.referrerCode };
+  } catch (e) {
+    console.warn(`referidoParaCheckout: no se pudo validar ${id}:`, e.message);
+    return null;
+  }
+}
+
+// Al crearse el pedido (WhatsApp o pago aprobado), el referido pasa a
+// "Compró". Antes lo escribía el navegador después de la compra, con el monto
+// que quisiera y sobre cualquier referido. Un enlace = una compra: si el
+// referido ya tiene otro pedido, no se toca.
+async function vincularCompraReferido(orderId, payload) {
+  const referralId = payload && payload.referido && payload.referido.referralId;
+  if (!referralId) return;
+  const ref = db.collection("referrals").doc(String(referralId));
+  try {
+    await db.runTransaction(async (t) => {
+      const snap = await t.get(ref);
+      if (!snap.exists) return;
+      const r = snap.data() || {};
+      if (r.orderId && String(r.orderId) !== String(orderId)) return;
+      if (!["sent", "clicked", "purchased"].includes(r.status)) return;
+      t.update(ref, {
+        status: "purchased",
+        orderId: String(orderId),
+        orderTotal: Number(payload.montoTotal) || 0,
+        ...(r.purchasedAt ? {} : { purchasedAt: FieldValue.serverTimestamp() }),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    });
+  } catch (e) {
+    console.warn(`vincularCompraReferido: ${orderId} no se vinculó a ${referralId}:`, e.message);
+  }
+}
+
+// El pedido de un referido, esté donde esté. El ERP, al aprobar, BORRA
+// pedidos_web/{código web} y crea pedidos/{número nuevo} con
+// origenPedidoWebId = código web (sistema/components/tabs/ventas-tab.tsx,
+// handleApproveWebOrder). Buscar solo por el código web daba "no existe"
+// justo cuando el pedido ya estaba aprobado o entregado.
+async function buscarPedidoPorCodigoWeb(erpDb, codigo) {
+  const id = String(codigo || "").trim();
+  if (!id || id.includes("/")) return null;
+  for (const campo of ["origenPedidoWebId", "portalPseudoOrderId"]) {
+    const q = await erpDb.collection("pedidos").where(campo, "==", id).limit(1).get();
+    if (!q.empty) return { coleccion: "pedidos", id: q.docs[0].id, data: q.docs[0].data() || {} };
+  }
+  for (const coll of ["pedidos_web", "pedidos"]) {
+    const snap = await erpDb.collection(coll).doc(id).get();
+    if (snap.exists) return { coleccion: coll, id: snap.id, data: snap.data() || {} };
+  }
+  return null;
+}
 
 async function readCheckoutIntent(intentId, context, { exigirVigente = false } = {}) {
   const id = String(intentId || "").trim();
@@ -351,6 +424,7 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
   const userRef = uid ? db.collection(PORTAL_USERS_COLLECTION).doc(uid) : null;
   const anteriorId = uid ? await reservaCheckoutLiberable(uid, intentId) : null;
   const anteriorRef = anteriorId ? db.collection(CHECKOUT_INTENTS_COLLECTION).doc(anteriorId) : null;
+  const referido = await referidoParaCheckout(data && data.referralId, uid, intentId);
 
   await db.runTransaction(async (t) => {
     // ── Lecturas (todas antes de la primera escritura) ──
@@ -466,9 +540,13 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
       : { modalidad: "completo", cobroPen: pagos.redondear(amountPen), saldoPen: 0 };
 
     // El pedido que se guarda es el del navegador SIN campos de pago (los pone el
-    // servidor al confirmar el cobro) y con la cuenta real de quien compra.
+    // servidor al confirmar el cobro) y con la cuenta real de quien compra. El
+    // `referido` tampoco se acepta del navegador: lo pone el servidor si validó
+    // el enlace (referidoParaCheckout).
+    const { referido: _referidoDelCliente, ...payloadCliente } = pagos.limpiarPayloadCliente(orderPayload);
     const payloadGuardado = {
-      ...pagos.limpiarPayloadCliente(orderPayload),
+      ...payloadCliente,
+      ...(referido ? { referido } : {}),
       ...(uid ? { userId: uid } : {}),
       modalidadPago: cobro.modalidad,
       montoAdelanto: 0,
@@ -766,6 +844,7 @@ async function createPaidWebOrderFromIntent({ intentId, context, pago, payment =
   // 3) Espejo wala_pedidos (lo que muestra "Mis pedidos"). Antes lo escribía el
   // navegador después del pago; ahora el servidor, junto con el pedido.
   await escribirEspejoPagado({ orderId, payload, uid, pago, montos });
+  await vincularCompraReferido(orderId, payload);
 
   // 4) El cobro en Finanzas del ERP (adelanto pendiente de validar). Al aprobar el
   // pedido, el ERP lo enlaza con el número de pedido nuevo (origenPedidoWebId).
@@ -858,6 +937,7 @@ exports.crearSolicitudWhatsappSecure = functions.https.onCall(async (data, conte
       console.warn(`crearSolicitudWhatsappSecure: espejo de ${orderId} no escrito:`, e.message);
     }
   }
+  await vincularCompraReferido(orderId, payload);
   await checkout.ref.set({ whatsappSolicitado: true, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   return { id: orderId };
 });
@@ -3344,12 +3424,13 @@ exports.reconciliarMonedasEnEspera = onSchedule("every 60 minutes", async () => 
       const orderId = String(entry.orderId);
       if (resolucion[orderId]) continue;
 
+      // Un pedido aprobado ya no está en pedidos_web: el ERP lo pasó a
+      // `pedidos` con otro número (buscarPedidoPorCodigoWeb). Antes solo se
+      // buscaba por el código web y sus monedas quedaban en espera para siempre.
       let orderData = null;
       try {
-        for (const coll of ["pedidos_web", "pedidos"]) {
-          const snap = await erpDb.collection(coll).doc(orderId).get();
-          if (snap.exists) { orderData = snap.data(); break; }
-        }
+        const encontrado = await buscarPedidoPorCodigoWeb(erpDb, orderId);
+        orderData = encontrado ? encontrado.data : null;
       } catch (e) {
         console.error(`reconciliarMonedasEnEspera: error leyendo pedido ${orderId}:`, e);
         continue; // se reintenta en la próxima corrida
@@ -3560,109 +3641,114 @@ exports.claimDatesStreakSecure = functions.https.onCall(async (data, context) =>
   }
 });
 
-// ── Reclamar monedas de un referido completado ────────────────────────────────
+// ── Referidos: reclamar monedas y ver el pedido ───────────────────────────────
 // Regla de negocio (confirmada): % del monto TOTAL del pedido referido, en
 // monedas (1 moneda = S/1) — 5% si el pedido es S/200 o menos, 10% si supera
-// los S/200. Antes había 3 versiones distintas y NINGUNA calculaba esto: un
-// flat de 10 monedas acá (server-authoritative), un cálculo aparte de "5 por
-// cada tramo de S/100" solo VISUAL en el panel de Admin (AdminReferidos.jsx),
-// y un copy de marketing ("10 fijas, x2 en tu 3ra venta del mes") en
-// CuentaReferidosPage.jsx que no coincidía con ninguno de los dos anteriores.
-// Ahora esta es la ÚNICA función que calcula el premio, y se usa tanto acá
-// (lo que realmente se paga) como en AdminReferidos (lo que se muestra antes
-// de aprobar), para que el número sea el mismo en todos lados.
-function calcularRecompensaReferido(montoTotal) {
-  const monto = Number(montoTotal) || 0;
-  if (monto <= 0) return 0;
-  const tasa = monto > 200 ? 0.10 : 0.05;
-  return Math.round(monto * tasa);
+// los S/200 (referidos.calcularRecompensaReferido). El estimado que se muestra
+// antes de reclamar usa la misma fórmula (estimateReferralReward en el cliente).
+//
+// El doc de `referrals` lo puede escribir cualquiera, así que no se confía en
+// sus campos: vale el pedido. Tiene que llevar `referido.referralId` igual a
+// este referido (lo pone prepareCheckoutPayment) y estar finalizado en el ERP.
+
+// Referido + pedido de quien refirió. Lanza si el referido no es suyo o si el
+// pedido no vino de ese enlace.
+async function cargarReferidoDelDueno(uid, referralId) {
+  const id = String(referralId || "").trim();
+  if (!id || id.includes("/")) {
+    throw new functions.https.HttpsError("invalid-argument", "Falta referralId.");
+  }
+  const erpDb = getErpDb();
+  const [refSnap, userSnap] = await Promise.all([
+    db.collection("referrals").doc(id).get(),
+    db.collection(PORTAL_USERS_COLLECTION).doc(uid).get(),
+  ]);
+  if (!refSnap.exists) throw new functions.https.HttpsError("not-found", "Referido no encontrado.");
+  if (!userSnap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+  const r = refSnap.data() || {};
+  const u = userSnap.data() || {};
+  if (!u.referralCode || r.referrerCode !== u.referralCode) {
+    throw new functions.https.HttpsError("permission-denied", "Este referido no le pertenece.");
+  }
+  if (!r.orderId) {
+    throw new functions.https.HttpsError("failed-precondition", "Este enlace todavía no tiene una compra.");
+  }
+  const pedido = await buscarPedidoPorCodigoWeb(erpDb, r.orderId);
+  if (!pedido) {
+    throw new functions.https.HttpsError("not-found", "No encontramos esa compra. Puede que se haya eliminado.");
+  }
+  if (!referidos.pedidoEsDelReferido(pedido.data, id) ||
+      pedido.data.referido.referrerCode !== u.referralCode) {
+    throw new functions.https.HttpsError("permission-denied", "Esta compra no se hizo con tu enlace.");
+  }
+  return { id, r, u, pedido, orderId: String(r.orderId) };
 }
 
 exports.claimReferralSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
-  const referralId = data && data.referralId;
-  if (!referralId) {
-    throw new functions.https.HttpsError("invalid-argument", "Falta referralId.");
-  }
+  const { id: referralId, r, u, pedido, orderId } = await cargarReferidoDelDueno(uid, data && data.referralId);
+  const orderData = pedido.data;
 
-  // El doc de referrals es escribible por el cliente, así que NO se confía en sus
-  // campos (status/earnedCoins). La legitimidad se valida contra el ERP: debe existir
-  // una compra (orderId) real y finalizada. FALLA CERRADO sin credencial del ERP.
-  const erpDb = getErpDb();
-  if (!erpDb) {
-    console.error("claimReferralSecure: ERP_SERVICE_ACCOUNT no configurado; rechazado (fail-closed).");
-    throw new functions.https.HttpsError("failed-precondition", "Validación de referidos no disponible temporalmente.");
+  if (r.status === "claimed") {
+    throw new functions.https.HttpsError("already-exists", "Ya reclamaste las monedas de este referido.");
   }
-
-  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
-  const refRef = db.collection("referrals").doc(String(referralId));
-
-  const refSnap0 = await refRef.get();
-  if (!refSnap0.exists) throw new functions.https.HttpsError("not-found", "Referido no encontrado.");
-  const orderId = refSnap0.data().orderId;
-  if (!orderId) {
-    throw new functions.https.HttpsError("failed-precondition", "El referido no tiene una compra asociada.");
+  // No puede referirse a sí mismo (la compra no puede ser del propio referrer).
+  const ownOrder = (orderData.userId && orderData.userId === uid) ||
+    (orderData.dni && u.dni && String(orderData.dni) === String(u.dni));
+  if (ownOrder) {
+    throw new functions.https.HttpsError("permission-denied", "No puedes referirte a ti mismo.");
   }
-
-  // El pedido referido debe existir y estar finalizado en el ERP.
-  let orderData = null;
-  for (const coll of ["pedidos_web", "pedidos"]) {
-    const snap = await erpDb.collection(coll).doc(String(orderId)).get();
-    if (snap.exists) { orderData = snap.data(); break; }
+  const estado = referidos.estadoPedidoReferido(orderData, pedido.coleccion);
+  if (estado.anulado) {
+    throw new functions.https.HttpsError("failed-precondition", "Esta compra se anuló, así que no genera monedas.");
   }
-  if (!orderData) throw new functions.https.HttpsError("not-found", "La compra del referido no existe.");
-  const estado = (orderData.estadoGeneral || orderData.estado || "")
-    .toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-  if (!["finalizado", "entregado", "completado"].includes(estado)) {
-    throw new functions.https.HttpsError("failed-precondition", "La compra del referido aún no está finalizada.");
+  if (!estado.finalizado) {
+    throw new functions.https.HttpsError("failed-precondition",
+      "Podrás reclamar cuando el pedido esté entregado. Revisa en qué va con «Ver pedido».");
   }
-  // Monto del ERP (ya validado arriba), NUNCA de referrals/orderTotal -ese
-  // campo lo escribe el cliente en linkPurchaseToReferral y es falsificable-.
-  const montoPedido = orderData.montoTotal ?? orderData.montoPendiente ?? orderData.montoDeuda;
-  const reward = calcularRecompensaReferido(montoPedido);
+  // Monto del ERP, NUNCA de referrals/orderTotal (lo puede escribir cualquiera).
+  const reward = referidos.calcularRecompensaReferido(orderData.montoTotal);
   if (reward <= 0) {
     throw new functions.https.HttpsError("failed-precondition", "Esta compra no genera premio de referido.");
   }
 
-  // Lock GLOBAL por pedido: doc keyed por orderId en referralOrderClaims.
-  const claimRef = db.collection("referralOrderClaims").doc(String(orderId));
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  const refRef = db.collection("referrals").doc(referralId);
+  // Lock GLOBAL por pedido: doc keyed por el código web del pedido.
+  const claimRef = db.collection("referralOrderClaims").doc(orderId);
   try {
     return await db.runTransaction(async (t) => {
       const [userSnap, refSnap, claimSnap] = await Promise.all([t.get(userRef), t.get(refRef), t.get(claimRef)]);
-      if (!userSnap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
-      if (!refSnap.exists) throw new functions.https.HttpsError("not-found", "Referido no encontrado.");
-      const u = userSnap.data();
-      const r = refSnap.data();
-
-      if (!u.referralCode || r.referrerCode !== u.referralCode) {
-        throw new functions.https.HttpsError("permission-denied", "Este referido no le pertenece.");
+      const uf = userSnap.data() || {};
+      const rf = refSnap.data() || {};
+      if (rf.status === "claimed") {
+        throw new functions.https.HttpsError("already-exists", "Ya reclamaste las monedas de este referido.");
       }
-      // No puede referirse a sí mismo (la compra no puede ser del propio referrer).
-      const ownOrder = (orderData.userId && orderData.userId === uid) ||
-        (orderData.dni && u.dni && String(orderData.dni) === String(u.dni));
-      if (ownOrder) {
-        throw new functions.https.HttpsError("permission-denied", "No puede referirse a sí mismo.");
+      if (String(rf.orderId || "") !== orderId) {
+        throw new functions.https.HttpsError("aborted", "El referido cambió. Recarga la página.");
       }
-      if (r.status === "claimed") {
-        throw new functions.https.HttpsError("already-exists", "Este referido ya fue reclamado.");
-      }
-      // Dedup GLOBAL por pedido: cada compra otorga UN solo premio de referido (a quien
-      // reclame primero), no uno por usuario. Evita que varios cosechen el mismo pedido ajeno.
+      // Cada compra otorga UN solo premio de referido.
       if (claimSnap.exists) {
         throw new functions.https.HttpsError("already-exists", "Esta compra ya otorgó un premio de referido.");
       }
 
-      const newBalance = (u.monedas || 0) + reward;
-      t.set(claimRef, { uid, referralId: String(referralId), at: FieldValue.serverTimestamp() });
-      t.update(refRef, { status: "claimed", claimedAt: FieldValue.serverTimestamp(), earnedCoins: reward });
+      const newBalance = (uf.monedas || 0) + reward;
+      t.set(claimRef, { uid, referralId, pedidoErp: pedido.id, at: FieldValue.serverTimestamp() });
+      t.update(refRef, {
+        status: "claimed",
+        claimedAt: FieldValue.serverTimestamp(),
+        earnedCoins: reward,
+        orderTotal: Number(orderData.montoTotal) || 0,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
       t.update(userRef, {
         monedas: newBalance,
-        referralOrdersClaimed: FieldValue.arrayUnion(String(orderId)),
+        referralOrdersClaimed: FieldValue.arrayUnion(orderId),
       });
       writeLedger(t, uid, {
         type: "earn",
         amount: reward,
-        source: "referido_" + String(orderId),
+        source: "referido_" + orderId,
         balanceAfter: newBalance,
       });
       return { success: true, earned: reward };
@@ -3672,6 +3758,19 @@ exports.claimReferralSecure = functions.https.onCall(async (data, context) => {
     console.error("claimReferralSecure error:", e);
     throw new functions.https.HttpsError("internal", "Error al reclamar el referido.");
   }
+});
+
+// "Ver pedido" en Mis Referidos: qué compró la persona referida, cuánto y en
+// qué etapa va, sin ningún dato suyo (referidos.resumenPedidoReferido).
+exports.detalleReferidoSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const { r, pedido } = await cargarReferidoDelDueno(uid, data && data.referralId);
+  const resumen = referidos.resumenPedidoReferido(pedido.data, pedido.coleccion);
+  return {
+    ...resumen,
+    premio: referidos.calcularRecompensaReferido(resumen.montoTotal),
+    reclamado: r.status === "claimed",
+  };
 });
 
 // ════════════════════════════════════════════════════════════════════════════

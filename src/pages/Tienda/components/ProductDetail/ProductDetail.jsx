@@ -305,7 +305,10 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   const displayPrice = product?.salePrice || product?.price || 0;
   const originalPrice = product?.salePrice ? product?.price : null;
   const discount = originalPrice ? Math.round(((originalPrice - displayPrice) / originalPrice) * 100) : 0;
-  const referralCode = userProfile?.referralCode || (user?.uid ? `KS-${user.uid.substring(0, 6).toUpperCase()}` : '');
+  // Solo el código real del perfil. Antes, sin perfil cargado, se inventaba uno
+  // con el uid (KS-XXXXXX) que no es el de la cuenta: los referidos de ese
+  // enlace no aparecían en Mis Referidos y nadie podía reclamarlos.
+  const referralCode = userProfile?.referralCode || '';
 
   const { data: brands } = useQuery({
     queryKey: ['brands'],
@@ -526,6 +529,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
 
   const handleShare = async () => {
     if (!user) { toast.error('Inicia sesión para compartir y ganar monedas'); return; }
+    if (!referralCode) { toast.error('Tu cuenta todavía está cargando. Inténtalo en un momento.'); return; }
     setSharing(true);
     const { id, error } = await createReferralShare(referralCode);
     setSharing(false);

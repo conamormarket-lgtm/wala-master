@@ -11,6 +11,7 @@ import {
   Send,
   AlertCircle,
   Clock,
+  Receipt,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
@@ -21,6 +22,7 @@ import {
   estimateReferralReward,
 } from '../../services/referrals';
 import ReferralRanking from '../../components/analytics/ReferralRanking';
+import DetallePedidoReferido from './components/DetallePedidoReferido';
 import { GlassCard, Reveal, Stagger, StaggerItem } from '../../components/ui';
 import styles from './CuentaReferidosPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
@@ -68,6 +70,10 @@ const CuentaReferidosPage = () => {
   const queryClient = useQueryClient();
   const [generating, setGenerating] = useState(false);
   const [claimingId, setClaimingId] = useState(null);
+  // Referidos con el detalle del pedido desplegado ("Ver pedido").
+  const [detallesAbiertos, setDetallesAbiertos] = useState({});
+  const toggleDetalle = (id) =>
+    setDetallesAbiertos((prev) => ({ ...prev, [id]: !prev[id] }));
   const [ahora, setAhora] = useState(() => Date.now());
 
   const referralCode = userProfile?.referralCode || '';
@@ -157,13 +163,15 @@ const CuentaReferidosPage = () => {
     setClaimingId(null);
 
     if (error) {
-      // Para 'purchased' (sin aprobación de Admin) es normal que el ERP
-      // todavía no marque el pedido como finalizado — mostrar el motivo
-      // real del servidor en vez de un genérico ayuda a entender por qué.
+      // Lo normal es que el pedido todavía no esté entregado: se muestra el
+      // motivo real del servidor ("Podrás reclamar cuando…"), no un genérico.
       toast.error(error || 'Error al reclamar monedas');
+      // Y se abre el pedido para que vea en qué etapa va.
+      setDetallesAbiertos((prev) => ({ ...prev, [referralDoc.id]: true }));
     } else {
       toast.success(`¡Has reclamado ${earned ?? ''} monedas con éxito!`);
       queryClient.invalidateQueries({ queryKey: ['myReferrals', referralCode] });
+      queryClient.invalidateQueries({ queryKey: ['referralOrder', referralDoc.id] });
       // También se actualiza el userProfile globalmente a través del effect en AuthContext
     }
   };
@@ -374,14 +382,11 @@ const CuentaReferidosPage = () => {
         <ul className={styles.list}>
           {referrals.map((ref, i) => {
             const currentStage = STAGES[ref.status] || 1;
-            // 'purchased' también puede reclamarse, no solo 'completed': ese
-            // paso de Admin (AdminReferidos) es para ventas por WhatsApp, que
-            // no pasan por linkPurchaseToReferral. Para las que SÍ se
-            // registran solas (compra con el link ?ref=&shareId= del
-            // checkout web), claimReferralSecure ya valida por su cuenta
-            // contra el ERP -si el pedido aún no está finalizado, rechaza con
-            // un mensaje claro (ver handleClaim)-, así que no hace falta
-            // esperar una aprobación manual aparte.
+            // Se puede intentar reclamar desde que compró: claimReferralSecure
+            // revisa en el ERP que el pedido haya salido de este enlace y esté
+            // entregado, y si todavía no, lo dice (ver handleClaim). No hace
+            // falta una aprobación manual. 'completed' queda por los referidos
+            // que aprobaba antes el panel de admin.
             const canClaim = ref.status === 'completed' || ref.status === 'purchased';
             const isClaimed = ref.status === 'claimed';
             const isIneligible = ref.status === 'ineligible';
@@ -517,6 +522,18 @@ const CuentaReferidosPage = () => {
                       </button>
                     )}
 
+                    {ref.orderId && (
+                      <button
+                        type="button"
+                        className={styles.btnGhost}
+                        onClick={() => toggleDetalle(ref.id)}
+                        aria-expanded={!!detallesAbiertos[ref.id]}
+                      >
+                        <Receipt size={15} aria-hidden="true" />
+                        {detallesAbiertos[ref.id] ? 'Ocultar pedido' : 'Ver pedido'}
+                      </button>
+                    )}
+
                     {/* Solo mientras nadie lo abrió: es el caso de "lo generé
                         y me olvidé de mandarlo". Una vez que alguien entró, el
                         enlace ya tiene dueño — recopiarlo y mandárselo a otra
@@ -534,6 +551,9 @@ const CuentaReferidosPage = () => {
                     )}
                   </div>
 
+                  {ref.orderId && detallesAbiertos[ref.id] && (
+                    <DetallePedidoReferido referralId={ref.id} />
+                  )}
                 </GlassCard>
               </Reveal>
             );

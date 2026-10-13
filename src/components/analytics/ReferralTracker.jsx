@@ -1,55 +1,52 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { recordReferralClick } from '../../services/referrals';
-
-const REFERRAL_KEY = 'wala_referral';
-const EXPIRATION_MS = 36 * 60 * 60 * 1000; // 36 horas en ms
+import { useAuth } from '../../contexts/AuthContext';
+import {
+  recordReferralClick,
+  leerReferidoGuardado,
+  guardarReferido,
+} from '../../services/referrals';
 
 const ReferralTracker = () => {
   const location = useLocation();
+  const { userProfile, loading } = useAuth();
+  const miCodigo = (userProfile?.referralCode || '').toUpperCase();
 
   useEffect(() => {
     // Buscar en los query params "?ref=CODE"
     const searchParams = new URLSearchParams(location.search);
-    const refCode = searchParams.get('ref');
+    const refCode = (searchParams.get('ref') || '').trim().toUpperCase();
     const shareId = searchParams.get('shareId');
+    // Se espera a saber quién entra: sin eso, el dueño del enlace que lo abre
+    // con la sesión todavía cargando lo registraba como un clic ajeno.
+    if (!refCode || loading) return;
 
-    if (refCode) {
-      // Registrar de inmediato
-      const trackReferral = async () => {
-        // Chequear si ya hay un referido guardado y si es válido, para no grabar doble click innecesario.
-        // Pero si es un codigo nuevo diferente al anterior, sí lo grabamos.
-        let stored = null;
-        try {
-          const raw = localStorage.getItem(REFERRAL_KEY);
-          if (raw) stored = JSON.parse(raw);
-        } catch(e) {}
+    // Quien abre SU PROPIO enlace (para probarlo o copiarlo) no lo "gasta": si
+    // no, el enlace pasaba a "Entró al link" y la persona a la que se lo mandó
+    // ya no podía usarlo.
+    if (miCodigo && refCode === miCodigo) return;
 
-        const now = Date.now();
-        const isValidStored = stored && (now - stored.timestamp < EXPIRATION_MS);
+    const trackReferral = async () => {
+      // Mismo enlace ya registrado y vigente: no se escribe otra vez en cada
+      // navegación. Un enlace DISTINTO (otro shareId, aunque sea del mismo
+      // código) sí se registra: es el que esta persona acaba de recibir.
+      const stored = leerReferidoGuardado();
+      if (stored && stored.referrerCode === refCode && (!shareId || stored.referralId === shareId)) {
+        return;
+      }
 
-        if (isValidStored && stored.referrerCode === refCode.toUpperCase()) {
-          // Ya lo tenemos guardado, no spammeamos a Firebase en cada navegación
-          return;
-        }
+      const { id, error } = await recordReferralClick(refCode, shareId);
+      if (!error && id) {
+        guardarReferido({
+          referrerCode: refCode,
+          referralId: id, // El docId de Firestore (etapa 2)
+          timestamp: Date.now(),
+        });
+      }
+    };
 
-        // Registrar click en FB
-        const { id, error } = await recordReferralClick(refCode, shareId);
-        
-        if (!error && id) {
-          // Guardar en LocalStorage
-          const referralData = {
-            referrerCode: refCode.toUpperCase(),
-            referralId: id, // El docId de Firestore (etapa 2)
-            timestamp: now
-          };
-          localStorage.setItem(REFERRAL_KEY, JSON.stringify(referralData));
-        }
-      };
-
-      trackReferral();
-    }
-  }, [location.search]);
+    trackReferral();
+  }, [location.search, miCodigo, loading]);
 
   return null;
 };

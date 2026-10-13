@@ -1,4 +1,5 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { leerReferidoGuardado } from './referrals';
 
 /**
  * Guarda una intención privada de checkout. No crea nada en pedidos_web ni en el ERP;
@@ -7,7 +8,11 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
  */
 export async function prepareCheckoutPayment(orderPayload) {
   const prepare = httpsCallable(getFunctions(), 'prepareCheckoutPayment');
-  const result = await prepare({ orderPayload });
+  // El enlace de referido que abrió este navegador (si sigue vigente). El
+  // servidor lo valida y, si vale, lo deja en el pedido: así la compra queda
+  // vinculada aunque se haga desde una landing o por WhatsApp.
+  const referralId = leerReferidoGuardado()?.referralId || null;
+  const result = await prepare({ orderPayload, referralId });
   return result?.data || {};
 }
 

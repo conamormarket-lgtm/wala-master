@@ -741,6 +741,128 @@
 }
 
 /* =========================================================================
+   Ver pedido: lo que compró la persona referida (DetallePedidoReferido.jsx)
+   ========================================================================= */
+.detalle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  border-radius: 12px;
+  background: var(--gris-hover, #f8fafc);
+  border: 1px solid var(--gris-borde, #e2e8f0);
+}
+
+.detalleHead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Etapa en curso (confirmado / producción / en camino): violeta de marca. */
+.chipEtapa {
+  color: #6d28d9;
+  background: rgba(139, 92, 246, 0.12);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.detallePaso {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+.detalleNota {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+.detalleProductos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detalleProducto {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+/* Foto con fondo blanco, como el resto de fotos de producto de la tienda. */
+.detalleFoto {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid var(--gris-borde, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b5cf6;
+}
+
+.detalleTexto {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.detalleNombre {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal, #0f172a);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detalleExtra {
+  font-size: 0.75rem;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+.detalleCantidad {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--gris-texto-secundario, #475569);
+  font-variant-numeric: tabular-nums;
+}
+
+.detalleTotal {
+  margin: 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--gris-borde, #e2e8f0);
+  font-size: 0.85rem;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.detalleTotal strong {
+  color: var(--gris-texto-principal, #0f172a);
+  font-variant-numeric: tabular-nums;
+}
+
+.detalleCargando,
+.detalleError {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+/* =========================================================================
    MODO NOCHE
    -------------------------------------------------------------------------
    Casi todo sale por tokens (--gris-*, --glass-*, --color-*). Acá solo lo que
@@ -809,6 +931,16 @@
 
 :global([data-theme='dark']) .stepCircle {
   background: var(--color-surface-2, #272338);
+}
+
+:global([data-theme='dark']) .chipEtapa {
+  color: #c4b5fd;
+  background: rgba(139, 92, 246, 0.18);
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+:global([data-theme='dark']) .detalle {
+  background: rgba(139, 92, 246, 0.06);
 }
 
 /* =========================================================================

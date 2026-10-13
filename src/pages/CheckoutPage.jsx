@@ -11,7 +11,7 @@ import { useGlobalToast } from '../contexts/ToastContext';
 import { useQuery } from '@tanstack/react-query';
 import { getMessage } from '../services/messages';
 import { getBrands } from '../services/brands';
-import { linkPurchaseToReferral } from '../services/referrals';
+import { leerReferidoGuardado, olvidarReferido } from '../services/referrals';
 import { prepareCheckoutPayment, precalentarFunciones } from '../services/checkoutPayment';
 import { markItemAsGifted } from '../services/wishlist';
 import { marcarCreacionesEnPedido } from '../services/designs';
@@ -1095,19 +1095,10 @@ const CheckoutPage = () => {
         }
 
         // ── 2. Procesar referidos ─────────────────────────────────────────
-        let referralTag = '';
-        try {
-          const rawRef = localStorage.getItem('wala_referral');
-          if (rawRef) {
-            const refData = JSON.parse(rawRef);
-            const now = Date.now();
-            if (now - refData.timestamp < 36 * 60 * 60 * 1000) {
-              referralTag = `\n_Referido por: ${refData.referrerCode}_`;
-            }
-          }
-        } catch (e) {
-          console.warn('No se pudo procesar cookie de referido:', e);
-        }
+        // Solo un aviso en el mensaje: el vínculo real ya lo guardó el servidor en
+        // el pedido (prepareCheckoutPayment recibe el referralId).
+        const refGuardado = leerReferidoGuardado();
+        const referralTag = refGuardado ? `\n_Referido por: ${refGuardado.referrerCode}_` : '';
 
         // ── 3. Armar mensaje de WhatsApp ──────────────────────────────────
         let message = `SOLICITUD DE NUEVO PEDIDO (${pseudoOrderId})\n\n`;
@@ -1702,17 +1693,9 @@ const CheckoutPage = () => {
     if (user) {
       await marcarCreacionesEnPedido(snapshot.map((i) => i?.customization?.designId)).catch(() => {});
     }
-    try {
-      const rawRef = localStorage.getItem('wala_referral');
-      if (rawRef) {
-        const refData = JSON.parse(rawRef);
-        if (Date.now() - refData.timestamp < 36 * 60 * 60 * 1000) {
-          await linkPurchaseToReferral(refData.referralId, paymentStepData.numeroPedido, paymentStepData.subtotal);
-        }
-      }
-    } catch (e) {
-      console.warn('No se pudo procesar el referido:', e);
-    }
+    // El referido lo vinculó el servidor al crear el pedido. El enlace ya se usó:
+    // se olvida para que otra compra de este navegador no lo vuelva a mandar.
+    olvidarReferido();
     try {
       const currentCart = JSON.parse(localStorage.getItem('shopping_cart') || '[]');
       localStorage.setItem('shopping_cart', JSON.stringify(currentCart.map((item) => item.selected === false

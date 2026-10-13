@@ -1,18 +1,24 @@
-import React, { useState } from 'react';
-// eslint-disable-next-line no-unused-vars
-// eslint-disable-next-line no-unused-vars
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { collection, query, getDocs, updateDoc, doc, serverTimestamp, orderBy } from 'firebase/firestore';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { collection, query, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../../services/firebase/config';
-import { useGlobalToast } from '../../contexts/ToastContext';
 import { estimateReferralReward } from '../../services/referrals';
 import styles from './AdminReferidos.module.css';
 
-const AdminReferidos = () => {
-  const toast = useGlobalToast();
-  const queryClient = useQueryClient();
-  const [procesandoId, setProcesandoId] = useState(null);
+// Antes este panel tenía "Aprobar" / "Rechazar", que escribían el estado del
+// referido desde el navegador. Ya no deciden nada: claimReferralSecure paga
+// solo si el pedido salió de ese enlace y el ERP lo marca Finalizado, y no paga
+// si está Anulado. Queda como seguimiento.
+const ETIQUETAS = {
+  sent: 'Enlace creado (nadie lo abrió)',
+  clicked: 'Abrió el enlace',
+  purchased: 'Compró (esperando entrega)',
+  completed: 'Aprobado (sistema anterior)',
+  claimed: 'Monedas reclamadas',
+  ineligible: 'No califica',
+};
 
+const AdminReferidos = () => {
   const { data: referidos, isLoading } = useQuery({
     queryKey: ['adminReferrals'],
     queryFn: async () => {
@@ -22,56 +28,15 @@ const AdminReferidos = () => {
     }
   });
 
-  const aprobarRestriccion = async (referidoId, totalGanancia) => {
-    if (!window.confirm(`¿Confirmas que este pedido ya se entregó y el referido puede reclamar ${totalGanancia} monedas?`)) return;
-    
-    setProcesandoId(referidoId);
-    try {
-      const docRef = doc(db, 'referrals', referidoId);
-      await updateDoc(docRef, {
-        status: 'completed',
-        earnedCoins: totalGanancia,
-        completedAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-      toast.success('Referido aprobado exitosamente');
-      queryClient.invalidateQueries(['adminReferrals']);
-    } catch (error) {
-      toast.error('Error al aprobar');
-    } finally {
-      setProcesandoId(null);
-    }
-  };
-
-  const rechazarRestriccion = async (referidoId) => {
-    if (!window.confirm('¿Confirmas que esta venta fue cancelada o no califica?')) return;
-    
-    setProcesandoId(referidoId);
-    try {
-      const docRef = doc(db, 'referrals', referidoId);
-      await updateDoc(docRef, {
-        status: 'ineligible',
-        earnedCoins: 0,
-        completedAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-      toast.success('Referido marcado como no elegible');
-      queryClient.invalidateQueries(['adminReferrals']);
-    } catch (error) {
-      toast.error('Error al rechazar');
-    } finally {
-      setProcesandoId(null);
-    }
-  };
-
   if (isLoading) return <div style={{ padding: '2rem' }}>Cargando panel de referidos...</div>;
 
   return (
     <div className="admin-container">
-      <h2>Gestión de Referidos (Ventas por WhatsApp)</h2>
-      <p style={{ marginBottom: '2rem', color: '#666' }}>
-        Como las ventas finalizan por WhatsApp y tu ERP externo, el sistema no sabe automáticamente cuándo se completa el envío. 
-        Aquí verás las ventas iniciadas con código de referido. Cuando confirmes que el pedido se entregó, haz clic en "Aprobar" para que el usuario pueda reclamar sus monedas.
+      <h2>Referidos</h2>
+      <p style={{ marginBottom: '2rem', color: 'var(--color-text-muted, #666)' }}>
+        Enlaces de referido y las compras que salieron de ellos. No hace falta aprobar nada: quien
+        refirió puede reclamar sus monedas cuando el pedido queda <strong>Finalizado</strong> en el
+        ERP (5&nbsp;% del total, 10&nbsp;% si supera S/&nbsp;200). Un pedido Anulado no paga.
       </p>
 
       <div className={styles.tableWrapper}>
@@ -80,60 +45,34 @@ const AdminReferidos = () => {
             <tr>
               <th>Fecha</th>
               <th>Código Referente</th>
-              <th>Cód. Pedido WA</th>
+              <th>Pedido web</th>
               <th>Monto Venta</th>
-              <th>Monedas a Ganar</th>
-              <th>Estado Actual</th>
-              <th>Acciones</th>
+              <th>Monedas</th>
+              <th>Estado</th>
             </tr>
           </thead>
           <tbody>
             {referidos?.length === 0 && (
-              <tr><td colSpan="7" style={{ textAlign: 'center' }}>No hay referidos registrados aún.</td></tr>
+              <tr><td colSpan="6" style={{ textAlign: 'center' }}>No hay referidos registrados aún.</td></tr>
             )}
             {referidos?.map(ref => {
               const d = ref.createdAt?.toDate()?.toLocaleDateString() || 'N/A';
-              // 5% si el pedido es <= S/200, 10% si supera los S/200 — misma
-              // fórmula que claimReferralSecure (functions/index.js), que es
-              // quien realmente paga (esto es solo el estimado a mostrar).
-              const monedasCalculadas = estimateReferralReward(ref.orderTotal);
-              
-              let statusLabel = 'Etapa 2 (Solo Clic)';
-              if (ref.status === 'purchased') statusLabel = 'Etapa 3 (Compró por WA)';
-              if (ref.status === 'completed') statusLabel = 'Etapa 4 (Aprobado/Esperando Reclamo)';
-              if (ref.status === 'claimed') statusLabel = 'Finalizado (Monedas Reclamadas)';
-              if (ref.status === 'ineligible') statusLabel = 'No califica / Cancelado';
-
-              const isPending = ref.status === 'purchased';
+              // Reclamado: lo que pagó el servidor. Si no, el estimado con la
+              // misma fórmula que claimReferralSecure.
+              const monedas = ref.status === 'claimed'
+                ? (ref.earnedCoins || 0)
+                : estimateReferralReward(ref.orderTotal);
 
               return (
                 <tr key={ref.id}>
                   <td>{d}</td>
                   <td><strong>{ref.referrerCode}</strong></td>
                   <td>{ref.orderId || '-'}</td>
-                  <td>{ref.orderTotal ? `S/ ${ref.orderTotal}` : '-'}</td>
-                  <td style={{ color: '#d35400', fontWeight: 'bold' }}>{monedasCalculadas > 0 ? monedasCalculadas : 0}</td>
-                  <td>{statusLabel}</td>
-                  <td>
-                    {isPending && (
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button 
-                          className={styles.btnApprove}
-                          onClick={() => aprobarRestriccion(ref.id, monedasCalculadas)}
-                          disabled={procesandoId === ref.id}
-                        >
-                          Aprobar
-                        </button>
-                        <button 
-                          className={styles.btnReject}
-                          onClick={() => rechazarRestriccion(ref.id)}
-                          disabled={procesandoId === ref.id}
-                        >
-                          Rechazar
-                        </button>
-                      </div>
-                    )}
+                  <td>{ref.orderTotal ? `S/ ${Number(ref.orderTotal).toFixed(2)}` : '-'}</td>
+                  <td style={{ color: '#d35400', fontWeight: 'bold' }}>
+                    {ref.orderId ? `${monedas}${ref.status === 'claimed' ? '' : ' (estimado)'}` : '-'}
                   </td>
+                  <td>{ETIQUETAS[ref.status] || ref.status}</td>
                 </tr>
               );
             })}

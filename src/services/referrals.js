@@ -2,8 +2,9 @@ import {
   collection, 
   addDoc, 
   updateDoc, 
-  doc, 
-  query, 
+  doc,
+  getDoc,
+  query,
   where, 
   getDocs, 
   serverTimestamp,
@@ -14,6 +15,37 @@ import { db } from './firebase/config';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const REFERRALS_COLLECTION = 'referrals';
+
+// El enlace que abrió ESTE navegador. Lo escribe ReferralTracker y lo lee el
+// checkout para mandarlo a prepareCheckoutPayment, que es quien decide si vale.
+export const REFERRAL_STORAGE_KEY = 'wala_referral';
+// Plazo para comprar desde que se abre el enlace (el servidor usa el mismo:
+// VENTANA_REFERIDO_MS en functions/referidosLogic.js).
+export const VENTANA_REFERIDO_MS = 36 * 60 * 60 * 1000;
+
+/** { referrerCode, referralId, timestamp } si el enlace abierto sigue vigente; si no, null. */
+export function leerReferidoGuardado() {
+  try {
+    const data = JSON.parse(localStorage.getItem(REFERRAL_STORAGE_KEY) || 'null');
+    if (!data?.referralId || !(Date.now() - data.timestamp < VENTANA_REFERIDO_MS)) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+export function guardarReferido(data) {
+  try {
+    localStorage.setItem(REFERRAL_STORAGE_KEY, JSON.stringify(data));
+  } catch { /* modo privado: la compra sale sin referido */ }
+}
+
+/** Tras una compra: un enlace = una compra, así que no se reutiliza. */
+export function olvidarReferido() {
+  try {
+    localStorage.removeItem(REFERRAL_STORAGE_KEY);
+  } catch { /* nada que limpiar */ }
+}
 
 /**
  * Estimado de cuántas monedas gana el referente por un pedido de este monto:
@@ -71,13 +103,20 @@ export async function createReferralShare(referrerCode) {
 export async function recordReferralClick(referrerCode, shareId = null) {
   try {
     if (shareId) {
-      // Actualizar doc existente
+      // Solo la PRIMERA apertura pasa el enlace a 'clicked': ahí empiezan las
+      // 36 h. Antes cada apertura reescribía el estado, así que volver a abrir
+      // un enlace ya comprado o reclamado lo devolvía a "Entró al link" y
+      // reiniciaba el plazo.
       const docRef = doc(db, REFERRALS_COLLECTION, shareId);
-      await updateDoc(docRef, {
-        status: 'clicked', // Etapa 2
-        clickedAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
+      const snap = await getDoc(docRef);
+      if (!snap.exists()) return { id: null, error: 'Enlace no encontrado' };
+      if (snap.data().status === 'sent') {
+        await updateDoc(docRef, {
+          status: 'clicked', // Etapa 2
+          clickedAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+      }
       return { id: shareId, error: null };
     }
 
@@ -93,23 +132,18 @@ export async function recordReferralClick(referrerCode, shareId = null) {
   }
 }
 
+// La compra ya NO la vincula el navegador (antes linkPurchaseToReferral escribía
+// status/orderId/orderTotal en cualquier referido). Ahora el checkout manda el
+// referralId a prepareCheckoutPayment y el servidor lo deja en el pedido y pasa
+// el referido a 'purchased' al crearse el pedido.
+
 /**
- * Vincula una compra finalizada con el flujo del referido
+ * Lo que compró la persona referida: productos, monto y etapa del pedido, sin
+ * datos suyos. Lo arma detalleReferidoSecure (functions/index.js).
  */
-export async function linkPurchaseToReferral(referralId, orderId, orderTotal) {
-  try {
-    const docRef = doc(db, REFERRALS_COLLECTION, referralId);
-    await updateDoc(docRef, {
-      status: 'purchased', // Etapa 3
-      orderId,
-      orderTotal,
-      purchasedAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-    return { error: null };
-  } catch (error) {
-    return { error: error.message };
-  }
+export async function getReferralOrderDetail(referralId) {
+  const result = await httpsCallable(getFunctions(), 'detalleReferidoSecure')({ referralId });
+  return result?.data || null;
 }
 
 /**
@@ -168,18 +202,22 @@ export async function getTopReferrersOfMonth() {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     
+    // Cuenta las monedas reclamadas este mes (claimedAt lo pone el servidor al
+    // pagar). Antes filtraba por completedAt, que solo ponía la aprobación del
+    // admin, y además pedía un índice compuesto que no existía: el ranking salía
+    // siempre vacío.
     const q = query(
       collection(db, REFERRALS_COLLECTION),
-      where('status', 'in', ['completed', 'claimed']),
-      where('completedAt', '>=', Timestamp.fromDate(startOfMonth))
+      where('claimedAt', '>=', Timestamp.fromDate(startOfMonth))
     );
-    
+
     const snapshot = await getDocs(q);
-    
+
     // Agrupar por código de referido
     const userStats = {};
     snapshot.docs.forEach(doc => {
       const data = doc.data();
+      if (data.status !== 'claimed') return;
       const code = data.referrerCode;
       if (!userStats[code]) {
         userStats[code] = { referrerCode: code, count: 0, coins: 0 };
