@@ -131,9 +131,10 @@ página.
   total). No va en etiqueta colgante: se confundía con "Combo · 2".
 - Combo sin foto: sus piezas como cartas (hoy se compone una imagen en canvas
   con `comboImageComposer`).
-- En el celular, como mucho dos etiquetas sobre la foto, por importancia:
-  descuento, Combo, Nuevo, Tu diseño (tres tapaban la foto). En escritorio,
-  todas.
+- En el celular, como mucho dos etiquetas sobre la foto y en tamaño chico,
+  por importancia: descuento, Combo, Nuevo, Tu diseño (tres tapaban la foto y
+  "Combo · 3" llegaba al corazón). Si "Nuevo" no entra, va junto a la
+  categoría: "COMBOS · NUEVO". En escritorio, todas en la foto.
 - Las tarjetas no muestran el "0" suelto de hoy (bug de abajo).
 
 ### Qué le falta al kit antes de migrar esta página

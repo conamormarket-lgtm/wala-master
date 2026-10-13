@@ -48,7 +48,9 @@ const ACCIONES = {
  *    ratón, qué trae. Si el combo no trae `imagen`, sus piezas van como cartas.
  *
  * Etiquetas de la foto, por importancia: descuento, Combo, Nuevo, Tu diseño.
- * En una tarjeta angosta (2 columnas del celular) solo se ven las dos primeras.
+ * En una tarjeta angosta (2 columnas del celular) van en tamaño chico (para no
+ * llegar al corazón) y solo las dos primeras; si "Nuevo" queda fuera, pasa a la
+ * línea de la categoría ("COMBOS · NUEVO").
  */
 export default function TarjetaProducto({
   imagen,
@@ -81,6 +83,10 @@ export default function TarjetaProducto({
   const descuento = precioAntes ? Math.round((1 - precio / precioAntes) * 100) : 0;
   const quedan = Number(stock) > 0 && Number(stock) <= STOCK_BAJO ? Number(stock) : 0;
   const esCombo = piezas.length > 0;
+  const tuDiseno = personalizable && !nuevo && !esCombo && descuento === 0;
+  // Con descuento y combo, "Nuevo" es la tercera etiqueta: en la tarjeta
+  // angosta no entra en la foto y pasa a la línea de la categoría.
+  const nuevoEnLinea = nuevo && descuento > 0 && esCombo;
   // Combo sin foto propia: sus piezas juntas (la tienda compone una imagen
   // con ellas; aquí van como cartas, cada una sobre su escenario).
   const collage = imagen ? [] : piezas.filter((pz) => pz.imagen).slice(0, 3);
@@ -144,7 +150,7 @@ export default function TarjetaProducto({
           {descuento > 0 && <Etiqueta tono="peligro" solida>-{descuento}%</Etiqueta>}
           {esCombo && <Etiqueta tono="violeta" solida>Combo · {piezas.length}</Etiqueta>}
           {nuevo && <Etiqueta tono="violeta" solida>Nuevo</Etiqueta>}
-          {personalizable && !nuevo && !esCombo && descuento === 0 && (
+          {tuDiseno && (
             <Etiqueta tono="violeta" solida icono={<Palette aria-label="Personalizable" />}><span className={s.badgeTexto}>Tu diseño</span></Etiqueta>
           )}
         </div>
@@ -214,7 +220,10 @@ export default function TarjetaProducto({
       </div>
 
       <div className={s.cuerpo}>
-        <p className={s.categoria}>{categoria || ' '}</p>
+        <p className={s.categoria}>
+          {categoria || ' '}
+          {nuevoEnLinea && <span className={s.nuevoEnLinea}>{categoria ? ' · ' : ''}Nuevo</span>}
+        </p>
         <h3 className={s.nombre}><Enlace to={url}>{nombre}</Enlace></h3>
 
         <p className={s.puntuacion}>

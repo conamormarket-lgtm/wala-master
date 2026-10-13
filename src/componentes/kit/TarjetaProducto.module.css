@@ -503,13 +503,23 @@
     display: none;
   }
 
-  /* Tres etiquetas tapaban la foto: solo las dos más importantes. */
+  /* Tres etiquetas tapaban la foto: solo las dos más importantes, en tamaño
+     chico (así "Combo · 3" no llega al corazón). "Nuevo" pasa a la línea de
+     la categoría (.nuevoEnLinea). */
   .badges {
     gap: 6px;
   }
 
+  .tarjeta .badges > * {
+    font-size: 0.6rem;
+  }
+
   .badges > :nth-child(n + 3) {
     display: none;
+  }
+
+  .categoria .nuevoEnLinea {
+    display: inline;
   }
 
   /* No caben junto al precio: los colores se eligen al agregar.
@@ -571,13 +581,22 @@
 
 .categoria {
   margin: 0;
+  overflow: hidden;
   height: 1.1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 0.66rem;
   font-weight: 700;
   line-height: 1.1rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--primary-color);
+}
+
+/* "Nuevo" junto a la categoría: solo en tarjetas angostas (ver arriba). */
+.nuevoEnLinea {
+  display: none;
+  color: var(--violet-500, #8b5cf6);
 }
 
 .nombre {
