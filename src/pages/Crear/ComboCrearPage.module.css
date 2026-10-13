@@ -448,3 +448,51 @@
   background: #f5f4f8;
   border-radius: 10px;
 }
+
+/* Combo de la comunidad: aviso con "Personalizar". */
+.plantillaAviso {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 14px;
+  background: var(--primary-light, #f5f3ff);
+  border: 1.5px solid var(--violet-200, #ddd6fe);
+  color: var(--gris-texto-principal);
+  font-size: 0.88rem;
+}
+
+.plantillaAviso > span {
+  flex: 1;
+  min-width: 200px;
+}
+
+.plantillaAviso > svg {
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+/* "Mi combo" guardado (y publicar en la comunidad, para el admin). */
+.miCombo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  margin-top: 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #15803d;
+}
+
+.miCombo > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+:global([data-theme="dark"]) .plantillaAviso {
+  border-color: rgba(167, 139, 250, 0.35);
+  background: rgba(139, 92, 246, 0.12);
+}

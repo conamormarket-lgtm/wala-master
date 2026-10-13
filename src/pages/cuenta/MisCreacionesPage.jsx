@@ -7,6 +7,8 @@ import { usePedidos } from '../../hooks/usePedidos';
 import MiCreacionCard, { MiCreacionCardSkeleton, fechaDeCreacion } from './components/MiCreacionCard';
 import { useEliminarCreacion } from '../Crear/useEliminarCreacion';
 import TusBorradores, { useBorradoresCrear } from '../Crear/TusBorradores';
+import TarjetaMiCombo from '../Crear/TarjetaMiCombo';
+import { esMiCombo, eliminarMiCombo, agruparCombos } from '../../services/misCombos';
 import styles from './MisCreacionesPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -51,10 +53,16 @@ const MisCreacionesPage = () => {
 
   // La más reciente primero. getDesignsByUser ordena por updatedAt, pero las
   // creaciones antiguas no tienen esa fecha bien guardada (ver fechaDeCreacion).
+  // Cada combo es UNA tarjeta: sus prendas no se repiten sueltas.
   const ordenados = useMemo(
-    () => [...designs].sort((a, b) => (fechaDeCreacion(b) || 0) - (fechaDeCreacion(a) || 0)),
+    () => agruparCombos(designs).sort((a, b) => (fechaDeCreacion(b) || 0) - (fechaDeCreacion(a) || 0)),
     [designs]
   );
+  const quitarCombo = async (combo) => {
+    if (!window.confirm(`¿Quitar el combo "${combo.name || 'Mi combo'}"? Sus prendas siguen en tus creaciones.`)) return;
+    const { error: err } = await eliminarMiCombo(combo.id);
+    if (!err) setDesigns((prev) => prev.filter((x) => x.id !== combo.id));
+  };
 
   const purchasedDesignIds = useMemo(() => {
     const ids = new Set();
@@ -70,7 +78,7 @@ const MisCreacionesPage = () => {
 
   if (!user) return null;
 
-  const cantidad = designs.length;
+  const cantidad = ordenados.length;
   const hayBorradores = borradores.length > 0;
 
   return (
@@ -131,7 +139,15 @@ const MisCreacionesPage = () => {
             </div>
           )}
           <ul className={styles.grid}>
-            {ordenados.map((d) => (
+            {ordenados.map((d) => (esMiCombo(d) ? (
+              <TarjetaMiCombo
+                key={d.id}
+                design={d}
+                onEliminar={quitarCombo}
+                onRenombrado={(id, nuevo) => setDesigns((prev) => prev.map((x) => (x.id === id ? { ...x, name: nuevo } : x)))}
+                onComunidad={(id, estado) => setDesigns((prev) => prev.map((x) => (x.id === id ? { ...x, comunidad: estado } : x)))}
+              />
+            ) : (
               <MiCreacionCard
                 key={d.id}
                 design={d}
@@ -140,7 +156,7 @@ const MisCreacionesPage = () => {
                 onRenombrado={(id, nuevo) => setDesigns((prev) => prev.map((x) => (x.id === id ? { ...x, name: nuevo } : x)))}
                 onComunidad={(id, estado) => setDesigns((prev) => prev.map((x) => (x.id === id ? { ...x, comunidad: estado } : x)))}
               />
-            ))}
+            )))}
           </ul>
         </section>
       )}

@@ -145,4 +145,51 @@ check("prenda disponible", () => {
   assert.strictEqual(c.prendaDisponible(null), false);
 });
 
+const miCombo = (extra = {}) => ({
+  id: "mc1", userId: "admin1", tipo: "comboCrear", comboId: "pareja", comboNombre: "Pareja · Polera",
+  name: "Moteros", piezas: [{ designId: "d1" }, { designId: "d2" }], ...extra,
+});
+
+check("combo: se publica con todas sus piezas, cada una sin datos del autor", () => {
+  const piezas = [diseno(), diseno({ id: "d2", name: "Él" })];
+  assert.strictEqual(c.motivoNoPublicableCombo(miCombo(), piezas, "admin1"), null);
+  const d = c.datosPublicacionCombo(miCombo(), piezas, {}, { autorUid: "admin1" });
+  assert.strictEqual(d.tipo, "combo");
+  assert.strictEqual(d.comboId, "pareja");
+  assert.strictEqual(d.nombre, "Moteros");
+  assert.strictEqual(d.piezas.length, 2);
+  assert.strictEqual(d.piezas[1].nombre, "Él");
+  assert.ok(!("autorUid" in d.piezas[0]) && !("origenDesignId" in d.piezas[0]));
+  assert.strictEqual(d.productId, "polo");
+});
+
+check("combo: no se publica ajeno, incompleto ni con piezas sin guardar", () => {
+  const piezas = [diseno(), diseno({ id: "d2" })];
+  assert.ok(c.motivoNoPublicableCombo(miCombo({ userId: "otro" }), piezas, "admin1"));
+  assert.ok(c.motivoNoPublicableCombo(miCombo(), [diseno()], "admin1"));
+  assert.ok(/Prenda 2/.test(c.motivoNoPublicableCombo(miCombo(), [diseno(), diseno({ estado: "borrador" })], "admin1")));
+  assert.ok(c.motivoNoPublicableCombo(null, [], "admin1"));
+});
+
+check("combo: la galería lo serializa con sus piezas y capas solo al abrirlo", () => {
+  const pub = c.datosPublicacionCombo(miCombo(), [diseno(), diseno({ id: "d2" })], {}, { autorUid: "admin1" });
+  const lista = c.serializarPublica("mc1", pub);
+  assert.strictEqual(lista.tipo, "combo");
+  assert.strictEqual(lista.piezas.length, 2);
+  assert.ok(!("layersByView" in lista.piezas[0]));
+  assert.ok("layersByView" in c.serializarPublica("mc1", pub, { conCapas: true }).piezas[0]);
+  assert.ok(!("tipo" in c.serializarPublica("d1", c.datosPublicacion(diseno(), {}, { autorUid: "a" }))));
+});
+
+check("combo: solo se muestra si todas sus prendas y el combo están a la venta", () => {
+  const pub = { tipo: "combo", comboId: "pareja", productId: "polo", piezas: [{ productId: "polo" }, { productId: "polera" }] };
+  assert.deepStrictEqual(c.dependenciasPublicacion(pub), { prendas: ["polo", "polera"], combo: "pareja" });
+  assert.strictEqual(c.publicacionVisible(pub, new Set(["polo", "polera"]), new Set(["pareja"])), true);
+  assert.strictEqual(c.publicacionVisible(pub, new Set(["polo"]), new Set(["pareja"])), false);
+  assert.strictEqual(c.publicacionVisible(pub, new Set(["polo", "polera"]), new Set()), false);
+  assert.strictEqual(c.publicacionVisible({ productId: "polo" }, new Set(["polo"]), new Set()), true);
+  assert.strictEqual(c.comboDisponible({ esComboCrear: true, comboCrear: { publicado: true } }), true);
+  assert.strictEqual(c.comboDisponible({ esComboCrear: true, deleted: true, comboCrear: { publicado: true } }), false);
+});
+
 console.log(`comunidadLogic: ${count} tests OK`);

@@ -15,7 +15,7 @@ export const usePuedePublicar = (design) => {
   const { user, isAdmin, adminPermissions } = useAuth();
   return Boolean(
     user && isAdmin && (adminPermissions || []).some((p) => PERMISOS.includes(p))
-    && design?.tipo === 'crear' && design.userId === user.uid && design.estado !== 'borrador'
+    && ['crear', 'comboCrear'].includes(design?.tipo) && design.userId === user.uid && design.estado !== 'borrador'
   );
 };
 

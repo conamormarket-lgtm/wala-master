@@ -29,7 +29,7 @@ import {
 import RecorteImagen from './RecorteImagen';
 import QuitarFondo from './QuitarFondo';
 import { itemDeCreacion } from './creacionCarrito';
-import { ponerPieza, leerArmado } from './comboCrear';
+import { ponerPieza, leerArmado, leerMetaArmado } from './comboCrear';
 import { getComboCrear } from '../../services/combosCrear';
 import AtajosTeclado, { MOD } from './AtajosTeclado';
 import CapaModal from './CapaModal';
@@ -142,6 +142,8 @@ const CrearStudioPage = () => {
   // Diseño de la comunidad de punto de partida (/crear/:id?plantilla=X): se
   // abre como un diseño nuevo y al guardarlo es una creación propia.
   const plantillaParam = searchParams.get('plantilla');
+  // En un combo de la comunidad, qué pieza de la publicación usa esta prenda.
+  const plantillaPiezaParam = Number(searchParams.get('plantillaPieza')) || 0;
   // Pieza de un combo (/crear/:id?combo=X&pieza=N): al terminar vuelve al
   // combo en vez de ir al carrito. Con &copiar=Y empieza con el diseño de
   // otra pieza (una creación del cliente), como nuevo.
@@ -158,7 +160,8 @@ const CrearStudioPage = () => {
   // Las otras piezas del combo que son esta misma prenda y siguen sin diseño:
   // con un clic llevan el mismo (en una pareja de poleras, la otra polera).
   const otrasIguales = (() => {
-    if (!enCombo || !comboActual) return [];
+    // Un combo de la comunidad trae un diseño para cada pieza: no se copia encima.
+    if (!enCombo || !comboActual || leerMetaArmado(comboParam).plantilla) return [];
     const armado = leerArmado(comboParam, comboActual.piezas.length);
     return comboActual.piezas
       .map((p, i) => ({ ...p, i }))
@@ -522,12 +525,14 @@ const CrearStudioPage = () => {
           plantilla = await obtenerDisenoComunidad(plantillaParam);
         } catch { /* sin red: se empieza de cero */ }
         if (cancelado) return undefined;
-        if (plantilla && plantilla.productId === id) {
-          const capas = plantilla.layersByView || {};
-          const colorPlantilla = cfg.colores.find((c) => c.id === plantilla.color?.id || c.nombre === plantilla.color?.nombre);
+        // Un combo de la comunidad trae una pieza por prenda: se usa la de esta.
+        const fuente = plantilla?.tipo === 'combo' ? plantilla.piezas?.[plantillaPiezaParam] : plantilla;
+        if (fuente && fuente.productId === id) {
+          const capas = fuente.layersByView || {};
+          const colorPlantilla = cfg.colores.find((c) => c.id === fuente.color?.id || c.nombre === fuente.color?.nombre);
           const primeraZona = Object.keys(capas)[0];
           const vistaDeZona = vistasDelColor(cfg.vistas, colorPlantilla).find((v) => v.zonas.some((z) => z.id === primeraZona));
-          setNombre(plantilla.nombre || '');
+          setNombre(fuente.nombre || '');
           return aplicar({ capasPorZona: capas, vistaId: vistaDeZona?.id, zonaId: primeraZona, colorId: colorPlantilla?.id });
         }
         basadoEnRef.current = null;
@@ -536,7 +541,7 @@ const CrearStudioPage = () => {
       return aplicar(borrador);
     })();
     return () => { cancelado = true; };
-  }, [cfgPrenda, listo, authLoading, designIdParam, plantillaParam, copiarParam, user, id]);
+  }, [cfgPrenda, listo, authLoading, designIdParam, plantillaParam, plantillaPiezaParam, copiarParam, user, id]);
 
   // Las fuentes del selector se cargan en segundo plano para la vista previa.
   useEffect(() => { FUENTES.forEach((f) => { asegurarFuente(f); }); }, []);
@@ -2127,6 +2132,38 @@ const CrearStudioPage = () => {
     }
   };
 
+  /**
+   * Pestañas "Prenda 1 · Prenda 2": pasar a otra pieza del combo sin volver
+   * a la página del combo. Lo de esta pieza se guarda antes (si tiene diseño)
+   * y la otra se abre con lo suyo: su creación, el diseño de la comunidad que
+   * le toca o en blanco. Recarga la página para abrir el estudio limpio.
+   */
+  const irAPieza = async (j) => {
+    if (!enCombo || !comboActual || j === piezaParam || procesando) return;
+    try {
+      if (zonasUsadas.length) {
+        if (!validar()) return;
+        let idPieza = designIdRef.current;
+        if (!idPieza || esBorradorRef.current || hayCambios) idPieza = (await guardarCreacion(nombre, talla)).id;
+        ponerEnCombo(idPieza);
+      }
+    } catch (err) {
+      toast.error(`No pudimos guardar esta prenda: ${err?.message || err}`);
+      setProcesando(null);
+      return;
+    }
+    const armado = leerArmado(comboParam, comboActual.piezas.length);
+    const { plantilla } = leerMetaArmado(comboParam);
+    const destino = armado[j]?.designId;
+    // Si otra pieza lleva el mismo diseño, se edita una copia (no cambia la otra).
+    const compartido = destino && armado.some((a, k) => k !== j && a.designId === destino);
+    let url = `/crear/${comboActual.piezas[j].prendaId}?combo=${encodeURIComponent(comboParam)}&pieza=${j}`;
+    if (destino) url += compartido ? `&copiar=${destino}` : `&designId=${destino}`;
+    else if (plantilla) url += `&plantilla=${plantilla}&plantillaPieza=${j}`;
+    try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
+    window.location.assign(url);
+  };
+
   const comprar = async (tallaElegida) => {
     setPidiendoTalla(false);
     setTalla(tallaElegida);
@@ -2480,6 +2517,27 @@ const CrearStudioPage = () => {
           </Link>
         )}
       </div>
+
+      {enCombo && comboActual?.piezas?.length > 1 && (
+        <nav className={styles.piezasCombo} aria-label="Prendas del combo">
+          <span className={styles.piezasComboTitulo}>{comboActual.name}</span>
+          <div className={styles.piezasComboTabs} role="tablist">
+            {comboActual.piezas.map((p, j) => (
+              <button
+                key={j}
+                type="button"
+                role="tab"
+                aria-selected={j === piezaParam}
+                className={`${styles.piezaComboTab} ${j === piezaParam ? styles.piezaComboTabActiva : ''}`}
+                onClick={() => irAPieza(j)}
+                disabled={!!procesando}
+              >
+                Prenda {j + 1}
+              </button>
+            ))}
+          </div>
+        </nav>
+      )}
 
       {designId && (
         <div className={styles.editando}>

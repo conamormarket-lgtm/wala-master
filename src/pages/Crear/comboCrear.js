@@ -6,29 +6,43 @@ import { itemDeCreacion } from './creacionCarrito';
  * estudio de siempre y aquí se arman en una sola línea del carrito.
  *
  * Lo que lleva armado (qué creación y qué talla va en cada pieza) vive en
- * este navegador mientras va y viene del estudio: es un paso de compra, no
- * algo de su cuenta. Las creaciones sí quedan en su cuenta, como siempre.
+ * este navegador mientras va y viene del estudio. Junto a eso se guarda:
+ *   - miComboId: el "Mi combo" de su cuenta (services/misCombos.js), que se
+ *     crea en cuanto todas las piezas tienen diseño;
+ *   - plantilla: la publicación de la comunidad de la que partió (un combo),
+ *     para que cada pieza sin diseño propio arranque desde la suya.
  */
 const clave = (comboId) => `wala:combo-crear:${comboId}`;
 
 const piezaVacia = () => ({ designId: '', talla: '' });
 
+const leer = (comboId) => {
+  try { return JSON.parse(localStorage.getItem(clave(comboId)) || 'null') || {}; } catch { return {}; }
+};
+
+const escribir = (comboId, guardado) => {
+  try { localStorage.setItem(clave(comboId), JSON.stringify(guardado)); } catch { /* sin almacenamiento */ }
+};
+
 export const leerArmado = (comboId, cantidadPiezas) => {
-  let guardado = null;
-  try { guardado = JSON.parse(localStorage.getItem(clave(comboId)) || 'null'); } catch { /* sin almacenamiento */ }
-  const piezas = Array.isArray(guardado?.piezas) ? guardado.piezas : [];
+  const piezas = Array.isArray(leer(comboId).piezas) ? leer(comboId).piezas : [];
   return Array.from({ length: cantidadPiezas }, (_, i) => ({ ...piezaVacia(), ...(piezas[i] || {}) }));
 };
 
-export const guardarArmado = (comboId, piezas) => {
-  try { localStorage.setItem(clave(comboId), JSON.stringify({ piezas })); } catch { /* sin almacenamiento */ }
+export const guardarArmado = (comboId, piezas) => escribir(comboId, { ...leer(comboId), piezas });
+
+/** { miComboId, plantilla } del armado de este combo. */
+export const leerMetaArmado = (comboId) => {
+  const { miComboId = '', plantilla = '' } = leer(comboId);
+  return { miComboId, plantilla };
 };
+
+export const guardarMetaArmado = (comboId, cambios) => escribir(comboId, { ...leer(comboId), ...cambios });
 
 /** Pone (o cambia) lo que lleva una pieza. Lo usa el estudio al volver. */
 export const ponerPieza = (comboId, indice, cambios) => {
-  let guardado = null;
-  try { guardado = JSON.parse(localStorage.getItem(clave(comboId)) || 'null'); } catch { /* sin almacenamiento */ }
-  const piezas = Array.isArray(guardado?.piezas) ? [...guardado.piezas] : [];
+  const guardado = leer(comboId);
+  const piezas = Array.isArray(guardado.piezas) ? [...guardado.piezas] : [];
   while (piezas.length <= indice) piezas.push(piezaVacia());
   piezas[indice] = { ...piezaVacia(), ...piezas[indice], ...cambios };
   guardarArmado(comboId, piezas);

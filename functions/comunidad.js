@@ -7,7 +7,8 @@
  * así que el permiso de admin se comprueba en el servidor y la galería se
  * lee también desde aquí, sin depender de las reglas vivas.
  *
- *   publicarEnComunidad({ designId })     admin · publica o actualiza
+ *   publicarEnComunidad({ designId })     admin · publica o actualiza (una
+ *                                         creación, o "Mi combo" entero)
  *   retirarDeComunidad({ designId })      admin · la oculta (no borra archivos)
  *   listarComunidad()                     público · la galería
  *   obtenerDisenoComunidad({ id })        público · una, con sus capas
@@ -107,13 +108,23 @@ exports.publicarEnComunidad = functions
     const disenoRef = db().collection("designs").doc(designId);
     const snap = await disenoRef.get();
     const diseno = snap.exists ? { id: snap.id, ...snap.data() } : null;
-    const motivo = c.motivoNoPublicable(diseno, uid);
+    // "Mi combo": se publican juntas todas sus piezas (una creación cada una).
+    const esCombo = diseno && diseno.tipo === "comboCrear";
+    let piezas = [];
+    if (esCombo) {
+      const ids = (diseno.piezas || []).map((p) => idValido(p && p.designId));
+      if (ids.some((id) => !id)) throw new functions.https.HttpsError("failed-precondition", "Al combo le falta alguna prenda.");
+      const snaps = await db().getAll(...ids.map((id) => db().collection("designs").doc(id)));
+      piezas = snaps.map((s) => (s.exists ? { id: s.id, ...s.data() } : null));
+      if (piezas.some((p) => !p)) throw new functions.https.HttpsError("failed-precondition", "Al combo le falta alguna prenda.");
+    }
+    const motivo = esCombo ? c.motivoNoPublicableCombo(diseno, piezas, uid) : c.motivoNoPublicable(diseno, uid);
     if (motivo) throw new functions.https.HttpsError("failed-precondition", motivo);
 
     const mapa = {};
     try {
-      for (const url of c.urlsACopiar(diseno, uid)) {
-        mapa[url] = await copiarArchivo(designId, url);
+      for (const url of (esCombo ? piezas : [diseno]).flatMap((d) => c.urlsACopiar(d, uid))) {
+        if (!mapa[url]) mapa[url] = await copiarArchivo(designId, url);
       }
     } catch (e) {
       console.error("publicarEnComunidad: no se pudo copiar un archivo:", e && e.message);
@@ -125,7 +136,9 @@ exports.publicarEnComunidad = functions
 
     const pubRef = db().collection(c.COLECCION).doc(designId);
     const previa = await pubRef.get();
-    const datos = c.datosPublicacion(diseno, mapa, { autorUid: uid, autorNombre: "Walá" });
+    const datos = esCombo
+      ? c.datosPublicacionCombo(diseno, piezas, mapa, { autorUid: uid, autorNombre: "Walá" })
+      : c.datosPublicacion(diseno, mapa, { autorUid: uid, autorNombre: "Walá" });
     await pubRef.set({
       ...datos,
       estado: "publicada",
@@ -167,14 +180,18 @@ exports.listarComunidad = functions.https.onCall(async (data) => {
     }
     const snap = await db().collection(c.COLECCION).where("estado", "==", "publicada").limit(300).get();
     const pubs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    // Solo las de prendas que hoy se pueden diseñar.
-    const prendaIds = [...new Set(pubs.map((p) => p.productId).filter(Boolean))];
-    const prendas = prendaIds.length
-      ? await db().getAll(...prendaIds.map((id) => db().collection("productos_wala").doc(id)))
-      : [];
-    const disponibles = new Set(prendas.filter((p) => p.exists && c.prendaDisponible(p.data())).map((p) => p.id));
+    // Solo las de prendas que hoy se pueden diseñar (y, los combos, que se venden).
+    const deps = pubs.map(c.dependenciasPublicacion);
+    const prendaIds = [...new Set(deps.flatMap((d) => d.prendas))];
+    const comboIds = [...new Set(deps.map((d) => d.combo).filter(Boolean))];
+    const [prendas, combos] = await Promise.all([
+      prendaIds.length ? db().getAll(...prendaIds.map((id) => db().collection("productos_wala").doc(id))) : [],
+      comboIds.length ? db().getAll(...comboIds.map((id) => db().collection("productos_wala").doc(id))) : [],
+    ]);
+    const prendasOk = new Set(prendas.filter((p) => p.exists && c.prendaDisponible(p.data())).map((p) => p.id));
+    const combosOk = new Set(combos.filter((p) => p.exists && c.comboDisponible(p.data())).map((p) => p.id));
     const disenos = c.ordenarGaleria(
-      pubs.filter((p) => disponibles.has(p.productId)).map((p) => c.serializarPublica(p.id, p))
+      pubs.filter((p) => c.publicacionVisible(p, prendasOk, combosOk)).map((p) => c.serializarPublica(p.id, p))
     );
     cacheGaleria = { en: Date.now(), version, disenos };
     return { disenos };

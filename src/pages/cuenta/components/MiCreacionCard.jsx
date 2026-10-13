@@ -47,7 +47,7 @@ export const fechaDeCreacion = (design) => {
 const relativo = new Intl.RelativeTimeFormat('es', { numeric: 'auto' });
 
 /** "Guardada hoy", "Guardada ayer", "Guardada hace 3 días"… */
-const guardadaHace = (ms) => {
+export const guardadaHace = (ms) => {
   const dias = Math.round((Date.now() - ms) / 86400000);
   if (dias < 30) return `Guardada ${relativo.format(-dias, 'day')}`;
   const meses = Math.round(dias / 30);

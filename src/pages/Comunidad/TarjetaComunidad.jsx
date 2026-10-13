@@ -6,6 +6,7 @@ import { listarComunidad } from '../../services/comunidad';
 import { fondoColorGuardado } from '../../utils/prendaBase';
 import { useAlternarFotos } from '../../hooks/useAlternarFotos';
 import styles from '../cuenta/MisCreacionesPage.module.css';
+import duo from '../Crear/TarjetaMiCombo.module.css';
 import propios from './Comunidad.module.css';
 
 /** La galería (pública, sin sesión). Cambia poco: un minuto de caché. */
@@ -15,8 +16,13 @@ export const useComunidad = () => useQuery({
   staleTime: 60 * 1000,
 });
 
-/** Abre el estudio con este diseño de punto de partida. */
-export const urlUsarDiseno = (d) => `/crear/${d.productId}?plantilla=${d.id}`;
+/**
+ * Abre el estudio con este diseño de punto de partida. Un combo abre su
+ * página con todas sus prendas ya diseñadas, para personalizarlas.
+ */
+export const urlUsarDiseno = (d) => (d.tipo === 'combo'
+  ? `/combo/${d.comboId}?plantilla=${d.id}`
+  : `/crear/${d.productId}?plantilla=${d.id}`);
 
 /**
  * Tarjeta de un diseño de la comunidad: el mismo lenguaje que las de Mis
@@ -32,12 +38,20 @@ const TarjetaComunidad = ({ diseno }) => {
   const lados = previas.map((p) => p.nombre).filter(Boolean);
   const color = diseno.color?.nombre ? diseno.color : null;
   const url = urlUsarDiseno(diseno);
+  const esCombo = diseno.tipo === 'combo';
+  const fotosCombo = esCombo
+    ? (diseno.piezas || []).map((p) => p.vistasPrevias?.[0]?.url || p.imagenConjunta || p.previewUrl).filter(Boolean)
+    : [];
 
   return (
     <li className={styles.card}>
       <div ref={mediaRef} className={`${styles.media} ${verEspalda ? styles.mediaEspalda : ''}`}>
         <Link to={url} className={styles.foto} aria-label={`Usar el diseño ${diseno.nombre}`}>
-          {frente ? (
+          {esCombo && fotosCombo.length ? (
+            <span className={duo.prendas} style={{ '--n': fotosCombo.length }}>
+              {fotosCombo.map((src, i) => <img key={`${src}-${i}`} src={src} alt="" loading="lazy" />)}
+            </span>
+          ) : frente ? (
             <>
               <img src={frente} alt={diseno.nombre} className={styles.fotoFrente} loading="lazy" />
               {espalda && <img src={espalda} alt="" aria-hidden="true" className={styles.fotoEspalda} loading="lazy" />}
@@ -46,13 +60,20 @@ const TarjetaComunidad = ({ diseno }) => {
             <span className={styles.fotoVacia}><ImageOff size={34} aria-hidden="true" /></span>
           )}
         </Link>
-        {frente && espalda && (
+        {esCombo && (
+          <div className={styles.insignias}>
+            <span className={duo.insignia}>
+              <Users size={12} strokeWidth={2.5} aria-hidden="true" /> Combo · {(diseno.piezas || []).length} prendas
+            </span>
+          </div>
+        )}
+        {!esCombo && frente && espalda && (
           <span className={styles.puntosFoto} aria-hidden="true">
             <span className={`${styles.puntoFoto} ${!verEspalda ? styles.puntoFotoActivo : ''}`} />
             <span className={`${styles.puntoFoto} ${verEspalda ? styles.puntoFotoActivo : ''}`} />
           </span>
         )}
-        {lados.length > 0 && (
+        {!esCombo && lados.length > 0 && (
           <span className={styles.lados} title="Lados con diseño">{lados.join(' + ')}</span>
         )}
       </div>
@@ -64,7 +85,7 @@ const TarjetaComunidad = ({ diseno }) => {
             <span className={styles.puntoColor} style={{ background: fondoColorGuardado(color) }} aria-hidden="true" />
           )}
           <span className={styles.prendaTexto}>
-            {[diseno.productName, color?.nombre].filter(Boolean).join(' · ')}
+            {esCombo ? diseno.comboNombre || diseno.productName : [diseno.productName, color?.nombre].filter(Boolean).join(' · ')}
           </span>
         </p>
         {diseno.usos > 0 && (

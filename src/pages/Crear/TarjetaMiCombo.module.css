@@ -1,0 +1,39 @@
+/* "Mi combo" y combos de la comunidad: las prendas juntas, un poco superpuestas. */
+.prendas {
+  position: absolute;
+  inset: 8% 4%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.prendas img {
+  width: calc(100% / var(--n, 2) + 12%);
+  max-height: 100%;
+  object-fit: contain;
+  margin-left: -9%;
+  transition: transform var(--dur-media, 320ms) ease;
+}
+
+.prendas img:first-child {
+  margin-left: 0;
+}
+
+@media (hover: hover) {
+  a:hover .prendas img:nth-child(odd) { transform: rotate(-3deg); }
+  a:hover .prendas img:nth-child(even) { transform: rotate(3deg); }
+}
+
+.insignia {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  max-width: 100%;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+  background: #ede9fe;
+  color: #6d28d9;
+}

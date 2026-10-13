@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useQueries, useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Paintbrush, Images, Copy, Pencil, X, ShoppingBag, Loader2, CheckCircle2, Users } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Paintbrush, Images, Copy, Pencil, X, ShoppingBag, Loader2, CheckCircle2, Users, Sparkles } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
@@ -10,7 +10,10 @@ import { getPrendaBase } from '../../services/prendasBase';
 import { getDesignById, getDesignsByUser } from '../../services/designs';
 import { leerPrendaBase, tallasDeColor } from '../../utils/prendaBase';
 import { creacionLista } from './creacionCarrito';
-import { leerArmado, guardarArmado, olvidarArmado, preciosDeCombo, itemDeCombo } from './comboCrear';
+import { leerArmado, guardarArmado, olvidarArmado, preciosDeCombo, itemDeCombo, leerMetaArmado, guardarMetaArmado } from './comboCrear';
+import { guardarMiCombo } from '../../services/misCombos';
+import { obtenerDisenoComunidad } from '../../services/comunidad';
+import AccionesComunidad from '../Comunidad/AccionesComunidad';
 import CapaModal from './CapaModal';
 import { EtiquetaColgante } from '../../componentes/kit/Marca';
 import styles from './ComboCrearPage.module.css';
@@ -37,7 +40,12 @@ const ComboCrearPage = () => {
   const { user, isAdmin } = useAuth();
   const { addToCart } = useCart();
   const toast = useGlobalToast();
+  const queryClient = useQueryClient();
   const [eligiendo, setEligiendo] = useState(null);
+  // ?mio=X abre un "Mi combo" de la cuenta; ?plantilla=Y, un combo de la comunidad.
+  const [params, setParams] = useSearchParams();
+  const mioParam = params.get('mio');
+  const plantillaParam = params.get('plantilla');
 
   const { data: combo, isLoading, isError: errorCombo } = useQuery({
     queryKey: ['combo-crear', id],
@@ -62,13 +70,59 @@ const ComboCrearPage = () => {
   const prendas = prendasQ.map((q) => q.data || null);
 
   const [armado, setArmado] = useState([]);
+  const [meta, setMeta] = useState({ miComboId: '', plantilla: '' });
   useEffect(() => {
-    if (piezasCombo.length) setArmado(leerArmado(id, piezasCombo.length));
-  }, [id, piezasCombo.length]);
+    if (!piezasCombo.length) return;
+    // Un combo de la comunidad nuevo empieza limpio (las creaciones que ya
+    // hizo siguen en su cuenta).
+    if (plantillaParam && plantillaParam !== leerMetaArmado(id).plantilla) {
+      olvidarArmado(id);
+      guardarMetaArmado(id, { plantilla: plantillaParam });
+    }
+    setArmado(leerArmado(id, piezasCombo.length));
+    setMeta(leerMetaArmado(id));
+  }, [id, piezasCombo.length, plantillaParam]);
   const cambiarArmado = (siguiente) => {
     setArmado(siguiente);
     guardarArmado(id, siguiente);
   };
+
+  // "Mi combo" abierto desde Mis creaciones: sus piezas y tallas pasan al armado.
+  useEffect(() => {
+    if (!mioParam || !user || !piezasCombo.length) return;
+    let cancelado = false;
+    (async () => {
+      const { data } = await getDesignById(mioParam);
+      if (cancelado) return;
+      if (data && data.tipo === 'comboCrear' && data.userId === user.uid && data.comboId === id) {
+        const siguiente = Array.from({ length: piezasCombo.length }, (_, i) => ({
+          designId: data.piezas?.[i]?.designId || '',
+          talla: data.piezas?.[i]?.talla || '',
+        }));
+        olvidarArmado(id);
+        guardarArmado(id, siguiente);
+        guardarMetaArmado(id, { miComboId: mioParam, plantilla: '' });
+        setArmado(siguiente);
+        setMeta({ miComboId: mioParam, plantilla: '' });
+      }
+      const sin = new URLSearchParams(params);
+      sin.delete('mio');
+      setParams(sin, { replace: true });
+    })();
+    return () => { cancelado = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mioParam, user?.uid, id, piezasCombo.length]);
+
+  // El combo de la comunidad del que partió: cada pieza sin diseño propio
+  // muestra el suyo y se personaliza desde ahí.
+  const { data: plantillaCombo } = useQuery({
+    queryKey: ['comunidad-diseno', meta.plantilla],
+    enabled: Boolean(meta.plantilla),
+    queryFn: async () => {
+      const d = await obtenerDisenoComunidad(meta.plantilla);
+      return d && d.tipo === 'combo' && d.comboId === id ? d : null;
+    },
+  });
 
   const creacionesQ = useQueries({
     queries: armado.map((a) => ({
@@ -91,11 +145,45 @@ const ComboCrearPage = () => {
     enabled: Boolean(user),
     queryFn: async () => {
       const { data } = await getDesignsByUser(user.uid);
-      return (data || []).filter((d) => d.tipo === 'crear');
+      // Igual que Crear (misma clave de caché): creaciones y "Mis combos".
+      return (data || []).filter((d) => d.tipo === 'crear' || d.tipo === 'comboCrear');
     },
   });
 
   const { precio, sueltas, ahorro } = combo ? preciosDeCombo(combo, prendas) : { precio: 0, sueltas: 0, ahorro: 0 };
+
+  // En cuanto todas las piezas tienen diseño, el combo se guarda en la cuenta
+  // como UNA creación ("Mi combo") y se mantiene al día con cada cambio.
+  const todasConDiseno = Boolean(user && combo && armado.length && armado.every((a, i) => a.designId && creaciones[i]));
+  const firmaArmado = armado.map((a) => `${a.designId}:${a.talla}`).join('|');
+  const firmaGuardadaRef = useRef('');
+  const guardandoComboRef = useRef(false);
+  useEffect(() => {
+    if (!todasConDiseno || guardandoComboRef.current || firmaArmado === firmaGuardadaRef.current) return;
+    guardandoComboRef.current = true;
+    firmaGuardadaRef.current = firmaArmado;
+    guardarMiCombo(user.uid, { id: meta.miComboId || undefined, combo, piezas: armado, creaciones })
+      .then(({ id: guardadoId, error }) => {
+        if (error) { firmaGuardadaRef.current = ''; return; }
+        if (guardadoId && guardadoId !== meta.miComboId) {
+          guardarMetaArmado(id, { miComboId: guardadoId });
+          setMeta((m) => ({ ...m, miComboId: guardadoId }));
+        }
+        queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'], refetchType: 'all' });
+        queryClient.invalidateQueries({ queryKey: ['creacion', guardadoId] });
+      })
+      .finally(() => { guardandoComboRef.current = false; });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [todasConDiseno, firmaArmado]);
+
+  const { data: miCombo } = useQuery({
+    queryKey: ['creacion', meta.miComboId, user?.uid],
+    enabled: Boolean(user && meta.miComboId),
+    queryFn: async () => {
+      const { data } = await getDesignById(meta.miComboId);
+      return data ? { id: meta.miComboId, ...data } : null;
+    },
+  });
 
   if (isLoading || prendasQ.some((q) => q.isLoading)) {
     return (
@@ -134,12 +222,17 @@ const ComboCrearPage = () => {
 
   const piezas = armado.map((a, i) => {
     const creacion = creaciones[i];
+    // Diseño de la comunidad para esta pieza (si todavía no tiene uno propio).
+    const dePlantilla = plantillaCombo?.piezas?.[i];
+    const plantilla = !a.designId && dePlantilla?.productId === piezasCombo[i]?.prendaId ? dePlantilla : null;
     const tallas = tallasPara(prendas[i], creacion);
     const talla = tallas.includes(a.talla) ? a.talla
       : tallas.includes(creacion?.variant?.size) ? creacion.variant.size : '';
     const cargando = Boolean(a.designId && creacionesQ[i]?.isLoading);
-    return { ...a, i, prenda: prendas[i], creacion, tallas, talla, cargando, lista: Boolean(creacion && creacionLista(creacion)) };
+    return { ...a, i, prenda: prendas[i], creacion, plantilla, tallas, talla, cargando, lista: Boolean(creacion && creacionLista(creacion)) };
   });
+  const urlPlantilla = (i) => urlEstudio(i, `&plantilla=${meta.plantilla}&plantillaPieza=${i}`);
+  const pendientePlantilla = piezas.find((p) => p.plantilla);
   const listas = piezas.filter((p) => p.lista && (!p.tallas.length || p.talla)).length;
   const completo = piezas.length > 0 && listas === piezas.length;
 
@@ -180,7 +273,7 @@ const ComboCrearPage = () => {
   };
 
   const opcionesMias = eligiendo === null ? [] : misCreaciones.filter(
-    (c) => c.productId === piezasCombo[eligiendo]?.prendaId && c.estado !== 'borrador' && creacionLista(c)
+    (c) => c.tipo === 'crear' && c.productId === piezasCombo[eligiendo]?.prendaId && c.estado !== 'borrador' && creacionLista(c)
   );
 
   return (
@@ -195,6 +288,24 @@ const ComboCrearPage = () => {
           <h1 className={styles.titulo}>{combo.name}</h1>
           {combo.description && <p className={styles.descripcion}>{combo.description}</p>}
           {!combo.publicado && <span className={styles.borrador}>Borrador: solo lo ves tú</span>}
+          {pendientePlantilla && (
+            <div className={styles.plantillaAviso}>
+              <Sparkles size={16} aria-hidden="true" />
+              <span>Partes de <strong>{plantillaCombo.nombre}</strong>. Personaliza cada prenda (puedes dejarla tal cual) y elige su talla.</span>
+              <Link to={urlPlantilla(pendientePlantilla.i)} state={estadoEstudio} className={styles.principal}>
+                <Paintbrush size={15} aria-hidden="true" /> Personalizar
+              </Link>
+            </div>
+          )}
+          {miCombo && (
+            <div className={styles.miCombo}>
+              <span><CheckCircle2 size={15} aria-hidden="true" /> Guardado en Mis creaciones como un combo.</span>
+              <AccionesComunidad
+                design={miCombo}
+                onCambio={() => queryClient.invalidateQueries({ queryKey: ['creacion', meta.miComboId] })}
+              />
+            </div>
+          )}
         </div>
         <div className={styles.precioCaja}>
           <span className={styles.precio}>{soles(precio)}</span>
@@ -210,6 +321,7 @@ const ComboCrearPage = () => {
       <ol className={styles.piezas}>
         {piezas.map((p) => {
           const foto = p.creacion?.vistasPrevias?.[0]?.url || p.creacion?.imagenConjunta
+            || p.plantilla?.vistasPrevias?.[0]?.url || p.plantilla?.imagenConjunta
             || leerPrendaBase(p.prenda).vistas[0]?.imagen || p.prenda?.mainImage;
           const otraConDiseno = piezas.find((o) => o.i !== p.i && o.creacion && creacionLista(o.creacion));
           const vaciasIguales = piezas.filter((o) => o.i !== p.i && !o.designId
@@ -217,7 +329,7 @@ const ComboCrearPage = () => {
           return (
             <li key={p.i} className={`${styles.pieza} ${p.lista ? styles.piezaLista : ''}`}>
               <div className={styles.piezaFoto}>
-                {foto && <img src={foto} alt={p.prenda?.name || ''} className={p.creacion ? '' : styles.fotoVacia} loading="lazy" />}
+                {foto && <img src={foto} alt={p.prenda?.name || ''} className={p.creacion || p.plantilla ? '' : styles.fotoVacia} loading="lazy" />}
                 <span className={styles.numero}>{p.i + 1}</span>
                 {p.lista && <CheckCircle2 className={styles.check} size={22} aria-label="Lista" />}
               </div>
@@ -267,6 +379,16 @@ const ComboCrearPage = () => {
                       </button>
                     </div>
                   </>
+                ) : p.plantilla ? (
+                  <>
+                    <strong className={styles.piezaNombre}>{p.plantilla.nombre || 'Diseño de la comunidad'}</strong>
+                    <p className={styles.ayuda}>Cámbiale el nombre, la foto o lo que quieras.</p>
+                    <div className={styles.acciones}>
+                      <Link to={urlPlantilla(p.i)} state={estadoEstudio} className={styles.principal}>
+                        <Paintbrush size={15} aria-hidden="true" /> Personalizar
+                      </Link>
+                    </div>
+                  </>
                 ) : (
                   <>
                     <p className={styles.ayuda}>Ponle tu imagen o tu frase.</p>
@@ -297,7 +419,8 @@ const ComboCrearPage = () => {
       <div className={styles.barra}>
         <div className={styles.barraTexto}>
           <strong>{listas} de {piezas.length} listas</strong>
-          <span>{completo ? 'Todo listo para agregar.' : 'Diseña cada prenda y elige su talla.'}</span>
+          <span>{completo ? 'Todo listo para agregar.'
+            : pendientePlantilla ? 'Personaliza cada prenda y elige su talla.' : 'Diseña cada prenda y elige su talla.'}</span>
         </div>
         <button type="button" className={styles.botonCarrito} onClick={agregar} disabled={!completo}>
           <ShoppingBag size={18} aria-hidden="true" /> Agregar al carrito · {soles(precio)}

@@ -143,6 +143,59 @@ function motivoNoPublicable(diseno, uid) {
   return null;
 }
 
+/**
+ * Combos (pareja, conjunto…): "Mi combo" es un doc de designs con tipo
+ * 'comboCrear' que apunta a una creación por pieza. Se publica como UNA
+ * publicación con todas sus piezas: quien la usa recibe el combo entero.
+ */
+function motivoNoPublicableCombo(miCombo, piezas, uid) {
+  if (!miCombo) return "No encontramos ese combo.";
+  if (miCombo.userId !== uid) return "Solo puedes publicar tus propios combos.";
+  if (miCombo.tipo !== "comboCrear" || !miCombo.comboId) return "Ese combo no es de Crear.";
+  const esperadas = Array.isArray(miCombo.piezas) ? miCombo.piezas : [];
+  if (esperadas.length < 2 || piezas.length !== esperadas.length) return "Al combo le falta alguna prenda.";
+  for (let i = 0; i < piezas.length; i += 1) {
+    const motivo = motivoNoPublicable(piezas[i], uid);
+    if (motivo) return `Prenda ${i + 1}: ${motivo}`;
+  }
+  return null;
+}
+
+/** La publicación de un combo: cada pieza como una publicación sin autor. */
+function datosPublicacionCombo(miCombo, piezas, mapa, { autorUid, autorNombre }) {
+  const datosPiezas = piezas.map((p) => {
+    const d = datosPublicacion(p, mapa, { autorUid, autorNombre });
+    return {
+      nombre: d.nombre,
+      productId: d.productId,
+      productName: d.productName,
+      color: d.color,
+      layersByView: d.layersByView,
+      vistasPrevias: d.vistasPrevias,
+      imagenConjunta: d.imagenConjunta,
+      previewUrl: d.previewUrl,
+    };
+  });
+  const primera = datosPiezas[0] || {};
+  return {
+    tipo: "combo",
+    origenDesignId: miCombo.id,
+    autorUid,
+    autorNombre: autorNombre || "Walá",
+    nombre: String(miCombo.name || miCombo.comboNombre || "").trim().slice(0, 80) || "Combo de la comunidad",
+    comboId: miCombo.comboId,
+    comboNombre: String(miCombo.comboNombre || "").slice(0, 80),
+    // Para la galería: la primera prenda (las demás van en piezas).
+    productId: primera.productId || "",
+    productName: String(miCombo.comboNombre || primera.productName || ""),
+    color: primera.color || null,
+    vistasPrevias: primera.vistasPrevias || [],
+    imagenConjunta: primera.imagenConjunta || "",
+    previewUrl: primera.previewUrl || "",
+    piezas: datosPiezas,
+  };
+}
+
 /** Permiso de comunidad por adminRoles/{email} (el mismo RBAC del panel). */
 function rolPermiteComunidad(rol) {
   const permisos = Array.isArray(rol && rol.permissions) ? rol.permissions : [];
@@ -175,6 +228,21 @@ function serializarPublica(id, pub, { conCapas = false } = {}) {
     publicadoEn: aMillis(pub.publicadoEn),
   };
   if (conCapas) out.layersByView = pub.layersByView || {};
+  if (pub.tipo === "combo") {
+    out.tipo = "combo";
+    out.comboId = pub.comboId || "";
+    out.comboNombre = pub.comboNombre || "";
+    out.piezas = (pub.piezas || []).map((p) => ({
+      nombre: p.nombre || "",
+      productId: p.productId || "",
+      productName: p.productName || "",
+      color: p.color || null,
+      vistasPrevias: (p.vistasPrevias || []).map((v) => ({ nombre: v.nombre || "", url: v.url })),
+      imagenConjunta: p.imagenConjunta || "",
+      previewUrl: p.previewUrl || "",
+      ...(conCapas ? { layersByView: p.layersByView || {} } : {}),
+    }));
+  }
   return out;
 }
 
@@ -191,6 +259,27 @@ function prendaDisponible(prenda) {
   return Boolean(prenda) && prenda.esPrendaBase === true && prenda.deleted !== true && prenda.visible !== false;
 }
 
+/** El combo de la publicación se vende hoy (publicado y no archivado). */
+function comboDisponible(combo) {
+  return Boolean(combo) && combo.esComboCrear === true && combo.deleted !== true
+    && Boolean(combo.comboCrear) && combo.comboCrear.publicado === true;
+}
+
+/** Ids de prendas y combos que hay que mirar para saber si una publicación se muestra. */
+function dependenciasPublicacion(pub) {
+  const prendas = new Set();
+  if (pub.productId) prendas.add(pub.productId);
+  (pub.piezas || []).forEach((p) => { if (p && p.productId) prendas.add(p.productId); });
+  return { prendas: [...prendas], combo: pub.tipo === "combo" ? pub.comboId || "" : "" };
+}
+
+/** ¿Se muestra? Todas sus prendas se pueden diseñar y, si es combo, el combo se vende. */
+function publicacionVisible(pub, prendasOk, combosOk) {
+  const { prendas, combo } = dependenciasPublicacion(pub);
+  if (!prendas.length || !prendas.every((id) => prendasOk.has(id))) return false;
+  return pub.tipo === "combo" ? Boolean(combo) && combosOk.has(combo) : true;
+}
+
 module.exports = {
   COLECCION,
   CARPETA,
@@ -200,6 +289,11 @@ module.exports = {
   urlsACopiar,
   datosPublicacion,
   motivoNoPublicable,
+  motivoNoPublicableCombo,
+  datosPublicacionCombo,
+  comboDisponible,
+  dependenciasPublicacion,
+  publicacionVisible,
   rolPermiteComunidad,
   serializarPublica,
   ordenarGaleria,

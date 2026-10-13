@@ -1,6 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Shirt, Upload, ShoppingBag, ArrowRight, Paintbrush, Users, User } from 'lucide-react';
 import { getPrendasBase } from '../services/prendasBase';
 import { getCombosCrear } from '../services/combosCrear';
@@ -15,6 +15,8 @@ import TusBorradores, { useBorradoresCrear } from './Crear/TusBorradores';
 import FilaCarrusel from './Crear/FilaCarrusel';
 import MiCreacionCard, { fechaDeCreacion } from './cuenta/components/MiCreacionCard';
 import TarjetaComunidad, { useComunidad } from './Comunidad/TarjetaComunidad';
+import TarjetaMiCombo from './Crear/TarjetaMiCombo';
+import { esMiCombo, eliminarMiCombo, agruparCombos } from '../services/misCombos';
 import styles from './PersonalizarPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
@@ -138,18 +140,27 @@ const useCreacionesCrear = (uid) => useQuery({
   refetchOnMount: 'always',
   queryFn: async () => {
     const { data } = await getDesignsByUser(uid);
-    return (data || []).filter((d) => d.tipo === 'crear');
+    // Creaciones de Crear y "Mis combos" (una tarjeta por combo).
+    return (data || []).filter((d) => d.tipo === 'crear' || esMiCombo(d));
   },
 });
 
+
 const TusCreaciones = ({ uid }) => {
   const { data: creaciones = [] } = useCreacionesCrear(uid);
+  const queryClient = useQueryClient();
   const { pedir: pedirEliminar, dialogo: dialogoEliminar } = useEliminarCreacion();
   // Las mismas tarjetas que Mis creaciones, la más reciente primero.
-  const recientes = useMemo(
-    () => [...creaciones].sort((a, b) => (fechaDeCreacion(b) || 0) - (fechaDeCreacion(a) || 0)).slice(0, 8),
+  const tarjetas = useMemo(
+    () => agruparCombos(creaciones).sort((a, b) => (fechaDeCreacion(b) || 0) - (fechaDeCreacion(a) || 0)),
     [creaciones]
   );
+  const recientes = tarjetas.slice(0, 8);
+  const quitarCombo = async (combo) => {
+    if (!window.confirm(`¿Quitar el combo "${combo.name || 'Mi combo'}"? Sus prendas siguen en tus creaciones.`)) return;
+    await eliminarMiCombo(combo.id);
+    queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'], refetchType: 'all' });
+  };
   if (!creaciones.length) return dialogoEliminar;
   return (
     <section className={styles.seccion} aria-label="Tus creaciones">
@@ -159,13 +170,13 @@ const TusCreaciones = ({ uid }) => {
           <p className={styles.seccionAyuda}><T>Listas para comprar o seguir editando.</T></p>
         </div>
         <Link to="/cuenta/creaciones" className={styles.verTodas}>
-          <T>Ver todas</T>{creaciones.length > 1 ? ` (${creaciones.length})` : ''} <ArrowRight size={16} aria-hidden="true" />
+          <T>Ver todas</T>{tarjetas.length > 1 ? ` (${tarjetas.length})` : ''} <ArrowRight size={16} aria-hidden="true" />
         </Link>
       </div>
       <FilaCarrusel>
-        {recientes.map((c) => (
-          <MiCreacionCard key={c.id} design={c} onEliminar={pedirEliminar} />
-        ))}
+        {recientes.map((c) => (esMiCombo(c)
+          ? <TarjetaMiCombo key={c.id} design={c} onEliminar={quitarCombo} />
+          : <MiCreacionCard key={c.id} design={c} onEliminar={pedirEliminar} />))}
       </FilaCarrusel>
       {dialogoEliminar}
     </section>
@@ -237,7 +248,8 @@ const PersonalizarPage = () => {
   // localStorage mientras va y viene del estudio): para que vuelva a ellos.
   const combosEnCurso = combosListos
     .map(({ combo }) => ({ combo, conDiseno: leerArmado(combo.id, combo.piezas.length).filter((a) => a.designId).length }))
-    .filter(({ conDiseno }) => conDiseno > 0);
+    // Completo ya es "Mi combo" (una tarjeta en Tus creaciones).
+    .filter(({ combo, conDiseno }) => conDiseno > 0 && conDiseno < combo.piezas.length);
   const soloConjuntos = (n) => {
     const deN = combosListos.filter(({ combo }) => combo.piezas.length === n);
     return deN.length > 0 && deN.every(({ combo }) => esConjunto(combo));
