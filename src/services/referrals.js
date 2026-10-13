@@ -205,19 +205,21 @@ export async function getTopReferrersOfMonth() {
     // Cuenta las monedas reclamadas este mes (claimedAt lo pone el servidor al
     // pagar). Antes filtraba por completedAt, que solo ponía la aprobación del
     // admin, y además pedía un índice compuesto que no existía: el ranking salía
-    // siempre vacío.
+    // siempre vacío. Se piden los 'claimed' (las reglas solo dejan listar esos
+    // de otras cuentas) y el mes se filtra acá, sin índice compuesto.
     const q = query(
       collection(db, REFERRALS_COLLECTION),
-      where('claimedAt', '>=', Timestamp.fromDate(startOfMonth))
+      where('status', '==', 'claimed')
     );
 
     const snapshot = await getDocs(q);
+    const desde = startOfMonth.getTime();
 
     // Agrupar por código de referido
     const userStats = {};
     snapshot.docs.forEach(doc => {
       const data = doc.data();
-      if (data.status !== 'claimed') return;
+      if (!((data.claimedAt?.toMillis?.() || 0) >= desde)) return;
       const code = data.referrerCode;
       if (!userStats[code]) {
         userStats[code] = { referrerCode: code, count: 0, coins: 0 };
