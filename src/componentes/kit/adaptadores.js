@@ -435,3 +435,71 @@ export function retoDesdePerfil(reto, perfil = {}) {
     conEvidencia: String(reto.actionType || '').startsWith('manual_'),
   };
 }
+
+/* ── Búsqueda ───────────────────────────────────────────── */
+
+/**
+ * Sugerencias del buscador (props de PanelBusqueda) desde lo que devuelve
+ * getSearchSuggestions (services/search.js): productos con foto y precio, y
+ * las marcas y categorías de esos productos como atajos.
+ *  - marcas (tienda_brands) y categorias (tienda_categories): para los nombres
+ *    y los logos (la búsqueda solo trae ids)
+ *  - termino: lo escrito (va en el enlace de "buscar en esta marca")
+ */
+export function sugerenciasDesdeBusqueda(resultado, { marcas = [], categorias = [], termino = '' } = {}) {
+  if (!resultado) return null;
+  const q = encodeURIComponent(String(termino || '').trim());
+  return {
+    productos: (resultado.productos || []).map((p) => {
+      const t = tarjetaDesdeProducto(p);
+      return { id: p.id, nombre: p.name, imagen: t.imagen, precio: t.precio, url: t.url };
+    }),
+    marcas: (resultado.marcas || []).map((m) => {
+      const doc = marcas.find((x) => x.id === m.id);
+      return { id: m.id, nombre: doc?.name || m.id, logo: doc?.logoUrl, cuenta: m.total, url: `/buscar?q=${q}&brand=${encodeURIComponent(m.id)}` };
+    }),
+    categorias: (resultado.categorias || []).map((c) => {
+      const doc = categorias.find((x) => (x.categoryId || x.id) === c.id);
+      return { id: c.id, nombre: doc?.name || c.id, cuenta: c.total, url: `/tienda?categoria=${encodeURIComponent(c.id)}` };
+    }),
+    total: resultado.total || 0,
+  };
+}
+
+/* Cómo se hace el producto (FULFILLMENT_TYPES de constants/marketplace). */
+const MODALIDADES = [['print_on_demand', 'Personalizado'], ['stock', 'En stock']];
+
+/**
+ * Grupo "Modalidad" del catálogo en la búsqueda (personalizado o de stock),
+ * con su cuenta; sin productos de ninguna, null. Va primero en `grupos`.
+ */
+export function grupoModalidad(productos = []) {
+  const opciones = MODALIDADES
+    .map(([valor, nombre]) => ({ valor, nombre, cuenta: productos.filter((p) => p.fulfillmentType === valor).length }))
+    .filter((o) => o.cuenta > 0);
+  return opciones.length ? { id: 'modalidad', titulo: 'Modalidad', opciones, de: (p) => [p.fulfillmentType] } : null;
+}
+
+/** Órdenes de la búsqueda (los mismos de SearchPage). */
+export const ORDENES_BUSQUEDA = [
+  { valor: 'newest', texto: 'Más nuevos' },
+  { valor: 'price', texto: 'Precio: menor a mayor' },
+  { valor: 'price-desc', texto: 'Precio: mayor a menor' },
+  { valor: 'name', texto: 'Nombre (A-Z)' },
+];
+
+/** Ordena una lista de productos con uno de ORDENES_BUSQUEDA (sin tocar la original). */
+export function ordenarProductos(productos = [], orden = 'newest') {
+  const fecha = (p) => {
+    const f = p?.createdAt;
+    if (!f) return 0;
+    if (typeof f === 'number') return f;
+    if (typeof f === 'string') return Date.parse(f) || 0;
+    return (f.seconds || f._seconds || 0) * 1000;
+  };
+  const lista = productos.slice();
+  if (orden === 'price') return lista.sort((a, b) => precioEfectivo(a) - precioEfectivo(b));
+  if (orden === 'price-desc') return lista.sort((a, b) => precioEfectivo(b) - precioEfectivo(a));
+  if (orden === 'name') return lista.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'es'));
+  return lista.sort((a, b) => fecha(b) - fecha(a));
+}

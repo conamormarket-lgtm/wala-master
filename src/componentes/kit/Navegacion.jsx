@@ -1,16 +1,17 @@
-import React, { useId, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Home, ShoppingBag, Brush, Gamepad2, User, Heart, Bell, ChevronDown } from 'lucide-react';
 import { Contador, SaldoMonedas } from './Etiquetas';
 import Boton from './Boton';
 import { Buscador } from './Formulario';
 import { RESORTE } from './Efectos';
-import { ListaNotificaciones } from './Feedback';
+import { ListaNotificaciones, HojaInferior } from './Feedback';
 import { Enlace } from './Enlace';
 import Desplegable from './Desplegable';
 import { MenuTienda, MenuMarcas, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito } from './MenusCabecera';
 import { BotonTema } from './piezas/Marco';
 import { Avatar } from './piezas/Avatar';
+import { PanelBusqueda, useBusquedasRecientes } from './piezas/PanelBusqueda';
 import s from './Navegacion.module.css';
 
 /**
@@ -43,6 +44,10 @@ export function Logo({ alto = 32 }) {
  *  - monedas, notificaciones (+ onLeer, onMarcarLeidas, onVerTodas)
  *  - usuario, gruposCuenta, promoCuenta, onCerrarSesion
  *  - favoritos: [{ id, nombre, imagen }]   carrito: [{ id, nombre, imagen, precio, cantidad, variante }]
+ *  - onBuscar(termino): ir a los resultados
+ *  - buscarSugerencias(texto) → promesa de sugerencias (PanelBusqueda): con
+ *    ella, el buscador abre el panel (recientes y sugerencias) debajo del
+ *    campo; en el celular, una hoja con su propio campo. Sin ella, solo Enter.
  *
  * Monedas y notificaciones solo aparecen con sesión. En el celular la
  * cabecera tiene dos filas (como la tienda): logo y accesos arriba, el
@@ -67,9 +72,12 @@ export function Cabecera({
   favoritos = [],
   carrito = [],
   onBuscar,
+  buscarSugerencias,
   placeholder = 'Buscar productos y marcas',
 }) {
   const uid = useId();
+  const cajaRef = useRef(null);
+  const busqueda = useBuscadorConPanel({ buscarSugerencias, onBuscar, cajaRef });
   const [sobre, setSobre] = useState(null);
   const [abierto, setAbierto] = useState(null);
   const noLeidas = notificaciones.filter((n) => !n.leida).length;
@@ -145,9 +153,19 @@ export function Cabecera({
         })}
       </nav>
 
-      <div className={s.buscadorCaja}>
-        <Buscador placeholder={placeholder} onBuscar={onBuscar} />
+      <div className={s.buscadorCaja} ref={cajaRef}>
+        <Buscador placeholder={placeholder} onBuscar={busqueda.activo ? busqueda.buscar : onBuscar} {...busqueda.campo} />
+        {busqueda.abierto && !busqueda.enHoja && (
+          <div className={s.panelBusqueda} role="dialog" aria-label="Sugerencias de búsqueda">
+            <PanelBusqueda {...busqueda.panel} />
+          </div>
+        )}
       </div>
+      {busqueda.activo && (
+        <HojaInferior abierta={busqueda.abierto && busqueda.enHoja} onCerrar={busqueda.cerrar} titulo="Buscar">
+          <PanelBusqueda {...busqueda.panel} conCampo />
+        </HojaInferior>
+      )}
 
       <div className={s.acciones}>
         {onTema && <span className={s.ocultarMovil}><BotonTema tema={tema} onCambiar={onTema} /></span>}
@@ -366,4 +384,71 @@ export function Pestanas({ opciones, valor, onChange, etiqueta }) {
       })}
     </div>
   );
+}
+
+/* Buscador de la cabecera con panel de sugerencias (si hay buscarSugerencias):
+   lo escrito, las sugerencias con un respiro entre teclas, las búsquedas
+   recientes y dónde se abre (debajo del campo, o en una hoja si la cabecera
+   está en su versión de celular). */
+function useBuscadorConPanel({ buscarSugerencias, onBuscar, cajaRef }) {
+  const activo = typeof buscarSugerencias === 'function';
+  const [abierto, setAbierto] = useState(false);
+  const [enHoja, setEnHoja] = useState(false);
+  const [texto, setTexto] = useState('');
+  const [sugerencias, setSugerencias] = useState(null);
+  const [buscando, setBuscando] = useState(false);
+  const { recientes, guardar, limpiar, releer } = useBusquedasRecientes();
+
+  useEffect(() => {
+    if (!activo || !abierto || texto.trim().length < 2) { setSugerencias(null); return undefined; }
+    let vivo = true;
+    setBuscando(true);
+    const t = setTimeout(() => {
+      Promise.resolve(buscarSugerencias(texto.trim()))
+        .then((r) => { if (vivo) setSugerencias(r || null); })
+        .catch(() => { if (vivo) setSugerencias(null); })
+        .finally(() => { if (vivo) setBuscando(false); });
+    }, 180);
+    return () => { vivo = false; clearTimeout(t); };
+  }, [activo, abierto, texto, buscarSugerencias]);
+
+  // Debajo del campo se cierra al tocar fuera o con Esc (la hoja ya lo hace sola).
+  useEffect(() => {
+    if (!abierto || enHoja) return undefined;
+    const fuera = (e) => { if (!cajaRef.current?.contains(e.target)) setAbierto(false); };
+    const tecla = (e) => { if (e.key === 'Escape') setAbierto(false); };
+    document.addEventListener('pointerdown', fuera);
+    document.addEventListener('keydown', tecla);
+    return () => { document.removeEventListener('pointerdown', fuera); document.removeEventListener('keydown', tecla); };
+  }, [abierto, enHoja, cajaRef]);
+
+  const cerrar = () => setAbierto(false);
+  const buscar = (termino) => {
+    const limpio = String(termino || '').trim();
+    if (limpio) guardar(limpio);
+    setAbierto(false);
+    setTexto('');
+    onBuscar?.(limpio);
+  };
+  const abrir = (e) => {
+    // La cabecera pasa a dos filas (celular) a los 760 px de ancho.
+    const angosta = (cajaRef.current?.closest('header')?.offsetWidth || 1000) <= 760;
+    releer();
+    setEnHoja(angosta);
+    setAbierto(true);
+    if (angosta) e.target.blur();
+  };
+
+  return {
+    activo,
+    abierto,
+    enHoja,
+    cerrar,
+    buscar,
+    campo: activo ? { value: texto, onChange: (e) => setTexto(e.target.value), onFocus: abrir, autoComplete: 'off', 'aria-expanded': abierto } : {},
+    panel: {
+      texto, onTexto: setTexto, sugerencias, buscando, recientes, onLimpiarRecientes: limpiar, onBuscar: buscar,
+      onNavegar: () => { if (texto.trim()) guardar(texto); setAbierto(false); setTexto(''); },
+    },
+  };
 }

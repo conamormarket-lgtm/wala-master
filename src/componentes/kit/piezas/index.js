@@ -15,3 +15,4 @@ export { OpcionesFiltro } from './OpcionesFiltro';
 export { TarjetaJuego } from './TarjetaJuego';
 export { RetoSemanal } from './RetoSemanal';
 export { VentanaKapi } from './VentanaKapi';
+export { PanelBusqueda, useBusquedasRecientes } from './PanelBusqueda';

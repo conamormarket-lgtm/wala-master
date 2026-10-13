@@ -158,3 +158,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* ── Búsqueda ── */
+.busquedaCabeza {
+  display: grid;
+  gap: 0.9rem;
+  max-width: 980px;
+}

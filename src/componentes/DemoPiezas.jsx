@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import {
   TarjetaCategoria, TarjetaTestimonio, TarjetaMarca, LogoMarca, TarjetaDestacado, Beneficio, StockBajo, Chip, tarjetaDesdeMarca, acento,
   FotoProducto, Avatar, Moneda, EtiquetaColgante, OpcionesFiltro, Acordeon, TarjetaJuego, Etiqueta, GananciaMonedas,
-  Aviso, CuentaRegresiva, IconoWala, BarraProgreso, RetoSemanal, VentanaKapi, Boton,
+  Aviso, CuentaRegresiva, IconoWala, BarraProgreso, RetoSemanal, VentanaKapi, Boton, PanelBusqueda, Buscador, Selector,
+  ORDENES_BUSQUEDA,
 } from './kit';
 import { Lock } from 'lucide-react';
 import s from './DemoPiezas.module.css';
@@ -32,6 +33,19 @@ export default function DemoPiezas({ categorias, marcas, imagenes }) {
   const [activa, setActiva] = useState(null);
   const [personaje, setPersonaje] = useState('Goku');
   const [kapiAbierta, setKapiAbierta] = useState(false);
+  const [textoBusqueda, setTextoBusqueda] = useState('polera');
+  const [recientesDemo, setRecientesDemo] = useState(['casaca', 'taza mágica', 'reloj']);
+  const [ordenDemo, setOrdenDemo] = useState('newest');
+  // Sugerencias de ejemplo (en la tienda: sugerenciasDesdeBusqueda).
+  const sugerenciasDemo = textoBusqueda.trim().length >= 2 ? {
+    productos: [
+      { id: 'p1', nombre: 'Polera Walá Essentials con capucha', imagen: imagenes.frente, precio: 89.9, url: '/producto/essentials' },
+      { id: 'p2', nombre: 'Taza mágica «Feliz día»', imagen: imagenes.taza, precio: 34.9, url: '/producto/taza' },
+    ],
+    marcas: marcas.slice(0, 2).map((m) => ({ id: m.id, nombre: m.name, logo: m.logoUrl, cuenta: 3, url: `/buscar?q=polera&brand=${m.id}` })),
+    categorias: [{ id: 'poleras', nombre: 'Poleras', cuenta: 12, url: '/tienda?categoria=poleras' }],
+    total: 15,
+  } : null;
   const [kapiComio, setKapiComio] = useState(false);
   const [filtro, setFiltro] = useState('Poleras');
   const marca = (k) => tarjetaDesdeMarca(marcas[k]);
@@ -145,6 +159,27 @@ export default function DemoPiezas({ categorias, marcas, imagenes }) {
           <BarraProgreso pasos valor={4} max={7} etiqueta="Días reclamados" />
           <Aviso compacto icono={<Lock aria-hidden="true" />}>Reclama 7 días seguidos para desbloquearla.</Aviso>
           <CuentaRegresiva variante="frase" hasta={new Date(Date.now() + 7.8 * 3600 * 1000).toISOString()} etiqueta="Disponible de nuevo en" />
+        </div>
+      </Ficha>
+
+      <Ficha nombre="PanelBusqueda" usadaEn="Buscador de la cabecera (debajo del campo en escritorio, hoja en el celular)" ancho="1 / -1">
+        <div className={s.panelBusqueda}>
+          <PanelBusqueda
+            conCampo
+            texto={textoBusqueda}
+            onTexto={setTextoBusqueda}
+            sugerencias={sugerenciasDemo}
+            recientes={recientesDemo}
+            onLimpiarRecientes={() => setRecientesDemo([])}
+            onBuscar={(q) => setTextoBusqueda(q)}
+          />
+        </div>
+      </Ficha>
+
+      <Ficha nombre={'Buscador grande · Selector'} usadaEn="Página de búsqueda (/buscar): el campo con su botón y «Ordenar por»">
+        <div className={s.columna}>
+          <Buscador grande atajo={null} boton="Buscar" placeholder="¿Qué buscas?" />
+          <Selector etiqueta="Ordenar por" opciones={ORDENES_BUSQUEDA} valor={ordenDemo} onCambiar={setOrdenDemo} />
         </div>
       </Ficha>
 

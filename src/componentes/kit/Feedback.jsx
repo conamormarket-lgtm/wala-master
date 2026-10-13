@@ -296,18 +296,23 @@ export function HojaInferior({ abierta, onCerrar, titulo, acciones, children, pi
   useBloquearScroll(abierta && !contenida);
   useCerrarConAtras(abierta && !contenida, onCerrar);
 
+  // onCerrar por referencia: casi siempre llega como función nueva en cada
+  // render, y si el efecto dependiera de ella, cada tecla escrita en un campo
+  // de la hoja volvía a mandar el foco al panel (solo entraba la primera letra).
+  const cerrarRef = useRef(onCerrar);
+  cerrarRef.current = onCerrar;
   useEffect(() => {
     if (!abierta) return undefined;
     const previo = document.activeElement;
     const t = window.setTimeout(() => panelRef.current?.focus({ preventScroll: true }), 40);
-    const onKey = (e) => { if (e.key === 'Escape') onCerrar(); };
+    const onKey = (e) => { if (e.key === 'Escape') cerrarRef.current?.(); };
     document.addEventListener('keydown', onKey);
     return () => {
       window.clearTimeout(t);
       document.removeEventListener('keydown', onKey);
       previo?.focus?.({ preventScroll: true });
     };
-  }, [abierta, onCerrar]);
+  }, [abierta]);
 
   const empezarArrastre = (e) => { if (!modal) controles.start(e); };
 

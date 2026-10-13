@@ -2,7 +2,8 @@ import React, { forwardRef, useCallback, useMemo, useRef, useState } from 'react
 import { RotateCcw, User, Package, Settings, Gift, Ticket, Sparkles } from 'lucide-react';
 import {
   PaginaTienda, MarcoTienda, PaginaCarrito, PaginaPedidos, PaginaMinijuegos, juegosDelArcade, VentanaKapi, kapiDesdePerfil,
-  retoDesdePerfil, Pestanas, Chip, Interruptor, Boton,
+  retoDesdePerfil, PaginaBusqueda, sugerenciasDesdeBusqueda, grupoModalidad, ORDENES_BUSQUEDA, ordenarProductos,
+  Pestanas, Chip, Interruptor, Boton,
   BarraAdmin, AvisoSistema, BannerApp, BotonWhatsApp, KapiFlotante, BurbujaRegalos, PildoraRecompensa,
   VentanaCampana, AvisoIdioma, ProveedorEnlaces, PanelEditor, useBorrador, SeccionEditable, InsertarAqui,
   moverSeccion, duplicarSeccion, rutaDeMarca, tarjetaDesdeProducto, REGISTRO_SECCIONES, enlaceWhatsApp, gruposDeCatalogo,
@@ -23,6 +24,9 @@ import s from './DemoTienda.module.css';
  *  - Tienda (/tienda): las secciones de pages/tienda; el catálogo filtra
  *    con las listas reales (categorías, colecciones, etiquetas…). El menú
  *    Tienda de la cabecera lleva aquí con la categoría ya elegida.
+ *  - Buscar (/buscar): resultados de los productos de tienda.json, de a 24
+ *    con "Ver más" (como el cursor de la tienda); la cabecera sugiere mientras
+ *    escribes (PanelBusqueda) y Enter lleva aquí.
  *  - Carrito y Mis pedidos: con los mismos productos reales.
  *  - Minijuegos (Zona Arcade): las cuatro tarjetas con juegosDelArcade; con
  *    sesión, chips para ver cada estado (como el modo diseño de la tienda).
@@ -43,15 +47,16 @@ const PAGINAS = [
   { id: 'inicio', texto: 'Inicio', ruta: '/' },
   { id: 'tienda', texto: 'Tienda', ruta: '/tienda' },
   { id: 'minijuegos', texto: 'Minijuegos', ruta: '/minijuegos' },
+  { id: 'buscar', texto: 'Buscar', ruta: '/buscar' },
   { id: 'carrito', texto: 'Carrito', ruta: '/carrito' },
   { id: 'pedidos', texto: 'Mis pedidos', ruta: '/cuenta/pedidos' },
 ];
 
 /** Ruta de la tienda → página de esta demo (las demás solo avisan). */
-const PAGINA_DE_RUTA = { '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/carrito': 'carrito', '/cuenta': 'pedidos', '/cuenta/pedidos': 'pedidos' };
+const PAGINA_DE_RUTA = { '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/cuenta': 'pedidos', '/cuenta/pedidos': 'pedidos' };
 
 /** Pestaña de la barra inferior que se enciende en cada página. */
-const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', minijuegos: 'juegos', carrito: 'tienda', pedidos: 'cuenta' };
+const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', pedidos: 'cuenta' };
 
 /* Estados de la Zona Arcade para probar (como el modo diseño de la tienda). */
 const RULETAS = [
@@ -82,6 +87,21 @@ const RETO_DEMO = {
   goal: 1,
   rewardType: 'main',
   rewardCoins: 10,
+};
+
+/* Búsqueda de la demo: misma idea que services/search (sin tildes, por
+   nombre, categoría o marca), sobre los productos de ejemplo. */
+const sinTildes = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const POR_PAGINA = 24;
+const casa = (p, q, nombresCategorias, nombresMarcas) => {
+  if (!q) return true;
+  const texto = sinTildes([p.name, ...(p.categories || []).map((c) => nombresCategorias[c]), nombresMarcas[p.brandId]].join(' '));
+  return sinTildes(q).split(/\s+/).filter(Boolean).every((pal) => texto.includes(pal));
+};
+const contarPor = (lista, clave) => {
+  const cuenta = new Map();
+  lista.forEach((p) => [].concat(clave(p) || []).forEach((v) => v && cuenta.set(v, (cuenta.get(v) || 0) + 1)));
+  return [...cuenta.entries()].sort((a, b) => b[1] - a[1]).map(([id, total]) => ({ id, total }));
 };
 
 /** Fecha (AAAA-MM-DD, Lima) de hace `dias` días. */
@@ -163,6 +183,11 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   // Zona Arcade: qué está hecho hoy y en qué va la ruleta.
   const [hechos, setHechos] = useState(['kapi']);
   const [kapiAbierta, setKapiAbierta] = useState(false);
+  // Búsqueda: término y marca de la URL, orden, filtros y páginas cargadas.
+  const [consulta, setConsulta] = useState({ q: '', marca: '' });
+  const [orden, setOrden] = useState('newest');
+  const [filtrosBusqueda, setFiltrosBusqueda] = useState({});
+  const [paginasBusqueda, setPaginasBusqueda] = useState(1);
   const [monedas, setMonedas] = useState(43);
   const [ruletaDemo, setRuletaDemo] = useState('racha');
   const marcoRef = useRef(null);
@@ -194,6 +219,12 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   navegar.current = (to) => {
     const [ruta, query = ''] = String(to || '').split('?');
     if (!PAGINA_DE_RUTA[ruta]) { avisar('En la tienda iría a', to); return; }
+    if (ruta === '/buscar') {
+      const p = new URLSearchParams(query);
+      setConsulta({ q: p.get('q') || '', marca: p.get('brand') || '' });
+      setFiltrosBusqueda({});
+      setPaginasBusqueda(1);
+    }
     if (ruta === '/tienda') {
       const categoria = new URLSearchParams(query).get('categoria');
       setFiltros(categoria ? { categoria } : {});
@@ -236,6 +267,32 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     kapiHappiness: ver('triste') ? 50 : 60,
     kapiTutorialVisto: true,
   });
+  /* ── Búsqueda: sugerencias de la cabecera y resultados de /buscar ── */
+  const nombresCategorias = useMemo(() => Object.fromEntries(TIENDA.categorias.map((c) => [c.id, c.name])), []);
+  const nombresMarcas = useMemo(() => Object.fromEntries(marcas.map((m) => [m.id, m.name])), [marcas]);
+  const buscarSugerencias = useCallback(async (texto) => {
+    await new Promise((r) => setTimeout(r, 120)); // lo que tardaría el catálogo
+    const casan = TIENDA.productos.filter((p) => casa(p, texto, nombresCategorias, nombresMarcas));
+    return sugerenciasDesdeBusqueda({
+      productos: casan.slice(0, 6),
+      marcas: contarPor(casan, (p) => p.brandId).slice(0, 5),
+      categorias: contarPor(casan, (p) => p.categories).slice(0, 6),
+      total: casan.length,
+    }, { marcas: visibles, categorias: TIENDA.categorias, termino: texto });
+  }, [nombresCategorias, nombresMarcas, visibles]);
+  const resultados = useMemo(() => ordenarProductos(
+    TIENDA.productos.filter((p) => casa(p, consulta.q, nombresCategorias, nombresMarcas) && (!consulta.marca || p.brandId === consulta.marca)),
+    orden,
+  ), [consulta, orden, nombresCategorias, nombresMarcas]);
+  const gruposBusqueda = useMemo(() => [
+    grupoModalidad(resultados),
+    ...gruposDeCatalogo({
+      categorias: TIENDA.categorias, colecciones: TIENDA.colecciones, marcas: visibles, tipos: TIENDA.tipos,
+      etiquetas: TIENDA.etiquetas, personajes: TIENDA.personajes, productos: resultados, marcaActual: consulta.marca || undefined,
+    }),
+  ].filter(Boolean), [resultados, visibles, consulta.marca]);
+  const marcaBusqueda = visibles.find((m) => m.id === consulta.marca);
+
   const alimentarKapi = async (boton) => {
     await new Promise((r) => setTimeout(r, 600)); // lo que tardaría el servidor
     setHechos((h) => (h.includes('kapi') ? h : [...h, 'kapi']));
@@ -280,7 +337,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     onVerTodas,
     favoritos: conSesion ? FAVORITOS : [],
     carrito,
-    onBuscar: (q) => avisar('En la tienda buscaría', `/buscar?q=${q}`),
+    onBuscar: (q) => navegar.current(q ? `/buscar?q=${encodeURIComponent(q)}` : '/buscar'),
+    buscarSugerencias,
   };
 
   const flotantes = {
@@ -404,7 +462,28 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       : setKapiAbierta(true)),
   });
 
-  const contenido = pagina === 'minijuegos' ? (
+  const contenido = pagina === 'buscar' ? (
+    <MarcoTienda {...marco}>
+      <Parte n="P4" nombre="PaginaBusqueda">
+        <PaginaBusqueda
+          termino={consulta.q}
+          onBuscar={(q) => navegar.current(q ? `/buscar?q=${encodeURIComponent(q)}${consulta.marca ? `&brand=${consulta.marca}` : ''}` : '/buscar')}
+          productos={resultados.slice(0, paginasBusqueda * POR_PAGINA)}
+          hayMas={resultados.length > paginasBusqueda * POR_PAGINA}
+          onCargarMas={() => setPaginasBusqueda((n) => n + 1)}
+          grupos={gruposBusqueda}
+          seleccion={filtrosBusqueda}
+          onFiltrar={(grupo, valor) => setFiltrosBusqueda((f) => ({ ...f, [grupo]: valor }))}
+          orden={orden}
+          onOrden={setOrden}
+          ordenes={ORDENES_BUSQUEDA}
+          marcaFiltro={marcaBusqueda && { nombre: marcaBusqueda.name, urlTodo: consulta.q ? `/buscar?q=${encodeURIComponent(consulta.q)}` : '/buscar' }}
+          catalogo={{ marcas: visibles, categorias: TIENDA.categorias, marcaActual: consulta.marca || null }}
+          onAgregar={onAgregar}
+        />
+      </Parte>
+    </MarcoTienda>
+  ) : pagina === 'minijuegos' ? (
     <MarcoTienda {...marco}>
       <Parte n="P3" nombre="PaginaMinijuegos">
         <PaginaMinijuegos {...arcade} sesion={conSesion} cargando={conSesion && hechos.includes('cargando')} />

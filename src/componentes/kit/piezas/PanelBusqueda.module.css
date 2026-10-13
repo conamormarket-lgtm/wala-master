@@ -1,0 +1,316 @@
+/* Contenedor: las columnas se acomodan a SU ancho (debajo del buscador o en
+   la hoja del celular). */
+.panel {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr); /* sin esto, un texto que no se parte lo ensanchaba */
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+/* Campo propio (hoja del celular). */
+.campo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 50px;
+  padding: 0 0.4rem 0 0.95rem;
+  border: 1.5px solid var(--violet-500);
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+  color: var(--primary-color);
+}
+
+.campo > svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+}
+
+/* La "x" propia del navegador sobra: el panel trae la suya. */
+.campo input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.campo input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background-color: transparent !important;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 1rem;
+  outline: none;
+}
+
+.limpiarCampo {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.limpiarCampo svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.pista {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+}
+
+.bloque {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.bloqueCabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.bloqueTitulo {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.enlaceChico {
+  padding: 0.3rem 0.2rem;
+  border: 0;
+  background: none;
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Recientes: chips con un reloj. */
+.recientes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reciente {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 36px;
+  max-width: 100%;
+  padding: 0 0.8rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.86rem;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.reciente svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+/* Escribiendo: productos a la izquierda; marcas y categorías a la derecha. */
+.columnas {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 1.1rem;
+}
+
+@container (max-width: 560px) {
+  .columnas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.productos,
+.lista {
+  display: grid;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.producto,
+.producto:hover,
+.atajo,
+.atajo:hover {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.producto {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.35rem 0.4rem;
+  border-radius: 12px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.productoFoto {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+
+.productoNombre {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.88rem;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.productoPrecio {
+  font-family: var(--fuente-marca);
+  font-size: 0.86rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.atajos {
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+}
+
+.atajo {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 40px;
+  padding: 0.25rem 0.4rem;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.atajoLogo {
+  width: 30px;
+  height: 30px;
+  padding: 2px;
+  border-width: 1px;
+  box-shadow: none;
+}
+
+.atajoNombre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Cuántos hay: número chico, no una etiqueta (es un dato, no un producto). */
+.cuenta {
+  flex-shrink: 0;
+  min-width: 1.6rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: var(--color-hover);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .producto:hover,
+  .atajo:hover,
+  .reciente:hover {
+    background: var(--primary-light);
+  }
+
+  .reciente:hover {
+    border-color: var(--violet-200);
+  }
+}
+
+.producto:focus-visible,
+.atajo:focus-visible,
+.reciente:focus-visible,
+.verTodo:focus-visible,
+.enlaceChico:focus-visible,
+.limpiarCampo:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+/* "Ver todos los resultados": la salida siempre a mano. */
+.verTodo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0.5rem 0.9rem;
+  border: 0;
+  border-top: 1px dashed var(--color-border);
+  border-radius: 0 0 12px 12px;
+  background: none;
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.verTodo > span:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.verTodo > svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .verTodo:hover > svg {
+    transform: translateX(3px);
+  }
+}
+
+:global([data-theme='dark']) .verTodo,
+:global([data-theme='dark']) .enlaceChico {
+  color: var(--violet-300);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verTodo > svg {
+    transition: none;
+  }
+}

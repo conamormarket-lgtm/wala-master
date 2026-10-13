@@ -196,7 +196,7 @@ día si cambia un componente del kit o su forma de recibir datos.
 ### Qué le falta al kit antes de migrar
 
 - `TarjetaProducto`: favorito controlado desde fuera (hoy guarda `deseado` por dentro: necesita `deseado` + `onDeseo` para `WishlistContext`) y avisar la impresión (`recordImpression`).
-- `Cabecera`: buscador con panel de sugerencias (`HeaderSearch`), selector de idioma en `MenuCuenta`, aviso para activar notificaciones push.
+- `Cabecera`: selector de idioma en `MenuCuenta`, aviso para activar notificaciones push. (El buscador con sugerencias ya está: `buscarSugerencias`, ver BUSCAR.md.)
 - Traducción de textos (`<T>`).
 - `imageSource: 'product'` de las categorías: la página debe pasar `imagenProducto`.
 - La `TrustBadges` vieja no entiende los íconos nuevos del editor del kit (`camion`, `escudo`…): mientras convivan, usar `iconoDesde`.

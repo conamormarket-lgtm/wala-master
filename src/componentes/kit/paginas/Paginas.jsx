@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ShoppingBag, LogIn, Sparkles } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, LogIn, Sparkles, Store } from 'lucide-react';
 import Boton from '../Boton';
 import { Cabecera, BarraInferior, Pestanas } from '../Navegacion';
 import { ItemCarrito, BarraEnvioGratis, ResumenPedido, SeguimientoPedido } from '../Pedido';
@@ -10,7 +10,8 @@ import { TarjetaJuego } from '../piezas/TarjetaJuego';
 import { EASE } from '../Efectos';
 import { BloqueSeccion, TituloSeccion } from '../Seccion';
 import { RenderSecciones, CarruselProductos } from '../Secciones';
-import { PiePagina } from '../SeccionesExtra';
+import { PiePagina, CatalogoConFiltros } from '../SeccionesExtra';
+import { Buscador } from '../Formulario';
 import { PilaFlotante } from '../piezas/Flotantes';
 import { PieLegal } from '../piezas/Marco';
 import s from './Paginas.module.css';
@@ -294,4 +295,107 @@ export function PaginaMinijuegos({
       </BloqueSeccion>
     </>
   );
+}
+
+/* ── Búsqueda (/buscar) ─────────────────────────────────── */
+
+/**
+ * Página de resultados: el término, un buscador grande con su botón y los
+ * resultados en el MISMO catálogo con filtros de /tienda (con "Ordenar por" y
+ * el grupo Modalidad). Sin resultados y sin filtros, Kapi lo dice; con
+ * filtros, el catálogo sigue a la vista para poder quitarlos.
+ *
+ *  - termino, onBuscar(texto)
+ *  - productos: resultados ya ordenados (ordenarProductos) · cargando · hayMas,
+ *    onCargarMas, cargandoMas (cursor de searchProductsFirestore)
+ *  - grupos: grupos de filtros (grupoModalidad + gruposDeCatalogo de los
+ *    resultados) · seleccion / onFiltrar (filtran aquí, sobre los resultados)
+ *  - orden, onOrden · ordenes (ORDENES_BUSQUEDA)
+ *  - marcaFiltro: { nombre, urlTodo } si la búsqueda está acotada a una marca
+ *  - catalogo, onAgregar: para las tarjetas
+ *  - textos: { titulo, subtitulo, marcador, boton, vacioTitulo, vacioTexto,
+ *    vacioConFiltros } (los edita el admin en storeConfig/homePage.searchPage)
+ */
+export function PaginaBusqueda({
+  termino = '', onBuscar, productos = [], cargando = false, hayMas, onCargarMas, cargandoMas,
+  grupos = [], seleccion, onFiltrar, orden = 'newest', onOrden, ordenes = [], marcaFiltro, catalogo, onAgregar, textos = {},
+}) {
+  // En pantallas angostas la frase con ejemplos se cortaba ("…(pol"): ahí
+  // va la pregunta corta, como el buscador de la tienda en el celular.
+  const angosta = useAngosta(560);
+  const t = {
+    titulo: 'Buscar productos',
+    subtitulo: 'Escribe qué buscas y afina con los filtros.',
+    marcador: angosta ? '¿Qué buscas?' : '¿Qué buscas? (polo, taza, gorro…)',
+    boton: 'Buscar',
+    vacioTitulo: 'Sin resultados',
+    vacioTexto: 'Prueba con otra palabra: una más corta o más general suele encontrar más.',
+    vacioConFiltros: 'Prueba a quitar algún filtro o a buscar otra palabra.',
+    ...textos,
+  };
+  const hayFiltros = Object.values(seleccion || {}).some((v) => v != null);
+  return (
+    <>
+      <BloqueSeccion ajustes={{ paddingTop: '1.5rem', paddingBottom: '0.75rem' }}>
+        <div className={s.busquedaCabeza}>
+          <TituloSeccion
+            nivel={1}
+            titulo={t.titulo}
+            subtitulo={termino ? <>Resultados para <strong>«{termino}»</strong></> : t.subtitulo}
+          />
+          {marcaFiltro && (
+            <Aviso compacto icono={<Store aria-hidden="true" />} accion={marcaFiltro.urlTodo && <Boton to={marcaFiltro.urlTodo} variante="fantasma" tamano="sm">Buscar en todo el catálogo</Boton>}>
+              Buscando solo en <strong>{marcaFiltro.nombre}</strong>
+            </Aviso>
+          )}
+          <Buscador
+            key={termino}
+            grande
+            atajo={null}
+            boton={t.boton}
+            placeholder={t.marcador}
+            defaultValue={termino}
+            onBuscar={onBuscar}
+          />
+        </div>
+      </BloqueSeccion>
+      <BloqueSeccion ajustes={{ paddingTop: '0.75rem', paddingBottom: '2.5rem' }}>
+        {!cargando && productos.length === 0 && !hayFiltros ? (
+          <EstadoVacio imagen="/assets/kapi/kapi-sad.webp" titulo={t.vacioTitulo} texto={termino ? t.vacioTexto : t.subtitulo} />
+        ) : (
+          <CatalogoConFiltros
+            key={termino}
+            productos={productos}
+            grupos={grupos}
+            seleccion={seleccion}
+            onFiltrar={onFiltrar}
+            filtrarAqui
+            conBuscador={false}
+            unidad={['resultado', 'resultados']}
+            orden={{ opciones: ordenes, valor: orden, onCambiar: onOrden }}
+            cargando={cargando}
+            hayMas={hayMas}
+            onCargarMas={onCargarMas}
+            cargandoMas={cargandoMas}
+            catalogo={catalogo}
+            onAgregar={onAgregar}
+            vacio={{ titulo: t.vacioTitulo, texto: t.vacioConFiltros }}
+          />
+        )}
+      </BloqueSeccion>
+    </>
+  );
+}
+
+/** ¿La ventana mide `px` o menos? Se actualiza al girar o redimensionar. */
+function useAngosta(px) {
+  const consulta = `(max-width: ${px}px)`;
+  const [angosta, setAngosta] = useState(() => typeof window !== 'undefined' && window.matchMedia(consulta).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(consulta);
+    const cambio = () => setAngosta(mq.matches);
+    mq.addEventListener('change', cambio);
+    return () => mq.removeEventListener('change', cambio);
+  }, [consulta]);
+  return angosta;
 }

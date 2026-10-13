@@ -129,3 +129,8 @@
 .marca {
   max-width: 420px;
 }
+
+/* Panel de búsqueda de ejemplo, del ancho que tiene bajo la cabecera. */
+.panelBusqueda {
+  max-width: 660px;
+}

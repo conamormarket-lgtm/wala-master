@@ -1,6 +1,7 @@
 import React, { useEffect, useId, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertCircle, Minus, Plus, Check, Search } from 'lucide-react';
+import { AlertCircle, Minus, Plus, Check, Search, ChevronDown } from 'lucide-react';
+import Boton from './Boton';
 import s from './Formulario.module.css';
 
 /** Campo de texto con etiqueta, ayuda y error accesibles. El error entra con una sacudida. */
@@ -161,9 +162,13 @@ export function Interruptor({ activo, onChange, etiqueta, descripcion }) {
  * Buscador (cabecera, tienda, admin). Se ilumina al enfocarlo y, con
  * `atajo`, la tecla "/" lo enfoca desde cualquier parte de la página.
  *  - onBuscar(texto) al presionar Enter.
+ *  - boton: texto de un botón "Buscar" al final (página de búsqueda)
+ *  - grande: más alto y a todo el ancho (no crece al enfocarlo)
+ *  - inputRef: para leer o enfocar el campo desde fuera
  */
-export function Buscador({ placeholder = 'Buscar…', atajo = '/', onBuscar, defaultValue = '', className, ...input }) {
-  const ref = useRef(null);
+export function Buscador({ placeholder = 'Buscar…', atajo = '/', onBuscar, defaultValue = '', className, boton, grande = false, inputRef, ...input }) {
+  const propio = useRef(null);
+  const ref = inputRef || propio;
 
   useEffect(() => {
     if (!atajo) return undefined;
@@ -181,12 +186,35 @@ export function Buscador({ placeholder = 'Buscar…', atajo = '/', onBuscar, def
   return (
     <form
       role="search"
-      className={[s.buscador, className].filter(Boolean).join(' ')}
+      className={[s.buscador, grande && s.buscadorGrande, className].filter(Boolean).join(' ')}
       onSubmit={(e) => { e.preventDefault(); onBuscar?.(ref.current.value.trim()); }}
     >
       <Search aria-hidden="true" />
-      <input ref={ref} type="search" placeholder={placeholder} aria-label={placeholder} defaultValue={defaultValue} {...input} />
+      <input ref={ref} type="search" placeholder={placeholder} aria-label={placeholder} defaultValue={input.value === undefined ? defaultValue : undefined} {...input} />
       {atajo && <kbd aria-hidden="true">{atajo}</kbd>}
+      {boton && <Boton type="submit" className={s.buscadorBoton}>{boton}</Boton>}
     </form>
+  );
+}
+
+/**
+ * Selector de una opción (ordenar, filtrar). Es el <select> del navegador
+ * con el estilo de Walá: en el celular abre el selector propio del teléfono.
+ *  - etiqueta: texto a la izquierda ("Ordenar por")
+ *  - opciones: [{ valor, texto }] · valor · onCambiar(valor)
+ */
+export function Selector({ etiqueta, opciones = [], valor, onCambiar, className, id }) {
+  const autoId = useId();
+  const selectId = id || autoId;
+  return (
+    <span className={[s.selector, className].filter(Boolean).join(' ')}>
+      {etiqueta && <label htmlFor={selectId} className={s.selectorEtiqueta}>{etiqueta}</label>}
+      <span className={s.selectorCaja}>
+        <select id={selectId} value={valor} onChange={(e) => onCambiar?.(e.target.value)}>
+          {opciones.map((o) => <option key={o.valor} value={o.valor}>{o.texto}</option>)}
+        </select>
+        <ChevronDown aria-hidden="true" />
+      </span>
+    </span>
   );
 }

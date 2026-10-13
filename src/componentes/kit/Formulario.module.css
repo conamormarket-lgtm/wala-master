@@ -629,3 +629,81 @@
     transition: none;
   }
 }
+
+/* Buscador grande (página de búsqueda): a todo el ancho, con su botón. */
+.buscadorGrande,
+.buscadorGrande:focus-within {
+  max-width: none;
+}
+
+.buscadorGrande {
+  height: 56px;
+  padding: 0 6px 0 1.1rem;
+  border-radius: 18px;
+}
+
+.buscadorGrande input {
+  font-size: 1rem;
+}
+
+.buscadorBoton {
+  flex-shrink: 0;
+}
+
+/* Selector (<select> con el estilo de Walá). */
+.selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.selectorEtiqueta {
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
+.selectorCaja {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+}
+
+.selectorCaja select {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 2.3rem 0 0.9rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  /* globals.css pinta los campos en noche con un selector muy específico. */
+  background-color: var(--color-surface) !important;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  appearance: none;
+  cursor: pointer;
+  transition: border-color var(--dur-media) ease, box-shadow var(--dur-media) ease;
+}
+
+.selectorCaja select:hover {
+  border-color: var(--violet-300);
+}
+
+.selectorCaja select:focus-visible {
+  border-color: var(--violet-500);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+.selectorCaja svg {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  width: 1rem;
+  height: 1rem;
+  color: var(--primary-color);
+  transform: translateY(-50%);
+  pointer-events: none;
+}

@@ -5,7 +5,7 @@ import Marquesina from './Marquesina';
 import Acordeon from './Acordeon';
 import TarjetaProducto, { TarjetaProductoEsqueleto } from './TarjetaProducto';
 import { Enlace } from './Enlace';
-import { Buscador, Campo } from './Formulario';
+import { Buscador, Campo, Selector } from './Formulario';
 import { Chip } from './Etiquetas';
 import { EstadoVacio, HojaInferior } from './Feedback';
 import { TituloSeccion, tituloDesdeAjustes } from './Seccion';
@@ -327,12 +327,16 @@ const RANGOS_PRECIO = [['', '50', 'Hasta S/ 50'], ['50', '100', 'S/ 50 – 100']
  *  - precio {min, max} / onPrecio: controlado. limitesPrecio {min, max}: lo
  *    que se ve de guía en los campos (sin él se calcula de los productos).
  *  - total: cuántos productos hay (con paginación en servidor); sin él se
- *    cuentan los de la lista.
+ *    cuentan los de la lista. Con `hayMas`, la cuenta lleva "+" ("24+").
+ *  - unidad: [singular, plural] de la cuenta (['resultado', 'resultados'] en
+ *    la búsqueda; por defecto productos).
+ *  - orden: { opciones: [{ valor, texto }], valor, onCambiar, etiqueta } →
+ *    "Ordenar por" a la derecha de la barra (la página ordena la lista).
  *  - resto: como GrillaProductos (hayMas, onCargarMas, onAgregar…).
  */
 export function CatalogoConFiltros({
   ajustes = {}, productos = [], grupos = [], seleccion, onFiltrar, filtrarAqui = !onFiltrar, conBuscador = true,
-  busqueda, onBuscar, precio, onPrecio, limitesPrecio, total, ...grilla
+  busqueda, onBuscar, precio, onPrecio, limitesPrecio, total, unidad = ['producto', 'productos'], orden, ...grilla
 }) {
   const [propia, setPropia] = useState({});
   const [textoPropio, setTextoPropio] = useState('');
@@ -379,7 +383,8 @@ export function CatalogoConFiltros({
     cambiarPrecio({ min: '', max: '' });
   };
   const cantidad = total ?? (filtrarAqui ? visibles.length : null);
-  const textoCantidad = cantidad === 1 ? '1 producto' : `${cantidad} productos`;
+  const nombreUnidad = cantidad === 1 ? unidad[0] : unidad[1];
+  const textoCantidad = `${cantidad}${grilla.hayMas ? '+' : ''} ${nombreUnidad}`;
   const elegidoEn = (g) => activos.find((a) => a.grupo === g)?.nombre;
   const textoPrecio = `S/ ${rango.min || 0} – ${rango.max || '∞'}`;
 
@@ -438,11 +443,14 @@ export function CatalogoConFiltros({
           <div className={s.catalogoBarra}>
             {cantidad != null && (
               <p className={s.catalogoCuenta} role="status">
-                <strong>{cantidad}</strong> {cantidad === 1 ? 'producto' : 'productos'}
+                <strong>{cantidad}{grilla.hayMas ? '+' : ''}</strong> {nombreUnidad}
               </p>
             )}
             {conBuscador && (
               <Buscador placeholder="Buscar en el catálogo" atajo={null} defaultValue={texto} onBuscar={buscar} onChange={onBuscar ? undefined : (e) => setTextoPropio(e.target.value)} className={s.catalogoBuscador} />
+            )}
+            {orden?.opciones?.length > 0 && (
+              <Selector className={s.catalogoOrden} etiqueta={orden.etiqueta ?? 'Ordenar por'} opciones={orden.opciones} valor={orden.valor} onCambiar={orden.onCambiar} />
             )}
             <Boton variante="contorno" className={s.botonFiltros} icono={<SlidersHorizontal aria-hidden="true" />} onClick={() => setHoja(true)}>
               Filtros{cuantos ? ` (${cuantos})` : ''}

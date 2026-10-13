@@ -1,6 +1,6 @@
 export { default as Boton } from './Boton';
 export { Etiqueta, Chip, Moneda, MONEDA, CostoMonedas, GananciaMonedas, SaldoMonedas, Contador } from './Etiquetas';
-export { Campo, Buscador, SelectorTalla, SelectorColor, Cantidad, Interruptor } from './Formulario';
+export { Campo, Buscador, Selector, SelectorTalla, SelectorColor, Cantidad, Interruptor } from './Formulario';
 export { default as TarjetaProducto, TarjetaProductoEsqueleto, soles } from './TarjetaProducto';
 export { Cabecera, BarraInferior, Pestanas, Logo } from './Navegacion';
 export { SeguimientoPedido, ItemCarrito, BarraEnvioGratis, ResumenPedido, PASOS_PEDIDO } from './Pedido';
@@ -10,7 +10,8 @@ export { Enlace, ProveedorEnlaces } from './Enlace';
 export { default as Desplegable } from './Desplegable';
 export { MenuTienda, MenuMarcas, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito } from './MenusCabecera';
 export { default as AgregarRapido } from './AgregarRapido';
-export { accionDeProducto, tarjetaDesdeProducto, esNuevo, opcionesDeProducto, rutaDeMarca, tarjetaDesdeMarca, testimonioDesdeAjuste, precioEfectivo, limitesDePrecio, esTemporada, gruposDeCatalogo, grillaDesdeConfiguracion, juegosDelArcade, kapiDesdePerfil, retoDesdePerfil } from './adaptadores';
+export { accionDeProducto, tarjetaDesdeProducto, esNuevo, opcionesDeProducto, rutaDeMarca, tarjetaDesdeMarca, testimonioDesdeAjuste, precioEfectivo, limitesDePrecio, esTemporada, gruposDeCatalogo, grillaDesdeConfiguracion, juegosDelArcade, kapiDesdePerfil, retoDesdePerfil,
+  sugerenciasDesdeBusqueda, grupoModalidad, ORDENES_BUSQUEDA, ordenarProductos } from './adaptadores';
 export { tipoDeEnlace } from './Enlace';
 export { default as Carrusel } from './Carrusel';
 export { default as Marquesina } from './Marquesina';
@@ -31,4 +32,4 @@ export { EtiquetaColgante, IsoWala, LogoWala, Garabatos, Destello, Corazon, Punt
 export { IconoWala, ICONOS_WALA, iconoDesde } from './IconosWala';
 export { PASTELES, pastel, ACENTOS, acento } from './Marca';
 export * from './piezas';
-export { MarcoTienda, PaginaTienda, productosDeSeccion, PaginaCarrito, PaginaPedidos, PaginaMinijuegos } from './paginas/Paginas';
+export { MarcoTienda, PaginaTienda, productosDeSeccion, PaginaCarrito, PaginaPedidos, PaginaMinijuegos, PaginaBusqueda } from './paginas/Paginas';
