@@ -176,7 +176,8 @@ function normalizeVariantItem(item, index) {
   const name = String(item.name ?? '').trim();
   const imageUrl = String(item.imageUrl ?? '');
   const sizes = Array.isArray(item.sizes) ? item.sizes.filter(Boolean) : [];
-  
+  const sizeLabel = String(item.sizeLabel ?? '').trim();
+
   // Extraer las URLs asegurando que los objetos legacy se conviertan a strings
   const extractUrl = (img) => {
     if (!img) return '';
@@ -214,6 +215,9 @@ function normalizeVariantItem(item, index) {
     thumbnailCrop: item.thumbnailCrop ?? null,
     imagesCrops,
     imagesVariantes,
+    // Nombre de la opción ("Talla", "Medida", "Número"…). Sin él, un cuadro o
+    // unas zapatillas volvían a decir "Talla" después de guardar.
+    ...(sizeLabel ? { sizeLabel } : {}),
     ...(item.colorHex ? { colorHex: item.colorHex } : {})
   };
 }

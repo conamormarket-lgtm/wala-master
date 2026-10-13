@@ -67,8 +67,8 @@ export function opcionesDeProducto(p, { subproductos = {} } = {}) {
     producto: { nombre: p.name, imagen: p.mainImage || p.images?.[0], precio: p.salePrice || p.price, precioAntes: p.salePrice ? p.price : undefined },
     variantes: piezas.length ? [] : vs.map((v) => ({ id: v.id, nombre: v.name, colorHex: v.colorHex, imagen: v.imageUrl, opciones: v.sizes || [] })),
     opciones: piezas.length ? opcionesCombo : p.mainSizes || [],
-    // Ojo: hoy products.js no guarda sizeLabel al normalizar la variante, así
-    // que llega vacío y se usa "Talla". Cuando se guarde, aparecerá solo.
+    // Los productos guardados antes de que products.js conservara sizeLabel
+    // no lo tienen: dicen "Talla" hasta que se vuelvan a guardar.
     etiquetaOpcion: vs.find((v) => v.sizeLabel)?.sizeLabel || 'Talla',
     piezas,
     personalizable: Boolean(p.customizable),
