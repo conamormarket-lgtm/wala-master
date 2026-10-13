@@ -489,7 +489,8 @@
 }
 
 /* Contador junto al icono (el icono va centrado en una píldora de 56 px). */
-.tabIcono > span:not(.tabPildora) {
+/* El contador (número rojo); no el avatar ni la píldora. */
+.tabIcono > span:not(.tabPildora):not(.tabAvatar) {
   top: -5px;
   right: 7px;
   z-index: 2;
