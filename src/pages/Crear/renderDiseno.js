@@ -30,6 +30,9 @@ export const FUENTES = [
   'Montserrat', 'Bebas Neue', 'Anton', 'Oswald', 'Playfair Display', 'Righteous',
   'Pacifico', 'Lobster', 'Dancing Script', 'Great Vibes', 'Permanent Marker', 'Caveat',
   'Kanit', 'Rubik', 'Libre Baskerville',
+  // Locales (public/fonts/fonts.css): se cargan del mismo sitio.
+  'Back to Black', 'Franklin Gothic Heavy Italic', 'Varsity Team Bold', 'Keep on Truckin',
+  'Brush Script', 'Bernadette', 'DK Longreach', 'Rainbow Kitty',
 ];
 
 const fuentesListas = new Map();

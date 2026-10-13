@@ -7,9 +7,10 @@ import styles from './SelectorFuente.module.css';
 // escrita a mano", no un nombre de fuente. Las que no estén aquí van a "Otras".
 const GRUPOS = [
   { nombre: 'Simples', fuentes: ['Montserrat', 'Rubik', 'Kanit'] },
-  { nombre: 'Gruesas', fuentes: ['Bebas Neue', 'Anton', 'Oswald', 'Righteous'] },
+  { nombre: 'Gruesas', fuentes: ['Bebas Neue', 'Anton', 'Oswald', 'Righteous', 'Franklin Gothic Heavy Italic', 'DK Longreach'] },
+  { nombre: 'Deportivas y retro', fuentes: ['Varsity Team Bold', 'Keep on Truckin'] },
   { nombre: 'Elegantes', fuentes: ['Playfair Display', 'Libre Baskerville'] },
-  { nombre: 'Escritas a mano', fuentes: ['Pacifico', 'Lobster', 'Dancing Script', 'Great Vibes', 'Permanent Marker', 'Caveat'] },
+  { nombre: 'Escritas a mano', fuentes: ['Pacifico', 'Lobster', 'Dancing Script', 'Great Vibes', 'Permanent Marker', 'Caveat', 'Back to Black', 'Brush Script', 'Bernadette', 'Rainbow Kitty'] },
 ];
 
 const gruposDisponibles = () => {

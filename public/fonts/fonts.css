@@ -152,3 +152,48 @@
   font-weight: normal;
   font-style: normal;
 }
+
+/* Letras del estudio de Crear (2026-10-13). Cada archivo trae un solo
+   estilo: se declara normal para que el lienzo lo use tal cual. */
+@font-face {
+  font-family: 'Back to Black';
+  src: url('BackToBlack-Bold.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Bernadette';
+  src: url('Bernadette-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Brush Script';
+  src: url('BrushScript-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'DK Longreach';
+  src: url('DKLongreach-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Franklin Gothic Heavy Italic';
+  src: url('FranklinGothic-HeavyItalic.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Keep on Truckin';
+  src: url('KeepOnTruckin-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Rainbow Kitty';
+  src: url('RainbowKitty-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
