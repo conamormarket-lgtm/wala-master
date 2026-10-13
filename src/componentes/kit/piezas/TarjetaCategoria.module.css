@@ -25,9 +25,7 @@
   /* Sombra suave (el color lo pone la foto). */
   box-shadow: 0 12px 24px -18px rgba(46, 16, 101, 0.55);
   overflow: hidden;
-  /* Chromium pierde el recorte redondeado de una foto con multiply mientras
-     el cuadro gira (se ven esquinas rectas): aislar la mezcla lo evita. */
-  isolation: isolate;
+
   transition: transform var(--dur-media) var(--ease-signature);
 }
 
@@ -41,18 +39,24 @@
   pointer-events: none;
 }
 
+/* Capa que recorta la foto. overflow + border-radius falla en Chromium/Edge
+   mientras el cuadro se mueve (la foto se salía con esquinas rectas);
+   clip-path no falla, y al ir en esta capa no corta la sombra del cuadro. */
+.cuadroRecorte {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(0 round 24px);
+}
+
 .cuadroFoto img {
   display: block;
-  /* Y la foto redondea sus propias esquinas, por si acaso. */
-  border-radius: inherit;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  mix-blend-mode: multiply;
   transition: transform 0.6s var(--ease-signature);
 }
 
-.cuadroFoto > span[aria-hidden='true'] {
+.cuadroRecorte > span[aria-hidden='true'] {
   display: grid;
   width: 100%;
   height: 100%;
@@ -103,11 +107,11 @@
 
 @media (hover: hover) and (pointer: fine) {
   .cuadro:hover .cuadroFoto {
-    transform: rotate(var(--giro, -2deg)) translateY(-4px);
+    transform: translateY(-4px);
   }
 
   .cuadro:hover .cuadroFoto img {
-    transform: scale(1.06);
+    transform: scale(1.05);
   }
 
   .cuadro:hover .cuadroCuenta > * {
@@ -134,6 +138,10 @@
     border-radius: 18px;
   }
 
+  .cuadroRecorte {
+    clip-path: inset(0 round 18px);
+  }
+
   .cuadroCuenta {
     top: 8px;
     left: 6px;
@@ -145,9 +153,9 @@
     font-size: 0.82rem;
   }
 
+  /* Sin flecha: el nombre necesita el espacio y todo el cuadro es tocable. */
   .cuadroNombre svg {
-    width: 0.85rem;
-    height: 0.85rem;
+    display: none;
   }
 }
 
@@ -204,7 +212,6 @@
   /* El color de la categoría va en un aro, no detrás de la foto. */
   box-shadow: inset 0 0 0 2px var(--acento, transparent);
   overflow: hidden;
-  isolation: isolate;
   transition: transform var(--dur-media) var(--ease-signature);
 }
 
@@ -224,12 +231,15 @@
 .foto img {
   width: 100%;
   height: 100%;
-  border-radius: inherit;
   object-fit: cover;
-  mix-blend-mode: multiply;
 }
 
-/* Círculo: aro punteado como un sello. */
+.circulo .foto img {
+  clip-path: circle(50%);
+}
+
+/* Círculo: aro punteado como un sello. La foto se recorta sola con
+   clip-path (firme también mientras se mueve; en el contenedor taparía el aro). */
 .circulo .foto {
   border-radius: 50%;
   outline: 2px dashed var(--acento, var(--violet-300, #c4b5fd));

@@ -49,7 +49,7 @@ export function TarjetaCategoria({ forma = 'cuadro', nombre, imagen, cuenta, url
     return (
       <Enlace to={url} onClick={onClick} className={[s.cuadro, className].filter(Boolean).join(' ')} style={{ '--giro': `${giro}deg` }}>
         <span className={s.cuadroFoto} style={{ background: fondo || undefined }}>
-          {foto}
+          <span className={s.cuadroRecorte}>{foto}</span>
           {cuenta != null && (
             <span className={s.cuadroCuenta}>
               <EtiquetaColgante tono="blanco" tamano="sm">{cuenta === 1 ? '1 producto' : `${cuenta} productos`}</EtiquetaColgante>
