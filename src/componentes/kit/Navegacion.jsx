@@ -48,6 +48,7 @@ export function Logo({ alto = 32 }) {
  *  - buscarSugerencias(texto) → promesa de sugerencias (PanelBusqueda): con
  *    ella, el buscador abre el panel (recientes y sugerencias) debajo del
  *    campo; en el celular, una hoja con su propio campo. Sin ella, solo Enter.
+ *  - ideasBusqueda: términos para "Lo más buscado" en el panel
  *
  * Monedas y notificaciones solo aparecen con sesión. En el celular la
  * cabecera tiene dos filas (como la tienda): logo y accesos arriba, el
@@ -73,11 +74,12 @@ export function Cabecera({
   carrito = [],
   onBuscar,
   buscarSugerencias,
+  ideasBusqueda = [],
   placeholder = 'Buscar productos y marcas',
 }) {
   const uid = useId();
   const cajaRef = useRef(null);
-  const busqueda = useBuscadorConPanel({ buscarSugerencias, onBuscar, cajaRef });
+  const busqueda = useBuscadorConPanel({ buscarSugerencias, onBuscar, cajaRef, ideas: ideasBusqueda });
   const [sobre, setSobre] = useState(null);
   const [abierto, setAbierto] = useState(null);
   const noLeidas = notificaciones.filter((n) => !n.leida).length;
@@ -390,7 +392,7 @@ export function Pestanas({ opciones, valor, onChange, etiqueta }) {
    lo escrito, las sugerencias con un respiro entre teclas, las búsquedas
    recientes y dónde se abre (debajo del campo, o en una hoja si la cabecera
    está en su versión de celular). */
-function useBuscadorConPanel({ buscarSugerencias, onBuscar, cajaRef }) {
+function useBuscadorConPanel({ buscarSugerencias, onBuscar, cajaRef, ideas = [] }) {
   const activo = typeof buscarSugerencias === 'function';
   const [abierto, setAbierto] = useState(false);
   const [enHoja, setEnHoja] = useState(false);
@@ -447,7 +449,7 @@ function useBuscadorConPanel({ buscarSugerencias, onBuscar, cajaRef }) {
     buscar,
     campo: activo ? { value: texto, onChange: (e) => setTexto(e.target.value), onFocus: abrir, autoComplete: 'off', 'aria-expanded': abierto } : {},
     panel: {
-      texto, onTexto: setTexto, sugerencias, buscando, recientes, onLimpiarRecientes: limpiar, onBuscar: buscar,
+      texto, onTexto: setTexto, sugerencias, buscando, recientes, ideas, onLimpiarRecientes: limpiar, onBuscar: buscar,
       onNavegar: () => { if (texto.trim()) guardar(texto); setAbierto(false); setTexto(''); },
     },
   };

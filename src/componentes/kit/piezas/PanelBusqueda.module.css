@@ -314,3 +314,70 @@
     transition: none;
   }
 }
+
+/* Invitación (campo vacío y sin recientes): sello de Walá + pregunta con la
+   letra del logo y la palabra subrayada a mano. */
+.invitacion {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.2rem 0.1rem;
+}
+
+.invitacionTexto {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.invitacionTitulo {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.resaltado {
+  position: relative;
+  display: inline-block;
+  color: var(--primary-color);
+}
+
+:global([data-theme='dark']) .resaltado {
+  color: var(--violet-300);
+}
+
+.trazo {
+  position: absolute;
+  left: -2%;
+  bottom: -0.32em;
+  width: 104%;
+  height: 0.45em;
+  color: #f59e0b;
+}
+
+/* Ideas: chips en violeta suave (se distinguen de lo que buscaste tú). */
+.idea {
+  border-color: transparent;
+  background: var(--primary-light);
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.idea svg {
+  color: currentColor;
+}
+
+:global([data-theme='dark']) .idea {
+  background: rgba(167, 139, 250, 0.14);
+  color: var(--violet-200);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .idea:hover {
+    border-color: var(--violet-300);
+  }
+}

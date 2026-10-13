@@ -33,7 +33,7 @@ export default function DemoPiezas({ categorias, marcas, imagenes }) {
   const [activa, setActiva] = useState(null);
   const [personaje, setPersonaje] = useState('Goku');
   const [kapiAbierta, setKapiAbierta] = useState(false);
-  const [textoBusqueda, setTextoBusqueda] = useState('polera');
+  const [textoBusqueda, setTextoBusqueda] = useState('');
   const [recientesDemo, setRecientesDemo] = useState(['casaca', 'taza mágica', 'reloj']);
   const [ordenDemo, setOrdenDemo] = useState('newest');
   // Sugerencias de ejemplo (en la tienda: sugerenciasDesdeBusqueda).
@@ -170,6 +170,7 @@ export default function DemoPiezas({ categorias, marcas, imagenes }) {
             onTexto={setTextoBusqueda}
             sugerencias={sugerenciasDemo}
             recientes={recientesDemo}
+            ideas={['Casacas', 'Combos', 'Relojes', 'Sérums y tratamientos']}
             onLimpiarRecientes={() => setRecientesDemo([])}
             onBuscar={(q) => setTextoBusqueda(q)}
           />

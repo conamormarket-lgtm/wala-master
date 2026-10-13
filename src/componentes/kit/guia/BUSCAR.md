@@ -12,9 +12,9 @@ Cómo verlo en vivo: `npm run dev` → http://localhost:3000/componentes.html �
   ordenar, filtrar, "Ver más productos" (de a 24), "zzz" (sin resultados) y una
   marca sugerida en el panel (búsqueda acotada a esa marca).
 
-| Panel (escritorio) | Panel (celular) |
-|---|---|
-| ![Panel de sugerencias debajo del buscador](buscar-panel.webp) | ![Hoja de búsqueda en el celular](buscar-hoja.webp) |
+| Panel vacío (escritorio) | Escribiendo (escritorio) | Celular |
+|---|---|---|
+| ![Panel vacío: invitación y lo más buscado](buscar-vacio.webp) | ![Panel de sugerencias debajo del buscador](buscar-panel.webp) | ![Hoja de búsqueda en el celular](buscar-hoja.webp) |
 
 | Página (escritorio) | Página (celular) |
 |---|---|
@@ -35,9 +35,13 @@ categoría o marca y sin tildes, como `services/search.js`.
 
 ### Lo que hace el panel
 
-- **Vacío:** "Buscaste hace poco" con las últimas 6 búsquedas como chips (en
-  este navegador, misma clave `wala_busquedas_recientes` que la tienda) y
-  "Borrar".
+- **Vacío:** si nunca buscaste, una invitación de Walá: sello `IconoWala`
+  (destello) y "¿Qué se te *antoja* hoy?" con la letra del logo y la palabra
+  subrayada a mano. Si ya buscaste, "Buscaste hace poco" con las últimas 6
+  (en este navegador, misma clave `wala_busquedas_recientes` que la tienda) y
+  "Borrar". En los dos casos, **"Lo más buscado"**: chips violeta con ideas
+  (`ideasBusqueda` de la `Cabecera`; en la demo, las 5 categorías con más
+  productos). Sin Kapi a propósito: ya está el flotante (uno solo a la vista).
 - **Escribiendo:** productos con foto y precio (`FotoProducto`), y a la derecha
   las marcas (con su sello) y categorías de esos productos con su cuenta.
   Elegir una marca busca solo en ella (`/buscar?q=…&brand=…`); una categoría
@@ -89,6 +93,7 @@ recibir datos.
 
 | Prop del kit | En la tienda |
 |---|---|
+| `ideasBusqueda` | las categorías con más productos (`categoriesData` + la cuenta de `automaticCategoryProducts`) o, si se quiere, los términos más buscados de `trackSearchQuery` |
 | `buscarSugerencias(texto)` | `getSearchSuggestions(texto)` y `sugerenciasDesdeBusqueda(r, { marcas: brandsData, categorias: categoriesData, termino: texto })` (queries `brands` y `categories`, ya en caché) |
 | `onBuscar(q)` (cabecera) | `navigate('/buscar?q=…')` + `trackSearchQuery(q, user)`; desde una página de marca, con `&brand=brandActual.id` |
 | `termino`, `marcaFiltro` | `useSearchParams`: `q` y `brand` (nombre con `getBrand`) |
@@ -116,6 +121,7 @@ recibir datos.
   lupa que abre un panel aparte); en el celular, hoja que sube (hoy, pantalla
   completa).
 - Productos con foto y precio en el panel (hoy solo el nombre).
+- Panel vacío con invitación y "Lo más buscado" (hoy, una línea de texto).
 - Recientes como chips; marcas con su sello.
 - "Ordenar por" con el selector de Walá; en el celular comparte fila con
   "Filtros".

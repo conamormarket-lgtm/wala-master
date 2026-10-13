@@ -270,6 +270,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   /* ── Búsqueda: sugerencias de la cabecera y resultados de /buscar ── */
   const nombresCategorias = useMemo(() => Object.fromEntries(TIENDA.categorias.map((c) => [c.id, c.name])), []);
   const nombresMarcas = useMemo(() => Object.fromEntries(marcas.map((m) => [m.id, m.name])), [marcas]);
+  const ideasBusqueda = useMemo(() => contarPor(TIENDA.productos, (p) => p.categories)
+    .slice(0, 5).map((c) => nombresCategorias[c.id]).filter(Boolean), [nombresCategorias]);
   const buscarSugerencias = useCallback(async (texto) => {
     await new Promise((r) => setTimeout(r, 120)); // lo que tardaría el catálogo
     const casan = TIENDA.productos.filter((p) => casa(p, texto, nombresCategorias, nombresMarcas));
@@ -339,6 +341,9 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     carrito,
     onBuscar: (q) => navegar.current(q ? `/buscar?q=${encodeURIComponent(q)}` : '/buscar'),
     buscarSugerencias,
+    // "Lo más buscado": las categorías con más productos (en la tienda,
+    // también podrían ser los términos más buscados de la analítica).
+    ideasBusqueda,
   };
 
   const flotantes = {

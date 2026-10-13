@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowRight, Clock, Search, X } from 'lucide-react';
+import { IconoWala } from '../IconosWala';
+import { Trazo } from '../Marca';
 import { Enlace } from '../Enlace';
 import { soles } from '../TarjetaProducto';
 import { FotoProducto } from './FotoProducto';
@@ -49,12 +51,15 @@ export function useBusquedasRecientes(clave = CLAVE_RECIENTES) {
  *    cuenta, url }], total } (sugerenciasDesdeBusqueda)
  *  - buscando: se están pidiendo
  *  - recientes, onLimpiarRecientes (useBusquedasRecientes)
+ *  - ideas: términos para empezar ("Lo más buscado": en la tienda, las
+ *    categorías con más productos o los términos más buscados). Con el campo
+ *    vacío y sin recientes, el panel invita a buscar con ellos.
  *  - onBuscar(termino): ir a la página de resultados
  *  - onNavegar: al elegir un producto, marca o categoría (para cerrar)
  *  - conCampo: el panel trae su propio campo (hoja del celular)
  */
 export function PanelBusqueda({
-  texto = '', onTexto, sugerencias, buscando = false, recientes = [], onLimpiarRecientes, onBuscar, onNavegar,
+  texto = '', onTexto, sugerencias, buscando = false, recientes = [], ideas = [], onLimpiarRecientes, onBuscar, onNavegar,
   conCampo = false, placeholder = '¿Qué buscas? (polo, taza, gorro…)',
 }) {
   const campo = useRef(null);
@@ -90,7 +95,20 @@ export function PanelBusqueda({
         </form>
       )}
 
-      {!escribiendo && (recientes.length > 0 ? (
+      {/* Sin nada que recordar: una invitación de Walá, no una línea gris. */}
+      {!escribiendo && recientes.length === 0 && (
+        <div className={s.invitacion}>
+          <IconoWala nombre="destello" tamano={46} girar={-8} />
+          <div className={s.invitacionTexto}>
+            <p className={s.invitacionTitulo}>
+              ¿Qué se te <span className={s.resaltado}>antoja<Trazo className={s.trazo} /></span> hoy?
+            </p>
+            <p className={s.pista}>Escribe un producto, una marca o tu personaje favorito.</p>
+          </div>
+        </div>
+      )}
+
+      {!escribiendo && recientes.length > 0 && (
         <section className={s.bloque}>
           <div className={s.bloqueCabeza}>
             <h3 className={s.bloqueTitulo}>Buscaste hace poco</h3>
@@ -106,9 +124,22 @@ export function PanelBusqueda({
             ))}
           </ul>
         </section>
-      ) : (
-        <p className={s.pista}>Escribe para ver productos, marcas y categorías.</p>
-      ))}
+      )}
+
+      {!escribiendo && ideas.length > 0 && (
+        <section className={s.bloque}>
+          <h3 className={s.bloqueTitulo}>Lo más buscado</h3>
+          <ul className={s.recientes}>
+            {ideas.map((idea) => (
+              <li key={idea}>
+                <button type="button" className={`${s.reciente} ${s.idea}`} onClick={() => onBuscar?.(idea)}>
+                  <Search aria-hidden="true" />{idea}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {escribiendo && (
         <div className={s.columnas} aria-busy={buscando}>
