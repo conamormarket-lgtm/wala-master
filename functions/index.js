@@ -193,6 +193,10 @@ async function vincularCompraReferido(orderId, payload) {
       nombre = perfil.exists ? referidos.primerNombre(perfil.data()) : null;
     }
     if (!nombre) nombre = referidos.primerNombre({ displayName: payload.clienteNombre || payload.clienteNombreCompleto });
+    // Qué compró: el link puede ser de un producto y la compra de otro (vale
+    // cualquier compra en 36 h). Mis Referidos lo muestra para que no se lea
+    // como que compró lo que se compartió.
+    const productosComprados = referidos.nombresProductos(payload.productos);
     await db.runTransaction(async (t) => {
       const snap = await t.get(ref);
       if (!snap.exists) return;
@@ -205,6 +209,7 @@ async function vincularCompraReferido(orderId, payload) {
         orderTotal: Number(payload.montoTotal) || 0,
         ...(r.purchasedAt ? {} : { purchasedAt: FieldValue.serverTimestamp() }),
         ...(!r.visitanteNombre && nombre ? { visitanteNombre: nombre } : {}),
+        ...(productosComprados.length ? { productosComprados } : {}),
         updatedAt: FieldValue.serverTimestamp(),
       });
     });

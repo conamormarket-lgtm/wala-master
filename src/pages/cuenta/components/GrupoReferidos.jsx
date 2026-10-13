@@ -63,7 +63,13 @@ const Persona = ({ r, nombre, ahora, abierto, onToggle, onClaim, reclamando }) =
   else if (e.clave === 'cuenta_nueva') detalle = `Creó su cuenta y recibió ${BONO_BIENVENIDA_INVITACION} monedas · tiene ${restante} para su primera compra`;
   else if (e.clave === 'vencido') detalle = `Entró el ${fechaCorta(r.clickedAt)} · no compró a tiempo`;
   else if (e.clave === 'no_califico') detalle = 'Esta compra no calificó para el premio';
-  else detalle = `Compró el ${fechaCorta(r.purchasedAt || r.clickedAt)} · S/ ${Number(r.orderTotal || 0).toFixed(2)}`;
+  else {
+    // Lo que compró de verdad: el link puede ser de otro producto (cuenta
+    // cualquier compra en 36 h).
+    const lista = r.productosComprados || [];
+    const que = lista.length ? `Compró ${lista.slice(0, 2).join(', ')}${lista.length > 2 ? ` y ${lista.length - 2} más` : ''}` : 'Compró';
+    detalle = `${que} · S/ ${Number(r.orderTotal || 0).toFixed(2)} · ${fechaCorta(r.purchasedAt || r.clickedAt)}`;
+  }
 
   return (
     <li className={styles.persona}>
@@ -128,7 +134,7 @@ const Persona = ({ r, nombre, ahora, abierto, onToggle, onClaim, reclamando }) =
  * lista (nombre si tiene cuenta; si no, "Visitante 3").
  */
 const GrupoReferidos = ({
-  titulo, icono, imagen, descripcion, personas, ahora,
+  titulo, antetitulo, icono, imagen, descripcion, personas, ahora,
   detallesAbiertos, onToggleDetalle, onClaim, claimingId, extra,
 }) => {
   const [todas, setTodas] = useState(false);
@@ -147,6 +153,7 @@ const GrupoReferidos = ({
           ? <img src={imagen} alt="" className={styles.grupoFoto} loading="lazy" />
           : <IconoWala nombre={icono || 'regalo'} tamano={40} />}
         <div className={styles.grupoTexto}>
+          {antetitulo && <p className={styles.grupoAntetitulo}>{antetitulo}</p>}
           <h4 className={styles.grupoTitulo}>{titulo}</h4>
           <p className={styles.grupoMeta}>
             {personas.length} {personas.length === 1 ? 'entró' : 'entraron'}

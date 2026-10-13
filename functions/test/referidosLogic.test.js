@@ -172,4 +172,13 @@ check("teléfonos: mismas formas que guardan el ERP y la tienda", () => {
   assert.strictEqual(r.normDocumento(" 12.345.678 "), "12345678");
 });
 
+check("nombresProductos: lo que se compró, sin repetir", () => {
+  assert.deepStrictEqual(
+    r.nombresProductos({ item_0: { producto: "Polo Adicto a las Rosaditas" }, item_1: { producto: "Taza" }, item_2: { producto: "Taza" } }),
+    ["Polo Adicto a las Rosaditas", "Taza"]
+  );
+  assert.deepStrictEqual(r.nombresProductos([{ nombre: "Gorra" }, null, {}]), ["Gorra"]);
+  assert.deepStrictEqual(r.nombresProductos(undefined), []);
+});
+
 console.log(`referidosLogic: ${count} pruebas OK`);

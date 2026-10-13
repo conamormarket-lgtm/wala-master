@@ -207,8 +207,20 @@ function primerNombre(perfil) {
   return nombre.charAt(0).toLocaleUpperCase("es") + nombre.slice(1);
 }
 
+/** Nombres de lo comprado (máx. 5, sin repetir), del mapa `productos` del pedido. */
+function nombresProductos(productos) {
+  let lista = productos;
+  if (lista && typeof lista === "object" && !Array.isArray(lista)) lista = Object.values(lista);
+  if (!Array.isArray(lista)) return [];
+  const nombres = lista.filter(Boolean)
+    .map((p) => String(p.producto || p.nombre || p.name || "").trim().slice(0, 80))
+    .filter(Boolean);
+  return [...new Set(nombres)].slice(0, 5);
+}
+
 module.exports = {
   VENTANA_REFERIDO_MS,
+  nombresProductos,
   BONO_BIENVENIDA_INVITACION,
   PREMIO_INVITACION,
   VENTANA_INVITACION_MS,

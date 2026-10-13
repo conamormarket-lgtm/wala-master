@@ -323,9 +323,12 @@ const CuentaReferidosPage = () => {
                 key={clave}
                 {...comunes}
                 titulo={titulo}
+                antetitulo={productId ? 'Link del producto' : null}
                 icono={productId ? 'polera' : 'destello'}
                 imagen={producto?.mainImage || producto?.images?.[0] || null}
-                descripcion={clave === 'anteriores' ? 'Los links que se generaban uno por persona. Siguen funcionando.' : null}
+                descripcion={productId
+                  ? 'Cuenta cualquier compra que hagan en 36 h, no solo este producto.'
+                  : clave === 'anteriores' ? 'Los links que se generaban uno por persona. Siguen funcionando.' : null}
                 personas={lista}
                 extra={clave === 'anteriores' && sinAbrir > 0
                   ? <p className={styles.pieNota}>{sinAbrir} {sinAbrir === 1 ? 'link generado sigue' : 'links generados siguen'} sin abrir.</p>

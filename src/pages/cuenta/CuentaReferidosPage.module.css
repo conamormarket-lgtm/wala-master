@@ -714,6 +714,15 @@
   min-width: 0;
 }
 
+.grupoAntetitulo {
+  margin: 0 0 0.1rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7c3aed;
+}
+
 .grupoTitulo {
   margin: 0;
   font-size: 1rem;
@@ -919,6 +928,10 @@
 
 :global([data-theme='dark']) .grupoFoto {
   mix-blend-mode: normal;
+}
+
+:global([data-theme='dark']) .grupoAntetitulo {
+  color: #c4b5fd;
 }
 
 :global([data-theme='dark']) .verTodas {
