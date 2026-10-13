@@ -96,16 +96,12 @@
   height: 1rem;
 }
 
-/* Ícono de app: el isotipo blanco sobre el degradado del logo. */
+/* Ícono real de la app (redondo, como en el celular). */
 .appIcono {
-  display: inline-flex;
   flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
   width: 44px;
   height: 44px;
-  border-radius: 12px;
-  background: var(--degradado-logo, var(--violet-600));
+  border-radius: 50%;
 }
 
 .appTexto {

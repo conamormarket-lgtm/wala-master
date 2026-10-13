@@ -6,7 +6,7 @@ import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { HojaInferior } from '../Feedback';
 import { useBloquearScroll, useCerrarConAtras } from '../Efectos';
-import { IsoWala, EtiquetaColgante } from '../Marca';
+import { EtiquetaColgante } from '../Marca';
 import s from './Marco.module.css';
 
 /*
@@ -39,8 +39,11 @@ export function AvisoSistema({ tipo = 'aviso', children, onCerrar }) {
 /**
  * Banner para bajar la app (solo en el navegador del celular).
  *  - url: tienda de apps  · onCerrar: la X
+ *  - icono: el ícono real de la app (el mismo de Android, Play Store y la
+ *    PWA: public/icons). No se redibuja: tiene que verse igual que en el
+ *    celular.
  */
-export function BannerApp({ titulo = 'Walá App', texto = 'Para una mejor experiencia', accion = 'Obtener', url, onCerrar }) {
+export function BannerApp({ titulo = 'Walá App', texto = 'Para una mejor experiencia', accion = 'Obtener', url, onCerrar, icono = '/icons/icon-192.webp' }) {
   return (
     <div className={s.app}>
       {onCerrar && (
@@ -48,7 +51,7 @@ export function BannerApp({ titulo = 'Walá App', texto = 'Para una mejor experi
           <X aria-hidden="true" />
         </button>
       )}
-      <span className={s.appIcono}><IsoWala tamano={30} tono="blanco" /></span>
+      <img className={s.appIcono} src={icono} alt="" width="44" height="44" decoding="async" />
       <span className={s.appTexto}>
         <strong>{titulo}</strong>
         <span>{texto}</span>

@@ -21,7 +21,7 @@ el carrito y Mis pedidos.
 | # | Parte | Componente | Piezas que usa | Diseño en | Datos (en la tienda) | Quién lo ve |
 |---|---|---|---|---|---|---|
 | M1 | Aviso del sistema (franja arriba) | `AvisoSistema` | — | `piezas/Marco.module.css` | `configuracion/estado_app` | todos, si está activo |
-| M2 | Banner "Walá App" | `BannerApp` | `IsoWala`, `Boton` | `piezas/Marco.module.css` | — | celular web, no en la app |
+| M2 | Banner "Walá App" | `BannerApp` | ícono real de la app (`public/icons/icon-192.webp`), `Boton` | `piezas/Marco.module.css` | — | celular web, no en la app |
 | M3 | Barra de admin | `BarraAdmin` | `Boton`, `Enlace` | `piezas/Marco.module.css` | `isAdmin` (AuthContext) | admins |
 | M4 | Cabecera | `Cabecera` | `Logo`, `Desplegable`, `MenuTienda`, `MenuMarcas`, `SaldoMonedas` + `AyudaMonedas`, `ListaNotificaciones`, `VistaFavoritos`, `VistaCarrito`, `MenuCuenta`, `Buscador`, `BotonTema`, `Boton`, `Contador` | `Navegacion.module.css` (+ `MenusCabecera.module.css`) | enlaces: `storeConfig/homePage.header.navLinks`; categorías y marcas; AuthContext, CartContext, WishlistContext, NotificationsContext | todos (monedas y campana con sesión; la cuenta solo en escritorio) |
 | M5 | Pie | `PiePagina` (`footer_columns`) + `PieLegal` | `LogoWala`, `EtiquetaColgante`, `Garabatos`, `Enlace` | `SeccionesExtra.module.css` (`.pie…`) y `piezas/Marco.module.css` (`.legal…`) | columnas: `pages/footer`; contacto: `config/empresa.js` | todos (no en la app) |
