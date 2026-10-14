@@ -67,8 +67,11 @@ check("creacionesDelPedido: cada línea, cada pieza y su Mi combo, sin repetir",
 });
 
 // disenoCompartido es async: se prueba aparte y al final se imprime el total.
-const fakeDb = (docs) => ({
-  collection: () => ({ doc: (id) => ({ get: async () => ({ exists: !!docs[id], data: () => docs[id] }) }) }),
+const fakeDb = (docs, prendas = {}) => ({
+  collection: (col) => ({ doc: (id) => ({ get: async () => {
+    const fuente = col === "productos_wala" ? prendas : docs;
+    return { exists: !!fuente[id], data: () => fuente[id] };
+  } }) }),
 });
 const P = (n) => `https://x/${n}.jpg`;
 
@@ -78,25 +81,32 @@ const P = (n) => `https://x/${n}.jpg`;
       tipo: "comboCrear", userId: "u1", enPedido: true, name: "Nuestro combo",
       piezas: [{ designId: "a", talla: "M" }, { designId: "b", talla: "L", frente: P("bf"), nombre: "Otra" }],
     },
-    a: { userId: "u1", name: "Polo A", productName: "Polo clásico", color: { nombre: "Blanco", hex: "#fff" }, vistasPrevias: [{ url: P("af") }, { url: P("ae") }] },
+    a: {
+      userId: "u1", name: "Polo A", productName: "Polo clásico", productId: "polo",
+      color: { nombre: "Blanco", hex: "#fff" }, vistasPrevias: [{ vista: "frente", nombre: "Frente", url: P("af") }],
+    },
     b: { userId: "u2", name: "Ajena" },
     suelta: { userId: "u1", enPedido: true, name: "Mi polera", productName: "Polera", variant: { size: "S" }, imagenConjunta: P("s") },
     borrador: { userId: "u1", name: "Sin comprar", vistasPrevias: [{ url: P("x") }] },
   };
-  const db = fakeDb(docs);
+  const db = fakeDb(docs, {
+    polo: { prendaBase: { vistas: [{ id: "frente", nombre: "Frente" }, { id: "espalda", nombre: "Espalda" }] } },
+  });
 
   const combo = await d.disenoCompartido(db, ["mio1"]);
   assert.strictEqual(combo.titulo, "Nuestro combo");
   assert.deepStrictEqual(combo.piezas[0], {
-    nombre: "Polo A", prenda: "Polo clásico", color: "Blanco", colorHex: "#fff", talla: "M", imagenes: [P("af"), P("ae")],
+    nombre: "Polo A", prenda: "Polo clásico", color: "Blanco", colorHex: "#fff", talla: "M",
+    // La espalda va sin diseño: sale igual, sin imagen.
+    lados: [{ nombre: "Frente", url: P("af") }, { nombre: "Espalda", url: "" }],
   });
   // Pieza de otra cuenta: solo lo que guardó el combo, nunca su documento.
-  assert.deepStrictEqual(combo.piezas[1], { nombre: "Otra", prenda: "", color: "", colorHex: "", talla: "L", imagenes: [P("bf")] });
+  assert.deepStrictEqual(combo.piezas[1], { nombre: "Otra", prenda: "", color: "", colorHex: "", talla: "L", lados: [{ nombre: "", url: P("bf") }] });
   count += 1;
 
   const suelta = await d.disenoCompartido(db, ["suelta", "borrador", "../x", "nada"]);
   assert.strictEqual(suelta.piezas.length, 1);
-  assert.deepStrictEqual(suelta.piezas[0].imagenes, [P("s")]);
+  assert.deepStrictEqual(suelta.piezas[0].lados, [{ nombre: "", url: P("s") }]);
   assert.strictEqual(suelta.piezas[0].talla, "S");
   count += 1;
 

@@ -63,11 +63,21 @@ const VerDisenoPage = () => {
               </div>
             </div>
             <div className={styles.fotos}>
-              {p.imagenes.map((url) => (
-                <a key={url} href={url} target="_blank" rel="noopener noreferrer" className={styles.foto}>
-                  <img src={url} alt={`${p.prenda || p.nombre || 'Prenda'}: lado con diseño`} loading="lazy" />
+              {(p.lados || []).map((lado, k) => (lado.url ? (
+                <a key={k} href={lado.url} target="_blank" rel="noopener noreferrer" className={styles.foto}>
+                  <img src={lado.url} alt={`${p.prenda || p.nombre || 'Prenda'}: ${lado.nombre || 'diseño'}`} loading="lazy" />
+                  {lado.nombre && <span className={styles.lado}>{lado.nombre}</span>}
                 </a>
-              ))}
+              ) : (
+                // Lado sin diseño: se dice, para que no parezca que falta la foto.
+                <div key={k} className={`${styles.foto} ${styles.sinDiseno}`}>
+                  <span className={styles.lado}>{lado.nombre}</span>
+                  <span className={styles.liso}>
+                    <strong>Sin diseño</strong>
+                    Este lado va liso{p.color ? `, en ${p.color}` : ''}.
+                  </span>
+                </div>
+              )))}
             </div>
           </li>
         ))}

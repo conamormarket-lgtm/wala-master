@@ -141,9 +141,28 @@ const urlsDe = (lista) => (Array.isArray(lista) ? lista : [])
   .map((v) => (v && typeof v === "object" ? v.url : v))
   .filter((u) => typeof u === "string" && /^https:\/\//.test(u));
 
-function prendaVisible(d, extra = {}) {
-  const imagenes = urlsDe(d.vistasPrevias);
-  if (!imagenes.length) imagenes.push(...urlsDe([d.imagenConjunta, d.previewUrl, d.miniatura]));
+/**
+ * Los lados de la prenda en su orden (Frente, Espalda…), cada uno con la
+ * imagen de su diseño o sin ella: quien mira sabe que la espalda va lisa y no
+ * que falta. Sin la lista de la prenda, solo los lados con diseño.
+ */
+function ladosDe(d, vistasPrenda) {
+  const previas = (Array.isArray(d.vistasPrevias) ? d.vistasPrevias : [])
+    .filter((v) => v && typeof v.url === "string" && /^https:\/\//.test(v.url));
+  if (!previas.length) {
+    return urlsDe([d.imagenConjunta, d.previewUrl, d.miniatura]).slice(0, 1).map((url) => ({ nombre: "", url }));
+  }
+  const lados = vistasPrenda.map((v) => {
+    const previa = previas.find((x) => x.vista === v.id);
+    return { nombre: v.nombre, url: previa ? previa.url : "" };
+  });
+  // Lados con diseño que la prenda ya no tiene (la cambiaron después): igual se muestran.
+  previas.filter((x) => !vistasPrenda.some((v) => v.id === x.vista))
+    .forEach((x) => lados.push({ nombre: String(x.nombre || ""), url: x.url }));
+  return lados.slice(0, 6);
+}
+
+function prendaVisible(d, vistasPrenda, extra = {}) {
   const color = d.color && typeof d.color === "object" ? d.color : null;
   return {
     nombre: String(d.name || ""),
@@ -151,7 +170,7 @@ function prendaVisible(d, extra = {}) {
     color: color ? String(color.nombre || "") : "",
     colorHex: color ? String(color.hex || "") : "",
     talla: String(extra.talla || (d.variant && d.variant.size) || ""),
-    imagenes: imagenes.slice(0, 4),
+    lados: ladosDe(d, vistasPrenda),
   };
 }
 
@@ -161,6 +180,23 @@ async function disenoCompartido(db, ids) {
     const snap = await db.collection("designs").doc(id).get();
     return snap.exists ? snap.data() : null;
   };
+  // Los lados de cada prenda (productos_wala/{id}.prendaBase.vistas), una vez por prenda.
+  const prendas = new Map();
+  const vistasDe = (prendaId) => {
+    const id = String(prendaId || "");
+    if (!ID_VALIDO.test(id)) return Promise.resolve([]);
+    if (!prendas.has(id)) {
+      prendas.set(id, db.collection("productos_wala").doc(id).get()
+        .then((snap) => {
+          const vistas = snap.exists && snap.data().prendaBase && snap.data().prendaBase.vistas;
+          return (Array.isArray(vistas) ? vistas : [])
+            .filter((v) => v && v.id)
+            .map((v) => ({ id: String(v.id), nombre: String(v.nombre || v.id) }));
+        })
+        .catch(() => []));
+    }
+    return prendas.get(id);
+  };
   const piezas = [];
   let titulo = "";
   for (const id of lista) {
@@ -169,15 +205,19 @@ async function disenoCompartido(db, ids) {
     if (d.tipo === "comboCrear" && Array.isArray(d.piezas)) {
       titulo = titulo || String(d.name || d.comboNombre || "");
       const docs = await Promise.all(d.piezas.map((p) => (p && ID_VALIDO.test(String(p.designId || "")) ? leer(String(p.designId)) : null)));
-      d.piezas.forEach((p, i) => {
-        if (!p) return;
-        const pieza = docs[i] && docs[i].userId === d.userId
-          ? prendaVisible(docs[i], { talla: p.talla })
-          : { nombre: String(p.nombre || ""), prenda: "", color: "", colorHex: "", talla: String(p.talla || ""), imagenes: urlsDe([p.frente, p.espalda]) };
-        piezas.push(pieza);
-      });
+      for (let i = 0; i < d.piezas.length; i += 1) {
+        const p = d.piezas[i];
+        if (!p) continue;
+        const doc = docs[i] && docs[i].userId === d.userId ? docs[i] : null;
+        piezas.push(doc
+          ? prendaVisible(doc, await vistasDe(doc.productId || p.prendaId), { talla: p.talla })
+          : {
+            nombre: String(p.nombre || ""), prenda: "", color: "", colorHex: "", talla: String(p.talla || ""),
+            lados: urlsDe([p.frente, p.espalda]).map((url) => ({ nombre: "", url })),
+          });
+      }
     } else {
-      piezas.push(prendaVisible(d));
+      piezas.push(prendaVisible(d, await vistasDe(d.productId)));
     }
   }
   return { titulo, piezas };

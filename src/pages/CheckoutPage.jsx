@@ -192,9 +192,14 @@ const getDesignReferences = (item) => {
  */
 const detalleWhatsapp = (item) => {
   const lineas = [];
-  const pieza = (nombre, color, talla) => `   • ${[nombre, color, talla && `Talla ${talla}`].filter(Boolean).join(' · ')}`;
+  const pieza = (nombre, color, talla, extra = '') => `   • ${[nombre, color, talla && `Talla ${talla}`, extra].filter(Boolean).join(' · ')}`;
   if (item?.customization?.tipo === 'comboCrear') {
-    (item.customization.piezas || []).forEach((p) => lineas.push(pieza(p.prendaNombre || 'Prenda', p.color?.nombre, p.talla)));
+    (item.customization.piezas || []).forEach((p) => {
+      // Qué lados llevan diseño ("solo Frente"): así no se espera una espalda.
+      const lados = (p.vistasPrevias || []).map((v) => v?.nombre).filter(Boolean);
+      const conDiseno = lados.length ? `diseño en ${lados.join(' y ')}` : '';
+      lineas.push(pieza(p.prendaNombre || 'Prenda', p.color?.nombre, p.talla, conDiseno));
+    });
     return lineas;
   }
   if (item?.isComboProduct) {
