@@ -621,3 +621,119 @@
   background: #ede9fe;
   color: #6d28d9;
 }
+
+/* ── Versiones anteriores de los combos (ocultas, se borran a los días) ── */
+.versiones {
+  margin-top: 2rem;
+  border: 1px solid var(--gris-borde);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  background: var(--blanco);
+}
+
+.versiones > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--gris-texto-principal);
+}
+
+.versionesAyuda {
+  margin: 0.6rem 0 0.8rem;
+  font-size: 0.85rem;
+  color: var(--gris-texto-secundario);
+}
+
+.versionesLista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.version {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.versionImagen {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--gris-claro, #f3f4f6);
+}
+
+.versionTexto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.versionTexto strong {
+  font-size: 0.92rem;
+  color: var(--gris-texto-principal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.versionTexto span {
+  font-size: 0.8rem;
+  color: var(--gris-texto-secundario);
+}
+
+.versionAcciones {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.versionRecuperar {
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--primary-color, #7c3aed);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--primary-color, #7c3aed);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.versionRecuperar:hover:not(:disabled) {
+  background: var(--primary-color, #7c3aed);
+  color: #ffffff;
+}
+
+.versionRecuperar:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.versionEliminar {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--gris-texto-secundario);
+  cursor: pointer;
+}
+
+.versionEliminar:hover {
+  color: #dc2626;
+  background: #fef2f2;
+}

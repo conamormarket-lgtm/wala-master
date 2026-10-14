@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Plus, RotateCcw } from 'lucide-react';
+import { Sparkles, Plus, RotateCcw, History, Trash2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDesignsByUser } from '../../services/designs';
 import { usePedidos } from '../../hooks/usePedidos';
@@ -8,7 +8,8 @@ import MiCreacionCard, { MiCreacionCardSkeleton, fechaDeCreacion } from './compo
 import { useEliminarCreacion } from '../Crear/useEliminarCreacion';
 import TusBorradores, { useBorradoresCrear } from '../Crear/TusBorradores';
 import TarjetaMiCombo from '../Crear/TarjetaMiCombo';
-import { esMiCombo, eliminarMiCombo, agruparCombos } from '../../services/misCombos';
+import { esMiCombo, eliminarMiCombo, agruparCombos, recuperarVersion, diasParaBorrar, DIAS_VERSION_REEMPLAZADA } from '../../services/misCombos';
+import { useVersionesReemplazadas } from '../Crear/useVersionesReemplazadas';
 import styles from './MisCreacionesPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -25,7 +26,8 @@ const MisCreacionesPage = () => {
 
   // Misma consulta (y caché) que usa <TusBorradores>: solo para saber si hay
   // borradores y separar las dos secciones con su título.
-  const { data: borradores = [] } = useBorradoresCrear(user?.uid);
+  const borradoresQuery = useBorradoresCrear(user?.uid);
+  const borradores = useMemo(() => borradoresQuery.data || [], [borradoresQuery.data]);
 
   const dni = userProfile?.dni ? String(userProfile.dni).trim() : '';
   const { data: pedidosData, buscar: buscarPedidos } = usePedidos(dni);
@@ -62,6 +64,23 @@ const MisCreacionesPage = () => {
     if (!window.confirm(`¿Quitar el combo "${combo.name || 'Mi combo'}"? Sus prendas siguen en tus creaciones.`)) return;
     const { error: err } = await eliminarMiCombo(combo.id);
     if (!err) setDesigns((prev) => prev.filter((x) => x.id !== combo.id));
+  };
+
+  // Versiones anteriores de las prendas de sus combos: ocultas, se recuperan
+  // aquí y se borran solas a los días (ver versionesReemplazadas).
+  const versiones = useVersionesReemplazadas({
+    uid: user?.uid,
+    creaciones: designs,
+    borradores,
+    listo: !loading && !error && borradoresQuery.isSuccess && !borradoresQuery.isFetching,
+    alBorrar: (ids) => setDesigns((prev) => prev.filter((x) => !ids.includes(x.id))),
+  });
+  const [recuperando, setRecuperando] = useState(null);
+  const recuperar = async (d) => {
+    setRecuperando(d.id);
+    const { error: err } = await recuperarVersion(d.id);
+    setRecuperando(null);
+    if (!err) setDesigns((prev) => prev.map((x) => (x.id === d.id ? { ...x, combo: null, reemplazadaEn: null } : x)));
   };
 
   const purchasedDesignIds = useMemo(() => {
@@ -159,6 +178,54 @@ const MisCreacionesPage = () => {
             )))}
           </ul>
         </section>
+      )}
+
+      {!loading && versiones.length > 0 && (
+        <details className={styles.versiones}>
+          <summary>
+            <History size={17} aria-hidden="true" />
+            Versiones anteriores de tus combos ({versiones.length})
+          </summary>
+          <p className={styles.versionesAyuda}>
+            Son diseños que tus combos ya no usan (los cambiaste por otro). No salen en tus creaciones y se
+            borran solos a los {DIAS_VERSION_REEMPLAZADA} días. Recupera los que quieras guardar.
+          </p>
+          <ul className={styles.versionesLista}>
+            {versiones.map((d) => {
+              const imagen = d.vistasPrevias?.[0]?.url || d.previewUrl || '';
+              const dias = diasParaBorrar(d);
+              const enPedido = d.enPedido === true || purchasedDesignIds.has(d.id);
+              return (
+                <li key={d.id} className={styles.version}>
+                  {imagen ? <img src={imagen} alt="" className={styles.versionImagen} /> : <span className={styles.versionImagen} />}
+                  <div className={styles.versionTexto}>
+                    <strong>{d.name || 'Mi diseño'}</strong>
+                    <span>
+                      {d.combo?.nombre ? `${d.combo.nombre} · ` : ''}
+                      {enPedido
+                        ? 'Está en un pedido: no se borra sola'
+                        : dias > 0 ? `Se borra en ${dias} ${dias === 1 ? 'día' : 'días'}` : 'Se borra hoy'}
+                    </span>
+                  </div>
+                  <div className={styles.versionAcciones}>
+                    <button type="button" className={styles.versionRecuperar} onClick={() => recuperar(d)} disabled={recuperando === d.id}>
+                      Recuperar
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.versionEliminar}
+                      onClick={() => pedirEliminar(d, { enPedido })}
+                      aria-label={`Eliminar ${d.name || 'este diseño'} ya`}
+                      title="Eliminar ya"
+                    >
+                      <Trash2 size={16} aria-hidden="true" />
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </details>
       )}
 
       {/* Los borradores van después: lo principal de esta sección son las

@@ -18,6 +18,7 @@ import MiCreacionCard, { fechaDeCreacion } from './cuenta/components/MiCreacionC
 import TarjetaComunidad, { useComunidad } from './Comunidad/TarjetaComunidad';
 import TarjetaMiCombo from './Crear/TarjetaMiCombo';
 import { esMiCombo, eliminarMiCombo, agruparCombos } from '../services/misCombos';
+import { useVersionesReemplazadas } from './Crear/useVersionesReemplazadas';
 import styles from './PersonalizarPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
@@ -151,8 +152,19 @@ const useCreacionesCrear = (uid) => useQuery({
 
 
 const TusCreaciones = ({ uid }) => {
-  const { data: creaciones = [] } = useCreacionesCrear(uid);
-  const { data: borradores = [] } = useBorradoresCrear(uid);
+  const creacionesQuery = useCreacionesCrear(uid);
+  const borradoresQuery = useBorradoresCrear(uid);
+  const creaciones = useMemo(() => creacionesQuery.data || [], [creacionesQuery.data]);
+  const borradores = useMemo(() => borradoresQuery.data || [], [borradoresQuery.data]);
+  // Versiones anteriores de las prendas de los combos: aquí no salen (las
+  // oculta agruparCombos); esto solo las marca y borra las que pasaron los días.
+  useVersionesReemplazadas({
+    uid,
+    creaciones,
+    borradores,
+    listo: creacionesQuery.isSuccess && !creacionesQuery.isFetching
+      && borradoresQuery.isSuccess && !borradoresQuery.isFetching,
+  });
   const queryClient = useQueryClient();
   const { pedir: pedirEliminar, dialogo: dialogoEliminar } = useEliminarCreacion();
   // Las mismas tarjetas que Mis creaciones, la más reciente primero.
