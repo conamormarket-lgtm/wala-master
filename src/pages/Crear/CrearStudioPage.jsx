@@ -177,18 +177,23 @@ const CrearStudioPage = () => {
     enabled: enCombo,
     queryFn: async () => (await getComboCrear(comboParam)).data,
   });
-  // Las otras piezas del combo que son esta misma prenda y siguen sin diseño:
-  // con un clic llevan el mismo (en una pareja de poleras, la otra polera).
-  const otrasIguales = (() => {
+  // Las otras piezas del combo que son esta misma prenda (en una pareja de
+  // poleras, la otra polera), con el diseño que llevan (o null).
+  const otrasMismaPrenda = (() => {
     // Un combo de la comunidad trae un diseño para cada pieza: no se copia encima.
     if (!enCombo || !comboActual || leerMetaArmado(comboParam).plantilla) return [];
     const armado = leerArmado(comboParam, comboActual.piezas.length);
     return comboActual.piezas
       .map((p, i) => ({ ...p, i }))
-      .filter((p) => p.i !== piezaParam && p.prendaId === id && !armado[p.i]?.designId)
-      .map((p) => p.i);
+      .filter((p) => p.i !== piezaParam && p.prendaId === id)
+      .map((p) => ({ i: p.i, designId: armado[p.i]?.designId || null }));
   })();
+  // Las que siguen sin diseño: con un clic llevan el mismo (marcado de entrada).
+  const otrasIguales = otrasMismaPrenda.filter((p) => !p.designId).map((p) => p.i);
   const [copiarALasOtras, setCopiarALasOtras] = useState(true);
+  // Las que ya tienen otro diseño: se puede pasar este también (reemplaza el
+  // suyo), pero solo si se pide.
+  const [reemplazarOtras, setReemplazarOtras] = useState(false);
   // Bicolor al revés ("versión invertida" del admin): no sale como un color
   // aparte, se activa con el interruptor "Invertir colores" bajo los colores.
   const invertidoDe = (c, colores) => (c ? colores.find((o) => o.espejoDe === c.id) : null);
@@ -256,6 +261,8 @@ const CrearStudioPage = () => {
   const [subiendo, setSubiendo] = useState(0);
   const [procesando, setProcesando] = useState(null);
   const [designId, setDesignId] = useState(designIdParam || null);
+  // Otras piezas iguales del combo que llevan un diseño distinto a este.
+  const otrasConOtroDiseno = otrasMismaPrenda.filter((p) => p.designId && p.designId !== designId);
   const [pedirLogin, setPedirLogin] = useState(false);
   // La talla se elige al agregar al carrito (el estudio es solo para el diseño).
   const [pidiendoTalla, setPidiendoTalla] = useState(false);
@@ -2585,12 +2592,14 @@ const CrearStudioPage = () => {
   const ponerEnCombo = (idPieza) => {
     ponerPieza(comboParam, piezaParam, { designId: idPieza });
     cambiosPiezasRef.current[piezaParam] = idPieza;
-    if (copiarALasOtras) {
-      otrasIguales.forEach((i) => {
-        ponerPieza(comboParam, i, { designId: idPieza });
-        cambiosPiezasRef.current[i] = idPieza;
-      });
-    }
+    const destinos = [
+      ...(copiarALasOtras ? otrasIguales : []),
+      ...(reemplazarOtras ? otrasConOtroDiseno.map((p) => p.i) : []),
+    ];
+    destinos.forEach((i) => {
+      ponerPieza(comboParam, i, { designId: idPieza });
+      cambiosPiezasRef.current[i] = idPieza;
+    });
   };
 
   const confirmarGuardar = async (nombreFinal = nombreEditado, { actualizar = false } = {}) => {
@@ -3622,6 +3631,15 @@ const CrearStudioPage = () => {
                 <span>
                   Ponerlo también en la {otrasIguales.map((i) => `prenda ${i + 1}`).join(' y la ')}
                   <small>Luego puedes cambiarle el color o editarla aparte.</small>
+                </span>
+              </label>
+            )}
+            {enCombo && otrasConOtroDiseno.length > 0 && (
+              <label className={styles.copiarCombo}>
+                <input type="checkbox" checked={reemplazarOtras} onChange={(e) => setReemplazarOtras(e.target.checked)} />
+                <span>
+                  Usar este diseño también en la {otrasConOtroDiseno.map((p) => `prenda ${p.i + 1}`).join(' y la ')}
+                  <small>Reemplaza el diseño que tiene ahora. Luego puedes cambiarle el color o editarla aparte.</small>
                 </span>
               </label>
             )}
