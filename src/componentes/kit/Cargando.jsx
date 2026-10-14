@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IsoWala } from './Marca';
 import s from './Cargando.module.css';
 
 /*
@@ -87,20 +86,19 @@ export function PantallaCarga({ frases, pantallaCompleta = false, saliendo = fal
 }
 
 /**
- * Cargando dentro de la tienda (cambio de página, una sección, una lista):
- * la etiqueta del logo a color meciéndose y un texto en gris. Reemplaza al
- * círculo que gira.
+ * La etiqueta del logo a color meciéndose y un texto en gris. Es la etiqueta
+ * actual (la imagen del splash, pintada con el degradado como el logo de la
+ * cabecera: por la W calada se ve el fondo). Es la pieza de CapaCargando y
+ * sirve suelta en zonas chicas.
  *  - texto ('Cargando' por defecto; null = sin texto) · tamano: 'sm' | 'md' | 'lg'
  *  - bloque: ocupa su espacio y se centra (alto mínimo 240px)
  */
 export function Cargando({ texto = 'Cargando', tamano = 'md', bloque = false }) {
   const fase = useFase();
-  const medida = { sm: 22, md: 34, lg: 52 }[tamano] || 34;
+  const medida = { sm: 20, md: 30, lg: 46 }[tamano] || 30;
   return (
     <div className={[s.cargando, s[`t_${tamano}`], bloque && s.bloque].filter(Boolean).join(' ')} role="status" data-componente="Cargando">
-      <span className={s.mini} style={{ animationDelay: fase.vaiven }} aria-hidden="true">
-        <IsoWala tamano={medida} />
-      </span>
+      <span className={s.mini} style={{ width: medida, animationDelay: fase.vaiven }} aria-hidden="true" />
       {texto ? <span className={s.texto}>{texto}<span className={s.puntos} aria-hidden="true"><i /><i /><i /></span></span> : <span className={s.oculto}>Cargando</span>}
     </div>
   );

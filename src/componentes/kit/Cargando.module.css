@@ -115,10 +115,20 @@
   min-height: 240px;
 }
 
+/* La etiqueta del logo (splash-etiqueta.webp como máscara) con el degradado. */
 .mini {
-  display: inline-flex;
+  display: inline-block;
+  flex-shrink: 0;
+  aspect-ratio: 246 / 330;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #5b21b6 100%);
+  -webkit-mask: url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat;
+  mask: url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat;
   transform-origin: 75% 4%;
   animation: vaiven 2.4s ease-in-out infinite;
+}
+
+:global([data-theme='dark']) .mini {
+  background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%);
 }
 
 .texto {

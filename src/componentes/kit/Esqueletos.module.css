@@ -532,6 +532,36 @@
   border-left: 2px dashed var(--color-border);
 }
 
+/* Sin sesión: la tarjeta centrada de la invitación. */
+.invitado {
+  width: min(100%, 520px);
+  margin: 0 auto;
+  padding-top: 1rem;
+}
+
+.invitadoTarjeta {
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem 1.25rem;
+  border-radius: 24px;
+}
+
+.invitadoBotones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.avisoEntrar {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: min(100%, 720px);
+  margin: 0 auto;
+}
+
 .buscador {
   justify-self: center;
 }

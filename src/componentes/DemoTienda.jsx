@@ -533,7 +533,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         {/* El inicio, sección por sección (las del builder). */}
         {pagina === 'inicio'
           ? <EsqueletoPagina secciones={secciones.map((x) => x.type)} />
-          : <EsqueletoPagina forma={formaEsqueleto} modulo={moduloEsqueleto} />}
+          : <EsqueletoPagina forma={formaEsqueleto} modulo={moduloEsqueleto} sesion={conSesion} />}
       </Parte>
     </MarcoTienda>
   ) : pagina === 'buscar' ? (

@@ -96,6 +96,12 @@ export default function DemoEsqueletos() {
           <EsqueletoPagina forma={forma} />
         </Ficha>
       ))}
+      <Ficha nombre={'EsqueletoPagina forma="cuenta" sesion={false}'} usadaEn="Mi cuenta y la encuesta sin sesión: la invitación a entrar" ancho="1 / -1">
+        <EsqueletoPagina forma="cuenta" sesion={false} />
+      </Ficha>
+      <Ficha nombre={'EsqueletoPagina forma="minijuegos" sesion={false}'} usadaEn="Zona Arcade sin sesión: el aviso para entrar en vez del progreso" ancho="1 / -1">
+        <EsqueletoPagina forma="minijuegos" sesion={false} />
+      </Ficha>
       {MODULOS_ESQUELETO_CUENTA.map((modulo) => (
         <Ficha key={modulo} nombre={`EsqueletoPagina forma="cuenta" modulo="${modulo}"`} usadaEn="Mi cuenta: el menú al costado (en ancho) y lo de ese módulo" ancho="1 / -1">
           <EsqueletoPagina forma="cuenta" modulo={modulo} />

@@ -16,6 +16,11 @@ Cómo verlo en vivo: `npm run dev` → http://localhost:3000/componentes.html �
   detrás de un velo claro y encima una tarjeta con la etiqueta meciéndose:
   "Procesando tu pago".
 
+**Con y sin sesión:** el esqueleto sigue a quien mira (`sesion`). Sin
+sesión, Mi cuenta y la encuesta muestran la forma de la invitación a entrar
+(Kapi, título y dos botones), y Minijuegos, el aviso para entrar en vez del
+progreso. La cabecera es la de siempre (sin monedas ni campana).
+
 **Regla:** para cambiar de página, siempre el esqueleto (ya se sabe la
 forma de lo que viene). `CapaCargando` es solo para esperar algo que no
 tiene forma conocida: un pago, verificar un documento, subir un diseño, o
@@ -60,7 +65,7 @@ del cordón, arriba a la derecha (`transform-origin: 75% 4%`), ±6° en 2,4 s.
 |---|---|---|---|
 | M11 | `PantallaCarga` | La primera carga, con varias piezas. Ver la lista de abajo. | `kit/Cargando.module.css` |
 | M11 | `CapaCargando` | Esperar una acción: velo claro sobre la página y una tarjeta con `Cargando` (`texto`, `detalle`; `pantallaCompleta` fija al viewport). | `kit/Cargando.module.css` |
-| M11 | `Cargando` | La etiqueta a color (`IsoWala`) meciéndose y "Cargando…", con los puntos que aparecen uno tras otro. Es la pieza de `CapaCargando` y sirve suelta en zonas chicas (un menú, un panel). Tiene `tamano` (sm, md, lg) y `bloque`. | `kit/Cargando.module.css` |
+| M11 | `Cargando` | La etiqueta del logo actual (la imagen del splash como máscara, con el degradado; la W calada deja ver el fondo, como el logo de la cabecera) meciéndose y "Cargando…", con los puntos que aparecen uno tras otro. Es la pieza de `CapaCargando` y sirve suelta en zonas chicas (un menú, un panel). Tiene `tamano` (sm, md, lg) y `bloque`. | `kit/Cargando.module.css` |
 | M11 | `EsqueletoPagina` | Mientras llega una página (Suspense): su forma. Ver «Esqueletos» abajo. | `kit/Esqueletos.module.css` |
 
 Qué lleva `PantallaCarga`:

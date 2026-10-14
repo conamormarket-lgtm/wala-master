@@ -404,6 +404,22 @@ const MODULOS_CUENTA = {
   otro: () => <span className={s.dos}><EsqueletoTarjeta lineas={3} alto={220} /><EsqueletoTarjeta lineas={4} alto={220} /></span>,
 };
 
+/** Sin sesión: la invitación a entrar (Mi cuenta, la encuesta): Kapi, título, texto y dos botones. */
+const invitado = () => (
+  <span className={s.invitado}>
+    <span className={cx(s.tarjeta, s.invitadoTarjeta)}>
+      <Hueso forma="circulo" ancho={112} alto={112} />
+      <Hueso alto={22} ancho="60%" />
+      <Hueso alto={11} ancho="85%" />
+      <Hueso alto={11} ancho="65%" />
+      <span className={s.invitadoBotones}>
+        <Hueso forma="pildora" alto={46} ancho={150} />
+        <Hueso forma="pildora" alto={46} ancho={130} />
+      </span>
+    </span>
+  </span>
+);
+
 /** Las secciones del inicio por defecto (si no se pasan las del builder). */
 const INICIO = ['hero_carousel', 'category_grid', 'featured_carousel', 'feature_list', 'product_grid'];
 
@@ -466,7 +482,7 @@ const PAGINAS = {
       </span>
     </>
   ),
-  cuenta: ({ modulo }) => (
+  cuenta: ({ modulo, sesion }) => (sesion === false ? invitado() : (
     <span className={s.cuenta}>
       <span className={cx(s.tarjeta, s.menuCuenta)}>
         <span className={s.tarjetaCabeza}>
@@ -487,7 +503,7 @@ const PAGINAS = {
         {(MODULOS_CUENTA[modulo] || MODULOS_CUENTA.otro)()}
       </span>
     </span>
-  ),
+  )),
   lista: () => (
     <>
       <EsqueletoCabeza />
@@ -500,13 +516,20 @@ const PAGINAS = {
       <span className={s.tarjeta}><EsqueletoFormulario /></span>
     </span>
   ),
-  minijuegos: () => (
+  minijuegos: ({ sesion }) => (
     <>
       <span className={cx(s.cabeza, s.centrado)}>
         <Hueso alto={34} ancho="min(60%, 360px)" />
         <Hueso alto={12} ancho="min(80%, 460px)" />
-        <Hueso forma="pildora" alto={30} ancho={200} />
+        {/* Con sesión, "Cargando tu progreso"; sin ella, el aviso para entrar. */}
+        {sesion !== false && <Hueso forma="pildora" alto={30} ancho={200} />}
       </span>
+      {sesion === false && (
+        <span className={cx(s.tarjeta, s.avisoEntrar)}>
+          <span className={s.filaTextos}><Hueso alto={14} ancho="40%" /><Hueso alto={10} ancho="70%" /></span>
+          <Hueso forma="pildora" alto={42} ancho={140} />
+        </span>
+      )}
       <span className={s.juegos}>{repetir(4, (k) => (
         <span key={k} className={s.tarjeta}>
           <Hueso forma="bloque" proporcion="16 / 10" ancho="100%" />
@@ -525,7 +548,7 @@ const PAGINAS = {
       <span className={s.grilla}>{productos(8)}</span>
     </>
   ),
-  encuesta: () => (
+  encuesta: ({ sesion }) => (sesion === false ? invitado() : (
     <span className={s.encuesta}>
       <Hueso alto={9} ancho={90} />
       <Hueso forma="pildora" alto={8} />
@@ -539,7 +562,7 @@ const PAGINAS = {
         <span className={s.parLinea}><Hueso forma="pildora" alto={44} ancho={100} /><Hueso forma="pildora" alto={44} ancho={160} /></span>
       </span>
     </span>
-  ),
+  )),
   acceso: () => (
     <span className={s.acceso}>
       <span className={s.accesoPanel}>
@@ -559,6 +582,8 @@ const PAGINAS = {
  *  - forma: 'productos' (la grilla, por defecto) | 'inicio' | 'tienda' |
  *    'busqueda' | 'producto' | 'carrito' | 'minijuegos' | 'encuesta' |
  *    'acceso' | 'cuenta' | 'lista' | 'formulario'
+ *  - sesion: false para quien no entró (la cuenta y la encuesta muestran la
+ *    invitación a entrar; Minijuegos, su aviso en vez del progreso)
  *  - modulo (con forma 'cuenta'): uno de MODULOS_ESQUELETO_CUENTA (resumen,
  *    perfil, pedidos, direcciones, ajustes, catalogo, cupones, misiones,
  *    referidos, creaciones, deseos, fechas)
@@ -566,7 +591,7 @@ const PAGINAS = {
  *    la página antes de que lleguen los productos): una EsqueletoSeccion por cada una
  *  - tarjetas, titulo: compatibilidad con la versión anterior (forma 'productos')
  */
-export function EsqueletoPagina({ forma = 'productos', modulo, secciones, tarjetas, titulo = true }) {
+export function EsqueletoPagina({ forma = 'productos', modulo, sesion = true, secciones, tarjetas, titulo = true }) {
   const lista = secciones || (forma === 'inicio' ? INICIO : null);
   return (
     <div className={s.pagina} role="status" aria-busy="true" aria-label="Cargando página" data-componente="EsqueletoPagina">
@@ -580,7 +605,7 @@ export function EsqueletoPagina({ forma = 'productos', modulo, secciones, tarjet
           {titulo && <EsqueletoCabeza />}
           <span className={s.grilla}>{productos(tarjetas)}</span>
         </>
-      ) : (PAGINAS[forma] || PAGINAS.productos)({ modulo })}
+      ) : (PAGINAS[forma] || PAGINAS.productos)({ modulo, sesion })}
     </div>
   );
 }
