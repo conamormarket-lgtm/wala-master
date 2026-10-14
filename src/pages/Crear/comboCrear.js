@@ -88,7 +88,7 @@ export const repartirPrecio = (total, n) => {
  * (vistas previas, archivos de impresión, zonas, color y talla).
  * `piezas` = [{ prenda, creacion, talla }] en el orden del combo.
  */
-export const itemDeCombo = ({ combo, piezas }) => {
+export const itemDeCombo = ({ combo, piezas, miComboId = '' }) => {
   const detalle = piezas.map(({ prenda, creacion, talla }) => {
     const [, , personalizacion] = itemDeCreacion({ prenda, creacion, talla });
     return {
@@ -105,6 +105,8 @@ export const itemDeCombo = ({ combo, piezas }) => {
     {
       tipo: 'comboCrear',
       nombre: combo.name,
+      // De qué "Mi combo" salió: el carrito vuelve a ESE combo (con sus diseños).
+      ...(miComboId && { miComboId }),
       piezas: detalle,
       finalPrice: precioBase(combo),
       imageURL: imagen,

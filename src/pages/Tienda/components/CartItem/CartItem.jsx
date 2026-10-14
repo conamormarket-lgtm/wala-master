@@ -40,10 +40,11 @@ const CartItem = ({ item, incompleto = false }) => {
 
   // Una creación del apartado Crear abre su propia página (la del cliente),
   // no la prenda en blanco.
-  // Un combo de Crear vuelve a su página (para armar otro igual).
+  // Un combo de Crear vuelve a SU combo (?mio=, con sus diseños y tallas); los
+  // agregados antes de guardar ese dato, a la página del combo.
   const piezasCombo = item.customization?.tipo === 'comboCrear' ? (item.customization.piezas || []) : null;
   const enlace = piezasCombo
-    ? `/combo/${item.productId}`
+    ? `/combo/${item.productId}${item.customization.miComboId ? `?mio=${item.customization.miComboId}` : ''}`
     : item.customization?.tipo === 'crear' && item.customization?.designId
       ? `/creacion/${item.customization.designId}`
       : `/producto/${item.productId}`;

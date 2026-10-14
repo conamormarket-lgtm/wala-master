@@ -536,6 +536,7 @@ const ComboCrearPage = () => {
     addToCart(...itemDeCombo({
       combo,
       piezas: piezas.map((p) => ({ prenda: p.prenda, creacion: p.creacion, talla: p.talla })),
+      miComboId: meta.miComboId,
     }));
     olvidarArmado(id);
     navigate('/carrito');
