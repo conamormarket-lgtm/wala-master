@@ -99,9 +99,10 @@ const P = (n) => `https://x/${n}.jpg`;
     nombre: "Polo A", prenda: "Polo clásico", color: "Blanco", colorHex: "#fff", talla: "M",
     // La espalda va sin diseño: sale igual, sin imagen.
     lados: [{ nombre: "Frente", url: P("af") }, { nombre: "Espalda", url: "" }],
+    imagenes: [P("af")],
   });
   // Pieza de otra cuenta: solo lo que guardó el combo, nunca su documento.
-  assert.deepStrictEqual(combo.piezas[1], { nombre: "Otra", prenda: "", color: "", colorHex: "", talla: "L", lados: [{ nombre: "", url: P("bf") }] });
+  assert.deepStrictEqual(combo.piezas[1], { nombre: "Otra", prenda: "", color: "", colorHex: "", talla: "L", lados: [{ nombre: "", url: P("bf") }], imagenes: [P("bf")] });
   count += 1;
 
   const suelta = await d.disenoCompartido(db, ["suelta", "borrador", "../x", "nada"]);

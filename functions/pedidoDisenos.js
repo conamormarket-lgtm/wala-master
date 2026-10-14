@@ -170,9 +170,13 @@ function prendaVisible(d, vistasPrenda, extra = {}) {
     color: color ? String(color.nombre || "") : "",
     colorHex: color ? String(color.hex || "") : "",
     talla: String(extra.talla || (d.variant && d.variant.size) || ""),
-    lados: ladosDe(d, vistasPrenda),
+    ...conImagenes(ladosDe(d, vistasPrenda)),
   };
 }
+
+// `imagenes` (solo las URLs) es lo que lee la página publicada antes de
+// `lados`: mientras una pestaña vieja siga abierta, no se rompe.
+const conImagenes = (lados) => ({ lados, imagenes: lados.map((l) => l.url).filter(Boolean) });
 
 async function disenoCompartido(db, ids) {
   const lista = [...new Set((Array.isArray(ids) ? ids : [ids]).map(String))].filter((id) => ID_VALIDO.test(id)).slice(0, 4);
@@ -213,7 +217,7 @@ async function disenoCompartido(db, ids) {
           ? prendaVisible(doc, await vistasDe(doc.productId || p.prendaId), { talla: p.talla })
           : {
             nombre: String(p.nombre || ""), prenda: "", color: "", colorHex: "", talla: String(p.talla || ""),
-            lados: urlsDe([p.frente, p.espalda]).map((url) => ({ nombre: "", url })),
+            ...conImagenes(urlsDe([p.frente, p.espalda]).map((url) => ({ nombre: "", url }))),
           });
       }
     } else {
