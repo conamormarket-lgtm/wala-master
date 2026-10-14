@@ -257,6 +257,10 @@ const CrearStudioPage = () => {
   const centroZoomRef = useRef(null);
   const paneoRef = useRef(null);
   const cambiarZoomRef = useRef(null);
+  // El lienzo ocupa todo el recuadro gris; la prenda (el "mundo", en las
+  // coordenadas de siempre) mide mundoRef y va centrada. Así, con zoom, la
+  // prenda llena el recuadro en vez de cortarse en el borde de la foto.
+  const mundoRef = useRef({ w: 0, h: 0 });
   // Menú del clic derecho: { x, y, capaId } sobre un diseño, o { x, y, zonaId, punto } en la zona.
   const [menu, setMenu] = useState(null);
   const cerrarMenu = useCallback(() => setMenu(null), []);
@@ -379,25 +383,32 @@ const CrearStudioPage = () => {
     const t = window.innerWidth <= 768 && !verCompleta && zonaAcercada ? transformsRef.current[zonaAcercada] : null;
     const W = lienzo.getWidth();
     const H = lienzo.getHeight();
-    let destino = [1, 0, 0, 1, 0, 0];
+    const Wm = mundoRef.current.w || W;
+    const Hm = mundoRef.current.h || H;
+    // Lo que queda al centro del lienzo con zoom z: el punto c de la prenda,
+    // sin dejar ver fuera de ella si es más grande que el recuadro (si es
+    // más chica, va centrada).
+    const vista = (z, c) => {
+      const medio = (lado, mundo, valor) => (mundo * z <= lado
+        ? mundo / 2
+        : Math.min(mundo - lado / (2 * z), Math.max(lado / (2 * z), valor)));
+      const cx = medio(W, Wm, c.x);
+      const cy = medio(H, Hm, c.y);
+      return { c: { x: cx, y: cy }, v: [z, 0, 0, z, W / 2 - cx * z, H / 2 - cy * z] };
+    };
+    let destino = vista(1, { x: Wm / 2, y: Hm / 2 }).v;
     if (zoomManual > 1) {
       // Zoom a mano: manda sobre el acercamiento automático del celular.
-      const z = zoomManual;
-      const c = centroZoomRef.current || { x: W / 2, y: H / 2 };
-      // El centro no puede salirse de la foto (no se ve nada fuera).
-      const cx = Math.min(W - W / (2 * z), Math.max(W / (2 * z), c.x));
-      const cy = Math.min(H - H / (2 * z), Math.max(H / (2 * z), c.y));
-      centroZoomRef.current = { x: cx, y: cy };
-      destino = [z, 0, 0, z, W / 2 - cx * z, H / 2 - cy * z];
+      const r = vista(zoomManual, centroZoomRef.current || { x: Wm / 2, y: Hm / 2 });
+      centroZoomRef.current = r.c;
+      destino = r.v;
     } else if (t) {
       const a = (t.ang * Math.PI) / 180;
       const bw = Math.abs(t.zw * Math.cos(a)) + Math.abs(t.zh * Math.sin(a));
       const bh = Math.abs(t.zw * Math.sin(a)) + Math.abs(t.zh * Math.cos(a));
       const z = Math.max(1, Math.min(3, W / (bw * 1.3), H / (bh * 1.3)));
       // Centrada en la zona, sin mostrar nada fuera de la foto.
-      const tx = Math.min(0, Math.max(W - W * z, W / 2 - t.cx * z));
-      const ty = Math.min(0, Math.max(H - H * z, H / 2 - t.cy * z));
-      destino = [z, 0, 0, z, tx, ty];
+      destino = vista(z, { x: t.cx, y: t.cy }).v;
     }
     const fijar = (v) => {
       lienzo.setViewportTransform(v);
@@ -427,20 +438,33 @@ const CrearStudioPage = () => {
     aplicarZoomRef.current?.(true);
   }, [zonaAcercada, verCompleta, zoomManual]);
 
-  /** Cambia el zoom a mano (1 = la prenda entera), acercándose a `punto` o a lo elegido. */
+  /**
+   * Cambia el zoom a mano (1 = la prenda entera):
+   *  - con un diseño elegido (o mientras se sostiene), se acerca a él y lo deja al centro;
+   *  - sin nada elegido, con la rueda se acerca a donde está el puntero (ese
+   *    punto no se mueve) y con los botones a lo que ya se veía (o a la zona).
+   */
   const NIVELES_ZOOM = [1, 1.5, 2, 3, 4];
   cambiarZoomRef.current = (nuevo, punto = null) => {
     const z = Math.max(1, Math.min(4, Math.round(nuevo * 100) / 100));
     const lienzo = fabricRef.current;
+    const anterior = zoomManualRef.current;
+    const { w: Wm, h: Hm } = mundoRef.current;
+    const actual = centroZoomRef.current || { x: Wm / 2, y: Hm / 2 };
+    const obj = lienzo?.getActiveObject();
     if (z <= 1) {
       centroZoomRef.current = null;
+    } else if (obj) {
+      const p = obj.getCenterPoint();
+      centroZoomRef.current = { x: p.x, y: p.y };
     } else if (punto) {
-      centroZoomRef.current = punto;
-    } else if (zoomManualRef.current <= 1 || !centroZoomRef.current) {
-      const obj = lienzo?.getActiveObject();
+      centroZoomRef.current = {
+        x: punto.x + (actual.x - punto.x) * (anterior / z),
+        y: punto.y + (actual.y - punto.y) * (anterior / z),
+      };
+    } else if (anterior <= 1 || !centroZoomRef.current) {
       const t = transformsRef.current[zonaRef.current];
-      const p = obj ? obj.getCenterPoint() : null;
-      centroZoomRef.current = p ? { x: p.x, y: p.y } : t ? { x: t.cx, y: t.cy } : null;
+      centroZoomRef.current = t ? { x: t.cx, y: t.cy } : actual;
     }
     setZoomManual(z);
   };
@@ -915,7 +939,7 @@ const CrearStudioPage = () => {
       if (!paneoRef.current || zoomManualRef.current <= 1) return;
       const p = puntoPantalla(opt.e);
       const z = zoomManualRef.current;
-      const c = centroZoomRef.current || { x: lienzo.getWidth() / 2, y: lienzo.getHeight() / 2 };
+      const c = centroZoomRef.current || { x: mundoRef.current.w / 2, y: mundoRef.current.h / 2 };
       centroZoomRef.current = { x: c.x - (p.x - paneoRef.current.x) / z, y: c.y - (p.y - paneoRef.current.y) / z };
       paneoRef.current = p;
       aplicarZoomRef.current?.(false);
@@ -928,13 +952,13 @@ const CrearStudioPage = () => {
         e.preventDefault();
         e.stopPropagation();
         const punto = lienzo.getPointer(e);
-        cambiarZoomRef.current?.(z * (e.deltaY < 0 ? 1.15 : 1 / 1.15), z <= 1 ? { x: punto.x, y: punto.y } : null);
+        cambiarZoomRef.current?.(z * (e.deltaY < 0 ? 1.15 : 1 / 1.15), { x: punto.x, y: punto.y });
         return;
       }
       if (z <= 1) return;
       e.preventDefault();
       e.stopPropagation();
-      const c = centroZoomRef.current || { x: lienzo.getWidth() / 2, y: lienzo.getHeight() / 2 };
+      const c = centroZoomRef.current || { x: mundoRef.current.w / 2, y: mundoRef.current.h / 2 };
       centroZoomRef.current = { x: c.x + e.deltaX / z, y: c.y + e.deltaY / z };
       aplicarZoomRef.current?.(false);
     });
@@ -1253,7 +1277,10 @@ const CrearStudioPage = () => {
 
         // De una sola vez (sin dibujar entre medio).
         lienzo.renderOnAddRemove = false;
-        lienzo.setDimensions({ width: ancho, height: Math.round(ih + margen * 2) });
+        // El lienzo ocupa todo el recuadro; la prenda se centra con el zoom
+        // (aplicarZoomRef). Así, con zoom, la prenda llena el recuadro.
+        mundoRef.current = { w: ancho, h: Math.round(ih + margen * 2) };
+        lienzo.setDimensions({ width: Math.max(ancho, anchoLienzo), height: Math.round(ih + margen * 2) });
         // clear() suelta la selección (y avisa "selection:cleared"): se recuerda
         // cuál estaba elegida para volver a elegirla al terminar.
         const elegida = seleccionRef.current;
