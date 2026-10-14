@@ -1693,3 +1693,16 @@
   border-color: rgba(167, 139, 250, 0.35);
   background: rgba(139, 92, 246, 0.12);
 }
+
+/* En un combo solo queda "Descargar" bajo "Listo, usar en el combo". */
+.accionesSolo {
+  grid-template-columns: 1fr;
+}
+
+/* Prenda 2 de una pareja bicolor: va al revés. */
+.notaInvertida {
+  margin: 0.6rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--primary-color, #6d28d9);
+}

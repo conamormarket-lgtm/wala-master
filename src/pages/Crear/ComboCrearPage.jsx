@@ -456,11 +456,24 @@ const ComboCrearPage = () => {
                       >
                         <Pencil size={15} aria-hidden="true" /> {p.creacion.estado === 'borrador' ? 'Continuar' : 'Editar'}
                       </Link>
-                      {vaciasIguales > 0 && p.lista && (
-                        <button type="button" className={styles.secundario} onClick={() => usarEnLasDemas(p.i)}>
-                          <Copy size={15} aria-hidden="true" /> Usar en {vaciasIguales === 1 ? 'la otra' : 'las demás'}
-                        </button>
-                      )}
+                      {vaciasIguales > 0 && p.lista && (() => {
+                        // Un bicolor con versión invertida va al revés en la otra prenda:
+                        // se abre su estudio con la copia (ya invertida) en vez de repetirla.
+                        const cfgP = leerPrendaBase(p.prenda);
+                        const colorP = cfgP.colores.find((c) => c.id === p.creacion.color?.id);
+                        const conInvertido = Boolean(colorP && (colorP.espejoDe || cfgP.colores.some((c) => c.espejoDe === colorP.id)));
+                        const destino = piezas.find((o) => o.i !== p.i && !o.designId
+                          && piezasCombo[o.i].prendaId === piezasCombo[p.i].prendaId);
+                        return conInvertido && destino ? (
+                          <Link to={urlEstudio(destino.i, `&copiar=${p.designId}`)} state={estadoEstudio} className={styles.secundario}>
+                            <Copy size={15} aria-hidden="true" /> Copiar a la otra (al revés)
+                          </Link>
+                        ) : (
+                          <button type="button" className={styles.secundario} onClick={() => usarEnLasDemas(p.i)}>
+                            <Copy size={15} aria-hidden="true" /> Usar en {vaciasIguales === 1 ? 'la otra' : 'las demás'}
+                          </button>
+                        );
+                      })()}
                       <button type="button" className={styles.texto} onClick={() => quitar(p.i)}>
                         <X size={15} aria-hidden="true" /> Quitar
                       </button>
