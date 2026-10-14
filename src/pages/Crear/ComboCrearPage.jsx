@@ -188,6 +188,7 @@ const ComboCrearPage = () => {
   // muestra el suyo y se personaliza desde ahí.
   const { data: plantillaCombo } = useQuery({
     queryKey: ['comunidad-diseno', meta.plantilla],
+    refetchOnMount: 'always',
     enabled: Boolean(meta.plantilla),
     queryFn: async () => {
       const d = await obtenerDisenoComunidad(meta.plantilla);

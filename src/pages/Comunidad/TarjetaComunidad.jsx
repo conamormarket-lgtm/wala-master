@@ -10,11 +10,16 @@ import styles from '../cuenta/MisCreacionesPage.module.css';
 import duo from '../Crear/TarjetaMiCombo.module.css';
 import propios from './Comunidad.module.css';
 
-/** La galería (pública, sin sesión). Cambia poco: un minuto de caché. */
+/**
+ * La galería (pública, sin sesión). Se vuelve a pedir cada vez que se muestra
+ * (mientras, la de caché): con refetchOnMount: false global, una publicación
+ * actualizada no se veía hasta recargar. El servidor ya la tiene en caché.
+ */
 export const useComunidad = () => useQuery({
   queryKey: ['comunidad'],
   queryFn: listarComunidad,
   staleTime: 60 * 1000,
+  refetchOnMount: 'always',
 });
 
 /**

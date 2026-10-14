@@ -77,6 +77,7 @@ const AccionesComunidad = ({ design, onCambio }) => {
     setAccion(null);
     onCambio?.(nuevo);
     queryClient.invalidateQueries({ queryKey: ['comunidad'] });
+    queryClient.invalidateQueries({ queryKey: ['comunidad-diseno'] });
     queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'], refetchType: 'all' });
     queryClient.invalidateQueries({ queryKey: ['creacion', design.id] });
   };
