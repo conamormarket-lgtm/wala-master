@@ -13,7 +13,8 @@ import { getDesignById, eliminarCreacion, saveDesign } from './designs';
  * guardadas y listas para imprimir pasa a 'guardada' (en "Tus creaciones").
  *
  *   { userId, tipo: 'comboCrear', estado, comboId, comboNombre, name,
- *     piezas: [{ designId, prendaId, talla }], previas: [imagen por pieza] }
+ *     piezas: [{ designId, prendaId, talla }], previas: [imagen por pieza],
+ *     previasEspalda: [segunda imagen por pieza ('' si tiene un solo lado)] }
  */
 export const esMiCombo = (d) => d?.tipo === 'comboCrear';
 
@@ -35,6 +36,8 @@ const datos = ({ combo, piezas, creaciones }) => ({
     talla: p.talla || '',
   })),
   previas: creaciones.map(imagenDe),
+  // La espalda (u otro lado) de cada prenda: la tarjeta la muestra al pasar el mouse.
+  previasEspalda: creaciones.map((d) => d?.vistasPrevias?.[1]?.url || ''),
 });
 
 /**

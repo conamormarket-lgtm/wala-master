@@ -1,8 +1,10 @@
 import React, { useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueries } from '@tanstack/react-query';
 import { Trash2, Paintbrush, ShoppingBag, Clock, Users, ArrowRight } from 'lucide-react';
 import { getComboCrear } from '../../services/combosCrear';
+import { getDesignById } from '../../services/designs';
+import { useAlternarFotos } from '../../hooks/useAlternarFotos';
 import { useAlVerUnaVez } from '../../hooks/useAlVerUnaVez';
 import { precioBase } from '../../utils/prendaBase';
 import NombreEditable from './NombreEditable';
@@ -29,6 +31,25 @@ const TarjetaMiCombo = ({ design, onEliminar, onRenombrado, onComunidad }) => {
     queryFn: async () => (await getComboCrear(design.comboId)).data,
   });
   const previas = (design.previas || []).filter(Boolean);
+  // La espalda de cada prenda (si tiene diseño atrás), para verla al pasar el
+  // mouse. Los combos guardados antes no la traen: se leen sus prendas.
+  const sinEspaldas = !Array.isArray(design.previasEspalda);
+  const piezasQ = useQueries({
+    queries: (design.piezas || []).map((p) => ({
+      queryKey: ['pieza-combo', p.designId],
+      enabled: sinEspaldas && Boolean(p.designId),
+      staleTime: 5 * 60 * 1000,
+      queryFn: async () => (await getDesignById(p.designId)).data || null,
+    })),
+  });
+  const espaldaDe = (i) => (sinEspaldas
+    ? piezasQ[i]?.data?.vistasPrevias?.[1]?.url
+    : design.previasEspalda[i]) || '';
+  // Cada prenda con su frente (la de siempre) y su espalda.
+  const fotos = (design.previas || []).map((src, i) => ({ src, espalda: espaldaDe(i) })).filter((f) => f.src);
+  const hayEspalda = fotos.some((f) => f.espalda);
+  // En el celular (sin mouse) frente y espalda alternan solas.
+  const verEspalda = useAlternarFotos(fotoRef, hayEspalda);
   const url = `/combo/${design.comboId}?mio=${design.id}`;
   const disponible = Boolean(combo) && combo.publicado && combo.deleted !== true;
   const fecha = fechaDeCreacion(design);
@@ -40,8 +61,17 @@ const TarjetaMiCombo = ({ design, onEliminar, onRenombrado, onComunidad }) => {
     <li className={styles.card}>
       <div className={styles.media}>
         <Link to={url} className={styles.foto} aria-label={`Abrir el combo ${design.name || ''}`}>
-          <span ref={fotoRef} className={`${propios.prendas} ${visto ? propios.saludo : ''}`} style={{ '--n': Math.max(previas.length, 1) }}>
-            {previas.map((src, i) => <img key={`${src}-${i}`} src={src} alt="" loading="lazy" />)}
+          <span
+            ref={fotoRef}
+            className={`${propios.prendas} ${visto ? propios.saludo : ''} ${verEspalda ? propios.verDetras : ''}`}
+            style={{ '--n': Math.max(previas.length, 1) }}
+          >
+            {fotos.map((f, i) => (
+              <span key={`${f.src}-${i}`} className={propios.prenda}>
+                <img src={f.src} alt="" loading="lazy" />
+                {f.espalda && <img src={f.espalda} alt="" loading="lazy" className={propios.detras} />}
+              </span>
+            ))}
           </span>
         </Link>
         <div className={styles.insignias}>

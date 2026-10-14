@@ -9,18 +9,41 @@
 }
 
 /* Lado a lado, sin encimarse: las vistas previas traen su propio fondo y
-   encimadas se veía el borde de una sobre la otra. */
-.prendas img {
+   encimadas se veía el borde de una sobre la otra. Cada prenda es una foto
+   (comunidad) o una caja con su frente y su espalda (Mi combo). */
+.prendas > img,
+.prendas > .prenda {
   width: calc((100% - 2% * (var(--n, 2) - 1)) / var(--n, 2));
   max-height: 100%;
   object-fit: contain;
   transition: transform var(--dur-media, 320ms) ease;
 }
 
+.prenda {
+  position: relative;
+  height: 100%;
+}
+
+.prenda > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: opacity var(--dur-media, 320ms) ease;
+}
+
+/* La espalda: al pasar el mouse (o, en el celular, cuando toca alternar). */
+.prenda > .detras { opacity: 0; }
+.verDetras .prenda > .detras { opacity: 1; }
+.verDetras .prenda > img:not(.detras):not(:only-child) { opacity: 0; }
+
 /* Igual que las tarjetas de combos de Crear: se inclinan al pasar el mouse. */
 @media (hover: hover) {
-  a:hover .prendas img:nth-child(odd) { transform: rotate(-3deg); }
-  a:hover .prendas img:nth-child(even) { transform: rotate(3deg); }
+  a:hover .prendas > :nth-child(odd) { transform: rotate(-3deg); }
+  a:hover .prendas > :nth-child(even) { transform: rotate(3deg); }
+  a:hover .prenda > .detras { opacity: 1; }
+  a:hover .prenda > img:not(.detras):not(:only-child) { opacity: 0; }
 }
 
 /* Al aparecer en pantalla las prendas se mueven una vez (como al pasar el
@@ -37,11 +60,11 @@
   70% { transform: rotate(-1deg); }
 }
 
-.saludo img:nth-child(odd) { animation: saludoIzq 0.9s ease-out; }
-.saludo img:nth-child(even) { animation: saludoDer 0.9s ease-out 0.08s; }
+.saludo > :nth-child(odd) { animation: saludoIzq 0.9s ease-out; }
+.saludo > :nth-child(even) { animation: saludoDer 0.9s ease-out 0.08s; }
 
 @media (prefers-reduced-motion: reduce) {
-  .saludo img { animation: none; }
+  .saludo > * { animation: none; }
 }
 
 
