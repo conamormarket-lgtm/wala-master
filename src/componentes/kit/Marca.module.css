@@ -216,6 +216,16 @@
   box-shadow: 0 6px 12px -8px rgba(13, 148, 136, 0.8);
 }
 
+.sello_bronce {
+  background: linear-gradient(135deg, #fdba74 0%, #c2410c 100%);
+  box-shadow: 0 6px 12px -8px rgba(194, 65, 12, 0.8);
+}
+
+.sello_plata {
+  background: linear-gradient(135deg, #e2e8f0 0%, #64748b 100%);
+  box-shadow: 0 6px 12px -8px rgba(71, 85, 105, 0.8);
+}
+
 .sello_rosa {
   background: linear-gradient(135deg, #f9a8d4 0%, #db2777 100%);
   box-shadow: 0 6px 12px -8px rgba(219, 39, 119, 0.8);

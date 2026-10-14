@@ -1,0 +1,256 @@
+/* ── Forma de ganar ──────────────────────────────────────── */
+.forma {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  min-width: 0;
+  padding: 1rem 1.05rem;
+  border: 1px dashed var(--violet-300, #c4b5fd);
+  border-radius: 6px 20px 20px 20px;
+  background: color-mix(in srgb, var(--primary-light) 45%, var(--color-surface));
+}
+
+:global([data-theme='dark']) .forma {
+  border-color: rgba(167, 139, 250, 0.35);
+  background: rgba(167, 139, 250, 0.07);
+}
+
+.formaTextos {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.formaTitulo {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.formaTexto {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.formaTexto strong {
+  color: var(--color-text);
+}
+
+/* ── Link de invitación ──────────────────────────────────── */
+.enlace {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.enlaceUrl {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  overflow-wrap: anywhere;
+  border: 1.5px dashed var(--violet-300, #c4b5fd);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--primary-light) 50%, var(--color-surface));
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+:global([data-theme='dark']) .enlaceUrl {
+  border-color: rgba(167, 139, 250, 0.45);
+  background: rgba(167, 139, 250, 0.08);
+}
+
+.enlaceBotones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.enlaceBotones > * {
+  flex: 1 1 12rem;
+}
+
+/* ── Persona ─────────────────────────────────────────────── */
+.persona {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.4rem 0.75rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.persona:last-child {
+  border-bottom: 0;
+}
+
+.personaAvatar {
+  width: 38px;
+  height: 38px;
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+}
+
+.personaCuerpo {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.personaFila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.45rem;
+}
+
+.personaNombre {
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.personaDetalle {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.personaAcciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+}
+
+.personaGanancia {
+  display: grid;
+  justify-items: end;
+  gap: 0.15rem;
+}
+
+.personaGanancia small {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Angosto: la ganancia baja bajo el nombre. */
+@container (max-width: 480px) {
+  .persona {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .personaGanancia {
+    grid-column: 2;
+    grid-row: 2;
+    justify-items: start;
+    grid-auto-flow: column;
+    align-items: center;
+    justify-content: start;
+    gap: 0.4rem;
+  }
+}
+
+/* ── Detalle del pedido ──────────────────────────────────── */
+.detalle {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 14px;
+  background: var(--color-hover);
+}
+
+.detalleCabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.detalleFecha,
+.detalleTotal,
+.detalleEstado {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.detalleEstado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+.detalleEstado svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.detalleTotal strong {
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+}
+
+.detalleLista {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.detalleLista li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.detalleFoto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  color: var(--color-text-muted);
+}
+
+.detalleFoto svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.detalleNombre {
+  display: grid;
+  min-width: 0;
+  color: var(--color-text);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.detalleNombre small {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+.detalleCantidad {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}

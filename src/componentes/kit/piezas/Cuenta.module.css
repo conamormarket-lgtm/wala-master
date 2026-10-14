@@ -14,6 +14,19 @@
   min-width: 0;
 }
 
+.cabezaAntetitulo {
+  margin: 0;
+  color: var(--primary-color);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:global([data-theme='dark']) .cabezaAntetitulo {
+  color: var(--violet-300);
+}
+
 .cabezaTitulo {
   margin: 0;
   color: var(--color-text);

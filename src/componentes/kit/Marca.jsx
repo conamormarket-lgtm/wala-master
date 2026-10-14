@@ -160,7 +160,7 @@ export function Trazo({ className }) {
  *  - children: el ícono (lucide u otro svg)
  *  - tamano: px del círculo (40) · girar: grados (-8; 0 = derecho)
  *  - tono: 'degradado' | 'suave' (lila con el ícono violeta: lo que no está
- *    elegido) | 'oro' | 'menta' | 'rosa'
+ *    elegido) | 'oro' | 'menta' | 'rosa' | 'bronce' | 'plata' (niveles)
  */
 export function Sello({ children, tamano = 40, girar = -8, tono = 'degradado', className }) {
   return (

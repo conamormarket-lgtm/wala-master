@@ -30,7 +30,7 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #f59e0b, #e11d48);
+  background: var(--bp-relleno, linear-gradient(90deg, #f59e0b, #e11d48));
 }
 
 
@@ -49,7 +49,7 @@
 }
 
 .pasos > .pasoOn {
-  background: linear-gradient(90deg, #f59e0b, #e11d48);
+  background: var(--bp-relleno, linear-gradient(90deg, #f59e0b, #e11d48));
 }
 
 :global([data-theme='dark']) .pasos > span:not(.pasoOn) {

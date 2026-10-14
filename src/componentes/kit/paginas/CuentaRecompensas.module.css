@@ -1,0 +1,188 @@
+/* Páginas de Recompensas (dentro de MarcoCuenta: el contenedor "pagina"). */
+.saldo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.saldo strong,
+.cuenta strong {
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.2rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.cuenta {
+  margin: -0.4rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.rejilla,
+.cupones,
+.misiones,
+.personas {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rejilla {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+}
+
+.cupones {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr));
+}
+
+.misiones {
+  gap: 0.7rem;
+}
+
+.personas {
+  gap: 0;
+}
+
+.rejilla > li,
+.cupones > li {
+  display: flex;
+  min-width: 0;
+}
+
+.rejilla > li > *,
+.cupones > li > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.esqueleto {
+  border-radius: 20px;
+  background: var(--color-hover);
+  animation: latir 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes latir {
+  to {
+    opacity: 0.55;
+  }
+}
+
+/* Tres cifras: en columna en el celular, en fila desde 640px. */
+.cifras {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+@container pagina (min-width: 640px) {
+  .cifras {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.enlaceNota,
+.enlaceNota:hover {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--primary-color);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+:global([data-theme='dark']) .enlaceNota,
+:global([data-theme='dark']) .enlaceNota:hover {
+  color: var(--violet-300);
+}
+
+.enlaceNota svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.enlaceNota:hover svg {
+  transform: translateX(3px);
+}
+
+/* Referidos */
+.formas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+@container pagina (min-width: 700px) {
+  .formas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.grupos {
+  display: grid;
+  gap: 1rem;
+}
+
+.grupoFoto {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 14px;
+}
+
+.grupoTexto,
+.grupoNota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.grupoNota strong {
+  color: var(--color-text);
+}
+
+.verTodas {
+  justify-self: start;
+  min-height: 40px;
+  padding: 0 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.verTodas:hover {
+  border-color: var(--violet-300);
+}
+
+.verTodas:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+:global([data-theme='dark']) .verTodas {
+  color: var(--violet-300);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto {
+    animation: none;
+  }
+
+  .enlaceNota svg {
+    transition: none;
+  }
+}

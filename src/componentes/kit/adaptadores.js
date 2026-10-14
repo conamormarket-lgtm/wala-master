@@ -558,3 +558,57 @@ export const direccionAFirestore = (d = {}) => ({
   district: d.distrito || '',
   address: String(d.direccion || '').trim(),
 });
+
+const MESES_CORTOS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+/** "2026-10-31" → "31 de octubre" (con el año si no es el actual). */
+const diaLegible = (iso) => {
+  const [a, m, d] = String(iso || '').split('-').map(Number);
+  if (!m || !d) return '';
+  return `${d} de ${MESES_CORTOS[m - 1]}${a && a !== new Date().getFullYear() ? ` de ${a}` : ''}`;
+};
+
+/**
+ * Recompensa de rewardsCatalog → TarjetaRecompensa.
+ *  - beneficio: el texto del premio (textoPremio de utils/ruletaModel, como
+ *    CatalogReward); sin él, reward.value
+ */
+export const recompensaDesdeFirestore = (r = {}, beneficio) => ({
+  id: r.id,
+  titulo: r.title,
+  descripcion: r.description,
+  imagen: r.imageUrl || null,
+  beneficio: beneficio || r.value || '',
+  costo: Number(r.cost) || 0,
+});
+
+/**
+ * Cupón de userCoupons → TarjetaCupon.
+ *  - estado: estadoCupon(c) de services/cupones ('activo' | 'usado' | 'caducado')
+ */
+export const cuponDesdeFirestore = (c = {}, estado = 'activo') => ({
+  id: c.id,
+  codigo: c.code,
+  texto: c.texto || c.titulo || c.title || 'Cupón de descuento',
+  origen: c.origen,
+  estado,
+  vence: diaLegible(c.expiraEn),
+  // Los cupones viejos del catálogo (sin tipo) los aplica un asesor.
+  conAsesor: !c.tipo,
+});
+
+/**
+ * Misión de getDailyMissionsSecure → TarjetaMision.
+ *  - acciones: MISSION_ACTIONS (constants/missionActions): las que se cumplen
+ *    en otra página llevan su botón ("Ir a Mis cupones").
+ */
+export const misionDesdeServidor = (m = {}, acciones = {}) => {
+  const a = m.actionKey && !m.verified ? acciones[m.actionKey] : null;
+  return {
+    id: m.missionId,
+    titulo: m.title,
+    descripcion: m.description,
+    recompensa: Number(m.rewardPoints) || 0,
+    completada: Boolean(m.completed),
+    accion: a && !m.completed ? { texto: a.goLabel || 'Ir a hacerlo', url: a.path } : undefined,
+  };
+};

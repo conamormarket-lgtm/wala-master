@@ -1,0 +1,540 @@
+/* ── Recompensa del catálogo ─────────────────────────────── */
+.recompensa {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: var(--color-surface);
+  transition: border-color var(--dur-rapida) ease;
+}
+
+.recompensa:hover {
+  border-color: var(--violet-300);
+}
+
+.recompensaFoto {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: 0;
+}
+
+.recompensaRespaldo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: #fef3c7;
+}
+
+:global([data-theme='dark']) .recompensaRespaldo {
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.beneficio {
+  position: absolute;
+  z-index: 1;
+  top: 14px;
+  left: 18px;
+}
+
+.recompensaCuerpo {
+  display: grid;
+  flex: 1;
+  gap: 0.3rem;
+  align-content: start;
+  padding: 1rem 1.1rem 0.6rem;
+}
+
+.recompensaTitulo {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.recompensaTexto {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.recompensaPie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 64px;
+  padding: 0.7rem 1.1rem 0.9rem;
+  border-top: 1px dashed var(--color-border);
+}
+
+.faltan {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.faltan strong {
+  color: var(--color-text);
+}
+
+.lejos .recompensaFoto {
+  filter: saturate(0.6);
+}
+
+.confirmar {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.confirmarTexto {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-text);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.confirmarBotones {
+  display: inline-flex;
+  gap: 0.3rem;
+}
+
+/* ── Cupón: un boleto con talón troquelado ───────────────── */
+.cupon {
+  --muesca: var(--color-bg, var(--gris-fondo));
+  --talon: 88px;
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--talon) minmax(0, 1fr);
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface);
+}
+
+/* Las dos muescas sobre la línea troquelada (el fondo de la página). */
+.cupon::before,
+.cupon::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  left: var(--talon);
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--muesca);
+  transform: translateX(-50%);
+}
+
+.cupon::before {
+  top: -11px;
+  clip-path: inset(50% 0 0 0);
+}
+
+.cupon::after {
+  bottom: -11px;
+  clip-path: inset(0 0 50% 0);
+}
+
+.talon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 2px dashed rgba(255, 255, 255, 0.55);
+  border-radius: 19px 0 0 19px;
+}
+
+.talonRuleta {
+  background: var(--degradado-logo);
+}
+
+.talonCatalogo {
+  background: linear-gradient(135deg, #fde68a 0%, #f59e0b 100%);
+}
+
+.cuponCuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0.95rem 1rem 0.95rem 1.15rem;
+}
+
+.cuponMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.6rem;
+  margin: 0;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.cuponEstado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.cuponEstado::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.estado_activo {
+  color: #047857;
+}
+
+.estado_usado,
+.estado_caducado {
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .estado_activo {
+  color: #6ee7b7;
+}
+
+.cuponOrigen {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.cuponTexto {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.08rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.codigo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0.2rem 0.25rem 0.2rem 0.8rem;
+  border: 1.5px dashed var(--violet-300, #c4b5fd);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary-light) 50%, var(--color-surface));
+}
+
+:global([data-theme='dark']) .codigo {
+  border-color: rgba(167, 139, 250, 0.45);
+  background: rgba(167, 139, 250, 0.08);
+}
+
+.codigo code {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 0.98rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copiar {
+  display: inline-flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 38px;
+  padding: 0 0.7rem;
+  border: 0;
+  border-radius: 9px;
+  background: var(--primary-color);
+  color: #fff;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--dur-rapida) ease;
+}
+
+.copiar:active {
+  transform: scale(0.96);
+}
+
+.copiar:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+.copiar svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+/* Angosto: talón más chico y el botón de copiar bajo el código. */
+@container (max-width: 400px) {
+  .cupon {
+    --talon: 64px;
+  }
+
+  .copiar {
+    flex: 1 1 100%;
+    margin-bottom: 0.2rem;
+  }
+
+  .codigo {
+    padding-top: 0.45rem;
+    padding-right: 0.25rem;
+  }
+}
+
+.vence {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.cuponInactivo .talon {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.cuponInactivo .cuponTexto,
+.cuponInactivo .codigo code {
+  color: var(--color-text-muted);
+}
+
+.cuponInactivo .codigo code {
+  text-decoration: line-through;
+}
+
+/* ── Misión ──────────────────────────────────────────────── */
+.mision {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+  min-width: 0;
+  padding: 0.95rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface);
+}
+
+.misionHecha {
+  background: color-mix(in srgb, var(--primary-light) 40%, var(--color-surface));
+}
+
+:global([data-theme='dark']) .misionHecha {
+  background: rgba(167, 139, 250, 0.06);
+}
+
+.misionMarca {
+  display: inline-flex;
+  width: 34px;
+  justify-content: center;
+}
+
+.misionVacia {
+  width: 30px;
+  height: 30px;
+  border: 2px dashed var(--violet-300, #c4b5fd);
+  border-radius: 50%;
+}
+
+.misionTextos {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.misionTitulo {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.misionHecha .misionTitulo {
+  color: var(--color-text-muted);
+}
+
+.misionTexto {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.misionLado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+}
+
+.hecha {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #047857;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+:global([data-theme='dark']) .hecha {
+  color: #6ee7b7;
+}
+
+.hecha svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Angosto: la ganancia y el botón bajan a su propia fila. */
+@container (max-width: 520px) {
+  .mision {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .misionLado {
+    grid-column: 2;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+/* ── Nivel ───────────────────────────────────────────────── */
+.nivel {
+  --bp-relleno: var(--degradado-logo);
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  padding: clamp(1rem, 0.8rem + 1vw, 1.5rem);
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: var(--color-surface);
+}
+
+.nivelCabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+}
+
+.nivelTextos {
+  display: grid;
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+.nivelNombre {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.3rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.nivelXp,
+.nivelFalta {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+}
+
+.nivelXp strong,
+.nivelFalta strong {
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+}
+
+.escala {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@container (min-width: 520px) {
+  .escala {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.escalon {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  color: var(--color-text-muted);
+}
+
+.actual {
+  border-color: var(--violet-400, #a78bfa);
+  background: var(--primary-light);
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .actual {
+  background: rgba(167, 139, 250, 0.12);
+}
+
+.escalonTextos {
+  display: grid;
+  min-width: 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.escalonTextos small {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.alcanzado .escalonTextos > span {
+  color: var(--color-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recompensa,
+  .copiar {
+    transition: none;
+  }
+}

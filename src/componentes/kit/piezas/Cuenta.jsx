@@ -20,13 +20,16 @@ import s from './Cuenta.module.css';
  *  - icono: ícono de lucide (nodo) · tono: del Sello ('degradado', 'oro'…)
  *  - titulo, subtitulo · accion: nodo (un Boton) · nivel: 1 (página) o 2 (tarjeta)
  *  - subrayado: trazo a mano bajo el título (la página de inicio de la cuenta)
+ *  - figura: en vez del sello, otro nodo (la foto de un producto, un IconoWala)
+ *  - antetitulo: línea chica sobre el título ("Link del producto"), en texto
  */
-export function CabezaCuenta({ icono, tono = 'degradado', titulo, subtitulo, accion, nivel = 1, subrayado = false }) {
+export function CabezaCuenta({ icono, tono = 'degradado', titulo, subtitulo, accion, nivel = 1, subrayado = false, figura, antetitulo }) {
   const H = `h${nivel}`;
   return (
     <header className={[s.cabeza, nivel > 1 && s.cabezaTarjeta].filter(Boolean).join(' ')}>
-      {icono && <Sello tamano={nivel > 1 ? 36 : 44} tono={tono}>{icono}</Sello>}
+      {figura || (icono && <Sello tamano={nivel > 1 ? 36 : 44} tono={tono}>{icono}</Sello>)}
       <div className={s.cabezaTextos}>
+        {antetitulo && <p className={s.cabezaAntetitulo}>{antetitulo}</p>}
         <H className={s.cabezaTitulo}>
           <span className={subrayado ? s.conTrazo : undefined}>
             {titulo}
@@ -43,13 +46,13 @@ export function CabezaCuenta({ icono, tono = 'degradado', titulo, subtitulo, acc
 /**
  * Tarjeta de la cuenta (Datos personales, Apariencia, Idioma…): superficie
  * con borde y su CabezaCuenta de nivel 2 arriba.
- *  - icono, tono, titulo, subtitulo, accion: los de CabezaCuenta
+ *  - icono, tono, titulo, subtitulo, accion, figura, antetitulo: los de CabezaCuenta
  *  - children: el contenido
  */
-export function TarjetaCuenta({ icono, tono, titulo, subtitulo, accion, children, className, ...rest }) {
+export function TarjetaCuenta({ icono, tono, titulo, subtitulo, accion, figura, antetitulo, children, className, ...rest }) {
   return (
     <section className={[s.tarjeta, className].filter(Boolean).join(' ')} data-componente="TarjetaCuenta" {...rest}>
-      {(titulo || icono) && <CabezaCuenta nivel={2} icono={icono} tono={tono} titulo={titulo} subtitulo={subtitulo} accion={accion} />}
+      {(titulo || icono) && <CabezaCuenta nivel={2} icono={icono} tono={tono} titulo={titulo} subtitulo={subtitulo} accion={accion} figura={figura} antetitulo={antetitulo} />}
       {children}
     </section>
   );

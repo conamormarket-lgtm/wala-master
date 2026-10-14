@@ -158,6 +158,9 @@ const CARRITO_INICIAL = [
   fila(ofertas.find((p) => !p.isComboProduct) || ofertas[0]),
 ];
 
+/* Fotos reales para recompensas y referidos de "Mi cuenta". */
+const FOTOS_CUENTA = [ofertas[0], nuevos[1], destacados[2]].map((p) => ({ nombre: p.name, imagen: fila(p).imagen }));
+
 const FAVORITOS = [...nuevos.slice(0, 4), ...ofertas.slice(0, 3)].map((p) => ({ id: p.id, nombre: p.name, imagen: fila(p).imagen }));
 
 const PEDIDOS = [
@@ -538,6 +541,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         sesion={conSesion}
         usuario={usuario}
         monedas={monedas}
+        onMonedas={(n) => setMonedas((m) => Math.max(0, m + n))}
+        fotos={FOTOS_CUENTA}
         tema={tema}
         onTema={cambiarTema}
         onCerrarSesion={() => setRol('visitante')}

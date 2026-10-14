@@ -3,7 +3,8 @@ import s from './BarraProgreso.module.css';
 
 /**
  * Barra de progreso con un texto encima. Colores por variables
- * (--bp-texto, --bp-acento, --bp-pista) para seguir al panel que la contiene.
+ * (--bp-texto, --bp-acento, --bp-pista y --bp-relleno, el color de lo
+ * avanzado) para seguir al panel que la contiene.
  *  - valor, max
  *  - texto: nodo sobre la barra (usar <strong> para el número)
  *  - minimo: % mínimo visible de la barra
