@@ -13,18 +13,20 @@ const AdminWhatsApp = () => {
     text_tienda: '',
     text_crear: '',
     text_cuenta: '',
+    mostrar_en_acceso: false,
   });
 
   const { data: savedNumbers, isLoading } = useQuery({
     queryKey: ['admin-whatsapp-numbers'],
     queryFn: async () => {
-      const [tienda, crear, cuenta, textTienda, textCrear, textCuenta] = await Promise.all([
+      const [tienda, crear, cuenta, textTienda, textCrear, textCuenta, mostrarEnAcceso] = await Promise.all([
         getMessage('whatsapp_number_tienda'),
         getMessage('whatsapp_number_crear'),
         getMessage('whatsapp_number_cuenta'),
         getMessage('whatsapp_text_tienda'),
         getMessage('whatsapp_text_crear'),
-        getMessage('whatsapp_text_cuenta')
+        getMessage('whatsapp_text_cuenta'),
+        getMessage('whatsapp_mostrar_en_acceso')
       ]);
 
       // Fallback a whatsapp_number si las específicas están vacías (retrocompatibilidad)
@@ -36,7 +38,9 @@ const AdminWhatsApp = () => {
         cuenta: cuenta.data?.trim() || fallback.data?.trim() || '',
         text_tienda: textTienda.data || 'Solicitud de Pedido\n\nHola! Vengo de la tienda virtual y quiero confirmar mi pedido con código {id}.',
         text_crear: textCrear.data || '*Mi Creación Libre*\n\nHola! Diseñé esto con el Creador Libre, ayúdame a cotizar.',
-        text_cuenta: textCuenta.data || 'Hola, necesito ayuda con mi cuenta / mi pedido.'
+        text_cuenta: textCuenta.data || 'Hola, necesito ayuda con mi cuenta / mi pedido.',
+        // Sin guardar = oculto (igual que en WhatsAppButton).
+        mostrar_en_acceso: mostrarEnAcceso.data === 'si'
       };
     }
   });
@@ -57,6 +61,7 @@ const AdminWhatsApp = () => {
         setMessage('whatsapp_text_tienda', updatedNumbers.text_tienda || ''),
         setMessage('whatsapp_text_crear', updatedNumbers.text_crear || ''),
         setMessage('whatsapp_text_cuenta', updatedNumbers.text_cuenta || ''),
+        setMessage('whatsapp_mostrar_en_acceso', updatedNumbers.mostrar_en_acceso ? 'si' : 'no'),
         // Mantener whatsapp_number como fallback general
         setMessage('whatsapp_number', updatedNumbers.tienda?.trim() || '')
       ]);
@@ -195,6 +200,22 @@ const AdminWhatsApp = () => {
                 style={{ resize: 'vertical' }}
               />
             </div>
+          </div>
+
+          <div className={styles.configBlock} style={{ background: 'var(--gris-fondo)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--gris-borde)' }}>
+            <h3 style={{ margin: '0 0 1rem 0' }}>4. Iniciar sesión y registro</h3>
+            <label htmlFor="whatsapp_mostrar_en_acceso" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+              <input
+                id="whatsapp_mostrar_en_acceso"
+                type="checkbox"
+                checked={numbers.mostrar_en_acceso}
+                onChange={(e) => setNumbers(prev => ({ ...prev, mostrar_en_acceso: e.target.checked }))}
+              />
+              Mostrar el botón de WhatsApp en iniciar sesión, registro y recuperar contraseña
+            </label>
+            <p className={styles.sectionHint} style={{ marginTop: '0.5rem' }}>
+              Apagado, esas pantallas quedan sin el botón flotante para no distraer de entrar a la cuenta.
+            </p>
           </div>
 
         </div>

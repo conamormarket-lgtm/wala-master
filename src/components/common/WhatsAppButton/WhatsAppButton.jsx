@@ -25,11 +25,17 @@ import styles from './WhatsAppButton.module.css';
  * configurables en /admin/whatsapp. El resto de la web usa el número general
  * (whatsapp_number), que esa misma pantalla mantiene.
  *
+ * PANTALLAS DE ACCESO (login, registro, recuperar contraseña): oculto por
+ * defecto, para no distraer de entrar a la cuenta. Se puede volver a mostrar
+ * desde /admin/whatsapp (clave whatsapp_mostrar_en_acceso = 'si').
+ *
  * WHATSAPP POR MARCA: en páginas de marca (/<slug>), si la marca tiene
  * whatsappNumber propio (tienda_brands.whatsappNumber), el botón usa ESE
  * número en vez del número global de contexto. Sin marca (Con Amor / páginas
  * globales) o sin número configurado, el comportamiento queda EXACTO como hoy.
  */
+const RUTAS_DE_ACCESO = ['/login', '/registro', '/recuperar-contrasena'];
+
 const WhatsAppButton = () => {
   const location = useLocation();
   const pathname = location.pathname;
@@ -108,14 +114,16 @@ const WhatsAppButton = () => {
   // 2. Fuera del panel de administración y de las landings de conversión.
   // En el checkout tapaba los botones de pago (y su propio "Continuar por WhatsApp").
   const shouldShow = context !== 'admin' && !onLandingPage && !pathname.startsWith('/checkout');
+  const enPantallaDeAcceso = RUTAS_DE_ACCESO.includes(pathname.replace(/\/+$/, ''));
 
   const { data: whatsappNumbers } = useQuery({
     queryKey: ['whatsapp-numbers-config'],
     queryFn: async () => {
-      const [tienda, crear, cuenta] = await Promise.all([
+      const [tienda, crear, cuenta, mostrarEnAcceso] = await Promise.all([
         getMessage('whatsapp_number_tienda'),
         getMessage('whatsapp_number_crear'),
-        getMessage('whatsapp_number_cuenta')
+        getMessage('whatsapp_number_cuenta'),
+        getMessage('whatsapp_mostrar_en_acceso')
       ]);
 
       // Fallback a whatsapp_number
@@ -126,7 +134,9 @@ const WhatsAppButton = () => {
         crear: crear.data?.trim() || fallback.data?.trim() || null,
         cuenta: cuenta.data?.trim() || fallback.data?.trim() || null,
         // Resto de la web: el número general de /admin/whatsapp.
-        general: fallback.data?.trim() || tienda.data?.trim() || null
+        general: fallback.data?.trim() || tienda.data?.trim() || null,
+        // Sin guardar nada todavía = oculto en login/registro.
+        mostrarEnAcceso: mostrarEnAcceso.data === 'si'
       };
     },
     staleTime: 5 * 60 * 1000,
@@ -148,6 +158,8 @@ const WhatsAppButton = () => {
   });
 
   if (!shouldShow || !whatsappNumbers) return null;
+
+  if (enPantallaDeAcceso && !whatsappNumbers.mostrarEnAcceso) return null;
 
   if (isProductDetail && product && product.whatsappEnabled === false) return null;
 
