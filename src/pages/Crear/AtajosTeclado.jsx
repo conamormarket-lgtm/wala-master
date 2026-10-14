@@ -31,8 +31,16 @@ const grupos = (vistas) => [
       ...(vistas.length > 1
         ? [{ teclas: [vistas.slice(0, 9).map((_, i) => String(i + 1))], texto: vistas.slice(0, 9).map((v) => v.nombre).join(' / '), juntas: true }]
         : []),
-      { teclas: [['←', '↑', '→', '↓']], texto: 'Con zoom y nada elegido: recorrer la prenda', juntas: true },
       { teclas: [['?']], texto: 'Ver estos atajos' },
+    ],
+  },
+  {
+    titulo: 'Zoom',
+    atajos: [
+      { teclas: [[MOD, '+'], [MOD, '−']], texto: 'Acercar / alejar la prenda' },
+      { teclas: [[MOD, '0'], ['Shift', '1']], texto: 'Ver la prenda entera' },
+      { teclas: [['Shift', '2']], texto: 'Acercar a lo elegido' },
+      { teclas: [['←', '↑', '→', '↓']], texto: 'Con zoom y nada elegido: recorrer la prenda', juntas: true },
     ],
   },
   {
@@ -59,9 +67,10 @@ const grupos = (vistas) => [
       { teclas: [['Clic derecho']], texto: 'Más opciones' },
       { teclas: [['Shift', 'Clic']], texto: 'Sumar o quitar de la selección' },
       { teclas: [['Arrastrar']], texto: 'En una zona vacía: elegir varios con un recuadro' },
-      { teclas: [[MOD, 'Rueda']], texto: 'Zoom (hacia lo elegido o hacia el puntero)' },
-      { teclas: [['Shift', 'Rueda']], texto: 'Con zoom: subir / bajar por la prenda' },
-      { teclas: [['Alt', 'Rueda']], texto: 'Con zoom: ir a los costados' },
+      { teclas: [[MOD, 'Rueda']], texto: 'Zoom hacia el puntero (o pellizca en el trackpad)' },
+      { teclas: [['Rueda']], texto: 'Con zoom: subir / bajar por la prenda' },
+      { teclas: [['Shift', 'Rueda']], texto: 'Con zoom: ir a los costados' },
+      { teclas: [['Arrastrar']], texto: 'Con zoom, en una zona vacía: mover la vista' },
       { teclas: [['Shift']], texto: 'Al girar: de 15° en 15°' },
       { teclas: [['Alt']], texto: 'Al arrastrar: sin imán al centro' },
     ],
