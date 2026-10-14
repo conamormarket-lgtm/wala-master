@@ -106,4 +106,24 @@ export function Cargando({ texto = 'Cargando', tamano = 'md', bloque = false }) 
   );
 }
 
+/**
+ * Esperar una acción (procesar un pago, verificar un documento, subir un
+ * diseño, abrir una landing cuya forma aún no se conoce): la página se queda
+ * a la vista, detrás de un velo claro, y encima una tarjeta con Cargando.
+ * No es para cambiar de página: para eso está el esqueleto de la página
+ * (Esqueletos.jsx), que ya muestra su forma.
+ *  - texto ('Procesando') · detalle: una línea más chica debajo
+ *  - pantallaCompleta: fija al viewport; sin ella cubre su contenedor
+ */
+export function CapaCargando({ texto = 'Procesando', detalle, pantallaCompleta = false }) {
+  return (
+    <div className={[s.capa, pantallaCompleta && s.capaCompleta].filter(Boolean).join(' ')} data-componente="CapaCargando">
+      <div className={s.capaTarjeta}>
+        <Cargando texto={texto} tamano="lg" />
+        {detalle && <p className={s.capaDetalle}>{detalle}</p>}
+      </div>
+    </div>
+  );
+}
+
 // El esqueleto de una página (y de cada sección y componente) vive en Esqueletos.jsx.

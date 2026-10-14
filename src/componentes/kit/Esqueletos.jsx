@@ -301,6 +301,109 @@ export function EsqueletoSeccion({ tipo, etiqueta = 'Cargando' }) {
 
 /* ── Páginas ────────────────────────────────────────────── */
 
+/** Lo de adentro de cada módulo de /cuenta (el menú y la cabeza los pone 'cuenta'). */
+const estadistica = (k) => (
+  <span key={k} className={s.tarjeta}>
+    <Hueso forma="circulo" ancho={44} alto={44} />
+    <Hueso alto={9} ancho="40%" />
+    <Hueso alto={30} ancho="55%" />
+  </span>
+);
+export const MODULOS_ESQUELETO_CUENTA = ['resumen', 'perfil', 'pedidos', 'direcciones', 'ajustes', 'catalogo', 'cupones', 'misiones', 'referidos', 'creaciones', 'deseos', 'fechas'];
+const MODULOS_CUENTA = {
+  resumen: () => (
+    <>
+      <EsqueletoCabeza />
+      {estadistica(0)}
+      <span className={s.accesos}>{repetir(6, (k) => (
+        <span key={k} className={s.tarjeta}>
+          <Hueso forma="circulo" ancho={40} alto={40} />
+          <Hueso alto={13} ancho="70%" />
+          <Hueso alto={10} ancho="90%" />
+        </span>
+      ))}</span>
+    </>
+  ),
+  perfil: () => (
+    <>
+      <span className={cx(s.tarjeta, s.identidad)}>
+        <Hueso forma="circulo" ancho={96} alto={96} />
+        <span className={s.filaTextos}><Hueso alto={26} ancho="60%" /><Hueso alto={11} ancho="45%" /><Hueso alto={11} ancho="30%" /></span>
+      </span>
+      <span className={s.perfil}>
+        {estadistica(0)}
+        <span className={s.tarjeta}><EsqueletoFormulario campos={4} titulo={false} /></span>
+      </span>
+    </>
+  ),
+  pedidos: () => (
+    <>
+      <span className={s.chips}>{repetir(2, (k) => <Hueso key={k} forma="pildora" alto={40} ancho={120} />)}</span>
+      {repetir(2, (k) => <EsqueletoPedido key={k} />)}
+    </>
+  ),
+  direcciones: () => <span className={s.dos}>{repetir(2, (k) => <EsqueletoTarjeta key={k} lineas={3} alto={190} />)}</span>,
+  ajustes: () => repetir(2, (k) => (
+    <span key={k} className={s.tarjeta}>
+      <span className={s.tarjetaCabeza}><Hueso forma="circulo" ancho={40} alto={40} /><Hueso alto={15} ancho="40%" /></span>
+      {repetir(2, (j) => (
+        <span key={j} className={s.parLinea}>
+          <span className={s.filaTextos}><Hueso alto={13} ancho="50%" /><Hueso alto={10} ancho="70%" /></span>
+          <Hueso forma="pildora" alto={28} ancho={50} />
+        </span>
+      ))}
+    </span>
+  )),
+  catalogo: () => (
+    <>
+      {estadistica(0)}
+      <span className={s.grilla}>{productos(6)}</span>
+    </>
+  ),
+  cupones: () => (
+    <span className={s.lista}>{repetir(3, (k) => (
+      <span key={k} className={s.cupon}>
+        <span className={s.cuponCuerpo}>
+          <Hueso alto={24} ancho="40%" />
+          <Hueso alto={12} ancho="70%" />
+          <Hueso forma="pildora" alto={34} ancho={130} />
+        </span>
+        <span className={s.cuponTalon}><Hueso alto={20} ancho="70%" /></span>
+      </span>
+    ))}</span>
+  ),
+  misiones: () => (
+    <>
+      <span className={s.tres}>{repetir(3, (k) => estadistica(k))}</span>
+      <span className={s.lista}>{repetir(4, (k) => <EsqueletoFila key={k} />)}</span>
+    </>
+  ),
+  referidos: () => (
+    <>
+      <span className={s.tarjeta}>
+        <Hueso alto={15} ancho="40%" />
+        <span className={s.parLinea}><Hueso forma="bloque" alto={50} ancho="100%" /><Hueso forma="pildora" alto={50} ancho={120} /></span>
+      </span>
+      <span className={s.lista}>{repetir(3, (k) => <EsqueletoFila key={k} foto="circulo" />)}</span>
+    </>
+  ),
+  creaciones: () => <span className={s.grilla}>{productos(6)}</span>,
+  deseos: () => <span className={s.grilla}>{productos(6)}</span>,
+  fechas: () => (
+    <>
+      <span className={s.filaProductos}>{repetir(4, (k) => (
+        <span key={k} className={s.tarjeta}>
+          <Hueso forma="bloque" ancho={56} alto={62} />
+          <Hueso alto={13} ancho="70%" />
+          <Hueso alto={10} ancho="50%" />
+        </span>
+      ))}</span>
+      <span className={s.dos}>{repetir(2, (k) => <EsqueletoTarjeta key={k} lineas={4} alto={300} />)}</span>
+    </>
+  ),
+  otro: () => <span className={s.dos}><EsqueletoTarjeta lineas={3} alto={220} /><EsqueletoTarjeta lineas={4} alto={220} /></span>,
+};
+
 /** Las secciones del inicio por defecto (si no se pasan las del builder). */
 const INICIO = ['hero_carousel', 'category_grid', 'featured_carousel', 'feature_list', 'product_grid'];
 
@@ -363,21 +466,25 @@ const PAGINAS = {
       </span>
     </>
   ),
-  cuenta: () => (
+  cuenta: ({ modulo }) => (
     <span className={s.cuenta}>
       <span className={cx(s.tarjeta, s.menuCuenta)}>
         <span className={s.tarjetaCabeza}>
           <Hueso forma="circulo" ancho={44} alto={44} />
           <span className={s.filaTextos}><Hueso alto={13} ancho="70%" /><Hueso alto={10} ancho="85%" /></span>
         </span>
-        {repetir(9, (k) => <Hueso key={k} alto={13} ancho={`${55 + ((k * 13) % 35)}%`} />)}
+        {repetir(12, (k) => (k === 0 || k === 5 || k === 10
+          ? <Hueso key={k} alto={9} ancho="34%" className={s.grupoMenu} />
+          : <span key={k} className={s.itemMenu}><Hueso forma="circulo" ancho={22} alto={22} /><Hueso alto={12} ancho={`${50 + ((k * 13) % 35)}%`} /></span>))}
       </span>
       <span className={s.cuentaLado}>
-        <EsqueletoCabeza />
-        <span className={s.dos}>
-          <EsqueletoTarjeta lineas={3} alto={220} />
-          <EsqueletoTarjeta lineas={4} alto={220} />
-        </span>
+        {modulo !== 'resumen' && (
+          <span className={s.tarjetaCabeza}>
+            <Hueso forma="circulo" ancho={44} alto={44} />
+            <span className={s.filaTextos}><Hueso alto={24} ancho="min(46%, 280px)" /><Hueso alto={11} ancho="min(70%, 380px)" /></span>
+          </span>
+        )}
+        {(MODULOS_CUENTA[modulo] || MODULOS_CUENTA.otro)()}
       </span>
     </span>
   ),
@@ -393,17 +500,73 @@ const PAGINAS = {
       <span className={s.tarjeta}><EsqueletoFormulario /></span>
     </span>
   ),
+  minijuegos: () => (
+    <>
+      <span className={cx(s.cabeza, s.centrado)}>
+        <Hueso alto={34} ancho="min(60%, 360px)" />
+        <Hueso alto={12} ancho="min(80%, 460px)" />
+        <Hueso forma="pildora" alto={30} ancho={200} />
+      </span>
+      <span className={s.juegos}>{repetir(4, (k) => (
+        <span key={k} className={s.tarjeta}>
+          <Hueso forma="bloque" proporcion="16 / 10" ancho="100%" />
+          <Hueso alto={16} ancho="60%" />
+          <EsqueletoTexto lineas={2} alto={10} />
+          <span className={s.parLinea}><Hueso forma="pildora" alto={26} ancho={90} /><Hueso forma="pildora" alto={42} ancho={110} /></span>
+        </span>
+      ))}</span>
+    </>
+  ),
+  busqueda: () => (
+    <>
+      <Hueso forma="pildora" alto={54} ancho="min(100%, 680px)" className={s.buscador} />
+      <span className={s.chips}>{repetir(5, (k) => <Hueso key={k} forma="pildora" alto={34} ancho={84 + (k % 3) * 18} />)}</span>
+      <span className={s.parLinea}><Hueso alto={12} ancho={160} /><Hueso forma="pildora" alto={38} ancho={150} /></span>
+      <span className={s.grilla}>{productos(8)}</span>
+    </>
+  ),
+  encuesta: () => (
+    <span className={s.encuesta}>
+      <Hueso alto={9} ancho={90} />
+      <Hueso forma="pildora" alto={8} />
+      <span className={s.tarjeta}>
+        <span className={cx(s.cabeza, s.centrado)}>
+          <Hueso forma="circulo" ancho={52} alto={52} />
+          <Hueso alto={26} ancho="60%" />
+          <Hueso alto={11} ancho="75%" />
+        </span>
+        <span className={s.opciones}>{repetir(8, (k) => <Hueso key={k} forma="bloque" alto={108} />)}</span>
+        <span className={s.parLinea}><Hueso forma="pildora" alto={44} ancho={100} /><Hueso forma="pildora" alto={44} ancho={160} /></span>
+      </span>
+    </span>
+  ),
+  acceso: () => (
+    <span className={s.acceso}>
+      <span className={s.accesoPanel}>
+        <Hueso claro alto={22} ancho={100} />
+        <Hueso claro alto={30} ancho="80%" />
+        <Hueso claro alto={12} ancho="70%" />
+        {repetir(3, (k) => <span key={k} className={s.itemMenu}><Hueso claro forma="circulo" ancho={30} alto={30} /><Hueso claro alto={12} ancho="55%" /></span>)}
+      </span>
+      <span className={s.accesoLado}><EsqueletoFormulario campos={2} /></span>
+    </span>
+  ),
 };
 
 /**
  * Lo que se ve mientras llega una página (Suspense): su forma, no un círculo.
+ * Para cambiar de página siempre es esto (CapaCargando es para esperar una acción).
  *  - forma: 'productos' (la grilla, por defecto) | 'inicio' | 'tienda' |
- *    'producto' | 'carrito' | 'cuenta' | 'lista' (pedidos, cupones…) | 'formulario'
+ *    'busqueda' | 'producto' | 'carrito' | 'minijuegos' | 'encuesta' |
+ *    'acceso' | 'cuenta' | 'lista' | 'formulario'
+ *  - modulo (con forma 'cuenta'): uno de MODULOS_ESQUELETO_CUENTA (resumen,
+ *    perfil, pedidos, direcciones, ajustes, catalogo, cupones, misiones,
+ *    referidos, creaciones, deseos, fechas)
  *  - secciones: [tipo] las del builder (la tienda ya conoce la estructura de
  *    la página antes de que lleguen los productos): una EsqueletoSeccion por cada una
  *  - tarjetas, titulo: compatibilidad con la versión anterior (forma 'productos')
  */
-export function EsqueletoPagina({ forma = 'productos', secciones, tarjetas, titulo = true }) {
+export function EsqueletoPagina({ forma = 'productos', modulo, secciones, tarjetas, titulo = true }) {
   const lista = secciones || (forma === 'inicio' ? INICIO : null);
   return (
     <div className={s.pagina} role="status" aria-busy="true" aria-label="Cargando página" data-componente="EsqueletoPagina">
@@ -417,7 +580,7 @@ export function EsqueletoPagina({ forma = 'productos', secciones, tarjetas, titu
           {titulo && <EsqueletoCabeza />}
           <span className={s.grilla}>{productos(tarjetas)}</span>
         </>
-      ) : (PAGINAS[forma] || PAGINAS.productos)()}
+      ) : (PAGINAS[forma] || PAGINAS.productos)({ modulo })}
     </div>
   );
 }

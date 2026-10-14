@@ -162,6 +162,12 @@
   gap: 1rem;
 }
 
+/* En una fila de dos, las píldoras y líneas se encogen si no caben. */
+.parLinea > .hueso:not(.circulo) {
+  flex-shrink: 1;
+  min-width: 0;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -467,9 +473,128 @@
   margin: 0 auto;
 }
 
+/* Menú de la cuenta: grupos y accesos con su ícono. */
+.grupoMenu {
+  margin-top: 0.4rem;
+}
+
+.itemMenu {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.accesos,
+.juegos,
+.opciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 0.9rem;
+}
+
+.opciones {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 112px), 1fr));
+  gap: 0.6rem;
+}
+
+.identidad {
+  flex-direction: row;
+  align-items: center;
+  gap: 1.1rem;
+}
+
+.perfil {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+/* Cupón: cuerpo y talón con su línea punteada. */
+.cupon {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface);
+}
+
+.cuponCuerpo {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem;
+}
+
+.cuponTalon {
+  display: grid;
+  place-items: center;
+  border-left: 2px dashed var(--color-border);
+}
+
+.buscador {
+  justify-self: center;
+}
+
+.encuesta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  width: min(100%, 620px);
+  margin: 0 auto;
+}
+
+.encuesta .tarjeta {
+  gap: 1.2rem;
+  margin-top: 0.6rem;
+  padding: 1.5rem 1.1rem;
+}
+
+/* Acceso: el panel de la marca (un hueso grande) y el formulario. */
+.acceso {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: min(100%, 1060px);
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 28px 28px 28px;
+  background: var(--color-surface);
+}
+
+.accesoPanel {
+  --hueso: color-mix(in srgb, var(--violet-200, #ddd6fe) 70%, var(--color-hover, #f1f5f9));
+  display: grid;
+  align-content: center;
+  gap: 0.8rem;
+  min-height: 150px;
+  padding: 1.25rem;
+  background: var(--hueso);
+}
+
+:global([data-theme='dark']) .accesoPanel {
+  --hueso: rgba(167, 139, 250, 0.14);
+}
+
+.accesoPanel .itemMenu {
+  display: none;
+}
+
+.accesoLado {
+  padding: 1.5rem 1.15rem;
+}
+
 @container esqueleto (min-width: 640px) {
   .dos {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tres {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .perfil {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr);
   }
 }
 
@@ -489,6 +614,24 @@
 
   .menuCuenta {
     display: flex;
+  }
+
+  .acceso {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+    min-height: 560px;
+  }
+
+  .accesoPanel {
+    padding: 2.5rem 2.25rem;
+  }
+
+  .accesoPanel .itemMenu {
+    display: flex;
+  }
+
+  .accesoLado {
+    align-self: center;
+    padding: 2.5rem 2.75rem;
   }
 }
 

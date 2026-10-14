@@ -5,19 +5,29 @@ Cómo verlo en vivo: `npm run dev` → http://localhost:3000/componentes.html �
 
 - **Primera vez (marca):** la pantalla de marca sobre la tienda. Se va sola
   a los 4 segundos, con su salida.
-- **Cambio de página:** la cabecera queda y abajo carga.
-- **Página llegando (esqueleto de esta página):** la forma de la página
-  que se está viendo. El inicio va sección por sección (las del builder),
-  y la tienda, el carrito, la cuenta, los pedidos y los formularios tienen
-  la suya.
+- **Cambio de página (esqueleto de esta página):** la cabecera queda y
+  abajo, la forma de la página que llega. Cada apartado tiene la suya:
+  - el inicio, sección por sección (las del builder);
+  - la tienda, la búsqueda, el carrito, Minijuegos, la encuesta y el acceso;
+  - cada módulo de Mi cuenta (resumen, perfil, pedidos, direcciones,
+    ajustes, catálogo, cupones, misiones, referidos, creaciones, deseos y
+    fechas importantes), con el menú al costado en ancho.
+- **Esperando una acción (pago, landing…):** la página se queda a la vista
+  detrás de un velo claro y encima una tarjeta con la etiqueta meciéndose:
+  "Procesando tu pago".
+
+**Regla:** para cambiar de página, siempre el esqueleto (ya se sabe la
+forma de lo que viene). `CapaCargando` es solo para esperar algo que no
+tiene forma conocida: un pago, verificar un documento, subir un diseño, o
+una landing del builder antes de que llegue su configuración.
 
 Las dos últimas vuelven solas a la página a los 4 s. Todos los esqueletos
 sueltos (por componente, por sección y por página) están en **Piezas** →
 **11 · Carga y esqueletos**.
 
-| Primera vez (escritorio) | Cambio de página (celular) | Esqueleto (escritorio) |
+| Primera vez (escritorio) | Esperando una acción (celular) | Cambio de página: el inicio (escritorio) |
 |---|---|---|
-| ![Pantalla de marca: la etiqueta meciéndose, WALÁ, la barra y una frase](carga-marca.webp) | ![Cargando con la etiqueta a color y "Cargando la tienda…"](carga-pagina.webp) | ![El inicio cargando: banner, mosaico, categorías y filas de productos](carga-esqueleto.webp) |
+| ![Pantalla de marca: la etiqueta meciéndose, WALÁ, la barra y una frase](carga-marca.webp) | ![Esperando una acción: la página detrás de un velo y "Procesando tu pago"](carga-pagina.webp) | ![El inicio cargando: banner, mosaico, categorías y filas de productos](carga-esqueleto.webp) |
 
 | Tienda llegando (escritorio) | Carrito llegando (celular) |
 |---|---|
@@ -49,7 +59,8 @@ del cordón, arriba a la derecha (`transform-origin: 75% 4%`), ±6° en 2,4 s.
 | Parte | Componente | Qué es | Archivo del diseño |
 |---|---|---|---|
 | M11 | `PantallaCarga` | La primera carga, con varias piezas. Ver la lista de abajo. | `kit/Cargando.module.css` |
-| M11 | `Cargando` | Dentro de la tienda: la etiqueta a color (`IsoWala`) meciéndose y "Cargando…", con los puntos que aparecen uno tras otro. Tiene `tamano` (sm, md, lg) y `bloque` (centrado, alto mínimo de 240px). | `kit/Cargando.module.css` |
+| M11 | `CapaCargando` | Esperar una acción: velo claro sobre la página y una tarjeta con `Cargando` (`texto`, `detalle`; `pantallaCompleta` fija al viewport). | `kit/Cargando.module.css` |
+| M11 | `Cargando` | La etiqueta a color (`IsoWala`) meciéndose y "Cargando…", con los puntos que aparecen uno tras otro. Es la pieza de `CapaCargando` y sirve suelta en zonas chicas (un menú, un panel). Tiene `tamano` (sm, md, lg) y `bloque`. | `kit/Cargando.module.css` |
 | M11 | `EsqueletoPagina` | Mientras llega una página (Suspense): su forma. Ver «Esqueletos» abajo. | `kit/Esqueletos.module.css` |
 
 Qué lleva `PantallaCarga`:
@@ -84,7 +95,7 @@ quieto). Las piezas sueltas van `aria-hidden`; `EsqueletoSeccion` y
 | Componente | `EsqueletoTarjeta` | direcciones, cupones, personas |
 | Componente | `EsqueletoFormulario` | completar perfil, encuesta |
 | Sección | `EsqueletoSeccion tipo` | una forma por tipo del builder (`FORMA_DE_SECCION`): banner, fila, grilla, catalogo, categorias, beneficios, testimonios, preguntas, marcas, mosaico, texto, medio, ubicacion, anuncio |
-| Página | `EsqueletoPagina` | `secciones` (los tipos del builder, en orden) o `forma`: productos, inicio, tienda, producto, carrito, cuenta, lista, formulario |
+| Página | `EsqueletoPagina` | `secciones` (los tipos del builder, en orden) o `forma`: productos, inicio, tienda, busqueda, producto, carrito, minijuegos, encuesta, acceso, cuenta (con `modulo`: resumen, perfil, pedidos, direcciones, ajustes, catalogo, cupones, misiones, referidos, creaciones, deseos, fechas), lista, formulario |
 
 Las páginas del kit ya los usan: los bloques grises que latían en la
 cuenta, la encuesta y el acceso son ahora esqueletos con la forma de lo que
@@ -104,7 +115,8 @@ cabecera), o antes y suelto, porque no depende de datos.
 | Hoy en la tienda | Pasa a (kit) |
 |---|---|
 | `BrandLoader` (dentro de `BrandLoaderOverlay`, cuando `useBrand`) | `PantallaCarga` (`pantallaCompleta`, `frases` opcional, `relevo` igual que hoy) |
-| `Loading` (el círculo): en `BrandLoaderOverlay` cuando ya se vio la marca, y `fullScreen` en el login y el registro | `Cargando bloque`. En el acceso ya no hace falta: el botón muestra que carga. |
+| `Loading` (el círculo) en `BrandLoaderOverlay` cuando ya se vio la marca (cambio de página) | `EsqueletoPagina` con la forma de la ruta |
+| `Loading fullScreen` en el login y el registro, y las esperas de pagos o subidas | El botón con `cargando`; si hay que bloquear la página, `CapaCargando pantallaCompleta` |
 | `PageLoading` (fallback de `Suspense` en `App.jsx`) | `EsqueletoPagina` con la `forma` de la ruta. En el inicio y `/tienda`, `secciones` con los tipos del layout del builder (se conocen antes que los productos). |
 | `ProductCardSkeleton` y los "Cargando..." sueltos de cada página | `EsqueletoProducto` y el esqueleto del componente que corresponda |
 | El splash estático de `index.html` | El mismo lockup que `PantallaCarga`. Ver la lista de abajo. |
@@ -144,7 +156,7 @@ lógica es de la tienda:
 ### Pasos
 
 1. `PageLoading` → `EsqueletoPagina` (lo más simple: sin estado; la forma sale de la ruta).
-2. El círculo de `BrandLoaderOverlay` → `Cargando bloque`.
+2. El círculo de `BrandLoaderOverlay` → `EsqueletoPagina` de la ruta (y `CapaCargando` donde hoy hay esperas de una acción).
 3. `BrandLoader` → `PantallaCarga`, **en el mismo commit** que el splash de
    `index.html`. Probar la primera carga con la caché vacía y la red
    lenta: el relevo no debe saltar.

@@ -986,7 +986,7 @@ function Contenido({ tema, cambiarTema }) {
         <Seccion
           id="carga" numero="11" titulo="Carga y esqueletos"
           descripcion="Mientras llegan los datos se ve la forma de lo que viene: un esqueleto por componente, uno por cada forma de sección del builder y uno por página, todos con el mismo brillo violeta. En la Tienda de prueba, «Ver la carga» muestra el de la página que se está viendo."
-          mejoras={['Un esqueleto con la forma de cada sección (no solo productos)', 'Un mismo brillo para todo el kit', 'La etiqueta del logo en lugar del círculo']}
+          mejoras={['Un esqueleto con la forma de cada sección y de cada página (no solo productos)', 'Cambiar de página: el esqueleto; esperar una acción: la capa', 'Un mismo brillo para todo el kit', 'La etiqueta del logo en lugar del círculo']}
         >
           <DemoEsqueletos />
         </Seccion>

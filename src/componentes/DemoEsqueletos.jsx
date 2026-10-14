@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Hueso, EsqueletoTexto, EsqueletoCabeza, EsqueletoProducto, EsqueletoFila, EsqueletoPedido, EsqueletoTarjeta,
-  EsqueletoFormulario, EsqueletoSeccion, EsqueletoPagina, Cargando,
+  EsqueletoFormulario, EsqueletoSeccion, EsqueletoPagina, Cargando, CapaCargando, MODULOS_ESQUELETO_CUENTA,
 } from './kit';
 import { Ficha } from './DemoPiezas';
 import s from './DemoPiezas.module.css';
@@ -27,11 +27,14 @@ const FORMAS_SECCION = [
   ['ubicacion', 'map_location'],
 ];
 const FORMAS_PAGINA = [
+  ['busqueda', 'Buscar: el buscador, chips, orden y resultados'],
   ['producto', 'La ficha de un producto: galería e información'],
   ['carrito', 'El carrito: líneas y resumen'],
-  ['cuenta', 'Mi cuenta: menú lateral y tarjetas'],
-  ['lista', 'Mis pedidos, cupones…'],
-  ['formulario', 'Perfil, acceso, encuesta'],
+  ['minijuegos', 'Zona Arcade: el encabezado y las tarjetas de juego'],
+  ['encuesta', 'La encuesta: el avance y su tarjeta'],
+  ['acceso', 'Login, registro, recuperar, completar perfil: los dos paneles'],
+  ['lista', 'Una lista de pedidos suelta'],
+  ['formulario', 'Un formulario suelto'],
 ];
 
 export default function DemoEsqueletos() {
@@ -53,7 +56,12 @@ export default function DemoEsqueletos() {
           <EsqueletoTexto lineas={4} />
         </div>
       </Ficha>
-      <Ficha nombre="Cargando" usadaEn="Cambio de página dentro de la tienda (en lugar del círculo)">
+      <Ficha nombre="CapaCargando" usadaEn="Esperar una acción: un pago, verificar un documento, subir un diseño, una landing que aún no se sabe cómo es">
+        <div style={{ position: 'relative', minHeight: 200, borderRadius: 16, overflow: 'hidden', background: 'var(--color-hover)' }}>
+          <CapaCargando texto="Procesando tu pago" detalle="No cierres esta página." />
+        </div>
+      </Ficha>
+      <Ficha nombre="Cargando" usadaEn="La pieza de CapaCargando; también suelta en zonas chicas (un menú, un panel)">
         <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <Cargando tamano="sm" />
           <Cargando />
@@ -86,6 +94,11 @@ export default function DemoEsqueletos() {
       {FORMAS_PAGINA.map(([forma, texto]) => (
         <Ficha key={forma} nombre={`EsqueletoPagina forma="${forma}"`} usadaEn={texto} ancho="1 / -1">
           <EsqueletoPagina forma={forma} />
+        </Ficha>
+      ))}
+      {MODULOS_ESQUELETO_CUENTA.map((modulo) => (
+        <Ficha key={modulo} nombre={`EsqueletoPagina forma="cuenta" modulo="${modulo}"`} usadaEn="Mi cuenta: el menú al costado (en ancho) y lo de ese módulo" ancho="1 / -1">
+          <EsqueletoPagina forma="cuenta" modulo={modulo} />
         </Ficha>
       ))}
     </div>
