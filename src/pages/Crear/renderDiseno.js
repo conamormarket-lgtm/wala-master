@@ -37,7 +37,37 @@ export const FUENTES = [
 
 const fuentesListas = new Map();
 
-/** Carga una fuente (normal y negrita) antes de pintarla en canvas. */
+// Letras cuyo archivo ya es grueso o inclinado (Back to Black, Franklin Gothic
+// Heavy Italic…): el navegador no les "inventa" negrita ni cursiva y el botón
+// no cambiaba nada. Se mide al cargarlas y, si hace falta, se dibuja aparte.
+const sinVariante = new Map();
+
+const firmaTexto = (font) => {
+  const c = document.createElement('canvas');
+  c.width = 400;
+  c.height = 80;
+  const ctx = c.getContext('2d');
+  ctx.font = font;
+  ctx.fillText('HaWo gl', 8, 60);
+  const d = ctx.getImageData(0, 0, c.width, c.height).data;
+  let s = 0;
+  for (let i = 3; i < d.length; i += 4) s = (s * 31 + d[i]) % 1000000007;
+  return s;
+};
+
+const medirVariantes = (familia) => {
+  try {
+    const normal = firmaTexto(`normal 400 48px "${familia}"`);
+    sinVariante.set(familia, {
+      negrita: normal === firmaTexto(`normal 700 48px "${familia}"`),
+      cursiva: normal === firmaTexto(`italic 400 48px "${familia}"`),
+    });
+  } catch {
+    // Sin canvas legible no se mide: queda lo que haga el navegador.
+  }
+};
+
+/** Carga una fuente (normal, negrita y cursiva) antes de pintarla en canvas. */
 export const asegurarFuente = (familia) => {
   if (!familia) return Promise.resolve();
   if (fuentesListas.has(familia)) return fuentesListas.get(familia);
@@ -48,7 +78,10 @@ export const asegurarFuente = (familia) => {
         await Promise.all([
           document.fonts.load(`400 48px "${familia}"`),
           document.fonts.load(`700 48px "${familia}"`),
+          document.fonts.load(`italic 400 48px "${familia}"`),
+          document.fonts.load(`italic 700 48px "${familia}"`),
         ]);
+        medirVariantes(familia);
       }
       fabric.util.clearFabricFontCache(familia);
     } catch {
@@ -141,19 +174,29 @@ export const propiedadesTexto = (capa) => {
   const texto = capa.text?.length ? capa.text : ' ';
   const contorno = Number(capa.contorno) || 0;
   const sombra = Number(capa.sombra) || 0;
+  const fuente = capa.fuente || 'Montserrat';
+  const color = capa.color || '#111111';
+  // Negrita o cursiva que el navegador no puede hacer con esta letra: la
+  // negrita es un trazo del color de la letra (ver pintarTextoConContorno) y
+  // la cursiva, una inclinación.
+  const falta = sinVariante.get(fuente) || {};
+  const negritaFalsa = capa.negrita && falta.negrita ? tamano * 0.04 : 0;
   return {
     // Un texto curvo va en una sola línea (todas irían sobre el mismo arco).
     text: curvo ? texto.replace(/\s*\n\s*/g, ' ') : texto,
-    fontFamily: capa.fuente || 'Montserrat',
-    fill: contorno > 0 && capa.sinRelleno ? 'rgba(0,0,0,0)' : (capa.color || '#111111'),
+    fontFamily: fuente,
+    fill: contorno > 0 && capa.sinRelleno ? 'rgba(0,0,0,0)' : color,
     fontSize: tamano,
     fontWeight: capa.negrita ? 'bold' : 'normal',
     fontStyle: capa.cursiva ? 'italic' : 'normal',
     textAlign: curvo ? 'center' : (capa.alineacion || 'center'),
     lineHeight: Number(capa.interlineado) || 1.05,
     charSpacing: Number(capa.espaciado) || 0,
-    stroke: contorno > 0 ? (capa.contornoColor || '#FFFFFF') : null,
-    strokeWidth: contorno > 0 ? (tamano * contorno * 2) / 100 : 0,
+    // El contorno crece con la negrita dibujada, para seguir viéndose igual de grueso.
+    stroke: contorno > 0 ? (capa.contornoColor || '#FFFFFF') : negritaFalsa ? color : null,
+    strokeWidth: (contorno > 0 ? (tamano * contorno * 2) / 100 : 0) + negritaFalsa,
+    negritaFalsa,
+    skewX: capa.cursiva && falta.cursiva ? -12 : 0,
     paintFirst: 'stroke',
     strokeLineJoin: 'round',
     shadow: sombra > 0
@@ -177,6 +220,15 @@ function pintarTextoConContorno(ctx) {
   if (this.stroke && this.strokeWidth > 0) {
     this._renderTextStroke(ctx);
     this._removeShadow(ctx);
+    if (this.negritaFalsa > 0 && this.stroke !== this.fill) {
+      // Con contorno, la negrita dibujada va aparte, del color de la letra.
+      const { stroke, strokeWidth } = this;
+      this.stroke = this.fill;
+      this.strokeWidth = this.negritaFalsa;
+      this._renderTextStroke(ctx);
+      this.stroke = stroke;
+      this.strokeWidth = strokeWidth;
+    }
     this._renderTextFill(ctx);
     return;
   }
