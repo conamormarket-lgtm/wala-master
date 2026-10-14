@@ -68,6 +68,8 @@
   height: 2rem;
 }
 
+/* Etiquetas como en la tarjeta de producto: arriba a la izquierda, en
+   columna, dentro de la foto (el tacho va a la derecha, como el corazón). */
 .etiquetas {
   position: absolute;
   z-index: 2;
@@ -75,9 +77,10 @@
   left: 12px;
   right: 56px;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: flex-start;
-  gap: 0.35rem;
+  gap: 9px;
+  pointer-events: none;
 }
 
 .eliminar {
@@ -420,17 +423,14 @@
     min-width: 0;
   }
 
-  /* La foto es angosta: una sola etiqueta, abajo (arriba está el tacho). */
+  /* La foto es angosta: una sola etiqueta (la más importante), arriba y en
+     tamaño chico, como en la tarjeta de producto de dos columnas. */
   .etiquetas {
-    top: auto;
-    right: 8px;
-    bottom: 48px;
-    /* Aire para el hilo de la etiqueta colgante (no asoma por el borde). */
-    left: 16px;
+    right: 50px;
   }
 
-  .fotoMarco:not(:has(.girar, .lados)) .etiquetas {
-    bottom: 10px;
+  .etiquetas > * {
+    font-size: 0.6rem;
   }
 
   .etiquetas > :nth-child(n + 2) {
@@ -490,16 +490,69 @@
   }
 }
 
-/* Vida al pasar el ratón: la tarjeta sube un poco, la foto se acerca, las
-   prendas de un combo se abren y las etiquetas saltan. Solo con ratón. */
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .creacion {
-    transition: border-color var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature), box-shadow var(--dur-media) ease;
+/* Al pasar el ratón, como la tarjeta de producto: se inclina siguiendo al
+   puntero y se levanta, el canto se ilumina donde está el puntero, un
+   barrido de luz cruza la foto una vez, la foto se acerca (o muestra la
+   espalda), las etiquetas se mecen y un combo abre sus prendas. */
+.creacion {
+  --rx: 0deg;
+  --ry: 0deg;
+  --mx: 50%;
+  --my: 30%;
+  transform: perspective(1000px) rotateX(var(--rx)) rotateY(var(--ry));
+  transition:
+    transform 0.5s var(--ease-signature),
+    box-shadow var(--dur-media) var(--ease-signature),
+    border-color var(--dur-media) ease;
+}
+
+.bordeLuz {
+  position: absolute;
+  inset: -1px;
+  z-index: 5;
+  padding: 1px;
+  border-radius: inherit;
+  background: radial-gradient(180px circle at var(--mx) var(--my), rgba(139, 92, 246, 0.55), transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-media) ease;
+}
+
+.barrido {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 38%, rgba(255, 255, 255, 0.35) 50%, transparent 62%);
+  transform: translateX(-110%);
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .creacion:hover {
+    border-color: var(--violet-200);
+    box-shadow: 0 16px 32px -20px rgba(76, 29, 149, 0.35);
+    transform: perspective(1000px) translateY(-4px) rotateX(var(--rx)) rotateY(var(--ry));
+    transition:
+      transform 0.15s linear,
+      box-shadow var(--dur-media) var(--ease-signature),
+      border-color var(--dur-media) ease;
   }
 
-  .creacion:hover {
-    box-shadow: 0 18px 32px -24px rgba(76, 29, 149, 0.6);
-    transform: translateY(-3px);
+  :global([data-theme='dark']) .creacion:hover {
+    border-color: rgba(167, 139, 250, 0.3);
+    box-shadow: 0 16px 36px -18px rgba(0, 0, 0, 0.7);
+  }
+
+  .creacion:hover .bordeLuz {
+    opacity: 1;
+  }
+
+  .creacion:hover .barrido {
+    transform: translateX(110%);
+    transition: transform 0.8s var(--ease-entrance, var(--ease-signature));
   }
 
   .foto > img:not(.espalda) {
@@ -507,7 +560,11 @@
   }
 
   .creacion:hover .foto > img:not(.espalda) {
-    transform: scale(1.05);
+    transform: scale(1.04);
+  }
+
+  .creacion:hover .etiquetas > * {
+    --inclinar: -9deg;
   }
 
   .prenda {
@@ -518,16 +575,8 @@
     transform: translateY(-4px) rotate(calc((var(--i) - 0.5) * 14deg)) scale(1.04);
   }
 
-  .etiquetas {
-    transition: transform var(--dur-media) var(--ease-signature);
-  }
-
-  .creacion:hover .etiquetas {
-    transform: translateY(-2px);
-  }
-
   .eliminar {
-    opacity: 0.8;
+    opacity: 0.85;
   }
 
   .creacion:hover .eliminar {
@@ -542,3 +591,21 @@
     transform: rotate(-14deg) scale(1.1);
   }
 }
+
+@media (hover: none), (pointer: coarse) {
+  .creacion:active {
+    transform: scale(0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .creacion,
+  .creacion:hover {
+    transform: none;
+  }
+
+  .barrido {
+    display: none;
+  }
+}
+

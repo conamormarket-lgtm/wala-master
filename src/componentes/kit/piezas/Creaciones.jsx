@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Clock, Paintbrush, ShoppingBag, Trash2, Pencil, Check, RotateCw, ImageOff, Users, RefreshCw, EyeOff, ArrowRight } from 'lucide-react';
 import Boton from '../Boton';
 import { Etiqueta } from '../Etiquetas';
-import { EtiquetaColgante } from '../Marca';
 import { soles } from '../TarjetaProducto';
 import { FotoProducto } from './FotoProducto';
 import s from './Creaciones.module.css';
@@ -35,8 +34,9 @@ const COMUNIDAD = {
  *  - nombre · imagen, imagenEspalda · imagenes: [url] (prendas de un combo)
  *  - producto, color: { nombre, hex } · subtitulo: en vez de "producto · color"
  *  - fecha: "Guardada hace 3 días" (ya legible) · precio, precioAntes
- *  - comprado, disponible (false: ya no está), publicada, combo (texto de la
- *    etiqueta: "Pareja", "2 prendas"), lados ("Frente + Espalda")
+ *  - comprado, disponible (false: ya no está), publicada, combo (texto corto
+ *    de la etiqueta, como en la tarjeta de producto: "2", "Pareja"), lados
+ *    ("Frente + Espalda")
  *  - aviso: texto en lugar del precio ("Este combo ya no se vende…")
  *  - urlEditar, urlComprar · borrador: un solo botón "Continuar" (urlEditar)
  *  - onRenombrar(nombre), onEliminar(): promesas
@@ -54,6 +54,23 @@ export function TarjetaCreacion({
   const [editando, setEditando] = useState(null);
   const [guardando, setGuardando] = useState(false);
   const prendas = imagenes?.filter(Boolean) || [];
+  // Como la tarjeta de producto: con ratón se inclina siguiendo al puntero
+  // (4° como mucho) y el canto se ilumina donde está.
+  const ref = useRef(null);
+  const mover = (e) => {
+    if (e.pointerType !== 'mouse' || !ref.current) return;
+    const r = ref.current.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width;
+    const y = (e.clientY - r.top) / r.height;
+    ref.current.style.setProperty('--mx', `${x * 100}%`);
+    ref.current.style.setProperty('--my', `${y * 100}%`);
+    ref.current.style.setProperty('--ry', `${(x - 0.5) * 8}deg`);
+    ref.current.style.setProperty('--rx', `${(0.5 - y) * 8}deg`);
+  };
+  const salir = () => {
+    ref.current?.style.setProperty('--rx', '0deg');
+    ref.current?.style.setProperty('--ry', '0deg');
+  };
   const enComunidad = publicada || comunidad?.estado === 'publicada';
 
   // Etiquetas de la foto por importancia; solo las dos primeras.
@@ -61,7 +78,7 @@ export function TarjetaCreacion({
     !disponible && <Etiqueta key="no" tono="peligro" sobreFoto>No disponible</Etiqueta>,
     borrador && prendas.length > 1 && <Etiqueta key="borrador" tono="aviso" sobreFoto>Borrador</Etiqueta>,
     comprado && <Etiqueta key="comprado" tono="exito" sobreFoto icono={<Check aria-hidden="true" />}>Comprado</Etiqueta>,
-    combo && <EtiquetaColgante key="combo" tono="magenta" tamano="sm">Combo · {combo}</EtiquetaColgante>,
+    combo && <Etiqueta key="combo" tono="violeta" solida>Combo · {combo}</Etiqueta>,
     enComunidad && <Etiqueta key="pub" tono="violeta" sobreFoto icono={<Users aria-hidden="true" />}>En la comunidad</Etiqueta>,
   ].filter(Boolean).slice(0, 2);
 
@@ -88,7 +105,14 @@ export function TarjetaCreacion({
   };
 
   return (
-    <article className={[s.creacion, !disponible && s.noDisponible, borrador && s.borrador].filter(Boolean).join(' ')} data-componente="TarjetaCreacion">
+    <article
+      ref={ref}
+      className={[s.creacion, !disponible && s.noDisponible, borrador && s.borrador].filter(Boolean).join(' ')}
+      data-componente="TarjetaCreacion"
+      onPointerMove={mover}
+      onPointerLeave={salir}
+    >
+      <span className={s.bordeLuz} aria-hidden="true" />
       <div className={s.caja}>
         <div className={s.fotoMarco}>
           {prendas.length > 1 ? (
@@ -107,6 +131,7 @@ export function TarjetaCreacion({
               {imagenEspalda && <img className={s.espalda} src={imagenEspalda} alt="" loading="lazy" draggable={false} />}
             </FotoProducto>
           )}
+          <span className={s.barrido} aria-hidden="true" />
           {etiquetas.length > 0 && <div className={s.etiquetas}>{etiquetas}</div>}
           {onEliminar && (
             <button type="button" className={s.eliminar} onClick={preguntarEliminar} aria-label={`Eliminar ${nombre || 'esta creación'}`}>

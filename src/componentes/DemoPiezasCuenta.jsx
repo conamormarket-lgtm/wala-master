@@ -186,7 +186,7 @@ export default function DemoPiezasCuenta({ imagenes }) {
       <Ficha nombre="TarjetaCreacion (combo · comunidad)" usadaEn="Un combo con sus prendas lado a lado; publicar en la comunidad (admins); borrador" ancho="1 / -1">
         <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))' }}>
           <TarjetaCreacion
-            nombre="Mi combo de pareja" imagenes={[imagenes.frente, imagenes.espalda]} combo="2 prendas" subtitulo="Combo Pareja Walá" fecha="Guardada hace 5 días"
+            nombre="Mi combo de pareja" imagenes={[imagenes.frente, imagenes.espalda]} combo="2" subtitulo="Combo Pareja Walá" fecha="Guardada hace 5 días"
             precio={99.9} urlEditar="/combo" urlComprar="/combo" comunidad={{ estado: null, onPublicar: () => espera(600) }}
           />
           <TarjetaCreacion nombre="Combo de aniversario" borrador imagenes={[imagenes.frente, imagenes.espalda]} subtitulo="1 de 2 prendas con diseño · sin terminar" fecha="Editado hoy" urlEditar="/combo" />

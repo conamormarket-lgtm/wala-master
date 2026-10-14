@@ -155,7 +155,7 @@ const creacionesDemo = (fotos) => [
 ];
 /* Un combo guardado (TarjetaMiCombo) y uno a medias. */
 const combosDemo = (fotos) => [
-  { id: 'k1', nombre: 'Mi combo de pareja', imagenes: [POLERA, POLERA_ESPALDA], combo: '2 prendas', subtitulo: 'Combo Pareja Walá',
+  { id: 'k1', nombre: 'Mi combo de pareja', imagenes: [POLERA, POLERA_ESPALDA], combo: '2', subtitulo: 'Combo Pareja Walá',
     fecha: 'Guardada hace 5 días', precio: 99.9, urlEditar: '/combo/pareja?mio=k1', urlComprar: '/combo/pareja?mio=k1' },
 ];
 
