@@ -106,7 +106,7 @@ export const getDesignById = async (designId) => {
 export const saveDesign = async (userId, payload) => {
   if (!userId) return { id: null, error: 'Usuario no autenticado' };
 
-  const { designId, productId, productName, layers, layersByView, variant, name, comboItemCustomization, isUserComboDesign, tipo, previewUrl, color, archivosImpresion, vistasPrevias, imagenConjunta, estado, miniatura, basadoEn, combo } = payload || {};
+  const { designId, productId, productName, layers, layersByView, variant, name, comboItemCustomization, isUserComboDesign, tipo, previewUrl, color, archivosImpresion, vistasPrevias, imagenConjunta, estado, miniatura, miniaturas, basadoEn, combo } = payload || {};
 
   // Formar una vista estandar del root layersByView (hacia atrás para compatibilidad)
   const sanitizedLayersByView = sanitizeLayersByViewMap(layersByView);
@@ -149,6 +149,8 @@ export const saveDesign = async (userId, payload) => {
       tipo: 'crear',
       estado: estado === 'borrador' ? 'borrador' : 'guardada',
       ...(typeof miniatura === 'string' && { miniatura }),
+      // Borrador: una miniatura por lado con diseño ({ vista, nombre, url }).
+      ...(Array.isArray(miniaturas) && { miniaturas }),
       previewUrl: previewUrl || '',
       color: color || null,
       ...(Array.isArray(archivosImpresion) && { archivosImpresion }),

@@ -8,7 +8,8 @@ import { useGlobalToast } from '../../contexts/ToastContext';
 import { getComboCrear } from '../../services/combosCrear';
 import { getPrendaBase } from '../../services/prendasBase';
 import { getDesignById, getDesignsByUser } from '../../services/designs';
-import { leerPrendaBase, tallasDeColor } from '../../utils/prendaBase';
+import { leerPrendaBase, tallasDeColor, fotoDeVista, fondoDeVista, cargarImagen } from '../../utils/prendaBase';
+import { renderizarVistaPrevia } from './renderDiseno';
 import { useAlternarFotos } from '../../hooks/useAlternarFotos';
 import { creacionLista } from './creacionCarrito';
 import { leerArmado, guardarArmado, olvidarArmado, preciosDeCombo, itemDeCombo, leerMetaArmado, guardarMetaArmado } from './comboCrear';
@@ -33,19 +34,23 @@ const tallasPara = (prenda, creacion) => {
 /** Frente y espalda de una pieza: su diseño, el de la comunidad o la prenda en blanco. */
 /**
  * Fotos de una pieza y de dónde salen:
- *  - 'render': las vistas previas de su creación (o de la plantilla) o, en un
- *    borrador, su miniatura. Ya traen el fondo del estudio y su margen.
+ *  - 'render': sus lados con diseño, ya renderizados con el fondo y el margen
+ *    del estudio (vistas previas de la creación o de la plantilla o, en un
+ *    borrador, sus miniaturas). Los lados sin diseño se completan con la
+ *    prenda lisa en su color (useLadosLisos), renderizada igual.
  *  - 'prenda': la prenda en blanco (sin diseño todavía), foto de catálogo.
  * Así la tarjeta las muestra al mismo tamaño y sobre el mismo fondo.
  */
 const ladosDePieza = (p) => {
   const previas = (p.creacion?.vistasPrevias || p.plantilla?.vistasPrevias || []).filter((v) => v?.url);
-  if (previas.length) return { origen: 'render', lados: previas.map((v) => ({ url: v.url, nombre: v.nombre })) };
+  if (previas.length) return { origen: 'render', lados: previas.map((v) => ({ url: v.url, nombre: v.nombre, vista: v.vista })) };
   const conjunta = p.creacion?.imagenConjunta || p.plantilla?.imagenConjunta;
-  if (conjunta) return { origen: 'render', lados: [{ url: conjunta, nombre: '' }] };
-  // Un borrador todavía no tiene sus vistas previas: su miniatura (la que se
-  // guarda sola mientras se diseña, como en "Tus borradores").
-  if (p.creacion?.miniatura) return { origen: 'render', lados: [{ url: p.creacion.miniatura, nombre: '' }] };
+  if (conjunta) return { origen: 'render', lados: [{ url: conjunta, nombre: '' }], completa: true };
+  // Un borrador todavía no tiene vistas previas: sus miniaturas (las que se
+  // guardan solas mientras se diseña), una por lado; los de antes, una sola.
+  const miniaturas = (p.creacion?.miniaturas || []).filter((m) => m?.url);
+  if (miniaturas.length) return { origen: 'render', lados: miniaturas.map((m) => ({ url: m.url, nombre: m.nombre, vista: m.vista })) };
+  if (p.creacion?.miniatura) return { origen: 'render', lados: [{ url: p.creacion.miniatura, nombre: '' }], completa: true };
   return {
     origen: 'prenda',
     lados: leerPrendaBase(p.prenda).vistas.filter((v) => v.imagen).map((v) => ({ url: v.imagen, nombre: v.nombre })),
@@ -53,17 +58,62 @@ const ladosDePieza = (p) => {
 };
 
 /**
+ * La prenda lisa en el color de la pieza, para cada lado SIN diseño
+ * (renderizada como las vistas previas: mismo fondo, mismo margen). Así una
+ * prenda con diseño solo adelante muestra su espalda lisa al pasar el mouse.
+ * Se hace una vez por prenda, color y lado (queda en memoria).
+ */
+const useLadosLisos = (p, fotos) => {
+  const cfg = p.prenda ? leerPrendaBase(p.prenda) : null;
+  const guardado = p.creacion?.color || null;
+  const color = cfg?.colores.find((c) => c.id === guardado?.id)
+    || cfg?.colores.find((c) => c.nombre === guardado?.nombre) || null;
+  // Solo si se sabe qué lados tienen diseño (una imagen única no lo dice).
+  const conDiseno = new Set(fotos.lados.map((l) => l.vista).filter(Boolean));
+  const faltan = fotos.origen === 'render' && !fotos.completa && color && conDiseno.size
+    ? cfg.vistas.filter((v) => !conDiseno.has(v.id) && fotoDeVista(v, color))
+    : [];
+  const consultas = useQueries({
+    queries: faltan.map((v) => ({
+      queryKey: ['prenda-lisa', p.prenda.id, color.id, v.id],
+      staleTime: Infinity,
+      queryFn: async () => {
+        const img = await cargarImagen(fotoDeVista(v, color));
+        const blob = await renderizarVistaPrevia({
+          fuente: fondoDeVista(img, v, color), anchoImg: img.naturalWidth, altoImg: img.naturalHeight,
+          vista: v, capasPorZona: {}, srcDe: (c) => c.src, ancho: 600,
+        });
+        return URL.createObjectURL(blob);
+      },
+    })),
+  });
+  return faltan.map((v, k) => ({ url: consultas[k]?.data || '', nombre: v.nombre, vista: v.id, lisa: true }))
+    .filter((l) => l.url);
+};
+
+/** La foto de una pieza: sus lados con diseño y, a continuación, los lisos. */
+const FotoDePieza = ({ pieza, ...props }) => {
+  const fotos = ladosDePieza(pieza);
+  const lisos = useLadosLisos(pieza, fotos);
+  return <FotoPieza fotos={fotos} lisos={lisos} {...props} />;
+};
+
+/**
  * Foto de una pieza, como las tarjetas de Mis creaciones: al pasar el mouse
  * se ve la espalda y en el celular alternan solas (con dos puntos de qué
  * lado se ve). Lleva el número de la pieza y el check cuando está lista.
  */
-const FotoPieza = ({ fotos: { origen, lados }, alt, vacia, children }) => {
+const FotoPieza = ({ fotos, lisos = [], alt, vacia, children }) => {
+  const { origen } = fotos;
+  // Primero los lados con diseño; después, la prenda lisa de los demás.
+  const lados = [...fotos.lados, ...lisos];
   const ref = useRef(null);
   const frente = lados[0]?.url;
   const espalda = lados[1]?.url;
   const verEspalda = useAlternarFotos(ref, Boolean(frente && espalda));
-  // La etiqueta dice qué lados llevan diseño: no va en la prenda en blanco.
-  const nombres = origen === 'render' ? lados.map((l) => l.nombre).filter(Boolean) : [];
+  // La etiqueta dice qué lados llevan diseño: no va en la prenda en blanco
+  // ni nombra los lados lisos.
+  const nombres = origen === 'render' ? fotos.lados.map((l) => l.nombre).filter(Boolean) : [];
   return (
     <div
       ref={ref}
@@ -435,10 +485,10 @@ const ComboCrearPage = () => {
             && piezasCombo[o.i].prendaId === piezasCombo[p.i].prendaId).length;
           return (
             <li key={p.i} className={`${styles.pieza} ${p.lista ? styles.piezaLista : ''}`}>
-              <FotoPieza fotos={ladosDePieza(p)} alt={p.prenda?.name || ''} vacia={!p.creacion && !p.plantilla}>
+              <FotoDePieza pieza={p} alt={p.prenda?.name || ''} vacia={!p.creacion && !p.plantilla}>
                 <span className={styles.numero}>{p.i + 1}</span>
                 {p.lista && <CheckCircle2 className={styles.check} size={22} aria-label="Lista" />}
-              </FotoPieza>
+              </FotoDePieza>
               <div className={styles.piezaInfo}>
                 <span className={styles.piezaPrenda}>Prenda {p.i + 1} · {p.prenda?.name}</span>
                 {p.cargando ? (

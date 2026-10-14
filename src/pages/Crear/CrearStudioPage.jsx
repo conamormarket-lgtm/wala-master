@@ -2452,11 +2452,17 @@ const CrearStudioPage = () => {
       const firma = JSON.stringify({ capas, colorId: color.id, talla });
       if (firma === firmaBorradorRef.current) return;
       if (montadoRef.current) setEstadoBorrador('guardando');
-      let miniatura = '';
-      try {
-        const v = cfg.vistas.find((x) => x.zonas.some((z) => capas[z.id])) || cfg.vistas[0];
-        miniatura = await aDataUrl(await renderizarVista(v, capas, 360));
-      } catch { /* sin miniatura */ }
+      // Una miniatura por lado con diseño (frente, espalda…): así el borrador
+      // se ve entero donde se muestre (en el combo, al pasar el mouse).
+      // `miniatura` es la primera, la de siempre.
+      const miniaturas = [];
+      const conDiseno = vistasConCapas(capas);
+      for (const v of conDiseno.length ? conDiseno : cfg.vistas.slice(0, 1)) {
+        try {
+          miniaturas.push({ vista: v.id, nombre: v.nombre, url: await aDataUrl(await renderizarVista(v, capas, 420)) });
+        } catch { /* sin miniatura de este lado */ }
+      }
+      const miniatura = miniaturas[0]?.url || '';
       if (guardandoRef.current) {
         if (montadoRef.current) setEstadoBorrador(null);
         return;
@@ -2471,6 +2477,7 @@ const CrearStudioPage = () => {
         estado: 'borrador',
         color: datosColor(),
         miniatura,
+        miniaturas,
         ...(!designIdRef.current && basadoEnRef.current && { basadoEn: basadoEnRef.current }),
         // Pieza de un combo: el borrador sabe de qué combo es (se reabre en él).
         ...(enCombo && { combo: { id: comboParam, nombre: comboActual?.name || '', pieza: piezaParam } }),
@@ -2557,6 +2564,7 @@ const CrearStudioPage = () => {
       tipo: 'crear',
       estado: 'guardada',
       miniatura: '',
+      miniaturas: [],
       previewUrl: archivos.imagenConjunta,
       color: datosColor(),
       ...archivos,

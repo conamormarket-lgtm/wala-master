@@ -92,6 +92,7 @@ export const copiarCreacionParaCombo = (userId, creacion, combo, pieza = 0) => s
   vistasPrevias: creacion.vistasPrevias,
   imagenConjunta: creacion.imagenConjunta,
   miniatura: creacion.miniatura,
+  miniaturas: creacion.miniaturas,
   basadoEn: creacion.basadoEn,
   combo: { id: combo.id, nombre: combo.name || '', pieza },
 });
