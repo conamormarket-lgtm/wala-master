@@ -112,15 +112,16 @@
   width: 96px;
   height: 96px;
   object-fit: contain;
-  transform: rotate(-8deg);
-  transition: transform var(--dur-media) var(--ease-signature);
+  transform: translateY(0) rotate(-8deg);
+  transition: transform 0.45s var(--ease-signature);
   pointer-events: none;
 }
 
-/* Kapi se asoma un poco más al pasar por la tarjeta. */
+/* Kapi se asoma un poco más al pasar por el panel: sube derecho, sin
+   cambiar de giro (si gira, el corte del borde se inclina y su cara se tuerce). */
 @media (hover: hover) and (pointer: fine) {
-  .acceso:hover .kapi {
-    transform: rotate(-3deg) translateY(-6px);
+  .panel:hover .kapi {
+    transform: translateY(-8px) rotate(-8deg);
   }
 }
 
