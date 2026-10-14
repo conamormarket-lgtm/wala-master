@@ -5432,6 +5432,7 @@ exports.datesReminderEngine = require('./notificationsEngine').datesReminderEngi
 exports.probarAvisoFechas = require('./notificationsEngine').probarAvisoFechas;
 exports.markNotificationOpenedSecure = require('./notificationsEngine').markNotificationOpenedSecure;
 exports.notifyOrderMilestoneErp = require('./notificationsEngine').notifyOrderMilestoneErp;
+exports.notifyOrderMilestoneErpAlta = require('./notificationsEngine').notifyOrderMilestoneErpAlta;
 exports.notifyOrderMilestoneWala = require('./notificationsEngine').notifyOrderMilestoneWala;
 exports.cancelPromoCampaign = require('./notificationsEngine').cancelPromoCampaign;
 

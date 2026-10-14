@@ -860,6 +860,25 @@ exports.notifyOrderMilestoneErp = functions.firestore
     return null;
   });
 
+// Un pedido web validado en el ERP nace ya en producción ("En Diseño"): el
+// aviso de arriba solo ve cambios (onUpdate) y no se enteraba; el cliente
+// recién sabía de su pedido al pasar a Impresión. Solo pedidos de la web: un
+// pedido creado a mano en el ERP (o restaurado) no avisa al crearse.
+exports.notifyOrderMilestoneErpAlta = functions.firestore
+  .document("pedidos/{pedidoId}")
+  .onCreate(async (snap, context) => {
+    const pedido = snap.data() || {};
+    if (!pedido.origenPedidoWebId && !pedido.portalPseudoOrderId) return null;
+    const hito = hitoDeEstadoErp(pedido.estadoGeneral);
+    if (!hito) return null;
+    try {
+      await avisarHitoPedido(pedido, context.params.pedidoId, hito);
+    } catch (e) {
+      console.error("notifyOrderMilestoneErpAlta:", e);
+    }
+    return null;
+  });
+
 exports.notifyOrderMilestoneWala = functions.firestore
   .document("wala_pedidos/{id}")
   .onWrite(async (change, context) => {
