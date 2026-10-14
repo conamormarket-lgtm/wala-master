@@ -9,6 +9,7 @@ import { useAlVerUnaVez } from '../../hooks/useAlVerUnaVez';
 import styles from '../cuenta/MisCreacionesPage.module.css';
 import duo from '../Crear/TarjetaMiCombo.module.css';
 import propios from './Comunidad.module.css';
+import PuntosColor from '../Crear/PuntosColor';
 
 /**
  * La galería (pública, sin sesión). Se vuelve a pedir cada vez que se muestra
@@ -100,7 +101,10 @@ const TarjetaComunidad = ({ diseno }) => {
       <div className={styles.info}>
         <h3 className={styles.nombre}>{diseno.nombre}</h3>
         <p className={styles.prenda}>
-          {color?.hex && (
+          {/* Un combo: el color de cada prenda (no solo el de la primera). */}
+          {esCombo ? (
+            <PuntosColor colores={(diseno.piezas || []).map((p) => p.color)} />
+          ) : color?.hex && (
             <span className={styles.puntoColor} style={{ background: fondoColorGuardado(color) }} aria-hidden="true" />
           )}
           <span className={styles.prendaTexto}>

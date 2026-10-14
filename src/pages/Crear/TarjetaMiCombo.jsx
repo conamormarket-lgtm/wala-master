@@ -5,6 +5,7 @@ import { Trash2, Paintbrush, ShoppingBag, Clock, Users, ArrowRight } from 'lucid
 import { getComboCrear } from '../../services/combosCrear';
 import { getDesignById } from '../../services/designs';
 import { imagenDe, espaldaDe } from '../../services/misCombos';
+import PuntosColor from './PuntosColor';
 import { useAlternarFotos } from '../../hooks/useAlternarFotos';
 import { useAlVerUnaVez } from '../../hooks/useAlVerUnaVez';
 import { precioBase } from '../../utils/prendaBase';
@@ -51,6 +52,8 @@ const TarjetaMiCombo = ({ design, onEliminar, onRenombrado, onComunidad }) => {
       ? piezas.map((p, k) => ({ src: imagenDe(piezasQ[k]?.data), espalda: espaldaDe(piezasQ[k]?.data) }))
       : (design.previas || []).map((src) => ({ src, espalda: '' }))
   ).filter((f) => f.src);
+  // El color de cada prenda (de lo guardado en el combo o de sus prendas).
+  const colores = guardadas ? piezas.map((p) => p.color) : piezasQ.map((q) => q.data?.color);
   const hayEspalda = fotos.some((f) => f.espalda);
   // En el celular (sin mouse) frente y espalda alternan solas.
   const verEspalda = useAlternarFotos(fotoRef, hayEspalda);
@@ -107,6 +110,7 @@ const TarjetaMiCombo = ({ design, onEliminar, onRenombrado, onComunidad }) => {
           onCambiado={(nuevo) => onRenombrado?.(design.id, nuevo)}
         />
         <p className={styles.prenda}>
+          <PuntosColor colores={colores} />
           <span className={styles.prendaTexto}>
             {borrador
               ? `${conDiseno} de ${(design.piezas || []).length} prendas con diseño · sin terminar`
