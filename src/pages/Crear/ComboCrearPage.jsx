@@ -16,6 +16,7 @@ import { guardarMiCombo } from '../../services/misCombos';
 import { obtenerDisenoComunidad } from '../../services/comunidad';
 import AccionesComunidad from '../Comunidad/AccionesComunidad';
 import CapaModal from './CapaModal';
+import { esperarGuardados } from './borradoresCache';
 import { EtiquetaColgante } from '../../componentes/kit/Marca';
 import styles from './ComboCrearPage.module.css';
 
@@ -35,6 +36,10 @@ const ladosDePieza = (p) => {
   if (previas.length) return previas.map((v) => ({ url: v.url, nombre: v.nombre }));
   const conjunta = p.creacion?.imagenConjunta || p.plantilla?.imagenConjunta;
   if (conjunta) return [{ url: conjunta, nombre: '' }];
+  // Un borrador todavía no tiene sus vistas previas: muestra la miniatura que
+  // se guarda sola mientras se diseña (como en "Tus borradores"), no la
+  // prenda vacía.
+  if (p.creacion?.miniatura) return [{ url: p.creacion.miniatura, nombre: '' }];
   return leerPrendaBase(p.prenda).vistas.filter((v) => v.imagen).map((v) => ({ url: v.imagen, nombre: v.nombre }));
 };
 
@@ -200,7 +205,13 @@ const ComboCrearPage = () => {
     queries: armado.map((a) => ({
       queryKey: ['creacion', a.designId, user?.uid],
       enabled: Boolean(user && a.designId),
+      // Al volver del estudio, cada prenda se ve con lo último que se editó
+      // (la app guarda en memoria una hora y no recarga sola).
+      refetchOnMount: 'always',
       queryFn: async () => {
+        // Si se vuelve del estudio con un autoguardado en curso, se espera:
+        // si no, se leía la versión de antes.
+        await esperarGuardados();
         const { data } = await getDesignById(a.designId);
         return data ? { id: a.designId, ...data } : null;
       },
