@@ -31,6 +31,7 @@ const grupos = (vistas) => [
       ...(vistas.length > 1
         ? [{ teclas: [vistas.slice(0, 9).map((_, i) => String(i + 1))], texto: vistas.slice(0, 9).map((v) => v.nombre).join(' / '), juntas: true }]
         : []),
+      { teclas: [['←', '↑', '→', '↓']], texto: 'Con zoom y nada elegido: recorrer la prenda', juntas: true },
       { teclas: [['?']], texto: 'Ver estos atajos' },
     ],
   },
@@ -58,7 +59,8 @@ const grupos = (vistas) => [
       { teclas: [['Clic derecho']], texto: 'Más opciones' },
       { teclas: [['Shift', 'Clic']], texto: 'Sumar o quitar de la selección' },
       { teclas: [['Arrastrar']], texto: 'En una zona vacía: elegir varios con un recuadro' },
-      { teclas: [[MOD, 'Rueda']], texto: 'Agrandar / achicar lo elegido' },
+      { teclas: [[MOD, 'Rueda']], texto: 'Zoom (hacia lo elegido o hacia el puntero)' },
+      { teclas: [['Rueda']], texto: 'Con zoom: recorrer la prenda' },
       { teclas: [['Shift']], texto: 'Al girar: de 15° en 15°' },
       { teclas: [['Alt']], texto: 'Al arrastrar: sin imán al centro' },
     ],

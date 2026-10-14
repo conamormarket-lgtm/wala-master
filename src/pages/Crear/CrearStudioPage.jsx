@@ -869,14 +869,6 @@ const CrearStudioPage = () => {
     lienzo.on('mouse:down', (e) => { if (e.button === 3) accionesRef.current.abrirMenu?.(e); });
     lienzo.on('mouse:dblclick', (e) => accionesRef.current.dobleClic?.(e));
     // Ctrl + rueda (o pellizcar en el trackpad) cambia el tamaño de lo elegido.
-    lienzo.on('mouse:wheel', (e) => {
-      const ev = e.e;
-      const activo = lienzo.getActiveObject();
-      if (!(ev.ctrlKey || ev.metaKey) || !(activo?.capaId || activo?.type === 'activeSelection')) return;
-      ev.preventDefault();
-      ev.stopPropagation();
-      accionesRef.current.escalar?.(ev.deltaY < 0 ? 1.05 : 1 / 1.05);
-    });
     // Contorno de lo que está bajo el puntero (se ve qué se va a elegir).
     lienzo.on('mouse:over', (e) => {
       if (!e.target?.capaId) return;
@@ -2377,7 +2369,12 @@ const CrearStudioPage = () => {
       // Ctrl+V llega como evento "paste" (ver alPegarRef).
       return;
     }
-    if (e.altKey && !e.getModifierState?.('AltGraph')) return;
+    if (e.altKey && !e.getModifierState?.('AltGraph')) {
+      // Alt no mueve nada, pero Alt+←/→ en el navegador es "atrás/adelante":
+      // aquí sacaría del estudio a media edición.
+      if (tecla === 'ArrowLeft' || tecla === 'ArrowRight') e.preventDefault();
+      return;
+    }
 
     if (tecla === '?') { e.preventDefault(); setVerAtajos(true); return; }
     if (tecla === 't') { e.preventDefault(); agregarTexto(undefined, { editar: true }); return; }
@@ -2388,7 +2385,20 @@ const CrearStudioPage = () => {
     }
 
     const capa = capaActual();
-    if (!capa && multiRef.current.length < 2) return;
+    if (!capa && multiRef.current.length < 2) {
+      // Sin nada elegido, las flechas recorren la prenda acercada.
+      const z = zoomManualRef.current;
+      if (z > 1 && tecla.startsWith('Arrow')) {
+        e.preventDefault();
+        const paso = (e.shiftKey ? 160 : 40) / z;
+        const dx = tecla === 'ArrowLeft' ? -paso : tecla === 'ArrowRight' ? paso : 0;
+        const dy = tecla === 'ArrowUp' ? -paso : tecla === 'ArrowDown' ? paso : 0;
+        const c = centroZoomRef.current || { x: mundoRef.current.w / 2, y: mundoRef.current.h / 2 };
+        centroZoomRef.current = { x: c.x + dx, y: c.y + dy };
+        aplicarZoomRef.current?.(false);
+      }
+      return;
+    }
     // Cada atajo es un paso propio para deshacer; solo las flechas seguidas se agrupan.
     if (!tecla.startsWith('Arrow')) asentarHistorial();
     const paso = e.shiftKey ? 50 : 5;
