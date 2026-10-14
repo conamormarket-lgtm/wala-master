@@ -950,8 +950,15 @@ const CrearStudioPage = () => {
       if (z <= 1) return;
       e.preventDefault();
       e.stopPropagation();
+      // Alt + rueda: a los costados; Shift + rueda: arriba y abajo. El
+      // navegador manda la rueda con Shift como horizontal: se toma la que
+      // venga y se aplica en el sentido del modificador.
+      const d = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+      let dx = e.deltaX;
+      let dy = e.deltaY;
+      if (e.altKey) { dx = d; dy = 0; } else if (e.shiftKey) { dx = 0; dy = d; }
       const c = centroZoomRef.current || { x: mundoRef.current.w / 2, y: mundoRef.current.h / 2 };
-      centroZoomRef.current = { x: c.x + e.deltaX / z, y: c.y + e.deltaY / z };
+      centroZoomRef.current = { x: c.x + dx / z, y: c.y + dy / z };
       aplicarZoomRef.current?.(false);
     });
     lienzo.on('after:render', ({ ctx }) => {
