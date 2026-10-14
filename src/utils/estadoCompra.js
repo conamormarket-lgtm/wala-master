@@ -90,10 +90,16 @@ const ETAPAS_FINALIZADAS = ['finalizado', 'entregado', 'completado'];
  *   - web === false            (un pedido NO-web ya pasó por caja en el ERP)
  *   - conDeuda === false       (sin deuda pendiente)
  *   - algún registro de historialPagos con estado que matchee /aprob/i
+ *
+ * Excepto un pedido web que el ERP todavía no valida y dice pagado === false
+ * (p. ej. una solicitud por WhatsApp): no está pagado aunque traiga
+ * conDeuda === false (misPedidosSecure lo pone para no ofrecer "Pagar deuda",
+ * y se leía como "Pago confirmado").
  */
-function esPagado(pedido) {
+export function esPagado(pedido) {
   if (!pedido || typeof pedido !== 'object') return false;
   if (pedido.pagado === true) return true;
+  if (pedido.web === true && pedido.pagado === false) return false;
   if (pedido.estadoPago === 'pagado') return true;
   if (pedido.web === false) return true;
   if (pedido.conDeuda === false) return true;
