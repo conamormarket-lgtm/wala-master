@@ -741,6 +741,10 @@ const AdminProductoFormV2 = () => {
         // Sin refetch, al volver a editar se servirían los datos ANTIGUOS de la caché.
         !isNew && queryClient.refetchQueries({ queryKey: ['admin-product', id] }),
         queryClient.invalidateQueries({ queryKey: ['products'] }),
+        // Prendas de Crear (estudio, combos, creaciones) y su lista: un color
+        // nuevo (p.ej. un bicolor al revés) se ve sin esperar la hora de caché.
+        queryClient.invalidateQueries({ queryKey: ['prenda-base'] }),
+        queryClient.invalidateQueries({ queryKey: ['prendas-base'] }),
         // 'products-infinite' es la query que de verdad alimenta el catálogo
         // por defecto (home de marca sin ?categoria= ni búsqueda, ver
         // TiendaPage.jsx). Se agregó en la paginación con cursor DESPUÉS de

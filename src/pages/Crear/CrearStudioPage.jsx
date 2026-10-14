@@ -188,6 +188,9 @@ const CrearStudioPage = () => {
       if (err) throw new Error(err);
       return data;
     },
+    // Se vuelve a leer al abrir el estudio (muestra la de caché mientras):
+    // con la hora de caché general no aparecían colores recién agregados.
+    refetchOnMount: 'always',
   });
   // Solo los colores que se pueden mostrar: un bicolor sin sus fotos no se ofrece.
   const cfgPrenda = useMemo(() => {

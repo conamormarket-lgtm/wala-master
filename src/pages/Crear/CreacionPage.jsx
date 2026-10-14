@@ -128,6 +128,7 @@ const CreacionPage = () => {
 
   const { data: prenda, isLoading: cargandoPrenda } = useQuery({
     queryKey: ['prenda-base', creacion?.productId],
+    refetchOnMount: 'always',
     enabled: Boolean(esMia && creacion.productId),
     queryFn: async () => {
       const { data, error } = await getPrendaBase(creacion.productId);

@@ -105,6 +105,8 @@ const ComboCrearPage = () => {
         if (error) throw new Error(error);
         return data;
       },
+      // Al día al abrir el combo (colores nuevos de la prenda).
+      refetchOnMount: 'always',
     })),
   });
   const prendas = prendasQ.map((q) => q.data || null);
