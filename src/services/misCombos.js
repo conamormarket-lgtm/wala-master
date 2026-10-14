@@ -13,8 +13,13 @@ import { getDesignById, eliminarCreacion, saveDesign } from './designs';
  * guardadas y listas para imprimir pasa a 'guardada' (en "Tus creaciones").
  *
  *   { userId, tipo: 'comboCrear', estado, comboId, comboNombre, name,
- *     piezas: [{ designId, prendaId, talla }], previas: [imagen por pieza],
- *     previasEspalda: [segunda imagen por pieza ('' si tiene un solo lado)] }
+ *     piezas: [{ designId, prendaId, talla, frente, espalda }],
+ *     previas: [imagen por pieza] }
+ *
+ * La foto de frente y la de espalda van DENTRO de cada pieza: el guardado
+ * (removeEmptyForFirestore) quita los '' de las listas, y en una lista
+ * aparte ("previasEspalda") una pieza sin espalda corría a las demás: la
+ * casaca mostraba la espalda del polo. `previas` queda para lo de antes.
  */
 export const esMiCombo = (d) => d?.tipo === 'comboCrear';
 
@@ -23,7 +28,10 @@ const piezaLista = (d) => Boolean(d) && d.estado !== 'borrador'
   && Array.isArray(d.archivosImpresion) && d.archivosImpresion.length > 0
   && Array.isArray(d.vistasPrevias) && d.vistasPrevias.length > 0;
 
-const imagenDe = (d) => d?.vistasPrevias?.[0]?.url || d?.imagenConjunta || d?.previewUrl || d?.miniatura || '';
+export const imagenDe = (d) => d?.vistasPrevias?.[0]?.url || d?.imagenConjunta || d?.previewUrl || d?.miniatura || '';
+
+/** El otro lado con diseño de una prenda (su espalda), o '' si tiene uno solo. */
+export const espaldaDe = (d) => d?.vistasPrevias?.[1]?.url || d?.miniaturas?.[1]?.url || '';
 
 const datos = ({ combo, piezas, creaciones }) => ({
   tipo: 'comboCrear',
@@ -34,10 +42,11 @@ const datos = ({ combo, piezas, creaciones }) => ({
     designId: p.designId || '',
     prendaId: combo.piezas[i]?.prendaId || '',
     talla: p.talla || '',
+    frente: imagenDe(creaciones[i]),
+    // La espalda: la tarjeta la muestra al pasar el mouse.
+    espalda: espaldaDe(creaciones[i]),
   })),
   previas: creaciones.map(imagenDe),
-  // La espalda (u otro lado) de cada prenda: la tarjeta la muestra al pasar el mouse.
-  previasEspalda: creaciones.map((d) => d?.vistasPrevias?.[1]?.url || ''),
 });
 
 /**

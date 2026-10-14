@@ -4,6 +4,7 @@ import { useQuery, useQueries } from '@tanstack/react-query';
 import { Trash2, Paintbrush, ShoppingBag, Clock, Users, ArrowRight } from 'lucide-react';
 import { getComboCrear } from '../../services/combosCrear';
 import { getDesignById } from '../../services/designs';
+import { imagenDe, espaldaDe } from '../../services/misCombos';
 import { useAlternarFotos } from '../../hooks/useAlternarFotos';
 import { useAlVerUnaVez } from '../../hooks/useAlVerUnaVez';
 import { precioBase } from '../../utils/prendaBase';
@@ -30,23 +31,26 @@ const TarjetaMiCombo = ({ design, onEliminar, onRenombrado, onComunidad }) => {
     enabled: Boolean(design.comboId),
     queryFn: async () => (await getComboCrear(design.comboId)).data,
   });
-  const previas = (design.previas || []).filter(Boolean);
-  // La espalda de cada prenda (si tiene diseño atrás), para verla al pasar el
-  // mouse. Los combos guardados antes no la traen: se leen sus prendas.
-  const sinEspaldas = !Array.isArray(design.previasEspalda);
+  // Frente y espalda de cada prenda. Van dentro de cada pieza (`frente`,
+  // `espalda`); los combos guardados antes no las traen: se leen sus prendas
+  // (mientras, sus fotos de siempre, sin espalda).
+  const piezas = design.piezas || [];
+  const guardadas = piezas.some((p) => p.frente);
   const piezasQ = useQueries({
-    queries: (design.piezas || []).map((p) => ({
+    queries: piezas.map((p) => ({
       queryKey: ['pieza-combo', p.designId],
-      enabled: sinEspaldas && Boolean(p.designId),
+      enabled: !guardadas && Boolean(p.designId),
       staleTime: 5 * 60 * 1000,
       queryFn: async () => (await getDesignById(p.designId)).data || null,
     })),
   });
-  const espaldaDe = (i) => (sinEspaldas
-    ? piezasQ[i]?.data?.vistasPrevias?.[1]?.url
-    : design.previasEspalda[i]) || '';
-  // Cada prenda con su frente (la de siempre) y su espalda.
-  const fotos = (design.previas || []).map((src, i) => ({ src, espalda: espaldaDe(i) })).filter((f) => f.src);
+  const leidas = !guardadas && piezasQ.some((q) => q.data);
+  const fotos = (guardadas
+    ? piezas.map((p) => ({ src: p.frente || '', espalda: p.espalda || '' }))
+    : leidas
+      ? piezas.map((p, k) => ({ src: imagenDe(piezasQ[k]?.data), espalda: espaldaDe(piezasQ[k]?.data) }))
+      : (design.previas || []).map((src) => ({ src, espalda: '' }))
+  ).filter((f) => f.src);
   const hayEspalda = fotos.some((f) => f.espalda);
   // En el celular (sin mouse) frente y espalda alternan solas.
   const verEspalda = useAlternarFotos(fotoRef, hayEspalda);
@@ -64,7 +68,7 @@ const TarjetaMiCombo = ({ design, onEliminar, onRenombrado, onComunidad }) => {
           <span
             ref={fotoRef}
             className={`${propios.prendas} ${visto ? propios.saludo : ''} ${verEspalda ? propios.verDetras : ''}`}
-            style={{ '--n': Math.max(previas.length, 1) }}
+            style={{ '--n': Math.max(fotos.length, 1) }}
           >
             {fotos.map((f, i) => (
               <span key={`${f.src}-${i}`} className={propios.prenda}>
