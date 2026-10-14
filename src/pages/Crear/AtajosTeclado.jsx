@@ -72,7 +72,7 @@ const grupos = (vistas) => [
       { teclas: [['Shift', 'Rueda']], texto: 'Con zoom: ir a los costados' },
       { teclas: [['Arrastrar']], texto: 'Con zoom, en una zona vacía: mover la vista' },
       { teclas: [['Shift']], texto: 'Al girar: de 15° en 15°' },
-      { teclas: [['Alt']], texto: 'Al arrastrar: sin imán al centro' },
+      { teclas: [['Alt']], texto: 'Al arrastrar o agrandar: sin guías ni imán' },
     ],
   },
 ];

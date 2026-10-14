@@ -6,6 +6,7 @@ import {
   ArrowLeft, ImagePlus, Images, Plus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
   Crosshair, Maximize2, RotateCw, Crop, Eraser, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info, Undo2, Redo2, Keyboard, Clipboard, ClipboardPaste, Pencil,
   X, Check, Minus, Hand, ZoomIn, ZoomOut, HelpCircle, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
+  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -40,17 +41,32 @@ import CampoHex from './CampoHex';
 import SelectorFuente from './SelectorFuente';
 import NombreEditable from './NombreEditable';
 import { registrarGuardado, ponerBorradorEnCache, quitarBorradorDeCache } from './borradoresCache';
+import { cajaEnZona, imanAlMover, imanAlEscalar, enCm } from './guiasInteligentes';
 import styles from './CrearStudioPage.module.css';
 
 const VIOLETA = '#7C3AED';
 // Con mouse se escribe directo sobre la prenda (doble clic). En el celular
 // el teclado taparía la prenda: ahí se escribe en el panel.
 const CON_MOUSE = typeof window !== 'undefined' && Boolean(window.matchMedia?.('(pointer: fine)').matches);
-// Distancia (px de pantalla) a la que un diseño se imanta al centro de su zona.
-const IMAN_PX = 7;
+// Distancia (px de pantalla) a la que un diseño se pega a una guía: con el
+// mouse y con el dedo (más gruesa).
+const IMAN_PX = 6;
+const IMAN_DEDO_PX = 10;
+// Color de las guías inteligentes y de sus medidas.
+const ROSA = '#EC4899';
 // Zoom máximo de la prenda (8 = 800 %).
 const ZOOM_MAX = 8;
 const COLORES_TEXTO = ['#111111', '#FFFFFF', '#7C3AED', '#E11D48', '#F59E0B', '#10B981', '#2563EB', '#F472B6'];
+
+// Botones de alinear: [modo, ícono, nombre].
+const MODOS_ALINEAR = [
+  ['izquierda', AlignStartVertical, 'Alinear a la izquierda'],
+  ['centroH', AlignCenterVertical, 'Alinear al centro'],
+  ['derecha', AlignEndVertical, 'Alinear a la derecha'],
+  ['arriba', AlignStartHorizontal, 'Alinear arriba'],
+  ['centroV', AlignCenterHorizontal, 'Alinear al medio'],
+  ['abajo', AlignEndHorizontal, 'Alinear abajo'],
+];
 
 const soles = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
 const nuevoId = () => `capa_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -331,6 +347,8 @@ const CrearStudioPage = () => {
   const accionesRef = useRef({});
   const hoverRef = useRef(null);
   const guiasRef = useRef([]);
+  // Medida (al agrandar) o grados (al girar) junto a lo que se está cambiando.
+  const burbujaRef = useRef(null);
   const editarAlCrearRef = useRef(null);
   const recargadaRef = useRef(null);
   if (recargadaRef.current === null) recargadaRef.current = !estudioAbierto && recargadaEn(location.pathname);
@@ -1045,30 +1063,84 @@ const CrearStudioPage = () => {
       hoverRef.current = null;
       lienzo.requestRenderAll();
     });
-    // Imán al centro de la zona al arrastrar (Alt lo desactiva).
+    // ── Guías inteligentes (como en Canva) ──
+    // Al mover o agrandar, el diseño se pega a los bordes y centros de otros
+    // diseños de su zona y de la zona, y a espacios iguales entre diseños.
+    // Alt lo desactiva. El alcance del imán es el mismo en pantalla con
+    // cualquier zoom (antes, a 400 % se pegaba desde muy lejos).
+    const zonaYOtras = (obj) => {
+      const activos = obj.type === 'activeSelection' ? obj.getObjects() : [obj];
+      const zId = activos[0]?.zonaId;
+      if (!zId || activos.some((o) => o.zonaId !== zId)) return null;
+      const t = transformsRef.current[zId];
+      if (!t) return null;
+      const otras = lienzo.getObjects()
+        .filter((o) => o.capaId && o.zonaId === zId && !activos.includes(o) && o.visible !== false)
+        .map((o) => cajaEnZona(o, t));
+      return { t, otras };
+    };
+    const conDedo = (e) => Boolean(e.e?.type?.startsWith('touch'));
+    const alcance = (e, t) => (conDedo(e) ? IMAN_DEDO_PX : IMAN_PX) / (t.k * (lienzo.viewportTransform[0] || 1));
+    // Guías en unidades de la zona -> puntos del lienzo (con su medida en cm).
+    const guiasAlLienzo = (guias, t) => guias.map((g) => {
+      const punto = (u, w) => (g.eje === 'x' ? aLienzo(t, u, w) : aLienzo(t, w, u));
+      if (g.tipo === 'linea') return { tipo: 'linea', a: punto(g.valor, g.desde), b: punto(g.valor, g.hasta) };
+      return { tipo: 'espacio', a: punto(g.desde, g.en), b: punto(g.hasta, g.en), texto: enCm(g.hasta - g.desde, t.cmPorUnidad) };
+    });
+    // En el celular, un toquecito al pegarse (como en Canva).
+    let pegadoAntes = false;
+    const avisarPegado = (e, pegado) => {
+      if (pegado && !pegadoAntes && conDedo(e)) navigator.vibrate?.(8);
+      pegadoAntes = pegado;
+    };
     lienzo.on('object:moving', (e) => {
       const obj = e.target;
-      const t = obj?.zonaId && transformsRef.current[obj.zonaId];
       guiasRef.current = [];
-      if (!t || e.e?.altKey) return;
-      const p = desdeLienzo(t, obj.left, obj.top);
-      const tol = IMAN_PX / t.k;
-      let { left, top } = p;
-      if (Math.abs(left - t.wu / 2) < tol) {
-        left = t.wu / 2;
-        guiasRef.current.push([aLienzo(t, t.wu / 2, 0), aLienzo(t, t.wu / 2, t.hu)]);
+      const zona = obj && !e.e?.altKey ? zonaYOtras(obj) : null;
+      if (!zona) {
+        pegadoAntes = false;
+        return;
       }
-      if (Math.abs(top - t.hu / 2) < tol) {
-        top = t.hu / 2;
-        guiasRef.current.push([aLienzo(t, 0, t.hu / 2), aLienzo(t, t.wu, t.hu / 2)]);
-      }
-      if (guiasRef.current.length) {
-        const q = aLienzo(t, left, top);
-        obj.set({ left: q.x, top: q.y });
+      const { t, otras } = zona;
+      const { dx, dy, guias } = imanAlMover(cajaEnZona(obj, t), otras, t, alcance(e, t));
+      if (dx || dy) {
+        const o = aLienzo(t, 0, 0);
+        const d = aLienzo(t, dx, dy);
+        obj.set({ left: obj.left + d.x - o.x, top: obj.top + d.y - o.y });
         obj.setCoords();
       }
+      guiasRef.current = guiasAlLienzo(guias, t);
+      avisarPegado(e, Boolean(dx || dy));
     });
-    // Al girar se imanta a 0°, 90°, 180°… y con Shift va de 15° en 15°.
+    // Al agrandar desde una esquina, el borde se pega igual; y se ve la medida.
+    lienzo.on('object:scaling', (e) => {
+      const obj = e.target;
+      guiasRef.current = [];
+      burbujaRef.current = null;
+      const zona = obj && zonaYOtras(obj);
+      if (!zona) return;
+      const { t, otras } = zona;
+      const tr = e.transform;
+      const rel = ((((obj.angle || 0) - t.ang) % 90) + 90) % 90;
+      // Solo derecho (o de costado): girado, sus bordes no van con los de la zona.
+      if ((rel < 0.5 || rel > 89.5) && !e.e?.altKey && tr?.originX && tr.originX !== 'center') {
+        const fijoLienzo = obj.translateToOriginPoint(obj.getCenterPoint(), tr.originX, tr.originY);
+        const { factor, guias } = imanAlEscalar(
+          cajaEnZona(obj, t), desdeLienzo(t, fijoLienzo.x, fijoLienzo.y), otras, t, alcance(e, t),
+        );
+        if (factor !== 1) {
+          obj.set({ scaleX: obj.scaleX * factor, scaleY: obj.scaleY * factor });
+          obj.setPositionByOrigin(fijoLienzo, tr.originX, tr.originY);
+          obj.setCoords();
+        }
+        guiasRef.current = guiasAlLienzo(guias, t);
+        avisarPegado(e, factor !== 1);
+      }
+      const c = cajaEnZona(obj, t);
+      const ancho = enCm(c.x2 - c.x1, t.cmPorUnidad);
+      if (ancho) burbujaRef.current = { obj, texto: `${ancho.replace(' cm', '')} × ${enCm(c.y2 - c.y1, t.cmPorUnidad)}` };
+    });
+    // Al girar se imanta a 0°, 90°, 180°… y con Shift va de 15° en 15°; se ven los grados.
     lienzo.on('object:rotating', (e) => {
       const obj = e.target;
       const base = (obj?.zonaId && transformsRef.current[obj.zonaId]?.ang) || 0;
@@ -1076,10 +1148,13 @@ const CrearStudioPage = () => {
       const paso = e.e?.shiftKey ? 15 : 90;
       const cerca = Math.round(rel / paso) * paso;
       if (e.e?.shiftKey || Math.abs(rel - cerca) < 4) obj.set({ angle: cerca + base });
+      burbujaRef.current = { obj, texto: `${Math.round((((obj.angle - base) % 360) + 360) % 360)}°` };
     });
     lienzo.on('mouse:up', () => {
-      if (!guiasRef.current.length) return;
+      pegadoAntes = false;
+      if (!guiasRef.current.length && !burbujaRef.current) return;
       guiasRef.current = [];
+      burbujaRef.current = null;
       lienzo.requestRenderAll();
     });
     // Con zoom: arrastrar en vacío (o sobre una zona) mueve la vista; la rueda
@@ -1127,33 +1202,80 @@ const CrearStudioPage = () => {
       }
       camaraApiRef.current.mover(dx, dy);
     });
+    // Etiqueta redondeada (medidas de las guías y burbuja al agrandar o girar).
+    const etiqueta = (ctx, texto, x, y, fondo) => {
+      ctx.font = '700 11px Montserrat, system-ui, sans-serif';
+      const w = ctx.measureText(texto).width + 12;
+      const h = 18;
+      const x0 = Math.round(Math.min(Math.max(x - w / 2, 2), lienzo.getWidth() - w - 2));
+      const y0 = Math.round(Math.min(Math.max(y - h / 2, 2), lienzo.getHeight() - h - 2));
+      const r = 6;
+      ctx.beginPath();
+      ctx.moveTo(x0 + r, y0);
+      ctx.arcTo(x0 + w, y0, x0 + w, y0 + h, r);
+      ctx.arcTo(x0 + w, y0 + h, x0, y0 + h, r);
+      ctx.arcTo(x0, y0 + h, x0, y0, r);
+      ctx.arcTo(x0, y0, x0 + w, y0, r);
+      ctx.closePath();
+      ctx.fillStyle = fondo;
+      ctx.fill();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(texto, x0 + w / 2, y0 + h / 2 + 0.5);
+    };
     lienzo.on('after:render', ({ ctx }) => {
       const h = hoverRef.current;
       const hayHover = h && !h.group && h !== lienzo.getActiveObject() && lienzo.getObjects().includes(h);
-      if (!hayHover && !guiasRef.current.length) return;
-      ctx.save();
+      const guias = guiasRef.current;
+      const burbuja = burbujaRef.current?.obj?.canvas ? burbujaRef.current : null;
+      if (!hayHover && !guias.length && !burbuja) return;
+      // Todo en px de pantalla: las líneas quedan finas con cualquier zoom.
       const v = lienzo.viewportTransform;
-      ctx.transform(v[0], v[1], v[2], v[3], v[4], v[5]);
-      const grosor = 1 / (v[0] || 1);
+      const enPantalla = (p) => fabric.util.transformPoint(p, v);
+      ctx.save();
       if (hayHover) {
-        const pts = h.getCoords(true, true);
+        const pts = h.getCoords(true, true).map(enPantalla);
         ctx.strokeStyle = VIOLETA;
-        ctx.lineWidth = 1.5 * grosor;
-        ctx.setLineDash([5 * grosor, 4 * grosor]);
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([5, 4]);
         ctx.beginPath();
         pts.forEach((pt, i) => (i ? ctx.lineTo(pt.x, pt.y) : ctx.moveTo(pt.x, pt.y)));
         ctx.closePath();
         ctx.stroke();
       }
-      ctx.strokeStyle = '#EC4899';
-      ctx.lineWidth = grosor;
       ctx.setLineDash([]);
-      guiasRef.current.forEach(([a, b]) => {
+      guias.forEach((g) => {
+        const a = enPantalla(g.a);
+        const b = enPantalla(g.b);
+        ctx.strokeStyle = ROSA;
+        ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
         ctx.lineTo(b.x, b.y);
+        if (g.tipo === 'espacio') {
+          // Topes en cada punta y la medida al medio.
+          const largo = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+          const nx = (-(b.y - a.y) / largo) * 4;
+          const ny = ((b.x - a.x) / largo) * 4;
+          [a, b].forEach((p) => {
+            ctx.moveTo(p.x - nx, p.y - ny);
+            ctx.lineTo(p.x + nx, p.y + ny);
+          });
+        }
         ctx.stroke();
+        if (g.tipo === 'espacio' && g.texto) {
+          const horizontal = Math.abs(b.x - a.x) >= Math.abs(b.y - a.y);
+          const mx = (a.x + b.x) / 2;
+          const my = (a.y + b.y) / 2;
+          etiqueta(ctx, g.texto, horizontal ? mx : mx + 30, horizontal ? my - 14 : my, ROSA);
+        }
       });
+      if (burbuja) {
+        const r = burbuja.obj.getBoundingRect(false, true);
+        const abajo = r.top + r.height + 20;
+        etiqueta(ctx, burbuja.texto, r.left + r.width / 2, abajo < lienzo.getHeight() - 12 ? abajo : r.top - 20, '#1F1530');
+      }
       ctx.restore();
     });
     // Escribir sobre la prenda: cada letra va a la capa (y al panel).
@@ -1418,6 +1540,9 @@ const CrearStudioPage = () => {
         const transforms = {};
         vista.zonas.forEach((z) => {
           transforms[z.id] = transformDeZona(z, { ox: margen, oy: margen, iw, ih, anchoImg, altoImg });
+          // Para mostrar medidas en cm en las guías (si la vista tiene escala).
+          const medida = medidaZona(z, vista);
+          transforms[z.id].cmPorUnidad = medida ? medida.anchoCm / transforms[z.id].wu : 0;
         });
 
         // Los diseños de cada zona, listos antes de tocar el lienzo.
@@ -1793,53 +1918,84 @@ const CrearStudioPage = () => {
     sincronizarGrupo(sel);
   };
 
-  /** Caja de un diseño del lienzo en unidades de su zona (esté o no en un grupo). */
-  const cajaEnZona = (obj) => {
-    const t = transformsRef.current[obj.zonaId];
-    // Dentro de un grupo, fabric da las esquinas relativas al grupo: se pasan al lienzo.
-    const delGrupo = obj.group ? obj.group.calcTransformMatrix() : null;
-    const pts = obj.getCoords(true, true)
-      .map((pt) => (delGrupo ? fabric.util.transformPoint(pt, delGrupo) : pt))
-      .map((pt) => desdeLienzo(t, pt.x, pt.y));
-    const xs = pts.map((pt) => pt.left);
-    const ys = pts.map((pt) => pt.top);
-    return { x1: Math.min(...xs), x2: Math.max(...xs), y1: Math.min(...ys), y2: Math.max(...ys) };
-  };
-
   /**
-   * Alinea los diseños del grupo entre sí (izquierda, centroH, derecha,
-   * arriba, centroV, abajo) o centra el bloque en la zona ('zona'). Solo si
-   * todos están en la misma zona.
+   * Lo elegido para alinear o distribuir: los diseños del grupo (o el único
+   * elegido), su zona y sus cajas. Solo si todos están en la misma zona.
    */
-  const alinear = (modo) => {
+  const elegidosEnZona = () => {
     const sel = grupoActivo();
-    const objs = sel ? sel.getObjects().filter((o) => o.capaId) : [];
+    const solo = !sel && seleccionRef.current ? objetoDe(seleccionRef.current) : null;
+    const objs = sel ? sel.getObjects().filter((o) => o.capaId) : solo ? [solo] : [];
     const zId = objs[0]?.zonaId;
     const t = zId && transformsRef.current[zId];
-    if (!t || objs.some((o) => o.zonaId !== zId)) return;
-    const cajas = objs.map(cajaEnZona);
-    const minX = Math.min(...cajas.map((c) => c.x1));
-    const maxX = Math.max(...cajas.map((c) => c.x2));
-    const minY = Math.min(...cajas.map((c) => c.y1));
-    const maxY = Math.max(...cajas.map((c) => c.y2));
-    const delta = {};
-    objs.forEach((o, i) => {
-      const c = cajas[i];
-      const d = {
-        izquierda: [minX - c.x1, 0],
-        centroH: [(minX + maxX) / 2 - (c.x1 + c.x2) / 2, 0],
-        derecha: [maxX - c.x2, 0],
-        arriba: [0, minY - c.y1],
-        centroV: [0, (minY + maxY) / 2 - (c.y1 + c.y2) / 2],
-        abajo: [0, maxY - c.y2],
-        zona: [t.wu / 2 - (minX + maxX) / 2, t.hu / 2 - (minY + maxY) / 2],
-      }[modo];
-      if (d) delta[o.capaId] = d;
-    });
+    if (!t || objs.some((o) => o.zonaId !== zId)) return null;
+    return { objs, zId, t, solo: Boolean(solo), cajas: objs.map((o) => cajaEnZona(o, t)) };
+  };
+
+  /** Corre cada diseño (en unidades de la zona) como un solo paso de deshacer. */
+  const correrCapas = (zId, delta) => {
     asentarHistorial();
     modificarCapas(zId, (capas) => capas.map((c) => (delta[c.id]
       ? { ...c, left: c.left + delta[c.id][0], top: c.top + delta[c.id][1] }
       : c)), true);
+  };
+
+  /**
+   * Alinea (izquierda, centroH, derecha, arriba, centroV, abajo): varios,
+   * entre ellos; uno solo, a los bordes y el centro de su zona. 'zona'
+   * centra lo elegido en la zona.
+   */
+  const alinear = (modo) => {
+    const elegidos = elegidosEnZona();
+    if (!elegidos) return;
+    const { objs, zId, t, solo, cajas } = elegidos;
+    const bloque = {
+      x1: Math.min(...cajas.map((c) => c.x1)),
+      x2: Math.max(...cajas.map((c) => c.x2)),
+      y1: Math.min(...cajas.map((c) => c.y1)),
+      y2: Math.max(...cajas.map((c) => c.y2)),
+    };
+    const ref = solo ? { x1: 0, x2: t.wu, y1: 0, y2: t.hu } : bloque;
+    const delta = {};
+    objs.forEach((o, i) => {
+      const c = cajas[i];
+      const d = {
+        izquierda: [ref.x1 - c.x1, 0],
+        centroH: [(ref.x1 + ref.x2) / 2 - (c.x1 + c.x2) / 2, 0],
+        derecha: [ref.x2 - c.x2, 0],
+        arriba: [0, ref.y1 - c.y1],
+        centroV: [0, (ref.y1 + ref.y2) / 2 - (c.y1 + c.y2) / 2],
+        abajo: [0, ref.y2 - c.y2],
+        zona: [t.wu / 2 - (bloque.x1 + bloque.x2) / 2, t.hu / 2 - (bloque.y1 + bloque.y2) / 2],
+      }[modo];
+      if (d) delta[o.capaId] = d;
+    });
+    correrCapas(zId, delta);
+  };
+
+  /**
+   * Distribuye 3 o más diseños con el mismo espacio entre ellos, en
+   * horizontal ('h') o vertical ('v'): los de las puntas no se mueven.
+   */
+  const distribuir = (eje) => {
+    const elegidos = elegidosEnZona();
+    if (!elegidos || elegidos.objs.length < 3) return;
+    const [a1, a2] = eje === 'h' ? ['x1', 'x2'] : ['y1', 'y2'];
+    const lista = elegidos.objs
+      .map((o, i) => ({ o, c: elegidos.cajas[i] }))
+      .sort((p, q) => (p.c[a1] + p.c[a2]) - (q.c[a1] + q.c[a2]));
+    const ocupado = lista.reduce((suma, { c }) => suma + (c[a2] - c[a1]), 0);
+    const inicio = Math.min(...lista.map(({ c }) => c[a1]));
+    const fin = Math.max(...lista.map(({ c }) => c[a2]));
+    const hueco = (fin - inicio - ocupado) / (lista.length - 1);
+    const delta = {};
+    let pos = inicio;
+    lista.forEach(({ o, c }) => {
+      const d = pos - c[a1];
+      delta[o.capaId] = eje === 'h' ? [d, 0] : [0, d];
+      pos += c[a2] - c[a1] + hueco;
+    });
+    correrCapas(elegidos.zId, delta);
   };
 
   /** Ctrl+A: todos los diseños de la vista. */
@@ -2768,6 +2924,10 @@ const CrearStudioPage = () => {
           { id: 'arriba', etiqueta: 'Alinear arriba', icono: AlignStartHorizontal, accion: () => alinear('arriba') },
           { id: 'medio', etiqueta: 'Alinear al medio', icono: AlignCenterHorizontal, accion: () => alinear('centroV') },
           { id: 'abajo', etiqueta: 'Alinear abajo', icono: AlignEndHorizontal, accion: () => alinear('abajo') },
+          ...(multiIds.length > 2 ? [
+            { id: 'distH', etiqueta: 'Mismo espacio de lado a lado', icono: AlignHorizontalDistributeCenter, accion: () => distribuir('h') },
+            { id: 'distV', etiqueta: 'Mismo espacio de arriba abajo', icono: AlignVerticalDistributeCenter, accion: () => distribuir('v') },
+          ] : []),
           'separador',
         ] : []),
         { id: 'quitar', etiqueta: `Quitar los ${multiIds.length}`, icono: Trash2, atajo: 'Supr', peligro: true, accion: () => { asentarHistorial(); eliminar(); } },
@@ -3263,20 +3423,25 @@ const CrearStudioPage = () => {
                 Muévelos o cambia su tamaño juntos. Shift + clic suma o quita uno.
               </p>
               {mismaZonaMulti ? (
-                <div className={styles.alinearVarios} role="group" aria-label="Alinear">
-                  {[
-                    ['izquierda', AlignStartVertical, 'Alinear a la izquierda'],
-                    ['centroH', AlignCenterVertical, 'Alinear al centro'],
-                    ['derecha', AlignEndVertical, 'Alinear a la derecha'],
-                    ['arriba', AlignStartHorizontal, 'Alinear arriba'],
-                    ['centroV', AlignCenterHorizontal, 'Alinear al medio'],
-                    ['abajo', AlignEndHorizontal, 'Alinear abajo'],
-                  ].map(([modo, Icono, nombreAlinear]) => (
-                    <button key={modo} type="button" className={styles.botonAlinear} onClick={() => alinear(modo)} aria-label={nombreAlinear} title={nombreAlinear}>
-                      <Icono size={18} aria-hidden="true" />
-                    </button>
-                  ))}
-                </div>
+                <>
+                  <div className={styles.alinearVarios} role="group" aria-label="Alinear">
+                    {MODOS_ALINEAR.map(([modo, Icono, nombreAlinear]) => (
+                      <button key={modo} type="button" className={styles.botonAlinear} onClick={() => alinear(modo)} aria-label={nombreAlinear} title={nombreAlinear}>
+                        <Icono size={18} aria-hidden="true" />
+                      </button>
+                    ))}
+                  </div>
+                  {multiIds.length > 2 && (
+                    <div className={styles.distribuir} role="group" aria-label="Distribuir">
+                      <button type="button" className={styles.herramienta} onClick={() => distribuir('h')} title="El mismo espacio entre ellos, de lado a lado">
+                        <AlignHorizontalDistributeCenter size={16} aria-hidden="true" />Mismo espacio ↔
+                      </button>
+                      <button type="button" className={styles.herramienta} onClick={() => distribuir('v')} title="El mismo espacio entre ellos, de arriba abajo">
+                        <AlignVerticalDistributeCenter size={16} aria-hidden="true" />Mismo espacio ↕
+                      </button>
+                    </div>
+                  )}
+                </>
               ) : (
                 <p className={styles.ayudaVarios}>Están en zonas distintas: para alinearlos, elige los de una misma zona.</p>
               )}
@@ -3410,6 +3575,15 @@ const CrearStudioPage = () => {
                   <button type="button" className={styles.herramienta} onClick={() => girar(1)} title="Girar (R)"><RotateCw size={16} aria-hidden="true" />Girar</button>
                 )}
                 <button type="button" className={`${styles.herramienta} ${styles.herramientaPeligro}`} onClick={eliminar} title="Quitar (Supr)"><Trash2 size={16} aria-hidden="true" />Quitar</button>
+              </div>
+
+              <span className={styles.etiquetaCampo}>Alinear en la zona</span>
+              <div className={styles.alinearVarios} role="group" aria-label="Alinear en la zona">
+                {MODOS_ALINEAR.map(([modo, Icono, nombreAlinear]) => (
+                  <button key={modo} type="button" className={styles.botonAlinear} onClick={() => alinear(modo)} aria-label={`${nombreAlinear} de la zona`} title={`${nombreAlinear} de la zona`}>
+                    <Icono size={18} aria-hidden="true" />
+                  </button>
+                ))}
               </div>
 
               <details className={styles.masOpciones}>

@@ -1623,6 +1623,13 @@
   color: var(--primary-color);
 }
 
+.distribuir {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
 /* ── Cargando la prenda y el diseño ────────────────────────────────────── */
 .cargandoLienzo {
   position: absolute;
