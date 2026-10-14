@@ -14,6 +14,7 @@ import styles from '../MisCreacionesPage.module.css';
 import estilosEliminar from '../../Crear/EliminarCreacion.module.css';
 import NombreEditable from '../../Crear/NombreEditable';
 import AccionesComunidad, { InsigniaPublicada } from '../../Comunidad/AccionesComunidad';
+import { BotonLlevarEnCombo } from '../../Crear/LlevarEnCombo';
 
 /**
  * Milisegundos del último guardado de una creación, o null.
@@ -283,6 +284,7 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado, onComun
                   <Paintbrush size={16} aria-hidden="true" />
                 </Link>
               )}
+              {esDeCrear && <BotonLlevarEnCombo creacion={design} className={styles.botonEditar} />}
               <Link to={esDeCrear ? verUrl : editarUrl} state={esDeCrear ? undefined : { desde: pathname }} className={styles.botonPrincipal}>
                 {esDeCrear
                   ? <><ShoppingBag size={15} aria-hidden="true" /> Comprar</>

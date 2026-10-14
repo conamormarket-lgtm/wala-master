@@ -49,20 +49,16 @@ export const ponerPieza = (comboId, indice, cambios) => {
 };
 
 /**
- * Lleva una creación ya hecha a un combo: va en la primera pieza libre de su
- * misma prenda y, como al diseñar, también en las otras piezas iguales que
- * sigan vacías. Devuelve false si el combo no lleva esa prenda.
+ * Empieza un combo NUEVO con un diseño ya hecho: va en todas las prendas del
+ * combo que son su misma prenda (en una pareja de poleras, en las dos) y las
+ * demás quedan por diseñar. Lo que había a medias sigue en la cuenta (Mi combo).
  */
-export const usarCreacionEnCombo = (combo, creacion) => {
-  const piezas = leerArmado(combo.id, combo.piezas.length);
-  const iguales = combo.piezas.map((p, i) => (p.prendaId === creacion.productId ? i : -1)).filter((i) => i >= 0);
-  if (!iguales.length) return false;
-  if (!iguales.some((i) => piezas[i].designId === creacion.id)) {
-    const libres = iguales.filter((i) => !piezas[i].designId);
-    (libres.length ? libres : [iguales[0]]).forEach((i) => { piezas[i] = { ...piezas[i], designId: creacion.id }; });
-    guardarArmado(combo.id, piezas);
-  }
-  return true;
+export const empezarComboCon = (combo, designId, prendaId) => {
+  olvidarArmado(combo.id);
+  guardarArmado(combo.id, combo.piezas.map((p) => ({
+    ...piezaVacia(),
+    designId: p.prendaId === prendaId ? designId : '',
+  })));
 };
 
 export const olvidarArmado = (comboId) => {

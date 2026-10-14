@@ -10,7 +10,8 @@ import { getPrendaBase } from '../../services/prendasBase';
 import { leerPrendaBase, precioPersonalizado, precioBase, tallasDeColor, fondoColorGuardado } from '../../utils/prendaBase';
 import { useTranslatedHtml } from '../../i18n/useTranslatedText';
 import { itemDeCreacion, creacionLista } from './creacionCarrito';
-import { usarCreacionEnCombo, ponerPieza, leerArmado } from './comboCrear';
+import { ponerPieza, leerArmado } from './comboCrear';
+import { useLlevarEnCombo } from './LlevarEnCombo';
 import { getCombosCrear } from '../../services/combosCrear';
 import { useEliminarCreacion } from './useEliminarCreacion';
 import NombreEditable from './NombreEditable';
@@ -137,6 +138,7 @@ const CreacionPage = () => {
     },
   });
 
+  const { llevar: llevarEnCombo, llevando: llevandoACombo } = useLlevarEnCombo();
   // Combos publicados que llevan esta prenda: para llevar la creación a uno.
   const { data: combos = [] } = useQuery({
     queryKey: ['combos-crear', false],
@@ -312,14 +314,15 @@ const CreacionPage = () => {
             <span className={styles.comboIcono}><Users size={18} aria-hidden="true" /></span>
             <span className={styles.comboTexto}>
               <strong>Llévala en combo: {c.name}</strong>
-              <span>{c.piezas.length} prendas por {soles(precioBase(c))}. Ponemos este diseño y luego lo cambias si quieres.</span>
+              <span>{c.piezas.length} prendas por {soles(precioBase(c))}. Usamos una copia de este diseño y luego lo cambias si quieres.</span>
             </span>
             <button
               type="button"
               className={styles.comboBoton}
-              onClick={() => { if (usarCreacionEnCombo(c, { ...creacion, id })) navigate(`/combo/${c.id}`); }}
+              onClick={() => llevarEnCombo(c, { ...creacion, id })}
+              disabled={Boolean(llevandoACombo)}
             >
-              Usar en el combo <ArrowRight size={15} aria-hidden="true" />
+              {llevandoACombo === c.id ? 'Armando…' : 'Usar en el combo'} <ArrowRight size={15} aria-hidden="true" />
             </button>
           </div>
         ))}

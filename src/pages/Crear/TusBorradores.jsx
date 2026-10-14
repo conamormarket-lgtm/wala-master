@@ -9,6 +9,7 @@ import { useEliminarCreacion } from './useEliminarCreacion';
 import { esperarGuardados } from './borradoresCache';
 import FilaCarrusel from './FilaCarrusel';
 import TarjetaMiCombo from './TarjetaMiCombo';
+import { BotonLlevarEnCombo } from './LlevarEnCombo';
 import { esMiCombo, eliminarMiCombo, agruparCombos } from '../../services/misCombos';
 import styles from './TusBorradores.module.css';
 // La misma tarjeta que las creaciones (MiCreacionCard): mismo tamaño, foto,
@@ -101,6 +102,8 @@ export const TarjetaBorrador = ({ borrador: b, onEliminar }) => {
             {precio > 0 && <span className={tarjeta.precio}>S/ {precio.toFixed(2)}</span>}
           </div>
           <div className={tarjeta.acciones}>
+            {/* Una prenda de un combo ya está en su combo. */}
+            {!b.combo?.id && <BotonLlevarEnCombo creacion={b} className={tarjeta.botonEditar} />}
             <Link to={continuarUrl} state={desde} className={tarjeta.botonPrincipal}>
               Continuar <ArrowRight size={15} aria-hidden="true" />
             </Link>

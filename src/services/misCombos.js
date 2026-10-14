@@ -1,5 +1,5 @@
 import { createDocument, updateDocument, deleteDocument } from './firebase/firestore';
-import { getDesignById, eliminarCreacion } from './designs';
+import { getDesignById, eliminarCreacion, saveDesign } from './designs';
 
 /**
  * "Mi combo": el combo que arma el cliente, guardado en su cuenta como UNA
@@ -68,6 +68,30 @@ export const sincronizarMiCombo = async (userId, { id, combo, piezas }) => {
   }));
   return guardarMiCombo(userId, { id, combo, piezas, creaciones });
 };
+
+/**
+ * Copia de una creación (guardada o borrador) para llevarla a un combo: la
+ * misma prenda, color, diseño e imágenes ya generadas, marcada como pieza del
+ * combo. La creación original sigue suelta, igual que antes.
+ */
+export const copiarCreacionParaCombo = (userId, creacion, combo, pieza = 0) => saveDesign(userId, {
+  tipo: 'crear',
+  estado: creacion.estado,
+  productId: creacion.productId,
+  productName: creacion.productName,
+  layers: creacion.layers,
+  layersByView: creacion.layersByView,
+  variant: creacion.variant,
+  name: creacion.name,
+  previewUrl: creacion.previewUrl,
+  color: creacion.color,
+  archivosImpresion: creacion.archivosImpresion,
+  vistasPrevias: creacion.vistasPrevias,
+  imagenConjunta: creacion.imagenConjunta,
+  miniatura: creacion.miniatura,
+  basadoEn: creacion.basadoEn,
+  combo: { id: combo.id, nombre: combo.name || '', pieza },
+});
 
 /** Quita "Mi combo". Sus prendas (creaciones) se quedan en la cuenta. */
 export const eliminarMiCombo = (id) => deleteDocument('designs', id);
