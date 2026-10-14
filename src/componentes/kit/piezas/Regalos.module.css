@@ -247,10 +247,36 @@
 }
 
 .idea {
+  container: idea / inline-size;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 0.6rem;
+}
+
+/* Angosta (celular, dentro de otra tarjeta): el precio baja bajo el nombre
+   para que el nombre no quede en dos letras. */
+@container idea (max-width: 340px) {
+  .ideaFoto {
+    grid-row: 1 / span 2;
+  }
+
+  .ideaTextos {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .ideaPrecio {
+    grid-column: 2;
+    grid-row: 2;
+    margin-top: -0.45rem;
+    font-size: 0.85rem;
+  }
+
+  .idea > :last-child {
+    grid-column: 4;
+    grid-row: 1 / span 2;
+  }
 }
 
 .ideaTextos {

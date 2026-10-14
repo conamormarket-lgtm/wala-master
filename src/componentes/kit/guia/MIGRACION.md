@@ -53,7 +53,9 @@ Cada paso en su propio commit, verificable por separado.
    (`PaginaCarrito` y las piezas de `Pedido.jsx`; su ficha P1 todavía falta),
    la cuenta (`MarcoCuenta` y sus 12 páginas, Mis pedidos incluida:
    CUENTA.md, un módulo a la vez), la Zona Arcade (`PaginaMinijuegos`,
-   MINIJUEGOS.md) y la búsqueda (`PaginaBusqueda`, BUSCAR.md).
+   MINIJUEGOS.md), la búsqueda (`PaginaBusqueda`, BUSCAR.md) y la encuesta
+   (`PaginaEncuesta`, ENCUESTA.md; después de Fechas importantes: comparten
+   `HojaPersona`).
 7. **`BarraInferior` y luego `Cabecera`**: la más conectada (AuthContext,
    CartContext, WishlistContext, notificaciones y la configuración de
    Firestore).

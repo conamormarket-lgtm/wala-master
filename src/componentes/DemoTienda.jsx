@@ -11,7 +11,7 @@ import {
 import { empresa } from '../config/empresa';
 import { msHastaMananaLima, msHastaLunesLima, limaTodayStr } from '../utils/fechaLima';
 import { volarMonedasGanadas } from '../utils/animations';
-import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA } from './DemoCuenta';
+import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA } from './DemoCuenta';
 import INICIO from './demo/inicio.json';
 import TIENDA from './demo/tienda.json';
 import cs from './ComponentesPage.module.css';
@@ -54,11 +54,12 @@ const PAGINAS = [
   { id: 'buscar', texto: 'Buscar', ruta: '/buscar' },
   { id: 'carrito', texto: 'Carrito', ruta: '/carrito' },
   { id: 'cuenta', texto: 'Mi cuenta', ruta: '/cuenta' },
+  { id: 'encuesta', texto: 'Encuesta', ruta: '/encuesta-suscripcion' },
 ];
 
 /** Ruta de la tienda → página de esta demo (las demás solo avisan). */
 const PAGINA_DE_RUTA = {
-  '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito',
+  '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/encuesta-suscripcion': 'encuesta',
   ...Object.fromEntries(MODULOS_CUENTA.map((m) => [m.ruta, 'cuenta'])),
 };
 
@@ -217,6 +218,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   // Mi cuenta: qué módulo de /cuenta se ve y los estados para probar.
   const [rutaCuenta, setRutaCuenta] = useState('/cuenta');
   const [estadosCuenta, setEstadosCuenta] = useState([]);
+  const [estadosEncuesta, setEstadosEncuesta] = useState([]);
   const marcoRef = useRef(null);
 
   // Editor del builder (solo admin, sobre el inicio).
@@ -376,13 +378,16 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     ideasBusqueda,
   };
 
+  // En la encuesta Kapi ya está en la página (uno solo a la vista) y la
+  // píldora invitaría a la misma encuesta: ninguno de los dos se muestra.
+  const enEncuesta = pagina === 'encuesta';
   const flotantes = {
     derecha: (
       <>
         <Parte n="M7" nombre="BotonWhatsApp" bloque={false}>
           <BotonWhatsApp numero={empresa.whatsapp} mensaje="¡Hola Walá! Tengo una consulta." />
         </Parte>
-        {conSesion && (
+        {conSesion && !enEncuesta && (
           <Parte n="M8" nombre="KapiFlotante" bloque={false}>
             <KapiFlotante estado={kapi.estado} aviso={kapi.aviso} onAbrir={() => setKapiAbierta(true)} />
           </Parte>
@@ -394,7 +399,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         )}
       </>
     ),
-    izquierda: conSesion && pildora && (
+    izquierda: conSesion && pildora && !enEncuesta && (
       <Parte n="M10" nombre="PildoraRecompensa" bloque={false}>
         <PildoraRecompensa titulo="Gana 15 monedas" texto="Completa tu perfil de regalos" monedas={15} to="/encuesta-suscripcion" onCerrar={() => setPildora(false)} />
       </Parte>
@@ -548,6 +553,21 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       propsPara={(sec) => (sec.type === 'faq_accordion' ? { contacto: enlaceWhatsApp(empresa.whatsapp, '¡Hola Walá! Tengo una duda.') } : undefined)}
       envolver={envolver}
     />
+  ) : pagina === 'encuesta' ? (
+    // Kapi ya está en la portada (y en los estados): el pie no lo asoma.
+    <MarcoTienda {...marco} kapiEnPie={false}>
+      <Parte n="P6" nombre="PaginaEncuesta">
+        <EncuestaDemo
+          sesion={conSesion}
+          usuario={usuario}
+          estados={estadosEncuesta}
+          fotos={FOTOS_CUENTA}
+          onMonedas={(n) => setMonedas((m) => Math.max(0, m + n))}
+          toast={toast}
+          onIrA={(ruta) => navegar.current(ruta)}
+        />
+      </Parte>
+    </MarcoTienda>
   ) : pagina === 'cuenta' ? (
     // Sin sesión o sin datos, Kapi ya está en el estado vacío: el pie no lo asoma.
     <MarcoTienda {...marco} kapiEnPie={conSesion && !estadosCuenta.includes('vacio')}>
@@ -620,6 +640,16 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
                 ))}
               </div>
             )}
+          </div>
+        )}
+        {pagina === 'encuesta' && conSesion && (
+          <div>
+            <span className={cs.controlesTitulo}>Estado de la encuesta</span>
+            <div className={cs.controlesChips}>
+              {ESTADOS_ENCUESTA.map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={estadosEncuesta.includes(id)} onClick={() => setEstadosEncuesta((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
+              ))}
+            </div>
           </div>
         )}
         {pagina === 'minijuegos' && conSesion && (

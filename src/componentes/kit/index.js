@@ -15,7 +15,7 @@ export { MenuTienda, MenuMarcas, AyudaMonedas, MenuCuenta, VistaFavoritos, Vista
 export { default as AgregarRapido } from './AgregarRapido';
 export { accionDeProducto, tarjetaDesdeProducto, esNuevo, opcionesDeProducto, rutaDeMarca, tarjetaDesdeMarca, testimonioDesdeAjuste, precioEfectivo, limitesDePrecio, esTemporada, gruposDeCatalogo, grillaDesdeConfiguracion, juegosDelArcade, kapiDesdePerfil, retoDesdePerfil,
   sugerenciasDesdeBusqueda, grupoModalidad, ORDENES_BUSQUEDA, ordenarProductos, perfilDesdeUsuario, direccionDesdeFirestore, direccionAFirestore,
-  recompensaDesdeFirestore, cuponDesdeFirestore, misionDesdeServidor, creacionDesdeDiseno, personaDesdeRecipient, personaARecipient } from './adaptadores';
+  recompensaDesdeFirestore, cuponDesdeFirestore, misionDesdeServidor, creacionDesdeDiseno, personaDesdeRecipient, personaARecipient, encuestaDesdeConfig } from './adaptadores';
 export { tipoDeEnlace } from './Enlace';
 export { default as Carrusel } from './Carrusel';
 export { default as Marquesina } from './Marquesina';
@@ -40,4 +40,5 @@ export { MarcoTienda, PaginaTienda, productosDeSeccion, PaginaCarrito, PaginaMin
 export { PaginaPedidos, PaginaDetallePedido } from './paginas/CuentaPedidos';
 export { MarcoCuenta, PaginaCuentaInvitado, PaginaResumenCuenta, PaginaPerfil, PaginaDirecciones, PaginaAjustes, validarPerfil, validarDireccion, fechaLegible } from './paginas/Cuenta';
 export { PaginaCatalogo, PaginaCupones, PaginaMisiones, PaginaReferidos } from './paginas/CuentaRecompensas';
-export { PaginaCreaciones, PaginaListaDeseos, PaginaFechas, validarPersona } from './paginas/CuentaPersonalizacion';
+export { PaginaCreaciones, PaginaListaDeseos, PaginaFechas } from './paginas/CuentaPersonalizacion';
+export { PaginaEncuesta, GRUPOS_ENCUESTA, CONFIG_ENCUESTA } from './paginas/Encuesta';

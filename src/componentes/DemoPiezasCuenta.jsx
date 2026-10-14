@@ -5,7 +5,7 @@ import {
   TarjetaDireccion, TarjetaRecompensa, TarjetaCupon, TarjetaMision, NivelCuenta, FilaReferido, EnlaceInvitacion,
   FormaGanar, TarjetaCreacion, IdeaRegalo, AvisoFestiva, Moneda, Interruptor,
   CampoFecha, CampoTelefono, Casilla, RecortarFoto, AgendaFechas, HojaCalendario, LineaProduccion, PagosPedido, PedidosPorVerificar, RankingReferidos,
-  ETAPAS_PRODUCCION, Boton,
+  ETAPAS_PRODUCCION, Boton, ProgresoEncuesta, ElegirVarios, FichaPersonaEncuesta, GRUPOS_ENCUESTA, HojaPersona,
 } from './kit';
 import { GRUPOS_CUENTA_COMPLETO } from './DemoCuenta';
 import { Ficha } from './DemoPiezas';
@@ -36,6 +36,8 @@ export default function DemoPiezasCuenta({ imagenes }) {
   const [telefono, setTelefono] = useState('987654321');
   const [acepto, setAcepto] = useState(true);
   const [recorte, setRecorte] = useState(null);
+  const [grupos, setGrupos] = useState(['pareja', 'amigos']);
+  const [hojaPersona, setHojaPersona] = useState(0);
   const copiar = async () => {};
   return (
     <div className={s.rejilla}>
@@ -225,6 +227,31 @@ export default function DemoPiezasCuenta({ imagenes }) {
         <ul style={{ margin: '0.75rem 0 0', padding: 0, listStyle: 'none' }}>
           <IdeaRegalo nombre="Polera con tu foto" imagen={imagenes.frente} precio={59.9} motivo="Le gusta el anime" url="/producto/polera" necesitaOpciones />
         </ul>
+      </Ficha>
+
+      <Ficha nombre="ProgresoEncuesta · ElegirVarios" usadaEn="Encuesta (/encuesta-suscripcion): el avance y «¿A quiénes sueles regalar?»" ancho="1 / -1">
+        <div style={{ display: 'grid', gap: '1rem' }}>
+          <ProgresoEncuesta texto="Paso 2 de 3" avance={0.5} />
+          <ElegirVarios etiqueta="A quiénes sueles regalar" opciones={GRUPOS_ENCUESTA} valores={grupos} onCambiar={setGrupos} />
+        </div>
+      </Ficha>
+
+      <Ficha nombre="FichaPersonaEncuesta · HojaPersona" usadaEn="Encuesta (cada grupo) y Fechas importantes (el mismo formulario)">
+        <ul style={{ display: 'grid', gap: '0.6rem', margin: 0, padding: 0, listStyle: 'none' }}>
+          <FichaPersonaEncuesta nombre="María" relacion="Hermano/a" completa onEditar={() => setHojaPersona((n) => n + 1)} onQuitar={() => {}} />
+          <FichaPersonaEncuesta relacion="Pareja" onEditar={() => setHojaPersona((n) => n + 1)} />
+        </ul>
+        <HojaPersona
+          key={hojaPersona}
+          abierta={hojaPersona > 0}
+          persona={{ relacion: 'hermanos', nombre: 'María' }}
+          relacionFija
+          familia
+          titulo="Datos de María"
+          textoGuardar="Guardar hermano/a"
+          onGuardar={() => espera(500)}
+          onCerrar={() => setHojaPersona(0)}
+        />
       </Ficha>
     </div>
   );

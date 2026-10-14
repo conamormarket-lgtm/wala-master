@@ -3,7 +3,7 @@ import { User, Package, MapPin, Settings, Gift, Ticket, Trophy, Users, Sparkles,
 import {
   MarcoCuenta, PaginaCuentaInvitado, PaginaResumenCuenta, PaginaPerfil, PaginaDirecciones, PaginaAjustes, PaginaPedidos,
   PaginaCatalogo, PaginaCupones, PaginaMisiones, PaginaReferidos, PaginaCreaciones, PaginaListaDeseos, PaginaFechas,
-  PaginaDetallePedido, HojaPagarSaldo, Boton, enlaceWhatsApp,
+  PaginaDetallePedido, HojaPagarSaldo, Boton, enlaceWhatsApp, PaginaEncuesta,
 } from './kit';
 import { empresa } from '../config/empresa';
 import POLERA from './demo/polera-fondo-blanco.jpg';
@@ -545,5 +545,56 @@ export function CuentaDemo({
         <Parte n={modulo.n} nombre={modulo.componente} rejilla>{pagina}</Parte>
       </MarcoCuenta>
     </Parte>
+  );
+}
+
+/* ── Encuesta (/encuesta-suscripcion) ─────────────────────── */
+
+/** Estados para probar la encuesta en la Tienda de prueba. */
+export const ESTADOS_ENCUESTA = [
+  ['completada', 'Ya respondida'],
+  ['conDatos', 'Con personas guardadas'],
+  ['cargando', 'Cargando'],
+  ['falla', 'Falla al guardar'],
+];
+
+/** Las preguntas de "Un poco sobre ti" por defecto (basicDataPanel). */
+const SOBRE_TI = [
+  { id: 'nombres', etiqueta: '¿Cómo te llamas?', tipo: 'texto', requerido: true },
+  { id: 'familia', etiqueta: '¿Tienes familia?', tipo: 'opciones', opciones: ['Vivo solo/a', 'Vivo en pareja', 'Tengo hijos', 'Vivo con mis padres/familiares'] },
+  { id: 'frecuencia_ropa', etiqueta: '¿Con qué frecuencia sueles comprar ropa?', tipo: 'opciones', opciones: ['Cada semana', 'Al menos una vez al mes', 'Solo en ocasiones especiales o cambios de temporada', 'Casi nunca'] },
+  { id: 'preferencia_compra', etiqueta: '¿Dónde prefieres comprar?', tipo: 'opciones', opciones: ['Prefiero ir a la tienda física', 'Prefiero comprar 100% online', 'Me gustan ambas opciones'] },
+];
+
+/**
+ * La encuesta con datos de prueba: guarda en memoria, paga 15 + 5 por fecha
+ * (tope 50) y devuelve ideas con las fotos de la demo.
+ */
+export function EncuestaDemo({ sesion, usuario, estados = [], fotos = [], onMonedas, toast, onIrA }) {
+  const avisar = (titulo, texto, tipo = 'exito') => toast?.({ tipo, titulo, texto, duracion: 2200 });
+  const conDatos = estados.includes('conDatos');
+  return (
+    <PaginaEncuesta
+      key={estados.join('-')}
+      config={{ sobreTi: { campos: SOBRE_TI } }}
+      conjuntos={CONJUNTOS}
+      sesion={sesion}
+      completada={estados.includes('completada')}
+      cargando={estados.includes('cargando')}
+      inicial={conDatos ? { respuestas: { nombres: usuario?.nombre || 'Isaac' }, grupos: ['pareja', 'hermanos'], personas: personasDemo(fotos) } : { respuestas: { nombres: usuario?.nombre || '' } }}
+      onOmitir={() => onIrA?.('/')}
+      onTerminar={async ({ personas }) => {
+        await espera(900);
+        if (estados.includes('falla')) throw new Error('falla');
+        const fechas = personas.reduce((n, p) => n + p.eventos.filter((e) => e.fecha).length, 0);
+        const monedas = 15 + Math.min(50, fechas * 5);
+        onMonedas?.(monedas);
+        volarMonedasGanadas(null, monedas);
+        return { monedas, ideas: personas.slice(0, 3).map((p, k) => ({ id: p.id, nombre: p.nombre, ideas: ideasDe(fotos, k) })) };
+      }}
+      onSubirFoto={async (archivo) => { await espera(700); return URL.createObjectURL(archivo); }}
+      onAgregarIdea={(i) => avisar('Agregado al carrito', i.nombre)}
+      urlTienda="/tienda"
+    />
   );
 }

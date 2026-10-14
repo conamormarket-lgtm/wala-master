@@ -25,3 +25,5 @@ export { RecortarFoto } from './RecortarFoto';
 export { IdeaRegalo, TarjetaPersonaRegalo, AvisoFestiva, HojaCalendario, AgendaFechas, faltanDias, textoFaltan, diaYMes } from './Regalos';
 export { LineaProduccion, PagosPedido, HojaPagarSaldo } from './DetallePedido';
 export { PedidosPorVerificar } from './PedidosPorVerificar';
+export { HojaPersona, validarPersona, RELACIONES, GENEROS, PRESUPUESTOS } from './FormularioPersona';
+export { ProgresoEncuesta, ElegirVarios, FichaPersonaEncuesta } from './Encuesta';
