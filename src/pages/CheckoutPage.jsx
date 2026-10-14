@@ -783,7 +783,11 @@ const CheckoutPage = () => {
               const refs = getDesignReferences({ productImage: pieza.imageURL, customization: pieza });
               productosMap[`item_${idx}_${k}`] = {
                 productoId: pieza.prendaId || '',
-                producto: `${item.productName} · ${pieza.prendaNombre || 'Prenda'} (${k + 1} de ${piezas.length})`,
+                // "Pareja · Polera clásica (1 de 2)": la prenda no se repite si
+                // el combo ya la nombra; en un conjunto sí ("… · Polo clásico (2 de 3)").
+                producto: String(item.productName || '').includes(pieza.prendaNombre || '\u0000')
+                  ? `${item.productName} (${k + 1} de ${piezas.length})`
+                  : `${item.productName} · ${pieza.prendaNombre || 'Prenda'} (${k + 1} de ${piezas.length})`,
                 // La prenda de verdad: el ERP saca de aquí el tipo para su inventario.
                 prendaNombre: pieza.prendaNombre || '',
                 combo: item.productName || '',
