@@ -47,6 +47,8 @@ const datos = ({ combo, piezas, creaciones }) => ({
     espalda: espaldaDe(creaciones[i]),
     // Su color: la tarjeta muestra el de cada prenda.
     color: creaciones[i]?.color || null,
+    // Su nombre: la página del combo lo muestra mientras carga la prenda.
+    nombre: creaciones[i]?.name || '',
   })),
   previas: creaciones.map(imagenDe),
 });

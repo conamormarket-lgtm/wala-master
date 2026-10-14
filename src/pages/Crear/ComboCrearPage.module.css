@@ -560,10 +560,21 @@
 .miCombo > span {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.35rem;
 }
 
 :global([data-theme="dark"]) .plantillaAviso {
   border-color: rgba(167, 139, 250, 0.35);
   background: rgba(139, 92, 246, 0.12);
+}
+
+/* El nombre de "Mi combo", con su lápiz, dentro del aviso de guardado. */
+.nombreMiCombo {
+  font-weight: 800;
+}
+
+.miComboNota {
+  font-weight: 500;
+  opacity: 0.85;
 }

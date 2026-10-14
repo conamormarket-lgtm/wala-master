@@ -18,6 +18,7 @@ import { obtenerDisenoComunidad } from '../../services/comunidad';
 import AccionesComunidad from '../Comunidad/AccionesComunidad';
 import CapaModal from './CapaModal';
 import { esperarGuardados } from './borradoresCache';
+import NombreEditable from './NombreEditable';
 import { EtiquetaColgante } from '../../componentes/kit/Marca';
 import styles from './ComboCrearPage.module.css';
 
@@ -51,6 +52,10 @@ const ladosDePieza = (p) => {
   const miniaturas = (p.creacion?.miniaturas || []).filter((m) => m?.url);
   if (miniaturas.length) return { origen: 'render', lados: miniaturas.map((m) => ({ url: m.url, nombre: m.nombre, vista: m.vista })) };
   if (p.creacion?.miniatura) return { origen: 'render', lados: [{ url: p.creacion.miniatura, nombre: '' }], completa: true };
+  // Mientras carga la prenda: las fotos que guardó "Mi combo".
+  if (!p.creacion && p.respaldo?.frente) {
+    return { origen: 'render', lados: [p.respaldo.frente, p.respaldo.espalda].filter(Boolean).map((url) => ({ url, nombre: '' })), completa: true };
+  }
   return {
     origen: 'prenda',
     lados: leerPrendaBase(p.prenda).vistas.filter((v) => v.imagen).map((v) => ({ url: v.imagen, nombre: v.nombre })),
@@ -212,14 +217,25 @@ const ComboCrearPage = () => {
   // Así cada combo tiene su enlace y dos pestañas no se pisan. Si no es suyo
   // (un enlace ajeno), empieza uno limpio.
   const mioPropioRef = useRef('');
+  // Se pide en paralelo con el combo y sus prendas (antes esperaba a que
+  // terminaran) y queda en caché: es el mismo "Mi combo" de más abajo. Sus
+  // fotos y nombres guardados se ven mientras cargan las prendas.
+  const mioQ = useQuery({
+    queryKey: ['creacion', mioParam, user?.uid],
+    enabled: Boolean(user && mioParam),
+    refetchOnMount: 'always',
+    queryFn: async () => {
+      await esperarGuardados();
+      const { data } = await getDesignById(mioParam);
+      return data ? { id: mioParam, ...data } : null;
+    },
+  });
   useEffect(() => {
-    if (!mioParam || !user || !piezasCombo.length) return;
+    if (!mioParam || !user || !piezasCombo.length || !mioQ.isFetched) return;
     // Lo puso esta misma página al crear el combo: ya está al día.
     if (mioParam === mioPropioRef.current) return;
-    let cancelado = false;
-    (async () => {
-      const { data } = await getDesignById(mioParam);
-      if (cancelado) return;
+    (() => {
+      const data = mioQ.data;
       olvidarArmado(id);
       if (data && data.tipo === 'comboCrear' && data.userId === user.uid && data.comboId === id) {
         const siguiente = Array.from({ length: piezasCombo.length }, (_, i) => ({
@@ -239,9 +255,8 @@ const ComboCrearPage = () => {
       sin.delete('mio');
       setParams(sin, { replace: true });
     })();
-    return () => { cancelado = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mioParam, user?.uid, id, piezasCombo.length]);
+  }, [mioParam, user?.uid, id, piezasCombo.length, mioQ.data, mioQ.isFetched]);
 
   /** Al crear "Mi combo", su id queda en la dirección (?mio=). */
   const ponerMioEnDireccion = (miComboId) => {
@@ -375,6 +390,7 @@ const ComboCrearPage = () => {
     + `${meta.miComboId ? `&mio=${meta.miComboId}` : ''}${extra}`;
   const estadoEstudio = { desde: `/combo/${id}${meta.miComboId ? `?mio=${meta.miComboId}` : ''}` };
 
+  const miComboDoc = miCombo || mioQ.data || null;
   const piezas = armado.map((a, i) => {
     const creacion = creaciones[i];
     // Diseño de la comunidad para esta pieza (si todavía no tiene uno propio).
@@ -384,7 +400,10 @@ const ComboCrearPage = () => {
     const talla = tallas.includes(a.talla) ? a.talla
       : tallas.includes(creacion?.variant?.size) ? creacion.variant.size : '';
     const cargando = Boolean(a.designId && creacionesQ[i]?.isLoading);
-    return { ...a, i, prenda: prendas[i], creacion, plantilla, tallas, talla, cargando, lista: Boolean(creacion && creacionLista(creacion)) };
+    // Mientras carga: la foto y el nombre que guardó "Mi combo" de esta prenda.
+    const guardada = (miComboDoc?.piezas || [])[i];
+    const respaldo = cargando && guardada?.designId === a.designId ? guardada : null;
+    return { ...a, i, prenda: prendas[i], creacion, plantilla, tallas, talla, cargando, respaldo, lista: Boolean(creacion && creacionLista(creacion)) };
   });
   const urlPlantilla = (i) => urlEstudio(i, `&plantilla=${meta.plantilla}&plantillaPieza=${i}`);
   const pendientePlantilla = piezas.find((p) => p.plantilla);
@@ -456,9 +475,9 @@ const ComboCrearPage = () => {
             <div className={styles.miCombo}>
               <span>
                 <CheckCircle2 size={15} aria-hidden="true" />
-                {miCombo.estado === 'borrador'
-                  ? 'Borrador guardado: lo encuentras en Crear para continuarlo después.'
-                  : 'Guardado en Mis creaciones como un combo.'}
+                {miCombo.estado === 'borrador' ? 'Borrador guardado como' : 'Guardado en Mis creaciones como'}
+                <NombreEditable designId={miCombo.id} nombre={miCombo.name || 'Mi combo'} como="strong" className={styles.nombreMiCombo} />
+                {miCombo.estado === 'borrador' && <span className={styles.miComboNota}>Lo encuentras en Crear para continuarlo.</span>}
               </span>
               <AccionesComunidad
                 design={miCombo}
@@ -485,17 +504,19 @@ const ComboCrearPage = () => {
             && piezasCombo[o.i].prendaId === piezasCombo[p.i].prendaId).length;
           return (
             <li key={p.i} className={`${styles.pieza} ${p.lista ? styles.piezaLista : ''}`}>
-              <FotoDePieza pieza={p} alt={p.prenda?.name || ''} vacia={!p.creacion && !p.plantilla}>
+              <FotoDePieza pieza={p} alt={p.prenda?.name || ''} vacia={!p.creacion && !p.plantilla && !p.respaldo?.frente}>
                 <span className={styles.numero}>{p.i + 1}</span>
                 {p.lista && <CheckCircle2 className={styles.check} size={22} aria-label="Lista" />}
               </FotoDePieza>
               <div className={styles.piezaInfo}>
                 <span className={styles.piezaPrenda}>Prenda {p.i + 1} · {p.prenda?.name}</span>
                 {p.cargando ? (
-                  <p className={styles.ayuda}>Cargando el diseño…</p>
+                  p.respaldo?.nombre
+                    ? <strong className={styles.piezaNombre}>{p.respaldo.nombre}</strong>
+                    : <p className={styles.ayuda}>Cargando el diseño…</p>
                 ) : p.creacion ? (
                   <>
-                    <strong className={styles.piezaNombre}>{p.creacion.name || 'Mi creación'}</strong>
+                    <NombreEditable designId={p.creacion.id} nombre={p.creacion.name || 'Mi creación'} como="strong" className={styles.piezaNombre} />
                     {p.creacion.color?.nombre && <span className={styles.ayuda}>{p.creacion.color.nombre}</span>}
                     {!p.lista && (
                       <p className={styles.aviso}>
