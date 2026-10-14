@@ -27,7 +27,7 @@ function Monto({ valor, className }) {
  *  - paso (0…) · pasos: nombres (PASOS_PEDIDO; con más de 5, p. ej.
  *    ETAPAS_PRODUCCION, va como barra compacta "Paso 5 de 8 · Estampado")
  *  - estado: { texto, tono } la etiqueta de arriba (si no, sale del paso)
- *  - pagoPendiente: aún sin pagar (se separa 24 h) · deuda: saldo por pagar
+ *  - pagoPendiente: aún sin pagar (se separa 72 h) · deuda: saldo por pagar
  *    (S/) · onPagar · anulado
  *  - entregaEstimada · urlDetalle: "Ver detalle" (/cuenta/pedidos/:id)
  */
@@ -136,7 +136,7 @@ export function SeguimientoPedido({
 
       {pagoPendiente && !anulado && (
         <div className={s.pagoAviso}>
-          <p>Tu pedido se separa por 24 h. Paga para que pase a producción.</p>
+          <p>Tu pedido se separa por 72 h. Paga para que pase a producción.</p>
           <Boton brillo icono={<CreditCard aria-hidden="true" />} onClick={onPagar}>Pagar {soles(total)}</Boton>
         </div>
       )}
