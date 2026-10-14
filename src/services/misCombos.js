@@ -1,4 +1,4 @@
-import { createDocument, updateDocument, deleteDocument } from './firebase/firestore';
+import { createDocument, updateDocument, deleteDocument, getCollection } from './firebase/firestore';
 import { getDesignById, eliminarCreacion, saveDesign } from './designs';
 
 /**
@@ -106,26 +106,68 @@ export const copiarCreacionParaCombo = (userId, creacion, combo, pieza = 0) => s
   combo: { id: combo.id, nombre: combo.name || '', pieza },
 });
 
-/** Quita "Mi combo". Sus prendas (creaciones) se quedan en la cuenta. */
+/** Quita solo el documento de "Mi combo" (sin tocar sus prendas). */
 export const eliminarMiCombo = (id) => deleteDocument('designs', id);
+
+/** TODOS los diseños del cliente (las listas traen solo los 50 más recientes). */
+const todosLosDisenos = async (userId) => {
+  const { data, error } = await getCollection('designs', [{ field: 'userId', operator: '==', value: userId }]);
+  return error ? null : (data || []);
+};
+
+/** Ids de las prendas que usa algún "Mi combo" (menos el que se excluye). */
+const usadasPorCombos = (disenos, excepto = null) => new Set(disenos
+  .filter((d) => esMiCombo(d) && d.id !== excepto)
+  .flatMap((c) => (c.piezas || []).map((p) => p.designId).filter(Boolean)));
+
+/**
+ * Elimina "Mi combo" y sus prendas. Una prenda se borra solo si se hizo para
+ * ESTE combo (campo combo), ningún otro combo la usa y no está en un pedido,
+ * en el carrito ni publicada. Una creación que ya existía y se eligió para el
+ * combo ("Mis creaciones") no se borra: vuelve a verse suelta. Las que no se
+ * borran quedan como creaciones normales (sin la etiqueta del combo). Lo
+ * publicado en la comunidad es una copia: no cambia.
+ */
+export const eliminarMiComboConPrendas = async (userId, combo, { enCarrito = new Set() } = {}) => {
+  const disenos = await todosLosDisenos(userId);
+  // Sin la lista completa no se sabe si otro combo usa una prenda: no se borra nada.
+  if (!disenos) return { error: 'No pudimos revisar tus diseños. Inténtalo de nuevo.', borradas: [], sueltas: [] };
+  const { error } = await deleteDocument('designs', combo.id);
+  if (error) return { error, borradas: [], sueltas: [] };
+  const enOtro = usadasPorCombos(disenos, combo.id);
+  const ids = [...new Set((combo.piezas || []).map((p) => p.designId).filter(Boolean))];
+  const borradas = [];
+  const sueltas = [];
+  await Promise.allSettled(ids.map(async (id) => {
+    if (enOtro.has(id)) return;
+    const d = disenos.find((x) => x.id === id);
+    if (!d || d.userId !== userId) return;
+    if (d.combo?.id === combo.comboId && sePuedeBorrarSola(d, enCarrito)) {
+      const { error: e } = await eliminarCreacion(userId, d);
+      if (!e) borradas.push(id);
+    } else if (d.combo?.id) {
+      const { error: e } = await updateDocument('designs', id, { combo: null, reemplazadaEn: null });
+      if (!e) sueltas.push(id);
+    }
+  }));
+  return { error: null, borradas, sueltas };
+};
 
 /** Días que se guarda (oculta) una versión reemplazada antes de borrarse sola. */
 export const DIAS_VERSION_REEMPLAZADA = 7;
 const MS_DIA = 24 * 60 * 60 * 1000;
 
 /**
- * Prendas hechas para un combo que su combo ya no usa: versiones anteriores.
+ * Prendas hechas para un combo que ningún combo usa ya: versiones anteriores.
  * Pasa al editar una prenda que las dos compartían (el estudio trabaja en una
- * copia para no cambiar la otra) y después llevar esa copia a la otra prenda:
- * el diseño de antes queda sin usar. Solo cuenta mientras exista un "Mi
- * combo" de ese combo: si se quita el combo, sus prendas vuelven a verse
- * sueltas, como siempre.
+ * copia para no cambiar la otra) y después llevar esa copia a la otra prenda,
+ * o cuando una prenda se quedó sin su combo. Eliminar un combo ya borra sus
+ * prendas (eliminarMiComboConPrendas); las que no se borran pierden el campo
+ * combo y se ven como creaciones normales.
  */
 export const versionesReemplazadas = (designs, otros = []) => {
-  const combos = [...designs, ...otros].filter(esMiCombo);
-  const usadas = new Set(combos.flatMap((c) => (c.piezas || []).map((p) => p.designId)));
-  const conCombo = new Set(combos.map((c) => c.comboId));
-  return designs.filter((d) => !esMiCombo(d) && d.combo?.id && conCombo.has(d.combo.id) && !usadas.has(d.id));
+  const usadas = usadasPorCombos([...designs, ...otros]);
+  return designs.filter((d) => !esMiCombo(d) && d.combo?.id && !usadas.has(d.id));
 };
 
 /** Días que le quedan a una versión reemplazada antes de borrarse (sin marca: todos). */
@@ -148,6 +190,13 @@ const sePuedeBorrarSola = (d, enCarrito) => d.enPedido !== true
 export const cuidarVersionesReemplazadas = async (userId, { todos, enCarrito = new Set() }) => {
   if (!userId) return [];
   const versiones = versionesReemplazadas(todos);
+  // Las listas traen solo los 50 más recientes: un combo más antiguo puede
+  // usar una prenda que aquí parece suelta. Para borrar se mira todo.
+  let usadasEnTodo = null;
+  if (versiones.some((d) => d.reemplazadaEn && Date.now() - d.reemplazadaEn > DIAS_VERSION_REEMPLAZADA * MS_DIA)) {
+    const completos = await todosLosDisenos(userId);
+    usadasEnTodo = completos ? usadasPorCombos(completos) : null;
+  }
   const ids = new Set(versiones.map((d) => d.id));
   const ahora = Date.now();
   const borradas = [];
@@ -158,7 +207,8 @@ export const cuidarVersionesReemplazadas = async (userId, { todos, enCarrito = n
   versiones.forEach((d) => {
     if (!d.reemplazadaEn) {
       tareas.push(updateDocument('designs', d.id, { reemplazadaEn: ahora }));
-    } else if (ahora - d.reemplazadaEn > DIAS_VERSION_REEMPLAZADA * MS_DIA && sePuedeBorrarSola(d, enCarrito)) {
+    } else if (ahora - d.reemplazadaEn > DIAS_VERSION_REEMPLAZADA * MS_DIA && sePuedeBorrarSola(d, enCarrito)
+      && usadasEnTodo && !usadasEnTodo.has(d.id)) {
       tareas.push(eliminarCreacion(userId, d).then(({ error }) => { if (!error) borradas.push(d.id); }));
     }
   });

@@ -1,6 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Shirt, Upload, ShoppingBag, ArrowRight, Paintbrush, Users, User } from 'lucide-react';
 import { getPrendasBase } from '../services/prendasBase';
 import { getCombosCrear } from '../services/combosCrear';
@@ -17,7 +17,8 @@ import FilaCarrusel from './Crear/FilaCarrusel';
 import MiCreacionCard, { fechaDeCreacion } from './cuenta/components/MiCreacionCard';
 import TarjetaComunidad, { useComunidad } from './Comunidad/TarjetaComunidad';
 import TarjetaMiCombo from './Crear/TarjetaMiCombo';
-import { esMiCombo, eliminarMiCombo, agruparCombos } from '../services/misCombos';
+import { esMiCombo, agruparCombos } from '../services/misCombos';
+import { useEliminarMiCombo } from './Crear/useEliminarMiCombo';
 import { useVersionesReemplazadas } from './Crear/useVersionesReemplazadas';
 import styles from './PersonalizarPage.module.css';
 import { T } from '../i18n/useTranslatedText';
@@ -165,7 +166,6 @@ const TusCreaciones = ({ uid }) => {
     listo: creacionesQuery.isSuccess && !creacionesQuery.isFetching
       && borradoresQuery.isSuccess && !borradoresQuery.isFetching,
   });
-  const queryClient = useQueryClient();
   const { pedir: pedirEliminar, dialogo: dialogoEliminar } = useEliminarCreacion();
   // Las mismas tarjetas que Mis creaciones, la más reciente primero.
   const tarjetas = useMemo(
@@ -173,11 +173,8 @@ const TusCreaciones = ({ uid }) => {
     [creaciones, borradores]
   );
   const recientes = tarjetas.slice(0, 8);
-  const quitarCombo = async (combo) => {
-    if (!window.confirm(`¿Quitar el combo "${combo.name || 'Mi combo'}"? Sus prendas siguen en tus creaciones.`)) return;
-    await eliminarMiCombo(combo.id);
-    queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'], refetchType: 'all' });
-  };
+  // Eliminar un combo se lleva sus prendas (useEliminarMiCombo refresca las listas).
+  const quitarCombo = useEliminarMiCombo();
   if (!creaciones.length) return dialogoEliminar;
   return (
     <section className={styles.seccion} aria-label="Tus creaciones">

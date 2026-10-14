@@ -8,7 +8,8 @@ import MiCreacionCard, { MiCreacionCardSkeleton, fechaDeCreacion } from './compo
 import { useEliminarCreacion } from '../Crear/useEliminarCreacion';
 import TusBorradores, { useBorradoresCrear } from '../Crear/TusBorradores';
 import TarjetaMiCombo from '../Crear/TarjetaMiCombo';
-import { esMiCombo, eliminarMiCombo, agruparCombos, recuperarVersion, diasParaBorrar, DIAS_VERSION_REEMPLAZADA } from '../../services/misCombos';
+import { esMiCombo, agruparCombos, recuperarVersion, diasParaBorrar, DIAS_VERSION_REEMPLAZADA } from '../../services/misCombos';
+import { useEliminarMiCombo } from '../Crear/useEliminarMiCombo';
 import { useVersionesReemplazadas } from '../Crear/useVersionesReemplazadas';
 import styles from './MisCreacionesPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
@@ -60,10 +61,13 @@ const MisCreacionesPage = () => {
     () => agruparCombos(designs, borradores).sort((a, b) => (fechaDeCreacion(b) || 0) - (fechaDeCreacion(a) || 0)),
     [designs, borradores]
   );
+  const eliminarCombo = useEliminarMiCombo();
   const quitarCombo = async (combo) => {
-    if (!window.confirm(`¿Quitar el combo "${combo.name || 'Mi combo'}"? Sus prendas siguen en tus creaciones.`)) return;
-    const { error: err } = await eliminarMiCombo(combo.id);
-    if (!err) setDesigns((prev) => prev.filter((x) => x.id !== combo.id));
+    const hecho = await eliminarCombo(combo);
+    if (!hecho) return;
+    setDesigns((prev) => prev
+      .filter((x) => !hecho.quitadas.includes(x.id))
+      .map((x) => (hecho.sueltas.includes(x.id) ? { ...x, combo: null, reemplazadaEn: null } : x)));
   };
 
   // Versiones anteriores de las prendas de sus combos: ocultas, se recuperan

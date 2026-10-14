@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, PenLine, Trash2, Clock } from 'lucide-react';
 import { getBorradoresCrear } from '../../services/designs';
 import { getProduct } from '../../services/products';
@@ -10,7 +10,8 @@ import { esperarGuardados } from './borradoresCache';
 import FilaCarrusel from './FilaCarrusel';
 import TarjetaMiCombo from './TarjetaMiCombo';
 import { BotonLlevarEnCombo } from './LlevarEnCombo';
-import { esMiCombo, eliminarMiCombo, agruparCombos } from '../../services/misCombos';
+import { esMiCombo, agruparCombos } from '../../services/misCombos';
+import { useEliminarMiCombo } from './useEliminarMiCombo';
 import styles from './TusBorradores.module.css';
 // La misma tarjeta que las creaciones (MiCreacionCard): mismo tamaño, foto,
 // datos y pie con precio + botón. Lo propio del borrador va en `styles`.
@@ -120,15 +121,11 @@ export const TarjetaBorrador = ({ borrador: b, onEliminar }) => {
  */
 const TusBorradores = ({ uid }) => {
   const { data: borradores = [] } = useBorradoresCrear(uid);
-  const queryClient = useQueryClient();
   const { pedir, dialogo } = useEliminarCreacion();
   // Un combo a medias es UNA tarjeta; sus prendas no se repiten sueltas.
   const tarjetas = agruparCombos(borradores);
-  const quitarCombo = async (combo) => {
-    if (!window.confirm(`¿Quitar el combo "${combo.name || 'Mi combo'}"? Sus prendas siguen en tu cuenta.`)) return;
-    await eliminarMiCombo(combo.id);
-    queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'], refetchType: 'all' });
-  };
+  // Eliminar un combo se lleva sus prendas (useEliminarMiCombo refresca las listas).
+  const quitarCombo = useEliminarMiCombo();
 
   if (!tarjetas.length) return dialogo;
 
