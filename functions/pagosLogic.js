@@ -159,7 +159,28 @@ function resumirProductos(productos) {
     ...(l.urlImagenPersonalizada && { urlImagenPersonalizada: l.urlImagenPersonalizada }),
     ...(l.textoPersonalizado && { textoPersonalizado: l.textoPersonalizado }),
     ...(l.designId && { designId: l.designId }),
+    ...combosDeLinea(l),
   }));
+}
+
+/**
+ * Lo que "Mis pedidos" necesita de un combo: las piezas del de la tienda (con su
+ * talla y color) y, en uno de Crear, a qué combo y grupo pertenece la pieza.
+ */
+function combosDeLinea(l) {
+  const out = {};
+  const subs = l.subProductos && typeof l.subProductos === "object" ? Object.values(l.subProductos).filter(Boolean) : [];
+  if (subs.length) {
+    out.piezas = subs.map((s) => ({ nombre: s.producto || "Prenda", talla: s.talla || "", color: s.color || "" }));
+  }
+  if (l.combo) out.combo = l.combo;
+  if (l.comboCrear) {
+    const c = l.comboCrear;
+    out.comboCrear = { grupo: c.grupo ?? 0, pieza: c.pieza ?? 0, de: c.de ?? 1 };
+  }
+  if (l.prendaNombre) out.prendaNombre = l.prendaNombre;
+  if (l.colorPrenda) out.colorPrenda = l.colorPrenda;
+  return out;
 }
 
 module.exports = {

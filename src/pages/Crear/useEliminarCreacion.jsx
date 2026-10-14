@@ -73,7 +73,7 @@ export const useEliminarCreacion = ({ alEliminar } = {}) => {
         </h2>
         <p>
           {enPedido
-            ? 'Se borra de tus creaciones para siempre. Como ya está en un pedido, guardamos sus imágenes para imprimirlo.'
+            ? 'Se borra de tus creaciones para siempre. Ya está en un pedido: el pedido conserva su diseño tal como lo compraste.'
             : 'Se borra para siempre junto con sus imágenes. No se puede deshacer.'}
         </p>
         {enCarrito.length > 0 && <p>También se quitará de tu carrito.</p>}

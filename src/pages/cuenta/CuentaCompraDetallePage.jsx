@@ -84,6 +84,17 @@ function imagenDeLinea(linea, productoCatalogo) {
 /* ──────────────────────────────────────────────────────────────────────────
  * Página de detalle "Estado de la compra"
  * ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Las piezas de un combo de la tienda con su talla y color: el pedido del ERP
+ * las trae en subProductos; el espejo de Walá, ya resumidas en piezas.
+ */
+function piezasDeCombo(linea) {
+  if (Array.isArray(linea?.piezas)) return linea.piezas.filter(Boolean);
+  const subs = linea?.subProductos && typeof linea.subProductos === 'object'
+    ? Object.values(linea.subProductos).filter(Boolean) : [];
+  return subs.map((s) => ({ nombre: s.producto || 'Prenda', talla: s.talla || '', color: s.color || '' }));
+}
+
 const CuentaCompraDetallePage = () => {
   const { id } = useParams();
   // "Mis Pedidos" y "Rastreo del Pedido" se unificaron en una sola lista en
@@ -554,7 +565,13 @@ const CuentaCompraDetallePage = () => {
                 {lineas.map((linea, i) => {
                   const prodCat = catalogoPorId.get(String(linea?.productoId));
                   const img = imagenDeLinea(linea, prodCat);
-                  const nombre = linea?.producto || prodCat?.name || 'Producto';
+                  const piezas = piezasDeCombo(linea);
+                  const crear = linea?.comboCrear;
+                  // Combo de la tienda: su nombre arriba y cada pieza abajo. Pieza
+                  // de un combo de Crear: la prenda, con el combo al que pertenece.
+                  const nombre = (piezas.length && linea?.combo)
+                    || (crear && linea?.prendaNombre)
+                    || linea?.producto || linea?.nombre || prodCat?.name || 'Producto';
                   const cantidad = toNum(linea?.cantidad) || 1;
                   const subtotal =
                     linea?.subtotal != null
@@ -580,13 +597,27 @@ const CuentaCompraDetallePage = () => {
                         )}
                       </div>
                       <div className={styles.lineaInfo}>
+                        {crear && linea?.combo && (
+                          <span className={styles.lineaCombo}>
+                            Combo {linea.combo} · {Number(crear.pieza || 0) + 1} de {crear.de || 1}
+                          </span>
+                        )}
                         <span className={styles.lineaNombre}>{nombre}</span>
+                        {piezas.length > 0 && (
+                          <ul className={styles.lineaPiezas}>
+                            {piezas.map((pz, k) => (
+                              <li key={k}>
+                                {[pz.nombre, pz.color, pz.talla && `Talla ${pz.talla}`].filter(Boolean).join(' · ')}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                         <div className={styles.lineaAtributos}>
                           {linea?.talla && (
                             <span className={styles.chip}>Talla: {linea.talla}</span>
                           )}
-                          {linea?.color && (
-                            <span className={styles.chip}>Color: {linea.color}</span>
+                          {(linea?.color || linea?.colorPrenda) && (
+                            <span className={styles.chip}>Color: {linea.color || linea.colorPrenda}</span>
                           )}
                           {linea?.personalizado && (
                             <span className={styles.chip}>Personalizado</span>

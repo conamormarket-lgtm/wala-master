@@ -29,6 +29,9 @@ export const itemDeCreacion = ({ prenda, creacion, talla }) => {
     {
       tipo: 'crear',
       nombre: creacion.name || '',
+      // La prenda de verdad (el nombre de la línea empieza con el del cliente):
+      // el ERP saca de aquí el tipo de prenda para su inventario.
+      prendaNombre: prenda.name || '',
       layersByView: capas,
       vistasUsadas: usadas,
       zonas: usadas.map((zId) => {

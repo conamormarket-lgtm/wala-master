@@ -397,6 +397,22 @@
   line-height: 1.3;
 }
 
+.lineaCombo {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--violet-700, #6d28d9);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.lineaPiezas {
+  margin: 0;
+  padding-left: 1rem;
+  font-size: 0.82rem;
+  color: var(--gris-texto-secundario, #4b5563);
+  line-height: 1.45;
+}
+
 .lineaAtributos {
   display: flex;
   flex-wrap: wrap;

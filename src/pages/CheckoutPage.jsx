@@ -185,6 +185,36 @@ const getDesignReferences = (item) => {
   return { images: uniqueImageUrls(refs), views };
 };
 
+/**
+ * Las líneas de detalle de un artículo para el WhatsApp al asesor: en un combo,
+ * cada pieza con su color y talla; en una creación, su color y los lados con
+ * diseño; en lo demás, su talla y color.
+ */
+const detalleWhatsapp = (item) => {
+  const lineas = [];
+  const pieza = (nombre, color, talla) => `   • ${[nombre, color, talla && `Talla ${talla}`].filter(Boolean).join(' · ')}`;
+  if (item?.customization?.tipo === 'comboCrear') {
+    (item.customization.piezas || []).forEach((p) => lineas.push(pieza(p.prendaNombre || 'Prenda', p.color?.nombre, p.talla)));
+    return lineas;
+  }
+  if (item?.isComboProduct) {
+    const selecciones = item.comboVariantSelections || {};
+    (item.comboItems || []).forEach((sub, i) => {
+      const datos = (item.comboSubProductsData || {})[i];
+      const sel = selecciones[i] || item.customization?.comboItemCustomization?.[i]?.variant || {};
+      lineas.push(pieza(datos?.name || sub.productName || sub.name || `Prenda ${i + 1}`, sel.color, sel.size));
+    });
+    return lineas;
+  }
+  if (item?.variant?.size) lineas.push(`   Talla/Modelo: ${item.variant.size}`);
+  if (item?.variant?.color) lineas.push(`   Color: ${item.variant.color}`);
+  if (item?.customization?.tipo === 'crear') {
+    const lados = (item.customization.vistasPrevias || []).map((v) => v?.nombre).filter(Boolean);
+    if (lados.length) lineas.push(`   Lados con diseño: ${lados.join(' + ')}`);
+  }
+  return lineas;
+};
+
 // Lo que ve el cliente en la pestaña nueva mientras el servidor crea el pedido y
 // antes de que cargue WhatsApp (misma presentación que la pantalla de carga).
 const PANTALLA_ABRIENDO_WHATSAPP = `<!doctype html><html lang="es"><head><meta charset="utf-8">
@@ -393,12 +423,23 @@ const CheckoutPage = () => {
 
   // Lo que el servidor necesita para revalorar el carrito con los precios del
   // catálogo en vez de fiarse del subtotal que calcula esta pantalla.
-  const itemsParaCupon = () => selectedItems.map((it) => ({
-    productId: it.productId || '',
-    qty: it.quantity || 1,
-    precio: it.customization?.finalPrice || it.price || 0,
-    personalizado: !!(it.customization?.finalPrice),
-  }));
+  const itemsParaCupon = () => selectedItems.flatMap((it) => {
+    // Combo de Crear: en el pedido va una línea por pieza con el id de su
+    // prenda y su parte del precio (así lo valora el servidor): igual aquí.
+    if (esComboCrear(it)) {
+      const piezas = it.customization.piezas || [];
+      const precios = repartirPrecio(it.customization?.finalPrice || it.price || 0, piezas.length);
+      return piezas.map((p, k) => ({
+        productId: p.prendaId || '', qty: it.quantity || 1, precio: precios[k], personalizado: true,
+      }));
+    }
+    return [{
+      productId: it.productId || '',
+      qty: it.quantity || 1,
+      precio: it.customization?.finalPrice || it.price || 0,
+      personalizado: !!(it.customization?.finalPrice),
+    }];
+  });
 
   const aplicarCupon = async () => {
     const code = cuponTexto.trim().toUpperCase();
@@ -723,8 +764,13 @@ const CheckoutPage = () => {
               productosMap[`item_${idx}_${k}`] = {
                 productoId: pieza.prendaId || '',
                 producto: `${item.productName} · ${pieza.prendaNombre || 'Prenda'} (${k + 1} de ${piezas.length})`,
+                // La prenda de verdad: el ERP saca de aquí el tipo para su inventario.
+                prendaNombre: pieza.prendaNombre || '',
                 combo: item.productName || '',
-                comboCrear: { comboId: item.productId || '', grupo: idx, pieza: k, de: piezas.length },
+                comboCrear: {
+                  comboId: item.productId || '', grupo: idx, pieza: k, de: piezas.length,
+                  ...(item.customization.miComboId && { miComboId: item.customization.miComboId }),
+                },
                 brandId: item.brandId || null,
                 urlImagen: pieza.imageURL || '',
                 imagenReferencial: pieza.imageURL || '',
@@ -780,7 +826,8 @@ const CheckoutPage = () => {
                 return {
                   cantidadCapas: layers.length,
                   imagenes: layers
-                    .filter((l) => l.type === 'image' && l.src)
+                    // Sin enlaces temporales (blob:/data:) de una imagen que seguía subiéndose.
+                    .filter((l) => l.type === 'image' && l.src && /^https?:\/\//.test(String(l.src)))
                     .map((l) => l.src),
                   textos: layers
                     .filter((l) => l.type === 'text' && l.text)
@@ -888,9 +935,16 @@ const CheckoutPage = () => {
               };
             });
 
+            // Las piezas en texto ("Casaca Blanco M + Polo Granate M"): el ERP
+            // muestra el nombre de la línea en todas sus etapas, también después
+            // de aprobar (sus recuadros de prendas van aparte, una por pieza).
+            const detallePiezas = Object.values(subProductos)
+              .map((s) => [s.producto, s.color, s.talla].filter(Boolean).join(' '))
+              .join(' + ');
             productosMap[`item_${idx}`] = {
               productoId: item.productId || '',
-              producto: item.productName || '',
+              producto: detallePiezas ? `${item.productName || 'Combo'} (${detallePiezas})` : (item.productName || ''),
+              combo: item.productName || '',
               // Marca del producto (para enrutar el WhatsApp de "Mis Compras" al asesor correcto)
               brandId: item.brandId || null,
               // Snapshot de la imagen del producto AL COMPRAR (ya vive en el cartItem):
@@ -941,6 +995,7 @@ const CheckoutPage = () => {
               ...(item.customization?.tipo === 'crear' && {
                 vistasPersonalizadas: item.customization.vistasUsadas || [],
                 colorPrenda: item.customization.color?.nombre || '',
+                prendaNombre: item.customization.prendaNombre || '',
               }),
             };
           }
@@ -1164,9 +1219,7 @@ const CheckoutPage = () => {
         selectedItems.forEach((item, index) => {
           message += `${index + 1}. ${item.productName}\n`;
           message += `   Cantidad: ${item.quantity}\n`;
-          if (item.variant && item.variant.size) {
-            message += `   Talla/Modelo: ${item.variant.size}\n`;
-          }
+          detalleWhatsapp(item).forEach((linea) => { message += `${linea}\n`; });
           if (item.customization && item.customization.text) {
             message += `   Texto: ${item.customization.text}\n`;
           }
@@ -1230,7 +1283,7 @@ const CheckoutPage = () => {
           its.forEach((item, index) => {
             m += `${index + 1}. ${item.productName}\n`;
             m += `   Cantidad: ${item.quantity}\n`;
-            if (item.variant && item.variant.size) m += `   Talla/Modelo: ${item.variant.size}\n`;
+            detalleWhatsapp(item).forEach((linea) => { m += `${linea}\n`; });
             if (item.customization && item.customization.text) m += `   Texto: ${item.customization.text}\n`;
             const price = item.customization?.finalPrice || item.price;
             sub += price * item.quantity;

@@ -66,10 +66,12 @@ function resumirRastreo(pedido, indiceCatalogo) {
   if (lineas.length > 0) {
     const primera = lineas[0];
     const prodCat = primera?.productoId != null ? indiceCatalogo.get(String(primera.productoId)) : null;
-    miniatura = thumbDeProductoCatalogo(prodCat);
+    // Lo personalizado se ve con su diseño (vista previa guardada en la línea).
+    if (primera?.urlImagenPersonalizada) miniatura = toThumbnailImageUrl(primera.urlImagenPersonalizada);
+    if (!miniatura) miniatura = thumbDeProductoCatalogo(prodCat);
     // Fallback: la línea guarda la imagen del producto al comprar (urlImagen).
     if (!miniatura && primera?.urlImagen) miniatura = toThumbnailImageUrl(primera.urlImagen);
-    nombrePrincipal = primera?.producto || prodCat?.name || '';
+    nombrePrincipal = primera?.combo || primera?.producto || primera?.nombre || prodCat?.name || '';
   }
   // Fallbacks de miniatura: imagen de diseño del propio pedido -> placeholder.
   if (!miniatura) {

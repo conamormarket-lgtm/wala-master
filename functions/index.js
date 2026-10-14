@@ -7,6 +7,7 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { FieldValue } = require("firebase-admin/firestore"); // robusto en emulador (FieldValue puede ser undefined ahí)
 const crypto = require("crypto");
+const { congelarDisenos, marcarCreacionesDelPedido } = require("./pedidoDisenos");
 const { precioDeCatalogo } = require("./catalogPricing");
 const { createCartValidator } = require("./cartValidation");
 const {
@@ -710,25 +711,55 @@ async function prendasErpDelPedido(payload) {
   } catch (e) {
     console.warn("prendasErpDelPedido: inventario no disponible:", e.message);
   }
-  return productos.map((p) => {
-    const nombre = palabrasNorm(p.producto || p.nombre);
+  // Un recuadro "Por inventario" del ERP por PRENDA (tipo, color, talla,
+  // cantidad): con eso Diseño valida, Cobranza revisa el stock y Preparación
+  // lo descuenta, como en cualquier pedido de varias prendas.
+  const fila = ({ nombre: texto, color: colorWala0, talla, cantidad, productoId }) => {
+    const nombre = palabrasNorm(texto);
     let tipo = null;
     let posicion = Infinity;
     for (const t of tipos.values()) {
       const i = nombre.indexOf(palabrasNorm(t.etiqueta));
       if (i >= 0 && i < posicion) { posicion = i; tipo = t; }
     }
-    const colorWala = String(p.color || "").trim();
+    const colorWala = String(colorWala0 || "").trim();
     const n = normInventario(colorWala);
     const color = (tipo && (tipo.colores.get(n) || tipo.colores.get(normInventario(SINONIMOS_COLOR_ERP[n])))) || colorWala;
     return {
       tipoPrenda: tipo ? tipo.etiqueta : "",
       color,
-      talla: String(p.talla || "").trim(),
-      cantidad: Number(p.cantidad) || 1,
-      productoId: p.productoId || "",
+      talla: String(talla || "").trim(),
+      cantidad: Number(cantidad) || 1,
+      productoId: productoId || "",
     };
+  };
+  return productos.flatMap((p) => {
+    // Combo de la tienda: una sola línea con sus piezas en subProductos. Cada
+    // pieza es su propio recuadro (antes iba 1 recuadro sin talla ni color).
+    const subs = p.esCombo && p.subProductos ? Object.values(p.subProductos).filter(Boolean) : [];
+    if (subs.length) {
+      return subs.map((sub) => fila({
+        nombre: sub.producto, color: sub.color, talla: sub.talla, cantidad: p.cantidad, productoId: sub.productoId,
+      }));
+    }
+    return [fila({
+      nombre: nombrePrendaDeLinea(p), color: p.color, talla: p.talla, cantidad: p.cantidad, productoId: p.productoId,
+    })];
   });
+}
+
+/**
+ * El texto donde buscar el tipo de prenda. En Crear, el nombre de la línea
+ * empieza con el que puso el cliente ("Mi polo favorito · Polera clásica") o
+ * con el del combo ("Conjunto · Casaca, polo y jogger · Polo clásico (2 de 3)"):
+ * buscar ahí elegía la primera prenda nombrada. Se usa la prenda de verdad.
+ */
+function nombrePrendaDeLinea(p) {
+  if (p.prendaNombre) return p.prendaNombre;
+  const nombre = String(p.producto || p.nombre || "");
+  const esCrear = p.comboCrear || Array.isArray(p.vistasPersonalizadas) || p.colorPrenda;
+  if (!esCrear || !nombre.includes(" · ")) return nombre;
+  return nombre.slice(nombre.lastIndexOf(" · ") + 3).replace(/\s*\(\d+ de \d+\)\s*$/, "");
 }
 
 // Campos que el formulario del ERP lee con otro nombre: la marca (lista del ERP),
@@ -835,11 +866,13 @@ async function createPaidWebOrderFromIntent({ intentId, context, pago, payment =
   const docNorm = String(docRaw).trim().replace(/\s/g, "");
   const uid = checkout.intent.uid || null;
   const orderRef = erpDb.collection("pedidos_web").doc(orderId);
-  const erpWala = await camposErpWala(payload);
+  // El pedido con su propia copia de los diseños (pedidoDisenos.js).
+  const pedido = await congelarDisenos(payload, orderId, uid);
+  const erpWala = await camposErpWala(pedido);
   await erpDb.runTransaction(async (t) => {
     const existing = await t.get(orderRef);
     t.set(orderRef, {
-      ...payload,
+      ...pedido,
       ...(docNorm ? { dniRaw: docRaw, clienteNumeroDocumento: docNorm, dni: docNorm } : {}),
       ...(uid ? { userId: uid, buyerUid: uid } : {}),
       web: true,
@@ -871,7 +904,8 @@ async function createPaidWebOrderFromIntent({ intentId, context, pago, payment =
 
   // 3) Espejo wala_pedidos (lo que muestra "Mis pedidos"). Antes lo escribía el
   // navegador después del pago; ahora el servidor, junto con el pedido.
-  await escribirEspejoPagado({ orderId, payload, uid, pago, montos });
+  await escribirEspejoPagado({ orderId, payload: pedido, uid, pago, montos });
+  await marcarCreacionesDelPedido(db, payload, uid);
   await vincularCompraReferido(orderId, payload);
 
   // 4) El cobro en Finanzas del ERP (adelanto pendiente de validar). Al aprobar el
@@ -907,7 +941,10 @@ exports.crearSolicitudWhatsappSecure = functions.https.onCall(async (data, conte
     whatsappSolicitadoAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   };
-  const erpWala = await camposErpWala(payload);
+  const uid = checkout.intent.uid || null;
+  // El pedido con su propia copia de los diseños (pedidoDisenos.js).
+  const pedido = await congelarDisenos(payload, orderId, uid);
+  const erpWala = await camposErpWala(pedido);
   let nuevo = false;
   await erpDb.runTransaction(async (t) => {
     const existing = await t.get(orderRef);
@@ -918,7 +955,7 @@ exports.crearSolicitudWhatsappSecure = functions.https.onCall(async (data, conte
     }
     nuevo = true;
     t.set(orderRef, {
-      ...payload,
+      ...pedido,
       ...(docNorm ? { dniRaw: docRaw, clienteNumeroDocumento: docNorm, dni: docNorm } : {}),
       ...(checkout.intent.uid ? { userId: checkout.intent.uid, buyerUid: checkout.intent.uid } : {}),
       metodoPago: "whatsapp",
@@ -948,7 +985,7 @@ exports.crearSolicitudWhatsappSecure = functions.https.onCall(async (data, conte
           dniRaw: docRaw || null,
           clienteNumeroDocumento: docNorm || null,
           clienteNombreCompleto: payload.clienteNombreCompleto || null,
-          productos: pagos.resumirProductos(payload.productos),
+          productos: pagos.resumirProductos(pedido.productos),
           ...(payload.giftDetails != null && { giftDetails: payload.giftDetails }),
           ...(payload.deliveryDate != null && { deliveryDate: payload.deliveryDate }),
           montoTotal: payload.montoTotal ?? null,
@@ -965,6 +1002,7 @@ exports.crearSolicitudWhatsappSecure = functions.https.onCall(async (data, conte
       console.warn(`crearSolicitudWhatsappSecure: espejo de ${orderId} no escrito:`, e.message);
     }
   }
+  await marcarCreacionesDelPedido(db, payload, uid);
   await vincularCompraReferido(orderId, payload);
   await checkout.ref.set({ whatsappSolicitado: true, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   return { id: orderId };

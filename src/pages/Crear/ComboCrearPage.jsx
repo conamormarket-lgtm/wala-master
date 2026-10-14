@@ -444,7 +444,17 @@ const ComboCrearPage = () => {
   // Un conjunto (prendas distintas para una persona: casaca, polo y jogger)
   // lleva UNA talla para todas, como el conjunto de la tienda. En una pareja
   // o un trío de la misma prenda (varias personas) cada una lleva la suya.
-  const unaTalla = new Set(piezasCombo.map((p) => p.prendaId)).size > 1;
+  const esConjunto = new Set(piezasCombo.map((p) => p.prendaId)).size > 1;
+  const tallasPorPieza = armado.map((a, i) => tallasPara(prendas[i], creaciones[i]));
+  const tallasComunes = (() => {
+    const listas = tallasPorPieza.filter((t) => t.length);
+    if (!listas.length) return [];
+    const [primera, ...resto] = listas;
+    return primera.filter((t) => resto.every((l) => l.includes(t)));
+  })();
+  // Si las prendas no comparten ninguna talla (una casaca de S a L y un jogger
+  // de 28 a 34), una talla común no se podría elegir: cada prenda lleva la suya.
+  const unaTalla = esConjunto && (tallasComunes.length > 0 || tallasPorPieza.every((t) => !t.length));
   // La del conjunto: la que eligió el cliente (va en todas las piezas). Sin
   // marcar hasta que la elija.
   const tallaConjunto = unaTalla ? (armado.find((a) => a.talla)?.talla || '') : '';
@@ -453,7 +463,7 @@ const ComboCrearPage = () => {
     // Diseño de la comunidad para esta pieza (si todavía no tiene uno propio).
     const dePlantilla = plantillaCombo?.piezas?.[i];
     const plantilla = !a.designId && dePlantilla?.productId === piezasCombo[i]?.prendaId ? dePlantilla : null;
-    const tallas = tallasPara(prendas[i], creacion);
+    const tallas = tallasPorPieza[i];
     const talla = unaTalla
       ? (tallas.includes(tallaConjunto) ? tallaConjunto : '')
       : tallas.includes(a.talla) ? a.talla
@@ -509,14 +519,7 @@ const ComboCrearPage = () => {
     + `${meta.miComboId ? `&mio=${meta.miComboId}` : ''}${extra}`;
   const estadoEstudio = { desde: `/combo/${id}${meta.miComboId ? `?mio=${meta.miComboId}` : ''}` };
 
-  const tallasConjunto = (() => {
-    if (!unaTalla) return [];
-    const listas = piezas.map((p) => p.tallas).filter((t) => t.length);
-    if (!listas.length) return [];
-    const [primera, ...resto] = listas;
-    const comunes = primera.filter((t) => resto.every((l) => l.includes(t)));
-    return comunes.length ? comunes : [...new Set(listas.flat())];
-  })();
+  const tallasConjunto = unaTalla ? tallasComunes : [];
   const elegirTallaConjunto = (t) => cambiarArmado(armado.map((a) => ({ ...a, talla: t })));
 
   const urlPlantilla = (i) => urlEstudio(i, `&plantilla=${meta.plantilla}&plantillaPieza=${i}`);

@@ -476,12 +476,29 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
     if (!isCombo) return comboSels;
     const n = product?.comboItems?.length || 0;
     const out = {};
-    for (let i = 0; i < n; i++) out[i] = { ...comboSels[i], size: comboSize };
+    for (let i = 0; i < n; i++) {
+      // Sin tocar el color, la pieza se ve con el primero: ese es el que se pide.
+      const { selVar } = getComboVariantInfo(comboProd[i], product.comboItems[i], (comboSels[i] || {}).color);
+      out[i] = { ...comboSels[i], ...(selVar?.name && { color: selVar.name }), size: comboSize };
+    }
     return out;
-  }, [isCombo, comboSels, comboSize, product?.comboItems?.length]);
+  }, [isCombo, comboSels, comboSize, comboProd, product?.comboItems]);
+
+  // El combo se puede pedir cuando cargaron sus prendas y tiene talla (si las
+  // prendas tienen tallas): antes se podía agregar sin talla mientras cargaba.
+  const comboListo = !isCombo || (
+    (product?.comboItems || []).every((_, i) => comboProd[i])
+    && (comboSizeOptions.length === 0 || comboSizeOptions.includes(comboSize))
+  );
+  const avisarComboCargando = () => {
+    if (comboListo) return false;
+    toast.info('Un momento: estamos cargando las prendas del combo.');
+    return true;
+  };
 
   // ── Handlers
   const handleAddToCart = () => {
+    if (avisarComboCargando()) return;
     addToCart(
       product,
       { size: selectedSize, selectedVariant: selectedVariant ?? undefined },
@@ -496,6 +513,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   // (selectOnly) y va directo a la pasarela de pago, así se paga solo este producto.
   const handleComprarAhora = () => {
     if (!product.inStock) return;
+    if (avisarComboCargando()) return;
     addToCart(
       product,
       { size: selectedSize, selectedVariant: selectedVariant ?? undefined },
