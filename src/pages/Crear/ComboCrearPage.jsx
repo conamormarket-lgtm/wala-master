@@ -619,6 +619,9 @@ const ComboCrearPage = () => {
         if (guardadoId) {
           miComboId = guardadoId;
           guardarMetaArmado(id, { miComboId: guardadoId });
+          // También en el estado: si el guardado automático de "Mi combo" corre
+          // antes de salir, actualiza este en vez de crear otro igual.
+          setMeta((m) => ({ ...m, miComboId: guardadoId }));
         }
         registrarUsoComunidad(plantillaId);
         queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'], refetchType: 'all' });
