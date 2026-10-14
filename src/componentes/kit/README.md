@@ -128,7 +128,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | Archivo | Componentes | Para qué |
 |---|---|---|
 | `Boton.jsx` | `Boton` | Botón violeta liso; variantes, tamaños, cargando, `brillo` para CTA de pago. Con `to` es un enlace; con `insignia` lleva un contador en la esquina |
-| `Etiquetas.jsx` | `Etiqueta`, `Chip`, `Moneda`, `MONEDA`, `CostoMonedas`, `GananciaMonedas`, `SaldoMonedas`, `Contador` | Badges, filtros y monedas |
+| `Etiquetas.jsx` | `Etiqueta`, `Chip`, `Moneda`, `MONEDA`, `CostoMonedas`, `GananciaMonedas`, `SaldoMonedas` (sube de a una con cada moneda que aterriza), `Contador` | Badges, filtros y monedas |
 | `Formulario.jsx` | `Campo` (con `opciones` es una `ListaOpciones`; `control` para otro control en la misma caja), `Buscador` (`grande`, `boton`), `Selector`, `SelectorTalla`, `SelectorColor`, `Cantidad`, `Interruptor`, `Casilla`, `CampoTelefono` | Formularios, búsqueda (atajo "/"), "Ordenar por" y variantes de producto |
 | `ListaOpciones.jsx` | `ListaOpciones` | Lista desplegable de Walá: panel en escritorio, hoja en el celular, buscador, teclado, `creable` |
 | `Fecha.jsx` | `CampoFecha`, `Calendario`, `fechaEnTexto` | Fechas con el calendario de Walá (años, meses, días; "No sé el año") |
@@ -159,7 +159,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `piezas/Recompensas.jsx` | `TarjetaRecompensa`, `TarjetaCupon`, `TarjetaMision`, `NivelCuenta`, `NIVELES` | Catálogo, cupones, misiones y nivel por XP |
 | `piezas/Referidos.jsx` | `FormaGanar`, `EnlaceInvitacion`, `FilaReferido`, `DetallePedidoReferido`, `RankingReferidos` | Mis referidos |
 | `piezas/Creaciones.jsx` | `TarjetaCreacion` | Un diseño guardado (frente y espalda, renombrar, eliminar; también borradores) |
-| `piezas/Regalos.jsx` | `IdeaRegalo`, `TarjetaPersonaRegalo`, `AvisoFestiva`, `faltanDias`, `textoFaltan`, `diaYMes` | Fechas importantes |
+| `piezas/Regalos.jsx` | `IdeaRegalo`, `TarjetaPersonaRegalo`, `AvisoFestiva` (cuenta atrás), `HojaCalendario`, `AgendaFechas` ("Lo que se viene"), `faltanDias`, `textoFaltan`, `diaYMes` | Fechas importantes |
 | `paginas/Cuenta.jsx`, `CuentaPedidos.jsx`, `CuentaRecompensas.jsx`, `CuentaPersonalizacion.jsx` | `MarcoCuenta`, `PaginaCuentaInvitado`, `PaginaResumenCuenta`, `PaginaPerfil`, `PaginaPedidos`, `PaginaDetallePedido`, `PaginaDirecciones`, `PaginaAjustes`, `PaginaCatalogo`, `PaginaCupones`, `PaginaMisiones`, `PaginaReferidos`, `PaginaCreaciones`, `PaginaListaDeseos`, `PaginaFechas` (+ `validarPerfil`, `validarDireccion`, `validarPersona`) | Las páginas de /cuenta (guía: `guia/CUENTA.md`) |
 | `piezas/VentanaKapi.jsx` | `VentanaKapi` | La ventana de Kapi: ánimo, felicidad, moneda del día, alimentar y el reto (hoja en el celular, centrada en escritorio) |
 | `piezas/RetoSemanal.jsx` | `RetoSemanal` | El reto de la semana: premio, avance y envío de evidencia |

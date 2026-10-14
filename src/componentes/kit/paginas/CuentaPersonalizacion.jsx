@@ -10,7 +10,7 @@ import Carrusel from '../Carrusel';
 import { Avatar } from '../piezas/Avatar';
 import { CabezaCuenta } from '../piezas/Cuenta';
 import { TarjetaCreacion } from '../piezas/Creaciones';
-import { TarjetaPersonaRegalo, AvisoFestiva } from '../piezas/Regalos';
+import { TarjetaPersonaRegalo, AvisoFestiva, AgendaFechas, faltanDias } from '../piezas/Regalos';
 import s from './CuentaPersonalizacion.module.css';
 
 /*
@@ -388,6 +388,19 @@ export function PaginaFechas({
   // que se abre, `clave` nueva = formulario desde cero.
   const [hoja, setHoja] = useState({ abierta: false, persona: null, clave: 0 });
   const abrir = (persona = {}) => setHoja((h) => ({ abierta: true, persona, clave: h.clave + 1 }));
+  // "Lo que se viene": las próximas fechas de todos (y las festivas que les
+  // tocan), de la más cercana a la más lejana; cada una lleva a su persona.
+  const agenda = personas.flatMap((p) => [
+    ...(p.eventos || []).map((e) => ({
+      id: `${p.id}-${e.id}`,
+      fecha: e.fecha,
+      titulo: e.tipo === 'Fecha Especial' ? (e.nombre || 'Fecha especial') : e.tipo === 'Cumpleaños' ? `Cumpleaños de ${p.nombre}` : `${e.tipo} con ${p.nombre}`,
+      persona: e.tipo === 'Cumpleaños' ? p.relacionTexto : p.nombre,
+      dias: faltanDias(e.fecha, hoy),
+      url: `#persona-${p.id}`,
+    })),
+    ...(p.festivas || []).map((f) => ({ id: `${p.id}-${f.nombre}`, fecha: f.fecha, titulo: f.nombre, persona: `Para ${p.nombre}`, dias: faltanDias(f.fecha, hoy), url: `#persona-${p.id}` })),
+  ]).filter((x) => x.dias != null).sort((a, b) => a.dias - b.dias).slice(0, 8);
   return (
     <>
       <CabezaCuenta
@@ -404,6 +417,7 @@ export function PaginaFechas({
           Cuéntanos qué le gusta a cada persona y te recomendamos mejor.
         </Aviso>
       )}
+      {!cargando && <AgendaFechas items={agenda} />}
       {festivas.map((f) => (
         <AvisoFestiva key={f.nombre} {...f} hoy={hoy} urlTienda={urlTienda} onAgregarIdea={onAgregarIdea} onAgregarPersona={onGuardar && (() => abrir())} />
       ))}

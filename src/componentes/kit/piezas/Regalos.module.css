@@ -363,3 +363,321 @@
     transition: none;
   }
 }
+
+/* ── Hoja de calendario ──────────────────────────────────── */
+.hoja {
+  --hoja-banda: var(--degradado-logo, #7c3aed);
+  display: inline-grid;
+  flex-shrink: 0;
+  grid-template-rows: auto 1fr;
+  width: 42px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  box-shadow: 0 4px 10px -8px rgba(30, 17, 64, 0.5);
+  text-align: center;
+  transform: rotate(-4deg);
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.hoja_rosa {
+  --hoja-banda: linear-gradient(135deg, #f9a8d4, #db2777);
+}
+
+.hoja_oro {
+  --hoja-banda: linear-gradient(135deg, #fde68a, #f59e0b);
+}
+
+.hojaMes {
+  padding: 2px 0 1px;
+  background: var(--hoja-banda);
+  color: #fff;
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hoja_oro .hojaMes {
+  color: #3b2300;
+}
+
+.hojaDia {
+  padding: 1px 0 3px;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.hojaGrande {
+  width: 54px;
+  border-radius: 12px;
+}
+
+.hojaGrande .hojaMes {
+  font-size: 0.62rem;
+}
+
+.hojaGrande .hojaDia {
+  font-size: 1.4rem;
+}
+
+/* ── Agenda "Lo que se viene" ─────────────────────────────── */
+.agenda {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.agendaTitulo {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.agendaLista {
+  display: flex;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0.3rem 0.1rem 0.6rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  list-style: none;
+}
+
+.agendaLista > li {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+.agendaItem,
+.agendaItem:hover {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 236px;
+  min-height: 92px;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  transition: border-color var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature), box-shadow var(--dur-media) ease;
+}
+
+.agendaPronto {
+  border-color: rgba(219, 39, 119, 0.35);
+  background: color-mix(in srgb, #fce7f3 55%, var(--color-surface));
+}
+
+:global([data-theme='dark']) .agendaPronto {
+  border-color: rgba(244, 114, 182, 0.35);
+  background: rgba(244, 114, 182, 0.08);
+}
+
+.agendaItem:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+.agendaTextos {
+  display: grid;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.agendaTextos strong {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.86rem;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.agendaTextos small {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agendaFalta {
+  margin-top: 0.15rem;
+  color: var(--primary-color);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.agendaPronto .agendaFalta {
+  color: #be185d;
+}
+
+:global([data-theme='dark']) .agendaFalta {
+  color: var(--violet-300);
+}
+
+:global([data-theme='dark']) .agendaPronto .agendaFalta {
+  color: #f9a8d4;
+}
+
+.agendaFalta b {
+  font-family: var(--fuente-marca);
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+/* ── Fila de una fecha ───────────────────────────────────── */
+.fechas .fecha {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  transition: background-color var(--dur-rapida) ease;
+}
+
+.fechas .fecha > :last-child:not(.fechaTextos) {
+  grid-column: auto;
+  justify-self: end;
+}
+
+.fechaTextos {
+  display: grid;
+  min-width: 0;
+}
+
+.fechaTextos .fechaNombre {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.fechaTextos .fechaNombre svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.fechaTextos .fechaDia {
+  font-size: 0.78rem;
+  text-align: left;
+}
+
+/* ── Cuenta atrás de una fecha festiva ───────────────────── */
+.festivaIcono {
+  display: inline-flex;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.cuentaAtras {
+  display: grid;
+  flex-shrink: 0;
+  justify-items: center;
+  min-width: 64px;
+  padding: 0.45rem 0.6rem;
+  border-radius: 16px;
+  background: var(--degradado-logo, #7c3aed);
+  color: #fff;
+  line-height: 1;
+  transform: rotate(3deg);
+  box-shadow: 0 8px 16px -10px rgba(91, 33, 182, 0.8);
+}
+
+.cuentaAtras strong {
+  font-family: var(--fuente-marca);
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.cuentaAtras small {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.festivaBarra {
+  --bp-relleno: var(--degradado-logo);
+}
+
+/* ── Vida al pasar el ratón ──────────────────────────────── */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .persona,
+  .festiva {
+    transition: border-color var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature), box-shadow var(--dur-media) ease;
+  }
+
+  .persona:hover {
+    border-color: var(--violet-200, #ddd6fe);
+    box-shadow: 0 16px 32px -24px rgba(76, 29, 149, 0.55);
+    transform: translateY(-3px);
+  }
+
+  .avatar {
+    transition: transform var(--dur-media) var(--ease-signature);
+  }
+
+  .persona:hover .avatar {
+    transform: rotate(-8deg) scale(1.06);
+  }
+
+  .fecha:hover {
+    background: var(--primary-light);
+  }
+
+  :global([data-theme='dark']) .fecha:hover {
+    background: rgba(167, 139, 250, 0.1);
+  }
+
+  .fecha:hover .hoja,
+  .agendaItem:hover .hoja {
+    transform: rotate(0deg) translateY(-2px) scale(1.06);
+  }
+
+  .agendaItem:hover {
+    border-color: var(--violet-300, #c4b5fd);
+    box-shadow: 0 14px 26px -20px rgba(76, 29, 149, 0.6);
+    transform: translateY(-3px);
+  }
+
+  .festiva:hover .festivaIcono {
+    transform: rotate(-10deg) scale(1.08);
+  }
+
+  .idea {
+    margin-inline: -0.4rem;
+    padding: 0.3rem 0.4rem;
+    border-radius: 12px;
+    transition: background-color var(--dur-rapida) ease;
+  }
+
+  .idea:hover {
+    background: var(--color-hover);
+  }
+
+  .ideaFoto,
+  .paqueteFoto {
+    transition: transform var(--dur-media) var(--ease-signature);
+  }
+
+  .idea:hover .ideaFoto,
+  .paqueteLista li:hover .paqueteFoto {
+    transform: scale(1.08) rotate(-3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hoja {
+    transition: none;
+  }
+}

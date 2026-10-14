@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Globe, Pencil, Trash2, Plus, Check, Package, ArrowRight, Gift, ShoppingBag } from 'lucide-react';
+import { Globe, Pencil, Trash2, Plus, Check, Package, ArrowRight, Gift, ShoppingBag } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { Etiqueta } from '../Etiquetas';
@@ -7,6 +7,7 @@ import { IconoWala } from '../IconosWala';
 import { soles } from '../TarjetaProducto';
 import { Avatar } from './Avatar';
 import { FotoProducto } from './FotoProducto';
+import { BarraProgreso } from './BarraProgreso';
 import s from './Regalos.module.css';
 
 /*
@@ -35,6 +36,62 @@ export const faltanDias = (iso, hoy = new Date()) => {
 
 /** 0 → "¡Es hoy!", 1 → "Mañana", n → "En n días". */
 export const textoFaltan = (n) => (n === 0 ? '¡Es hoy!' : n === 1 ? 'Mañana' : `En ${n} días`);
+
+const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+/** Años que se cumplen la próxima vez (cumpleaños o aniversario con año). */
+const aniosQueCumple = (iso, hoy = new Date()) => {
+  const [a, m, d] = String(iso || '').split('-').map(Number);
+  if (!a || !m || !d) return null;
+  const base = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  const anio = new Date(base.getFullYear(), m - 1, d) < base ? base.getFullYear() + 1 : base.getFullYear();
+  return anio - a;
+};
+
+/**
+ * Hoja de calendario (como las de taco): el mes en la franja de arriba y el
+ * día grande con la letra del logo, un poco girada. Al pasar el ratón por su
+ * fila se endereza.
+ *  - fecha: 'AAAA-MM-DD' · tono: 'violeta' | 'rosa' | 'oro' · grande
+ */
+export function HojaCalendario({ fecha, tono = 'violeta', grande = false }) {
+  const [, m, d] = String(fecha || '').split('-').map(Number);
+  return (
+    <span className={[s.hoja, s[`hoja_${tono}`], grande && s.hojaGrande].filter(Boolean).join(' ')} aria-hidden="true">
+      <span className={s.hojaMes}>{m ? MESES_CORTOS[m - 1] : '—'}</span>
+      <span className={s.hojaDia}>{d || '?'}</span>
+    </span>
+  );
+}
+
+/**
+ * Lo que se viene: las próximas fechas de todas las personas (y las
+ * festivas), de la más cercana a la más lejana, en una fila que se desliza.
+ * Cada una lleva a la tarjeta de su persona.
+ *  - items: [{ id, fecha, titulo, persona, dias, url ('#persona-…') }]
+ */
+export function AgendaFechas({ items = [] }) {
+  if (!items.length) return null;
+  return (
+    <section className={s.agenda} data-componente="AgendaFechas" aria-label="Lo que se viene">
+      <h3 className={s.agendaTitulo}>Lo que se viene</h3>
+      <ul className={s.agendaLista}>
+        {items.map((it) => (
+          <li key={it.id}>
+            <Enlace to={it.url} className={[s.agendaItem, it.dias <= 7 && s.agendaPronto].filter(Boolean).join(' ')}>
+              <HojaCalendario fecha={it.fecha} tono={it.dias <= 7 ? 'rosa' : 'violeta'} grande />
+              <span className={s.agendaTextos}>
+                <strong>{it.titulo}</strong>
+                {it.persona && <small>{it.persona}</small>}
+                <span className={s.agendaFalta}>{it.dias === 0 ? '¡Es hoy!' : it.dias === 1 ? 'Mañana' : <>En <b>{it.dias}</b> días</>}</span>
+              </span>
+            </Enlace>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
 
 /** Cuánto falta, como etiqueta (solo si es en 30 días o menos). */
 function Faltan({ dias, hasta = 30 }) {
@@ -82,18 +139,19 @@ export function IdeaRegalo({ nombre, imagen, motivo, precio, url, agregada = fal
  *  - paquete: { total, productos: [{ nombre, imagen, precio, url }], quitados, agregado }
  *  - ideas: props de IdeaRegalo · ideasGenerales: aún no sabemos qué le gusta
  *  - sinIdeas: tiene gustos pero no hay productos de eso
+ *  - id: la tarjeta queda en #persona-{id} (la agenda lleva ahí)
  *  - onEditar, onEliminar (pide confirmar en la tarjeta), onAgregarPaquete,
  *    onAgregarIdea(idea), onAgregarIdeas · urlTienda · hoy (para "En N días")
  */
 export function TarjetaPersonaRegalo({
-  nombre, relacion, foto, eventos = [], festivas = [], paquete, ideas = [], ideasGenerales = false, sinIdeas = false,
+  id, nombre, relacion, foto, eventos = [], festivas = [], paquete, ideas = [], ideasGenerales = false, sinIdeas = false,
   onEditar, onEliminar, onAgregarPaquete, onAgregarIdea, onAgregarIdeas, urlTienda = '/tienda', hoy,
 }) {
   const [confirmar, setConfirmar] = useState(false);
   const directas = ideas.filter((i) => !i.necesitaOpciones && !i.agregada);
   const totalIdeas = directas.reduce((a, i) => a + Number(i.precio || 0), 0);
   return (
-    <article className={s.persona} data-componente="TarjetaPersonaRegalo">
+    <article className={s.persona} data-componente="TarjetaPersonaRegalo" id={id ? `persona-${id}` : undefined}>
       <header className={s.cabeza}>
         <Avatar className={s.avatar} nombre={nombre} imagen={foto} letras={1} />
         <div className={s.quien}>
@@ -118,20 +176,28 @@ export function TarjetaPersonaRegalo({
       <ul className={s.fechas}>
         {eventos.map((e) => {
           const dias = faltanDias(e.fecha, hoy);
+          const anios = aniosQueCumple(e.fecha, hoy);
+          let detalle = diaYMes(e.fecha) || 'Sin fecha';
+          if (anios && e.tipo === 'Cumpleaños') detalle += ` · cumple ${anios}`;
+          if (anios && e.tipo === 'Aniversario') detalle += ` · ${anios} ${anios === 1 ? 'año' : 'años'}`;
           return (
-            <li key={e.id}>
-              <Calendar aria-hidden="true" />
-              <span className={s.fechaNombre}>{e.tipo === 'Fecha Especial' ? (e.nombre || 'Fecha especial') : e.tipo}</span>
-              <span className={s.fechaDia}>{diaYMes(e.fecha) || 'Sin fecha'}</span>
+            <li key={e.id} className={s.fecha}>
+              <HojaCalendario fecha={e.fecha} tono={dias != null && dias <= 7 ? 'rosa' : 'violeta'} />
+              <span className={s.fechaTextos}>
+                <span className={s.fechaNombre}>{e.tipo === 'Fecha Especial' ? (e.nombre || 'Fecha especial') : e.tipo}</span>
+                <span className={s.fechaDia}>{detalle}</span>
+              </span>
               <Faltan dias={dias} />
             </li>
           );
         })}
         {festivas.map((f) => (
-          <li key={f.nombre} className={s.festivaFila}>
-            <Globe aria-hidden="true" />
-            <span className={s.fechaNombre}>{f.nombre}</span>
-            <span className={s.fechaDia}>{diaYMes(f.fecha)}</span>
+          <li key={f.nombre} className={`${s.fecha} ${s.festivaFila}`}>
+            <HojaCalendario fecha={f.fecha} tono="oro" />
+            <span className={s.fechaTextos}>
+              <span className={s.fechaNombre}><Globe aria-hidden="true" /> {f.nombre}</span>
+              <span className={s.fechaDia}>{diaYMes(f.fecha)} · del calendario</span>
+            </span>
             <Faltan dias={faltanDias(f.fecha, hoy)} />
           </li>
         ))}
@@ -203,12 +269,20 @@ export function AvisoFestiva({ nombre, fecha, icono = 'regalo', personas = [], o
   return (
     <section className={s.festiva} data-componente="AvisoFestiva">
       <header className={s.festivaCabeza}>
-        <IconoWala nombre={icono} tamano={48} girar={-6} />
+        <span className={s.festivaIcono}><IconoWala nombre={icono} tamano={48} girar={-6} /></span>
         <div className={s.quien}>
           <h3>{dias === 0 ? `¡Hoy es ${nombre}!` : `Se acerca el ${nombre}`}</h3>
-          <p>{diaYMes(fecha)} · <strong>{textoFaltan(dias)}</strong></p>
+          <p>{diaYMes(fecha)}</p>
         </div>
+        <span className={s.cuentaAtras} aria-label={textoFaltan(dias)}>
+          {dias === 0 ? <strong>¡Hoy!</strong> : <><strong>{dias}</strong><small>{dias === 1 ? 'día' : 'días'}</small></>}
+        </span>
       </header>
+      {dias != null && dias <= 30 && (
+        <div className={s.festivaBarra}>
+          <BarraProgreso valor={30 - dias} max={30} minimo={6} />
+        </div>
+      )}
       {personas.length > 0 ? personas.slice(0, 3).map((p) => (
         <div key={p.nombre} className={s.festivaPersona}>
           <h4>Ideas para {p.nombre}</h4>

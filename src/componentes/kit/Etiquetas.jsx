@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useEffect, useRef, useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { useContador } from './Efectos';
 import { EtiquetaColgante } from './Marca';
@@ -95,16 +95,45 @@ export function GananciaMonedas({ monto, children, icono }) {
   );
 }
 
-/** Saldo de monedas (header, cuenta). La moneda gira al pasar el ratón y el número corre al cambiar. */
+/**
+ * Saldo de monedas (header, cuenta). La moneda gira al pasar el ratón y el
+ * número corre al cambiar. Mientras vuelan monedas ganadas
+ * (volarMonedasGanadas de utils/animations), el número sube con cada una que
+ * aterriza, como la cabecera de la tienda: escucha 'coins-animation-start',
+ * 'coin-reached-target' y 'coins-animation-end'.
+ */
 export const SaldoMonedas = forwardRef(function SaldoMonedas({ saldo, ...rest }, ref) {
-  const mostrado = useContador(saldo, 0.9);
+  // El saldo de antes de la última subida: si la página ya sumó las monedas
+  // (justo antes de hacerlas volar), el contador parte de ahí.
+  const historia = useRef({ actual: saldo, previo: saldo, cuando: 0 });
+  if (historia.current.actual !== saldo) historia.current = { actual: saldo, previo: historia.current.actual, cuando: Date.now() };
+  const [vuelo, setVuelo] = useState(null); // { base, llegado }
+  useEffect(() => {
+    const empezar = () => setVuelo((v) => {
+      if (v) return v;
+      const h = historia.current;
+      return { base: Date.now() - h.cuando < 1500 ? h.previo : h.actual, llegado: 0 };
+    });
+    const llegar = (e) => setVuelo((v) => (v ? { ...v, llegado: v.llegado + (Number(e.detail?.amount) || 1) } : v));
+    const terminar = () => setVuelo(null);
+    window.addEventListener('coins-animation-start', empezar);
+    window.addEventListener('coin-reached-target', llegar);
+    window.addEventListener('coins-animation-end', terminar);
+    return () => {
+      window.removeEventListener('coins-animation-start', empezar);
+      window.removeEventListener('coin-reached-target', llegar);
+      window.removeEventListener('coins-animation-end', terminar);
+    };
+  }, []);
+  const objetivo = vuelo ? Math.min(saldo, vuelo.base + vuelo.llegado) : saldo;
+  const mostrado = useContador(objetivo, vuelo ? 0.28 : 0.9);
   return (
     // global-coins-target: adonde vuelan las monedas ganadas (volarMonedasGanadas
     // de utils/animations busca esa clase, como en la cabecera de la tienda).
     <button ref={ref} type="button" className={`${s.saldo} global-coins-target`} aria-label={`Tienes ${saldo} monedas`} {...rest}>
       <span className={s.saldoDestello} aria-hidden="true" />
       <Moneda tamano={20} />
-      <span className={s.saldoNumero}>{miles(mostrado)}</span>
+      <span key={vuelo ? vuelo.llegado : 'quieto'} className={[s.saldoNumero, vuelo?.llegado && s.saldoSube].filter(Boolean).join(' ')}>{miles(mostrado)}</span>
     </button>
   );
 });

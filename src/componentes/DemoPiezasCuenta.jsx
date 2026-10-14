@@ -4,7 +4,7 @@ import {
   Sello, Campo, MenuCuenta, Estadistica, AccesosCuenta, IdentidadCuenta, ListaEleccion, TarjetaCuenta, ListaDatos,
   TarjetaDireccion, TarjetaRecompensa, TarjetaCupon, TarjetaMision, NivelCuenta, FilaReferido, EnlaceInvitacion,
   FormaGanar, TarjetaCreacion, IdeaRegalo, AvisoFestiva, Moneda, Interruptor,
-  CampoFecha, CampoTelefono, Casilla, RecortarFoto, LineaProduccion, PagosPedido, PedidosPorVerificar, RankingReferidos,
+  CampoFecha, CampoTelefono, Casilla, RecortarFoto, AgendaFechas, HojaCalendario, LineaProduccion, PagosPedido, PedidosPorVerificar, RankingReferidos,
   ETAPAS_PRODUCCION, Boton,
 } from './kit';
 import { GRUPOS_CUENTA_COMPLETO } from './DemoCuenta';
@@ -199,6 +199,20 @@ export default function DemoPiezasCuenta({ imagenes }) {
             fecha="Guardada ayer" precio={59.9} comprado urlEditar="/crear" urlComprar="/creacion" onEliminar={() => new Promise((r) => setTimeout(r, 600))} onRenombrar={() => Promise.resolve()} />
           <TarjetaCreacion borrador nombre="Sin terminar" imagen={imagenes.frente} producto="Polera clásica" fecha="Guardada hoy" urlEditar="/crear" />
         </div>
+      </Ficha>
+
+      <Ficha nombre="AgendaFechas · HojaCalendario" usadaEn="Fechas importantes («Lo que se viene» y cada fecha de una persona)" ancho="1 / -1">
+        <div className={s.fila} style={{ marginBottom: '0.75rem' }}>
+          <HojaCalendario fecha="2001-10-20" />
+          <HojaCalendario fecha="0000-12-25" tono="oro" />
+          <HojaCalendario fecha="0000-02-14" tono="rosa" grande />
+        </div>
+        <AgendaFechas items={[
+          { id: 'a1', fecha: '1998-10-20', titulo: 'Cumpleaños de María', persona: 'Hermano/a', dias: 6, url: '#cuenta-piezas' },
+          { id: 'a2', fecha: '2021-11-02', titulo: 'Aniversario con Carlos', persona: 'Carlos', dias: 19, url: '#cuenta-piezas' },
+          { id: 'a3', fecha: '0000-12-25', titulo: 'Navidad', persona: 'Para María', dias: 72, url: '#cuenta-piezas' },
+        ]}
+        />
       </Ficha>
 
       <Ficha nombre="AvisoFestiva · IdeaRegalo" usadaEn="Fechas importantes (TarjetaPersonaRegalo usa las mismas ideas)">

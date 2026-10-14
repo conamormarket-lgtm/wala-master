@@ -22,6 +22,6 @@ export { TarjetaRecompensa, TarjetaCupon, TarjetaMision, NivelCuenta, NIVELES } 
 export { FormaGanar, EnlaceInvitacion, FilaReferido, DetallePedidoReferido, RankingReferidos } from './Referidos';
 export { TarjetaCreacion } from './Creaciones';
 export { RecortarFoto } from './RecortarFoto';
-export { IdeaRegalo, TarjetaPersonaRegalo, AvisoFestiva, faltanDias, textoFaltan, diaYMes } from './Regalos';
+export { IdeaRegalo, TarjetaPersonaRegalo, AvisoFestiva, HojaCalendario, AgendaFechas, faltanDias, textoFaltan, diaYMes } from './Regalos';
 export { LineaProduccion, PagosPedido, HojaPagarSaldo } from './DetallePedido';
 export { PedidosPorVerificar } from './PedidosPorVerificar';
