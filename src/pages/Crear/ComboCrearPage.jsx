@@ -31,16 +31,25 @@ const tallasPara = (prenda, creacion) => {
 };
 
 /** Frente y espalda de una pieza: su diseño, el de la comunidad o la prenda en blanco. */
+/**
+ * Fotos de una pieza y de dónde salen:
+ *  - 'render': las vistas previas de su creación (o de la plantilla) o, en un
+ *    borrador, su miniatura. Ya traen el fondo del estudio y su margen.
+ *  - 'prenda': la prenda en blanco (sin diseño todavía), foto de catálogo.
+ * Así la tarjeta las muestra al mismo tamaño y sobre el mismo fondo.
+ */
 const ladosDePieza = (p) => {
   const previas = (p.creacion?.vistasPrevias || p.plantilla?.vistasPrevias || []).filter((v) => v?.url);
-  if (previas.length) return previas.map((v) => ({ url: v.url, nombre: v.nombre }));
+  if (previas.length) return { origen: 'render', lados: previas.map((v) => ({ url: v.url, nombre: v.nombre })) };
   const conjunta = p.creacion?.imagenConjunta || p.plantilla?.imagenConjunta;
-  if (conjunta) return [{ url: conjunta, nombre: '' }];
-  // Un borrador todavía no tiene sus vistas previas: muestra la miniatura que
-  // se guarda sola mientras se diseña (como en "Tus borradores"), no la
-  // prenda vacía.
-  if (p.creacion?.miniatura) return [{ url: p.creacion.miniatura, nombre: '' }];
-  return leerPrendaBase(p.prenda).vistas.filter((v) => v.imagen).map((v) => ({ url: v.imagen, nombre: v.nombre }));
+  if (conjunta) return { origen: 'render', lados: [{ url: conjunta, nombre: '' }] };
+  // Un borrador todavía no tiene sus vistas previas: su miniatura (la que se
+  // guarda sola mientras se diseña, como en "Tus borradores").
+  if (p.creacion?.miniatura) return { origen: 'render', lados: [{ url: p.creacion.miniatura, nombre: '' }] };
+  return {
+    origen: 'prenda',
+    lados: leerPrendaBase(p.prenda).vistas.filter((v) => v.imagen).map((v) => ({ url: v.imagen, nombre: v.nombre })),
+  };
 };
 
 /**
@@ -48,14 +57,18 @@ const ladosDePieza = (p) => {
  * se ve la espalda y en el celular alternan solas (con dos puntos de qué
  * lado se ve). Lleva el número de la pieza y el check cuando está lista.
  */
-const FotoPieza = ({ lados, alt, vacia, children }) => {
+const FotoPieza = ({ fotos: { origen, lados }, alt, vacia, children }) => {
   const ref = useRef(null);
   const frente = lados[0]?.url;
   const espalda = lados[1]?.url;
   const verEspalda = useAlternarFotos(ref, Boolean(frente && espalda));
-  const nombres = lados.map((l) => l.nombre).filter(Boolean);
+  // La etiqueta dice qué lados llevan diseño: no va en la prenda en blanco.
+  const nombres = origen === 'render' ? lados.map((l) => l.nombre).filter(Boolean) : [];
   return (
-    <div ref={ref} className={`${styles.piezaFoto} ${verEspalda ? styles.conEspalda : ''} ${vacia ? styles.fotoVacia : ''}`}>
+    <div
+      ref={ref}
+      className={`${styles.piezaFoto} ${origen === 'render' ? styles.fotoRender : ''} ${verEspalda ? styles.conEspalda : ''} ${vacia ? styles.fotoVacia : ''}`}
+    >
       {frente && <img src={frente} alt={alt} className={styles.fotoFrente} loading="lazy" />}
       {espalda && <img src={espalda} alt="" aria-hidden="true" className={styles.fotoEspalda} loading="lazy" />}
       {frente && espalda && (
@@ -422,7 +435,7 @@ const ComboCrearPage = () => {
             && piezasCombo[o.i].prendaId === piezasCombo[p.i].prendaId).length;
           return (
             <li key={p.i} className={`${styles.pieza} ${p.lista ? styles.piezaLista : ''}`}>
-              <FotoPieza lados={ladosDePieza(p)} alt={p.prenda?.name || ''} vacia={!p.creacion && !p.plantilla}>
+              <FotoPieza fotos={ladosDePieza(p)} alt={p.prenda?.name || ''} vacia={!p.creacion && !p.plantilla}>
                 <span className={styles.numero}>{p.i + 1}</span>
                 {p.lista && <CheckCircle2 className={styles.check} size={22} aria-label="Lista" />}
               </FotoPieza>
