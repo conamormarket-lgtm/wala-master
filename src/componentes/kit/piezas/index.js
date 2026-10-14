@@ -21,4 +21,5 @@ export { TarjetaDireccion } from './TarjetaDireccion';
 export { TarjetaRecompensa, TarjetaCupon, TarjetaMision, NivelCuenta, NIVELES } from './Recompensas';
 export { FormaGanar, EnlaceInvitacion, FilaReferido, DetallePedidoReferido } from './Referidos';
 export { TarjetaCreacion } from './Creaciones';
+export { RecortarFoto } from './RecortarFoto';
 export { IdeaRegalo, TarjetaPersonaRegalo, AvisoFestiva, faltanDias, textoFaltan, diaYMes } from './Regalos';

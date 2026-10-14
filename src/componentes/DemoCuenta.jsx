@@ -155,16 +155,24 @@ const BORRADORES = [
   { id: 'b2', nombre: 'Idea para Carlos', imagen: POLERA_ESPALDA, producto: 'Polera clásica', fecha: 'Guardada ayer', urlEditar: '/crear/polera?borrador=b2' },
 ];
 
+/* Los conjuntos por defecto de tienda_encuesta_config (encuestaConfig.js):
+   campos de texto con sugerencias del catálogo (sugerenciasPorCampo). */
 const CONJUNTOS = [
-  { id: 'anime', nombre: 'Anime', campos: [{ id: 'personaje', etiqueta: 'Personaje favorito', opciones: ['Goku', 'Luffy', 'Nezuko', 'Tanjiro'] }] },
-  { id: 'futbol', nombre: 'Fútbol', campos: [{ id: 'equipo', etiqueta: 'Equipo', opciones: ['Alianza Lima', 'Universitario', 'Sporting Cristal'] }] },
+  { id: 'cat_deportes', nombre: 'Deportes', campos: [
+    { id: 'dep_q1', etiqueta: '¿Cuál es su deporte favorito?', sugerencias: ['Fútbol', 'Vóley', 'Básquet', 'Running'] },
+    { id: 'dep_q2', etiqueta: '¿De qué equipo es hincha?', sugerencias: ['Alianza Lima', 'Universitario', 'Sporting Cristal', 'Real Madrid', 'Barcelona'] },
+  ] },
+  { id: 'cat_geek', nombre: 'Geek', campos: [
+    { id: 'geek_q1', etiqueta: '¿Cuál es su anime o franquicia favorita?', sugerencias: ['Dragon Ball', 'One Piece', 'Demon Slayer', 'Naruto', 'Jujutsu Kaisen'] },
+    { id: 'geek_q2', etiqueta: '¿Quién es su personaje favorito?', sugerencias: ['Goku', 'Vegeta', 'Luffy', 'Zoro', 'Nezuko', 'Tanjiro', 'Itachi Uchiha', 'Kakashi', 'Gojo', 'Rengoku', 'Akaza', 'Inosuke'] },
+  ] },
 ];
 const ideasDe = (fotos, desde = 0) => fotos.slice(desde, desde + 2).map((f, k) => ({
   id: `i${desde}${k}`, nombre: f.nombre, imagen: f.imagen, precio: [49.9, 34.9, 59.9][(desde + k) % 3], url: '/producto/x',
   motivo: k ? 'Le gusta el anime' : 'Entra en tu presupuesto',
 }));
 const personasDemo = (fotos) => [
-  { id: 'per1', nombre: 'María', relacion: 'hermanos', genero: 'Femenino', presupuesto: '50a100', gustos: { anime: { personaje: 'Nezuko' } },
+  { id: 'per1', nombre: 'María', relacion: 'hermanos', genero: 'Femenino', presupuesto: '50a100', gustos: { cat_geek: { geek_q1: 'Demon Slayer', geek_q2: 'Nezuko' } },
     eventos: [{ id: 'e1', tipo: 'Cumpleaños', fecha: '1998-10-20' }],
     festivas: [{ nombre: 'Navidad', fecha: '0000-12-25' }],
     paquete: { total: 84.8, productos: fotos.slice(0, 2).map((f, k) => ({ nombre: f.nombre, imagen: f.imagen, precio: [49.9, 34.9][k], url: '/producto/x' })), quitados: 1 },

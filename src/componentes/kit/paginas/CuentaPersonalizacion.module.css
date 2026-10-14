@@ -21,7 +21,7 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-@container pagina (min-width: 560px) {
+@container pagina (min-width: 640px) {
   .rejilla {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -34,7 +34,7 @@
   }
 }
 
-@container pagina (min-width: 760px) {
+@container pagina (min-width: 1240px) {
   .rejilla {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }

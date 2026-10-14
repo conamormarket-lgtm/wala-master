@@ -33,7 +33,7 @@ export function TarjetaCreacion({
 
   // Etiquetas de la foto por importancia; solo las dos primeras.
   const etiquetas = [
-    !disponible && <Etiqueta key="no" tono="peligro" sobreFoto>Ya no disponible</Etiqueta>,
+    !disponible && <Etiqueta key="no" tono="peligro" sobreFoto>No disponible</Etiqueta>,
     comprado && <Etiqueta key="comprado" tono="exito" sobreFoto icono={<Check aria-hidden="true" />}>Comprado</Etiqueta>,
     combo && <EtiquetaColgante key="combo" tono="magenta" tamano="sm">Combo · {combo}</EtiquetaColgante>,
     publicada && <Etiqueta key="pub" tono="violeta" sobreFoto>En la comunidad</Etiqueta>,

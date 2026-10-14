@@ -51,10 +51,21 @@ export function useBloquearScroll(activo) {
   }, [activo]);
 }
 
+/* Modales abiertos, del más viejo al de encima. "Atrás" cierra solo el de
+   encima (una lista abierta dentro de una hoja no se lleva la hoja), y el
+   history.back() de un modal que se cierra solo no cierra a los demás. */
+const pilaModales = [];
+let popsIgnorados = 0;
+const alVolverGlobal = () => {
+  if (popsIgnorados > 0) { popsIgnorados -= 1; return; }
+  pilaModales[pilaModales.length - 1]?.();
+};
+
 /**
  * El botón "atrás" (Android en Capacitor, o el del navegador) cierra el modal
  * en vez de salir de la pantalla. Capacitor, sin un listener propio de
  * backButton, retrocede en el historial: por eso basta con apilar un estado.
+ * Con varios modales uno encima de otro, cierra solo el de encima.
  */
 export function useCerrarConAtras(activo, onCerrar) {
   const cerrar = useRef(onCerrar);
@@ -73,12 +84,18 @@ export function useCerrarConAtras(activo, onCerrar) {
     const t = window.setTimeout(() => {
       window.history.pushState({ walaModal: true }, '');
       apilado = true;
-      window.addEventListener('popstate', alVolver);
+      if (pilaModales.length === 0) window.addEventListener('popstate', alVolverGlobal);
+      pilaModales.push(alVolver);
     }, 0);
     return () => {
       window.clearTimeout(t);
-      window.removeEventListener('popstate', alVolver);
-      if (apilado && !porAtras && window.history.state?.walaModal) window.history.back();
+      const i = pilaModales.indexOf(alVolver);
+      if (i >= 0) pilaModales.splice(i, 1);
+      if (apilado && !porAtras && window.history.state?.walaModal) {
+        popsIgnorados += 1;
+        window.history.back();
+      }
+      if (pilaModales.length === 0 && popsIgnorados === 0) window.removeEventListener('popstate', alVolverGlobal);
     };
   }, [activo]);
 }

@@ -149,10 +149,11 @@ export function PaginaCarrito({
     <>
       <BloqueSeccion ajustes={{ paddingTop: '1.5rem', paddingBottom: '1rem' }}>
         <div className={s.cabezaPagina}>
+          {/* Cuántos productos: un dato de la página, en texto (no en etiqueta). */}
           <TituloSeccion
             nivel={1}
-            antetitulo={cuentas.unidades ? `${cuentas.unidades} ${cuentas.unidades === 1 ? 'producto' : 'productos'}` : undefined}
             titulo="Tu carrito"
+            subtitulo={cuentas.unidades ? `${cuentas.unidades} ${cuentas.unidades === 1 ? 'producto' : 'productos'}` : undefined}
           />
           {onSeguirComprando && <Boton variante="fantasma" icono={<ArrowLeft aria-hidden="true" />} onClick={onSeguirComprando}>Seguir comprando</Boton>}
         </div>

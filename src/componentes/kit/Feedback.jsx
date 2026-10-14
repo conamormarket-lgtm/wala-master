@@ -305,7 +305,14 @@ export function HojaInferior({ abierta, onCerrar, titulo, acciones, children, pi
     if (!abierta) return undefined;
     const previo = document.activeElement;
     const t = window.setTimeout(() => panelRef.current?.focus({ preventScroll: true }), 40);
-    const onKey = (e) => { if (e.key === 'Escape') cerrarRef.current?.(); };
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      // Con otra ventana encima (una lista abierta desde esta hoja), Esc es
+      // de ella: esta solo se cierra si el foco está adentro o en ningún lado.
+      const foco = document.activeElement;
+      if (foco && foco !== document.body && !panelRef.current?.contains(foco)) return;
+      cerrarRef.current?.();
+    };
     document.addEventListener('keydown', onKey);
     return () => {
       window.clearTimeout(t);

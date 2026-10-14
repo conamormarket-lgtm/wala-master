@@ -147,6 +147,10 @@
   color: var(--color-text);
 }
 
+.apagado {
+  opacity: 0.6;
+}
+
 .flechaLista {
   position: absolute;
   right: 0.9rem;
@@ -734,4 +738,113 @@
   color: var(--primary-color);
   transform: translateY(-50%);
   pointer-events: none;
+}
+
+/* ── Casilla ─────────────────────────────────────────────── */
+.casilla {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 44px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.casilla input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.caja {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--violet-300, #c4b5fd);
+  border-radius: 8px;
+  background: var(--color-surface);
+  transition: background var(--dur-rapida) ease, border-color var(--dur-rapida) ease, transform var(--dur-rapida) ease;
+}
+
+.caja svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 16;
+  stroke-dashoffset: 16;
+  transition: stroke-dashoffset var(--dur-media) var(--ease-signature);
+}
+
+.casilla input:checked + .caja {
+  border-color: transparent;
+  background: var(--degradado-logo, var(--violet-600));
+}
+
+.casilla input:checked + .caja svg {
+  stroke-dashoffset: 0;
+}
+
+.casilla:active .caja {
+  transform: scale(0.92);
+}
+
+.casilla input:focus-visible + .caja {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+/* ── Teléfono con país ───────────────────────────────────── */
+.telefono {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.separadorTel {
+  width: 1px;
+  height: 24px;
+  flex-shrink: 0;
+  background: var(--color-border);
+}
+
+.prefijoFijo {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.codigoPais {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--primary-light);
+  color: var(--primary-color);
+  font-family: var(--fuente-marca);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+:global([data-theme='dark']) .codigoPais {
+  background: rgba(167, 139, 250, 0.16);
+  color: var(--violet-200);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caja,
+  .caja svg {
+    transition: none;
+  }
 }

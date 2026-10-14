@@ -164,6 +164,31 @@
   gap: 0.5rem;
 }
 
+.codigoPais {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--primary-light);
+  color: var(--primary-color);
+  font-family: var(--fuente-marca);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+:global([data-theme='dark']) .codigoPais {
+  background: rgba(167, 139, 250, 0.16);
+  color: var(--violet-200);
+}
+
+.botonesAviso {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 .prefijo {
   color: var(--color-text);
   font-size: 0.92rem;

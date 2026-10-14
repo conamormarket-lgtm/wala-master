@@ -3,6 +3,8 @@ import { Sparkles, Plus, RotateCcw, Heart, ShoppingCart, CalendarHeart, Share2, 
 import Boton from '../Boton';
 import { Aviso, EstadoVacio, HojaInferior } from '../Feedback';
 import { Campo, Interruptor } from '../Formulario';
+import { CampoFecha } from '../Fecha';
+import { RecortarFoto } from '../piezas/RecortarFoto';
 import TarjetaProducto from '../TarjetaProducto';
 import Carrusel from '../Carrusel';
 import { Avatar } from '../piezas/Avatar';
@@ -177,13 +179,8 @@ const PRESUPUESTOS = [
   { valor: '', texto: 'Sin preferencia' }, { valor: 'hasta50', texto: 'Hasta S/ 50' }, { valor: '50a100', texto: 'S/ 50 – 100' },
   { valor: '100a200', texto: 'S/ 100 – 200' }, { valor: 'mas200', texto: 'Más de S/ 200' },
 ];
-const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-const OPC_MES = [{ valor: '', texto: 'Mes', deshabilitada: true }, ...MESES.map((m, i) => ({ valor: String(i + 1).padStart(2, '0'), texto: m }))];
-const OPC_DIA = [{ valor: '', texto: 'Día', deshabilitada: true }, ...Array.from({ length: 31 }, (_, i) => ({ valor: String(i + 1).padStart(2, '0'), texto: String(i + 1) }))];
 const TIPOS_FECHA = [{ valor: 'Aniversario', texto: 'Aniversario' }, { valor: 'Fecha Especial', texto: 'Fecha especial' }];
 
-const partir = (iso) => { const [a = '', m = '', d = ''] = String(iso || '').split('-'); return { anio: a === '0000' ? '' : a, mes: m, dia: d }; };
-const unir = ({ anio, mes, dia }) => (mes && dia ? `${anio || '0000'}-${mes}-${dia}` : '');
 let siguienteId = 0;
 const nuevoId = () => { siguienteId += 1; return `f${Date.now().toString(36)}${siguienteId}`; };
 
@@ -195,7 +192,7 @@ export function validarPersona(p) {
     const e = p.eventos[i];
     const cual = i === 0 ? 'Cumpleaños' : (e.tipo === 'Fecha Especial' ? (e.nombre || 'Fecha especial') : e.tipo);
     if (i > 0 && e.tipo === 'Fecha Especial' && !String(e.nombre || '').trim()) return 'Escribe qué se celebra en la fecha especial.';
-    if (!unir(e)) return `Falta la fecha de "${cual}".`;
+    if (!e.fecha) return `Falta la fecha de "${cual}".`;
   }
   return '';
 }
@@ -205,7 +202,7 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
   const [p, setP] = useState(() => ({
     nombre: '', genero: '', relacion: 'otros', presupuesto: '', foto: null, gustos: {},
     ...inicial,
-    eventos: (inicial?.eventos?.length ? inicial.eventos : [{ id: nuevoId(), tipo: 'Cumpleaños', fecha: '' }]).map((e) => ({ ...e, ...partir(e.fecha) })),
+    eventos: (inicial?.eventos?.length ? inicial.eventos : [{ id: nuevoId(), tipo: 'Cumpleaños', fecha: '' }]).map((e) => ({ ...e })),
   }));
   const [error, setError] = useState('');
   const [guardando, setGuardando] = useState(false);
@@ -218,7 +215,7 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
     if (msg) return;
     setGuardando(true);
     try {
-      await onGuardar({ ...p, eventos: p.eventos.map(({ id, tipo, nombre }, i) => ({ id, tipo: i === 0 ? 'Cumpleaños' : tipo, nombre, fecha: unir(p.eventos[i]) })) });
+      await onGuardar({ ...p, eventos: p.eventos.map(({ id, tipo, nombre, fecha }, i) => ({ id, tipo: i === 0 ? 'Cumpleaños' : tipo, nombre, fecha })) });
       onCerrar();
     } catch {
       setError('No pudimos guardar los cambios. Intenta de nuevo.');
@@ -226,10 +223,24 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
       setGuardando(false);
     }
   };
-  const subirFoto = async (archivo) => {
+  // La foto pasa por el recorte (otra hoja encima de esta) antes de subirse.
+  const [recorte, setRecorte] = useState(null);
+  const elegirFoto = (archivo) => {
     if (!archivo?.type?.startsWith('image/')) { setError('El archivo debe ser una imagen.'); return; }
+    setError('');
+    setRecorte(URL.createObjectURL(archivo));
+  };
+  const subirFoto = async (blob) => {
     setSubiendo(true);
-    try { const url = await onSubirFoto(archivo); setP((x) => ({ ...x, foto: url })); } catch { setError('No se pudo subir la foto. Inténtalo de nuevo.'); } finally { setSubiendo(false); }
+    try {
+      const url = await onSubirFoto(blob);
+      setP((x) => ({ ...x, foto: url }));
+      setRecorte(null);
+    } catch {
+      setError('No se pudo subir la foto. Inténtalo de nuevo.');
+    } finally {
+      setSubiendo(false);
+    }
   };
   return {
     pie: (
@@ -244,11 +255,20 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
     cuerpo: (
       <div className={s.formulario}>
         {onSubirFoto && (
+          <RecortarFoto
+            abierta={Boolean(recorte)}
+            src={recorte}
+            titulo="Recorta su foto"
+            onCancelar={() => setRecorte(null)}
+            onListo={subirFoto}
+          />
+        )}
+        {onSubirFoto && (
           <div className={s.fotoPersona}>
             <Avatar className={s.fotoAvatar} nombre={p.nombre} imagen={p.foto} letras={1}><Camera aria-hidden="true" /></Avatar>
             <div>
               <label className={s.subir}>
-                <input type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; subirFoto(f); }} />
+                <input type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; elegirFoto(f); }} />
                 {subiendo ? 'Subiendo…' : p.foto ? 'Cambiar foto' : 'Subir foto'}
               </label>
               {p.foto && <button type="button" className={s.quitarFoto} onClick={() => setP((x) => ({ ...x, foto: null }))}>Quitar foto</button>}
@@ -285,7 +305,11 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
                     <Campo
                       key={campo.id}
                       etiqueta={campo.etiqueta}
-                      opciones={campo.opciones && [{ valor: '', texto: 'Elige…' }, ...campo.opciones.map((o) => ({ valor: o, texto: o }))]}
+                      opciones={campo.opciones
+                        ? [{ valor: '', texto: 'Elige…', deshabilitada: true }, ...campo.opciones.map((o) => ({ valor: o, texto: o }))]
+                        : (campo.sugerencias || []).map((o) => ({ valor: o, texto: o }))}
+                      creable={!campo.opciones}
+                      placeholder={campo.opciones ? undefined : 'Escribe o elige una sugerencia'}
                       value={p.gustos[c.id]?.[campo.id] || ''}
                       onChange={(e) => setP((x) => ({ ...x, gustos: { ...x.gustos, [c.id]: { ...x.gustos[c.id], [campo.id]: e.target.value } } }))}
                     />
@@ -312,16 +336,19 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
               {i > 0 && e.tipo === 'Fecha Especial' && (
                 <Campo etiqueta="¿Qué se celebra?" value={e.nombre || ''} onChange={(ev) => ponerEvento(i, 'nombre', ev.target.value)} placeholder="Ej. Bautizo" />
               )}
-              <div className={s.filaFecha}>
-                <Campo etiqueta="Día" opciones={OPC_DIA} value={e.dia} onChange={(ev) => ponerEvento(i, 'dia', ev.target.value)} />
-                <Campo etiqueta="Mes" opciones={OPC_MES} value={e.mes} onChange={(ev) => ponerEvento(i, 'mes', ev.target.value)} />
-                <Campo etiqueta={i === 0 ? 'Año (opcional)' : 'Año (opcional)'} inputMode="numeric" maxLength={4} value={e.anio}
-                  onChange={(ev) => ponerEvento(i, 'anio', ev.target.value.replace(/\D/g, '').slice(0, 4))} />
-              </div>
+              <CampoFecha
+                etiqueta={i === 0 ? 'Fecha de su cumpleaños' : 'Fecha'}
+                valor={e.fecha}
+                onCambiar={(iso) => ponerEvento(i, 'fecha', iso)}
+                anioOpcional
+                vistaInicial={i === 0 ? 'anios' : 'dias'}
+                max={i === 0 ? new Date().toISOString().slice(0, 10) : undefined}
+                ayuda={i === 0 ? 'Si no sabes en qué año nació, marca «No sé el año».' : undefined}
+              />
             </div>
           ))}
           <Boton variante="contorno" tamano="sm" icono={<Plus aria-hidden="true" />}
-            onClick={() => setP((x) => ({ ...x, eventos: [...x.eventos, { id: nuevoId(), tipo: 'Aniversario', dia: '', mes: '', anio: '' }] }))}>
+            onClick={() => setP((x) => ({ ...x, eventos: [...x.eventos, { id: nuevoId(), tipo: 'Aniversario', fecha: '' }] }))}>
             Agregar otra fecha
           </Boton>
         </fieldset>

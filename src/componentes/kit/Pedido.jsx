@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useInView } from 'framer-motion';
-import { Check, Copy, CreditCard, Truck, Trash2, Gift, ChevronDown, Clock, Tag, Sparkles } from 'lucide-react';
+import { Check, Copy, CreditCard, Truck, Trash2, Gift, ChevronDown, Clock, Tag, Sparkles, Package } from 'lucide-react';
 import Boton from './Boton';
 import { Etiqueta, Moneda } from './Etiquetas';
 import { FotoProducto } from './piezas/FotoProducto';
@@ -40,7 +40,7 @@ export function SeguimientoPedido({ codigo, fecha, paso, total, items, pagoPendi
       <header className={s.cabeza}>
         <div className={s.miniaturas}>
           {items.slice(0, 3).map((it, i) => (
-            <FotoProducto key={i} className={s.miniatura} src={it.imagen} relleno="3px" />
+            <FotoProducto respaldo={<Package className={s.sinFoto} aria-hidden="true" />} key={i} className={s.miniatura} src={it.imagen} relleno="3px" />
           ))}
           {items.length > 3 && <span className={`${s.miniatura} ${s.miniaturaMas}`}>+{items.length - 3}</span>}
         </div>
@@ -132,7 +132,7 @@ export function SeguimientoPedido({ codigo, fecha, paso, total, items, pagoPendi
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.05 * i + 0.1, duration: 0.35, ease: EASE }}
               >
-                <FotoProducto className={s.detalleFoto} src={it.imagen} relleno="3px" />
+                <FotoProducto respaldo={<Package className={s.sinFoto} aria-hidden="true" />} className={s.detalleFoto} src={it.imagen} relleno="3px" />
                 <span className={s.detalleNombre}>{it.nombre}<small>{it.variante} · x{it.cantidad}</small></span>
                 <strong>{it.precio === 0 ? 'Gratis' : soles(it.precio * it.cantidad)}</strong>
               </motion.li>
@@ -157,7 +157,7 @@ export function ItemCarrito({
   const cambiar = onCantidad ?? setPropia;
   return (
     <div className={s.item}>
-      <FotoProducto como="div" className={s.itemImgCaja} src={imagen} relleno="8px" />
+      <FotoProducto respaldo={<Package className={s.sinFoto} aria-hidden="true" />} como="div" className={s.itemImgCaja} src={imagen} relleno="8px" />
       <div className={s.itemInfo}>
         <p className={s.itemNombre}>{nombre}</p>
         <p className={s.itemVariante}>{variante}</p>

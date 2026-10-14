@@ -3,7 +3,9 @@ import { ArrowLeft, IdCard, LogIn, LogOut, MapPin, Pencil, Plus, Settings, User,
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { Aviso, EstadoVacio, HojaInferior } from '../Feedback';
-import { Campo, Interruptor } from '../Formulario';
+import { Campo, Interruptor, CampoTelefono } from '../Formulario';
+import { CampoFecha } from '../Fecha';
+import { RecortarFoto } from '../piezas/RecortarFoto';
 import { Moneda } from '../Etiquetas';
 import { MenuCuenta } from '../MenusCabecera';
 import { BloqueSeccion } from '../Seccion';
@@ -186,7 +188,8 @@ export function validarPerfil(d) {
  *  - monedas, enEspera · urlInvitar, urlCanjear
  *  - whatsapp, onWhatsapp(activo): ofertas por WhatsApp (se guarda al tocar)
  *  - onGuardar(datos): promesa; si falla, su mensaje se muestra en la tarjeta
- *  - onCambiarFoto(archivo), onQuitarFoto, subiendoFoto
+ *  - onCambiarFoto(blob): promesa con la foto ya recortada (RecortarFoto, JPG
+ *    cuadrado) · onQuitarFoto: promesa, se confirma en la página · subiendoFoto
  *  - paises: [{ valor, texto, prefijo }] para el campo País
  *  - validar: reglas propias (por defecto validarPerfil)
  * "Cancelar" deja los datos como estaban (cada vez que se abre la edición,
@@ -201,6 +204,8 @@ export function PaginaPerfil({
   const [errores, setErrores] = useState({});
   const [error, setError] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const [recorte, setRecorte] = useState(null);
+  const [quitarFoto, setQuitarFoto] = useState(false);
   const editando = form !== null;
   const pais = paises.find((p) => p.valor === (perfil.pais || 'PE')) || paises[0];
   const completo = Boolean(perfil.documento && perfil.telefono);
@@ -238,7 +243,8 @@ export function PaginaPerfil({
   };
 
   const peruForm = form?.pais === 'PE';
-  const prefijoForm = paises.find((p) => p.valor === form?.pais)?.prefijo;
+  const paisForm = paises.find((p) => p.valor === form?.pais) || paises[0];
+  const opcionesPais = paises.map((p) => ({ ...p, detalle: p.prefijo, icono: <span className={s.codigoPais}>{p.valor}</span> }));
 
   return (
     <>
@@ -247,9 +253,29 @@ export function PaginaPerfil({
         email={perfil.email}
         avatar={perfil.avatar}
         completo={completo}
-        onCambiarFoto={onCambiarFoto}
-        onQuitarFoto={onQuitarFoto}
+        onCambiarFoto={onCambiarFoto && ((archivo) => setRecorte(URL.createObjectURL(archivo)))}
+        onQuitarFoto={onQuitarFoto && (() => setQuitarFoto(true))}
         subiendo={subiendoFoto}
+      />
+      {quitarFoto && (
+        <Aviso
+          tipo="aviso"
+          titulo="¿Quitar tu foto de perfil?"
+          accion={(
+            <span className={s.botonesAviso}>
+              <Boton tamano="sm" variante="fantasma" onClick={() => setQuitarFoto(false)}>Cancelar</Boton>
+              <Boton tamano="sm" variante="peligro" onClick={async () => { await onQuitarFoto(); setQuitarFoto(false); }}>Quitar foto</Boton>
+            </span>
+          )}
+        >
+          Se verán tus iniciales en su lugar.
+        </Aviso>
+      )}
+      <RecortarFoto
+        abierta={Boolean(recorte)}
+        src={recorte}
+        onCancelar={() => setRecorte(null)}
+        onListo={async (blob) => { await onCambiarFoto(blob); setRecorte(null); }}
       />
       <div className={s.perfilRejilla}>
         <Estadistica
@@ -272,7 +298,7 @@ export function PaginaPerfil({
             <form className={s.formulario} onSubmit={guardar} noValidate>
               <Campo etiqueta="Nombre completo" value={form.nombre} onChange={cambiar('nombre')} error={errores.nombre} autoComplete="name" />
               {paises.length > 1 && (
-                <Campo etiqueta="País" opciones={paises} value={form.pais} onChange={cambiar('pais')} />
+                <Campo etiqueta="País" opciones={opcionesPais} value={form.pais} onChange={cambiar('pais')} buscable={paises.length > 6} />
               )}
               <div className={s.fila}>
                 {peruForm && (
@@ -289,16 +315,21 @@ export function PaginaPerfil({
                 />
               </div>
               <div className={s.fila}>
-                <Campo
-                  etiqueta="Celular"
-                  value={form.telefono}
-                  onChange={cambiar('telefono')}
+                <CampoTelefono
+                  pais={paisForm?.valor}
+                  paises={[paisForm]}
+                  valor={form.telefono}
+                  onCambiar={(v) => { setForm((f) => ({ ...f, telefono: v })); setErrores((x) => ({ ...x, telefono: undefined })); }}
                   error={errores.telefono}
-                  inputMode="tel"
-                  autoComplete="tel-national"
-                  icono={prefijoForm && <span className={s.prefijo}>{prefijoForm}</span>}
                 />
-                <Campo etiqueta="Fecha de nacimiento" type="date" value={form.cumpleanos} onChange={cambiar('cumpleanos')} ayuda="Para saludarte en tu día." />
+                <CampoFecha
+                  etiqueta="Fecha de nacimiento"
+                  valor={form.cumpleanos}
+                  onCambiar={(v) => setForm((f) => ({ ...f, cumpleanos: v }))}
+                  max={new Date().toISOString().slice(0, 10)}
+                  vistaInicial="anios"
+                  ayuda="Para saludarte en tu día."
+                />
               </div>
               {error && <Aviso tipo="error" compacto>{error}</Aviso>}
               <div className={s.botonesForm}>
@@ -508,7 +539,7 @@ export function PaginaDirecciones({
                   <Campo etiqueta="Documento" opciones={DOCS_DIRECCION} value={form.tipoDocumento} onChange={cambiar('tipoDocumento')} />
                   <Campo etiqueta="Número" value={form.documento} onChange={cambiar('documento')} error={errores.documento} />
                 </div>
-                <Campo etiqueta="Celular" value={form.telefono} onChange={cambiar('telefono')} error={errores.telefono} inputMode="tel" />
+                <CampoTelefono valor={form.telefono} onCambiar={(v) => cambiar('telefono')({ target: { value: v } })} error={errores.telefono} />
               </>
             ) : (
               <div className={s.destinatario}>

@@ -611,6 +611,8 @@
 .pista {
   position: relative;
   height: 10px;
+  /* Aire para el camión (o el check) de la punta: no se sale de la caja. */
+  margin-inline: 4px 14px;
   border-radius: 999px;
   background: rgba(124, 58, 237, 0.14);
 }
@@ -906,4 +908,13 @@
   .paso::after {
     transition: none;
   }
+}
+
+/* Sin foto (producto sin imagen): la caja con el ícono, centrado. */
+.sinFoto {
+  display: block;
+  width: 45%;
+  height: 45%;
+  margin: 27.5%;
+  color: var(--color-text-muted);
 }

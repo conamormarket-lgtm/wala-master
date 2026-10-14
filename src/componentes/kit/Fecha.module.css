@@ -1,0 +1,201 @@
+/* Botón del campo (vive dentro de la caja de Campo). */
+.disparador {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  height: 46px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+}
+
+.valor,
+.vacio {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vacio {
+  color: var(--color-text-muted);
+  opacity: 0.8;
+}
+
+.flechaCampo {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.girada {
+  transform: rotate(180deg);
+}
+
+/* ── Calendario ──────────────────────────────────────────── */
+.calendario {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+}
+
+.cabeza {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.flecha,
+.titulo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.flecha {
+  width: 40px;
+}
+
+.flecha:disabled {
+  visibility: hidden;
+}
+
+.titulo {
+  gap: 0.3rem;
+  font-family: var(--fuente-marca);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.titulo svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--primary-color);
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.flecha:hover,
+.titulo:hover {
+  background: var(--color-hover);
+}
+
+.flecha svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.semana,
+.dias {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.15rem;
+}
+
+.semana span {
+  padding: 0.2rem 0;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.dia,
+.celdaGrande {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color var(--dur-rapida) ease, transform var(--dur-rapida) ease;
+}
+
+.dia {
+  aspect-ratio: 1;
+  min-height: 38px;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.celdaGrande {
+  min-height: 46px;
+  border-radius: 14px;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.rejillaGrande {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.dia:hover,
+.celdaGrande:hover {
+  background: var(--color-hover);
+}
+
+.dia:active,
+.celdaGrande:active {
+  transform: scale(0.92);
+}
+
+.dia:focus-visible,
+.celdaGrande:focus-visible,
+.flecha:focus-visible,
+.titulo:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 1px;
+}
+
+.dia:disabled,
+.celdaGrande:disabled {
+  cursor: default;
+  opacity: 0.3;
+}
+
+/* Hoy: un aro punteado (como los sellos). */
+.hoy {
+  box-shadow: inset 0 0 0 1.5px var(--violet-300, #c4b5fd);
+}
+
+.elegida,
+.elegida:hover {
+  background: var(--degradado-logo);
+  color: #fff;
+  font-weight: 800;
+  box-shadow: 0 6px 12px -8px rgba(91, 33, 182, 0.8);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flechaCampo,
+  .titulo svg,
+  .dia,
+  .celdaGrande {
+    transition: none;
+  }
+}

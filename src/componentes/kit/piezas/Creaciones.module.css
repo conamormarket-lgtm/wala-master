@@ -314,8 +314,14 @@
   gap: 0.35rem;
 }
 
-/* "Comprar" (o "Continuar") ocupa lo que queda: todas las tarjetas igual. */
-.acciones > :last-child {
+.acciones > * {
+  flex-shrink: 0;
+}
+
+/* "Comprar" (o "Continuar") ocupa lo que queda: todas las tarjetas igual.
+   Si solo está el pincel (producto que ya no está), queda de su tamaño. */
+.acciones > :last-child:not(:first-child),
+.borrador .acciones > :only-child {
   flex: 1;
 }
 
@@ -324,9 +330,10 @@
   opacity: 0.7;
 }
 
-/* Una sola columna en el celular: la tarjeta en horizontal (foto a la
-   izquierda), así entra todo sin cortar. */
-@container creacion (min-width: 280px) and (max-width: 520px) {
+/* Tarjeta de lista (Mis creaciones: una columna en el celular, dos en
+   escritorio): en horizontal, la foto a la izquierda y todo entra sin cortar.
+   Angosta (borradores en carrusel), vertical. */
+@container creacion (min-width: 280px) {
   .caja {
     flex-direction: row;
   }
@@ -342,6 +349,10 @@
     right: 8px;
     bottom: 48px;
     left: 8px;
+  }
+
+  .fotoMarco:not(:has(.girar, .lados)) .etiquetas {
+    bottom: 10px;
   }
 
   .etiquetas > :nth-child(n + 2) {
