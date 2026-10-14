@@ -2236,17 +2236,20 @@ const CrearStudioPage = () => {
       if (!espacioRef.current) mano(true);
     };
     const alSoltar = (e) => { if (e.code === 'Space' && espacioRef.current) mano(false); };
-    const alSalir = () => { if (espacioRef.current) mano(false); };
+    const alSalir = () => { if (espacioRef.current && fabricRef.current === lienzo) mano(false); };
     const sinAutoDesplazar = (e) => { if (e.button === 1) e.preventDefault(); };
     window.addEventListener('keydown', alApretar);
     window.addEventListener('keyup', alSoltar);
     window.addEventListener('blur', alSalir);
-    lienzo.upperCanvasEl.addEventListener('mousedown', sinAutoDesplazar);
+    // Se guarda ahora: al salir del estudio, fabric ya soltó el lienzo cuando
+    // corre esta limpieza (leerlo de lienzo rompía la página al ir al combo).
+    const superficie = lienzo.upperCanvasEl;
+    superficie?.addEventListener('mousedown', sinAutoDesplazar);
     return () => {
       window.removeEventListener('keydown', alApretar);
       window.removeEventListener('keyup', alSoltar);
       window.removeEventListener('blur', alSalir);
-      lienzo.upperCanvasEl.removeEventListener('mousedown', sinAutoDesplazar);
+      superficie?.removeEventListener('mousedown', sinAutoDesplazar);
     };
   }, [listo]);
 
