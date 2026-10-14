@@ -27,39 +27,52 @@ export const pastel = (k) => PASTELES[((k % PASTELES.length) + PASTELES.length) 
 export const ACENTOS = ['#c4b5fd', '#f9a8d4', '#fcd34d', '#5eead4', '#7dd3fc'];
 export const acento = (k) => ACENTOS[((k % ACENTOS.length) + ACENTOS.length) % ACENTOS.length];
 
-/** Forma exacta de la etiqueta del logo (public/logo-wala.svg, tagBaseGlobal). */
-const ETIQUETA_LOGO = 'M 32 42 L 28 88 C 27 92 30 94 34 93 L 85 80 C 89 79 91 76 89 72 L 76 18 C 75 13 68 11 65 14 L 36 34 C 32 37 31 40 32 42 Z';
+/*
+ * El logo actual de Walá, siempre desde sus imágenes oficiales (pintadas por
+ * máscara, así toman el color que haga falta):
+ *  - la etiqueta: /assets/marca/splash-etiqueta.webp (la del splash);
+ *  - el logo entero: /assets/marca/logo-header-v2.webp (el de la cabecera),
+ *    con la W de la etiqueta en logo-header-huecos-v2.webp.
+ * La W va calada: por ella se ve el fondo (blanco en la tienda, violeta en un
+ * panel de la marca), como en el logo real. Antes se dibujaban a mano en SVG
+ * y no eran iguales al logo.
+ */
 
 /**
  * Isotipo: la etiqueta con la W. `tono` 'color' (degradado del logo),
  * 'blanco' (sobre fondos de color) o 'actual' (currentColor).
+ *  - tamano: el ancho en px (el alto sale de la etiqueta, 246 × 330)
+ *  - titulo: si se pasa, se anuncia como imagen ("Walá")
  */
 export function IsoWala({ tamano = 32, tono = 'color', className, titulo }) {
-  const id = React.useId().replace(/:/g, '');
-  const relleno = tono === 'color' ? `url(#g${id})` : tono === 'blanco' ? '#fff' : 'currentColor';
-  const trazo = tono === 'blanco' ? '#5b21b6' : '#fff';
   return (
-    <svg viewBox="20 -6 80 104" width={tamano} height={tamano * 1.3} className={className} role={titulo ? 'img' : undefined} aria-label={titulo} aria-hidden={titulo ? undefined : true}>
-      <defs>
-        <linearGradient id={`g${id}`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#a855f7" />
-          <stop offset="1" stopColor="#5b21b6" />
-        </linearGradient>
-      </defs>
-      <path d="M 68 20 C 72 -2, 98 0, 85 28" stroke={relleno} strokeWidth="6" strokeLinecap="round" fill="none" />
-      <path d={ETIQUETA_LOGO} fill={relleno} />
-      <circle cx="67" cy="23" r="6.5" fill={trazo} />
-      <path d="M 38 42 L 43 78 L 54 52 L 64 72 L 72 38" fill="none" stroke={trazo} strokeWidth="11" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <span
+      className={[s.iso, s[`iso_${tono}`], className].filter(Boolean).join(' ')}
+      style={{ width: tamano }}
+      role={titulo ? 'img' : undefined}
+      aria-label={titulo}
+      aria-hidden={titulo ? undefined : true}
+    />
   );
 }
 
-/** Logo completo: isotipo + WALÁ con la letra del logo. */
+/**
+ * Logo completo (etiqueta + WALÁ con la etiquetita de tilde), el mismo de la
+ * cabecera. `tono` 'color' (degradado, con la W blanca) o 'blanco' (sobre
+ * fondos de color: la W deja ver el fondo).
+ *  - tamano: escala del logo (30 ≈ el alto de la etiqueta; el logo mide
+ *    1,3 veces eso de alto y lo ancho que le toque, 431 × 168)
+ */
 export function LogoWala({ tamano = 30, tono = 'color', className }) {
   return (
-    <span className={[s.logo, tono === 'blanco' && s.logoBlanco, className].filter(Boolean).join(' ')} style={{ '--logo': `${tamano}px` }}>
-      <IsoWala tamano={tamano} tono={tono} />
-      <span className={s.logoTexto}>WALÁ</span>
+    <span
+      className={[s.logo, tono === 'blanco' && s.logoBlanco, className].filter(Boolean).join(' ')}
+      style={{ '--logo': `${tamano}px` }}
+      role="img"
+      aria-label="Walá"
+    >
+      <span className={s.logoForma} aria-hidden="true" />
+      {tono !== 'blanco' && <span className={s.logoHuecos} aria-hidden="true" />}
     </span>
   );
 }
