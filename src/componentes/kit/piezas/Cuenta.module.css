@@ -9,6 +9,7 @@
 
 .cabezaTextos {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   flex: 1 1 14rem;
   gap: 0.2rem;
   min-width: 0;
@@ -80,6 +81,7 @@
 /* ── Tarjeta ─────────────────────────────────────────────── */
 .tarjeta {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.1rem;
   min-width: 0;
   padding: clamp(1rem, 0.8rem + 1vw, 1.5rem);
@@ -93,9 +95,17 @@
   border-bottom: 1px dashed var(--color-border);
 }
 
+/* En la página más angosta (320px), las tarjetas con menos relleno. */
+@container pagina (max-width: 300px) {
+  .tarjeta {
+    padding: 0.85rem;
+  }
+}
+
 /* ── Datos en filas ──────────────────────────────────────── */
 .datos {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   margin: 0;
 }
 
@@ -165,6 +175,7 @@
 
 .cifraTextos {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.1rem;
   min-width: 0;
 }
@@ -248,12 +259,14 @@
 /* ── Accesos (resumen de la cuenta) ──────────────────────── */
 .accesos {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.4rem;
   container-type: inline-size;
 }
 
 .accesosGrupo {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.6rem;
 }
 
@@ -327,13 +340,24 @@
 
 .accesoTexto {
   display: -webkit-box;
+  max-width: 100%;
   overflow: hidden;
+  hyphens: auto;
+  overflow-wrap: break-word;
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.25;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
+}
+
+/* Muy angosto (teléfonos de 320px): tres por fila, para que los nombres
+   largos ("Mis direcciones") entren sin partirse. */
+@container (max-width: 300px) {
+  .accesosLista {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 /* Ancho: cada acceso en fila (sello a la izquierda, nombre al lado). */
@@ -476,6 +500,7 @@
 .identidadTextos {
   position: relative;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.3rem;
   min-width: 0;
 }
@@ -545,6 +570,7 @@
 /* ── Elegir una opción ───────────────────────────────────── */
 .eleccion {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.45rem;
 }
 
@@ -592,6 +618,7 @@
 
 .opcionTextos {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   flex: 1;
   min-width: 0;
   font-weight: 600;

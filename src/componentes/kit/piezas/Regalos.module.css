@@ -1,0 +1,365 @@
+/* ── Persona ─────────────────────────────────────────────── */
+.persona,
+.festiva {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+  min-width: 0;
+  padding: 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: var(--color-surface);
+}
+
+.cabeza,
+.festivaCabeza {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border: 2px dashed var(--violet-300, #c4b5fd);
+  font-family: var(--fuente-marca);
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.quien {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  flex: 1;
+  min-width: 0;
+}
+
+.quien h3 {
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.08rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.festiva .quien h3 {
+  white-space: normal;
+}
+
+.quien p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.quien p strong {
+  color: var(--color-text);
+}
+
+.botones {
+  display: inline-flex;
+  gap: 0.2rem;
+}
+
+.icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.icono:hover {
+  background: var(--color-hover);
+  color: var(--primary-color);
+}
+
+.peligro:hover {
+  background: var(--danger-soft);
+  color: var(--danger-hover);
+}
+
+.icono svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.icono:focus-visible,
+.textoBoton:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+.confirmar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 14px;
+  background: var(--danger-soft);
+}
+
+.confirmar p {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.confirmar span {
+  display: inline-flex;
+  gap: 0.3rem;
+  margin-left: auto;
+}
+
+/* Fechas de la persona */
+.fechas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fechas li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.15rem 0.55rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 12px;
+  background: var(--color-hover);
+  font-size: 0.86rem;
+}
+
+.fechas li > svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--primary-color);
+}
+
+.festivaFila > svg {
+  color: var(--color-text-muted) !important;
+}
+
+.fechaNombre {
+  overflow: hidden;
+  color: var(--color-text);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fechaDia {
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+/* La etiqueta de cuánto falta baja a su propia línea. */
+.fechas li > :last-child:not(.fechaDia) {
+  grid-column: 2 / -1;
+  justify-self: start;
+}
+
+/* Paquete e ideas */
+.paquete,
+.ideas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+}
+
+.paquete {
+  padding: 0.85rem;
+  border: 1px dashed var(--violet-300, #c4b5fd);
+  border-radius: 6px 18px 18px 18px;
+}
+
+:global([data-theme='dark']) .paquete {
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+.paquete h4,
+.ideas h4,
+.festivaPersona h4 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.paquete h4 svg,
+.ideas h4 svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--primary-color);
+}
+
+.paquete h4 strong {
+  margin-left: auto;
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+}
+
+.paqueteLista,
+.ideasLista {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.paqueteLista li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.paqueteFoto,
+.ideaFoto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  color: var(--color-text-muted);
+}
+
+.idea {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.ideaTextos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+.ideaTextos small {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ideaNombre,
+.ideaNombre:hover {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ideaNombre:hover {
+  color: var(--primary-color);
+}
+
+.ideaPrecio {
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 0.9rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.nota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.textoBoton {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-color);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.masRegalos,
+.masRegalos:hover {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  justify-self: start;
+  color: var(--primary-color);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+:global([data-theme='dark']) .masRegalos,
+:global([data-theme='dark']) .textoBoton {
+  color: var(--violet-300);
+}
+
+.masRegalos svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.masRegalos:hover svg {
+  transform: translateX(3px);
+}
+
+/* ── Fecha festiva ───────────────────────────────────────── */
+.festiva {
+  border-style: dashed;
+  border-color: var(--violet-300, #c4b5fd);
+  background: color-mix(in srgb, var(--primary-light) 40%, var(--color-surface));
+}
+
+:global([data-theme='dark']) .festiva {
+  border-color: rgba(167, 139, 250, 0.35);
+  background: rgba(167, 139, 250, 0.06);
+}
+
+.festivaPersona,
+.festivaVacia {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+}
+
+.festivaVacia {
+  justify-items: start;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .masRegalos svg {
+    transition: none;
+  }
+}

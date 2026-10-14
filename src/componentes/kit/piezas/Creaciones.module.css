@@ -1,0 +1,402 @@
+/* Creación guardada: frente/espalda, etiquetas y acciones. */
+.creacion {
+  container: creacion / inline-size;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: var(--color-surface);
+  transition: border-color var(--dur-rapida) ease;
+}
+
+.creacion:hover {
+  border-color: var(--violet-300);
+}
+
+.caja {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.fotoMarco {
+  position: relative;
+}
+
+.foto {
+  position: relative;
+  aspect-ratio: 1;
+}
+
+.espalda {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  opacity: 0;
+  transition: opacity var(--dur-media) ease;
+}
+
+/* Con ratón: la espalda al pasar por la tarjeta. */
+@media (hover: hover) and (pointer: fine) {
+  .creacion:hover .conEspalda .espalda {
+    opacity: 1;
+  }
+
+  .girar {
+    display: none !important;
+  }
+}
+
+.verEspalda .espalda {
+  opacity: 1;
+}
+
+.sinFoto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--color-text-muted);
+}
+
+.sinFoto svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+.etiquetas {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  left: 12px;
+  right: 56px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.eliminar {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-surface);
+  box-shadow: 0 4px 12px -6px rgba(30, 17, 64, 0.35);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background-color var(--dur-rapida) ease, color var(--dur-rapida) ease;
+}
+
+.eliminar:hover {
+  background: var(--danger-soft);
+  color: var(--danger-hover);
+}
+
+.eliminar svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.girar,
+.lados {
+  position: absolute;
+  z-index: 2;
+  bottom: 10px;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 32px;
+  padding: 0 0.7rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-surface);
+  box-shadow: 0 4px 12px -6px rgba(30, 17, 64, 0.35);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.girar {
+  cursor: pointer;
+}
+
+.girar svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.eliminar:focus-visible,
+.girar:focus-visible,
+.lapiz:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+/* Confirmar eliminar: una capa sobre la foto. */
+.confirmar {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  animation: aparecer var(--dur-media) var(--ease-signature);
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.confirmar p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.confirmar p strong {
+  color: var(--color-text);
+  font-size: 0.92rem;
+}
+
+.confirmarBotones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  margin-top: 0.3rem;
+}
+
+.cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  flex: 1;
+  gap: 0.3rem;
+  align-content: start;
+  padding: 0.85rem 1rem 0.95rem;
+}
+
+.nombre {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.nombre > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lapiz {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.lapiz:hover {
+  background: var(--color-hover);
+  color: var(--primary-color);
+}
+
+.lapiz svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.renombrar {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.renombrarCampo {
+  flex: 1;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 0.7rem;
+  border: 1.5px solid var(--violet-400);
+  border-radius: 10px;
+  background: var(--color-surface) !important;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  outline: none;
+}
+
+.producto,
+.fecha {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.punto {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 50%;
+}
+
+.fecha svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.pie {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.precios {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.precios strong {
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.precios s {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.acciones {
+  display: flex;
+  gap: 0.35rem;
+}
+
+/* "Comprar" (o "Continuar") ocupa lo que queda: todas las tarjetas igual. */
+.acciones > :last-child {
+  flex: 1;
+}
+
+.noDisponible .foto {
+  filter: grayscale(0.85);
+  opacity: 0.7;
+}
+
+/* Una sola columna en el celular: la tarjeta en horizontal (foto a la
+   izquierda), así entra todo sin cortar. */
+@container creacion (min-width: 280px) and (max-width: 520px) {
+  .caja {
+    flex-direction: row;
+  }
+
+  .fotoMarco {
+    flex: 0 0 40%;
+    min-width: 0;
+  }
+
+  /* La foto es angosta: una sola etiqueta, abajo (arriba está el tacho). */
+  .etiquetas {
+    top: auto;
+    right: 8px;
+    bottom: 48px;
+    left: 8px;
+  }
+
+  .etiquetas > :nth-child(n + 2) {
+    display: none;
+  }
+
+  /* La foto llena su lado (alto de la tarjeta), sin estirar la fila. */
+  .foto {
+    position: absolute;
+    inset: 0;
+    aspect-ratio: auto;
+  }
+
+  .girar {
+    left: 8px;
+    bottom: 8px;
+  }
+
+  .cuerpo {
+    min-width: 0;
+  }
+}
+
+/* Tarjeta angosta (dos columnas en el celular): una sola etiqueta sobre la
+   foto, menos aire y "Comprar" sin ícono para que entre entero. */
+@container creacion (max-width: 230px) {
+  .etiquetas > :nth-child(n + 2) {
+    display: none;
+  }
+
+  .cuerpo {
+    padding: 0.7rem 0.75rem 0.8rem;
+  }
+
+  .nombre {
+    font-size: 0.92rem;
+  }
+
+  .acciones > :last-child svg {
+    display: none;
+  }
+
+  .girar {
+    padding: 0 0.55rem;
+    font-size: 0.7rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .espalda,
+  .creacion {
+    transition: none;
+  }
+
+  .confirmar {
+    animation: none;
+  }
+}

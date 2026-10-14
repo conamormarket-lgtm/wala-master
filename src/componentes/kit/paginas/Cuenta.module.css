@@ -20,12 +20,14 @@
 .contenido {
   container: pagina / inline-size;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   min-width: 0;
 }
 
 .pagina {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
   min-width: 0;
   animation: entrar var(--dur-lenta, 500ms) var(--ease-signature) both;
@@ -138,6 +140,7 @@
 .formulario {
   container-type: inline-size;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.9rem;
 }
 
@@ -193,6 +196,7 @@
 
 .botonesCifra {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.4rem;
   width: 100%;
 }
@@ -248,6 +252,7 @@
 
 .destinatarioTexto {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   line-height: 1.35;
 }

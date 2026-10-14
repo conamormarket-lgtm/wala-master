@@ -42,6 +42,7 @@
 
 .recompensaCuerpo {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   flex: 1;
   gap: 0.3rem;
   align-content: start;
@@ -367,6 +368,7 @@
 
 .misionTextos {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.15rem;
   min-width: 0;
 }
@@ -434,6 +436,7 @@
 .nivel {
   --bp-relleno: var(--degradado-logo);
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   min-width: 0;
   padding: clamp(1rem, 0.8rem + 1vw, 1.5rem);
@@ -451,6 +454,7 @@
 
 .nivelTextos {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   flex: 1 1 10rem;
   min-width: 0;
 }
@@ -516,6 +520,7 @@
 
 .escalonTextos {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   font-size: 0.84rem;
   font-weight: 700;

@@ -86,8 +86,9 @@
 
 .codigo {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0 0.25rem;
   margin: 0;
   font-size: 0.92rem;
   white-space: nowrap;

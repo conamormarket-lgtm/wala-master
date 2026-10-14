@@ -1,0 +1,307 @@
+/* Páginas de Personalización (dentro de MarcoCuenta: el contenedor "pagina"). */
+.rejilla,
+.rejillaProductos,
+.personas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Productos: dos columnas en el celular, como la tienda; más donde caben.
+   Creaciones: una en el celular (la tarjeta va en horizontal), luego 2 y 3. */
+.rejillaProductos {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.rejilla {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@container pagina (min-width: 560px) {
+  .rejilla {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container pagina (min-width: 640px) {
+  .rejillaProductos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+@container pagina (min-width: 760px) {
+  .rejilla {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container pagina (min-width: 900px) {
+  .rejillaProductos {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.rejilla > li,
+.personas > li {
+  display: flex;
+  min-width: 0;
+}
+
+.rejilla > li > *,
+.personas > li > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.personas {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@container pagina (min-width: 760px) {
+  .personas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.esqueleto {
+  border-radius: 20px;
+  background: var(--color-hover);
+  animation: latir 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes latir {
+  to {
+    opacity: 0.55;
+  }
+}
+
+.borradores {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* Lista de deseos */
+.accionesLista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@container pagina (max-width: 520px) {
+  .accionesLista > * {
+    flex: 1 1 100%;
+  }
+}
+
+.deseo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.4rem;
+  align-content: start;
+  min-width: 0;
+}
+
+.guardado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0 0.3rem;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+}
+
+.guardado svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  color: #e11d48;
+}
+
+.noDisponible {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+  justify-items: start;
+  padding: 0.75rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface);
+}
+
+.noDisponible img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 14px;
+  background: var(--escenario-foto, #f5f4f8);
+  mix-blend-mode: multiply;
+  object-fit: contain;
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.noDisponible p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.noDisponible p strong {
+  color: var(--color-text);
+  font-size: 0.86rem;
+}
+
+/* Formulario de una persona (hoja inferior) */
+.formulario {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+.fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+@container (min-width: 480px) {
+  .fila {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.filaFecha {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 0.5rem;
+}
+
+.fotoPersona {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.fotoPersona > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: 0.15rem;
+}
+
+.fotoPersona small {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.fotoAvatar {
+  width: 64px;
+  height: 64px;
+  border: 2px dashed var(--violet-300, #c4b5fd);
+  font-family: var(--fuente-marca);
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+
+.fotoAvatar svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.subir,
+.quitarFoto {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.quitarFoto {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+:global([data-theme='dark']) .subir {
+  color: var(--violet-300);
+}
+
+.grupoForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.9rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 16px;
+}
+
+.grupoForm legend {
+  padding: 0 0.35rem;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.gusto {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+}
+
+.evento {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.eventoCabeza {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.eventoCabeza > :first-child {
+  flex: 1;
+}
+
+.eventoCabeza strong {
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.pieForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.botonesForm {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto {
+    animation: none;
+  }
+}

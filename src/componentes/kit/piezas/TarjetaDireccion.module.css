@@ -29,6 +29,7 @@
 
 .quien {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
 }
 
@@ -57,6 +58,7 @@
 
 .lineas {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   flex: 1;
   gap: 0.15rem;
   min-width: 0;

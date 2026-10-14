@@ -20,3 +20,5 @@ export { CabezaCuenta, TarjetaCuenta, ListaDatos, Estadistica, AccesosCuenta, Id
 export { TarjetaDireccion } from './TarjetaDireccion';
 export { TarjetaRecompensa, TarjetaCupon, TarjetaMision, NivelCuenta, NIVELES } from './Recompensas';
 export { FormaGanar, EnlaceInvitacion, FilaReferido, DetallePedidoReferido } from './Referidos';
+export { TarjetaCreacion } from './Creaciones';
+export { IdeaRegalo, TarjetaPersonaRegalo, AvisoFestiva, faltanDias, textoFaltan, diaYMes } from './Regalos';

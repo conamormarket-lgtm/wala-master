@@ -47,6 +47,9 @@ const ACCIONES = {
  *  - piezas: [{ nombre, imagen }] de un combo → etiqueta "Combo" y, con
  *    ratón, qué trae. Si el combo no trae `imagen`, sus piezas van como cartas.
  *
+ *  - deseado, onDeseo(nuevo): el corazón controlado (WishlistContext); sin
+ *    `deseado`, la tarjeta lo recuerda sola.
+ *
  * Etiquetas de la foto, por importancia: descuento, Combo, Nuevo, Tu diseño.
  * En una tarjeta angosta (2 columnas del celular) van en tamaño chico (para no
  * llegar al corazón) y solo las dos primeras; si "Nuevo" queda fuera, pasa a la
@@ -73,10 +76,15 @@ export default function TarjetaProducto({
   url = '#producto',
   accion = 'agregar',
   onAgregar,
+  deseado: deseadoProp,
+  onDeseo,
 }) {
   const ref = useRef(null);
   const temporizador = useRef(0);
-  const [deseado, setDeseado] = useState(false);
+  // Favorito: controlado si llega `deseado` (la lista de deseos real); si
+  // no, la tarjeta lo recuerda sola (demo).
+  const [deseadoLocal, setDeseadoLocal] = useState(false);
+  const deseado = deseadoProp !== undefined ? Boolean(deseadoProp) : deseadoLocal;
   const [latidos, setLatidos] = useState(0);
   const [agregado, setAgregado] = useState(false);
   const [sumas, setSumas] = useState(0);
@@ -110,7 +118,8 @@ export default function TarjetaProducto({
 
   const alternarDeseo = () => {
     if (!deseado) setLatidos((n) => n + 1);
-    setDeseado(!deseado);
+    if (deseadoProp === undefined) setDeseadoLocal(!deseado);
+    onDeseo?.(!deseado);
   };
 
   // Solo "agregar" (producto sin opciones) se marca como agregado en la

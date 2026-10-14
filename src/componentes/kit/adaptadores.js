@@ -612,3 +612,72 @@ export const misionDesdeServidor = (m = {}, acciones = {}) => {
     accion: a && !m.completed ? { texto: a.goLabel || 'Ir a hacerlo', url: a.path } : undefined,
   };
 };
+
+/** "Guardada hoy / ayer / hace N días" desde una fecha (Timestamp, ms o ISO). */
+const haceCuanto = (f, prefijo = 'Guardada') => {
+  const ms = typeof f === 'number' ? f : typeof f === 'string' ? Date.parse(f) : ((f?.seconds || f?._seconds || 0) * 1000);
+  if (!ms) return '';
+  const dias = Math.floor((Date.now() - ms) / 86400000);
+  if (dias <= 0) return `${prefijo} hoy`;
+  if (dias === 1) return `${prefijo} ayer`;
+  return `${prefijo} hace ${dias} días`;
+};
+
+/**
+ * Diseño guardado (services/designs) → TarjetaCreacion. Lo que sale del
+ * catálogo vivo va en `extra`: { precio, precioAntes, disponible, comprado }
+ * (MisCreacionesPage lo cruza con getProduct y usePedidos).
+ */
+export const creacionDesdeDiseno = (d = {}, extra = {}) => {
+  const deCrear = d.tipo === 'crear';
+  const vistas = d.vistasPrevias || [];
+  return {
+    id: d.id,
+    nombre: d.name,
+    imagen: vistas[0]?.url || d.imagenConjunta || d.previewUrl || null,
+    imagenEspalda: deCrear ? (vistas[1]?.url || null) : null,
+    producto: d.productName,
+    color: d.color ? { nombre: d.color.nombre, hex: d.color.hex } : undefined,
+    fecha: haceCuanto(d.updatedAt || d.createdAt),
+    publicada: d.comunidad === 'publicada',
+    combo: d.combo?.nombre,
+    lados: vistas.length > 1 ? 'Frente + Espalda' : undefined,
+    urlEditar: deCrear ? `/crear/${d.productId}?designId=${d.id}` : `/editor/${d.productId}?designId=${d.id}`,
+    urlComprar: deCrear ? `/creacion/${d.id}` : undefined,
+    ...extra,
+  };
+};
+
+const RELACION_TEXTO = {
+  pareja: 'Pareja', hijos: 'Hijo/a', padres: 'Padre/Madre', hermanos: 'Hermano/a',
+  sobrinos: 'Sobrino/a', primos: 'Primo/a', amigos: 'Amigo/a', otros: 'Otra persona',
+};
+
+/** Persona de userProfile.giftRecipients → PaginaFechas (sin las ideas: esas salen de useGiftCatalog). */
+export const personaDesdeRecipient = (r = {}) => ({
+  id: r.id,
+  nombre: r.name || '',
+  relacion: r.roleKey || 'otros',
+  relacionTexto: r.roleDisplay || RELACION_TEXTO[r.roleKey] || 'Otra persona',
+  genero: r.gender || '',
+  foto: r.photoUrl || null,
+  presupuesto: r.budget || '',
+  gustos: Object.fromEntries((r.selectedCategories || []).map((c) => [c, (r.categoryAnswers || {})[c] || {}])),
+  eventos: (r.events || []).map((e) => ({ id: e.id, tipo: e.type, nombre: e.customName || '', fecha: e.date || '' })),
+});
+
+/** Al revés: lo que guarda el formulario → el recipient de giftRecipients. */
+export const personaARecipient = (p = {}, id) => ({
+  id: p.id || id,
+  roleKey: p.relacion || 'otros',
+  roleDisplay: RELACION_TEXTO[p.relacion] || 'Otra persona',
+  name: String(p.nombre || '').trim(),
+  gender: p.genero || '',
+  photoUrl: p.foto || null,
+  budget: p.presupuesto || '',
+  selectedCategories: Object.keys(p.gustos || {}),
+  categoryAnswers: p.gustos || {},
+  events: (p.eventos || []).map((e) => ({
+    id: e.id, type: e.tipo, date: e.fecha, ...(e.tipo === 'Fecha Especial' ? { customName: e.nombre } : {}),
+  })),
+});

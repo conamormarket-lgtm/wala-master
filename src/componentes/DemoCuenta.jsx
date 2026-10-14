@@ -2,8 +2,10 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { User, Package, MapPin, Settings, Gift, Ticket, Trophy, Users, Sparkles, Heart, Calendar } from 'lucide-react';
 import {
   MarcoCuenta, PaginaCuentaInvitado, PaginaResumenCuenta, PaginaPerfil, PaginaDirecciones, PaginaAjustes, PaginaPedidos,
-  PaginaCatalogo, PaginaCupones, PaginaMisiones, PaginaReferidos,
+  PaginaCatalogo, PaginaCupones, PaginaMisiones, PaginaReferidos, PaginaCreaciones, PaginaListaDeseos, PaginaFechas,
 } from './kit';
+import POLERA from './demo/polera-fondo-blanco.jpg';
+import POLERA_ESPALDA from './demo/polera-fondo-blanco-espalda.jpg';
 import { volarMonedasGanadas } from '../utils/animations';
 import { DEPARTAMENTOS, getProvincias } from '../constants/peruUbigeo';
 import { distritosSugeridos, lugarLegible } from '../utils/ubicacionErp';
@@ -48,6 +50,9 @@ export const MODULOS_CUENTA = [
   { ruta: '/cuenta/cupones', texto: 'Mis cupones', n: 'C7', componente: 'PaginaCupones' },
   { ruta: '/cuenta/misiones', texto: 'Misiones', n: 'C8', componente: 'PaginaMisiones' },
   { ruta: '/cuenta/referidos', texto: 'Mis referidos', n: 'C9', componente: 'PaginaReferidos' },
+  { ruta: '/cuenta/creaciones', texto: 'Mis creaciones', n: 'C10', componente: 'PaginaCreaciones' },
+  { ruta: '/cuenta/wishlist', texto: 'Lista de deseos', n: 'C11', componente: 'PaginaListaDeseos' },
+  { ruta: '/cuenta/fechas-importantes', texto: 'Fechas importantes', n: 'C12', componente: 'PaginaFechas' },
 ];
 
 /** Estados para probar (chips de la demo). */
@@ -134,7 +139,42 @@ const gruposReferidosDemo = (fotos) => [
   },
 ];
 
-export function CuentaDemo({ ruta = '/cuenta', sesion, usuario, monedas, onMonedas, tema, onTema, onCerrarSesion, estados = [], toast, Parte, pedidos, fotos = [], onIrATienda }) {
+/* Personalización: creaciones (las fotos de la polera son de la demo del
+   estudio), deseos (productos reales) y fechas importantes. */
+const creacionesDemo = (fotos) => [
+  { id: 'd1', nombre: 'Mi polera con Kapi', imagen: POLERA, imagenEspalda: POLERA_ESPALDA, producto: 'Polera clásica', color: { nombre: 'Blanco', hex: '#ffffff' },
+    fecha: 'Guardada hace 3 días', precio: 59.9, comprado: true, publicada: true, urlEditar: '/crear/polera?designId=d1', urlComprar: '/creacion/d1' },
+  { id: 'd2', nombre: 'Para el equipo', imagen: POLERA, imagenEspalda: POLERA_ESPALDA, producto: 'Polera clásica', color: { nombre: 'Blanco', hex: '#ffffff' },
+    fecha: 'Guardada ayer', precio: 54.9, precioAntes: 64.9, combo: 'Pareja', urlEditar: '/crear/polera?designId=d2', urlComprar: '/creacion/d2' },
+  { id: 'd3', nombre: 'Regalo para papá', imagen: fotos[2]?.imagen, producto: fotos[2]?.nombre, fecha: 'Guardada hace 12 días', precio: 34.9,
+    lados: 'Frente', urlEditar: '/editor/taza?designId=d3', urlComprar: '/creacion/d3' },
+  { id: 'd4', nombre: 'Diseño de verano', imagen: fotos[0]?.imagen, producto: 'Polo descontinuado', fecha: 'Guardada hace 40 días', disponible: false, urlEditar: '/editor/x?designId=d4' },
+];
+const BORRADORES = [
+  { id: 'b1', nombre: 'Sin terminar', imagen: POLERA, producto: 'Polera clásica', fecha: 'Guardada hoy', urlEditar: '/crear/polera?borrador=b1' },
+  { id: 'b2', nombre: 'Idea para Carlos', imagen: POLERA_ESPALDA, producto: 'Polera clásica', fecha: 'Guardada ayer', urlEditar: '/crear/polera?borrador=b2' },
+];
+
+const CONJUNTOS = [
+  { id: 'anime', nombre: 'Anime', campos: [{ id: 'personaje', etiqueta: 'Personaje favorito', opciones: ['Goku', 'Luffy', 'Nezuko', 'Tanjiro'] }] },
+  { id: 'futbol', nombre: 'Fútbol', campos: [{ id: 'equipo', etiqueta: 'Equipo', opciones: ['Alianza Lima', 'Universitario', 'Sporting Cristal'] }] },
+];
+const ideasDe = (fotos, desde = 0) => fotos.slice(desde, desde + 2).map((f, k) => ({
+  id: `i${desde}${k}`, nombre: f.nombre, imagen: f.imagen, precio: [49.9, 34.9, 59.9][(desde + k) % 3], url: '/producto/x',
+  motivo: k ? 'Le gusta el anime' : 'Entra en tu presupuesto',
+}));
+const personasDemo = (fotos) => [
+  { id: 'per1', nombre: 'María', relacion: 'hermanos', genero: 'Femenino', presupuesto: '50a100', gustos: { anime: { personaje: 'Nezuko' } },
+    eventos: [{ id: 'e1', tipo: 'Cumpleaños', fecha: '1998-10-20' }],
+    festivas: [{ nombre: 'Navidad', fecha: '0000-12-25' }],
+    paquete: { total: 84.8, productos: fotos.slice(0, 2).map((f, k) => ({ nombre: f.nombre, imagen: f.imagen, precio: [49.9, 34.9][k], url: '/producto/x' })), quitados: 1 },
+    ideas: ideasDe(fotos, 1) },
+  { id: 'per2', nombre: 'Carlos', relacion: 'pareja', genero: 'Masculino',
+    eventos: [{ id: 'e2', tipo: 'Cumpleaños', fecha: '0000-03-08' }, { id: 'e3', tipo: 'Aniversario', fecha: '2021-11-02' }],
+    ideas: ideasDe(fotos, 0), ideasGenerales: true },
+];
+
+export function CuentaDemo({ ruta = '/cuenta', sesion, usuario, monedas, onMonedas, tema, onTema, onCerrarSesion, estados = [], toast, Parte, pedidos, fotos = [], deseos = [], onAgregar, onIrATienda }) {
   const incompleto = estados.includes('incompleto');
   const [perfil, setPerfil] = useState({
     nombre: usuario?.nombre, email: usuario?.email, avatar: null, pais: 'PE', tipoDocumento: 'DNI',
@@ -153,6 +193,11 @@ export function CuentaDemo({ ruta = '/cuenta', sesion, usuario, monedas, onMoned
   const [misiones, setMisiones] = useState(MISIONES);
   const [grupos, setGrupos] = useState(() => gruposReferidosDemo(fotos));
   const recompensas = useMemo(() => recompensasDemo(fotos), [fotos]);
+  const [creaciones, setCreaciones] = useState(() => creacionesDemo(fotos));
+  const [borradores, setBorradores] = useState(BORRADORES);
+  const [listaDeseos, setListaDeseos] = useState(deseos);
+  const [personas, setPersonas] = useState(() => personasDemo(fotos));
+  const [ganadas, setGanadas] = useState(0);
   const copiar = async (texto) => {
     try { await navigator.clipboard.writeText(texto); } catch { /* sin permiso en la demo */ }
     avisar('¡Copiado!', texto, 'info');
@@ -288,6 +333,62 @@ export function CuentaDemo({ ruta = '/cuenta', sesion, usuario, monedas, onMoned
           volarMonedasGanadas(null, n || 8);
           avisar(`¡Reclamaste ${n || 8} monedas!`);
         }}
+      />
+    );
+  } else if (ruta === '/cuenta/creaciones') {
+    pagina = (
+      <PaginaCreaciones
+        creaciones={vacio ? [] : creaciones}
+        borradores={vacio ? [] : borradores}
+        cargando={cargando}
+        error={conError}
+        onReintentar={() => avisar('En la tienda', 'Volvería a pedir tus creaciones', 'info')}
+        onEliminar={async (id) => {
+          await espera(700);
+          setCreaciones((l) => l.filter((x) => x.id !== id));
+          setBorradores((l) => l.filter((x) => x.id !== id));
+          avisar(id.startsWith('b') ? 'Borrador eliminado' : 'Creación eliminada', undefined, 'info');
+        }}
+        onRenombrar={async (id, nombre) => { await espera(500); setCreaciones((l) => l.map((x) => (x.id === id ? { ...x, nombre } : x))); }}
+      />
+    );
+  } else if (ruta === '/cuenta/wishlist') {
+    pagina = (
+      <PaginaListaDeseos
+        items={vacio ? [] : listaDeseos}
+        cargando={cargando}
+        sinCumpleanos
+        onQuitar={(id) => { setListaDeseos((l) => l.filter((x) => x.id !== id)); avisar('Quitado de tu lista', undefined, 'info'); }}
+        onAgregar={(it) => onAgregar?.(it)}
+        onAgregarTodo={async () => {
+          await espera(800);
+          const n = listaDeseos.filter((x) => x.disponible !== false && !x.regalado).length;
+          const omitidos = listaDeseos.length - n;
+          return `${n} ${n === 1 ? 'producto agregado' : 'productos agregados'} al carrito${omitidos ? ` · ${omitidos} ${omitidos === 1 ? 'omitido' : 'omitidos'}` : ''}.`;
+        }}
+        onCompartir={() => copiar('https://www.wala.pe/wishlist/ISAAC7K')}
+        onFechasEspeciales={() => avisar('En la tienda', 'Abriría tu registro de regalos (/regalar/ISAAC7K)', 'info')}
+      />
+    );
+  } else if (ruta === '/cuenta/fechas-importantes') {
+    pagina = (
+      <PaginaFechas
+        personas={vacio ? [] : personas}
+        festivas={vacio ? [] : [{ nombre: 'Halloween', fecha: '0000-10-31', icono: 'destello', personas: [{ nombre: 'María', ideas: ideasDe(fotos, 2) }] }]}
+        encuesta={{ monedas: 15, url: '/encuesta-suscripcion' }}
+        ganadas={ganadas}
+        conjuntos={CONJUNTOS}
+        cargando={cargando}
+        onGuardar={async (p) => {
+          await espera(700);
+          setPersonas((l) => (p.id ? l.map((x) => (x.id === p.id ? { ...x, ...p } : x)) : [...l, { ...p, id: `per${Date.now().toString(36)}`, ideas: ideasDe(fotos, 0), ideasGenerales: true }]));
+          if (!p.id) { setGanadas(5); onMonedas?.(5); volarMonedasGanadas(null, 5); }
+        }}
+        onEliminar={(id) => { setPersonas((l) => l.filter((x) => x.id !== id)); avisar('Persona quitada', undefined, 'info'); }}
+        onSubirFoto={async (archivo) => { await espera(700); return URL.createObjectURL(archivo); }}
+        onAgregarIdea={(i) => avisar('Agregado al carrito', i.nombre)}
+        onAgregarPaquete={(id) => { setPersonas((l) => l.map((x) => (x.id === id ? { ...x, paquete: { ...x.paquete, agregado: true } } : x))); avisar('Paquete agregado al carrito'); }}
+        onAgregarIdeas={(id) => { setPersonas((l) => l.map((x) => (x.id === id ? { ...x, ideas: x.ideas.map((i) => ({ ...i, agregada: true })) } : x))); avisar('Ideas agregadas al carrito'); }}
       />
     );
   } else if (ruta === '/cuenta/ajustes') {

@@ -161,6 +161,14 @@ const CARRITO_INICIAL = [
 /* Fotos reales para recompensas y referidos de "Mi cuenta". */
 const FOTOS_CUENTA = [ofertas[0], nuevos[1], destacados[2]].map((p) => ({ nombre: p.name, imagen: fila(p).imagen }));
 
+/* Lista de deseos de "Mi cuenta": productos reales; uno ya no está en la tienda. */
+const DESEOS = [
+  ...[...nuevos.slice(0, 3), ofertas[1]].map((p, k) => ({
+    id: p.id, crudo: p, producto: tarjetaDesdeProducto(p), guardado: ['hoy', 'ayer', 'hace 4 días', 'hace 9 días'][k], regalado: k === 2,
+  })),
+  { id: 'agotado', producto: { nombre: destacados[4]?.name, imagen: fila(destacados[4]).imagen }, guardado: 'hace 30 días', disponible: false },
+];
+
 const FAVORITOS = [...nuevos.slice(0, 4), ...ofertas.slice(0, 3)].map((p) => ({ id: p.id, nombre: p.name, imagen: fila(p).imagen }));
 
 const PEDIDOS = [
@@ -535,7 +543,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       envolver={envolver}
     />
   ) : pagina === 'cuenta' ? (
-    <MarcoTienda {...marco}>
+    // Sin sesión o sin datos, Kapi ya está en el estado vacío: el pie no lo asoma.
+    <MarcoTienda {...marco} kapiEnPie={conSesion && !estadosCuenta.includes('vacio')}>
       <CuentaDemo
         ruta={rutaCuenta}
         sesion={conSesion}
@@ -543,6 +552,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         monedas={monedas}
         onMonedas={(n) => setMonedas((m) => Math.max(0, m + n))}
         fotos={FOTOS_CUENTA}
+        deseos={DESEOS}
+        onAgregar={(item) => (item.crudo ? onAgregar?.(item.crudo)?.() : false)}
         tema={tema}
         onTema={cambiarTema}
         onCerrarSesion={() => setRol('visitante')}
