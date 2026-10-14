@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Sparkles, Plus, RotateCcw, Heart, ShoppingCart, CalendarHeart, Share2, Gift, Trash2, Lightbulb, Camera } from 'lucide-react';
 import Boton from '../Boton';
 import { Aviso, EstadoVacio, HojaInferior } from '../Feedback';
@@ -228,6 +228,7 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
   };
   // La foto pasa por el recorte (otra hoja encima de esta) antes de subirse.
   const [recorte, setRecorte] = useState(null);
+  const archivo = useRef(null);
   const elegirFoto = (archivo) => {
     if (!archivo?.type?.startsWith('image/')) { setError('El archivo debe ser una imagen.'); return; }
     setError('');
@@ -268,13 +269,19 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
         )}
         {onSubirFoto && (
           <div className={s.fotoPersona}>
-            <Avatar className={s.fotoAvatar} nombre={p.nombre} imagen={p.foto} letras={1}><Camera aria-hidden="true" /></Avatar>
-            <div>
-              <label className={s.subir}>
-                <input type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; elegirFoto(f); }} />
-                {subiendo ? 'Subiendo…' : p.foto ? 'Cambiar foto' : 'Subir foto'}
-              </label>
-              {p.foto && <button type="button" className={s.quitarFoto} onClick={() => setP((x) => ({ ...x, foto: null }))}>Quitar foto</button>}
+            <input ref={archivo} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; elegirFoto(f); }} />
+            {/* La foto también se toca (con su cámara en la esquina, como en Mi perfil). */}
+            <button type="button" className={s.fotoBoton} onClick={() => archivo.current?.click()} disabled={subiendo} aria-label={p.foto ? 'Cambiar la foto' : 'Subir una foto'}>
+              <Avatar className={s.fotoAvatar} nombre={p.nombre} imagen={p.foto} letras={1}><Plus aria-hidden="true" /></Avatar>
+              <span className={s.fotoCamara} aria-hidden="true"><Camera /></span>
+            </button>
+            <div className={s.fotoTextos}>
+              <span className={s.fotoBotones}>
+                <Boton tamano="sm" icono={<Camera aria-hidden="true" />} cargando={subiendo} onClick={() => archivo.current?.click()}>
+                  {p.foto ? 'Cambiar foto' : 'Subir foto'}
+                </Boton>
+                {p.foto && <Boton variante="fantasma" tamano="sm" icono={<Trash2 aria-hidden="true" />} onClick={() => setP((x) => ({ ...x, foto: null }))}>Quitar</Boton>}
+              </span>
               <small>Opcional. Ayuda a reconocerla de un vistazo.</small>
             </div>
           </div>
