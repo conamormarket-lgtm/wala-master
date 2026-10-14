@@ -4,7 +4,7 @@ import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { Aviso, EstadoVacio, HojaInferior } from '../Feedback';
 import { Campo, Interruptor, CampoTelefono } from '../Formulario';
-import { CampoFecha } from '../Fecha';
+import { CamposDatosPersonales, validarPerfil, NOMBRE_DOCUMENTO } from '../piezas/DatosPersonales';
 import { RecortarFoto } from '../piezas/RecortarFoto';
 import { Moneda } from '../Etiquetas';
 import { MenuCuenta } from '../MenusCabecera';
@@ -133,12 +133,6 @@ export function PaginaResumenCuenta({ usuario, monedas = 0, enEspera = 0, grupos
 
 /* ── Mi perfil (/cuenta/perfil) ─────────────────────────── */
 
-const TIPOS_DOCUMENTO = [
-  { valor: 'DNI', texto: 'DNI' },
-  { valor: 'CE', texto: 'Carnet de extranjería' },
-  { valor: 'Pasaporte', texto: 'Pasaporte' },
-];
-const NOMBRE_DOCUMENTO = { DNI: 'DNI', CE: 'Carnet de extranjería', Pasaporte: 'Pasaporte' };
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
 /** "2001-07-12" → "12 de julio de 2001" (sin año si es 0000). */
@@ -156,29 +150,8 @@ const telefonoLegible = (tel, prefijo) => {
   return prefijo && prefijo !== '+51' ? `${prefijo} ${local}` : local;
 };
 
-/**
- * Las reglas de los datos personales (las de PerfilPage). En el Perú: DNI de
- * 8 números, carnet de 9 a 12 letras o números, pasaporte de 6 a 12, y
- * celular de 9 números que empieza con 9. Fuera: documento y teléfono libres.
- * Devuelve { campo: mensaje } (vacío si todo está bien).
- */
-export function validarPerfil(d) {
-  const e = {};
-  const peru = (d.pais || 'PE') === 'PE';
-  const doc = String(d.documento || '').trim();
-  const tel = String(d.telefono || '').replace(/\D/g, '');
-  if (String(d.nombre || '').trim().length < 3) e.nombre = 'Escribe tu nombre completo.';
-  if (peru) {
-    if (d.tipoDocumento === 'DNI' && !/^\d{8}$/.test(doc)) e.documento = 'El DNI tiene 8 números.';
-    if (d.tipoDocumento === 'CE' && !/^[A-Za-z0-9]{9,12}$/.test(doc)) e.documento = 'El carnet tiene de 9 a 12 letras o números.';
-    if (d.tipoDocumento === 'Pasaporte' && !/^[A-Za-z0-9]{6,12}$/.test(doc)) e.documento = 'El pasaporte tiene de 6 a 12 letras o números.';
-    if (!/^9\d{8}$/.test(tel)) e.telefono = 'El celular tiene 9 números y empieza con 9.';
-  } else {
-    if (doc.length < 3) e.documento = 'Escribe tu documento de identidad.';
-    if (tel.length < 4) e.telefono = 'Escribe tu teléfono.';
-  }
-  return e;
-}
+// Las reglas viven con los campos (piezas/DatosPersonales): Mi perfil, Crear cuenta y Completar perfil.
+export { validarPerfil };
 
 /**
  * Mi perfil: la identidad, el saldo de monedas y los datos personales (con
@@ -242,9 +215,6 @@ export function PaginaPerfil({
     }
   };
 
-  const peruForm = form?.pais === 'PE';
-  const paisForm = paises.find((p) => p.valor === form?.pais) || paises[0];
-  const opcionesPais = paises.map((p) => ({ ...p, detalle: p.prefijo, icono: <span className={s.codigoPais}>{p.valor}</span> }));
 
   return (
     <>
@@ -296,41 +266,13 @@ export function PaginaPerfil({
         <TarjetaCuenta icono={<User />} titulo="Datos personales" subtitulo={editando ? 'Revisa y guarda tus cambios.' : 'Con estos datos ubicamos tus pedidos.'}>
           {editando ? (
             <form className={s.formulario} onSubmit={guardar} noValidate>
-              <Campo etiqueta="Nombre completo" value={form.nombre} onChange={cambiar('nombre')} error={errores.nombre} autoComplete="name" />
-              {paises.length > 1 && (
-                <Campo etiqueta="País" opciones={opcionesPais} value={form.pais} onChange={cambiar('pais')} buscable={paises.length > 6} />
-              )}
-              <div className={s.fila}>
-                {peruForm && (
-                  <Campo etiqueta="Tipo de documento" opciones={TIPOS_DOCUMENTO} value={form.tipoDocumento} onChange={cambiar('tipoDocumento')} />
-                )}
-                <Campo
-                  etiqueta={peruForm ? `Número de ${NOMBRE_DOCUMENTO[form.tipoDocumento] || 'documento'}` : 'Documento de identidad'}
-                  value={form.documento}
-                  onChange={cambiar('documento')}
-                  error={errores.documento}
-                  inputMode={peruForm && form.tipoDocumento === 'DNI' ? 'numeric' : 'text'}
-                  maxLength={peruForm && form.tipoDocumento === 'DNI' ? 8 : 12}
-                  placeholder={peruForm ? undefined : 'Pasaporte, ID o documento'}
-                />
-              </div>
-              <div className={s.fila}>
-                <CampoTelefono
-                  pais={paisForm?.valor}
-                  paises={[paisForm]}
-                  valor={form.telefono}
-                  onCambiar={(v) => { setForm((f) => ({ ...f, telefono: v })); setErrores((x) => ({ ...x, telefono: undefined })); }}
-                  error={errores.telefono}
-                />
-                <CampoFecha
-                  etiqueta="Fecha de nacimiento"
-                  valor={form.cumpleanos}
-                  onCambiar={(v) => setForm((f) => ({ ...f, cumpleanos: v }))}
-                  max={new Date().toISOString().slice(0, 10)}
-                  vistaInicial="anios"
-                  ayuda="Para saludarte en tu día."
-                />
-              </div>
+              <CamposDatosPersonales
+                datos={form}
+                onCambiar={(campo, valor) => cambiar(campo)({ target: { value: valor } })}
+                errores={errores}
+                paises={paises}
+                disabled={guardando}
+              />
               {error && <Aviso tipo="error" compacto>{error}</Aviso>}
               <div className={s.botonesForm}>
                 <Boton type="button" variante="fantasma" onClick={() => setForm(null)} disabled={guardando}>Cancelar</Boton>

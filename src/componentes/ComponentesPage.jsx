@@ -974,7 +974,7 @@ function Contenido({ tema, cambiarTema }) {
         {/* ── PIEZAS DE LA CUENTA ── */}
         <Seccion
           id="cuenta-piezas" numero="10" titulo="Piezas de la cuenta"
-          descripcion="Con estas piezas se arman las doce páginas de /cuenta y la encuesta (Páginas → Tienda de prueba → Mi cuenta y Encuesta). Cada ícono va en un sello con el degradado del logo; las cifras van con la letra del logo y su palabra en gris, sin etiquetas."
+          descripcion="Con estas piezas se arman las doce páginas de /cuenta, la encuesta y el acceso (Páginas → Tienda de prueba → Mi cuenta, Encuesta y Acceso). Cada ícono va en un sello con el degradado del logo; las cifras van con la letra del logo y su palabra en gris, sin etiquetas."
           mejoras={['Un sello para todos los íconos de la cuenta', 'Confirmar en la misma tarjeta (sin ventanas del navegador)', 'Cupón con talón troquelado', 'Niveles sin emojis']}
         >
           <DemoPiezasCuenta imagenes={{ frente: FRENTE_BLANCO, espalda: ESPALDA_BLANCO, taza: TAZA }} />

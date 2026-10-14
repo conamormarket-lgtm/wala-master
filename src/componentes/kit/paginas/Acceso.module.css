@@ -1,0 +1,391 @@
+/* El marco: una tarjeta de dos paneles (marca + formulario) que se apila en angosto. */
+.contenedor {
+  container: acceso / inline-size;
+  width: 100%;
+  max-width: 1060px;
+  margin: 0 auto;
+}
+
+.acceso {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 28px 28px 28px;
+  background: var(--color-surface);
+  box-shadow: 0 18px 40px -26px rgba(76, 29, 149, 0.45);
+}
+
+/* ── Panel de la marca ───────────────────────────────────── */
+.panel {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 0.9rem;
+  min-width: 0;
+  padding: 1.15rem 1.25rem 1.25rem;
+  overflow: hidden;
+  background: var(--degradado-logo);
+  color: #fff;
+  isolation: isolate;
+}
+
+.garabatos {
+  z-index: -1;
+}
+
+/* En la franja angosta los garabatos de abajo pisarían el texto. */
+.garabatos > :nth-child(3),
+.garabatos > :nth-child(5) {
+  display: none;
+}
+
+.logo {
+  justify-self: start;
+}
+
+.panelTextos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+  /* En angosto el título deja sitio a Kapi a la derecha. */
+  padding-right: 88px;
+}
+
+.panelTitulo {
+  margin: 0;
+  font-family: var(--fuente-marca);
+  font-size: clamp(1.3rem, 4.8vw, 1.6rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.panelTrazo {
+  display: block;
+  width: min(80%, 200px);
+  height: 11px;
+  margin-top: 0.3rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.panelTexto {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+/* En angosto, lo que trae la cuenta no cabe: queda solo la franja. */
+.beneficios {
+  display: none;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.beneficios li {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.beneficios li > span {
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+/* Al pasar, el sello se endereza y crece (como los accesos de la cuenta). */
+@media (hover: hover) and (pointer: fine) {
+  .beneficios li:hover > span {
+    transform: rotate(8deg) scale(1.12);
+  }
+}
+
+.kapi {
+  position: absolute;
+  right: -6px;
+  bottom: -18px;
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  transform: rotate(-8deg);
+  transition: transform var(--dur-media) var(--ease-signature);
+  pointer-events: none;
+}
+
+/* Kapi se asoma un poco más al pasar por la tarjeta. */
+@media (hover: hover) and (pointer: fine) {
+  .acceso:hover .kapi {
+    transform: rotate(-3deg) translateY(-6px);
+  }
+}
+
+/* ── Lado del formulario ─────────────────────────────────── */
+.lado {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 1.1rem;
+  min-width: 0;
+  padding: 1.35rem 1.15rem 1.5rem;
+}
+
+.cabeza {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.3rem;
+}
+
+.titulo {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: clamp(1.45rem, 5vw, 1.85rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.texto {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.correo {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.formulario {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.95rem;
+}
+
+.conEnlace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.4rem;
+}
+
+.enlace {
+  color: var(--primary-color);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.enlace:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+:global([data-theme='dark']) .enlace {
+  color: var(--violet-300);
+}
+
+.olvido {
+  justify-self: end;
+  font-size: 0.84rem;
+}
+
+.terminos {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.86rem;
+}
+
+.errorSuelto {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.pie {
+  margin: 0;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* El paso nuevo entra de lado (una vez). */
+.entraAdelante {
+  animation: entraAdelante var(--dur-media) var(--ease-signature);
+}
+
+.entraAtras {
+  animation: entraAtras var(--dur-media) var(--ease-signature);
+}
+
+@keyframes entraAdelante {
+  from { opacity: 0; transform: translateX(16px); }
+}
+
+@keyframes entraAtras {
+  from { opacity: 0; transform: translateX(-16px); }
+}
+
+/* ── Confirmar los datos (en la misma tarjeta) ───────────── */
+.confirmar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  padding: 0.95rem 1rem 1rem;
+  border: 1.5px solid var(--violet-300, #c4b5fd);
+  border-radius: 6px 18px 18px 18px;
+  background: var(--primary-light);
+  animation: entraAdelante var(--dur-media) var(--ease-signature);
+}
+
+.confirmarTitulo {
+  margin: 0;
+  font-family: var(--fuente-marca);
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.confirmarTexto {
+  margin: -0.3rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.resumen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.resumen div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.9rem;
+}
+
+.resumen dt {
+  color: var(--color-text-muted);
+}
+
+.resumen dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+  text-align: right;
+}
+
+.botones {
+  display: flex;
+  flex-wrap: wrap-reverse;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+}
+
+/* ── Correo enviado ──────────────────────────────────────── */
+.enviado {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: 0.9rem;
+}
+
+.enviado p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* ── Cargando el perfil ──────────────────────────────────── */
+.esqueleto {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.esqueleto span {
+  height: 50px;
+  border-radius: 14px;
+  background: var(--color-border);
+  opacity: 0.55;
+}
+
+/* ── Ancho: dos paneles lado a lado ──────────────────────── */
+@container acceso (min-width: 820px) {
+  .acceso {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+    min-height: 600px;
+  }
+
+  .panel {
+    align-content: center;
+    gap: 1.5rem;
+    padding: 2.5rem 2.25rem 3rem;
+  }
+
+  .logo {
+    position: absolute;
+    top: 1.5rem;
+    left: 2.25rem;
+  }
+
+  .panelTextos {
+    padding-right: 0;
+  }
+
+  .panelTitulo {
+    font-size: 2.1rem;
+  }
+
+  .panelTexto {
+    max-width: 34ch;
+    font-size: 1rem;
+  }
+
+  .beneficios {
+    display: grid;
+  }
+
+  .garabatos > :nth-child(3),
+  .garabatos > :nth-child(5) {
+    display: block;
+  }
+
+  .kapi {
+    right: 18px;
+    bottom: -22px;
+    width: 150px;
+    height: 150px;
+  }
+
+  .lado {
+    align-content: center;
+    padding: 2.5rem 2.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .beneficios li > span,
+  .entraAdelante,
+  .entraAtras,
+  .confirmar {
+    animation: none;
+  }
+
+  .kapi {
+    transition: none;
+  }
+}
+

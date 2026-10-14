@@ -11,7 +11,7 @@ import {
 import { empresa } from '../config/empresa';
 import { msHastaMananaLima, msHastaLunesLima, limaTodayStr } from '../utils/fechaLima';
 import { volarMonedasGanadas } from '../utils/animations';
-import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA } from './DemoCuenta';
+import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO } from './DemoCuenta';
 import INICIO from './demo/inicio.json';
 import TIENDA from './demo/tienda.json';
 import cs from './ComponentesPage.module.css';
@@ -55,16 +55,18 @@ const PAGINAS = [
   { id: 'carrito', texto: 'Carrito', ruta: '/carrito' },
   { id: 'cuenta', texto: 'Mi cuenta', ruta: '/cuenta' },
   { id: 'encuesta', texto: 'Encuesta', ruta: '/encuesta-suscripcion' },
+  { id: 'acceso', texto: 'Acceso', ruta: '/login' },
 ];
 
 /** Ruta de la tienda → página de esta demo (las demás solo avisan). */
 const PAGINA_DE_RUTA = {
   '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/encuesta-suscripcion': 'encuesta',
   ...Object.fromEntries(MODULOS_CUENTA.map((m) => [m.ruta, 'cuenta'])),
+  ...Object.fromEntries(VISTAS_ACCESO.map((v) => [v.ruta, 'acceso'])),
 };
 
 /** Pestaña de la barra inferior que se enciende en cada página. */
-const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta' };
+const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta' };
 
 /* Estados de la Zona Arcade para probar (como el modo diseño de la tienda). */
 const RULETAS = [
@@ -219,6 +221,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [rutaCuenta, setRutaCuenta] = useState('/cuenta');
   const [estadosCuenta, setEstadosCuenta] = useState([]);
   const [estadosEncuesta, setEstadosEncuesta] = useState([]);
+  const [rutaAcceso, setRutaAcceso] = useState('/login');
   const marcoRef = useRef(null);
 
   // Editor del builder (solo admin, sobre el inicio).
@@ -257,6 +260,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       setPaginasBusqueda(1);
     }
     if (PAGINA_DE_RUTA[ruta] === 'cuenta') setRutaCuenta(ruta);
+    if (PAGINA_DE_RUTA[ruta] === 'acceso') setRutaAcceso(ruta);
     if (ruta === '/tienda') {
       const categoria = new URLSearchParams(query).get('categoria');
       setFiltros(categoria ? { categoria } : {});
@@ -379,9 +383,9 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     ideasBusqueda,
   };
 
-  // En la encuesta Kapi ya está en la página (uno solo a la vista) y la
-  // píldora invitaría a la misma encuesta: ninguno de los dos se muestra.
-  const enEncuesta = pagina === 'encuesta';
+  // En la encuesta y en el acceso Kapi ya está en la página (uno solo a la
+  // vista) y la píldora distrae (o invita a la misma encuesta): no se muestran.
+  const enEncuesta = pagina === 'encuesta' || pagina === 'acceso';
   const flotantes = {
     derecha: (
       <>
@@ -554,6 +558,23 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       propsPara={(sec) => (sec.type === 'faq_accordion' ? { contacto: enlaceWhatsApp(empresa.whatsapp, '¡Hola Walá! Tengo una duda.') } : undefined)}
       envolver={envolver}
     />
+  ) : pagina === 'acceso' ? (
+    // Kapi asoma en el panel de la marca: el pie no lo muestra.
+    <MarcoTienda {...marco} kapiEnPie={false}>
+      {(() => {
+        const v = VISTAS_ACCESO.find((x) => x.ruta === rutaAcceso) || VISTAS_ACCESO[0];
+        return (
+          <Parte n={v.n} nombre={v.componente}>
+            <AccesoDemo
+              ruta={rutaAcceso}
+              toast={toast}
+              onIrA={(r) => navegar.current(r)}
+              onEntrar={() => setRol((r) => (r === 'visitante' ? 'sesion' : r))}
+            />
+          </Parte>
+        );
+      })()}
+    </MarcoTienda>
   ) : pagina === 'encuesta' ? (
     // Kapi ya está en la portada (y en los estados): el pie no lo asoma.
     <MarcoTienda {...marco} kapiEnPie={false}>
@@ -641,6 +662,16 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
                 ))}
               </div>
             )}
+          </div>
+        )}
+        {pagina === 'acceso' && (
+          <div>
+            <span className={cs.controlesTitulo}>Pantalla</span>
+            <div className={cs.controlesChips}>
+              {VISTAS_ACCESO.map((v) => (
+                <Chip key={v.ruta} tamano="sm" activo={rutaAcceso === v.ruta} onClick={() => { setRutaAcceso(v.ruta); if (marcoRef.current) marcoRef.current.scrollTop = 0; }}>{v.texto}</Chip>
+              ))}
+            </div>
           </div>
         )}
         {pagina === 'encuesta' && conSesion && (

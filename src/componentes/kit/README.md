@@ -132,7 +132,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 |---|---|---|
 | `Boton.jsx` | `Boton` | Botón violeta liso; variantes, tamaños, cargando, `brillo` para CTA de pago. Con `to` es un enlace; con `insignia` lleva un contador en la esquina |
 | `Etiquetas.jsx` | `Etiqueta`, `Chip`, `Moneda`, `MONEDA`, `CostoMonedas`, `GananciaMonedas`, `SaldoMonedas` (sube de a una con cada moneda que aterriza), `Contador` | Badges, filtros y monedas |
-| `Formulario.jsx` | `Campo` (con `opciones` es una `ListaOpciones`; `control` para otro control en la misma caja), `Buscador` (`grande`, `boton`), `Selector`, `SelectorTalla`, `SelectorColor`, `Cantidad`, `Interruptor`, `Casilla`, `CampoTelefono` | Formularios, búsqueda (atajo "/"), "Ordenar por" y variantes de producto |
+| `Formulario.jsx` | `Campo` (con `opciones` es una `ListaOpciones`; `control` para otro control en la misma caja), `Buscador` (`grande`, `boton`), `Selector`, `SelectorTalla`, `SelectorColor`, `Cantidad`, `Interruptor`, `Casilla`, `CampoTelefono`, `CampoContrasena` (con el ojo que parpadea) | Formularios, búsqueda (atajo "/"), "Ordenar por" y variantes de producto |
 | `ListaOpciones.jsx` | `ListaOpciones` | Lista desplegable de Walá: panel en escritorio, hoja en el celular, buscador, teclado, `creable` |
 | `Fecha.jsx` | `CampoFecha`, `Calendario`, `fechaEnTexto` | Fechas con el calendario de Walá (años, meses, días; "No sé el año") |
 | `PanelFlotante.jsx` | `PanelFlotante`, `enCelular` | Lo que se abre desde un campo: panel pegado (escritorio) u hoja (celular); como un `<select>`, se cierra con el scroll de afuera |
@@ -164,6 +164,9 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `piezas/Creaciones.jsx` | `TarjetaCreacion` | Un diseño guardado (frente y espalda, renombrar, eliminar; también borradores) |
 | `piezas/Regalos.jsx` | `IdeaRegalo`, `TarjetaPersonaRegalo`, `AvisoFestiva` (cuenta atrás), `HojaCalendario`, `AgendaFechas` ("Lo que se viene"), `faltanDias`, `textoFaltan`, `diaYMes` | Fechas importantes |
 | `piezas/FormularioPersona.jsx` | `HojaPersona` (formulario de una persona en una hoja: foto, género, relación o fija, presupuesto, gustos, "Conjunto familia", fechas), `validarPersona`, `RELACIONES`, `GENEROS`, `PRESUPUESTOS` | Fechas importantes y la encuesta |
+| `piezas/DatosPersonales.jsx` | `CamposDatosPersonales` (nombre, país, documento, celular y cumpleaños), `validarPerfil`, `TIPOS_DOCUMENTO`, `NOMBRE_DOCUMENTO` | Mi perfil, Crear cuenta y Completar perfil |
+| `piezas/Acceso.jsx` | `RequisitosContrasena` (reglas con barra de 5 tramos), `requisitosContrasena`, `contrasenaValida`, `BotonGoogle`, `SeparadorAcceso` | Login y registro |
+| `paginas/Acceso.jsx` | `MarcoAcceso`, `PaginaLogin`, `PaginaRegistro`, `PaginaRecuperar`, `PaginaCompletarPerfil` | /login, /registro, /recuperar-contrasena, /completar-perfil (guía: `guia/ACCESO.md`) |
 | `piezas/Encuesta.jsx` | `ProgresoEncuesta`, `ElegirVarios` (varias opciones en tarjetas con sello), `FichaPersonaEncuesta` | La encuesta |
 | `paginas/Cuenta.jsx`, `CuentaPedidos.jsx`, `CuentaRecompensas.jsx`, `CuentaPersonalizacion.jsx` | `MarcoCuenta`, `PaginaCuentaInvitado`, `PaginaResumenCuenta`, `PaginaPerfil`, `PaginaPedidos`, `PaginaDetallePedido`, `PaginaDirecciones`, `PaginaAjustes`, `PaginaCatalogo`, `PaginaCupones`, `PaginaMisiones`, `PaginaReferidos`, `PaginaCreaciones`, `PaginaListaDeseos`, `PaginaFechas` (+ `validarPerfil`, `validarDireccion`) | Las páginas de /cuenta (guía: `guia/CUENTA.md`) |
 | `paginas/Encuesta.jsx` | `PaginaEncuesta`, `GRUPOS_ENCUESTA`, `CONFIG_ENCUESTA` | /encuesta-suscripcion (guía: `guia/ENCUESTA.md`) |

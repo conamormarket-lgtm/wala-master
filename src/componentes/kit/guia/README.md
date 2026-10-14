@@ -20,7 +20,7 @@ Numeración: **M** = marco (cabecera, pie, barra inferior, flotantes: igual en
 todas las páginas), **S** = secciones del builder en su orden, **P** =
 contenido propio de una página que no es del builder (carrito, minijuegos,
 búsqueda, encuesta), **C** = las secciones de la cuenta (C0 su marco, C1-C12 cada
-página).
+página), **A** = las páginas de acceso (A1-A4).
 
 | Página | Ficha | Estado |
 |---|---|---|
@@ -31,6 +31,7 @@ página).
 | Minijuegos (`/minijuegos`) | [MINIJUEGOS.md](MINIJUEGOS.md) | armada (P3 `PaginaMinijuegos`, con los estados de cada juego); con plan de migración (a futuro) |
 | Mi cuenta (`/cuenta`: resumen, perfil, pedidos, direcciones, ajustes, catálogo, cupones, misiones, referidos, creaciones, lista de deseos, fechas importantes) | [CUENTA.md](CUENTA.md) | armada (C0 `MarcoCuenta` y C1-C12); con plan de migración (a futuro). Mis pedidos (antes P2) es C3 |
 | Encuesta (`/encuesta-suscripcion`) | [ENCUESTA.md](ENCUESTA.md) | armada (P6 `PaginaEncuesta`, con los estados sin sesión, ya respondida, cargando y falla); con plan de migración (a futuro) |
+| Acceso (`/login`, `/registro`, `/recuperar-contrasena`, `/completar-perfil`) | [ACCESO.md](ACCESO.md) | armadas (A1-A4 con `MarcoAcceso`; los datos personales son los de Mi perfil); con plan de migración (a futuro) |
 | Carrito (`/carrito`) | — | armada (P1 `PaginaCarrito`); falta su ficha |
 
 Para una página nueva: se mapea la página real, lo que falte se crea como

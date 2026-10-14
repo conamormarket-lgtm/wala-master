@@ -1,0 +1,154 @@
+/* ── Requisitos de la contraseña ─────────────────────────── */
+.requisitos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.55rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 6px 16px 16px 16px;
+  transition: border-color var(--dur-media) ease;
+}
+
+.requisitosListos {
+  border-style: solid;
+  border-color: rgba(16, 185, 129, 0.45);
+}
+
+.fuerza {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.tramos {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.tramos span {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-border);
+  transform-origin: left;
+}
+
+/* Cada tramo se llena desde la izquierda al cumplirse una regla. */
+.tramos .tramoOn {
+  background: var(--degradado-logo);
+  animation: llenarTramo var(--dur-media) var(--ease-signature);
+}
+
+.requisitosListos .tramos .tramoOn {
+  background: linear-gradient(90deg, #34d399, #059669);
+}
+
+@keyframes llenarTramo {
+  from { transform: scaleX(0); }
+}
+
+.nivel {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.requisitosListos .nivel {
+  color: #047857;
+}
+
+:global([data-theme='dark']) .requisitosListos .nivel {
+  color: #6ee7b7;
+}
+
+.reglas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
+  gap: 0.3rem 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reglas li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  transition: color var(--dur-rapida) ease;
+}
+
+.visto {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 50%;
+  color: transparent;
+  transition: background-color var(--dur-rapida) ease, border-color var(--dur-rapida) ease, color var(--dur-rapida) ease;
+}
+
+.visto svg {
+  width: 10px;
+  height: 10px;
+  stroke-width: 3.5;
+}
+
+.reglas .cumple {
+  color: var(--color-text);
+}
+
+.cumple .visto {
+  border-color: #10b981;
+  background: #10b981;
+  color: #fff;
+  animation: saltaVisto 0.36s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes saltaVisto {
+  from { transform: scale(0.4); }
+}
+
+.oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── Google y el separador ───────────────────────────────── */
+.google svg {
+  flex-shrink: 0;
+}
+
+.separador {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.separador::before,
+.separador::after {
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+  content: '';
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tramos .tramoOn,
+  .cumple .visto {
+    animation: none;
+  }
+}

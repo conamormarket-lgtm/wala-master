@@ -4,6 +4,7 @@ import {
   MarcoCuenta, PaginaCuentaInvitado, PaginaResumenCuenta, PaginaPerfil, PaginaDirecciones, PaginaAjustes, PaginaPedidos,
   PaginaCatalogo, PaginaCupones, PaginaMisiones, PaginaReferidos, PaginaCreaciones, PaginaListaDeseos, PaginaFechas,
   PaginaDetallePedido, HojaPagarSaldo, Boton, enlaceWhatsApp, PaginaEncuesta,
+  PaginaLogin, PaginaRegistro, PaginaRecuperar, PaginaCompletarPerfil,
 } from './kit';
 import { empresa } from '../config/empresa';
 import POLERA from './demo/polera-fondo-blanco.jpg';
@@ -597,4 +598,73 @@ export function EncuestaDemo({ sesion, usuario, estados = [], fotos = [], onMone
       urlTienda="/tienda"
     />
   );
+}
+
+/* ── Acceso (/login, /registro, /recuperar-contrasena, /completar-perfil) ── */
+
+/** Las pantallas de acceso de la Tienda de prueba. */
+export const VISTAS_ACCESO = [
+  { ruta: '/login', texto: 'Iniciar sesión', n: 'A1', componente: 'PaginaLogin' },
+  { ruta: '/registro', texto: 'Crear cuenta', n: 'A2', componente: 'PaginaRegistro' },
+  { ruta: '/recuperar-contrasena', texto: 'Recuperar contraseña', n: 'A3', componente: 'PaginaRecuperar' },
+  { ruta: '/completar-perfil', texto: 'Completar perfil', n: 'A4', componente: 'PaginaCompletarPerfil' },
+];
+
+const PAISES_ACCESO = [
+  { valor: 'PE', texto: 'Perú', prefijo: '+51' }, { valor: 'AR', texto: 'Argentina', prefijo: '+54' }, { valor: 'CL', texto: 'Chile', prefijo: '+56' },
+  { valor: 'CO', texto: 'Colombia', prefijo: '+57' }, { valor: 'MX', texto: 'México', prefijo: '+52' }, { valor: 'US', texto: 'Estados Unidos', prefijo: '+1' },
+  { valor: 'ES', texto: 'España', prefijo: '+34' },
+];
+
+/**
+ * Login, registro, recuperar y completar perfil con datos de prueba. Para
+ * ver los errores: contraseña "error" al entrar, un correo con "usado" al
+ * registrarse y el DNI 12345678 (ya registrado).
+ */
+export function AccesoDemo({ ruta = '/login', toast, onIrA, onEntrar }) {
+  const avisar = (titulo, texto, tipo = 'exito') => toast?.({ tipo, titulo, texto, duracion: 2400 });
+  const vista = VISTAS_ACCESO.find((v) => v.ruta === ruta) || VISTAS_ACCESO[0];
+  const yaRegistrado = (d) => {
+    if (String(d.documento) === '12345678') throw new Error('Este documento ya está registrado en otra cuenta. Si es tuyo, inicia sesión con esa cuenta o recupera tu contraseña.');
+  };
+  let pagina;
+  if (vista.ruta === '/registro') {
+    pagina = (
+      <PaginaRegistro
+        paises={PAISES_ACCESO}
+        datosIniciales={{ pais: 'PE' }}
+        correo="isaac@correo.com"
+        onCrearCuenta={async ({ correo }) => {
+          await espera(800);
+          if (correo.includes('usado')) throw new Error('Ese correo ya tiene una cuenta. Inicia sesión o recupera tu contraseña.');
+        }}
+        onGoogle={async () => { await espera(700); onIrA?.('/completar-perfil'); }}
+        onRegistrar={async (d) => { await espera(900); yaRegistrado(d); avisar('¡Cuenta creada!', 'Sigue la encuesta para ganar monedas'); onEntrar?.(); onIrA?.('/encuesta-suscripcion'); }}
+      />
+    );
+  } else if (vista.ruta === '/recuperar-contrasena') {
+    pagina = <PaginaRecuperar onEnviar={() => espera(800)} />;
+  } else if (vista.ruta === '/completar-perfil') {
+    pagina = (
+      <PaginaCompletarPerfil
+        paises={PAISES_ACCESO}
+        correo="isaac.castro@gmail.com"
+        inicial={{ nombre: 'Isaac Castro', pais: 'PE', tipoDocumento: 'DNI', cumpleanos: '2001-07-12' }}
+        deGoogle={{ nombre: true, cumpleanos: true }}
+        onGuardar={async (d) => { await espera(900); yaRegistrado(d); avisar('¡Listo!', 'Ya puedes hacer pedidos'); onEntrar?.(); onIrA?.('/encuesta-suscripcion'); }}
+      />
+    );
+  } else {
+    pagina = (
+      <PaginaLogin
+        onEntrar={async ({ contrasena }) => {
+          await espera(800);
+          if (contrasena === 'error') throw new Error('Correo o contraseña incorrectos. Revisa e inténtalo de nuevo.');
+          avisar('¡Hola de nuevo!', 'En la tienda iría a tu página de origen'); onEntrar?.(); onIrA?.('/');
+        }}
+        onGoogle={async () => { await espera(700); avisar('¡Hola de nuevo!', 'Entraste con Google'); onEntrar?.(); onIrA?.('/'); }}
+      />
+    );
+  }
+  return <div key={vista.ruta}>{pagina}</div>;
 }

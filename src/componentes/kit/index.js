@@ -1,6 +1,6 @@
 export { default as Boton } from './Boton';
 export { Etiqueta, Chip, Moneda, MONEDA, CostoMonedas, GananciaMonedas, SaldoMonedas, Contador } from './Etiquetas';
-export { Campo, Buscador, Selector, SelectorTalla, SelectorColor, Cantidad, Interruptor, Casilla, CampoTelefono } from './Formulario';
+export { Campo, Buscador, Selector, SelectorTalla, SelectorColor, Cantidad, Interruptor, Casilla, CampoTelefono, CampoContrasena } from './Formulario';
 export { default as ListaOpciones } from './ListaOpciones';
 export { PanelFlotante, enCelular } from './PanelFlotante';
 export { CampoFecha, Calendario, fechaEnTexto } from './Fecha';
@@ -38,7 +38,8 @@ export { PASTELES, pastel, ACENTOS, acento } from './Marca';
 export * from './piezas';
 export { MarcoTienda, PaginaTienda, productosDeSeccion, PaginaCarrito, PaginaMinijuegos, PaginaBusqueda } from './paginas/Paginas';
 export { PaginaPedidos, PaginaDetallePedido } from './paginas/CuentaPedidos';
-export { MarcoCuenta, PaginaCuentaInvitado, PaginaResumenCuenta, PaginaPerfil, PaginaDirecciones, PaginaAjustes, validarPerfil, validarDireccion, fechaLegible } from './paginas/Cuenta';
+export { MarcoCuenta, PaginaCuentaInvitado, PaginaResumenCuenta, PaginaPerfil, PaginaDirecciones, PaginaAjustes, validarDireccion, fechaLegible } from './paginas/Cuenta';
 export { PaginaCatalogo, PaginaCupones, PaginaMisiones, PaginaReferidos } from './paginas/CuentaRecompensas';
 export { PaginaCreaciones, PaginaListaDeseos, PaginaFechas } from './paginas/CuentaPersonalizacion';
 export { PaginaEncuesta, GRUPOS_ENCUESTA, CONFIG_ENCUESTA } from './paginas/Encuesta';
+export { MarcoAcceso, PaginaLogin, PaginaRegistro, PaginaRecuperar, PaginaCompletarPerfil } from './paginas/Acceso';

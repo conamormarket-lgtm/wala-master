@@ -55,7 +55,8 @@ Cada paso en su propio commit, verificable por separado.
    CUENTA.md, un módulo a la vez), la Zona Arcade (`PaginaMinijuegos`,
    MINIJUEGOS.md), la búsqueda (`PaginaBusqueda`, BUSCAR.md) y la encuesta
    (`PaginaEncuesta`, ENCUESTA.md; después de Fechas importantes: comparten
-   `HojaPersona`).
+   `HojaPersona`) y el acceso (login, registro, recuperar y completar
+   perfil: ACCESO.md; chicas y aisladas, buenas para empezar).
 7. **`BarraInferior` y luego `Cabecera`**: la más conectada (AuthContext,
    CartContext, WishlistContext, notificaciones y la configuración de
    Firestore).

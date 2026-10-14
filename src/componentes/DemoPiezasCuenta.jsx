@@ -6,6 +6,7 @@ import {
   FormaGanar, TarjetaCreacion, IdeaRegalo, AvisoFestiva, Moneda, Interruptor,
   CampoFecha, CampoTelefono, Casilla, RecortarFoto, AgendaFechas, HojaCalendario, LineaProduccion, PagosPedido, PedidosPorVerificar, RankingReferidos,
   ETAPAS_PRODUCCION, Boton, ProgresoEncuesta, ElegirVarios, FichaPersonaEncuesta, GRUPOS_ENCUESTA, HojaPersona,
+  CampoContrasena, RequisitosContrasena, BotonGoogle, SeparadorAcceso, CamposDatosPersonales, validarPerfil,
 } from './kit';
 import { GRUPOS_CUENTA_COMPLETO } from './DemoCuenta';
 import { Ficha } from './DemoPiezas';
@@ -38,6 +39,8 @@ export default function DemoPiezasCuenta({ imagenes }) {
   const [recorte, setRecorte] = useState(null);
   const [grupos, setGrupos] = useState(['pareja', 'amigos']);
   const [hojaPersona, setHojaPersona] = useState(0);
+  const [clave, setClave] = useState('Hola12');
+  const [datos, setDatos] = useState({ nombre: 'Isaac Castro', pais: 'PE', tipoDocumento: 'DNI', documento: '4587', telefono: '987654321' });
   const copiar = async () => {};
   return (
     <div className={s.rejilla}>
@@ -227,6 +230,29 @@ export default function DemoPiezasCuenta({ imagenes }) {
         <ul style={{ margin: '0.75rem 0 0', padding: 0, listStyle: 'none' }}>
           <IdeaRegalo nombre="Polera con tu foto" imagen={imagenes.frente} precio={59.9} motivo="Le gusta el anime" url="/producto/polera" necesitaOpciones />
         </ul>
+      </Ficha>
+
+      <Ficha nombre="CampoContrasena · RequisitosContrasena" usadaEn="Crear cuenta (y login, sin las reglas)">
+        <div style={{ display: 'grid', gap: '0.75rem' }}>
+          <CampoContrasena nueva etiqueta="Crea una contraseña" valor={clave} onCambiar={setClave} />
+          <RequisitosContrasena contrasena={clave} />
+        </div>
+      </Ficha>
+
+      <Ficha nombre="BotonGoogle · SeparadorAcceso" usadaEn="Login y Crear cuenta">
+        <div style={{ display: 'grid', gap: '0.9rem' }}>
+          <SeparadorAcceso />
+          <BotonGoogle onClick={() => {}}>Iniciar con Google</BotonGoogle>
+        </div>
+      </Ficha>
+
+      <Ficha nombre="CamposDatosPersonales" usadaEn="Mi perfil, Crear cuenta (paso 2) y Completar perfil: mismos campos y reglas (validarPerfil)" ancho="1 / -1">
+        <CamposDatosPersonales
+          datos={datos}
+          onCambiar={(campo, valor) => setDatos((d) => ({ ...d, [campo]: valor }))}
+          errores={validarPerfil(datos)}
+          paises={[{ valor: 'PE', texto: 'Perú', prefijo: '+51' }, { valor: 'CL', texto: 'Chile', prefijo: '+56' }]}
+        />
       </Ficha>
 
       <Ficha nombre="ProgresoEncuesta · ElegirVarios" usadaEn="Encuesta (/encuesta-suscripcion): el avance y «¿A quiénes sueles regalar?»" ancho="1 / -1">

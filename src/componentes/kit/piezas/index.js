@@ -27,3 +27,5 @@ export { LineaProduccion, PagosPedido, HojaPagarSaldo } from './DetallePedido';
 export { PedidosPorVerificar } from './PedidosPorVerificar';
 export { HojaPersona, validarPersona, RELACIONES, GENEROS, PRESUPUESTOS } from './FormularioPersona';
 export { ProgresoEncuesta, ElegirVarios, FichaPersonaEncuesta } from './Encuesta';
+export { CamposDatosPersonales, validarPerfil, TIPOS_DOCUMENTO, NOMBRE_DOCUMENTO } from './DatosPersonales';
+export { RequisitosContrasena, requisitosContrasena, contrasenaValida, BotonGoogle, SeparadorAcceso } from './Acceso';

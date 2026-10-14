@@ -1,6 +1,6 @@
-import React, { useEffect, useId, useRef } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertCircle, Minus, Plus, Check, Search, ChevronDown } from 'lucide-react';
+import { AlertCircle, Minus, Plus, Check, Search, ChevronDown, Eye, EyeOff, LockKeyhole } from 'lucide-react';
 import Boton from './Boton';
 import ListaOpciones from './ListaOpciones';
 import s from './Formulario.module.css';
@@ -195,6 +195,44 @@ export function Casilla({ activo = false, onChange, etiqueta, descripcion, disab
         {descripcion && <small>{descripcion}</small>}
       </span>
     </label>
+  );
+}
+
+/**
+ * Contraseña con el candado y el ojo para mostrarla u ocultarla (el ojo
+ * parpadea al cambiar). Es un Campo: mismas etiqueta, ayuda y error.
+ *  - valor · onCambiar(texto) · nueva: autocompletar como contraseña nueva
+ *  - etiqueta, ayuda, error, placeholder, disabled, id, aria-describedby
+ */
+export function CampoContrasena({ etiqueta = 'Contraseña', valor = '', onCambiar, nueva = false, ayuda, error, placeholder, disabled, id, ...resto }) {
+  const [ver, setVer] = useState(false);
+  return (
+    <Campo
+      id={id}
+      etiqueta={etiqueta}
+      ayuda={ayuda}
+      error={error}
+      icono={<LockKeyhole />}
+      type={ver ? 'text' : 'password'}
+      autoComplete={nueva ? 'new-password' : 'current-password'}
+      value={valor}
+      onChange={(e) => onCambiar?.(e.target.value)}
+      placeholder={placeholder}
+      disabled={disabled}
+      {...resto}
+      sufijo={(
+        <button
+          type="button"
+          className={s.ojo}
+          onClick={() => setVer((v) => !v)}
+          disabled={disabled}
+          aria-label={ver ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+          aria-pressed={ver}
+        >
+          <span key={ver ? 'si' : 'no'} className={s.ojoIcono}>{ver ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}</span>
+        </button>
+      )}
+    />
   );
 }
 

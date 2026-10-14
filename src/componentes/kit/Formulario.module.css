@@ -176,6 +176,53 @@
   color: var(--color-text-muted);
 }
 
+/* El ojo de la contraseña: el botón ocupa el sufijo y llega al borde. */
+.ojo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-right: -0.55rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background-color var(--dur-rapida) ease, color var(--dur-rapida) ease;
+}
+
+.ojo:hover {
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.ojo:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 1px;
+}
+
+.ojo svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+/* Parpadea al cambiar (una vez). */
+.ojoIcono {
+  display: inline-flex;
+  animation: parpadeo 0.28s var(--ease-signature);
+}
+
+@keyframes parpadeo {
+  from { opacity: 0.2; transform: scaleY(0.2); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ojoIcono {
+    animation: none;
+  }
+}
+
 .ayuda,
 .error {
   display: flex;
