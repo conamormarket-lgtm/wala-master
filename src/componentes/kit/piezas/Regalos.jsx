@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Globe, Pencil, Trash2, Plus, Check, Package, ArrowRight, Gift, ShoppingBag } from 'lucide-react';
 import Boton from '../Boton';
+import Carrusel from '../Carrusel';
 import { Enlace } from '../Enlace';
 import { Etiqueta } from '../Etiquetas';
 import { IconoWala } from '../IconosWala';
@@ -66,7 +67,8 @@ export function HojaCalendario({ fecha, tono = 'violeta', grande = false }) {
 
 /**
  * Lo que se viene: las próximas fechas de todas las personas (y las
- * festivas), de la más cercana a la más lejana, en una fila que se desliza.
+ * festivas), de la más cercana a la más lejana, en el Carrusel del kit: se
+ * desliza con el dedo y tiene flechas a los costados (sin barra de scroll).
  * Cada una lleva a la tarjeta de su persona.
  *  - items: [{ id, fecha, titulo, persona, dias, url ('#persona-…') }]
  */
@@ -75,20 +77,18 @@ export function AgendaFechas({ items = [] }) {
   return (
     <section className={s.agenda} data-componente="AgendaFechas" aria-label="Lo que se viene">
       <h3 className={s.agendaTitulo}>Lo que se viene</h3>
-      <ul className={s.agendaLista}>
+      <Carrusel visibles={{ escritorio: 3.3, tablet: 2.4, movil: 1.3 }} espacio="0.75rem" etiqueta="Lo que se viene">
         {items.map((it) => (
-          <li key={it.id}>
-            <Enlace to={it.url} className={[s.agendaItem, it.dias <= 7 && s.agendaPronto].filter(Boolean).join(' ')}>
-              <HojaCalendario fecha={it.fecha} tono={it.dias <= 7 ? 'rosa' : 'violeta'} grande />
-              <span className={s.agendaTextos}>
-                <strong>{it.titulo}</strong>
-                {it.persona && <small>{it.persona}</small>}
-                <span className={s.agendaFalta}>{it.dias === 0 ? '¡Es hoy!' : it.dias === 1 ? 'Mañana' : <>En <b>{it.dias}</b> días</>}</span>
-              </span>
-            </Enlace>
-          </li>
+          <Enlace key={it.id} to={it.url} className={[s.agendaItem, it.dias <= 7 && s.agendaPronto].filter(Boolean).join(' ')}>
+            <HojaCalendario fecha={it.fecha} tono={it.dias <= 7 ? 'rosa' : 'violeta'} grande />
+            <span className={s.agendaTextos}>
+              <strong>{it.titulo}</strong>
+              {it.persona && <small>{it.persona}</small>}
+              <span className={s.agendaFalta}>{it.dias === 0 ? '¡Es hoy!' : it.dias === 1 ? 'Mañana' : <>En <b>{it.dias}</b> días</>}</span>
+            </span>
+          </Enlace>
         ))}
-      </ul>
+      </Carrusel>
     </section>
   );
 }

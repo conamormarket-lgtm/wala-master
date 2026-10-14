@@ -442,29 +442,12 @@
   letter-spacing: -0.02em;
 }
 
-.agendaLista {
-  display: flex;
-  gap: 0.7rem;
-  margin: 0;
-  padding: 0.3rem 0.1rem 0.6rem;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: thin;
-  list-style: none;
-}
-
-.agendaLista > li {
-  flex: 0 0 auto;
-  scroll-snap-align: start;
-}
-
 .agendaItem,
 .agendaItem:hover {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  width: 236px;
+  width: 100%;
   min-height: 92px;
   padding: 0.7rem 0.85rem;
   border: 1px solid var(--color-border);
