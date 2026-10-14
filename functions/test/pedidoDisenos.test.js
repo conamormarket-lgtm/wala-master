@@ -66,4 +66,39 @@ check("creacionesDelPedido: cada línea, cada pieza y su Mi combo, sin repetir",
   assert.deepStrictEqual(ids.sort(), ["crea1", "mio1", "pieza1"]);
 });
 
-console.log(`pedidoDisenos: ${count} pruebas OK`);
+// disenoCompartido es async: se prueba aparte y al final se imprime el total.
+const fakeDb = (docs) => ({
+  collection: () => ({ doc: (id) => ({ get: async () => ({ exists: !!docs[id], data: () => docs[id] }) }) }),
+});
+const P = (n) => `https://x/${n}.jpg`;
+
+(async () => {
+  const docs = {
+    mio1: {
+      tipo: "comboCrear", userId: "u1", enPedido: true, name: "Nuestro combo",
+      piezas: [{ designId: "a", talla: "M" }, { designId: "b", talla: "L", frente: P("bf"), nombre: "Otra" }],
+    },
+    a: { userId: "u1", name: "Polo A", productName: "Polo clásico", color: { nombre: "Blanco", hex: "#fff" }, vistasPrevias: [{ url: P("af") }, { url: P("ae") }] },
+    b: { userId: "u2", name: "Ajena" },
+    suelta: { userId: "u1", enPedido: true, name: "Mi polera", productName: "Polera", variant: { size: "S" }, imagenConjunta: P("s") },
+    borrador: { userId: "u1", name: "Sin comprar", vistasPrevias: [{ url: P("x") }] },
+  };
+  const db = fakeDb(docs);
+
+  const combo = await d.disenoCompartido(db, ["mio1"]);
+  assert.strictEqual(combo.titulo, "Nuestro combo");
+  assert.deepStrictEqual(combo.piezas[0], {
+    nombre: "Polo A", prenda: "Polo clásico", color: "Blanco", colorHex: "#fff", talla: "M", imagenes: [P("af"), P("ae")],
+  });
+  // Pieza de otra cuenta: solo lo que guardó el combo, nunca su documento.
+  assert.deepStrictEqual(combo.piezas[1], { nombre: "Otra", prenda: "", color: "", colorHex: "", talla: "L", imagenes: [P("bf")] });
+  count += 1;
+
+  const suelta = await d.disenoCompartido(db, ["suelta", "borrador", "../x", "nada"]);
+  assert.strictEqual(suelta.piezas.length, 1);
+  assert.deepStrictEqual(suelta.piezas[0].imagenes, [P("s")]);
+  assert.strictEqual(suelta.piezas[0].talla, "S");
+  count += 1;
+
+  console.log(`pedidoDisenos: ${count} pruebas OK`);
+})().catch((e) => { console.error("FALLA: disenoCompartido"); console.error(e); process.exit(1); });

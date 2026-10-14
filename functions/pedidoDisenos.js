@@ -128,9 +128,65 @@ async function marcarCreacionesDelPedido(db, payload, uid) {
   }));
 }
 
+/**
+ * La vista pública de una creación ("wala.pe/ver/<id>"), para el asesor que
+ * abre el enlace del WhatsApp: solo lo que se ve (prenda, color, talla y las
+ * imágenes de cada lado), nada del cliente. Solo de creaciones que ya están en
+ * un pedido o publicadas: el id (20 caracteres al azar) va en el mensaje.
+ * Un "Mi combo" se muestra con todas sus prendas.
+ */
+const ID_VALIDO = /^[A-Za-z0-9_-]{1,128}$/;
+const compartible = (d) => d && (d.enPedido === true || d.isPublic === true || d.comunidad === "publicada");
+const urlsDe = (lista) => (Array.isArray(lista) ? lista : [])
+  .map((v) => (v && typeof v === "object" ? v.url : v))
+  .filter((u) => typeof u === "string" && /^https:\/\//.test(u));
+
+function prendaVisible(d, extra = {}) {
+  const imagenes = urlsDe(d.vistasPrevias);
+  if (!imagenes.length) imagenes.push(...urlsDe([d.imagenConjunta, d.previewUrl, d.miniatura]));
+  const color = d.color && typeof d.color === "object" ? d.color : null;
+  return {
+    nombre: String(d.name || ""),
+    prenda: String(d.productName || ""),
+    color: color ? String(color.nombre || "") : "",
+    colorHex: color ? String(color.hex || "") : "",
+    talla: String(extra.talla || (d.variant && d.variant.size) || ""),
+    imagenes: imagenes.slice(0, 4),
+  };
+}
+
+async function disenoCompartido(db, ids) {
+  const lista = [...new Set((Array.isArray(ids) ? ids : [ids]).map(String))].filter((id) => ID_VALIDO.test(id)).slice(0, 4);
+  const leer = async (id) => {
+    const snap = await db.collection("designs").doc(id).get();
+    return snap.exists ? snap.data() : null;
+  };
+  const piezas = [];
+  let titulo = "";
+  for (const id of lista) {
+    const d = await leer(id);
+    if (!compartible(d)) continue;
+    if (d.tipo === "comboCrear" && Array.isArray(d.piezas)) {
+      titulo = titulo || String(d.name || d.comboNombre || "");
+      const docs = await Promise.all(d.piezas.map((p) => (p && ID_VALIDO.test(String(p.designId || "")) ? leer(String(p.designId)) : null)));
+      d.piezas.forEach((p, i) => {
+        if (!p) return;
+        const pieza = docs[i] && docs[i].userId === d.userId
+          ? prendaVisible(docs[i], { talla: p.talla })
+          : { nombre: String(p.nombre || ""), prenda: "", color: "", colorHex: "", talla: String(p.talla || ""), imagenes: urlsDe([p.frente, p.espalda]) };
+        piezas.push(pieza);
+      });
+    } else {
+      piezas.push(prendaVisible(d));
+    }
+  }
+  return { titulo, piezas };
+}
+
 module.exports = {
   congelarDisenos,
   marcarCreacionesDelPedido,
+  disenoCompartido,
   // Para las pruebas.
   destinoPedido,
   urlsDelCliente,

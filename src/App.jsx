@@ -102,6 +102,7 @@ const ProductPage = lazy(() => import('./pages/ProductPage'));
 const PersonalizarPage = lazy(() => import('./pages/PersonalizarPage'));
 const CrearStudioPage = lazy(() => import('./pages/Crear/CrearStudioPage'));
 const ComboCrearPage = lazy(() => import('./pages/Crear/ComboCrearPage'));
+const VerDisenoPage = lazy(() => import('./pages/Crear/VerDisenoPage'));
 const CreacionPage = lazy(() => import('./pages/Crear/CreacionPage'));
 const ComunidadPage = lazy(() => import('./pages/Comunidad/ComunidadPage'));
 const CartPage = lazy(() => import('./pages/CartPage'));
@@ -409,6 +410,7 @@ function App() {
                                   <Route path="/personalizar" element={<PersonalizarPage />} />
                                   <Route path="/crear/:id" element={<CrearStudioPage />} />
                                   <Route path="/combo/:id" element={<ComboCrearPage />} />
+                                  <Route path="/ver/:id" element={<VerDisenoPage />} />
                                   <Route path="/creacion/:id" element={<CreacionPage />} />
                                   <Route path="/comunidad" element={<ComunidadPage />} />
                                   <Route path="/editor/:id" element={<EditorPage />} />

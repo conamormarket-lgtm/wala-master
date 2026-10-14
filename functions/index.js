@@ -7,7 +7,7 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { FieldValue } = require("firebase-admin/firestore"); // robusto en emulador (FieldValue puede ser undefined ahí)
 const crypto = require("crypto");
-const { congelarDisenos, marcarCreacionesDelPedido } = require("./pedidoDisenos");
+const { congelarDisenos, marcarCreacionesDelPedido, disenoCompartido } = require("./pedidoDisenos");
 const { precioDeCatalogo } = require("./catalogPricing");
 const { createCartValidator } = require("./cartValidation");
 const {
@@ -382,6 +382,13 @@ const verificarPreciosYStock = createCartValidator({ db, HttpsError: functions.h
 // prepareCheckoutPayment (ej. LandingPaymentBlock.jsx, que llama createWebOrder
 // de una vez). Mismo criterio que prepareCheckoutPayment, vía la misma función
 // verificarPreciosYStock — no es una segunda validación distinta.
+// "wala.pe/ver/<id>": la creación de un pedido (o publicada) para quien abre
+// el enlace del WhatsApp, sin sesión. Ver disenoCompartido (pedidoDisenos.js).
+exports.verDisenoCompartido = functions.https.onCall(async (data) => {
+  const ids = String((data && data.id) || "").split(",");
+  return disenoCompartido(db, ids);
+});
+
 exports.validateCartPricingSecure = functions.https.onCall(async (data) => {
   const productos = data && data.productos;
   if (!productos || typeof productos !== "object") {

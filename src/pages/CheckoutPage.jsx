@@ -215,6 +215,21 @@ const detalleWhatsapp = (item) => {
   return lineas;
 };
 
+/**
+ * El enlace de un artículo en el WhatsApp al asesor. Lo de Crear va a su diseño
+ * ("wala.pe/ver/<id>": el combo con todas sus prendas o la creación), no a la
+ * prenda o al combo vacíos; lo demás, a su producto.
+ */
+const enlaceWhatsapp = (item) => {
+  const c = item?.customization;
+  if (c?.tipo === 'comboCrear') {
+    const ids = c.miComboId ? [c.miComboId] : (c.piezas || []).map((p) => p?.designId).filter(Boolean);
+    if (ids.length) return `${window.location.origin}/ver/${ids.join(',')}`;
+  }
+  if (c?.tipo === 'crear' && c.designId) return `${window.location.origin}/ver/${c.designId}`;
+  return `${window.location.origin}/producto/${item.productId}`;
+};
+
 // Lo que ve el cliente en la pestaña nueva mientras el servidor crea el pedido y
 // antes de que cargue WhatsApp (misma presentación que la pantalla de carga).
 const PANTALLA_ABRIENDO_WHATSAPP = `<!doctype html><html lang="es"><head><meta charset="utf-8">
@@ -1225,8 +1240,8 @@ const CheckoutPage = () => {
           }
           const price = item.customization?.finalPrice || item.price;
           message += `   Subtotal: S/ ${(price * item.quantity).toFixed(2)}\n`;
-          // Sin enlaces de imágenes (Firebase): el enlace del producto basta.
-          message += `   Link: ${window.location.origin}/producto/${item.productId}\n\n`;
+          // Sin enlaces de imágenes (Firebase): el del producto o el del diseño basta.
+          message += `   Link: ${enlaceWhatsapp(item)}\n\n`;
         });
 
         message += `Resumen de Pago:\n`;
@@ -1288,7 +1303,7 @@ const CheckoutPage = () => {
             const price = item.customization?.finalPrice || item.price;
             sub += price * item.quantity;
             m += `   Subtotal: S/ ${(price * item.quantity).toFixed(2)}\n`;
-            m += `   Link: ${window.location.origin}/producto/${item.productId}\n\n`;
+            m += `   Link: ${enlaceWhatsapp(item)}\n\n`;
           });
           m += `Subtotal${brandLabel ? ` de ${brandLabel}` : ''}: S/ ${sub.toFixed(2)}\n`;
           if (brandLabel) {

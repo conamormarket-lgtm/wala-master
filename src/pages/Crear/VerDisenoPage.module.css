@@ -1,0 +1,117 @@
+/* "wala.pe/ver/<id>": el diseño de un pedido para el asesor. Fotos con el
+   mismo fondo lila de las vistas previas (#F3F1F7). */
+
+.pagina {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 2rem 1rem 5rem;
+  color: var(--gris-texto-principal);
+  min-height: 60vh;
+}
+
+.rotulo {
+  margin: 0 0 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--violet-600, #7c3aed);
+}
+
+.titulo {
+  margin: 0 0 1.5rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.piezas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.pieza {
+  border: 1px solid var(--borde-suave, rgba(124, 58, 237, 0.18));
+  border-radius: 16px;
+  padding: 1rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.datos {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.numero {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: #fff;
+  background: var(--violet-600, #7c3aed);
+}
+
+.prenda {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.detalle {
+  margin: 0.25rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  font-size: 0.9rem;
+  color: var(--gris-texto-secundario, #4b5563);
+}
+
+.color {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.punto {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  /* Visible en modo claro y noche (un negro sobre fondo oscuro). */
+  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+}
+
+.nombre {
+  font-style: italic;
+}
+
+.fotos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 0.75rem;
+}
+
+.foto {
+  display: block;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f3f1f7;
+  aspect-ratio: 1;
+}
+
+.foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
