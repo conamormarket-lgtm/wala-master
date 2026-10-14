@@ -176,7 +176,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `piezas/RetoSemanal.jsx` | `RetoSemanal` | El reto de la semana: premio, avance y envío de evidencia |
 | `piezas/TarjetaJuego.jsx` | `TarjetaJuego` | Tarjeta de un minijuego: banner, estado, recompensa, racha, nota, botón y cuenta atrás (recibe datos; `juegosDelArcade` los arma) |
 | `piezas/LogoMarca.jsx` | `LogoMarca` | Logo de una marca: `sticker` (con nombre) o `sello` (círculo chico girado) |
-| `piezas/Flotantes.jsx` | `PilaFlotante`, `BotonWhatsApp`, `KapiFlotante`, `CARAS_KAPI`, `BurbujaRegalos`, `PildoraRecompensa` | Lo que flota sobre la página (sobre la barra inferior en el celular) |
+| `piezas/Flotantes.jsx` | `PilaFlotante`, `BotonWhatsApp`, `KapiFlotante`, `CARAS_KAPI` y `CARAS_KAPI_MINI` (las caras de Kapi 3D: la fuente única del kit), `BurbujaRegalos`, `PildoraRecompensa` | Lo que flota sobre la página (sobre la barra inferior en el celular) |
 | `piezas/Marco.jsx` | `AvisoSistema`, `BannerApp`, `BarraAdmin`, `PieLegal`, `AvisoIdioma`, `VentanaCampana`, `BotonTema` | Lo que rodea a las secciones: avisos arriba, barra de admin, pie legal, ventanas |
 | `Secciones.jsx` | `BarraAnuncios`, `HeroCarrusel`, `InsigniasConfianza`, `CarruselProductos`, `OfertaRelampago`, `Testimonios`, `PreguntasFrecuentes`, `MarcasMarquesina`, `GrillaCategorias`, `RenderSecciones`, `REGISTRO_SECCIONES` | Secciones del builder; reciben el mismo `settings` que guarda Firestore |
 | `SeccionesContenido.jsx` | `Encabezado`, `BloqueTexto`, `BloqueImagen`, `BloqueVideo`, `MosaicoBanners`, `FilaDestacados`, `videoIncrustado` | Secciones de contenido del builder (header, text, image, video, banner_grid, bestsellers_row) |

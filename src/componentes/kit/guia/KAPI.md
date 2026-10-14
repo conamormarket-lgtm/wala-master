@@ -39,12 +39,28 @@ Revisado el 2026-10-13 contra wala.pe (ventana "Tu Mascota Kapi") y
 
 | Pieza | Aparece en | Archivo |
 |---|---|---|
-| `CARAS_KAPI` | botón flotante y ventana | `piezas/Flotantes.jsx` |
+| `CARAS_KAPI` (512px) y `CARAS_KAPI_MINI` (256px) | todas las caras de Kapi del kit: el botón flotante (la chica), la ventana, los estados vacíos, el acceso, la encuesta, el pie, el editor | `piezas/Flotantes.jsx` |
 | `HojaInferior` | esta ventana, filtros del catálogo, menús en el celular | `Feedback.module.css` |
 | `BarraProgreso` | felicidad, avance del reto, racha de la ruleta, "Quedan N" | `piezas/BarraProgreso.module.css` |
 | `Etiqueta` / `GananciaMonedas` | estado y moneda (también en la Zona Arcade) | `Etiquetas.module.css` |
 | `CuentaRegresiva` (`frase`) | "Podrás darle de comer en…" (y la Zona Arcade) | `CuentaRegresiva.module.css` |
 | `SaldoMonedas` | adonde vuelan las monedas (`.global-coins-target`) | `Etiquetas.jsx` |
+
+## Las caras: Kapi 3D
+
+Desde el 2026-10-14 el kit usa las caras de Kapi en 3D (feliz, hambre y
+triste, en `public/assets/kapi/3d/`), del mismo estilo que los banners de
+los juegos. Se prepararon desde los PNG originales:
+
+- **Borde limpio:** sin los píxeles casi transparentes teñidos de rojo y
+  amarillo que dejaban un halo.
+- **Formato:** recortadas en cuadrado con un poco de aire y pasadas a webp,
+  de 512px (unos 44 KB) y 256px (unos 17 KB).
+
+Todo el kit las toma de `CARAS_KAPI`; nadie escribe la ruta a mano. La
+tienda real sigue con las de antes (`/assets/kapi/kapi-*.webp`), y
+`EstadoVacio` conserva la de antes como valor por defecto porque la tienda
+lo usa en Ver diseño. Cambiar las de la tienda es un paso de la migración.
 
 ## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
 

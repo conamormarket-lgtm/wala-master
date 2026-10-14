@@ -63,11 +63,21 @@ export function BotonWhatsApp({ numero, mensaje, etiqueta = '¿Te ayudamos?' }) 
   );
 }
 
-/** Caras de Kapi por estado (el botón flotante y su ventana). */
+/**
+ * Caras de Kapi por estado, en 3D (public/assets/kapi/3d: 512px, con el borde
+ * limpio). Es la fuente única del kit: estados vacíos, el acceso, la encuesta,
+ * la ventana de Kapi… CARAS_KAPI_MINI (256px) para donde va chico (el botón
+ * flotante). Las de antes (/assets/kapi/kapi-*.webp) siguen en la tienda real.
+ */
 export const CARAS_KAPI = {
-  feliz: '/assets/kapi/kapi-happy.webp',
-  hambre: '/assets/kapi/kapi-hungry.webp',
-  triste: '/assets/kapi/kapi-sad.webp',
+  feliz: '/assets/kapi/3d/kapi-feliz.webp',
+  hambre: '/assets/kapi/3d/kapi-hambre.webp',
+  triste: '/assets/kapi/3d/kapi-triste.webp',
+};
+export const CARAS_KAPI_MINI = {
+  feliz: '/assets/kapi/3d/kapi-feliz-256.webp',
+  hambre: '/assets/kapi/3d/kapi-hambre-256.webp',
+  triste: '/assets/kapi/3d/kapi-triste-256.webp',
 };
 
 /**
@@ -79,7 +89,7 @@ export const CARAS_KAPI = {
 export function KapiFlotante({ estado = 'feliz', aviso = false, onAbrir, etiqueta = 'Tu mascota Kapi' }) {
   return (
     <button type="button" className={`${s.flotante} ${s.kapi}`} onClick={onAbrir} aria-label={aviso ? `${etiqueta} (tiene algo para ti)` : etiqueta}>
-      <img src={CARAS_KAPI[estado] || CARAS_KAPI.feliz} alt="" draggable="false" />
+      <img src={CARAS_KAPI_MINI[estado] || CARAS_KAPI_MINI.feliz} alt="" draggable="false" />
       {aviso && <span className={s.exclamacion} aria-hidden="true">!</span>}
     </button>
   );

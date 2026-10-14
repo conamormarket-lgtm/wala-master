@@ -13,6 +13,7 @@ import { FotoProducto } from '../piezas/FotoProducto';
 import { PedidosPorVerificar } from '../piezas/PedidosPorVerificar';
 import { LineaProduccion, PagosPedido } from '../piezas/DetallePedido';
 import { EsqueletoPedido, EsqueletoTarjeta } from '../Esqueletos';
+import { CARAS_KAPI } from '../piezas/Flotantes';
 import s from './CuentaPedidos.module.css';
 
 /*
@@ -41,7 +42,7 @@ export function PaginaPedidos({ pedidos = [], porVerificar, cargando = false, er
     return (
       <>
         {cabeza}
-        <EstadoVacio imagen="/assets/kapi/kapi-happy.webp" titulo="Completa tu perfil para rastrear" texto="Para ubicar tus pedidos necesitamos tu DNI o carnet de extranjería.">
+        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Completa tu perfil para rastrear" texto="Para ubicar tus pedidos necesitamos tu DNI o carnet de extranjería.">
           <Boton to={urlCompletar} icono={<IdCard aria-hidden="true" />}>Completar perfil</Boton>
         </EstadoVacio>
       </>
@@ -66,7 +67,7 @@ export function PaginaPedidos({ pedidos = [], porVerificar, cargando = false, er
           {[0, 1].map((k) => <li key={k}><EsqueletoPedido /></li>)}
         </ul>
       ) : !pedidos.length && !porVerificar?.pendientes?.length ? (
-        <EstadoVacio imagen="/assets/kapi/kapi-happy.webp" titulo="Aún no tienes pedidos" texto="Cuando compres algo, aquí verás por dónde va, paso a paso.">
+        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Aún no tienes pedidos" texto="Cuando compres algo, aquí verás por dónde va, paso a paso.">
           {onIrATienda && <Boton icono={<ShoppingBag aria-hidden="true" />} onClick={onIrATienda}>Ir a la tienda</Boton>}
         </EstadoVacio>
       ) : pedidos.length > 0 && (

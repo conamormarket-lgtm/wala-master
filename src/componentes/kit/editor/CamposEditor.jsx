@@ -10,6 +10,7 @@ import { tipoDeEnlace } from '../Enlace';
 import { FUENTES_TIPOGRAFIA, esquemaDe } from './esquemas';
 import { IconoWala, ICONOS_WALA, iconoDesde } from '../IconosWala';
 import { FotoProducto } from '../piezas/FotoProducto';
+import { CARAS_KAPI } from '../piezas/Flotantes';
 import s from './Editor.module.css';
 
 /*
@@ -469,7 +470,7 @@ function ControlLista({ campo: def, valor, onCambiar }) {
       </AnimatePresence>
       {items.length === 0 && (
         <p className={s.vacioLista}>
-          <img src="/assets/kapi/kapi-sad.webp" alt="" width="40" height="40" />
+          <img src={CARAS_KAPI.triste} alt="" width="40" height="40" />
           Aún no hay {def.etiqueta.toLowerCase()}. Añade la primera.
         </p>
       )}

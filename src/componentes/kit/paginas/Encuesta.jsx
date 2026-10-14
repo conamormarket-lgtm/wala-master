@@ -15,6 +15,7 @@ import { ProgresoEncuesta, ElegirVarios, FichaPersonaEncuesta } from '../piezas/
 import { HojaPersona, validarPersona } from '../piezas/FormularioPersona';
 import { IdeaRegalo } from '../piezas/Regalos';
 import { Hueso, EsqueletoFormulario } from '../Esqueletos';
+import { CARAS_KAPI } from '../piezas/Flotantes';
 import s from './Encuesta.module.css';
 
 /*
@@ -149,12 +150,12 @@ export function PaginaEncuesta({
       <BloqueSeccion ajustes={{ paddingTop: '2rem', paddingBottom: '2.5rem' }}>
         <div className={`${s.columna} ${s.estado}`}>
           {!sesion ? (
-            <EstadoVacio imagen="/assets/kapi/kapi-happy.webp" titulo="Cuéntanos a quién le regalas" texto={`Inicia sesión para responder la encuesta y ganar hasta ${recompensa.tope} monedas.`}>
+            <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Cuéntanos a quién le regalas" texto={`Inicia sesión para responder la encuesta y ganar hasta ${recompensa.tope} monedas.`}>
               <Boton to={urlLogin} icono={<LogIn aria-hidden="true" />}>Iniciar sesión</Boton>
               <Boton to={urlRegistro} variante="contorno">Crear cuenta</Boton>
             </EstadoVacio>
           ) : (
-            <EstadoVacio imagen="/assets/kapi/kapi-happy.webp" titulo="Ya respondiste la encuesta" texto="Tus personas y sus fechas están en Fechas importantes. Puedes volver a responderla: no se pierde nada de lo que ya guardaste.">
+            <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Ya respondiste la encuesta" texto="Tus personas y sus fechas están en Fechas importantes. Puedes volver a responderla: no se pierde nada de lo que ya guardaste.">
               <Boton to={urlFechas} icono={<CalendarHeart aria-hidden="true" />}>Ver mis fechas</Boton>
               <Boton variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={() => setRehacer(true)}>Volver a responder</Boton>
             </EstadoVacio>
@@ -258,7 +259,7 @@ export function PaginaEncuesta({
     cuerpo = (
       <>
         <div className={s.portada}>
-          <img className={s.kapi} src="/assets/kapi/kapi-happy.webp" alt="" width="132" height="132" />
+          <img className={s.kapi} src={CARAS_KAPI.feliz} alt="" width="132" height="132" />
           {/* Sin sello: Kapi ya pone la cara. */}
           <CabezaPaso titulo={portada.titulo} subtitulo={portada.subtitulo} trazo />
         </div>

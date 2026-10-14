@@ -9,6 +9,7 @@ import { TarjetaCreacion } from '../piezas/Creaciones';
 import { TarjetaPersonaRegalo, AvisoFestiva, AgendaFechas, faltanDias } from '../piezas/Regalos';
 import { HojaPersona, RELACIONES } from '../piezas/FormularioPersona';
 import { EsqueletoProducto, EsqueletoFila, EsqueletoTarjeta } from '../Esqueletos';
+import { CARAS_KAPI } from '../piezas/Flotantes';
 import s from './CuentaPersonalizacion.module.css';
 
 /*
@@ -58,7 +59,7 @@ export function PaginaCreaciones({ creaciones = [], borradores = [], cargando = 
       ) : cargando ? (
         <ul className={s.rejilla} aria-busy="true"><Esqueletos n={3} forma="producto" /></ul>
       ) : n === 0 && borradores.length === 0 ? (
-        <EstadoVacio imagen="/assets/kapi/kapi-happy.webp" titulo="Aún no tienes creaciones" texto="Elige una prenda, ponle tu imagen o tu frase y guárdala: aquí la tendrás lista para comprar o seguir editando.">
+        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Aún no tienes creaciones" texto="Elige una prenda, ponle tu imagen o tu frase y guárdala: aquí la tendrás lista para comprar o seguir editando.">
           <Boton to={urlCrear} icono={<Sparkles aria-hidden="true" />}>Empezar a crear</Boton>
         </EstadoVacio>
       ) : (
@@ -145,7 +146,7 @@ export function PaginaListaDeseos({
       {cargando ? (
         <ul className={s.rejillaProductos} aria-busy="true"><Esqueletos n={4} forma="producto" /></ul>
       ) : !hay ? (
-        <EstadoVacio imagen="/assets/kapi/kapi-happy.webp" titulo="Tu lista de deseos está vacía" texto="Explora la tienda y guarda los productos que te encantaría recibir o comprar después.">
+        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Tu lista de deseos está vacía" texto="Explora la tienda y guarda los productos que te encantaría recibir o comprar después.">
           <Boton to={urlTienda}>Explorar la tienda</Boton>
         </EstadoVacio>
       ) : (
@@ -230,7 +231,7 @@ export function PaginaFechas({
       {cargando ? (
         <ul className={s.personas} aria-busy="true"><Esqueletos n={2} alto={360} /></ul>
       ) : personas.length === 0 ? (
-        <EstadoVacio imagen="/assets/kapi/kapi-happy.webp" titulo="Todavía no agregaste a nadie" texto="Empieza por la persona a la que más le regalas: con su cumpleaños alcanza.">
+        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Todavía no agregaste a nadie" texto="Empieza por la persona a la que más le regalas: con su cumpleaños alcanza.">
           {onGuardar && <Boton icono={<Plus aria-hidden="true" />} onClick={() => abrir()}>Añadir persona</Boton>}
         </EstadoVacio>
       ) : (

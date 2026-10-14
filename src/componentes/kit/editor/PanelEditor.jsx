@@ -10,6 +10,7 @@ import { Pestanas } from '../Navegacion';
 import { IsoWala } from '../Marca';
 import { ESQUEMAS, GRUPOS_MODULOS, ajustesIniciales, esquemaDe, resumenDe } from './esquemas';
 import { FormularioSeccion, ProveedorEditor } from './CamposEditor';
+import { CARAS_KAPI } from '../piezas/Flotantes';
 import s from './Editor.module.css';
 
 /* ── Operaciones sobre la lista de secciones (siempre devuelven otra lista) ── */
@@ -323,7 +324,7 @@ export default function PanelEditor({
                     {cabecera}
                     {lista.length === 0 && (
                       <div className={s.vacio}>
-                        <img src="/assets/kapi/kapi-hungry.webp" alt="" width="88" height="88" />
+                        <img src={CARAS_KAPI.hambre} alt="" width="88" height="88" />
                         <strong>Esta página tiene hambre</strong>
                         <span>Dale de comer un banner o un título y ve sumando secciones.</span>
                       </div>

@@ -10,6 +10,7 @@ import { ProgresoEncuesta } from '../piezas/Encuesta';
 import { RequisitosContrasena, contrasenaValida, BotonGoogle, SeparadorAcceso } from '../piezas/Acceso';
 import { CamposDatosPersonales, validarPerfil, NOMBRE_DOCUMENTO } from '../piezas/DatosPersonales';
 import { EsqueletoFormulario } from '../Esqueletos';
+import { CARAS_KAPI } from '../piezas/Flotantes';
 import s from './Acceso.module.css';
 
 /*
@@ -72,7 +73,7 @@ export function MarcoAcceso({ panel = {}, titulo, texto, arriba, pie, children }
                 ))}
               </ul>
             )}
-            <img className={s.kapi} src="/assets/kapi/kapi-happy.webp" alt="" width="120" height="120" />
+            <img className={s.kapi} src={CARAS_KAPI.feliz} alt="" width="120" height="120" />
           </aside>
           <div className={s.lado}>
             {arriba}

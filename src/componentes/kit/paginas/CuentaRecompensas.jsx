@@ -10,6 +10,7 @@ import { TarjetaRecompensa, TarjetaCupon, TarjetaMision, NivelCuenta, NIVELES } 
 import { FormaGanar, EnlaceInvitacion, FilaReferido, DetallePedidoReferido, RankingReferidos } from '../piezas/Referidos';
 import { FotoProducto } from '../piezas/FotoProducto';
 import { EsqueletoProducto, EsqueletoFila, EsqueletoTarjeta } from '../Esqueletos';
+import { CARAS_KAPI } from '../piezas/Flotantes';
 import s from './CuentaRecompensas.module.css';
 
 /*
@@ -84,7 +85,7 @@ export function PaginaCatalogo({ recompensas = [], saldo = 0, cargando = false, 
       ) : cargando ? (
         <ul className={s.rejilla} aria-busy="true"><Esqueletos n={3} forma="producto" /></ul>
       ) : recompensas.length === 0 ? (
-        <EstadoVacio imagen="/assets/kapi/kapi-happy.webp" titulo="No hay recompensas por ahora" texto="Vuelve pronto: se agregan seguido." />
+        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="No hay recompensas por ahora" texto="Vuelve pronto: se agregan seguido." />
       ) : (
         <ul className={s.rejilla}>
           {recompensas.map((r) => (
@@ -128,7 +129,7 @@ export function PaginaCupones({ cupones = [], cargando = false, error = false, o
       ) : cargando ? (
         <ul className={s.cupones} aria-busy="true"><Esqueletos n={2} alto={150} /></ul>
       ) : ordenados.length === 0 ? (
-        <EstadoVacio imagen="/assets/kapi/kapi-happy.webp" titulo="Todavía no tienes cupones" texto="Los ganas en la Ruleta semanal o canjeando tus monedas en el catálogo.">
+        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Todavía no tienes cupones" texto="Los ganas en la Ruleta semanal o canjeando tus monedas en el catálogo.">
           <Boton to={urlRuleta}>Ir a la ruleta</Boton>
           <Boton to={urlCatalogo} variante="contorno">Ver el catálogo</Boton>
         </EstadoVacio>
@@ -208,7 +209,7 @@ export function PaginaMisiones({
       ) : cargando ? (
         <ul className={s.misiones} aria-busy="true"><Esqueletos n={3} forma="fila" /></ul>
       ) : misiones.length === 0 ? (
-        <EstadoVacio imagen="/assets/kapi/kapi-happy.webp" titulo="Todavía no hay misiones activas" texto="Vuelve pronto: se agregan seguido." />
+        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Todavía no hay misiones activas" texto="Vuelve pronto: se agregan seguido." />
       ) : (
         <ul className={s.misiones}>
           {misiones.map((m) => (

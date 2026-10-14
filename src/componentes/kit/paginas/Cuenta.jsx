@@ -12,6 +12,7 @@ import { BloqueSeccion } from '../Seccion';
 import { CabezaCuenta, TarjetaCuenta, ListaDatos, Estadistica, AccesosCuenta, IdentidadCuenta, ListaEleccion } from '../piezas/Cuenta';
 import { TarjetaDireccion } from '../piezas/TarjetaDireccion';
 import { EsqueletoTarjeta } from '../Esqueletos';
+import { CARAS_KAPI } from '../piezas/Flotantes';
 import s from './Cuenta.module.css';
 
 /*
@@ -87,7 +88,7 @@ export function PaginaCuentaInvitado({ pedidos = false, urlLogin = '/login', url
     <BloqueSeccion ajustes={{ paddingTop: '2rem', paddingBottom: '2.5rem' }}>
       <div className={s.invitado}>
         <EstadoVacio
-          imagen="/assets/kapi/kapi-happy.webp"
+          imagen={CARAS_KAPI.feliz}
           titulo={pedidos ? 'Mira por dónde va tu pedido' : 'Tu cuenta Walá'}
           texto={pedidos
             ? 'Inicia sesión con el correo de tu compra para ver tus pedidos y su avance.'
@@ -436,7 +437,7 @@ export function PaginaDirecciones({
         </ul>
       ) : ordenadas.length === 0 ? (
         <EstadoVacio
-          imagen="/assets/kapi/kapi-happy.webp"
+          imagen={CARAS_KAPI.feliz}
           titulo="Aún no tienes direcciones"
           texto="Se guarda sola en tu primera compra, o agrégala aquí para pagar más rápido."
         >

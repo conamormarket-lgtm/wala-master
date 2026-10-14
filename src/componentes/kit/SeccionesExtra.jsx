@@ -14,6 +14,7 @@ import { TextoCampo, BotonDeAjustes, fuenteDe, prefiereQuieto } from './Seccione
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import { EtiquetaColgante, Garabatos, LogoWala, Destello, Corazon, acento } from './Marca';
 import { TarjetaCategoria, TarjetaCategoriaEsqueleto, Beneficio, FotoProducto, OpcionesFiltro } from './piezas';
+import { CARAS_KAPI } from './piezas/Flotantes';
 import s from './SeccionesExtra.module.css';
 
 /*
@@ -510,7 +511,7 @@ export function PiePagina({ ajustes = {}, pieLegal, kapi = true }) {
   return (
     <footer className={s.pie}>
       <Garabatos variante="pie" />
-      {kapi && <img className={s.pieKapi} src="/assets/kapi/kapi-happy.webp" alt="" width="96" height="96" loading="lazy" decoding="async" />}
+      {kapi && <img className={s.pieKapi} src={CARAS_KAPI.feliz} alt="" width="96" height="96" loading="lazy" decoding="async" />}
       <div className={s.pieMarca}>
         <LogoWala tamano={34} tono="blanco" />
         <EtiquetaColgante tono="magenta" tamano="sm">Hecho con amor en Perú</EtiquetaColgante>

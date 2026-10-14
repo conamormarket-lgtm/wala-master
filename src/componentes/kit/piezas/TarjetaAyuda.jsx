@@ -1,6 +1,7 @@
 import React from 'react';
 import { MessageCircle } from 'lucide-react';
 import Boton from '../Boton';
+import { CARAS_KAPI } from './Flotantes';
 import s from './TarjetaAyuda.module.css';
 
 /**
@@ -16,7 +17,7 @@ export function TarjetaAyuda({
   titulo = '¿Te quedó otra duda?',
   texto = 'Escríbenos y te respondemos rapidito.',
   accion,
-  imagen = '/assets/kapi/kapi-happy.webp',
+  imagen = CARAS_KAPI.feliz,
 }) {
   return (
     <aside className={s.ayuda}>

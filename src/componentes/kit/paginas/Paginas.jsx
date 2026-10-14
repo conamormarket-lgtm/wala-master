@@ -16,6 +16,7 @@ import { PiePagina, CatalogoConFiltros } from '../SeccionesExtra';
 import { Buscador } from '../Formulario';
 import { PilaFlotante } from '../piezas/Flotantes';
 import { PieLegal } from '../piezas/Marco';
+import { CARAS_KAPI } from '../piezas/Flotantes';
 import s from './Paginas.module.css';
 
 /*
@@ -352,7 +353,7 @@ export function PaginaBusqueda({
       </BloqueSeccion>
       <BloqueSeccion ajustes={{ paddingTop: '0.75rem', paddingBottom: '2.5rem' }}>
         {!cargando && productos.length === 0 && !hayFiltros ? (
-          <EstadoVacio imagen="/assets/kapi/kapi-sad.webp" titulo={t.vacioTitulo} texto={termino ? t.vacioTexto : t.subtitulo}>
+          <EstadoVacio imagen={CARAS_KAPI.triste} titulo={t.vacioTitulo} texto={termino ? t.vacioTexto : t.subtitulo}>
             {sugeridas.length > 0 && (
               <div className={s.busquedaProbar}>
                 <span className={s.busquedaAtajosTitulo}>Prueba con</span>

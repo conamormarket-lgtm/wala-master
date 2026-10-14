@@ -451,7 +451,7 @@ function Portada({ tema, cambiarTema, manejarAgregar }) {
           <CheckCircle2 />
           <span><strong>¡Pedido en camino!</strong><small>Llega mañana</small></span>
         </div>
-        <img src="/assets/kapi/kapi-happy.webp" alt="" className={s.kapi} aria-hidden="true" />
+        <img src="/assets/kapi/3d/kapi-feliz.webp" alt="" className={s.kapi} aria-hidden="true" />
         <Sparkles className={`${s.chispa} ${s.chispa1}`} aria-hidden="true" />
         <Sparkles className={`${s.chispa} ${s.chispa2}`} aria-hidden="true" />
         <Sparkles className={`${s.chispa} ${s.chispa3}`} aria-hidden="true" />
@@ -966,7 +966,7 @@ function Contenido({ tema, cambiarTema }) {
               </EstadoVacio>
             </Panel>
             <Panel retraso={0.08}>
-              <EstadoVacio imagen="/assets/kapi/kapi-happy.webp" titulo="Aún no tienes pedidos" texto="Diseña algo único: Kapi te ayuda paso a paso.">
+              <EstadoVacio imagen="/assets/kapi/3d/kapi-feliz.webp" titulo="Aún no tienes pedidos" texto="Diseña algo único: Kapi te ayuda paso a paso.">
                 <Boton variante="secundario" icono={<Wand2 aria-hidden="true" />}>Crear mi diseño</Boton>
               </EstadoVacio>
             </Panel>
