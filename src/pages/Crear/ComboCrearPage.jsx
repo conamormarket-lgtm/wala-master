@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Paintbrush, Images, Copy, Pencil, X, ShoppingBag, Loader2, CheckCircle2, Users, Sparkles } from 'lucide-react';
+import { Paintbrush, Images, Copy, Pencil, X, ShoppingBag, Loader2, CheckCircle2, Sparkles, Truck, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
@@ -10,7 +10,6 @@ import { getPrendaBase } from '../../services/prendasBase';
 import { getDesignById, getDesignsByUser } from '../../services/designs';
 import { leerPrendaBase, tallasDeColor, fotoDeVista, fondoDeVista, cargarImagen } from '../../utils/prendaBase';
 import { renderizarVistaPrevia } from './renderDiseno';
-import { useAlternarFotos } from '../../hooks/useAlternarFotos';
 import { creacionLista } from './creacionCarrito';
 import { leerArmado, guardarArmado, olvidarArmado, preciosDeCombo, itemDeCombo, leerMetaArmado, guardarMetaArmado } from './comboCrear';
 import { guardarMiCombo } from '../../services/misCombos';
@@ -19,8 +18,12 @@ import AccionesComunidad from '../Comunidad/AccionesComunidad';
 import CapaModal from './CapaModal';
 import { esperarGuardados } from './borradoresCache';
 import NombreEditable from './NombreEditable';
-import { EtiquetaColgante } from '../../componentes/kit/Marca';
+import PuntosColor from './PuntosColor';
 import styles from './ComboCrearPage.module.css';
+// La misma ficha que una creación (y que el producto de la tienda).
+import ficha from './CreacionPage.module.css';
+// Las prendas juntas, lado a lado (como la tarjeta de Mi combo).
+import duo from './TarjetaMiCombo.module.css';
 
 const soles = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
 
@@ -56,84 +59,158 @@ const ladosDePieza = (p) => {
   if (!p.creacion && p.respaldo?.frente) {
     return { origen: 'render', lados: [p.respaldo.frente, p.respaldo.espalda].filter(Boolean).map((url) => ({ url, nombre: '' })), completa: true };
   }
+  if (!p.prenda) return { origen: 'prenda', lados: [] };
   return {
     origen: 'prenda',
     lados: leerPrendaBase(p.prenda).vistas.filter((v) => v.imagen).map((v) => ({ url: v.imagen, nombre: v.nombre })),
   };
 };
 
-/**
- * La prenda lisa en el color de la pieza, para cada lado SIN diseño
- * (renderizada como las vistas previas: mismo fondo, mismo margen). Así una
- * prenda con diseño solo adelante muestra su espalda lisa al pasar el mouse.
- * Se hace una vez por prenda, color y lado (queda en memoria).
- */
-const useLadosLisos = (p, fotos) => {
-  const cfg = p.prenda ? leerPrendaBase(p.prenda) : null;
-  const guardado = p.creacion?.color || null;
-  const color = cfg?.colores.find((c) => c.id === guardado?.id)
+/** El color guardado de la pieza, en la configuración de su prenda (o null). */
+const colorDePieza = (p, cfg) => {
+  const guardado = p.creacion?.color || p.plantilla?.color || null;
+  return cfg?.colores.find((c) => c.id === guardado?.id)
     || cfg?.colores.find((c) => c.nombre === guardado?.nombre) || null;
-  // Solo si se sabe qué lados tienen diseño (una imagen única no lo dice).
-  const conDiseno = new Set(fotos.lados.map((l) => l.vista).filter(Boolean));
-  const faltan = fotos.origen === 'render' && !fotos.completa && color && conDiseno.size
-    ? cfg.vistas.filter((v) => !conDiseno.has(v.id) && fotoDeVista(v, color))
-    : [];
+};
+
+/**
+ * Las fotos de todas las piezas: sus lados con diseño y, a continuación, la
+ * prenda lisa en su color para cada lado SIN diseño (renderizada como las
+ * vistas previas: mismo fondo y margen). Así una prenda con diseño solo
+ * adelante también muestra su espalda. Una consulta por prenda, color y lado
+ * (queda en memoria). Devuelve, por pieza: { origen, lados, conDiseno }.
+ */
+const useFotosDePiezas = (piezas) => {
+  const base = piezas.map((p) => {
+    const fotos = ladosDePieza(p);
+    const cfg = p.prenda ? leerPrendaBase(p.prenda) : null;
+    const color = colorDePieza(p, cfg);
+    // Solo si se sabe qué lados tienen diseño (una imagen única no lo dice).
+    const conVista = new Set(fotos.lados.map((l) => l.vista).filter(Boolean));
+    const faltan = fotos.origen === 'render' && !fotos.completa && color && conVista.size
+      ? cfg.vistas.filter((v) => !conVista.has(v.id) && fotoDeVista(v, color))
+      : [];
+    return { p, fotos, color, faltan };
+  });
+  const pedidos = base.flatMap((b, k) => b.faltan.map((v) => ({ k, b, v })));
   const consultas = useQueries({
-    queries: faltan.map((v) => ({
-      queryKey: ['prenda-lisa', p.prenda.id, color.id, v.id],
+    queries: pedidos.map(({ b, v }) => ({
+      queryKey: ['prenda-lisa', b.p.prenda.id, b.color.id, v.id],
       staleTime: Infinity,
       queryFn: async () => {
-        const img = await cargarImagen(fotoDeVista(v, color));
+        const img = await cargarImagen(fotoDeVista(v, b.color));
         const blob = await renderizarVistaPrevia({
-          fuente: fondoDeVista(img, v, color), anchoImg: img.naturalWidth, altoImg: img.naturalHeight,
+          fuente: fondoDeVista(img, v, b.color), anchoImg: img.naturalWidth, altoImg: img.naturalHeight,
           vista: v, capasPorZona: {}, srcDe: (c) => c.src, ancho: 600,
         });
         return URL.createObjectURL(blob);
       },
     })),
   });
-  return faltan.map((v, k) => ({ url: consultas[k]?.data || '', nombre: v.nombre, vista: v.id, lisa: true }))
-    .filter((l) => l.url);
+  return base.map((b, k) => {
+    const lisos = pedidos
+      .map((x, n) => (x.k === k ? { url: consultas[n]?.data || '', nombre: x.v.nombre, vista: x.v.id, lisa: true } : null))
+      .filter((l) => l && l.url);
+    return {
+      origen: b.fotos.origen,
+      lados: [...b.fotos.lados, ...lisos],
+      // La etiqueta nombra solo los lados con diseño (no los lisos ni la prenda en blanco).
+      conDiseno: b.fotos.origen === 'render' ? b.fotos.lados.map((l) => l.nombre).filter(Boolean) : [],
+    };
+  });
 };
 
-/** La foto de una pieza: sus lados con diseño y, a continuación, los lisos. */
-const FotoDePieza = ({ pieza, ...props }) => {
-  const fotos = ladosDePieza(pieza);
-  const lisos = useLadosLisos(pieza, fotos);
-  return <FotoPieza fotos={fotos} lisos={lisos} {...props} />;
-};
+/** ¿La pieza todavía no tiene diseño? (su foto es la prenda en blanco, atenuada). */
+const piezaVacia = (p) => !p.creacion && !p.plantilla && !p.respaldo?.frente;
 
 /**
- * Foto de una pieza, como las tarjetas de Mis creaciones: al pasar el mouse
- * se ve la espalda y en el celular alternan solas (con dos puntos de qué
- * lado se ve). Lleva el número de la pieza y el check cuando está lista.
+ * Galería del combo, como la de una creación (miniaturas en columna, zoom que
+ * sigue al cursor, deslizar con el dedo). La primera imagen es todo el combo
+ * (las prendas juntas); después, los lados de cada prenda.
  */
-const FotoPieza = ({ fotos, lisos = [], alt, vacia, children }) => {
-  const { origen } = fotos;
-  // Primero los lados con diseño; después, la prenda lisa de los demás.
-  const lados = [...fotos.lados, ...lisos];
-  const ref = useRef(null);
-  const frente = lados[0]?.url;
-  const espalda = lados[1]?.url;
-  const verEspalda = useAlternarFotos(ref, Boolean(frente && espalda));
-  // La etiqueta dice qué lados llevan diseño: no va en la prenda en blanco
-  // ni nombra los lados lisos.
-  const nombres = origen === 'render' ? fotos.lados.map((l) => l.nombre).filter(Boolean) : [];
-  return (
-    <div
-      ref={ref}
-      className={`${styles.piezaFoto} ${origen === 'render' ? styles.fotoRender : ''} ${verEspalda ? styles.conEspalda : ''} ${vacia ? styles.fotoVacia : ''}`}
-    >
-      {frente && <img src={frente} alt={alt} className={styles.fotoFrente} loading="lazy" />}
-      {espalda && <img src={espalda} alt="" aria-hidden="true" className={styles.fotoEspalda} loading="lazy" />}
-      {frente && espalda && (
-        <span className={styles.puntosFoto} aria-hidden="true">
-          <span className={`${styles.puntoFoto} ${!verEspalda ? styles.puntoFotoActivo : ''}`} />
-          <span className={`${styles.puntoFoto} ${verEspalda ? styles.puntoFotoActivo : ''}`} />
+const GaleriaCombo = ({ piezas, fotos, sel, setSel, nombre }) => {
+  const [zoom, setZoom] = useState(false);
+  const [pos, setPos] = useState({ x: 50, y: 50 });
+  const toqueX = useRef(null);
+  const frentes = piezas.map((p, k) => ({ p, url: fotos[k]?.lados[0]?.url || '', origen: fotos[k]?.origen }))
+    .filter((f) => f.url);
+  const vistas = [
+    { tipo: 'conjunto', nombre: 'Todo el combo' },
+    ...piezas.flatMap((p, k) => (fotos[k]?.lados || []).map((l) => ({
+      url: l.url,
+      nombre: `Prenda ${p.i + 1}${l.nombre ? ` · ${l.nombre}` : ''}`,
+      origen: fotos[k].origen,
+      vacia: piezaVacia(p),
+    }))),
+  ];
+  const actual = vistas[Math.min(sel, vistas.length - 1)];
+  const conZoom = zoom && actual.tipo !== 'conjunto';
+
+  const mover = (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setPos({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 });
+  };
+  const soltarDedo = (e) => {
+    if (toqueX.current === null) return;
+    const inicio = toqueX.current;
+    toqueX.current = null;
+    const finX = e.changedTouches[0]?.clientX;
+    if (vistas.length < 2 || typeof finX !== 'number' || Math.abs(finX - inicio) < 44) return;
+    setSel((i) => (finX < inicio ? Math.min(i + 1, vistas.length - 1) : Math.max(i - 1, 0)));
+  };
+  // Las prendas juntas: en grande y en su miniatura.
+  const juntas = (chico = false) => (
+    <span className={`${duo.prendas} ${chico ? styles.juntasChico : ''}`} style={{ '--n': Math.max(frentes.length, 1) }}>
+      {frentes.map((f) => (
+        <span key={`${f.p.i}-${f.url}`} className={duo.prenda}>
+          <img src={f.url} alt="" loading="lazy" className={`${f.origen === 'prenda' ? styles.conMargen : ''} ${piezaVacia(f.p) ? styles.atenuada : ''}`} />
         </span>
+      ))}
+    </span>
+  );
+
+  return (
+    <div className={ficha.galeria}>
+      {vistas.length > 1 && (
+        <div className={ficha.miniaturas}>
+          {vistas.map((v, i) => (
+            <button
+              key={`${v.nombre}-${v.url || 'juntas'}`}
+              type="button"
+              className={`${ficha.miniatura} ${i === sel ? ficha.miniaturaActiva : ''}`}
+              onClick={() => setSel(i)}
+              onMouseEnter={() => setSel(i)}
+              aria-label={v.nombre}
+              aria-pressed={i === sel}
+            >
+              {v.tipo === 'conjunto'
+                ? <span className={`${styles.miniaturaJuntas} ${i === sel ? styles.miniaturaJuntasActiva : ''}`}>{juntas(true)}</span>
+                : <img src={v.url} alt="" loading="lazy" className={v.origen === 'prenda' ? styles.conMargen : ''} />}
+              <span>{v.nombre}</span>
+            </button>
+          ))}
+        </div>
       )}
-      {nombres.length > 1 && <span className={styles.lados}>{nombres.join(' + ')}</span>}
-      {children}
+      <div
+        className={`${ficha.marco} ${actual.tipo === 'conjunto' ? styles.marcoJuntas : ''}`}
+        onMouseEnter={() => setZoom(true)}
+        onMouseLeave={() => setZoom(false)}
+        onMouseMove={mover}
+        onTouchStart={(e) => { toqueX.current = e.touches[0]?.clientX ?? null; setZoom(false); }}
+        onTouchEnd={soltarDedo}
+        onTouchCancel={() => { toqueX.current = null; }}
+      >
+        {actual.tipo === 'conjunto' ? juntas() : (
+          <img
+            src={actual.url}
+            alt={`${nombre} · ${actual.nombre}`}
+            className={`${ficha.marcoImg} ${actual.origen === 'prenda' ? styles.conMargen : ''} ${actual.vacia ? styles.atenuada : ''}`}
+            style={conZoom ? { transform: 'scale(2.2)', transformOrigin: `${pos.x}% ${pos.y}%` } : undefined}
+          />
+        )}
+        <span className={ficha.ladoActual}>{actual.nombre}</span>
+        {!conZoom && actual.tipo !== 'conjunto' && <span className={ficha.pistaZoom}>Pasa el cursor para ver de cerca</span>}
+      </div>
     </div>
   );
 };
@@ -363,6 +440,29 @@ const ComboCrearPage = () => {
     },
   });
 
+  const miComboDoc = miCombo || mioQ.data || null;
+  const piezas = armado.map((a, i) => {
+    const creacion = creaciones[i];
+    // Diseño de la comunidad para esta pieza (si todavía no tiene uno propio).
+    const dePlantilla = plantillaCombo?.piezas?.[i];
+    const plantilla = !a.designId && dePlantilla?.productId === piezasCombo[i]?.prendaId ? dePlantilla : null;
+    const tallas = tallasPara(prendas[i], creacion);
+    const talla = tallas.includes(a.talla) ? a.talla
+      : tallas.includes(creacion?.variant?.size) ? creacion.variant.size : '';
+    const cargando = Boolean(a.designId && creacionesQ[i]?.isLoading);
+    // Mientras carga: la foto y el nombre que guardó "Mi combo" de esta prenda.
+    const guardada = (miComboDoc?.piezas || [])[i];
+    const respaldo = cargando && guardada?.designId === a.designId ? guardada : null;
+    const esperando = !a.designId && esperandoPlantilla;
+    return { ...a, i, prenda: prendas[i], creacion, plantilla, tallas, talla, cargando, respaldo, esperando, lista: Boolean(creacion && creacionLista(creacion)) };
+  });
+  const fotosPiezas = useFotosDePiezas(piezas);
+  // Qué se ve en la galería (0 = todo el combo).
+  const [verFoto, setVerFoto] = useState(0);
+  const galeriaRef = useRef(null);
+  // Otro combo (o volver a este): la galería empieza en "Todo el combo".
+  useEffect(() => { setVerFoto(0); }, [id, mioParam, plantillaParam]);
+
   if (isLoading || prendasQ.some((q) => q.isLoading)) {
     return (
       <div className={styles.estado}>
@@ -400,22 +500,6 @@ const ComboCrearPage = () => {
     + `${meta.miComboId ? `&mio=${meta.miComboId}` : ''}${extra}`;
   const estadoEstudio = { desde: `/combo/${id}${meta.miComboId ? `?mio=${meta.miComboId}` : ''}` };
 
-  const miComboDoc = miCombo || mioQ.data || null;
-  const piezas = armado.map((a, i) => {
-    const creacion = creaciones[i];
-    // Diseño de la comunidad para esta pieza (si todavía no tiene uno propio).
-    const dePlantilla = plantillaCombo?.piezas?.[i];
-    const plantilla = !a.designId && dePlantilla?.productId === piezasCombo[i]?.prendaId ? dePlantilla : null;
-    const tallas = tallasPara(prendas[i], creacion);
-    const talla = tallas.includes(a.talla) ? a.talla
-      : tallas.includes(creacion?.variant?.size) ? creacion.variant.size : '';
-    const cargando = Boolean(a.designId && creacionesQ[i]?.isLoading);
-    // Mientras carga: la foto y el nombre que guardó "Mi combo" de esta prenda.
-    const guardada = (miComboDoc?.piezas || [])[i];
-    const respaldo = cargando && guardada?.designId === a.designId ? guardada : null;
-    const esperando = !a.designId && esperandoPlantilla;
-    return { ...a, i, prenda: prendas[i], creacion, plantilla, tallas, talla, cargando, respaldo, esperando, lista: Boolean(creacion && creacionLista(creacion)) };
-  });
   const urlPlantilla = (i) => urlEstudio(i, `&plantilla=${meta.plantilla}&plantillaPieza=${i}`);
   const pendientePlantilla = piezas.find((p) => p.plantilla);
   const listas = piezas.filter((p) => p.lista && (!p.tallas.length || p.talla)).length;
@@ -461,167 +545,251 @@ const ComboCrearPage = () => {
     (c) => c.tipo === 'crear' && c.productId === piezasCombo[eligiendo]?.prendaId && c.estado !== 'borrador' && creacionLista(c)
   );
 
+  // Ver una prenda en la galería (su primer lado) desde su fila.
+  const verPieza = (i) => {
+    let indice = 1;
+    for (let k = 0; k < i; k += 1) indice += fotosPiezas[k]?.lados.length || 0;
+    setVerFoto(fotosPiezas[i]?.lados.length ? indice : 0);
+    if (window.innerWidth <= 768) galeriaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  const nombreCombo = miCombo?.name || combo.name;
+  const descuento = sueltas > 0 && ahorro > 0 ? Math.round((ahorro / sueltas) * 100) : 0;
+  const faltaTexto = completo ? 'Todo listo para agregar al carrito.'
+    : pendientePlantilla ? 'Personaliza cada prenda y elige su talla.' : 'Diseña cada prenda y elige su talla.';
+
   return (
-    <div className={styles.container}>
-      <Link to="/personalizar" className={styles.volver}>
-        <ArrowLeft size={18} aria-hidden="true" /> Volver a Crear
-      </Link>
-
-      <header className={styles.cabecera}>
-        <div>
-          <span className={styles.etiqueta}><Users size={14} aria-hidden="true" /> Combo de {piezasCombo.length} prendas</span>
-          <h1 className={styles.titulo}>{combo.name}</h1>
-          {combo.description && <p className={styles.descripcion}>{combo.description}</p>}
-          {!combo.publicado && <span className={styles.borrador}>Borrador: solo lo ves tú</span>}
-          {pendientePlantilla && (
-            <div className={styles.plantillaAviso}>
-              <Sparkles size={16} aria-hidden="true" />
-              <span>Partes de <strong>{plantillaCombo.nombre}</strong>. Personaliza cada prenda (puedes dejarla tal cual) y elige su talla.</span>
-              <Link to={urlPlantilla(pendientePlantilla.i)} state={estadoEstudio} className={styles.principal}>
-                <Paintbrush size={15} aria-hidden="true" /> Personalizar
-              </Link>
-            </div>
-          )}
-          {miCombo && (
-            <div className={styles.miCombo}>
-              <span>
-                <CheckCircle2 size={15} aria-hidden="true" />
-                {miCombo.estado === 'borrador' ? 'Borrador guardado como' : 'Guardado en Mis creaciones como'}
-                <NombreEditable designId={miCombo.id} nombre={miCombo.name || 'Mi combo'} como="strong" className={styles.nombreMiCombo} />
-                {miCombo.estado === 'borrador' && <span className={styles.miComboNota}>Lo encuentras en Crear para continuarlo.</span>}
-              </span>
-              <AccionesComunidad
-                design={miCombo}
-                onCambio={() => queryClient.invalidateQueries({ queryKey: ['creacion', meta.miComboId] })}
-              />
-            </div>
-          )}
-        </div>
-        <div className={styles.precioCaja}>
-          <span className={styles.precio}>{soles(precio)}</span>
-          {ahorro > 0 && (
-            <>
-              <span className={styles.sueltas}>Por separado <span className={styles.tachado}>{soles(sueltas)}</span></span>
-              <EtiquetaColgante tono="magenta" tamano="sm">Ahorras {soles(ahorro)}</EtiquetaColgante>
-            </>
-          )}
-        </div>
-      </header>
-
-      <ol className={styles.piezas}>
-        {piezas.map((p) => {
-          const otraConDiseno = piezas.find((o) => o.i !== p.i && o.creacion && creacionLista(o.creacion));
-          const vaciasIguales = piezas.filter((o) => o.i !== p.i && !o.designId
-            && piezasCombo[o.i].prendaId === piezasCombo[p.i].prendaId).length;
-          return (
-            <li key={p.i} className={`${styles.pieza} ${p.lista ? styles.piezaLista : ''}`}>
-              <FotoDePieza pieza={p} alt={p.prenda?.name || ''} vacia={!p.creacion && !p.plantilla && !p.respaldo?.frente}>
-                <span className={styles.numero}>{p.i + 1}</span>
-                {p.lista && <CheckCircle2 className={styles.check} size={22} aria-label="Lista" />}
-              </FotoDePieza>
-              <div className={styles.piezaInfo}>
-                <span className={styles.piezaPrenda}>Prenda {p.i + 1} · {p.prenda?.name}</span>
-                {p.cargando ? (
-                  p.respaldo?.nombre
-                    ? <strong className={styles.piezaNombre}>{p.respaldo.nombre}</strong>
-                    : <p className={styles.ayuda}>Cargando el diseño…</p>
-                ) : p.creacion ? (
-                  <>
-                    <NombreEditable designId={p.creacion.id} nombre={p.creacion.name || 'Mi creación'} como="strong" className={styles.piezaNombre} />
-                    {p.creacion.color?.nombre && <span className={styles.ayuda}>{p.creacion.color.nombre}</span>}
-                    {!p.lista && (
-                      <p className={styles.aviso}>
-                        {p.creacion.estado === 'borrador'
-                          ? 'Sin terminar: continúa y guárdala para tenerla lista.'
-                          : 'Ábrelo y guárdalo otra vez para prepararlo para imprimir.'}
-                      </p>
-                    )}
-                    {p.tallas.length > 0 && (
-                      <div className={styles.tallas} role="radiogroup" aria-label={`Talla de la prenda ${p.i + 1}`}>
-                        {p.tallas.map((t) => (
-                          <button
-                            key={t}
-                            type="button"
-                            role="radio"
-                            aria-checked={t === p.talla}
-                            className={`${styles.talla} ${t === p.talla ? styles.tallaActiva : ''}`}
-                            onClick={() => ponerEn(p.i, { talla: t })}
-                          >
-                            {t}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    <div className={styles.acciones}>
-                      {/* Si otra pieza lleva este mismo diseño, se edita una copia:
-                          cambiarlo aquí no debe cambiar la otra prenda. */}
-                      <Link
-                        to={urlEstudio(p.i, piezas.some((o) => o.i !== p.i && o.designId === p.designId)
-                          ? `&copiar=${p.designId}` : `&designId=${p.designId}`)}
-                        state={estadoEstudio}
-                        className={styles.secundario}
-                      >
-                        <Pencil size={15} aria-hidden="true" /> {p.creacion.estado === 'borrador' ? 'Continuar' : 'Editar'}
-                      </Link>
-                      {vaciasIguales > 0 && p.lista && (
-                        <button type="button" className={styles.secundario} onClick={() => usarEnLasDemas(p.i)}>
-                          <Copy size={15} aria-hidden="true" /> Usar en {vaciasIguales === 1 ? 'la otra' : 'las demás'}
-                        </button>
-                      )}
-                      <button type="button" className={styles.texto} onClick={() => quitar(p.i)}>
-                        <X size={15} aria-hidden="true" /> Quitar
-                      </button>
-                    </div>
-                  </>
-                ) : p.plantilla ? (
-                  <>
-                    <strong className={styles.piezaNombre}>{p.plantilla.nombre || 'Diseño de la comunidad'}</strong>
-                    <p className={styles.ayuda}>Cámbiale el nombre, la foto o lo que quieras.</p>
-                    <div className={styles.acciones}>
-                      <Link to={urlPlantilla(p.i)} state={estadoEstudio} className={styles.principal}>
-                        <Paintbrush size={15} aria-hidden="true" /> Personalizar
-                      </Link>
-                    </div>
-                  </>
-                ) : p.esperando ? (
-                  <p className={styles.ayuda}>Cargando el diseño…</p>
-                ) : (
-                  <>
-                    <p className={styles.ayuda}>Ponle tu imagen o tu frase.</p>
-                    <div className={styles.acciones}>
-                      <Link to={urlEstudio(p.i)} state={estadoEstudio} className={styles.principal}>
-                        <Paintbrush size={15} aria-hidden="true" /> Diseñar
-                      </Link>
-                      {otraConDiseno && (
-                        <Link to={urlEstudio(p.i, `&copiar=${otraConDiseno.designId}`)} state={estadoEstudio} className={styles.secundario}>
-                          <Copy size={15} aria-hidden="true" /> Copiar de la prenda {otraConDiseno.i + 1}
-                        </Link>
-                      )}
-                      {user && (
-                        <button type="button" className={styles.secundario} onClick={() => setEligiendo(p.i)}>
-                          <Images size={15} aria-hidden="true" /> Mis creaciones
-                        </button>
-                      )}
-                    </div>
-                  </>
-                )}
-                {agotada(p.prenda) && <p className={styles.aviso}>Agotada por ahora.</p>}
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-
-      <div className={styles.barra}>
-        <div className={styles.barraTexto}>
-          <strong>{listas} de {piezas.length} listas</strong>
-          <span>{completo ? 'Todo listo para agregar.'
-            : pendientePlantilla ? 'Personaliza cada prenda y elige su talla.' : 'Diseña cada prenda y elige su talla.'}</span>
-        </div>
-        <button type="button" className={styles.botonCarrito} onClick={agregar} disabled={!completo}>
-          <ShoppingBag size={18} aria-hidden="true" /> Agregar al carrito · {soles(precio)}
-        </button>
+    // product-detail-page: como la ficha y la creación (en el celular, la
+    // compra queda fija abajo y se esconden los botones flotantes).
+    <div className={`${ficha.pagina} product-detail-page`}>
+      <div ref={galeriaRef} className={ficha.columnaGaleria}>
+        <GaleriaCombo piezas={piezas} fotos={fotosPiezas} sel={verFoto} setSel={setVerFoto} nombre={nombreCombo} />
       </div>
+
+      <section className={ficha.info}>
+        <nav className={ficha.migas} aria-label="Ruta">
+          <Link to="/personalizar">Crear</Link>
+          <span aria-hidden="true">/</span>
+          {miCombo ? <Link to="/cuenta/creaciones">Mis creaciones</Link> : <span>Combos</span>}
+          <span aria-hidden="true" className={ficha.migaFinal}>/</span>
+          <span className={ficha.migaFinal}>{nombreCombo}</span>
+        </nav>
+
+        <div className={ficha.cabecera}>
+          <span className={ficha.etiqueta}>{miCombo ? 'Mi combo' : 'Combo'} · {piezasCombo.length} prendas</span>
+          {miCombo
+            ? <NombreEditable designId={miCombo.id} nombre={nombreCombo} como="h1" className={ficha.titulo} />
+            : <h1 className={ficha.titulo}>{combo.name}</h1>}
+          <p className={ficha.base}>{miCombo ? `Hecho sobre ${combo.name}` : combo.description}</p>
+          {!combo.publicado && <span className={styles.borrador}>Borrador: solo lo ves tú</span>}
+        </div>
+
+        <div className={ficha.filaPrecio}>
+          <span className={ficha.precio}>{soles(precio)}</span>
+          {ahorro > 0 && <span className={ficha.precioAntes}>{soles(sueltas)}</span>}
+          {descuento > 0 && <span className={ficha.descuento}>-{descuento}%</span>}
+        </div>
+        <p className={ficha.incluye}>
+          {ahorro > 0 ? `Ahorras ${soles(ahorro)} frente a comprarlas por separado. ` : ''}
+          Incluye la impresión de todos tus diseños.
+        </p>
+
+        {pendientePlantilla && (
+          <div className={styles.plantillaAviso}>
+            <Sparkles size={16} aria-hidden="true" />
+            <span>Partes de <strong>{plantillaCombo.nombre}</strong>. Personaliza cada prenda (puedes dejarla tal cual) y elige su talla.</span>
+            <Link to={urlPlantilla(pendientePlantilla.i)} state={estadoEstudio} className={styles.principal}>
+              <Paintbrush size={15} aria-hidden="true" /> Personalizar
+            </Link>
+          </div>
+        )}
+        {miCombo && (
+          <div className={styles.miCombo}>
+            <span>
+              <CheckCircle2 size={15} aria-hidden="true" />
+              {miCombo.estado === 'borrador'
+                ? 'Borrador guardado: lo encuentras en Crear para continuarlo.'
+                : 'Guardado en Mis creaciones.'}
+            </span>
+            <AccionesComunidad
+              design={miCombo}
+              onCambio={() => queryClient.invalidateQueries({ queryKey: ['creacion', meta.miComboId] })}
+            />
+          </div>
+        )}
+
+        <hr className={ficha.divisor} />
+
+        <div className={ficha.grupo}>
+          <span className={ficha.rotulo}>
+            Este combo incluye ({piezas.length}) <em>· {listas} de {piezas.length} listas</em>
+          </span>
+          <ol className={styles.filas}>
+            {piezas.map((p, k) => {
+              const otraConDiseno = piezas.find((o) => o.i !== p.i && o.creacion && creacionLista(o.creacion));
+              const vaciasIguales = piezas.filter((o) => o.i !== p.i && !o.designId
+                && piezasCombo[o.i].prendaId === piezasCombo[p.i].prendaId).length;
+              const fotoFila = fotosPiezas[k]?.lados[0];
+              const conDiseno = fotosPiezas[k]?.conDiseno || [];
+              const color = p.creacion?.color || p.plantilla?.color || null;
+              return (
+                <li key={p.i} className={`${styles.fila} ${p.lista ? styles.filaLista : ''}`}>
+                  <button type="button" className={styles.filaFoto} onClick={() => verPieza(k)} aria-label={`Ver la prenda ${p.i + 1}`}>
+                    {fotoFila && (
+                      <img
+                        src={fotoFila.url}
+                        alt=""
+                        loading="lazy"
+                        className={`${fotosPiezas[k].origen === 'prenda' ? styles.conMargen : ''} ${piezaVacia(p) ? styles.atenuada : ''}`}
+                      />
+                    )}
+                    <span className={styles.filaNumero}>{p.i + 1}</span>
+                    {p.lista && <CheckCircle2 className={styles.filaCheck} size={18} aria-label="Lista" />}
+                  </button>
+                  <div className={styles.filaInfo}>
+                    <span className={styles.piezaPrenda}>Prenda {p.i + 1} · {p.prenda?.name}</span>
+                    {p.cargando ? (
+                      p.respaldo?.nombre
+                        ? <strong className={styles.piezaNombre}>{p.respaldo.nombre}</strong>
+                        : <p className={styles.ayuda}>Cargando el diseño…</p>
+                    ) : p.creacion ? (
+                      <>
+                        <NombreEditable designId={p.creacion.id} nombre={p.creacion.name || 'Mi creación'} como="strong" className={styles.piezaNombre} />
+                        {(color?.nombre || conDiseno.length > 0) && (
+                          <span className={styles.filaDatos}>
+                            {color?.nombre && <><PuntosColor colores={[color]} /> {color.nombre}</>}
+                            {color?.nombre && conDiseno.length > 0 && <span aria-hidden="true">·</span>}
+                            {conDiseno.length > 0 && conDiseno.join(' + ')}
+                          </span>
+                        )}
+                        {!p.lista && (
+                          <p className={styles.aviso}>
+                            {p.creacion.estado === 'borrador'
+                              ? 'Sin terminar: continúa y guárdala para tenerla lista.'
+                              : 'Ábrelo y guárdalo otra vez para prepararlo para imprimir.'}
+                          </p>
+                        )}
+                        {p.tallas.length > 0 && (
+                          <div className={`${ficha.tallas} ${styles.tallasFila}`} role="radiogroup" aria-label={`Talla de la prenda ${p.i + 1}`}>
+                            {p.tallas.map((t) => (
+                              <button
+                                key={t}
+                                type="button"
+                                role="radio"
+                                aria-checked={t === p.talla}
+                                className={`${ficha.talla} ${t === p.talla ? ficha.tallaActiva : ''}`}
+                                onClick={() => ponerEn(p.i, { talla: t })}
+                              >
+                                {t}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <div className={styles.acciones}>
+                          {/* Si otra pieza lleva este mismo diseño, se edita una copia:
+                              cambiarlo aquí no debe cambiar la otra prenda. */}
+                          <Link
+                            to={urlEstudio(p.i, piezas.some((o) => o.i !== p.i && o.designId === p.designId)
+                              ? `&copiar=${p.designId}` : `&designId=${p.designId}`)}
+                            state={estadoEstudio}
+                            className={styles.secundario}
+                          >
+                            <Pencil size={15} aria-hidden="true" /> {p.creacion.estado === 'borrador' ? 'Continuar' : 'Editar'}
+                          </Link>
+                          {vaciasIguales > 0 && p.lista && (
+                            <button type="button" className={styles.secundario} onClick={() => usarEnLasDemas(p.i)}>
+                              <Copy size={15} aria-hidden="true" /> Usar en {vaciasIguales === 1 ? 'la otra' : 'las demás'}
+                            </button>
+                          )}
+                          <button type="button" className={styles.texto} onClick={() => quitar(p.i)}>
+                            <X size={15} aria-hidden="true" /> Quitar
+                          </button>
+                        </div>
+                      </>
+                    ) : p.plantilla ? (
+                      <>
+                        <strong className={styles.piezaNombre}>{p.plantilla.nombre || 'Diseño de la comunidad'}</strong>
+                        {color?.nombre && <span className={styles.filaDatos}><PuntosColor colores={[color]} /> {color.nombre}</span>}
+                        <p className={styles.ayuda}>Cámbiale el nombre, la foto o lo que quieras.</p>
+                        <div className={styles.acciones}>
+                          <Link to={urlPlantilla(p.i)} state={estadoEstudio} className={styles.principal}>
+                            <Paintbrush size={15} aria-hidden="true" /> Personalizar
+                          </Link>
+                        </div>
+                      </>
+                    ) : p.esperando ? (
+                      <p className={styles.ayuda}>Cargando el diseño…</p>
+                    ) : (
+                      <>
+                        <p className={styles.ayuda}>Ponle tu imagen o tu frase.</p>
+                        <div className={styles.acciones}>
+                          <Link to={urlEstudio(p.i)} state={estadoEstudio} className={styles.principal}>
+                            <Paintbrush size={15} aria-hidden="true" /> Diseñar
+                          </Link>
+                          {otraConDiseno && (
+                            <Link to={urlEstudio(p.i, `&copiar=${otraConDiseno.designId}`)} state={estadoEstudio} className={styles.secundario}>
+                              <Copy size={15} aria-hidden="true" /> Copiar de la prenda {otraConDiseno.i + 1}
+                            </Link>
+                          )}
+                          {user && (
+                            <button type="button" className={styles.secundario} onClick={() => setEligiendo(p.i)}>
+                              <Images size={15} aria-hidden="true" /> Mis creaciones
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
+                    {agotada(p.prenda) && <p className={styles.aviso}>Agotada por ahora.</p>}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+
+        <div className={ficha.botones}>
+          <button type="button" className={ficha.principal} onClick={agregar} disabled={!completo}>
+            <ShoppingBag size={17} aria-hidden="true" /> Agregar al carrito · {soles(precio)}
+          </button>
+        </div>
+        <p className={`${ficha.ayuda} ${styles.estadoCompra}`}>
+          <strong>{listas} de {piezas.length} listas.</strong> {faltaTexto}
+        </p>
+
+        <div className={ficha.confianza}>
+          <span><Truck size={14} aria-hidden="true" /> Envío a todo el país</span>
+          <span><RefreshCw size={14} aria-hidden="true" /> Cambios y devoluciones</span>
+          <span><ShieldCheck size={14} aria-hidden="true" /> Pago seguro</span>
+        </div>
+
+        <details className={ficha.desplegable} open>
+          <summary>Detalles del combo</summary>
+          <dl className={ficha.detalles}>
+            {piezas.map((p) => {
+              const color = p.creacion?.color?.nombre || p.plantilla?.color?.nombre || '';
+              return (
+                <React.Fragment key={p.i}>
+                  <dt>Prenda {p.i + 1}</dt>
+                  <dd>{[p.prenda?.name, color, p.talla && `Talla ${p.talla}`].filter(Boolean).join(' · ') || '—'}</dd>
+                </React.Fragment>
+              );
+            })}
+            {ahorro > 0 && (
+              <>
+                <dt>Por separado</dt>
+                <dd>{soles(sueltas)}</dd>
+              </>
+            )}
+          </dl>
+          <p className={ficha.nota}>Cada prenda se imprime con su propio diseño, color y talla.</p>
+        </details>
+
+        {miCombo && combo.description && (
+          <details className={ficha.desplegable}>
+            <summary>Sobre el combo</summary>
+            <p className={ficha.textoRico}>{combo.description}</p>
+          </details>
+        )}
+      </section>
 
       {eligiendo !== null && (
         <CapaModal className={styles.capa} role="dialog" aria-modal="true" aria-labelledby="combo-elegir-titulo" onClick={() => setEligiendo(null)}>

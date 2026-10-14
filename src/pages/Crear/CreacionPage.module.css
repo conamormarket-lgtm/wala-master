@@ -828,6 +828,13 @@
   color: var(--color-surface);
 }
 
+/* Deshabilitado se tiene que notar: con el claro de noche parecía activo. */
+:global([data-theme='dark']) .principal:disabled {
+  background: var(--color-border);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
 :global([data-theme='dark']) .contorno {
   border-color: var(--color-text);
 }

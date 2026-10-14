@@ -526,7 +526,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 0.6rem;
-  margin-top: 0.9rem;
+  margin-top: 0;
   padding: 0.7rem 0.85rem;
   border-radius: 14px;
   background: var(--primary-light, #f5f3ff);
@@ -551,7 +551,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 0.6rem 1rem;
-  margin-top: 0.8rem;
+  margin-top: 0;
   font-size: 0.85rem;
   font-weight: 700;
   color: #15803d;
@@ -577,4 +577,201 @@
 .miComboNota {
   font-weight: 500;
   opacity: 0.85;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FICHA DEL COMBO — misma ficha que una creación (CreacionPage.module.css):
+   galería a la izquierda y, a la derecha, "Este combo incluye" con una fila
+   por prenda (foto, nombre, color, tallas y acciones).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* La foto de catálogo (prenda en blanco) no trae margen; las vistas previas
+   sí: se le da el mismo para que todas se vean del mismo tamaño. */
+.conMargen {
+  box-sizing: border-box;
+  padding: 6%;
+}
+
+/* La prenda todavía sin diseño. filter y no opacity (la opacidad la usa el
+   cambio frente/espalda). */
+.atenuada {
+  filter: opacity(0.55);
+}
+
+/* "Todo el combo": las prendas juntas, en grande y en su miniatura. */
+.marcoJuntas {
+  cursor: default;
+}
+
+.miniaturaJuntas {
+  position: relative;
+  display: block;
+  width: 72px;
+  height: 72px;
+  border: 1.5px solid transparent;
+  border-radius: 4px;
+  background: #F3F1F7;
+  overflow: hidden;
+}
+
+.miniaturaJuntas .juntasChico {
+  inset: 10% 4%;
+}
+
+/* La ficha da 72 px y borde a toda imagen de una miniatura: aquí son las
+   prendas chiquitas dentro del recuadro. */
+.miniaturaJuntas img {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  transform: none !important;
+}
+
+.miniaturaJuntasActiva {
+  border-color: #0a0a0a;
+}
+
+:global([data-theme='dark']) .miniaturaJuntasActiva {
+  border-color: var(--primary-color);
+}
+
+/* ── Este combo incluye: una fila por prenda ── */
+.filas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.fila {
+  display: flex;
+  gap: 0.9rem;
+  padding: 0.75rem;
+  border: 1.5px solid #ebebeb;
+  border-radius: 12px;
+  background: var(--blanco);
+  transition: border-color 0.2s ease;
+}
+
+.filaLista {
+  border-color: rgba(22, 163, 74, 0.45);
+}
+
+.filaFoto {
+  position: relative;
+  flex-shrink: 0;
+  width: 96px;
+  height: 96px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: #F3F1F7;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+
+.filaFoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.25s ease;
+}
+
+.filaFoto:hover img {
+  transform: scale(1.05);
+}
+
+.filaNumero {
+  position: absolute;
+  top: 0.35rem;
+  left: 0.35rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-color, #7c3aed);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.filaCheck {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  color: #16a34a;
+  background: #fff;
+  border-radius: 50%;
+}
+
+.filaInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.filaDatos {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--gris-texto-secundario);
+}
+
+/* Tallas de la ficha, más chicas dentro de la fila. */
+.tallasFila {
+  gap: 0.4rem;
+  margin-top: 0.15rem;
+}
+
+.tallasFila button {
+  min-width: 44px;
+  height: 36px;
+  padding: 0 0.55rem;
+  font-size: 0.8rem;
+}
+
+.filaInfo .acciones {
+  margin-top: 0.15rem;
+  padding-top: 0;
+}
+
+/* Bajo el botón de compra: cuántas faltan. */
+.estadoCompra {
+  margin: -0.6rem 0 0;
+}
+
+.estadoCompra strong {
+  color: var(--gris-texto-principal);
+}
+
+@media (max-width: 420px) {
+  .fila {
+    gap: 0.7rem;
+    padding: 0.6rem;
+  }
+
+  .filaFoto {
+    width: 76px;
+    height: 76px;
+  }
+}
+
+:global([data-theme='dark']) .fila {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:global([data-theme='dark']) .filaLista {
+  border-color: rgba(74, 222, 128, 0.45);
 }
