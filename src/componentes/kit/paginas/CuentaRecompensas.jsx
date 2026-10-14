@@ -9,6 +9,7 @@ import { CabezaCuenta, TarjetaCuenta, Estadistica } from '../piezas/Cuenta';
 import { TarjetaRecompensa, TarjetaCupon, TarjetaMision, NivelCuenta, NIVELES } from '../piezas/Recompensas';
 import { FormaGanar, EnlaceInvitacion, FilaReferido, DetallePedidoReferido, RankingReferidos } from '../piezas/Referidos';
 import { FotoProducto } from '../piezas/FotoProducto';
+import { EsqueletoProducto, EsqueletoFila, EsqueletoTarjeta } from '../Esqueletos';
 import s from './CuentaRecompensas.module.css';
 
 /*
@@ -25,8 +26,13 @@ const mensajeDe = (err, porDefecto) => {
   return m && m.length > 12 && !/^[a-z-]+$/.test(m) ? m : porDefecto;
 };
 
-function Esqueletos({ n = 3, alto = 220 }) {
-  return Array.from({ length: n }, (_, k) => <li key={k} className={s.esqueleto} style={{ height: alto }} aria-hidden="true" />);
+/** Esqueletos con la forma de lo que viene: 'producto', 'fila' o una tarjeta de ese alto. */
+function Esqueletos({ n = 3, alto = 220, forma = 'tarjeta' }) {
+  return Array.from({ length: n }, (_, k) => (
+    <li key={k}>
+      {forma === 'producto' ? <EsqueletoProducto /> : forma === 'fila' ? <EsqueletoFila /> : <EsqueletoTarjeta lineas={3} alto={alto} />}
+    </li>
+  ));
 }
 
 /* ── Catálogo de recompensas (/cuenta/catalogo) ─────────── */
@@ -76,7 +82,7 @@ export function PaginaCatalogo({ recompensas = [], saldo = 0, cargando = false, 
           Intenta de nuevo en unos minutos.
         </Aviso>
       ) : cargando ? (
-        <ul className={s.rejilla} aria-busy="true"><Esqueletos n={3} alto={320} /></ul>
+        <ul className={s.rejilla} aria-busy="true"><Esqueletos n={3} forma="producto" /></ul>
       ) : recompensas.length === 0 ? (
         <EstadoVacio imagen="/assets/kapi/kapi-happy.webp" titulo="No hay recompensas por ahora" texto="Vuelve pronto: se agregan seguido." />
       ) : (
@@ -200,7 +206,7 @@ export function PaginaMisiones({
       {error ? (
         <Aviso tipo="error">No pudimos cargar tus misiones. Intenta de nuevo en unos minutos.</Aviso>
       ) : cargando ? (
-        <ul className={s.misiones} aria-busy="true"><Esqueletos n={3} alto={78} /></ul>
+        <ul className={s.misiones} aria-busy="true"><Esqueletos n={3} forma="fila" /></ul>
       ) : misiones.length === 0 ? (
         <EstadoVacio imagen="/assets/kapi/kapi-happy.webp" titulo="Todavía no hay misiones activas" texto="Vuelve pronto: se agregan seguido." />
       ) : (

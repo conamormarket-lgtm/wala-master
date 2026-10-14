@@ -8,6 +8,7 @@ import { CabezaCuenta } from '../piezas/Cuenta';
 import { TarjetaCreacion } from '../piezas/Creaciones';
 import { TarjetaPersonaRegalo, AvisoFestiva, AgendaFechas, faltanDias } from '../piezas/Regalos';
 import { HojaPersona, RELACIONES } from '../piezas/FormularioPersona';
+import { EsqueletoProducto, EsqueletoFila, EsqueletoTarjeta } from '../Esqueletos';
 import s from './CuentaPersonalizacion.module.css';
 
 /*
@@ -15,8 +16,13 @@ import s from './CuentaPersonalizacion.module.css';
  * deseos y Fechas importantes. Van dentro de MarcoCuenta.
  */
 
-function Esqueletos({ n = 3, alto = 300 }) {
-  return Array.from({ length: n }, (_, k) => <li key={k} className={s.esqueleto} style={{ height: alto }} aria-hidden="true" />);
+/** Esqueletos con la forma de lo que viene: 'producto', 'fila' o una tarjeta de ese alto. */
+function Esqueletos({ n = 3, alto = 300, forma = 'tarjeta' }) {
+  return Array.from({ length: n }, (_, k) => (
+    <li key={k}>
+      {forma === 'producto' ? <EsqueletoProducto /> : forma === 'fila' ? <EsqueletoFila /> : <EsqueletoTarjeta lineas={3} alto={alto} />}
+    </li>
+  ));
 }
 
 /* ── Mis creaciones (/cuenta/creaciones) ────────────────── */
@@ -50,7 +56,7 @@ export function PaginaCreaciones({ creaciones = [], borradores = [], cargando = 
           Revisa tu conexión e inténtalo de nuevo.
         </Aviso>
       ) : cargando ? (
-        <ul className={s.rejilla} aria-busy="true"><Esqueletos n={3} alto={380} /></ul>
+        <ul className={s.rejilla} aria-busy="true"><Esqueletos n={3} forma="producto" /></ul>
       ) : n === 0 && borradores.length === 0 ? (
         <EstadoVacio imagen="/assets/kapi/kapi-happy.webp" titulo="Aún no tienes creaciones" texto="Elige una prenda, ponle tu imagen o tu frase y guárdala: aquí la tendrás lista para comprar o seguir editando.">
           <Boton to={urlCrear} icono={<Sparkles aria-hidden="true" />}>Empezar a crear</Boton>
@@ -137,7 +143,7 @@ export function PaginaListaDeseos({
         </Aviso>
       )}
       {cargando ? (
-        <ul className={s.rejillaProductos} aria-busy="true"><Esqueletos n={4} alto={330} /></ul>
+        <ul className={s.rejillaProductos} aria-busy="true"><Esqueletos n={4} forma="producto" /></ul>
       ) : !hay ? (
         <EstadoVacio imagen="/assets/kapi/kapi-happy.webp" titulo="Tu lista de deseos está vacía" texto="Explora la tienda y guarda los productos que te encantaría recibir o comprar después.">
           <Boton to={urlTienda}>Explorar la tienda</Boton>

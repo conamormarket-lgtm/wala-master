@@ -341,23 +341,6 @@
   color: var(--violet-300);
 }
 
-/* ── Cargando ────────────────────────────────────────────── */
-.esqueletoBarra,
-.esqueleto {
-  border-radius: 999px;
-  background: var(--color-border);
-  opacity: 0.6;
-}
-
-.esqueletoBarra {
-  height: 30px;
-}
-
-.esqueleto {
-  min-height: 420px;
-  border-radius: 6px 26px 26px 26px;
-}
-
 @media (min-width: 560px) {
   .tarjeta {
     padding: 2rem 2rem 1.6rem;

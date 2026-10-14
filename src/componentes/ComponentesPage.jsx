@@ -21,6 +21,7 @@ import s from './ComponentesPage.module.css';
 import DemoSecciones, { GRUPOS_CATALOGO } from './DemoSecciones';
 import DemoPiezas from './DemoPiezas';
 import DemoPiezasCuenta from './DemoPiezasCuenta';
+import DemoEsqueletos from './DemoEsqueletos';
 // La mayoría de productos reales vienen con fondo blanco: estas fotos lo simulan.
 import FRENTE_BLANCO from './demo/polera-fondo-blanco.jpg';
 import ESPALDA_BLANCO from './demo/polera-fondo-blanco-espalda.jpg';
@@ -60,6 +61,7 @@ const INDICES = {
     ['menus', 'Menús'],
     ['avisos', 'Avisos'],
     ['cuenta-piezas', 'Cuenta'],
+    ['carga', 'Carga y esqueletos'],
   ],
   secciones: GRUPOS_CATALOGO,
   paginas: [
@@ -978,6 +980,15 @@ function Contenido({ tema, cambiarTema }) {
           mejoras={['Un sello para todos los íconos de la cuenta', 'Confirmar en la misma tarjeta (sin ventanas del navegador)', 'Cupón con talón troquelado', 'Niveles sin emojis']}
         >
           <DemoPiezasCuenta imagenes={{ frente: FRENTE_BLANCO, espalda: ESPALDA_BLANCO, taza: TAZA }} />
+        </Seccion>
+
+        {/* ── CARGA Y ESQUELETOS ── */}
+        <Seccion
+          id="carga" numero="11" titulo="Carga y esqueletos"
+          descripcion="Mientras llegan los datos se ve la forma de lo que viene: un esqueleto por componente, uno por cada forma de sección del builder y uno por página, todos con el mismo brillo violeta. En la Tienda de prueba, «Ver la carga» muestra el de la página que se está viendo."
+          mejoras={['Un esqueleto con la forma de cada sección (no solo productos)', 'Un mismo brillo para todo el kit', 'La etiqueta del logo en lugar del círculo']}
+        >
+          <DemoEsqueletos />
         </Seccion>
 
         </>)}

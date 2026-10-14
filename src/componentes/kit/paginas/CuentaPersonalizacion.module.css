@@ -69,18 +69,6 @@
   }
 }
 
-.esqueleto {
-  border-radius: 20px;
-  background: var(--color-hover);
-  animation: latir 1.4s ease-in-out infinite alternate;
-}
-
-@keyframes latir {
-  to {
-    opacity: 0.55;
-  }
-}
-
 .borradores {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -158,8 +146,3 @@
   font-size: 0.86rem;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .esqueleto {
-    animation: none;
-  }
-}

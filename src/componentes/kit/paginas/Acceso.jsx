@@ -9,6 +9,7 @@ import { BloqueSeccion } from '../Seccion';
 import { ProgresoEncuesta } from '../piezas/Encuesta';
 import { RequisitosContrasena, contrasenaValida, BotonGoogle, SeparadorAcceso } from '../piezas/Acceso';
 import { CamposDatosPersonales, validarPerfil, NOMBRE_DOCUMENTO } from '../piezas/DatosPersonales';
+import { EsqueletoFormulario } from '../Esqueletos';
 import s from './Acceso.module.css';
 
 /*
@@ -508,9 +509,7 @@ export function PaginaCompletarPerfil({ inicial = {}, correo, deGoogle = {}, onG
       texto={correo ? <>Entraste como <strong className={s.correo}>{correo}</strong>. Solo falta esto para tus pedidos.</> : 'Solo falta esto para tus pedidos.'}
     >
       {cargando ? (
-        <div className={s.esqueleto} aria-busy="true">
-          {[0, 1, 2, 3].map((k) => <span key={k} />)}
-        </div>
+        <div aria-busy="true"><EsqueletoFormulario titulo={false} /></div>
       ) : (
         <form className={s.formulario} onSubmit={guardar} noValidate>
           <CamposDatosPersonales

@@ -284,12 +284,6 @@
   list-style: none;
 }
 
-.rankingEsqueleto {
-  height: 52px;
-  border-radius: 14px;
-  background: var(--color-hover);
-}
-
 .rankingVacio {
   margin: 0;
   color: var(--color-text-muted);

@@ -1,0 +1,499 @@
+/* ── El hueso y su brillo ────────────────────────────────── */
+.hueso {
+  --hueso: color-mix(in srgb, var(--violet-100, #ede9fe) 60%, var(--color-hover, #f1f5f9));
+  --hueso-luz: rgba(255, 255, 255, 0.65);
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  max-width: 100%;
+  overflow: hidden;
+  background: var(--hueso);
+  isolation: isolate;
+}
+
+:global([data-theme='dark']) .hueso {
+  --hueso: rgba(167, 139, 250, 0.1);
+  --hueso-luz: rgba(255, 255, 255, 0.07);
+}
+
+/* Un barrido suave de izquierda a derecha (transform: lo mueve el compositor). */
+.hueso::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 15%, var(--hueso-luz) 50%, transparent 85%);
+  transform: translateX(-100%);
+  animation: barridoHueso 1.6s ease-in-out infinite;
+  content: '';
+}
+
+@keyframes barridoHueso {
+  60%,
+  100% { transform: translateX(100%); }
+}
+
+.linea {
+  height: 11px;
+  border-radius: 6px;
+}
+
+.bloque {
+  border-radius: 16px;
+}
+
+.circulo {
+  border-radius: 50%;
+}
+
+.pildora {
+  border-radius: 999px;
+}
+
+/* Sobre un hueso (el texto de un banner): más claro. */
+.claro {
+  --hueso: rgba(255, 255, 255, 0.55);
+}
+
+:global([data-theme='dark']) .claro {
+  --hueso: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Piezas ──────────────────────────────────────────────── */
+.texto,
+.cabeza,
+.filaTextos,
+.campo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.cabeza {
+  gap: 0.6rem;
+}
+
+.centrado {
+  justify-items: center;
+}
+
+.producto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface);
+}
+
+.producto {
+  height: 100%;
+}
+
+/* La foto como en TarjetaProducto: 6px de marco y radio 13px. */
+.productoFoto {
+  width: calc(100% - 12px);
+  margin: 6px 6px 0;
+  border-radius: 13px;
+}
+
+.productoCuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  padding: 0.85rem 0.85rem 0.9rem;
+}
+
+.productoPie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.filaTextos {
+  flex: 1;
+  gap: 0.45rem;
+}
+
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+  padding: 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 22px 22px 22px;
+  background: var(--color-surface);
+}
+
+.tarjetaCabeza {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.alFinal {
+  margin-top: auto;
+}
+
+.formulario {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.parLinea {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* ── Secciones ───────────────────────────────────────────── */
+.seccion {
+  container: esqueleto / inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.1rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+.s_anuncio {
+  max-width: none;
+  padding: 0;
+}
+
+.anuncio {
+  border-radius: 0;
+}
+
+.s_banner {
+  padding-top: 1rem;
+}
+
+/* El banner es un hueso grande con su texto adentro (más claro). */
+.banner {
+  --hueso: color-mix(in srgb, var(--violet-200, #ddd6fe) 70%, var(--color-hover, #f1f5f9));
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: clamp(260px, 42vw, 460px);
+  padding: clamp(1.25rem, 4vw, 3rem);
+  overflow: hidden;
+  border-radius: 28px;
+  background: var(--hueso);
+}
+
+:global([data-theme='dark']) .banner {
+  --hueso: rgba(167, 139, 250, 0.14);
+}
+
+.bannerTextos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.7rem;
+  width: min(100%, 460px);
+}
+
+.bannerTextos > :last-child {
+  margin-top: 0.4rem;
+}
+
+.puntos {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  display: flex;
+  gap: 6px;
+  transform: translateX(-50%);
+}
+
+/* Fila de productos: se corta a la derecha (como el carrusel). */
+.filaProductos {
+  display: grid;
+  grid-auto-columns: minmax(170px, 1fr);
+  grid-auto-flow: column;
+  gap: 1rem;
+  overflow: hidden;
+}
+
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 46%), 1fr));
+  gap: 1rem;
+}
+
+.catalogo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+.filtros {
+  display: none;
+  align-content: start;
+  gap: 1.4rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface);
+}
+
+.filtro {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.catalogoLado {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  min-width: 0;
+}
+
+.burbujas {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  overflow: hidden;
+}
+
+.burbuja {
+  display: grid;
+  justify-items: center;
+  gap: 0.55rem;
+}
+
+.beneficios {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+.beneficio {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.tres,
+.dos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.preguntas {
+  display: grid;
+  gap: 0.6rem;
+  width: min(100%, 760px);
+  margin: 0 auto;
+}
+
+.marcas {
+  display: flex;
+  gap: 1rem;
+  overflow: hidden;
+}
+
+.mosaico {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: 160px;
+  gap: 1rem;
+}
+
+.textoSeccion {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  width: min(100%, 720px);
+}
+
+.ubicacion {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: center;
+}
+
+@container esqueleto (min-width: 640px) {
+  .beneficios {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tres {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mosaico {
+    grid-template-columns: 1.4fr 1fr;
+    grid-auto-rows: 170px;
+  }
+
+  .mosaicoGrande {
+    grid-row: span 2;
+  }
+
+  .ubicacion {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  }
+}
+
+@container esqueleto (min-width: 900px) {
+  .beneficios {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .catalogo {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+
+  .filtros {
+    display: grid;
+  }
+}
+
+/* ── Páginas ─────────────────────────────────────────────── */
+.pagina {
+  container: esqueleto / inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 2rem;
+}
+
+/* Con secciones, cada una pone su aire. */
+.pagina > .seccion {
+  padding-inline: 0;
+}
+
+.pagina:has(> .seccion) {
+  gap: 0;
+  padding-top: 0;
+}
+
+.ficha {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+.galeria {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.miniaturas {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.fichaInfo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  align-content: start;
+}
+
+.carrito {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.lista {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.8rem;
+}
+
+.lineaCarrito {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface);
+}
+
+.cuenta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+.menuCuenta {
+  display: none;
+}
+
+.cuentaLado {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.1rem;
+  align-content: start;
+}
+
+.formularioPagina {
+  width: min(100%, 480px);
+  margin: 0 auto;
+}
+
+@container esqueleto (min-width: 640px) {
+  .dos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container esqueleto (min-width: 820px) {
+  .ficha {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 2.5rem;
+  }
+
+  .carrito {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+
+  .cuenta {
+    grid-template-columns: 250px minmax(0, 1fr);
+  }
+
+  .menuCuenta {
+    display: flex;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hueso::after {
+    display: none;
+  }
+}

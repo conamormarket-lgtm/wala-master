@@ -14,6 +14,7 @@ import { BloqueSeccion } from '../Seccion';
 import { ProgresoEncuesta, ElegirVarios, FichaPersonaEncuesta } from '../piezas/Encuesta';
 import { HojaPersona, validarPersona } from '../piezas/FormularioPersona';
 import { IdeaRegalo } from '../piezas/Regalos';
+import { Hueso, EsqueletoFormulario } from '../Esqueletos';
 import s from './Encuesta.module.css';
 
 /*
@@ -136,8 +137,8 @@ export function PaginaEncuesta({
     return (
       <BloqueSeccion ajustes={{ paddingTop: '1.5rem', paddingBottom: '2.5rem' }}>
         <div className={s.columna} aria-busy="true">
-          <div className={s.esqueletoBarra} />
-          <div className={`${s.tarjeta} ${s.esqueleto}`} />
+          <Hueso forma="pildora" alto={30} />
+          <div className={s.tarjeta}><EsqueletoFormulario campos={3} /></div>
         </div>
       </BloqueSeccion>
     );

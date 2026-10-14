@@ -4,6 +4,7 @@ import { Enlace } from '../Enlace';
 import { EtiquetaColgante } from '../Marca';
 import { toDirectImageUrl } from '../../../utils/imageUrl';
 import { FotoProducto } from './FotoProducto';
+import { Hueso } from '../Esqueletos';
 import s from './TarjetaCategoria.module.css';
 
 /** Color estable para una categoría sin foto (mismo nombre → mismo color). */
@@ -87,5 +88,10 @@ export function TarjetaCategoria({ forma = 'cuadro', nombre, imagen, cuenta, url
 
 /** Burbuja vacía mientras cargan las categorías. */
 export function TarjetaCategoriaEsqueleto() {
-  return <span className={`${s.burbuja} ${s.burbujaEsqueleto}`} aria-hidden="true"><span className={s.burbujaFoto} /></span>;
+  return (
+    <span className={s.burbuja} aria-hidden="true">
+      <Hueso forma="circulo" ancho={64} alto={64} />
+      <Hueso alto={10} ancho={56} />
+    </span>
+  );
 }

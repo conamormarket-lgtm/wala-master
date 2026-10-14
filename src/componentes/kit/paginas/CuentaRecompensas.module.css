@@ -64,18 +64,6 @@
   min-width: 0;
 }
 
-.esqueleto {
-  border-radius: 20px;
-  background: var(--color-hover);
-  animation: latir 1.4s ease-in-out infinite alternate;
-}
-
-@keyframes latir {
-  to {
-    opacity: 0.55;
-  }
-}
-
 /* Tres cifras: en columna en el celular, en fila desde 640px. */
 .cifras {
   display: grid;
@@ -180,10 +168,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .esqueleto {
-    animation: none;
-  }
-
   .enlaceNota svg {
     transition: none;
   }

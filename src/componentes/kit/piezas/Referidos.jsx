@@ -7,6 +7,7 @@ import { TarjetaCuenta } from './Cuenta';
 import { IconoWala } from '../IconosWala';
 import { Avatar } from './Avatar';
 import { FotoProducto } from './FotoProducto';
+import { EsqueletoFila } from '../Esqueletos';
 import s from './Referidos.module.css';
 
 /*
@@ -136,7 +137,7 @@ export function RankingReferidos({ items = [], cargando = false, tuCodigo }) {
   return (
     <TarjetaCuenta icono={<Trophy />} tono="oro" titulo="Top regaleros del mes" subtitulo="Quiénes tuvieron más referidos que completaron su compra este mes.">
       {cargando ? (
-        <ul className={s.ranking} aria-busy="true">{[0, 1, 2].map((k) => <li key={k} className={s.rankingEsqueleto} />)}</ul>
+        <ul className={s.ranking} aria-busy="true">{[0, 1, 2].map((k) => <li key={k}><EsqueletoFila foto="circulo" /></li>)}</ul>
       ) : !items.length ? (
         <p className={s.rankingVacio}>Aún no hay compras de referidos este mes. ¡Sé el primero!</p>
       ) : (

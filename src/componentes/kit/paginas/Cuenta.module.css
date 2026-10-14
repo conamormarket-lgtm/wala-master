@@ -232,19 +232,6 @@
   flex: 1;
 }
 
-.esqueletoDireccion {
-  height: 190px;
-  border-radius: 20px;
-  background: var(--color-hover);
-  animation: latir 1.4s ease-in-out infinite alternate;
-}
-
-@keyframes latir {
-  to {
-    opacity: 0.55;
-  }
-}
-
 /* Quién recibe, resumido (como en el checkout) con "Cambiar". */
 .destinatario {
   display: flex;
@@ -341,8 +328,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pagina,
-  .esqueletoDireccion {
+  .pagina {
     animation: none;
   }
 

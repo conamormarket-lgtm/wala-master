@@ -310,19 +310,6 @@
   overflow-wrap: anywhere;
 }
 
-/* ── Cargando el perfil ──────────────────────────────────── */
-.esqueleto {
-  display: grid;
-  gap: 0.9rem;
-}
-
-.esqueleto span {
-  height: 50px;
-  border-radius: 14px;
-  background: var(--color-border);
-  opacity: 0.55;
-}
-
 /* ── Ancho: dos paneles lado a lado ──────────────────────── */
 @container acceso (min-width: 820px) {
   .acceso {

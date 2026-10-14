@@ -751,33 +751,6 @@
   box-shadow: 0 0 0 2px var(--color-surface), inset 0 0 0 1px rgba(255, 255, 255, 0.28);
 }
 
-/* ── Esqueleto ─────────────────────────────────────────── */
-.esqueleto {
-  box-shadow: none;
-}
-
-.linea {
-  display: block;
-  height: 10px;
-  border-radius: 6px;
-}
-
-.brillo {
-  background: linear-gradient(90deg, var(--color-hover) 0%, var(--color-border) 50%, var(--color-hover) 100%);
-  background-size: 200% 100%;
-  animation: brillo 1.4s ease-in-out infinite;
-}
-
-@keyframes brillo {
-  from {
-    background-position: 100% 0;
-  }
-
-  to {
-    background-position: -100% 0;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .tarjeta {
     transform: none !important;
@@ -796,7 +769,6 @@
     display: none;
   }
 
-  .brillo,
   .deseoActivo svg,
   .agregarIcono svg,
   .masUno {

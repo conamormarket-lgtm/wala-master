@@ -6,6 +6,7 @@ import { Enlace } from './Enlace';
 import { FotoProducto } from './piezas/FotoProducto';
 import { LogoMarca } from './piezas/LogoMarca';
 import { iniciales } from './piezas/Avatar';
+import { EsqueletoProducto } from './Esqueletos';
 import s from './TarjetaProducto.module.css';
 
 // Formato peruano: separador de miles y 2 decimales (S/ 1,250.00).
@@ -269,18 +270,7 @@ export default function TarjetaProducto({
   );
 }
 
-/** Esqueleto con la misma silueta y alturas que la tarjeta, para la carga. */
+/** Esqueleto con la misma silueta que la tarjeta (el de Esqueletos.jsx, mismo brillo que todo el kit). */
 export function TarjetaProductoEsqueleto() {
-  return (
-    <div className={`${s.tarjeta} ${s.esqueleto}`} aria-hidden="true">
-      <div className={`${s.media} ${s.brillo}`} />
-      <div className={s.cuerpo}>
-        <span className={`${s.linea} ${s.brillo}`} style={{ width: '40%' }} />
-        <span className={`${s.linea} ${s.brillo}`} style={{ width: '90%', height: 14 }} />
-        <span className={`${s.linea} ${s.brillo}`} style={{ width: '60%', height: 14 }} />
-        <span className={`${s.linea} ${s.brillo}`} style={{ width: '45%' }} />
-        <span className={`${s.linea} ${s.brillo}`} style={{ width: '38%', height: 18, marginTop: 'auto' }} />
-      </div>
-    </div>
-  );
+  return <EsqueletoProducto />;
 }

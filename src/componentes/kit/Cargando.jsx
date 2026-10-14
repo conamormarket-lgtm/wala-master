@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { IsoWala } from './Marca';
-import { TarjetaProductoEsqueleto } from './TarjetaProducto';
 import s from './Cargando.module.css';
 
 /*
@@ -107,23 +106,4 @@ export function Cargando({ texto = 'Cargando', tamano = 'md', bloque = false }) 
   );
 }
 
-/**
- * Mientras llega una página (Suspense): la forma de la página con tarjetas
- * vacías que brillan, sin ningún círculo (el reemplazo de PageLoading).
- *  - tarjetas: cuántas (8) · titulo: con la barra del título arriba
- */
-export function EsqueletoPagina({ tarjetas = 8, titulo = true }) {
-  return (
-    <div className={s.esqueleto} aria-busy="true" aria-label="Cargando página" data-componente="EsqueletoPagina">
-      {titulo && (
-        <div className={s.esqueletoCabeza} aria-hidden="true">
-          <span />
-          <span />
-        </div>
-      )}
-      <div className={s.esqueletoRejilla}>
-        {Array.from({ length: tarjetas }, (_, k) => <TarjetaProductoEsqueleto key={k} />)}
-      </div>
-    </div>
-  );
-}
+// El esqueleto de una página (y de cada sección y componente) vive en Esqueletos.jsx.

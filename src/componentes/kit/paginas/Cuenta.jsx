@@ -11,6 +11,7 @@ import { MenuCuenta } from '../MenusCabecera';
 import { BloqueSeccion } from '../Seccion';
 import { CabezaCuenta, TarjetaCuenta, ListaDatos, Estadistica, AccesosCuenta, IdentidadCuenta, ListaEleccion } from '../piezas/Cuenta';
 import { TarjetaDireccion } from '../piezas/TarjetaDireccion';
+import { EsqueletoTarjeta } from '../Esqueletos';
 import s from './Cuenta.module.css';
 
 /*
@@ -431,7 +432,7 @@ export function PaginaDirecciones({
 
       {cargando ? (
         <ul className={s.direcciones} aria-busy="true">
-          {[0, 1].map((k) => <li key={k} className={s.esqueletoDireccion} />)}
+          {[0, 1].map((k) => <li key={k}><EsqueletoTarjeta lineas={3} alto={190} /></li>)}
         </ul>
       ) : ordenadas.length === 0 ? (
         <EstadoVacio

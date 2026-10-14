@@ -16,19 +16,6 @@
   min-width: 0;
 }
 
-.esqueleto {
-  height: 220px;
-  border-radius: 22px;
-  background: var(--color-hover);
-  animation: latir 1.4s ease-in-out infinite alternate;
-}
-
-@keyframes latir {
-  to {
-    opacity: 0.55;
-  }
-}
-
 .nada {
   margin: 0;
   padding: 1rem 0;
@@ -252,8 +239,4 @@
   margin-top: 0.5rem;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .esqueleto {
-    animation: none;
-  }
-}
+

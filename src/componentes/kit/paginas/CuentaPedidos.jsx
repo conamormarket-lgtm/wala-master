@@ -12,6 +12,7 @@ import { CabezaCuenta, TarjetaCuenta, ListaDatos } from '../piezas/Cuenta';
 import { FotoProducto } from '../piezas/FotoProducto';
 import { PedidosPorVerificar } from '../piezas/PedidosPorVerificar';
 import { LineaProduccion, PagosPedido } from '../piezas/DetallePedido';
+import { EsqueletoPedido, EsqueletoTarjeta } from '../Esqueletos';
 import s from './CuentaPedidos.module.css';
 
 /*
@@ -62,7 +63,7 @@ export function PaginaPedidos({ pedidos = [], porVerificar, cargando = false, er
       {porVerificar && <PedidosPorVerificar {...porVerificar} />}
       {cargando ? (
         <ul className={s.pedidos} aria-busy="true">
-          {[0, 1].map((k) => <li key={k} className={s.esqueleto} aria-hidden="true" />)}
+          {[0, 1].map((k) => <li key={k}><EsqueletoPedido /></li>)}
         </ul>
       ) : !pedidos.length && !porVerificar?.pendientes?.length ? (
         <EstadoVacio imagen="/assets/kapi/kapi-happy.webp" titulo="Aún no tienes pedidos" texto="Cuando compres algo, aquí verás por dónde va, paso a paso.">
@@ -123,8 +124,8 @@ export function PaginaDetallePedido({
     return (
       <>
         {migas}
-        <div className={s.esqueleto} style={{ height: 120 }} aria-hidden="true" />
-        <div className={s.esqueleto} style={{ height: 260 }} aria-hidden="true" />
+        <div aria-busy="true"><EsqueletoPedido /></div>
+        <EsqueletoTarjeta lineas={5} alto={260} boton={false} />
       </>
     );
   }

@@ -230,7 +230,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     setCargaSaliendo(false);
     setCarga(tipo);
     if (tipo === 'marca') setTimeout(() => setCargaSaliendo(true), 4200);
-    else setTimeout(() => setCarga(null), 2600);
+    else setTimeout(() => setCarga(null), 4000);
   };
   const marcoRef = useRef(null);
 
@@ -517,12 +517,23 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       : setKapiAbierta(true)),
   });
 
+  const formaEsqueleto = {
+    tienda: 'tienda', buscar: 'tienda', carrito: 'carrito', minijuegos: 'productos', encuesta: 'formulario', acceso: 'formulario',
+    cuenta: rutaCuenta.startsWith('/cuenta/pedidos') ? 'lista' : rutaCuenta === '/cuenta/perfil' || rutaCuenta === '/cuenta/direcciones' ? 'formulario' : 'cuenta',
+  }[pagina] || 'productos';
   const contenido = carga === 'pagina' || carga === 'esqueleto' ? (
     // Lo que se ve mientras llega una página: la cabecera queda y abajo carga.
     <MarcoTienda {...marco} kapiEnPie={false}>
       {carga === 'pagina'
         ? <Parte n="M11" nombre="Cargando"><Cargando bloque texto="Cargando la tienda" tamano="lg" /></Parte>
-        : <Parte n="M11" nombre="EsqueletoPagina"><EsqueletoPagina /></Parte>}
+        : (
+          <Parte n="M11" nombre="EsqueletoPagina">
+            {/* La forma de la página que se está viendo; el inicio, sección por sección. */}
+            {pagina === 'inicio'
+              ? <EsqueletoPagina secciones={secciones.map((x) => x.type)} />
+              : <EsqueletoPagina forma={formaEsqueleto} />}
+          </Parte>
+        )}
     </MarcoTienda>
   ) : pagina === 'buscar' ? (
     // Sin resultados ya habla Kapi (el estado vacío): el pie no lo asoma (uno solo a la vista).
@@ -725,7 +736,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
           <div className={cs.controlesChips}>
             <Chip tamano="sm" activo={carga === 'marca'} onClick={() => verCarga('marca')}>Primera vez (marca)</Chip>
             <Chip tamano="sm" activo={carga === 'pagina'} onClick={() => verCarga('pagina')}>Cambio de página</Chip>
-            <Chip tamano="sm" activo={carga === 'esqueleto'} onClick={() => verCarga('esqueleto')}>Página llegando (esqueleto)</Chip>
+            <Chip tamano="sm" activo={carga === 'esqueleto'} onClick={() => verCarga('esqueleto')}>Página llegando (esqueleto de esta página)</Chip>
           </div>
         </div>
         <div className={s.interruptor}>

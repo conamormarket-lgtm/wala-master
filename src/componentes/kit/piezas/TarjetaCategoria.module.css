@@ -364,10 +364,6 @@
   transform: scale(0.94);
 }
 
-.burbujaEsqueleto .burbujaFoto {
-  background: var(--color-border);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .foto,
   .burbujaFoto,

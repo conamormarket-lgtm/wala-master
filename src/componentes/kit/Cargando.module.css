@@ -170,40 +170,6 @@
   white-space: nowrap;
 }
 
-/* ── Esqueleto de una página ─────────────────────────────── */
-.esqueleto {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1.25rem;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1.25rem 1rem 2rem;
-}
-
-.esqueletoCabeza {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.esqueletoCabeza span {
-  height: 26px;
-  width: min(60%, 320px);
-  border-radius: 8px;
-  background: var(--color-hover);
-}
-
-.esqueletoCabeza span + span {
-  height: 12px;
-  width: min(80%, 440px);
-}
-
-.esqueletoRejilla {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(200px, 46%), 1fr));
-  gap: 1rem;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .etiqueta,
   .mini,
