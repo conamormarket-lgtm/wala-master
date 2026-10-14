@@ -40,23 +40,35 @@ const TarjetaComunidad = ({ diseno }) => {
   const previas = (diseno.vistasPrevias || []).filter((p) => p?.url);
   const frente = previas[0]?.url || diseno.imagenConjunta || diseno.previewUrl || '';
   const espalda = previas[1]?.url || '';
-  const verEspalda = useAlternarFotos(mediaRef, Boolean(frente && espalda));
+  const esCombo = diseno.tipo === 'combo';
+  // Un combo: cada prenda con su frente y su espalda (la espalda al pasar el
+  // mouse, como en "Mi combo"). Cada pieza trae sus vistas previas.
+  const fotosCombo = esCombo
+    ? (diseno.piezas || []).map((p) => {
+      const suyas = (p.vistasPrevias || []).filter((v) => v?.url);
+      return { src: suyas[0]?.url || p.imagenConjunta || p.previewUrl || '', espalda: suyas[1]?.url || '' };
+    }).filter((f) => f.src)
+    : [];
+  const hayEspalda = esCombo ? fotosCombo.some((f) => f.espalda) : Boolean(frente && espalda);
+  // En el celular (sin mouse) frente y espalda alternan solas.
+  const verEspalda = useAlternarFotos(mediaRef, hayEspalda);
   const visto = useAlVerUnaVez(mediaRef);
   const lados = previas.map((p) => p.nombre).filter(Boolean);
   const color = diseno.color?.nombre ? diseno.color : null;
   const url = urlUsarDiseno(diseno);
-  const esCombo = diseno.tipo === 'combo';
-  const fotosCombo = esCombo
-    ? (diseno.piezas || []).map((p) => p.vistasPrevias?.[0]?.url || p.imagenConjunta || p.previewUrl).filter(Boolean)
-    : [];
 
   return (
     <li className={styles.card}>
-      <div ref={mediaRef} className={`${styles.media} ${verEspalda ? styles.mediaEspalda : ''}`}>
+      <div ref={mediaRef} className={`${styles.media} ${verEspalda && !esCombo ? styles.mediaEspalda : ''}`}>
         <Link to={url} className={styles.foto} aria-label={`Usar el diseño ${diseno.nombre}`}>
           {esCombo && fotosCombo.length ? (
-            <span className={`${duo.prendas} ${visto ? duo.saludo : ''}`} style={{ '--n': fotosCombo.length }}>
-              {fotosCombo.map((src, i) => <img key={`${src}-${i}`} src={src} alt="" loading="lazy" />)}
+            <span className={`${duo.prendas} ${visto ? duo.saludo : ''} ${verEspalda ? duo.verDetras : ''}`} style={{ '--n': fotosCombo.length }}>
+              {fotosCombo.map((f, i) => (
+                <span key={`${f.src}-${i}`} className={duo.prenda}>
+                  <img src={f.src} alt="" loading="lazy" />
+                  {f.espalda && <img src={f.espalda} alt="" loading="lazy" className={duo.detras} />}
+                </span>
+              ))}
             </span>
           ) : frente ? (
             <>
