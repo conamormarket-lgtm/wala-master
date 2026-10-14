@@ -102,6 +102,23 @@ quieto). Las piezas sueltas van `aria-hidden`; `EsqueletoSeccion` y
 | Sección | `EsqueletoSeccion tipo` | una forma por tipo del builder (`FORMA_DE_SECCION`): banner, fila, grilla, catalogo, categorias, beneficios, testimonios, preguntas, marcas, mosaico, texto, medio, ubicacion, anuncio |
 | Página | `EsqueletoPagina` | `secciones` (los tipos del builder, en orden) o `forma`: productos, inicio, tienda, busqueda, producto, carrito, minijuegos, encuesta, acceso, cuenta (con `modulo`: resumen, perfil, pedidos, direcciones, ajustes, catalogo, cupones, misiones, referidos, creaciones, deseos, fechas), lista, formulario |
 
+**Del tamaño de la página real.** Cada forma de página está medida contra
+la página del kit a 1366px y a 390px:
+
+- **Contenedor:** 1280px, como `BloqueSeccion`.
+- **Tarjeta de producto:** 418px de alto.
+- **Filtros del catálogo:** 264px.
+- **Mi cuenta:** el menú mide 264×725px y el contenido 918px; la cabeza de
+  cada módulo mide 57px, y Mi perfil no tiene cabeza.
+- **Carrito:** la lista y un resumen de 370×425px.
+- **Zona Arcade:** dos columnas hasta 1080px.
+- **Encuesta:** abre en su portada.
+
+Cada bloque cae a pocos píxeles de donde aparece el real, así que al llegar
+los datos nada salta. Si una página real cambia, se ajusta su forma en
+`Esqueletos.jsx` (la comparación lado a lado está en «Ver la carga» de la
+Tienda de prueba).
+
 Las páginas del kit ya los usan: los bloques grises que latían en la
 cuenta, la encuesta y el acceso son ahora esqueletos con la forma de lo que
 viene (pedidos, productos, tarjetas, filas y formularios).

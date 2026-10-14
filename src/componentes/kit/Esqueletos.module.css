@@ -98,9 +98,11 @@
 }
 
 .productoCuerpo {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   gap: 0.5rem;
+  min-height: 155px;
   padding: 0.85rem 0.85rem 0.9rem;
 }
 
@@ -109,7 +111,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  margin-top: 0.3rem;
+  margin-top: auto;
 }
 
 .fila {
@@ -181,7 +183,7 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 1.1rem;
   width: 100%;
-  max-width: 1200px;
+  max-width: var(--content-max, 1280px);
   margin: 0 auto;
   padding: 1.5rem 1rem;
 }
@@ -261,6 +263,7 @@
   display: none;
   align-content: start;
   gap: 1.4rem;
+  min-height: 680px;
   padding: 1rem;
   border: 1px solid var(--color-border);
   border-radius: 20px;
@@ -309,6 +312,14 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
+  /* Cada tarjeta con su alto (no se estiran a la más alta de la fila). */
+  align-items: start;
+}
+
+.cuatroFijo {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
 }
 
 .preguntas {
@@ -374,11 +385,16 @@
   }
 
   .catalogo {
-    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-columns: 264px minmax(0, 1fr);
+    gap: 2rem;
   }
 
   .filtros {
     display: grid;
+  }
+
+  .soloAngostoCatalogo {
+    display: none;
   }
 }
 
@@ -389,9 +405,9 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
   width: 100%;
-  max-width: 1200px;
+  max-width: var(--content-max, 1280px);
   margin: 0 auto;
-  padding: 1.25rem 1rem 2rem;
+  padding: 1.5rem 1rem 2.5rem;
 }
 
 /* Con secciones, cada una pone su aire. */
@@ -464,7 +480,7 @@
 .cuentaLado {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 1.1rem;
+  gap: 1.25rem;
   align-content: start;
 }
 
@@ -474,46 +490,163 @@
 }
 
 /* Menú de la cuenta: grupos y accesos con su ícono. */
+.menuCuenta {
+  gap: 1rem;
+  min-height: 725px;
+}
+
 .grupoMenu {
-  margin-top: 0.4rem;
+  display: grid;
+  gap: 0;
+}
+
+.grupoMenu > .hueso {
+  margin-bottom: 0.4rem;
 }
 
 .itemMenu {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  min-height: 42px;
 }
 
-.accesos,
-.juegos,
-.opciones {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
-  gap: 0.9rem;
-}
-
-.opciones {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 112px), 1fr));
-  gap: 0.6rem;
+.accesoPanel .itemMenu {
+  min-height: 0;
 }
 
 .identidad {
-  flex-direction: row;
   align-items: center;
-  gap: 1.1rem;
+  gap: 0.9rem;
+  text-align: center;
+}
+
+.identidad .filaTextos {
+  justify-items: center;
+  width: 100%;
 }
 
 .perfil {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 1rem;
+  gap: 1.25rem;
   align-items: start;
+}
+
+/* Las piezas de cada módulo de la cuenta, con la forma de las reales. */
+.cifra {
+  flex-direction: row;
+  align-items: center;
+}
+
+.cifraGrande {
+  align-items: center;
+  text-align: center;
+}
+
+.grupoAccesos {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.cuatro,
+.tresCol {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.acceso,
+.mision,
+.agenda {
+  flex-direction: row;
+  align-items: center;
+}
+
+.agenda {
+  flex: 0 0 auto;
+  width: 270px;
+}
+
+.creacion {
+  flex-direction: row;
+  align-items: stretch;
+  padding: 0.6rem;
+}
+
+.creacionFoto {
+  flex-shrink: 0;
+  min-height: 170px;
+}
+
+.creacion .filaTextos {
+  align-content: center;
+  padding: 0.4rem 0.4rem 0.4rem 0;
+}
+
+.recompensa {
+  padding: 0.6rem 0.6rem 1rem;
+}
+
+.encabezado {
+  display: grid;
+  justify-items: center;
+  gap: 0.9rem;
+  padding: 0.5rem 0 1.5rem;
+}
+
+.busquedaCabeza {
+  justify-content: center;
+  border-radius: 6px 28px 28px 28px;
+}
+
+.seccionDebajo {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.centradoSolo {
+  align-self: center;
+}
+
+/* Zona Arcade: dos columnas hasta 1080px, como la real. */
+.juegos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  width: min(100%, 1080px);
+  margin: 0 auto;
+}
+
+.juego {
+  padding: 0;
+  overflow: hidden;
+}
+
+.juegoFoto {
+  border-radius: 0;
+}
+
+.juegoCuerpo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.25rem 1.1rem 1.1rem;
+}
+
+.encuestaTarjeta {
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  border-radius: 6px 26px 26px 26px;
 }
 
 /* Cupón: cuerpo y talón con su línea punteada. */
 .cupon {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 88px;
+  grid-template-columns: 64px minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: 20px;
@@ -529,7 +662,8 @@
 .cuponTalon {
   display: grid;
   place-items: center;
-  border-left: 2px dashed var(--color-border);
+  border-right: 2px dashed var(--color-border);
+  background: color-mix(in srgb, var(--violet-100, #ede9fe) 45%, transparent);
 }
 
 /* Sin sesión: la tarjeta centrada de la invitación. */
@@ -574,14 +708,9 @@
   margin: 0 auto;
 }
 
-.encuesta .tarjeta {
-  gap: 1.2rem;
-  margin-top: 0.6rem;
-  padding: 1.5rem 1.1rem;
-}
 
 /* Acceso: el panel de la marca (un hueso grande) y el formulario. */
-.acceso {
+.accesoPagina {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   width: min(100%, 1060px);
@@ -615,16 +744,40 @@
 }
 
 @container esqueleto (min-width: 640px) {
-  .dos {
+  .dos,
+  .juegos {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .tres {
+  .tres,
+  .tresCol {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .cuatro {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container esqueleto (min-width: 640px) {
+  .identidad {
+    flex-direction: row;
+    gap: 1.25rem;
+    text-align: left;
+  }
+
+  .identidad .filaTextos {
+    justify-items: start;
+  }
+}
+
+@container esqueleto (min-width: 1000px) {
+  .cuatro {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .perfil {
-    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr);
+    grid-template-columns: 300px minmax(0, 1fr);
   }
 }
 
@@ -635,20 +788,26 @@
   }
 
   .carrito {
-    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-columns: minmax(0, 1fr) 370px;
+    gap: 1rem;
   }
 
   .cuenta {
-    grid-template-columns: 250px minmax(0, 1fr);
+    grid-template-columns: 264px minmax(0, 1fr);
+    gap: 2rem;
   }
 
   .menuCuenta {
     display: flex;
   }
 
-  .acceso {
+  .soloAngosto {
+    display: none;
+  }
+
+  .accesoPagina {
     grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
-    min-height: 560px;
+    min-height: 600px;
   }
 
   .accesoPanel {
