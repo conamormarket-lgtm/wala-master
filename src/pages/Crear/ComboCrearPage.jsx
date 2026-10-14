@@ -269,15 +269,25 @@ const ComboCrearPage = () => {
 
   // El combo de la comunidad del que partió: cada pieza sin diseño propio
   // muestra el suyo y se personaliza desde ahí.
-  const { data: plantillaCombo } = useQuery({
-    queryKey: ['comunidad-diseno', meta.plantilla],
+  // Se pide apenas se abre (con ?plantilla=, sin esperar a lo guardado). La
+  // función del servidor puede tardar en despertar: mientras, se usa lo que
+  // ya trajo la galería de la comunidad (fotos y nombres de cada prenda), de
+  // donde se viene al tocar "Usar diseño". Las capas las pide el estudio.
+  const plantillaId = meta.plantilla || plantillaParam || '';
+  const plantillaQ = useQuery({
+    queryKey: ['comunidad-diseno', plantillaId],
     refetchOnMount: 'always',
-    enabled: Boolean(meta.plantilla),
+    enabled: Boolean(plantillaId),
+    placeholderData: () => (queryClient.getQueryData(['comunidad']) || [])
+      .find((d) => d.id === plantillaId && d.tipo === 'combo' && d.comboId === id),
     queryFn: async () => {
-      const d = await obtenerDisenoComunidad(meta.plantilla);
+      const d = await obtenerDisenoComunidad(plantillaId);
       return d && d.tipo === 'combo' && d.comboId === id ? d : null;
     },
   });
+  const plantillaCombo = plantillaQ.data;
+  // Sin nada que mostrar todavía: las prendas dicen "Cargando…", no "Diseñar".
+  const esperandoPlantilla = Boolean(plantillaId) && !plantillaCombo && plantillaQ.isFetching;
 
   const creacionesQ = useQueries({
     queries: armado.map((a) => ({
@@ -403,7 +413,8 @@ const ComboCrearPage = () => {
     // Mientras carga: la foto y el nombre que guardó "Mi combo" de esta prenda.
     const guardada = (miComboDoc?.piezas || [])[i];
     const respaldo = cargando && guardada?.designId === a.designId ? guardada : null;
-    return { ...a, i, prenda: prendas[i], creacion, plantilla, tallas, talla, cargando, respaldo, lista: Boolean(creacion && creacionLista(creacion)) };
+    const esperando = !a.designId && esperandoPlantilla;
+    return { ...a, i, prenda: prendas[i], creacion, plantilla, tallas, talla, cargando, respaldo, esperando, lista: Boolean(creacion && creacionLista(creacion)) };
   });
   const urlPlantilla = (i) => urlEstudio(i, `&plantilla=${meta.plantilla}&plantillaPieza=${i}`);
   const pendientePlantilla = piezas.find((p) => p.plantilla);
@@ -572,6 +583,8 @@ const ComboCrearPage = () => {
                       </Link>
                     </div>
                   </>
+                ) : p.esperando ? (
+                  <p className={styles.ayuda}>Cargando el diseño…</p>
                 ) : (
                   <>
                     <p className={styles.ayuda}>Ponle tu imagen o tu frase.</p>
