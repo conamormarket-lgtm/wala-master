@@ -32,6 +32,7 @@ página), **A** = las páginas de acceso (A1-A4).
 | Mi cuenta (`/cuenta`: resumen, perfil, pedidos, direcciones, ajustes, catálogo, cupones, misiones, referidos, creaciones, lista de deseos, fechas importantes) | [CUENTA.md](CUENTA.md) | armada (C0 `MarcoCuenta` y C1-C12); con plan de migración (a futuro). Mis pedidos (antes P2) es C3 |
 | Encuesta (`/encuesta-suscripcion`) | [ENCUESTA.md](ENCUESTA.md) | armada (P6 `PaginaEncuesta`, con los estados sin sesión, ya respondida, cargando y falla); con plan de migración (a futuro) |
 | Acceso (`/login`, `/registro`, `/recuperar-contrasena`, `/completar-perfil`) | [ACCESO.md](ACCESO.md) | armadas (A1-A4 con `MarcoAcceso`; los datos personales son los de Mi perfil); con plan de migración (a futuro) |
+| Cargando (primera carga, cambio de página, página llegando) | [CARGA.md](CARGA.md) | armada (M11 `PantallaCarga`, `Cargando`, `EsqueletoPagina`; en la Tienda de prueba, "Ver la carga"); con plan de migración (a futuro) |
 | Carrito (`/carrito`) | — | armada (P1 `PaginaCarrito`); falta su ficha |
 
 Para una página nueva: se mapea la página real, lo que falte se crea como

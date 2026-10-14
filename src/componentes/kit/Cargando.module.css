@@ -1,0 +1,228 @@
+/* ── Pantalla de marca ───────────────────────────────────── */
+.pantalla {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  /* El mismo degradado que el splash estático de index.html (--gradient-brand):
+     el relevo no cambia de color. Plano, sin halos. */
+  background: var(--gradient-brand, linear-gradient(135deg, #8b5cf6 0%, #5b21b6 100%));
+  color: #fff;
+  transition: opacity 0.6s var(--ease-signature), transform 0.6s var(--ease-signature);
+}
+
+.completa {
+  position: fixed;
+  z-index: 99999;
+}
+
+/* Al terminar: se funde y se abre un poco hacia la tienda. */
+.saliendo {
+  opacity: 0;
+  transform: scale(1.05);
+  pointer-events: none;
+}
+
+.relevo {
+  display: none;
+}
+
+.conjunto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+/* La etiqueta cuelga de su cordón (arriba a la derecha) y se mece. */
+.etiqueta {
+  width: 88px;
+  height: auto;
+  margin-bottom: 4px;
+  transform-origin: 75% 4%;
+  animation: vaiven 2.4s ease-in-out infinite;
+  filter: drop-shadow(0 5px 12px rgba(76, 29, 149, 0.28));
+}
+
+@keyframes vaiven {
+  0%,
+  100% { transform: rotate(-6deg); }
+  50% { transform: rotate(6deg); }
+}
+
+.palabra {
+  display: block;
+  width: 122px;
+  height: auto;
+}
+
+.pista {
+  position: relative;
+  width: 132px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Barra que va y viene: no finge un porcentaje que no existe. */
+.barra {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  border-radius: inherit;
+  background: #fff;
+  animation: vaYViene 1.4s ease-in-out infinite;
+}
+
+@keyframes vaYViene {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+
+.frase {
+  min-height: 1.2em;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  animation: entraFrase 0.45s var(--ease-signature);
+}
+
+@keyframes entraFrase {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+/* ── Cargando dentro de la tienda ────────────────────────── */
+.cargando {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--color-text-muted);
+}
+
+.bloque {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.85rem;
+  width: 100%;
+  min-height: 240px;
+}
+
+.mini {
+  display: inline-flex;
+  transform-origin: 75% 4%;
+  animation: vaiven 2.4s ease-in-out infinite;
+}
+
+.texto {
+  display: inline-flex;
+  align-items: baseline;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.t_sm .texto {
+  font-size: 0.8rem;
+}
+
+.t_lg .texto {
+  font-size: 1rem;
+}
+
+/* Los tres puntos aparecen uno tras otro. */
+.puntos {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 2px;
+}
+
+.puntos i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: punto 1.2s ease-in-out infinite;
+}
+
+.puntos i:nth-child(2) { animation-delay: 0.2s; }
+.puntos i:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes punto {
+  0%,
+  60%,
+  100% { opacity: 0.25; }
+  30% { opacity: 1; }
+}
+
+.oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── Esqueleto de una página ─────────────────────────────── */
+.esqueleto {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 2rem;
+}
+
+.esqueletoCabeza {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.esqueletoCabeza span {
+  height: 26px;
+  width: min(60%, 320px);
+  border-radius: 8px;
+  background: var(--color-hover);
+}
+
+.esqueletoCabeza span + span {
+  height: 12px;
+  width: min(80%, 440px);
+}
+
+.esqueletoRejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 46%), 1fr));
+  gap: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .etiqueta,
+  .mini,
+  .frase,
+  .puntos i {
+    animation: none;
+  }
+
+  .barra {
+    width: 100%;
+    animation: none;
+    opacity: 0.7;
+  }
+
+  .pantalla {
+    transition: opacity 0.3s ease;
+  }
+
+  .saliendo {
+    transform: none;
+  }
+}

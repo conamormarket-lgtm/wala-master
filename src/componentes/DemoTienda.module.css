@@ -20,6 +20,7 @@
 
 /* El lienzo es el "navegador" de la tienda: tiene su propio scroll. */
 .lienzo {
+  position: relative;
   min-width: 0;
   min-height: 0;
   border: 1px solid var(--color-border);

@@ -57,7 +57,8 @@ Cada paso en su propio commit, verificable por separado.
    (`PaginaEncuesta`, ENCUESTA.md; después de Fechas importantes: comparten
    `HojaPersona`) y el acceso (login, registro, recuperar y completar
    perfil: ACCESO.md; chicas y aisladas, buenas para empezar).
-7. **`BarraInferior` y luego `Cabecera`**: la más conectada (AuthContext,
+7. **Cargando** (`PantallaCarga`, `Cargando`, `EsqueletoPagina`: CARGA.md; el
+   splash de `index.html` cambia en el mismo commit), **`BarraInferior` y luego `Cabecera`**: la más conectada (AuthContext,
    CartContext, WishlistContext, notificaciones y la configuración de
    Firestore).
 8. **Editor del kit** (`PanelEditor`) en lugar de `VisualEditorPanel`.

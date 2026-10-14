@@ -164,6 +164,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `piezas/Creaciones.jsx` | `TarjetaCreacion` | Un diseño guardado (frente y espalda, renombrar, eliminar; también borradores) |
 | `piezas/Regalos.jsx` | `IdeaRegalo`, `TarjetaPersonaRegalo`, `AvisoFestiva` (cuenta atrás), `HojaCalendario`, `AgendaFechas` ("Lo que se viene"), `faltanDias`, `textoFaltan`, `diaYMes` | Fechas importantes |
 | `piezas/FormularioPersona.jsx` | `HojaPersona` (formulario de una persona en una hoja: foto, género, relación o fija, presupuesto, gustos, "Conjunto familia", fechas), `validarPersona`, `RELACIONES`, `GENEROS`, `PRESUPUESTOS` | Fechas importantes y la encuesta |
+| `Cargando.jsx` | `PantallaCarga` (primera carga: la etiqueta se mece de su cordón), `Cargando` (dentro de la tienda, en lugar del círculo), `EsqueletoPagina` (fallback de Suspense), `FRASES_CARGA` | Cargar (guía: `guia/CARGA.md`) |
 | `piezas/DatosPersonales.jsx` | `CamposDatosPersonales` (nombre, país, documento, celular y cumpleaños), `validarPerfil`, `TIPOS_DOCUMENTO`, `NOMBRE_DOCUMENTO` | Mi perfil, Crear cuenta y Completar perfil |
 | `piezas/Acceso.jsx` | `RequisitosContrasena` (reglas con barra de 5 tramos), `requisitosContrasena`, `contrasenaValida`, `BotonGoogle`, `SeparadorAcceso` | Login y registro |
 | `paginas/Acceso.jsx` | `MarcoAcceso`, `PaginaLogin`, `PaginaRegistro`, `PaginaRecuperar`, `PaginaCompletarPerfil` | /login, /registro, /recuperar-contrasena, /completar-perfil (guía: `guia/ACCESO.md`) |

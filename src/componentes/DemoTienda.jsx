@@ -3,7 +3,7 @@ import { RotateCcw, User, Package, Settings, Gift, Ticket, Sparkles } from 'luci
 import {
   PaginaTienda, MarcoTienda, PaginaCarrito, PaginaMinijuegos, juegosDelArcade, VentanaKapi, kapiDesdePerfil,
   retoDesdePerfil, PaginaBusqueda, sugerenciasDesdeBusqueda, grupoModalidad, ORDENES_BUSQUEDA, ordenarProductos,
-  Pestanas, Chip, Interruptor, Boton,
+  Pestanas, Chip, Interruptor, Boton, PantallaCarga, Cargando, EsqueletoPagina, FRASES_CARGA,
   BarraAdmin, AvisoSistema, BannerApp, BotonWhatsApp, KapiFlotante, BurbujaRegalos, PildoraRecompensa,
   VentanaCampana, AvisoIdioma, ProveedorEnlaces, PanelEditor, useBorrador, SeccionEditable, InsertarAqui,
   moverSeccion, duplicarSeccion, rutaDeMarca, tarjetaDesdeProducto, REGISTRO_SECCIONES, enlaceWhatsApp, gruposDeCatalogo, ETAPAS_PRODUCCION,
@@ -222,6 +222,16 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [estadosCuenta, setEstadosCuenta] = useState([]);
   const [estadosEncuesta, setEstadosEncuesta] = useState([]);
   const [rutaAcceso, setRutaAcceso] = useState('/login');
+  // Ver la carga: 'marca' (primera vez), 'pagina' (cambio de página) o 'esqueleto'.
+  const [carga, setCarga] = useState(null);
+  const [cargaSaliendo, setCargaSaliendo] = useState(false);
+  const verCarga = (tipo) => {
+    if (marcoRef.current) marcoRef.current.scrollTop = 0;
+    setCargaSaliendo(false);
+    setCarga(tipo);
+    if (tipo === 'marca') setTimeout(() => setCargaSaliendo(true), 4200);
+    else setTimeout(() => setCarga(null), 2600);
+  };
   const marcoRef = useRef(null);
 
   // Editor del builder (solo admin, sobre el inicio).
@@ -507,7 +517,14 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       : setKapiAbierta(true)),
   });
 
-  const contenido = pagina === 'buscar' ? (
+  const contenido = carga === 'pagina' || carga === 'esqueleto' ? (
+    // Lo que se ve mientras llega una página: la cabecera queda y abajo carga.
+    <MarcoTienda {...marco} kapiEnPie={false}>
+      {carga === 'pagina'
+        ? <Parte n="M11" nombre="Cargando"><Cargando bloque texto="Cargando la tienda" tamano="lg" /></Parte>
+        : <Parte n="M11" nombre="EsqueletoPagina"><EsqueletoPagina /></Parte>}
+    </MarcoTienda>
+  ) : pagina === 'buscar' ? (
     // Sin resultados ya habla Kapi (el estado vacío): el pie no lo asoma (uno solo a la vista).
     <MarcoTienda {...marco} kapiEnPie={resultados.length > 0}>
       <Parte n="P4" nombre="PaginaBusqueda">
@@ -703,6 +720,14 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
             {EXTRAS.map(([id, texto]) => <Chip key={id} tamano="sm" activo={ver(id)} onClick={() => alternar(id)}>{texto}</Chip>)}
           </div>
         </div>
+        <div>
+          <span className={cs.controlesTitulo}>Ver la carga</span>
+          <div className={cs.controlesChips}>
+            <Chip tamano="sm" activo={carga === 'marca'} onClick={() => verCarga('marca')}>Primera vez (marca)</Chip>
+            <Chip tamano="sm" activo={carga === 'pagina'} onClick={() => verCarga('pagina')}>Cambio de página</Chip>
+            <Chip tamano="sm" activo={carga === 'esqueleto'} onClick={() => verCarga('esqueleto')}>Página llegando (esqueleto)</Chip>
+          </div>
+        </div>
         <div className={s.interruptor}>
           <Interruptor etiqueta="Ver componentes" descripcion="Cada parte con su número y su componente (guía en kit/guia)." activo={anatomia} onChange={setAnatomia} />
         </div>
@@ -716,6 +741,9 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
             </ProveedorEnlaces>
             {enEditor && <InsertarAqui indice={total} onInsertar={setInsertarEn} activo={insertarEn === total} />}
           </div>
+          {carga === 'marca' && (
+            <PantallaCarga frases={FRASES_CARGA} saliendo={cargaSaliendo} onSalio={() => { setCarga(null); setCargaSaliendo(false); }} />
+          )}
         </div>
         {enEditor && (
           <div className={s.lado}>

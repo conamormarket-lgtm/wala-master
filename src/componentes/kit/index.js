@@ -7,6 +7,7 @@ export { CampoFecha, Calendario, fechaEnTexto } from './Fecha';
 export { default as TarjetaProducto, TarjetaProductoEsqueleto, soles } from './TarjetaProducto';
 export { Cabecera, BarraInferior, Pestanas, Logo } from './Navegacion';
 export { SeguimientoPedido, ItemCarrito, BarraEnvioGratis, ResumenPedido, PASOS_PEDIDO, ETAPAS_PRODUCCION } from './Pedido';
+export { PantallaCarga, Cargando, EsqueletoPagina, FRASES_CARGA } from './Cargando';
 export { Aviso, ProveedorToasts, useToast, useNotificaciones, ListaNotificaciones, EstadoVacio, HojaInferior } from './Feedback';
 export { EASE, RESORTE, useContador, seguirPuntero, Estallido, Revelar, esApp, useBloquearScroll, useCerrarConAtras } from './Efectos';
 export { Enlace, ProveedorEnlaces } from './Enlace';
