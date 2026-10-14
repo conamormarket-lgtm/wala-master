@@ -162,7 +162,7 @@
 /* ── Línea de tiempo ───────────────────────────────────── */
 .linea {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(var(--pasos, 5), minmax(0, 1fr));
   margin: 0;
   padding: 0;
   list-style: none;
@@ -291,10 +291,21 @@
 }
 
 .nombrePaso {
+  max-width: 100%;
   font-size: 0.7rem;
   font-weight: 500;
   line-height: 1.2;
   color: var(--color-text-muted);
+  /* Un nombre largo ("confirmado") se parte en su columna, no pisa al vecino. */
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+@container (max-width: 380px) {
+  .nombrePaso {
+    font-size: 0.6rem;
+    letter-spacing: -0.01em;
+  }
 }
 
 .hecho .nombrePaso,
@@ -917,4 +928,90 @@
   height: 45%;
   margin: 27.5%;
   color: var(--color-text-muted);
+}
+
+/* Muchos pasos (las 8 etapas del taller): barra por segmentos y el paso en
+   texto, en vez de 8 nombres apretados. */
+.barraPasos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.45rem;
+}
+
+.barraPista {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 4px;
+}
+
+.segmento {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(124, 58, 237, 0.14);
+}
+
+.segmentoOn {
+  background: linear-gradient(90deg, var(--violet-500), var(--violet-700));
+}
+
+.segmentoActual {
+  background: linear-gradient(90deg, var(--violet-400), #d946ef);
+}
+
+.barraTexto {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.barraTexto strong {
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+}
+
+.barraAnulada .segmento {
+  background: var(--color-border);
+}
+
+/* Deuda: el mismo aviso del pago, en rojo. */
+.deudaAviso {
+  border-color: rgba(225, 29, 72, 0.3);
+  background: linear-gradient(135deg, rgba(225, 29, 72, 0.1), rgba(225, 29, 72, 0.03));
+}
+
+.deudaAviso p {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.deudaAviso p svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  color: #e11d48;
+}
+
+.anuladoAviso {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+}
+
+.anuladoAviso svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.pieSeguimiento {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }

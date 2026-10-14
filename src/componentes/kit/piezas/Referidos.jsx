@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Copy, Share2, Check, Package, AlertCircle } from 'lucide-react';
+import { Copy, Share2, Check, Package, AlertCircle, Trophy } from 'lucide-react';
 import Boton from '../Boton';
-import { Etiqueta, GananciaMonedas } from '../Etiquetas';
+import { Etiqueta, GananciaMonedas, Moneda } from '../Etiquetas';
+import { Sello } from '../Marca';
+import { TarjetaCuenta } from './Cuenta';
 import { IconoWala } from '../IconosWala';
 import { Avatar } from './Avatar';
 import { FotoProducto } from './FotoProducto';
@@ -119,5 +121,38 @@ export function DetallePedidoReferido({ etapa, nota, fecha, productos = [], tota
       </ul>
       {total && <p className={s.detalleTotal}>Total del pedido: <strong>{total}</strong></p>}
     </div>
+  );
+}
+
+const TONO_PUESTO = ['oro', 'plata', 'bronce'];
+
+/**
+ * Los que más regalaron este mes (ReferralRanking): el puesto en un sello
+ * (oro, plata y bronce para los tres primeros; sin emojis), el código, las
+ * compras y las monedas.
+ *  - items: [{ codigo, compras, monedas }] · cargando · tuCodigo: se resalta
+ */
+export function RankingReferidos({ items = [], cargando = false, tuCodigo }) {
+  return (
+    <TarjetaCuenta icono={<Trophy />} tono="oro" titulo="Top regaleros del mes" subtitulo="Quiénes tuvieron más referidos que completaron su compra este mes.">
+      {cargando ? (
+        <ul className={s.ranking} aria-busy="true">{[0, 1, 2].map((k) => <li key={k} className={s.rankingEsqueleto} />)}</ul>
+      ) : !items.length ? (
+        <p className={s.rankingVacio}>Aún no hay compras de referidos este mes. ¡Sé el primero!</p>
+      ) : (
+        <ol className={s.ranking}>
+          {items.map((it, i) => (
+            <li key={it.codigo} className={[s.puesto, it.codigo === tuCodigo && s.tuPuesto].filter(Boolean).join(' ')}>
+              {i < 3 ? (
+                <Sello tamano={34} tono={TONO_PUESTO[i]} girar={i === 1 ? 6 : -8}><span className={s.numeroPuesto}>{i + 1}</span></Sello>
+              ) : <span className={s.puestoN}>{i + 1}</span>}
+              <span className={s.codigoPuesto}>{it.codigo}{it.codigo === tuCodigo && <small>Tú</small>}</span>
+              <span className={s.comprasPuesto}>{it.compras} {it.compras === 1 ? 'compra' : 'compras'}</span>
+              <span className={s.monedasPuesto}><Moneda /> {Number(it.monedas || 0).toLocaleString('es-PE')}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </TarjetaCuenta>
   );
 }

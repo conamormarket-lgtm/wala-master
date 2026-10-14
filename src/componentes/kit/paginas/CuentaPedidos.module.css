@@ -1,0 +1,259 @@
+.pestanas {
+  min-width: 0;
+}
+
+.pedidos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr));
+  gap: 1rem;
+  align-items: start;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pedidos > li {
+  min-width: 0;
+}
+
+.esqueleto {
+  height: 220px;
+  border-radius: 22px;
+  background: var(--color-hover);
+  animation: latir 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes latir {
+  to {
+    opacity: 0.55;
+  }
+}
+
+.nada {
+  margin: 0;
+  padding: 1rem 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+/* Detalle */
+.migas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+}
+
+.migas a,
+.migas a:hover {
+  color: var(--primary-color);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+:global([data-theme='dark']) .migas a,
+:global([data-theme='dark']) .migas a:hover {
+  color: var(--violet-300);
+}
+
+.migas svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.detalle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@container pagina (min-width: 860px) {
+  .detalle {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+
+  .lado {
+    position: sticky;
+    top: 6rem;
+  }
+}
+
+.principal,
+.lado {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.encabezado {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+}
+
+.pago {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.pagoOk {
+  background: rgba(16, 185, 129, 0.1);
+  color: #047857;
+}
+
+:global([data-theme='dark']) .pago {
+  color: #fcd34d;
+}
+
+:global([data-theme='dark']) .pagoOk {
+  color: #6ee7b7;
+}
+
+.pago svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.productos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.producto {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.producto:last-child {
+  border-bottom: 0;
+}
+
+.foto {
+  width: 68px;
+  height: 68px;
+  border-radius: 14px;
+}
+
+.sinFoto {
+  display: block;
+  width: 45%;
+  height: 45%;
+  margin: 27.5%;
+  color: var(--color-text-muted);
+}
+
+.productoTextos {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.productoTextos strong {
+  color: var(--color-text);
+  font-size: 0.92rem;
+}
+
+.productoTextos small {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+/* Angosto: el precio baja bajo el nombre (el nombre usa todo el ancho). */
+@container pagina (max-width: 480px) {
+  .producto {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .subtotal {
+    grid-column: 2;
+  }
+}
+
+.subtotal {
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.direccion {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+}
+
+.direccion span {
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+}
+
+.total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--color-border);
+}
+
+.total span {
+  font-weight: 700;
+}
+
+.total strong {
+  font-family: var(--fuente-marca);
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.whatsapp {
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* Textos largos ("Consultar a Marca por WhatsApp") en dos líneas, sin salirse. */
+.whatsapp > * {
+  min-height: 46px;
+  padding-block: 0.5rem;
+  line-height: 1.25;
+  white-space: normal;
+  text-align: center;
+}
+
+.recomendados {
+  min-width: 0;
+  margin-top: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto {
+    animation: none;
+  }
+}

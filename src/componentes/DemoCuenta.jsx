@@ -3,7 +3,9 @@ import { User, Package, MapPin, Settings, Gift, Ticket, Trophy, Users, Sparkles,
 import {
   MarcoCuenta, PaginaCuentaInvitado, PaginaResumenCuenta, PaginaPerfil, PaginaDirecciones, PaginaAjustes, PaginaPedidos,
   PaginaCatalogo, PaginaCupones, PaginaMisiones, PaginaReferidos, PaginaCreaciones, PaginaListaDeseos, PaginaFechas,
+  PaginaDetallePedido, HojaPagarSaldo, Boton, enlaceWhatsApp,
 } from './kit';
+import { empresa } from '../config/empresa';
 import POLERA from './demo/polera-fondo-blanco.jpg';
 import POLERA_ESPALDA from './demo/polera-fondo-blanco-espalda.jpg';
 import { volarMonedasGanadas } from '../utils/animations';
@@ -44,6 +46,7 @@ export const MODULOS_CUENTA = [
   { ruta: '/cuenta', texto: 'Resumen', n: 'C1', componente: 'PaginaResumenCuenta' },
   { ruta: '/cuenta/perfil', texto: 'Mi perfil', n: 'C2', componente: 'PaginaPerfil' },
   { ruta: '/cuenta/pedidos', texto: 'Mis pedidos', n: 'C3', componente: 'PaginaPedidos (P2)' },
+  { ruta: '/cuenta/pedidos/PD-20455', texto: 'Detalle de compra', n: 'C3·d', componente: 'PaginaDetallePedido' },
   { ruta: '/cuenta/direcciones', texto: 'Mis direcciones', n: 'C4', componente: 'PaginaDirecciones' },
   { ruta: '/cuenta/ajustes', texto: 'Ajustes', n: 'C5', componente: 'PaginaAjustes' },
   { ruta: '/cuenta/catalogo', texto: 'Catálogo', n: 'C6', componente: 'PaginaCatalogo' },
@@ -150,9 +153,47 @@ const creacionesDemo = (fotos) => [
     lados: 'Frente', urlEditar: '/editor/taza?designId=d3', urlComprar: '/creacion/d3' },
   { id: 'd4', nombre: 'Diseño de verano', imagen: fotos[0]?.imagen, producto: 'Polo descontinuado', fecha: 'Guardada hace 40 días', disponible: false, urlEditar: '/editor/x?designId=d4' },
 ];
+/* Un combo guardado (TarjetaMiCombo) y uno a medias. */
+const combosDemo = (fotos) => [
+  { id: 'k1', nombre: 'Mi combo de pareja', imagenes: [POLERA, POLERA_ESPALDA], combo: '2 prendas', subtitulo: 'Combo Pareja Walá',
+    fecha: 'Guardada hace 5 días', precio: 99.9, urlEditar: '/combo/pareja?mio=k1', urlComprar: '/combo/pareja?mio=k1' },
+];
+
+/* Pedidos por verificar (coinciden con el documento). */
+const POR_VERIFICAR = [
+  { ref: 'v1', fecha: '2 oct 2026', fase: 'En producción', mismoCorreo: true },
+  { ref: 'v2', fecha: '18 ago 2026', fase: 'Entregado', pistaCorreo: 'i***@hotmail.com' },
+];
+
+const RANKING = [
+  { codigo: 'MARIA22', compras: 5, monedas: 62 },
+  { codigo: 'ISAAC7K', compras: 3, monedas: 31 },
+  { codigo: 'LUCHO10', compras: 2, monedas: 20 },
+  { codigo: 'ANAWALA', compras: 1, monedas: 15 },
+];
+
+/** Un pedido de la lista → el detalle de su compra. */
+const detalleDe = (p) => p && ({
+  codigo: p.codigo,
+  numeroProduccion: p.pasos ? '4512' : undefined,
+  fecha: `${p.fecha} de 2026`,
+  estado: p.anulado ? { texto: 'Anulado', tono: 'neutro' } : p.estado || { texto: p.pagoPendiente ? 'Por confirmar pago' : 'Pago confirmado', tono: p.pagoPendiente ? 'aviso' : 'violeta' },
+  pago: p.pagoPendiente ? { texto: 'Por validar (Yape/Plin/transf.)' } : p.deuda ? { texto: 'Pagaste una parte' } : { texto: 'Pagado con tarjeta (Culqi)', pagado: true },
+  produccion: Boolean(p.pasos),
+  pasos: p.pasos || ['Pago', 'Pagado', 'En preparación', 'Enviado', 'Entregado'],
+  paso: p.paso,
+  fechasPasos: Object.fromEntries(Array.from({ length: p.paso + 1 }, (_, i) => [i, `${3 + i} oct`])),
+  anulado: p.anulado,
+  deuda: p.deuda || 0,
+  productos: p.items.map((it, i) => ({ id: it.id || i, nombre: it.nombre, imagen: it.imagen, talla: (it.variante || '').replace('Talla ', ''), personalizado: i === 0 && Boolean(p.pasos), cantidad: it.cantidad, subtotal: it.precio * it.cantidad })),
+  direccion: { linea: 'Av. Larco 1150, dpto. 502 (frente al parque)', lugar: 'Miraflores, Lima Metropolitana' },
+  resumen: { productos: p.total, envio: p.total >= 150 ? 0 : 12, total: p.total + (p.total >= 150 ? 0 : 12) },
+});
+
 const BORRADORES = [
   { id: 'b1', nombre: 'Sin terminar', imagen: POLERA, producto: 'Polera clásica', fecha: 'Guardada hoy', urlEditar: '/crear/polera?borrador=b1' },
   { id: 'b2', nombre: 'Idea para Carlos', imagen: POLERA_ESPALDA, producto: 'Polera clásica', fecha: 'Guardada ayer', urlEditar: '/crear/polera?borrador=b2' },
+  { id: 'b3', nombre: 'Combo para el aniversario', imagenes: [POLERA, POLERA_ESPALDA], subtitulo: '1 de 2 prendas con diseño · sin terminar', fecha: 'Editado hoy', urlEditar: '/combo/pareja?mio=b3' },
 ];
 
 /* Los conjuntos por defecto de tienda_encuesta_config (encuestaConfig.js):
@@ -182,7 +223,10 @@ const personasDemo = (fotos) => [
     ideas: ideasDe(fotos, 0), ideasGenerales: true },
 ];
 
-export function CuentaDemo({ ruta = '/cuenta', sesion, usuario, monedas, onMonedas, tema, onTema, onCerrarSesion, estados = [], toast, Parte, pedidos, fotos = [], deseos = [], onAgregar, onIrATienda }) {
+export function CuentaDemo({
+  ruta = '/cuenta', sesion, usuario, monedas, onMonedas, tema, onTema, onCerrarSesion, estados = [], toast, Parte, pedidos = [], fotos = [],
+  deseos = [], onAgregar, onIrATienda, recomendados = [], catalogo, onAgregarProducto, esAdmin = false,
+}) {
   const incompleto = estados.includes('incompleto');
   const [perfil, setPerfil] = useState({
     nombre: usuario?.nombre, email: usuario?.email, avatar: null, pais: 'PE', tipoDocumento: 'DNI',
@@ -201,7 +245,10 @@ export function CuentaDemo({ ruta = '/cuenta', sesion, usuario, monedas, onMoned
   const [misiones, setMisiones] = useState(MISIONES);
   const [grupos, setGrupos] = useState(() => gruposReferidosDemo(fotos));
   const recompensas = useMemo(() => recompensasDemo(fotos), [fotos]);
-  const [creaciones, setCreaciones] = useState(() => creacionesDemo(fotos));
+  const [creaciones, setCreaciones] = useState(() => [...combosDemo(fotos), ...creacionesDemo(fotos)]);
+  const [comunidad, setComunidad] = useState({ d1: 'publicada' });
+  const [pagar, setPagar] = useState(null);
+  const [reclamadas, setReclamadas] = useState(false);
   const [borradores, setBorradores] = useState(BORRADORES);
   const [listaDeseos, setListaDeseos] = useState(deseos);
   const [personas, setPersonas] = useState(() => personasDemo(fotos));
@@ -221,7 +268,15 @@ export function CuentaDemo({ ruta = '/cuenta', sesion, usuario, monedas, onMoned
     avisar('Dirección guardada');
   }, [avisar]);
 
-  const modulo = MODULOS_CUENTA.find((m) => m.ruta === ruta) || MODULOS_CUENTA[0];
+  const enDetalle = ruta.startsWith('/cuenta/pedidos/');
+  const modulo = enDetalle ? MODULOS_CUENTA.find((m) => m.componente === 'PaginaDetallePedido') : (MODULOS_CUENTA.find((m) => m.ruta === ruta) || MODULOS_CUENTA[0]);
+  // Publicar en la comunidad: solo quien puede (admins); no un producto que ya no está.
+  const conComunidad = (c) => (!esAdmin || c.disponible === false ? undefined : {
+    estado: comunidad[c.id] || null,
+    onPublicar: async () => { await espera(700); setComunidad((x) => ({ ...x, [c.id]: 'publicada' })); avisar('Publicada en la comunidad'); },
+    onActualizar: async () => { await espera(700); avisar('Publicación actualizada'); },
+    onRetirar: async () => { await espera(700); setComunidad((x) => ({ ...x, [c.id]: 'retirada' })); avisar('Retirada de la comunidad', undefined, 'info'); },
+  });
   const usuarioMarco = useMemo(() => ({ ...usuario, nombre: perfil.nombre, avatar: perfil.avatar }), [usuario, perfil.nombre, perfil.avatar]);
 
   if (!sesion) {
@@ -248,8 +303,70 @@ export function CuentaDemo({ ruta = '/cuenta', sesion, usuario, monedas, onMoned
         paises={[{ valor: 'PE', texto: 'Perú', prefijo: '+51' }, { valor: 'CL', texto: 'Chile', prefijo: '+56' }, { valor: 'MX', texto: 'México', prefijo: '+52' }]}
       />
     );
+  } else if (enDetalle) {
+    const p = pedidos.find((x) => ruta.endsWith(`/${x.codigo}`));
+    const detalle = detalleDe(p);
+    pagina = (
+      <>
+        <PaginaDetallePedido
+          pedido={detalle}
+          noEncontrado={!p}
+          cargando={cargando}
+          onPagar={() => setPagar(p)}
+          pagos={{
+            historial: p && !p.pagoPendiente ? [{ monto: detalle.resumen.total - (p.deuda || 0), fecha: `${p.fecha} · 3:12 p. m.` }] : [],
+            onBoletas: async () => { await espera(700); return fotos.map((f) => f.imagen).filter(Boolean).slice(0, 2); },
+            onFotosEnvio: async () => { await espera(700); return []; },
+            monedas: p && p.paso >= (p.pasos?.length || 5) - 1 && !p.anulado ? {
+              cantidad: 10, reclamadas,
+              onReclamar: async () => { await espera(800); setReclamadas(true); onMonedas?.(10); volarMonedasGanadas(null, 10); avisar('¡Reclamaste 10 monedas!'); },
+            } : undefined,
+          }}
+          whatsapp={[{ texto: 'Consultar estado de mi pedido', url: enlaceWhatsApp(empresa.whatsapp, `Hola, quiero consultar el estado de mi pedido #${p?.codigo}`) }]}
+          recomendados={recomendados}
+          catalogo={catalogo}
+          onAgregar={onAgregarProducto}
+        />
+        <HojaPagarSaldo
+          abierta={Boolean(pagar)}
+          onCerrar={() => setPagar(null)}
+          monto={pagar?.deuda || pagar?.total || 0}
+          tarjeta={<Boton bloque onClick={() => avisar('En la tienda', 'Aquí va el formulario de Culqi o PayPal', 'info')}>Pagar con tarjeta</Boton>}
+          yape={{ numero: '987 654 321', nombre: 'Walá Perú' }}
+          plin={{ numero: '912 345 678', nombre: 'Walá Perú' }}
+          urlComprobante={enlaceWhatsApp(empresa.whatsapp, `Hola, quiero pagar mi saldo pendiente del pedido #${pagar?.codigo}. Adjunto mi comprobante.`)}
+        />
+      </>
+    );
   } else if (ruta === '/cuenta/pedidos') {
-    pagina = <PaginaPedidos pedidos={pedidos} onIrATienda={onIrATienda} />;
+    pagina = (
+      <>
+        <PaginaPedidos
+          pedidos={vacio ? [] : pedidos.map((p) => ({ ...p, onPagar: () => setPagar(p) }))}
+          porVerificar={vacio ? undefined : {
+            pendientes: POR_VERIFICAR,
+            correoVerificado: false,
+            onEnviarVerificacion: async () => { await espera(800); return { yaVerificado: false }; },
+            onYaVerifique: async () => { await espera(800); return false; },
+            onVincular: async () => { await espera(900); throw new Error('Ese número de pedido no coincide con ese teléfono. Revísalos e inténtalo de nuevo.'); },
+          }}
+          cargando={cargando}
+          error={conError}
+          onReintentar={() => avisar('En la tienda', 'Volvería a pedir tus pedidos', 'info')}
+          sinDocumento={incompleto}
+          onIrATienda={onIrATienda}
+        />
+        <HojaPagarSaldo
+          abierta={Boolean(pagar)}
+          onCerrar={() => setPagar(null)}
+          monto={pagar?.deuda || pagar?.total || 0}
+          tarjeta={<Boton bloque onClick={() => avisar('En la tienda', 'Aquí va el formulario de Culqi o PayPal', 'info')}>Pagar con tarjeta</Boton>}
+          yape={{ numero: '987 654 321', nombre: 'Walá Perú' }}
+          plin={{ numero: '912 345 678', nombre: 'Walá Perú' }}
+          urlComprobante={enlaceWhatsApp(empresa.whatsapp, `Hola, quiero pagar el pedido #${pagar?.codigo}. Adjunto mi comprobante.`)}
+        />
+      </>
+    );
   } else if (ruta === '/cuenta/direcciones') {
     pagina = (
       <PaginaDirecciones
@@ -321,6 +438,7 @@ export function CuentaDemo({ ruta = '/cuenta', sesion, usuario, monedas, onMoned
   } else if (ruta === '/cuenta/referidos') {
     pagina = (
       <PaginaReferidos
+        ranking={{ items: vacio ? [] : RANKING, cargando }}
         url="https://www.wala.pe/invitar/ISAAC7K"
         codigo="ISAAC7K"
         monedas={monedas}
@@ -358,6 +476,7 @@ export function CuentaDemo({ ruta = '/cuenta', sesion, usuario, monedas, onMoned
           avisar(id.startsWith('b') ? 'Borrador eliminado' : 'Creación eliminada', undefined, 'info');
         }}
         onRenombrar={async (id, nombre) => { await espera(500); setCreaciones((l) => l.map((x) => (x.id === id ? { ...x, nombre } : x))); }}
+        comunidadPara={esAdmin ? conComunidad : undefined}
       />
     );
   } else if (ruta === '/cuenta/wishlist') {
@@ -418,7 +537,8 @@ export function CuentaDemo({ ruta = '/cuenta', sesion, usuario, monedas, onMoned
       <MarcoCuenta
         usuario={usuarioMarco}
         grupos={GRUPOS_CUENTA_COMPLETO}
-        activo={modulo.ruta}
+        activo={enDetalle ? '/cuenta/pedidos' : modulo.ruta}
+        volver={enDetalle ? null : undefined}
         onCerrarSesion={onCerrarSesion}
         perfilIncompleto={incompleto}
       >

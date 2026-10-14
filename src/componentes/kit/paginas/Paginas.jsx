@@ -1,12 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ShoppingBag, LogIn, Sparkles, Store, Package } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, LogIn, Sparkles, Store } from 'lucide-react';
 import Boton from '../Boton';
-import { Cabecera, BarraInferior, Pestanas } from '../Navegacion';
-import { ItemCarrito, BarraEnvioGratis, ResumenPedido, SeguimientoPedido } from '../Pedido';
+import { Cabecera, BarraInferior } from '../Navegacion';
+import { ItemCarrito, BarraEnvioGratis, ResumenPedido } from '../Pedido';
 import { EstadoVacio, Aviso } from '../Feedback';
 import { Encabezado } from '../SeccionesContenido';
-import { CabezaCuenta } from '../piezas/Cuenta';
 import { TarjetaJuego } from '../piezas/TarjetaJuego';
 import { ChipsBusqueda, InvitacionBusqueda } from '../piezas/PanelBusqueda';
 import { Destello } from '../Marca';
@@ -202,50 +201,6 @@ export function PaginaCarrito({
             onAgregar={onAgregar}
           />
         </BloqueSeccion>
-      )}
-    </>
-  );
-}
-
-/**
- * Mis pedidos: pestañas Activos / Entregados con cuántos hay, cada pedido con
- * su seguimiento y, si una pestaña está vacía, Kapi. Va dentro de MarcoCuenta
- * (su cabecera es la de las páginas de la cuenta).
- *  - pedidos: [{ codigo, fecha, paso (0-4), total, items, pagoPendiente, entregaEstimada }]
- *  - onIrATienda
- */
-export function PaginaPedidos({ pedidos = [], onIrATienda }) {
-  const entregados = pedidos.filter((p) => p.paso >= 4);
-  const activos = pedidos.filter((p) => p.paso < 4);
-  const [pestana, setPestana] = useState(activos.length ? 'activos' : 'entregados');
-  const lista = pestana === 'activos' ? activos : entregados;
-
-  return (
-    <>
-      <CabezaCuenta icono={<Package />} titulo="Mis pedidos" subtitulo="Por dónde va cada uno, del pago a tu puerta." />
-      <div className={s.pestanas}>
-        <Pestanas
-          etiqueta="Filtrar pedidos"
-          valor={pestana}
-          onChange={setPestana}
-          opciones={[
-            { id: 'activos', texto: 'En curso', cuenta: activos.length },
-            { id: 'entregados', texto: 'Entregados', cuenta: entregados.length },
-          ]}
-        />
-      </div>
-      {lista.length ? (
-        <div className={s.pedidos}>
-          {lista.map((p) => <SeguimientoPedido key={p.codigo} {...p} />)}
-        </div>
-      ) : (
-        <EstadoVacio
-          imagen={pestana === 'activos' ? '/assets/kapi/kapi-happy.webp' : undefined}
-          titulo={pestana === 'activos' ? 'No tienes pedidos en curso' : 'Aún no recibes pedidos'}
-          texto={pestana === 'activos' ? 'Cuando compres algo, aquí verás por dónde va.' : 'Tus pedidos entregados aparecerán aquí.'}
-        >
-          {onIrATienda && <Boton icono={<ShoppingBag aria-hidden="true" />} onClick={onIrATienda}>Ir a la tienda</Boton>}
-        </EstadoVacio>
       )}
     </>
   );

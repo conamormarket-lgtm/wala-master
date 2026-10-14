@@ -31,8 +31,10 @@ function Esqueletos({ n = 3, alto = 300 }) {
  *  - borradores: ídem, sin precio (useBorradoresCrear)
  *  - cargando · error · onReintentar
  *  - onEliminar(id), onRenombrar(id, nombre): promesas · urlCrear
+ *  - comunidadPara(creacion): la prop `comunidad` de cada tarjeta (publicar,
+ *    actualizar, retirar; solo para quien puede publicar) o nada
  */
-export function PaginaCreaciones({ creaciones = [], borradores = [], cargando = false, error = false, onReintentar, onEliminar, onRenombrar, urlCrear = '/personalizar' }) {
+export function PaginaCreaciones({ creaciones = [], borradores = [], cargando = false, error = false, onReintentar, onEliminar, onRenombrar, comunidadPara, urlCrear = '/personalizar' }) {
   const n = creaciones.length;
   let subtitulo = 'Tus diseños guardados, listos para comprar o seguir editando.';
   if (!cargando && n) subtitulo = `${n} ${n === 1 ? 'diseño guardado' : 'diseños guardados'} · cómpralos o sigue editándolos cuando quieras.`;
@@ -67,6 +69,7 @@ export function PaginaCreaciones({ creaciones = [], borradores = [], cargando = 
                     {...c}
                     onEliminar={onEliminar && (() => onEliminar(c.id))}
                     onRenombrar={onRenombrar && ((nombre) => onRenombrar(c.id, nombre))}
+                    comunidad={comunidadPara?.(c)}
                   />
                 </li>
               ))}

@@ -273,3 +273,100 @@
   font-size: 0.82rem;
   font-weight: 700;
 }
+
+/* ── Ranking del mes ─────────────────────────────────────── */
+.ranking {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rankingEsqueleto {
+  height: 52px;
+  border-radius: 14px;
+  background: var(--color-hover);
+}
+
+.rankingVacio {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+}
+
+.puesto {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 52px;
+  padding: 0.4rem 0.75rem;
+  border-radius: 14px;
+  background: var(--color-hover);
+}
+
+.tuPuesto {
+  outline: 1.5px solid var(--violet-400, #a78bfa);
+  background: var(--primary-light);
+}
+
+.numeroPuesto {
+  font-family: var(--fuente-marca);
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.puestoN {
+  color: var(--color-text-muted);
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+  text-align: center;
+}
+
+.codigoPuesto {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.codigoPuesto small {
+  color: var(--primary-color);
+  font-family: inherit;
+  font-size: 0.7rem;
+}
+
+.comprasPuesto {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.monedasPuesto {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-text);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+@container (max-width: 380px) {
+  .puesto {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+  }
+
+  .comprasPuesto {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}

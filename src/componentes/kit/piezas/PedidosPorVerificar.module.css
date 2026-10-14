@@ -1,0 +1,94 @@
+.lista {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pendiente {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.45rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 16px;
+}
+
+.cabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.fecha {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.pista {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.pista strong {
+  color: var(--color-text);
+}
+
+.textoBoton {
+  display: inline-flex;
+  text-align: left;
+  align-items: center;
+  justify-self: start;
+  gap: 0.35rem;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+:global([data-theme='dark']) .textoBoton {
+  color: var(--violet-300);
+}
+
+.textoBoton svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.form {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: 0.7rem;
+}
+
+.fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.7rem;
+  width: 100%;
+}
+
+@container (min-width: 520px) {
+  .fila {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.botones {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}

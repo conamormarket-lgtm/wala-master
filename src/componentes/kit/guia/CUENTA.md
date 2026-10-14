@@ -34,8 +34,18 @@ anteriores) es **C3**.
   con un tono por grupo: Cuenta violeta, Recompensas oro, Personalización
   rosa. Las cifras (monedas, XP, días, personas) son texto: el número con la
   letra del logo y la palabra en gris.
-- Confirmar algo (eliminar una dirección, una creación, una persona; canjear)
-  se hace **en la misma tarjeta**, nunca con `window.confirm`.
+- Confirmar algo (eliminar una dirección, una creación, una persona; canjear;
+  publicar en la comunidad) se hace **en la misma tarjeta**, nunca con
+  `window.confirm`.
+- **Ningún control del navegador**: las listas son `ListaOpciones` (dentro de
+  `Campo` con `opciones`: panel pegado al campo en escritorio, hoja en el
+  celular, con buscador si hay más de 10 y `creable` para escribir algo que no
+  está), las fechas son `CampoFecha` (calendario de Walá; empieza por el año
+  en un cumpleaños; "No sé el año"), el teléfono es `CampoTelefono` (prefijo
+  del país con código, sin banderas emoji), las casillas son `Casilla` y la
+  foto pasa por `RecortarFoto` antes de subirse. Una hoja abierta encima de
+  otra (la lista de distritos dentro de "Nueva dirección") se cierra sola con
+  "atrás" o Esc, sin cerrar la de abajo.
 
 ## Partes
 
@@ -45,14 +55,15 @@ anteriores) es **C3**.
 | Sin sesión | `PaginaCuentaInvitado` | `EstadoVacio` (Kapi), `Boton` | `paginas/Cuenta.module.css` (`.invitado`) | — (`pedidos` en /cuenta/pedidos) | visitante |
 | C1 Resumen `/cuenta` | `PaginaResumenCuenta` | `CabezaCuenta` (subrayado), `Estadistica` (monedas), `AccesosCuenta` | `piezas/Cuenta.module.css` | `userProfile.monedas`, `monedasEnEspera`, los grupos | con sesión |
 | C2 Mi perfil | `PaginaPerfil` | `IdentidadCuenta`, `Estadistica grande`, `TarjetaCuenta`, `ListaDatos`, `Interruptor`, `Campo` (con `opciones`) | `piezas/Cuenta.module.css`, `paginas/Cuenta.module.css` | `perfilDesdeUsuario(userProfile, user)`; WhatsApp: `marketingConsent.whatsapp` | con sesión |
-| C3 Mis pedidos | `PaginaPedidos` (P2) | `CabezaCuenta`, `Pestanas`, `SeguimientoPedido`, `EstadoVacio` | `Pedido.module.css` | `usePedidos(dni, uid)` | con sesión |
+| C3 Mis pedidos | `PaginaPedidos` (P2) | `CabezaCuenta`, `PedidosPorVerificar`, `Pestanas` (En curso · Terminados), `SeguimientoPedido` (5 pasos o las 8 etapas del taller como barra "Paso 5 de 8 · Estampado"; deuda, anulado, "Ver detalle"), `HojaPagarSaldo`, `EstadoVacio` | `Pedido.module.css`, `paginas/CuentaPedidos.module.css` | `usePedidos(dni, uid)` → `pedidos` y `pendientes` | con sesión |
+| C3·d Detalle de compra `/cuenta/pedidos/:id` | `PaginaDetallePedido` | migas, `CabezaCuenta` + estado y pago, `LineaProduccion`, productos, dirección; al costado `ListaDatos` (detalle), `PagosPedido` (historial, boletas, fotos de envío, reclamar monedas), WhatsApp; `CarruselProductos` | `piezas/DetallePedido.module.css`, `paginas/CuentaPedidos.module.css` | `usePedidos` + `getOrderByIdAnyCollection(id)`; `derivarEstadoCompra` | con sesión |
 | C4 Mis direcciones | `PaginaDirecciones` | `CabezaCuenta`, `TarjetaDireccion`, `HojaInferior`, `Campo` | `piezas/TarjetaDireccion.module.css` | `obtenerDirecciones(uid)` → `direccionDesdeFirestore`; ubigeo en `lugares` | con sesión |
 | C5 Ajustes | `PaginaAjustes` | `TarjetaCuenta`, `Interruptor` (modo noche), `ListaEleccion` (idioma) | `paginas/Cuenta.module.css` | `useTheme()`, `useLanguage()` | con sesión |
 | C6 Catálogo | `PaginaCatalogo` | `TarjetaRecompensa` (`FotoProducto`, `EtiquetaColgante`, `CostoMonedas`), `Aviso` | `piezas/Recompensas.module.css` | `rewardsCatalog` → `recompensaDesdeFirestore`; canje `redeemRewardSecure` | con sesión |
 | C7 Mis cupones | `PaginaCupones` | `TarjetaCupon` (`IconoWala` en el talón) | `piezas/Recompensas.module.css` (`.cupon`) | `getMisCupones(uid)` + `estadoCupon` → `cuponDesdeFirestore` | con sesión |
 | C8 Misiones | `PaginaMisiones` | `Estadistica` ×3, `NivelCuenta` (`BarraProgreso`, `Sello` bronce/plata/oro), `TarjetaMision` (`GananciaMonedas`) | `piezas/Recompensas.module.css` | `getDailyMissions()` → `misionDesdeServidor`, `dailyCheckIn()`, `xp`, `dailyStreak` | con sesión |
-| C9 Mis referidos | `PaginaReferidos` | `FormaGanar` ×2, `EnlaceInvitacion`, `Estadistica` ×3, grupos en `TarjetaCuenta` con `FilaReferido` y `DetallePedidoReferido` | `piezas/Referidos.module.css` | `getReferralsByReferrer(code)`, `claimReferralCoins`, `getReferralOrderDetail` | con sesión |
-| C10 Mis creaciones | `PaginaCreaciones` | `TarjetaCreacion` (también para borradores, en `Carrusel`) | `piezas/Creaciones.module.css` | `getDesignsByUser(uid)` → `creacionDesdeDiseno`; borradores `useBorradoresCrear` | con sesión |
+| C9 Mis referidos | `PaginaReferidos` | `FormaGanar` ×2, `EnlaceInvitacion`, `Estadistica` ×3, grupos en `TarjetaCuenta` con `FilaReferido` y `DetallePedidoReferido`, `RankingReferidos` (puestos en sellos oro, plata y bronce) | `piezas/Referidos.module.css` | `getReferralsByReferrer(code)`, `claimReferralCoins`, `getReferralOrderDetail` | con sesión |
+| C10 Mis creaciones | `PaginaCreaciones` | `TarjetaCreacion` (también combos con sus prendas lado a lado, borradores en `Carrusel`, renombrar, publicar en la comunidad para admins) | `piezas/Creaciones.module.css` | `getDesignsByUser(uid)` → `creacionDesdeDiseno`; borradores `useBorradoresCrear` | con sesión |
 | C11 Lista de deseos | `PaginaListaDeseos` | `TarjetaProducto` (`deseado` + `onDeseo`), `Aviso` | `paginas/CuentaPersonalizacion.module.css` | `useWishlist()` + `useProducts` → `tarjetaDesdeProducto` | con sesión |
 | C12 Fechas importantes | `PaginaFechas` | `AvisoFestiva`, `TarjetaPersonaRegalo` (`IdeaRegalo`), formulario en `HojaInferior` (`Campo`, `Interruptor`) | `piezas/Regalos.module.css` | `userProfile.giftRecipients` → `personaDesdeRecipient`; ideas `useGiftCatalog` | con sesión |
 
@@ -61,6 +72,10 @@ anteriores) es **C3**.
 | C2 Mi perfil | C4 Direcciones (celular) | C5 Ajustes (celular) |
 |---|---|---|
 | ![Mi perfil](cuenta-perfil.webp) | ![Mis direcciones](cuenta-direcciones.webp) | ![Ajustes](cuenta-ajustes.webp) |
+
+| C3 Mis pedidos | C3·d Detalle de compra |
+|---|---|
+| ![Mis pedidos con pedidos por verificar](cuenta-pedidos.webp) | ![Detalle de una compra](cuenta-detalle.webp) |
 
 | C6 Catálogo | C7 Cupones (celular) | C8 Misiones |
 |---|---|---|
@@ -112,7 +127,15 @@ componente o su forma de recibir datos.
 | Sin sesión | `CuentaLoginPrompt` / `PedidosLoginPrompt` (~67) | `PaginaCuentaInvitado` (`pedidos` en /cuenta/pedidos) |
 | Resumen | `pages/cuenta/CuentaResumenPage.jsx` (grilla ~34-48, "Cerrar sesión" ~58) | `PaginaResumenCuenta` (el "Cerrar sesión" lo pone `MarcoCuenta`) |
 | Perfil | `PerfilPage.jsx`: `AvatarStudio` (~193), recompensas, `GlassCard` "Datos Personales" (~243-330) | `PaginaPerfil` |
-| Mis pedidos | `CuentaRastreoPage.jsx` | `PaginaPedidos` (falta `PedidosPorVerificar`, ver abajo) |
+| Mis pedidos | `CuentaRastreoPage.jsx` (tarjetas ~365-484, `ProgresoResumen` ~204-230) y `PedidosPorVerificar.jsx` | `PaginaPedidos` + `SeguimientoPedido` (`pasos`, `estado`, `deuda`, `anulado`, `urlDetalle`) + `PedidosPorVerificar` |
+| Detalle de compra | `CuentaCompraDetallePage.jsx` (`Timeline`, `PedidoAcciones`, `HistorialPagos`, modales de pago y boletas) | `PaginaDetallePedido` + `LineaProduccion` + `PagosPedido` + `HojaPagarSaldo` |
+| Foto de perfil | `AvatarStudio` + `AvatarCropModal` (react-easy-crop) | `IdentidadCuenta` + `RecortarFoto` (sin librería) |
+| País y teléfono | `CountrySelect`, `PhoneIntlInput` (`<select>` con banderas emoji) | `Campo opciones` (buscador) y `CampoTelefono` |
+| Fechas de una persona | `FechaEventoInput` (día, mes, año) | `CampoFecha anioOpcional` |
+| Gustos | `<input list>` con `<datalist>` | `Campo opciones creable` |
+| Combo guardado | `TarjetaMiCombo` | `TarjetaCreacion` con `imagenes`, `subtitulo`, `aviso` |
+| Publicar en la comunidad | `AccionesComunidad`, `InsigniaPublicada` | `TarjetaCreacion comunidad={…}` |
+| Ranking | `ReferralRanking` | `RankingReferidos` |
 | Direcciones | `MisDireccionesPage.jsx` (lista ~155-180, formulario ~183-286) | `PaginaDirecciones` + `TarjetaDireccion` |
 | Ajustes | `CuentaAjustesPage.jsx`: `ThemeToggle` (~56), idiomas (~61-87) | `PaginaAjustes` |
 | Catálogo | `CatalogReward.jsx` (tarjetas ~133) | `PaginaCatalogo` + `TarjetaRecompensa` |
@@ -150,6 +173,13 @@ componente o su forma de recibir datos.
 | `creaciones`, `borradores` | `getDesignsByUser(uid)` → `creacionDesdeDiseno(d, { precio, precioAntes, disponible, comprado })`; `useBorradoresCrear` |
 | `onEliminar` (creación) | `useEliminarCreacion` (sin su modal: la tarjeta ya confirma) |
 | `items` (deseos) | `wishlistItems` + `useProducts([], { includeHidden: true })` → `{ id, producto: tarjetaDesdeProducto(p), guardado, regalado: isGifted, disponible }` |
+| `PaginaPedidos.pedidos` | cada pedido de `usePedidos` como lo arma `resumirRastreo`: `{ id, codigo, fecha, items, total, paso, pasos: ETAPAS_PRODUCCION si hay fase del taller (o los 5 generales), estado: { texto: getEtapaBadgeLabel / estadoWalaADisplay, tono }, deuda: montoDeuda si conDeuda, anulado, urlDetalle }` |
+| `porVerificar` | `{ pendientes: data.pendientes (fecha ya legible y fase con ETIQUETA_FASE), correoVerificado: data.emailVerificado, onEnviarVerificacion: enviarVerificacionCorreo, onYaVerifique: refrescarVerificacionCorreo + recargar, onVincular: vincularPedido }` |
+| `PaginaDetallePedido.pedido` | el pedido efectivo de la página: `getCodigoPedido`, `getNumeroProduccion`, `derivarEstadoCompra` (estado y `paymentLabel`), `fechas` → `fechasPasos`, líneas de `getProductosPedido`, dirección y montos como hoy |
+| `pagos` | `historialPagos` → `historial`; `onBoletas`: `listFilesInFolder('00'+id)`; `onFotosEnvio`: `reparto.boletasEnvio` o Storage; `monedas`: `claimMonedas(id, 10)` y `monedasReclamadas` |
+| `onPagar` → `HojaPagarSaldo` | `tarjeta`: `CulqiCustomCheckout` + `PaypalCheckout`; `yape`, `plin`: `getMessage('yape_number')`…; `urlComprobante`: `whatsapp_number_pagos` con `whatsapp_text_pagos` |
+| `ranking` | `getTopReferrersOfMonth()` → `{ codigo: referrerCode, compras: count, monedas: coins }` |
+| `comunidadPara(c)` | con `usePuedePublicar(design)`: `{ estado: design.comunidad, onPublicar: publicarEnComunidad, onActualizar: publicarEnComunidad, onRetirar: retirarDeComunidad }` |
 | `onAgregarTodo`, `onCompartir` | `handleAddAll` (devolver el texto del resultado), copiar `/wishlist/{referralCode}` |
 | `personas`, `festivas` | `giftRecipients` → `personaDesdeRecipient` + `recomendar()` de `useGiftCatalog`; `useFechasFestivas` / `proximasFestivas` (con un `icono` de IconoWala, no el emoji) |
 | `onGuardar` (persona) | `updateUserProfile({ giftRecipients })` con `personaARecipient`, luego `claimDatesReward()` → `ganadas` |
@@ -196,19 +226,15 @@ componente o su forma de recibir datos.
 ### Qué le falta al kit antes de migrar
 
 - Traducción (`<T>` / `t()`), como en las demás páginas.
-- `PedidosPorVerificar` (pedidos que coinciden con el documento, verificar el
-  correo, vincular con número de pedido) y el detalle de una compra
-  (`/cuenta/pedidos/:id`, `CuentaCompraDetallePage`).
-- El recorte de la foto de perfil (`AvatarStudio` / `AvatarCropModal`): el kit
-  solo entrega el archivo.
-- `PhoneIntlInput` y `CountrySelect` completos fuera del Perú (el kit usa
-  `Campo` con prefijo).
-- Mis creaciones: la tarjeta del combo (`TarjetaMiCombo`, "Mi combo"),
-  publicar en la comunidad (`AccionesComunidad`), los diseños de legado con
-  capas (`DomOverlay`, `ComboProductImage`).
-- Referidos: el ranking del mes (`ReferralRanking`).
-- Fechas importantes: los campos con sugerencias (`datalist`) de los gustos y
-  el año como en `FechaEventoInput`.
+- El formulario de tarjeta (Culqi, PayPal) entra como `tarjeta` en
+  `HojaPagarSaldo`: el kit no lo dibuja.
+- Mis creaciones: los diseños de legado con capas (`DomOverlay`,
+  `ComboProductImage`) se ven con su imagen de vista previa.
+- Las páginas públicas para compartir: la lista de deseos
+  (`/wishlist/:código`, `WishlistPublic`) y el registro de regalos
+  (`/regalar/:código`, `GiftRegistryPage`, con arrastrar a una fecha).
+- El aviso de impresión con deuda ("STOP…") del detalle: el kit lo muestra
+  como la etapa actual en rojo ("Esperando tu pago") y el aviso de deuda.
 
 ### Pasos (cada uno se verifica solo y se puede volver atrás)
 

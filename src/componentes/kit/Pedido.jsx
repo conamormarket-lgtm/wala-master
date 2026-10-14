@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useInView } from 'framer-motion';
-import { Check, Copy, CreditCard, Truck, Trash2, Gift, ChevronDown, Clock, Tag, Sparkles, Package } from 'lucide-react';
+import { Check, Copy, CreditCard, Truck, Trash2, Gift, ChevronDown, Clock, Tag, Sparkles, Package, AlertTriangle, XCircle, ArrowRight } from 'lucide-react';
 import Boton from './Boton';
 import { Etiqueta, Moneda } from './Etiquetas';
 import { FotoProducto } from './piezas/FotoProducto';
@@ -10,6 +10,8 @@ import { EASE, Estallido, useContador } from './Efectos';
 import s from './Pedido.module.css';
 
 export const PASOS_PEDIDO = ['Recibido', 'Pago confirmado', 'En producción', 'En camino', 'Entregado'];
+/** Las 8 etapas del taller (ETAPAS_TIMELINE de utils/constants). */
+export const ETAPAS_PRODUCCION = ['Compra', 'Diseño', 'Impresión', 'Preparación', 'Estampado', 'Empaquetado', 'Reparto', 'Finalizado'];
 
 /** Precio que corre hasta su valor nuevo. */
 function Monto({ valor, className }) {
@@ -21,13 +23,24 @@ function Monto({ valor, className }) {
  * Tarjeta de "Mis pedidos": resumen + línea de tiempo + acción principal.
  * La línea se llena paso a paso al entrar en pantalla; el paso actual late.
  * Si falta pagar, el pago es la acción que manda (y el paso se marca en ámbar).
+ *  - codigo, fecha, total, items: [{ nombre, imagen, variante, cantidad, precio }]
+ *  - paso (0…) · pasos: nombres (PASOS_PEDIDO; con más de 5, p. ej.
+ *    ETAPAS_PRODUCCION, va como barra compacta "Paso 5 de 8 · Estampado")
+ *  - estado: { texto, tono } la etiqueta de arriba (si no, sale del paso)
+ *  - pagoPendiente: aún sin pagar (se separa 24 h) · deuda: saldo por pagar
+ *    (S/) · onPagar · anulado
+ *  - entregaEstimada · urlDetalle: "Ver detalle" (/cuenta/pedidos/:id)
  */
-export function SeguimientoPedido({ codigo, fecha, paso, total, items, pagoPendiente = false, entregaEstimada }) {
+export function SeguimientoPedido({
+  codigo, fecha, paso, total, items = [], pagoPendiente = false, entregaEstimada,
+  pasos = PASOS_PEDIDO, estado, deuda = 0, anulado = false, onPagar, urlDetalle,
+}) {
   const lineaRef = useRef(null);
   const visible = useInView(lineaRef, { once: true, margin: '0px 0px -40px 0px' });
   const [abierto, setAbierto] = useState(false);
   const [copiado, setCopiado] = useState(false);
-  const entregado = paso >= PASOS_PEDIDO.length - 1;
+  const entregado = !anulado && paso >= pasos.length - 1;
+  const compacta = pasos.length > 5;
 
   const copiar = () => {
     navigator.clipboard?.writeText(codigo).catch(() => {});
@@ -68,18 +81,34 @@ export function SeguimientoPedido({ codigo, fecha, paso, total, items, pagoPendi
         </div>
         {/* En tarjetas angostas se oculta: la línea de tiempo ya dice el estado. */}
         <span className={s.estado}>
-          {pagoPendiente ? (
+          {estado ? (
+            <Etiqueta tono={estado.tono || 'violeta'}>{estado.texto}</Etiqueta>
+          ) : anulado ? (
+            <Etiqueta tono="neutro" icono={<XCircle aria-hidden="true" />}>Anulado</Etiqueta>
+          ) : pagoPendiente ? (
             <Etiqueta tono="aviso" icono={<Clock aria-hidden="true" />}>Falta pagar</Etiqueta>
           ) : entregado ? (
             <Etiqueta tono="exito" icono={<Check aria-hidden="true" />}>Entregado</Etiqueta>
           ) : (
-            <Etiqueta tono="violeta">{PASOS_PEDIDO[paso]}</Etiqueta>
+            <Etiqueta tono="violeta">{pasos[paso]}</Etiqueta>
           )}
         </span>
       </header>
 
-      <ol ref={lineaRef} className={[s.linea, visible && s.lineaVisible].filter(Boolean).join(' ')} aria-label="Estado del pedido">
-        {PASOS_PEDIDO.map((nombre, i) => {
+      {compacta || anulado ? (
+        <div ref={lineaRef} className={[s.barraPasos, anulado && s.barraAnulada].filter(Boolean).join(' ')}>
+          <span className={s.barraPista} role="progressbar" aria-valuemin={1} aria-valuemax={pasos.length} aria-valuenow={Math.min(paso + 1, pasos.length)}>
+            {pasos.map((nombre, i) => (
+              <span key={nombre} className={[s.segmento, !anulado && i <= paso && s.segmentoOn, !anulado && i === paso && !entregado && s.segmentoActual].filter(Boolean).join(' ')} />
+            ))}
+          </span>
+          <span className={s.barraTexto}>
+            {anulado ? 'Pedido cancelado' : <>Paso <strong>{Math.min(paso + 1, pasos.length)}</strong> de {pasos.length} · {pasos[Math.min(paso, pasos.length - 1)]}</>}
+          </span>
+        </div>
+      ) : (
+      <ol ref={lineaRef} className={[s.linea, visible && s.lineaVisible].filter(Boolean).join(' ')} style={{ '--pasos': pasos.length }} aria-label="Estado del pedido">
+        {pasos.map((nombre, i) => {
           const hecho = i < paso || (entregado && i === paso);
           const actual = i === paso && !entregado;
           const espera = pagoPendiente && i === 1;
@@ -96,25 +125,42 @@ export function SeguimientoPedido({ codigo, fecha, paso, total, items, pagoPendi
           );
         })}
       </ol>
+      )}
 
-      {!entregado && !pagoPendiente && entregaEstimada && (
+      {!entregado && !pagoPendiente && !anulado && entregaEstimada && (
         <p className={s.estimado}>
           <span className={s.camion}><Truck aria-hidden="true" /></span>
           Llega aprox. <strong>{entregaEstimada}</strong>
         </p>
       )}
 
-      {pagoPendiente && (
+      {pagoPendiente && !anulado && (
         <div className={s.pagoAviso}>
           <p>Tu pedido se separa por 24 h. Paga para que pase a producción.</p>
-          <Boton brillo icono={<CreditCard aria-hidden="true" />}>Pagar {soles(total)}</Boton>
+          <Boton brillo icono={<CreditCard aria-hidden="true" />} onClick={onPagar}>Pagar {soles(total)}</Boton>
         </div>
       )}
 
-      <button type="button" className={s.verDetalle} aria-expanded={abierto} onClick={() => setAbierto((v) => !v)}>
-        {abierto ? 'Ocultar productos' : 'Ver productos'}
-        <ChevronDown aria-hidden="true" />
-      </button>
+      {deuda > 0 && !pagoPendiente && !anulado && (
+        <div className={`${s.pagoAviso} ${s.deudaAviso}`}>
+          <p><AlertTriangle aria-hidden="true" /><span>Te falta pagar <strong>{soles(deuda)}</strong> para que tu pedido siga avanzando.</span></p>
+          <Boton icono={<CreditCard aria-hidden="true" />} onClick={onPagar} to={onPagar ? undefined : urlDetalle}>Pagar deuda</Boton>
+        </div>
+      )}
+
+      {anulado && (
+        <p className={s.anuladoAviso}><XCircle aria-hidden="true" /> Este pedido se anuló.</p>
+      )}
+
+      <div className={s.pieSeguimiento}>
+        <button type="button" className={s.verDetalle} aria-expanded={abierto} onClick={() => setAbierto((v) => !v)}>
+          {abierto ? 'Ocultar productos' : 'Ver productos'}
+          <ChevronDown aria-hidden="true" />
+        </button>
+        {urlDetalle && (
+          <Boton to={urlDetalle} variante="contorno" tamano="sm" iconoFin={<ArrowRight aria-hidden="true" />}>Ver detalle</Boton>
+        )}
+      </div>
 
       <AnimatePresence initial={false}>
         {abierto && (

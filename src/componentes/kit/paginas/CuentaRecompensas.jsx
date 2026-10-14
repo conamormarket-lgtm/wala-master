@@ -7,7 +7,7 @@ import { Moneda } from '../Etiquetas';
 import { IconoWala } from '../IconosWala';
 import { CabezaCuenta, TarjetaCuenta, Estadistica } from '../piezas/Cuenta';
 import { TarjetaRecompensa, TarjetaCupon, TarjetaMision, NivelCuenta, NIVELES } from '../piezas/Recompensas';
-import { FormaGanar, EnlaceInvitacion, FilaReferido, DetallePedidoReferido } from '../piezas/Referidos';
+import { FormaGanar, EnlaceInvitacion, FilaReferido, DetallePedidoReferido, RankingReferidos } from '../piezas/Referidos';
 import { FotoProducto } from '../piezas/FotoProducto';
 import s from './CuentaRecompensas.module.css';
 
@@ -308,10 +308,11 @@ function GrupoReferidos({ grupo, onReclamar, onVerPedido }) {
  *  - cargando · bono (10), premio (15): los números de la invitación
  *  - onCompartir() · onCopiar(url) · onReclamar(id): promesas
  *  - onVerPedido(id): para pedir el detalle al abrirlo · urlTienda
+ *  - ranking: { items, cargando } los que más regalaron este mes
  */
 export function PaginaReferidos({
   url, codigo, monedas = 0, resumen = {}, grupos = [], cargando = false, bono = 10, premio = 15,
-  onCompartir, onCopiar, onReclamar, onVerPedido, urlTienda = '/tienda',
+  onCompartir, onCopiar, onReclamar, onVerPedido, urlTienda = '/tienda', ranking,
 }) {
   const { entraron = 0, cuentasNuevas = 0, compras = 0, porReclamar = 0, ganadas = 0 } = resumen;
   const otros = grupos.filter((g) => g.tipo !== 'invitacion');
@@ -363,6 +364,7 @@ export function PaginaReferidos({
           ))}
         </div>
       )}
+      {ranking && <RankingReferidos {...ranking} tuCodigo={codigo} />}
     </>
   );
 }

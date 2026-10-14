@@ -129,13 +129,16 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 |---|---|---|
 | `Boton.jsx` | `Boton` | Botón violeta liso; variantes, tamaños, cargando, `brillo` para CTA de pago. Con `to` es un enlace; con `insignia` lleva un contador en la esquina |
 | `Etiquetas.jsx` | `Etiqueta`, `Chip`, `Moneda`, `MONEDA`, `CostoMonedas`, `GananciaMonedas`, `SaldoMonedas`, `Contador` | Badges, filtros y monedas |
-| `Formulario.jsx` | `Campo` (con `opciones` es una lista desplegable), `Buscador` (`grande`, `boton`), `Selector`, `SelectorTalla`, `SelectorColor`, `Cantidad`, `Interruptor` | Formularios, búsqueda (atajo "/"), "Ordenar por" y variantes de producto |
+| `Formulario.jsx` | `Campo` (con `opciones` es una `ListaOpciones`; `control` para otro control en la misma caja), `Buscador` (`grande`, `boton`), `Selector`, `SelectorTalla`, `SelectorColor`, `Cantidad`, `Interruptor`, `Casilla`, `CampoTelefono` | Formularios, búsqueda (atajo "/"), "Ordenar por" y variantes de producto |
+| `ListaOpciones.jsx` | `ListaOpciones` | Lista desplegable de Walá: panel en escritorio, hoja en el celular, buscador, teclado, `creable` |
+| `Fecha.jsx` | `CampoFecha`, `Calendario`, `fechaEnTexto` | Fechas con el calendario de Walá (años, meses, días; "No sé el año") |
+| `PanelFlotante.jsx` | `PanelFlotante`, `enCelular` | Lo que se abre desde un campo: panel pegado (escritorio) u hoja (celular) |
 | `TarjetaProducto.jsx` | `TarjetaProducto`, `TarjetaProductoEsqueleto`, `soles` | Tarjeta de la tienda (fotos con fondo blanco, alturas parejas; corazón controlado con `deseado` + `onDeseo`) |
 | `Navegacion.jsx` | `Cabecera`, `BarraInferior`, `Pestanas`, `Logo` | Navegación |
 | `Desplegable.jsx` | `Desplegable` | Base de todos los menús: hover en escritorio, hoja/globo en celular |
 | `MenusCabecera.jsx` | `MenuTienda`, `MenuMarcas`, `AyudaMonedas`, `MenuCuenta` (`lateral` + `activo`: el menú al costado de /cuenta), `VistaFavoritos`, `VistaCarrito` | Contenido de los menús de la cabecera |
 | `AgregarRapido.jsx` | `AgregarRapido` | Elegir talla, color y cantidad antes de agregar al carrito |
-| `Pedido.jsx` | `SeguimientoPedido`, `ItemCarrito`, `BarraEnvioGratis`, `ResumenPedido` | Carrito y Mis pedidos |
+| `Pedido.jsx` | `SeguimientoPedido` (`pasos`, `estado`, `deuda`, `anulado`, `urlDetalle`, `onPagar`), `ItemCarrito`, `BarraEnvioGratis`, `ResumenPedido`, `PASOS_PEDIDO`, `ETAPAS_PRODUCCION` | Carrito y Mis pedidos |
 | `Feedback.jsx` | `Aviso`, `ProveedorToasts`, `useToast`, `useNotificaciones`, `ListaNotificaciones`, `EstadoVacio`, `HojaInferior` | Avisos, notificaciones y modales |
 | `Enlace.jsx` | `Enlace`, `ProveedorEnlaces`, `tipoDeEnlace` | La única regla de enlaces: internos por el router, externos en otra pestaña, `#ancla` con scroll suave |
 | `adaptadores.js` | `accionDeProducto`, `tarjetaDesdeProducto`, `opcionesDeProducto`, `rutaDeMarca`, `tarjetaDesdeMarca`, `testimonioDesdeAjuste`, `precioEfectivo`, `limitesDePrecio`, `esTemporada`, `gruposDeCatalogo`, `grillaDesdeConfiguracion`, `juegosDelArcade`, `kapiDesdePerfil`, `retoDesdePerfil`, `sugerenciasDesdeBusqueda`, `grupoModalidad`, `ORDENES_BUSQUEDA`, `ordenarProductos`, y de la cuenta: `perfilDesdeUsuario`, `direccionDesdeFirestore` / `direccionAFirestore`, `recompensaDesdeFirestore`, `cuponDesdeFirestore`, `misionDesdeServidor`, `creacionDesdeDiseno`, `personaDesdeRecipient` / `personaARecipient` | Traducen datos de Firestore a props del kit: un producto de `productos_wala`, una marca de `tienda_brands`, las listas de filtros del catálogo (categorías, colecciones, etiquetas, personajes, tipos), `storeConfig.layout` y el perfil del cliente (Zona Arcade, Kapi y su reto) |
@@ -149,12 +152,15 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `piezas/OpcionesFiltro.jsx` | `OpcionesFiltro` | Opciones de un filtro como chips con su cuenta; una a la vez y "Ver N más" |
 | `piezas/PanelBusqueda.jsx` | `PanelBusqueda`, `useBusquedasRecientes`, `TextoResaltado`, `ChipsBusqueda`, `InvitacionBusqueda` | Sugerencias del buscador: recientes, productos con foto y precio, marcas y categorías, "Ver todos los resultados" |
 | `piezas/Cuenta.jsx` | `CabezaCuenta`, `TarjetaCuenta`, `ListaDatos`, `Estadistica`, `AccesosCuenta`, `IdentidadCuenta`, `ListaEleccion` | Lo común de las páginas de la cuenta |
+| `piezas/DetallePedido.jsx` | `LineaProduccion`, `PagosPedido`, `HojaPagarSaldo` | Detalle de una compra |
+| `piezas/PedidosPorVerificar.jsx` | `PedidosPorVerificar` | Pedidos que coinciden con el documento: verificar el correo o vincular |
+| `piezas/RecortarFoto.jsx` | `RecortarFoto` | Recortar una foto antes de subirla (arrastrar, zoom) |
 | `piezas/TarjetaDireccion.jsx` | `TarjetaDireccion` | Una dirección guardada (principal, editar, eliminar con confirmación) |
 | `piezas/Recompensas.jsx` | `TarjetaRecompensa`, `TarjetaCupon`, `TarjetaMision`, `NivelCuenta`, `NIVELES` | Catálogo, cupones, misiones y nivel por XP |
-| `piezas/Referidos.jsx` | `FormaGanar`, `EnlaceInvitacion`, `FilaReferido`, `DetallePedidoReferido` | Mis referidos |
+| `piezas/Referidos.jsx` | `FormaGanar`, `EnlaceInvitacion`, `FilaReferido`, `DetallePedidoReferido`, `RankingReferidos` | Mis referidos |
 | `piezas/Creaciones.jsx` | `TarjetaCreacion` | Un diseño guardado (frente y espalda, renombrar, eliminar; también borradores) |
 | `piezas/Regalos.jsx` | `IdeaRegalo`, `TarjetaPersonaRegalo`, `AvisoFestiva`, `faltanDias`, `textoFaltan`, `diaYMes` | Fechas importantes |
-| `paginas/Cuenta.jsx`, `CuentaRecompensas.jsx`, `CuentaPersonalizacion.jsx` | `MarcoCuenta`, `PaginaCuentaInvitado`, `PaginaResumenCuenta`, `PaginaPerfil`, `PaginaDirecciones`, `PaginaAjustes`, `PaginaCatalogo`, `PaginaCupones`, `PaginaMisiones`, `PaginaReferidos`, `PaginaCreaciones`, `PaginaListaDeseos`, `PaginaFechas` (+ `validarPerfil`, `validarDireccion`, `validarPersona`) | Las páginas de /cuenta (guía: `guia/CUENTA.md`) |
+| `paginas/Cuenta.jsx`, `CuentaPedidos.jsx`, `CuentaRecompensas.jsx`, `CuentaPersonalizacion.jsx` | `MarcoCuenta`, `PaginaCuentaInvitado`, `PaginaResumenCuenta`, `PaginaPerfil`, `PaginaPedidos`, `PaginaDetallePedido`, `PaginaDirecciones`, `PaginaAjustes`, `PaginaCatalogo`, `PaginaCupones`, `PaginaMisiones`, `PaginaReferidos`, `PaginaCreaciones`, `PaginaListaDeseos`, `PaginaFechas` (+ `validarPerfil`, `validarDireccion`, `validarPersona`) | Las páginas de /cuenta (guía: `guia/CUENTA.md`) |
 | `piezas/VentanaKapi.jsx` | `VentanaKapi` | La ventana de Kapi: ánimo, felicidad, moneda del día, alimentar y el reto (hoja en el celular, centrada en escritorio) |
 | `piezas/RetoSemanal.jsx` | `RetoSemanal` | El reto de la semana: premio, avance y envío de evidencia |
 | `piezas/TarjetaJuego.jsx` | `TarjetaJuego` | Tarjeta de un minijuego: banner, estado, recompensa, racha, nota, botón y cuenta atrás (recibe datos; `juegosDelArcade` los arma) |

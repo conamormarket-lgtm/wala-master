@@ -6,7 +6,7 @@ export { PanelFlotante, enCelular } from './PanelFlotante';
 export { CampoFecha, Calendario, fechaEnTexto } from './Fecha';
 export { default as TarjetaProducto, TarjetaProductoEsqueleto, soles } from './TarjetaProducto';
 export { Cabecera, BarraInferior, Pestanas, Logo } from './Navegacion';
-export { SeguimientoPedido, ItemCarrito, BarraEnvioGratis, ResumenPedido, PASOS_PEDIDO } from './Pedido';
+export { SeguimientoPedido, ItemCarrito, BarraEnvioGratis, ResumenPedido, PASOS_PEDIDO, ETAPAS_PRODUCCION } from './Pedido';
 export { Aviso, ProveedorToasts, useToast, useNotificaciones, ListaNotificaciones, EstadoVacio, HojaInferior } from './Feedback';
 export { EASE, RESORTE, useContador, seguirPuntero, Estallido, Revelar, esApp, useBloquearScroll, useCerrarConAtras } from './Efectos';
 export { Enlace, ProveedorEnlaces } from './Enlace';
@@ -36,7 +36,8 @@ export { EtiquetaColgante, IsoWala, LogoWala, Garabatos, Destello, Corazon, Punt
 export { IconoWala, ICONOS_WALA, iconoDesde } from './IconosWala';
 export { PASTELES, pastel, ACENTOS, acento } from './Marca';
 export * from './piezas';
-export { MarcoTienda, PaginaTienda, productosDeSeccion, PaginaCarrito, PaginaPedidos, PaginaMinijuegos, PaginaBusqueda } from './paginas/Paginas';
+export { MarcoTienda, PaginaTienda, productosDeSeccion, PaginaCarrito, PaginaMinijuegos, PaginaBusqueda } from './paginas/Paginas';
+export { PaginaPedidos, PaginaDetallePedido } from './paginas/CuentaPedidos';
 export { MarcoCuenta, PaginaCuentaInvitado, PaginaResumenCuenta, PaginaPerfil, PaginaDirecciones, PaginaAjustes, validarPerfil, validarDireccion, fechaLegible } from './paginas/Cuenta';
 export { PaginaCatalogo, PaginaCupones, PaginaMisiones, PaginaReferidos } from './paginas/CuentaRecompensas';
 export { PaginaCreaciones, PaginaListaDeseos, PaginaFechas, validarPersona } from './paginas/CuentaPersonalizacion';

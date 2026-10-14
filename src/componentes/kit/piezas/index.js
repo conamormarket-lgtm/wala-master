@@ -19,7 +19,9 @@ export { PanelBusqueda, useBusquedasRecientes, TextoResaltado, ChipsBusqueda, In
 export { CabezaCuenta, TarjetaCuenta, ListaDatos, Estadistica, AccesosCuenta, IdentidadCuenta, ListaEleccion } from './Cuenta';
 export { TarjetaDireccion } from './TarjetaDireccion';
 export { TarjetaRecompensa, TarjetaCupon, TarjetaMision, NivelCuenta, NIVELES } from './Recompensas';
-export { FormaGanar, EnlaceInvitacion, FilaReferido, DetallePedidoReferido } from './Referidos';
+export { FormaGanar, EnlaceInvitacion, FilaReferido, DetallePedidoReferido, RankingReferidos } from './Referidos';
 export { TarjetaCreacion } from './Creaciones';
 export { RecortarFoto } from './RecortarFoto';
 export { IdeaRegalo, TarjetaPersonaRegalo, AvisoFestiva, faltanDias, textoFaltan, diaYMes } from './Regalos';
+export { LineaProduccion, PagosPedido, HojaPagarSaldo } from './DetallePedido';
+export { PedidosPorVerificar } from './PedidosPorVerificar';

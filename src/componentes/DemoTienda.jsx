@@ -6,7 +6,7 @@ import {
   Pestanas, Chip, Interruptor, Boton,
   BarraAdmin, AvisoSistema, BannerApp, BotonWhatsApp, KapiFlotante, BurbujaRegalos, PildoraRecompensa,
   VentanaCampana, AvisoIdioma, ProveedorEnlaces, PanelEditor, useBorrador, SeccionEditable, InsertarAqui,
-  moverSeccion, duplicarSeccion, rutaDeMarca, tarjetaDesdeProducto, REGISTRO_SECCIONES, enlaceWhatsApp, gruposDeCatalogo,
+  moverSeccion, duplicarSeccion, rutaDeMarca, tarjetaDesdeProducto, REGISTRO_SECCIONES, enlaceWhatsApp, gruposDeCatalogo, ETAPAS_PRODUCCION,
 } from './kit';
 import { empresa } from '../config/empresa';
 import { msHastaMananaLima, msHastaLunesLima, limaTodayStr } from '../utils/fechaLima';
@@ -171,11 +171,15 @@ const DESEOS = [
 
 const FAVORITOS = [...nuevos.slice(0, 4), ...ofertas.slice(0, 3)].map((p) => ({ id: p.id, nombre: p.name, imagen: fila(p).imagen }));
 
+/* Pedidos de "Mis pedidos": uno sin pagar (5 pasos generales), uno en el
+   taller (8 etapas) con deuda, uno en reparto, uno entregado y uno anulado. */
 const PEDIDOS = [
-  { codigo: 'PD-20481', fecha: '10 oct', paso: 1, pagoPendiente: true, items: [fila(destacados[1], { variante: 'Talla L' }), fila(nuevos[1])] },
-  { codigo: 'PD-20377', fecha: '7 oct', paso: 3, entregaEstimada: 'mañana, 14 oct', items: [fila(ofertas[0])] },
-  { codigo: 'PD-19902', fecha: '28 sep', paso: 4, items: [fila(nuevos[2]), fila(destacados[2], { variante: 'Talla S' })] },
-].map((p) => ({ ...p, total: p.items.reduce((a, it) => a + it.precio * it.cantidad, 0) }));
+  { codigo: 'PD-20481', fecha: '10 oct', paso: 0, pagoPendiente: true, items: [fila(destacados[1], { variante: 'Talla L' }), fila(nuevos[1])] },
+  { codigo: 'PD-20455', fecha: '8 oct', paso: 4, pasos: ETAPAS_PRODUCCION, deuda: 45, estado: { texto: 'En estampado', tono: 'violeta' }, items: [fila(destacados[0], { variante: 'Talla M' })] },
+  { codigo: 'PD-20377', fecha: '7 oct', paso: 6, pasos: ETAPAS_PRODUCCION, estado: { texto: 'En reparto', tono: 'violeta' }, entregaEstimada: 'mañana, 14 oct', items: [fila(destacados[3])] },
+  { codigo: 'PD-19902', fecha: '28 sep', paso: 7, pasos: ETAPAS_PRODUCCION, estado: { texto: 'Finalizado', tono: 'exito' }, items: [fila(nuevos[2]), fila(destacados[2], { variante: 'Talla S' })] },
+  { codigo: 'PD-19750', fecha: '20 sep', paso: 2, anulado: true, items: [fila(ofertas[2])] },
+].map((p) => ({ ...p, id: p.codigo, urlDetalle: `/cuenta/pedidos/${p.codigo}`, total: p.items.reduce((a, it) => a + it.precio * it.cantidad, 0) }));
 
 /** Nombre del componente que dibuja cada tipo de sección (para "Ver componentes"). */
 const componenteDe = (tipo) => REGISTRO_SECCIONES[tipo]?.nombre || tipo;
@@ -241,6 +245,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const navegar = useRef(null);
   navegar.current = (to) => {
     const [ruta, query = ''] = String(to || '').split('?');
+    // El detalle de una compra (/cuenta/pedidos/PD-…) también es de la cuenta.
+    if (ruta.startsWith('/cuenta/pedidos/')) { setRutaCuenta(ruta); irA('cuenta'); return; }
     if (!PAGINA_DE_RUTA[ruta]) { avisar('En la tienda iría a', to); return; }
     if (ruta === '/buscar') {
       const p = new URLSearchParams(query);
@@ -561,6 +567,10 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         toast={toast}
         Parte={Parte}
         pedidos={PEDIDOS}
+        recomendados={destacados.slice(3, 9)}
+        catalogo={{ marcas: visibles, categorias: INICIO.categorias.map((c) => ({ id: c.categoryId, name: c.name })) }}
+        onAgregarProducto={onAgregar}
+        esAdmin={esAdmin}
         onIrATienda={() => irA('tienda')}
       />
     </MarcoTienda>
