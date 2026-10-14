@@ -23,6 +23,8 @@ import PuntosColor from './PuntosColor';
 import styles from './ComboCrearPage.module.css';
 // La misma ficha que una creación (y que el producto de la tienda).
 import ficha from './CreacionPage.module.css';
+// La ventana "¿Qué talla quieres?" del estudio (diseño individual).
+import estudio from './CrearStudioPage.module.css';
 // Las prendas juntas, lado a lado (como la tarjeta de Mi combo).
 import duo from './TarjetaMiCombo.module.css';
 
@@ -491,6 +493,8 @@ const ComboCrearPage = () => {
   const galeriaRef = useRef(null);
   // "Preparando tu combo…": las prendas de la comunidad se guardan en la cuenta.
   const [preparando, setPreparando] = useState('');
+  const [pidiendoTallas, setPidiendoTallas] = useState(false);
+  const [tallasElegidas, setTallasElegidas] = useState({});
   // Otro combo (o volver a este): la galería empieza en "Todo el combo".
   useEffect(() => { setVerFoto(0); }, [id, mioParam, plantillaParam]);
 
@@ -536,7 +540,8 @@ const ComboCrearPage = () => {
 
   const urlPlantilla = (i) => urlEstudio(i, `&plantilla=${meta.plantilla}&plantillaPieza=${i}`);
   const pendientePlantilla = piezas.find((p) => p.plantilla);
-  const listas = piezas.filter((p) => p.lista && (!p.tallas.length || p.talla)).length;
+  const sinTallaTodavia = (p) => !p.creacion && p.plantilla;
+  const listas = piezas.filter((p) => p.lista && (!p.tallas.length || p.talla || sinTallaTodavia(p))).length;
   const completo = piezas.length > 0 && listas === piezas.length;
 
   const ponerEn = (i, cambios) => cambiarArmado(armado.map((a, k) => (k === i ? { ...a, ...cambios } : a)));
@@ -551,16 +556,34 @@ const ComboCrearPage = () => {
     toast.success(destinos.length === 1 ? 'Listo: la otra prenda lleva el mismo diseño.' : 'Listo: las demás prendas llevan el mismo diseño.');
   };
 
-  const agregar = async () => {
+  // Con prendas de la comunidad, "Agregar al carrito" pregunta la talla en una
+  // ventana, como un diseño individual de la comunidad.
+  const agregar = () => {
     if (preparando) return;
-    const falta = piezas.find((p) => !p.lista || (p.tallas.length && !p.talla));
+    const sinDiseno = piezas.find((p) => !p.lista);
+    if (sinDiseno) {
+      toast.info(!sinDiseno.creacion ? `Falta el diseño de la prenda ${sinDiseno.i + 1}.`
+        : `Abre y guarda otra vez el diseño de la prenda ${sinDiseno.i + 1}.`);
+      return;
+    }
+    if (piezas.some(sinTallaTodavia)) {
+      setTallasElegidas(Object.fromEntries(piezas.map((p) => [p.i, p.talla || ''])));
+      setPidiendoTallas(true);
+      return;
+    }
+    comprar(piezas);
+  };
+
+  const comprar = async (piezasCompra) => {
+    if (preparando) return;
+    const falta = piezasCompra.find((p) => !p.lista || (p.tallas.length && !p.talla));
     if (falta) {
       toast.info(!falta.creacion ? `Falta el diseño de la prenda ${falta.i + 1}.`
         : !falta.lista ? `Abre y guarda otra vez el diseño de la prenda ${falta.i + 1}.`
           : unaTalla ? 'Elige la talla del conjunto.' : `Elige la talla de la prenda ${falta.i + 1}.`);
       return;
     }
-    if (piezas.some((p) => agotada(p.prenda))) {
+    if (piezasCompra.some((p) => agotada(p.prenda))) {
       toast.info('Una de las prendas está agotada por ahora.');
       return;
     }
@@ -568,13 +591,13 @@ const ComboCrearPage = () => {
       toast.info('Este combo está en borrador: publícalo para poder venderlo.');
       return;
     }
-    const deComunidad = piezas.filter((p) => !p.creacion && p.plantilla);
+    const deComunidad = piezasCompra.filter(sinTallaTodavia);
     if (deComunidad.length && !user) {
       toast.info('Inicia sesión para agregar tu combo al carrito.');
       navigate('/login', { state: { from: location.pathname + location.search } });
       return;
     }
-    const finales = piezas.map((p) => p.creacion);
+    const finales = piezasCompra.map((p) => p.creacion);
     let miComboId = meta.miComboId;
     if (deComunidad.length) {
       // Como un diseño individual de la comunidad: cada prenda se guarda tal
@@ -589,7 +612,7 @@ const ComboCrearPage = () => {
             combo: { id, nombre: combo.name || '', pieza: p.i },
           });
         }
-        const nuevoArmado = armado.map((a, i) => ({ ...a, designId: finales[i]?.id || a.designId, talla: piezas[i].talla }));
+        const nuevoArmado = armado.map((a, i) => ({ ...a, designId: finales[i]?.id || a.designId, talla: piezasCompra[i].talla }));
         cambiarArmado(nuevoArmado);
         setPreparando('Guardando tu combo…');
         const { id: guardadoId } = await guardarMiCombo(user.uid, { id: miComboId || undefined, combo, piezas: nuevoArmado, creaciones: finales });
@@ -609,7 +632,7 @@ const ComboCrearPage = () => {
     }
     addToCart(...itemDeCombo({
       combo,
-      piezas: piezas.map((p) => ({ prenda: p.prenda, creacion: finales[p.i], talla: p.talla })),
+      piezas: piezasCompra.map((p) => ({ prenda: p.prenda, creacion: finales[p.i], talla: p.talla })),
       miComboId,
     }));
     olvidarArmado(id);
@@ -786,22 +809,6 @@ const ComboCrearPage = () => {
                         <strong className={styles.piezaNombre}>{p.plantilla.nombre || 'Diseño de la comunidad'}</strong>
                         {color?.nombre && <span className={styles.filaDatos}><PuntosColor colores={[color]} /> {color.nombre}</span>}
                         <p className={styles.ayuda}>Llévala tal cual o cámbiale el nombre, la foto o lo que quieras.</p>
-                        {!unaTalla && p.tallas.length > 0 && (
-                          <div className={`${ficha.tallas} ${styles.tallasFila}`} role="radiogroup" aria-label={`Talla de la prenda ${p.i + 1}`}>
-                            {p.tallas.map((t) => (
-                              <button
-                                key={t}
-                                type="button"
-                                role="radio"
-                                aria-checked={t === p.talla}
-                                className={`${ficha.talla} ${t === p.talla ? ficha.tallaActiva : ''}`}
-                                onClick={() => ponerEn(p.i, { talla: t })}
-                              >
-                                {t}
-                              </button>
-                            ))}
-                          </div>
-                        )}
                         <div className={styles.acciones}>
                           <Link to={urlPlantilla(p.i)} state={estadoEstudio} className={styles.principal}>
                             <Paintbrush size={15} aria-hidden="true" /> Personalizar
@@ -838,7 +845,7 @@ const ComboCrearPage = () => {
           </ol>
         </div>
 
-        {unaTalla && tallasConjunto.length > 0 && (
+        {unaTalla && tallasConjunto.length > 0 && !pendientePlantilla && (
           <div className={ficha.grupo}>
             <span className={styles.tallaConjuntoFila}>
               <span className={ficha.rotulo}>Talla{tallaConjunto && <>: <em>{tallaConjunto}</em></>}</span>
@@ -933,6 +940,67 @@ const ComboCrearPage = () => {
           </div>
         </CapaModal>
       )}
+
+      {pidiendoTallas && (() => {
+        // Conjunto: una talla para todas. Pareja/trío: una por prenda.
+        const filas = unaTalla
+          ? [{ clave: 'todas', titulo: `Para las ${piezas.length} prendas`, tallas: tallasConjunto }]
+          : piezas.filter((p) => p.tallas.length).map((p) => ({
+            clave: p.i,
+            titulo: [`Prenda ${p.i + 1}`, p.creacion?.name || p.plantilla?.nombre, (p.creacion?.color || p.plantilla?.color)?.nombre].filter(Boolean).join(' · '),
+            tallas: p.tallas,
+          }));
+        const tallaDe = (clave) => (clave === 'todas' ? tallasElegidas[0] : tallasElegidas[clave]) || '';
+        const elegir = (clave, t) => setTallasElegidas((prev) => (clave === 'todas'
+          ? Object.fromEntries(piezas.map((p) => [p.i, t]))
+          : { ...prev, [clave]: t }));
+        const completas = filas.every((f) => tallaDe(f.clave));
+        const cerrar = () => setPidiendoTallas(false);
+        return (
+          <CapaModal className={estudio.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="combo-talla-titulo" onClick={cerrar}>
+            <form
+              className={estudio.cajaBloqueo}
+              onClick={(e) => e.stopPropagation()}
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!completas) return;
+                cerrar();
+                // Quedan en el armado: si antes hay que iniciar sesión, al volver siguen elegidas.
+                cambiarArmado(armado.map((a, i) => ({ ...a, talla: tallasElegidas[i] || a.talla })));
+                comprar(piezas.map((p) => ({ ...p, talla: tallasElegidas[p.i] || p.talla })));
+              }}
+            >
+              <h2 id="combo-talla-titulo" className={estudio.estadoTitulo}>¿Qué talla quieres?</h2>
+              <p>{nombreCombo}</p>
+              {filas.map((f) => (
+                <div key={f.clave} className={styles.tallaVentana}>
+                  {filas.length > 1 || unaTalla ? <span className={styles.tallaVentanaTitulo}>{f.titulo}</span> : null}
+                  <div className={`${estudio.tallas} ${estudio.tallasDialogo}`} role="radiogroup" aria-label={`Talla · ${f.titulo}`}>
+                    {f.tallas.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        role="radio"
+                        aria-checked={t === tallaDe(f.clave)}
+                        className={`${estudio.talla} ${t === tallaDe(f.clave) ? estudio.tallaActiva : ''}`}
+                        onClick={() => elegir(f.clave, t)}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <p className={estudio.incluye}>Incluye la impresión de todos los diseños de tu combo.</p>
+              <button type="submit" className={estudio.botonPrincipal} disabled={!completas}>
+                <ShoppingBag size={18} aria-hidden="true" />
+                Agregar al carrito · {soles(precio)}
+              </button>
+              <button type="button" className={estudio.botonTexto} onClick={cerrar}>Cancelar</button>
+            </form>
+          </CapaModal>
+        );
+      })()}
     </div>
   );
 };

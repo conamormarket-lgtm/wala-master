@@ -791,3 +791,17 @@
   font-weight: 700;
   color: var(--primary-color, #7c3aed);
 }
+
+/* Ventana "¿Qué talla quieres?" de un combo: una fila por prenda. */
+.tallaVentana {
+  display: grid;
+  gap: 0.45rem;
+  justify-items: center;
+}
+
+.tallaVentanaTitulo {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--gris-texto-secundario, #4b5563);
+  text-align: center;
+}
