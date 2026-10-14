@@ -1,0 +1,68 @@
+import React, { useEffect, useState } from 'react';
+import { Minus, Plus } from 'lucide-react';
+import styles from './TamanoLetra.module.css';
+
+/**
+ * Tamaño de la letra de un texto, en cm de la prenda (alto de la letra) si
+ * la zona tiene medida real; si no, en puntos de la zona. Se cambia con − / +
+ * o escribiendo el número. El texto se achica solo si no entra en su zona
+ * (editarCapa), así que un número muy grande queda en lo que entra.
+ *
+ *   <TamanoLetra capa={capa} cmPorUnidad={n} onCambiar={(escala) => …} />
+ */
+const TamanoLetra = ({ capa, cmPorUnidad = 0, onCambiar }) => {
+  const enCm = cmPorUnidad > 0;
+  const base = capa.tamano || 90;
+  const escala = Math.abs(capa.escalaY || 1);
+  // Lo que se muestra: cm con un decimal, o puntos enteros.
+  const valor = enCm ? Math.round(base * escala * cmPorUnidad * 10) / 10 : Math.round(base * escala);
+  const paso = enCm ? 0.5 : 5;
+  const minimo = enCm ? 0.3 : 5;
+  const [texto, setTexto] = useState(String(valor));
+  useEffect(() => { setTexto(String(valor)); }, [valor]);
+
+  const fijar = (nuevo) => {
+    if (!Number.isFinite(nuevo)) {
+      setTexto(String(valor));
+      return;
+    }
+    const limpio = Math.max(minimo, nuevo);
+    const unidades = enCm ? limpio / cmPorUnidad : limpio;
+    onCambiar(unidades / base);
+  };
+  const confirmar = () => fijar(Number(String(texto).replace(',', '.')));
+  // Con − / + se va al siguiente múltiplo del paso (4.3 → 4.5 → 5).
+  const subir = () => fijar((Math.floor(valor / paso + 1e-6) + 1) * paso);
+  const bajar = () => fijar((Math.ceil(valor / paso - 1e-6) - 1) * paso);
+
+  return (
+    <div className={styles.tamano} role="group" aria-label="Tamaño de letra">
+      <button type="button" className={styles.boton} onClick={bajar} disabled={valor <= minimo} aria-label="Letra más chica">
+        <Minus size={16} aria-hidden="true" />
+      </button>
+      <label className={styles.campo}>
+        <input
+          type="text"
+          inputMode="decimal"
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          onBlur={confirmar}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              confirmar();
+              e.currentTarget.blur();
+            }
+          }}
+          aria-label={enCm ? 'Alto de la letra en centímetros' : 'Tamaño de la letra'}
+        />
+        <span>{enCm ? 'cm' : 'pt'}</span>
+      </label>
+      <button type="button" className={styles.boton} onClick={subir} aria-label="Letra más grande">
+        <Plus size={16} aria-hidden="true" />
+      </button>
+    </div>
+  );
+};
+
+export default TamanoLetra;

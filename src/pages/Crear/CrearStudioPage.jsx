@@ -39,6 +39,7 @@ import MenuContextual from './MenuContextual';
 import EfectosTexto from './EfectosTexto';
 import CampoHex from './CampoHex';
 import SelectorFuente from './SelectorFuente';
+import TamanoLetra from './TamanoLetra';
 import NombreEditable from './NombreEditable';
 import { registrarGuardado, ponerBorradorEnCache, quitarBorradorDeCache } from './borradoresCache';
 import { cajaEnZona, imanAlMover, imanAlEscalar, enCm } from './guiasInteligentes';
@@ -284,6 +285,8 @@ const CrearStudioPage = () => {
   const cuadroCamaraRef = useRef(0);
   const timerZoomRef = useRef(null);
   const paneoRef = useRef(null);
+  // Espacio apretado: arrastrar mueve la vista (la "mano"), como en Canva o Figma.
+  const espacioRef = useRef(false);
   const camaraApiRef = useRef({});
   // Mientras hay un dedo o el mouse apretado, el acercamiento automático espera.
   const punteroAbajoRef = useRef(false);
@@ -462,8 +465,9 @@ const CrearStudioPage = () => {
         destino = encuadre(1).v;
       }
     }
-    // Con zoom, arrastrar en vacío mueve la vista (no hace un recuadro de selección).
-    lienzo.selection = CON_MOUSE && cam.z <= 1;
+    // Con mouse, arrastrar en vacío elige varios (también con zoom); la vista
+    // se mueve con Espacio, el botón del medio o la rueda.
+    lienzo.selection = CON_MOUSE && !espacioRef.current;
     const fijar = (v) => {
       lienzo.setViewportTransform(v);
       lienzo.getObjects().forEach((o) => o.setCoords());
@@ -1012,8 +1016,12 @@ const CrearStudioPage = () => {
   useEffect(() => {
     if (!listo || !canvasElRef.current || fabricRef.current) return undefined;
     const lienzo = new fabric.Canvas(canvasElRef.current, {
-      // Con mouse se eligen varios arrastrando un recuadro (o con Shift + clic).
+      // Con mouse se eligen varios arrastrando un recuadro (o con Shift o
+      // Ctrl/⌘ + clic, que suma o quita uno).
       selection: CON_MOUSE,
+      selectionKey: ['shiftKey', 'ctrlKey', 'metaKey'],
+      // El botón del medio también mueve la vista.
+      fireMiddleClick: true,
       selectionColor: 'rgba(124, 58, 237, 0.08)',
       selectionBorderColor: VIOLETA,
       selectionLineWidth: 1.5,
@@ -1164,13 +1172,19 @@ const CrearStudioPage = () => {
       burbujaRef.current = null;
       lienzo.requestRenderAll();
     });
-    // Con zoom: arrastrar en vacío (o sobre una zona) mueve la vista; la rueda
-    // también (Shift + rueda, a los costados), y Ctrl/⌘ + rueda (o pellizcar
-    // en el trackpad) acerca y aleja hacia el puntero.
+    // Mover la vista con zoom: Espacio + arrastrar, el botón del medio o, con
+    // el dedo, arrastrar en vacío (con mouse eso hace el recuadro de
+    // selección). La rueda también (Shift + rueda, a los costados) y Ctrl/⌘ +
+    // rueda (o pellizcar en el trackpad) acerca y aleja hacia el puntero.
     lienzo.on('mouse:down', (opt) => {
       punteroAbajoRef.current = true;
-      if (opt.button === 3 || camaraRef.current.z <= 1 || (opt.target && !opt.target.guiaZona)) return;
+      const conDedo = Boolean(opt.e?.type?.startsWith('touch'));
+      const vacio = !opt.target || opt.target.guiaZona;
+      const mano = espacioRef.current || opt.button === 2
+        || (conDedo && vacio && camaraRef.current.z > 1);
+      if (!mano) return;
       paneoRef.current = lienzo.getPointer(opt.e, true);
+      if (!conDedo) lienzo.setCursor('grabbing');
     });
     lienzo.on('mouse:move', (opt) => {
       if (!paneoRef.current) return;
@@ -1179,6 +1193,7 @@ const CrearStudioPage = () => {
       paneoRef.current = p;
     });
     lienzo.on('mouse:up', () => {
+      if (paneoRef.current && espacioRef.current) lienzo.setCursor('grab');
       paneoRef.current = null;
       punteroAbajoRef.current = false;
       camaraApiRef.current.alSoltar?.();
@@ -2199,6 +2214,42 @@ const CrearStudioPage = () => {
     };
   }, []);
 
+  // Espacio apretado = la mano: arrastrar mueve la vista en vez de elegir.
+  // El botón del medio también, sin el desplazamiento automático del navegador.
+  useEffect(() => {
+    const lienzo = fabricRef.current;
+    if (!lienzo || !CON_MOUSE) return undefined;
+    const escribiendoAhora = () => {
+      const el = document.activeElement;
+      return ['INPUT', 'TEXTAREA', 'SELECT'].includes(el?.tagName) || Boolean(el?.isContentEditable);
+    };
+    const mano = (activa) => {
+      espacioRef.current = activa;
+      lienzo.skipTargetFind = activa;
+      lienzo.selection = !activa;
+      lienzo.defaultCursor = activa ? 'grab' : 'default';
+      lienzo.setCursor(lienzo.defaultCursor);
+    };
+    const alApretar = (e) => {
+      if (e.code !== 'Space' || escribiendoAhora() || lienzo.getActiveObject()?.isEditing) return;
+      e.preventDefault();
+      if (!espacioRef.current) mano(true);
+    };
+    const alSoltar = (e) => { if (e.code === 'Space' && espacioRef.current) mano(false); };
+    const alSalir = () => { if (espacioRef.current) mano(false); };
+    const sinAutoDesplazar = (e) => { if (e.button === 1) e.preventDefault(); };
+    window.addEventListener('keydown', alApretar);
+    window.addEventListener('keyup', alSoltar);
+    window.addEventListener('blur', alSalir);
+    lienzo.upperCanvasEl.addEventListener('mousedown', sinAutoDesplazar);
+    return () => {
+      window.removeEventListener('keydown', alApretar);
+      window.removeEventListener('keyup', alSoltar);
+      window.removeEventListener('blur', alSalir);
+      lienzo.upperCanvasEl.removeEventListener('mousedown', sinAutoDesplazar);
+    };
+  }, [listo]);
+
   /** Letra que se lee sobre una prenda de este color (la misma regla que al crear un texto). */
   const letraSobre = (hex) => (esColorBlanco(hex) || textoSobre(hex) !== '#FFFFFF' ? '#111111' : '#FFFFFF');
 
@@ -3005,6 +3056,9 @@ const CrearStudioPage = () => {
   }
 
   const vistaSel = zonaSel ? cfg.vistas.find((v) => v.id === zonaSel.vistaId) : null;
+  // cm de la prenda por unidad de la zona elegida (0 si su vista no tiene escala).
+  const medidaSel = zonaSel && vistaSel ? medidaZona(zonaSel, vistaSel) : null;
+  const cmPorUnidadSel = medidaSel ? medidaSel.anchoCm / UNIDADES_ZONA : 0;
   const calidad = capaSel?.type === 'image' ? calidadDeCapa(capaSel, zonaSel, zonaSel && medidaZona(zonaSel, vistaSel)) : null;
   const base = precioBase(prenda);
   // Con algo elegido el panel muestra sus opciones (los pasos vuelven con "Listo").
@@ -3429,7 +3483,7 @@ const CrearStudioPage = () => {
                 </button>
               </div>
               <p className={styles.ayudaVarios}>
-                Muévelos o cambia su tamaño juntos. Shift + clic suma o quita uno.
+                Muévelos o cambia su tamaño juntos. Shift o {MOD} + clic suma o quita uno.
               </p>
               {mismaZonaMulti ? (
                 <>
@@ -3523,6 +3577,12 @@ const CrearStudioPage = () => {
                   </label>
                   <span className={styles.etiquetaCampo}>Letra</span>
                   <SelectorFuente valor={capaSel.fuente} onCambiar={cambiarFuente} />
+                  <span className={styles.etiquetaCampo}>Tamaño de letra</span>
+                  <TamanoLetra
+                    capa={capaSel}
+                    cmPorUnidad={cmPorUnidadSel}
+                    onCambiar={(escala) => editarCapa(capaSel.id, { escalaX: escala, escalaY: escala })}
+                  />
                   <span className={styles.etiquetaCampo}>Color de la letra</span>
                   <div className={styles.filaTexto}>
                     <div className={styles.coloresTexto} aria-label="Color del texto">
