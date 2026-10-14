@@ -24,6 +24,9 @@
 
 .fotoMarco {
   position: relative;
+  /* El barrido de luz (y lo que flota en la foto) no pasa al texto. */
+  overflow: hidden;
+  isolation: isolate;
 }
 
 .foto {
@@ -72,7 +75,7 @@
    columna, dentro de la foto (el tacho va a la derecha, como el corazón). */
 .etiquetas {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   top: 12px;
   left: 12px;
   right: 56px;
