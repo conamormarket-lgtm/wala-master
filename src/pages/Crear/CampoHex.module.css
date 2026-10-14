@@ -1,0 +1,18 @@
+.campo {
+  width: 5.6rem;
+  height: 28px;
+  padding: 0 0.5rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--gris-borde);
+  background: var(--color-surface, var(--blanco));
+  color: var(--gris-texto-principal);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.campo:focus {
+  outline: none;
+  border-color: var(--primary-color, #7c3aed);
+}

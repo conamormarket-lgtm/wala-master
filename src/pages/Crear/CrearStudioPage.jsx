@@ -36,6 +36,7 @@ import AtajosTeclado, { MOD } from './AtajosTeclado';
 import CapaModal from './CapaModal';
 import MenuContextual from './MenuContextual';
 import EfectosTexto from './EfectosTexto';
+import CampoHex from './CampoHex';
 import SelectorFuente from './SelectorFuente';
 import NombreEditable from './NombreEditable';
 import { registrarGuardado, ponerBorradorEnCache, quitarBorradorDeCache } from './borradoresCache';
@@ -248,6 +249,14 @@ const CrearStudioPage = () => {
   const [guiaGestos, setGuiaGestos] = useState(false);
   // En el celular, editando algo se acerca a su zona; esto muestra la prenda entera.
   const [verCompleta, setVerCompleta] = useState(false);
+  // Zoom a mano (botones − / +, Ctrl + rueda): para acomodar con detalle.
+  // centroZoomRef = punto del lienzo (sin zoom) que queda al centro.
+  const [zoomManual, setZoomManual] = useState(1);
+  const zoomManualRef = useRef(1);
+  zoomManualRef.current = zoomManual;
+  const centroZoomRef = useRef(null);
+  const paneoRef = useRef(null);
+  const cambiarZoomRef = useRef(null);
   // Menú del clic derecho: { x, y, capaId } sobre un diseño, o { x, y, zonaId, punto } en la zona.
   const [menu, setMenu] = useState(null);
   const cerrarMenu = useCallback(() => setMenu(null), []);
@@ -371,7 +380,16 @@ const CrearStudioPage = () => {
     const W = lienzo.getWidth();
     const H = lienzo.getHeight();
     let destino = [1, 0, 0, 1, 0, 0];
-    if (t) {
+    if (zoomManual > 1) {
+      // Zoom a mano: manda sobre el acercamiento automático del celular.
+      const z = zoomManual;
+      const c = centroZoomRef.current || { x: W / 2, y: H / 2 };
+      // El centro no puede salirse de la foto (no se ve nada fuera).
+      const cx = Math.min(W - W / (2 * z), Math.max(W / (2 * z), c.x));
+      const cy = Math.min(H - H / (2 * z), Math.max(H / (2 * z), c.y));
+      centroZoomRef.current = { x: cx, y: cy };
+      destino = [z, 0, 0, z, W / 2 - cx * z, H / 2 - cy * z];
+    } else if (t) {
       const a = (t.ang * Math.PI) / 180;
       const bw = Math.abs(t.zw * Math.cos(a)) + Math.abs(t.zh * Math.sin(a));
       const bh = Math.abs(t.zw * Math.sin(a)) + Math.abs(t.zh * Math.cos(a));
@@ -402,7 +420,32 @@ const CrearStudioPage = () => {
     };
     animacionZoomRef.current = requestAnimationFrame(paso);
   };
-  useEffect(() => { aplicarZoomRef.current?.(true); }, [zonaAcercada, verCompleta]);
+  useEffect(() => {
+    const lienzo = fabricRef.current;
+    // Con zoom, arrastrar en vacío mueve la vista (no hace un recuadro de selección).
+    if (lienzo) lienzo.selection = CON_MOUSE && zoomManual === 1;
+    aplicarZoomRef.current?.(true);
+  }, [zonaAcercada, verCompleta, zoomManual]);
+
+  /** Cambia el zoom a mano (1 = la prenda entera), acercándose a `punto` o a lo elegido. */
+  const NIVELES_ZOOM = [1, 1.5, 2, 3, 4];
+  cambiarZoomRef.current = (nuevo, punto = null) => {
+    const z = Math.max(1, Math.min(4, Math.round(nuevo * 100) / 100));
+    const lienzo = fabricRef.current;
+    if (z <= 1) {
+      centroZoomRef.current = null;
+    } else if (punto) {
+      centroZoomRef.current = punto;
+    } else if (zoomManualRef.current <= 1 || !centroZoomRef.current) {
+      const obj = lienzo?.getActiveObject();
+      const t = transformsRef.current[zonaRef.current];
+      const p = obj ? obj.getCenterPoint() : null;
+      centroZoomRef.current = p ? { x: p.x, y: p.y } : t ? { x: t.cx, y: t.cy } : null;
+    }
+    setZoomManual(z);
+  };
+  const acercar = () => cambiarZoomRef.current(NIVELES_ZOOM.find((n) => n > zoomManual + 0.01) || 4);
+  const alejar = () => cambiarZoomRef.current([...NIVELES_ZOOM].reverse().find((n) => n < zoomManual - 0.01) || 1);
   // Al soltar, lo próximo que se elija vuelve a acercarse.
   useEffect(() => { if (!zonaAcercada) setVerCompleta(false); }, [zonaAcercada]);
   useEffect(() => () => cancelAnimationFrame(animacionZoomRef.current), []);
@@ -857,6 +900,43 @@ const CrearStudioPage = () => {
       if (!guiasRef.current.length) return;
       guiasRef.current = [];
       lienzo.requestRenderAll();
+    });
+    // Con zoom: arrastrar en vacío (o sobre una zona) mueve la vista; la rueda
+    // también, y Ctrl/⌘ + rueda (o pellizcar en el trackpad) acerca y aleja.
+    const puntoPantalla = (e) => {
+      const t = e.touches?.[0] || e.changedTouches?.[0] || e;
+      return { x: t.clientX, y: t.clientY };
+    };
+    lienzo.on('mouse:down', (opt) => {
+      if (zoomManualRef.current <= 1 || (opt.target && !opt.target.guiaZona)) return;
+      paneoRef.current = puntoPantalla(opt.e);
+    });
+    lienzo.on('mouse:move', (opt) => {
+      if (!paneoRef.current || zoomManualRef.current <= 1) return;
+      const p = puntoPantalla(opt.e);
+      const z = zoomManualRef.current;
+      const c = centroZoomRef.current || { x: lienzo.getWidth() / 2, y: lienzo.getHeight() / 2 };
+      centroZoomRef.current = { x: c.x - (p.x - paneoRef.current.x) / z, y: c.y - (p.y - paneoRef.current.y) / z };
+      paneoRef.current = p;
+      aplicarZoomRef.current?.(false);
+    });
+    lienzo.on('mouse:up', () => { paneoRef.current = null; });
+    lienzo.on('mouse:wheel', (opt) => {
+      const e = opt.e;
+      const z = zoomManualRef.current;
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        const punto = lienzo.getPointer(e);
+        cambiarZoomRef.current?.(z * (e.deltaY < 0 ? 1.15 : 1 / 1.15), z <= 1 ? { x: punto.x, y: punto.y } : null);
+        return;
+      }
+      if (z <= 1) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const c = centroZoomRef.current || { x: lienzo.getWidth() / 2, y: lienzo.getHeight() / 2 };
+      centroZoomRef.current = { x: c.x + e.deltaX / z, y: c.y + e.deltaY / z };
+      aplicarZoomRef.current?.(false);
     });
     lienzo.on('after:render', ({ ctx }) => {
       const h = hoverRef.current;
@@ -2757,6 +2837,25 @@ const CrearStudioPage = () => {
                 </button>
               </div>
             )}
+            {(CON_MOUSE || !capaSel) && (
+              <div className={styles.zoomLienzo} role="group" aria-label="Zoom de la prenda">
+                <button type="button" className={styles.botonBarra} onClick={alejar} disabled={zoomManual <= 1} aria-label="Alejar" title="Alejar (Ctrl + rueda)">
+                  <ZoomOut size={17} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className={styles.valorZoom}
+                  onClick={() => cambiarZoomRef.current(1)}
+                  disabled={zoomManual <= 1}
+                  title={zoomManual > 1 ? 'Ver la prenda entera' : 'Zoom'}
+                >
+                  {Math.round(zoomManual * 100)}%
+                </button>
+                <button type="button" className={styles.botonBarra} onClick={acercar} disabled={zoomManual >= 4} aria-label="Acercar" title="Acercar (Ctrl + rueda)">
+                  <ZoomIn size={17} aria-hidden="true" />
+                </button>
+              </div>
+            )}
             {CON_MOUSE ? (
               <button
                 type="button"
@@ -3039,6 +3138,7 @@ const CrearStudioPage = () => {
                       <label className={styles.muestraLibre} aria-label="Otro color" title="Otro color">
                         <input type="color" value={capaSel.color} onChange={(e) => editarCapa(capaSel.id, { color: e.target.value })} />
                       </label>
+                      <CampoHex valor={capaSel.color} onChange={(hex) => editarCapa(capaSel.id, { color: hex })} etiqueta="Color de la letra en hexadecimal" />
                     </div>
                     <div className={styles.estilos}>
                       <button

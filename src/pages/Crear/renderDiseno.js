@@ -128,7 +128,8 @@ export const recorteDeZona = (t) => rectDeZona(t, { absolutePositioned: true });
 /**
  * Propiedades de fabric de un texto, con sus efectos:
  * - contorno: grosor visible en % del tamaño de letra (contornoColor). Se
- *   pinta detrás de la letra, así no la adelgaza.
+ *   pinta detrás de la letra, así no la adelgaza. Con sinRelleno la letra
+ *   queda transparente y solo se ve (e imprime) el contorno.
  * - sombra: distancia en % del tamaño (sombraColor). Sólida, sin
  *   desenfoque: una sombra difuminada no se imprime bien en la prenda.
  * - espaciado (milésimas de letra), interlineado y alineacion.
@@ -144,7 +145,7 @@ export const propiedadesTexto = (capa) => {
     // Un texto curvo va en una sola línea (todas irían sobre el mismo arco).
     text: curvo ? texto.replace(/\s*\n\s*/g, ' ') : texto,
     fontFamily: capa.fuente || 'Montserrat',
-    fill: capa.color || '#111111',
+    fill: contorno > 0 && capa.sinRelleno ? 'rgba(0,0,0,0)' : (capa.color || '#111111'),
     fontSize: tamano,
     fontWeight: capa.negrita ? 'bold' : 'normal',
     fontStyle: capa.cursiva ? 'italic' : 'normal',

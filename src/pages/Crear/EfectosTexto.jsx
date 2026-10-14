@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlignLeft, AlignCenter, AlignRight, Sparkles } from 'lucide-react';
 import { textoSobre } from '../../utils/prendaBase';
+import CampoHex from './CampoHex';
 import styles from './EfectosTexto.module.css';
 
 const COLORES = ['#FFFFFF', '#111111', '#7C3AED', '#E11D48', '#F59E0B', '#10B981', '#2563EB', '#F472B6'];
@@ -44,6 +45,7 @@ const Colores = ({ etiqueta, valor, onChange }) => (
     <label className={styles.colorLibre} aria-label={`${etiqueta}: otro color`}>
       <input type="color" value={valor || '#FFFFFF'} onChange={(e) => onChange(e.target.value)} />
     </label>
+    <CampoHex valor={valor || '#FFFFFF'} onChange={onChange} etiqueta={`${etiqueta} en hexadecimal`} />
   </div>
 );
 
@@ -105,10 +107,15 @@ const EfectosTexto = ({ capa, onCambiar }) => {
         activo={contorno > 0}
         onActivar={(on) => onCambiar(on
           ? { contorno: 8, contornoColor: capa.contornoColor || contrasteDe(capa.color) }
-          : { contorno: 0 })}
+          : { contorno: 0, sinRelleno: false })}
       >
         <Colores etiqueta="Color del contorno" valor={capa.contornoColor || '#FFFFFF'} onChange={(v) => onCambiar({ contornoColor: v })} />
         <Deslizador etiqueta="Grosor" valor={contorno} min={1} max={25} onChange={(v) => onCambiar({ contorno: v })} />
+        {/* La letra hueca: solo se ve (y se imprime) el contorno. */}
+        <label className={styles.opcion}>
+          <input type="checkbox" checked={Boolean(capa.sinRelleno)} onChange={(e) => onCambiar({ sinRelleno: e.target.checked })} />
+          <span>Letra transparente (solo el contorno)</span>
+        </label>
       </Efecto>
 
       <Efecto

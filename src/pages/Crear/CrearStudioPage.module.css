@@ -1767,3 +1767,33 @@
   outline: 2px solid #8b5cf6;
   outline-offset: 2px;
 }
+
+/* Zoom de la prenda: − 100 % + en la barra del lienzo. */
+.zoomLienzo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.valorZoom {
+  min-width: 3.2rem;
+  height: 36px;
+  padding: 0 0.35rem;
+  border: none;
+  background: transparent;
+  color: var(--gris-texto-principal);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.valorZoom:disabled {
+  cursor: default;
+  color: var(--gris-texto-secundario);
+}
+
+.valorZoom:not(:disabled):hover {
+  background: var(--primary-light, #f5f3ff);
+}

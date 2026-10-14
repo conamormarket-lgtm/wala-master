@@ -275,3 +275,21 @@
   color: var(--primary-color);
   background: var(--primary-light, rgba(124, 58, 237, 0.1));
 }
+
+/* "Letra transparente (solo el contorno)". */
+.opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--gris-texto-principal);
+  cursor: pointer;
+}
+
+.opcion input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--primary-color, #7c3aed);
+}
