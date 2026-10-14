@@ -132,9 +132,17 @@ function derivarMetodoPago(pedido, paid) {
   }
 
   const metodoStr = paymentMethod ? String(paymentMethod).toLowerCase() : '';
+  // Pago en partes (adelanto por WhatsApp y el resto después): el saldo que
+  // calcula el servidor (misPedidosSecure: saldoCobrableOnline).
+  const saldo = pedido && pedido.conDeuda === true ? Number(pedido.montoDeuda) : 0;
 
   let paymentLabel;
-  if (/culqi|tarjeta|card|visa|mastercard/.test(metodoStr)) {
+  if (saldo > 0) {
+    paymentLabel = `Adelanto pagado · falta S/ ${saldo.toFixed(2)}`;
+  } else if (/whatsapp/.test(metodoStr)) {
+    // Coordinado con el asesor: pagado cuando el ERP lo valida.
+    paymentLabel = paid ? 'Pagado (coordinado por WhatsApp)' : 'Pendiente de pago (por WhatsApp)';
+  } else if (/culqi|tarjeta|card|visa|mastercard/.test(metodoStr)) {
     paymentLabel = 'Pagado con tarjeta (Culqi)';
   } else if (/paypal/.test(metodoStr)) {
     paymentLabel = 'Pagado con PayPal';

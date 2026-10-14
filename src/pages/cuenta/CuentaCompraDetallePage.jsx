@@ -160,9 +160,16 @@ const CuentaCompraDetallePage = () => {
     const walaEstado =
       pedidoBase.estadoWala ?? pedidoBase._walaEstado ?? crudoLista?.estadoWala ?? crudoLista?._walaEstado ?? null;
     const walaPagado = pedidoBase._walaPagado === true || crudoLista?._walaPagado === true || crudoLista?.pagado === true;
-    if (walaEstado == null && !walaPagado) return pedidoBase;
+    // La deuda la calcula el servidor (misPedidosSecure: adelanto + pagos de
+    // cobranza contra el total); el ERP no la guarda en el pedido. Sin esto el
+    // detalle, que lee el pedido directo, no mostraba el saldo ni "Pagar saldo".
+    const deuda = typeof crudoLista?.conDeuda === 'boolean'
+      ? { conDeuda: crudoLista.conDeuda, montoDeuda: crudoLista.montoDeuda ?? 0 }
+      : null;
+    if (walaEstado == null && !walaPagado && !deuda) return pedidoBase;
     return {
       ...pedidoBase,
+      ...(deuda || {}),
       ...(walaEstado != null && { _walaEstado: walaEstado }),
       ...(walaPagado && { _walaPagado: true }),
     };
