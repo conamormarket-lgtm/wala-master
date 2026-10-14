@@ -3,7 +3,7 @@ import { Plus, Upload, X, Sparkles, Palette, AlertTriangle } from 'lucide-react'
 import { uploadFile } from '../../../services/firebase/storage';
 import {
   leerPrendaBase, normalizarZona, normalizarVista, normalizarReferencia, medidaZona, zonaConMedida,
-  nuevoIdZona, slug, cargarImagen, tintarImagen,
+  nuevoIdZona, slug, cargarImagen, tintarImagen, voltearImagen,
   colorDisponible, fondoMuestra, PATRONES_BICOLOR, vistasDeEjemplo, COLORES_POLERA, TALLAS_POLERA,
 } from '../../../utils/prendaBase';
 import ZonaEditor from './ZonaEditor';
@@ -26,6 +26,12 @@ export const prendaBaseParaGuardar = (valor, variantes) => {
       .filter(([, lista]) => Array.isArray(lista) && lista.length)
       .map(([vistaId, lista]) => [vistaId, lista.map(normalizarZona)]));
     const conZonas = Object.keys(zonas).length > 0;
+    // Bicolor al revés: solo guarda de quién es espejo y su segundo tono (las
+    // fotos, zonas y patrón los toma del original al leerse).
+    if (c?.espejoDe && ids.has(c.espejoDe)) {
+      colores[id] = { espejoDe: c.espejoDe, ...(c.hex2 ? { hex2: c.hex2 } : {}), fotos: {} };
+      return;
+    }
     if (c?.hex2 || Object.keys(fotos).length || conZonas) {
       colores[id] = {
         ...(c.hex2 ? { hex2: c.hex2 } : {}),
@@ -69,14 +75,14 @@ const CampoCm = ({ valor, onFijar, etiqueta }) => {
 };
 
 /** Miniatura teñida para revisar cómo queda cada color sin salir del admin. */
-const MiniaturaColor = ({ imagen, hex, nombre }) => {
+const MiniaturaColor = ({ imagen, hex, nombre, espejo = false }) => {
   const [src, setSrc] = useState(null);
   useEffect(() => {
     let vigente = true;
     if (!imagen) return undefined;
     cargarImagen(imagen).then((img) => {
       if (!vigente) return;
-      const tenida = tintarImagen(img, hex);
+      const tenida = espejo ? voltearImagen(img) : tintarImagen(img, hex);
       const c = document.createElement('canvas');
       const escala = 160 / tenida.width;
       c.width = 160;
@@ -85,7 +91,7 @@ const MiniaturaColor = ({ imagen, hex, nombre }) => {
       try { setSrc(c.toDataURL('image/png')); } catch { setSrc(imagen); }
     }).catch(() => {});
     return () => { vigente = false; };
-  }, [imagen, hex]);
+  }, [imagen, hex, espejo]);
   return (
     <figure className={styles.miniatura}>
       <div className={styles.miniaturaFoto}>{src && <img src={src} alt={`Vista previa en ${nombre}`} />}</div>
@@ -238,6 +244,23 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
     onAgregarVariantes(creados.map((c) => ({ id: c.id, nombre: c.nombre, hex: c.hex, tallas: TALLAS_POLERA })));
     const bicolores = Object.fromEntries(creados.filter((c) => c.hex2).map((c) => [c.id, { hex2: c.hex2, ...(c.patron ? { patron: c.patron } : {}), fotos: {} }]));
     if (Object.keys(bicolores).length) cambiar({ colores: { ...extras, ...bicolores } });
+  };
+
+  /**
+   * Bicolor al revés (rosado/celeste → celeste/rosado): un color más, con las
+   * mismas fotos volteadas en espejo y los tonos cruzados. Sirve para parejas
+   * de poleras que van invertidas. No hay que subir fotos.
+   */
+  const nombreInvertido = (nombre) => {
+    const partes = String(nombre || '').split('/').map((p) => p.trim()).filter(Boolean);
+    return partes.length === 2 ? `${partes[1]} / ${partes[0]}` : `${nombre} (al revés)`;
+  };
+  const invertidoDe = (c) => colores.find((o) => o.espejoDe === c.id);
+  const agregarInvertido = (c) => {
+    if (invertidoDe(c)) return;
+    const id = `var_${Date.now()}_inv`;
+    onAgregarVariantes([{ id, nombre: nombreInvertido(c.nombre), hex: c.hex2, tallas: c.tallas.length ? c.tallas : TALLAS_POLERA }]);
+    cambiar((prev) => ({ colores: { ...prev.colores, [id]: { espejoDe: c.id, hex2: c.hex, fotos: {} } } }));
   };
 
   return (
@@ -434,6 +457,21 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
                     />
                     <strong className={styles.nombreColor}>{c.nombre}</strong>
                     <span className={styles.tallasColor}>{c.tallas.length ? c.tallas.join(' · ') : 'Sin tallas'}</span>
+                    {c.espejo ? (
+                      <span className={styles.invertido} title="Usa las fotos de su original, volteadas en espejo">
+                        Al revés de {colores.find((o) => o.id === c.espejoDe)?.nombre || 'su original'}
+                      </span>
+                    ) : c.hex2 && (
+                      invertidoDe(c) ? (
+                        <span className={styles.invertido}>Al revés: {invertidoDe(c).nombre}</span>
+                      ) : (
+                        <button type="button" className={styles.botonMini} onClick={() => agregarInvertido(c)}
+                          title="Crea este mismo bicolor con los tonos cruzados (fotos volteadas), para parejas">
+                          Agregar versión invertida
+                        </button>
+                      )
+                    )}
+                    {!c.espejo && (
                     <label className={styles.bicolor}>
                       <input
                         type="checkbox"
@@ -442,7 +480,8 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
                       />
                       Bicolor
                     </label>
-                    {c.hex2 && (
+                    )}
+                    {c.hex2 && !c.espejo && (
                       <input
                         type="color"
                         value={c.hex2}
@@ -451,7 +490,7 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
                         title="Segundo tono"
                       />
                     )}
-                    {c.hex2 && (
+                    {c.hex2 && !c.espejo && (
                       <select
                         className={styles.patron}
                         value={c.patron}
@@ -472,8 +511,8 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
                     <div className={styles.miniaturas}>
                       {vistas.map((v) => (
                         <div key={v.id} className={styles.miniaturaVista}>
-                          <MiniaturaColor imagen={c.fotos[v.id] || v.imagen} hex={c.fotos[v.id] ? '#FFFFFF' : c.hex} nombre={v.nombre} />
-                          {c.fotos[v.id] ? (
+                          <MiniaturaColor imagen={c.fotos[v.id] || v.imagen} hex={c.fotos[v.id] ? '#FFFFFF' : c.hex} nombre={v.nombre} espejo={Boolean(c.espejo && c.fotos[v.id])} />
+                          {c.espejo ? null : c.fotos[v.id] ? (
                             <button
                               type="button"
                               className={styles.botonMini}
@@ -511,7 +550,8 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
           bicolores de cada vista y, si hace falta, uno propio por color. Ver
           zonasDeVista en utils/prendaBase.js. */}
       {vistas.length > 0 && colores.some((c) => c.hex2) && (() => {
-        const bicolores = colores.filter((c) => c.hex2);
+        // Los invertidos usan las zonas de su original: no se editan aparte.
+        const bicolores = colores.filter((c) => c.hex2 && !c.espejo);
         const objetivo = bicolores.find((c) => c.id === objetivoBicolor) || null; // null = todos
         const conFoto = (vistaId) => bicolores.find((c) => c.id === bicolorPrevio && c.fotos[vistaId])
           || bicolores.find((c) => c.fotos[vistaId]);

@@ -284,6 +284,8 @@ export const normalizarColor = (color, i = 0) => ({
   patron: patronDe(color),
   fotos: limpiarFotos(color?.fotos),
   ...(leerZonasDeColor(color?.zonas) && { zonas: leerZonasDeColor(color?.zonas) }),
+  // Bicolor al revés: usa las fotos (y zonas) de `espejoDe` volteadas en espejo.
+  ...(color?.espejoDe ? { espejoDe: String(color.espejoDe) } : {}),
   tallas: (Array.isArray(color?.tallas) ? color.tallas : []).map((t) => String(t || '').trim()).filter(Boolean),
 });
 
@@ -317,8 +319,24 @@ export const leerPrendaBase = (producto) => {
       patron: extra[v.id]?.patron,
       zonas: extra[v.id]?.zonas,
       fotos: extra[v.id]?.fotos,
+      espejoDe: extra[v.id]?.espejoDe,
       tallas: v.sizes,
     }, i));
+    // Un bicolor al revés toma las fotos, zonas y patrón de su original (las
+    // de hoy: si cambian allá, cambian aquí) y se dibuja volteado.
+    colores = colores.map((c) => {
+      if (!c.espejoDe) return c;
+      const original = colores.find((o) => o.id === c.espejoDe && !o.espejoDe);
+      if (!original) return { ...c, espejoDe: undefined };
+      return {
+        ...c,
+        espejo: true,
+        hex2: c.hex2 || original.hex,
+        patron: original.patron,
+        fotos: original.fotos,
+        ...(original.zonas ? { zonas: original.zonas } : {}),
+      };
+    });
   } else {
     colores = (Array.isArray(cfg.colores) ? cfg.colores : []).map(normalizarColor);
   }
@@ -564,6 +582,35 @@ export const tintarImagen = (img, hex) => {
 
 /** Foto a mostrar para una vista y un color: la propia del color, o la base. */
 export const fotoDeVista = (vista, color) => color?.fotos?.[vista.id] || vista.imagen;
+
+const cacheVolteadas = new Map();
+
+/** La imagen volteada en espejo (canvas), para un bicolor al revés. Cacheada. */
+export const voltearImagen = (img) => {
+  const clave = img.src || img;
+  if (cacheVolteadas.has(clave)) return cacheVolteadas.get(clave);
+  const ancho = img.naturalWidth || img.width;
+  const alto = img.naturalHeight || img.height;
+  const canvas = document.createElement('canvas');
+  canvas.width = ancho;
+  canvas.height = alto;
+  const ctx = canvas.getContext('2d');
+  ctx.translate(ancho, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(img, 0, 0, ancho, alto);
+  cacheVolteadas.set(clave, canvas);
+  return canvas;
+};
+
+/**
+ * Lo que se pinta de fondo para una vista y un color: la foto teñida (color
+ * de un tono sin foto propia), la del color tal cual, o volteada si es un
+ * bicolor al revés.
+ */
+export const fondoDeVista = (img, vista, color) => {
+  if (requiereTenido(vista, color)) return tintarImagen(img, color?.hex);
+  return color?.espejo ? voltearImagen(img) : img;
+};
 
 /** ¿Hay que teñir? No, si el color trae foto propia para esta vista. */
 export const requiereTenido = (vista, color) => !color?.fotos?.[vista.id];

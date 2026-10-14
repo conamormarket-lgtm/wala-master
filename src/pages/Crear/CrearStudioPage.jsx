@@ -18,7 +18,7 @@ import {
 } from '../../services/crearArchivos';
 import {
   UNIDADES_ZONA, leerPrendaBase, precioBase, precioPersonalizado, zonasConDiseno, listarZonas,
-  calidadDeCapa, medidaZona, cargarImagen, tintarImagen, fotoDeVista, requiereTenido, textoSobre, esColorBlanco,
+  calidadDeCapa, medidaZona, cargarImagen, tintarImagen, fotoDeVista, requiereTenido, fondoDeVista, textoSobre, esColorBlanco,
   colorDisponible, tallasDeColor, slug, fondoMuestra, vistasDelColor,
 } from '../../utils/prendaBase';
 import {
@@ -1124,7 +1124,7 @@ const CrearStudioPage = () => {
           return;
         }
         if (token !== tokenRef.current) return;
-        const fuente = requiereTenido(vista, color) ? tintarImagen(img, color.hex) : img;
+        const fuente = fondoDeVista(img, vista, color);
 
         const anchoImg = img.naturalWidth;
         const altoImg = img.naturalHeight;
@@ -1860,7 +1860,7 @@ const CrearStudioPage = () => {
 
   const renderizarVista = async (v, capas, ancho) => {
     const img = await cargarImagen(fotoDeVista(v, color));
-    const fuente = requiereTenido(v, color) ? tintarImagen(img, color.hex) : img;
+    const fuente = fondoDeVista(img, v, color);
     return renderizarVistaPrevia({
       fuente, anchoImg: img.naturalWidth, altoImg: img.naturalHeight, vista: v, capasPorZona: capas, srcDe,
       ...(ancho && { ancho }),
