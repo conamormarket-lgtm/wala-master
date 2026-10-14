@@ -441,14 +441,23 @@ const ComboCrearPage = () => {
   });
 
   const miComboDoc = miCombo || mioQ.data || null;
+  // Un conjunto (prendas distintas para una persona: casaca, polo y jogger)
+  // lleva UNA talla para todas, como el conjunto de la tienda. En una pareja
+  // o un trío de la misma prenda (varias personas) cada una lleva la suya.
+  const unaTalla = new Set(piezasCombo.map((p) => p.prendaId)).size > 1;
+  // La del conjunto: la que eligió el cliente (va en todas las piezas). Sin
+  // marcar hasta que la elija.
+  const tallaConjunto = unaTalla ? (armado.find((a) => a.talla)?.talla || '') : '';
   const piezas = armado.map((a, i) => {
     const creacion = creaciones[i];
     // Diseño de la comunidad para esta pieza (si todavía no tiene uno propio).
     const dePlantilla = plantillaCombo?.piezas?.[i];
     const plantilla = !a.designId && dePlantilla?.productId === piezasCombo[i]?.prendaId ? dePlantilla : null;
     const tallas = tallasPara(prendas[i], creacion);
-    const talla = tallas.includes(a.talla) ? a.talla
-      : tallas.includes(creacion?.variant?.size) ? creacion.variant.size : '';
+    const talla = unaTalla
+      ? (tallas.includes(tallaConjunto) ? tallaConjunto : '')
+      : tallas.includes(a.talla) ? a.talla
+        : tallas.includes(creacion?.variant?.size) ? creacion.variant.size : '';
     const cargando = Boolean(a.designId && creacionesQ[i]?.isLoading);
     // Mientras carga: la foto y el nombre que guardó "Mi combo" de esta prenda.
     const guardada = (miComboDoc?.piezas || [])[i];
@@ -500,6 +509,16 @@ const ComboCrearPage = () => {
     + `${meta.miComboId ? `&mio=${meta.miComboId}` : ''}${extra}`;
   const estadoEstudio = { desde: `/combo/${id}${meta.miComboId ? `?mio=${meta.miComboId}` : ''}` };
 
+  const tallasConjunto = (() => {
+    if (!unaTalla) return [];
+    const listas = piezas.map((p) => p.tallas).filter((t) => t.length);
+    if (!listas.length) return [];
+    const [primera, ...resto] = listas;
+    const comunes = primera.filter((t) => resto.every((l) => l.includes(t)));
+    return comunes.length ? comunes : [...new Set(listas.flat())];
+  })();
+  const elegirTallaConjunto = (t) => cambiarArmado(armado.map((a) => ({ ...a, talla: t })));
+
   const urlPlantilla = (i) => urlEstudio(i, `&plantilla=${meta.plantilla}&plantillaPieza=${i}`);
   const pendientePlantilla = piezas.find((p) => p.plantilla);
   const listas = piezas.filter((p) => p.lista && (!p.tallas.length || p.talla)).length;
@@ -522,7 +541,7 @@ const ComboCrearPage = () => {
     if (falta) {
       toast.info(!falta.creacion ? `Falta el diseño de la prenda ${falta.i + 1}.`
         : !falta.lista ? `Abre y guarda otra vez el diseño de la prenda ${falta.i + 1}.`
-          : `Elige la talla de la prenda ${falta.i + 1}.`);
+          : unaTalla ? 'Elige la talla del conjunto.' : `Elige la talla de la prenda ${falta.i + 1}.`);
       return;
     }
     if (piezas.some((p) => agotada(p.prenda))) {
@@ -556,7 +575,8 @@ const ComboCrearPage = () => {
   const nombreCombo = miCombo?.name || combo.name;
   const descuento = sueltas > 0 && ahorro > 0 ? Math.round((ahorro / sueltas) * 100) : 0;
   const faltaTexto = completo ? 'Todo listo para agregar al carrito.'
-    : pendientePlantilla ? 'Personaliza cada prenda y elige su talla.' : 'Diseña cada prenda y elige su talla.';
+    : unaTalla ? (pendientePlantilla ? 'Personaliza cada prenda y elige la talla.' : 'Diseña cada prenda y elige la talla.')
+      : pendientePlantilla ? 'Personaliza cada prenda y elige su talla.' : 'Diseña cada prenda y elige su talla.';
 
   return (
     // product-detail-page: como la ficha y la creación (en el celular, la
@@ -669,7 +689,7 @@ const ComboCrearPage = () => {
                               : 'Ábrelo y guárdalo otra vez para prepararlo para imprimir.'}
                           </p>
                         )}
-                        {p.tallas.length > 0 && (
+                        {!unaTalla && p.tallas.length > 0 && (
                           <div className={`${ficha.tallas} ${styles.tallasFila}`} role="radiogroup" aria-label={`Talla de la prenda ${p.i + 1}`}>
                             {p.tallas.map((t) => (
                               <button
@@ -746,6 +766,29 @@ const ComboCrearPage = () => {
             })}
           </ol>
         </div>
+
+        {unaTalla && tallasConjunto.length > 0 && (
+          <div className={ficha.grupo}>
+            <span className={styles.tallaConjuntoFila}>
+              <span className={ficha.rotulo}>Talla{tallaConjunto && <>: <em>{tallaConjunto}</em></>}</span>
+              <span className={styles.tallaConjuntoPista}>Se aplica a las {piezas.length} prendas</span>
+            </span>
+            <div className={ficha.tallas} role="radiogroup" aria-label="Talla del conjunto">
+              {tallasConjunto.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  role="radio"
+                  aria-checked={t === tallaConjunto}
+                  className={`${ficha.talla} ${t === tallaConjunto ? ficha.tallaActiva : ''}`}
+                  onClick={() => elegirTallaConjunto(t)}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className={ficha.botones}>
           <button type="button" className={ficha.principal} onClick={agregar} disabled={!completo}>

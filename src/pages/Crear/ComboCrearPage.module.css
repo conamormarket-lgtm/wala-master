@@ -775,3 +775,19 @@
 :global([data-theme='dark']) .filaLista {
   border-color: rgba(74, 222, 128, 0.45);
 }
+
+/* Conjunto: una talla para todas las prendas, con su aviso al lado (como el
+   conjunto de la tienda). */
+.tallaConjuntoFila {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tallaConjuntoPista {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary-color, #7c3aed);
+}
