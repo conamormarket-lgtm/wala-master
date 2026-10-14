@@ -157,7 +157,7 @@ const fila = (p, extra = {}) => {
 const CARRITO_INICIAL = [
   fila(destacados[0], { variante: 'Talla M' }),
   fila(ofertas.find((p) => !p.isComboProduct) || ofertas[0]),
-];
+].map((it) => ({ ...it, url: `/producto/${it.id}` }));
 
 /* Fotos reales para recompensas y referidos de "Mi cuenta". */
 const FOTOS_CUENTA = [ofertas[0], nuevos[1], destacados[2]].map((p) => ({ nombre: p.name, imagen: fila(p).imagen }));
@@ -371,6 +371,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     onVerTodas,
     favoritos: conSesion ? FAVORITOS : [],
     carrito,
+    metaEnvio: META_ENVIO,
     onBuscar: (q) => navegar.current(q ? `/buscar?q=${encodeURIComponent(q)}` : '/buscar'),
     buscarSugerencias,
     // "Lo más buscado": las categorías con más productos (en la tienda,

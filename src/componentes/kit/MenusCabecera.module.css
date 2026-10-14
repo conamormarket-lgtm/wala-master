@@ -561,30 +561,78 @@
   outline: none;
 }
 
-.miniatura img {
-  transition: transform var(--dur-media) var(--ease-signature);
-}
-
 .listaCarrito {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  margin: 0;
+  gap: 0.15rem;
+  margin: 0 -0.5rem;
   padding: 0;
   list-style: none;
 }
 
+/* Al abrir, las filas entran una tras otra (una vez, sin bucle). */
 .listaCarrito li {
+  animation: entraFila var(--dur-media) var(--ease-signature) both;
+  animation-delay: calc(var(--i, 0) * 60ms + 40ms);
+}
+
+@keyframes entraFila {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+.lineaCarrito {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.7rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 14px;
+  color: var(--color-text);
+  text-decoration: none;
+  transition: background-color var(--dur-rapida) ease;
+}
+
+.lineaCarrito:hover {
+  background: var(--primary-light);
+}
+
+.lineaCarrito:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 1px;
+}
+
+.miniaturaCaja {
+  position: relative;
+  flex-shrink: 0;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+/* La foto se ladea y crece un poco: la fila "se levanta" al pasar. */
+.lineaCarrito:hover .miniaturaCaja {
+  transform: rotate(-5deg) scale(1.06);
 }
 
 .miniatura {
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+
+.cantidadMini {
+  position: absolute;
+  right: -6px;
+  bottom: -5px;
+  min-width: 22px;
+  padding: 0.1rem 0.32rem;
+  border: 2px solid var(--color-surface);
+  border-radius: 999px;
+  background: var(--degradado-logo);
+  color: #fff;
+  font-family: var(--fuente-marca);
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1.25;
+  text-align: center;
 }
 
 .lineaTexto {
@@ -601,6 +649,7 @@
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: color var(--dur-rapida) ease;
 }
 
 .lineaTexto small {
@@ -608,17 +657,48 @@
   font-size: 0.76rem;
 }
 
+.lineaCarrito:hover .lineaTexto strong {
+  color: var(--primary-color);
+}
+
+:global([data-theme='dark']) .lineaCarrito:hover .lineaTexto strong {
+  color: var(--violet-300);
+}
+
 .lineaPrecio {
+  display: flex;
   flex-shrink: 0;
-  color: var(--color-text-muted);
-  font-size: 0.8rem;
+  flex-direction: column;
+  align-items: flex-end;
   font-variant-numeric: tabular-nums;
 }
 
-.masItems {
-  margin: 0;
+.lineaPrecio strong {
+  font-family: var(--fuente-marca);
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.lineaPrecio small {
   color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.masItems {
+  align-self: flex-start;
+  color: var(--primary-color);
   font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.masItems:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+:global([data-theme='dark']) .masItems {
+  color: var(--violet-300);
 }
 
 .total {
@@ -630,7 +710,10 @@
 }
 
 .total strong {
-  font-size: 1.15rem;
+  font-family: var(--fuente-marca);
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -925,6 +1008,18 @@
   }
 
   .lateral .item:hover .itemHueco svg {
+    transform: none;
+  }
+
+  .listaCarrito li {
+    animation: none;
+  }
+
+  .miniaturaCaja {
+    transition: none;
+  }
+
+  .lineaCarrito:hover .miniaturaCaja {
     transform: none;
   }
 }

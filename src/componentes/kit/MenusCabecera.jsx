@@ -6,6 +6,8 @@ import { soles } from './TarjetaProducto';
 import { IconoWala } from './IconosWala';
 import { Moneda } from './Etiquetas';
 import { Sello } from './Marca';
+import { useContador } from './Efectos';
+import { BarraEnvioGratis } from './Pedido';
 import { FotoProducto } from './piezas/FotoProducto';
 import { LogoMarca } from './piezas/LogoMarca';
 import { Avatar } from './piezas/Avatar';
@@ -348,10 +350,16 @@ export function VistaFavoritos({ items = [], sesion = true, urlLista = '/cuenta/
 /* ── Carrito ────────────────────────────────────────────── */
 
 /**
- * Vista previa del carrito: los 3 primeros, "+N más", total y botones.
- *  - items: [{ id, nombre, imagen, precio, cantidad, variante }]
+ * Vista previa del carrito: los 3 primeros (entran uno tras otro al abrir;
+ * al pasar el ratón la foto se ladea y el nombre se pinta), "+N más", cuánto
+ * falta para el envío gratis, el total que corre al cambiar y los botones.
+ *  - items: [{ id, nombre, imagen, precio, cantidad, variante, url }]
+ *    (sin `url`, la fila lleva al carrito)
+ *  - metaEnvio: monto del envío gratis (sin él, no hay barra)
  */
-export function VistaCarrito({ items = [], urlCarrito = '/carrito', urlPagar = '/checkout', onNavegar }) {
+export function VistaCarrito({ items = [], urlCarrito = '/carrito', urlPagar = '/checkout', metaEnvio, onNavegar }) {
+  const totalReal = items.reduce((a, it) => a + it.precio * it.cantidad, 0);
+  const total = useContador(totalReal, 0.45);
   if (!items.length) {
     return (
       <div className={s.vacio}>
@@ -364,7 +372,6 @@ export function VistaCarrito({ items = [], urlCarrito = '/carrito', urlPagar = '
   }
   const visibles = items.slice(0, 3);
   const restantes = items.length - visibles.length;
-  const total = items.reduce((a, it) => a + it.precio * it.cantidad, 0);
   const unidades = items.reduce((a, it) => a + it.cantidad, 0);
   return (
     <div className={s.vista}>
@@ -373,25 +380,38 @@ export function VistaCarrito({ items = [], urlCarrito = '/carrito', urlPagar = '
         <span>{unidades} {unidades === 1 ? 'producto' : 'productos'}</span>
       </div>
       <ul className={s.listaCarrito}>
-        {visibles.map((it) => (
-          <li key={it.id}>
-            <FotoProducto className={s.miniatura} src={it.imagen} relleno="6%" />
-            <span className={s.lineaTexto}>
-              <strong>{it.nombre}</strong>
-              {it.variante && <small>{it.variante}</small>}
-            </span>
-            <span className={s.lineaPrecio}>{it.cantidad} × {soles(it.precio)}</span>
+        {visibles.map((it, i) => (
+          <li key={it.id} style={{ '--i': i }}>
+            <Enlace to={it.url || urlCarrito} className={s.lineaCarrito} onClick={onNavegar}>
+              <span className={s.miniaturaCaja}>
+                <FotoProducto className={s.miniatura} src={it.imagen} relleno="6%" />
+                {it.cantidad > 1 && <span className={s.cantidadMini} aria-label={`${it.cantidad} unidades`}>×{it.cantidad}</span>}
+              </span>
+              <span className={s.lineaTexto}>
+                <strong>{it.nombre}</strong>
+                {it.variante && <small>{it.variante}</small>}
+              </span>
+              <span className={s.lineaPrecio}>
+                <strong>{soles(it.precio * it.cantidad)}</strong>
+                {it.cantidad > 1 && <small>{soles(it.precio)} c/u</small>}
+              </span>
+            </Enlace>
           </li>
         ))}
       </ul>
-      {restantes > 0 && <p className={s.masItems}>+{restantes} {restantes === 1 ? 'artículo' : 'artículos'} más</p>}
+      {restantes > 0 && (
+        <Enlace to={urlCarrito} className={s.masItems} onClick={onNavegar}>
+          +{restantes} {restantes === 1 ? 'artículo' : 'artículos'} más en tu carrito
+        </Enlace>
+      )}
+      {metaEnvio > 0 && <BarraEnvioGratis actual={totalReal} meta={metaEnvio} compacta />}
       <div className={s.total}>
         <span>Total</span>
         <strong>{soles(total)}</strong>
       </div>
       <div className={s.botones}>
         <Boton to={urlCarrito} variante="contorno" bloque onClick={onNavegar}>Ver carrito</Boton>
-        <Boton to={urlPagar} variante="primario" bloque onClick={onNavegar}>Pagar</Boton>
+        <Boton to={urlPagar} variante="primario" bloque iconoFin={<ArrowRight aria-hidden="true" />} onClick={onNavegar}>Pagar</Boton>
       </div>
     </div>
   );

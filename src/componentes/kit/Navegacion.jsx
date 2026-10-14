@@ -43,7 +43,8 @@ export function Logo({ alto = 32 }) {
  *  - tema: 'claro' | 'noche' + onTema → botón de tema (solo escritorio)
  *  - monedas, notificaciones (+ onLeer, onMarcarLeidas, onVerTodas)
  *  - usuario, gruposCuenta, promoCuenta, onCerrarSesion
- *  - favoritos: [{ id, nombre, imagen }]   carrito: [{ id, nombre, imagen, precio, cantidad, variante }]
+ *  - favoritos: [{ id, nombre, imagen }]   carrito: [{ id, nombre, imagen, precio, cantidad, variante, url }]
+ *  - metaEnvio: monto del envío gratis (barra en el menú del carrito)
  *  - onBuscar(termino): ir a los resultados
  *  - buscarSugerencias(texto) → promesa de sugerencias (PanelBusqueda): con
  *    ella, el buscador abre el panel (recientes y sugerencias) debajo del
@@ -72,6 +73,7 @@ export function Cabecera({
   onCerrarSesion,
   favoritos = [],
   carrito = [],
+  metaEnvio,
   onBuscar,
   buscarSugerencias,
   ideasBusqueda = [],
@@ -263,7 +265,7 @@ export function Cabecera({
             </Boton>
           )}
         >
-          {(cerrar) => <VistaCarrito items={carrito} onNavegar={cerrar} />}
+          {(cerrar) => <VistaCarrito items={carrito} metaEnvio={metaEnvio} onNavegar={cerrar} />}
         </Desplegable>
 
         <span className={s.ocultarMovil}>

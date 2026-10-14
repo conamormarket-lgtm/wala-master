@@ -223,8 +223,11 @@ export function ItemCarrito({
   );
 }
 
-/** Barra hacia el envío gratis: el camión avanza con el total y al llegar sale confeti. */
-export function BarraEnvioGratis({ actual, meta }) {
+/**
+ * Barra hacia el envío gratis: el camión avanza con el total y al llegar sale confeti.
+ *  - actual, meta · compacta: más baja y sin caja (menú del carrito en la cabecera)
+ */
+export function BarraEnvioGratis({ actual, meta, compacta = false }) {
   const falta = Math.max(0, meta - actual);
   const pct = Math.min(100, (actual / meta) * 100);
   const logrado = falta === 0;
@@ -237,7 +240,7 @@ export function BarraEnvioGratis({ actual, meta }) {
   }, [logrado]);
 
   return (
-    <div className={[s.envio, logrado && s.envioOk].filter(Boolean).join(' ')}>
+    <div className={[s.envio, logrado && s.envioOk, compacta && s.envioCompacta].filter(Boolean).join(' ')}>
       <AnimatePresence mode="wait" initial={false}>
         <motion.p
           key={logrado ? 'ok' : 'falta'}

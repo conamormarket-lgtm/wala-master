@@ -139,7 +139,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `TarjetaProducto.jsx` | `TarjetaProducto`, `TarjetaProductoEsqueleto`, `soles` | Tarjeta de la tienda (fotos con fondo blanco, alturas parejas; corazón controlado con `deseado` + `onDeseo`) |
 | `Navegacion.jsx` | `Cabecera`, `BarraInferior`, `Pestanas`, `Logo` | Navegación |
 | `Desplegable.jsx` | `Desplegable` | Base de todos los menús: hover en escritorio, hoja/globo en celular |
-| `MenusCabecera.jsx` | `MenuTienda`, `MenuMarcas`, `AyudaMonedas`, `MenuCuenta` (`lateral` + `activo`: el menú al costado de /cuenta), `VistaFavoritos`, `VistaCarrito` | Contenido de los menús de la cabecera |
+| `MenusCabecera.jsx` | `MenuTienda`, `MenuMarcas`, `AyudaMonedas`, `MenuCuenta` (`lateral` + `activo`: el menú al costado de /cuenta), `VistaFavoritos`, `VistaCarrito` (filas que entran una tras otra y se levantan al pasar, `metaEnvio` con la `BarraEnvioGratis compacta`, total que corre) | Contenido de los menús de la cabecera |
 | `AgregarRapido.jsx` | `AgregarRapido` | Elegir talla, color y cantidad antes de agregar al carrito |
 | `Pedido.jsx` | `SeguimientoPedido` (`pasos`, `estado`, `deuda`, `anulado`, `urlDetalle`, `onPagar`), `ItemCarrito`, `BarraEnvioGratis`, `ResumenPedido`, `PASOS_PEDIDO`, `ETAPAS_PRODUCCION` | Carrito y Mis pedidos |
 | `Feedback.jsx` | `Aviso`, `ProveedorToasts`, `useToast`, `useNotificaciones`, `ListaNotificaciones`, `EstadoVacio`, `HojaInferior` | Avisos, notificaciones y modales |
