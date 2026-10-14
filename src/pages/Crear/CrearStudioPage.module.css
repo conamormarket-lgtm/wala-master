@@ -1699,10 +1699,71 @@
   grid-template-columns: 1fr;
 }
 
-/* Prenda 2 de una pareja bicolor: va al revés. */
-.notaInvertida {
-  margin: 0.6rem 0 0;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--primary-color, #6d28d9);
+/* Interruptor "Invertir colores" de un bicolor con versión al revés. */
+.interruptorInvertir {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 12px;
+  border: 1.5px solid var(--gris-borde);
+  background: var(--color-surface, var(--blanco));
+  cursor: pointer;
+  color: var(--gris-texto-principal);
+  font-size: 0.88rem;
+}
+
+.interruptorInvertir input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.interruptorInvertir > span:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.interruptorInvertir small {
+  font-size: 0.78rem;
+  color: var(--gris-texto-secundario);
+}
+
+.interruptor {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--gris-borde, #d4d4d8);
+  transition: background-color 0.2s ease;
+}
+
+.interruptor::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(20, 18, 28, 0.25);
+  transition: transform 0.2s ease;
+}
+
+.interruptorInvertir input:checked + .interruptor {
+  background: #8b5cf6;
+}
+
+.interruptorInvertir input:checked + .interruptor::after {
+  transform: translateX(18px);
+}
+
+.interruptorInvertir input:focus-visible + .interruptor {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
 }

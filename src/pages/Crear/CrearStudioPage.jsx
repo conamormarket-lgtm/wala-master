@@ -170,13 +170,9 @@ const CrearStudioPage = () => {
       .map((p) => p.i);
   })();
   const [copiarALasOtras, setCopiarALasOtras] = useState(true);
-  // Pareja de prendas iguales: la segunda va con los colores AL REVÉS (un
-  // bicolor rosado/celeste pasa a celeste/rosado, ver "versión invertida" en
-  // el admin). Los invertidos no se eligen aparte: se aplican solos aquí.
-  const invertirPieza = enCombo && Boolean(comboActual) && comboActual.piezas.length > 1
-    && comboActual.piezas.every((p) => p.prendaId === id) && piezaParam % 2 === 1;
+  // Bicolor al revés ("versión invertida" del admin): no sale como un color
+  // aparte, se activa con el interruptor "Invertir colores" bajo los colores.
   const invertidoDe = (c, colores) => (c ? colores.find((o) => o.espejoDe === c.id) : null);
-  const colorParaPieza = (c, colores) => (invertirPieza && c && !c.espejo ? invertidoDe(c, colores) || c : c);
   // "Mi combo" que se está armando (?mio=): con él se guarda y se vuelve a ESE
   // combo aunque otra pestaña esté armando otro (lo del navegador es compartido).
   const mioRef = useRef(enCombo ? searchParams.get('mio') || '' : '');
@@ -452,8 +448,6 @@ const CrearStudioPage = () => {
   useEffect(() => {
     const cfg = cfgPrenda;
     if (!cfg || listo || authLoading) return;
-    // En un combo se espera a saber si esta pieza va al revés.
-    if (enCombo && !comboActual) return;
     let cancelado = false;
     const aplicar = async (estado) => {
       const capas = estado?.capasPorZona || estado?.capasPorVista || {};
@@ -463,12 +457,7 @@ const CrearStudioPage = () => {
       setCapasPorZona(capas);
       firmaBorradorRef.current = JSON.stringify({ capas: capasParaGuardar(capas), colorId: estado?.colorId, talla: estado?.talla || '' });
       const principal = cfg.colores.find((c) => c.id === prenda?.defaultVariantId) || cfg.colores[0];
-      const colorElegido = cfg.colores.some((c) => c.id === estado?.colorId) ? estado.colorId : principal?.id;
-      // Pieza al revés: lo que llega (copia, comunidad, en blanco) toma su
-      // invertido. Una creación ya guardada se respeta tal cual.
-      const colorInicial = estado?.guardada
-        ? colorElegido
-        : colorParaPieza(cfg.colores.find((c) => c.id === colorElegido), cfg.colores)?.id || colorElegido;
+      const colorInicial = cfg.colores.some((c) => c.id === estado?.colorId) ? estado.colorId : principal?.id;
       // Las zonas son las de ese color (un bicolor puede tener otras).
       const vistasIniciales = vistasDelColor(cfg.vistas, cfg.colores.find((c) => c.id === colorInicial));
       const vistaInicial = vistasIniciales.find((v) => v.id === estado?.vistaId) || vistasIniciales[0];
@@ -569,7 +558,7 @@ const CrearStudioPage = () => {
       return aplicar(borrador);
     })();
     return () => { cancelado = true; };
-  }, [cfgPrenda, listo, authLoading, designIdParam, plantillaParam, plantillaPiezaParam, copiarParam, user, id, comboActual]);
+  }, [cfgPrenda, listo, authLoading, designIdParam, plantillaParam, plantillaPiezaParam, copiarParam, user, id]);
 
   // Las fuentes del selector se cargan en segundo plano para la vista previa.
   useEffect(() => { FUENTES.forEach((f) => { asegurarFuente(f); }); }, []);
@@ -2152,15 +2141,11 @@ const CrearStudioPage = () => {
     } catch { /* se vuelve a intentar desde la página del combo */ }
   };
 
-  // Un bicolor con versión invertida no se copia igual a la otra prenda: allá
-  // va al revés (se copia desde el combo, que la abre ya invertida).
-  const copiaDirecta = !(color?.espejo || invertidoDe(color, cfgPrenda?.colores || []));
-
   /** Pone la creación en su pieza del combo (y en las iguales, si se pidió). */
   const ponerEnCombo = (idPieza) => {
     ponerPieza(comboParam, piezaParam, { designId: idPieza });
     cambiosPiezasRef.current[piezaParam] = idPieza;
-    if (copiarALasOtras && copiaDirecta) {
+    if (copiarALasOtras) {
       otrasIguales.forEach((i) => {
         ponerPieza(comboParam, i, { designId: idPieza });
         cambiosPiezasRef.current[i] = idPieza;
@@ -2819,9 +2804,9 @@ const CrearStudioPage = () => {
             </h2>
             <div className={styles.coloresPrenda}>
               {cfg.colores.filter((o) => !o.espejo).map((original) => {
-                // En la pieza al revés cada bicolor se muestra (y se aplica) invertido.
-                const c = colorParaPieza(original, cfg.colores);
-                const activo = c.id === color.id || original.id === color.id || original.id === color.espejoDe;
+                // Si está puesto su invertido, la muestra se ve al revés (como la prenda).
+                const activo = original.id === color.id || original.id === color.espejoDe;
+                const c = activo ? color : original;
                 return (
                 <button
                   key={original.id}
@@ -2841,8 +2826,26 @@ const CrearStudioPage = () => {
                 );
               })}
             </div>
-            {invertirPieza && color?.espejo && (
-              <p className={styles.notaInvertida}>Prenda 2 de la pareja: va con los colores al revés.</p>
+            {/* Bicolor con versión invertida: un interruptor para ponerlo al revés
+                (p.ej. la segunda polera de una pareja rosado/celeste). */}
+            {(color?.espejo || invertidoDe(color, cfg.colores)) && (
+              <label className={styles.interruptorInvertir}>
+                <input
+                  type="checkbox"
+                  role="switch"
+                  checked={Boolean(color.espejo)}
+                  onChange={(e) => {
+                    const original = color.espejo ? cfg.colores.find((o) => o.id === color.espejoDe) : color;
+                    const destino = e.target.checked ? invertidoDe(original, cfg.colores) : original;
+                    if (destino) cambiarColorPrenda(destino);
+                  }}
+                />
+                <span className={styles.interruptor} aria-hidden="true" />
+                <span>
+                  <strong>Invertir colores</strong>
+                  <small>{color.espejo ? `Al revés: ${color.nombre}` : `Queda ${invertidoDe(color, cfg.colores)?.nombre}`}</small>
+                </span>
+              </label>
             )}
           </section>
 
@@ -3112,7 +3115,7 @@ const CrearStudioPage = () => {
           </div>
 
           <div className={styles.acciones}>
-            {enCombo && otrasIguales.length > 0 && copiaDirecta && (
+            {enCombo && otrasIguales.length > 0 && (
               <label className={styles.copiarCombo}>
                 <input type="checkbox" checked={copiarALasOtras} onChange={(e) => setCopiarALasOtras(e.target.checked)} />
                 <span>
