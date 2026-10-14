@@ -243,9 +243,11 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   const [qty, setQty] = useState(1);
   const [comboSels, setComboSels] = useState({});
   const [comboProd, setComboProd] = useState({});
-  // Color y talla de cada pieza del conjunto: `comboSels[i] = { color, size }`
-  // (ver las filas por pieza en el panel de info, más abajo). Cada prenda
-  // lleva su propia talla (antes era una sola para las 3).
+  // Talla ÚNICA para todo el conjunto: el usuario la elige una sola vez y se
+  // aplica a las 3 piezas (casaca/polo/jogger). El color sí varía por pieza
+  // y sigue viviendo en `comboSels` (ver las filas "Color" por pieza en el
+  // panel de info, más abajo).
+  const [comboSize, setComboSize] = useState('');
   const [imgIdx, setImgIdx] = useState(0);
   const [cuestionario, setCuestionario] = useState(null);
   const [showYoryoPersonalizado, setShowYoryoPersonalizado] = useState(false);
@@ -441,36 +443,42 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setSelectedSize(sizes[0] || ''); }, [selectedVariant?.id, JSON.stringify(sizes)]);
 
-  // Tallas de cada pieza, según el color elegido para ella.
-  const comboTallas = React.useMemo(() => {
+  // Tallas válidas para el conjunto completo: la intersección de las tallas
+  // de cada pieza (según su color elegido). Si por alguna razón no comparten
+  // ninguna talla exacta, se usa la unión para no dejar el selector vacío.
+  const comboSizeOptions = React.useMemo(() => {
     if (!isCombo) return [];
-    return (product?.comboItems || []).map((cfg, i) => (comboProd[i]
-      ? getComboVariantInfo(comboProd[i], cfg, (comboSels[i] || {}).color).itemSizes
-      : []));
+    const n = product?.comboItems?.length || 0;
+    if (!n) return [];
+    const lists = [];
+    for (let i = 0; i < n; i++) {
+      const sub = comboProd[i];
+      if (!sub) return []; // aún cargando los sub-productos
+      const { itemSizes } = getComboVariantInfo(sub, product.comboItems[i], (comboSels[i] || {}).color);
+      if (itemSizes.length) lists.push(itemSizes);
+    }
+    if (!lists.length) return [];
+    const [first, ...rest] = lists;
+    const intersection = first.filter(s => rest.every(l => l.includes(s)));
+    return intersection.length ? intersection : [...new Set(lists.flat())];
   }, [isCombo, product?.comboItems, comboProd, comboSels]);
 
-  // Cada pieza empieza con una talla válida: la que ya tenía si sigue
-  // existiendo con su color, la misma que la pieza anterior si la hay, o la
-  // primera.
-  const firmaTallas = JSON.stringify(comboTallas);
-  useEffect(() => {
-    if (!isCombo || !comboTallas.length) return;
-    setComboSels((prev) => {
-      let cambio = false;
-      const next = { ...prev };
-      comboTallas.forEach((tallas, i) => {
-        if (!tallas.length || tallas.includes(next[i]?.size)) return;
-        const anterior = i > 0 ? next[i - 1]?.size : null;
-        next[i] = { ...next[i], size: tallas.includes(anterior) ? anterior : tallas[0] };
-        cambio = true;
-      });
-      return cambio ? next : prev;
-    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isCombo, firmaTallas]);
+  useEffect(() => {
+    if (!isCombo || comboSizeOptions.length === 0) return;
+    if (!comboSizeOptions.includes(comboSize)) setComboSize(comboSizeOptions[0]);
+  }, [isCombo, comboSizeOptions]);
 
-  // Carrito y checkout leen `variant.size` de cada pieza: ya va en comboSels.
-  const comboSelsForSubmit = comboSels;
+  // Selecciones "listas para enviar": mismas que `comboSels` pero con la
+  // talla única inyectada en las 3 piezas. Carrito/checkout siguen leyendo
+  // `variant.size` por pieza tal cual lo hacían antes.
+  const comboSelsForSubmit = React.useMemo(() => {
+    if (!isCombo) return comboSels;
+    const n = product?.comboItems?.length || 0;
+    const out = {};
+    for (let i = 0; i < n; i++) out[i] = { ...comboSels[i], size: comboSize };
+    return out;
+  }, [isCombo, comboSels, comboSize, product?.comboItems?.length]);
 
   // ── Handlers
   const handleAddToCart = () => {
@@ -640,12 +648,10 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
             const sub = comboProd[i];
             if (!sub) return null;
             const sel = comboSels[i] || {};
-            const { vars, hasColors, itemSizes } = getComboVariantInfo(sub, cfg, sel.color);
-            if (!hasColors && !itemSizes.length) return null;
+            const { vars, hasColors } = getComboVariantInfo(sub, cfg, sel.color);
+            if (!hasColors) return null;
             return (
               <div key={cfg.productId || i} className={styles.selectorGroup}>
-                {hasColors && (
-                <>
                 <span className={styles.selectorLabel}>
                   <T>{sub.name}</T> — {t('card.color', 'Color')}: <em><T>{sel.color || vars[0]?.name}</T></em>
                 </span>
@@ -667,28 +673,33 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
                     );
                   })}
                 </DraggableContainer>
-                </>
-                )}
-                {/* La talla de ESTA prenda (cada una la suya). */}
-                {itemSizes.length > 0 && (
-                  <>
-                    <span className={styles.selectorLabel}>
-                      {hasColors ? t('card.talla', 'Talla') : <><T>{sub.name}</T> — {t('card.talla', 'Talla')}</>}: <em>{sel.size}</em>
-                    </span>
-                    <DraggableContainer className={styles.pillRow}>
-                      {itemSizes.map((s) => (
-                        <button key={s}
-                          className={`${styles.sizePill} ${sel.size === s ? styles.sizePillActive : ''}`}
-                          onClick={() => setComboSels((p) => ({ ...p, [i]: { ...p[i], size: s } }))}>
-                          {s}
-                        </button>
-                      ))}
-                    </DraggableContainer>
-                  </>
-                )}
               </div>
             );
           })}
+
+          {/* Talla del conjunto — UNA sola elección para las 3 piezas. Vive
+              aquí (no repetida en cada tarjeta) precisamente para que se lea
+              como "esto aplica a todo el conjunto" sin tener que explicarlo;
+              el aviso de al lado lo deja explícito para la primera visita. */}
+          {isCombo && comboSizeOptions.length > 0 && (
+            <div className={styles.selectorGroup}>
+              <span className={styles.selectorLabelRow}>
+                <span className={styles.selectorLabel}>{t('card.talla', 'Talla')}: <em>{comboSize}</em></span>
+                <span className={styles.comboSizeHint}>
+                  <T>{`Se aplica a las ${product.comboItems.length} prendas`}</T>
+                </span>
+              </span>
+              <DraggableContainer className={styles.pillRow}>
+                {comboSizeOptions.map(s => (
+                  <button key={s}
+                    className={`${styles.sizePill} ${comboSize === s ? styles.sizePillActive : ''}`}
+                    onClick={() => setComboSize(s)}>
+                    {s}
+                  </button>
+                ))}
+              </DraggableContainer>
+            </div>
+          )}
 
           {/* Color selector — etiqueta estática t(); nombre de color dinámico <T>.
               Con una sola variante y sin tallas (un sérum) no hay color que
