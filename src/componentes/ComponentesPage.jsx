@@ -20,6 +20,7 @@ import {
 import s from './ComponentesPage.module.css';
 import DemoSecciones, { GRUPOS_CATALOGO } from './DemoSecciones';
 import DemoPiezas from './DemoPiezas';
+import DemoPiezasCuenta from './DemoPiezasCuenta';
 // La mayoría de productos reales vienen con fondo blanco: estas fotos lo simulan.
 import FRENTE_BLANCO from './demo/polera-fondo-blanco.jpg';
 import ESPALDA_BLANCO from './demo/polera-fondo-blanco-espalda.jpg';
@@ -58,6 +59,7 @@ const INDICES = {
     ['navegacion', 'Navegación'],
     ['menus', 'Menús'],
     ['avisos', 'Avisos'],
+    ['cuenta-piezas', 'Cuenta'],
   ],
   secciones: GRUPOS_CATALOGO,
   paginas: [
@@ -967,6 +969,15 @@ function Contenido({ tema, cambiarTema }) {
               </EstadoVacio>
             </Panel>
           </div>
+        </Seccion>
+
+        {/* ── PIEZAS DE LA CUENTA ── */}
+        <Seccion
+          id="cuenta-piezas" numero="10" titulo="Piezas de la cuenta"
+          descripcion="Con estas piezas se arman las doce páginas de /cuenta (Páginas → Tienda de prueba → Mi cuenta). Cada ícono va en un sello con el degradado del logo; las cifras van con la letra del logo y su palabra en gris, sin etiquetas."
+          mejoras={['Un sello para todos los íconos de la cuenta', 'Confirmar en la misma tarjeta (sin ventanas del navegador)', 'Cupón con talón troquelado', 'Niveles sin emojis']}
+        >
+          <DemoPiezasCuenta imagenes={{ frente: FRENTE_BLANCO, espalda: ESPALDA_BLANCO, taza: TAZA }} />
         </Seccion>
 
         </>)}

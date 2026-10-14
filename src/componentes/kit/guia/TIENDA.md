@@ -141,8 +141,8 @@ página.
 
 - `GrillaProductos`: estado de error con "Reintentar" (`productsError`) y
   textos propios del vacío con enlace (`emptyTitle`, `emptyHomeLink`).
-- Lo mismo que el inicio en `TarjetaProducto` (favorito controlado e
-  impresión) y la traducción (`<T>`).
+- Lo mismo que el inicio en `TarjetaProducto` (la impresión; el favorito ya
+  se controla con `deseado` + `onDeseo`) y la traducción (`<T>`).
 - Si se quiere "N productos" con la lista paginada: una cuenta en servidor
   (`getCountFromServer`) que llegue como `total`.
 

@@ -7,9 +7,9 @@ Piezas de interfaz reutilizables. Se ven en `/componentes.html`
   tarjeta de producto, navegación, menús, avisos).
 - **Secciones**: cada tipo del builder por separado, agrupado como en el
   catálogo del editor, con su `type` y sus variantes (`DemoSecciones.jsx`).
-- **Páginas**: la Tienda de prueba: inicio, carrito y Mis pedidos con el
-  mismo marco, el editor del builder sobre el inicio (como admin) y "Ver
-  componentes".
+- **Páginas**: la Tienda de prueba: inicio, tienda, minijuegos, búsqueda,
+  carrito y Mi cuenta (sus 12 secciones) con el mismo marco, el editor del
+  builder sobre el inicio (como admin) y "Ver componentes".
 
 Todo se importa desde un solo lugar:
 
@@ -35,6 +35,11 @@ Todo se arma con lo del nivel de abajo; nada se dibuja dos veces.
    (piezas del pedido + la sección de carrusel para recomendar),
    `PaginaPedidos`, `PaginaMinijuegos` (Zona Arcade: `Encabezado` +
    `TarjetaJuego`) y `PaginaBusqueda` (el catálogo de /tienda con orden).
+   La cuenta (`paginas/Cuenta.jsx`, `CuentaRecompensas.jsx`,
+   `CuentaPersonalizacion.jsx`): `MarcoCuenta` (menú lateral o "← Mi cuenta")
+   y sus páginas, armadas con las piezas de `piezas/Cuenta.jsx`,
+   `Recompensas.jsx`, `Referidos.jsx`, `Creaciones.jsx`, `Regalos.jsx` y
+   `TarjetaDireccion.jsx` (guía: `guia/CUENTA.md`).
 
 Si una sección necesita algo nuevo (una tarjeta, un chip…), va primero como
 pieza en `piezas/` y después se usa en la sección.
@@ -89,6 +94,9 @@ también es una etiqueta) y de los banners de la tienda.
   títulos, precios, nombres de marca y del editor. Poppins para el resto.
 - **Sellos**: íconos blancos en un círculo con el degradado del logo
   (`--degradado-logo`), girados -8°. Nada de cuadritos lila.
+- **Sello** (`Sello`): el ícono blanco en el círculo con el degradado, girado.
+  Tonos `degradado` · `suave` · `oro` · `rosa` · `menta` · `bronce` · `plata`.
+  Todos los íconos de la cuenta van así.
 - **Garabatos** (`Garabatos`, `Destello`, `Corazon`, `Puntos`, `Trazo`):
   destellos ✦, corazones, puntos de medio tono y subrayado a mano para las
   palabras resaltadas. Siempre quietos.
@@ -121,16 +129,16 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 |---|---|---|
 | `Boton.jsx` | `Boton` | Botón violeta liso; variantes, tamaños, cargando, `brillo` para CTA de pago. Con `to` es un enlace; con `insignia` lleva un contador en la esquina |
 | `Etiquetas.jsx` | `Etiqueta`, `Chip`, `Moneda`, `MONEDA`, `CostoMonedas`, `GananciaMonedas`, `SaldoMonedas`, `Contador` | Badges, filtros y monedas |
-| `Formulario.jsx` | `Campo`, `Buscador` (`grande`, `boton`), `Selector`, `SelectorTalla`, `SelectorColor`, `Cantidad`, `Interruptor` | Formularios, búsqueda (atajo "/"), "Ordenar por" y variantes de producto |
-| `TarjetaProducto.jsx` | `TarjetaProducto`, `TarjetaProductoEsqueleto`, `soles` | Tarjeta de la tienda (fotos con fondo blanco, alturas parejas) |
+| `Formulario.jsx` | `Campo` (con `opciones` es una lista desplegable), `Buscador` (`grande`, `boton`), `Selector`, `SelectorTalla`, `SelectorColor`, `Cantidad`, `Interruptor` | Formularios, búsqueda (atajo "/"), "Ordenar por" y variantes de producto |
+| `TarjetaProducto.jsx` | `TarjetaProducto`, `TarjetaProductoEsqueleto`, `soles` | Tarjeta de la tienda (fotos con fondo blanco, alturas parejas; corazón controlado con `deseado` + `onDeseo`) |
 | `Navegacion.jsx` | `Cabecera`, `BarraInferior`, `Pestanas`, `Logo` | Navegación |
 | `Desplegable.jsx` | `Desplegable` | Base de todos los menús: hover en escritorio, hoja/globo en celular |
-| `MenusCabecera.jsx` | `MenuTienda`, `MenuMarcas`, `AyudaMonedas`, `MenuCuenta`, `VistaFavoritos`, `VistaCarrito` | Contenido de los menús de la cabecera |
+| `MenusCabecera.jsx` | `MenuTienda`, `MenuMarcas`, `AyudaMonedas`, `MenuCuenta` (`lateral` + `activo`: el menú al costado de /cuenta), `VistaFavoritos`, `VistaCarrito` | Contenido de los menús de la cabecera |
 | `AgregarRapido.jsx` | `AgregarRapido` | Elegir talla, color y cantidad antes de agregar al carrito |
 | `Pedido.jsx` | `SeguimientoPedido`, `ItemCarrito`, `BarraEnvioGratis`, `ResumenPedido` | Carrito y Mis pedidos |
 | `Feedback.jsx` | `Aviso`, `ProveedorToasts`, `useToast`, `useNotificaciones`, `ListaNotificaciones`, `EstadoVacio`, `HojaInferior` | Avisos, notificaciones y modales |
 | `Enlace.jsx` | `Enlace`, `ProveedorEnlaces`, `tipoDeEnlace` | La única regla de enlaces: internos por el router, externos en otra pestaña, `#ancla` con scroll suave |
-| `adaptadores.js` | `accionDeProducto`, `tarjetaDesdeProducto`, `opcionesDeProducto`, `rutaDeMarca`, `tarjetaDesdeMarca`, `testimonioDesdeAjuste`, `precioEfectivo`, `limitesDePrecio`, `esTemporada`, `gruposDeCatalogo`, `grillaDesdeConfiguracion`, `juegosDelArcade`, `kapiDesdePerfil`, `retoDesdePerfil`, `sugerenciasDesdeBusqueda`, `grupoModalidad`, `ORDENES_BUSQUEDA`, `ordenarProductos` | Traducen datos de Firestore a props del kit: un producto de `productos_wala`, una marca de `tienda_brands`, las listas de filtros del catálogo (categorías, colecciones, etiquetas, personajes, tipos), `storeConfig.layout` y el perfil del cliente (Zona Arcade, Kapi y su reto) |
+| `adaptadores.js` | `accionDeProducto`, `tarjetaDesdeProducto`, `opcionesDeProducto`, `rutaDeMarca`, `tarjetaDesdeMarca`, `testimonioDesdeAjuste`, `precioEfectivo`, `limitesDePrecio`, `esTemporada`, `gruposDeCatalogo`, `grillaDesdeConfiguracion`, `juegosDelArcade`, `kapiDesdePerfil`, `retoDesdePerfil`, `sugerenciasDesdeBusqueda`, `grupoModalidad`, `ORDENES_BUSQUEDA`, `ordenarProductos`, y de la cuenta: `perfilDesdeUsuario`, `direccionDesdeFirestore` / `direccionAFirestore`, `recompensaDesdeFirestore`, `cuponDesdeFirestore`, `misionDesdeServidor`, `creacionDesdeDiseno`, `personaDesdeRecipient` / `personaARecipient` | Traducen datos de Firestore a props del kit: un producto de `productos_wala`, una marca de `tienda_brands`, las listas de filtros del catálogo (categorías, colecciones, etiquetas, personajes, tipos), `storeConfig.layout` y el perfil del cliente (Zona Arcade, Kapi y su reto) |
 | `Carrusel.jsx` | `Carrusel` | El único carrusel: deslizar nativo, flechas, puntos, autoplay con pausas |
 | `Marquesina.jsx` | `Marquesina` | Cinta sin fin (logos, anuncios, burbujas) |
 | `CuentaRegresiva.jsx` | `CuentaRegresiva` | Hasta una fecha o "siempre activa" por visitante; variantes bloques, texto y evento (dígitos grandes para fondos oscuros) |
@@ -140,6 +148,13 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `piezas/Avatar.jsx` | `Avatar`, `iniciales` | Foto o iniciales de una persona |
 | `piezas/OpcionesFiltro.jsx` | `OpcionesFiltro` | Opciones de un filtro como chips con su cuenta; una a la vez y "Ver N más" |
 | `piezas/PanelBusqueda.jsx` | `PanelBusqueda`, `useBusquedasRecientes`, `TextoResaltado`, `ChipsBusqueda`, `InvitacionBusqueda` | Sugerencias del buscador: recientes, productos con foto y precio, marcas y categorías, "Ver todos los resultados" |
+| `piezas/Cuenta.jsx` | `CabezaCuenta`, `TarjetaCuenta`, `ListaDatos`, `Estadistica`, `AccesosCuenta`, `IdentidadCuenta`, `ListaEleccion` | Lo común de las páginas de la cuenta |
+| `piezas/TarjetaDireccion.jsx` | `TarjetaDireccion` | Una dirección guardada (principal, editar, eliminar con confirmación) |
+| `piezas/Recompensas.jsx` | `TarjetaRecompensa`, `TarjetaCupon`, `TarjetaMision`, `NivelCuenta`, `NIVELES` | Catálogo, cupones, misiones y nivel por XP |
+| `piezas/Referidos.jsx` | `FormaGanar`, `EnlaceInvitacion`, `FilaReferido`, `DetallePedidoReferido` | Mis referidos |
+| `piezas/Creaciones.jsx` | `TarjetaCreacion` | Un diseño guardado (frente y espalda, renombrar, eliminar; también borradores) |
+| `piezas/Regalos.jsx` | `IdeaRegalo`, `TarjetaPersonaRegalo`, `AvisoFestiva`, `faltanDias`, `textoFaltan`, `diaYMes` | Fechas importantes |
+| `paginas/Cuenta.jsx`, `CuentaRecompensas.jsx`, `CuentaPersonalizacion.jsx` | `MarcoCuenta`, `PaginaCuentaInvitado`, `PaginaResumenCuenta`, `PaginaPerfil`, `PaginaDirecciones`, `PaginaAjustes`, `PaginaCatalogo`, `PaginaCupones`, `PaginaMisiones`, `PaginaReferidos`, `PaginaCreaciones`, `PaginaListaDeseos`, `PaginaFechas` (+ `validarPerfil`, `validarDireccion`, `validarPersona`) | Las páginas de /cuenta (guía: `guia/CUENTA.md`) |
 | `piezas/VentanaKapi.jsx` | `VentanaKapi` | La ventana de Kapi: ánimo, felicidad, moneda del día, alimentar y el reto (hoja en el celular, centrada en escritorio) |
 | `piezas/RetoSemanal.jsx` | `RetoSemanal` | El reto de la semana: premio, avance y envío de evidencia |
 | `piezas/TarjetaJuego.jsx` | `TarjetaJuego` | Tarjeta de un minijuego: banner, estado, recompensa, racha, nota, botón y cuenta atrás (recibe datos; `juegosDelArcade` los arma) |

@@ -13,7 +13,7 @@ import s from './DemoPiezas.module.css';
  * usar sola en cualquier pantalla (ficha de producto, cuenta, landing…).
  */
 
-function Ficha({ nombre, usadaEn, children, ancho }) {
+export function Ficha({ nombre, usadaEn, children, ancho }) {
   return (
     <article className={s.ficha} style={ancho ? { gridColumn: ancho } : undefined}>
       <header>

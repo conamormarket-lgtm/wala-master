@@ -123,25 +123,6 @@
   min-width: 0;
 }
 
-/* Piezas de la cuenta (data-componente en el kit): su nombre arriba a la
-   derecha, para no tapar el número de la página. */
-.anatomia [data-componente='MenuCuenta']::after {
-  content: 'C0 · MenuCuenta lateral';
-}
-
-.anatomia :is([data-componente='IdentidadCuenta'], [data-componente='Estadistica'], [data-componente='TarjetaCuenta'],
-  [data-componente='AccesosCuenta'], [data-componente='TarjetaDireccion'])::after {
-  content: attr(data-componente);
-  left: auto;
-  right: 6px;
-  background: var(--violet-500);
-}
-
-.anatomia :is([data-componente='IdentidadCuenta'], [data-componente='Estadistica'], [data-componente='TarjetaCuenta'],
-  [data-componente='AccesosCuenta'], [data-componente='TarjetaDireccion'], [data-componente='MenuCuenta']) {
-  position: relative;
-}
-
 .anatomia .parte::after,
 .anatomia .parteEnLinea::after,
 .anatomia [data-componente]::after {
@@ -196,4 +177,21 @@
   left: 0;
   right: auto;
   transform: none;
+}
+
+/* Piezas de la cuenta (data-componente en el kit): su nombre arriba a la
+   derecha, para no tapar el número de la página. */
+.anatomia [data-componente='MenuCuenta']::after {
+  content: 'C0 · MenuCuenta lateral';
+}
+
+.anatomia [data-componente]:not([data-componente='Cabecera'], [data-componente='PiePagina'], [data-componente='BarraInferior'], [data-componente='MenuCuenta'])::after {
+  content: attr(data-componente);
+  left: auto;
+  right: 6px;
+  background: var(--violet-500);
+}
+
+.anatomia [data-componente]:not([data-componente='Cabecera'], [data-componente='PiePagina'], [data-componente='BarraInferior']) {
+  position: relative;
 }

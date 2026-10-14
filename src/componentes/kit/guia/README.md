@@ -18,7 +18,9 @@ las fichas lo siguen.
 
 Numeración: **M** = marco (cabecera, pie, barra inferior, flotantes: igual en
 todas las páginas), **S** = secciones del builder en su orden, **P** =
-contenido propio de una página que no es del builder (carrito, pedidos).
+contenido propio de una página que no es del builder (carrito, minijuegos,
+búsqueda), **C** = las secciones de la cuenta (C0 su marco, C1-C12 cada
+página).
 
 | Página | Ficha | Estado |
 |---|---|---|
@@ -27,8 +29,8 @@ contenido propio de una página que no es del builder (carrito, pedidos).
 | Kapi (M8, en todas las páginas) | [KAPI.md](KAPI.md) | botón y ventana (`KapiFlotante`, `VentanaKapi`, `RetoSemanal`); con plan de migración (a futuro) |
 | Buscar (`/buscar` y el buscador de la cabecera) | [BUSCAR.md](BUSCAR.md) | armada (P4 `PaginaBusqueda`, panel de sugerencias en la `Cabecera`); con plan de migración (a futuro) |
 | Minijuegos (`/minijuegos`) | [MINIJUEGOS.md](MINIJUEGOS.md) | armada (P3 `PaginaMinijuegos`, con los estados de cada juego); con plan de migración (a futuro) |
+| Mi cuenta (`/cuenta`: resumen, perfil, pedidos, direcciones, ajustes, catálogo, cupones, misiones, referidos, creaciones, lista de deseos, fechas importantes) | [CUENTA.md](CUENTA.md) | armada (C0 `MarcoCuenta` y C1-C12); con plan de migración (a futuro). Mis pedidos (antes P2) es C3 |
 | Carrito (`/carrito`) | — | armada (P1 `PaginaCarrito`); falta su ficha |
-| Mis pedidos (`/cuenta/pedidos`) | — | armada (P2 `PaginaPedidos`); falta su ficha |
 
 Para una página nueva: se mapea la página real, lo que falte se crea como
 pieza en `piezas/`, después la sección, y la página se arma en la Tienda de

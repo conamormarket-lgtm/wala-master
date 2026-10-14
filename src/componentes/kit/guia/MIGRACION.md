@@ -24,7 +24,8 @@ principal (y a la APK de Capacitor).
 | `IconoWala` y `Trazo` en referidos | `components/common/AvisoInvitacion/AvisoInvitacion.jsx`, `pages/cuenta/components/GrupoReferidos.jsx`, `pages/cuenta/CuentaReferidosPage.jsx` |
 
 Cambiar `Boton`, `Feedback`, `Enlace`, `IconosWala` o `Marca` ya cambia la
-tienda real: revisar también esas pantallas. `Feedback` usa
+tienda real: revisar también esas pantallas. (`Marca.jsx` ahora también
+exporta `Sello`; agregarlo no cambió nada de lo que ya usa la tienda.) `Feedback` usa
 `piezas/FotoProducto` para la foto de los toasts, así que esa pieza (y el
 token `--escenario-foto` de `tokens.css`) también está ya en la tienda.
 
@@ -41,13 +42,15 @@ Cada paso en su propio commit, verificable por separado.
 3. **Avisos y hojas**: `Aviso` y `HojaInferior` en lugar de los modales
    sueltos de la tienda.
 4. **`TarjetaProducto`** en carruseles y grillas, con `tarjetaDesdeProducto`
-   (antes, lo que le falta: favorito controlado e impresión; ver INICIO.md).
+   (antes, lo que le falta: la impresión; el favorito ya se controla con
+   `deseado` + `onDeseo`; ver INICIO.md).
 5. **Secciones del builder**, página por página, con `RenderSecciones` (o
    `PaginaTienda`) + `respaldo`. Primero el inicio (INICIO.md), después
    `/tienda` con el catálogo (TIENDA.md). Comparar capturas antes y después.
-6. **Páginas propias** (no son del builder): carrito, checkout y Mis pedidos
-   (`PaginaCarrito`, `PaginaPedidos` y las piezas de `Pedido.jsx`; sus fichas
-   P1 y P2 todavía faltan), la Zona Arcade (`PaginaMinijuegos`,
+6. **Páginas propias** (no son del builder): carrito y checkout
+   (`PaginaCarrito` y las piezas de `Pedido.jsx`; su ficha P1 todavía falta),
+   la cuenta (`MarcoCuenta` y sus 12 páginas, Mis pedidos incluida:
+   CUENTA.md, un módulo a la vez), la Zona Arcade (`PaginaMinijuegos`,
    MINIJUEGOS.md) y la búsqueda (`PaginaBusqueda`, BUSCAR.md).
 7. **`BarraInferior` y luego `Cabecera`**: la más conectada (AuthContext,
    CartContext, WishlistContext, notificaciones y la configuración de
