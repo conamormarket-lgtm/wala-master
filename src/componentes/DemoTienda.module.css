@@ -116,6 +116,32 @@
   display: inline-flex;
 }
 
+/* Páginas de la cuenta: sus piezas en columna, con el espacio de la página. */
+.parteRejilla {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+/* Piezas de la cuenta (data-componente en el kit): su nombre arriba a la
+   derecha, para no tapar el número de la página. */
+.anatomia [data-componente='MenuCuenta']::after {
+  content: 'C0 · MenuCuenta lateral';
+}
+
+.anatomia :is([data-componente='IdentidadCuenta'], [data-componente='Estadistica'], [data-componente='TarjetaCuenta'],
+  [data-componente='AccesosCuenta'], [data-componente='TarjetaDireccion'])::after {
+  content: attr(data-componente);
+  left: auto;
+  right: 6px;
+  background: var(--violet-500);
+}
+
+.anatomia :is([data-componente='IdentidadCuenta'], [data-componente='Estadistica'], [data-componente='TarjetaCuenta'],
+  [data-componente='AccesosCuenta'], [data-componente='TarjetaDireccion'], [data-componente='MenuCuenta']) {
+  position: relative;
+}
+
 .anatomia .parte::after,
 .anatomia .parteEnLinea::after,
 .anatomia [data-componente]::after {

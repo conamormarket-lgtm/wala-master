@@ -11,7 +11,7 @@ export { default as Desplegable } from './Desplegable';
 export { MenuTienda, MenuMarcas, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito } from './MenusCabecera';
 export { default as AgregarRapido } from './AgregarRapido';
 export { accionDeProducto, tarjetaDesdeProducto, esNuevo, opcionesDeProducto, rutaDeMarca, tarjetaDesdeMarca, testimonioDesdeAjuste, precioEfectivo, limitesDePrecio, esTemporada, gruposDeCatalogo, grillaDesdeConfiguracion, juegosDelArcade, kapiDesdePerfil, retoDesdePerfil,
-  sugerenciasDesdeBusqueda, grupoModalidad, ORDENES_BUSQUEDA, ordenarProductos } from './adaptadores';
+  sugerenciasDesdeBusqueda, grupoModalidad, ORDENES_BUSQUEDA, ordenarProductos, perfilDesdeUsuario, direccionDesdeFirestore, direccionAFirestore } from './adaptadores';
 export { tipoDeEnlace } from './Enlace';
 export { default as Carrusel } from './Carrusel';
 export { default as Marquesina } from './Marquesina';
@@ -28,8 +28,9 @@ export { default as PanelEditor, useBorrador, actualizarAjustes, insertarSeccion
 export { SeccionEditable, InsertarAqui } from './editor/SeccionEditable';
 export { FormularioSeccion, ProveedorEditor } from './editor/CamposEditor';
 export { ESQUEMAS, GRUPOS_MODULOS, esquemaDe, ajustesIniciales, resumenDe } from './editor/esquemas';
-export { EtiquetaColgante, IsoWala, LogoWala, Garabatos, Destello, Corazon, Puntos, Trazo } from './Marca';
+export { EtiquetaColgante, IsoWala, LogoWala, Garabatos, Destello, Corazon, Puntos, Trazo, Sello } from './Marca';
 export { IconoWala, ICONOS_WALA, iconoDesde } from './IconosWala';
 export { PASTELES, pastel, ACENTOS, acento } from './Marca';
 export * from './piezas';
 export { MarcoTienda, PaginaTienda, productosDeSeccion, PaginaCarrito, PaginaPedidos, PaginaMinijuegos, PaginaBusqueda } from './paginas/Paginas';
+export { MarcoCuenta, PaginaCuentaInvitado, PaginaResumenCuenta, PaginaPerfil, PaginaDirecciones, PaginaAjustes, validarPerfil, validarDireccion, fechaLegible } from './paginas/Cuenta';

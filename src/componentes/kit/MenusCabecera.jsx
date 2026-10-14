@@ -5,6 +5,7 @@ import Boton from './Boton';
 import { soles } from './TarjetaProducto';
 import { IconoWala } from './IconosWala';
 import { Moneda } from './Etiquetas';
+import { Sello } from './Marca';
 import { FotoProducto } from './piezas/FotoProducto';
 import { LogoMarca } from './piezas/LogoMarca';
 import { Avatar } from './piezas/Avatar';
@@ -192,8 +193,13 @@ export function AyudaMonedas({
  *  - promo: { texto, url } enlace destacado opcional, o con título:
  *    { titulo, texto, url, monedas, icono } (p. ej. la encuesta: "Perfil de
  *    regalos · Gana 15 monedas")
+ *  - lateral: el menú fijo al costado de las páginas de /cuenta (MarcoCuenta):
+ *    tarjeta propia, el nombre sin "Hola", sin "Ver toda mi cuenta"
+ *  - activo: ruta actual; su acceso se enciende con el sello del logo
+ *    (también una subruta: /cuenta/pedidos/123 enciende Mis pedidos)
  */
-export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNavegar, urlLogin = '/login', urlRegistro = '/registro' }) {
+export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNavegar, urlLogin = '/login', urlRegistro = '/registro', lateral = false, activo }) {
+  const esActual = (to) => Boolean(activo) && (activo === to || activo.startsWith(`${to}/`));
   if (!usuario) {
     return (
       <div className={s.cuentaInvitado}>
@@ -207,11 +213,11 @@ export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNave
     );
   }
   return (
-    <div className={s.cuenta}>
+    <div className={[s.cuenta, lateral && s.lateral].filter(Boolean).join(' ')}>
       <div className={s.identidad}>
         <Avatar className={s.avatar} nombre={usuario.nombre} imagen={usuario.avatar} />
         <div className={s.identidadTexto}>
-          <strong>Hola, {usuario.nombre}</strong>
+          <strong>{lateral ? usuario.nombre : `Hola, ${usuario.nombre}`}</strong>
           <span>{usuario.email}</span>
         </div>
       </div>
@@ -235,17 +241,32 @@ export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNave
         {grupos.map((g) => (
           <div key={g.titulo} className={s.grupo}>
             <p className={s.titulo}>{g.titulo}</p>
-            {g.items.map(({ to, texto, Icono }) => (
-              <Enlace key={to} to={to} className={s.item} onClick={onNavegar}>
-                {Icono && <Icono aria-hidden="true" />}
-                <span>{texto}</span>
-              </Enlace>
-            ))}
+            {g.items.map(({ to, texto, Icono }) => {
+              const actual = esActual(to);
+              let icono = Icono && <Icono aria-hidden="true" />;
+              if (lateral && Icono) {
+                icono = actual
+                  ? <Sello tamano={30}>{icono}</Sello>
+                  : <span className={s.itemHueco}>{icono}</span>;
+              }
+              return (
+                <Enlace
+                  key={to}
+                  to={to}
+                  className={[s.item, actual && s.itemActual].filter(Boolean).join(' ')}
+                  aria-current={actual ? 'page' : undefined}
+                  onClick={onNavegar}
+                >
+                  {icono}
+                  <span>{texto}</span>
+                </Enlace>
+              );
+            })}
           </div>
         ))}
       </nav>
       <div className={s.cuentaPie}>
-        <Enlace to="/cuenta" className={s.verTodo} onClick={onNavegar}>Ver toda mi cuenta <ArrowRight aria-hidden="true" /></Enlace>
+        {!lateral && <Enlace to="/cuenta" className={s.verTodo} onClick={onNavegar}>Ver toda mi cuenta <ArrowRight aria-hidden="true" /></Enlace>}
         <button type="button" className={s.salir} onClick={() => { onCerrarSesion?.(); onNavegar?.(); }}>
           <LogOut aria-hidden="true" /> Cerrar sesión
         </button>

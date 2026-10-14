@@ -4,8 +4,12 @@ import { AlertCircle, Minus, Plus, Check, Search, ChevronDown } from 'lucide-rea
 import Boton from './Boton';
 import s from './Formulario.module.css';
 
-/** Campo de texto con etiqueta, ayuda y error accesibles. El error entra con una sacudida. */
-export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, ...input }) {
+/**
+ * Campo de texto con etiqueta, ayuda y error accesibles. El error entra con una sacudida.
+ *  - opciones: [{ valor, texto }] lo vuelve una lista desplegable (<select>) con
+ *    el mismo aspecto (documento, ciudad, país…); en el celular abre la del teléfono
+ */
+export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, opciones, ...input }) {
   const autoId = useId();
   const campoId = id || autoId;
   const ayudaId = `${campoId}-ayuda`;
@@ -14,13 +18,26 @@ export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, ...input }) {
       {etiqueta && <label htmlFor={campoId} className={s.etiqueta}>{etiqueta}</label>}
       <div className={[s.control, error && s.conError, icono && s.conIcono].filter(Boolean).join(' ')}>
         {icono && <span className={s.icono} aria-hidden="true">{icono}</span>}
-        <input
-          id={campoId}
-          className={s.input}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error || ayuda ? ayudaId : undefined}
-          {...input}
-        />
+        {opciones ? (
+          <select
+            id={campoId}
+            className={`${s.input} ${s.inputLista}`}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error || ayuda ? ayudaId : undefined}
+            {...input}
+          >
+            {opciones.map((o) => <option key={o.valor} value={o.valor} disabled={o.deshabilitada}>{o.texto}</option>)}
+          </select>
+        ) : (
+          <input
+            id={campoId}
+            className={s.input}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error || ayuda ? ayudaId : undefined}
+            {...input}
+          />
+        )}
+        {opciones && <ChevronDown className={s.flechaLista} aria-hidden="true" />}
         {sufijo && <span className={s.sufijo}>{sufijo}</span>}
         <span className={s.brilloFoco} aria-hidden="true" />
       </div>

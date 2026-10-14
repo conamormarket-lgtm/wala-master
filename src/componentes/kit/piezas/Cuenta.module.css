@@ -1,0 +1,624 @@
+/* ── Cabecera (página y tarjeta) ─────────────────────────── */
+.cabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem 0.9rem;
+  min-width: 0;
+}
+
+.cabezaTextos {
+  display: grid;
+  flex: 1 1 14rem;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.cabezaTitulo {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: clamp(1.45rem, 1.2rem + 1vw, 1.85rem);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+
+.cabezaTarjeta .cabezaTitulo {
+  font-size: 1.12rem;
+  letter-spacing: -0.025em;
+}
+
+.cabezaSub {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.cabezaTarjeta .cabezaSub {
+  font-size: 0.82rem;
+}
+
+.cabezaAccion {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.5rem;
+}
+
+/* Subrayado a mano: el aire, en em del propio título. */
+.conTrazo {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 0.32em;
+}
+
+.trazo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.3em;
+  width: 100%;
+  height: 0.36em;
+  color: var(--violet-400, #a78bfa);
+  pointer-events: none;
+}
+
+/* ── Tarjeta ─────────────────────────────────────────────── */
+.tarjeta {
+  display: grid;
+  gap: 1.1rem;
+  min-width: 0;
+  padding: clamp(1rem, 0.8rem + 1vw, 1.5rem);
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: var(--color-surface);
+}
+
+.tarjeta > .cabeza {
+  padding-bottom: 0.9rem;
+  border-bottom: 1px dashed var(--color-border);
+}
+
+/* ── Datos en filas ──────────────────────────────────────── */
+.datos {
+  display: grid;
+  margin: 0;
+}
+
+.dato {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dato:last-child {
+  border-bottom: 0;
+}
+
+.dato dt {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+}
+
+.dato dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.datoVacio {
+  color: var(--color-text-muted) !important;
+  font-style: italic;
+  font-weight: 500 !important;
+}
+
+/* ── Cifra ───────────────────────────────────────────────── */
+.cifra {
+  container-type: inline-size;
+  min-width: 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface);
+}
+
+.cifraCaja {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.35rem 0.85rem;
+  min-width: 0;
+}
+
+@container (min-width: 560px) {
+  .cifraCaja:not(.cifraCajaGrande) {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .cifraCaja:not(.cifraCajaGrande) .cifraAccion {
+    grid-column: auto;
+    margin-top: 0;
+  }
+}
+
+.cifraTextos {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.cifraIcono {
+  display: inline-flex;
+}
+
+.cifraEtiqueta {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cifraValor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.35rem;
+  margin: 0;
+}
+
+.cifraValor strong {
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.55rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+}
+
+.cifraValor span {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.cifraNota {
+  margin: 0.15rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.cifraAccion {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+}
+
+.cifraGrande {
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+}
+
+.cifraCajaGrande {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: 0.6rem;
+}
+
+.cifraGrande .cifraValor {
+  justify-content: center;
+}
+
+.cifraGrande .cifraValor strong {
+  font-size: clamp(2.4rem, 2rem + 2vw, 3rem);
+}
+
+.cifraGrande .cifraValor span {
+  font-size: 1.05rem;
+}
+
+.cifraGrande .cifraAccion {
+  margin-top: 0.2rem;
+}
+
+/* ── Accesos (resumen de la cuenta) ──────────────────────── */
+.accesos {
+  display: grid;
+  gap: 1.4rem;
+  container-type: inline-size;
+}
+
+.accesosGrupo {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.accesosTitulo {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.accesosLista {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.accesosLista li {
+  display: flex;
+  min-width: 0;
+}
+
+.acceso {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  min-height: 108px;
+  padding: 0.8rem 0.15rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: center;
+  text-decoration: none;
+  transition: border-color var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature);
+}
+
+.acceso:hover {
+  border-color: var(--violet-300);
+  color: var(--color-text);
+}
+
+.acceso:active {
+  transform: scale(0.97);
+}
+
+.acceso:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+.accesoSello {
+  position: relative;
+  display: inline-flex;
+  transform: rotate(var(--giro, -8deg));
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .acceso:hover .accesoSello {
+    transform: rotate(0deg) scale(1.08);
+  }
+}
+
+.accesoTexto {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* Ancho: cada acceso en fila (sello a la izquierda, nombre al lado). */
+@container (min-width: 700px) {
+  .accesosLista {
+    gap: 0.75rem;
+  }
+
+  .acceso {
+    flex-direction: row;
+    gap: 0.8rem;
+    min-height: 82px;
+    padding: 0.8rem 1rem;
+    text-align: left;
+  }
+
+  .accesoTexto {
+    font-size: 0.88rem;
+  }
+}
+
+/* ── Identidad del perfil ────────────────────────────────── */
+.identidad {
+  position: relative;
+  min-width: 0;
+  padding: clamp(1.1rem, 0.8rem + 1.5vw, 1.75rem);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--color-surface);
+  container-type: inline-size;
+}
+
+.identidadCaja {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  min-width: 0;
+}
+
+.identidadPuntos {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 60px;
+  color: var(--violet-200, #ddd6fe);
+  pointer-events: none;
+}
+
+:global([data-theme='dark']) .identidadPuntos {
+  color: rgba(167, 139, 250, 0.22);
+}
+
+.identidadFoto {
+  position: relative;
+  flex-shrink: 0;
+  padding: 5px;
+  border: 2px dashed var(--violet-300, #c4b5fd);
+  border-radius: 50%;
+}
+
+.identidadAvatar {
+  width: 88px;
+  height: 88px;
+  font-family: var(--fuente-marca);
+  font-size: 1.9rem;
+  font-weight: 900;
+}
+
+.identidadCamara {
+  position: absolute;
+  right: -4px;
+  bottom: -2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 3px solid var(--color-surface);
+  border-radius: 50%;
+  background: var(--degradado-logo);
+  color: #fff;
+  cursor: pointer;
+  transform: rotate(-8deg);
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.identidadCamara:hover {
+  transform: rotate(0deg) scale(1.08);
+}
+
+.identidadCamara:focus-visible,
+.identidadQuitar:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+.identidadCamara svg {
+  width: 15px;
+  height: 15px;
+}
+
+.subiendo svg {
+  animation: girar 0.9s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.identidadQuitar {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  background: var(--color-surface-2, var(--color-hover));
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.identidadQuitar:hover {
+  background: var(--danger-soft);
+  color: var(--danger-hover);
+}
+
+.identidadQuitar svg {
+  width: 13px;
+  height: 13px;
+}
+
+.identidadTextos {
+  position: relative;
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.identidadNombre {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: clamp(1.45rem, 1.2rem + 1.2vw, 2rem);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+}
+
+.identidadEmail {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+}
+
+.identidadEstado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.2rem 0 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.identidadEstado svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.estadoOk {
+  color: #047857;
+}
+
+.estadoFalta {
+  color: var(--gold-text, #92400e);
+}
+
+:global([data-theme='dark']) .estadoOk {
+  color: #6ee7b7;
+}
+
+:global([data-theme='dark']) .estadoFalta {
+  color: #fcd34d;
+}
+
+/* Angosto (la tarjeta mide menos de 520px): la foto arriba y todo centrado. */
+@container (max-width: 520px) {
+  .identidadCaja {
+    flex-direction: column;
+    gap: 0.9rem;
+    text-align: center;
+  }
+
+  .identidadEstado {
+    justify-content: center;
+  }
+}
+
+/* ── Elegir una opción ───────────────────────────────────── */
+.eleccion {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 54px;
+  padding: 0.55rem 0.85rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur-rapida) ease, background-color var(--dur-rapida) ease;
+}
+
+.opcion:hover {
+  border-color: var(--violet-300);
+}
+
+.opcion:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+.opcionActiva,
+.opcionActiva:hover {
+  border-color: var(--violet-600);
+  background: var(--primary-light);
+}
+
+:global([data-theme='dark']) .opcionActiva,
+:global([data-theme='dark']) .opcionActiva:hover {
+  border-color: var(--violet-400);
+  background: rgba(167, 139, 250, 0.12);
+}
+
+.opcionIcono {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.opcionTextos {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.opcionTextos small {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.opcionVisto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: #fff;
+}
+
+.opcionActiva .opcionVisto {
+  background: var(--degradado-logo);
+}
+
+.opcionVisto svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acceso,
+  .accesoSello,
+  .identidadCamara {
+    transition: none;
+  }
+
+  .subiendo svg {
+    animation-duration: 2.4s;
+  }
+}

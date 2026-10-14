@@ -96,7 +96,7 @@
 
 /* ── Mis pedidos ── */
 .pestanas {
-  margin-bottom: 1.1rem;
+  min-width: 0;
 }
 
 .pedidos {

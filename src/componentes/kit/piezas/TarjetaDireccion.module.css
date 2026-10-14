@@ -1,0 +1,182 @@
+/* Dirección guardada: la principal con borde violeta y el sello del logo. */
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+  padding: 1.05rem 1.1rem 0.9rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface);
+}
+
+.principal {
+  border-color: var(--violet-400, #a78bfa);
+  background: color-mix(in srgb, var(--primary-light) 45%, var(--color-surface));
+}
+
+:global([data-theme='dark']) .principal {
+  border-color: rgba(167, 139, 250, 0.55);
+  background: rgba(167, 139, 250, 0.07);
+}
+
+.cabeza {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.quien {
+  display: grid;
+  min-width: 0;
+}
+
+.nombre {
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.02rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.esPrincipal {
+  margin: 0;
+  color: var(--primary-color);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+:global([data-theme='dark']) .esPrincipal {
+  color: var(--violet-300);
+}
+
+.lineas {
+  display: grid;
+  flex: 1;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.lineas p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.lineas .direccion {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.acciones,
+.confirmar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding-top: 0.7rem;
+  border-top: 1px dashed var(--color-border);
+}
+
+.iconos {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.textoBoton,
+.icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color var(--dur-rapida) ease, color var(--dur-rapida) ease;
+}
+
+.textoBoton {
+  padding: 0 0.65rem;
+  margin-left: -0.65rem;
+}
+
+.icono {
+  width: 40px;
+  color: var(--color-text-muted);
+}
+
+.textoBoton:hover,
+.icono:hover {
+  background: var(--color-hover);
+  color: var(--primary-color);
+}
+
+.iconoPeligro:hover,
+.peligro,
+.peligro:hover {
+  background: var(--danger-soft);
+  color: var(--danger-hover);
+}
+
+.peligro {
+  margin-left: 0;
+}
+
+.textoBoton:focus-visible,
+.icono:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+.textoBoton:disabled,
+.icono:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.textoBoton svg,
+.icono svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+:global([data-theme='dark']) .textoBoton {
+  color: var(--violet-300);
+}
+
+:global([data-theme='dark']) .peligro {
+  color: #fca5a5;
+}
+
+.confirmar p {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.confirmarBotones {
+  display: inline-flex;
+  gap: 0.3rem;
+  margin-left: auto;
+}
+
+.confirmarBotones .textoBoton {
+  margin-left: 0;
+}

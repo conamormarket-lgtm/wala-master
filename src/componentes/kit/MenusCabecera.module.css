@@ -634,9 +634,82 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Lateral (MarcoCuenta): una tarjeta al costado de /cuenta. El acceso
+   actual lleva el sello del logo y su texto en violeta; los demás, el ícono
+   gris en el mismo hueco (así no se mueven al cambiar de página). */
+.cuenta.lateral {
+  gap: 1rem;
+  padding: 1.1rem 1rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: var(--color-surface);
+}
+
+.lateral .identidad {
+  padding-bottom: 0.9rem;
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.lateral .identidadTexto strong {
+  overflow: hidden;
+  font-family: var(--fuente-marca);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lateral .titulo {
+  margin-bottom: 0.3rem;
+}
+
+.lateral .item {
+  min-height: 42px;
+  margin: 0;
+  padding: 0 0.45rem;
+  font-weight: 500;
+}
+
+.itemHueco {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+}
+
+.lateral .item svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.itemActual,
+.itemActual:hover {
+  background: var(--primary-light);
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+.itemActual svg,
+.itemActual:hover svg {
+  color: #fff;
+}
+
+:global([data-theme='dark']) .itemActual,
+:global([data-theme='dark']) .itemActual:hover {
+  background: rgba(167, 139, 250, 0.14);
+  color: var(--violet-200);
+}
+
+.lateral .cuentaPie {
+  padding-top: 0.6rem;
+}
+
 /* En la hoja del celular el margen lo pone la hoja. */
 @media (max-width: 760px) {
-  .cuenta,
+  .cuenta:not(.lateral),
   .cuentaInvitado,
   .vista,
   .vacio {

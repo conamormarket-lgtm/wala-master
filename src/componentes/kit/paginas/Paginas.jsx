@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ShoppingBag, LogIn, Sparkles, Store } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, LogIn, Sparkles, Store, Package } from 'lucide-react';
 import Boton from '../Boton';
 import { Cabecera, BarraInferior, Pestanas } from '../Navegacion';
 import { ItemCarrito, BarraEnvioGratis, ResumenPedido, SeguimientoPedido } from '../Pedido';
 import { EstadoVacio, Aviso } from '../Feedback';
 import { Encabezado } from '../SeccionesContenido';
+import { CabezaCuenta } from '../piezas/Cuenta';
 import { TarjetaJuego } from '../piezas/TarjetaJuego';
 import { ChipsBusqueda, InvitacionBusqueda } from '../piezas/PanelBusqueda';
 import { Destello } from '../Marca';
@@ -207,7 +208,8 @@ export function PaginaCarrito({
 
 /**
  * Mis pedidos: pestañas Activos / Entregados con cuántos hay, cada pedido con
- * su seguimiento y, si una pestaña está vacía, Kapi.
+ * su seguimiento y, si una pestaña está vacía, Kapi. Va dentro de MarcoCuenta
+ * (su cabecera es la de las páginas de la cuenta).
  *  - pedidos: [{ codigo, fecha, paso (0-4), total, items, pagoPendiente, entregaEstimada }]
  *  - onIrATienda
  */
@@ -218,10 +220,8 @@ export function PaginaPedidos({ pedidos = [], onIrATienda }) {
   const lista = pestana === 'activos' ? activos : entregados;
 
   return (
-    <BloqueSeccion ajustes={{ paddingTop: '1.5rem', paddingBottom: '2rem' }}>
-      <div className={s.cabezaPagina}>
-        <TituloSeccion nivel={1} antetitulo="Tu cuenta" titulo="Mis pedidos" />
-      </div>
+    <>
+      <CabezaCuenta icono={<Package />} titulo="Mis pedidos" subtitulo="Por dónde va cada uno, del pago a tu puerta." />
       <div className={s.pestanas}>
         <Pestanas
           etiqueta="Filtrar pedidos"
@@ -246,7 +246,7 @@ export function PaginaPedidos({ pedidos = [], onIrATienda }) {
           {onIrATienda && <Boton icono={<ShoppingBag aria-hidden="true" />} onClick={onIrATienda}>Ir a la tienda</Boton>}
         </EstadoVacio>
       )}
-    </BloqueSeccion>
+    </>
   );
 }
 

@@ -173,6 +173,54 @@
 .g_pie .g4 { display: none; }
 .g_pie .g5 { color: rgba(167, 139, 250, 0.2); width: 110px; }
 
+/* ── Sello ── */
+.sello {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--sello, 40px);
+  height: var(--sello, 40px);
+  border-radius: 50%;
+  background: var(--degradado-logo);
+  color: #fff;
+  box-shadow: 0 6px 12px -8px rgba(91, 33, 182, 0.8);
+  transform: rotate(var(--sello-giro, -8deg));
+}
+
+.sello svg {
+  width: calc(var(--sello, 40px) * 0.48);
+  height: calc(var(--sello, 40px) * 0.48);
+  stroke-width: 2.1;
+}
+
+.sello_suave {
+  background: var(--violet-100, #ede9fe);
+  color: var(--violet-700, #6d28d9);
+  box-shadow: none;
+}
+
+:global([data-theme='dark']) .sello_suave {
+  background: rgba(167, 139, 250, 0.16);
+  color: var(--violet-200, #ddd6fe);
+}
+
+.sello_oro {
+  background: linear-gradient(135deg, #fde68a 0%, #f59e0b 100%);
+  color: #3b2300;
+  box-shadow: 0 6px 12px -8px rgba(180, 83, 9, 0.8);
+}
+
+.sello_menta {
+  background: linear-gradient(135deg, #5eead4 0%, #0d9488 100%);
+  box-shadow: 0 6px 12px -8px rgba(13, 148, 136, 0.8);
+}
+
+.sello_rosa {
+  background: linear-gradient(135deg, #f9a8d4 0%, #db2777 100%);
+  box-shadow: 0 6px 12px -8px rgba(219, 39, 119, 0.8);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .colgante {
     transition: none;

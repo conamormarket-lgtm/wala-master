@@ -1,7 +1,7 @@
 import React, { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
 import { RotateCcw, User, Package, Settings, Gift, Ticket, Sparkles } from 'lucide-react';
 import {
-  PaginaTienda, MarcoTienda, PaginaCarrito, PaginaPedidos, PaginaMinijuegos, juegosDelArcade, VentanaKapi, kapiDesdePerfil,
+  PaginaTienda, MarcoTienda, PaginaCarrito, PaginaMinijuegos, juegosDelArcade, VentanaKapi, kapiDesdePerfil,
   retoDesdePerfil, PaginaBusqueda, sugerenciasDesdeBusqueda, grupoModalidad, ORDENES_BUSQUEDA, ordenarProductos,
   Pestanas, Chip, Interruptor, Boton,
   BarraAdmin, AvisoSistema, BannerApp, BotonWhatsApp, KapiFlotante, BurbujaRegalos, PildoraRecompensa,
@@ -11,6 +11,7 @@ import {
 import { empresa } from '../config/empresa';
 import { msHastaMananaLima, msHastaLunesLima, limaTodayStr } from '../utils/fechaLima';
 import { volarMonedasGanadas } from '../utils/animations';
+import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA } from './DemoCuenta';
 import INICIO from './demo/inicio.json';
 import TIENDA from './demo/tienda.json';
 import cs from './ComponentesPage.module.css';
@@ -27,7 +28,10 @@ import s from './DemoTienda.module.css';
  *  - Buscar (/buscar): resultados de los productos de tienda.json, de a 24
  *    con "Ver más" (como el cursor de la tienda); la cabecera sugiere mientras
  *    escribes (PanelBusqueda) y Enter lleva aquí.
- *  - Carrito y Mis pedidos: con los mismos productos reales.
+ *  - Carrito: con los mismos productos reales.
+ *  - Mi cuenta (/cuenta): MarcoCuenta con sus páginas (DemoCuenta.jsx):
+ *    resumen, perfil, Mis pedidos, direcciones y ajustes; los enlaces del
+ *    menú de la cuenta navegan entre ellas.
  *  - Minijuegos (Zona Arcade): las cuatro tarjetas con juegosDelArcade; con
  *    sesión, chips para ver cada estado (como el modo diseño de la tienda).
  * "Ver componentes" marca cada parte con su número y su componente; los
@@ -49,14 +53,17 @@ const PAGINAS = [
   { id: 'minijuegos', texto: 'Minijuegos', ruta: '/minijuegos' },
   { id: 'buscar', texto: 'Buscar', ruta: '/buscar' },
   { id: 'carrito', texto: 'Carrito', ruta: '/carrito' },
-  { id: 'pedidos', texto: 'Mis pedidos', ruta: '/cuenta/pedidos' },
+  { id: 'cuenta', texto: 'Mi cuenta', ruta: '/cuenta' },
 ];
 
 /** Ruta de la tienda → página de esta demo (las demás solo avisan). */
-const PAGINA_DE_RUTA = { '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/cuenta': 'pedidos', '/cuenta/pedidos': 'pedidos' };
+const PAGINA_DE_RUTA = {
+  '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito',
+  ...Object.fromEntries(MODULOS_CUENTA.map((m) => [m.ruta, 'cuenta'])),
+};
 
 /** Pestaña de la barra inferior que se enciende en cada página. */
-const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', pedidos: 'cuenta' };
+const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta' };
 
 /* Estados de la Zona Arcade para probar (como el modo diseño de la tienda). */
 const RULETAS = [
@@ -162,10 +169,12 @@ const PEDIDOS = [
 /** Nombre del componente que dibuja cada tipo de sección (para "Ver componentes"). */
 const componenteDe = (tipo) => REGISTRO_SECCIONES[tipo]?.nombre || tipo;
 
-/** Marca de una parte en "Ver componentes": número + componente. */
-function Parte({ n, nombre, children, bloque = true }) {
+/** Marca de una parte en "Ver componentes": número + componente.
+ *  - rejilla: deja a sus hijos en columna con el espacio de la página
+ *    (páginas de la cuenta, que devuelven varias piezas sueltas). */
+function Parte({ n, nombre, children, bloque = true, rejilla = false }) {
   return (
-    <div className={bloque ? s.parte : s.parteEnLinea} data-etiqueta={`${n} · ${nombre}`}>
+    <div className={[bloque ? s.parte : s.parteEnLinea, rejilla && s.parteRejilla].filter(Boolean).join(' ')} data-etiqueta={`${n} · ${nombre}`}>
       {children}
     </div>
   );
@@ -190,6 +199,9 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [paginasBusqueda, setPaginasBusqueda] = useState(1);
   const [monedas, setMonedas] = useState(43);
   const [ruletaDemo, setRuletaDemo] = useState('racha');
+  // Mi cuenta: qué módulo de /cuenta se ve y los estados para probar.
+  const [rutaCuenta, setRutaCuenta] = useState('/cuenta');
+  const [estadosCuenta, setEstadosCuenta] = useState([]);
   const marcoRef = useRef(null);
 
   // Editor del builder (solo admin, sobre el inicio).
@@ -225,6 +237,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       setFiltrosBusqueda({});
       setPaginasBusqueda(1);
     }
+    if (PAGINA_DE_RUTA[ruta] === 'cuenta') setRutaCuenta(ruta);
     if (ruta === '/tienda') {
       const categoria = new URLSearchParams(query).get('categoria');
       setFiltros(categoria ? { categoria } : {});
@@ -518,9 +531,26 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       propsPara={(sec) => (sec.type === 'faq_accordion' ? { contacto: enlaceWhatsApp(empresa.whatsapp, '¡Hola Walá! Tengo una duda.') } : undefined)}
       envolver={envolver}
     />
+  ) : pagina === 'cuenta' ? (
+    <MarcoTienda {...marco}>
+      <CuentaDemo
+        ruta={rutaCuenta}
+        sesion={conSesion}
+        usuario={usuario}
+        monedas={monedas}
+        tema={tema}
+        onTema={cambiarTema}
+        onCerrarSesion={() => setRol('visitante')}
+        estados={estadosCuenta}
+        toast={toast}
+        Parte={Parte}
+        pedidos={PEDIDOS}
+        onIrATienda={() => irA('tienda')}
+      />
+    </MarcoTienda>
   ) : (
     <MarcoTienda {...marco}>
-      {pagina === 'carrito' ? (
+      {pagina === 'carrito' && (
         <Parte n="P1" nombre="PaginaCarrito">
           <PaginaCarrito
             items={carrito}
@@ -533,10 +563,6 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
             onSeguirComprando={() => irA('inicio')}
             vacio={{ texto: 'Lo quitaste todo. Vuelve a llenarlo para seguir probando.', accion: <Boton icono={<RotateCcw aria-hidden="true" />} onClick={() => setCarrito(CARRITO_INICIAL)}>Restaurar carrito</Boton> }}
           />
-        </Parte>
-      ) : (
-        <Parte n="P2" nombre="PaginaPedidos">
-          <PaginaPedidos pedidos={PEDIDOS} onIrATienda={() => irA('inicio')} />
         </Parte>
       )}
     </MarcoTienda>
@@ -553,6 +579,23 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
           <span className={cs.controlesTitulo}>Ver como</span>
           <Pestanas opciones={ROLES} valor={rol} onChange={(r) => { setRol(r); if (r !== 'admin') setEditando(false); }} etiqueta="Ver la página como" />
         </div>
+        {pagina === 'cuenta' && (
+          <div>
+            <span className={cs.controlesTitulo}>Sección de la cuenta</span>
+            <div className={cs.controlesChips}>
+              {MODULOS_CUENTA.map((m) => (
+                <Chip key={m.ruta} tamano="sm" activo={rutaCuenta === m.ruta} onClick={() => { setRutaCuenta(m.ruta); if (marcoRef.current) marcoRef.current.scrollTop = 0; }}>{m.texto}</Chip>
+              ))}
+            </div>
+            {conSesion && (
+              <div className={cs.controlesChips}>
+                {ESTADOS_CUENTA.map(([id, texto]) => (
+                  <Chip key={id} tamano="sm" activo={estadosCuenta.includes(id)} onClick={() => setEstadosCuenta((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {pagina === 'minijuegos' && conSesion && (
           <div>
             <span className={cs.controlesTitulo}>Juegos de hoy</span>

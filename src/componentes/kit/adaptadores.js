@@ -503,3 +503,58 @@ export function ordenarProductos(productos = [], orden = 'newest') {
   if (orden === 'name') return lista.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'es'));
   return lista.sort((a, b) => fecha(b) - fecha(a));
 }
+
+/* ── Cuenta ─────────────────────────────────────────────── */
+
+/**
+ * Perfil del cliente → props de PaginaPerfil (y el `perfil` de
+ * PaginaDirecciones). Mismos campos que lee PerfilPage: el nombre que
+ * muestra CuentaLayout, la foto de AvatarStudio y el teléfono local de
+ * phoneIntl fuera del Perú.
+ *  - perfil: userProfile (Firestore) · usuario: user de Firebase Auth
+ */
+export function perfilDesdeUsuario(perfil = {}, usuario = {}) {
+  const pais = perfil.country || 'PE';
+  return {
+    nombre: perfil.displayName || perfil.nombre || usuario.displayName || String(usuario.email || '').split('@')[0],
+    email: usuario.email || perfil.email || '',
+    avatar: perfil.avatarConfig?.avatarUrl || usuario.photoURL || null,
+    pais,
+    tipoDocumento: pais === 'PE' ? (perfil.tipoDocumento || 'DNI') : 'OTRO',
+    documento: perfil.dni || '',
+    telefono: pais === 'PE' ? (perfil.phone || '') : (perfil.phoneIntl?.localNumber || perfil.phone || ''),
+    cumpleanos: perfil.birthDate || '',
+  };
+}
+
+/** Una dirección de wala_direcciones/{uid}.lista → props de PaginaDirecciones. */
+export const direccionDesdeFirestore = (d = {}) => ({
+  id: d.id,
+  principal: Boolean(d.principal),
+  nombre: d.customerName || '',
+  tipoDocumento: d.docType || 'DNI',
+  documento: d.dni || '',
+  telefono: d.phone || '',
+  pais: d.country || 'PE',
+  ciudad: d.city || 'Lima',
+  departamento: d.department || '',
+  provincia: d.province || '',
+  distrito: d.district || '',
+  direccion: d.address || '',
+});
+
+/** Al revés: lo que devuelve el formulario → el formato de services/direcciones (guardarDirecciones). */
+export const direccionAFirestore = (d = {}) => ({
+  ...(d.id ? { id: d.id } : {}),
+  principal: Boolean(d.principal),
+  customerName: String(d.nombre || '').trim(),
+  docType: d.tipoDocumento || 'DNI',
+  dni: String(d.documento || '').trim(),
+  phone: String(d.telefono || '').trim(),
+  country: d.pais || 'PE',
+  city: d.ciudad || 'Lima',
+  department: d.departamento || '',
+  province: d.provincia || '',
+  district: d.distrito || '',
+  address: String(d.direccion || '').trim(),
+});

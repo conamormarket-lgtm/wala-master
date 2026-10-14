@@ -152,3 +152,24 @@ export function Trazo({ className }) {
     </svg>
   );
 }
+
+/**
+ * Sello: un ícono blanco en un círculo con el degradado del logo, girado como
+ * los sellos de los banners. Es como Walá pone un ícono junto a un título o en
+ * un acceso (nada de cuadritos lila).
+ *  - children: el ícono (lucide u otro svg)
+ *  - tamano: px del círculo (40) · girar: grados (-8; 0 = derecho)
+ *  - tono: 'degradado' | 'suave' (lila con el ícono violeta: lo que no está
+ *    elegido) | 'oro' | 'menta' | 'rosa'
+ */
+export function Sello({ children, tamano = 40, girar = -8, tono = 'degradado', className }) {
+  return (
+    <span
+      className={[s.sello, tono !== 'degradado' && s[`sello_${tono}`], className].filter(Boolean).join(' ')}
+      style={{ '--sello': `${tamano}px`, '--sello-giro': `${girar}deg` }}
+      aria-hidden="true"
+    >
+      {children}
+    </span>
+  );
+}

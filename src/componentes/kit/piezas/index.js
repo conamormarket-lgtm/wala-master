@@ -16,3 +16,5 @@ export { TarjetaJuego } from './TarjetaJuego';
 export { RetoSemanal } from './RetoSemanal';
 export { VentanaKapi } from './VentanaKapi';
 export { PanelBusqueda, useBusquedasRecientes, TextoResaltado, ChipsBusqueda, InvitacionBusqueda } from './PanelBusqueda';
+export { CabezaCuenta, TarjetaCuenta, ListaDatos, Estadistica, AccesosCuenta, IdentidadCuenta, ListaEleccion } from './Cuenta';
+export { TarjetaDireccion } from './TarjetaDireccion';

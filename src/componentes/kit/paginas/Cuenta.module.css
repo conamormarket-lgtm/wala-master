@@ -1,0 +1,341 @@
+/* ── Marco de la cuenta ──────────────────────────────────── */
+/* Dos contenedores con nombre: "cuenta" (todo el marco, decide si va el menú
+   lateral) y "pagina" (la columna del contenido, para el diseño de cada
+   página). */
+.cuenta {
+  container: cuenta / inline-size;
+}
+
+.rejilla {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.lateral {
+  display: none;
+}
+
+.contenido {
+  container: pagina / inline-size;
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.pagina {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+  animation: entrar var(--dur-lenta, 500ms) var(--ease-signature) both;
+}
+
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@container cuenta (min-width: 860px) {
+  .rejilla {
+    grid-template-columns: 264px minmax(0, 1fr);
+  }
+
+  .lateral {
+    display: block;
+  }
+
+  .soloAngosto {
+    display: none !important;
+  }
+}
+
+/* "← Mi cuenta": vuelve a los accesos (solo sin el menú lateral). */
+.volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  justify-self: start;
+  min-height: 40px;
+  padding: 0 0.9rem 0 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color var(--dur-rapida) ease;
+}
+
+.volver:hover {
+  border-color: var(--violet-300);
+  color: var(--color-text);
+}
+
+.volver:focus-visible,
+.salir:focus-visible,
+.cambiar:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+.volver svg {
+  width: 1rem;
+  height: 1rem;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.volver:hover svg {
+  transform: translateX(-3px);
+}
+
+/* Cerrar sesión al final del resumen y de ajustes (celular). */
+.salir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  color: var(--danger-hover);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color var(--dur-rapida) ease;
+}
+
+.salir:hover {
+  background: var(--danger-soft);
+}
+
+:global([data-theme='dark']) .salir {
+  color: #fca5a5;
+}
+
+.salir svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+/* Sin sesión. */
+.invitado {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--color-surface);
+}
+
+/* ── Formularios (perfil, dirección) ─────────────────────── */
+.formulario {
+  container-type: inline-size;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+@container (min-width: 520px) {
+  .fila {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.botonesForm {
+  display: flex;
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.prefijo {
+  color: var(--color-text);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.interruptor {
+  padding: 0.6rem 0.9rem;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--primary-light) 55%, var(--color-surface));
+}
+
+:global([data-theme='dark']) .interruptor {
+  background: rgba(167, 139, 250, 0.08);
+}
+
+/* ── Perfil ──────────────────────────────────────────────── */
+.perfilRejilla {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@container pagina (min-width: 760px) {
+  .perfilRejilla {
+    grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+  }
+}
+
+.botonesCifra {
+  display: grid;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+/* ── Direcciones ─────────────────────────────────────────── */
+.direcciones {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@container pagina (min-width: 640px) {
+  .direcciones {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.direcciones > li {
+  display: flex;
+  min-width: 0;
+}
+
+.direcciones > li > * {
+  flex: 1;
+}
+
+.esqueletoDireccion {
+  height: 190px;
+  border-radius: 20px;
+  background: var(--color-hover);
+  animation: latir 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes latir {
+  to {
+    opacity: 0.55;
+  }
+}
+
+/* Quién recibe, resumido (como en el checkout) con "Cambiar". */
+.destinatario {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px dashed var(--violet-300, #c4b5fd);
+  border-radius: 14px;
+}
+
+.destinatarioTexto {
+  display: grid;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.destinatarioTexto small {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.destinatarioTexto strong {
+  overflow: hidden;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.destinatarioTexto span {
+  overflow-wrap: anywhere;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.cambiar {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 0 0.7rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cambiar:hover {
+  background: var(--color-hover);
+}
+
+:global([data-theme='dark']) .cambiar {
+  color: var(--violet-300);
+}
+
+/* ── Ajustes ─────────────────────────────────────────────── */
+.ajustes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@container pagina (min-width: 720px) {
+  .ajustes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.codigoIdioma {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary-color);
+  font-family: var(--fuente-marca);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+:global([data-theme='dark']) .codigoIdioma {
+  background: rgba(167, 139, 250, 0.16);
+  color: var(--violet-200);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pagina,
+  .esqueletoDireccion {
+    animation: none;
+  }
+
+  .volver svg {
+    transition: none;
+  }
+}

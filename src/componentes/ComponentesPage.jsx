@@ -887,7 +887,7 @@ function Contenido({ tema, cambiarTema }) {
         >
           <HechaCon
             secciones={['BarraAnuncios', 'HeroCarrusel', 'MosaicoBanners', 'GrillaCategorias', 'CarruselProductos', 'InsigniasConfianza', 'Testimonios', 'PreguntasFrecuentes', 'PiePagina']}
-            piezas={['Cabecera', 'BarraInferior', 'PilaFlotante', 'BarraAdmin', 'PieLegal', 'TarjetaProducto', 'PanelEditor', 'PaginaCarrito', 'PaginaPedidos']}
+            piezas={['Cabecera', 'BarraInferior', 'PilaFlotante', 'BarraAdmin', 'PieLegal', 'TarjetaProducto', 'PanelEditor', 'PaginaCarrito', 'MarcoCuenta', 'PaginaPedidos', 'PaginaPerfil', 'PaginaDirecciones']}
           />
           <DemoTienda
             marcas={MARCAS_DEMO}
