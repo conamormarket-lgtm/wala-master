@@ -88,7 +88,7 @@ export function Estadistica({ icono, tono = 'degradado', sello = true, etiqueta,
   return (
     <div className={[s.cifra, grande && s.cifraGrande].filter(Boolean).join(' ')} data-componente="Estadistica">
       <div className={[s.cifraCaja, grande && s.cifraCajaGrande].filter(Boolean).join(' ')}>
-        {icono && (sello ? <Sello tamano={grande ? 48 : 38} tono={tono}>{icono}</Sello> : <span className={s.cifraIcono}>{icono}</span>)}
+        {icono && (sello ? <Sello tamano={grande ? 48 : 38} tono={tono} className={s.cifraSello}>{icono}</Sello> : <span className={s.cifraIcono}>{icono}</span>)}
         <div className={s.cifraTextos}>
           {etiqueta && <p className={s.cifraEtiqueta}>{etiqueta}</p>}
           <p className={s.cifraValor}>

@@ -891,3 +891,40 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
+
+/* Menú lateral con vida: el ícono se asoma al pasar el ratón y el sello de
+   la sección actual entra con un giro al cambiar de página. */
+.selloActual {
+  animation: sellar 0.5s var(--ease-signature);
+}
+
+@keyframes sellar {
+  from {
+    opacity: 0.4;
+    transform: rotate(-40deg) scale(0.5);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .itemHueco svg {
+    transition: transform var(--dur-media) var(--ease-signature), color var(--dur-rapida) ease;
+  }
+
+  .lateral .item:hover .itemHueco svg {
+    transform: translateX(2px) rotate(-10deg) scale(1.12);
+  }
+
+  .lateral .item:active {
+    transform: scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .selloActual {
+    animation: none;
+  }
+
+  .lateral .item:hover .itemHueco svg {
+    transform: none;
+  }
+}

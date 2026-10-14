@@ -662,3 +662,34 @@
     animation-duration: 2.4s;
   }
 }
+
+/* Vida al pasar el ratón: el sello o la moneda de una cifra se endereza. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .cifraSello,
+  .cifraIcono {
+    transition: transform var(--dur-media) var(--ease-signature);
+  }
+
+  .cifra:hover .cifraSello {
+    transform: rotate(0deg) scale(1.08);
+  }
+
+  .cifra:hover .cifraIcono {
+    transform: rotate(-12deg) scale(1.08);
+  }
+
+  .tarjeta,
+  .cifra {
+    transition: border-color var(--dur-rapida) ease;
+  }
+
+  .tarjeta:hover,
+  .cifra:hover {
+    border-color: var(--violet-200, #ddd6fe);
+  }
+
+  :global([data-theme='dark']) .tarjeta:hover,
+  :global([data-theme='dark']) .cifra:hover {
+    border-color: rgba(167, 139, 250, 0.3);
+  }
+}

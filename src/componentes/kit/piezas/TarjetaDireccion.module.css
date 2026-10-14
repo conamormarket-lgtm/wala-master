@@ -182,3 +182,15 @@
 .confirmarBotones .textoBoton {
   margin-left: 0;
 }
+
+/* Vida al pasar el ratón: la tarjeta sube un poco y el pin se endereza. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .tarjeta {
+    transition: border-color var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature);
+  }
+
+  .tarjeta:hover {
+    border-color: var(--violet-300, #c4b5fd);
+    transform: translateY(-2px);
+  }
+}

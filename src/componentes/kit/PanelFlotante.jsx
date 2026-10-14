@@ -10,7 +10,9 @@ export const enCelular = () => typeof window !== 'undefined' && window.matchMedi
  * Lo que se abre desde un campo (lista de opciones, calendario): en
  * escritorio, un panel pegado al campo (debajo, o arriba si no entra); en el
  * celular, una hoja inferior con su título. Se dibuja en <body>, así no lo
- * recorta una hoja o una tarjeta con overflow.
+ * recorta una hoja o una tarjeta con overflow. Como un <select> del sistema,
+ * se cierra al hacer scroll fuera de él o al cambiar el tamaño de la ventana
+ * (así nunca queda flotando encima de la cabecera ni cortado).
  *  - abierto · onCerrar · ancla: ref del campo
  *  - titulo: el de la hoja (y nombre del panel para lectores)
  *  - ancho: 'campo' (el del campo) o px mínimos (calendario)
@@ -46,11 +48,20 @@ export function PanelFlotante({ abierto, onCerrar, ancla, titulo, ancho = 'campo
       });
     };
     ubicar();
-    window.addEventListener('scroll', ubicar, true);
-    window.addEventListener('resize', ubicar);
+    const alScroll = (e) => {
+      if (panel.current && (e.target === panel.current || panel.current.contains(e.target))) return;
+      cerrarRef.current?.();
+    };
+    const alCambiar = () => cerrarRef.current?.();
+    // Un instante después: el foco al abrir no cuenta como scroll.
+    const t = window.setTimeout(() => {
+      window.addEventListener('scroll', alScroll, true);
+      window.addEventListener('resize', alCambiar);
+    }, 120);
     return () => {
-      window.removeEventListener('scroll', ubicar, true);
-      window.removeEventListener('resize', ubicar);
+      window.clearTimeout(t);
+      window.removeEventListener('scroll', alScroll, true);
+      window.removeEventListener('resize', alCambiar);
     };
   }, [abierto, celular, ancla, ancho, alto]);
 

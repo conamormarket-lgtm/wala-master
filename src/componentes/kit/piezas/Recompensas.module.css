@@ -543,3 +543,52 @@
     transition: none;
   }
 }
+
+/* Vida al pasar el ratón: la recompensa acerca su foto, el boleto se
+   inclina como si lo tomaras y el círculo de una misión pendiente gira. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .recompensa,
+  .cupon,
+  .mision {
+    transition: border-color var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature), box-shadow var(--dur-media) ease;
+  }
+
+  .recompensa:hover {
+    box-shadow: 0 18px 32px -24px rgba(76, 29, 149, 0.6);
+    transform: translateY(-3px);
+  }
+
+  .recompensaFoto > img {
+    transition: transform 0.6s var(--ease-signature);
+  }
+
+  .recompensa:hover .recompensaFoto > img {
+    transform: scale(1.06);
+  }
+
+  .cupon:hover {
+    box-shadow: 0 16px 30px -24px rgba(76, 29, 149, 0.6);
+    transform: translateY(-2px) rotate(-0.5deg);
+  }
+
+  .talon > * {
+    transition: transform var(--dur-media) var(--ease-signature);
+  }
+
+  .cupon:hover .talon > * {
+    transform: rotate(10deg) scale(1.08);
+  }
+
+  .mision:hover {
+    border-color: var(--violet-200, #ddd6fe);
+  }
+
+  .misionVacia {
+    transition: transform 0.8s var(--ease-signature), border-color var(--dur-rapida) ease;
+  }
+
+  .mision:hover .misionVacia {
+    border-color: var(--violet-500);
+    transform: rotate(120deg);
+  }
+}

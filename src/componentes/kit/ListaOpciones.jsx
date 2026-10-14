@@ -63,17 +63,25 @@ export default function ListaOpciones({
     cerrar();
   };
 
+  // Muestra una opción moviendo solo la lista (scrollIntoView movería también
+  // la página, y el panel se cierra con el scroll de afuera).
+  const mostrar = (el) => {
+    const l = lista.current;
+    if (!el || !l) return;
+    if (el.offsetTop < l.scrollTop) l.scrollTop = el.offsetTop - 4;
+    else if (el.offsetTop + el.offsetHeight > l.scrollTop + l.clientHeight) l.scrollTop = el.offsetTop + el.offsetHeight - l.clientHeight + 4;
+  };
   // Al abrir, el foco va al buscador (o a la lista) y la elegida se ve.
   useEffect(() => {
     if (!abierta) return undefined;
     const t = window.setTimeout(() => {
       (buscador.current || lista.current)?.focus({ preventScroll: true });
-      lista.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' });
+      mostrar(lista.current?.querySelector('[aria-selected="true"]'));
     }, 60);
     return () => window.clearTimeout(t);
   }, [abierta]);
   useEffect(() => {
-    lista.current?.querySelector(`[data-indice="${activa}"]`)?.scrollIntoView({ block: 'nearest' });
+    mostrar(lista.current?.querySelector(`[data-indice="${activa}"]`));
   }, [activa]);
 
   const mover = (paso) => {

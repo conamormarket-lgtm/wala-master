@@ -425,7 +425,8 @@
     top: auto;
     right: 8px;
     bottom: 48px;
-    left: 8px;
+    /* Aire para el hilo de la etiqueta colgante (no asoma por el borde). */
+    left: 16px;
   }
 
   .fotoMarco:not(:has(.girar, .lados)) .etiquetas {
@@ -486,5 +487,58 @@
 
   .confirmar {
     animation: none;
+  }
+}
+
+/* Vida al pasar el ratón: la tarjeta sube un poco, la foto se acerca, las
+   prendas de un combo se abren y las etiquetas saltan. Solo con ratón. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .creacion {
+    transition: border-color var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature), box-shadow var(--dur-media) ease;
+  }
+
+  .creacion:hover {
+    box-shadow: 0 18px 32px -24px rgba(76, 29, 149, 0.6);
+    transform: translateY(-3px);
+  }
+
+  .foto > img:not(.espalda) {
+    transition: transform 0.6s var(--ease-signature);
+  }
+
+  .creacion:hover .foto > img:not(.espalda) {
+    transform: scale(1.05);
+  }
+
+  .prenda {
+    transition: transform 0.55s var(--ease-signature);
+  }
+
+  .creacion:hover .prenda {
+    transform: translateY(-4px) rotate(calc((var(--i) - 0.5) * 14deg)) scale(1.04);
+  }
+
+  .etiquetas {
+    transition: transform var(--dur-media) var(--ease-signature);
+  }
+
+  .creacion:hover .etiquetas {
+    transform: translateY(-2px);
+  }
+
+  .eliminar {
+    opacity: 0.8;
+  }
+
+  .creacion:hover .eliminar {
+    opacity: 1;
+  }
+
+  .lapiz svg {
+    transition: transform var(--dur-media) var(--ease-signature);
+  }
+
+  .lapiz:hover svg {
+    transform: rotate(-14deg) scale(1.1);
   }
 }

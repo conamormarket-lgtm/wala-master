@@ -246,7 +246,7 @@ export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNave
               let icono = Icono && <Icono aria-hidden="true" />;
               if (lateral && Icono) {
                 icono = actual
-                  ? <Sello tamano={30}>{icono}</Sello>
+                  ? <Sello tamano={30} className={s.selloActual}>{icono}</Sello>
                   : <span className={s.itemHueco}>{icono}</span>;
               }
               return (
