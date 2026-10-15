@@ -184,9 +184,11 @@ export function FormularioOpinion({ onEnviar, onCancelar, sesion = true, urlLogi
       </div>
       <Campo
         etiqueta="Tu opinión"
-        control={(aria) => (
-          <textarea {...aria} className={s.area} rows={3} maxLength={800} placeholder="¿Qué te pareció? ¿La talla, el color, la calidad?" value={texto} onChange={(e) => { setTexto(e.target.value); setError(null); }} />
-        )}
+        multilinea
+        maxLength={800}
+        placeholder="¿Qué te pareció? ¿La talla, el color, la calidad?"
+        value={texto}
+        onChange={(e) => { setTexto(e.target.value); setError(null); }}
       />
       <div className={s.grupo}>
         <span className={s.rotulo}>Fotos <small>(opcional, hasta {maxFotos})</small></span>

@@ -13,8 +13,10 @@ import s from './Formulario.module.css';
  *    escrito). `nativo`: el <select> del navegador.
  *  - control: ({ id, aria-invalid, aria-describedby }) => nodo, otro control
  *    dentro de la misma caja (CampoFecha, CampoTelefono)
+ *  - multilinea: un texto largo (<textarea>); true = 3 líneas o el número de
+ *    líneas. Con maxLength, cuenta lo escrito ("120/800") junto a la ayuda.
  */
-export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, opciones, nativo = false, buscable, creable, control, ...input }) {
+export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, opciones, nativo = false, buscable, creable, control, multilinea, ...input }) {
   const autoId = useId();
   const campoId = id || autoId;
   const ayudaId = `${campoId}-ayuda`;
@@ -46,22 +48,25 @@ export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, opciones, nat
         <ChevronDown className={s.flechaLista} aria-hidden="true" />
       </>
     );
+  } else if (multilinea) {
+    cuerpo = <textarea id={campoId} className={`${s.input} ${s.area}`} rows={multilinea === true ? 3 : multilinea} {...aria} {...input} />;
   } else {
     cuerpo = <input id={campoId} className={s.input} {...aria} {...input} />;
   }
+  const contador = multilinea && input.maxLength ? <span className={s.contador}>{String(input.value || '').length}/{input.maxLength}</span> : null;
   return (
     <div className={s.campo}>
       {etiqueta && <label htmlFor={campoId} className={s.etiqueta}>{etiqueta}</label>}
-      <div className={[s.control, error && s.conError, icono && s.conIcono, input.disabled && s.apagado].filter(Boolean).join(' ')}>
+      <div className={[s.control, multilinea && s.controlArea, error && s.conError, icono && s.conIcono, input.disabled && s.apagado].filter(Boolean).join(' ')}>
         {icono && <span className={s.icono} aria-hidden="true">{icono}</span>}
         {cuerpo}
         {sufijo && <span className={s.sufijo}>{sufijo}</span>}
         <span className={s.brilloFoco} aria-hidden="true" />
       </div>
       {error ? (
-        <p id={ayudaId} className={s.error}><AlertCircle aria-hidden="true" />{error}</p>
-      ) : ayuda ? (
-        <p id={ayudaId} className={s.ayuda}>{ayuda}</p>
+        <p id={ayudaId} className={s.error}><AlertCircle aria-hidden="true" />{error}{contador}</p>
+      ) : ayuda || contador ? (
+        <p id={ayudaId} className={s.ayuda}>{ayuda}{contador}</p>
       ) : null}
     </div>
   );
@@ -247,11 +252,12 @@ const agrupar = (n) => String(n || '').replace(/\D/g, '').replace(/(\d{3})(?=\d)
  *  - pais · onPais(codigo) · paises: [{ valor: 'PE', texto: 'Perú', prefijo: '+51' }]
  *  - valor (solo números) · onCambiar(numeros) · maximo (9 en el Perú)
  */
-export function CampoTelefono({ etiqueta = 'Celular', ayuda, error, pais = 'PE', onPais, paises = [{ valor: 'PE', texto: 'Perú', prefijo: '+51' }], valor = '', onCambiar, maximo }) {
+export function CampoTelefono({ etiqueta = 'Celular', ayuda, error, pais = 'PE', onPais, paises = [{ valor: 'PE', texto: 'Perú', prefijo: '+51' }], valor = '', onCambiar, maximo, id }) {
   const tope = maximo ?? (pais === 'PE' ? 9 : 15);
   const opciones = paises.map((p) => ({ ...p, detalle: p.prefijo, corto: p.prefijo, icono: <span className={s.codigoPais}>{p.valor}</span> }));
   return (
     <Campo
+      id={id}
       etiqueta={etiqueta}
       ayuda={ayuda}
       error={error}

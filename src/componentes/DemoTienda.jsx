@@ -17,6 +17,7 @@ import { CheckoutDemo, ESTADOS_CHECKOUT } from './DemoCheckout';
 import { traducirDemo, traducirHtmlDemo } from './demo/traduccionDemo';
 import { RegalarDemo, VISTAS_REGALAR, ESTADOS_REGALAR, PagoRapidoDemo, ESTADOS_PAGO_RAPIDO } from './DemoRegalar';
 import { ENVIO_ESTANDAR, ENVIO_GRATIS_DESDE } from '../constants/envio';
+import { LegalesDemo, VISTAS_LEGALES, ESTADOS_LEGALES } from './DemoLegales';
 import { OfertasDemo, ESTADOS_OFERTAS, NavegarDemo, VISTAS_NAVEGAR, ESTADOS_NAVEGAR, LANDINGS_DEMO, VISTAS_LANDING, datosLanding } from './DemoNavegar';
 import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR, ComunidadDemo, ESTADOS_COMUNIDAD, CreacionDemo, ESTADOS_CREACION, VerDisenoDemo, ESTADOS_VER, ComboDemo, ESTADOS_COMBO, EstudioDemo, ESTADOS_ESTUDIO } from './DemoCuenta';
 import INICIO from './demo/inicio.json';
@@ -69,6 +70,7 @@ const PAGINAS = [
   { id: 'ofertas', texto: 'Ofertas', ruta: '/ofertas' },
   { id: 'nichos', texto: 'Nichos y vendedores', ruta: '/nichos' },
   { id: 'landing', texto: 'Landing de marca', ruta: '/conamorgeeks' },
+  { id: 'legales', texto: 'Legales', ruta: '/libro-de-reclamaciones' },
   { id: 'carrito', texto: 'Carrito', ruta: '/carrito' },
   { id: 'checkout', texto: 'Checkout', ruta: '/checkout' },
   { id: 'regalar', texto: 'Regalar', ruta: '/wishlist/' },
@@ -96,6 +98,7 @@ const ABRIR_ESTUDIO = [
 
 const PAGINA_DE_RUTA = {
   '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/checkout': 'checkout', '/encuesta-suscripcion': 'encuesta', '/personalizar': 'crear', '/comunidad': 'comunidad', '/ofertas': 'ofertas', '/nichos': 'nichos',
+  ...Object.fromEntries(VISTAS_LEGALES.map(([, r]) => [r, 'legales'])),
   ...Object.fromEntries(MODULOS_CUENTA.map((m) => [m.ruta, 'cuenta'])),
   ...Object.fromEntries(VISTAS_ACCESO.map((v) => [v.ruta, 'acceso'])),
 };
@@ -160,7 +163,7 @@ const PIE_LEGAL = {
   empresa: { nombre: empresa.nombreComercial, email: empresa.email, telefono: empresa.telefono, direccion: empresa.domicilioFiscal },
   enlaces: [
     { texto: 'Términos y Condiciones', url: '/terminos-y-condiciones' },
-    { texto: 'Políticas de Privacidad', url: '/politicas-de-privacidad' },
+    { texto: 'Políticas de Privacidad', url: '/politicas-privacidad' },
   ],
 };
 
@@ -282,6 +285,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [estadosNavegar, setEstadosNavegar] = useState([]);
   const [rutaLanding, setRutaLanding] = useState(VISTAS_LANDING[0][1]);
   const [filtrosLanding, setFiltrosLanding] = useState({});
+  const [rutaLegal, setRutaLegal] = useState(VISTAS_LEGALES[0][1]);
+  const [estadosLegales, setEstadosLegales] = useState([]);
   // Ver la carga: 'marca' (primera vez), 'accion' (esperar una acción) o 'esqueleto' (cambio de página).
   const [carga, setCarga] = useState(null);
   const [cargaSaliendo, setCargaSaliendo] = useState(false);
@@ -346,6 +351,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     }
     if (PAGINA_DE_RUTA[ruta] === 'cuenta') setRutaCuenta(ruta);
     if (PAGINA_DE_RUTA[ruta] === 'acceso') setRutaAcceso(ruta);
+    if (PAGINA_DE_RUTA[ruta] === 'legales') setRutaLegal(ruta);
     if (ruta === '/tienda') {
       const categoria = new URLSearchParams(query).get('categoria');
       setFiltros(categoria ? { categoria } : {});
@@ -612,7 +618,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   });
 
   const formaEsqueleto = {
-    tienda: 'tienda', ofertas: 'ofertas', nichos: rutaNavegar === '/nichos' ? 'nichos' : 'coleccion', producto: 'producto', checkout: 'checkout', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
+    tienda: 'tienda', legales: rutaLegal === '/libro-de-reclamaciones' ? 'reclamaciones' : 'legal', ofertas: 'ofertas', nichos: rutaNavegar === '/nichos' ? 'nichos' : 'coleccion', producto: 'producto', checkout: 'checkout', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
   }[pagina] || 'productos';
   // /cuenta/… → su módulo (el detalle de una compra usa el de pedidos).
   const moduloEsqueleto = {
@@ -628,6 +634,13 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         {pagina === 'inicio' || pagina === 'landing'
           ? <EsqueletoPagina secciones={(pagina === 'landing' ? landing.secciones : secciones).map((x) => x.type)} />
           : <EsqueletoPagina forma={formaEsqueleto} modulo={moduloEsqueleto} sesion={conSesion} />}
+      </Parte>
+    </MarcoTienda>
+  ) : pagina === 'legales' ? (
+    // Privacidad y términos terminan con la tarjeta de ayuda (Kapi asomado): el pie no lo repite.
+    <MarcoTienda {...marco} kapiEnPie={rutaLegal === '/libro-de-reclamaciones'}>
+      <Parte n="P19" nombre={rutaLegal === '/libro-de-reclamaciones' ? 'PaginaReclamaciones' : 'PaginaLegal'}>
+        <LegalesDemo ruta={rutaLegal} sesion={conSesion} usuario={usuario} estados={estadosLegales} />
       </Parte>
     </MarcoTienda>
   ) : pagina === 'ofertas' ? (
@@ -906,6 +919,21 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
                 ))}
               </div>
             )}
+          </div>
+        )}
+        {pagina === 'legales' && (
+          <div>
+            <span className={cs.controlesTitulo}>Cómo se abre</span>
+            <div className={cs.controlesChips}>
+              {VISTAS_LEGALES.map(([texto, r]) => (
+                <Chip key={texto} tamano="sm" activo={rutaLegal === r} onClick={() => { setRutaLegal(r); if (marcoRef.current) marcoRef.current.scrollTop = 0; }}>{texto}</Chip>
+              ))}
+            </div>
+            <div className={cs.controlesChips}>
+              {ESTADOS_LEGALES.filter(([id]) => id !== 'falla' || rutaLegal === '/libro-de-reclamaciones').map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={estadosLegales.includes(id)} onClick={() => setEstadosLegales((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
+              ))}
+            </div>
           </div>
         )}
         {pagina === 'ofertas' && (

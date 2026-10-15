@@ -128,6 +128,27 @@
   outline: none;
 }
 
+/* Varias líneas: la caja crece con el texto y se estira hacia abajo. */
+.controlArea {
+  align-items: stretch;
+}
+
+.area {
+  height: auto;
+  min-height: 5.5rem;
+  padding: 0.8rem 0;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.contador {
+  margin-left: auto;
+  padding-left: 0.75rem;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* Con opciones: la lista desplegable, con su flecha (no la del navegador). */
 .inputLista {
   appearance: none;

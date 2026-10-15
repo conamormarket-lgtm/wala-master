@@ -1107,3 +1107,68 @@
     width: 100% !important;
   }
 }
+
+/* ── Páginas legales ── */
+.legalEsq,
+.reclamosEsq {
+  display: grid;
+  gap: 1.25rem;
+  width: min(100%, 1080px);
+  margin: 0 auto;
+}
+
+.reclamosEsq {
+  width: min(100%, 780px);
+}
+
+.legalCuerpo {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  align-items: start;
+  gap: 1.75rem;
+}
+
+.legalIndice {
+  display: grid;
+  gap: 0.85rem;
+  padding-top: 0.25rem;
+}
+
+.legalHoja {
+  gap: 1.75rem;
+}
+
+.legalSeccion {
+  display: grid;
+  gap: 0.8rem;
+}
+
+@container esqueleto (max-width: 899px) {
+  .legalCuerpo {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .legalIndice {
+    min-height: 50px;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 6px 18px 18px 18px;
+  }
+
+  .legalIndice > :not(:first-child) {
+    display: none;
+  }
+}
+
+/* En el celular el título va en dos líneas y los datos del proveedor, apilados. */
+@container esqueleto (max-width: 600px) {
+  .tituloLegalEsq {
+    height: 68px !important;
+  }
+
+  .proveedorEsq {
+    height: 290px !important;
+  }
+}
+

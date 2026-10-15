@@ -1,0 +1,222 @@
+/* ── Privacidad y términos ── */
+.documento {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.cuerpo {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  align-items: start;
+  gap: 1.75rem;
+}
+
+/* El índice se queda a la vista mientras se lee (debajo de la cabecera fija). */
+.lado {
+  position: sticky;
+  top: 6rem;
+}
+
+.hoja {
+  min-width: 0;
+  padding: 1.75rem 2rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 26px 26px 26px;
+  background: var(--color-surface);
+  font-size: 1rem;
+}
+
+.contacto {
+  max-width: 540px;
+  margin-top: 2.5rem;
+}
+
+.otro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+}
+
+@media (max-width: 899px) {
+  .cuerpo {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .lado {
+    position: static;
+  }
+
+  .hoja {
+    padding: 1.25rem 1.1rem;
+    font-size: 0.97rem;
+  }
+}
+
+/* ── Libro de reclamaciones ── */
+.libro {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.intro {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.pasos {
+  position: relative;
+  display: grid;
+  gap: 1.75rem;
+  padding: 1.5rem 1.5rem 1.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 26px 26px 26px;
+  background: var(--color-surface);
+}
+
+.pasos > section {
+  display: grid;
+  gap: 0.9rem;
+}
+
+/* La costura punteada que une los sellos de los pasos (como en el estudio). */
+.pasos::before {
+  content: '';
+  position: absolute;
+  top: 2.4rem;
+  bottom: 2.4rem;
+  left: calc(1.5rem + 14px);
+  border-left: 2px dashed rgba(124, 58, 237, 0.25);
+}
+
+.rejilla {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1rem;
+}
+
+.ancho {
+  grid-column: 1 / -1;
+}
+
+.eleccion > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.soles {
+  color: var(--color-text-muted);
+  font-family: var(--fuente-marca);
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.acepta {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.enlace,
+.enlace:hover {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+.errorSuelto {
+  margin: 0;
+  color: var(--danger-hover);
+  font-size: 0.8rem;
+  font-weight: 500;
+  outline: none;
+}
+
+.nota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  /* En el celular el sello del paso va en la línea del título (sin sangría):
+     los campos usan todo el ancho. */
+  .pasos {
+    padding: 1.2rem 1rem 1.3rem;
+  }
+
+  .pasos::before {
+    display: none;
+  }
+
+  .pasos > section {
+    padding-left: 0;
+  }
+
+  .pasos > section > h2 {
+    margin-left: 0;
+  }
+
+  .rejilla,
+  .eleccion > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── Reclamación registrada ── */
+.listo {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 1.75rem 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 26px 26px 26px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: center;
+}
+
+.listoIcono {
+  width: 36px;
+  height: 36px;
+}
+
+.listo p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.listoTitulo {
+  margin: 0;
+  font-family: var(--fuente-marca);
+  font-size: clamp(1.6rem, 6vw, 2.1rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.listoTrazo {
+  display: block;
+  width: 70%;
+  height: 12px;
+  margin: 0.2rem auto 0;
+  color: #a78bfa;
+}
+
+.listoBotones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}

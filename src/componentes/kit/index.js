@@ -59,3 +59,4 @@ export { PaginaCheckout } from './paginas/Checkout';
 export { PaginaListaPublica, PaginaRegalar, PaginaRegaloSorpresa } from './paginas/Regalar';
 export { PaginaPagoRapido } from './paginas/PagoRapido';
 export { PaginaOfertas, PaginaNichos, PaginaColeccion } from './paginas/Navegar';
+export { PaginaLegal, PaginaReclamaciones, validarReclamacion } from './paginas/Legales';

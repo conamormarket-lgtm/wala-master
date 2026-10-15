@@ -49,10 +49,11 @@ export function validarPerfil(d) {
  *  - cumpleanos: { etiqueta, ayuda } o false para no pedirlo
  *  - ayudaNombre: nota bajo el nombre ("Lo tomamos de tu cuenta de Google.")
  *  - disabled: mientras se guarda
+ *  - ids: { nombre, documento, telefono } para llevar el foco al primer error
  */
 export function CamposDatosPersonales({
   datos = {}, onCambiar, errores = {}, paises = [{ valor: 'PE', texto: 'Perú', prefijo: '+51' }],
-  cumpleanos = { etiqueta: 'Fecha de nacimiento', ayuda: 'Para saludarte en tu día.' }, ayudaNombre, disabled = false,
+  cumpleanos = { etiqueta: 'Fecha de nacimiento', ayuda: 'Para saludarte en tu día.' }, ayudaNombre, disabled = false, ids = {},
 }) {
   const peru = (datos.pais || 'PE') === 'PE';
   const pais = paises.find((p) => p.valor === datos.pais) || paises[0];
@@ -60,7 +61,7 @@ export function CamposDatosPersonales({
   const cambiar = (campo) => (e) => onCambiar?.(campo, e.target.value);
   return (
     <div className={s.campos} data-componente="CamposDatosPersonales">
-      <Campo etiqueta="Nombre completo" value={datos.nombre || ''} onChange={cambiar('nombre')} error={errores.nombre} ayuda={ayudaNombre}
+      <Campo id={ids.nombre} etiqueta="Nombre completo" value={datos.nombre || ''} onChange={cambiar('nombre')} error={errores.nombre} ayuda={ayudaNombre}
         autoComplete="name" placeholder="Ej. Juan Pérez" disabled={disabled} />
       {paises.length > 1 && (
         <Campo etiqueta="País" opciones={opcionesPais} value={datos.pais || 'PE'} onChange={cambiar('pais')} buscable={paises.length > 6} disabled={disabled} />
@@ -70,6 +71,7 @@ export function CamposDatosPersonales({
           <Campo etiqueta="Tipo de documento" opciones={TIPOS_DOCUMENTO} value={datos.tipoDocumento || 'DNI'} onChange={cambiar('tipoDocumento')} disabled={disabled} />
         )}
         <Campo
+          id={ids.documento}
           etiqueta={peru ? `Número de ${NOMBRE_DOCUMENTO[datos.tipoDocumento || 'DNI'] || 'documento'}` : 'Documento de identidad'}
           value={datos.documento || ''}
           onChange={(e) => onCambiar?.('documento', peru ? e.target.value.replace(/\s/g, '') : e.target.value)}
@@ -82,6 +84,7 @@ export function CamposDatosPersonales({
       </div>
       <div className={s.fila}>
         <CampoTelefono
+          id={ids.telefono}
           pais={pais?.valor}
           paises={[pais]}
           valor={datos.telefono || ''}

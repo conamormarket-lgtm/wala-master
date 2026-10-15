@@ -40,3 +40,4 @@ export { Estrellas, ResumenOpiniones, TarjetaOpinion, FormularioOpinion } from '
 export { GaleriaProducto } from './GaleriaProducto';
 export { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra, TituloEditable } from './Ficha';
 export { CofreDiario, TarjetaOferta } from './Ofertas';
+export { CabezaLegal, IndiceLegal, SeccionLegal, DatosProveedor, CodigoReclamacion } from './Legales';

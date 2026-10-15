@@ -835,6 +835,49 @@ const PAGINAS = {
       <span className={s.grilla}>{productos(8)}</span>
     </>
   ),
+  legal: () => (
+    // Privacidad o términos: la cabeza con el sello, el índice al costado y la hoja.
+    <span className={s.legalEsq}>
+      <span className={s.itemMenu}>
+        <Hueso forma="circulo" ancho={52} alto={52} />
+        <span className={s.filaTextos}><Hueso alto={34} ancho="min(70%, 380px)" className={s.tituloLegalEsq} /><Hueso alto={11} ancho="min(50%, 240px)" /></span>
+      </span>
+      <span className={s.legalCuerpo}>
+        <span className={s.legalIndice}>
+          <Hueso alto={9} ancho="45%" />
+          {repetir(8, (k) => <Hueso key={k} alto={13} ancho={`${55 + ((k * 17) % 40)}%`} />)}
+        </span>
+        <Caja alto={640} className={s.legalHoja}>
+          {repetir(3, (k) => (
+            <span key={k} className={s.legalSeccion}>
+              <span className={s.itemMenu}><Hueso forma="circulo" ancho={30} alto={30} /><Hueso alto={17} ancho="45%" /></span>
+              <EsqueletoTexto lineas={k === 1 ? 5 : 4} alto={11} />
+            </span>
+          ))}
+        </Caja>
+      </span>
+    </span>
+  ),
+  reclamaciones: () => (
+    // El libro de reclamaciones: la cabeza, los datos del proveedor y la hoja con sus tres pasos.
+    <span className={s.reclamosEsq}>
+      <span className={s.itemMenu}>
+        <Hueso forma="circulo" ancho={52} alto={52} />
+        <span className={s.filaTextos}><Hueso alto={34} ancho="min(70%, 380px)" className={s.tituloLegalEsq} /><Hueso alto={11} ancho="min(85%, 460px)" /></span>
+      </span>
+      <Hueso alto={12} ancho="80%" />
+      <Hueso forma="bloque" alto={128} ancho="100%" className={s.proveedorEsq} />
+      <Caja alto={720}>
+        {repetir(3, (k) => (
+          <span key={k} className={s.legalSeccion}>
+            <span className={s.itemMenu}><Hueso forma="circulo" ancho={30} alto={30} /><Hueso alto={16} ancho="35%" /></span>
+            <EsqueletoFormulario campos={k === 0 ? 4 : 2} titulo={false} />
+          </span>
+        ))}
+      </Caja>
+      <Hueso forma="pildora" alto={54} ancho="100%" />
+    </span>
+  ),
   acceso: () => (
     <span className={s.accesoPagina}>
       <span className={s.accesoPanel}>
@@ -853,7 +896,8 @@ const PAGINAS = {
  * Para cambiar de página siempre es esto (CapaCargando es para esperar una acción).
  *  - forma: 'productos' (la grilla, por defecto) | 'inicio' | 'tienda' |
  *    'busqueda' | 'producto' | 'carrito' | 'checkout' | 'crear' | 'estudio' | 'comunidad' | 'minijuegos' | 'encuesta' |
- *    'acceso' | 'cuenta' | 'lista' | 'formulario' | 'ofertas' | 'nichos' | 'coleccion' (un nicho o un vendedor)
+ *    'acceso' | 'cuenta' | 'lista' | 'formulario' | 'ofertas' | 'nichos' | 'coleccion' (un nicho o un vendedor) |
+ *    'legal' (privacidad, términos) | 'reclamaciones'
  *  - sesion: false para quien no entró (la cuenta y la encuesta muestran la
  *    invitación a entrar; Minijuegos, su aviso en vez del progreso)
  *  - modulo (con forma 'cuenta'): uno de MODULOS_ESQUELETO_CUENTA (resumen,
