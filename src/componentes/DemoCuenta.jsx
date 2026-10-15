@@ -5,10 +5,10 @@ import {
   PaginaCatalogo, PaginaCupones, PaginaMisiones, PaginaReferidos, PaginaCreaciones, PaginaListaDeseos, PaginaFechas,
   PaginaDetallePedido, HojaPagarSaldo, Boton, enlaceWhatsApp, PaginaEncuesta,
   PaginaLogin, PaginaRegistro, PaginaRecuperar, PaginaCompletarPerfil, PaginaCrear,
+  prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde,
 } from './kit';
 import { empresa } from '../config/empresa';
-import POLERA from './demo/polera-fondo-blanco.jpg';
-import POLERA_ESPALDA from './demo/polera-fondo-blanco-espalda.jpg';
+import CREAR from './demo/crear.json';
 import { volarMonedasGanadas } from '../utils/animations';
 import { DEPARTAMENTOS, getProvincias } from '../constants/peruUbigeo';
 import { distritosSugeridos, lugarLegible } from '../utils/ubicacionErp';
@@ -145,20 +145,48 @@ const gruposReferidosDemo = (fotos) => [
 
 /* Personalización: creaciones (las fotos de la polera son de la demo del
    estudio), deseos (productos reales) y fechas importantes. */
-const creacionesDemo = (fotos) => [
-  { id: 'd1', nombre: 'Mi polera con Kapi', imagen: POLERA, imagenEspalda: POLERA_ESPALDA, producto: 'Polera clásica', color: { nombre: 'Blanco', hex: '#ffffff' },
-    fecha: 'Guardada hace 3 días', precio: 59.9, comprado: true, publicada: true, urlEditar: '/crear/polera?designId=d1', urlComprar: '/creacion/d1' },
-  { id: 'd2', nombre: 'Para el equipo', imagen: POLERA, imagenEspalda: POLERA_ESPALDA, producto: 'Polera clásica', color: { nombre: 'Blanco', hex: '#ffffff' },
-    fecha: 'Guardada ayer', precio: 54.9, precioAntes: 64.9, combo: 'Pareja', urlEditar: '/crear/polera?designId=d2', urlComprar: '/creacion/d2' },
-  { id: 'd3', nombre: 'Regalo para papá', imagen: fotos[2]?.imagen, producto: fotos[2]?.nombre, fecha: 'Guardada hace 12 días', precio: 34.9,
-    lados: 'Frente', urlEditar: '/editor/taza?designId=d3', urlComprar: '/creacion/d3' },
-  { id: 'd4', nombre: 'Diseño de verano', imagen: fotos[0]?.imagen, producto: 'Polo descontinuado', fecha: 'Guardada hace 40 días', disponible: false, urlEditar: '/editor/x?designId=d4' },
-];
-/* Un combo guardado (TarjetaMiCombo) y uno a medias. */
-const combosDemo = (fotos) => [
-  { id: 'k1', nombre: 'Mi combo de pareja', imagenes: [POLERA, POLERA_ESPALDA], combo: '2', subtitulo: 'Combo Pareja Walá',
-    fecha: 'Guardada hace 5 días', precio: 99.9, urlEditar: '/combo/pareja?mio=k1', urlComprar: '/combo/pareja?mio=k1' },
-];
+/* ── Datos reales de Crear (demo/crear.json: prendas base, combos y diseños
+   de la comunidad leídos de wala.pe), por los adaptadores del kit. ── */
+const PRENDAS_CREAR = CREAR.prendas
+  .filter((p) => p.deleted !== true)
+  .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+const PRENDA_POR_ID = new Map(PRENDAS_CREAR.map((p) => [p.id, p]));
+const precioDe = (id) => {
+  const p = PRENDA_POR_ID.get(id) || CREAR.combos.find((c) => c.id === id);
+  if (!p) return undefined;
+  const sale = Number(p.salePrice);
+  return sale > 0 && sale < Number(p.price) ? sale : Number(p.price);
+};
+const FECHAS = ['Guardada hoy', 'Guardada ayer', 'Guardada hace 3 días', 'Guardada hace 5 días', 'Guardada hace 12 días', 'Guardada hace 20 días'];
+
+/** Un diseño real (de la comunidad) como si fuera una creación del cliente. */
+const creacionDesdeReal = (d, k) => {
+  const { usar, ...base } = disenoComunidadDesde(d);
+  const esCombo = d.tipo === 'combo';
+  return {
+    ...base,
+    id: `cr-${d.id}`,
+    fecha: FECHAS[k % FECHAS.length],
+    precio: precioDe(esCombo ? d.comboId : d.productId),
+    combo: esCombo ? String((d.piezas || []).length) : undefined,
+    subtitulo: esCombo ? d.comboNombre : undefined,
+    comprado: k === 1,
+    publicada: k === 0,
+    urlEditar: esCombo ? `/combo/${d.comboId}?mio=${d.id}` : `/crear/${d.productId}?designId=${d.id}`,
+    urlComprar: `/creacion/${d.id}`,
+  };
+};
+
+const creacionesDemo = () => CREAR.comunidad.map(creacionDesdeReal);
+
+const BORRADORES = CREAR.comunidad.slice(-3).map((d, k) => {
+  const c = creacionDesdeReal(d, k);
+  return {
+    id: `b-${d.id}`, nombre: c.nombre, imagen: c.imagen, imagenes: c.imagenes, producto: c.producto, color: c.color,
+    subtitulo: c.imagenes ? '1 de 2 prendas con diseño · sin terminar' : undefined,
+    fecha: ['Editado hoy', 'Editado ayer', 'Editado hace 2 días'][k], urlEditar: c.urlEditar,
+  };
+});
 
 /* Pedidos por verificar (coinciden con el documento). */
 const POR_VERIFICAR = [
@@ -190,12 +218,6 @@ const detalleDe = (p) => p && ({
   direccion: { linea: 'Av. Larco 1150, dpto. 502 (frente al parque)', lugar: 'Miraflores, Lima Metropolitana' },
   resumen: { productos: p.total, envio: p.total >= 150 ? 0 : 12, total: p.total + (p.total >= 150 ? 0 : 12) },
 });
-
-const BORRADORES = [
-  { id: 'b1', nombre: 'Sin terminar', imagen: POLERA, producto: 'Polera clásica', fecha: 'Guardada hoy', urlEditar: '/crear/polera?borrador=b1' },
-  { id: 'b2', nombre: 'Idea para Carlos', imagen: POLERA_ESPALDA, producto: 'Polera clásica', fecha: 'Guardada ayer', urlEditar: '/crear/polera?borrador=b2' },
-  { id: 'b3', nombre: 'Combo para el aniversario', imagenes: [POLERA, POLERA_ESPALDA], subtitulo: '1 de 2 prendas con diseño · sin terminar', fecha: 'Editado hoy', urlEditar: '/combo/pareja?mio=b3' },
-];
 
 /* Los conjuntos por defecto de tienda_encuesta_config (encuestaConfig.js):
    campos de texto con sugerencias del catálogo (sugerenciasPorCampo). */
@@ -246,7 +268,7 @@ export function CuentaDemo({
   const [misiones, setMisiones] = useState(MISIONES);
   const [grupos, setGrupos] = useState(() => gruposReferidosDemo(fotos));
   const recompensas = useMemo(() => recompensasDemo(fotos), [fotos]);
-  const [creaciones, setCreaciones] = useState(() => [...combosDemo(fotos), ...creacionesDemo(fotos)]);
+  const [creaciones, setCreaciones] = useState(() => creacionesDemo());
   const [comunidad, setComunidad] = useState({ d1: 'publicada' });
   const [pagar, setPagar] = useState(null);
   const [reclamadas, setReclamadas] = useState(false);
@@ -678,37 +700,20 @@ export const ESTADOS_CREAR = [
   ['sinCombos', 'Sin combos'],
 ];
 
-/** Colores de la polera del proveedor (con un bicolor), como fondoMuestra. */
-const COLORES_POLERA = [
-  ['blanco', 'Blanco', '#ffffff'], ['negro', 'Negro', '#1f1f23'], ['lila', 'Lila', '#c4b5fd'], ['rosa', 'Rosa', '#f9a8d4'],
-  ['celeste', 'Celeste', '#7dd3fc'], ['rojo', 'Rojo', '#dc2626'], ['jade', 'Jade', '#10b981'], ['mostaza', 'Mostaza', '#eab308'],
-  ['azul', 'Azul marino', '#1e3a8a'], ['bicolor', 'Celeste y rosa', 'linear-gradient(90deg, #7dd3fc 50%, #f9a8d4 50%)'],
-].map(([id, nombre, fondo]) => ({ id, nombre, fondo }));
-
 /**
- * Crear con datos de prueba: prendas base (la polera del proveedor y las
- * fotos de la demo), combos de pareja y de conjunto, lo del cliente (con
- * sesión) y los diseños de la comunidad.
+ * Crear con los datos reales de Walá (demo/crear.json): sus prendas base,
+ * sus combos (pareja y conjunto) y los diseños de la comunidad; con sesión,
+ * esos mismos diseños hacen de borradores y creaciones del cliente.
  */
-export function CrearDemo({ sesion, esAdmin, estados = [], fotos = [] }) {
+export function CrearDemo({ sesion, esAdmin, estados = [] }) {
   const [para, setPara] = useState(1);
-  const prendas = [
-    { id: 'polera', nombre: 'Polera clásica', frente: POLERA, espalda: POLERA_ESPALDA, lados: ['Frente', 'Espalda'], colores: COLORES_POLERA, precio: 49.9, url: '/crear/polera' },
-    { id: 'oversize', nombre: 'Polera oversize', frente: POLERA_ESPALDA, espalda: POLERA, lados: ['Frente', 'Espalda'], colores: COLORES_POLERA.slice(0, 5), precio: 59.9, url: '/crear/oversize' },
-    { id: 'casaca', nombre: fotos[0]?.nombre || 'Casaca con capucha', frente: fotos[0]?.imagen, lados: ['Frente'], colores: COLORES_POLERA.slice(1, 4), precio: 109, url: '/crear/casaca' },
-    { id: 'polo', nombre: fotos[1]?.nombre || 'Polo', frente: fotos[1]?.imagen, lados: ['Frente'], colores: COLORES_POLERA.slice(0, 2), precio: 45, url: '/crear/polo', borrador: esAdmin },
-  ].filter((p) => esAdmin || !p.borrador);
-  const combos = estados.includes('sinCombos') ? [] : [
-    { id: 'pareja', piezas: 2, conjunto: false, nombre: 'Pareja de poleras', fotos: [POLERA, POLERA], prendas: ['Polera clásica', 'Polera clásica'], precio: 89.9, sueltas: 99.8, url: '/combo/pareja?nuevo=1' },
-    { id: 'pareja-over', piezas: 2, conjunto: false, nombre: 'Pareja oversize', fotos: [POLERA_ESPALDA, POLERA_ESPALDA], prendas: ['Polera oversize', 'Polera oversize'], precio: 109.9, sueltas: 119.8, url: '/combo/pareja-over?nuevo=1' },
-    { id: 'conjunto', piezas: 3, conjunto: true, nombre: 'Conjunto completo', fotos: [fotos[0]?.imagen, POLERA, fotos[1]?.imagen].filter(Boolean), prendas: ['Casaca', 'Polera clásica', 'Polo'], precio: 179.9, sueltas: 203.9, url: '/combo/conjunto?nuevo=1' },
-  ];
-  const comunidad = [
-    { id: 'c1', nombre: 'Kapi astronauta', imagen: POLERA, imagenEspalda: POLERA_ESPALDA, producto: 'Polera clásica', color: { nombre: 'Blanco', hex: '#ffffff' }, lados: 'Frente + Espalda', usar: { url: '/crear/polera?plantilla=c1', autor: 'Walá', usos: 12 } },
-    { id: 'c2', nombre: 'Juntos desde 2019', imagenes: [POLERA, POLERA_ESPALDA], combo: '2 prendas', producto: 'Pareja de poleras', usar: { url: '/combo/pareja?plantilla=c2', autor: 'Walá', usos: 31 } },
-    { id: 'c3', nombre: 'Equipo de los viernes', imagen: POLERA_ESPALDA, producto: 'Polera oversize', color: { nombre: 'Blanco', hex: '#ffffff' }, usar: { url: '/crear/oversize?plantilla=c3', autor: 'Walá', usos: 1 } },
-    { id: 'c4', nombre: 'Mi mascota', imagen: fotos[0]?.imagen, producto: fotos[0]?.nombre, usar: { url: '/crear/casaca?plantilla=c4', autor: 'Walá' } },
-  ];
+  // Lo mismo que la tienda: el admin ve también los borradores.
+  const prendas = PRENDAS_CREAR.filter((p) => esAdmin || p.visible !== false).map(prendaCrearDesdeProducto);
+  const combos = estados.includes('sinCombos') ? [] : CREAR.combos
+    .filter((c) => esAdmin || c.publicado)
+    .map((c) => comboCrearDesde(c, PRENDA_POR_ID))
+    .filter(Boolean);
+  const comunidad = CREAR.comunidad.map(disenoComunidadDesde);
   return (
     <PaginaCrear
       prendas={estados.includes('sinPrendas') ? [] : prendas}
@@ -717,10 +722,10 @@ export function CrearDemo({ sesion, esAdmin, estados = [], fotos = [] }) {
       para={para}
       onPara={setPara}
       borradores={sesion ? BORRADORES : []}
-      creaciones={sesion ? [...combosDemo(fotos), ...creacionesDemo(fotos)] : []}
-      totalCreaciones={sesion ? 13 : 0}
+      creaciones={sesion ? creacionesDemo() : []}
+      totalCreaciones={sesion ? creacionesDemo().length : 0}
       comunidad={comunidad}
-      totalComunidad={18}
+      totalComunidad={comunidad.length}
     />
   );
 }

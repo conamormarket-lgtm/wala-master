@@ -15,6 +15,13 @@ Cómo verlo en vivo: `npm run dev` → http://localhost:3000/componentes.html �
 |---|---|---|
 | ![Crear en escritorio](crear-escritorio.webp) | ![Crear en el celular](crear-celular.webp) | ![Los combos de pareja con su ahorro](crear-combos.webp) |
 
+**Datos de la demo:** son los reales de Walá, en `src/componentes/demo/crear.json`, y pasan por los mismos adaptadores que usaría la tienda.
+
+- **Qué se leyó (2026-10-15):** las prendas base y los combos de
+  `productos_wala`, y los diseños de la comunidad (`listarComunidad`).
+- **Con sesión:** esos diseños personalizados hacen de borradores y
+  creaciones del cliente, también en Mis creaciones.
+
 Revisado el 2026-10-15 contra wala.pe/personalizar (admin) y:
 
 - `src/pages/PersonalizarPage.jsx` y `pages/Crear/TusBorradores.jsx`;
@@ -58,7 +65,8 @@ Las tarjetas de prenda y de combo tienen el lenguaje de `TarjetaProducto`:
 - se inclinan siguiendo al puntero, se ilumina el canto y un barrido cruza
   la foto una vez;
 - la prenda muestra la espalda al pasar; en el celular, frente y espalda
-  alternan solas mientras se ven;
+  alternan solas mientras se ven, con dos puntos redondos arriba que dicen
+  cuál se ve (como en la tienda: con ratón no aparecen);
 - los puntos de color se levantan uno tras otro y el pincel de "Diseñar" se
   ladea;
 - un combo abre sus prendas en abanico y lleva "Ahorras S/" en una
