@@ -4,8 +4,7 @@ import { LogOut, IdCard } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { logout } from '../services/firebase/auth';
-import CuentaLoginPrompt from '../components/CuentaLoginPrompt';
-import PedidosLoginPrompt from '../components/PedidosLoginPrompt/PedidosLoginPrompt';
+import { PaginaCuentaInvitado } from '../componentes/kit/paginas/Cuenta';
 import { useCuentaNavGroups } from './cuenta/useCuentaNavGroups';
 import styles from './CuentaPage.module.css';
 import { T } from '../i18n/useTranslatedText';
@@ -54,20 +53,14 @@ const CuentaLayout = () => {
   }
 
   if (!user) {
-    // Si el visitante entra directo a /cuenta/pedidos sin sesión,
-    // mostramos el prompt específico de pedidos. Para el resto de cuenta,
-    // mantenemos el prompt general.
+    // Sin sesión: el aviso del kit, con su texto propio en /cuenta/pedidos.
+    // (CuentaLoginPrompt y PedidosLoginPrompt quedan sin usar hasta que este
+    // lleve un tiempo en producción; ver kit/guia/MIGRACION.md.)
     const isPedidosRoute =
       location.pathname === '/cuenta/pedidos' ||
       location.pathname.startsWith('/cuenta/pedidos/');
 
-    return (
-      <div className={`${styles.container} ${styles.containerAuth}`}>
-        <div className={styles.content}>
-          {isPedidosRoute ? <PedidosLoginPrompt /> : <CuentaLoginPrompt />}
-        </div>
-      </div>
-    );
+    return <PaginaCuentaInvitado pedidos={isPedidosRoute} />;
   }
 
   // Mis Pedidos necesita el documento y el teléfono del perfil: sin ellos no

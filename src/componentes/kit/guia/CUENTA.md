@@ -124,7 +124,7 @@ componente o su forma de recibir datos.
 | Parte | Hoy en la tienda | Pasa a (kit) |
 |---|---|---|
 | Marco | `pages/CuentaLayout.jsx`: `<aside>` (~95-130), aviso de perfil (~143-157), `<Outlet>` (~158) | `MarcoCuenta` con `usuario`, `grupos`, `activo={location.pathname}`, `perfilIncompleto` |
-| Sin sesión | `CuentaLoginPrompt` / `PedidosLoginPrompt` (~67) | `PaginaCuentaInvitado` (`pedidos` en /cuenta/pedidos) |
+| Sin sesión | ✓ Ya en la tienda (`CuentaLayout.jsx`; antes `CuentaLoginPrompt` / `PedidosLoginPrompt`) | `PaginaCuentaInvitado` (`pedidos` en /cuenta/pedidos) |
 | Resumen | `pages/cuenta/CuentaResumenPage.jsx` (grilla ~34-48, "Cerrar sesión" ~58) | `PaginaResumenCuenta` (el "Cerrar sesión" lo pone `MarcoCuenta`) |
 | Perfil | `PerfilPage.jsx`: `AvatarStudio` (~193), recompensas, `GlassCard` "Datos Personales" (~243-330) | `PaginaPerfil` |
 | Mis pedidos | `CuentaRastreoPage.jsx` (tarjetas ~365-484, `ProgresoResumen` ~204-230) y `PedidosPorVerificar.jsx` | `PaginaPedidos` + `SeguimientoPedido` (`pasos`, `estado`, `deuda`, `anulado`, `urlDetalle`) + `PedidosPorVerificar` |
