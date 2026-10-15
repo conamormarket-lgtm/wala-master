@@ -64,6 +64,8 @@ const BLOB_RADIUS_RATIO = 0.044;
 const DENSITY_CELL = 3;
 // Máximo de resoluciones exactas que se ofrecen en el selector.
 const MAX_RESOLUCIONES = 12;
+// Elementos del ranking que se ven antes de "Ver todos".
+const ELEMENTOS_INICIALES = 8;
 // Tiempo máximo de espera a que el iframe cargue antes de asumir fallo.
 const IFRAME_TIMEOUT_MS = 6000;
 // Reintentos de carga del iframe antes de rendirse al fallback.
@@ -190,6 +192,12 @@ function ramp(t) {
   return stops[stops.length - 1].c;
 }
 
+// Texto de un elemento del ranking ("Sin texto (2)" si no tiene).
+function textoElemento(el) {
+  if (el.texto) return el.texto;
+  return el.sufijo ? `Sin texto (${el.sufijo})` : 'Sin texto';
+}
+
 // Ruta para mostrar: '/producto/:id' -> '/producto/…'.
 function rutaVisible(path) {
   return typeof path === 'string' ? path.replace(/\/:[^/]+/g, '/…') : '';
@@ -244,6 +252,10 @@ export default function HeatmapViewer({
   // Anclas medidas en la vista previa: ruta CSS -> caja del elemento en px de
   // la página (sin escalar). null = aún sin medir.
   const [anclas, setAnclas] = useState(null);
+  // Elemento del ranking elegido (su `key`): se señala en la vista previa.
+  const [elegido, setElegido] = useState(null);
+  const [verTodosElementos, setVerTodosElementos] = useState(false);
+  const ultimoScrollElegido = useRef(null);
 
   // Resolución única de la fuente de datos según el modo.
   const data = controlled ? { ...EMPTY_HEATMAP_DATA, ...dataProp } : internalData;
@@ -343,6 +355,12 @@ export default function HeatmapViewer({
     () => (exacta ? points.filter((p) => p.sw === exacta.w && p.sh === exacta.h) : points),
     [exacta, points]
   );
+
+  // Al cambiar de página no queda ningún elemento elegido.
+  useEffect(() => {
+    setElegido(null);
+    setVerTodosElementos(false);
+  }, [selectedPath]);
 
   // Reinicia el estado del iframe cada vez que cambia la página seleccionada.
   useEffect(() => {
@@ -451,13 +469,20 @@ export default function HeatmapViewer({
     const lista = visiblePoints.map((p) => {
       const a = p.sel && anclas ? anclas.get(p.sel) : null;
       if (a) {
-        return { cx: (a.x + p.rx * a.w) * scale, cy: Math.min(a.y + p.ry * a.h, docH) * scale };
+        return {
+          cx: (a.x + p.rx * a.w) * scale,
+          cy: Math.min(a.y + p.ry * a.h, docH) * scale,
+          el: p.el,
+          caja: { x: a.x * scale, y: a.y * scale, w: a.w * scale, h: a.h * scale },
+        };
       }
-      if (exacta) return { cx: p.px * scale, cy: Math.min(p.py, docH) * scale };
+      if (exacta) return { cx: p.px * scale, cy: Math.min(p.py, docH) * scale, el: p.el, caja: null };
       aproximados += 1;
       return {
         cx: p.xNorm * stageW,
         cy: (p.yFrac != null ? p.yFrac * docH : Math.min(p.yScreens * pantalla.h, docH)) * scale,
+        el: p.el,
+        caja: null,
       };
     });
     return { pixelPoints: lista, clicsAproximados: aproximados };
@@ -479,11 +504,60 @@ export default function HeatmapViewer({
     return () => ro.disconnect();
   }, [hasData]);
 
+  // Con un elemento elegido, el calor muestra solo sus clics.
+  const puntosCalor = useMemo(
+    () => (elegido ? pixelPoints.filter((p) => p.el === elegido) : pixelPoints),
+    [elegido, pixelPoints]
+  );
+
+  // Recuadros que señalan el elemento elegido: la caja real del elemento si se
+  // encontró en la vista previa (puede haber varias: el "Crear" del menú y el
+  // del pie), o un recuadro alrededor de sus clics si no.
+  const marcas = useMemo(() => {
+    if (!elegido || puntosCalor.length === 0) return [];
+    const cajas = new Map();
+    const sueltos = [];
+    puntosCalor.forEach((p) => {
+      if (p.caja) cajas.set(`${Math.round(p.caja.x)}|${Math.round(p.caja.y)}`, p.caja);
+      else sueltos.push(p);
+    });
+    const lista = [...cajas.values()];
+    if (sueltos.length > 0) {
+      const xs = sueltos.map((p) => p.cx);
+      const ys = sueltos.map((p) => p.cy);
+      const pad = 14;
+      const x = Math.max(0, Math.min(...xs) - pad);
+      const y = Math.max(0, Math.min(...ys) - pad);
+      lista.push({ x, y, w: Math.max(...xs) + pad - x, h: Math.max(...ys) + pad - y, aproximada: true });
+    }
+    return lista.sort((a, b) => a.y - b.y).slice(0, 6);
+  }, [elegido, puntosCalor]);
+
   // (Re)dibuja el heatmap sobre la página completa.
   useEffect(() => {
     if (stageW <= 0 || stageH <= 0) return;
-    drawHeatmap(canvasRef.current, pixelPoints, stageW, stageH);
-  }, [pixelPoints, stageW, stageH]);
+    drawHeatmap(canvasRef.current, puntosCalor, stageW, stageH);
+  }, [puntosCalor, stageW, stageH]);
+
+  // Al elegir un elemento: la vista baja hasta él (una sola vez por elección).
+  useEffect(() => {
+    if (!elegido) {
+      ultimoScrollElegido.current = null;
+      return;
+    }
+    if (marcas.length === 0 || ultimoScrollElegido.current === elegido) return;
+    ultimoScrollElegido.current = elegido;
+    const frame = frameRef.current;
+    if (!frame) return;
+    const m = marcas[0];
+    frame.scrollTo({ top: Math.max(0, m.y + m.h / 2 - viewH / 2), behavior: 'smooth' });
+    // Si la vista no se ve entera (en pantallas angostas el ranking va debajo),
+    // la página sube hasta ella para que se vea el recuadro y la barra.
+    const r = frame.getBoundingClientRect();
+    if (r.top < 0 || r.bottom > window.innerHeight) {
+      frame.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  }, [elegido, marcas, viewH]);
 
   // El iframe queda fijo en la ventana y se desplaza por dentro al mismo
   // ritmo que el scroll del marco, para que la página y el calor coincidan.
@@ -590,6 +664,19 @@ export default function HeatmapViewer({
   };
 
   const maxElementCount = topElements.length > 0 ? topElements[0].count : 0;
+  const totalElementos = Math.max(
+    data.clicksByPath?.[selectedPath] || 0,
+    topElements.reduce((t, e) => t + e.count, 0)
+  );
+  const elementosVisibles = verTodosElementos ? topElements : topElements.slice(0, ELEMENTOS_INICIALES);
+  const posElegido = elegido ? topElements.findIndex((e) => e.key === elegido) + 1 : 0;
+  const elElegido = posElegido > 0 ? topElements[posElegido - 1] : null;
+  const hayZonas = topElements.some((e) => e.tipo === 'Zona');
+
+  // Si el elemento elegido sale del ranking (cambio de filtros), se suelta.
+  useEffect(() => {
+    if (elegido && !topElements.some((e) => e.key === elegido)) setElegido(null);
+  }, [elegido, topElements]);
   const showIframe = iframeState !== 'failed' && !!iframeSrc;
   const maxClicks = data.maxClicks || 0;
 
@@ -766,6 +853,26 @@ export default function HeatmapViewer({
                 </div>
               </div>
 
+              {elElegido && (
+                <div className={styles.seleccionBar} role="status">
+                  <span className={styles.seleccionNum}>{posElegido}</span>
+                  <span className={styles.tipoChip}>{elElegido.tipo}</span>
+                  <span className={styles.seleccionTexto} title={textoElemento(elElegido)}>
+                    {textoElemento(elElegido)}
+                  </span>
+                  <span className={styles.seleccionInfo}>
+                    {marcas.length > 0
+                      ? `${puntosCalor.length.toLocaleString('es-PE')} ${puntosCalor.length === 1 ? 'clic' : 'clics'}${
+                        marcas.length > 1 ? ` en ${marcas.length} lugares de la página (desplázate para verlos)` : ''
+                      }`
+                      : 'No se ve en esta vista: puede estar en un menú o ventana que estaba abierta, o en otra pantalla.'}
+                  </span>
+                  <button type="button" className={styles.seleccionQuitar} onClick={() => setElegido(null)}>
+                    Ver todo el mapa
+                  </button>
+                </div>
+              )}
+
               <div
                 ref={frameRef}
                 className={`${styles.canvasFrame} ${showIframe ? styles.canvasFrameLive : ''}`}
@@ -815,9 +922,26 @@ export default function HeatmapViewer({
                   <canvas
                     ref={canvasRef}
                     className={styles.canvas}
-                    style={{ width: `${stageW}px`, height: `${stageH}px`, opacity: opacidadCalor }}
+                    style={{
+                      width: `${stageW}px`,
+                      height: `${stageH}px`,
+                      // Con un elemento señalado, el calor se suaviza para leer el elemento.
+                      opacity: elegido ? Math.min(opacidadCalor, 0.4) : opacidadCalor,
+                    }}
                     aria-hidden="true"
                   />
+
+                  {/* Recuadro(s) del elemento elegido en el ranking. */}
+                  {marcas.map((m, i) => (
+                    <div
+                      key={`${elegido}-${i}`}
+                      className={`${styles.marca} ${m.aproximada ? styles.marcaAproximada : ''}`}
+                      style={{ left: `${m.x}px`, top: `${m.y}px`, width: `${m.w}px`, height: `${m.h}px` }}
+                      aria-hidden="true"
+                    >
+                      <span className={styles.marcaNum}>{posElegido}</span>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Spinner mientras carga el iframe (con aviso de reintento). */}
@@ -890,34 +1014,56 @@ export default function HeatmapViewer({
               {topElements.length === 0 ? (
                 <p className={styles.sideEmpty}><T>Sin elementos registrados en esta página.</T></p>
               ) : (
-                <ul className={styles.rankList}>
-                  {topElements.map((el, idx) => {
-                    const pct = maxElementCount > 0 ? (el.count / maxElementCount) * 100 : 0;
-                    return (
-                      <motion.li
-                        key={`${el.label}-${idx}`}
-                        className={styles.rankItem}
-                        initial={{ opacity: 0, x: 12 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.03 * idx, duration: 0.3 }}
-                      >
-                        <span className={styles.rankPos}>{idx + 1}</span>
-                        <div className={styles.rankBody}>
-                          <span
-                            className={`${styles.rankLabel} ${el.generic ? styles.rankLabelGeneric : ''}`}
-                            title={el.label}
+                <>
+                  <p className={styles.sideHint}>
+                    Toca uno para verlo señalado en la página.
+                    {hayZonas ? ' «Zona» es un clic fuera de un botón o enlace.' : ''}
+                  </p>
+                  <ul className={styles.rankList}>
+                    {elementosVisibles.map((el, idx) => {
+                      const pct = maxElementCount > 0 ? (el.count / maxElementCount) * 100 : 0;
+                      const pctPagina = totalElementos > 0 ? Math.round((el.count / totalElementos) * 100) : 0;
+                      const activo = el.key === elegido;
+                      return (
+                        <li key={el.key}>
+                          <button
+                            type="button"
+                            className={`${styles.rankItem} ${activo ? styles.rankItemActive : ''}`}
+                            aria-pressed={activo}
+                            onClick={() => setElegido(activo ? null : el.key)}
+                            title={`${el.tipo}: ${textoElemento(el)} · ${el.count} ${el.count === 1 ? 'clic' : 'clics'}`}
                           >
-                            {el.label}
-                          </span>
-                          <span className={styles.rankTrack}>
-                            <span className={styles.rankFill} style={{ width: `${pct}%` }} />
-                          </span>
-                        </div>
-                        <span className={styles.rankCount}>{el.count}</span>
-                      </motion.li>
-                    );
-                  })}
-                </ul>
+                            <span className={styles.rankPos}>{idx + 1}</span>
+                            <span className={styles.rankBody}>
+                              <span className={styles.rankTop}>
+                                <span className={styles.tipoChip}>{el.tipo}</span>
+                                <span className={`${styles.rankLabel} ${el.texto ? '' : styles.rankLabelGeneric}`}>
+                                  {textoElemento(el)}
+                                </span>
+                              </span>
+                              <span className={styles.rankTrack}>
+                                <span className={styles.rankFill} style={{ width: `${pct}%` }} />
+                              </span>
+                            </span>
+                            <span className={styles.rankCount}>
+                              {el.count.toLocaleString('es-PE')}
+                              <span className={styles.rankPct}>{pctPagina}%</span>
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {topElements.length > ELEMENTOS_INICIALES && (
+                    <button
+                      type="button"
+                      className={styles.verMas}
+                      onClick={() => setVerTodosElementos((v) => !v)}
+                    >
+                      {verTodosElementos ? 'Ver menos' : `Ver los ${topElements.length}`}
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </motion.div>

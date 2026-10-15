@@ -658,6 +658,13 @@
   color: var(--gris-texto-principal, #0F172A);
 }
 
+.sideHint {
+  margin: -0.45rem 0 0.75rem;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--gris-texto-secundario, #475569);
+}
+
 .sideEmpty {
   font-size: 0.85rem;
   color: var(--gris-texto-secundario, #475569);
@@ -669,16 +676,66 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  max-height: 520px;
+  gap: 0.2rem;
+  max-height: 560px;
   overflow-y: auto;
 }
 
+/* Cada fila es un botón: al tocarla se señala el elemento en la página. */
 .rankItem {
+  width: 100%;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.6rem;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.rankItem:hover {
+  background: rgba(109, 40, 217, 0.06);
+}
+
+.rankItem:focus-visible {
+  outline: 2px solid var(--primary-color, #6D28D9);
+  outline-offset: 1px;
+}
+
+.rankItemActive,
+.rankItemActive:hover {
+  background: rgba(109, 40, 217, 0.1);
+  border-color: rgba(109, 40, 217, 0.35);
+}
+
+.rankItemActive .rankPos {
+  background: var(--primary-color, #6D28D9);
+  color: #ffffff;
+}
+
+.rankTop {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+/* Tipo del elemento (Enlace, Botón, Zona…): texto simple, sin etiqueta colgante. */
+.tipoChip {
+  flex-shrink: 0;
+  padding: 0.08rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--primary-color, #6D28D9);
+  background: rgba(109, 40, 217, 0.1);
 }
 
 .rankPos {
@@ -687,6 +744,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   border-radius: 50%;
   font-size: 0.72rem;
   font-weight: 800;
@@ -726,13 +784,146 @@
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--primary-color, #6D28D9), var(--verde-exito, #10B981));
+  background: var(--primary-color, #6D28D9);
 }
 
 .rankCount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   font-size: 0.82rem;
   font-weight: 800;
+  line-height: 1.15;
   color: var(--gris-texto-principal, #0F172A);
+}
+
+/* Parte de los clics de la página que se lleva el elemento. */
+.rankPct {
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.verMas {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(109, 40, 217, 0.08);
+  color: var(--primary-color, #6D28D9);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.verMas:hover {
+  background: rgba(109, 40, 217, 0.14);
+}
+
+/* Barra "Señalando: …" encima de la vista previa. */
+.seleccionBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.55rem;
+  margin-bottom: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 12px;
+  border: 1px solid rgba(109, 40, 217, 0.22);
+  background: rgba(109, 40, 217, 0.07);
+  font-size: 0.82rem;
+}
+
+.seleccionNum {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: var(--primary-color, #6D28D9);
+}
+
+.seleccionTexto {
+  min-width: 0;
+  max-width: 100%;
+  font-weight: 700;
+  color: var(--gris-texto-principal, #0F172A);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seleccionInfo {
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.seleccionQuitar {
+  margin-left: auto;
+  padding: 0.3rem 0.75rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--primary-color, #6D28D9);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Recuadro que señala el elemento elegido sobre la página. */
+.marca {
+  position: absolute;
+  z-index: 3;
+  border: 2px solid var(--primary-color, #6D28D9);
+  border-radius: 8px;
+  background: rgba(109, 40, 217, 0.08);
+  box-shadow: 0 0 0 4px rgba(109, 40, 217, 0.22);
+  pointer-events: none;
+  animation: marcaEntra 0.35s ease-out;
+}
+
+/* Sin ancla: el recuadro rodea los clics (posición aproximada). */
+.marcaAproximada {
+  border-style: dashed;
+}
+
+.marcaNum {
+  position: absolute;
+  top: -11px;
+  left: -11px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: var(--primary-color, #6D28D9);
+}
+
+@keyframes marcaEntra {
+  from {
+    opacity: 0;
+    transform: scale(1.12);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marca {
+    animation: none;
+  }
 }
 
 /* ---------- Fallback opaco (sin backdrop-filter) ---------- */

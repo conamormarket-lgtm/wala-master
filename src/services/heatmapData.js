@@ -339,63 +339,20 @@ function humanizeToken(token) {
     .trim();
 }
 
-/* ------------------------------------------------------------------ *
- *  EMOJIS POR TIPO DE ELEMENTO
- *  Un prefijo visual ayuda a leer el ranking de un vistazo y evita
- *  mostrar etiquetas crudas tipo [svg] / [img].
- * ------------------------------------------------------------------ */
-
-const EMOJI_BUTTON = '🔘';
-const EMOJI_LINK = '🔗';
-const EMOJI_IMAGE = '🖼️';
-const EMOJI_INPUT = '📝';
-const EMOJI_ICON = '🔣';
-const EMOJI_GENERIC = '📦';
-
-// Devuelve el emoji que mejor representa un tag concreto.
-function emojiForTag(tag) {
+// Tipo legible del elemento según su etiqueta HTML.
+function tipoDeTag(tag) {
   switch (tag) {
-    case 'BUTTON':
-      return EMOJI_BUTTON;
     case 'A':
-      return EMOJI_LINK;
-    case 'IMG':
-    case 'IMAGE':
-    case 'PICTURE':
-      return EMOJI_IMAGE;
+      return 'Enlace';
+    case 'BUTTON':
+      return 'Botón';
     case 'INPUT':
     case 'TEXTAREA':
+      return 'Campo';
     case 'SELECT':
-      return EMOJI_INPUT;
-    case 'SVG':
-    case 'PATH':
-    case 'USE':
-    case 'G':
-    case 'CIRCLE':
-    case 'RECT':
-    case 'POLYGON':
-    case 'LINE':
-      return EMOJI_ICON;
-    case 'CANVAS':
-      return EMOJI_ICON;
-    default:
-      return EMOJI_GENERIC;
-  }
-}
-
-// Antepone un emoji a una etiqueta, evitando duplicarlo si ya empieza por uno.
-function withEmoji(emoji, label) {
-  const text = (label || '').trim();
-  if (!emoji) return text;
-  if (!text) return emoji;
-  // Si la etiqueta ya arranca con el mismo emoji, no lo repetimos.
-  if (text.startsWith(emoji)) return text;
-  return `${emoji} ${text}`;
-}
-
-// Nombre amigable de un tag genérico cuando no hay texto.
-function genericTagLabel(tag) {
-  switch (tag) {
+      return 'Selector';
+    case 'LABEL':
+      return 'Opción';
     case 'IMG':
     case 'IMAGE':
     case 'PICTURE':
@@ -408,106 +365,65 @@ function genericTagLabel(tag) {
     case 'RECT':
     case 'POLYGON':
     case 'LINE':
-      return 'Ícono';
     case 'CANVAS':
-      return 'Lienzo';
+      return 'Ícono';
     default:
-      return 'Elemento';
+      // Clic fuera de un botón/enlace (en un recuadro, un texto, un fondo).
+      return 'Zona';
   }
 }
 
-// Nombre amigable de un tag interactivo con texto.
-function interactiveTagPrefix(tag) {
-  switch (tag) {
-    case 'A':
-      return 'Enlace';
-    case 'BUTTON':
-      return 'Botón';
-    case 'INPUT':
-    case 'TEXTAREA':
-      return 'Campo';
-    case 'SELECT':
-      return 'Selector';
-    default:
-      return null;
-  }
+// Texto visible limpio: sin emojis ni símbolos sueltos al inicio y con los
+// espacios normalizados. null si no queda nada legible (el "!" de un globo de
+// aviso, un contador "6 1"…): ese elemento se muestra como "sin texto".
+function textoLegible(value) {
+  if (!value) return null;
+  const limpio = String(value)
+    .replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '')
+    .replace(/\s+/g, ' ')
+    .replace(/^[^\p{L}\p{N}]+/u, '')
+    .trim();
+  return /\p{L}/u.test(limpio) ? limpio : null;
 }
 
 /**
- * Deriva una ETIQUETA LEGIBLE y una CLAVE de agrupación a partir del elementInfo
- * crudo. La clave agrupa elementos equivalentes (mismo texto/acción) aunque el
- * string original difiera levemente.
+ * Deriva la ETIQUETA de un elemento clicado a partir del elementInfo crudo:
+ *   { tipo: 'Enlace'|'Botón'|'Imagen'|'Ícono'|'Campo'|'Selector'|'Opción'|'Zona',
+ *     texto: 'Crear' | null, label: 'Enlace: Crear', key, generic }
+ * Los elementos con el mismo tipo y texto se agrupan (el "Crear" del menú y
+ * el del pie suman juntos). Sin texto legible, cada elemento se separa por su
+ * ancla (`sel`) si la hay; si no, uno por tipo.
  *
- * @param {string} raw       elementInfo tal cual viene de Firestore
- * @param {number} zoneIndex índice de "zona" para etiquetar genéricos sin texto
- * @returns {{ label:string, key:string, generic:boolean }}
+ * @param {string} raw  elementInfo tal cual viene de Firestore
+ * @param {string|null} sel  ruta CSS del ancla del clic (clics nuevos)
  */
-function deriveElementLabel(raw, zoneIndex) {
+function deriveElementLabel(raw, sel) {
   const parsed = parseElementInfo(raw);
+  const tipo = tipoDeTag(parsed?.tag || '');
 
-  if (!parsed) {
-    return { label: `${EMOJI_GENERIC} Elemento sin identificar`, key: 'unknown', generic: true };
+  let texto = null;
+  if (parsed?.kind === 'text') texto = textoLegible(parsed.value);
+  else if (parsed?.kind === 'track' || parsed?.kind === 'id') texto = textoLegible(humanizeToken(parsed.value));
+
+  // El tracker corta el texto a 40 caracteres: se marca con "…" si llegó cortado.
+  if (texto && String(parsed.value).length >= 39) texto = `${texto}…`;
+
+  if (texto) {
+    return { tipo, texto, label: `${tipo}: ${texto}`, key: `${tipo}:${texto.toLowerCase()}`, generic: false };
   }
+  return {
+    tipo,
+    texto: null,
+    label: `${tipo} sin texto`,
+    key: sel ? `sel:${sel}` : `tipo:${tipo}`,
+    generic: true,
+  };
+}
 
-  const { tag, kind, value } = parsed;
-
-  // Guarda: si el elemento llegó SIN tag parseable y tampoco trae un texto/valor
-  // útil, devolvemos SIEMPRE una etiqueta genérica con emoji (nunca un string
-  // crudo). Evita que se filtren etiquetas tipo '[svg]' o basura sin formato.
-  if (!tag && (!value || !String(value).trim())) {
-    const zoneLabel = Number.isFinite(zoneIndex)
-      ? `Elemento (zona ${zoneIndex})`
-      : 'Elemento sin identificar';
-    return { label: withEmoji(EMOJI_GENERIC, zoneLabel), key: 'unknown', generic: true };
-  }
-
-  // 1) Prioridad máxima: texto visible (enlace/botón) o data-track/aria/alt/title.
-  if (kind === 'text' && value) {
-    const clean = value.replace(/\s+/g, ' ').trim();
-    const prefix = interactiveTagPrefix(tag);
-    const base = prefix ? `${prefix}: ${clean}` : clean;
-    const emoji = prefix ? emojiForTag(tag) : EMOJI_LINK;
-    return { label: withEmoji(emoji, base), key: `text:${clean.toLowerCase()}`, generic: false };
-  }
-
-  if (kind === 'track' && value) {
-    const human = humanizeToken(value);
-    const clean = (human || value).replace(/\s+/g, ' ').trim();
-    const emoji = tag ? emojiForTag(tag) : EMOJI_LINK;
-    return { label: withEmoji(emoji, clean), key: `track:${value.toLowerCase()}`, generic: false };
-  }
-
-  // 2) Id legible (si parece descriptivo).
-  if (kind === 'id' && value) {
-    const human = humanizeToken(value);
-    const emoji = tag ? emojiForTag(tag) : EMOJI_GENERIC;
-    return { label: withEmoji(emoji, human || value), key: `id:${value.toLowerCase()}`, generic: false };
-  }
-
-  // 3) Genéricos / visuales sin texto: imagen / ícono por zona.
-  const isGeneric = GENERIC_TAGS.has(tag) || kind === 'bare' || kind === 'class';
-  if (isGeneric) {
-    const base = genericTagLabel(tag);
-    const emoji = emojiForTag(tag);
-    // Si tenía una clase, la usamos como pista discreta.
-    if (kind === 'class' && value) {
-      const human = humanizeToken(value);
-      if (human && human.length <= 22) {
-        return {
-          label: withEmoji(emoji, `${base} · ${human}`),
-          key: `gen:${tag}:${value.toLowerCase()}`,
-          generic: true,
-        };
-      }
-    }
-    const zoneLabel = Number.isFinite(zoneIndex) ? `${base} (zona ${zoneIndex})` : base;
-    return { label: withEmoji(emoji, zoneLabel), key: `gen:${tag}:zone${zoneIndex}`, generic: true };
-  }
-
-  // 4) Fallback final.
-  const fallback = humanizeToken(value) || tag || 'Elemento';
-  const emoji = tag ? emojiForTag(tag) : EMOJI_GENERIC;
-  return { label: withEmoji(emoji, fallback), key: `tag:${tag}:${(value || '').toLowerCase()}`, generic: false };
+// Clics viejos sobre la barra de admin (antes se registraban): no son de clientes.
+function esClicDeAdmin(ev) {
+  return typeof ev?.elementInfo === 'string'
+    && /Modo Administrador Activo|Panel de Administraci[oó]n|Edici[oó]n Visual/i.test(ev.elementInfo);
 }
 
 /* ------------------------------------------------------------------ *
@@ -663,10 +579,6 @@ export function aggregateHeatmapBatches(docs = [], filtros = {}) {
   const elementsByPath = {};
   // clickCountByPath: path -> número total de clics ubicables (para ordenar páginas)
   const clickCountByPath = new Map();
-  // Contador de "zonas" genéricas por página (para etiquetar imágenes/íconos sin texto).
-  const zoneCounterByPath = {};
-  // Cache de zona por (path + tag) para que el mismo ícono caiga en la misma zona.
-  const zoneAssignByPath = {};
 
   let totalClicks = 0;
   // Métricas de HONESTIDAD: cuántos lotes del rango NO traen origen/dispositivo
@@ -723,45 +635,37 @@ export function aggregateHeatmapBatches(docs = [], filtros = {}) {
       const rawPath = (ev && typeof ev.path === 'string' && ev.path.trim()) ? ev.path.trim() : 'unknown';
       const path = claveDePagina(rawPath);
       if (path == null) return; // panel admin: fuera del mapa
+      if (esClicDeAdmin(ev)) return; // barra de admin: fuera del mapa
 
       if (!concretasByPath[path]) concretasByPath[path] = new Map();
       const concreta = rawPath === 'unknown' ? rawPath : limpiarRuta(rawPath);
       concretasByPath[path].set(concreta, (concretasByPath[path].get(concreta) || 0) + 1);
 
+      const rawElement = (ev && typeof ev.elementInfo === 'string' && ev.elementInfo.trim())
+        ? ev.elementInfo.trim()
+        : null;
+      const elemento = rawElement
+        ? deriveElementLabel(rawElement, typeof ev.sel === 'string' ? ev.sel : null)
+        : null;
+
       const point = normalizePoint(ev);
       if (point) {
+        // `el` enlaza el punto con su fila del ranking (para señalarlo).
+        point.el = elemento ? elemento.key : null;
         if (!pointsByPath[path]) pointsByPath[path] = [];
         pointsByPath[path].push(point);
         totalClicks += 1;
         clickCountByPath.set(path, (clickCountByPath.get(path) || 0) + 1);
       }
 
-      const rawElement = (ev && typeof ev.elementInfo === 'string' && ev.elementInfo.trim())
-        ? ev.elementInfo.trim()
-        : null;
-      if (!rawElement) return;
-
-      // Asignación de "zona" estable por (path + tag genérico) para no inflar
-      // el ranking con decenas de "Imagen (zona N)" distintas.
-      const parsedTag = parseElementInfo(rawElement)?.tag || '';
-      if (!zoneAssignByPath[path]) zoneAssignByPath[path] = new Map();
-      if (!zoneCounterByPath[path]) zoneCounterByPath[path] = 0;
-      let zoneIndex = zoneAssignByPath[path].get(parsedTag);
-      if (zoneIndex == null) {
-        zoneCounterByPath[path] += 1;
-        zoneIndex = zoneCounterByPath[path];
-        zoneAssignByPath[path].set(parsedTag, zoneIndex);
-      }
-
-      const { label, key, generic } = deriveElementLabel(rawElement, zoneIndex);
-
+      if (!elemento) return;
       if (!elementsByPath[path]) elementsByPath[path] = new Map();
       const m = elementsByPath[path];
-      const existing = m.get(key);
+      const existing = m.get(elemento.key);
       if (existing) {
         existing.count += 1;
       } else {
-        m.set(key, { label, count: 1, generic });
+        m.set(elemento.key, { ...elemento, count: 1 });
       }
     });
   });
@@ -801,9 +705,21 @@ export function aggregateHeatmapBatches(docs = [], filtros = {}) {
   // Construir el ranking de elementos (etiquetas legibles) por página.
   const topElementsByPath = {};
   Object.entries(elementsByPath).forEach(([path, map]) => {
-    topElementsByPath[path] = [...map.values()]
+    const top = [...map.values()]
       .sort((a, b) => b.count - a.count)
       .slice(0, 25);
+    // Varios "Ícono sin texto" distintos se numeran para poder distinguirlos.
+    const totalSinTexto = {};
+    top.forEach((e) => {
+      if (!e.texto) totalSinTexto[e.tipo] = (totalSinTexto[e.tipo] || 0) + 1;
+    });
+    const vistos = {};
+    top.forEach((e) => {
+      if (e.texto || totalSinTexto[e.tipo] < 2) return;
+      vistos[e.tipo] = (vistos[e.tipo] || 0) + 1;
+      e.sufijo = vistos[e.tipo];
+    });
+    topElementsByPath[path] = top;
   });
 
   return {

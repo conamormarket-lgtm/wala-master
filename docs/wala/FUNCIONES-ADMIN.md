@@ -174,6 +174,12 @@ sub-páginas los filtros **se heredan** y un enlace copiado conserva la vista ex
   muestra la **barra de admin** (empujaba la página ~45px) y los **admins no se registran**.
   Filtros: **Origen** + **Dispositivo** (por ancho de pantalla, cubre todo el historial; se
   quitó el filtro por user-agent "lotes nuevos"). Control **Intensidad del calor** (opacidad).
+  **Elementos más clicados:** cada fila muestra el **tipo** (Enlace, Botón, Imagen, Ícono, Campo,
+  Zona = clic fuera de un botón/enlace), el texto limpio (sin emojis ni símbolos sueltos; "Sin
+  texto" si no tiene), los clics y el % de la página; 8 visibles + "Ver todos". Al tocar una fila
+  el elemento se **señala** en la vista previa con un recuadro numerado (la caja real del
+  elemento si se encontró; punteado alrededor de los clics si no), la vista baja hasta él y el
+  calor muestra solo sus clics. Los clics viejos de la barra de admin se descartan.
 
 > **Requiere redeploy de functions:** los desgloses nuevos (país/dispositivo/navegador/SO,
 > identidades, top visitantes, embudo completo) salen de campos que agrega la versión nueva de
