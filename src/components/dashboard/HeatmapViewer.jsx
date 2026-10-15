@@ -360,6 +360,9 @@ export default function HeatmapViewer({
   const [rutaIframe, setRutaIframe] = useState(null);
   // La vista previa muestra un aviso de "Iniciar sesión" en vez de la página.
   const [pideLogin, setPideLogin] = useState(false);
+  // La app dentro de la vista previa no llegó a arrancar (sigue el splash):
+  // { errores, sesion, controladaPorSW } para explicar por qué.
+  const [sinArrancar, setSinArrancar] = useState(null);
   // Elemento del ranking elegido (su `key`): se señala en la vista previa.
   const [elegido, setElegido] = useState(null);
   const [verTodosElementos, setVerTodosElementos] = useState(false);
@@ -480,6 +483,7 @@ export default function HeatmapViewer({
     setPageHeight(0);
     setRutaIframe(null);
     setPideLogin(false);
+    setSinArrancar(null);
     setIframeAttempt(0);
     if (frameRef.current) frameRef.current.scrollTop = 0;
     if (!iframeSrc) {
@@ -816,6 +820,39 @@ export default function HeatmapViewer({
     };
   }, [iframeState, pasarSesion, iframeAttempt]);
 
+  // ¿Arrancó la app dentro de la vista previa? Si a los 10 s sigue el splash
+  // de index.html (#app-loading) y no hay app de React, se avisa con lo que
+  // se sepa: errores del arranque (window.__erroresArranque, ver index.html),
+  // si tenía sesión y si la sirvió el service worker. Se revisa otra vez a
+  // los 25 s por si solo era lenta.
+  useEffect(() => {
+    if (iframeState !== 'ready') return undefined;
+    const revisar = () => {
+      try {
+        const win = iframeRef.current?.contentWindow;
+        const doc = iframeRef.current?.contentDocument;
+        if (!win || !doc) return;
+        const atascada = Boolean(doc.getElementById('app-loading')) && !doc.querySelector('#root .App');
+        if (!atascada) {
+          setSinArrancar(null);
+          return;
+        }
+        const diagnostico = {
+          errores: Array.isArray(win.__erroresArranque) ? [...win.__erroresArranque] : [],
+          sesion: win.__walaVistaPrevia ? win.__walaVistaPrevia.tieneSesion() : null,
+          controladaPorSW: Boolean(win.navigator?.serviceWorker?.controller),
+          ruta: win.location.pathname,
+        };
+        console.warn('[Mapa de calor] La vista previa no arrancó:', diagnostico);
+        setSinArrancar(diagnostico);
+      } catch (e) {
+        console.warn('[Mapa de calor] No se pudo revisar la vista previa:', e?.message || e);
+      }
+    };
+    const timers = [10000, 25000].map((t) => setTimeout(revisar, t));
+    return () => timers.forEach(clearTimeout);
+  }, [iframeState, iframeAttempt]);
+
   // Aplica el tema claro/oscuro elegido a la página de la vista previa.
   const aplicarTemaPreview = useCallback(() => {
     try {
@@ -861,6 +898,7 @@ export default function HeatmapViewer({
   // Reintento manual desde el fallback.
   const handleRetry = () => {
     retriesRef.current = 0;
+    setSinArrancar(null);
     setPageHeight(0);
     setIframeState('loading');
     setIframeAttempt((n) => n + 1);
@@ -1063,6 +1101,34 @@ export default function HeatmapViewer({
                   coincide con lo que se ve.
                 </div>
               )}
+              {sinArrancar && (
+                <div className={styles.avisoRedirigida} role="alert">
+                  <strong>La página no terminó de arrancar dentro de la vista previa.</strong>{' '}
+                  {sinArrancar.errores.length > 0
+                    ? 'Al arrancar dio este error:'
+                    : 'No dio ningún error: se quedó esperando algo al arrancar.'}
+                  {sinArrancar.errores.length > 0 && (
+                    <ul className={styles.avisoLista}>
+                      {sinArrancar.errores.slice(0, 3).map((err, i) => <li key={i}>{err}</li>)}
+                    </ul>
+                  )}
+                  <span className={styles.avisoDetalle}>
+                    {sinArrancar.sesion === null
+                      ? 'La app ni siquiera cargó su código.'
+                      : sinArrancar.sesion ? 'Tenía tu sesión.' : 'No tenía sesión.'}
+                    {sinArrancar.controladaPorSW ? ' La sirvió la caché del sitio (service worker).' : ''}
+                  </span>
+                  <span className={styles.avisoAcciones}>
+                    <button type="button" className={styles.notaBoton} onClick={handleRetry}>Reintentar</button>
+                    {iframeSrc && (
+                      <a className={styles.notaBoton} href={iframeSrc} target="_blank" rel="noopener noreferrer">
+                        Abrir la página en otra pestaña
+                      </a>
+                    )}
+                  </span>
+                </div>
+              )}
+
               {!vistaRedirigida && pideLogin && (
                 <div className={styles.avisoRedirigida} role="status">
                   Esta página pide iniciar sesión y la vista previa se abrió sin sesión: se ve el aviso

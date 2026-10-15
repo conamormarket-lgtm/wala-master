@@ -82,6 +82,23 @@
       src="https://www.facebook.com/tr?id=1696511731424872&amp;ev=PageView&amp;noscript=1"
     /></noscript>
     <noscript>Necesitas habilitar JavaScript para ejecutar esta aplicación.</noscript>
+    <script>
+      /* Vista previa del mapa de calor (página dentro de un iframe del panel):
+         se guardan los errores del ARRANQUE para que el panel pueda decir por
+         qué no cargó (HeatmapViewer los lee). Fuera de un iframe no hace nada. */
+      (function () {
+        if (window.self === window.top) return;
+        var lista = (window.__erroresArranque = []);
+        var anotar = function (texto) { if (lista.length < 10) lista.push(String(texto).slice(0, 300)); };
+        window.addEventListener('error', function (e) {
+          anotar(e.message || (e.target && (e.target.src || e.target.href)) || 'error');
+        }, true);
+        window.addEventListener('unhandledrejection', function (e) {
+          var r = e.reason;
+          anotar((r && (r.message || r.code)) || r || 'promesa rechazada');
+        });
+      })();
+    </script>
     <div id="root">
       <!-- Pantalla de carga mientras React carga — mismo diseño que BrandLoader.jsx
            (etiqueta y "WALÁ" del logo oficial + halo + barra de progreso indeterminada,
