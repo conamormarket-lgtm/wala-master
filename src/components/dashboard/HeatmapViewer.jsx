@@ -86,37 +86,21 @@ const itemVariants = {
 };
 
 /**
- * Dibuja el heatmap en el canvas a la resolución indicada (w x h en px reales).
- * `points` ya vienen en px del lienzo: [{ cx, cy }].
- *  1) Suma la densidad de clics en una rejilla de DENSITY_CELL px (núcleo suave
- *     por clic).
- *  2) La normaliza por el MÁXIMO: la zona más clicada de la página es siempre
- *     la más roja, haya 5 o 500 clics (antes todo se saturaba en rojo a los
- *     pocos clics). La raíz cuadrada mantiene visibles los clics sueltos.
- *  3) Colorea (azul -> verde -> amarillo -> rojo) y lo escala al lienzo.
+ * Densidad de clics de un lienzo de w x h px (`points` en px: [{ cx, cy }]):
+ * cada clic suma un núcleo suave en una rejilla de DENSITY_CELL px.
+ * Se calcula aparte del pintado para que la página y la capa FIJA (barras que
+ * no se mueven al hacer scroll) compartan el mismo máximo y sus colores se
+ * puedan comparar.
  */
-function drawHeatmap(canvas, points, w, h) {
-  if (!canvas) return;
+function calcularDensidad(points, w, h) {
   const width = Math.max(1, Math.round(w));
   const height = Math.max(1, Math.round(h));
-
-  // Ajustar el tamaño interno del canvas solo si cambió (evita reflows).
-  if (canvas.width !== width) canvas.width = width;
-  if (canvas.height !== height) canvas.height = height;
-
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  ctx.clearRect(0, 0, width, height);
-  if (!points || points.length === 0) return;
-
-  // Paso 1: densidad en rejilla.
   const gw = Math.ceil(width / DENSITY_CELL);
   const gh = Math.ceil(height / DENSITY_CELL);
   const densidad = new Float32Array(gw * gh);
   const r = Math.max(14, Math.round(width * BLOB_RADIUS_RATIO)) / DENSITY_CELL;
   const r2 = r * r;
-  points.forEach(({ cx, cy }) => {
+  (points || []).forEach(({ cx, cy }) => {
     const gx = cx / DENSITY_CELL;
     const gy = cy / DENSITY_CELL;
     const x0 = Math.max(0, Math.floor(gx - r));
@@ -134,25 +118,39 @@ function drawHeatmap(canvas, points, w, h) {
       }
     }
   });
-
-  // Paso 2: normalizar por el máximo.
   let max = 0;
   for (let i = 0; i < densidad.length; i += 1) {
     if (densidad[i] > max) max = densidad[i];
   }
-  if (max <= 0) return;
+  return { width, height, gw, gh, densidad, max };
+}
 
-  // Paso 3: colorear en la rejilla y escalar (suavizado) al lienzo.
+/**
+ * Pinta una densidad normalizada por `max` (el de TODOS los lienzos): la zona
+ * más clicada es siempre la más roja, haya 5 o 500 clics. La raíz cuadrada
+ * mantiene visibles los clics sueltos. Colorea (azul -> verde -> amarillo ->
+ * rojo) en la rejilla y lo escala al lienzo.
+ */
+function pintarDensidad(canvas, d, max) {
+  if (!canvas) return;
+  // Ajustar el tamaño interno del canvas solo si cambió (evita reflows).
+  if (canvas.width !== d.width) canvas.width = d.width;
+  if (canvas.height !== d.height) canvas.height = d.height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  ctx.clearRect(0, 0, d.width, d.height);
+  if (max <= 0 || d.max <= 0) return;
+
   const rejilla = document.createElement('canvas');
-  rejilla.width = gw;
-  rejilla.height = gh;
+  rejilla.width = d.gw;
+  rejilla.height = d.gh;
   const rctx = rejilla.getContext('2d');
   if (!rctx) return;
-  const image = rctx.createImageData(gw, gh);
+  const image = rctx.createImageData(d.gw, d.gh);
   const data = image.data;
-  for (let i = 0; i < densidad.length; i += 1) {
-    if (densidad[i] <= 0) continue;
-    const [cr, cg, cb, ca] = ramp(Math.sqrt(densidad[i] / max));
+  for (let i = 0; i < d.densidad.length; i += 1) {
+    if (d.densidad[i] <= 0) continue;
+    const [cr, cg, cb, ca] = ramp(Math.sqrt(Math.min(1, d.densidad[i] / max)));
     const o = i * 4;
     data[o] = cr;
     data[o + 1] = cg;
@@ -161,7 +159,7 @@ function drawHeatmap(canvas, points, w, h) {
   }
   rctx.putImageData(image, 0, 0);
   ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(rejilla, 0, 0, gw * DENSITY_CELL, gh * DENSITY_CELL);
+  ctx.drawImage(rejilla, 0, 0, d.gw * DENSITY_CELL, d.gh * DENSITY_CELL);
 }
 
 /**
@@ -260,7 +258,26 @@ function cajaVisible(win, el) {
   if (r.width <= 0 || r.height <= 0 || r.right <= 0 || r.left >= win.innerWidth) return null;
   const estilo = win.getComputedStyle(el);
   if (estilo.visibility === 'hidden' || Number(estilo.opacity) === 0) return null;
-  return { x: r.left, y: r.top, w: r.width, h: r.height };
+  return { x: r.left, y: r.top, w: r.width, h: r.height, fijo: esFijo(win, el) };
+}
+
+// ¿El elemento (o un contenedor suyo) se queda quieto en la PANTALLA al hacer
+// scroll? Barra de abajo, botones flotantes (position: fixed) y la cabecera
+// pegada arriba desde el inicio (sticky ya "enganchada" con el scroll en 0).
+// Sus clics se pintan en una capa fija de la vista, no sobre la página: si no,
+// el recuadro de la barra de abajo quedaba a mitad de la página al bajar.
+function esFijo(win, el) {
+  let n = el;
+  while (n && n.nodeType === 1 && n !== win.document.body) {
+    const estilo = win.getComputedStyle(n);
+    if (estilo.position === 'fixed') return true;
+    if (estilo.position === 'sticky') {
+      const top = parseFloat(estilo.top);
+      if (Number.isFinite(top) && Math.abs(n.getBoundingClientRect().top - top) < 2) return true;
+    }
+    n = n.parentElement;
+  }
+  return false;
 }
 
 // Por qué un elemento del ranking no se ve en la vista previa.
@@ -383,6 +400,7 @@ export default function HeatmapViewer({
   const [frameW, setFrameW] = useState(0);
 
   const canvasRef = useRef(null);
+  const canvasFijoRef = useRef(null); // calor de los elementos fijos (barra de abajo, cabecera)
   const frameRef = useRef(null); // ventana con scroll por la que se ve la página
   const iframeRef = useRef(null);
   const iframeTimerRef = useRef(null);
@@ -599,11 +617,15 @@ export default function HeatmapViewer({
       const yAprox = exacta
         ? Math.min(p.py, docH)
         : (p.yFrac != null ? p.yFrac * docH : Math.min(p.yScreens * pantalla.h, docH));
+      // Altura del clic dentro de la PANTALLA del visitante (para elegir
+      // entre candidatos fijos, que viven en la pantalla y no en la página).
+      const yPantalla = (p.vy != null ? p.vy : 0.5) * pantalla.h;
       const enCaja = (a) => ({
         cx: (a.x + p.rx * a.w) * scale,
-        cy: Math.min(a.y + p.ry * a.h, docH) * scale,
+        cy: (a.fijo ? a.y + p.ry * a.h : Math.min(a.y + p.ry * a.h, docH)) * scale,
         el: p.el,
         caja: { x: a.x * scale, y: a.y * scale, w: a.w * scale, h: a.h * scale },
+        fijo: Boolean(a.fijo),
         ubicado: true,
       });
 
@@ -613,14 +635,13 @@ export default function HeatmapViewer({
 
       const candidatos = p.el && anclas ? anclas.porTexto.get(p.el) : null;
       if (candidatos && candidatos.length > 0) {
-        const cercano = candidatos.reduce((m, c) => (
-          Math.abs(c.y + c.h / 2 - yAprox) < Math.abs(m.y + m.h / 2 - yAprox) ? c : m
-        ));
+        const distancia = (c) => Math.abs(c.y + c.h / 2 - (c.fijo ? yPantalla : yAprox));
+        const cercano = candidatos.reduce((m, c) => (distancia(c) < distancia(m) ? c : m));
         return enCaja(cercano);
       }
 
       if (anclas) sinUbicarN += 1;
-      return { cx: xAprox * scale, cy: yAprox * scale, el: p.el, caja: null, ubicado: !anclas };
+      return { cx: xAprox * scale, cy: yAprox * scale, el: p.el, caja: null, fijo: false, ubicado: !anclas };
     });
     return { pixelPoints: lista, sinUbicar: sinUbicarN };
   }, [visiblePoints, anclas, exacta, docH, pantalla.w, pantalla.h, scale]);
@@ -666,16 +687,24 @@ export default function HeatmapViewer({
     if (!elegido) return [];
     const cajas = new Map();
     puntosCalor.forEach((p) => {
-      if (p.caja) cajas.set(`${Math.round(p.caja.x)}|${Math.round(p.caja.y)}`, p.caja);
+      if (p.caja) {
+        cajas.set(`${p.fijo ? 'f' : 'p'}|${Math.round(p.caja.x)}|${Math.round(p.caja.y)}`, { ...p.caja, fijo: p.fijo });
+      }
     });
     return [...cajas.values()].sort((a, b) => a.y - b.y).slice(0, 6);
   }, [elegido, puntosCalor]);
 
-  // (Re)dibuja el heatmap sobre la página completa.
+  // (Re)dibuja el heatmap: la página completa en un lienzo y los elementos
+  // fijos en otro dentro de la ventana (quieto al hacer scroll), con el mismo
+  // máximo para que los colores se comparen.
   useEffect(() => {
     if (stageW <= 0 || stageH <= 0) return;
-    drawHeatmap(canvasRef.current, puntosCalor, stageW, stageH);
-  }, [puntosCalor, stageW, stageH]);
+    const enPagina = calcularDensidad(puntosCalor.filter((p) => !p.fijo), stageW, stageH);
+    const enPantalla = calcularDensidad(puntosCalor.filter((p) => p.fijo), stageW, viewH);
+    const max = Math.max(enPagina.max, enPantalla.max);
+    pintarDensidad(canvasRef.current, enPagina, max);
+    pintarDensidad(canvasFijoRef.current, enPantalla, max);
+  }, [puntosCalor, stageW, stageH, viewH]);
 
   // Al elegir un elemento: la vista baja hasta él (una sola vez por elección).
   useEffect(() => {
@@ -687,8 +716,9 @@ export default function HeatmapViewer({
     ultimoScrollElegido.current = elegido;
     const frame = frameRef.current;
     if (!frame) return;
-    const m = marcas[0];
-    frame.scrollTo({ top: Math.max(0, m.y + m.h / 2 - viewH / 2), behavior: 'smooth' });
+    // Los recuadros fijos se ven siempre: solo se baja hasta uno de la página.
+    const m = marcas.find((x) => !x.fijo);
+    if (m) frame.scrollTo({ top: Math.max(0, m.y + m.h / 2 - viewH / 2), behavior: 'smooth' });
     // Si la vista no se ve entera (en pantallas angostas el ranking va debajo),
     // la página sube hasta ella para que se vea el recuadro y la barra.
     const r = frame.getBoundingClientRect();
@@ -1202,6 +1232,30 @@ export default function HeatmapViewer({
 
                     {/* Capa de atenuación para que el calor resalte sobre la preview. */}
                     {showIframe && <div className={styles.previewScrim} aria-hidden="true" />}
+
+                    {/* Calor y recuadros de los elementos FIJOS (barra de abajo,
+                        cabecera, botones flotantes): viven en la ventana, que no
+                        se mueve, igual que en el teléfono del visitante. */}
+                    <canvas
+                      ref={canvasFijoRef}
+                      className={styles.canvas}
+                      style={{
+                        width: `${stageW}px`,
+                        height: `${viewH}px`,
+                        opacity: elegido ? Math.min(opacidadCalor, 0.4) : opacidadCalor,
+                      }}
+                      aria-hidden="true"
+                    />
+                    {marcas.filter((m) => m.fijo).map((m, i) => (
+                      <div
+                        key={`${elegido}-fijo-${i}`}
+                        className={styles.marca}
+                        style={{ left: `${m.x}px`, top: `${m.y}px`, width: `${m.w}px`, height: `${m.h}px` }}
+                        aria-hidden="true"
+                      >
+                        <span className={styles.marcaNum}>{posElegido}</span>
+                      </div>
+                    ))}
                   </div>
 
                   {/* Canvas del heatmap sobre la página completa (no captura el puntero). */}
@@ -1218,7 +1272,7 @@ export default function HeatmapViewer({
                   />
 
                   {/* Recuadro(s) del elemento elegido en el ranking. */}
-                  {marcas.map((m, i) => (
+                  {marcas.filter((m) => !m.fijo).map((m, i) => (
                     <div
                       key={`${elegido}-${i}`}
                       className={styles.marca}

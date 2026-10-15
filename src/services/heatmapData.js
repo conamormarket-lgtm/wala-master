@@ -144,6 +144,9 @@ function normalizePoint(ev) {
     xNorm,
     yFrac,
     yScreens: pageY / height,
+    // Altura del clic dentro de la PANTALLA (0..1): sirve para ubicar los
+    // clics en elementos fijos (barra de abajo, cabecera), que no se mueven.
+    vy: Number.isFinite(Number(ev.y)) ? clamp01(Number(ev.y) / height) : null,
     ancho: bucketAncho(width),
     px: pageX,
     py: pageY,
