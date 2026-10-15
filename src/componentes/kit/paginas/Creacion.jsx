@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Paintbrush, Truck, RefreshCw, ShieldCheck, Check, Users, ArrowRight, Trash2, Pencil, Download, LogIn, Sparkles, EyeOff } from 'lucide-react';
+import { Paintbrush, Check, Users, ArrowRight, Trash2, Download, LogIn, Sparkles, EyeOff } from 'lucide-react';
 import Boton from '../Boton';
 import Acordeon from '../Acordeon';
 import { Enlace } from '../Enlace';
@@ -9,6 +9,7 @@ import { EtiquetaColgante, Sello } from '../Marca';
 import { BloqueSeccion } from '../Seccion';
 import { EsqueletoPagina } from '../Esqueletos';
 import { soles } from '../TarjetaProducto';
+import { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra, TituloEditable } from '../piezas/Ficha';
 import { GaleriaProducto } from '../piezas/GaleriaProducto';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import s from './Creacion.module.css';
@@ -50,7 +51,6 @@ export function PaginaCreacion({
   const [cantidad, setCantidad] = useState(1);
   const [avisoTalla, setAvisoTalla] = useState(false);
   const [cargando, setCargando] = useState(null);
-  const [editando, setEditando] = useState(null);
   const [pregunta, setPregunta] = useState(null);
 
   if (estado === 'cargando') return <EsqueletoPagina forma="producto" />;
@@ -75,7 +75,6 @@ export function PaginaCreacion({
 
   const nombre = creacion.nombre || 'Mi creación';
   const sePuedeComprar = disponible && lista && !agotado;
-  const descuento = precioAntes > precio ? Math.round((1 - precio / precioAntes) * 100) : 0;
   const listo = () => {
     if (tallas.length && !talla) { setAvisoTalla(true); return false; }
     return true;
@@ -84,12 +83,6 @@ export function PaginaCreacion({
     if (!listo()) return;
     setCargando(cual);
     try { await fn?.({ talla, cantidad }); } finally { setCargando(null); }
-  };
-  const renombrar = async (e) => {
-    e.preventDefault();
-    const nuevo = editando.trim();
-    if (nuevo && nuevo !== nombre) await onRenombrar?.(nuevo);
-    setEditando(null);
   };
   const confirmar = async () => {
     setCargando('confirmar');
@@ -121,56 +114,17 @@ export function PaginaCreacion({
   ].filter(Boolean);
 
   return (
-    <BloqueSeccion ajustes={{ paddingTop: '1.5rem', paddingBottom: '2.5rem' }}>
-      <div className={s.ficha} data-componente="PaginaCreacion">
-        <div className={s.columnaGaleria}>
-          <GaleriaProducto imagenes={creacion.imagenes || []} nombre={nombre} />
-        </div>
-
-        <section className={s.info}>
-          <nav className={s.migas} aria-label="Estás en">
-            <Enlace to="/cuenta">Mi cuenta</Enlace>
-            <span aria-hidden="true">/</span>
-            <Enlace to={urlCreaciones}>Mis creaciones</Enlace>
-          </nav>
+    <MarcoFicha componente="PaginaCreacion" galeria={<GaleriaProducto imagenes={creacion.imagenes || []} nombre={nombre} />}>
+          <Migas items={[{ texto: 'Mi cuenta', url: '/cuenta' }, { texto: 'Mis creaciones', url: urlCreaciones }]} />
 
           <div className={s.cabeza}>
             <EtiquetaColgante tono="violeta" tamano="sm" icono={<Sparkles aria-hidden="true" />}>Mi creación</EtiquetaColgante>
-            {editando !== null ? (
-              <form className={s.renombrar} onSubmit={renombrar}>
-                <input
-                  className={s.renombrarCampo}
-                  value={editando}
-                  onChange={(e) => setEditando(e.target.value)}
-                  maxLength={60}
-                  aria-label="Nombre de la creación"
-                  // eslint-disable-next-line jsx-a11y/no-autofocus
-                  autoFocus
-                  onFocus={(e) => e.currentTarget.select()}
-                  onKeyDown={(e) => { if (e.key === 'Escape') setEditando(null); }}
-                />
-                <Boton type="submit" tamano="sm" soloIcono aria-label="Guardar nombre" icono={<Check aria-hidden="true" />} />
-              </form>
-            ) : (
-              <h1 className={s.titulo}>
-                {nombre}
-                {onRenombrar && (
-                  <button type="button" className={s.lapiz} onClick={() => setEditando(nombre)} aria-label="Cambiar el nombre"><Pencil aria-hidden="true" /></button>
-                )}
-              </h1>
-            )}
+            <TituloEditable nombre={nombre} onRenombrar={onRenombrar} />
             <p className={s.base}>Hecha sobre {creacion.prenda}{creacion.fecha ? ` · guardada el ${creacion.fecha}` : ''}</p>
             {enComunidad && <span className={s.publicada}><Users aria-hidden="true" /> En la comunidad</span>}
           </div>
 
-          {disponible && precio > 0 && (
-            <div className={s.precioFila}>
-              <strong className={s.precio}>{soles(precio)}</strong>
-              {descuento > 0 && <s className={s.antes}>{soles(precioAntes)}</s>}
-              {descuento > 0 && <span className={s.descuento}>-{descuento}%</span>}
-            </div>
-          )}
-          {disponible && <p className={s.incluye}>Incluye la impresión de todos tus diseños.</p>}
+          {disponible && precio > 0 && <PrecioFicha precio={precio} precioAntes={precioAntes} nota="Incluye la impresión de todos tus diseños." />}
 
           {combo ? (
             <div className={s.combo}>
@@ -241,11 +195,7 @@ export function PaginaCreacion({
             <Boton bloque tamano="lg" variante="secundario" cargando={cargando === 'comprar'} onClick={() => accion('comprar', onComprar)} iconoFin={<ArrowRight aria-hidden="true" />}>Comprar ahora</Boton>
           )}
 
-          <ul className={s.confianza}>
-            <li><Truck aria-hidden="true" /> Envío a todo el país</li>
-            <li><RefreshCw aria-hidden="true" /> Cambios y devoluciones</li>
-            <li><ShieldCheck aria-hidden="true" /> Pago seguro</li>
-          </ul>
+          <ConfianzaCompra />
 
           <Acordeon items={detalles} abiertoInicial="detalles" multiple variante="lista" />
 
@@ -274,8 +224,6 @@ export function PaginaCreacion({
               )}
             </div>
           )}
-        </section>
-      </div>
-    </BloqueSeccion>
+    </MarcoFicha>
   );
 }

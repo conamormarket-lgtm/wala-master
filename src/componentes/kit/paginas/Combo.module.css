@@ -1,0 +1,200 @@
+.cabeza {
+  display: grid;
+  justify-items: start;
+  gap: 0.45rem;
+}
+
+.base {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.borrador {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--gold-text, #92400e);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.mio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: 14px;
+  background: rgba(16, 185, 129, 0.1);
+  font-size: 0.86rem;
+}
+
+.mio > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #047857;
+  font-weight: 600;
+}
+
+:global([data-theme='dark']) .mio > span {
+  color: #6ee7b7;
+}
+
+.mio svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.botonesAviso {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.grupo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+}
+
+.rotulo {
+  color: var(--color-text);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.rotulo em {
+  color: var(--color-text-muted);
+  font-style: normal;
+  font-weight: 600;
+}
+
+/* Cuántas prendas están listas: un tramo por prenda que se llena. */
+.avance {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 4px;
+}
+
+.avance i {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-border);
+  transform-origin: left;
+}
+
+.avance .avanceLista {
+  background: linear-gradient(90deg, #34d399, #059669);
+  animation: llenar var(--dur-media) var(--ease-signature);
+}
+
+@keyframes llenar {
+  from { transform: scaleX(0); }
+}
+
+.piezas {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pista {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.estadoCompra {
+  margin: -0.3rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+  text-align: center;
+}
+
+.estadoCompra strong {
+  color: var(--color-text);
+}
+
+.detalles dl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.4rem 1rem;
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.detalles dt {
+  color: var(--color-text-muted);
+}
+
+.detalles dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.nota {
+  margin: 0.5rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.opciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.opcion {
+  display: grid;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.4rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature);
+}
+
+.opcion:hover {
+  border-color: var(--violet-400);
+  transform: translateY(-2px);
+}
+
+.opcionFoto {
+  aspect-ratio: 4 / 5;
+  border-radius: 10px;
+}
+
+.hojaTallas {
+  display: grid;
+  gap: 1rem;
+}
+
+.estado {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--color-surface);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avance .avanceLista {
+    animation: none;
+  }
+}

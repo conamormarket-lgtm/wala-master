@@ -50,3 +50,4 @@ export { PaginaCrear } from './paginas/Crear';
 export { PaginaComunidad } from './paginas/Comunidad';
 export { PaginaCreacion } from './paginas/Creacion';
 export { PaginaVerDiseno } from './paginas/VerDiseno';
+export { PaginaCombo } from './paginas/Combo';

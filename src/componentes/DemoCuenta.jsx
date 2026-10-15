@@ -4,11 +4,12 @@ import {
   MarcoCuenta, PaginaCuentaInvitado, PaginaResumenCuenta, PaginaPerfil, PaginaDirecciones, PaginaAjustes, PaginaPedidos,
   PaginaCatalogo, PaginaCupones, PaginaMisiones, PaginaReferidos, PaginaCreaciones, PaginaListaDeseos, PaginaFechas,
   PaginaDetallePedido, HojaPagarSaldo, Boton, enlaceWhatsApp, PaginaEncuesta,
-  PaginaLogin, PaginaRegistro, PaginaRecuperar, PaginaCompletarPerfil, PaginaCrear, PaginaComunidad, PaginaCreacion, PaginaVerDiseno,
+  PaginaLogin, PaginaRegistro, PaginaRecuperar, PaginaCompletarPerfil, PaginaCrear, PaginaComunidad, PaginaCreacion, PaginaVerDiseno, PaginaCombo,
   prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaCreacionDesde,
 } from './kit';
 import { empresa } from '../config/empresa';
 import CREAR from './demo/crear.json';
+import { leerPrendaBase } from '../utils/prendaBase';
 import { volarMonedasGanadas } from '../utils/animations';
 import { DEPARTAMENTOS, getProvincias } from '../constants/peruUbigeo';
 import { distritosSugeridos, lugarLegible } from '../utils/ubicacionErp';
@@ -820,5 +821,108 @@ export function VerDisenoDemo({ estados = [] }) {
     lados: [...(p.vistasPrevias || []).map((v) => ({ nombre: v.nombre, url: v.url })), ...(i === 1 && (p.vistasPrevias || []).length < 2 ? [{ nombre: 'Espalda', url: '' }] : [])],
   }));
   return <PaginaVerDiseno titulo={d?.nombre} piezas={piezas} cargando={estados.includes('cargando')} noDisponible={estados.includes('noDisponible')} />;
+}
+
+/* ── Un combo (/combo/:id) ─────────────────────────────────── */
+
+export const ESTADOS_COMBO = [
+  ['cargando', 'Cargando'],
+  ['error', 'Error al cargar'],
+  ['noDisponible', 'No disponible'],
+];
+
+/** Los diseños reales sueltos (y cada prenda de los combos), para "Mis creaciones". */
+const DISENOS_SUELTOS = CREAR.comunidad.flatMap((d) => (d.tipo === 'combo'
+  ? (d.piezas || []).map((p, k) => ({ ...p, id: `${d.id}-${k}`, nombre: p.nombre }))
+  : [d]));
+const disenoPorId = (id) => DISENOS_SUELTOS.find((x) => x.id === id);
+
+/**
+ * Un combo con los datos reales: ?nuevo=1 empieza vacío, ?mio=<id> abre un
+ * combo guardado (un diseño real de pareja) y ?plantilla=<id> parte de uno de
+ * la comunidad. Se arma de verdad: copiar de otra prenda, usar en las demás,
+ * quitar, tomar de Mis creaciones y elegir tallas.
+ */
+export function ComboDemo({ ruta = '/combo/', sesion, esAdmin, estados = [], toast, onIrA }) {
+  const [camino, consulta = ''] = ruta.split('?');
+  const q = new URLSearchParams(consulta);
+  const combo = CREAR.combos.find((c) => c.id === camino.split('/')[2]) || CREAR.combos[0];
+  const prendas = combo.piezas.map((p) => PRENDA_POR_ID.get(p.prendaId));
+  const unaTalla = new Set(combo.piezas.map((p) => p.prendaId)).size > 1;
+  const origen = CREAR.comunidad.find((d) => d.id === (q.get('mio') || q.get('plantilla')) && d.tipo === 'combo');
+  const [armado, setArmado] = useState(() => prendas.map((_, i) => {
+    const pieza = origen?.piezas?.[i];
+    if (!pieza) return { designId: null };
+    return { designId: `${origen.id}-${i}`, plantilla: Boolean(q.get('plantilla')) };
+  }));
+  const [nombres, setNombres] = useState({});
+  const [nombreCombo, setNombreCombo] = useState(origen?.nombre);
+  const [tallaConjunto, setTallaConjunto] = useState('');
+  const avisar = (titulo, texto, tipo = 'exito') => toast?.({ tipo, titulo, texto, duracion: 2200 });
+  const poner = (i, cambio) => setArmado((a) => a.map((x, k) => (k === i ? { ...x, ...cambio } : x)));
+  const mio = Boolean(q.get('mio')) && origen;
+
+  let estado;
+  if (estados.includes('cargando')) estado = 'cargando';
+  else if (estados.includes('error')) estado = 'error';
+  else if (estados.includes('noDisponible')) estado = 'noDisponible';
+
+  const piezas = prendas.map((prenda, i) => {
+    const cfg = leerPrendaBase(prenda);
+    const a = armado[i];
+    const d = a.designId && disenoPorId(a.designId);
+    const lados = (d?.vistasPrevias || []).map((v) => v.nombre).filter(Boolean);
+    const otra = armado.findIndex((x, k) => k !== i && x.designId && !x.plantilla);
+    const vaciasIguales = armado.filter((x, k) => k !== i && !x.designId && combo.piezas[k].prendaId === combo.piezas[i].prendaId).length;
+    const estadoPieza = !d ? 'vacia' : a.plantilla ? 'plantilla' : 'disenada';
+    return {
+      i,
+      prenda: prenda.name,
+      foto: d?.vistasPrevias?.[0]?.url || cfg.vistas[0]?.imagen,
+      estado: estadoPieza,
+      nombre: nombres[i] || d?.nombre,
+      color: d?.color ? { nombre: d.color.nombre, fondo: d.color.hex } : undefined,
+      lados,
+      lista: Boolean(d),
+      tallas: cfg.tallas,
+      talla: a.talla,
+      onTalla: (t) => poner(i, { talla: t }),
+      urlDisenar: `/crear/${prenda.id}?combo=${combo.id}&pieza=${i}`,
+      urlEditar: `/crear/${prenda.id}?combo=${combo.id}&pieza=${i}&designId=${a.designId}`,
+      copiarDe: !d && otra >= 0 ? { numero: otra + 1, url: `/crear/${prenda.id}?combo=${combo.id}&pieza=${i}&copiar=${armado[otra].designId}` } : undefined,
+      usarEnLasDemas: vaciasIguales === 1 ? 'la otra' : 'las demás',
+      onUsarEnLasDemas: d && vaciasIguales > 0 ? () => setArmado((x) => x.map((y, k) => (!y.designId && combo.piezas[k].prendaId === combo.piezas[i].prendaId ? { designId: a.designId } : y))) : undefined,
+      onQuitar: d ? () => poner(i, { designId: null, plantilla: false, talla: '' }) : undefined,
+      onRenombrar: d ? async (nuevo) => { await espera(300); setNombres((x) => ({ ...x, [i]: nuevo })); } : undefined,
+    };
+  });
+  const galeria = piezas.flatMap((p, k) => {
+    const d = armado[k].designId && disenoPorId(armado[k].designId);
+    const fotos = d ? (d.vistasPrevias || []) : leerPrendaBase(prendas[k]).vistas.map((v) => ({ url: v.imagen, nombre: v.nombre }));
+    return fotos.filter((f) => f.url).map((f) => ({ url: f.url, nombre: `Prenda ${k + 1} · ${f.nombre}` }));
+  });
+  const sueltas = prendas.reduce((total, p) => total + precioDe(p.id), 0);
+
+  return (
+    <PaginaCombo
+      estado={estado}
+      combo={{ nombre: combo.name, descripcion: 'Cada prenda con su propio diseño, color y talla.', publicado: combo.publicado }}
+      mio={mio ? { nombre: nombreCombo, estado: 'guardado', onRenombrar: async (n) => { await espera(300); setNombreCombo(n); } } : undefined}
+      plantilla={q.get('plantilla') && origen && armado.some((a) => a.plantilla) ? { nombre: origen.nombre, urlPersonalizar: piezas[0].urlEditar } : undefined}
+      piezas={piezas}
+      galeria={galeria}
+      precio={precioDe(combo.id)}
+      sueltas={sueltas}
+      unaTalla={unaTalla}
+      tallas={unaTalla ? leerPrendaBase(prendas[0]).tallas : []}
+      talla={tallaConjunto}
+      onTalla={setTallaConjunto}
+      misCreaciones={sesion ? (i) => DISENOS_SUELTOS.filter((x) => x.productId === prendas[i].id).map((x) => ({ id: x.id, nombre: x.nombre, imagen: x.vistasPrevias?.[0]?.url })) : undefined}
+      onElegirCreacion={(i, id) => poner(i, { designId: id, plantilla: false })}
+      onAgregar={async () => { await espera(700); avisar('¡Combo agregado al carrito!', nombreCombo || combo.name); onIrA?.('/carrito'); }}
+      comunidad={mio && esAdmin ? { estado: null, onPublicar: async () => { await espera(500); avisar('Publicado en la comunidad'); } } : undefined}
+      onReintentar={() => avisar('Volviendo a cargar', undefined, 'info')}
+    />
+  );
 }
 

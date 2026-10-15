@@ -158,6 +158,180 @@
   }
 }
 
+/* ── Una prenda de un combo ─────────────────────────────── */
+.pieza {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 0.9rem;
+  padding: 0.85rem;
+  border: 1.5px dashed var(--color-border);
+  border-radius: 6px 18px 18px 18px;
+  background: var(--color-surface);
+  transition: border-color var(--dur-media) ease;
+}
+
+/* Lista: el borde se vuelve sólido y verde (como una costura terminada). */
+.piezaLista {
+  border-style: solid;
+  border-color: rgba(16, 185, 129, 0.45);
+}
+
+.piezaFoto {
+  position: relative;
+  align-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.piezaImagen {
+  display: block;
+  width: 96px;
+  aspect-ratio: 4 / 5;
+  border-radius: 12px;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.atenuada img {
+  opacity: 0.45;
+}
+
+.piezaFoto:hover .piezaImagen {
+  transform: rotate(-3deg) scale(1.03);
+}
+
+.piezaNumero {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  background: var(--degradado-logo);
+  color: #fff;
+  font-family: var(--fuente-marca);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.piezaVisto {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  background: #10b981;
+  color: #fff;
+  animation: saltaVisto 0.36s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.piezaVisto svg {
+  width: 15px;
+  height: 15px;
+}
+
+@keyframes saltaVisto {
+  from { transform: scale(0.4); }
+}
+
+.piezaInfo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  justify-items: start;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.piezaInfo > fieldset {
+  justify-self: stretch;
+}
+
+.piezaPrenda {
+  color: var(--primary-color);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+:global([data-theme='dark']) .piezaPrenda {
+  color: var(--violet-300);
+}
+
+.piezaNombre {
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.piezaDatos {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.piezaColor {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 3px var(--color-border);
+}
+
+.piezaAyuda,
+.piezaAviso {
+  margin: 0;
+  font-size: 0.84rem;
+}
+
+.piezaAyuda {
+  color: var(--color-text-muted);
+}
+
+.piezaAviso {
+  color: var(--gold-text, #92400e);
+  font-weight: 600;
+}
+
+:global([data-theme='dark']) .piezaAviso {
+  color: #fcd34d;
+}
+
+.piezaAcciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding-top: 0.15rem;
+}
+
+@media (max-width: 420px) {
+  .pieza {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .piezaImagen {
+    width: 72px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .piezaImagen,
+  .piezaVisto {
+    animation: none;
+    transition: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pasoSello {
     transition: none;

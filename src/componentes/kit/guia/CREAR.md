@@ -95,7 +95,7 @@ Sus partes, en orden:
 | Comunidad (`/comunidad`) | **P8 · `PaginaComunidad`** | "Ver todos (8)" de Diseños de la comunidad |
 | Creación (`/creacion/:id`) | **P9 · `PaginaCreacion`** | "Comprar" de una creación |
 | Ver diseño (`/ver/:id`) | **P10 · `PaginaVerDiseno`** | el enlace del WhatsApp de un pedido |
-| Combo (`/combo/:id`) | falta | "Armar" de un combo |
+| Combo (`/combo/:id`) | **P11 · `PaginaCombo`** | "Armar" de un combo, "Usar diseño" de un combo de la comunidad, un combo de Mis creaciones |
 | Estudio (`/crear/:id`) | falta (el editor, ~3.900 líneas) | "Diseñar", "Continuar", "Usar diseño" |
 
 ### P8 · Comunidad (`paginas/Comunidad.jsx`)
@@ -173,6 +173,38 @@ Es lo que abre el asesor desde el WhatsApp de un pedido, sin sesión.
 Hoy `VerDisenoPage.jsx` ya usa `Cargando` y `EstadoVacio` del kit. Para
 llevarla a la tienda, devuelve `<PaginaVerDiseno titulo piezas cargando
 noDisponible />` con los datos de `verDisenoCompartido`.
+
+### P11 · Un combo (`paginas/Combo.jsx`)
+
+Pareja, trío o conjunto: cada prenda con su propio diseño, color y talla, a
+precio de combo. Usa el mismo marco de ficha que una creación
+(`piezas/Ficha.jsx`: `MarcoFicha`, `Migas`, `PrecioFicha`,
+`ConfianzaCompra`, `TituloEditable`) y `GaleriaProducto`, con todas las
+prendas y sus lados.
+
+- **Cabeza:** "Combo · 2 prendas" o "Mi combo" en etiqueta colgante; el
+  nombre se renombra si es suyo. El precio lleva el de por separado tachado
+  y "Ahorras S/ 59.00".
+- **Desde la comunidad:** un aviso con "Personalizar". **Mi combo** dice
+  "Guardado en Mis creaciones" y el admin puede publicarlo.
+- **Este combo incluye:** "1 de 2 listas" y una barra de un tramo por
+  prenda, que se pone verde al quedar lista. Cada prenda es
+  **`FilaPiezaCombo`** (pieza nueva), con lo que se puede hacer según cómo
+  está:
+  - **vacía:** Diseñar, "Copiar de la prenda N" y Mis creaciones (en una
+    `HojaInferior`);
+  - **desde la comunidad:** Personalizar;
+  - **diseñada:** su nombre se renombra, color, lados, su talla
+    (`SelectorTalla`), Editar, "Usar en la otra / las demás" y Quitar;
+  - **borrador o versión vieja:** su aviso.
+- **Conjunto:** una sola talla para todas las prendas.
+- **Agregar al carrito:** si falta una talla, una `HojaInferior` la pide
+  antes, por prenda (o una para el conjunto).
+- **Estados:** cargando (esqueleto de ficha), error y no disponible.
+
+En la Tienda de prueba es la página **Un combo**, con "Cómo se abre" (nuevo,
+conjunto, desde la comunidad, mi combo) y sus estados. "Armar" de Crear y
+los combos de Mis creaciones llevan ahí.
 
 En la Tienda de prueba son las páginas **Una creación** ("Comprar" de una
 creación lleva ahí) y **Ver diseño**, cada una con sus estados.

@@ -1,6 +1,10 @@
 import React from 'react';
-import { Shirt, Upload, ShoppingBag } from 'lucide-react';
+import { Shirt, Upload, ShoppingBag, Paintbrush, Pencil, Copy, X, Images, CheckCircle2 } from 'lucide-react';
+import Boton from '../Boton';
+import { SelectorTalla } from '../Formulario';
 import { Sello, Trazo, Garabatos } from '../Marca';
+import { FotoProducto } from './FotoProducto';
+import { TituloEditable } from './Ficha';
 import s from './Crear.module.css';
 
 /*
@@ -82,3 +86,82 @@ export const textoPara = (n, conjunto) => {
   if (conjunto) return 'Conjunto';
   return n === 2 ? 'En pareja' : `Para ${n}`;
 };
+
+/* ── Una prenda de un combo ─────────────────────────────── */
+
+/**
+ * Una prenda de un combo (/combo/:id), en su fila: la foto con su número
+ * (y un visto si está lista), la prenda, su diseño y lo que se puede hacer
+ * según cómo está:
+ *  - vacia: "Ponle tu imagen o tu frase" · Diseñar · Copiar de la prenda N ·
+ *    Mis creaciones
+ *  - plantilla: el diseño de la comunidad del que se parte · Personalizar
+ *  - disenada: su nombre (se renombra ahí), color y lados con diseño, su
+ *    talla (si cada prenda lleva la suya) · Editar · Usar en las demás · Quitar
+ *  - borrador / vieja: lo mismo, con el aviso de que falta guardarla
+ * Props: i, prenda, foto, estado, nombre, color: { nombre, fondo }, lados,
+ * lista, agotada, tallas, talla, onTalla(t), urlDisenar, urlEditar,
+ * copiarDe: { numero, url }, onMisCreaciones, onUsarEnLasDemas (texto: 'la
+ * otra' | 'las demás'), onQuitar, onRenombrar, onVer (mostrar en la galería)
+ */
+export function FilaPiezaCombo({
+  i, prenda, foto, estado = 'vacia', nombre, color, lados = [], lista = false, agotada = false,
+  tallas = [], talla, onTalla, urlDisenar, urlEditar, copiarDe, onMisCreaciones, usarEnLasDemas, onUsarEnLasDemas,
+  onQuitar, onRenombrar, onVer,
+}) {
+  const disenada = estado === 'disenada' || estado === 'borrador' || estado === 'vieja';
+  return (
+    <li className={[s.pieza, lista && s.piezaLista].filter(Boolean).join(' ')} data-componente="FilaPiezaCombo">
+      <button type="button" className={s.piezaFoto} onClick={onVer} aria-label={`Ver la prenda ${i + 1}`}>
+        <FotoProducto className={[s.piezaImagen, estado === 'vacia' && s.atenuada].filter(Boolean).join(' ')} src={foto} relleno={estado === 'vacia' ? '10%' : '4%'} />
+        <span className={s.piezaNumero}>{i + 1}</span>
+        {lista && <span className={s.piezaVisto} aria-label="Lista"><CheckCircle2 aria-hidden="true" /></span>}
+      </button>
+      <div className={s.piezaInfo}>
+        <span className={s.piezaPrenda}>Prenda {i + 1} · {prenda}</span>
+        {disenada ? (
+          <>
+            <TituloEditable nombre={nombre || 'Mi creación'} onRenombrar={onRenombrar} como="strong" />
+            {(color?.nombre || lados.length > 0) && (
+              <span className={s.piezaDatos}>
+                {color?.nombre && <><span className={s.piezaColor} style={{ background: color.fondo }} aria-hidden="true" /> {color.nombre}</>}
+                {color?.nombre && lados.length > 0 && <span aria-hidden="true">·</span>}
+                {lados.length > 0 && lados.join(' + ')}
+              </span>
+            )}
+            {estado !== 'disenada' && (
+              <p className={s.piezaAviso}>{estado === 'borrador' ? 'Sin terminar: continúa y guárdala para tenerla lista.' : 'Ábrela y guárdala otra vez para prepararla para imprimir.'}</p>
+            )}
+            {tallas.length > 0 && onTalla && (
+              <SelectorTalla tallas={tallas} valor={talla} onChange={onTalla} etiqueta={`Talla de la prenda ${i + 1}`} />
+            )}
+            <div className={s.piezaAcciones}>
+              <Boton to={urlEditar} tamano="sm" variante="contorno" icono={<Pencil aria-hidden="true" />}>{estado === 'borrador' ? 'Continuar' : 'Editar'}</Boton>
+              {onUsarEnLasDemas && lista && <Boton tamano="sm" variante="fantasma" icono={<Copy aria-hidden="true" />} onClick={onUsarEnLasDemas}>Usar en {usarEnLasDemas || 'las demás'}</Boton>}
+              {onQuitar && <Boton tamano="sm" variante="fantasma" icono={<X aria-hidden="true" />} onClick={onQuitar}>Quitar</Boton>}
+            </div>
+          </>
+        ) : estado === 'plantilla' ? (
+          <>
+            <strong className={s.piezaNombre}>{nombre || 'Diseño de la comunidad'}</strong>
+            {color?.nombre && <span className={s.piezaDatos}><span className={s.piezaColor} style={{ background: color.fondo }} aria-hidden="true" /> {color.nombre}</span>}
+            <p className={s.piezaAyuda}>Llévala tal cual o cámbiale el nombre, la foto o lo que quieras.</p>
+            <div className={s.piezaAcciones}>
+              <Boton to={urlDisenar} tamano="sm" icono={<Paintbrush aria-hidden="true" />}>Personalizar</Boton>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className={s.piezaAyuda}>Ponle tu imagen o tu frase.</p>
+            <div className={s.piezaAcciones}>
+              <Boton to={urlDisenar} tamano="sm" icono={<Paintbrush aria-hidden="true" />}>Diseñar</Boton>
+              {copiarDe && <Boton to={copiarDe.url} tamano="sm" variante="contorno" icono={<Copy aria-hidden="true" />}>Copiar de la prenda {copiarDe.numero}</Boton>}
+              {onMisCreaciones && <Boton tamano="sm" variante="fantasma" icono={<Images aria-hidden="true" />} onClick={onMisCreaciones}>Mis creaciones</Boton>}
+            </div>
+          </>
+        )}
+        {agotada && <p className={s.piezaAviso}>Agotada por ahora.</p>}
+      </div>
+    </li>
+  );
+}

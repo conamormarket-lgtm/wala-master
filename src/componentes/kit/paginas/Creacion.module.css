@@ -1,121 +1,7 @@
-/* Dos columnas en ancho: galería (que se queda a la vista al bajar) e información. */
-.ficha {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1.5rem;
-}
-
-.columnaGaleria {
-  min-width: 0;
-}
-
-.info {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-content: start;
-  gap: 1rem;
-  min-width: 0;
-}
-
-@media (min-width: 900px) {
-  .ficha {
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-    gap: 2.5rem;
-    align-items: start;
-  }
-
-  .columnaGaleria {
-    position: sticky;
-    top: 1rem;
-  }
-}
-
-.migas {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.3rem;
-  color: var(--color-text-muted);
-  font-size: 0.86rem;
-}
-
-.migas a,
-.migas a:hover {
-  color: var(--primary-color);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-:global([data-theme='dark']) .migas a {
-  color: var(--violet-300);
-}
-
 .cabeza {
   display: grid;
   justify-items: start;
   gap: 0.45rem;
-}
-
-.titulo {
-  margin: 0.15rem 0 0;
-  font-family: var(--fuente-marca);
-  font-size: clamp(1.6rem, 4.2vw, 2.2rem);
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  line-height: 1.08;
-  overflow-wrap: anywhere;
-}
-
-.lapiz {
-  display: inline-flex;
-  flex-shrink: 0;
-  margin-left: 0.3rem;
-  vertical-align: middle;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition: background-color var(--dur-rapida) ease, color var(--dur-rapida) ease;
-}
-
-.lapiz:hover {
-  background: var(--primary-light);
-  color: var(--primary-color);
-}
-
-.lapiz svg {
-  width: 1rem;
-  height: 1rem;
-  transition: transform var(--dur-media) var(--ease-signature);
-}
-
-.lapiz:hover svg {
-  transform: rotate(-14deg);
-}
-
-.renombrar {
-  display: flex;
-  gap: 0.5rem;
-  width: 100%;
-}
-
-.renombrarCampo {
-  flex: 1;
-  min-width: 0;
-  min-height: 46px;
-  padding: 0 0.85rem;
-  border: 1.5px solid var(--violet-500);
-  border-radius: 12px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-family: var(--fuente-marca);
-  font-size: 1.3rem;
-  font-weight: 900;
 }
 
 .base {
@@ -139,44 +25,6 @@
 .publicada svg {
   width: 0.9rem;
   height: 0.9rem;
-}
-
-.precioFila {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.6rem;
-}
-
-.precio {
-  font-family: var(--fuente-marca);
-  font-size: 2rem;
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-}
-
-.antes {
-  color: var(--color-text-muted);
-  font-size: 1rem;
-}
-
-/* El descuento: un sello inclinado con el degradado del logo. */
-.descuento {
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  background: var(--degradado-logo);
-  color: #fff;
-  font-family: var(--fuente-marca);
-  font-size: 0.8rem;
-  font-weight: 900;
-  transform: rotate(-6deg);
-}
-
-.incluye {
-  margin: -0.5rem 0 0;
-  color: var(--color-text-muted);
-  font-size: 0.86rem;
 }
 
 .combo {
@@ -289,32 +137,6 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.6rem;
   padding-top: 0.25rem;
-}
-
-.confianza {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
-  margin: 0;
-  padding: 0.85rem 0;
-  border-block: 1px dashed var(--color-border);
-  list-style: none;
-}
-
-.confianza li {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--color-text-muted);
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.confianza svg {
-  width: 0.95rem;
-  height: 0.95rem;
-  color: var(--primary-color);
 }
 
 .detalles dl {
