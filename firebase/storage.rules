@@ -1,78 +1,48 @@
+// Reglas de Storage VIVAS (publicadas el 2026-10-15). Son las de mayo más el
+// cierre de backups/. Cubren lo que usan la tienda, el ERP (boletas_envio,
+// comprobantes_*, detalles_personalizado, usuarios_documentos, proformas) y el
+// visor (no usa Storage). Antes de cambiarlas, probar con el servicio de reglas
+// (node scripts/probar-reglas-storage.cjs) y publicar desde aquí.
+// storage.rules.borrador es un borrador viejo que nunca se publicó: rompería el ERP.
+
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Helper functions
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    // Admin = custom claim `admin: true` (H-09) o, como puente, doc adminUsers/{uid}.
-    function isAdmin() {
-      return isAuthenticated() && (
-        request.auth.token.admin == true ||
-        (firestore.exists(/databases/(default)/documents/adminUsers/$(request.auth.uid)) &&
-         firestore.get(/databases/(default)/documents/adminUsers/$(request.auth.uid)).data.role == 'admin')
-      );
-    }
-    
-    // Product images - públicos para lectura, solo admin puede escribir
-    match /products/{productId}/{allPaths=**} {
+
+    // NUEVA REGLA: Permitir subir imágenes a boletas_envio a través de la interfaz web
+    match /boletas_envio/{allPaths=**} {
       allow read: if true;
-      allow write: if isAdmin();
-    }
-    
-    // Design images - usuarios pueden subir sus propios diseños
-    match /designs/{userId}/{allPaths=**} {
-      allow read: if true; // Diseños pueden ser públicos o privados según metadata
-      allow write: if isAuthenticated() && request.auth.uid == userId;
-      allow delete: if isAuthenticated() && request.auth.uid == userId || isAdmin();
-    }
-    
-    // User uploads - usuarios pueden subir sus propios archivos
-    match /users/{userId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if isAuthenticated() && request.auth.uid == userId;
-      allow delete: if isAuthenticated() && request.auth.uid == userId || isAdmin();
-    }
-    
-    // Admin uploads - solo admin
-    match /admin/{allPaths=**} {
-      allow read, write: if isAdmin();
+      allow write: if request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
     }
 
-    // Fotos de producto (modelo V2). NO estaban cubiertas: sin regla, Storage
-    // deniega por defecto, asi que estas reglas tal cual romperian la subida de
-    // imagenes desde el formulario de producto. Que en produccion funcione
-    // significa que lo desplegado no es este archivo — revisar antes de
-    // ejecutar deploy:storage-rules.
-    match /productos_v2/{allPaths=**} {
+    // Imágenes de productos: lectura PÚBLICA, escritura solo autenticados con límites
+    match /productos/{imageId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if request.auth != null
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
     }
 
-    // Destino de la herramienta "Optimizar imagenes antiguas" (imagenesWebp.js).
-    // Mismo caso: sin esta regla, esa herramienta falla con storage/unauthorized.
-    match /reconvertidas/{allPaths=**} {
-      allow read: if true;
-      allow write: if isAdmin();
+    // Respaldos diarios de las bases (los escribe la función scheduledBackup del
+    // ERP con permisos de servidor, que no pasa por estas reglas). Nadie desde
+    // la web los lee, lista ni toca.
+    match /backups/{allPaths=**} {
+      allow read, write: if false;
     }
 
-    // Cliparts (galería global) - lectura pública, solo admin puede subir/eliminar
-    match /cliparts/{allPaths=**} {
-      allow read: if true;
-      allow write: if isAdmin();
+    // Cualquier otra carpeta: lectura pública, escritura solo autenticados.
+    // (Antes era /{allPaths=**}, que también cubría backups/ y, como las reglas
+    // se suman, la dejaba pública.)
+    match /{carpeta}/{allPaths=**} {
+      allow read: if carpeta != 'backups';
+      allow write: if request.auth != null && carpeta != 'backups';
     }
 
-    // Fonts (tipografías) - lectura pública, solo admin puede subir/eliminar
-    match /fonts/{allPaths=**} {
+    // Archivos sueltos en la raíz del bucket: igual que antes.
+    match /{archivo} {
       allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // Config (mascota, etc.) - lectura pública, solo admin puede escribir
-    match /config/{allPaths=**} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow write: if request.auth != null;
     }
   }
 }

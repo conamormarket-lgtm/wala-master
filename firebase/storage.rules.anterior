@@ -1,0 +1,33 @@
+// Reglas de Storage publicadas hasta el 2026-10-15 (desde el 2026-05-05).
+// Se guardan solo para volver atrás si hiciera falta:
+//   copiar este archivo sobre storage.rules y publicar con
+//   npx firebase deploy --only storage --project sistema-gestion-3b225
+// OJO: dejaban backups/ (respaldos completos de las bases) públicos.
+
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // NUEVA REGLA: Permitir subir imágenes a boletas_envio a través de la interfaz web
+    match /boletas_envio/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Imágenes de productos: lectura PÚBLICA, escritura solo autenticados con límites
+    match /productos/{imageId} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Cualquier otro archivo: lectura pública, escritura solo autenticados
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}
+
