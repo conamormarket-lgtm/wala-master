@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Capacitor } from '@capacitor/core';
+import { esAppNativa } from '../../../../utils/vistaPreviaCalor';
 import styles from './MobileCategorySubheader.module.css';
 
 const MobileCategorySubheader = ({ categories = [] }) => {
@@ -10,7 +10,7 @@ const MobileCategorySubheader = ({ categories = [] }) => {
   const activeItemRef = useRef(null);
 
   // Solo se muestra en aplicación nativa móvil
-  const isNativeApp = Capacitor.isNativePlatform();
+  const isNativeApp = esAppNativa();
 
   // Scroll al elemento activo al cargar
   useEffect(() => {

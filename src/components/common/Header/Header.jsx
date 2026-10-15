@@ -15,7 +15,7 @@ import { useLayoutContext } from '../../../contexts/LayoutContext';
 import EditableSection from '../../admin/EditableSection';
 import HeaderSearch from '../HeaderSearch/HeaderSearch';
 import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search, ChevronDown, ChevronRight, Check, LogOut, X, Loader2 } from 'lucide-react';
-import { Capacitor } from '@capacitor/core';
+import { esAppNativa } from '../../../utils/vistaPreviaCalor';
 import { logout } from '../../../services/firebase/auth';
 import { useCuentaNavGroups } from '../../../pages/cuenta/useCuentaNavGroups';
 import styles from './Header.module.css';
@@ -543,7 +543,7 @@ const Header = () => {
   };
 
   const handleMobilePopupClick = (e, dropdownName) => {
-    if (window.innerWidth <= 768 || Capacitor.isNativePlatform()) {
+    if (window.innerWidth <= 768 || esAppNativa()) {
       e.preventDefault();
       setActiveDropdown(prev => prev === dropdownName ? null : dropdownName);
     }
@@ -585,7 +585,7 @@ const Header = () => {
 
   if (!isHeaderVisible) return null;
 
-  const isNativeApp = Capacitor.isNativePlatform();
+  const isNativeApp = esAppNativa();
 
   return (
     <>

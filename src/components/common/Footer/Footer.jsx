@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getStorefrontConfig, getDefaultSettings } from '../../../pages/Tienda/services/storefront';
 import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
-import { Capacitor } from '@capacitor/core';
+import { esAppNativa } from '../../../utils/vistaPreviaCalor';
 import { empresa } from '../../../config/empresa';
 import styles from './Footer.module.css';
 import { T } from '../../../i18n/useTranslatedText';
@@ -30,7 +30,7 @@ const Footer = () => {
 
   if (!isFooterVisible) return null;
   // Ocultar footer si está en una app móvil nativa (Capacitor)
-  if (window.Capacitor?.isNativePlatform?.() || Capacitor.isNativePlatform()) return null;
+  if (window.Capacitor?.isNativePlatform?.() || esAppNativa()) return null;
 
   const isEditingFooter = activePageId === 'footer';
   let displaySections = isEditingFooter ? (storeConfigDraft?.sections || []) : (footerConfig?.sections || []);

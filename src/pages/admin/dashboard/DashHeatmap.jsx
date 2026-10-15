@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import HeatmapViewer from '../../../components/dashboard/HeatmapViewer';
@@ -138,6 +138,16 @@ export default function DashHeatmap() {
     refetchOnWindowFocus: false,
   });
   const versionesPorRuta = paginasQuery.data || null;
+
+  // La app de Android solo corre en celulares y tablets: con origen "App" no
+  // hay "Computadora" (una tablet en horizontal cuenta como tablet).
+  const soloApp = origen === 'app';
+  const opcionesDispositivo = soloApp
+    ? ANCHOS_PANTALLA.filter((o) => o.value !== 'desktop')
+    : ANCHOS_PANTALLA;
+  useEffect(() => {
+    if (soloApp && ancho === 'desktop') setAncho('todos');
+  }, [soloApp, ancho]);
   const [incluirSinMeta, setIncluirSinMeta] = useState(false);
 
   // LECTURA PAGINADA POR RANGO — cacheada por react-query (clave = rango) y por
@@ -239,9 +249,9 @@ export default function DashHeatmap() {
               ariaLabel="Filtrar por diseño de la página"
             />
           </GrupoFiltro>
-          <GrupoFiltro etiqueta="Dispositivo">
+          <GrupoFiltro etiqueta={soloApp ? 'Dispositivo (celular o tablet)' : 'Dispositivo'}>
             <SegmentadoHeatmap
-              opciones={ANCHOS_PANTALLA}
+              opciones={opcionesDispositivo}
               valor={ancho}
               onChange={setAncho}
               ariaLabel="Filtrar por dispositivo (según el ancho de pantalla del clic)"
@@ -304,6 +314,7 @@ export default function DashHeatmap() {
             error={batchesQuery.error?.message || null}
             emptyMessage={mensajeVacio}
             ancho={ancho}
+            origen={origen}
             versionesPorRuta={versionesPorRuta}
             soloDisenoActual={diseno === 'actual'}
             onCambiarDiseno={(actual) => setDiseno(actual ? 'actual' : 'todos')}

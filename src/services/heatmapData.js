@@ -83,11 +83,13 @@ export const DISPOSITIVOS_HEATMAP = [
 
 // Clasifica un ancho de pantalla en su bucket ('movil' <768 / 'tablet' 768-1024
 // / 'desktop' >1024). null = ancho inválido/ausente (no clasificable).
-function bucketAncho(screenWidth) {
+// En la APP (Android: teléfonos y tablets) no hay "computadora": una tablet en
+// horizontal pasa de 1024 px y se cuenta como tablet.
+function bucketAncho(screenWidth, esApp = false) {
   const w = Number(screenWidth);
   if (!Number.isFinite(w) || w <= 0) return null;
   if (w < 768) return 'movil';
-  if (w <= 1024) return 'tablet';
+  if (w <= 1024 || esApp) return 'tablet';
   return 'desktop';
 }
 
@@ -125,7 +127,7 @@ function clamp01(n) {
  *               posición más fiable, sirva la pantalla que sirva.
  * Devuelve null si el evento no es válido / no se puede normalizar.
  */
-function normalizePoint(ev) {
+function normalizePoint(ev, esApp = false) {
   if (!ev || typeof ev !== 'object') return null;
 
   const width = Number(ev.screenWidth);
@@ -156,7 +158,9 @@ function normalizePoint(ev) {
     // Altura del clic dentro de la PANTALLA (0..1): sirve para ubicar los
     // clics en elementos fijos (barra de abajo, cabecera), que no se mueven.
     vy: Number.isFinite(Number(ev.y)) ? clamp01(Number(ev.y) / height) : null,
-    ancho: bucketAncho(width),
+    ancho: bucketAncho(width, esApp),
+    // Clic hecho desde la app de Android (el lote trae clientType 'APP').
+    app: Boolean(esApp),
     px: pageX,
     py: pageY,
     sw: Math.round(width),
@@ -673,7 +677,7 @@ export function aggregateHeatmapBatches(docs = [], filtros = {}) {
 
     events.forEach((ev) => {
       // -- Filtro a nivel de CLIC: corte retroactivo por ancho de pantalla --
-      if (ancho !== 'todos' && bucketAncho(ev?.screenWidth) !== ancho) return;
+      if (ancho !== 'todos' && bucketAncho(ev?.screenWidth, clientType === 'APP') !== ancho) return;
 
       const rawPath = (ev && typeof ev.path === 'string' && ev.path.trim()) ? ev.path.trim() : 'unknown';
       const path = claveDePagina(rawPath);
@@ -704,7 +708,7 @@ export function aggregateHeatmapBatches(docs = [], filtros = {}) {
         )
         : null;
 
-      const point = normalizePoint(ev);
+      const point = normalizePoint(ev, clientType === 'APP');
       if (point) {
         point.t = t;
         point.antes = antes;

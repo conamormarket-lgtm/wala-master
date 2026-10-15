@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Smartphone } from 'lucide-react';
-import { Capacitor } from '@capacitor/core';
+import { esAppNativa } from '../../../utils/vistaPreviaCalor';
 import useIsMobile from '../../../hooks/useIsMobile';
 import styles from './AppDownloadBanner.module.css';
 import { T } from '../../../i18n/useTranslatedText';
@@ -18,7 +18,7 @@ const AppDownloadBanner = () => {
 
   useEffect(() => {
     // Solo mostrar si es un dispositivo móvil y NO estamos dentro de la app nativa
-    if (isMobileDevice && !Capacitor.isNativePlatform()) {
+    if (isMobileDevice && !esAppNativa()) {
       setIsVisible(true);
     }
   }, [isMobileDevice]);

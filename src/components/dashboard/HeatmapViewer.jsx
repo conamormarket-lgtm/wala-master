@@ -370,6 +370,7 @@ export default function HeatmapViewer({
   emptyMessage = null,
   ancho = 'todos',
   versionesPorRuta = null,
+  origen = 'todos',
   soloDisenoActual: soloDisenoActualProp = false,
   onCambiarDiseno = null,
 }) {
@@ -482,7 +483,17 @@ export default function HeatmapViewer({
   // Las páginas con código se agrupan ('/producto/:id'): la vista previa abre
   // la página concreta con más clics del grupo (misma-origen = wala.pe).
   const previewPath = selectedPath ? (data.previewPathByPath?.[selectedPath] || selectedPath) : null;
-  const iframeSrc = previewPath && previewPath !== 'unknown' && !previewPath.includes('/:') ? previewPath : null;
+  // ¿Se muestra la página "como la app"? Con origen App, o con Todos si la
+  // mayoría de los clics de esta página vinieron de la app. La app no tiene pie
+  // de página ni el aviso de "descarga la app" y cambia la cabecera: la vista
+  // previa la carga con ?vista=app (ver utils/vistaPreviaCalor.js).
+  const clicsApp = useMemo(() => points.filter((p) => p.app).length, [points]);
+  const comoApp = origen === 'app' || (origen === 'todos' && points.length > 0 && clicsApp > points.length / 2);
+  const mezclaOrigen = origen === 'todos' && clicsApp > 0 && clicsApp < points.length;
+  const rutaPreview = previewPath && previewPath !== 'unknown' && !previewPath.includes('/:') ? previewPath : null;
+  const iframeSrc = rutaPreview
+    ? (comoApp ? `${rutaPreview}${rutaPreview.includes('?') ? '&' : '?'}vista=app` : rutaPreview)
+    : null;
   const variantes = selectedPath ? (data.variantesByPath?.[selectedPath] || 1) : 1;
 
   // Resoluciones exactas registradas en esta página (más clics primero).
@@ -631,8 +642,9 @@ export default function HeatmapViewer({
         mejor = k;
       }
     });
-    return mejor;
-  }, [ancho, points]);
+    // En la app no hay computadora: su pantalla más ancha es una tablet.
+    return comoApp && mejor === 'desktop' ? 'tablet' : mejor;
+  }, [ancho, points, comoApp]);
   const pantalla = exacta
     ? { w: exacta.w, h: exacta.h, label: `${exacta.w} × ${exacta.h}` }
     : PANTALLAS_PREVIEW[anchoPreview];
@@ -1017,7 +1029,7 @@ export default function HeatmapViewer({
   // con lo que se ve.
   const normRuta = (r) => (r && r.length > 1 && r.endsWith('/') ? r.slice(0, -1) : r);
   const vistaRedirigida = Boolean(
-    iframeSrc && rutaIframe && iframeState === 'ready' && normRuta(rutaIframe) !== normRuta(iframeSrc)
+    iframeSrc && rutaIframe && iframeState === 'ready' && normRuta(rutaIframe) !== normRuta(rutaPreview)
   );
 
   const handleIframeLoad = () => {
@@ -1268,7 +1280,7 @@ export default function HeatmapViewer({
                   <span className={styles.avisoAcciones}>
                     <button type="button" className={styles.notaBoton} onClick={handleRetry}>Reintentar</button>
                     {iframeSrc && (
-                      <a className={styles.notaBoton} href={iframeSrc} target="_blank" rel="noopener noreferrer">
+                      <a className={styles.notaBoton} href={rutaPreview} target="_blank" rel="noopener noreferrer">
                         Abrir la página en otra pestaña
                       </a>
                     )}
@@ -1441,7 +1453,7 @@ export default function HeatmapViewer({
               <div className={styles.legendRow}>
                 <span className={styles.previewTag}>
                   {showIframe
-                    ? `Sobre la página real · ${exacta ? 'pantalla' : 'vista'} ${pantalla.label} · ${Math.round(scale * 100)}%`
+                    ? `Sobre la página real · ${comoApp ? 'como la app · ' : ''}${exacta ? 'pantalla' : 'vista'} ${pantalla.label} · ${Math.round(scale * 100)}%`
                     : 'Vista de respaldo'}
                 </span>
                 <div className={styles.legend}>
@@ -1456,6 +1468,13 @@ export default function HeatmapViewer({
                   El rojo marca la zona más clicada de esta página; el resto se compara con ella.
                   {hayScroll ? ' Desplázate dentro de la vista para recorrer toda la página.' : ''}
                 </p>
+                {mezclaOrigen && (
+                  <p>
+                    Hay clics de la web y de la app ({clicsApp.toLocaleString('es-PE')} de la app); la vista
+                    previa muestra la {comoApp ? 'app' : 'web'}, que se ven distinto (la app no tiene pie de
+                    página). Elige un origen arriba para ver cada uno sobre su versión.
+                  </p>
+                )}
                 {versionActual && (clicsVersionVieja > 0 || soloActual) && (
                   <p>
                     Esta página se cambió en el builder (

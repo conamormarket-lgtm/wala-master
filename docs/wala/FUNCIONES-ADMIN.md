@@ -211,6 +211,11 @@ sub-páginas los filtros **se heredan** y un enlace copiado conserva la vista ex
   texto no se ubica por su ruta vieja ("De un diseño anterior"); uno posterior sí (la página es
   la misma). Filtro **"Diseño de la página: Todos / Solo el actual"**: se aplica en la agregación,
   así tarjetas, ranking y mapa cuentan lo mismo (`clicsAntesByPath` para el aviso).
+  **Web vs app:** con Origen "App" el filtro Dispositivo ofrece solo Móvil/Tablet (la app de
+  Android no corre en computadora) y los clics de la app de más de 1024 px cuentan como tablet.
+  La vista previa se carga "como la app" (`?vista=app` → `esAppNativa()` en
+  `utils/vistaPreviaCalor.js`: sin pie, cabecera de la app, sin aviso de descarga) con Origen App
+  o cuando la mayoría de clics de la página vienen de la app; si se mezclan web y app, se avisa.
 
 > **Requiere redeploy de functions:** los desgloses nuevos (país/dispositivo/navegador/SO,
 > identidades, top visitantes, embudo completo) salen de campos que agrega la versión nueva de
