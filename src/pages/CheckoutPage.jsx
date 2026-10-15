@@ -1661,8 +1661,11 @@ const CheckoutPage = () => {
         if (!vivo) return;
         setLibreta(lista);
         const principal = direccionPrincipal(lista);
-        // Solo si el cliente no empezó a escribir en el formulario.
-        if (principal && Object.keys(formik.touched).length === 0) {
+        // Solo si el cliente no empezó a escribir en el formulario, ni trae una
+        // dirección escrita antes de ir a iniciar sesión (esa se queda; la libreta
+        // sigue a mano con "Usar una dirección guardada").
+        const direccionDelBorrador = !!(borrador.address || borrador.district);
+        if (principal && Object.keys(formik.touched).length === 0 && !direccionDelBorrador) {
           aplicarDireccion(principal);
           setModoDireccion('tarjeta');
         }

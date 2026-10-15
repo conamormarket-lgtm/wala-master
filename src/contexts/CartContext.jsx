@@ -231,6 +231,17 @@ export const CartProvider = ({ children }) => {
   // de reemplazar — así un invitado que agrega algo y LUEGO inicia sesión no
   // pierde lo que acaba de agregar aquí.
   const restoredUidRef = useRef(null);
+  // Cuántas líneas de la nube entraron sin marcar; el aviso sale una vez, fuera
+  // del updater de setItems (que React puede correr dos veces).
+  const avisoNubeRef = useRef(0);
+  useEffect(() => {
+    const n = avisoNubeRef.current;
+    if (!n) return;
+    avisoNubeRef.current = 0;
+    toast.info(n === 1
+      ? 'Tu cuenta tenía 1 producto guardado: quedó en tu carrito para otra vez.'
+      : `Tu cuenta tenía ${n} productos guardados: quedaron en tu carrito para otra vez.`, 6000);
+  }, [items, toast]);
   useEffect(() => {
     if (!uid || !db) return;
     if (restoredUidRef.current === uid) return;
@@ -259,7 +270,16 @@ export const CartProvider = ({ children }) => {
             return !clave || !clavesLocales.has(clave);
           });
           if (nuevosDeLaNube.length === 0) return propios;
-          return consolidarDuplicados([...propios, ...nuevosDeLaNube]);
+          // 3) Si este equipo ya tenía algo (p.ej. un invitado que inicia sesión a
+          //    mitad del checkout), lo de la nube entra SIN marcar: no se cobra en
+          //    esta compra, queda para otra vez. Con el carrito local vacío (entrar
+          //    desde otro dispositivo) se restaura tal como estaba guardado.
+          if (propios.length === 0) return consolidarDuplicados(nuevosDeLaNube);
+          avisoNubeRef.current = nuevosDeLaNube.length;
+          return consolidarDuplicados([
+            ...propios,
+            ...nuevosDeLaNube.map((remoto) => ({ ...remoto, selected: false })),
+          ]);
         });
       } catch (err) {
         console.warn('No se pudo restaurar el carrito guardado en la nube:', err);
