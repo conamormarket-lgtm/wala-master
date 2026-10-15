@@ -7,7 +7,10 @@
  */
 
 import { limaTodayStr, felicidadKapiHoy } from '../../utils/fechaLima';
-import { leerPrendaBase, colorDisponible, fondoMuestra, precioBase, precioPersonalizado, tallasDeColor, fondoColorGuardado } from '../../utils/prendaBase';
+import {
+  leerPrendaBase, colorDisponible, fondoMuestra, precioBase, precioPersonalizado, tallasDeColor, fondoColorGuardado,
+  vistasDelColor, esColorBlanco, textoSobre,
+} from '../../utils/prendaBase';
 
 const variantesDe = (p) => (p?.hasVariants ? p.variants || [] : []);
 
@@ -842,3 +845,38 @@ export const fichaCreacionDesde = (d = {}, prenda, { fecha, esAdmin = false } = 
   };
 };
 
+
+/**
+ * Una prenda base (productos_wala con prendaBase) → la prenda de
+ * PaginaEstudio: sus lados (cada color con sus zonas, ver vistasDelColor) y
+ * sus colores con lo que el estudio necesita para dibujarlos.
+ *  - colores: [{ id, nombre, hex (fondo de la muestra), tinte (el tono para
+ *    teñir la foto blanca), blanco (no se tiñe), claro (el visto va oscuro),
+ *    oscura (la prenda es oscura: las guías van en blanco), fotos, espejo
+ *    (bicolor al revés: las fotos se voltean), espejoDe, tallas, vistas }]
+ */
+export const prendaEstudioDesde = (producto = {}) => {
+  const cfg = leerPrendaBase(producto);
+  return {
+    id: producto.id,
+    nombre: producto.name,
+    precio: precioPersonalizado(producto),
+    precioAntes: Number(producto.price) > precioPersonalizado(producto) ? Number(producto.price) : undefined,
+    vistas: cfg.vistas,
+    tallas: cfg.tallas,
+    colores: cfg.colores.filter((c) => colorDisponible(c, cfg.vistas)).map((c) => ({
+      id: c.id,
+      nombre: c.nombre,
+      hex: fondoMuestra(c),
+      tinte: c.hex,
+      blanco: esColorBlanco(c.hex),
+      claro: esColorBlanco(c.hex) || textoSobre(c.hex) !== '#FFFFFF',
+      oscura: !c.hex2 && textoSobre(c.hex) === '#FFFFFF',
+      fotos: c.fotos,
+      espejo: Boolean(c.espejo),
+      espejoDe: c.espejoDe,
+      tallas: tallasDeColor(c, cfg),
+      vistas: vistasDelColor(cfg.vistas, c),
+    })),
+  };
+};

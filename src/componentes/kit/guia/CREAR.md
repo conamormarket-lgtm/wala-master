@@ -96,7 +96,7 @@ Sus partes, en orden:
 | Creación (`/creacion/:id`) | **P9 · `PaginaCreacion`** | "Comprar" de una creación |
 | Ver diseño (`/ver/:id`) | **P10 · `PaginaVerDiseno`** | el enlace del WhatsApp de un pedido |
 | Combo (`/combo/:id`) | **P11 · `PaginaCombo`** | "Armar" de un combo, "Usar diseño" de un combo de la comunidad, un combo de Mis creaciones |
-| Estudio (`/crear/:id`) | falta (el editor, ~3.900 líneas) | "Diseñar", "Continuar", "Usar diseño" |
+| Estudio (`/crear/:id`) | **P12 · `PaginaEstudio`** | "Diseñar", "Continuar", "Editar", "Personalizar" y "Usar diseño" (Crear, Comunidad, una creación y un combo) |
 
 ### P8 · Comunidad (`paginas/Comunidad.jsx`)
 
@@ -209,6 +209,74 @@ los combos de Mis creaciones llevan ahí.
 En la Tienda de prueba son las páginas **Una creación** ("Comprar" de una
 creación lleva ahí) y **Ver diseño**, cada una con sus estados.
 
+### P12 · El estudio (`paginas/Estudio.jsx`)
+
+Donde se diseña una prenda: el color, la zona y una imagen o un texto. En la
+tienda el lienzo que se arrastra es fabric.js (`CrearStudioPage`, ~3.900
+líneas); en el kit el diseño vive en el estado de la página y
+**`LienzoPrenda`** lo dibuja con CSS, así se ve y se prueba todo lo demás.
+Las piezas están en `piezas/Estudio.jsx`:
+
+- **`LienzoPrenda`** (pieza nueva): la foto del lado. Si el color no tiene
+  foto propia, la foto blanca se tiñe: el color recortado con la silueta
+  (`mask-image`) y la foto encima en `multiply`; en una prenda oscura la
+  foto vuelve tenue en `screen` para que se vean los pliegues. Un bicolor al
+  revés voltea la foto. Las zonas son costuras punteadas (`x`, `y`, `w`,
+  `proporcion`, `angulo` de la prenda base; el alto es `altoZonaFraccion`) y
+  la elegida lleva su nombre. Las capas se arrastran dentro de su zona y lo
+  que sale de ella se recorta, como en la impresión. El texto se mide en
+  `cqw` de la zona, así escala con la prenda. Con `guias={false}` es la foto
+  final (sin zonas), la de "Guarda tu creación".
+- **`BarraLienzo`**: deshacer y rehacer; con algo elegido, achicar, agrandar,
+  centrar y quitar; + Imagen y + Texto; el zoom (no en el celular: ahí se
+  acerca con los dedos) y los atajos (solo con ratón).
+- **`PasosEstudio`**: los tres pasos en sellos unidos por una costura, como
+  la portada de Crear: **1** el color (`SelectorColor`; si el color tiene
+  versión al revés, el `Interruptor` "Invertir colores"), **2** la zona por
+  lado (`Chip`, con un punto si ya lleva algo), **3** "Subir imagen" o
+  "Escribir texto" y dónde se agrega.
+- **`PanelCapa`**: lo elegido, con "Listo". La imagen dice su calidad de
+  impresión (buena, aceptable o baja, por sus píxeles contra el ancho que
+  ocupa) y tiene quitar fondo y recortar (`RecortarFoto`; sin sesión van
+  apagados, como en la tienda) y "Llenar zona". El texto: el texto, la letra
+  (`Campo` con `opciones`, cada una con su muestra y su grupo: Simples,
+  Gruesas, Deportivas y retro, Elegantes, Escritas a mano), el tamaño
+  (`Cantidad`), negrita y cursiva (`Chip`), 8 colores (`SelectorColor`) y el
+  estilo (Normal, Contorno, Sombra, Sticker). Los dos: ajustar, girar,
+  alinear en la zona y, en `Acordeon`, voltear, traer adelante, enviar
+  atrás, duplicar y pasar a otra zona.
+
+La página (`PaginaEstudio`):
+
+- **Cabeza:** volver, la prenda con su color y los lados con diseño, y el
+  precio. Debajo, un `Aviso` según cómo se abrió: una prenda de un combo
+  ("Prenda 2 de 2 de tu combo…"), editando una creación, desde un diseño de
+  la comunidad o sin sesión ("Puedes diseñar sin cuenta…").
+- **Ancho:** la prenda a la izquierda (fija al bajar) con las pestañas de
+  lado (`Pestanas`, con cuántas capas lleva cada uno) y la barra; el panel a
+  la derecha. **Celular:** una columna, y la compra pegada abajo.
+- **Compra:** "Agregar al carrito · S/ X" (o "Listo, usar en el combo"),
+  Guardar (o "Guardar cambios") y Descargar. Sin diseño, apagados.
+- **Hojas (`HojaInferior`):** la talla y la cantidad antes de agregar; el
+  nombre al guardar, con la foto; "¡Creación guardada!" (agregar, ver mis
+  creaciones o seguir); sin sesión, "Inicia sesión para guardar"; los
+  atajos. Quitar el fondo espera con `CapaCargando`.
+- **Teclado:** Ctrl+Z y Ctrl+Y, flechas para mover (con Shift, más), + y −,
+  Supr para quitar y Esc para soltar.
+- **Estados:** cargando (`EsqueletoPagina forma="estudio"`, con el aviso si
+  no hay sesión), error y prenda no disponible.
+
+Los datos llegan por `prendaEstudioDesde(producto)` (adaptadores): los lados
+y, por color, sus zonas (`vistasDelColor`: un bicolor usa las suyas), su
+foto, su tinte y sus tallas.
+
+En la Tienda de prueba es la página **Estudio**, con la polera y el polo
+reales y "Cómo se abre": nuevo, editar una creación, desde la comunidad y
+una prenda de un combo (al terminar vuelve al combo). Todos los "Diseñar",
+"Continuar", "Editar" y "Personalizar" de Crear, una creación y un combo
+llevan ahí. "Subir imagen" pone las caras de Kapi como si fueran fotos (una
+buena, una regular y una chica, para ver los avisos de calidad).
+
 ## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
 
 Va en el paso 6 de [MIGRACION.md](MIGRACION.md), después de Mis creaciones,
@@ -258,6 +326,33 @@ porque comparten `TarjetaCreacion`.
 - Las tarjetas de las filas son las de Mis creaciones, en vertical.
 - "Ahorras" va en un sello dorado; los pasos van en sellos con su número.
 - Sin prendas, Kapi en vez de una polera gris.
+
+### El estudio (P12)
+
+Es lo más delicado: el lienzo de fabric.js arma los archivos de impresión,
+las vistas previas y el pedido. **No se cambia el lienzo**: se cambia lo de
+alrededor, por partes.
+
+| Parte | Hoy en `CrearStudioPage` | Pasa a (kit) |
+|---|---|---|
+| Barra de arriba y avisos | `.barraSuperior`, avisos de edición e invitado | cabeza de `PaginaEstudio` + `Aviso` |
+| Barra rápida | la de debajo del lienzo | `BarraLienzo` |
+| Panel sin selección | los tres pasos | `PasosEstudio` |
+| Panel con un elemento | texto / imagen (con `SelectorFuente`) | `PanelCapa` |
+| Modales | talla, guardar, guardada, login, atajos | `HojaInferior` |
+| Recortar | su modal propio | `RecortarFoto forma="cuadrado"` |
+| Miniatura al guardar | la vista previa renderizada | se queda la de la tienda (`renderVistaPrevia`) |
+
+- `PanelCapa` recibe la capa elegida de fabric traducida a sus campos
+  (`texto`, `fuente`, `tamano`, `color`, `contorno`, `sombra`…) y sus
+  `onCambiar` se aplican al objeto de fabric. `LienzoPrenda` sirve para las
+  miniaturas y para la vista previa de Crear, no reemplaza al lienzo.
+- No se puede perder: el autoguardado del borrador, el aviso al salir sin
+  guardar, la regla de la calidad (`calidadDeCapa`), quitar el fondo y
+  recortar solo con sesión, `?combo=&pieza=` que vuelve al combo, `?copiar=`
+  y `?plantilla=`, y los archivos de impresión por zona.
+- Las letras se cargan al abrir el estudio (Google Fonts y
+  `public/fonts/fonts.css`), no en toda la tienda.
 
 ### Pasos
 

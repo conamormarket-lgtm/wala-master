@@ -719,6 +719,39 @@ const PAGINAS = {
       </Caja>
     </span>
   )),
+  estudio: ({ sesion }) => (
+    // El estudio (/crear/:id): la prenda con sus lados y su barra; al lado, los
+    // tres pasos y la compra. Sin sesión, arriba va el aviso de que guardar pide entrar.
+    <span className={s.estudio}>
+      <span className={s.estudioCabeza}>
+        <Hueso forma="circulo" ancho={36} alto={36} />
+        <span className={s.filaTextos}><Hueso alto={20} ancho="min(55%, 260px)" /><Hueso alto={10} ancho="min(35%, 160px)" /></span>
+        <Hueso alto={22} ancho={64} />
+      </span>
+      {sesion === false && <Hueso forma="bloque" alto={40} ancho="100%" />}
+      <span className={s.estudioCuerpo}>
+        <span className={s.estudioEscena}>
+          <Hueso forma="pildora" alto={40} ancho={200} />
+          <Hueso forma="bloque" proporcion="1100 / 1289" className={s.estudioLienzo} />
+          <Hueso forma="pildora" alto={46} ancho="min(100%, 520px)" />
+        </span>
+        <span className={cx(s.tarjeta, s.estudioPanel)}>
+          {repetir(3, (k) => (
+            <span key={k} className={s.estudioPaso}>
+              <span className={s.itemMenu}><Hueso forma="circulo" ancho={30} alto={30} /><Hueso alto={14} ancho="50%" /></span>
+              {k === 0 && <span className={s.chips}>{repetir(6, (j) => <Hueso key={j} forma="circulo" ancho={36} alto={36} />)}</span>}
+              {k === 1 && <span className={s.chips}>{repetir(4, (j) => <Hueso key={j} forma="pildora" alto={32} ancho={j % 2 ? 110 : 80} />)}</span>}
+              {k === 2 && <span className={s.estudioAgregar}><Hueso forma="bloque" alto={112} /><Hueso forma="bloque" alto={112} /></span>}
+            </span>
+          ))}
+          <span className={s.estudioCompra}>
+            <Hueso alto={18} ancho="100%" />
+            <Hueso forma="pildora" alto={48} ancho="100%" />
+          </span>
+        </span>
+      </span>
+    </span>
+  ),
   acceso: () => (
     <span className={s.accesoPagina}>
       <span className={s.accesoPanel}>
@@ -736,7 +769,7 @@ const PAGINAS = {
  * Lo que se ve mientras llega una página (Suspense): su forma, no un círculo.
  * Para cambiar de página siempre es esto (CapaCargando es para esperar una acción).
  *  - forma: 'productos' (la grilla, por defecto) | 'inicio' | 'tienda' |
- *    'busqueda' | 'producto' | 'carrito' | 'crear' | 'comunidad' | 'minijuegos' | 'encuesta' |
+ *    'busqueda' | 'producto' | 'carrito' | 'crear' | 'estudio' | 'comunidad' | 'minijuegos' | 'encuesta' |
  *    'acceso' | 'cuenta' | 'lista' | 'formulario'
  *  - sesion: false para quien no entró (la cuenta y la encuesta muestran la
  *    invitación a entrar; Minijuegos, su aviso en vez del progreso)

@@ -894,3 +894,73 @@
     display: none;
   }
 }
+
+/* ── Estudio de Crear: la prenda y el panel de los pasos ─── */
+.estudio {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.estudioCabeza {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.estudioCuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.estudioEscena {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+}
+
+.estudioLienzo {
+  width: 100%;
+  border-radius: 6px 24px 24px 24px;
+}
+
+.estudioPanel {
+  gap: 1.35rem;
+}
+
+.estudioPaso {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.estudioAgregar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.estudioCompra {
+  display: grid;
+  gap: 0.6rem;
+  padding-top: 1rem;
+  border-top: 1.5px dashed var(--color-border);
+}
+
+@container esqueleto (min-width: 900px) {
+  .estudioCuerpo {
+    grid-template-columns: minmax(0, 1fr) 400px;
+    align-items: start;
+    gap: 1.5rem;
+  }
+
+  .estudio {
+    padding-inline: 0.5rem;
+  }
+
+  /* El escenario: la prenda a su alto (--alto-lienzo de la página) más su margen. */
+  .estudioLienzo {
+    height: calc(min(66vh, 680px) + 62px);
+    aspect-ratio: auto !important;
+  }
+}

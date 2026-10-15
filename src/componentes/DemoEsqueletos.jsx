@@ -30,6 +30,7 @@ const FORMAS_PAGINA = [
   ['busqueda', 'Buscar: el buscador, chips, orden y resultados'],
   ['producto', 'La ficha de un producto: galería e información'],
   ['carrito', 'El carrito: líneas y resumen'],
+  ['estudio', 'El estudio de Crear: la prenda con su barra, los tres pasos y la compra'],
   ['minijuegos', 'Zona Arcade: el encabezado y las tarjetas de juego'],
   ['encuesta', 'La encuesta: el avance y su tarjeta'],
   ['acceso', 'Login, registro, recuperar, completar perfil: los dos paneles'],

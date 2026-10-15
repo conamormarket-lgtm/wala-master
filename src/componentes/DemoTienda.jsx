@@ -12,7 +12,7 @@ import { empresa } from '../config/empresa';
 import { msHastaMananaLima, msHastaLunesLima, limaTodayStr } from '../utils/fechaLima';
 import { volarMonedasGanadas } from '../utils/animations';
 import CREAR_DATOS from './demo/crear.json';
-import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR, ComunidadDemo, ESTADOS_COMUNIDAD, CreacionDemo, ESTADOS_CREACION, VerDisenoDemo, ESTADOS_VER, ComboDemo, ESTADOS_COMBO } from './DemoCuenta';
+import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR, ComunidadDemo, ESTADOS_COMUNIDAD, CreacionDemo, ESTADOS_CREACION, VerDisenoDemo, ESTADOS_VER, ComboDemo, ESTADOS_COMBO, EstudioDemo, ESTADOS_ESTUDIO } from './DemoCuenta';
 import INICIO from './demo/inicio.json';
 import TIENDA from './demo/tienda.json';
 import cs from './ComponentesPage.module.css';
@@ -52,6 +52,7 @@ const PAGINAS = [
   { id: 'inicio', texto: 'Inicio', ruta: '/' },
   { id: 'tienda', texto: 'Tienda', ruta: '/tienda' },
   { id: 'crear', texto: 'Crear', ruta: '/personalizar' },
+  { id: 'estudio', texto: 'Estudio', ruta: '/crear/' },
   { id: 'comunidad', texto: 'Comunidad', ruta: '/comunidad' },
   { id: 'creacion', texto: 'Una creación', ruta: '/creacion/' },
   { id: 'ver', texto: 'Ver diseño', ruta: '/ver/' },
@@ -68,6 +69,17 @@ const PAGINAS = [
 /* Para los chips de "Un combo": los combos reales y un diseño de pareja. */
 const CREAR_COMBOS = CREAR_DATOS.combos.map((c) => c.id);
 const CREAR_PLANTILLA = (CREAR_DATOS.comunidad.find((d) => d.tipo === 'combo') || {}).id;
+/* Para los chips del estudio: la polera, el polo y una creación suelta real. */
+const CREAR_POLERA = (CREAR_DATOS.prendas.find((p) => p.name === 'Polera clásica') || CREAR_DATOS.prendas[0]).id;
+const CREAR_POLO = (CREAR_DATOS.prendas.find((p) => p.name === 'Polo clásico') || CREAR_DATOS.prendas[0]).id;
+const CREAR_SUELTA = (CREAR_DATOS.comunidad.find((d) => d.tipo !== 'combo' && d.productId === CREAR_POLERA) || {}).id;
+const ABRIR_ESTUDIO = [
+  ['Nuevo', `/crear/${CREAR_POLERA}`],
+  ['Editar una creación', `/crear/${CREAR_POLERA}?designId=${CREAR_SUELTA}`],
+  ['Desde la comunidad', `/crear/${CREAR_POLERA}?plantilla=${CREAR_SUELTA}`],
+  ['Prenda de un combo', `/crear/${CREAR_POLERA}?combo=${CREAR_COMBOS[0]}&pieza=1`],
+  ['Otra prenda (polo)', `/crear/${CREAR_POLO}`],
+];
 
 const PAGINA_DE_RUTA = {
   '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/encuesta-suscripcion': 'encuesta', '/personalizar': 'crear', '/comunidad': 'comunidad',
@@ -76,7 +88,7 @@ const PAGINA_DE_RUTA = {
 };
 
 /** Pestaña de la barra inferior que se enciende en cada página. */
-const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
+const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
 
 /* Estados de la Zona Arcade para probar (como el modo diseño de la tienda). */
 const RULETAS = [
@@ -237,6 +249,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [estadosCreacion, setEstadosCreacion] = useState([]);
   const [estadosVer, setEstadosVer] = useState([]);
   const [rutaCombo, setRutaCombo] = useState('/combo/');
+  const [rutaEstudio, setRutaEstudio] = useState(ABRIR_ESTUDIO[0][1]);
+  const [estadosEstudio, setEstadosEstudio] = useState([]);
   const [estadosCombo, setEstadosCombo] = useState([]);
   const [rutaAcceso, setRutaAcceso] = useState('/login');
   // Ver la carga: 'marca' (primera vez), 'accion' (esperar una acción) o 'esqueleto' (cambio de página).
@@ -283,6 +297,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     if (ruta.startsWith('/creacion/')) { setRutaCreacion(ruta); irA('creacion'); return; }
     // Un combo (/combo/:id?nuevo=1 | ?mio= | ?plantilla=) también.
     if (ruta.startsWith('/combo/')) { setRutaCombo(to); irA('combo'); return; }
+    // El estudio (/crear/:id?designId= | ?plantilla= | ?copiar= | ?combo=&pieza=).
+    if (ruta.startsWith('/crear/')) { setRutaEstudio(to); irA('estudio'); return; }
     if (!PAGINA_DE_RUTA[ruta]) { avisar('En la tienda iría a', to); return; }
     if (ruta === '/buscar') {
       const p = new URLSearchParams(query);
@@ -416,7 +432,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
 
   // En la encuesta y en el acceso Kapi ya está en la página (uno solo a la
   // vista) y la píldora distrae (o invita a la misma encuesta): no se muestran.
-  const enEncuesta = pagina === 'encuesta' || pagina === 'acceso' || pagina === 'crear';
+  const enEncuesta = pagina === 'encuesta' || pagina === 'acceso' || pagina === 'crear' || pagina === 'estudio';
   const flotantes = {
     derecha: (
       <>
@@ -534,7 +550,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   });
 
   const formaEsqueleto = {
-    tienda: 'tienda', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
+    tienda: 'tienda', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
   }[pagina] || 'productos';
   // /cuenta/… → su módulo (el detalle de una compra usa el de pedidos).
   const moduloEsqueleto = {
@@ -603,6 +619,14 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       propsPara={(sec) => (sec.type === 'faq_accordion' ? { contacto: enlaceWhatsApp(empresa.whatsapp, '¡Hola Walá! Tengo una duda.') } : undefined)}
       envolver={envolver}
     />
+  ) : pagina === 'estudio' ? (
+    // El estudio es una herramienta: sin pie, sin barra inferior ni flotantes
+    // (taparían la prenda y la compra, que va pegada abajo en el celular).
+    <MarcoTienda {...marco} pie={null} pieLegal={null} barraInferior={null} flotantes={undefined}>
+      <Parte n="P12" nombre="PaginaEstudio">
+        <EstudioDemo key={rutaEstudio} ruta={rutaEstudio} sesion={conSesion} estados={estadosEstudio} toast={toast} onIrA={(r) => navegar.current(r)} />
+      </Parte>
+    </MarcoTienda>
   ) : pagina === 'combo' ? (
     <MarcoTienda {...marco}>
       <Parte n="P11" nombre="PaginaCombo">
@@ -746,6 +770,21 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
                 ))}
               </div>
             )}
+          </div>
+        )}
+        {pagina === 'estudio' && (
+          <div>
+            <span className={cs.controlesTitulo}>Cómo se abre</span>
+            <div className={cs.controlesChips}>
+              {ABRIR_ESTUDIO.map(([texto, r]) => (
+                <Chip key={texto} tamano="sm" activo={rutaEstudio === r} onClick={() => setRutaEstudio(r)}>{texto}</Chip>
+              ))}
+            </div>
+            <div className={cs.controlesChips}>
+              {ESTADOS_ESTUDIO.map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={estadosEstudio.includes(id)} onClick={() => setEstadosEstudio((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
+              ))}
+            </div>
           </div>
         )}
         {pagina === 'combo' && (

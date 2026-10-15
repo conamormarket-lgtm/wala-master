@@ -1,0 +1,555 @@
+/* ── El lienzo: la prenda con sus zonas y los diseños ─────── */
+.lienzo {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  min-height: 0;
+  padding: 4%;
+  border-radius: 6px 24px 24px 24px;
+  background: var(--escenario-foto, #f4f1fb);
+  isolation: isolate;
+}
+
+/* Cabe a lo ancho y, con --alto-lienzo (lo pone la página), también a lo alto. */
+.lienzoEscala {
+  position: relative;
+  width: min(100%, calc(var(--alto-lienzo, 200vh) * var(--proporcion, 0.8)));
+  container-type: inline-size;
+  transform-origin: center;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.prenda {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* La foto blanca sobre su color: multiply deja las sombras de la tela. */
+.prendaTenida {
+  mix-blend-mode: multiply;
+}
+
+.luz {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.1;
+  filter: contrast(2.4);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.tinte {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+/* Las zonas: costura punteada (como las de la tienda); la elegida, violeta. */
+.zona {
+  position: absolute;
+  z-index: 1;
+  border: 1.5px dashed rgba(124, 58, 237, 0.4);
+  border-radius: 6px;
+  container-type: inline-size;
+  cursor: pointer;
+  transform-origin: center;
+  transition: border-color var(--dur-rapida) ease, background-color var(--dur-rapida) ease;
+}
+
+/* Lo que sale de la zona no se imprime: se recorta (el nombre queda afuera). */
+.recorte {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.sinGuia {
+  border-color: transparent !important;
+  background: none !important;
+  cursor: default;
+}
+
+.zona:hover {
+  border-color: rgba(124, 58, 237, 0.75);
+}
+
+.zonaActiva {
+  border: 2px dashed var(--violet-500, #8b5cf6);
+  background: rgba(124, 58, 237, 0.06);
+}
+
+.oscura .zona {
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.oscura .zonaActiva {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.zona:focus-visible {
+  outline: 2px solid var(--violet-500, #8b5cf6);
+  outline-offset: 2px;
+}
+
+.zonaNombre {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  background: var(--violet-600, #7c3aed);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Las capas: el tamaño de letra va en cqw del lienzo, así escala con él. */
+.capa {
+  position: absolute;
+  display: block;
+  line-height: 1;
+  cursor: grab;
+  touch-action: none;
+}
+
+.capa:active {
+  cursor: grabbing;
+}
+
+.capa img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+.capaElegida {
+  outline: 1.5px solid var(--violet-500, #8b5cf6);
+  outline-offset: 3px;
+}
+
+.capaElegida::after {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--violet-500, #8b5cf6);
+  border-radius: 3px;
+  background: #fff;
+  content: '';
+}
+
+.texto {
+  display: block;
+  white-space: pre;
+  text-align: center;
+  paint-order: stroke fill;
+}
+
+/* ── La barra rápida ───────────────────────────────────────── */
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem 0.6rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+
+.grupoBarra {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+@media (min-width: 560px) {
+  .grupoBarra + .grupoBarra {
+    padding-left: 0.6rem;
+    border-left: 1px solid var(--color-border);
+  }
+}
+
+.peligro {
+  color: var(--danger, #dc2626);
+}
+
+.zoomValor {
+  min-width: 3.2rem;
+  padding: 0.3rem 0.2rem;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.zoomValor:hover {
+  background: var(--color-hover);
+}
+
+@media (hover: none) {
+  .soloRaton {
+    display: none;
+  }
+}
+
+@media (max-width: 559px) {
+  .grupoZoom {
+    display: none;
+  }
+}
+
+/* ── Los pasos ─────────────────────────────────────────────── */
+.pasos {
+  position: relative;
+  display: grid;
+  gap: 1.35rem;
+}
+
+/* La costura punteada que une los sellos de los pasos. */
+.pasos::before {
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  left: 14px;
+  border-left: 2px dashed rgba(124, 58, 237, 0.25);
+  content: '';
+}
+
+.paso {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.7rem;
+  padding-left: 2.6rem;
+}
+
+.pasoTitulo {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0 0 0 -2.6rem;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.02rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.pasoTitulo em {
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.pasoNumero {
+  color: #fff;
+  font-family: var(--fuente-marca);
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.lado {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.ladoNombre {
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* Un punto: esa zona ya lleva algo. */
+.conDiseno {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 0.4rem;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: middle;
+}
+
+.oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.agregar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.agregarOpcion {
+  display: grid;
+  justify-items: start;
+  gap: 0.15rem;
+  padding: 0.85rem;
+  border: 1.5px dashed var(--color-border);
+  border-radius: 6px 18px 18px 18px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature);
+}
+
+.agregarOpcion > span:first-child {
+  margin-bottom: 0.4rem;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.agregarOpcion strong {
+  font-size: 0.92rem;
+}
+
+.agregarOpcion small {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.agregarOpcion:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .agregarOpcion:not(:disabled):hover {
+    border-color: var(--violet-400);
+    border-style: solid;
+    transform: translateY(-2px);
+  }
+
+  .agregarOpcion:not(:disabled):hover > span:first-child {
+    transform: rotate(10deg) scale(1.08);
+  }
+}
+
+.donde {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.donde strong {
+  color: var(--color-text);
+}
+
+/* ── El panel de lo elegido ────────────────────────────────── */
+.panelCapa {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.1rem;
+}
+
+.panelCabeza {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.panelTitulo {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.panelTitulo em {
+  color: var(--color-text-muted);
+  font-style: normal;
+  font-weight: 700;
+}
+
+.panelAyuda {
+  margin: 0.15rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.calidad {
+  margin: 0;
+  padding: 0.55rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.calidad_ok {
+  background: rgba(16, 185, 129, 0.1);
+  color: #047857;
+}
+
+.calidad_aviso {
+  background: rgba(245, 158, 11, 0.14);
+  color: var(--gold-text, #92400e);
+}
+
+.calidad_mal {
+  background: var(--danger-soft, rgba(220, 38, 38, 0.1));
+  color: var(--danger, #b91c1c);
+}
+
+:global([data-theme='dark']) .calidad_ok {
+  color: #6ee7b7;
+}
+
+:global([data-theme='dark']) .calidad_aviso {
+  color: #fcd34d;
+}
+
+:global([data-theme='dark']) .calidad_mal {
+  color: #fca5a5;
+}
+
+.areaTexto {
+  width: 100%;
+  min-height: 3.2rem;
+  padding: 0.7rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 1rem;
+  resize: vertical;
+  outline: none;
+}
+
+/* El oscuro global pinta los textarea: este va dentro del campo, sin fondo propio. */
+:global([data-theme='dark']) .areaTexto {
+  background: transparent;
+}
+
+.muestraLetra {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+}
+
+.grupoCampo {
+  display: grid;
+  justify-items: start;
+  gap: 0.45rem;
+}
+
+.rotulo {
+  color: var(--color-text);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.nota {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.estilos {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.estilo {
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  padding: 0.5rem 0.25rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature);
+}
+
+.estilo:hover {
+  transform: translateY(-1px);
+}
+
+.estiloActivo {
+  border-color: var(--violet-500, #8b5cf6);
+  color: var(--color-text);
+}
+
+.estiloMuestra {
+  font-family: var(--fuente-marca);
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 1;
+  paint-order: stroke fill;
+}
+
+.alinear {
+  display: grid;
+  grid-template-columns: repeat(6, auto);
+  gap: 0.3rem;
+}
+
+.mas {
+  display: grid;
+  gap: 0.8rem;
+  padding-bottom: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lienzoEscala,
+  .agregarOpcion,
+  .agregarOpcion > span:first-child,
+  .estilo {
+    transition: none;
+  }
+}

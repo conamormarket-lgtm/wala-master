@@ -1,11 +1,11 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { User, Package, MapPin, Settings, Gift, Ticket, Trophy, Users, Sparkles, Heart, Calendar } from 'lucide-react';
 import {
   MarcoCuenta, PaginaCuentaInvitado, PaginaResumenCuenta, PaginaPerfil, PaginaDirecciones, PaginaAjustes, PaginaPedidos,
   PaginaCatalogo, PaginaCupones, PaginaMisiones, PaginaReferidos, PaginaCreaciones, PaginaListaDeseos, PaginaFechas,
   PaginaDetallePedido, HojaPagarSaldo, Boton, enlaceWhatsApp, PaginaEncuesta,
-  PaginaLogin, PaginaRegistro, PaginaRecuperar, PaginaCompletarPerfil, PaginaCrear, PaginaComunidad, PaginaCreacion, PaginaVerDiseno, PaginaCombo,
-  prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaCreacionDesde,
+  PaginaLogin, PaginaRegistro, PaginaRecuperar, PaginaCompletarPerfil, PaginaCrear, PaginaComunidad, PaginaCreacion, PaginaVerDiseno, PaginaCombo, PaginaEstudio,
+  prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaCreacionDesde, prendaEstudioDesde,
 } from './kit';
 import { empresa } from '../config/empresa';
 import CREAR from './demo/crear.json';
@@ -948,3 +948,109 @@ export function ComboDemo({ ruta = '/combo/', sesion, esAdmin, estados = [], toa
   );
 }
 
+
+/* ── El estudio (/crear/:id) ───────────────────────────────── */
+
+export const ESTADOS_ESTUDIO = [
+  ['cargando', 'Cargando'],
+  ['error', 'Error al cargar'],
+  ['noDisponible', 'Prenda no disponible'],
+];
+
+/* Las letras del estudio por cómo se ven (como SelectorFuente de la tienda). */
+const FUENTES_ESTUDIO = [
+  ['Simples', ['Montserrat', 'Rubik', 'Kanit']],
+  ['Gruesas', ['Bebas Neue', 'Anton', 'Oswald', 'Righteous', 'Franklin Gothic Heavy Italic', 'DK Longreach']],
+  ['Deportivas y retro', ['Varsity Team Bold', 'Keep on Truckin']],
+  ['Elegantes', ['Playfair Display', 'Libre Baskerville']],
+  ['Escritas a mano', ['Pacifico', 'Lobster', 'Dancing Script', 'Great Vibes', 'Permanent Marker', 'Caveat', 'Back to Black', 'Brush Script', 'Bernadette', 'Rainbow Kitty']],
+].flatMap(([grupo, fuentes]) => fuentes.map((f) => ({ valor: f, texto: f, detalle: grupo })));
+
+const GOOGLE_ESTUDIO = 'https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Caveat:wght@700&family=Dancing+Script:wght@700&family=Great+Vibes&family=Kanit:wght@400;800&family=Libre+Baskerville:wght@400;700&family=Lobster&family=Oswald:wght@400;700&family=Pacifico&family=Permanent+Marker&family=Playfair+Display:wght@400;900&family=Righteous&family=Rubik:wght@400;800&display=swap';
+
+/** Las letras del estudio se cargan solo al abrirlo (como en la tienda). */
+const useFuentesEstudio = () => useEffect(() => {
+  [GOOGLE_ESTUDIO, '/fonts/fonts.css'].forEach((href) => {
+    if (document.querySelector(`link[href="${href}"]`)) return;
+    const l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = href;
+    document.head.appendChild(l);
+  });
+}, []);
+
+/* "Subir imagen": las caras de Kapi hacen de fotos del cliente (con los
+   píxeles de una foto buena, una regular y una chica, para ver la calidad). */
+const SUBIDAS = [
+  { src: '/assets/kapi/3d/kapi-feliz.webp', px: 1800 },
+  { src: '/assets/kapi/3d/kapi-hambre.webp', px: 1000 },
+  { src: '/assets/kapi/3d/kapi-triste.webp', px: 500 },
+];
+
+/** Un diseño de ejemplo (Kapi en el pecho, una frase en la espalda) para editar o partir de él. */
+const disenoDeEjemplo = (prenda, texto) => {
+  const pecho = prenda.vistas[0]?.zonas[0];
+  const espalda = prenda.vistas[1]?.zonas[0];
+  return {
+    ...(pecho && { [pecho.id]: [{ id: 'k1', tipo: 'imagen', src: '/assets/kapi/3d/kapi-feliz.webp', px: 1800, ancho: 0.62, x: 0.5, y: 0.48 }] }),
+    ...(espalda && { [espalda.id]: [{ id: 't1', tipo: 'texto', texto, fuente: 'Bebas Neue', tamano: 0.24, x: 0.5, y: 0.3, color: '#ffffff', contorno: true, contornoColor: '#7c3aed', grosor: 0.08, sombra: false }] }),
+  };
+};
+
+/**
+ * El estudio con una prenda real (demo/crear.json). Se abre como en la
+ * tienda: /crear/:id para empezar, ?designId= para editar una creación,
+ * ?plantilla= desde un diseño de la comunidad, ?copiar= desde otra prenda y
+ * ?combo=&pieza= para una prenda de un combo (vuelve al combo al terminar).
+ */
+export function EstudioDemo({ ruta = '/crear/', sesion, estados = [], toast, onIrA }) {
+  useFuentesEstudio();
+  const [camino, consulta = ''] = ruta.split('?');
+  const q = new URLSearchParams(consulta);
+  const producto = PRENDA_POR_ID.get(camino.split('/')[2]) || PRENDAS_CREAR.find((p) => p.name === 'Polera clásica') || PRENDAS_CREAR[0];
+  const prenda = useMemo(() => prendaEstudioDesde(producto), [producto]);
+  const [subidas, setSubidas] = useState(0);
+  const avisar = (titulo, texto, tipo = 'exito') => toast?.({ tipo, titulo, texto, duracion: 2200 });
+
+  const combo = q.get('combo') && CREAR.combos.find((c) => c.id === q.get('combo'));
+  const origen = CREAR.comunidad.find((d) => d.id === (q.get('designId') || q.get('plantilla')) || (d.piezas || []).some((_, k) => `${d.id}-${k}` === q.get('designId')));
+  const modo = q.get('designId') ? 'editar' : q.get('plantilla') ? 'plantilla' : 'nuevo';
+  const conDiseno = modo !== 'nuevo' || q.get('copiar');
+  const negro = prenda.colores.find((c) => c.nombre === 'Negro');
+  const inicial = conDiseno ? {
+    color: negro?.id,
+    capas: disenoDeEjemplo(prenda, 'WALÁ CREW'),
+    nombre: modo === 'editar' ? (origen?.nombre || 'Mi polera de Kapi') : '',
+  } : {};
+
+  let estado;
+  if (estados.includes('cargando')) estado = 'cargando';
+  else if (estados.includes('error')) estado = 'error';
+  else if (estados.includes('noDisponible')) estado = 'noDisponible';
+
+  return (
+    <PaginaEstudio
+      key={ruta}
+      estado={estado}
+      prenda={prenda}
+      inicial={inicial}
+      modo={modo}
+      plantilla={origen?.nombre}
+      combo={combo ? { nombre: combo.name, numero: Number(q.get('pieza') || 0) + 1, total: combo.piezas.length } : undefined}
+      sesion={sesion}
+      fuentes={FUENTES_ESTUDIO}
+      urlVolver={combo ? `/combo/${combo.id}?nuevo=1` : '/personalizar'}
+      onSubirImagen={async () => {
+        await espera(700);
+        setSubidas((n) => n + 1);
+        return SUBIDAS[subidas % SUBIDAS.length];
+      }}
+      onQuitarFondo={async (capa) => { await espera(1600); avisar('Fondo quitado'); return capa.src; }}
+      onGuardar={async () => { await espera(700); }}
+      onAgregar={async ({ talla, cantidad }) => { await espera(600); avisar('¡Agregado al carrito!', `${prenda.nombre}${talla ? ` · Talla ${talla}` : ''} × ${cantidad}`); }}
+      onDescargar={() => avisar('Se descargaría tu diseño', 'Una imagen de cada lado, con el logo de Walá en una esquina.', 'info')}
+      onUsarEnCombo={async () => { avisar('Prenda lista', `Vuelves a «${combo.name}» con tu diseño.`); onIrA?.(`/combo/${combo.id}?nuevo=1`); }}
+      onReintentar={() => avisar('Volviendo a cargar', undefined, 'info')}
+    />
+  );
+}
