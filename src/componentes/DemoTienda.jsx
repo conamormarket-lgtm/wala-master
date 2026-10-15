@@ -5,7 +5,7 @@ import {
   retoDesdePerfil, PaginaBusqueda, sugerenciasDesdeBusqueda, grupoModalidad, ORDENES_BUSQUEDA, ordenarProductos,
   Pestanas, Chip, Interruptor, Boton, PantallaCarga, CapaCargando, EsqueletoPagina, FRASES_CARGA,
   BarraAdmin, AvisoSistema, BannerApp, BotonWhatsApp, KapiFlotante, PildoraRecompensa,
-  VentanaCampana, AvisoIdioma, ProveedorEnlaces, ProveedorTraduccion, PanelEditor, useBorrador, SeccionEditable, InsertarAqui,
+  VentanaCampana, AvisoIdioma, AvisoInvitacion, ProveedorEnlaces, ProveedorTraduccion, PanelEditor, useBorrador, SeccionEditable, InsertarAqui,
   moverSeccion, duplicarSeccion, rutaDeMarca, tarjetaDesdeProducto, REGISTRO_SECCIONES, enlaceWhatsApp, gruposDeCatalogo, ETAPAS_PRODUCCION,
 } from './kit';
 import { empresa } from '../config/empresa';
@@ -19,6 +19,7 @@ import { RegalarDemo, VISTAS_REGALAR, ESTADOS_REGALAR, PagoRapidoDemo, ESTADOS_P
 import { ENVIO_ESTANDAR, ENVIO_GRATIS_DESDE } from '../constants/envio';
 import { LegalesDemo, VISTAS_LEGALES, ESTADOS_LEGALES } from './DemoLegales';
 import { JuegosDemo, VISTAS_JUEGOS, ESTADOS_JUEGOS } from './DemoJuegos';
+import { CampanasDemo, VISTAS_CAMPANAS, ESTADOS_CAMPANAS } from './DemoCampanas';
 import { OfertasDemo, ESTADOS_OFERTAS, NavegarDemo, VISTAS_NAVEGAR, ESTADOS_NAVEGAR, LANDINGS_DEMO, VISTAS_LANDING, datosLanding } from './DemoNavegar';
 import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR, ComunidadDemo, ESTADOS_COMUNIDAD, CreacionDemo, ESTADOS_CREACION, VerDisenoDemo, ESTADOS_VER, ComboDemo, ESTADOS_COMBO, EstudioDemo, ESTADOS_ESTUDIO } from './DemoCuenta';
 import INICIO from './demo/inicio.json';
@@ -73,6 +74,7 @@ const PAGINAS = [
   { id: 'nichos', texto: 'Nichos y vendedores', ruta: '/nichos' },
   { id: 'landing', texto: 'Landing de marca', ruta: '/conamorgeeks' },
   { id: 'legales', texto: 'Legales', ruta: '/libro-de-reclamaciones' },
+  { id: 'campanas', texto: 'Sorteos y campañas', ruta: '/sorteos' },
   { id: 'carrito', texto: 'Carrito', ruta: '/carrito' },
   { id: 'checkout', texto: 'Checkout', ruta: '/checkout' },
   { id: 'regalar', texto: 'Regalar', ruta: '/wishlist/' },
@@ -102,12 +104,13 @@ const PAGINA_DE_RUTA = {
   '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/checkout': 'checkout', '/encuesta-suscripcion': 'encuesta', '/personalizar': 'crear', '/comunidad': 'comunidad', '/ofertas': 'ofertas', '/nichos': 'nichos',
   ...Object.fromEntries(VISTAS_LEGALES.map(([, r]) => [r, 'legales'])),
   ...Object.fromEntries(VISTAS_JUEGOS.map(([, r]) => [r, 'juego'])),
+  ...Object.fromEntries(VISTAS_CAMPANAS.filter(([, r]) => !r.startsWith('/invitar/')).map(([, r]) => [r, 'campanas'])),
   ...Object.fromEntries(MODULOS_CUENTA.map((m) => [m.ruta, 'cuenta'])),
   ...Object.fromEntries(VISTAS_ACCESO.map((v) => [v.ruta, 'acceso'])),
 };
 
 /** Pestaña de la barra inferior que se enciende en cada página. */
-const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', ofertas: 'tienda', nichos: 'tienda', landing: 'tienda', juego: 'juegos', producto: 'tienda', checkout: 'tienda', regalar: 'tienda', pagoRapido: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
+const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', ofertas: 'tienda', nichos: 'tienda', landing: 'tienda', juego: 'juegos', campanas: 'tienda', producto: 'tienda', checkout: 'tienda', regalar: 'tienda', pagoRapido: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
 
 /* Estados de la Zona Arcade para probar (como el modo diseño de la tienda). */
 const RULETAS = [
@@ -126,6 +129,7 @@ const EXTRAS = [
   ['campana', 'Ventana de campaña'],
   ['reto', 'Reto semanal'],
   ['triste', 'Kapi triste'],
+  ['invitacion', 'Aviso de invitación'],
 ];
 
 /* Reto de ejemplo (mismos campos que globals/activeChallenge; hoy no hay uno
@@ -291,6 +295,9 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [rutaLegal, setRutaLegal] = useState(VISTAS_LEGALES[0][1]);
   const [estadosLegales, setEstadosLegales] = useState([]);
   const [rutaJuego, setRutaJuego] = useState(VISTAS_JUEGOS[0][1]);
+  const [rutaCampana, setRutaCampana] = useState(VISTAS_CAMPANAS[0][1]);
+  const [estadosCampana, setEstadosCampana] = useState([]);
+  const [estadoInvitacion, setEstadoInvitacion] = useState('nueva');
   const [estadosJuego, setEstadosJuego] = useState([]);
   // Ver la carga: 'marca' (primera vez), 'accion' (esperar una acción) o 'esqueleto' (cambio de página).
   const [carga, setCarga] = useState(null);
@@ -343,6 +350,9 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     // Regalar: la lista de otra persona, sus fechas y abrir el regalo.
     if (/^\/(wishlist|regalar|regalo)\//.test(ruta)) { setRutaRegalar(ruta); irA('regalar'); return; }
     if (ruta.startsWith('/pago-rapido/')) { irA('pagoRapido'); return; }
+    // Una invitación no tiene página: como la tienda, lleva al registro y el aviso queda arriba.
+    if (ruta.startsWith('/invitar/')) { setExtras((xs) => (xs.includes('invitacion') ? xs : [...xs, 'invitacion'])); setEstadoInvitacion('nueva'); setRutaAcceso('/registro'); irA('acceso'); return; }
+    if (ruta.startsWith('/l/') || ruta.startsWith('/sorteos/') || ruta.startsWith('/suscrito-sorteo/')) { setRutaCampana(ruta.startsWith('/l/') ? ruta : ruta.replace(/\/[^/]+$/, '')); setEstadosCampana([]); irA('campanas'); return; }
     // Los nichos, un nicho o la tienda de un vendedor.
     if (/^\/(nicho|tienda-vendedor)\//.test(ruta) || ruta === '/nichos') { setRutaNavegar(ruta); irA('nichos'); return; }
     // Una landing del builder (/:slug): las copiadas en demo/landings.json.
@@ -358,6 +368,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     if (PAGINA_DE_RUTA[ruta] === 'acceso') setRutaAcceso(ruta);
     if (PAGINA_DE_RUTA[ruta] === 'legales') setRutaLegal(ruta);
     if (PAGINA_DE_RUTA[ruta] === 'juego') { setRutaJuego(ruta); setEstadosJuego([]); }
+    if (PAGINA_DE_RUTA[ruta] === 'campanas') { setRutaCampana(ruta); setEstadosCampana([]); }
     if (ruta === '/tienda') {
       const categoria = new URLSearchParams(query).get('categoria');
       setFiltros(categoria ? { categoria } : {});
@@ -503,8 +514,13 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     ),
   };
 
-  const arriba = (ver('aviso') || ver('app') || esAdmin) && (
+  const arriba = (ver('aviso') || ver('app') || ver('invitacion') || esAdmin) && (
     <>
+      {ver('invitacion') && (
+        <Parte n="M12" nombre="AvisoInvitacion">
+          <AvisoInvitacion nombre="Isaac" estado={estadoInvitacion} plazo="hasta el jueves 16, 9:20 p. m." urlRegistro={pagina === 'acceso' ? null : '/registro'} onCerrar={() => alternar('invitacion')} />
+        </Parte>
+      )}
       {ver('aviso') && (
         <Parte n="M1" nombre="AvisoSistema">
           <AvisoSistema tipo="aviso" onCerrar={() => alternar('aviso')}>Por fiestas patrias, los pedidos de esta semana salen el lunes.</AvisoSistema>
@@ -624,7 +640,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   });
 
   const formaEsqueleto = {
-    tienda: 'tienda', juego: { '/ruleta': 'ruleta', '/ball-sort': 'bolitas' }[rutaJuego] || 'palabra', legales: rutaLegal === '/libro-de-reclamaciones' ? 'reclamaciones' : 'legal', ofertas: 'ofertas', nichos: rutaNavegar === '/nichos' ? 'nichos' : 'coleccion', producto: 'producto', checkout: 'checkout', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
+    tienda: 'tienda', campanas: { '/sorteos': 'sorteo', '/suscrito-sorteo': 'suscripcionSorteo', '/suscripciones': 'landing', '/regalos-con-amor': 'landing' }[rutaCampana] || 'enlaces', juego: { '/ruleta': 'ruleta', '/ball-sort': 'bolitas' }[rutaJuego] || 'palabra', legales: rutaLegal === '/libro-de-reclamaciones' ? 'reclamaciones' : 'legal', ofertas: 'ofertas', nichos: rutaNavegar === '/nichos' ? 'nichos' : 'coleccion', producto: 'producto', checkout: 'checkout', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
   }[pagina] || 'productos';
   // /cuenta/… → su módulo (el detalle de una compra usa el de pedidos).
   const moduloEsqueleto = {
@@ -642,6 +658,21 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
           : <EsqueletoPagina forma={formaEsqueleto} modulo={moduloEsqueleto} sesion={conSesion} />}
       </Parte>
     </MarcoTienda>
+  ) : pagina === 'campanas' ? (
+    // Regalos con amor es una landing suelta: sin menú, pie, barra ni flotantes (como la tienda).
+    rutaCampana === '/regalos-con-amor' ? (
+      <MarcoTienda {...marco} cabecera={null} pie={null} pieLegal={null} barraInferior={null} flotantes={undefined}>
+        <Parte n="P21" nombre="PaginaRegalosConAmor">
+          <CampanasDemo ruta={rutaCampana} sesion={conSesion} usuario={usuario} estados={estadosCampana} toast={toast} />
+        </Parte>
+      </MarcoTienda>
+    ) : (
+      <MarcoTienda {...marco} kapiEnPie={!estadosCampana.some((e) => ['vacio', 'error', 'noDisponible'].includes(e))}>
+        <Parte n="P21" nombre={{ '/sorteos': 'PaginaSorteo', '/suscrito-sorteo': 'PaginaSuscripcionSorteo', '/suscripciones': 'PaginaSuscripciones' }[rutaCampana] || 'PaginaEnlaces'}>
+          <CampanasDemo ruta={rutaCampana} sesion={conSesion} usuario={usuario} estados={estadosCampana} toast={toast} />
+        </Parte>
+      </MarcoTienda>
+    )
   ) : pagina === 'juego' ? (
     // Un juego es una herramienta: sin Kapi en el pie (aparece en el resultado).
     <MarcoTienda {...marco} kapiEnPie={false}>
@@ -934,6 +965,21 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
             )}
           </div>
         )}
+        {pagina === 'campanas' && (
+          <div>
+            <span className={cs.controlesTitulo}>Cómo se abre</span>
+            <div className={cs.controlesChips}>
+              {VISTAS_CAMPANAS.map(([texto, r]) => (
+                <Chip key={texto} tamano="sm" activo={rutaCampana === r} onClick={() => { if (r.startsWith('/invitar/')) { navegar.current(r); return; } setRutaCampana(r); setEstadosCampana([]); if (marcoRef.current) marcoRef.current.scrollTop = 0; }}>{texto}</Chip>
+              ))}
+            </div>
+            <div className={cs.controlesChips}>
+              {(ESTADOS_CAMPANAS[rutaCampana.startsWith('/l/') ? 'enlaces' : rutaCampana] || []).map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={estadosCampana.includes(id)} onClick={() => setEstadosCampana((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
+              ))}
+            </div>
+          </div>
+        )}
         {pagina === 'juego' && (
           <div>
             <span className={cs.controlesTitulo}>Cómo se abre</span>
@@ -1168,6 +1214,13 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
           <div className={cs.controlesChips}>
             {EXTRAS.map(([id, texto]) => <Chip key={id} tamano="sm" activo={ver(id)} onClick={() => alternar(id)}>{texto}</Chip>)}
           </div>
+          {ver('invitacion') && (
+            <div className={cs.controlesChips}>
+              {[['nueva', 'Invitación: sin cuenta'], ['aceptada', 'Invitación aceptada'], ['compra', 'Link de compra']].map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={estadoInvitacion === id} onClick={() => setEstadoInvitacion(id)}>{texto}</Chip>
+              ))}
+            </div>
+          )}
         </div>
         <div>
           <span className={cs.controlesTitulo}>Ver la carga</span>

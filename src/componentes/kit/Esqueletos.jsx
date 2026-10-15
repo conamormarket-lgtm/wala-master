@@ -938,6 +938,60 @@ const PAGINAS = {
       </span>
     </span>
   ),
+  sorteo: () => (
+    // El sorteo: la foto del premio con el título y la cuenta atrás; abajo, las dos columnas y el botón.
+    <span className={s.campanaEsq}>
+      <span className={s.sorteoCabeza}>
+        <Hueso forma="bloque" proporcion="4 / 3" ancho="100%" />
+        <span className={s.filaTextos}>
+          <Hueso alto={40} ancho="85%" />
+          <Hueso alto={12} ancho="70%" />
+          <span className={s.chips}>{repetir(3, (k) => <Hueso key={k} forma="bloque" alto={56} ancho={60} />)}</span>
+          <Hueso alto={12} ancho="45%" />
+        </span>
+      </span>
+      <span className={s.dosColumnasEsq}>
+        <Caja alto={220}><EsqueletoCabeza /><EsqueletoTexto lineas={3} /></Caja>
+        <Caja alto={220}><EsqueletoCabeza /><EsqueletoTexto lineas={3} /></Caja>
+      </span>
+      <Hueso forma="pildora" alto={54} ancho="min(100%, 520px)" className={s.centradoX} />
+    </span>
+  ),
+  suscripcionSorteo: () => (
+    // La campaña: la portada de color, las anclas y los planes.
+    <span className={s.campanaEsq}>
+      <Hueso forma="bloque" alto={260} ancho="100%" />
+      <span className={s.chips}>{repetir(4, (k) => <Hueso key={k} forma="pildora" alto={34} ancho={96} />)}</span>
+      <EsqueletoCabeza />
+      <span className={s.tresColumnasEsq}>{repetir(3, (k) => <Caja key={k} alto={340}><Hueso alto={20} ancho="50%" /><Hueso alto={34} ancho="60%" /><EsqueletoTexto lineas={4} /><Hueso forma="pildora" alto={44} ancho="100%" className={s.alFinal} /></Caja>)}</span>
+    </span>
+  ),
+  landing: () => (
+    // Una landing de campaña (Suscripciones, Regalos con amor): la portada y tres tarjetas.
+    <span className={s.campanaEsq}>
+      <span className={s.sorteoCabeza}>
+        <span className={s.filaTextos}>
+          <Hueso alto={12} ancho={120} />
+          <Hueso alto={46} ancho="90%" />
+          <Hueso alto={46} ancho="60%" />
+          <EsqueletoTexto lineas={3} />
+          <Hueso forma="pildora" alto={52} ancho={240} />
+        </span>
+        <Hueso forma="bloque" alto={280} ancho="min(100%, 280px)" className={s.centradoX} />
+      </span>
+      <span className={s.tresColumnasEsq}>{repetir(4, (k) => <Caja key={k} alto={150}><Hueso forma="circulo" ancho={44} alto={44} /><EsqueletoTexto lineas={3} /></Caja>)}</span>
+    </span>
+  ),
+  enlaces: () => (
+    // Una página de enlaces: la foto, el título, las redes y los botones.
+    <span className={s.enlacesEsq}>
+      <Hueso forma="circulo" ancho={96} alto={96} />
+      <Hueso alto={26} ancho="55%" />
+      <Hueso alto={12} ancho="70%" />
+      <span className={s.chips}>{repetir(2, (k) => <Hueso key={k} forma="circulo" ancho={44} alto={44} />)}</span>
+      {repetir(3, (k) => <Hueso key={k} forma="bloque" alto={58} ancho="100%" />)}
+    </span>
+  ),
   acceso: () => (
     <span className={s.accesoPagina}>
       <span className={s.accesoPanel}>
@@ -958,7 +1012,8 @@ const PAGINAS = {
  *    'busqueda' | 'producto' | 'carrito' | 'checkout' | 'crear' | 'estudio' | 'comunidad' | 'minijuegos' | 'encuesta' |
  *    'acceso' | 'cuenta' | 'lista' | 'formulario' | 'ofertas' | 'nichos' | 'coleccion' (un nicho o un vendedor) |
  *    'legal' (privacidad, términos) | 'reclamaciones' |
- *    'palabra' | 'ruleta' | 'bolitas' (los minijuegos por dentro)
+ *    'palabra' | 'ruleta' | 'bolitas' (los minijuegos por dentro) | 'sorteo' |
+ *    'suscripcionSorteo' | 'landing' (Suscripciones, Regalos con amor) | 'enlaces'
  *  - sesion: false para quien no entró (la cuenta y la encuesta muestran la
  *    invitación a entrar; Minijuegos, su aviso en vez del progreso)
  *  - modulo (con forma 'cuenta'): uno de MODULOS_ESQUELETO_CUENTA (resumen,

@@ -1,0 +1,275 @@
+/* ── Aviso de invitación ── */
+.invitacion {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.6rem clamp(0.75rem, 3vw, 1.5rem);
+  border-bottom: 2px solid var(--violet-200);
+  background: var(--violet-50);
+  color: var(--color-text);
+  animation: entrar var(--dur-media) var(--ease-signature);
+}
+
+:global([data-theme='dark']) .invitacion {
+  border-color: rgba(139, 92, 246, 0.3);
+  background: #1d1830;
+}
+
+@keyframes entrar {
+  from { opacity: 0; transform: translateY(-6px); }
+}
+
+.invitacionTexto {
+  flex: 1;
+  min-width: 0;
+}
+
+.invitacionTexto p {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.invitacionTitulo {
+  font-weight: 600;
+  font-size: 0.95rem !important;
+}
+
+.resaltado {
+  position: relative;
+  display: inline-block;
+  color: var(--violet-700);
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+}
+
+:global([data-theme='dark']) .resaltado {
+  color: var(--violet-300);
+}
+
+.trazo {
+  position: absolute;
+  left: 0;
+  bottom: -0.35em;
+  width: 100%;
+  height: 0.45em;
+  color: #f9a8d4;
+}
+
+.soloAngosto {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .soloAncho {
+    display: none;
+  }
+
+  .soloAngosto {
+    display: block;
+  }
+}
+
+.cerrar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.cerrar svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ── Antes y después ── */
+.antesDespues {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.par {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.rotulo {
+  padding: 0.3rem 0.9rem;
+  border-radius: 999px;
+  background: var(--noche-wala, #14121c);
+  color: #fff;
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+}
+
+.rotuloDespues {
+  background: #ff8b6f;
+}
+
+.fotos {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  width: 100%;
+}
+
+.parFoto {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 5px solid #fff;
+  border-radius: 6px 22px 22px 22px;
+  background: #ff8b6f;
+  object-fit: cover;
+  box-shadow: 0 10px 24px -14px rgba(0, 0, 0, 0.45);
+}
+
+.vs {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--violet-700);
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+  box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, -50%) rotate(-8deg);
+}
+
+/* ── Reseña con foto ── */
+.resena {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 2px solid #f4b5a4;
+  border-radius: 6px 22px 22px 22px;
+  background: var(--color-surface);
+}
+
+.resenaFoto {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.resenaCuerpo {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.9rem 1rem 1rem;
+}
+
+.resenaMeta {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.resenaTitulo {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.02rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.resenaTexto {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+/* ── Página de enlaces ── */
+.redes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.red,
+.red:hover {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  color: inherit;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.red:hover {
+  transform: translateY(-2px);
+}
+
+.red svg,
+.red img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.botonEnlace,
+.botonEnlace:hover {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 58px;
+  padding: 0.5rem 0.75rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.botonEnlace:hover {
+  transform: translateY(-2px);
+}
+
+.botonImagen,
+.botonHueco {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.botonTexto {
+  flex: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invitacion {
+    animation: none;
+  }
+
+  .red,
+  .botonEnlace {
+    transition: none;
+  }
+
+  .red:hover,
+  .botonEnlace:hover {
+    transform: none;
+  }
+}

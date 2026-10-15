@@ -61,3 +61,5 @@ export { PaginaPagoRapido } from './paginas/PagoRapido';
 export { PaginaOfertas, PaginaNichos, PaginaColeccion } from './paginas/Navegar';
 export { PaginaLegal, PaginaReclamaciones, validarReclamacion } from './paginas/Legales';
 export { PaginaPalabra, PaginaRuleta, PaginaBolitas } from './paginas/Juegos';
+export { PaginaSorteo, PaginaSuscripcionSorteo } from './paginas/Sorteos';
+export { PaginaSuscripciones, PaginaRegalosConAmor, PaginaEnlaces } from './paginas/Campanas';

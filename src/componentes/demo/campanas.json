@@ -1,0 +1,53 @@
+{
+ "copiadoEl": "2026-10-15",
+ "origen": "link_pages — API REST pública, solo lectura",
+ "enlaces": {
+  "slug": "sorteos-y-atencion",
+  "titulo": "Sorteos y Atencion",
+  "descripcion": "Tu tienda virtual de preferencia.",
+  "avatarUrl": "",
+  "botones": [
+   {
+    "thumbnailUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/link_pages%2Fthumbnails%2FmD2B18mcVqWQqfki1LhF%2F1782988496703_Dise%C3%B1o%20sin%20t%C3%ADtulo.png?alt=media&token=4fc0a3de-c60d-4e63-b5f0-0b981331455f",
+    "titulo": "Sorteos",
+    "url": "https://www.wala.pe/sorteos",
+    "order": 0,
+    "id": "btn_1782987571558_xekl"
+   },
+   {
+    "order": 1,
+    "titulo": "WhatsApp",
+    "id": "btn_1782987778143_f4ow",
+    "url": "https://api.whatsapp.com/send/?phone=51924426791&text=Quiero+mas+informaci%C3%B3n&type=phone_number&app_absent=0"
+   }
+  ],
+  "redes": [
+   {
+    "order": 0,
+    "tipo": "instagram",
+    "url": "https://www.instagram.com/conamormarket/",
+    "id": "red_1782988151031_0133",
+    "nombre": "@CONAMOR"
+   },
+   {
+    "id": "red_1782988189023_l291",
+    "order": 1,
+    "url": "https://www.facebook.com/conamormarket",
+    "tipo": "facebook",
+    "nombre": "@CONAMOR"
+   }
+  ],
+  "diseno": {
+   "cornerRoundness": 12,
+   "background": {
+    "type": "gradient",
+    "value": "#2b0d3b"
+   },
+   "buttonStyle": "outline",
+   "fontFamily": "'Poppins', sans-serif",
+   "buttonShadow": "soft",
+   "buttonTextColor": "#ffffff",
+   "buttonColor": "#ffffff"
+  }
+ }
+}

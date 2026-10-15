@@ -1278,3 +1278,44 @@
   }
 }
 
+/* ── Sorteos y campañas ── */
+.campanaEsq {
+  display: grid;
+  gap: 1.25rem;
+  width: min(100%, 1080px);
+  margin: 0 auto;
+}
+
+.sorteoCabeza,
+.dosColumnasEsq {
+  display: grid;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.tresColumnasEsq {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1rem;
+}
+
+@container esqueleto (min-width: 820px) {
+  .sorteoCabeza,
+  .dosColumnasEsq {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.centradoX {
+  justify-self: center;
+}
+
+.enlacesEsq {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  width: min(100%, 520px);
+  margin: 0 auto;
+  padding-top: 1rem;
+}
+
