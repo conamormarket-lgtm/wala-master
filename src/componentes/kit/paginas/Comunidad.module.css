@@ -1,0 +1,53 @@
+.pagina {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* La galería: al cambiar de filtro, las tarjetas entran una tras otra. */
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.grilla > li {
+  min-width: 0;
+  animation: entraTarjeta var(--dur-media) var(--ease-signature) both;
+  animation-delay: calc(min(var(--k, 0), 8) * 50ms);
+}
+
+@keyframes entraTarjeta {
+  from { opacity: 0; transform: translateY(10px); }
+}
+
+@media (max-width: 480px) {
+  .grilla {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+}
+
+.vacio {
+  width: min(100%, 520px);
+  margin: 0 auto;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--color-surface);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grilla > li {
+    animation: none;
+  }
+}

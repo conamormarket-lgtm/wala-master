@@ -671,6 +671,17 @@ const PAGINAS = {
       </span>
     </>
   ),
+  comunidad: () => (
+    <>
+      <span className={s.tarjetaCabeza}>
+        <Hueso forma="circulo" ancho={44} alto={44} />
+        <span className={s.filaTextos}><Hueso alto={30} ancho="min(46%, 340px)" /><Hueso alto={11} ancho="min(70%, 420px)" /></span>
+        <Hueso forma="pildora" alto={44} ancho={190} />
+      </span>
+      <span className={s.chips}>{repetir(4, (k) => <Hueso key={k} forma="pildora" alto={36} ancho={k ? 120 : 80} />)}</span>
+      <span className={s.grillaCrear}>{productos(8)}</span>
+    </>
+  ),
   minijuegos: ({ sesion }) => (
     <>
       <EncabezadoCentrado extra={sesion !== false} />
@@ -725,7 +736,7 @@ const PAGINAS = {
  * Lo que se ve mientras llega una página (Suspense): su forma, no un círculo.
  * Para cambiar de página siempre es esto (CapaCargando es para esperar una acción).
  *  - forma: 'productos' (la grilla, por defecto) | 'inicio' | 'tienda' |
- *    'busqueda' | 'producto' | 'carrito' | 'crear' | 'minijuegos' | 'encuesta' |
+ *    'busqueda' | 'producto' | 'carrito' | 'crear' | 'comunidad' | 'minijuegos' | 'encuesta' |
  *    'acceso' | 'cuenta' | 'lista' | 'formulario'
  *  - sesion: false para quien no entró (la cuenta y la encuesta muestran la
  *    invitación a entrar; Minijuegos, su aviso en vez del progreso)

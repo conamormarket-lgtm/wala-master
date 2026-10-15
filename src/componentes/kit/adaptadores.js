@@ -782,10 +782,14 @@ export const disenoComunidadDesde = (d = {}) => {
     imagen: previas[0]?.url || d.imagenConjunta || d.previewUrl || '',
     imagenEspalda: esCombo ? undefined : previas[1]?.url,
     imagenes: esCombo ? (d.piezas || []).map((p) => (p.vistasPrevias || []).find((v) => v?.url)?.url || p.imagenConjunta || p.previewUrl).filter(Boolean) : undefined,
-    combo: esCombo ? `${(d.piezas || []).length} prendas` : undefined,
+    combo: esCombo ? String((d.piezas || []).length) : undefined,
     producto: esCombo ? (d.comboNombre || d.productName) : d.productName,
     color: !esCombo && d.color?.nombre ? { nombre: d.color.nombre, hex: d.color.hex } : undefined,
     lados: previas.length > 1 ? previas.map((p) => p.nombre).filter(Boolean).join(' + ') : undefined,
     usar: { url, autor: d.autorNombre || 'Walá', usos: d.usos || 0 },
+    // Para el filtro por prenda de la galería (como ComunidadPage), con el
+    // nombre de la prenda ("Polera clásica"), no el del combo.
+    prendaId: d.productId,
+    prendaNombre: esCombo ? ((d.piezas || [])[0]?.productName || d.productName) : d.productName,
   };
 };

@@ -11,7 +11,7 @@ import {
 import { empresa } from '../config/empresa';
 import { msHastaMananaLima, msHastaLunesLima, limaTodayStr } from '../utils/fechaLima';
 import { volarMonedasGanadas } from '../utils/animations';
-import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR } from './DemoCuenta';
+import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR, ComunidadDemo, ESTADOS_COMUNIDAD } from './DemoCuenta';
 import INICIO from './demo/inicio.json';
 import TIENDA from './demo/tienda.json';
 import cs from './ComponentesPage.module.css';
@@ -51,6 +51,7 @@ const PAGINAS = [
   { id: 'inicio', texto: 'Inicio', ruta: '/' },
   { id: 'tienda', texto: 'Tienda', ruta: '/tienda' },
   { id: 'crear', texto: 'Crear', ruta: '/personalizar' },
+  { id: 'comunidad', texto: 'Comunidad', ruta: '/comunidad' },
   { id: 'minijuegos', texto: 'Minijuegos', ruta: '/minijuegos' },
   { id: 'buscar', texto: 'Buscar', ruta: '/buscar' },
   { id: 'carrito', texto: 'Carrito', ruta: '/carrito' },
@@ -61,13 +62,13 @@ const PAGINAS = [
 
 /** Ruta de la tienda → página de esta demo (las demás solo avisan). */
 const PAGINA_DE_RUTA = {
-  '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/encuesta-suscripcion': 'encuesta', '/personalizar': 'crear',
+  '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/encuesta-suscripcion': 'encuesta', '/personalizar': 'crear', '/comunidad': 'comunidad',
   ...Object.fromEntries(MODULOS_CUENTA.map((m) => [m.ruta, 'cuenta'])),
   ...Object.fromEntries(VISTAS_ACCESO.map((v) => [v.ruta, 'acceso'])),
 };
 
 /** Pestaña de la barra inferior que se enciende en cada página. */
-const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear' };
+const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', comunidad: 'crear' };
 
 /* Estados de la Zona Arcade para probar (como el modo diseño de la tienda). */
 const RULETAS = [
@@ -223,6 +224,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [estadosCuenta, setEstadosCuenta] = useState([]);
   const [estadosEncuesta, setEstadosEncuesta] = useState([]);
   const [estadosCrear, setEstadosCrear] = useState([]);
+  const [estadosComunidad, setEstadosComunidad] = useState([]);
   const [rutaAcceso, setRutaAcceso] = useState('/login');
   // Ver la carga: 'marca' (primera vez), 'accion' (esperar una acción) o 'esqueleto' (cambio de página).
   const [carga, setCarga] = useState(null);
@@ -368,7 +370,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       { id: 'marcas', texto: 'Marcas', url: '/marcas', menu: 'marcas' },
       { id: 'minijuegos', texto: 'Minijuegos', url: '/minijuegos' },
     ],
-    activo: ['tienda', 'minijuegos', 'crear'].includes(pagina) ? pagina : null,
+    activo: ['tienda', 'minijuegos', 'crear'].includes(pagina) ? pagina : pagina === 'comunidad' ? 'crear' : null,
     menuTienda: {
       categorias: INICIO.categorias.slice(0, 10).map((c) => ({ id: c.categoryId, nombre: c.name, url: `/tienda?categoria=${c.categoryId}` })),
     },
@@ -515,7 +517,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   });
 
   const formaEsqueleto = {
-    tienda: 'tienda', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
+    tienda: 'tienda', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', comunidad: 'comunidad', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
   }[pagina] || 'productos';
   // /cuenta/… → su módulo (el detalle de una compra usa el de pedidos).
   const moduloEsqueleto = {
@@ -584,6 +586,12 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       propsPara={(sec) => (sec.type === 'faq_accordion' ? { contacto: enlaceWhatsApp(empresa.whatsapp, '¡Hola Walá! Tengo una duda.') } : undefined)}
       envolver={envolver}
     />
+  ) : pagina === 'comunidad' ? (
+    <MarcoTienda {...marco} kapiEnPie={!estadosComunidad.includes('vacia')}>
+      <Parte n="P8" nombre="PaginaComunidad">
+        <ComunidadDemo estados={estadosComunidad} toast={toast} />
+      </Parte>
+    </MarcoTienda>
   ) : pagina === 'crear' ? (
     // Kapi ya está en el arte de la portada: ni el pie ni el flotante lo repiten.
     <MarcoTienda {...marco} kapiEnPie={false}>
@@ -695,6 +703,16 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
                 ))}
               </div>
             )}
+          </div>
+        )}
+        {pagina === 'comunidad' && (
+          <div>
+            <span className={cs.controlesTitulo}>Estado de la galería</span>
+            <div className={cs.controlesChips}>
+              {ESTADOS_COMUNIDAD.map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={estadosComunidad.includes(id)} onClick={() => setEstadosComunidad((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
+              ))}
+            </div>
           </div>
         )}
         {pagina === 'crear' && (

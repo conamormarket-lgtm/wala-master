@@ -4,7 +4,7 @@ import {
   MarcoCuenta, PaginaCuentaInvitado, PaginaResumenCuenta, PaginaPerfil, PaginaDirecciones, PaginaAjustes, PaginaPedidos,
   PaginaCatalogo, PaginaCupones, PaginaMisiones, PaginaReferidos, PaginaCreaciones, PaginaListaDeseos, PaginaFechas,
   PaginaDetallePedido, HojaPagarSaldo, Boton, enlaceWhatsApp, PaginaEncuesta,
-  PaginaLogin, PaginaRegistro, PaginaRecuperar, PaginaCompletarPerfil, PaginaCrear,
+  PaginaLogin, PaginaRegistro, PaginaRecuperar, PaginaCompletarPerfil, PaginaCrear, PaginaComunidad,
   prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde,
 } from './kit';
 import { empresa } from '../config/empresa';
@@ -726,6 +726,27 @@ export function CrearDemo({ sesion, esAdmin, estados = [] }) {
       totalCreaciones={sesion ? creacionesDemo().length : 0}
       comunidad={comunidad}
       totalComunidad={comunidad.length}
+    />
+  );
+}
+
+/* ── Comunidad (/comunidad) ────────────────────────────────── */
+
+/** Estados para probar la galería en la Tienda de prueba. */
+export const ESTADOS_COMUNIDAD = [
+  ['cargando', 'Cargando'],
+  ['error', 'Error al cargar'],
+  ['vacia', 'Sin diseños'],
+];
+
+/** La galería con los diseños reales de la comunidad (demo/crear.json). */
+export function ComunidadDemo({ estados = [], toast }) {
+  return (
+    <PaginaComunidad
+      disenos={estados.includes('vacia') ? [] : CREAR.comunidad.map(disenoComunidadDesde)}
+      cargando={estados.includes('cargando')}
+      error={estados.includes('error')}
+      onReintentar={() => toast?.({ tipo: 'info', titulo: 'Volviendo a cargar', duracion: 1800 })}
     />
   );
 }

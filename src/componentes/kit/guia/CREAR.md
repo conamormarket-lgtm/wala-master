@@ -95,6 +95,37 @@ Las tarjetas de prenda y de combo tienen el lenguaje de `TarjetaProducto`:
   canto con luz y barrido.
 - **`Carrusel`, `TituloSeccion` y `EstadoVacio`** son los de todo el kit.
 
+## Las páginas que salen de Crear
+
+| Página | Estado en el kit | Se llega desde |
+|---|---|---|
+| Comunidad (`/comunidad`) | **P8 · `PaginaComunidad`** | "Ver todos (8)" de Diseños de la comunidad |
+| Creación (`/creacion/:id`) | falta | "Comprar" de una creación |
+| Ver diseño (`/ver/…`) | falta | el enlace de un diseño compartido |
+| Combo (`/combo/:id`) | falta | "Armar" de un combo |
+| Estudio (`/crear/:id`) | falta (el editor, ~3.900 líneas) | "Diseñar", "Continuar", "Usar diseño" |
+
+### P8 · Comunidad (`paginas/Comunidad.jsx`)
+
+Es la galería de los diseños que publica Walá. Se ve también sin iniciar
+sesión.
+
+- **Cabeza:** `CabezaCuenta` con el sello rosa, el título, "8 diseños listos
+  para usar" y "Empezar desde cero" (lleva a Crear).
+- **Filtro por prenda:** `Chip` con cuántos diseños tiene cada una. Agrupa
+  por `productId` como `ComunidadPage`, pero el chip lleva el nombre de la
+  prenda ("Polera clásica 7"), no el del primer combo que aparece.
+- **Galería:** `TarjetaCreacion vertical usar`. Al cambiar de filtro, las
+  tarjetas entran una tras otra.
+- **Estados:** cargando (`EsqueletoProducto`), error (`Aviso` con
+  "Reintentar") y vacío (Kapi con "Muy pronto").
+- **Esqueleto al llegar:** `EsqueletoPagina forma="comunidad"`.
+
+En la Tienda de prueba es la página **Comunidad**, con los estados en
+"Estado de la galería". Para llevarla a la tienda, `ComunidadPage.jsx`
+pasa a `<PaginaComunidad disenos={disenos.map(disenoComunidadDesde)}
+cargando={isLoading} error={Boolean(error)} onReintentar={refetch} />`.
+
 ## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
 
 Va en el paso 6 de [MIGRACION.md](MIGRACION.md), después de Mis creaciones,

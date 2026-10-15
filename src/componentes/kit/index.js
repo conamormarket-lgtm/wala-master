@@ -47,3 +47,4 @@ export { PaginaCreaciones, PaginaListaDeseos, PaginaFechas } from './paginas/Cue
 export { PaginaEncuesta, GRUPOS_ENCUESTA, CONFIG_ENCUESTA } from './paginas/Encuesta';
 export { MarcoAcceso, PaginaLogin, PaginaRegistro, PaginaRecuperar, PaginaCompletarPerfil } from './paginas/Acceso';
 export { PaginaCrear } from './paginas/Crear';
+export { PaginaComunidad } from './paginas/Comunidad';
