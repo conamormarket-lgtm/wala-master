@@ -55,3 +55,5 @@ export { PaginaCombo } from './paginas/Combo';
 export { PaginaEstudio } from './paginas/Estudio';
 export { PaginaProducto } from './paginas/Producto';
 export { PaginaCheckout } from './paginas/Checkout';
+export { PaginaListaPublica, PaginaRegalar, PaginaRegaloSorpresa } from './paginas/Regalar';
+export { PaginaPagoRapido } from './paginas/PagoRapido';

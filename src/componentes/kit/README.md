@@ -174,6 +174,8 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `piezas/Opiniones.jsx` | `Estrellas` (ver o elegir), `ResumenOpiniones` (promedio y una barra por estrella), `TarjetaOpinion` (con fotos y "Útil"), `FormularioOpinion` | La ficha de un producto (`paginas/Producto.jsx`: `PaginaProducto`; guía: `guia/PRODUCTO.md`) |
 | `piezas/Direccion.jsx` | `CamposDireccion` (quién recibe, el lugar y la dirección exacta), `validarDireccion`, `cambiarDireccion`, `documentoDe`, `CIUDADES`, `DOCS_DIRECCION` | Mis direcciones y el checkout |
 | `piezas/Checkout.jsx` | `PasosCompra`, `FilaMonedas`, `CampoCupon`, `ResumenCompra`, `MetodoPago` | El checkout (`paginas/Checkout.jsx`: `PaginaCheckout`; guía: `guia/CHECKOUT.md`) |
+| `piezas/Pago.jsx` | `PagoTarjeta` (el botón de Culqi, la nota, "Confirmando tu pago" y el error), `PagoPaypal` (el monto en dólares, los botones del SDK, procesando y el error) | El checkout, el pago rápido (a futuro, el saldo de un pedido) |
+| `piezas/Regalar.jsx` | `TarjetaRegalo`, `FechaEntrega`, `SobreRegalo` | Regalar desde la lista de otra persona (`paginas/Regalar.jsx`; guía: `guia/REGALAR.md`) |
 | `piezas/DatosPersonales.jsx` | `CamposDatosPersonales` (nombre, país, documento, celular y cumpleaños), `validarPerfil`, `TIPOS_DOCUMENTO`, `NOMBRE_DOCUMENTO` | Mi perfil, Crear cuenta y Completar perfil |
 | `piezas/Acceso.jsx` | `RequisitosContrasena` (reglas con barra de 5 tramos), `requisitosContrasena`, `contrasenaValida`, `BotonGoogle`, `SeparadorAcceso` | Login y registro |
 | `paginas/Acceso.jsx` | `MarcoAcceso`, `PaginaLogin`, `PaginaRegistro`, `PaginaRecuperar`, `PaginaCompletarPerfil` | /login, /registro, /recuperar-contrasena, /completar-perfil (guía: `guia/ACCESO.md`) |

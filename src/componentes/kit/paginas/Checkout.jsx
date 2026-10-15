@@ -1,11 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, CreditCard, MessageCircle, Globe2, MapPin, Plus, Heart, PartyPopper, Smile, CalendarHeart, ShoppingBag, Package, Gift, Lock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CreditCard, MessageCircle, Globe2, MapPin, Plus, Heart, PartyPopper, Smile, CalendarHeart, ShoppingBag, Package, Gift } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { Aviso, EstadoVacio } from '../Feedback';
 import { Campo, Casilla, Interruptor } from '../Formulario';
 import { Trazo } from '../Marca';
-import { CapaCargando } from '../Cargando';
 import { BloqueSeccion } from '../Seccion';
 import { EsqueletoPagina } from '../Esqueletos';
 import { soles } from '../TarjetaProducto';
@@ -14,6 +13,7 @@ import { ListaEleccion } from '../piezas/Cuenta';
 import { TarjetaDireccion } from '../piezas/TarjetaDireccion';
 import { CamposDireccion, validarDireccion, cambiarDireccion, documentoDe } from '../piezas/Direccion';
 import { PasosCompra, ResumenCompra, MetodoPago } from '../piezas/Checkout';
+import { PagoTarjeta, PagoPaypal } from '../piezas/Pago';
 import s from './Checkout.module.css';
 
 /*
@@ -44,7 +44,8 @@ const correoValido = (c) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(c || '').tr
  *  - onPreparar(datos): promesa → { numero } (prepara el pago; aún no hay pedido)
  *  - pago: { onTarjeta(total), onWhatsApp(marcaId?), onPaypal(totalUsd),
  *    marcas: [{ id, nombre, cantidad }] (más de una: un envío por marca),
- *    usd(total) } — promesas; la de la tarjeta falla si no se cobró
+ *    usd(total), botonesPaypal (los del SDK de PayPal) } — promesas; la de
+ *    la tarjeta falla si no se cobró
  *  - entrega: { fecha, ocasion, destinatario, aviso } (un regalo de una lista de deseos)
  *  - invitacion: { nombre } (primera compra con un link de invitación)
  *  - urlCarrito, urlTienda, urlPedidos, urlLogin · estado: 'cargando'
@@ -353,7 +354,7 @@ export function PaginaCheckout({
                   <>
                     <Aviso tipo="info" compacto icono={<Globe2 aria-hidden="true" />}>Envíos internacionales: la entrega demora de 7 a 30 días hábiles.</Aviso>
                     <MetodoPago destacado icono={<Globe2 aria-hidden="true" />} titulo="PayPal" texto="Con tu cuenta de PayPal o con tarjeta, en dólares.">
-                      <Boton bloque tamano="lg" cargando={ocupado === 'paypal'} onClick={() => pagar('paypal', pago.onPaypal, usd)}>Pagar con PayPal · US$ {usd?.toFixed(2)}</Boton>
+                      <PagoPaypal montoUsd={usd || 0} equivalente={`≈ ${soles(cuentas.total)}`} botones={pago.botonesPaypal} onPagar={() => pagar('paypal', pago.onPaypal, usd)} />
                     </MetodoPago>
                   </>
                 ) : (
@@ -361,8 +362,7 @@ export function PaginaCheckout({
                     {tarjetaFallo && (
                       <Aviso tipo="aviso" compacto titulo="No se completó el pago con tarjeta">Puedes intentarlo otra vez o pagar con Yape, Plin o transferencia por WhatsApp.</Aviso>
                     )}
-                    <Boton bloque tamano="lg" icono={<Lock aria-hidden="true" />} cargando={ocupado === 'tarjeta'} onClick={() => { setError(''); pagar('tarjeta', pago.onTarjeta, cuentas.total); }}>Pagar {soles(cuentas.total)}</Boton>
-                    <p className={s.nota}>Pago seguro con Culqi. Walá no guarda los datos de tu tarjeta.</p>
+                    <PagoTarjeta monto={cuentas.total} onPagar={() => { setError(''); return pagar('tarjeta', pago.onTarjeta, cuentas.total); }} />
                   </MetodoPago>
                 )}
 
@@ -406,9 +406,6 @@ export function PaginaCheckout({
         </div>
       </div>
 
-      {(ocupado === 'tarjeta' || ocupado === 'paypal') && (
-        <CapaCargando pantallaCompleta texto="Confirmando tu pago" detalle="Estamos confirmando el cobro con tu banco. No cierres ni recargues esta página." />
-      )}
     </BloqueSeccion>
   );
 }

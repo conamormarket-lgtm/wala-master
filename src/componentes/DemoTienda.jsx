@@ -14,6 +14,7 @@ import { volarMonedasGanadas } from '../utils/animations';
 import CREAR_DATOS from './demo/crear.json';
 import { ProductoDemo, ESTADOS_PRODUCTO, ABRIR_PRODUCTO } from './DemoProducto';
 import { CheckoutDemo, ESTADOS_CHECKOUT } from './DemoCheckout';
+import { RegalarDemo, VISTAS_REGALAR, ESTADOS_REGALAR, PagoRapidoDemo, ESTADOS_PAGO_RAPIDO } from './DemoRegalar';
 import { ENVIO_ESTANDAR, ENVIO_GRATIS_DESDE } from '../constants/envio';
 import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR, ComunidadDemo, ESTADOS_COMUNIDAD, CreacionDemo, ESTADOS_CREACION, VerDisenoDemo, ESTADOS_VER, ComboDemo, ESTADOS_COMBO, EstudioDemo, ESTADOS_ESTUDIO } from './DemoCuenta';
 import INICIO from './demo/inicio.json';
@@ -65,6 +66,8 @@ const PAGINAS = [
   { id: 'buscar', texto: 'Buscar', ruta: '/buscar' },
   { id: 'carrito', texto: 'Carrito', ruta: '/carrito' },
   { id: 'checkout', texto: 'Checkout', ruta: '/checkout' },
+  { id: 'regalar', texto: 'Regalar', ruta: '/wishlist/' },
+  { id: 'pagoRapido', texto: 'Pago rápido', ruta: '/pago-rapido/' },
   { id: 'cuenta', texto: 'Mi cuenta', ruta: '/cuenta' },
   { id: 'encuesta', texto: 'Encuesta', ruta: '/encuesta-suscripcion' },
   { id: 'acceso', texto: 'Acceso', ruta: '/login' },
@@ -93,7 +96,7 @@ const PAGINA_DE_RUTA = {
 };
 
 /** Pestaña de la barra inferior que se enciende en cada página. */
-const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', producto: 'tienda', checkout: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
+const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', producto: 'tienda', checkout: 'tienda', regalar: 'tienda', pagoRapido: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
 
 /* Estados de la Zona Arcade para probar (como el modo diseño de la tienda). */
 const RULETAS = [
@@ -260,6 +263,9 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [estadosProducto, setEstadosProducto] = useState([]);
   const [estadosCheckout, setEstadosCheckout] = useState([]);
   const [estadosCarrito, setEstadosCarrito] = useState([]);
+  const [rutaRegalar, setRutaRegalar] = useState(VISTAS_REGALAR[0][1]);
+  const [estadosRegalar, setEstadosRegalar] = useState([]);
+  const [estadosPagoRapido, setEstadosPagoRapido] = useState([]);
   const [estadosEstudio, setEstadosEstudio] = useState([]);
   const [estadosCombo, setEstadosCombo] = useState([]);
   const [rutaAcceso, setRutaAcceso] = useState('/login');
@@ -311,6 +317,9 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     if (ruta.startsWith('/crear/')) { setRutaEstudio(to); irA('estudio'); return; }
     // La ficha de un producto (/producto/:id): cualquier tarjeta abre la suya.
     if (ruta.startsWith('/producto/')) { setRutaProducto(ruta); irA('producto'); return; }
+    // Regalar: la lista de otra persona, sus fechas y abrir el regalo.
+    if (/^\/(wishlist|regalar|regalo)\//.test(ruta)) { setRutaRegalar(ruta); irA('regalar'); return; }
+    if (ruta.startsWith('/pago-rapido/')) { irA('pagoRapido'); return; }
     if (!PAGINA_DE_RUTA[ruta]) { avisar('En la tienda iría a', to); return; }
     if (ruta === '/buscar') {
       const p = new URLSearchParams(query);
@@ -631,6 +640,19 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       propsPara={(sec) => (sec.type === 'faq_accordion' ? { contacto: enlaceWhatsApp(empresa.whatsapp, '¡Hola Walá! Tengo una duda.') } : undefined)}
       envolver={envolver}
     />
+  ) : pagina === 'regalar' ? (
+    <MarcoTienda {...marco} kapiEnPie={false}>
+      <Parte n="P15" nombre={rutaRegalar.startsWith('/regalo/') ? 'PaginaRegaloSorpresa' : rutaRegalar.startsWith('/regalar/') ? 'PaginaRegalar' : 'PaginaListaPublica'}>
+        <RegalarDemo key={rutaRegalar} ruta={rutaRegalar} estados={estadosRegalar} toast={toast} onCarrito={(item) => setCarrito((c) => [...c, item])} onIrA={(r) => navegar.current(r)} />
+      </Parte>
+    </MarcoTienda>
+  ) : pagina === 'pagoRapido' ? (
+    // Un enlace de pago: sin la barra inferior ni Kapi en el pie (solo pagar).
+    <MarcoTienda {...marco} barraInferior={null} kapiEnPie={false}>
+      <Parte n="P16" nombre="PaginaPagoRapido">
+        <PagoRapidoDemo estados={estadosPagoRapido} toast={toast} />
+      </Parte>
+    </MarcoTienda>
   ) : pagina === 'checkout' ? (
     // Pagar: sin la barra inferior (la compra manda) y sin Kapi en el pie.
     <MarcoTienda {...marco} barraInferior={null} kapiEnPie={false}>
@@ -814,6 +836,31 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
                 ))}
               </div>
             )}
+          </div>
+        )}
+        {pagina === 'regalar' && (
+          <div>
+            <span className={cs.controlesTitulo}>Cómo se abre</span>
+            <div className={cs.controlesChips}>
+              {VISTAS_REGALAR.map(([texto, r]) => (
+                <Chip key={texto} tamano="sm" activo={rutaRegalar === r} onClick={() => setRutaRegalar(r)}>{texto}</Chip>
+              ))}
+            </div>
+            <div className={cs.controlesChips}>
+              {ESTADOS_REGALAR.map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={estadosRegalar.includes(id)} onClick={() => setEstadosRegalar((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
+              ))}
+            </div>
+          </div>
+        )}
+        {pagina === 'pagoRapido' && (
+          <div>
+            <span className={cs.controlesTitulo}>Estado del enlace</span>
+            <div className={cs.controlesChips}>
+              {ESTADOS_PAGO_RAPIDO.map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={estadosPagoRapido.includes(id)} onClick={() => setEstadosPagoRapido((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
+              ))}
+            </div>
           </div>
         )}
         {pagina === 'carrito' && (

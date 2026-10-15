@@ -1,0 +1,111 @@
+.pagina {
+  display: grid;
+  gap: 1.75rem;
+}
+
+.cabeza {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.titulo {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: clamp(1.7rem, 6vw, 2.6rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.trazo {
+  display: block;
+  width: min(70%, 260px);
+  height: 12px;
+  margin: 0.3rem auto 0;
+  color: #f472b6;
+}
+
+.texto {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 520px) {
+  .rejilla {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+}
+
+.fechas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 0.75rem;
+}
+
+.entrega {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+  text-align: center;
+}
+
+.entrega strong {
+  color: var(--color-text);
+}
+
+.vacia {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.sorpresa {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+}
+
+.antetitulo {
+  margin: 0;
+  color: var(--primary-color);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+:global([data-theme='dark']) .antetitulo {
+  color: var(--violet-300);
+}
+
+.invitacion {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.estado {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--color-surface);
+}

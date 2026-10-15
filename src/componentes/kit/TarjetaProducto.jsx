@@ -48,6 +48,8 @@ const ACCIONES = {
  *  - piezas: [{ nombre, imagen }] de un combo → etiqueta "Combo" y, con
  *    ratón, qué trae. Si el combo no trae `imagen`, sus piezas van como cartas.
  *
+ *  - sinAccion: sin el botón de agregar (el regalo de una lista de deseos lleva el suyo).
+ *
  *  - deseado, onDeseo(nuevo): el corazón controlado (WishlistContext); sin
  *    `deseado`, la tarjeta lo recuerda sola.
  *
@@ -76,6 +78,7 @@ export default function TarjetaProducto({
   inclinar = true,
   url = '#producto',
   accion = 'agregar',
+  sinAccion = false,
   onAgregar,
   deseado: deseadoProp,
   onDeseo,
@@ -213,7 +216,7 @@ export default function TarjetaProducto({
 
         {agotado ? (
           <span className={s.capaAgotado}>Agotado</span>
-        ) : (
+        ) : sinAccion ? null : (
           <button
             type="button"
             className={[s.agregar, agregado && s.agregarOk].filter(Boolean).join(' ')}

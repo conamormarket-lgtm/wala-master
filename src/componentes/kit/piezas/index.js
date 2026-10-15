@@ -34,6 +34,8 @@ export { LienzoPrenda, BarraLienzo, PasoEstudio, PasosEstudio, PanelCapa } from 
 export { OpcionesProducto, opcionesDe } from './OpcionesProducto';
 export { CamposDireccion, cambiarDireccion, documentoDe, CIUDADES, DOCS_DIRECCION } from './Direccion';
 export { PasosCompra, FilaMonedas, CampoCupon, ResumenCompra, MetodoPago } from './Checkout';
+export { PagoTarjeta, PagoPaypal } from './Pago';
+export { TarjetaRegalo, FechaEntrega, SobreRegalo } from './Regalar';
 export { Estrellas, ResumenOpiniones, TarjetaOpinion, FormularioOpinion } from './Opiniones';
 export { GaleriaProducto } from './GaleriaProducto';
 export { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra, TituloEditable } from './Ficha';
