@@ -31,5 +31,7 @@ export { CamposDatosPersonales, validarPerfil, TIPOS_DOCUMENTO, NOMBRE_DOCUMENTO
 export { RequisitosContrasena, requisitosContrasena, contrasenaValida, BotonGoogle, SeparadorAcceso } from './Acceso';
 export { PortadaCrear, PASOS_CREAR, textoPara, FilaPiezaCombo } from './Crear';
 export { LienzoPrenda, BarraLienzo, PasoEstudio, PasosEstudio, PanelCapa } from './Estudio';
+export { OpcionesProducto, opcionesDe } from './OpcionesProducto';
+export { Estrellas, ResumenOpiniones, TarjetaOpinion, FormularioOpinion } from './Opiniones';
 export { GaleriaProducto } from './GaleriaProducto';
 export { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra, TituloEditable } from './Ficha';

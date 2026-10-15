@@ -1,0 +1,289 @@
+.cabeza {
+  display: grid;
+  justify-items: start;
+  gap: 0.45rem;
+}
+
+/* La marca: su logo y su nombre, enlace a su página. */
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.65rem 0.2rem 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color var(--dur-rapida) ease;
+}
+
+.marca:hover {
+  border-color: var(--violet-400);
+}
+
+.marca img {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: #fff;
+}
+
+.marca:not(:has(img)) {
+  padding-left: 0.65rem;
+}
+
+.tituloFila {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.titulo {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: clamp(1.4rem, 5.5vw, 2rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.puntaje {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+  text-decoration: none;
+}
+
+.puntaje strong {
+  color: var(--color-text);
+}
+
+.puntaje:hover span {
+  text-decoration: underline;
+}
+
+.quedan {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: -0.5rem 0 0;
+  color: #b45309;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.quedan::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  content: '';
+}
+
+:global([data-theme='dark']) .quedan {
+  color: #fbbf24;
+}
+
+.grupo {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.rotulo {
+  color: var(--color-text);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.rotulo em {
+  color: var(--color-text-muted);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.piezas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.piezas li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.8rem 0.3rem 0.3rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 16px 16px 16px;
+  background: var(--color-surface);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.piezaFoto {
+  width: 44px;
+  height: 52px;
+  border-radius: 10px;
+}
+
+/* La compra: en el celular, pegada abajo sobre la barra inferior. */
+.compra {
+  position: sticky;
+  bottom: var(--alto-barra-inferior, 72px);
+  z-index: 20;
+  display: flex;
+  gap: 0.6rem;
+  margin: 0 -1rem;
+  padding: 0.6rem 1rem;
+  background: color-mix(in srgb, var(--color-bg, #fff) 88%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.compra > :first-child {
+  flex: 1;
+}
+
+@media (min-width: 900px) {
+  .compra {
+    position: static;
+    margin: 0;
+    padding: 0;
+    background: none;
+    backdrop-filter: none;
+  }
+}
+
+.pagarCarrito {
+  justify-self: center;
+  color: var(--primary-color);
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.pagarCarrito:hover {
+  text-decoration: underline;
+}
+
+:global([data-theme='dark']) .pagarCarrito {
+  color: var(--violet-300);
+}
+
+.textoRico {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.textoRico p {
+  margin: 0 0 0.5rem;
+}
+
+.textoRico p:empty,
+.textoRico p:has(> br:only-child) {
+  display: none;
+}
+
+.textoRico strong {
+  color: var(--color-text);
+}
+
+/* ── Opiniones ─────────────────────────────────────────────── */
+.opiniones {
+  scroll-margin-top: 5rem;
+}
+
+.opinionesCuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+@media (min-width: 900px) {
+  .opinionesCuerpo {
+    grid-template-columns: 340px minmax(0, 1fr);
+    align-items: start;
+    gap: 2.5rem;
+  }
+
+  .opinionesCuerpo > :first-child {
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+.opinionesLista {
+  display: grid;
+  align-content: start;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.fotosClientes {
+  display: grid;
+  gap: 0.5rem;
+  padding-bottom: 0.75rem;
+}
+
+.tiraFotos {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+}
+
+.tiraFotos button {
+  flex: none;
+  overflow: hidden;
+  width: 84px;
+  height: 84px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--escenario-foto, #f4f1fb);
+  cursor: zoom-in;
+  scroll-snap-align: start;
+}
+
+.tiraFotos img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sinOpiniones {
+  margin: 0;
+  padding: 1rem 0;
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+}
+
+.fotoGrande {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  border-radius: 14px;
+  object-fit: contain;
+  background: var(--escenario-foto, #f4f1fb);
+}
+
+.estado {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--color-surface);
+}

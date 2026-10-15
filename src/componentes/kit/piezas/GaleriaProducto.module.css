@@ -105,8 +105,10 @@
   }
 }
 
+/* En el celular, la foto primero y las miniaturas debajo. */
 .miniaturas {
   display: flex;
+  order: 1;
   gap: 0.5rem;
   overflow-x: auto;
   scrollbar-width: none;
@@ -171,6 +173,7 @@
   }
 
   .miniaturas {
+    order: 0;
     flex-direction: column;
     overflow: visible;
   }

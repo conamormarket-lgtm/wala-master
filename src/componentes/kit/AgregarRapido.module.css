@@ -45,14 +45,6 @@
   font-weight: 400;
 }
 
-.fila {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
 .pie {
   display: flex;
   gap: 0.6rem;

@@ -1,0 +1,38 @@
+.opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.opcion {
+  display: grid;
+  gap: 0.4rem;
+  border-radius: 14px;
+  transition: box-shadow var(--dur-media) var(--ease-signature);
+}
+
+/* Falta la talla: se marca la fila con un borde rojo suave, sin mover nada. */
+.falta {
+  box-shadow: 0 0 0 2px var(--danger-soft, rgba(220, 38, 38, 0.18)), 0 0 0 8px var(--danger-soft, rgba(220, 38, 38, 0.08));
+}
+
+.aviso {
+  margin: 0;
+  color: var(--danger, #dc2626);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.nota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 600;
+}

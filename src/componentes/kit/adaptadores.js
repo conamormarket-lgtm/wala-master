@@ -91,6 +91,8 @@ export function opcionesDeProducto(p, { subproductos = {} } = {}) {
   const piezas = p?.isComboProduct
     ? (p.comboItems || []).map((it) => ({
       nombre: it.name,
+      // El color con el que viene el combo (variantMapping.color).
+      color: it.variantMapping?.color,
       colores: variantesDe(subproductos[it.productId])
         .filter((v) => !it.variantMapping?.allowedColors || it.variantMapping.allowedColors.includes(v.name))
         .map((v) => ({ nombre: v.name, hex: v.colorHex || '#cccccc' })),
@@ -880,3 +882,88 @@ export const prendaEstudioDesde = (producto = {}) => {
     })),
   };
 };
+
+/* ── Ficha de producto (/producto/:id) ─────────────────────── */
+
+/**
+ * Fotos sin repetir para la galería. `nombres`: el de cada foto por su url
+ * (el color, o la prenda de un combo); las demás van sin píldora.
+ */
+const fotosGaleria = (urls, nombres = {}) => [...new Set(urls.filter(Boolean))]
+  .map((url) => ({ url, nombre: nombres[url] || '' }));
+
+/**
+ * Un producto de productos_wala → props de PaginaProducto (sin las opiniones
+ * ni los relacionados, que llegan por su lado).
+ *  - catalogo: { marcas, categorias } (para la marca y las migas)
+ *  - subproductos: { [productId]: producto } de las piezas de un combo
+ * Devuelve { producto, opciones (las de opcionesDeProducto), varianteInicial,
+ * fotos: { base: [...], [varianteId]: [...] } }. Las fotos de una variante
+ * son las suyas (imageUrl, galleryImages, images) y, si no tiene, las del
+ * producto: el mismo orden que buildImages de ProductDetail.
+ */
+export function fichaProductoDesde(p = {}, { catalogo = {}, subproductos = {} } = {}) {
+  const { marcas = [], categorias = [] } = catalogo;
+  const m = p.brandId ? marcas.find((x) => x.id === p.brandId) : null;
+  const cat = (p.categories || []).map((id) => categorias.find((c) => (c.categoryId || c.id) === id)).find(Boolean);
+  const delProducto = [p.mainImage, ...(p.images || [])];
+  const base = p.isComboProduct
+    ? fotosGaleria([p.comboPreviewImage, ...(p.comboItems || []).map((it) => it.imageUrl), ...delProducto], Object.fromEntries((p.comboItems || []).map((it) => [it.imageUrl, it.name])))
+    : fotosGaleria(delProducto);
+  const fotos = { base };
+  variantesDe(p).forEach((v) => {
+    const propias = [v.imageUrl, ...(v.galleryImages || []), ...(v.images || [])].filter(Boolean);
+    fotos[v.id] = propias.length && variantesDe(p).length > 1 ? fotosGaleria([...propias, ...delProducto], { [propias[0]]: v.name }) : base;
+  });
+  const precio = p.salePrice || p.price;
+  return {
+    producto: {
+      id: p.id,
+      nombre: p.name,
+      marca: m?.name ? { nombre: m.name, url: `/${rutaDeMarca(m)}`, logo: m.logoUrl || '' } : undefined,
+      categoria: cat ? { nombre: cat.name, url: `/tienda?categoria=${cat.categoryId || cat.id}` } : undefined,
+      precio,
+      precioAntes: p.salePrice && p.salePrice < p.price ? p.price : undefined,
+      stock: typeof p.inStock === 'number' ? p.inStock : undefined,
+      agotado: !p.inStock,
+      personalizable: Boolean(p.customizable),
+      urlPersonalizar: p.customizable ? `/editor/${p.id}` : undefined,
+      descripcion: p.description || '',
+      combo: p.isComboProduct ? (p.comboItems || []).map((it) => ({ nombre: it.name || subproductos[it.productId]?.name || 'Producto', imagen: it.imageUrl })) : undefined,
+    },
+    opciones: opcionesDeProducto(p, { subproductos }),
+    // La variante que el admin marcó como principal (la tienda hoy abre siempre la primera).
+    varianteInicial: (variantesDe(p).find((v) => String(v.id) === String(p.defaultVariantId)) || variantesDe(p)[0])?.id,
+    fotos,
+  };
+}
+
+/**
+ * Las opiniones de product_reviews → props de las opiniones de la ficha.
+ * Firma con el nombre y la inicial del apellido (no el nombre completo).
+ *  - uid: el de quien mira (para saber si ya la marcó útil)
+ */
+export function opinionesDesde(resenas = [], { uid } = {}) {
+  const firma = (n) => {
+    const [nombre, apellido] = String(n || 'Cliente de Walá').trim().split(/\s+/);
+    return apellido ? `${nombre} ${apellido[0].toUpperCase()}.` : nombre;
+  };
+  const lista = resenas.map((r) => ({
+    id: r.id,
+    autor: firma(r.userName),
+    fecha: r.createdAt ? new Date(r.createdAt).toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : undefined,
+    puntuacion: Number(r.rating) || 0,
+    texto: r.comment,
+    fotos: r.imageUrls || [],
+    utiles: (r.helpfulVotes || []).length,
+    marcada: Boolean(uid) && (r.helpfulVotes || []).includes(uid),
+  }));
+  const total = lista.length;
+  const porEstrella = lista.reduce((a, o) => ({ ...a, [o.puntuacion]: (a[o.puntuacion] || 0) + 1 }), {});
+  return {
+    lista,
+    total,
+    promedio: total ? lista.reduce((t, o) => t + o.puntuacion, 0) / total : 0,
+    porEstrella,
+  };
+}

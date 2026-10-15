@@ -1,0 +1,598 @@
+{
+ "copiadoEl": "2026-10-15",
+ "origen": "productos_wala (wala.pe), solo los campos que usa la ficha",
+ "productos": [
+  {
+   "id": "sqxf0goHABLcnqVFxoS7",
+   "name": "Casaca One Piece · Tripulación Sombrero de Paja",
+   "price": 119,
+   "salePrice": 109,
+   "inStock": 10,
+   "customizable": false,
+   "isComboProduct": false,
+   "brandId": "xjlrkw1JM8InbEw1mWtt",
+   "categories": [
+    "Ivdz5SdOYFgOpnuTeNlx"
+   ],
+   "description": "<p>Polos personalizados de tus animes favoritos</p><p><br></p><p>Luce a tus personajes favoritos con nuestros polos de diseños llamativos, modernos cómodos y llenos de estilo. Disponibles en varios colores y tallas, son unisex.</p>",
+   "images": [
+    "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600787997_1789593395038_main_var_1788367960335_1788444029690_ONE%20PICE%20(5).webp?alt=media&token=878730a4-4638-4f94-9828-cec36337f27e"
+   ],
+   "mainImage": "",
+   "hasVariants": true,
+   "variants": [
+    {
+     "id": "var_1788976285257",
+     "name": "Perla",
+     "colorHex": "#EAE6E1",
+     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600787997_1789593395038_main_var_1788367960335_1788444029690_ONE%20PICE%20(5).webp?alt=media&token=878730a4-4638-4f94-9828-cec36337f27e",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+     ]
+    },
+    {
+     "id": "var_1788981963653",
+     "name": "Negro",
+     "colorHex": "#101010",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+     ]
+    },
+    {
+     "id": "var_1788981963654",
+     "name": "Blanco",
+     "colorHex": "#F3F3F3",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+     ]
+    },
+    {
+     "id": "var_1788981963655",
+     "name": "Melange",
+     "colorHex": "#C8CACB",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+     ]
+    },
+    {
+     "id": "var_1788981963656",
+     "name": "Azul Acero",
+     "colorHex": "#0F1E37",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+     ]
+    },
+    {
+     "id": "var_1788981963657",
+     "name": "Guinda",
+     "colorHex": "#651322",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+     ]
+    },
+    {
+     "id": "var_1788981963658",
+     "name": "Naranja",
+     "colorHex": "#F76C0C",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+     ]
+    },
+    {
+     "id": "var_1788981963659",
+     "name": "Rosado",
+     "colorHex": "#FDA9C9",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+     ]
+    },
+    {
+     "id": "var_1788981963660",
+     "name": "Celeste",
+     "colorHex": "#A9D5F6",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+     ]
+    }
+   ],
+   "defaultVariantId": "var_1788976285257",
+   "mainSizes": [],
+   "visible": true,
+   "createdAtMs": 1788976285257
+  },
+  {
+   "id": "mussa-skin1004-centella-soothing-cream",
+   "name": "SKIN1004 Madagascar Centella Soothing Cream",
+   "price": 99,
+   "salePrice": 0,
+   "inStock": 4,
+   "customizable": false,
+   "isComboProduct": false,
+   "brandId": "pMujqcyIIDUF2EdSSX5V",
+   "categories": [
+    "7Y2Pbjp5jUjrFOhxwLxd"
+   ],
+   "description": "<p><strong>SKIN1004 Madagascar Centella Soothing Cream</strong>, 75 ml / 2.53 fl. oz.</p><p><br></p><p><strong>Crema Calmante Ligera con Centella de Madagascar</strong></p><p>El rescate perfecto para pieles estresadas. Esta crema reparadora actúa al instante para devolverle el confort a tu rostro, aliviando molestias y protegiendo tu barrera natural sin aportar pesadez.</p><p><strong>Beneficios clave:</strong></p><p><br></p><ul><li><strong>Calma Inmediata (Centella de Madagascar):</strong> Alivia rápidamente la piel reactiva, sensibilizada o con ardor.</li><li><strong>Reducción de Rojeces:</strong> Disminuye la inflamación y ayuda a unificar el tono de las zonas irritadas.</li><li><strong>Reparación de la Barrera Cutánea:</strong> Fortalece las defensas naturales del rostro, siendo el hidratante ideal para usar después de aplicar activos fuertes (como ácidos exfoliantes o retinol).</li><li><strong>Textura Ligera y Segura:</strong> Se absorbe con facilidad sin dejar sensación grasa y está 100% libre de fragancias para garantizar la máxima tolerancia.</li></ul><p><strong>Ideal para:</strong> Pieles sensibles, reactivas o cualquier tipo de piel que necesite un cuidado reparador y calmante post-tratamiento.</p><p><br></p>",
+   "images": [
+    "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600503889_1789593804607_main.webp?alt=media&token=c201cb98-0a4b-40d3-aac5-aa776eb503e2"
+   ],
+   "hasVariants": true,
+   "variants": [
+    {
+     "id": "var_1789165368632",
+     "name": "Principal",
+     "colorHex": "#cccccc",
+     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600503889_1789593804607_main.webp?alt=media&token=c201cb98-0a4b-40d3-aac5-aa776eb503e2",
+     "images": [],
+     "galleryImages": [],
+     "sizes": []
+    }
+   ],
+   "defaultVariantId": "var_1789165368632",
+   "visible": true,
+   "createdAtMs": 1789138592924
+  },
+  {
+   "id": "parejas-rodar-contigo-combo",
+   "name": "Conjunto Pareja · Rodar Contigo",
+   "price": 188,
+   "inStock": 4,
+   "customizable": false,
+   "isComboProduct": true,
+   "comboItems": [
+    {
+     "productId": "parejas-rodar-contigo-ella",
+     "name": "Ella",
+     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600684633_1789593935977_ella.webp?alt=media&token=7e9c0c43-f937-4cd5-972e-e46fdaedcad5",
+     "variantMapping": {
+      "allowedColors": [
+       "Blanco",
+       "Negro",
+       "Perla",
+       "Melange",
+       "Azul Acero",
+       "Guinda",
+       "Naranja",
+       "Rosado",
+       "Celeste"
+      ],
+      "color": "Melange"
+     }
+    },
+    {
+     "productId": "parejas-rodar-contigo-el",
+     "name": "Él",
+     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600686447_1789593936657_el.webp?alt=media&token=0a14eed2-88cf-4a09-8a2d-1115cd267e83",
+     "variantMapping": {
+      "color": "Negro",
+      "allowedColors": [
+       "Blanco",
+       "Negro",
+       "Perla",
+       "Melange",
+       "Azul Acero",
+       "Guinda",
+       "Naranja",
+       "Rosado",
+       "Celeste"
+      ]
+     }
+    }
+   ],
+   "comboPreviewImage": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600684633_1789593935977_ella.webp?alt=media&token=7e9c0c43-f937-4cd5-972e-e46fdaedcad5",
+   "brandId": "y5eh2sd61nUC5kTBndax",
+   "categories": [
+    "Ivdz5SdOYFgOpnuTeNlx"
+   ],
+   "description": "<p><strong>Conjunto Pareja · Rodar Contigo</strong> — conjunto pareja: 1 polera para Él + 1 polera para Ella.</p><p>Algodón afranelado reactivo 20/1, con capucha y bolsillo canguro. Elige color y talla (S a XL) para cada prenda.</p>",
+   "images": [
+    "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600684633_1789593935977_ella.webp?alt=media&token=7e9c0c43-f937-4cd5-972e-e46fdaedcad5"
+   ],
+   "mainImage": "",
+   "hasVariants": false,
+   "variants": [],
+   "defaultVariantId": "",
+   "mainSizes": [],
+   "visible": true,
+   "createdAtMs": 1789141822991
+  },
+  {
+   "id": "parejas-rodar-contigo-ella",
+   "name": "Conjunto Pareja · Rodar Contigo · Ella",
+   "price": 188,
+   "inStock": 4,
+   "customizable": false,
+   "isComboProduct": false,
+   "brandId": "y5eh2sd61nUC5kTBndax",
+   "categories": [
+    "Ivdz5SdOYFgOpnuTeNlx"
+   ],
+   "description": "",
+   "images": [
+    "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600684633_1789593935977_ella.webp?alt=media&token=7e9c0c43-f937-4cd5-972e-e46fdaedcad5"
+   ],
+   "mainImage": "",
+   "hasVariants": true,
+   "variants": [
+    {
+     "id": "blanco",
+     "name": "Blanco",
+     "colorHex": "#F3F3F3",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+     ]
+    },
+    {
+     "id": "negro",
+     "name": "Negro",
+     "colorHex": "#101010",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+     ]
+    },
+    {
+     "id": "perla",
+     "name": "Perla",
+     "colorHex": "#EAE6E1",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+     ]
+    },
+    {
+     "id": "melange",
+     "name": "Melange",
+     "colorHex": "#C8CACB",
+     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600684633_1789593935977_ella.webp?alt=media&token=7e9c0c43-f937-4cd5-972e-e46fdaedcad5",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+     ]
+    },
+    {
+     "id": "azul-acero",
+     "name": "Azul Acero",
+     "colorHex": "#0F1E37",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+     ]
+    },
+    {
+     "id": "guinda",
+     "name": "Guinda",
+     "colorHex": "#651322",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+     ]
+    },
+    {
+     "id": "naranja",
+     "name": "Naranja",
+     "colorHex": "#F76C0C",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+     ]
+    },
+    {
+     "id": "rosado",
+     "name": "Rosado",
+     "colorHex": "#FDA9C9",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+     ]
+    },
+    {
+     "id": "celeste",
+     "name": "Celeste",
+     "colorHex": "#A9D5F6",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+     ]
+    }
+   ],
+   "defaultVariantId": "melange",
+   "mainSizes": [],
+   "visible": false,
+   "createdAtMs": 1789141822585
+  },
+  {
+   "id": "parejas-rodar-contigo-el",
+   "name": "Conjunto Pareja · Rodar Contigo · Él",
+   "price": 188,
+   "inStock": 4,
+   "customizable": false,
+   "isComboProduct": false,
+   "brandId": "y5eh2sd61nUC5kTBndax",
+   "categories": [
+    "Ivdz5SdOYFgOpnuTeNlx"
+   ],
+   "description": "",
+   "images": [
+    "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600686447_1789593936657_el.webp?alt=media&token=0a14eed2-88cf-4a09-8a2d-1115cd267e83"
+   ],
+   "mainImage": "",
+   "hasVariants": true,
+   "variants": [
+    {
+     "id": "blanco",
+     "name": "Blanco",
+     "colorHex": "#F3F3F3",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+     ]
+    },
+    {
+     "id": "negro",
+     "name": "Negro",
+     "colorHex": "#101010",
+     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600686447_1789593936657_el.webp?alt=media&token=0a14eed2-88cf-4a09-8a2d-1115cd267e83",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+     ]
+    },
+    {
+     "id": "perla",
+     "name": "Perla",
+     "colorHex": "#EAE6E1",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+     ]
+    },
+    {
+     "id": "melange",
+     "name": "Melange",
+     "colorHex": "#C8CACB",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+     ]
+    },
+    {
+     "id": "azul-acero",
+     "name": "Azul Acero",
+     "colorHex": "#0F1E37",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+     ]
+    },
+    {
+     "id": "guinda",
+     "name": "Guinda",
+     "colorHex": "#651322",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+     ]
+    },
+    {
+     "id": "naranja",
+     "name": "Naranja",
+     "colorHex": "#F76C0C",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+     ]
+    },
+    {
+     "id": "rosado",
+     "name": "Rosado",
+     "colorHex": "#FDA9C9",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+     ]
+    },
+    {
+     "id": "celeste",
+     "name": "Celeste",
+     "colorHex": "#A9D5F6",
+     "imageUrl": "",
+     "images": [],
+     "galleryImages": [],
+     "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+     ]
+    }
+   ],
+   "defaultVariantId": "negro",
+   "mainSizes": [],
+   "visible": false,
+   "createdAtMs": 1789141821858
+  },
+  {
+   "id": "z4CmzlhW29u3eOdIlNfw",
+   "name": "Reloj Yoryo Poedagar",
+   "price": 120,
+   "salePrice": 0,
+   "inStock": 4,
+   "customizable": false,
+   "isComboProduct": false,
+   "brandId": "rEPEpl4Hvzi6ogOBHn7x",
+   "categories": [
+    "GtylUg5tpx4YrklvBnty"
+   ],
+   "description": "<p>Reloj POEDAGAR 857 Caja rectangular · Esfera azul · Correa de acero inoxidable Esfera azul, caja y correa plateadas</p><p><br></p><p>CARACTERÍSTICA DETALLE</p><p>Marca POEDAGAR</p><p>Código de modelo 857</p><p>Movimiento Cuarzo</p><p>Material de la correa Acero inoxidable</p><p>Cristal Hardlex (mineral endurecido)</p><p>Tamaño de la esfera 36 mm</p><p>Grosor de la caja 11 mm</p><p>Ancho de la correa 31 mm</p><p>Largo de la correa 23 cm</p><p>Peso 152 g</p><p>Resistencia al agua 30 m (3 ATM)</p>",
+   "images": [
+    "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fz4CmzlhW29u3eOdIlNfw%2Fmain_variant_1790088317915_r5_0_1790718488479_20260904_165925.webp?alt=media&token=1956a545-b53e-4698-86ad-597be9541873"
+   ],
+   "hasVariants": true,
+   "variants": [
+    {
+     "id": "variant_1790088317915_r5_0",
+     "name": "Negro Total",
+     "colorHex": "#121212",
+     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fz4CmzlhW29u3eOdIlNfw%2Fmain_variant_1790088317915_r5_0_1790718488479_20260904_165925.webp?alt=media&token=1956a545-b53e-4698-86ad-597be9541873",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fz4CmzlhW29u3eOdIlNfw%2Fgallery_1790718519217_Imagen%20de%20ChatGPT%2029%20sept%202026%2C%2003_24_28%20p.m..webp?alt=media&token=55547d12-04ce-4a41-b67d-8fc48317fe0b"
+     ],
+     "galleryImages": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fz4CmzlhW29u3eOdIlNfw%2Fgallery_1790718519217_Imagen%20de%20ChatGPT%2029%20sept%202026%2C%2003_24_28%20p.m..webp?alt=media&token=55547d12-04ce-4a41-b67d-8fc48317fe0b"
+     ],
+     "sizes": []
+    }
+   ],
+   "defaultVariantId": "variant_1790088317915_r5_0",
+   "visible": true,
+   "createdAtMs": 1790864747540
+  }
+ ]
+}

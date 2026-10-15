@@ -2,13 +2,14 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ShoppingBag, Wand2 } from 'lucide-react';
 import Boton from './Boton';
 import { HojaInferior } from './Feedback';
-import { SelectorTalla, SelectorColor, Cantidad } from './Formulario';
 import { soles } from './TarjetaProducto';
 import { FotoProducto } from './piezas/FotoProducto';
+import { OpcionesProducto, opcionesDe } from './piezas/OpcionesProducto';
 import s from './AgregarRapido.module.css';
 
 /**
- * Elegir opciones antes de agregar al carrito, sin salir de la lista.
+ * Elegir opciones antes de agregar al carrito, sin salir de la lista. Los
+ * selectores son OpcionesProducto (los mismos de la ficha del producto).
  * Sirve para cualquier producto, no solo ropa (mismo modelo que la tienda):
  *
  *  - variantes: [{ id, nombre, colorHex?, imagen?, opciones?: string[] }]
@@ -46,12 +47,12 @@ export default function AgregarRapido({
     if (!abierto) return;
     setVarId(variantes[0]?.id ?? null);
     setOpcion(null);
-    setColores(Object.fromEntries(piezas.map((p, i) => [i, p.colores[0]?.nombre])));
+    setColores(Object.fromEntries(piezas.map((p, i) => [i, p.colores.some((c) => c.nombre === p.color) ? p.color : p.colores[0]?.nombre])));
     setCantidad(1);
   }, [abierto, producto?.nombre]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const variante = variantes.find((v) => v.id === varId) || variantes[0];
-  const lista = variante?.opciones?.length ? variante.opciones : opciones;
+  const lista = opcionesDe(variante, opciones);
   const conColor = variantes.length > 1 && variantes.every((v) => v.colorHex);
 
   // Si la variante elegida no tiene la opción marcada, se limpia.
@@ -106,46 +107,22 @@ export default function AgregarRapido({
           </div>
         </div>
 
-        {piezas.map((p, i) => (
-          <SelectorColor
-            key={p.nombre}
-            etiqueta={`Color · ${p.nombre}`}
-            colores={p.colores}
-            valor={colores[i]}
-            onChange={(c) => setColores((x) => ({ ...x, [i]: c }))}
-          />
-        ))}
-
-        {variantes.length > 1 && (conColor ? (
-          <SelectorColor
-            colores={variantes.map((v) => ({ nombre: v.nombre, hex: v.colorHex, claro: v.claro }))}
-            valor={variante?.nombre}
-            onChange={(n) => setVarId(variantes.find((v) => v.nombre === n)?.id)}
-          />
-        ) : (
-          <SelectorTalla
-            etiqueta="Modelo"
-            tallas={variantes.map((v) => v.nombre)}
-            valor={variante?.nombre}
-            onChange={(n) => setVarId(variantes.find((v) => v.nombre === n)?.id)}
-          />
-        ))}
-
-        {lista.length > 0 && (
-          <SelectorTalla
-            etiqueta={etiquetaOpcion}
-            tallas={lista}
-            agotadas={agotadas}
-            valor={opcion}
-            onChange={setOpcion}
-            guia={etiquetaOpcion === 'Talla' ? onGuia : undefined}
-          />
-        )}
-
-        <div className={s.fila}>
-          <span>Cantidad</span>
-          <Cantidad valor={cantidad} onChange={setCantidad} max={10} />
-        </div>
+        <OpcionesProducto
+          variantes={variantes}
+          varId={variante?.id}
+          onVariante={setVarId}
+          opciones={opciones}
+          etiquetaOpcion={etiquetaOpcion}
+          agotadas={agotadas}
+          opcion={opcion}
+          onOpcion={setOpcion}
+          piezas={piezas}
+          colores={colores}
+          onColorPieza={(i, c) => setColores((x) => ({ ...x, [i]: c }))}
+          cantidad={cantidad}
+          onCantidad={setCantidad}
+          onGuia={onGuia}
+        />
       </div>
     </HojaInferior>
   );

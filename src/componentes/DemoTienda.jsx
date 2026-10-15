@@ -12,6 +12,7 @@ import { empresa } from '../config/empresa';
 import { msHastaMananaLima, msHastaLunesLima, limaTodayStr } from '../utils/fechaLima';
 import { volarMonedasGanadas } from '../utils/animations';
 import CREAR_DATOS from './demo/crear.json';
+import { ProductoDemo, ESTADOS_PRODUCTO, ABRIR_PRODUCTO } from './DemoProducto';
 import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR, ComunidadDemo, ESTADOS_COMUNIDAD, CreacionDemo, ESTADOS_CREACION, VerDisenoDemo, ESTADOS_VER, ComboDemo, ESTADOS_COMBO, EstudioDemo, ESTADOS_ESTUDIO } from './DemoCuenta';
 import INICIO from './demo/inicio.json';
 import TIENDA from './demo/tienda.json';
@@ -51,6 +52,7 @@ const ROLES = [
 const PAGINAS = [
   { id: 'inicio', texto: 'Inicio', ruta: '/' },
   { id: 'tienda', texto: 'Tienda', ruta: '/tienda' },
+  { id: 'producto', texto: 'Un producto', ruta: '/producto/' },
   { id: 'crear', texto: 'Crear', ruta: '/personalizar' },
   { id: 'estudio', texto: 'Estudio', ruta: '/crear/' },
   { id: 'comunidad', texto: 'Comunidad', ruta: '/comunidad' },
@@ -88,7 +90,7 @@ const PAGINA_DE_RUTA = {
 };
 
 /** Pestaña de la barra inferior que se enciende en cada página. */
-const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
+const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', producto: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
 
 /* Estados de la Zona Arcade para probar (como el modo diseño de la tienda). */
 const RULETAS = [
@@ -250,6 +252,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [estadosVer, setEstadosVer] = useState([]);
   const [rutaCombo, setRutaCombo] = useState('/combo/');
   const [rutaEstudio, setRutaEstudio] = useState(ABRIR_ESTUDIO[0][1]);
+  const [rutaProducto, setRutaProducto] = useState(ABRIR_PRODUCTO[0][1]);
+  const [estadosProducto, setEstadosProducto] = useState([]);
   const [estadosEstudio, setEstadosEstudio] = useState([]);
   const [estadosCombo, setEstadosCombo] = useState([]);
   const [rutaAcceso, setRutaAcceso] = useState('/login');
@@ -299,6 +303,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     if (ruta.startsWith('/combo/')) { setRutaCombo(to); irA('combo'); return; }
     // El estudio (/crear/:id?designId= | ?plantilla= | ?copiar= | ?combo=&pieza=).
     if (ruta.startsWith('/crear/')) { setRutaEstudio(to); irA('estudio'); return; }
+    // La ficha de un producto (/producto/:id): cualquier tarjeta abre la suya.
+    if (ruta.startsWith('/producto/')) { setRutaProducto(ruta); irA('producto'); return; }
     if (!PAGINA_DE_RUTA[ruta]) { avisar('En la tienda iría a', to); return; }
     if (ruta === '/buscar') {
       const p = new URLSearchParams(query);
@@ -403,7 +409,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       { id: 'marcas', texto: 'Marcas', url: '/marcas', menu: 'marcas' },
       { id: 'minijuegos', texto: 'Minijuegos', url: '/minijuegos' },
     ],
-    activo: ['tienda', 'minijuegos', 'crear'].includes(pagina) ? pagina : ['comunidad', 'combo'].includes(pagina) ? 'crear' : null,
+    activo: ['tienda', 'minijuegos', 'crear'].includes(pagina) ? pagina : ['comunidad', 'combo', 'estudio'].includes(pagina) ? 'crear' : pagina === 'producto' ? 'tienda' : null,
     menuTienda: {
       categorias: INICIO.categorias.slice(0, 10).map((c) => ({ id: c.categoryId, nombre: c.name, url: `/tienda?categoria=${c.categoryId}` })),
     },
@@ -550,7 +556,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   });
 
   const formaEsqueleto = {
-    tienda: 'tienda', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
+    tienda: 'tienda', producto: 'producto', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
   }[pagina] || 'productos';
   // /cuenta/… → su módulo (el detalle de una compra usa el de pedidos).
   const moduloEsqueleto = {
@@ -619,6 +625,24 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       propsPara={(sec) => (sec.type === 'faq_accordion' ? { contacto: enlaceWhatsApp(empresa.whatsapp, '¡Hola Walá! Tengo una duda.') } : undefined)}
       envolver={envolver}
     />
+  ) : pagina === 'producto' ? (
+    // Sin producto (error o retirado), Kapi ya está en el estado vacío.
+    <MarcoTienda {...marco} kapiEnPie={!estadosProducto.some((e) => e === 'error' || e === 'noDisponible')}>
+      <Parte n="P13" nombre="PaginaProducto">
+        <ProductoDemo
+          key={rutaProducto}
+          ruta={rutaProducto}
+          sesion={conSesion}
+          estados={estadosProducto}
+          marcas={marcas}
+          carrito={enCarrito}
+          onCarrito={(item) => setCarrito((c) => [...c, item])}
+          onAgregar={onAgregar}
+          toast={toast}
+          onIrA={(r) => navegar.current(r)}
+        />
+      </Parte>
+    </MarcoTienda>
   ) : pagina === 'estudio' ? (
     // El estudio es una herramienta: sin pie, sin barra inferior ni flotantes
     // (taparían la prenda y la compra, que va pegada abajo en el celular).
@@ -770,6 +794,21 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
                 ))}
               </div>
             )}
+          </div>
+        )}
+        {pagina === 'producto' && (
+          <div>
+            <span className={cs.controlesTitulo}>Cómo se abre</span>
+            <div className={cs.controlesChips}>
+              {ABRIR_PRODUCTO.map(([texto, r]) => (
+                <Chip key={texto} tamano="sm" activo={rutaProducto === r} onClick={() => setRutaProducto(r)}>{texto}</Chip>
+              ))}
+            </div>
+            <div className={cs.controlesChips}>
+              {ESTADOS_PRODUCTO.map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={estadosProducto.includes(id)} onClick={() => setEstadosProducto((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
+              ))}
+            </div>
           </div>
         )}
         {pagina === 'estudio' && (

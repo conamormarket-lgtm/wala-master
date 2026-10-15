@@ -40,13 +40,13 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0 }) {
               type="button"
               role="tab"
               aria-selected={i === sel}
-              aria-label={img.nombre}
+              aria-label={img.nombre || `Foto ${i + 1}`}
               className={[s.miniatura, i === sel && s.miniaturaActiva].filter(Boolean).join(' ')}
               onClick={() => setSel(i)}
               onMouseEnter={() => setSel(i)}
             >
               <img src={img.url} alt="" loading="lazy" draggable={false} />
-              <span>{img.nombre}</span>
+              {img.nombre && <span>{img.nombre}</span>}
             </button>
           ))}
         </div>
