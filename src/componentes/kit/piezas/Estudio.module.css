@@ -495,7 +495,7 @@
 
 .estilos {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.4rem;
   width: 100%;
 }
@@ -552,4 +552,59 @@
   .estilo {
     transition: none;
   }
+}
+
+/* ── Estilo de la letra (EfectosTexto) ─────────────────── */
+.efectos {
+  display: grid;
+  gap: 0.6rem;
+}
+
+/* La muestra "Aa" de cada estilo de un toque. */
+.muestra_contorno {
+  color: #fff;
+  -webkit-text-stroke: 3px var(--color-text);
+}
+
+.muestra_sombra {
+  text-shadow: 2px 2px 0 rgba(15, 23, 42, 0.45);
+}
+
+.muestra_arco {
+  display: inline-block;
+  transform: perspective(40px) rotateX(18deg);
+}
+
+.muestra_sticker {
+  color: var(--violet-600);
+  -webkit-text-stroke: 4px #fff;
+  text-shadow: 2px 2px 0 rgba(15, 23, 42, 0.55);
+}
+
+.fino {
+  display: grid;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+}
+
+.efecto {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.efectoCuerpo {
+  display: grid;
+  gap: 0.7rem;
+  padding-top: 0.2rem;
+}
+
+/* Texto curvo (TextoCurvo): el SVG mide su ancho en cqw de la zona. */
+.textoCurvo {
+  display: block;
+  height: auto;
+  overflow: visible;
 }

@@ -1,6 +1,6 @@
 export { default as Boton } from './Boton';
 export { Etiqueta, Chip, Moneda, MONEDA, CostoMonedas, GananciaMonedas, SaldoMonedas, Contador } from './Etiquetas';
-export { Campo, Buscador, Selector, SelectorTalla, SelectorColor, Cantidad, Interruptor, Casilla, CampoTelefono, CampoContrasena } from './Formulario';
+export { Campo, Buscador, Selector, SelectorTalla, SelectorColor, Cantidad, Interruptor, Casilla, CampoTelefono, CampoContrasena, CampoHex, Deslizador, normalizarHex } from './Formulario';
 export { default as ListaOpciones } from './ListaOpciones';
 export { PanelFlotante, enCelular } from './PanelFlotante';
 export { CampoFecha, Calendario, fechaEnTexto } from './Fecha';

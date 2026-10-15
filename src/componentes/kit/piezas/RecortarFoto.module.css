@@ -81,54 +81,7 @@
   height: 1rem;
 }
 
-/* Barra de zoom con los colores de Walá. */
-.zoom input {
-  flex: 1;
-  height: 28px;
-  margin: 0;
-  background: transparent;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-}
-
-.zoom input::-webkit-slider-runnable-track {
-  height: 6px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--violet-500) var(--avance), var(--color-border) var(--avance));
-}
-
-.zoom input::-moz-range-track {
-  height: 6px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--violet-500) var(--avance), var(--color-border) var(--avance));
-}
-
-.zoom input::-webkit-slider-thumb {
-  width: 22px;
-  height: 22px;
-  margin-top: -8px;
-  border: 3px solid #fff;
-  border-radius: 50%;
-  background: var(--degradado-logo, var(--violet-600));
-  box-shadow: 0 2px 8px rgba(76, 29, 149, 0.4);
-  appearance: none;
-  -webkit-appearance: none;
-}
-
-.zoom input::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  border: 3px solid #fff;
-  border-radius: 50%;
-  background: var(--violet-600);
-}
-
-.zoom input:focus-visible {
-  outline: 2px solid var(--violet-500);
-  outline-offset: 4px;
-  border-radius: 8px;
-}
+/* La barra es el Deslizador del kit (Formulario.module.css). */
 
 .botones {
   display: flex;
@@ -136,4 +89,80 @@
   justify-content: flex-end;
   gap: 0.5rem;
   width: 100%;
+}
+
+/* ── Recorte libre (forma 'libre') ─────────────────────── */
+.areaLibre {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 200px;
+  padding: 0.9rem;
+  border-radius: 16px;
+  /* La sombra que oscurece lo de afuera del recuadro no pasa de aquí. */
+  overflow: hidden;
+  /* Cuadros: se ve qué partes de la imagen son transparentes. */
+  background: repeating-conic-gradient(var(--color-border) 0% 25%, var(--color-surface) 0% 50%) 50% / 18px 18px;
+}
+
+.cajaLibre {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  touch-action: none;
+  user-select: none;
+}
+
+.imagenLibre {
+  display: block;
+  max-width: 100%;
+  max-height: min(52vh, 420px);
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* El recuadro: lo de afuera se oscurece con una sombra enorme. */
+.recuadro {
+  position: absolute;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.55), 0 0 0 1px rgba(15, 23, 42, 0.4) inset;
+  cursor: move;
+  touch-action: none;
+}
+
+.recuadro:focus-visible {
+  outline: 2px solid var(--violet-400);
+  outline-offset: 3px;
+}
+
+.esquina {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 3px solid #fff;
+  border-radius: 6px;
+  background: var(--violet-600);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.4);
+  touch-action: none;
+}
+
+.esquina_no { left: -11px; top: -11px; cursor: nwse-resize; }
+.esquina_ne { right: -11px; top: -11px; cursor: nesw-resize; }
+.esquina_so { left: -11px; bottom: -11px; cursor: nesw-resize; }
+.esquina_se { right: -11px; bottom: -11px; cursor: nwse-resize; }
+
+/* En el celular, esquinas más grandes para el dedo. */
+@media (pointer: coarse) {
+  .esquina { width: 30px; height: 30px; }
+  .esquina_no { left: -15px; top: -15px; }
+  .esquina_ne { right: -15px; top: -15px; }
+  .esquina_so { left: -15px; bottom: -15px; }
+  .esquina_se { right: -15px; bottom: -15px; }
+}
+
+.accionesLibre {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
 }

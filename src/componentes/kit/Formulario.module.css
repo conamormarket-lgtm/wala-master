@@ -916,3 +916,154 @@
     transition: none;
   }
 }
+
+/* ── Color libre (SelectorColor con `libre`) ───────────── */
+.colorLibreFila {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* "Otro color": una muestra arcoíris; elegido, toma el color. El selector del
+   sistema queda encima, invisible, para abrirse al tocar. */
+.colorLibre {
+  position: relative;
+  background: var(--muestra, conic-gradient(#ef4444, #f59e0b, #eab308, #22c55e, #06b6d4, #3b82f6, #8b5cf6, #ec4899, #ef4444));
+  overflow: hidden;
+}
+
+.colorLibre input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.hex {
+  width: 6.2rem;
+  height: 42px;
+  padding: 0 0.7rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: 600 0.85rem/1 ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  text-transform: uppercase;
+}
+
+.hex:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 1px;
+  border-color: var(--violet-400);
+}
+
+/* ── Cantidad con número escribible y unidad ───────────── */
+.cantidadCampo {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.2rem;
+  min-width: 4.2rem;
+  padding: 0 0.2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cantidadCampo input {
+  width: 3rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.95rem;
+  text-align: right;
+}
+
+.cantidadCampo input:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.cantidadCampo span,
+.cantidadSufijo {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* ── Deslizador ────────────────────────────────────────── */
+.deslizador {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.deslizadorFila {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.deslizadorFila output {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* La barra con los colores de Walá (también la del zoom de RecortarFoto). */
+.deslizadorBarra {
+  flex: 1;
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.deslizadorBarra:disabled {
+  cursor: not-allowed;
+}
+
+.deslizadorBarra::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--violet-500) var(--avance), var(--color-border) var(--avance));
+}
+
+.deslizadorBarra::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--violet-500) var(--avance), var(--color-border) var(--avance));
+}
+
+.deslizadorBarra::-webkit-slider-thumb {
+  width: 22px;
+  height: 22px;
+  margin-top: -8px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--degradado-logo, var(--violet-600));
+  box-shadow: 0 2px 8px rgba(76, 29, 149, 0.4);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.deslizadorBarra::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--violet-600);
+}
+
+.deslizadorBarra:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 4px;
+  border-radius: 8px;
+}

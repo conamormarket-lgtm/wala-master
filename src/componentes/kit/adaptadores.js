@@ -9,7 +9,7 @@
 import { limaTodayStr, felicidadKapiHoy } from '../../utils/fechaLima';
 import {
   leerPrendaBase, colorDisponible, fondoMuestra, precioBase, precioPersonalizado, tallasDeColor, fondoColorGuardado,
-  vistasDelColor, esColorBlanco, textoSobre,
+  vistasDelColor, esColorBlanco, textoSobre, medidaZona,
 } from '../../utils/prendaBase';
 
 const variantesDe = (p) => (p?.hasVariants ? p.variants || [] : []);
@@ -856,15 +856,21 @@ export const fichaCreacionDesde = (d = {}, prenda, { fecha, esAdmin = false } = 
  *    teñir la foto blanca), blanco (no se tiñe), claro (el visto va oscuro),
  *    oscura (la prenda es oscura: las guías van en blanco), fotos, espejo
  *    (bicolor al revés: las fotos se voltean), espejoDe, tallas, vistas }]
+ *  - cada zona trae `anchoCm` y `altoCm` si su lado tiene escala (medidaZona):
+ *    con eso el estudio mide la letra en cm y la calidad de la imagen.
  */
 export const prendaEstudioDesde = (producto = {}) => {
   const cfg = leerPrendaBase(producto);
+  const conMedidas = (vistas = []) => vistas.map((v) => ({
+    ...v,
+    zonas: (v.zonas || []).map((z) => ({ ...z, ...(medidaZona(z, v) || {}) })),
+  }));
   return {
     id: producto.id,
     nombre: producto.name,
     precio: precioPersonalizado(producto),
     precioAntes: Number(producto.price) > precioPersonalizado(producto) ? Number(producto.price) : undefined,
-    vistas: cfg.vistas,
+    vistas: conMedidas(cfg.vistas),
     tallas: cfg.tallas,
     colores: cfg.colores.filter((c) => colorDisponible(c, cfg.vistas)).map((c) => ({
       id: c.id,
@@ -878,7 +884,7 @@ export const prendaEstudioDesde = (producto = {}) => {
       espejo: Boolean(c.espejo),
       espejoDe: c.espejoDe,
       tallas: tallasDeColor(c, cfg),
-      vistas: vistasDelColor(cfg.vistas, c),
+      vistas: conMedidas(vistasDelColor(cfg.vistas, c)),
     })),
   };
 };

@@ -108,9 +108,70 @@ export function SelectorTalla({ tallas, valor, onChange, agotadas = [], guia, et
   );
 }
 
-/** Selector de color con el nombre visible del color elegido. */
-export function SelectorColor({ colores, valor, onChange, etiqueta = 'Color' }) {
-  const actual = colores.find((c) => c.nombre === valor);
+/** "#abc" o "abc123" → "#AABBCC"; null si no es un color hexadecimal. */
+export const normalizarHex = (texto) => {
+  const limpio = String(texto || '').trim().replace(/^#/, '');
+  if (/^[0-9a-f]{3}$/i.test(limpio)) return `#${limpio.split('').map((c) => c + c).join('')}`.toUpperCase();
+  if (/^[0-9a-f]{6}$/i.test(limpio)) return `#${limpio}`.toUpperCase();
+  return null;
+};
+
+/**
+ * Un color escrito en hexadecimal (#FF6B6B): el selector del sistema muestra
+ * RGB y no deja pegar un código. Se aplica al tener las 6 cifras; si queda a
+ * medias, al salir vuelve al color de antes.
+ *  - valor (hex) · onChange(hex) · etiqueta (para lectores de pantalla)
+ */
+export function CampoHex({ valor, onChange, etiqueta = 'Color en hexadecimal' }) {
+  const [texto, setTexto] = useState(String(valor || '').toUpperCase());
+  const [editando, setEditando] = useState(false);
+  useEffect(() => { if (!editando) setTexto(String(valor || '').toUpperCase()); }, [valor, editando]);
+  return (
+    <input
+      type="text"
+      className={s.hex}
+      value={texto}
+      maxLength={7}
+      spellCheck={false}
+      autoComplete="off"
+      aria-label={etiqueta}
+      title={etiqueta}
+      placeholder="#000000"
+      onFocus={(e) => { setEditando(true); e.target.select(); }}
+      onChange={(e) => {
+        setTexto(e.target.value);
+        const hex = normalizarHex(e.target.value);
+        if (hex && e.target.value.replace('#', '').length === 6) onChange?.(hex);
+      }}
+      onBlur={() => {
+        setEditando(false);
+        const hex = normalizarHex(texto);
+        if (hex && hex !== String(valor || '').toUpperCase()) onChange?.(hex);
+        else setTexto(String(valor || '').toUpperCase());
+      }}
+      onKeyDown={(e) => {
+        e.stopPropagation(); // que no dispare los atajos de la página (el estudio)
+        if (e.key === 'Enter') e.currentTarget.blur();
+      }}
+    />
+  );
+}
+
+/**
+ * Selector de color con el nombre visible del color elegido.
+ *  - colores: [{ nombre, hex, claro }] · valor: nombre del elegido · onChange(nombre)
+ *  - libre: { hex, onCambiar(hex) } suma "otro color" (el del sistema) y el
+ *    código hexadecimal. Con `libre` y sin onChange, las muestras también
+ *    llaman a onCambiar con su hex; si `hex` no está en la lista, la leyenda
+ *    lo muestra.
+ */
+export function SelectorColor({ colores, valor, onChange, etiqueta = 'Color', libre }) {
+  const hexLibre = libre?.hex ? String(libre.hex).toUpperCase() : null;
+  const actual = colores.find((c) => c.nombre === valor)
+    || (hexLibre && colores.find((c) => c.hex.toUpperCase() === hexLibre))
+    || (hexLibre ? { nombre: hexLibre, hex: hexLibre, libre: true } : null);
+  const elegido = (c) => Boolean(actual && !actual.libre && actual.nombre === c.nombre);
+  const elegir = (c) => (libre && !onChange ? libre.onCambiar?.(c.hex.toUpperCase()) : onChange?.(c.nombre));
   return (
     <fieldset className={s.grupo}>
       <legend className={s.leyenda}>
@@ -138,30 +199,78 @@ export function SelectorColor({ colores, valor, onChange, etiqueta = 'Color' }) 
             key={c.nombre}
             type="button"
             role="radio"
-            aria-checked={valor === c.nombre}
+            aria-checked={elegido(c)}
             aria-label={c.nombre}
-            className={[s.color, valor === c.nombre && s.colorActivo].filter(Boolean).join(' ')}
+            className={[s.color, elegido(c) && s.colorActivo].filter(Boolean).join(' ')}
             style={{ '--muestra': c.hex }}
-            onClick={() => onChange(c.nombre)}
+            onClick={() => elegir(c)}
           >
-            {valor === c.nombre && <Check aria-hidden="true" className={c.claro ? s.checkOscuro : undefined} />}
+            {elegido(c) && <Check aria-hidden="true" className={c.claro ? s.checkOscuro : undefined} />}
           </button>
         ))}
+        {libre && (
+          <span className={s.colorLibreFila}>
+            {/* "Otro color": el selector del sistema dentro de una muestra arcoíris. */}
+            <label
+              className={[s.color, s.colorLibre, actual?.libre && s.colorActivo].filter(Boolean).join(' ')}
+              style={actual?.libre ? { '--muestra': hexLibre } : undefined}
+              title="Otro color"
+            >
+              <input type="color" value={(hexLibre || '#7C3AED').toLowerCase()} onChange={(e) => libre.onCambiar?.(e.target.value.toUpperCase())} aria-label={`${etiqueta}: otro color`} />
+            </label>
+            <CampoHex valor={hexLibre || ''} onChange={libre.onCambiar} etiqueta={`${etiqueta} en hexadecimal`} />
+          </span>
+        )}
       </div>
     </fieldset>
   );
 }
 
-/** Cantidad con − / +. El número rueda hacia arriba o abajo según el cambio. */
-export function Cantidad({ valor, onChange, min = 1, max = 99, tamano = 'md' }) {
+/**
+ * Cantidad con − / +. El número rueda hacia arriba o abajo según el cambio.
+ *  - paso (1) · decimales (0) · sufijo ("cm") · editable: el número se puede
+ *    escribir (Enter o al salir lo aplica; fuera de min–max se ajusta)
+ *  - etiqueta: nombre para lectores de pantalla (con editable)
+ * Con otro paso, − / + van al múltiplo siguiente (4,3 → 4,5 → 5).
+ */
+export function Cantidad({ valor, onChange, min = 1, max = 99, tamano = 'md', paso = 1, decimales = 0, sufijo, editable = false, etiqueta }) {
   const previo = useRef(valor);
   const sube = valor >= previo.current;
   useEffect(() => { previo.current = valor; }, [valor]);
+  const mostrar = (v) => (decimales ? Number(v).toFixed(decimales).replace(/\.?0+$/, '') : String(v));
+  const fijar = (v) => onChange(Number(Math.min(max, Math.max(min, v)).toFixed(decimales)));
+  const simple = paso === 1 && !decimales;
+  const bajar = () => (simple ? onChange(valor - 1) : fijar((Math.ceil(valor / paso - 1e-6) - 1) * paso));
+  const subir = () => (simple ? onChange(valor + 1) : fijar((Math.floor(valor / paso + 1e-6) + 1) * paso));
+  const [texto, setTexto] = useState(mostrar(valor));
+  useEffect(() => { setTexto(mostrar(valor)); }, [valor]); // eslint-disable-line react-hooks/exhaustive-deps
+  const confirmar = () => {
+    const n = Number(String(texto).replace(',', '.'));
+    if (Number.isFinite(n) && String(texto).trim() !== '') fijar(n);
+    else setTexto(mostrar(valor));
+  };
   return (
-    <div className={[s.cantidad, tamano === 'sm' && s.cantidadSm].filter(Boolean).join(' ')}>
-      <button type="button" aria-label="Quitar uno" disabled={valor <= min} onClick={() => onChange(valor - 1)}>
+    <div className={[s.cantidad, tamano === 'sm' && s.cantidadSm].filter(Boolean).join(' ')} role={editable ? 'group' : undefined} aria-label={editable ? etiqueta : undefined}>
+      <button type="button" aria-label="Quitar uno" disabled={valor <= min} onClick={bajar}>
         <Minus aria-hidden="true" />
       </button>
+      {editable ? (
+        <label className={s.cantidadCampo}>
+          <input
+            type="text"
+            inputMode="decimal"
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            onBlur={confirmar}
+            onKeyDown={(e) => {
+              e.stopPropagation(); // que no dispare los atajos de la página
+              if (e.key === 'Enter') { e.preventDefault(); confirmar(); e.currentTarget.blur(); }
+            }}
+            aria-label={etiqueta}
+          />
+          {sufijo && <span>{sufijo}</span>}
+        </label>
+      ) : (
       <output aria-live="polite" className={s.cantidadValor}>
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.span
@@ -171,14 +280,50 @@ export function Cantidad({ valor, onChange, min = 1, max = 99, tamano = 'md' }) 
             exit={{ y: sube ? -16 : 16, opacity: 0 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           >
-            {valor}
+            {mostrar(valor)}{sufijo && <small className={s.cantidadSufijo}> {sufijo}</small>}
           </motion.span>
         </AnimatePresence>
       </output>
-      <button type="button" aria-label="Agregar uno" disabled={valor >= max} onClick={() => onChange(valor + 1)}>
+      )}
+      <button type="button" aria-label="Agregar uno" disabled={valor >= max} onClick={subir}>
         <Plus aria-hidden="true" />
       </button>
     </div>
+  );
+}
+
+/**
+ * Un valor en una barra (grosor, curva, zoom…), con los colores de Walá.
+ *  - etiqueta · valor · min · max · paso (1) · formato(v) para el número
+ *    visible · onChange(v) · disabled
+ *  - soloBarra: sin la fila de etiqueta y valor (la etiqueta queda para
+ *    lectores de pantalla), p. ej. entre dos botones − / +
+ */
+export function Deslizador({ etiqueta, valor, min = 0, max = 100, paso = 1, formato, onChange, disabled = false, soloBarra = false }) {
+  const avance = max > min ? ((valor - min) / (max - min)) * 100 : 0;
+  const barra = (
+    <input
+      type="range"
+      className={s.deslizadorBarra}
+      min={min}
+      max={max}
+      step={paso}
+      value={valor}
+      disabled={disabled}
+      onChange={(e) => onChange?.(Number(e.target.value))}
+      aria-label={soloBarra ? etiqueta : undefined}
+      style={{ '--avance': `${Math.min(100, Math.max(0, avance))}%` }}
+    />
+  );
+  if (soloBarra) return barra;
+  return (
+    <label className={[s.deslizador, disabled && s.apagado].filter(Boolean).join(' ')}>
+      <span className={s.deslizadorFila}>
+        <span>{etiqueta}</span>
+        <output>{formato ? formato(valor) : valor}</output>
+      </span>
+      {barra}
+    </label>
   );
 }
 

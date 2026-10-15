@@ -13,6 +13,8 @@ import { leerPrendaBase } from '../utils/prendaBase';
 import { volarMonedasGanadas } from '../utils/animations';
 import { DEPARTAMENTOS, getProvincias } from '../constants/peruUbigeo';
 import { distritosSugeridos, lugarLegible } from '../utils/ubicacionErp';
+// El motor de quitar fondo de la tienda (funciones puras de píxeles).
+import * as motorFondo from '../pages/Crear/fondoPixeles';
 
 /*
  * "Mi cuenta" de la Tienda de prueba: las páginas de /cuenta dentro de
@@ -993,7 +995,7 @@ const disenoDeEjemplo = (prenda, texto) => {
   const espalda = prenda.vistas[1]?.zonas[0];
   return {
     ...(pecho && { [pecho.id]: [{ id: 'k1', tipo: 'imagen', src: '/assets/kapi/3d/kapi-feliz.webp', px: 1800, ancho: 0.62, x: 0.5, y: 0.48 }] }),
-    ...(espalda && { [espalda.id]: [{ id: 't1', tipo: 'texto', texto, fuente: 'Bebas Neue', tamano: 0.24, x: 0.5, y: 0.3, color: '#ffffff', contorno: true, contornoColor: '#7c3aed', grosor: 0.08, sombra: false }] }),
+    ...(espalda && { [espalda.id]: [{ id: 't1', tipo: 'texto', texto, fuente: 'Bebas Neue', tamano: 0.24, x: 0.5, y: 0.3, color: '#FFFFFF', contorno: 8, contornoColor: '#7C3AED' }] }),
   };
 };
 
@@ -1045,7 +1047,7 @@ export function EstudioDemo({ ruta = '/crear/', sesion, estados = [], toast, onI
         setSubidas((n) => n + 1);
         return SUBIDAS[subidas % SUBIDAS.length];
       }}
-      onQuitarFondo={async (capa) => { await espera(1600); avisar('Fondo quitado'); return capa.src; }}
+      motorFondo={motorFondo}
       onGuardar={async () => { await espera(700); }}
       onAgregar={async ({ talla, cantidad }) => { await espera(600); avisar('¡Agregado al carrito!', `${prenda.nombre}${talla ? ` · Talla ${talla}` : ''} × ${cantidad}`); }}
       onDescargar={() => avisar('Se descargaría tu diseño', 'Una imagen de cada lado, con el logo de Walá en una esquina.', 'info')}

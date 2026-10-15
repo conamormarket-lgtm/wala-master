@@ -1,13 +1,14 @@
-import React, { useRef } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import {
   Undo2, Redo2, Minus, Plus, Crosshair, Trash2, ImagePlus, Type, ZoomIn, ZoomOut, Keyboard, Check,
   Copy, ArrowUpToLine, ArrowDownToLine, RotateCw, FlipHorizontal, Crop, Eraser, Maximize2,
   AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
+  AlignLeft, AlignCenter, AlignRight,
 } from 'lucide-react';
 import Boton from '../Boton';
 import Acordeon from '../Acordeon';
 import { Chip } from '../Etiquetas';
-import { Campo, Cantidad, Interruptor, SelectorColor } from '../Formulario';
+import { Campo, Cantidad, Casilla, Deslizador, Interruptor, SelectorColor } from '../Formulario';
 import { Sello } from '../Marca';
 import s from './Estudio.module.css';
 
@@ -21,6 +22,120 @@ import s from './Estudio.module.css';
 
 /** Alto de una zona como fracción del alto de la foto (altoZonaFraccion). */
 const altoZona = (z, anchoImg, altoImg) => (anchoImg && altoImg ? (z.w * anchoImg * z.proporcion) / altoImg : z.w);
+
+/*
+ * Los efectos del texto usan los mismos campos y unidades que el estudio de la
+ * tienda (pages/Crear/renderDiseno.js, propiedadesTexto), así PanelCapa
+ * recibe la capa de fabric tal cual:
+ *  - contorno: grosor visible en % del tamaño de letra (contornoColor); va
+ *    detrás de la letra. sinRelleno: la letra queda hueca (solo el contorno).
+ *  - sombra: distancia en % del tamaño (sombraColor), sólida, sin desenfoque.
+ *  - curva: −100 a 100 (∩ positiva, ∪ negativa) · espaciado: milésimas de
+ *    letra · interlineado · alineacion: 'left' | 'center' | 'right'.
+ */
+const efectoNum = (v) => Number(v) || 0;
+
+/** CSS de un texto recto en el lienzo (el tamaño va en cqw de su zona). */
+const estiloTexto = (c) => {
+  const contorno = efectoNum(c.contorno);
+  const sombra = efectoNum(c.sombra);
+  return {
+    fontFamily: c.fuente ? `'${c.fuente}', var(--fuente-marca)` : undefined,
+    fontSize: `${(c.tamano ?? 0.18) * 100}cqw`,
+    color: contorno > 0 && c.sinRelleno ? 'transparent' : c.color,
+    fontWeight: c.negrita ? 900 : 400,
+    fontStyle: c.cursiva ? 'italic' : undefined,
+    // El trazo va centrado en el borde: el doble, para que lo visible sea `contorno`.
+    WebkitTextStroke: contorno > 0 ? `${(contorno * 2) / 100}em ${c.contornoColor || '#ffffff'}` : undefined,
+    textShadow: sombra > 0 ? `${sombra / 100}em ${sombra / 100}em 0 ${c.sombraColor || '#111111'}` : undefined,
+    letterSpacing: efectoNum(c.espaciado) ? `${efectoNum(c.espaciado) / 1000}em` : undefined,
+    lineHeight: Number(c.interlineado) || 1.05,
+    textAlign: c.alineacion || 'center',
+  };
+};
+
+const LIMITE_CURVA = (300 * Math.PI) / 180;
+
+/**
+ * Un texto sobre un arco del largo justo del texto, como curvarTexto de la
+ * tienda: se mide el texto y se arma el arco; un texto curvo va en una línea.
+ * En SVG, con la letra a 100 unidades: así el contorno y la sombra escalan con
+ * ella.
+ */
+function TextoCurvo({ capa: c }) {
+  const medida = useRef(null);
+  const dibujo = useRef(null);
+  const [arco, setArco] = useState(null);
+  const [caja, setCaja] = useState(null);
+  const curva = Math.max(-100, Math.min(100, efectoNum(c.curva)));
+  const texto = String(c.texto || ' ').replace(/\s*\n\s*/g, ' ');
+  const contorno = efectoNum(c.contorno);
+  const sombra = efectoNum(c.sombra);
+  const espaciado = efectoNum(c.espaciado);
+  const comun = {
+    fontFamily: c.fuente ? `'${c.fuente}', var(--fuente-marca)` : undefined,
+    fontWeight: c.negrita ? 900 : 400,
+    fontStyle: c.cursiva ? 'italic' : undefined,
+    fontSize: 100,
+    letterSpacing: espaciado ? `${espaciado / 1000}em` : undefined,
+    textAnchor: 'middle',
+  };
+
+  // 1) El arco del largo del texto (como curvarTexto).
+  useLayoutEffect(() => {
+    const el = medida.current;
+    if (!el) return;
+    const largo = Math.max(1, el.getComputedTextLength()) * 1.04 + 10;
+    const angulo = (Math.abs(curva) / 100) * LIMITE_CURVA;
+    const r = largo / angulo;
+    const x = Math.sin(angulo / 2) * r;
+    const y = Math.cos(angulo / 2) * r;
+    const grande = angulo > Math.PI ? 1 : 0;
+    setArco(curva > 0
+      ? `M ${-x} ${-y} A ${r} ${r} 0 ${grande} 1 ${x} ${-y}`
+      : `M ${-x} ${y} A ${r} ${r} 0 ${grande} 0 ${x} ${y}`);
+  }, [texto, curva, espaciado, c.fuente, c.negrita, c.cursiva]);
+
+  // 2) El recuadro de lo dibujado (con el contorno y la sombra), para el viewBox.
+  useLayoutEffect(() => {
+    if (!arco || !dibujo.current) return;
+    const b = dibujo.current.getBBox();
+    const borde = contorno + 4;
+    setCaja({ x: b.x - borde, y: b.y - borde, w: b.width + borde * 2, h: b.height + borde * 2 });
+  }, [arco, contorno, sombra, texto]);
+
+  const id = `arco-${c.id}`;
+  const linea = (props) => (
+    <text {...comun} {...props}>
+      <textPath href={`#${id}`} startOffset="50%">{texto}</textPath>
+    </text>
+  );
+  return (
+    <svg
+      className={s.textoCurvo}
+      viewBox={caja ? `${caja.x} ${caja.y} ${caja.w} ${caja.h}` : '0 0 1 1'}
+      // La letra mide 100 unidades = tamano de la zona.
+      style={{ width: caja ? `${(caja.w / 100) * (c.tamano ?? 0.18) * 100}cqw` : 0 }}
+      aria-label={texto}
+      role="img"
+    >
+      {/* Medida del texto en una línea (invisible). */}
+      <text ref={medida} {...comun} x={0} y={-10000} opacity={0} aria-hidden="true">{texto}</text>
+      {arco && (
+        <g ref={dibujo}>
+          <defs><path id={id} d={arco} /></defs>
+          {sombra > 0 && (
+            <g transform={`translate(${sombra} ${sombra})`}>
+              {linea({ fill: c.sombraColor || '#111111', stroke: contorno > 0 ? (c.sombraColor || '#111111') : undefined, strokeWidth: contorno * 2, strokeLinejoin: 'round' })}
+            </g>
+          )}
+          {contorno > 0 && linea({ fill: 'none', stroke: c.contornoColor || '#ffffff', strokeWidth: contorno * 2, strokeLinejoin: 'round' })}
+          {linea({ fill: contorno > 0 && c.sinRelleno ? 'none' : (c.color || '#111111') })}
+        </g>
+      )}
+    </svg>
+  );
+}
 
 /**
  * La prenda de un lado con sus zonas punteadas y los diseños encima. Las
@@ -115,21 +230,10 @@ export function LienzoPrenda({
                   >
                     {c.tipo === 'imagen' ? (
                       <img src={c.src} alt="" draggable={false} />
+                    ) : efectoNum(c.curva) ? (
+                      <TextoCurvo capa={c} />
                     ) : (
-                      <span
-                        className={s.texto}
-                        style={{
-                          fontFamily: c.fuente ? `'${c.fuente}', var(--fuente-marca)` : undefined,
-                          fontSize: `${(c.tamano ?? 0.18) * 100}cqw`,
-                          color: c.color,
-                          fontWeight: c.negrita ? 900 : 400,
-                          fontStyle: c.cursiva ? 'italic' : undefined,
-                          WebkitTextStroke: c.contorno ? `${c.grosor || 0.06}em ${c.contornoColor || '#111'}` : undefined,
-                          textShadow: c.sombra ? `0.06em 0.06em 0 ${c.sombraColor || 'rgba(0,0,0,.45)'}` : undefined,
-                        }}
-                      >
-                        {c.texto}
-                      </span>
+                      <span className={s.texto} style={estiloTexto(c)}>{c.texto}</span>
                     )}
                   </span>
                 ))}
@@ -250,17 +354,165 @@ export function PasosEstudio({ colores = [], color, onColor, invertir, lados = [
   );
 }
 
-const COLORES_TEXTO = [
-  ['Negro', '#111111'], ['Blanco', '#ffffff', true], ['Violeta', '#7c3aed'], ['Rojo', '#dc2626'],
-  ['Rosa', '#ec4899'], ['Dorado', '#d4a017'], ['Azul', '#2563eb'], ['Verde', '#16a34a'],
+/** Los colores de la letra, el contorno y la sombra (los mismos de la tienda). */
+export const COLORES_TEXTO = [
+  ['Blanco', '#FFFFFF', true], ['Negro', '#111111'], ['Violeta', '#7C3AED'], ['Rojo', '#E11D48'],
+  ['Ámbar', '#F59E0B'], ['Verde', '#10B981'], ['Azul', '#2563EB'], ['Rosa', '#F472B6'],
 ].map(([nombre, hex, claro]) => ({ nombre, hex, claro }));
 
+/** Blanco o negro, el que más resalta junto a ese color. */
+const contrasteDe = (hex = '#111111') => {
+  const h = String(hex).replace('#', '');
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.length === 3 ? h[i / 2] + h[i / 2] : h.slice(i, i + 2), 16) / 255);
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return lum > 0.6 ? '#111111' : '#FFFFFF';
+};
+
+// Estilos de un toque (los de EfectosTexto de la tienda). Todos se imprimen
+// bien: sin degradados ni desenfoques.
 const ESTILOS = [
-  ['normal', 'Normal', {}],
-  ['contorno', 'Contorno', { contorno: true, contornoColor: '#111111', grosor: 0.06, sombra: false }],
-  ['sombra', 'Sombra', { sombra: true, contorno: false }],
-  ['sticker', 'Sticker', { contorno: true, contornoColor: '#ffffff', grosor: 0.14, sombra: true }],
+  { id: 'normal', nombre: 'Normal', cambios: () => ({ contorno: 0, sombra: 0, curva: 0, espaciado: 0, sinRelleno: false }) },
+  { id: 'contorno', nombre: 'Contorno', cambios: (c) => ({ contorno: 8, contornoColor: contrasteDe(c.color), sombra: 0 }) },
+  { id: 'sombra', nombre: 'Sombra', cambios: (c) => ({ sombra: 6, sombraColor: contrasteDe(c.color), contorno: 0 }) },
+  { id: 'arco', nombre: 'Arco', cambios: () => ({ curva: 45 }) },
+  { id: 'sticker', nombre: 'Sticker', cambios: () => ({ contorno: 14, contornoColor: '#FFFFFF', sombra: 5, sombraColor: '#111111' }) },
 ];
+
+/** Cuál de los estilos de un toque es la capa ahora (para marcarlo). */
+const estiloDe = (c) => {
+  const contorno = efectoNum(c.contorno);
+  const sombra = efectoNum(c.sombra);
+  if (efectoNum(c.curva) && !contorno && !sombra) return 'arco';
+  if (contorno === 14 && sombra === 5) return 'sticker';
+  if (contorno && !sombra) return 'contorno';
+  if (sombra && !contorno) return 'sombra';
+  if (!contorno && !sombra && !efectoNum(c.curva)) return 'normal';
+  return null;
+};
+
+/**
+ * El estilo de la letra: los cinco estilos de un toque y, plegado, lo fino:
+ * contorno (color, grosor, letra hueca), sombra (color, distancia), curva
+ * con "Enderezar", espacio entre letras y, con varias líneas, la alineación
+ * y el interlineado. Los campos son los de la tienda (ver estiloTexto).
+ *  - capa · onCambiar(cambios)
+ */
+export function EfectosTexto({ capa, onCambiar }) {
+  const contorno = efectoNum(capa.contorno);
+  const sombra = efectoNum(capa.sombra);
+  const curva = efectoNum(capa.curva);
+  const espaciado = efectoNum(capa.espaciado);
+  const variasLineas = /\n/.test(capa.texto || '') && !curva;
+  const alineacion = capa.alineacion || 'center';
+  const activo = estiloDe(capa);
+  const afinado = contorno > 0 || sombra > 0 || curva !== 0 || espaciado !== 0;
+  const colorLibre = (campo, porDefecto) => (
+    <SelectorColor
+      etiqueta={campo === 'contornoColor' ? 'Color del contorno' : 'Color de la sombra'}
+      colores={COLORES_TEXTO}
+      libre={{ hex: capa[campo] || porDefecto, onCambiar: (hex) => onCambiar?.({ [campo]: hex }) }}
+    />
+  );
+  return (
+    <div className={s.efectos} data-componente="EfectosTexto">
+      <div className={s.grupoCampo}>
+        <span className={s.rotulo}>Estilo de la letra</span>
+        <span className={s.estilos}>
+          {ESTILOS.map((e) => (
+            <button
+              key={e.id}
+              type="button"
+              className={[s.estilo, activo === e.id && s.estiloActivo].filter(Boolean).join(' ')}
+              onClick={() => onCambiar?.(e.cambios(capa))}
+              aria-pressed={activo === e.id}
+            >
+              <span className={[s.estiloMuestra, s[`muestra_${e.id}`]].filter(Boolean).join(' ')}>Aa</span>
+              {e.nombre}
+            </button>
+          ))}
+        </span>
+      </div>
+
+      <Acordeon
+        variante="lista"
+        abiertoInicial={afinado ? 'fino' : false}
+        items={[{
+          id: 'fino',
+          question: 'Personalizar contorno, sombra y curva',
+          answer: (
+            <div className={s.fino}>
+              <div className={s.efecto}>
+                <Interruptor
+                  activo={contorno > 0}
+                  etiqueta="Contorno"
+                  onChange={(on) => onCambiar?.(on
+                    ? { contorno: 8, contornoColor: capa.contornoColor || contrasteDe(capa.color) }
+                    : { contorno: 0, sinRelleno: false })}
+                />
+                {contorno > 0 && (
+                  <div className={s.efectoCuerpo}>
+                    {colorLibre('contornoColor', '#FFFFFF')}
+                    <Deslizador etiqueta="Grosor" valor={contorno} min={1} max={25} onChange={(v) => onCambiar?.({ contorno: v })} />
+                    <Casilla activo={Boolean(capa.sinRelleno)} onChange={(v) => onCambiar?.({ sinRelleno: v })} etiqueta="Letra transparente" descripcion="Solo se ve (y se imprime) el contorno." />
+                  </div>
+                )}
+              </div>
+              <div className={s.efecto}>
+                <Interruptor
+                  activo={sombra > 0}
+                  etiqueta="Sombra"
+                  onChange={(on) => onCambiar?.(on ? { sombra: 6, sombraColor: capa.sombraColor || contrasteDe(capa.color) } : { sombra: 0 })}
+                />
+                {sombra > 0 && (
+                  <div className={s.efectoCuerpo}>
+                    {colorLibre('sombraColor', '#111111')}
+                    <Deslizador etiqueta="Distancia" valor={sombra} min={1} max={20} onChange={(v) => onCambiar?.({ sombra: v })} />
+                  </div>
+                )}
+              </div>
+              <div className={s.efecto}>
+                <Deslizador
+                  etiqueta="Curva"
+                  valor={curva}
+                  min={-100}
+                  max={100}
+                  formato={(v) => (v === 0 ? 'Recta' : v > 0 ? `Arco ${v}` : `Hacia abajo ${-v}`)}
+                  // Cerca del medio se queda recta: fácil de volver a 0.
+                  onChange={(v) => onCambiar?.({ curva: Math.abs(v) < 5 ? 0 : v })}
+                />
+                {curva !== 0 && <Boton variante="fantasma" tamano="sm" onClick={() => onCambiar?.({ curva: 0 })}>Enderezar</Boton>}
+              </div>
+              <div className={s.efecto}>
+                <Deslizador
+                  etiqueta="Espacio entre letras"
+                  valor={espaciado}
+                  min={-100}
+                  max={800}
+                  paso={10}
+                  formato={(v) => (v === 0 ? 'Normal' : v > 0 ? `+${v}` : v)}
+                  onChange={(v) => onCambiar?.({ espaciado: v })}
+                />
+              </div>
+              {variasLineas && (
+                <div className={s.efecto}>
+                  <span className={s.rotulo}>Alineación</span>
+                  <span className={s.chips}>
+                    {[['left', AlignLeft, 'Izquierda'], ['center', AlignCenter, 'Centro'], ['right', AlignRight, 'Derecha']].map(([valor, Icono, nombre]) => (
+                      <Chip key={valor} tamano="sm" activo={alineacion === valor} onClick={() => onCambiar?.({ alineacion: valor })} icono={<Icono aria-hidden="true" />}>
+                        <span className={s.oculto}>{nombre}</span>
+                      </Chip>
+                    ))}
+                  </span>
+                  <Deslizador etiqueta="Interlineado" valor={Number(capa.interlineado) || 1.05} min={0.7} max={2} paso={0.05} formato={(v) => v.toFixed(2)} onChange={(v) => onCambiar?.({ interlineado: v })} />
+                </div>
+              )}
+            </div>
+          ),
+        }]}
+      />
+    </div>
+  );
+}
 
 const ALINEAR = [
   ['izquierda', AlignStartVertical, 'Izquierda'], ['centroH', AlignCenterVertical, 'Al centro'], ['derecha', AlignEndVertical, 'Derecha'],
@@ -275,20 +527,23 @@ const ALINEAR = [
  *  - onAchicar, onAgrandar, onCentrar, onAlinear(donde), onQuitar, onDuplicar,
  *    onAdelante, onAtras, onRecortar, onQuitarFondo, onLlenar
  *  - zonas: [{ id, nombre }] · onPasarAZona(id) · sinSesion: recortar y quitar fondo apagados
+ *  - anchoZonaCm: ancho real de la zona; con él, el tamaño de la letra va en
+ *    cm (alto de la letra), como en la tienda · fueraDeZona: una parte queda
+ *    fuera y no se imprimirá
  */
 export function PanelCapa({
   capa, zona, onCambiar, onListo, fuentes = [], calidad,
   onAchicar, onAgrandar, onCentrar, onAlinear, onQuitar, onDuplicar, onAdelante, onAtras,
   onRecortar, onQuitarFondo, onLlenar, zonas = [], onPasarAZona, sinSesion = false,
+  anchoZonaCm, fueraDeZona = false,
 }) {
   if (!capa) return null;
   const imagen = capa.tipo === 'imagen';
-  const estilo = !capa.contorno && !capa.sombra ? 'normal'
-    : capa.contorno && capa.sombra ? 'sticker'
-    : capa.contorno ? 'contorno' : 'sombra';
+  const tamano = capa.tamano ?? 0.18;
   const CALIDAD = {
     buena: ['ok', 'Se imprimirá con buena calidad.'],
     aceptable: ['aviso', 'Calidad aceptable. Si la achicas un poco se verá más nítida.'],
+    regular: ['aviso', 'Calidad aceptable. Si la achicas un poco se verá más nítida.'],
     baja: ['mal', 'Se verá borrosa a este tamaño. Achícala o usa una imagen más grande.'],
   }[calidad];
   return (
@@ -302,6 +557,7 @@ export function PanelCapa({
       </header>
 
       {imagen && CALIDAD && <p className={[s.calidad, s[`calidad_${CALIDAD[0]}`]].join(' ')}>{CALIDAD[1]}</p>}
+      {fueraDeZona && <p className={[s.calidad, s.calidad_aviso].join(' ')}>Una parte queda fuera de la zona y no se imprimirá.</p>}
 
       {!imagen && (
         <>
@@ -316,42 +572,38 @@ export function PanelCapa({
           )}
           <div className={s.fila}>
             <div className={s.grupoCampo}>
-              <span className={s.rotulo}>Tamaño de letra</span>
-              <Cantidad valor={Math.round((capa.tamano ?? 0.18) * 100)} min={4} max={60} onChange={(v) => onCambiar?.({ tamano: v / 100 })} />
+              <span className={s.rotulo}>{anchoZonaCm ? 'Alto de la letra' : 'Tamaño de letra'}</span>
+              {anchoZonaCm ? (
+                // En cm de la prenda, como en la tienda: el alto de la letra.
+                <Cantidad
+                  editable
+                  etiqueta="Alto de la letra en centímetros"
+                  valor={Math.round(tamano * anchoZonaCm * 10) / 10}
+                  min={0.3}
+                  max={Math.round(anchoZonaCm * 0.6 * 10) / 10}
+                  paso={0.5}
+                  decimales={1}
+                  sufijo="cm"
+                  onChange={(cm) => onCambiar?.({ tamano: cm / anchoZonaCm })}
+                />
+              ) : (
+                <Cantidad editable etiqueta="Tamaño de la letra" valor={Math.round(tamano * 100)} min={4} max={60} sufijo="pt" onChange={(v) => onCambiar?.({ tamano: v / 100 })} />
+              )}
             </div>
             <div className={s.grupoCampo}>
               <span className={s.rotulo}>Estilo</span>
               <span className={s.chips}>
-                <Chip tamano="sm" activo={Boolean(capa.negrita)} onClick={() => onCambiar?.({ negrita: !capa.negrita })}><b>N</b></Chip>
-                <Chip tamano="sm" activo={Boolean(capa.cursiva)} onClick={() => onCambiar?.({ cursiva: !capa.cursiva })}><i>C</i></Chip>
+                <Chip tamano="sm" activo={Boolean(capa.negrita)} onClick={() => onCambiar?.({ negrita: !capa.negrita })}><b>N</b><span className={s.oculto}> negrita</span></Chip>
+                <Chip tamano="sm" activo={Boolean(capa.cursiva)} onClick={() => onCambiar?.({ cursiva: !capa.cursiva })}><i>C</i><span className={s.oculto}> cursiva</span></Chip>
               </span>
             </div>
           </div>
-          <SelectorColor etiqueta="Color de la letra" colores={COLORES_TEXTO} valor={COLORES_TEXTO.find((c) => c.hex === capa.color)?.nombre} onChange={(n) => onCambiar?.({ color: COLORES_TEXTO.find((c) => c.nombre === n)?.hex })} />
-          <div className={s.grupoCampo}>
-            <span className={s.rotulo}>Estilo de la letra</span>
-            <span className={s.estilos}>
-              {ESTILOS.map(([id, texto, valores]) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={[s.estilo, estilo === id && s.estiloActivo].filter(Boolean).join(' ')}
-                  onClick={() => onCambiar?.({ contorno: false, sombra: false, ...valores })}
-                  aria-pressed={estilo === id}
-                >
-                  <span
-                    className={s.estiloMuestra}
-                    style={{
-                      WebkitTextStroke: valores.contorno ? `1.5px ${valores.contornoColor || '#111'}` : undefined,
-                      color: valores.contornoColor === '#ffffff' ? '#7c3aed' : valores.contorno ? '#fff' : 'var(--color-text)',
-                      textShadow: valores.sombra ? '2px 2px 0 rgba(0,0,0,.35)' : undefined,
-                    }}
-                  >Aa</span>
-                  {texto}
-                </button>
-              ))}
-            </span>
-          </div>
+          <SelectorColor
+            etiqueta="Color de la letra"
+            colores={COLORES_TEXTO}
+            libre={{ hex: capa.color || '#111111', onCambiar: (hex) => onCambiar?.({ color: hex }) }}
+          />
+          <EfectosTexto capa={capa} onCambiar={onCambiar} />
         </>
       )}
 
@@ -364,7 +616,8 @@ export function PanelCapa({
           {imagen && <Boton variante="contorno" tamano="sm" icono={<Eraser aria-hidden="true" />} onClick={onQuitarFondo} disabled={sinSesion}>Quitar fondo</Boton>}
           {imagen && <Boton variante="contorno" tamano="sm" icono={<Crop aria-hidden="true" />} onClick={onRecortar} disabled={sinSesion}>Recortar</Boton>}
           {imagen && <Boton variante="contorno" tamano="sm" icono={<Maximize2 aria-hidden="true" />} onClick={onLlenar}>Llenar zona</Boton>}
-          <Boton variante="contorno" tamano="sm" icono={<RotateCw aria-hidden="true" />} onClick={() => onCambiar?.({ angulo: ((capa.angulo || 0) + 15) % 360 })}>Girar</Boton>
+          {/* De 90° en 90°, como la tecla R de la tienda. */}
+          <Boton variante="contorno" tamano="sm" icono={<RotateCw aria-hidden="true" />} onClick={() => onCambiar?.({ angulo: (Math.round((capa.angulo || 0) / 90) * 90 + 90) % 360 })}>Girar</Boton>
           <Boton variante="contorno" tamano="sm" icono={<Trash2 aria-hidden="true" />} onClick={onQuitar} className={s.peligro}>Quitar</Boton>
         </span>
         {sinSesion && imagen && <span className={s.nota}>Inicia sesión para recortar o quitar el fondo.</span>}

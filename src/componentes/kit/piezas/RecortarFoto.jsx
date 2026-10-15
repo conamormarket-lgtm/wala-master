@@ -1,22 +1,32 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Minus, Plus } from 'lucide-react';
+import { Minus, Plus, Scissors, RotateCcw } from 'lucide-react';
 import Boton from '../Boton';
-import { HojaInferior } from '../Feedback';
+import { Aviso, HojaInferior } from '../Feedback';
+import { Deslizador } from '../Formulario';
+import { cargarImagen, cajaVisible, recortarImagen } from '../imagenes';
 import s from './RecortarFoto.module.css';
 
 const limitar = (v, a, b) => Math.min(b, Math.max(a, v));
 
 /**
- * Recortar una foto antes de subirla (foto de perfil, foto de una persona en
- * Fechas importantes). Se arrastra para moverla y se hace zoom con la barra,
- * con dos dedos o con la rueda del ratón. Sale un JPG cuadrado (el círculo es
- * solo la guía).
- *  - abierta · src: la imagen elegida (URL.createObjectURL(archivo))
- *  - onListo(blob): promesa (subir y guardar); mientras, "Guardando…"
- *  - onCancelar · forma: 'circulo' | 'cuadrado' · tamano: px de salida (512)
- *  - titulo, texto
+ * Recortar una foto.
+ *  - forma 'circulo' | 'cuadrado': antes de subirla (foto de perfil, foto de
+ *    una persona en Fechas importantes). Se arrastra para moverla y se hace
+ *    zoom con la barra, con dos dedos o con la rueda. Sale un JPG cuadrado de
+ *    `tamano` px (el círculo es solo la guía). onListo(blob).
+ *  - forma 'libre': una imagen del diseño (el estudio). Un recuadro sobre la
+ *    imagen entera que se mueve y se ajusta desde sus esquinas, "Quitar bordes
+ *    transparentes" y "Restablecer"; Enter aplica y Esc cancela. Sale un PNG
+ *    (conserva la transparencia): onListo(blob, { corte, natural }) con
+ *    `corte` en px de la imagen ({ x, y, w, h }); blob null si no cambió.
+ *  - abierta · src · onListo: promesa (mientras, "Guardando…") · onCancelar ·
+ *    titulo, texto
  */
-export function RecortarFoto({
+export function RecortarFoto(props) {
+  return props.forma === 'libre' ? <RecortarLibre {...props} /> : <RecortarFija {...props} />;
+}
+
+function RecortarFija({
   abierta, src, onListo, onCancelar, forma = 'circulo', tamano = 512,
   titulo = 'Recorta tu foto', texto = 'Arrastra la imagen y usa el zoom para elegir cómo se va a ver.',
 }) {
@@ -140,17 +150,158 @@ export function RecortarFoto({
         </div>
         <div className={s.zoom}>
           <button type="button" className={s.paso} onClick={() => cambiarZoom(zoom - 0.2)} aria-label="Alejar"><Minus aria-hidden="true" /></button>
-          <input
-            type="range"
-            min="1"
-            max="3"
-            step="0.01"
-            value={zoom}
-            onChange={(e) => cambiarZoom(Number(e.target.value))}
-            aria-label="Zoom de la foto"
-            style={{ '--avance': `${((zoom - 1) / 2) * 100}%` }}
-          />
+          <Deslizador soloBarra etiqueta="Zoom de la foto" min={1} max={3} paso={0.01} valor={zoom} onChange={cambiarZoom} />
           <button type="button" className={s.paso} onClick={() => cambiarZoom(zoom + 0.2)} aria-label="Acercar"><Plus aria-hidden="true" /></button>
+        </div>
+      </div>
+    </HojaInferior>
+  );
+}
+
+const COMPLETA = { x: 0, y: 0, w: 1, h: 1 };
+const MINIMO = 0.04;
+const ESQUINAS = [['no', 'arriba a la izquierda'], ['ne', 'arriba a la derecha'], ['so', 'abajo a la izquierda'], ['se', 'abajo a la derecha']];
+
+/** Recorte libre de una imagen del diseño (ver RecortarFoto, forma 'libre'). */
+function RecortarLibre({
+  abierta, src, onListo, onCancelar,
+  titulo = 'Recortar la imagen', texto = 'Arrastra el recuadro y ajústalo desde sus esquinas. Solo se usará lo que quede adentro.',
+}) {
+  const caja = useRef(null);
+  const arrastre = useRef(null);
+  const [img, setImg] = useState(null);
+  const [rect, setRect] = useState(COMPLETA);
+  const [aviso, setAviso] = useState('');
+  const [guardando, setGuardando] = useState(false);
+
+  useEffect(() => {
+    if (!abierta || !src) return undefined;
+    let vigente = true;
+    setImg(null);
+    setRect(COMPLETA);
+    setAviso('');
+    cargarImagen(src).then((i) => vigente && setImg(i)).catch(() => vigente && setAviso('No pudimos abrir la imagen.'));
+    return () => { vigente = false; };
+  }, [abierta, src]);
+
+  const empezar = (modo) => (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    arrastre.current = { modo, x0: e.clientX, y0: e.clientY, rect: { ...rect } };
+  };
+  const mover = (e) => {
+    const a = arrastre.current;
+    const c = caja.current?.getBoundingClientRect();
+    if (!a || !c) return;
+    const dx = (e.clientX - a.x0) / c.width;
+    const dy = (e.clientY - a.y0) / c.height;
+    const r = a.rect;
+    if (a.modo === 'mover') {
+      setRect({ ...r, x: limitar(r.x + dx, 0, 1 - r.w), y: limitar(r.y + dy, 0, 1 - r.h) });
+      return;
+    }
+    let { x, y, w, h } = r;
+    if (a.modo.includes('o')) { const nx = limitar(r.x + dx, 0, r.x + r.w - MINIMO); w = r.w + (r.x - nx); x = nx; }
+    if (a.modo.includes('e')) w = limitar(r.w + dx, MINIMO, 1 - r.x);
+    if (a.modo.includes('n')) { const ny = limitar(r.y + dy, 0, r.y + r.h - MINIMO); h = r.h + (r.y - ny); y = ny; }
+    if (a.modo.includes('s')) h = limitar(r.h + dy, MINIMO, 1 - r.y);
+    setRect({ x, y, w, h });
+  };
+  const soltar = () => { arrastre.current = null; };
+
+  // Con el teclado: las flechas mueven el recuadro (Shift, más rápido).
+  const teclaRecuadro = (e) => {
+    const paso = e.shiftKey ? 0.05 : 0.01;
+    const d = { ArrowLeft: [-paso, 0], ArrowRight: [paso, 0], ArrowUp: [0, -paso], ArrowDown: [0, paso] }[e.key];
+    if (!d) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setRect((r) => ({ ...r, x: limitar(r.x + d[0], 0, 1 - r.w), y: limitar(r.y + d[1], 0, 1 - r.h) }));
+  };
+
+  const quitarBordes = () => {
+    if (!img) return;
+    const visible = cajaVisible(img);
+    if (!visible) { setAviso('Esta imagen no tiene bordes transparentes que quitar.'); return; }
+    setAviso('');
+    const W = img.naturalWidth;
+    const H = img.naturalHeight;
+    setRect({ x: visible.x / W, y: visible.y / H, w: visible.w / W, h: visible.h / H });
+  };
+
+  const aplicar = async () => {
+    if (!img || guardando) return;
+    const W = img.naturalWidth;
+    const H = img.naturalHeight;
+    const natural = { w: W, h: H };
+    const sinCambios = rect.x < 0.002 && rect.y < 0.002 && rect.w > 0.996 && rect.h > 0.996;
+    setGuardando(true);
+    try {
+      if (sinCambios) { await onListo?.(null, { corte: null, natural }); return; }
+      const corte = { x: rect.x * W, y: rect.y * H, w: rect.w * W, h: rect.h * H };
+      const { blob } = await recortarImagen(img, corte);
+      await onListo?.(blob, { corte, natural });
+    } catch {
+      setAviso('No pudimos recortar la imagen. Prueba con una más liviana.');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  // Enter aplica, Esc cancela (con la hoja abierta).
+  const teclas = useRef(null);
+  teclas.current = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); onCancelar?.(); } else if (e.key === 'Enter') { e.preventDefault(); aplicar(); }
+  };
+  useEffect(() => {
+    if (!abierta) return undefined;
+    const f = (e) => teclas.current?.(e);
+    window.addEventListener('keydown', f);
+    return () => window.removeEventListener('keydown', f);
+  }, [abierta]);
+
+  return (
+    <HojaInferior
+      abierta={abierta}
+      onCerrar={() => !guardando && onCancelar?.()}
+      titulo={titulo}
+      pie={(
+        <div className={s.botones}>
+          <Boton variante="fantasma" onClick={onCancelar} disabled={guardando} title="Cancelar (Esc)">Cancelar</Boton>
+          <Boton onClick={aplicar} cargando={guardando} disabled={!img} title="Aplicar (Enter)">Aplicar recorte</Boton>
+        </div>
+      )}
+    >
+      <div className={s.recortar}>
+        <p className={s.texto}>{texto}</p>
+        <div className={s.areaLibre}>
+          {img ? (
+            <div ref={caja} className={s.cajaLibre} onPointerMove={mover} onPointerUp={soltar} onPointerCancel={soltar}>
+              <img src={src} alt="Imagen a recortar" className={s.imagenLibre} draggable={false} />
+              <div
+                className={s.recuadro}
+                style={{ left: `${rect.x * 100}%`, top: `${rect.y * 100}%`, width: `${rect.w * 100}%`, height: `${rect.h * 100}%` }}
+                onPointerDown={empezar('mover')}
+                onKeyDown={teclaRecuadro}
+                role="slider"
+                tabIndex={0}
+                aria-label="Recuadro del recorte (muévelo con las flechas)"
+                aria-valuetext={`${Math.round(rect.w * 100)} % de ancho, ${Math.round(rect.h * 100)} % de alto`}
+              >
+                {ESQUINAS.map(([esquina, nombre]) => (
+                  <span key={esquina} className={[s.esquina, s[`esquina_${esquina}`]].join(' ')} onPointerDown={empezar(esquina)} title={`Esquina ${nombre}`} aria-hidden="true" />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className={s.texto}>{aviso || 'Cargando imagen…'}</p>
+          )}
+        </div>
+        {img && aviso && <Aviso compacto tipo="info">{aviso}</Aviso>}
+        <div className={s.accionesLibre}>
+          <Boton variante="contorno" tamano="sm" icono={<Scissors aria-hidden="true" />} onClick={quitarBordes} disabled={!img || guardando}>Quitar bordes transparentes</Boton>
+          <Boton variante="fantasma" tamano="sm" icono={<RotateCcw aria-hidden="true" />} onClick={() => { setRect(COMPLETA); setAviso(''); }} disabled={!img || guardando}>Restablecer</Boton>
         </div>
       </div>
     </HojaInferior>

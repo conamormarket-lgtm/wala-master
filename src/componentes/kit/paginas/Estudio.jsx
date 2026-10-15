@@ -10,6 +10,7 @@ import { EsqueletoPagina } from '../Esqueletos';
 import { soles } from '../TarjetaProducto';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { RecortarFoto } from '../piezas/RecortarFoto';
+import { QuitarFondo } from '../piezas/QuitarFondo';
 import { LienzoPrenda, BarraLienzo, PasosEstudio, PanelCapa } from '../piezas/Estudio';
 import s from './Estudio.module.css';
 
@@ -32,11 +33,50 @@ const ATAJOS = [
 /** "Frente · Pecho" (o solo "Espalda" si la zona se llama como su lado). */
 const nombreZona = (z) => (!z ? '' : z.nombre === z.vista.nombre ? z.nombre : `${z.vista.nombre} · ${z.nombre}`);
 
-/** Calidad de impresión de una imagen: sus píxeles contra el ancho que ocupa. */
-const calidadDe = (capa, zona) => {
+/**
+ * Calidad de impresión de una imagen, con la regla de la tienda
+ * (calidadDeCapa): cuánto hay que estirar sus píxeles para el ancho que ocupa
+ * en el archivo de impresión. Con la medida real de la zona, a 300 dpi; sin
+ * ella, la zona entera son 3600 px.
+ */
+const calidadPorDefecto = (capa, zona) => {
   if (capa?.tipo !== 'imagen' || !capa.px || !zona) return undefined;
-  const ppp = capa.px / ((capa.ancho ?? 0.8) * zona.w * 3600);
-  return ppp >= 0.9 ? 'buena' : ppp >= 0.55 ? 'aceptable' : 'baja';
+  const anchoZonaPx = zona.anchoCm > 0 ? (zona.anchoCm / 2.54) * 300 : 3600;
+  const estiramiento = ((capa.ancho ?? 0.8) * anchoZonaPx) / capa.px;
+  return estiramiento <= 1.5 ? 'buena' : estiramiento <= 2.5 ? 'regular' : 'baja';
+};
+
+/**
+ * ¿Una parte de la imagen queda fuera de su zona? (no se imprime). Del texto
+ * no se sabe el ancho aquí: lo avisa la tienda con `fueraDeZona`.
+ */
+const fueraPorDefecto = (capa) => {
+  if (capa?.tipo !== 'imagen') return false;
+  const medioAncho = (capa.ancho ?? 0.8) / 2;
+  const medioAlto = capa.aspecto ? (medioAncho * capa.aspecto) : 0;
+  const x = capa.x ?? 0.5;
+  const y = capa.y ?? 0.5;
+  return x - medioAncho < -0.01 || x + medioAncho > 1.01 || (medioAlto > 0 && (y - medioAlto < -0.01 || y + medioAlto > 1.01));
+};
+
+/**
+ * Después de recortar (o quitar el fondo, que también recorta lo vacío) la
+ * imagen se queda donde estaba en la prenda: lo que quedó, del mismo tamaño
+ * y en el mismo lugar, como en la tienda.
+ *  - corte: px de la imagen original · natural: { w, h } de la original
+ *  - proporcion: alto / ancho de la zona
+ */
+const reubicarTrasCorte = (capa, corte, natural, proporcion = 1) => {
+  const ancho = capa.ancho ?? 0.8;
+  const W = natural.w || 1;
+  const H = natural.h || W;
+  const altoEnZona = (ancho * H) / W / (proporcion || 1); // alto de la imagen, en fracción del alto de la zona
+  return {
+    ancho: ancho * (corte.w / W),
+    x: (capa.x ?? 0.5) + ((corte.x + corte.w / 2) / W - 0.5) * ancho,
+    y: (capa.y ?? 0.5) + ((corte.y + corte.h / 2) / H - 0.5) * altoEnZona,
+    aspecto: corte.h / corte.w,
+  };
 };
 
 /**
@@ -53,12 +93,21 @@ const calidadDe = (capa, zona) => {
  *  - onAgregar({ talla, cantidad, diseno }): promesa · onDescargar(diseno)
  *  - onUsarEnCombo(diseno) · urlVolver, urlLogin, urlCreaciones
  *  - estado: 'cargando' | 'error' | 'noDisponible' · onReintentar · urlCrear
+ *  - calidadDe(capa, zona) → 'buena' | 'regular' | 'baja' y fueraDeZona(capa,
+ *    zona) → bool: la tienda pasa los suyos (calidadDeCapa y el límite de
+ *    fabric); sin ellos, una aproximación con la medida de la zona
+ *  - motorFondo: las funciones de píxeles de quitar el fondo (en la tienda,
+ *    pages/Crear/fondoPixeles.js). Con él, "Quitar fondo" abre el editor
+ *    (QuitarFondo); sin él, se usa onQuitarFondo de un toque
+ *  - onImagenEditada({ capa, blob }): promesa → src; sube la imagen recortada o
+ *    sin fondo (en la tienda, a Storage). Sin ella, se usa una URL local.
  */
 export function PaginaEstudio({
   prenda, inicial = {}, modo = 'nuevo', plantilla, combo, sesion = false, fuentes = [],
   onSubirImagen, onQuitarFondo, onGuardar, onAgregar, onDescargar, onUsarEnCombo,
   urlVolver = '/personalizar', urlLogin = '/login', urlCreaciones = '/cuenta/creaciones',
   estado, onReintentar, urlCrear = '/personalizar',
+  calidadDe = calidadPorDefecto, fueraDeZona = fueraPorDefecto, motorFondo, onImagenEditada,
 }) {
   const colores = prenda?.colores || [];
   const [colorId, setColorId] = useState(inicial.color || colores.find((c) => !c.espejoDe)?.id);
@@ -77,6 +126,7 @@ export function PaginaEstudio({
   const [talla, setTalla] = useState(null);
   const [cantidad, setCantidad] = useState(1);
   const [recortando, setRecortando] = useState(null);
+  const [sinFondo, setSinFondo] = useState(null); // la capa en el editor de quitar fondo
   const lienzoRef = useRef(null);
 
   // Todas las zonas, con su lado, para buscar una capa o una zona por id.
@@ -192,7 +242,9 @@ export function PaginaEstudio({
   });
   const quitarFondo = async () => {
     const { capa } = elegida;
-    if (!capa || !onQuitarFondo) return;
+    if (!capa) return;
+    if (motorFondo) { setSinFondo(capa); return; }
+    if (!onQuitarFondo) return;
     setOcupado('fondo');
     try {
       const src = await onQuitarFondo(capa);
@@ -200,6 +252,14 @@ export function PaginaEstudio({
     } finally {
       setOcupado(null);
     }
+  };
+
+  /** La imagen recortada o sin fondo reemplaza a la de la capa, en su lugar. */
+  const aplicarEdicion = async (capa, { blob, corte, natural, px }) => {
+    const zonaDeCapa = todasLasZonas.find((z) => (capas[z.id] || []).some((c) => c.id === capa.id));
+    const src = onImagenEditada ? await onImagenEditada({ capa, blob }) : URL.createObjectURL(blob);
+    if (!src) return;
+    cambiarCapa(capa.id, { src, px, ...reubicarTrasCorte(capa, corte, natural, zonaDeCapa?.proporcion) });
   };
 
   // Atajos de teclado (no mientras se escribe en un campo).
@@ -389,6 +449,8 @@ export function PaginaEstudio({
                 zona={nombreZona(zonaElegida)}
                 fuentes={fuentes}
                 calidad={calidadDe(elegida.capa, zonaElegida)}
+                fueraDeZona={fueraDeZona(elegida.capa, zonaElegida)}
+                anchoZonaCm={zonaElegida?.anchoCm}
                 sinSesion={!sesion}
                 onCambiar={(c) => cambiarCapa(elegida.capa.id, c)}
                 onListo={() => setSeleccion(null)}
@@ -512,19 +574,30 @@ export function PaginaEstudio({
         </dl>
       </HojaInferior>
 
+      {/* Recortar: recuadro libre, conserva la transparencia y el lugar en la prenda. */}
       <RecortarFoto
         abierta={Boolean(recortando)}
         src={recortando?.src}
-        forma="cuadrado"
-        tamano={1024}
-        titulo="Recortar la imagen"
-        texto="Arrastra y acerca para dejar solo lo que va en la prenda."
+        forma="libre"
         onCancelar={() => setRecortando(null)}
-        onListo={async (blob) => {
-          cambiarCapa(recortando.id, { src: URL.createObjectURL(blob), px: 1024 });
+        onListo={async (blob, { corte, natural }) => {
+          if (blob) await aplicarEdicion(recortando, { blob, corte, natural, px: corte.w });
           setRecortando(null);
         }}
       />
+
+      {motorFondo && (
+        <QuitarFondo
+          abierta={Boolean(sinFondo)}
+          src={sinFondo?.src}
+          motor={motorFondo}
+          onCancelar={() => setSinFondo(null)}
+          onAplicar={async (r) => {
+            if (r) await aplicarEdicion(sinFondo, { blob: r.blob, corte: r.corte, natural: r.natural, px: r.ancho });
+            setSinFondo(null);
+          }}
+        />
+      )}
 
       {ocupado === 'fondo' && <CapaCargando texto="Quitando el fondo" detalle="Tarda unos segundos." />}
     </div>
