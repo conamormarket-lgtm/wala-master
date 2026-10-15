@@ -779,20 +779,41 @@ export default function HeatmapViewer({
   // Le pasa la sesión del panel a la página de la vista previa si arrancó sin
   // ella (ver window.__walaVistaPrevia en services/firebase/config.js): así las
   // páginas de cuenta se ven por dentro y no con el aviso de "Iniciar sesión".
+  // Solo se pasa si de verdad falta: primero se espera a que Auth, dentro de
+  // la vista previa, termine de recuperar su sesión guardada (puerta.listo).
+  // Pasarla antes, a media carga, cambiaba la sesión mientras la página leía
+  // su perfil y la dejaba cargando para siempre.
+  // Devuelve false si aún no se pudo intentar (la puerta no existe todavía).
   const pasarSesion = useCallback(async () => {
+    const win = iframeRef.current?.contentWindow;
+    const puerta = win?.__walaVistaPrevia;
+    if (!puerta || !auth?.currentUser) return false;
     try {
-      const puerta = iframeRef.current?.contentWindow?.__walaVistaPrevia;
-      if (!puerta || !auth?.currentUser || puerta.tieneSesion()) return;
-      await puerta.recibirSesion(auth.currentUser);
+      await puerta.listo();
+      // El iframe cambió mientras se esperaba (otra página): no tocar nada.
+      if (iframeRef.current?.contentWindow !== win) return true;
+      if (!puerta.tieneSesion()) await puerta.recibirSesion(auth.currentUser);
     } catch (e) {
       console.warn('[Mapa de calor] No se pudo pasar la sesión a la vista previa:', e?.message || e);
     }
+    return true;
   }, []);
 
+  // Un solo traspaso por carga del iframe (se reintenta solo si la puerta aún
+  // no existía).
   useEffect(() => {
     if (iframeState !== 'ready') return undefined;
-    const timers = [0, 1500, 4000].map((t) => setTimeout(pasarSesion, t));
-    return () => timers.forEach(clearTimeout);
+    let estado = 'pendiente';
+    const intentar = async () => {
+      if (estado !== 'pendiente') return;
+      estado = 'en curso';
+      estado = (await pasarSesion()) ? 'hecho' : 'pendiente';
+    };
+    const timers = [0, 1500, 4000].map((t) => setTimeout(intentar, t));
+    return () => {
+      estado = 'cancelado';
+      timers.forEach(clearTimeout);
+    };
   }, [iframeState, pasarSesion, iframeAttempt]);
 
   // Aplica el tema claro/oscuro elegido a la página de la vista previa.

@@ -173,6 +173,10 @@ if (USE_EMULATORS) {
 // sesión) le pasa su usuario con esta puerta; solo existe en la vista previa.
 if (EN_VISTA_PREVIA_CALOR && auth && typeof window !== 'undefined') {
   window.__walaVistaPrevia = {
+    // Se resuelve cuando Auth terminó de recuperar la sesión guardada: antes
+    // de eso `currentUser` es null aunque haya sesión, y pasarla en ese momento
+    // cambiaba la sesión a media carga y la página se quedaba cargando.
+    listo: () => (auth.authStateReady ? auth.authStateReady() : Promise.resolve()),
     tieneSesion: () => Boolean(auth.currentUser),
     recibirSesion: (usuario) => updateCurrentUser(auth, usuario),
   };
