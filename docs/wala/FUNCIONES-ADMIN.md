@@ -153,7 +153,11 @@ sub-páginas los filtros **se heredan** y un enlace copiado conserva la vista ex
   por rango con cursor + caché 30 s** (tope 300 lotes con sonda anti falso-positivo); filtros de
   **fecha / ruta / APP-WEB / dispositivo** (los lotes históricos sin metadatos se avisan) y **corte
   retroactivo por ancho de pantalla** (móvil &lt;768 / tablet 768–1024 / desktop &gt;1024);
-  `HeatmapViewer` en modo controlado.
+  `HeatmapViewer` en modo controlado. **Desde 2026-10-15** cada clic guarda `pageHeight` y se
+  ubica en la **página completa** (`pageY / pageHeight`): la vista previa carga la página con una
+  pantalla tipo (móvil 390 / tablet 820 / escritorio 1280, según el ancho elegido o el que más
+  clics tiene) y se recorre con scroll dentro del panel. Los clics anteriores (sin `pageHeight`)
+  se ubican aproximados por pantallas bajadas (`pageY / screenHeight`) y se avisa.
 
 > **Requiere redeploy de functions:** los desgloses nuevos (país/dispositivo/navegador/SO,
 > identidades, top visitantes, embudo completo) salen de campos que agrega la versión nueva de

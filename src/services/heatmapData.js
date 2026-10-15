@@ -6,7 +6,8 @@ import { getCollectionPaginated } from './firebase/firestore';
  * Lee la colección 'heatmap_events' (escrita por src/hooks/useHeatmapTracker.js).
  * Cada documento (LOTE de clics de una visita) tiene la forma:
  *   {
- *     events: [{ x, y, pageX, pageY, screenWidth, screenHeight, path, elementInfo, time }],
+ *     events: [{ x, y, pageX, pageY, pageHeight, screenWidth, screenHeight, path, elementInfo, time }],
+ *     // pageHeight existe solo en clics registrados desde el 2026-10-15.
  *     timestamp,                                  // serverTimestamp del envío
  *     // Campos NUEVOS por lote (P1) — los lotes VIEJOS no los tienen:
  *     sessionId, uid, clientType ('APP'|'WEB'), device ('Mobile'|'Tablet'|'Desktop')
@@ -19,8 +20,8 @@ import { getCollectionPaginated } from './firebase/firestore';
  * vuelve a leer Firestore.
  *
  * Capa 2 — aggregateHeatmapBatches(docs, filtros): agregación PURA en cliente.
- * Aplana los arrays .events, normaliza las coordenadas de clic respecto al
- * viewport (screenWidth/screenHeight), agrupa por 'path' (página) y aplica los
+ * Aplana los arrays .events, ubica cada clic dentro de la página completa
+ * (pageY / pageHeight; ver normalizePoint), agrupa por 'path' (página) y aplica los
  * filtros de ORIGEN (clientType), DISPOSITIVO (device — solo lotes nuevos) y el
  * corte RETROACTIVO por ANCHO DE PANTALLA (screenWidth existe en cada clic
  * desde siempre, así que sirve también para el histórico).
@@ -98,7 +99,14 @@ function clamp01(n) {
 }
 
 /**
- * Normaliza un evento de clic individual a coordenadas 0..1 respecto al viewport.
+ * Normaliza un evento de clic a una posición dentro de la PÁGINA COMPLETA:
+ *   - xNorm:    0..1 del ancho de la pantalla.
+ *   - yFrac:    0..1 del alto total de la página (pageY / pageHeight). Solo
+ *               los clics nuevos traen pageHeight; los viejos dan null.
+ *   - yScreens: cuántas pantallas por debajo del inicio cayó el clic
+ *               (pageY / screenHeight). Sirve para ubicar de forma
+ *               APROXIMADA los clics viejos, que no traen pageHeight.
+ *   - ancho:    bucket de ancho de pantalla ('movil'|'tablet'|'desktop').
  * Devuelve null si el evento no es válido / no se puede normalizar.
  */
 function normalizePoint(ev) {
@@ -110,14 +118,20 @@ function normalizePoint(ev) {
   if (!Number.isFinite(height) || height <= 0) return null;
 
   const rawX = Number(ev.x);
-  const rawY = Number(ev.y);
-  if (!Number.isFinite(rawX) || !Number.isFinite(rawY)) return null;
-
+  if (!Number.isFinite(rawX)) return null;
   const xNorm = clamp01(rawX / width);
-  const yNorm = clamp01(rawY / height);
-  if (xNorm === null || yNorm === null) return null;
+  if (xNorm === null) return null;
 
-  return { xNorm, yNorm, weight: 1 };
+  // pageY = posición en la página; si falta (no debería), cae a la de la ventana.
+  const pageY = Number.isFinite(Number(ev.pageY)) ? Number(ev.pageY) : Number(ev.y);
+  if (!Number.isFinite(pageY) || pageY < 0) return null;
+
+  const pageHeight = Number(ev.pageHeight);
+  const yFrac = Number.isFinite(pageHeight) && pageHeight > 0
+    ? clamp01(pageY / pageHeight)
+    : null;
+
+  return { xNorm, yFrac, yScreens: pageY / height, ancho: bucketAncho(width), weight: 1 };
 }
 
 /* ------------------------------------------------------------------ *
@@ -555,7 +569,7 @@ export async function fetchHeatmapBatches(options = {}) {
  * @returns {{
  *   paths: string[],
  *   pageNames: Record<string,string>,
- *   pointsByPath: Record<string, Array<{xNorm:number,yNorm:number,weight:number}>>,
+ *   pointsByPath: Record<string, Array<{xNorm:number,yFrac:number|null,yScreens:number,ancho:string|null,weight:number}>>,
  *   clicksByPath: Record<string, number>,
  *   maxClicks: number,
  *   topElementsByPath: Record<string, Array<{label:string,count:number,generic:boolean}>>,
@@ -573,7 +587,7 @@ export function aggregateHeatmapBatches(docs = [], filtros = {}) {
   const ancho = filtros.ancho || 'todos';
   const incluirSinMeta = Boolean(filtros.incluirSinMeta);
 
-  // pointsByPath: path -> [{xNorm,yNorm,weight}]
+  // pointsByPath: path -> [{xNorm,yFrac,yScreens,ancho,weight}]
   const pointsByPath = {};
   // elementsByPath: path -> Map(key -> { label, count, generic })
   const elementsByPath = {};

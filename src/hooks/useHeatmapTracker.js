@@ -120,12 +120,18 @@ export const useHeatmapTracker = (enabled = true, batchSize = 5) => {
 
       const elementInfo = getElementIdentifier(e.target);
 
-      // Obtener coordenadas relativas a la ventana gráfica (viewport)
+      // Coordenadas en la ventana (x/y) y en la página completa (pageX/pageY).
+      // pageHeight es el alto TOTAL de la página en ese momento: el visor ubica
+      // el clic como pageY / pageHeight, así los clics de abajo caen en su sitio.
       const eventData = {
         x: e.clientX,
         y: e.clientY,
         pageX: e.pageX,
         pageY: e.pageY,
+        pageHeight: Math.max(
+          document.documentElement.scrollHeight,
+          document.body ? document.body.scrollHeight : 0
+        ),
         screenWidth: window.innerWidth,
         screenHeight: window.innerHeight,
         path: location.pathname,

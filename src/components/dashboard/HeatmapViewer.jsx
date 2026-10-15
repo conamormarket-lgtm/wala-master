@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { getHeatmapByPage } from '../../services/heatmapData';
 import { AnimatedNumber, Badge } from '../ui';
@@ -21,9 +21,12 @@ import { T } from '../../i18n/useTranslatedText';
  *     intensidad (gradiente violeta proporcional al máximo). La activa se resalta.
  *     (Este selector ES el filtro de RUTA: agrupa y elige por `path`.)
  *  2) PREVIEW REAL de la página dentro de un <iframe src={path}> (misma-origen,
- *     wala.pe) con el canvas del heatmap superpuesto. La preview es ROBUSTA:
- *     timeout con reintentos y, si el iframe envía postMessage
- *     'WALA_HEATMAP_SYNC' con altura, ajusta la altura del marco. Si no carga,
+ *     wala.pe) cargada con el tamaño de una pantalla tipo (móvil, tablet o
+ *     escritorio, según el ancho elegido) y escalada al panel. La vista se
+ *     recorre con scroll como en el teléfono/PC: el iframe se queda fijo y se
+ *     desplaza por dentro, y el canvas cubre la PÁGINA COMPLETA (alto que
+ *     reporta el iframe con 'WALA_HEATMAP_SYNC'), así cada clic cae a la
+ *     altura de la página en que se hizo. Timeout con reintentos; si no carga,
  *     FALLBACK elegante (fondo glass + iniciales/ícono de la página).
  *  3) Panel lateral con el ranking de elementos más clicados (etiquetas legibles
  *     con emoji, ya formateadas en heatmapData.deriveElementLabel).
@@ -43,18 +46,24 @@ const EMPTY_HEATMAP_DATA = {
   totalDocs: 0,
 };
 
-// Proporción del lienzo de respaldo (16:10, similar a un viewport de escritorio).
-const FALLBACK_W = 960;
-const FALLBACK_H = 600;
+// Pantalla tipo con la que se carga la vista previa, según el ancho de pantalla.
+const PANTALLAS_PREVIEW = {
+  movil: { w: 390, h: 844, label: 'móvil' },
+  tablet: { w: 820, h: 1180, label: 'tablet' },
+  desktop: { w: 1280, h: 800, label: 'escritorio' },
+};
+// Alto máximo (px del panel) de la ventana por la que se ve la página.
+const PREVIEW_MAX_H = 640;
+// Tope del alto de página aceptado del iframe (evita lienzos gigantes).
+const PAGE_MAX_H = 30000;
+// Sin alto real (respaldo), la página estimada no pasa de estas pantallas.
+const FALLBACK_MAX_SCREENS = 8;
 // Radio base del blob de cada clic, como fracción del ancho del lienzo.
 const BLOB_RADIUS_RATIO = 0.044;
 // Tiempo máximo de espera a que el iframe cargue antes de asumir fallo.
 const IFRAME_TIMEOUT_MS = 6000;
 // Reintentos de carga del iframe antes de rendirse al fallback.
 const IFRAME_MAX_RETRIES = 2;
-// Límites de altura del marco cuando el iframe reporta su altura real.
-const FRAME_MIN_H = 320;
-const FRAME_MAX_H = 1400;
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -71,6 +80,7 @@ const itemVariants = {
 
 /**
  * Dibuja el heatmap en el canvas a la resolución indicada (w x h en px reales).
+ * `points` ya vienen en px del lienzo: [{ cx, cy }].
  *  1) Pinta cada clic como un gradiente radial en escala de grises (alpha acumulada).
  *  2) Recolorea según la intensidad acumulada (rampa azul -> verde -> amarillo -> rojo).
  */
@@ -95,9 +105,7 @@ function drawHeatmap(canvas, points, w, h) {
 
   // Paso 1: acumulación de densidad en escala de grises.
   ctx.globalCompositeOperation = 'source-over';
-  points.forEach((p) => {
-    const cx = p.xNorm * width;
-    const cy = p.yNorm * height;
+  points.forEach(({ cx, cy }) => {
     const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
     grad.addColorStop(0, 'rgba(0,0,0,0.28)');
     grad.addColorStop(1, 'rgba(0,0,0,0)');
@@ -178,12 +186,16 @@ function initialsOf(name) {
  * @param {string}  [props.error]        Error externo (modo controlado).
  * @param {string}  [props.emptyMessage] Mensaje honesto para el estado vacío
  *                                       (p. ej. "sin clics para estos filtros").
+ * @param {string}  [props.ancho]        Ancho de pantalla filtrado
+ *                                       ('todos'|'movil'|'tablet'|'desktop'):
+ *                                       elige la pantalla de la vista previa.
  */
 export default function HeatmapViewer({
   data: dataProp = null,
   loading: loadingProp = false,
   error: errorProp = null,
   emptyMessage = null,
+  ancho = 'todos',
 }) {
   // Modo controlado = los datos llegan filtrados desde fuera (DashHeatmap).
   const controlled = dataProp != null;
@@ -201,11 +213,15 @@ export default function HeatmapViewer({
   const [iframeState, setIframeState] = useState('loading');
   // Nº de intento actual (también fuerza el remount del iframe al reintentar).
   const [iframeAttempt, setIframeAttempt] = useState(0);
-  // Altura real reportada por el iframe vía postMessage (0 = usar aspect-ratio).
-  const [frameHeight, setFrameHeight] = useState(0);
+  // Alto de la página completa dentro del iframe (px sin escalar), reportado
+  // por el propio iframe vía postMessage. 0 = aún no se sabe.
+  const [pageHeight, setPageHeight] = useState(0);
+  // Ancho disponible del marco (px), para escalar la pantalla tipo.
+  const [frameW, setFrameW] = useState(0);
 
   const canvasRef = useRef(null);
-  const frameRef = useRef(null); // contenedor que define el tamaño de overlay
+  const frameRef = useRef(null); // ventana con scroll por la que se ve la página
+  const iframeRef = useRef(null);
   const iframeTimerRef = useRef(null);
   const retriesRef = useRef(0);
 
@@ -268,8 +284,9 @@ export default function HeatmapViewer({
       iframeTimerRef.current = null;
     }
     retriesRef.current = 0;
-    setFrameHeight(0);
+    setPageHeight(0);
     setIframeAttempt(0);
+    if (frameRef.current) frameRef.current.scrollTop = 0;
     if (!iframeSrc) {
       setIframeState('failed'); // sin ruta navegable -> fallback elegante
       return undefined;
@@ -302,53 +319,107 @@ export default function HeatmapViewer({
   }, [iframeSrc, iframeState, iframeAttempt]);
 
   // Escucha el postMessage 'WALA_HEATMAP_SYNC' del iframe (lo emite
-  // useHeatmapTracker cuando corre dentro del marco) para ajustar la altura.
+  // useHeatmapTracker cuando corre dentro del marco) con el alto de la página.
   useEffect(() => {
     const onMessage = (e) => {
       const payload = e?.data;
       if (!payload || payload.type !== 'WALA_HEATMAP_SYNC') return;
+      // Solo el iframe de esta vista previa (no otro marco de la página).
+      if (iframeRef.current && e.source !== iframeRef.current.contentWindow) return;
       const h = Number(payload.height);
       if (Number.isFinite(h) && h > 0) {
-        setFrameHeight(Math.max(FRAME_MIN_H, Math.min(FRAME_MAX_H, Math.round(h))));
+        setPageHeight(Math.min(PAGE_MAX_H, Math.round(h)));
       }
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
   }, []);
 
-  // (Re)dibuja el overlay del heatmap ajustado al tamaño REAL del contenedor.
-  useEffect(() => {
-    const redraw = () => {
-      const frame = frameRef.current;
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      let w = FALLBACK_W;
-      let h = FALLBACK_H;
-      if (frame) {
-        const rect = frame.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) {
-          w = rect.width;
-          h = rect.height;
-        }
+  // Pantalla de la vista previa: la del ancho filtrado o, con 'todos', la del
+  // ancho con más clics en esta página.
+  const anchoPreview = useMemo(() => {
+    if (PANTALLAS_PREVIEW[ancho]) return ancho;
+    const cuenta = {};
+    points.forEach((p) => {
+      if (p.ancho) cuenta[p.ancho] = (cuenta[p.ancho] || 0) + 1;
+    });
+    let mejor = 'desktop';
+    let max = 0;
+    Object.entries(cuenta).forEach(([k, c]) => {
+      if (c > max) {
+        max = c;
+        mejor = k;
       }
-      drawHeatmap(canvas, points, w, h);
-    };
+    });
+    return mejor;
+  }, [ancho, points]);
+  const pantalla = PANTALLAS_PREVIEW[anchoPreview];
+  const mezclaAnchos = ancho === 'todos' && points.some((p) => p.ancho && p.ancho !== anchoPreview);
 
-    redraw();
+  // Escala de la pantalla tipo al panel (nunca agranda) y alto de la página.
+  // Sin alto real (respaldo o mientras carga) se estima con los clics viejos
+  // más profundos, medidos en pantallas.
+  const scale = frameW > 0 ? Math.min(1, frameW / pantalla.w, PREVIEW_MAX_H / pantalla.h) : 0;
+  const pantallasEstimadas = points.reduce(
+    (m, p) => (p.yFrac == null ? Math.max(m, p.yScreens) : m),
+    1
+  );
+  const docH = pageHeight > 0
+    ? Math.max(pageHeight, pantalla.h)
+    : Math.round(pantalla.h * Math.min(pantallasEstimadas, FALLBACK_MAX_SCREENS));
+  const stageW = pantalla.w * scale;
+  const stageH = docH * scale;
+  const viewH = pantalla.h * scale;
 
-    // Redibuja al redimensionar el contenedor (responsive / cambio de layout).
-    let ro;
-    if (typeof ResizeObserver !== 'undefined' && frameRef.current) {
-      ro = new ResizeObserver(() => redraw());
-      ro.observe(frameRef.current);
-    } else if (typeof window !== 'undefined') {
-      window.addEventListener('resize', redraw);
+  // Clics en px del lienzo: los nuevos por su fracción del alto de la página;
+  // los viejos (sin pageHeight) por pantallas bajadas, de forma aproximada.
+  const pixelPoints = useMemo(
+    () => points.map((p) => ({
+      cx: p.xNorm * stageW,
+      cy: (p.yFrac != null ? p.yFrac * docH : Math.min(p.yScreens * pantalla.h, docH)) * scale,
+    })),
+    [points, stageW, docH, pantalla.h, scale]
+  );
+  const clicsAproximados = useMemo(() => points.filter((p) => p.yFrac == null).length, [points]);
+
+  // Mide el ancho disponible del marco (responsive / cambio de layout).
+  const hasData = !loading && !error && data.totalClicks > 0;
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return undefined;
+    const medir = () => setFrameW(frame.clientWidth);
+    medir();
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', medir);
+      return () => window.removeEventListener('resize', medir);
     }
-    return () => {
-      if (ro) ro.disconnect();
-      else if (typeof window !== 'undefined') window.removeEventListener('resize', redraw);
-    };
-  }, [points, iframeState, frameHeight]);
+    const ro = new ResizeObserver(medir);
+    ro.observe(frame);
+    return () => ro.disconnect();
+  }, [hasData]);
+
+  // (Re)dibuja el heatmap sobre la página completa.
+  useEffect(() => {
+    if (stageW <= 0 || stageH <= 0) return;
+    drawHeatmap(canvasRef.current, pixelPoints, stageW, stageH);
+  }, [pixelPoints, stageW, stageH]);
+
+  // El iframe queda fijo en la ventana y se desplaza por dentro al mismo
+  // ritmo que el scroll del marco, para que la página y el calor coincidan.
+  const syncIframeScroll = useCallback(() => {
+    const frame = frameRef.current;
+    const win = iframeRef.current?.contentWindow;
+    if (!frame || !win || scale <= 0) return;
+    try {
+      win.scrollTo({ top: frame.scrollTop / scale, left: 0, behavior: 'instant' });
+    } catch {
+      /* el iframe aún no está listo */
+    }
+  }, [scale]);
+
+  useEffect(() => {
+    syncIframeScroll();
+  }, [syncIframeScroll, pageHeight, iframeState]);
 
   const handleIframeLoad = () => {
     // 'load' dispara tanto en éxito como en about:blank; si hay src, lo damos por
@@ -374,19 +445,20 @@ export default function HeatmapViewer({
   // Reintento manual desde el fallback.
   const handleRetry = () => {
     retriesRef.current = 0;
-    setFrameHeight(0);
+    setPageHeight(0);
     setIframeState('loading');
     setIframeAttempt((n) => n + 1);
   };
 
-  const hasData = !loading && !error && data.totalClicks > 0;
   const maxElementCount = topElements.length > 0 ? topElements[0].count : 0;
   const showIframe = iframeState !== 'failed' && !!iframeSrc;
   const maxClicks = data.maxClicks || 0;
 
-  // Estilo de altura del marco: si el iframe reportó una altura real la usamos;
-  // si no, dejamos que mande el aspect-ratio definido en CSS.
-  const frameStyle = showIframe && frameHeight > 0 ? { height: `${frameHeight}px` } : undefined;
+  // El marco mide una pantalla tipo escalada (+2px de su borde, para que el
+  // scroll del marco y el del iframe terminen juntos); hasta medirlo manda el
+  // aspect-ratio del CSS.
+  const frameStyle = viewH > 0 ? { height: `${viewH + 2}px` } : undefined;
+  const hayScroll = stageH > viewH + 1;
 
   return (
     <motion.section
@@ -503,6 +575,7 @@ export default function HeatmapViewer({
                 ref={frameRef}
                 className={`${styles.canvasFrame} ${showIframe ? styles.canvasFrameLive : ''}`}
                 style={frameStyle}
+                onScroll={syncIframeScroll}
               >
                 {/*
                   * PREVIEW real de la página (misma-origen wala.pe).
@@ -514,26 +587,43 @@ export default function HeatmapViewer({
                   * (2) tracking desactivado dentro del iframe (IN_IFRAME) para evitar el
                   * conflicto del lock de persistencia, el doble-conteo y las escrituras
                   * 404/400. El propio iframe nos avisa de su altura con WALA_HEATMAP_SYNC.
+                  *
+                  * Escenario = la página completa a escala. La ventana (sticky) mide una
+                  * pantalla y lleva el iframe; el canvas cubre todo el escenario.
                   */}
-                {iframeSrc && iframeState !== 'failed' && (
-                  <iframe
-                    key={`${iframeSrc}#${iframeAttempt}`}
-                    src={iframeSrc}
-                    title={`Vista previa de ${pageName}`}
-                    className={styles.previewFrame}
-                    loading="lazy"
-                    sandbox="allow-same-origin allow-scripts"
-                    scrolling="no"
-                    onLoad={handleIframeLoad}
-                    onError={handleIframeError}
+                <div className={styles.stage} style={{ width: `${stageW}px`, height: `${Math.max(stageH, viewH)}px` }}>
+                  <div className={styles.stageViewport} style={{ height: `${viewH}px` }}>
+                    {iframeSrc && iframeState !== 'failed' && (
+                      <iframe
+                        ref={iframeRef}
+                        key={`${iframeSrc}#${iframeAttempt}`}
+                        src={iframeSrc}
+                        title={`Vista previa de ${pageName}`}
+                        className={styles.previewFrame}
+                        style={{
+                          width: `${pantalla.w}px`,
+                          height: `${pantalla.h}px`,
+                          transform: `scale(${scale || 1})`,
+                        }}
+                        sandbox="allow-same-origin allow-scripts"
+                        scrolling="no"
+                        onLoad={handleIframeLoad}
+                        onError={handleIframeError}
+                      />
+                    )}
+
+                    {/* Capa de atenuación para que el calor resalte sobre la preview. */}
+                    {showIframe && <div className={styles.previewScrim} aria-hidden="true" />}
+                  </div>
+
+                  {/* Canvas del heatmap sobre la página completa (no captura el puntero). */}
+                  <canvas
+                    ref={canvasRef}
+                    className={styles.canvas}
+                    style={{ width: `${stageW}px`, height: `${stageH}px` }}
+                    aria-hidden="true"
                   />
-                )}
-
-                {/* Capa de atenuación para que el calor resalte sobre la preview. */}
-                {showIframe && <div className={styles.previewScrim} aria-hidden="true" />}
-
-                {/* Canvas del heatmap superpuesto (no captura el puntero). */}
-                <canvas ref={canvasRef} className={styles.canvas} aria-hidden="true" />
+                </div>
 
                 {/* Spinner mientras carga el iframe (con aviso de reintento). */}
                 {showIframe && iframeState === 'loading' && (
@@ -574,7 +664,7 @@ export default function HeatmapViewer({
 
               <div className={styles.legendRow}>
                 <span className={styles.previewTag}>
-                  {showIframe ? 'Sobre la página real' : 'Vista de respaldo'}
+                  {showIframe ? `Sobre la página real · vista ${pantalla.label}` : 'Vista de respaldo'}
                 </span>
                 <div className={styles.legend}>
                   <span className={styles.legendLabel}>Menos</span>
@@ -582,6 +672,24 @@ export default function HeatmapViewer({
                   <span className={styles.legendLabel}>Más</span>
                 </div>
               </div>
+
+              {(hayScroll || mezclaAnchos || clicsAproximados > 0) && (
+                <div className={styles.canvasNotes}>
+                  {hayScroll && <p>Desplázate dentro de la vista para recorrer toda la página.</p>}
+                  {mezclaAnchos && (
+                    <p>
+                      Hay clics de varios anchos de pantalla sobre la vista {pantalla.label}: elige un
+                      ancho arriba para verlos en su sitio exacto.
+                    </p>
+                  )}
+                  {clicsAproximados > 0 && (
+                    <p>
+                      {clicsAproximados.toLocaleString('es-PE')} clics son anteriores al 15/10/2026 y no
+                      guardaron el alto de la página: su altura es aproximada.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className={styles.sideCard}>

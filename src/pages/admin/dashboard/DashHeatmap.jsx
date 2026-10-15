@@ -272,6 +272,7 @@ export default function DashHeatmap() {
             loading={batchesQuery.isLoading}
             error={batchesQuery.error?.message || null}
             emptyMessage={mensajeVacio}
+            ancho={ancho}
           />
         </motion.div>
       </motion.div>
