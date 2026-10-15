@@ -3,8 +3,6 @@ import { createPortal } from 'react-dom';
 import { CreditCard, Lock } from 'lucide-react';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { signInAnonymously } from 'firebase/auth';
-import { auth } from '../../services/firebase/config';
 import { getOrCreateCulqi } from './culqiSingleton';
 import { trackCulqiPurchase } from '../../services/analytics/metaPixel.mjs';
 import styles from './CulqiCustomCheckout.module.css';
@@ -186,13 +184,6 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, onOpen, autoO
         let aprobado = false;
 
         try {
-          // El enlace de /pago-rapido/:id es público y processCulqiPayment exige
-          // sesión: quien lo abre sin cuenta entra como anónimo (igual que
-          // LandingPaymentBlock). El servidor valida el enlace, su monto y su estado.
-          if (enlace && auth && !auth.currentUser) {
-            if (auth.authStateReady) await auth.authStateReady();
-            if (!auth.currentUser) await signInAnonymously(auth);
-          }
           const functions = getFunctions();
           const processCulqiPayment = httpsCallable(functions, 'processCulqiPayment');
           

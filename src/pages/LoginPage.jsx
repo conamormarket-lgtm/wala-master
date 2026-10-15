@@ -216,7 +216,7 @@ const LoginPage = () => {
           <div className={styles.footer}>
             <p>
               <T>¿No tienes una cuenta?</T>{' '}
-              <Link to="/registro" className={styles.link}>
+              <Link to="/registro" state={from ? { from } : undefined} className={styles.link}>
                 <T>Regístrate aquí</T>
               </Link>
             </p>

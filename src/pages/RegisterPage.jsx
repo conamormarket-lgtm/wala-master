@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { signUpWithEmail, signInWithGoogle, enviarVerificacionCorreo } from '../services/firebase/auth';
 import { registrarConversionPopup } from '../services/popups';
@@ -24,6 +24,8 @@ import { T } from '../i18n/useTranslatedText';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  // Adónde volver al terminar (p. ej. el checkout, que pide cuenta para pagar).
+  const from = useLocation().state?.from || null;
   const { user, userProfile, loading: authLoading } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -76,7 +78,9 @@ const RegisterPage = () => {
       return;
     }
     if (userProfile?.dni && userProfile?.phone) {
-      if (shouldPromptSurvey(userProfile)) {
+      if (from) {
+        navigate(from, { replace: true });
+      } else if (shouldPromptSurvey(userProfile)) {
         navigate('/encuesta-suscripcion', { replace: true });
       } else {
         navigate('/', { replace: true });
@@ -84,7 +88,7 @@ const RegisterPage = () => {
     } else if (step === 1) {
       setStep(2);
     }
-  }, [user, userProfile, authLoading, step, navigate]);
+  }, [user, userProfile, authLoading, step, navigate, from]);
 
   const handleStep1 = async (e) => {
     e.preventDefault();
@@ -166,7 +170,7 @@ const RegisterPage = () => {
       setError('No se pudieron guardar tus datos. Revisa tu conexión e inténtalo de nuevo.');
       return;
     }
-    navigate('/encuesta-suscripcion');
+    navigate(from || '/encuesta-suscripcion');
   };
 
   const handleGoogle = async () => {
@@ -185,7 +189,7 @@ const RegisterPage = () => {
     }
     // Cerró el selector de cuentas: se queda en el registro.
     if (errorCode === 'auth/cancelled' || !usuarioGoogle) return;
-    navigate('/completar-perfil');
+    navigate('/completar-perfil', from ? { state: { from } } : undefined);
   };
 
   if (loading && step === 1 && !user) {

@@ -260,12 +260,28 @@ const PANTALLA_ABRIENDO_WHATSAPP = `<!doctype html><html lang="es"><head><meta c
   <div class="wa"><span class="punto"></span>Un asesor te atenderá por WhatsApp</div>
 </div></body></html>`;
 
+/* Lo que el cliente llenó antes de ir a iniciar sesión para pagar (solo esta pestaña). */
+const BORRADOR_CHECKOUT = 'wala_checkout_borrador';
+const CAMPOS_BORRADOR = ['customerName', 'country', 'dni', 'docType', 'phone', 'address', 'district', 'city', 'department', 'province', 'email',
+  'isGiftMode', 'giftRecipientName', 'giftMessage', 'giftSticker'];
+const leerBorradorCheckout = () => {
+  try {
+    const b = JSON.parse(sessionStorage.getItem(BORRADOR_CHECKOUT) || 'null');
+    return b && typeof b === 'object' ? b : {};
+  } catch {
+    return {};
+  }
+};
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
   // eslint-disable-next-line no-unused-vars
   // eslint-disable-next-line no-unused-vars
   const { items, getTotalPrice, clearSelectedItems } = useCart();
   const { user, userProfile, loading: authLoading, updateUserProfile, freezeMonedas, activeMainCoins } = useAuth();
+  const sinCuenta = !authLoading && (!user || user.isAnonymous);
+  const sinCuentaRef = useRef(sinCuenta);
+  sinCuentaRef.current = sinCuenta;
   const toast = useGlobalToast();
 
   // ── Selección de compra ───────────────────────────────────────────────────
@@ -594,6 +610,11 @@ const CheckoutPage = () => {
   });
 
   const [datosGuardados] = useState(leerDatosGuardados);
+  // Para pagar hace falta una cuenta (no un invitado ni un anónimo): el pedido
+  // queda en "Mis pedidos" y el cobro con tarjeta exige sesión en el servidor.
+  // Quien va a iniciar sesión deja aquí lo que llenó y lo recupera al volver.
+  const [borrador] = useState(leerBorradorCheckout);
+  useEffect(() => { try { sessionStorage.removeItem(BORRADOR_CHECKOUT); } catch { /* sin almacenamiento */ } }, []);
   // Solo lo que un invitado pidió recordar llena el formulario de entrada; los
   // de una cuenta se siembran cuando se sabe quién es (ver seededRef).
   const guestSavedInfo = datosGuardados.recordar ? datosGuardados : {};
@@ -692,10 +713,14 @@ const CheckoutPage = () => {
       giftSticker: 'kapi-love',
       recordarDatos: !!guestSavedInfo.recordar,
       // Fecha de entrega programada (ISO 'YYYY-MM-DD'); vacía en el flujo normal.
-      deliveryDate: registryDeliveryDate
+      deliveryDate: registryDeliveryDate,
+      // Lo que llenó antes de ir a iniciar sesión (gana sobre lo demás).
+      ...borrador,
     },
     validationSchema,
     onSubmit: async (values) => {
+      // Sin cuenta no se prepara el pago (el botón ya lleva a iniciar sesión).
+      if (sinCuentaRef.current) return;
 
       // GUARD (dinero): no se puede generar un pedido sin items seleccionados.
       if (selectedItems.length === 0) {
@@ -1682,6 +1707,16 @@ const CheckoutPage = () => {
   // Distrito: en el Perú se elige de la lista del lugar (escrito a mano llegaban
   // distritos de otro sitio, y el autocompletado del navegador metía los suyos).
   // Fuera del Perú es la ciudad, escrita.
+  // Guarda lo llenado y va a iniciar sesión (o a crear la cuenta); al terminar vuelve aquí.
+  const irAEntrar = (ruta) => {
+    try {
+      const datos = Object.fromEntries(CAMPOS_BORRADOR
+        .filter((k) => formik.values[k] !== '' && formik.values[k] != null)
+        .map((k) => [k, formik.values[k]]));
+      sessionStorage.setItem(BORRADOR_CHECKOUT, JSON.stringify(datos));
+    } catch { /* sin almacenamiento: igual se va a entrar */ }
+    navigate(ruta, { state: { from: '/checkout' } });
+  };
   const extranjero = esExtranjero(formik.values.country);
   const distritosDelLugar = distritosSugeridos(formik.values);
   const estiloSelect = { padding: '0.8rem 1rem', border: '2px solid var(--gris-borde)', borderRadius: 'var(--radio-pequeno)', fontSize: '1rem' };
@@ -2544,13 +2579,26 @@ const CheckoutPage = () => {
                 Selecciona al menos un producto para pagar. Vuelve al carrito y marca "Comprar esta vez".
               </p>
             )}
+            {sinCuenta && (
+              <p className={styles.cuentaAviso} role="note">
+                <strong>Para pagar necesitas tu cuenta.</strong> Así tu pedido queda en «Mis pedidos» y puedes usar tus monedas.
+                Lo que ya llenaste se guarda.{' '}
+                <button type="button" className={styles.cuentaEnlace} onClick={() => irAEntrar('/registro')}>¿No tienes cuenta? Créala aquí</button>
+              </p>
+            )}
             <div className={styles.buttonGroup}>
               <Boton variante="contorno" tamano="lg" bloque onClick={() => navigate('/carrito')} disabled={processing}>
                 Volver al carrito
               </Boton>
-              <Boton type="submit" tamano="lg" bloque cargando={processing} disabled={!hasSelectedItems}>
-                {processing ? 'Preparando tu pago…' : 'Continuar al pago'}
-              </Boton>
+              {sinCuenta ? (
+                <Boton tamano="lg" bloque onClick={() => irAEntrar('/login')} disabled={!hasSelectedItems}>
+                  Inicia sesión para pagar
+                </Boton>
+              ) : (
+                <Boton type="submit" tamano="lg" bloque cargando={processing} disabled={!hasSelectedItems}>
+                  {processing ? 'Preparando tu pago…' : 'Continuar al pago'}
+                </Boton>
+              )}
             </div>
           </form>
           )}

@@ -84,6 +84,33 @@
 
 
 
+/* Sin cuenta: por qué hace falta y cómo crearla. */
+.cuentaAviso {
+  margin: 0 0 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(124, 58, 237, 0.25);
+  border-radius: 12px;
+  background: rgba(124, 58, 237, 0.06);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.cuentaEnlace {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-color);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+:global([data-theme='dark']) .cuentaEnlace {
+  color: var(--violet-300);
+}
+
 .buttonGroup {
   display: flex;
   justify-content: space-between;
