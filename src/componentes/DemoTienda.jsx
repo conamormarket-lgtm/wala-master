@@ -639,7 +639,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     // Kapi ya está en el arte de la portada: ni el pie ni el flotante lo repiten.
     <MarcoTienda {...marco} kapiEnPie={false}>
       <Parte n="P7" nombre="PaginaCrear">
-        <CrearDemo sesion={conSesion} esAdmin={esAdmin} estados={estadosCrear} />
+        <CrearDemo sesion={conSesion} esAdmin={esAdmin} estados={estadosCrear} toast={toast} onIrA={(r) => navegar.current(r)} />
       </Parte>
     </MarcoTienda>
   ) : pagina === 'acceso' ? (

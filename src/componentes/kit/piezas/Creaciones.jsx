@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Clock, Paintbrush, ShoppingBag, Trash2, Pencil, Check, RotateCw, ImageOff, Users, RefreshCw, EyeOff, ArrowRight } from 'lucide-react';
 import Boton from '../Boton';
+import { HojaInferior } from '../Feedback';
 import { Etiqueta } from '../Etiquetas';
 import { soles } from '../TarjetaProducto';
 import { FotoProducto } from './FotoProducto';
@@ -45,17 +46,21 @@ const COMUNIDAD = {
  *  - usar: { url, autor, usos } un diseño de la comunidad (TarjetaComunidad):
  *    sin precio; "Por Walá", cuántos lo usaron y "Usar diseño"
  *  - vertical: nunca se acuesta (carruseles de Crear, como una tarjeta de producto)
+ *  - combos: [{ id, nombre, piezas, precio, onLlevar }] los combos de su prenda:
+ *    botón "Llevar en combo" que abre una hoja para elegir uno (se usa una copia)
  */
 export function TarjetaCreacion({
   nombre, imagen, imagenEspalda, imagenes, producto, color, subtitulo, fecha, precio, precioAntes,
   comprado = false, disponible = true, publicada = false, combo, lados, aviso,
-  urlEditar, urlComprar, onRenombrar, onEliminar, borrador = false, comunidad, usar, vertical = false,
+  urlEditar, urlComprar, onRenombrar, onEliminar, borrador = false, comunidad, usar, vertical = false, combos = [],
 }) {
   const [espalda, setEspalda] = useState(false);
   const [pregunta, setPregunta] = useState(null);
   const [trabajando, setTrabajando] = useState(false);
   const [editando, setEditando] = useState(null);
   const [guardando, setGuardando] = useState(false);
+  const [eligiendoCombo, setEligiendoCombo] = useState(false);
+  const [llevando, setLlevando] = useState(null);
   const prendas = imagenes?.filter(Boolean) || [];
   // Como la tarjeta de producto: con ratón se inclina siguiendo al puntero
   // (4° como mucho) y el canto se ilumina donde está.
@@ -213,6 +218,9 @@ export function TarjetaCreacion({
               </span>
             )}
             <span className={s.acciones}>
+              {combos.length > 0 && disponible && (
+                <Boton variante="contorno" tamano="sm" soloIcono aria-label="Llevar en combo (pareja, trío…)" title="Llevar en combo" icono={<Users aria-hidden="true" />} onClick={() => setEligiendoCombo(true)} />
+              )}
               {borrador ? (
                 urlEditar && disponible && <Boton to={urlEditar} tamano="sm" iconoFin={<ArrowRight aria-hidden="true" />}>Continuar</Boton>
               ) : (
@@ -238,6 +246,27 @@ export function TarjetaCreacion({
           )}
         </div>
       </div>
+      {combos.length > 0 && (
+        <HojaInferior abierta={eligiendoCombo} onCerrar={() => !llevando && setEligiendoCombo(false)} titulo="Llevar en combo">
+          <p className={s.comboAyuda}>Usamos una copia de «{nombre || 'tu diseño'}»: tu creación sigue igual. En el combo le cambias el color o el diseño a cada prenda.</p>
+          <ul className={s.comboLista}>
+            {combos.map((c) => (
+              <li key={c.id}>
+                <button
+                  type="button"
+                  className={s.comboOpcion}
+                  disabled={Boolean(llevando)}
+                  onClick={async () => { setLlevando(c.id); try { await c.onLlevar?.(); } finally { setLlevando(null); setEligiendoCombo(false); } }}
+                >
+                  <Users aria-hidden="true" />
+                  <span><strong>{c.nombre}</strong><small>{c.piezas} prendas · {soles(c.precio)}</small></span>
+                  {llevando === c.id ? <RotateCw className={s.girando} aria-hidden="true" /> : <ArrowRight aria-hidden="true" />}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </HojaInferior>
+      )}
     </article>
   );
 }

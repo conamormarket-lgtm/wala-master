@@ -183,7 +183,7 @@ const creacionesDemo = () => CREAR.comunidad.map(creacionDesdeReal);
 const BORRADORES = CREAR.comunidad.slice(-3).map((d, k) => {
   const c = creacionDesdeReal(d, k);
   return {
-    id: `b-${d.id}`, nombre: c.nombre, imagen: c.imagen, imagenes: c.imagenes, producto: c.producto, color: c.color,
+    id: `b-${d.id}`, nombre: c.nombre, imagen: c.imagen, imagenes: c.imagenes, producto: c.producto, color: c.color, prendaId: c.prendaId,
     subtitulo: c.imagenes ? '1 de 2 prendas con diseño · sin terminar' : undefined,
     fecha: ['Editado hoy', 'Editado ayer', 'Editado hace 2 días'][k], urlEditar: c.urlEditar,
   };
@@ -706,8 +706,30 @@ export const ESTADOS_CREAR = [
  * sus combos (pareja y conjunto) y los diseños de la comunidad; con sesión,
  * esos mismos diseños hacen de borradores y creaciones del cliente.
  */
-export function CrearDemo({ sesion, esAdmin, estados = [] }) {
+export function CrearDemo({ sesion, esAdmin, estados = [], toast, onIrA }) {
   const [para, setPara] = useState(1);
+  // Lo del cliente se puede eliminar, renombrar y (el admin) publicar, como en Mis creaciones.
+  const [mias, setMias] = useState(() => creacionesDemo());
+  const [suyos, setSuyos] = useState(BORRADORES);
+  const [publicadas, setPublicadas] = useState(() => new Set(mias.filter((c) => c.publicada).map((c) => c.id)));
+  const avisar = (titulo, tipo = 'exito') => toast?.({ tipo, titulo, duracion: 2000 });
+  // "Llevar en combo": los combos publicados de su prenda (una creación suelta).
+  const combosDe = (c) => (c.imagenes ? [] : CREAR.combos
+    .filter((k) => k.publicado && k.piezas.some((pz) => pz.prendaId === c.prendaId))
+    .map((k) => ({ id: k.id, nombre: k.name, piezas: k.piezas.length, precio: precioDe(k.id), onLlevar: async () => { await espera(700); onIrA?.(`/combo/${k.id}?nuevo=1`); } })));
+  const conAcciones = (c) => ({
+    ...c,
+    combos: combosDe(c),
+    publicada: publicadas.has(c.id),
+    onEliminar: async () => { await espera(500); setMias((l) => l.filter((x) => x.id !== c.id)); avisar('Creación eliminada', 'info'); },
+    onRenombrar: async (nombre) => { await espera(300); setMias((l) => l.map((x) => (x.id === c.id ? { ...x, nombre } : x))); },
+    comunidad: esAdmin ? {
+      estado: publicadas.has(c.id) ? 'publicada' : null,
+      onPublicar: async () => { await espera(500); setPublicadas((s) => new Set([...s, c.id])); avisar('Publicada en la comunidad'); },
+      onActualizar: async () => { await espera(500); avisar('Publicación actualizada'); },
+      onRetirar: async () => { await espera(500); setPublicadas((s) => { const n = new Set(s); n.delete(c.id); return n; }); avisar('Retirada de la comunidad', 'info'); },
+    } : undefined,
+  });
   // Lo mismo que la tienda: el admin ve también los borradores.
   const prendas = PRENDAS_CREAR.filter((p) => esAdmin || p.visible !== false).map(prendaCrearDesdeProducto);
   const combos = estados.includes('sinCombos') ? [] : CREAR.combos
@@ -722,9 +744,9 @@ export function CrearDemo({ sesion, esAdmin, estados = [] }) {
       cargando={estados.includes('cargando')}
       para={para}
       onPara={setPara}
-      borradores={sesion ? BORRADORES : []}
-      creaciones={sesion ? creacionesDemo() : []}
-      totalCreaciones={sesion ? creacionesDemo().length : 0}
+      borradores={sesion ? suyos.map((b) => ({ ...b, combos: combosDe(b), onEliminar: async () => { await espera(400); setSuyos((l) => l.filter((x) => x.id !== b.id)); avisar('Borrador eliminado', 'info'); } })) : []}
+      creaciones={sesion ? mias.map(conAcciones) : []}
+      totalCreaciones={sesion ? mias.length : 0}
       comunidad={comunidad}
       totalComunidad={comunidad.length}
     />

@@ -670,3 +670,65 @@
 .vertical .fotoCombo .prenda {
   aspect-ratio: 5 / 7;
 }
+
+/* "Llevar en combo": los combos de su prenda, en una hoja. */
+.comboAyuda {
+  margin: 0 0 0.9rem;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+}
+
+.comboLista {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.comboOpcion {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 6px 16px 16px 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature);
+}
+
+.comboOpcion:hover:not(:disabled) {
+  border-color: var(--violet-400);
+  transform: translateX(3px);
+}
+
+.comboOpcion > svg {
+  flex-shrink: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--primary-color);
+}
+
+.comboOpcion span {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.comboOpcion small {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.girando {
+  animation: girar 0.9s linear infinite;
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
