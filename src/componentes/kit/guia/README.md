@@ -43,6 +43,7 @@ página), **A** = las páginas de acceso (A1-A4).
 | Carrito (`/carrito`) | [CARRITO.md](CARRITO.md) | armada (P1 `PaginaCarrito`: qué se compra esta vez, pedido esperando el pago, productos sin talla y la regla de envío real); con plan de migración (a futuro) |
 | Regalar (`/wishlist/:código`, `/regalar/:código`, `/regalo/:pedido`) y Pago rápido (`/pago-rapido/:id`) | [REGALAR.md](REGALAR.md) | armadas (P15 `PaginaListaPublica`, `PaginaRegalar`, `PaginaRegaloSorpresa`; P16 `PaginaPagoRapido`; las piezas de pago `PagoTarjeta` y `PagoPaypal`, también en el checkout); con plan de migración (a futuro) |
 | Checkout (`/checkout`) | [CHECKOUT.md](CHECKOUT.md) | armada (P14 `PaginaCheckout` con `CamposDireccion`, `ResumenCompra` y `MetodoPago`); con plan de migración (a futuro) |
+| Navegar la tienda: Ofertas (`/ofertas`), Nichos (`/nichos`, `/nicho/:slug`), Tienda de un vendedor (`/tienda-vendedor/:slug`) y las landings (`/:slug`) | [NAVEGAR.md](NAVEGAR.md) | armadas (P17 `PaginaOfertas` con `CofreDiario` y `TarjetaOferta`; P18 `PaginaNichos` y `PaginaColeccion`); las 18 landings reales comprobadas con `PaginaTienda` (Con Amor Geeks y Yoryo en la demo); con plan de migración (a futuro) |
 
 Para una página nueva: se mapea la página real, lo que falte se crea como
 pieza en `piezas/`, después la sección, y la página se arma en la Tienda de

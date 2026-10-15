@@ -26,8 +26,10 @@ const tonoDe = (texto) => {
  *  - acento: color del aro del círculo y la burbuja (la foto nunca se tiñe)
  *  - fondo: color propio del cuadro (tileBackgroundColor del builder)
  *  - giro: grados al pasar el ratón (cuadros y círculos)
+ *  - detalle: una línea de texto bajo el nombre del cuadro (p. ej. el tipo de
+ *    un nicho: "Personalizados")
  */
-export function TarjetaCategoria({ forma = 'cuadro', nombre, imagen, cuenta, url, onClick, activa = false, todos = false, acento, fondo, giro = -2.5, className }) {
+export function TarjetaCategoria({ forma = 'cuadro', nombre, imagen, cuenta, url, onClick, activa = false, todos = false, acento, fondo, giro = -2.5, detalle, className }) {
   const foto = todos ? <LayoutGrid aria-hidden="true" />
     : imagen ? <img src={toDirectImageUrl(imagen)} alt="" loading="lazy" decoding="async" />
       : <span aria-hidden="true">{String(nombre || '').trim()[0]?.toUpperCase()}</span>;
@@ -65,7 +67,7 @@ export function TarjetaCategoria({ forma = 'cuadro', nombre, imagen, cuenta, url
           )}
         </span>
         <span className={s.cuadroNombre}>
-          <span>{nombre}</span>
+          <span>{nombre}{detalle && <small className={s.cuadroDetalle}>{detalle}</small>}</span>
           <ArrowRight aria-hidden="true" />
         </span>
       </Enlace>

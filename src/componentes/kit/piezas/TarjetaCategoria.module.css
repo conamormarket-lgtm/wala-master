@@ -95,6 +95,16 @@
   white-space: nowrap;
 }
 
+.cuadroDetalle {
+  display: block;
+  color: var(--color-text-muted);
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  white-space: normal;
+}
+
 .cuadroNombre svg {
   flex-shrink: 0;
   width: 1rem;

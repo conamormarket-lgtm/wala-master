@@ -967,3 +967,77 @@ export function opinionesDesde(resenas = [], { uid } = {}) {
     porEstrella,
   };
 }
+
+/* ── Navegar la tienda: ofertas flash y nichos ── */
+
+const MESES_LARGOS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const diaDeMes = (iso) => {
+  const [, m, d] = String(iso || '').split('-').map(Number);
+  return m && d ? `${d} de ${MESES_LARGOS[m - 1]}` : '';
+};
+const diasEntre = (desde, hasta) => Math.round((new Date(`${hasta}T12:00:00`) - new Date(`${desde}T12:00:00`)) / 86400000);
+
+/**
+ * Una oferta de flashOffers ({ title, productId, discountPct, startsAt,
+ * endsAt, active, order }; las fechas son 'AAAA-MM-DD' del admin) → props de
+ * <TarjetaOferta>. La tienda de hoy no mira las fechas; aquí sí:
+ *  - estado: 'proxima' (aún no empieza) | 'activa' | 'terminada'
+ *  - fechas: "Termina hoy" · "Hasta el 24 de octubre" · "Empieza el 2 de
+ *    noviembre"; quedan: "Quedan 3 días" (solo si faltan 7 o menos)
+ *  - producto: el de productId ya leído (foto y nombre), si la página lo tiene
+ */
+export function ofertaDesdeFirestore(o = {}, { hoy = limaTodayStr(), producto } = {}) {
+  const inicio = o.startsAt || '';
+  const fin = o.endsAt || '';
+  let estado = 'activa';
+  if (inicio && inicio > hoy) estado = 'proxima';
+  else if (fin && fin < hoy) estado = 'terminada';
+  let fechas = '';
+  let quedan = '';
+  if (estado === 'proxima') fechas = `Empieza el ${diaDeMes(inicio)}`;
+  else if (estado === 'terminada') fechas = `Terminó el ${diaDeMes(fin)}`;
+  else if (fin === hoy) fechas = 'Termina hoy';
+  else if (fin) {
+    fechas = `Hasta el ${diaDeMes(fin)}`;
+    const n = diasEntre(hoy, fin);
+    if (n <= 7) quedan = n === 1 ? 'Queda 1 día' : `Quedan ${n} días`;
+  }
+  const t = producto ? tarjetaDesdeProducto(producto) : null;
+  return {
+    id: o.id,
+    titulo: o.title || 'Oferta',
+    descuento: Math.max(0, Math.min(100, Math.round(Number(o.discountPct) || 0))),
+    estado,
+    fechas,
+    quedan,
+    url: o.productId ? `/producto/${o.productId}` : undefined,
+    producto: t ? { nombre: t.nombre, imagen: t.imagen } : undefined,
+  };
+}
+
+/** Las que se muestran: activas primero y después las próximas (las terminadas no). */
+export const ofertasVigentes = (ofertas = []) => [
+  ...ofertas.filter((o) => o.estado === 'activa'),
+  ...ofertas.filter((o) => o.estado === 'proxima'),
+];
+
+const TIPOS_NICHO = { general: 'General', personalizados: 'Personalizados' };
+
+/**
+ * Un nicho de la colección niches ({ slug, name, type, imageUrl, active,
+ * order }) → una tarjeta de la grilla de nichos (la de category_grid).
+ *  - cuenta: cuántos productos tiene (productos_wala con ese nicheId), si la
+ *    página lo sabe; va en `detalle` ("General · 12 productos")
+ */
+export const nichoDesdeFirestore = (n = {}, { cuenta } = {}) => {
+  const tipo = TIPOS_NICHO[n.type] || n.type || 'General';
+  return {
+    categoryId: n.slug || n.id,
+    name: n.name || n.slug || n.id,
+    imageUrl: n.imageUrl || undefined,
+    url: `/nicho/${n.slug || n.id}`,
+    // La cuenta va en texto, junto al tipo (la etiqueta colgante es para productos).
+    detalle: cuenta != null ? `${tipo} · ${cuenta === 1 ? '1 producto' : `${cuenta} productos`}` : tipo,
+    cuenta,
+  };
+};

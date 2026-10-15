@@ -1,0 +1,6494 @@
+{
+ "copiadoEl": "2026-10-15",
+ "origen": "landingPages, pages/{slug} y productos_wala de esas marcas — API REST pública, solo lectura",
+ "landings": [
+  {
+   "slug": "conamorgeeks",
+   "titulo": "Con Amor Geeks",
+   "brandId": "xjlrkw1JM8InbEw1mWtt",
+   "hideHeader": false,
+   "hideFooter": false,
+   "secciones": [
+    {
+     "settings": {
+      "minHeight": "600px",
+      "subtitleUnderline": false,
+      "buttonLink": "/conamorgeeks",
+      "title": "CON AMOR GEEKS",
+      "titleAlign": "",
+      "buttonTextColor": "#000000",
+      "overlayOpacity": 40,
+      "textPosition": "center",
+      "titleBg": "",
+      "buttonText": "COMPRAR AHORA",
+      "subtitleColor": "#ffffff",
+      "mediaUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/storefront%2Fhero-banner%2F1788811539191_ChatGPT_Image_7_sept_2026__15_05_30.webp?alt=media&token=19a3ef04-2da1-4b2a-88a0-626c5c5459f1",
+      "textAlign": "center",
+      "titleColor": "#ffffff",
+      "mediaType": "image",
+      "titleUnderline": false,
+      "subtitleAlign": "",
+      "titleLink": "",
+      "subtitleLink": "",
+      "buttonBgColor": "#ffffff",
+      "subtitle": "Productos de Con Amor Geeks",
+      "subtitleBg": ""
+     },
+     "type": "hero_banner",
+     "id": "sec_hero",
+     "order": 0
+    },
+    {
+     "type": "categories_nav",
+     "settings": {
+      "brandId": "xjlrkw1JM8InbEw1mWtt"
+     },
+     "id": "sec_nav",
+     "order": 1
+    },
+    {
+     "id": "sec_destacados",
+     "settings": {
+      "titleLink": "",
+      "backgroundColor": "transparent",
+      "paddingBottom": "2rem",
+      "titleBg": "",
+      "autoPlay": false,
+      "autoPlaySpeed": 5000,
+      "titleUnderline": false,
+      "buttonLink": "",
+      "paddingTop": "2rem",
+      "title": "Productos Destacados",
+      "visibleItems": 5,
+      "buttonText": "",
+      "titleAlign": ""
+     },
+     "order": 2,
+     "type": "featured_carousel"
+    },
+    {
+     "id": "sec_ofertas",
+     "settings": {
+      "titleBg": "",
+      "titleLink": "",
+      "visibleItems": 5,
+      "title": "Ofertas",
+      "buttonLink": "",
+      "paddingTop": "2rem",
+      "paddingBottom": "2rem",
+      "autoPlaySpeed": 5000,
+      "autoPlay": false,
+      "buttonText": "",
+      "titleUnderline": false,
+      "titleAlign": "",
+      "backgroundColor": "transparent"
+     },
+     "type": "sale_carousel",
+     "order": 3
+    },
+    {
+     "id": "sec_catalog",
+     "order": 4,
+     "type": "sidebar_catalog",
+     "settings": {
+      "titleBg": "",
+      "paddingTop": "2rem",
+      "titleUnderline": false,
+      "buttonLink": "",
+      "title": "Productos Con Amor Geeks",
+      "titleAlign": "",
+      "buttonText": "",
+      "titleLink": "",
+      "backgroundColor": "transparent",
+      "paddingBottom": "2rem",
+      "brandId": "xjlrkw1JM8InbEw1mWtt"
+     }
+    },
+    {
+     "id": "sec_marcas",
+     "type": "marquee",
+     "order": 5,
+     "settings": {
+      "paddingBottom": "2rem",
+      "titleAlign": "",
+      "buttonText": "",
+      "speed": 20000,
+      "titleBg": "",
+      "paddingTop": "2rem",
+      "buttonLink": "",
+      "items": [
+       {
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809045022_1788465110625_conamor.webp?alt=media&token=088623fa-bf69-435c-b5ca-f841c76f7975",
+        "name": "Con Amor",
+        "link": "/conamor"
+       },
+       {
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809053230_1788465161780_parejas.webp?alt=media&token=c8316da1-eff8-423d-a7f2-01ec9b45521c",
+        "name": "Con Amor Parejas",
+        "link": "/conamorparejas"
+       },
+       {
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809046936_1788465195818_equipos.webp?alt=media&token=78338361-ba87-4662-a5af-f9a0cbc47e43",
+        "name": "Con Amor Equipos",
+        "link": "/conamorequipos"
+       },
+       {
+        "link": "/mussa",
+        "name": "MUSSA",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809048355_1788465136025_mussa.webp?alt=media&token=3bac5cb2-7a97-4b58-be85-130bf6aec311"
+       },
+       {
+        "name": "Nova",
+        "link": "/nova",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809040756_1788465234410_nova.webp?alt=media&token=96cd6ce5-87c3-45a4-9a39-d65b57aec41d"
+       },
+       {
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809042222_1788465259737_catas.webp?alt=media&token=83e93101-d243-43e0-93e8-98f8a6ca94ae",
+        "name": "Catas",
+        "link": "/catas"
+       },
+       {
+        "link": "/factos",
+        "name": "Factos",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809043653_1788465287299_factos.webp?alt=media&token=16459de1-bc1e-4ffb-80fc-bd14b7a5564f"
+       },
+       {
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809049922_1788464875591_yoryo.webp?alt=media&token=3984692b-e61a-45c6-bf4f-0e183af4f1c4",
+        "name": "Yoryo",
+        "link": "/yoryo"
+       }
+      ],
+      "backgroundColor": "transparent",
+      "titleLink": "",
+      "titleUnderline": false
+     }
+    }
+   ],
+   "totalProductos": 63,
+   "productos": [
+    {
+     "id": "sqxf0goHABLcnqVFxoS7",
+     "name": "Casaca One Piece · Tripulación Sombrero de Paja",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 10,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "zNQTsf8SngccfTj8lOvf"
+     ],
+     "characters": [
+      "PlPEBXne36mROmAcN81g",
+      "JAyUxRm7RA3eng4LkhFD",
+      "E3HPnKgfPW9LJWnREJB6"
+     ],
+     "productType": "",
+     "createdAt": {
+      "nanoseconds": 257000000,
+      "seconds": 1788976285
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600787997_1789593395038_main_var_1788367960335_1788444029690_ONE%20PICE%20(5).webp?alt=media&token=878730a4-4638-4f94-9828-cec36337f27e"
+     ],
+     "defaultVariantId": "var_1788976285257",
+     "hasVariants": true,
+     "variants": [
+      {
+       "id": "var_1788976285257",
+       "name": "Perla",
+       "images": [],
+       "galleryImages": [],
+       "colorHex": "#EAE6E1",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600787997_1789593395038_main_var_1788367960335_1788444029690_ONE%20PICE%20(5).webp?alt=media&token=878730a4-4638-4f94-9828-cec36337f27e",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "colorHex": "#101010",
+       "name": "Negro",
+       "imageUrl": "",
+       "id": "var_1788981963653"
+      },
+      {
+       "id": "var_1788981963654",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Blanco",
+       "imageUrl": "",
+       "galleryImages": [],
+       "colorHex": "#F3F3F3"
+      },
+      {
+       "images": [],
+       "galleryImages": [],
+       "name": "Melange",
+       "id": "var_1788981963655",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#C8CACB",
+       "imageUrl": ""
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "name": "Azul Acero",
+       "id": "var_1788981963656",
+       "colorHex": "#0F1E37",
+       "images": [],
+       "galleryImages": []
+      },
+      {
+       "id": "var_1788981963657",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "name": "Guinda",
+       "imageUrl": "",
+       "colorHex": "#651322"
+      },
+      {
+       "images": [],
+       "colorHex": "#F76C0C",
+       "name": "Naranja",
+       "imageUrl": "",
+       "id": "var_1788981963658",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "imageUrl": "",
+       "colorHex": "#FDA9C9",
+       "name": "Rosado",
+       "id": "var_1788981963659",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": []
+      },
+      {
+       "images": [],
+       "name": "Celeste",
+       "colorHex": "#A9D5F6",
+       "galleryImages": [],
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963660"
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "UKMqHsiQSQPrrVGuwgfT",
+     "name": "Casaca One Piece · Luffy Gomu Gomu",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 10,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "zNQTsf8SngccfTj8lOvf"
+     ],
+     "characters": [
+      "PlPEBXne36mROmAcN81g"
+     ],
+     "productType": "",
+     "createdAt": {
+      "seconds": 1788976225,
+      "nanoseconds": 257000000
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600200565_1789593397579_main_var_1788387091283_1788387136308_ONE%20PICE.webp?alt=media&token=fdfe52f6-e7cc-4110-8f5d-25809c5b5187"
+     ],
+     "defaultVariantId": "var_1788976285258",
+     "hasVariants": true,
+     "variants": [
+      {
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600200565_1789593397579_main_var_1788387091283_1788387136308_ONE%20PICE.webp?alt=media&token=fdfe52f6-e7cc-4110-8f5d-25809c5b5187",
+       "galleryImages": [],
+       "colorHex": "#0F1E37",
+       "id": "var_1788976285258",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Azul Acero",
+       "images": []
+      },
+      {
+       "name": "Negro",
+       "id": "var_1788981963661",
+       "galleryImages": [],
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#101010",
+       "imageUrl": ""
+      },
+      {
+       "name": "Blanco",
+       "id": "var_1788981963662",
+       "imageUrl": "",
+       "colorHex": "#F3F3F3",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "galleryImages": []
+      },
+      {
+       "colorHex": "#EAE6E1",
+       "imageUrl": "",
+       "id": "var_1788981963663",
+       "name": "Perla",
+       "galleryImages": [],
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "colorHex": "#C8CACB",
+       "id": "var_1788981963664",
+       "imageUrl": "",
+       "name": "Melange",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "images": []
+      },
+      {
+       "imageUrl": "",
+       "id": "var_1788981963665",
+       "galleryImages": [],
+       "colorHex": "#651322",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "name": "Guinda"
+      },
+      {
+       "images": [],
+       "colorHex": "#F76C0C",
+       "name": "Naranja",
+       "imageUrl": "",
+       "galleryImages": [],
+       "id": "var_1788981963666",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "images": [],
+       "colorHex": "#FDA9C9",
+       "imageUrl": "",
+       "name": "Rosado",
+       "id": "var_1788981963667",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "imageUrl": "",
+       "name": "Celeste",
+       "colorHex": "#A9D5F6",
+       "id": "var_1788981963668",
+       "images": []
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "PTtIYIY1OgEh4Z3PXnA5",
+     "name": "Casaca One Piece · Luffy Gear Second",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 10,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "zNQTsf8SngccfTj8lOvf"
+     ],
+     "characters": [
+      "PlPEBXne36mROmAcN81g"
+     ],
+     "productType": "",
+     "createdAt": {
+      "nanoseconds": 257000000,
+      "seconds": 1788976165
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600145084_1789593399929_main_var_1788387148802_1788387187642_ONE%20PICE%20(3).webp?alt=media&token=fa9467e8-7361-4782-a5b9-d6bb727633da"
+     ],
+     "defaultVariantId": "var_1788976285259",
+     "hasVariants": true,
+     "variants": [
+      {
+       "name": "Blanco",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "id": "var_1788976285259",
+       "images": [],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600145084_1789593399929_main_var_1788387148802_1788387187642_ONE%20PICE%20(3).webp?alt=media&token=fa9467e8-7361-4782-a5b9-d6bb727633da",
+       "colorHex": "#F3F3F3"
+      },
+      {
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Negro",
+       "id": "var_1788981963669",
+       "imageUrl": "",
+       "images": [],
+       "colorHex": "#101010"
+      },
+      {
+       "id": "var_1788981963670",
+       "images": [],
+       "name": "Perla",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#EAE6E1",
+       "imageUrl": ""
+      },
+      {
+       "id": "var_1788981963671",
+       "name": "Melange",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "imageUrl": "",
+       "galleryImages": [],
+       "colorHex": "#C8CACB"
+      },
+      {
+       "colorHex": "#0F1E37",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "imageUrl": "",
+       "galleryImages": [],
+       "name": "Azul Acero",
+       "id": "var_1788981963672"
+      },
+      {
+       "galleryImages": [],
+       "id": "var_1788981963673",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "name": "Guinda",
+       "colorHex": "#651322",
+       "images": []
+      },
+      {
+       "name": "Naranja",
+       "galleryImages": [],
+       "imageUrl": "",
+       "colorHex": "#F76C0C",
+       "images": [],
+       "id": "var_1788981963674",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "id": "var_1788981963675",
+       "images": [],
+       "galleryImages": [],
+       "name": "Rosado",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#FDA9C9",
+       "imageUrl": ""
+      },
+      {
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#A9D5F6",
+       "id": "var_1788981963676",
+       "galleryImages": [],
+       "name": "Celeste",
+       "images": []
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "5RUoEDJ1znMaqpJF5P77",
+     "name": "Casaca One Piece · Zoro Santoryu",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 10,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "zNQTsf8SngccfTj8lOvf"
+     ],
+     "characters": [
+      "JAyUxRm7RA3eng4LkhFD"
+     ],
+     "productType": "",
+     "createdAt": {
+      "seconds": 1788976105,
+      "nanoseconds": 257000000
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789599765982_1789593360673_main_var_1788387193346_1788387253146_ONE%20PICE%20(4).webp?alt=media&token=1b288ca6-c329-434c-9516-26547b57d170"
+     ],
+     "defaultVariantId": "var_1788976285260",
+     "hasVariants": true,
+     "variants": [
+      {
+       "id": "var_1788976285260",
+       "images": [],
+       "name": "Negro",
+       "colorHex": "#101010",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789599765982_1789593360673_main_var_1788387193346_1788387253146_ONE%20PICE%20(4).webp?alt=media&token=1b288ca6-c329-434c-9516-26547b57d170",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": []
+      },
+      {
+       "id": "var_1788981963677",
+       "colorHex": "#F3F3F3",
+       "images": [],
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Blanco",
+       "galleryImages": []
+      },
+      {
+       "id": "var_1788981963678",
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#EAE6E1",
+       "images": [],
+       "galleryImages": [],
+       "name": "Perla"
+      },
+      {
+       "name": "Melange",
+       "images": [],
+       "colorHex": "#C8CACB",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963679",
+       "imageUrl": "",
+       "galleryImages": []
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963680",
+       "name": "Azul Acero",
+       "galleryImages": [],
+       "imageUrl": "",
+       "colorHex": "#0F1E37",
+       "images": []
+      },
+      {
+       "images": [],
+       "name": "Guinda",
+       "colorHex": "#651322",
+       "imageUrl": "",
+       "id": "var_1788981963681",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "galleryImages": [],
+       "images": [],
+       "id": "var_1788981963682",
+       "name": "Naranja",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#F76C0C",
+       "imageUrl": ""
+      },
+      {
+       "id": "var_1788981963683",
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#FDA9C9",
+       "galleryImages": [],
+       "name": "Rosado",
+       "images": []
+      },
+      {
+       "colorHex": "#A9D5F6",
+       "galleryImages": [],
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Celeste",
+       "id": "var_1788981963684",
+       "images": []
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "U1WVuu5X8xcESHm6s91G",
+     "name": "Casaca One Piece · Luffy 9 Viñetas",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 10,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "zNQTsf8SngccfTj8lOvf"
+     ],
+     "characters": [
+      "PlPEBXne36mROmAcN81g"
+     ],
+     "productType": "",
+     "createdAt": {
+      "seconds": 1788976045,
+      "nanoseconds": 257000000
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600183684_1789593402611_main_var_1788387255739_1788387305382_ONE%20PICE%20(1).webp?alt=media&token=596637c8-fd0b-464c-9f9a-f089172026dc"
+     ],
+     "defaultVariantId": "var_1788976285261",
+     "hasVariants": true,
+     "variants": [
+      {
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Naranja",
+       "colorHex": "#F76C0C",
+       "galleryImages": [],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600183684_1789593402611_main_var_1788387255739_1788387305382_ONE%20PICE%20(1).webp?alt=media&token=596637c8-fd0b-464c-9f9a-f089172026dc",
+       "id": "var_1788976285261"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "id": "var_1788981963685",
+       "colorHex": "#101010",
+       "imageUrl": "",
+       "name": "Negro",
+       "galleryImages": []
+      },
+      {
+       "name": "Blanco",
+       "id": "var_1788981963686",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "colorHex": "#F3F3F3",
+       "imageUrl": ""
+      },
+      {
+       "imageUrl": "",
+       "id": "var_1788981963687",
+       "colorHex": "#EAE6E1",
+       "name": "Perla",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": []
+      },
+      {
+       "id": "var_1788981963688",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "name": "Melange",
+       "imageUrl": "",
+       "colorHex": "#C8CACB"
+      },
+      {
+       "colorHex": "#0F1E37",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Azul Acero",
+       "imageUrl": "",
+       "images": [],
+       "galleryImages": [],
+       "id": "var_1788981963689"
+      },
+      {
+       "imageUrl": "",
+       "colorHex": "#651322",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "id": "var_1788981963690",
+       "name": "Guinda",
+       "images": []
+      },
+      {
+       "id": "var_1788981963691",
+       "images": [],
+       "colorHex": "#FDA9C9",
+       "name": "Rosado",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "galleryImages": []
+      },
+      {
+       "imageUrl": "",
+       "colorHex": "#A9D5F6",
+       "name": "Celeste",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "id": "var_1788981963692",
+       "images": []
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "bJ4AG7bl8NNdx4VAx2Qg",
+     "name": "Casaca One Piece · Monkey D. Luffy Haki",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 10,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "zNQTsf8SngccfTj8lOvf"
+     ],
+     "characters": [
+      "PlPEBXne36mROmAcN81g"
+     ],
+     "productType": "",
+     "createdAt": {
+      "seconds": 1788975985,
+      "nanoseconds": 257000000
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600273243_1789593404882_main_var_1788387308498_1788387371411_ONE%20PICE%20(2).webp?alt=media&token=1c4b30e3-3ba6-4aa9-9d02-82f7f78afb03"
+     ],
+     "defaultVariantId": "var_1788976285262",
+     "hasVariants": true,
+     "variants": [
+      {
+       "colorHex": "#651322",
+       "images": [],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600273243_1789593404882_main_var_1788387308498_1788387371411_ONE%20PICE%20(2).webp?alt=media&token=1c4b30e3-3ba6-4aa9-9d02-82f7f78afb03",
+       "id": "var_1788976285262",
+       "name": "Guinda",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "images": [],
+       "imageUrl": "",
+       "colorHex": "#101010",
+       "id": "var_1788981963693",
+       "name": "Negro"
+      },
+      {
+       "colorHex": "#F3F3F3",
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "name": "Blanco",
+       "images": [],
+       "id": "var_1788981963694"
+      },
+      {
+       "id": "var_1788981963695",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "name": "Perla",
+       "imageUrl": "",
+       "galleryImages": [],
+       "colorHex": "#EAE6E1"
+      },
+      {
+       "id": "var_1788981963696",
+       "imageUrl": "",
+       "colorHex": "#C8CACB",
+       "galleryImages": [],
+       "name": "Melange",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": []
+      },
+      {
+       "images": [],
+       "id": "var_1788981963697",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#0F1E37",
+       "imageUrl": "",
+       "galleryImages": [],
+       "name": "Azul Acero"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "colorHex": "#F76C0C",
+       "galleryImages": [],
+       "id": "var_1788981963698",
+       "name": "Naranja",
+       "images": []
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#FDA9C9",
+       "imageUrl": "",
+       "id": "var_1788981963699",
+       "name": "Rosado",
+       "galleryImages": [],
+       "images": []
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963700",
+       "images": [],
+       "colorHex": "#A9D5F6",
+       "imageUrl": "",
+       "galleryImages": [],
+       "name": "Celeste"
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "dnzkvm4edUxuADu6o01I",
+     "name": "Casaca Demon Slayer · Rengoku Kokoro wo Moyase",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 5,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "1ZednyOXXhyhQY41UQPh"
+     ],
+     "characters": [
+      "GMnlpWyBZX0i2kaZW44Y"
+     ],
+     "createdAt": {
+      "nanoseconds": 257000000,
+      "seconds": 1788975925
+     },
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600296201_main_var_1788976285263_1789052051303_ChatGPT%20Image%2010%20sept%202026%2C%2009_50_29%20(1).webp?alt=media&token=a1c39713-7162-40d0-bf82-533110ba590f"
+     ],
+     "defaultVariantId": "var_1788976285263",
+     "hasVariants": true,
+     "variants": [
+      {
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600296201_main_var_1788976285263_1789052051303_ChatGPT%20Image%2010%20sept%202026%2C%2009_50_29%20(1).webp?alt=media&token=a1c39713-7162-40d0-bf82-533110ba590f",
+       "colorHex": "#F3F3F3",
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600303011_gallery_1789052058319_ChatGPT%20Image%2010%20sept%202026%2C%2009_50_29%20(2).webp?alt=media&token=5947b1c5-4154-4306-a99e-cc6726c8f59c",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600306881_gallery_1789052062677_main_var_1788380659177_1788443973528_DEMON%20SLAYER%20(7).webp?alt=media&token=7c0bd1cf-8082-4fee-830b-69276aef6ea3"
+       ],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600303011_gallery_1789052058319_ChatGPT%20Image%2010%20sept%202026%2C%2009_50_29%20(2).webp?alt=media&token=5947b1c5-4154-4306-a99e-cc6726c8f59c",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600306881_gallery_1789052062677_main_var_1788380659177_1788443973528_DEMON%20SLAYER%20(7).webp?alt=media&token=7c0bd1cf-8082-4fee-830b-69276aef6ea3"
+       ],
+       "name": "Blanco",
+       "id": "var_1788976285263"
+      },
+      {
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600308878_gallery_1789052076742_ChatGPT%20Image%2010%20sept%202026%2C%2009_52_36%20(2).webp?alt=media&token=6a35ff40-711b-4482-b252-1dac56f150d3",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600312775_gallery_1789052080944_main_var_1788382188144_1788382242230_Demon%20Slayer%20(6).webp?alt=media&token=ae49d8bf-6d78-4f26-a285-d304821dd389"
+       ],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600308878_gallery_1789052076742_ChatGPT%20Image%2010%20sept%202026%2C%2009_52_36%20(2).webp?alt=media&token=6a35ff40-711b-4482-b252-1dac56f150d3",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600312775_gallery_1789052080944_main_var_1788382188144_1788382242230_Demon%20Slayer%20(6).webp?alt=media&token=ae49d8bf-6d78-4f26-a285-d304821dd389"
+       ],
+       "colorHex": "#F76C0C",
+       "name": "Naranja",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600299121_main_var_1788976285264_1789052071110_ChatGPT%20Image%2010%20sept%202026%2C%2009_52_36%20(1).webp?alt=media&token=583515c1-32cc-4b38-81fb-fcf8f494c4a8",
+       "id": "var_1788976285264"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#101010",
+       "name": "Negro",
+       "id": "var_1788981963366",
+       "images": [],
+       "galleryImages": []
+      },
+      {
+       "id": "var_1788981963367",
+       "galleryImages": [],
+       "colorHex": "#EAE6E1",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "name": "Perla"
+      },
+      {
+       "galleryImages": [],
+       "colorHex": "#C8CACB",
+       "images": [],
+       "name": "Melange",
+       "id": "var_1788981963368",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "name": "Azul Acero",
+       "images": [],
+       "colorHex": "#0F1E37",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "id": "var_1788981963369"
+      },
+      {
+       "images": [],
+       "colorHex": "#651322",
+       "id": "var_1788981963370",
+       "name": "Guinda",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "galleryImages": [],
+       "colorHex": "#FDA9C9",
+       "name": "Rosado",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963371"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#A9D5F6",
+       "galleryImages": [],
+       "id": "var_1788981963372",
+       "name": "Celeste",
+       "images": []
+      }
+     ],
+     "fulfillmentType": "stock",
+     "featured": true,
+     "featuredOrder": 0
+    },
+    {
+     "id": "5Zok4VIfe6XBoi8iYlSb",
+     "name": "Casaca Demon Slayer · Tanjiro Demon Hunter",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 5,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "1ZednyOXXhyhQY41UQPh"
+     ],
+     "characters": [
+      "4aeaad5s3QWoDKzITlMx"
+     ],
+     "productType": "",
+     "createdAt": {
+      "seconds": 1788975865,
+      "nanoseconds": 257000000
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789599773712_1789593364812_gallery_1788381603883_DEMON%20SYALER%20%20(13).webp?alt=media&token=6dedddd1-ba14-43cc-a0a4-228c8af9acaf"
+     ],
+     "defaultVariantId": "var_1788976285265",
+     "hasVariants": true,
+     "variants": [
+      {
+       "galleryImages": [],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789599773712_1789593364812_gallery_1788381603883_DEMON%20SYALER%20%20(13).webp?alt=media&token=6dedddd1-ba14-43cc-a0a4-228c8af9acaf",
+       "name": "Blanco",
+       "colorHex": "#F3F3F3",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788976285265"
+      },
+      {
+       "id": "var_1788981963373",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "images": [],
+       "name": "Negro",
+       "imageUrl": "",
+       "colorHex": "#101010"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "colorHex": "#EAE6E1",
+       "imageUrl": "",
+       "images": [],
+       "id": "var_1788981963374",
+       "name": "Perla"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963375",
+       "imageUrl": "",
+       "galleryImages": [],
+       "colorHex": "#C8CACB",
+       "name": "Melange",
+       "images": []
+      },
+      {
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#0F1E37",
+       "imageUrl": "",
+       "id": "var_1788981963376",
+       "galleryImages": [],
+       "name": "Azul Acero"
+      },
+      {
+       "imageUrl": "",
+       "colorHex": "#651322",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963377",
+       "images": [],
+       "name": "Guinda",
+       "galleryImages": []
+      },
+      {
+       "colorHex": "#F76C0C",
+       "images": [],
+       "imageUrl": "",
+       "name": "Naranja",
+       "id": "var_1788981963378",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "colorHex": "#FDA9C9",
+       "imageUrl": "",
+       "name": "Rosado",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963379",
+       "galleryImages": []
+      },
+      {
+       "id": "var_1788981963380",
+       "galleryImages": [],
+       "name": "Celeste",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "imageUrl": "",
+       "colorHex": "#A9D5F6"
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "uoHZ9LfqX7Z4lWmIny3U",
+     "name": "Casaca Demon Slayer · Tanjiro Silueta Roja",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 5,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "1ZednyOXXhyhQY41UQPh"
+     ],
+     "characters": [
+      "4aeaad5s3QWoDKzITlMx"
+     ],
+     "productType": "",
+     "createdAt": {
+      "seconds": 1788975805,
+      "nanoseconds": 257000000
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600048664_1789593497547_main_var_1788381654975_1788381726108_DEMON%20SLAYER%20(2).webp?alt=media&token=91229d5c-463d-4fa1-a7d9-1d66f1726262"
+     ],
+     "defaultVariantId": "var_1788976285266",
+     "hasVariants": true,
+     "variants": [
+      {
+       "colorHex": "#101010",
+       "id": "var_1788976285266",
+       "images": [],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600048664_1789593497547_main_var_1788381654975_1788381726108_DEMON%20SLAYER%20(2).webp?alt=media&token=91229d5c-463d-4fa1-a7d9-1d66f1726262",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "name": "Negro"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "id": "var_1788981963381",
+       "imageUrl": "",
+       "name": "Blanco",
+       "galleryImages": [],
+       "colorHex": "#F3F3F3"
+      },
+      {
+       "galleryImages": [],
+       "name": "Perla",
+       "images": [],
+       "imageUrl": "",
+       "colorHex": "#EAE6E1",
+       "id": "var_1788981963382",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "name": "Melange",
+       "images": [],
+       "imageUrl": "",
+       "galleryImages": [],
+       "colorHex": "#C8CACB",
+       "id": "var_1788981963383",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "colorHex": "#0F1E37",
+       "name": "Azul Acero",
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963384",
+       "images": [],
+       "galleryImages": []
+      },
+      {
+       "imageUrl": "",
+       "colorHex": "#651322",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963385",
+       "name": "Guinda",
+       "images": []
+      },
+      {
+       "galleryImages": [],
+       "name": "Naranja",
+       "id": "var_1788981963386",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#F76C0C",
+       "images": [],
+       "imageUrl": ""
+      },
+      {
+       "galleryImages": [],
+       "colorHex": "#FDA9C9",
+       "images": [],
+       "imageUrl": "",
+       "name": "Rosado",
+       "id": "var_1788981963387",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "name": "Celeste",
+       "galleryImages": [],
+       "images": [],
+       "colorHex": "#A9D5F6",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "id": "var_1788981963388"
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "pIimDGYqdMrwF1IvvkS7",
+     "name": "Casaca Demon Slayer · Nezuko Kimetsu",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 5,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "1ZednyOXXhyhQY41UQPh"
+     ],
+     "characters": [
+      "aB9GW4ez9U1w194VEtmB"
+     ],
+     "productType": "",
+     "createdAt": {
+      "seconds": 1788975745,
+      "nanoseconds": 257000000
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600066136_1789593490817_gallery_1788381736091_DEMON%20SLAYER%20(12).webp?alt=media&token=4d7607de-b26c-4bc9-972b-8f57a560e97d"
+     ],
+     "defaultVariantId": "var_1788976285267",
+     "hasVariants": true,
+     "variants": [
+      {
+       "colorHex": "#101010",
+       "images": [],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600066136_1789593490817_gallery_1788381736091_DEMON%20SLAYER%20(12).webp?alt=media&token=4d7607de-b26c-4bc9-972b-8f57a560e97d",
+       "galleryImages": [],
+       "name": "Negro",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788976285267"
+      },
+      {
+       "id": "var_1788981963389",
+       "name": "Blanco",
+       "imageUrl": "",
+       "colorHex": "#F3F3F3",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "images": []
+      },
+      {
+       "images": [],
+       "id": "var_1788981963390",
+       "galleryImages": [],
+       "name": "Perla",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#EAE6E1",
+       "imageUrl": ""
+      },
+      {
+       "id": "var_1788981963391",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#C8CACB",
+       "name": "Melange",
+       "imageUrl": "",
+       "images": []
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "colorHex": "#0F1E37",
+       "galleryImages": [],
+       "id": "var_1788981963392",
+       "images": [],
+       "name": "Azul Acero"
+      },
+      {
+       "imageUrl": "",
+       "colorHex": "#651322",
+       "name": "Guinda",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "id": "var_1788981963393",
+       "galleryImages": []
+      },
+      {
+       "imageUrl": "",
+       "colorHex": "#F76C0C",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "name": "Naranja",
+       "id": "var_1788981963394",
+       "images": []
+      },
+      {
+       "imageUrl": "",
+       "galleryImages": [],
+       "colorHex": "#FDA9C9",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963395",
+       "images": [],
+       "name": "Rosado"
+      },
+      {
+       "name": "Celeste",
+       "images": [],
+       "id": "var_1788981963396",
+       "galleryImages": [],
+       "colorHex": "#A9D5F6",
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "UlELpWuMqurO72ik9PaO",
+     "name": "Casaca Demon Slayer · Inosuke Beast",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 5,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "1ZednyOXXhyhQY41UQPh"
+     ],
+     "characters": [
+      "b9zy0IbOENfJo9OysD9B"
+     ],
+     "productType": "",
+     "createdAt": {
+      "nanoseconds": 257000000,
+      "seconds": 1788975685
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600069016_1789593493066_gallery_1788381743109_DEMON%20SYALER%20%20(8).webp?alt=media&token=56302e08-14df-4fa4-bfa2-b3cb86213e7c"
+     ],
+     "defaultVariantId": "var_1788976285268",
+     "hasVariants": true,
+     "variants": [
+      {
+       "galleryImages": [],
+       "id": "var_1788976285268",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Negro",
+       "images": [],
+       "colorHex": "#101010",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600069016_1789593493066_gallery_1788381743109_DEMON%20SYALER%20%20(8).webp?alt=media&token=56302e08-14df-4fa4-bfa2-b3cb86213e7c"
+      },
+      {
+       "name": "Blanco",
+       "images": [],
+       "id": "var_1788981963397",
+       "galleryImages": [],
+       "imageUrl": "",
+       "colorHex": "#F3F3F3",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Perla",
+       "colorHex": "#EAE6E1",
+       "id": "var_1788981963398",
+       "images": [],
+       "galleryImages": []
+      },
+      {
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#C8CACB",
+       "id": "var_1788981963399",
+       "imageUrl": "",
+       "galleryImages": [],
+       "name": "Melange"
+      },
+      {
+       "images": [],
+       "name": "Azul Acero",
+       "imageUrl": "",
+       "id": "var_1788981963400",
+       "colorHex": "#0F1E37",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "imageUrl": "",
+       "colorHex": "#651322",
+       "galleryImages": [],
+       "name": "Guinda",
+       "id": "var_1788981963401"
+      },
+      {
+       "imageUrl": "",
+       "id": "var_1788981963402",
+       "galleryImages": [],
+       "colorHex": "#F76C0C",
+       "name": "Naranja",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": []
+      },
+      {
+       "name": "Rosado",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "colorHex": "#FDA9C9",
+       "images": [],
+       "id": "var_1788981963403"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "images": [],
+       "colorHex": "#A9D5F6",
+       "imageUrl": "",
+       "name": "Celeste",
+       "id": "var_1788981963404"
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "kqoA6q4sDhibMGCs6Zc0",
+     "name": "Casaca Demon Slayer · Akaza Hakuji",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 5,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "1ZednyOXXhyhQY41UQPh"
+     ],
+     "characters": [
+      "xl6WJeOM3rzIni1TsWLn"
+     ],
+     "productType": "",
+     "createdAt": {
+      "nanoseconds": 257000000,
+      "seconds": 1788975625
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600071817_1789593495277_gallery_1788381762121_DEMON%20SYALER%20%20(10).webp?alt=media&token=5df41645-fe42-4a83-bf1a-06ad670b5c9d"
+     ],
+     "defaultVariantId": "var_1788976285269",
+     "hasVariants": true,
+     "variants": [
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "images": [],
+       "colorHex": "#101010",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600071817_1789593495277_gallery_1788381762121_DEMON%20SYALER%20%20(10).webp?alt=media&token=5df41645-fe42-4a83-bf1a-06ad670b5c9d",
+       "id": "var_1788976285269",
+       "name": "Negro"
+      },
+      {
+       "id": "var_1788981963405",
+       "name": "Blanco",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "imageUrl": "",
+       "galleryImages": [],
+       "colorHex": "#F3F3F3"
+      },
+      {
+       "id": "var_1788981963406",
+       "imageUrl": "",
+       "colorHex": "#EAE6E1",
+       "name": "Perla",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "galleryImages": []
+      },
+      {
+       "name": "Melange",
+       "images": [],
+       "galleryImages": [],
+       "colorHex": "#C8CACB",
+       "id": "var_1788981963407",
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "id": "var_1788981963408",
+       "imageUrl": "",
+       "name": "Azul Acero",
+       "colorHex": "#0F1E37",
+       "galleryImages": [],
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "galleryImages": [],
+       "name": "Guinda",
+       "id": "var_1788981963409",
+       "images": [],
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#651322"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#F76C0C",
+       "imageUrl": "",
+       "galleryImages": [],
+       "name": "Naranja",
+       "images": [],
+       "id": "var_1788981963410"
+      },
+      {
+       "imageUrl": "",
+       "colorHex": "#FDA9C9",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Rosado",
+       "id": "var_1788981963411",
+       "images": [],
+       "galleryImages": []
+      },
+      {
+       "images": [],
+       "galleryImages": [],
+       "name": "Celeste",
+       "colorHex": "#A9D5F6",
+       "id": "var_1788981963412",
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "v3gOs1Nat4N4K42WgCma",
+     "name": "Casaca Demon Slayer · Zenitsu Thunder",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 5,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "1ZednyOXXhyhQY41UQPh"
+     ],
+     "characters": [
+      "Qg82EdmDI0ZpMgzHEEOr"
+     ],
+     "productType": "",
+     "createdAt": {
+      "nanoseconds": 257000000,
+      "seconds": 1788975565
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600042739_1789593499839_main_var_1788381898272_1788382001203_DEMON%20SLAYER%20(1).webp?alt=media&token=75eddd22-4524-4d3b-b9b2-9e46c03327d8"
+     ],
+     "defaultVariantId": "var_1788976285270",
+     "hasVariants": true,
+     "variants": [
+      {
+       "galleryImages": [],
+       "id": "var_1788976285270",
+       "images": [],
+       "name": "Azul Acero",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600042739_1789593499839_main_var_1788381898272_1788382001203_DEMON%20SLAYER%20(1).webp?alt=media&token=75eddd22-4524-4d3b-b9b2-9e46c03327d8",
+       "colorHex": "#0F1E37"
+      },
+      {
+       "id": "var_1788981963413",
+       "colorHex": "#101010",
+       "name": "Negro",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "galleryImages": [],
+       "images": []
+      },
+      {
+       "imageUrl": "",
+       "name": "Blanco",
+       "galleryImages": [],
+       "colorHex": "#F3F3F3",
+       "id": "var_1788981963414",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "name": "Perla",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#EAE6E1",
+       "galleryImages": [],
+       "id": "var_1788981963415",
+       "imageUrl": ""
+      },
+      {
+       "colorHex": "#C8CACB",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "galleryImages": [],
+       "id": "var_1788981963416",
+       "images": [],
+       "name": "Melange"
+      },
+      {
+       "colorHex": "#651322",
+       "name": "Guinda",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "galleryImages": [],
+       "id": "var_1788981963417"
+      },
+      {
+       "imageUrl": "",
+       "id": "var_1788981963418",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#F76C0C",
+       "galleryImages": [],
+       "images": [],
+       "name": "Naranja"
+      },
+      {
+       "galleryImages": [],
+       "name": "Rosado",
+       "id": "var_1788981963419",
+       "colorHex": "#FDA9C9",
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": []
+      },
+      {
+       "galleryImages": [],
+       "id": "var_1788981963420",
+       "name": "Celeste",
+       "imageUrl": "",
+       "colorHex": "#A9D5F6",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "ECuFgc6tKrbPH0Ozokhm",
+     "name": "Casaca Demon Slayer · Tanjiro Logo Oficial",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 5,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "1ZednyOXXhyhQY41UQPh"
+     ],
+     "characters": [
+      "4aeaad5s3QWoDKzITlMx"
+     ],
+     "createdAt": {
+      "seconds": 1788975505,
+      "nanoseconds": 257000000
+     },
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789599884920_main_var_1788976285271_1788983510454_ChatGPT%20Image%209%20sept%202026%2C%2002_50_51%20p.m.webp?alt=media&token=4b45dcc7-17ff-4ab7-82c2-86706ddfb0af"
+     ],
+     "defaultVariantId": "var_1788976285271",
+     "hasVariants": true,
+     "variants": [
+      {
+       "name": "Guinda",
+       "id": "var_1788976285271",
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789599877870_gallery_1788983533027_ChatGPT%20Image%209%20sept%202026%2C%2002_52_04%20p.m.webp?alt=media&token=755d92d8-6ce9-456d-9258-2d8ecba70f2d",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789599882060_gallery_1788983542077_main_var_1788382020088_1788382066966_DEMON%20SYALER%20%20(11).webp?alt=media&token=15b2bc05-07fa-4339-bd80-1e934bf2d256"
+       ],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789599884920_main_var_1788976285271_1788983510454_ChatGPT%20Image%209%20sept%202026%2C%2002_50_51%20p.m.webp?alt=media&token=4b45dcc7-17ff-4ab7-82c2-86706ddfb0af",
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789599877870_gallery_1788983533027_ChatGPT%20Image%209%20sept%202026%2C%2002_52_04%20p.m.webp?alt=media&token=755d92d8-6ce9-456d-9258-2d8ecba70f2d",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789599882060_gallery_1788983542077_main_var_1788382020088_1788382066966_DEMON%20SYALER%20%20(11).webp?alt=media&token=15b2bc05-07fa-4339-bd80-1e934bf2d256"
+       ],
+       "colorHex": "#651322",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "colorHex": "#101010",
+       "name": "Negro",
+       "id": "var_1788981963421",
+       "images": [],
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963422",
+       "images": [],
+       "name": "Blanco",
+       "galleryImages": [],
+       "colorHex": "#F3F3F3"
+      },
+      {
+       "colorHex": "#EAE6E1",
+       "name": "Perla",
+       "id": "var_1788981963423",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": []
+      },
+      {
+       "name": "Melange",
+       "galleryImages": [],
+       "colorHex": "#C8CACB",
+       "images": [],
+       "id": "var_1788981963424",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "colorHex": "#0F1E37",
+       "id": "var_1788981963425",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "name": "Azul Acero"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "images": [],
+       "colorHex": "#F76C0C",
+       "name": "Naranja",
+       "id": "var_1788981963426"
+      },
+      {
+       "name": "Rosado",
+       "galleryImages": [],
+       "images": [],
+       "colorHex": "#FDA9C9",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963427"
+      },
+      {
+       "colorHex": "#A9D5F6",
+       "galleryImages": [],
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963428",
+       "name": "Celeste"
+      }
+     ],
+     "fulfillmentType": "stock",
+     "featured": true,
+     "featuredOrder": 0
+    },
+    {
+     "id": "uxi3Ugk3NffkOPrWw10z",
+     "name": "Casaca Demon Slayer · Nezuko Amaterasu",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 5,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "1ZednyOXXhyhQY41UQPh"
+     ],
+     "characters": [
+      "aB9GW4ez9U1w194VEtmB"
+     ],
+     "productType": "",
+     "createdAt": {
+      "seconds": 1788975445,
+      "nanoseconds": 257000000
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600054257_1789593504552_main_var_1788382073175_1788382128831_DEMON%20SLAYER%20(4).webp?alt=media&token=839ba37f-de57-4566-a6d7-9e959496ab39"
+     ],
+     "defaultVariantId": "var_1788976285272",
+     "hasVariants": true,
+     "variants": [
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "galleryImages": [],
+       "id": "var_1788976285272",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600054257_1789593504552_main_var_1788382073175_1788382128831_DEMON%20SLAYER%20(4).webp?alt=media&token=839ba37f-de57-4566-a6d7-9e959496ab39",
+       "colorHex": "#FDA9C9",
+       "name": "Rosado"
+      },
+      {
+       "name": "Negro",
+       "colorHex": "#101010",
+       "imageUrl": "",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "id": "var_1788981963429"
+      },
+      {
+       "id": "var_1788981963430",
+       "images": [],
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Blanco",
+       "imageUrl": "",
+       "colorHex": "#F3F3F3"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Perla",
+       "galleryImages": [],
+       "colorHex": "#EAE6E1",
+       "id": "var_1788981963431",
+       "imageUrl": "",
+       "images": []
+      },
+      {
+       "galleryImages": [],
+       "name": "Melange",
+       "id": "var_1788981963432",
+       "imageUrl": "",
+       "images": [],
+       "colorHex": "#C8CACB",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "imageUrl": "",
+       "id": "var_1788981963433",
+       "name": "Azul Acero",
+       "colorHex": "#0F1E37",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "images": []
+      },
+      {
+       "colorHex": "#651322",
+       "name": "Guinda",
+       "imageUrl": "",
+       "images": [],
+       "id": "var_1788981963434",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "galleryImages": [],
+       "id": "var_1788981963435",
+       "name": "Naranja",
+       "images": [],
+       "imageUrl": "",
+       "colorHex": "#F76C0C",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "galleryImages": [],
+       "imageUrl": "",
+       "colorHex": "#A9D5F6",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963436",
+       "name": "Celeste"
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "SbgnYmqGK4PkhMYCKiiu",
+     "name": "Casaca Demon Slayer · Akaza Line Art",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 5,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "1ZednyOXXhyhQY41UQPh"
+     ],
+     "characters": [
+      "xl6WJeOM3rzIni1TsWLn"
+     ],
+     "productType": "",
+     "createdAt": {
+      "seconds": 1788975385,
+      "nanoseconds": 257000000
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600051408_1789593506757_main_var_1788382133024_1788382184445_DEMON%20SLAYER%20(5).webp?alt=media&token=2240033c-c886-44f0-9a8d-dfbd828ea9da"
+     ],
+     "defaultVariantId": "var_1788976285273",
+     "hasVariants": true,
+     "variants": [
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788976285273",
+       "galleryImages": [],
+       "name": "Celeste",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600051408_1789593506757_main_var_1788382133024_1788382184445_DEMON%20SLAYER%20(5).webp?alt=media&token=2240033c-c886-44f0-9a8d-dfbd828ea9da",
+       "images": [],
+       "colorHex": "#A9D5F6"
+      },
+      {
+       "galleryImages": [],
+       "images": [],
+       "colorHex": "#101010",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "name": "Negro",
+       "id": "var_1788981963437"
+      },
+      {
+       "imageUrl": "",
+       "galleryImages": [],
+       "name": "Blanco",
+       "colorHex": "#F3F3F3",
+       "images": [],
+       "id": "var_1788981963438",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "name": "Perla",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "id": "var_1788981963439",
+       "colorHex": "#EAE6E1",
+       "images": [],
+       "galleryImages": []
+      },
+      {
+       "galleryImages": [],
+       "id": "var_1788981963440",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "imageUrl": "",
+       "name": "Melange",
+       "colorHex": "#C8CACB"
+      },
+      {
+       "galleryImages": [],
+       "images": [],
+       "name": "Azul Acero",
+       "id": "var_1788981963441",
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#0F1E37"
+      },
+      {
+       "images": [],
+       "colorHex": "#651322",
+       "galleryImages": [],
+       "imageUrl": "",
+       "id": "var_1788981963442",
+       "name": "Guinda",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Naranja",
+       "imageUrl": "",
+       "id": "var_1788981963443",
+       "colorHex": "#F76C0C",
+       "images": []
+      },
+      {
+       "colorHex": "#FDA9C9",
+       "galleryImages": [],
+       "name": "Rosado",
+       "imageUrl": "",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963444"
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "Hi1Aa31Yic39jXj5sxGS",
+     "name": "Casaca Demon Slayer · Nezuko Fucsia",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 5,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "1ZednyOXXhyhQY41UQPh"
+     ],
+     "characters": [
+      "aB9GW4ez9U1w194VEtmB"
+     ],
+     "productType": "",
+     "createdAt": {
+      "nanoseconds": 257000000,
+      "seconds": 1788975325
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789599899305_1789593454553_main_var_1788382250696_1788382294034_DEMON%20SLAYER%20(3).webp?alt=media&token=982cc626-3b87-46ee-9a37-60c5f8e75197"
+     ],
+     "defaultVariantId": "var_1788976285274",
+     "hasVariants": true,
+     "variants": [
+      {
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789599899305_1789593454553_main_var_1788382250696_1788382294034_DEMON%20SLAYER%20(3).webp?alt=media&token=982cc626-3b87-46ee-9a37-60c5f8e75197",
+       "images": [],
+       "name": "Perla",
+       "colorHex": "#EAE6E1",
+       "id": "var_1788976285274",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963445",
+       "galleryImages": [],
+       "images": [],
+       "name": "Negro",
+       "colorHex": "#101010",
+       "imageUrl": ""
+      },
+      {
+       "images": [],
+       "galleryImages": [],
+       "id": "var_1788981963446",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#F3F3F3",
+       "name": "Blanco",
+       "imageUrl": ""
+      },
+      {
+       "name": "Melange",
+       "galleryImages": [],
+       "imageUrl": "",
+       "id": "var_1788981963447",
+       "colorHex": "#C8CACB",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "images": [],
+       "id": "var_1788981963448",
+       "name": "Azul Acero",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#0F1E37",
+       "imageUrl": ""
+      },
+      {
+       "name": "Guinda",
+       "galleryImages": [],
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#651322",
+       "imageUrl": "",
+       "id": "var_1788981963449"
+      },
+      {
+       "images": [],
+       "galleryImages": [],
+       "name": "Naranja",
+       "colorHex": "#F76C0C",
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963450"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "name": "Rosado",
+       "colorHex": "#FDA9C9",
+       "images": [],
+       "imageUrl": "",
+       "id": "var_1788981963451"
+      },
+      {
+       "galleryImages": [],
+       "id": "var_1788981963452",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "colorHex": "#A9D5F6",
+       "name": "Celeste",
+       "imageUrl": ""
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "UYCEhIBCgMNvfWKywkBO",
+     "name": "Casaca Attack on Titan · Eren Jaeger Legión",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 7,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "uKfo2rgTclguWwrMz8Mc"
+     ],
+     "characters": [
+      "JH3YAXvKYPS591LhaPRa"
+     ],
+     "productType": "",
+     "createdAt": {
+      "nanoseconds": 257000000,
+      "seconds": 1788975265
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600203808_1789593598916_main_var_1788368307333_1788443829053_Attack%20on%20Titan.webp?alt=media&token=37a4a768-c8cf-484d-aec8-8aa2f4ca426b"
+     ],
+     "defaultVariantId": "var_1788976285275",
+     "hasVariants": true,
+     "variants": [
+      {
+       "galleryImages": [],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600203808_1789593598916_main_var_1788368307333_1788443829053_Attack%20on%20Titan.webp?alt=media&token=37a4a768-c8cf-484d-aec8-8aa2f4ca426b",
+       "name": "Guinda",
+       "colorHex": "#651322",
+       "images": [],
+       "id": "var_1788976285275",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "galleryImages": [],
+       "name": "Negro",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "colorHex": "#101010",
+       "id": "var_1788981963199",
+       "images": []
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963200",
+       "galleryImages": [],
+       "images": [],
+       "colorHex": "#F3F3F3",
+       "imageUrl": "",
+       "name": "Blanco"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#EAE6E1",
+       "galleryImages": [],
+       "imageUrl": "",
+       "id": "var_1788981963201",
+       "name": "Perla",
+       "images": []
+      },
+      {
+       "imageUrl": "",
+       "colorHex": "#C8CACB",
+       "id": "var_1788981963202",
+       "galleryImages": [],
+       "name": "Melange",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "name": "Azul Acero",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963203",
+       "colorHex": "#0F1E37",
+       "galleryImages": [],
+       "imageUrl": ""
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "colorHex": "#F76C0C",
+       "id": "var_1788981963204",
+       "galleryImages": [],
+       "name": "Naranja",
+       "images": []
+      },
+      {
+       "id": "var_1788981963205",
+       "galleryImages": [],
+       "name": "Rosado",
+       "images": [],
+       "colorHex": "#FDA9C9",
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "id": "var_1788981963206",
+       "name": "Celeste",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "galleryImages": [],
+       "colorHex": "#A9D5F6",
+       "imageUrl": ""
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "pcZ8CF7RtKOxWHmO1Lxq",
+     "name": "Casaca Attack on Titan · Eren Titán Sketch",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 7,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "uKfo2rgTclguWwrMz8Mc"
+     ],
+     "characters": [
+      "JH3YAXvKYPS591LhaPRa"
+     ],
+     "productType": "",
+     "createdAt": {
+      "seconds": 1788975205,
+      "nanoseconds": 257000000
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600260533_1789593640613_main_var_1788388384588_1788388505093_Attack%20on%20Titan%20(2).webp?alt=media&token=5ce58319-ca0e-437e-a386-a445b2018407"
+     ],
+     "defaultVariantId": "var_1788976285276",
+     "hasVariants": true,
+     "variants": [
+      {
+       "id": "var_1788976285276",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Blanco",
+       "galleryImages": [],
+       "colorHex": "#F3F3F3",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600260533_1789593640613_main_var_1788388384588_1788388505093_Attack%20on%20Titan%20(2).webp?alt=media&token=5ce58319-ca0e-437e-a386-a445b2018407",
+       "images": []
+      },
+      {
+       "name": "Negro",
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#101010",
+       "id": "var_1788981963207",
+       "images": [],
+       "galleryImages": []
+      },
+      {
+       "id": "var_1788981963208",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "images": [],
+       "colorHex": "#EAE6E1",
+       "name": "Perla",
+       "imageUrl": ""
+      },
+      {
+       "name": "Melange",
+       "id": "var_1788981963209",
+       "images": [],
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#C8CACB",
+       "galleryImages": []
+      },
+      {
+       "images": [],
+       "galleryImages": [],
+       "name": "Azul Acero",
+       "id": "var_1788981963210",
+       "colorHex": "#0F1E37",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": ""
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "id": "var_1788981963211",
+       "colorHex": "#651322",
+       "galleryImages": [],
+       "name": "Guinda",
+       "imageUrl": ""
+      },
+      {
+       "imageUrl": "",
+       "colorHex": "#F76C0C",
+       "galleryImages": [],
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Naranja",
+       "id": "var_1788981963212"
+      },
+      {
+       "id": "var_1788981963213",
+       "images": [],
+       "colorHex": "#FDA9C9",
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Rosado",
+       "galleryImages": []
+      },
+      {
+       "colorHex": "#A9D5F6",
+       "imageUrl": "",
+       "id": "var_1788981963214",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "images": [],
+       "name": "Celeste"
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "n0HYtZ6Atk9m70T3GCRM",
+     "name": "Casaca Attack on Titan · Levi Ackerman Color",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 7,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "uKfo2rgTclguWwrMz8Mc"
+     ],
+     "characters": [
+      "eR8q7E1qQHwDTa8tZWr7"
+     ],
+     "productType": "",
+     "createdAt": {
+      "seconds": 1788975145,
+      "nanoseconds": 257000000
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600257605_1789593642810_main_var_1788388519540_1788388572606_Attack%20on%20Titan%20(3).webp?alt=media&token=bac85f9c-2996-4a3e-857e-943a9ea24486"
+     ],
+     "defaultVariantId": "var_1788976285277",
+     "hasVariants": true,
+     "variants": [
+      {
+       "images": [],
+       "id": "var_1788976285277",
+       "galleryImages": [],
+       "colorHex": "#101010",
+       "name": "Negro",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600257605_1789593642810_main_var_1788388519540_1788388572606_Attack%20on%20Titan%20(3).webp?alt=media&token=bac85f9c-2996-4a3e-857e-943a9ea24486",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "colorHex": "#F3F3F3",
+       "imageUrl": "",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Blanco",
+       "images": [],
+       "id": "var_1788981963215"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "colorHex": "#EAE6E1",
+       "galleryImages": [],
+       "id": "var_1788981963216",
+       "images": [],
+       "name": "Perla"
+      },
+      {
+       "galleryImages": [],
+       "colorHex": "#C8CACB",
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "id": "var_1788981963217",
+       "name": "Melange"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#0F1E37",
+       "name": "Azul Acero",
+       "galleryImages": [],
+       "imageUrl": "",
+       "id": "var_1788981963218",
+       "images": []
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "colorHex": "#651322",
+       "id": "var_1788981963219",
+       "name": "Guinda",
+       "galleryImages": [],
+       "images": []
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "galleryImages": [],
+       "name": "Naranja",
+       "id": "var_1788981963220",
+       "colorHex": "#F76C0C",
+       "images": []
+      },
+      {
+       "id": "var_1788981963221",
+       "colorHex": "#FDA9C9",
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "name": "Rosado",
+       "galleryImages": []
+      },
+      {
+       "colorHex": "#A9D5F6",
+       "images": [],
+       "imageUrl": "",
+       "id": "var_1788981963222",
+       "name": "Celeste",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": []
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "aWoetRzUyvnkaiiVKjMl",
+     "name": "Casaca Attack on Titan · Levi Ackerman Tinta",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 7,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "uKfo2rgTclguWwrMz8Mc"
+     ],
+     "characters": [
+      "eR8q7E1qQHwDTa8tZWr7"
+     ],
+     "productType": "",
+     "createdAt": {
+      "nanoseconds": 257000000,
+      "seconds": 1788975085
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600263511_1789593645159_main_var_1788388582935_1788388631232_Attack%20on%20Titan%20(4).webp?alt=media&token=7732356a-7377-4e69-8506-9af6b1efaca0"
+     ],
+     "defaultVariantId": "var_1788976285278",
+     "hasVariants": true,
+     "variants": [
+      {
+       "id": "var_1788976285278",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600263511_1789593645159_main_var_1788388582935_1788388631232_Attack%20on%20Titan%20(4).webp?alt=media&token=7732356a-7377-4e69-8506-9af6b1efaca0",
+       "images": [],
+       "colorHex": "#EAE6E1",
+       "name": "Perla",
+       "galleryImages": []
+      },
+      {
+       "images": [],
+       "name": "Negro",
+       "id": "var_1788981963223",
+       "colorHex": "#101010",
+       "galleryImages": [],
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "images": [],
+       "galleryImages": [],
+       "name": "Blanco",
+       "colorHex": "#F3F3F3",
+       "imageUrl": "",
+       "id": "var_1788981963224",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#C8CACB",
+       "galleryImages": [],
+       "name": "Melange",
+       "id": "var_1788981963225",
+       "images": []
+      },
+      {
+       "galleryImages": [],
+       "name": "Azul Acero",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#0F1E37",
+       "imageUrl": "",
+       "id": "var_1788981963226"
+      },
+      {
+       "imageUrl": "",
+       "colorHex": "#651322",
+       "name": "Guinda",
+       "galleryImages": [],
+       "images": [],
+       "id": "var_1788981963227",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "name": "Naranja",
+       "colorHex": "#F76C0C",
+       "id": "var_1788981963228",
+       "galleryImages": [],
+       "images": []
+      },
+      {
+       "name": "Rosado",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963229",
+       "colorHex": "#FDA9C9",
+       "images": [],
+       "imageUrl": "",
+       "galleryImages": []
+      },
+      {
+       "id": "var_1788981963230",
+       "name": "Celeste",
+       "imageUrl": "",
+       "colorHex": "#A9D5F6",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "images": []
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "bShMRjJU0BWYslm4SyvB",
+     "name": "Casaca Marvel · Carnage",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 7,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "YBfBpQR1skD6bMY5Igr7"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "rjZ5C0mjj7j1eOXWeyPj",
+      "QXKYHGzo9g6twkIumLLZ"
+     ],
+     "characters": [
+      "f6gg0yNf14CvcsMpXydG"
+     ],
+     "productType": "",
+     "createdAt": {
+      "nanoseconds": 257000000,
+      "seconds": 1788975025
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600279745_1789593655989_main_var_1788389919318_1788443781443_SPIDERMAN%20(1).webp?alt=media&token=224035a7-46f7-4dee-a921-4b0c2fd1a1c5"
+     ],
+     "defaultVariantId": "var_1788976285279",
+     "hasVariants": true,
+     "variants": [
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788976285279",
+       "colorHex": "#101010",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600279745_1789593655989_main_var_1788389919318_1788443781443_SPIDERMAN%20(1).webp?alt=media&token=224035a7-46f7-4dee-a921-4b0c2fd1a1c5",
+       "galleryImages": [],
+       "name": "Negro",
+       "images": []
+      },
+      {
+       "galleryImages": [],
+       "name": "Blanco",
+       "images": [],
+       "imageUrl": "",
+       "colorHex": "#F3F3F3",
+       "id": "var_1788981963517",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#EAE6E1",
+       "images": [],
+       "imageUrl": "",
+       "name": "Perla",
+       "id": "var_1788981963518"
+      },
+      {
+       "images": [],
+       "name": "Melange",
+       "galleryImages": [],
+       "id": "var_1788981963519",
+       "colorHex": "#C8CACB",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": ""
+      },
+      {
+       "galleryImages": [],
+       "imageUrl": "",
+       "id": "var_1788981963520",
+       "colorHex": "#0F1E37",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "name": "Azul Acero"
+      },
+      {
+       "name": "Guinda",
+       "images": [],
+       "imageUrl": "",
+       "id": "var_1788981963521",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "colorHex": "#651322"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "colorHex": "#F76C0C",
+       "images": [],
+       "galleryImages": [],
+       "id": "var_1788981963522",
+       "name": "Naranja"
+      },
+      {
+       "galleryImages": [],
+       "id": "var_1788981963523",
+       "colorHex": "#FDA9C9",
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "name": "Rosado"
+      },
+      {
+       "colorHex": "#A9D5F6",
+       "images": [],
+       "name": "Celeste",
+       "id": "var_1788981963524",
+       "imageUrl": "",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "8YnwQ7j2ooX2LmZLx91I",
+     "name": "Casaca Marvel · Spider-Man Miles Morales",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 7,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "YBfBpQR1skD6bMY5Igr7"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "rjZ5C0mjj7j1eOXWeyPj",
+      "8ecbSIsuARIhYKLZpB4c"
+     ],
+     "characters": [
+      "VAD3sBlewIicYBxG7lTT"
+     ],
+     "productType": "",
+     "createdAt": {
+      "seconds": 1788974965,
+      "nanoseconds": 257000000
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789599804216_1789593383273_main_var_1788390793277_1788390860957_SPIDERMAN%20(2).webp?alt=media&token=01d97268-bce8-4ecc-b95b-90e0a91fc846"
+     ],
+     "defaultVariantId": "var_1788976285280",
+     "hasVariants": true,
+     "variants": [
+      {
+       "name": "Blanco",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789599804216_1789593383273_main_var_1788390793277_1788390860957_SPIDERMAN%20(2).webp?alt=media&token=01d97268-bce8-4ecc-b95b-90e0a91fc846",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#F3F3F3",
+       "id": "var_1788976285280",
+       "images": [],
+       "galleryImages": []
+      },
+      {
+       "colorHex": "#101010",
+       "id": "var_1788981963525",
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "images": [],
+       "name": "Negro"
+      },
+      {
+       "name": "Perla",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#EAE6E1",
+       "imageUrl": "",
+       "id": "var_1788981963526",
+       "galleryImages": []
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "colorHex": "#C8CACB",
+       "galleryImages": [],
+       "id": "var_1788981963527",
+       "name": "Melange",
+       "images": []
+      },
+      {
+       "name": "Azul Acero",
+       "id": "var_1788981963528",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#0F1E37",
+       "images": [],
+       "imageUrl": "",
+       "galleryImages": []
+      },
+      {
+       "imageUrl": "",
+       "colorHex": "#651322",
+       "galleryImages": [],
+       "id": "var_1788981963529",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Guinda"
+      },
+      {
+       "name": "Naranja",
+       "images": [],
+       "colorHex": "#F76C0C",
+       "imageUrl": "",
+       "galleryImages": [],
+       "id": "var_1788981963530",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "colorHex": "#FDA9C9",
+       "id": "var_1788981963531",
+       "imageUrl": "",
+       "name": "Rosado",
+       "images": []
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "name": "Celeste",
+       "imageUrl": "",
+       "colorHex": "#A9D5F6",
+       "images": [],
+       "id": "var_1788981963532"
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "gcCuDBHUybUQ7gjdADvQ",
+     "name": "Casaca Marvel · Venom",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 7,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "YBfBpQR1skD6bMY5Igr7"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "rjZ5C0mjj7j1eOXWeyPj",
+      "QXKYHGzo9g6twkIumLLZ"
+     ],
+     "characters": [
+      "MWSvPVO9Pl2HKfwiceHG"
+     ],
+     "productType": "",
+     "createdAt": {
+      "seconds": 1788974905,
+      "nanoseconds": 257000000
+     },
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600334279_1789593690023_main_var_1788390866971_1788390945860_SPIDERMAN%20(3).webp?alt=media&token=8963922a-3a07-4fd8-bee4-f234a8f4505c"
+     ],
+     "defaultVariantId": "var_1788976285281",
+     "hasVariants": true,
+     "variants": [
+      {
+       "colorHex": "#0F1E37",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600334279_1789593690023_main_var_1788390866971_1788390945860_SPIDERMAN%20(3).webp?alt=media&token=8963922a-3a07-4fd8-bee4-f234a8f4505c",
+       "id": "var_1788976285281",
+       "galleryImages": [],
+       "images": [],
+       "name": "Azul Acero"
+      },
+      {
+       "galleryImages": [],
+       "imageUrl": "",
+       "colorHex": "#101010",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "name": "Negro",
+       "id": "var_1788981963533"
+      },
+      {
+       "colorHex": "#F3F3F3",
+       "imageUrl": "",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963534",
+       "images": [],
+       "galleryImages": [],
+       "name": "Blanco"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963535",
+       "images": [],
+       "colorHex": "#EAE6E1",
+       "galleryImages": [],
+       "imageUrl": "",
+       "name": "Perla"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "imageUrl": "",
+       "colorHex": "#C8CACB",
+       "id": "var_1788981963536",
+       "galleryImages": [],
+       "name": "Melange",
+       "images": []
+      },
+      {
+       "name": "Guinda",
+       "images": [],
+       "colorHex": "#651322",
+       "id": "var_1788981963537",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "imageUrl": ""
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "id": "var_1788981963538",
+       "images": [],
+       "imageUrl": "",
+       "name": "Naranja",
+       "colorHex": "#F76C0C"
+      },
+      {
+       "images": [],
+       "galleryImages": [],
+       "id": "var_1788981963539",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#FDA9C9",
+       "name": "Rosado",
+       "imageUrl": ""
+      },
+      {
+       "images": [],
+       "name": "Celeste",
+       "id": "var_1788981963540",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "colorHex": "#A9D5F6",
+       "imageUrl": ""
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "YxniiBKJYitmL4OjT4yL",
+     "name": "Casaca Dragon Ball · Son Goku Sumi-e",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 5,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "eQZa35FAnPutUJKPkhkI"
+     ],
+     "characters": [
+      "cNYNoIQFtGzaQhQDDAvt"
+     ],
+     "createdAt": {
+      "seconds": 1788974425,
+      "nanoseconds": 257000000
+     },
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600236208_main_var_1788976285290_1789082687233_Gemini_Generated_Image_6wfp8c6wfp8c6wfp.webp?alt=media&token=db7e48b3-d165-4e0b-890f-a438a0671eaa"
+     ],
+     "defaultVariantId": "var_1788976285290",
+     "hasVariants": true,
+     "variants": [
+      {
+       "id": "var_1788976285290",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600238074_gallery_1789082712997_Gemini_Generated_Image_iunyaxiunyaxiuny.webp?alt=media&token=5be2d6dd-3b79-44a4-97a6-2e94437d8298",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600239907_gallery_1789082721569_dragon%20ball%20(5).webp?alt=media&token=81bc185a-09fe-4bc4-993a-0107caa7f20a"
+       ],
+       "colorHex": "#F3F3F3",
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600238074_gallery_1789082712997_Gemini_Generated_Image_iunyaxiunyaxiuny.webp?alt=media&token=5be2d6dd-3b79-44a4-97a6-2e94437d8298",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600239907_gallery_1789082721569_dragon%20ball%20(5).webp?alt=media&token=81bc185a-09fe-4bc4-993a-0107caa7f20a"
+       ],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600236208_main_var_1788976285290_1789082687233_Gemini_Generated_Image_6wfp8c6wfp8c6wfp.webp?alt=media&token=db7e48b3-d165-4e0b-890f-a438a0671eaa",
+       "name": "Blanco"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963286",
+       "galleryImages": [],
+       "colorHex": "#101010",
+       "name": "Negro",
+       "images": []
+      },
+      {
+       "galleryImages": [],
+       "name": "Perla",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#EAE6E1",
+       "id": "var_1788981963287"
+      },
+      {
+       "colorHex": "#C8CACB",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963288",
+       "galleryImages": [],
+       "name": "Melange",
+       "images": []
+      },
+      {
+       "images": [],
+       "name": "Azul Acero",
+       "colorHex": "#0F1E37",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963289"
+      },
+      {
+       "images": [],
+       "id": "var_1788981963290",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "name": "Guinda",
+       "colorHex": "#651322"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "name": "Naranja",
+       "id": "var_1788981963291",
+       "colorHex": "#F76C0C",
+       "images": []
+      },
+      {
+       "name": "Rosado",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963292",
+       "images": [],
+       "galleryImages": [],
+       "colorHex": "#FDA9C9"
+      },
+      {
+       "images": [],
+       "name": "Celeste",
+       "colorHex": "#A9D5F6",
+       "id": "var_1788981963293",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": []
+      }
+     ],
+     "fulfillmentType": "stock",
+     "featured": true,
+     "featuredOrder": 0
+    },
+    {
+     "id": "XYFB7tLjjZmP5D8PEFnR",
+     "name": "Casaca Dragon Ball · Vegeta INSECTO",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 5,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "eQZa35FAnPutUJKPkhkI"
+     ],
+     "characters": [
+      "7Zl3Hc046m4OM6qJRCD4"
+     ],
+     "createdAt": {
+      "seconds": 1788974365,
+      "nanoseconds": 257000000
+     },
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600219858_main_var_1788976285291_1789082219981_Gemini_Generated_Image_wuwa6dwuwa6dwuwa.webp?alt=media&token=515888a7-2005-4d3e-8c0a-5fa9391f1ca2"
+     ],
+     "defaultVariantId": "var_1788976285291",
+     "hasVariants": true,
+     "variants": [
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600215975_gallery_1789082227574_Gemini_Generated_Image_kofgspkofgspkofg.webp?alt=media&token=9d792418-1173-4153-9857-4146e90ee28f",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600217906_gallery_1789082237714_dragon%20ball%20(6).webp?alt=media&token=d467e09b-59dd-4994-a0d4-71f09dbad21f"
+       ],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600219858_main_var_1788976285291_1789082219981_Gemini_Generated_Image_wuwa6dwuwa6dwuwa.webp?alt=media&token=515888a7-2005-4d3e-8c0a-5fa9391f1ca2",
+       "colorHex": "#F3F3F3",
+       "id": "var_1788976285291",
+       "name": "Blanco",
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600215975_gallery_1789082227574_Gemini_Generated_Image_kofgspkofgspkofg.webp?alt=media&token=9d792418-1173-4153-9857-4146e90ee28f",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600217906_gallery_1789082237714_dragon%20ball%20(6).webp?alt=media&token=d467e09b-59dd-4994-a0d4-71f09dbad21f"
+       ]
+      },
+      {
+       "images": [],
+       "colorHex": "#101010",
+       "name": "Negro",
+       "galleryImages": [],
+       "id": "var_1788981963294",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "id": "var_1788981963295",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "name": "Perla",
+       "colorHex": "#EAE6E1"
+      },
+      {
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "colorHex": "#C8CACB",
+       "id": "var_1788981963296",
+       "name": "Melange"
+      },
+      {
+       "colorHex": "#0F1E37",
+       "id": "var_1788981963297",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Azul Acero",
+       "images": [],
+       "galleryImages": []
+      },
+      {
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963298",
+       "name": "Guinda",
+       "colorHex": "#651322",
+       "images": []
+      },
+      {
+       "id": "var_1788981963299",
+       "name": "Naranja",
+       "colorHex": "#F76C0C",
+       "galleryImages": [],
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "galleryImages": [],
+       "colorHex": "#FDA9C9",
+       "name": "Rosado",
+       "id": "var_1788981963300"
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "id": "var_1788981963301",
+       "colorHex": "#A9D5F6",
+       "name": "Celeste",
+       "images": []
+      }
+     ],
+     "fulfillmentType": "stock",
+     "featured": true,
+     "featuredOrder": 0
+    },
+    {
+     "id": "zQox8m2sJQmUVfAq7j5O",
+     "name": "Casaca Dragon Ball Z · Goku Niño 1984",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 5,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "eQZa35FAnPutUJKPkhkI"
+     ],
+     "characters": [
+      "cNYNoIQFtGzaQhQDDAvt"
+     ],
+     "createdAt": {
+      "seconds": 1788974245,
+      "nanoseconds": 257000000
+     },
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600940091_main_var_1788976285293_1789083798264_Gemini_Generated_Image_bz1atbz1atbz1atb.webp?alt=media&token=812cc656-715f-4358-a142-d98a531fcada"
+     ],
+     "defaultVariantId": "var_1788976285293",
+     "hasVariants": true,
+     "variants": [
+      {
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600940091_main_var_1788976285293_1789083798264_Gemini_Generated_Image_bz1atbz1atbz1atb.webp?alt=media&token=812cc656-715f-4358-a142-d98a531fcada",
+       "name": "Blanco",
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600942010_gallery_1789083806837_Gemini_Generated_Image_1m76ss1m76ss1m76.webp?alt=media&token=bf43a546-36b6-41e9-96b3-86167ea844e1",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600944109_gallery_1789083812896_Gemini_Generated_Image_w72h3hw72h3hw72h.webp?alt=media&token=82b0a708-caa3-40da-980f-cff78787eb3d",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600947916_gallery_1789083822157_dragon%20ball%20(11).webp?alt=media&token=638ace51-3b5c-4566-8544-c1fd70fa33b6"
+       ],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#F3F3F3",
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600942010_gallery_1789083806837_Gemini_Generated_Image_1m76ss1m76ss1m76.webp?alt=media&token=bf43a546-36b6-41e9-96b3-86167ea844e1",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600944109_gallery_1789083812896_Gemini_Generated_Image_w72h3hw72h3hw72h.webp?alt=media&token=82b0a708-caa3-40da-980f-cff78787eb3d",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600947916_gallery_1789083822157_dragon%20ball%20(11).webp?alt=media&token=638ace51-3b5c-4566-8544-c1fd70fa33b6"
+       ],
+       "id": "var_1788976285293"
+      },
+      {
+       "images": [],
+       "colorHex": "#101010",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963310",
+       "name": "Negro",
+       "galleryImages": []
+      },
+      {
+       "galleryImages": [],
+       "name": "Perla",
+       "colorHex": "#EAE6E1",
+       "id": "var_1788981963311",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": []
+      },
+      {
+       "id": "var_1788981963312",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Melange",
+       "colorHex": "#C8CACB",
+       "galleryImages": []
+      },
+      {
+       "name": "Azul Acero",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "id": "var_1788981963313",
+       "colorHex": "#0F1E37",
+       "galleryImages": []
+      },
+      {
+       "name": "Guinda",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#651322",
+       "images": [],
+       "galleryImages": [],
+       "id": "var_1788981963314"
+      },
+      {
+       "name": "Naranja",
+       "colorHex": "#F76C0C",
+       "galleryImages": [],
+       "id": "var_1788981963315",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": []
+      },
+      {
+       "name": "Rosado",
+       "colorHex": "#FDA9C9",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963316",
+       "galleryImages": []
+      },
+      {
+       "name": "Celeste",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963317",
+       "colorHex": "#A9D5F6",
+       "images": []
+      }
+     ],
+     "fulfillmentType": "stock",
+     "featured": true,
+     "featuredOrder": 0
+    },
+    {
+     "id": "UAbed455yMoBKs8LEdwZ",
+     "name": "Casaca Dragon Ball · Gohan Beast",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 5,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "eQZa35FAnPutUJKPkhkI"
+     ],
+     "characters": [
+      "8KlHuJfTGpcafHJQRIav"
+     ],
+     "createdAt": {
+      "seconds": 1788974185,
+      "nanoseconds": 257000000
+     },
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600194974_main_var_1788976285294_1789082443017_Gemini_Generated_Image_2zbi9e2zbi9e2zbi.webp?alt=media&token=774ba3a3-dac6-4a65-b299-ca4b2563f83d"
+     ],
+     "defaultVariantId": "var_1788976285294",
+     "hasVariants": true,
+     "variants": [
+      {
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600190226_gallery_1789082453055_Gemini_Generated_Image_gxbcnbgxbcnbgxbc.webp?alt=media&token=8fe5df4e-9a66-4cd8-84fe-6e0f8feaa8f7",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600192170_gallery_1789082461862_dragon%20ball%20(2).webp?alt=media&token=c923743b-98c5-4266-9558-9a337a9af53b"
+       ],
+       "id": "var_1788976285294",
+       "name": "Rosado",
+       "colorHex": "#FDA9C9",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600194974_main_var_1788976285294_1789082443017_Gemini_Generated_Image_2zbi9e2zbi9e2zbi.webp?alt=media&token=774ba3a3-dac6-4a65-b299-ca4b2563f83d",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600190226_gallery_1789082453055_Gemini_Generated_Image_gxbcnbgxbcnbgxbc.webp?alt=media&token=8fe5df4e-9a66-4cd8-84fe-6e0f8feaa8f7",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600192170_gallery_1789082461862_dragon%20ball%20(2).webp?alt=media&token=c923743b-98c5-4266-9558-9a337a9af53b"
+       ]
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963318",
+       "colorHex": "#101010",
+       "name": "Negro",
+       "galleryImages": [],
+       "images": []
+      },
+      {
+       "colorHex": "#F3F3F3",
+       "name": "Blanco",
+       "galleryImages": [],
+       "id": "var_1788981963319",
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "colorHex": "#EAE6E1",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "name": "Perla",
+       "galleryImages": [],
+       "id": "var_1788981963320"
+      },
+      {
+       "colorHex": "#C8CACB",
+       "images": [],
+       "galleryImages": [],
+       "name": "Melange",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963321"
+      },
+      {
+       "images": [],
+       "colorHex": "#0F1E37",
+       "name": "Azul Acero",
+       "galleryImages": [],
+       "id": "var_1788981963322",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "colorHex": "#651322",
+       "id": "var_1788981963323",
+       "images": [],
+       "name": "Guinda"
+      },
+      {
+       "id": "var_1788981963324",
+       "images": [],
+       "galleryImages": [],
+       "name": "Naranja",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#F76C0C"
+      },
+      {
+       "images": [],
+       "galleryImages": [],
+       "id": "var_1788981963325",
+       "name": "Celeste",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#A9D5F6"
+      }
+     ],
+     "fulfillmentType": "stock",
+     "featured": true,
+     "featuredOrder": 0
+    },
+    {
+     "id": "StAoTx98NYYwZi5wruIz",
+     "name": "Casaca Dragon Ball Super · Vegeta SSJ Blue",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 5,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "eQZa35FAnPutUJKPkhkI"
+     ],
+     "characters": [
+      "7Zl3Hc046m4OM6qJRCD4"
+     ],
+     "createdAt": {
+      "seconds": 1788974065,
+      "nanoseconds": 257000000
+     },
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600168995_main_var_1788976285296_1789082158202_Gemini_Generated_Image_pjqqwspjqqwspjqq.webp?alt=media&token=ee284547-4038-44c8-9681-1013d62ed0b4"
+     ],
+     "defaultVariantId": "var_1788976285296",
+     "hasVariants": true,
+     "variants": [
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788976285296",
+       "colorHex": "#651322",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600168995_main_var_1788976285296_1789082158202_Gemini_Generated_Image_pjqqwspjqqwspjqq.webp?alt=media&token=ee284547-4038-44c8-9681-1013d62ed0b4",
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600170930_gallery_1789082166815_Gemini_Generated_Image_q6mywvq6mywvq6my.webp?alt=media&token=1a69ca68-70ad-4643-86cb-694a6fda6881",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600173681_gallery_1789082181419_dragon%20ball%20(12).webp?alt=media&token=10ea9794-9f3f-40fc-baf9-5739ded6768a"
+       ],
+       "name": "Guinda",
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600170930_gallery_1789082166815_Gemini_Generated_Image_q6mywvq6mywvq6my.webp?alt=media&token=1a69ca68-70ad-4643-86cb-694a6fda6881",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600173681_gallery_1789082181419_dragon%20ball%20(12).webp?alt=media&token=10ea9794-9f3f-40fc-baf9-5739ded6768a"
+       ]
+      },
+      {
+       "images": [],
+       "name": "Negro",
+       "galleryImages": [],
+       "id": "var_1788981963334",
+       "colorHex": "#101010",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "id": "var_1788981963335",
+       "colorHex": "#F3F3F3",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Blanco",
+       "galleryImages": [],
+       "images": []
+      },
+      {
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "colorHex": "#EAE6E1",
+       "id": "var_1788981963336",
+       "images": [],
+       "name": "Perla"
+      },
+      {
+       "colorHex": "#C8CACB",
+       "name": "Melange",
+       "images": [],
+       "id": "var_1788981963337",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "colorHex": "#0F1E37",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "name": "Azul Acero",
+       "galleryImages": [],
+       "id": "var_1788981963338"
+      },
+      {
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963339",
+       "name": "Naranja",
+       "colorHex": "#F76C0C",
+       "images": []
+      },
+      {
+       "galleryImages": [],
+       "images": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "name": "Rosado",
+       "colorHex": "#FDA9C9",
+       "id": "var_1788981963340"
+      },
+      {
+       "name": "Celeste",
+       "galleryImages": [],
+       "colorHex": "#A9D5F6",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963341",
+       "images": []
+      }
+     ],
+     "fulfillmentType": "stock",
+     "featured": true,
+     "featuredOrder": 0
+    },
+    {
+     "id": "OjHOUmJRNjafIZUX8LYi",
+     "name": "Casaca Naruto · Itachi Collage Akatsuki",
+     "price": 119,
+     "salePrice": 109,
+     "inStock": 5,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "xjlrkw1JM8InbEw1mWtt",
+     "categories": [
+      "Ivdz5SdOYFgOpnuTeNlx"
+     ],
+     "collections": [
+      "gjjXNOihehKGysjgrmBM"
+     ],
+     "tags": [
+      "79uV7dhCoEkCQvRoiGR3",
+      "A4w2ymJvtQfcv2L9mq0l"
+     ],
+     "characters": [
+      "nuxnzUBmo0XLxsdxrknf"
+     ],
+     "createdAt": {
+      "seconds": 1788972685,
+      "nanoseconds": 257000000
+     },
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600127696_main_var_1788976285320_1788983868320_ChatGPT%20Image%209%20sept%202026%2C%2002_57_00%20p.m.webp?alt=media&token=ed11aa68-6e70-49a4-8645-6d318be08216"
+     ],
+     "defaultVariantId": "var_1788976285320",
+     "hasVariants": true,
+     "variants": [
+      {
+       "colorHex": "#F76C0C",
+       "name": "Naranja",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600127696_main_var_1788976285320_1788983868320_ChatGPT%20Image%209%20sept%202026%2C%2002_57_00%20p.m.webp?alt=media&token=ed11aa68-6e70-49a4-8645-6d318be08216",
+       "id": "var_1788976285320",
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600131476_gallery_1788983904715_4be0d775-ae43-4edf-a04e-61ae231e7ea6.webp?alt=media&token=c6af7cfc-13c7-45c0-afd5-56a7eb30a2e0",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600135267_gallery_1788983910939_main_var_1788386041346_1788386086289_naruto%20(16).webp?alt=media&token=e3fe4e68-1e6a-46c0-a0fb-6245ce741a50"
+       ],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600131476_gallery_1788983904715_4be0d775-ae43-4edf-a04e-61ae231e7ea6.webp?alt=media&token=c6af7cfc-13c7-45c0-afd5-56a7eb30a2e0",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1789600135267_gallery_1788983910939_main_var_1788386041346_1788386086289_naruto%20(16).webp?alt=media&token=e3fe4e68-1e6a-46c0-a0fb-6245ce741a50"
+       ]
+      },
+      {
+       "galleryImages": [],
+       "images": [],
+       "name": "Negro",
+       "id": "var_1788981963629",
+       "colorHex": "#101010",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "colorHex": "#F3F3F3",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "name": "Blanco",
+       "galleryImages": [],
+       "id": "var_1788981963630"
+      },
+      {
+       "name": "Perla",
+       "id": "var_1788981963631",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "galleryImages": [],
+       "images": [],
+       "colorHex": "#EAE6E1"
+      },
+      {
+       "colorHex": "#C8CACB",
+       "id": "var_1788981963632",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "name": "Melange",
+       "galleryImages": []
+      },
+      {
+       "id": "var_1788981963633",
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "name": "Azul Acero",
+       "colorHex": "#0F1E37"
+      },
+      {
+       "galleryImages": [],
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "images": [],
+       "name": "Guinda",
+       "id": "var_1788981963634",
+       "colorHex": "#651322"
+      },
+      {
+       "galleryImages": [],
+       "name": "Rosado",
+       "images": [],
+       "colorHex": "#FDA9C9",
+       "id": "var_1788981963635",
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ]
+      },
+      {
+       "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+       ],
+       "id": "var_1788981963636",
+       "galleryImages": [],
+       "name": "Celeste",
+       "colorHex": "#A9D5F6",
+       "images": []
+      }
+     ],
+     "fulfillmentType": "stock",
+     "featured": true,
+     "featuredOrder": 0
+    }
+   ]
+  },
+  {
+   "slug": "yoryo",
+   "titulo": "Yoryo",
+   "brandId": "rEPEpl4Hvzi6ogOBHn7x",
+   "hideHeader": false,
+   "hideFooter": false,
+   "secciones": [
+    {
+     "order": 0,
+     "settings": {
+      "showDots": true,
+      "heightMobile": "clamp(420px, 78vh, 640px)",
+      "showArrows": true,
+      "borderRadius": "0",
+      "pauseOnHover": true,
+      "heightDesktop": "max(95vh, 600px)",
+      "fullWidth": true,
+      "autoPlay": true,
+      "autoPlaySpeed": 5000,
+      "slides": [
+       {
+        "buttonLink": "/yoryo",
+        "subtitleColor": "#ffffff",
+        "overlayColor": "#111827",
+        "title": "YORYO",
+        "verticalPosition": "center",
+        "titleColor": "#ffffff",
+        "subtitle": "Productos de Yoryo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/storefront%2Fhero-banner%2F1788814229063_ChatGPT_Image_7_sept_2026__15_50_16.webp?alt=media&token=f563e7e5-24fb-4289-98e9-043c1b34c0a5",
+        "contentPosition": "center",
+        "buttonTextColor": "#000000",
+        "mobileImageUrl": "",
+        "buttonBgColor": "#ffffff",
+        "alt": "YORYO",
+        "link": "",
+        "imagePosition": "center center",
+        "buttonText": "COMPRAR AHORA",
+        "overlayOpacity": 40
+       },
+       {
+        "link": "",
+        "titleColor": "#ffffff",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/storefront%2Fhero-carousel%2F1790105319655_ChatGPT_Image_22_sept_2026__14_28_32.webp?alt=media&token=d106a59c-e612-4e53-9764-d05b7a4c261b",
+        "subtitle": "Combo Yoryo Oro · Incluye esclava GRATIS · S/ 240",
+        "imagePosition": "left center",
+        "buttonLink": "/producto/xpRJ063Yl1NNIgSQ8KcY",
+        "title": "ELEVA TU ESTILO",
+        "mobileImageUrl": "",
+        "buttonBgColor": "#ffffff",
+        "overlayColor": "#111827",
+        "contentPosition": "right",
+        "buttonTextColor": "#111827",
+        "verticalPosition": "center",
+        "buttonText": "QUIERO MI COMBO",
+        "subtitleColor": "#ffffff",
+        "overlayOpacity": 20,
+        "alt": "",
+        "id": "slide_1790105007213"
+       },
+       {
+        "imagePosition": "left center",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/storefront%2Fhero-carousel%2F1790105812169_ChatGPT_Image_22_sept_2026__14_36_18.webp?alt=media&token=f51f36c5-b484-4403-9251-7b707ab44bc8",
+        "subtitle": "Combo Yoryo Ónix con esclava GRATIS · S/ 240",
+        "title": "ELEGANCIA EN NEGRO",
+        "verticalPosition": "center",
+        "link": "",
+        "buttonBgColor": "#ffffff",
+        "id": "slide_1790105808654",
+        "mobileImageUrl": "",
+        "buttonText": "LO QUIERO",
+        "buttonLink": "/producto/ZEz7WkCa6bsvWh8Feikn",
+        "titleColor": "#ffffff",
+        "alt": "",
+        "overlayColor": "#111827",
+        "overlayOpacity": 20,
+        "subtitleColor": "#ffffff",
+        "contentPosition": "right",
+        "buttonTextColor": "#111827"
+       },
+       {
+        "buttonBgColor": "#ffffff",
+        "mobileImageUrl": "",
+        "contentPosition": "right",
+        "buttonTextColor": "#111827",
+        "imagePosition": "center center",
+        "buttonText": "DESCUBRIR COMBO",
+        "subtitleColor": "#ffffff",
+        "alt": "",
+        "buttonLink": "/producto/d5D5duDB8Ess8dSRuGnU",
+        "title": "ELEGANCIA DESPUÉS DEL ANOCHECER",
+        "link": "",
+        "id": "slide_1790106726612",
+        "overlayOpacity": 20,
+        "overlayColor": "#111827",
+        "titleColor": "#ffffff",
+        "subtitle": "Descubre el Combo Yoryo Medianoche · Esclava GRATIS",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/storefront%2Fhero-carousel%2F1790106729169_ChatGPT_Image_22_sept_2026__14_43_22.webp?alt=media&token=8a7a9e24-3e52-4aa9-86d8-6b3c1b14a766",
+        "verticalPosition": "center"
+       }
+      ]
+     },
+     "id": "sec_hero",
+     "type": "hero_carousel"
+    },
+    {
+     "settings": {
+      "paddingTop": "2rem",
+      "titleLink": "",
+      "visibleItems": 5,
+      "title": "Relojes",
+      "titleUnderline": false,
+      "buttonLink": "",
+      "categoryId": "GtylUg5tpx4YrklvBnty",
+      "titleAlign": "",
+      "autoPlay": false,
+      "autoPlaySpeed": 5000,
+      "titleBg": "",
+      "paddingBottom": "2rem",
+      "buttonText": "",
+      "backgroundColor": "transparent"
+     },
+     "id": "section_1790099768686",
+     "type": "category_carousel",
+     "order": 1
+    },
+    {
+     "order": 2,
+     "settings": {
+      "titleBg": "",
+      "autoPlaySpeed": 5000,
+      "titleLink": "",
+      "buttonText": "",
+      "visibleItems": 5,
+      "paddingTop": "2rem",
+      "autoPlay": false,
+      "backgroundColor": "transparent",
+      "title": "Exclusivos",
+      "buttonLink": "",
+      "titleAlign": "",
+      "categoryId": "Lbmxm07yyVq13ZpzC4Ji",
+      "titleUnderline": false,
+      "paddingBottom": "2rem"
+     },
+     "type": "category_carousel",
+     "id": "section_1790099913901"
+    },
+    {
+     "order": 3,
+     "settings": {
+      "backgroundColor": "transparent",
+      "buttonText": "",
+      "title": "Billeteras",
+      "autoPlaySpeed": 5000,
+      "visibleItems": 5,
+      "titleBg": "",
+      "titleUnderline": false,
+      "paddingTop": "2rem",
+      "titleLink": "",
+      "autoPlay": false,
+      "paddingBottom": "2rem",
+      "buttonLink": "",
+      "categoryId": "98hFFLCbOQymceyVhp8I",
+      "titleAlign": ""
+     },
+     "id": "section_1790099895459",
+     "type": "category_carousel"
+    },
+    {
+     "order": 4,
+     "type": "category_carousel",
+     "settings": {
+      "paddingBottom": "2rem",
+      "backgroundColor": "transparent",
+      "titleLink": "",
+      "buttonText": "",
+      "visibleItems": 5,
+      "buttonLink": "",
+      "titleAlign": "",
+      "autoPlay": false,
+      "categoryId": "55X6hWIZkOeQKqGO6BFf",
+      "titleBg": "",
+      "titleUnderline": false,
+      "paddingTop": "2rem",
+      "title": "Lentes",
+      "autoPlaySpeed": 5000
+     },
+     "id": "section_1790099864518"
+    },
+    {
+     "id": "sec_marcas",
+     "order": 5,
+     "type": "marquee",
+     "settings": {
+      "titleUnderline": false,
+      "titleBg": "",
+      "titleAlign": "",
+      "titleLink": "",
+      "buttonLink": "",
+      "backgroundColor": "transparent",
+      "items": [
+       {
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809045022_1788465110625_conamor.webp?alt=media&token=088623fa-bf69-435c-b5ca-f841c76f7975",
+        "link": "/conamor",
+        "name": "Con Amor"
+       },
+       {
+        "name": "Con Amor Parejas",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809053230_1788465161780_parejas.webp?alt=media&token=c8316da1-eff8-423d-a7f2-01ec9b45521c",
+        "link": "/conamorparejas"
+       },
+       {
+        "name": "Con Amor Geeks",
+        "link": "/conamorgeeks",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809051837_1788463881615_images.webp?alt=media&token=94636b60-9e6f-4794-9ed6-42e39c85580c"
+       },
+       {
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809046936_1788465195818_equipos.webp?alt=media&token=78338361-ba87-4662-a5af-f9a0cbc47e43",
+        "link": "/conamorequipos",
+        "name": "Con Amor Equipos"
+       },
+       {
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809048355_1788465136025_mussa.webp?alt=media&token=3bac5cb2-7a97-4b58-be85-130bf6aec311",
+        "link": "/mussa",
+        "name": "MUSSA"
+       },
+       {
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809040756_1788465234410_nova.webp?alt=media&token=96cd6ce5-87c3-45a4-9a39-d65b57aec41d",
+        "name": "Nova",
+        "link": "/nova"
+       },
+       {
+        "link": "/catas",
+        "name": "Catas",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809042222_1788465259737_catas.webp?alt=media&token=83e93101-d243-43e0-93e8-98f8a6ca94ae"
+       },
+       {
+        "link": "/factos",
+        "name": "Factos",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809043653_1788465287299_factos.webp?alt=media&token=16459de1-bc1e-4ffb-80fc-bd14b7a5564f"
+       }
+      ],
+      "speed": 20000,
+      "paddingTop": "2rem",
+      "buttonText": "",
+      "paddingBottom": "2rem"
+     }
+    }
+   ],
+   "totalProductos": 14,
+   "productos": [
+    {
+     "id": "z4CmzlhW29u3eOdIlNfw",
+     "name": "Reloj Yoryo Poedagar",
+     "price": 120,
+     "salePrice": 0,
+     "inStock": 4,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "rEPEpl4Hvzi6ogOBHn7x",
+     "categories": [
+      "GtylUg5tpx4YrklvBnty"
+     ],
+     "collections": [
+      "OtqZTlqk7ZEFMMebTtkF"
+     ],
+     "tags": [
+      "igb9nsYeBSupAhKTERSr",
+      "Mq0pd8fbDEi319lis7Mj"
+     ],
+     "productType": "rffUNjWeEeqrw1CCzIRN",
+     "createdAt": "2026-10-01T14:25:47.766Z",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fz4CmzlhW29u3eOdIlNfw%2Fmain_variant_1790088317915_r5_0_1790718488479_20260904_165925.webp?alt=media&token=1956a545-b53e-4698-86ad-597be9541873"
+     ],
+     "defaultVariantId": "variant_1790088317915_r5_0",
+     "hasVariants": true,
+     "variants": [
+      {
+       "id": "variant_1790088317915_r5_0",
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fz4CmzlhW29u3eOdIlNfw%2Fgallery_1790718519217_Imagen%20de%20ChatGPT%2029%20sept%202026%2C%2003_24_28%20p.m..webp?alt=media&token=55547d12-04ce-4a41-b67d-8fc48317fe0b"
+       ],
+       "colorHex": "#121212",
+       "sizes": [],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fz4CmzlhW29u3eOdIlNfw%2Fmain_variant_1790088317915_r5_0_1790718488479_20260904_165925.webp?alt=media&token=1956a545-b53e-4698-86ad-597be9541873",
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fz4CmzlhW29u3eOdIlNfw%2Fgallery_1790718519217_Imagen%20de%20ChatGPT%2029%20sept%202026%2C%2003_24_28%20p.m..webp?alt=media&token=55547d12-04ce-4a41-b67d-8fc48317fe0b"
+       ],
+       "name": "Negro Total"
+      }
+     ],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "d5D5duDB8Ess8dSRuGnU",
+     "name": "Esclava GRATIS · Combo Yoryo Medianoche",
+     "price": 290,
+     "salePrice": 240,
+     "inStock": 4,
+     "customizable": false,
+     "isComboProduct": true,
+     "brandId": "rEPEpl4Hvzi6ogOBHn7x",
+     "categories": [
+      "Lbmxm07yyVq13ZpzC4Ji"
+     ],
+     "collections": [
+      "OtqZTlqk7ZEFMMebTtkF"
+     ],
+     "tags": [
+      "Mq0pd8fbDEi319lis7Mj",
+      "igb9nsYeBSupAhKTERSr",
+      "0HqKLuQ6bi0fszscs8rm"
+     ],
+     "productType": "N2rTN3na2tb7LrZqL8E9",
+     "createdAt": "2026-09-22T16:47:49.969Z",
+     "hasVariants": false,
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "xpRJ063Yl1NNIgSQ8KcY",
+     "name": "Esclava GRATIS · Combo Yoryo Oro",
+     "price": 290,
+     "salePrice": 240,
+     "inStock": 4,
+     "customizable": false,
+     "isComboProduct": true,
+     "brandId": "rEPEpl4Hvzi6ogOBHn7x",
+     "categories": [
+      "Lbmxm07yyVq13ZpzC4Ji"
+     ],
+     "collections": [
+      "OtqZTlqk7ZEFMMebTtkF"
+     ],
+     "tags": [
+      "Mq0pd8fbDEi319lis7Mj",
+      "igb9nsYeBSupAhKTERSr",
+      "0HqKLuQ6bi0fszscs8rm"
+     ],
+     "productType": "N2rTN3na2tb7LrZqL8E9",
+     "createdAt": "2026-09-22T16:47:48.716Z",
+     "hasVariants": false,
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "ZEz7WkCa6bsvWh8Feikn",
+     "name": "Esclava GRATIS · Combo Yoryo Ónix",
+     "price": 290,
+     "salePrice": 240,
+     "inStock": 4,
+     "customizable": false,
+     "isComboProduct": true,
+     "brandId": "rEPEpl4Hvzi6ogOBHn7x",
+     "categories": [
+      "Lbmxm07yyVq13ZpzC4Ji"
+     ],
+     "collections": [
+      "OtqZTlqk7ZEFMMebTtkF"
+     ],
+     "tags": [
+      "Mq0pd8fbDEi319lis7Mj",
+      "igb9nsYeBSupAhKTERSr",
+      "0HqKLuQ6bi0fszscs8rm"
+     ],
+     "productType": "N2rTN3na2tb7LrZqL8E9",
+     "createdAt": "2026-09-22T16:47:47.521Z",
+     "hasVariants": false,
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "JbO3IFaCRX57CwGtSIj5",
+     "name": "Lentes de Sol Yoryo Obsidiana",
+     "price": 120,
+     "salePrice": null,
+     "inStock": 4,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "rEPEpl4Hvzi6ogOBHn7x",
+     "categories": [
+      "55X6hWIZkOeQKqGO6BFf"
+     ],
+     "collections": [
+      "OtqZTlqk7ZEFMMebTtkF"
+     ],
+     "tags": [
+      "Mq0pd8fbDEi319lis7Mj",
+      "zy1Ytn2mLL79tUusr1w4"
+     ],
+     "characters": [],
+     "productType": "rffUNjWeEeqrw1CCzIRN",
+     "createdAt": "2026-09-22T15:54:20.897Z",
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-ls1%2Fmain_variant_1790092457540_ls1_0_1790092457540_LSOL_negro.webp?alt=media&token=e82f387c-3629-4aa2-bd42-b833bfd582bf"
+     ],
+     "defaultVariantId": "variant_1790092457540_ls1_0",
+     "hasVariants": true,
+     "variants": [
+      {
+       "imagesCrops": {},
+       "name": "Negro Obsidiana",
+       "id": "variant_1790092457540_ls1_0",
+       "imagesVariantes": {
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-ls1%2Fmain_variant_1790092457540_ls1_0_1790092457540_LSOL_negro.webp?alt=media&token=e82f387c-3629-4aa2-bd42-b833bfd582bf": {
+         "160": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-ls1%2Fmain_variant_1790092457540_ls1_0_1790092457540_LSOL_negro_160.webp?alt=media&token=976616ab-657e-4206-987b-b8b3da351129",
+         "400": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-ls1%2Fmain_variant_1790092457540_ls1_0_1790092457540_LSOL_negro_400.webp?alt=media&token=28bff8d3-8ba3-4e8d-94aa-2d640df29e98",
+         "800": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-ls1%2Fmain_variant_1790092457540_ls1_0_1790092457540_LSOL_negro_800.webp?alt=media&token=a4011cf7-173e-4ec2-a9ac-0b08c1ea3ec7"
+        }
+       },
+       "images": [],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-ls1%2Fmain_variant_1790092457540_ls1_0_1790092457540_LSOL_negro.webp?alt=media&token=e82f387c-3629-4aa2-bd42-b833bfd582bf",
+       "sizes": [],
+       "thumbnailCrop": null,
+       "colorHex": "#111111",
+       "galleryImages": []
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "NEtavILSA0EoxJgGD7ou",
+     "name": "Billetera Yoryo Cónsul",
+     "price": 120,
+     "salePrice": null,
+     "inStock": 4,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "rEPEpl4Hvzi6ogOBHn7x",
+     "categories": [
+      "98hFFLCbOQymceyVhp8I"
+     ],
+     "collections": [
+      "OtqZTlqk7ZEFMMebTtkF"
+     ],
+     "tags": [
+      "0HqKLuQ6bi0fszscs8rm",
+      "Mq0pd8fbDEi319lis7Mj"
+     ],
+     "productType": "rffUNjWeEeqrw1CCzIRN",
+     "createdAt": "2026-09-22T15:54:17.249Z",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fmain_variant_1790092445170_b1_0_1790092445170_BIL_3.webp?alt=media&token=b4d5d931-a0b4-4d84-a692-170bcdebfa39"
+     ],
+     "defaultVariantId": "variant_1790092445170_b1_0",
+     "hasVariants": true,
+     "variants": [
+      {
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fgallery_1790092445170_BIL_1.webp?alt=media&token=936f1398-1c59-4761-a1a1-79040073f348",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fgallery_1790092445170_BIL_2.webp?alt=media&token=901599a9-edd7-448e-a8ac-22ac6c156847",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fgallery_1790092445170_BIL_4.webp?alt=media&token=ffc525cd-a6ff-4682-b129-dae72d837010"
+       ],
+       "id": "variant_1790092445170_b1_0",
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fgallery_1790092445170_BIL_1.webp?alt=media&token=936f1398-1c59-4761-a1a1-79040073f348",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fgallery_1790092445170_BIL_2.webp?alt=media&token=901599a9-edd7-448e-a8ac-22ac6c156847",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fgallery_1790092445170_BIL_4.webp?alt=media&token=ffc525cd-a6ff-4682-b129-dae72d837010"
+       ],
+       "name": "Deep Blue",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fmain_variant_1790092445170_b1_0_1790092445170_BIL_3.webp?alt=media&token=b4d5d931-a0b4-4d84-a692-170bcdebfa39",
+       "sizes": [],
+       "colorHex": "#1B2A4A"
+      },
+      {
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fgallery_1790093590594_BILMAR_abierta_a.webp?alt=media&token=ec4b4b80-5234-4ecd-a194-9bf6fb4fb97b",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fgallery_1790093590594_BILMAR_abierta_b.webp?alt=media&token=7045a3ee-1e67-46a6-8429-8df331eb16f4",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fgallery_1790093590594_BILMAR_tarjetero.webp?alt=media&token=e0ecca75-e952-46f4-8b7a-5c034881b262"
+       ],
+       "colorHex": "#6B4226",
+       "name": "Marrón Coñac",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fmain_variant_1790093590594_bil_0_1790093590594_BILMAR_cerrada.webp?alt=media&token=da49be48-745d-4dc3-9853-6c7728c2b7ed",
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fgallery_1790093590594_BILMAR_abierta_a.webp?alt=media&token=ec4b4b80-5234-4ecd-a194-9bf6fb4fb97b",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fgallery_1790093590594_BILMAR_abierta_b.webp?alt=media&token=7045a3ee-1e67-46a6-8429-8df331eb16f4",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fgallery_1790093590594_BILMAR_tarjetero.webp?alt=media&token=e0ecca75-e952-46f4-8b7a-5c034881b262"
+       ],
+       "sizes": [],
+       "id": "variant_1790093590594_bil_0"
+      },
+      {
+       "colorHex": "#1A1A1A",
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fgallery_1790093590594_BILNEG_abierta_a.webp?alt=media&token=5726b497-3415-4013-a967-2cac5af3a35b",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fgallery_1790093590594_BILNEG_abierta_b.webp?alt=media&token=62f529e3-fbfc-42c3-bbf7-ee50f58cbdbf",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fgallery_1790093590594_BILNEG_tarjetero.webp?alt=media&token=824ba571-2b0a-4370-87c4-1c202117183b"
+       ],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fmain_variant_1790093590594_bil_1_1790093590594_BILNEG_cerrada.webp?alt=media&token=1491fc90-b78c-4587-8156-c71a5ae4b031",
+       "sizes": [],
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fgallery_1790093590594_BILNEG_abierta_a.webp?alt=media&token=5726b497-3415-4013-a967-2cac5af3a35b",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fgallery_1790093590594_BILNEG_abierta_b.webp?alt=media&token=62f529e3-fbfc-42c3-bbf7-ee50f58cbdbf",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fgallery_1790093590594_BILNEG_tarjetero.webp?alt=media&token=824ba571-2b0a-4370-87c4-1c202117183b"
+       ],
+       "name": "Negro Azabache",
+       "id": "variant_1790093590594_bil_1"
+      }
+     ],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "NubeDxyOrTMwZDnjmrUL",
+     "name": "Set Yoryo Alianza · Él & Ella",
+     "price": 240,
+     "salePrice": 0,
+     "inStock": 4,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "rEPEpl4Hvzi6ogOBHn7x",
+     "categories": [
+      "GtylUg5tpx4YrklvBnty"
+     ],
+     "collections": [
+      "OtqZTlqk7ZEFMMebTtkF"
+     ],
+     "tags": [
+      "igb9nsYeBSupAhKTERSr",
+      "Mq0pd8fbDEi319lis7Mj",
+      "WNoplIuUzFY5hs7CfKMt"
+     ],
+     "productType": "rffUNjWeEeqrw1CCzIRN",
+     "createdAt": "2026-09-22T15:05:04.780Z",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r6%2Fmain_variant_1790088320553_r6_0_1790088320553_R6_bicolor-champagne.webp?alt=media&token=176035b2-7e75-40fb-97d4-e452d58066ae"
+     ],
+     "defaultVariantId": "variant_1790088320553_r6_0",
+     "hasVariants": true,
+     "variants": [
+      {
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FNubeDxyOrTMwZDnjmrUL%2Fgallery_1790896248162_Relojes%20a%20juego%2C%20amor%20para%20siempre.webp?alt=media&token=b2b71558-0d29-4dde-8a8a-5ddd674fe8da",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FNubeDxyOrTMwZDnjmrUL%2Fgallery_1790896274157_Imagen%20de%20ChatGPT%2029%20sept%202026%2C%2004_41_41%20p.m..webp?alt=media&token=bb320e62-9b01-4b14-afde-e07d44e42ba7"
+       ],
+       "sizes": [],
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FNubeDxyOrTMwZDnjmrUL%2Fgallery_1790896248162_Relojes%20a%20juego%2C%20amor%20para%20siempre.webp?alt=media&token=b2b71558-0d29-4dde-8a8a-5ddd674fe8da",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FNubeDxyOrTMwZDnjmrUL%2Fgallery_1790896274157_Imagen%20de%20ChatGPT%2029%20sept%202026%2C%2004_41_41%20p.m..webp?alt=media&token=bb320e62-9b01-4b14-afde-e07d44e42ba7"
+       ],
+       "id": "variant_1790088320553_r6_0",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r6%2Fmain_variant_1790088320553_r6_0_1790088320553_R6_bicolor-champagne.webp?alt=media&token=176035b2-7e75-40fb-97d4-e452d58066ae",
+       "colorHex": "#C9A24B",
+       "name": "Bicolor Champagne"
+      }
+     ],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "AuBNmqrZQkgLeXk2MBnp",
+     "name": "Reloj Yoryo Titán",
+     "price": 90,
+     "salePrice": 0,
+     "inStock": 4,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "rEPEpl4Hvzi6ogOBHn7x",
+     "categories": [
+      "GtylUg5tpx4YrklvBnty"
+     ],
+     "collections": [
+      "OtqZTlqk7ZEFMMebTtkF"
+     ],
+     "tags": [
+      "igb9nsYeBSupAhKTERSr",
+      "Mq0pd8fbDEi319lis7Mj"
+     ],
+     "productType": "rffUNjWeEeqrw1CCzIRN",
+     "createdAt": "2026-09-22T15:05:03.907Z",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r3%2Fmain_variant_1790088301201_r3_0_1790088301201_R3_negro-cobre.webp?alt=media&token=945d4b53-ea1d-4be8-bf06-3071246fe8a1"
+     ],
+     "defaultVariantId": "variant_1790088301201_r3_0",
+     "hasVariants": true,
+     "variants": [
+      {
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FAuBNmqrZQkgLeXk2MBnp%2Fgallery_1790720590978_WhatsApp%20Image%202026-09-24%20at%202.48.06%20PM.webp?alt=media&token=fd4872a7-d627-4cd6-96f0-15643970af85"
+       ],
+       "colorHex": "#1A1A1A",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r3%2Fmain_variant_1790088301201_r3_0_1790088301201_R3_negro-cobre.webp?alt=media&token=945d4b53-ea1d-4be8-bf06-3071246fe8a1",
+       "id": "variant_1790088301201_r3_0",
+       "name": "Negro Cobre",
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FAuBNmqrZQkgLeXk2MBnp%2Fgallery_1790720590978_WhatsApp%20Image%202026-09-24%20at%202.48.06%20PM.webp?alt=media&token=fd4872a7-d627-4cd6-96f0-15643970af85"
+       ],
+       "sizes": []
+      },
+      {
+       "galleryImages": [],
+       "sizes": [],
+       "id": "variant_1790088301201_r3_1",
+       "name": "Acero Grafito",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r3%2Fmain_variant_1790088301201_r3_1_1790088301201_R3_acero-grafito.webp?alt=media&token=953b182e-c634-4bcb-bbe9-064e2e2182d9",
+       "colorHex": "#4A4E54",
+       "images": []
+      },
+      {
+       "name": "Azul Abismo",
+       "images": [],
+       "galleryImages": [],
+       "colorHex": "#16315C",
+       "id": "variant_1790088301201_r3_2",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r3%2Fmain_variant_1790088301201_r3_2_1790088301201_R3_azul-abismo.webp?alt=media&token=c2e441bb-e5f1-49a1-b178-fcdca00e53a4",
+       "sizes": []
+      }
+     ],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "BrSFBNeep6FXODg4Pqyp",
+     "name": "Reloj Yoryo Monarca",
+     "price": 120,
+     "salePrice": 0,
+     "inStock": 4,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "rEPEpl4Hvzi6ogOBHn7x",
+     "categories": [
+      "GtylUg5tpx4YrklvBnty"
+     ],
+     "collections": [
+      "OtqZTlqk7ZEFMMebTtkF"
+     ],
+     "tags": [
+      "igb9nsYeBSupAhKTERSr",
+      "Mq0pd8fbDEi319lis7Mj",
+      "Pn4HA4LxtPFI9XLKRE5s"
+     ],
+     "productType": "rffUNjWeEeqrw1CCzIRN",
+     "createdAt": "2026-09-22T15:05:03.534Z",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r2%2Fmain_variant_1790088293597_r2_0_1790088293597_R2_oro-rosa.webp?alt=media&token=ebe9b766-28e2-4d3b-a197-9566f6732cf8"
+     ],
+     "defaultVariantId": "variant_1790088293597_r2_0",
+     "hasVariants": true,
+     "variants": [
+      {
+       "name": "Oro Rosa Medianoche",
+       "id": "variant_1790088293597_r2_0",
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r2%2Fgallery_1790088293597_R2_acero_muneca.webp?alt=media&token=129adaf6-52f9-4ab5-8e98-2185b3094af7"
+       ],
+       "sizes": [],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r2%2Fmain_variant_1790088293597_r2_0_1790088293597_R2_oro-rosa.webp?alt=media&token=ebe9b766-28e2-4d3b-a197-9566f6732cf8",
+       "colorHex": "#B76E51",
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r2%2Fgallery_1790088293597_R2_acero_muneca.webp?alt=media&token=129adaf6-52f9-4ab5-8e98-2185b3094af7"
+       ]
+      },
+      {
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r2%2Fgallery_1790088293597_R2_acero_muneca.webp?alt=media&token=129adaf6-52f9-4ab5-8e98-2185b3094af7"
+       ],
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r2%2Fgallery_1790088293597_R2_acero_muneca.webp?alt=media&token=129adaf6-52f9-4ab5-8e98-2185b3094af7"
+       ],
+       "name": "Acero Medianoche",
+       "id": "variant_1790088293597_r2_1",
+       "colorHex": "#1B2A4A",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r2%2Fmain_variant_1790088293597_r2_1_1790088293597_R2_acero.webp?alt=media&token=0ae0ef56-488c-4f43-bbaa-ae1fea9b539d",
+       "sizes": []
+      }
+     ],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "OvGYD9qhSz7kUxdCBjEn",
+     "name": "Lentes Yoryo Versalles",
+     "price": 120,
+     "salePrice": null,
+     "inStock": 4,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "rEPEpl4Hvzi6ogOBHn7x",
+     "categories": [
+      "55X6hWIZkOeQKqGO6BFf"
+     ],
+     "collections": [
+      "OtqZTlqk7ZEFMMebTtkF"
+     ],
+     "tags": [
+      "zy1Ytn2mLL79tUusr1w4",
+      "Mq0pd8fbDEi319lis7Mj"
+     ],
+     "characters": [],
+     "productType": "rffUNjWeEeqrw1CCzIRN",
+     "createdAt": "2026-09-22T15:05:02.669Z",
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l2%2Fmain_variant_1790091981031_0_1790091981031_L2_oro_a.webp?alt=media&token=d2232026-a620-45db-8cec-50b0203d7389"
+     ],
+     "defaultVariantId": "variant_1790091981031_0",
+     "hasVariants": true,
+     "variants": [
+      {
+       "imagesCrops": {},
+       "id": "variant_1790091981031_0",
+       "sizes": [],
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l2%2Fgallery_1790091981031_L2_oro_b.webp?alt=media&token=1951bd60-59a6-4394-ab50-980a33715c9e"
+       ],
+       "thumbnailCrop": null,
+       "name": "Oro Labrado",
+       "colorHex": "#C9A24B",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l2%2Fmain_variant_1790091981031_0_1790091981031_L2_oro_a.webp?alt=media&token=d2232026-a620-45db-8cec-50b0203d7389",
+       "imagesVariantes": {
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l2%2Fmain_variant_1790091981031_0_1790091981031_L2_oro_a.webp?alt=media&token=d2232026-a620-45db-8cec-50b0203d7389": {
+         "160": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l2%2Fmain_variant_1790091981031_0_1790091981031_L2_oro_a_160.webp?alt=media&token=d249ced6-5d7a-491c-a947-660ab3bcb22d",
+         "400": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l2%2Fmain_variant_1790091981031_0_1790091981031_L2_oro_a_400.webp?alt=media&token=3954131e-89a6-449b-8bb0-7ecff4c41196",
+         "800": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l2%2Fmain_variant_1790091981031_0_1790091981031_L2_oro_a_800.webp?alt=media&token=40a992f6-bf06-4882-be8b-30257eea7b8e"
+        },
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l2%2Fgallery_1790091981031_L2_oro_b.webp?alt=media&token=1951bd60-59a6-4394-ab50-980a33715c9e": {
+         "160": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l2%2Fgallery_1790091981031_L2_oro_b_160.webp?alt=media&token=101a7f6b-0b63-4545-b2b7-9c99f4c64009",
+         "400": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l2%2Fgallery_1790091981031_L2_oro_b_400.webp?alt=media&token=ff2631e6-ca8a-4898-ae64-0a1a88039e5c",
+         "800": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l2%2Fgallery_1790091981031_L2_oro_b_800.webp?alt=media&token=4231bc9a-297f-4361-8af8-49ff5dc4d68e"
+        }
+       },
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l2%2Fgallery_1790091981031_L2_oro_b.webp?alt=media&token=1951bd60-59a6-4394-ab50-980a33715c9e"
+       ]
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "foF1l7x33v3zFmRs2CVG",
+     "name": "Reloj Yoryo Magnate",
+     "price": 120,
+     "salePrice": 0,
+     "inStock": 4,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "rEPEpl4Hvzi6ogOBHn7x",
+     "categories": [
+      "GtylUg5tpx4YrklvBnty"
+     ],
+     "collections": [
+      "OtqZTlqk7ZEFMMebTtkF"
+     ],
+     "tags": [
+      "igb9nsYeBSupAhKTERSr",
+      "Mq0pd8fbDEi319lis7Mj",
+      "Pn4HA4LxtPFI9XLKRE5s"
+     ],
+     "productType": "rffUNjWeEeqrw1CCzIRN",
+     "createdAt": "2026-09-22T15:05:01.404Z",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r1%2Fmain_variant_1790088280690_r1_0_1790088280690_R1_acero-onix.webp?alt=media&token=8eb0b7ff-a38c-4241-8009-0519838e4141"
+     ],
+     "defaultVariantId": "variant_1790088280690_r1_2",
+     "hasVariants": true,
+     "variants": [
+      {
+       "name": "Acero Ónix",
+       "id": "variant_1790088280690_r1_0",
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r1%2Fgallery_1790088280690_R1_oro-imperial_muneca.webp?alt=media&token=ffed719c-a26b-4735-a668-56a186fd61a5",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FfoF1l7x33v3zFmRs2CVG%2Fgallery_1790720809226_Imagen%20de%20ChatGPT%2029%20sept%202026%2C%2003_15_50%20p.m..webp?alt=media&token=38c44a47-e735-4617-9380-267547720797"
+       ],
+       "sizes": [],
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r1%2Fgallery_1790088280690_R1_oro-imperial_muneca.webp?alt=media&token=ffed719c-a26b-4735-a668-56a186fd61a5",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FfoF1l7x33v3zFmRs2CVG%2Fgallery_1790720809226_Imagen%20de%20ChatGPT%2029%20sept%202026%2C%2003_15_50%20p.m..webp?alt=media&token=38c44a47-e735-4617-9380-267547720797"
+       ],
+       "colorHex": "#2E2E2E",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r1%2Fmain_variant_1790088280690_r1_0_1790088280690_R1_acero-onix.webp?alt=media&token=8eb0b7ff-a38c-4241-8009-0519838e4141"
+      },
+      {
+       "id": "variant_1790088280690_r1_1",
+       "sizes": [],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r1%2Fmain_variant_1790088280690_r1_1_1790088280690_R1_oro-imperial.webp?alt=media&token=4e383673-d69f-4f08-a14e-c13fd456dd7c",
+       "colorHex": "#C9A24B",
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r1%2Fgallery_1790088280690_R1_oro-imperial_muneca.webp?alt=media&token=ffed719c-a26b-4735-a668-56a186fd61a5",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r1%2Fgallery_1790088280690_R1_platino-perla_muneca.webp?alt=media&token=a736dbe1-e8c1-4b08-9526-0e7392c6cb2d"
+       ],
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r1%2Fgallery_1790088280690_R1_oro-imperial_muneca.webp?alt=media&token=ffed719c-a26b-4735-a668-56a186fd61a5",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r1%2Fgallery_1790088280690_R1_platino-perla_muneca.webp?alt=media&token=a736dbe1-e8c1-4b08-9526-0e7392c6cb2d"
+       ],
+       "name": "Oro Imperial"
+      },
+      {
+       "sizes": [],
+       "id": "variant_1790088280690_r1_2",
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r1%2Fgallery_1790088280690_R1_platino-perla_muneca.webp?alt=media&token=a736dbe1-e8c1-4b08-9526-0e7392c6cb2d",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r1%2Fgallery_1790088280690_R1_oro-imperial_muneca.webp?alt=media&token=ffed719c-a26b-4735-a668-56a186fd61a5"
+       ],
+       "colorHex": "#D9DCE1",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r1%2Fmain_variant_1790088280690_r1_2_1790088280690_R1_platino-perla.webp?alt=media&token=c3e1665c-3711-44aa-bee6-28a77d7e8b16",
+       "name": "Platino Perla",
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r1%2Fgallery_1790088280690_R1_platino-perla_muneca.webp?alt=media&token=a736dbe1-e8c1-4b08-9526-0e7392c6cb2d",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r1%2Fgallery_1790088280690_R1_oro-imperial_muneca.webp?alt=media&token=ffed719c-a26b-4735-a668-56a186fd61a5"
+       ]
+      }
+     ],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "qVKdfMI5ZMXaBGwkNmoF",
+     "name": "Reloj Yoryo Expedición",
+     "price": 80,
+     "salePrice": 0,
+     "inStock": 4,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "rEPEpl4Hvzi6ogOBHn7x",
+     "categories": [
+      "GtylUg5tpx4YrklvBnty"
+     ],
+     "collections": [
+      "OtqZTlqk7ZEFMMebTtkF"
+     ],
+     "tags": [
+      "igb9nsYeBSupAhKTERSr",
+      "Mq0pd8fbDEi319lis7Mj"
+     ],
+     "productType": "rffUNjWeEeqrw1CCzIRN",
+     "createdAt": "2026-09-22T15:05:01.138Z",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r4%2Fmain_variant_1790088309433_r4_0_1790088309433_R4_verde-militar.webp?alt=media&token=e0040177-b2e8-4250-bc28-f3ba5b6fbacf"
+     ],
+     "defaultVariantId": "variant_1790088309433_r4_0",
+     "hasVariants": true,
+     "variants": [
+      {
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FqVKdfMI5ZMXaBGwkNmoF%2Fgallery_1790861547499_Imagen%20de%20ChatGPT%2030%20sept%202026%2C%2004_17_27%20p.m..webp?alt=media&token=36ee07ac-f7fd-44f6-ab43-774e018bc374"
+       ],
+       "sizes": [],
+       "name": "Verde Militar",
+       "colorHex": "#2F4F3A",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r4%2Fmain_variant_1790088309433_r4_0_1790088309433_R4_verde-militar.webp?alt=media&token=e0040177-b2e8-4250-bc28-f3ba5b6fbacf",
+       "id": "variant_1790088309433_r4_0",
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FqVKdfMI5ZMXaBGwkNmoF%2Fgallery_1790861547499_Imagen%20de%20ChatGPT%2030%20sept%202026%2C%2004_17_27%20p.m..webp?alt=media&token=36ee07ac-f7fd-44f6-ab43-774e018bc374"
+       ]
+      },
+      {
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r4%2Fmain_variant_1790088309433_r4_1_1790088309433_R4_azul-marino.webp?alt=media&token=a101bc06-602f-406d-b888-8856d658e89b",
+       "colorHex": "#1F3A63",
+       "sizes": [],
+       "images": [],
+       "id": "variant_1790088309433_r4_1",
+       "galleryImages": [],
+       "name": "Azul Marino"
+      },
+      {
+       "colorHex": "#6E7176",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r4%2Fmain_variant_1790088309433_r4_2_1790088309433_R4_grafito.webp?alt=media&token=21b59819-2bae-450d-b779-bc4956e55f65",
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FqVKdfMI5ZMXaBGwkNmoF%2Fgallery_1790864697432_Imagen%20de%20ChatGPT%2030%20sept%202026%2C%2004_18_19%20p.m..webp?alt=media&token=b45e5d4d-303a-41a9-a450-aa07d090987e"
+       ],
+       "id": "variant_1790088309433_r4_2",
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FqVKdfMI5ZMXaBGwkNmoF%2Fgallery_1790864697432_Imagen%20de%20ChatGPT%2030%20sept%202026%2C%2004_18_19%20p.m..webp?alt=media&token=b45e5d4d-303a-41a9-a450-aa07d090987e"
+       ],
+       "sizes": [],
+       "name": "Grafito"
+      },
+      {
+       "name": "Negro Ámbar",
+       "id": "variant_1790091958157_0",
+       "sizes": [],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r4%2Fmain_variant_1790091958157_0_1790091958157_R4_negro-ambar.webp?alt=media&token=87a56a6e-e690-429f-afd8-e837487fa303",
+       "colorHex": "#1C1C1C",
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FqVKdfMI5ZMXaBGwkNmoF%2Fgallery_1790861560694_Imagen%20de%20ChatGPT%2030%20sept%202026%2C%2004_17_51%20p.m..webp?alt=media&token=be627a13-1a0d-438a-9861-f15e8e5e1211"
+       ],
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2FqVKdfMI5ZMXaBGwkNmoF%2Fgallery_1790861560694_Imagen%20de%20ChatGPT%2030%20sept%202026%2C%2004_17_51%20p.m..webp?alt=media&token=be627a13-1a0d-438a-9861-f15e8e5e1211"
+       ]
+      }
+     ],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "L2lHIqgLxxqIgp6KONaI",
+     "name": "Lentes Yoryo Imperial",
+     "price": 120,
+     "salePrice": null,
+     "inStock": 4,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "rEPEpl4Hvzi6ogOBHn7x",
+     "categories": [
+      "55X6hWIZkOeQKqGO6BFf"
+     ],
+     "collections": [
+      "OtqZTlqk7ZEFMMebTtkF"
+     ],
+     "tags": [
+      "zy1Ytn2mLL79tUusr1w4",
+      "Mq0pd8fbDEi319lis7Mj"
+     ],
+     "characters": [],
+     "productType": "rffUNjWeEeqrw1CCzIRN",
+     "createdAt": "2026-09-22T15:05:00.352Z",
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l3%2Fmain_variant_1790091986703_0_1790091986703_L3_plata_a.webp?alt=media&token=ec90b6fb-a0b6-4f35-915f-f2350073e79e"
+     ],
+     "defaultVariantId": "variant_1790091986703_0",
+     "hasVariants": true,
+     "variants": [
+      {
+       "colorHex": "#D9DCE1",
+       "imagesVariantes": {
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l3%2Fmain_variant_1790091986703_0_1790091986703_L3_plata_a.webp?alt=media&token=ec90b6fb-a0b6-4f35-915f-f2350073e79e": {
+         "160": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l3%2Fmain_variant_1790091986703_0_1790091986703_L3_plata_a_160.webp?alt=media&token=67fb0475-bf42-41ba-a592-4b52f374c4a9",
+         "400": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l3%2Fmain_variant_1790091986703_0_1790091986703_L3_plata_a_400.webp?alt=media&token=60234b49-a7dc-4f0f-bfe6-8733254ef749",
+         "800": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l3%2Fmain_variant_1790091986703_0_1790091986703_L3_plata_a_800.webp?alt=media&token=cd651774-999a-4dfe-9636-a1cbb4a38eff"
+        }
+       },
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l3%2Fmain_variant_1790091986703_0_1790091986703_L3_plata_a.webp?alt=media&token=ec90b6fb-a0b6-4f35-915f-f2350073e79e",
+       "sizes": [],
+       "thumbnailCrop": null,
+       "imagesCrops": {},
+       "images": [],
+       "id": "variant_1790091986703_0",
+       "name": "Plata Grabado",
+       "galleryImages": []
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    },
+    {
+     "id": "R78pH03QLmHwpSAuGI7o",
+     "name": "Lentes Yoryo Diamante",
+     "price": 120,
+     "salePrice": null,
+     "inStock": 4,
+     "customizable": false,
+     "isComboProduct": false,
+     "brandId": "rEPEpl4Hvzi6ogOBHn7x",
+     "categories": [
+      "55X6hWIZkOeQKqGO6BFf"
+     ],
+     "collections": [
+      "OtqZTlqk7ZEFMMebTtkF"
+     ],
+     "tags": [
+      "zy1Ytn2mLL79tUusr1w4",
+      "Mq0pd8fbDEi319lis7Mj"
+     ],
+     "characters": [],
+     "productType": "rffUNjWeEeqrw1CCzIRN",
+     "createdAt": "2026-09-22T15:05:00.031Z",
+     "mainImage": "",
+     "images": [
+      "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fmain_variant_1790091962558_0_1790091962558_L1_azul_a.webp?alt=media&token=ee8c02fd-8372-49a8-9c9e-14617b35f912"
+     ],
+     "defaultVariantId": "variant_1790091962558_0",
+     "hasVariants": true,
+     "variants": [
+      {
+       "sizes": [],
+       "thumbnailCrop": null,
+       "imagesVariantes": {
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_azul_d.webp?alt=media&token=a5853995-cef4-4d83-b20f-b0588ae8a9e7": {
+         "160": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_azul_d_160.webp?alt=media&token=8c8c87c5-86ba-4b8f-94ac-fb92a42ce82e",
+         "400": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_azul_d_400.webp?alt=media&token=8e6da90e-8b03-4451-8634-cc3efac0092c",
+         "800": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_azul_d_800.webp?alt=media&token=a8b6d835-2535-4016-be08-f8c82762a344"
+        },
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fmain_variant_1790091962558_0_1790091962558_L1_azul_a.webp?alt=media&token=ee8c02fd-8372-49a8-9c9e-14617b35f912": {
+         "160": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fmain_variant_1790091962558_0_1790091962558_L1_azul_a_160.webp?alt=media&token=e62abfe4-7da8-4034-997f-e4eba0182871",
+         "400": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fmain_variant_1790091962558_0_1790091962558_L1_azul_a_400.webp?alt=media&token=775aab86-6ce4-4eee-90d9-67462539ea90",
+         "800": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fmain_variant_1790091962558_0_1790091962558_L1_azul_a_800.webp?alt=media&token=7546937e-2e11-4c03-9808-4f4cf3cca2e3"
+        },
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_azul_c.webp?alt=media&token=292c84c2-6f21-4043-ba80-bc2e4490ea54": {
+         "160": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_azul_c_160.webp?alt=media&token=3ea68b87-9ef4-4ad2-baae-62f3415c1d4e",
+         "400": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_azul_c_400.webp?alt=media&token=6fcb2211-3b65-44c7-a663-ba369ca41c16",
+         "800": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_azul_c_800.webp?alt=media&token=41adf930-e7d6-4f29-b6eb-579ea9b83e3d"
+        },
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_azul_b.webp?alt=media&token=98adbe19-5164-49af-810f-b4224a5205b8": {
+         "160": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_azul_b_160.webp?alt=media&token=6633b63c-1a30-4f95-8bf3-9c4481b75aad",
+         "400": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_azul_b_400.webp?alt=media&token=b2b2e40f-ba54-4913-9f10-ba64e9089068",
+         "800": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_azul_b_800.webp?alt=media&token=d0a58c76-905b-4c5e-9be3-0267961939d0"
+        }
+       },
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fmain_variant_1790091962558_0_1790091962558_L1_azul_a.webp?alt=media&token=ee8c02fd-8372-49a8-9c9e-14617b35f912",
+       "colorHex": "#6E8FB8",
+       "imagesCrops": {},
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_azul_b.webp?alt=media&token=98adbe19-5164-49af-810f-b4224a5205b8",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_azul_c.webp?alt=media&token=292c84c2-6f21-4043-ba80-bc2e4490ea54",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_azul_d.webp?alt=media&token=a5853995-cef4-4d83-b20f-b0588ae8a9e7"
+       ],
+       "id": "variant_1790091962558_0",
+       "name": "Cristal Azul",
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_azul_b.webp?alt=media&token=98adbe19-5164-49af-810f-b4224a5205b8",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_azul_c.webp?alt=media&token=292c84c2-6f21-4043-ba80-bc2e4490ea54",
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_azul_d.webp?alt=media&token=a5853995-cef4-4d83-b20f-b0588ae8a9e7"
+       ]
+      },
+      {
+       "imagesVariantes": {
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_humo_b.webp?alt=media&token=b4cddf35-5a34-4b5e-811f-24b131238df2": {
+         "160": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_humo_b_160.webp?alt=media&token=af960c9c-f558-44d3-a77b-3b3fe027c298",
+         "400": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_humo_b_400.webp?alt=media&token=071ba5f7-7244-4e73-94cf-7f23ff6c128f",
+         "800": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_humo_b_800.webp?alt=media&token=cfa63dd4-5b00-48aa-a70d-95dde82c72a2"
+        },
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fmain_variant_1790091962558_1_1790091962558_L1_humo_a.webp?alt=media&token=c74d508c-bc6f-4ff1-bcdf-1516c3a9ed17": {
+         "160": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fmain_variant_1790091962558_1_1790091962558_L1_humo_a_160.webp?alt=media&token=fefa7d0c-9556-4642-a7b7-24df75cd9732",
+         "400": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fmain_variant_1790091962558_1_1790091962558_L1_humo_a_400.webp?alt=media&token=ce0d84af-ba93-4666-a09e-d1d87235d10a",
+         "800": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fmain_variant_1790091962558_1_1790091962558_L1_humo_a_800.webp?alt=media&token=726791a5-b969-4959-a390-0e54b54576a0"
+        }
+       },
+       "imagesCrops": {},
+       "thumbnailCrop": null,
+       "name": "Cristal Humo",
+       "id": "variant_1790091962558_1",
+       "sizes": [],
+       "galleryImages": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_humo_b.webp?alt=media&token=b4cddf35-5a34-4b5e-811f-24b131238df2"
+       ],
+       "images": [
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fgallery_1790091962558_L1_humo_b.webp?alt=media&token=b4cddf35-5a34-4b5e-811f-24b131238df2"
+       ],
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fmain_variant_1790091962558_1_1790091962558_L1_humo_a.webp?alt=media&token=c74d508c-bc6f-4ff1-bcdf-1516c3a9ed17",
+       "colorHex": "#5A5A60"
+      },
+      {
+       "images": [],
+       "imagesVariantes": {
+        "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fmain_variant_1790091962558_2_1790091962558_L1_cafe_a.webp?alt=media&token=46246164-672d-4855-ac3d-6e8d580da567": {
+         "160": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fmain_variant_1790091962558_2_1790091962558_L1_cafe_a_160.webp?alt=media&token=06afd18a-636d-4c7c-b941-485e37561751",
+         "400": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fmain_variant_1790091962558_2_1790091962558_L1_cafe_a_400.webp?alt=media&token=3adc19b9-dbec-4656-b1bd-9251e280dffd",
+         "800": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fmain_variant_1790091962558_2_1790091962558_L1_cafe_a_800.webp?alt=media&token=a75fd89e-b791-4d0a-b9bc-288a984b0e77"
+        }
+       },
+       "galleryImages": [],
+       "imagesCrops": {},
+       "name": "Cristal Café",
+       "colorHex": "#8B5E3C",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-l1%2Fmain_variant_1790091962558_2_1790091962558_L1_cafe_a.webp?alt=media&token=46246164-672d-4855-ac3d-6e8d580da567",
+       "thumbnailCrop": null,
+       "id": "variant_1790091962558_2",
+       "sizes": []
+      }
+     ],
+     "mainSizes": [],
+     "fulfillmentType": "stock",
+     "featured": false,
+     "featuredOrder": 0
+    }
+   ]
+  }
+ ],
+ "slugsDeLandings": [
+  "catas",
+  "conamorequipos",
+  "conamorgeeks",
+  "conamorparejas",
+  "factos",
+  "combo-reloj-billetera-2026",
+  "reloj-kchero-2026",
+  "reloj-matador-pro-2026",
+  "deportes-top",
+  "pareja-viral",
+  "regalos-con-amor",
+  "testing",
+  "yoryo",
+  "relojes-promocion",
+  "veranito-promo",
+  "muebleria",
+  "lumi",
+  "nova"
+ ]
+}

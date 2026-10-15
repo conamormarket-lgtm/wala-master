@@ -62,7 +62,9 @@ Cada paso en su propio commit, verificable por separado.
    `HojaPersona`) y el acceso (login, registro, recuperar y completar
    perfil: ACCESO.md; chicas y aisladas, buenas para empezar) y Crear
    (`PaginaCrear`, CREAR.md; después de Mis creaciones: comparten
-   `TarjetaCreacion`).
+   `TarjetaCreacion`) y navegar la tienda (un nicho y un vendedor con
+   `PaginaColeccion`, los nichos y las ofertas: NAVEGAR.md; las landings
+   `/:slug` van con el paso 5, son del builder).
 7. **Cargando** (`PantallaCarga`, `Cargando`, `EsqueletoPagina`: CARGA.md; el
    splash de `index.html` cambia en el mismo commit), **`BarraInferior` y luego `Cabecera`**: la más conectada (AuthContext,
    CartContext, WishlistContext, notificaciones y la configuración de

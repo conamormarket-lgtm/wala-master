@@ -458,6 +458,7 @@ export function GrillaCategorias({ ajustes = {}, categorias }) {
               imagen={fotoDe(c)}
               url={c.url || `?categoria=${c.categoryId}`}
               cuenta={ajustes.showProductCount ? c.cuenta : undefined}
+              detalle={c.detalle}
               fondo={c.backgroundColor || ajustes.tileBackgroundColor}
               acento={acento(k)}
               giro={k % 2 ? 2.5 : -2.5}

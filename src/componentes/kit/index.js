@@ -20,7 +20,7 @@ export { accionDeProducto, tarjetaDesdeProducto, esNuevo, opcionesDeProducto, ru
   sugerenciasDesdeBusqueda, grupoModalidad, ORDENES_BUSQUEDA, ordenarProductos, perfilDesdeUsuario, direccionDesdeFirestore, direccionAFirestore,
   recompensaDesdeFirestore, cuponDesdeFirestore, misionDesdeServidor, creacionDesdeDiseno, personaDesdeRecipient, personaARecipient, encuestaDesdeConfig,
   prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaCreacionDesde, prendaEstudioDesde,
-  fichaProductoDesde, opinionesDesde } from './adaptadores';
+  fichaProductoDesde, opinionesDesde, ofertaDesdeFirestore, ofertasVigentes, nichoDesdeFirestore } from './adaptadores';
 export { tipoDeEnlace } from './Enlace';
 export { default as Carrusel } from './Carrusel';
 export { default as Marquesina } from './Marquesina';
@@ -58,3 +58,4 @@ export { PaginaProducto } from './paginas/Producto';
 export { PaginaCheckout } from './paginas/Checkout';
 export { PaginaListaPublica, PaginaRegalar, PaginaRegaloSorpresa } from './paginas/Regalar';
 export { PaginaPagoRapido } from './paginas/PagoRapido';
+export { PaginaOfertas, PaginaNichos, PaginaColeccion } from './paginas/Navegar';

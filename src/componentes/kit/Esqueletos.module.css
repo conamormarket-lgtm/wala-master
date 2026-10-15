@@ -1026,3 +1026,84 @@
     display: grid;
   }
 }
+
+/* ── Ofertas, nichos y colección (nicho o vendedor) ── */
+.cofreEsq {
+  flex-direction: row;
+  align-items: center;
+  gap: 1.25rem;
+  width: min(100%, 860px);
+  margin: 0 auto;
+}
+
+.ofertasEsq {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 280px));
+  justify-content: center;
+  gap: 1.1rem;
+}
+
+.ofertaEsq {
+  padding: 0;
+  overflow: hidden;
+}
+
+.ofertaEsqCuerpo {
+  display: grid;
+  gap: 0.55rem;
+  padding: 1rem 1.1rem 1.1rem;
+}
+
+.nichosEsq {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.1rem;
+}
+
+.nichoEsq {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.pieNavegarEsq {
+  justify-content: center;
+  margin-top: 0.75rem;
+}
+
+.coleccionCabeza {
+  display: grid;
+  gap: 1rem;
+  /* Con la medida real: migas, el logo con el nombre y el aire hasta la grilla. */
+  padding-bottom: 1.6rem;
+}
+
+.coleccionCabeza .itemMenu {
+  gap: 1rem;
+}
+
+@container esqueleto (max-width: 900px) {
+  .nichosEsq {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container esqueleto (max-width: 600px) {
+  .nichosEsq {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+  }
+
+  .ofertasEsq {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .cofreEsq {
+    flex-wrap: wrap;
+    min-height: 200px !important;
+  }
+
+  .cofreEsqBoton {
+    width: 100% !important;
+  }
+}

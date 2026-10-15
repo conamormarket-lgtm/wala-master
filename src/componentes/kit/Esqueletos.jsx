@@ -785,6 +785,56 @@ const PAGINAS = {
       </span>
     </span>
   ),
+  ofertas: () => (
+    // /ofertas: el encabezado, el cofre diario y las ofertas (foto, sello y textos).
+    <>
+      <EncabezadoCentrado />
+      <Caja alto={112} className={s.cofreEsq}>
+        <Hueso forma="circulo" ancho={68} alto={68} />
+        <span className={s.filaTextos}><Hueso alto={20} ancho="40%" /><Hueso alto={11} ancho="75%" /><Hueso alto={11} ancho="45%" /></span>
+        <Hueso forma="pildora" alto={44} ancho={190} className={s.cofreEsqBoton} />
+      </Caja>
+      <span className={s.ofertasEsq}>{repetir(4, (k) => (
+        <Caja key={k} className={s.ofertaEsq}>
+          <Hueso forma="bloque" proporcion="4 / 3" ancho="100%" />
+          <span className={s.ofertaEsqCuerpo}>
+            <Hueso alto={16} ancho="70%" />
+            <Hueso alto={10} ancho="50%" />
+            <Hueso alto={10} ancho="60%" />
+            <Hueso forma="pildora" alto={36} ancho={130} />
+          </span>
+        </Caja>
+      ))}</span>
+    </>
+  ),
+  nichos: () => (
+    // /nichos: el encabezado y los cuadros (foto y nombre con su tipo).
+    <>
+      <EncabezadoCentrado />
+      <span className={s.nichosEsq}>{repetir(4, (k) => (
+        <span key={k} className={s.nichoEsq}>
+          <Hueso forma="bloque" proporcion="1 / 1" ancho="100%" />
+          <Hueso alto={14} ancho="60%" />
+          <Hueso alto={10} ancho="40%" />
+        </span>
+      ))}</span>
+      {/* "Buscar productos" y "Volver a la tienda". */}
+      <span className={cx(s.chips, s.pieNavegarEsq)}><Hueso forma="pildora" alto={44} ancho={180} /><Hueso forma="pildora" alto={44} ancho={170} /></span>
+    </>
+  ),
+  coleccion: () => (
+    // Un nicho o un vendedor: migas, el logo con el nombre y la grilla.
+    <>
+      <span className={s.coleccionCabeza}>
+        <Hueso alto={11} ancho={190} />
+        <span className={s.itemMenu}>
+          <Hueso forma="circulo" ancho={64} alto={64} />
+          <span className={s.filaTextos}><Hueso alto={34} ancho="min(60%, 300px)" /><Hueso alto={12} ancho="min(45%, 200px)" /></span>
+        </span>
+      </span>
+      <span className={s.grilla}>{productos(8)}</span>
+    </>
+  ),
   acceso: () => (
     <span className={s.accesoPagina}>
       <span className={s.accesoPanel}>
@@ -803,7 +853,7 @@ const PAGINAS = {
  * Para cambiar de página siempre es esto (CapaCargando es para esperar una acción).
  *  - forma: 'productos' (la grilla, por defecto) | 'inicio' | 'tienda' |
  *    'busqueda' | 'producto' | 'carrito' | 'checkout' | 'crear' | 'estudio' | 'comunidad' | 'minijuegos' | 'encuesta' |
- *    'acceso' | 'cuenta' | 'lista' | 'formulario'
+ *    'acceso' | 'cuenta' | 'lista' | 'formulario' | 'ofertas' | 'nichos' | 'coleccion' (un nicho o un vendedor)
  *  - sesion: false para quien no entró (la cuenta y la encuesta muestran la
  *    invitación a entrar; Minijuegos, su aviso en vez del progreso)
  *  - modulo (con forma 'cuenta'): uno de MODULOS_ESQUELETO_CUENTA (resumen,

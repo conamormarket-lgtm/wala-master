@@ -39,3 +39,4 @@ export { TarjetaRegalo, FechaEntrega, SobreRegalo } from './Regalar';
 export { Estrellas, ResumenOpiniones, TarjetaOpinion, FormularioOpinion } from './Opiniones';
 export { GaleriaProducto } from './GaleriaProducto';
 export { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra, TituloEditable } from './Ficha';
+export { CofreDiario, TarjetaOferta } from './Ofertas';
