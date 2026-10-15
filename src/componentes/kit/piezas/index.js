@@ -29,5 +29,5 @@ export { HojaPersona, validarPersona, RELACIONES, GENEROS, PRESUPUESTOS } from '
 export { ProgresoEncuesta, ElegirVarios, FichaPersonaEncuesta } from './Encuesta';
 export { CamposDatosPersonales, validarPerfil, TIPOS_DOCUMENTO, NOMBRE_DOCUMENTO } from './DatosPersonales';
 export { RequisitosContrasena, requisitosContrasena, contrasenaValida, BotonGoogle, SeparadorAcceso } from './Acceso';
-export { PortadaCrear, PASOS_CREAR, TarjetaPrendaBase, TarjetaComboCrear, ElegirPara, textoPara } from './Crear';
+export { PortadaCrear, PASOS_CREAR, textoPara } from './Crear';
 export { GaleriaProducto } from './GaleriaProducto';

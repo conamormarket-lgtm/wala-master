@@ -53,24 +53,17 @@ Sus partes, en orden:
    - La comunidad lleva `usar`: dice "Por Walá" y cuántos lo usaron, y su
      botón es "Usar diseño".
 3. **Empieza una nueva**:
-   - el título subrayado y **`ElegirPara`**. "Para ti", "En pareja" y
-     "Conjunto" van en píldoras; la elegida va en violeta liso y las de
-     combo llevan "Ahorras" en un sello dorado.
-   - la grilla de **`TarjetaPrendaBase`**, o la de **`TarjetaComboCrear`**
-     si eligió un combo. Las tarjetas entran una tras otra al cambiar de
-     opción.
-
-Las tarjetas de prenda y de combo tienen el lenguaje de `TarjetaProducto`:
-
-- se inclinan siguiendo al puntero, se ilumina el canto y un barrido cruza
-  la foto una vez;
-- la prenda muestra la espalda al pasar; en el celular, frente y espalda
-  alternan solas mientras se ven, con dos puntos redondos arriba que dicen
-  cuál se ve (como en la tienda: con ratón no aparecen);
-- los puntos de color se levantan uno tras otro y el pincel de "Diseñar" se
-  ladea;
-- un combo abre sus prendas en abanico y lleva "Ahorras S/" en una
-  **etiqueta colgante** magenta, porque es cosa del producto.
+   - el título subrayado y "¿Para cuántos?" con **`Chip`** ("Para ti", "En
+     pareja", "Conjunto");
+   - la grilla con **`TarjetaProducto`**, la misma de la tienda, ya sin
+     tarjetas propias de Crear:
+     - **una prenda** usa `accion="crear"`: "Tu diseño", el botón con la
+       paleta que lleva al estudio, la espalda al pasar (`imagenHover`), sus
+       colores y en la categoría los lados que se diseñan ("Frente +
+       Espalda");
+     - **un combo** usa `piezas`, que muestra la etiqueta "Combo · 2" y sus
+       prendas como cartas, y `precioAntes`, el precio por separado, que da
+       el "-23%" y el tachado.
 
 ## Partes
 
@@ -81,9 +74,9 @@ Las tarjetas de prenda y de combo tienen el lenguaje de `TarjetaProducto`:
 | — | Tus borradores | `TarjetaCreacion borrador vertical` | `Carrusel`, `TituloSeccion` | `piezas/Creaciones.module.css` | `useBorradoresCrear` (+ `agruparCombos`) |
 | — | Tus creaciones | `TarjetaCreacion vertical` (combo con `imagenes`) | ídem | ídem | `getDesignsByUser` filtrado por `tipo === 'crear'` o `esMiCombo` → `creacionDesdeDiseno` |
 | — | Diseños de la comunidad | `TarjetaCreacion vertical usar` | ídem | ídem | `useComunidad` → `disenoComunidadDesde` |
-| — | ¿Para cuántos? | `ElegirPara` | — | `piezas/Crear.module.css` | los tamaños de los combos (`textoPara`) |
-| — | Prenda para diseñar | `TarjetaPrendaBase` | `FotoProducto`, `Etiqueta` | `piezas/Crear.module.css` | `getPrendasBase` → `prendaCrearDesdeProducto` |
-| — | Combo | `TarjetaComboCrear` | `FotoProducto`, `Etiqueta solida`, `EtiquetaColgante` | ídem | `getCombosCrear` → `comboCrearDesde` |
+| — | ¿Para cuántos? | `Chip` | — | `Etiquetas.module.css` | los tamaños de los combos (`textoPara`) |
+| — | Prenda para diseñar | `TarjetaProducto accion="crear"` | `FotoProducto`, `Etiqueta` | `TarjetaProducto.module.css` | `getPrendasBase` → `prendaCrearDesdeProducto` |
+| — | Combo | `TarjetaProducto` con `piezas` y `precioAntes` | ídem | ídem | `getCombosCrear` → `comboCrearDesde` |
 | — | Cargando / vacío | `EsqueletoProducto` / `EstadoVacio` (Kapi 3D) | — | — | `isLoading`, sin prendas |
 | M11 | Cambio de página | `EsqueletoPagina forma="crear"` | portada, fila y grilla | `Esqueletos.module.css` | — |
 
@@ -197,9 +190,9 @@ porque comparten `TarjetaCreacion`.
 | Borradores | `TusBorradores` + `TarjetaBorrador` | fila con `TarjetaCreacion borrador vertical` |
 | Creaciones | `TusCreaciones` con `MiCreacionCard` / `TarjetaMiCombo` y `FilaCarrusel` | fila con `TarjetaCreacion vertical` + `Carrusel` |
 | Comunidad | `DisenosComunidad` + `TarjetaComunidad` | fila con `TarjetaCreacion vertical usar` |
-| ¿Para cuántos? | `.selectorPara` (`etiquetaPara`) | `ElegirPara` + `textoPara` |
-| Prenda | `TarjetaPrenda` | `TarjetaPrendaBase` |
-| Combo | `TarjetaCombo` | `TarjetaComboCrear` |
+| ¿Para cuántos? | `.selectorPara` (`etiquetaPara`) | `Chip` + `textoPara` |
+| Prenda | `TarjetaPrenda` | `TarjetaProducto accion="crear"` |
+| Combo | `TarjetaCombo` | `TarjetaProducto` con `piezas` |
 | Cargando | `.esqueleto` ×3 | `EsqueletoProducto` |
 | Sin prendas | `.emptyState` con un ícono de polera | `EstadoVacio` con Kapi |
 

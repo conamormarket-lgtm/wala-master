@@ -726,44 +726,52 @@ export const encuestaDesdeConfig = (c = {}, sugerencias) => ({
 /* ── Crear (/personalizar) ─────────────────────────────── */
 
 /**
- * Una prenda base de productos_wala (getPrendasBase) → TarjetaPrendaBase.
- * Solo los colores que se pueden pedir (colorDisponible), como la tienda.
+ * Una prenda base de productos_wala (getPrendasBase) → props de
+ * TarjetaProducto con accion "crear" ("Diseñar", va al estudio): frente y
+ * espalda (imagenHover), sus colores (solo los que se pueden pedir, como la
+ * tienda) y los lados que se diseñan en la línea de la categoría.
  */
 export const prendaCrearDesdeProducto = (prenda = {}) => {
   const { vistas, colores } = leerPrendaBase(prenda);
+  const lados = vistas.map((v) => v.nombre).filter(Boolean).join(' + ');
   return {
     id: prenda.id,
     nombre: prenda.name,
-    frente: vistas[0]?.imagen,
-    espalda: vistas[1]?.imagen,
-    lados: vistas.map((v) => v.nombre).filter(Boolean),
-    colores: colores.filter((c) => colorDisponible(c, vistas)).map((c) => ({ id: c.id, nombre: c.nombre, fondo: fondoMuestra(c) })),
+    imagen: vistas[0]?.imagen,
+    imagenHover: vistas[1]?.imagen,
+    categoria: [prenda.visible === false && 'Borrador', lados].filter(Boolean).join(' · '),
+    colores: [...new Set(colores.filter((c) => colorDisponible(c, vistas)).map(fondoMuestra))],
     precio: precioBase(prenda),
+    personalizable: true,
+    accion: 'crear',
     url: `/crear/${prenda.id}`,
-    borrador: prenda.visible === false,
   };
 };
 
 /**
- * Un combo de Crear (getCombosCrear) con sus prendas → TarjetaComboCrear
- * (más `piezas` y `conjunto` para "¿Para cuántos?"). Devuelve null si falta
- * alguna prenda (no está a la venta). Mismo cálculo que preciosDeCombo.
+ * Un combo de Crear (getCombosCrear) con sus prendas → props de
+ * TarjetaProducto (piezas: la etiqueta "Combo" y sus prendas como cartas;
+ * precioAntes: lo que cuestan por separado, así se ve el ahorro), más
+ * `cantidad` y `conjunto` para "¿Para cuántos?". null si falta una prenda.
  *  - prendaPorId: Map de las prendas base por id
  */
 export const comboCrearDesde = (combo = {}, prendaPorId = new Map()) => {
   const prendas = (combo.piezas || []).map((p) => prendaPorId.get(p.prendaId));
   if (!prendas.length || !prendas.every(Boolean)) return null;
+  const precio = precioBase(combo);
+  const sueltas = prendas.reduce((total, p) => total + precioBase(p), 0);
   return {
     id: combo.id,
-    piezas: prendas.length,
+    cantidad: prendas.length,
     conjunto: new Set((combo.piezas || []).map((p) => p.prendaId)).size > 1,
     nombre: combo.name,
-    fotos: prendas.map((p) => leerPrendaBase(p).vistas[0]?.imagen || p.mainImage).filter(Boolean),
-    prendas: prendas.map((p) => p.name),
-    precio: precioBase(combo),
-    sueltas: prendas.reduce((total, p) => total + precioBase(p), 0),
+    categoria: [!combo.publicado && 'Borrador', 'Cada una con su diseño'].filter(Boolean).join(' · '),
+    piezas: prendas.map((p) => ({ nombre: p.name, imagen: leerPrendaBase(p).vistas[0]?.imagen || p.mainImage })),
+    precio,
+    precioAntes: sueltas > precio ? sueltas : undefined,
+    personalizable: true,
+    accion: 'crear',
     url: `/combo/${combo.id}?nuevo=1`,
-    borrador: !combo.publicado,
   };
 };
 

@@ -1,12 +1,15 @@
 import React from 'react';
+import { User, Users } from 'lucide-react';
 import Boton from '../Boton';
 import Carrusel from '../Carrusel';
+import TarjetaProducto from '../TarjetaProducto';
+import { Chip } from '../Etiquetas';
 import { EstadoVacio } from '../Feedback';
 import { BloqueSeccion, TituloSeccion } from '../Seccion';
 import { EsqueletoProducto } from '../Esqueletos';
 import { TarjetaCreacion } from '../piezas/Creaciones';
 import { CARAS_KAPI } from '../piezas/Flotantes';
-import { PortadaCrear, TarjetaPrendaBase, TarjetaComboCrear, ElegirPara, textoPara } from '../piezas/Crear';
+import { PortadaCrear, textoPara } from '../piezas/Crear';
 import s from './Crear.module.css';
 
 /*
@@ -33,8 +36,8 @@ function Fila({ titulo, subtitulo, accion, etiqueta, children }) {
 
 /**
  * La página Crear.
- *  - prendas: [{ id, ...props de TarjetaPrendaBase }] · cargando
- *  - combos: [{ id, piezas: n, conjunto, ...props de TarjetaComboCrear }]
+ *  - prendas: [{ id, ...props de TarjetaProducto }] (accion "crear") · cargando
+ *  - combos: [{ id, cantidad: n, conjunto, ...props de TarjetaProducto con piezas }]
  *  - para · onPara(n): "¿Para cuántos?" (en la tienda va en la dirección: ?para=2)
  *  - borradores, creaciones: [{ id, ...props de TarjetaCreacion }] (las 8
  *    más recientes) · totalCreaciones: para "Ver todas (13)"
@@ -47,14 +50,14 @@ export function PaginaCrear({
   urlCreaciones = '/cuenta/creaciones', urlComunidad = '/comunidad', urlTienda = '/tienda', portada,
 }) {
   // 1 son las prendas sueltas; 2, 3… los tamaños de combo que hay.
-  const tamanos = [...new Set(combos.map((c) => c.piezas))].sort((a, b) => a - b);
+  const tamanos = [...new Set(combos.map((c) => c.cantidad))].sort((a, b) => a - b);
   const opciones = [1, ...tamanos].map((n) => {
-    const deN = combos.filter((c) => c.piezas === n);
+    const deN = combos.filter((c) => c.cantidad === n);
     const conjunto = n > 1 && deN.length > 0 && deN.every((c) => c.conjunto);
     return { valor: n, texto: textoPara(n, conjunto), grupo: n > 1 && !conjunto };
   });
   const elegido = opciones.some((o) => o.valor === para) ? para : 1;
-  const combosDePara = combos.filter((c) => c.piezas === elegido);
+  const combosDePara = combos.filter((c) => c.cantidad === elegido);
   const hayAlgoArriba = borradores.length > 0 || creaciones.length > 0 || comunidad.length > 0;
   const nCreaciones = totalCreaciones ?? creaciones.length;
   const nComunidad = totalComunidad ?? comunidad.length;
@@ -102,11 +105,19 @@ export function PaginaCrear({
               subrayado
             />
           )}
-          {opciones.length > 1 && <ElegirPara opciones={opciones} valor={elegido} onCambiar={onPara} />}
+          {opciones.length > 1 && (
+            <div className={s.para} role="group" aria-label="¿Para cuántas personas?">
+              {opciones.map((o) => (
+                <Chip key={o.valor} activo={o.valor === elegido} icono={o.grupo ? <Users aria-hidden="true" /> : <User aria-hidden="true" />} onClick={() => onPara?.(o.valor)}>
+                  {o.texto}
+                </Chip>
+              ))}
+            </div>
+          )}
 
           {elegido > 1 ? (
             <ul className={s.grilla} key={`para-${elegido}`}>
-              {combosDePara.map(({ id, piezas, conjunto, ...c }, k) => <li key={id} style={{ '--k': k }}><TarjetaComboCrear {...c} /></li>)}
+              {combosDePara.map(({ id, cantidad, conjunto, ...c }, k) => <li key={id} style={{ '--k': k }}><TarjetaProducto {...c} /></li>)}
             </ul>
           ) : cargando ? (
             <ul className={s.grilla} aria-busy="true">
@@ -114,7 +125,7 @@ export function PaginaCrear({
             </ul>
           ) : prendas.length > 0 ? (
             <ul className={s.grilla} key="para-1">
-              {prendas.map(({ id, ...p }, k) => <li key={id} style={{ '--k': k }}><TarjetaPrendaBase {...p} /></li>)}
+              {prendas.map(({ id, ...p }, k) => <li key={id} style={{ '--k': k }}><TarjetaProducto {...p} /></li>)}
             </ul>
           ) : (
             <div className={s.vacio}>
