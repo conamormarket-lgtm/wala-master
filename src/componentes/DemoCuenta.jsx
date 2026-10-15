@@ -68,14 +68,14 @@ export const ESTADOS_CUENTA = [
   ['error', 'Error al cargar'],
 ];
 
-const LUGARES = {
+export const LUGARES = {
   departamentos: DEPARTAMENTOS,
   provincias: getProvincias,
   distritos: (d) => distritosSugeridos({ country: d.pais, city: d.ciudad, department: d.departamento, province: d.provincia }),
   legible: (d) => lugarLegible({ country: d.pais, city: d.ciudad, district: d.distrito, department: d.departamento, province: d.provincia }),
 };
 
-const DIRECCIONES = [
+export const DIRECCIONES = [
   {
     id: 'dir-1', principal: true, nombre: 'Isaac Castro', tipoDocumento: 'DNI', documento: '45871236', telefono: '987654321',
     pais: 'PE', ciudad: 'Lima', departamento: '', provincia: '', distrito: 'Miraflores', direccion: 'Av. Larco 1150, dpto. 502 (frente al parque)',

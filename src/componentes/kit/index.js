@@ -54,3 +54,4 @@ export { PaginaVerDiseno } from './paginas/VerDiseno';
 export { PaginaCombo } from './paginas/Combo';
 export { PaginaEstudio } from './paginas/Estudio';
 export { PaginaProducto } from './paginas/Producto';
+export { PaginaCheckout } from './paginas/Checkout';

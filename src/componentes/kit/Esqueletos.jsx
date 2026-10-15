@@ -752,6 +752,39 @@ const PAGINAS = {
       </span>
     </span>
   ),
+  checkout: ({ sesion }) => (
+    // El checkout: el título con los pasos; el formulario de envío y, al lado
+    // (arriba y plegado en el celular), el resumen.
+    <span className={s.checkout}>
+      <span className={s.checkoutCabeza}>
+        <Hueso alto={32} ancho="min(60%, 300px)" />
+        <span className={s.chips}><Hueso forma="circulo" ancho={28} alto={28} /><Hueso alto={12} ancho={50} /><Hueso forma="circulo" ancho={28} alto={28} /><Hueso alto={12} ancho={44} /></span>
+      </span>
+      <span className={s.checkoutCuerpo}>
+        <span className={cx(s.tarjeta, s.checkoutResumen)}>
+          <span className={s.checkoutPlegado}><Hueso alto={14} ancho="45%" /><Hueso alto={18} ancho={80} /></span>
+          <span className={s.checkoutAbierto}>
+            <Hueso alto={20} ancho="60%" />
+            {repetir(2, (k) => <span key={k} className={s.itemMenu}><Hueso forma="bloque" ancho={52} alto={52} /><Hueso alto={12} ancho="60%" /></span>)}
+            <Hueso forma="bloque" alto={64} ancho="100%" />
+            <Hueso forma="pildora" alto={46} ancho="100%" />
+            <EsqueletoTexto lineas={3} alto={12} ultima="100%" />
+            <Hueso alto={28} ancho="100%" />
+          </span>
+        </span>
+        <span className={cx(s.tarjeta, s.checkoutForm)}>
+          <Hueso alto={20} ancho="35%" />
+          {sesion !== false ? (
+            <Hueso forma="bloque" alto={170} ancho="100%" />
+          ) : (
+            <EsqueletoFormulario campos={5} titulo={false} />
+          )}
+          <Hueso forma="bloque" alto={74} ancho="100%" />
+          <span className={s.checkoutBotones}><Hueso forma="pildora" alto={44} ancho={160} /><Hueso forma="pildora" alto={52} ancho={210} /></span>
+        </span>
+      </span>
+    </span>
+  ),
   acceso: () => (
     <span className={s.accesoPagina}>
       <span className={s.accesoPanel}>
@@ -769,7 +802,7 @@ const PAGINAS = {
  * Lo que se ve mientras llega una página (Suspense): su forma, no un círculo.
  * Para cambiar de página siempre es esto (CapaCargando es para esperar una acción).
  *  - forma: 'productos' (la grilla, por defecto) | 'inicio' | 'tienda' |
- *    'busqueda' | 'producto' | 'carrito' | 'crear' | 'estudio' | 'comunidad' | 'minijuegos' | 'encuesta' |
+ *    'busqueda' | 'producto' | 'carrito' | 'checkout' | 'crear' | 'estudio' | 'comunidad' | 'minijuegos' | 'encuesta' |
  *    'acceso' | 'cuenta' | 'lista' | 'formulario'
  *  - sesion: false para quien no entró (la cuenta y la encuesta muestran la
  *    invitación a entrar; Minijuegos, su aviso en vez del progreso)

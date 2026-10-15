@@ -3,7 +3,7 @@ import { ArrowLeft, IdCard, LogIn, LogOut, MapPin, Pencil, Plus, Settings, User,
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { Aviso, EstadoVacio, HojaInferior } from '../Feedback';
-import { Campo, Interruptor, CampoTelefono } from '../Formulario';
+import { Interruptor } from '../Formulario';
 import { CamposDatosPersonales, validarPerfil, NOMBRE_DOCUMENTO } from '../piezas/DatosPersonales';
 import { RecortarFoto } from '../piezas/RecortarFoto';
 import { Moneda } from '../Etiquetas';
@@ -11,6 +11,7 @@ import { MenuCuenta } from '../MenusCabecera';
 import { BloqueSeccion } from '../Seccion';
 import { CabezaCuenta, TarjetaCuenta, ListaDatos, Estadistica, AccesosCuenta, IdentidadCuenta, ListaEleccion } from '../piezas/Cuenta';
 import { TarjetaDireccion } from '../piezas/TarjetaDireccion';
+import { CamposDireccion, validarDireccion, cambiarDireccion, documentoDe } from '../piezas/Direccion';
 import { EsqueletoTarjeta } from '../Esqueletos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import s from './Cuenta.module.css';
@@ -315,36 +316,8 @@ export function PaginaPerfil({
 
 /* ── Mis direcciones (/cuenta/direcciones) ──────────────── */
 
-const CIUDADES = [
-  { valor: 'Lima', texto: 'Lima Metropolitana' },
-  { valor: 'Callao', texto: 'Callao' },
-  { valor: 'Provincias', texto: 'Otras provincias' },
-];
-const DOCS_DIRECCION = [
-  { valor: 'DNI', texto: 'DNI' },
-  { valor: 'CE', texto: 'Carnet de extranjería' },
-  { valor: 'Pasaporte', texto: 'Pasaporte' },
-];
-
-/** Reglas de una dirección (las de MisDireccionesPage). Devuelve { campo: mensaje }. */
-export function validarDireccion(d) {
-  const e = {};
-  const fuera = d.pais && d.pais !== 'PE';
-  if (String(d.nombre || '').trim().length < 3) e.nombre = 'Escribe el nombre de quien recibe.';
-  if (String(d.documento || '').trim().length < 6) e.documento = 'Escribe un número de documento válido.';
-  if (String(d.telefono || '').replace(/\D/g, '').length < 6) e.telefono = 'Escribe un teléfono válido.';
-  if (fuera) {
-    if (!String(d.provincia || '').trim()) e.provincia = 'Escribe la región o estado.';
-    if (!String(d.distrito || '').trim()) e.distrito = 'Escribe la ciudad.';
-  } else {
-    if (d.ciudad === 'Provincias' && (!d.departamento || !d.provincia)) e.provincia = 'Elige el departamento y la provincia.';
-    if (!d.distrito) e.distrito = 'Elige el distrito.';
-  }
-  if (String(d.direccion || '').trim().length < 5) e.direccion = 'Escribe la dirección exacta.';
-  return e;
-}
-
-const opcionesDe = (lista, primera) => [{ valor: '', texto: primera, deshabilitada: true }, ...lista.map((x) => ({ valor: x, texto: x }))];
+// Los campos y sus reglas viven en piezas/Direccion (los usa también el checkout).
+export { validarDireccion };
 
 /**
  * Mis direcciones: las guardadas (la principal primero), agregar, editar,
@@ -369,7 +342,7 @@ export function PaginaDirecciones({
   const [verDestinatario, setVerDestinatario] = useState(false);
   const ordenadas = useMemo(() => [...direcciones].sort((a, b) => Number(b.principal) - Number(a.principal)), [direcciones]);
   const lleno = direcciones.length >= maximo;
-  const { departamentos = [], provincias = () => [], distritos = () => [], legible = () => '' } = lugares;
+  const { legible = () => '' } = lugares;
 
   const abrir = (dir) => {
     const base = dir || {
@@ -381,16 +354,8 @@ export function PaginaDirecciones({
     setError('');
     setVerDestinatario(!(base.nombre && base.documento && base.telefono));
   };
-  const cambiar = (campo) => (e) => {
-    const v = e.target.value;
-    setForm((f) => {
-      const n = { ...f, [campo]: v };
-      // Al cambiar de ciudad o de provincia, el distrito ya no corresponde.
-      if (campo === 'ciudad') Object.assign(n, { departamento: '', provincia: '', distrito: '' });
-      if (campo === 'departamento') Object.assign(n, { provincia: '', distrito: '' });
-      if (campo === 'provincia') n.distrito = '';
-      return n;
-    });
+  const cambiar = (campo, v) => {
+    setForm((f) => cambiarDireccion(f, campo, v));
     setErrores((x) => ({ ...x, [campo]: undefined }));
   };
   const guardar = async (e) => {
@@ -413,9 +378,6 @@ export function PaginaDirecciones({
     }
   };
 
-  const fuera = form && form.pais && form.pais !== 'PE';
-  const listaDistritos = form && !fuera ? distritos(form) : [];
-  const docTexto = (d) => `${DOCS_DIRECCION.find((x) => x.valor === d.tipoDocumento)?.valor || 'DNI'} ${d.documento}`;
 
   return (
     <>
@@ -451,7 +413,7 @@ export function PaginaDirecciones({
                 nombre={d.nombre}
                 direccion={d.direccion}
                 lugar={legible(d)}
-                documento={d.documento ? docTexto(d) : ''}
+                documento={d.documento ? documentoDe(d) : ''}
                 telefono={d.telefono}
                 principal={d.principal}
                 onPrincipal={onPrincipal && (() => onPrincipal(d.id))}
@@ -476,69 +438,13 @@ export function PaginaDirecciones({
       >
         {form && (
           <form className={s.formulario} onSubmit={guardar} noValidate>
-            {verDestinatario ? (
-              <>
-                <Campo etiqueta="Nombre de quien recibe" value={form.nombre} onChange={cambiar('nombre')} error={errores.nombre} autoComplete="name" />
-                <div className={s.fila}>
-                  <Campo etiqueta="Documento" opciones={DOCS_DIRECCION} value={form.tipoDocumento} onChange={cambiar('tipoDocumento')} />
-                  <Campo etiqueta="Número" value={form.documento} onChange={cambiar('documento')} error={errores.documento} />
-                </div>
-                <CampoTelefono valor={form.telefono} onCambiar={(v) => cambiar('telefono')({ target: { value: v } })} error={errores.telefono} />
-              </>
-            ) : (
-              <div className={s.destinatario}>
-                <span className={s.destinatarioTexto}>
-                  <small>Recibe</small>
-                  <strong>{form.nombre}</strong>
-                  <span>{docTexto(form)} · {form.telefono}</span>
-                </span>
-                <button type="button" className={s.cambiar} onClick={() => setVerDestinatario(true)}>Cambiar</button>
-              </div>
-            )}
-
-            {fuera ? (
-              <div className={s.fila}>
-                <Campo etiqueta="Región / Estado" value={form.provincia} onChange={cambiar('provincia')} error={errores.provincia} />
-                <Campo etiqueta="Ciudad" value={form.distrito} onChange={cambiar('distrito')} error={errores.distrito} />
-              </div>
-            ) : (
-              <>
-                <Campo etiqueta="Ciudad o región" opciones={CIUDADES} value={form.ciudad} onChange={cambiar('ciudad')} />
-                {form.ciudad === 'Provincias' && (
-                  <div className={s.fila}>
-                    <Campo
-                      etiqueta="Departamento"
-                      opciones={opcionesDe(departamentos.filter((d) => d !== 'Callao'), 'Elige…')}
-                      value={form.departamento}
-                      onChange={cambiar('departamento')}
-                    />
-                    <Campo
-                      etiqueta="Provincia"
-                      opciones={opcionesDe(form.departamento ? provincias(form.departamento).filter((p) => !(form.departamento === 'Lima' && p === 'Lima')) : [], form.departamento ? 'Elige…' : 'Primero el departamento')}
-                      value={form.provincia}
-                      onChange={cambiar('provincia')}
-                      error={errores.provincia}
-                      disabled={!form.departamento}
-                    />
-                  </div>
-                )}
-                <Campo
-                  etiqueta="Distrito"
-                  opciones={opcionesDe(listaDistritos, listaDistritos.length ? 'Elige…' : 'Primero la provincia')}
-                  value={form.distrito}
-                  onChange={cambiar('distrito')}
-                  error={errores.distrito}
-                  disabled={!listaDistritos.length}
-                />
-              </>
-            )}
-            <Campo
-              etiqueta="Dirección exacta"
-              value={form.direccion}
-              onChange={cambiar('direccion')}
-              error={errores.direccion}
-              placeholder="Calle, número, dpto. y una referencia"
-              autoComplete="street-address"
+            <CamposDireccion
+              valor={form}
+              onCambiar={cambiar}
+              errores={errores}
+              lugares={lugares}
+              verDestinatario={verDestinatario}
+              onVerDestinatario={() => setVerDestinatario(true)}
             />
             {error && <Aviso tipo="error" compacto>{error}</Aviso>}
           </form>

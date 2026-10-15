@@ -39,7 +39,8 @@ página), **A** = las páginas de acceso (A1-A4).
 | Una creación (`/creacion/:id`) y Ver diseño (`/ver/:id`) | [CREAR.md](CREAR.md) | armadas (P9 `PaginaCreacion` con `GaleriaProducto`, P10 `PaginaVerDiseno`); con plan de migración (a futuro) |
 | Comunidad (`/comunidad`) | [CREAR.md](CREAR.md#p8--comunidad-paginascomunidadjsx) | armada (P8 `PaginaComunidad`: galería con filtro por prenda); con plan de migración (a futuro) |
 | Crear (`/personalizar`) | [CREAR.md](CREAR.md) | armada (P7 `PaginaCrear`: portada con los pasos, borradores, creaciones, comunidad y ¿para cuántos? con prendas y combos); con plan de migración (a futuro) |
-| Carrito (`/carrito`) | — | armada (P1 `PaginaCarrito`); falta su ficha |
+| Carrito (`/carrito`) | [CARRITO.md](CARRITO.md) | armada (P1 `PaginaCarrito`: qué se compra esta vez, pedido esperando el pago, productos sin talla y la regla de envío real); con plan de migración (a futuro) |
+| Checkout (`/checkout`) | [CHECKOUT.md](CHECKOUT.md) | armada (P14 `PaginaCheckout` con `CamposDireccion`, `ResumenCompra` y `MetodoPago`); con plan de migración (a futuro) |
 
 Para una página nueva: se mapea la página real, lo que falte se crea como
 pieza en `piezas/`, después la sección, y la página se arma en la Tienda de

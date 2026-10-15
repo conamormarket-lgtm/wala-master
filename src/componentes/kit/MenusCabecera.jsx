@@ -404,7 +404,7 @@ export function VistaCarrito({ items = [], urlCarrito = '/carrito', urlPagar = '
           +{restantes} {restantes === 1 ? 'artículo' : 'artículos'} más en tu carrito
         </Enlace>
       )}
-      {metaEnvio > 0 && <BarraEnvioGratis actual={totalReal} meta={metaEnvio} compacta />}
+      {metaEnvio > 0 && <BarraEnvioGratis actual={totalReal} meta={metaEnvio} compacta estricto />}
       <div className={s.total}>
         <span>Total</span>
         <strong>{soles(total)}</strong>

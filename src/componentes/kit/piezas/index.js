@@ -32,6 +32,8 @@ export { RequisitosContrasena, requisitosContrasena, contrasenaValida, BotonGoog
 export { PortadaCrear, PASOS_CREAR, textoPara, FilaPiezaCombo } from './Crear';
 export { LienzoPrenda, BarraLienzo, PasoEstudio, PasosEstudio, PanelCapa } from './Estudio';
 export { OpcionesProducto, opcionesDe } from './OpcionesProducto';
+export { CamposDireccion, cambiarDireccion, documentoDe, CIUDADES, DOCS_DIRECCION } from './Direccion';
+export { PasosCompra, FilaMonedas, CampoCupon, ResumenCompra, MetodoPago } from './Checkout';
 export { Estrellas, ResumenOpiniones, TarjetaOpinion, FormularioOpinion } from './Opiniones';
 export { GaleriaProducto } from './GaleriaProducto';
 export { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra, TituloEditable } from './Ficha';

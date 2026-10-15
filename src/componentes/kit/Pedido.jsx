@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useInView } from 'framer-motion';
 import { Check, Copy, CreditCard, Truck, Trash2, Gift, ChevronDown, Clock, Tag, Sparkles, Package, AlertTriangle, XCircle, ArrowRight } from 'lucide-react';
 import Boton from './Boton';
+import { Enlace } from './Enlace';
 import { Etiqueta, Moneda } from './Etiquetas';
 import { FotoProducto } from './piezas/FotoProducto';
 import { Cantidad } from './Formulario';
@@ -193,23 +194,60 @@ export function SeguimientoPedido({
 /**
  * Fila de producto en el carrito. Controlada (cantidad/onCantidad/onQuitar)
  * o, si no se pasan, con estado propio.
+ *  - imagen, nombre, variante (una línea suelta), precio, precioAntes
+ *  - url: la foto y el nombre llevan al producto (o a la creación o al combo)
+ *  - detalles: [{ etiqueta: 'Color', valor, hex }] (con su bolita de color)
+ *  - combo: lleva la etiqueta "Combo" · piezas: [{ texto, hex }] (cada prenda)
+ *  - personalizado: "Con tu diseño"
+ *  - seleccionado + onSeleccionar(bool): la casilla de "comprar esta vez";
+ *    sin marcar, la fila se apaga y dice que no se cobra
+ *  - incompleto: 'color' | 'talla' | 'color y talla' · urlElegir
  */
 export function ItemCarrito({
-  imagen, nombre, variante, precio, precioAntes, personalizado = false,
+  imagen, nombre, variante, precio, precioAntes, personalizado = false, url, detalles = [], combo = false, piezas = [],
+  seleccionado, onSeleccionar, incompleto, urlElegir,
   cantidad: cantidadControlada, onCantidad, onQuitar, cantidadInicial = 1,
 }) {
   const [propia, setPropia] = useState(cantidadInicial);
   const cantidad = cantidadControlada ?? propia;
   const cambiar = onCantidad ?? setPropia;
+  const conCasilla = typeof seleccionado === 'boolean';
+  const foto = <FotoProducto respaldo={<Package className={s.sinFoto} aria-hidden="true" />} como="div" className={s.itemImgCaja} src={imagen} relleno="8px" />;
   return (
-    <div className={s.item}>
-      <FotoProducto respaldo={<Package className={s.sinFoto} aria-hidden="true" />} como="div" className={s.itemImgCaja} src={imagen} relleno="8px" />
+    <div className={[s.item, conCasilla && s.itemConCasilla, seleccionado === false && s.itemApagado].filter(Boolean).join(' ')} data-componente="ItemCarrito">
+      {conCasilla && (
+        <label className={s.itemCasilla}>
+          <input type="checkbox" checked={seleccionado} onChange={(e) => onSeleccionar?.(e.target.checked)} />
+          <span className={s.itemCaja} aria-hidden="true"><Check /></span>
+          <span className={s.oculto}>Comprar {nombre} esta vez</span>
+        </label>
+      )}
+      {url ? <Enlace to={url} className={s.itemFotoEnlace} aria-label={nombre}>{foto}</Enlace> : foto}
       <div className={s.itemInfo}>
-        <p className={s.itemNombre}>{nombre}</p>
-        <p className={s.itemVariante}>{variante}</p>
+        <p className={s.itemNombre}>
+          {url ? <Enlace to={url}>{nombre}</Enlace> : nombre}
+          {combo && <Etiqueta tono="violeta">Combo</Etiqueta>}
+        </p>
+        {variante && <p className={s.itemVariante}>{variante}</p>}
+        {detalles.length > 0 && (
+          <p className={s.itemDetalles}>
+            {detalles.map((d) => (
+              <span key={d.etiqueta}>{d.hex && <i style={{ background: d.hex }} aria-hidden="true" />}{d.etiqueta}: <b>{d.valor}</b></span>
+            ))}
+          </p>
+        )}
+        {piezas.length > 0 && (
+          <ul className={s.itemPiezas}>
+            {piezas.map((p, i) => <li key={i}>{p.hex && <i style={{ background: p.hex }} aria-hidden="true" />}{p.texto}</li>)}
+          </ul>
+        )}
         {personalizado && <Etiqueta tono="violeta" icono={<Sparkles aria-hidden="true" />}>Con tu diseño</Etiqueta>}
+        {incompleto && (
+          <p className={s.itemFalta}><AlertTriangle aria-hidden="true" /> Falta elegir {incompleto}{urlElegir && <> · <Enlace to={urlElegir}>Elegir ahora</Enlace></>}</p>
+        )}
+        {seleccionado === false && <p className={s.itemVariante}>No se cobra en esta compra.</p>}
         <div className={s.itemAcciones}>
-          <Cantidad valor={cantidad} onChange={cambiar} tamano="sm" max={10} />
+          <Cantidad valor={cantidad} onChange={cambiar} tamano="sm" max={99} />
           <button type="button" className={s.quitar} aria-label={`Quitar ${nombre}`} onClick={onQuitar}>
             <Trash2 aria-hidden="true" />
           </button>
@@ -218,6 +256,7 @@ export function ItemCarrito({
       <div className={s.itemPrecio}>
         <Monto valor={precio * cantidad} className={s.itemPrecioActual} />
         {precioAntes && <s>{soles(precioAntes * cantidad)}</s>}
+        {cantidad > 1 && <small>{soles(precio)} c/u</small>}
       </div>
     </div>
   );
@@ -226,11 +265,13 @@ export function ItemCarrito({
 /**
  * Barra hacia el envío gratis: el camión avanza con el total y al llegar sale confeti.
  *  - actual, meta · compacta: más baja y sin caja (menú del carrito en la cabecera)
+ *  - estricto: gratis solo si pasa de la meta (con la meta justa todavía se cobra)
  */
-export function BarraEnvioGratis({ actual, meta, compacta = false }) {
+export function BarraEnvioGratis({ actual, meta, compacta = false, estricto = false }) {
   const falta = Math.max(0, meta - actual);
   const pct = Math.min(100, (actual / meta) * 100);
-  const logrado = falta === 0;
+  // estricto: gratis en compras de MÁS de la meta (la regla de la tienda).
+  const logrado = estricto ? actual > meta : falta === 0;
   const [fiesta, setFiesta] = useState(0);
   const antes = useRef(logrado);
 
@@ -252,7 +293,9 @@ export function BarraEnvioGratis({ actual, meta, compacta = false }) {
           {logrado ? (
             <><Gift aria-hidden="true" /><span><strong>¡Tienes envío gratis!</strong></span></>
           ) : (
-            <><Truck aria-hidden="true" /><span>Te faltan <Monto valor={falta} className={s.fuerte} /> para el envío gratis</span></>
+            falta > 0
+              ? <><Truck aria-hidden="true" /><span>Te faltan <Monto valor={falta} className={s.fuerte} /> para el envío gratis</span></>
+              : <><Truck aria-hidden="true" /><span>Pasa de <strong className={s.fuerte}>{soles(meta)}</strong> y el envío es gratis</span></>
           )}
         </motion.p>
       </AnimatePresence>
@@ -273,20 +316,31 @@ export function BarraEnvioGratis({ actual, meta, compacta = false }) {
   );
 }
 
-/** Resumen del pedido con cupón y total que corre. */
-export function ResumenPedido({ subtotal, descuento = 0, envio = 0, monedas = 0, cupones = { WALA10: 10 }, onPagar }) {
+/**
+ * Resumen del pedido con el total que corre.
+ *  - subtotal, descuento (precios de antes), envio · etiquetaSubtotal
+ *  - cupones: { CODIGO: monto } para probar un cupón aquí (en la tienda el
+ *    cupón va en el checkout; sin esta prop no sale)
+ *  - monedas: las que ganas con la compra · saldoMonedas: las que ya tienes
+ *    ("podrás usarlas al pagar")
+ *  - onPagar · textoBoton · deshabilitado · nota (bajo el botón)
+ */
+export function ResumenPedido({
+  subtotal, descuento = 0, envio = 0, monedas = 0, saldoMonedas = 0, cupones, onPagar,
+  etiquetaSubtotal = 'Subtotal', textoBoton = 'Ir a pagar', deshabilitado = false, nota = 'Pago seguro con tarjeta, Yape o PayPal',
+}) {
   const [cupon, setCupon] = useState('');
   const [aplicado, setAplicado] = useState(null);
   const [errorCupon, setErrorCupon] = useState(false);
   const [chispas, setChispas] = useState(0);
-  const descCupon = aplicado ? cupones[aplicado] : 0;
+  const descCupon = aplicado && cupones ? cupones[aplicado] : 0;
   const total = Math.max(0, subtotal - descuento - descCupon + envio);
 
   const aplicar = (e) => {
     e.preventDefault();
     const codigo = cupon.trim().toUpperCase();
     if (!codigo) return;
-    if (cupones[codigo]) {
+    if (cupones?.[codigo]) {
       setAplicado(codigo);
       setErrorCupon(false);
       setChispas((n) => n + 1);
@@ -300,7 +354,7 @@ export function ResumenPedido({ subtotal, descuento = 0, envio = 0, monedas = 0,
     <section className={s.resumen} aria-label="Resumen del pedido">
       <h3>Resumen</h3>
       <dl>
-        <div><dt>Subtotal</dt><dd><Monto valor={subtotal} /></dd></div>
+        <div><dt>{etiquetaSubtotal}</dt><dd><Monto valor={subtotal} /></dd></div>
         {descuento > 0 && <div className={s.ahorro}><dt>Descuentos</dt><dd>−<Monto valor={descuento} /></dd></div>}
         <AnimatePresence initial={false}>
           {aplicado && (
@@ -318,29 +372,34 @@ export function ResumenPedido({ subtotal, descuento = 0, envio = 0, monedas = 0,
         <div><dt>Envío</dt><dd>{envio === 0 ? <span className={s.gratis}>Gratis</span> : soles(envio)}</dd></div>
       </dl>
 
-      <form className={[s.cupon, aplicado && s.cuponOk, errorCupon && s.cuponError].filter(Boolean).join(' ')} onSubmit={aplicar}>
-        <Tag aria-hidden="true" />
-        <input
-          value={cupon}
-          onChange={(e) => { setCupon(e.target.value); setAplicado(null); }}
-          placeholder="Prueba WALA10"
-          aria-label="Código de cupón"
-        />
-        <button type="submit" disabled={!cupon.trim() || !!aplicado}>
-          {aplicado ? <><Check aria-hidden="true" /> Listo</> : 'Aplicar'}
-          <Estallido disparo={chispas} cantidad={10} distancia={30} />
-        </button>
-      </form>
+      {cupones && (
+        <form className={[s.cupon, aplicado && s.cuponOk, errorCupon && s.cuponError].filter(Boolean).join(' ')} onSubmit={aplicar}>
+          <Tag aria-hidden="true" />
+          <input
+            value={cupon}
+            onChange={(e) => { setCupon(e.target.value); setAplicado(null); }}
+            placeholder="Prueba WALA10"
+            aria-label="Código de cupón"
+          />
+          <button type="submit" disabled={!cupon.trim() || !!aplicado}>
+            {aplicado ? <><Check aria-hidden="true" /> Listo</> : 'Aplicar'}
+            <Estallido disparo={chispas} cantidad={10} distancia={30} />
+          </button>
+        </form>
+      )}
 
       <div className={s.total}>
         <span>Total</span>
         <Monto valor={total} className={s.totalMonto} />
       </div>
       {monedas > 0 && (
-        <p className={s.ganas}><Moneda tamano={18} /> Con esta compra ganas <strong>{monedas} monedas</strong></p>
+        <p className={s.ganas}><Moneda tamano={18} /><span>Con esta compra ganas <strong>{monedas} monedas</strong></span></p>
       )}
-      <Boton tamano="lg" bloque brillo onClick={onPagar}>Ir a pagar</Boton>
-      <p className={s.seguro}>Pago seguro con tarjeta, Yape o PayPal</p>
+      {saldoMonedas > 0 && (
+        <p className={s.ganas}><Moneda tamano={18} /><span>Tienes <strong>{saldoMonedas} monedas</strong>: podrás usarlas al pagar.</span></p>
+      )}
+      <Boton tamano="lg" bloque brillo={!deshabilitado} disabled={deshabilitado} onClick={onPagar}>{textoBoton}</Boton>
+      {nota && <p className={s.seguro}>{nota}</p>}
     </section>
   );
 }

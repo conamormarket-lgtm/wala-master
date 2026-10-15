@@ -13,6 +13,8 @@ import { msHastaMananaLima, msHastaLunesLima, limaTodayStr } from '../utils/fech
 import { volarMonedasGanadas } from '../utils/animations';
 import CREAR_DATOS from './demo/crear.json';
 import { ProductoDemo, ESTADOS_PRODUCTO, ABRIR_PRODUCTO } from './DemoProducto';
+import { CheckoutDemo, ESTADOS_CHECKOUT } from './DemoCheckout';
+import { ENVIO_ESTANDAR, ENVIO_GRATIS_DESDE } from '../constants/envio';
 import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR, ComunidadDemo, ESTADOS_COMUNIDAD, CreacionDemo, ESTADOS_CREACION, VerDisenoDemo, ESTADOS_VER, ComboDemo, ESTADOS_COMBO, EstudioDemo, ESTADOS_ESTUDIO } from './DemoCuenta';
 import INICIO from './demo/inicio.json';
 import TIENDA from './demo/tienda.json';
@@ -62,6 +64,7 @@ const PAGINAS = [
   { id: 'minijuegos', texto: 'Minijuegos', ruta: '/minijuegos' },
   { id: 'buscar', texto: 'Buscar', ruta: '/buscar' },
   { id: 'carrito', texto: 'Carrito', ruta: '/carrito' },
+  { id: 'checkout', texto: 'Checkout', ruta: '/checkout' },
   { id: 'cuenta', texto: 'Mi cuenta', ruta: '/cuenta' },
   { id: 'encuesta', texto: 'Encuesta', ruta: '/encuesta-suscripcion' },
   { id: 'acceso', texto: 'Acceso', ruta: '/login' },
@@ -84,13 +87,13 @@ const ABRIR_ESTUDIO = [
 ];
 
 const PAGINA_DE_RUTA = {
-  '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/encuesta-suscripcion': 'encuesta', '/personalizar': 'crear', '/comunidad': 'comunidad',
+  '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/checkout': 'checkout', '/encuesta-suscripcion': 'encuesta', '/personalizar': 'crear', '/comunidad': 'comunidad',
   ...Object.fromEntries(MODULOS_CUENTA.map((m) => [m.ruta, 'cuenta'])),
   ...Object.fromEntries(VISTAS_ACCESO.map((v) => [v.ruta, 'acceso'])),
 };
 
 /** Pestaña de la barra inferior que se enciende en cada página. */
-const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', producto: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
+const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', producto: 'tienda', checkout: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
 
 /* Estados de la Zona Arcade para probar (como el modo diseño de la tienda). */
 const RULETAS = [
@@ -171,7 +174,8 @@ const GRUPOS_CUENTA = [
 ];
 const PROMO_CUENTA = { titulo: 'Perfil de regalos', texto: 'Completa la encuesta', monedas: 15, url: '/encuesta-suscripcion', icono: 'moneda' };
 
-const META_ENVIO = 150;
+// La regla de la tienda (constants/envio): S/ 15, gratis en compras de MÁS de S/ 100.
+const META_ENVIO = ENVIO_GRATIS_DESDE;
 const { destacados, nuevos, ofertas } = INICIO.productos;
 
 /** Producto de la tienda → fila del carrito / pedido / favoritos. */
@@ -181,7 +185,7 @@ const fila = (p, extra = {}) => {
 };
 
 const CARRITO_INICIAL = [
-  fila(destacados[0], { variante: 'Talla M' }),
+  fila(destacados[0], { detalles: [{ etiqueta: 'Talla', valor: 'M' }] }),
   fila(ofertas.find((p) => !p.isComboProduct) || ofertas[0]),
 ].map((it) => ({ ...it, url: `/producto/${it.id}` }));
 
@@ -254,6 +258,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [rutaEstudio, setRutaEstudio] = useState(ABRIR_ESTUDIO[0][1]);
   const [rutaProducto, setRutaProducto] = useState(ABRIR_PRODUCTO[0][1]);
   const [estadosProducto, setEstadosProducto] = useState([]);
+  const [estadosCheckout, setEstadosCheckout] = useState([]);
+  const [estadosCarrito, setEstadosCarrito] = useState([]);
   const [estadosEstudio, setEstadosEstudio] = useState([]);
   const [estadosCombo, setEstadosCombo] = useState([]);
   const [rutaAcceso, setRutaAcceso] = useState('/login');
@@ -438,7 +444,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
 
   // En la encuesta y en el acceso Kapi ya está en la página (uno solo a la
   // vista) y la píldora distrae (o invita a la misma encuesta): no se muestran.
-  const enEncuesta = pagina === 'encuesta' || pagina === 'acceso' || pagina === 'crear' || pagina === 'estudio';
+  const enEncuesta = ['encuesta', 'acceso', 'crear', 'estudio', 'checkout'].includes(pagina);
   const flotantes = {
     derecha: (
       <>
@@ -556,7 +562,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   });
 
   const formaEsqueleto = {
-    tienda: 'tienda', producto: 'producto', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
+    tienda: 'tienda', producto: 'producto', checkout: 'checkout', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
   }[pagina] || 'productos';
   // /cuenta/… → su módulo (el detalle de una compra usa el de pedidos).
   const moduloEsqueleto = {
@@ -625,6 +631,13 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       propsPara={(sec) => (sec.type === 'faq_accordion' ? { contacto: enlaceWhatsApp(empresa.whatsapp, '¡Hola Walá! Tengo una duda.') } : undefined)}
       envolver={envolver}
     />
+  ) : pagina === 'checkout' ? (
+    // Pagar: sin la barra inferior (la compra manda) y sin Kapi en el pie.
+    <MarcoTienda {...marco} barraInferior={null} kapiEnPie={false}>
+      <Parte n="P14" nombre="PaginaCheckout">
+        <CheckoutDemo items={carrito.filter((it) => it.seleccionado !== false)} sesion={conSesion} usuario={usuario} monedas={monedas} estados={estadosCheckout} toast={toast} onIrA={(r) => navegar.current(r)} />
+      </Parte>
+    </MarcoTienda>
   ) : pagina === 'producto' ? (
     // Sin producto (error o retirado), Kapi ya está en el estado vacío.
     <MarcoTienda {...marco} kapiEnPie={!estadosProducto.some((e) => e === 'error' || e === 'noDisponible')}>
@@ -753,13 +766,20 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       {pagina === 'carrito' && (
         <Parte n="P1" nombre="PaginaCarrito">
           <PaginaCarrito
-            items={carrito}
+            items={carrito.map((it, k) => (k === 0 && estadosCarrito.includes('incompleto') ? { ...it, detalles: [], incompleto: 'talla', urlElegir: it.url } : it))}
             onCantidad={(id, cantidad) => setCarrito((c) => c.map((it) => (it.id === id ? { ...it, cantidad } : it)))}
             onQuitar={(id) => setCarrito((c) => c.filter((it) => it.id !== id))}
+            onSeleccionar={(id, v) => setCarrito((c) => c.map((it) => (it.id === id ? { ...it, seleccionado: v } : it)))}
+            onSeleccionarTodo={(v) => setCarrito((c) => c.map((it) => ({ ...it, seleccionado: v })))}
+            onQuitarSeleccionados={() => setCarrito((c) => c.filter((it) => it.seleccionado === false))}
+            onVaciar={() => setCarrito([])}
+            pendiente={estadosCarrito.includes('pendiente') ? { codigo: 'PD-9QZ38Z' } : undefined}
+            saldoMonedas={conSesion ? monedas : 0}
             metaEnvio={META_ENVIO}
+            costoEnvio={ENVIO_ESTANDAR}
             recomendados={destacados.slice(3, 9)}
             onAgregar={onAgregar}
-            onPagar={() => avisar('En la tienda iría al checkout', '/checkout')}
+            onPagar={() => navegar.current('/checkout')}
             onSeguirComprando={() => irA('inicio')}
             vacio={{ texto: 'Lo quitaste todo. Vuelve a llenarlo para seguir probando.', accion: <Boton icono={<RotateCcw aria-hidden="true" />} onClick={() => setCarrito(CARRITO_INICIAL)}>Restaurar carrito</Boton> }}
           />
@@ -794,6 +814,27 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
                 ))}
               </div>
             )}
+          </div>
+        )}
+        {pagina === 'carrito' && (
+          <div>
+            <span className={cs.controlesTitulo}>Estado del carrito</span>
+            <div className={cs.controlesChips}>
+              {[['pendiente', 'Pedido esperando el pago'], ['incompleto', 'Falta una talla']].map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={estadosCarrito.includes(id)} onClick={() => setEstadosCarrito((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
+              ))}
+              <Chip tamano="sm" onClick={() => setCarrito(CARRITO_INICIAL)}>Restaurar carrito</Chip>
+            </div>
+          </div>
+        )}
+        {pagina === 'checkout' && (
+          <div>
+            <span className={cs.controlesTitulo}>Estado del checkout</span>
+            <div className={cs.controlesChips}>
+              {ESTADOS_CHECKOUT.map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={estadosCheckout.includes(id)} onClick={() => setEstadosCheckout((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
+              ))}
+            </div>
           </div>
         )}
         {pagina === 'producto' && (

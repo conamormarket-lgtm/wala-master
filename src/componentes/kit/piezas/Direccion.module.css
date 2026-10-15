@@ -1,0 +1,84 @@
+.campos {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+.fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+@container (min-width: 520px) {
+  .fila {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Quién recibe, resumido, con "Cambiar". */
+.destinatario {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px dashed var(--violet-300, #c4b5fd);
+  border-radius: 14px;
+}
+
+.destinatarioTexto {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.destinatarioTexto small {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.destinatarioTexto strong {
+  overflow: hidden;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.destinatarioTexto span {
+  overflow-wrap: anywhere;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.cambiar {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 0 0.7rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cambiar:hover {
+  background: var(--color-hover);
+}
+
+.cambiar:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+:global([data-theme='dark']) .cambiar {
+  color: var(--violet-300);
+}

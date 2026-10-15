@@ -481,6 +481,81 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+/* Con la casilla de "comprar esta vez" delante. */
+.itemConCasilla {
+  grid-template-columns: auto 84px minmax(0, 1fr) auto;
+}
+
+/* Sin marcar: no se cobra; la fila se apaga (pero sigue a mano). */
+.itemApagado .itemImgCaja,
+.itemApagado .itemNombre,
+.itemApagado .itemPrecio {
+  opacity: 0.5;
+}
+
+.itemCasilla {
+  position: relative;
+  align-self: center;
+  cursor: pointer;
+}
+
+.itemCasilla input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.itemCaja {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface);
+  color: #fff;
+  transition: background-color var(--dur-rapida) ease, border-color var(--dur-rapida) ease;
+}
+
+.itemCaja svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature);
+}
+
+.itemCasilla input:checked + .itemCaja {
+  border-color: transparent;
+  background: var(--degradado-logo, #7c3aed);
+}
+
+.itemCasilla input:checked + .itemCaja svg {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.itemCasilla input:focus-visible + .itemCaja {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+.oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.itemFotoEnlace {
+  display: block;
+  border-radius: 16px;
+}
+
 .itemImgCaja {
   width: 84px;
   height: 100px;
@@ -516,6 +591,76 @@
   margin: 0;
   font-size: 0.8rem;
   color: var(--color-text-muted);
+}
+
+.itemNombre a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.itemNombre a:hover {
+  text-decoration: underline;
+}
+
+.itemNombre > span {
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+.itemDetalles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.8rem;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.itemDetalles b {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.itemDetalles i,
+.itemPiezas i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 0.3rem;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  vertical-align: -1px;
+}
+
+.itemPiezas {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  list-style: none;
+}
+
+.itemFalta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
+  color: var(--danger, #dc2626);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.itemFalta svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.itemFalta a {
+  color: inherit;
+  font-weight: 800;
 }
 
 .itemAcciones {
@@ -585,6 +730,37 @@
   font-size: 0.78rem;
   color: var(--color-text-muted);
   white-space: nowrap;
+}
+
+.itemPrecio small {
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+/* Angosto (el carrito en el celular): foto más chica y el precio debajo del nombre. */
+@container (max-width: 460px) {
+  .item {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .itemConCasilla {
+    grid-template-columns: auto 64px minmax(0, 1fr);
+  }
+
+  .itemImgCaja {
+    width: 64px;
+    height: 78px;
+  }
+
+  .itemPrecio {
+    grid-column: -2 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.2rem 0.5rem;
+  }
 }
 
 /* ── Envío gratis ──────────────────────────────────────── */

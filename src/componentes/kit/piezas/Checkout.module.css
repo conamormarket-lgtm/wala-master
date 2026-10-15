@@ -1,0 +1,498 @@
+/* ── Pasos ─────────────────────────────────────────────────── */
+.pasos {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.paso {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+/* La costura entre un paso y el siguiente. */
+.paso + .paso::before {
+  width: clamp(1.5rem, 6vw, 3.5rem);
+  margin: 0 0.6rem;
+  border-top: 2px dashed var(--color-border);
+  content: '';
+}
+
+.pasoHecho + .paso::before {
+  border-top-color: rgba(124, 58, 237, 0.45);
+}
+
+.pasoActual,
+.pasoHecho {
+  color: var(--color-text);
+}
+
+.pasoNumero {
+  color: inherit;
+  font-family: var(--fuente-marca);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.pasoActual .pasoNumero,
+.pasoHecho .pasoNumero {
+  color: #fff;
+}
+
+/* ── Monedas ───────────────────────────────────────────────── */
+.monedas {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 14px;
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.moneda {
+  flex: none;
+}
+
+/* Ya en el pago: se ve lo elegido, pero no se cambia aquí. */
+.bloqueado .monedasInterruptor {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.monedasTexto {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+  font-size: 0.86rem;
+}
+
+.monedasTexto small {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.monedasTexto a {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+:global([data-theme='dark']) .monedasTexto a {
+  color: var(--violet-300);
+}
+
+.monedasInterruptor {
+  flex: 1;
+  min-width: 0;
+}
+
+.menos {
+  margin-left: 0.25rem;
+  color: #047857;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+:global([data-theme='dark']) .menos {
+  color: #6ee7b7;
+}
+
+.cargandoLinea {
+  display: block;
+  width: 70%;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--color-border);
+}
+
+.oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── Cupón ─────────────────────────────────────────────────── */
+.cupon {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.cuponCaja {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.35rem 0.3rem 0.8rem;
+  border: 1.5px dashed var(--color-border);
+  border-radius: 14px;
+  transition: border-color var(--dur-rapida) ease;
+}
+
+.cuponCaja:focus-within {
+  border-color: var(--violet-400);
+  border-style: solid;
+}
+
+.cuponError .cuponCaja {
+  border-color: var(--danger, #dc2626);
+}
+
+.cuponCaja > svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-text-muted);
+}
+
+.cuponCaja input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  outline: none;
+}
+
+.cuponCaja input::placeholder {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+:global([data-theme='dark']) .cuponCaja input {
+  background: transparent;
+}
+
+.cuponMensaje {
+  margin: 0;
+  color: var(--danger, #dc2626);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.cuponAplicado {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 14px;
+  background: rgba(16, 185, 129, 0.1);
+  color: #047857;
+  font-size: 0.86rem;
+}
+
+:global([data-theme='dark']) .cuponAplicado {
+  color: #6ee7b7;
+}
+
+.cuponAplicado > svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
+
+.cuponAplicado > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.cuponAplicado button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.25rem 0.5rem;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cuponAplicado button:hover {
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.cuponAplicado button svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+/* ── Resumen ───────────────────────────────────────────────── */
+.resumen {
+  border: 1px solid var(--color-border);
+  border-radius: 6px 22px 22px 22px;
+  background: var(--color-surface);
+}
+
+/* En el celular: una línea con el total; se abre al tocarla. */
+.resumenCabeza {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.resumenCabeza > span {
+  flex: 1;
+}
+
+.resumenCabeza em {
+  color: var(--color-text-muted);
+  font-style: normal;
+}
+
+.resumenCabeza strong {
+  font-family: var(--fuente-marca);
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.resumenCabeza svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.resumenAbierto .resumenCabeza svg {
+  transform: rotate(180deg);
+}
+
+.resumenTitulo {
+  display: none;
+  margin: 0;
+  padding: 1.1rem 1.1rem 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.resumenCuerpo {
+  display: none;
+  gap: 0.9rem;
+  padding: 0 1rem 1rem;
+}
+
+.resumenAbierto .resumenCuerpo {
+  display: grid;
+}
+
+@media (min-width: 960px) {
+  .resumenCabeza {
+    display: none;
+  }
+
+  .resumenTitulo {
+    display: block;
+  }
+
+  .resumenCuerpo {
+    display: grid;
+    padding: 1rem 1.1rem 1.1rem;
+  }
+}
+
+.items {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0 0 0.9rem;
+  border-bottom: 1px dashed var(--color-border);
+  list-style: none;
+}
+
+.items li {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.itemFoto {
+  position: relative;
+  flex: none;
+}
+
+.itemFoto > span {
+  display: block;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+}
+
+/* La cantidad sobre la foto, como un sello chico. */
+.itemFoto b {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 0.3rem;
+  border: 2px solid var(--color-surface);
+  border-radius: 999px;
+  background: var(--degradado-logo, #7c3aed);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.itemTexto {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.86rem;
+  line-height: 1.3;
+}
+
+.itemTexto strong {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.itemTexto small {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+}
+
+.itemPrecio {
+  flex: none;
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cuentas {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.cuentas > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cuentas dt {
+  color: var(--color-text-muted);
+}
+
+.cuentas dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ahorro dd,
+.gratis {
+  color: #047857;
+}
+
+:global([data-theme='dark']) .ahorro dd,
+:global([data-theme='dark']) .gratis {
+  color: #6ee7b7;
+}
+
+.falta {
+  margin: -0.3rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.falta strong {
+  color: var(--color-text);
+}
+
+.total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1.5px solid var(--color-border);
+}
+
+.total span {
+  font-weight: 700;
+}
+
+.total strong {
+  font-family: var(--fuente-marca);
+  font-size: 1.6rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* ── Una forma de pagar ────────────────────────────────────── */
+.metodo {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 6px 20px 20px 20px;
+  background: var(--color-surface);
+}
+
+.metodoDestacado {
+  border-color: rgba(124, 58, 237, 0.45);
+}
+
+.metodoCabeza {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.metodoCabeza > span:last-child {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.metodoCabeza strong {
+  font-size: 0.98rem;
+}
+
+.metodoCabeza small {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resumenCabeza svg,
+  .cuponCaja {
+    transition: none;
+  }
+}

@@ -964,3 +964,65 @@
     aspect-ratio: auto !important;
   }
 }
+
+/* ── Checkout: el resumen (plegado en el celular) y el formulario ── */
+.checkout {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.checkoutCabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.checkoutCuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.checkoutPlegado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.checkoutAbierto {
+  display: none;
+  gap: 0.9rem;
+}
+
+.checkoutForm {
+  gap: 1rem;
+}
+
+.checkoutBotones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+@container esqueleto (min-width: 900px) {
+  .checkoutCuerpo {
+    grid-template-columns: minmax(0, 1fr) 380px;
+    align-items: start;
+    gap: 2rem;
+  }
+
+  .checkoutResumen {
+    order: 2;
+  }
+
+  .checkoutPlegado {
+    display: none;
+  }
+
+  .checkoutAbierto {
+    display: grid;
+  }
+}
