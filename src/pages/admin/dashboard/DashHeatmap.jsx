@@ -6,7 +6,6 @@ import {
   fetchHeatmapBatches,
   aggregateHeatmapBatches,
   ANCHOS_PANTALLA,
-  DISPOSITIVOS_HEATMAP,
 } from '../../../services/heatmapData';
 import {
   DashBackground,
@@ -115,8 +114,10 @@ export default function DashHeatmap() {
   const { rangeDays, setRangeDays, dateRange, rangeLabel, origen, setOrigen } = filtros;
 
   // Filtros PROPIOS del heatmap (estado local; no contaminan el querystring
-  // compartido): dispositivo del lote, corte por ancho y "incluir sin datos".
-  const [dispositivo, setDispositivo] = useState('todos');
+  // compartido): dispositivo y "incluir sin datos". El dispositivo se decide
+  // por el ANCHO de pantalla de cada clic (existe desde el primer día, cubre
+  // todo el historial); antes había además un filtro por el user-agent del
+  // lote que hacía lo mismo solo para lotes nuevos y confundía.
   const [ancho, setAncho] = useState('todos');
   const [incluirSinMeta, setIncluirSinMeta] = useState(false);
 
@@ -148,12 +149,12 @@ export default function DashHeatmap() {
 
   // RE-AGREGACIÓN EN CLIENTE con los filtros vigentes (función pura, sin red).
   const heatmap = useMemo(
-    () => aggregateHeatmapBatches(docs || [], { origen, dispositivo, ancho, incluirSinMeta }),
-    [docs, origen, dispositivo, ancho, incluirSinMeta]
+    () => aggregateHeatmapBatches(docs || [], { origen, ancho, incluirSinMeta }),
+    [docs, origen, ancho, incluirSinMeta]
   );
 
   // ¿Hay un filtro activo que dependa de los campos NUEVOS del lote?
-  const filtroMetaActivo = origen !== 'todos' || dispositivo !== 'todos';
+  const filtroMetaActivo = origen !== 'todos';
   // Aviso honesto: hay lotes viejos (sin origen/dispositivo) afectados por ese filtro.
   const avisoSinMeta = filtroMetaActivo && heatmap.batchesSinMeta > 0;
   const hayFiltrosActivos = filtroMetaActivo || ancho !== 'todos';
@@ -161,7 +162,7 @@ export default function DashHeatmap() {
   // Mensaje honesto para el estado vacío del visor: distingue "no hay datos"
   // de "tus filtros dejaron fuera todos los clics".
   const mensajeVacio = hayFiltrosActivos
-    ? 'Sin clics que cumplan los filtros seleccionados en este rango. Prueba a ampliar el rango, quitar filtros o incluir los clics sin datos de origen/dispositivo.'
+    ? 'Sin clics que cumplan los filtros seleccionados en este rango. Prueba a ampliar el rango, quitar filtros o incluir los clics antiguos sin origen.'
     : `Sin clics registrados ${rangeLabel}. Prueba con un rango más amplio.`;
 
   return (
@@ -184,7 +185,7 @@ export default function DashHeatmap() {
           />
         </motion.div>
 
-        {/* BARRA DE FILTROS: origen (contrato global) + dispositivo + ancho. */}
+        {/* BARRA DE FILTROS: origen (contrato global) + dispositivo. */}
         <motion.div
           variants={itemVariants}
           style={{
@@ -198,20 +199,12 @@ export default function DashHeatmap() {
           <GrupoFiltro etiqueta="Origen">
             <OrigenPicker origen={origen} setOrigen={setOrigen} />
           </GrupoFiltro>
-          <GrupoFiltro etiqueta="Dispositivo (lotes nuevos)">
-            <SegmentadoHeatmap
-              opciones={DISPOSITIVOS_HEATMAP}
-              valor={dispositivo}
-              onChange={setDispositivo}
-              ariaLabel="Filtrar por dispositivo del lote (solo lotes nuevos)"
-            />
-          </GrupoFiltro>
-          <GrupoFiltro etiqueta="Ancho de pantalla (histórico)">
+          <GrupoFiltro etiqueta="Dispositivo">
             <SegmentadoHeatmap
               opciones={ANCHOS_PANTALLA}
               valor={ancho}
               onChange={setAncho}
-              ariaLabel="Corte retroactivo por ancho de pantalla del clic"
+              ariaLabel="Filtrar por dispositivo (según el ancho de pantalla del clic)"
             />
           </GrupoFiltro>
         </motion.div>
@@ -245,20 +238,18 @@ export default function DashHeatmap() {
           <motion.div className={extra.infoStrip} variants={itemVariants}>
             <span className={extra.infoIcon} aria-hidden="true">⚠️</span>
             <span className={extra.infoText}>
-              Los clics anteriores al despliegue de esta mejora no tienen datos
-              de origen/dispositivo: <strong>{fmtInt(heatmap.clicksSinMeta)} clics</strong> en{' '}
-              {fmtInt(heatmap.batchesSinMeta)} lotes{' '}
+              <strong>{fmtInt(heatmap.clicksSinMeta)} clics</strong> antiguos no guardaron si
+              venían de la web o de la app{' '}
               {incluirSinMeta
-                ? 'se están incluyendo aunque no se pueden clasificar.'
-                : 'quedaron fuera de este filtro.'}{' '}
-              El corte por <strong>ancho de pantalla</strong> sí cubre todo el histórico.
+                ? 'y se están incluyendo igual.'
+                : 'y quedaron fuera de este filtro.'}
             </span>
             <button
               type="button"
               style={ESTILO_BTN_SIN_DATOS}
               onClick={() => setIncluirSinMeta((v) => !v)}
               aria-pressed={incluirSinMeta}
-              title="Incluir/excluir los lotes viejos que no traen origen ni dispositivo"
+              title="Incluir o excluir los clics antiguos sin origen"
             >
               {incluirSinMeta ? 'Excluir sin datos' : 'Incluir sin datos'}
             </button>

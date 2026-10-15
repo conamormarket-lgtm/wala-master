@@ -239,6 +239,11 @@ export default function HeatmapViewer({
   const [resolucion, setResolucion] = useState('todas');
   // Tema con el que se muestra la página en la vista previa.
   const [temaPreview, setTemaPreview] = useState('light');
+  // Opacidad del calor (0.3..1): bajarla deja leer la página debajo.
+  const [opacidadCalor, setOpacidadCalor] = useState(0.85);
+  // Anclas medidas en la vista previa: ruta CSS -> caja del elemento en px de
+  // la página (sin escalar). null = aún sin medir.
+  const [anclas, setAnclas] = useState(null);
 
   // Resolución única de la fuente de datos según el modo.
   const data = controlled ? { ...EMPTY_HEATMAP_DATA, ...dataProp } : internalData;
@@ -418,7 +423,6 @@ export default function HeatmapViewer({
   const pantalla = exacta
     ? { w: exacta.w, h: exacta.h, label: `${exacta.w} × ${exacta.h}` }
     : PANTALLAS_PREVIEW[anchoPreview];
-  const mezclaAnchos = !exacta && ancho === 'todos' && points.some((p) => p.ancho && p.ancho !== anchoPreview);
 
   // Escala de la pantalla tipo al panel (nunca agranda) y alto de la página.
   // Sin alto real (respaldo o mientras carga) se estima con los clics viejos
@@ -435,22 +439,29 @@ export default function HeatmapViewer({
   const stageH = docH * scale;
   const viewH = pantalla.h * scale;
 
-  // Clics en px del lienzo. Resolución exacta: pageX/pageY tal cual (mismo
-  // layout que vio el visitante). 'Todas': los nuevos por su fracción del alto
-  // de la página; los viejos (sin pageHeight) por pantallas bajadas, aproximado.
-  const pixelPoints = useMemo(
-    () => visiblePoints.map((p) => (exacta
-      ? { cx: p.px * scale, cy: Math.min(p.py, docH) * scale }
-      : {
+  // Clics en px del lienzo, de lo más fiable a lo menos:
+  //  1) ANCLA: el elemento clicado existe en la vista previa -> el punto va
+  //     encima de él, en la misma posición relativa (vale para cualquier
+  //     pantalla del visitante).
+  //  2) Pantalla exacta: pageX/pageY tal cual (mismo layout que el visitante).
+  //  3) 'Todas' sin ancla: fracción del alto de la página (o pantallas bajadas
+  //     en los clics viejos) -> posición APROXIMADA.
+  const { pixelPoints, clicsAproximados } = useMemo(() => {
+    let aproximados = 0;
+    const lista = visiblePoints.map((p) => {
+      const a = p.sel && anclas ? anclas.get(p.sel) : null;
+      if (a) {
+        return { cx: (a.x + p.rx * a.w) * scale, cy: Math.min(a.y + p.ry * a.h, docH) * scale };
+      }
+      if (exacta) return { cx: p.px * scale, cy: Math.min(p.py, docH) * scale };
+      aproximados += 1;
+      return {
         cx: p.xNorm * stageW,
         cy: (p.yFrac != null ? p.yFrac * docH : Math.min(p.yScreens * pantalla.h, docH)) * scale,
-      })),
-    [visiblePoints, exacta, stageW, docH, pantalla.h, scale]
-  );
-  const clicsAproximados = useMemo(
-    () => (exacta ? 0 : visiblePoints.filter((p) => p.yFrac == null).length),
-    [exacta, visiblePoints]
-  );
+      };
+    });
+    return { pixelPoints: lista, clicsAproximados: aproximados };
+  }, [visiblePoints, anclas, exacta, stageW, docH, pantalla.h, scale]);
 
   // Mide el ancho disponible del marco (responsive / cambio de layout).
   const hasData = !loading && !error && data.totalClicks > 0;
@@ -490,6 +501,50 @@ export default function HeatmapViewer({
   useEffect(() => {
     syncIframeScroll();
   }, [syncIframeScroll, pageHeight, iframeState]);
+
+  // Mide en la vista previa la caja de cada elemento clicado (ancla). Se mide
+  // con el iframe arriba del todo (scroll 0) y se devuelve a su sitio en la
+  // misma tarea, así no hay parpadeo: las barras fijas/sticky quedan en su
+  // posición de inicio de página. Elementos ocultos o fuera de pantalla
+  // (menús cerrados, cajones) no cuentan: esos clics usan las coordenadas.
+  const medirAnclas = useCallback(() => {
+    const win = iframeRef.current?.contentWindow;
+    const doc = iframeRef.current?.contentDocument;
+    if (!win || !doc) return;
+    const sels = [...new Set(points.map((p) => p.sel).filter(Boolean))];
+    const medidas = new Map();
+    if (sels.length > 0) {
+      const scrollAntes = win.scrollY;
+      win.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      sels.forEach((sel) => {
+        let el = null;
+        try {
+          el = doc.querySelector(sel);
+        } catch {
+          el = null;
+        }
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        if (r.width <= 0 || r.height <= 0 || r.right <= 0 || r.left >= win.innerWidth) return;
+        const estilo = win.getComputedStyle(el);
+        if (estilo.visibility === 'hidden' || Number(estilo.opacity) === 0) return;
+        medidas.set(sel, { x: r.left, y: r.top, w: r.width, h: r.height });
+      });
+      win.scrollTo({ top: scrollAntes, left: 0, behavior: 'instant' });
+    }
+    setAnclas(medidas);
+  }, [points]);
+
+  // Se mide al cargar y otra vez cuando la página termina de pintar contenido
+  // (productos, imágenes) o cambia de tamaño de pantalla.
+  useEffect(() => {
+    if (iframeState !== 'ready') {
+      setAnclas(null);
+      return undefined;
+    }
+    const timers = [300, 1200, 3000].map((t) => setTimeout(medirAnclas, t));
+    return () => timers.forEach(clearTimeout);
+  }, [iframeState, medirAnclas, pageHeight, pantalla.w]);
 
   // Aplica el tema claro/oscuro elegido a la página de la vista previa.
   const aplicarTemaPreview = useCallback(() => {
@@ -664,21 +719,34 @@ export default function HeatmapViewer({
 
               <div className={styles.previewControls}>
                 <label className={styles.controlField}>
-                  <span className={styles.controlLabel}>Pantalla</span>
+                  <span className={styles.controlLabel}>Pantalla del visitante</span>
                   <select
                     className={styles.controlSelect}
                     value={exacta ? exacta.key : 'todas'}
                     onChange={(e) => setResolucion(e.target.value)}
                   >
                     <option value="todas">
-                      Todas · {points.length.toLocaleString('es-PE')} clics (posición aproximada)
+                      Todas las pantallas · {points.length.toLocaleString('es-PE')} clics
                     </option>
                     {resoluciones.map((r) => (
                       <option key={r.key} value={r.key}>
-                        {r.w} × {r.h} · {r.count.toLocaleString('es-PE')} {r.count === 1 ? 'clic' : 'clics'} (exacta)
+                        Solo {r.w} × {r.h} · {r.count.toLocaleString('es-PE')} {r.count === 1 ? 'clic' : 'clics'}
                       </option>
                     ))}
                   </select>
+                </label>
+                <label className={styles.intensityField}>
+                  <span className={styles.controlLabel}>Intensidad del calor</span>
+                  <input
+                    type="range"
+                    min="0.3"
+                    max="1"
+                    step="0.05"
+                    value={opacidadCalor}
+                    onChange={(e) => setOpacidadCalor(Number(e.target.value))}
+                    className={styles.intensityRange}
+                    aria-label="Intensidad del calor sobre la página"
+                  />
                 </label>
                 <div className={styles.themeToggle} role="group" aria-label="Tema de la vista previa">
                   {[
@@ -747,7 +815,7 @@ export default function HeatmapViewer({
                   <canvas
                     ref={canvasRef}
                     className={styles.canvas}
-                    style={{ width: `${stageW}px`, height: `${stageH}px` }}
+                    style={{ width: `${stageW}px`, height: `${stageH}px`, opacity: opacidadCalor }}
                     aria-hidden="true"
                   />
                 </div>
@@ -796,29 +864,25 @@ export default function HeatmapViewer({
                     : 'Vista de respaldo'}
                 </span>
                 <div className={styles.legend}>
-                  <span className={styles.legendLabel}>Menos</span>
+                  <span className={styles.legendLabel}>Pocos clics</span>
                   <span className={styles.legendBar} aria-hidden="true" />
-                  <span className={styles.legendLabel}>Más</span>
+                  <span className={styles.legendLabel}>Lo más clicado</span>
                 </div>
               </div>
 
-              {(hayScroll || mezclaAnchos || clicsAproximados > 0) && (
-                <div className={styles.canvasNotes}>
-                  {hayScroll && <p>Desplázate dentro de la vista para recorrer toda la página.</p>}
-                  {mezclaAnchos && (
-                    <p>
-                      Hay clics de varios anchos de pantalla sobre la vista {pantalla.label}: elige una
-                      pantalla exacta para verlos en su pixel exacto.
-                    </p>
-                  )}
-                  {clicsAproximados > 0 && (
-                    <p>
-                      {clicsAproximados.toLocaleString('es-PE')} clics son anteriores al 15/10/2026 y no
-                      guardaron el alto de la página: su altura es aproximada.
-                    </p>
-                  )}
-                </div>
-              )}
+              <div className={styles.canvasNotes}>
+                <p>
+                  El rojo marca la zona más clicada de esta página; el resto se compara con ella.
+                  {hayScroll ? ' Desplázate dentro de la vista para recorrer toda la página.' : ''}
+                </p>
+                {clicsAproximados > 0 && (
+                  <p>
+                    {clicsAproximados.toLocaleString('es-PE')} de {visiblePoints.length.toLocaleString('es-PE')} clics
+                    están en una posición aproximada (son de antes del 15/10/2026 o su botón ya no está en
+                    la página). Elige una pantalla del visitante para verlos exactos.
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className={styles.sideCard}>

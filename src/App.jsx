@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } f
 import { ProveedorEnlaces } from './componentes/kit/Enlace';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationsProvider } from './contexts/NotificationsContext';
 import { CartProvider } from './contexts/CartContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -288,8 +288,10 @@ const GlobalLayout = ({ children }) => {
   const { isEditModeActive } = useVisualEditor();
   const isIndependentRoute = location.pathname.startsWith('/regalos-con-amor');
 
-  // Activar Heatmap Tracker globalmente
-  useHeatmapTracker(true, 10); // Batch de 10 clics
+  // Activar Heatmap Tracker globalmente (menos para admins: no son clientes y
+  // su barra cambia la estructura de la página respecto a la del visitante).
+  const { isAdmin } = useAuth();
+  useHeatmapTracker(!isAdmin, 10); // Batch de 10 clics
 
   if (isIndependentRoute) {
     return (

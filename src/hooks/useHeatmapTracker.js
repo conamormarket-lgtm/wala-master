@@ -122,6 +122,49 @@ export const useHeatmapTracker = (enabled = true, batchSize = 5) => {
 
       const elementInfo = getElementIdentifier(e.target);
 
+      // ANCLA del clic: ruta CSS al elemento clicado + posición relativa
+      // dentro de él (rx/ry, 0..1). El visor busca ese MISMO elemento en la
+      // vista previa y pone el punto encima, sea cual sea la pantalla del
+      // visitante (un layout responsive no escala proporcionalmente).
+      const cssPath = (node) => {
+        const parts = [];
+        while (node && node.nodeType === 1 && node !== document.body && parts.length < 30) {
+          // ids escritos a mano (sin números: los generados como ":r1:" cambian).
+          if (node.id && /^[A-Za-z][A-Za-z_-]*$/.test(node.id)) {
+            parts.unshift(`#${node.id}`);
+            return parts.join('>');
+          }
+          let i = 1;
+          let sib = node;
+          while ((sib = sib.previousElementSibling)) {
+            if (sib.tagName === node.tagName) i += 1;
+          }
+          parts.unshift(`${node.tagName.toLowerCase()}:nth-of-type(${i})`);
+          node = node.parentElement;
+        }
+        return node === document.body ? `body>${parts.join('>')}` : null;
+      };
+      let anchor = null;
+      try {
+        const target = e.target;
+        const anchorEl =
+          (target.closest && target.closest('a, button, [role="button"], [data-track], input, select, textarea, label')) ||
+          (target.closest && target.closest('svg')) ||
+          target;
+        const sel = cssPath(anchorEl);
+        const rect = anchorEl.getBoundingClientRect();
+        if (sel && sel.length <= 500 && rect.width > 0 && rect.height > 0) {
+          const rel = (v) => Math.round(Math.min(1, Math.max(0, v)) * 1000) / 1000;
+          anchor = {
+            sel,
+            rx: rel((e.clientX - rect.left) / rect.width),
+            ry: rel((e.clientY - rect.top) / rect.height),
+          };
+        }
+      } catch {
+        anchor = null; // sin ancla: el visor usa las coordenadas
+      }
+
       // Coordenadas en la ventana (x/y) y en la página completa (pageX/pageY).
       // pageHeight es el alto TOTAL de la página en ese momento: el visor ubica
       // el clic como pageY / pageHeight, así los clics de abajo caen en su sitio.
@@ -138,6 +181,7 @@ export const useHeatmapTracker = (enabled = true, batchSize = 5) => {
         screenHeight: window.innerHeight,
         path: location.pathname,
         elementInfo: elementInfo,
+        ...(anchor || {}),
         time: new Date().toISOString()
       };
 

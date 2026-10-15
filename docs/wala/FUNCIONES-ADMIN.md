@@ -167,6 +167,13 @@ sub-páginas los filtros **se heredan** y un enlace copiado conserva la vista ex
   "Detalle de pedido") y la vista previa abre la más clicada; los slugs legibles se muestran
   ("Nicho · Día de la madre"). El panel **admin** ya no se registra ni se muestra. Los clics
   pendientes se envían al ocultar/cerrar la pestaña.
+  **Ancla del clic (desde 2026-10-15):** cada clic guarda la ruta CSS del elemento clicado
+  (`sel`) y su posición dentro de él (`rx`/`ry`); el visor busca ese elemento en la vista previa
+  y pinta el punto encima, sea cual sea la pantalla del visitante. Sin ancla (clics viejos o
+  elemento ausente) se usa la posición aproximada y se avisa cuántos son. La vista previa ya no
+  muestra la **barra de admin** (empujaba la página ~45px) y los **admins no se registran**.
+  Filtros: **Origen** + **Dispositivo** (por ancho de pantalla, cubre todo el historial; se
+  quitó el filtro por user-agent "lotes nuevos"). Control **Intensidad del calor** (opacidad).
 
 > **Requiere redeploy de functions:** los desgloses nuevos (país/dispositivo/navegador/SO,
 > identidades, top visitantes, embudo completo) salen de campos que agrega la versión nueva de

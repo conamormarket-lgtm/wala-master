@@ -63,10 +63,10 @@ const batchesCache = new Map();
  * histórico (a diferencia de `device`, que solo existe en lotes nuevos).
  */
 export const ANCHOS_PANTALLA = [
-  { value: 'todos', label: 'Todos', title: 'Sin corte por ancho de pantalla' },
+  { value: 'todos', label: 'Todos', title: 'Todos los dispositivos' },
   { value: 'movil', label: 'Móvil', title: 'Pantallas de menos de 768 px' },
   { value: 'tablet', label: 'Tablet', title: 'Pantallas entre 768 y 1024 px' },
-  { value: 'desktop', label: 'Desktop', title: 'Pantallas de más de 1024 px' },
+  { value: 'desktop', label: 'Computadora', title: 'Pantallas de más de 1024 px' },
 ];
 
 /**
@@ -110,6 +110,10 @@ function clamp01(n) {
  *   - px/py:    pageX/pageY en px y sw/sh: ancho/alto de la pantalla. Con la
  *               vista previa cargada en ESA misma resolución, el clic se pinta
  *               en su pixel exacto (el layout es idéntico al del visitante).
+ *   - sel/rx/ry: ANCLA (clics desde el 2026-10-15): ruta CSS del elemento
+ *               clicado y posición relativa dentro de él. El visor busca ese
+ *               elemento en la vista previa y pinta el punto encima: es la
+ *               posición más fiable, sirva la pantalla que sirva.
  * Devuelve null si el evento no es válido / no se puede normalizar.
  */
 function normalizePoint(ev) {
@@ -145,6 +149,9 @@ function normalizePoint(ev) {
     py: pageY,
     sw: Math.round(width),
     sh: Math.round(height),
+    sel: typeof ev.sel === 'string' && ev.sel ? ev.sel : null,
+    rx: Number.isFinite(Number(ev.rx)) ? Number(ev.rx) : 0.5,
+    ry: Number.isFinite(Number(ev.ry)) ? Number(ev.ry) : 0.5,
     weight: 1,
   };
 }
