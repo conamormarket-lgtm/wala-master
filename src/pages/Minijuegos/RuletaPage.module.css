@@ -48,15 +48,6 @@
   }
 }
 
-/* Estados de espera ("cargando", "inicia sesión"): antes eran texto suelto
-   sobre el fondo y parecían un fallo de carga. */
-.estado {
-  margin: 3rem 0;
-  text-align: center;
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-}
 
 .errorBanner {
   width: 100%;
@@ -275,8 +266,8 @@
    página no dé el salto de layout al aparecer el disco.
    ========================================================================= */
 
-/* El "Cargando ruleta..." no puede usar .estado: sus 3rem de margen empujaban
-   el texto hasta media pantalla por debajo del hueco del disco. */
+/* El "Cargando ruleta...": margen corto para que quede pegado al hueco del
+   disco y no a media pantalla. */
 .cargando {
   margin: 1.25rem 0 0;
   text-align: center;

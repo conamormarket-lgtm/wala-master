@@ -223,7 +223,7 @@ const MinijuegosPage = () => {
 
   // Sin sesión no bloqueamos con un alert: el propio botón lleva al login.
   const botonLogin = (
-    <Link to="/login" className={`${styles.accion} ${styles.accionGhost}`}>
+    <Link to="/login" state={{ from: '/minijuegos' }} className={`${styles.accion} ${styles.accionGhost}`}>
       <LogIn size={17} aria-hidden="true" />
       <T>Inicia sesión</T>
     </Link>
@@ -265,7 +265,7 @@ const MinijuegosPage = () => {
             <p className={styles.loginTexto}>
               <T>Entra con tu cuenta para reclamar monedas, guardar tu racha y girar la ruleta.</T>
             </p>
-            <Link to="/login" className={styles.loginBtn}>
+            <Link to="/login" state={{ from: '/minijuegos' }} className={styles.loginBtn}>
               <LogIn size={17} aria-hidden="true" />
               <T>Iniciar sesión</T>
             </Link>

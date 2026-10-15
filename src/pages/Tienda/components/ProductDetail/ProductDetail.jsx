@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useGlobalToast } from '../../../../contexts/ToastContext';
@@ -226,6 +226,7 @@ const Skeleton = () => (
 // ─── ProductDetail ────────────────────────────────────────────────────────────
 const ProductDetail = ({ product, loading, categories = [] }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { addToCart, items: cartItems, selectAllItems } = useCart();
   const { user, userProfile } = useAuth();
   const toast = useGlobalToast();
@@ -258,7 +259,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   const handleYoryoPersonalizableClick = async () => {
     if (!user) {
       toast.error('Debes iniciar sesión para poder personalizar este producto.');
-      navigate('/login');
+      navigate('/login', { state: { from: location.pathname + location.search } });
       return;
     }
 

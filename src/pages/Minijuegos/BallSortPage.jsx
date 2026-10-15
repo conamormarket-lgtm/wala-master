@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, Navigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { claimBallSortReward } from '../../services/firebase/ballSort';
@@ -11,7 +11,6 @@ import { HelpCircle, Coins, Check } from 'lucide-react';
 import { volarMonedasGanadas } from '../../utils/animations';
 import { useEntregaMonedas } from '../../hooks/useEntregaMonedas';
 import ArcadeShell from './ArcadeShell';
-import Loading from '../../components/common/Loading/Loading';
 import styles from './BallSortPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -110,7 +109,7 @@ const MiniTubo = ({ colores = [], estado }) => (
 );
 
 const BallSortPage = () => {
-  const { user, userProfile, reloadProfile, loading: authLoading } = useAuth();
+  const { user, userProfile, reloadProfile } = useAuth();
   const [tubes, setTubes] = useState([]);
   const [selectedTubeIndex, setSelectedTubeIndex] = useState(null);
   const [hasWon, setHasWon] = useState(false);
@@ -315,23 +314,8 @@ const BallSortPage = () => {
     setCompletedTubes(new Set());
   };
 
-  // Se espera a saber quién entra: con la sesión aún cargando `user` es null y
-  // antes se mandaba a /login a quien SÍ tenía sesión (al abrir /ball-sort desde
-  // un enlace o al recargar), y el login lo devolvía al inicio.
-  if (authLoading) {
-    return (
-      <ArcadeShell back="/minijuegos" title="Las Bolitas de Kapi" className={styles.pageContainer}>
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem 0' }}>
-          <Loading />
-        </div>
-      </ArcadeShell>
-    );
-  }
-
-  if (!user) {
-    // Tras iniciar sesión, LoginPage vuelve aquí (state.from).
-    return <Navigate to="/login" replace state={{ from: '/ball-sort' }} />;
-  }
+  // Sin cuenta no se llega aquí: la ruta va con <RutaPrivada> (App.jsx), que
+  // espera a saber quién entra y, si no hay cuenta, manda al login y de vuelta.
 
   return (
     <ArcadeShell

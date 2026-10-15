@@ -15,6 +15,9 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 
 import AdminRoute from './components/AdminRoute/AdminRoute';
+// Páginas que piden cuenta: sin sesión, al login y de vuelta (utils/rutaPrivada.js).
+// /cuenta lo decide CuentaLayout, /admin AdminRoute y /ruleta su página.
+import RutaPrivada from './components/RutaPrivada/RutaPrivada';
 import RouteTracker from './components/analytics/RouteTracker';
 import ReferralTracker from './components/analytics/ReferralTracker';
 import AvisoInvitacion from './components/common/AvisoInvitacion/AvisoInvitacion';
@@ -389,7 +392,7 @@ function App() {
                                     path="/encuesta-suscripcion"
                                     element={
                                       <Suspense fallback={<PageLoading />}>
-                                        <SubscriptionSurveyPage />
+                                        <RutaPrivada><SubscriptionSurveyPage /></RutaPrivada>
                                       </Suspense>
                                     }
                                   />
@@ -408,7 +411,7 @@ function App() {
                                   <Route path="/crear/:id" element={<CrearStudioPage />} />
                                   <Route path="/combo/:id" element={<ComboCrearPage />} />
                                   <Route path="/ver/:id" element={<VerDisenoPage />} />
-                                  <Route path="/creacion/:id" element={<CreacionPage />} />
+                                  <Route path="/creacion/:id" element={<RutaPrivada><CreacionPage /></RutaPrivada>} />
                                   <Route path="/comunidad" element={<ComunidadPage />} />
                                   <Route path="/editor/:id" element={<EditorPage />} />
                                   <Route path="/carrito" element={<CartPage />} />
@@ -532,7 +535,7 @@ function App() {
                                   <Route path="/palabra-del-dia" element={<WordlePage />} />
                                   <Route path="/minijuegos" element={<MinijuegosPage />} />
                                   <Route path="/ruleta" element={<RuletaPage />} />
-                                  <Route path="/ball-sort" element={<BallSortPage />} />
+                                  <Route path="/ball-sort" element={<RutaPrivada><BallSortPage /></RutaPrivada>} />
                                   <Route path="/recuperar-contrasena" element={<ResetPasswordPage />} />
                                   <Route path="/politicas-privacidad" element={<PoliticasPrivacidadPage />} />
                                   <Route path="/terminos-y-condiciones" element={<TerminosCondicionesPage />} />
@@ -551,7 +554,7 @@ function App() {
                                   <Route path="/buscar" element={<SearchPage />} />
                                   <Route path="/nicho/:slug" element={<NichePage />} />
                                   <Route path="/nichos" element={<NichesPage />} />
-                                  <Route path="/vendedor" element={<VendorPanel />} />
+                                  <Route path="/vendedor" element={<RutaPrivada><VendorPanel /></RutaPrivada>} />
                                   <Route path="/tienda-vendedor/:slug" element={<VendorStorefrontPage />} />
                                   <Route path="/ofertas" element={<OfertasFlashPage />} />
                                   <Route path="/sorteos" element={<SorteosPage />} />

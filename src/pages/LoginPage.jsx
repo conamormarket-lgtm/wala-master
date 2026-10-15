@@ -11,13 +11,16 @@ import Loading from '../components/common/Loading';
 import { EyeIcon, EyeOffIcon } from '../components/common/Icons/Icons';
 import styles from './LoginPage.module.css';
 import { T } from '../i18n/useTranslatedText';
+import { leerDestino, motivoDeRuta, tieneCuenta } from '../utils/rutaPrivada';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  // Ruta a la que volver tras iniciar sesión (p.ej. /sorteos manda state.from).
+  // Ruta a la que volver tras iniciar sesión: el state.from de quien la mandó
+  // o el ?redirect= de una página que pide cuenta (utils/rutaPrivada.js).
   // Si no vino de ningún lado, el destino por defecto es la home / encuesta.
-  const from = location.state?.from || null;
+  const from = leerDestino(location);
+  const motivo = motivoDeRuta(from);
   const { user, userProfile, loading: authLoading } = useAuth();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -26,7 +29,7 @@ const LoginPage = () => {
   const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
-    if (authLoading || !user) return;
+    if (authLoading || !tieneCuenta(user)) return;
     // El perfil no se pudo leer (red lenta): no se sabe si está completo, así
     // que se entra normal en vez de mandar a "Completar perfil" con todo vacío.
     if (userProfile?._perfilNoCargado) {
@@ -90,7 +93,7 @@ const LoginPage = () => {
     return <Loading fullScreen portal message="Iniciando sesión..." />;
   }
 
-  if (user) {
+  if (tieneCuenta(user)) {
     // Cubre también el instante en que `user` ya llegó pero el perfil (authLoading)
     // todavía se está resolviendo: sin esto, entre medias se veía otra vez el
     // formulario de login por un instante.
@@ -122,7 +125,7 @@ const LoginPage = () => {
         <div className={styles.formContainer}>
           <img src={LOGO_URL} alt="Walá" className={styles.logoMovil} />
           <h1><T>Iniciar sesión</T></h1>
-          <p><T>Ingresa tus credenciales para acceder a tu cuenta.</T></p>
+          <p><T>{motivo || 'Ingresa tus credenciales para acceder a tu cuenta.'}</T></p>
           
           <form onSubmit={handleEmailLogin} className={styles.form}>
             <div className={styles.formGroup}>

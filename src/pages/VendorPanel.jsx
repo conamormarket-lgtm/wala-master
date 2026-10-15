@@ -54,15 +54,7 @@ const VendorPanel = () => {
 
   const wrap = { maxWidth: 1000, margin: '0 auto', padding: '16px' };
 
-  if (!user) {
-    return (
-      <div style={wrap}>
-        <h1 style={{ fontSize: 22 }}><T>Panel de vendedor</T></h1>
-        <p style={{ color: '#666' }}><T>Inicia sesión para acceder a tu área de vendedor.</T></p>
-        <Link to="/login" style={{ color: '#7C3AED' }}><T>Iniciar sesión</T></Link>
-      </div>
-    );
-  }
+  // Sin cuenta no se llega aquí: la ruta va con <RutaPrivada> (App.jsx).
 
   if (!vendorId) {
     return (

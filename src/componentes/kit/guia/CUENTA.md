@@ -124,7 +124,7 @@ componente o su forma de recibir datos.
 | Parte | Hoy en la tienda | Pasa a (kit) |
 |---|---|---|
 | Marco | `pages/CuentaLayout.jsx`: `<aside>` (~95-130), aviso de perfil (~143-157), `<Outlet>` (~158) | `MarcoCuenta` con `usuario`, `grupos`, `activo={location.pathname}`, `perfilIncompleto` |
-| Sin sesión | ✓ Ya en la tienda (`CuentaLayout.jsx`; antes `CuentaLoginPrompt` / `PedidosLoginPrompt`) | `PaginaCuentaInvitado` (`pedidos` en /cuenta/pedidos) |
+| Sin sesión | ✓ Ya en la tienda, solo en /cuenta (`CuentaLayout.jsx`; antes `CuentaLoginPrompt` / `PedidosLoginPrompt`). Las secciones van al login y vuelven (`RutaPrivada`, `utils/rutaPrivada.js`) | `PaginaCuentaInvitado` |
 | Resumen | `pages/cuenta/CuentaResumenPage.jsx` (grilla ~34-48, "Cerrar sesión" ~58) | `PaginaResumenCuenta` (el "Cerrar sesión" lo pone `MarcoCuenta`) |
 | Perfil | `PerfilPage.jsx`: `AvatarStudio` (~193), recompensas, `GlassCard` "Datos Personales" (~243-330) | `PaginaPerfil` |
 | Mis pedidos | `CuentaRastreoPage.jsx` (tarjetas ~365-484, `ProgresoResumen` ~204-230) y `PedidosPorVerificar.jsx` | `PaginaPedidos` + `SeguimientoPedido` (`pasos`, `estado`, `deuda`, `anulado`, `urlDetalle`) + `PedidosPorVerificar` |
@@ -186,6 +186,9 @@ componente o su forma de recibir datos.
 
 ### Comportamiento que no se puede perder
 
+- **Sin cuenta** (o con la sesión anónima de las landings de pago) solo /cuenta
+  muestra `PaginaCuentaInvitado`; cada sección va al login con `?redirect=` y,
+  al entrar, vuelve a esa sección (`IrALogin`, `utils/rutaPrivada.js`).
 - **Mis pedidos sin documento ni teléfono** redirige a `/completar-perfil`
   con `state.from` (CuentaLayout ~80): queda en la página, antes del marco.
 - **`key={location.pathname}`** en el contenido: `MarcoCuenta` ya anima la

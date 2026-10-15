@@ -5,6 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { logout } from '../services/firebase/auth';
 import { PaginaCuentaInvitado } from '../componentes/kit/paginas/Cuenta';
+import { IrALogin } from '../components/RutaPrivada/RutaPrivada';
+import { tieneCuenta, urlLogin } from '../utils/rutaPrivada';
 import { useCuentaNavGroups } from './cuenta/useCuentaNavGroups';
 import styles from './CuentaPage.module.css';
 import { T } from '../i18n/useTranslatedText';
@@ -52,15 +54,17 @@ const CuentaLayout = () => {
     );
   }
 
-  if (!user) {
-    // Sin sesión: el aviso del kit, con su texto propio en /cuenta/pedidos.
-    // (CuentaLoginPrompt y PedidosLoginPrompt quedan sin usar hasta que este
+  if (!tieneCuenta(user)) {
+    // Sin cuenta, la pestaña "Cuenta" (/cuenta) es la bienvenida del kit, como
+    // en las apps de compras: se llega tocando el menú y espera ver una
+    // pantalla. Cada sección (/cuenta/pedidos, /cuenta/perfil…) es una página
+    // privada más: al login y, al entrar, de vuelta ahí (utils/rutaPrivada.js).
+    // (CuentaLoginPrompt y PedidosLoginPrompt quedan sin usar hasta que esto
     // lleve un tiempo en producción; ver kit/guia/MIGRACION.md.)
-    const isPedidosRoute =
-      location.pathname === '/cuenta/pedidos' ||
-      location.pathname.startsWith('/cuenta/pedidos/');
-
-    return <PaginaCuentaInvitado pedidos={isPedidosRoute} />;
+    if (location.pathname.replace(/\/+$/, '') === '/cuenta') {
+      return <PaginaCuentaInvitado urlLogin={urlLogin('/cuenta')} urlRegistro={`/registro?redirect=${encodeURIComponent('/cuenta')}`} />;
+    }
+    return <IrALogin />;
   }
 
   // Mis Pedidos necesita el documento y el teléfono del perfil: sin ellos no

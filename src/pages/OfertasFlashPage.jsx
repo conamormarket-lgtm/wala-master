@@ -106,7 +106,7 @@ const OfertasFlashPage = () => {
               )}
             </Button>
           ) : (
-            <Link to="/login" className={styles.loginLink}>
+            <Link to="/login" state={{ from: '/ofertas' }} className={styles.loginLink}>
               Inicia sesión para abrir el cofre
             </Link>
           )}

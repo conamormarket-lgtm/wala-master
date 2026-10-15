@@ -21,11 +21,14 @@ import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../constants/documentTypes';
 import styles from './RegisterPage.module.css';
 import { T } from '../i18n/useTranslatedText';
+import { leerDestino, tieneCuenta } from '../utils/rutaPrivada';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
-  // Adónde volver al terminar (p. ej. el checkout, que pide cuenta para pagar).
-  const from = useLocation().state?.from || null;
+  const location = useLocation();
+  // Adónde volver al terminar (p. ej. el checkout, que pide cuenta para pagar):
+  // el state.from o el ?redirect= (utils/rutaPrivada.js).
+  const from = leerDestino(location);
   const { user, userProfile, loading: authLoading } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -72,9 +75,9 @@ const RegisterPage = () => {
   const step2Valid = docValid && fullName.trim() && phoneValid;
 
   React.useEffect(() => {
-    if (authLoading || !user) return;
+    if (authLoading || !tieneCuenta(user)) return;
     if (userProfile?._perfilNoCargado) {
-      navigate('/', { replace: true });
+      navigate(from || '/', { replace: true });
       return;
     }
     if (userProfile?.dni && userProfile?.phone) {
@@ -493,7 +496,7 @@ const RegisterPage = () => {
 
           <div className={styles.footer}>
             <p>
-              ¿Ya tienes cuenta? <Link to="/login" className={styles.link}><T>Iniciar sesión</T></Link>
+              ¿Ya tienes cuenta? <Link to="/login" state={from ? { from } : undefined} className={styles.link}><T>Iniciar sesión</T></Link>
             </p>
           </div>
         </div>

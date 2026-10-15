@@ -14,16 +14,14 @@ import { esperarCumpleGoogle } from '../services/firebase/auth';
 import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../constants/documentTypes';
 import styles from './CompleteProfilePage.module.css';
 import { T } from '../i18n/useTranslatedText';
+import { leerDestino, tieneCuenta } from '../utils/rutaPrivada';
 
 const CompleteProfilePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   // A dónde volver al terminar (p. ej. Mis Pedidos, o la página desde la que
   // inició sesión). Solo rutas internas: nunca una URL externa.
-  const desdeEstado = location.state?.from;
-  const volverA = typeof desdeEstado === 'string' && desdeEstado.startsWith('/') && !desdeEstado.startsWith('//')
-    ? desdeEstado
-    : null;
+  const volverA = leerDestino(location);
   const { user, userProfile, loading: authLoading, updateUserProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -52,8 +50,8 @@ const CompleteProfilePage = () => {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/login');
+    if (!authLoading && !tieneCuenta(user)) {
+      navigate('/login', { replace: true });
       return;
     }
     if (!authLoading && user && userProfile) {

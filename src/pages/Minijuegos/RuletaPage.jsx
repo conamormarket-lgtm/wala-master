@@ -15,6 +15,8 @@ import RuedaRuleta from '../../components/ruleta/RuedaRuleta';
 import ArcadeShell from './ArcadeShell';
 import styles from './RuletaPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
+import { IrALogin } from '../../components/RutaPrivada/RutaPrivada';
+import { tieneCuenta } from '../../utils/rutaPrivada';
 
 // Rueda de muestra para el modo diseño (?premios=demo). Sirve para repasar
 // colores, contraste del texto y recortes sin tener que cargar premios de
@@ -110,7 +112,7 @@ const prefiereMenosMovimiento = () => {
 };
 
 const RuletaPage = () => {
-  const { user, userProfile, reloadProfile } = useAuth();
+  const { user, userProfile, reloadProfile, loading: authLoading } = useAuth();
   const { addToast } = useGlobalToast();
   // eslint-disable-next-line no-unused-vars
   const navigate = useNavigate();
@@ -164,7 +166,8 @@ const RuletaPage = () => {
   // cliente NO filtra por su cuenta; si lo hiciera y el servidor filtrara
   // distinto, la rueda pararía en un gajo que no es el premio ganado.
   useEffect(() => {
-    if (!user && !sesionForzada) { setLoading(false); return; }
+    // Sin cuenta no se carga nada: la página manda al login (abajo).
+    if (!tieneCuenta(user) && !sesionForzada) return;
     let vivo = true;
     (async () => {
       const board = await getRuletaBoard();
@@ -505,13 +508,11 @@ const RuletaPage = () => {
     document.body
   );
 
-  if (!user && !sesionForzada) {
-    return (
-      <ArcadeShell back="/minijuegos" title="Ruleta Semanal" acciones={botonAyuda}>
-        <p className={styles.estado}><T>Inicia sesión para jugar.</T></p>
-        {modalAyuda}
-      </ArcadeShell>
-    );
+  // Sin cuenta, al login y de vuelta aquí (utils/rutaPrivada.js). Se espera a
+  // saber quién entra: mientras, `loading` sigue en true y se ve el armazón.
+  // ?sesion=activa la deja ver sin cuenta para revisar el diseño.
+  if (!authLoading && !tieneCuenta(user) && !sesionForzada) {
+    return <IrALogin />;
   }
 
   if (loading) {

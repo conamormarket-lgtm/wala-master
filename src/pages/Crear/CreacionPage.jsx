@@ -173,16 +173,7 @@ const CreacionPage = () => {
     );
   }
 
-  if (!user) {
-    return (
-      <div className={styles.estado}>
-        <h1 className={styles.estadoTitulo}>Inicia sesión para ver tu creación</h1>
-        <button type="button" className={styles.principal} onClick={() => navigate('/login', { state: { from: location.pathname } })}>
-          Iniciar sesión
-        </button>
-      </div>
-    );
-  }
+  // Sin cuenta no se llega aquí: la ruta va con <RutaPrivada> (App.jsx).
 
   if (!esMia) {
     return (

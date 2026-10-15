@@ -1017,7 +1017,7 @@ const Header = () => {
                       <p><T>{accountPopup.description}</T></p>
                       
                       <div className={styles.accountButtons}>
-                        <Link to={accountPopup.loginButtonUrl || '/login'} className={styles.primaryButton} onClick={closeDropdowns}>
+                        <Link to={accountPopup.loginButtonUrl || '/login'} state={{ from: location.pathname + location.search }} className={styles.primaryButton} onClick={closeDropdowns}>
                           <T>{accountPopup.loginButtonText || 'Iniciar sesión'}</T>
                         </Link>
                         <Link to={accountPopup.registerButtonUrl || '/registro'} className={styles.secondaryButton} onClick={closeDropdowns}>
@@ -1218,7 +1218,7 @@ const Header = () => {
                       <h3><T>{favConfig.loggedOutTitle || 'Tus Favoritos'}</T></h3>
                       <p style={textStyle}><T>{favConfig.loggedOutText || 'Aún no tienes artículos guardados. Inicia sesión para crear tu lista de deseos.'}</T></p>
                       <div className={styles.accountButtons}>
-                        <Link to="/login" className={styles.primaryButton} onClick={closeDropdowns}>
+                        <Link to="/login" state={{ from: location.pathname + location.search }} className={styles.primaryButton} onClick={closeDropdowns}>
                           <T>Iniciar sesión</T>
                         </Link>
                         <Link to="/tienda" className={styles.secondaryButton} onClick={closeDropdowns}>

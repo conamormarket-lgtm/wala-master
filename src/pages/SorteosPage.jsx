@@ -1107,7 +1107,7 @@ const SorteosPage = () => {
             <GlassButton
               as={Link}
               to="/login"
-              state={{ from: '/sorteos' }}
+              state={{ from: slug ? `/sorteos/${slug}` : '/sorteos' }}
               variant="primary"
               size="lg"
               fullWidth
