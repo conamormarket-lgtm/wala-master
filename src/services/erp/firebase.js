@@ -1,6 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
 import portalApp, { db as portalDb, USE_EMULATORS } from '../firebase/config';
-import { readOrdersByDocument } from './orderLookup.mjs';
 import { getFirestore, connectFirestoreEmulator, setLogLevel } from 'firebase/firestore';
 import {
   collection,
@@ -11,7 +10,6 @@ import {
   setDoc,
   updateDoc,
   query,
-  where,
   orderBy,
   limit,
   startAfter,
@@ -130,8 +128,7 @@ function sortPedidosByCreatedAt(pedidos) {
 /**
  * Fusiona los pedidos VIVOS del ERP (pedidos + pedidos_web) con las copias
  * espejo de WALA (wala_pedidos) y los ordena del más reciente al más antiguo.
- * La usan searchOrdersByDniInERP y la carga segura de "Mis Pedidos"
- * (services/misPedidos.js), así ambas muestran exactamente lo mismo.
+ * La usa la carga segura de "Mis Pedidos" (services/misPedidos.js).
  *
  * @param {Array<object>} liveOrders - Docs crudos de pedidos/pedidos_web.
  * @param {Array<object>} espejo - Copias ya normalizadas (normalizarEspejoParaVista).
@@ -152,7 +149,7 @@ export function fusionarVivosYEspejo(liveOrders, espejo) {
   //      _walaEstado/_walaPagado); la precedencia "no degradar" la resuelve
   //      derivarEstadoCompra (src/utils/estadoCompra.js). NO se recalcula ningún
   //      monto ni se borra nada.
-  // Best-effort: getWalaMirrorOrders nunca lanza (devuelve [] ante error).
+  // Best-effort: un espejo vacío o inválido deja los pedidos vivos tal cual.
   try {
     if (Array.isArray(espejo) && espejo.length > 0) {
       // Clave de negocio idéntica a adminOrders.js (dedup de "Recepción").
@@ -220,103 +217,6 @@ export function fusionarVivosYEspejo(liveOrders, espejo) {
   }
 
   return sortPedidosByCreatedAt(pedidos);
-}
-
-/**
- * Buscar pedidos por número de documento (DNI/CE) en el Firestore del ERP.
- * Usa el campo clienteNumeroDocumento. No requiere índice compuesto: se hace
- * una sola condición where y el ordenamiento es en memoria.
- *
- * RED DE SEGURIDAD (lectura del espejo): además de los pedidos VIVOS del ERP
- * (pedidos + pedidos_web), se consulta la copia propia de WALA en `wala_pedidos`
- * (getWalaMirrorOrders). Si el ERP externo ya borró/absorbió el pedido al
- * aprobarlo, su espejo lo recupera para que NUNCA desaparezca de "Mis Compras".
- *
- * @param {string} dni - DNI o CE del cliente (se normaliza a string sin espacios)
- * @param {object} [opciones] - Opciones adicionales (no rompe llamadas existentes).
- * @param {string} [opciones.userId] - UID del comprador autenticado (= buyerUid del espejo).
- * @returns {Promise<{ data: Array | null, error: string | null }>}
- */
-export async function searchOrdersByDniInERP(dni, { userId } = {}) {
-  if (!isErpFirestoreAvailable()) {
-    return { data: null, error: 'Firestore del ERP no está disponible' };
-  }
-
-  // Valor crudo del perfil (sin normalizar) para usarlo como fallback con
-  // pedidos históricos que se guardaron antes de normalizar el documento.
-  const dniRaw = dni != null ? String(dni) : '';
-  const dniNorm = dniRaw.trim().replace(/\s/g, '');
-  if (!dniNorm) {
-    return { data: [], error: null };
-  }
-
-  try {
-    const [liveOrders, espejo] = await Promise.all([
-      readOrdersByDocument(async (name, field, value) => {
-        const snap = await getDocs(query(collection(erpDb, name), where(field, '==', value)));
-        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      }, dniRaw, dniNorm),
-      import('../walaOrders')
-        .then(({ getWalaMirrorOrders }) => getWalaMirrorOrders({ userId, dni: dniRaw || dniNorm }))
-        .catch((error) => {
-          console.warn('No se pudo leer el espejo wala_pedidos:', error?.message);
-          return [];
-        }),
-    ]);
-    const pedidos = fusionarVivosYEspejo(liveOrders, espejo);
-    return { data: pedidos, error: null };
-  } catch (error) {
-    console.error('Error al buscar pedidos en ERP:', error);
-    return { data: null, error: error.message };
-  }
-}
-
-/**
- * Buscar pedidos por teléfono y DNI en el Firestore del ERP (legacy).
- * @param {string} telefono
- * @param {string} dni
- * @returns {Promise<{ data: Array | null, error: string | null }>}
- */
-export async function searchOrdersInERP(telefono, dni) {
-  if (!isErpFirestoreAvailable()) {
-    return { data: null, error: 'Firestore del ERP no está disponible' };
-  }
-
-  try {
-    const q = query(
-      collection(erpDb, 'pedidos'),
-      where('phone', '==', telefono),
-      where('dni', '==', dni),
-      orderBy('createdAt', 'desc')
-    );
-
-    const querySnapshot = await getDocs(q);
-    let pedidos = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-
-    const qWeb = query(
-      collection(erpDb, 'pedidos_web'),
-      where('phone', '==', telefono),
-      where('dni', '==', dni),
-      orderBy('createdAt', 'desc')
-    );
-
-    const querySnapshotWeb = await getDocs(qWeb);
-    const pedidosWeb = querySnapshotWeb.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-
-    pedidos = [...pedidos, ...pedidosWeb];
-    pedidos = sortPedidosByCreatedAt(pedidos);
-
-    return { data: pedidos, error: null };
-  } catch (error) {
-    console.error('Error al buscar pedidos en ERP:', error);
-    return { data: null, error: error.message };
-  }
 }
 
 /**
@@ -452,8 +352,8 @@ export async function createWebOrder(orderData, requestedId = null) {
       updatedAt: serverTimestamp(),
     };
 
-    // Normaliza el documento igual que createOrderInERP para que el filtro
-    // exacto de "Mis Compras" (searchOrdersByDniInERP) case con lo guardado.
+    // Normaliza el documento igual que createOrderInERP para que la búsqueda
+    // de "Mis Pedidos" por documento (misPedidosSecure) case con lo guardado.
     // Se conserva el valor tecleado original en dniRaw (CE/pasaporte tal cual).
     const docRaw = orderData.clienteNumeroDocumento || orderData.dni || '';
     const docNorm = String(docRaw).trim().replace(/\s/g, '');

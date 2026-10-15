@@ -1256,23 +1256,22 @@ exports.ensureAccountFromOrder = functions.https.onRequest(async (req, res) => {
   }
 
   // Autenticación del webhook por HMAC-SHA256 (H-03). El ERP firma el body crudo con
-  // ERP_WEBHOOK_SECRET y envía la firma hex en X-Webhook-Signature. Si el secreto está
-  // configurado se exige y valida; si no, se advierte y se permite (transición —
-  // configurar ERP_WEBHOOK_SECRET y firmar desde el ERP para cerrar el agujero).
+  // ERP_WEBHOOK_SECRET y envía la firma hex en X-Webhook-Signature. Sin el secreto
+  // configurado el webhook queda APAGADO: antes se permitía sin firma y cualquiera
+  // podía crear cuentas con correos ajenos. Hoy no lo llama nadie (ni el ERP ni el
+  // visor; el admin crea cuentas con accountFromOrder.js en el navegador).
   const webhookSecret = process.env.ERP_WEBHOOK_SECRET;
-  if (webhookSecret) {
-    const rawBody = req.rawBody || Buffer.from(JSON.stringify(req.body || {}));
-    const valid = verifyWebhookSignature(rawBody, req.get("X-Webhook-Signature"), webhookSecret);
-    if (!valid) {
-      console.warn("ensureAccountFromOrder: firma HMAC inválida o ausente.");
-      res.status(401).json({ created: false, error: "INVALID_SIGNATURE" });
-      return;
-    }
-  } else {
-    console.warn(
-      "ensureAccountFromOrder: ERP_WEBHOOK_SECRET no configurado; webhook SIN autenticar. " +
-      "Configúrelo y firme el payload desde el ERP para cerrar H-03."
-    );
+  if (!webhookSecret) {
+    console.warn("ensureAccountFromOrder: ERP_WEBHOOK_SECRET no configurado; webhook apagado.");
+    res.status(503).json({ created: false, error: "WEBHOOK_DISABLED" });
+    return;
+  }
+  const rawBody = req.rawBody || Buffer.from(JSON.stringify(req.body || {}));
+  const valid = verifyWebhookSignature(rawBody, req.get("X-Webhook-Signature"), webhookSecret);
+  if (!valid) {
+    console.warn("ensureAccountFromOrder: firma HMAC inválida o ausente.");
+    res.status(401).json({ created: false, error: "INVALID_SIGNATURE" });
+    return;
   }
 
   const body = typeof req.body === "object" ? req.body : {};

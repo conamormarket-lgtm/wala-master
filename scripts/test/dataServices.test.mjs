@@ -109,7 +109,7 @@ test('filtered product requests do not reuse an unfiltered response', async () =
   await Promise.all([full, filtered]);
 });
 
-async function erpFixture({ project = 'same', portalProject = 'same', emulator = false, getDocs = unused, mirror = [] } = {}) {
+async function erpFixture({ project = 'same', portalProject = 'same', emulator = false, getDocs = unused } = {}) {
   const portal = { options: { projectId: portalProject } };
   const portalDb = {};
   const created = [];
@@ -120,7 +120,6 @@ async function erpFixture({ project = 'same', portalProject = 'same', emulator =
     },
     'firebase/firestore': { ...sdk, getDocs, getFirestore: app => ({ app }) },
     '../firebase/config': { default: portal, db: portalDb, USE_EMULATORS: emulator },
-    '../walaOrders': { getWalaMirrorOrders: async () => mirror },
   }, { process: { env: { REACT_APP_FIREBASE_API_KEY: 'test', REACT_APP_FIREBASE_PROJECT_ID: project } } });
   return { api, portalDb, created };
 }
@@ -137,22 +136,19 @@ test('ERP shares portal instance for same project and preview; preserves separat
   assert.equal(different.created[0].options.projectId, 'erp');
 });
 
-test('real order lookup keeps mirror-only orders and enriches matching live orders', async () => {
-  const { api } = await erpFixture({
-    getDocs: async query => ({ docs: query.name === 'pedidos' ? [{
-      id: '0001', data: () => ({ numeroPedido: '0001', createdAt: 1, web: true }),
-    }] : [] }),
-    mirror: [
+test('order merge keeps mirror-only orders and enriches matching live orders', async () => {
+  const { api } = await erpFixture();
+  const pedidos = api.fusionarVivosYEspejo(
+    [{ id: '0001', numeroPedido: '0001', createdAt: 1, web: true }],
+    [
       { id: 'mirror1', numeroPedido: '0001', estadoWala: 'pagado', pagado: true },
       { id: 'mirror2', numeroPedido: '0002', createdAt: 2 },
     ],
-  });
-  const result = await api.searchOrdersByDniInERP(' 00123 ', { userId: 'user' });
-  assert.equal(result.error, null);
-  assert.deepEqual(Array.from(result.data, p => p.numeroPedido), ['0002', '0001']);
-  assert.equal(result.data[1]._walaEstado, 'pagado');
-  assert.equal(result.data[1]._walaPagado, true);
-  assert.equal(result.data[0]._esWalaMirror, true);
+  );
+  assert.deepEqual(Array.from(pedidos, p => p.numeroPedido), ['0002', '0001']);
+  assert.equal(pedidos[1]._walaEstado, 'pagado');
+  assert.equal(pedidos[1]._walaPagado, true);
+  assert.equal(pedidos[0]._esWalaMirror, true);
 });
 
 test('navigation prefetch waits for intent, respects data saving and survives StrictMode replay', async () => {
@@ -195,18 +191,22 @@ test('storefront consumes the HTML response once and later refreshes use current
   const initial = [{ type: 'header', settings: { title: 'Initial' } }];
   const current = [{ type: 'header', settings: { title: 'Updated' } }];
   let sdkReads = 0, migrations = 0;
+  const precargadas = [];
   const api = await loadService('src/pages/Tienda/services/startup.js', {
     './storefront': {
       getStorefrontConfig: async () => { sdkReads++; return { sections: current }; },
       migrateHomeCategoryGrid: sections => { migrations++; return sections; },
     },
     '../../../utils/imageUrl': { toDirectImageUrl: value => value },
-  }, { window: {
+    './seccionesPorTipo': { precargarSecciones: async list => { precargadas.push(list); } },
+  }, { setTimeout: () => 0, window: {
     __walaStorefrontBootstrap: { pageId: 'home', promise: Promise.resolve(initial), consumed: false },
     matchMedia: () => ({ matches: false }),
   } });
   assert.equal((await api.loadStorefrontPage('home')).sections, initial);
   assert.equal(sdkReads, 0);
+  // El código de las secciones de la primera pantalla se pide al llegar la config.
+  assert.ok(precargadas.length >= 1);
   assert.equal(migrations, 1);
   assert.equal((await api.loadStorefrontPage('home')).sections, current);
   assert.equal(sdkReads, 1);
@@ -221,7 +221,8 @@ test('failed public bootstrap falls back to the existing Firestore reader', asyn
       migrateHomeCategoryGrid: unused,
     },
     '../../../utils/imageUrl': { toDirectImageUrl: value => value },
-  }, { window: {
+    './seccionesPorTipo': { precargarSecciones: async () => {} },
+  }, { setTimeout: () => 0, window: {
     __walaStorefrontBootstrap: { pageId: 'home', promise: Promise.resolve(null), consumed: false },
     matchMedia: () => ({ matches: false }),
   } });

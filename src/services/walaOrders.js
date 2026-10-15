@@ -5,13 +5,13 @@
 // PROBLEMA: el portal crea cada pedido en `pedidos_web` (createWebOrder, en
 // src/services/erp/firebase.js). El ERP externo (aimunayerp.com), al aprobar el
 // pedido, BORRA ese doc o le quita los marcadores de Portal Web. Como el portal
-// NUNCA borra pedidos, ese pedido desaparece de "Mis Compras"
-// (searchOrdersByDniInERP, filtra por DNI exacto) y de "Recepción"
+// NUNCA borra pedidos, ese pedido desaparecería de "Mis Pedidos"
+// (misPedidosSecure en el servidor) y de "Recepción"
 // (src/services/adminOrders.js, filtro esPedidoWala).
 //
 // SOLUCIÓN: aquí guardamos una COPIA propia del lado WALA en la colección
 // `wala_pedidos`. Esta copia es nuestra y el ERP no la toca. Si el pedido
-// original desaparece, la lectura del espejo (getWalaMirrorOrders) lo recupera.
+// original desaparece, la lectura del espejo lo recupera.
 //
 // REGLAS DURAS de este módulo:
 //   - El espejo es BEST-EFFORT: su escritura va siempre en try/catch del lado
@@ -458,7 +458,7 @@ export function estadoWalaADisplay(estadoWala) {
 
 /**
  * Convierte un doc crudo del espejo a la forma que la UI de "Mis Compras" espera
- * (misma que searchOrdersByDniInERP entrega: doc crudo del ERP con `id` y nombres
+ * (la misma que un doc crudo del ERP: con `id` y nombres
  * de campo ERP que luego pasa por normalizarPedidoParaVista). Marca _fromMirror.
  */
 export function normalizarEspejoParaVista(docId, data) {
@@ -505,78 +505,6 @@ export function normalizarEspejoParaVista(docId, data) {
 }
 
 /**
- * Lee la copia de seguridad de pedidos del Portal Web desde `wala_pedidos`.
- *
- * Estrategia de búsqueda (cada where es una sola condición → no requiere índice
- * compuesto; la unión y el dedup se hacen en memoria):
- *   1) Si hay userId → where("buyerUid", "==", userId).
- *   2) Si hay dni → where("clienteNumeroDocumento", "==", dniNorm) con fallbacks
- *      a where("dni", ...) y al valor CRUDO (dniRaw) por si difiere del normalizado.
- *
- * Une todos los resultados, deduplica por docId, normaliza cada pedido a la forma
- * que espera la UI (igual que searchOrdersByDniInERP) y lo marca _fromMirror:true.
- *
- * NUNCA lanza: ante error devuelve lista vacía (best-effort de red de seguridad).
- *
- * @param {object} params
- * @param {string} [params.userId] - UID del comprador autenticado (= buyerUid).
- * @param {string} [params.dni]    - Documento del cliente (DNI/CE).
- * @returns {Promise<Array<object>>} Pedidos normalizados con _fromMirror:true.
- */
-export async function getWalaMirrorOrders({ userId, dni } = {}) {
-  if (!isErpFirestoreAvailable()) return [];
-
-  const coll = collection(erpDb, WALA_ORDERS_COLLECTION);
-
-  // Acumulador por docId para deduplicar automáticamente las uniones.
-  const porDocId = new Map();
-
-  // Ejecuta una query y vuelca sus docs en el acumulador (best-effort por query:
-  // si una falla, las demás siguen aportando resultados).
-  const acumular = async (q) => {
-    try {
-      const snap = await getDocs(q);
-      snap.docs.forEach((dDoc) => {
-        if (!porDocId.has(dDoc.id)) porDocId.set(dDoc.id, dDoc.data());
-      });
-    } catch (error) {
-      console.warn('[walaOrders] Falló una consulta del espejo:', error?.message);
-    }
-  };
-
-  try {
-    // 1) Por usuario autenticado (camino preferente y más exacto).
-    if (userId) {
-      await acumular(query(coll, where('buyerUid', '==', userId)));
-    }
-
-    // 2) Por documento (DNI/CE), con normalizado, alias `dni` y crudo de fallback.
-    const dniRaw = dni != null ? String(dni) : '';
-    const dniNorm = normalizarDocumento(dniRaw);
-    if (dniNorm) {
-      await acumular(query(coll, where('clienteNumeroDocumento', '==', dniNorm)));
-      await acumular(query(coll, where('dni', '==', dniNorm)));
-      // Fallback al valor CRUDO si difiere del normalizado (copias antiguas).
-      if (dniRaw && dniRaw !== dniNorm) {
-        await acumular(query(coll, where('clienteNumeroDocumento', '==', dniRaw)));
-        await acumular(query(coll, where('dni', '==', dniRaw)));
-        await acumular(query(coll, where('dniRaw', '==', dniRaw)));
-      }
-    }
-  } catch (error) {
-    console.warn('[walaOrders] Error al leer el espejo wala_pedidos:', error?.message);
-    return [];
-  }
-
-  // Normaliza cada doc a la forma de la UI y devuelve marcado como copia.
-  const pedidos = [];
-  porDocId.forEach((data, docId) => {
-    pedidos.push(normalizarEspejoParaVista(docId, data));
-  });
-  return pedidos;
-}
-
-/**
  * Límite por defecto de copias-espejo a leer para el admin (orden desc por fecha).
  * Conservador, alineado con LIMIT_DEFAULT de adminOrders.js (200) y la nota del
  * repo sobre cuotas de Firestore.
@@ -585,8 +513,7 @@ const ADMIN_MIRROR_LIMIT_DEFAULT = 200;
 
 /**
  * Lee TODAS las copias-espejo de `wala_pedidos` (SIN filtro de usuario) para el
- * área admin "Recepción". A diferencia de getWalaMirrorOrders (que filtra por
- * comprador/DNI para "Mis Compras"), aquí traemos la colección completa ordenada
+ * área admin "Recepción": la colección completa ordenada
  * por createdAt desc con un límite razonable.
  *
  * NUNCA lanza: ante error (o erpDb no disponible) devuelve lista vacía, para no
@@ -623,5 +550,3 @@ export async function getAllWalaMirrorOrders({ limitN = ADMIN_MIRROR_LIMIT_DEFAU
 
   return docs.map((dDoc) => normalizarEspejoParaVista(dDoc.id, dDoc.data()));
 }
-
-export default getWalaMirrorOrders;
