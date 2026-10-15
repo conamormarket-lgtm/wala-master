@@ -4,8 +4,8 @@ import {
   MarcoCuenta, PaginaCuentaInvitado, PaginaResumenCuenta, PaginaPerfil, PaginaDirecciones, PaginaAjustes, PaginaPedidos,
   PaginaCatalogo, PaginaCupones, PaginaMisiones, PaginaReferidos, PaginaCreaciones, PaginaListaDeseos, PaginaFechas,
   PaginaDetallePedido, HojaPagarSaldo, Boton, enlaceWhatsApp, PaginaEncuesta,
-  PaginaLogin, PaginaRegistro, PaginaRecuperar, PaginaCompletarPerfil, PaginaCrear, PaginaComunidad,
-  prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde,
+  PaginaLogin, PaginaRegistro, PaginaRecuperar, PaginaCompletarPerfil, PaginaCrear, PaginaComunidad, PaginaCreacion, PaginaVerDiseno,
+  prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaCreacionDesde,
 } from './kit';
 import { empresa } from '../config/empresa';
 import CREAR from './demo/crear.json';
@@ -173,7 +173,7 @@ const creacionDesdeReal = (d, k) => {
     comprado: k === 1,
     publicada: k === 0,
     urlEditar: esCombo ? `/combo/${d.comboId}?mio=${d.id}` : `/crear/${d.productId}?designId=${d.id}`,
-    urlComprar: `/creacion/${d.id}`,
+    urlComprar: esCombo ? `/combo/${d.comboId}?mio=${d.id}` : `/creacion/${d.id}`,
   };
 };
 
@@ -749,5 +749,76 @@ export function ComunidadDemo({ estados = [], toast }) {
       onReintentar={() => toast?.({ tipo: 'info', titulo: 'Volviendo a cargar', duracion: 1800 })}
     />
   );
+}
+
+/* ── Una creación (/creacion/:id) ──────────────────────────── */
+
+/** Estados para probar la ficha de una creación. */
+export const ESTADOS_CREACION = [
+  ['cargando', 'Cargando'],
+  ['noEncontrada', 'No encontrada'],
+  ['noDisponible', 'Prenda no disponible'],
+  ['vieja', 'Guardada con versión vieja'],
+];
+
+/**
+ * La ficha de una creación con un diseño real (de la comunidad) como si fuera
+ * del cliente. `id`: el del diseño (por defecto, el primero que no es combo).
+ */
+export function CreacionDemo({ id, sesion, esAdmin, estados = [], toast, onIrA, onMonedas }) {
+  const avisar = (titulo, texto, tipo = 'exito') => toast?.({ tipo, titulo, texto, duracion: 2200 });
+  const sueltos = CREAR.comunidad.filter((d) => d.tipo !== 'combo');
+  const d = CREAR.comunidad.find((x) => x.id === id && x.tipo !== 'combo') || sueltos[0];
+  const prenda = d && PRENDA_POR_ID.get(d.productId);
+  const base = fichaCreacionDesde({ ...d, name: d?.nombre }, estados.includes('noDisponible') ? { ...prenda, deleted: true } : prenda, { fecha: Date.now() - 3 * 864e5, esAdmin });
+  const [talla, setTalla] = useState(base.talla || '');
+  const [nombre, setNombre] = useState(base.creacion.nombre);
+  const combosDeLaPrenda = CREAR.combos.filter((c) => c.publicado && c.piezas.some((p) => p.prendaId === d?.productId));
+  let estado;
+  if (!sesion) estado = 'sinSesion';
+  else if (estados.includes('cargando')) estado = 'cargando';
+  else if (estados.includes('noEncontrada')) estado = 'noEncontrada';
+  return (
+    <PaginaCreacion
+      {...base}
+      creacion={{ ...base.creacion, nombre }}
+      estado={estado}
+      lista={!estados.includes('vieja')}
+      talla={talla}
+      onTalla={setTalla}
+      combosSugeridos={combosDeLaPrenda.map((c) => ({ id: c.id, nombre: c.name, piezas: c.piezas.length, precio: precioDe(c.id), onUsar: async () => { await espera(700); onIrA?.(`/combo/${c.id}`); } }))}
+      onAgregar={async ({ talla: t, cantidad }) => { await espera(500); avisar('¡Agregado al carrito!', `${nombre} · Talla ${t} × ${cantidad}`); }}
+      onComprar={async () => { await espera(500); onIrA?.('/checkout'); }}
+      onRenombrar={async (n) => { await espera(400); setNombre(n); }}
+      onEliminar={async () => { await espera(600); avisar('Creación eliminada', undefined, 'info'); onIrA?.('/cuenta/creaciones'); }}
+      comunidad={esAdmin ? { estado: null, onPublicar: async () => { await espera(600); avisar('Publicada en la comunidad'); }, onRetirar: async () => { await espera(600); } } : undefined}
+    />
+  );
+}
+
+/* ── Ver diseño (/ver/:id) ─────────────────────────────────── */
+
+export const ESTADOS_VER = [
+  ['cargando', 'Cargando'],
+  ['noDisponible', 'No disponible'],
+];
+
+/**
+ * Ver diseño con un combo real (sus dos prendas, frente y espalda) y, en la
+ * segunda, la espalda lisa para ver cómo se dice.
+ */
+export function VerDisenoDemo({ estados = [] }) {
+  const d = CREAR.comunidad.find((x) => x.tipo === 'combo') || CREAR.comunidad[0];
+  const tallas = ['M', 'S'];
+  const piezas = (d?.piezas || []).map((p, i) => ({
+    prenda: p.productName,
+    nombre: p.nombre,
+    color: p.color?.nombre,
+    colorHex: p.color?.hex,
+    talla: tallas[i % tallas.length],
+    // La segunda prenda con la espalda lisa (sin diseño), para ver cómo se dice.
+    lados: [...(p.vistasPrevias || []).map((v) => ({ nombre: v.nombre, url: v.url })), ...(i === 1 && (p.vistasPrevias || []).length < 2 ? [{ nombre: 'Espalda', url: '' }] : [])],
+  }));
+  return <PaginaVerDiseno titulo={d?.nombre} piezas={piezas} cargando={estados.includes('cargando')} noDisponible={estados.includes('noDisponible')} />;
 }
 

@@ -1,0 +1,189 @@
+.galeria {
+  --escenario: var(--escenario-foto, #f5f4f8);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+/* La foto grande: escenario claro, esquina de etiqueta y el lado en una píldora. */
+.marco {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 26px 26px 26px;
+  background: var(--escenario);
+  cursor: zoom-in;
+  isolation: isolate;
+  touch-action: pan-y;
+}
+
+.foto {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  transition: transform 0.25s ease-out;
+  animation: aparece var(--dur-media) var(--ease-signature);
+}
+
+@keyframes aparece {
+  from { opacity: 0.4; transform: scale(0.98); }
+}
+
+.lado {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #4c1d95;
+  font-size: 0.75rem;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(76, 29, 149, 0.12);
+}
+
+/* "Pasa el cursor…": solo con ratón y se va al acercar. */
+.pista {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  display: none;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(28, 20, 51, 0.62);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  pointer-events: none;
+  transition: opacity var(--dur-rapida) ease;
+}
+
+.pista svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.acercado .pista,
+.acercado .lado {
+  opacity: 0;
+}
+
+/* En el celular: puntos abajo (se desliza con el dedo). */
+.puntos {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  display: flex;
+  gap: 5px;
+  transform: translateX(-50%);
+}
+
+.puntos i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.3);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.puntos .puntoActivo {
+  background: #8b5cf6;
+  transform: scale(1.3);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pista {
+    display: inline-flex;
+  }
+
+  .puntos {
+    display: none;
+  }
+}
+
+.miniaturas {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.miniaturas::-webkit-scrollbar {
+  display: none;
+}
+
+.miniatura {
+  position: relative;
+  flex: 0 0 auto;
+  width: 72px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: var(--escenario);
+  cursor: pointer;
+  transition: border-color var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature);
+}
+
+.miniatura img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+}
+
+.miniatura span {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 0.15rem 0.2rem;
+  background: rgba(255, 255, 255, 0.88);
+  color: #4c1d95;
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.miniatura:hover {
+  transform: translateY(-2px);
+}
+
+.miniatura:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+.miniaturaActiva {
+  border-color: var(--primary-color, #6d28d9);
+}
+
+/* Ancho: las miniaturas en columna a la izquierda. */
+@media (min-width: 900px) {
+  .conMiniaturas {
+    grid-template-columns: 76px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .miniaturas {
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .miniatura {
+    width: 76px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .foto,
+  .miniatura {
+    animation: none;
+    transition: none;
+  }
+}

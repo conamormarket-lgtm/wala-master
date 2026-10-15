@@ -7,7 +7,7 @@
  */
 
 import { limaTodayStr, felicidadKapiHoy } from '../../utils/fechaLima';
-import { leerPrendaBase, colorDisponible, fondoMuestra, precioBase } from '../../utils/prendaBase';
+import { leerPrendaBase, colorDisponible, fondoMuestra, precioBase, precioPersonalizado, tallasDeColor, fondoColorGuardado } from '../../utils/prendaBase';
 
 const variantesDe = (p) => (p?.hasVariants ? p.variants || [] : []);
 
@@ -793,3 +793,44 @@ export const disenoComunidadDesde = (d = {}) => {
     prendaNombre: esCombo ? ((d.piezas || [])[0]?.productName || d.productName) : d.productName,
   };
 };
+
+const FECHA_LARGA = { day: 'numeric', month: 'long', year: 'numeric' };
+
+/**
+ * Una creación (getDesignById) y su prenda base (getPrendaBase) → las props
+ * de PaginaCreacion (sin los handlers). Como CreacionPage: las fotos son sus
+ * vistas previas y la imagen de todos los lados; las tallas, las del color.
+ *  - fecha: ms (fechaDeCreacion) · esAdmin: ve las prendas en borrador
+ */
+export const fichaCreacionDesde = (d = {}, prenda, { fecha, esAdmin = false } = {}) => {
+  const cfg = prenda ? leerPrendaBase(prenda) : null;
+  const color = cfg?.colores.find((c) => c.id === d.color?.id || c.nombre === d.color?.nombre) || null;
+  const imagenes = (d.vistasPrevias || []).filter((p) => p?.url).map((p) => ({ url: p.url, nombre: p.nombre }));
+  if (d.imagenConjunta) imagenes.push({ url: d.imagenConjunta, nombre: 'Todos los lados' });
+  if (!imagenes.length && d.previewUrl) imagenes.push({ url: d.previewUrl, nombre: 'Vista previa' });
+  const precio = prenda ? precioPersonalizado(prenda) : 0;
+  const lista = Number(prenda?.price);
+  return {
+    creacion: {
+      nombre: d.name || d.nombre || 'Mi creación',
+      prenda: d.productName || prenda?.name,
+      fecha: fecha ? new Date(fecha).toLocaleDateString('es-PE', FECHA_LARGA) : undefined,
+      imagenes,
+      color: d.color?.nombre ? { nombre: d.color.nombre, fondo: fondoColorGuardado(d.color, prenda) || d.color.hex } : undefined,
+      lados: (d.vistasPrevias || []).map((p) => p?.nombre).filter(Boolean),
+      zonas: (d.archivosImpresion || []).filter((a) => a?.nombre).map((a) => ({ nombre: a.nombre, ancho: a.anchoCm, alto: a.altoCm })),
+      imagenConjunta: d.imagenConjunta,
+      publicada: d.comunidad === 'publicada',
+    },
+    precio,
+    precioAntes: Number.isFinite(lista) && lista > precio ? lista : undefined,
+    disponible: Boolean(prenda) && prenda.deleted !== true && (prenda.visible !== false || esAdmin),
+    agotado: typeof prenda?.inStock === 'number' && prenda.inStock <= 0,
+    tallas: cfg ? (color ? tallasDeColor(color, cfg) : cfg.tallas) : [],
+    talla: d.variant?.size,
+    combo: d.combo?.id ? { nombre: d.combo.nombre, url: `/combo/${d.combo.id}` } : undefined,
+    urlEditar: `/crear/${d.productId}?designId=${d.id}`,
+    descripcionPrenda: prenda?.description,
+  };
+};
+

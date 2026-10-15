@@ -100,8 +100,8 @@ Las tarjetas de prenda y de combo tienen el lenguaje de `TarjetaProducto`:
 | Página | Estado en el kit | Se llega desde |
 |---|---|---|
 | Comunidad (`/comunidad`) | **P8 · `PaginaComunidad`** | "Ver todos (8)" de Diseños de la comunidad |
-| Creación (`/creacion/:id`) | falta | "Comprar" de una creación |
-| Ver diseño (`/ver/…`) | falta | el enlace de un diseño compartido |
+| Creación (`/creacion/:id`) | **P9 · `PaginaCreacion`** | "Comprar" de una creación |
+| Ver diseño (`/ver/:id`) | **P10 · `PaginaVerDiseno`** | el enlace del WhatsApp de un pedido |
 | Combo (`/combo/:id`) | falta | "Armar" de un combo |
 | Estudio (`/crear/:id`) | falta (el editor, ~3.900 líneas) | "Diseñar", "Continuar", "Usar diseño" |
 
@@ -125,6 +125,64 @@ En la Tienda de prueba es la página **Comunidad**, con los estados en
 "Estado de la galería". Para llevarla a la tienda, `ComunidadPage.jsx`
 pasa a `<PaginaComunidad disenos={disenos.map(disenoComunidadDesde)}
 cargando={isLoading} error={Boolean(error)} onReintentar={refetch} />`.
+
+### P9 · Una creación (`paginas/Creacion.jsx`)
+
+Es el "producto propio" del cliente, con la forma de una ficha de producto.
+Solo la ve su dueño.
+
+- **Galería:** `GaleriaProducto`, una pieza nueva que también servirá para la
+  ficha de producto:
+  - las miniaturas van en columna (debajo en el celular) y cada foto lleva su
+    lado en una píldora;
+  - con ratón, la foto se acerca donde está el cursor;
+  - con el dedo, se desliza y unos puntos dicen cuál se ve.
+- **Cabeza:**
+  - migas a Mi cuenta y Mis creaciones;
+  - "Mi creación" en etiqueta colgante (es cosa del producto);
+  - el nombre con lápiz para renombrarlo ahí mismo;
+  - "Hecha sobre Polo clásico · guardada el…".
+- **Precio:** con la letra de la marca y, si hay oferta, el descuento en un
+  sello inclinado con el degradado.
+- **Combo:** "Es parte de tu combo", con "Ir al combo". Si no es parte de uno,
+  "Llévala en combo" para cada combo que usa esa prenda.
+- **Color, lados con diseño, talla y cantidad:**
+  - el color es una muestra fija, porque va con el diseño;
+  - la talla es `SelectorTalla` y queda guardada; si falta al agregar, se
+    sacude y avisa;
+  - la cantidad es `Cantidad`.
+- **Botones:** "Agregar al carrito", "Editar diseño" y "Comprar ahora". Debajo,
+  envío, cambios y pago seguro.
+- **Detalles:** `Acordeon` con la prenda, el color, las zonas de impresión en
+  cm, "Ver imagen completa" y "Sobre la prenda".
+- **Al final:** publicar o retirar de la comunidad (solo el admin) y
+  "Eliminar creación". Las dos se confirman en la página, sin ventanas del
+  navegador.
+- **Estados:** cargando (`EsqueletoPagina forma="producto"`), sin sesión, no
+  encontrada, prenda no disponible y guardada con una versión vieja.
+- **Datos:** `fichaCreacionDesde(diseno, prenda, { fecha, esAdmin })` hace lo
+  mismo que `CreacionPage` (fotos, tallas del color, precio, combo).
+  `itemDeCreacion` y `addToCart` siguen en la página de la tienda, en
+  `onAgregar` y `onComprar`.
+
+### P10 · Ver diseño (`paginas/VerDiseno.jsx`)
+
+Es lo que abre el asesor desde el WhatsApp de un pedido, sin sesión.
+
+- **Cabeza:** "Combo · 2 prendas" y el nombre del diseño.
+- **Cada prenda:** una tarjeta con su número en un sello y el color con su
+  punto, la talla en una píldora y el nombre de la pieza.
+- **Fotos:** las de cada lado, con su nombre. Un lado **sin diseño** va
+  punteado y dice "Este lado va liso, en Blanco", para que no parezca que
+  falta la foto.
+- **Estados:** cargando (`Cargando`) y no disponible (Kapi triste).
+
+Hoy `VerDisenoPage.jsx` ya usa `Cargando` y `EstadoVacio` del kit. Para
+llevarla a la tienda, devuelve `<PaginaVerDiseno titulo piezas cargando
+noDisponible />` con los datos de `verDisenoCompartido`.
+
+En la Tienda de prueba son las páginas **Una creación** ("Comprar" de una
+creación lleva ahí) y **Ver diseño**, cada una con sus estados.
 
 ## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
 

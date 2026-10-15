@@ -11,7 +11,7 @@ import {
 import { empresa } from '../config/empresa';
 import { msHastaMananaLima, msHastaLunesLima, limaTodayStr } from '../utils/fechaLima';
 import { volarMonedasGanadas } from '../utils/animations';
-import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR, ComunidadDemo, ESTADOS_COMUNIDAD } from './DemoCuenta';
+import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR, ComunidadDemo, ESTADOS_COMUNIDAD, CreacionDemo, ESTADOS_CREACION, VerDisenoDemo, ESTADOS_VER } from './DemoCuenta';
 import INICIO from './demo/inicio.json';
 import TIENDA from './demo/tienda.json';
 import cs from './ComponentesPage.module.css';
@@ -52,6 +52,8 @@ const PAGINAS = [
   { id: 'tienda', texto: 'Tienda', ruta: '/tienda' },
   { id: 'crear', texto: 'Crear', ruta: '/personalizar' },
   { id: 'comunidad', texto: 'Comunidad', ruta: '/comunidad' },
+  { id: 'creacion', texto: 'Una creación', ruta: '/creacion/' },
+  { id: 'ver', texto: 'Ver diseño', ruta: '/ver/' },
   { id: 'minijuegos', texto: 'Minijuegos', ruta: '/minijuegos' },
   { id: 'buscar', texto: 'Buscar', ruta: '/buscar' },
   { id: 'carrito', texto: 'Carrito', ruta: '/carrito' },
@@ -68,7 +70,7 @@ const PAGINA_DE_RUTA = {
 };
 
 /** Pestaña de la barra inferior que se enciende en cada página. */
-const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', comunidad: 'crear' };
+const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', comunidad: 'crear', creacion: 'cuenta' };
 
 /* Estados de la Zona Arcade para probar (como el modo diseño de la tienda). */
 const RULETAS = [
@@ -225,6 +227,9 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [estadosEncuesta, setEstadosEncuesta] = useState([]);
   const [estadosCrear, setEstadosCrear] = useState([]);
   const [estadosComunidad, setEstadosComunidad] = useState([]);
+  const [rutaCreacion, setRutaCreacion] = useState('/creacion/');
+  const [estadosCreacion, setEstadosCreacion] = useState([]);
+  const [estadosVer, setEstadosVer] = useState([]);
   const [rutaAcceso, setRutaAcceso] = useState('/login');
   // Ver la carga: 'marca' (primera vez), 'accion' (esperar una acción) o 'esqueleto' (cambio de página).
   const [carga, setCarga] = useState(null);
@@ -266,6 +271,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     const [ruta, query = ''] = String(to || '').split('?');
     // El detalle de una compra (/cuenta/pedidos/PD-…) también es de la cuenta.
     if (ruta.startsWith('/cuenta/pedidos/')) { setRutaCuenta(ruta); irA('cuenta'); return; }
+    // Una creación (/creacion/:id) es su propia página.
+    if (ruta.startsWith('/creacion/')) { setRutaCreacion(ruta); irA('creacion'); return; }
     if (!PAGINA_DE_RUTA[ruta]) { avisar('En la tienda iría a', to); return; }
     if (ruta === '/buscar') {
       const p = new URLSearchParams(query);
@@ -517,7 +524,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   });
 
   const formaEsqueleto = {
-    tienda: 'tienda', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', comunidad: 'comunidad', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
+    tienda: 'tienda', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', comunidad: 'comunidad', creacion: 'producto', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
   }[pagina] || 'productos';
   // /cuenta/… → su módulo (el detalle de una compra usa el de pedidos).
   const moduloEsqueleto = {
@@ -586,6 +593,26 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       propsPara={(sec) => (sec.type === 'faq_accordion' ? { contacto: enlaceWhatsApp(empresa.whatsapp, '¡Hola Walá! Tengo una duda.') } : undefined)}
       envolver={envolver}
     />
+  ) : pagina === 'ver' ? (
+    <MarcoTienda {...marco} kapiEnPie={!estadosVer.includes('noDisponible')}>
+      <Parte n="P10" nombre="PaginaVerDiseno">
+        <VerDisenoDemo estados={estadosVer} />
+      </Parte>
+    </MarcoTienda>
+  ) : pagina === 'creacion' ? (
+    <MarcoTienda {...marco}>
+      <Parte n="P9" nombre="PaginaCreacion">
+        <CreacionDemo
+          key={rutaCreacion}
+          id={rutaCreacion.split('/')[2]}
+          sesion={conSesion}
+          esAdmin={esAdmin}
+          estados={estadosCreacion}
+          toast={toast}
+          onIrA={(r) => navegar.current(r)}
+        />
+      </Parte>
+    </MarcoTienda>
   ) : pagina === 'comunidad' ? (
     <MarcoTienda {...marco} kapiEnPie={!estadosComunidad.includes('vacia')}>
       <Parte n="P8" nombre="PaginaComunidad">
@@ -703,6 +730,26 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
                 ))}
               </div>
             )}
+          </div>
+        )}
+        {pagina === 'ver' && (
+          <div>
+            <span className={cs.controlesTitulo}>Estado</span>
+            <div className={cs.controlesChips}>
+              {ESTADOS_VER.map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={estadosVer.includes(id)} onClick={() => setEstadosVer((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
+              ))}
+            </div>
+          </div>
+        )}
+        {pagina === 'creacion' && (
+          <div>
+            <span className={cs.controlesTitulo}>Estado de la creación</span>
+            <div className={cs.controlesChips}>
+              {ESTADOS_CREACION.map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={estadosCreacion.includes(id)} onClick={() => setEstadosCreacion((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
+              ))}
+            </div>
           </div>
         )}
         {pagina === 'comunidad' && (

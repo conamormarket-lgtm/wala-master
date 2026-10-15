@@ -33,6 +33,7 @@ página), **A** = las páginas de acceso (A1-A4).
 | Encuesta (`/encuesta-suscripcion`) | [ENCUESTA.md](ENCUESTA.md) | armada (P6 `PaginaEncuesta`, con los estados sin sesión, ya respondida, cargando y falla); con plan de migración (a futuro) |
 | Acceso (`/login`, `/registro`, `/recuperar-contrasena`, `/completar-perfil`) | [ACCESO.md](ACCESO.md) | armadas (A1-A4 con `MarcoAcceso`; los datos personales son los de Mi perfil); con plan de migración (a futuro) |
 | Cargando (primera carga, cambio de página, página llegando) | [CARGA.md](CARGA.md) | armada (M11 `PantallaCarga`, `Cargando` y los esqueletos de `Esqueletos.jsx` por componente, sección y página; en la Tienda de prueba, "Ver la carga"); con plan de migración (a futuro) |
+| Una creación (`/creacion/:id`) y Ver diseño (`/ver/:id`) | [CREAR.md](CREAR.md) | armadas (P9 `PaginaCreacion` con `GaleriaProducto`, P10 `PaginaVerDiseno`); con plan de migración (a futuro) |
 | Comunidad (`/comunidad`) | [CREAR.md](CREAR.md#p8--comunidad-paginascomunidadjsx) | armada (P8 `PaginaComunidad`: galería con filtro por prenda); con plan de migración (a futuro) |
 | Crear (`/personalizar`) | [CREAR.md](CREAR.md) | armada (P7 `PaginaCrear`: portada con los pasos, borradores, creaciones, comunidad y ¿para cuántos? con prendas y combos); con plan de migración (a futuro) |
 | Carrito (`/carrito`) | — | armada (P1 `PaginaCarrito`); falta su ficha |
