@@ -648,6 +648,29 @@ const PAGINAS = {
       <span className={s.tarjeta}><EsqueletoFormulario /></span>
     </span>
   ),
+  crear: ({ sesion }) => (
+    // La portada (el arte de Kapi, 2172 × 724), lo del cliente y las prendas.
+    <>
+      <span className={s.portadaCrear}>
+        <span className={s.portadaCrearTexto}>
+          <Hueso claro alto={40} ancho="70%" />
+          <Hueso claro alto={12} ancho="90%" />
+          {repetir(3, (k) => <span key={k} className={s.itemMenu}><Hueso claro forma="circulo" ancho={42} alto={42} /><Hueso claro alto={12} ancho="55%" /></span>)}
+        </span>
+      </span>
+      {sesion !== false && (
+        <span className={s.seccionDebajo}>
+          <EsqueletoCabeza />
+          <span className={cx(s.filaProductos, s.filaCuatro)}>{productos(5)}</span>
+        </span>
+      )}
+      <span className={s.seccionDebajo}>
+        <EsqueletoCabeza />
+        <span className={s.chips}>{repetir(3, (k) => <Hueso key={k} forma="pildora" alto={44} ancho={k ? 150 : 100} />)}</span>
+        <span className={s.grillaCrear}>{productos(4)}</span>
+      </span>
+    </>
+  ),
   minijuegos: ({ sesion }) => (
     <>
       <EncabezadoCentrado extra={sesion !== false} />
@@ -702,7 +725,7 @@ const PAGINAS = {
  * Lo que se ve mientras llega una página (Suspense): su forma, no un círculo.
  * Para cambiar de página siempre es esto (CapaCargando es para esperar una acción).
  *  - forma: 'productos' (la grilla, por defecto) | 'inicio' | 'tienda' |
- *    'busqueda' | 'producto' | 'carrito' | 'minijuegos' | 'encuesta' |
+ *    'busqueda' | 'producto' | 'carrito' | 'crear' | 'minijuegos' | 'encuesta' |
  *    'acceso' | 'cuenta' | 'lista' | 'formulario'
  *  - sesion: false para quien no entró (la cuenta y la encuesta muestran la
  *    invitación a entrar; Minijuegos, su aviso en vez del progreso)

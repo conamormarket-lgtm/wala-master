@@ -824,6 +824,71 @@
   }
 }
 
+/* Crear: la portada (como su arte, 2172 × 724; vertical en el celular). */
+.portadaCrear {
+  --hueso: color-mix(in srgb, var(--violet-200, #ddd6fe) 70%, var(--color-hover, #f1f5f9));
+  position: relative;
+  display: grid;
+  aspect-ratio: 800 / 1067;
+  padding: 1.5rem 1.25rem;
+  border-radius: 6px 28px 28px 28px;
+  background: var(--hueso);
+}
+
+:global([data-theme='dark']) .portadaCrear {
+  --hueso: rgba(167, 139, 250, 0.14);
+}
+
+.portadaCrearTexto {
+  display: grid;
+  align-content: start;
+  gap: 0.8rem;
+}
+
+.portadaCrearTexto .itemMenu {
+  display: none;
+}
+
+/* Como el Carrusel de Crear: 4 a la vista en escritorio, 1,35 en el celular. */
+.filaCuatro {
+  grid-auto-columns: calc((100% - 3rem) / 4);
+}
+
+@media (max-width: 768px) {
+  .filaCuatro {
+    grid-auto-columns: 72%;
+  }
+}
+
+.grillaCrear {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 480px) {
+  .grillaCrear {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .portadaCrear {
+    aspect-ratio: 2172 / 724;
+    min-height: 340px;
+    padding: 2rem 2.5rem 2rem 46%;
+  }
+
+  .portadaCrearTexto {
+    align-content: center;
+  }
+
+  .portadaCrearTexto .itemMenu {
+    display: flex;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hueso::after {
     display: none;

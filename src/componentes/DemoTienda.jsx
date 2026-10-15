@@ -11,7 +11,7 @@ import {
 import { empresa } from '../config/empresa';
 import { msHastaMananaLima, msHastaLunesLima, limaTodayStr } from '../utils/fechaLima';
 import { volarMonedasGanadas } from '../utils/animations';
-import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO } from './DemoCuenta';
+import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR } from './DemoCuenta';
 import INICIO from './demo/inicio.json';
 import TIENDA from './demo/tienda.json';
 import cs from './ComponentesPage.module.css';
@@ -50,6 +50,7 @@ const ROLES = [
 const PAGINAS = [
   { id: 'inicio', texto: 'Inicio', ruta: '/' },
   { id: 'tienda', texto: 'Tienda', ruta: '/tienda' },
+  { id: 'crear', texto: 'Crear', ruta: '/personalizar' },
   { id: 'minijuegos', texto: 'Minijuegos', ruta: '/minijuegos' },
   { id: 'buscar', texto: 'Buscar', ruta: '/buscar' },
   { id: 'carrito', texto: 'Carrito', ruta: '/carrito' },
@@ -60,13 +61,13 @@ const PAGINAS = [
 
 /** Ruta de la tienda → página de esta demo (las demás solo avisan). */
 const PAGINA_DE_RUTA = {
-  '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/encuesta-suscripcion': 'encuesta',
+  '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/encuesta-suscripcion': 'encuesta', '/personalizar': 'crear',
   ...Object.fromEntries(MODULOS_CUENTA.map((m) => [m.ruta, 'cuenta'])),
   ...Object.fromEntries(VISTAS_ACCESO.map((v) => [v.ruta, 'acceso'])),
 };
 
 /** Pestaña de la barra inferior que se enciende en cada página. */
-const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta' };
+const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear' };
 
 /* Estados de la Zona Arcade para probar (como el modo diseño de la tienda). */
 const RULETAS = [
@@ -221,6 +222,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [rutaCuenta, setRutaCuenta] = useState('/cuenta');
   const [estadosCuenta, setEstadosCuenta] = useState([]);
   const [estadosEncuesta, setEstadosEncuesta] = useState([]);
+  const [estadosCrear, setEstadosCrear] = useState([]);
   const [rutaAcceso, setRutaAcceso] = useState('/login');
   // Ver la carga: 'marca' (primera vez), 'accion' (esperar una acción) o 'esqueleto' (cambio de página).
   const [carga, setCarga] = useState(null);
@@ -366,7 +368,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       { id: 'marcas', texto: 'Marcas', url: '/marcas', menu: 'marcas' },
       { id: 'minijuegos', texto: 'Minijuegos', url: '/minijuegos' },
     ],
-    activo: pagina === 'tienda' || pagina === 'minijuegos' ? pagina : null,
+    activo: ['tienda', 'minijuegos', 'crear'].includes(pagina) ? pagina : null,
     menuTienda: {
       categorias: INICIO.categorias.slice(0, 10).map((c) => ({ id: c.categoryId, nombre: c.name, url: `/tienda?categoria=${c.categoryId}` })),
     },
@@ -395,7 +397,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
 
   // En la encuesta y en el acceso Kapi ya está en la página (uno solo a la
   // vista) y la píldora distrae (o invita a la misma encuesta): no se muestran.
-  const enEncuesta = pagina === 'encuesta' || pagina === 'acceso';
+  const enEncuesta = pagina === 'encuesta' || pagina === 'acceso' || pagina === 'crear';
   const flotantes = {
     derecha: (
       <>
@@ -513,7 +515,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   });
 
   const formaEsqueleto = {
-    tienda: 'tienda', buscar: 'busqueda', carrito: 'carrito', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
+    tienda: 'tienda', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
   }[pagina] || 'productos';
   // /cuenta/… → su módulo (el detalle de una compra usa el de pedidos).
   const moduloEsqueleto = {
@@ -582,6 +584,13 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       propsPara={(sec) => (sec.type === 'faq_accordion' ? { contacto: enlaceWhatsApp(empresa.whatsapp, '¡Hola Walá! Tengo una duda.') } : undefined)}
       envolver={envolver}
     />
+  ) : pagina === 'crear' ? (
+    // Kapi ya está en el arte de la portada: ni el pie ni el flotante lo repiten.
+    <MarcoTienda {...marco} kapiEnPie={false}>
+      <Parte n="P7" nombre="PaginaCrear">
+        <CrearDemo sesion={conSesion} esAdmin={esAdmin} estados={estadosCrear} fotos={FOTOS_CUENTA} />
+      </Parte>
+    </MarcoTienda>
   ) : pagina === 'acceso' ? (
     // Kapi asoma en el panel de la marca: el pie no lo muestra.
     <MarcoTienda {...marco} kapiEnPie={false}>
@@ -686,6 +695,16 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
                 ))}
               </div>
             )}
+          </div>
+        )}
+        {pagina === 'crear' && (
+          <div>
+            <span className={cs.controlesTitulo}>Estado de Crear</span>
+            <div className={cs.controlesChips}>
+              {ESTADOS_CREAR.map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={estadosCrear.includes(id)} onClick={() => setEstadosCrear((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
+              ))}
+            </div>
           </div>
         )}
         {pagina === 'acceso' && (

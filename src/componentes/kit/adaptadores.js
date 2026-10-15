@@ -7,6 +7,7 @@
  */
 
 import { limaTodayStr, felicidadKapiHoy } from '../../utils/fechaLima';
+import { leerPrendaBase, colorDisponible, fondoMuestra, precioBase } from '../../utils/prendaBase';
 
 const variantesDe = (p) => (p?.hasVariants ? p.variants || [] : []);
 
@@ -721,3 +722,70 @@ export const encuestaDesdeConfig = (c = {}, sugerencias) => ({
       : { id: f.id, etiqueta: f.label, sugerencias: sugerencias ? sugerencias(cat, f) : [] })),
   })),
 });
+
+/* ── Crear (/personalizar) ─────────────────────────────── */
+
+/**
+ * Una prenda base de productos_wala (getPrendasBase) → TarjetaPrendaBase.
+ * Solo los colores que se pueden pedir (colorDisponible), como la tienda.
+ */
+export const prendaCrearDesdeProducto = (prenda = {}) => {
+  const { vistas, colores } = leerPrendaBase(prenda);
+  return {
+    id: prenda.id,
+    nombre: prenda.name,
+    frente: vistas[0]?.imagen,
+    espalda: vistas[1]?.imagen,
+    lados: vistas.map((v) => v.nombre).filter(Boolean),
+    colores: colores.filter((c) => colorDisponible(c, vistas)).map((c) => ({ id: c.id, nombre: c.nombre, fondo: fondoMuestra(c) })),
+    precio: precioBase(prenda),
+    url: `/crear/${prenda.id}`,
+    borrador: prenda.visible === false,
+  };
+};
+
+/**
+ * Un combo de Crear (getCombosCrear) con sus prendas → TarjetaComboCrear
+ * (más `piezas` y `conjunto` para "¿Para cuántos?"). Devuelve null si falta
+ * alguna prenda (no está a la venta). Mismo cálculo que preciosDeCombo.
+ *  - prendaPorId: Map de las prendas base por id
+ */
+export const comboCrearDesde = (combo = {}, prendaPorId = new Map()) => {
+  const prendas = (combo.piezas || []).map((p) => prendaPorId.get(p.prendaId));
+  if (!prendas.length || !prendas.every(Boolean)) return null;
+  return {
+    id: combo.id,
+    piezas: prendas.length,
+    conjunto: new Set((combo.piezas || []).map((p) => p.prendaId)).size > 1,
+    nombre: combo.name,
+    fotos: prendas.map((p) => leerPrendaBase(p).vistas[0]?.imagen || p.mainImage).filter(Boolean),
+    prendas: prendas.map((p) => p.name),
+    precio: precioBase(combo),
+    sueltas: prendas.reduce((total, p) => total + precioBase(p), 0),
+    url: `/combo/${combo.id}?nuevo=1`,
+    borrador: !combo.publicado,
+  };
+};
+
+/**
+ * Un diseño de la comunidad (listarComunidad) → TarjetaCreacion con `usar`:
+ * frente y espalda (o las prendas de un combo), prenda y color, quién lo
+ * hizo y cuántos lo usaron.
+ */
+export const disenoComunidadDesde = (d = {}) => {
+  const previas = (d.vistasPrevias || []).filter((p) => p?.url);
+  const esCombo = d.tipo === 'combo';
+  const url = esCombo ? `/combo/${d.comboId}?plantilla=${d.id}` : `/crear/${d.productId}?plantilla=${d.id}`;
+  return {
+    id: d.id,
+    nombre: d.nombre,
+    imagen: previas[0]?.url || d.imagenConjunta || d.previewUrl || '',
+    imagenEspalda: esCombo ? undefined : previas[1]?.url,
+    imagenes: esCombo ? (d.piezas || []).map((p) => (p.vistasPrevias || []).find((v) => v?.url)?.url || p.imagenConjunta || p.previewUrl).filter(Boolean) : undefined,
+    combo: esCombo ? `${(d.piezas || []).length} prendas` : undefined,
+    producto: esCombo ? (d.comboNombre || d.productName) : d.productName,
+    color: !esCombo && d.color?.nombre ? { nombre: d.color.nombre, hex: d.color.hex } : undefined,
+    lados: previas.length > 1 ? previas.map((p) => p.nombre).filter(Boolean).join(' + ') : undefined,
+    usar: { url, autor: d.autorNombre || 'Walá', usos: d.usos || 0 },
+  };
+};

@@ -56,7 +56,9 @@ Cada paso en su propio commit, verificable por separado.
    MINIJUEGOS.md), la búsqueda (`PaginaBusqueda`, BUSCAR.md) y la encuesta
    (`PaginaEncuesta`, ENCUESTA.md; después de Fechas importantes: comparten
    `HojaPersona`) y el acceso (login, registro, recuperar y completar
-   perfil: ACCESO.md; chicas y aisladas, buenas para empezar).
+   perfil: ACCESO.md; chicas y aisladas, buenas para empezar) y Crear
+   (`PaginaCrear`, CREAR.md; después de Mis creaciones: comparten
+   `TarjetaCreacion`).
 7. **Cargando** (`PantallaCarga`, `Cargando`, `EsqueletoPagina`: CARGA.md; el
    splash de `index.html` cambia en el mismo commit), **`BarraInferior` y luego `Cabecera`**: la más conectada (AuthContext,
    CartContext, WishlistContext, notificaciones y la configuración de

@@ -415,44 +415,45 @@
 
 /* Tarjeta de lista (Mis creaciones: una columna en el celular, dos en
    escritorio): en horizontal, la foto a la izquierda y todo entra sin cortar.
-   Angosta (borradores en carrusel), vertical. */
+   Angosta (borradores en carrusel), vertical. Con `vertical` (las filas de
+   Crear) no se acuesta nunca, como una tarjeta de producto. */
 @container creacion (min-width: 280px) {
-  .caja {
+  .creacion:not(.vertical) .caja {
     flex-direction: row;
   }
 
-  .fotoMarco {
+  .creacion:not(.vertical) .fotoMarco {
     flex: 0 0 40%;
     min-width: 0;
   }
 
   /* La foto es angosta: una sola etiqueta (la más importante), arriba y en
      tamaño chico, como en la tarjeta de producto de dos columnas. */
-  .etiquetas {
+  .creacion:not(.vertical) .etiquetas {
     right: 50px;
   }
 
-  .etiquetas > * {
+  .creacion:not(.vertical) .etiquetas > * {
     font-size: 0.6rem;
   }
 
-  .etiquetas > :nth-child(n + 2) {
+  .creacion:not(.vertical) .etiquetas > :nth-child(n + 2) {
     display: none;
   }
 
   /* La foto llena su lado (alto de la tarjeta), sin estirar la fila. */
-  .foto {
+  .creacion:not(.vertical) .foto {
     position: absolute;
     inset: 0;
     aspect-ratio: auto;
   }
 
-  .girar {
+  .creacion:not(.vertical) .girar {
     left: 8px;
     bottom: 8px;
   }
 
-  .cuerpo {
+  .creacion:not(.vertical) .cuerpo {
     min-width: 0;
   }
 }
@@ -612,3 +613,14 @@
   }
 }
 
+
+/* Un diseño de la comunidad: quién lo hizo, en gris (sin precio). */
+.autor {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

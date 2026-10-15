@@ -42,11 +42,14 @@ const COMUNIDAD = {
  *  - onRenombrar(nombre), onEliminar(): promesas
  *  - comunidad: { estado: 'publicada' | 'retirada' | null, onPublicar,
  *    onActualizar, onRetirar } (promesas; solo para quien puede publicar)
+ *  - usar: { url, autor, usos } un diseño de la comunidad (TarjetaComunidad):
+ *    sin precio; "Por Walá", cuántos lo usaron y "Usar diseño"
+ *  - vertical: nunca se acuesta (carruseles de Crear, como una tarjeta de producto)
  */
 export function TarjetaCreacion({
   nombre, imagen, imagenEspalda, imagenes, producto, color, subtitulo, fecha, precio, precioAntes,
   comprado = false, disponible = true, publicada = false, combo, lados, aviso,
-  urlEditar, urlComprar, onRenombrar, onEliminar, borrador = false, comunidad,
+  urlEditar, urlComprar, onRenombrar, onEliminar, borrador = false, comunidad, usar, vertical = false,
 }) {
   const [espalda, setEspalda] = useState(false);
   const [pregunta, setPregunta] = useState(null);
@@ -107,7 +110,7 @@ export function TarjetaCreacion({
   return (
     <article
       ref={ref}
-      className={[s.creacion, !disponible && s.noDisponible, borrador && s.borrador].filter(Boolean).join(' ')}
+      className={[s.creacion, !disponible && s.noDisponible, borrador && s.borrador, vertical && s.vertical].filter(Boolean).join(' ')}
       data-componente="TarjetaCreacion"
       onPointerMove={mover}
       onPointerLeave={salir}
@@ -191,6 +194,17 @@ export function TarjetaCreacion({
             ) : 'Este producto ya no está disponible')}
           </p>
           {fecha && <p className={s.fecha}><Clock aria-hidden="true" /> {fecha}</p>}
+          {usar?.usos > 0 && (
+            <p className={s.fecha}><Users aria-hidden="true" /> {usar.usos === 1 ? '1 persona lo usó' : `${usar.usos} personas lo usaron`}</p>
+          )}
+          {usar ? (
+            <div className={s.pie}>
+              <span className={s.autor}>Por {usar.autor || 'Walá'}</span>
+              <span className={s.acciones}>
+                <Boton to={usar.url} tamano="sm" icono={<Paintbrush aria-hidden="true" />}>Usar diseño</Boton>
+              </span>
+            </div>
+          ) : (
           <div className={s.pie}>
             {aviso ? <p className={s.aviso}>{aviso}</p> : !borrador && precio != null && disponible && (
               <span className={s.precios}>
@@ -221,6 +235,7 @@ export function TarjetaCreacion({
               )
             )}
           </div>
+          )}
         </div>
       </div>
     </article>

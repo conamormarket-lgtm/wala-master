@@ -1,0 +1,600 @@
+/* ── Portada ─────────────────────────────────────────────── */
+.portada {
+  container: portada / inline-size;
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px 28px 28px 28px;
+  background: #ede6fd;
+  isolation: isolate;
+}
+
+.portadaArte {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 800 / 1067;
+  object-fit: cover;
+  user-select: none;
+}
+
+.portadaTexto {
+  position: absolute;
+  inset: 0 0 auto 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  padding: 1.5rem 1.25rem;
+}
+
+.portadaGarabatos {
+  inset: 0.8rem 1rem auto auto;
+}
+
+.portadaTitulo {
+  position: relative;
+  margin: 0;
+  color: #1c1433;
+  font-family: var(--fuente-marca);
+  font-size: clamp(1.9rem, 8cqi, 3rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+}
+
+.portadaTrazo {
+  display: block;
+  width: min(70%, 260px);
+  height: 12px;
+  margin-top: 0.35rem;
+  color: #a78bfa;
+}
+
+.portadaBajada {
+  max-width: 34ch;
+  margin: 0;
+  color: #4b3f6b;
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
+/* Los pasos: sellos unidos por una costura punteada, como una prenda. */
+.pasos {
+  position: relative;
+  display: none;
+  gap: 0.85rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pasos::before {
+  position: absolute;
+  top: 21px;
+  bottom: 21px;
+  left: 20px;
+  border-left: 2px dashed rgba(124, 58, 237, 0.35);
+  content: '';
+}
+
+.paso {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.pasoSello {
+  position: relative;
+  display: inline-flex;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.pasoNumero {
+  position: absolute;
+  right: -6px;
+  bottom: -4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ede6fd;
+  border-radius: 50%;
+  background: #fff;
+  color: #5b21b6;
+  font-family: var(--fuente-marca);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.pasoTextos {
+  display: grid;
+  min-width: 0;
+  color: #4b3f6b;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.pasoTextos strong {
+  color: #1c1433;
+  font-size: 0.98rem;
+}
+
+.oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .paso:hover .pasoSello {
+    transform: rotate(10deg) scale(1.08);
+  }
+}
+
+/* Ancho: el arte ancho y el texto en el lado libre (la mitad derecha). */
+@media (min-width: 769px) {
+  .portadaArte {
+    aspect-ratio: 2172 / 724;
+    min-height: 340px;
+  }
+
+  .portadaTexto {
+    inset: 0 0 0 46%;
+    align-content: center;
+    gap: 0.75rem;
+    padding: 2rem 2.5rem 2rem 1rem;
+  }
+
+  .portadaTitulo {
+    font-size: clamp(2rem, 4cqi, 3.1rem);
+  }
+
+  .pasos {
+    display: grid;
+  }
+}
+
+/* ── Tarjetas (prenda y combo) ───────────────────────────── */
+.tarjeta {
+  --rx: 0deg;
+  --ry: 0deg;
+  --mx: 50%;
+  --my: 30%;
+  --escenario: var(--escenario-foto, #f5f4f8);
+  container: tarjeta / inline-size;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transform: perspective(1000px) rotateX(var(--rx)) rotateY(var(--ry));
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.5s var(--ease-signature),
+    box-shadow var(--dur-media) var(--ease-signature),
+    border-color var(--dur-media) ease;
+}
+
+.tarjeta:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 3px;
+}
+
+.bordeLuz {
+  position: absolute;
+  inset: -1px;
+  z-index: 5;
+  padding: 1px;
+  border-radius: inherit;
+  background: radial-gradient(180px circle at var(--mx) var(--my), rgba(139, 92, 246, 0.55), transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-media) ease;
+}
+
+.foto {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  margin: 6px 6px 0;
+  overflow: hidden;
+  border-radius: 13px;
+  background: var(--escenario);
+  isolation: isolate;
+}
+
+.fotoFrente,
+.fotoEspalda {
+  position: absolute;
+  inset: 0;
+  transition: opacity var(--dur-media) ease, transform 0.6s var(--ease-signature);
+}
+
+.fotoEspalda {
+  opacity: 0;
+}
+
+.verEspalda .fotoFrente {
+  opacity: 0;
+}
+
+.verEspalda .fotoEspalda {
+  opacity: 1;
+}
+
+.barrido {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 38%, rgba(255, 255, 255, 0.35) 50%, transparent 62%);
+  transform: translateX(-110%);
+  pointer-events: none;
+}
+
+.etiquetas {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  max-width: calc(100% - 20px);
+}
+
+.lados {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #4c1d95;
+  font-size: 0.68rem;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(76, 29, 149, 0.12);
+}
+
+.puntosFoto {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+  transform: translateX(-50%);
+}
+
+.puntosFoto i {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(76, 29, 149, 0.25);
+  transition: width var(--dur-media) var(--ease-signature), background-color var(--dur-media) ease;
+}
+
+.puntosFoto i:first-child,
+.verEspalda .puntosFoto i:last-child {
+  width: 16px;
+  background: #7c3aed;
+}
+
+.verEspalda .puntosFoto i:first-child {
+  width: 6px;
+  background: rgba(76, 29, 149, 0.25);
+}
+
+/* Combo: las prendas en abanico. */
+.fotoCombo {
+  display: grid;
+  place-items: center;
+}
+
+.abanico {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 18% 6% 14%;
+}
+
+.prenda {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  margin-inline: -4%;
+  border-radius: 12px;
+  background: transparent;
+  transform: rotate(calc((var(--i) - (var(--n) - 1) / 2) * 7deg));
+  transition: transform 0.55s var(--ease-signature);
+}
+
+.ahorro {
+  position: absolute;
+  right: 8px;
+  bottom: 12px;
+  z-index: 3;
+}
+
+.cuerpo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem 0.85rem 0.9rem;
+}
+
+.nombre {
+  min-height: calc(0.98rem * 1.3 * 2);
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.colores {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.color {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 3px var(--color-border);
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.colorMas {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.detalle {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.pie {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.4rem;
+}
+
+.precio {
+  display: grid;
+  min-width: 0;
+}
+
+.precio small {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.precio s {
+  margin-left: 0.15rem;
+}
+
+.precio strong {
+  font-family: var(--fuente-marca);
+  font-size: 1.12rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* "Diseñar": botón violeta liso; el pincel se mueve al pasar. */
+.cta {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 36px;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  background: var(--primary-color, #6d28d9);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.cta svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+@container tarjeta (max-width: 190px) {
+  .pie {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cta {
+    justify-content: center;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tarjeta:hover {
+    border-color: var(--violet-200);
+    box-shadow: 0 16px 32px -20px rgba(76, 29, 149, 0.35);
+    transform: perspective(1000px) translateY(-4px) rotateX(var(--rx)) rotateY(var(--ry));
+    transition:
+      transform 0.15s linear,
+      box-shadow var(--dur-media) var(--ease-signature),
+      border-color var(--dur-media) ease;
+  }
+
+  :global([data-theme='dark']) .tarjeta:hover {
+    border-color: rgba(167, 139, 250, 0.3);
+    box-shadow: 0 16px 36px -18px rgba(0, 0, 0, 0.7);
+  }
+
+  .tarjeta:hover .bordeLuz {
+    opacity: 1;
+  }
+
+  .tarjeta:hover .barrido {
+    transform: translateX(110%);
+    transition: transform 0.8s var(--ease-entrance, var(--ease-signature));
+  }
+
+  /* Con ratón, la espalda se ve al pasar (en el celular alternan solas). */
+  .conEspalda:hover .fotoFrente,
+  .tarjeta:hover .conEspalda .fotoFrente {
+    opacity: 0;
+  }
+
+  .tarjeta:hover .conEspalda .fotoEspalda {
+    opacity: 1;
+  }
+
+  .tarjeta:hover .conEspalda .puntosFoto i:first-child {
+    width: 6px;
+    background: rgba(76, 29, 149, 0.25);
+  }
+
+  .tarjeta:hover .conEspalda .puntosFoto i:last-child {
+    width: 16px;
+    background: #7c3aed;
+  }
+
+  .tarjeta:hover .foto:not(.conEspalda) .fotoFrente {
+    transform: scale(1.04);
+  }
+
+  .tarjeta:hover .prenda {
+    transform: translateY(-4px) rotate(calc((var(--i) - (var(--n) - 1) / 2) * 13deg)) scale(1.04);
+  }
+
+  .tarjeta:hover .etiquetas > * {
+    --inclinar: -9deg;
+  }
+
+  .tarjeta:hover .color {
+    transform: translateY(-2px);
+    transition-delay: calc(var(--k) * 30ms);
+  }
+
+  .tarjeta:hover .cta svg {
+    transform: rotate(-18deg) translateY(-1px);
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .tarjeta:active {
+    transform: scale(0.985);
+    transition-duration: 0.12s;
+  }
+}
+
+/* ── ¿Para cuántos? ──────────────────────────────────────── */
+.para {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.paraOpcion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color var(--dur-rapida) ease, background-color var(--dur-rapida) ease, color var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature);
+}
+
+.paraOpcion svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.paraOpcion:hover {
+  border-color: var(--violet-300);
+}
+
+.paraOpcion:active {
+  transform: scale(0.97);
+}
+
+.paraOpcion:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+.paraActiva,
+.paraActiva:hover {
+  border-color: var(--primary-color, #6d28d9);
+  background: var(--primary-color, #6d28d9);
+  color: #fff;
+}
+
+/* "Ahorras": un sello dorado chiquito, inclinado. */
+.paraAhorra {
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fde68a, #f59e0b);
+  color: #78350f;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  transform: rotate(-6deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tarjeta,
+  .tarjeta:hover {
+    transform: none;
+  }
+
+  .barrido {
+    display: none;
+  }
+
+  .prenda,
+  .pasoSello,
+  .color,
+  .cta svg,
+  .fotoFrente,
+  .fotoEspalda {
+    transition: none;
+  }
+}

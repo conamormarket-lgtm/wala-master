@@ -4,7 +4,7 @@ import {
   MarcoCuenta, PaginaCuentaInvitado, PaginaResumenCuenta, PaginaPerfil, PaginaDirecciones, PaginaAjustes, PaginaPedidos,
   PaginaCatalogo, PaginaCupones, PaginaMisiones, PaginaReferidos, PaginaCreaciones, PaginaListaDeseos, PaginaFechas,
   PaginaDetallePedido, HojaPagarSaldo, Boton, enlaceWhatsApp, PaginaEncuesta,
-  PaginaLogin, PaginaRegistro, PaginaRecuperar, PaginaCompletarPerfil,
+  PaginaLogin, PaginaRegistro, PaginaRecuperar, PaginaCompletarPerfil, PaginaCrear,
 } from './kit';
 import { empresa } from '../config/empresa';
 import POLERA from './demo/polera-fondo-blanco.jpg';
@@ -668,3 +668,60 @@ export function AccesoDemo({ ruta = '/login', toast, onIrA, onEntrar }) {
   }
   return <div key={vista.ruta}>{pagina}</div>;
 }
+
+/* ── Crear (/personalizar) ─────────────────────────────────── */
+
+/** Estados para probar Crear en la Tienda de prueba. */
+export const ESTADOS_CREAR = [
+  ['cargando', 'Cargando prendas'],
+  ['sinPrendas', 'Sin prendas'],
+  ['sinCombos', 'Sin combos'],
+];
+
+/** Colores de la polera del proveedor (con un bicolor), como fondoMuestra. */
+const COLORES_POLERA = [
+  ['blanco', 'Blanco', '#ffffff'], ['negro', 'Negro', '#1f1f23'], ['lila', 'Lila', '#c4b5fd'], ['rosa', 'Rosa', '#f9a8d4'],
+  ['celeste', 'Celeste', '#7dd3fc'], ['rojo', 'Rojo', '#dc2626'], ['jade', 'Jade', '#10b981'], ['mostaza', 'Mostaza', '#eab308'],
+  ['azul', 'Azul marino', '#1e3a8a'], ['bicolor', 'Celeste y rosa', 'linear-gradient(90deg, #7dd3fc 50%, #f9a8d4 50%)'],
+].map(([id, nombre, fondo]) => ({ id, nombre, fondo }));
+
+/**
+ * Crear con datos de prueba: prendas base (la polera del proveedor y las
+ * fotos de la demo), combos de pareja y de conjunto, lo del cliente (con
+ * sesión) y los diseños de la comunidad.
+ */
+export function CrearDemo({ sesion, esAdmin, estados = [], fotos = [] }) {
+  const [para, setPara] = useState(1);
+  const prendas = [
+    { id: 'polera', nombre: 'Polera clásica', frente: POLERA, espalda: POLERA_ESPALDA, lados: ['Frente', 'Espalda'], colores: COLORES_POLERA, precio: 49.9, url: '/crear/polera' },
+    { id: 'oversize', nombre: 'Polera oversize', frente: POLERA_ESPALDA, espalda: POLERA, lados: ['Frente', 'Espalda'], colores: COLORES_POLERA.slice(0, 5), precio: 59.9, url: '/crear/oversize' },
+    { id: 'casaca', nombre: fotos[0]?.nombre || 'Casaca con capucha', frente: fotos[0]?.imagen, lados: ['Frente'], colores: COLORES_POLERA.slice(1, 4), precio: 109, url: '/crear/casaca' },
+    { id: 'polo', nombre: fotos[1]?.nombre || 'Polo', frente: fotos[1]?.imagen, lados: ['Frente'], colores: COLORES_POLERA.slice(0, 2), precio: 45, url: '/crear/polo', borrador: esAdmin },
+  ].filter((p) => esAdmin || !p.borrador);
+  const combos = estados.includes('sinCombos') ? [] : [
+    { id: 'pareja', piezas: 2, conjunto: false, nombre: 'Pareja de poleras', fotos: [POLERA, POLERA], prendas: ['Polera clásica', 'Polera clásica'], precio: 89.9, sueltas: 99.8, url: '/combo/pareja?nuevo=1' },
+    { id: 'pareja-over', piezas: 2, conjunto: false, nombre: 'Pareja oversize', fotos: [POLERA_ESPALDA, POLERA_ESPALDA], prendas: ['Polera oversize', 'Polera oversize'], precio: 109.9, sueltas: 119.8, url: '/combo/pareja-over?nuevo=1' },
+    { id: 'conjunto', piezas: 3, conjunto: true, nombre: 'Conjunto completo', fotos: [fotos[0]?.imagen, POLERA, fotos[1]?.imagen].filter(Boolean), prendas: ['Casaca', 'Polera clásica', 'Polo'], precio: 179.9, sueltas: 203.9, url: '/combo/conjunto?nuevo=1' },
+  ];
+  const comunidad = [
+    { id: 'c1', nombre: 'Kapi astronauta', imagen: POLERA, imagenEspalda: POLERA_ESPALDA, producto: 'Polera clásica', color: { nombre: 'Blanco', hex: '#ffffff' }, lados: 'Frente + Espalda', usar: { url: '/crear/polera?plantilla=c1', autor: 'Walá', usos: 12 } },
+    { id: 'c2', nombre: 'Juntos desde 2019', imagenes: [POLERA, POLERA_ESPALDA], combo: '2 prendas', producto: 'Pareja de poleras', usar: { url: '/combo/pareja?plantilla=c2', autor: 'Walá', usos: 31 } },
+    { id: 'c3', nombre: 'Equipo de los viernes', imagen: POLERA_ESPALDA, producto: 'Polera oversize', color: { nombre: 'Blanco', hex: '#ffffff' }, usar: { url: '/crear/oversize?plantilla=c3', autor: 'Walá', usos: 1 } },
+    { id: 'c4', nombre: 'Mi mascota', imagen: fotos[0]?.imagen, producto: fotos[0]?.nombre, usar: { url: '/crear/casaca?plantilla=c4', autor: 'Walá' } },
+  ];
+  return (
+    <PaginaCrear
+      prendas={estados.includes('sinPrendas') ? [] : prendas}
+      combos={combos}
+      cargando={estados.includes('cargando')}
+      para={para}
+      onPara={setPara}
+      borradores={sesion ? BORRADORES : []}
+      creaciones={sesion ? [...combosDemo(fotos), ...creacionesDemo(fotos)] : []}
+      totalCreaciones={sesion ? 13 : 0}
+      comunidad={comunidad}
+      totalComunidad={18}
+    />
+  );
+}
+
