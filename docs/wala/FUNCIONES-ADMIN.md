@@ -192,6 +192,10 @@ sub-páginas los filtros **se heredan** y un enlace copiado conserva la vista ex
   `data-track="Abrir el buscador"` (lupa y barra móvil = un solo elemento; los clics viejos
   "Buscar" se unen por alias). Si la vista previa acaba en otra ruta o muestra un "Iniciar
   sesión" en el contenido, se avisa encima del mapa.
+  **Sesión en la vista previa:** en producción la página del iframe a veces arranca sin sesión
+  (las páginas de cuenta mostraban el login). En vista previa, `services/firebase/config.js`
+  expone `window.__walaVistaPrevia` y el visor le pasa el usuario del panel con
+  `updateCurrentUser` al cargar (y a los 1,5 s y 4 s). Probado con el emulador de Auth.
 
 > **Requiere redeploy de functions:** los desgloses nuevos (país/dispositivo/navegador/SO,
 > identidades, top visitantes, embudo completo) salen de campos que agrega la versión nueva de

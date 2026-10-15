@@ -8,7 +8,9 @@ import {
   indexedDBLocalPersistence,
   browserLocalPersistence,
   connectAuthEmulator,
+  updateCurrentUser,
 } from 'firebase/auth';
+import { EN_VISTA_PREVIA_CALOR } from '../../utils/vistaPreviaCalor';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 
 // Ocultar los diagnósticos de Firestore en producción.
@@ -162,6 +164,18 @@ if (USE_EMULATORS) {
 } else {
   console.warn('Firebase no está configurado. Usando modo desarrollo con backend mock.');
   console.warn('Para configurar Firebase, edita el archivo .env con tus credenciales.');
+}
+
+// ── Vista previa del mapa de calor ──────────────────────────────────────
+// En producción la página dentro del iframe del panel a veces arranca SIN
+// sesión (no recupera la guardada), y las páginas de cuenta enseñan el aviso
+// de "Iniciar sesión" en vez de la página. El panel (mismo origen, ya con
+// sesión) le pasa su usuario con esta puerta; solo existe en la vista previa.
+if (EN_VISTA_PREVIA_CALOR && auth && typeof window !== 'undefined') {
+  window.__walaVistaPrevia = {
+    tieneSesion: () => Boolean(auth.currentUser),
+    recibirSesion: (usuario) => updateCurrentUser(auth, usuario),
+  };
 }
 
 // Mensaje según entorno (en Vercel no existe .env, hay que usar el dashboard)

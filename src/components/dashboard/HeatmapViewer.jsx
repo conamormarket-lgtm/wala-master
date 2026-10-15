@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { getHeatmapByPage } from '../../services/heatmapData';
+import { auth } from '../../services/firebase/config';
 import { AnimatedNumber, Badge } from '../ui';
 import styles from './HeatmapViewer.module.css';
 import { T } from '../../i18n/useTranslatedText';
@@ -774,6 +775,25 @@ export default function HeatmapViewer({
     const timers = [300, 1200, 3000].map((t) => setTimeout(medirAnclas, t));
     return () => timers.forEach(clearTimeout);
   }, [iframeState, medirAnclas, pageHeight, pantalla.w]);
+
+  // Le pasa la sesión del panel a la página de la vista previa si arrancó sin
+  // ella (ver window.__walaVistaPrevia en services/firebase/config.js): así las
+  // páginas de cuenta se ven por dentro y no con el aviso de "Iniciar sesión".
+  const pasarSesion = useCallback(async () => {
+    try {
+      const puerta = iframeRef.current?.contentWindow?.__walaVistaPrevia;
+      if (!puerta || !auth?.currentUser || puerta.tieneSesion()) return;
+      await puerta.recibirSesion(auth.currentUser);
+    } catch (e) {
+      console.warn('[Mapa de calor] No se pudo pasar la sesión a la vista previa:', e?.message || e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (iframeState !== 'ready') return undefined;
+    const timers = [0, 1500, 4000].map((t) => setTimeout(pasarSesion, t));
+    return () => timers.forEach(clearTimeout);
+  }, [iframeState, pasarSesion, iframeAttempt]);
 
   // Aplica el tema claro/oscuro elegido a la página de la vista previa.
   const aplicarTemaPreview = useCallback(() => {
