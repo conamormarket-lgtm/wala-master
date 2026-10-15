@@ -6,9 +6,11 @@ import {
   PaginaDetallePedido, HojaPagarSaldo, Boton, enlaceWhatsApp, PaginaEncuesta,
   PaginaLogin, PaginaRegistro, PaginaRecuperar, PaginaCompletarPerfil, PaginaCrear, PaginaComunidad, PaginaCreacion, PaginaVerDiseno, PaginaCombo, PaginaEstudio,
   prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaCreacionDesde, prendaEstudioDesde,
+  PaginaEditor, prendaEditorDesde,
 } from './kit';
 import { empresa } from '../config/empresa';
 import CREAR from './demo/crear.json';
+import EDITOR from './demo/editor.json';
 import { leerPrendaBase } from '../utils/prendaBase';
 import { volarMonedasGanadas } from '../utils/animations';
 import { DEPARTAMENTOS, getProvincias } from '../constants/peruUbigeo';
@@ -1054,3 +1056,56 @@ export function EstudioDemo({ ruta = '/crear/', sesion, estados = [], toast, onI
     />
   );
 }
+
+/* ── El editor de un producto del catálogo (/editor/:id) ── */
+
+/*
+ * La Polera básica real (productos_wala, hoy retirada: en wala.pe ningún
+ * producto visible abre este editor) en el MISMO estudio de Crear, con
+ * prendaEditorDesde. El precio sube S/ 5 por texto y S/ 10 por imagen, como
+ * calculatePrice de la tienda. El "diseño sin terminar" es de ejemplo.
+ */
+export const ESTADOS_EDITOR = [
+  ['pendiente', 'Diseño sin terminar'],
+  ['noPersonalizable', 'No se personaliza'],
+  ['retirado', 'Producto retirado'],
+  ['cargando', 'Cargando'],
+  ['error', 'Error al cargar'],
+];
+
+export function EditorDemo({ sesion, estados = [], toast, onIrA }) {
+  useFuentesEstudio();
+  const prenda = useMemo(() => prendaEditorDesde(EDITOR.producto, { medidas: EDITOR.medidas }), []);
+  const [subidas, setSubidas] = useState(0);
+  const [inicial, setInicial] = useState({});
+  const avisar = (titulo, texto, tipo = 'exito') => toast?.({ tipo, titulo, texto, duracion: 2200 });
+  let estado;
+  if (estados.includes('cargando')) estado = 'cargando';
+  else if (estados.includes('error')) estado = 'error';
+  return (
+    <PaginaEditor
+      key={`${estados.join()}-${inicial.nombre || ''}`}
+      estado={estado}
+      prenda={estados.includes('retirado') ? null : prenda}
+      personalizable={!estados.includes('noPersonalizable')}
+      pendiente={estados.includes('pendiente') && !inicial.nombre ? { nombre: 'Diseño 12/10/2026', fecha: '12 de octubre' } : undefined}
+      onContinuar={() => setInicial({ nombre: 'Diseño 12/10/2026', capas: disenoDeEjemplo(prenda, 'MAMÁ 2026'), color: prenda.colores.find((c) => c.nombre === 'Rosado')?.id })}
+      inicial={inicial}
+      modo={inicial.nombre ? 'editar' : 'nuevo'}
+      sesion={sesion}
+      fuentes={FUENTES_ESTUDIO}
+      urlProducto={`/producto/${EDITOR.producto.id}`}
+      onSubirImagen={async () => {
+        await espera(700);
+        setSubidas((n) => n + 1);
+        return SUBIDAS[subidas % SUBIDAS.length];
+      }}
+      onQuitarFondo={async (capa) => { await espera(1600); avisar('Fondo quitado'); return capa.src; }}
+      onGuardar={async () => { await espera(700); }}
+      onAgregar={async ({ talla, cantidad }) => { await espera(600); avisar('¡Agregado al carrito!', `${prenda.nombre}${talla ? ` · Talla ${talla}` : ''} × ${cantidad}`); onIrA?.('/carrito'); }}
+      onDescargar={() => avisar('Se descargaría tu diseño', 'Una imagen de cada lado, con el logo de Walá en una esquina.', 'info')}
+      onReintentar={() => avisar('Volviendo a cargar', undefined, 'info')}
+    />
+  );
+}
+

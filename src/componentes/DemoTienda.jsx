@@ -21,7 +21,7 @@ import { LegalesDemo, VISTAS_LEGALES, ESTADOS_LEGALES } from './DemoLegales';
 import { JuegosDemo, VISTAS_JUEGOS, ESTADOS_JUEGOS } from './DemoJuegos';
 import { CampanasDemo, VISTAS_CAMPANAS, ESTADOS_CAMPANAS } from './DemoCampanas';
 import { OfertasDemo, ESTADOS_OFERTAS, NavegarDemo, VISTAS_NAVEGAR, ESTADOS_NAVEGAR, LANDINGS_DEMO, VISTAS_LANDING, datosLanding } from './DemoNavegar';
-import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR, ComunidadDemo, ESTADOS_COMUNIDAD, CreacionDemo, ESTADOS_CREACION, VerDisenoDemo, ESTADOS_VER, ComboDemo, ESTADOS_COMBO, EstudioDemo, ESTADOS_ESTUDIO } from './DemoCuenta';
+import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR, ComunidadDemo, ESTADOS_COMUNIDAD, CreacionDemo, ESTADOS_CREACION, VerDisenoDemo, ESTADOS_VER, ComboDemo, ESTADOS_COMBO, EstudioDemo, ESTADOS_ESTUDIO, EditorDemo, ESTADOS_EDITOR } from './DemoCuenta';
 import INICIO from './demo/inicio.json';
 import TIENDA from './demo/tienda.json';
 import cs from './ComponentesPage.module.css';
@@ -63,6 +63,7 @@ const PAGINAS = [
   { id: 'producto', texto: 'Un producto', ruta: '/producto/' },
   { id: 'crear', texto: 'Crear', ruta: '/personalizar' },
   { id: 'estudio', texto: 'Estudio', ruta: '/crear/' },
+  { id: 'editor', texto: 'Editor de producto', ruta: '/editor/' },
   { id: 'comunidad', texto: 'Comunidad', ruta: '/comunidad' },
   { id: 'creacion', texto: 'Una creación', ruta: '/creacion/' },
   { id: 'ver', texto: 'Ver diseño', ruta: '/ver/' },
@@ -110,7 +111,7 @@ const PAGINA_DE_RUTA = {
 };
 
 /** Pestaña de la barra inferior que se enciende en cada página. */
-const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', ofertas: 'tienda', nichos: 'tienda', landing: 'tienda', juego: 'juegos', campanas: 'tienda', producto: 'tienda', checkout: 'tienda', regalar: 'tienda', pagoRapido: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
+const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', ofertas: 'tienda', nichos: 'tienda', landing: 'tienda', juego: 'juegos', campanas: 'tienda', editor: 'tienda', producto: 'tienda', checkout: 'tienda', regalar: 'tienda', pagoRapido: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
 
 /* Estados de la Zona Arcade para probar (como el modo diseño de la tienda). */
 const RULETAS = [
@@ -284,6 +285,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [estadosRegalar, setEstadosRegalar] = useState([]);
   const [estadosPagoRapido, setEstadosPagoRapido] = useState([]);
   const [estadosEstudio, setEstadosEstudio] = useState([]);
+  const [estadosEditor, setEstadosEditor] = useState([]);
   const [estadosCombo, setEstadosCombo] = useState([]);
   const [rutaAcceso, setRutaAcceso] = useState('/login');
   // Navegar la tienda: ofertas, nichos y vendedores, landings del builder.
@@ -345,6 +347,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     if (ruta.startsWith('/combo/')) { setRutaCombo(to); irA('combo'); return; }
     // El estudio (/crear/:id?designId= | ?plantilla= | ?copiar= | ?combo=&pieza=).
     if (ruta.startsWith('/crear/')) { setRutaEstudio(to); irA('estudio'); return; }
+    // El editor de un producto del catálogo (/editor/:id): el mismo estudio.
+    if (ruta.startsWith('/editor/')) { setEstadosEditor([]); irA('editor'); return; }
     // La ficha de un producto (/producto/:id): cualquier tarjeta abre la suya.
     if (ruta.startsWith('/producto/')) { setRutaProducto(ruta); irA('producto'); return; }
     // Regalar: la lista de otra persona, sus fechas y abrir el regalo.
@@ -640,7 +644,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   });
 
   const formaEsqueleto = {
-    tienda: 'tienda', campanas: { '/sorteos': 'sorteo', '/suscrito-sorteo': 'suscripcionSorteo', '/suscripciones': 'landing', '/regalos-con-amor': 'landing' }[rutaCampana] || 'enlaces', juego: { '/ruleta': 'ruleta', '/ball-sort': 'bolitas' }[rutaJuego] || 'palabra', legales: rutaLegal === '/libro-de-reclamaciones' ? 'reclamaciones' : 'legal', ofertas: 'ofertas', nichos: rutaNavegar === '/nichos' ? 'nichos' : 'coleccion', producto: 'producto', checkout: 'checkout', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
+    tienda: 'tienda', editor: 'estudio', campanas: { '/sorteos': 'sorteo', '/suscrito-sorteo': 'suscripcionSorteo', '/suscripciones': 'landing', '/regalos-con-amor': 'landing' }[rutaCampana] || 'enlaces', juego: { '/ruleta': 'ruleta', '/ball-sort': 'bolitas' }[rutaJuego] || 'palabra', legales: rutaLegal === '/libro-de-reclamaciones' ? 'reclamaciones' : 'legal', ofertas: 'ofertas', nichos: rutaNavegar === '/nichos' ? 'nichos' : 'coleccion', producto: 'producto', checkout: 'checkout', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
   }[pagina] || 'productos';
   // /cuenta/… → su módulo (el detalle de una compra usa el de pedidos).
   const moduloEsqueleto = {
@@ -811,6 +815,13 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     <MarcoTienda {...marco} pie={null} pieLegal={null} barraInferior={null} flotantes={undefined}>
       <Parte n="P12" nombre="PaginaEstudio">
         <EstudioDemo key={rutaEstudio} ruta={rutaEstudio} sesion={conSesion} estados={estadosEstudio} toast={toast} onIrA={(r) => navegar.current(r)} />
+      </Parte>
+    </MarcoTienda>
+  ) : pagina === 'editor' ? (
+    // Como el estudio: una herramienta, sin pie, barra ni flotantes.
+    <MarcoTienda {...marco} pie={null} pieLegal={null} barraInferior={null} flotantes={undefined}>
+      <Parte n="P22" nombre="PaginaEditor">
+        <EditorDemo sesion={conSesion} estados={estadosEditor} toast={toast} onIrA={(r) => navegar.current(r)} />
       </Parte>
     </MarcoTienda>
   ) : pagina === 'combo' ? (
@@ -1117,6 +1128,16 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
             <div className={cs.controlesChips}>
               {ESTADOS_ESTUDIO.map(([id, texto]) => (
                 <Chip key={id} tamano="sm" activo={estadosEstudio.includes(id)} onClick={() => setEstadosEstudio((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
+              ))}
+            </div>
+          </div>
+        )}
+        {pagina === 'editor' && (
+          <div>
+            <span className={cs.controlesTitulo}>Estado del editor</span>
+            <div className={cs.controlesChips}>
+              {ESTADOS_EDITOR.map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={estadosEditor.includes(id)} onClick={() => setEstadosEditor((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
               ))}
             </div>
           </div>

@@ -53,9 +53,12 @@ const calidadDe = (capa, zona) => {
  *  - onAgregar({ talla, cantidad, diseno }): promesa · onDescargar(diseno)
  *  - onUsarEnCombo(diseno) · urlVolver, urlLogin, urlCreaciones
  *  - estado: 'cargando' | 'error' | 'noDisponible' · onReintentar · urlCrear
+ *  - precioCapas: { texto, imagen } lo que suma cada capa al precio (el editor
+ *    de un producto del catálogo: +S/ 5 por texto, +S/ 10 por imagen); sin él,
+ *    el precio es el de la prenda
  */
 export function PaginaEstudio({
-  prenda, inicial = {}, modo = 'nuevo', plantilla, combo, sesion = false, fuentes = [],
+  prenda, inicial = {}, modo = 'nuevo', plantilla, combo, sesion = false, fuentes = [], precioCapas,
   onSubirImagen, onQuitarFondo, onGuardar, onAgregar, onDescargar, onUsarEnCombo,
   urlVolver = '/personalizar', urlLogin = '/login', urlCreaciones = '/cuenta/creaciones',
   estado, onReintentar, urlCrear = '/personalizar',
@@ -261,7 +264,10 @@ export function PaginaEstudio({
   const muestras = colores.filter((c) => !c.espejoDe).map((c) => ({ id: c.id, nombre: c.nombre, hex: c.hex, claro: c.claro }));
   const fotoDelLado = (v) => color?.fotos?.[v.id];
   const tallas = color?.tallas?.length ? color.tallas : prenda.tallas || [];
-  const precio = prenda.precio || 0;
+  const todas = Object.values(capas).flat();
+  const precio = (prenda.precio || 0) + (precioCapas
+    ? todas.reduce((suma, c) => suma + (Number(precioCapas[c.tipo]) || 0), 0)
+    : 0);
 
   const lienzo = (props) => (
     <LienzoPrenda
