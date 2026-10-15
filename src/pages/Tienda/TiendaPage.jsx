@@ -1,36 +1,36 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect, Suspense } from 'react';
 import { Plus } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useInfiniteQuery, keepPreviousData, useIsFetching, useQueryClient } from '@tanstack/react-query';
-import ProductGrid from './components/ProductGrid';
-import VisualCategoryNav from './components/VisualCategoryNav/VisualCategoryNav';
-import CollectionCarousel from './components/CollectionCarousel';
-import FeaturedCarousel from './components/FeaturedCarousel';
-import AnnouncementBar from './components/AnnouncementBar';
-import HeroCarousel from './components/HeroCarousel';
-import FlashSales from './components/FlashSales';
-import SidebarCatalogLayout from './components/SidebarCatalogLayout';
-import BrandMarquee from './components/BrandMarquee/BrandMarquee';
-import ProductQueryCarousel from './components/ProductQueryCarousel/ProductQueryCarousel';
-import CategoryGrid from './components/CategoryGrid/CategoryGrid';
-import BannerGrid from './components/BannerGrid/BannerGrid';
-import BestSellersRow from './components/BestSellersRow/BestSellersRow';
-import Testimonials from './components/Testimonials';
-import MapLocation from './components/MapLocation';
-import TrustBadges from './components/TrustBadges/TrustBadges';
-import ConversionFold from './components/ConversionFold/ConversionFold';
-import FeatureList from './components/FeatureList/FeatureList';
-import FaqAccordion from './components/FaqAccordion/FaqAccordion';
-import TextBlock from './components/TextBlock/TextBlock';
-import ImageBlock from './components/ImageBlock/ImageBlock';
-import HeaderBlock from './components/HeaderBlock/HeaderBlock';
-
-// El bloque de pago de las landings arrastra react-select (con emotion,
-// floating-ui y stylis detras: ~270 KB) mas el ubigeo de Peru. Importado de
-// forma estatica, eso viajaba en el bundle de arranque de CUALQUIER visita a
-// la tienda, aunque la mayoria de storefronts no llevan seccion de pago.
-// Se pide cuando una pagina de verdad incluye la seccion 'landing_payment'.
-const LandingPaymentBlock = lazy(() => import('./components/LandingPaymentBlock/LandingPaymentBlock'));
+// Las secciones del constructor llegan bajo demanda: cada tipo es su propio
+// archivo y la página solo descarga las que usa (services/seccionesPorTipo.jsx).
+import {
+  AnnouncementBar,
+  BannerGrid,
+  BestSellersRow,
+  BrandMarquee,
+  CategoryGrid,
+  CollectionCarousel,
+  ConversionFold,
+  FaqAccordion,
+  FeatureList,
+  FeaturedCarousel,
+  FlashSales,
+  HeaderBlock,
+  HeroBanner,
+  HeroCarousel,
+  ImageBlock,
+  LandingPaymentBlock,
+  MapLocation,
+  ProductGrid,
+  ProductQueryCarousel,
+  SidebarCatalogLayout,
+  Testimonials,
+  TextBlock,
+  TrustBadges,
+  VisualCategoryNav,
+  precargarSecciones,
+} from './services/seccionesPorTipo';
 import {
   getProducts,
   getCategories,
@@ -55,7 +55,6 @@ import CustomFontsInjector from '../../components/common/CustomFontsInjector/Cus
 import { getDocument } from '../../services/firebase/firestore';
 import { getBrand, getBrands } from '../../services/brands';
 import { toDirectImageUrl } from '../../utils/imageUrl';
-import HeroBanner from './components/HeroBanner';
 import EditableSection from '../../components/admin/EditableSection';
 import { useVisualEditor } from './contexts/VisualEditorContext';
 import AppDownloadBanner from './components/AppDownloadBanner';
@@ -1461,7 +1460,19 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   const queryClient = useQueryClient();
   const [readyState, setReadyState] = useState({ pageId, ready: false });
   const pageReady = readyState.pageId === pageId && readyState.ready;
-  const contenidoRenderizando = !(isConfigLoading && !storefrontConfig);
+  // Las consultas de una sección empiezan cuando su código ya llegó y se monta:
+  // sin esperar a ese código, el cargador se quitaría con la sección aún vacía.
+  const [seccionesListas, setSeccionesListas] = useState(null);
+  const primeraPantalla = useMemo(() => sorted.filter((section, index) => sectionIsActive(section, index)), [sorted, sectionIsActive]);
+  useEffect(() => {
+    let vivo = true;
+    precargarSecciones(primeraPantalla).then(
+      () => { if (vivo) setSeccionesListas(pageId); },
+      () => { if (vivo) setSeccionesListas(pageId); }, // el error lo muestra la sección al dibujarse
+    );
+    return () => { vivo = false; };
+  }, [primeraPantalla, pageId]);
+  const contenidoRenderizando = !(isConfigLoading && !storefrontConfig) && seccionesListas === pageId;
 
   useEffect(() => {
     if (pageReady) return undefined;
@@ -1516,7 +1527,11 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
             <ModuleInserter index={index} />
             <DeferredSection active={active} observe={pageReady && heroListo && (index === 0 || sectionIsActive(sorted[index - 1], index - 1))} onVisible={markSectionVisible} section={section}>
               <EditableSection sectionId={section.id} currentConfig={activeConfig} label={typeLabel}>
-                {rendered}
+                {/* Mientras llega el código de la sección, el mismo hueco que
+                    DeferredSection, para que lo de abajo no salte. */}
+                <Suspense fallback={<div aria-hidden="true" style={{ minHeight: section.type === 'header' ? 140 : 360 }} />}>
+                  {rendered}
+                </Suspense>
               </EditableSection>
             </DeferredSection>
           </React.Fragment>
