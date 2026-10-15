@@ -18,6 +18,7 @@ import { traducirDemo, traducirHtmlDemo } from './demo/traduccionDemo';
 import { RegalarDemo, VISTAS_REGALAR, ESTADOS_REGALAR, PagoRapidoDemo, ESTADOS_PAGO_RAPIDO } from './DemoRegalar';
 import { ENVIO_ESTANDAR, ENVIO_GRATIS_DESDE } from '../constants/envio';
 import { LegalesDemo, VISTAS_LEGALES, ESTADOS_LEGALES } from './DemoLegales';
+import { JuegosDemo, VISTAS_JUEGOS, ESTADOS_JUEGOS } from './DemoJuegos';
 import { OfertasDemo, ESTADOS_OFERTAS, NavegarDemo, VISTAS_NAVEGAR, ESTADOS_NAVEGAR, LANDINGS_DEMO, VISTAS_LANDING, datosLanding } from './DemoNavegar';
 import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR, ComunidadDemo, ESTADOS_COMUNIDAD, CreacionDemo, ESTADOS_CREACION, VerDisenoDemo, ESTADOS_VER, ComboDemo, ESTADOS_COMBO, EstudioDemo, ESTADOS_ESTUDIO } from './DemoCuenta';
 import INICIO from './demo/inicio.json';
@@ -66,6 +67,7 @@ const PAGINAS = [
   { id: 'ver', texto: 'Ver diseño', ruta: '/ver/' },
   { id: 'combo', texto: 'Un combo', ruta: '/combo/' },
   { id: 'minijuegos', texto: 'Minijuegos', ruta: '/minijuegos' },
+  { id: 'juego', texto: 'Un juego', ruta: '/palabra-del-dia' },
   { id: 'buscar', texto: 'Buscar', ruta: '/buscar' },
   { id: 'ofertas', texto: 'Ofertas', ruta: '/ofertas' },
   { id: 'nichos', texto: 'Nichos y vendedores', ruta: '/nichos' },
@@ -99,12 +101,13 @@ const ABRIR_ESTUDIO = [
 const PAGINA_DE_RUTA = {
   '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/checkout': 'checkout', '/encuesta-suscripcion': 'encuesta', '/personalizar': 'crear', '/comunidad': 'comunidad', '/ofertas': 'ofertas', '/nichos': 'nichos',
   ...Object.fromEntries(VISTAS_LEGALES.map(([, r]) => [r, 'legales'])),
+  ...Object.fromEntries(VISTAS_JUEGOS.map(([, r]) => [r, 'juego'])),
   ...Object.fromEntries(MODULOS_CUENTA.map((m) => [m.ruta, 'cuenta'])),
   ...Object.fromEntries(VISTAS_ACCESO.map((v) => [v.ruta, 'acceso'])),
 };
 
 /** Pestaña de la barra inferior que se enciende en cada página. */
-const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', ofertas: 'tienda', nichos: 'tienda', landing: 'tienda', producto: 'tienda', checkout: 'tienda', regalar: 'tienda', pagoRapido: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
+const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', ofertas: 'tienda', nichos: 'tienda', landing: 'tienda', juego: 'juegos', producto: 'tienda', checkout: 'tienda', regalar: 'tienda', pagoRapido: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
 
 /* Estados de la Zona Arcade para probar (como el modo diseño de la tienda). */
 const RULETAS = [
@@ -287,6 +290,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [filtrosLanding, setFiltrosLanding] = useState({});
   const [rutaLegal, setRutaLegal] = useState(VISTAS_LEGALES[0][1]);
   const [estadosLegales, setEstadosLegales] = useState([]);
+  const [rutaJuego, setRutaJuego] = useState(VISTAS_JUEGOS[0][1]);
+  const [estadosJuego, setEstadosJuego] = useState([]);
   // Ver la carga: 'marca' (primera vez), 'accion' (esperar una acción) o 'esqueleto' (cambio de página).
   const [carga, setCarga] = useState(null);
   const [cargaSaliendo, setCargaSaliendo] = useState(false);
@@ -352,6 +357,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     if (PAGINA_DE_RUTA[ruta] === 'cuenta') setRutaCuenta(ruta);
     if (PAGINA_DE_RUTA[ruta] === 'acceso') setRutaAcceso(ruta);
     if (PAGINA_DE_RUTA[ruta] === 'legales') setRutaLegal(ruta);
+    if (PAGINA_DE_RUTA[ruta] === 'juego') { setRutaJuego(ruta); setEstadosJuego([]); }
     if (ruta === '/tienda') {
       const categoria = new URLSearchParams(query).get('categoria');
       setFiltros(categoria ? { categoria } : {});
@@ -447,7 +453,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       { id: 'marcas', texto: 'Marcas', url: '/marcas', menu: 'marcas' },
       { id: 'minijuegos', texto: 'Minijuegos', url: '/minijuegos' },
     ],
-    activo: ['tienda', 'minijuegos', 'crear'].includes(pagina) ? pagina : ['comunidad', 'combo', 'estudio'].includes(pagina) ? 'crear' : pagina === 'producto' ? 'tienda' : null,
+    activo: ['tienda', 'minijuegos', 'crear'].includes(pagina) ? pagina : pagina === 'juego' ? 'minijuegos' : ['comunidad', 'combo', 'estudio'].includes(pagina) ? 'crear' : pagina === 'producto' ? 'tienda' : null,
     menuTienda: {
       categorias: INICIO.categorias.slice(0, 10).map((c) => ({ id: c.categoryId, nombre: c.name, url: `/tienda?categoria=${c.categoryId}` })),
     },
@@ -476,7 +482,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
 
   // En la encuesta y en el acceso Kapi ya está en la página (uno solo a la
   // vista) y la píldora distrae (o invita a la misma encuesta): no se muestran.
-  const enEncuesta = ['encuesta', 'acceso', 'crear', 'estudio', 'checkout'].includes(pagina);
+  const enEncuesta = ['encuesta', 'acceso', 'crear', 'estudio', 'checkout', 'juego'].includes(pagina);
   const flotantes = {
     derecha: (
       <>
@@ -618,7 +624,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   });
 
   const formaEsqueleto = {
-    tienda: 'tienda', legales: rutaLegal === '/libro-de-reclamaciones' ? 'reclamaciones' : 'legal', ofertas: 'ofertas', nichos: rutaNavegar === '/nichos' ? 'nichos' : 'coleccion', producto: 'producto', checkout: 'checkout', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
+    tienda: 'tienda', juego: { '/ruleta': 'ruleta', '/ball-sort': 'bolitas' }[rutaJuego] || 'palabra', legales: rutaLegal === '/libro-de-reclamaciones' ? 'reclamaciones' : 'legal', ofertas: 'ofertas', nichos: rutaNavegar === '/nichos' ? 'nichos' : 'coleccion', producto: 'producto', checkout: 'checkout', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
   }[pagina] || 'productos';
   // /cuenta/… → su módulo (el detalle de una compra usa el de pedidos).
   const moduloEsqueleto = {
@@ -634,6 +640,13 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         {pagina === 'inicio' || pagina === 'landing'
           ? <EsqueletoPagina secciones={(pagina === 'landing' ? landing.secciones : secciones).map((x) => x.type)} />
           : <EsqueletoPagina forma={formaEsqueleto} modulo={moduloEsqueleto} sesion={conSesion} />}
+      </Parte>
+    </MarcoTienda>
+  ) : pagina === 'juego' ? (
+    // Un juego es una herramienta: sin Kapi en el pie (aparece en el resultado).
+    <MarcoTienda {...marco} kapiEnPie={false}>
+      <Parte n="P20" nombre={{ '/ruleta': 'PaginaRuleta', '/ball-sort': 'PaginaBolitas' }[rutaJuego] || 'PaginaPalabra'}>
+        <JuegosDemo key={rutaJuego} ruta={rutaJuego} sesion={conSesion} usuario={usuario} estados={estadosJuego} onMonedas={(n) => setMonedas((m) => m + n)} toast={toast} />
       </Parte>
     </MarcoTienda>
   ) : pagina === 'legales' ? (
@@ -919,6 +932,21 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
                 ))}
               </div>
             )}
+          </div>
+        )}
+        {pagina === 'juego' && (
+          <div>
+            <span className={cs.controlesTitulo}>Cómo se abre</span>
+            <div className={cs.controlesChips}>
+              {VISTAS_JUEGOS.map(([texto, r]) => (
+                <Chip key={texto} tamano="sm" activo={rutaJuego === r} onClick={() => { setRutaJuego(r); setEstadosJuego([]); if (marcoRef.current) marcoRef.current.scrollTop = 0; }}>{texto}</Chip>
+              ))}
+            </div>
+            <div className={cs.controlesChips}>
+              {(ESTADOS_JUEGOS[rutaJuego] || []).map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={estadosJuego.includes(id)} onClick={() => setEstadosJuego((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
+              ))}
+            </div>
           </div>
         )}
         {pagina === 'legales' && (

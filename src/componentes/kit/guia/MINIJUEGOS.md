@@ -120,7 +120,8 @@ recibir datos.
 - Traducción (`<T>`), como en las demás páginas.
 - La entrada escalonada (`Stagger`), si se quiere conservar.
 - Las pantallas de cada juego (`/palabra-del-dia`, `/ruleta`, `/ball-sort`,
-  `ArcadeShell` con su barra "Volver") no están en el kit: son páginas aparte.
+  `ArcadeShell` con su barra "Volver") ya están en el kit, cada una con su
+  plan: ver [JUEGOS.md](JUEGOS.md).
 
 ### Pasos (cada uno se verifica solo y se puede volver atrás)
 

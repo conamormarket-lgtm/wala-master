@@ -313,6 +313,15 @@ const Cifra = ({ alto = 105 }) => (
   </Caja>
 );
 
+/** La barra de un juego (MarcoJuego): "Volver", el título y "Cómo jugar". */
+const barraJuego = () => (
+  <span className={s.barraJuegoEsq}>
+    <Hueso forma="pildora" alto={36} ancho={96} />
+    <Hueso alto={30} ancho={200} />
+    <Hueso forma="pildora" alto={36} ancho={130} />
+  </span>
+);
+
 /** Sin sesión: la invitación a entrar (Mi cuenta, la encuesta): Kapi, título, texto y dos botones. */
 const invitado = () => (
   <span className={s.invitado}>
@@ -878,6 +887,57 @@ const PAGINAS = {
       <Hueso forma="pildora" alto={54} ancho="100%" />
     </span>
   ),
+  palabra: () => (
+    // La Palabra del día: la barra del juego, el tablero de 6 × 5, el teclado y el ranking.
+    <span className={s.juegoEsq}>
+      {barraJuego()}
+      <span className={s.juegoCuerpo}>
+        <span className={s.palabraEsq}>
+          <span className={s.tableroEsq}>{repetir(30, (k) => <Hueso key={k} forma="bloque" proporcion="1 / 1" ancho="100%" />)}</span>
+          <span className={s.tecladoEsq}>{[10, 10, 9].map((n, f) => <span key={f}>{repetir(n, (k) => <Hueso key={k} forma="bloque" alto={54} ancho="100%" />)}</span>)}</span>
+        </span>
+        <Caja alto={420} className={s.juegoLado}>
+          <Hueso alto={20} ancho="40%" />
+          <Hueso forma="pildora" alto={40} ancho="100%" />
+          {repetir(5, (k) => <span key={k} className={s.itemMenu}><Hueso forma="circulo" ancho={34} alto={34} /><span className={s.filaTextos}><Hueso alto={12} ancho="60%" /><Hueso alto={9} ancho="40%" /></span></span>)}
+        </Caja>
+      </span>
+    </span>
+  ),
+  ruleta: () => (
+    // La Ruleta Semanal: la racha, la rueda, el botón y lo ya ganado.
+    <span className={s.juegoEsq}>
+      {barraJuego()}
+      <span className={s.juegoCuerpo}>
+        <span className={s.ruletaEsq}>
+          <Hueso forma="bloque" alto={84} ancho="min(100%, 420px)" />
+          <Hueso forma="circulo" className={s.ruedaEsq} />
+          <Hueso forma="pildora" alto={54} ancho="min(100%, 420px)" />
+        </span>
+        <Caja alto={240} className={s.juegoLado}>
+          <Hueso alto={20} ancho="50%" />
+          {repetir(3, (k) => <span key={k} className={s.itemMenu}><Hueso forma="circulo" ancho={34} alto={34} /><Hueso alto={12} ancho="60%" /></span>)}
+        </Caja>
+      </span>
+    </span>
+  ),
+  bolitas: () => (
+    // Las Bolitas de Kapi: la mesa con los seis tubos y el panel del premio.
+    <span className={s.juegoEsq}>
+      {barraJuego()}
+      <span className={s.juegoCuerpo}>
+        <Caja alto={360} className={s.mesaEsq}>
+          <span className={s.tubosEsq}>{repetir(6, (k) => <Hueso key={k} forma="bloque" className={s.tuboEsq} />)}</span>
+          <span className={s.chips}><Hueso forma="pildora" alto={44} ancho={130} /><Hueso forma="pildora" alto={44} ancho={130} /></span>
+        </Caja>
+        <Caja alto={260} className={s.juegoLado}>
+          <Hueso forma="bloque" alto={48} ancho="100%" />
+          <span className={s.chips}><Hueso forma="bloque" alto={64} ancho="47%" /><Hueso forma="bloque" alto={64} ancho="47%" /></span>
+          <Hueso forma="pildora" alto={14} ancho="100%" />
+        </Caja>
+      </span>
+    </span>
+  ),
   acceso: () => (
     <span className={s.accesoPagina}>
       <span className={s.accesoPanel}>
@@ -897,7 +957,8 @@ const PAGINAS = {
  *  - forma: 'productos' (la grilla, por defecto) | 'inicio' | 'tienda' |
  *    'busqueda' | 'producto' | 'carrito' | 'checkout' | 'crear' | 'estudio' | 'comunidad' | 'minijuegos' | 'encuesta' |
  *    'acceso' | 'cuenta' | 'lista' | 'formulario' | 'ofertas' | 'nichos' | 'coleccion' (un nicho o un vendedor) |
- *    'legal' (privacidad, términos) | 'reclamaciones'
+ *    'legal' (privacidad, términos) | 'reclamaciones' |
+ *    'palabra' | 'ruleta' | 'bolitas' (los minijuegos por dentro)
  *  - sesion: false para quien no entró (la cuenta y la encuesta muestran la
  *    invitación a entrar; Minijuegos, su aviso en vez del progreso)
  *  - modulo (con forma 'cuenta'): uno de MODULOS_ESQUELETO_CUENTA (resumen,

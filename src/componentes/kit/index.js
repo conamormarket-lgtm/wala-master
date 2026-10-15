@@ -60,3 +60,4 @@ export { PaginaListaPublica, PaginaRegalar, PaginaRegaloSorpresa } from './pagin
 export { PaginaPagoRapido } from './paginas/PagoRapido';
 export { PaginaOfertas, PaginaNichos, PaginaColeccion } from './paginas/Navegar';
 export { PaginaLegal, PaginaReclamaciones, validarReclamacion } from './paginas/Legales';
+export { PaginaPalabra, PaginaRuleta, PaginaBolitas } from './paginas/Juegos';

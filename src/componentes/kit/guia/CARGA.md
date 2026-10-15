@@ -100,7 +100,7 @@ quieto). Las piezas sueltas van `aria-hidden`; `EsqueletoSeccion` y
 | Componente | `EsqueletoTarjeta` | direcciones, cupones, personas |
 | Componente | `EsqueletoFormulario` | completar perfil, encuesta |
 | Sección | `EsqueletoSeccion tipo` | una forma por tipo del builder (`FORMA_DE_SECCION`): banner, fila, grilla, catalogo, categorias, beneficios, testimonios, preguntas, marcas, mosaico, texto, medio, ubicacion, anuncio |
-| Página | `EsqueletoPagina` | `secciones` (los tipos del builder, en orden) o `forma`: productos, inicio, tienda, busqueda, producto, carrito, minijuegos, encuesta, acceso, cuenta (con `modulo`: resumen, perfil, pedidos, direcciones, ajustes, catalogo, cupones, misiones, referidos, creaciones, deseos, fechas), lista, formulario, ofertas, nichos, coleccion (un nicho o un vendedor; NAVEGAR.md), legal, reclamaciones (LEGALES.md) |
+| Página | `EsqueletoPagina` | `secciones` (los tipos del builder, en orden) o `forma`: productos, inicio, tienda, busqueda, producto, carrito, minijuegos, encuesta, acceso, cuenta (con `modulo`: resumen, perfil, pedidos, direcciones, ajustes, catalogo, cupones, misiones, referidos, creaciones, deseos, fechas), lista, formulario, ofertas, nichos, coleccion (un nicho o un vendedor; NAVEGAR.md), legal, reclamaciones (LEGALES.md), palabra, ruleta, bolitas (JUEGOS.md) |
 
 **Del tamaño de la página real.** Cada forma de página está medida contra
 la página del kit a 1366px y a 390px:

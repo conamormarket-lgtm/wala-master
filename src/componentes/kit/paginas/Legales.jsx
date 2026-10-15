@@ -11,7 +11,7 @@ import { TarjetaAyuda } from '../piezas/TarjetaAyuda';
 import { PasoEstudio } from '../piezas/Estudio';
 import { ListaEleccion } from '../piezas/Cuenta';
 import { CamposDatosPersonales, validarPerfil } from '../piezas/DatosPersonales';
-import { CabezaLegal, IndiceLegal, SeccionLegal, DatosProveedor, CodigoReclamacion } from '../piezas/Legales';
+import { CabezaLegal, IndiceLegal, SeccionLegal, DatosProveedor, CodigoCopiable } from '../piezas/Legales';
 import s from './Legales.module.css';
 
 /*
@@ -177,7 +177,7 @@ export function PaginaReclamaciones({ empresa = {}, inicial = {}, onEnviar, hoy,
           <Sello tamano={72} girar={-8}><CheckCircle2 aria-hidden="true" className={s.listoIcono} /></Sello>
           <h1 className={s.listoTitulo}>¡Reclamación registrada!<Trazo className={s.listoTrazo} /></h1>
           <p>Tu hoja de reclamación quedó guardada. Guarda este código para cualquier consulta.</p>
-          <CodigoReclamacion codigo={registrada.codigo} fecha={registrada.fecha || hoy} />
+          <CodigoCopiable codigo={registrada.codigo} rotulo="Tu código de seguimiento" fecha={`Registrada el ${registrada.fecha || hoy}`} />
           <p>
             Te responderemos al correo <strong>{registrada.email}</strong> en un plazo máximo de <strong>{plazo} días hábiles</strong>,
             conforme al Código de Protección y Defensa del Consumidor.

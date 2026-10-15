@@ -40,7 +40,7 @@ de ejemplo.
 
 | Parte | Componente | Piezas que usa | Datos (en la tienda) |
 |---|---|---|---|
-| P19 Libro de reclamaciones | `PaginaReclamaciones` (`paginas/Legales.jsx`) | `CabezaLegal`, `DatosProveedor` y `CodigoReclamacion` (nuevas, `piezas/Legales.jsx`); `PasoEstudio` (los 3 pasos con su costura), `CamposDatosPersonales` (nombre, documento y celular, con las reglas de Mi perfil), `Campo` (con `multilinea`, nuevo), `ListaEleccion`, `Casilla`, `Aviso`, `Boton` | `empresa`; al enviar, `createDocument('libro_reclamaciones', …)` |
+| P19 Libro de reclamaciones | `PaginaReclamaciones` (`paginas/Legales.jsx`) | `CabezaLegal`, `DatosProveedor` y `CodigoCopiable` (nuevas, `piezas/Legales.jsx`); `PasoEstudio` (los 3 pasos con su costura), `CamposDatosPersonales` (nombre, documento y celular, con las reglas de Mi perfil), `Campo` (con `multilinea`, nuevo), `ListaEleccion`, `Casilla`, `Aviso`, `Boton` | `empresa`; al enviar, `createDocument('libro_reclamaciones', …)` |
 | P19 Privacidad y términos | `PaginaLegal` | `CabezaLegal`, `IndiceLegal`, `SeccionLegal` (nuevas), `TarjetaAyuda` (Kapi, el correo y WhatsApp), `Boton` | hoy los textos están escritos en el JSX de cada página (ver abajo) |
 
 Validación: `validarReclamacion(datos)` (exportada) usa `validarPerfil` para

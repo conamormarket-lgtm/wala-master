@@ -66,7 +66,8 @@ Cada paso en su propio commit, verificable por separado.
    `PaginaColeccion`, los nichos y las ofertas: NAVEGAR.md; las landings
    `/:slug` van con el paso 5, son del builder) y las legales (privacidad y
    términos con `PaginaLegal`, el libro con `PaginaReclamaciones`:
-   LEGALES.md; chicas y aisladas).
+   LEGALES.md; chicas y aisladas) y los juegos por dentro (las bolitas, la
+   ruleta y la palabra con `MarcoJuego`: JUEGOS.md; después de la Zona Arcade).
 7. **Cargando** (`PantallaCarga`, `Cargando`, `EsqueletoPagina`: CARGA.md; el
    splash de `index.html` cambia en el mismo commit), **`BarraInferior` y luego `Cabecera`**: la más conectada (AuthContext,
    CartContext, WishlistContext, notificaciones y la configuración de

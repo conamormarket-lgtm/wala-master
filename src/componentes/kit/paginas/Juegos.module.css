@@ -1,0 +1,185 @@
+/* Lo común: el juego y, en escritorio, su panel al costado. */
+.palabra,
+.ruleta,
+.bolitas {
+  display: grid;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .palabra {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  }
+
+  .ruleta,
+  .bolitas {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  }
+
+  .lado {
+    position: sticky;
+    top: 6rem;
+  }
+}
+
+.notaSuave {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  text-align: center;
+}
+
+.ayudaTexto {
+  margin: 0;
+}
+
+/* ── Palabra ── */
+.juego {
+  display: grid;
+  gap: 1rem;
+}
+
+.mensajeZona {
+  display: grid;
+  place-items: center;
+  min-height: 2.2rem;
+}
+
+.mensaje {
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  background: var(--noche-wala, #14121c);
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 600;
+  animation: aparecer 1.9s var(--ease-signature) both;
+}
+
+:global([data-theme='dark']) .mensaje {
+  background: #fff;
+  color: #14121c;
+}
+
+@keyframes aparecer {
+  0% { opacity: 0; transform: translateY(6px); }
+  12%, 82% { opacity: 1; transform: none; }
+  100% { opacity: 0; }
+}
+
+.fin {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  padding: 1.1rem;
+  border: 1.5px dashed var(--violet-300);
+  border-radius: 6px 20px 20px 20px;
+  color: var(--color-text);
+  text-align: center;
+}
+
+.fin p {
+  margin: 0;
+}
+
+.finNota {
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+}
+
+/* ── Ruleta ── */
+.zonaRueda {
+  display: grid;
+  justify-items: center;
+  gap: 1.5rem;
+}
+
+.racha {
+  display: grid;
+  gap: 0.4rem;
+  width: min(100%, 420px);
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 18px 18px 18px;
+  background: var(--color-surface);
+}
+
+.rachaNota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.controles {
+  display: grid;
+  gap: 0.5rem;
+  width: min(100%, 420px);
+}
+
+/* ── Bolitas ── */
+.mesa {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.5rem 1rem 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 26px 26px 26px;
+  background: var(--color-surface);
+}
+
+.tubos {
+  display: grid;
+  grid-template-columns: repeat(var(--tubos), auto);
+  justify-content: center;
+  gap: 0.9rem 1.1rem;
+  padding-top: 1.75rem;
+}
+
+@media (max-width: 575px) {
+  .tubos {
+    grid-template-columns: repeat(3, auto);
+    gap: 2rem 1.5rem;
+  }
+}
+
+.botonesMesa {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 22px 22px 22px;
+  background: var(--color-surface);
+}
+
+.leyendaTubos {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.leyendaTubos li {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 0.92rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mensaje {
+    animation-duration: 1.9s;
+    animation-name: aparecerQuieto;
+  }
+
+  @keyframes aparecerQuieto {
+    0%, 82% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+}

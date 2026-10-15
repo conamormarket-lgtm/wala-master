@@ -128,11 +128,12 @@ export function DatosProveedor({ empresa = {}, fecha, codigo }) {
 }
 
 /**
- * El código de una reclamación registrada, para guardarlo: grande, con la
- * letra de la marca y un botón para copiarlo.
- *  - codigo · fecha
+ * Un código para guardar (una reclamación, un cupón): grande, con la letra
+ * de la marca y un botón para copiarlo.
+ *  - codigo · rotulo ("Tu código de seguimiento") · fecha (texto) · detalle
+ *    (una línea más, p. ej. "Válido hasta el 14 de noviembre")
  */
-export function CodigoReclamacion({ codigo, fecha }) {
+export function CodigoCopiable({ codigo, rotulo = 'Tu código', fecha, detalle }) {
   const [copiado, setCopiado] = useState(false);
   const copiar = async () => {
     try {
@@ -142,10 +143,11 @@ export function CodigoReclamacion({ codigo, fecha }) {
     } catch { /* sin portapapeles: el código queda a la vista */ }
   };
   return (
-    <div className={s.codigo} data-componente="CodigoReclamacion">
-      <span className={s.codigoRotulo}>Tu código de seguimiento</span>
+    <div className={s.codigo} data-componente="CodigoCopiable">
+      <span className={s.codigoRotulo}>{rotulo}</span>
       <strong className={s.codigoValor}>{codigo}</strong>
-      {fecha && <span className={s.codigoFecha}><CalendarDays aria-hidden="true" /> Registrada el {fecha}</span>}
+      {fecha && <span className={s.codigoFecha}><CalendarDays aria-hidden="true" /> {fecha}</span>}
+      {detalle && <span className={s.codigoFecha}>{detalle}</span>}
       <Boton variante="secundario" tamano="sm" icono={copiado ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />} onClick={copiar}>
         {copiado ? 'Copiado' : 'Copiar código'}
       </Boton>

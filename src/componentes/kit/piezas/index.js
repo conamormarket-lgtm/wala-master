@@ -40,4 +40,8 @@ export { Estrellas, ResumenOpiniones, TarjetaOpinion, FormularioOpinion } from '
 export { GaleriaProducto } from './GaleriaProducto';
 export { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra, TituloEditable } from './Ficha';
 export { CofreDiario, TarjetaOferta } from './Ofertas';
-export { CabezaLegal, IndiceLegal, SeccionLegal, DatosProveedor, CodigoReclamacion } from './Legales';
+export { CabezaLegal, IndiceLegal, SeccionLegal, DatosProveedor, CodigoCopiable } from './Legales';
+export { MarcoJuego, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego } from './Juegos';
+export { TableroPalabra, FichaPalabra, TecladoPalabra, LeyendaPalabra, RankingPalabra, evaluarIntento, estadosDeTeclas, normalizarPalabra, INTENTOS_PALABRA } from './Palabra';
+export { RuedaRuleta, HistorialRuleta, ICONO_PREMIO } from './Ruleta';
+export { TuboBolitas, Bolita, nivelBolitas, puedeSoltar, moverBolita, tuboListo, nivelResuelto, COLORES_BOLITAS, CAPACIDAD_TUBO } from './Bolitas';

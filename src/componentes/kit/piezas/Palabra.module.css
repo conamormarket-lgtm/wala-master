@@ -1,0 +1,360 @@
+/* ── Tablero ── */
+.tablero {
+  display: grid;
+  gap: 6px;
+  width: min(100%, calc(var(--largo) * 66px));
+  margin: 0 auto;
+}
+
+.fila {
+  display: grid;
+  grid-template-columns: repeat(var(--largo), minmax(0, 1fr));
+  gap: 6px;
+}
+
+/* Falta una letra o la palabra no existe: la fila dice que no. */
+.sacudir {
+  animation: sacudir 0.42s var(--ease-signature);
+}
+
+@keyframes sacudir {
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(2px); }
+}
+
+.ficha {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: clamp(1.4rem, 7vw, 2rem);
+  font-weight: 900;
+  line-height: 1;
+  perspective: 300px;
+}
+
+button.ficha {
+  cursor: pointer;
+}
+
+.conLetra {
+  border-color: var(--violet-300);
+  animation: asomar 0.14s var(--ease-signature);
+}
+
+@keyframes asomar {
+  50% { transform: scale(1.1); }
+}
+
+.activa {
+  border-color: var(--violet-600);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
+}
+
+.cara {
+  backface-visibility: hidden;
+}
+
+/* El color va en la cara de atrás: al voltear solo giran y se funden capas
+   (transform y opacity), sin animar el fondo. */
+.reverso {
+  position: absolute;
+  inset: -2px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: #fff;
+}
+
+.revelada {
+  border-color: transparent;
+}
+
+.correcta {
+  background: #10b981;
+}
+
+.presente {
+  background: #f59e0b;
+}
+
+.ausente {
+  background: #94a3b8;
+}
+
+:global([data-theme='dark']) .ausente {
+  background: #4b4560;
+}
+
+.volteando {
+  animation: voltear 0.5s var(--ease-signature) var(--retraso) both;
+}
+
+.volteando .reverso {
+  animation: mostrar 0.5s linear var(--retraso) both;
+}
+
+@keyframes voltear {
+  0% { transform: rotateX(0); }
+  50% { transform: rotateX(-90deg); }
+  100% { transform: rotateX(0); }
+}
+
+@keyframes mostrar {
+  0%, 49% { opacity: 0; }
+  50%, 100% { opacity: 1; }
+}
+
+.chica {
+  width: 34px;
+  font-size: 1rem;
+  border-radius: 8px;
+}
+
+.chica .reverso {
+  border-radius: 8px;
+}
+
+/* ── Teclado ── */
+.teclado {
+  display: grid;
+  gap: 6px;
+  width: min(100%, 520px);
+  margin: 0 auto;
+  touch-action: manipulation;
+}
+
+.filaTeclas {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.tecla {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  max-width: 46px;
+  height: 54px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: var(--violet-50);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--dur-rapida) var(--ease-signature);
+  -webkit-tap-highlight-color: transparent;
+}
+
+:global([data-theme='dark']) .tecla {
+  background: rgba(139, 92, 246, 0.16);
+}
+
+.tecla:active {
+  transform: scale(0.94);
+}
+
+.tecla svg {
+  width: 18px;
+  height: 18px;
+}
+
+.teclaAncha {
+  flex: 1.6;
+  max-width: 76px;
+  font-size: 0.78rem;
+}
+
+.tecla_correcta,
+:global([data-theme='dark']) .tecla_correcta {
+  background: #10b981;
+  color: #fff;
+}
+
+.tecla_presente,
+:global([data-theme='dark']) .tecla_presente {
+  background: #f59e0b;
+  color: #fff;
+}
+
+.tecla_ausente {
+  background: #cbd5e1;
+  color: #64748b;
+}
+
+:global([data-theme='dark']) .tecla_ausente {
+  background: #2e2a3c;
+  color: #8b85a0;
+}
+
+@media (max-width: 380px) {
+  .teclaAncha span {
+    display: none;
+  }
+}
+
+/* ── Leyenda ── */
+.leyenda {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.leyenda li {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 0.92rem;
+}
+
+.leyenda li > :first-child {
+  flex: none;
+}
+
+/* ── Ranking ── */
+.ranking {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 22px 22px 22px;
+  background: var(--color-surface);
+}
+
+.rankingTitulo {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
+.rankingNota,
+.rankingVacio {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.rankingVacio {
+  padding: 1rem 0;
+  text-align: center;
+}
+
+.rankingLista {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rankingLista li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 12px;
+}
+
+.yo {
+  background: var(--violet-50);
+}
+
+:global([data-theme='dark']) .yo {
+  background: rgba(139, 92, 246, 0.16);
+}
+
+.puesto {
+  flex: none;
+  width: 1.4rem;
+  color: var(--violet-500);
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+  text-align: center;
+}
+
+.avatar {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--violet-100);
+  color: var(--violet-700);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.persona {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.persona strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.persona small {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+}
+
+.tu {
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--violet-600);
+  color: #fff !important;
+  font-size: 0.68rem !important;
+  font-weight: 700;
+}
+
+.racha {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: #f97316;
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+}
+
+.racha svg {
+  width: 16px;
+  height: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sacudir,
+  .conLetra {
+    animation: none;
+  }
+
+  .volteando,
+  .volteando .reverso {
+    animation-duration: 0.01s;
+  }
+
+  .tecla {
+    transition: none;
+  }
+}

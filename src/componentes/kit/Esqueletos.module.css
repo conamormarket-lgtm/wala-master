@@ -1172,3 +1172,109 @@
   }
 }
 
+/* ── Minijuegos por dentro ── */
+.juegoEsq {
+  display: grid;
+  gap: 1.25rem;
+  width: min(100%, 1100px);
+  margin: 0 auto;
+}
+
+.barraJuegoEsq {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  justify-items: center;
+}
+
+.barraJuegoEsq > :first-child {
+  justify-self: start;
+}
+
+.barraJuegoEsq > :last-child {
+  justify-self: end;
+}
+
+/* En el celular "Volver" y "Cómo jugar" son solo íconos. */
+@container esqueleto (max-width: 560px) {
+  .barraJuegoEsq > :first-child,
+  .barraJuegoEsq > :last-child {
+    width: 44px !important;
+  }
+}
+
+.juegoCuerpo {
+  display: grid;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@container esqueleto (min-width: 1000px) {
+  .juegoCuerpo {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  }
+}
+
+.palabraEsq,
+.ruletaEsq {
+  display: grid;
+  justify-items: center;
+  gap: 1.25rem;
+}
+
+.tableroEsq {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  width: min(100%, 330px);
+  margin-top: 2.6rem;
+}
+
+.tecladoEsq {
+  display: grid;
+  gap: 6px;
+  width: min(100%, 520px);
+}
+
+.tecladoEsq > span {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.tecladoEsq > span > * {
+  flex: 1;
+  max-width: 46px;
+}
+
+.ruedaEsq {
+  width: clamp(270px, min(84vw, 52vh), 460px) !important;
+  height: auto !important;
+  aspect-ratio: 1;
+}
+
+.mesaEsq {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tubosEsq {
+  display: grid;
+  grid-template-columns: repeat(6, auto);
+  gap: 1.1rem;
+  padding-top: 1.75rem;
+}
+
+.tuboEsq {
+  width: 54px !important;
+  height: 190px !important;
+  border-radius: 0 0 28px 28px !important;
+}
+
+@container esqueleto (max-width: 575px) {
+  .tubosEsq {
+    grid-template-columns: repeat(3, auto);
+    gap: 2rem 1.5rem;
+  }
+}
+
