@@ -7,7 +7,7 @@ const FirebaseWarning = () => {
   const [showWarning, setShowWarning] = useState(false);
 
   useEffect(() => {
-    if (!auth) setShowWarning(true);
+    if (!auth || window.__walaFirebaseAuthError) setShowWarning(true);
     const onAuthError = () => setShowWarning(true);
     window.addEventListener('firebase-auth-config-error', onAuthError);
     return () => window.removeEventListener('firebase-auth-config-error', onAuthError);

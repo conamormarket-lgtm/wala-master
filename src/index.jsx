@@ -14,6 +14,9 @@ window.addEventListener('unhandledrejection', (event) => {
     event.preventDefault();
     event.stopPropagation();
     console.warn('Firebase Auth no configurado. Activa Authentication en Firebase Console y añade localhost a Dominios autorizados.');
+    // Marca por si el aviso (FirebaseWarning, que llega en su propio archivo)
+    // todavía no está montado para oír el evento.
+    window.__walaFirebaseAuthError = true;
     window.dispatchEvent(new CustomEvent('firebase-auth-config-error'));
   }
 });

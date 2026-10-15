@@ -20,7 +20,6 @@ import AdminRoute from './components/AdminRoute/AdminRoute';
 import RutaPrivada from './components/RutaPrivada/RutaPrivada';
 import RouteTracker from './components/analytics/RouteTracker';
 import ReferralTracker from './components/analytics/ReferralTracker';
-import AvisoInvitacion from './components/common/AvisoInvitacion/AvisoInvitacion';
 import PushLinkHandler from './components/common/PushLinkHandler/PushLinkHandler';
 import ErrorBoundary from './components/common/ErrorBoundary/ErrorBoundary';
 import AppErrorBoundary from './components/system/AppErrorBoundary';
@@ -30,7 +29,6 @@ import AppPrefetcher from './components/common/AppPrefetcher/AppPrefetcher';
 import NavProgressBar from './components/common/NavProgressBar/NavProgressBar';
 import CustomFontsInjector from './components/common/CustomFontsInjector/CustomFontsInjector';
 import { withEditorFonts } from './services/shared/fontResources';
-import { useHeatmapTracker } from './hooks/useHeatmapTracker';
 import ScrollTracker from './components/analytics/ScrollTracker';
 import ScrollToTop from './components/common/ScrollToTop/ScrollToTop';
 
@@ -39,17 +37,23 @@ import './App.css';
 // ── Páginas principales y Layout Crítico (Carga Inmediata para evitar efecto Waterfall de Suspense) ──
 import TiendaPage from './pages/Tienda/TiendaPage';
 import Header from './components/common/Header';
-import Footer from './components/common/Footer';
 import BottomNav from './components/common/BottomNav';
 import WhatsAppButton from './components/common/WhatsAppButton';
-import FirebaseWarning from './components/common/FirebaseWarning';
-import KapiPet from './components/common/KapiPet/KapiPet';
 import AdminBar from './components/common/AdminBar/AdminBar';
 import DeepLinkHandler from './components/common/DeepLinkHandler';
 import SystemAlert from './components/common/SystemAlert/SystemAlert';
 import LanguagePopup from './components/i18n/LanguagePopup';
-import CampaignPopup from './components/common/CampaignPopup/CampaignPopup';
 import { EN_VISTA_PREVIA_CALOR } from './utils/vistaPreviaCalor';
+
+// ── Lo que no hace falta para ver la página: su propio archivo ────────────
+// Se montan en el mismo sitio de siempre, pero su código llega en paralelo
+// justo después del arranque en vez de ir en el archivo principal.
+const Footer = lazy(() => import('./components/common/Footer'));
+const KapiPet = lazy(() => import('./components/common/KapiPet/KapiPet'));
+const CampaignPopup = lazy(() => import('./components/common/CampaignPopup/CampaignPopup'));
+const AvisoInvitacion = lazy(() => import('./components/common/AvisoInvitacion/AvisoInvitacion'));
+const FirebaseWarning = lazy(() => import('./components/common/FirebaseWarning'));
+const RastreoCalor = lazy(() => import('./components/analytics/RastreoCalor'));
 
 // ── Auto-recuperación de bundle obsoleto tras un deploy ───
 // Si una pestaña tenía cacheado un build viejo y al navegar a una página lazy
@@ -289,11 +293,16 @@ const GlobalLayout = ({ children }) => {
   // Activar Heatmap Tracker globalmente (menos para admins: no son clientes y
   // su barra cambia la estructura de la página respecto a la del visitante).
   const { isAdmin } = useAuth();
-  useHeatmapTracker(!isAdmin, 10); // Batch de 10 clics
+  const rastreoCalor = (
+    <Suspense fallback={null}>
+      <RastreoCalor enabled={!isAdmin} batchSize={10} />
+    </Suspense>
+  );
 
   if (isIndependentRoute) {
     return (
       <div className="App independent-app">
+        {rastreoCalor}
         <main style={{ width: '100%', minHeight: '100vh', padding: 0, margin: 0 }}>
           {children}
         </main>
@@ -303,6 +312,7 @@ const GlobalLayout = ({ children }) => {
 
   return (
     <div className="App">
+      {rastreoCalor}
       <SystemAlert />
       <NavProgressBar />
       <RouteTracker />
@@ -310,7 +320,7 @@ const GlobalLayout = ({ children }) => {
       <ReferralTracker />
       {/* En la vista previa del mapa de calor no van avisos ni popups: la
           página tiene que verse como la vio el visitante, sin nada encima. */}
-      {!EN_VISTA_PREVIA_CALOR && <AvisoInvitacion />}
+      {!EN_VISTA_PREVIA_CALOR && <Suspense fallback={null}><AvisoInvitacion /></Suspense>}
       <ScrollTracker />
       <AdminBar />
       {isEditModeActive && (
@@ -333,21 +343,21 @@ const GlobalLayout = ({ children }) => {
         {children}
       </main>
 
-      <Footer />
+      <Suspense fallback={null}><Footer /></Suspense>
       <BottomNav />
 
       <div className="floating-action-stack">
         <WhatsAppButton />
-        <KapiPet />
+        <Suspense fallback={null}><KapiPet /></Suspense>
       </div>
 
-      <FirebaseWarning />
+      <Suspense fallback={null}><FirebaseWarning /></Suspense>
 
       {/* Popup discreto de sugerencia de idioma (se muestra una sola vez). */}
       {!EN_VISTA_PREVIA_CALOR && <LanguagePopup />}
 
       {/* Popups de campaña (encuesta, promos…) configurados en /admin/popups. */}
-      {!EN_VISTA_PREVIA_CALOR && <CampaignPopup />}
+      {!EN_VISTA_PREVIA_CALOR && <Suspense fallback={null}><CampaignPopup /></Suspense>}
     </div>
   );
 };

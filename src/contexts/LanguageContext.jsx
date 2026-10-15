@@ -12,7 +12,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { dictionaries } from '../i18n/dictionaries';
-import { prepararTraductorDelNavegador } from '../services/translate';
 
 // Idiomas disponibles (deben existir como claves en `dictionaries`).
 const AVAILABLE = ['es', 'en', 'pt'];
@@ -91,7 +90,8 @@ export const LanguageProvider = ({ children }) => {
     // usuario. setLang siempre se llama desde un clic (menu de idioma o popup),
     // asi que este es el unico momento valido para prepararlo. Sin await: si
     // tarda o falla, la traduccion cae al motor de respaldo y nada se bloquea.
-    prepararTraductorDelNavegador(next);
+    // El traductor se descarga aquí, no en el arranque (casi todos navegan en español).
+    import('../services/translate').then((m) => m.prepararTraductorDelNavegador(next), () => {});
   }, []);
 
   // Traducción: idioma actual -> español (fallback) -> fallback explícito -> clave.

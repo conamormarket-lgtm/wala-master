@@ -18,7 +18,10 @@
 
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { translateText, translateMany } from '../services/translate';
+
+// El motor de traducción solo se descarga si alguien elige otro idioma: en
+// español (casi todas las visitas) no viaja en el arranque.
+const cargarTraductor = () => import('../services/translate');
 
 // ¿Hace falta traducir? Sólo si hay texto y el idioma destino no es el origen.
 function needsTranslation(text, lang) {
@@ -53,12 +56,13 @@ export function useTranslatedText(text) {
     setOut((prev) => (prev === text ? prev : text));
 
     // translateText nunca lanza: ante fallo total devuelve el texto original.
-    translateText(text, lang).then((traducido) => {
+    // Si no se pudo descargar el traductor, se queda el original.
+    cargarTraductor().then(({ translateText }) => translateText(text, lang)).then((traducido) => {
       if (!activo) return;
       // Sólo actualizamos si el resultado cambia algo: evita renders inútiles y
       // posibles bucles si el valor traducido coincide con el original.
       setOut((prev) => (prev === traducido ? prev : traducido));
-    });
+    }, () => {});
 
     return () => {
       activo = false;
@@ -126,6 +130,7 @@ export function useTranslatedHtml(html) {
         }
         if (nodos.length === 0) return;
 
+        const { translateMany } = await cargarTraductor();
         const traducidos = await translateMany(nodos.map((n) => n.nodeValue.trim()), lang);
         if (!activo) return;
 

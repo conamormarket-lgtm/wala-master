@@ -9,7 +9,6 @@
 // chunks obsoletos y errores de Fabric/Auth): nosotros NO hacemos preventDefault.
 
 import { reportClientError, normalizeError } from './errorReporter';
-import { initWebVitals } from './webVitals';
 
 let initialized = false;
 
@@ -71,8 +70,10 @@ export function initObservability() {
       }
     });
 
-    // 3) Web Vitals (no-op si PerformanceObserver no existe).
-    initWebVitals();
+    // 3) Web Vitals (no-op si PerformanceObserver no existe). Su código llega
+    // después del arranque: los observadores usan buffered, así que igual
+    // reciben lo que pasó antes.
+    import('./webVitals').then((m) => m.initWebVitals(), () => {});
   } catch {
     /* la observabilidad nunca rompe la app */
   }

@@ -24,7 +24,7 @@ import OptimizedImage from '../OptimizedImage/OptimizedImage';
 import FlagIcon from '../../i18n/FlagIcon';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import { T } from '../../../i18n/useTranslatedText';
-import { registrarTextosSinTraducir } from '../../../services/translate';
+import { registrarTextosSinTraducir } from '../../../services/textosSinTraducir';
 import Moneda, { MONEDA_SRC } from '../Moneda';
 
 // La imagen de la moneda se pide en cuanto carga la app, no cuando se pinta el
