@@ -133,7 +133,7 @@ día si cambia un componente del kit o su forma de recibir datos.
 | Barra de admin (M3) | `components/common/AdminBar/AdminBar.jsx` | `BarraAdmin` |
 | Aviso del sistema (M1) | `components/common/SystemAlert` | `AvisoSistema` |
 | Banner de la app (M2) | `pages/Tienda/components/AppDownloadBanner.jsx` | `BannerApp` |
-| Flotantes (M7-M10) | `WhatsAppButton`, `KapiPet` (solo el botón), `PackageBubble` (solo el botón), píldora de la encuesta en `Header.jsx` ~1333-1359, `.floating-action-stack` de `App.jsx` | `PilaFlotante` + `BotonWhatsApp`, `KapiFlotante`, `BurbujaRegalos`, `PildoraRecompensa` (la ventana de Kapi ya está en el kit: `VentanaKapi`, ver KAPI.md; la de regalos sigue siendo de la tienda) |
+| Flotantes (M7-M10) | `WhatsAppButton`, `KapiPet` (solo el botón), `PackageBubble` (retirada de la tienda el 2026-10-15), píldora de la encuesta en `Header.jsx` ~1333-1359, `.floating-action-stack` de `App.jsx` | `PilaFlotante` + `BotonWhatsApp`, `KapiFlotante`, `BurbujaRegalos`, `PildoraRecompensa` (la ventana de Kapi ya está en el kit: `VentanaKapi`, ver KAPI.md; la burbuja de regalos ya no está en la tienda) |
 | Anuncio de campaña (M11) | `components/common/CampaignPopup/PopupCard.jsx` | `VentanaCampana` (las reglas de `services/popupsLogic.mjs` se quedan) |
 | Idioma (M12) | `components/i18n/LanguagePopup.jsx` | `AvisoIdioma` |
 | Editor | `VisualEditorPanel`, `EditableSection`, `ModuleInserter` | `PanelEditor`, `SeccionEditable`, `InsertarAqui`, `useBorrador` |
@@ -161,7 +161,7 @@ día si cambia un componente del kit o su forma de recibir datos.
 | `pie` | `getStorefrontConfig('footer')` (`pages/footer`) |
 | `pieLegal.empresa` | `config/empresa.js` |
 | `BotonWhatsApp.numero` | Firestore `messages` (`whatsapp_number_tienda`…), marca y producto como hoy |
-| `BurbujaRegalos.cantidad` | `suggested_packages` sin ver (como `PackageBubble`) |
+| `BurbujaRegalos.cantidad` | `suggested_packages` sin ver (la tienda ya no la muestra) |
 | `PildoraRecompensa` | `userProfile.hasCompletedSurvey` y `surveyFabHiddenUntil` (3 días) |
 | `AvisoSistema` | `configuracion/estado_app` en tiempo real |
 | `onAgregar` | `CartContext.addToCart`; "elegir" abre `AgregarRapido` con `opcionesDeProducto` |

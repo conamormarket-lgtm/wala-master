@@ -42,7 +42,6 @@ import WhatsAppButton from './components/common/WhatsAppButton';
 import FirebaseWarning from './components/common/FirebaseWarning';
 import KapiPet from './components/common/KapiPet/KapiPet';
 import AdminBar from './components/common/AdminBar/AdminBar';
-import PackageBubble from './components/common/PackageBubble/PackageBubble';
 import DeepLinkHandler from './components/common/DeepLinkHandler';
 import SystemAlert from './components/common/SystemAlert/SystemAlert';
 import LanguagePopup from './components/i18n/LanguagePopup';
@@ -338,7 +337,6 @@ const GlobalLayout = ({ children }) => {
       <div className="floating-action-stack">
         <WhatsAppButton />
         <KapiPet />
-        <PackageBubble />
       </div>
 
       <FirebaseWarning />
