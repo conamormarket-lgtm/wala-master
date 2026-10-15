@@ -1398,8 +1398,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     }
   };
 
-  // El header unificado ha sido movido a LegacyTiendaPage.
-  // Esta vista ahora es puramente una Landing Page dinámica.
+  // Esta vista es puramente una Landing Page dinámica.
 
 
 

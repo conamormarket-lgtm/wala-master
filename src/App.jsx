@@ -128,13 +128,11 @@ const BallSortPage = lazy(() => import('./pages/Minijuegos/BallSortPage'));
 const GiftExperiencePage = lazy(() => import('./pages/GiftExperiencePage'));
 
 // MussaPage retirado: /MUSSA ahora es la página de la marca vía DynamicLandingPage (/:slug).
-const RegalosCatasPage = lazy(() => import('./pages/RegalosCatasPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
 const NichePage = lazy(() => import('./pages/NichePage'));
 const VendorPanel = lazy(() => import('./pages/VendorPanel'));
 const NichesPage = lazy(() => import('./pages/NichesPage'));
 const VendorStorefrontPage = lazy(() => import('./pages/VendorStorefrontPage'));
-const CheckoutDemoPage = lazy(() => import('./pages/CheckoutDemoPage'));
 const OfertasFlashPage = lazy(() => import('./pages/OfertasFlashPage'));
 const SorteosPage = lazy(() => import('./pages/SorteosPage'));
 
@@ -160,7 +158,6 @@ const DashPaginas = lazy(() => import('./pages/admin/dashboard/DashPaginas'));
 const DashCategorias = lazy(() => import('./pages/admin/dashboard/DashCategorias'));
 const DashUso = lazy(() => import('./pages/admin/dashboard/DashUso'));
 const DashRecepcion = lazy(() => import('./pages/admin/dashboard/DashRecepcion'));
-const DesignSystemPage = lazy(() => import('./pages/admin/DesignSystemPage'));
 
 // ── Admin pages ───────────────────────────────────────────────────────────────
 const AdminProductos = lazy(() => import('./pages/Tienda/admin/AdminProductos'));
@@ -187,7 +184,6 @@ const AdminSuscripcionSorteos = lazy(() => import('./pages/admin/AdminSuscripcio
 const AdminSuscripcionDetalle = lazy(() => import('./pages/admin/AdminSuscripcionDetalle'));
 
 const AdminWhatsApp = lazy(() => import('./pages/admin/AdminWhatsApp'));
-const AdminPagos = lazy(() => import('./pages/admin/AdminPagos'));
 const AdminDestacados = lazy(() => import('./pages/admin/AdminDestacados'));
 const AdminCliparts = lazy(() => import('./pages/admin/AdminCliparts'));
 const AdminMascota = lazy(() => import('./pages/admin/AdminMascota'));
@@ -224,12 +220,10 @@ const AdminElementosDiseno = lazy(() => import('./pages/admin/AdminElementosDise
 const AdminElementoDisenoPage = lazy(() => import('./pages/admin/elementosDiseno/AdminElementoDisenoPage'));
 const AdminLandingPages = lazy(() => import('./pages/Tienda/admin/AdminLandingPages'));
 const AdminThemes = lazy(() => import('./pages/Tienda/admin/AdminThemes'));
-const AdminStoreEditor = lazy(() => import('./pages/Tienda/admin/AdminStoreEditor'));
 const AdminRuletaPage = lazy(() => import('./pages/admin/AdminRuletaPage'));
 const AdminEncuestas = lazy(() => import('./pages/admin/AdminEncuestas'));
 const AdminPopups = lazy(() => import('./pages/admin/AdminPopups'));
 const AdminFechasImportantesPage = lazy(() => import('./pages/admin/AdminFechasImportantesPage'));
-const AdminGeneradorPagos = lazy(() => import('./pages/admin/AdminGeneradorPagos'));
 const AdminLibroReclamaciones = lazy(() => import('./pages/admin/AdminLibroReclamaciones'));
 
 // Gestión de Pagos (unifica Métodos de Pago + Generador de Enlaces + historial/analíticas).
@@ -464,7 +458,6 @@ function App() {
                                       <Route path="dashboard/categorias" element={<DashCategorias />} />
                                       <Route path="dashboard/uso" element={<DashUso />} />
                                       <Route path="dashboard/recepcion" element={<DashRecepcion />} />
-                                      <Route path="design" element={<DesignSystemPage />} />
 
                                       <Route path="productos" element={<AdminProductos />} />
                                       <Route path="combos-crear" element={<AdminCombosCrear />} />
@@ -485,8 +478,6 @@ function App() {
 
                                       <Route path="whatsapp" element={<AdminWhatsApp />} />
                                       <Route path="referidos" element={<AdminReferidos />} />
-                                      <Route path="pagos" element={<AdminPagos />} />
-                                      <Route path="generador-pagos" element={<AdminGeneradorPagos />} />
 
                                       {/* Gestión de Pagos: módulo unificado (config + generar + historial). */}
                                       <Route path="gestion-pagos" element={<AdminGestionPagos />} />
@@ -525,7 +516,6 @@ function App() {
                                       <Route path="elementos-diseno/:elementSlug" element={<AdminElementoDisenoPage />} />
                                       <Route path="landing-pages" element={<AdminLandingPages />} />
                                       <Route path="temas" element={<AdminThemes />} />
-                                      <Route path="store-editor" element={<AdminStoreEditor />} />
                                       <Route path="ruleta" element={<AdminRuletaPage />} />
                                       <Route path="backups" element={<AdminBackups />} />
                                       <Route path="configuracion" element={<AdminConfiguracion />} />
@@ -556,7 +546,6 @@ function App() {
                                   {/* Mussa: la ruta hardcodeada se eliminó. Ahora /MUSSA (y /mussa,
                                       slug case-insensitive) cae en el catch-all /:slug -> DynamicLandingPage
                                       y resuelve la landingPage 'MUSSA' como página de marca editable. */}
-                                  <Route path="/regalos-catas" element={<RegalosCatasPage />} />
 
                                   {/* Fase 1: búsqueda con facetas y páginas de nicho (multi-vendor) */}
                                   <Route path="/buscar" element={<SearchPage />} />
@@ -564,8 +553,6 @@ function App() {
                                   <Route path="/nichos" element={<NichesPage />} />
                                   <Route path="/vendedor" element={<VendorPanel />} />
                                   <Route path="/tienda-vendedor/:slug" element={<VendorStorefrontPage />} />
-                                  <Route path="/checkout-demo" element={<CheckoutDemoPage />} />
-                                  <Route path="/pago-demo/:orderId" element={<CheckoutDemoPage />} />
                                   <Route path="/ofertas" element={<OfertasFlashPage />} />
                                   <Route path="/sorteos" element={<SorteosPage />} />
 

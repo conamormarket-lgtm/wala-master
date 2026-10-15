@@ -351,8 +351,8 @@ const AdminLayout = () => {
               </h3>
               {/* "Métodos de Pago" y "Generador de Enlaces" se unificaron en
                   "💳 Gestión de Pagos" (grupo Diseño de Tienda, bajo "Ver qué hacen
-                  los usuarios"). Sus rutas /admin/pagos y /admin/generador-pagos
-                  siguen existiendo por compatibilidad. */}
+                  los usuarios"). Sus rutas viejas /admin/pagos y /admin/generador-pagos
+                  se quitaron. */}
               <NavLink
                 to="/admin/libro-reclamaciones"
                 className={({ isActive }) => getLinkClass(isActive, 'clientes')}
