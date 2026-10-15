@@ -32,7 +32,11 @@
  * este worker no se mete y el navegador hace lo de siempre.
  */
 
-const VERSION = 'v1';
+// v2 (2026-10-15): v1 llegó a guardar el index.html bajo el nombre de un
+// chunk .js (pedido durante un deploy, Vercel respondió con la página) y desde
+// entonces servía HTML como JavaScript: la web no arrancaba para esa persona.
+// Subir la versión borra esas cachés viejas en todos los navegadores.
+const VERSION = 'v2';
 const CACHE_ESTATICOS = `wala-estaticos-${VERSION}`;
 const CACHE_PAGINAS = `wala-paginas-${VERSION}`;
 const CACHE_MEDIA = `wala-media-${VERSION}`;
@@ -71,16 +75,22 @@ const podar = async (cache, maximo) => {
   await Promise.all(claves.slice(0, claves.length - maximo).map((k) => cache.delete(k)));
 };
 
+// Nada de /assets es HTML (son JS, CSS, imágenes y fuentes). Si llega HTML es
+// la página que Vercel devuelve cuando el archivo no existe (p. ej. durante un
+// deploy): ni se guarda ni se sirve desde la caché.
+const esHtml = (respuesta) => /text\/html/i.test(respuesta?.headers?.get('content-type') || '');
+
 /** Caché primero: si está guardado se sirve tal cual y no se toca la red. */
 const cachePrimero = async (request, nombreCache, maximo) => {
   const cache = await caches.open(nombreCache);
   const guardado = await cache.match(request);
-  if (guardado) return guardado;
+  if (guardado && !esHtml(guardado)) return guardado;
+  if (guardado) await cache.delete(request); // copia mala: se descarta
 
   const respuesta = await fetch(request);
   // Solo se guardan respuestas completas y correctas. Un 206 o un error no
   // sirven de nada cacheados, y un 404 cacheado sería un bug permanente.
-  if (respuesta && respuesta.status === 200) {
+  if (respuesta && respuesta.status === 200 && !esHtml(respuesta)) {
     await cache.put(request, respuesta.clone());
     if (maximo) await podar(cache, maximo);
   }

@@ -33,7 +33,7 @@
       "destination": "/componentes.html"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!assets/).*)",
       "destination": "/index.html"
     }
   ],
