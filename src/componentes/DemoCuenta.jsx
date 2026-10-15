@@ -1042,7 +1042,13 @@ export function EstudioDemo({ ruta = '/crear/', sesion, estados = [], toast, onI
       inicial={inicial}
       modo={modo}
       plantilla={origen?.nombre}
-      combo={combo ? { nombre: combo.name, numero: Number(q.get('pieza') || 0) + 1, total: combo.piezas.length } : undefined}
+      combo={combo ? {
+        nombre: combo.name,
+        numero: Number(q.get('pieza') || 0) + 1,
+        total: combo.piezas.length,
+        // Demo: las demás prendas del combo, todavía sin diseño.
+        otras: { iguales: combo.piezas.map((_, k) => k + 1).filter((n) => n !== Number(q.get('pieza') || 0) + 1) },
+      } : undefined}
       sesion={sesion}
       fuentes={FUENTES_ESTUDIO}
       urlVolver={combo ? `/combo/${combo.id}?nuevo=1` : '/personalizar'}

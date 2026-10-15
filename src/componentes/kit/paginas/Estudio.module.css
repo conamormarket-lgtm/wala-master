@@ -92,22 +92,35 @@
   width: 100%;
 }
 
+/* Lienzo vacío: "Empieza tu diseño" con los dos botones (como la tienda). */
 .empezar {
   position: absolute;
   bottom: 0.75rem;
   left: 50%;
   z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  width: max-content;
   max-width: calc(100% - 1.5rem);
-  margin: 0;
-  padding: 0.35rem 0.8rem;
-  border-radius: 999px;
-  background: rgba(28, 20, 51, 0.78);
+  padding: 0.6rem 0.8rem;
+  border-radius: 16px;
+  background: rgba(28, 20, 51, 0.82);
   color: #fff;
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.8rem;
   text-align: center;
   transform: translateX(-50%);
-  pointer-events: none;
+}
+
+.empezar p {
+  margin: 0;
+}
+
+.empezarBotones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
 }
 
 .zonaInfo {
@@ -339,4 +352,10 @@
     font-size: 0;
     gap: 0;
   }
+}
+
+.otrasCombo {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
 }

@@ -674,3 +674,115 @@
     animation: none;
   }
 }
+
+/* ── Lienzo: zoom, varias capas y soltar archivos ──────── */
+/* Con zoom se arrastra el fondo para recorrer la prenda (sin transición: sigue al dedo). */
+.lienzoPaneo {
+  cursor: grab;
+}
+
+.lienzoPaneo:active {
+  cursor: grabbing;
+}
+
+.lienzoPaneo .lienzoEscala {
+  transition: none;
+}
+
+/* Varias elegidas: contorno punteado, sin la esquina de agrandar. */
+.capaVarias {
+  outline-style: dashed;
+}
+
+.capaVarias::after {
+  display: none;
+}
+
+.capa:focus-visible {
+  outline: 2px solid var(--violet-500, #8b5cf6);
+  outline-offset: 4px;
+}
+
+/* La zona donde va a caer la imagen arrastrada. */
+.zonaSoltar {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--violet-500, #8b5cf6);
+  border-radius: inherit;
+  background: rgba(124, 58, 237, 0.14);
+  pointer-events: none;
+}
+
+.soltarAviso {
+  position: absolute;
+  left: 50%;
+  bottom: 1rem;
+  z-index: 3;
+  margin: 0;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  background: var(--violet-700, #6d28d9);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ── Atajos (AtajosEstudio) ────────────────────────────── */
+.atajosGrupos {
+  display: grid;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+}
+
+@media (min-width: 720px) {
+  .atajosGrupos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.atajosGrupo {
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+}
+
+.atajosLista {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.atajosLista dt {
+  white-space: nowrap;
+}
+
+.atajosLista dd {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.atajosLista kbd {
+  display: inline-block;
+  min-width: 1.5rem;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid var(--color-border);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.atajoO {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}

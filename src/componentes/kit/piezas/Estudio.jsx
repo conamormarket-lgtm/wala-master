@@ -1,9 +1,10 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   Undo2, Redo2, Minus, Plus, Crosshair, Trash2, ImagePlus, Type, ZoomIn, ZoomOut, Keyboard, Check,
   Copy, ArrowUpToLine, ArrowDownToLine, RotateCw, FlipHorizontal, Crop, Eraser, Maximize2,
   AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
   AlignLeft, AlignCenter, AlignRight, LoaderCircle, CheckCircle2, AlertTriangle,
+  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter,
 } from 'lucide-react';
 import Boton from '../Boton';
 import Acordeon from '../Acordeon';
@@ -149,23 +150,46 @@ function TextoCurvo({ capa: c }) {
  *    color, x, y (centro, 0–1 de la zona), ancho (0–1 de la zona), angulo,
  *    tamano (alto de letra, 0–1 del ancho de la zona), negrita, cursiva,
  *    contorno, sombra, voltear }] }
- *  - zonaActiva · seleccion: id de la capa elegida · oscura: prenda oscura
- *    (las guías van en blanco) · guias: false para la foto final (sin zonas)
- *  - onElegirZona(id) · onElegirCapa(id, zonaId) · onMoverCapa(id, { x, y })
+ *  - zonaActiva · seleccion: id de la capa elegida, o una lista si son varias
+ *    · oscura: prenda oscura (las guías van en blanco) · guias: false para la
+ *    foto final (sin zonas ni nada que tocar)
+ *  - onElegirZona(id) · onElegirCapa(id, zonaId, { sumar }) (sumar: con Shift
+ *    o Ctrl, suma o quita de la selección) · onMoverCapa(id, { x, y })
  *    mientras se arrastra · onSoltarCapa() al terminar (para deshacer)
- *  - zoom · encima: lo que va sobre el lienzo (empezar, cargando…)
+ *  - onMenu({ x, y, capaId, zonaId, punto }): clic derecho (x, y de la
+ *    ventana; punto: 0–1 de la zona) · onDobleClic({ capaId, zonaId, punto })
+ *  - onSoltarArchivo(archivo, zonaId): una imagen arrastrada desde la
+ *    computadora; mientras se arrastra, "Suelta tu imagen en …"
+ *  - zoom · camara: { x, y } (px) con zoom: la vista desplazada · onCamara({ x,
+ *    y }) al arrastrar el fondo (con zoom) · moverVista: arrastrar mueve la
+ *    vista (Espacio mantenida) · onRueda({ deltaX, deltaY, ctrl, shift, x, y })
+ *    (x, y desde el centro del lienzo; la rueda no desplaza la página)
+ *  - encima: lo que va sobre el lienzo (empezar, cargando…)
  */
 export function LienzoPrenda({
   imagen, foto, tinte, voltear = false, anchoImg = 1000, altoImg = 1200, zonas = [], capas = {},
   zonaActiva, seleccion, oscura = false, guias = true, onElegirZona, onElegirCapa, onMoverCapa, onSoltarCapa,
-  encima, zoom = 1, className,
+  onMenu, onDobleClic, onSoltarArchivo, encima, zoom = 1, camara, onCamara, moverVista = false, onRueda, className,
 }) {
+  const marco = useRef(null);
   const arrastre = useRef(null);
+  const paneo = useRef(null);
+  const [soltarEn, setSoltarEn] = useState(null);
+  const elegidas = Array.isArray(seleccion) ? seleccion : seleccion ? [seleccion] : [];
+
+  /** Punto (0–1) de la zona bajo el puntero. */
+  const puntoEnZona = (e, el) => {
+    const caja = el.getBoundingClientRect();
+    return { x: Math.min(1, Math.max(0, (e.clientX - caja.left) / caja.width)), y: Math.min(1, Math.max(0, (e.clientY - caja.top) / caja.height)) };
+  };
 
   const empezar = (e, c, zonaId) => {
+    if (moverVista || e.button === 1) return; // se mueve la vista, no la capa
+    if (e.button === 2) return; // el clic derecho abre el menú
     e.stopPropagation();
-    onElegirCapa?.(c.id, zonaId);
-    if (!onMoverCapa) return;
+    const sumar = e.shiftKey || e.ctrlKey || e.metaKey;
+    onElegirCapa?.(c.id, zonaId, { sumar });
+    if (!onMoverCapa || sumar) return;
     const caja = e.currentTarget.closest('[data-zona]').getBoundingClientRect();
     arrastre.current = { id: c.id, caja, dx: e.clientX - (caja.left + (c.x ?? 0.5) * caja.width), dy: e.clientY - (caja.top + (c.y ?? 0.5) * caja.height), movio: false };
     e.currentTarget.setPointerCapture?.(e.pointerId);
@@ -183,10 +207,66 @@ export function LienzoPrenda({
     arrastre.current = null;
   };
 
+  // Con zoom, arrastrar el fondo (o con Espacio, o el botón del medio) mueve la vista.
+  const empezarPaneo = (e) => {
+    if (!onCamara || !(zoom > 1 || moverVista || e.button === 1)) return;
+    if (e.button !== 0 && e.button !== 1) return;
+    e.preventDefault();
+    paneo.current = { x0: e.clientX, y0: e.clientY, c0: camara || { x: 0, y: 0 } };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+  const moverPaneo = (e) => {
+    const p = paneo.current;
+    if (!p) return;
+    onCamara({ x: p.c0.x + e.clientX - p.x0, y: p.c0.y + e.clientY - p.y0 });
+  };
+  const soltarPaneo = () => { paneo.current = null; };
+
+  // La rueda no desplaza la página sobre el lienzo (necesita passive: false).
+  useEffect(() => {
+    const el = marco.current;
+    if (!el || !onRueda || !guias) return undefined;
+    const alRodar = (e) => {
+      if (!(e.ctrlKey || e.metaKey) && zoom <= 1) return; // sin zoom, la rueda baja por la página
+      e.preventDefault();
+      const r = el.getBoundingClientRect();
+      onRueda({ deltaX: e.deltaX, deltaY: e.deltaY, ctrl: e.ctrlKey || e.metaKey, shift: e.shiftKey, x: e.clientX - (r.left + r.width / 2), y: e.clientY - (r.top + r.height / 2) });
+    };
+    el.addEventListener('wheel', alRodar, { passive: false });
+    return () => el.removeEventListener('wheel', alRodar);
+  }, [onRueda, guias, zoom]);
+
+  // Una imagen arrastrada desde la computadora: la zona bajo el puntero.
+  const zonaBajo = (e) => document.elementFromPoint(e.clientX, e.clientY)?.closest?.('[data-zona]')?.getAttribute('data-zona') || zonaActiva || zonas[0]?.id;
+  const arrastrandoArchivo = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
+  const soltarArchivo = guias && onSoltarArchivo ? {
+    onDragOver: (e) => { if (!arrastrandoArchivo(e)) return; e.preventDefault(); setSoltarEn(zonaBajo(e)); },
+    onDragLeave: (e) => { if (!marco.current?.contains(e.relatedTarget)) setSoltarEn(null); },
+    onDrop: (e) => {
+      if (!arrastrandoArchivo(e)) return;
+      e.preventDefault();
+      const archivo = [...e.dataTransfer.files].find((f) => f.type.startsWith('image/'));
+      const zid = zonaBajo(e);
+      setSoltarEn(null);
+      if (archivo) onSoltarArchivo(archivo, zid);
+    },
+  } : {};
+
   const espejo = voltear ? { transform: 'scaleX(-1)' } : undefined;
+  const transformacion = zoom !== 1 || camara ? `translate(${camara?.x || 0}px, ${camara?.y || 0}px) scale(${zoom})` : undefined;
   return (
-    <div className={[s.lienzo, oscura && s.oscura, className].filter(Boolean).join(' ')} data-componente="LienzoPrenda">
-      <div className={s.lienzoEscala} style={{ aspectRatio: `${anchoImg} / ${altoImg}`, '--proporcion': anchoImg / altoImg, transform: zoom !== 1 ? `scale(${zoom})` : undefined }}>
+    <div
+      ref={marco}
+      className={[s.lienzo, oscura && s.oscura, (zoom > 1 || moverVista) && onCamara && s.lienzoPaneo, className].filter(Boolean).join(' ')}
+      data-componente="LienzoPrenda"
+      onPointerDown={guias ? empezarPaneo : undefined}
+      onPointerMove={guias ? moverPaneo : undefined}
+      onPointerUp={guias ? soltarPaneo : undefined}
+      onPointerCancel={guias ? soltarPaneo : undefined}
+      onAuxClick={(e) => e.preventDefault()}
+      {...soltarArchivo}
+    >
+      <div className={s.lienzoEscala} style={{ aspectRatio: `${anchoImg} / ${altoImg}`, '--proporcion': anchoImg / altoImg, transform: transformacion }}>
         {/* Sin foto del color: la foto blanca teñida (el color recortado con su silueta + multiply). */}
         {!foto && tinte && <span className={s.tinte} style={{ ...espejo, background: tinte, WebkitMaskImage: `url("${imagen}")`, maskImage: `url("${imagen}")` }} aria-hidden="true" />}
         <img className={[s.prenda, !foto && tinte && s.prendaTenida].filter(Boolean).join(' ')} style={espejo} src={foto || imagen} alt="" draggable={false} />
@@ -207,16 +287,20 @@ export function LienzoPrenda({
                 transform: z.angulo ? `rotate(${z.angulo}deg)` : undefined,
               }}
               onClick={guias ? () => onElegirZona?.(z.id) : undefined}
+              onDoubleClick={guias && onDobleClic ? (e) => onDobleClic({ zonaId: z.id, punto: puntoEnZona(e, e.currentTarget) }) : undefined}
+              onContextMenu={guias && onMenu ? (e) => { e.preventDefault(); onMenu({ x: e.clientX, y: e.clientY, zonaId: z.id, punto: puntoEnZona(e, e.currentTarget) }); } : undefined}
               role={guias ? 'button' : undefined}
               tabIndex={guias ? 0 : undefined}
               aria-label={guias ? `Zona ${z.nombre}` : undefined}
-              onKeyDown={guias ? (e) => { if (e.key === 'Enter') onElegirZona?.(z.id); } : undefined}
+              aria-pressed={guias ? z.id === zonaActiva : undefined}
+              onKeyDown={guias ? (e) => { if (e.key === 'Enter' && e.target === e.currentTarget) onElegirZona?.(z.id); } : undefined}
             >
               <div className={s.recorte}>
                 {(capas[z.id] || []).map((c) => (
                   <span
                     key={c.id}
-                    className={[s.capa, guias && c.id === seleccion && s.capaElegida].filter(Boolean).join(' ')}
+                    data-capa={c.id}
+                    className={[s.capa, guias && elegidas.includes(c.id) && s.capaElegida, guias && elegidas.length > 1 && elegidas.includes(c.id) && s.capaVarias].filter(Boolean).join(' ')}
                     style={{
                       left: `${(c.x ?? 0.5) * 100}%`,
                       top: `${(c.y ?? 0.5) * 100}%`,
@@ -228,6 +312,24 @@ export function LienzoPrenda({
                     onPointerUp={guias ? soltar : undefined}
                     onPointerCancel={guias ? soltar : undefined}
                     onClick={(e) => e.stopPropagation()}
+                    onDoubleClick={guias && onDobleClic ? (e) => { e.stopPropagation(); onDobleClic({ capaId: c.id, zonaId: z.id }); } : undefined}
+                    onContextMenu={guias && onMenu ? (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (!elegidas.includes(c.id)) onElegirCapa?.(c.id, z.id, {});
+                      onMenu({ x: e.clientX, y: e.clientY, capaId: c.id, zonaId: z.id });
+                    } : undefined}
+                    // Con el teclado: Tab llega a cada capa; Enter la elige (Shift+Enter la suma).
+                    tabIndex={guias ? 0 : undefined}
+                    role={guias ? 'button' : undefined}
+                    aria-pressed={guias ? elegidas.includes(c.id) : undefined}
+                    aria-label={guias ? (c.tipo === 'imagen' ? 'Imagen' : `Texto «${c.texto || ''}»`) : undefined}
+                    onKeyDown={guias ? (e) => {
+                      if (e.key !== 'Enter' && e.key !== ' ') return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onElegirCapa?.(c.id, z.id, { sumar: e.shiftKey });
+                    } : undefined}
                   >
                     {c.tipo === 'imagen' ? (
                       <img src={c.src} alt="" draggable={false} />
@@ -240,10 +342,16 @@ export function LienzoPrenda({
                 ))}
               </div>
               {activa && <span className={s.zonaNombre} style={z.angulo ? { transform: `translateX(-50%) rotate(${-z.angulo}deg)` } : undefined}>{z.nombre}</span>}
+              {soltarEn === z.id && <span className={s.zonaSoltar} aria-hidden="true" />}
             </div>
           );
         })}
       </div>
+      {soltarEn && (
+        <p className={s.soltarAviso} role="status">
+          Suelta tu imagen en <strong>{zonas.find((z) => z.id === soltarEn)?.nombre || 'la zona'}</strong>
+        </p>
+      )}
       {encima}
     </div>
   );
@@ -257,12 +365,16 @@ export function LienzoPrenda({
  *  - onAchicar, onAgrandar, onCentrar, onQuitar · onImagen, onTexto
  *  - zoom, onZoom(z) · onAtajos
  */
+export const NIVELES_ZOOM = [1, 1.5, 2, 3, 4, 6, 8];
+/** El nivel siguiente (o anterior) al zoom de ahora, aunque esté entre dos (Ctrl + rueda). */
+export const zoomVecino = (zoom, sube) => (sube
+  ? NIVELES_ZOOM.find((n) => n > zoom + 0.01) ?? NIVELES_ZOOM[NIVELES_ZOOM.length - 1]
+  : [...NIVELES_ZOOM].reverse().find((n) => n < zoom - 0.01) ?? 1);
+
 export function BarraLienzo({
   puedeDeshacer, puedeRehacer, onDeshacer, onRehacer, elegido = false,
   onAchicar, onAgrandar, onCentrar, onQuitar, onImagen, onTexto, zoom = 1, onZoom, onAtajos,
 }) {
-  const NIVELES = [1, 1.5, 2, 3, 4];
-  const i = NIVELES.indexOf(zoom);
   const B = (props) => <Boton variante="fantasma" tamano="sm" soloIcono {...props} />;
   return (
     <div className={s.barra} role="toolbar" aria-label="Herramientas del lienzo" data-componente="BarraLienzo">
@@ -284,9 +396,9 @@ export function BarraLienzo({
       </span>
       {/* En el celular se acerca con los dedos: el zoom queda para el ratón. */}
       <span className={[s.grupoBarra, s.grupoZoom].join(' ')}>
-        <B aria-label="Alejar" icono={<ZoomOut aria-hidden="true" />} disabled={i <= 0} onClick={() => onZoom?.(NIVELES[Math.max(0, i - 1)])} />
-        <button type="button" className={s.zoomValor} onClick={() => onZoom?.(1)} title="Ver la prenda completa">{Math.round(zoom * 100)}%</button>
-        <B aria-label="Acercar" icono={<ZoomIn aria-hidden="true" />} disabled={i >= NIVELES.length - 1} onClick={() => onZoom?.(NIVELES[Math.min(NIVELES.length - 1, i + 1)])} />
+        <B aria-label="Alejar (Ctrl −)" icono={<ZoomOut aria-hidden="true" />} disabled={zoom <= 1} onClick={() => onZoom?.(zoomVecino(zoom, false))} />
+        <button type="button" className={s.zoomValor} onClick={() => onZoom?.(1)} title="Ver la prenda completa (Shift+1)">{Math.round(zoom * 100)}%</button>
+        <B aria-label="Acercar (Ctrl +)" icono={<ZoomIn aria-hidden="true" />} disabled={zoom >= NIVELES_ZOOM[NIVELES_ZOOM.length - 1]} onClick={() => onZoom?.(zoomVecino(zoom, true))} />
         {onAtajos && <B aria-label="Atajos de teclado" icono={<Keyboard aria-hidden="true" />} onClick={onAtajos} className={s.soloRaton} />}
       </span>
     </div>
@@ -515,7 +627,7 @@ export function EfectosTexto({ capa, onCambiar }) {
   );
 }
 
-const ALINEAR = [
+export const ALINEAR = [
   ['izquierda', AlignStartVertical, 'Izquierda'], ['centroH', AlignCenterVertical, 'Al centro'], ['derecha', AlignEndVertical, 'Derecha'],
   ['arriba', AlignStartHorizontal, 'Arriba'], ['centroV', AlignCenterHorizontal, 'Al medio'], ['abajo', AlignEndHorizontal, 'Abajo'],
 ];
@@ -691,6 +803,141 @@ export function EstadoEdicion({ esBorrador = false, estadoBorrador = 'guardado',
         </span>
       )}
       {onEmpezarNuevo && <Boton variante="fantasma" tamano="sm" icono={<Plus aria-hidden="true" />} onClick={onEmpezarNuevo}>Empezar uno nuevo</Boton>}
+    </div>
+  );
+}
+
+/**
+ * El panel con varias capas elegidas (Shift o Ctrl + clic, Ctrl+A): alinear
+ * entre ellas, el mismo espacio entre tres o más, centrar el grupo, duplicar
+ * y quitar. Si están en zonas distintas, solo duplicar y quitar.
+ *  - cantidad · mismaZona · onListo · onAlinear(donde) · onDistribuir('h' |
+ *    'v') · onCentrar · onDuplicar · onQuitar
+ */
+export function PanelVarios({ cantidad, mismaZona = true, onListo, onAlinear, onDistribuir, onCentrar, onDuplicar, onQuitar }) {
+  return (
+    <div className={s.panelCapa} data-componente="PanelVarios">
+      <header className={s.panelCabeza}>
+        <div>
+          <h2 className={s.panelTitulo}>{cantidad} elementos elegidos</h2>
+          <p className={s.panelAyuda}>Se mueven juntos al arrastrar uno.</p>
+        </div>
+        <Boton tamano="sm" icono={<Check aria-hidden="true" />} onClick={onListo}>Listo</Boton>
+      </header>
+      {mismaZona ? (
+        <>
+          <div className={s.grupoCampo}>
+            <span className={s.rotulo}>Alinear entre ellos</span>
+            <span className={s.alinear}>
+              {ALINEAR.map(([id, Icono, texto]) => (
+                <Boton key={id} variante="contorno" tamano="sm" soloIcono aria-label={texto} title={texto} icono={<Icono aria-hidden="true" />} onClick={() => onAlinear?.(id)} />
+              ))}
+            </span>
+          </div>
+          {cantidad > 2 && (
+            <div className={s.grupoCampo}>
+              <span className={s.rotulo}>Mismo espacio entre ellos</span>
+              <span className={s.chips}>
+                <Boton variante="contorno" tamano="sm" icono={<AlignHorizontalDistributeCenter aria-hidden="true" />} onClick={() => onDistribuir?.('h')}>De lado a lado</Boton>
+                <Boton variante="contorno" tamano="sm" icono={<AlignVerticalDistributeCenter aria-hidden="true" />} onClick={() => onDistribuir?.('v')}>De arriba abajo</Boton>
+              </span>
+            </div>
+          )}
+        </>
+      ) : (
+        <p className={[s.calidad, s.calidad_aviso].join(' ')}>Están en zonas distintas: para alinearlos, elige solo los de una zona.</p>
+      )}
+      <div className={s.grupoCampo}>
+        <span className={s.rotulo}>El grupo</span>
+        <span className={s.chips}>
+          {mismaZona && <Boton variante="contorno" tamano="sm" icono={<Crosshair aria-hidden="true" />} onClick={onCentrar}>Centrar en la zona</Boton>}
+          <Boton variante="contorno" tamano="sm" icono={<Copy aria-hidden="true" />} onClick={onDuplicar}>Duplicar</Boton>
+          <Boton variante="contorno" tamano="sm" icono={<Trash2 aria-hidden="true" />} onClick={onQuitar} className={s.peligro}>Quitar los {cantidad}</Boton>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+const MOD = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || '') ? '⌘' : 'Ctrl';
+
+/** Los atajos del estudio en cuatro grupos (los de Crear). `lados`: los nombres de los lados, para 1, 2… */
+const gruposAtajos = (lados = []) => [
+  {
+    titulo: 'General',
+    atajos: [
+      [[[MOD, 'Z']], 'Deshacer'],
+      [[[MOD, 'Y'], [MOD, 'Shift', 'Z']], 'Rehacer'],
+      [[[MOD, 'S']], 'Guardar'],
+      [[['T']], 'Agregar texto'],
+      [[['I']], 'Subir imagen'],
+      [[[MOD, 'V']], 'Pegar una imagen copiada, un texto o lo que copiaste'],
+      [[[MOD, 'A']], 'Elegir todo lo de este lado'],
+      ...(lados.length > 1 ? [[[lados.slice(0, 9).map((_, i) => String(i + 1))], lados.slice(0, 9).join(' / ')]] : []),
+      [[['?']], 'Ver estos atajos'],
+    ],
+  },
+  {
+    titulo: 'Zoom',
+    atajos: [
+      [[[MOD, '+'], [MOD, '−']], 'Acercar / alejar la prenda'],
+      [[[MOD, '0'], ['Shift', '1']], 'Ver la prenda entera'],
+      [[['Shift', '2']], 'Acercar a lo elegido'],
+    ],
+  },
+  {
+    titulo: 'Con algo elegido',
+    atajos: [
+      [[['←', '↑', '→', '↓']], 'Mover (con Shift, más rápido)'],
+      [[['+'], ['−']], 'Agrandar / achicar'],
+      [[['R']], 'Girar (Shift+R al otro lado)'],
+      [[['C']], 'Centrar en la zona'],
+      [[['F']], 'Voltear imagen'],
+      [[[']'], ['[']], 'Adelante / atrás'],
+      [[[MOD, 'D']], 'Duplicar'],
+      [[[MOD, 'C'], [MOD, 'X']], 'Copiar / cortar'],
+      [[['Supr']], 'Quitar'],
+      [[['Esc']], 'Soltar la selección'],
+    ],
+  },
+  {
+    titulo: 'Con el ratón',
+    atajos: [
+      [[['Doble clic']], 'En la zona vacía: texto nuevo ahí · en una imagen: recortar'],
+      [[['Clic derecho']], 'Más opciones'],
+      [[['Shift', 'Clic'], [MOD, 'Clic']], 'Sumar o quitar de la selección'],
+      [[[MOD, 'Rueda']], 'Zoom hacia el puntero (o pellizca en el trackpad)'],
+      [[['Rueda']], 'Con zoom: subir / bajar por la prenda (Shift: a los costados)'],
+      [[['Espacio', 'Arrastrar'], ['Botón del medio']], 'Mover la vista (con zoom)'],
+      [[['Arrastrar una imagen']], 'Desde la computadora, a la zona donde la sueltas'],
+    ],
+  },
+];
+
+/** Los atajos de teclado del estudio, en grupos (va dentro de una HojaInferior). */
+export function AtajosEstudio({ lados = [] }) {
+  return (
+    <div className={s.atajosGrupos} data-componente="AtajosEstudio">
+      {gruposAtajos(lados).map((g) => (
+        <section key={g.titulo} className={s.atajosGrupo}>
+          <h3 className={s.rotulo}>{g.titulo}</h3>
+          <dl className={s.atajosLista}>
+            {g.atajos.map(([combinaciones, que]) => (
+              <React.Fragment key={que}>
+                <dt>
+                  {combinaciones.map((teclas, i) => (
+                    <React.Fragment key={teclas.join('+')}>
+                      {i > 0 && <span className={s.atajoO}> o </span>}
+                      {teclas.map((t, j) => <React.Fragment key={t}>{j > 0 && '+'}<kbd>{t}</kbd></React.Fragment>)}
+                    </React.Fragment>
+                  ))}
+                </dt>
+                <dd>{que}</dd>
+              </React.Fragment>
+            ))}
+          </dl>
+        </section>
+      ))}
     </div>
   );
 }
