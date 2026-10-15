@@ -192,6 +192,75 @@ function ramp(t) {
   return stops[stops.length - 1].c;
 }
 
+// Texto normalizado para comparar el elemento guardado con el de la página
+// (mismo criterio que heatmapData.textoLegible, en minúsculas).
+function normTexto(value) {
+  return String(value || '')
+    .replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '')
+    .replace(/\s+/g, ' ')
+    .replace(/^[^\p{L}\p{N}]+/u, '')
+    .trim()
+    .toLowerCase();
+}
+
+// Clave del ranking 'Enlace:crear' -> { tipo: 'Enlace', texto: 'crear' }.
+// Las claves 'sel:…' / 'tipo:…' son de elementos sin texto.
+function partesDeClave(key) {
+  const i = typeof key === 'string' ? key.indexOf(':') : -1;
+  if (i < 0) return { tipo: '', texto: '' };
+  const tipo = key.slice(0, i);
+  if (tipo === 'sel' || tipo === 'tipo') return { tipo, texto: '' };
+  return { tipo, texto: key.slice(i + 1) };
+}
+
+// Dónde buscar cada tipo en la página para ubicarlo por su texto.
+const SELECTOR_POR_TIPO = {
+  Enlace: 'a',
+  'Botón': 'button, [role="button"]',
+  Campo: 'input, textarea',
+  Selector: 'select',
+  'Opción': 'label',
+};
+
+// ¿Algún texto del elemento de la página es el texto guardado del clic?
+// Con "…" (texto cortado a 40 caracteres) basta con que empiece igual. En las
+// "Zonas" (clic en un recuadro o texto) basta con que uno contenga al otro.
+function coincideTexto(textos, objetivo, tipo) {
+  if (!objetivo) return true;
+  const cortado = objetivo.endsWith('…');
+  const base = cortado ? objetivo.slice(0, -1).trim() : objetivo;
+  if (!base) return true;
+  return textos.some((t) => {
+    if (!t) return false;
+    if (t === base) return true;
+    if ((cortado || t.length > 40) && t.startsWith(base)) return true;
+    return tipo === 'Zona' && (t.includes(base) || base.includes(t));
+  });
+}
+
+// Textos con los que se puede reconocer un elemento: el visible, aria-label,
+// title, alt de su imagen, y los mismos de su botón/enlace contenedor.
+function textosDe(el) {
+  const de = (n) => (n ? [
+    normTexto(n.innerText || n.textContent),
+    normTexto(n.getAttribute && n.getAttribute('aria-label')),
+    normTexto(n.getAttribute && n.getAttribute('title')),
+    normTexto(n.querySelector && n.querySelector('img[alt]')?.getAttribute('alt')),
+  ] : []);
+  const accionable = el.closest && el.closest('a, button, [role="button"], [data-track], [aria-label]');
+  return [...de(el), ...(accionable && accionable !== el ? de(accionable) : [])].filter(Boolean);
+}
+
+// Caja visible del elemento en px de la página (con el iframe en scroll 0), o
+// null si está oculto (menú cerrado, cajón fuera de pantalla, opacidad 0…).
+function cajaVisible(win, el) {
+  const r = el.getBoundingClientRect();
+  if (r.width <= 0 || r.height <= 0 || r.right <= 0 || r.left >= win.innerWidth) return null;
+  const estilo = win.getComputedStyle(el);
+  if (estilo.visibility === 'hidden' || Number(estilo.opacity) === 0) return null;
+  return { x: r.left, y: r.top, w: r.width, h: r.height };
+}
+
 // Texto de un elemento del ranking ("Sin texto (2)" si no tiene).
 function textoElemento(el) {
   if (el.texto) return el.texto;
@@ -249,9 +318,13 @@ export default function HeatmapViewer({
   const [temaPreview, setTemaPreview] = useState('light');
   // Opacidad del calor (0.3..1): bajarla deja leer la página debajo.
   const [opacidadCalor, setOpacidadCalor] = useState(0.85);
-  // Anclas medidas en la vista previa: ruta CSS -> caja del elemento en px de
-  // la página (sin escalar). null = aún sin medir.
+  // Elementos medidos en la vista previa (px de la página, sin escalar):
+  //   porSel:   ruta CSS del ancla -> { caja, textos }
+  //   porTexto: clave del ranking -> cajas de los elementos con ese texto
+  // null = aún sin medir.
   const [anclas, setAnclas] = useState(null);
+  // Mostrar también los clics que no se pueden ubicar en la página actual.
+  const [mostrarSinUbicar, setMostrarSinUbicar] = useState(false);
   // Elemento del ranking elegido (su `key`): se señala en la vista previa.
   const [elegido, setElegido] = useState(null);
   const [verTodosElementos, setVerTodosElementos] = useState(false);
@@ -464,29 +537,57 @@ export default function HeatmapViewer({
   //  2) Pantalla exacta: pageX/pageY tal cual (mismo layout que el visitante).
   //  3) 'Todas' sin ancla: fracción del alto de la página (o pantallas bajadas
   //     en los clics viejos) -> posición APROXIMADA.
-  const { pixelPoints, clicsAproximados } = useMemo(() => {
-    let aproximados = 0;
+  //
+  // Cada clic se ubica sobre un elemento REAL de la página actual:
+  //  1) su ancla (ruta CSS), si el elemento de esa ruta tiene el mismo texto
+  //     que el clic (si la página cambió, la ruta puede apuntar a otra cosa);
+  //  2) si no, el elemento con su mismo tipo y texto (sirve para los clics
+  //     viejos sin ancla); con varios iguales, el más cercano a donde cayó.
+  //  3) si no hay ninguno, el clic queda "sin ubicar": su elemento ya no está
+  //     (se eliminó o cambió de texto) o es un clic viejo sin texto. Esos no
+  //     se pintan (salvo que se pida), para no señalar cosas que no existen.
+  const { pixelPoints, sinUbicar } = useMemo(() => {
+    let sinUbicarN = 0;
     const lista = visiblePoints.map((p) => {
-      const a = p.sel && anclas ? anclas.get(p.sel) : null;
-      if (a) {
-        return {
-          cx: (a.x + p.rx * a.w) * scale,
-          cy: Math.min(a.y + p.ry * a.h, docH) * scale,
-          el: p.el,
-          caja: { x: a.x * scale, y: a.y * scale, w: a.w * scale, h: a.h * scale },
-        };
-      }
-      if (exacta) return { cx: p.px * scale, cy: Math.min(p.py, docH) * scale, el: p.el, caja: null };
-      aproximados += 1;
-      return {
-        cx: p.xNorm * stageW,
-        cy: (p.yFrac != null ? p.yFrac * docH : Math.min(p.yScreens * pantalla.h, docH)) * scale,
+      const xAprox = exacta ? p.px : p.xNorm * pantalla.w;
+      const yAprox = exacta
+        ? Math.min(p.py, docH)
+        : (p.yFrac != null ? p.yFrac * docH : Math.min(p.yScreens * pantalla.h, docH));
+      const enCaja = (a) => ({
+        cx: (a.x + p.rx * a.w) * scale,
+        cy: Math.min(a.y + p.ry * a.h, docH) * scale,
         el: p.el,
-        caja: null,
-      };
+        caja: { x: a.x * scale, y: a.y * scale, w: a.w * scale, h: a.h * scale },
+        ubicado: true,
+      });
+
+      const { tipo, texto } = partesDeClave(p.el);
+      const ancla = p.sel && anclas ? anclas.porSel.get(p.sel) : null;
+      if (ancla && coincideTexto(ancla.textos, texto, tipo)) return enCaja(ancla.caja);
+
+      const candidatos = p.el && anclas ? anclas.porTexto.get(p.el) : null;
+      if (candidatos && candidatos.length > 0) {
+        const cercano = candidatos.reduce((m, c) => (
+          Math.abs(c.y + c.h / 2 - yAprox) < Math.abs(m.y + m.h / 2 - yAprox) ? c : m
+        ));
+        return enCaja(cercano);
+      }
+
+      if (anclas) sinUbicarN += 1;
+      return { cx: xAprox * scale, cy: yAprox * scale, el: p.el, caja: null, ubicado: !anclas };
     });
-    return { pixelPoints: lista, clicsAproximados: aproximados };
-  }, [visiblePoints, anclas, exacta, stageW, docH, pantalla.h, scale]);
+    return { pixelPoints: lista, sinUbicar: sinUbicarN };
+  }, [visiblePoints, anclas, exacta, docH, pantalla.w, pantalla.h, scale]);
+
+  // Claves del ranking que se encontraron en la página actual.
+  const clavesEnPagina = useMemo(() => {
+    if (!anclas) return null;
+    const set = new Set(anclas.porTexto.keys());
+    pixelPoints.forEach((p) => {
+      if (p.ubicado && p.el) set.add(p.el);
+    });
+    return set;
+  }, [anclas, pixelPoints]);
 
   // Mide el ancho disponible del marco (responsive / cambio de layout).
   const hasData = !loading && !error && data.totalClicks > 0;
@@ -506,31 +607,22 @@ export default function HeatmapViewer({
 
   // Con un elemento elegido, el calor muestra solo sus clics.
   const puntosCalor = useMemo(
-    () => (elegido ? pixelPoints.filter((p) => p.el === elegido) : pixelPoints),
-    [elegido, pixelPoints]
+    () => pixelPoints.filter((p) => (
+      (!elegido || p.el === elegido) && (p.ubicado || mostrarSinUbicar)
+    )),
+    [elegido, pixelPoints, mostrarSinUbicar]
   );
 
-  // Recuadros que señalan el elemento elegido: la caja real del elemento si se
-  // encontró en la vista previa (puede haber varias: el "Crear" del menú y el
-  // del pie), o un recuadro alrededor de sus clics si no.
+  // Recuadros que señalan el elemento elegido: SOLO cajas de elementos reales
+  // encontrados en la página (puede haber varias: el "Crear" del menú y el del
+  // pie). Si no se encontró, no se inventa ningún recuadro: la barra lo avisa.
   const marcas = useMemo(() => {
-    if (!elegido || puntosCalor.length === 0) return [];
+    if (!elegido) return [];
     const cajas = new Map();
-    const sueltos = [];
     puntosCalor.forEach((p) => {
       if (p.caja) cajas.set(`${Math.round(p.caja.x)}|${Math.round(p.caja.y)}`, p.caja);
-      else sueltos.push(p);
     });
-    const lista = [...cajas.values()];
-    if (sueltos.length > 0) {
-      const xs = sueltos.map((p) => p.cx);
-      const ys = sueltos.map((p) => p.cy);
-      const pad = 14;
-      const x = Math.max(0, Math.min(...xs) - pad);
-      const y = Math.max(0, Math.min(...ys) - pad);
-      lista.push({ x, y, w: Math.max(...xs) + pad - x, h: Math.max(...ys) + pad - y, aproximada: true });
-    }
-    return lista.sort((a, b) => a.y - b.y).slice(0, 6);
+    return [...cajas.values()].sort((a, b) => a.y - b.y).slice(0, 6);
   }, [elegido, puntosCalor]);
 
   // (Re)dibuja el heatmap sobre la página completa.
@@ -585,28 +677,40 @@ export default function HeatmapViewer({
     const win = iframeRef.current?.contentWindow;
     const doc = iframeRef.current?.contentDocument;
     if (!win || !doc) return;
-    const sels = [...new Set(points.map((p) => p.sel).filter(Boolean))];
-    const medidas = new Map();
-    if (sels.length > 0) {
-      const scrollAntes = win.scrollY;
-      win.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-      sels.forEach((sel) => {
-        let el = null;
-        try {
-          el = doc.querySelector(sel);
-        } catch {
-          el = null;
-        }
-        if (!el) return;
-        const r = el.getBoundingClientRect();
-        if (r.width <= 0 || r.height <= 0 || r.right <= 0 || r.left >= win.innerWidth) return;
-        const estilo = win.getComputedStyle(el);
-        if (estilo.visibility === 'hidden' || Number(estilo.opacity) === 0) return;
-        medidas.set(sel, { x: r.left, y: r.top, w: r.width, h: r.height });
-      });
-      win.scrollTo({ top: scrollAntes, left: 0, behavior: 'instant' });
-    }
-    setAnclas(medidas);
+    const porSel = new Map();
+    const porTexto = new Map();
+    const scrollAntes = win.scrollY;
+    win.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+
+    // 1) Anclas por ruta CSS.
+    [...new Set(points.map((p) => p.sel).filter(Boolean))].forEach((sel) => {
+      let el = null;
+      try {
+        el = doc.querySelector(sel);
+      } catch {
+        el = null;
+      }
+      const caja = el ? cajaVisible(win, el) : null;
+      if (caja) porSel.set(sel, { caja, textos: textosDe(el) });
+    });
+
+    // 2) Elementos por su tipo y texto (enlaces, botones, campos…).
+    const porTipo = {};
+    [...new Set(points.map((p) => p.el).filter(Boolean))].forEach((key) => {
+      const { tipo, texto } = partesDeClave(key);
+      const selector = SELECTOR_POR_TIPO[tipo];
+      if (!selector || !texto) return;
+      if (!porTipo[tipo]) {
+        porTipo[tipo] = [...doc.querySelectorAll(selector)]
+          .map((el) => ({ caja: cajaVisible(win, el), textos: textosDe(el) }))
+          .filter((c) => c.caja);
+      }
+      const encontrados = porTipo[tipo].filter((c) => coincideTexto(c.textos, texto, tipo)).map((c) => c.caja);
+      if (encontrados.length > 0) porTexto.set(key, encontrados.slice(0, 10));
+    });
+
+    win.scrollTo({ top: scrollAntes, left: 0, behavior: 'instant' });
+    setAnclas({ porSel, porTexto });
   }, [points]);
 
   // Se mide al cargar y otra vez cuando la página termina de pintar contenido
@@ -865,7 +969,11 @@ export default function HeatmapViewer({
                       ? `${puntosCalor.length.toLocaleString('es-PE')} ${puntosCalor.length === 1 ? 'clic' : 'clics'}${
                         marcas.length > 1 ? ` en ${marcas.length} lugares de la página (desplázate para verlos)` : ''
                       }`
-                      : 'No se ve en esta vista: puede estar en un menú o ventana que estaba abierta, o en otra pantalla.'}
+                      : !anclas
+                        ? 'Buscándolo en la página…'
+                        : elElegido.texto && SELECTOR_POR_TIPO[elElegido.tipo]
+                          ? 'Ya no está en la página: se eliminó, cambió de texto o solo aparece al abrir un menú.'
+                          : 'No se puede señalar: son clics antiguos que no guardaron en qué elemento fueron.'}
                   </span>
                   <button type="button" className={styles.seleccionQuitar} onClick={() => setElegido(null)}>
                     Ver todo el mapa
@@ -935,7 +1043,7 @@ export default function HeatmapViewer({
                   {marcas.map((m, i) => (
                     <div
                       key={`${elegido}-${i}`}
-                      className={`${styles.marca} ${m.aproximada ? styles.marcaAproximada : ''}`}
+                      className={styles.marca}
                       style={{ left: `${m.x}px`, top: `${m.y}px`, width: `${m.w}px`, height: `${m.h}px` }}
                       aria-hidden="true"
                     >
@@ -999,11 +1107,18 @@ export default function HeatmapViewer({
                   El rojo marca la zona más clicada de esta página; el resto se compara con ella.
                   {hayScroll ? ' Desplázate dentro de la vista para recorrer toda la página.' : ''}
                 </p>
-                {clicsAproximados > 0 && (
+                {sinUbicar > 0 && (
                   <p>
-                    {clicsAproximados.toLocaleString('es-PE')} de {visiblePoints.length.toLocaleString('es-PE')} clics
-                    están en una posición aproximada (son de antes del 15/10/2026 o su botón ya no está en
-                    la página). Elige una pantalla del visitante para verlos exactos.
+                    {sinUbicar.toLocaleString('es-PE')} de {visiblePoints.length.toLocaleString('es-PE')} clics no
+                    se pueden ubicar en la página actual (su elemento ya no está o son clics antiguos sin
+                    ubicación) y {mostrarSinUbicar ? 'se muestran en una posición aproximada.' : 'no se muestran.'}{' '}
+                    <button
+                      type="button"
+                      className={styles.notaBoton}
+                      onClick={() => setMostrarSinUbicar((v) => !v)}
+                    >
+                      {mostrarSinUbicar ? 'Ocultarlos' : 'Mostrarlos igual'}
+                    </button>
                   </p>
                 )}
               </div>
@@ -1044,6 +1159,11 @@ export default function HeatmapViewer({
                               <span className={styles.rankTrack}>
                                 <span className={styles.rankFill} style={{ width: `${pct}%` }} />
                               </span>
+                              {clavesEnPagina && !clavesEnPagina.has(el.key) && (
+                                <span className={styles.rankAusente}>
+                                  {el.texto && SELECTOR_POR_TIPO[el.tipo] ? 'Ya no está en la página' : 'Sin ubicación exacta'}
+                                </span>
+                              )}
                             </span>
                             <span className={styles.rankCount}>
                               {el.count.toLocaleString('es-PE')}

@@ -180,6 +180,11 @@ sub-páginas los filtros **se heredan** y un enlace copiado conserva la vista ex
   el elemento se **señala** en la vista previa con un recuadro numerado (la caja real del
   elemento si se encontró; punteado alrededor de los clics si no), la vista baja hasta él y el
   calor muestra solo sus clics. Los clics viejos de la barra de admin se descartan.
+  **Solo se señala lo que existe:** cada clic se ubica sobre un elemento real de la página
+  actual: su ancla si el elemento de esa ruta tiene el mismo texto (si la página cambió, la ruta
+  puede apuntar a otra cosa), si no el enlace/botón con su mismo texto (sirve para clics viejos;
+  con varios iguales, el más cercano). Los que no se encuentran **no se pintan** (botón "Mostrarlos
+  igual") y en el ranking dicen "Ya no está en la página" o "Sin ubicación exacta".
 
 > **Requiere redeploy de functions:** los desgloses nuevos (país/dispositivo/navegador/SO,
 > identidades, top visitantes, embudo completo) salen de campos que agrega la versión nueva de

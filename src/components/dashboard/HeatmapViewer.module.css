@@ -888,9 +888,24 @@
   animation: marcaEntra 0.35s ease-out;
 }
 
-/* Sin ancla: el recuadro rodea los clics (posición aproximada). */
-.marcaAproximada {
-  border-style: dashed;
+/* Fila del ranking cuyo elemento ya no está en la página actual. */
+.rankAusente {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #b45309;
+}
+
+/* Botón de texto dentro de las notas bajo el mapa. */
+.notaBoton {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-color, #6D28D9);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .marcaNum {
