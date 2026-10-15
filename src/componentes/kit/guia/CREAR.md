@@ -225,57 +225,121 @@ Las piezas están en `piezas/Estudio.jsx`:
   `proporcion`, `angulo` de la prenda base; el alto es `altoZonaFraccion`) y
   la elegida lleva su nombre. Las capas se arrastran dentro de su zona y lo
   que sale de ella se recorta, como en la impresión. El texto se mide en
-  `cqw` de la zona, así escala con la prenda. Con `guias={false}` es la foto
-  final (sin zonas), la de "Guarda tu creación".
+  `cqw` de la zona, así escala con la prenda; con `curva` se dibuja en un
+  arco (SVG). Con `guias={false}` es la foto final (sin zonas), la de
+  "Guarda tu creación". Además:
+  - `seleccion`: una capa o varias (Shift o Ctrl + clic las suma; arrastrar
+    una de ellas mueve todas) · `onMenu`: clic derecho o toque largo ·
+    `onDobleClic`: en una zona vacía escribe un texto ahí; en un texto lo
+    edita; en una imagen la recorta.
+  - `onSoltarArchivo(archivo, zona)`: una imagen arrastrada desde la
+    computadora, con "Suelta tu imagen en …" sobre la zona.
+  - `zoom` y `camara` (la vista): con zoom, arrastrar el fondo, Espacio o el
+    botón del medio la recorren; `onRueda` con Ctrl acerca hacia el puntero.
+  - `onGesto({ fase, factor, giro, centro })`: dos dedos. Con algo elegido o
+    con zoom los dedos son del lienzo (`touch-action: none`); si no, un dedo
+    desplaza la página y dos acercan la prenda (`pan-x pan-y`).
+  - `cargando`: "Cargando tu diseño…" encima, con `aria-busy`.
+  - Con el teclado: Tab llega a cada zona y a cada capa; Enter la elige.
 - **`BarraLienzo`**: deshacer y rehacer; con algo elegido, achicar, agrandar,
-  centrar y quitar; + Imagen y + Texto; el zoom (no en el celular: ahí se
-  acerca con los dedos) y los atajos (solo con ratón).
+  centrar, quitar y, en el celular, **Editar** (baja al panel); + Imagen y +
+  Texto; el zoom (1× a 8×; no en el celular: ahí se acerca con los dedos) y
+  los atajos (solo con ratón).
 - **`PasosEstudio`**: los tres pasos en sellos unidos por una costura, como
   la portada de Crear: **1** el color (`SelectorColor`; si el color tiene
   versión al revés, el `Interruptor` "Invertir colores"), **2** la zona por
   lado (`Chip`, con un punto si ya lleva algo), **3** "Subir imagen" o
   "Escribir texto" y dónde se agrega.
 - **`PanelCapa`**: lo elegido, con "Listo". La imagen dice su calidad de
-  impresión (buena, aceptable o baja, por sus píxeles contra el ancho que
-  ocupa) y tiene quitar fondo y recortar (`RecortarFoto`; sin sesión van
-  apagados, como en la tienda) y "Llenar zona". El texto: el texto, la letra
-  (`Campo` con `opciones`, cada una con su muestra y su grupo: Simples,
-  Gruesas, Deportivas y retro, Elegantes, Escritas a mano), el tamaño
-  (`Cantidad`), negrita y cursiva (`Chip`), 8 colores (`SelectorColor`) y el
-  estilo (Normal, Contorno, Sombra, Sticker). Los dos: ajustar, girar,
-  alinear en la zona y, en `Acordeon`, voltear, traer adelante, enviar
-  atrás, duplicar y pasar a otra zona.
+  impresión (buena, aceptable o baja, con la regla de `calidadDeCapa`) y
+  tiene quitar fondo, recortar (sin sesión van apagados, como en la tienda)
+  y "Llenar zona". El texto: el texto, la letra (`Campo` con `opciones`, cada
+  una con su muestra y su grupo), el **alto de la letra en cm** (`Cantidad
+  editable`, si la zona trae `anchoCm`), negrita y cursiva (`Chip`), el color
+  (`SelectorColor` con `libre`: el arcoíris abre el hex) y **`EfectosTexto`**
+  (Normal, Contorno, Sombra, Sticker, Arco y, en un `Acordeon`, contorno,
+  sombra y curva a medida con `Deslizador`). Los dos: ajustar, girar de 90°
+  en 90°, alinear contra los bordes de la zona, "Una parte queda fuera de la
+  zona" y, en `Acordeon`, voltear, traer adelante, enviar atrás, duplicar y
+  pasar a otra zona. Al final, **Agregar otro: Imagen · Texto**.
+- **`PanelVarios`**: con dos o más elegidas, alinearlas entre ellas,
+  repartirlas (tres o más), centrar el grupo, duplicar y quitar.
+- **`EstadoEdicion`**: al editar algo guardado, cómo va el borrador
+  (guardando, guardado o error) o "Estás editando «nombre» ✎" (se renombra
+  ahí mismo, `TituloEditable`) y si hay cambios sin guardar; siempre,
+  "Empezar uno nuevo".
+- **`GuiaGestos`**: la primera vez que se toca algo con el dedo, sobre la
+  prenda: un dedo mueve, dos agrandan y giran, dos toques escriben.
+- **`AtajosEstudio`**: la lista de atajos por grupos (editar, mover y
+  ordenar, vista, agregar).
+
+Piezas sueltas que usa (sirven en otras páginas):
+
+- **`RecortarFoto forma="libre"`**: un recuadro con sus 4 esquinas, "Quitar
+  bordes transparentes" y "Restablecer"; conserva la transparencia y la
+  imagen se queda en el mismo lugar de la prenda.
+- **`QuitarFondo`**: el editor de quitar el fondo (varita, borrar, restaurar,
+  mover; tolerancia, pincel, zoom, fondos para ver, deshacer). Los píxeles
+  los hace el `motor` que llega por props (en la tienda,
+  `pages/Crear/fondoPixeles.js`).
+- **`MenuContextual`**: en escritorio una lista flotante con los atajos; en
+  el celular, una `HojaInferior` con las mismas opciones.
+- En `Formulario`: `Deslizador`, `CampoHex` y `SelectorColor libre`.
 
 La página (`PaginaEstudio`):
 
-- **Cabeza:** volver, la prenda con su color y los lados con diseño, y el
-  precio. Debajo, un `Aviso` según cómo se abrió: una prenda de un combo
-  ("Prenda 2 de 2 de tu combo…"), editando una creación, desde un diseño de
-  la comunidad o sin sesión ("Puedes diseñar sin cuenta…").
+- **Cabeza:** volver (`etiquetaVolver`), la prenda con su color y los lados
+  con diseño, el precio y "Mis creaciones". Debajo, `EstadoEdicion` y un
+  `Aviso` según cómo se abrió: una prenda de un combo, desde un diseño de la
+  comunidad, sin sesión, o una prenda en borrador (`borradorAdmin`, no se
+  compra).
 - **Ancho:** la prenda a la izquierda (fija al bajar) con las pestañas de
   lado (`Pestanas`, con cuántas capas lleva cada uno) y la barra; el panel a
-  la derecha. **Celular:** una columna, y la compra pegada abajo.
-- **Compra:** "Agregar al carrito · S/ X" (o "Listo, usar en el combo"),
-  Guardar (o "Guardar cambios") y Descargar. Sin diseño, apagados.
+  la derecha. **Celular:** una columna, y la compra pegada abajo. El lienzo
+  vacío dice "Empieza tu diseño en …" con Subir imagen y Escribir texto.
+- **Compra:** "Agregar al carrito · S/ X" (o "Listo, usar en el combo", con
+  casillas para ponerlo también en las otras prendas del combo; o "Agotado
+  por ahora"), Guardar (sin cambios se apaga y dice "Guardado"; si ya se
+  guardó, guarda sin preguntar el nombre) y Descargar.
 - **Hojas (`HojaInferior`):** la talla y la cantidad antes de agregar; el
-  nombre al guardar, con la foto; "¡Creación guardada!" (agregar, ver mis
-  creaciones o seguir); sin sesión, "Inicia sesión para guardar"; los
-  atajos. Quitar el fondo espera con `CapaCargando`.
-- **Teclado:** Ctrl+Z y Ctrl+Y, flechas para mover (con Shift, más), + y −,
-  Supr para quitar y Esc para soltar.
-- **Estados:** cargando (`EsqueletoPagina forma="estudio"`, con el aviso si
-  no hay sesión), error y prenda no disponible.
+  nombre al guardar, con la foto; "¡Creación guardada!" (agregar o volver al
+  combo, "Ver mi creación" si `onGuardar` devuelve `{ urlCreacion }`, o
+  seguir); sin sesión, iniciar sesión o crear una cuenta (al guardar, subir
+  una imagen o agregar al carrito: `requiereSesion`); los atajos. Lo que
+  hace la tienda mientras tanto (`procesando`) espera con `CapaCargando`.
+- **Color:** al cambiarlo, el texto negro o blanco pasa al que se lee y lo
+  que estaba en una zona que el nuevo color no tiene (un bicolor) pasa a la
+  de igual nombre (`onAviso` lo cuenta).
+- **Imágenes:** subir, pegar (Ctrl+V) o soltar sobre la prenda
+  (`onSubirImagen(archivo?)`); lo recortado o sin fondo se sube con
+  `onImagenEditada` (sin ella, una URL local).
+- **Teclado:** ver `AtajosEstudio`. Deshacer, rehacer, guardar (Ctrl+S),
+  elegir todo, copiar, cortar, pegar (también de un lado al otro), duplicar,
+  flechas para mover (con Shift, más), + y −, R para girar, F para voltear,
+  C para centrar, [ y ] para el orden, T e I para agregar, 1–9 para el lado,
+  zoom (Ctrl + / − / 0, Shift+1, Shift+2), Supr y Esc.
+- **Celular:** arrastrar con un dedo; con dos, agrandar y girar lo elegido
+  (cerca de un múltiplo de 90° se queda derecho) o acercar la prenda. Se
+  guarda una sola vez en el deshacer, al soltar.
+- **Estados:** cargando (`EsqueletoPagina forma="estudio"`), error, prenda no
+  disponible, agotada, en borrador y el diseño que aún llega
+  (`cargandoDiseno`).
 
 Los datos llegan por `prendaEstudioDesde(producto)` (adaptadores): los lados
-y, por color, sus zonas (`vistasDelColor`: un bicolor usa las suyas), su
-foto, su tinte y sus tallas.
+y, por color, sus zonas (`vistasDelColor`: un bicolor usa las suyas) con su
+medida en cm (`medidaZona`), su foto, su tinte y sus tallas. La tienda pasa
+además `calidadDe` y `fueraDeZona` (los suyos, con fabric); sin ellos, el kit
+usa una aproximación con la medida de la zona.
 
 En la Tienda de prueba es la página **Estudio**, con la polera y el polo
 reales y "Cómo se abre": nuevo, editar una creación, desde la comunidad y
 una prenda de un combo (al terminar vuelve al combo). Todos los "Diseñar",
 "Continuar", "Editar" y "Personalizar" de Crear, una creación y un combo
 llevan ahí. "Subir imagen" pone las caras de Kapi como si fueran fotos (una
-buena, una regular y una chica, para ver los avisos de calidad).
+buena, una regular y una chica, para ver los avisos de calidad) y "Quitar
+fondo" usa el motor real de la tienda. En "Estados" están agotada, en
+borrador, editando un borrador, el borrador que no se guardó y el diseño
+que aún llega.
 
 ## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
 
@@ -338,14 +402,24 @@ alrededor, por partes.
 | Barra de arriba y avisos | `.barraSuperior`, avisos de edición e invitado | cabeza de `PaginaEstudio` + `Aviso` |
 | Barra rápida | la de debajo del lienzo | `BarraLienzo` |
 | Panel sin selección | los tres pasos | `PasosEstudio` |
-| Panel con un elemento | texto / imagen (con `SelectorFuente`) | `PanelCapa` |
-| Modales | talla, guardar, guardada, login, atajos | `HojaInferior` |
-| Recortar | su modal propio | `RecortarFoto forma="cuadrado"` |
+| Panel con un elemento | texto / imagen (con `SelectorFuente`) | `PanelCapa` (+ `EfectosTexto`) |
+| Panel con varios | la barra de alinear y repartir | `PanelVarios` |
+| Edición y borrador | los avisos de "Estás editando" y el autoguardado | `EstadoEdicion` |
+| Modales | talla, guardar, guardada, login, atajos | `HojaInferior` (+ `AtajosEstudio`) |
+| Menú del clic derecho | su menú propio | `MenuContextual` |
+| Guía de los dedos | `.guiaGestos` | `GuiaGestos` |
+| Recortar | su modal propio | `RecortarFoto forma="libre"` |
+| Quitar fondo | `pages/Crear/QuitarFondo.jsx` | `QuitarFondo` con `motor` = `fondoPixeles.js` |
 | Miniatura al guardar | la vista previa renderizada | se queda la de la tienda (`renderVistaPrevia`) |
 
 - `PanelCapa` recibe la capa elegida de fabric traducida a sus campos
-  (`texto`, `fuente`, `tamano`, `color`, `contorno`, `sombra`…) y sus
-  `onCambiar` se aplican al objeto de fabric. `LienzoPrenda` sirve para las
+  (`texto`, `fuente`, `tamano`, `color`, y los efectos con los mismos
+  números que `propiedadesTexto` de `renderDiseno.js`: `contorno` y `sombra`
+  en % del tamaño de la letra, `curva` de −100 a 100, `espaciado` en
+  milésimas de em, `interlineado`, `alineacion`, `sinRelleno`) y sus
+  `onCambiar` se aplican al objeto de fabric. El tamaño en cm sale de
+  `anchoZonaCm`; la guía de los dedos se marca como vista con
+  `onGuiaGestosVista` (hoy, `localStorage` `crear_guia_gestos`). `LienzoPrenda` sirve para las
   miniaturas y para la vista previa de Crear, no reemplaza al lienzo.
 - No se puede perder: el autoguardado del borrador, el aviso al salir sin
   guardar, la regla de la calidad (`calidadDeCapa`), quitar el fondo y

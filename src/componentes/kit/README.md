@@ -159,7 +159,9 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `piezas/Cuenta.jsx` | `CabezaCuenta`, `TarjetaCuenta`, `ListaDatos`, `Estadistica`, `AccesosCuenta`, `IdentidadCuenta`, `ListaEleccion` | Lo común de las páginas de la cuenta |
 | `piezas/DetallePedido.jsx` | `LineaProduccion`, `PagosPedido`, `HojaPagarSaldo` | Detalle de una compra |
 | `piezas/PedidosPorVerificar.jsx` | `PedidosPorVerificar` | Pedidos que coinciden con el documento: verificar el correo o vincular |
-| `piezas/RecortarFoto.jsx` | `RecortarFoto` | Recortar una foto antes de subirla (arrastrar, zoom) |
+| `piezas/RecortarFoto.jsx` | `RecortarFoto` | Recortar una foto antes de subirla (arrastrar, zoom) o, con `forma="libre"`, un recuadro con esquinas que conserva la transparencia (el estudio) |
+| `piezas/QuitarFondo.jsx` | `QuitarFondo` | El editor de quitar el fondo de una imagen (varita, borrar, restaurar, zoom); los píxeles los hace el `motor` que llega por props |
+| `piezas/MenuContextual.jsx` | `MenuContextual` | El menú del clic derecho o del toque largo: lista flotante en escritorio, `HojaInferior` en el celular |
 | `piezas/TarjetaDireccion.jsx` | `TarjetaDireccion` | Una dirección guardada (principal, editar, eliminar con confirmación) |
 | `piezas/Recompensas.jsx` | `TarjetaRecompensa`, `TarjetaCupon`, `TarjetaMision`, `NivelCuenta`, `NIVELES` | Catálogo, cupones, misiones y nivel por XP |
 | `piezas/Referidos.jsx` | `FormaGanar`, `EnlaceInvitacion`, `FilaReferido`, `DetallePedidoReferido`, `RankingReferidos` | Mis referidos |
@@ -171,7 +173,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `piezas/Ficha.jsx` | `MarcoFicha` (galería + información), `Migas`, `PrecioFicha` (precio, tachado y descuento en sello), `ConfianzaCompra`, `TituloEditable` (nombre que se renombra ahí) | Una creación y un combo (y a futuro la ficha de producto) |
 | `piezas/GaleriaProducto.jsx` | `GaleriaProducto` (foto grande con zoom al cursor, miniaturas, deslizar con el dedo) | Una creación (y la ficha de producto) |
 | `piezas/Crear.jsx` | `PortadaCrear` (arte de Kapi, título con trazo y los pasos en sellos con costura), `PASOS_CREAR`, `textoPara`, `FilaPiezaCombo` (una prenda de un combo y lo que se hace con ella) (las prendas y los combos son `TarjetaProducto accion="crear"`; el selector, `Chip`) | Crear (`paginas/Crear.jsx`: `PaginaCrear`; guía: `guia/CREAR.md`) |
-| `piezas/Estudio.jsx` | `LienzoPrenda` (la prenda de un lado, teñida con CSS, con sus zonas y las capas que se arrastran), `BarraLienzo`, `PasoEstudio`, `PasosEstudio` (color, zona y agregar) y `PanelCapa` (lo elegido: texto o imagen) | El estudio (`paginas/Estudio.jsx`: `PaginaEstudio`; guía: `guia/CREAR.md`, P12) |
+| `piezas/Estudio.jsx` | `LienzoPrenda` (la prenda de un lado, teñida con CSS, con sus zonas y las capas que se arrastran), `BarraLienzo`, `PasoEstudio`, `PasosEstudio` (color, zona y agregar), `PanelCapa` (lo elegido: texto o imagen, con `EfectosTexto`), `PanelVarios` (varias elegidas), `EstadoEdicion`, `GuiaGestos` y `AtajosEstudio` | El estudio (`paginas/Estudio.jsx`: `PaginaEstudio`; guía: `guia/CREAR.md`, P12) |
 | `piezas/OpcionesProducto.jsx` | `OpcionesProducto` (el color de cada prenda de un combo, el color o modelo, la talla y la cantidad), `opcionesDe` | La ficha de un producto y "Agregar rápido" (`AgregarRapido`) |
 | `piezas/Opiniones.jsx` | `Estrellas` (ver o elegir), `ResumenOpiniones` (promedio y una barra por estrella), `TarjetaOpinion` (con fotos y "Útil"), `FormularioOpinion` | La ficha de un producto (`paginas/Producto.jsx`: `PaginaProducto`; guía: `guia/PRODUCTO.md`) |
 | `piezas/Direccion.jsx` | `CamposDireccion` (quién recibe, el lugar y la dirección exacta), `validarDireccion`, `cambiarDireccion`, `documentoDe`, `CIUDADES`, `DOCS_DIRECCION` | Mis direcciones y el checkout |

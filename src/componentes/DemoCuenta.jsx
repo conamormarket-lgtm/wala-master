@@ -961,6 +961,7 @@ export const ESTADOS_ESTUDIO = [
   ['borradorAdmin', 'Prenda en borrador (admin)'],
   ['borrador', 'Editando un borrador'],
   ['borradorError', 'El borrador no se guardó'],
+  ['cargandoDiseno', 'El diseño aún llega'],
 ];
 
 /* Las letras del estudio por cómo se ven (como SelectorFuente de la tienda). */
@@ -1058,7 +1059,7 @@ export function EstudioDemo({ ruta = '/crear/', sesion, estados = [], toast, onI
         return SUBIDAS[subidas % SUBIDAS.length];
       }}
       motorFondo={motorFondo}
-      onGuardar={async () => { await espera(700); }}
+      onGuardar={async () => { await espera(700); return { urlCreacion: '/cuenta/creaciones' }; }}
       onAgregar={async ({ talla, cantidad }) => { await espera(600); avisar('¡Agregado al carrito!', `${prenda.nombre}${talla ? ` · Talla ${talla}` : ''} × ${cantidad}`); }}
       onDescargar={() => avisar('Se descargaría tu diseño', 'Una imagen de cada lado, con el logo de Walá en una esquina.', 'info')}
       onUsarEnCombo={async () => { avisar('Prenda lista', `Vuelves a «${combo.name}» con tu diseño.`); onIrA?.(`/combo/${combo.id}?nuevo=1`); }}
@@ -1071,6 +1072,7 @@ export function EstudioDemo({ ruta = '/crear/', sesion, estados = [], toast, onI
       estadoBorrador={estados.includes('borradorError') ? 'error' : 'guardado'}
       agotado={estados.includes('agotado')}
       borradorAdmin={estados.includes('borradorAdmin')}
+      cargandoDiseno={estados.includes('cargandoDiseno')}
     />
   );
 }

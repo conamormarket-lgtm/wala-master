@@ -19,7 +19,7 @@ import { RecortarFoto } from '../piezas/RecortarFoto';
 import { QuitarFondo } from '../piezas/QuitarFondo';
 import { MenuContextual } from '../piezas/MenuContextual';
 import {
-  LienzoPrenda, BarraLienzo, PasosEstudio, PanelCapa, PanelVarios, EstadoEdicion, AtajosEstudio, zoomVecino, NIVELES_ZOOM,
+  LienzoPrenda, BarraLienzo, PasosEstudio, PanelCapa, PanelVarios, EstadoEdicion, AtajosEstudio, GuiaGestos, zoomVecino, NIVELES_ZOOM,
 } from '../piezas/Estudio';
 import s from './Estudio.module.css';
 
@@ -117,6 +117,7 @@ const reubicarTrasCorte = (capa, corte, natural, proporcion = 1) => {
  *  - onSubirImagen(archivo?): promesa → { src, px, aspecto } (o null si se
  *    cancela); sin archivo abre el selector; con él, uno pegado o soltado
  *  - onQuitarFondo(capa): promesa → src · onGuardar({ nombre, diseno }): promesa
+ *    (puede resolver { urlCreacion }: "Ver mi creación" en la hoja de guardada)
  *  - onAgregar({ talla, cantidad, diseno }): promesa · onDescargar(diseno)
  *  - onUsarEnCombo(diseno, { copiarA: [n] }) · urlVolver, urlLogin, urlCreaciones
  *  - procesando: texto de lo que está haciendo la tienda (una capa de espera)
@@ -140,6 +141,9 @@ const reubicarTrasCorte = (capa, corte, natural, proporcion = 1) => {
  *    (solo la ve el admin): aviso y no se compra
  *  - etiquetaVolver ("Volver a Mis creaciones"…) · onAviso({ tipo, titulo,
  *    texto }): avisos sueltos (el color cambió las zonas, cambios guardados)
+ *  - cargandoDiseno: el diseño guardado aún llega (la prenda ya se ve)
+ *  - guiaGestosVista: la guía de los dedos ya se vio (la tienda lo guarda en
+ *    el aparato); sale la primera vez que se toca algo · onGuiaGestosVista()
  */
 export function PaginaEstudio({
   prenda, inicial = {}, modo = 'nuevo', plantilla, combo, sesion = false, fuentes = [],
@@ -150,6 +154,7 @@ export function PaginaEstudio({
   requiereSesion = { imagen: true, carrito: true },
   esBorrador = false, estadoBorrador = 'guardado', onRenombrar, onEmpezarNuevo,
   agotado = false, borradorAdmin = false, etiquetaVolver = 'Volver', onAviso, procesando,
+  cargandoDiseno = false, guiaGestosVista = false, onGuiaGestosVista,
 }) {
   const colores = prenda?.colores || [];
   const [colorId, setColorId] = useState(inicial.color || colores.find((c) => !c.espejoDe)?.id);
@@ -185,6 +190,10 @@ export function PaginaEstudio({
   const firmaDe = (c, cs) => JSON.stringify([c, cs]);
   const [firmaGuardada, setFirmaGuardada] = useState(() => (modo === 'editar' ? firmaDe(colorId, inicial.capas || {}) : null));
   const lienzoRef = useRef(null);
+  const panelRef = useRef(null);
+  const [guia, setGuia] = useState(false); // la guía de los dedos
+  const guiaVista = useRef(guiaGestosVista);
+  const [urlCreacion, setUrlCreacion] = useState(null); // la creación recién guardada
   const guardarRef = useRef(null); // Ctrl+S (guardar se arma más abajo, después de cargar)
 
   // Todas las zonas, con su lado, para buscar una capa o una zona por id.
@@ -252,13 +261,14 @@ export function PaginaEstudio({
     if (capa.tipo === 'imagen') cambiarCapa(capa.id, { ancho: Math.min(1.5, Math.max(0.1, (capa.ancho ?? 0.8) * factor)) });
     else cambiarCapa(capa.id, { tamano: Math.min(0.6, Math.max(0.04, (capa.tamano ?? 0.18) * factor)) });
   };
+  /** Contra los bordes de su zona (por su tamaño), como en la tienda. */
   const alinear = (donde) => {
     const { capa } = elegida;
     if (!capa) return;
-    const medio = capa.tipo === 'imagen' ? (capa.ancho ?? 0.8) / 2 : 0.3;
+    const { medioAncho, medioAlto } = medidasDe(capa, zonaElegida?.proporcion);
     const pos = {
-      izquierda: { x: medio }, centroH: { x: 0.5 }, derecha: { x: 1 - medio },
-      arriba: { y: 0.25 }, centroV: { y: 0.5 }, abajo: { y: 0.75 },
+      izquierda: { x: Math.min(0.5, medioAncho) }, centroH: { x: 0.5 }, derecha: { x: Math.max(0.5, 1 - medioAncho) },
+      arriba: { y: Math.min(0.5, medioAlto) }, centroV: { y: 0.5 }, abajo: { y: Math.max(0.5, 1 - medioAlto) },
     }[donde];
     cambiarCapa(capa.id, pos);
   };
@@ -374,8 +384,9 @@ export function PaginaEstudio({
     const z = todasLasZonas.find((x) => x.id === id);
     if (z && z.vista.id !== vista?.id) setVistaId(z.vista.id);
   };
-  /** Con `sumar` (Shift o Ctrl + clic) suma o quita de las elegidas. */
-  const elegirCapa = (id, zid, { sumar } = {}) => {
+  /** Con `sumar` (Shift o Ctrl + clic) suma o quita de las elegidas. Con el dedo, la primera vez, la guía. */
+  const elegirCapa = (id, zid, { sumar, tactil } = {}) => {
+    if (tactil && !guiaVista.current) { guiaVista.current = true; setGuia(true); }
     if (sumar) {
       const actuales = new Set(elegidas);
       if (actuales.has(id)) actuales.delete(id); else actuales.add(id);
@@ -573,6 +584,48 @@ export function PaginaEstudio({
     setCamara((c) => (shift ? { x: c.x - (deltaY || deltaX), y: c.y } : { x: c.x - deltaX, y: c.y - deltaY }));
   };
 
+  /**
+   * Dos dedos: con algo elegido, lo agrandan o achican y lo giran (cerca de
+   * un múltiplo de 90° se queda derecho, como en la tienda); sin nada, acercan
+   * la prenda y la recorren. Se guarda una sola vez, al soltar.
+   */
+  const gestoBase = useRef(null);
+  const alGesto = ({ fase, factor = 1, giro = 0, centro }) => {
+    if (fase === 'inicio') {
+      const { capa } = elegida;
+      gestoBase.current = capa
+        ? { id: capa.id, imagen: capa.tipo === 'imagen', ancho: capa.ancho ?? 0.8, tamano: capa.tamano ?? 0.18, angulo: capa.angulo || 0 }
+        : { zoom, camara, centro };
+      return;
+    }
+    const b = gestoBase.current;
+    if (!b) return;
+    if (fase === 'fin') {
+      gestoBase.current = null;
+      if (b.id) soltar();
+      return;
+    }
+    if (b.id) {
+      let angulo = b.angulo + giro;
+      const derecho = Math.round(angulo / 90) * 90;
+      if (Math.abs(angulo - derecho) < 6) angulo = derecho;
+      angulo = Math.round(((angulo % 360) + 360) % 360);
+      cambiarCapa(b.id, b.imagen
+        ? { ancho: limitar(b.ancho * factor, 0.1, 1.5), angulo }
+        : { tamano: limitar(b.tamano * factor, 0.04, 0.6), angulo }, false);
+      return;
+    }
+    // El punto de la prenda que estaba bajo los dedos los sigue.
+    const z = limitar(b.zoom * factor, 1, ZOOM_MAX);
+    if (z === 1) { setZoom(1); return; }
+    const u = { x: (b.centro.x - b.camara.x) / b.zoom, y: (b.centro.y - b.camara.y) / b.zoom };
+    setZoomEstado(z);
+    setCamara({ x: centro.x - u.x * z, y: centro.y - u.y * z });
+  };
+  const cerrarGuia = () => { setGuia(false); onGuiaGestosVista?.(); };
+  /** En el celular el panel queda debajo: "Editar" baja hasta él. */
+  const irAlPanel = () => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
   /** Girar de 90° en 90° (R) o hacia el otro lado (Shift+R). */
   const girar = (sentido = 1) => {
     const { capa } = elegida;
@@ -731,7 +784,8 @@ export function PaginaEstudio({
   const confirmarGuardar = async ({ conHoja = true } = {}) => {
     setOcupado('guardando');
     try {
-      await onGuardar?.({ nombre: nombre.trim() || `Mi ${prenda.nombre?.split(' ')[0]?.toLowerCase() || 'creación'}`, diseno });
+      const r = await onGuardar?.({ nombre: nombre.trim() || `Mi ${prenda.nombre?.split(' ')[0]?.toLowerCase() || 'creación'}`, diseno });
+      setUrlCreacion(r?.urlCreacion || null);
       setFirmaGuardada(firmaActual);
       if (conHoja) setHoja('guardada');
       else onAviso?.({ tipo: 'exito', titulo: 'Cambios guardados' });
@@ -866,7 +920,9 @@ export function PaginaEstudio({
               if (capa?.tipo === 'imagen') { if (sesion) setRecortando(capa); } else escribirEnPanel();
             },
             onSoltarArchivo: (archivo, zid) => subirImagen(archivo, zid),
-            encima: vacio && zona && zoom === 1 && (
+            onGesto: alGesto,
+            cargando: cargandoDiseno,
+            encima: guia ? <GuiaGestos onEntendido={cerrarGuia} /> : vacio && !cargandoDiseno && zona && zoom === 1 && (
               <div className={s.empezar}>
                 <p>Empieza tu diseño en <strong>{nombreZona(zona)}</strong></p>
                 <span className={s.empezarBotones}>
@@ -891,11 +947,12 @@ export function PaginaEstudio({
             zoom={zoom}
             onZoom={setZoom}
             onAtajos={() => setHoja('atajos')}
+            onEditar={irAlPanel}
           />
           {zona && <p className={s.zonaInfo}>Zona elegida: <strong>{nombreZona(zona)}</strong></p>}
         </section>
 
-        <aside className={s.panel}>
+        <aside className={s.panel} ref={panelRef}>
           <div className={s.panelCuerpo}>
             {varios.length > 1 ? (
               <PanelVarios
@@ -933,6 +990,8 @@ export function PaginaEstudio({
                 onQuitarFondo={quitarFondo}
                 zonas={todasLasZonas.filter((z) => z.id !== elegida.zonaId).map((z) => ({ id: z.id, nombre: nombreZona(z) }))}
                 onPasarAZona={pasarAZona}
+                onImagen={() => subirImagen()}
+                onTexto={() => escribirTexto()}
               />
             ) : (
               <PasosEstudio
@@ -1018,8 +1077,14 @@ export function PaginaEstudio({
         titulo="¡Creación guardada!"
         pie={(
           <div className={s.pieGuardada}>
-            {!combo && <Boton bloque icono={<ShoppingBag aria-hidden="true" />} onClick={() => { setHoja(null); agregar(); }}>Agregar al carrito · {soles(precio)}</Boton>}
-            <Boton bloque variante="contorno" icono={<Images aria-hidden="true" />} to={urlCreaciones}>Ver mis creaciones</Boton>
+            {combo ? (
+              <Boton bloque icono={<CheckCircle2 aria-hidden="true" />} onClick={() => { setHoja(null); onUsarEnCombo?.(diseno, { copiarA }); }}>Volver al combo</Boton>
+            ) : !agotado && !borradorAdmin && (
+              <Boton bloque icono={<ShoppingBag aria-hidden="true" />} onClick={() => { setHoja(null); agregar(); }}>Agregar al carrito · {soles(precio)}</Boton>
+            )}
+            {urlCreacion
+              ? <Boton bloque variante="contorno" icono={<Images aria-hidden="true" />} to={urlCreacion}>Ver mi creación</Boton>
+              : <Boton bloque variante="contorno" icono={<Images aria-hidden="true" />} to={urlCreaciones}>Ver mis creaciones</Boton>}
             <Boton bloque variante="fantasma" onClick={() => setHoja(null)}>Seguir diseñando</Boton>
           </div>
         )}

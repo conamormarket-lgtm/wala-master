@@ -4,7 +4,7 @@ import {
   Copy, ArrowUpToLine, ArrowDownToLine, RotateCw, FlipHorizontal, Crop, Eraser, Maximize2,
   AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
   AlignLeft, AlignCenter, AlignRight, LoaderCircle, CheckCircle2, AlertTriangle,
-  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter,
+  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter, Pencil, Hand,
 } from 'lucide-react';
 import Boton from '../Boton';
 import Acordeon from '../Acordeon';
@@ -164,18 +164,64 @@ function TextoCurvo({ capa: c }) {
  *    y }) al arrastrar el fondo (con zoom) · moverVista: arrastrar mueve la
  *    vista (Espacio mantenida) · onRueda({ deltaX, deltaY, ctrl, shift, x, y })
  *    (x, y desde el centro del lienzo; la rueda no desplaza la página)
- *  - encima: lo que va sobre el lienzo (empezar, cargando…)
+ *  - onGesto({ fase: 'inicio' | 'cambio' | 'fin', factor, giro, centro }):
+ *    dos dedos (factor: separación; giro: grados; centro: px desde el centro
+ *    del lienzo). La página decide: con una capa elegida la agranda y la
+ *    gira; si no, hace zoom.
+ *  - cargando: "Cargando tu diseño…" encima (y aria-busy)
+ *  - encima: lo que va sobre el lienzo (empezar…)
  */
 export function LienzoPrenda({
   imagen, foto, tinte, voltear = false, anchoImg = 1000, altoImg = 1200, zonas = [], capas = {},
   zonaActiva, seleccion, oscura = false, guias = true, onElegirZona, onElegirCapa, onMoverCapa, onSoltarCapa,
-  onMenu, onDobleClic, onSoltarArchivo, encima, zoom = 1, camara, onCamara, moverVista = false, onRueda, className,
+  onMenu, onDobleClic, onSoltarArchivo, encima, zoom = 1, camara, onCamara, moverVista = false, onRueda, onGesto,
+  cargando = false, className,
 }) {
   const marco = useRef(null);
   const arrastre = useRef(null);
   const paneo = useRef(null);
+  const toques = useRef(new Map());
+  const gesto = useRef(null);
   const [soltarEn, setSoltarEn] = useState(null);
   const elegidas = Array.isArray(seleccion) ? seleccion : seleccion ? [seleccion] : [];
+
+  // Dos dedos (se miran en la fase de captura, antes que la capa o el fondo).
+  const medirToques = () => {
+    const [a, b] = [...toques.current.values()];
+    const r = marco.current.getBoundingClientRect();
+    return {
+      d: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+      ang: (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI,
+      centro: { x: (a.x + b.x) / 2 - (r.left + r.width / 2), y: (a.y + b.y) / 2 - (r.top + r.height / 2) },
+    };
+  };
+  const gestos = guias && onGesto ? {
+    onPointerDownCapture: (e) => {
+      if (e.pointerType !== 'touch') return;
+      toques.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (toques.current.size !== 2) return;
+      arrastre.current = null; // el segundo dedo convierte el arrastre en gesto
+      paneo.current = null;
+      const m = medirToques();
+      gesto.current = { d0: m.d, ang0: m.ang };
+      onGesto({ fase: 'inicio', factor: 1, giro: 0, centro: m.centro });
+    },
+    onPointerMoveCapture: (e) => {
+      if (!toques.current.has(e.pointerId)) return;
+      toques.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (!gesto.current || toques.current.size < 2) return;
+      const m = medirToques();
+      onGesto({ fase: 'cambio', factor: m.d / gesto.current.d0, giro: m.ang - gesto.current.ang0, centro: m.centro });
+    },
+    onPointerUpCapture: (e) => {
+      toques.current.delete(e.pointerId);
+      if (gesto.current && toques.current.size < 2) { gesto.current = null; onGesto({ fase: 'fin' }); }
+    },
+    onPointerCancelCapture: (e) => {
+      toques.current.delete(e.pointerId);
+      if (gesto.current && toques.current.size < 2) { gesto.current = null; onGesto({ fase: 'fin' }); }
+    },
+  } : {};
 
   /** Punto (0–1) de la zona bajo el puntero. */
   const puntoEnZona = (e, el) => {
@@ -188,11 +234,11 @@ export function LienzoPrenda({
     if (e.button === 2) return; // el clic derecho abre el menú
     e.stopPropagation();
     const sumar = e.shiftKey || e.ctrlKey || e.metaKey;
-    onElegirCapa?.(c.id, zonaId, { sumar });
+    onElegirCapa?.(c.id, zonaId, { sumar, tactil: e.pointerType === 'touch' });
     if (!onMoverCapa || sumar) return;
     const caja = e.currentTarget.closest('[data-zona]').getBoundingClientRect();
     arrastre.current = { id: c.id, caja, dx: e.clientX - (caja.left + (c.x ?? 0.5) * caja.width), dy: e.clientY - (caja.top + (c.y ?? 0.5) * caja.height), movio: false };
-    e.currentTarget.setPointerCapture?.(e.pointerId);
+    try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch { /* el puntero ya se soltó */ }
   };
   const mover = (e) => {
     const a = arrastre.current;
@@ -213,7 +259,7 @@ export function LienzoPrenda({
     if (e.button !== 0 && e.button !== 1) return;
     e.preventDefault();
     paneo.current = { x0: e.clientX, y0: e.clientY, c0: camara || { x: 0, y: 0 } };
-    e.currentTarget.setPointerCapture?.(e.pointerId);
+    try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch { /* el puntero ya se soltó */ }
   };
   const moverPaneo = (e) => {
     const p = paneo.current;
@@ -257,13 +303,20 @@ export function LienzoPrenda({
   return (
     <div
       ref={marco}
-      className={[s.lienzo, oscura && s.oscura, (zoom > 1 || moverVista) && onCamara && s.lienzoPaneo, className].filter(Boolean).join(' ')}
+      className={[
+        s.lienzo, oscura && s.oscura, (zoom > 1 || moverVista) && onCamara && s.lienzoPaneo,
+        // Con algo elegido o con zoom, los dedos son del lienzo; si no, un dedo
+        // desplaza la página y dos acercan la prenda (no la página).
+        guias && onGesto && (elegidas.length || zoom > 1 ? s.lienzoGestos : s.lienzoPellizco), className,
+      ].filter(Boolean).join(' ')}
       data-componente="LienzoPrenda"
+      aria-busy={cargando || undefined}
       onPointerDown={guias ? empezarPaneo : undefined}
       onPointerMove={guias ? moverPaneo : undefined}
       onPointerUp={guias ? soltarPaneo : undefined}
       onPointerCancel={guias ? soltarPaneo : undefined}
       onAuxClick={(e) => e.preventDefault()}
+      {...gestos}
       {...soltarArchivo}
     >
       <div className={s.lienzoEscala} style={{ aspectRatio: `${anchoImg} / ${altoImg}`, '--proporcion': anchoImg / altoImg, transform: transformacion }}>
@@ -352,6 +405,7 @@ export function LienzoPrenda({
           Suelta tu imagen en <strong>{zonas.find((z) => z.id === soltarEn)?.nombre || 'la zona'}</strong>
         </p>
       )}
+      {cargando && <p className={s.cargandoDiseno} role="status"><LoaderCircle aria-hidden="true" className={s.girando} /> Cargando tu diseño…</p>}
       {encima}
     </div>
   );
@@ -373,7 +427,7 @@ export const zoomVecino = (zoom, sube) => (sube
 
 export function BarraLienzo({
   puedeDeshacer, puedeRehacer, onDeshacer, onRehacer, elegido = false,
-  onAchicar, onAgrandar, onCentrar, onQuitar, onImagen, onTexto, zoom = 1, onZoom, onAtajos,
+  onAchicar, onAgrandar, onCentrar, onQuitar, onImagen, onTexto, zoom = 1, onZoom, onAtajos, onEditar,
 }) {
   const B = (props) => <Boton variante="fantasma" tamano="sm" soloIcono {...props} />;
   return (
@@ -388,6 +442,8 @@ export function BarraLienzo({
           <B aria-label="Agrandar" icono={<Plus aria-hidden="true" />} onClick={onAgrandar} />
           <B aria-label="Centrar" icono={<Crosshair aria-hidden="true" />} onClick={onCentrar} />
           <Boton variante="fantasma" tamano="sm" soloIcono aria-label="Quitar" icono={<Trash2 aria-hidden="true" />} onClick={onQuitar} className={s.peligro} />
+          {/* En el celular el panel queda debajo de la prenda: "Editar" baja hasta él. */}
+          {onEditar && <Boton variante="secundario" tamano="sm" icono={<Pencil aria-hidden="true" />} onClick={onEditar} className={s.soloCelular}>Editar</Boton>}
         </span>
       )}
       <span className={s.grupoBarra}>
@@ -642,13 +698,14 @@ export const ALINEAR = [
  *  - zonas: [{ id, nombre }] · onPasarAZona(id) · sinSesion: recortar y quitar fondo apagados
  *  - anchoZonaCm: ancho real de la zona; con él, el tamaño de la letra va en
  *    cm (alto de la letra), como en la tienda · fueraDeZona: una parte queda
- *    fuera y no se imprimirá
+ *    fuera y no se imprimirá · onImagen, onTexto: "Agregar otro" (sin soltar
+ *    lo elegido, como en la tienda)
  */
 export function PanelCapa({
   capa, zona, onCambiar, onListo, fuentes = [], calidad,
   onAchicar, onAgrandar, onCentrar, onAlinear, onQuitar, onDuplicar, onAdelante, onAtras,
   onRecortar, onQuitarFondo, onLlenar, zonas = [], onPasarAZona, sinSesion = false,
-  anchoZonaCm, fueraDeZona = false,
+  anchoZonaCm, fueraDeZona = false, onImagen, onTexto,
 }) {
   if (!capa) return null;
   const imagen = capa.tipo === 'imagen';
@@ -768,6 +825,16 @@ export function PanelCapa({
           ),
         }]}
       />
+
+      {(onImagen || onTexto) && (
+        <div className={s.grupoCampo}>
+          <span className={s.rotulo}>Agregar otro</span>
+          <span className={s.chips}>
+            {onImagen && <Boton variante="contorno" tamano="sm" icono={<ImagePlus aria-hidden="true" />} onClick={onImagen}>Imagen</Boton>}
+            {onTexto && <Boton variante="contorno" tamano="sm" icono={<Type aria-hidden="true" />} onClick={onTexto}>Texto</Boton>}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -915,6 +982,26 @@ const gruposAtajos = (lados = []) => [
 ];
 
 /** Los atajos de teclado del estudio, en grupos (va dentro de una HojaInferior). */
+/**
+ * La primera vez que se toca algo con el dedo, sobre la prenda: cómo moverlo,
+ * agrandarlo, girarlo y escribir (como la tienda). Va en `encima` del lienzo.
+ *  - onEntendido
+ */
+export function GuiaGestos({ onEntendido }) {
+  return (
+    // Sus toques no llegan al lienzo (no eligen ni mueven nada).
+    <div className={s.guiaGestos} role="dialog" aria-label="Cómo editar con los dedos" data-componente="GuiaGestos" onPointerDown={(e) => e.stopPropagation()} onPointerDownCapture={(e) => e.stopPropagation()}>
+      <ul>
+        <li><Hand aria-hidden="true" /> <span><strong>Un dedo:</strong> arrástralo para moverlo.</span></li>
+        <li><Maximize2 aria-hidden="true" /> <span><strong>Dos dedos:</strong> sepáralos o júntalos para agrandar o achicar, y gíralos para girarlo.</span></li>
+        <li><Type aria-hidden="true" /> <span><strong>Dos toques</strong> en un texto para escribirlo.</span></li>
+        <li><ZoomIn aria-hidden="true" /> <span><strong>Sin nada elegido,</strong> dos dedos acercan la prenda.</span></li>
+      </ul>
+      <Boton bloque tamano="sm" onClick={onEntendido}>Entendido</Boton>
+    </div>
+  );
+}
+
 export function AtajosEstudio({ lados = [] }) {
   return (
     <div className={s.atajosGrupos} data-componente="AtajosEstudio">
