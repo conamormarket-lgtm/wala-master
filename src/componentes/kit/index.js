@@ -12,6 +12,7 @@ export { Hueso, EsqueletoTexto, EsqueletoCabeza, EsqueletoProducto, EsqueletoFil
 export { Aviso, ProveedorToasts, useToast, useNotificaciones, ListaNotificaciones, EstadoVacio, HojaInferior } from './Feedback';
 export { EASE, RESORTE, useContador, seguirPuntero, Estallido, Revelar, esApp, useBloquearScroll, useCerrarConAtras } from './Efectos';
 export { Enlace, ProveedorEnlaces } from './Enlace';
+export { ProveedorTraduccion, useTexto, useHtml, Texto } from './Traduccion';
 export { default as Desplegable } from './Desplegable';
 export { MenuTienda, MenuMarcas, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito } from './MenusCabecera';
 export { default as AgregarRapido } from './AgregarRapido';

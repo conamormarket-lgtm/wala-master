@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import Boton from './Boton';
 import { Enlace } from './Enlace';
+import { useTexto } from './Traduccion';
 import { EtiquetaColgante, Garabatos, Trazo } from './Marca';
 import s from './Seccion.module.css';
 
@@ -77,7 +78,11 @@ export function BloqueSeccion({ ajustes = {}, ancho = 'contenido', pegado = fals
  *    (buttonText/buttonLink y, si el editor los fijó, sus colores)
  *  - adorno: destellos de marca junto al título
  */
-export function TituloSeccion({ titulo, subtitulo, antetitulo, alinear = 'left', subrayado = false, fondo, enlace, accion, nivel = 2, adorno = false }) {
+export function TituloSeccion({ titulo: tituloOriginal, subtitulo: subtituloOriginal, antetitulo: antetituloOriginal, alinear = 'left', subrayado = false, fondo, enlace, accion, nivel = 2, adorno = false }) {
+  // Los títulos vienen del builder: pasan por la traducción de la tienda (si hay).
+  const titulo = useTexto(tituloOriginal);
+  const subtitulo = useTexto(subtituloOriginal);
+  const antetitulo = useTexto(antetituloOriginal);
   if (!titulo && !subtitulo) return null;
   const H = `h${nivel}`;
   const centrado = alinear === 'center';

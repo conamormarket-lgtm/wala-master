@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowRight, ChevronDown, Loader2, LogOut, RefreshCw, ShoppingBag, Heart, Sparkles, Coins, CalendarClock, Trophy } from 'lucide-react';
 import { Enlace } from './Enlace';
+import { Texto } from './Traduccion';
 import Boton from './Boton';
 import { soles } from './TarjetaProducto';
 import { IconoWala } from './IconosWala';
@@ -388,7 +389,7 @@ export function VistaCarrito({ items = [], urlCarrito = '/carrito', urlPagar = '
                 {it.cantidad > 1 && <span className={s.cantidadMini} aria-label={`${it.cantidad} unidades`}>×{it.cantidad}</span>}
               </span>
               <span className={s.lineaTexto}>
-                <strong>{it.nombre}</strong>
+                <strong><Texto>{it.nombre}</Texto></strong>
                 {it.variante && <small>{it.variante}</small>}
               </span>
               <span className={s.lineaPrecio}>

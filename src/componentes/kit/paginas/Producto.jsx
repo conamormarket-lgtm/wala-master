@@ -5,6 +5,7 @@ import Acordeon from '../Acordeon';
 import Carrusel from '../Carrusel';
 import TarjetaProducto from '../TarjetaProducto';
 import { Enlace } from '../Enlace';
+import { useTexto, useHtml } from '../Traduccion';
 import { EstadoVacio, HojaInferior } from '../Feedback';
 import { BloqueSeccion, TituloSeccion } from '../Seccion';
 import { EsqueletoPagina } from '../Esqueletos';
@@ -60,6 +61,9 @@ export function PaginaProducto({
   const [mostradas, setMostradas] = useState(POR_PAGINA);
   const [foto, setFoto] = useState(null);
 
+  // El nombre y la descripción vienen de los datos: pasan por la traducción de la tienda (si hay).
+  const nombre = useTexto(producto.nombre);
+  const descripcion = useHtml(producto.descripcion);
   const variante = variantes.find((v) => v.id === varId) || variantes[0];
   const lista = opcionesDe(variante, tallasBase);
   const galeria = (variante && fotos[variante.id]) || fotos.base || [];
@@ -105,8 +109,8 @@ export function PaginaProducto({
 
   return (
     <>
-      <MarcoFicha componente="PaginaProducto" galeria={<GaleriaProducto key={variante?.id || 'base'} imagenes={galeria} nombre={producto.nombre} />}>
-        <Migas items={[{ texto: 'Inicio', url: '/' }, producto.categoria && { texto: producto.categoria.nombre, url: producto.categoria.url }, { texto: producto.nombre }].filter(Boolean)} />
+      <MarcoFicha componente="PaginaProducto" galeria={<GaleriaProducto key={variante?.id || 'base'} imagenes={galeria} nombre={nombre} />}>
+        <Migas items={[{ texto: 'Inicio', url: '/' }, producto.categoria && { texto: producto.categoria.nombre, url: producto.categoria.url }, { texto: nombre }].filter(Boolean)} />
 
         <div className={s.cabeza}>
           {producto.marca && (
@@ -116,7 +120,7 @@ export function PaginaProducto({
             </Enlace>
           )}
           <div className={s.tituloFila}>
-            <h1 className={s.titulo}>{producto.nombre}</h1>
+            <h1 className={s.titulo}>{nombre}</h1>
             {sesion && onCompartir && (
               <Boton variante="contorno" tamano="sm" soloIcono aria-label="Compartir y ganar monedas" title="Compartir y ganar monedas" icono={<Share2 aria-hidden="true" />} onClick={onCompartir} />
             )}
@@ -182,11 +186,11 @@ export function PaginaProducto({
 
         <ConfianzaCompra />
 
-        {producto.descripcion && (
+        {descripcion && (
           <Acordeon
             variante="lista"
             abiertoInicial="descripcion"
-            items={[{ id: 'descripcion', question: 'Descripción', answer: <div className={s.textoRico} dangerouslySetInnerHTML={{ __html: producto.descripcion }} /> }]}
+            items={[{ id: 'descripcion', question: 'Descripción', answer: <div className={s.textoRico} dangerouslySetInnerHTML={{ __html: descripcion }} /> }]}
           />
         )}
       </MarcoFicha>

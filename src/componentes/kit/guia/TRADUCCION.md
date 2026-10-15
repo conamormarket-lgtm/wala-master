@@ -1,0 +1,71 @@
+# Traducción
+
+Cómo verla en vivo: `npm run dev` → http://localhost:3000/componentes.html →
+**Páginas** → **Tienda de prueba** → **Ver en inglés**. También se activa con
+"Switch to English" del aviso de idioma (**Mostrar también** → el aviso de
+idioma).
+
+En la demo, un traductor **de prueba** cambia palabras de un diccionario chico
+(`demo/traduccionDemo.js`). Por eso sale "Jacket One Piece · Tripulación
+Sombrero of Paja": solo sirve para ver qué textos pasan por la traducción.
+
+## Cómo traduce la tienda hoy
+
+- **Textos fijos** (botones, avisos): diccionarios (`src/i18n/dictionaries.js`)
+  con `t('card.addToCart')`.
+- **Textos de los datos:** `<T>` y `useTranslatedText` (nombres de producto,
+  títulos del builder) y `useTranslatedHtml` (la descripción). Mientras llega
+  la traducción muestran el original, guardan en caché y no tocan la red en
+  español.
+
+## Cómo traduce el kit
+
+Igual que con los enlaces: el kit no traduce por su cuenta, la tienda le pasa
+cómo hacerlo.
+
+```jsx
+// src/App.jsx (a futuro), junto a ProveedorEnlaces:
+import { ProveedorTraduccion } from './componentes/kit/Traduccion';
+import { useTranslatedText, useTranslatedHtml } from './i18n/useTranslatedText';
+
+<ProveedorTraduccion texto={useTranslatedText} html={useTranslatedHtml}>
+  …la app…
+</ProveedorTraduccion>
+```
+
+- **`useTexto(texto)`** y **`<Texto>`**: un texto de los datos, traducido si
+  hay proveedor. Lo que no es texto pasa igual.
+- **`useHtml(html)`**: la descripción de un producto (solo los textos entre
+  etiquetas).
+- **Sin proveedor**, en la página de componentes y en los tests, todo queda
+  como está.
+- Los dos son **hooks**: el proveedor no debe cambiar de uno a otro mientras
+  la página vive. En la tienda siempre son los mismos.
+
+### Qué pasa hoy por la traducción
+
+| Componente | Qué se traduce |
+|---|---|
+| `TarjetaProducto` | el nombre y la categoría (también en el aria-label) |
+| `TituloSeccion` | título, subtítulo y antetítulo (los del builder) |
+| `Migas` | cada miga (la categoría) |
+| `PaginaProducto` | el nombre, la galería y la descripción (`useHtml`) |
+| `ItemCarrito` | el nombre |
+| `ResumenCompra` (checkout) y el menú del carrito | el nombre de cada producto |
+
+### Lo que falta (a futuro)
+
+- **Los textos fijos del kit** ("Agregar al carrito", "Talla", los avisos)
+  están en español. Hay dos caminos: pasarlos por el mismo `useTexto`, que
+  traduce cualquier texto con caché, o un diccionario del kit con las
+  mismas claves de `dictionaries.js`. Conviene decidirlo antes de migrar la
+  cabecera, que es lo más visible.
+- **Los nombres de las marcas** no se traducen (igual que en la tienda).
+- **Otros datos:** los nombres de los colores y de las tallas, y las
+  descripciones de las creaciones.
+
+## Llevar a la tienda
+
+Es el paso más chico: el proveedor en `App.jsx`, al lado de
+`ProveedorEnlaces`. No cambia nada en español. En inglés, las piezas del
+kit que ya estén en la tienda traducen sus textos de los datos como `<T>`.

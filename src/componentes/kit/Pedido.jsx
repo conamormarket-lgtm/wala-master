@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useInView } from 'framer-motion';
 import { Check, Copy, CreditCard, Truck, Trash2, Gift, ChevronDown, Clock, Tag, Sparkles, Package, AlertTriangle, XCircle, ArrowRight } from 'lucide-react';
 import Boton from './Boton';
 import { Enlace } from './Enlace';
+import { useTexto } from './Traduccion';
 import { Etiqueta, Moneda } from './Etiquetas';
 import { FotoProducto } from './piezas/FotoProducto';
 import { Cantidad } from './Formulario';
@@ -204,10 +205,11 @@ export function SeguimientoPedido({
  *  - incompleto: 'color' | 'talla' | 'color y talla' · urlElegir
  */
 export function ItemCarrito({
-  imagen, nombre, variante, precio, precioAntes, personalizado = false, url, detalles = [], combo = false, piezas = [],
+  imagen, nombre: nombreOriginal, variante, precio, precioAntes, personalizado = false, url, detalles = [], combo = false, piezas = [],
   seleccionado, onSeleccionar, incompleto, urlElegir,
   cantidad: cantidadControlada, onCantidad, onQuitar, cantidadInicial = 1,
 }) {
+  const nombre = useTexto(nombreOriginal);
   const [propia, setPropia] = useState(cantidadInicial);
   const cantidad = cantidadControlada ?? propia;
   const cambiar = onCantidad ?? setPropia;

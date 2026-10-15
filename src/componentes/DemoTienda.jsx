@@ -5,7 +5,7 @@ import {
   retoDesdePerfil, PaginaBusqueda, sugerenciasDesdeBusqueda, grupoModalidad, ORDENES_BUSQUEDA, ordenarProductos,
   Pestanas, Chip, Interruptor, Boton, PantallaCarga, CapaCargando, EsqueletoPagina, FRASES_CARGA,
   BarraAdmin, AvisoSistema, BannerApp, BotonWhatsApp, KapiFlotante, PildoraRecompensa,
-  VentanaCampana, AvisoIdioma, ProveedorEnlaces, PanelEditor, useBorrador, SeccionEditable, InsertarAqui,
+  VentanaCampana, AvisoIdioma, ProveedorEnlaces, ProveedorTraduccion, PanelEditor, useBorrador, SeccionEditable, InsertarAqui,
   moverSeccion, duplicarSeccion, rutaDeMarca, tarjetaDesdeProducto, REGISTRO_SECCIONES, enlaceWhatsApp, gruposDeCatalogo, ETAPAS_PRODUCCION,
 } from './kit';
 import { empresa } from '../config/empresa';
@@ -14,6 +14,7 @@ import { volarMonedasGanadas } from '../utils/animations';
 import CREAR_DATOS from './demo/crear.json';
 import { ProductoDemo, ESTADOS_PRODUCTO, ABRIR_PRODUCTO } from './DemoProducto';
 import { CheckoutDemo, ESTADOS_CHECKOUT } from './DemoCheckout';
+import { traducirDemo, traducirHtmlDemo } from './demo/traduccionDemo';
 import { RegalarDemo, VISTAS_REGALAR, ESTADOS_REGALAR, PagoRapidoDemo, ESTADOS_PAGO_RAPIDO } from './DemoRegalar';
 import { ENVIO_ESTANDAR, ENVIO_GRATIS_DESDE } from '../constants/envio';
 import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR, ComunidadDemo, ESTADOS_COMUNIDAD, CreacionDemo, ESTADOS_CREACION, VerDisenoDemo, ESTADOS_VER, ComboDemo, ESTADOS_COMBO, EstudioDemo, ESTADOS_ESTUDIO } from './DemoCuenta';
@@ -234,6 +235,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [pagina, setPagina] = useState('inicio');
   const [extras, setExtras] = useState([]);
   const [anatomia, setAnatomia] = useState(false);
+  // "Ver en inglés": los textos de los datos pasan por un traductor de prueba.
+  const [ingles, setIngles] = useState(false);
   const [pildora, setPildora] = useState(true);
   const [carrito, setCarrito] = useState(CARRITO_INICIAL);
   // Filtros del catálogo de /tienda (el menú Tienda llega con ?categoria=).
@@ -1019,13 +1022,18 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         <div className={s.interruptor}>
           <Interruptor etiqueta="Ver componentes" descripcion="Cada parte con su número y su componente (guía en kit/guia)." activo={anatomia} onChange={setAnatomia} />
         </div>
+        <div className={s.interruptor}>
+          <Interruptor etiqueta="Ver en inglés" descripcion="Los textos de los datos (productos, títulos, descripciones) pasan por la traducción. Aquí, un diccionario de prueba." activo={ingles} onChange={setIngles} />
+        </div>
       </div>
 
       <div className={[s.estudio, !enEditor && s.sinPanel].filter(Boolean).join(' ')}>
         <div ref={marcoRef} className={[s.lienzo, anatomia && s.anatomia].filter(Boolean).join(' ')}>
           <div className={[s.pagina, enEditor && s.paginaEditor, enEditor && vistaEditor === 'movil' && s.paginaMovil].filter(Boolean).join(' ')}>
             <ProveedorEnlaces componente={EnlaceTienda}>
-              {contenido}
+              <ProveedorTraduccion texto={ingles ? traducirDemo : undefined} html={ingles ? traducirHtmlDemo : undefined}>
+                {contenido}
+              </ProveedorTraduccion>
             </ProveedorEnlaces>
             {enEditor && <InsertarAqui indice={total} onInsertar={setInsertarEn} activo={insertarEn === total} />}
           </div>
@@ -1072,7 +1080,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         <div className={cs.avisoIdiomaDemo}>
           <AvisoIdioma
             idioma={{ codigo: 'EN', titulo: 'Looks like you speak English', texto: 'Do you want to see Walá in English?', cambiar: 'Switch to English' }}
-            onCambiar={() => { alternar('idioma'); avisar('Idioma', 'En la tienda cambiaría a inglés'); }}
+            onCambiar={() => { alternar('idioma'); setIngles(true); }}
             onMantener={() => alternar('idioma')}
           />
         </div>

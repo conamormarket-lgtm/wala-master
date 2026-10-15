@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Truck, RefreshCw, ShieldCheck, Pencil, Check } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
+import { Texto } from '../Traduccion';
 import { BloqueSeccion } from '../Seccion';
 import { soles } from '../TarjetaProducto';
 import s from './Ficha.module.css';
@@ -35,7 +36,7 @@ export function Migas({ items = [] }) {
       {items.map((m, k) => (
         <React.Fragment key={m.texto}>
           {k > 0 && <span aria-hidden="true">/</span>}
-          {m.url ? <Enlace to={m.url}>{m.texto}</Enlace> : <span className={s.actual}>{m.texto}</span>}
+          {m.url ? <Enlace to={m.url}><Texto>{m.texto}</Texto></Enlace> : <span className={s.actual}><Texto>{m.texto}</Texto></span>}
         </React.Fragment>
       ))}
     </nav>

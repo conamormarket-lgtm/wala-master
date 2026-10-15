@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ChevronDown, Tag, Check, X, Package } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
+import { Texto } from '../Traduccion';
 import { Moneda } from '../Etiquetas';
 import { Interruptor } from '../Formulario';
 import { Sello } from '../Marca';
@@ -151,7 +152,7 @@ export function ResumenCompra({
                 <b>{it.cantidad}</b>
               </span>
               <span className={s.itemTexto}>
-                <strong>{it.nombre}</strong>
+                <strong><Texto>{it.nombre}</Texto></strong>
                 {it.variante && <small>{it.variante}</small>}
               </span>
               <span className={s.itemPrecio}>{soles(it.precio * it.cantidad)}</span>

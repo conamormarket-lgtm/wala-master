@@ -35,7 +35,9 @@ token `--escenario-foto` de `tokens.css`) también está ya en la tienda.
 
 Cada paso en su propio commit, verificable por separado.
 
-1. ✓ Proveedores y `Boton` (arriba).
+1. ✓ Proveedores y `Boton` (arriba). Falta `ProveedorTraduccion` en `App.jsx`, al lado de
+   `ProveedorEnlaces`, con `useTranslatedText` y `useTranslatedHtml` (TRADUCCION.md). No cambia
+   nada en español.
 2. **Marco**: `BarraAdmin`, `AvisoSistema`, `BannerApp`, flotantes
    (`PilaFlotante` y compañía; Kapi con su ventana, KAPI.md), `PieLegal`,
    `VentanaCampana`, `AvisoIdioma`.
@@ -49,8 +51,10 @@ Cada paso en su propio commit, verificable por separado.
 5. **Secciones del builder**, página por página, con `RenderSecciones` (o
    `PaginaTienda`) + `respaldo`. Primero el inicio (INICIO.md), después
    `/tienda` con el catálogo (TIENDA.md). Comparar capturas antes y después.
-6. **Páginas propias** (no son del builder): carrito y checkout
-   (`PaginaCarrito` y las piezas de `Pedido.jsx`; su ficha P1 todavía falta),
+6. **Páginas propias** (no son del builder): la ficha de producto
+   (`PaginaProducto`, PRODUCTO.md), el carrito (`PaginaCarrito`, CARRITO.md), el checkout
+   (`PaginaCheckout`, CHECKOUT.md), regalar y el pago rápido (REGALAR.md; el pago rápido primero:
+   usa las piezas de pago que después van al checkout),
    la cuenta (`MarcoCuenta` y sus 12 páginas, Mis pedidos incluida:
    CUENTA.md, un módulo a la vez), la Zona Arcade (`PaginaMinijuegos`,
    MINIJUEGOS.md), la búsqueda (`PaginaBusqueda`, BUSCAR.md) y la encuesta

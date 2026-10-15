@@ -3,6 +3,7 @@ import { Heart, Star, Plus, Check, Palette, SlidersHorizontal } from 'lucide-rea
 import { Etiqueta } from './Etiquetas';
 import { Estallido } from './Efectos';
 import { Enlace } from './Enlace';
+import { useTexto } from './Traduccion';
 import { FotoProducto } from './piezas/FotoProducto';
 import { LogoMarca } from './piezas/LogoMarca';
 import { iniciales } from './piezas/Avatar';
@@ -61,8 +62,8 @@ const ACCIONES = {
 export default function TarjetaProducto({
   imagen,
   imagenHover,
-  nombre,
-  categoria,
+  nombre: nombreOriginal,
+  categoria: categoriaOriginal,
   precio,
   precioAntes,
   puntuacion,
@@ -83,6 +84,9 @@ export default function TarjetaProducto({
   deseado: deseadoProp,
   onDeseo,
 }) {
+  // Los textos de los datos pasan por la traducción de la tienda (si hay).
+  const nombre = useTexto(nombreOriginal);
+  const categoria = useTexto(categoriaOriginal);
   const ref = useRef(null);
   const temporizador = useRef(0);
   // Favorito: controlado si llega `deseado` (la lista de deseos real); si
