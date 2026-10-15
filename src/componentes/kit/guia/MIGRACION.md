@@ -70,8 +70,7 @@ Cada paso en su propio commit, verificable por separado.
    LEGALES.md; chicas y aisladas) y los juegos por dentro (las bolitas, la
    ruleta y la palabra con `MarcoJuego`: JUEGOS.md; después de la Zona Arcade)
    y las campañas (el aviso de la invitación primero, luego Link en bio, las
-   landings y los sorteos: CAMPANAS.md) y, si sigue vivo, el editor del
-   catálogo (`PaginaEditor`, el mismo estudio: EDITOR.md).
+   landings y los sorteos: CAMPANAS.md).
 7. **Cargando** (`PantallaCarga`, `Cargando`, `EsqueletoPagina`: CARGA.md; el
    splash de `index.html` cambia en el mismo commit), **`BarraInferior` y luego `Cabecera`**: la más conectada (AuthContext,
    CartContext, WishlistContext, notificaciones y la configuración de

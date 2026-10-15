@@ -103,7 +103,7 @@ export function ProductoDemo({ ruta = ABRIR_PRODUCTO[0][1], sesion, estados = []
       onAgregarRelacionado={(i) => onAgregar?.(relacionadosCrudos[i])}
       onAgregar={agregar}
       onComprar={async (e) => { await agregar(e); onIrA?.('/checkout'); }}
-      onPersonalizar={() => onIrA?.(`/editor/${p.id}`)}
+      onPersonalizar={() => avisar('En la tienda iría al editor', `/editor/${p.id}`, 'info')}
       onCompartir={async () => { await espera(200); avisar('¡Enlace copiado!', 'Compártelo y gana monedas cuando alguien compre.'); }}
       onOpinar={async ({ puntuacion, texto, fotos }) => {
         await espera(700);
