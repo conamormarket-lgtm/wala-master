@@ -165,6 +165,24 @@ export const useHeatmapTracker = (enabled = true, batchSize = 5) => {
         anchor = null; // sin ancla: el visor usa las coordenadas
       }
 
+      // ¿El clic fue dentro de una VENTANA (modal, panel del buscador…)? Se
+      // guarda su nombre: en la vista previa las ventanas están cerradas, así
+      // que el mapa la nombra en vez de decir que el elemento no existe.
+      let capa = null;
+      try {
+        const ventana = e.target.closest && e.target.closest('[role="dialog"], [aria-modal="true"], dialog');
+        if (ventana) {
+          const tituloId = ventana.getAttribute('aria-labelledby');
+          const titulo = tituloId ? document.getElementById(tituloId)?.innerText : null;
+          capa = cleanLabel(
+            ventana.getAttribute('aria-label') || titulo || ventana.querySelector('h1, h2, h3')?.innerText || 'Ventana',
+            40
+          ) || 'Ventana';
+        }
+      } catch {
+        capa = null;
+      }
+
       // Coordenadas en la ventana (x/y) y en la página completa (pageX/pageY).
       // pageHeight es el alto TOTAL de la página en ese momento: el visor ubica
       // el clic como pageY / pageHeight, así los clics de abajo caen en su sitio.
@@ -182,6 +200,7 @@ export const useHeatmapTracker = (enabled = true, batchSize = 5) => {
         path: location.pathname,
         elementInfo: elementInfo,
         ...(anchor || {}),
+        ...(capa ? { capa } : {}),
         time: new Date().toISOString()
       };
 

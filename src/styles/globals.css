@@ -326,3 +326,11 @@ img[loading="lazy"] {
     transition: none;
   }
 }
+/* Vista previa del mapa de calor (iframe del panel admin, ver
+   utils/vistaPreviaCalor.js): la página se muestra limpia, sin ventanas
+   emergentes que la tapen (iniciar sesión, campañas, buscador abierto…). */
+html.vista-previa-calor [role="dialog"],
+html.vista-previa-calor [aria-modal="true"],
+html.vista-previa-calor dialog {
+  display: none !important;
+}

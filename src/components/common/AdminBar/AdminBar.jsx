@@ -5,12 +5,10 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorContext';
 import styles from './AdminBar.module.css';
 import { Settings, Save, Eye, Edit2 } from 'lucide-react';
-import { esVistaPreviaMapaCalor } from '../../../utils/vistaPreviaCalor';
+import { EN_VISTA_PREVIA_CALOR } from '../../../utils/vistaPreviaCalor';
 
 // En la vista previa del mapa de calor la barra no se muestra: la página debe
 // verse como la vio el visitante (la barra empujaba todo hacia abajo).
-const EN_VISTA_PREVIA_CALOR = esVistaPreviaMapaCalor();
-
 const AdminBar = () => {
   const { isAdmin: esAdmin } = useAuth();
   const isAdmin = esAdmin && !EN_VISTA_PREVIA_CALOR;

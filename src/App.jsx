@@ -46,6 +46,7 @@ import DeepLinkHandler from './components/common/DeepLinkHandler';
 import SystemAlert from './components/common/SystemAlert/SystemAlert';
 import LanguagePopup from './components/i18n/LanguagePopup';
 import CampaignPopup from './components/common/CampaignPopup/CampaignPopup';
+import { EN_VISTA_PREVIA_CALOR } from './utils/vistaPreviaCalor';
 
 // ── Auto-recuperación de bundle obsoleto tras un deploy ───
 // Si una pestaña tenía cacheado un build viejo y al navegar a una página lazy
@@ -310,7 +311,9 @@ const GlobalLayout = ({ children }) => {
       <RouteTracker />
       <PushLinkHandler />
       <ReferralTracker />
-      <AvisoInvitacion />
+      {/* En la vista previa del mapa de calor no van avisos ni popups: la
+          página tiene que verse como la vio el visitante, sin nada encima. */}
+      {!EN_VISTA_PREVIA_CALOR && <AvisoInvitacion />}
       <ScrollTracker />
       <AdminBar />
       {isEditModeActive && (
@@ -344,10 +347,10 @@ const GlobalLayout = ({ children }) => {
       <FirebaseWarning />
 
       {/* Popup discreto de sugerencia de idioma (se muestra una sola vez). */}
-      <LanguagePopup />
+      {!EN_VISTA_PREVIA_CALOR && <LanguagePopup />}
 
       {/* Popups de campaña (encuesta, promos…) configurados en /admin/popups. */}
-      <CampaignPopup />
+      {!EN_VISTA_PREVIA_CALOR && <CampaignPopup />}
     </div>
   );
 };

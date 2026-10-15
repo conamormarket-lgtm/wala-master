@@ -245,6 +245,9 @@ const HeaderSearch = ({ brandId = null, botonClassName = '', mobileLabel = '' })
         onClick={() => (abierto ? cerrar() : abrir())}
         aria-expanded={abierto}
         aria-label="Buscar"
+        // Mismo nombre en el mapa de calor para la lupa (computadora) y la
+        // barra "Buscar productos, marcas y categorías" (móvil).
+        data-track="Abrir el buscador"
       >
         <Search strokeWidth={1.5} className={styles.lupaIcono} />
         {mobileLabel && <span className={styles.mobileTriggerLabel}><T>{mobileLabel}</T></span>}

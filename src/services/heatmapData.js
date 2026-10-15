@@ -397,7 +397,15 @@ function textoLegible(value) {
  * @param {string} raw  elementInfo tal cual viene de Firestore
  * @param {string|null} sel  ruta CSS del ancla del clic (clics nuevos)
  */
-function deriveElementLabel(raw, sel) {
+// Un mismo control con nombres distintos según la pantalla: se unen en uno.
+// (Desde 2026-10-15 el botón lleva data-track y ya llega con el nombre bueno;
+// esto une los clics anteriores.)
+const ALIAS_ELEMENTOS = {
+  'Botón:buscar': 'Abrir el buscador',
+  'Botón:buscar productos, marcas y categorías': 'Abrir el buscador',
+};
+
+function deriveElementLabel(raw, sel, capa = null) {
   const parsed = parseElementInfo(raw);
   const tipo = tipoDeTag(parsed?.tag || '');
 
@@ -407,15 +415,24 @@ function deriveElementLabel(raw, sel) {
 
   // El tracker corta el texto a 40 caracteres: se marca con "…" si llegó cortado.
   if (texto && String(parsed.value).length >= 39) texto = `${texto}…`;
+  if (texto && ALIAS_ELEMENTOS[`${tipo}:${texto.toLowerCase()}`]) {
+    texto = ALIAS_ELEMENTOS[`${tipo}:${texto.toLowerCase()}`];
+  }
 
+  // Clic dentro de una VENTANA (modal, panel del buscador…): se agrupa aparte
+  // ("Cerrar" de una ventana no es el "Cerrar" de otra) y se nombra la ventana.
+  const prefijo = capa ? `ventana:${capa.toLowerCase()}|` : '';
   if (texto) {
-    return { tipo, texto, label: `${tipo}: ${texto}`, key: `${tipo}:${texto.toLowerCase()}`, generic: false };
+    return {
+      tipo, texto, capa, label: `${tipo}: ${texto}`, key: `${prefijo}${tipo}:${texto.toLowerCase()}`, generic: false,
+    };
   }
   return {
     tipo,
     texto: null,
+    capa,
     label: `${tipo} sin texto`,
-    key: sel ? `sel:${sel}` : `tipo:${tipo}`,
+    key: `${prefijo}${sel ? `sel:${sel}` : `tipo:${tipo}`}`,
     generic: true,
   };
 }
@@ -645,7 +662,11 @@ export function aggregateHeatmapBatches(docs = [], filtros = {}) {
         ? ev.elementInfo.trim()
         : null;
       const elemento = rawElement
-        ? deriveElementLabel(rawElement, typeof ev.sel === 'string' ? ev.sel : null)
+        ? deriveElementLabel(
+          rawElement,
+          typeof ev.sel === 'string' ? ev.sel : null,
+          typeof ev.capa === 'string' && ev.capa ? ev.capa : null
+        )
         : null;
 
       const point = normalizePoint(ev);

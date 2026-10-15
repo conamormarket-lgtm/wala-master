@@ -245,6 +245,7 @@ function textosDe(el) {
     normTexto(n.innerText || n.textContent),
     normTexto(n.getAttribute && n.getAttribute('aria-label')),
     normTexto(n.getAttribute && n.getAttribute('title')),
+    normTexto(n.getAttribute && n.getAttribute('data-track')),
     normTexto(n.querySelector && n.querySelector('img[alt]')?.getAttribute('alt')),
   ] : []);
   const accionable = el.closest && el.closest('a, button, [role="button"], [data-track], [aria-label]');
@@ -259,6 +260,34 @@ function cajaVisible(win, el) {
   const estilo = win.getComputedStyle(el);
   if (estilo.visibility === 'hidden' || Number(estilo.opacity) === 0) return null;
   return { x: r.left, y: r.top, w: r.width, h: r.height };
+}
+
+// Por qué un elemento del ranking no se ve en la vista previa.
+//  - Clic dentro de una ventana (modal, panel del buscador): en la vista previa
+//    las ventanas están cerradas.
+//  - Con texto: no hay ningún elemento así a la vista (vive en un menú o
+//    ventana que se abre, o se quitó de la página).
+//  - Sin texto: clic antiguo que no guardó en qué elemento fue.
+function motivoNoVisible(el) {
+  if (el.capa) {
+    return {
+      corto: `En la ventana «${el.capa}»`,
+      largo: `Fue dentro de la ventana «${el.capa}», que en la vista previa está cerrada.`,
+      ventana: true,
+    };
+  }
+  if (el.texto && SELECTOR_POR_TIPO[el.tipo]) {
+    return {
+      corto: 'No está a la vista',
+      largo: 'No está a la vista: estaba en una ventana o menú que se abre, o se quitó de la página.',
+      ventana: false,
+    };
+  }
+  return {
+    corto: 'Sin ubicación exacta',
+    largo: 'No se puede señalar: son clics antiguos que no guardaron en qué elemento fueron.',
+    ventana: false,
+  };
 }
 
 // Texto de un elemento del ranking ("Sin texto (2)" si no tiene).
@@ -325,6 +354,11 @@ export default function HeatmapViewer({
   const [anclas, setAnclas] = useState(null);
   // Mostrar también los clics que no se pueden ubicar en la página actual.
   const [mostrarSinUbicar, setMostrarSinUbicar] = useState(false);
+  // Ruta en la que está realmente la vista previa (si la página redirige,
+  // p. ej. a /login, no coincide con la pedida).
+  const [rutaIframe, setRutaIframe] = useState(null);
+  // La vista previa muestra un aviso de "Iniciar sesión" en vez de la página.
+  const [pideLogin, setPideLogin] = useState(false);
   // Elemento del ranking elegido (su `key`): se señala en la vista previa.
   const [elegido, setElegido] = useState(null);
   const [verTodosElementos, setVerTodosElementos] = useState(false);
@@ -443,6 +477,8 @@ export default function HeatmapViewer({
     }
     retriesRef.current = 0;
     setPageHeight(0);
+    setRutaIframe(null);
+    setPideLogin(false);
     setIframeAttempt(0);
     if (frameRef.current) frameRef.current.scrollTop = 0;
     if (!iframeSrc) {
@@ -487,6 +523,11 @@ export default function HeatmapViewer({
       const h = Number(payload.height);
       if (Number.isFinite(h) && h > 0) {
         setPageHeight(Math.min(PAGE_MAX_H, Math.round(h)));
+      }
+      try {
+        setRutaIframe(iframeRef.current?.contentWindow?.location?.pathname || null);
+      } catch {
+        /* sin acceso al marco */
       }
     };
     window.addEventListener('message', onMessage);
@@ -709,6 +750,16 @@ export default function HeatmapViewer({
       if (encontrados.length > 0) porTexto.set(key, encontrados.slice(0, 10));
     });
 
+    // 3) ¿La página muestra un "Iniciar sesión" en su contenido? Pasa en las
+    //    páginas de cuenta cuando la vista previa se abre sin sesión.
+    const contenido = doc.querySelector('#main-content-area') || doc.body;
+    const enLogin = /^\/(login|registro)/.test(win.location.pathname);
+    setPideLogin(!enLogin && [...contenido.querySelectorAll('a, button')].some((el) => {
+      const t = normTexto(el.innerText || el.textContent);
+      const esLogin = /^(iniciar|inicia) sesi[oó]n$|^ingresar$/.test(t) || (el.getAttribute('href') || '').endsWith('/login');
+      return esLogin && Boolean(cajaVisible(win, el));
+    }));
+
     win.scrollTo({ top: scrollAntes, left: 0, behavior: 'instant' });
     setAnclas({ porSel, porTexto });
   }, [points]);
@@ -736,6 +787,13 @@ export default function HeatmapViewer({
   useEffect(() => {
     aplicarTemaPreview();
   }, [aplicarTemaPreview, iframeState]);
+
+  // La vista previa acabó en otra página (redirigida): sus clics no coinciden
+  // con lo que se ve.
+  const normRuta = (r) => (r && r.length > 1 && r.endsWith('/') ? r.slice(0, -1) : r);
+  const vistaRedirigida = Boolean(
+    iframeSrc && rutaIframe && iframeState === 'ready' && normRuta(rutaIframe) !== normRuta(iframeSrc)
+  );
 
   const handleIframeLoad = () => {
     // 'load' dispara tanto en éxito como en about:blank; si hay src, lo damos por
@@ -957,6 +1015,21 @@ export default function HeatmapViewer({
                 </div>
               </div>
 
+              {vistaRedirigida && (
+                <div className={styles.avisoRedirigida} role="status">
+                  La vista previa terminó en <strong>{rutaIframe}</strong> en vez de esta página
+                  {/login|registro/.test(rutaIframe) ? ' (pide iniciar sesión)' : ''}: el calor no
+                  coincide con lo que se ve.
+                </div>
+              )}
+              {!vistaRedirigida && pideLogin && (
+                <div className={styles.avisoRedirigida} role="status">
+                  Esta página pide iniciar sesión y la vista previa se abrió sin sesión: se ve el aviso
+                  de login en vez de la página que vio el cliente. Los clics de lo que está detrás del
+                  login no se pueden ubicar.
+                </div>
+              )}
+
               {elElegido && (
                 <div className={styles.seleccionBar} role="status">
                   <span className={styles.seleccionNum}>{posElegido}</span>
@@ -971,9 +1044,7 @@ export default function HeatmapViewer({
                       }`
                       : !anclas
                         ? 'Buscándolo en la página…'
-                        : elElegido.texto && SELECTOR_POR_TIPO[elElegido.tipo]
-                          ? 'Ya no está en la página: se eliminó, cambió de texto o solo aparece al abrir un menú.'
-                          : 'No se puede señalar: son clics antiguos que no guardaron en qué elemento fueron.'}
+                        : motivoNoVisible(elElegido).largo}
                   </span>
                   <button type="button" className={styles.seleccionQuitar} onClick={() => setElegido(null)}>
                     Ver todo el mapa
@@ -1110,8 +1181,8 @@ export default function HeatmapViewer({
                 {sinUbicar > 0 && (
                   <p>
                     {sinUbicar.toLocaleString('es-PE')} de {visiblePoints.length.toLocaleString('es-PE')} clics no
-                    se pueden ubicar en la página actual (su elemento ya no está o son clics antiguos sin
-                    ubicación) y {mostrarSinUbicar ? 'se muestran en una posición aproximada.' : 'no se muestran.'}{' '}
+                    se pueden ubicar en la página actual (fueron dentro de una ventana, su elemento no está a
+                    la vista o son clics antiguos sin ubicación) y {mostrarSinUbicar ? 'se muestran en una posición aproximada.' : 'no se muestran.'}{' '}
                     <button
                       type="button"
                       className={styles.notaBoton}
@@ -1160,8 +1231,11 @@ export default function HeatmapViewer({
                                 <span className={styles.rankFill} style={{ width: `${pct}%` }} />
                               </span>
                               {clavesEnPagina && !clavesEnPagina.has(el.key) && (
-                                <span className={styles.rankAusente}>
-                                  {el.texto && SELECTOR_POR_TIPO[el.tipo] ? 'Ya no está en la página' : 'Sin ubicación exacta'}
+                                <span
+                                  className={motivoNoVisible(el).ventana ? styles.rankVentana : styles.rankAusente}
+                                  title={motivoNoVisible(el).largo}
+                                >
+                                  {motivoNoVisible(el).corto}
                                 </span>
                               )}
                             </span>

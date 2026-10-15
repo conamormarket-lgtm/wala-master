@@ -184,7 +184,14 @@ sub-páginas los filtros **se heredan** y un enlace copiado conserva la vista ex
   actual: su ancla si el elemento de esa ruta tiene el mismo texto (si la página cambió, la ruta
   puede apuntar a otra cosa), si no el enlace/botón con su mismo texto (sirve para clics viejos;
   con varios iguales, el más cercano). Los que no se encuentran **no se pintan** (botón "Mostrarlos
-  igual") y en el ranking dicen "Ya no está en la página" o "Sin ubicación exacta".
+  igual") y en el ranking dicen "No está a la vista" o "Sin ubicación exacta".
+  **Ventanas:** la vista previa se carga sin ventanas emergentes (`html.vista-previa-calor`
+  esconde `[role="dialog"]`/`[aria-modal]`; no se montan CampaignPopup, LanguagePopup ni
+  AvisoInvitacion). Los clics dentro de una ventana guardan `capa` (su nombre, p. ej. "Buscar
+  productos") y el ranking dice "En la ventana «…»". El botón del buscador lleva
+  `data-track="Abrir el buscador"` (lupa y barra móvil = un solo elemento; los clics viejos
+  "Buscar" se unen por alias). Si la vista previa acaba en otra ruta o muestra un "Iniciar
+  sesión" en el contenido, se avisa encima del mapa.
 
 > **Requiere redeploy de functions:** los desgloses nuevos (país/dispositivo/navegador/SO,
 > identidades, top visitantes, embudo completo) salen de campos que agrega la versión nueva de
