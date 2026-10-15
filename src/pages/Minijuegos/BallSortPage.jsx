@@ -11,6 +11,7 @@ import { HelpCircle, Coins, Check } from 'lucide-react';
 import { volarMonedasGanadas } from '../../utils/animations';
 import { useEntregaMonedas } from '../../hooks/useEntregaMonedas';
 import ArcadeShell from './ArcadeShell';
+import Loading from '../../components/common/Loading/Loading';
 import styles from './BallSortPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -109,7 +110,7 @@ const MiniTubo = ({ colores = [], estado }) => (
 );
 
 const BallSortPage = () => {
-  const { user, userProfile, reloadProfile } = useAuth();
+  const { user, userProfile, reloadProfile, loading: authLoading } = useAuth();
   const [tubes, setTubes] = useState([]);
   const [selectedTubeIndex, setSelectedTubeIndex] = useState(null);
   const [hasWon, setHasWon] = useState(false);
@@ -314,8 +315,22 @@ const BallSortPage = () => {
     setCompletedTubes(new Set());
   };
 
+  // Se espera a saber quién entra: con la sesión aún cargando `user` es null y
+  // antes se mandaba a /login a quien SÍ tenía sesión (al abrir /ball-sort desde
+  // un enlace o al recargar), y el login lo devolvía al inicio.
+  if (authLoading) {
+    return (
+      <ArcadeShell back="/minijuegos" title="Las Bolitas de Kapi" className={styles.pageContainer}>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem 0' }}>
+          <Loading />
+        </div>
+      </ArcadeShell>
+    );
+  }
+
   if (!user) {
-    return <Navigate to="/login" replace />;
+    // Tras iniciar sesión, LoginPage vuelve aquí (state.from).
+    return <Navigate to="/login" replace state={{ from: '/ball-sort' }} />;
   }
 
   return (
