@@ -624,3 +624,35 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Vertical (filas de Crear y la galería de la comunidad), como la tarjeta de
+   producto: todas del mismo alto en la fila (el pie va abajo aunque una no
+   diga "1 persona lo usó") y la foto en 4:5, llenando su recuadro (las vistas
+   previas son verticales: en un cuadro quedaban franjas a los costados). */
+.vertical {
+  height: 100%;
+}
+
+.vertical .cuerpo {
+  display: flex;
+  flex-direction: column;
+}
+
+.vertical .pie {
+  margin-top: auto;
+  padding-top: 0.4rem;
+}
+
+.vertical .foto {
+  aspect-ratio: 4 / 5;
+}
+
+.vertical .foto:not(.fotoCombo) > img {
+  object-fit: cover;
+  padding: 0;
+}
+
+/* En el recuadro 4:5 las prendas de un combo crecen a lo alto. */
+.vertical .fotoCombo .prenda {
+  aspect-ratio: 5 / 7;
+}
