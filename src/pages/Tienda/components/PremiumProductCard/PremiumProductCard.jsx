@@ -1,5 +1,3 @@
-// eslint-disable-next-line no-unused-vars
-// eslint-disable-next-line no-unused-vars
 import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -171,7 +169,6 @@ const PremiumProductCard = React.memo(({
   }, [product, toggleFavorite, addToast, isFav]);
 
   const handlePrefetch = useCallback(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     queryClient.setQueryData(['product', product.id], product);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryClient, product.id, product]);
@@ -263,7 +260,6 @@ const PremiumProductCard = React.memo(({
     return { sold, rating, reviews };
   };
 
-  // eslint-disable-next-line no-unused-vars
   const stats = getProductStats(product?.id);
 
   // Copias pequeñas de cada foto, si el producto las tiene. `sizes` describe el

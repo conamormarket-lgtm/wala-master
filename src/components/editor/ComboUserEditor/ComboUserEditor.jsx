@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-// eslint-disable-next-line no-unused-vars
 import { getProduct } from '../../../services/products';
 import { EditorProvider, useEditor } from '../../../contexts/EditorContext';
 import EditorCanvas from '../EditorCanvas/EditorCanvas';
 import Toolbar from '../Toolbar/Toolbar';
-// eslint-disable-next-line no-unused-vars
 import { getCloudinaryOptimized } from '../../common/OptimizedImage/OptimizedImage';
 import DraggableContainer from '../../common/DraggableContainer/DraggableContainer';
 import MobileFloatingTools from '../MobileFloatingTools/MobileFloatingTools';
@@ -29,11 +27,8 @@ const ComboUserEditorContent = ({
   const [activeItemIndex, setActiveItemIndex] = useState(0);
   const [activeSide, setActiveSide] = useState('front');
   const [variantSelections, setVariantSelections] = useState(initialVariantSelections);
-  // eslint-disable-next-line no-unused-vars
   const [showMobileSettingsModal, setShowMobileSettingsModal] = useState(false);
-  // eslint-disable-next-line no-unused-vars
   const [isMobileEditing, setIsMobileEditing] = useState(false);
-  // eslint-disable-next-line no-unused-vars
   const canvasRefs = useRef({});
 
   // Inicializar variantes desde comboItems
@@ -490,7 +485,6 @@ const GlobalCanvasItem = ({ item, index, variantSelections, comboItemCustomizati
   const availableColors = product && product.hasVariants ? product.variants.map(v => v.name).filter(Boolean) : [];
   const allowed = item.variantMapping?.allowedColors;
   const allowedLower = allowed && Array.isArray(allowed) ? allowed.map(c => c.trim().toLowerCase()) : [];
-  // eslint-disable-next-line no-unused-vars
   const filteredColors = allowedLower.length > 0 ? availableColors.filter(c => allowedLower.includes((c || '').trim().toLowerCase())) : availableColors;
 
   if (!view || !activeImage) return <div style={{ flex: 1, backgroundColor: '#f3f4f6' }}>Cargando...</div>;

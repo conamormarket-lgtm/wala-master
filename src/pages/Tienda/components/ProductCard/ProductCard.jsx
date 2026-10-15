@@ -1,13 +1,9 @@
-// eslint-disable-next-line no-unused-vars
-// eslint-disable-next-line no-unused-vars
 import React, { useEffect, useRef, useCallback } from 'react';
 import { variantesDeImagen } from '../../../../services/products';
 import { Link } from 'react-router-dom';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { getBrands } from '../../../../services/brands';
-// eslint-disable-next-line no-unused-vars
 import { useCart } from '../../../../contexts/CartContext';
-// eslint-disable-next-line no-unused-vars
 import { toThumbnailImageUrl } from '../../../../utils/imageUrl'; // Force recompile
 import { useWishlist } from '../../../../contexts/WishlistContext';
 import { useGlobalToast } from '../../../../contexts/ToastContext';
@@ -15,7 +11,6 @@ import { useLanguage } from '../../../../contexts/LanguageContext';
 import { T } from '../../../../i18n/useTranslatedText';
 import { isComboProduct, productNeedsVariantSelection, productSelectionNeeds } from '../../../../utils/comboProductUtils';
 import { useProductThumbnailVariant } from '../../../../hooks/useProductThumbnailVariant';
-// eslint-disable-next-line no-unused-vars
 import ComboProductImage from '../ComboProductImage/ComboProductImage';
 import OptimizedImage, { SIZES_TARJETA_PRODUCTO } from '../../../../components/common/OptimizedImage/OptimizedImage';
 import styles from './ProductCard.module.css';
@@ -40,9 +35,7 @@ const getCategoryDisplay = (product, categoriesList) => {
 
 const ProductCard = React.memo(({ product, categories = [], isAboveFold = false, showHoverSecondaryMedia = true, onAddToCartOverride }) => {
   const { addToCart } = useCart();
-  // eslint-disable-next-line no-unused-vars
   const queryClient = useQueryClient();
-  // eslint-disable-next-line no-unused-vars
   const categoryDisplay = getCategoryDisplay(product, categories);
   const { thumbnailImageUrl, recordImpression, variantIndex } = useProductThumbnailVariant(product);
   const imageContainerRef = useRef(null);
@@ -125,10 +118,8 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
     } else {
       addToCart(product, {}, null, 1);
     }
-  // eslint-disable-next-line no-unused-vars
   }, [addToCart, product, onAddToCartOverride, necesitaElegir]);
 
-  // eslint-disable-next-line no-unused-vars
   const handlePersonalize = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -148,7 +139,6 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
     }
   }, [product, toggleFavorite, addToast, isFav]);
 
-// eslint-disable-next-line react-hooks/exhaustive-deps
 
   const handlePrefetch = useCallback(() => {
     queryClient.setQueryData(['product', product.id], product);
@@ -208,7 +198,6 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
     ? (product?.images?.[0] || null)
     : (product?.images?.[1] || null);
 
-// eslint-disable-next-line no-unused-vars
 
   // Extraer el crop de la variante principal si existe
   // Copias pequeñas de cada foto, si el producto las tiene. `sizes` describe el
@@ -222,7 +211,6 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
   // Encuadre propio de la imagen de hover (si el admin lo definió para esa foto).
   const secondaryCrop = secondaryImageUrl ? principalVariant?.imagesCrops?.[secondaryImageUrl]?.percentages : undefined;
 
-  // eslint-disable-next-line no-unused-vars
   const isFirebase = cardImageUrl && cardImageUrl.includes('firebasestorage.googleapis.com');
 
   return (

@@ -15,7 +15,6 @@ import FechaEventoInput from '../../components/common/FechaEventoInput/FechaEven
 import { textoFechaEvento } from '../../utils/fechaEvento.mjs';
 import { productNeedsVariantSelection } from '../../utils/comboProductUtils';
 import { GlassCard, Reveal } from '../../components/ui';
-// eslint-disable-next-line no-unused-vars
 import { Gift, Calendar, CalendarHeart, Plus, Edit2, Trash2, X, Globe, ShoppingCart, Package, Camera, AlertCircle, Check } from 'lucide-react';
 // Helper de subida YA existente en el repo (mismo que usan AvatarStudio / CategoryNavEditor).
 import { uploadFile } from '../../services/firebase/storage';
@@ -77,7 +76,6 @@ const avisoProximidad = (dias) => {
 };
 
 const CuentaFechasImportantesPage = () => {
-  // eslint-disable-next-line no-unused-vars
   const { user, userProfile, updateUserProfile, claimDatesReward } = useAuth();
   const { addToCart } = useCart();
   const navigate = useNavigate();

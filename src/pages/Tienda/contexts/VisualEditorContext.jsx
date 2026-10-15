@@ -1,5 +1,3 @@
-// eslint-disable-next-line no-unused-vars
-// eslint-disable-next-line no-unused-vars
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';

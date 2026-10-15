@@ -8,10 +8,8 @@ import { VALID_GUESSES } from '../../data/wordleDictionary';
 import { useAuth } from '../../contexts/AuthContext';
 import { limaTodayStr } from '../../utils/fechaLima';
 import { trackMinigame } from '../../services/analytics/tracker';
-import { HelpCircle, Trophy, X } from 'lucide-react';
+import { HelpCircle, Trophy } from 'lucide-react';
 import ArcadeShell from '../Minijuegos/ArcadeShell';
-// eslint-disable-next-line no-unused-vars
-// eslint-disable-next-line no-unused-vars
 import styles from './WordlePage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 import Moneda from '../../components/common/Moneda';
@@ -437,7 +435,6 @@ const WordlePage = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onKeyPress, ayudaAbierta, showResultModal]);
 
 

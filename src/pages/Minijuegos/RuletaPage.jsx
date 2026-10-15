@@ -114,7 +114,6 @@ const prefiereMenosMovimiento = () => {
 const RuletaPage = () => {
   const { user, userProfile, reloadProfile, loading: authLoading } = useAuth();
   const { addToast } = useGlobalToast();
-  // eslint-disable-next-line no-unused-vars
   const navigate = useNavigate();
   const [premios, setPremios] = useState([]);
   const [config, setConfig] = useState(CONFIG_POR_DEFECTO);

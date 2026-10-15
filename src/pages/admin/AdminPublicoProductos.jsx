@@ -162,7 +162,6 @@ const AdminPublicoProductos = () => {
     const nuevos = {};
     for (let i = 0; i < cambios.length; i += 20) {
       const grupo = cambios.slice(i, i + 20);
-      // eslint-disable-next-line no-await-in-loop
       const res = await Promise.all(grupo.map(({ p, campos }) => updateDocument('productos_wala', p.id, campos)));
       res.forEach((r, k) => {
         if (r.error) fallos += 1;
@@ -185,7 +184,6 @@ const AdminPublicoProductos = () => {
     const nuevos = {};
     for (let i = 0; i < lista.length; i += 20) {
       const grupo = lista.slice(i, i + 20);
-      // eslint-disable-next-line no-await-in-loop
       const res = await Promise.all(grupo.map((p) => updateDocument('productos_wala', p.id, { publico: valor })));
       res.forEach((r, k) => {
         if (r.error) fallos += 1;

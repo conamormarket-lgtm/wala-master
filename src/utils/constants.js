@@ -101,5 +101,3 @@ export function getEtapaBadgeLabel(estado) {
   const key = getQueueStage(estado) || estadoToKey(estado) || '';
   return ESTADO_BADGE_LABEL[key] ?? ESTADO_BADGE_LABEL[key.replace(/[íi]/g, 'i')] ?? (estado || 'Pendiente');
 }
-
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';

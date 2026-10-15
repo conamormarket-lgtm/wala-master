@@ -155,9 +155,7 @@ const PrintAreasEditor = ({
   const [freeDrawPoints, setFreeDrawPoints] = useState([]); // Puntos del dibujo libre
   const [mousePos, setMousePos] = useState(null); // Seguir ratón para previsualización
   const [, setIsDrawingFree] = useState(false);
-  // eslint-disable-next-line no-unused-vars
   const [editingPointIndex, setEditingPointIndex] = useState(null); // Índice del punto que se está editando
-  // eslint-disable-next-line no-unused-vars
   const [editingZoneId, setEditingZoneId] = useState(null); // ID de la zona que se está editando
   const [isCapturing, setIsCapturing] = useState(false);
   const [isMouseOver, setIsMouseOver] = useState(false);

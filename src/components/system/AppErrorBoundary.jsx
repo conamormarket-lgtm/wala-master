@@ -42,7 +42,6 @@ class AppErrorBoundary extends React.Component {
       msg.includes('insertBefore')
     ) {
       try {
-        // eslint-disable-next-line no-console
         console.warn('AppErrorBoundary: ignorando conflicto de DOM:', msg);
       } catch {
         /* no-op */
@@ -50,7 +49,6 @@ class AppErrorBoundary extends React.Component {
       return;
     }
     try {
-      // eslint-disable-next-line no-console
       console.error('AppErrorBoundary:', error, errorInfo);
     } catch {
       /* no-op */

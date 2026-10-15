@@ -54,7 +54,6 @@ const FaqAccordion = ({ config = {} }) => {
     // redimensionar la ventana (el layout pasa a una sola columna en mobile).
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemsSignature]);
 
   if (items.length === 0) return null;

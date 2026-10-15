@@ -5,7 +5,7 @@ import '../../../fabricPatch'; // parche de renderAll: viaja con fabric, ya no e
 import { useEditor } from '../../../contexts/EditorContext';
 import { useDesignClipboard } from '../../../contexts/DesignClipboardContext';
 import { EDITOR_FONTS, FONT_WEIGHT_NORMAL, FONT_WEIGHT_BOLD, FONT_STYLE_NORMAL, FONT_STYLE_ITALIC } from '../../../../../../constants/fonts';
-import { toDirectImageUrl, toCanvasImageUrl, ensureSingleImageUrl } from '../../../../../../utils/imageUrl';
+import { toDirectImageUrl, ensureSingleImageUrl } from '../../../../../../utils/imageUrl';
 import { SHAPE_TYPES, renderShapeSVG, isPointInShape, loadCustomShape } from '../../../utils/shapeUtils';
 import styles from './EditorCanvas.module.css';
 

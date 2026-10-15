@@ -1,9 +1,6 @@
 import { getDocument, setDocument } from '../../../services/firebase/firestore';
 
-// eslint-disable-next-line no-unused-vars
-// eslint-disable-next-line no-unused-vars
 const COLLECTION = 'storefront';
-// eslint-disable-next-line no-unused-vars
 const DOC_ID = 'config';
 
 /**
@@ -413,7 +410,6 @@ export function migrateHomeCategoryGrid(sections, pageId) {
   return sorted.map((section, order) => ({ ...section, order }));
 }
 
-// eslint-disable-next-line no-unused-vars
 // Fecha del último guardado del builder (updatedAt que pone setDocument) en
 // ms, como "versión" de la página. El mapa de calor la usa para separar los
 // clics hechos sobre una versión anterior. null si no se sabe.
@@ -428,18 +424,15 @@ const versionDe = (data) => {
 
 export async function getStorefrontConfig(pageId = 'home') {
   const collection = 'pages';
-  // eslint-disable-next-line no-unused-vars
   const { data, error } = await getDocument(collection, pageId);
   
   if (data?.sections && Array.isArray(data.sections)) {
     return { sections: migrateHomeCategoryGrid(data.sections, pageId), version: versionDe(data), error: null };
   }
 
-// eslint-disable-next-line no-unused-vars
 
   // Fallback para Home desde la colección antigua 'storefront'
   if (pageId === 'home') {
-    // eslint-disable-next-line no-unused-vars
     const { data: legacyData, error: legacyError } = await getDocument('storefront', 'config');
     if (legacyData?.sections && Array.isArray(legacyData.sections)) {
       return { sections: migrateHomeCategoryGrid(legacyData.sections, pageId), version: versionDe(legacyData), error: null };

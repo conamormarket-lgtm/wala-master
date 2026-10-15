@@ -1,8 +1,6 @@
-// eslint-disable-next-line no-unused-vars
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { onAuthChange } from '../services/firebase/auth';
-// eslint-disable-next-line no-unused-vars
 import { getDocument, setDocument } from '../services/firebase/firestore';
 import { getAdminRoleByEmail } from '../services/adminRoles';
 import { LEGACY_USERS_COLLECTION, PORTAL_USERS_COLLECTION } from '../constants/userCollections';

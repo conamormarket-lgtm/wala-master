@@ -1,8 +1,6 @@
 import { db } from './config';
 import { doc, getDoc, updateDoc, setDoc, collection, getDocs, addDoc, deleteDoc, query, orderBy, limit as fsLimit } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-// eslint-disable-next-line no-unused-vars
-import { PORTAL_USERS_COLLECTION } from '../../constants/userCollections';
 import { limaWeekStartStr, limaDayOfWeek, limaTodayStr } from '../../utils/fechaLima';
 import { normalizarPremio, normalizarConfig, premiosDeHoy, textoPremio, CONFIG_POR_DEFECTO } from '../../utils/ruletaModel';
 

@@ -61,7 +61,6 @@ export function AyudaJuego({ abierta, onCerrar, intro, pasos = [], children, pie
         {pasos.length > 0 && (
           <ol className={s.pasos}>
             {pasos.map((p, k) => (
-              // eslint-disable-next-line react/no-array-index-key
               <li key={k}>
                 <Sello tamano={28} girar={k % 2 ? 6 : -8}><b className={s.pasoNumero}>{k + 1}</b></Sello>
                 <span>{p}</span>

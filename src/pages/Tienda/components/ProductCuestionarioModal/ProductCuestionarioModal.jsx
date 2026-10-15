@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-// eslint-disable-next-line no-unused-vars
-// eslint-disable-next-line no-unused-vars
 import { useGlobalToast } from '../../../../contexts/ToastContext';
 import { getCuestionarioTemplate } from '../../../../services/cuestionarios';
 import { createWebOrder } from '../../../../services/erp/firebase';
@@ -38,7 +36,6 @@ function ProductCuestionarioModal({
         setLoading(false);
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, templateId]);
 
@@ -78,7 +75,6 @@ function ProductCuestionarioModal({
       // Configurar WhatsApp number
       const tiendaNumRes = await getMessage('whatsapp_number_tienda');
       const fallbackNumRes = await getMessage('whatsapp_number');
-      // eslint-disable-next-line no-useless-escape
       let waNum = tiendaNumRes.data?.trim() || fallbackNumRes.data?.trim() || '51999999999';
       // eslint-disable-next-line no-useless-escape
       waNum = waNum.replace(/[\s\-\(\)\+]/g, '');

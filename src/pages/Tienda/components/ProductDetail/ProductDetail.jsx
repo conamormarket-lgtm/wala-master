@@ -437,9 +437,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
     product.comboItems.forEach((item, i) => { if (item.variantMapping?.color) init[i] = { color: item.variantMapping.color }; });
     if (Object.keys(init).length) setComboSels(prev => ({ ...init, ...prev }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.id, isCombo]);
-// eslint-disable-next-line react-hooks/exhaustive-deps
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setSelectedSize(sizes[0] || ''); }, [selectedVariant?.id, JSON.stringify(sizes)]);
@@ -464,7 +462,6 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
     return intersection.length ? intersection : [...new Set(lists.flat())];
   }, [isCombo, product?.comboItems, comboProd, comboSels]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!isCombo || comboSizeOptions.length === 0) return;
     if (!comboSizeOptions.includes(comboSize)) setComboSize(comboSizeOptions[0]);

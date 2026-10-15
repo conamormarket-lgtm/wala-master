@@ -19,25 +19,18 @@ const PREVIEW_URL = '/tienda';
 
 const AdminDashboard = () => {
   const queryClient = useQueryClient();
-  // eslint-disable-next-line no-unused-vars
   const [editingSection, setEditingSection] = useState(null);
-  // eslint-disable-next-line no-unused-vars
   const [addOpen, setAddOpen] = useState(false);
-  // eslint-disable-next-line no-unused-vars
   const [dragIndex, setDragIndex] = useState(null);
-  // eslint-disable-next-line no-unused-vars
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const addDropdownRef = useRef(null);
 
-  // eslint-disable-next-line no-unused-vars
   const [previewSrc, setPreviewSrc] = useState(() => `${PREVIEW_URL}?t=${Date.now()}`);
 
-  // eslint-disable-next-line no-unused-vars
   const refreshPreviews = () => {
     setPreviewSrc(`${PREVIEW_URL}?t=${Date.now()}`);
   };
 
-  // eslint-disable-next-line no-unused-vars
   const { data: config, isLoading, error } = useQuery({
     queryKey: ['storefront-config'],
     queryFn: async () => {
@@ -47,7 +40,6 @@ const AdminDashboard = () => {
     }
   });
 
-  // eslint-disable-next-line no-unused-vars
   const { data: collections } = useQuery({
     queryKey: ['admin-collections'],
     queryFn: async () => {
@@ -93,7 +85,6 @@ const AdminDashboard = () => {
   const sections = config?.sections ?? [];
   const sorted = [...sections].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
-  // eslint-disable-next-line no-unused-vars
   const handleMove = (index, dir) => {
     if (dir < 0 && index <= 0) return;
     if (dir > 0 && index >= sorted.length - 1) return;
@@ -103,7 +94,6 @@ const AdminDashboard = () => {
     saveMutation.mutate(next.map((s, i) => ({ ...s, order: i })));
   };
 
-  // eslint-disable-next-line no-unused-vars
   const handleDragStart = (e, index) => {
     setDragIndex(index);
     e.dataTransfer.setData('text/plain', String(index));
@@ -111,7 +101,6 @@ const AdminDashboard = () => {
     e.dataTransfer.dropEffect = 'move';
   };
 
-  // eslint-disable-next-line no-unused-vars
   const handleDragOver = (e, index) => {
     e.preventDefault();
     e.stopPropagation();
@@ -119,17 +108,14 @@ const AdminDashboard = () => {
     setDragOverIndex(index);
   };
 
-  // eslint-disable-next-line no-unused-vars
   const handleDragEnter = (e) => {
     e.preventDefault();
   };
 
-  // eslint-disable-next-line no-unused-vars
   const handleDragLeave = (e) => {
     if (!e.currentTarget.contains(e.relatedTarget)) setDragOverIndex(null);
   };
 
-  // eslint-disable-next-line no-unused-vars
   const handleDrop = (e, toIndex) => {
     e.preventDefault();
     e.stopPropagation();
@@ -149,19 +135,16 @@ const AdminDashboard = () => {
     setDragOverIndex(null);
   };
 
-  // eslint-disable-next-line no-unused-vars
   const handleDragEnd = () => {
     setDragIndex(null);
     setDragOverIndex(null);
   };
 
-  // eslint-disable-next-line no-unused-vars
   const handleDelete = (id) => {
     if (!window.confirm('¿Quitar esta zona?')) return;
     saveMutation.mutate(sorted.filter((s) => s.id !== id).map((s, i) => ({ ...s, order: i })));
   };
 
-  // eslint-disable-next-line no-unused-vars
   const handleAdd = (typeId) => {
     saveMutation.mutate([
       ...sorted,
@@ -169,7 +152,6 @@ const AdminDashboard = () => {
     ]);
   };
 
-  // eslint-disable-next-line no-unused-vars
   const handleSaveEdit = (updated) => {
     saveMutation.mutate(sorted.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)));
   };
@@ -208,7 +190,6 @@ const AdminDashboard = () => {
   );
 };
 
-// eslint-disable-next-line no-unused-vars
 function EditSectionModal({ section, collections, onSave, onClose }) {
   const [form, setForm] = useState(section.settings || {});
 

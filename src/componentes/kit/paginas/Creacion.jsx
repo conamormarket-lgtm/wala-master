@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Paintbrush, Check, Users, ArrowRight, Trash2, Download, LogIn, Sparkles, EyeOff } from 'lucide-react';
 import Boton from '../Boton';
 import Acordeon from '../Acordeon';
-import { Enlace } from '../Enlace';
 import { Aviso, EstadoVacio } from '../Feedback';
 import { SelectorTalla, Cantidad } from '../Formulario';
 import { EtiquetaColgante, Sello } from '../Marca';

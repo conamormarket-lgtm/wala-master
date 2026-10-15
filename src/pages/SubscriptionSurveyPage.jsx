@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-// eslint-disable-next-line no-unused-vars
-// eslint-disable-next-line no-unused-vars
 import { Gift, UserCircle, Users, CheckCircle, Heart, UserPlus, Plus, Trash2, ArrowLeft, AlertCircle } from 'lucide-react';
 import { getSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../services/encuestaConfig';
 import { registrarConversionPopup } from '../services/popups';
-import { showFlyingCoins, volarMonedasGanadas } from '../utils/animations';
+import { volarMonedasGanadas } from '../utils/animations';
 import { useGiftCatalog } from '../hooks/useGiftCatalog';
 import { PRESUPUESTOS } from '../utils/giftRecommender.mjs';
 import { PLACEHOLDER_IMG } from '../constants/placeholder';

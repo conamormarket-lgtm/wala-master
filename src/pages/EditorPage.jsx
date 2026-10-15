@@ -9,7 +9,6 @@ import { getDesignById, saveDesign, getDesignsByUser } from '../services/designs
 import { isComboProduct } from '../utils/comboProductUtils';
 import { generateFullUserComboCartPreview, generatePerItemSidePreviews } from '../utils/comboImageComposer';
 import AdminViewEditor from '../components/admin/AdminViewEditor/AdminViewEditor';
-// eslint-disable-next-line no-unused-vars
 import ComboUserEditor from '../components/editor/ComboUserEditor/ComboUserEditor';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal/Modal';
@@ -685,8 +684,6 @@ const EditorPage = () => {
     );
   }
 
-  // eslint-disable-next-line no-unused-vars
-  // eslint-disable-next-line no-unused-vars
   const priceDisplay = typeof price === 'number' && !Number.isNaN(price) ? price.toFixed(2) : '0.00';
 
   const renderExitModal = () => (

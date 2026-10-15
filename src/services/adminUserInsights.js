@@ -205,7 +205,6 @@ async function leerColeccionHasta(collectionName, maxDocs) {
 
   while (docs.length < maxDocs) {
     const pageSize = Math.min(AGGREGATE_PAGE_SIZE, maxDocs - docs.length);
-    // eslint-disable-next-line no-await-in-loop
     const { data, lastDoc, hasMore, error } = await getCollectionPaginated(
       collectionName,
       [],

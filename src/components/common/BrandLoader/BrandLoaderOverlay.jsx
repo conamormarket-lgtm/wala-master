@@ -176,7 +176,6 @@ const BrandLoaderOverlay = ({ show, relevo = false }) => {
     // Ojo: NO desbloqueamos cuando show pasa a false — eso lo hace
     // onExitComplete, cuando el zoom de salida ya termino (ver comentario
     // arriba). Aqui solo bloqueamos al entrar.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveShow]);
 
   // Red de seguridad #1: si `onExitComplete` de framer-motion no llega a
@@ -197,7 +196,6 @@ const BrandLoaderOverlay = ({ show, relevo = false }) => {
 
   // Seguridad: si el overlay se desmonta por completo estando bloqueado
   // (p.ej. cambio de ruta a mitad de la salida), restauramos el scroll.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => () => unlockScroll(), []);
 
   return createPortal(

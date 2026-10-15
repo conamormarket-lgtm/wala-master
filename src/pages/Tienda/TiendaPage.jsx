@@ -4,7 +4,6 @@ import { useSearchParams, useLocation, useNavigate, Link } from 'react-router-do
 import { useQuery, useInfiniteQuery, keepPreviousData, useIsFetching, useQueryClient } from '@tanstack/react-query';
 import ProductGrid from './components/ProductGrid';
 import VisualCategoryNav from './components/VisualCategoryNav/VisualCategoryNav';
-import ProductSearch from './components/ProductSearch';
 import CollectionCarousel from './components/CollectionCarousel';
 import FeaturedCarousel from './components/FeaturedCarousel';
 import AnnouncementBar from './components/AnnouncementBar';
@@ -56,7 +55,6 @@ import CustomFontsInjector from '../../components/common/CustomFontsInjector/Cus
 import { getDocument } from '../../services/firebase/firestore';
 import { getBrand, getBrands } from '../../services/brands';
 import { toDirectImageUrl } from '../../utils/imageUrl';
-import OptimizedImage from '../../components/common/OptimizedImage/OptimizedImage';
 import HeroBanner from './components/HeroBanner';
 import EditableSection from '../../components/admin/EditableSection';
 import { useVisualEditor } from './contexts/VisualEditorContext';
@@ -965,7 +963,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           </section>
         );
       }
-      case 'hero_banner':
+      case 'hero_banner': {
         // Usa la configuración local de la sección o el fallback al config global
         const heroConfig = { ...activeConfig.heroBanner, ...s };
         return (
@@ -974,6 +972,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
             <HeroBanner config={heroConfig} />
           </section>
         );
+      }
       case 'text':
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ padding: 0, overflow: 'hidden' }}>
@@ -1000,7 +999,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         let isEmbed = false;
 
         // Auto-convertir links de YouTube a formato embed
-        const ytMatch = finalUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+        const ytMatch = finalUrl.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/);
         if (ytMatch && ytMatch[1]) {
           finalUrl = `https://www.youtube.com/embed/${ytMatch[1]}`;
           isEmbed = true;

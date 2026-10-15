@@ -1,9 +1,7 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Filter, X, Search } from 'lucide-react';
 import ProductGrid from './ProductGrid';
 import styles from './SidebarCatalogLayout.module.css';
-// eslint-disable-next-line no-unused-vars
-// eslint-disable-next-line no-unused-vars
 import { useQuery } from '@tanstack/react-query';
 import { getCollections } from '../../../services/collections';
 import { getBrands } from '../../../services/brands';
@@ -258,7 +256,6 @@ const SidebarCatalogLayout = ({
       });
     }
     return { cats, cols, tgs, chars, types, brandIds };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [brandId, brandProducts, facetProducts, loadCatalogFacets, productsData, shouldScopeFacets]);
 
   // Listas EFECTIVAS que consume el render. Con brandId: acotadas a la marca.

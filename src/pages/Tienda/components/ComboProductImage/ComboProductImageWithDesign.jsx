@@ -131,8 +131,6 @@ const CACHE_VERSION = 'v20_forced_dims';
 
 export const NativeOverlay = ({ baseImageUrl, layers, isThumbnail = false }) => {
     const [dataUrl, setDataUrl] = useState(null);
-    // eslint-disable-next-line no-unused-vars
-    // eslint-disable-next-line no-unused-vars
     const [isGenerating, setIsGenerating] = useState(true);
     const validLayers = Array.isArray(layers) ? layers.filter(l => l && l.type) : [];
 
@@ -214,7 +212,6 @@ export const NativeOverlay = ({ baseImageUrl, layers, isThumbnail = false }) => 
             setIsGenerating(false);
         });
 
-        // eslint-disable-next-line react-hooks/exhaustive-deps
         return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [baseImageUrl, layers, loadingFonts]);
@@ -393,24 +390,20 @@ const ComboProductImageWithDesign = ({
     onError
 }) => {
     const queryClient = useQueryClient();
-    // eslint-disable-next-line no-unused-vars
     const [itemsData, setItemsData] = useState([]);
     const containerRef = useRef(null);
     // Misma fila con ancho mínimo por tarjeta + scroll-x que ComboProductImage;
     // este hook agrega arrastre con mouse cuando no entran todas las piezas.
     useDragScroll(containerRef, !isThumbnail);
 
-    // eslint-disable-next-line no-unused-vars
     const { data: customFonts, isLoading: loadingFonts } = useQuery({
         queryKey: ['fonts'],
         queryFn: async () => {
             const { data, error } = await getFonts();
             return error ? [] : data;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
         }
     });
 
-// eslint-disable-next-line react-hooks/exhaustive-deps
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const comboItems = comboProduct?.comboItems || [];

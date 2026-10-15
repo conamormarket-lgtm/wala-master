@@ -50,7 +50,6 @@ const KapiPet = () => {
   // Lo que se le dice al usuario según cómo esté Kapi. Antes el subtítulo era
   // siempre el mismo ("Alimenta a Kapi todos los días..."), así que la carita
   // cambiaba y el texto no la acompañaba.
-  // eslint-disable-next-line no-unused-vars
   const TEXTO_ESTADO = {
     happy: 'Kapi está feliz. Vuelve mañana por su comida.',
     hungry: 'Kapi tiene hambre. Dale de comer y te llevas una moneda.',
@@ -61,7 +60,6 @@ const KapiPet = () => {
   // que llora se llamaba 'hungry' y el de la carita alicaida 'sad', asi que un
   // solo dia sin comer sacaba lagrimas y llevar dias olvidado sacaba la cara
   // suave. Se renombraron para que el nombre no vuelva a mentir.
-  // eslint-disable-next-line no-unused-vars
   const IMAGES = {
     // WebP a 400 px. Los PNG originales eran de 800 px y pesaban 638/598/545 KB
     // CADA UNO, y el boton flotante los pinta a 56 px en TODAS las paginas: eran
@@ -336,7 +334,6 @@ const KapiPet = () => {
   const progressData = userProfile?.weeklyChallengeProgress || {};
   const isChallengeCompleted = progressData.challengeId === activeWeeklyChallenge?.challengeId && progressData.completed;
   const currentProgress = progressData.challengeId === activeWeeklyChallenge?.challengeId ? (progressData.progress || 0) : 0;
-  // eslint-disable-next-line no-unused-vars
   const isPendingApproval = userProfile?.challengeEvidencesApproved?.includes(activeWeeklyChallenge?.challengeId);
   // Wait, actually challengeEvidencesApproved means it IS approved.
   const isManualApproved = userProfile?.challengeEvidencesApproved?.includes(activeWeeklyChallenge?.challengeId);

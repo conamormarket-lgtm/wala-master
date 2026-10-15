@@ -1,4 +1,4 @@
-import { getCollection, createDocument, updateDocument, getDocument } from './firebase/firestore';
+import { getCollection, createDocument, getDocument } from './firebase/firestore';
 
 const COLLECTION = 'producto_cliente_personalizado';
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { searchCatalog, searchProductsFirestore } from '../services/search';
+import { searchProductsFirestore } from '../services/search';
 import { getDocument } from '../services/firebase/firestore';
 import { useVisualEditor } from './Tienda/contexts/VisualEditorContext';
 import EditableSection from '../components/admin/EditableSection';

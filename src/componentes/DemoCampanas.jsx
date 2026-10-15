@@ -82,7 +82,7 @@ const CAMPANA = {
 };
 
 /* Regalos con amor: lo real de pages/NuevosUsuariosPage.jsx (sin emojis en las reseñas). */
-const sinEmojis = (t) => t.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '').replace(/\s+([.!?,])/g, '$1').trim();
+const sinEmojis = (t) => t.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]|\u{FE0F}/gu, '').replace(/\s+([.!?,])/g, '$1').trim();
 const RESENAS = [
   ['Lima, PE', '12/05/2026', 'Un detalle muy especial', 'Pedimos poleras para aniversario y nos sorprendieron muchísimo. La impresión se ve elegante y resistente. Y de regalo nos dieron unas pulseras que brillan en la oscuridad ☕❤️'],
   ['Arequipa, PE', '08/05/2026', 'Calidad Premium', 'Los gorros personalizados quedaron increíbles. Son cómodos, modernos y el bordado se ve de muy buena calidad. Mi novio y yo los usamos todos los días. ¡Nos preguntan dónde los compramos!'],

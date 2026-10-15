@@ -515,7 +515,6 @@ export async function fetchHeatmapBatches(options = {}) {
   while (hasMore && docs.length < maxDocs) {
     const pageSize = Math.min(PAGE_SIZE, maxDocs - docs.length);
     // Secuencial a propósito: cada página necesita el cursor de la anterior.
-    // eslint-disable-next-line no-await-in-loop
     const page = await getCollectionPaginated(
       HEATMAP_COLLECTION,
       filters,

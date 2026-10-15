@@ -440,7 +440,6 @@ const ShapeCreator = ({ onSave, onClose, initialPath = null, initialName = '' })
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleUndo is stable; avoid re-subscribing when history changes
   // eslint-disable-next-line react-hooks/exhaustive-deps -- handleUndo stable; avoid re-sub on history change
   }, [historyIndex, history]);
 

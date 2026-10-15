@@ -480,7 +480,6 @@ export function PaginaBolitas({
                 <div className={s.tubos} style={{ '--tubos': tubos.length }}>
                   {tubos.map((t, i) => (
                     <TuboBolitas
-                      // eslint-disable-next-line react/no-array-index-key
                       key={i}
                       numero={i + 1}
                       bolas={t}

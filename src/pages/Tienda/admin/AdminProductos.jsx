@@ -22,8 +22,6 @@ import styles from './AdminProductos.module.css';
 const AdminProductos = () => {
   const queryClient = useQueryClient();
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  // eslint-disable-next-line no-unused-vars
-  // eslint-disable-next-line no-unused-vars
   const [creatingReference, setCreatingReference] = useState(false);
   const [createResult, setCreateResult] = useState(null);
   const [optimisticVisibility, setOptimisticVisibility] = useState({});
@@ -262,7 +260,6 @@ const AdminProductos = () => {
       });
     }
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     return filtered;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productsData, comboItemProductIds, optimisticVisibility, searchQuery, statusFilter]);
@@ -434,10 +431,8 @@ const AdminProductos = () => {
       console.error('Error al duplicar producto:', err);
       showError('Error al duplicar producto: ' + (err.message || 'Error desconocido'));
     }
-  // eslint-disable-next-line no-unused-vars
   };
 
-  // eslint-disable-next-line no-unused-vars
   const handleCreateReferenceProducts = async () => {
     if (!window.confirm('¿Crear 5 productos de referencia (Poleras, Polos, Joggers, Gorros, Joyas)?\n\nEsto creará productos con datos de ejemplo.')) {
       return;

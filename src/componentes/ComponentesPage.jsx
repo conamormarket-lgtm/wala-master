@@ -9,12 +9,11 @@ import {
   Boton, Etiqueta, Chip, CostoMonedas, GananciaMonedas, SaldoMonedas,
   Campo, SelectorTalla, SelectorColor, Cantidad, Interruptor,
   TarjetaProducto, TarjetaProductoEsqueleto,
-  Cabecera, BarraInferior, Pestanas, Logo,
-  SeguimientoPedido, ItemCarrito, BarraEnvioGratis, ResumenPedido,
+  Cabecera, BarraInferior, Pestanas, Logo, BarraEnvioGratis,
   Aviso, ProveedorToasts, useToast, useNotificaciones, ListaNotificaciones, EstadoVacio, HojaInferior, soles,
   EASE, RESORTE, Revelar, Contador,
   ProveedorEnlaces, MenuTienda, MenuMarcas, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito, AgregarRapido,
-  accionDeProducto, tarjetaDesdeProducto, opcionesDeProducto, RenderSecciones,
+  accionDeProducto, tarjetaDesdeProducto, opcionesDeProducto,
   IconoWala, ICONOS_WALA, IsoWala,
 } from './kit';
 import s from './ComponentesPage.module.css';

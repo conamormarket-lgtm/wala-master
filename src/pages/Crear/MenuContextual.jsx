@@ -69,7 +69,6 @@ const MenuContextual = ({ x, y, items, onCerrar }) => {
       onContextMenu={(e) => e.preventDefault()}
     >
       {items.map((item, i) => (item === 'separador' ? (
-        // eslint-disable-next-line react/no-array-index-key
         <div key={`sep-${i}`} className={styles.separador} role="separator" />
       ) : (
         <button

@@ -253,7 +253,6 @@ export const getAnaliticaEnlace = async (pageId) => {
     const ids = [...sesionesFaltantes];
     for (let i = 0; i < ids.length; i += 10) {
       const lote = ids.slice(i, i + 10);
-      // eslint-disable-next-line no-await-in-loop
       const sSnap = await getDocs(query(
         collection(db, ANALYTICS_COLLECTIONS.SESSIONS),
         where(documentId(), 'in', lote)

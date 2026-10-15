@@ -4,8 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fabric } from 'fabric';
 import {
   ArrowLeft, ImagePlus, Images, Plus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
-  Crosshair, Maximize2, RotateCw, Crop, Eraser, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info, Undo2, Redo2, Keyboard, Clipboard, ClipboardPaste, Pencil,
-  X, Check, Minus, Hand, ZoomIn, ZoomOut, HelpCircle, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
+  Crosshair, Maximize2, RotateCw, Crop, Eraser, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info, Undo2, Redo2, Keyboard, Clipboard, ClipboardPaste, Pencil, Check, Minus, Hand, ZoomIn, ZoomOut, HelpCircle, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
   AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,7 +18,7 @@ import {
 } from '../../services/crearArchivos';
 import {
   UNIDADES_ZONA, leerPrendaBase, precioBase, precioPersonalizado, zonasConDiseno, listarZonas,
-  calidadDeCapa, medidaZona, cargarImagen, tintarImagen, fotoDeVista, requiereTenido, fondoDeVista, textoSobre, esColorBlanco,
+  calidadDeCapa, medidaZona, cargarImagen, fotoDeVista, fondoDeVista, textoSobre, esColorBlanco,
   colorDisponible, tallasDeColor, slug, fondoMuestra, vistasDelColor,
 } from '../../utils/prendaBase';
 import {

@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-// eslint-disable-next-line no-unused-vars
-// eslint-disable-next-line no-unused-vars
 import { Link } from 'react-router-dom';
 import { Save, Plus, Trash2 } from 'lucide-react';
 import { getSurveyConfig, saveSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../../services/encuestaConfig';
@@ -19,9 +17,7 @@ const AdminEncuestas = () => {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line no-unused-vars
     const fetchConfig = async () => {
-      // eslint-disable-next-line no-unused-vars
       const { data, error } = await getSurveyConfig();
       if (data) {
         // Hacemos un merge con default por si hay campos nuevos

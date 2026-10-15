@@ -245,5 +245,5 @@ export function csvRespuestas(usuarios, config) {
       ]);
     });
   });
-  return `﻿${filas.map((r) => r.map(celda).join(';')).join('\r\n')}`;
+  return `\uFEFF${filas.map((r) => r.map(celda).join(';')).join('\r\n')}`;
 }

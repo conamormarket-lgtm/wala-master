@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCliparts, createClipart, updateClipart, deleteClipart } from '../../services/cliparts';
 import { uploadFile } from '../../services/firebase/storage';
 import { toDirectImageUrl } from '../../utils/imageUrl';
-// eslint-disable-next-line no-unused-vars
 import { Edit2, Trash2, ImagePlus, Loader2, X } from 'lucide-react';
 import Button from '../../components/common/Button';
 import styles from './AdminCliparts.module.css';

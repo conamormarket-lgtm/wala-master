@@ -17,6 +17,7 @@ export const normalizarPalabra = (t) => String(t || '')
   .replace(/Ñ/g, '\u0000')
   .normalize('NFD')
   .replace(/[̀-ͯ]/g, '')
+  // eslint-disable-next-line no-control-regex -- \u0000 es la marca que protege la Ñ
   .replace(/\u0000/g, 'Ñ');
 
 /**

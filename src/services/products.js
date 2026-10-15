@@ -24,6 +24,12 @@ const CACHE_KEYS = {
 // pegado tanto tiempo.
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
+// Number(x) ?? n nunca usa n: Number(undefined) es NaN, que no es nullish.
+const numeroO = (valor, porDefecto) => {
+  const n = Number(valor);
+  return Number.isFinite(n) ? n : porDefecto;
+};
+
 const writeCache = (key, data) => {
   try {
     localStorage.setItem(key, JSON.stringify({ data, cachedAt: Date.now() }));
@@ -1410,13 +1416,13 @@ function normalizeProductPayload(data) {
         printAreas: Array.isArray(c.printAreas) ? c.printAreas.map((a) => ({
           id: a.id,
           shape: a.shape || 'rectangle',
-          x: Number(a.x) ?? 10,
-          y: Number(a.y) ?? 10,
-          width: Number(a.width) ?? 80,
-          height: Number(a.height) ?? 80,
-          rotation: Number(a.rotation) ?? 0,
-          skewX: Number(a.skewX) ?? 0,
-          skewY: Number(a.skewY) ?? 0,
+          x: numeroO(a.x, 10),
+          y: numeroO(a.y, 10),
+          width: numeroO(a.width, 80),
+          height: numeroO(a.height, 80),
+          rotation: numeroO(a.rotation, 0),
+          skewX: numeroO(a.skewX, 0),
+          skewY: numeroO(a.skewY, 0),
           ...(a.customShapeId && { customShapeId: String(a.customShapeId) }),
           ...(a.freeDrawPath && { freeDrawPath: String(a.freeDrawPath) })
         })) : [],
@@ -1437,13 +1443,13 @@ function normalizeProductPayload(data) {
             printAreas: Array.isArray(c.backSide.printAreas) ? c.backSide.printAreas.map((a) => ({
               id: a.id,
               shape: a.shape || 'rectangle',
-              x: Number(a.x) ?? 10,
-              y: Number(a.y) ?? 10,
-              width: Number(a.width) ?? 80,
-              height: Number(a.height) ?? 80,
-              rotation: Number(a.rotation) ?? 0,
-              skewX: Number(a.skewX) ?? 0,
-              skewY: Number(a.skewY) ?? 0,
+              x: numeroO(a.x, 10),
+              y: numeroO(a.y, 10),
+              width: numeroO(a.width, 80),
+              height: numeroO(a.height, 80),
+              rotation: numeroO(a.rotation, 0),
+              skewX: numeroO(a.skewX, 0),
+              skewY: numeroO(a.skewY, 0),
               ...(a.customShapeId && { customShapeId: String(a.customShapeId) }),
               ...(a.freeDrawPath && { freeDrawPath: String(a.freeDrawPath) })
             })) : []

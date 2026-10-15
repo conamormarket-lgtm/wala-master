@@ -173,7 +173,6 @@ export function TarjetaCreacion({
                 onChange={(e) => setEditando(e.target.value)}
                 maxLength={60}
                 aria-label="Nombre de la creación"
-                // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
                 onFocus={(e) => e.currentTarget.select()}
                 onKeyDown={(e) => { if (e.key === 'Escape') setEditando(null); }}

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-// eslint-disable-next-line no-unused-vars
 import { useEditor } from '../../../contexts/EditorContext';
 import { useDesignClipboard } from '../../../contexts/DesignClipboardContext';
 import styles from './MobileFloatingTools.module.css';

@@ -1,6 +1,4 @@
 import { initializeApp } from 'firebase/app';
-// eslint-disable-next-line no-unused-vars
-// eslint-disable-next-line no-unused-vars
 import { initializeFirestore, persistentLocalCache, getFirestore, connectFirestoreEmulator, setLogLevel } from 'firebase/firestore';
 import {
   getAuth,

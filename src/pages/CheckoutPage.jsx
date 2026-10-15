@@ -21,7 +21,6 @@ import { esComboCrear, repartirPrecio, resumenPiezas } from './Crear/comboCrear'
 // monedas. Aquí solo se pinta el descuento y se consume el cupón al crear el
 // pedido; el navegador nunca decide cuánto vale.
 import { validarCupon, canjearCupon } from '../services/cupones';
-import { validateDNI } from '../utils/helpers';
 import { detectCountry } from '../services/geo';
 import { trackCheckoutStart, trackPurchaseComplete } from '../services/analytics/tracker';
 import CountrySelect from '../components/intl/CountrySelect';
@@ -43,7 +42,7 @@ import { getCurrency, formatMoney } from '../constants/currencies';
 import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../constants/documentTypes';
 // Design System "Aurora Violeta Serena": superficies de vidrio y CTAs premium.
 // Uso SOLO presentacional (aditivo); no altera lógica de compra/pago/totales.
-import { GlassCard, Badge, AuroraBackground } from '../components/ui';
+import { GlassCard, AuroraBackground } from '../components/ui';
 import { DEPARTAMENTOS, getProvincias } from '../constants/peruUbigeo';
 import { ubicacionErp, lugarLegible, distritosSugeridos, distritoEnLugar, distritoDeLista, esExtranjero } from '../utils/ubicacionErp';
 import styles from './CheckoutPage.module.css';
@@ -275,8 +274,6 @@ const leerBorradorCheckout = () => {
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
-  // eslint-disable-next-line no-unused-vars
-  // eslint-disable-next-line no-unused-vars
   const { items, getTotalPrice, clearSelectedItems } = useCart();
   const { user, userProfile, loading: authLoading, updateUserProfile, freezeMonedas, activeMainCoins } = useAuth();
   const sinCuenta = !authLoading && (!user || user.isAnonymous);
@@ -569,7 +566,6 @@ const CheckoutPage = () => {
         let num = tiendaNum.data?.trim() || fallbackNum.data?.trim() || '';
         let cleanText = textTienda.data || 'Solicitud de Pedido\n\nHola! Vengo de la tienda virtual y quiero confirmar mi pedido con código {id}.';
 
-// eslint-disable-next-line no-useless-escape
 
         // eslint-disable-next-line no-useless-escape
         let clean = num.replace(/[\s\-\(\)\+]/g, '');

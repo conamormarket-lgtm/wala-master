@@ -129,7 +129,6 @@ function CulqiSuscripcionButton({ campaignId, plan, email, datos, origenApp, onO
     // Al cambiar deps o desmontar: cierra/purga ESTA instancia si sigue siendo la global.
     return () => { destroyCulqi(culqiInstance); };
     // onOk/onError se leen vía refs estables (no van en deps).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReady, plan, email, campaignId, datos, origenApp]);
 
   const handleOpen = () => {

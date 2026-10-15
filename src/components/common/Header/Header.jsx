@@ -14,7 +14,7 @@ import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorCont
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import EditableSection from '../../admin/EditableSection';
 import HeaderSearch from '../HeaderSearch/HeaderSearch';
-import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search, ChevronDown, ChevronRight, Check, LogOut, X, Loader2 } from 'lucide-react';
+import { Heart, User, ShoppingBag, Home, ChevronDown, ChevronRight, Check, LogOut, X, Loader2 } from 'lucide-react';
 import { esAppNativa } from '../../../utils/vistaPreviaCalor';
 import { logout } from '../../../services/firebase/auth';
 import { useCuentaNavGroups } from '../../../pages/cuenta/useCuentaNavGroups';
@@ -503,7 +503,6 @@ const Header = () => {
 
   useEffect(() => {
     closeDropdowns();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
 

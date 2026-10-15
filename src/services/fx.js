@@ -143,7 +143,6 @@ export async function getFx() {
   } catch (e) {
     // Error de red / permisos / offline: caemos a caché / fallback.
     // No relanzamos; el checkout debe poder continuar.
-    // eslint-disable-next-line no-console
     console.warn('[fx] No se pudo leer config/fx de Firestore, usando caché o fallback:', e?.message || e);
   }
 

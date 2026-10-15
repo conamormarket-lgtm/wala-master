@@ -597,7 +597,6 @@ const LandingPaymentBlock = ({ config = {} }) => {
       if (!isTouch) document.removeEventListener('mouseout', onMouseOut);
       window.removeEventListener('beforeunload', onBeforeUnload);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showWhatsApp, pagoCompletado]);
 
   const handleExitWhatsApp = () => {

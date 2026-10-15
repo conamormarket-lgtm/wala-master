@@ -8,14 +8,10 @@ import { getCategories } from '../../../services/categories';
 import { getProductsByBrand } from '../../../services/products';
 import { getLandingPageBySlug } from '../services/landingPages';
 import { getDocument } from '../../../services/firebase/firestore';
-// eslint-disable-next-line no-unused-vars
-// eslint-disable-next-line no-unused-vars
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import { SECTION_TYPES, getDefaultSettings } from '../services/storefront';
 import { normalizeTestimonial } from '../components/Testimonials/Testimonials';
 import styles from '../../../components/admin/VisualEditorPanel.module.css';
-// eslint-disable-next-line no-unused-vars
-// eslint-disable-next-line no-unused-vars
 import { Eye, EyeOff, Settings2, Trash2, ChevronUp, ChevronDown, Plus, ArrowLeft, Save, LayoutTemplate, PanelLeft, Monitor, PanelRight, Smartphone, Settings, Layers } from 'lucide-react';
 
 import TypographyControl from './editor/controls/TypographyControl';

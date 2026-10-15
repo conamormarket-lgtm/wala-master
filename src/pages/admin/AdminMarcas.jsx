@@ -347,7 +347,7 @@ const AdminMarcas = () => {
             onChange={(e) =>
               setWhatsappConfig((c) => ({
                 ...c,
-                numeroPrincipal: e.target.value.replace(/[^\d\s\-\(\)\+]/g, ''),
+                numeroPrincipal: e.target.value.replace(/[^\d\s\-()+]/g, ''),
               }))
             }
             className={styles.input}
@@ -470,7 +470,7 @@ const AdminMarcas = () => {
                 type="text"
                 placeholder="Ej: +51 987 654 321"
                 value={form.whatsappNumber}
-                onChange={(e) => setForm((f) => ({ ...f, whatsappNumber: e.target.value.replace(/[^\d\s\-\(\)\+]/g, '') }))}
+                onChange={(e) => setForm((f) => ({ ...f, whatsappNumber: e.target.value.replace(/[^\d\s\-()+]/g, '') }))}
                 className={styles.input}
               />
               <small style={{ color: 'var(--gris-texto, #6b7280)', fontSize: '0.78rem', marginTop: '0.3rem', display: 'block' }}>

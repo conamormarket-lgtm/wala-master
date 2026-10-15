@@ -5,7 +5,6 @@ import '../../../fabricPatch'; // parche de renderAll: viaja con fabric, ya no e
 import { useEditor } from '../../../contexts/EditorContext';
 import { useDesignClipboard } from '../../../contexts/DesignClipboardContext';
 import { EDITOR_FONTS, FONT_WEIGHT_NORMAL, FONT_WEIGHT_BOLD, FONT_STYLE_NORMAL, FONT_STYLE_ITALIC } from '../../../constants/fonts';
-// eslint-disable-next-line no-unused-vars
 import { toDirectImageUrl, ensureSingleImageUrl } from '../../../utils/imageUrl';
 import { SHAPE_TYPES, renderShapeSVG, isPointInShape, loadCustomShape } from '../../../utils/shapeUtils';
 import styles from './EditorCanvas.module.css';
@@ -841,7 +840,6 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
           if (active) {
             e.preventDefault();
             const step = e.shiftKey ? 10 : 1;
-            // eslint-disable-next-line default-case
             switch(e.key) {
                case 'ArrowUp': active.set('top', active.top - step); break;
                case 'ArrowDown': active.set('top', active.top + step); break;
@@ -1092,7 +1090,6 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
 
   useEffect(() => {
     const lc = localCanvasRef.current;
-    // eslint-disable-next-line no-unused-vars
     const { totalW = 0, totalH = 0, padding = 0 } = imageDimensions || {};
     if (!lc || !isCanvasValid(lc) || totalW === 0 || totalH === 0) return;
     try {
