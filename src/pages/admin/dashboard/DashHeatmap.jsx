@@ -5,6 +5,7 @@ import HeatmapViewer from '../../../components/dashboard/HeatmapViewer';
 import {
   fetchHeatmapBatches,
   aggregateHeatmapBatches,
+  versionesDesdePaginas,
   ANCHOS_PANTALLA,
 } from '../../../services/heatmapData';
 import {
@@ -16,6 +17,7 @@ import {
   itemVariants,
   fmtInt,
 } from './dashShared';
+import { getCollection } from '../../../services/firebase/firestore';
 import styles from '../AdminDashboard.module.css';
 // Clases glass del segmentado compartido (solo se IMPORTAN; el .css es de dashShared).
 import glass from './dashShared.extra.module.css';
@@ -119,6 +121,23 @@ export default function DashHeatmap() {
   // todo el historial); antes había además un filtro por el user-agent del
   // lote que hacía lo mismo solo para lotes nuevos y confundía.
   const [ancho, setAncho] = useState('todos');
+  // 'actual' = solo clics hechos después del último cambio de cada página en
+  // el builder (sobre el diseño que se ve hoy); 'todos' = cualquier diseño.
+  const [diseno, setDiseno] = useState('todos');
+
+  // Fecha del último cambio de cada página del builder (colección `pages`):
+  // una lectura por página, con la misma caché que el resto del panel.
+  const paginasQuery = useQuery({
+    queryKey: ['admin-heatmap-paginas-builder'],
+    queryFn: async () => {
+      const { data } = await getCollection('pages');
+      return versionesDesdePaginas(data || []);
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
+  });
+  const versionesPorRuta = paginasQuery.data || null;
   const [incluirSinMeta, setIncluirSinMeta] = useState(false);
 
   // LECTURA PAGINADA POR RANGO — cacheada por react-query (clave = rango) y por
@@ -149,15 +168,21 @@ export default function DashHeatmap() {
 
   // RE-AGREGACIÓN EN CLIENTE con los filtros vigentes (función pura, sin red).
   const heatmap = useMemo(
-    () => aggregateHeatmapBatches(docs || [], { origen, ancho, incluirSinMeta }),
-    [docs, origen, ancho, incluirSinMeta]
+    () => aggregateHeatmapBatches(docs || [], {
+      origen,
+      ancho,
+      incluirSinMeta,
+      versionesPorRuta,
+      soloDisenoActual: diseno === 'actual',
+    }),
+    [docs, origen, ancho, incluirSinMeta, versionesPorRuta, diseno]
   );
 
   // ¿Hay un filtro activo que dependa de los campos NUEVOS del lote?
   const filtroMetaActivo = origen !== 'todos';
   // Aviso honesto: hay lotes viejos (sin origen/dispositivo) afectados por ese filtro.
   const avisoSinMeta = filtroMetaActivo && heatmap.batchesSinMeta > 0;
-  const hayFiltrosActivos = filtroMetaActivo || ancho !== 'todos';
+  const hayFiltrosActivos = filtroMetaActivo || ancho !== 'todos' || diseno !== 'todos';
 
   // Mensaje honesto para el estado vacío del visor: distingue "no hay datos"
   // de "tus filtros dejaron fuera todos los clics".
@@ -198,6 +223,21 @@ export default function DashHeatmap() {
         >
           <GrupoFiltro etiqueta="Origen">
             <OrigenPicker origen={origen} setOrigen={setOrigen} />
+          </GrupoFiltro>
+          <GrupoFiltro etiqueta="Diseño de la página">
+            <SegmentadoHeatmap
+              opciones={[
+                { value: 'todos', label: 'Todos', title: 'Clics de cualquier diseño de la página' },
+                {
+                  value: 'actual',
+                  label: 'Solo el actual',
+                  title: 'Solo clics hechos después del último cambio de cada página en el builder',
+                },
+              ]}
+              valor={diseno}
+              onChange={setDiseno}
+              ariaLabel="Filtrar por diseño de la página"
+            />
           </GrupoFiltro>
           <GrupoFiltro etiqueta="Dispositivo">
             <SegmentadoHeatmap
@@ -264,6 +304,9 @@ export default function DashHeatmap() {
             error={batchesQuery.error?.message || null}
             emptyMessage={mensajeVacio}
             ancho={ancho}
+            versionesPorRuta={versionesPorRuta}
+            soloDisenoActual={diseno === 'actual'}
+            onCambiarDiseno={(actual) => setDiseno(actual ? 'actual' : 'todos')}
           />
         </motion.div>
       </motion.div>

@@ -91,6 +91,15 @@ function bucketAncho(screenWidth) {
   return 'desktop';
 }
 
+// Fecha en ms desde un Timestamp de Firestore, {seconds}, ISO o número.
+function msDe(valor) {
+  if (valor == null) return null;
+  if (typeof valor.toMillis === 'function') return valor.toMillis();
+  if (Number.isFinite(valor.seconds)) return valor.seconds * 1000;
+  const ms = typeof valor === 'number' ? valor : Date.parse(valor);
+  return Number.isFinite(ms) ? ms : null;
+}
+
 function clamp01(n) {
   if (!Number.isFinite(n)) return null;
   if (n < 0) return 0;
@@ -578,6 +587,7 @@ export async function fetchHeatmapBatches(options = {}) {
  *   pageNames: Record<string,string>,
  *   pointsByPath: Record<string, Array<{xNorm,yFrac,yScreens,ancho,px,py,sw,sh,weight}>>,
  *   previewPathByPath: Record<string,string>,  // página concreta para la vista previa
+ *   clicsAntesByPath: Record<string,number>,   // clics anteriores al último cambio del builder
  *   variantesByPath: Record<string,number>,    // nº de páginas concretas del grupo
  *   clicksByPath: Record<string, number>,
  *   maxClicks: number,
@@ -595,6 +605,12 @@ export function aggregateHeatmapBatches(docs = [], filtros = {}) {
   const dispositivo = filtros.dispositivo || 'todos';
   const ancho = filtros.ancho || 'todos';
   const incluirSinMeta = Boolean(filtros.incluirSinMeta);
+  // Fecha del último cambio en el builder de cada página (ruta -> ms) y si se
+  // quieren solo los clics hechos DESPUÉS de ese cambio (el diseño actual).
+  // Un clic anterior al último cambio se hizo sobre otro diseño de la página.
+  const versionesPorRuta = filtros.versionesPorRuta || null;
+  const soloDisenoActual = Boolean(filtros.soloDisenoActual);
+  const clicsAntesByPath = {};
 
   // pointsByPath: clave de página -> [{xNorm,yFrac,yScreens,ancho,px,py,sw,sh,weight}]
   // (la clave agrupa las páginas con código: '/producto/:id'; ver claveDePagina).
@@ -617,6 +633,7 @@ export function aggregateHeatmapBatches(docs = [], filtros = {}) {
   const lista = Array.isArray(docs) ? docs : [];
 
   lista.forEach((docData) => {
+    const tLote = msDe(docData?.timestamp);
     const events = Array.isArray(docData?.events) ? docData.events : [];
     const clientType = typeof docData?.clientType === 'string'
       ? docData.clientType.trim().toUpperCase()
@@ -663,6 +680,15 @@ export function aggregateHeatmapBatches(docs = [], filtros = {}) {
       if (path == null) return; // panel admin: fuera del mapa
       if (esClicDeAdmin(ev)) return; // barra de admin: fuera del mapa
 
+      // ¿Clic anterior al último cambio de esta página en el builder?
+      const t = msDe(ev?.time) ?? tLote;
+      const version = versionesPorRuta
+        ? (versionesPorRuta[path] ?? versionesPorRuta[path.toLowerCase()] ?? null)
+        : null;
+      const antes = Boolean(version && t && t < version);
+      if (antes) clicsAntesByPath[path] = (clicsAntesByPath[path] || 0) + 1;
+      if (antes && soloDisenoActual) return;
+
       if (!concretasByPath[path]) concretasByPath[path] = new Map();
       const concreta = rawPath === 'unknown' ? rawPath : limpiarRuta(rawPath);
       concretasByPath[path].set(concreta, (concretasByPath[path].get(concreta) || 0) + 1);
@@ -679,6 +705,10 @@ export function aggregateHeatmapBatches(docs = [], filtros = {}) {
         : null;
 
       const point = normalizePoint(ev);
+      if (point) {
+        point.t = t;
+        point.antes = antes;
+      }
       if (point) {
         // `el` enlaza el punto con su fila del ranking (para señalarlo).
         point.el = elemento ? elemento.key : null;
@@ -767,7 +797,33 @@ export function aggregateHeatmapBatches(docs = [], filtros = {}) {
     batchesExcluidos,
     batchesSinMeta,
     clicksSinMeta,
+    clicsAntesByPath,
   };
+}
+
+/**
+ * Fecha del último cambio en el builder de cada página, por RUTA (en minúsculas):
+ * los docs de la colección `pages` (id = 'home', 'tienda' o el slug de una
+ * landing; updatedAt lo pone setDocument al guardar). 'home' es '/' y '/home'.
+ * Sirve para saber si un clic se hizo sobre el diseño actual de la página.
+ *
+ * @param {Array<{id:string, updatedAt:any}>} paginas
+ * @returns {Record<string, number>}
+ */
+export function versionesDesdePaginas(paginas = []) {
+  const versiones = {};
+  (Array.isArray(paginas) ? paginas : []).forEach((pagina) => {
+    const ms = msDe(pagina?.updatedAt);
+    if (!pagina?.id || !ms) return;
+    const id = String(pagina.id).toLowerCase();
+    if (id === 'home') {
+      versiones['/'] = ms;
+      versiones['/home'] = ms;
+    } else {
+      versiones[`/${id}`] = ms;
+    }
+  });
+  return versiones;
 }
 
 /**

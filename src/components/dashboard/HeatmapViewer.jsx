@@ -286,7 +286,14 @@ function esFijo(win, el) {
 //  - Con texto: no hay ningún elemento así a la vista (vive en un menú o
 //    ventana que se abre, o se quitó de la página).
 //  - Sin texto: clic antiguo que no guardó en qué elemento fue.
-function motivoNoVisible(el, seccionBorrada = false) {
+function motivoNoVisible(el, seccionBorrada = false, disenoAnterior = false) {
+  if (disenoAnterior && !seccionBorrada) {
+    return {
+      corto: 'De un diseño anterior',
+      largo: 'Se hizo sobre un diseño anterior de la página (antes del último cambio en el builder) y no se puede ubicar en el actual.',
+      ventana: false,
+    };
+  }
   if (seccionBorrada) {
     return {
       corto: 'Su sección ya no existe',
@@ -347,6 +354,11 @@ function initialsOf(name) {
  * @param {string}  [props.error]        Error externo (modo controlado).
  * @param {string}  [props.emptyMessage] Mensaje honesto para el estado vacío
  *                                       (p. ej. "sin clics para estos filtros").
+ * @param {Object}  [props.versionesPorRuta] Ruta -> fecha (ms) del último cambio
+ *                                       de la página en el builder.
+ * @param {boolean} [props.soloDisenoActual] Filtro "solo el diseño actual" del
+ *                                       panel (los datos ya llegan filtrados).
+ * @param {Function} [props.onCambiarDiseno] Cambia ese filtro desde el aviso.
  * @param {string}  [props.ancho]        Ancho de pantalla filtrado
  *                                       ('todos'|'movil'|'tablet'|'desktop'):
  *                                       elige la pantalla de la vista previa.
@@ -357,6 +369,9 @@ export default function HeatmapViewer({
   error: errorProp = null,
   emptyMessage = null,
   ancho = 'todos',
+  versionesPorRuta = null,
+  soloDisenoActual: soloDisenoActualProp = false,
+  onCambiarDiseno = null,
 }) {
   // Modo controlado = los datos llegan filtrados desde fuera (DashHeatmap).
   const controlled = dataProp != null;
@@ -494,19 +509,38 @@ export default function HeatmapViewer({
     [exacta, points]
   );
 
-  // Versión actual de la página del builder (la lee medirAnclas del iframe) y
-  // clics hechos sobre otra versión. Los clics viejos sin versión no cuentan:
-  // no se sabe de cuál fueron.
-  const versionActual = anclas?.versionActual || null;
+  // Fecha (ms) del último cambio de esta página en el builder: la del panel
+  // (colección `pages`) o, si no la tiene, la que muestra la vista previa
+  // (data-version-pagina). Un clic hecho ANTES fue sobre otro diseño; uno
+  // hecho después, sobre el de hoy (su posición guardada sigue valiendo).
+  const versionActual = useMemo(() => {
+    const deRuta = versionesPorRuta && selectedPath
+      ? (versionesPorRuta[selectedPath] ?? versionesPorRuta[selectedPath.toLowerCase()])
+      : null;
+    if (deRuta) return deRuta;
+    const deVista = Number(anclas?.versionActual);
+    return Number.isFinite(deVista) && deVista > 0 ? deVista : null;
+  }, [versionesPorRuta, selectedPath, anclas]);
+  const esAntes = useCallback(
+    (p) => Boolean(p.antes || (versionActual && p.t && p.t < versionActual)),
+    [versionActual]
+  );
+  // Con el filtro del panel los datos ya llegan filtrados; sin panel (modo
+  // autónomo) se filtra aquí.
+  const controladoDiseno = typeof onCambiarDiseno === 'function';
+  const soloActual = controladoDiseno ? Boolean(soloDisenoActualProp) : soloVersionActual;
+  const cambiarSoloActual = () => (controladoDiseno
+    ? onCambiarDiseno(!soloActual)
+    : setSoloVersionActual((v) => !v));
   const clicsVersionVieja = useMemo(
-    () => (versionActual ? visiblePoints.filter((p) => p.version && p.version !== versionActual).length : 0),
-    [versionActual, visiblePoints]
+    () => (controladoDiseno && data.clicsAntesByPath
+      ? (data.clicsAntesByPath[selectedPath] || 0)
+      : visiblePoints.filter(esAntes).length),
+    [controladoDiseno, data.clicsAntesByPath, selectedPath, visiblePoints, esAntes]
   );
   const puntosEnUso = useMemo(
-    () => (soloVersionActual && versionActual
-      ? visiblePoints.filter((p) => p.version === versionActual)
-      : visiblePoints),
-    [soloVersionActual, versionActual, visiblePoints]
+    () => (!controladoDiseno && soloActual ? visiblePoints.filter((p) => !esAntes(p)) : visiblePoints),
+    [controladoDiseno, soloActual, visiblePoints, esAntes]
   );
 
   // Al cambiar de página no queda ningún elemento elegido.
@@ -666,7 +700,11 @@ export default function HeatmapViewer({
         if (enSeccion && coincideTexto(enSeccion.textos, texto, tipo)) return enCaja(enSeccion.caja);
       }
 
-      const ancla = p.sel && anclas ? anclas.porSel.get(p.sel) : null;
+      // Un clic de ANTES del último cambio y sin texto (banner, imagen…) no se
+      // ubica por su ruta guardada: con el diseño cambiado apuntaría a otra
+      // cosa. Uno de después, sí: la página es la misma que vio el visitante.
+      const anterior = esAntes(p);
+      const ancla = p.sel && anclas && (!anterior || texto) ? anclas.porSel.get(p.sel) : null;
       if (ancla && coincideTexto(ancla.textos, texto, tipo)) return enCaja(ancla.caja);
 
       const candidatos = p.el && anclas ? anclas.porTexto.get(p.el) : null;
@@ -677,16 +715,26 @@ export default function HeatmapViewer({
       }
 
       if (anclas) sinUbicarN += 1;
-      return { cx: xAprox * scale, cy: yAprox * scale, el: p.el, caja: null, fijo: false, ubicado: !anclas };
+      return {
+        cx: xAprox * scale, cy: yAprox * scale, el: p.el, caja: null, fijo: false, ubicado: !anclas, disenoAnterior: anterior,
+      };
     });
     return { pixelPoints: lista, sinUbicar: sinUbicarN };
-  }, [puntosEnUso, anclas, exacta, docH, pantalla.w, pantalla.h, scale]);
+  }, [puntosEnUso, anclas, exacta, docH, pantalla.w, pantalla.h, scale, esAntes]);
 
-  // Elementos del ranking cuyos clics estaban en una sección ya borrada.
+  // Elementos del ranking cuyos clics estaban en una sección ya borrada, o se
+  // hicieron sobre un diseño anterior y no se pudieron ubicar en el actual.
   const clavesSeccionBorrada = useMemo(() => {
     const set = new Set();
     pixelPoints.forEach((p) => {
       if (p.seccionBorrada && p.el) set.add(p.el);
+    });
+    return set;
+  }, [pixelPoints]);
+  const clavesDisenoAnterior = useMemo(() => {
+    const set = new Set();
+    pixelPoints.forEach((p) => {
+      if (!p.ubicado && p.disenoAnterior && p.el) set.add(p.el);
     });
     return set;
   }, [pixelPoints]);
@@ -1250,7 +1298,7 @@ export default function HeatmapViewer({
                       }`
                       : !anclas
                         ? 'Buscándolo en la página…'
-                        : motivoNoVisible(elElegido, clavesSeccionBorrada.has(elElegido.key)).largo}
+                        : motivoNoVisible(elElegido, clavesSeccionBorrada.has(elElegido.key), clavesDisenoAnterior.has(elElegido.key)).largo}
                   </span>
                   <button type="button" className={styles.seleccionQuitar} onClick={() => setElegido(null)}>
                     Ver todo el mapa
@@ -1408,7 +1456,7 @@ export default function HeatmapViewer({
                   El rojo marca la zona más clicada de esta página; el resto se compara con ella.
                   {hayScroll ? ' Desplázate dentro de la vista para recorrer toda la página.' : ''}
                 </p>
-                {versionActual && (clicsVersionVieja > 0 || soloVersionActual) && (
+                {versionActual && (clicsVersionVieja > 0 || soloActual) && (
                   <p>
                     Esta página se cambió en el builder (
                     {new Date(Number(versionActual)).toLocaleString('es-PE', {
@@ -1416,22 +1464,18 @@ export default function HeatmapViewer({
                     })}
                     ):{' '}
                     {clicsVersionVieja.toLocaleString('es-PE')}{' '}
-                    {clicsVersionVieja === 1 ? 'clic es' : 'clics son'} de una versión anterior
-                    {soloVersionActual ? ' y no se muestran.' : '.'}{' '}
-                    <button
-                      type="button"
-                      className={styles.notaBoton}
-                      onClick={() => setSoloVersionActual((v) => !v)}
-                    >
-                      {soloVersionActual ? 'Ver todas las versiones' : 'Ver solo la versión actual'}
+                    {clicsVersionVieja === 1 ? 'clic es' : 'clics son'} de antes de ese cambio
+                    {soloActual ? ' y no se cuentan ni se muestran.' : '.'}{' '}
+                    <button type="button" className={styles.notaBoton} onClick={cambiarSoloActual}>
+                      {soloActual ? 'Ver todos los diseños' : 'Ver solo el diseño actual'}
                     </button>
                   </p>
                 )}
                 {sinUbicar > 0 && (
                   <p>
                     {sinUbicar.toLocaleString('es-PE')} de {puntosEnUso.length.toLocaleString('es-PE')} clics no
-                    se pueden ubicar en la página actual (fueron dentro de una ventana, su elemento no está a
-                    la vista o son clics antiguos sin ubicación) y {mostrarSinUbicar ? 'se muestran en una posición aproximada.' : 'no se muestran.'}{' '}
+                    se pueden ubicar en la página actual (son de un diseño anterior, fueron dentro de una
+                    ventana, su elemento no está a la vista o son clics antiguos sin ubicación) y {mostrarSinUbicar ? 'se muestran en una posición aproximada.' : 'no se muestran.'}{' '}
                     <button
                       type="button"
                       className={styles.notaBoton}
@@ -1481,10 +1525,10 @@ export default function HeatmapViewer({
                               </span>
                               {clavesEnPagina && !clavesEnPagina.has(el.key) && (
                                 <span
-                                  className={motivoNoVisible(el, clavesSeccionBorrada.has(el.key)).ventana ? styles.rankVentana : styles.rankAusente}
-                                  title={motivoNoVisible(el, clavesSeccionBorrada.has(el.key)).largo}
+                                  className={motivoNoVisible(el, clavesSeccionBorrada.has(el.key), clavesDisenoAnterior.has(el.key)).ventana ? styles.rankVentana : styles.rankAusente}
+                                  title={motivoNoVisible(el, clavesSeccionBorrada.has(el.key), clavesDisenoAnterior.has(el.key)).largo}
                                 >
-                                  {motivoNoVisible(el, clavesSeccionBorrada.has(el.key)).corto}
+                                  {motivoNoVisible(el, clavesSeccionBorrada.has(el.key), clavesDisenoAnterior.has(el.key)).corto}
                                 </span>
                               )}
                             </span>

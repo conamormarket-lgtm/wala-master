@@ -205,6 +205,12 @@ sub-páginas los filtros **se heredan** y un enlace copiado conserva la vista ex
   último guardado del builder, `updatedAt` de `pages/{id}`, expuesta en `data-version-pagina`); el
   visor avisa cuántos clics son de una versión anterior y ofrece "Ver solo la versión actual". En
   la vista previa se pintan todas las secciones de entrada (no solo al acercarse con el scroll).
+  **Diseño de la página por HORA del clic (también clics viejos):** DashHeatmap lee la colección
+  `pages` (una lectura por página, caché 5 min) y arma ruta → fecha del último cambio
+  (`versionesDesdePaginas`). Un clic anterior a esa fecha se hizo sobre otro diseño: si no tiene
+  texto no se ubica por su ruta vieja ("De un diseño anterior"); uno posterior sí (la página es
+  la misma). Filtro **"Diseño de la página: Todos / Solo el actual"**: se aplica en la agregación,
+  así tarjetas, ranking y mapa cuentan lo mismo (`clicsAntesByPath` para el aviso).
 
 > **Requiere redeploy de functions:** los desgloses nuevos (país/dispositivo/navegador/SO,
 > identidades, top visitantes, embudo completo) salen de campos que agrega la versión nueva de
