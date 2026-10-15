@@ -153,6 +153,12 @@ function normalizePoint(ev) {
     sw: Math.round(width),
     sh: Math.round(height),
     sel: typeof ev.sel === 'string' && ev.sel ? ev.sel : null,
+    // Sección del builder y ruta dentro de ella (clics nuevos en páginas del
+    // builder): ubica el clic aunque la sección cambie de lugar.
+    seccion: typeof ev.seccion === 'string' && ev.seccion ? ev.seccion : null,
+    selSec: typeof ev.selSec === 'string' ? ev.selSec : null,
+    // Versión de la página (fecha de su último guardado en el builder).
+    version: ev.version != null && ev.version !== '' ? String(ev.version) : null,
     rx: Number.isFinite(Number(ev.rx)) ? Number(ev.rx) : 0.5,
     ry: Number.isFinite(Number(ev.ry)) ? Number(ev.ry) : 0.5,
     weight: 1,

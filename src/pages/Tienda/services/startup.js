@@ -29,8 +29,8 @@ export async function loadStorefrontPage(pageId) {
       return { sections };
     }
   }
-  const { sections, error } = await getStorefrontConfig(pageId);
+  const { sections, version, error } = await getStorefrontConfig(pageId);
   if (error) throw new Error(error);
   preloadHero(sections || []);
-  return { sections: sections || [] };
+  return { sections: sections || [], version: version || null };
 }

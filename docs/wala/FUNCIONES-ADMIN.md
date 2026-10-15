@@ -198,6 +198,13 @@ sub-páginas los filtros **se heredan** y un enlace copiado conserva la vista ex
   `updateCurrentUser`, **solo después de `authStateReady()`** y solo si la vista previa sigue sin
   sesión (al cargar el iframe Auth aún no recuperó la suya: pasarla a media carga dejaba la página
   cargando para siempre). Probado con el emulador de Auth.
+  **Páginas del builder (desde 2026-10-15):** cada clic guarda su sección (`seccion`, el id de
+  `data-storefront-section` que pone DeferredSection) y la ruta dentro de ella (`selSec`): el visor
+  ubica el clic dentro de esa sección aunque se haya reordenado; si la sección se quitó, dice "Su
+  sección ya no existe" y no señala otra cosa. También guarda la `version` de la página (fecha del
+  último guardado del builder, `updatedAt` de `pages/{id}`, expuesta en `data-version-pagina`); el
+  visor avisa cuántos clics son de una versión anterior y ofrece "Ver solo la versión actual". En
+  la vista previa se pintan todas las secciones de entrada (no solo al acercarse con el scroll).
 
 > **Requiere redeploy de functions:** los desgloses nuevos (país/dispositivo/navegador/SO,
 > identidades, top visitantes, embudo completo) salen de campos que agrega la versión nueva de

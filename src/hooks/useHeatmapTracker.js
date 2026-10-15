@@ -144,6 +144,21 @@ export const useHeatmapTracker = (enabled = true, batchSize = 5) => {
         }
         return node === document.body ? `body>${parts.join('>')}` : null;
       };
+      // Ruta desde una SECCIÓN del builder hasta el elemento (vacía si es la
+      // sección misma). Sigue valiendo aunque la sección cambie de lugar.
+      const rutaDentro = (node, raiz) => {
+        const parts = [];
+        while (node && node !== raiz && node.nodeType === 1 && parts.length < 30) {
+          let i = 1;
+          let sib = node;
+          while ((sib = sib.previousElementSibling)) {
+            if (sib.tagName === node.tagName) i += 1;
+          }
+          parts.unshift(`${node.tagName.toLowerCase()}:nth-of-type(${i})`);
+          node = node.parentElement;
+        }
+        return node === raiz ? parts.join('>') : null;
+      };
       let anchor = null;
       try {
         const target = e.target;
@@ -160,6 +175,14 @@ export const useHeatmapTracker = (enabled = true, batchSize = 5) => {
             rx: rel((e.clientX - rect.left) / rect.width),
             ry: rel((e.clientY - rect.top) / rect.height),
           };
+          // Sección del builder (data-storefront-section, ver DeferredSection):
+          // su id no cambia al reordenar, así el clic sigue a su sección.
+          const seccionEl = anchorEl.closest && anchorEl.closest('[data-storefront-section]');
+          const selSec = seccionEl ? rutaDentro(anchorEl, seccionEl) : null;
+          if (seccionEl && selSec != null && selSec.length <= 500) {
+            anchor.seccion = seccionEl.getAttribute('data-storefront-section');
+            anchor.selSec = selSec;
+          }
         }
       } catch {
         anchor = null; // sin ancla: el visor usa las coordenadas
@@ -186,6 +209,15 @@ export const useHeatmapTracker = (enabled = true, batchSize = 5) => {
       // Coordenadas en la ventana (x/y) y en la página completa (pageX/pageY).
       // pageHeight es el alto TOTAL de la página en ese momento: el visor ubica
       // el clic como pageY / pageHeight, así los clics de abajo caen en su sitio.
+      // Versión de la página del builder (fecha de su último guardado, ver
+      // TiendaPage): separa los clics hechos sobre una versión anterior.
+      let version = null;
+      try {
+        version = document.querySelector('[data-version-pagina]')?.getAttribute('data-version-pagina') || null;
+      } catch {
+        version = null;
+      }
+
       const eventData = {
         x: e.clientX,
         y: e.clientY,
@@ -201,6 +233,7 @@ export const useHeatmapTracker = (enabled = true, batchSize = 5) => {
         elementInfo: elementInfo,
         ...(anchor || {}),
         ...(capa ? { capa } : {}),
+        ...(version ? { version } : {}),
         time: new Date().toISOString()
       };
 

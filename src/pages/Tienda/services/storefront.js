@@ -414,13 +414,25 @@ export function migrateHomeCategoryGrid(sections, pageId) {
 }
 
 // eslint-disable-next-line no-unused-vars
+// Fecha del último guardado del builder (updatedAt que pone setDocument) en
+// ms, como "versión" de la página. El mapa de calor la usa para separar los
+// clics hechos sobre una versión anterior. null si no se sabe.
+const versionDe = (data) => {
+  const t = data?.updatedAt;
+  if (!t) return null;
+  if (typeof t.toMillis === 'function') return t.toMillis();
+  if (Number.isFinite(t.seconds)) return t.seconds * 1000;
+  const ms = new Date(t).getTime();
+  return Number.isFinite(ms) ? ms : null;
+};
+
 export async function getStorefrontConfig(pageId = 'home') {
   const collection = 'pages';
   // eslint-disable-next-line no-unused-vars
   const { data, error } = await getDocument(collection, pageId);
   
   if (data?.sections && Array.isArray(data.sections)) {
-    return { sections: migrateHomeCategoryGrid(data.sections, pageId), error: null };
+    return { sections: migrateHomeCategoryGrid(data.sections, pageId), version: versionDe(data), error: null };
   }
 
 // eslint-disable-next-line no-unused-vars
@@ -430,7 +442,7 @@ export async function getStorefrontConfig(pageId = 'home') {
     // eslint-disable-next-line no-unused-vars
     const { data: legacyData, error: legacyError } = await getDocument('storefront', 'config');
     if (legacyData?.sections && Array.isArray(legacyData.sections)) {
-      return { sections: migrateHomeCategoryGrid(legacyData.sections, pageId), error: null };
+      return { sections: migrateHomeCategoryGrid(legacyData.sections, pageId), version: versionDe(legacyData), error: null };
     }
   }
 

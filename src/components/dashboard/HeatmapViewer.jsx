@@ -286,7 +286,14 @@ function esFijo(win, el) {
 //  - Con texto: no hay ningún elemento así a la vista (vive en un menú o
 //    ventana que se abre, o se quitó de la página).
 //  - Sin texto: clic antiguo que no guardó en qué elemento fue.
-function motivoNoVisible(el) {
+function motivoNoVisible(el, seccionBorrada = false) {
+  if (seccionBorrada) {
+    return {
+      corto: 'Su sección ya no existe',
+      largo: 'Estaba en una sección del builder que se quitó de la página.',
+      ventana: false,
+    };
+  }
   if (el.capa) {
     return {
       corto: `En la ventana «${el.capa}»`,
@@ -372,6 +379,8 @@ export default function HeatmapViewer({
   const [anclas, setAnclas] = useState(null);
   // Mostrar también los clics que no se pueden ubicar en la página actual.
   const [mostrarSinUbicar, setMostrarSinUbicar] = useState(false);
+  // Ver solo los clics hechos sobre la versión actual de la página del builder.
+  const [soloVersionActual, setSoloVersionActual] = useState(false);
   // Ruta en la que está realmente la vista previa (si la página redirige,
   // p. ej. a /login, no coincide con la pedida).
   const [rutaIframe, setRutaIframe] = useState(null);
@@ -483,6 +492,21 @@ export default function HeatmapViewer({
   const visiblePoints = useMemo(
     () => (exacta ? points.filter((p) => p.sw === exacta.w && p.sh === exacta.h) : points),
     [exacta, points]
+  );
+
+  // Versión actual de la página del builder (la lee medirAnclas del iframe) y
+  // clics hechos sobre otra versión. Los clics viejos sin versión no cuentan:
+  // no se sabe de cuál fueron.
+  const versionActual = anclas?.versionActual || null;
+  const clicsVersionVieja = useMemo(
+    () => (versionActual ? visiblePoints.filter((p) => p.version && p.version !== versionActual).length : 0),
+    [versionActual, visiblePoints]
+  );
+  const puntosEnUso = useMemo(
+    () => (soloVersionActual && versionActual
+      ? visiblePoints.filter((p) => p.version === versionActual)
+      : visiblePoints),
+    [soloVersionActual, versionActual, visiblePoints]
   );
 
   // Al cambiar de página no queda ningún elemento elegido.
@@ -612,7 +636,7 @@ export default function HeatmapViewer({
   //     se pintan (salvo que se pida), para no señalar cosas que no existen.
   const { pixelPoints, sinUbicar } = useMemo(() => {
     let sinUbicarN = 0;
-    const lista = visiblePoints.map((p) => {
+    const lista = puntosEnUso.map((p) => {
       const xAprox = exacta ? p.px : p.xNorm * pantalla.w;
       const yAprox = exacta
         ? Math.min(p.py, docH)
@@ -630,6 +654,18 @@ export default function HeatmapViewer({
       });
 
       const { tipo, texto } = partesDeClave(p.el);
+
+      // 0) Sección del builder: su id no cambia al reordenar la página. Si la
+      //    sección ya no existe, el clic no se señala en ningún otro sitio.
+      if (p.seccion && anclas) {
+        if (!anclas.secciones.has(p.seccion)) {
+          sinUbicarN += 1;
+          return { cx: xAprox * scale, cy: yAprox * scale, el: p.el, caja: null, fijo: false, ubicado: false, seccionBorrada: true };
+        }
+        const enSeccion = anclas.porSeccion.get(`${p.seccion}|${p.selSec}`);
+        if (enSeccion && coincideTexto(enSeccion.textos, texto, tipo)) return enCaja(enSeccion.caja);
+      }
+
       const ancla = p.sel && anclas ? anclas.porSel.get(p.sel) : null;
       if (ancla && coincideTexto(ancla.textos, texto, tipo)) return enCaja(ancla.caja);
 
@@ -644,7 +680,16 @@ export default function HeatmapViewer({
       return { cx: xAprox * scale, cy: yAprox * scale, el: p.el, caja: null, fijo: false, ubicado: !anclas };
     });
     return { pixelPoints: lista, sinUbicar: sinUbicarN };
-  }, [visiblePoints, anclas, exacta, docH, pantalla.w, pantalla.h, scale]);
+  }, [puntosEnUso, anclas, exacta, docH, pantalla.w, pantalla.h, scale]);
+
+  // Elementos del ranking cuyos clics estaban en una sección ya borrada.
+  const clavesSeccionBorrada = useMemo(() => {
+    const set = new Set();
+    pixelPoints.forEach((p) => {
+      if (p.seccionBorrada && p.el) set.add(p.el);
+    });
+    return set;
+  }, [pixelPoints]);
 
   // Claves del ranking que se encontraron en la página actual.
   const clavesEnPagina = useMemo(() => {
@@ -795,8 +840,32 @@ export default function HeatmapViewer({
       return esLogin && Boolean(cajaVisible(win, el));
     }));
 
+    // 4) Secciones del builder que hay ahora en la página, anclas dentro de
+    //    ellas y versión actual de la página (data-version-pagina, TiendaPage).
+    const secciones = new Set(
+      [...doc.querySelectorAll('[data-storefront-section]')].map((n) => n.getAttribute('data-storefront-section'))
+    );
+    const porSeccion = new Map();
+    [...new Set(points.filter((p) => p.seccion && p.selSec != null).map((p) => `${p.seccion}|${p.selSec}`))]
+      .forEach((clave) => {
+        const corte = clave.indexOf('|');
+        const id = clave.slice(0, corte);
+        const ruta = clave.slice(corte + 1);
+        if (!secciones.has(id)) return;
+        let el = null;
+        try {
+          const raiz = doc.querySelector(`[data-storefront-section="${win.CSS.escape(id)}"]`);
+          el = raiz && ruta ? raiz.querySelector(`:scope>${ruta}`) : null;
+        } catch {
+          el = null;
+        }
+        const caja = el ? cajaVisible(win, el) : null;
+        if (caja) porSeccion.set(clave, { caja, textos: textosDe(el) });
+      });
+    const versionPagina = doc.querySelector('[data-version-pagina]')?.getAttribute('data-version-pagina') || null;
+
     win.scrollTo({ top: scrollAntes, left: 0, behavior: 'instant' });
-    setAnclas({ porSel, porTexto });
+    setAnclas({ porSel, porTexto, porSeccion, secciones, versionActual: versionPagina });
   }, [points]);
 
   // Se mide al cargar y otra vez cuando la página termina de pintar contenido
@@ -1071,7 +1140,7 @@ export default function HeatmapViewer({
                   </span>
                 </span>
                 <Badge tone={showIframe ? 'success' : 'neutral'} size="sm">
-                  {visiblePoints.length.toLocaleString('es-PE')} clics
+                  {puntosEnUso.length.toLocaleString('es-PE')} clics
                 </Badge>
               </div>
 
@@ -1181,7 +1250,7 @@ export default function HeatmapViewer({
                       }`
                       : !anclas
                         ? 'Buscándolo en la página…'
-                        : motivoNoVisible(elElegido).largo}
+                        : motivoNoVisible(elElegido, clavesSeccionBorrada.has(elElegido.key)).largo}
                   </span>
                   <button type="button" className={styles.seleccionQuitar} onClick={() => setElegido(null)}>
                     Ver todo el mapa
@@ -1316,7 +1385,7 @@ export default function HeatmapViewer({
                   </div>
                 )}
 
-                {visiblePoints.length === 0 && (
+                {puntosEnUso.length === 0 && (
                   <div className={styles.canvasEmpty}><T>Sin clics ubicables en esta página.</T></div>
                 )}
               </div>
@@ -1339,9 +1408,28 @@ export default function HeatmapViewer({
                   El rojo marca la zona más clicada de esta página; el resto se compara con ella.
                   {hayScroll ? ' Desplázate dentro de la vista para recorrer toda la página.' : ''}
                 </p>
+                {versionActual && (clicsVersionVieja > 0 || soloVersionActual) && (
+                  <p>
+                    Esta página se cambió en el builder (
+                    {new Date(Number(versionActual)).toLocaleString('es-PE', {
+                      day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+                    })}
+                    ):{' '}
+                    {clicsVersionVieja.toLocaleString('es-PE')}{' '}
+                    {clicsVersionVieja === 1 ? 'clic es' : 'clics son'} de una versión anterior
+                    {soloVersionActual ? ' y no se muestran.' : '.'}{' '}
+                    <button
+                      type="button"
+                      className={styles.notaBoton}
+                      onClick={() => setSoloVersionActual((v) => !v)}
+                    >
+                      {soloVersionActual ? 'Ver todas las versiones' : 'Ver solo la versión actual'}
+                    </button>
+                  </p>
+                )}
                 {sinUbicar > 0 && (
                   <p>
-                    {sinUbicar.toLocaleString('es-PE')} de {visiblePoints.length.toLocaleString('es-PE')} clics no
+                    {sinUbicar.toLocaleString('es-PE')} de {puntosEnUso.length.toLocaleString('es-PE')} clics no
                     se pueden ubicar en la página actual (fueron dentro de una ventana, su elemento no está a
                     la vista o son clics antiguos sin ubicación) y {mostrarSinUbicar ? 'se muestran en una posición aproximada.' : 'no se muestran.'}{' '}
                     <button
@@ -1393,10 +1481,10 @@ export default function HeatmapViewer({
                               </span>
                               {clavesEnPagina && !clavesEnPagina.has(el.key) && (
                                 <span
-                                  className={motivoNoVisible(el).ventana ? styles.rankVentana : styles.rankAusente}
-                                  title={motivoNoVisible(el).largo}
+                                  className={motivoNoVisible(el, clavesSeccionBorrada.has(el.key)).ventana ? styles.rankVentana : styles.rankAusente}
+                                  title={motivoNoVisible(el, clavesSeccionBorrada.has(el.key)).largo}
                                 >
-                                  {motivoNoVisible(el).corto}
+                                  {motivoNoVisible(el, clavesSeccionBorrada.has(el.key)).corto}
                                 </span>
                               )}
                             </span>

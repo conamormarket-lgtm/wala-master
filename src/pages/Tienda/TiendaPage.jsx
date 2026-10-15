@@ -50,6 +50,7 @@ import { SECTION_TYPES, getDefaultSettings } from './services/storefront';
 import { loadStorefrontPage, preloadHero } from './services/startup.js';
 import { firstHeroUrl, criticalQueryNames, initialSectionCount, resolveCatalogFacet } from './services/startup.mjs';
 import DeferredSection from './components/DeferredSection';
+import { EN_VISTA_PREVIA_CALOR } from '../../utils/vistaPreviaCalor';
 import useIsMobile from '../../hooks/useIsMobile';
 import CustomFontsInjector from '../../components/common/CustomFontsInjector/CustomFontsInjector';
 import { getDocument } from '../../services/firebase/firestore';
@@ -331,8 +332,11 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       return { pageId, ids: new Set([...ids, id]) };
     });
   }, [pageId]);
+  // En la vista previa del mapa de calor se pintan TODAS las secciones de
+  // entrada (no al acercarse con el scroll): si no, las de abajo eran huecos
+  // vacíos y sus clics no tenían dónde ubicarse.
   const sectionIsActive = useCallback((section, index) =>
-    isEditModeActive || isPreview || index < initialSectionCount(configuredSections) ||
+    isEditModeActive || isPreview || EN_VISTA_PREVIA_CALOR || index < initialSectionCount(configuredSections) ||
     (visibleSections.pageId === pageId && visibleSections.ids.has(section.id)),
   [isEditModeActive, isPreview, visibleSections, pageId, configuredSections]);
   const activeSections = useMemo(() => configuredSections.filter(sectionIsActive), [configuredSections, sectionIsActive]);
@@ -1496,7 +1500,9 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   }, [heroImagenUrl]);
 
   return (
-    <div className={styles.container}>
+    // data-version-pagina: fecha del último guardado del builder. El tracker del
+    // mapa de calor la guarda con cada clic para separar versiones de la página.
+    <div className={styles.container} data-version-pagina={storefrontConfig?.version || undefined}>
       {/* Keep the first screen complete; lower sections load near the viewport. */}
       <BrandLoaderOverlay show={!pageReady || !heroListo} />
       <CustomFontsInjector config={activeSections} all={isEditModeActive} />
