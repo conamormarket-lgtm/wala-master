@@ -186,10 +186,16 @@ const BrandLoaderOverlay = ({ show, relevo = false }) => {
   // estuviera pintada debajo. Un timer de respaldo, atado a la MISMA
   // duracion que la transicion de salida, garantiza que el candado se
   // suelta si o si un instante despues de que `show` pasa a false.
+  //
+  // El mismo timer RETIRA el overlay: con rAF pausado AnimatePresence nunca
+  // termina la salida y deja el nodo montado —en la pestaña que se abrió en
+  // segundo plano, el catálogo quedaba atenuado bajo la ruedita y sin
+  // responder a los clics—. Sacarlo del árbol no depende de rAF.
   const exitDurationMs = relevo ? 0 : (reducedMotion ? 300 : 600);
+  const [retirado, setRetirado] = useState(false);
   useEffect(() => {
-    if (effectiveShow) return undefined;
-    const t = setTimeout(unlockScroll, exitDurationMs + 400);
+    if (effectiveShow) { setRetirado(false); return undefined; }
+    const t = setTimeout(() => { unlockScroll(); setRetirado(true); }, exitDurationMs + 400);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveShow]);
@@ -198,20 +204,17 @@ const BrandLoaderOverlay = ({ show, relevo = false }) => {
   // (p.ej. cambio de ruta a mitad de la salida), restauramos el scroll.
   useEffect(() => () => unlockScroll(), []);
 
+  if (retirado) return null;
+
   return createPortal(
     <AnimatePresence initial={false} onExitComplete={unlockScroll}>
       {effectiveShow && (
         <motion.div
           key="brand-loader-overlay"
-          // pointerEvents en 'none' apenas `show` pasa a false (no recien al
-          // desmontar): si la transicion de salida de framer-motion no llega
-          // a completarse -pestaña en segundo plano, tab sin foco, o
-          // cualquier corte del ciclo de animacion- este div se queda
-          // colgado en el DOM, invisible pero a pantalla completa y con
-          // z-index por encima de TODO. Sin este cambio se traga cada click
-          // / tap de la tienda para siempre: la pagina "se pega" y ninguna
-          // tarjeta ni boton vuelve a responder. Con pointer-events:none deja
-          // de interceptar clicks aunque el nodo nunca llegue a desmontarse.
+          // Ojo: el nodo que sale conserva las props del último render con
+          // `effectiveShow` en true, así que este pointerEvents no llega a
+          // 'none' durante la salida. Lo que libera los clics si la salida
+          // se cuelga es `retirado` (ver el timer de respaldo arriba).
           style={
             useBrand
               // Splash de MARCA (primera carga en frío): cubre TODO.
