@@ -107,6 +107,9 @@ function clamp01(n) {
  *               (pageY / screenHeight). Sirve para ubicar de forma
  *               APROXIMADA los clics viejos, que no traen pageHeight.
  *   - ancho:    bucket de ancho de pantalla ('movil'|'tablet'|'desktop').
+ *   - px/py:    pageX/pageY en px y sw/sh: ancho/alto de la pantalla. Con la
+ *               vista previa cargada en ESA misma resolución, el clic se pinta
+ *               en su pixel exacto (el layout es idéntico al del visitante).
  * Devuelve null si el evento no es válido / no se puede normalizar.
  */
 function normalizePoint(ev) {
@@ -131,7 +134,19 @@ function normalizePoint(ev) {
     ? clamp01(pageY / pageHeight)
     : null;
 
-  return { xNorm, yFrac, yScreens: pageY / height, ancho: bucketAncho(width), weight: 1 };
+  const pageX = Number.isFinite(Number(ev.pageX)) ? Number(ev.pageX) : rawX;
+
+  return {
+    xNorm,
+    yFrac,
+    yScreens: pageY / height,
+    ancho: bucketAncho(width),
+    px: pageX,
+    py: pageY,
+    sw: Math.round(width),
+    sh: Math.round(height),
+    weight: 1,
+  };
 }
 
 /* ------------------------------------------------------------------ *
@@ -177,21 +192,70 @@ const EXACT_PATH_NAMES = {
   '/cuenta/wishlist': 'Mi lista de deseos',
 };
 
-// Patrones con parámetros dinámicos -> nombre amigable.
-// Se evalúan en orden; el primero que coincide gana.
-const PATTERN_PATH_NAMES = [
-  { re: /^\/producto\/[^/]+$/, name: 'Ficha de producto' },
-  { re: /^\/editor\/[^/]+$/, name: 'Editor de producto' },
-  { re: /^\/pago-rapido\/[^/]+$/, name: 'Pago rápido' },
-  { re: /^\/pago-demo\/[^/]+$/, name: 'Pago (demo)' },
-  { re: /^\/regalo\/[^/]+$/, name: 'Experiencia de regalo' },
-  { re: /^\/wishlist\/[^/]+$/, name: 'Lista de deseos compartida' },
-  { re: /^\/nicho\/[^/]+$/, name: 'Nicho' },
-  { re: /^\/tienda-vendedor\/[^/]+$/, name: 'Tienda de vendedor' },
-  { re: /^\/admin\/?$/, name: 'Admin' },
-  { re: /^\/admin\/dashboard$/, name: 'Admin · Dashboard' },
-  { re: /^\/admin\//, name: 'Admin' },
+// Páginas cuya ruta lleva un CÓDIGO (id de producto, de diseño, de pedido…).
+// Todas las de una misma plantilla comparten diseño, así que se AGRUPAN en una
+// sola tarjeta con nombre legible (en vez de "ARsHnlp8ccNYTt…" o "PD MV8MWU6Q").
+// La vista previa usa la página concreta con más clics del grupo.
+const PLANTILLAS_CON_CODIGO = [
+  { re: /^\/producto\/[^/]+$/, key: '/producto/:id', name: 'Ficha de producto' },
+  { re: /^\/crear\/[^/]+$/, key: '/crear/:id', name: 'Crear · diseño' },
+  { re: /^\/combo\/[^/]+$/, key: '/combo/:id', name: 'Crear · combo' },
+  { re: /^\/ver\/[^/]+$/, key: '/ver/:id', name: 'Ver diseño' },
+  { re: /^\/creacion\/[^/]+$/, key: '/creacion/:id', name: 'Creación compartida' },
+  { re: /^\/editor\/[^/]+$/, key: '/editor/:id', name: 'Editor de producto' },
+  { re: /^\/cuenta\/pedidos\/[^/]+$/, key: '/cuenta/pedidos/:id', name: 'Detalle de pedido' },
+  { re: /^\/pago-rapido\/[^/]+$/, key: '/pago-rapido/:id', name: 'Pago rápido' },
+  { re: /^\/pago-demo\/[^/]+$/, key: '/pago-demo/:id', name: 'Pago (demo)' },
+  { re: /^\/regalo\/[^/]+$/, key: '/regalo/:id', name: 'Experiencia de regalo' },
+  { re: /^\/regalar\/[^/]+$/, key: '/regalar/:codigo', name: 'Regalar a un amigo' },
+  { re: /^\/invitar\/[^/]+$/, key: '/invitar/:codigo', name: 'Invitación de referido' },
+  { re: /^\/wishlist\/[^/]+$/, key: '/wishlist/:codigo', name: 'Lista de deseos compartida' },
 ];
+
+// Páginas con un SLUG legible (nicho, sorteo, landing…): se quedan separadas
+// y el nombre incluye el slug ("Nicho · Mascotas").
+const PATTERN_PATH_NAMES = [
+  { re: /^\/nicho\/([^/]+)$/, name: 'Nicho' },
+  { re: /^\/tienda-vendedor\/([^/]+)$/, name: 'Tienda' },
+  { re: /^\/sorteos\/([^/]+)$/, name: 'Sorteo' },
+  { re: /^\/suscrito-sorteo\/([^/]+)$/, name: 'Sorteo · suscrito' },
+  { re: /^\/l\/([^/]+)$/, name: 'Enlaces' },
+];
+
+// Páginas del panel admin: no son de clientes, no se muestran en el mapa
+// (y el tracker ya no las registra).
+export function esRutaAdmin(path) {
+  return typeof path === 'string' && /^\/admin(\/|$)/.test(path);
+}
+
+function limpiarRuta(path) {
+  let clean = String(path).split('?')[0].split('#')[0];
+  if (clean.length > 1 && clean.endsWith('/')) clean = clean.slice(0, -1);
+  return clean === '' ? '/' : clean;
+}
+
+function slugLegible(slug) {
+  let texto = slug;
+  try {
+    texto = decodeURIComponent(slug);
+  } catch {
+    /* slug mal codificado: se usa tal cual */
+  }
+  const words = texto.replace(/[-_]+/g, ' ').trim();
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : slug;
+}
+
+/**
+ * Clave de agrupación de una ruta: la plantilla ('/producto/:id') si lleva
+ * código, o la ruta limpia si no. null = página que no se muestra (admin).
+ */
+export function claveDePagina(path) {
+  if (!path || typeof path !== 'string' || path === 'unknown') return 'unknown';
+  const clean = limpiarRuta(path);
+  if (esRutaAdmin(clean)) return null;
+  const plantilla = PLANTILLAS_CON_CODIGO.find(({ re }) => re.test(clean));
+  return plantilla ? plantilla.key : clean;
+}
 
 /**
  * Devuelve un nombre de página legible a partir de su path.
@@ -200,28 +264,22 @@ export function prettyPageName(path) {
   if (!path || typeof path !== 'string') return 'Desconocida';
   if (path === 'unknown') return 'Desconocida';
 
-  // Quitar query / hash y barra final sobrante.
-  let clean = path.split('?')[0].split('#')[0];
-  if (clean.length > 1 && clean.endsWith('/')) clean = clean.slice(0, -1);
-  if (clean === '') clean = '/';
+  const clean = limpiarRuta(path);
 
   if (EXACT_PATH_NAMES[clean]) return EXACT_PATH_NAMES[clean];
 
+  const plantilla = PLANTILLAS_CON_CODIGO.find((t) => t.key === clean || t.re.test(clean));
+  if (plantilla) return plantilla.name;
+
   for (const { re, name } of PATTERN_PATH_NAMES) {
-    if (re.test(clean)) return name;
+    const m = clean.match(re);
+    if (m) return `${name} · ${slugLegible(m[1])}`;
   }
 
-  // Fallback: capitaliza el último segmento y reemplaza guiones.
+  // Fallback (landings /:slug y rutas nuevas): el último segmento legible.
   const segs = clean.split('/').filter(Boolean);
   if (segs.length === 0) return 'Inicio';
-  const last = segs[segs.length - 1];
-  const words = last
-    .replace(/[-_]+/g, ' ')
-    .trim()
-    .split(' ')
-    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : ''))
-    .join(' ');
-  return words || clean;
+  return slugLegible(segs[segs.length - 1]) || clean;
 }
 
 /* ------------------------------------------------------------------ *
@@ -569,7 +627,9 @@ export async function fetchHeatmapBatches(options = {}) {
  * @returns {{
  *   paths: string[],
  *   pageNames: Record<string,string>,
- *   pointsByPath: Record<string, Array<{xNorm:number,yFrac:number|null,yScreens:number,ancho:string|null,weight:number}>>,
+ *   pointsByPath: Record<string, Array<{xNorm,yFrac,yScreens,ancho,px,py,sw,sh,weight}>>,
+ *   previewPathByPath: Record<string,string>,  // página concreta para la vista previa
+ *   variantesByPath: Record<string,number>,    // nº de páginas concretas del grupo
  *   clicksByPath: Record<string, number>,
  *   maxClicks: number,
  *   topElementsByPath: Record<string, Array<{label:string,count:number,generic:boolean}>>,
@@ -587,8 +647,11 @@ export function aggregateHeatmapBatches(docs = [], filtros = {}) {
   const ancho = filtros.ancho || 'todos';
   const incluirSinMeta = Boolean(filtros.incluirSinMeta);
 
-  // pointsByPath: path -> [{xNorm,yFrac,yScreens,ancho,weight}]
+  // pointsByPath: clave de página -> [{xNorm,yFrac,yScreens,ancho,px,py,sw,sh,weight}]
+  // (la clave agrupa las páginas con código: '/producto/:id'; ver claveDePagina).
   const pointsByPath = {};
+  // Clics por página CONCRETA dentro de cada clave (para elegir la vista previa).
+  const concretasByPath = {};
   // elementsByPath: path -> Map(key -> { label, count, generic })
   const elementsByPath = {};
   // clickCountByPath: path -> número total de clics ubicables (para ordenar páginas)
@@ -650,7 +713,13 @@ export function aggregateHeatmapBatches(docs = [], filtros = {}) {
       // -- Filtro a nivel de CLIC: corte retroactivo por ancho de pantalla --
       if (ancho !== 'todos' && bucketAncho(ev?.screenWidth) !== ancho) return;
 
-      const path = (ev && typeof ev.path === 'string' && ev.path.trim()) ? ev.path : 'unknown';
+      const rawPath = (ev && typeof ev.path === 'string' && ev.path.trim()) ? ev.path.trim() : 'unknown';
+      const path = claveDePagina(rawPath);
+      if (path == null) return; // panel admin: fuera del mapa
+
+      if (!concretasByPath[path]) concretasByPath[path] = new Map();
+      const concreta = rawPath === 'unknown' ? rawPath : limpiarRuta(rawPath);
+      concretasByPath[path].set(concreta, (concretasByPath[path].get(concreta) || 0) + 1);
 
       const point = normalizePoint(ev);
       if (point) {
@@ -710,10 +779,16 @@ export function aggregateHeatmapBatches(docs = [], filtros = {}) {
     if (c > maxClicks) maxClicks = c;
   });
 
-  // pageNames: path -> nombre legible.
+  // pageNames: clave -> nombre legible; vista previa = la página concreta
+  // con más clics del grupo; variantes = cuántas páginas concretas agrupa.
   const pageNames = {};
+  const previewPathByPath = {};
+  const variantesByPath = {};
   paths.forEach((path) => {
     pageNames[path] = prettyPageName(path);
+    const concretas = [...(concretasByPath[path] || new Map()).entries()].sort((a, b) => b[1] - a[1]);
+    previewPathByPath[path] = concretas.length > 0 ? concretas[0][0] : path;
+    variantesByPath[path] = concretas.length;
   });
 
   // Construir el ranking de elementos (etiquetas legibles) por página.
@@ -728,6 +803,8 @@ export function aggregateHeatmapBatches(docs = [], filtros = {}) {
     paths,
     pageNames,
     pointsByPath,
+    previewPathByPath,
+    variantesByPath,
     clicksByPath,
     maxClicks,
     topElementsByPath,

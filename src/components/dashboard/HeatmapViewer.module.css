@@ -307,6 +307,83 @@
   margin-bottom: 0.75rem;
 }
 
+/* Controles de la vista previa: pantalla (resolución) + tema claro/oscuro. */
+.previewControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.controlField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  flex: 1 1 240px;
+}
+
+.controlLabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #64748b);
+}
+
+.controlSelect {
+  width: 100%;
+  max-width: 420px;
+  padding: 0.45rem 0.6rem;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #ffffff;
+  color: #0f172a;
+  font-family: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.controlSelect:focus-visible {
+  outline: 2px solid var(--primary-color, #6D28D9);
+  outline-offset: 1px;
+}
+
+.themeToggle {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.themeBtn {
+  padding: 0.35rem 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #475569;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.themeBtn:hover {
+  color: #0f172a;
+}
+
+.themeBtnActive {
+  background: var(--primary-color, #6D28D9);
+  color: #ffffff;
+}
+
+.themeBtnActive:hover {
+  color: #ffffff;
+}
+
 .canvasPath {
   display: flex;
   flex-direction: column;

@@ -25,6 +25,8 @@ export const useHeatmapTracker = (enabled = true, batchSize = 5) => {
   useEffect(() => {
     if (!enabled) return;
     if (IN_IFRAME) return;
+    // El panel admin no es parte de la tienda: sus clics no van al mapa.
+    if (/^\/admin(\/|$)/.test(location.pathname)) return;
 
     const flushBuffer = async () => {
       if (clickBuffer.current.length === 0) return;
@@ -147,11 +149,21 @@ export const useHeatmapTracker = (enabled = true, batchSize = 5) => {
       }
     };
 
+    // Al ocultar la pestaña (cerrarla, cambiar de app en el móvil) se envían
+    // los clics pendientes: si no, el lote a medio llenar se perdía.
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flushBuffer();
+    };
+
     document.addEventListener('click', handleClick);
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', flushBuffer);
 
     // Al desmontar o cambiar de página, enviamos los clics pendientes
     return () => {
       document.removeEventListener('click', handleClick);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', flushBuffer);
       flushBuffer();
     };
   }, [enabled, location.pathname, batchSize]);

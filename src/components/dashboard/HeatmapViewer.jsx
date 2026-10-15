@@ -60,6 +60,10 @@ const PAGE_MAX_H = 30000;
 const FALLBACK_MAX_SCREENS = 8;
 // Radio base del blob de cada clic, como fracción del ancho del lienzo.
 const BLOB_RADIUS_RATIO = 0.044;
+// Tamaño (px del lienzo) de cada celda de la rejilla de densidad.
+const DENSITY_CELL = 3;
+// Máximo de resoluciones exactas que se ofrecen en el selector.
+const MAX_RESOLUCIONES = 12;
 // Tiempo máximo de espera a que el iframe cargue antes de asumir fallo.
 const IFRAME_TIMEOUT_MS = 6000;
 // Reintentos de carga del iframe antes de rendirse al fallback.
@@ -81,8 +85,12 @@ const itemVariants = {
 /**
  * Dibuja el heatmap en el canvas a la resolución indicada (w x h en px reales).
  * `points` ya vienen en px del lienzo: [{ cx, cy }].
- *  1) Pinta cada clic como un gradiente radial en escala de grises (alpha acumulada).
- *  2) Recolorea según la intensidad acumulada (rampa azul -> verde -> amarillo -> rojo).
+ *  1) Suma la densidad de clics en una rejilla de DENSITY_CELL px (núcleo suave
+ *     por clic).
+ *  2) La normaliza por el MÁXIMO: la zona más clicada de la página es siempre
+ *     la más roja, haya 5 o 500 clics (antes todo se saturaba en rojo a los
+ *     pocos clics). La raíz cuadrada mantiene visibles los clics sueltos.
+ *  3) Colorea (azul -> verde -> amarillo -> rojo) y lo escala al lienzo.
  */
 function drawHeatmap(canvas, points, w, h) {
   if (!canvas) return;
@@ -93,47 +101,64 @@ function drawHeatmap(canvas, points, w, h) {
   if (canvas.width !== width) canvas.width = width;
   if (canvas.height !== height) canvas.height = height;
 
-  // willReadFrequently: true porque hacemos getImageData en cada redibujado
-  // (recoloreado del heatmap). Evita el warning de rendimiento de Canvas2D.
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
   ctx.clearRect(0, 0, width, height);
   if (!points || points.length === 0) return;
 
-  const radius = Math.max(14, Math.round(width * BLOB_RADIUS_RATIO));
-
-  // Paso 1: acumulación de densidad en escala de grises.
-  ctx.globalCompositeOperation = 'source-over';
+  // Paso 1: densidad en rejilla.
+  const gw = Math.ceil(width / DENSITY_CELL);
+  const gh = Math.ceil(height / DENSITY_CELL);
+  const densidad = new Float32Array(gw * gh);
+  const r = Math.max(14, Math.round(width * BLOB_RADIUS_RATIO)) / DENSITY_CELL;
+  const r2 = r * r;
   points.forEach(({ cx, cy }) => {
-    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-    grad.addColorStop(0, 'rgba(0,0,0,0.28)');
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.fill();
+    const gx = cx / DENSITY_CELL;
+    const gy = cy / DENSITY_CELL;
+    const x0 = Math.max(0, Math.floor(gx - r));
+    const x1 = Math.min(gw - 1, Math.ceil(gx + r));
+    const y0 = Math.max(0, Math.floor(gy - r));
+    const y1 = Math.min(gh - 1, Math.ceil(gy + r));
+    for (let y = y0; y <= y1; y += 1) {
+      const dy = y + 0.5 - gy;
+      for (let x = x0; x <= x1; x += 1) {
+        const dx = x + 0.5 - gx;
+        const d2 = dx * dx + dy * dy;
+        if (d2 >= r2) continue;
+        const k = 1 - d2 / r2;
+        densidad[y * gw + x] += k * k;
+      }
+    }
   });
 
-  // Paso 2: recolorear según intensidad acumulada (canal alpha).
-  let image;
-  try {
-    image = ctx.getImageData(0, 0, width, height);
-  } catch (e) {
-    return; // Por seguridad (canvas "tainted"); no debería ocurrir aquí.
+  // Paso 2: normalizar por el máximo.
+  let max = 0;
+  for (let i = 0; i < densidad.length; i += 1) {
+    if (densidad[i] > max) max = densidad[i];
   }
+  if (max <= 0) return;
+
+  // Paso 3: colorear en la rejilla y escalar (suavizado) al lienzo.
+  const rejilla = document.createElement('canvas');
+  rejilla.width = gw;
+  rejilla.height = gh;
+  const rctx = rejilla.getContext('2d');
+  if (!rctx) return;
+  const image = rctx.createImageData(gw, gh);
   const data = image.data;
-  for (let i = 0; i < data.length; i += 4) {
-    const alpha = data[i + 3];
-    if (alpha === 0) continue;
-    const t = Math.min(1, alpha / 255);
-    const [r, g, b, a] = ramp(t);
-    data[i] = r;
-    data[i + 1] = g;
-    data[i + 2] = b;
-    data[i + 3] = a;
+  for (let i = 0; i < densidad.length; i += 1) {
+    if (densidad[i] <= 0) continue;
+    const [cr, cg, cb, ca] = ramp(Math.sqrt(densidad[i] / max));
+    const o = i * 4;
+    data[o] = cr;
+    data[o + 1] = cg;
+    data[o + 2] = cb;
+    data[o + 3] = ca;
   }
-  ctx.putImageData(image, 0, 0);
+  rctx.putImageData(image, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(rejilla, 0, 0, gw * DENSITY_CELL, gh * DENSITY_CELL);
 }
 
 /**
@@ -163,6 +188,11 @@ function ramp(t) {
     }
   }
   return stops[stops.length - 1].c;
+}
+
+// Ruta para mostrar: '/producto/:id' -> '/producto/…'.
+function rutaVisible(path) {
+  return typeof path === 'string' ? path.replace(/\/:[^/]+/g, '/…') : '';
 }
 
 /**
@@ -204,6 +234,11 @@ export default function HeatmapViewer({
   const [internalError, setInternalError] = useState(null);
   const [internalData, setInternalData] = useState(EMPTY_HEATMAP_DATA);
   const [selectedPath, setSelectedPath] = useState(null);
+  // 'todas' = todos los clics sobre una pantalla tipo (posición aproximada);
+  // 'ANCHOxALTO' = solo los clics de esa resolución, en su pixel exacto.
+  const [resolucion, setResolucion] = useState('todas');
+  // Tema con el que se muestra la página en la vista previa.
+  const [temaPreview, setTemaPreview] = useState('light');
 
   // Resolución única de la fuente de datos según el modo.
   const data = controlled ? { ...EMPTY_HEATMAP_DATA, ...dataProp } : internalData;
@@ -274,8 +309,35 @@ export default function HeatmapViewer({
   );
 
   const pageName = selectedPath ? (data.pageNames[selectedPath] || selectedPath) : '';
-  // Para el iframe usamos la ruta tal cual (relativa al mismo origen = wala.pe).
-  const iframeSrc = selectedPath && selectedPath !== 'unknown' ? selectedPath : null;
+  // Las páginas con código se agrupan ('/producto/:id'): la vista previa abre
+  // la página concreta con más clics del grupo (misma-origen = wala.pe).
+  const previewPath = selectedPath ? (data.previewPathByPath?.[selectedPath] || selectedPath) : null;
+  const iframeSrc = previewPath && previewPath !== 'unknown' && !previewPath.includes('/:') ? previewPath : null;
+  const variantes = selectedPath ? (data.variantesByPath?.[selectedPath] || 1) : 1;
+
+  // Resoluciones exactas registradas en esta página (más clics primero).
+  const resoluciones = useMemo(() => {
+    const grupos = new Map();
+    points.forEach((p) => {
+      if (!p.sw || !p.sh) return;
+      const key = `${p.sw}x${p.sh}`;
+      const g = grupos.get(key);
+      if (g) g.count += 1;
+      else grupos.set(key, { key, w: p.sw, h: p.sh, count: 1 });
+    });
+    return [...grupos.values()].sort((a, b) => b.count - a.count).slice(0, MAX_RESOLUCIONES);
+  }, [points]);
+  const exacta = resoluciones.find((r) => r.key === resolucion) || null;
+
+  // Si la resolución elegida no existe en la página/filtros vigentes, vuelve a 'todas'.
+  useEffect(() => {
+    if (resolucion !== 'todas' && !exacta) setResolucion('todas');
+  }, [resolucion, exacta]);
+
+  const visiblePoints = useMemo(
+    () => (exacta ? points.filter((p) => p.sw === exacta.w && p.sh === exacta.h) : points),
+    [exacta, points]
+  );
 
   // Reinicia el estado del iframe cada vez que cambia la página seleccionada.
   useEffect(() => {
@@ -353,15 +415,17 @@ export default function HeatmapViewer({
     });
     return mejor;
   }, [ancho, points]);
-  const pantalla = PANTALLAS_PREVIEW[anchoPreview];
-  const mezclaAnchos = ancho === 'todos' && points.some((p) => p.ancho && p.ancho !== anchoPreview);
+  const pantalla = exacta
+    ? { w: exacta.w, h: exacta.h, label: `${exacta.w} × ${exacta.h}` }
+    : PANTALLAS_PREVIEW[anchoPreview];
+  const mezclaAnchos = !exacta && ancho === 'todos' && points.some((p) => p.ancho && p.ancho !== anchoPreview);
 
   // Escala de la pantalla tipo al panel (nunca agranda) y alto de la página.
   // Sin alto real (respaldo o mientras carga) se estima con los clics viejos
   // más profundos, medidos en pantallas.
   const scale = frameW > 0 ? Math.min(1, frameW / pantalla.w, PREVIEW_MAX_H / pantalla.h) : 0;
-  const pantallasEstimadas = points.reduce(
-    (m, p) => (p.yFrac == null ? Math.max(m, p.yScreens) : m),
+  const pantallasEstimadas = visiblePoints.reduce(
+    (m, p) => (exacta ? Math.max(m, p.py / exacta.h) : p.yFrac == null ? Math.max(m, p.yScreens) : m),
     1
   );
   const docH = pageHeight > 0
@@ -371,16 +435,22 @@ export default function HeatmapViewer({
   const stageH = docH * scale;
   const viewH = pantalla.h * scale;
 
-  // Clics en px del lienzo: los nuevos por su fracción del alto de la página;
-  // los viejos (sin pageHeight) por pantallas bajadas, de forma aproximada.
+  // Clics en px del lienzo. Resolución exacta: pageX/pageY tal cual (mismo
+  // layout que vio el visitante). 'Todas': los nuevos por su fracción del alto
+  // de la página; los viejos (sin pageHeight) por pantallas bajadas, aproximado.
   const pixelPoints = useMemo(
-    () => points.map((p) => ({
-      cx: p.xNorm * stageW,
-      cy: (p.yFrac != null ? p.yFrac * docH : Math.min(p.yScreens * pantalla.h, docH)) * scale,
-    })),
-    [points, stageW, docH, pantalla.h, scale]
+    () => visiblePoints.map((p) => (exacta
+      ? { cx: p.px * scale, cy: Math.min(p.py, docH) * scale }
+      : {
+        cx: p.xNorm * stageW,
+        cy: (p.yFrac != null ? p.yFrac * docH : Math.min(p.yScreens * pantalla.h, docH)) * scale,
+      })),
+    [visiblePoints, exacta, stageW, docH, pantalla.h, scale]
   );
-  const clicsAproximados = useMemo(() => points.filter((p) => p.yFrac == null).length, [points]);
+  const clicsAproximados = useMemo(
+    () => (exacta ? 0 : visiblePoints.filter((p) => p.yFrac == null).length),
+    [exacta, visiblePoints]
+  );
 
   // Mide el ancho disponible del marco (responsive / cambio de layout).
   const hasData = !loading && !error && data.totalClicks > 0;
@@ -421,6 +491,19 @@ export default function HeatmapViewer({
     syncIframeScroll();
   }, [syncIframeScroll, pageHeight, iframeState]);
 
+  // Aplica el tema claro/oscuro elegido a la página de la vista previa.
+  const aplicarTemaPreview = useCallback(() => {
+    try {
+      iframeRef.current?.contentDocument?.documentElement?.setAttribute('data-theme', temaPreview);
+    } catch {
+      /* aún no cargó: onLoad lo vuelve a aplicar */
+    }
+  }, [temaPreview]);
+
+  useEffect(() => {
+    aplicarTemaPreview();
+  }, [aplicarTemaPreview, iframeState]);
+
   const handleIframeLoad = () => {
     // 'load' dispara tanto en éxito como en about:blank; si hay src, lo damos por
     // bueno (el navegador no expone errores cross-doc por seguridad).
@@ -429,6 +512,7 @@ export default function HeatmapViewer({
         clearTimeout(iframeTimerRef.current);
         iframeTimerRef.current = null;
       }
+      aplicarTemaPreview();
       setIframeState('ready');
     }
   };
@@ -553,7 +637,10 @@ export default function HeatmapViewer({
                   <span className={styles.pageCardTrack} aria-hidden="true">
                     <span className={styles.pageCardFill} style={{ width: `${pct}%` }} />
                   </span>
-                  <span className={styles.pageCardRoute}>{path}</span>
+                  <span className={styles.pageCardRoute}>
+                    {rutaVisible(path)}
+                    {(data.variantesByPath?.[path] || 1) > 1 ? ` · ${data.variantesByPath[path]} páginas` : ''}
+                  </span>
                 </motion.button>
               );
             })}
@@ -564,11 +651,51 @@ export default function HeatmapViewer({
               <div className={styles.canvasHead}>
                 <span className={styles.canvasPath} title={selectedPath}>
                   {pageName}
-                  <span className={styles.canvasRoute}>{selectedPath}</span>
+                  <span className={styles.canvasRoute}>
+                    {variantes > 1
+                      ? `${variantes} páginas · vista previa de la más clicada`
+                      : rutaVisible(selectedPath)}
+                  </span>
                 </span>
                 <Badge tone={showIframe ? 'success' : 'neutral'} size="sm">
-                  {points.length.toLocaleString('es-PE')} clics
+                  {visiblePoints.length.toLocaleString('es-PE')} clics
                 </Badge>
+              </div>
+
+              <div className={styles.previewControls}>
+                <label className={styles.controlField}>
+                  <span className={styles.controlLabel}>Pantalla</span>
+                  <select
+                    className={styles.controlSelect}
+                    value={exacta ? exacta.key : 'todas'}
+                    onChange={(e) => setResolucion(e.target.value)}
+                  >
+                    <option value="todas">
+                      Todas · {points.length.toLocaleString('es-PE')} clics (posición aproximada)
+                    </option>
+                    {resoluciones.map((r) => (
+                      <option key={r.key} value={r.key}>
+                        {r.w} × {r.h} · {r.count.toLocaleString('es-PE')} {r.count === 1 ? 'clic' : 'clics'} (exacta)
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className={styles.themeToggle} role="group" aria-label="Tema de la vista previa">
+                  {[
+                    { value: 'light', label: 'Claro' },
+                    { value: 'dark', label: 'Oscuro' },
+                  ].map((t) => (
+                    <button
+                      key={t.value}
+                      type="button"
+                      className={`${styles.themeBtn} ${temaPreview === t.value ? styles.themeBtnActive : ''}`}
+                      aria-pressed={temaPreview === t.value}
+                      onClick={() => setTemaPreview(t.value)}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div
@@ -657,14 +784,16 @@ export default function HeatmapViewer({
                   </div>
                 )}
 
-                {points.length === 0 && (
+                {visiblePoints.length === 0 && (
                   <div className={styles.canvasEmpty}><T>Sin clics ubicables en esta página.</T></div>
                 )}
               </div>
 
               <div className={styles.legendRow}>
                 <span className={styles.previewTag}>
-                  {showIframe ? `Sobre la página real · vista ${pantalla.label}` : 'Vista de respaldo'}
+                  {showIframe
+                    ? `Sobre la página real · ${exacta ? 'pantalla' : 'vista'} ${pantalla.label} · ${Math.round(scale * 100)}%`
+                    : 'Vista de respaldo'}
                 </span>
                 <div className={styles.legend}>
                   <span className={styles.legendLabel}>Menos</span>
@@ -678,8 +807,8 @@ export default function HeatmapViewer({
                   {hayScroll && <p>Desplázate dentro de la vista para recorrer toda la página.</p>}
                   {mezclaAnchos && (
                     <p>
-                      Hay clics de varios anchos de pantalla sobre la vista {pantalla.label}: elige un
-                      ancho arriba para verlos en su sitio exacto.
+                      Hay clics de varios anchos de pantalla sobre la vista {pantalla.label}: elige una
+                      pantalla exacta para verlos en su pixel exacto.
                     </p>
                   )}
                   {clicsAproximados > 0 && (
