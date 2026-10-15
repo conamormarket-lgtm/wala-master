@@ -42,10 +42,24 @@
   transition: opacity var(--dur-media) ease;
 }
 
+/* La espalda reemplaza al frente (no va encima): las dos fotos se mezclan
+   con multiply sobre el escenario, y una sobre otra la espalda salía oscura. */
+.conEspalda > img:not(.espalda) {
+  transition: opacity var(--dur-media) ease, transform 0.6s var(--ease-signature);
+}
+
+.verEspalda > img:not(.espalda) {
+  opacity: 0;
+}
+
 /* Con ratón: la espalda al pasar por la tarjeta. */
 @media (hover: hover) and (pointer: fine) {
   .creacion:hover .conEspalda .espalda {
     opacity: 1;
+  }
+
+  .creacion:hover .conEspalda > img:not(.espalda) {
+    opacity: 0;
   }
 
   .girar {
