@@ -1,13 +1,12 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { Contador } from '../Etiquetas';
 import { Enlace } from '../Enlace';
 import { IconoWala } from '../IconosWala';
 import s from './Flotantes.module.css';
 
 /*
- * Lo que flota sobre la página: WhatsApp, Kapi, regalos sugeridos y la
- * píldora de recompensa. Todo por props: quién lo ve (sesión, rutas) y qué
+ * Lo que flota sobre la página: WhatsApp, Kapi y la píldora de
+ * recompensa. Todo por props: quién lo ve (sesión, rutas) y qué
  * pasa al tocar lo decide la tienda.
  */
 
@@ -96,23 +95,8 @@ export function KapiFlotante({ estado = 'feliz', aviso = false, onAbrir, etiquet
 }
 
 /**
- * Regalos sugeridos: sello con el regalo de Walá y cuántos hay sin ver.
- * Solo se dibuja si hay alguno.
- */
-export function BurbujaRegalos({ cantidad = 0, onAbrir, etiqueta = 'Regalos pensados para ti' }) {
-  if (!cantidad) return null;
-  return (
-    <button type="button" className={`${s.flotante} ${s.regalos}`} onClick={onAbrir} aria-label={`${etiqueta} (${cantidad})`}>
-      <IconoWala nombre="regalo" tamano={34} sticker={false} />
-      <span className={s.insignia}><Contador valor={cantidad} /></span>
-    </button>
-  );
-}
-
-/**
  * Píldora de recompensa ("Gana 15 monedas · Completa tu perfil de regalos").
- * Va con la moneda en un sello blanco de aro dorado: así no se confunde con
- * la burbuja violeta de regalos sugeridos (otra cosa). En el celular se
+ * Va con la moneda en un sello blanco de aro dorado. En el celular se
  * recoge en ese sello con "+15".
  *  - to: adónde lleva  · onCerrar: la X (la tienda decide cuánto se oculta)
  */

@@ -4,7 +4,7 @@ import {
   PaginaTienda, MarcoTienda, PaginaCarrito, PaginaMinijuegos, juegosDelArcade, VentanaKapi, kapiDesdePerfil,
   retoDesdePerfil, PaginaBusqueda, sugerenciasDesdeBusqueda, grupoModalidad, ORDENES_BUSQUEDA, ordenarProductos,
   Pestanas, Chip, Interruptor, Boton, PantallaCarga, CapaCargando, EsqueletoPagina, FRASES_CARGA,
-  BarraAdmin, AvisoSistema, BannerApp, BotonWhatsApp, KapiFlotante, BurbujaRegalos, PildoraRecompensa,
+  BarraAdmin, AvisoSistema, BannerApp, BotonWhatsApp, KapiFlotante, PildoraRecompensa,
   VentanaCampana, AvisoIdioma, ProveedorEnlaces, PanelEditor, useBorrador, SeccionEditable, InsertarAqui,
   moverSeccion, duplicarSeccion, rutaDeMarca, tarjetaDesdeProducto, REGISTRO_SECCIONES, enlaceWhatsApp, gruposDeCatalogo, ETAPAS_PRODUCCION,
 } from './kit';
@@ -405,11 +405,6 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         {conSesion && !enEncuesta && (
           <Parte n="M8" nombre="KapiFlotante" bloque={false}>
             <KapiFlotante estado={kapi.estado} aviso={kapi.aviso} onAbrir={() => setKapiAbierta(true)} />
-          </Parte>
-        )}
-        {conSesion && (
-          <Parte n="M9" nombre="BurbujaRegalos" bloque={false}>
-            <BurbujaRegalos cantidad={2} onAbrir={() => avisar('Regalos pensados para ti', 'En la tienda se abre la lista')} />
           </Parte>
         )}
       </>

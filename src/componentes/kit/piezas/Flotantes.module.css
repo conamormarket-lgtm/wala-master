@@ -179,21 +179,6 @@
   transform: rotate(-8deg);
 }
 
-/* ── Regalos sugeridos ─────────────────────────────────── */
-.regalos {
-  background: var(--degradado-logo, var(--violet-600));
-}
-
-.regalos > span:first-child {
-  transform: rotate(-8deg);
-}
-
-.insignia {
-  position: absolute;
-  top: -2px;
-  right: -2px;
-}
-
 /* ── Píldora de recompensa ─────────────────────────────── */
 .pildora {
   position: relative;

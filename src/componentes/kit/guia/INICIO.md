@@ -28,8 +28,8 @@ el carrito y Mis pedidos.
 | M6 | Barra inferior | `BarraInferior` (siempre 5 pestañas, "Crear" al centro; en "Mi cuenta" las iniciales o la foto en un aro del mismo trazo que los íconos) | `Enlace`, `Contador` | `Navegacion.module.css` (`.barra`, `.tab…`) | ruta actual, AuthContext | celular |
 | M7 | WhatsApp flotante | `BotonWhatsApp` (dentro de `PilaFlotante`) | `Enlace` | `piezas/Flotantes.module.css` | Firestore `messages` (número por zona) | todos (no admin, checkout ni landings) |
 | M8 | Kapi | `KapiFlotante` (abre `VentanaKapi`, ficha en [KAPI.md](KAPI.md)) | `CARAS_KAPI` | `piezas/Flotantes.module.css`, `piezas/VentanaKapi.module.css` | perfil (`kapiDesdePerfil`: comida del día, felicidad, tutorial) | con sesión |
-| M9 | Regalos sugeridos | `BurbujaRegalos` | `IconoWala`, `Contador` | `piezas/Flotantes.module.css` | `suggested_packages` sin ver | con sesión, si hay |
-| M10 | "Gana 15 monedas" | `PildoraRecompensa` | `IconoWala` (moneda), `Enlace` | `piezas/Flotantes.module.css` | perfil sin encuesta | con sesión. Sello blanco con aro dorado y "+15": no confundir con M9 (regalo violeta) |
+| M9 | (retirada) | — | — | — | La burbuja de regalos sugeridos se quitó el 2026-10-15: ya no tenía uso | — |
+| M10 | "Gana 15 monedas" | `PildoraRecompensa` | `IconoWala` (moneda), `Enlace` | `piezas/Flotantes.module.css` | perfil sin encuesta | con sesión. Sello blanco con aro dorado y "+15" |
 | M11 | Anuncio de campaña | `VentanaCampana` (`formato: 'imagen'`, como la tienda: solo la imagen, que es el botón, y una X; tocar afuera cierra) o `'tarjeta'` | `EtiquetaColgante`, `Boton`, `HojaInferior` (solo en tarjeta) | `piezas/Marco.module.css` (`.anuncio…`) | `storeConfig/popups` (las reglas siguen en la tienda) | según reglas |
 | M12 | Sugerencia de idioma | `AvisoIdioma` | `Boton` | `piezas/Marco.module.css` | idioma del navegador | una vez, si no es español |
 
@@ -81,7 +81,7 @@ esta tabla:
 | `Carrusel` (flechas, puntos) | S2, S3, S5, S6, S7, S9 | `Carrusel.module.css` |
 | `EtiquetaColgante` | descuentos y "Nuevo" de S5-S7, "Universo Walá" de S3, antetítulos, M11 | `Marca.module.css` |
 | `Boton` | M2, M3, M4, M11, M12, S2, carrito, Mis pedidos | `Boton.module.css` |
-| `IconoWala` | S1, S8, M9, M10 | `IconosWala.jsx` (dibujos) + `IconosWala.module.css` |
+| `IconoWala` | S1, S8, M10 | `IconosWala.jsx` (dibujos) + `IconosWala.module.css` |
 | `FotoProducto` (escenario + `multiply`) | M4 (menús de tienda, favoritos y carrito; notificaciones), toasts, "Agregar rápido", piezas de un combo en S5-S7, carrito, Mis pedidos. Fuera del inicio: burbujas de `categories_nav`, polaroid de `feature_list`, `TarjetaDestacado` | `piezas/FotoProducto.module.css`; el color, `--escenario-foto` en `tokens.css` (también lo usan la foto grande de `TarjetaProducto` y el fondo vacío de los cuadros de S4) |
 | `LogoMarca` `sello` | sello de la marca en S5-S7 y menú Marcas de M4 | `piezas/LogoMarca.module.css` (`.sello`) |
 | `Avatar` | M4 (botón y menú de la cuenta), M6 (pestaña Cuenta), S9 (testimonios) | `piezas/Avatar.module.css` |
@@ -108,7 +108,7 @@ Viendo como Admin → "Editar esta página":
    publicar" hasta tocar **Publicar**).
 4. El botón de flechas agranda la hoja casi a pantalla completa (para
    formularios largos) y la vuelve a achicar; deslizarla no cierra nada.
-5. Mientras se edita se esconden los flotantes (WhatsApp, Kapi, regalos,
+5. Mientras se edita se esconden los flotantes (WhatsApp, Kapi,
    monedas) para que no tapen el panel. En el celular no aparece el botón
    "ver en celular/escritorio" (ya estás en uno).
 
@@ -133,7 +133,7 @@ día si cambia un componente del kit o su forma de recibir datos.
 | Barra de admin (M3) | `components/common/AdminBar/AdminBar.jsx` | `BarraAdmin` |
 | Aviso del sistema (M1) | `components/common/SystemAlert` | `AvisoSistema` |
 | Banner de la app (M2) | `pages/Tienda/components/AppDownloadBanner.jsx` | `BannerApp` |
-| Flotantes (M7-M10) | `WhatsAppButton`, `KapiPet` (solo el botón), `PackageBubble` (retirada de la tienda el 2026-10-15), píldora de la encuesta en `Header.jsx` ~1333-1359, `.floating-action-stack` de `App.jsx` | `PilaFlotante` + `BotonWhatsApp`, `KapiFlotante`, `BurbujaRegalos`, `PildoraRecompensa` (la ventana de Kapi ya está en el kit: `VentanaKapi`, ver KAPI.md; la burbuja de regalos ya no está en la tienda) |
+| Flotantes (M7-M10) | `WhatsAppButton`, `KapiPet` (solo el botón), `PackageBubble` (retirada el 2026-10-15, sin equivalente en el kit), píldora de la encuesta en `Header.jsx` ~1333-1359, `.floating-action-stack` de `App.jsx` | `PilaFlotante` + `BotonWhatsApp`, `KapiFlotante`, `PildoraRecompensa` (la ventana de Kapi ya está en el kit: `VentanaKapi`, ver KAPI.md) |
 | Anuncio de campaña (M11) | `components/common/CampaignPopup/PopupCard.jsx` | `VentanaCampana` (las reglas de `services/popupsLogic.mjs` se quedan) |
 | Idioma (M12) | `components/i18n/LanguagePopup.jsx` | `AvisoIdioma` |
 | Editor | `VisualEditorPanel`, `EditableSection`, `ModuleInserter` | `PanelEditor`, `SeccionEditable`, `InsertarAqui`, `useBorrador` |
@@ -161,7 +161,6 @@ día si cambia un componente del kit o su forma de recibir datos.
 | `pie` | `getStorefrontConfig('footer')` (`pages/footer`) |
 | `pieLegal.empresa` | `config/empresa.js` |
 | `BotonWhatsApp.numero` | Firestore `messages` (`whatsapp_number_tienda`…), marca y producto como hoy |
-| `BurbujaRegalos.cantidad` | `suggested_packages` sin ver (la tienda ya no la muestra) |
 | `PildoraRecompensa` | `userProfile.hasCompletedSurvey` y `surveyFabHiddenUntil` (3 días) |
 | `AvisoSistema` | `configuracion/estado_app` en tiempo real |
 | `onAgregar` | `CartContext.addToCart`; "elegir" abre `AgregarRapido` con `opcionesDeProducto` |
@@ -183,7 +182,7 @@ día si cambia un componente del kit o su forma de recibir datos.
 - Barra inferior siempre de 5 pestañas, sin "Admin": el panel se abre desde `BarraAdmin`.
 - "¡Quedan N!" solo con 10 unidades o menos (hoy dice "N disponibles" en todos).
 - Sin puntuación ni reseñas inventadas (`ProductCard.jsx:169`): solo si hay reseñas reales.
-- Píldora de la encuesta con moneda (no regalo), para no confundirse con los regalos sugeridos.
+- Píldora de la encuesta con moneda (no regalo).
 - Distancia mínima entre secciones aunque el builder guarde 0.
 - Anuncio de campaña de solo imagen, centrado también en el celular.
 - Ícono del banner de la app en el violeta de la cabecera.
