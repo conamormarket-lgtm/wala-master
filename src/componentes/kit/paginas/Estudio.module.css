@@ -328,3 +328,15 @@
   border-radius: 24px;
   background: var(--color-surface);
 }
+
+/* "Mis creaciones" en la cabeza: en el celular, solo el ícono. */
+.misCreaciones {
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .misCreaciones {
+    font-size: 0;
+    gap: 0;
+  }
+}

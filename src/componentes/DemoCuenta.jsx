@@ -957,6 +957,10 @@ export const ESTADOS_ESTUDIO = [
   ['cargando', 'Cargando'],
   ['error', 'Error al cargar'],
   ['noDisponible', 'Prenda no disponible'],
+  ['agotado', 'Agotada'],
+  ['borradorAdmin', 'Prenda en borrador (admin)'],
+  ['borrador', 'Editando un borrador'],
+  ['borradorError', 'El borrador no se guardó'],
 ];
 
 /* Las letras del estudio por cómo se ven (como SelectorFuente de la tienda). */
@@ -1053,6 +1057,14 @@ export function EstudioDemo({ ruta = '/crear/', sesion, estados = [], toast, onI
       onDescargar={() => avisar('Se descargaría tu diseño', 'Una imagen de cada lado, con el logo de Walá en una esquina.', 'info')}
       onUsarEnCombo={async () => { avisar('Prenda lista', `Vuelves a «${combo.name}» con tu diseño.`); onIrA?.(`/combo/${combo.id}?nuevo=1`); }}
       onReintentar={() => avisar('Volviendo a cargar', undefined, 'info')}
+      onAviso={({ tipo, titulo, texto }) => avisar(titulo, texto, tipo)}
+      etiquetaVolver={combo ? 'Volver al combo' : modo === 'editar' ? 'Volver a Mis creaciones' : 'Volver a las prendas'}
+      onRenombrar={async () => { await espera(400); avisar('Nombre guardado'); }}
+      onEmpezarNuevo={() => onIrA?.(`/crear/${producto.id}`)}
+      esBorrador={estados.includes('borrador')}
+      estadoBorrador={estados.includes('borradorError') ? 'error' : 'guardado'}
+      agotado={estados.includes('agotado')}
+      borradorAdmin={estados.includes('borradorAdmin')}
     />
   );
 }

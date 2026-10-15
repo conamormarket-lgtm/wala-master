@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Save, Download, ShoppingBag, CheckCircle2, LogIn, RotateCcw, Images, Pencil } from 'lucide-react';
+import { ArrowLeft, Save, Download, ShoppingBag, CheckCircle2, LogIn, RotateCcw, Images } from 'lucide-react';
 import Boton from '../Boton';
 import { Aviso, EstadoVacio, HojaInferior } from '../Feedback';
 import { Campo, Cantidad, SelectorTalla } from '../Formulario';
@@ -11,7 +11,7 @@ import { soles } from '../TarjetaProducto';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { RecortarFoto } from '../piezas/RecortarFoto';
 import { QuitarFondo } from '../piezas/QuitarFondo';
-import { LienzoPrenda, BarraLienzo, PasosEstudio, PanelCapa } from '../piezas/Estudio';
+import { LienzoPrenda, BarraLienzo, PasosEstudio, PanelCapa, EstadoEdicion } from '../piezas/Estudio';
 import s from './Estudio.module.css';
 
 /*
@@ -101,13 +101,27 @@ const reubicarTrasCorte = (capa, corte, natural, proporcion = 1) => {
  *    (QuitarFondo); sin él, se usa onQuitarFondo de un toque
  *  - onImagenEditada({ capa, blob }): promesa → src; sube la imagen recortada o
  *    sin fondo (en la tienda, a Storage). Sin ella, se usa una URL local.
+ *  - requiereSesion: { imagen, carrito } (los dos true, como la tienda): sin
+ *    sesión, subir una imagen o agregar al carrito pide entrar (la tienda
+ *    guarda el diseño antes, así no se pierde) · urlRegistro
+ *  - edición (modo 'editar'): esBorrador · estadoBorrador ('guardando' |
+ *    'guardado' | 'error') · onRenombrar(nombre): promesa · onEmpezarNuevo.
+ *    Guardar se apaga sin cambios ("Guardado") y, si ya estaba guardada,
+ *    guarda sin preguntar el nombre.
+ *  - agotado: "Agotado por ahora" · borradorAdmin: la prenda es un borrador
+ *    (solo la ve el admin): aviso y no se compra
+ *  - etiquetaVolver ("Volver a Mis creaciones"…) · onAviso({ tipo, titulo,
+ *    texto }): avisos sueltos (el color cambió las zonas, cambios guardados)
  */
 export function PaginaEstudio({
   prenda, inicial = {}, modo = 'nuevo', plantilla, combo, sesion = false, fuentes = [],
   onSubirImagen, onQuitarFondo, onGuardar, onAgregar, onDescargar, onUsarEnCombo,
-  urlVolver = '/personalizar', urlLogin = '/login', urlCreaciones = '/cuenta/creaciones',
+  urlVolver = '/personalizar', urlLogin = '/login', urlRegistro = '/registro', urlCreaciones = '/cuenta/creaciones',
   estado, onReintentar, urlCrear = '/personalizar',
   calidadDe = calidadPorDefecto, fueraDeZona = fueraPorDefecto, motorFondo, onImagenEditada,
+  requiereSesion = { imagen: true, carrito: true },
+  esBorrador = false, estadoBorrador = 'guardado', onRenombrar, onEmpezarNuevo,
+  agotado = false, borradorAdmin = false, etiquetaVolver = 'Volver', onAviso,
 }) {
   const colores = prenda?.colores || [];
   const [colorId, setColorId] = useState(inicial.color || colores.find((c) => !c.espejoDe)?.id);
@@ -127,7 +141,13 @@ export function PaginaEstudio({
   const [cantidad, setCantidad] = useState(1);
   const [recortando, setRecortando] = useState(null);
   const [sinFondo, setSinFondo] = useState(null); // la capa en el editor de quitar fondo
+  const [motivoLogin, setMotivoLogin] = useState('guardar');
+  // La "firma" del diseño (color + capas) al guardarlo: si la de ahora es otra,
+  // hay cambios sin guardar. Una creación que se edita ya empieza guardada.
+  const firmaDe = (c, cs) => JSON.stringify([c, cs]);
+  const [firmaGuardada, setFirmaGuardada] = useState(() => (modo === 'editar' ? firmaDe(colorId, inicial.capas || {}) : null));
   const lienzoRef = useRef(null);
+  const guardarRef = useRef(null); // Ctrl+S (guardar se arma más abajo, después de cargar)
 
   // Todas las zonas, con su lado, para buscar una capa o una zona por id.
   const todasLasZonas = useMemo(() => vistas.flatMap((v) => v.zonas.map((z) => ({ ...z, vista: v }))), [vistas]);
@@ -226,7 +246,54 @@ export function PaginaEstudio({
     if (zid) setZonaId(zid);
   };
 
+  /** Sin sesión: la hoja de iniciar sesión, con el texto de para qué. */
+  const pedirLogin = (motivo) => { setMotivoLogin(motivo); setHoja('login'); };
+
+  /**
+   * Cambia el color de la prenda, como la tienda (cambiarColorPrenda): el
+   * texto negro o blanco pasa al que se lee sobre el nuevo color; lo que
+   * estaba en una zona que el nuevo color no tiene (un bicolor) pasa a la de
+   * igual nombre en ese lado o a la primera; la talla se borra si ya no está.
+   */
+  const cambiarColor = (id) => {
+    const nuevo = colores.find((c) => c.id === id);
+    if (!nuevo || nuevo.id === color?.id) return;
+    setColorId(nuevo.id);
+    const tallasNuevas = nuevo.tallas?.length ? nuevo.tallas : prenda?.tallas || [];
+    if (talla && !tallasNuevas.includes(talla)) setTalla(null);
+    const letra = nuevo.oscura ? '#FFFFFF' : '#111111';
+    const otra = letra === '#111111' ? '#FFFFFF' : '#111111';
+    const vistasNuevas = nuevo.vistas || prenda?.vistas || [];
+    const idsNuevos = new Set(vistasNuevas.flatMap((v) => v.zonas.map((z) => z.id)));
+    const movidas = [];
+    let cambio = false;
+    const siguiente = Object.fromEntries(Object.entries(capas).map(([zid, lista]) => [zid, lista.map((c) => {
+      if (c.tipo !== 'texto' || String(c.color || '').toUpperCase() !== otra) return c;
+      cambio = true;
+      return { ...c, color: letra };
+    })]));
+    Object.keys(siguiente).forEach((zid) => {
+      if (idsNuevos.has(zid) || !siguiente[zid]?.length) return;
+      const antes = todasLasZonas.find((z) => z.id === zid);
+      const lado = vistasNuevas.find((v) => v.id === antes?.vista.id) || vistasNuevas[0];
+      const destino = lado?.zonas.find((z) => z.nombre === antes?.nombre) || lado?.zonas[0];
+      if (!destino) return;
+      siguiente[destino.id] = [...(siguiente[destino.id] || []), ...siguiente[zid]];
+      delete siguiente[zid];
+      cambio = true;
+      if (antes && antes.nombre !== destino.nombre) movidas.push(`${antes.nombre} → ${destino.nombre}`);
+    });
+    const ladoActual = vistasNuevas.find((v) => v.id === vista?.id);
+    if (ladoActual && !ladoActual.zonas.some((z) => z.id === zonaId)) setZonaId(ladoActual.zonas[0]?.id);
+    if (movidas.length) {
+      setSeleccion(null);
+      onAviso?.({ tipo: 'info', titulo: `${nuevo.nombre} tiene otras zonas de impresión`, texto: `Tu diseño pasó de ${movidas.join(', ')}.` });
+    }
+    if (cambio) cambiarCapas(() => siguiente);
+  };
+
   const subirImagen = async () => {
+    if (!sesion && requiereSesion?.imagen) { pedirLogin('continuar'); return; }
     if (!onSubirImagen) return;
     setOcupado('subiendo');
     try {
@@ -269,6 +336,7 @@ export function PaginaEstudio({
     const ctrl = e.ctrlKey || e.metaKey;
     if (ctrl && e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) rehacer(); else deshacer(); return; }
     if (ctrl && e.key.toLowerCase() === 'y') { e.preventDefault(); rehacer(); return; }
+    if (ctrl && e.key.toLowerCase() === 's') { e.preventDefault(); guardarRef.current?.(); return; }
     const { capa } = elegida;
     if (!capa) return;
     if (e.key === 'Escape') setSeleccion(null);
@@ -338,20 +406,33 @@ export function PaginaEstudio({
     />
   );
 
-  const guardar = () => {
-    if (!sesion) { setHoja('login'); return; }
-    setHoja('guardar');
-  };
-  const confirmarGuardar = async () => {
+  // Cambios sin guardar: contra lo último guardado (o, si nunca se guardó, contra vacío).
+  const firmaActual = firmaDe(color?.id, capas);
+  const hayCambios = firmaGuardada === null ? !vacio : firmaActual !== firmaGuardada;
+  const yaGuardada = firmaGuardada !== null;
+
+  const confirmarGuardar = async ({ conHoja = true } = {}) => {
     setOcupado('guardando');
     try {
       await onGuardar?.({ nombre: nombre.trim() || `Mi ${prenda.nombre?.split(' ')[0]?.toLowerCase() || 'creación'}`, diseno });
-      setHoja('guardada');
+      setFirmaGuardada(firmaActual);
+      if (conHoja) setHoja('guardada');
+      else onAviso?.({ tipo: 'exito', titulo: 'Cambios guardados' });
     } finally {
       setOcupado(null);
     }
   };
+  // Sin sesión pide entrar; si ya está guardada, guarda sin preguntar el nombre.
+  const guardar = () => {
+    if (!sesion) { pedirLogin('guardar'); return; }
+    if (!hayCambios) return;
+    if (yaGuardada) confirmarGuardar({ conHoja: false });
+    else setHoja('guardar');
+  };
+  guardarRef.current = guardar;
   const agregar = async () => {
+    if (borradorAdmin || agotado) return;
+    if (!sesion && requiereSesion?.carrito) { pedirLogin('continuar'); return; }
     if (tallas.length && !talla) { setHoja('talla'); return; }
     setOcupado('agregando');
     try {
@@ -362,26 +443,35 @@ export function PaginaEstudio({
     }
   };
 
-  const aviso = combo ? (
+  const aviso = borradorAdmin ? (
+    <Aviso compacto tipo="aviso">Borrador: solo los administradores ven esta prenda. Publícala desde Admin → Productos para poder comprarla.</Aviso>
+  ) : combo ? (
     <Aviso compacto tipo="info">Prenda {combo.numero} de {combo.total} de tu combo «{combo.nombre}». Al terminar, vuelve al combo con tu diseño.</Aviso>
-  ) : modo === 'editar' ? (
-    <Aviso compacto tipo="info" icono={<Pencil aria-hidden="true" />}>Estás editando «{inicial.nombre || 'tu creación'}». Al guardar, se actualiza.</Aviso>
   ) : modo === 'plantilla' ? (
     <Aviso compacto tipo="info">Partes del diseño «{plantilla || 'de la comunidad'}». Cámbiale el nombre, la foto o lo que quieras.</Aviso>
-  ) : !sesion ? (
-    <Aviso compacto tipo="info" icono={<LogIn aria-hidden="true" />}>Puedes diseñar sin cuenta. Para guardar tu creación, inicia sesión.</Aviso>
+  ) : !sesion && modo !== 'editar' ? (
+    <Aviso
+      compacto
+      tipo="info"
+      icono={<LogIn aria-hidden="true" />}
+      accion={!vacio ? <Boton variante="fantasma" tamano="sm" to={urlLogin}>Iniciar sesión</Boton> : undefined}
+    >
+      {vacio ? 'Puedes diseñar sin cuenta. Para subir una imagen o guardar, inicia sesión.' : 'Inicia sesión para guardar tu diseño como borrador y continuarlo después.'}
+    </Aviso>
   ) : null;
 
   const accionPrincipal = combo ? (
     <Boton bloque icono={<CheckCircle2 aria-hidden="true" />} disabled={vacio} onClick={() => onUsarEnCombo?.(diseno)}>Listo, usar en el combo</Boton>
+  ) : agotado ? (
+    <Boton bloque disabled>Agotado por ahora</Boton>
   ) : (
-    <Boton bloque icono={<ShoppingBag aria-hidden="true" />} disabled={vacio} cargando={ocupado === 'agregando'} onClick={agregar}>Agregar al carrito · {soles(precio)}</Boton>
+    <Boton bloque icono={<ShoppingBag aria-hidden="true" />} disabled={vacio || borradorAdmin} cargando={ocupado === 'agregando'} onClick={agregar}>Agregar al carrito · {soles(precio)}</Boton>
   );
 
   return (
     <div className={s.pagina} data-componente="PaginaEstudio">
       <header className={s.cabeza}>
-        <Boton to={urlVolver} variante="fantasma" tamano="sm" soloIcono aria-label="Volver" icono={<ArrowLeft aria-hidden="true" />} />
+        <Boton to={urlVolver} variante="fantasma" tamano="sm" soloIcono aria-label={etiquetaVolver} title={etiquetaVolver} icono={<ArrowLeft aria-hidden="true" />} />
         <div className={s.titulo}>
           <h1>{prenda.nombre}</h1>
           <span className={s.subtitulo}>
@@ -394,8 +484,21 @@ export function PaginaEstudio({
           {soles(precio)}
           {prenda.precioAntes > precio && <s>{soles(prenda.precioAntes)}</s>}
         </span>
+        {sesion && <Boton to={urlCreaciones} variante="fantasma" tamano="sm" icono={<Images aria-hidden="true" />} className={s.misCreaciones}>Mis creaciones</Boton>}
       </header>
 
+      {modo === 'editar' && sesion && (
+        <div className={s.aviso}>
+          <EstadoEdicion
+            esBorrador={esBorrador}
+            estadoBorrador={estadoBorrador}
+            nombre={nombre || inicial.nombre}
+            onRenombrar={onRenombrar ? async (n) => { await onRenombrar(n); setNombre(n); } : undefined}
+            hayCambios={hayCambios}
+            onEmpezarNuevo={onEmpezarNuevo}
+          />
+        </div>
+      )}
       {aviso && <div className={s.aviso}>{aviso}</div>}
 
       <div className={s.cuerpo}>
@@ -472,11 +575,11 @@ export function PaginaEstudio({
               <PasosEstudio
                 colores={muestras}
                 color={original?.id}
-                onColor={(id) => setColorId(id)}
+                onColor={cambiarColor}
                 invertir={alReves ? {
                   activo: Boolean(espejoDe),
                   texto: 'Los dos tonos cambian de lado.',
-                  onCambiar: (v) => setColorId(v ? alReves.id : original.id),
+                  onCambiar: (v) => cambiarColor(v ? alReves.id : original.id),
                 } : undefined}
                 lados={vistas.map((v) => ({ nombre: v.nombre, zonas: v.zonas.map((z) => ({ id: z.id, nombre: z.nombre, conDiseno: conDiseno.has(z.id) })) }))}
                 zona={zonaId}
@@ -496,7 +599,18 @@ export function PaginaEstudio({
             </div>
             {accionPrincipal}
             <div className={s.compraOtras}>
-              <Boton variante="contorno" tamano="sm" icono={<Save aria-hidden="true" />} disabled={vacio} onClick={guardar}>{modo === 'editar' ? 'Guardar cambios' : 'Guardar'}</Boton>
+              {/* Sin cambios se apaga; si ya se guardó, dice "Guardado". */}
+              <Boton
+                variante="contorno"
+                tamano="sm"
+                icono={yaGuardada && !hayCambios ? <CheckCircle2 aria-hidden="true" /> : <Save aria-hidden="true" />}
+                disabled={vacio || !hayCambios}
+                cargando={ocupado === 'guardando' && hoja !== 'guardar'}
+                onClick={guardar}
+                title={hayCambios ? 'Guardar (Ctrl+S)' : 'No hay cambios por guardar'}
+              >
+                {yaGuardada && !hayCambios ? 'Guardado' : yaGuardada ? 'Guardar cambios' : 'Guardar'}
+              </Boton>
               <Boton variante="fantasma" tamano="sm" icono={<Download aria-hidden="true" />} disabled={vacio} onClick={() => onDescargar?.(diseno)}>Descargar</Boton>
             </div>
             {vacio && <p className={s.compraNota}>Agrega una imagen o un texto para continuar.</p>}
@@ -512,6 +626,7 @@ export function PaginaEstudio({
         pie={<Boton bloque icono={<ShoppingBag aria-hidden="true" />} disabled={!talla} cargando={ocupado === 'agregando'} onClick={agregar}>Agregar · {soles(precio * cantidad)}</Boton>}
       >
         <div className={s.hojaTalla}>
+          <p className={s.compraNota}>Incluye la impresión de todos tus diseños.</p>
           <SelectorTalla tallas={tallas} valor={talla} onChange={setTalla} />
           <div className={s.filaCantidad}>
             <span>Cantidad</span>
@@ -525,7 +640,7 @@ export function PaginaEstudio({
         abierta={hoja === 'guardar'}
         onCerrar={() => setHoja(null)}
         titulo={modo === 'editar' ? 'Guardar los cambios' : 'Guarda tu creación'}
-        pie={<Boton bloque icono={<Save aria-hidden="true" />} cargando={ocupado === 'guardando'} onClick={confirmarGuardar}>Guardar</Boton>}
+        pie={<Boton bloque icono={<Save aria-hidden="true" />} cargando={ocupado === 'guardando'} onClick={() => confirmarGuardar()}>Guardar</Boton>}
       >
         <div className={s.hojaGuardar}>
           <div className={s.miniatura}>{lienzo({ guias: false, className: s.lienzoMini })}</div>
@@ -552,16 +667,26 @@ export function PaginaEstudio({
         </div>
       </HojaInferior>
 
-      {/* Sin sesión: guardar pide entrar (el diseño no se pierde). */}
+      {/* Sin sesión: guardar, subir una imagen o agregar al carrito piden entrar (el diseño no se pierde). */}
       <HojaInferior
         abierta={hoja === 'login'}
         onCerrar={() => setHoja(null)}
-        titulo="Inicia sesión para guardar"
-        pie={<Boton bloque icono={<LogIn aria-hidden="true" />} to={urlLogin}>Iniciar sesión o crear cuenta</Boton>}
+        titulo={motivoLogin === 'guardar' ? 'Inicia sesión para guardar' : 'Inicia sesión para continuar'}
+        pie={(
+          <div className={s.pieGuardada}>
+            <Boton bloque icono={<LogIn aria-hidden="true" />} to={urlLogin}>Iniciar sesión</Boton>
+            <Boton bloque variante="contorno" to={urlRegistro}>Crear una cuenta</Boton>
+            <Boton bloque variante="fantasma" onClick={() => setHoja(null)}>Seguir diseñando</Boton>
+          </div>
+        )}
       >
         <div className={s.hojaLogin}>
           <img src={CARAS_KAPI.feliz} alt="" width="96" height="96" />
-          <p>Tu diseño te espera aquí mismo: al volver lo encuentras tal cual y lo guardas en Mis creaciones.</p>
+          <p>
+            {motivoLogin === 'guardar'
+              ? 'Tu diseño te espera aquí mismo: al volver lo encuentras tal cual y lo guardas en Mis creaciones.'
+              : 'Así guardamos tus imágenes y tu diseño. Tus textos y elecciones se quedan como los dejaste.'}
+          </p>
         </div>
       </HojaInferior>
 

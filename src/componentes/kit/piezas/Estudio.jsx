@@ -3,13 +3,14 @@ import {
   Undo2, Redo2, Minus, Plus, Crosshair, Trash2, ImagePlus, Type, ZoomIn, ZoomOut, Keyboard, Check,
   Copy, ArrowUpToLine, ArrowDownToLine, RotateCw, FlipHorizontal, Crop, Eraser, Maximize2,
   AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
-  AlignLeft, AlignCenter, AlignRight,
+  AlignLeft, AlignCenter, AlignRight, LoaderCircle, CheckCircle2, AlertTriangle,
 } from 'lucide-react';
 import Boton from '../Boton';
 import Acordeon from '../Acordeon';
 import { Chip } from '../Etiquetas';
 import { Campo, Cantidad, Casilla, Deslizador, Interruptor, SelectorColor } from '../Formulario';
 import { Sello } from '../Marca';
+import { TituloEditable } from './Ficha';
 import s from './Estudio.module.css';
 
 /*
@@ -655,6 +656,41 @@ export function PanelCapa({
           ),
         }]}
       />
+    </div>
+  );
+}
+
+/**
+ * Bajo la cabeza del estudio, al editar algo ya guardado: si es un borrador
+ * (se guarda solo), cómo va ese guardado; si es una creación, "Estás
+ * editando «nombre» ✎" (se renombra ahí mismo) y si hay cambios sin guardar.
+ * Siempre, "Empezar uno nuevo".
+ *  - esBorrador · estadoBorrador: 'guardando' | 'guardado' | 'error'
+ *  - nombre · onRenombrar(nuevo): promesa · hayCambios · onEmpezarNuevo
+ */
+export function EstadoEdicion({ esBorrador = false, estadoBorrador = 'guardado', nombre, onRenombrar, hayCambios = false, onEmpezarNuevo }) {
+  const borrador = {
+    guardando: [LoaderCircle, 'Guardando borrador…', s.girando],
+    error: [AlertTriangle, 'No pudimos guardar el borrador. Revisa tu conexión.', s.estadoError],
+    guardado: [CheckCircle2, 'Borrador guardado: lo encuentras en Crear para continuarlo después.', s.estadoOk],
+  }[estadoBorrador] || [];
+  const [Icono, texto, clase] = borrador;
+  return (
+    <div className={s.edicion} data-componente="EstadoEdicion">
+      {esBorrador ? (
+        <span className={s.edicionTexto} role="status">
+          {Icono && <Icono aria-hidden="true" className={clase} />}
+          {texto}
+        </span>
+      ) : (
+        <span className={s.edicionTexto}>
+          <span className={s.edicionNombre}>Estás editando <TituloEditable nombre={nombre || 'tu creación'} onRenombrar={onRenombrar} como="strong" /></span>
+          <span className={hayCambios ? s.sinGuardar : s.todoGuardado} role="status">
+            {hayCambios ? 'Tienes cambios sin guardar.' : 'Todo está guardado.'}
+          </span>
+        </span>
+      )}
+      {onEmpezarNuevo && <Boton variante="fantasma" tamano="sm" icono={<Plus aria-hidden="true" />} onClick={onEmpezarNuevo}>Empezar uno nuevo</Boton>}
     </div>
   );
 }

@@ -608,3 +608,69 @@
   height: auto;
   overflow: visible;
 }
+
+/* ── Estado de edición (EstadoEdicion) ─────────────────── */
+.edicion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  font-size: 0.85rem;
+}
+
+.edicionTexto {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+}
+
+.edicionTexto > svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.edicionNombre {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.sinGuardar {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.todoGuardado {
+  color: var(--color-text-muted);
+}
+
+.estadoOk {
+  color: #16a34a;
+}
+
+.estadoError {
+  color: #dc2626;
+}
+
+.girando {
+  animation: girarEstudio 0.9s linear infinite;
+}
+
+@keyframes girarEstudio {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .girando {
+    animation: none;
+  }
+}
