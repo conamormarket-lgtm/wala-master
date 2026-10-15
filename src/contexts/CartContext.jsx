@@ -243,7 +243,10 @@ export const CartProvider = ({ children }) => {
       : `Tu cuenta tenía ${n} productos guardados: quedaron en tu carrito para otra vez.`, 6000);
   }, [items, toast]);
   useEffect(() => {
-    if (!uid || !db) return;
+    // Al cerrar sesión se olvida: quien vuelve a entrar en la misma pestaña (sin
+    // recargar) también recupera lo que tenía guardado.
+    if (!uid) { restoredUidRef.current = null; return; }
+    if (!db) return;
     if (restoredUidRef.current === uid) return;
     restoredUidRef.current = uid;
 
