@@ -48,12 +48,15 @@ const correoValido = (c) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(c || '').tr
  *    la tarjeta falla si no se cobró
  *  - entrega: { fecha, ocasion, destinatario, aviso } (un regalo de una lista de deseos)
  *  - invitacion: { nombre } (primera compra con un link de invitación)
- *  - urlCarrito, urlTienda, urlPedidos, urlLogin · estado: 'cargando'
+ *  - Para pagar hace falta una cuenta: sin sesión se llena todo, pero el botón
+ *    es "Inicia sesión para pagar" · onEntrar(ruta, datos): guardar lo llenado
+ *    antes de ir a urlLogin o urlRegistro (al volver, llega en `perfil`/`direcciones`)
+ *  - urlCarrito, urlTienda, urlPedidos, urlLogin, urlRegistro · estado: 'cargando'
  */
 export function PaginaCheckout({
   items = [], incompletos = [], sesion = false, perfil = {}, direcciones = [], lugares = {}, paises,
   envio: reglaEnvio = { costo: 15, gratisDesde: 100 }, monedas = {}, onCupon, onPreparar, pago = {},
-  entrega, invitacion, urlCarrito = '/carrito', urlTienda = '/tienda', urlPedidos = '/cuenta/pedidos', urlLogin = '/login',
+  entrega, invitacion, urlCarrito = '/carrito', urlTienda = '/tienda', urlPedidos = '/cuenta/pedidos', urlLogin = '/login', urlRegistro = '/registro', onEntrar,
   estado,
 }) {
   const principal = direcciones.find((d) => d.principal) || direcciones[0];
@@ -118,6 +121,7 @@ export function PaginaCheckout({
 
   const continuar = async (e) => {
     e.preventDefault();
+    if (!sesion) return;
     const encontrados = modo === 'formulario' ? validarDireccion(form) : {};
     if (pedirCorreo && !correoValido(correo)) encontrados.correo = correo ? 'Escribe un correo válido.' : 'Escribe tu correo para enviarte el pedido.';
     if (regalo.activo && !regalo.destinatario.trim()) encontrados.regalo_destinatario = 'Escribe para quién es.';
@@ -224,9 +228,6 @@ export function PaginaCheckout({
                 <h2 className={s.subtitulo}>
                   {modo === 'tarjeta' || modo === 'lista' ? 'Enviar a' : form.id ? 'Editar dirección' : direcciones.length ? 'Nueva dirección' : 'Datos de envío'}
                 </h2>
-                {!sesion && (
-                  <p className={s.entrar}>¿Ya tienes cuenta? <Enlace to={urlLogin}>Inicia sesión</Enlace> para usar tus direcciones y tus monedas.</p>
-                )}
 
                 {modo === 'tarjeta' && direccion && (
                   <div className={s.elegida}>
@@ -332,11 +333,21 @@ export function PaginaCheckout({
 
                 {error && <Aviso tipo="error" compacto>{error}</Aviso>}
 
+                {!sesion && (
+                  <p className={s.entrar} role="note">
+                    <strong>Para pagar necesitas tu cuenta.</strong> Así tu pedido queda en «Mis pedidos» y puedes usar tus monedas. Lo que ya llenaste se guarda.{' '}
+                    <Enlace to={urlRegistro} onClick={() => onEntrar?.(urlRegistro, { direccion: form, correo, regalo })}>¿No tienes cuenta? Créala aquí</Enlace>
+                  </p>
+                )}
                 <div className={s.botones}>
                   <Boton to={urlCarrito} variante="fantasma" icono={<ArrowLeft aria-hidden="true" />}>Volver al carrito</Boton>
-                  <Boton type="submit" tamano="lg" cargando={ocupado === 'preparar'} iconoFin={<ArrowRight aria-hidden="true" />}>
-                    {ocupado === 'preparar' ? 'Preparando tu pago…' : 'Continuar al pago'}
-                  </Boton>
+                  {sesion ? (
+                    <Boton type="submit" tamano="lg" cargando={ocupado === 'preparar'} iconoFin={<ArrowRight aria-hidden="true" />}>
+                      {ocupado === 'preparar' ? 'Preparando tu pago…' : 'Continuar al pago'}
+                    </Boton>
+                  ) : (
+                    <Boton to={urlLogin} tamano="lg" iconoFin={<ArrowRight aria-hidden="true" />} onClick={() => onEntrar?.(urlLogin, { direccion: form, correo, regalo })}>Inicia sesión para pagar</Boton>
+                  )}
                 </div>
               </form>
             ) : (

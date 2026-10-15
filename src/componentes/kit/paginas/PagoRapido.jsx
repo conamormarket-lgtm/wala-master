@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, MessageCircle } from 'lucide-react';
+import { CheckCircle2, MessageCircle, LogIn } from 'lucide-react';
 import Boton from '../Boton';
 import { EstadoVacio } from '../Feedback';
 import { LogoWala, Trazo } from '../Marca';
@@ -22,10 +22,12 @@ const importe = (monto, moneda) => `${moneda === 'USD' ? 'US$' : 'S/'} ${Number(
  *  - enlace: { concepto, monto, moneda ('PEN' | 'USD'), vence ("Vence hoy a
  *    las 18:30"), pagado, transaccion }
  *  - onTarjeta(): promesa · onPaypal(): promesa · botonesPaypal (los del SDK)
+ *  - sesion: para pagar hace falta una cuenta; sin ella, "Inicia sesión para
+ *    pagar" (urlLogin, urlRegistro; al entrar, vuelve aquí)
  *  - urlWhatsApp: para pedir un enlace nuevo
  *  - estado: 'cargando' | 'noEncontrado' | 'vencido'
  */
-export function PaginaPagoRapido({ enlace = {}, onTarjeta, onPaypal, botonesPaypal, urlWhatsApp, estado }) {
+export function PaginaPagoRapido({ enlace = {}, sesion = true, urlLogin = '/login', urlRegistro = '/registro', onTarjeta, onPaypal, botonesPaypal, urlWhatsApp, estado }) {
   const [pagado, setPagado] = useState(false);
   if (estado === 'cargando') return <EsqueletoPagina forma="formulario" />;
   if (estado === 'noEncontrado' || estado === 'vencido') {
@@ -72,7 +74,13 @@ export function PaginaPagoRapido({ enlace = {}, onTarjeta, onPaypal, botonesPayp
               </div>
             </dl>
             {enlace.vence && <p className={s.vence}>{enlace.vence}</p>}
-            {usd ? (
+            {!sesion ? (
+              <div className={s.entrar}>
+                <p><strong>Para pagar necesitas tu cuenta.</strong> Así el pago queda a tu nombre. Al entrar, vuelves aquí.</p>
+                <Boton to={urlLogin} bloque tamano="lg" icono={<LogIn aria-hidden="true" />}>Inicia sesión para pagar</Boton>
+                <Boton to={urlRegistro} bloque variante="contorno">Crear mi cuenta</Boton>
+              </div>
+            ) : usd ? (
               <PagoPaypal montoUsd={Number(enlace.monto) || 0} mostrarMonto={false} botones={botonesPaypal} onPagar={async () => { await onPaypal?.(); setPagado(true); }} />
             ) : (
               <PagoTarjeta monto={Number(enlace.monto) || 0} onPagar={async () => { await onTarjeta?.(); setPagado(true); }} />

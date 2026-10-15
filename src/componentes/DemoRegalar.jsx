@@ -101,7 +101,7 @@ export const ESTADOS_PAGO_RAPIDO = [
   ['cargando', 'Cargando'],
 ];
 
-export function PagoRapidoDemo({ estados = [], toast }) {
+export function PagoRapidoDemo({ sesion = true, estados = [], toast }) {
   const falla = estados.includes('falla');
   let estado;
   if (estados.includes('cargando')) estado = 'cargando';
@@ -112,6 +112,7 @@ export function PagoRapidoDemo({ estados = [], toast }) {
     <PaginaPagoRapido
       key={estados.join()}
       estado={estado}
+      sesion={sesion}
       urlWhatsApp="https://wa.me/51924426791"
       enlace={{
         concepto: usd ? 'Adelanto del pedido PD-9QZ38Z (envío a Chile)' : 'Saldo del pedido PD-9QZ38Z · 2 casacas',

@@ -40,11 +40,20 @@ la tarjeta, WhatsApp y PayPal esperan y avisan.
     esta dirección en mi cuenta".
   - Si el perfil ya tiene nombre, documento y celular, quien recibe va
     resumido con "Cambiar".
-- **Envío sin cuenta:**
-  - El formulario completo: país, quién recibe, el lugar y la dirección.
-  - "¿Ya tienes cuenta? Inicia sesión…".
-  - El correo y la casilla "Recordar mis datos en este dispositivo", que va
-    **sin marcar** porque puede ser un equipo ajeno.
+- **Sin cuenta (decidido el 2026-10-15: para pagar hace falta una cuenta):**
+  - Se puede llenar todo (país, quién recibe, el lugar, la dirección, el
+    correo y "Recordar mis datos", que va **sin marcar** porque puede ser un
+    equipo ajeno).
+  - Junto al botón: "Para pagar necesitas tu cuenta. Así tu pedido queda en
+    «Mis pedidos» y puedes usar tus monedas. Lo que ya llenaste se guarda",
+    con "¿No tienes cuenta? Créala aquí".
+  - El botón es **"Inicia sesión para pagar"**. `onEntrar(ruta, datos)` guarda
+    lo llenado antes de ir. La tienda ya lo hace así: guarda en
+    `sessionStorage` (`wala_checkout_borrador`), va a `/login` o `/registro`
+    con `state.from`, y al volver lo recupera.
+  - **Por qué:** el cobro con tarjeta exige sesión en el servidor
+    (`processCulqiPayment`). Antes un invitado llegaba a escribir su tarjeta y
+    el cobro fallaba al final. Así el pedido además queda en su cuenta.
 - **El lugar:**
   - Perú: Lima Metropolitana, Callao u otras provincias (con departamento y
     provincia), y el distrito de la lista.

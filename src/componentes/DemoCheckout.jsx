@@ -83,6 +83,7 @@ export function CheckoutDemo({ items = [], sesion, usuario, monedas = 0, estados
       }}
       entrega={estados.includes('regalo') ? { fecha: '24 de octubre', ocasion: 'Cumpleaños', destinatario: 'María', aviso: 'Está cerca: la preparación y el envío toman de 7 a 30 días hábiles.' } : undefined}
       invitacion={estados.includes('invitacion') ? { nombre: 'Andrea' } : undefined}
+      onEntrar={() => avisar('Lo llenado queda guardado', 'En la tienda vuelve al checkout después de entrar.', 'info')}
       onIrA={onIrA}
     />
   );

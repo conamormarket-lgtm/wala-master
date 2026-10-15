@@ -653,7 +653,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     // Un enlace de pago: sin la barra inferior ni Kapi en el pie (solo pagar).
     <MarcoTienda {...marco} barraInferior={null} kapiEnPie={false}>
       <Parte n="P16" nombre="PaginaPagoRapido">
-        <PagoRapidoDemo estados={estadosPagoRapido} toast={toast} />
+        <PagoRapidoDemo sesion={conSesion} estados={estadosPagoRapido} toast={toast} />
       </Parte>
     </MarcoTienda>
   ) : pagina === 'checkout' ? (

@@ -123,17 +123,20 @@ vigía del modal cerrado y el anti doble cobro.
 - Los textos de no encontrado dicen qué hacer, y el pago rápido vencido lleva
   a escribirle al asesor.
 
-### Para revisar en la tienda (no es del kit)
+### Pagar pide una cuenta (2026-10-15)
 
-`processCulqiPayment` exige sesión (`functions/index.js`, "Debe estar
-autenticado para pagar."). `/pago-rapido` es pública y no inicia sesión
-anónima. Un cliente sin cuenta con un enlace **en soles** podría no poder
-pagar con tarjeta. PayPal no exige sesión.
+El enlace se ve sin sesión, pero para pagar hace falta entrar: "Para pagar
+necesitas tu cuenta", "Inicia sesión para pagar" y "Crear mi cuenta" (prop
+`sesion` de `PaginaPagoRapido`). Al entrar, vuelve al enlace.
+
+La tienda ya lo hace así en `PagoRapidoPage`. Hoy se probó primero con una
+sesión anónima justo antes de cobrar (commit 7ec335d), pero se quitó:
+pagar pide cuenta, como en el checkout, y no se suma otro uso del login
+anónimo.
 
 ### Pasos
 
-1. `PaginaPagoRapido` primero: es chica y usa las piezas de pago. Ver antes
-   lo de la sesión de arriba.
+1. `PaginaPagoRapido` primero: es chica y usa las piezas de pago.
 2. La lista pública.
 3. Regalar para una fecha (decidir si se mantiene el arrastre).
 4. Abrir el regalo.
