@@ -84,7 +84,9 @@ la tarjeta, WhatsApp y PayPal esperan y avisan.
     pedido…", tres pasos (guardamos tu pedido, se abre WhatsApp con el
     detalle, el asesor te dice cómo pagar), "Un asesor te atenderá por
     WhatsApp" (con varias marcas, "El asesor de {marca}") y qué hacer si
-    WhatsApp no se abre. En el celular va en una columna; en escritorio
+    WhatsApp no se abre. Trae su propio link a Google Fonts (Poppins y
+    Montserrat 900): la pestaña nueva no tiene las fuentes de la tienda. En
+    el celular va en una columna; en escritorio
     (desde 860 px), en dos: la marca y el título a la izquierda, los pasos a
     la derecha. En la demo: estado "Pestaña de WhatsApp" (con "Varias
     marcas", la de una marca), dentro de una ventana del navegador que toma
