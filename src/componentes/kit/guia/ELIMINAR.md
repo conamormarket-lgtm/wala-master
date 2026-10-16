@@ -71,4 +71,6 @@ por `pages/Tienda/services/seccionesPorTipo.jsx` y por el interruptor
 | `pages/Tienda/components/FaqAccordion/` | `faq_accordion` | `PreguntasFrecuentes` (sin Kapi con sesión) | ídem | ídem |
 | `pages/Tienda/components/ProductQueryCarousel/` | `new_arrivals_carousel`, `sale_carousel`, `category_carousel` | `CarruselProductos` con las mismas consultas (`query-carousel`) hechas en `TiendaPage` | `seccionesPorTipo.jsx` (`category_carousel` y las otras páginas) | cuando esas páginas y `category_carousel` pasen al kit |
 | `pages/Tienda/components/FeaturedCarousel/` (en secciones) | `featured_carousel` del inicio | `CarruselProductos` | `ProductQueryCarousel`, `ProductDetail.jsx` (relacionados), `CuentaCompraDetallePage.jsx`, `seccionesPorTipo.jsx` | cuando migren la ficha (paso 6), el detalle del pedido y las demás páginas |
+| `pages/Tienda/components/BannerGrid/` | `banner_grid` del inicio | `MosaicoBanners` (con `marcas` de la consulta `['brands']`) | `seccionesPorTipo.jsx` (otras páginas, `seccionesViejo`) | cuando esas páginas pasen al kit y se retire `seccionesViejo` |
+| `pages/Tienda/components/CategoryGrid/` | `category_grid` del inicio | `GrillaCategorias` + `categoriasDeGrilla` (misma cuenta, foto y orden) | `seccionesPorTipo.jsx` (`/tienda` y marcas: `migrateHomeCategoryGrid`) | ídem |
 

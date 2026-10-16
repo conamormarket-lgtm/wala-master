@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback, useRef, useEffect, Suspense } fr
 // Secciones del inicio con el kit (paso 5 de la migración). seccionesViejo
 // (useLoViejo) vuelve a los componentes de antes; lo viejo, en guia/ELIMINAR.md.
 import { SeccionDelKit } from '../../componentes/kit/Secciones';
+import { categoriasDeGrilla } from '../../componentes/kit/adaptadores';
 import { enlaceWhatsApp } from '../../componentes/kit/piezas/Flotantes';
 import useLoViejo from '../../hooks/useLoViejo';
 import useWhatsAppDeLaRuta from '../../components/marco/useWhatsAppDeLaRuta';
@@ -48,6 +49,7 @@ import {
   getFeaturedProducts,
   getStoreProductsPage,
   getOnSaleProducts,
+  idsDeCategoriaDe,
   STORE_PAGE_SIZE,
   getCachedProducts,
   getCachedCategories,
@@ -926,6 +928,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   const TIPOS_DEL_KIT = new Set([
     'announcement_bar', 'hero_carousel', 'trust_badges', 'testimonials', 'faq_accordion',
     'featured_carousel', 'new_arrivals_carousel', 'sale_carousel',
+    'banner_grid', 'category_grid',
   ]);
   const usaKit = (section) => pageId === 'home' && !seccionesViejo && TIPOS_DEL_KIT.has(section.type);
   const conTipoDelKit = (tipo) => pageId === 'home' && !seccionesViejo && configuredSections.some((x) => x.type === tipo);
@@ -954,6 +957,12 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     return <TarjetaDeProducto product={producto} categories={categoriesData || []} currentBrandId={pageBrandId} />;
   }, [categoriesData, pageBrandId]);
   const PRODUCTOS_DEL_KIT = { featured_carousel: featuredProducts, new_arrivals_carousel: nuevosKit, sale_carousel: ofertasKit };
+  // Las categorías con productos, como las calculaba CategoryGrid (la misma
+  // regla que el menú de la cabecera: idsDeCategoriaDe).
+  const categoriasDeGrillaKit = useMemo(
+    () => categoriasDeGrilla(categoriesData || [], automaticCategoryProducts, { idsDe: idsDeCategoriaDe }),
+    [categoriesData, automaticCategoryProducts],
+  );
   const seccionDelKit = (section) => {
     // Lo de la primera pantalla carga ya (como antes, sin esperar a bajar).
     const indice = configuredSections.findIndex((x) => x.id === section.id);
@@ -962,6 +971,9 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       datos.productos = PRODUCTOS_DEL_KIT[section.type];
       datos.tarjeta = TarjetaDeTienda;
     }
+    if (section.type === 'banner_grid') datos.marcas = automaticGridBrands;
+    // Con items puestos a mano (dataSource manual) mandan esos.
+    if (section.type === 'category_grid') datos.categorias = section.settings?.dataSource === 'products' ? categoriasDeGrillaKit : undefined;
     if (section.type === 'faq_accordion') {
       // "Escríbenos" con el WhatsApp de la página; y un solo Kapi a la vista:
       // con sesión ya está el flotante.
