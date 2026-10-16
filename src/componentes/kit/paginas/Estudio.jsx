@@ -414,18 +414,26 @@ export function PaginaEstudio({
    * donde se soltó. Si no entra, al 90% y al centro; un texto en una zona
    * larga va girado (como la tienda). Un solo paso de deshacer.
    */
-  const pasarCapa = (id, destino, punto, { grupo } = {}) => {
+  const pasarCapa = (id, destino, punto, { grupo, cambio } = {}) => {
     const { capa, zonaId: origen } = ubicar(id);
     const z = todasLasZonas.find((x) => x.id === destino);
     if (!capa || !z) { soltar(); return; }
+    // Con el mismo tamaño y giro en pantalla (las medidas van en fracción de la zona).
+    const kx = cambio?.x || 1;
+    const ky = cambio?.y || 1;
+    const igual = (c) => ({
+      ...c,
+      ...(c.tipo === 'imagen' ? { ancho: (c.ancho ?? 0.8) * kx } : { tamano: (c.tamano ?? 0.18) * kx }),
+      angulo: Math.round((((c.angulo || 0) + (cambio?.giro || 0)) % 360 + 360) % 360),
+    });
     if (grupo?.length > 1) {
       // Varias: van juntas, con la misma distancia entre ellas.
       const movidas = grupo.map(ubicar).filter((u) => u.capa);
       const fuera = new Set(movidas.map((u) => u.capa.id));
       const nuevas = movidas.map(({ capa: c }) => ({
-        ...c,
-        x: limitar(punto.x + (c.x ?? 0.5) - (capa.x ?? 0.5), 0, 1),
-        y: limitar(punto.y + (c.y ?? 0.5) - (capa.y ?? 0.5), 0, 1),
+        ...igual(c),
+        x: limitar(punto.x + ((c.x ?? 0.5) - (capa.x ?? 0.5)) * kx, 0, 1),
+        y: limitar(punto.y + ((c.y ?? 0.5) - (capa.y ?? 0.5)) * ky, 0, 1),
       }));
       cambiarCapas((cs) => ({
         ...Object.fromEntries(Object.entries(cs).map(([zid, lista]) => [zid, lista.filter((c) => !fuera.has(c.id))])),
@@ -435,8 +443,9 @@ export function PaginaEstudio({
       setZonaId(destino);
       return;
     }
-    let nueva = { ...capa, ...punto };
-    if (capa.tipo === 'imagen' && (capa.ancho ?? 0.8) > 0.9) nueva = { ...nueva, ancho: 0.9, x: 0.5, y: 0.5 };
+    // Si no entra, al 90% (la copia que se arrastraba ya lo mostraba así).
+    let nueva = { ...igual(capa), ...punto };
+    if (capa.tipo === 'imagen' && nueva.ancho > 0.9) nueva = { ...nueva, ancho: 0.9 };
     if (capa.tipo === 'texto' && esLarga(z) && !esLarga(todasLasZonas.find((x) => x.id === origen)) && !(capa.angulo % 180)) nueva = { ...nueva, angulo: 90 };
     cambiarCapas((cs) => ({ ...cs, [origen]: cs[origen].filter((c) => c.id !== id), [destino]: [...(cs[destino] || []), nueva] }), false);
     soltar();

@@ -1060,3 +1060,34 @@
   cursor: move;
   touch-action: none;
 }
+
+/* Al arrastrar: la capa se ve entera (su copia, sin el recorte de la zona),
+   un poco levantada; la de verdad queda escondida debajo. */
+.capaOculta {
+  visibility: hidden;
+}
+
+.capaArrastrada {
+  z-index: 4;
+  opacity: 0.9;
+  filter: drop-shadow(0 8px 14px rgba(28, 20, 51, 0.3));
+  cursor: grabbing;
+  pointer-events: none;
+}
+
+/* La zona a la que pasa lo que se arrastra: su nombre encima (como el de
+   la zona elegida), donde la copia no lo tapa. */
+.zonaDestino {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  z-index: 5;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: var(--violet-500, #8b5cf6);
+  color: #fff;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateX(-50%);
+}

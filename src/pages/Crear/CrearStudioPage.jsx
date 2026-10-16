@@ -304,6 +304,7 @@ const CrearStudioPage = () => {
   const [arrastreLado, setArrastreLado] = useState(null);
   const ladoBajoRef = useRef(null);
   const punteroArrastreRef = useRef(null); // el puntero al arrastrar, en el lienzo
+  const destinoZonaRef = useRef(null); // la zona a la que pasará lo que se arrastra (se resalta)
   // Nombre de la creación (se pide al guardar) y aviso de "guardada".
   const [nombre, setNombre] = useState('');
   const [nombreEditado, setNombreEditado] = useState('');
@@ -1134,16 +1135,77 @@ const CrearStudioPage = () => {
     // Pasar a otro lado o a otra zona arrastrando: se mira dónde está el
     // puntero (con el dedo, el primer toque) y si hay un destino debajo.
     const enPantalla = (ev) => ev?.touches?.[0] || ev?.changedTouches?.[0] || ev;
+    // Lo que se arrastra se ve entero (sin el recorte de su zona), un poco
+    // transparente y sin asas; al soltar vuelve todo (o se redibuja si pasó
+    // a otra zona o a otro lado).
+    let arrastrado = null;
+    const levantar = (obj) => {
+      if (arrastrado === obj) return;
+      arrastrado = obj;
+      (obj.type === 'activeSelection' ? obj.getObjects() : [obj]).forEach((o) => {
+        o.recorteGuardado = o.clipPath;
+        o.opacidadGuardada = o.opacity;
+        o.set({ clipPath: null, opacity: 0.9 });
+        o.dirty = true;
+      });
+      obj.controlesGuardados = obj.hasControls;
+      obj.hasControls = false;
+    };
+    const bajar = () => {
+      const obj = arrastrado;
+      arrastrado = null;
+      if (!obj) return;
+      (obj.type === 'activeSelection' ? obj.getObjects() : [obj]).forEach((o) => {
+        if (!('recorteGuardado' in o)) return;
+        o.set({ clipPath: o.recorteGuardado, opacity: o.opacidadGuardada ?? 1 });
+        delete o.recorteGuardado;
+        delete o.opacidadGuardada;
+        o.dirty = true;
+      });
+      obj.hasControls = obj.controlesGuardados ?? true;
+      lienzo.requestRenderAll();
+    };
+    /** La zona a la que pasará: una sola, por su centro; varias de una zona, por el puntero. */
+    const zonaDestino = (obj) => {
+      const ts = transformsRef.current;
+      const dentro = (tz, x, y) => {
+        const q = desdeLienzo(tz, x, y);
+        return q.left >= 0 && q.top >= 0 && q.left <= tz.wu && q.top <= tz.hu;
+      };
+      let origen = obj.zonaId;
+      let punto = { x: obj.left, y: obj.top };
+      if (obj.type === 'activeSelection') {
+        const hijos = obj.getObjects();
+        origen = hijos[0]?.zonaId;
+        if (!origen || hijos.some((o) => o.zonaId !== origen) || !punteroArrastreRef.current) return null;
+        punto = punteroArrastreRef.current;
+      }
+      if (!origen || !ts[origen] || dentro(ts[origen], punto.x, punto.y)) return null;
+      return Object.keys(ts).find((zId) => zId !== origen && dentro(ts[zId], punto.x, punto.y)) || null;
+    };
     lienzo.on('object:moving', (e) => {
       const p = enPantalla(e.e);
       if (!p || p.clientX == null) return;
+      if (e.target) levantar(e.target);
       punteroArrastreRef.current = lienzo.getPointer(e.e);
       const lado = document.elementsFromPoint(p.clientX, p.clientY)
         .map((el) => el.closest?.('[data-soltar-lado]')).find(Boolean)?.getAttribute('data-soltar-lado') || null;
       accionesRef.current.alArrastrar?.(lado);
+      const destino = lado || !e.target ? null : zonaDestino(e.target);
+      if (destino !== destinoZonaRef.current) {
+        destinoZonaRef.current = destino;
+        accionesRef.current.pintarGuias?.();
+      }
     });
     // object:modified llega antes que mouse:up: ahí ya se usó el destino.
-    lienzo.on('mouse:up', () => accionesRef.current.finArrastre?.());
+    lienzo.on('mouse:up', () => {
+      bajar();
+      if (destinoZonaRef.current) {
+        destinoZonaRef.current = null;
+        accionesRef.current.pintarGuias?.();
+      }
+      accionesRef.current.finArrastre?.();
+    });
     // Al agrandar desde una esquina, el borde se pega igual; y se ve la medida.
     lienzo.on('object:scaling', (e) => {
       const obj = e.target;
@@ -1528,6 +1590,14 @@ const CrearStudioPage = () => {
     const oscuro = color && !esColorBlanco(color.hex) && textoSobre(color.hex) === '#FFFFFF';
     lienzo.getObjects().forEach((o) => {
       if (!o.guiaZona) return;
+      // La zona a la que pasa lo que se arrastra: borde lleno y más color.
+      if (o.guiaZona === destinoZonaRef.current) {
+        o.set({
+          stroke: oscuro ? '#FFFFFF' : '#7C3AED', strokeWidth: 2.5, strokeDashArray: null,
+          fill: oscuro ? 'rgba(255,255,255,0.18)' : 'rgba(124,58,237,0.18)',
+        });
+        return;
+      }
       const activa = o.guiaZona === zonaRef.current;
       o.set({
         stroke: activa
@@ -3043,6 +3113,7 @@ const CrearStudioPage = () => {
 
   accionesRef.current = {
     pasarALado,
+    pintarGuias,
     grupoAOtraZona,
     alArrastrar: (lado) => {
       if (!cfg || cfg.vistas.length < 2) return;

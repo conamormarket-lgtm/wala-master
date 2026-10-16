@@ -160,7 +160,9 @@ function TextoCurvo({ capa: c }) {
  *    (para deshacer)
  *  - Al arrastrar, guías rosadas e imán (como la tienda: utils/
  *    guiasInteligentes) contra la zona y los otros diseños; Alt lo apaga.
- *    onPasarCapa(id, zonaId, punto): se soltó sobre otra zona de este lado
+ *    onPasarCapa(id, zonaId, punto, { grupo, cambio }): se soltó sobre otra
+ *    zona de este lado; cambio: { x, y } por cuánto multiplicar los tamaños
+ *    (0–1 de la zona) para que se vea igual en la otra, y giro (grados)
  *  - onElegirVarias(ids, { sumar }): el recuadro del ratón sobre el fondo
  *  - onEncajar(id, cambios): un texto que se pasa del 96% de su zona se
  *    achica (sin un paso de deshacer propio)
@@ -253,6 +255,11 @@ export function LienzoPrenda({
   const sinClic = useRef(false); // el clic que sigue a un recuadro no suelta lo elegido
   const [soltarEn, setSoltarEn] = useState(null);
   const [pasarA, setPasarA] = useState(null); // la zona a la que pasa la capa arrastrada
+  // Lo que se está arrastrando: se ve entero (sin el recorte de su zona) y sin asas.
+  const [moviendo, setMoviendo] = useState(null);
+  // Sobre otra zona: cómo quedará lo que se suelta (más chico si no entra; un
+  // texto en una manga, a lo largo). La copia lo muestra antes de soltar.
+  const [vistaPrevia, setVistaPrevia] = useState(null); // { escala, giro }
   const [ayudas, setAyudas] = useState(null); // { zid, hu, cmPorU, lineas, etiqueta }
   const [rect, setRect] = useState(null); // el recuadro de selección (px del lienzo)
   const elegidas = Array.isArray(seleccion) ? seleccion : seleccion ? [seleccion] : [];
@@ -521,6 +528,24 @@ export function LienzoPrenda({
     },
   } : {};
 
+  /** Dónde va una capa en su zona (la capa y, al arrastrarla, su copia sin recorte). */
+  const estiloCapa = (c) => ({
+    left: `${(c.x ?? 0.5) * 100}%`,
+    top: `${(c.y ?? 0.5) * 100}%`,
+    width: c.tipo === 'imagen' ? `${(c.ancho ?? 0.8) * 100}%` : undefined,
+    transform: `translate(-50%, -50%) rotate(${c.angulo || 0}deg)${c.voltear ? ' scaleX(-1)' : ''}`,
+  });
+  const contenidoCapa = (c) => (c.tipo === 'imagen' ? (
+    <img src={c.src} alt="" draggable={false} />
+  ) : guias && editando === c.id ? (
+    // Mientras se escribe, derecho (como la tienda); al terminar vuelve el arco.
+    <TextoEnPrenda capa={{ ...c, curva: 0 }} seleccionar={c.texto === 'Tu texto'} onEscribir={(t) => onEscribir?.(c.id, t)} onTerminar={() => onTerminarTexto?.(c.id)} />
+  ) : efectoNum(c.curva) ? (
+    <TextoCurvo capa={c} />
+  ) : (
+    <span className={s.texto} style={estiloTexto(c)}>{c.texto}</span>
+  ));
+
   /** Punto (0–1) de la zona bajo el puntero (con su giro). */
   const puntoEnZona = (e, zid) => {
     const g = geometria(zid);
@@ -577,6 +602,7 @@ export function LienzoPrenda({
     const lado = onPasarALado
       ? document.elementsFromPoint(e.clientX, e.clientY).map((el) => el.closest?.('[data-soltar-lado]')).find(Boolean)?.getAttribute('data-soltar-lado') || null
       : null;
+    if (!a.movio) setMoviendo(a.grupo);
     if (!a.movio || lado !== a.lado) onArrastre?.({ activo: true, lado });
     a.lado = lado;
     // Fuera de su zona y sobre otra de este lado: al soltar pasa a esa. Una
@@ -592,6 +618,22 @@ export function LienzoPrenda({
       }
     }
     a.destino = destino;
+    // Al pasar a otra zona conserva su tamaño y su giro en pantalla: las
+    // medidas de la zona de origen pasan a las de la de destino.
+    a.cambio = null;
+    let previa = null;
+    const g2 = destino && geometria(destino);
+    if (g2) {
+      a.cambio = { x: a.g.w / g2.w, y: a.g.h / g2.h, giro: ((a.g.ang - g2.ang) * 180) / Math.PI, largaDestino: (g2.zona?.proporcion || 0) > 1.8 };
+      const capa = (capas[a.zonaId] || []).find((c) => c.id === a.id);
+      if (a.solo && capa?.tipo === 'imagen') {
+        const ancho = (capa.ancho ?? 0.8) * a.cambio.x;
+        if (ancho > 0.9) previa = { escala: 0.9 / ancho, giro: 0 };
+      } else if (a.solo && capa?.tipo === 'texto' && a.cambio.largaDestino && (a.g.zona?.proporcion || 0) <= 1.8 && !((capa.angulo || 0) % 180)) {
+        previa = { escala: 1, giro: 90 };
+      }
+    }
+    setVistaPrevia(previa);
     a.ultimo = { x, y };
     a.movio = true;
     setPasarA(destino);
@@ -603,6 +645,8 @@ export function LienzoPrenda({
     arrastre.current = null;
     setAyudas(null);
     setPasarA(null);
+    setMoviendo(null);
+    setVistaPrevia(null);
     if (!a?.movio) return;
     onArrastre?.({ activo: false });
     if (a.lado) { onPasarALado(a.grupo, a.lado); return; }
@@ -610,7 +654,7 @@ export function LienzoPrenda({
       const enPantalla = a.g.aPantalla(a.ultimo.x, a.ultimo.y);
       const g2 = geometria(a.destino);
       const punto = g2 ? g2.aZona(enPantalla.x, enPantalla.y) : { x: 0.5, y: 0.5 };
-      onPasarCapa(a.id, a.destino, { x: Math.min(1, Math.max(0, punto.x)), y: Math.min(1, Math.max(0, punto.y)) }, { grupo: a.grupo });
+      onPasarCapa(a.id, a.destino, { x: Math.min(1, Math.max(0, punto.x)), y: Math.min(1, Math.max(0, punto.y)) }, { grupo: a.grupo, cambio: a.cambio });
       return;
     }
     if (a.solo) {
@@ -764,7 +808,8 @@ export function LienzoPrenda({
         {!foto && tinte && oscura && <img className={s.luz} style={espejo} src={imagen} alt="" draggable={false} aria-hidden="true" />}
         {zonas.map((z) => {
           const activa = guias && z.id === zonaActiva;
-          const conAsas = caja?.id === unaElegida && (capas[z.id] || []).find((c) => c.id === caja.id);
+          const conAsas = !moviendo && caja?.id === unaElegida && (capas[z.id] || []).find((c) => c.id === caja.id);
+          const copias = moviendo ? (capas[z.id] || []).filter((c) => moviendo.includes(c.id)) : [];
           return (
             <div
               key={z.id}
@@ -776,7 +821,8 @@ export function LienzoPrenda({
                 width: `${z.w * 100}%`,
                 height: `${altoZona(z, anchoImg, altoImg) * 100}%`,
                 transform: z.angulo ? `rotate(${z.angulo}deg)` : undefined,
-                zIndex: conAsas ? 2 : undefined, // sus asas quedan sobre las otras zonas
+                // Sus asas (o lo que se arrastra) quedan sobre las otras zonas.
+                zIndex: copias.length ? 3 : conAsas ? 2 : undefined,
               }}
               onClick={guias ? () => { if (!sinClic.current) onElegirZona?.(z.id); } : undefined}
               onDoubleClick={guias && onDobleClic ? (e) => onDobleClic({ zonaId: z.id, punto: puntoEnZona(e, z.id) }) : undefined}
@@ -792,13 +838,11 @@ export function LienzoPrenda({
                   <span
                     key={c.id}
                     data-capa={c.id}
-                    className={[s.capa, guias && elegidas.includes(c.id) && s.capaElegida, guias && elegidas.length > 1 && elegidas.includes(c.id) && s.capaVarias].filter(Boolean).join(' ')}
-                    style={{
-                      left: `${(c.x ?? 0.5) * 100}%`,
-                      top: `${(c.y ?? 0.5) * 100}%`,
-                      width: c.tipo === 'imagen' ? `${(c.ancho ?? 0.8) * 100}%` : undefined,
-                      transform: `translate(-50%, -50%) rotate(${c.angulo || 0}deg)${c.voltear ? ' scaleX(-1)' : ''}`,
-                    }}
+                    className={[
+                      s.capa, guias && elegidas.includes(c.id) && s.capaElegida, guias && elegidas.length > 1 && elegidas.includes(c.id) && s.capaVarias,
+                      moviendo?.includes(c.id) && s.capaOculta, // se ve su copia, abajo
+                    ].filter(Boolean).join(' ')}
+                    style={estiloCapa(c)}
                     onPointerDown={guias ? (e) => empezar(e, c, z.id) : undefined}
                     onPointerMove={guias ? mover : undefined}
                     onPointerUp={guias ? soltar : undefined}
@@ -823,19 +867,22 @@ export function LienzoPrenda({
                       onElegirCapa?.(c.id, z.id, { sumar: e.shiftKey });
                     } : undefined}
                   >
-                    {c.tipo === 'imagen' ? (
-                      <img src={c.src} alt="" draggable={false} />
-                    ) : guias && editando === c.id ? (
-                      // Mientras se escribe, derecho (como la tienda); al terminar vuelve el arco.
-                      <TextoEnPrenda capa={{ ...c, curva: 0 }} seleccionar={c.texto === 'Tu texto'} onEscribir={(t) => onEscribir?.(c.id, t)} onTerminar={() => onTerminarTexto?.(c.id)} />
-                    ) : efectoNum(c.curva) ? (
-                      <TextoCurvo capa={c} />
-                    ) : (
-                      <span className={s.texto} style={estiloTexto(c)}>{c.texto}</span>
-                    )}
+                    {contenidoCapa(c)}
                   </span>
                 ))}
               </div>
+              {copias.map((c) => (
+                // Al arrastrar: una copia sin el recorte de la zona, que sigue al
+                // puntero aunque salga de ella (hacia otra zona o al borde).
+                <span
+                  key={c.id}
+                  className={[s.capa, s.capaArrastrada].join(' ')}
+                  style={vistaPrevia ? { ...estiloCapa(c), transform: `${estiloCapa(c).transform} rotate(${vistaPrevia.giro}deg) scale(${vistaPrevia.escala})` } : estiloCapa(c)}
+                  aria-hidden="true"
+                >
+                  {contenidoCapa(c)}
+                </span>
+              ))}
               {conAsas && (
                 // Fuera del recorte: las asas se ven aunque la capa llegue al borde de la zona.
                 <span
@@ -858,6 +905,11 @@ export function LienzoPrenda({
               )}
               {activa && <span className={s.zonaNombre} style={z.angulo ? { transform: `translateX(-50%) rotate(${-z.angulo}deg)` } : undefined}>{z.nombre}</span>}
               {(soltarEn === z.id || pasarA === z.id) && <span className={s.zonaSoltar} aria-hidden="true" />}
+              {pasarA === z.id && (
+                <span className={s.zonaDestino} style={z.angulo ? { transform: `translateX(-50%) rotate(${-z.angulo}deg)` } : undefined} aria-live="polite">
+                  Soltar en <strong>{z.nombre}</strong>
+                </span>
+              )}
               {ayudas?.zid === z.id && ayudas.lineas?.length > 0 && (
                 // Las guías rosadas: alineado con la zona o con otro diseño, y espacios iguales.
                 <span className={s.guiasCapa} style={{ '--zoom': zoom }} aria-hidden="true">

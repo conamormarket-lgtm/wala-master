@@ -253,6 +253,13 @@ Las piezas están en `piezas/Estudio.jsx`:
     (`onPasarCapa`), la pasa a esa (la zona se marca mientras se arrastra).
     Si no entra, al 90% y al centro; un texto en una manga va girado.
     Varias de una misma zona pasan juntas (por dónde está el puntero).
+    Conserva su tamaño y su giro en pantalla (las medidas pasan a las de la
+    otra zona); si una imagen no entra, al 90%.
+  - **Al arrastrar**, lo que se mueve se ve entero (una copia sin el recorte
+    de su zona, un poco levantada) y sin asas; sobre otra zona, la copia ya
+    toma el tamaño con que quedará y encima de la zona sale "Soltar en
+    Manga izquierda". En la tienda igual: sin recorte, un poco transparente,
+    sin asas y la zona destino resaltada.
   - **Varias elegidas** llevan una caja punteada: se arrastran tomándola de
     cualquier parte, también del hueco entre ellas (Shift + clic suma o
     quita la de debajo).
