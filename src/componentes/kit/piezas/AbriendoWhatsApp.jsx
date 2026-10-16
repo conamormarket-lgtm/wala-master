@@ -10,11 +10,15 @@ import s from './AbriendoWhatsApp.module.css';
  *
  * Es la pantalla de carga de Walá (PantallaCarga: el degradado, la etiqueta
  * que se mece, WALÁ y la barra que va y viene) con lo que pasa ahora: qué
- * hacemos, los tres pasos y quién te atiende.
+ * hacemos, los tres pasos y quién te atiende. En el celular va en una
+ * columna; en escritorio, en dos (la marca y el título a la izquierda, los
+ * pasos a la derecha).
  */
 
 const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 const escapar = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ESCAPES[c]);
+
+const DESTELLO = '<path d="M12 0c.8 6.4 4.6 10.6 12 12-7.4 1.4-11.2 5.6-12 12-.8-6.4-4.6-10.6-12-12C7.4 10.6 11.2 6.4 12 0z"/>';
 
 /**
  * El HTML de la pestaña "Abriendo WhatsApp".
@@ -26,6 +30,7 @@ export function htmlAbriendoWhatsApp({ origen = '', marca } = {}) {
   const img = (nombre) => `${escapar(origen)}/assets/marca/${nombre}`;
   const asesor = marca ? `el asesor de ${escapar(marca)}` : 'un asesor';
   const Asesor = marca ? `El asesor de ${escapar(marca)}` : 'Un asesor';
+  const destello = (clase) => `<svg class="destello ${clase}" viewBox="0 0 24 24" aria-hidden="true">${DESTELLO}</svg>`;
   return `<!doctype html>
 <html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -36,12 +41,15 @@ export function htmlAbriendoWhatsApp({ origen = '', marca } = {}) {
   body{display:flex;align-items:center;justify-content:center;padding:28px 20px;overflow-x:hidden;
     font-family:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff;text-align:center;
     background:linear-gradient(135deg,#8b5cf6 0%,#5b21b6 100%)}
-  /* Adornos quietos: puntos de medio tono y dos destellos. */
+  /* Adornos quietos: puntos de medio tono y destellos. */
   .puntos{position:fixed;top:24px;right:20px;width:120px;height:80px;opacity:.22;pointer-events:none;
     background:radial-gradient(circle,#fff 2.2px,transparent 2.6px) 0 0/16px 16px}
+  .puntos.p2{top:auto;right:auto;bottom:28px;left:24px;display:none}
   .destello{position:fixed;fill:#fff;pointer-events:none}
   .d1{top:13%;left:12%;width:22px;opacity:.75}.d2{top:20%;left:19%;width:12px;fill:#fcd34d}
+  .d3,.d4{display:none}.d3{right:10%;bottom:16%;width:26px;opacity:.6}.d4{right:16%;bottom:24%;width:12px;fill:#fcd34d}
   .caja{position:relative;display:flex;flex-direction:column;align-items:center;gap:16px;max-width:380px;width:100%}
+  .marca,.detalle{display:flex;flex-direction:column;align-items:center;gap:16px;width:100%}
   .etiqueta{width:80px;height:auto;transform-origin:75% 4%;animation:vaiven 2.4s ease-in-out infinite;
     filter:drop-shadow(0 5px 12px rgba(76,29,149,.28))}
   .palabra{width:116px;height:auto}
@@ -60,41 +68,64 @@ export function htmlAbriendoWhatsApp({ origen = '', marca } = {}) {
     font-size:13px;font-weight:700}
   .punto{width:9px;height:9px;border-radius:50%;background:#25d366;box-shadow:0 0 0 3px rgba(37,211,102,.25)}
   small{max-width:300px;font-size:12px;line-height:1.5;opacity:.75}
+  /* Escritorio: dos columnas. A la izquierda la marca y el título; a la derecha, lo que pasa ahora. */
+  @media (min-width:860px){
+    body{padding:48px}
+    .caja{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:56px;max-width:900px;text-align:left}
+    .marca{align-items:flex-start;gap:18px}
+    .etiqueta{width:104px}.palabra{width:150px}
+    h1{font-size:40px}.trazo{width:210px;margin-left:0}
+    p{font-size:17px;max-width:34ch}
+    .detalle{align-items:flex-start;gap:18px}
+    ol{padding:22px;gap:14px}li{font-size:15px}
+    small{max-width:none}
+    .puntos{width:180px;height:120px}.puntos.p2,.d3,.d4{display:block}
+  }
   @keyframes vaiven{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
   @keyframes vayviene{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
   @media (prefers-reduced-motion:reduce){.etiqueta,.barra{animation:none}.barra{width:100%;opacity:.6}}
 </style></head>
 <body>
   <span class="puntos" aria-hidden="true"></span>
-  <svg class="destello d1" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0c.8 6.4 4.6 10.6 12 12-7.4 1.4-11.2 5.6-12 12-.8-6.4-4.6-10.6-12-12C7.4 10.6 11.2 6.4 12 0z"/></svg>
-  <svg class="destello d2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0c.8 6.4 4.6 10.6 12 12-7.4 1.4-11.2 5.6-12 12-.8-6.4-4.6-10.6-12-12C7.4 10.6 11.2 6.4 12 0z"/></svg>
+  <span class="puntos p2" aria-hidden="true"></span>
+  ${destello('d1')}${destello('d2')}${destello('d3')}${destello('d4')}
   <main class="caja" role="status">
-    <img class="etiqueta" src="${img('splash-etiqueta.webp')}" width="246" height="330" alt="" aria-hidden="true">
-    <img class="palabra" src="${img('splash-wala.webp')}" alt="Walá">
-    <span class="pista" aria-hidden="true"><span class="barra"></span></span>
-    <h1>Creando tu pedido…<svg class="trazo" viewBox="0 0 150 10" aria-hidden="true"><path d="M3 7c30-5 70-6 144-3"/></svg></h1>
-    <p>En un momento te llevamos a WhatsApp con tu pedido listo para enviar.</p>
-    <ol aria-label="Lo que pasa ahora">
-      <li><b>1</b>Guardamos tu pedido con su número</li>
-      <li><b>2</b>Se abre WhatsApp con el detalle</li>
-      <li><b>3</b>Envías el mensaje y ${asesor} te dice cómo pagar</li>
-    </ol>
-    <span class="wa"><span class="punto" aria-hidden="true"></span>${Asesor} te atenderá por WhatsApp</span>
-    <small>Si WhatsApp no se abre, vuelve a la pestaña de Walá y toca el botón otra vez (no se crea un pedido repetido).</small>
+    <div class="marca">
+      <img class="etiqueta" src="${img('splash-etiqueta.webp')}" width="246" height="330" alt="" aria-hidden="true">
+      <img class="palabra" src="${img('splash-wala.webp')}" alt="Walá">
+      <span class="pista" aria-hidden="true"><span class="barra"></span></span>
+      <h1>Creando tu pedido…<svg class="trazo" viewBox="0 0 150 10" aria-hidden="true"><path d="M3 7c30-5 70-6 144-3"/></svg></h1>
+      <p>En un momento te llevamos a WhatsApp con tu pedido listo para enviar.</p>
+    </div>
+    <div class="detalle">
+      <ol aria-label="Lo que pasa ahora">
+        <li><b>1</b>Guardamos tu pedido con su número</li>
+        <li><b>2</b>Se abre WhatsApp con el detalle</li>
+        <li><b>3</b>Envías el mensaje y ${asesor} te dice cómo pagar</li>
+      </ol>
+      <span class="wa"><span class="punto" aria-hidden="true"></span>${Asesor} te atenderá por WhatsApp</span>
+      <small>Si WhatsApp no se abre, vuelve a la pestaña de Walá y toca el botón otra vez (no se crea un pedido repetido).</small>
+    </div>
   </main>
 </body></html>`;
 }
 
 /**
  * La misma pestaña para verla dentro de la página (la demo y la guía): el
- * HTML de htmlAbriendoWhatsApp en un marco del tamaño de un teléfono.
- *  - marca · origen (por defecto, el de esta página) · alto (px)
+ * HTML de htmlAbriendoWhatsApp en una ventana del navegador, con su pestaña
+ * arriba. Toma el ancho que tenga: en el celular se ve la columna; en
+ * escritorio, las dos columnas.
+ *  - marca · origen (por defecto, el de esta página)
  */
-export function PantallaAbriendoWhatsApp({ marca, origen, alto = 720 }) {
+export function PantallaAbriendoWhatsApp({ marca, origen }) {
   const html = htmlAbriendoWhatsApp({ origen: origen ?? (typeof window !== 'undefined' ? window.location.origin : ''), marca });
   return (
-    <div className={s.telefono} data-componente="PantallaAbriendoWhatsApp">
-      <iframe title="La pestaña de WhatsApp" srcDoc={html} className={s.marco} style={{ height: alto }} />
+    <div className={s.ventana} data-componente="PantallaAbriendoWhatsApp">
+      <div className={s.barra} aria-hidden="true">
+        <span className={s.puntos}><i /><i /><i /></span>
+        <span className={s.pestana}>Abriendo WhatsApp… · Walá</span>
+      </div>
+      <iframe title="La pestaña de WhatsApp" srcDoc={html} className={s.marco} />
     </div>
   );
 }

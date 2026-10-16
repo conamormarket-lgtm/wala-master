@@ -84,10 +84,15 @@ la tarjeta, WhatsApp y PayPal esperan y avisan.
     pedido…", tres pasos (guardamos tu pedido, se abre WhatsApp con el
     detalle, el asesor te dice cómo pagar), "Un asesor te atenderá por
     WhatsApp" (con varias marcas, "El asesor de {marca}") y qué hacer si
-    WhatsApp no se abre. En la demo: estado "Pestaña de WhatsApp" (con
-    "Varias marcas", la de una marca).
+    WhatsApp no se abre. En el celular va en una columna; en escritorio
+    (desde 860 px), en dos: la marca y el título a la izquierda, los pasos a
+    la derecha. En la demo: estado "Pestaña de WhatsApp" (con "Varias
+    marcas", la de una marca), dentro de una ventana del navegador que toma
+    el ancho de la página.
 
-    ![La pestaña que se abre al pedir por WhatsApp](whatsapp-pestana.webp)
+    | Celular | Escritorio |
+    |---|---|
+    | ![La pestaña en el celular](whatsapp-pestana.webp) | ![La pestaña en escritorio, en dos columnas](whatsapp-pestana-escritorio.webp) |
   - **Varias marcas:** un botón por marca ("Enviar a Con Amor Geeks (1)") y
     "Listo, ya envié mis pedidos".
 - **Pago (otro país):** el aviso de 7 a 30 días hábiles, **PayPal** en dólares
