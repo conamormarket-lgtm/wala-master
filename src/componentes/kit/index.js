@@ -61,6 +61,7 @@ export { PaginaProducto } from './paginas/Producto';
 export { PaginaCheckout } from './paginas/Checkout';
 export { PaginaListaPublica, PaginaRegalar, PaginaRegaloSorpresa } from './paginas/Regalar';
 export { PaginaPagoRapido } from './paginas/PagoRapido';
+export { PaginaNoEncontrada, PaginaDescargarApp } from './paginas/Generales';
 export { PaginaLegal, PaginaReclamaciones, validarReclamacion } from './paginas/Legales';
 export { PaginaPalabra, PaginaRuleta, PaginaBolitas } from './paginas/Juegos';
 export { PaginaSorteo, PaginaSuscripcionSorteo } from './paginas/Sorteos';

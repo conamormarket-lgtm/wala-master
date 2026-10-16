@@ -1,0 +1,159 @@
+/* Una tarjeta centrada con su sello o Kapi, el título con trazo y los botones. */
+.tarjeta {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.9rem;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 1.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 28px 28px 28px;
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.tarjeta > :not(.adornos) {
+  position: relative;
+}
+
+/* ── Adornos (quietos) ── */
+.adornos {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.puntos {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 100px;
+  color: rgba(124, 58, 237, 0.14);
+}
+
+.destello1,
+.destello2 {
+  position: absolute;
+  color: var(--violet-400, #a78bfa);
+}
+
+.destello1 {
+  top: 2.2rem;
+  left: 12%;
+  width: 20px;
+}
+
+.destello2 {
+  top: 4.4rem;
+  left: 18%;
+  width: 11px;
+  color: #fcd34d;
+}
+
+/* ── Contenido ── */
+.kapi {
+  width: 132px;
+  height: 132px;
+  object-fit: contain;
+}
+
+/* "404" en un sello con el degradado, girado. */
+.sello {
+  margin-top: -0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: var(--degradado-logo);
+  color: #fff;
+  font-family: var(--fuente-marca);
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  transform: rotate(-4deg);
+}
+
+.selloIcono {
+  width: 42%;
+  height: 42%;
+  color: #fff;
+}
+
+.titulo {
+  margin: 0.25rem 0 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: clamp(1.6rem, 5.5vw, 2.3rem);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+}
+
+.trazo {
+  display: block;
+  width: 100%;
+  max-width: 240px;
+  height: 11px;
+  margin: 0.25rem auto 0;
+  color: var(--violet-400, #a78bfa);
+}
+
+.texto {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
+.ruta {
+  max-width: 100%;
+  padding: 0.35rem 0.75rem;
+  overflow-wrap: anywhere;
+  border: 1px dashed var(--violet-300, #c4b5fd);
+  border-radius: 10px;
+  background: var(--primary-light, #f3e8ff);
+  color: var(--violet-800, #5b21b6);
+  font-size: 0.86rem;
+}
+
+:global([data-theme='dark']) .ruta {
+  border-color: rgba(167, 139, 250, 0.35);
+  background: rgba(167, 139, 250, 0.1);
+  color: var(--violet-200, #ddd6fe);
+}
+
+.buscador {
+  width: min(100%, 460px);
+  text-align: left;
+}
+
+/* El campo cede su ancho al botón "Buscar" (si no, en el celular se salía de la tarjeta). */
+.buscador input {
+  width: 0;
+  min-width: 0;
+  flex: 1;
+}
+
+.botones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 600px) {
+  .tarjeta {
+    padding: 1.6rem 1.1rem 1.4rem;
+  }
+
+  .botones > * {
+    flex: 1 1 100%;
+  }
+
+  .adornos {
+    display: none;
+  }
+}

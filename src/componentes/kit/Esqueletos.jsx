@@ -917,6 +917,18 @@ const PAGINAS = {
       </span>
     </span>
   ),
+  aviso: () => (
+    // Una tarjeta centrada (no encontrada, descargar la app): el sello o Kapi, el título, el texto y dos botones.
+    <span className={s.avisoEsq}>
+      <Hueso forma="circulo" ancho={96} alto={96} />
+      <Hueso alto={34} ancho="min(80%, 400px)" />
+      <Hueso alto={12} ancho="min(70%, 340px)" />
+      <span className={s.invitacionBotonesEsq}>
+        <Hueso forma="pildora" alto={52} ancho={180} />
+        <Hueso forma="pildora" alto={52} ancho={180} />
+      </span>
+    </span>
+  ),
   invitacion: () => (
     // La invitación: el sello, el título, la bajada, el premio, los tres pasos y los dos botones.
     <span className={s.invitacionEsq}>
@@ -1018,7 +1030,8 @@ const PAGINAS = {
  *    'acceso' | 'cuenta' | 'lista' | 'formulario' |
  *    'legal' (privacidad, términos) | 'reclamaciones' | 'verDiseno' |
  *    'palabra' | 'ruleta' | 'bolitas' (los minijuegos por dentro) | 'sorteo' |
- *    'suscripcionSorteo' | 'landing' (Suscripciones) | 'invitacion' | 'enlaces'
+ *    'suscripcionSorteo' | 'landing' (Suscripciones) | 'invitacion' | 'enlaces' |
+ *    'aviso' (no encontrada, descargar la app)
  *  - sesion: false para quien no entró (la cuenta y la encuesta muestran la
  *    invitación a entrar; Minijuegos, su aviso en vez del progreso)
  *  - modulo (con forma 'cuenta'): uno de MODULOS_ESQUELETO_CUENTA (resumen,

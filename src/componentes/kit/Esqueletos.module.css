@@ -1368,3 +1368,15 @@
     justify-items: start;
   }
 }
+
+/* ── Una tarjeta centrada (no encontrada, descargar la app) ── */
+.avisoEsq {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  width: min(100%, 640px);
+  margin: 0 auto;
+  padding: 2rem 1.5rem 1.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 28px 28px 28px;
+}

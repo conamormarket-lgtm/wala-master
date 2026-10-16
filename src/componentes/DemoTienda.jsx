@@ -1,7 +1,7 @@
 import React, { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
 import { RotateCcw, User, Package, Settings, Gift, Ticket, Sparkles } from 'lucide-react';
 import {
-  PaginaTienda, PaginaMarca, MarcoTienda, PaginaCarrito, PaginaMinijuegos, juegosDelArcade, VentanaKapi, kapiDesdePerfil,
+  PaginaTienda, PaginaMarca, PaginaNoEncontrada, PaginaDescargarApp, MarcoTienda, PaginaCarrito, PaginaMinijuegos, juegosDelArcade, VentanaKapi, kapiDesdePerfil,
   retoDesdePerfil, PaginaBusqueda, sugerenciasDesdeBusqueda, grupoModalidad, ORDENES_BUSQUEDA, ordenarProductos,
   Pestanas, Chip, Interruptor, Boton, PantallaCarga, CapaCargando, EsqueletoPagina, FRASES_CARGA,
   BarraAdmin, AvisoSistema, BannerApp, BotonWhatsApp, KapiFlotante, PildoraRecompensa,
@@ -80,6 +80,8 @@ const PAGINAS = [
   { id: 'cuenta', texto: 'Mi cuenta', ruta: '/cuenta' },
   { id: 'encuesta', texto: 'Encuesta', ruta: '/encuesta-suscripcion' },
   { id: 'acceso', texto: 'Acceso', ruta: '/login' },
+  { id: 'noEncontrada', texto: 'No encontrada', ruta: '/poleras-anime' },
+  { id: 'descargar', texto: 'Descargar la app', ruta: '/descargar' },
 ];
 
 /** Ruta de la tienda → página de esta demo (las demás solo avisan). */
@@ -99,7 +101,7 @@ const ABRIR_ESTUDIO = [
 ];
 
 const PAGINA_DE_RUTA = {
-  '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/checkout': 'checkout', '/encuesta-suscripcion': 'encuesta', '/personalizar': 'crear', '/comunidad': 'comunidad', '/ofertas': 'tienda', '/nichos': 'tienda',
+  '/': 'inicio', '/tienda': 'tienda', '/descargar': 'descargar', '/app': 'descargar', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/checkout': 'checkout', '/encuesta-suscripcion': 'encuesta', '/personalizar': 'crear', '/comunidad': 'comunidad', '/ofertas': 'tienda', '/nichos': 'tienda',
   ...Object.fromEntries(VISTAS_LEGALES.map(([, r]) => [r, 'legales'])),
   ...Object.fromEntries(VISTAS_JUEGOS.map(([, r]) => [r, 'juego'])),
   ...Object.fromEntries(VISTAS_CAMPANAS.map(([, r]) => [r, 'campanas'])),
@@ -108,7 +110,7 @@ const PAGINA_DE_RUTA = {
 };
 
 /** Pestaña de la barra inferior que se enciende en cada página. */
-const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', marca: 'tienda', juego: 'juegos', campanas: 'tienda', producto: 'tienda', checkout: 'tienda', regalar: 'tienda', pagoRapido: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
+const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', marca: 'tienda', juego: 'juegos', campanas: 'tienda', producto: 'tienda', checkout: 'tienda', regalar: 'tienda', pagoRapido: 'tienda', noEncontrada: 'tienda', descargar: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
 
 /* Estados de la Zona Arcade para probar (como el modo diseño de la tienda). */
 const RULETAS = [
@@ -282,6 +284,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [rutaRegalar, setRutaRegalar] = useState(VISTAS_REGALAR[0][1]);
   const [estadosRegalar, setEstadosRegalar] = useState([]);
   const [estadosPagoRapido, setEstadosPagoRapido] = useState([]);
+  // Descargar la app: en qué aparato se abre (la tienda lo sabría por el navegador).
+  const [plataformaApp, setPlataformaApp] = useState('android');
   const [estadosEstudio, setEstadosEstudio] = useState([]);
   const [estadosCombo, setEstadosCombo] = useState([]);
   const [rutaAcceso, setRutaAcceso] = useState('/login');
@@ -632,6 +636,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   });
 
   const formaEsqueleto = {
+    noEncontrada: 'aviso', descargar: 'aviso',
     tienda: 'tienda', campanas: rutaCampana.startsWith('/invitar/') ? 'invitacion' : { '/sorteos': 'sorteo', '/suscrito-sorteo': 'suscripcionSorteo', '/suscripciones': 'landing' }[rutaCampana] || 'enlaces', juego: { '/ruleta': 'ruleta', '/ball-sort': 'bolitas' }[rutaJuego] || 'palabra', legales: rutaLegal === '/libro-de-reclamaciones' ? 'reclamaciones' : 'legal', producto: 'producto', checkout: 'checkout', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', ver: 'verDiseno', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
   }[pagina] || 'productos';
   // /cuenta/… → su módulo (el detalle de una compra usa el de pedidos).
@@ -750,6 +755,20 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     <MarcoTienda {...marco} kapiEnPie={false}>
       <Parte n="P15" nombre={rutaRegalar.startsWith('/regalo/') ? 'PaginaRegaloSorpresa' : rutaRegalar.startsWith('/regalar/') ? 'PaginaRegalar' : 'PaginaListaPublica'}>
         <RegalarDemo key={rutaRegalar} ruta={rutaRegalar} estados={estadosRegalar} toast={toast} onCarrito={(item) => setCarrito((c) => [...c, item])} onIrA={(r) => navegar.current(r)} />
+      </Parte>
+    </MarcoTienda>
+  ) : pagina === 'noEncontrada' ? (
+    // Una dirección que no existe (la propuesta: hoy la tienda manda al inicio sin avisar). Kapi ya está en la tarjeta.
+    <MarcoTienda {...marco} kapiEnPie={false}>
+      <Parte n="P22" nombre="PaginaNoEncontrada">
+        <PaginaNoEncontrada ruta="/poleras-anime" onBuscar={(q) => navegar.current(`/buscar?q=${encodeURIComponent(q)}`)} />
+      </Parte>
+    </MarcoTienda>
+  ) : pagina === 'descargar' ? (
+    // Descargar la app (/descargar, /app): la propuesta; hoy es un texto suelto que salta a la Play Store.
+    <MarcoTienda {...marco}>
+      <Parte n="P23" nombre="PaginaDescargarApp">
+        <PaginaDescargarApp plataforma={plataformaApp} />
       </Parte>
     </MarcoTienda>
   ) : pagina === 'pagoRapido' ? (
@@ -1015,6 +1034,16 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
             <div className={cs.controlesChips}>
               {ESTADOS_REGALAR.map(([id, texto]) => (
                 <Chip key={id} tamano="sm" activo={estadosRegalar.includes(id)} onClick={() => setEstadosRegalar((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
+              ))}
+            </div>
+          </div>
+        )}
+        {pagina === 'descargar' && (
+          <div>
+            <span className={cs.controlesTitulo}>Se abre desde</span>
+            <div className={cs.controlesChips}>
+              {[['android', 'Android'], ['iphone', 'iPhone'], ['computadora', 'Computadora']].map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={plataformaApp === id} onClick={() => setPlataformaApp(id)}>{texto}</Chip>
               ))}
             </div>
           </div>
