@@ -829,8 +829,8 @@ export const ESTADOS_VER = [
 ];
 
 /**
- * Ver diseño con un combo real (sus dos prendas, frente y espalda) y, en la
- * segunda, la espalda lisa para ver cómo se dice.
+ * Ver diseño con un combo real (sus dos prendas, frente y espalda): las
+ * espaldas sin diseño van lisas, como las manda el servidor.
  */
 export function VerDisenoDemo({ estados = [] }) {
   const d = CREAR.comunidad.find((x) => x.tipo === 'combo') || CREAR.comunidad[0];
@@ -841,8 +841,9 @@ export function VerDisenoDemo({ estados = [] }) {
     color: p.color?.nombre,
     colorHex: p.color?.hex,
     talla: tallas[i % tallas.length],
-    // La segunda prenda con la espalda lisa (sin diseño), para ver cómo se dice.
-    lados: [...(p.vistasPrevias || []).map((v) => ({ nombre: v.nombre, url: v.url })), ...(i === 1 && (p.vistasPrevias || []).length < 2 ? [{ nombre: 'Espalda', url: '' }] : [])],
+    // Como el servidor (ladosDe en functions/pedidoDisenos.js): todos los lados
+    // de la prenda, y el que no tiene diseño va sin foto ("va liso").
+    lados: ['Frente', 'Espalda'].map((nombre) => ({ nombre, url: (p.vistasPrevias || []).find((v) => v.nombre === nombre)?.url || '' })),
   }));
   return <PaginaVerDiseno titulo={d?.nombre} piezas={piezas} cargando={estados.includes('cargando')} noDisponible={estados.includes('noDisponible')} />;
 }

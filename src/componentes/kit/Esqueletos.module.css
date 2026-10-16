@@ -1070,6 +1070,63 @@
   margin-top: 0.75rem;
 }
 
+/* Ver diseño: medida real (cabeza de ~90 px y prendas de ~400 px, lado a
+   lado en escritorio). */
+.verDisenoEsq {
+  display: grid;
+  gap: 1.25rem;
+  width: min(100%, 1040px);
+  margin: 0 auto;
+}
+
+.verDisenoCabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+}
+
+/* Como el nombre largo: en el celular el botón baja a su propia línea. */
+.verDisenoCabeza > :first-child {
+  flex: 1 1 260px;
+}
+
+.verDisenoPiezas {
+  display: grid;
+  gap: 1rem;
+}
+
+@container esqueleto (min-width: 860px) {
+  .verDisenoPiezas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.verDisenoPieza {
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.verDisenoDatos {
+  gap: 0.55rem;
+}
+
+.verDisenoFotos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));
+  gap: 0.75rem;
+}
+
+/* En el celular, los lados uno debajo de otro: la foto y, abajo, el lado
+   liso (más bajo, como en la página). */
+@container esqueleto (max-width: 420px) {
+  .verDisenoFotos > :nth-child(n + 2) {
+    height: 220px !important;
+    aspect-ratio: auto !important;
+  }
+}
+
 .coleccionCabeza {
   display: grid;
   gap: 1rem;

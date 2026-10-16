@@ -831,6 +831,27 @@ const PAGINAS = {
       <span className={cx(s.chips, s.pieNavegarEsq)}><Hueso forma="pildora" alto={44} ancho={180} /><Hueso forma="pildora" alto={44} ancho={170} /></span>
     </>
   ),
+  verDiseno: () => (
+    // Ver diseño: el rótulo y el nombre con "Copiar resumen", y dos prendas
+    // (sello, prenda, color y talla, el nombre) con sus lados.
+    <span className={s.verDisenoEsq}>
+      <span className={s.verDisenoCabeza}>
+        <span className={cx(s.filaTextos, s.verDisenoDatos)}><Hueso alto={13} ancho={130} /><Hueso alto={40} ancho="min(85%, 380px)" /><Hueso alto={11} ancho={240} /></span>
+        <Hueso forma="pildora" alto={38} ancho={150} />
+      </span>
+      <span className={s.verDisenoPiezas}>
+        {repetir(2, (k) => (
+          <Caja key={k} className={s.verDisenoPieza}>
+            <span className={s.itemMenu}>
+              <Hueso forma="circulo" ancho={40} alto={40} />
+              <span className={cx(s.filaTextos, s.verDisenoDatos)}><Hueso alto={26} ancho="50%" /><Hueso alto={22} ancho="38%" /><Hueso alto={18} ancho="62%" /></span>
+            </span>
+            <span className={s.verDisenoFotos}>{repetir(2, (j) => <Hueso key={j} forma="bloque" ancho="100%" proporcion="900 / 1036" />)}</span>
+          </Caja>
+        ))}
+      </span>
+    </span>
+  ),
   coleccion: () => (
     // Un nicho o un vendedor: migas, el logo con el nombre y la grilla.
     <>
@@ -1011,7 +1032,7 @@ const PAGINAS = {
  *  - forma: 'productos' (la grilla, por defecto) | 'inicio' | 'tienda' |
  *    'busqueda' | 'producto' | 'carrito' | 'checkout' | 'crear' | 'estudio' | 'comunidad' | 'minijuegos' | 'encuesta' |
  *    'acceso' | 'cuenta' | 'lista' | 'formulario' | 'ofertas' | 'nichos' | 'coleccion' (un nicho o un vendedor) |
- *    'legal' (privacidad, términos) | 'reclamaciones' |
+ *    'legal' (privacidad, términos) | 'reclamaciones' | 'verDiseno' |
  *    'palabra' | 'ruleta' | 'bolitas' (los minijuegos por dentro) | 'sorteo' |
  *    'suscripcionSorteo' | 'landing' (Suscripciones, Regalos con amor) | 'enlaces'
  *  - sesion: false para quien no entró (la cuenta y la encuesta muestran la

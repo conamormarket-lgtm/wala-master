@@ -4,7 +4,7 @@ import Boton from '../Boton';
 import { EstadoVacio, HojaInferior } from '../Feedback';
 import { Sello, Trazo } from '../Marca';
 import { BloqueSeccion } from '../Seccion';
-import { Cargando } from '../Cargando';
+import { EsqueletoPagina } from '../Esqueletos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { FotoProducto } from '../piezas/FotoProducto';
 import s from './VerDiseno.module.css';
@@ -46,7 +46,7 @@ export function PaginaVerDiseno({ titulo, piezas = [], cargando = false, noDispo
   const [copiado, setCopiado] = useState(false);
 
   if (cargando) {
-    return <BloqueSeccion><Cargando texto="Cargando el diseño" bloque tamano="lg" /></BloqueSeccion>;
+    return <EsqueletoPagina forma="verDiseno" />;
   }
   if (noDisponible || !piezas.length) {
     return (

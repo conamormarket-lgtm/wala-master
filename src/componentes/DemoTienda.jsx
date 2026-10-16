@@ -640,7 +640,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   });
 
   const formaEsqueleto = {
-    tienda: 'tienda', campanas: { '/sorteos': 'sorteo', '/suscrito-sorteo': 'suscripcionSorteo', '/suscripciones': 'landing', '/regalos-con-amor': 'landing' }[rutaCampana] || 'enlaces', juego: { '/ruleta': 'ruleta', '/ball-sort': 'bolitas' }[rutaJuego] || 'palabra', legales: rutaLegal === '/libro-de-reclamaciones' ? 'reclamaciones' : 'legal', ofertas: 'ofertas', nichos: rutaNavegar === '/nichos' ? 'nichos' : 'coleccion', producto: 'producto', checkout: 'checkout', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
+    tienda: 'tienda', campanas: { '/sorteos': 'sorteo', '/suscrito-sorteo': 'suscripcionSorteo', '/suscripciones': 'landing', '/regalos-con-amor': 'landing' }[rutaCampana] || 'enlaces', juego: { '/ruleta': 'ruleta', '/ball-sort': 'bolitas' }[rutaJuego] || 'palabra', legales: rutaLegal === '/libro-de-reclamaciones' ? 'reclamaciones' : 'legal', ofertas: 'ofertas', nichos: rutaNavegar === '/nichos' ? 'nichos' : 'coleccion', producto: 'producto', checkout: 'checkout', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', ver: 'verDiseno', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
   }[pagina] || 'productos';
   // /cuenta/… → su módulo (el detalle de una compra usa el de pedidos).
   const moduloEsqueleto = {

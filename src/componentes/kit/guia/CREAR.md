@@ -189,7 +189,12 @@ Es lo que abre el asesor desde el WhatsApp de un pedido, sin sesión.
   ratón. Un lado **sin diseño** va punteado, con una muestra grande del
   color, y dice "Este lado va liso, en Blanco", para que no parezca que
   falta la foto; se estira al alto de la foto de al lado.
-- **Estados:** cargando (`Cargando`) y no disponible (Kapi triste).
+- **Estados:** cargando (`EsqueletoPagina forma="verDiseno"`, con la medida
+  real; antes un `Cargando` chico que dejaba subir el pie) y no disponible
+  (Kapi triste).
+- **Todos los lados de cada prenda:** el servidor (`ladosDe` en
+  `functions/pedidoDisenos.js`) manda cada lado de la prenda, con su foto o
+  vacío; la demo hace lo mismo (las dos espaldas van lisas).
 
 Hoy `VerDisenoPage.jsx` ya usa `Cargando` y `EstadoVacio` del kit. Para
 llevarla a la tienda, devuelve `<PaginaVerDiseno titulo piezas cargando

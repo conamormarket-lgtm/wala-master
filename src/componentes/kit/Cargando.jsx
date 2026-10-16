@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useBloquearScroll } from './Efectos';
 import s from './Cargando.module.css';
 
 /*
@@ -114,8 +115,23 @@ export function Cargando({ texto = 'Cargando', tamano = 'md', bloque = false }) 
  *  - pantallaCompleta: fija al viewport; sin ella cubre su contenedor
  */
 export function CapaCargando({ texto = 'Procesando', detalle, pantallaCompleta = false }) {
+  // Mientras se espera, la página no se mueve (el pago, quitar el fondo…):
+  // ni la ventana ni un marco con scroll propio debajo de la capa.
+  useBloquearScroll(true);
+  const capa = useRef(null);
+  useEffect(() => {
+    const el = capa.current;
+    if (!el) return undefined;
+    const frenar = (e) => e.preventDefault();
+    el.addEventListener('wheel', frenar, { passive: false });
+    el.addEventListener('touchmove', frenar, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', frenar);
+      el.removeEventListener('touchmove', frenar);
+    };
+  }, []);
   return (
-    <div className={[s.capa, pantallaCompleta && s.capaCompleta].filter(Boolean).join(' ')} data-componente="CapaCargando">
+    <div ref={capa} className={[s.capa, pantallaCompleta && s.capaCompleta].filter(Boolean).join(' ')} data-componente="CapaCargando">
       <div className={s.capaTarjeta}>
         <Cargando texto={texto} tamano="lg" />
         {detalle && <p className={s.capaDetalle}>{detalle}</p>}

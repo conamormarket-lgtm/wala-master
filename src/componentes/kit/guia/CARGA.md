@@ -64,7 +64,7 @@ del cordón, arriba a la derecha (`transform-origin: 75% 4%`), ±6° en 2,4 s.
 | Parte | Componente | Qué es | Archivo del diseño |
 |---|---|---|---|
 | M11 | `PantallaCarga` | La primera carga, con varias piezas. Ver la lista de abajo. | `kit/Cargando.module.css` |
-| M11 | `CapaCargando` | Esperar una acción: velo claro sobre la página y una tarjeta con `Cargando` (`texto`, `detalle`; `pantallaCompleta` fija al viewport). | `kit/Cargando.module.css` |
+| M11 | `CapaCargando` | Esperar una acción: velo claro sobre la página y una tarjeta con `Cargando` (`texto`, `detalle`; `pantallaCompleta` fija al viewport). Mientras está, **la página no se mueve** (`useBloquearScroll` y la rueda o el dedo sobre el velo no desplazan un marco con scroll propio) y la tarjeta se queda en el medio de lo que se ve aunque la página sea larga (2026-10-16). | `kit/Cargando.module.css` |
 | M11 | `Cargando` | La etiqueta del logo actual (la imagen del splash como máscara, con el degradado; la W calada deja ver el fondo, como el logo de la cabecera) meciéndose y "Cargando…", con los puntos que aparecen uno tras otro. Es la pieza de `CapaCargando` y sirve suelta en zonas chicas (un menú, un panel). Tiene `tamano` (sm, md, lg) y `bloque`. | `kit/Cargando.module.css` |
 | M11 | `EsqueletoPagina` | Mientras llega una página (Suspense): su forma. Ver «Esqueletos» abajo. | `kit/Esqueletos.module.css` |
 
@@ -100,7 +100,7 @@ quieto). Las piezas sueltas van `aria-hidden`; `EsqueletoSeccion` y
 | Componente | `EsqueletoTarjeta` | direcciones, cupones, personas |
 | Componente | `EsqueletoFormulario` | completar perfil, encuesta |
 | Sección | `EsqueletoSeccion tipo` | una forma por tipo del builder (`FORMA_DE_SECCION`): banner, fila, grilla, catalogo, categorias, beneficios, testimonios, preguntas, marcas, mosaico, texto, medio, ubicacion, anuncio |
-| Página | `EsqueletoPagina` | `secciones` (los tipos del builder, en orden) o `forma`: productos, inicio, tienda, busqueda, producto, carrito, minijuegos, encuesta, acceso, cuenta (con `modulo`: resumen, perfil, pedidos, direcciones, ajustes, catalogo, cupones, misiones, referidos, creaciones, deseos, fechas), lista, formulario, ofertas, nichos, coleccion (un nicho o un vendedor; NAVEGAR.md), legal, reclamaciones (LEGALES.md), palabra, ruleta, bolitas (JUEGOS.md), sorteo, suscripcionSorteo, landing, enlaces (CAMPANAS.md) |
+| Página | `EsqueletoPagina` | `secciones` (los tipos del builder, en orden) o `forma`: productos, inicio, tienda, busqueda, producto, carrito, minijuegos, encuesta, acceso, cuenta (con `modulo`: resumen, perfil, pedidos, direcciones, ajustes, catalogo, cupones, misiones, referidos, creaciones, deseos, fechas), lista, formulario, ofertas, nichos, coleccion (un nicho o un vendedor; NAVEGAR.md), legal, reclamaciones (LEGALES.md), verDiseno (Ver diseño: la cabeza con "Copiar resumen" y dos prendas con sus lados; medida real 503 px en escritorio, cada prenda ~700 px en el celular; CREAR.md P10), palabra, ruleta, bolitas (JUEGOS.md), sorteo, suscripcionSorteo, landing, enlaces (CAMPANAS.md) |
 
 **Del tamaño de la página real.** Cada forma de página está medida contra
 la página del kit a 1366px y a 390px:

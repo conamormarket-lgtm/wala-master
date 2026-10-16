@@ -178,8 +178,10 @@
   /* Sobre los flotantes (950): mientras se espera, nada se toca. */
   z-index: 960;
   display: grid;
-  place-items: center;
+  align-items: start;
+  justify-items: center;
   padding: 1rem;
+  overscroll-behavior: contain;
   background: color-mix(in srgb, var(--color-bg, #f8f7fc) 72%, transparent);
   animation: aparecerCapa 0.25s ease;
 }
@@ -187,9 +189,15 @@
 .capaCompleta {
   position: fixed;
   z-index: 99990;
+  align-items: center;
 }
 
+/* La tarjeta se queda en el medio de lo que se ve, aunque la página sea
+   larga y la capa empiece más arriba. */
 .capaTarjeta {
+  position: sticky;
+  top: calc(50vh - 4rem);
+  margin-top: max(1rem, calc(50vh - 4rem));
   display: grid;
   justify-items: center;
   gap: 0.4rem;
@@ -199,6 +207,11 @@
   background: var(--color-surface);
   box-shadow: 0 18px 40px -24px rgba(76, 29, 149, 0.45);
   animation: subirTarjeta 0.35s var(--ease-signature);
+}
+
+.capaCompleta .capaTarjeta {
+  position: static;
+  margin-top: 0;
 }
 
 .capaTarjeta .cargando {
