@@ -41,20 +41,19 @@ import './App.css';
 import TiendaPage from './pages/Tienda/TiendaPage';
 import Header from './components/common/Header';
 import BottomNav from './components/common/BottomNav';
-import WhatsAppButton from './components/common/WhatsAppButton';
 import DeepLinkHandler from './components/common/DeepLinkHandler';
 // Marco con el kit (paso 2 de la migración): cada uno reemplaza a un componente
 // viejo, que sigue en su sitio hasta borrarlo todo junto (guia/ELIMINAR.md).
 import AvisoDelSistema from './components/marco/AvisoDelSistema';
 import BarraDeAdmin from './components/marco/BarraDeAdmin';
 import AvisoDeIdioma from './components/marco/AvisoDeIdioma';
+import FlotantesDeLaTienda from './components/marco/FlotantesDeLaTienda';
 import { EN_VISTA_PREVIA_CALOR } from './utils/vistaPreviaCalor';
 
 // ── Lo que no hace falta para ver la página: su propio archivo ────────────
 // Se montan en el mismo sitio de siempre, pero su código llega en paralelo
 // justo después del arranque en vez de ir en el archivo principal.
 const Footer = lazy(() => import('./components/common/Footer'));
-const KapiPet = lazy(() => import('./components/common/KapiPet/KapiPet'));
 const CampaignPopup = lazy(() => import('./components/common/CampaignPopup/CampaignPopup'));
 const AvisoInvitacion = lazy(() => import('./components/common/AvisoInvitacion/AvisoInvitacion'));
 const FirebaseWarning = lazy(() => import('./components/common/FirebaseWarning'));
@@ -342,10 +341,7 @@ const GlobalLayout = ({ children }) => {
       <Suspense fallback={null}><Footer /></Suspense>
       <BottomNav />
 
-      <div className="floating-action-stack">
-        <WhatsAppButton />
-        <Suspense fallback={null}><KapiPet /></Suspense>
-      </div>
+      <FlotantesDeLaTienda />
 
       <Suspense fallback={null}><FirebaseWarning /></Suspense>
 
