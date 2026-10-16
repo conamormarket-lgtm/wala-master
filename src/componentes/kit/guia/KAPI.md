@@ -62,7 +62,7 @@ tienda real sigue con las de antes (`/assets/kapi/kapi-*.webp`), y
 `EstadoVacio` conserva la de antes como valor por defecto porque la tienda
 lo usa en Ver diseño. Cambiar las de la tienda es un paso de la migración.
 
-## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
+## Llevar a la tienda (hecho el 2026-10-16)
 
 Va con el paso 2 de [MIGRACION.md](MIGRACION.md) (marco). Mantener al día si
 cambia un componente o su forma de recibir datos.
@@ -116,19 +116,21 @@ cambia un componente o su forma de recibir datos.
 
 ### Qué le falta al kit antes de migrar
 
-- Traducción (`<T>`).
+- ✓ Traducción: los textos de la ventana y del reto pasan por `useTexto`.
 - La felicidad que suba al comer la decide el servidor: la ventana muestra lo
   que diga el perfil después de `feedKapi`.
 
 ### Pasos (cada uno se verifica solo y se puede volver atrás)
 
-1. Dentro de `KapiPet.jsx`, cambiar el portal por `VentanaKapi` con
-   `kapiDesdePerfil` y `retoDesdePerfil`, dejando eventos, recorrido,
-   notificaciones y visibilidad como están. Probar: hambre, lleno, triste,
-   alimentar (monedas volando y error), reto manual y el recorrido de un
-   usuario nuevo.
-2. Cambiar el `.fab` por `KapiFlotante` (cuando se migren los flotantes,
-   paso 2 de MIGRACION.md).
+1. ✓ y 2. ✓ juntos, en `src/components/marco/Kapi.jsx` (no dentro de
+   `KapiPet.jsx`, que queda intacto para volver atrás): `KapiFlotante` en la
+   pila de flotantes y `VentanaKapi` con `kapiDesdePerfil` y
+   `retoDesdePerfil`; eventos, recorrido, notificaciones, visibilidad y modo
+   diseño como estaban. Probado en local: hambre, lleno, triste, modo diseño,
+   el error al alimentar (toast), el error del reto (dentro del bloque), no
+   cerrar mientras come, el evento de la Zona Arcade y el recorrido de una
+   cuenta nueva (queda guardado en el perfil). Sin probar en local: las
+   monedas volando tras alimentar (sin emulador de functions).
 
 Para volver atrás: cada paso en su propio commit; el `KapiPet` viejo no se
 borra hasta que el nuevo lleve un tiempo en producción.

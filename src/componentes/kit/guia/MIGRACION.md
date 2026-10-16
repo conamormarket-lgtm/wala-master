@@ -1,4 +1,4 @@
-# Llevar el kit a la tienda (a futuro: TODAVÍA NO se hace)
+# Llevar el kit a la tienda (en marcha: pasos 1 y 2 hechos)
 
 Lo común a todas las páginas: qué ya usa la tienda, cómo se importa y en qué
 orden se migraría. El detalle de cada página (reemplazos con archivo y línea,
@@ -25,15 +25,20 @@ principal (y a la APK de Capacitor).
 | Monedas que vuelan (`showFlyingCoins` / `volarMonedasGanadas`): en arco, girando, con "+N" y el saldo que late; mismos eventos para la cabecera | `src/utils/animations.js` (toda la tienda) |
 | `IconoWala` y `Trazo` en referidos | `components/common/AvisoInvitacion/AvisoInvitacion.jsx`, `pages/cuenta/components/GrupoReferidos.jsx`, `pages/cuenta/CuentaReferidosPage.jsx` |
 | `PaginaCuentaInvitado`: solo /cuenta sin sesión (la pestaña "Cuenta"); cada sección (/cuenta/pedidos…) es una página privada y va al login con `?redirect=` (`utils/rutaPrivada.js`), así que la variante `pedidos` ya no se usa. `CuentaLoginPrompt` y `PedidosLoginPrompt` quedan sin usar hasta borrarlos; los textos del `accountPopup` del editor visual siguen solo en el pop-up de la cabecera | `pages/CuentaLayout.jsx` |
-
-| Marco (paso 2): `AvisoSistema`, `BarraAdmin` (`fija`: publica `--admin-bar-height` para la cabecera), `BannerApp`, `AvisoIdioma` (`flotante`), `PilaFlotante` + `BotonWhatsApp` + `PildoraRecompensa` + `KapiFlotante` / `VentanaKapi` (`Kapi.jsx`, con las caras 3D), `VentanaCampana` (`textoCerrar`) (la de `Header.jsx` queda apagada con `PILDORA_EN_EL_KIT`) | `components/marco/AvisoDelSistema.jsx`, `BarraDeAdmin.jsx`, `AvisoDeIdioma.jsx`, `FlotantesDeLaTienda.jsx` (+ `useWhatsAppDeLaRuta.js`, `Kapi.jsx`), `AnuncioDeCampana.jsx` (en `App.jsx`); `BannerDeLaApp.jsx` (en `TiendaPage.jsx`, como antes) |
+| Marco (paso 2), cada pieza con su conector en `src/components/marco/`: `AvisoSistema` (`AvisoDelSistema.jsx`), `BarraAdmin` `fija` (`BarraDeAdmin.jsx`; publica `--admin-bar-height` para la cabecera), `AvisoIdioma` `flotante` (`AvisoDeIdioma.jsx`), `VentanaCampana` (`AnuncioDeCampana.jsx`), la pila de flotantes (`FlotantesDeLaTienda.jsx`: `PilaFlotante`, `BotonWhatsApp` con `useWhatsAppDeLaRuta.js`, `PildoraRecompensa` y Kapi en `Kapi.jsx` con `KapiFlotante` + `VentanaKapi` y las caras 3D) | `src/App.jsx` |
+| `BannerApp` (`components/marco/BannerDeLaApp.jsx`, montado donde siempre, con su portal antes de la cabecera) | `pages/Tienda/TiendaPage.jsx` |
+| `PieLegal` (`pieLegalDesdeEmpresa`) dentro del pie viejo; las columnas y su editor siguen igual. El bloque viejo queda apagado con `PIE_LEGAL_EN_EL_KIT` | `components/common/Footer/Footer.jsx` |
+| La píldora "Gana 15 monedas" de la cabecera vieja, apagada con `PILDORA_EN_EL_KIT` (la dibuja `FlotantesDeLaTienda`) | `components/common/Header/Header.jsx` |
 
 Cada pieza del marco tiene un conector chico en `src/components/marco/`: lee
 lo de la tienda (Firestore, rutas, sesión) y dibuja la pieza del kit. Lo viejo
 queda en su sitio hasta el final ([ELIMINAR.md](ELIMINAR.md)).
 
-Cambiar `Boton`, `Feedback`, `Enlace`, `IconosWala` o `Marca` ya cambia la
-tienda real: revisar también esas pantallas. (`Feedback` usa `Efectos`:
+Cambiar `Boton`, `Feedback`, `Enlace`, `IconosWala`, `Marca`, `Traduccion`,
+`piezas/Marco`, `piezas/Flotantes`, `piezas/VentanaKapi`, `piezas/RetoSemanal`
+(y lo que usan: `BarraProgreso`, `CuentaRegresiva`, `Etiquetas`, `Formulario`)
+o los adaptadores del marco ya cambia la tienda real: revisar también esas
+pantallas. (`Feedback` usa `Efectos`:
 `useCerrarConAtras` ahora cierra solo la hoja de encima cuando hay dos.) (`Marca.jsx` ahora también
 exporta `Sello`; agregarlo no cambió nada de lo que ya usa la tienda.) `Feedback` usa
 `piezas/FotoProducto` para la foto de los toasts, así que esa pieza (y el
@@ -46,11 +51,10 @@ Cada paso en su propio commit, verificable por separado.
 1. ✓ Proveedores y `Boton` (arriba). `ProveedorTraduccion` ya está en `App.jsx`, dentro de
    `ProveedorEnlaces`, con `useTranslatedText` y `useTranslatedHtml` (TRADUCCION.md). No cambia
    nada en español.
-2. **Marco**: `BarraAdmin`, `AvisoSistema`, `BannerApp`, flotantes
+2. ✓ **Marco** (2026-10-16, un commit por pieza): `BarraAdmin`, `AvisoSistema`, `BannerApp`, flotantes
    (`PilaFlotante` y compañía; Kapi con su ventana, KAPI.md), `PieLegal`,
-   `VentanaCampana`, `AvisoIdioma`.
-   Bajo riesgo: cada uno reemplaza a un componente y sirve en todas las
-   páginas.
+   `VentanaCampana`, `AvisoIdioma`. Cada uno con su conector en
+   `src/components/marco/` (arriba). Lo viejo, en [ELIMINAR.md](ELIMINAR.md).
 3. **Avisos y hojas**: `Aviso` y `HojaInferior` en lugar de los modales
    sueltos de la tienda.
 4. **`TarjetaProducto`** en carruseles y grillas, con `tarjetaDesdeProducto`
@@ -91,4 +95,6 @@ Cada paso en su propio commit, verificable por separado.
 
 Cada paso en su propio commit, y el componente viejo no se borra hasta que el
 nuevo lleve un tiempo en producción: revertir el commit devuelve la tienda
-como estaba.
+como estaba. Lo que cambió dentro de un archivo viejo (la píldora de
+`Header.jsx`, el pie legal de `Footer.jsx`) queda detrás de una constante:
+en `false` vuelve lo de antes sin revertir nada.

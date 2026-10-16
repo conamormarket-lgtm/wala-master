@@ -14,7 +14,8 @@ Una ficha por página real de wala.pe. Cada ficha tiene:
 
 Lo común a todas las páginas (qué usa ya la tienda, cómo se importa y el
 orden de los pasos) está en [MIGRACION.md](MIGRACION.md): es el único plan;
-las fichas lo siguen.
+las fichas lo siguen. Lo viejo que queda sin uso al migrar se anota en
+[ELIMINAR.md](ELIMINAR.md) y se borra todo junto al final.
 
 Numeración: **M** = marco (cabecera, pie, barra inferior, flotantes: igual en
 todas las páginas), **S** = secciones del builder en su orden, **P** =
@@ -24,15 +25,16 @@ página), **A** = las páginas de acceso (A1-A4).
 
 | Página | Ficha | Estado |
 |---|---|---|
-| Inicio (`/`) | [INICIO.md](INICIO.md) | armada en la Tienda de prueba; con plan de migración (a futuro) |
+| Lo viejo que se borra al final | [ELIMINAR.md](ELIMINAR.md) | una fila por archivo o componente viejo: qué lo reemplazó, quién lo importa todavía y cuándo se puede borrar |
+| Inicio (`/`) | [INICIO.md](INICIO.md) | armada en la Tienda de prueba; con plan de migración (a futuro). **El marco (M1-M3, M7-M12 y el pie legal) ya está en la tienda** desde el 2026-10-16 (paso 2) |
 | Tienda (`/tienda`) | [TIENDA.md](TIENDA.md) | armada en la Tienda de prueba (catálogo con filtros reales); con plan de migración (a futuro) |
-| Kapi (M8, en todas las páginas) | [KAPI.md](KAPI.md) | botón y ventana (`KapiFlotante`, `VentanaKapi`, `RetoSemanal`); con plan de migración (a futuro) |
+| Kapi (M8, en todas las páginas) | [KAPI.md](KAPI.md) | botón y ventana (`KapiFlotante`, `VentanaKapi`, `RetoSemanal`); **en la tienda** desde el 2026-10-16 |
 | Buscar (`/buscar` y el buscador de la cabecera) | [BUSCAR.md](BUSCAR.md) | armada (P4 `PaginaBusqueda`, panel de sugerencias en la `Cabecera`); con plan de migración (a futuro) |
 | Minijuegos (`/minijuegos`) | [MINIJUEGOS.md](MINIJUEGOS.md) | armada (P3 `PaginaMinijuegos`, con los estados de cada juego); con plan de migración (a futuro) |
 | Mi cuenta (`/cuenta`: resumen, perfil, pedidos, direcciones, ajustes, catálogo, cupones, misiones, referidos, creaciones, lista de deseos, fechas importantes) | [CUENTA.md](CUENTA.md) | armada (C0 `MarcoCuenta` y C1-C12); con plan de migración (a futuro). Mis pedidos (antes P2) es C3 |
 | Encuesta (`/encuesta-suscripcion`) | [ENCUESTA.md](ENCUESTA.md) | armada (P6 `PaginaEncuesta`, con los estados sin sesión, ya respondida, cargando y falla); con plan de migración (a futuro) |
 | Acceso (`/login`, `/registro`, `/recuperar-contrasena`, `/completar-perfil`) | [ACCESO.md](ACCESO.md) | armadas (A1-A4 con `MarcoAcceso`; los datos personales son los de Mi perfil); con plan de migración (a futuro) |
-| Traducción (los textos de los datos en otro idioma) | [TRADUCCION.md](TRADUCCION.md) | `ProveedorTraduccion`, `useTexto`, `useHtml` y `<Texto>` en tarjetas, títulos, migas, ficha y carrito; falta conectarlo en `App.jsx` y decidir los textos fijos del kit |
+| Traducción (los textos de los datos en otro idioma) | [TRADUCCION.md](TRADUCCION.md) | `ProveedorTraduccion`, `useTexto`, `useHtml` y `<Texto>` en tarjetas, títulos, migas, ficha y carrito; **conectado en `App.jsx`** (2026-10-16); los textos fijos van por `useTexto`, empezando por el marco |
 | Cargando (primera carga, cambio de página, página llegando) | [CARGA.md](CARGA.md) | armada (M11 `PantallaCarga`, `Cargando` y los esqueletos de `Esqueletos.jsx` por componente, sección y página; en la Tienda de prueba, "Ver la carga"); con plan de migración (a futuro) |
 | Un producto (`/producto/:id`) | [PRODUCTO.md](PRODUCTO.md) | armada (P13 `PaginaProducto` con el marco de `piezas/Ficha`, `OpcionesProducto` y las opiniones); rediseñada el 2026-10-16 (galería que se desliza, lo elegido que viaja, "¡Agregado!", `BarraCompra` al bajar); con plan de migración (a futuro) |
 | El estudio (`/crear/:id`) | [CREAR.md](CREAR.md) | armada (P12 `PaginaEstudio` con `LienzoPrenda`, `BarraLienzo`, `PasosEstudio` y `PanelCapa`; el lienzo de fabric.js se queda en la tienda); con plan de migración (a futuro) |

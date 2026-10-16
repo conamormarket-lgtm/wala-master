@@ -121,6 +121,15 @@ Plan para cuando se decida pasar el inicio real (`/`) a este diseño. Hoy la
 tienda sigue con sus componentes; esto es solo la hoja de ruta. Mantenerla al
 día si cambia un componente del kit o su forma de recibir datos.
 
+**El marco ya está en la tienda (paso 2, 2026-10-16):** M1 `AvisoSistema`,
+M2 `BannerApp`, M3 `BarraAdmin`, M7-M10 la pila de flotantes (WhatsApp, Kapi
+y la píldora), M11 `VentanaCampana`, M12 `AvisoIdioma` y el pie legal. Cada
+uno con su conector en `src/components/marco/` (lee lo de la tienda y dibuja
+la pieza); lo viejo queda en su sitio hasta el final
+([ELIMINAR.md](ELIMINAR.md)). Faltan del marco: las columnas del pie
+(`PiePagina`, con las secciones del builder: paso 5), la barra inferior y la
+cabecera (paso 7).
+
 ### Reemplazos
 
 | Parte | Hoy en la tienda | Pasa a (kit) |
@@ -203,7 +212,7 @@ día si cambia un componente del kit o su forma de recibir datos.
 
 - `TarjetaProducto`: avisar la impresión (`recordImpression`). (El favorito controlado ya está: `deseado` + `onDeseo`, conectar con `WishlistContext`.)
 - `Cabecera`: selector de idioma en `MenuCuenta`, aviso para activar notificaciones push. (El buscador con sugerencias ya está: `buscarSugerencias`, ver BUSCAR.md.)
-- Traducción de textos (`<T>`).
+- ✓ Traducción: `ProveedorTraduccion` ya está en `App.jsx` y los textos fijos del marco pasan por `useTexto`. Falta hacer lo mismo con los de las secciones y la cabecera al migrarlas.
 - `imageSource: 'product'` de las categorías: la página debe pasar `imagenProducto`.
 - La `TrustBadges` vieja no entiende los íconos nuevos del editor del kit (`camion`, `escudo`…): mientras convivan, usar `iconoDesde`.
 
@@ -212,7 +221,7 @@ día si cambia un componente del kit o su forma de recibir datos.
 Siguen el orden común de [MIGRACION.md](MIGRACION.md); aquí, lo que le toca
 al inicio.
 
-1. Marco: `BarraAdmin`, `AvisoSistema`, `BannerApp`, flotantes, `PieLegal`. Bajo riesgo; cada uno reemplaza a un componente.
+1. ✓ Marco: `BarraAdmin`, `AvisoSistema`, `BannerApp`, flotantes, `PieLegal` (2026-10-16, un commit por pieza). Al migrar, el kit ganó `BarraAdmin` `fija` y `editarEn`, `BannerApp` `onAccion`, `AvisoIdioma` `flotante`, `VentanaCampana` `textoCerrar`, `PilaFlotante` `ocultarEnCelular` y los adaptadores `avisoDesdeEstadoApp`, `numeroWhatsApp`, `campanaDesdePopup` y `pieLegalDesdeEmpresa`.
 2. `TarjetaProducto` en los carruseles (con lo que le falta, arriba).
 3. Secciones del inicio con `RenderSecciones` + `respaldo`, conservando `DeferredSection` y las excepciones. Comparar capturas antes y después.
 4. `BarraInferior` y luego `Cabecera` (la más conectada).
