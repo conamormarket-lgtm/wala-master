@@ -2,40 +2,28 @@
 //
 // RED DE SEGURIDAD (ESPEJO) de los pedidos del Portal Web.
 //
-// PROBLEMA: el portal crea cada pedido en `pedidos_web` (createWebOrder, en
-// src/services/erp/firebase.js). El ERP externo (aimunayerp.com), al aprobar el
+// PROBLEMA: el servidor crea cada pedido en `pedidos_web` (Cloud Functions: el
+// checkout, el pago rápido y la landing). El ERP externo (aimunayerp.com), al aprobar el
 // pedido, BORRA ese doc o le quita los marcadores de Portal Web. Como el portal
 // NUNCA borra pedidos, ese pedido desaparecería de "Mis Pedidos"
 // (misPedidosSecure en el servidor) y de "Recepción"
 // (src/services/adminOrders.js, filtro esPedidoWala).
 //
-// SOLUCIÓN: aquí guardamos una COPIA propia del lado WALA en la colección
+// SOLUCIÓN: el servidor guarda una COPIA propia del lado WALA en la colección
 // `wala_pedidos`. Esta copia es nuestra y el ERP no la toca. Si el pedido
-// original desaparece, la lectura del espejo lo recupera.
+// original desaparece, la lectura del espejo lo recupera. Este módulo solo LEE
+// el espejo (desde el 2026-10-16 el navegador ya no lo escribe: lo hacía el
+// cuestionario de producto, que se retiró).
 //
-// REGLAS DURAS de este módulo:
-//   - El espejo es BEST-EFFORT: su escritura va siempre en try/catch del lado
-//     del llamador y JAMÁS debe hacer fallar ni demorar la creación del pedido.
-//   - NO se toca lógica de pagos/totales: solo copiamos campos display ya
-//     calculados (montoTotal, etc.). NO se guardan secretos de pago.
-//   - Idempotente: doc id estable (numeroPedido) + setDoc({ merge: true }).
-//
-// Usa la MISMA instancia de Firestore del ERP (erpDb) que createWebOrder, porque
-// las reglas Firestore de producción están abiertas y así reusamos la conexión
-// ya inicializada (mismo proyecto del ERP).
+// Usa la MISMA instancia de Firestore del ERP (erpDb): wala_pedidos vive en el
+// mismo proyecto que pedidos_web.
 
 import {
   collection,
-  doc,
-  setDoc,
-  updateDoc,
-  getDoc,
   getDocs,
   query,
-  where,
   orderBy,
   limit,
-  serverTimestamp,
 } from 'firebase/firestore';
 import { erpDb, isErpFirestoreAvailable } from './erp/firebase';
 
@@ -46,225 +34,11 @@ import { erpDb, isErpFirestoreAvailable } from './erp/firebase';
 export const WALA_ORDERS_COLLECTION = 'wala_pedidos';
 
 /* ────────────────────────────────────────────────────────────────────────────
- * Helpers puros internos (no exportados)
- * ──────────────────────────────────────────────────────────────────────────── */
-
-/**
- * Normaliza un número de documento (DNI/CE) igual que erp/firebase.js:
- * trim + quita TODOS los espacios. Devuelve string (vacío si no hay valor).
- */
-function normalizarDocumento(valor) {
-  if (valor == null) return '';
-  return String(valor).trim().replace(/\s/g, '');
-}
-
-/**
- * Sanea un valor para usarlo como ID de documento de Firestore.
- * Los doc id no pueden contener '/', y por seguridad evitamos también otros
- * caracteres problemáticos. Se conserva el valor "bonito" del numeroPedido en el
- * campo `numeroPedido` del doc; esto es solo para la CLAVE.
- */
-function sanearDocId(valor) {
-  if (valor == null) return '';
-  return String(valor)
-    .trim()
-    .replace(/[/\\#?[\].]/g, '-') // caracteres no permitidos / reservados
-    .replace(/\s+/g, '-');
-}
-
-/**
- * Devuelve las líneas de producto de un pedido como array, soportando tanto el
- * formato array como el formato mapa del ERP ({ item_0: {...}, item_1: {...} }).
- * (Mismo criterio que getProductosPedido de utils/estadoCompra.js, replicado
- * aquí para no acoplar el espejo a la capa de UI.)
- */
-function productosComoArray(productos) {
-  if (productos == null) return [];
-  if (Array.isArray(productos)) return productos.filter(Boolean);
-  if (typeof productos === 'object') return Object.values(productos).filter(Boolean);
-  return [];
-}
-
-/**
- * Resume las líneas de producto a un array plano y LIGERO para el espejo.
- * Solo campos display (URLs/strings cortos): nada de datos de pago.
- * ADITIVO: los snapshots visuales (urlImagen, personalización) solo se copian
- * si la línea los trae, para no engordar pedidos antiguos ni líneas sin diseño.
- */
-function resumirProductos(productos) {
-  const lineas = productosComoArray(productos);
-  return lineas.map((l) => ({
-    productoId: l?.productoId ?? null,
-    nombre: l?.producto ?? l?.nombre ?? 'Producto',
-    brandId: l?.brandId ?? null,
-    cantidad: l?.cantidad ?? 1,
-    talla: l?.talla ?? null,
-    color: l?.color ?? null,
-    precio: l?.precio ?? null,
-    subtotal: l?.subtotal ?? null,
-    personalizado: !!l?.personalizado,
-    // ── Snapshot visual/diseño (ADITIVO; solo si la línea lo trae) ────────────
-    // urlImagen: imagen del producto al comprar (contrato del checkout); permite
-    // mostrar la miniatura aunque el producto se oculte/borre del catálogo.
-    ...(l?.urlImagen && { urlImagen: l.urlImagen }),
-    // Personalización del cliente (imagen renderizada, texto y diseño guardado).
-    ...(l?.urlImagenPersonalizada && { urlImagenPersonalizada: l.urlImagenPersonalizada }),
-    ...(l?.textoPersonalizado && { textoPersonalizado: l.textoPersonalizado }),
-    ...(l?.designId && { designId: l.designId }),
-    // Combos (igual que functions/pagosLogic.js): piezas del de la tienda y
-    // grupo del de Crear, para que "Mis pedidos" los muestre como combo.
-    ...combosDeLinea(l),
-  }));
-}
-
-function combosDeLinea(l) {
-  const out = {};
-  const subs = l?.subProductos && typeof l.subProductos === 'object' ? Object.values(l.subProductos).filter(Boolean) : [];
-  if (subs.length) {
-    out.piezas = subs.map((s) => ({ nombre: s.producto || 'Prenda', talla: s.talla || '', color: s.color || '' }));
-  }
-  if (l?.combo) out.combo = l.combo;
-  if (l?.comboCrear) {
-    const c = l.comboCrear;
-    out.comboCrear = { grupo: c.grupo ?? 0, pieza: c.pieza ?? 0, de: c.de ?? 1 };
-  }
-  if (l?.prendaNombre) out.prendaNombre = l.prendaNombre;
-  if (l?.colorPrenda) out.colorPrenda = l.colorPrenda;
-  return out;
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
- * ESCRITURA del espejo
- * ──────────────────────────────────────────────────────────────────────────── */
-
-/**
- * Construye el doc espejo a partir del payload YA NORMALIZADO del pedido y lo
- * escribe en `wala_pedidos` con setDoc({ merge: true }) (idempotente).
+ * ESTADO de WALA (fuente de verdad)
  *
- * BEST-EFFORT: el llamador (createWebOrder) DEBE envolver esta llamada en
- * try/catch y nunca re-lanzar. Aun así, aquí también validamos disponibilidad y
- * no lanzamos por validaciones triviales.
- *
- * @param {object}  params
- * @param {string}  params.pedidoWebId - docId que devolvió el addDoc a `pedidos_web`.
- * @param {object}  params.payload     - Payload normalizado del pedido (webOrderPayload).
- * @returns {Promise<{ id: string|null, error: string|null }>}
- */
-export async function mirrorWebOrder({ pedidoWebId, payload }) {
-  if (!isErpFirestoreAvailable()) {
-    return { id: null, error: 'Firestore del ERP no está disponible' };
-  }
-
-  const datos = payload && typeof payload === 'object' ? payload : {};
-
-  // ── Documento (DNI/CE) con sus variantes para que la lectura case ──────────
-  // dniRaw: valor original tecleado; clienteNumeroDocumento/dni: ya normalizado
-  // por createWebOrder. Si el espejo se llamara con un payload sin normalizar,
-  // normalizamos aquí de forma idéntica a erp/firebase.js.
-  const dniRaw =
-    datos.dniRaw != null
-      ? datos.dniRaw
-      : (datos.clienteNumeroDocumento ?? datos.dni ?? '');
-  const dniNorm = normalizarDocumento(datos.clienteNumeroDocumento ?? datos.dni ?? dniRaw);
-
-  // ── Identidad del comprador autenticado ────────────────────────────────────
-  // El checkout (CheckoutPage.jsx:750) mete userId solo si hay usuario logueado.
-  const buyerUid = datos.buyerUid ?? datos.userId ?? null;
-
-  // ── Clave estable e idempotente del espejo ─────────────────────────────────
-  // numeroPedido es el código de negocio del portal (pseudoOrderId); si faltara,
-  // caemos al docId de pedidos_web. Saneado para ser un doc id válido.
-  const numeroPedido = datos.numeroPedido ?? null;
-  const idCrudo = numeroPedido || pedidoWebId;
-  const id = sanearDocId(idCrudo);
-  if (!id) {
-    return { id: null, error: 'No se pudo determinar un id para el espejo' };
-  }
-
-  // ── Doc espejo: SOLO campos display + claves de búsqueda. NADA de pagos ─────
-  const espejo = {
-    // Claves de identidad / búsqueda
-    numeroPedido: numeroPedido ?? null,
-    portalPseudoOrderId: datos.portalPseudoOrderId ?? numeroPedido ?? null,
-    pedidoWebId: pedidoWebId ?? null,
-    buyerUid, // = userId del checkout (CheckoutPage.jsx:750)
-
-    // Documento del cliente (normalizado + crudo) para casar en la lectura
-    dni: dniNorm || null,
-    dniRaw: dniRaw || null,
-    clienteNumeroDocumento: dniNorm || null,
-
-    // Datos display del cliente
-    clienteNombreCompleto:
-      datos.clienteNombreCompleto ?? datos.customerName ?? datos.nombreCliente ?? null,
-
-    // Productos resumidos (ligeros, sin imágenes pesadas)
-    productos: resumirProductos(datos.productos),
-
-    // ── Contexto de REGALO (ADITIVO: solo si el payload lo trae) ────────────────
-    // giftDetails viene del checkout en modo regalo e incluye deliveryDate/
-    // deliveryEventLabel/wishlistUserCode cuando el pedido nació de /regalar.
-    // deliveryDate raíz se copia por compatibilidad si algún flujo la mandara suelta.
-    ...(datos.giftDetails != null && { giftDetails: datos.giftDetails }),
-    ...(datos.deliveryDate != null && { deliveryDate: datos.deliveryDate }),
-
-    // Montos display (NO se recalcula nada; se copia el total ya calculado)
-    montoTotal: datos.montoTotal ?? datos.total ?? null,
-    moneda: datos.moneda ?? datos.currency ?? 'PEN',
-
-    // Marcadores de origen WALA (para que esPedidoWala y la vista lo reconozcan)
-    canalVenta: 'Portal Web',
-    web: true,
-
-    // ── ESTADO PROPIO DE WALA (fuente de verdad independiente del ERP) ──────────
-    // Al CREAR el pedido siempre nace como "pendiente_pago" (todavía no pagado).
-    // El pago (Culqi/PayPal) lo moverá a "pagado" vía markWalaOrderPagado, y el
-    // ERP (fase aparte, vía API con API key) podrá avanzarlo a en_preparacion/
-    // enviado/entregado/cancelado vía updateWalaOrderEstado. Estos campos son
-    // ADITIVOS: no tocan la lógica de pagos/totales del checkout.
-    // NOTA: con setDoc({ merge:true }) y doc id estable, si el espejo ya existía
-    // (reintento idempotente) NO se pisa un estado más avanzado de forma
-    // destructiva intencional; igualmente el flujo normal crea el espejo una vez.
-    estadoWala: 'pendiente_pago',
-    pagado: false,
-
-    // Metadatos del espejo
-    createdAt: serverTimestamp(),
-    fuente: 'wala-mirror',
-  };
-
-  try {
-    const ref = doc(erpDb, WALA_ORDERS_COLLECTION, id);
-    // NO-DESTRUCTIVO respecto al estado/pago: si el espejo YA existe (reintento,
-    // backfill o re-mirror del mismo numeroPedido), NO pisamos su estadoWala/
-    // pagado —podría estar ya 'pagado' o más avanzado— ni su createdAt original.
-    // Solo refrescamos los campos display/clave. Si es nuevo, nace 'pendiente_pago'.
-    let payload = espejo;
-    try {
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        const { estadoWala: _e, pagado: _p, createdAt: _c, ...soloDisplay } = espejo;
-        payload = soloDisplay;
-      }
-    } catch {
-      // Si la lectura previa falla, seguimos con el merge normal (best-effort).
-    }
-    await setDoc(ref, payload, { merge: true });
-    return { id, error: null };
-  } catch (error) {
-    // No re-lanzamos: el espejo es best-effort. Devolvemos el error para que el
-    // llamador pueda hacer console.warn si quiere.
-    return { id: null, error: error?.message || 'Error al escribir el espejo' };
-  }
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
- * ESTADO de WALA (fuente de verdad) — actualización del espejo
- *
- * wala_pedidos lleva SU PROPIO estado (estadoWala) independiente del ERP. Estas
- * funciones lo actualizan de forma IDEMPOTENTE y BEST-EFFORT (try/catch interno,
- * NUNCA lanzan). Son ADITIVAS: NO tocan la lógica de pagos/totales del checkout;
- * el llamador (Culqi/PayPal) las invoca ADEMÁS de marcar pedidos_web como hoy.
+ * wala_pedidos lleva SU PROPIO estado (estadoWala) independiente del ERP. Lo
+ * escribe solo el servidor (Cloud Functions: el espejo al crear el pedido y
+ * marcarWalaPedidoPagado al cobrar). Aquí, cómo se muestra.
  * ──────────────────────────────────────────────────────────────────────────── */
 
 /**
@@ -282,152 +56,6 @@ export const ESTADOS_WALA = Object.freeze([
   'entregado',
   'cancelado',
 ]);
-
-/**
- * Localiza el doc de wala_pedidos para un pedido dado.
- *
- * Estrategia:
- *   1) Por id directo = sanearDocId(numeroPedido) (la clave estable del espejo).
- *   2) Si no existe y hay pedidoWebId → query where("pedidoWebId","==",pedidoWebId).
- *
- * BEST-EFFORT: nunca lanza. Devuelve la referencia del doc encontrado (o, si no
- * existe pero hay numeroPedido, la referencia por id saneado para poder crearlo
- * vía setDoc{merge}), junto con un flag de si existía.
- *
- * @param {object} params
- * @param {string} [params.numeroPedido]
- * @param {string} [params.pedidoWebId]
- * @returns {Promise<{ ref: import('firebase/firestore').DocumentReference|null, existe: boolean }>}
- */
-async function localizarDocWala({ numeroPedido, pedidoWebId } = {}) {
-  const coll = collection(erpDb, WALA_ORDERS_COLLECTION);
-
-  // 1) Por id estable saneado a partir del numeroPedido.
-  const idSaneado = numeroPedido != null ? sanearDocId(numeroPedido) : '';
-  if (idSaneado) {
-    try {
-      const ref = doc(erpDb, WALA_ORDERS_COLLECTION, idSaneado);
-      const snap = await getDoc(ref);
-      if (snap.exists()) return { ref, existe: true };
-      // El doc por id no existe; recordamos la ref por si hay que crearlo (merge),
-      // pero antes intentamos casar por pedidoWebId (puede existir con otra clave).
-    } catch (error) {
-      console.warn('[walaOrders] localizarDocWala getDoc por id falló:', error?.message);
-    }
-  }
-
-  // 2) Por pedidoWebId (query de una sola condición → sin índice compuesto).
-  if (pedidoWebId) {
-    try {
-      const snap = await getDocs(query(coll, where('pedidoWebId', '==', pedidoWebId), limit(1)));
-      if (!snap.empty) {
-        return { ref: snap.docs[0].ref, existe: true };
-      }
-    } catch (error) {
-      console.warn('[walaOrders] localizarDocWala query por pedidoWebId falló:', error?.message);
-    }
-  }
-
-  // No se encontró un doc existente. Si tenemos un id saneado, devolvemos esa ref
-  // para que el llamador pueda crear el espejo con setDoc{merge} (idempotente).
-  if (idSaneado) {
-    return { ref: doc(erpDb, WALA_ORDERS_COLLECTION, idSaneado), existe: false };
-  }
-  return { ref: null, existe: false };
-}
-
-/**
- * Actualiza el estado propio (estadoWala) de un pedido en wala_pedidos.
- *
- * IDEMPOTENTE y BEST-EFFORT: nunca lanza. Si el doc ya existe hace updateDoc; si
- * no existe (pero hay numeroPedido para derivar la clave) hace setDoc{merge} para
- * dejarlo creado con el estado. Siempre sella estadoWalaUpdatedAt.
- *
- * @param {object} params
- * @param {string} [params.numeroPedido] - Código de negocio del portal (clave del espejo).
- * @param {string} [params.pedidoWebId]  - docId de pedidos_web (fallback de localización).
- * @param {string} params.estado         - Nuevo estadoWala (ver ESTADOS_WALA).
- * @param {object} [params.extra]        - Campos adicionales a fusionar (p.ej. tracking).
- * @returns {Promise<{ ok: boolean, id: string|null, error: string|null }>}
- */
-export async function updateWalaOrderEstado({ numeroPedido, pedidoWebId, estado, extra } = {}) {
-  if (!isErpFirestoreAvailable()) {
-    return { ok: false, id: null, error: 'Firestore del ERP no está disponible' };
-  }
-  if (!estado || typeof estado !== 'string') {
-    return { ok: false, id: null, error: 'estado requerido' };
-  }
-
-  try {
-    const { ref, existe } = await localizarDocWala({ numeroPedido, pedidoWebId });
-    if (!ref) {
-      return { ok: false, id: null, error: 'No se pudo localizar el doc de wala_pedidos' };
-    }
-
-    const extraObj = extra && typeof extra === 'object' ? extra : {};
-    const cambios = {
-      estadoWala: estado,
-      ...extraObj,
-      estadoWalaUpdatedAt: serverTimestamp(),
-    };
-
-    if (existe) {
-      // El doc ya existe: actualización parcial.
-      await updateDoc(ref, cambios);
-    } else {
-      // No existía: lo creamos/fusionamos de forma idempotente. Añadimos un par
-      // de marcadores mínimos para que la lectura lo reconozca como WALA.
-      await setDoc(
-        ref,
-        {
-          ...cambios,
-          numeroPedido: numeroPedido ?? null,
-          pedidoWebId: pedidoWebId ?? null,
-          canalVenta: 'Portal Web',
-          web: true,
-          fuente: 'wala-mirror',
-        },
-        { merge: true },
-      );
-    }
-    return { ok: true, id: ref.id, error: null };
-  } catch (error) {
-    // BEST-EFFORT: no re-lanzamos para no romper el flujo de pago/ERP.
-    console.warn('[walaOrders] updateWalaOrderEstado falló:', error?.message);
-    return { ok: false, id: null, error: error?.message || 'Error al actualizar estadoWala' };
-  }
-}
-
-/**
- * Marca un pedido de wala_pedidos como PAGADO (estadoWala:"pagado", pagado:true).
- *
- * Pensada para llamarse DESPUÉS de que el pago (Culqi/PayPal) se confirma, ADEMÁS
- * de la marca actual en pedidos_web. ADITIVA, IDEMPOTENTE y BEST-EFFORT (nunca
- * lanza). NO recalcula montos: montoPagado es solo informativo para el espejo.
- *
- * @param {object} params
- * @param {string} [params.numeroPedido]
- * @param {string} [params.pedidoWebId]
- * @param {string} [params.metodoPago]   - 'culqi' | 'paypal' | etc. (informativo).
- * @param {number} [params.montoPagado]  - Monto cobrado (informativo, ya calculado).
- * @returns {Promise<{ ok: boolean, id: string|null, error: string|null }>}
- */
-export async function markWalaOrderPagado({ numeroPedido, pedidoWebId, metodoPago, montoPagado } = {}) {
-  // Reutiliza updateWalaOrderEstado para mantener una sola ruta de escritura.
-  const extra = {
-    pagado: true,
-    pagadoAt: serverTimestamp(),
-  };
-  if (metodoPago != null) extra.metodoPago = metodoPago;
-  if (montoPagado != null) extra.montoPagado = montoPagado;
-
-  return updateWalaOrderEstado({
-    numeroPedido,
-    pedidoWebId,
-    estado: 'pagado',
-    extra,
-  });
-}
 
 /**
  * Mapea un estadoWala a su representación de UI (etiqueta, color y paso del flujo).

@@ -35,7 +35,7 @@ import { getAllWalaMirrorOrders } from './walaOrders';
 
 /**
  * Colecciones del ERP donde viven los pedidos. `pedidos_web` es la fuente principal
- * de los pedidos hechos desde WALA (el checkout web crea ahí, vía createWebOrder);
+ * de los pedidos hechos desde WALA (los crea el servidor: checkout, WhatsApp, pago);
  * `pedidos` es el ERP validado, que también puede contener pedidos del portal una vez
  * aprobados (canalVenta === 'Portal Web').
  */

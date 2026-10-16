@@ -38,6 +38,13 @@ const casos = [
   ['ALLOW', 'catálogo público sin sesión', { method: 'get', path: `${DOCS}/productos_wala/A` }],
   ['DENY', 'pedidos sin sesión', { method: 'get', path: `${DOCS}/pedidos/P1` }],
   ['DENY', 'ERP no toca colección solo Walá', { auth: anonimo, method: 'get', path: `${DOCS}/checkout_payment_intents/I1` }],
+  // Pedidos web: los crea el servidor (2026-10-16, sin el cuestionario de producto)
+  ['DENY', 'sin sesión no crea un pedido web con DNI', { method: 'create', path: `${DOCS}/pedidos_web/PD1`, resource: { data: { dni: '12345678', web: true } } }],
+  ['ALLOW', 'ERP lee pedidos web', { auth: anonimo, method: 'get', path: `${DOCS}/pedidos_web/PD1` }],
+  ['ALLOW', 'ERP borra un pedido web al validarlo', { auth: anonimo, method: 'delete', path: `${DOCS}/pedidos_web/PD1` }],
+  ['DENY', 'sin sesión no crea la copia en wala_pedidos', { method: 'create', path: `${DOCS}/wala_pedidos/PD1`, resource: { data: { pagado: false, estadoWala: 'pendiente_pago' } } }],
+  ['DENY', 'cliente no crea la copia en wala_pedidos', { auth: cliente('U1'), method: 'create', path: `${DOCS}/wala_pedidos/PD1`, resource: { data: { pagado: false, estadoWala: 'pendiente_pago', buyerUid: 'U1' } } }],
+  ['DENY', 'plantillas del cuestionario cerradas', { method: 'get', path: `${DOCS}/cuestionarios_templates/T1` }],
 ];
 
 (async () => {

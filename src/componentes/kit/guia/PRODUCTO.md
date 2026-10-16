@@ -197,9 +197,10 @@ reseñas de prueba en un producto borrado, así que no sirven para ver el diseñ
 - **Lo que se queda en la tienda, sin pasar al kit:**
   - El personalizador **Yoryo** (`YoryoPersonalizado`, con su historial de
     diseños). El botón se muestra con el texto "Personalizable".
-  - El **cuestionario** (`cuestionario://` dentro de la descripción), que crea
-    el pedido en el ERP y abre WhatsApp. Al migrar, el clic en ese enlace se
-    sigue escuchando sobre el HTML de la descripción.
+  - (El **cuestionario** de algunos productos, `cuestionario://` dentro de la
+    descripción, se retiró de la tienda el 2026-10-16: no tenía pantalla en
+    el admin, había una sola plantilla de ejemplo y creaba el pedido desde el
+    navegador. Para volver, todo está en el historial de git.)
 - El botón de WhatsApp global lee `whatsappEnabled`, `whatsappNumber` y
   `whatsappMessage` del producto.
 
@@ -234,9 +235,8 @@ Falta en el kit y queda para cuando se migre (o se pida):
   personalización por color. El kit usa la URL tal cual.
 - **Muchas fotos:** en la tienda la columna de miniaturas tiene alto máximo y
   scroll; en el kit crece con ellas.
-- **`cuestionario://`** en la descripción y el **WhatsApp del producto**
-  (`whatsappEnabled`, `whatsappNumber`, `whatsappMessage`) siguen siendo de
-  la tienda.
+- El **WhatsApp del producto** (`whatsappEnabled`, `whatsappNumber`,
+  `whatsappMessage`) sigue siendo de la tienda.
 - **En la tienda sale un toast doble al agregar** (`ProductDetail.jsx` y
   `CartContext.jsx` muestran uno cada uno).
 - `--alto-barra-inferior` (la altura que usa `.compra`) no está definida en

@@ -119,7 +119,8 @@ service cloud.firestore {
     match /suggested_packages/{id}    { allow read: if true; allow write: if isAdmin(); }
     match /universal_dates/{id}       { allow read: if true; allow write: if isAdmin(); }
     match /tienda_encuesta_config/{id}{ allow read: if true; allow write: if isAdmin(); }
-    match /cuestionarios_templates/{id}{ allow read: if true; allow write: if isAdmin(); }
+    // cuestionarios_templates: sin match desde el 2026-10-16 (se retiró el
+    // cuestionario de producto). Sigue en esSoloWala: queda cerrada.
 
     // Compat: colecciones legacy (mantener hasta confirmar que no se usan en producción).
     match /products/{id}    { allow read: if true; allow write: if isAdmin(); }
@@ -286,10 +287,19 @@ service cloud.firestore {
       allow create: if isAuthenticated() || request.resource.data.dni != null;
       allow update, delete: if isAdmin();
     }
+    // Pedidos web: los crea y los marca SOLO el servidor (checkout, WhatsApp, pagos;
+    // Cloud Functions con Admin SDK, que no pasa por estas reglas). Hasta el
+    // 2026-10-16 el navegador podía crearlos y modificarlos con solo mandar un DNI
+    // (lo usaba el cuestionario de producto, que se retiró): cualquiera podía
+    // cambiar un pedido ajeno, incluso uno pagado.
+    // OJO: pedidos_web NO está en esSoloWala, así que la regla general de abajo
+    // ({collection}) sigue dejando leer y escribir a CUALQUIER sesión (el ERP lo
+    // necesita: su personal no es isAdmin()). Cerrarla del todo pide separar al
+    // personal del ERP (ver la revisión de seguridad).
     match /pedidos_web/{id} {
       allow read: if isAdmin() || (isAuthenticated() && resource.data.buyerUid == request.auth.uid);
-      allow create: if isAuthenticated() || request.resource.data.dni != null;
-      allow update: if isAdmin() || request.resource.data.dni != null;
+      allow create: if false;
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
@@ -337,13 +347,12 @@ service cloud.firestore {
       allow read: if id == 'fx';
     }
 
-    // Copia de los pedidos web del lado Walá ("Mis pedidos", Recepción). Pagos y
-    // estados los escribe solo el servidor; desde el navegador solo nace una copia
-    // SIN pago (formulario de cuestionario).
+    // Copia de los pedidos web del lado Walá ("Mis pedidos", Recepción). La escribe
+    // solo el servidor. (Hasta el 2026-10-16 cualquiera, sin cuenta, podía crear
+    // una copia "sin pagar": la usaba el cuestionario de producto, que se retiró.)
     match /wala_pedidos/{id} {
       allow read: if isAdmin() || (isAuthenticated() && resource.data.buyerUid == request.auth.uid);
-      allow create: if request.resource.data.get('pagado', false) == false
-                    && request.resource.data.get('estadoWala', 'pendiente_pago') == 'pendiente_pago';
+      allow create: if false;
       allow update, delete: if isAdmin();
     }
 

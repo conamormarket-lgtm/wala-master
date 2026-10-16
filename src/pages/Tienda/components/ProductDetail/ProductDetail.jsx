@@ -18,7 +18,6 @@ import FeaturedCarousel from '../FeaturedCarousel/FeaturedCarousel';
 import { useImagePreloader } from '../../../../components/common/OptimizedImage/OptimizedImage';
 import OptimizedImage from '../../../../components/common/OptimizedImage/OptimizedImage';
 import DraggableContainer from '../../../../components/common/DraggableContainer/DraggableContainer';
-import ProductCuestionarioModal from '../ProductCuestionarioModal/ProductCuestionarioModal';
 import { withEditorFonts } from '../../../../services/shared/fontResources';
 const YoryoPersonalizadoCliente = lazy(() => withEditorFonts(import('../../../../components/YoryoPersonalizadoCliente/YoryoPersonalizadoCliente')));
 import HistorialPersonalizacionesModal from '../../../../components/YoryoPersonalizadoCliente/HistorialPersonalizacionesModal';
@@ -250,7 +249,6 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   // panel de info, más abajo).
   const [comboSize, setComboSize] = useState('');
   const [imgIdx, setImgIdx] = useState(0);
-  const [cuestionario, setCuestionario] = useState(null);
   const [showYoryoPersonalizado, setShowYoryoPersonalizado] = useState(false);
   const [pastDesigns, setPastDesigns] = useState([]);
   const [showPastDesignsModal, setShowPastDesignsModal] = useState(false);
@@ -553,14 +551,6 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
       .catch(() => toast.error('Error al copiar'));
   };
 
-  const handleDescClick = e => {
-    const btn = e.target.closest('a.custom-quill-button');
-    if (btn?.getAttribute('href')?.startsWith('cuestionario://')) {
-      e.preventDefault();
-      setCuestionario(btn.getAttribute('href').replace('cuestionario://', ''));
-    }
-  };
-
   // ── Render
   if (loading) return <Skeleton />;
   if (!product) return <div className={styles.notFound}>{t('card.noEncontrado', 'Producto no encontrado.')}</div>;
@@ -814,7 +804,6 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
               <div
                 className={styles.richText}
                 dangerouslySetInnerHTML={{ __html: descripcionTraducida }}
-                onClick={handleDescClick}
               />
             </details>
           )}
@@ -836,17 +825,6 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
           />
         </div>
       )}
-
-      <ProductCuestionarioModal
-        isOpen={!!cuestionario}
-        onClose={() => setCuestionario(null)}
-        templateId={cuestionario}
-        product={product}
-        selectedVariant={selectedVariant}
-        selectedSize={selectedSize}
-        quantity={qty}
-        comboVariantSelections={comboSelsForSubmit}
-      />
 
       {showYoryoPersonalizado && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 9999, backgroundColor: '#fff', overflowY: 'auto' }}>

@@ -7,7 +7,6 @@ import {
   getDoc,
   getDocs,
   addDoc,
-  setDoc,
   updateDoc,
   query,
   orderBy,
@@ -328,85 +327,6 @@ export async function getPedidosForAccountSync(limitCount = 100, startAfterDoc =
   } catch (error) {
     console.error('Error al listar pedidos para sync de cuentas:', error);
     return { data: [], lastDoc: null, error: error.message };
-  }
-}
-
-/**
- * Crea una solicitud de pedido web en la colección `pedidos_web` del Firebase ERP.
- * Separada de `pedidos/` (ERP real) para pasar primero por validación manual.
- *
- * @param {Object} orderData - Datos del pedido con la misma estructura de campos del ERP
- * @returns {Promise<{ id: string | null, error: string | null }>}
- */
-export async function createWebOrder(orderData, requestedId = null) {
-  if (!isErpFirestoreAvailable()) {
-    return { id: null, error: 'Firestore del ERP no está disponible' };
-  }
-
-  try {
-    const orderPayload = {
-      ...orderData,
-      web: true,
-      estadoValidacion: 'pendiente', // estado de la cola de validación
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
-
-    // Normaliza el documento igual que createOrderInERP para que la búsqueda
-    // de "Mis Pedidos" por documento (misPedidosSecure) case con lo guardado.
-    // Se conserva el valor tecleado original en dniRaw (CE/pasaporte tal cual).
-    const docRaw = orderData.clienteNumeroDocumento || orderData.dni || '';
-    const docNorm = String(docRaw).trim().replace(/\s/g, '');
-    if (docNorm) {
-      orderPayload.dniRaw = docRaw; // valor original sin normalizar (no se pierde)
-      orderPayload.clienteNumeroDocumento = docNorm;
-      orderPayload.dni = docNorm;
-    }
-    // Si el documento viene vacío no se fuerza: se deja como está.
-
-    // Si el checkout trae un código estable usamos setDoc para que un doble clic en
-    // WhatsApp sea idempotente. Los llamadores antiguos siguen usando addDoc.
-    const stableId = requestedId || orderData.portalPseudoOrderId || null;
-    const docRef = stableId
-      ? doc(erpDb, 'pedidos_web', String(stableId))
-      : await addDoc(collection(erpDb, 'pedidos_web'), orderPayload);
-    if (stableId) {
-      await setDoc(docRef, orderPayload, { merge: true });
-    }
-
-    // ── WALA = FUENTE DE VERDAD: copia/espejo del pedido del lado WALA ─────────
-    // Tras guardar OK en pedidos_web, escribimos el pedido en wala_pedidos, que es
-    // la base PROPIA e INDEPENDIENTE de WALA (con su propio estadoWala). El ERP
-    // externo, al aprobar, puede borrar el doc de pedidos_web; wala_pedidos es
-    // nuestra copia para que el pedido nunca desaparezca de "Mis Compras" y para
-    // que WALA muestre su propio estado/pago.
-    //
-    // Import dinámico para evitar el ciclo de dependencias (walaOrders.js importa
-    // erpDb de este archivo). Al ser lazy, el ciclo se resuelve en runtime.
-    //
-    // CONFIABLE pero NO BLOQUEANTE: ahora hacemos AWAIT del espejo dentro de un
-    // try/catch que SOLO loguea y NUNCA aborta el pedido. El pedido YA quedó
-    // persistido en pedidos_web (addDoc anterior); si el espejo fallara, se loguea
-    // pero la venta CONTINÚA y el valor de retorno de createWebOrder no cambia.
-    // Le pasamos el payload YA enriquecido (clienteNumeroDocumento/dni normalizados
-    // + dniRaw); buyerUid/userId viene del checkout dentro de él.
-    try {
-      const { mirrorWebOrder } = await import('../walaOrders');
-      const espejoRes = await mirrorWebOrder({ pedidoWebId: docRef.id, payload: orderPayload });
-      if (espejoRes?.error) {
-        // mirrorWebOrder es best-effort y NO lanza: devuelve {error}. Solo logueamos.
-        console.warn('Espejo wala_pedidos no se escribió (best-effort):', espejoRes.error);
-      }
-    } catch (mirrorErr) {
-      // Cinturón extra: cualquier excepción inesperada del import/espejo se loguea
-      // y NO rompe la creación del pedido (que ya está persistida).
-      console.warn('No se pudo escribir el espejo wala_pedidos (best-effort):', mirrorErr?.message);
-    }
-
-    return { id: docRef.id, error: null };
-  } catch (error) {
-    console.error('Error al crear solicitud web en pedidos_web:', error);
-    return { id: null, error: error.message };
   }
 }
 
