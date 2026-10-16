@@ -42,11 +42,11 @@ import TiendaPage from './pages/Tienda/TiendaPage';
 import Header from './components/common/Header';
 import BottomNav from './components/common/BottomNav';
 import WhatsAppButton from './components/common/WhatsAppButton';
-import AdminBar from './components/common/AdminBar/AdminBar';
 import DeepLinkHandler from './components/common/DeepLinkHandler';
 // Marco con el kit (paso 2 de la migración): cada uno reemplaza a un componente
 // viejo, que sigue en su sitio hasta borrarlo todo junto (guia/ELIMINAR.md).
 import AvisoDelSistema from './components/marco/AvisoDelSistema';
+import BarraDeAdmin from './components/marco/BarraDeAdmin';
 import LanguagePopup from './components/i18n/LanguagePopup';
 import { EN_VISTA_PREVIA_CALOR } from './utils/vistaPreviaCalor';
 
@@ -318,7 +318,7 @@ const GlobalLayout = ({ children }) => {
           página tiene que verse como la vio el visitante, sin nada encima. */}
       {!EN_VISTA_PREVIA_CALOR && <Suspense fallback={null}><AvisoInvitacion /></Suspense>}
       <ScrollTracker />
-      <AdminBar />
+      <BarraDeAdmin />
       {isEditModeActive && (
         <Suspense fallback={null}>
           <VisualEditorPanel />
