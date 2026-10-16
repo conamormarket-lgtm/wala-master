@@ -33,3 +33,11 @@ cambiado) y borrar también su CSS.
 | `components/common/CampaignPopup/CampaignPopup.jsx` (controlador de los popups de campaña) | `App.jsx` | `components/marco/AnuncioDeCampana.jsx` (mismas reglas y métricas) → `VentanaCampana` del kit + `campanaDesdePopup` | nadie | **listo para borrar** |
 | `components/common/CampaignPopup/PopupCard.jsx` + `CampaignPopup.module.css` (la tarjeta del popup) | `CampaignPopup.jsx` y la vista previa de `/admin/popups` | `VentanaCampana` del kit + `campanaDesdePopup` (también en la vista previa de `/admin/popups`: el admin queda fuera del kit, pero la vista previa muestra la tienda) | solo `CampaignPopup.jsx` (de arriba, que ya nadie importa) | **listo para borrar** (junto con `CampaignPopup.jsx`; se va la carpeta `CampaignPopup/` entera) |
 | `Footer.jsx`: el bloque legal de antes (contacto, enlaces legales con estilos en línea, "📕 Libro de Reclamaciones", copyright), apagado con `PIE_LEGAL_EN_EL_KIT` + `Footer.module.css` `.copyright` | el pie de todas las páginas (no en la app) | `PieLegal` del kit + `pieLegalDesdeEmpresa`, dentro del mismo `Footer.jsx` | — (en `false` vuelve el de antes) | cuando el pie entero pase a `PiePagina` (paso 5); ahí se borra también `Footer.jsx` |
+
+## Paso 3: avisos y hojas
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `components/common/Modal/Modal.jsx` + `Modal.module.css` (el modal común: sin Esc ni botón atrás) | `/registro` (¿Tus datos son correctos?) y las 5 ventanas de `PedidoAcciones` (`/cuenta/pedidos/:id`) | `Confirmar` y `HojaInferior` del kit | `PedidoAcciones.jsx` (solo con el interruptor `pagosViejo`), un comentario en `profile/AvatarCropModal.jsx`, y fuera de la tienda `EditorPage.jsx` y `pages/admin/AdminCrearCuentasPedidos.jsx` | de la tienda, cuando se retire `pagosViejo` y migre Mi perfil (paso 6); el archivo, solo si el editor viejo y el admin dejan de usarlo |
+| `RegisterPage.module.css`: `.modalText`, `.modalActions` | la confirmación del registro | `Confirmar` | — | **listo para borrar** |
+

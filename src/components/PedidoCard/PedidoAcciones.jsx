@@ -3,6 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 import Modal from '../common/Modal';
+// Las ventanas con el kit (paso 3 de la migración). El Modal viejo solo queda
+// para "Pagar saldo" si se enciende el interruptor pagosViejo (useLoViejo).
+import { HojaInferior } from '../../componentes/kit/Feedback';
+import useLoViejo from '../../hooks/useLoViejo';
 import HistorialPagos from './HistorialPagos';
 import PaypalCheckout from '../PaypalCheckout';
 import CulqiCustomCheckout from '../CulqiCustomCheckout';
@@ -54,6 +58,7 @@ const PedidoAcciones = ({ pedido, estado }) => {
 
   const [showDeudaImpresionModal, setShowDeudaImpresionModal] = useState(false);
   const [showPagoModal, setShowPagoModal] = useState(false);
+  const pagosViejo = useLoViejo('pagos');
   const [showHistorialModal, setShowHistorialModal] = useState(false);
   const [showBoletaModal, setShowBoletaModal] = useState(false);
   const [boletas, setBoletas] = useState([]);
@@ -206,105 +211,7 @@ const PedidoAcciones = ({ pedido, estado }) => {
     setLoadingBoletasEnvio(false);
   };
 
-  return (
-    <>
-      {pedido.conDeuda ? (
-        <div className={`${styles.banner} ${styles.bannerDeuda}`}>
-          <AlertTriangle className={styles.bannerIcono} aria-hidden="true" />
-          <div className={styles.bannerTextos}>
-            <span className={styles.bannerLabel}><T>Saldo pendiente</T></span>
-            <span className={styles.bannerMonto}>S/ {pedido.montoDeuda ?? '0.00'}</span>
-          </div>
-          <button type="button" className={styles.btnPagar} onClick={() => setShowPagoModal(true)}>
-            <T>Pagar</T>
-          </button>
-        </div>
-      ) : estado?.paid === false ? (
-        // Sin deuda registrada PERO tampoco pagado (p.ej. "Pendiente de
-        // pago" recién creado, nunca hubo ni un adelanto): ni "Saldo
-        // pendiente" (no hay una deuda parcial que cobrar acá) ni "Pedido
-        // pagado" -sería contradictorio con el badge del header y
-        // "Seguimiento", que ya dicen que está pendiente-.
-        <div className={`${styles.banner} ${styles.bannerPendiente}`}>
-          <AlertTriangle className={styles.bannerIcono} aria-hidden="true" />
-          <div className={styles.bannerTextos}>
-            <span className={styles.bannerLabel}>{estado.label || 'Pendiente de pago'}</span>
-            <span className={styles.bannerMonto}>S/ {pedido.montoTotal || '0.00'}</span>
-          </div>
-        </div>
-      ) : (
-        <div className={`${styles.banner} ${styles.bannerPagado}`}>
-          <CheckCircle2 className={styles.bannerIcono} aria-hidden="true" />
-          <div className={styles.bannerTextos}>
-            <span className={styles.bannerLabel}><T>Pedido pagado</T></span>
-            <span className={styles.bannerMonto}>S/ {pedido.montoTotal || '0.00'}</span>
-          </div>
-        </div>
-      )}
-
-      <div className={styles.accionesRow}>
-        <button type="button" className={styles.accionLink} onClick={() => setShowHistorialModal(true)}>
-          <T>Ver historial de pagos</T>
-        </button>
-        <button type="button" className={styles.accionLink} onClick={handleVerBoleta}>
-          <T>Ver boleta / recibos</T>
-        </button>
-        <button type="button" className={styles.accionLink} onClick={handleVerBoletasEnvio}>
-          <T>Fotos de envío</T>
-        </button>
-      </div>
-
-      {(canClaimCoins || isCompleted) && (
-        <div className={styles.monedasRow}>
-          {canClaimCoins ? (
-            <button
-              type="button"
-              className={styles.chipReclamar}
-              onClick={handleClaimCoins}
-              disabled={claimingCoins}
-            >
-              <Moneda />{claimingCoins ? <T>Reclamando...</T> : <T>Reclamar 10 monedas</T>}
-            </button>
-          ) : (
-            <span className={styles.chipReclamado}><Moneda /><T>Monedas reclamadas</T></span>
-          )}
-        </div>
-      )}
-
-      {/* ── Modales ─────────────────────────────────────────────────────── */}
-      <Modal
-        isOpen={showDeudaImpresionModal}
-        title="Aviso de impresión"
-        onClose={() => setShowDeudaImpresionModal(false)}
-      >
-        <p style={{ color: '#ef4444', fontWeight: 700 }}>{DEUDA_IMPRESION_MENSAJE}</p>
-
-        <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-          <button
-            className={styles.waBoton}
-            onClick={() => {
-              setShowDeudaImpresionModal(false);
-              setShowPagoModal(true);
-            }}
-          >
-            Ver Detalles de Pago
-          </button>
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={showHistorialModal}
-        title="Historial de Pagos"
-        onClose={() => setShowHistorialModal(false)}
-      >
-        <HistorialPagos pedido={pedido} />
-      </Modal>
-
-      <Modal
-        isOpen={showPagoModal}
-        title="Pagar Saldo Pendiente"
-        onClose={() => setShowPagoModal(false)}
-      >
+  const contenidoPago = (
         <div className={styles.modalPagoInner}>
           <p style={{ textAlign: 'center', fontSize: '1.2rem', marginBottom: '1.5rem', fontWeight: 'bold' }}>
             Monto a cancelar: <span style={{ color: '#ea580c' }}>S/ {pedido.montoDeuda ?? '0.00'}</span>
@@ -409,12 +316,118 @@ const PedidoAcciones = ({ pedido, estado }) => {
             </div>
           )}
         </div>
-      </Modal>
+  );
 
-      <Modal
-        isOpen={showBoletaModal}
-        title={`Boleta del Pedido #${pedido.id}`}
-        onClose={() => setShowBoletaModal(false)}
+  return (
+    <>
+      {pedido.conDeuda ? (
+        <div className={`${styles.banner} ${styles.bannerDeuda}`}>
+          <AlertTriangle className={styles.bannerIcono} aria-hidden="true" />
+          <div className={styles.bannerTextos}>
+            <span className={styles.bannerLabel}><T>Saldo pendiente</T></span>
+            <span className={styles.bannerMonto}>S/ {pedido.montoDeuda ?? '0.00'}</span>
+          </div>
+          <button type="button" className={styles.btnPagar} onClick={() => setShowPagoModal(true)}>
+            <T>Pagar</T>
+          </button>
+        </div>
+      ) : estado?.paid === false ? (
+        // Sin deuda registrada PERO tampoco pagado (p.ej. "Pendiente de
+        // pago" recién creado, nunca hubo ni un adelanto): ni "Saldo
+        // pendiente" (no hay una deuda parcial que cobrar acá) ni "Pedido
+        // pagado" -sería contradictorio con el badge del header y
+        // "Seguimiento", que ya dicen que está pendiente-.
+        <div className={`${styles.banner} ${styles.bannerPendiente}`}>
+          <AlertTriangle className={styles.bannerIcono} aria-hidden="true" />
+          <div className={styles.bannerTextos}>
+            <span className={styles.bannerLabel}>{estado.label || 'Pendiente de pago'}</span>
+            <span className={styles.bannerMonto}>S/ {pedido.montoTotal || '0.00'}</span>
+          </div>
+        </div>
+      ) : (
+        <div className={`${styles.banner} ${styles.bannerPagado}`}>
+          <CheckCircle2 className={styles.bannerIcono} aria-hidden="true" />
+          <div className={styles.bannerTextos}>
+            <span className={styles.bannerLabel}><T>Pedido pagado</T></span>
+            <span className={styles.bannerMonto}>S/ {pedido.montoTotal || '0.00'}</span>
+          </div>
+        </div>
+      )}
+
+      <div className={styles.accionesRow}>
+        <button type="button" className={styles.accionLink} onClick={() => setShowHistorialModal(true)}>
+          <T>Ver historial de pagos</T>
+        </button>
+        <button type="button" className={styles.accionLink} onClick={handleVerBoleta}>
+          <T>Ver boleta / recibos</T>
+        </button>
+        <button type="button" className={styles.accionLink} onClick={handleVerBoletasEnvio}>
+          <T>Fotos de envío</T>
+        </button>
+      </div>
+
+      {(canClaimCoins || isCompleted) && (
+        <div className={styles.monedasRow}>
+          {canClaimCoins ? (
+            <button
+              type="button"
+              className={styles.chipReclamar}
+              onClick={handleClaimCoins}
+              disabled={claimingCoins}
+            >
+              <Moneda />{claimingCoins ? <T>Reclamando...</T> : <T>Reclamar 10 monedas</T>}
+            </button>
+          ) : (
+            <span className={styles.chipReclamado}><Moneda /><T>Monedas reclamadas</T></span>
+          )}
+        </div>
+      )}
+
+      {/* ── Modales ─────────────────────────────────────────────────────── */}
+      <HojaInferior
+        abierta={showDeudaImpresionModal}
+        titulo="Aviso de impresión"
+        onCerrar={() => setShowDeudaImpresionModal(false)}
+      >
+        <p style={{ color: '#ef4444', fontWeight: 700 }}>{DEUDA_IMPRESION_MENSAJE}</p>
+
+        <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+          <button
+            className={styles.waBoton}
+            onClick={() => {
+              setShowDeudaImpresionModal(false);
+              setShowPagoModal(true);
+            }}
+          >
+            Ver Detalles de Pago
+          </button>
+        </div>
+      </HojaInferior>
+
+      <HojaInferior
+        abierta={showHistorialModal}
+        titulo="Historial de Pagos"
+        onCerrar={() => setShowHistorialModal(false)}
+      >
+        <HistorialPagos pedido={pedido} />
+      </HojaInferior>
+
+      {/* Pagar saldo: el mismo contenido (Culqi, PayPal, Yape/Plin, comprobante);
+          solo cambia la ventana. pagosViejo vuelve al Modal de antes. */}
+      {pagosViejo ? (
+        <Modal isOpen={showPagoModal} title="Pagar Saldo Pendiente" onClose={() => setShowPagoModal(false)}>
+          {contenidoPago}
+        </Modal>
+      ) : (
+        <HojaInferior abierta={showPagoModal} titulo="Pagar Saldo Pendiente" onCerrar={() => setShowPagoModal(false)}>
+          {contenidoPago}
+        </HojaInferior>
+      )}
+
+      <HojaInferior
+        abierta={showBoletaModal}
+        titulo={`Boleta del Pedido #${pedido.id}`}
+        onCerrar={() => setShowBoletaModal(false)}
       >
         <div style={{ padding: '1rem', textAlign: 'center' }}>
           {loadingBoletas ? (
@@ -442,12 +455,12 @@ const PedidoAcciones = ({ pedido, estado }) => {
             </div>
           )}
         </div>
-      </Modal>
+      </HojaInferior>
 
-      <Modal
-        isOpen={showBoletasEnvioModal}
-        title="Fotos de envío"
-        onClose={() => setShowBoletasEnvioModal(false)}
+      <HojaInferior
+        abierta={showBoletasEnvioModal}
+        titulo="Fotos de envío"
+        onCerrar={() => setShowBoletasEnvioModal(false)}
       >
         <div style={{ padding: '1rem', textAlign: 'center' }}>
           {loadingBoletasEnvio ? (
@@ -467,7 +480,7 @@ const PedidoAcciones = ({ pedido, estado }) => {
             <p><T>Aún no hay boletas adjuntas.</T></p>
           )}
         </div>
-      </Modal>
+      </HojaInferior>
     </>
   );
 };

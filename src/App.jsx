@@ -4,6 +4,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } f
 import { ProveedorEnlaces } from './componentes/kit/Enlace';
 // Y traducen sus textos con el mismo motor que <T> (en español no hace nada).
 import { ProveedorTraduccion } from './componentes/kit/Traduccion';
+// Una sola ventana de Confirmar para toda la tienda (useConfirmar en vez de confirm()).
+import { ProveedorConfirmar } from './componentes/kit/Feedback';
 import { useTranslatedText, useTranslatedHtml } from './i18n/useTranslatedText';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -373,6 +375,7 @@ function App() {
                         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                          <ProveedorEnlaces componente={Link}>
                          <ProveedorTraduccion texto={useTranslatedText} html={useTranslatedHtml}>
+                         <ProveedorConfirmar>
                           <CustomFontsInjector routeFonts />
                           <DeepLinkHandler />
                           <ScrollToTop />
@@ -583,6 +586,7 @@ function App() {
                               </Suspense>
                             </ErrorBoundary>
                           </GlobalLayout>
+                         </ProveedorConfirmar>
                          </ProveedorTraduccion>
                          </ProveedorEnlaces>
                         </Router>

@@ -11,7 +11,7 @@ import { LOGO_URL } from '../utils/constants';
 import { validateDNI, validateCE, validatePhone, validateDocInternacional, getPasswordRequirements, isPasswordValid } from '../utils/helpers';
 import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
-import Modal from '../components/common/Modal/Modal';
+import { Confirmar } from '../componentes/kit/Feedback';
 import { EyeIcon, EyeOffIcon } from '../components/common/Icons/Icons';
 import CountrySelect from '../components/intl/CountrySelect';
 import PhoneIntlInput from '../components/intl/PhoneIntlInput';
@@ -501,23 +501,16 @@ const RegisterPage = () => {
           </div>
         </div>
       </div>
-      <Modal
-        isOpen={confirmModalOpen}
-        onClose={() => setConfirmModalOpen(false)}
-        title="¿Tus datos son correctos?"
-      >
-        <p className={styles.modalText}>
-          <T>Usaremos tu documento y tu teléfono para rastrear tus pedidos. Revisa que estén bien antes de continuar.</T>
-        </p>
-        <div className={styles.modalActions}>
-          <Button type="button" variant="secondary" onClick={() => setConfirmModalOpen(false)}>
-            <T>Revisar</T>
-          </Button>
-          <Button type="button" variant="primary" onClick={handleConfirmRegister}>
-            <T>Sí, registrarme</T>
-          </Button>
-        </div>
-      </Modal>
+      {/* Con el kit (paso 3 de la migración): antes era el Modal común. */}
+      <Confirmar
+        abierta={confirmModalOpen}
+        titulo="¿Tus datos son correctos?"
+        texto="Usaremos tu documento y tu teléfono para rastrear tus pedidos. Revisa que estén bien antes de continuar."
+        cancelar="Revisar"
+        confirmar="Sí, registrarme"
+        onCancelar={() => setConfirmModalOpen(false)}
+        onConfirmar={handleConfirmRegister}
+      />
     </div>
   );
 };
