@@ -292,8 +292,21 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* "¡Agregado!": el check entra con un golpe. */
+.hecho {
+  animation: golpe var(--dur-media) var(--ease-signature);
+}
+
+@keyframes golpe {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-25deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .descuento {
+  .descuento,
+  .hecho {
     animation: none;
   }
 

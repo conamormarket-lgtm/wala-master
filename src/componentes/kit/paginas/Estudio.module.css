@@ -186,6 +186,43 @@
   text-align: center;
 }
 
+/* Celular: una sola fila (guardar y descargar como íconos, y agregar), como
+   la tienda. El total ya está arriba, junto al nombre de la prenda. */
+@media (max-width: 959px) {
+  .compra {
+    display: flex;
+    align-items: center;
+  }
+
+  .compra > :global(*) {
+    flex-shrink: 0;
+  }
+
+  .compra > :nth-child(2) {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .compraPrecio,
+  .compraNota,
+  .textoAccion,
+  .precioBoton {
+    display: none;
+  }
+
+  .compraOtras {
+    order: -1;
+    flex-wrap: nowrap;
+  }
+
+  /* Guardar y descargar: cuadrados, del alto del botón de agregar. */
+  .accionIcono {
+    width: 46px;
+    min-height: 46px;
+    padding: 0;
+  }
+}
+
 .aviso {
   min-width: 0;
 }

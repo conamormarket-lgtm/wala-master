@@ -4,13 +4,14 @@ import {
   Copy, ArrowUpToLine, ArrowDownToLine, RotateCw, FlipHorizontal, Crop, Eraser, Maximize2,
   AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
   AlignLeft, AlignCenter, AlignRight, LoaderCircle, CheckCircle2, AlertTriangle,
-  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter, Pencil, Hand,
+  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter, Pencil, Hand, Sparkles,
 } from 'lucide-react';
 import Boton from '../Boton';
 import Acordeon from '../Acordeon';
 import { Chip } from '../Etiquetas';
 import { Campo, Cantidad, Casilla, Deslizador, Interruptor, SelectorColor } from '../Formulario';
 import { Sello } from '../Marca';
+import { BarraProgreso } from './BarraProgreso';
 import { TituloEditable } from './Ficha';
 import { imanAlMover, imanAlEscalar, enCm } from '../../../utils/guiasInteligentes';
 import s from './Estudio.module.css';
@@ -1026,16 +1027,65 @@ export function BarraLienzo({
   );
 }
 
-/** Un paso del panel, con su número en un sello. */
-export function PasoEstudio({ numero, titulo, detalle, children }) {
+/**
+ * Un paso del panel, con su número en un sello. Hecho, el sello pasa a menta
+ * con un check: se ve de un vistazo cuánto falta.
+ */
+export function PasoEstudio({ numero, titulo, detalle, hecho = false, children }) {
   return (
-    <section className={s.paso} data-componente="PasoEstudio">
+    <section className={[s.paso, hecho && s.pasoHecho].filter(Boolean).join(' ')} data-componente="PasoEstudio">
       <h2 className={s.pasoTitulo}>
-        <Sello tamano={30} girar={numero % 2 ? -8 : 6}><b className={s.pasoNumero}>{numero}</b></Sello>
-        <span>{titulo}{detalle && <em>: {detalle}</em>}</span>
+        <Sello tamano={30} girar={numero % 2 ? -8 : 6} tono={hecho ? 'menta' : 'degradado'}>
+          {hecho ? <Check key="hecho" className={s.pasoCheck} aria-hidden="true" /> : <b className={s.pasoNumero}>{numero}</b>}
+        </Sello>
+        <span>{titulo}{detalle && <em>: {detalle}</em>}{hecho && <span className={s.oculto}> (listo)</span>}</span>
       </h2>
       {children}
     </section>
+  );
+}
+
+/**
+ * Una opción grande con su sello: agregar una imagen o un texto, quitar el
+ * fondo, recortar. La misma tarjeta punteada en el paso 3 y en el panel.
+ *  - icono · tono (del Sello) · girar · titulo · detalle · onClick · disabled
+ */
+export function OpcionSello({ icono, tono, girar = -8, titulo, detalle, onClick, disabled = false }) {
+  return (
+    <button type="button" className={s.agregarOpcion} onClick={onClick} disabled={disabled}>
+      <Sello tamano={42} girar={girar} tono={tono}>{icono}</Sello>
+      <strong>{titulo}</strong>
+      {detalle && <small>{detalle}</small>}
+    </button>
+  );
+}
+
+const NIVELES_CALIDAD = {
+  baja: { paso: 1, nombre: 'Borrosa', texto: 'Se verá borrosa a este tamaño. Achícala o usa una imagen más grande.', tono: 'mal' },
+  regular: { paso: 2, nombre: 'Aceptable', texto: 'Si la achicas un poco se verá más nítida.', tono: 'aviso' },
+  buena: { paso: 3, nombre: 'Nítida', texto: 'Se imprimirá con buena calidad.', tono: 'ok' },
+};
+NIVELES_CALIDAD.aceptable = NIVELES_CALIDAD.regular;
+
+/**
+ * Cómo se imprimirá una imagen a su tamaño: una barra de tres tramos
+ * (borrosa · aceptable · nítida) y, si no está nítida, "Dejarla nítida", que
+ * la achica justo hasta el tamaño en que se ve bien.
+ *  - calidad: 'baja' | 'regular' | 'aceptable' | 'buena' · onNitida()
+ */
+export function MedidorCalidad({ calidad, onNitida }) {
+  const n = NIVELES_CALIDAD[calidad];
+  if (!n) return null;
+  return (
+    <div className={[s.medidor, s[`medidor_${n.tono}`]].join(' ')} data-componente="MedidorCalidad">
+      <BarraProgreso pasos max={3} valor={n.paso} texto={<>Calidad de impresión: <strong>{n.nombre}</strong></>} />
+      <div className={s.medidorPie}>
+        <p>{n.texto}</p>
+        {n.paso < 3 && onNitida && (
+          <Boton variante="contorno" tamano="sm" icono={<Sparkles aria-hidden="true" />} onClick={onNitida}>Dejarla nítida</Boton>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -1047,15 +1097,15 @@ export function PasoEstudio({ numero, titulo, detalle, children }) {
  *  - lados: [{ nombre, zonas: [{ id, nombre, conDiseno }] }] · zona · onZona(id)
  *  - onImagen, onTexto · subiendo · donde: "Frente · Pecho"
  */
-export function PasosEstudio({ colores = [], color, onColor, invertir, lados = [], zona, onZona, onImagen, onTexto, subiendo = false, donde }) {
+export function PasosEstudio({ colores = [], color, onColor, invertir, lados = [], zona, onZona, onImagen, onTexto, subiendo = false, donde, conDiseno = false }) {
   const actual = colores.find((c) => c.id === color);
   return (
     <div className={s.pasos} data-componente="PasosEstudio">
-      <PasoEstudio numero={1} titulo="Elige el color" detalle={actual?.nombre}>
+      <PasoEstudio numero={1} titulo="Elige el color" detalle={actual?.nombre} hecho={Boolean(actual)}>
         <SelectorColor etiqueta="Color de la prenda" colores={colores} valor={actual?.nombre} onChange={(nombre) => onColor?.(colores.find((c) => c.nombre === nombre)?.id)} />
         {invertir && <Interruptor activo={invertir.activo} onChange={invertir.onCambiar} etiqueta="Invertir colores" descripcion={invertir.texto} />}
       </PasoEstudio>
-      <PasoEstudio numero={2} titulo="¿Dónde va tu diseño?">
+      <PasoEstudio numero={2} titulo="¿Dónde va tu diseño?" hecho={Boolean(zona)}>
         {lados.map((l) => (
           <div key={l.nombre} className={s.lado}>
             <span className={s.ladoNombre}>{l.nombre}</span>
@@ -1069,18 +1119,10 @@ export function PasosEstudio({ colores = [], color, onColor, invertir, lados = [
           </div>
         ))}
       </PasoEstudio>
-      <PasoEstudio numero={3} titulo="Agrega tu imagen o tu texto">
+      <PasoEstudio numero={3} titulo="Agrega tu imagen o tu texto" hecho={conDiseno}>
         <div className={s.agregar}>
-          <button type="button" className={s.agregarOpcion} onClick={onImagen} disabled={subiendo}>
-            <Sello tamano={42} girar={-8}><ImagePlus aria-hidden="true" /></Sello>
-            <strong>Subir imagen</strong>
-            <small>Una foto o un logo</small>
-          </button>
-          <button type="button" className={s.agregarOpcion} onClick={onTexto}>
-            <Sello tamano={42} girar={6} tono="rosa"><Type aria-hidden="true" /></Sello>
-            <strong>Escribir texto</strong>
-            <small>Un nombre o una frase</small>
-          </button>
+          <OpcionSello icono={<ImagePlus aria-hidden="true" />} titulo="Subir imagen" detalle="Una foto o un logo" onClick={onImagen} disabled={subiendo} />
+          <OpcionSello icono={<Type aria-hidden="true" />} tono="rosa" girar={6} titulo="Escribir texto" detalle="Un nombre o una frase" onClick={onTexto} />
         </div>
         {donde && <p className={s.donde}>{subiendo ? 'Subiendo tu imagen…' : <>Se agrega en: <strong>{donde}</strong></>}</p>}
       </PasoEstudio>
@@ -1267,20 +1309,15 @@ export const ALINEAR = [
  *    lo elegido, como en la tienda)
  */
 export function PanelCapa({
-  capa, zona, onCambiar, onListo, fuentes = [], calidad,
-  onAchicar, onAgrandar, onCentrar, onAlinear, onQuitar, onDuplicar, onAdelante, onAtras,
+  capa, zona, onCambiar, onListo, fuentes = [], calidad, onNitida,
+  onCentrar, onAlinear, onQuitar, onDuplicar, onAdelante, onAtras,
   onRecortar, onQuitarFondo, onLlenar, zonas = [], onPasarAZona, sinSesion = false,
   anchoZonaCm, fueraDeZona = false, onImagen, onTexto,
 }) {
   if (!capa) return null;
   const imagen = capa.tipo === 'imagen';
   const tamano = capa.tamano ?? 0.18;
-  const CALIDAD = {
-    buena: ['ok', 'Se imprimirá con buena calidad.'],
-    aceptable: ['aviso', 'Calidad aceptable. Si la achicas un poco se verá más nítida.'],
-    regular: ['aviso', 'Calidad aceptable. Si la achicas un poco se verá más nítida.'],
-    baja: ['mal', 'Se verá borrosa a este tamaño. Achícala o usa una imagen más grande.'],
-  }[calidad];
+  const ancho = capa.ancho ?? 0.8;
   return (
     <div className={s.panelCapa} data-componente="PanelCapa">
       <header className={s.panelCabeza}>
@@ -1288,10 +1325,14 @@ export function PanelCapa({
           <h2 className={s.panelTitulo}>{imagen ? 'Tu imagen' : 'Tu texto'} <em>en {zona}</em></h2>
           <p className={s.panelAyuda}>Los cambios se ven en la prenda al instante.</p>
         </div>
-        <Boton tamano="sm" icono={<Check aria-hidden="true" />} onClick={onListo}>Listo</Boton>
+        {/* Quitar, aparte y como ícono: lejos de lo que se toca seguido. */}
+        <span className={s.panelAcciones}>
+          <Boton variante="fantasma" tamano="sm" soloIcono aria-label="Quitar" title="Quitar (Supr)" icono={<Trash2 aria-hidden="true" />} onClick={onQuitar} className={s.peligro} />
+          <Boton tamano="sm" icono={<Check aria-hidden="true" />} onClick={onListo}>Listo</Boton>
+        </span>
       </header>
 
-      {imagen && CALIDAD && <p className={[s.calidad, s[`calidad_${CALIDAD[0]}`]].join(' ')}>{CALIDAD[1]}</p>}
+      {imagen && <MedidorCalidad calidad={calidad} onNitida={onNitida} />}
       {fueraDeZona && <p className={[s.calidad, s.calidad_aviso].join(' ')}>Una parte queda fuera de la zona y no se imprimirá.</p>}
 
       {!imagen && (
@@ -1342,28 +1383,53 @@ export function PanelCapa({
         </>
       )}
 
-      <div className={s.grupoCampo}>
-        <span className={s.rotulo}>Ajustar</span>
-        <span className={s.chips}>
-          <Boton variante="contorno" tamano="sm" icono={<Minus aria-hidden="true" />} onClick={onAchicar}>Achicar</Boton>
-          <Boton variante="contorno" tamano="sm" icono={<Plus aria-hidden="true" />} onClick={onAgrandar}>Agrandar</Boton>
-          <Boton variante="contorno" tamano="sm" icono={<Crosshair aria-hidden="true" />} onClick={onCentrar}>Centrar</Boton>
-          {imagen && <Boton variante="contorno" tamano="sm" icono={<Eraser aria-hidden="true" />} onClick={onQuitarFondo} disabled={sinSesion}>Quitar fondo</Boton>}
-          {imagen && <Boton variante="contorno" tamano="sm" icono={<Crop aria-hidden="true" />} onClick={onRecortar} disabled={sinSesion}>Recortar</Boton>}
-          {imagen && <Boton variante="contorno" tamano="sm" icono={<Maximize2 aria-hidden="true" />} onClick={onLlenar}>Llenar zona</Boton>}
-          {/* De 90° en 90°, como la tecla R de la tienda. */}
-          <Boton variante="contorno" tamano="sm" icono={<RotateCw aria-hidden="true" />} onClick={() => onCambiar?.({ angulo: (Math.round((capa.angulo || 0) / 90) * 90 + 90) % 360 })}>Girar</Boton>
-          <Boton variante="contorno" tamano="sm" icono={<Trash2 aria-hidden="true" />} onClick={onQuitar} className={s.peligro}>Quitar</Boton>
-        </span>
-        {sinSesion && imagen && <span className={s.nota}>Inicia sesión para recortar o quitar el fondo.</span>}
-      </div>
+      {imagen && (
+        <>
+          {/* El tamaño en un solo control (en cm de la prenda si la zona tiene medida). */}
+          <div className={s.grupoCampo}>
+            <span className={s.rotulo}>{anchoZonaCm ? 'Ancho de la imagen' : 'Tamaño'}</span>
+            {anchoZonaCm ? (
+              <Cantidad
+                editable
+                etiqueta="Ancho de la imagen en centímetros"
+                valor={Math.round(ancho * anchoZonaCm * 10) / 10}
+                min={1}
+                max={Math.round(anchoZonaCm * 2)}
+                paso={1}
+                decimales={1}
+                sufijo="cm"
+                onChange={(cm) => onCambiar?.({ ancho: cm / anchoZonaCm })}
+              />
+            ) : (
+              <Cantidad editable etiqueta="Tamaño de la imagen" valor={Math.round(ancho * 100)} min={5} max={200} paso={5} sufijo="%" onChange={(v) => onCambiar?.({ ancho: v / 100 })} />
+            )}
+          </div>
+          <div className={s.grupoCampo}>
+            <span className={s.rotulo}>Arreglar la imagen</span>
+            <div className={s.agregar}>
+              <OpcionSello icono={<Eraser aria-hidden="true" />} tono="rosa" titulo="Quitar fondo" detalle="Deja solo lo importante" onClick={onQuitarFondo} disabled={sinSesion} />
+              <OpcionSello icono={<Crop aria-hidden="true" />} girar={6} titulo="Recortar" detalle="Elige qué parte va" onClick={onRecortar} disabled={sinSesion} />
+            </div>
+            {sinSesion && <span className={s.nota}>Inicia sesión para recortar o quitar el fondo.</span>}
+          </div>
+        </>
+      )}
 
       <div className={s.grupoCampo}>
-        <span className={s.rotulo}>Alinear en la zona</span>
-        <span className={s.alinear}>
-          {ALINEAR.map(([id, Icono, texto]) => (
-            <Boton key={id} variante="contorno" tamano="sm" soloIcono aria-label={texto} title={texto} icono={<Icono aria-hidden="true" />} onClick={() => onAlinear?.(id)} />
-          ))}
+        <span className={s.rotulo}>Acomodar en la zona</span>
+        {/* Dos bloques (acomodar | alinear) que bajan de línea enteros. */}
+        <span className={s.acomodar}>
+          <span className={s.grupoIconos}>
+            <Boton variante="contorno" tamano="sm" soloIcono aria-label="Centrar" title="Centrar (C)" icono={<Crosshair aria-hidden="true" />} onClick={onCentrar} />
+            {imagen && <Boton variante="contorno" tamano="sm" soloIcono aria-label="Llenar zona" title="Llenar zona" icono={<Maximize2 aria-hidden="true" />} onClick={onLlenar} />}
+            {/* De 90° en 90°, como la tecla R de la tienda. */}
+            <Boton variante="contorno" tamano="sm" soloIcono aria-label="Girar" title="Girar (R)" icono={<RotateCw aria-hidden="true" />} onClick={() => onCambiar?.({ angulo: (Math.round((capa.angulo || 0) / 90) * 90 + 90) % 360 })} />
+          </span>
+          <span className={s.grupoIconos}>
+            {ALINEAR.map(([id, Icono, texto]) => (
+              <Boton key={id} variante="contorno" tamano="sm" soloIcono aria-label={texto} title={texto} icono={<Icono aria-hidden="true" />} onClick={() => onAlinear?.(id)} />
+            ))}
+          </span>
         </span>
       </div>
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
+import { UNIDADES_ZONA } from '../../utils/prendaBase';
 import styles from './TamanoLetra.module.css';
 
 /**
@@ -8,16 +9,24 @@ import styles from './TamanoLetra.module.css';
  * o escribiendo el número. El texto se achica solo si no entra en su zona
  * (editarCapa), así que un número muy grande queda en lo que entra.
  *
+ * Con `imagen`, el ancho de una imagen: en cm de la prenda, o en % del ancho
+ * de la zona si no tiene medida (como el tamaño de la imagen en el kit).
+ *
  *   <TamanoLetra capa={capa} cmPorUnidad={n} onCambiar={(escala) => …} />
+ *   <TamanoLetra imagen capa={capa} cmPorUnidad={n} onCambiar={(escala) => …} />
  */
-const TamanoLetra = ({ capa, cmPorUnidad = 0, onCambiar }) => {
+const TamanoLetra = ({ capa, cmPorUnidad = 0, onCambiar, imagen = false }) => {
   const enCm = cmPorUnidad > 0;
-  const base = capa.tamano || 90;
-  const escala = Math.abs(capa.escalaY || 1);
-  // Lo que se muestra: cm con un decimal, o puntos enteros.
-  const valor = enCm ? Math.round(base * escala * cmPorUnidad * 10) / 10 : Math.round(base * escala);
-  const paso = enCm ? 0.5 : 5;
-  const minimo = enCm ? 0.3 : 5;
+  const base = imagen ? capa.anchoNatural || 1 : capa.tamano || 90;
+  const escala = Math.abs((imagen ? capa.escalaX : capa.escalaY) || 1);
+  // Lo que se muestra: cm con un decimal, o puntos enteros (o % de la zona, una imagen).
+  const enUnidad = (unidades) => (enCm ? Math.round(unidades * cmPorUnidad * 10) / 10 : imagen ? Math.round((unidades / UNIDADES_ZONA) * 100) : Math.round(unidades));
+  const aUnidades = (v) => (enCm ? v / cmPorUnidad : imagen ? (v / 100) * UNIDADES_ZONA : v);
+  const valor = enUnidad(base * escala);
+  const paso = enCm ? (imagen ? 1 : 0.5) : 5;
+  const minimo = enCm ? (imagen ? 1 : 0.3) : 5;
+  const sufijo = enCm ? 'cm' : imagen ? '%' : 'pt';
+  const nombre = imagen ? 'Ancho de la imagen' : 'Tamaño de letra';
   const [texto, setTexto] = useState(String(valor));
   useEffect(() => { setTexto(String(valor)); }, [valor]);
 
@@ -27,8 +36,7 @@ const TamanoLetra = ({ capa, cmPorUnidad = 0, onCambiar }) => {
       return;
     }
     const limpio = Math.max(minimo, nuevo);
-    const unidades = enCm ? limpio / cmPorUnidad : limpio;
-    onCambiar(unidades / base);
+    onCambiar(aUnidades(limpio) / base);
   };
   const confirmar = () => fijar(Number(String(texto).replace(',', '.')));
   // Con − / + se va al siguiente múltiplo del paso (4.3 → 4.5 → 5).
@@ -36,8 +44,8 @@ const TamanoLetra = ({ capa, cmPorUnidad = 0, onCambiar }) => {
   const bajar = () => fijar((Math.ceil(valor / paso - 1e-6) - 1) * paso);
 
   return (
-    <div className={styles.tamano} role="group" aria-label="Tamaño de letra">
-      <button type="button" className={styles.boton} onClick={bajar} disabled={valor <= minimo} aria-label="Letra más chica">
+    <div className={styles.tamano} role="group" aria-label={nombre}>
+      <button type="button" className={styles.boton} onClick={bajar} disabled={valor <= minimo} aria-label={imagen ? 'Más chica' : 'Letra más chica'}>
         <Minus size={16} aria-hidden="true" />
       </button>
       <label className={styles.campo}>
@@ -54,11 +62,11 @@ const TamanoLetra = ({ capa, cmPorUnidad = 0, onCambiar }) => {
               e.currentTarget.blur();
             }
           }}
-          aria-label={enCm ? 'Alto de la letra en centímetros' : 'Tamaño de la letra'}
+          aria-label={imagen ? `${nombre}${enCm ? ' en centímetros' : ' en % de la zona'}` : enCm ? 'Alto de la letra en centímetros' : 'Tamaño de la letra'}
         />
-        <span>{enCm ? 'cm' : 'pt'}</span>
+        <span>{sufijo}</span>
       </label>
-      <button type="button" className={styles.boton} onClick={subir} aria-label="Letra más grande">
+      <button type="button" className={styles.boton} onClick={subir} aria-label={imagen ? 'Más grande' : 'Letra más grande'}>
         <Plus size={16} aria-hidden="true" />
       </button>
     </div>

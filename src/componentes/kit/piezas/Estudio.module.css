@@ -264,6 +264,22 @@
   font-weight: 900;
 }
 
+/* Paso hecho: el check entra con un golpe de sello. */
+.pasoCheck {
+  width: 1rem;
+  height: 1rem;
+  color: #fff;
+  stroke-width: 3.2;
+  animation: sellar var(--dur-media) var(--ease-signature);
+}
+
+@keyframes sellar {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-25deg);
+  }
+}
+
 .lado {
   display: grid;
   gap: 0.4rem;
@@ -527,6 +543,73 @@
   gap: 0.3rem;
 }
 
+/* Centrar, llenar, girar | alinear: una fila de íconos (baja de línea si no entra). */
+.acomodar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.9rem;
+}
+
+.grupoIconos {
+  display: inline-flex;
+  gap: 0.3rem;
+}
+
+.panelAcciones {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+/* ── La calidad de impresión (MedidorCalidad) ─────────────── */
+.medidor {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 6px 16px 16px 16px;
+  --bp-texto: var(--color-text);
+}
+
+.medidor_ok {
+  --bp-relleno: #10b981;
+  --bp-acento: #047857;
+  background: rgba(16, 185, 129, 0.09);
+}
+
+.medidor_aviso {
+  --bp-relleno: #f59e0b;
+  --bp-acento: var(--gold-text, #92400e);
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.medidor_mal {
+  --bp-relleno: #e11d48;
+  --bp-acento: var(--danger, #b91c1c);
+  background: var(--danger-soft, rgba(220, 38, 38, 0.09));
+}
+
+:global([data-theme='dark']) .medidor_ok { --bp-acento: #6ee7b7; }
+:global([data-theme='dark']) .medidor_aviso { --bp-acento: #fcd34d; }
+:global([data-theme='dark']) .medidor_mal { --bp-acento: #fda4af; }
+
+.medidorPie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.medidorPie p {
+  flex: 1 1 12rem;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
 .mas {
   display: grid;
   gap: 0.8rem;
@@ -534,6 +617,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .pasoCheck {
+    animation: none;
+  }
+
   .lienzoEscala,
   .agregarOpcion,
   .agregarOpcion > span:first-child,

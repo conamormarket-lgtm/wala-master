@@ -18,6 +18,7 @@ import { CARAS_KAPI } from '../piezas/Flotantes';
 import { RecortarFoto } from '../piezas/RecortarFoto';
 import { QuitarFondo } from '../piezas/QuitarFondo';
 import { MenuContextual } from '../piezas/MenuContextual';
+import { useAgregado, IconoAgregar } from '../piezas/Ficha';
 import {
   LienzoPrenda, BarraLienzo, PasosEstudio, PanelCapa, PanelVarios, EstadoEdicion, AtajosEstudio, GuiaGestos, zoomVecino, NIVELES_ZOOM,
 } from '../piezas/Estudio';
@@ -69,12 +70,15 @@ const nombreZona = (z) => (!z ? '' : z.nombre === z.vista.nombre ? z.nombre : `$
  * en el archivo de impresión. Con la medida real de la zona, a 300 dpi; sin
  * ella, la zona entera son 3600 px.
  */
+const anchoZonaPx = (zona) => (zona.anchoCm > 0 ? (zona.anchoCm / 2.54) * 300 : 3600);
 const calidadPorDefecto = (capa, zona) => {
   if (capa?.tipo !== 'imagen' || !capa.px || !zona) return undefined;
-  const anchoZonaPx = zona.anchoCm > 0 ? (zona.anchoCm / 2.54) * 300 : 3600;
-  const estiramiento = ((capa.ancho ?? 0.8) * anchoZonaPx) / capa.px;
+  const estiramiento = ((capa.ancho ?? 0.8) * anchoZonaPx(zona)) / capa.px;
   return estiramiento <= 1.5 ? 'buena' : estiramiento <= 2.5 ? 'regular' : 'baja';
 };
+
+/** El ancho (en fracción de la zona) hasta el que una imagen se ve nítida: la misma regla. */
+const anchoNitidoPorDefecto = (capa, zona) => (capa?.px && zona ? (1.5 * capa.px) / anchoZonaPx(zona) : null);
 
 /** alto / ancho de una imagen: el que trae, o se mide al cargarla (null si no carga). */
 const medirAspecto = (src) => new Promise((listo) => {
@@ -142,6 +146,9 @@ const reubicarTrasCorte = (capa, corte, natural, proporcion = 1) => {
  *  - onUsarEnCombo(diseno, { copiarA: [n] }) · urlVolver, urlLogin, urlCreaciones
  *  - procesando: texto de lo que está haciendo la tienda (una capa de espera)
  *  - estado: 'cargando' | 'error' | 'noDisponible' · onReintentar · urlCrear
+ *  - anchoNitidoDe(capa, zona) → hasta qué ancho (fracción de la zona) se ve
+ *    nítida una imagen: "Dejarla nítida". La tienda pasa el suyo si cambia la
+ *    regla de calidad.
  *  - calidadDe(capa, zona) → 'buena' | 'regular' | 'baja' y fueraDeZona(capa,
  *    zona) → bool: la tienda pasa los suyos (calidadDeCapa y el límite de
  *    fabric); sin ellos, una aproximación con la medida de la zona
@@ -170,7 +177,7 @@ export function PaginaEstudio({
   onSubirImagen, onQuitarFondo, onGuardar, onAgregar, onDescargar, onUsarEnCombo,
   urlVolver = '/personalizar', urlLogin = '/login', urlRegistro = '/registro', urlCreaciones = '/cuenta/creaciones',
   estado, onReintentar, urlCrear = '/personalizar',
-  calidadDe = calidadPorDefecto, fueraDeZona = fueraPorDefecto, motorFondo, onImagenEditada,
+  calidadDe = calidadPorDefecto, anchoNitidoDe = anchoNitidoPorDefecto, fueraDeZona = fueraPorDefecto, motorFondo, onImagenEditada,
   requiereSesion = { imagen: true, carrito: true },
   esBorrador = false, estadoBorrador = 'guardado', onRenombrar, onEmpezarNuevo,
   agotado = false, borradorAdmin = false, etiquetaVolver = 'Volver', onAviso, procesando,
@@ -205,6 +212,7 @@ export function PaginaEstudio({
   const [nombre, setNombre] = useState(inicial.nombre || '');
   const [hoja, setHoja] = useState(null);
   const [ocupado, setOcupado] = useState(null);
+  const [agregado, marcarAgregado] = useAgregado();
   const [talla, setTalla] = useState(null);
   const [cantidad, setCantidad] = useState(1);
   const [recortando, setRecortando] = useState(null);
@@ -329,6 +337,13 @@ export function PaginaEstudio({
    * ENTERA en su zona, centrada y derecha. Antes solo llenaba el ancho y una
    * imagen más alta que la zona se salía arriba y abajo.
    */
+  /** "Dejarla nítida": la achica justo hasta el ancho en que se imprime bien (en su lugar). */
+  const dejarNitida = (id) => {
+    const { capa, zonaId: zid } = ubicar(id);
+    const nitido = anchoNitidoDe(capa, todasLasZonas.find((z) => z.id === zid));
+    if (capa && nitido) cambiarCapa(id, { ancho: Math.min(capa.ancho ?? 0.8, nitido) });
+  };
+
   const llenarZona = async (id) => {
     const { capa, zonaId } = ubicar(id);
     if (!capa) return;
@@ -596,7 +611,10 @@ export function PaginaEstudio({
       const r = await onSubirImagen(archivo instanceof Blob ? archivo : undefined);
       // Sin aspecto de la tienda, se mide: lo necesitan "Llenar zona", las guías y el aviso de fuera de zona.
       const aspecto = r?.src ? r.aspecto || await medirAspecto(r.src) : null;
-      if (r?.src) agregarCapa({ tipo: 'imagen', src: r.src, px: r.px, aspecto: aspecto || undefined, ancho: (capas[zid] || []).length ? 0.5 : 0.8 }, { zid });
+      // Entra entera en su zona, como en la tienda: el 80% (o la mitad si ya hay algo) del ancho o del alto.
+      const base = (capas[zid] || []).length ? 0.5 : 0.8;
+      const ancho = aspecto ? Math.min(base, (base * proporcionDe(zid)) / aspecto) : base;
+      if (r?.src) agregarCapa({ tipo: 'imagen', src: r.src, px: r.px, aspecto: aspecto || undefined, ancho }, { zid });
     } finally {
       setOcupado(null);
     }
@@ -1025,6 +1043,7 @@ export function PaginaEstudio({
     try {
       await onAgregar?.({ talla, cantidad, diseno });
       setHoja(null);
+      marcarAgregado();
     } finally {
       setOcupado(null);
     }
@@ -1069,7 +1088,9 @@ export function PaginaEstudio({
   ) : agotado ? (
     <Boton bloque disabled>Agotado por ahora</Boton>
   ) : (
-    <Boton bloque icono={<ShoppingBag aria-hidden="true" />} disabled={vacio || borradorAdmin} cargando={ocupado === 'agregando'} onClick={agregar}>Agregar al carrito · {soles(precio)}</Boton>
+    <Boton bloque icono={<IconoAgregar agregado={agregado} />} disabled={vacio || borradorAdmin} cargando={ocupado === 'agregando'} onClick={agregar}>
+      {agregado ? '¡Agregado!' : <>Agregar al carrito<span className={s.precioBoton}> · {soles(precio)}</span></>}
+    </Boton>
   );
 
   return (
@@ -1208,6 +1229,7 @@ export function PaginaEstudio({
                 zona={nombreZona(zonaElegida)}
                 fuentes={fuentes}
                 calidad={calidadDe(elegida.capa, zonaElegida)}
+                onNitida={() => dejarNitida(elegida.capa.id)}
                 fueraDeZona={fueraDeZona(elegida.capa, zonaElegida)}
                 anchoZonaCm={zonaElegida?.anchoCm}
                 sinSesion={!sesion}
@@ -1246,11 +1268,14 @@ export function PaginaEstudio({
                 onTexto={() => escribirTexto()}
                 subiendo={ocupado === 'subiendo'}
                 donde={nombreZona(zona)}
+                conDiseno={!vacio}
               />
             )}
           </div>
 
-          <div className={s.compra}>
+          {/* En el celular, pegada abajo en una fila: guardar y descargar como
+              íconos y agregar (como la tienda); los flotantes suben encima. */}
+          <div className={s.compra} data-compra-fija="">
             <div className={s.compraPrecio}>
               <span>{combo ? 'Precio en el combo' : 'Total'}</span>
               <strong>{combo ? 'Incluido' : soles(precio)}</strong>
@@ -1266,10 +1291,14 @@ export function PaginaEstudio({
                 cargando={ocupado === 'guardando' && hoja !== 'guardar'}
                 onClick={guardar}
                 title={hayCambios ? 'Guardar (Ctrl+S)' : 'No hay cambios por guardar'}
+                aria-label={yaGuardada && !hayCambios ? 'Guardado' : yaGuardada ? 'Guardar cambios' : 'Guardar'}
+                className={s.accionIcono}
               >
-                {yaGuardada && !hayCambios ? 'Guardado' : yaGuardada ? 'Guardar cambios' : 'Guardar'}
+                <span className={s.textoAccion}>{yaGuardada && !hayCambios ? 'Guardado' : yaGuardada ? 'Guardar cambios' : 'Guardar'}</span>
               </Boton>
-              <Boton variante="fantasma" tamano="sm" icono={<Download aria-hidden="true" />} disabled={vacio} onClick={() => onDescargar?.(diseno)}>Descargar</Boton>
+              <Boton variante="fantasma" tamano="sm" icono={<Download aria-hidden="true" />} disabled={vacio} onClick={() => onDescargar?.(diseno)} aria-label="Descargar" title="Descargar" className={s.accionIcono}>
+                <span className={s.textoAccion}>Descargar</span>
+              </Boton>
             </div>
             {vacio && <p className={s.compraNota}>Agrega una imagen o un texto para continuar.</p>}
           </div>

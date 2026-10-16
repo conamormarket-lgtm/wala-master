@@ -6,7 +6,7 @@ import { fabric } from 'fabric';
 import {
   ArrowLeft, ImagePlus, Images, Plus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
   Crosshair, Maximize2, RotateCw, Crop, Eraser, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info, Undo2, Redo2, Keyboard, Clipboard, ClipboardPaste, Pencil, Check, Minus, Hand, ZoomIn, ZoomOut, HelpCircle, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
-  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter, ArrowLeftRight,
+  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter, ArrowLeftRight, Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -20,7 +20,7 @@ import {
 import {
   UNIDADES_ZONA, leerPrendaBase, precioBase, precioPersonalizado, zonasConDiseno, listarZonas,
   calidadDeCapa, medidaZona, cargarImagen, fotoDeVista, fondoDeVista, textoSobre, esColorBlanco,
-  colorDisponible, tallasDeColor, slug, fondoMuestra, vistasDelColor,
+  colorDisponible, tallasDeColor, slug, fondoMuestra, vistasDelColor, pixelesDeImpresion,
 } from '../../utils/prendaBase';
 import {
   FUENTES, asegurarFuente, asegurarFuentesDe, altoEnUnidades, crearObjeto, leerTransformacion,
@@ -153,6 +153,20 @@ const capasParaGuardar = (capasPorZona) => {
 
 // El resorte del kit (Efectos.RESORTE): lo elegido viaja de una opción a otra.
 const RESORTE_ELEGIDO = { type: 'spring', stiffness: 420, damping: 34 };
+
+/** El número de un paso; hecho, un check sobre menta (como PasoEstudio del kit). */
+const NumeroPaso = ({ numero, hecho }) => (
+  <span className={`${styles.numeroPaso} ${hecho ? styles.numeroHecho : ''}`} aria-hidden="true">
+    {hecho ? <Check key="hecho" size={15} strokeWidth={3.2} className={styles.checkPaso} /> : numero}
+  </span>
+);
+
+/** La calidad de impresión en tres tramos (como MedidorCalidad del kit). */
+const NIVELES_CALIDAD = {
+  baja: { paso: 1, nombre: 'Borrosa', texto: 'Se verá borrosa a este tamaño. Achícala o usa una imagen más grande.' },
+  regular: { paso: 2, nombre: 'Aceptable', texto: 'Si la achicas un poco se verá más nítida.' },
+  buena: { paso: 3, nombre: 'Nítida', texto: 'Se imprimirá con buena calidad.' },
+};
 
 const CrearStudioPage = () => {
   const { id } = useParams();
@@ -2390,6 +2404,16 @@ const CrearStudioPage = () => {
     });
   };
 
+  /** "Dejarla nítida": la achica justo hasta el ancho en que se imprime bien (calidadDeCapa). */
+  const dejarNitida = () => {
+    if (!capaSel || capaSel.type !== 'image' || !zonaSel) return;
+    const { ancho } = pixelesDeImpresion(zonaSel, medidaZona(zonaSel, vistaSel));
+    const nitida = (1.5 * UNIDADES_ZONA) / ancho;
+    if (!(nitida < Math.abs(capaSel.escalaX))) return;
+    asentarHistorial();
+    editarCapa(capaSel.id, { escalaX: nitida, escalaY: nitida });
+  };
+
   const ajustarAZona = () => {
     if (!capaSel || capaSel.type !== 'image' || !zonaSel) return;
     const escala = Math.min(UNIDADES_ZONA / capaSel.anchoNatural, altoEnUnidades(zonaSel) / capaSel.altoNatural);
@@ -3582,7 +3606,7 @@ const CrearStudioPage = () => {
           {/* Paso 1 — Color */}
           <section className={styles.seccion} aria-label="Color de la prenda">
             <h2 className={styles.paso}>
-              <span className={styles.numeroPaso} aria-hidden="true">1</span>
+              <NumeroPaso numero={1} hecho={Boolean(color)} />
               Elige el color
               <span className={styles.valor}>{color.nombre}</span>
             </h2>
@@ -3637,7 +3661,7 @@ const CrearStudioPage = () => {
           {/* Paso 2 — Dónde va (todas las zonas, de cada lado) */}
           <section className={styles.seccion} aria-label="Dónde va tu diseño">
             <h2 className={styles.paso}>
-              <span className={styles.numeroPaso} aria-hidden="true">2</span>
+              <NumeroPaso numero={2} hecho={Boolean(zona)} />
               ¿Dónde va tu diseño?
             </h2>
             {cfg.vistas.map((v) => (
@@ -3674,7 +3698,7 @@ const CrearStudioPage = () => {
           {/* Paso 3 — Agregar imagen o texto */}
           <section className={styles.seccion} aria-label="Agregar al diseño">
             <h2 className={styles.paso}>
-              <span className={styles.numeroPaso} aria-hidden="true">3</span>
+              <NumeroPaso numero={3} hecho={Object.values(capasPorZona).some((l) => l?.length)} />
               Agrega tu imagen o tu texto
             </h2>
             <div className={styles.agregar}>
@@ -3768,9 +3792,15 @@ const CrearStudioPage = () => {
                   {capaSel.type === 'image' ? 'Tu imagen' : 'Tu texto'}
                   {zonaSel && <span className={styles.valor}>en {zonaSel.nombre.toLowerCase()}</span>}
                 </h2>
-                <button type="button" className={styles.botonListo} onClick={terminarEdicion} title="Listo (Esc)">
-                  <Check size={16} aria-hidden="true" /> Listo
-                </button>
+                {/* Quitar, aparte y como ícono: lejos de lo que se toca seguido. */}
+                <span className={styles.accionesCabecera}>
+                  <button type="button" className={styles.botonQuitar} onClick={() => { asentarHistorial(); eliminar(); }} aria-label="Quitar" title="Quitar (Supr)">
+                    <Trash2 size={17} aria-hidden="true" />
+                  </button>
+                  <button type="button" className={styles.botonListo} onClick={terminarEdicion} title="Listo (Esc)">
+                    <Check size={16} aria-hidden="true" /> Listo
+                  </button>
+                </span>
               </div>
               <p className={styles.ayudaEditar}>
                 Los cambios se ven en la prenda al instante. Cuando termines, toca <strong>Listo</strong>.
@@ -3788,14 +3818,20 @@ const CrearStudioPage = () => {
                 </div>
               )}
 
-              {capaSel.type === 'image' && calidad && (
-                <div className={`${styles.calidad} ${styles[`calidad_${calidad}`]}`}>
-                  {calidad === 'buena' ? <CheckCircle2 size={16} aria-hidden="true" /> : <AlertTriangle size={16} aria-hidden="true" />}
-                  <span>
-                    {calidad === 'buena' && 'Se imprimirá con buena calidad.'}
-                    {calidad === 'regular' && 'Calidad aceptable. Si la achicas un poco se verá más nítida.'}
-                    {calidad === 'baja' && 'Se verá borrosa a este tamaño. Achícala o usa una imagen más grande.'}
+              {capaSel.type === 'image' && NIVELES_CALIDAD[calidad] && (
+                <div className={`${styles.medidor} ${styles[`medidor_${calidad}`]}`}>
+                  <span className={styles.medidorTitulo}>Calidad de impresión: <strong>{NIVELES_CALIDAD[calidad].nombre}</strong></span>
+                  <span className={styles.medidorPista} role="progressbar" aria-valuemin={0} aria-valuemax={3} aria-valuenow={NIVELES_CALIDAD[calidad].paso}>
+                    {[1, 2, 3].map((n) => <i key={n} className={n <= NIVELES_CALIDAD[calidad].paso ? styles.medidorOn : undefined} />)}
                   </span>
+                  <div className={styles.medidorPie}>
+                    <span>{NIVELES_CALIDAD[calidad].texto}</span>
+                    {calidad !== 'buena' && (
+                      <button type="button" className={styles.botonNitida} onClick={dejarNitida}>
+                        <Sparkles size={15} aria-hidden="true" /> Dejarla nítida
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -3866,31 +3902,54 @@ const CrearStudioPage = () => {
                 </>
               )}
 
-              {/* Lo que más se usa, a la vista; lo demás en "Más opciones". */}
-              <span className={styles.etiquetaCampo}>Ajustar</span>
-              <div className={styles.herramientas}>
-                <button type="button" className={styles.herramienta} onClick={() => escalar(1 / 1.12)} title="Achicar (-)"><Minus size={16} aria-hidden="true" />Achicar</button>
-                <button type="button" className={styles.herramienta} onClick={() => escalar(1.12)} title="Agrandar (+)"><Plus size={16} aria-hidden="true" />Agrandar</button>
-                <button type="button" className={styles.herramienta} onClick={centrar} title="Centrar (C)"><Crosshair size={16} aria-hidden="true" />Centrar</button>
-                {capaSel.type === 'image' ? (
-                  <>
-                    <button type="button" className={styles.herramienta} onClick={() => setQuitandoFondo(capaSel.id)} disabled={!user || capaSel.subiendo}><Eraser size={16} aria-hidden="true" />Quitar fondo</button>
-                    <button type="button" className={styles.herramienta} onClick={() => setRecortando(capaSel.id)} disabled={!user}><Crop size={16} aria-hidden="true" />Recortar</button>
-                    <button type="button" className={styles.herramienta} onClick={ajustarAZona}><Maximize2 size={16} aria-hidden="true" />Llenar zona</button>
-                  </>
-                ) : (
-                  <button type="button" className={styles.herramienta} onClick={() => girar(1)} title="Girar (R)"><RotateCw size={16} aria-hidden="true" />Girar</button>
-                )}
-                <button type="button" className={`${styles.herramienta} ${styles.herramientaPeligro}`} onClick={eliminar} title="Quitar (Supr)"><Trash2 size={16} aria-hidden="true" />Quitar</button>
-              </div>
+              {capaSel.type === 'image' && (
+                <>
+                  {/* El tamaño en un solo control (en cm de la prenda si la zona tiene medida). */}
+                  <span className={styles.etiquetaCampo}>{cmPorUnidadSel ? 'Ancho de la imagen' : 'Tamaño'}</span>
+                  <TamanoLetra
+                    imagen
+                    capa={capaSel}
+                    cmPorUnidad={cmPorUnidadSel}
+                    onCambiar={(escala) => editarCapa(capaSel.id, { escalaX: escala, escalaY: escala })}
+                  />
+                  <span className={styles.etiquetaCampo}>Arreglar la imagen</span>
+                  <div className={styles.agregar}>
+                    <button type="button" className={styles.botonAgregar} onClick={() => setQuitandoFondo(capaSel.id)} disabled={!user || capaSel.subiendo}>
+                      <Eraser size={22} aria-hidden="true" />
+                      <span className={styles.botonAgregarTexto}>
+                        <strong>Quitar fondo</strong>
+                        <small>Deja solo lo importante</small>
+                      </span>
+                    </button>
+                    <button type="button" className={styles.botonAgregar} onClick={() => setRecortando(capaSel.id)} disabled={!user}>
+                      <Crop size={22} aria-hidden="true" />
+                      <span className={styles.botonAgregarTexto}>
+                        <strong>Recortar</strong>
+                        <small>Elige qué parte va</small>
+                      </span>
+                    </button>
+                  </div>
+                  {!user && <span className={styles.notaSesion}>Inicia sesión para recortar o quitar el fondo.</span>}
+                </>
+              )}
 
-              <span className={styles.etiquetaCampo}>Alinear en la zona</span>
-              <div className={styles.alinearVarios} role="group" aria-label="Alinear en la zona">
-                {MODOS_ALINEAR.map(([modo, Icono, nombreAlinear]) => (
-                  <button key={modo} type="button" className={styles.botonAlinear} onClick={() => alinear(modo)} aria-label={`${nombreAlinear} de la zona`} title={`${nombreAlinear} de la zona`}>
-                    <Icono size={18} aria-hidden="true" />
-                  </button>
-                ))}
+              {/* Acomodar | alinear: dos bloques de íconos que bajan de línea enteros. */}
+              <span className={styles.etiquetaCampo}>Acomodar en la zona</span>
+              <div className={styles.acomodar} role="group" aria-label="Acomodar en la zona">
+                <span className={styles.grupoIconos}>
+                  <button type="button" className={styles.botonAlinear} onClick={centrar} aria-label="Centrar" title="Centrar (C)"><Crosshair size={18} aria-hidden="true" /></button>
+                  {capaSel.type === 'image' && (
+                    <button type="button" className={styles.botonAlinear} onClick={() => { asentarHistorial(); ajustarAZona(); }} aria-label="Llenar zona" title="Llenar zona"><Maximize2 size={18} aria-hidden="true" /></button>
+                  )}
+                  <button type="button" className={styles.botonAlinear} onClick={() => girar(1)} aria-label="Girar" title="Girar (R)"><RotateCw size={18} aria-hidden="true" /></button>
+                </span>
+                <span className={styles.grupoIconos}>
+                  {MODOS_ALINEAR.map(([modo, Icono, nombreAlinear]) => (
+                    <button key={modo} type="button" className={styles.botonAlinear} onClick={() => alinear(modo)} aria-label={`${nombreAlinear} de la zona`} title={`${nombreAlinear} de la zona`}>
+                      <Icono size={18} aria-hidden="true" />
+                    </button>
+                  ))}
+                </span>
               </div>
 
               <details className={styles.masOpciones}>

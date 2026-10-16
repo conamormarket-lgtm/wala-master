@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ShoppingBag, Paintbrush, ArrowRight, Share2, RotateCcw, PencilLine, Store, Check } from 'lucide-react';
+import { Paintbrush, ArrowRight, Share2, RotateCcw, PencilLine, Store } from 'lucide-react';
 import Boton from '../Boton';
 import Acordeon from '../Acordeon';
 import Carrusel from '../Carrusel';
@@ -12,7 +12,7 @@ import { EsqueletoPagina } from '../Esqueletos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { FotoProducto } from '../piezas/FotoProducto';
 import { GaleriaProducto } from '../piezas/GaleriaProducto';
-import { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra, BarraCompra } from '../piezas/Ficha';
+import { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra, BarraCompra, useAgregado, IconoAgregar } from '../piezas/Ficha';
 import { OpcionesProducto, tallasDe, verVariantes } from '../piezas/OpcionesProducto';
 import { Estrellas, ResumenOpiniones, TarjetaOpinion, FormularioOpinion } from '../piezas/Opiniones';
 import s from './Producto.module.css';
@@ -91,14 +91,12 @@ export function PaginaProducto({
   const [filtro, setFiltro] = useState(null);
   const [mostradas, setMostradas] = useState(POR_PAGINA);
   const [foto, setFoto] = useState(null);
-  const [agregado, setAgregado] = useState(false);
+  const [agregado, marcarAgregado] = useAgregado();
   // Al recolorear una prenda del combo, la galería salta a su foto en ese color.
   const [salto, setSalto] = useState(null);
   const compraRef = useRef(null);
   const opcionesRef = useRef(null);
   const finRef = useRef(null);
-  const reloj = useRef(null);
-  useEffect(() => () => clearTimeout(reloj.current), []);
 
   // El nombre y la descripción vienen de los datos: pasan por la traducción de la tienda (si hay).
   const nombre = useTexto(producto.nombre);
@@ -152,17 +150,13 @@ export function PaginaProducto({
     try {
       await fn?.(eleccion);
       // "¡Agregado!" un momento en el mismo botón, como confirmación.
-      if (cual === 'agregar') {
-        setAgregado(true);
-        clearTimeout(reloj.current);
-        reloj.current = setTimeout(() => setAgregado(false), 1800);
-      }
+      if (cual === 'agregar') marcarAgregado();
     } finally { setCargando(null); }
   };
   const botonAgregar = (props, desdeBarra) => (
     <Boton
       tamano="lg"
-      icono={agregado ? <Check key="hecho" className={s.hecho} aria-hidden="true" /> : <ShoppingBag aria-hidden="true" />}
+      icono={<IconoAgregar agregado={agregado} />}
       disabled={producto.agotado}
       cargando={cargando === 'agregar'}
       onClick={() => accion('agregar', onAgregar, desdeBarra)}

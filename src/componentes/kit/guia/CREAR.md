@@ -299,19 +299,42 @@ Las piezas están en `piezas/Estudio.jsx`:
   la portada de Crear: **1** el color (`SelectorColor`; si el color tiene
   versión al revés, el `Interruptor` "Invertir colores"), **2** la zona por
   lado (`Chip`, con un punto si ya lleva algo), **3** "Subir imagen" o
-  "Escribir texto" y dónde se agrega.
-- **`PanelCapa`**: lo elegido, con "Listo". La imagen dice su calidad de
-  impresión (buena, aceptable o baja, con la regla de `calidadDeCapa`) y
-  tiene quitar fondo, recortar (sin sesión van apagados, como en la tienda)
-  y "Llenar zona". El texto: el texto, la letra (`Campo` con `opciones`, cada
+  "Escribir texto" (`OpcionSello`) y dónde se agrega. **Con avance**
+  (2026-10-16): un paso hecho (color y zona elegidos, y la prenda con algún
+  diseño) cambia su número por un check en un sello menta (`hecho` de
+  `PasoEstudio`); se ve de un vistazo qué falta.
+- **`PanelCapa`**: lo elegido, con un tacho (Quitar, aparte) y "Listo".
+  Ordenado el 2026-10-16 (antes eran 8 botones iguales):
+  - la imagen: **`MedidorCalidad`** (una barra de tres tramos, borrosa ·
+    aceptable · nítida, con la regla de `calidadDeCapa`) y **"Dejarla
+    nítida"**, que la achica justo hasta el ancho en que se imprime bien
+    (`anchoNitidoDe`; la tienda, con `pixelesDeImpresion`);
+  - **el ancho de la imagen** en un solo control (`Cantidad editable`: cm de
+    la prenda, o % de la zona si no tiene medida);
+  - **Arreglar la imagen**: "Quitar fondo" y "Recortar" en tarjetas con su
+    sello (`OpcionSello`, la misma del paso 3; sin sesión van apagadas, como
+    en la tienda);
+  - **Acomodar en la zona**: centrar, llenar la zona y girar | las seis
+    alineaciones, en dos bloques de íconos que bajan de línea enteros.
+
+  El texto: el texto, la letra (`Campo` con `opciones`, cada
   una con su muestra y su grupo), el **alto de la letra en cm** (`Cantidad
   editable`, si la zona trae `anchoCm`), negrita y cursiva (`Chip`), el color
   (`SelectorColor` con `libre`: el arcoíris abre el hex) y **`EfectosTexto`**
   (Normal, Contorno, Sombra, Sticker, Arco y, en un `Acordeon`, contorno,
-  sombra y curva a medida con `Deslizador`). Los dos: ajustar, girar de 90°
-  en 90°, alinear contra los bordes de la zona, "Una parte queda fuera de la
-  zona" y, en `Acordeon`, voltear, traer adelante, enviar atrás, duplicar y
-  pasar a otra zona. Al final, **Agregar otro: Imagen · Texto**.
+  sombra y curva a medida con `Deslizador`). Los dos: acomodar (centrar,
+  girar de 90° en 90°, alinear contra los bordes de la zona), "Una parte
+  queda fuera de la zona" y, en `Acordeon`, voltear, traer adelante, enviar
+  atrás, duplicar y pasar a otra zona. Al final, **Agregar otro: Imagen ·
+  Texto**.
+- **La compra** (en la página): en escritorio, el total, "Agregar al
+  carrito · S/ …", Guardar y Descargar. **En el celular, pegada abajo en una
+  sola fila** (como la tienda): Guardar y Descargar como íconos y Agregar; el
+  total ya está arriba, junto al nombre. Lleva `data-compra-fija` (los
+  flotantes suben encima). Al agregar, el botón dice **"¡Agregado!"**
+  (`useAgregado` de `piezas/Ficha`, el mismo de la ficha de producto).
+- Una imagen nueva entra entera en su zona (el 80% del ancho o del alto, o
+  la mitad si ya hay algo), como en la tienda.
 - **`PanelVarios`**: con dos o más elegidas, alinearlas entre ellas,
   repartirlas (tres o más), centrar el grupo, duplicar y quitar.
 - **`EstadoEdicion`**: al editar algo guardado, cómo va el borrador
@@ -490,6 +513,14 @@ alrededor, por partes.
   En el kit lo hacen `SelectorColor` y `SelectorTalla` (`.colorAro`,
   `.tallaMarca`); en `CrearStudioPage`, `.aroColor` y `.tallaFondo` con el
   mismo resorte (`RESORTE_ELEGIDO`). Sin movimiento si se pide reducirlo.
+- **El panel del estudio, ordenado** (2026-10-16), en los dos lados: pasos
+  con check (`NumeroPaso` en `CrearStudioPage`, el tono menta del `Sello`),
+  el medidor de calidad con "Dejarla nítida" (`dejarNitida`), el ancho de la
+  imagen en cm o % (`TamanoLetra imagen`), Quitar fondo y Recortar como
+  tarjetas (`.botonAgregar`, las del paso 3), "Acomodar en la zona" en dos
+  bloques de íconos y el tacho junto a "Listo". **Diferencia a propósito:**
+  en la tienda, agregar lleva al carrito, así que ahí no se ve
+  "¡Agregado!"; la compra del celular ya era una fila.
 - **"Llenar zona"** (2026-10-16): pone la imagen lo más grande que entra
   ENTERA en su zona, centrada y derecha, como `ajustarAZona` de
   `CrearStudioPage` (el menor de los dos: ancho de la zona o alto de la

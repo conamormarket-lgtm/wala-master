@@ -379,6 +379,33 @@
   color: #14121C;
 }
 
+/* Paso hecho: un check sobre menta (el tono "menta" del Sello del kit). */
+.numeroHecho {
+  background: linear-gradient(135deg, #5eead4 0%, #0d9488 100%);
+  color: #fff;
+}
+
+:global([data-theme="dark"]) .numeroHecho {
+  color: #fff;
+}
+
+.checkPaso {
+  animation: pasoSellado var(--dur-media, 320ms) var(--ease-signature, ease);
+}
+
+@keyframes pasoSellado {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-25deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .checkPaso {
+    animation: none;
+  }
+}
+
 .valor {
   font-weight: 500;
   color: var(--gris-texto-secundario);
@@ -505,6 +532,87 @@
 .calidad svg {
   flex-shrink: 0;
   margin-top: 1px;
+}
+
+/* La calidad de impresión en tres tramos (como MedidorCalidad del kit). */
+.medidor {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 6px 16px 16px 16px;
+}
+
+.medidor_buena { --medidor: #10b981; --medidor-texto: #047857; background: rgba(16, 185, 129, 0.09); }
+.medidor_regular { --medidor: #f59e0b; --medidor-texto: #92400e; background: rgba(245, 158, 11, 0.12); }
+.medidor_baja { --medidor: #e11d48; --medidor-texto: #b91c1c; background: rgba(239, 68, 68, 0.09); }
+
+:global([data-theme="dark"]) .medidor_buena { --medidor-texto: #6ee7b7; }
+:global([data-theme="dark"]) .medidor_regular { --medidor-texto: #fcd34d; }
+:global([data-theme="dark"]) .medidor_baja { --medidor-texto: #fda4af; }
+
+.medidorTitulo {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.medidorTitulo strong {
+  color: var(--medidor-texto);
+  font-weight: 900;
+}
+
+.medidorPista {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.medidorPista i {
+  height: 7px;
+  border-radius: 6px;
+  background: rgba(30, 17, 64, 0.08);
+}
+
+:global([data-theme="dark"]) .medidorPista i {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.medidorPista .medidorOn {
+  background: var(--medidor);
+}
+
+.medidorPie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: var(--gris-texto-secundario);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.medidorPie > span {
+  flex: 1 1 12rem;
+}
+
+.botonNitida {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 34px;
+  padding: 0 0.75rem;
+  border: 1.5px solid var(--primary-color);
+  border-radius: 10px;
+  background: var(--blanco);
+  color: var(--primary-color);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.botonNitida:hover {
+  background: var(--primary-light);
 }
 
 .calidad_buena {
@@ -1675,6 +1783,57 @@
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 0.35rem;
+}
+
+/* Acomodar | alinear: dos bloques de íconos que bajan de línea enteros. */
+.acomodar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.9rem;
+}
+
+.grupoIconos {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.grupoIconos .botonAlinear {
+  width: 40px;
+}
+
+/* Cabecera de lo elegido: Quitar (ícono) y Listo. */
+.accionesCabecera {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.botonQuitar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--danger, #EF4444);
+  cursor: pointer;
+}
+
+.botonQuitar:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.botonAgregar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.notaSesion {
+  color: var(--gris-texto-secundario);
+  font-size: 0.78rem;
 }
 
 .botonAlinear {

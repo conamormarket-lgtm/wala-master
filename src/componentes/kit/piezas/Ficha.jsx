@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Pencil, Check } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Pencil, Check, ShoppingBag } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { Texto } from '../Traduccion';
@@ -186,3 +186,27 @@ export function TituloEditable({ nombre, onRenombrar, como: Etiqueta = 'h1' }) {
   );
 }
 
+
+/**
+ * "¡Agregado!" un momento en el mismo botón de agregar, como confirmación
+ * (la ficha de producto, el estudio). Devuelve [agregado, marcar].
+ *   const [agregado, marcar] = useAgregado();
+ *   await onAgregar(); marcar();
+ *   <Boton icono={<IconoAgregar agregado={agregado} />}>{agregado ? '¡Agregado!' : 'Agregar al carrito'}</Boton>
+ */
+export function useAgregado(ms = 1800) {
+  const [agregado, setAgregado] = useState(false);
+  const reloj = useRef(null);
+  useEffect(() => () => clearTimeout(reloj.current), []);
+  const marcar = () => {
+    setAgregado(true);
+    clearTimeout(reloj.current);
+    reloj.current = setTimeout(() => setAgregado(false), ms);
+  };
+  return [agregado, marcar];
+}
+
+/** La bolsa, o el check que entra con un golpe cuando ya se agregó. */
+export function IconoAgregar({ agregado = false }) {
+  return agregado ? <Check key="hecho" className={s.hecho} aria-hidden="true" /> : <ShoppingBag aria-hidden="true" />;
+}
