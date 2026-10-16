@@ -169,6 +169,8 @@ function TextoCurvo({ capa: c }) {
  *    del lienzo). La página decide: con una capa elegida la agranda y la
  *    gira; si no, hace zoom.
  *  - cargando: "Cargando tu diseño…" encima (y aria-busy)
+ *  - con onGesto y una capa elegida, sus asas: las esquinas agrandan y
+ *    achican, la de arriba gira (llegan por onGesto, como los dos dedos)
  *  - encima: lo que va sobre el lienzo (empezar…)
  */
 export function LienzoPrenda({
@@ -184,6 +186,62 @@ export function LienzoPrenda({
   const gesto = useRef(null);
   const [soltarEn, setSoltarEn] = useState(null);
   const elegidas = Array.isArray(seleccion) ? seleccion : seleccion ? [seleccion] : [];
+
+  // Las asas de lo elegido (una sola capa): su caja se mide en el DOM, porque
+  // el tamaño de un texto depende de la letra (y cambia cuando la letra carga).
+  const unaElegida = guias && onGesto && elegidas.length === 1 ? elegidas[0] : null;
+  const [caja, setCaja] = useState(null);
+  const asa = useRef(null);
+  const capaEnDom = (id) => (id ? marco.current?.querySelector(`[data-capa="${CSS.escape(id)}"]`) : null);
+  useLayoutEffect(() => {
+    const el = capaEnDom(unaElegida);
+    const medir = () => {
+      const nueva = el ? { id: unaElegida, w: el.offsetWidth, h: el.offsetHeight } : null;
+      setCaja((c) => (c?.id === nueva?.id && c?.w === nueva?.w && c?.h === nueva?.h ? c : nueva));
+    };
+    medir();
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
+  // Arrastrar una esquina agranda o achica desde el centro; el asa de arriba
+  // gira. Van por onGesto, como los dos dedos (se guarda una vez, al soltar).
+  const empezarAsa = (e, tipo) => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const el = capaEnDom(unaElegida);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const c = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    asa.current = { tipo, c, d0: Math.hypot(e.clientX - c.x, e.clientY - c.y) || 1, a0: Math.atan2(e.clientY - c.y, e.clientX - c.x) };
+    try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch { /* el puntero ya se soltó */ }
+    onGesto({ fase: 'inicio', factor: 1, giro: 0 });
+  };
+  const moverAsa = (e) => {
+    const a = asa.current;
+    if (!a) return;
+    e.stopPropagation();
+    const dx = e.clientX - a.c.x;
+    const dy = e.clientY - a.c.y;
+    if (a.tipo === 'giro') onGesto({ fase: 'cambio', factor: 1, giro: ((Math.atan2(dy, dx) - a.a0) * 180) / Math.PI });
+    else onGesto({ fase: 'cambio', factor: Math.hypot(dx, dy) / a.d0, giro: 0 });
+  };
+  const soltarAsa = (e) => {
+    if (!asa.current) return;
+    e.stopPropagation();
+    asa.current = null;
+    onGesto({ fase: 'fin' });
+  };
+  const eventosAsa = (tipo) => ({
+    onPointerDown: (e) => empezarAsa(e, tipo),
+    onPointerMove: moverAsa,
+    onPointerUp: soltarAsa,
+    onPointerCancel: soltarAsa,
+    onClick: (e) => e.stopPropagation(),
+    onDoubleClick: (e) => e.stopPropagation(),
+  });
 
   // Dos dedos (se miran en la fase de captura, antes que la capa o el fondo).
   const medirToques = () => {
@@ -327,6 +385,7 @@ export function LienzoPrenda({
         {!foto && tinte && oscura && <img className={s.luz} style={espejo} src={imagen} alt="" draggable={false} aria-hidden="true" />}
         {zonas.map((z) => {
           const activa = guias && z.id === zonaActiva;
+          const conAsas = caja?.id === unaElegida && (capas[z.id] || []).find((c) => c.id === caja.id);
           return (
             <div
               key={z.id}
@@ -338,6 +397,7 @@ export function LienzoPrenda({
                 width: `${z.w * 100}%`,
                 height: `${altoZona(z, anchoImg, altoImg) * 100}%`,
                 transform: z.angulo ? `rotate(${z.angulo}deg)` : undefined,
+                zIndex: conAsas ? 2 : undefined, // sus asas quedan sobre las otras zonas
               }}
               onClick={guias ? () => onElegirZona?.(z.id) : undefined}
               onDoubleClick={guias && onDobleClic ? (e) => onDobleClic({ zonaId: z.id, punto: puntoEnZona(e, e.currentTarget) }) : undefined}
@@ -394,6 +454,26 @@ export function LienzoPrenda({
                   </span>
                 ))}
               </div>
+              {conAsas && (
+                // Fuera del recorte: las asas se ven aunque la capa llegue al borde de la zona.
+                <span
+                  className={s.asas}
+                  style={{
+                    left: `${(conAsas.x ?? 0.5) * 100}%`,
+                    top: `${(conAsas.y ?? 0.5) * 100}%`,
+                    width: caja.w,
+                    height: caja.h,
+                    transform: `translate(-50%, -50%) rotate(${conAsas.angulo || 0}deg)`,
+                    '--zoom': zoom,
+                  }}
+                  data-componente="AsasCapa"
+                >
+                  {['no', 'ne', 'so', 'se'].map((esquina) => (
+                    <span key={esquina} className={[s.asa, s[`asa_${esquina}`]].join(' ')} title="Arrastra para agrandar o achicar" {...eventosAsa('tamano')} />
+                  ))}
+                  <span className={s.asaGiro} title="Arrastra para girar" {...eventosAsa('giro')} />
+                </span>
+              )}
               {activa && <span className={s.zonaNombre} style={z.angulo ? { transform: `translateX(-50%) rotate(${-z.angulo}deg)` } : undefined}>{z.nombre}</span>}
               {soltarEn === z.id && <span className={s.zonaSoltar} aria-hidden="true" />}
             </div>

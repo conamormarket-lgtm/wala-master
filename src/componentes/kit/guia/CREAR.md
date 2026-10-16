@@ -239,6 +239,10 @@ Las piezas están en `piezas/Estudio.jsx`:
   - `onGesto({ fase, factor, giro, centro })`: dos dedos. Con algo elegido o
     con zoom los dedos son del lienzo (`touch-action: none`); si no, un dedo
     desplaza la página y dos acercan la prenda (`pan-x pan-y`).
+  - Asas de lo elegido (una sola capa, con `onGesto`): las cuatro esquinas
+    agrandan y achican desde el centro y la de arriba gira; van fuera del
+    recorte de la zona, así se ven aunque la capa llegue al borde, y no
+    crecen con el zoom.
   - `cargando`: "Cargando tu diseño…" encima, con `aria-busy`.
   - Con el teclado: Tab llega a cada zona y a cada capa; Enter la elige.
 - **`BarraLienzo`**: deshacer y rehacer; con algo elegido, achicar, agrandar,
@@ -318,9 +322,10 @@ La página (`PaginaEstudio`):
   flechas para mover (con Shift, más), + y −, R para girar, F para voltear,
   C para centrar, [ y ] para el orden, T e I para agregar, 1–9 para el lado,
   zoom (Ctrl + / − / 0, Shift+1, Shift+2), Supr y Esc.
-- **Celular:** arrastrar con un dedo; con dos, agrandar y girar lo elegido
-  (cerca de un múltiplo de 90° se queda derecho) o acercar la prenda. Se
-  guarda una sola vez en el deshacer, al soltar.
+- **Mouse y dedos:** las asas de lo elegido agrandan y giran; en el celular,
+  además, dos dedos agrandan y giran lo elegido o acercan la prenda. Cerca
+  de un múltiplo de 90° se queda derecho, y se guarda una sola vez en el
+  deshacer, al soltar.
 - **Estados:** cargando (`EsqueletoPagina forma="estudio"`), error, prenda no
   disponible, agotada, en borrador y el diseño que aún llega
   (`cargandoDiseno`).
