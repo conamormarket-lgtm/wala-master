@@ -1,9 +1,10 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { AlertCircle, Minus, Plus, Check, Search, ChevronDown, Eye, EyeOff, LockKeyhole } from 'lucide-react';
 import Boton from './Boton';
 import ListaOpciones from './ListaOpciones';
 import { RESORTE } from './Efectos';
+import { Visto } from './Marca';
 import s from './Formulario.module.css';
 
 /**
@@ -15,7 +16,8 @@ import s from './Formulario.module.css';
  *  - control: ({ id, aria-invalid, aria-describedby }) => nodo, otro control
  *    dentro de la misma caja (CampoFecha, CampoTelefono)
  *  - multilinea: un texto largo (<textarea>); true = 3 líneas o el número de
- *    líneas. Con maxLength, cuenta lo escrito ("120/800") junto a la ayuda.
+ *    líneas (lo mínimo: crece solo con lo escrito, sin agarradera). Con
+ *    maxLength, cuenta lo escrito ("120/800") junto a la ayuda.
  */
 export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, opciones, nativo = false, buscable, creable, control, multilinea, ...input }) {
   const autoId = useId();
@@ -50,7 +52,7 @@ export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, opciones, nat
       </>
     );
   } else if (multilinea) {
-    cuerpo = <textarea id={campoId} className={`${s.input} ${s.area}`} rows={multilinea === true ? 3 : multilinea} {...aria} {...input} />;
+    cuerpo = <AreaTexto id={campoId} filas={multilinea === true ? 3 : multilinea} {...aria} {...input} />;
   } else {
     cuerpo = <input id={campoId} className={s.input} {...aria} {...input} />;
   }
@@ -71,6 +73,22 @@ export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, opciones, nat
       ) : null}
     </div>
   );
+}
+
+/**
+ * El texto largo de un Campo: empieza con sus filas y crece con lo escrito
+ * hasta un tope (luego se desplaza por dentro). Sin agarradera para estirarlo:
+ * no hace falta y se veía poco cuidado.
+ */
+function AreaTexto({ filas, value, ...resto }) {
+  const ref = useRef(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
+  return <textarea ref={ref} className={`${s.input} ${s.area}`} rows={filas} value={value} {...resto} />;
 }
 
 /**
@@ -336,8 +354,8 @@ export function Deslizador({ etiqueta, valor, min = 0, max = 100, paso = 1, form
 }
 
 /**
- * Casilla para marcar (aceptar, "No sé el año"). El visto se dibuja al
- * marcarla; la caja con el degradado del logo.
+ * Casilla para marcar (aceptar, "No sé el año"): el Visto en cuadro (el
+ * mismo check de Walá que marca la opción elegida de una lista).
  *  - activo · onChange(marcada) · etiqueta · descripcion · disabled
  */
 export function Casilla({ activo = false, onChange, etiqueta, descripcion, disabled = false }) {
@@ -345,9 +363,7 @@ export function Casilla({ activo = false, onChange, etiqueta, descripcion, disab
   return (
     <label className={[s.casilla, disabled && s.apagado].filter(Boolean).join(' ')} htmlFor={id}>
       <input id={id} type="checkbox" checked={activo} disabled={disabled} onChange={(e) => onChange?.(e.target.checked)} />
-      <span className={s.caja} aria-hidden="true">
-        <svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" /></svg>
-      </span>
+      <Visto activo={activo} forma="cuadro" className={s.caja} />
       <span className={s.interruptorTexto}>
         <span>{etiqueta}</span>
         {descripcion && <small>{descripcion}</small>}

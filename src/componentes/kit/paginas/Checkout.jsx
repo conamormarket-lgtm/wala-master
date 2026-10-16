@@ -315,13 +315,15 @@ export function PaginaCheckout({
                   {regalo.activo && (
                     <div className={s.regaloCampos}>
                       <Campo etiqueta="Para" placeholder="Ej.: María" value={regalo.destinatario} onChange={cambiarRegalo('destinatario')} error={errores.regalo_destinatario} />
+                      {/* Crece solo con lo escrito y cuenta las letras (Campo multilinea). */}
                       <Campo
                         etiqueta="Tu mensaje"
                         error={errores.regalo_mensaje}
-                        ayuda={errores.regalo_mensaje ? undefined : `${regalo.mensaje.length}/200`}
-                        control={(aria) => (
-                          <textarea {...aria} className={s.area} rows={3} maxLength={200} placeholder="Escribe algo especial…" value={regalo.mensaje} onChange={cambiarRegalo('mensaje')} />
-                        )}
+                        multilinea={3}
+                        maxLength={200}
+                        placeholder="Escribe algo especial…"
+                        value={regalo.mensaje}
+                        onChange={cambiarRegalo('mensaje')}
                       />
                       <div className={s.grupo}>
                         <span className={s.rotulo}>Cómo te acompaña Kapi</span>

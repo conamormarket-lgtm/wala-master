@@ -105,6 +105,10 @@ también es una etiqueta) y de los banners de la tienda.
 - **Sello** (`Sello`): el ícono blanco en el círculo con el degradado, girado.
   Tonos `degradado` · `suave` · `oro` · `rosa` · `menta` · `bronce` · `plata`.
   Todos los íconos de la cuenta van así.
+- **Visto** (`Visto`): el check de Walá, blanco sobre el degradado, para lo
+  marcado o elegido: `forma="cuadro"` en la `Casilla`, círculo en la opción
+  elegida de `ListaEleccion`. Sin marcar, solo el borde. Nada de checks
+  dibujados a mano en cada pieza.
 - **Garabatos** (`Garabatos`, `Destello`, `Corazon`, `Puntos`, `Trazo`):
   destellos ✦, corazones, puntos de medio tono y subrayado a mano para las
   palabras resaltadas. Siempre quietos.
@@ -137,7 +141,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 |---|---|---|
 | `Boton.jsx` | `Boton` | Botón violeta liso; variantes, tamaños, cargando, `brillo` para CTA de pago. Con `to` es un enlace; con `insignia` lleva un contador en la esquina |
 | `Etiquetas.jsx` | `Etiqueta`, `Chip`, `Moneda`, `MONEDA`, `CostoMonedas`, `GananciaMonedas`, `SaldoMonedas` (sube de a una con cada moneda que aterriza), `Contador` | Badges, filtros y monedas |
-| `Formulario.jsx` | `Campo` (con `opciones` es una `ListaOpciones`; `control` para otro control en la misma caja; `multilinea` para un texto largo, con la cuenta de letras si hay `maxLength`), `Buscador` (`grande`, `boton`), `Selector`, `SelectorTalla`, `SelectorColor`, `Cantidad`, `Interruptor`, `Casilla`, `CampoTelefono`, `CampoContrasena` (con el ojo que parpadea) | Formularios, búsqueda (atajo "/"), "Ordenar por" y variantes de producto (en `SelectorColor` y `SelectorTalla` lo elegido viaja de una opción a otra) |
+| `Formulario.jsx` | `Campo` (con `opciones` es una `ListaOpciones`; `control` para otro control en la misma caja; `multilinea` para un texto largo que crece solo con lo escrito, sin agarradera para estirarlo, con la cuenta de letras si hay `maxLength`), `Buscador` (`grande`, `boton`), `Selector`, `SelectorTalla`, `SelectorColor`, `Cantidad`, `Interruptor`, `Casilla` (con el `Visto`), `CampoTelefono`, `CampoContrasena` (con el ojo que parpadea) | Formularios, búsqueda (atajo "/"), "Ordenar por" y variantes de producto (en `SelectorColor` y `SelectorTalla` lo elegido viaja de una opción a otra) |
 | `ListaOpciones.jsx` | `ListaOpciones` | Lista desplegable de Walá: panel en escritorio, hoja en el celular, buscador, teclado, `creable` |
 | `Fecha.jsx` | `CampoFecha`, `Calendario`, `fechaEnTexto` | Fechas con el calendario de Walá (años, meses, días; "No sé el año") |
 | `PanelFlotante.jsx` | `PanelFlotante`, `enCelular` | Lo que se abre desde un campo: panel pegado (escritorio) u hoja (celular); como un `<select>`, se cierra con el scroll de afuera |

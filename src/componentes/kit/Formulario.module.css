@@ -128,7 +128,7 @@
   outline: none;
 }
 
-/* Varias líneas: la caja crece con el texto y se estira hacia abajo. */
+/* Varias líneas: la caja crece sola con el texto (AreaTexto), sin agarradera. */
 .controlArea {
   align-items: stretch;
 }
@@ -136,9 +136,11 @@
 .area {
   height: auto;
   min-height: 5.5rem;
+  max-height: 22rem;
   padding: 0.8rem 0;
+  overflow-y: auto;
   line-height: 1.5;
-  resize: vertical;
+  resize: none;
 }
 
 .contador {
@@ -868,39 +870,9 @@
   opacity: 0;
 }
 
+/* La caja es el Visto (Marca.jsx); aquí solo lo que hace al tocarla. */
 .caja {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: 2px solid var(--violet-300, #c4b5fd);
-  border-radius: 8px;
-  background: var(--color-surface);
-  transition: background var(--dur-rapida) ease, border-color var(--dur-rapida) ease, transform var(--dur-rapida) ease;
-}
-
-.caja svg {
-  width: 15px;
-  height: 15px;
-  fill: none;
-  stroke: #fff;
-  stroke-width: 2.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 16;
-  stroke-dashoffset: 16;
-  transition: stroke-dashoffset var(--dur-media) var(--ease-signature);
-}
-
-.casilla input:checked + .caja {
-  border-color: transparent;
-  background: var(--degradado-logo, var(--violet-600));
-}
-
-.casilla input:checked + .caja svg {
-  stroke-dashoffset: 0;
+  transition: transform var(--dur-rapida) ease;
 }
 
 .casilla:active .caja {

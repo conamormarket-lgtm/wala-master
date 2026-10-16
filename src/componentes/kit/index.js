@@ -37,7 +37,7 @@ export { default as PanelEditor, useBorrador, actualizarAjustes, insertarSeccion
 export { SeccionEditable, InsertarAqui } from './editor/SeccionEditable';
 export { FormularioSeccion, ProveedorEditor } from './editor/CamposEditor';
 export { ESQUEMAS, GRUPOS_MODULOS, esquemaDe, ajustesIniciales, resumenDe } from './editor/esquemas';
-export { EtiquetaColgante, IsoWala, LogoWala, Garabatos, Destello, Corazon, Puntos, Trazo, Sello } from './Marca';
+export { EtiquetaColgante, IsoWala, LogoWala, Garabatos, Destello, Corazon, Puntos, Trazo, Sello, Visto } from './Marca';
 export { IconoWala, ICONOS_WALA, iconoDesde } from './IconosWala';
 export { PASTELES, pastel, ACENTOS, acento } from './Marca';
 export * from './piezas';

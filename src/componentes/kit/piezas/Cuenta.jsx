@@ -1,8 +1,8 @@
 import React, { useRef } from 'react';
-import { Camera, Check, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { Camera, CheckCircle2, AlertCircle, X } from 'lucide-react';
 import { Enlace } from '../Enlace';
 import { Contador } from '../Etiquetas';
-import { Sello, Puntos, Trazo } from '../Marca';
+import { Sello, Puntos, Trazo, Visto } from '../Marca';
 import { Avatar } from './Avatar';
 import s from './Cuenta.module.css';
 
@@ -219,7 +219,7 @@ export function ListaEleccion({ opciones = [], valor, onElegir, etiqueta }) {
               <span>{o.texto}</span>
               {o.detalle && <small>{o.detalle}</small>}
             </span>
-            <span className={s.opcionVisto} aria-hidden="true">{activa && <Check />}</span>
+            <Visto activo={activa} className={s.opcionVisto} />
           </button>
         );
       })}

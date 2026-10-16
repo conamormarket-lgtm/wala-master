@@ -1,4 +1,5 @@
 import React from 'react';
+import { Check } from 'lucide-react';
 import s from './Marca.module.css';
 
 /*
@@ -183,6 +184,25 @@ export function Sello({ children, tamano = 40, girar = -8, tono = 'degradado', c
       aria-hidden="true"
     >
       {children}
+    </span>
+  );
+}
+
+/**
+ * El visto de Walá: un check blanco sobre el degradado del logo. Es la misma
+ * marca en todo lo que se elige o se marca: la casilla (cuadro) y la opción
+ * de una lista (círculo). Sin marcar, solo el borde; al marcarse, el check
+ * entra girando un poco (solo transform y opacity).
+ *  - activo · forma: 'circulo' | 'cuadro' · tamano: px (24) · className
+ */
+export function Visto({ activo = false, forma = 'circulo', tamano = 24, className }) {
+  return (
+    <span
+      className={[s.visto, forma === 'cuadro' && s.vistoCuadro, activo && s.vistoActivo, className].filter(Boolean).join(' ')}
+      style={{ '--visto': `${tamano}px` }}
+      aria-hidden="true"
+    >
+      <Check className={s.vistoCheck} />
     </span>
   );
 }

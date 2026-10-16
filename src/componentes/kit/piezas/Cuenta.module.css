@@ -630,25 +630,9 @@
   font-weight: 500;
 }
 
+/* El visto de la opción es el Visto de Marca.jsx (el mismo de la casilla). */
 .opcionVisto {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  color: #fff;
-}
-
-.opcionActiva .opcionVisto {
-  background: var(--degradado-logo);
-}
-
-.opcionVisto svg {
-  width: 14px;
-  height: 14px;
-  stroke-width: 3;
+  margin-left: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
