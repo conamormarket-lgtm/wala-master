@@ -221,6 +221,30 @@
     min-height: 46px;
     padding: 0;
   }
+
+  /* Agregar se achica con la pantalla; si aun así no entra, puntos
+     suspensivos (nunca un texto cortado por el borde). */
+  .compra > :nth-child(2),
+  .compra > :nth-child(2) span {
+    min-width: 0;
+  }
+
+  .compra > :nth-child(2) span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* Pantallas angostas (320 px): "Agregar" a secas. */
+@media (max-width: 379px) {
+  .textoLargo {
+    display: none;
+  }
+
+  .compraOtras {
+    gap: 0.25rem;
+  }
 }
 
 .aviso {

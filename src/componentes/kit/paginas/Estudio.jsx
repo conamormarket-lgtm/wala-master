@@ -1089,7 +1089,7 @@ export function PaginaEstudio({
     <Boton bloque disabled>Agotado por ahora</Boton>
   ) : (
     <Boton bloque icono={<IconoAgregar agregado={agregado} />} disabled={vacio || borradorAdmin} cargando={ocupado === 'agregando'} onClick={agregar}>
-      {agregado ? '¡Agregado!' : <>Agregar al carrito<span className={s.precioBoton}> · {soles(precio)}</span></>}
+      {agregado ? '¡Agregado!' : <>Agregar<span className={s.textoLargo}> al carrito</span><span className={s.precioBoton}> · {soles(precio)}</span></>}
     </Boton>
   );
 
