@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { motion, useReducedMotion } from 'framer-motion';
 import { fabric } from 'fabric';
 import {
   ArrowLeft, ImagePlus, Images, Plus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
@@ -150,11 +151,16 @@ const capasParaGuardar = (capasPorZona) => {
   return out;
 };
 
+// El resorte del kit (Efectos.RESORTE): lo elegido viaja de una opción a otra.
+const RESORTE_ELEGIDO = { type: 'spring', stiffness: 420, damping: 34 };
+
 const CrearStudioPage = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const reducirMovimiento = useReducedMotion();
+  const viajeElegido = reducirMovimiento ? { duration: 0 } : RESORTE_ELEGIDO;
   const { user, loading: authLoading, isAdmin } = useAuth();
   const { addToCart } = useCart();
   const toast = useGlobalToast();
@@ -3596,6 +3602,7 @@ const CrearStudioPage = () => {
                   title={c.nombre}
                   onClick={() => cambiarColorPrenda(c)}
                 >
+                  {activo && <motion.span layoutId="crear-color-prenda" className={styles.aroColor} transition={viajeElegido} aria-hidden="true" />}
                   {activo && (c.hex2
                     // En un bicolor el centro cae sobre el corte: va sobre un disco oscuro.
                     ? <Check size={14} strokeWidth={3} className={`${styles.checkColor} ${styles.checkBicolor}`} aria-hidden="true" />
@@ -3823,7 +3830,9 @@ const CrearStudioPage = () => {
                           style={{ background: c }}
                           aria-label={`Color ${c}`}
                           onClick={() => editarCapa(capaSel.id, { color: c })}
-                        />
+                        >
+                          {capaSel.color === c && <motion.span layoutId="crear-color-texto" className={styles.aroColor} transition={viajeElegido} aria-hidden="true" />}
+                        </button>
                       ))}
                       <label className={styles.muestraLibre} aria-label="Otro color" title="Otro color">
                         <input type="color" value={capaSel.color} onChange={(e) => editarCapa(capaSel.id, { color: e.target.value })} />
@@ -4023,7 +4032,8 @@ const CrearStudioPage = () => {
                   className={`${styles.talla} ${t === tallaCompra ? styles.tallaActiva : ''}`}
                   onClick={() => setTallaCompra(t)}
                 >
-                  {t}
+                  {t === tallaCompra && <motion.span layoutId="crear-talla-compra" className={styles.tallaFondo} transition={viajeElegido} aria-hidden="true" />}
+                  <span className={styles.tallaTexto}>{t}</span>
                 </button>
               ))}
             </div>

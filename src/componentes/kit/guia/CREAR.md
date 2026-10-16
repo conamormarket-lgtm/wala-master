@@ -473,6 +473,11 @@ alrededor, por partes.
   sobre la prenda, recuadro, pasar a otra zona (una o varias juntas),
   arrastrar a otro lado ("Suelta aquí para pasar a…", desde el 2026-10-16
   también en la tienda) y el acercamiento en el teléfono.
+- **Lo elegido viaja** (2026-10-16): el aro del color de la prenda y de la
+  letra y el fondo de la talla se deslizan de la opción anterior a la nueva.
+  En el kit lo hacen `SelectorColor` y `SelectorTalla` (`.colorAro`,
+  `.tallaMarca`); en `CrearStudioPage`, `.aroColor` y `.tallaFondo` con el
+  mismo resorte (`RESORTE_ELEGIDO`). Sin movimiento si se pide reducirlo.
 - No se puede perder: el autoguardado del borrador, el aviso al salir sin
   guardar, la regla de la calidad (`calidadDeCapa`), quitar el fondo y
   recortar solo con sesión, `?combo=&pieza=` que vuelve al combo, `?copiar=`

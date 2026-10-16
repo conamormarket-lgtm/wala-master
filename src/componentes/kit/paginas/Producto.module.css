@@ -154,6 +154,23 @@
   flex: 1;
 }
 
+/* "¡Agregado!": el check entra con un golpe. */
+.hecho {
+  animation: golpe var(--dur-media) var(--ease-signature);
+}
+
+@keyframes golpe {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-25deg);
+  }
+}
+
+.opciones {
+  min-width: 0;
+  scroll-margin: 6rem 0;
+}
+
 @media (min-width: 900px) {
   .compra {
     position: static;
@@ -197,6 +214,72 @@
 
 .textoRico strong {
   color: var(--color-text);
+}
+
+/* Lo que escribe el editor de productos: títulos, listas, imágenes, videos,
+   alineación y botones (enlaces con fondo). */
+.textoRico :is(h1, h2, h3, h4) {
+  margin: 0.9rem 0 0.4rem;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.textoRico h1 { font-size: 1.3rem; }
+.textoRico h2 { font-size: 1.15rem; }
+.textoRico :is(h3, h4) { font-size: 1rem; }
+
+.textoRico :is(ul, ol) {
+  margin: 0 0 0.6rem;
+  padding-left: 1.2rem;
+}
+
+.textoRico li {
+  margin-bottom: 0.25rem;
+}
+
+.textoRico li::marker {
+  color: var(--violet-500);
+}
+
+.textoRico :is(img, video) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0.6rem auto;
+  border-radius: 6px 16px 16px 16px;
+}
+
+.textoRico iframe {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  margin: 0.6rem 0;
+  border: 0;
+  border-radius: 16px;
+}
+
+.textoRico a {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+:global([data-theme='dark']) .textoRico a {
+  color: var(--violet-300);
+}
+
+.textoRico .ql-align-center,
+.textoRico [style*='text-align: center'] {
+  text-align: center;
+}
+
+.textoRico .ql-align-right,
+.textoRico [style*='text-align: right'] {
+  text-align: right;
 }
 
 /* ── Opiniones ─────────────────────────────────────────────── */
@@ -286,4 +369,10 @@
   border: 1px solid var(--color-border);
   border-radius: 24px;
   background: var(--color-surface);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hecho {
+    animation: none;
+  }
 }

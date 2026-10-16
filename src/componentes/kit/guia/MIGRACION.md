@@ -53,7 +53,8 @@ Cada paso en su propio commit, verificable por separado.
    `PaginaTienda`) + `respaldo`. Primero el inicio (INICIO.md), después
    `/tienda` con el catálogo (TIENDA.md). Comparar capturas antes y después.
 6. **Páginas propias** (no son del builder): la ficha de producto
-   (`PaginaProducto`, PRODUCTO.md), el carrito (`PaginaCarrito`, CARRITO.md), el checkout
+   (`PaginaProducto`, PRODUCTO.md; `onVariante` lleva `recordVariantViewTime`
+   y `onPagarCarrito` el `selectAllItems`), el carrito (`PaginaCarrito`, CARRITO.md), el checkout
    (`PaginaCheckout`, CHECKOUT.md), regalar y el pago rápido (REGALAR.md; el pago rápido primero:
    usa las piezas de pago que después van al checkout),
    la cuenta (`MarcoCuenta` y sus 12 páginas, Mis pedidos incluida:

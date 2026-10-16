@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { ShoppingBag, Paintbrush, ArrowRight, Share2, RotateCcw, PencilLine, Store } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ShoppingBag, Paintbrush, ArrowRight, Share2, RotateCcw, PencilLine, Store, Check } from 'lucide-react';
 import Boton from '../Boton';
 import Acordeon from '../Acordeon';
 import Carrusel from '../Carrusel';
@@ -12,7 +12,7 @@ import { EsqueletoPagina } from '../Esqueletos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { FotoProducto } from '../piezas/FotoProducto';
 import { GaleriaProducto } from '../piezas/GaleriaProducto';
-import { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra } from '../piezas/Ficha';
+import { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra, BarraCompra } from '../piezas/Ficha';
 import { OpcionesProducto, opcionesDe } from '../piezas/OpcionesProducto';
 import { Estrellas, ResumenOpiniones, TarjetaOpinion, FormularioOpinion } from '../piezas/Opiniones';
 import s from './Producto.module.css';
@@ -39,14 +39,18 @@ const POR_PAGINA = 4;
  *  - onAgregar(eleccion) · onComprar(eleccion): promesas; eleccion = {
  *    variante, opcion, piezas: { [i]: color }, cantidad }
  *  - onPersonalizar(eleccion) (si es personalizable) · onCompartir() (con sesión)
- *  - carrito: cuántos hay ya (para "Ir a pagar mi carrito") · urlPagar
+ *  - onVariante(variante): al abrir y en cada cambio de color o modelo (la
+ *    analítica de la tienda mide cuánto se mira cada variante)
+ *  - carrito: cuántos hay ya (para "Ir a pagar mi carrito") · urlPagar ·
+ *    onPagarCarrito(): si se pasa, el enlace la llama en vez de navegar (la
+ *    tienda elige todo el carrito antes de ir al checkout)
  *  - sesion · urlLogin
  *  - estado: 'cargando' | 'error' | 'noDisponible' · onReintentar · urlTienda
  */
 export function PaginaProducto({
   producto = {}, opciones = {}, varianteInicial, fotos = {}, opiniones = {}, onOpinar, onUtil,
-  relacionados = [], onAgregarRelacionado, onAgregar, onComprar, onPersonalizar, onCompartir,
-  carrito = 0, urlPagar = '/checkout', sesion = false, urlLogin = '/login',
+  relacionados = [], onAgregarRelacionado, onAgregar, onComprar, onPersonalizar, onCompartir, onVariante,
+  carrito = 0, urlPagar = '/checkout', onPagarCarrito, sesion = false, urlLogin = '/login',
   estado, onReintentar, urlTienda = '/tienda',
 }) {
   const { variantes = [], opciones: tallasBase = [], etiquetaOpcion = 'Talla', piezas = [] } = opciones;
@@ -60,6 +64,11 @@ export function PaginaProducto({
   const [filtro, setFiltro] = useState(null);
   const [mostradas, setMostradas] = useState(POR_PAGINA);
   const [foto, setFoto] = useState(null);
+  const [agregado, setAgregado] = useState(false);
+  const compraRef = useRef(null);
+  const opcionesRef = useRef(null);
+  const reloj = useRef(null);
+  useEffect(() => () => clearTimeout(reloj.current), []);
 
   // El nombre y la descripción vienen de los datos: pasan por la traducción de la tienda (si hay).
   const nombre = useTexto(producto.nombre);
@@ -67,6 +76,7 @@ export function PaginaProducto({
   const variante = variantes.find((v) => v.id === varId) || variantes[0];
   const lista = opcionesDe(variante, tallasBase);
   const galeria = (variante && fotos[variante.id]) || fotos.base || [];
+  useEffect(() => { if (variante) onVariante?.(variante); }, [variante?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // La más útil (con al menos un voto) va primero, destacada.
   const { destacada, resto } = useMemo(() => {
@@ -98,11 +108,37 @@ export function PaginaProducto({
 
   const quedan = !producto.agotado && producto.stock > 0 && producto.stock <= STOCK_BAJO ? producto.stock : 0;
   const eleccion = { variante, opcion, piezas: colores, cantidad };
-  const accion = async (cual, fn) => {
-    if (lista.length && !opcion) { setFalta(true); return; }
+  const accion = async (cual, fn, desdeBarra = false) => {
+    if (lista.length && !opcion) {
+      setFalta(true);
+      // Desde la barra de abajo la talla no se ve: se lleva la vista hasta ella.
+      if (desdeBarra) opcionesRef.current?.scrollIntoView({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+      return;
+    }
     setCargando(cual);
-    try { await fn?.(eleccion); } finally { setCargando(null); }
+    try {
+      await fn?.(eleccion);
+      // "¡Agregado!" un momento en el mismo botón, como confirmación.
+      if (cual === 'agregar') {
+        setAgregado(true);
+        clearTimeout(reloj.current);
+        reloj.current = setTimeout(() => setAgregado(false), 1800);
+      }
+    } finally { setCargando(null); }
   };
+  const botonAgregar = (props, desdeBarra) => (
+    <Boton
+      tamano="lg"
+      icono={agregado ? <Check key="hecho" className={s.hecho} aria-hidden="true" /> : <ShoppingBag aria-hidden="true" />}
+      disabled={producto.agotado}
+      cargando={cargando === 'agregar'}
+      onClick={() => accion('agregar', onAgregar, desdeBarra)}
+      {...props}
+    >
+      {producto.agotado ? 'Agotado por ahora' : agregado ? '¡Agregado!' : 'Agregar al carrito'}
+    </Boton>
+  );
+  const detalle = [variantes.length > 1 && variante?.nombre, opcion || (lista.length ? `Elige ${etiquetaOpcion.toLowerCase()}` : null)].filter(Boolean).join(' · ');
 
   const conFiltro = filtro ? resto.filter((o) => o.puntuacion === filtro) : resto;
   const conFotos = (opiniones.lista || []).flatMap((o) => o.fotos).slice(0, 12);
@@ -151,10 +187,15 @@ export function PaginaProducto({
           </div>
         )}
 
+        <div ref={opcionesRef} className={s.opciones}>
         <OpcionesProducto
           variantes={variantes}
           varId={variante?.id}
-          onVariante={(id) => { setVarId(id); setOpcion(null); }}
+          onVariante={(id) => {
+            setVarId(id);
+            // La talla elegida se queda si el nuevo color también la tiene.
+            if (!opcionesDe(variantes.find((v) => v.id === id), tallasBase).includes(opcion)) setOpcion(null);
+          }}
           opciones={tallasBase}
           etiquetaOpcion={etiquetaOpcion}
           opcion={opcion}
@@ -167,12 +208,11 @@ export function PaginaProducto({
           onCantidad={producto.agotado ? undefined : setCantidad}
           falta={falta}
         />
+        </div>
 
         {/* En el celular, agregar y personalizar quedan pegados abajo. */}
-        <div className={s.compra}>
-          <Boton bloque tamano="lg" icono={<ShoppingBag aria-hidden="true" />} disabled={producto.agotado} cargando={cargando === 'agregar'} onClick={() => accion('agregar', onAgregar)}>
-            {producto.agotado ? 'Agotado por ahora' : 'Agregar al carrito'}
-          </Boton>
+        <div ref={compraRef} className={s.compra} data-compra-fija="">
+          {botonAgregar({ bloque: true })}
           {producto.personalizable && onPersonalizar && (
             <Boton variante="contorno" tamano="lg" icono={<Paintbrush aria-hidden="true" />} onClick={() => onPersonalizar(eleccion)}>Personalizar</Boton>
           )}
@@ -181,7 +221,7 @@ export function PaginaProducto({
           <Boton bloque tamano="lg" variante="secundario" cargando={cargando === 'comprar'} onClick={() => accion('comprar', onComprar)} iconoFin={<ArrowRight aria-hidden="true" />}>Comprar ahora</Boton>
         )}
         {carrito > 0 && (
-          <Enlace to={urlPagar} className={s.pagarCarrito}>Ir a pagar mi carrito ({carrito})</Enlace>
+          <Enlace to={urlPagar} className={s.pagarCarrito} onClick={onPagarCarrito ? (e) => { e.preventDefault(); onPagarCarrito(); } : undefined}>Ir a pagar mi carrito ({carrito})</Enlace>
         )}
 
         <ConfianzaCompra />
@@ -245,11 +285,19 @@ export function PaginaProducto({
 
       {relacionados.length > 0 && (
         <BloqueSeccion ajustes={{ paddingTop: '0.5rem', paddingBottom: '2.5rem' }}>
-          <TituloSeccion titulo="También te puede gustar" />
-          <Carrusel visibles={{ escritorio: 5, tablet: 3, movil: 2.15 }} espacio="0.85rem" etiqueta="También te puede gustar">
-            {relacionados.map((p, i) => <TarjetaProducto key={p.url || i} {...p} onAgregar={onAgregarRelacionado?.(i)} />)}
-          </Carrusel>
+          <div data-componente="Carrusel · TarjetaProducto">
+            <TituloSeccion titulo="También te puede gustar" />
+            <Carrusel visibles={{ escritorio: 5, tablet: 3, movil: 2.15 }} espacio="0.85rem" etiqueta="También te puede gustar">
+              {relacionados.map((p, i) => <TarjetaProducto key={p.url || i} {...p} onAgregar={onAgregarRelacionado?.(i)} />)}
+            </Carrusel>
+          </div>
         </BloqueSeccion>
+      )}
+
+      {!producto.agotado && (
+        <BarraCompra mirar={compraRef} imagen={galeria[0]?.url} nombre={nombre} detalle={detalle} precio={producto.precio}>
+          {botonAgregar({ tamano: 'md' }, true)}
+        </BarraCompra>
       )}
 
       <HojaInferior abierta={Boolean(foto)} onCerrar={() => setFoto(null)} titulo="Foto de un cliente">

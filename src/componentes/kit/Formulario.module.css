@@ -383,13 +383,27 @@
 .tallaActiva,
 .tallaActiva:hover:not(:disabled) {
   border-color: var(--violet-700);
-  background: var(--violet-700);
   color: #fff;
 }
 
 :global([data-theme='dark']) .tallaActiva {
   border-color: var(--violet-600);
+}
+
+/* El fondo de la elegida: una sola pieza que viaja de una talla a otra. */
+.tallaMarca {
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  background: var(--violet-700);
+}
+
+:global([data-theme='dark']) .tallaMarca {
   background: var(--violet-600);
+}
+
+.tallaTexto {
+  position: relative;
 }
 
 .tallaAgotada {
@@ -418,6 +432,7 @@
 }
 
 .color {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -452,9 +467,22 @@
   animation: checkPop 0.25s var(--ease-signature);
 }
 
-/* Elegido: anillo violeta separado del color por un aro blanco. */
+/* Elegido: anillo violeta separado del color por un aro blanco. En las
+   muestras es una pieza (.colorAro) que se desliza; "otro color" lo lleva fijo. */
 .colorActivo {
   box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.16), 0 0 0 3px var(--color-surface), 0 0 0 5px var(--violet-600);
+}
+
+.colorAro {
+  position: absolute;
+  inset: -5px;
+  border: 2px solid var(--violet-600);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+:global([data-theme='dark']) .colorAro {
+  border-color: var(--violet-400);
 }
 
 :global([data-theme='dark']) .color {

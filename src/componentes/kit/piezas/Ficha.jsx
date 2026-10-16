@@ -1,16 +1,20 @@
-import React, { useState } from 'react';
-import { Truck, RefreshCw, ShieldCheck, Pencil, Check } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Pencil, Check } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { Texto } from '../Traduccion';
 import { BloqueSeccion } from '../Seccion';
+import { useContador } from '../Efectos';
+import { IconoWala } from '../IconosWala';
 import { soles } from '../TarjetaProducto';
+import { FotoProducto } from './FotoProducto';
 import s from './Ficha.module.css';
 
 /*
- * Las partes de una ficha de compra (una creación, un combo y, a futuro, el
- * producto de la tienda): la galería a la izquierda que se queda a la vista
- * al bajar, las migas, el precio con su descuento y la línea de confianza.
+ * Las partes de una ficha de compra (una creación, un combo y el producto de
+ * la tienda): la galería a la izquierda que se queda a la vista al bajar, las
+ * migas, el precio con su descuento, la línea de confianza y la barra de
+ * compra que aparece abajo al bajar.
  */
 
 /**
@@ -32,7 +36,7 @@ export function MarcoFicha({ galeria, children, componente }) {
 /** Migas: [{ texto, url }] (la última sin url, en gris). */
 export function Migas({ items = [] }) {
   return (
-    <nav className={s.migas} aria-label="Estás en">
+    <nav className={s.migas} aria-label="Estás en" data-componente="Migas">
       {items.map((m, k) => (
         <React.Fragment key={m.texto}>
           {k > 0 && <span aria-hidden="true">/</span>}
@@ -45,31 +49,77 @@ export function Migas({ items = [] }) {
 
 /**
  * El precio grande con la letra de la marca y, si hay, el de antes tachado y
- * el descuento en un sello inclinado con el degradado.
+ * el descuento en un sello inclinado con el degradado. Si el precio cambia
+ * (otra variante, un combo completo), corre hasta el nuevo.
  *  - precio, precioAntes · nota: una línea debajo ("Incluye la impresión…")
  */
 export function PrecioFicha({ precio, precioAntes, nota }) {
   const descuento = precioAntes > precio ? Math.round((1 - precio / precioAntes) * 100) : 0;
+  const mostrado = useContador(Number(precio) || 0, 0.5);
   return (
-    <div className={s.precioCaja}>
+    <div className={s.precioCaja} data-componente="PrecioFicha">
       <div className={s.precioFila}>
-        <strong className={s.precio}>{soles(precio)}</strong>
+        <strong className={s.precio}>{soles(Math.round(mostrado * 100) / 100)}</strong>
         {descuento > 0 && <s className={s.antes}>{soles(precioAntes)}</s>}
-        {descuento > 0 && <span className={s.descuento}>-{descuento}%</span>}
+        {descuento > 0 && <span key={descuento} className={s.descuento}>-{descuento}%</span>}
       </div>
       {nota && <p className={s.nota}>{nota}</p>}
     </div>
   );
 }
 
-/** Envío, cambios y pago seguro: la línea de confianza debajo de los botones. */
+const CONFIANZA = [
+  ['camion', 'Envío a todo el país'],
+  ['cambio', 'Cambios y devoluciones'],
+  ['escudo', 'Pago seguro'],
+];
+
+/** Envío, cambios y pago seguro: la línea de confianza, con los íconos de Walá. */
 export function ConfianzaCompra() {
   return (
-    <ul className={s.confianza}>
-      <li><Truck aria-hidden="true" /> Envío a todo el país</li>
-      <li><RefreshCw aria-hidden="true" /> Cambios y devoluciones</li>
-      <li><ShieldCheck aria-hidden="true" /> Pago seguro</li>
+    <ul className={s.confianza} data-componente="ConfianzaCompra">
+      {CONFIANZA.map(([icono, texto]) => (
+        <li key={icono}><IconoWala nombre={icono} tamano={34} /> <span>{texto}</span></li>
+      ))}
     </ul>
+  );
+}
+
+/**
+ * La barra de compra que sube desde abajo cuando los botones de la ficha ya
+ * no se ven (al leer la descripción o las opiniones): la foto, el nombre, lo
+ * elegido, el precio y el botón. Solo en escritorio: en el celular la compra
+ * ya va pegada abajo. Va al final de la página (se pega al fondo de la vista
+ * mientras se baja por ella).
+ *  - mirar: ref del bloque de compra · imagen, nombre, detalle ("Perla · M"),
+ *    precio · children: el botón
+ */
+export function BarraCompra({ mirar, imagen, nombre, detalle, precio, children }) {
+  const [ver, setVer] = useState(false);
+  useEffect(() => {
+    const el = mirar?.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return undefined;
+    // Se mira contra lo que se desplaza (la ventana o un marco con scroll
+    // propio) y aparece solo cuando los botones quedaron arriba.
+    let raiz = el.parentElement;
+    while (raiz && raiz !== document.body && !/(auto|scroll)/.test(getComputedStyle(raiz).overflowY)) raiz = raiz.parentElement;
+    if (raiz === document.body) raiz = null;
+    const io = new IntersectionObserver(([e]) => setVer(!e.isIntersecting && e.boundingClientRect.top < (e.rootBounds?.top ?? 0)), { root: raiz });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [mirar]);
+  return (
+    <div className={s.barraAncla} data-componente="BarraCompra">
+      <div className={[s.barraCompra, ver && s.barraVisible].filter(Boolean).join(' ')} aria-hidden={!ver}>
+        <FotoProducto className={s.barraFoto} src={imagen} relleno="6%" />
+        <div className={s.barraTexto}>
+          <strong>{nombre}</strong>
+          {detalle && <span>{detalle}</span>}
+        </div>
+        <strong className={s.barraPrecio}>{soles(precio)}</strong>
+        {children}
+      </div>
+    </div>
   );
 }
 

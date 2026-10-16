@@ -1,8 +1,9 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { AlertCircle, Minus, Plus, Check, Search, ChevronDown, Eye, EyeOff, LockKeyhole } from 'lucide-react';
 import Boton from './Boton';
 import ListaOpciones from './ListaOpciones';
+import { RESORTE } from './Efectos';
 import s from './Formulario.module.css';
 
 /**
@@ -73,11 +74,13 @@ export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, opciones, nat
 }
 
 /**
- * Selector de opción (talla, medida, número, modelo…). La elegida se pinta
- * de violeta al instante; las agotadas van tachadas. `etiqueta` cambia el
- * título ("Talla" por defecto).
+ * Selector de opción (talla, medida, número, modelo…). El fondo violeta de la
+ * elegida se desliza de una a otra; las agotadas van tachadas. `etiqueta`
+ * cambia el título ("Talla" por defecto).
  */
 export function SelectorTalla({ tallas, valor, onChange, agotadas = [], guia, etiqueta = 'Talla' }) {
+  const marca = useId();
+  const reducir = useReducedMotion();
   return (
     <fieldset className={s.grupo}>
       <legend className={s.leyenda}>
@@ -99,7 +102,8 @@ export function SelectorTalla({ tallas, valor, onChange, agotadas = [], guia, et
               onClick={() => onChange(t)}
               title={agotada ? `${t} agotada` : undefined}
             >
-              {t}
+              {activa && <motion.span layoutId={`talla-${marca}`} className={s.tallaMarca} transition={reducir ? { duration: 0 } : RESORTE} aria-hidden="true" />}
+              <span className={s.tallaTexto}>{t}</span>
             </button>
           );
         })}
@@ -166,6 +170,8 @@ export function CampoHex({ valor, onChange, etiqueta = 'Color en hexadecimal' })
  *    lo muestra.
  */
 export function SelectorColor({ colores, valor, onChange, etiqueta = 'Color', libre }) {
+  const marca = useId();
+  const reducir = useReducedMotion();
   const hexLibre = libre?.hex ? String(libre.hex).toUpperCase() : null;
   const actual = colores.find((c) => c.nombre === valor)
     || (hexLibre && colores.find((c) => c.hex.toUpperCase() === hexLibre))
@@ -201,10 +207,12 @@ export function SelectorColor({ colores, valor, onChange, etiqueta = 'Color', li
             role="radio"
             aria-checked={elegido(c)}
             aria-label={c.nombre}
-            className={[s.color, elegido(c) && s.colorActivo].filter(Boolean).join(' ')}
+            className={s.color}
             style={{ '--muestra': c.hex }}
             onClick={() => elegir(c)}
           >
+            {/* El aro de la elegida se desliza hasta la nueva. */}
+            {elegido(c) && <motion.span layoutId={`color-${marca}`} className={s.colorAro} transition={reducir ? { duration: 0 } : RESORTE} aria-hidden="true" />}
             {elegido(c) && <Check aria-hidden="true" className={c.claro ? s.checkOscuro : undefined} />}
           </button>
         ))}

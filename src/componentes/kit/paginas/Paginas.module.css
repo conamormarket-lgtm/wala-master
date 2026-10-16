@@ -47,6 +47,17 @@
   .flotantes {
     --pila-abajo: 84px;
   }
+
+  /* Y también por encima de una compra pegada abajo (la ficha de producto). */
+  .marco:has([data-compra-fija]) .flotantes {
+    --flotante-extra: 68px;
+  }
+}
+
+@media (max-width: 768px) {
+  .marco:has([data-compra-fija]) .flotantes {
+    --flotante-extra: 68px;
+  }
 }
 
 .cabezaPagina {

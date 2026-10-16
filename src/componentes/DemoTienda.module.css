@@ -193,6 +193,8 @@
   background: var(--violet-500);
 }
 
-.anatomia [data-componente]:not([data-componente='Cabecera'], [data-componente='PiePagina'], [data-componente='BarraInferior']) {
+/* :where() sin peso: lo que ya es sticky o absolute (el resumen de opiniones,
+   la barra de compra) sigue igual con las etiquetas a la vista. */
+.anatomia :where([data-componente]:not([data-componente='Cabecera'], [data-componente='PiePagina'], [data-componente='BarraInferior'])) {
   position: relative;
 }

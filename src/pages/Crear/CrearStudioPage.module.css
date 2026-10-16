@@ -392,6 +392,7 @@
 }
 
 .colorPrenda {
+  position: relative;
   width: 40px;
   height: 40px;
   display: inline-flex;
@@ -404,8 +405,24 @@
   outline-offset: 3px;
 }
 
-.colorPrendaActivo {
-  outline: 2.5px solid var(--primary-color);
+/* Lo elegido (color de la prenda o de la letra): un aro que viaja de una
+   muestra a otra (.aroColor, el mismo de SelectorColor en el kit). */
+.colorPrendaActivo,
+.muestraActiva {
+  outline: none;
+}
+
+.aroColor {
+  position: absolute;
+  inset: -5px;
+  border: 2.5px solid var(--primary-color);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.muestra .aroColor {
+  inset: -4px;
+  border-width: 2px;
 }
 
 .checkColor {
@@ -428,6 +445,7 @@
 }
 
 .talla {
+  position: relative;
   min-width: 48px;
   height: 42px;
   padding: 0 0.75rem;
@@ -442,8 +460,19 @@
 
 .tallaActiva {
   border-color: var(--primary-color);
-  background: var(--primary-color);
   color: #fff;
+}
+
+/* El fondo de la talla elegida viaja de una a otra. */
+.tallaFondo {
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  background: var(--primary-color);
+}
+
+.tallaTexto {
+  position: relative;
 }
 
 :global([data-theme="dark"]) .tallaActiva {
@@ -531,6 +560,7 @@
 }
 
 .muestra {
+  position: relative;
   width: 26px;
   height: 26px;
   border-radius: 50%;
@@ -540,9 +570,6 @@
   outline-offset: 2px;
 }
 
-.muestraActiva {
-  outline: 2px solid var(--primary-color);
-}
 
 .muestraLibre {
   width: 26px;

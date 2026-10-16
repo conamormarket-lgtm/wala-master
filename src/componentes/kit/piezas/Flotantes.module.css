@@ -6,7 +6,8 @@
   --flotante-tam: 56px;
 
   position: fixed;
-  inset: auto 0 var(--flotante-abajo) 0;
+  /* --flotante-extra: lo que sube la página si tiene algo pegado abajo. */
+  inset: auto 0 calc(var(--flotante-abajo) + var(--flotante-extra, 0px)) 0;
   z-index: 950;
   display: flex;
   align-items: flex-end;
@@ -40,7 +41,7 @@
 .capaContenida .izquierda,
 .capaContenida .pila {
   position: absolute;
-  bottom: var(--pila-abajo, 16px);
+  bottom: calc(var(--pila-abajo, 16px) + var(--flotante-extra, 0px));
 }
 
 .capaContenida .izquierda {
