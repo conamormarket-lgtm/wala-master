@@ -46,3 +46,5 @@ export { RuedaRuleta, HistorialRuleta, ICONO_PREMIO } from './Ruleta';
 export { TuboBolitas, Bolita, nivelBolitas, puedeSoltar, moverBolita, tuboListo, nivelResuelto, COLORES_BOLITAS, CAPACIDAD_TUBO } from './Bolitas';
 export { CabezaSorteo, ListaGanadores, TarjetaPlan, TarjetaAliado } from './Sorteos';
 export { AvisoInvitacion, AntesDespues, TarjetaResena, RedesEnlaces, BotonEnlace } from './Campanas';
+export { TemaMarca, temaDeMarca } from './TemaMarca';
+export { PortadaMarca } from './PortadaMarca';

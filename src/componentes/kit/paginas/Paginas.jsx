@@ -14,6 +14,7 @@ import { BloqueSeccion, TituloSeccion } from '../Seccion';
 import { RenderSecciones, CarruselProductos } from '../Secciones';
 import { PiePagina, CatalogoConFiltros } from '../SeccionesExtra';
 import { Buscador, Casilla } from '../Formulario';
+import { TemaMarca } from '../piezas/TemaMarca';
 import { PilaFlotante } from '../piezas/Flotantes';
 import { PieLegal } from '../piezas/Marco';
 import { CARAS_KAPI } from '../piezas/Flotantes';
@@ -101,21 +102,28 @@ export function productosDeSeccion(productos = {}, sec) {
  *  - navPorMarca: { [brandId]: { items, estilo } } (navDeMarca): las
  *    burbujas y el estilo de cada categories_nav que apunta a una marca,
  *    como TiendaPage (la lista curada de la marca, no las categorías sueltas).
+ *  - tema: { color, color2 } → las secciones (y `antes`) van dentro de
+ *    TemaMarca: la página de una marca con su color en los acentos.
+ *  - antes: lo que va antes de las secciones (la portada de una marca).
+ *  - kapiEnPie: para forzarlo (si no, sale salvo que la página termine con
+ *    Preguntas frecuentes).
  *  - El resto: props del marco (cabecera, pie, flotantes…) y de
  *    <RenderSecciones> (onAgregar, propsPara, respaldo, envolver).
  */
 export function PaginaTienda({
   arriba, cabecera, pie, pieLegal, barraInferior, flotantes, contenida,
-  productos, productosPara, categorias = [], marcas = [], marcaActual = null, navPorMarca = {}, ...secciones
+  productos, productosPara, categorias = [], marcas = [], marcaActual = null, navPorMarca = {},
+  tema, antes, kapiEnPie: kapiForzado, ...secciones
 }) {
   const navDe = (sec) => (sec.type === 'categories_nav' ? navPorMarca[(sec.settings?.brandId || '').trim()] : undefined);
   const catalogo = useMemo(() => ({ marcas, categorias, marcaActual }), [marcas, categorias, marcaActual]);
   // Un solo Kapi a la vista: si la página termina con Preguntas frecuentes
   // (su tarjeta de ayuda trae a Kapi), el pie no lo repite.
   const orden = [...(secciones.secciones || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  const kapiEnPie = orden[orden.length - 1]?.type !== 'faq_accordion';
-  return (
-    <MarcoTienda {...{ arriba, cabecera, pie, pieLegal, kapiEnPie, barraInferior, flotantes, contenida }}>
+  const kapiEnPie = kapiForzado ?? orden[orden.length - 1]?.type !== 'faq_accordion';
+  const contenido = (
+    <>
+      {antes}
       <RenderSecciones
         productosPara={productosPara || ((sec) => productosDeSeccion(productos, sec))}
         // Con items puestos a mano en el editor mandan esos; si no, las
@@ -126,6 +134,11 @@ export function PaginaTienda({
         {...secciones}
         propsPara={(sec) => ({ ...(navDe(sec) ? { estilo: navDe(sec).estilo } : {}), ...secciones.propsPara?.(sec) })}
       />
+    </>
+  );
+  return (
+    <MarcoTienda {...{ arriba, cabecera, pie, pieLegal, kapiEnPie, barraInferior, flotantes, contenida }}>
+      {tema ? <TemaMarca identidad={tema}>{contenido}</TemaMarca> : contenido}
     </MarcoTienda>
   );
 }

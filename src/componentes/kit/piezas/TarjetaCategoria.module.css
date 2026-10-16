@@ -365,11 +365,11 @@
 }
 
 .burbujaActiva .burbujaFoto {
-  box-shadow: 0 0 0 2px var(--color-bg, var(--gris-fondo)), 0 0 0 4px var(--primary-color);
+  box-shadow: 0 0 0 2px var(--color-bg, var(--gris-fondo)), 0 0 0 4px var(--tema-acento, var(--primary-color));
 }
 
 .burbujaActiva .burbujaNombre {
-  color: var(--primary-color);
+  color: var(--tema-acento, var(--primary-color));
 }
 
 /* "Todos": sello con el degradado del logo. */
@@ -378,7 +378,7 @@
 }
 
 .burbujaTodos .burbujaFoto svg {
-  color: #fff;
+  color: var(--tema-sobre, #fff);
 }
 
 @media (hover: hover) and (pointer: fine) {

@@ -31,7 +31,8 @@ Cómo verlo en vivo: `npm run dev` → http://localhost:3000/componentes.html �
 **Páginas** → **Tienda de prueba** → **Landing de marca** (`/:slug`): dos
 landings reales del builder, Con Amor Geeks (catálogo con filtros) y Yoryo
 (carruseles por categoría). El menú Marcas de la cabecera también lleva a la
-de Con Amor Geeks.
+de Con Amor Geeks. Al lado, **Página de marca**: la página de una marca
+sin armarla (abajo).
 
 ![La landing de Con Amor Geeks](landing-marca.webp)
 
@@ -68,6 +69,53 @@ wala.pe dice "Poleras"):
 La sección es compacta (0,75 rem arriba y abajo si el editor no fija otro
 relleno), como en wala.pe: las burbujas quedan casi pegadas al banner y al
 catálogo.
+
+## La página de una marca sin armarla (`PaginaMarca`)
+
+Hoy cada marca arma su landing a mano en el builder y 7 de ellas repiten lo
+mismo (banner, burbujas, destacados, ofertas y catálogo), todas en el violeta
+de Walá. `PaginaMarca` hace esa página sola con la **identidad** de la marca
+(unos pocos campos) y una **plantilla** de secciones del builder. Cómo verla:
+**Tienda de prueba** → **Página de marca**, con "Cómo se abre" (tres marcas y
+la de hoy) y los estados (cargando, error, sin productos).
+
+![Con Amor Geeks en escritorio: la foto de su landing, su logo y el rojo de la marca en "Todos" y en el trazo](marca-escritorio.webp)
+
+![Tres marcas en el celular: Con Amor Geeks con foto, Con Amor Parejas con su color y Yoryo con collage](marca-celular.webp)
+
+**Las identidades de la demo son DE EJEMPLO.** Los colores salen de cada
+logo y la foto de Con Amor Geeks es la de su landing real, pero en
+`tienda_brands` todavía no existe `identidad` (todas tienen `bgColor`
+blanco). Las frases también son de ejemplo. Los productos y las burbujas sí
+son reales.
+
+### Partes
+
+| Parte | Componente | Qué hace |
+|---|---|---|
+| El color | `TemaMarca` (`temaDeMarca`) | Cambia solo los acentos: el degradado de los sellos y del "Todos", el trazo bajo los títulos, el aro de la burbuja elegida y los chips activos. Los botones de compra, la cabecera, el pie y Kapi siguen violeta. |
+| La portada | `PortadaMarca` | Logo en sello girado, el nombre con trazo, la frase, "Ver productos" (baja al catálogo) y cuántos productos. Tres estilos: `foto` (la foto de fondo con el color de la marca detrás del texto), `color` (el degradado de la marca con el logo grande) y `collage` (fondo tenue con tres productos en cartas giradas). |
+| Las secciones | `plantillaDeMarca` | `categories_nav` (las burbujas curadas, `navDeMarca`), `featured_carousel` "Lo más pedido", `sale_carousel` "En oferta" y `sidebar_catalog` "Todo {marca}" con `anchorId: 'catalogo'`. Sin destacados o sin ofertas, esa fila no sale. |
+| La página | `PaginaMarca` | `PaginaTienda` con la portada (`antes`) y el tema (`tema`). Si la marca ya tiene secciones propias (una landing del builder), mandan esas; la portada sale solo si no traen `hero_banner` ni `hero_carousel`. |
+
+Esqueleto: `EsqueletoPagina secciones={ESQUELETO_MARCA}` (portada, burbujas,
+una fila y el catálogo). Error: Kapi triste y "Reintentar". Sin productos:
+"Ir a la tienda".
+
+### Lo que se configura (a futuro, en `tienda_brands.identidad`)
+
+| Campo | Qué es | Sin él |
+|---|---|---|
+| `color` | El color de la marca (hex) | `bgColor` si no es blanco; si no, el violeta de Walá |
+| `color2` | El segundo color: el final del degradado y, de noche, el acento si el primero no se ve (el negro de Yoryo pasa a crema) | El primero oscurecido |
+| `estilo` | `foto`, `color` o `collage` | `foto` si hay `imagen`; si no, `color` |
+| `imagen` | La foto de la portada | Sin ella, `foto` cae en `color` |
+| `frase` | Una línea bajo el nombre | "Productos de {marca}" |
+| `bloques` | Qué secciones lleva y cuáles no (`BLOQUES_MARCA`: categorias, destacados, ofertas, catalogo) | Todas |
+
+Lo lee `identidadDeMarca(marca)`. Para la noche, `temaDeMarca` busca una
+versión del color que se vea sobre el fondo oscuro (contraste 3:1); el texto
+encima de un acento se elige blanco u oscuro por contraste.
 
 ## Las landings del builder salen con el kit
 
@@ -124,6 +172,12 @@ Las landings esconden la cabecera y el pie según `hideHeader` / `hideFooter`.
   `firestore.indexes.json`.
 
 ### Pasos
+
+La página de marca va después: primero la identidad en el admin de
+marcas (los seis campos de arriba en `tienda_brands.identidad`), luego
+`DynamicLandingPage` monta `PaginaMarca` (con las `secciones` de la landing
+si existe) y las landings que hoy repiten la plantilla pueden dejar sus
+secciones vacías.
 
 Junto con la migración del inicio y /tienda a `PaginaTienda` (paso 5 de
 MIGRACION.md): `DynamicLandingPage` deja de montar `TiendaPage` y monta

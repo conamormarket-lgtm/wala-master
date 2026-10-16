@@ -151,16 +151,17 @@
 }
 
 .chipActivo {
-  border-color: var(--violet-700);
-  background: var(--violet-700);
-  color: #fff;
+  /* Con TemaMarca, el color de la marca (fuera de una marca, violeta). */
+  border-color: var(--tema-acento, var(--violet-700));
+  background: var(--tema-acento, var(--violet-700));
+  color: var(--tema-sobre, #fff);
   animation: rebote 0.45s var(--ease-signature);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .chipActivo:hover {
-    border-color: var(--violet-600);
-    background: var(--violet-600);
+    border-color: var(--tema-acento, var(--violet-600));
+    background: var(--tema-acento, var(--violet-600));
   }
 }
 
@@ -196,7 +197,7 @@
 
 .chipActivo .chipCuenta {
   background: rgba(255, 255, 255, 0.22);
-  color: #fff;
+  color: var(--tema-sobre, #fff);
 }
 
 /* Filtro ya aplicado: violeta suave con × para quitarlo. */
@@ -214,8 +215,8 @@
 }
 
 :global([data-theme='dark']) .chipActivo {
-  border-color: var(--violet-600);
-  background: var(--violet-600);
+  border-color: var(--tema-acento, var(--violet-600));
+  background: var(--tema-acento, var(--violet-600));
 }
 
 @keyframes rebote {

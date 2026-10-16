@@ -52,6 +52,8 @@ Cada paso en su propio commit, verificable por separado.
 5. **Secciones del builder**, página por página, con `RenderSecciones` (o
    `PaginaTienda`) + `respaldo`. Primero el inicio (INICIO.md), después
    `/tienda` con el catálogo (TIENDA.md). Comparar capturas antes y después.
+   Las landings de marca, con `PaginaMarca` (identidad + plantilla) cuando
+   el admin de marcas guarde `identidad` (NAVEGAR.md).
 6. **Páginas propias** (no son del builder): la ficha de producto
    (`PaginaProducto`, PRODUCTO.md; `onVariante` lleva `recordVariantViewTime`
    y `onPagarCarrito` el `selectAllItems`), el carrito (`PaginaCarrito`, CARRITO.md), el checkout

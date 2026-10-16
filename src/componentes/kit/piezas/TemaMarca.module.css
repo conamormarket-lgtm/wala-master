@@ -1,0 +1,19 @@
+/* El tema de una marca: los acentos con su color, de día y de noche. Los
+   botones no miran estas variables (siguen violeta). */
+.tema {
+  --degradado-logo: var(--tema-degradado-dia);
+  --tema-acento: var(--tema-acento-dia);
+  --tema-sobre: var(--tema-sobre-dia);
+  --tema-trazo: var(--tema-trazo-dia);
+  --tema-suave: var(--tema-suave-dia);
+  --tema-tinta: var(--tema-tinta-dia);
+}
+
+:global([data-theme='dark']) .tema {
+  --degradado-logo: var(--tema-degradado-noche);
+  --tema-acento: var(--tema-acento-noche);
+  --tema-sobre: var(--tema-sobre-noche);
+  --tema-trazo: var(--tema-trazo-noche);
+  --tema-suave: var(--tema-suave-noche);
+  --tema-tinta: var(--tema-tinta-noche);
+}

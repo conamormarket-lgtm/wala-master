@@ -1,0 +1,264 @@
+/* La portada de una marca: su color (TemaMarca), su logo y su nombre. */
+/* Se acomoda al ancho de su sección (las container queries de BloqueSeccion). */
+.portada {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 1.25rem;
+  min-height: 300px;
+  padding: clamp(1.5rem, 5cqi, 3rem);
+  overflow: hidden;
+  border-radius: 6px 28px 28px 28px;
+  isolation: isolate;
+}
+
+@container (min-width: 720px) {
+  .portada {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    min-height: 340px;
+  }
+}
+
+/* ── Los tres estilos ── */
+.p_color {
+  background: var(--degradado-logo);
+  color: #fff;
+}
+
+.p_foto {
+  min-height: 360px;
+  background: var(--tema-tinta, #2e1065);
+  color: #fff;
+}
+
+.fondo {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* El color de la marca detrás del texto: de la izquierda en ancho, de abajo en el celular. */
+.p_foto::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(0deg, var(--tema-tinta, #2e1065) 8%, color-mix(in srgb, var(--tema-tinta, #2e1065) 70%, transparent) 45%, transparent 85%);
+  content: '';
+}
+
+@container (min-width: 720px) {
+  .p_foto::before {
+    background: linear-gradient(90deg, var(--tema-tinta, #2e1065) 0%, color-mix(in srgb, var(--tema-tinta, #2e1065) 75%, transparent) 40%, transparent 75%);
+  }
+}
+
+/* En el celular, la foto arriba y el texto sobre el color (no tapa la foto). */
+@container (max-width: 719px) {
+  .p_foto {
+    align-items: end;
+    min-height: 440px;
+  }
+}
+
+.p_collage {
+  background: var(--tema-suave, var(--primary-light));
+  color: var(--color-text);
+}
+
+/* ── Adornos (quietos) ── */
+.adornos {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+}
+
+.puntos {
+  position: absolute;
+  right: 6%;
+  bottom: 10%;
+  width: 120px;
+  color: rgba(255, 255, 255, 0.18);
+}
+
+.destello1,
+.destello2 {
+  position: absolute;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.destello1 {
+  top: 14%;
+  right: 38%;
+  width: 22px;
+}
+
+.destello2 {
+  top: 26%;
+  right: 34%;
+  width: 12px;
+  color: #fcd34d;
+}
+
+.p_foto .puntos,
+.p_foto .destello1 {
+  display: none;
+}
+
+/* ── El texto ── */
+.texto {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.logo {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 10px 22px -12px rgba(28, 20, 51, 0.6);
+  color: var(--tema-tinta, #4c1d95);
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+  transform: rotate(-6deg);
+}
+
+.logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.logoGrande {
+  width: clamp(130px, 30cqi, 200px);
+  height: clamp(130px, 30cqi, 200px);
+  border-width: 5px;
+  font-size: 2.6rem;
+  transform: rotate(-6deg);
+}
+
+.nombre {
+  position: relative;
+  margin: 0;
+  font-family: var(--fuente-marca);
+  font-size: clamp(2rem, 7cqi, 3.4rem);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+}
+
+.trazo {
+  display: block;
+  width: min(100%, 260px);
+  height: 12px;
+  margin-top: 0.3rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.p_collage .trazo {
+  color: var(--tema-trazo, var(--violet-400));
+}
+
+.frase {
+  max-width: 36ch;
+  margin: 0;
+  font-size: clamp(0.95rem, 2.4cqi, 1.1rem);
+  line-height: 1.5;
+  opacity: 0.92;
+}
+
+.p_collage .frase {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  margin-top: 0.35rem;
+}
+
+.cuenta {
+  font-size: 0.86rem;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.p_collage .cuenta {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+/* ── El lado derecho (logo grande o collage) ── */
+.lado {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+}
+
+@container (max-width: 719px) {
+  .p_color .lado {
+    order: -1;
+    justify-items: start;
+  }
+
+  .p_color .logoGrande {
+    width: 96px;
+    height: 96px;
+    border-width: 4px;
+  }
+}
+
+.collage {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 4%;
+  width: min(100%, 420px);
+}
+
+/* Cartas con filo blanco, un poco giradas (como el collage de un combo). */
+.carta {
+  aspect-ratio: 3 / 4;
+  border: 5px solid #fff;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 26px -16px rgba(28, 20, 51, 0.55);
+  transform: rotate(calc((var(--i) - 1) * 6deg)) translateY(calc((var(--i) - 1) * (var(--i) - 1) * 10px));
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .portada:hover .carta {
+    transform: rotate(calc((var(--i) - 1) * 9deg)) translateY(-4px);
+  }
+}
+
+@container (max-width: 719px) {
+  .collage {
+    width: 100%;
+    margin-top: 0.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carta {
+    transition: none;
+  }
+}

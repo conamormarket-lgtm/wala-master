@@ -31,7 +31,7 @@ Todo se arma con lo del nivel de abajo; nada se dibuja dos veces.
    piezas. En `/componentes.html` (vista Secciones) cada ficha dice con qué
    piezas está hecha.
 3. **Páginas** (`paginas/Paginas.jsx`): `MarcoTienda` (cabecera, pie y barra
-   inferior), `PaginaTienda` (marco + secciones del builder), `PaginaCarrito`
+   inferior), `PaginaTienda` (marco + secciones del builder), `PaginaMarca` (`paginas/Marca.jsx`: la página de una marca con su color y su portada, NAVEGAR.md), `PaginaCarrito`
    (piezas del pedido + la sección de carrusel para recomendar),
    `PaginaPedidos`, `PaginaMinijuegos` (Zona Arcade: `Encabezado` +
    `TarjetaJuego`) y `PaginaBusqueda` (el catálogo de /tienda con orden).
@@ -150,13 +150,16 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `Feedback.jsx` | `Aviso`, `ProveedorToasts`, `useToast`, `useNotificaciones`, `ListaNotificaciones`, `EstadoVacio`, `HojaInferior` | Avisos, notificaciones y modales |
 | `Enlace.jsx` | `Enlace`, `ProveedorEnlaces`, `tipoDeEnlace` | La única regla de enlaces: internos por el router, externos en otra pestaña, `#ancla` con scroll suave |
 | `Traduccion.jsx` | `ProveedorTraduccion`, `useTexto`, `useHtml`, `Texto` | Los textos de los datos pasan por la traducción de la tienda (guía: `guia/TRADUCCION.md`); sin proveedor, quedan igual |
-| `adaptadores.js` | `accionDeProducto`, `tarjetaDesdeProducto`, `opcionesDeProducto`, `rutaDeMarca`, `tarjetaDesdeMarca`, `testimonioDesdeAjuste`, `precioEfectivo`, `limitesDePrecio`, `esTemporada`, `gruposDeCatalogo`, `grillaDesdeConfiguracion`, `juegosDelArcade`, `kapiDesdePerfil`, `retoDesdePerfil`, `sugerenciasDesdeBusqueda`, `grupoModalidad`, `ORDENES_BUSQUEDA`, `ordenarProductos`, y de la cuenta: `perfilDesdeUsuario`, `direccionDesdeFirestore` / `direccionAFirestore`, `recompensaDesdeFirestore`, `cuponDesdeFirestore`, `misionDesdeServidor`, `creacionDesdeDiseno`, `personaDesdeRecipient` / `personaARecipient` (con el "Conjunto familia"), `encuestaDesdeConfig` (config de la encuesta → textos y conjuntos), `navDeMarca` (las burbujas y el estilo de `categories_nav` de una marca)| Traducen datos de Firestore a props del kit: un producto de `productos_wala`, una marca de `tienda_brands`, las listas de filtros del catálogo (categorías, colecciones, etiquetas, personajes, tipos), `storeConfig.layout` y el perfil del cliente (Zona Arcade, Kapi y su reto) |
+| `adaptadores.js` | `accionDeProducto`, `tarjetaDesdeProducto`, `opcionesDeProducto`, `rutaDeMarca`, `tarjetaDesdeMarca`, `testimonioDesdeAjuste`, `precioEfectivo`, `limitesDePrecio`, `esTemporada`, `gruposDeCatalogo`, `grillaDesdeConfiguracion`, `juegosDelArcade`, `kapiDesdePerfil`, `retoDesdePerfil`, `sugerenciasDesdeBusqueda`, `grupoModalidad`, `ORDENES_BUSQUEDA`, `ordenarProductos`, y de la cuenta: `perfilDesdeUsuario`, `direccionDesdeFirestore` / `direccionAFirestore`, `recompensaDesdeFirestore`, `cuponDesdeFirestore`, `misionDesdeServidor`, `creacionDesdeDiseno`, `personaDesdeRecipient` / `personaARecipient` (con el "Conjunto familia"), `encuestaDesdeConfig` (config de la encuesta → textos y conjuntos), `navDeMarca` (las burbujas y el estilo de `categories_nav` de una marca), `identidadDeMarca` (color, segundo color, estilo, foto, frase y bloques de una marca), `plantillaDeMarca` + `BLOQUES_MARCA` (las secciones de su página), `ESQUELETO_MARCA`| Traducen datos de Firestore a props del kit: un producto de `productos_wala`, una marca de `tienda_brands`, las listas de filtros del catálogo (categorías, colecciones, etiquetas, personajes, tipos), `storeConfig.layout` y el perfil del cliente (Zona Arcade, Kapi y su reto) |
 | `Carrusel.jsx` | `Carrusel` | El único carrusel: deslizar nativo, flechas, puntos, autoplay con pausas |
 | `Marquesina.jsx` | `Marquesina` | Cinta sin fin (logos, anuncios, burbujas) |
 | `CuentaRegresiva.jsx` | `CuentaRegresiva` | Hasta una fecha o "siempre activa" por visitante; variantes bloques, texto y evento (dígitos grandes para fondos oscuros) |
 | `Acordeon.jsx` | `Acordeon` | Plegables: preguntas frecuentes (variante de tarjetas) y grupos de filtros o detalles (`variante="lista"`); la respuesta puede ser texto o cualquier contenido |
 | `Seccion.jsx` | `BloqueSeccion`, `TituloSeccion`, `tituloDesdeAjustes` | Relleno, fondo y título iguales en todas las secciones |
 | `piezas/TarjetaCategoria.jsx` | `TarjetaCategoria` (cuadro · círculo · burbuja; el cuadro lleva `detalle`, una línea de texto bajo el nombre), `TarjetaCategoriaEsqueleto` | category_grid y categories_nav |
+| `piezas/TemaMarca.jsx` | `TemaMarca`, `temaDeMarca` | El color de una marca en los acentos (sellos, "Todos", trazos, chips y aros) con su versión de noche; los botones de compra siguen violeta |
+| `piezas/PortadaMarca.jsx` | `PortadaMarca` | La portada de una marca: logo, nombre con trazo, frase y "Ver productos"; estilo foto · color · collage |
+| `paginas/Marca.jsx` | `PaginaMarca` | La página de una marca sin armarla: identidad + plantilla, o sus secciones del builder (guía: `guia/NAVEGAR.md`) |
 | `piezas/FotoProducto.jsx` | `FotoProducto` | Foto de producto sobre su escenario (`src`, `relleno`, `respaldo` sin foto, `children` encima) |
 | `piezas/Avatar.jsx` | `Avatar`, `iniciales` | Foto o iniciales de una persona |
 | `piezas/OpcionesFiltro.jsx` | `OpcionesFiltro` | Opciones de un filtro como chips con su cuenta; una a la vez y "Ver N más" |
@@ -293,7 +296,10 @@ que TiendaPage), más `categorias`, `marcas`, `marcaActual` y `navPorMarca`
 (las burbujas de cada `categories_nav` con marca: `navDeMarca(marca, {
 productos, categorias })`, la lista curada de la marca). Con `marcas` y
 `categorias` las tarjetas muestran el sello de la marca y la categoría
-(`catalogo` en `RenderSecciones` / `tarjetaDesdeProducto`).
+(`catalogo` en `RenderSecciones` / `tarjetaDesdeProducto`). `tema` (una
+identidad `{ color, color2 }`) pinta los acentos con `TemaMarca`, `antes`
+va arriba de las secciones (la portada de una marca) y `kapiEnPie={false}`
+quita el Kapi del pie (cuando la página ya muestra uno).
 
 Props de página por sección con `propsPara(sec)`: `{ cargando, hayMas,
 onCargarMas, cargandoMas, columnas, segundaFoto }` en grillas

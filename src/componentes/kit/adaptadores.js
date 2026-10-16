@@ -1084,3 +1084,53 @@ export function navDeMarca(marca = {}, { productos = [], categorias = [] } = {})
     },
   };
 }
+
+/* ── Página de marca: identidad y plantilla ── */
+
+/** Los bloques de la plantilla de una marca, en su orden. */
+export const BLOQUES_MARCA = ['categorias', 'destacados', 'ofertas', 'catalogo'];
+
+const casiBlanco = (hex) => /^#?(f{3}|f{6}|fefefe|fdfdfd|fafafa)$/i.test(String(hex || '').trim());
+
+/**
+ * La identidad de una marca para su página (TemaMarca + PortadaMarca), desde
+ * su doc de tienda_brands. Los campos de `identidad` son los que se eligen en
+ * el panel de la marca (a futuro); sin ellos, lo que ya hay: bgColor si no es
+ * blanco (todas lo tienen blanco hoy) y el violeta de Walá si no.
+ *  → { color, color2, estilo: 'foto' | 'color' | 'collage', imagen, frase, bloques }
+ */
+export function identidadDeMarca(marca = {}) {
+  const i = marca.identidad || {};
+  const color = i.color || (marca.bgColor && !casiBlanco(marca.bgColor) ? marca.bgColor : '');
+  return {
+    color,
+    color2: i.color2 || '',
+    estilo: ['foto', 'color', 'collage'].includes(i.estilo) ? i.estilo : (i.imagen ? 'foto' : 'color'),
+    imagen: i.imagen || '',
+    frase: i.frase || (marca.name ? `Productos de ${marca.name}` : ''),
+    bloques: Array.isArray(i.bloques) ? i.bloques.filter((b) => BLOQUES_MARCA.includes(b)) : BLOQUES_MARCA,
+  };
+}
+
+/**
+ * Las secciones de la página de una marca sin armarlas a mano en el builder
+ * (las mismas que hoy repiten 7 landings): las burbujas de sus categorías,
+ * lo más pedido, sus ofertas (si hay) y su catálogo con filtros. Son
+ * secciones normales del builder: se dibujan con RenderSecciones.
+ *  - brandId, nombre · bloques (BLOQUES_MARCA, en ese orden; los que no
+ *    estén no salen) · hayDestacados, hayOfertas (sin productos, la fila
+ *    no sale)
+ */
+/** La forma de la página de una marca mientras carga (EsqueletoPagina secciones). */
+export const ESQUELETO_MARCA = ['hero_banner', 'categories_nav', 'featured_carousel', 'sidebar_catalog'];
+
+export function plantillaDeMarca({ brandId, nombre = '', bloques = BLOQUES_MARCA, hayDestacados = true, hayOfertas = true } = {}) {
+  const pedidas = new Set(bloques);
+  const secciones = [
+    pedidas.has('categorias') && { type: 'categories_nav', settings: { brandId } },
+    pedidas.has('destacados') && hayDestacados && { type: 'featured_carousel', settings: { title: 'Lo más pedido', titleUnderline: true, visibleItems: 5 } },
+    pedidas.has('ofertas') && hayOfertas && { type: 'sale_carousel', settings: { title: 'En oferta', titleUnderline: true, visibleItems: 5 } },
+    pedidas.has('catalogo') && { type: 'sidebar_catalog', settings: { title: nombre ? `Todo ${nombre}` : 'Todos los productos', titleUnderline: true, brandId, anchorId: 'catalogo' } },
+  ].filter(Boolean);
+  return secciones.map((sec, k) => ({ id: `marca-${sec.type}`, order: k + 1, ...sec }));
+}

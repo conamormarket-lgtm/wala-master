@@ -20,7 +20,7 @@ export { accionDeProducto, tarjetaDesdeProducto, esNuevo, opcionesDeProducto, ru
   sugerenciasDesdeBusqueda, grupoModalidad, ORDENES_BUSQUEDA, ordenarProductos, perfilDesdeUsuario, direccionDesdeFirestore, direccionAFirestore,
   recompensaDesdeFirestore, cuponDesdeFirestore, misionDesdeServidor, creacionDesdeDiseno, personaDesdeRecipient, personaARecipient, encuestaDesdeConfig,
   prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaCreacionDesde, prendaEstudioDesde,
-  fichaProductoDesde, opinionesDesde, navDeMarca } from './adaptadores';
+  fichaProductoDesde, opinionesDesde, navDeMarca, identidadDeMarca, plantillaDeMarca, BLOQUES_MARCA, ESQUELETO_MARCA } from './adaptadores';
 export { tipoDeEnlace } from './Enlace';
 export { default as Carrusel } from './Carrusel';
 export { default as Marquesina } from './Marquesina';
@@ -42,6 +42,9 @@ export { IconoWala, ICONOS_WALA, iconoDesde } from './IconosWala';
 export { PASTELES, pastel, ACENTOS, acento } from './Marca';
 export * from './piezas';
 export { MarcoTienda, PaginaTienda, productosDeSeccion, PaginaCarrito, PaginaMinijuegos, PaginaBusqueda } from './paginas/Paginas';
+export { PaginaMarca } from './paginas/Marca';
+export { TemaMarca, temaDeMarca } from './piezas/TemaMarca';
+export { PortadaMarca } from './piezas/PortadaMarca';
 export { PaginaPedidos, PaginaDetallePedido } from './paginas/CuentaPedidos';
 export { MarcoCuenta, PaginaCuentaInvitado, PaginaResumenCuenta, PaginaPerfil, PaginaDirecciones, PaginaAjustes, validarDireccion, fechaLegible } from './paginas/Cuenta';
 export { PaginaCatalogo, PaginaCupones, PaginaMisiones, PaginaReferidos } from './paginas/CuentaRecompensas';
