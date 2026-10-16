@@ -53,10 +53,19 @@ reseñas de prueba en un producto borrado, así que no sirven para ver el diseñ
   estrellas con el promedio llevan a la sección de opiniones.
 - **Precio:** `PrecioFicha`, con el precio de antes y el descuento en su sello.
   Con 10 o menos unidades, "¡Quedan N!" (la misma regla que la tarjeta).
-- **Combo:** "Este conjunto incluye (2)", cada prenda con su foto. Después,
-  un color por prenda (abre con el color del combo, `variantMapping.color`) y
-  una talla para todas, con "Se aplica a las 2 prendas". La talla es la que
-  comparten las prendas.
+- **Combo:** "Este conjunto incluye (2)", cada prenda con su foto (la del
+  color elegido, si ese color tiene). Después, un color por prenda (abre con
+  el color del combo, `variantMapping.color`; `allowedColors` se compara sin
+  espacios ni mayúsculas) y una talla para todas, con "Se aplica a las 2
+  prendas". La talla es la que comparten las prendas **con los colores
+  elegidos** (`tallasDe`, la regla de `comboSizeOptions` de la tienda): si al
+  cambiar un color la talla elegida ya no está, se vuelve a pedir.
+  **Al cambiar el color de una prenda, la galería se desliza hasta la foto de
+  esa prenda en ese color** ("Él · Negro"; la miniatura dice solo "Él"). Las
+  fotos salen de la variante de la prenda (`imageUrl`, `galleryImages`,
+  `images`) y, si no tiene, de la prenda (`imageUrl` del combo, `mainImage`,
+  `images`). Si el color elegido no tiene foto, la prenda sigue en la galería
+  con la que hay, rotulada con su color real, y la galería no se mueve.
 - **Galería:** las fotos van en una tira que se desliza. En el celular sigue
   al dedo y encaja foto por foto, con puntos abajo. En escritorio, al tocar o
   pasar por una miniatura, la tira se desliza hasta esa foto. El borde de la
@@ -64,10 +73,17 @@ reseñas de prueba en un producto borrado, así que no sirven para ver el diseñ
   está el cursor. La foto se funde con el escenario (`multiply`), así que su
   fondo blanco no deja una franja.
 - **Opciones:** el color en muestras (o el modelo en botones, si las
-  variantes no tienen color) y la talla con su nombre (`sizeLabel`: Talla,
+  variantes no tienen color ni foto) y la talla con su nombre (`sizeLabel`: Talla,
   Medida…). **Lo elegido viaja**: el aro del color y el fondo violeta de la
   talla se deslizan de la opción anterior a la nueva (con resorte; sin
-  movimiento si se pide reducirlo). Al cambiar de color, la galería pasa a
+  movimiento si se pide reducirlo). **Muestras con foto:** la variante que
+  trae foto (`imageUrl`) la muestra en su círculo, sobre el escenario de las
+  fotos y con el recorte del admin (`thumbnailCrop`); las demás, su color. Si
+  a una variante le falta `colorHex`, el color sale del nombre
+  (`getFallbackHex`: "Negro", "Celeste"…); solo sin color ni foto pasa a
+  botones "Modelo". **Una sola variante con tallas** muestra igual su color
+  (como la tienda); sin tallas ("Principal" de un sérum) no se muestra.
+  Al cambiar de color, la galería pasa a
   sus fotos y **la talla elegida se queda** si el nuevo color la tiene (igual
   que "Agregar rápido"). Abre con la variante principal (`defaultVariantId`);
   la tienda abre siempre la primera. Cada cambio de variante (y la de
@@ -199,21 +215,16 @@ reseñas de prueba en un producto borrado, así que no sirven para ver el diseñ
 - Al cambiar de color la talla se conserva si existe.
 - En escritorio, la barra de compra al bajar (la tienda no la tiene).
 - El botón confirma "¡Agregado!" además del toast.
+- Combo: si el color elegido de una prenda no tiene foto, la prenda sigue en
+  la galería con la foto que hay (rotulada con su color); en la tienda
+  desaparece y la galería vuelve a la portada. Con los datos reales casi
+  ningún color tiene foto propia (en "Rodar Contigo", 1 de 9 por prenda).
+- La muestra con foto es redonda como las demás (en la tienda, rectángulos).
 
 ### Lo encontrado de paso (2026-10-16, comparando con `ProductDetail.jsx`)
 
 Falta en el kit y queda para cuando se migre (o se pida):
 
-- **Combo:** en la tienda, al cambiar el color de una prenda la galería salta
-  a la foto de esa prenda en ese color, y las tallas se recalculan por
-  color. En el kit las fotos de cada prenda son fijas (`comboItems[].imageUrl`)
-  y las tallas se juntan de todos los colores.
-- **Muestras con foto:** la tienda usa la foto de la variante
-  (`imageUrl` + `thumbnailCrop`) como muestra y deduce un color del nombre
-  (`getFallbackHex`). `SelectorColor` solo dibuja círculos; si a una
-  variante le falta `colorHex`, el kit pasa a botones "Modelo".
-- **Una sola variante con tallas:** la tienda muestra igual su color; el kit
-  no muestra selector con una sola variante.
 - **Fotos:** la tienda pide el tamaño justo (`imagesVariantes`), la primera
   con `fetchPriority="high"`, precarga las demás y usa las vistas de
   personalización por color. El kit usa la URL tal cual.

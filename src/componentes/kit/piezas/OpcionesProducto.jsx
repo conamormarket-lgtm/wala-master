@@ -9,15 +9,18 @@ import s from './OpcionesProducto.module.css';
  * producto. Sirve para cualquier producto, no solo ropa (el modelo de la
  * tienda; los datos salen de adaptadores.opcionesDeProducto):
  *
- *  - variantes: [{ id, nombre, colorHex?, claro?, opciones?: string[] }]. Si
- *    todas tienen colorHex van como muestras de color; si no, como botones con
- *    el nombre ("Feliz", "Clásico"…). Con una sola variante no hay selector.
- *    varId · onVariante(id)
+ *  - variantes: [{ id, nombre, colorHex?, claro?, imagen?, recorte?,
+ *    opciones?: string[] }]. Si todas tienen color o foto van como muestras
+ *    (la que tiene foto la muestra, con su recorte); si no, como botones con el
+ *    nombre ("Feliz", "Clásico"…). Una sola variante solo se muestra si tiene
+ *    tallas y color (como la tienda). varId · onVariante(id)
  *  - opciones: string[] por defecto (mainSizes) si la variante no trae las
  *    suyas · etiquetaOpcion: 'Talla' | 'Medida'… · agotadas · opcion · onOpcion
  *    · notaOpcion: una línea bajo la talla ("Se aplica a las 2 prendas")
- *  - piezas: combos → [{ nombre, colores: [{ nombre, hex }] }] · colores:
- *    { [i]: nombre } · onColorPieza(i, nombre)
+ *  - piezas: combos → [{ nombre, colores: [{ nombre, hex, imagen?, recorte?,
+ *    tallas }], tallas }] · colores: { [i]: nombre } · onColorPieza(i, nombre).
+ *    Las tallas de un combo son las que comparten los colores elegidos
+ *    (tallasDe), así que cambian con cada color.
  *  - cantidad · onCantidad · maxCantidad · onGuia (guía de tallas)
  *  - falta: la talla se marca en rojo con "Elige una talla para continuar"
  */
@@ -26,8 +29,8 @@ export function OpcionesProducto({
   piezas = [], colores = {}, onColorPieza, cantidad, onCantidad, maxCantidad = 10, onGuia, falta = false,
 }) {
   const variante = variantes.find((v) => v.id === varId) || variantes[0];
-  const lista = opcionesDe(variante, opciones);
-  const conColor = variantes.length > 1 && variantes.every((v) => v.colorHex);
+  const lista = tallasDe({ variante, opciones, piezas, colores });
+  const conColor = conMuestras(variantes);
   return (
     <div className={s.opciones} data-componente="OpcionesProducto">
       {piezas.map((p, i) => p.colores.length > 0 && (
@@ -40,9 +43,9 @@ export function OpcionesProducto({
         />
       ))}
 
-      {variantes.length > 1 && (conColor ? (
+      {verVariantes(variantes) && (conColor ? (
         <SelectorColor
-          colores={variantes.map((v) => ({ nombre: v.nombre, hex: v.colorHex, claro: v.claro }))}
+          colores={variantes.map((v) => ({ nombre: v.nombre, hex: v.colorHex, claro: v.claro, imagen: v.imagen, recorte: v.recorte }))}
           valor={variante?.nombre}
           onChange={(n) => onVariante?.(variantes.find((v) => v.nombre === n)?.id)}
         />
@@ -82,6 +85,30 @@ export function OpcionesProducto({
 
 /** Las tallas de la variante elegida (o las del producto). */
 export const opcionesDe = (variante, opciones = []) => (variante?.opciones?.length ? variante.opciones : opciones);
+
+/**
+ * Las tallas que se pueden elegir. En un combo, las que comparten las prendas
+ * con el color elegido de cada una (o todas, si no comparten ninguna; las de
+ * siempre, si las prendas no llegaron): la misma regla que comboSizeOptions de
+ * la tienda. Si no, las de la variante (opcionesDe).
+ */
+export const tallasDe = ({ variante, opciones = [], piezas = [], colores = {} }) => {
+  if (!piezas.length) return opcionesDe(variante, opciones);
+  const listas = piezas
+    .map((p, i) => (p.colores?.length ? (p.colores.find((c) => c.nombre === colores[i]) || p.colores[0]).tallas || [] : p.tallas || []))
+    .filter((l) => l.length);
+  if (!listas.length) return opciones;
+  const [primera, ...resto] = listas;
+  const comunes = primera.filter((t) => resto.every((l) => l.includes(t)));
+  return comunes.length ? comunes : [...new Set(listas.flat())];
+};
+
+/** Las variantes van como muestras si todas tienen color o foto. */
+export const conMuestras = (variantes = []) => variantes.length > 0 && variantes.every((v) => v.colorHex || v.imagen);
+
+/** Hay qué elegir (o qué mostrar): varias variantes, o una sola con tallas y color. */
+export const verVariantes = (variantes = []) => variantes.length > 1
+  || (variantes.length === 1 && variantes[0].opciones?.length > 0 && conMuestras(variantes));
 
 /** "una talla", "un número", "una medida"… */
 const articulo = (etiqueta = 'Talla') => {

@@ -13,7 +13,7 @@ import { CARAS_KAPI } from '../piezas/Flotantes';
 import { FotoProducto } from '../piezas/FotoProducto';
 import { GaleriaProducto } from '../piezas/GaleriaProducto';
 import { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra, BarraCompra } from '../piezas/Ficha';
-import { OpcionesProducto, opcionesDe } from '../piezas/OpcionesProducto';
+import { OpcionesProducto, tallasDe, verVariantes } from '../piezas/OpcionesProducto';
 import { Estrellas, ResumenOpiniones, TarjetaOpinion, FormularioOpinion } from '../piezas/Opiniones';
 import s from './Producto.module.css';
 
@@ -28,6 +28,33 @@ import s from './Producto.module.css';
 
 const STOCK_BAJO = 10;
 const POR_PAGINA = 4;
+
+/**
+ * La galería de un combo con el color elegido de cada prenda (fotos.combo de
+ * fichaProductoDesde): la portada, la foto de cada prenda en su color ("Ella ·
+ * Melange") y las del producto, sin repetir. Si el color elegido no tiene
+ * foto, va la de la prenda con el color que sí muestra ("Él · Negro"): así la
+ * prenda no desaparece de la galería (en la tienda desaparece). Cada foto
+ * sabe de qué prenda y color es (`pieza`, `color`) para saltar a ella.
+ */
+const galeriaCombo = (combo, piezas, colores) => {
+  const lista = [];
+  const poner = (url, pieza, color) => {
+    const pz = piezas[pieza];
+    const nombre = pz ? [pz.nombre, color].filter(Boolean).join(' · ') : '';
+    const ya = lista.find((f) => f.url === url);
+    if (!ya) lista.push({ url, nombre, corto: pz?.nombre, pieza, color });
+    else if (pieza != null && ya.pieza == null) Object.assign(ya, { nombre, corto: pz?.nombre, pieza, color });
+  };
+  combo.portada.forEach((u) => poner(u));
+  combo.piezas.forEach((f, i) => {
+    const propias = f.porColor[colores[i]] || [];
+    if (propias.length) propias.forEach((u) => poner(u, i, colores[i]));
+    else f.general.forEach((u) => poner(u, i, Object.keys(f.porColor).find((c) => f.porColor[c].includes(u))));
+  });
+  combo.producto.forEach((u) => poner(u));
+  return lista;
+};
 
 /**
  * La ficha del producto.
@@ -65,6 +92,8 @@ export function PaginaProducto({
   const [mostradas, setMostradas] = useState(POR_PAGINA);
   const [foto, setFoto] = useState(null);
   const [agregado, setAgregado] = useState(false);
+  // Al recolorear una prenda del combo, la galería salta a su foto en ese color.
+  const [salto, setSalto] = useState(null);
   const compraRef = useRef(null);
   const opcionesRef = useRef(null);
   const reloj = useRef(null);
@@ -74,8 +103,11 @@ export function PaginaProducto({
   const nombre = useTexto(producto.nombre);
   const descripcion = useHtml(producto.descripcion);
   const variante = variantes.find((v) => v.id === varId) || variantes[0];
-  const lista = opcionesDe(variante, tallasBase);
-  const galeria = (variante && fotos[variante.id]) || fotos.base || [];
+  const lista = tallasDe({ variante, opciones: tallasBase, piezas, colores });
+  const galeria = useMemo(
+    () => (fotos.combo ? galeriaCombo(fotos.combo, piezas, colores) : (variante && fotos[variante.id]) || fotos.base || []),
+    [fotos, piezas, colores, variante],
+  );
   useEffect(() => { if (variante) onVariante?.(variante); }, [variante?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // La más útil (con al menos un voto) va primero, destacada.
@@ -138,14 +170,14 @@ export function PaginaProducto({
       {producto.agotado ? 'Agotado por ahora' : agregado ? '¡Agregado!' : 'Agregar al carrito'}
     </Boton>
   );
-  const detalle = [variantes.length > 1 && variante?.nombre, opcion || (lista.length ? `Elige ${etiquetaOpcion.toLowerCase()}` : null)].filter(Boolean).join(' · ');
+  const detalle = [verVariantes(variantes) && variante?.nombre, piezas.length > 0 && piezas.map((_, i) => colores[i]).filter(Boolean).join(' + '), opcion || (lista.length ? `Elige ${etiquetaOpcion.toLowerCase()}` : null)].filter(Boolean).join(' · ');
 
   const conFiltro = filtro ? resto.filter((o) => o.puntuacion === filtro) : resto;
   const conFotos = (opiniones.lista || []).flatMap((o) => o.fotos).slice(0, 12);
 
   return (
     <>
-      <MarcoFicha componente="PaginaProducto" galeria={<GaleriaProducto key={variante?.id || 'base'} imagenes={galeria} nombre={nombre} />}>
+      <MarcoFicha componente="PaginaProducto" galeria={<GaleriaProducto key={variante?.id || 'base'} imagenes={galeria} nombre={nombre} salto={salto} />}>
         <Migas items={[{ texto: 'Inicio', url: '/' }, producto.categoria && { texto: producto.categoria.nombre, url: producto.categoria.url }, { texto: nombre }].filter(Boolean)} />
 
         <div className={s.cabeza}>
@@ -179,7 +211,8 @@ export function PaginaProducto({
             <ul className={s.piezas}>
               {producto.combo.map((p, i) => (
                 <li key={`${p.nombre}-${i}`}>
-                  <FotoProducto className={s.piezaFoto} src={p.imagen} relleno="6%" />
+                  {/* La foto de la prenda en el color elegido (si ese color tiene). */}
+                  <FotoProducto className={s.piezaFoto} src={fotos.combo?.piezas[i]?.porColor[colores[i]]?.[0] || p.imagen} relleno="6%" />
                   <span>{p.nombre}</span>
                 </li>
               ))}
@@ -194,7 +227,7 @@ export function PaginaProducto({
           onVariante={(id) => {
             setVarId(id);
             // La talla elegida se queda si el nuevo color también la tiene.
-            if (!opcionesDe(variantes.find((v) => v.id === id), tallasBase).includes(opcion)) setOpcion(null);
+            if (!tallasDe({ variante: variantes.find((v) => v.id === id), opciones: tallasBase }).includes(opcion)) setOpcion(null);
           }}
           opciones={tallasBase}
           etiquetaOpcion={etiquetaOpcion}
@@ -203,7 +236,15 @@ export function PaginaProducto({
           notaOpcion={piezas.length > 1 ? `Se aplica a las ${piezas.length} prendas.` : undefined}
           piezas={piezas}
           colores={colores}
-          onColorPieza={(i, c) => setColores((x) => ({ ...x, [i]: c }))}
+          onColorPieza={(i, c) => {
+            const nuevos = { ...colores, [i]: c };
+            setColores(nuevos);
+            // Solo si ese color tiene foto: si no, la galería se queda donde está.
+            const k = fotos.combo ? galeriaCombo(fotos.combo, piezas, nuevos).findIndex((f) => f.pieza === i && f.color === c) : -1;
+            if (k >= 0) setSalto((x) => ({ indice: k, vez: (x?.vez || 0) + 1 }));
+            // Las tallas son las de los colores elegidos: si la elegida ya no está, se vuelve a elegir.
+            if (!tallasDe({ opciones: tallasBase, piezas, colores: nuevos }).includes(opcion)) setOpcion(null);
+          }}
           cantidad={cantidad}
           onCantidad={producto.agotado ? undefined : setCantidad}
           falta={falta}

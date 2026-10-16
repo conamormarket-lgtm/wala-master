@@ -7,12 +7,44 @@
  */
 
 import { limaTodayStr, felicidadKapiHoy } from '../../utils/fechaLima';
+import { getFallbackHex } from '../../utils/colors';
 import {
   leerPrendaBase, colorDisponible, fondoMuestra, precioBase, precioPersonalizado, tallasDeColor, fondoColorGuardado,
   vistasDelColor, esColorBlanco, textoSobre, medidaZona,
 } from '../../utils/prendaBase';
 
 const variantesDe = (p) => (p?.hasVariants ? p.variants || [] : []);
+
+/* ── Colores de las variantes ──────────────────────────────── */
+
+/** Dos nombres de color iguales sin mirar espacios ni mayúsculas ("Azul Acero " = "azul acero"). */
+const normalColor = (n) => String(n ?? '').trim().toLowerCase();
+const mismoColor = (a, b) => Boolean(normalColor(a)) && normalColor(a) === normalColor(b);
+
+/** El color de la muestra: el guardado o, si falta, el que dice el nombre ("Negro"); si no, ninguno. */
+const hexDeVariante = (v) => v?.colorHex || getFallbackHex(v?.name);
+
+/** La muestra es clara (el visto va oscuro): la misma regla que las de Crear. */
+const esClaro = (hex) => esColorBlanco(hex) || textoSobre(hex) !== '#FFFFFF';
+
+/** El recorte de la foto de la muestra (thumbnailCrop del admin, en porcentajes). */
+const recorteDe = (v) => {
+  const r = v?.thumbnailCrop?.percentages;
+  return r?.width > 0 && r?.height > 0 ? { x: r.x, y: r.y, ancho: r.width, alto: r.height } : undefined;
+};
+
+/** Las variantes de una prenda de un combo que el combo permite (allowedColors). */
+const variantesDePieza = (sub, it) => {
+  const permitidos = (it?.variantMapping?.allowedColors || []).map(normalColor);
+  const vs = variantesDe(sub);
+  return permitidos.length ? vs.filter((v) => permitidos.includes(normalColor(v.name))) : vs;
+};
+
+/** Los colores de una prenda de un combo: muestra (o foto) y las tallas de ese color. */
+const coloresDePieza = (sub, it) => variantesDePieza(sub, it).map((v) => {
+  const hex = hexDeVariante(v) || '#cccccc';
+  return { nombre: v.name, hex, claro: esClaro(hex), imagen: v.imageUrl, recorte: recorteDe(v), tallas: v.sizes || [] };
+});
 
 /**
  * Qué hace el botón de la tarjeta. Misma regla que productNeedsVariantSelection
@@ -85,29 +117,37 @@ export function tarjetaDesdeProducto(p, { imagen, catalogo = {} } = {}) {
  * Props de <AgregarRapido> desde un producto.
  *  - subproductos: { [productId]: producto } de las piezas de un combo
  *    (la tienda ya los carga en ProductDetail para mostrar sus colores).
+ * Las muestras llevan el color guardado o el que dice el nombre
+ * (getFallbackHex), la foto de la variante (imageUrl, con su thumbnailCrop) y,
+ * en un combo, las tallas de cada color.
  */
 export function opcionesDeProducto(p, { subproductos = {} } = {}) {
   const vs = variantesDe(p);
   const piezas = p?.isComboProduct
-    ? (p.comboItems || []).map((it) => ({
-      nombre: it.name,
-      // El color con el que viene el combo (variantMapping.color).
-      color: it.variantMapping?.color,
-      colores: variantesDe(subproductos[it.productId])
-        .filter((v) => !it.variantMapping?.allowedColors || it.variantMapping.allowedColors.includes(v.name))
-        .map((v) => ({ nombre: v.name, hex: v.colorHex || '#cccccc' })),
-    }))
+    ? (p.comboItems || []).map((it) => {
+      const sub = subproductos[it.productId];
+      const colores = coloresDePieza(sub, it);
+      // El color con el que viene el combo (variantMapping.color), con el nombre de la variante.
+      const inicial = colores.find((c) => mismoColor(c.nombre, it.variantMapping?.color));
+      // Sin colores, las tallas son las de la prenda (como getComboVariantInfo de la tienda).
+      return { nombre: it.name, color: inicial?.nombre || it.variantMapping?.color, colores, tallas: colores.length ? [] : sub?.mainSizes || sub?.sizes || [] };
+    })
     : [];
-  // Combos: talla compartida = las que tienen todas las piezas (o todas, si no coinciden).
+  // Combos: talla compartida = las que tienen todas las piezas (o todas, si no
+  // coinciden). Es la de todos los colores: con los elegidos la recalcula
+  // OpcionesProducto (tallasDe).
   let opcionesCombo = [];
   if (piezas.length) {
-    const listas = (p.comboItems || []).map((it) => [...new Set(variantesDe(subproductos[it.productId]).flatMap((v) => v.sizes || []))]);
+    const listas = piezas.map((pz) => (pz.colores.length ? [...new Set(pz.colores.flatMap((c) => c.tallas))] : pz.tallas)).filter((l) => l.length);
     const comunes = listas.reduce((a, l) => a.filter((x) => l.includes(x)), listas[0] || []);
     opcionesCombo = comunes.length ? comunes : [...new Set(listas.flat())];
   }
   return {
     producto: { nombre: p.name, imagen: p.mainImage || p.images?.[0], precio: p.salePrice || p.price, precioAntes: p.salePrice ? p.price : undefined },
-    variantes: piezas.length ? [] : vs.map((v) => ({ id: v.id, nombre: v.name, colorHex: v.colorHex, imagen: v.imageUrl, opciones: v.sizes || [] })),
+    variantes: piezas.length ? [] : vs.map((v) => {
+      const hex = hexDeVariante(v);
+      return { id: v.id, nombre: v.name, colorHex: hex, claro: hex ? esClaro(hex) : undefined, imagen: v.imageUrl, recorte: recorteDe(v), opciones: v.sizes || [] };
+    }),
     opciones: piezas.length ? opcionesCombo : p.mainSizes || [],
     // Los productos guardados antes de que products.js conservara sizeLabel
     // no lo tienen: dicen "Talla" hasta que se vuelvan a guardar.
@@ -904,9 +944,13 @@ const fotosGaleria = (urls, nombres = {}) => [...new Set(urls.filter(Boolean))]
  *  - catalogo: { marcas, categorias } (para la marca y las migas)
  *  - subproductos: { [productId]: producto } de las piezas de un combo
  * Devuelve { producto, opciones (las de opcionesDeProducto), varianteInicial,
- * fotos: { base: [...], [varianteId]: [...] } }. Las fotos de una variante
- * son las suyas (imageUrl, galleryImages, images) y, si no tiene, las del
- * producto: el mismo orden que buildImages de ProductDetail.
+ * fotos: { base: [...], [varianteId]: [...], combo? } }. Las fotos de una
+ * variante son las suyas (imageUrl, galleryImages, images) y, si no tiene,
+ * las del producto: el mismo orden que buildImages de ProductDetail.
+ * En un combo, `combo` = { portada, piezas: [{ porColor: { [color]: urls },
+ * general: urls }], producto }: PaginaProducto arma la galería con el color
+ * elegido de cada prenda; si ese color no tiene foto (o la prenda no tiene
+ * colores), van las de la prenda (general).
  */
 export function fichaProductoDesde(p = {}, { catalogo = {}, subproductos = {} } = {}) {
   const { marcas = [], categorias = [] } = catalogo;
@@ -917,6 +961,21 @@ export function fichaProductoDesde(p = {}, { catalogo = {}, subproductos = {} } 
     ? fotosGaleria([p.comboPreviewImage, ...(p.comboItems || []).map((it) => it.imageUrl), ...delProducto], Object.fromEntries((p.comboItems || []).map((it) => [it.imageUrl, it.name])))
     : fotosGaleria(delProducto);
   const fotos = { base };
+  if (p.isComboProduct) {
+    const urls = (lista) => [...new Set(lista.filter(Boolean))];
+    fotos.combo = {
+      portada: urls([p.comboPreviewImage]),
+      piezas: (p.comboItems || []).map((it) => {
+        const sub = subproductos[it.productId];
+        const vs = variantesDePieza(sub, it);
+        return {
+          porColor: Object.fromEntries(vs.map((v) => [v.name, urls([v.imageUrl, ...(v.galleryImages || []), ...(v.images || [])])])),
+          general: urls([it.imageUrl, sub?.mainImage, ...(sub?.images || [])]),
+        };
+      }),
+      producto: urls(delProducto),
+    };
+  }
   variantesDe(p).forEach((v) => {
     const propias = [v.imageUrl, ...(v.galleryImages || []), ...(v.images || [])].filter(Boolean);
     fotos[v.id] = propias.length && variantesDe(p).length > 1 ? fotosGaleria([...propias, ...delProducto], { [propias[0]]: v.name }) : base;

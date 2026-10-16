@@ -497,6 +497,35 @@
   color: #0f172a;
 }
 
+/* Muestra con la foto de la variante: la foto sobre el escenario (multiply,
+   su fondo blanco no hace recuadro) y el visto encima, oscuro con halo. */
+.colorConFoto {
+  background: var(--escenario-foto, #f5f4f8);
+}
+
+.colorFoto {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 50%;
+  isolation: isolate;
+}
+
+.colorFoto img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  mix-blend-mode: multiply;
+  user-select: none;
+}
+
+.color .checkFoto {
+  position: relative;
+  color: var(--violet-700);
+  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 1px #fff);
+}
+
 @keyframes checkPop {
   from {
     transform: scale(0) rotate(-30deg);

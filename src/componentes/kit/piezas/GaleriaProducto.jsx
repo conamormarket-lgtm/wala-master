@@ -11,10 +11,14 @@ import s from './GaleriaProducto.module.css';
  * al elegir una miniatura pasa deslizándose hasta ella. Con ratón, la foto se
  * acerca donde está el cursor. Cada foto lleva su nombre ("Frente",
  * "Espalda") en una píldora.
- *  - imagenes: [{ url, nombre }] · nombre: el del producto (para el alt)
+ *  - imagenes: [{ url, nombre, corto? }] (corto: el de la miniatura, si el
+ *    nombre no cabe: "Ella" en vez de "Ella · Melange") · nombre: el del
+ *    producto (para el alt)
  *  - inicial: la que se ve primero
+ *  - salto: { indice, vez } para ir a otra foto desde fuera (la prenda de un
+ *    combo que se recoloreó): cada `vez` nueva, la tira se desliza hasta ella
  */
-export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0 }) {
+export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto }) {
   const total = imagenes.length;
   const [sel, setSel] = useState(Math.min(inicial, Math.max(total - 1, 0)));
   const [zoom, setZoom] = useState(false);
@@ -37,6 +41,11 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0 }) {
     setSel(n);
     tira.current?.scrollTo({ left: n * tira.current.clientWidth, behavior: reducir ? 'auto' : 'smooth' });
   };
+  // Otra foto pedida desde fuera (la prenda recoloreada): se desliza hasta ella.
+  useEffect(() => { if (salto) ir(salto.indice); }, [salto?.vez]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Si cambian las fotos y quedan menos, la elegida pasa a la última.
+  useEffect(() => { if (sel > total - 1) setSel(Math.max(total - 1, 0)); }, [sel, total]);
+
   // Al deslizar con el dedo, la elegida es la que queda a la vista cuando la tira se detiene.
   const alDeslizar = () => {
     clearTimeout(quieto.current);
@@ -66,7 +75,7 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0 }) {
               onMouseEnter={() => ir(i)}
             >
               <img src={img.url} alt="" loading="lazy" draggable={false} />
-              {img.nombre && <span>{img.nombre}</span>}
+              {(img.corto || img.nombre) && <span>{img.corto || img.nombre}</span>}
               {/* El borde de la elegida viaja de una miniatura a otra. */}
               {i === sel && <motion.i layoutId={`mini-${marca}`} className={s.miniaturaAro} transition={reducir ? { duration: 0 } : RESORTE} aria-hidden="true" />}
             </button>

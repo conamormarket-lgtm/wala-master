@@ -4,7 +4,7 @@ import Boton from './Boton';
 import { HojaInferior } from './Feedback';
 import { soles } from './TarjetaProducto';
 import { FotoProducto } from './piezas/FotoProducto';
-import { OpcionesProducto, opcionesDe } from './piezas/OpcionesProducto';
+import { OpcionesProducto, tallasDe, conMuestras } from './piezas/OpcionesProducto';
 import s from './AgregarRapido.module.css';
 
 /**
@@ -13,13 +13,13 @@ import s from './AgregarRapido.module.css';
  * Sirve para cualquier producto, no solo ropa (mismo modelo que la tienda):
  *
  *  - variantes: [{ id, nombre, colorHex?, imagen?, opciones?: string[] }]
- *      Cada variante es un color o un estilo. Si todas tienen colorHex se
- *      muestran como muestras de color; si no, como botones con el nombre
- *      ("Feliz", "Clásico"…). Con una sola variante no se muestra selector.
+ *      Cada variante es un color o un estilo. Si todas tienen color o foto se
+ *      muestran como muestras; si no, como botones con el nombre ("Feliz",
+ *      "Clásico"…). Una sola variante solo se muestra si tiene tallas y color.
  *  - opciones: string[] por defecto (mainSizes) si la variante no trae las suyas.
  *  - etiquetaOpcion: 'Talla' | 'Medida' | 'Número' | 'Tamaño'… (sizeLabel).
- *  - piezas: combos → [{ nombre, colores: [{ nombre, hex }] }], un color por pieza
- *      y la opción (talla) compartida.
+ *  - piezas: combos → [{ nombre, colores: [{ nombre, hex, imagen?, tallas }] }], un color por pieza
+ *      y la opción (talla) compartida: las que tienen los colores elegidos.
  *  - personalizable + onPersonalizar(eleccion): botón secundario "Personalizar".
  *  - onConfirmar({ variante, opcion, piezas, cantidad }).
  */
@@ -52,13 +52,13 @@ export default function AgregarRapido({
   }, [abierto, producto?.nombre]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const variante = variantes.find((v) => v.id === varId) || variantes[0];
-  const lista = opcionesDe(variante, opciones);
-  const conColor = variantes.length > 1 && variantes.every((v) => v.colorHex);
+  const lista = tallasDe({ variante, opciones, piezas, colores });
+  const conColor = conMuestras(variantes);
 
-  // Si la variante elegida no tiene la opción marcada, se limpia.
+  // Si la variante (o el color de una prenda del combo) no tiene la opción marcada, se limpia.
   useEffect(() => {
     if (opcion && !lista.includes(opcion)) setOpcion(null);
-  }, [varId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [varId, colores]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const titulo = useMemo(() => {
     if (piezas.length) return 'Arma tu combo';
