@@ -1,4 +1,4 @@
-# Llevar el kit a la tienda (en marcha: pasos 1 a 4 hechos; el 5, en el inicio)
+# Llevar el kit a la tienda (en marcha: pasos 1 a 4 hechos; el 5, en el inicio, /tienda y las marcas)
 
 Lo común a todas las páginas: qué ya usa la tienda, cómo se importa y en qué
 orden se migraría. El detalle de cada página (reemplazos con archivo y línea,
@@ -28,6 +28,7 @@ principal (y a la APK de Capacitor).
 | Marco (paso 2), cada pieza con su conector en `src/components/marco/`: `AvisoSistema` (`AvisoDelSistema.jsx`), `BarraAdmin` `fija` (`BarraDeAdmin.jsx`; publica `--admin-bar-height` para la cabecera), `AvisoIdioma` `flotante` (`AvisoDeIdioma.jsx`), `VentanaCampana` (`AnuncioDeCampana.jsx`), la pila de flotantes (`FlotantesDeLaTienda.jsx`: `PilaFlotante`, `BotonWhatsApp` con `useWhatsAppDeLaRuta.js`, `PildoraRecompensa` y Kapi en `Kapi.jsx` con `KapiFlotante` + `VentanaKapi` y las caras 3D) | `src/App.jsx` |
 | `BannerApp` (`components/marco/BannerDeLaApp.jsx`, montado donde siempre, con su portal antes de la cabecera) | `pages/Tienda/TiendaPage.jsx` |
 | `TarjetaProducto` por `components/producto/TarjetaDeProducto.jsx` (paso 4) | `ProductGrid`, `FeaturedCarousel`, `CollectionCarousel`, `FlashSales` |
+| Secciones del builder con `SeccionDelKit` (paso 5): el inicio, `/tienda` y las páginas de marca; `TIPOS_DEL_KIT` dice qué tipos; el catálogo con `CatalogoConFiltros` y su estado en la página | `pages/Tienda/TiendaPage.jsx` |
 | `PieLegal` (`pieLegalDesdeEmpresa`) dentro del pie viejo; las columnas y su editor siguen igual. El bloque viejo queda apagado con `PIE_LEGAL_EN_EL_KIT` | `components/common/Footer/Footer.jsx` |
 | La píldora "Gana 15 monedas" de la cabecera vieja, apagada con `PILDORA_EN_EL_KIT` (la dibuja `FlotantesDeLaTienda`) | `components/common/Header/Header.jsx` |
 
@@ -44,6 +45,11 @@ pantallas. (`Feedback` usa `Efectos`:
 exporta `Sello`; agregarlo no cambió nada de lo que ya usa la tienda.) `Feedback` usa
 `piezas/FotoProducto` para la foto de los toasts, así que esa pieza (y el
 token `--escenario-foto` de `tokens.css`) también está ya en la tienda.
+Desde el paso 5 también `Secciones`, `SeccionesExtra`, `SeccionesContenido`,
+`Seccion`, `Acordeon`, `Marquesina` y las piezas que usan (`OpcionesFiltro`,
+`TarjetaCategoria`, `LogoMarca`…). `EstadoVacio` acepta `imagen={null}`
+(sin Kapi, un sello) y `BloqueSeccion` marca su `<section>` con
+`data-kit-seccion` (lo usa `landing-mobile.css`).
 
 ## Orden
 
@@ -77,10 +83,19 @@ Cada paso en su propio commit, verificable por separado.
    mismo bucle de `TiendaPage` (carga diferida, editor, mapa de calor y
    secciones que no se dibujan siguen como estaban), solo con `pageId ===
    'home'` (lista `TIPOS_DEL_KIT`). Las tarjetas de los carruseles son
-   `TarjetaDeProducto` (prop `tarjeta`). Falta: `/tienda`, las marcas y las
-   landings (agregar sus tipos a la lista y quitar la condición del inicio).
-   Las landings de marca, con `PaginaMarca` (identidad + plantilla) cuando
-   el admin de marcas guarde `identidad` (NAVEGAR.md).
+   `TarjetaDeProducto` (prop `tarjeta`).
+   ✓ **`/tienda` y las páginas de marca** (2026-10-16): se suman `header`,
+   `marquee`, `sidebar_catalog`, `product_grid`, `hero_banner`,
+   `categories_nav` y `category_carousel`. Las páginas: `PAGINAS_DEL_KIT`
+   (`home`, `tienda`) más toda landing con marca que no sea del reloj
+   (`esPaginaDeMarca`). El catálogo guarda su estado en `TiendaPage`
+   (TIENDA.md); `landing-mobile.css` ya no pisa los títulos del kit.
+   Falta: las landings sin marca (siguen enteras con lo de antes, igual que
+   el cacherito), `featured_products` y los tipos que el inicio no usa
+   (`text`, `image`, `video`, `bestsellers_row`, `feature_list`,
+   `map_location`, `collection_carousel`, `flash_sales`). Las landings de
+   marca, con `PaginaMarca` (identidad + plantilla) cuando el admin de
+   marcas guarde `identidad` (NAVEGAR.md).
 6. **Páginas propias** (no son del builder): la ficha de producto
    (`PaginaProducto`, PRODUCTO.md; `onVariante` lleva `recordVariantViewTime`
    y `onPagarCarrito` el `selectAllItems`), el carrito (`PaginaCarrito`, CARRITO.md), el checkout
@@ -120,7 +135,7 @@ nada), o en un solo navegador con `localStorage.wala_kit_viejo = "pagos,carrito"
 | `pagosViejo` | la ventana "Pagar saldo" de Mis pedidos (`Modal` viejo) y la pantalla de Culqi mientras cobra |
 | `carritoViejo` | las preguntas del carrito (quitar seleccionados, vaciar) con `window.confirm` |
 | `tarjetasViejo` | la tarjeta de producto (`PremiumProductCard`) en carruseles y grillas |
-| `seccionesViejo` | las secciones del builder del inicio (los componentes de `seccionesPorTipo.jsx`) |
+| `seccionesViejo` | las secciones del builder del inicio, `/tienda` y las páginas de marca (los componentes de `seccionesPorTipo.jsx`, con `SidebarCatalogLayout`) |
 
 Se retiran cuando lo nuevo lleve un tiempo en producción (y con ellos lo viejo
 de [ELIMINAR.md](ELIMINAR.md)).

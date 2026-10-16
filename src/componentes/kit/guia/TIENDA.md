@@ -59,19 +59,25 @@ Se dibujan con `PaginaTienda` → `RenderSecciones`, igual que el inicio.
 | `LogoMarca` | S3 (sticker), sello de la marca en cada tarjeta de S2 | `piezas/LogoMarca.module.css` |
 | `HojaInferior` | filtros de S2 en el celular, menús de la cabecera | `Feedback.module.css` |
 
-## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
+## Llevar a la tienda (hecho el 2026-10-16)
 
 Sigue el orden común de [MIGRACION.md](MIGRACION.md) (paso 5, después del
 inicio). Mantener al día si cambia un componente o su forma de recibir datos.
+
+Se hizo dentro del mismo bucle de `TiendaPage` (como el inicio), no con
+`PaginaTienda`: cada sección es un `SeccionDelKit` y los datos los arma
+`seccionDelKit(section)`. Lo de antes vuelve con el interruptor
+`seccionesViejo`. Las páginas de marca usan lo mismo (NAVEGAR.md).
 
 ### Reemplazos
 
 | Parte | Hoy en la tienda | Pasa a (kit) |
 |---|---|---|
-| Página | `pages/Tienda/TiendaPage.jsx` con `pageId` `tienda` (`renderSection`, bucle ~1504) | `PaginaTienda` / `RenderSecciones` con `respaldo` |
-| S1 | `case 'header'` (~914) → `components/HeaderBlock/HeaderBlock.jsx` | `Encabezado` |
-| S2 | `case 'sidebar_catalog'` (~1345) → `components/SidebarCatalogLayout.jsx` (grupos ~486-669, `GrupoSidebar` ~372) → `components/ProductGrid/ProductGrid.jsx` → `PremiumProductCard` | `CatalogoConFiltros` + `gruposDeCatalogo` + `grillaDesdeConfiguracion`; tarjetas con `tarjetaDesdeProducto` |
-| S3 | `case 'marquee'` (~1185) → `components/BrandMarquee/BrandMarquee.jsx` | `MarcasMarquesina` |
+| Página | `pages/Tienda/TiendaPage.jsx` con `pageId` `tienda` (`renderSection`) | `SeccionDelKit` por sección dentro del mismo bucle (`usaKit`) |
+| S1 | `case 'header'` → `components/HeaderBlock/HeaderBlock.jsx` | ✓ `Encabezado` (sin título guardado, "Nuestra Tienda") |
+| S2 | `case 'sidebar_catalog'` → `components/SidebarCatalogLayout.jsx` → `components/ProductGrid/ProductGrid.jsx` | ✓ `CatalogoConFiltros` + `gruposDeCatalogo` + `grillaDesdeConfiguracion`; tarjetas: `TarjetaDeProducto` (prop `tarjeta`, con `indice` y `segundaFoto`) |
+| `product_grid` | `ProductGrid` | ✓ `GrillaProductos` con los mismos datos del catálogo |
+| S3 | `case 'marquee'` → `components/BrandMarquee/BrandMarquee.jsx` | ✓ `MarcasMarquesina` (sin forma, círculo; título en mayúsculas como frase) |
 | Marco | igual que el inicio | ver [INICIO.md](INICIO.md#reemplazos) |
 
 `SidebarCatalogLayout` también lo usa la búsqueda (`pages/SearchPage.jsx`, con
@@ -91,9 +97,12 @@ página.
 | `precio` / `onPrecio`, `limitesPrecio` | estado de la página; `limitesDePrecio(productos de la marca o de la página)` (como `priceBounds`) |
 | `conBuscador` | `Boolean(pageBrandId)` (como el buscador de la marca hoy) |
 | `columnas`, `segundaFoto` | `grillaDesdeConfiguracion(storeConfig?.layout)` (query `store-config-custom`, `storeConfig/homePage`) |
-| `total` | no hay cuenta en servidor: sin `total`, con la lista paginada no se muestra "N productos" |
-| `onAgregar` | `CartContext.addToCart`; "elegir" abre `AgregarRapido` |
-| `catalogo` (sellos y categoría de las tarjetas) | `marcas` y `categorias` de la página (`PaginaTienda` ya lo arma) |
+| `total` | no hay cuenta en servidor: sin `total` se cuentan los productos cargados que pasan los filtros, con "+" si quedan páginas ("24+ productos") |
+| `tarjeta` | `TarjetaDeTienda`: la `TarjetaDeProducto` del paso 4 (agrega, "Elegir" lleva a la ficha, favorito, impresión); las 4 primeras cargan ya |
+| `cargando`, `error` / `onReintentar` | `catalogLoadingResolved`, `catalogErrorResolved`; reintentar = `refetch` de la consulta que esté en uso |
+| `vacio` | solo con el catálogo vacío: "Próximamente más productos", `emptyMessage` y "Volver al inicio" (una sola vez por página, sin título encima) |
+| `sinKapi` | `Boolean(userProfile)`: con sesión ya está el Kapi flotante |
+| `bloque` | `{ id: anchorId \|\| 'catalogo', style: { scrollMarginTop: '7rem' } }`: el ancla de las burbujas |
 | S3 `settings.items` | el mismo documento `pages/tienda` |
 
 ### Comportamiento que no se puede perder
@@ -137,22 +146,32 @@ página.
   categoría: "COMBOS · NUEVO". En escritorio, todas en la foto.
 - Las tarjetas no muestran el "0" suelto de hoy (bug de abajo).
 
-### Qué le falta al kit antes de migrar esta página
+- Filtrado sin resultados: "Nada coincide con tu búsqueda" (hoy el mismo
+  "Próximamente más productos" del catálogo vacío). Con sesión, los avisos
+  van sin Kapi (un sello con una caja): ya está el flotante.
+- "Has visto todos los productos" al final, también sin paginación.
 
-- `GrillaProductos`: estado de error con "Reintentar" (`productsError`) y
-  textos propios del vacío con enlace (`emptyTitle`, `emptyHomeLink`).
+### Qué le faltaba al kit (hecho)
+
+- ✓ `GrillaProductos`: error con "Reintentar", vacío con botón, seguir
+  pidiendo páginas si un filtro dejó la lista vacía, `indice` a la tarjeta,
+  "Has visto todos los productos", `sinKapi`.
+- ✓ `CatalogoConFiltros`: `buscarAlEscribir`, "Limpiar todo" borra también
+  el texto, nombres por la traducción (las marcas, tal cual).
 - ✓ `TarjetaProducto`: la impresión, el favorito y la traducción (paso 4).
-- Si se quiere "N productos" con la lista paginada: una cuenta en servidor
+- Si se quiere el total real con la lista paginada: una cuenta en servidor
   (`getCountFromServer`) que llegue como `total`.
 
 ### Pasos (cada uno se verifica solo y se puede volver atrás)
 
 1. ✓ `TarjetaProducto` dentro de `ProductGrid` (`TarjetaDeProducto`, 2026-10-16).
-2. S1 y S3 con `RenderSecciones` + `respaldo` para lo demás (como el inicio).
-3. S2: en `case 'sidebar_catalog'`, `CatalogoConFiltros` con los datos de
-   arriba en vez de `SidebarCatalogLayout`. Probar: cada grupo, precio,
-   "Ver más productos", `/tienda?categoria=…`, burbujas de `categories_nav`,
-   una página de marca, catálogo vacío, celular (hoja) y modo noche.
+2. ✓ S1 y S3 con `SeccionDelKit` (como el inicio, 2026-10-16).
+3. ✓ S2: `CatalogoConFiltros` con los datos de arriba (2026-10-16). Probado
+   en el emulador con la copia de `pages/tienda`: marca (sigue pidiendo
+   páginas hasta encontrar), precio, "Limpiar todo", "Ver más" hasta "Has
+   visto todos", `?categoria=` ya elegida, categoría al servidor (21 sin
+   "+"), burbujas y buscador en una marca, celular (hoja) claro y oscuro.
+   Sin probar: catálogo vacío y error (el emulador siempre tiene productos).
 4. Pasar `pages/SearchPage.jsx` al mismo catálogo y recién entonces retirar
    `SidebarCatalogLayout`.
 

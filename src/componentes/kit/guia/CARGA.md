@@ -152,6 +152,11 @@ Qué cambia en el splash estático de `index.html`:
 
 Sin esos cambios, el relevo a React se notaría.
 
+Ya en la tienda (paso 5, 2026-10-16): dentro de las secciones del kit, el
+catálogo y la grilla esperan con `TarjetaProductoEsqueleto` (8 al empezar, 4
+al pedir más o mientras un filtro busca en las páginas siguientes) y las
+burbujas de una marca con `TarjetaCategoriaEsqueleto` (5).
+
 ### Qué se queda en la tienda (no es del kit)
 
 `BrandLoaderOverlay` sigue siendo el que decide. El kit solo dibuja, y la

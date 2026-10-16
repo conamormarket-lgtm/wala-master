@@ -137,13 +137,29 @@ Hoy ni `DynamicLandingPage` ni `TiendaPage` usan el kit: dibujan con su
 propio `renderSection`. Migrarlas es el mismo paso que el inicio y /tienda
 (INICIO.md, TIENDA.md).
 
-## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
+## Llevar a la tienda (en parte: las secciones, 2026-10-16)
+
+**Hecho:** las páginas de marca (landing con `brandId`, menos las del reloj:
+`isKcheroLanding`) dibujan sus secciones con el kit dentro de `TiendaPage`
+(`esPaginaDeMarca`), igual que `/tienda` (TIENDA.md): `hero_banner` →
+`BannerPrincipal` (con `trackBannerClick` y lo que falte del banner global),
+`categories_nav` → `NavCategorias` (`navCategoriesByBrand`: burbujas y
+estilo de la marca, esqueleto mientras cargan; filtran el catálogo y bajan
+hasta él), `featured_carousel` / `sale_carousel` / `category_carousel` →
+`CarruselProductos`, `sidebar_catalog` → `CatalogoConFiltros` (sin grupo
+Marcas, con buscador en vivo sobre todos los productos de la marca) y
+`marquee` → `MarcasMarquesina`. En `landing-mobile.css` la regla de los
+h1-h3 (y la de `.landing-store-page`) deja fuera `[data-kit-seccion]` con
+`:where()`, sin cambiar su peso para lo demás. Las landings sin marca y el
+cacherito siguen enteros con lo de antes. Interruptor: `seccionesViejo`.
+
+**Falta:** lo de abajo (`PaginaMarca` con la identidad).
 
 ### Reemplazos
 
 | Hoy | Pasa a (kit) |
 |---|---|
-| `TiendaPage isLandingPage` dentro de `DynamicLandingPage` | `PaginaTienda` (`secciones`, `marcaActual = brandId`, `respaldo` para el cacherito) |
+| `TiendaPage isLandingPage` dentro de `DynamicLandingPage` | `PaginaTienda` (`secciones`, `marcaActual = brandId`, `respaldo` para el cacherito). Por ahora: `SeccionDelKit` dentro de `TiendaPage` (arriba) |
 
 **Lo que no cambia:** `DynamicLandingPage` sigue resolviendo el slug (por
 `slug`, sin mayúsculas, y `slugsAnteriores` → `redirigirA`), el tema
