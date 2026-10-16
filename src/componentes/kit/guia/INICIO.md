@@ -190,6 +190,13 @@ día si cambia un componente del kit o su forma de recibir datos.
   menú (hoy son 5 y "Ver todas las marcas" abre un panel al costado que solo
   sale al pasar el ratón: en el celular y con teclado no funcionaba). No hay
   enlace a `/marcas` porque esa página pública no existe.
+- **En la app (Capacitor) la cabecera lleva el logo de Walá, como en la web.**
+  Hoy la tienda cambia el logo por una casita (`Header.jsx`, `isNativeApp` →
+  `nativeBackBtn` con el ícono `Home`, desde mayo de 2026). Se decidió el
+  2026-10-16 dejar el logo: el inicio ya está en la barra inferior
+  ("Inicio") y la casita repetía ese acceso sin la marca. Al migrar no se
+  agrega una casita a `Cabecera`. Lo demás de la app sí se mantiene: sin pie,
+  sin el banner de descargar la app y sin `BarraAdmin` en la tienda.
 - El menú Tienda solo lleva categorías (las marcas tienen su menú).
 
 ### Qué le falta al kit antes de migrar
