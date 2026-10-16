@@ -5,14 +5,12 @@ import { IconoWala } from '../IconosWala';
 import { Trazo } from '../Marca';
 import { Enlace } from '../Enlace';
 import { Texto } from '../Traduccion';
-import Carrusel from '../Carrusel';
-import { Estrellas } from './Opiniones';
 import s from './Campanas.module.css';
 
 /*
- * Piezas de las campañas: el aviso de una invitación (/invitar/:código), el
- * antes y después, una reseña con foto (Regalos con amor) y los botones de
- * una página de enlaces (/l/:slug).
+ * Piezas de las campañas: el aviso de una invitación (/invitar/:código) y
+ * los botones de una página de enlaces (/l/:slug). (El antes y después y la
+ * reseña con foto eran de Regalos con amor, que salió del kit el 2026-10-16.)
  */
 
 /**
@@ -51,48 +49,6 @@ export function AvisoInvitacion({ nombre, estado = 'nueva', plazo, bono = 10, ur
         </button>
       )}
     </aside>
-  );
-}
-
-/**
- * El antes y el después: dos fotos por lado con su rótulo y el "VS" al medio,
- * en un carrusel (un par por vista).
- *  - pares: [{ rotulo: 'Antes', fotos: [a, b] }, { rotulo: '5 años después', … }]
- */
-export function AntesDespues({ pares = [] }) {
-  return (
-    <div className={s.antesDespues} data-componente="AntesDespues">
-      <Carrusel visibles={{ escritorio: 1, tablet: 1, movil: 1 }} flechas puntos etiqueta="Antes y después">
-        {pares.map((p, k) => (
-          <figure key={p.rotulo} className={s.par}>
-            <figcaption className={[s.rotulo, k > 0 && s.rotuloDespues].filter(Boolean).join(' ')}>{p.rotulo}</figcaption>
-            <div className={s.fotos}>
-              <img src={p.fotos[0]} alt="" loading="lazy" className={s.parFoto} />
-              <span className={s.vs} aria-hidden="true">VS</span>
-              <img src={p.fotos[1]} alt="" loading="lazy" className={s.parFoto} />
-            </div>
-          </figure>
-        ))}
-      </Carrusel>
-    </div>
-  );
-}
-
-/**
- * Una reseña con foto grande (las de Regalos con amor).
- *  - foto · lugar ("Lima, PE") · fecha · titulo · texto · puntuacion (5)
- */
-export function TarjetaResena({ foto, lugar, fecha, titulo, texto, puntuacion = 5 }) {
-  return (
-    <article className={s.resena} data-componente="TarjetaResena">
-      {foto && <img src={foto} alt="" loading="lazy" className={s.resenaFoto} />}
-      <div className={s.resenaCuerpo}>
-        <p className={s.resenaMeta}><span>{lugar}</span><span>{fecha}</span></p>
-        <h3 className={s.resenaTitulo}><Texto>{titulo}</Texto></h3>
-        <p className={s.resenaTexto}><Texto>{texto}</Texto></p>
-        <Estrellas valor={puntuacion} tamano={16} etiqueta={`${puntuacion} de 5`} />
-      </div>
-    </article>
   );
 }
 

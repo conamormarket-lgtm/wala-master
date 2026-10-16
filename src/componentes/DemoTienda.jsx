@@ -630,7 +630,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   });
 
   const formaEsqueleto = {
-    tienda: 'tienda', campanas: { '/sorteos': 'sorteo', '/suscrito-sorteo': 'suscripcionSorteo', '/suscripciones': 'landing', '/regalos-con-amor': 'landing' }[rutaCampana] || 'enlaces', juego: { '/ruleta': 'ruleta', '/ball-sort': 'bolitas' }[rutaJuego] || 'palabra', legales: rutaLegal === '/libro-de-reclamaciones' ? 'reclamaciones' : 'legal', producto: 'producto', checkout: 'checkout', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', ver: 'verDiseno', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
+    tienda: 'tienda', campanas: { '/sorteos': 'sorteo', '/suscrito-sorteo': 'suscripcionSorteo', '/suscripciones': 'landing' }[rutaCampana] || 'enlaces', juego: { '/ruleta': 'ruleta', '/ball-sort': 'bolitas' }[rutaJuego] || 'palabra', legales: rutaLegal === '/libro-de-reclamaciones' ? 'reclamaciones' : 'legal', producto: 'producto', checkout: 'checkout', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', ver: 'verDiseno', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
   }[pagina] || 'productos';
   // /cuenta/… → su módulo (el detalle de una compra usa el de pedidos).
   const moduloEsqueleto = {
@@ -649,20 +649,11 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       </Parte>
     </MarcoTienda>
   ) : pagina === 'campanas' ? (
-    // Regalos con amor es una landing suelta: sin menú, pie, barra ni flotantes (como la tienda).
-    rutaCampana === '/regalos-con-amor' ? (
-      <MarcoTienda {...marco} cabecera={null} pie={null} pieLegal={null} barraInferior={null} flotantes={undefined}>
-        <Parte n="P21" nombre="PaginaRegalosConAmor">
-          <CampanasDemo ruta={rutaCampana} sesion={conSesion} usuario={usuario} estados={estadosCampana} toast={toast} />
-        </Parte>
-      </MarcoTienda>
-    ) : (
-      <MarcoTienda {...marco} kapiEnPie={!estadosCampana.some((e) => ['vacio', 'error', 'noDisponible'].includes(e))}>
-        <Parte n="P21" nombre={{ '/sorteos': 'PaginaSorteo', '/suscrito-sorteo': 'PaginaSuscripcionSorteo', '/suscripciones': 'PaginaSuscripciones' }[rutaCampana] || 'PaginaEnlaces'}>
-          <CampanasDemo ruta={rutaCampana} sesion={conSesion} usuario={usuario} estados={estadosCampana} toast={toast} />
-        </Parte>
-      </MarcoTienda>
-    )
+    <MarcoTienda {...marco} kapiEnPie={!estadosCampana.some((e) => ['vacio', 'error', 'noDisponible'].includes(e))}>
+      <Parte n="P21" nombre={{ '/sorteos': 'PaginaSorteo', '/suscrito-sorteo': 'PaginaSuscripcionSorteo', '/suscripciones': 'PaginaSuscripciones' }[rutaCampana] || 'PaginaEnlaces'}>
+        <CampanasDemo ruta={rutaCampana} sesion={conSesion} usuario={usuario} estados={estadosCampana} toast={toast} />
+      </Parte>
+    </MarcoTienda>
   ) : pagina === 'juego' ? (
     // Un juego es una herramienta: sin Kapi en el pie (aparece en el resultado).
     <MarcoTienda {...marco} kapiEnPie={false}>
