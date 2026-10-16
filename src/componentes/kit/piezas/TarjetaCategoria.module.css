@@ -316,17 +316,34 @@
 }
 
 .burbujaFoto {
+  position: relative;
   display: grid;
   place-items: center;
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  /* Aro del color de la categoría (la foto queda en neutro). */
-  box-shadow: inset 0 0 0 2px var(--acento, transparent);
   color: var(--violet-800);
   font-size: 1.3rem;
   font-weight: 800;
   transition: transform var(--dur-media) var(--ease-signature), box-shadow var(--dur-rapida) ease;
+}
+
+/* La foto de la categoría llena el círculo, como en el círculo de la grilla
+   (suele traer su propio fondo: contenida, quedaba un cuadrado adentro). */
+.burbujaFoto > img {
+  object-fit: cover;
+  mix-blend-mode: normal;
+  clip-path: circle(50%);
+}
+
+/* Aro del color de la categoría, encima de la foto. */
+.burbujaFoto::after {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--acento, transparent);
+  pointer-events: none;
+  content: '';
 }
 
 .burbujaFoto svg {

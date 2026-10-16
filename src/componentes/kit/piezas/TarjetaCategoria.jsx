@@ -42,7 +42,6 @@ export function TarjetaCategoria({ forma = 'cuadro', nombre, imagen, cuenta, url
           className={s.burbujaFoto}
           style={todos ? undefined : { '--acento': acento, background: imagen ? fondo : tonoDe(nombre) }}
           src={!todos && imagen ? toDirectImageUrl(imagen) : undefined}
-          relleno="12%"
           respaldo={foto}
         />
         <span className={s.burbujaNombre}>{nombre}</span>
