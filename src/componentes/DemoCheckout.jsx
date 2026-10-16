@@ -1,5 +1,5 @@
 import React from 'react';
-import { PaginaCheckout } from './kit';
+import { PaginaCheckout, PantallaAbriendoWhatsApp, BloqueSeccion } from './kit';
 import { COUNTRIES } from '../constants/countries';
 import { ENVIO_ESTANDAR, ENVIO_GRATIS_DESDE } from '../constants/envio';
 import { LUGARES, DIRECCIONES } from './DemoCuenta';
@@ -23,6 +23,7 @@ export const ESTADOS_CHECKOUT = [
   ['regalo', 'Regalo programado'],
   ['invitacion', 'Con invitación'],
   ['incompleto', 'Falta una talla'],
+  ['pestanaWhatsapp', 'Pestaña de WhatsApp'],
 ];
 
 /* Sin emojis de banderas: solo el nombre. */
@@ -41,6 +42,14 @@ export function CheckoutDemo({ items = [], sesion, usuario, monedas = 0, estados
   const avisar = (titulo, texto, tipo = 'exito') => toast?.({ tipo, titulo, texto, duracion: 2600 });
   const elegidos = estados.includes('vacio') ? [] : items;
   const subtotal = elegidos.reduce((t, it) => t + it.precio * it.cantidad, 0);
+  // La pestaña que se abre al pedir por WhatsApp (con "Varias marcas", la de una marca).
+  if (estados.includes('pestanaWhatsapp')) {
+    return (
+      <BloqueSeccion ajustes={{ paddingTop: '1.5rem', paddingBottom: '2.5rem' }}>
+        <PantallaAbriendoWhatsApp marca={estados.includes('variasMarcas') ? 'Con Amor Geeks' : undefined} />
+      </BloqueSeccion>
+    );
+  }
   return (
     <PaginaCheckout
       key={`${sesion}-${estados.join()}`}

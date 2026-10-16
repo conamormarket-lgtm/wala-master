@@ -49,3 +49,4 @@ export { AvisoInvitacion, RedesEnlaces, BotonEnlace } from './Campanas';
 export { TemaMarca, temaDeMarca } from './TemaMarca';
 export { PortadaMarca } from './PortadaMarca';
 export { PasosSellos } from './PasosSellos';
+export { htmlAbriendoWhatsApp, PantallaAbriendoWhatsApp } from './AbriendoWhatsApp';

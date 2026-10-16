@@ -76,6 +76,18 @@ la tarjeta, WhatsApp y PayPal esperan y avisan.
     tarjeta", y se puede reintentar o ir por WhatsApp.
   - **Yape, Plin o transferencia:** "Continuar por WhatsApp" (mientras: "Creando
     tu pedido…").
+  - **La pestaña de WhatsApp** (desde el 2026-10-16 en el kit:
+    `htmlAbriendoWhatsApp` y su vista `PantallaAbriendoWhatsApp`,
+    `piezas/AbriendoWhatsApp.jsx`): la que se abre en el clic mientras el
+    servidor crea el pedido. Es la pantalla de carga de Walá (el degradado,
+    la etiqueta que se mece, WALÁ y la barra que va y viene) con "Creando tu
+    pedido…", tres pasos (guardamos tu pedido, se abre WhatsApp con el
+    detalle, el asesor te dice cómo pagar), "Un asesor te atenderá por
+    WhatsApp" (con varias marcas, "El asesor de {marca}") y qué hacer si
+    WhatsApp no se abre. En la demo: estado "Pestaña de WhatsApp" (con
+    "Varias marcas", la de una marca).
+
+    ![La pestaña que se abre al pedir por WhatsApp](whatsapp-pestana.webp)
   - **Varias marcas:** un botón por marca ("Enviar a Con Amor Geeks (1)") y
     "Listo, ya envié mis pedidos".
 - **Pago (otro país):** el aviso de 7 a 30 días hábiles, **PayPal** en dólares
@@ -149,7 +161,9 @@ la tarjeta, WhatsApp y PayPal esperan y avisan.
 - **`pago.onTarjeta`:** el modal de Culqi y `processCulqiPayment`; si no se
   cobró, lanza el error. **`pago.onWhatsApp(marca)`:**
   `crearSolicitudWhatsappSecure` y abrir `wa.me` (con la pestaña de "Creando
-  tu pedido…"). **`pago.onPaypal`:** los botones de PayPal y
+  tu pedido…": en `CheckoutPage`, `PANTALLA_ABRIENDO_WHATSAPP` pasa a
+  `htmlAbriendoWhatsApp({ origen: window.location.origin, marca: g.label })`;
+  es HTML suelto porque la pestaña nueva no tiene la app cargada). **`pago.onPaypal`:** los botones de PayPal y
   `capturePaypalOrderSecure`. **`pago.usd`:** `penToUsd` de `services/fx`.
 - **`pago.marcas`:** el flag `whatsapp_multimarca` y los items agrupados por
   marca.
