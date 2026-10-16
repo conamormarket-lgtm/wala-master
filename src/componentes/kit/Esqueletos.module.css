@@ -1098,8 +1098,20 @@
 }
 
 @container esqueleto (min-width: 860px) {
-  .verDisenoPiezas {
+  .verDisenoCombo {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .verDisenoAncha {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
+    align-items: start;
+    gap: 1.25rem;
+  }
+
+  .verDisenoAncha .verDisenoFotos {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 }
 

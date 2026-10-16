@@ -831,17 +831,20 @@ const PAGINAS = {
       <span className={cx(s.chips, s.pieNavegarEsq)}><Hueso forma="pildora" alto={44} ancho={180} /><Hueso forma="pildora" alto={44} ancho={170} /></span>
     </>
   ),
-  verDiseno: () => (
-    // Ver diseño: el rótulo y el nombre con "Copiar resumen", y dos prendas
-    // (sello, prenda, color y talla, el nombre) con sus lados.
+  verDiseno: ({ tarjetas }) => (
+    // Ver diseño: el rótulo y el nombre con "Copiar resumen", y las prendas
+    // (sello, prenda, color y talla, el nombre) con sus lados. Mientras no se
+    // sabe cuántas son, dos (lo más común: las parejas); con `tarjetas`, esas,
+    // con las reglas de la página (una sola, o la última de un número impar, a
+    // lo ancho).
     <span className={s.verDisenoEsq}>
       <span className={s.verDisenoCabeza}>
         <span className={cx(s.filaTextos, s.verDisenoDatos)}><Hueso alto={13} ancho={130} /><Hueso alto={40} ancho="min(85%, 380px)" /><Hueso alto={11} ancho={240} /></span>
         <Hueso forma="pildora" alto={38} ancho={150} />
       </span>
-      <span className={s.verDisenoPiezas}>
-        {repetir(2, (k) => (
-          <Caja key={k} className={s.verDisenoPieza}>
+      <span className={cx(s.verDisenoPiezas, (tarjetas || 2) > 1 && s.verDisenoCombo)}>
+        {repetir(tarjetas || 2, (k, n = tarjetas || 2) => (
+          <Caja key={k} className={cx(s.verDisenoPieza, (n === 1 || (n % 2 === 1 && k === n - 1)) && s.verDisenoAncha)}>
             <span className={s.itemMenu}>
               <Hueso forma="circulo" ancho={40} alto={40} />
               <span className={cx(s.filaTextos, s.verDisenoDatos)}><Hueso alto={26} ancho="50%" /><Hueso alto={22} ancho="38%" /><Hueso alto={18} ancho="62%" /></span>
@@ -1042,7 +1045,8 @@ const PAGINAS = {
  *    referidos, creaciones, deseos, fechas)
  *  - secciones: [tipo] las del builder (la tienda ya conoce la estructura de
  *    la página antes de que lleguen los productos): una EsqueletoSeccion por cada una
- *  - tarjetas, titulo: compatibilidad con la versión anterior (forma 'productos')
+ *  - tarjetas, titulo: compatibilidad con la versión anterior (forma 'productos');
+ *    con forma 'verDiseno', tarjetas = cuántas prendas (si se sabe)
  */
 export function EsqueletoPagina({ forma = 'productos', modulo, sesion = true, secciones, tarjetas, titulo = true }) {
   const lista = secciones || (forma === 'inicio' ? INICIO : null);
@@ -1058,7 +1062,7 @@ export function EsqueletoPagina({ forma = 'productos', modulo, sesion = true, se
           {titulo && <EsqueletoCabeza />}
           <span className={s.grilla}>{productos(tarjetas)}</span>
         </>
-      ) : (PAGINAS[forma] || PAGINAS.productos)({ modulo, sesion })}
+      ) : (PAGINAS[forma] || PAGINAS.productos)({ modulo, sesion, tarjetas })}
     </div>
   );
 }

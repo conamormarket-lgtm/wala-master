@@ -192,6 +192,19 @@ Es lo que abre el asesor desde el WhatsApp de un pedido, sin sesión.
 - **Estados:** cargando (`EsqueletoPagina forma="verDiseno"`, con la medida
   real; antes un `Cargando` chico que dejaba subir el pie) y no disponible
   (Kapi triste).
+- **Cuántas prendas y cuántos lados:** una sola prenda va a lo ancho (en
+  escritorio, sus datos a la izquierda y sus lados a la derecha); un combo,
+  de a dos por fila; con un número impar (3, 5…) la última va a lo ancho,
+  así no queda media fila vacía. Una prenda con muchos lados (frente,
+  espalda y mangas: el servidor manda hasta 6) los baja de fila. En el
+  celular, siempre una columna. El esqueleto sigue las mismas reglas con
+  `tarjetas` (cuántas prendas, si se sabe); si no, dos (lo más común). Lo
+  que no puede saber es cuántos lados ni la proporción de cada foto: ahí
+  puede diferir unos píxeles.
+- **En la Tienda de prueba**, "Cómo se abre": combo de pareja, pareja con
+  frente y espalda, una prenda y un **conjunto de 3 (de ejemplo:** junta
+  tres diseños reales de la comunidad que no se pidieron juntos; la polera
+  lleva sus 4 lados).
 - **Todos los lados de cada prenda:** el servidor (`ladosDe` en
   `functions/pedidoDisenos.js`) manda cada lado de la prenda, con su foto o
   vacío; la demo hace lo mismo (las dos espaldas van lisas).

@@ -828,24 +828,57 @@ export const ESTADOS_VER = [
   ['noDisponible', 'No disponible'],
 ];
 
-/**
- * Ver diseño con un combo real (sus dos prendas, frente y espalda): las
- * espaldas sin diseño van lisas, como las manda el servidor.
+/** "Cómo se abre" Ver diseño: [id, texto, cuántas prendas] (el esqueleto usa el número). */
+export const CASOS_VER = [
+  ['pareja', 'Combo de pareja', 2],
+  ['dosLados', 'Pareja con frente y espalda', 2],
+  ['una', 'Una prenda', 1],
+  ['trio', 'Conjunto de 3 (de ejemplo)', 3],
+];
+
+/*
+ * Una prenda para Ver diseño, como la arma el servidor (ladosDe en
+ * functions/pedidoDisenos.js): todos los lados de la prenda en su orden, y
+ * el que no tiene diseño va sin foto ("va liso").
  */
-export function VerDisenoDemo({ estados = [] }) {
-  const d = CREAR.comunidad.find((x) => x.tipo === 'combo') || CREAR.comunidad[0];
-  const tallas = ['M', 'S'];
-  const piezas = (d?.piezas || []).map((p, i) => ({
-    prenda: p.productName,
-    nombre: p.nombre,
-    color: p.color?.nombre,
-    colorHex: p.color?.hex,
-    talla: tallas[i % tallas.length],
-    // Como el servidor (ladosDe en functions/pedidoDisenos.js): todos los lados
-    // de la prenda, y el que no tiene diseño va sin foto ("va liso").
-    lados: ['Frente', 'Espalda'].map((nombre) => ({ nombre, url: (p.vistasPrevias || []).find((v) => v.nombre === nombre)?.url || '' })),
-  }));
-  return <PaginaVerDiseno titulo={d?.nombre} piezas={piezas} cargando={estados.includes('cargando')} noDisponible={estados.includes('noDisponible')} />;
+const piezaVer = (p, talla, lados = ['Frente', 'Espalda']) => ({
+  prenda: p.productName,
+  nombre: p.nombre,
+  color: p.color?.nombre,
+  colorHex: p.color?.hex,
+  talla,
+  lados: lados.map((nombre) => ({ nombre, url: (p.vistasPrevias || []).find((v) => v.nombre === nombre)?.url || '' })),
+});
+
+/**
+ * Ver diseño con diseños reales de la comunidad: un combo de pareja (las
+ * espaldas lisas), una pareja con frente y espalda, una prenda sola y un
+ * conjunto de 3. **El conjunto es de ejemplo**: junta tres diseños reales
+ * que no se pidieron juntos (en la comunidad no hay combos de 3 con
+ * diseño), y a la polera le da sus 4 lados para ver muchos lados.
+ */
+export function VerDisenoDemo({ estados = [], caso = 'pareja' }) {
+  const combos = CREAR.comunidad.filter((x) => x.tipo === 'combo');
+  const solas = CREAR.comunidad.filter((x) => x.tipo !== 'combo' && (x.vistasPrevias || []).length);
+  const conEspalda = combos.find((c) => (c.piezas || []).every((p) => (p.vistasPrevias || []).length > 1)) || combos[0];
+  let titulo;
+  let piezas;
+  if (caso === 'una' && solas[0]) {
+    titulo = solas[0].nombre;
+    piezas = [piezaVer(solas[0], 'L')];
+  } else if (caso === 'trio' && solas.length >= 2) {
+    titulo = 'Conjunto familia';
+    piezas = [
+      piezaVer(solas[1], 'L', ['Frente', 'Espalda', 'Manga izquierda', 'Manga derecha']),
+      piezaVer(solas[0], 'M'),
+      piezaVer(conEspalda.piezas[0], 'S'),
+    ];
+  } else {
+    const d = caso === 'dosLados' ? conEspalda : combos[0];
+    titulo = d?.nombre;
+    piezas = (d?.piezas || []).map((p, i) => piezaVer(p, ['M', 'S'][i % 2]));
+  }
+  return <PaginaVerDiseno titulo={titulo} piezas={piezas} cargando={estados.includes('cargando')} noDisponible={estados.includes('noDisponible')} />;
 }
 
 /* ── Un combo (/combo/:id) ─────────────────────────────────── */

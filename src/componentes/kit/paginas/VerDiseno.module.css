@@ -55,10 +55,28 @@
   list-style: none;
 }
 
+/* Escritorio: un combo de a dos por fila; una prenda sola (o la última de
+   un número impar) a lo ancho, con sus datos a la izquierda y sus lados a la
+   derecha. Los lados bajan de fila si son muchos (mangas…). */
 @media (min-width: 860px) {
   .piezasCombo {
-    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
+  }
+
+  .piezaAncha {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
+    align-items: start;
+    gap: 1.25rem;
+  }
+
+  .piezaAncha .datos {
+    align-items: flex-start;
+  }
+
+  .piezaAncha .fotos {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 }
 

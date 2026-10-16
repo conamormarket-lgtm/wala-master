@@ -83,8 +83,11 @@ export function PaginaVerDiseno({ titulo, piezas = [], cargando = false, noDispo
         <ol className={[s.piezas, combo && s.piezasCombo].filter(Boolean).join(' ')}>
           {piezas.map((p, i) => {
             const prenda = p.prenda || p.nombre || `Prenda ${i + 1}`;
+            // Una sola prenda, o la última de un número impar (3, 5…): a lo
+            // ancho, con sus datos a un lado y los lados al otro (sin medio vacío).
+            const ancha = !combo || (piezas.length % 2 === 1 && i === piezas.length - 1);
             return (
-              <li key={i} className={s.pieza}>
+              <li key={i} className={[s.pieza, ancha && s.piezaAncha].filter(Boolean).join(' ')}>
                 <div className={s.datos}>
                   <Sello tamano={40} girar={i % 2 ? 6 : -8}>{combo ? <b className={s.numero}>{i + 1}</b> : <Shirt aria-hidden="true" />}</Sello>
                   <div className={s.datosTexto}>

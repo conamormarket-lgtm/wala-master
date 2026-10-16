@@ -21,7 +21,7 @@ import { LegalesDemo, VISTAS_LEGALES, ESTADOS_LEGALES } from './DemoLegales';
 import { JuegosDemo, VISTAS_JUEGOS, ESTADOS_JUEGOS } from './DemoJuegos';
 import { CampanasDemo, VISTAS_CAMPANAS, ESTADOS_CAMPANAS } from './DemoCampanas';
 import { OfertasDemo, ESTADOS_OFERTAS, NavegarDemo, VISTAS_NAVEGAR, ESTADOS_NAVEGAR, LANDINGS_DEMO, VISTAS_LANDING, datosLanding } from './DemoNavegar';
-import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR, ComunidadDemo, ESTADOS_COMUNIDAD, CreacionDemo, ESTADOS_CREACION, VerDisenoDemo, ESTADOS_VER, ComboDemo, ESTADOS_COMBO, EstudioDemo, ESTADOS_ESTUDIO } from './DemoCuenta';
+import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR, ComunidadDemo, ESTADOS_COMUNIDAD, CreacionDemo, ESTADOS_CREACION, VerDisenoDemo, ESTADOS_VER, CASOS_VER, ComboDemo, ESTADOS_COMBO, EstudioDemo, ESTADOS_ESTUDIO } from './DemoCuenta';
 import INICIO from './demo/inicio.json';
 import TIENDA from './demo/tienda.json';
 import cs from './ComponentesPage.module.css';
@@ -274,6 +274,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [rutaCreacion, setRutaCreacion] = useState('/creacion/');
   const [estadosCreacion, setEstadosCreacion] = useState([]);
   const [estadosVer, setEstadosVer] = useState([]);
+  const [casoVer, setCasoVer] = useState('pareja');
   const [rutaCombo, setRutaCombo] = useState('/combo/');
   const [rutaEstudio, setRutaEstudio] = useState(ABRIR_ESTUDIO[0][1]);
   const [rutaProducto, setRutaProducto] = useState(ABRIR_PRODUCTO[0][1]);
@@ -655,7 +656,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         {/* El inicio, sección por sección (las del builder). */}
         {pagina === 'inicio' || pagina === 'landing'
           ? <EsqueletoPagina secciones={(pagina === 'landing' ? landing.secciones : secciones).map((x) => x.type)} />
-          : <EsqueletoPagina forma={formaEsqueleto} modulo={moduloEsqueleto} sesion={conSesion} />}
+          : <EsqueletoPagina forma={formaEsqueleto} modulo={moduloEsqueleto} sesion={conSesion} tarjetas={pagina === 'ver' ? CASOS_VER.find((c) => c[0] === casoVer)?.[2] : undefined} />}
       </Parte>
     </MarcoTienda>
   ) : pagina === 'campanas' ? (
@@ -822,7 +823,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   ) : pagina === 'ver' ? (
     <MarcoTienda {...marco} kapiEnPie={!estadosVer.includes('noDisponible')}>
       <Parte n="P10" nombre="PaginaVerDiseno">
-        <VerDisenoDemo estados={estadosVer} />
+        <VerDisenoDemo key={casoVer} caso={casoVer} estados={estadosVer} />
       </Parte>
     </MarcoTienda>
   ) : pagina === 'creacion' ? (
@@ -1132,6 +1133,16 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
             <div className={cs.controlesChips}>
               {ESTADOS_COMBO.map(([id, texto]) => (
                 <Chip key={id} tamano="sm" activo={estadosCombo.includes(id)} onClick={() => setEstadosCombo((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
+              ))}
+            </div>
+          </div>
+        )}
+        {pagina === 'ver' && (
+          <div>
+            <span className={cs.controlesTitulo}>Cómo se abre</span>
+            <div className={cs.controlesChips}>
+              {CASOS_VER.map(([id, texto]) => (
+                <Chip key={id} tamano="sm" activo={casoVer === id} onClick={() => setCasoVer(id)}>{texto}</Chip>
               ))}
             </div>
           </div>
