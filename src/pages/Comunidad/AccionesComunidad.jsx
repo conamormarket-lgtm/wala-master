@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Users, RefreshCw, EyeOff, Loader2 } from 'lucide-react';
+import { Users, RefreshCw, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { publicarEnComunidad, retirarDeComunidad } from '../../services/comunidad';
-import CapaModal from '../Crear/CapaModal';
-import estilosModal from '../Crear/EliminarCreacion.module.css';
+// La confirmación con el kit (paso 3 de la migración; antes, CapaModal).
+import { Confirmar } from '../../componentes/kit/Feedback';
 import styles from './Comunidad.module.css';
 
 const PERMISOS = ['superadmin', 'manage_design'];
@@ -58,6 +58,9 @@ const AccionesComunidad = ({ design, onCambio }) => {
   const queryClient = useQueryClient();
   const [accion, setAccion] = useState(null);
   const [trabajando, setTrabajando] = useState(false);
+  // La última acción, para que la ventana se vaya con sus textos.
+  const ultima = useRef(null);
+  if (accion) ultima.current = accion;
 
   if (!puede) return null;
   const publicada = design.comunidad === 'publicada';
@@ -83,7 +86,7 @@ const AccionesComunidad = ({ design, onCambio }) => {
   };
 
   const cerrar = () => { if (!trabajando) setAccion(null); };
-  const t = accion ? TEXTOS[accion] : null;
+  const t = ultima.current ? TEXTOS[ultima.current] : null;
 
   return (
     <>
@@ -103,23 +106,14 @@ const AccionesComunidad = ({ design, onCambio }) => {
         </button>
       )}
 
-      {t && (
-        <CapaModal className={estilosModal.capa} role="dialog" aria-modal="true" aria-labelledby="comunidad-titulo" onClick={cerrar}>
-          <div className={estilosModal.caja} onClick={(e) => e.stopPropagation()}>
-            <span className={`${estilosModal.icono} ${styles.iconoComunidad}`}>
-              {accion === 'retirar' ? <EyeOff size={22} aria-hidden="true" /> : <Users size={22} aria-hidden="true" />}
-            </span>
-            <h2 id="comunidad-titulo" className={estilosModal.titulo}>{t.titulo}</h2>
-            <p>{t.texto}</p>
-            <button type="button" className={`${estilosModal.eliminar} ${styles.confirmar}`} onClick={confirmar} disabled={trabajando}>
-              {trabajando
-                ? <><Loader2 size={18} className={styles.girando} aria-hidden="true" /> Un momento…</>
-                : t.boton}
-            </button>
-            <button type="button" className={estilosModal.cancelar} onClick={cerrar} disabled={trabajando}>Cancelar</button>
-          </div>
-        </CapaModal>
-      )}
+      <Confirmar
+        abierta={Boolean(accion)}
+        titulo={t?.titulo}
+        texto={t?.texto}
+        confirmar={t?.boton}
+        onConfirmar={confirmar}
+        onCancelar={cerrar}
+      />
     </>
   );
 };

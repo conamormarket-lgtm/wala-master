@@ -6,6 +6,9 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getOrCreateCulqi } from './culqiSingleton';
 import { trackCulqiPurchase } from '../../services/analytics/metaPixel.mjs';
 import styles from './CulqiCustomCheckout.module.css';
+// El bloqueo mientras cobra, con el kit (paso 3). pagosViejo vuelve al de antes.
+import { CapaCargando } from '../../componentes/kit/Cargando';
+import useLoViejo from '../../hooks/useLoViejo';
 
 const CULQI_SCRIPT_ID = 'culqi-js-v4';
 
@@ -63,6 +66,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, onOpen, autoO
   // Pantalla sobre la página mientras el servidor cobra ('cobrando') y justo después
   // del cobro ('aprobado'), hasta que el padre navegue.
   const [pantalla, setPantalla] = useState(null);
+  const pagosViejo = useLoViejo('pagos');
   const culqiRef = useRef(null);
 
   // Identidad ESTABLE del pedido (sobrevive a remontes): con ella reutilizamos la
@@ -378,7 +382,21 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, onOpen, autoO
         <Lock size={13} aria-hidden="true" />
         Pago seguro con Culqi. Walá no guarda los datos de tu tarjeta.
       </p>
-      {pantalla && typeof document !== 'undefined' && createPortal(
+      {/* En un portal: dentro de la hoja de "Pagar saldo" (que se mueve con
+          transform) una capa fija quedaría atrapada en la hoja. */}
+      {pantalla && !pagosViejo && typeof document !== 'undefined' && createPortal(
+        <div role="alertdialog" aria-live="assertive" aria-busy={pantalla === 'cobrando'}>
+          <CapaCargando
+            pantallaCompleta
+            texto={pantalla === 'cobrando' ? 'Confirmando tu pago…' : '¡Pago aprobado!'}
+            detalle={pantalla === 'cobrando'
+              ? 'Estamos confirmando el cobro con tu banco. No cierres ni recargues esta página.'
+              : 'Estamos registrando tu pedido. En un momento verás el detalle.'}
+          />
+        </div>,
+        document.body
+      )}
+      {pantalla && pagosViejo && typeof document !== 'undefined' && createPortal(
         <div className={styles.overlay} role="alertdialog" aria-live="assertive" aria-busy={pantalla === 'cobrando'}>
           <div className={styles.overlayCard}>
             <div className={styles.overlaySpinner} aria-hidden="true" />

@@ -441,8 +441,9 @@ export function HojaInferior({ abierta, onCerrar, titulo, acciones, children, pi
  *  - peligro: el botón de confirmar en rojo (borrar, vaciar)
  *  - onConfirmar → puede ser una promesa: mientras dura, la hoja queda
  *    bloqueada y el botón cargando  · onCancelar
+ *  - children: notas debajo del texto (p. ej. "También se quitará de tu carrito")
  */
-export function Confirmar({ abierta, titulo, texto, confirmar = 'Sí', cancelar = 'Cancelar', peligro = false, onConfirmar, onCancelar, contenida = false }) {
+export function Confirmar({ abierta, titulo, texto, confirmar = 'Sí', cancelar = 'Cancelar', peligro = false, onConfirmar, onCancelar, contenida = false, children }) {
   const [cargando, setCargando] = useState(false);
   const aceptar = async () => {
     setCargando(true);
@@ -467,7 +468,12 @@ export function Confirmar({ abierta, titulo, texto, confirmar = 'Sí', cancelar 
         </div>
       )}
     >
-      {texto && <p className={s.confirmarTexto}><Texto>{texto}</Texto></p>}
+      {(texto || children) ? (
+        <>
+          {texto && <p className={s.confirmarTexto}><Texto>{texto}</Texto></p>}
+          {children && <div className={s.confirmarNotas}>{children}</div>}
+        </>
+      ) : null}
     </HojaInferior>
   );
 }

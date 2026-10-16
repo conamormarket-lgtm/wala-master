@@ -1,13 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Trash2, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { eliminarCreacion } from '../../services/designs';
 import { quitarBorradorDeCache } from './borradoresCache';
-import CapaModal from './CapaModal';
-import styles from './EliminarCreacion.module.css';
+// La confirmación con el kit (paso 3 de la migración; antes, CapaModal).
+import { Confirmar } from '../../componentes/kit/Feedback';
 
 /**
  * Eliminar una creación para siempre, con su confirmación. Lo usan la página
@@ -15,7 +14,7 @@ import styles from './EliminarCreacion.module.css';
  *
  *   const { pedir, dialogo } = useEliminarCreacion({ alEliminar });
  *   pedir(diseno, { enPedido })  → abre la confirmación
- *   {dialogo}                    → se renderiza donde sea (va en CapaModal)
+ *   {dialogo}                    → se renderiza donde sea (Confirmar del kit)
  *
  * También quita la creación del carrito: sin ella, el artículo quedaría
  * apuntando a imágenes que ya no existen.
@@ -28,21 +27,19 @@ export const useEliminarCreacion = ({ alEliminar } = {}) => {
   const [pendiente, setPendiente] = useState(null);
   const [borrando, setBorrando] = useState(false);
 
+  // El último pedido se recuerda para que la ventana se vaya con sus textos.
+  const ultimo = useRef(null);
+  if (pendiente) ultimo.current = pendiente;
+  const visto = pendiente || ultimo.current;
+
   const pedir = (diseno, { enPedido = false } = {}) => setPendiente({ diseno, enPedido });
   const cerrar = () => { if (!borrando) setPendiente(null); };
 
-  useEffect(() => {
-    if (!pendiente) return undefined;
-    const alTeclear = (e) => { if (e.key === 'Escape') cerrar(); };
-    window.addEventListener('keydown', alTeclear);
-    return () => window.removeEventListener('keydown', alTeclear);
-  });
-
-  const enCarrito = pendiente
-    ? (items || []).filter((i) => i.customization?.designId === pendiente.diseno.id)
+  const enCarrito = visto
+    ? (items || []).filter((i) => i.customization?.designId === visto.diseno.id)
     : [];
-  const enPedido = Boolean(pendiente && (pendiente.enPedido || pendiente.diseno.enPedido));
-  const esBorrador = pendiente?.diseno.estado === 'borrador';
+  const enPedido = Boolean(visto && (visto.enPedido || visto.diseno.enPedido));
+  const esBorrador = visto?.diseno.estado === 'borrador';
 
   const confirmar = async () => {
     if (!user || !pendiente) return;
@@ -64,31 +61,26 @@ export const useEliminarCreacion = ({ alEliminar } = {}) => {
     alEliminar?.(diseno);
   };
 
-  const dialogo = pendiente ? (
-    <CapaModal className={styles.capa} role="dialog" aria-modal="true" aria-labelledby="eliminar-creacion-titulo" onClick={cerrar}>
-      <div className={styles.caja} onClick={(e) => e.stopPropagation()}>
-        <span className={styles.icono}><Trash2 size={22} aria-hidden="true" /></span>
-        <h2 id="eliminar-creacion-titulo" className={styles.titulo}>
-          {esBorrador ? '¿Eliminar este borrador?' : `¿Eliminar «${pendiente.diseno.name || 'Mi diseño'}»?`}
-        </h2>
-        <p>
-          {enPedido
-            ? 'Se borra de tus creaciones para siempre. Ya está en un pedido: el pedido conserva su diseño tal como lo compraste.'
-            : 'Se borra para siempre junto con sus imágenes. No se puede deshacer.'}
-        </p>
-        {enCarrito.length > 0 && <p>También se quitará de tu carrito.</p>}
-        {pendiente.diseno.comunidad === 'publicada' && (
-          <p>Está publicada en la comunidad: la publicación seguirá ahí. Para quitarla, retírala antes.</p>
-        )}
-        <button type="button" className={styles.eliminar} onClick={confirmar} disabled={borrando}>
-          {borrando
-            ? <><Loader2 size={18} className={styles.girando} aria-hidden="true" /> Eliminando…</>
-            : <><Trash2 size={18} aria-hidden="true" /> Eliminar</>}
-        </button>
-        <button type="button" className={styles.cancelar} onClick={cerrar} disabled={borrando}>Cancelar</button>
-      </div>
-    </CapaModal>
-  ) : null;
+  // Mientras borra, Confirmar queda bloqueada (no se cierra) y el botón cargando.
+  const notas = [
+    enCarrito.length > 0 && 'También se quitará de tu carrito.',
+    visto?.diseno.comunidad === 'publicada' && 'Está publicada en la comunidad: la publicación seguirá ahí. Para quitarla, retírala antes.',
+  ].filter(Boolean);
+  const dialogo = (
+    <Confirmar
+      abierta={Boolean(pendiente)}
+      titulo={!visto ? '' : esBorrador ? '¿Eliminar este borrador?' : `¿Eliminar «${visto.diseno.name || 'Mi diseño'}»?`}
+      texto={enPedido
+        ? 'Se borra de tus creaciones para siempre. Ya está en un pedido: el pedido conserva su diseño tal como lo compraste.'
+        : 'Se borra para siempre junto con sus imágenes. No se puede deshacer.'}
+      confirmar="Eliminar"
+      peligro
+      onConfirmar={confirmar}
+      onCancelar={cerrar}
+    >
+      {notas.length ? notas.map((n) => <p key={n}>{n}</p>) : null}
+    </Confirmar>
+  );
 
   return { pedir, dialogo, borrando };
 };

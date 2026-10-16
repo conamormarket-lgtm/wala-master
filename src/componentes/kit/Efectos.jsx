@@ -35,18 +35,32 @@ export function useContador(valor, duracion = 0.7) {
 /** true dentro de la app de Capacitor (Android/iOS), false en la web. */
 export const esApp = () => typeof window !== 'undefined' && Boolean(window.Capacitor?.isNativePlatform?.());
 
+/* Bloqueos activos a la vez (una hoja y, encima, la capa de un pago): el
+   scroll vuelve cuando se suelta el último, en el orden que sea. Si cada uno
+   restaurara "lo que había antes", cerrar primero la hoja y después la capa
+   dejaba la página sin scroll. */
+let bloqueos = 0;
+let previoBloqueo = null;
+
 /** Bloquea el scroll de la página mientras hay un modal abierto, sin saltos por la barra. */
 export function useBloquearScroll(activo) {
   useEffect(() => {
     if (!activo) return undefined;
     const raiz = document.documentElement;
-    const barra = window.innerWidth - raiz.clientWidth;
-    const previo = { overflow: raiz.style.overflow, padding: raiz.style.paddingRight };
-    raiz.style.overflow = 'hidden';
-    if (barra > 0) raiz.style.paddingRight = `${barra}px`;
+    if (bloqueos === 0) {
+      const barra = window.innerWidth - raiz.clientWidth;
+      previoBloqueo = { overflow: raiz.style.overflow, padding: raiz.style.paddingRight };
+      raiz.style.overflow = 'hidden';
+      if (barra > 0) raiz.style.paddingRight = `${barra}px`;
+    }
+    bloqueos += 1;
     return () => {
-      raiz.style.overflow = previo.overflow;
-      raiz.style.paddingRight = previo.padding;
+      bloqueos -= 1;
+      if (bloqueos === 0 && previoBloqueo) {
+        raiz.style.overflow = previoBloqueo.overflow;
+        raiz.style.paddingRight = previoBloqueo.padding;
+        previoBloqueo = null;
+      }
     };
   }, [activo]);
 }

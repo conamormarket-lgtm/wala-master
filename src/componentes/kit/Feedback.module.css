@@ -791,3 +791,16 @@
     flex: 1;
   }
 }
+
+.confirmarNotas {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.confirmarNotas p {
+  margin: 0;
+}

@@ -1,14 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Users, X, ArrowRight, Loader2 } from 'lucide-react';
+import { Users, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getCombosCrear } from '../../services/combosCrear';
 import { copiarCreacionParaCombo } from '../../services/misCombos';
 import { precioBase } from '../../utils/prendaBase';
 import { empezarComboCon } from './comboCrear';
-import CapaModal from './CapaModal';
+// La ventana con el kit (paso 3 de la migración; antes, CapaModal).
+import { HojaInferior } from '../../componentes/kit/Feedback';
 import styles from './LlevarEnCombo.module.css';
 
 const soles = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
@@ -51,26 +52,13 @@ export const useLlevarEnCombo = () => {
   return { llevar, llevando };
 };
 
-/** Ventana para elegir el combo. */
-const ElegirCombo = ({ creacion, combos, onCerrar }) => {
+/** Ventana para elegir el combo (mientras arma la copia, no se cierra). */
+const ElegirCombo = ({ abierta, creacion, combos, onCerrar }) => {
   const { llevar, llevando } = useLlevarEnCombo();
-  useEffect(() => {
-    const alTeclear = (e) => { if (e.key === 'Escape' && !llevando) onCerrar(); };
-    window.addEventListener('keydown', alTeclear);
-    return () => window.removeEventListener('keydown', alTeclear);
-  }, [llevando, onCerrar]);
 
   return (
-    <CapaModal className={styles.capa} role="dialog" aria-modal="true" aria-labelledby="llevar-combo-titulo" onClick={() => !llevando && onCerrar()}>
-      <div className={styles.caja} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.cabecera}>
-          <h2 id="llevar-combo-titulo" className={styles.titulo}>
-            <Users size={20} aria-hidden="true" /> Llevar en combo
-          </h2>
-          <button type="button" className={styles.cerrar} onClick={onCerrar} disabled={Boolean(llevando)} aria-label="Cerrar">
-            <X size={18} aria-hidden="true" />
-          </button>
-        </div>
+    <HojaInferior abierta={abierta} onCerrar={onCerrar} titulo="Llevar en combo" bloqueada={Boolean(llevando)}>
+      <div>
         <p className={styles.ayuda}>
           Usamos una copia de «{creacion.name || 'tu diseño'}»: tu creación sigue igual. En el combo
           le cambias el color o el diseño a cada prenda.
@@ -91,7 +79,7 @@ const ElegirCombo = ({ creacion, combos, onCerrar }) => {
           ))}
         </ul>
       </div>
-    </CapaModal>
+    </HojaInferior>
   );
 };
 
@@ -114,7 +102,7 @@ export const BotonLlevarEnCombo = ({ creacion, className }) => {
       >
         <Users size={16} aria-hidden="true" />
       </button>
-      {abierto && <ElegirCombo creacion={creacion} combos={combos} onCerrar={() => setAbierto(false)} />}
+      <ElegirCombo abierta={abierto} creacion={creacion} combos={combos} onCerrar={() => setAbierto(false)} />
     </>
   );
 };
