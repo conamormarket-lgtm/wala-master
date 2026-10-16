@@ -1,5 +1,7 @@
 import TIENDA from './demo/tienda.json';
 import LANDINGS from './demo/landings.json';
+import MARCAS from './demo/marcas.json';
+import { navDeMarca } from './kit';
 
 /*
  * Las landings del builder (/:slug) en la Tienda de prueba. Son reales:
@@ -26,9 +28,12 @@ export function datosLanding(slug) {
     categoryId: c.id, name: c.name, imageUrl: c.imageUrl, cuenta: productos.filter((p) => (p.categories || []).includes(c.id)).length,
   }));
   const porCategoria = Object.fromEntries(categorias.map((c) => [c.categoryId, productos.filter((p) => (p.categories || []).includes(c.categoryId))]));
+  // Las burbujas de categories_nav: la lista curada real de la marca (marcas.json).
+  const marca = MARCAS.find((m) => m.id === l.brandId) || {};
   return {
     landing: l,
     categorias,
+    navPorMarca: l.brandId ? { [l.brandId]: navDeMarca(marca, { productos, categorias: TIENDA.categorias }) } : {},
     productos: {
       destacados: productos.filter((p) => p.featured === true).sort((a, b) => (a.featuredOrder ?? 0) - (b.featuredOrder ?? 0)),
       ofertas: productos.filter((p) => Number(p.salePrice) > 0 && Number(p.salePrice) < Number(p.price)),

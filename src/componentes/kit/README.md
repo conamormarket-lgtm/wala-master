@@ -150,7 +150,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `Feedback.jsx` | `Aviso`, `ProveedorToasts`, `useToast`, `useNotificaciones`, `ListaNotificaciones`, `EstadoVacio`, `HojaInferior` | Avisos, notificaciones y modales |
 | `Enlace.jsx` | `Enlace`, `ProveedorEnlaces`, `tipoDeEnlace` | La única regla de enlaces: internos por el router, externos en otra pestaña, `#ancla` con scroll suave |
 | `Traduccion.jsx` | `ProveedorTraduccion`, `useTexto`, `useHtml`, `Texto` | Los textos de los datos pasan por la traducción de la tienda (guía: `guia/TRADUCCION.md`); sin proveedor, quedan igual |
-| `adaptadores.js` | `accionDeProducto`, `tarjetaDesdeProducto`, `opcionesDeProducto`, `rutaDeMarca`, `tarjetaDesdeMarca`, `testimonioDesdeAjuste`, `precioEfectivo`, `limitesDePrecio`, `esTemporada`, `gruposDeCatalogo`, `grillaDesdeConfiguracion`, `juegosDelArcade`, `kapiDesdePerfil`, `retoDesdePerfil`, `sugerenciasDesdeBusqueda`, `grupoModalidad`, `ORDENES_BUSQUEDA`, `ordenarProductos`, y de la cuenta: `perfilDesdeUsuario`, `direccionDesdeFirestore` / `direccionAFirestore`, `recompensaDesdeFirestore`, `cuponDesdeFirestore`, `misionDesdeServidor`, `creacionDesdeDiseno`, `personaDesdeRecipient` / `personaARecipient` (con el "Conjunto familia"), `encuestaDesdeConfig` (config de la encuesta → textos y conjuntos)| Traducen datos de Firestore a props del kit: un producto de `productos_wala`, una marca de `tienda_brands`, las listas de filtros del catálogo (categorías, colecciones, etiquetas, personajes, tipos), `storeConfig.layout` y el perfil del cliente (Zona Arcade, Kapi y su reto) |
+| `adaptadores.js` | `accionDeProducto`, `tarjetaDesdeProducto`, `opcionesDeProducto`, `rutaDeMarca`, `tarjetaDesdeMarca`, `testimonioDesdeAjuste`, `precioEfectivo`, `limitesDePrecio`, `esTemporada`, `gruposDeCatalogo`, `grillaDesdeConfiguracion`, `juegosDelArcade`, `kapiDesdePerfil`, `retoDesdePerfil`, `sugerenciasDesdeBusqueda`, `grupoModalidad`, `ORDENES_BUSQUEDA`, `ordenarProductos`, y de la cuenta: `perfilDesdeUsuario`, `direccionDesdeFirestore` / `direccionAFirestore`, `recompensaDesdeFirestore`, `cuponDesdeFirestore`, `misionDesdeServidor`, `creacionDesdeDiseno`, `personaDesdeRecipient` / `personaARecipient` (con el "Conjunto familia"), `encuestaDesdeConfig` (config de la encuesta → textos y conjuntos), `navDeMarca` (las burbujas y el estilo de `categories_nav` de una marca)| Traducen datos de Firestore a props del kit: un producto de `productos_wala`, una marca de `tienda_brands`, las listas de filtros del catálogo (categorías, colecciones, etiquetas, personajes, tipos), `storeConfig.layout` y el perfil del cliente (Zona Arcade, Kapi y su reto) |
 | `Carrusel.jsx` | `Carrusel` | El único carrusel: deslizar nativo, flechas, puntos, autoplay con pausas |
 | `Marquesina.jsx` | `Marquesina` | Cinta sin fin (logos, anuncios, burbujas) |
 | `CuentaRegresiva.jsx` | `CuentaRegresiva` | Hasta una fecha o "siempre activa" por visitante; variantes bloques, texto y evento (dígitos grandes para fondos oscuros) |
@@ -289,7 +289,9 @@ componente vía `respaldo`.
 Con `PaginaTienda` no hace falta repartir los productos a mano: recibe
 `productos = { destacados, nuevos, ofertas, porCategoria, porColeccion,
 todos }` y cada sección toma la suya (`productosDeSeccion`, la misma regla
-que TiendaPage), más `categorias`, `marcas` y `marcaActual`. Con `marcas` y
+que TiendaPage), más `categorias`, `marcas`, `marcaActual` y `navPorMarca`
+(las burbujas de cada `categories_nav` con marca: `navDeMarca(marca, {
+productos, categorias })`, la lista curada de la marca). Con `marcas` y
 `categorias` las tarjetas muestran el sello de la marca y la categoría
 (`catalogo` en `RenderSecciones` / `tarjetaDesdeProducto`).
 

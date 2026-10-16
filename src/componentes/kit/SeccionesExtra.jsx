@@ -199,7 +199,9 @@ export function Ubicacion({ ajustes = {} }) {
  *  - ajustes.align: 'left' | 'center' | 'right' | 'justify'
  *  - ajustes.animation: 'static' (fila deslizable) | 'slider' (cinta sin fin)
  */
-export function NavCategorias({ ajustes = {}, categorias = [], activa = null, onSeleccionar, cargando = false }) {
+export function NavCategorias({ ajustes: ajustesSeccion = {}, categorias = [], activa = null, onSeleccionar, cargando = false, estilo }) {
+  // El estilo de la marca (categoryNavStyle, como en la tienda) manda sobre los de la sección.
+  const ajustes = estilo ? { ...ajustesSeccion, ...estilo } : ajustesSeccion;
   const lista = (categorias || []).filter((c) => c?.name);
   if (cargando) {
     return (

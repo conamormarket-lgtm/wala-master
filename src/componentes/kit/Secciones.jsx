@@ -500,7 +500,8 @@ export const REGISTRO_SECCIONES = {
   hero_banner: { Componente: BannerPrincipal, nombre: 'BannerPrincipal' },
   feature_list: { Componente: ListaBeneficios, nombre: 'ListaBeneficios' },
   map_location: { Componente: Ubicacion, nombre: 'Ubicacion' },
-  categories_nav: { Componente: NavCategorias, nombre: 'NavCategorias', categorias: true },
+  // Compacta como en la tienda: las burbujas casi pegadas al banner y al catálogo.
+  categories_nav: { Componente: NavCategorias, nombre: 'NavCategorias', categorias: true, relleno: '0.75rem' },
   featured_products: { Componente: GrillaProductos, nombre: 'GrillaProductos', productos: true },
   product_grid: { Componente: GrillaProductos, nombre: 'GrillaProductos', productos: true },
   sidebar_catalog: { Componente: CatalogoConFiltros, nombre: 'CatalogoConFiltros', productos: true },
@@ -535,6 +536,9 @@ export const REGISTRO_SECCIONES = {
  *  - envolver(seccion, nodo, indice) → para el editor: envuelve cada sección
  *    (p. ej. con <SeccionEditable>) sin que RenderSecciones lo conozca.
  */
+/** Sin valor guardado (el 0 sí es un valor: la sección sin relleno). */
+const vacio = (v) => v == null || v === '';
+
 export function RenderSecciones({ secciones = [], productosPara, categoriasPara, marcasPara, catalogo, propsPara, onAgregar, respaldo, envolver }) {
   return [...secciones]
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
@@ -554,7 +558,9 @@ export function RenderSecciones({ secciones = [], productosPara, categoriasPara,
       return conMarco(
         <BloqueSeccion
           key={sec.id}
-          ajustes={reg.sinRelleno ? { ...ajustes, paddingTop: '0', paddingBottom: '0' } : ajustes}
+          ajustes={reg.sinRelleno ? { ...ajustes, paddingTop: '0', paddingBottom: '0' }
+            : reg.relleno ? { ...ajustes, paddingTop: vacio(ajustes.paddingTop) ? reg.relleno : ajustes.paddingTop, paddingBottom: vacio(ajustes.paddingBottom) ? reg.relleno : ajustes.paddingBottom }
+              : ajustes}
           ancho={reg.ancho}
           pegado={reg.sinRelleno}
         >

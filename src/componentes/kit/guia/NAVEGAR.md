@@ -50,9 +50,24 @@ Esqueleto: la landing por sus secciones (`EsqueletoPagina secciones={…}`).
 
 ### Lo que hace
 
-`PaginaTienda` con las secciones guardadas. Las burbujas de categorías
-filtran el catálogo de la misma página, como en la tienda. Con `hideHeader` /
+`PaginaTienda` con las secciones guardadas. Con `hideHeader` /
 `hideFooter`, sin cabecera o sin pie.
+
+**Las burbujas de categorías (`categories_nav`)** filtran el catálogo de la
+misma página, como en la tienda, y salen de la **lista curada de la marca**
+(`tienda_brands.categoryNav`, con `navDeMarca`; antes de 2026-10-16 el kit
+usaba las categorías sueltas de los productos y mostraba "Casacas" donde
+wala.pe dice "Poleras"):
+
+- la lista de la marca en su orden, con su nombre y su foto (sin foto, la de
+  la categoría), solo las que tienen productos de la marca;
+- al final, las categorías que la marca usa y no están en la lista;
+- sin lista, todas las que usa;
+- el estilo de la marca (`categoryNavStyle`: alineación y `slider`) manda.
+
+La sección es compacta (0,75 rem arriba y abajo si el editor no fija otro
+relleno), como en wala.pe: las burbujas quedan casi pegadas al banner y al
+catálogo.
 
 ## Las landings del builder salen con el kit
 
@@ -89,7 +104,12 @@ lo que dibuja.
 
 Las secciones de `loadStorefrontPage(slug)`, `marcaActual` es
 `landing.brandId` y los productos, los mismos que reparte `TiendaPage` con
-`pageBrandId` (destacados y catálogo acotados a la marca).
+`pageBrandId` (destacados y catálogo acotados a la marca). Las burbujas:
+`navPorMarca = { [brandId]: navDeMarca(getBrand(brandId), { productos:
+getProductsByBrand(brandId), categorias: getCategories() }) }` por cada
+`categories_nav` con marca (la misma regla que `navCategoriesByBrand` de
+`TiendaPage`). En la demo, `demo/marcas.json` trae la `categoryNav` real de
+cada marca.
 
 ### Comportamiento que no se puede perder
 

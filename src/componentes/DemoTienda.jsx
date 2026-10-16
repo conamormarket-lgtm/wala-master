@@ -687,6 +687,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       secciones={landing.secciones}
       productos={datosDeLanding.productos}
       categorias={datosDeLanding.categorias}
+      navPorMarca={datosDeLanding.navPorMarca}
       marcas={marcas}
       marcaActual={landing.brandId}
       onAgregar={onAgregar}

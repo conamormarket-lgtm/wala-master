@@ -98,13 +98,17 @@ export function productosDeSeccion(productos = {}, sec) {
  *    de un producto de la categoría (imageSource 'product').
  *  - marcas: tienda_brands (banner_grid de marcas, sello en las tarjetas).
  *  - marcaActual: id de la marca de la página (landing de marca).
+ *  - navPorMarca: { [brandId]: { items, estilo } } (navDeMarca): las
+ *    burbujas y el estilo de cada categories_nav que apunta a una marca,
+ *    como TiendaPage (la lista curada de la marca, no las categorías sueltas).
  *  - El resto: props del marco (cabecera, pie, flotantes…) y de
  *    <RenderSecciones> (onAgregar, propsPara, respaldo, envolver).
  */
 export function PaginaTienda({
   arriba, cabecera, pie, pieLegal, barraInferior, flotantes, contenida,
-  productos, productosPara, categorias = [], marcas = [], marcaActual = null, ...secciones
+  productos, productosPara, categorias = [], marcas = [], marcaActual = null, navPorMarca = {}, ...secciones
 }) {
+  const navDe = (sec) => (sec.type === 'categories_nav' ? navPorMarca[(sec.settings?.brandId || '').trim()] : undefined);
   const catalogo = useMemo(() => ({ marcas, categorias, marcaActual }), [marcas, categorias, marcaActual]);
   // Un solo Kapi a la vista: si la página termina con Preguntas frecuentes
   // (su tarjeta de ayuda trae a Kapi), el pie no lo repite.
@@ -116,10 +120,11 @@ export function PaginaTienda({
         productosPara={productosPara || ((sec) => productosDeSeccion(productos, sec))}
         // Con items puestos a mano en el editor mandan esos; si no, las
         // categorías automáticas.
-        categoriasPara={(sec) => (sec.settings?.items?.length && sec.settings.dataSource !== 'products' ? undefined : categorias)}
+        categoriasPara={(sec) => navDe(sec)?.items || (sec.settings?.items?.length && sec.settings.dataSource !== 'products' ? undefined : categorias)}
         marcasPara={() => marcas}
         catalogo={catalogo}
         {...secciones}
+        propsPara={(sec) => ({ ...(navDe(sec) ? { estilo: navDe(sec).estilo } : {}), ...secciones.propsPara?.(sec) })}
       />
     </MarcoTienda>
   );

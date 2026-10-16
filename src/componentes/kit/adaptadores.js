@@ -1027,3 +1027,60 @@ export function opinionesDesde(resenas = [], { uid } = {}) {
   };
 }
 
+/* ── Nav de categorías de una marca (categories_nav) ── */
+
+const ALINEAR_NAV = ['left', 'center', 'right', 'justify'];
+const idDeCategoria = (c) => ((c && typeof c === 'object') ? (c.id || c.slug || c.name || '') : (c || ''));
+
+/**
+ * Las burbujas de categories_nav de una marca, con la regla de TiendaPage
+ * (navCategoriesByBrand):
+ *  - la lista curada de la marca (tienda_brands.categoryNav: su orden, su
+ *    nombre y su foto; sin nombre o foto, los de la categoría), solo con las
+ *    categorías que tienen productos visibles de la marca;
+ *  - y al final, las categorías que la marca ya usa y no están en la lista
+ *    (por el orden de la categoría y el nombre);
+ *  - sin lista curada, todas las que usa (mismo orden).
+ *  - estilo: categoryNavStyle → { align, animation } (center/static por defecto).
+ * marca: el doc de tienda_brands · productos: los de la marca (visibles) ·
+ * categorias: tienda_categories [{ id, name, imageUrl, order }]
+ */
+export function navDeMarca(marca = {}, { productos = [], categorias = [] } = {}) {
+  const porId = new Map(categorias.filter((c) => c?.id).map((c) => [c.id, c]));
+  const enUso = new Set();
+  productos.forEach((p) => {
+    [...(Array.isArray(p.categories) ? p.categories : []), p.categoryId, p.category].forEach((c) => {
+      const id = idDeCategoria(c);
+      if (id) enUso.add(id);
+    });
+  });
+  const auto = (ids) => ids
+    .map((id) => porId.get(id))
+    .filter(Boolean)
+    .map((c) => ({ categoryId: c.id, name: c.name || '', imageUrl: c.imageUrl || '', order: typeof c.order === 'number' ? c.order : 0 }))
+    .sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name));
+  const curada = Array.isArray(marca.categoryNav) ? marca.categoryNav : [];
+  let items;
+  if (curada.length) {
+    const elegidas = [...curada]
+      .sort((a, b) => (Number(a?.order) || 0) - (Number(b?.order) || 0))
+      .map((it) => {
+        const categoryId = idDeCategoria(it?.categoryId);
+        const c = porId.get(categoryId);
+        return { categoryId, name: it?.name || c?.name || '', imageUrl: it?.imageUrl || c?.imageUrl || '' };
+      })
+      .filter((it) => it.categoryId && enUso.has(it.categoryId));
+    const ya = new Set(elegidas.map((it) => it.categoryId));
+    items = [...elegidas, ...auto([...enUso].filter((id) => !ya.has(id)))];
+  } else {
+    items = auto([...enUso]);
+  }
+  const e = marca.categoryNavStyle || {};
+  return {
+    items: items.map(({ categoryId, name, imageUrl }) => ({ categoryId, name, imageUrl })),
+    estilo: {
+      align: ALINEAR_NAV.includes(e.align) ? e.align : 'center',
+      animation: ['static', 'slider'].includes(e.animation) ? e.animation : 'static',
+    },
+  };
+}
