@@ -260,7 +260,7 @@ export default function TarjetaProducto({
 
         <div className={s.pie}>
           <div className={s.precios}>
-            <s className={s.precioAntes} aria-hidden={!precioAntes}>{precioAntes ? soles(precioAntes) : ' '}</s>
+            <s className={[s.precioAntes, !precioAntes && s.precioAntesVacio].filter(Boolean).join(' ')} aria-hidden={!precioAntes}>{precioAntes ? soles(precioAntes) : ' '}</s>
             <span className={[s.precio, descuento > 0 && s.precioOferta].filter(Boolean).join(' ')}>{soles(precio)}</span>
           </div>
           {colores.length > 0 && (

@@ -61,6 +61,11 @@ Lo pequeño también es una sola pieza; no se vuelve a dibujar a mano:
   en la tarjeta de producto y el menú de marcas).
 - **Moneda**: `Moneda` / `MONEDA` (`Etiquetas.jsx`).
 
+Las muestras de color (puntos y círculos) llevan el borde `--borde-muestra`
+(`theme/tokens.css`: oscuro en claro, claro de noche), así un negro o un
+blanco no se pierden sobre la tarjeta. Y toda foto con `multiply` va sobre
+`--escenario-foto`, nunca sobre `--color-surface` (de noche saldría negra).
+
 Las piezas base (`FotoProducto`, `Avatar`, el sello) escriben sus reglas con
 `:where()`: no pesan, y la clase de quien las usa (tamaño, radio, borde)
 siempre gana.

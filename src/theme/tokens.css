@@ -31,6 +31,10 @@
      FotoProducto y TarjetaProducto). En noche, un punto más bajo (abajo). */
   --escenario-foto: #f5f4f8;
 
+  /* Borde fino de una muestra de color (puntos y círculos): un negro o un
+     blanco no se pierde sobre la tarjeta. En noche, claro (abajo). */
+  --borde-muestra: rgba(15, 23, 42, 0.16);
+
   /* ---------------------------------------------------------------------
      GRADIENTES DE MARCA
      --------------------------------------------------------------------- */
@@ -213,6 +217,7 @@
      blanco sobre oscuro se vería como un recuadro), un punto más bajo para
      que no deslumbre. */
   --escenario-foto: #e9e7f0;
+  --borde-muestra: rgba(255, 255, 255, 0.3);
 
   /* Fondos translúcidos -> violeta profundo translúcido */
   --glass-bg:        rgba(30, 27, 46, 0.62);

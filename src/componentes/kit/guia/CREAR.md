@@ -87,6 +87,13 @@ Sus partes, en orden:
 - **El gesto de las tarjetas** es el de `TarjetaProducto`: inclinación,
   canto con luz y barrido.
 - **`Carrusel`, `TituloSeccion` y `EstadoVacio`** son los de todo el kit.
+- **Modo oscuro (2026-10-16):** las prendas de un combo (borrador, creación
+  o de la comunidad) van sobre el escenario de foto (`--escenario-foto`,
+  claro también de noche) y el recuadro del combo es un lila claro. Antes,
+  de noche, las fotos se mezclaban (`multiply`) con la tarjeta oscura y
+  salían negras. Los puntos y círculos de color (la tarjeta, "Color: Negro"
+  de una creación, el estudio, el pedido) llevan el borde
+  `--borde-muestra`: un negro ya no se pierde sobre la tarjeta oscura.
 
 ## Las páginas que salen de Crear
 

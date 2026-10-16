@@ -84,7 +84,13 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  box-shadow: 0 0 0 3px var(--color-surface), 0 0 0 5px var(--primary-color, #6d28d9);
+  /* El borde fino de adentro (--borde-muestra): un negro o un blanco no se
+     pierde sobre la tarjeta. */
+  box-shadow: inset 0 0 0 1px var(--borde-muestra), 0 0 0 3px var(--color-surface), 0 0 0 5px var(--primary-color, #6d28d9);
+}
+
+:global([data-theme='dark']) .muestra {
+  box-shadow: inset 0 0 0 1px var(--borde-muestra), 0 0 0 3px var(--color-surface), 0 0 0 5px var(--violet-400);
 }
 
 .ayuda {

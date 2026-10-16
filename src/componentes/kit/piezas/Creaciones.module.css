@@ -294,7 +294,7 @@
   width: 10px;
   height: 10px;
   flex-shrink: 0;
-  border: 1px solid rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--borde-muestra);
   border-radius: 50%;
 }
 
@@ -356,8 +356,9 @@
   background: color-mix(in srgb, var(--primary-light) 70%, var(--color-surface));
 }
 
+/* De noche también claro, como el escenario de las demás tarjetas de la fila. */
 :global([data-theme='dark']) .fotoCombo {
-  background: rgba(167, 139, 250, 0.08);
+  background: color-mix(in srgb, var(--escenario-foto, #e9e7f0) 72%, var(--violet-400, #a78bfa));
 }
 
 /* Un combo: sus prendas lado a lado, un poco giradas (quietas). */
@@ -374,7 +375,9 @@
 .prenda {
   aspect-ratio: 3 / 4;
   border-radius: 14px;
-  background: var(--color-surface);
+  /* El escenario de la foto (claro también de noche): con multiply, sobre
+     --color-surface la prenda salía oscura en modo oscuro. */
+  background: var(--escenario-foto, #f5f4f8);
   box-shadow: 0 6px 16px -10px rgba(30, 17, 64, 0.45);
   transform: rotate(calc((var(--i) - 0.5) * 6deg));
 }
