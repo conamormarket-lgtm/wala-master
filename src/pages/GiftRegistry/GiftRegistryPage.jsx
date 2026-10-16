@@ -59,6 +59,7 @@ import AuroraBackground from '../../components/ui/AuroraBackground';
 import GlassCard from '../../components/ui/GlassCard';
 import GlassButton from '../../components/ui/GlassButton';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
+import { productNeedsVariantSelection, productSelectionNeeds } from '../../utils/comboProductUtils';
 import styles from './GiftRegistryPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -272,6 +273,29 @@ const DragGhost = ({ drag, ghostRef }) => {
   );
 };
 
+// Foto del producto: en los productos CON variantes mainImage viene vacío y
+// la miniatura vive en images[0] o en la variante; sin esto la tarjeta caía
+// a la foto guardada en la lista (vieja) o al placeholder. El catálogo pone
+// el placeholder en images[0] cuando no hay foto (combos sin vista previa):
+// ahí vale más la foto guardada en la lista.
+const imagenDe = (cardProduct, item) =>
+  [
+    cardProduct?.mainImage,
+    cardProduct?.images?.[0],
+    cardProduct?.variants?.[0]?.imageUrl,
+    item?.productImage,
+  ].find((url) => url && url !== PLACEHOLDER_IMG) || '';
+
+// Texto del botón cuando el producto pide elegir antes de regalarlo (misma
+// regla que la tarjeta de la tienda, ver PremiumProductCard).
+const textoElegirYRegalar = (cardProduct) => {
+  const { color, talla } = productSelectionNeeds(cardProduct);
+  if (color && talla) return 'Elegir color y talla 🎁';
+  if (talla) return 'Elegir talla 🎁';
+  if (color) return 'Elegir color 🎁';
+  return 'Elegir opciones 🎁';
+};
+
 // =========================================================================
 // GiftProductCard — tarjeta A MEDIDA para el registro de regalos.
 // -------------------------------------------------------------------------
@@ -285,7 +309,9 @@ const DragGhost = ({ drag, ghostRef }) => {
 //   - El NOMBRE es un <Link> al detalle del producto: tocarlo navega.
 // =========================================================================
 const GiftProductCard = ({ cardProduct, item, yaRegalado, sinFecha, noDisponible, onGift, onDragStart }) => {
-  const imagen = cardProduct.mainImage || item.productImage || '';
+  const imagen = imagenDe(cardProduct, item);
+  // Con color/talla/piezas para elegir, "Regalar este" abre la ficha.
+  const necesitaElegir = productNeedsVariantSelection(cardProduct);
   const precio = cardProduct.salePrice || cardProduct.price || 0;
   // Descuento simple (solo si hay precio de oferta y es menor al regular).
   const descuento =
@@ -389,7 +415,7 @@ const GiftProductCard = ({ cardProduct, item, yaRegalado, sinFecha, noDisponible
                   : undefined
             }
           >
-            Regalar este 🎁
+            {necesitaElegir ? textoElegirYRegalar(cardProduct) : 'Regalar este 🎁'}
           </GlassButton>
         )}
       </div>
@@ -504,23 +530,49 @@ const GiftRegistryPage = () => {
       return null;
     }
     const productMock = {
-      // Identidad del producto (igual que WishlistPublic).
+      // El producto COMPLETO del catálogo (antes era un recorte id/nombre/
+      // foto/precio sin variantes: ni los de una sola variante se completaban
+      // solos y el carrito quedaba con "Falta elegir color"). Precio y oferta
+      // viajan tal cual; addToCart calcula el precio final.
+      ...cardProduct,
       id: cardProduct?.id || item?.productId,
       name: cardProduct?.name || item?.productName,
-      mainImage: cardProduct?.mainImage || item?.productImage,
-      price,
-      // Flags de regalo de wishlist (mecanismo YA existente en el checkout).
-      isWishlistGift: true,
-      wishlistUserCode: String(referralCode || '').trim().toUpperCase(), // alinear casing con la CF (markItemAsGifted)
-      // NUEVO — contexto de fecha de entrega (aditivo, viaja en el item del carrito).
-      // Se entrega la PRÓXIMA vez que se celebra: el evento guarda el año de
-      // nacimiento (o "0000" si no se sabe), no el de la entrega.
-      deliveryDate: proximaOcurrencia(evento.date) || evento.date,
-      deliveryEventLabel: evento._label, // contexto humano del evento
-      deliveryRecipient: registry?.ownerName || 'Alguien', // dueño = destinatario
+      mainImage: imagenDe(cardProduct, item),
+      ...datosDeRegalo(evento),
     };
     addToCart(productMock, {}, null, 1, null, { silent });
     return productMock;
+  };
+
+  // Lo que hace que una línea del carrito sea un regalo de esta lista.
+  const datosDeRegalo = (evento) => ({
+    // Flags de regalo de wishlist (mecanismo YA existente en el checkout).
+    isWishlistGift: true,
+    wishlistUserCode: String(referralCode || '').trim().toUpperCase(), // alinear casing con la CF (markItemAsGifted)
+    // Contexto de fecha de entrega (aditivo, viaja en el item del carrito).
+    // Se entrega la PRÓXIMA vez que se celebra: el evento guarda el año de
+    // nacimiento (o "0000" si no se sabe), no el de la entrega.
+    deliveryDate: proximaOcurrencia(evento.date) || evento.date,
+    deliveryEventLabel: evento._label, // contexto humano del evento
+    deliveryRecipient: registry?.ownerName || 'Alguien', // dueño = destinatario
+  });
+
+  // Producto con color/talla/piezas para elegir: no se mete al carrito a
+  // ciegas (el pedido salía sin saber qué despachar). Se abre su ficha y el
+  // regalo viaja en el state: ProductDetail lo agrega con lo elegido y con
+  // estos mismos datos de regalo y fecha.
+  const abrirFichaParaRegalar = (cardProduct, item, evento) => {
+    const productId = cardProduct?.id || item?.productId;
+    const para = registry?.ownerName || 'Alguien';
+    navigate(`/producto/${productId}`, {
+      state: {
+        regalo: {
+          productId,
+          ...datosDeRegalo(evento),
+          aviso: `Regalo para ${para} · se entregará el ${formatearFecha(proximaOcurrencia(evento.date))} (${evento._label}). Elige y agrégalo al carrito.`,
+        },
+      },
+    });
   };
 
   // ── Acción "Regalar este" (fallback directo) ────────────────────────────
@@ -534,6 +586,10 @@ const GiftRegistryPage = () => {
     }
     if (!cardProduct) {
       addToast('Ese producto ya no está disponible en el catálogo.', 'warning');
+      return;
+    }
+    if (productNeedsVariantSelection(cardProduct)) {
+      abrirFichaParaRegalar(cardProduct, item, evento);
       return;
     }
     // Si el producto no tiene precio válido, addGiftToCart devuelve null y ya avisó:
@@ -557,7 +613,7 @@ const GiftRegistryPage = () => {
       const nueva = {
         productId,
         name: cardProduct?.name || item?.productName || 'Producto',
-        image: cardProduct?.mainImage || item?.productImage || '',
+        image: imagenDe(cardProduct, item),
         cardProduct,
         item,
       };
@@ -582,22 +638,47 @@ const GiftRegistryPage = () => {
   const proceedDate = (fecha) => {
     const lista = assignments[fecha._key] || [];
     if (lista.length === 0) return;
+    // Los que piden color/talla/piezas no entran a ciegas: se quedan asignados
+    // a la fecha y se eligen en su ficha (ver abrirFichaParaRegalar).
+    const porElegir = lista.filter((a) => productNeedsVariantSelection(a.cardProduct));
+    const directos = lista.filter((a) => !productNeedsVariantSelection(a.cardProduct));
     // addGiftToCart devuelve null si el producto no tiene precio válido (price<=0):
     // esas asignaciones se SALTAN (con su propio aviso) y no se cuentan como agregadas.
     let agregados = 0;
-    lista.forEach((a) => {
+    directos.forEach((a) => {
       const res = addGiftToCart(a.cardProduct, a.item, fecha, { silent: true });
       if (res) agregados += 1;
     });
-    // Si ninguno se pudo agregar (todos sin precio), no navegamos: el guard ya avisó.
-    if (agregados === 0) return;
-    addToast(`${agregados} regalo(s) para ${fecha._label} agregados al carrito`, 'success');
-    setAssignments((prev) => {
-      const next = { ...prev };
-      delete next[fecha._key];
-      return next;
-    });
-    navigate('/carrito');
+    if (agregados > 0) {
+      addToast(`${agregados} regalo(s) para ${fecha._label} agregados al carrito`, 'success');
+    }
+
+    if (porElegir.length === 0) {
+      // Si ninguno se pudo agregar (todos sin precio), no navegamos: el guard ya avisó.
+      if (agregados === 0) return;
+      setAssignments((prev) => {
+        const next = { ...prev };
+        delete next[fecha._key];
+        return next;
+      });
+      navigate('/carrito');
+      return;
+    }
+
+    // Uno solo por elegir: se abre su ficha directamente.
+    if (porElegir.length === 1) {
+      abrirFichaParaRegalar(porElegir[0].cardProduct, porElegir[0].item, fecha);
+      return;
+    }
+    // Varios: no se pueden abrir todas las fichas a la vez. Se quedan en la
+    // fecha y el cliente los regala uno por uno desde su tarjeta.
+    setAssignments((prev) => ({ ...prev, [fecha._key]: porElegir }));
+    setSelectedEventId(fecha._key);
+    const nombres = porElegir.map((a) => a.name).join(', ');
+    addToast(
+      `${nombres} piden elegir talla o color: tócalos en su tarjeta ("Elegir…") para regalarlos.`,
+      'info'
+    );
   };
 
   // ── Drag & drop: soltar un producto sobre una fecha lo ASIGNA a ese día ──
@@ -902,7 +983,7 @@ const GiftRegistryPage = () => {
                           productId: item.productId || idx,
                           cardProduct,
                           item,
-                          image: cardProduct.mainImage || item.productImage || '',
+                          image: imagenDe(cardProduct, item),
                           name: cardProduct.name || item.productName || 'Producto',
                         })
                       }

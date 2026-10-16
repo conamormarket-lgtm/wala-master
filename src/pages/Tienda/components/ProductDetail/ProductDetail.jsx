@@ -23,7 +23,7 @@ const YoryoPersonalizadoCliente = lazy(() => withEditorFonts(import('../../../..
 import HistorialPersonalizacionesModal from '../../../../components/YoryoPersonalizadoCliente/HistorialPersonalizacionesModal';
 import { getCustomerCustomProductsByUser } from '../../../../services/customerCustomProducts';
 import ProductReviews from '../ProductReviews';
-import { Truck, RefreshCw, ShieldCheck, Share2, Check } from 'lucide-react';
+import { Truck, RefreshCw, ShieldCheck, Share2, Check, Gift } from 'lucide-react';
 import styles from './ProductDetail.module.css';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -492,16 +492,37 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
     return true;
   };
 
+  // ── Regalo de una lista (/regalar/:código y /wishlist/:código)
+  // Esas páginas agregaban al carrito con la variante vacía, sin talla ni
+  // color. Ahora, si el producto pide elegir, mandan aquí y pasan el regalo
+  // en location.state: código de la lista (para marcarlo como regalado y
+  // enviarlo al dueño) y, desde /regalar, la fecha de entrega. Sin esto el
+  // regalo llegaba al carrito como una compra normal. Solo vale para ESTE
+  // producto; al recargar se pierde el state y queda como compra normal.
+  const regalo = location.state?.regalo;
+  const regaloActivo = regalo?.wishlistUserCode && regalo.productId === product?.id ? regalo : null;
+  const productoParaCarrito = React.useMemo(() => {
+    if (!regaloActivo) return product;
+    const { productId, aviso, ...datosRegalo } = regaloActivo;
+    return { ...product, ...datosRegalo, isWishlistGift: true };
+  }, [product, regaloActivo]);
+
   // ── Handlers
   const handleAddToCart = () => {
     if (avisarComboCargando()) return;
     addToCart(
-      product,
+      productoParaCarrito,
       { size: selectedSize, selectedVariant: selectedVariant ?? undefined },
       null,
       qty,
       isCombo ? { variantSelections: comboSelsForSubmit, customizations: {}, subProductsData: comboProd } : null
     );
+    if (regaloActivo) {
+      // Igual que "Regalar este" en la lista: el regalo va directo al carrito.
+      toast.success('¡Regalo agregado! Podrás elegir dónde enviarlo en el Checkout.');
+      navigate('/carrito');
+      return;
+    }
     toast.success('¡Agregado al carrito!');
   };
 
@@ -511,7 +532,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
     if (!product.inStock) return;
     if (avisarComboCargando()) return;
     addToCart(
-      product,
+      productoParaCarrito,
       { size: selectedSize, selectedVariant: selectedVariant ?? undefined },
       null,
       qty,
@@ -755,6 +776,14 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
               <button className={styles.qtyBtn} onClick={() => setQty(q => q + 1)}>+</button>
             </div>
           </div>
+
+          {/* Viene de una lista de regalos: que se note antes de comprar. */}
+          {regaloActivo && (
+            <p className={styles.avisoRegalo}>
+              <Gift size={16} aria-hidden="true" />
+              <span>{regaloActivo.aviso || 'Estás comprando un regalo de una lista de deseos.'}</span>
+            </p>
+          )}
 
           {/* CTA Buttons */}
           <div className={styles.ctaStack}>

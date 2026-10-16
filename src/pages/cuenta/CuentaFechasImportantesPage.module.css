@@ -376,6 +376,23 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Producto del paquete que pide talla/color: enlace a su página. */
+.suggestedElegir {
+  flex: 0 0 auto;
+  padding: 0.2rem 0.55rem;
+  border: 1.5px solid #c4b5fd;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #6d28d9;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.suggestedElegir:hover {
+  color: #6d28d9;
+  background: #f5f3ff;
+}
+
 /* Aviso de que la sugerencia se recortó porque algo salió del catálogo. */
 .suggestedNota {
   display: flex;
@@ -943,7 +960,8 @@
 
 :global([data-theme='dark']) .eventIcon,
 :global([data-theme='dark']) .suggestedHeader,
-:global([data-theme='dark']) .suggestedProductPrice {
+:global([data-theme='dark']) .suggestedProductPrice,
+:global([data-theme='dark']) .suggestedElegir {
   color: #c4b5fd;
 }
 

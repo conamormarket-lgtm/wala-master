@@ -16,6 +16,7 @@ import { useProducts } from '../../hooks/useProducts';
 import PremiumProductCard from '../Tienda/components/PremiumProductCard/PremiumProductCard';
 import Loading from '../../components/common/Loading';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
+import { productNeedsVariantSelection } from '../../utils/comboProductUtils';
 import styles from './WishlistPublic.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -111,21 +112,43 @@ const WishlistPublic = () => {
   // crudo de la wishlist, cuyo snapshot productImage sirve de último fallback.
   const handleGift = (item, wishlistItem = null) => {
     const fullProduct = typeof item === 'object' && item.id ? item : undefined;
-    const price = fullProduct?.salePrice || fullProduct?.price || 0;
+    const productId = item.productId || fullProduct?.id;
+    // Normalizamos el casing igual que GiftRegistryPage para que markItemAsGifted
+    // matchee el código almacenado (la CF compara en MAYÚSCULAS).
+    const wishlistUserCode = String(userCode || '').trim().toUpperCase();
+
+    // Con color/talla/piezas para elegir no se agrega a ciegas (antes iba con
+    // la variante vacía y el pedido salía sin saber qué despachar): se abre la
+    // ficha y el regalo viaja en el state para que ProductDetail lo agregue
+    // con lo elegido y siga contando como regalo de esta lista.
+    if (productNeedsVariantSelection(fullProduct)) {
+      navigate(`/producto/${productId}`, {
+        state: {
+          regalo: {
+            productId,
+            wishlistUserCode,
+            aviso: ownerName && ownerName !== 'Alguien'
+              ? `Regalo para ${ownerName}, de su lista de deseos. Elige y agrégalo al carrito.`
+              : 'Regalo de una lista de deseos. Elige y agrégalo al carrito.',
+          },
+        },
+      });
+      return;
+    }
 
     const productMock = {
-      id: item.productId || fullProduct?.id,
+      // El producto COMPLETO del catálogo: con sus variantes, addToCart
+      // completa sola la única variante de un producto que no pide elegir.
+      ...(fullProduct || {}),
+      id: productId,
       name: item.productName || fullProduct?.name,
       // Imagen con fallbacks: en productos CON variantes mainImage es '' (la
       // miniatura vive en images[0], derivada de la variante principal); sin
       // esto el pedido de regalo se creaba SIN imagen.
       mainImage: fullProduct?.mainImage || fullProduct?.images?.[0] || wishlistItem?.productImage || item.productImage || '',
-      price: price,
       // Flag para saber que es un regalo
       isWishlistGift: true,
-      // Normalizamos el casing igual que GiftRegistryPage para que markItemAsGifted
-      // matchee el código almacenado (la CF compara en MAYÚSCULAS).
-      wishlistUserCode: String(userCode || '').trim().toUpperCase()
+      wishlistUserCode,
     };
 
     addToCart(productMock, {}, null, 1);

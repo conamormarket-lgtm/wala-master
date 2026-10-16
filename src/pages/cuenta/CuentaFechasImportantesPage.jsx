@@ -224,9 +224,20 @@ const CuentaFechasImportantesPage = () => {
   // Manda al carrito el producto REAL del catálogo (no el recortado
   // {id,name,price,images} que se armaba con la foto guardada): así viajan
   // precio de oferta, variantes e imágenes tal como están hoy.
+  // Lo que pide talla/color/piezas NO entra a ciegas (iba con la variante
+  // vacía y el pedido salía sin saber qué despachar): queda marcado en la
+  // lista con un enlace a su página, igual que en agregarIdea.
   const handleAddPackageToCart = (pkg, items) => {
-    items.forEach(({ producto }) => addToCart(producto, {}, null, 1));
+    const directos = items.filter(({ producto }) => !productNeedsVariantSelection(producto));
+    const porElegir = items.filter(({ producto }) => productNeedsVariantSelection(producto));
+    directos.forEach(({ producto }) => addToCart(producto, {}, null, 1, null, { silent: porElegir.length > 0 }));
     setAddedPackageIds(prev => new Set([...prev, pkg.id]));
+    if (porElegir.length > 0) {
+      const nombres = porElegir.map((it) => it.nombre).join(', ');
+      toast.info(
+        `Agregamos ${directos.length} al carrito. ${nombres} ${porElegir.length === 1 ? 'pide' : 'piden'} elegir talla o color: tócalo en la lista para elegir.`
+      );
+    }
   };
 
   const handleAddNew = () => {
@@ -586,6 +597,8 @@ const CuentaFechasImportantesPage = () => {
                         if (items.length === 0) return null;
                         const isAdded = addedPackageIds.has(pkg.id);
                         const total = items.reduce((acc, it) => acc + (Number(it.precio) || 0), 0);
+                        const porElegir = items.filter((it) => productNeedsVariantSelection(it.producto)).length;
+                        const directos = items.length - porElegir;
 
                         return (
                           <div key={pkg.id} className={styles.suggestedPackage}>
@@ -608,6 +621,11 @@ const CuentaFechasImportantesPage = () => {
                                   <Link to={`/producto/${it.producto.id}`} className={styles.suggestedProductName}>
                                     {it.nombre}
                                   </Link>
+                                  {productNeedsVariantSelection(it.producto) ? (
+                                    <Link to={`/producto/${it.producto.id}`} className={styles.suggestedElegir}>
+                                      Elegir talla
+                                    </Link>
+                                  ) : null}
                                   <span className={styles.suggestedProductPrice}>S/ {it.precio}</span>
                                 </li>
                               ))}
@@ -622,15 +640,30 @@ const CuentaFechasImportantesPage = () => {
                               </p>
                             )}
 
-                            <button
-                              type="button"
-                              className={`${styles.btnSolido} ${styles.addToCartBtn} ${isAdded ? styles.addToCartBtnDone : ''}`}
-                              onClick={() => !isAdded && handleAddPackageToCart(pkg, items)}
-                              disabled={isAdded}
-                            >
-                              {isAdded ? <Check size={16} aria-hidden="true" /> : <ShoppingCart size={16} aria-hidden="true" />}
-                              {isAdded ? 'Agregado al carrito' : 'Agregar todo al carrito'}
-                            </button>
+                            {porElegir > 0 && (
+                              <p className={styles.suggestedNota}>
+                                <AlertCircle size={13} aria-hidden="true" />
+                                {porElegir === 1
+                                  ? 'Un producto pide elegir talla o color: tócalo para elegirlo en su página.'
+                                  : `${porElegir} productos piden elegir talla o color: tócalos para elegirlos en su página.`}
+                              </p>
+                            )}
+
+                            {directos > 0 && (
+                              <button
+                                type="button"
+                                className={`${styles.btnSolido} ${styles.addToCartBtn} ${isAdded ? styles.addToCartBtnDone : ''}`}
+                                onClick={() => !isAdded && handleAddPackageToCart(pkg, items)}
+                                disabled={isAdded}
+                              >
+                                {isAdded ? <Check size={16} aria-hidden="true" /> : <ShoppingCart size={16} aria-hidden="true" />}
+                                {isAdded
+                                  ? 'Agregado al carrito'
+                                  : porElegir > 0
+                                    ? `Agregar ${directos === 1 ? 'el otro' : `los otros ${directos}`} al carrito`
+                                    : 'Agregar todo al carrito'}
+                              </button>
+                            )}
                           </div>
                         );
                       })}
