@@ -30,7 +30,7 @@ function espacio(valor, pegado) {
   return `max(var(--seccion-min), ${conUnidad})`;
 }
 
-export function BloqueSeccion({ ajustes = {}, ancho = 'contenido', pegado = false, children, className }) {
+export function BloqueSeccion({ ajustes = {}, ancho = 'contenido', pegado = false, children, className, id, style }) {
   const {
     paddingTop, paddingBottom, backgroundColor, backgroundGradient,
     backgroundImageUrl, backgroundBlur, backgroundOverlay, anchorId, fullWidth,
@@ -41,9 +41,10 @@ export function BloqueSeccion({ ajustes = {}, ancho = 'contenido', pegado = fals
 
   return (
     <section
-      id={anchorId || undefined}
+      id={id || anchorId || undefined}
       className={[s.bloque, completo && s.completo, className].filter(Boolean).join(' ')}
       style={{
+        ...style,
         paddingTop: paddingTop != null && paddingTop !== '' ? espacio(paddingTop, pegado) : undefined,
         paddingBottom: paddingBottom != null && paddingBottom !== '' ? espacio(paddingBottom, pegado) : undefined,
       }}

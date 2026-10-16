@@ -759,3 +759,11 @@
     transition: none;
   }
 }
+
+/* Fin de la lista paginada. */
+.finLista {
+  margin: 1.5rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  text-align: center;
+}

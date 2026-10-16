@@ -5,6 +5,7 @@ import { EtiquetaColgante } from '../Marca';
 import { toDirectImageUrl } from '../../../utils/imageUrl';
 import { FotoProducto } from './FotoProducto';
 import { Hueso } from '../Esqueletos';
+import { Texto } from '../Traduccion';
 import s from './TarjetaCategoria.module.css';
 
 /** Color estable para una categoría sin foto (mismo nombre → mismo color). */
@@ -44,7 +45,7 @@ export function TarjetaCategoria({ forma = 'cuadro', nombre, imagen, cuenta, url
           src={!todos && imagen ? toDirectImageUrl(imagen) : undefined}
           respaldo={foto}
         />
-        <span className={s.burbujaNombre}>{nombre}</span>
+        <span className={s.burbujaNombre}><Texto>{nombre}</Texto></span>
       </>
     );
     return onClick
@@ -66,7 +67,7 @@ export function TarjetaCategoria({ forma = 'cuadro', nombre, imagen, cuenta, url
           )}
         </span>
         <span className={s.cuadroNombre}>
-          <span>{nombre}{detalle && <small className={s.cuadroDetalle}>{detalle}</small>}</span>
+          <span><Texto>{nombre}</Texto>{detalle && <small className={s.cuadroDetalle}>{detalle}</small>}</span>
           <ArrowRight aria-hidden="true" />
         </span>
       </Enlace>
@@ -81,7 +82,7 @@ export function TarjetaCategoria({ forma = 'cuadro', nombre, imagen, cuenta, url
       style={{ '--giro': `${giro}deg` }}
     >
       <span className={s.foto} style={{ background: fondo || undefined, '--acento': acento }}>{foto}</span>
-      <span className={s.nombre}>{nombre}</span>
+      <span className={s.nombre}><Texto>{nombre}</Texto></span>
       {cuenta != null && <small>{cuenta === 1 ? '1 producto' : `${cuenta} productos`}</small>}
     </Enlace>
   );

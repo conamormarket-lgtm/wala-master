@@ -561,10 +561,12 @@ const vacio = (v) => v == null || v === '';
  *  - seccion: { id, type, settings }  · primera: lo primero que se ve
  *  - productos, categorias, marcas: los datos de esa sección
  *  - catalogo, onAgregar, tarjeta: para las tarjetas de producto
+ *  - bloque: { id, style } del <section> (la tienda: el ancla del catálogo y
+ *    su margen al bajar hasta él)
  *  - el resto, props de esa sección (propsPara)
  * Devuelve null si el kit no tiene ese tipo.
  */
-export function SeccionDelKit({ seccion, primera = false, productos, categorias, marcas, catalogo, onAgregar, tarjeta, ...props }) {
+export function SeccionDelKit({ seccion, primera = false, productos, categorias, marcas, catalogo, onAgregar, tarjeta, bloque, ...props }) {
   const reg = REGISTRO_SECCIONES[seccion?.type];
   if (!reg) return null;
   const { Componente } = reg;
@@ -581,6 +583,8 @@ export function SeccionDelKit({ seccion, primera = false, productos, categorias,
           : ajustes}
       ancho={reg.ancho}
       pegado={reg.sinRelleno}
+      id={bloque?.id}
+      style={bloque?.style}
     >
       <Componente ajustes={ajustes} {...extra} {...props} />
     </BloqueSeccion>

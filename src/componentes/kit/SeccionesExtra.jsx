@@ -15,6 +15,7 @@ import { toDirectImageUrl } from '../../utils/imageUrl';
 import { EtiquetaColgante, Garabatos, LogoWala, Destello, Corazon, acento } from './Marca';
 import { TarjetaCategoria, TarjetaCategoriaEsqueleto, Beneficio, FotoProducto, OpcionesFiltro } from './piezas';
 import { CARAS_KAPI } from './piezas/Flotantes';
+import { Texto, useTexto } from './Traduccion';
 import s from './SeccionesExtra.module.css';
 
 /*
@@ -203,6 +204,8 @@ export function NavCategorias({ ajustes: ajustesSeccion = {}, categorias = [], a
   // El estilo de la marca (categoryNavStyle, como en la tienda) manda sobre los de la sección.
   const ajustes = estilo ? { ...ajustesSeccion, ...estilo } : ajustesSeccion;
   const lista = (categorias || []).filter((c) => c?.name);
+  const tTodos = useTexto('Todos');
+  const tCategorias = useTexto('Categorías');
   if (cargando) {
     return (
       <div className={s.burbujas} aria-hidden="true">
@@ -229,17 +232,17 @@ export function NavCategorias({ ajustes: ajustesSeccion = {}, categorias = [], a
       />
     );
   };
-  const todas = [{ categoryId: null, name: 'Todos' }, ...lista];
+  const todas = [{ categoryId: null, name: tTodos }, ...lista];
 
   if (ajustes.animation === 'slider') {
     return (
-      <Marquesina segundos={Math.max(18, todas.length * 3)} espacio="1rem" etiqueta="Categorías">
+      <Marquesina segundos={Math.max(18, todas.length * 3)} espacio="1rem" etiqueta={tCategorias}>
         {todas.map(burbuja)}
       </Marquesina>
     );
   }
   return (
-    <nav aria-label="Categorías" className={[s.burbujas, s[`alinear_${ajustes.align || 'center'}`]].filter(Boolean).join(' ')}>
+    <nav aria-label={tCategorias} className={[s.burbujas, s[`alinear_${ajustes.align || 'center'}`]].filter(Boolean).join(' ')}>
       {todas.map(burbuja)}
     </nav>
   );
@@ -270,8 +273,14 @@ function useCargarAlLlegar(activo, alLlegar) {
  *  - columnas: { escritorio, celular } fijas (las del admin, storeConfig.layout;
  *    grillaDesdeConfiguracion). Sin ellas, tantas como quepan.
  *  - segundaFoto: la segunda foto al pasar el ratón (true por defecto).
+ *  - vacio.accion: { texto, url } → un botón en el estado vacío ("Volver al inicio").
+ *  - error + onReintentar: no se pudo cargar (con "Reintentar").
+ *  - finDeLista: con paginación, "Has visto todos los productos" al terminar.
+ *  - tarjeta: la de la tienda; recibe también `indice` (las primeras cargan ya).
+ * Si la lista quedó vacía pero el servidor tiene más (un filtro descartó lo
+ * cargado), sigue pidiendo páginas en vez de decir que no hay nada.
  */
-export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargando = false, hayMas, onCargarMas, cargandoMas, onAgregar, vacio, columnas, segundaFoto = true, tarjeta: Tarjeta = TarjetaDeCatalogo }) {
+export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargando = false, hayMas, onCargarMas, cargandoMas, onAgregar, vacio, columnas, segundaFoto = true, tarjeta: Tarjeta = TarjetaDeCatalogo, error, onReintentar, finDeLista = true }) {
   const servidor = typeof onCargarMas === 'function';
   const [visibles, setVisibles] = useState(12);
   useEffect(() => { if (!servidor) setVisibles(12); }, [productos, servidor]);
@@ -281,9 +290,29 @@ export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargan
     if (servidor) { if (hayMas && !cargandoMas) onCargarMas(); } else setVisibles((v) => v + 12);
   }, [servidor, hayMas, cargandoMas, onCargarMas]);
   const marca = useCargarAlLlegar(quedan && !cargando, pedirMas);
+  const t = {
+    verMas: useTexto('Ver más productos'),
+    fin: useTexto('Has visto todos los productos'),
+    error: useTexto('No pudimos cargar los productos'),
+    reintentar: useTexto('Reintentar'),
+    vacio: useTexto(vacio?.titulo || 'Próximamente más productos'),
+  };
 
-  if (!cargando && !productos.length) {
-    return vacio ? <EstadoVacio titulo={vacio.titulo || 'Próximamente más productos'} texto={vacio.texto} /> : null;
+  if (error && !cargando && !productos.length) {
+    return (
+      <EstadoVacio titulo={t.error} texto={<Texto>{typeof error === 'string' ? error : 'Revisa tu conexión e inténtalo de nuevo.'}</Texto>}>
+        {onReintentar && <Boton variante="secundario" onClick={onReintentar}>{t.reintentar}</Boton>}
+      </EstadoVacio>
+    );
+  }
+  // Vacía pero con más en el servidor: esqueletos y seguir pidiendo.
+  const esperandoMas = !cargando && !productos.length && servidor && (hayMas || cargandoMas);
+  if (!cargando && !productos.length && !esperandoMas) {
+    return vacio ? (
+      <EstadoVacio titulo={t.vacio} texto={vacio.texto && <Texto>{vacio.texto}</Texto>}>
+        {vacio.accion?.url && <Boton to={vacio.accion.url} variante="secundario"><Texto>{vacio.accion.texto || 'Volver al inicio'}</Texto></Boton>}
+      </EstadoVacio>
+    ) : null;
   }
   return (
     <>
@@ -294,15 +323,18 @@ export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargan
       >
         {cargando
           ? Array.from({ length: 8 }, (_, k) => <li key={k}><TarjetaProductoEsqueleto /></li>)
-          : lista.map((p) => (
-            <li key={p.id}><Tarjeta producto={p} catalogo={catalogo} onAgregar={onAgregar} segundaFoto={segundaFoto} /></li>
+          : lista.map((p, i) => (
+            <li key={p.id}><Tarjeta producto={p} catalogo={catalogo} onAgregar={onAgregar} segundaFoto={segundaFoto} indice={i} /></li>
           ))}
-        {cargandoMas && Array.from({ length: 4 }, (_, k) => <li key={`m${k}`}><TarjetaProductoEsqueleto /></li>)}
+        {(cargandoMas || esperandoMas) && Array.from({ length: 4 }, (_, k) => <li key={`m${k}`}><TarjetaProductoEsqueleto /></li>)}
       </ul>
       {quedan && !cargando && (
         <div ref={marca} className={s.cargarMas}>
-          <Boton variante="secundario" cargando={cargandoMas} onClick={pedirMas}>Ver más productos</Boton>
+          <Boton variante="secundario" cargando={cargandoMas} onClick={pedirMas}>{t.verMas}</Boton>
         </div>
+      )}
+      {servidor && finDeLista && !quedan && !cargando && !cargandoMas && lista.length > 0 && (
+        <p className={s.finLista}>{t.fin}</p>
       )}
     </>
   );
@@ -327,6 +359,9 @@ const RANGOS_PRECIO = [['', '50', 'Hasta S/ 50'], ['50', '100', 'S/ 50 – 100']
  *    no es controlado). Con paginación en servidor la página filtra.
  *  - conBuscador: buscador por nombre arriba de la grilla (la tienda solo lo
  *    muestra en la página de una marca). busqueda / onBuscar: controlado.
+ *  - buscarAlEscribir: con onBuscar, avisa en cada tecla (como el buscador
+ *    de la marca) y no solo al enviar. "Limpiar todo" también borra el texto.
+ *  - sinTraducir: ids de grupos cuyos nombres no se traducen (['marca']).
  *  - precio {min, max} / onPrecio: controlado. limitesPrecio {min, max}: lo
  *    que se ve de guía en los campos (sin él se calcula de los productos).
  *  - total: cuántos productos hay (con paginación en servidor); sin él se
@@ -339,12 +374,29 @@ const RANGOS_PRECIO = [['', '50', 'Hasta S/ 50'], ['50', '100', 'S/ 50 – 100']
  */
 export function CatalogoConFiltros({
   ajustes = {}, productos = [], grupos = [], seleccion, onFiltrar, filtrarAqui = !onFiltrar, conBuscador = true,
-  busqueda, onBuscar, precio, onPrecio, limitesPrecio, total, unidad = ['producto', 'productos'], orden, ...grilla
+  busqueda, onBuscar, buscarAlEscribir = false, precio, onPrecio, limitesPrecio, total, unidad = ['producto', 'productos'], orden,
+  sinTraducir = ['marca'], ...grilla
 }) {
+  const t = {
+    filtros: useTexto('Filtros'),
+    limpiar: useTexto('Limpiar'),
+    limpiarTodo: useTexto('Limpiar todo'),
+    precio: useTexto('Precio'),
+    buscar: useTexto('Buscar en el catálogo'),
+    verProductos: useTexto('Ver productos'),
+    nadaTitulo: useTexto('Nada coincide con tu búsqueda'),
+    nadaTexto: useTexto('Prueba con otros filtros o quítalos.'),
+    unidad: [useTexto(unidad[0]), useTexto(unidad[1])],
+    min: useTexto('Precio mínimo'),
+    max: useTexto('Precio máximo'),
+    ordenarPor: useTexto('Ordenar por'),
+  };
   const [propia, setPropia] = useState({});
   const [textoPropio, setTextoPropio] = useState('');
   const [precioPropio, setPrecioPropio] = useState({ min: '', max: '' });
   const [hoja, setHoja] = useState(false);
+  // Sube al tocar "Limpiar todo": el campo de búsqueda vuelve a empezar vacío.
+  const [vueltaBuscador, setVueltaBuscador] = useState(0);
   const sel = seleccion ?? propia;
   const texto = busqueda ?? textoPropio;
   const rango = precio ?? precioPropio;
@@ -380,13 +432,18 @@ export function CatalogoConFiltros({
     return op ? [{ grupo: g.id, valor: v, nombre: op.nombre }] : [];
   });
   const hayPrecio = rango.min !== '' || rango.max !== '';
-  const cuantos = activos.length + (hayPrecio ? 1 : 0);
+  const hayTexto = conBuscador && Boolean(texto.trim());
+  const cuantos = activos.length + (hayPrecio ? 1 : 0) + (hayTexto ? 1 : 0);
   const limpiar = () => {
     activos.forEach((a) => elegir(a.grupo, null));
     cambiarPrecio({ min: '', max: '' });
+    if (hayTexto) {
+      buscar('');
+      setVueltaBuscador((n) => n + 1);
+    }
   };
   const cantidad = total ?? (filtrarAqui ? visibles.length : null);
-  const nombreUnidad = cantidad === 1 ? unidad[0] : unidad[1];
+  const nombreUnidad = cantidad === 1 ? t.unidad[0] : t.unidad[1];
   const textoCantidad = `${cantidad}${grilla.hayMas ? '+' : ''} ${nombreUnidad}`;
   const elegidoEn = (g) => activos.find((a) => a.grupo === g)?.nombre;
   const textoPrecio = `S/ ${rango.min || 0} – ${rango.max || '∞'}`;
@@ -397,8 +454,8 @@ export function CatalogoConFiltros({
     <div className={s.filtros}>
       <div className={s.filtrosCabeza}>
         <span className={s.filtrosSello} aria-hidden="true"><SlidersHorizontal /></span>
-        <strong>Filtros</strong>
-        {cuantos > 0 && <button type="button" className={s.limpiar} onClick={limpiar}>Limpiar ({cuantos})</button>}
+        <strong>{t.filtros}</strong>
+        {cuantos > 0 && <button type="button" className={s.limpiar} onClick={limpiar}>{t.limpiar} ({cuantos})</button>}
       </div>
       <Acordeon
         variante="lista"
@@ -407,13 +464,13 @@ export function CatalogoConFiltros({
         items={[
           ...grupos.filter((g) => g.opciones?.length).map((g) => ({
             id: g.id,
-            question: g.titulo,
-            extra: elegidoEn(g.id) && <span className={s.filtroElegido}>{elegidoEn(g.id)}</span>,
-            answer: <OpcionesFiltro opciones={g.opciones} elegida={sel[g.id] ?? null} onElegir={(v) => elegir(g.id, v)} />,
+            question: <Texto>{g.titulo}</Texto>,
+            extra: elegidoEn(g.id) && <span className={s.filtroElegido}>{sinTraducir.includes(g.id) ? elegidoEn(g.id) : <Texto>{elegidoEn(g.id)}</Texto>}</span>,
+            answer: <OpcionesFiltro opciones={g.opciones} elegida={sel[g.id] ?? null} onElegir={(v) => elegir(g.id, v)} sinTraducir={sinTraducir.includes(g.id)} />,
           })),
           {
             id: 'precio',
-            question: 'Precio',
+            question: t.precio,
             extra: hayPrecio && <span className={s.filtroElegido}>{textoPrecio}</span>,
             answer: (
               <>
@@ -426,8 +483,8 @@ export function CatalogoConFiltros({
                   })}
                 </div>
                 <div className={s.precio}>
-                  <Campo type="number" inputMode="numeric" min="0" placeholder={limites ? String(limites.min) : 'Mín.'} aria-label="Precio mínimo" icono="S/" value={rango.min} onChange={(e) => cambiarPrecio({ ...rango, min: e.target.value })} />
-                  <Campo type="number" inputMode="numeric" min="0" placeholder={limites ? String(limites.max) : 'Máx.'} aria-label="Precio máximo" icono="S/" value={rango.max} onChange={(e) => cambiarPrecio({ ...rango, max: e.target.value })} />
+                  <Campo type="number" inputMode="numeric" min="0" placeholder={limites ? String(limites.min) : 'Mín.'} aria-label={t.min} icono="S/" value={rango.min} onChange={(e) => cambiarPrecio({ ...rango, min: e.target.value })} />
+                  <Campo type="number" inputMode="numeric" min="0" placeholder={limites ? String(limites.max) : 'Máx.'} aria-label={t.max} icono="S/" value={rango.max} onChange={(e) => cambiarPrecio({ ...rango, max: e.target.value })} />
                 </div>
               </>
             ),
@@ -441,7 +498,7 @@ export function CatalogoConFiltros({
     <>
       <TituloSeccion {...tituloDesdeAjustes(ajustes)} />
       <div className={s.catalogo}>
-        <aside className={s.catalogoLado} aria-label="Filtros">{filtros}</aside>
+        <aside className={s.catalogoLado} aria-label={t.filtros}>{filtros}</aside>
         <div className={s.catalogoPrincipal}>
           <div className={s.catalogoBarra}>
             {cantidad != null && (
@@ -450,31 +507,40 @@ export function CatalogoConFiltros({
               </p>
             )}
             {conBuscador && (
-              <Buscador placeholder="Buscar en el catálogo" atajo={null} defaultValue={texto} onBuscar={buscar} onChange={onBuscar ? undefined : (e) => setTextoPropio(e.target.value)} className={s.catalogoBuscador} />
+              <Buscador
+                // key: "Limpiar todo" borra el texto también en el campo.
+                key={vueltaBuscador}
+                placeholder={t.buscar}
+                atajo={null}
+                defaultValue={texto}
+                onBuscar={buscar}
+                onChange={onBuscar ? (buscarAlEscribir ? (e) => onBuscar(e.target.value) : undefined) : (e) => setTextoPropio(e.target.value)}
+                className={s.catalogoBuscador}
+              />
             )}
             {orden?.opciones?.length > 0 && (
-              <Selector className={s.catalogoOrden} etiqueta={orden.etiqueta ?? 'Ordenar por'} opciones={orden.opciones} valor={orden.valor} onCambiar={orden.onCambiar} />
+              <Selector className={s.catalogoOrden} etiqueta={orden.etiqueta ?? t.ordenarPor} opciones={orden.opciones} valor={orden.valor} onCambiar={orden.onCambiar} />
             )}
             <Boton variante="contorno" className={s.botonFiltros} icono={<SlidersHorizontal aria-hidden="true" />} onClick={() => setHoja(true)}>
-              Filtros{cuantos ? ` (${cuantos})` : ''}
+              {t.filtros}{cuantos ? ` (${cuantos})` : ''}
             </Boton>
           </div>
           {cuantos > 0 && (
             <div className={s.chips}>
               {activos.map((a) => (
-                <Chip key={`${a.grupo}-${a.valor}`} tamano="sm" onQuitar={() => elegir(a.grupo, null)}>{a.nombre}</Chip>
+                <Chip key={`${a.grupo}-${a.valor}`} tamano="sm" onQuitar={() => elegir(a.grupo, null)}>{sinTraducir.includes(a.grupo) ? a.nombre : <Texto>{a.nombre}</Texto>}</Chip>
               ))}
               {hayPrecio && <Chip tamano="sm" onQuitar={() => cambiarPrecio({ min: '', max: '' })}>{textoPrecio}</Chip>}
-              <button type="button" className={s.limpiar} onClick={limpiar}>Limpiar todo</button>
+              <button type="button" className={s.limpiar} onClick={limpiar}>{t.limpiarTodo}</button>
             </div>
           )}
-          <GrillaProductos {...grilla} productos={visibles} vacio={grilla.vacio || { titulo: 'Nada coincide con tu búsqueda', texto: 'Prueba con otros filtros o quítalos.' }} />
+          <GrillaProductos {...grilla} productos={visibles} vacio={grilla.vacio || { titulo: t.nadaTitulo, texto: t.nadaTexto }} />
         </div>
         <HojaInferior
           abierta={hoja}
           onCerrar={() => setHoja(false)}
-          titulo="Filtros"
-          pie={<Boton bloque onClick={() => setHoja(false)}>{cantidad != null ? `Ver ${textoCantidad}` : 'Ver productos'}</Boton>}
+          titulo={t.filtros}
+          pie={<Boton bloque onClick={() => setHoja(false)}>{cantidad != null ? <Texto>{`Ver ${textoCantidad}`}</Texto> : t.verProductos}</Boton>}
         >
           <div className={s.filtrosEnHoja}>{filtros}</div>
         </HojaInferior>

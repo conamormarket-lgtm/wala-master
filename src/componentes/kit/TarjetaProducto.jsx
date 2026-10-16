@@ -42,7 +42,8 @@ function FotoTarjeta({ src, srcSet, sizes, recorte, respaldo, prioridad = false,
         height: `${(100 / recorte.height) * 100}%`,
       } : undefined}
       loading={prioridad ? 'eager' : 'lazy'}
-      fetchPriority={prioridad ? 'high' : undefined}
+      // En minúsculas: React 18 no conoce fetchPriority y lo dejaba como aviso.
+      {...(prioridad ? { fetchpriority: 'high' } : {})}
       decoding="async"
       onError={() => { if (!fallo && respaldo && respaldo !== src) setFallo(true); }}
     />

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Chip } from '../Etiquetas';
+import { Texto } from '../Traduccion';
 import s from './OpcionesFiltro.module.css';
 
 /**
@@ -10,11 +11,12 @@ import s from './OpcionesFiltro.module.css';
  * La usan el catálogo con filtros y la búsqueda.
  *
  *  - opciones: [{ valor, nombre, cuenta? }]
+ *  - sinTraducir: los nombres tal cual (las marcas no se traducen)
  *  - elegida: valor elegido (o null)
  *  - onElegir(valor | null)
  *  - limite: cuántas se ven antes de "Ver más" (8 por defecto; 0 = todas)
  */
-export function OpcionesFiltro({ opciones = [], elegida = null, onElegir, limite = 8 }) {
+export function OpcionesFiltro({ opciones = [], elegida = null, onElegir, limite = 8, sinTraducir = false }) {
   const [todas, setTodas] = useState(false);
   // Solo se corta si sobran más de 2 (no vale la pena "Ver 1 más").
   const larga = limite > 0 && opciones.length > limite + 2;
@@ -37,12 +39,12 @@ export function OpcionesFiltro({ opciones = [], elegida = null, onElegir, limite
           cuenta={o.cuenta}
           onClick={() => onElegir?.(elegida === o.valor ? null : o.valor)}
         >
-          {o.nombre}
+          {sinTraducir ? o.nombre : <Texto>{o.nombre}</Texto>}
         </Chip>
       ))}
       {larga && (
         <button type="button" className={[s.mas, todas && s.menos].filter(Boolean).join(' ')} onClick={() => setTodas((v) => !v)} aria-expanded={todas}>
-          {todas ? 'Ver menos' : `Ver ${restantes} más`}
+          <Texto>{todas ? 'Ver menos' : `Ver ${restantes} más`}</Texto>
           <ChevronDown aria-hidden="true" />
         </button>
       )}
