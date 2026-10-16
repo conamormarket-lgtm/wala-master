@@ -47,7 +47,7 @@ import DeepLinkHandler from './components/common/DeepLinkHandler';
 // viejo, que sigue en su sitio hasta borrarlo todo junto (guia/ELIMINAR.md).
 import AvisoDelSistema from './components/marco/AvisoDelSistema';
 import BarraDeAdmin from './components/marco/BarraDeAdmin';
-import LanguagePopup from './components/i18n/LanguagePopup';
+import AvisoDeIdioma from './components/marco/AvisoDeIdioma';
 import { EN_VISTA_PREVIA_CALOR } from './utils/vistaPreviaCalor';
 
 // ── Lo que no hace falta para ver la página: su propio archivo ────────────
@@ -350,7 +350,7 @@ const GlobalLayout = ({ children }) => {
       <Suspense fallback={null}><FirebaseWarning /></Suspense>
 
       {/* Popup discreto de sugerencia de idioma (se muestra una sola vez). */}
-      {!EN_VISTA_PREVIA_CALOR && <LanguagePopup />}
+      {!EN_VISTA_PREVIA_CALOR && <AvisoDeIdioma />}
 
       {/* Popups de campaña (encuesta, promos…) configurados en /admin/popups. */}
       {!EN_VISTA_PREVIA_CALOR && <Suspense fallback={null}><CampaignPopup /></Suspense>}
