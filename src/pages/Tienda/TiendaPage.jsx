@@ -57,7 +57,8 @@ import { getBrand, getBrands } from '../../services/brands';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import EditableSection from '../../components/admin/EditableSection';
 import { useVisualEditor } from './contexts/VisualEditorContext';
-import AppDownloadBanner from './components/AppDownloadBanner';
+// Banner "Walá App" con el kit (paso 2 de la migración; el viejo, en guia/ELIMINAR.md).
+import BannerDeLaApp from '../../components/marco/BannerDeLaApp';
 import { isKcheroLanding } from '../../constants/landingSlugs';
 import BrandLoaderOverlay from '../../components/common/BrandLoader/BrandLoaderOverlay';
 import styles from './TiendaPage.module.css';
@@ -1515,7 +1516,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       {/* Keep the first screen complete; lower sections load near the viewport. */}
       <BrandLoaderOverlay show={!pageReady || !heroListo} />
       <CustomFontsInjector config={activeSections} all={isEditModeActive} />
-      {!isLandingPage && !categoryId && !searchTerm && <AppDownloadBanner />}
+      {!isLandingPage && !categoryId && !searchTerm && <BannerDeLaApp />}
       {sorted.map((section, index) => {
         const active = sectionIsActive(section, index);
         const rendered = active ? renderSection(section) : null;

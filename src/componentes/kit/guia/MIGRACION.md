@@ -26,7 +26,7 @@ principal (y a la APK de Capacitor).
 | `IconoWala` y `Trazo` en referidos | `components/common/AvisoInvitacion/AvisoInvitacion.jsx`, `pages/cuenta/components/GrupoReferidos.jsx`, `pages/cuenta/CuentaReferidosPage.jsx` |
 | `PaginaCuentaInvitado`: solo /cuenta sin sesión (la pestaña "Cuenta"); cada sección (/cuenta/pedidos…) es una página privada y va al login con `?redirect=` (`utils/rutaPrivada.js`), así que la variante `pedidos` ya no se usa. `CuentaLoginPrompt` y `PedidosLoginPrompt` quedan sin usar hasta borrarlos; los textos del `accountPopup` del editor visual siguen solo en el pop-up de la cabecera | `pages/CuentaLayout.jsx` |
 
-| Marco (paso 2): `AvisoSistema`, `BarraAdmin` (`fija`: publica `--admin-bar-height` para la cabecera) | `components/marco/AvisoDelSistema.jsx`, `BarraDeAdmin.jsx` (en `App.jsx`) |
+| Marco (paso 2): `AvisoSistema`, `BarraAdmin` (`fija`: publica `--admin-bar-height` para la cabecera), `BannerApp` | `components/marco/AvisoDelSistema.jsx`, `BarraDeAdmin.jsx` (en `App.jsx`); `BannerDeLaApp.jsx` (en `TiendaPage.jsx`, como antes) |
 
 Cada pieza del marco tiene un conector chico en `src/components/marco/`: lee
 lo de la tienda (Firestore, rutas, sesión) y dibuja la pieza del kit. Lo viejo
