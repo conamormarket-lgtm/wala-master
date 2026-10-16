@@ -4,9 +4,11 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  overflow: hidden;
+  /* Sin overflow: hidden, como TarjetaProducto. Con la tarjeta inclinada,
+     Chromium perdía el recorte redondeado (esquinas cuadradas y sin borde
+     arriba); la foto se recorta sola en su recuadro (.fotoMarco). */
   border: 1px solid var(--color-border);
-  border-radius: 22px;
+  border-radius: 18px;
   background: var(--color-surface);
   transition: border-color var(--dur-rapida) ease;
 }
@@ -24,8 +26,13 @@
 
 .fotoMarco {
   position: relative;
-  /* El barrido de luz (y lo que flota en la foto) no pasa al texto. */
+  /* La foto en su recuadro dentro de la tarjeta, como la de TarjetaProducto
+     (.media): margen de 6px y esquinas propias. El barrido de luz (y lo que
+     flota en la foto) no pasa al texto; isolation mantiene el recorte de la
+     mezcla (multiply) con la tarjeta inclinada. */
+  margin: 6px 6px 0;
   overflow: hidden;
+  border-radius: 13px;
   isolation: isolate;
 }
 
@@ -39,13 +46,13 @@
   z-index: 1;
   inset: 0;
   opacity: 0;
-  transition: opacity var(--dur-media) ease;
+  transition: opacity var(--dur-lenta) var(--ease-signature), transform 0.6s var(--ease-signature);
 }
 
 /* La espalda reemplaza al frente (no va encima): las dos fotos se mezclan
    con multiply sobre el escenario, y una sobre otra la espalda salía oscura. */
 .conEspalda > img:not(.espalda) {
-  transition: opacity var(--dur-media) ease, transform 0.6s var(--ease-signature);
+  transition: opacity var(--dur-lenta) var(--ease-signature), transform 0.6s var(--ease-signature);
 }
 
 .verEspalda > img:not(.espalda) {
@@ -442,6 +449,7 @@
   .creacion:not(.vertical) .fotoMarco {
     flex: 0 0 40%;
     min-width: 0;
+    margin: 6px 0 6px 6px;
   }
 
   /* La foto es angosta: una sola etiqueta (la más importante), arriba y en
@@ -576,11 +584,13 @@
     transition: transform 0.8s var(--ease-entrance, var(--ease-signature));
   }
 
-  .foto > img:not(.espalda) {
-    transition: transform 0.6s var(--ease-signature);
+  /* Frente y espalda se acercan igual (como .img e .imgHover de
+     TarjetaProducto): al cruzarse no cambia el tamaño. */
+  .foto > img {
+    transition: opacity var(--dur-lenta) var(--ease-signature), transform 0.6s var(--ease-signature);
   }
 
-  .creacion:hover .foto > img:not(.espalda) {
+  .creacion:hover .foto > img {
     transform: scale(1.04);
   }
 

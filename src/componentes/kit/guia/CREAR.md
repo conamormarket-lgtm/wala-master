@@ -85,7 +85,12 @@ Sus partes, en orden:
 - **`TarjetaCreacion`** es la misma de Mis creaciones. `vertical` y `usar`
   son props, no copias.
 - **El gesto de las tarjetas** es el de `TarjetaProducto`: inclinación,
-  canto con luz y barrido.
+  canto con luz y barrido. Desde el 2026-10-16 también su forma: la foto va
+  en su recuadro dentro de la tarjeta (`.fotoMarco`: 6px de margen y
+  esquinas de 13px, como `.media`), la tarjeta tiene esquinas de 18px y no
+  recorta (con `overflow: hidden` e inclinada, Chromium perdía las esquinas
+  y el borde de arriba al pasar el ratón), y frente y espalda se acercan y
+  se cruzan igual que `.img` e `.imgHover`.
 - **`Carrusel`, `TituloSeccion` y `EstadoVacio`** son los de todo el kit.
 - **Modo oscuro (2026-10-16):** las prendas de un combo (borrador, creación
   o de la comunidad) van sobre el escenario de foto (`--escenario-foto`,
