@@ -5,6 +5,7 @@ import { SeccionDelKit } from '../../componentes/kit/Secciones';
 import { enlaceWhatsApp } from '../../componentes/kit/piezas/Flotantes';
 import useLoViejo from '../../hooks/useLoViejo';
 import useWhatsAppDeLaRuta from '../../components/marco/useWhatsAppDeLaRuta';
+import TarjetaDeProducto from '../../components/producto/TarjetaDeProducto';
 import { useAuth } from '../../contexts/AuthContext';
 import { Plus } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate, Link } from 'react-router-dom';
@@ -46,6 +47,7 @@ import {
   getProductsByBrand,
   getFeaturedProducts,
   getStoreProductsPage,
+  getOnSaleProducts,
   STORE_PAGE_SIZE,
   getCachedProducts,
   getCachedCategories,
@@ -921,12 +923,45 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   const seccionesViejo = useLoViejo('secciones');
   const whatsappTienda = useWhatsAppDeLaRuta();
   const { userProfile } = useAuth();
-  const TIPOS_DEL_KIT = new Set(['announcement_bar', 'hero_carousel', 'trust_badges', 'testimonials', 'faq_accordion']);
+  const TIPOS_DEL_KIT = new Set([
+    'announcement_bar', 'hero_carousel', 'trust_badges', 'testimonials', 'faq_accordion',
+    'featured_carousel', 'new_arrivals_carousel', 'sale_carousel',
+  ]);
   const usaKit = (section) => pageId === 'home' && !seccionesViejo && TIPOS_DEL_KIT.has(section.type);
+  const conTipoDelKit = (tipo) => pageId === 'home' && !seccionesViejo && configuredSections.some((x) => x.type === tipo);
+
+  // Los productos de "Recién llegaron" y "Ofertas": las mismas consultas (y
+  // caché) que hacía ProductQueryCarousel por dentro.
+  const marcaDeCarrusel = pageBrandId || null;
+  const { data: nuevosKit = [] } = useQuery({
+    queryKey: ['query-carousel', 'newest', null, marcaDeCarrusel],
+    queryFn: async () => {
+      const res = await getStoreProductsPage({ facet: marcaDeCarrusel ? { type: 'brand', value: marcaDeCarrusel } : null, sort: 'newest', pageSize: 12 });
+      return res?.items || [];
+    },
+    enabled: conTipoDelKit('new_arrivals_carousel'),
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: ofertasKit = [] } = useQuery({
+    queryKey: ['query-carousel', 'sale', null, marcaDeCarrusel],
+    queryFn: async () => (await getOnSaleProducts(marcaDeCarrusel)).data || [],
+    enabled: conTipoDelKit('sale_carousel'),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // La tarjeta de la tienda (paso 4) dentro de las secciones del kit.
+  const TarjetaDeTienda = useMemo(() => function TarjetaDeTienda({ producto }) {
+    return <TarjetaDeProducto product={producto} categories={categoriesData || []} currentBrandId={pageBrandId} />;
+  }, [categoriesData, pageBrandId]);
+  const PRODUCTOS_DEL_KIT = { featured_carousel: featuredProducts, new_arrivals_carousel: nuevosKit, sale_carousel: ofertasKit };
   const seccionDelKit = (section) => {
     // Lo de la primera pantalla carga ya (como antes, sin esperar a bajar).
     const indice = configuredSections.findIndex((x) => x.id === section.id);
     const datos = {};
+    if (PRODUCTOS_DEL_KIT[section.type]) {
+      datos.productos = PRODUCTOS_DEL_KIT[section.type];
+      datos.tarjeta = TarjetaDeTienda;
+    }
     if (section.type === 'faq_accordion') {
       // "Escríbenos" con el WhatsApp de la página; y un solo Kapi a la vista:
       // con sesión ya está el flotante.

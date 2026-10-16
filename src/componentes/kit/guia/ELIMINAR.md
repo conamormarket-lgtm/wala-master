@@ -69,4 +69,6 @@ por `pages/Tienda/services/seccionesPorTipo.jsx` y por el interruptor
 | `pages/Tienda/components/TrustBadges/` | `trust_badges` | `InsigniasConfianza` | ídem | ídem |
 | `pages/Tienda/components/Testimonials/` | `testimonials` | `Testimonios` | ídem y `VisualEditorPanel.jsx` (editor viejo, paso 8) | ídem y con el editor del kit |
 | `pages/Tienda/components/FaqAccordion/` | `faq_accordion` | `PreguntasFrecuentes` (sin Kapi con sesión) | ídem | ídem |
+| `pages/Tienda/components/ProductQueryCarousel/` | `new_arrivals_carousel`, `sale_carousel`, `category_carousel` | `CarruselProductos` con las mismas consultas (`query-carousel`) hechas en `TiendaPage` | `seccionesPorTipo.jsx` (`category_carousel` y las otras páginas) | cuando esas páginas y `category_carousel` pasen al kit |
+| `pages/Tienda/components/FeaturedCarousel/` (en secciones) | `featured_carousel` del inicio | `CarruselProductos` | `ProductQueryCarousel`, `ProductDetail.jsx` (relacionados), `CuentaCompraDetallePage.jsx`, `seccionesPorTipo.jsx` | cuando migren la ficha (paso 6), el detalle del pedido y las demás páginas |
 
