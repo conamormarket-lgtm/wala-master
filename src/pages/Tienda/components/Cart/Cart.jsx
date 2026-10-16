@@ -13,6 +13,9 @@ import { costoEnvio } from '../../../../constants/envio';
 // Los CTA son el Boton del kit de Walá (violeta liso, sin degradado).
 import { GlassCard, Badge, Stagger, StaggerItem } from '../../../../components/ui';
 import Boton from '../../../../componentes/kit/Boton';
+// Confirmar del kit en vez de confirm() (paso 3). carritoViejo vuelve al de antes.
+import { useConfirmar } from '../../../../componentes/kit/Feedback';
+import useLoViejo from '../../../../hooks/useLoViejo';
 import styles from './Cart.module.css';
 import { T } from '../../../../i18n/useTranslatedText';
 import Moneda from '../../../../components/common/Moneda';
@@ -21,6 +24,11 @@ const Cart = () => {
   const { items, getTotalPrice, clearCart, setAllItemsSelected, removeSelectedItems } = useCart();
   const { userProfile } = useAuth();
   const navigate = useNavigate();
+  const confirmarKit = useConfirmar();
+  const carritoViejo = useLoViejo('carrito');
+  const confirmar = (opciones) => (carritoViejo
+    ? Promise.resolve(window.confirm(opciones.titulo))
+    : confirmarKit(opciones));
 
   const total = getTotalPrice();
   const monedasCount = userProfile?.monedas || 0;
@@ -83,16 +91,21 @@ const Cart = () => {
     if (selectAllRef.current) selectAllRef.current.indeterminate = algunoSeleccionado;
   }, [algunoSeleccionado]);
 
-  const handleRemoveSelected = () => {
+  const handleRemoveSelected = async () => {
     const n = selectedCount;
     const mensaje = n === 1
       ? '¿Quitar del carrito el artículo seleccionado?'
       : `¿Quitar del carrito los ${n} artículos seleccionados?`;
-    if (window.confirm(mensaje)) removeSelectedItems();
+    if (await confirmar({ titulo: mensaje, confirmar: 'Quitar', peligro: true })) removeSelectedItems();
   };
 
-  const handleClearCart = () => {
-    if (window.confirm('¿Estás seguro de que quieres cancelar este pedido y vaciar tu carrito?')) {
+  const handleClearCart = async () => {
+    if (await confirmar({
+      titulo: '¿Estás seguro de que quieres cancelar este pedido y vaciar tu carrito?',
+      confirmar: 'Vaciar carrito',
+      cancelar: 'No, seguir',
+      peligro: true,
+    })) {
       clearCart();
     }
   };

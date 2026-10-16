@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MapPin, Plus, Pencil, Trash2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
+import { useConfirmar } from '../../componentes/kit/Feedback';
 import { GlassCard } from '../../components/ui';
 import { T } from '../../i18n/useTranslatedText';
 import { obtenerDirecciones, guardarDirecciones, MAX_DIRECCIONES } from '../../services/direcciones';
@@ -38,6 +39,7 @@ const destinatarioCompleto = (d) => !!(d.customerName.trim() && d.dni.trim() && 
 const MisDireccionesPage = () => {
   const { user, userProfile } = useAuth();
   const toast = useGlobalToast();
+  const confirmar = useConfirmar();
   const [lista, setLista] = useState(null);
   const [editando, setEditando] = useState(null); // null | 'nueva' | id
   const [form, setForm] = useState(VACIA);
@@ -98,8 +100,8 @@ const MisDireccionesPage = () => {
   const hacerPrincipal = (id) =>
     persistir(lista.map((d) => ({ ...d, principal: d.id === id })), 'Dirección principal actualizada.');
 
-  const eliminar = (d) => {
-    if (!window.confirm(`¿Eliminar la dirección de ${d.customerName}?`)) return;
+  const eliminar = async (d) => {
+    if (!(await confirmar({ titulo: `¿Eliminar la dirección de ${d.customerName}?`, confirmar: 'Eliminar', peligro: true }))) return;
     const resto = lista.filter((x) => x.id !== d.id);
     // Si se borra la principal, la primera que quede pasa a serlo (lo hace el servicio).
     persistir(resto, 'Dirección eliminada.');

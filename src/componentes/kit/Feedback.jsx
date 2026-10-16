@@ -415,7 +415,8 @@ export function HojaInferior({ abierta, onCerrar, titulo, acciones, children, pi
                 </button>
               </div>
             </header>
-            <div className={s.hojaCuerpo}>{children}</div>
+            {/* Sin contenido (un Confirmar sin texto) no queda un hueco vacío. */}
+            {children ? <div className={s.hojaCuerpo}>{children}</div> : null}
             {pie && <footer className={s.hojaPie}>{pie}</footer>}
           </motion.div>
         </motion.div>

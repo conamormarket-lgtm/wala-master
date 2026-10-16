@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useGlobalToast } from '../contexts/ToastContext';
+import { useConfirmar } from '../componentes/kit/Feedback';
 import { Gift, UserCircle, Users, CheckCircle, Heart, UserPlus, Plus, Trash2, ArrowLeft, AlertCircle } from 'lucide-react';
 import { getSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../services/encuestaConfig';
 import { registrarConversionPopup } from '../services/popups';
@@ -31,6 +33,9 @@ const ROLES_MAP = {
 
 const SubscriptionSurveyPage = () => {
   const { user, userProfile, updateUserProfile, loading: authLoading, grantSurveyReward, claimDatesReward } = useAuth();
+  // Los avisos de validación y error: toasts del kit en vez de alert() (paso 3).
+  const toast = useGlobalToast();
+  const confirmar = useConfirmar();
   const navigate = useNavigate();
 
   const [config, setConfig] = useState(DEFAULT_SURVEY_CONFIG);
@@ -135,7 +140,7 @@ const SubscriptionSurveyPage = () => {
   const validateFields = (fieldsArray, answersObject) => {
     for (let field of fieldsArray) {
       if (field.required && !answersObject[field.id]) {
-        alert(`Por favor completa el campo: ${field.label}`);
+        toast.warning(`Por favor completa el campo: ${field.label}`);
         return false;
       }
     }
@@ -175,7 +180,7 @@ const SubscriptionSurveyPage = () => {
       if (selectedRoles.pareja) selectedKeys.unshift('pareja');
 
       if (selectedKeys.length === 0) {
-        return alert('Por favor, selecciona al menos un rol o dale a Atrás/Omitir si no deseas regalar a nadie.');
+        return toast.warning('Por favor, selecciona al menos un rol o dale a Atrás/Omitir si no deseas regalar a nadie.');
       }
 
       setRolesList(selectedKeys);
@@ -208,17 +213,21 @@ const SubscriptionSurveyPage = () => {
     return true;
   };
 
-  const goToNextRoleGroup = () => {
+  const goToNextRoleGroup = async () => {
     const currentRoleKey = rolesList[currentRoleIndex];
     const roleRecipients = finalRecipients.filter(r => r.roleKey === currentRoleKey);
 
     const hasIncompletes = roleRecipients.some(r => !isRecipientComplete(r));
     if (hasIncompletes) {
-       return alert('Por favor completa todos los datos obligatorios (Nombre y Género) de todas las tarjetas antes de continuar.');
+       return toast.warning('Por favor completa todos los datos obligatorios (Nombre y Género) de todas las tarjetas antes de continuar.');
     }
 
     if (roleRecipients.length === 0 && currentRoleKey !== 'pareja') {
-      const confirmSkip = window.confirm('No has agregado a nadie en este grupo. ¿Deseas continuar de todos modos?');
+      const confirmSkip = await confirmar({
+        titulo: 'No has agregado a nadie en este grupo.',
+        texto: '¿Deseas continuar de todos modos?',
+        confirmar: 'Continuar',
+      });
       if (!confirmSkip) return;
     }
 
@@ -284,19 +293,19 @@ const SubscriptionSurveyPage = () => {
 
   const saveTempRecipient = () => {
     if (!tempRecipient.name || tempRecipient.name.trim() === '') {
-       return alert('El nombre es obligatorio.');
+       return toast.warning('El nombre es obligatorio.');
     }
     if (!tempRecipient.gender || tempRecipient.gender.trim() === '') {
-       return alert('El género es obligatorio.');
+       return toast.warning('El género es obligatorio.');
     }
 
     for (const ev of tempRecipient.events) {
       const evTypeConfig = EVENT_TYPES.find(e => e.label === ev.type) || EVENT_TYPES.find(e => e.id === 'otro');
       if (evTypeConfig.needsDate && (!ev.date || ev.date.trim() === '')) {
-        return alert(`La fecha es obligatoria para el evento: ${ev.type}.`);
+        return toast.warning(`La fecha es obligatoria para el evento: ${ev.type}.`);
       }
       if (ev.type === 'Fecha Especial' && (!ev.customName || ev.customName.trim() === '')) {
-        return alert('Por favor, indica qué se celebra en la Fecha Especial.');
+        return toast.warning('Por favor, indica qué se celebra en la Fecha Especial.');
       }
     }
 
@@ -322,7 +331,7 @@ const SubscriptionSurveyPage = () => {
     // Guard: sin perfil cargado no podemos guardar de forma segura (evita TypeError
     // al leer userProfile.giftRecipients). El botón vuelve a habilitarse.
     if (!userProfile) {
-      alert('Tu perfil aún se está cargando. Inténtalo de nuevo en unos segundos.');
+      toast.info('Tu perfil aún se está cargando. Inténtalo de nuevo en unos segundos.');
       return;
     }
     setSaving(true);
@@ -367,7 +376,7 @@ const SubscriptionSurveyPage = () => {
       setAnimationDir('Right');
       setCurrentStep(4);
     } catch (err) {
-      alert('Hubo un error al guardar tus datos.');
+      toast.error('Hubo un error al guardar tus datos.');
     } finally {
       setSaving(false);
     }

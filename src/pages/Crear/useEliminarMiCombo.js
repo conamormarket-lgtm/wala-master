@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
+import { useConfirmar } from '../../componentes/kit/Feedback';
 import { eliminarMiComboConPrendas } from '../../services/misCombos';
 
 /**
@@ -14,11 +15,17 @@ export const useEliminarMiCombo = () => {
   const { user } = useAuth();
   const { items } = useCart();
   const toast = useGlobalToast();
+  const confirmar = useConfirmar();
   const queryClient = useQueryClient();
   return async (combo) => {
     if (!user) return null;
     const nombre = combo.name || 'Mi combo';
-    if (!window.confirm(`¿Eliminar el combo "${nombre}" y sus prendas? Las que uses en otro combo, en un pedido o en el carrito se quedan.`)) return null;
+    if (!(await confirmar({
+      titulo: `¿Eliminar el combo "${nombre}" y sus prendas?`,
+      texto: 'Las que uses en otro combo, en un pedido o en el carrito se quedan.',
+      confirmar: 'Eliminar',
+      peligro: true,
+    }))) return null;
     const enCarrito = new Set((items || []).map((i) => i.customization?.designId).filter(Boolean));
     const { error, borradas, sueltas } = await eliminarMiComboConPrendas(user.uid, combo, { enCarrito });
     if (error) {

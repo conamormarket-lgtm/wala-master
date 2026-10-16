@@ -6,6 +6,7 @@ import { volarMonedasGanadas } from '../../utils/animations';
 import { useEntregaMonedas } from '../../hooks/useEntregaMonedas';
 import { VALID_GUESSES } from '../../data/wordleDictionary';
 import { useAuth } from '../../contexts/AuthContext';
+import { useGlobalToast } from '../../contexts/ToastContext';
 import { limaTodayStr } from '../../utils/fechaLima';
 import { trackMinigame } from '../../services/analytics/tracker';
 import { HelpCircle, Trophy } from 'lucide-react';
@@ -62,6 +63,7 @@ const formatTime = (seconds) => {
 
 const WordlePage = () => {
   const { user } = useAuth();
+  const toast = useGlobalToast();
   const queryClient = useQueryClient();
   // Misma fecha (hora Lima) que usa el servidor y que guarda el resultado: si no,
   // jugar de noche registraba la partida con la fecha del día siguiente.
@@ -364,7 +366,7 @@ const WordlePage = () => {
       
       // Validar si la palabra existe en el diccionario (si el diccionario está cargado)
       if (VALID_GUESSES.size > 10 && !VALID_GUESSES.has(guessStr)) {
-        alert("La palabra no está en el diccionario.");
+        toast.warning('La palabra no está en el diccionario.');
         return;
       }
 
@@ -405,7 +407,7 @@ const WordlePage = () => {
         setActiveIndex(activeIndex + 1);
       }
     }
-  }, [currentGuess, gameStatus, guesses, wordLength, targetWord, saveResultMutation, activeIndex, startTime, trackFin, abrirResultado]);
+  }, [currentGuess, gameStatus, guesses, wordLength, targetWord, saveResultMutation, activeIndex, startTime, trackFin, abrirResultado, toast]);
 
   // Escuchar teclado físico
   useEffect(() => {

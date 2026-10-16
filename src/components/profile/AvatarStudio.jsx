@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { uploadFile, deleteFile } from '../../services/firebase/storage';
 import AvatarCropModal from './AvatarCropModal';
+import { useConfirmar } from '../../componentes/kit/Feedback';
 import styles from './AvatarStudio.module.css';
 
 // Subidor simple de foto de perfil.
@@ -19,6 +20,7 @@ import styles from './AvatarStudio.module.css';
 // se suba nada. Tanto recortar como quitar guardan solos — no hay botón
 // "Guardar foto" aparte, para que el cambio quede confirmado de una.
 export default function AvatarStudio({ config, setConfig, onSave, isSaving, uid }) {
+    const confirmar = useConfirmar();
     const fileInputRef = useRef(null);
     const [isUploading, setIsUploading] = useState(false);
     const [isRemoving, setIsRemoving] = useState(false);
@@ -104,7 +106,7 @@ export default function AvatarStudio({ config, setConfig, onSave, isSaving, uid 
     // "Fix: quitar foto dejaba avatar roto...").
     const handleRemovePhoto = async () => {
         if (!avatarUrl || busy) return;
-        if (!window.confirm('¿Quitar tu foto de perfil?')) return;
+        if (!(await confirmar({ titulo: '¿Quitar tu foto de perfil?', confirmar: 'Quitar', peligro: true }))) return;
 
         setUploadError(null);
         setIsRemoving(true);

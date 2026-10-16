@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useGlobalToast } from '../../contexts/ToastContext';
+import { useConfirmar } from '../../componentes/kit/Feedback';
 import { useCart } from '../../contexts/CartContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useGiftCatalog } from '../../hooks/useGiftCatalog';
@@ -77,6 +79,8 @@ const avisoProximidad = (dias) => {
 
 const CuentaFechasImportantesPage = () => {
   const { user, userProfile, updateUserProfile, claimDatesReward } = useAuth();
+  const toast = useGlobalToast();
+  const confirmar = useConfirmar();
   const { addToCart } = useCart();
   const navigate = useNavigate();
 
@@ -267,11 +271,15 @@ const CuentaFechasImportantesPage = () => {
   useBloquearScroll(isModalOpen);
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Seguro que deseas eliminar a esta persona de tus fechas importantes?')) return;
+    if (!(await confirmar({
+      titulo: '¿Seguro que deseas eliminar a esta persona de tus fechas importantes?',
+      confirmar: 'Eliminar',
+      peligro: true,
+    }))) return;
 
     const newList = recipients.filter(r => r.id !== id);
     const { error } = await updateUserProfile({ giftRecipients: newList });
-    if (error) alert('No pudimos eliminar a la persona. Intenta de nuevo.');
+    if (error) toast.error('No pudimos eliminar a la persona. Intenta de nuevo.');
   };
 
   const handleTempChange = (field, value) => {
