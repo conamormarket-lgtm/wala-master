@@ -253,7 +253,7 @@
   margin-bottom: 0.9rem;
   border-radius: 50%;
   background: var(--degradado-logo);
-  color: var(--tema-sobre, #fff);
+  color: #fff;
   transform: rotate(-8deg);
 }
 
@@ -570,7 +570,7 @@
   height: 34px;
   border-radius: 50%;
   background: var(--degradado-logo);
-  color: var(--tema-sobre, #fff);
+  color: #fff;
   transform: rotate(-8deg);
 }
 

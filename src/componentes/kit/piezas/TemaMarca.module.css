@@ -1,7 +1,9 @@
-/* El tema de una marca: los acentos con su color, de día y de noche. Los
-   botones no miran estas variables (siguen violeta). */
+/* El tema de una marca: su color, de día y de noche, solo en lo que es de
+   la marca (la portada, las burbujas de categorías y el trazo bajo los
+   títulos). Los botones, los filtros y los sellos de los productos no miran
+   estas variables: siguen violeta, como en toda la tienda. */
 .tema {
-  --degradado-logo: var(--tema-degradado-dia);
+  --tema-degradado: var(--tema-degradado-dia);
   --tema-acento: var(--tema-acento-dia);
   --tema-sobre: var(--tema-sobre-dia);
   --tema-trazo: var(--tema-trazo-dia);
@@ -10,7 +12,7 @@
 }
 
 :global([data-theme='dark']) .tema {
-  --degradado-logo: var(--tema-degradado-noche);
+  --tema-degradado: var(--tema-degradado-noche);
   --tema-acento: var(--tema-acento-noche);
   --tema-sobre: var(--tema-sobre-noche);
   --tema-trazo: var(--tema-trazo-noche);

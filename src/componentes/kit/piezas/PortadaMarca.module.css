@@ -22,7 +22,7 @@
 
 /* ── Los tres estilos ── */
 .p_color {
-  background: var(--degradado-logo);
+  background: var(--tema-degradado, var(--degradado-logo));
   color: #fff;
 }
 
@@ -281,7 +281,7 @@
   width: min(78%, 300px);
   aspect-ratio: 1;
   border-radius: 50%;
-  background: var(--degradado-logo);
+  background: var(--tema-degradado, var(--degradado-logo));
   transform: translate(-50%, -50%) rotate(-8deg);
 }
 

@@ -374,7 +374,7 @@
 
 /* "Todos": sello con el degradado del logo. */
 .burbujaTodos .burbujaFoto {
-  background: var(--degradado-logo);
+  background: var(--tema-degradado, var(--degradado-logo));
 }
 
 .burbujaTodos .burbujaFoto svg {

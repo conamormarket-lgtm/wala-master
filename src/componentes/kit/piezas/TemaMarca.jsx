@@ -2,11 +2,12 @@ import React from 'react';
 import s from './TemaMarca.module.css';
 
 /*
- * El color de una marca en su página, sin dejar de ser Walá: cambia SOLO los
- * acentos (el degradado de los sellos y del "Todos", el trazo bajo los
- * títulos, el aro de la burbuja elegida, los chips activos, la portada). Los
- * botones de compra, la cabecera y Kapi siguen como siempre (usan otros
- * tokens). Cada color trae su versión de noche: un negro (Yoryo) se volvería
+ * El color de una marca en su página, sin dejar de ser Walá: va SOLO en lo
+ * que es de la marca (la portada, el "Todos" y el aro de la burbuja elegida,
+ * el trazo bajo los títulos). Los botones, los filtros, los sellos de los
+ * productos, la cabecera y Kapi siguen violeta, como en toda la tienda
+ * (mezclar los dos colores en los filtros se veía raro). Cada color trae su
+ * versión de noche: un negro (Yoryo) se volvería
  * invisible sobre la noche violeta, así que ahí manda el segundo color.
  */
 
@@ -46,9 +47,9 @@ const degradado = (a, b) => `linear-gradient(135deg, ${rgbAHex(mezclar(a, BLANCO
 /**
  * Las variables del tema de una marca ({ color, color2 } en hex). Sin color
  * válido, null (la página queda con el violeta de Walá).
- *  - --degradado-logo: el de los sellos (color claro → color → segundo color
- *    o el mismo oscurecido)
- *  - --tema-acento: aros y chips activos · --tema-sobre: el texto encima
+ *  - --tema-degradado: el de la portada y el "Todos" (color claro → color →
+ *    segundo color o el mismo oscurecido)
+ *  - --tema-acento: el aro de la burbuja elegida · --tema-sobre: el texto encima
  *  - --tema-trazo: el trazo bajo los títulos · --tema-suave: un fondo tenue
  *    (el segundo color si es claro: el crema de Yoryo) · --tema-tinta: el
  *    oscuro detrás del texto blanco (la portada con foto)
