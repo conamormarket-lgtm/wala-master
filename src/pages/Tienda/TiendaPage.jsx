@@ -921,17 +921,19 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // ¿Está vacío el catálogo? (respeta el spinner: durante la carga no se da por vacío)
   const catalogIsEmpty = !catalogLoadingResolved && catalogProducts.length === 0;
 
-  // ── Secciones con el kit: por ahora solo en el inicio y estos tipos ──
+  // ── Secciones con el kit: por ahora en el inicio y /tienda, y estos tipos ──
   const seccionesViejo = useLoViejo('secciones');
   const whatsappTienda = useWhatsAppDeLaRuta();
   const { userProfile } = useAuth();
   const TIPOS_DEL_KIT = new Set([
     'announcement_bar', 'hero_carousel', 'trust_badges', 'testimonials', 'faq_accordion',
     'featured_carousel', 'new_arrivals_carousel', 'sale_carousel',
-    'banner_grid', 'category_grid',
+    'banner_grid', 'category_grid', 'header', 'marquee',
   ]);
-  const usaKit = (section) => pageId === 'home' && !seccionesViejo && TIPOS_DEL_KIT.has(section.type);
-  const conTipoDelKit = (tipo) => pageId === 'home' && !seccionesViejo && configuredSections.some((x) => x.type === tipo);
+  const PAGINAS_DEL_KIT = new Set(['home', 'tienda']);
+  const paginaConKit = PAGINAS_DEL_KIT.has(pageId) && !seccionesViejo;
+  const usaKit = (section) => paginaConKit && TIPOS_DEL_KIT.has(section.type);
+  const conTipoDelKit = (tipo) => paginaConKit && configuredSections.some((x) => x.type === tipo);
 
   // Los productos de "Recién llegaron" y "Ofertas": las mismas consultas (y
   // caché) que hacía ProductQueryCarousel por dentro.
@@ -974,13 +976,18 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     if (section.type === 'banner_grid') datos.marcas = automaticGridBrands;
     // Con items puestos a mano (dataSource manual) mandan esos.
     if (section.type === 'category_grid') datos.categorias = section.settings?.dataSource === 'products' ? categoriasDeGrillaKit : undefined;
+    let seccion = section;
+    // Sin título guardado, el de siempre (HeaderBlock lo ponía por defecto).
+    if (section.type === 'header' && section.settings?.title === undefined) {
+      seccion = { ...section, settings: { ...section.settings, title: DEFAULT_STORE_TITLE } };
+    }
     if (section.type === 'faq_accordion') {
       // "Escríbenos" con el WhatsApp de la página; y un solo Kapi a la vista:
       // con sesión ya está el flotante.
       datos.contacto = whatsappTienda ? enlaceWhatsApp(whatsappTienda.numero) : undefined;
       datos.sinKapi = Boolean(userProfile);
     }
-    return <SeccionDelKit key={section.id} seccion={section} primera={indice >= 0 && indice < initialSectionCount(configuredSections)} {...datos} />;
+    return <SeccionDelKit key={section.id} seccion={seccion} primera={indice >= 0 && indice < initialSectionCount(configuredSections)} {...datos} />;
   };
 
   const renderSection = (section) => {

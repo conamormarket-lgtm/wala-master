@@ -399,19 +399,30 @@ export function PreguntasFrecuentes({ ajustes = {}, contacto, sinKapi = false })
 
 /* ── Marcas en movimiento (marquee) ─────────────────────── */
 
+/** "EMPRESAS ALIADAS" → "Empresas aliadas"; lo demás, tal cual. */
+function comoFrase(texto) {
+  const v = String(texto || '').trim();
+  if (!v || v !== v.toLocaleUpperCase('es-PE')) return v;
+  const minus = v.toLocaleLowerCase('es-PE');
+  return minus.charAt(0).toLocaleUpperCase('es-PE') + minus.slice(1);
+}
+
 /**
  * Logos en una cinta sin fin. Cada logo es un sticker con la forma, el zoom
- * y el encuadre que se eligen en el editor, y su nombre debajo.
- * `speed` viene en milisegundos (el editor guarda segundos × 1000).
+ * y el encuadre que se eligen en el editor, y su nombre debajo; sin forma
+ * guardada, círculo (lo que mostraba la tienda).
+ * `speed` viene en milisegundos (el editor guarda segundos × 1000); los
+ * valores chicos (hasta 200) son segundos.
+ * Un título guardado TODO EN MAYÚSCULAS se muestra como frase.
  */
 export function MarcasMarquesina({ ajustes = {} }) {
   const items = (ajustes.items || []).filter((m) => m?.imageUrl || m?.name);
   if (!items.length) return null;
   const velocidad = Number(ajustes.speed) || 30000;
-  const segundos = velocidad > 1000 ? velocidad / 1000 : velocidad;
+  const segundos = velocidad > 200 ? velocidad / 1000 : velocidad;
   return (
     <>
-      <TituloSeccion titulo={ajustes.title ?? 'Empresas con las que trabajamos'} subtitulo={ajustes.subtitle} antetitulo={ajustes.eyebrow} alinear="center" />
+      <TituloSeccion titulo={comoFrase(ajustes.title ?? 'Empresas con las que trabajamos')} subtitulo={ajustes.subtitle} antetitulo={ajustes.eyebrow} alinear="center" />
       <Marquesina segundos={Math.max(10, segundos * (items.length / 6 || 1))} espacio="1.75rem" etiqueta="Marcas">
         {items.map((m, k) => (
           <LogoMarca
@@ -420,7 +431,7 @@ export function MarcasMarquesina({ ajustes = {} }) {
             imagen={m.imageUrl}
             alt={m.alt}
             url={m.link}
-            forma={m.shape || 'square'}
+            forma={m.shape || 'circle'}
             zoom={m.zoom}
             posX={m.posX}
             posY={m.posY}

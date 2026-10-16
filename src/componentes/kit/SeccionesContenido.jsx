@@ -8,6 +8,7 @@ import { tarjetaDesdeMarca } from './adaptadores';
 import { EtiquetaColgante, Garabatos, Trazo, Destello, acento } from './Marca';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import { TarjetaMarca, TarjetaDestacado } from './piezas';
+import { Texto } from './Traduccion';
 import s from './SeccionesContenido.module.css';
 
 /*
@@ -50,7 +51,9 @@ export function TextoCampo({ ajustes, campo, como: Etiqueta = 'p', className, st
   const subrayado = !!ajustes[`${campo}Underline`];
   const enlace = ajustes[`${campo}Link`];
 
-  let contenido = children;
+  // Un texto suelto del builder pasa por la traducción de la tienda (como
+  // TextoSeccion); lo que ya viene armado (un título con resalte), tal cual.
+  let contenido = typeof children === 'string' ? <Texto>{children}</Texto> : children;
   if (fondo || subrayado) {
     contenido = (
       <span className={fondo ? s.resaltado : undefined} style={{ background: fondo, textDecoration: subrayado ? 'underline' : undefined }}>
@@ -84,7 +87,7 @@ export function BotonDeAjustes({ ajustes }) {
 /** Parte el título para pintar `resalte` (titleHighlight) en otro color, subrayado a mano. */
 function conResalte(titulo, resalte, color) {
   const i = resalte ? titulo.indexOf(resalte) : -1;
-  if (i < 0) return titulo;
+  if (i < 0) return <Texto>{titulo}</Texto>;
   return (
     <>
       {titulo.slice(0, i)}
