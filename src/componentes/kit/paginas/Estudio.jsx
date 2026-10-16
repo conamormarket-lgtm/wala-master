@@ -76,6 +76,15 @@ const calidadPorDefecto = (capa, zona) => {
   return estiramiento <= 1.5 ? 'buena' : estiramiento <= 2.5 ? 'regular' : 'baja';
 };
 
+/** alto / ancho de una imagen: el que trae, o se mide al cargarla (null si no carga). */
+const medirAspecto = (src) => new Promise((listo) => {
+  if (!src || typeof Image === 'undefined') { listo(null); return; }
+  const img = new Image();
+  img.onload = () => listo(img.naturalWidth ? img.naturalHeight / img.naturalWidth : null);
+  img.onerror = () => listo(null);
+  img.src = src;
+});
+
 /**
  * ¿Una parte de la imagen queda fuera de su zona? (no se imprime). Del texto
  * no se sabe el ancho aquí: lo avisa la tienda con `fueraDeZona`.
@@ -315,6 +324,18 @@ export function PaginaEstudio({
   const zonasDeElegidas = [...new Set(capasElegidas.map((u) => u.zonaId))];
   const mismaZona = zonasDeElegidas.length === 1 ? zonasDeElegidas[0] : null;
   const proporcionDe = (zid) => todasLasZonas.find((z) => z.id === zid)?.proporcion || 1;
+  /**
+   * "Llenar zona" (ajustarAZona en la tienda): lo más grande que entra
+   * ENTERA en su zona, centrada y derecha. Antes solo llenaba el ancho y una
+   * imagen más alta que la zona se salía arriba y abajo.
+   */
+  const llenarZona = async (id) => {
+    const { capa, zonaId } = ubicar(id);
+    if (!capa) return;
+    const aspecto = capa.aspecto || await medirAspecto(capa.src);
+    const ancho = aspecto ? Math.min(1, proporcionDe(zonaId) / aspecto) : 1;
+    cambiarCapa(id, { ancho, x: 0.5, y: 0.5, angulo: 0, ...(aspecto && !capa.aspecto && { aspecto }) });
+  };
   /** Alinea las elegidas entre ellas (por sus bordes), como en la tienda. */
   const alinearVarios = (donde) => {
     if (!mismaZona) return;
@@ -573,7 +594,9 @@ export function PaginaEstudio({
     setOcupado('subiendo');
     try {
       const r = await onSubirImagen(archivo instanceof Blob ? archivo : undefined);
-      if (r?.src) agregarCapa({ tipo: 'imagen', src: r.src, px: r.px, aspecto: r.aspecto, ancho: (capas[zid] || []).length ? 0.5 : 0.8 }, { zid });
+      // Sin aspecto de la tienda, se mide: lo necesitan "Llenar zona", las guías y el aviso de fuera de zona.
+      const aspecto = r?.src ? r.aspecto || await medirAspecto(r.src) : null;
+      if (r?.src) agregarCapa({ tipo: 'imagen', src: r.src, px: r.px, aspecto: aspecto || undefined, ancho: (capas[zid] || []).length ? 0.5 : 0.8 }, { zid });
     } finally {
       setOcupado(null);
     }
@@ -683,7 +706,7 @@ export function PaginaEstudio({
         { id: 'voltear', etiqueta: 'Voltear', Icono: FlipHorizontal, atajo: 'F', accion: () => cambiarCapa(capa.id, { voltear: !capa.voltear }) },
         { id: 'recortar', etiqueta: 'Recortar', Icono: Crop, atajo: 'Doble clic', deshabilitado: !sesion, accion: () => setRecortando(capa) },
         { id: 'fondo', etiqueta: 'Quitar fondo', Icono: Eraser, deshabilitado: !sesion, accion: quitarFondo },
-        { id: 'llenar', etiqueta: 'Llenar zona', Icono: Maximize2, accion: () => cambiarCapa(capa.id, { ancho: 1, x: 0.5, y: 0.5 }) },
+        { id: 'llenar', etiqueta: 'Llenar zona', Icono: Maximize2, accion: () => llenarZona(capa.id) },
       ] : []),
       'separador',
       { id: 'quitar', etiqueta: 'Quitar', Icono: Trash2, atajo: 'Supr', peligro: true, accion: () => quitarCapa(capa.id) },
@@ -1198,7 +1221,7 @@ export function PaginaEstudio({
                 onDuplicar={duplicar}
                 onAdelante={() => reordenar(true)}
                 onAtras={() => reordenar(false)}
-                onLlenar={() => cambiarCapa(elegida.capa.id, { ancho: 1, x: 0.5, y: 0.5 })}
+                onLlenar={() => llenarZona(elegida.capa.id)}
                 onRecortar={() => setRecortando(elegida.capa)}
                 onQuitarFondo={quitarFondo}
                 zonas={todasLasZonas.filter((z) => z.id !== elegida.zonaId).map((z) => ({ id: z.id, nombre: nombreZona(z) }))}

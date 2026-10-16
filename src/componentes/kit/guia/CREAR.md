@@ -490,6 +490,13 @@ alrededor, por partes.
   En el kit lo hacen `SelectorColor` y `SelectorTalla` (`.colorAro`,
   `.tallaMarca`); en `CrearStudioPage`, `.aroColor` y `.tallaFondo` con el
   mismo resorte (`RESORTE_ELEGIDO`). Sin movimiento si se pide reducirlo.
+- **"Llenar zona"** (2026-10-16): pone la imagen lo más grande que entra
+  ENTERA en su zona, centrada y derecha, como `ajustarAZona` de
+  `CrearStudioPage` (el menor de los dos: ancho de la zona o alto de la
+  zona). El kit solo llenaba el ancho y una imagen más alta que la zona se
+  salía arriba y abajo. Si la tienda no manda el `aspecto` de una imagen
+  subida, el kit lo mide al cargarla (`medirAspecto`); sin él tampoco
+  funcionaban bien las guías ni el aviso de "fuera de la zona".
 - No se puede perder: el autoguardado del borrador, el aviso al salir sin
   guardar, la regla de la calidad (`calidadDeCapa`), quitar el fondo y
   recortar solo con sesión, `?combo=&pieza=` que vuelve al combo, `?copiar=`
