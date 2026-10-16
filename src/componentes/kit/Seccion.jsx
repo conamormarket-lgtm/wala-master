@@ -42,6 +42,7 @@ export function BloqueSeccion({ ajustes = {}, ancho = 'contenido', pegado = fals
   return (
     <section
       id={id || anchorId || undefined}
+      data-kit-seccion=""
       className={[s.bloque, completo && s.completo, className].filter(Boolean).join(' ')}
       style={{
         ...style,

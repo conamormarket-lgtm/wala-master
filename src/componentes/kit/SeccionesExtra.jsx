@@ -97,7 +97,7 @@ export function BannerPrincipal({ ajustes = {}, primera = false, onClicBoton }) 
             className={s.bannerBoton}
             style={{ '--b-fondo': buttonBgColor || '#fff', '--b-fondo-hover': buttonBgColor || '#fff', '--b-texto': buttonTextColor || '#111827', '--b-borde': 'transparent' }}
           >
-            {buttonText}
+            <Texto>{buttonText}</Texto>
           </Boton>
         )}
       </div>

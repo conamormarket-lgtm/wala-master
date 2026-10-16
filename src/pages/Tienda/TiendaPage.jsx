@@ -12,9 +12,10 @@ import useLoViejo from '../../hooks/useLoViejo';
 import useWhatsAppDeLaRuta from '../../components/marco/useWhatsAppDeLaRuta';
 import TarjetaDeProducto from '../../components/producto/TarjetaDeProducto';
 import { useAuth } from '../../contexts/AuthContext';
+import { trackBannerClick } from '../../services/analytics/tracker';
 import { Plus } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate, Link } from 'react-router-dom';
-import { useQuery, useInfiniteQuery, keepPreviousData, useIsFetching, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueries, useInfiniteQuery, keepPreviousData, useIsFetching, useQueryClient } from '@tanstack/react-query';
 // Las secciones del constructor llegan bajo demanda: cada tipo es su propio
 // archivo y la página solo descarga las que usa (services/seccionesPorTipo.jsx).
 import {
@@ -86,7 +87,10 @@ const TIPOS_DEL_KIT = new Set([
   'announcement_bar', 'hero_carousel', 'trust_badges', 'testimonials', 'faq_accordion',
   'featured_carousel', 'new_arrivals_carousel', 'sale_carousel',
   'banner_grid', 'category_grid', 'header', 'marquee', 'sidebar_catalog', 'product_grid',
+  'hero_banner', 'categories_nav', 'category_carousel',
 ]);
+// Más las páginas de marca (landing con marca); las del reloj (cacherito)
+// siguen enteras con lo de antes.
 const PAGINAS_DEL_KIT = new Set(['home', 'tienda']);
 const PRECIO_VACIO = { min: '', max: '' };
 // El <section> del catálogo del kit no lleva ref: se busca por su id.
@@ -631,7 +635,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   //
   // El resultado mantiene el MISMO formato que consume VisualCategoryNav en modo
   // filtro: { categoryId, name, imageUrl }.
-  const { data: navCategoriesByBrand } = useQuery({
+  const { data: navCategoriesByBrand, isLoading: navCargando } = useQuery({
     queryKey: ['categories-nav-brands', navBrandIds, categoriesSignature],
     queryFn: async () => {
       // Estilo del nav por marca, retrocompat: sin categoryNavStyle → default
@@ -938,11 +942,12 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // ¿Está vacío el catálogo? (respeta el spinner: durante la carga no se da por vacío)
   const catalogIsEmpty = !catalogLoadingResolved && catalogProducts.length === 0;
 
-  // ── Secciones con el kit: por ahora en el inicio y /tienda (TIPOS_DEL_KIT) ──
+  // ── Secciones con el kit: el inicio, /tienda y las marcas (TIPOS_DEL_KIT) ──
   const seccionesViejo = useLoViejo('secciones');
   const whatsappTienda = useWhatsAppDeLaRuta();
-  const { userProfile } = useAuth();
-  const paginaConKit = PAGINAS_DEL_KIT.has(pageId) && !seccionesViejo;
+  const { user, userProfile } = useAuth();
+  const esPaginaDeMarca = isLandingPage && Boolean(pageBrandId) && !isKcheroLanding(pageId);
+  const paginaConKit = (PAGINAS_DEL_KIT.has(pageId) || esPaginaDeMarca) && !seccionesViejo;
   const usaKit = (section) => paginaConKit && TIPOS_DEL_KIT.has(section.type);
   const conTipoDelKit = (tipo) => paginaConKit && configuredSections.some((x) => x.type === tipo);
 
@@ -1057,6 +1062,20 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     accion: { texto: 'Volver al inicio', url: '/' },
   };
   const reintentarCatalogo = () => (usePaginatedCatalog ? catalogRefetch() : productsRefetch());
+  // "Por categoría": una consulta por carrusel, la misma (y su caché) que
+  // hacía ProductQueryCarousel (hasta 24, acotada a la marca de la página).
+  const categoriasDeCarrusel = useMemo(() => (paginaConKit
+    ? [...new Set(configuredSections.filter((x) => x.type === 'category_carousel' && x.settings?.categoryId).map((x) => x.settings.categoryId))]
+    : []), [paginaConKit, configuredSections]);
+  const carruselesPorCategoria = useQueries({
+    queries: categoriasDeCarrusel.map((id) => ({
+      queryKey: ['query-carousel', 'category', id, marcaDeCarrusel],
+      queryFn: async () => ((await getProductsByCategory(id, marcaDeCarrusel)).data || []).slice(0, 24),
+      staleTime: 5 * 60 * 1000,
+    })),
+  });
+  const productosDeCategoria = (id) => carruselesPorCategoria[categoriasDeCarrusel.indexOf(id)]?.data || [];
+
   const PRODUCTOS_DEL_KIT = { featured_carousel: featuredProducts, new_arrivals_carousel: nuevosKit, sale_carousel: ofertasKit };
   // Las categorías con productos, como las calculaba CategoryGrid (la misma
   // regla que el menú de la cabecera: idsDeCategoriaDe).
@@ -1072,10 +1091,34 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       datos.productos = PRODUCTOS_DEL_KIT[section.type];
       datos.tarjeta = TarjetaDeTienda;
     }
+    if (section.type === 'category_carousel') {
+      datos.productos = productosDeCategoria(section.settings?.categoryId);
+      datos.tarjeta = TarjetaDeTienda;
+    }
     if (section.type === 'banner_grid') datos.marcas = automaticGridBrands;
     // Con items puestos a mano (dataSource manual) mandan esos.
     if (section.type === 'category_grid') datos.categorias = section.settings?.dataSource === 'products' ? categoriasDeGrillaKit : undefined;
     let seccion = section;
+    if (section.type === 'hero_banner') {
+      // Lo que no trae la sección sale del banner global (como antes).
+      const banner = { ...activeConfig.heroBanner, ...section.settings };
+      seccion = { ...section, settings: banner };
+      datos.onClicBoton = () => { trackBannerClick(banner.id || banner.title || 'hero_banner', user).catch(console.error); };
+    }
+    if (section.type === 'categories_nav') {
+      // Las burbujas de la marca elegida en el editor filtran el catálogo de
+      // esta página (la categoría se comparte) y bajan hasta él.
+      const navBrandId = (section.settings?.brandId || '').trim();
+      if (!navBrandId) return null;
+      const entrada = navCategoriesByBrand?.[navBrandId];
+      Object.assign(datos, {
+        categorias: entrada?.items || [],
+        estilo: entrada?.style,
+        cargando: navCargando,
+        activa: navCategoryId,
+        onSeleccionar: handleNavCategorySelect,
+      });
+    }
     if (section.type === 'sidebar_catalog' || section.type === 'product_grid') {
       // Un solo "no hay productos" por página, y sin título encima (como antes).
       if (catalogIsEmpty) {
