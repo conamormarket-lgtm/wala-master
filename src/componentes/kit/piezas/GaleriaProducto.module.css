@@ -155,6 +155,12 @@
   transition: transform var(--dur-media) var(--ease-signature);
 }
 
+/* La elegida va encima de las demás: el borde que viaja hacia una miniatura
+   anterior no queda tapado por las fotos de las que vienen después. */
+.miniatura[aria-selected='true'] {
+  z-index: 1;
+}
+
 .miniaturaFoto {
   position: relative;
   display: block;
