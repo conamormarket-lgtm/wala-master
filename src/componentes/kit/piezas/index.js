@@ -39,7 +39,7 @@ export { TarjetaRegalo, FechaEntrega, SobreRegalo } from './Regalar';
 export { Estrellas, ResumenOpiniones, TarjetaOpinion, FormularioOpinion } from './Opiniones';
 export { GaleriaProducto } from './GaleriaProducto';
 export { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra, TituloEditable } from './Ficha';
-export { CabezaLegal, IndiceLegal, SeccionLegal, DatosProveedor, CodigoCopiable } from './Legales';
+export { CabezaLegal, IndiceLegal, SeccionLegal, DatosProveedor, CodigoCopiable, PasosAtencion, AvanceHoja } from './Legales';
 export { MarcoJuego, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego } from './Juegos';
 export { TableroPalabra, FichaPalabra, TecladoPalabra, LeyendaPalabra, RankingPalabra, evaluarIntento, estadosDeTeclas, normalizarPalabra, INTENTOS_PALABRA } from './Palabra';
 export { RuedaRuleta, HistorialRuleta, ICONO_PREMIO } from './Ruleta';

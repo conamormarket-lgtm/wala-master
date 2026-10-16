@@ -4,14 +4,14 @@ import Boton from '../Boton';
 import { Aviso } from '../Feedback';
 import { Campo, Casilla } from '../Formulario';
 import { Enlace } from '../Enlace';
-import { Trazo, Sello } from '../Marca';
+import { Trazo, Sello, Puntos, Destello } from '../Marca';
 import { BloqueSeccion } from '../Seccion';
 import { EsqueletoPagina } from '../Esqueletos';
 import { TarjetaAyuda } from '../piezas/TarjetaAyuda';
 import { PasoEstudio } from '../piezas/Estudio';
 import { ListaEleccion } from '../piezas/Cuenta';
 import { CamposDatosPersonales, validarPerfil } from '../piezas/DatosPersonales';
-import { CabezaLegal, IndiceLegal, SeccionLegal, DatosProveedor, CodigoCopiable } from '../piezas/Legales';
+import { CabezaLegal, IndiceLegal, SeccionLegal, DatosProveedor, CodigoCopiable, PasosAtencion, AvanceHoja } from '../piezas/Legales';
 import s from './Legales.module.css';
 
 /*
@@ -95,6 +95,14 @@ const TIPOS_RECLAMO = [
 /** El orden de los campos en la hoja: el primero con error recibe el foco. */
 const ORDEN = ['nombre', 'documento', 'telefono', 'domicilio', 'email', 'apoderado', 'descripcion', 'detalle', 'pedido', 'acepta'];
 
+/** Los campos de cada paso: el paso queda hecho (sello menta) cuando ninguno tiene error. */
+const CAMPOS_DE_PASO = [
+  ['nombre', 'documento', 'telefono', 'domicilio', 'email', 'apoderado'],
+  ['monto', 'descripcion'],
+  ['detalle', 'pedido'],
+];
+const TITULOS_DE_PASO = ['Tus datos', 'Lo que compraste', 'Tu reclamo'];
+
 /**
  * Las reglas de la hoja. Los datos de la persona son los de Mi perfil
  * (validarPerfil: DNI de 8, celular de 9 que empieza con 9…); el resto, los
@@ -134,6 +142,13 @@ export function PaginaReclamaciones({ empresa = {}, inicial = {}, onEnviar, hoy,
   const plazo = empresa.plazoRespuestaDiasHabiles || 15;
 
   if (estado === 'cargando') return <EsqueletoPagina forma="reclamaciones" />;
+
+  // Cada paso se marca solo al completarse (la misma regla que al enviar, sin mostrar errores).
+  const pendientes = validarReclamacion(datos);
+  const hechos = CAMPOS_DE_PASO.map((campos) => campos.every((c) => !pendientes[c]));
+  const bien = BIENES.find((b) => b.valor === datos.tipoBien);
+  const tipo = TIPOS_RECLAMO.find((t) => t.valor === datos.tipoReclamo);
+  const esQueja = datos.tipoReclamo === 'queja';
 
   const cambiar = (campo, valor) => {
     setDatos((d) => ({ ...d, [campo]: valor }));
@@ -194,14 +209,20 @@ export function PaginaReclamaciones({ empresa = {}, inicial = {}, onEnviar, hoy,
   return (
     <BloqueSeccion ajustes={{ paddingTop: '1.5rem', paddingBottom: '2.5rem' }}>
       <form ref={cabeza} className={s.libro} onSubmit={enviar} noValidate data-componente="PaginaReclamaciones">
+        <span className={s.adornos} aria-hidden="true">
+          <Puntos className={s.puntos} />
+          <Destello className={s.destello1} />
+          <Destello className={s.destello2} />
+        </span>
         <CabezaLegal icono={<BookOpen aria-hidden="true" />} titulo="Libro de Reclamaciones" detalle="Conforme al Código de Protección y Defensa del Consumidor (Ley N° 29571) – INDECOPI" />
         <p className={s.intro}>
-          Si algo no salió como esperabas, déjalo por escrito aquí. Lo revisamos y te respondemos en máximo {plazo} días hábiles.
+          Si algo no salió como esperabas, déjalo por escrito aquí. Lo revisa una persona del equipo de Walá.
         </p>
+        <PasosAtencion plazo={plazo} />
         <DatosProveedor empresa={empresa} fecha={hoy} />
 
         <div className={s.pasos}>
-          <PasoEstudio numero={1} titulo="Tus datos">
+          <PasoEstudio numero={1} titulo={TITULOS_DE_PASO[0]} hecho={hechos[0]}>
             <div className={s.rejilla}>
               <div className={s.ancho}>
                 <CamposDatosPersonales
@@ -224,7 +245,7 @@ export function PaginaReclamaciones({ empresa = {}, inicial = {}, onEnviar, hoy,
             </div>
           </PasoEstudio>
 
-          <PasoEstudio numero={2} titulo="Lo que compraste">
+          <PasoEstudio numero={2} titulo={TITULOS_DE_PASO[1]} detalle={hechos[1] ? bien?.texto : undefined} hecho={hechos[1]}>
             <div className={s.eleccion}>
               <ListaEleccion opciones={BIENES} valor={datos.tipoBien} onElegir={(v) => cambiar('tipoBien', v)} etiqueta="Tipo de bien contratado" />
             </div>
@@ -245,15 +266,23 @@ export function PaginaReclamaciones({ empresa = {}, inicial = {}, onEnviar, hoy,
             </div>
           </PasoEstudio>
 
-          <PasoEstudio numero={3} titulo="Tu reclamo">
+          <PasoEstudio numero={3} titulo={TITULOS_DE_PASO[2]} detalle={hechos[2] ? tipo?.texto : undefined} hecho={hechos[2]}>
             <div className={s.eleccion}>
               <ListaEleccion opciones={TIPOS_RECLAMO} valor={datos.tipoReclamo} onElegir={(v) => cambiar('tipoReclamo', v)} etiqueta="Reclamo o queja" />
             </div>
-            <Campo etiqueta="¿Qué pasó?" multilinea={4} maxLength={2000} placeholder="Cuéntalo con el mayor detalle que puedas: qué pasó, cuándo y con qué pedido." {...campo('detalle')} />
-            <Campo etiqueta="¿Qué solución esperas?" multilinea maxLength={1000} placeholder="Un cambio, un reembolso, que lo vuelvan a hacer…" {...campo('pedido')} />
+            {/* Lo que se pregunta cambia con lo elegido: una queja es sobre la atención. */}
+            <Campo
+              etiqueta={esQueja ? '¿Cómo te atendimos?' : '¿Qué pasó?'}
+              multilinea={4}
+              maxLength={2000}
+              placeholder={esQueja ? 'Cuéntanos qué pasó en la atención: cuándo, por qué canal (WhatsApp, correo…) y qué te molestó.' : 'Cuéntalo con el mayor detalle que puedas: qué pasó, cuándo y con qué pedido.'}
+              {...campo('detalle')}
+            />
+            <Campo etiqueta="¿Qué solución esperas?" multilinea maxLength={1000} placeholder={esQueja ? 'Una disculpa, que lo revisen, que te contacten…' : 'Un cambio, un reembolso, que lo vuelvan a hacer…'} {...campo('pedido')} />
           </PasoEstudio>
         </div>
 
+        <AvanceHoja pasos={TITULOS_DE_PASO.map((titulo, k) => ({ titulo: titulo.toLowerCase(), hecho: hechos[k] }))} listo={datos.acepta ? 'Todo listo: revisa y envía.' : 'Todo listo: marca la casilla de abajo y envía.'} />
         <div className={s.acepta}>
           <Casilla
             activo={datos.acepta}

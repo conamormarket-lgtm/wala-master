@@ -12,7 +12,7 @@ Cómo verlo en vivo: `npm run dev` → http://localhost:3000/componentes.html �
 El pie de la Tienda de prueba también lleva aquí. Su enlace a privacidad
 apuntaba a `/politicas-de-privacidad`, que no existe, y se corrigió.
 
-| El libro (escritorio) | El libro (celular, noche) | Registrada (celular, noche) |
+| El libro (ancho, con el paso 1 hecho) | El libro (celular, noche: arriba y la queja con cuánto falta) | Registrada (celular, noche) |
 |---|---|---|
 | ![El libro de reclamaciones](reclamaciones-escritorio.webp) | ![El libro en el celular](reclamaciones-celular.webp) | ![La reclamación registrada con su código](reclamacion-registrada.webp) |
 
@@ -40,7 +40,7 @@ de ejemplo.
 
 | Parte | Componente | Piezas que usa | Datos (en la tienda) |
 |---|---|---|---|
-| P19 Libro de reclamaciones | `PaginaReclamaciones` (`paginas/Legales.jsx`) | `CabezaLegal`, `DatosProveedor` y `CodigoCopiable` (nuevas, `piezas/Legales.jsx`); `PasoEstudio` (los 3 pasos con su costura), `CamposDatosPersonales` (nombre, documento y celular, con las reglas de Mi perfil), `Campo` (con `multilinea`, nuevo), `ListaEleccion`, `Casilla`, `Aviso`, `Boton` | `empresa`; al enviar, `createDocument('libro_reclamaciones', …)` |
+| P19 Libro de reclamaciones | `PaginaReclamaciones` (`paginas/Legales.jsx`) | `CabezaLegal`, `DatosProveedor`, `CodigoCopiable`, `PasosAtencion` y `AvanceHoja` (nuevas, `piezas/Legales.jsx`); `PasoEstudio` (los 3 pasos con su costura), `CamposDatosPersonales` (nombre, documento y celular, con las reglas de Mi perfil), `Campo` (con `multilinea`, nuevo), `ListaEleccion`, `Casilla`, `Aviso`, `Boton` | `empresa`; al enviar, `createDocument('libro_reclamaciones', …)` |
 | P19 Privacidad y términos | `PaginaLegal` | `CabezaLegal`, `IndiceLegal`, `SeccionLegal` (nuevas), `TarjetaAyuda` (Kapi, el correo y WhatsApp), `Boton` | hoy los textos están escritos en el JSX de cada página (ver abajo) |
 
 Validación: `validarReclamacion(datos)` (exportada) usa `validarPerfil` para
@@ -61,7 +61,12 @@ el foco al primer error.
 
 - **Libro de reclamaciones:**
   - El libro en su sello, "Libro de Reclamaciones" con su trazo y la ley.
-    Debajo, en una línea, qué es y en cuánto se responde.
+    Debajo, qué es y que lo revisa una persona del equipo. En pantallas
+    anchas, puntos y destellos quietos al costado.
+  - **Lo que sigue** (`PasosAtencion`, desde el 2026-10-16): tres sellos
+    unidos por una costura: llenas tu hoja, recibes tu código y te
+    respondemos en máximo N días hábiles a tu correo. En el celular, uno
+    debajo del otro.
   - **Datos del proveedor**, como pide INDECOPI: razón social, RUC,
     domicilio, "Hoja de reclamación: se genera al enviar" y la fecha de hoy.
   - **1. Tus datos:** nombre completo, tipo y número de documento, celular
@@ -71,7 +76,15 @@ el foco al primer error.
   - **2. Lo que compraste:** Producto o Servicio, el monto (opcional, con
     "S/") y "¿Qué compraste?" (con el pedido como ejemplo).
   - **3. Tu reclamo:** Reclamo o Queja, cada uno con lo que significa;
-    "¿Qué pasó?" y "¿Qué solución esperas?", con su cuenta de letras.
+    "¿Qué pasó?" y "¿Qué solución esperas?", con su cuenta de letras. Con
+    Queja, la pregunta cambia a "¿Cómo te atendimos?" y los ejemplos hablan
+    de la atención.
+  - **Cada paso se marca solo** al completarse (las mismas reglas que al
+    enviar, sin mostrar errores antes de tiempo): su sello pasa a menta con
+    un check y el título dice lo elegido ("Lo que compraste: Producto").
+  - **Cuánto falta** (`AvanceHoja`), antes de la casilla: un tramo por paso
+    que se llena al completarlo y "Te falta: lo que compraste y tu
+    reclamo." o "Todo listo: marca la casilla de abajo y envía."
   - La casilla de veracidad enlaza a la Política de Privacidad. Abajo,
     "Enviar reclamación" ("Registrando…" mientras guarda) y la nota legal de
     INDECOPI.

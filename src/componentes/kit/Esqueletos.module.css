@@ -1109,6 +1109,11 @@
   width: min(100%, 780px);
 }
 
+.avanceEsq {
+  display: grid;
+  gap: 0.5rem;
+}
+
 .legalCuerpo {
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
@@ -1156,7 +1161,21 @@
   }
 
   .proveedorEsq {
-    height: 290px !important;
+    height: 299px !important;
+  }
+
+  .detalleLegalEsq {
+    height: 52px !important;
+  }
+
+  /* Lo que sigue: los tres sellos uno debajo del otro. */
+  .atencionEsq {
+    height: 166px !important;
+  }
+
+  /* La hoja con sus tres pasos, medida a 390 px. */
+  .hojaEsq {
+    min-height: 1791px !important;
   }
 }
 

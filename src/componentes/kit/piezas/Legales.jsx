@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, Copy, Check, CalendarDays } from 'lucide-react';
+import { ChevronDown, Copy, Check, CalendarDays, PenLine, Hash, Mail } from 'lucide-react';
 import Boton from '../Boton';
 import { Sello, Trazo } from '../Marca';
 import { Enlace } from '../Enlace';
@@ -124,6 +124,57 @@ export function DatosProveedor({ empresa = {}, fecha, codigo }) {
         </div>
       )}
     </dl>
+  );
+}
+
+/**
+ * Lo que pasa con una hoja de reclamación, en tres pasos con su sello: la
+ * llenas, recibes tu código y te respondemos (en cuántos días hábiles).
+ * Unidos por una costura punteada; en el celular, uno debajo del otro.
+ *  - plazo: días hábiles (15)
+ */
+export function PasosAtencion({ plazo = 15 }) {
+  const pasos = [
+    { icono: <PenLine aria-hidden="true" />, titulo: 'Llenas tu hoja', texto: 'Tus datos, lo que compraste y qué pasó.' },
+    { icono: <Hash aria-hidden="true" />, titulo: 'Recibes tu código', texto: 'Al enviarla, para hacerle seguimiento.' },
+    { icono: <Mail aria-hidden="true" />, titulo: 'Te respondemos', texto: `En máximo ${plazo} días hábiles, a tu correo.` },
+  ];
+  return (
+    <ol className={s.atencion} aria-label="Lo que sigue" data-componente="PasosAtencion">
+      {pasos.map((p, k) => (
+        <li key={p.titulo} className={s.atencionPaso}>
+          <Sello tamano={40} girar={k % 2 ? 6 : -8}>{p.icono}</Sello>
+          <span className={s.atencionTextos}>
+            <strong>{p.titulo}</strong>
+            <span>{p.texto}</span>
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/**
+ * Cuánto falta para enviar una hoja: un tramo por paso que se llena al
+ * completarlo (solo se mueve cuando la persona escribe) y una línea que dice
+ * qué falta o que ya se puede enviar.
+ *  - pasos: [{ titulo, hecho }] · listo: el texto cuando están todos
+ */
+export function AvanceHoja({ pasos = [], listo = 'Todo listo: revisa y envía.' }) {
+  const faltan = pasos.filter((p) => !p.hecho).map((p) => p.titulo);
+  const texto = faltan.length === 0
+    ? listo
+    : `Te falta: ${faltan.length > 1 ? `${faltan.slice(0, -1).join(', ')} y ${faltan[faltan.length - 1]}` : faltan[0]}.`;
+  return (
+    <div className={[s.avance, faltan.length === 0 && s.avanceListo].filter(Boolean).join(' ')} data-componente="AvanceHoja">
+      <span className={s.avanceTramos} aria-hidden="true">
+        {pasos.map((p) => <span key={p.titulo} className={s.avanceTramo}><span className={p.hecho ? s.avanceLleno : undefined} /></span>)}
+      </span>
+      <p className={s.avanceTexto} aria-live="polite">
+        {faltan.length === 0 && <Check aria-hidden="true" />}
+        {texto}
+      </p>
+    </div>
   );
 }
 

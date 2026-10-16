@@ -61,10 +61,61 @@
 
 /* ── Libro de reclamaciones ── */
 .libro {
+  position: relative;
   display: grid;
   gap: 1.25rem;
   max-width: 780px;
   margin: 0 auto;
+}
+
+/* Adornos quietos al costado de la cabeza, fuera de la hoja: solo donde
+   hay sitio (en pantallas angostas tapaban el título). */
+.adornos {
+  position: absolute;
+  z-index: 0;
+  top: -0.5rem;
+  right: -190px;
+  width: 180px;
+  height: 120px;
+  pointer-events: none;
+}
+
+.libro > :not(.adornos) {
+  position: relative;
+  z-index: 1;
+}
+
+.puntos {
+  position: absolute;
+  top: 0.5rem;
+  right: 0;
+  width: 110px;
+  color: rgba(124, 58, 237, 0.16);
+}
+
+.destello1,
+.destello2 {
+  position: absolute;
+  color: var(--violet-400, #a78bfa);
+}
+
+.destello1 {
+  top: 1.2rem;
+  right: 130px;
+  width: 20px;
+}
+
+.destello2 {
+  top: 3.6rem;
+  right: 150px;
+  width: 11px;
+  color: #fcd34d;
+}
+
+@media (max-width: 1199px) {
+  .adornos {
+    display: none;
+  }
 }
 
 .intro {

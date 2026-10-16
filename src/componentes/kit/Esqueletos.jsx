@@ -842,15 +842,17 @@ const PAGINAS = {
     </span>
   ),
   reclamaciones: () => (
-    // El libro de reclamaciones: la cabeza, los datos del proveedor y la hoja con sus tres pasos.
+    // El libro de reclamaciones: la cabeza, lo que sigue (tres sellos), los datos del proveedor,
+    // la hoja con sus tres pasos, cuánto falta y el botón.
     <span className={s.reclamosEsq}>
       <span className={s.itemMenu}>
         <Hueso forma="circulo" ancho={52} alto={52} />
-        <span className={s.filaTextos}><Hueso alto={34} ancho="min(70%, 380px)" className={s.tituloLegalEsq} /><Hueso alto={11} ancho="min(85%, 460px)" /></span>
+        <span className={s.filaTextos}><Hueso alto={34} ancho="min(70%, 380px)" className={s.tituloLegalEsq} /><Hueso alto={11} ancho="min(85%, 460px)" className={s.detalleLegalEsq} /></span>
       </span>
-      <Hueso alto={12} ancho="80%" />
-      <Hueso forma="bloque" alto={128} ancho="100%" className={s.proveedorEsq} />
-      <Caja alto={720}>
+      <EsqueletoTexto lineas={2} alto={12} ultima="45%" />
+      <Hueso forma="bloque" alto={114} ancho="100%" className={s.atencionEsq} />
+      <Hueso forma="bloque" alto={194} ancho="100%" className={s.proveedorEsq} />
+      <Caja alto={1535} className={s.hojaEsq}>
         {repetir(3, (k) => (
           <span key={k} className={s.legalSeccion}>
             <span className={s.itemMenu}><Hueso forma="circulo" ancho={30} alto={30} /><Hueso alto={16} ancho="35%" /></span>
@@ -858,7 +860,10 @@ const PAGINAS = {
           </span>
         ))}
       </Caja>
-      <Hueso forma="pildora" alto={54} ancho="100%" />
+      <span className={s.avanceEsq}><Hueso alto={6} ancho="100%" /><Hueso alto={16} ancho="35%" /></span>
+      <span className={s.itemMenu}><Hueso forma="bloque" ancho={22} alto={22} /><EsqueletoTexto lineas={2} alto={12} ultima="55%" /></span>
+      <Hueso forma="pildora" alto={52} ancho="100%" />
+      <EsqueletoTexto lineas={2} alto={11} ultima="70%" />
     </span>
   ),
   palabra: () => (
