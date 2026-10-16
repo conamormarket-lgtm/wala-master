@@ -451,24 +451,6 @@
   color: #fca5a5;
 }
 
-.areaTexto {
-  width: 100%;
-  min-height: 3.2rem;
-  padding: 0.7rem 0;
-  border: 0;
-  background: transparent;
-  color: var(--color-text);
-  font: inherit;
-  font-size: 1rem;
-  resize: vertical;
-  outline: none;
-}
-
-/* El oscuro global pinta los textarea: este va dentro del campo, sin fondo propio. */
-:global([data-theme='dark']) .areaTexto {
-  background: transparent;
-}
-
 .muestraLetra {
   font-size: 1.05rem;
   line-height: 1;

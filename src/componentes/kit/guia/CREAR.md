@@ -558,6 +558,13 @@ alrededor, por partes.
   salía arriba y abajo. Si la tienda no manda el `aspecto` de una imagen
   subida, el kit lo mide al cargarla (`medirAspecto`); sin él tampoco
   funcionaban bien las guías ni el aviso de "fuera de la zona".
+- **"Escribe tu texto" sin agarradera** (2026-10-16), en los dos lados: el
+  campo empieza en dos líneas y crece solo con lo escrito, sin la esquina para
+  estirarlo a mano (se veía poco cuidado). En el kit es `Campo multilinea={2}`
+  (`AreaTexto` de `Formulario.jsx`, con su cuenta "76/120"); en
+  `CrearStudioPage`, `.textoInput` con `resize: none`, tope de 9 rem y su
+  `onInput` que ajusta el alto. **Diferencia a propósito:** la tienda no
+  muestra la cuenta de letras (ya tenía `maxLength` 120).
 - No se puede perder: el autoguardado del borrador, el aviso al salir sin
   guardar, la regla de la calidad (`calidadDeCapa`), quitar el fondo y
   recortar solo con sesión, `?combo=&pieza=` que vuelve al combo, `?copiar=`

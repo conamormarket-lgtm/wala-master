@@ -3839,12 +3839,14 @@ const CrearStudioPage = () => {
                 <>
                   <label className={styles.etiquetaCampo}>
                     Escribe tu texto
+                    {/* Crece solo con lo escrito, sin agarradera (como Campo multilinea del kit). */}
                     <textarea
                       className={styles.textoInput}
                       value={capaSel.text}
                       rows={2}
                       maxLength={120}
                       onChange={(e) => editarCapa(capaSel.id, { text: e.target.value })}
+                      onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }}
                     />
                   </label>
                   <span className={styles.etiquetaCampo}>Letra</span>

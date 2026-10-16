@@ -641,7 +641,9 @@
   padding: 0.6rem 0.75rem;
   font-size: 1rem;
   font-family: inherit;
-  resize: vertical;
+  max-height: 9rem;
+  overflow-y: auto;
+  resize: none;
   background: var(--blanco);
   color: var(--gris-texto-principal);
   box-sizing: border-box;

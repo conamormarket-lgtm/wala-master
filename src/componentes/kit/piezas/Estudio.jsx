@@ -1337,12 +1337,8 @@ export function PanelCapa({
 
       {!imagen && (
         <>
-          <Campo
-            etiqueta="Escribe tu texto"
-            control={(aria) => (
-              <textarea {...aria} className={s.areaTexto} rows={2} maxLength={120} value={capa.texto || ''} onChange={(e) => onCambiar?.({ texto: e.target.value })} />
-            )}
-          />
+          {/* Crece solo con lo escrito, sin agarradera (Campo multilinea). */}
+          <Campo etiqueta="Escribe tu texto" multilinea={2} maxLength={120} value={capa.texto || ''} onChange={(e) => onCambiar?.({ texto: e.target.value })} />
           {fuentes.length > 0 && (
             <Campo etiqueta="Letra" opciones={fuentes.map((f) => ({ ...f, icono: <span className={s.muestraLetra} style={{ fontFamily: `'${f.valor}'` }}>Aa</span> }))} buscable value={capa.fuente} onChange={(e) => onCambiar?.({ fuente: e.target.value })} />
           )}
