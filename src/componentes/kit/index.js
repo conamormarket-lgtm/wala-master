@@ -51,7 +51,7 @@ export { MarcoAcceso, PaginaLogin, PaginaRegistro, PaginaRecuperar, PaginaComple
 export { PaginaCrear } from './paginas/Crear';
 export { PaginaComunidad } from './paginas/Comunidad';
 export { PaginaCreacion } from './paginas/Creacion';
-export { PaginaVerDiseno } from './paginas/VerDiseno';
+export { PaginaVerDiseno, resumenDeDiseno } from './paginas/VerDiseno';
 export { PaginaCombo } from './paginas/Combo';
 export { PaginaEstudio } from './paginas/Estudio';
 export { PaginaProducto } from './paginas/Producto';

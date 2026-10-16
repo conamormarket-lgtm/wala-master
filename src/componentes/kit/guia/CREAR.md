@@ -174,17 +174,29 @@ Solo la ve su dueño.
 
 Es lo que abre el asesor desde el WhatsApp de un pedido, sin sesión.
 
-- **Cabeza:** "Combo · 2 prendas" y el nombre del diseño.
+- **Cabeza:** "Combo · 2 prendas", el nombre del diseño con su `Trazo` y
+  **"Copiar resumen"**: deja el pedido en texto para pegarlo en el ERP o el
+  WhatsApp (`resumenDeDiseno`: una línea por prenda con color, talla,
+  nombre y lados, y "Espalda sin diseño" si va lisa).
 - **Cada prenda:** una tarjeta con su número en un sello y el color con su
-  punto, la talla en una píldora y el nombre de la pieza.
-- **Fotos:** las de cada lado, con su nombre. Un lado **sin diseño** va
-  punteado y dice "Este lado va liso, en Blanco", para que no parezca que
-  falta la foto.
+  punto (`--borde-muestra`), la talla en una píldora y el nombre de la
+  pieza. Un combo va con sus prendas lado a lado en escritorio.
+- **Fotos:** las de cada lado, con su nombre, sobre el escenario
+  (`FotoProducto`) y **enteras**: cada recuadro toma el alto de su vista
+  previa (cambia según la prenda; antes, en un cuadrado, se cortaban abajo).
+  Al tocar una, se ve **en grande en una `HojaInferior`** con "Abrir la
+  imagen original" (antes abría otra pestaña); la lupa sale al pasar el
+  ratón. Un lado **sin diseño** va punteado, con una muestra grande del
+  color, y dice "Este lado va liso, en Blanco", para que no parezca que
+  falta la foto; se estira al alto de la foto de al lado.
 - **Estados:** cargando (`Cargando`) y no disponible (Kapi triste).
 
 Hoy `VerDisenoPage.jsx` ya usa `Cargando` y `EstadoVacio` del kit. Para
 llevarla a la tienda, devuelve `<PaginaVerDiseno titulo piezas cargando
-noDisponible />` con los datos de `verDisenoCompartido`.
+noDisponible />` con los datos de `verDisenoCompartido`. **Encontrado de
+paso (2026-10-16):** en la tienda las vistas previas (900 px de ancho y el
+alto según la foto de la prenda) van en un cuadrado y se cortan abajo; al
+migrar se arregla solo.
 
 ### P11 · Un combo (`paginas/Combo.jsx`)
 

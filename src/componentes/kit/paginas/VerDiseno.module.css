@@ -2,13 +2,17 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
-  width: min(100%, 980px);
+  width: min(100%, 1040px);
   margin: 0 auto;
 }
 
+/* El nombre con su trazo y, al lado, "Copiar resumen" (baja en el celular). */
 .cabeza {
-  display: grid;
-  gap: 0.3rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
 }
 
 .rotulo {
@@ -19,8 +23,12 @@
   text-transform: uppercase;
 }
 
+:global([data-theme='dark']) .rotulo {
+  color: var(--violet-300);
+}
+
 .titulo {
-  margin: 0;
+  margin: 0.2rem 0 0;
   font-family: var(--fuente-marca);
   font-size: clamp(1.6rem, 4.5vw, 2.3rem);
   font-weight: 900;
@@ -28,12 +36,30 @@
   line-height: 1.1;
 }
 
+.trazo {
+  display: block;
+  width: 100%;
+  max-width: 240px;
+  height: 11px;
+  margin-top: 0.2rem;
+  color: #a78bfa;
+}
+
+/* Las prendas: una debajo de otra; un combo, lado a lado en escritorio. */
 .piezas {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+@media (min-width: 860px) {
+  .piezasCombo {
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    align-items: start;
+  }
 }
 
 .pieza {
@@ -51,6 +77,12 @@
   gap: 0.8rem;
 }
 
+.datosTexto {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
 .numero {
   font-family: var(--fuente-marca);
   font-size: 1.05rem;
@@ -59,8 +91,10 @@
 
 .prenda {
   margin: 0;
-  font-size: 1.05rem;
-  font-weight: 800;
+  font-family: var(--fuente-marca);
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
 }
 
 .detalle {
@@ -68,7 +102,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem 0.75rem;
-  margin: 0.2rem 0 0;
+  margin: 0;
   color: var(--color-text-muted);
   font-size: 0.86rem;
 }
@@ -83,52 +117,73 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 3px var(--color-border);
+  box-shadow: inset 0 0 0 1px var(--borde-muestra), 0 0 0 2px var(--color-surface), 0 0 0 3px var(--color-border);
 }
 
 .talla {
-  padding: 0.1rem 0.5rem;
+  padding: 0.1rem 0.55rem;
   border-radius: 999px;
   background: var(--primary-light);
   color: var(--primary-color);
   font-weight: 700;
 }
 
-.nombre {
-  font-style: italic;
+:global([data-theme='dark']) .talla {
+  color: var(--violet-200);
 }
 
+.nombre {
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+  font-style: italic;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Los lados: cada foto con su propio alto (la vista previa cambia de
+   proporción según la prenda: sin recortes ni franjas). Un lado liso se
+   estira al alto de la foto de al lado. */
 .fotos {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));
+  align-items: stretch;
   gap: 0.75rem;
 }
 
 .foto {
   position: relative;
-  display: grid;
-  place-items: center;
-  aspect-ratio: 1 / 1;
-  overflow: hidden;
-  border-radius: 16px;
-  background: var(--escenario-foto, #f5f4f8);
-}
-
-.foto img {
+  display: block;
   width: 100%;
-  height: 100%;
-  object-fit: contain;
-  transition: transform 0.5s var(--ease-signature);
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 6px 16px 16px 16px;
+  background: var(--escenario-foto, #f5f4f8);
+  font: inherit;
+  isolation: isolate;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  a.foto:hover img {
-    transform: scale(1.04);
-  }
+button.foto {
+  cursor: zoom-in;
+}
+
+.fotoImagen {
+  width: 100%;
+}
+
+.fotoImagen > img {
+  height: auto;
+  /* Mientras carga guarda el lugar (la proporción de una vista previa); ya
+     cargada, la suya. */
+  aspect-ratio: auto 900 / 1036;
+  transition: transform 0.5s var(--ease-signature);
 }
 
 .lado {
   position: absolute;
+  z-index: 1;
   top: 10px;
   left: 10px;
   padding: 0.2rem 0.6rem;
@@ -139,15 +194,62 @@
   font-weight: 800;
 }
 
-/* Un lado sin diseño: punteado, para que se lea como "a propósito". */
+/* La lupa: aparece al pasar el ratón (en el celular, siempre a la vista). */
+.lupa {
+  position: absolute;
+  z-index: 1;
+  right: 10px;
+  bottom: 10px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(28, 20, 51, 0.62);
+  color: #fff;
+  transition: opacity var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature);
+}
+
+.lupa svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lupa {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  .foto:hover .lupa {
+    opacity: 1;
+    transform: none;
+  }
+
+  button.foto:hover .fotoImagen > img {
+    transform: scale(1.04);
+  }
+}
+
+.foto:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+/* Un lado sin diseño: punteado, con el color de la prenda, para que se lea
+   como "a propósito". */
 .liso {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
   border: 2px dashed var(--color-border);
   background: transparent;
 }
 
 .lisoTexto {
   display: grid;
-  gap: 0.2rem;
+  justify-items: center;
+  gap: 0.25rem;
   padding: 0 1rem;
   color: var(--color-text-muted);
   font-size: 0.82rem;
@@ -159,6 +261,26 @@
   font-size: 0.95rem;
 }
 
+.muestraLiso {
+  width: 52px;
+  height: 52px;
+  margin-bottom: 0.4rem;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--borde-muestra), 0 6px 14px -8px rgba(28, 20, 51, 0.45);
+  transform: rotate(-8deg);
+}
+
+/* La foto en grande, en la hoja. */
+.fotoGrande {
+  width: 100%;
+  border-radius: 14px;
+}
+
+.fotoGrande > img {
+  max-height: 70vh;
+  height: auto;
+}
+
 .vacio {
   width: min(100%, 520px);
   margin: 0 auto;
@@ -166,4 +288,11 @@
   border: 1px solid var(--color-border);
   border-radius: 24px;
   background: var(--color-surface);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lupa,
+  .fotoImagen > img {
+    transition: none;
+  }
 }
