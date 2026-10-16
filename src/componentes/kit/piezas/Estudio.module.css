@@ -785,15 +785,22 @@
 }
 
 /* ── Atajos (AtajosEstudio) ────────────────────────────── */
+/* Las columnas dependen del ancho de la hoja, no de la pantalla: en el modal de
+   480 px va en una (antes, en dos, las teclas pisaban las descripciones). */
+.atajos {
+  container-type: inline-size;
+}
+
 .atajosGrupos {
   display: grid;
-  gap: 1rem;
+  gap: 1.1rem;
   padding-bottom: 0.75rem;
 }
 
-@media (min-width: 720px) {
+@container (min-width: 640px) {
   .atajosGrupos {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem 1.75rem;
   }
 }
 
@@ -805,19 +812,38 @@
 
 .atajosLista {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.35rem 0.75rem;
+  /* La columna de las teclas mide lo mismo en todos los grupos: las
+     descripciones quedan alineadas. En el celular, como mucho la mitad. */
+  grid-template-columns: min(14.5rem, 55%) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem 1rem;
   margin: 0;
-  font-size: 0.82rem;
+  font-size: 0.84rem;
 }
 
 .atajosLista dt {
-  white-space: nowrap;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.4rem;
 }
 
 .atajosLista dd {
   margin: 0;
   color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+/* Una combinación ("Ctrl + Shift + Z") nunca se parte. */
+.atajoCombo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  white-space: nowrap;
+}
+
+.atajoMas {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
 }
 
 .atajosLista kbd {
@@ -837,6 +863,7 @@
 }
 
 .atajoO {
+  margin-right: 0.2rem;
   color: var(--color-text-muted);
   font-size: 0.72rem;
 }

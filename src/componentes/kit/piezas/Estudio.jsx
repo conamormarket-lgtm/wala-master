@@ -1631,27 +1631,31 @@ export function GuiaGestos({ onEntendido }) {
 
 export function AtajosEstudio({ lados = [] }) {
   return (
-    <div className={s.atajosGrupos} data-componente="AtajosEstudio">
-      {gruposAtajos(lados).map((g) => (
-        <section key={g.titulo} className={s.atajosGrupo}>
-          <h3 className={s.rotulo}>{g.titulo}</h3>
-          <dl className={s.atajosLista}>
-            {g.atajos.map(([combinaciones, que]) => (
-              <React.Fragment key={que}>
-                <dt>
-                  {combinaciones.map((teclas, i) => (
-                    <React.Fragment key={teclas.join('+')}>
-                      {i > 0 && <span className={s.atajoO}> o </span>}
-                      {teclas.map((t, j) => <React.Fragment key={t}>{j > 0 && '+'}<kbd>{t}</kbd></React.Fragment>)}
-                    </React.Fragment>
-                  ))}
-                </dt>
-                <dd>{que}</dd>
-              </React.Fragment>
-            ))}
-          </dl>
-        </section>
-      ))}
+    <div className={s.atajos} data-componente="AtajosEstudio">
+      <div className={s.atajosGrupos}>
+        {gruposAtajos(lados).map((g) => (
+          <section key={g.titulo} className={s.atajosGrupo}>
+            <h3 className={s.rotulo}>{g.titulo}</h3>
+            <dl className={s.atajosLista}>
+              {g.atajos.map(([combinaciones, que]) => (
+                <React.Fragment key={que}>
+                  <dt>
+                    {/* Cada combinación entera en una línea; si no caben, la siguiente baja. */}
+                    {combinaciones.map((teclas, i) => (
+                      <span key={teclas.join('+')} className={s.atajoCombo}>
+                        {i > 0 && <span className={s.atajoO}>o</span>}
+                        {/* Las flechas son cualquiera de ellas, no una combinación: van sin "+". */}
+                        {teclas.map((t, j) => <React.Fragment key={t}>{j > 0 && !teclas.every((x) => '←↑→↓'.includes(x)) && <span className={s.atajoMas}>+</span>}<kbd>{t}</kbd></React.Fragment>)}
+                      </span>
+                    ))}
+                  </dt>
+                  <dd>{que}</dd>
+                </React.Fragment>
+              ))}
+            </dl>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

@@ -565,6 +565,13 @@ alrededor, por partes.
   `CrearStudioPage`, `.textoInput` con `resize: none`, tope de 9 rem y su
   `onInput` que ajusta el alto. **Diferencia a propósito:** la tienda no
   muestra la cuenta de letras (ya tenía `maxLength` 120).
+- **Los atajos de teclado, legibles** (2026-10-16, solo el kit: la tienda ya
+  estaba bien). `AtajosEstudio` se partía en dos columnas por el ancho de la
+  pantalla dentro de una hoja de 480 px, y las teclas largas pisaban las
+  descripciones. Ahora las columnas siguen el ancho de la hoja (una en el
+  modal), la columna de teclas mide lo mismo en todos los grupos, una
+  combinación nunca se parte y las flechas van sin "+" (son cualquiera de
+  ellas), como `AtajosTeclado` de `CrearStudioPage` (`juntas`).
 - No se puede perder: el autoguardado del borrador, el aviso al salir sin
   guardar, la regla de la calidad (`calidadDeCapa`), quitar el fondo y
   recortar solo con sesión, `?combo=&pieza=` que vuelve al combo, `?copiar=`
