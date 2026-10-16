@@ -136,10 +136,6 @@ const GiftExperiencePage = lazy(() => import('./pages/GiftExperiencePage'));
 
 // MussaPage retirado: /MUSSA ahora es la página de la marca vía DynamicLandingPage (/:slug).
 const SearchPage = lazy(() => import('./pages/SearchPage'));
-const NichePage = lazy(() => import('./pages/NichePage'));
-const VendorPanel = lazy(() => import('./pages/VendorPanel'));
-const NichesPage = lazy(() => import('./pages/NichesPage'));
-const VendorStorefrontPage = lazy(() => import('./pages/VendorStorefrontPage'));
 const SorteosPage = lazy(() => import('./pages/SorteosPage'));
 
 // Página pública "Sorteo por suscripción" (auto-débito Culqi/PayPal). Rutas
@@ -175,11 +171,8 @@ const AdminProductoFormV2 = lazy(() => import('./pages/Tienda/admin/AdminProduct
 const AdminCategorias = lazy(() => import('./pages/admin/AdminCategorias'));
 const AdminColecciones = lazy(() => import('./pages/admin/AdminColecciones'));
 const AdminCatalogAttributes = lazy(() => import('./pages/admin/AdminCatalogAttributes'));
-const AdminNichos = lazy(() => import('./pages/admin/AdminNichos'));
-const AdminVendors = lazy(() => import('./pages/admin/AdminVendors'));
 const AdminRecompensas = lazy(() => import('./pages/admin/AdminRecompensas'));
 const AdminEnviosZonas = lazy(() => import('./pages/admin/AdminEnviosZonas'));
-const AdminPayouts = lazy(() => import('./pages/admin/AdminPayouts'));
 const AdminBlueprints = lazy(() => import('./pages/admin/AdminBlueprints'));
 const AdminSorteos = lazy(() => import('./pages/admin/AdminSorteos'));
 const AdminSorteoDetalle = lazy(() => import('./pages/admin/AdminSorteoDetalle'));
@@ -479,11 +472,8 @@ function App() {
                                       <Route path="categorias" element={<AdminCategorias />} />
                                       <Route path="colecciones" element={<AdminColecciones />} />
                                       <Route path="atributos-catalogo" element={<AdminCatalogAttributes />} />
-                                      <Route path="nichos" element={<AdminNichos />} />
-                                      <Route path="vendedores" element={<AdminVendors />} />
                                       <Route path="recompensas" element={<AdminRecompensas />} />
                                       <Route path="envios" element={<AdminEnviosZonas />} />
-                                      <Route path="payouts" element={<AdminPayouts />} />
                                       <Route path="blueprints" element={<AdminBlueprints />} />
 
                                       <Route path="whatsapp" element={<AdminWhatsApp />} />
@@ -557,12 +547,13 @@ function App() {
                                       slug case-insensitive) cae en el catch-all /:slug -> DynamicLandingPage
                                       y resuelve la landingPage 'MUSSA' como página de marca editable. */}
 
-                                  {/* Fase 1: búsqueda con facetas y páginas de nicho (multi-vendor) */}
                                   <Route path="/buscar" element={<SearchPage />} />
-                                  <Route path="/nicho/:slug" element={<NichePage />} />
-                                  <Route path="/nichos" element={<NichesPage />} />
-                                  <Route path="/vendedor" element={<RutaPrivada><VendorPanel /></RutaPrivada>} />
-                                  <Route path="/tienda-vendedor/:slug" element={<VendorStorefrontPage />} />
+                                  {/* Nichos, vendedores y su panel: retirados el 2026-10-16 (nadie los usaba).
+                                      Un enlace viejo va a la tienda. */}
+                                  <Route path="/nicho/:slug" element={<Navigate to="/tienda" replace />} />
+                                  <Route path="/nichos" element={<Navigate to="/tienda" replace />} />
+                                  <Route path="/vendedor" element={<Navigate to="/tienda" replace />} />
+                                  <Route path="/tienda-vendedor/:slug" element={<Navigate to="/tienda" replace />} />
                                   {/* Ofertas flash y el cofre diario: retirados el 2026-10-16. Un enlace viejo va a la tienda. */}
                                   <Route path="/ofertas" element={<Navigate to="/tienda" replace />} />
                                   <Route path="/sorteos" element={<SorteosPage />} />

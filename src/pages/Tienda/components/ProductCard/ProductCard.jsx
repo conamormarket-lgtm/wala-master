@@ -93,7 +93,8 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
   // ver ese archivo para el detalle de por qué "hasVariants" solo no alcanza).
   // Antes esto solo estaba resuelto en PremiumProductCard (la tarjeta de la
   // tienda); esta tarjeta más vieja -la que usan Wishlist, WishlistPublic,
-  // VendorStorefrontPage y NichePage- seguía agregando con variante vacía.
+  // la tienda de un vendedor y la página de un nicho, ya retiradas- seguía
+  // agregando con variante vacía.
   const necesitaElegir = !onAddToCartOverride && productNeedsVariantSelection(product);
 
   // Qué decirle al cliente en el botón. Antes era siempre "Elegir color y

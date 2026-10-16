@@ -269,18 +269,6 @@ const AdminLayout = () => {
                     Atributos del catálogo
                   </NavLink>
                   <NavLink
-                    to="/admin/nichos"
-                    className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
-                  >
-                    Nichos
-                  </NavLink>
-                  <NavLink
-                    to="/admin/vendedores"
-                    className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
-                  >
-                    Vendedores
-                  </NavLink>
-                  <NavLink
                     to="/admin/blueprints"
                     className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
                   >
@@ -297,12 +285,6 @@ const AdminLayout = () => {
                     className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
                   >
                     Zonas de Envío
-                  </NavLink>
-                  <NavLink
-                    to="/admin/payouts"
-                    className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
-                  >
-                    Pagos a Vendedores
                   </NavLink>
                   <NavLink
                     to="/admin/marcas"

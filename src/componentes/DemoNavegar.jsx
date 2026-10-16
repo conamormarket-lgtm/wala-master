@@ -1,106 +1,12 @@
-import React, { useState } from 'react';
-import {
-  PaginaNichos, PaginaColeccion, nichoDesdeFirestore, tarjetaDesdeProducto,
-} from './kit';
 import TIENDA from './demo/tienda.json';
-import MARCAS from './demo/marcas.json';
 import LANDINGS from './demo/landings.json';
 
 /*
- * Navegar la tienda en la Tienda de prueba: los nichos (/nichos y
- * /nicho/:slug), la tienda de un vendedor
- * (/tienda-vendedor/:slug) y las landings del builder (/:slug).
- *
- * Qué es real y qué es de ejemplo:
- *  - Los nichos son DE EJEMPLO: hoy niches está vacía en wala.pe. Los
- *    productos a los que apuntan sí son reales (demo/tienda.json).
- *  - El vendedor "WALA" es el único real de vendors (sin productos ni logo);
- *    el otro vendedor es de ejemplo, con los productos reales de MUSSA.
- *  - Las landings son reales: landingPages + pages/{slug} y los productos de
- *    esas marcas (demo/landings.json).
+ * Las landings del builder (/:slug) en la Tienda de prueba. Son reales:
+ * landingPages + pages/{slug} y los productos de esas marcas
+ * (demo/landings.json). (Los nichos y los vendedores se retiraron el
+ * 2026-10-16.)
  */
-
-const espera = (ms) => new Promise((r) => { setTimeout(r, ms); });
-const POR_PAGINA = 12;
-
-/* ── Nichos ── */
-
-const deMarca = (nombre) => {
-  const m = MARCAS.find((x) => x.name === nombre);
-  return TIENDA.productos.filter((p) => p.brandId === m?.id);
-};
-const foto = (p) => (p ? tarjetaDesdeProducto(p).imagen : undefined);
-
-/* Nichos de ejemplo con los campos de niches. "regala-con-amor" es el nicho
-   por defecto de verdad (DEFAULT_NICHE_ID): hoy todos los productos caen ahí. */
-const NICHOS_EJEMPLO = [
-  { id: 'n1', slug: 'regala-con-amor', name: 'Regala con amor', type: 'general', order: 1, active: true, productos: TIENDA.productos, imageUrl: foto(TIENDA.productos[3]) },
-  { id: 'n2', slug: 'anime', name: 'Anime y series', type: 'general', order: 2, active: true, productos: deMarca('Con Amor Geeks'), imageUrl: foto(deMarca('Con Amor Geeks')[0]) },
-  { id: 'n3', slug: 'parejas', name: 'Para parejas', type: 'personalizados', order: 3, active: true, productos: deMarca('Con Amor Parejas') },
-  { id: 'n4', slug: 'relojes', name: 'Relojes y accesorios', type: 'general', order: 4, active: true, productos: deMarca('Yoryo') },
-  { id: 'n5', slug: 'oculto', name: 'Nicho inactivo', type: 'general', order: 5, active: false, productos: [] },
-];
-
-/* Vendedores: WALA es el real (sin slug, logo ni productos); el otro, de ejemplo. */
-const MUSSA = MARCAS.find((x) => x.name === 'MUSSA');
-const VENDEDORES = [
-  { id: 's3Tti2DCqMz6gTLihH1Y', name: 'WALA', productos: [] },
-  { id: 'v-mussa', slug: 'mussa', name: 'MUSSA', logoUrl: MUSSA?.logoUrl, productos: deMarca('MUSSA') },
-];
-
-export const VISTAS_NAVEGAR = [
-  ['Todos los nichos', '/nichos'],
-  ['Un nicho', '/nicho/regala-con-amor'],
-  ['Nicho sin productos', '/nicho/relojes-vacio'],
-  ['Un vendedor', '/tienda-vendedor/mussa'],
-  ['WALA (el vendedor real)', '/tienda-vendedor/s3Tti2DCqMz6gTLihH1Y'],
-];
-
-export const ESTADOS_NAVEGAR = [
-  ['noEncontrado', 'No encontrado'],
-  ['vacia', 'Sin nichos'],
-  ['cargando', 'Cargando'],
-];
-
-export function NavegarDemo({ ruta = '/nichos', estados = [], catalogo, onAgregar }) {
-  const [paginas, setPaginas] = useState(1);
-  const [cargandoMas, setCargandoMas] = useState(false);
-  const cargando = estados.includes('cargando') ? 'cargando' : undefined;
-  if (ruta === '/nichos') {
-    const nichos = estados.includes('vacia') ? [] : NICHOS_EJEMPLO
-      .filter((n) => n.active !== false)
-      .map((n) => nichoDesdeFirestore(n, { cuenta: n.productos.length }));
-    return <PaginaNichos key={estados.join()} estado={cargando} nichos={nichos} />;
-  }
-  const [, tipoRuta, slug] = ruta.split('/');
-  const vendedor = tipoRuta === 'tienda-vendedor';
-  const doc = vendedor
-    ? VENDEDORES.find((v) => v.slug === slug || v.id === slug)
-    : slug === 'relojes-vacio' ? { ...NICHOS_EJEMPLO[3], name: 'Relojes de pared', productos: [] } : NICHOS_EJEMPLO.find((n) => n.slug === slug || n.id === slug);
-  const lista = doc?.productos || [];
-  const cargarMas = async () => {
-    setCargandoMas(true);
-    await espera(500);
-    setPaginas((n) => n + 1);
-    setCargandoMas(false);
-  };
-  return (
-    <PaginaColeccion
-      key={`${ruta}-${estados.join()}`}
-      tipo={vendedor ? 'vendedor' : 'nicho'}
-      estado={cargando || (!doc || estados.includes('noEncontrado') ? 'noEncontrado' : undefined)}
-      titulo={doc?.name}
-      imagen={vendedor ? doc?.logoUrl : doc?.imageUrl}
-      total={lista.length}
-      productos={lista.slice(0, paginas * POR_PAGINA)}
-      hayMas={lista.length > paginas * POR_PAGINA}
-      onCargarMas={cargarMas}
-      cargandoMas={cargandoMas}
-      catalogo={catalogo}
-      onAgregar={onAgregar}
-    />
-  );
-}
 
 /* ── Landings del builder (/:slug) ── */
 

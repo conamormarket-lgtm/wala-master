@@ -1027,23 +1027,6 @@
   }
 }
 
-/* ── Nichos y colección (nicho o vendedor) ── */
-.nichosEsq {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1.1rem;
-}
-
-.nichoEsq {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.pieNavegarEsq {
-  justify-content: center;
-  margin-top: 0.75rem;
-}
-
 /* Ver diseño: medida real (cabeza de ~90 px y prendas de ~400 px, lado a
    lado en escritorio). */
 .verDisenoEsq {
@@ -1110,30 +1093,6 @@
   .verDisenoFotos > :nth-child(n + 2) {
     height: 220px !important;
     aspect-ratio: auto !important;
-  }
-}
-
-.coleccionCabeza {
-  display: grid;
-  gap: 1rem;
-  /* Con la medida real: migas, el logo con el nombre y el aire hasta la grilla. */
-  padding-bottom: 1.6rem;
-}
-
-.coleccionCabeza .itemMenu {
-  gap: 1rem;
-}
-
-@container esqueleto (max-width: 900px) {
-  .nichosEsq {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@container esqueleto (max-width: 600px) {
-  .nichosEsq {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.85rem;
   }
 }
 

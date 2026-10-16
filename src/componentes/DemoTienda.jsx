@@ -20,7 +20,7 @@ import { ENVIO_ESTANDAR, ENVIO_GRATIS_DESDE } from '../constants/envio';
 import { LegalesDemo, VISTAS_LEGALES, ESTADOS_LEGALES } from './DemoLegales';
 import { JuegosDemo, VISTAS_JUEGOS, ESTADOS_JUEGOS } from './DemoJuegos';
 import { CampanasDemo, VISTAS_CAMPANAS, ESTADOS_CAMPANAS } from './DemoCampanas';
-import { NavegarDemo, VISTAS_NAVEGAR, ESTADOS_NAVEGAR, LANDINGS_DEMO, VISTAS_LANDING, datosLanding } from './DemoNavegar';
+import { LANDINGS_DEMO, VISTAS_LANDING, datosLanding } from './DemoNavegar';
 import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR, ComunidadDemo, ESTADOS_COMUNIDAD, CreacionDemo, ESTADOS_CREACION, VerDisenoDemo, ESTADOS_VER, CASOS_VER, ComboDemo, ESTADOS_COMBO, EstudioDemo, ESTADOS_ESTUDIO } from './DemoCuenta';
 import INICIO from './demo/inicio.json';
 import TIENDA from './demo/tienda.json';
@@ -70,7 +70,6 @@ const PAGINAS = [
   { id: 'minijuegos', texto: 'Minijuegos', ruta: '/minijuegos' },
   { id: 'juego', texto: 'Un juego', ruta: '/palabra-del-dia' },
   { id: 'buscar', texto: 'Buscar', ruta: '/buscar' },
-  { id: 'nichos', texto: 'Nichos y vendedores', ruta: '/nichos' },
   { id: 'landing', texto: 'Landing de marca', ruta: '/conamorgeeks' },
   { id: 'legales', texto: 'Legales', ruta: '/libro-de-reclamaciones' },
   { id: 'campanas', texto: 'Sorteos y campañas', ruta: '/sorteos' },
@@ -100,7 +99,7 @@ const ABRIR_ESTUDIO = [
 ];
 
 const PAGINA_DE_RUTA = {
-  '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/checkout': 'checkout', '/encuesta-suscripcion': 'encuesta', '/personalizar': 'crear', '/comunidad': 'comunidad', '/ofertas': 'tienda', '/nichos': 'nichos',
+  '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/checkout': 'checkout', '/encuesta-suscripcion': 'encuesta', '/personalizar': 'crear', '/comunidad': 'comunidad', '/ofertas': 'tienda', '/nichos': 'tienda',
   ...Object.fromEntries(VISTAS_LEGALES.map(([, r]) => [r, 'legales'])),
   ...Object.fromEntries(VISTAS_JUEGOS.map(([, r]) => [r, 'juego'])),
   ...Object.fromEntries(VISTAS_CAMPANAS.filter(([, r]) => !r.startsWith('/invitar/')).map(([, r]) => [r, 'campanas'])),
@@ -109,7 +108,7 @@ const PAGINA_DE_RUTA = {
 };
 
 /** Pestaña de la barra inferior que se enciende en cada página. */
-const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', nichos: 'tienda', landing: 'tienda', juego: 'juegos', campanas: 'tienda', producto: 'tienda', checkout: 'tienda', regalar: 'tienda', pagoRapido: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
+const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', landing: 'tienda', juego: 'juegos', campanas: 'tienda', producto: 'tienda', checkout: 'tienda', regalar: 'tienda', pagoRapido: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
 
 /* Estados de la Zona Arcade para probar (como el modo diseño de la tienda). */
 const RULETAS = [
@@ -286,9 +285,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [estadosEstudio, setEstadosEstudio] = useState([]);
   const [estadosCombo, setEstadosCombo] = useState([]);
   const [rutaAcceso, setRutaAcceso] = useState('/login');
-  // Navegar la tienda: nichos y vendedores, landings del builder.
-  const [rutaNavegar, setRutaNavegar] = useState('/nichos');
-  const [estadosNavegar, setEstadosNavegar] = useState([]);
+  // Las landings del builder.
   const [rutaLanding, setRutaLanding] = useState(VISTAS_LANDING[0][1]);
   const [filtrosLanding, setFiltrosLanding] = useState({});
   const [rutaLegal, setRutaLegal] = useState(VISTAS_LEGALES[0][1]);
@@ -352,8 +349,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     // Una invitación no tiene página: como la tienda, lleva al registro y el aviso queda arriba.
     if (ruta.startsWith('/invitar/')) { setExtras((xs) => (xs.includes('invitacion') ? xs : [...xs, 'invitacion'])); setEstadoInvitacion('nueva'); setRutaAcceso('/registro'); irA('acceso'); return; }
     if (ruta.startsWith('/l/') || ruta.startsWith('/sorteos/') || ruta.startsWith('/suscrito-sorteo/')) { setRutaCampana(ruta.startsWith('/l/') ? ruta : ruta.replace(/\/[^/]+$/, '')); setEstadosCampana([]); irA('campanas'); return; }
-    // Los nichos, un nicho o la tienda de un vendedor.
-    if (/^\/(nicho|tienda-vendedor)\//.test(ruta) || ruta === '/nichos') { setRutaNavegar(ruta); irA('nichos'); return; }
+    // Los nichos y los vendedores se retiraron: como la tienda, van a /tienda.
+    if (/^\/(nicho|tienda-vendedor)\//.test(ruta) || ruta === '/nichos' || ruta === '/vendedor') { irA('tienda'); return; }
     // Una landing del builder (/:slug): las copiadas en demo/landings.json.
     if (LANDINGS_DEMO.some((l) => `/${l.slug}` === ruta)) { setRutaLanding(ruta); setFiltrosLanding({}); irA('landing'); return; }
     if (!PAGINA_DE_RUTA[ruta]) { avisar('En la tienda iría a', to); return; }
@@ -614,12 +611,6 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     }
     return undefined;
   };
-  // Nichos y vendedores: cuando habla Kapi (vacío o no encontrado), el pie no lo repite.
-  const vacioNavegar = !estadosNavegar.includes('cargando') && (
-    estadosNavegar.includes('noEncontrado')
-    || (rutaNavegar === '/nichos' && estadosNavegar.includes('vacia'))
-    || ['/nicho/relojes-vacio', '/tienda-vendedor/s3Tti2DCqMz6gTLihH1Y'].includes(rutaNavegar)
-  );
 
   /* ── Minijuegos: la Zona Arcade con el estado elegido en los chips ── */
   const arcade = juegosDelArcade({
@@ -639,7 +630,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   });
 
   const formaEsqueleto = {
-    tienda: 'tienda', campanas: { '/sorteos': 'sorteo', '/suscrito-sorteo': 'suscripcionSorteo', '/suscripciones': 'landing', '/regalos-con-amor': 'landing' }[rutaCampana] || 'enlaces', juego: { '/ruleta': 'ruleta', '/ball-sort': 'bolitas' }[rutaJuego] || 'palabra', legales: rutaLegal === '/libro-de-reclamaciones' ? 'reclamaciones' : 'legal', nichos: rutaNavegar === '/nichos' ? 'nichos' : 'coleccion', producto: 'producto', checkout: 'checkout', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', ver: 'verDiseno', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
+    tienda: 'tienda', campanas: { '/sorteos': 'sorteo', '/suscrito-sorteo': 'suscripcionSorteo', '/suscripciones': 'landing', '/regalos-con-amor': 'landing' }[rutaCampana] || 'enlaces', juego: { '/ruleta': 'ruleta', '/ball-sort': 'bolitas' }[rutaJuego] || 'palabra', legales: rutaLegal === '/libro-de-reclamaciones' ? 'reclamaciones' : 'legal', producto: 'producto', checkout: 'checkout', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', ver: 'verDiseno', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
   }[pagina] || 'productos';
   // /cuenta/… → su módulo (el detalle de una compra usa el de pedidos).
   const moduloEsqueleto = {
@@ -684,12 +675,6 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     <MarcoTienda {...marco} kapiEnPie={rutaLegal === '/libro-de-reclamaciones'}>
       <Parte n="P19" nombre={rutaLegal === '/libro-de-reclamaciones' ? 'PaginaReclamaciones' : 'PaginaLegal'}>
         <LegalesDemo ruta={rutaLegal} sesion={conSesion} usuario={usuario} estados={estadosLegales} />
-      </Parte>
-    </MarcoTienda>
-  ) : pagina === 'nichos' ? (
-    <MarcoTienda {...marco} kapiEnPie={!vacioNavegar}>
-      <Parte n="P18" nombre={rutaNavegar === '/nichos' ? 'PaginaNichos' : 'PaginaColeccion'}>
-        <NavegarDemo ruta={rutaNavegar} estados={estadosNavegar} catalogo={{ marcas: visibles, categorias: TIENDA.categorias }} onAgregar={onAgregar} />
       </Parte>
     </MarcoTienda>
   ) : pagina === 'landing' ? (
@@ -998,21 +983,6 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
             <div className={cs.controlesChips}>
               {ESTADOS_LEGALES.filter(([id]) => id !== 'falla' || rutaLegal === '/libro-de-reclamaciones').map(([id, texto]) => (
                 <Chip key={id} tamano="sm" activo={estadosLegales.includes(id)} onClick={() => setEstadosLegales((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
-              ))}
-            </div>
-          </div>
-        )}
-        {pagina === 'nichos' && (
-          <div>
-            <span className={cs.controlesTitulo}>Cómo se abre</span>
-            <div className={cs.controlesChips}>
-              {VISTAS_NAVEGAR.map(([texto, r]) => (
-                <Chip key={texto} tamano="sm" activo={rutaNavegar === r} onClick={() => { setRutaNavegar(r); if (marcoRef.current) marcoRef.current.scrollTop = 0; }}>{texto}</Chip>
-              ))}
-            </div>
-            <div className={cs.controlesChips}>
-              {ESTADOS_NAVEGAR.filter(([id]) => (id === 'vacia' ? rutaNavegar === '/nichos' : true)).map(([id, texto]) => (
-                <Chip key={id} tamano="sm" activo={estadosNavegar.includes(id)} onClick={() => setEstadosNavegar((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
               ))}
             </div>
           </div>

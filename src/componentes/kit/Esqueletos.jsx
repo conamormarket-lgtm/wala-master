@@ -794,21 +794,6 @@ const PAGINAS = {
       </span>
     </span>
   ),
-  nichos: () => (
-    // /nichos: el encabezado y los cuadros (foto y nombre con su tipo).
-    <>
-      <EncabezadoCentrado />
-      <span className={s.nichosEsq}>{repetir(4, (k) => (
-        <span key={k} className={s.nichoEsq}>
-          <Hueso forma="bloque" proporcion="1 / 1" ancho="100%" />
-          <Hueso alto={14} ancho="60%" />
-          <Hueso alto={10} ancho="40%" />
-        </span>
-      ))}</span>
-      {/* "Buscar productos" y "Volver a la tienda". */}
-      <span className={cx(s.chips, s.pieNavegarEsq)}><Hueso forma="pildora" alto={44} ancho={180} /><Hueso forma="pildora" alto={44} ancho={170} /></span>
-    </>
-  ),
   verDiseno: ({ tarjetas }) => (
     // Ver diseño: el rótulo y el nombre con "Copiar resumen", y las prendas
     // (sello, prenda, color y talla, el nombre) con sus lados. Mientras no se
@@ -832,19 +817,6 @@ const PAGINAS = {
         ))}
       </span>
     </span>
-  ),
-  coleccion: () => (
-    // Un nicho o un vendedor: migas, el logo con el nombre y la grilla.
-    <>
-      <span className={s.coleccionCabeza}>
-        <Hueso alto={11} ancho={190} />
-        <span className={s.itemMenu}>
-          <Hueso forma="circulo" ancho={64} alto={64} />
-          <span className={s.filaTextos}><Hueso alto={34} ancho="min(60%, 300px)" /><Hueso alto={12} ancho="min(45%, 200px)" /></span>
-        </span>
-      </span>
-      <span className={s.grilla}>{productos(8)}</span>
-    </>
   ),
   legal: () => (
     // Privacidad o términos: la cabeza con el sello, el índice al costado y la hoja.
@@ -1012,7 +984,7 @@ const PAGINAS = {
  * Para cambiar de página siempre es esto (CapaCargando es para esperar una acción).
  *  - forma: 'productos' (la grilla, por defecto) | 'inicio' | 'tienda' |
  *    'busqueda' | 'producto' | 'carrito' | 'checkout' | 'crear' | 'estudio' | 'comunidad' | 'minijuegos' | 'encuesta' |
- *    'acceso' | 'cuenta' | 'lista' | 'formulario' | 'nichos' | 'coleccion' (un nicho o un vendedor) |
+ *    'acceso' | 'cuenta' | 'lista' | 'formulario' |
  *    'legal' (privacidad, términos) | 'reclamaciones' | 'verDiseno' |
  *    'palabra' | 'ruleta' | 'bolitas' (los minijuegos por dentro) | 'sorteo' |
  *    'suscripcionSorteo' | 'landing' (Suscripciones, Regalos con amor) | 'enlaces'

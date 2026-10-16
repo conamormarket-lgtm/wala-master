@@ -1027,25 +1027,3 @@ export function opinionesDesde(resenas = [], { uid } = {}) {
   };
 }
 
-/* ── Navegar la tienda: nichos ── */
-
-const TIPOS_NICHO = { general: 'General', personalizados: 'Personalizados' };
-
-/**
- * Un nicho de la colección niches ({ slug, name, type, imageUrl, active,
- * order }) → una tarjeta de la grilla de nichos (la de category_grid).
- *  - cuenta: cuántos productos tiene (productos_wala con ese nicheId), si la
- *    página lo sabe; va en `detalle` ("General · 12 productos")
- */
-export const nichoDesdeFirestore = (n = {}, { cuenta } = {}) => {
-  const tipo = TIPOS_NICHO[n.type] || n.type || 'General';
-  return {
-    categoryId: n.slug || n.id,
-    name: n.name || n.slug || n.id,
-    imageUrl: n.imageUrl || undefined,
-    url: `/nicho/${n.slug || n.id}`,
-    // La cuenta va en texto, junto al tipo (la etiqueta colgante es para productos).
-    detalle: cuenta != null ? `${tipo} · ${cuenta === 1 ? '1 producto' : `${cuenta} productos`}` : tipo,
-    cuenta,
-  };
-};

@@ -64,9 +64,7 @@ Cada paso en su propio commit, verificable por separado.
    `HojaPersona`) y el acceso (login, registro, recuperar y completar
    perfil: ACCESO.md; chicas y aisladas, buenas para empezar) y Crear
    (`PaginaCrear`, CREAR.md; después de Mis creaciones: comparten
-   `TarjetaCreacion`) y navegar la tienda (un nicho y un vendedor con
-   `PaginaColeccion` y los nichos: NAVEGAR.md; las landings
-   `/:slug` van con el paso 5, son del builder) y las legales (privacidad y
+   `TarjetaCreacion`) y las legales (privacidad y
    términos con `PaginaLegal`, el libro con `PaginaReclamaciones`:
    LEGALES.md; chicas y aisladas) y los juegos por dentro (las bolitas, la
    ruleta y la palabra con `MarcoJuego`: JUEGOS.md; después de la Zona Arcade)
