@@ -16,13 +16,77 @@
   position: relative;
 }
 
+/* El premio como un boleto: la foto y el talón, separados por una línea
+   punteada con dos muescas (círculos del color de la página). */
+.boleto {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 26px 26px 26px;
+  background: var(--color-surface);
+  box-shadow: 0 18px 34px -26px rgba(76, 29, 149, 0.45);
+}
+
 .foto,
 .fotoVacia {
   display: grid;
   place-items: center;
   aspect-ratio: 4 / 3;
-  border-radius: 6px 26px 26px 26px;
   overflow: hidden;
+}
+
+.talon {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+  padding: 0.85rem 1.25rem;
+  border-top: 2px dashed var(--violet-200, #ddd6fe);
+}
+
+.talon::before,
+.talon::after {
+  position: absolute;
+  top: -11px;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-bg, var(--gris-fondo));
+  content: '';
+}
+
+.talon::before {
+  left: -11px;
+}
+
+.talon::after {
+  right: -11px;
+}
+
+.talonDato {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+}
+
+.talonDato strong {
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+}
+
+.talonDato svg {
+  width: 17px;
+  height: 17px;
+  color: var(--violet-500);
+}
+
+:global([data-theme='dark']) .talon {
+  border-top-color: rgba(167, 139, 250, 0.3);
 }
 
 .fotoVacia {
@@ -45,8 +109,86 @@
 }
 
 .cabezaTextos {
+  position: relative;
   display: grid;
   gap: 0.75rem;
+}
+
+/* Adornos quietos arriba a la derecha del título. */
+.adornos {
+  position: absolute;
+  top: -1.25rem;
+  right: 0;
+  width: 150px;
+  height: 90px;
+  pointer-events: none;
+}
+
+.puntos {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 96px;
+  color: rgba(124, 58, 237, 0.14);
+}
+
+.destello1,
+.destello2 {
+  position: absolute;
+  color: var(--violet-400, #a78bfa);
+}
+
+.destello1 {
+  top: 1.4rem;
+  right: 108px;
+  width: 18px;
+}
+
+.destello2 {
+  top: 3.2rem;
+  right: 128px;
+  width: 10px;
+  color: #fcd34d;
+}
+
+.cabezaTextos > :not(.adornos) {
+  position: relative;
+}
+
+/* Con la foto arriba (una columna) el título llega al borde: sin adornos. */
+@media (max-width: 819px) {
+  .adornos {
+    display: none;
+  }
+}
+
+/* La cuenta atrás en una píldora (con más de dos días por delante). */
+.relojPildora {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.9rem 0.45rem 0.7rem;
+  border-radius: 999px;
+  background: var(--primary-light, #f3e8ff);
+  color: var(--violet-800, #5b21b6);
+  font-weight: 800;
+}
+
+.relojPildora svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* La frase de CuentaRegresiva viene chica y gris: en la píldora, del tono de la píldora. */
+.relojPildora > span {
+  color: inherit;
+  font-size: 0.92rem;
+}
+
+:global([data-theme='dark']) .relojPildora {
+  background: rgba(167, 139, 250, 0.14);
+  color: var(--violet-200, #ddd6fe);
 }
 
 .titulo {

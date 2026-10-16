@@ -364,3 +364,19 @@
     grid-row: 2;
   }
 }
+
+/* Lo que suma una forma de ganar ("+1 chance"), en un sello con el degradado. */
+.formaPremio {
+  flex-shrink: 0;
+  align-self: center;
+  margin-left: auto;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  background: var(--degradado-logo);
+  color: #fff;
+  font-family: var(--fuente-marca);
+  font-size: 0.78rem;
+  font-weight: 900;
+  white-space: nowrap;
+  transform: rotate(-4deg);
+}

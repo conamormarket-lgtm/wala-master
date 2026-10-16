@@ -122,11 +122,12 @@ export function PaginaSorteo({
     );
   }
 
+  // [icono, título, texto, lo que suma]
   const formas = [
-    pagado ? ['regalo', 'Cada ticket cuenta', 'Cada ticket pagado suma 1 chance para el sorteo.'] : ['regalo', 'Participar', 'Participar te da 1 chance.'],
-    reglas.appExtra && ['estrella', 'Desde la app', 'Entrar desde la app de Walá te da 1 chance extra.'],
-    reglas.compartir && ['corazon', 'Compartir', 'Compartir el sorteo te suma 1 chance (una vez).'],
-    reglas.referido && ['mano', 'Invitar', 'Ganas 1 chance por cada amigo que participe con tu link.'],
+    pagado ? ['regalo', 'Cada ticket cuenta', 'Cada ticket pagado suma 1 chance para el sorteo.', '+1 por ticket'] : ['regalo', 'Participar', 'Participar te da 1 chance.', '+1'],
+    reglas.appExtra && ['estrella', 'Desde la app', 'Entrar desde la app de Walá te da 1 chance extra.', '+1'],
+    reglas.compartir && ['corazon', 'Compartir', 'Compartir el sorteo te suma 1 chance (una vez).', '+1'],
+    reglas.referido && ['mano', 'Invitar', 'Ganas 1 chance por cada amigo que participe con tu link.', '+1 por amigo'],
   ].filter(Boolean);
 
   return (
@@ -197,7 +198,7 @@ export function PaginaSorteo({
             )}
             <TarjetaCuenta icono={<Star aria-hidden="true" />} titulo="Cómo ganar más chances">
               <div className={s.formas}>
-                {formas.map(([icono, titulo, texto]) => <FormaGanar key={titulo} icono={icono} titulo={titulo}>{texto}</FormaGanar>)}
+                {formas.map(([icono, titulo, texto, premio]) => <FormaGanar key={titulo} icono={icono} titulo={titulo} premio={premio}>{texto}</FormaGanar>)}
                 {reglas.appObligatorio && <Aviso tipo="info" compacto>Este sorteo solo se juega desde la app.</Aviso>}
               </div>
             </TarjetaCuenta>

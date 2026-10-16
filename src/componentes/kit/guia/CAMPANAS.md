@@ -1,8 +1,15 @@
-# Sorteos y campañas: Sorteos, Sorteo por suscripción, Suscripciones, Regalos con amor, Invitar y Link en bio
+# Sorteos y campañas: Sorteos, Sorteo por suscripción, Suscripciones, Invitar y Link en bio
+
+> **Regalos con amor salió del kit el 2026-10-16** (se pidió así): en el kit,
+> `PaginaRegalosConAmor`, `AntesDespues` y `TarjetaResena` (y sus estilos);
+> en la demo, su opción en "Cómo se abre" y sus datos. **En la tienda no se
+> tocó nada:** `/regalos-con-amor` sigue con `NuevosUsuariosPage`, y
+> `public/diseno` y `public/regalos-con-amor` siguen igual. Para volver, todo
+> está en el historial de git.
 
 Cómo verlo en vivo: `npm run dev` → http://localhost:3000/componentes.html →
 **Páginas** → **Tienda de prueba** → **Sorteos y campañas**. "Cómo se abre"
-tiene seis opciones:
+tiene cinco opciones:
 
 - **Sorteo** (`/sorteos` y `/sorteos/:slug`). Estados: ya participa, con
   tickets, cerrado, ganó, solo desde la app, sin sorteo, error y cargando.
@@ -12,8 +19,6 @@ tiene seis opciones:
   PayPal queda pendiente, no disponible y cargando. "Suscribirme" abre la
   hoja con tres pasos: entrar, los datos con la autorización y el pago.
 - **Suscripciones** (`/suscripciones`).
-- **Regalos con amor** (`/regalos-con-amor`): una landing suelta, sin menú
-  ni pie.
 - **Link en bio** (`/l/sorteos-y-atencion`). Estados: no disponible y
   cargando.
 - **Invitar** (`/invitar/ISAAC7K`): como en la tienda, lleva al registro con
@@ -21,13 +26,13 @@ tiene seis opciones:
   página desde "Mostrar también" → "Aviso de invitación", con sus tres
   estados.
 
-| El sorteo (celular, noche) | Por suscripción | Link en bio (el real) |
+| El sorteo (celular, noche: el boleto y la cuenta atrás) | Por suscripción | Link en bio (el real) |
 |---|---|---|
 | ![El sorteo con tu participación](sorteo-celular.webp) | ![La portada y los planes](suscrito-sorteo-celular.webp) | ![La página de enlaces real](enlaces-celular.webp) |
 
-| Suscripciones | Regalos con amor (claro) | La invitación en el registro (claro) |
-|---|---|---|
-| ![La suscripción de regalos](suscripciones-celular.webp) | ![La portada de Regalos con amor](regalos-celular.webp) | ![El aviso de la invitación sobre el registro](invitar-celular.webp) |
+| Suscripciones | La invitación en el registro (claro) |
+|---|---|
+| ![La suscripción de regalos](suscripciones-celular.webp) | ![El aviso de la invitación sobre el registro](invitar-celular.webp) |
 
 Las capturas son del celular. En escritorio también se revisaron (claro y
 noche), pero el panel del navegador de esta sesión no daba para una captura
@@ -40,7 +45,6 @@ Revisado el 2026-10-15 contra estos archivos:
 | Sorteo | `pages/SorteosPage.jsx` (+ `services/sorteos.js`) | 1224 |
 | Sorteo por suscripción | `pages/SuscripcionSorteoPage.jsx` (+ `services/suscripcionSorteos.js`, `pages/suscripcion/PagoSuscripcion.jsx`) | 896 |
 | Suscripciones | `pages/SubscriptionLandingPage.jsx` | 93 |
-| Regalos con amor | `pages/NuevosUsuariosPage.jsx` | 1234 |
 | Invitar | `pages/InvitarPage.jsx` (solo redirige), `components/analytics/ReferralTracker.jsx`, `components/common/AvisoInvitacion` | 27 + 125 + 133 |
 | Link en bio | `pages/LinkInBioPage.jsx` (+ `services/enlaces.js`, `services/linkThemes.js`) | 326 |
 
@@ -49,8 +53,6 @@ Revisado el 2026-10-15 contra estos archivos:
 - **Reales:**
   - Link en bio: la única página de `link_pages`, "Sorteos y Atencion", con
     su diseño, sus botones y sus redes (`demo/campanas.json`).
-  - Regalos con amor: sus textos, fotos, video, mapa y ocho de sus 14
-    reseñas (a las reseñas se les quitaron los emojis).
   - Suscripciones: los textos (la página no lee datos).
   - La encuesta a la que lleva Suscripciones es la que ya está en el kit
     (ENCUESTA.md).
@@ -65,28 +67,34 @@ Revisado el 2026-10-15 contra estos archivos:
 
 | Parte | Componente | Piezas que usa | Datos (en la tienda) |
 |---|---|---|---|
-| P21 Sorteo | `PaginaSorteo` (`paginas/Sorteos.jsx`) | `CabezaSorteo`, `ListaGanadores` (nuevas, `piezas/Sorteos.jsx`); `TarjetaCuenta`, `Estadistica`, `FormaGanar`, `EnlaceInvitacion`, `CamposDatosPersonales` + `validarPerfil`, `Cantidad`, `PagoTarjeta`, `PagoPaypal`, `HojaInferior`, `Estallido`, `CuentaRegresiva` | `getSorteoActivo` / `getSorteoBySlug`, `getMiParticipacion`, `getContadorSorteo`; `participarSorteoGratis`, `comprarTicketSorteoSecure` + Culqi / PayPal, `sumarChanceCompartir` |
+| P21 Sorteo | `PaginaSorteo` (`paginas/Sorteos.jsx`) | `CabezaSorteo` (el premio como boleto), `ListaGanadores` (nuevas, `piezas/Sorteos.jsx`); `TarjetaCuenta`, `Estadistica`, `FormaGanar` (con `premio`: "+1"), `EnlaceInvitacion`, `CamposDatosPersonales` + `validarPerfil`, `Cantidad`, `PagoTarjeta`, `PagoPaypal`, `HojaInferior`, `Estallido`, `CuentaRegresiva` | `getSorteoActivo` / `getSorteoBySlug`, `getMiParticipacion`, `getContadorSorteo`; `participarSorteoGratis`, `comprarTicketSorteoSecure` + Culqi / PayPal, `sumarChanceCompartir` |
 | P21 Sorteo por suscripción | `PaginaSuscripcionSorteo` | `TarjetaPlan`, `TarjetaAliado`, `ListaGanadores` (nuevas); `Pestanas`, `ListaDatos`, `Estadistica`, `BotonGoogle`, `Casilla`, `PagoTarjeta`, `PagoPaypal`, `Chip` | `getCampaignBySlug`, `getContadorSuscriptores`, `getBeneficios`, `getGanadoresGaleria`, `getMiSuscripcion`, `getRecibos`; `crearSuscripcionCulqi`, `crearSuscripcionPaypal` + `confirmarSuscripcionPaypal`, `cancelarSuscripcion` |
 | P21 Suscripciones | `PaginaSuscripciones` (`paginas/Campanas.jsx`) | `FormaGanar` (los 4 pasos), `IconoWala`, `Garabatos`, `Trazo`, `TituloSeccion` | — (textos fijos) |
-| P21 Regalos con amor | `PaginaRegalosConAmor` | `BloqueVideo`, `AntesDespues` y `TarjetaResena` (nuevas, `piezas/Campanas.jsx`), `MarcasMarquesina`, `Ubicacion`, `Carrusel`, `GananciaMonedas` | — (textos y fotos de `public/diseno` y `public/regalos-con-amor`) |
 | P21 Link en bio | `PaginaEnlaces` | `RedesEnlaces` y `BotonEnlace` (nuevas), `Avatar`, `LogoWala` | `getLinkPageBySlug` (`link_pages`), `registrarClicEnlace`, `registrarVisitaEnlace`; el fondo y los botones con `construirFondoStyle` / `estiloBotonStyle` (`services/linkThemes`) |
 | M12 La invitación | `AvisoInvitacion` (nueva, `piezas/Campanas.jsx`) | `IconoWala`, `Trazo`, `Boton` | `useInvitacionReferido` (localStorage `wala_referral`), `getNombreInvitacion` |
 
 Esqueletos: `EsqueletoPagina forma="sorteo"`, `"suscripcionSorteo"`,
-`"landing"` (Suscripciones y Regalos con amor) y `"enlaces"`.
+`"landing"` (Suscripciones) y `"enlaces"`. El del sorteo trae el talón del
+boleto y la píldora de la cuenta atrás.
 
 ### Lo que hace
 
 - **Sorteo:**
-  - **La cabeza:** la foto del premio con "Gratis" (o "S/ 5.00 por ticket")
-    y "3 ganadores", "Gana: …" con su trazo y la descripción. La cuenta
-    atrás va en palabras ("Termina en 4 d 7 h") y en bloques los dos últimos
-    días. Debajo, "1,284 personas ya participan".
+  - **La cabeza (desde el 2026-10-16):** el premio como un **boleto**: la
+    foto arriba con "Gratis" (o "S/ 5.00 por ticket") y, debajo de una
+    línea punteada con dos muescas, el talón: "Se sortea el 20 de octubre"
+    (o "Sorteo cerrado") y "3 ganadores". "Gana: …" con su trazo y la
+    descripción. La cuenta atrás va en una píldora con su reloj ("Termina en
+    4 d 7 h") y en bloques los dos últimos días. Debajo, "1,284 personas ya
+    participan". Con la cabeza en dos columnas, puntos y destellos quietos
+    junto al título.
   - Si ganaste: el sello del trofeo con confeti y "¡Felicidades, ganaste!".
   - **Tu participación:** tickets y chances.
   - **Suma más chances:** "Compartir y ganar 1 chance" (una vez) y tu link
     con "Copiar link".
-  - **Cómo ganar más chances:** cada forma con su ícono de Walá.
+  - **Cómo ganar más chances:** cada forma con su ícono de Walá y lo que
+    suma en un sello ("+1", "+1 por ticket", "+1 por amigo"), en dos columnas
+    cuando hay sitio.
   - **Quiénes ganaron:** con la tuya marcada.
   - **El botón:**
     - "¡Participar gratis!", "Quiero participar" / "Comprar más tickets"
@@ -103,7 +111,8 @@ Esqueletos: `EsqueletoPagina forma="sorteo"`, `"suscripcionSorteo"`,
     Beneficios, Mi cuenta).
   - **Los planes:** el precio con la letra de la marca, "Es como pagar S/
     16.63 al mes", las chances por ciclo y lo que incluye. El recomendado va
-    con su borde.
+    con su borde. Los tres en una fila desde unos 700 px (antes el tercero
+    quedaba solo abajo).
   - Los premios, los ganadores y las marcas aliadas (con filtro por
     categoría).
   - **Mi cuenta:** el estado, el plan, el método, la vigencia y el próximo
@@ -121,16 +130,6 @@ Esqueletos: `EsqueletoPagina forma="sorteo"`, `"suscripcionSorteo"`,
   - Los cuatro pasos y el llamado oscuro con su lista y "Separar mis fechas
     ahora".
   - Los dos botones llevan a la encuesta.
-- **Regalos con amor:**
-  - La portada con "abrazos" en imagen y "Ten a tu familia feliz con nuestra
-    app".
-  - El video y la franja "¿Por qué regalar algo personalizado?".
-  - El antes y después con su VS, en un carrusel.
-  - Las marcas.
-  - Kapi con "+15 de bienvenida" y "Descargar la app". Ese botón se queda
-    abajo, flotando, cuando su lugar ya pasó.
-  - Las reseñas con foto (en carrusel).
-  - "¡Encuéntranos!" con el mapa y las fotos de la tienda, y los términos.
 - **Link en bio:** la foto (o las iniciales), el título, la descripción, las
   redes en círculos (íconos de línea), los botones con el diseño del admin y
   "Creado con Walá". Cada clic se cuenta, también el de las redes.
@@ -152,7 +151,6 @@ Esqueletos: `EsqueletoPagina forma="sorteo"`, `"suscripcionSorteo"`,
 | `SorteosPage` (GlassCard, Badge, emojis, el modal `FormularioDatosSorteo`, `CulqiTicketButton`, `PaypalTicketButtons`) | `PaginaSorteo` (con `onPagarTarjeta` / `onPagarPaypal` que abren Culqi y PayPal como hoy) |
 | `SuscripcionSorteoPage` (GlassModal, `--sus-*`) | `PaginaSuscripcionSorteo` |
 | `SubscriptionLandingPage` | `PaginaSuscripciones` |
-| `NuevosUsuariosPage` (`<style>` global, fuente Mermaid) | `PaginaRegalosConAmor` |
 | `LinkInBioPage` | `PaginaEnlaces` |
 | `AvisoInvitacion` (common) | `AvisoInvitacion` (kit), en el mismo `#app-top-banner-slot` |
 
@@ -218,7 +216,6 @@ Esqueletos: `EsqueletoPagina forma="sorteo"`, `"suscripcionSorteo"`,
   marcada; cancelar deja vigente lo ya pagado.
 - Link en bio: las internas (`/…`) navegan sin recargar, las externas
   abren otra pestaña, y la visita se cuenta al cargar.
-- Regalos con amor no lleva menú, pie ni ventanas emergentes.
 - La invitación no sale en `/checkout` (ahí está la línea del checkout:
   `invitacion` en `PaginaCheckout`). Cerrarla dura la sesión.
 
@@ -237,13 +234,6 @@ Esqueletos: `EsqueletoPagina forma="sorteo"`, `"suscripcionSorteo"`,
   - El plan con su nombre.
 - **Suscripciones:** la caja es la Walá Box con el ícono de Walá. Los textos
   son un poco más cortos, sin cambiar lo que prometen.
-- **Regalos con amor:**
-  - Con las piezas del kit: el video sin el marco de monitor
-    (`PANTALLA.png`), Kapi 3D en vez de `kapi.png`, las reseñas legibles en
-    el celular (hoy tienen letra de 0.3rem) y el botón flotante sin
-    bamboleo infinito.
-  - "Visita nuestra tienda física" (hoy dice "Fisica de:").
-  - Los términos con enlaces.
 - **Link en bio:**
   - Los íconos de las redes son de línea (Instagram y Facebook dibujados
     en el kit: la versión de lucide no trae marcas).
@@ -265,10 +255,9 @@ Esqueletos: `EsqueletoPagina forma="sorteo"`, `"suscripcionSorteo"`,
   - Los ganadores son la galería del admin, no los que salieron en el
     sorteo.
   - Una campaña cerrada se sigue mostrando y falla al suscribirse.
-- **Regalos con amor:**
-  - Promete "S/15 en monedas", pero la encuesta da 15 monedas más 5 por
-    fecha (hasta 50).
-  - La landing del builder con el mismo slug nunca se ve (NAVEGAR.md).
+- **Regalos con amor** (fuera del kit, sigue en la tienda): promete "S/15
+  en monedas", pero la encuesta da 15 monedas más 5 por fecha (hasta 50); y
+  la landing del builder con el mismo slug nunca se ve (NAVEGAR.md).
 - **Link en bio:** los clics en las redes no se cuentan:
   `registrarClicEnlace` solo busca en `botones`. El kit ya los manda.
 - **Enlaces sin entrada:** nada del sitio público enlaza a `/sorteos`,
@@ -280,8 +269,8 @@ Esqueletos: `EsqueletoPagina forma="sorteo"`, `"suscripcionSorteo"`,
 1. `AvisoInvitacion` del kit en `#app-top-banner-slot` (chico y aislado).
 2. `PaginaEnlaces` en `LinkInBioPage`, compartiendo `linkThemes`; de paso,
    que la función también cuente las redes.
-3. `PaginaSuscripciones`, y `PaginaRegalosConAmor` como página
-   independiente.
+3. `PaginaSuscripciones` (Regalos con amor se queda con
+   `NuevosUsuariosPage`).
 4. `PaginaSorteo` con el mismo flujo de Culqi y PayPal (y el slug en
    compartir y en el login).
 5. `PaginaSuscripcionSorteo` cuando haya una campaña real para probarla de

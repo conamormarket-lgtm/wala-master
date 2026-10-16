@@ -1,8 +1,8 @@
 import React from 'react';
-import { Users, Check, Trophy, MapPin, ExternalLink } from 'lucide-react';
+import { Users, Check, Trophy, MapPin, ExternalLink, Clock, CalendarDays } from 'lucide-react';
 import Boton from '../Boton';
 import { Etiqueta } from '../Etiquetas';
-import { Trazo, Destello } from '../Marca';
+import { Trazo, Destello, Puntos } from '../Marca';
 import { Enlace } from '../Enlace';
 import { Texto } from '../Traduccion';
 import CuentaRegresiva from '../CuentaRegresiva';
@@ -17,10 +17,13 @@ import s from './Sorteos.module.css';
  */
 
 const miles = (n) => Number(n || 0).toLocaleString('es-PE');
+const diaYMes = (iso) => new Date(iso).toLocaleDateString('es-PE', { day: 'numeric', month: 'long' });
 
 /**
- * La cabeza de un sorteo: la foto del premio, el precio (o "Gratis"),
- * "Gana: …" con su trazo, la cuenta atrás y cuánta gente participa.
+ * La cabeza de un sorteo: el premio como un boleto (la foto arriba y el
+ * talón con muescas: cuándo se sortea y cuántos ganan), el precio (o
+ * "Gratis"), "Gana: …" con su trazo, la cuenta atrás en una píldora y
+ * cuánta gente participa. Adornos quietos junto al título.
  *  - premio · imagen · descripcion · precio (texto: "Gratis", "S/ 5 por ticket")
  *  - ganadores (cuántos) · hasta (ISO del fin) · cerrado · participantes
  */
@@ -28,13 +31,31 @@ export function CabezaSorteo({ premio, imagen, descripcion, precio, ganadores = 
   return (
     <header className={s.cabeza} data-componente="CabezaSorteo">
       <div className={s.cabezaFoto}>
-        {imagen ? <FotoProducto src={imagen} relleno="6%" className={s.foto} /> : <span className={s.fotoVacia}><Destello /></span>}
-        <span className={s.cabezaEtiquetas}>
-          {precio && <Etiqueta tono="violeta" sobreFoto>{precio}</Etiqueta>}
-          {ganadores > 1 && <Etiqueta tono="neutro" sobreFoto>{ganadores} ganadores</Etiqueta>}
-        </span>
+        <div className={s.boleto}>
+          {imagen ? <FotoProducto src={imagen} relleno="6%" className={s.foto} /> : <span className={s.fotoVacia}><Destello /></span>}
+          <div className={s.talon}>
+            <span className={s.talonDato}>
+              <CalendarDays aria-hidden="true" />
+              {cerrado ? 'Sorteo cerrado' : hasta ? <>Se sortea el <strong>{diaYMes(hasta)}</strong></> : 'Sorteo de Walá'}
+            </span>
+            <span className={s.talonDato}>
+              <Trophy aria-hidden="true" />
+              <strong>{ganadores}</strong> {ganadores === 1 ? 'ganador' : 'ganadores'}
+            </span>
+          </div>
+        </div>
+        {precio && (
+          <span className={s.cabezaEtiquetas}>
+            <Etiqueta tono="violeta" sobreFoto>{precio}</Etiqueta>
+          </span>
+        )}
       </div>
       <div className={s.cabezaTextos}>
+        <span className={s.adornos} aria-hidden="true">
+          <Puntos className={s.puntos} />
+          <Destello className={s.destello1} />
+          <Destello className={s.destello2} />
+        </span>
         <h1 className={s.titulo}>Gana: <Texto>{premio}</Texto><Trazo className={s.trazo} /></h1>
         {descripcion && <p className={s.descripcion}><Texto>{descripcion}</Texto></p>}
         {cerrado ? (
@@ -43,7 +64,7 @@ export function CabezaSorteo({ premio, imagen, descripcion, precio, ganadores = 
           // Con más de dos días por delante, en palabras ("Termina en 4 d 7 h"); al final, los bloques.
           <div className={s.reloj}>
             {new Date(hasta) - Date.now() > 48 * 3600000
-              ? <CuentaRegresiva hasta={hasta} variante="frase" etiqueta="Termina en" textoFin="Ya terminó: pronto anunciamos a quien ganó" />
+              ? <span className={s.relojPildora}><Clock aria-hidden="true" /><CuentaRegresiva hasta={hasta} variante="frase" etiqueta="Termina en" textoFin="Ya terminó: pronto anunciamos a quien ganó" /></span>
               : <CuentaRegresiva hasta={hasta} variante="bloques" etiqueta="Termina en" textoFin="Ya terminó: pronto anunciamos a quien ganó" />}
           </div>
         )}

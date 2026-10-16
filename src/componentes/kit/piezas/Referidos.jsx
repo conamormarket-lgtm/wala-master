@@ -18,8 +18,9 @@ import s from './Referidos.module.css';
 /**
  * Una forma de ganar monedas: ícono de Walá, título y explicación.
  *  - icono: nombre de IconoWala · titulo · children: el texto (con <strong>)
+ *  - premio: lo que suma, en un sello a la derecha ("+1", "+1 por amigo")
  */
-export function FormaGanar({ icono = 'regalo', titulo, children }) {
+export function FormaGanar({ icono = 'regalo', titulo, premio, children }) {
   return (
     <div className={s.forma} data-componente="FormaGanar">
       <IconoWala nombre={icono} tamano={50} girar={-6} />
@@ -27,6 +28,7 @@ export function FormaGanar({ icono = 'regalo', titulo, children }) {
         <h3 className={s.formaTitulo}>{titulo}</h3>
         <p className={s.formaTexto}>{children}</p>
       </div>
+      {premio && <span className={s.formaPremio}>{premio}</span>}
     </div>
   );
 }

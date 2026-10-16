@@ -918,14 +918,18 @@ const PAGINAS = {
     </span>
   ),
   sorteo: () => (
-    // El sorteo: la foto del premio con el título y la cuenta atrás; abajo, las dos columnas y el botón.
+    // El sorteo: el boleto (la foto y su talón) con el título y la cuenta atrás; abajo, las dos
+    // columnas y el botón.
     <span className={s.campanaEsq}>
       <span className={s.sorteoCabeza}>
-        <Hueso forma="bloque" proporcion="4 / 3" ancho="100%" />
+        <span className={s.filaTextos}>
+          <Hueso forma="bloque" proporcion="4 / 3" ancho="100%" />
+          <Hueso alto={18} ancho="70%" />
+        </span>
         <span className={s.filaTextos}>
           <Hueso alto={40} ancho="85%" />
           <Hueso alto={12} ancho="70%" />
-          <span className={s.chips}>{repetir(3, (k) => <Hueso key={k} forma="bloque" alto={56} ancho={60} />)}</span>
+          <Hueso forma="pildora" alto={36} ancho={180} />
           <Hueso alto={12} ancho="45%" />
         </span>
       </span>
@@ -946,7 +950,7 @@ const PAGINAS = {
     </span>
   ),
   landing: () => (
-    // Una landing de campaña (Suscripciones, Regalos con amor): la portada y tres tarjetas.
+    // Una landing de campaña (Suscripciones): la portada y tres tarjetas.
     <span className={s.campanaEsq}>
       <span className={s.sorteoCabeza}>
         <span className={s.filaTextos}>
@@ -992,7 +996,7 @@ const PAGINAS = {
  *    'acceso' | 'cuenta' | 'lista' | 'formulario' |
  *    'legal' (privacidad, términos) | 'reclamaciones' | 'verDiseno' |
  *    'palabra' | 'ruleta' | 'bolitas' (los minijuegos por dentro) | 'sorteo' |
- *    'suscripcionSorteo' | 'landing' (Suscripciones, Regalos con amor) | 'enlaces'
+ *    'suscripcionSorteo' | 'landing' (Suscripciones) | 'enlaces'
  *  - sesion: false para quien no entró (la cuenta y la encuesta muestran la
  *    invitación a entrar; Minijuegos, su aviso en vez del progreso)
  *  - modulo (con forma 'cuenta'): uno de MODULOS_ESQUELETO_CUENTA (resumen,
