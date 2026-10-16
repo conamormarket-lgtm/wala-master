@@ -1,23 +1,19 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
-  PaginaOfertas, PaginaNichos, PaginaColeccion, ofertaDesdeFirestore, ofertasVigentes, nichoDesdeFirestore, tarjetaDesdeProducto,
+  PaginaNichos, PaginaColeccion, nichoDesdeFirestore, tarjetaDesdeProducto,
 } from './kit';
-import { limaTodayStr, msHastaMananaLima } from '../utils/fechaLima';
-import { volarMonedasGanadas } from '../utils/animations';
 import TIENDA from './demo/tienda.json';
-import INICIO from './demo/inicio.json';
 import MARCAS from './demo/marcas.json';
 import LANDINGS from './demo/landings.json';
 
 /*
- * Navegar la tienda en la Tienda de prueba: las ofertas flash (/ofertas), los
- * nichos (/nichos y /nicho/:slug), la tienda de un vendedor
+ * Navegar la tienda en la Tienda de prueba: los nichos (/nichos y
+ * /nicho/:slug), la tienda de un vendedor
  * (/tienda-vendedor/:slug) y las landings del builder (/:slug).
  *
  * Qué es real y qué es de ejemplo:
- *  - Las ofertas y los nichos son DE EJEMPLO: hoy flashOffers y niches están
- *    vacías en wala.pe (el chip "Sin ofertas (como hoy)" muestra lo real).
- *    Los productos a los que apuntan sí son reales (demo/tienda.json).
+ *  - Los nichos son DE EJEMPLO: hoy niches está vacía en wala.pe. Los
+ *    productos a los que apuntan sí son reales (demo/tienda.json).
  *  - El vendedor "WALA" es el único real de vendors (sin productos ni logo);
  *    el otro vendedor es de ejemplo, con los productos reales de MUSSA.
  *  - Las landings son reales: landingPages + pages/{slug} y los productos de
@@ -26,66 +22,6 @@ import LANDINGS from './demo/landings.json';
 
 const espera = (ms) => new Promise((r) => { setTimeout(r, ms); });
 const POR_PAGINA = 12;
-
-/** Fecha AAAA-MM-DD (Lima) dentro de `dias` días. */
-const enDias = (dias) => {
-  const d = new Date(`${limaTodayStr()}T12:00:00`);
-  d.setDate(d.getDate() + dias);
-  return d.toISOString().slice(0, 10);
-};
-
-const TODOS = [...TIENDA.productos, ...INICIO.productos.ofertas, ...INICIO.productos.nuevos, ...INICIO.productos.destacados];
-const PRODUCTO = new Map(TODOS.map((p) => [p.id, p]));
-const LUFFY = TIENDA.productos.find((p) => p.name.includes('Luffy')) || TIENDA.productos[0];
-const UNIVERSITARIO = INICIO.productos.ofertas[0];
-
-/* Ofertas de ejemplo con los mismos campos que flashOffers (las fechas como
-   las guarda el admin: 'AAAA-MM-DD'). La última ya terminó: no se muestra. */
-const OFERTAS_EJEMPLO = [
-  { id: 'o1', title: 'Casacas de One Piece', productId: LUFFY.id, discountPct: 10, startsAt: enDias(-3), endsAt: enDias(2), active: true, order: 1 },
-  { id: 'o2', title: 'Polo Universitario · 100 años', productId: UNIVERSITARIO.id, discountPct: 24, startsAt: enDias(-1), endsAt: enDias(0), active: true, order: 2 },
-  { id: 'o3', title: 'Envío gratis desde S/ 80', discountPct: 15, startsAt: enDias(-5), endsAt: enDias(20), active: true, order: 3 },
-  { id: 'o4', title: 'Black Friday Walá', discountPct: 30, startsAt: '2026-11-27', endsAt: '2026-11-30', active: true, order: 4 },
-  { id: 'o5', title: 'Fiestas Patrias', discountPct: 20, startsAt: '2026-07-20', endsAt: '2026-07-31', active: true, order: 5 },
-];
-
-export const ESTADOS_OFERTAS = [
-  ['vacia', 'Sin ofertas (como hoy)'],
-  ['abierto', 'Cofre ya abierto hoy'],
-  ['falla', 'El cofre falla'],
-  ['error', 'Error al cargar'],
-  ['cargando', 'Cargando'],
-];
-
-export function OfertasDemo({ sesion = true, estados = [], monedas = 0, onMonedas, toast }) {
-  const ofertas = useMemo(() => ofertasVigentes(
-    OFERTAS_EJEMPLO.map((o) => ofertaDesdeFirestore(o, { producto: PRODUCTO.get(o.productId) })),
-  ), []);
-  let estado;
-  if (estados.includes('cargando')) estado = 'cargando';
-  else if (estados.includes('error')) estado = 'error';
-  return (
-    <PaginaOfertas
-      key={estados.join()}
-      estado={estado}
-      sesion={sesion}
-      ofertas={estados.includes('vacia') ? [] : ofertas}
-      onReintentar={() => toast?.({ tipo: 'info', titulo: 'Volviendo a cargar las ofertas', duracion: 1800 })}
-      cofre={{
-        abiertoHoy: estados.includes('abierto'),
-        hasta: new Date(Date.now() + msHastaMananaLima()).toISOString(),
-        onAbrir: async (boton) => {
-          await espera(900); // lo que tarda openDailyChestSecure
-          if (estados.includes('falla')) throw new Error('Error al abrir el cofre diario. Inténtalo en un momento.');
-          const premio = 12;
-          volarMonedasGanadas(boton, premio);
-          onMonedas?.(premio);
-          return { premio, saldo: monedas + premio };
-        },
-      }}
-    />
-  );
-}
 
 /* ── Nichos ── */
 

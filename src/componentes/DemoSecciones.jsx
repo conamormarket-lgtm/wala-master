@@ -61,7 +61,7 @@ const ejemplos = (img, logos = []) => ({
     ['Título resaltado a la derecha', { title: 'Para regalar', titleBg: '#fde68a', titleAlign: 'right', visibleItems: 3 }],
   ],
   new_arrivals_carousel: [['Carrusel', { eyebrow: 'Recién llegados', title: 'Novedades', visibleItems: 4 }]],
-  sale_carousel: [['Carrusel', { title: 'Ofertas', visibleItems: 4, buttonText: 'Ver ofertas', buttonLink: '/ofertas' }]],
+  sale_carousel: [['Carrusel', { title: 'Ofertas', visibleItems: 4, buttonText: 'Ver ofertas', buttonLink: '/tienda' }]],
   category_carousel: [['Carrusel', { title: 'Poleras', visibleItems: 4, categoryId: 'poleras' }]],
   collection_carousel: [['Carrusel', { title: 'Colección San Valentín', collection: 'san-valentin', visibleItems: 4 }]],
   flash_sales: [

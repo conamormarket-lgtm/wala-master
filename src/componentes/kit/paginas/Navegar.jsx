@@ -1,24 +1,23 @@
 import React from 'react';
-import { Search, ArrowLeft, RotateCcw, Store, Shapes } from 'lucide-react';
+import { Search, ArrowLeft, Store, Shapes } from 'lucide-react';
 import Boton from '../Boton';
-import { EstadoVacio, Aviso } from '../Feedback';
+import { EstadoVacio } from '../Feedback';
 import { Trazo, Sello } from '../Marca';
 import { Texto } from '../Traduccion';
-import { BloqueSeccion, TituloSeccion } from '../Seccion';
+import { BloqueSeccion } from '../Seccion';
 import { Encabezado } from '../SeccionesContenido';
 import { GrillaProductos } from '../SeccionesExtra';
 import { EsqueletoPagina } from '../Esqueletos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
-import { CofreDiario, TarjetaOferta } from '../piezas/Ofertas';
 import { TarjetaCategoria } from '../piezas/TarjetaCategoria';
 import { Avatar } from '../piezas/Avatar';
 import { Migas } from '../piezas/Ficha';
 import s from './Navegar.module.css';
 
 /*
- * Navegar la tienda fuera del builder: las ofertas flash (/ofertas), los
- * nichos (/nichos), un nicho (/nicho/:slug) y la tienda de un vendedor
- * (/tienda-vendedor/:slug). Las landings (/:slug) son del builder: van con
+ * Navegar la tienda fuera del builder: los nichos (/nichos), un nicho
+ * (/nicho/:slug) y la tienda de un vendedor (/tienda-vendedor/:slug). (Las
+ * ofertas flash y el cofre diario se retiraron el 2026-10-16.) Las landings (/:slug) son del builder: van con
  * PaginaTienda.
  */
 
@@ -33,77 +32,6 @@ function PieNavegar({ urlBuscar = '/buscar', urlTienda = '/' }) {
 }
 
 const cuantos = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
-
-/* ── Ofertas flash (/ofertas) ───────────────────────────── */
-
-/**
- * Ofertas flash: el cofre diario y las ofertas de flashOffers.
- *  - ofertas: ya traducidas con ofertaDesdeFirestore y filtradas con
- *    ofertasVigentes (activas y próximas; las terminadas no se muestran)
- *  - cofre: props de <CofreDiario> ({ onAbrir, abiertoHoy, hasta, premio })
- *  - sesion · urlLogin: sin cuenta, el cofre invita a entrar (las ofertas se ven igual)
- *  - estado: 'cargando' | 'error' (onReintentar)
- *  - urlTienda: adónde ir si no hay ofertas
- *  - titulo, subtitulo
- */
-export function PaginaOfertas({
-  ofertas = [], cofre = {}, sesion = true, urlLogin = '/login', estado, onReintentar, urlTienda = '/tienda',
-  titulo = 'Ofertas Flash', subtitulo = 'Promociones por tiempo limitado. ¡Aprovecha antes de que terminen!',
-}) {
-  if (estado === 'cargando') return <EsqueletoPagina forma="ofertas" sesion={sesion} />;
-  const activas = ofertas.filter((o) => o.estado !== 'proxima');
-  const proximas = ofertas.filter((o) => o.estado === 'proxima');
-  const grilla = (lista) => (
-    <ul className={s.ofertas}>
-      {lista.map((o) => <li key={o.id || o.titulo}><TarjetaOferta {...o} /></li>)}
-    </ul>
-  );
-  let cuerpo;
-  if (estado === 'error') {
-    cuerpo = (
-      <Aviso
-        tipo="error"
-        titulo="No pudimos cargar las ofertas"
-        accion={onReintentar && <Boton variante="secundario" tamano="sm" icono={<RotateCcw aria-hidden="true" />} onClick={onReintentar}>Reintentar</Boton>}
-      >
-        Revisa tu conexión e inténtalo otra vez.
-      </Aviso>
-    );
-  } else if (!ofertas.length) {
-    cuerpo = (
-      <EstadoVacio imagen={CARAS_KAPI.triste} titulo="No hay ofertas flash activas en este momento" texto="Las ofertas duran poco: ¡vuelve pronto! Mientras, abre tu cofre o mira la tienda.">
-        <Boton to={urlTienda} icono={<Store aria-hidden="true" />}>Ver la tienda</Boton>
-      </EstadoVacio>
-    );
-  } else {
-    cuerpo = (
-      <>
-        {activas.length > 0 && grilla(activas)}
-        {proximas.length > 0 && (
-          <div className={s.proximas}>
-            <TituloSeccion titulo="Muy pronto" subtitulo="Guárdate la fecha." alinear="center" subrayado />
-            {grilla(proximas)}
-          </div>
-        )}
-      </>
-    );
-  }
-  return (
-    <>
-      <BloqueSeccion ajustes={{ paddingTop: '1.75rem', paddingBottom: '0.75rem' }}>
-        <Encabezado ajustes={{ title: titulo, subtitle: subtitulo }} />
-      </BloqueSeccion>
-      <BloqueSeccion ajustes={{ paddingTop: '0.75rem', paddingBottom: '0.75rem' }}>
-        <div className={s.angosto}>
-          <CofreDiario sesion={sesion} urlLogin={urlLogin} {...cofre} />
-        </div>
-      </BloqueSeccion>
-      <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }}>
-        <div data-componente="OfertasFlash">{cuerpo}</div>
-      </BloqueSeccion>
-    </>
-  );
-}
 
 /* ── Nichos (/nichos) ───────────────────────────────────── */
 

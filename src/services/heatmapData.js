@@ -191,7 +191,7 @@ const EXACT_PATH_NAMES = {
   '/checkout': 'Pagar (checkout)',
   '/personalizar': 'Personalizar',
   '/nichos': 'Nichos',
-  '/ofertas': 'Ofertas flash',
+  '/ofertas': 'Ofertas flash (retirada)',
   '/suscripciones': 'Suscripciones',
   '/minijuegos': 'Minijuegos',
   '/ruleta': 'Ruleta',

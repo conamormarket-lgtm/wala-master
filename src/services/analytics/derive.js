@@ -53,6 +53,7 @@ const APP_AREAS = [
   { area: 'Mi cuenta', test: (p) => p.startsWith('/cuenta') || p.startsWith('/perfil') },
   { area: 'Minijuegos', test: (p) => p.startsWith('/minijuegos') },
   { area: 'Editor', test: (p) => p.startsWith('/editor') },
+  // /ofertas se retiró el 2026-10-16: queda para nombrar las visitas viejas.
   { area: 'Ofertas', test: (p) => p.startsWith('/ofertas') },
   { area: 'Producto', test: (p) => p.startsWith('/producto') },
   { area: 'Tienda', test: (p) => p.startsWith('/tienda') },

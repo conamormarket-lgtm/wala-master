@@ -1027,33 +1027,7 @@
   }
 }
 
-/* ── Ofertas, nichos y colección (nicho o vendedor) ── */
-.cofreEsq {
-  flex-direction: row;
-  align-items: center;
-  gap: 1.25rem;
-  width: min(100%, 860px);
-  margin: 0 auto;
-}
-
-.ofertasEsq {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 280px));
-  justify-content: center;
-  gap: 1.1rem;
-}
-
-.ofertaEsq {
-  padding: 0;
-  overflow: hidden;
-}
-
-.ofertaEsqCuerpo {
-  display: grid;
-  gap: 0.55rem;
-  padding: 1rem 1.1rem 1.1rem;
-}
-
+/* ── Nichos y colección (nicho o vendedor) ── */
 .nichosEsq {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1160,20 +1134,6 @@
   .nichosEsq {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.85rem;
-  }
-
-  .ofertasEsq {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem;
-  }
-
-  .cofreEsq {
-    flex-wrap: wrap;
-    min-height: 200px !important;
-  }
-
-  .cofreEsqBoton {
-    width: 100% !important;
   }
 }
 

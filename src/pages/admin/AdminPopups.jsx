@@ -193,7 +193,7 @@ const Editor = ({ inicial, idsExistentes, onGuardar, onCancelar, guardando }) =>
             ? 'Lleva a la encuesta (o a iniciar sesión si no la tiene). No se muestra a quien ya la llenó, y completarla cuenta como conversión.'
             : form.objetivo === 'registro'
               ? 'Lleva a crear una cuenta. Nunca se muestra a quien ya inició sesión, y crear la cuenta (con correo o con Google) cuenta como conversión.'
-              : 'Lleva al enlace que pongas. Puede ser una página de la tienda (/ofertas) o un enlace externo.'}
+              : 'Lleva al enlace que pongas. Puede ser una página de la tienda (/tienda) o un enlace externo.'}
         >
           <Select campo="objetivo" value={form.objetivo} onChange={set('objetivo')} />
         </Campo>
@@ -205,7 +205,7 @@ const Editor = ({ inicial, idsExistentes, onGuardar, onCancelar, guardando }) =>
           )}
           {form.objetivo === 'enlace' && (
             <Campo label="Enlace">
-              <input value={form.botonUrl} onChange={setInput('botonUrl')} placeholder="/ofertas" required />
+              <input value={form.botonUrl} onChange={setInput('botonUrl')} placeholder="/tienda" required />
             </Campo>
           )}
         </div>

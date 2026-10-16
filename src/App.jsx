@@ -140,7 +140,6 @@ const NichePage = lazy(() => import('./pages/NichePage'));
 const VendorPanel = lazy(() => import('./pages/VendorPanel'));
 const NichesPage = lazy(() => import('./pages/NichesPage'));
 const VendorStorefrontPage = lazy(() => import('./pages/VendorStorefrontPage'));
-const OfertasFlashPage = lazy(() => import('./pages/OfertasFlashPage'));
 const SorteosPage = lazy(() => import('./pages/SorteosPage'));
 
 // Página pública "Sorteo por suscripción" (auto-débito Culqi/PayPal). Rutas
@@ -182,7 +181,6 @@ const AdminRecompensas = lazy(() => import('./pages/admin/AdminRecompensas'));
 const AdminEnviosZonas = lazy(() => import('./pages/admin/AdminEnviosZonas'));
 const AdminPayouts = lazy(() => import('./pages/admin/AdminPayouts'));
 const AdminBlueprints = lazy(() => import('./pages/admin/AdminBlueprints'));
-const AdminFlashOffers = lazy(() => import('./pages/admin/AdminFlashOffers'));
 const AdminSorteos = lazy(() => import('./pages/admin/AdminSorteos'));
 const AdminSorteoDetalle = lazy(() => import('./pages/admin/AdminSorteoDetalle'));
 
@@ -487,7 +485,6 @@ function App() {
                                       <Route path="envios" element={<AdminEnviosZonas />} />
                                       <Route path="payouts" element={<AdminPayouts />} />
                                       <Route path="blueprints" element={<AdminBlueprints />} />
-                                      <Route path="flash-offers" element={<AdminFlashOffers />} />
 
                                       <Route path="whatsapp" element={<AdminWhatsApp />} />
                                       <Route path="referidos" element={<AdminReferidos />} />
@@ -566,7 +563,8 @@ function App() {
                                   <Route path="/nichos" element={<NichesPage />} />
                                   <Route path="/vendedor" element={<RutaPrivada><VendorPanel /></RutaPrivada>} />
                                   <Route path="/tienda-vendedor/:slug" element={<VendorStorefrontPage />} />
-                                  <Route path="/ofertas" element={<OfertasFlashPage />} />
+                                  {/* Ofertas flash y el cofre diario: retirados el 2026-10-16. Un enlace viejo va a la tienda. */}
+                                  <Route path="/ofertas" element={<Navigate to="/tienda" replace />} />
                                   <Route path="/sorteos" element={<SorteosPage />} />
 
                                   {/* Sorteo específico por slug (compartible desde lives). */}

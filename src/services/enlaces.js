@@ -1,6 +1,6 @@
 // ── Enlaces útiles (constructor tipo LINKTREE / link-in-bio) ─────────────────
 // Colección Firestore: 'link_pages'. Cada doc es una PÁGINA pública de botones
-// que se sirve en /l/{slug}. Molde: flashOffers.js (CRUD sobre firestore.js).
+// que se sirve en /l/{slug}. CRUD sobre firestore.js.
 //
 // REGLAS DURAS del dueño:
 //  - Contadores en la NUBE (denormalizados con FieldValue.increment), NUNCA

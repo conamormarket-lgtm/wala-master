@@ -1,7 +1,7 @@
 // =========================================================================
 // Walá — AdminEnlaces (lista de páginas "Enlaces útiles" tipo Linktree)
 // -------------------------------------------------------------------------
-// Molde: AdminFlashOffers.jsx (react-query + mutaciones + modal de borrado).
+// react-query + mutaciones + modal de borrado.
 // Esta pantalla SOLO lista las páginas de enlaces (título, slug, estado,
 // visitas). El CONSTRUCTOR en sí (cabecera, botones, redes, diseño, analítica)
 // vive en AdminEnlaceEditor.jsx bajo /admin/enlaces/:id.

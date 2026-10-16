@@ -794,28 +794,6 @@ const PAGINAS = {
       </span>
     </span>
   ),
-  ofertas: () => (
-    // /ofertas: el encabezado, el cofre diario y las ofertas (foto, sello y textos).
-    <>
-      <EncabezadoCentrado />
-      <Caja alto={112} className={s.cofreEsq}>
-        <Hueso forma="circulo" ancho={68} alto={68} />
-        <span className={s.filaTextos}><Hueso alto={20} ancho="40%" /><Hueso alto={11} ancho="75%" /><Hueso alto={11} ancho="45%" /></span>
-        <Hueso forma="pildora" alto={44} ancho={190} className={s.cofreEsqBoton} />
-      </Caja>
-      <span className={s.ofertasEsq}>{repetir(4, (k) => (
-        <Caja key={k} className={s.ofertaEsq}>
-          <Hueso forma="bloque" proporcion="4 / 3" ancho="100%" />
-          <span className={s.ofertaEsqCuerpo}>
-            <Hueso alto={16} ancho="70%" />
-            <Hueso alto={10} ancho="50%" />
-            <Hueso alto={10} ancho="60%" />
-            <Hueso forma="pildora" alto={36} ancho={130} />
-          </span>
-        </Caja>
-      ))}</span>
-    </>
-  ),
   nichos: () => (
     // /nichos: el encabezado y los cuadros (foto y nombre con su tipo).
     <>
@@ -1034,7 +1012,7 @@ const PAGINAS = {
  * Para cambiar de página siempre es esto (CapaCargando es para esperar una acción).
  *  - forma: 'productos' (la grilla, por defecto) | 'inicio' | 'tienda' |
  *    'busqueda' | 'producto' | 'carrito' | 'checkout' | 'crear' | 'estudio' | 'comunidad' | 'minijuegos' | 'encuesta' |
- *    'acceso' | 'cuenta' | 'lista' | 'formulario' | 'ofertas' | 'nichos' | 'coleccion' (un nicho o un vendedor) |
+ *    'acceso' | 'cuenta' | 'lista' | 'formulario' | 'nichos' | 'coleccion' (un nicho o un vendedor) |
  *    'legal' (privacidad, términos) | 'reclamaciones' | 'verDiseno' |
  *    'palabra' | 'ruleta' | 'bolitas' (los minijuegos por dentro) | 'sorteo' |
  *    'suscripcionSorteo' | 'landing' (Suscripciones, Regalos con amor) | 'enlaces'

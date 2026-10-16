@@ -65,7 +65,7 @@ Cada paso en su propio commit, verificable por separado.
    perfil: ACCESO.md; chicas y aisladas, buenas para empezar) y Crear
    (`PaginaCrear`, CREAR.md; después de Mis creaciones: comparten
    `TarjetaCreacion`) y navegar la tienda (un nicho y un vendedor con
-   `PaginaColeccion`, los nichos y las ofertas: NAVEGAR.md; las landings
+   `PaginaColeccion` y los nichos: NAVEGAR.md; las landings
    `/:slug` van con el paso 5, son del builder) y las legales (privacidad y
    términos con `PaginaLegal`, el libro con `PaginaReclamaciones`:
    LEGALES.md; chicas y aisladas) y los juegos por dentro (las bolitas, la

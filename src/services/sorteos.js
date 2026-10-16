@@ -1,8 +1,8 @@
 // ── Servicio de Sorteos (Módulo Sorteos, Build 1) ───────────────────────────
 // Lecturas públicas del sorteo + wrapper de la Cloud Function callable
-// `participarSorteoGratis` (contrato del Agente A). Sigue el molde de
-// services/flashOffers.js (lecturas) y services/payments.js / ruleta.js
-// (callables). Convención de retorno: { data, error }.
+// `participarSorteoGratis` (contrato del Agente A). Lecturas sobre
+// firestore.js y callables como services/payments.js / ruleta.js.
+// Convención de retorno: { data, error }.
 //
 // FILOSOFÍA DE POCAS LECTURAS (regla dura del proyecto):
 //   - La página NO escanea la subcolección de participantes.
@@ -181,8 +181,8 @@ export const participarGratis = async (sorteoId, origenApp = false, datos = {}) 
 
 // ── CRUD ADMIN ──────────────────────────────────────────────────────────────
 // Escrituras del panel admin. Las reglas de Firestore restringen estas
-// operaciones al administrador (base compartida con el ERP). Sigue el molde de
-// services/flashOffers.js. Convención de retorno de firebase/firestore:
+// operaciones al administrador (base compartida con el ERP). Convención de
+// retorno de firebase/firestore:
 //   createDocument → { id, error }; update/delete → { error }.
 
 /**
