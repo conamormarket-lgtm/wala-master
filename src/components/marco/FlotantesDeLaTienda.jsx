@@ -4,7 +4,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { PilaFlotante, BotonWhatsApp, PildoraRecompensa } from '../../componentes/kit/piezas/Flotantes';
 import useWhatsAppDeLaRuta from './useWhatsAppDeLaRuta';
 
-const KapiPet = lazy(() => import('../common/KapiPet/KapiPet'));
+// Kapi (con su ventana, el reto y el recorrido) llega en su propio archivo,
+// como antes: no hace falta para ver la página.
+const Kapi = lazy(() => import('./Kapi'));
 
 // Páginas con su propio botón fijo abajo: en el celular la pila tapaba
 // título, precio y opciones (antes, .App:has(.product-detail-page)).
@@ -32,8 +34,8 @@ const pildoraOculta = () => {
  * Lo que flota sobre la página (M7-M10) con el kit: PilaFlotante, abajo a la
  * derecha y sobre la barra inferior en el celular. El primero queda abajo:
  * WhatsApp y encima Kapi. A la izquierda, la píldora "Gana 15 monedas".
- * Cada uno decide si sale. Reemplaza al .floating-action-stack de App.jsx y
- * a la píldora que dibujaba Header.jsx.
+ * Cada uno decide si sale. Reemplaza al .floating-action-stack de App.jsx, a
+ * KapiPet y a la píldora que dibujaba Header.jsx.
  */
 export default function FlotantesDeLaTienda() {
   const { pathname } = useLocation();
@@ -69,7 +71,7 @@ export default function FlotantesDeLaTienda() {
       )}
     >
       {whatsapp && <BotonWhatsApp numero={whatsapp.numero} mensaje={whatsapp.mensaje} />}
-      <Suspense fallback={null}><KapiPet /></Suspense>
+      <Suspense fallback={null}><Kapi /></Suspense>
     </PilaFlotante>
   );
 }
