@@ -87,7 +87,9 @@ logo y la foto de Con Amor Geeks es la de su landing real, pero en
 `tienda_brands` todavía no existe `identidad` (todas tienen `bgColor`
 blanco). Las frases también son de ejemplo. Los productos y las burbujas sí
 son reales (los combos de Yoryo traen sus piezas, `comboItems`, copiadas
-de `productos_wala` el 2026-10-16: sin ellas la tarjeta salía sin foto).
+de `productos_wala` el 2026-10-16: sin ellas la tarjeta salía sin foto; y
+todos los combos de la demo, su portada `comboPreviewImage`, que la tarjeta
+usa primero como la tienda).
 
 ### Partes
 

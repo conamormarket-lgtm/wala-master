@@ -79,13 +79,26 @@ export const esNuevo = (p, ahora = Date.now()) => {
  *    y el nombre de la categoría. marcaActual = id de la marca de la página
  *    (dentro de una marca no se repite su logo en cada tarjeta).
  */
+/**
+ * La portada de un combo (comboPreviewImage, la que sube el admin), con la
+ * misma regla que ComboProductImage de la tienda: una URL de verdad (ni
+ * vacía, ni data:, ni el placeholder). Sin ella, el combo se ve con sus
+ * piezas.
+ */
+export function portadaDeCombo(p = {}) {
+  const url = typeof p.comboPreviewImage === 'string' ? p.comboPreviewImage.trim() : '';
+  if (!p.isComboProduct || !url || url.toLowerCase().startsWith('data:') || url.includes('placeholder')) return '';
+  return url;
+}
+
 export function tarjetaDesdeProducto(p, { imagen, catalogo = {} } = {}) {
   const vs = variantesDe(p);
   const { marcas = [], categorias = [], marcaActual = null } = catalogo;
   const m = !marcaActual && p.brandId ? marcas.find((x) => x.id === p.brandId) : null;
   const cat = (p.categories || []).map((id) => categorias.find((c) => (c.categoryId || c.id) === id)).find(Boolean);
   const principal = vs.find((v) => String(v.id) === String(p.defaultVariantId)) || vs[0];
-  const fotos = [principal?.imageUrl, ...(principal?.images || []), p.mainImage, ...(p.images || [])].filter(Boolean);
+  // Un combo con portada se ve con ella (como en la tienda); sin portada, con sus piezas.
+  const fotos = [portadaDeCombo(p), principal?.imageUrl, ...(principal?.images || []), p.mainImage, ...(p.images || [])].filter(Boolean);
   return {
     url: p.esPrendaBase ? `/crear/${p.id}` : `/producto/${p.id}`,
     imagen: imagen || fotos[0],
@@ -952,13 +965,13 @@ export function fichaProductoDesde(p = {}, { catalogo = {}, subproductos = {} } 
   const cat = (p.categories || []).map((id) => categorias.find((c) => (c.categoryId || c.id) === id)).find(Boolean);
   const delProducto = [p.mainImage, ...(p.images || [])];
   const base = p.isComboProduct
-    ? fotosGaleria([p.comboPreviewImage, ...(p.comboItems || []).map((it) => it.imageUrl), ...delProducto], Object.fromEntries((p.comboItems || []).map((it) => [it.imageUrl, it.name])))
+    ? fotosGaleria([portadaDeCombo(p), ...(p.comboItems || []).map((it) => it.imageUrl), ...delProducto], Object.fromEntries((p.comboItems || []).map((it) => [it.imageUrl, it.name])))
     : fotosGaleria(delProducto);
   const fotos = { base };
   if (p.isComboProduct) {
     const urls = (lista) => [...new Set(lista.filter(Boolean))];
     fotos.combo = {
-      portada: urls([p.comboPreviewImage]),
+      portada: urls([portadaDeCombo(p)]),
       piezas: (p.comboItems || []).map((it) => {
         const sub = subproductos[it.productId];
         const vs = variantesDePieza(sub, it);
