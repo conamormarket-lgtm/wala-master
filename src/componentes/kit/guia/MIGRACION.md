@@ -19,6 +19,7 @@ principal (y a la APK de Capacitor).
 | Qué | Dónde |
 |---|---|
 | `ProveedorEnlaces` (envuelve el router) | `src/App.jsx` |
+| `ProveedorTraduccion` (los textos del kit pasan por el mismo motor que `<T>`) | `src/App.jsx` |
 | `ProveedorToasts`: `ToastProvider` es un puente, así que todos los `useGlobalToast()` ya muestran los toasts del kit | `src/contexts/ToastContext.jsx` |
 | `Boton` en carrito y checkout (el verde de WhatsApp y "Aplicar" del cupón siguen igual) | `pages/CartPage.jsx`, `pages/CheckoutPage.jsx`, `pages/Tienda/components/Cart/Cart.jsx` |
 | Monedas que vuelan (`showFlyingCoins` / `volarMonedasGanadas`): en arco, girando, con "+N" y el saldo que late; mismos eventos para la cabecera | `src/utils/animations.js` (toda la tienda) |
@@ -36,7 +37,7 @@ token `--escenario-foto` de `tokens.css`) también está ya en la tienda.
 
 Cada paso en su propio commit, verificable por separado.
 
-1. ✓ Proveedores y `Boton` (arriba). Falta `ProveedorTraduccion` en `App.jsx`, al lado de
+1. ✓ Proveedores y `Boton` (arriba). `ProveedorTraduccion` ya está en `App.jsx`, dentro de
    `ProveedorEnlaces`, con `useTranslatedText` y `useTranslatedHtml` (TRADUCCION.md). No cambia
    nada en español.
 2. **Marco**: `BarraAdmin`, `AvisoSistema`, `BannerApp`, flotantes

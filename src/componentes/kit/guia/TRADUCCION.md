@@ -24,7 +24,7 @@ Igual que con los enlaces: el kit no traduce por su cuenta, la tienda le pasa
 cómo hacerlo.
 
 ```jsx
-// src/App.jsx (a futuro), junto a ProveedorEnlaces:
+// src/App.jsx (ya en la tienda), dentro de ProveedorEnlaces:
 import { ProveedorTraduccion } from './componentes/kit/Traduccion';
 import { useTranslatedText, useTranslatedHtml } from './i18n/useTranslatedText';
 
@@ -66,6 +66,16 @@ import { useTranslatedText, useTranslatedHtml } from './i18n/useTranslatedText';
 
 ## Llevar a la tienda
 
-Es el paso más chico: el proveedor en `App.jsx`, al lado de
+Hecho el 2026-10-16: el proveedor está en `App.jsx`, dentro de
 `ProveedorEnlaces`. No cambia nada en español. En inglés, las piezas del
-kit que ya estén en la tienda traducen sus textos de los datos como `<T>`.
+kit que ya estén en la tienda traducen sus textos como `<T>`.
+
+**Textos fijos del kit:** se decidió pasarlos por el mismo `useTexto`
+(`<Texto>` en JSX), pieza por pieza al llevarlas a la tienda, empezando por
+el marco. Así no hace falta un diccionario aparte y en español no cambia
+nada. Los textos que la tienda ya trae de su diccionario
+(`t('lang.popupTitle')`…) se pasan tal cual, sin volver a traducirlos.
+
+**En local** el traductor no responde (tampoco el `<T>` viejo), así que en
+inglés solo se puede comprobar que nada se rompe; la traducción real se ve
+en producción.

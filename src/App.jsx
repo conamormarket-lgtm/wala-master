@@ -2,6 +2,9 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 // Los enlaces del kit (Boton con `to`, secciones…) navegan con el router.
 import { ProveedorEnlaces } from './componentes/kit/Enlace';
+// Y traducen sus textos con el mismo motor que <T> (en español no hace nada).
+import { ProveedorTraduccion } from './componentes/kit/Traduccion';
+import { useTranslatedText, useTranslatedHtml } from './i18n/useTranslatedText';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -370,6 +373,7 @@ function App() {
                       <LayoutProvider>
                         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                          <ProveedorEnlaces componente={Link}>
+                         <ProveedorTraduccion texto={useTranslatedText} html={useTranslatedHtml}>
                           <CustomFontsInjector routeFonts />
                           <DeepLinkHandler />
                           <ScrollToTop />
@@ -580,6 +584,7 @@ function App() {
                               </Suspense>
                             </ErrorBoundary>
                           </GlobalLayout>
+                         </ProveedorTraduccion>
                          </ProveedorEnlaces>
                         </Router>
                       </LayoutProvider>
