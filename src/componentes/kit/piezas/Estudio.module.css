@@ -1050,3 +1050,13 @@
     display: none;
   }
 }
+
+/* Varias elegidas: la caja punteada que las mueve juntas. */
+.cajaVarias {
+  position: absolute;
+  z-index: 5;
+  border: 1.5px dashed #7c3aed;
+  border-radius: 4px;
+  cursor: move;
+  touch-action: none;
+}

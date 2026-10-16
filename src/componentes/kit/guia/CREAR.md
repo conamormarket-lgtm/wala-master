@@ -252,6 +252,16 @@ Las piezas están en `piezas/Estudio.jsx`:
   - Soltar una capa fuera de su zona, sobre otra de este lado
     (`onPasarCapa`), la pasa a esa (la zona se marca mientras se arrastra).
     Si no entra, al 90% y al centro; un texto en una manga va girado.
+    Varias de una misma zona pasan juntas (por dónde está el puntero).
+  - **Varias elegidas** llevan una caja punteada: se arrastran tomándola de
+    cualquier parte, también del hueco entre ellas (Shift + clic suma o
+    quita la de debajo).
+  - **A otro lado de la prenda:** mientras se arrastra (una o varias), arriba
+    de la prenda sale "Suelta aquí para pasar a Espalda" (`onArrastre`, y la
+    página pone esos destinos con `data-soltar-lado`). Al soltar ahí pasan a
+    la zona del mismo nombre de ese lado (o a la primera), en el lugar donde
+    estaban, y la vista cambia a ese lado (`onPasarALado`). Un solo paso de
+    deshacer.
   - Un texto que se pasa del borde vuelve adentro al soltarlo, y uno que no
     entra en el 96% de su zona se achica solo (`onEncajar`).
   - **Recuadro** con el ratón sobre el fondo para elegir varias (Shift
@@ -450,6 +460,15 @@ alrededor, por partes.
   `anchoZonaCm`; la guía de los dedos se marca como vista con
   `onGuiaGestosVista` (hoy, `localStorage` `crear_guia_gestos`). `LienzoPrenda` sirve para las
   miniaturas y para la vista previa de Crear, no reemplaza al lienzo.
+- **Lo que vive en el lienzo no llega solo.** Las guías, las asas, escribir
+  sobre la prenda, el recuadro, pasar a otra zona y el acercamiento en el
+  teléfono ya los tiene el lienzo de fabric (el kit los copió de ahí). Lo
+  que el kit tiene y fabric no, hay que hacerlo en `CrearStudioPage` al
+  migrar:
+  - arrastrar a otro lado de la prenda ("Suelta aquí para pasar a…");
+  - pasar varias juntas a otra zona arrastrándolas;
+  - "Agregar otro: Imagen · Texto" en el panel y "Editar" en la barra
+    (estos son de `PanelCapa` y `BarraLienzo`: llegan con ellos).
 - No se puede perder: el autoguardado del borrador, el aviso al salir sin
   guardar, la regla de la calidad (`calidadDeCapa`), quitar el fondo y
   recortar solo con sesión, `?combo=&pieza=` que vuelve al combo, `?copiar=`

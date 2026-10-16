@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, Save, Download, ShoppingBag, CheckCircle2, LogIn, RotateCcw, Images,
   Type, ImagePlus, ClipboardPaste, Clipboard, Copy, Undo2, Redo2, ArrowUpToLine, ArrowDownToLine, Crosshair,
-  RotateCw, FlipHorizontal, Crop, Eraser, Maximize2, Trash2, Pencil, MousePointerSquareDashed,
+  RotateCw, FlipHorizontal, Crop, Eraser, Maximize2, Trash2, Pencil, MousePointerSquareDashed, ArrowLeftRight,
   AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
   AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter,
 } from 'lucide-react';
@@ -414,10 +414,27 @@ export function PaginaEstudio({
    * donde se soltó. Si no entra, al 90% y al centro; un texto en una zona
    * larga va girado (como la tienda). Un solo paso de deshacer.
    */
-  const pasarCapa = (id, destino, punto) => {
+  const pasarCapa = (id, destino, punto, { grupo } = {}) => {
     const { capa, zonaId: origen } = ubicar(id);
     const z = todasLasZonas.find((x) => x.id === destino);
     if (!capa || !z) { soltar(); return; }
+    if (grupo?.length > 1) {
+      // Varias: van juntas, con la misma distancia entre ellas.
+      const movidas = grupo.map(ubicar).filter((u) => u.capa);
+      const fuera = new Set(movidas.map((u) => u.capa.id));
+      const nuevas = movidas.map(({ capa: c }) => ({
+        ...c,
+        x: limitar(punto.x + (c.x ?? 0.5) - (capa.x ?? 0.5), 0, 1),
+        y: limitar(punto.y + (c.y ?? 0.5) - (capa.y ?? 0.5), 0, 1),
+      }));
+      cambiarCapas((cs) => ({
+        ...Object.fromEntries(Object.entries(cs).map(([zid, lista]) => [zid, lista.filter((c) => !fuera.has(c.id))])),
+        [destino]: [...(cs[destino] || []).filter((c) => !fuera.has(c.id)), ...nuevas],
+      }), false);
+      soltar();
+      setZonaId(destino);
+      return;
+    }
     let nueva = { ...capa, ...punto };
     if (capa.tipo === 'imagen' && (capa.ancho ?? 0.8) > 0.9) nueva = { ...nueva, ancho: 0.9, x: 0.5, y: 0.5 };
     if (capa.tipo === 'texto' && esLarga(z) && !esLarga(todasLasZonas.find((x) => x.id === origen)) && !(capa.angulo % 180)) nueva = { ...nueva, angulo: 90 };
@@ -425,6 +442,44 @@ export function PaginaEstudio({
     soltar();
     setZonaId(destino);
   };
+  /**
+   * Arrastradas hasta "Suelta aquí para pasar a Espalda": pasan a ese lado,
+   * a la zona del mismo nombre (o a la primera), en el lugar donde estaban
+   * antes de arrastrarlas. Si no entra, al 90% y al centro; un texto en una
+   * manga va girado.
+   */
+  const pasarALado = (ids, ladoId) => {
+    const lado = vistas.find((v) => v.id === ladoId);
+    // Donde estaban antes del arrastre (el arrastre las llevó hasta el borde).
+    const antes = Object.values(arrastreInicio.current || {}).flat();
+    const movidas = ids.map(ubicar).filter((u) => u.capa).map((u) => {
+      const previa = antes.find((c) => c.id === u.capa.id);
+      return previa ? { ...u, capa: { ...u.capa, x: previa.x, y: previa.y } } : u;
+    });
+    if (!lado?.zonas.length || !movidas.length) { soltar(); return; }
+    const destinos = movidas.map(({ zonaId: zid }) => {
+      const antes = todasLasZonas.find((z) => z.id === zid);
+      return lado.zonas.find((z) => z.nombre === antes?.nombre) || lado.zonas[0];
+    });
+    cambiarCapas((cs) => {
+      const fuera = new Set(movidas.map((u) => u.capa.id));
+      const nuevo = Object.fromEntries(Object.entries(cs).map(([zid, lista]) => [zid, lista.filter((c) => !fuera.has(c.id))]));
+      movidas.forEach(({ capa }, i) => {
+        const z = destinos[i];
+        let c = { ...capa, x: limitar(capa.x ?? 0.5, 0, 1), y: limitar(capa.y ?? 0.5, 0, 1) };
+        if (c.tipo === 'imagen' && (c.ancho ?? 0.8) > 0.9) c = { ...c, ancho: 0.9, x: 0.5, y: 0.5 };
+        if (c.tipo === 'texto' && esLarga(z) && !(c.angulo % 180)) c = { ...c, angulo: 90 };
+        nuevo[z.id] = [...(nuevo[z.id] || []), c];
+      });
+      return nuevo;
+    }, false);
+    soltar();
+    setVistaId(lado.id);
+    setZonaId(destinos[0].id);
+    onAviso?.({ tipo: 'info', titulo: movidas.length > 1 ? `Pasaron a ${lado.nombre}` : `Pasó a ${lado.nombre}` });
+  };
+  const [arrastrando, setArrastrando] = useState(null); // { lado }: se arrastra algo (los destinos de otro lado se ven)
+
   /** El recuadro del ratón: lo que tocó (con Shift, se suma a lo elegido). */
   const elegirVarias = (ids, { sumar } = {}) => {
     const lista = sumar ? [...new Set([...elegidas, ...ids])] : ids;
@@ -1058,7 +1113,18 @@ export function PaginaEstudio({
             onEscribir: escribir,
             onTerminarTexto: terminarTexto,
             camaraSuave,
-            encima: guia ? <GuiaGestos onEntendido={cerrarGuia} /> : vacio && !cargandoDiseno && zona && zoom === 1 && (
+            onArrastre: vistas.length > 1 ? ({ activo, lado }) => setArrastrando(activo ? { lado: lado || null } : null) : undefined,
+            onPasarALado: pasarALado,
+            encima: arrastrando ? (
+              // Mientras se arrastra algo: arriba de la prenda, a qué otro lado se puede pasar.
+              <div className={s.soltarLados} role="status">
+                {vistas.filter((v) => v.id !== vista.id).map((v) => (
+                  <span key={v.id} data-soltar-lado={v.id} className={[s.soltarLado, arrastrando.lado === v.id && s.soltarLadoActivo].filter(Boolean).join(' ')}>
+                    <ArrowLeftRight aria-hidden="true" /> Suelta aquí para pasar a <strong>{v.nombre}</strong>
+                  </span>
+                ))}
+              </div>
+            ) : guia ? <GuiaGestos onEntendido={cerrarGuia} /> : vacio && !cargandoDiseno && zona && zoom === 1 && (
               <div className={s.empezar}>
                 <p>Empieza tu diseño en <strong>{nombreZona(zona)}</strong></p>
                 <span className={s.empezarBotones}>

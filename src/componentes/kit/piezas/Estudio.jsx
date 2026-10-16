@@ -167,6 +167,11 @@ function TextoCurvo({ capa: c }) {
  *  - editando: el texto que se escribe sobre la prenda · onEscribir(id,
  *    texto) · onTerminarTexto(id)
  *  - camaraSuave: el cambio de zoom se anima (el acercamiento automático)
+ *  - Varias elegidas llevan una caja punteada: se arrastran tomándola de
+ *    cualquier parte (Shift + clic suma o quita la que está debajo).
+ *  - onArrastre({ activo, lado }): empieza y termina un arrastre; `lado` es
+ *    el [data-soltar-lado] bajo el puntero (la página pone esos destinos,
+ *    p. ej. "Suelta aquí para pasar a Espalda") · onPasarALado(ids, lado)
  *  - onMenu({ x, y, capaId, zonaId, punto }): clic derecho (x, y de la
  *    ventana; punto: 0–1 de la zona) · onDobleClic({ capaId, zonaId, punto })
  *  - onSoltarArchivo(archivo, zonaId): una imagen arrastrada desde la
@@ -237,7 +242,7 @@ export function LienzoPrenda({
   zonaActiva, seleccion, oscura = false, guias = true, onElegirZona, onElegirCapa, onMoverCapa, onSoltarCapa,
   onMenu, onDobleClic, onSoltarArchivo, encima, zoom = 1, camara, onCamara, moverVista = false, onRueda, onGesto,
   cargando = false, className, onPasarCapa, onElegirVarias, onEncajar, editando, onEscribir, onTerminarTexto,
-  camaraSuave = false,
+  camaraSuave = false, onArrastre, onPasarALado,
 }) {
   const marco = useRef(null);
   const arrastre = useRef(null);
@@ -334,6 +339,23 @@ export function LienzoPrenda({
     const ro = new ResizeObserver(medir);
     ro.observe(el);
     return () => ro.disconnect();
+  });
+  // Varias elegidas: una caja punteada alrededor, que se toma de cualquier
+  // parte para moverlas juntas (como la tienda). Px del lienzo.
+  const varias = guias && onMoverCapa && elegidas.length > 1;
+  const [cajaVarias, setCajaVarias] = useState(null);
+  // Se mide en cada render (las capas se mueven); si la caja no cambió, no se actualiza.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    const m = varias && marco.current?.getBoundingClientRect();
+    const rs = m ? elegidas.map((id) => capaEnDom(id)?.getBoundingClientRect()).filter(Boolean) : [];
+    const nueva = rs.length > 1 ? {
+      left: Math.round(Math.min(...rs.map((r) => r.left)) - m.left - 5),
+      top: Math.round(Math.min(...rs.map((r) => r.top)) - m.top - 5),
+      width: Math.round(Math.max(...rs.map((r) => r.right)) - Math.min(...rs.map((r) => r.left)) + 10),
+      height: Math.round(Math.max(...rs.map((r) => r.bottom)) - Math.min(...rs.map((r) => r.top)) + 10),
+    } : null;
+    setCajaVarias((c) => (JSON.stringify(c) === JSON.stringify(nueva) ? c : nueva));
   });
   const ubicada = (id) => {
     for (const [zid, lista] of Object.entries(capas)) {
@@ -525,7 +547,7 @@ export function LienzoPrenda({
     const juntas = grupo.every((id) => lista.some((x) => x.id === id));
     const cajas = juntas ? lista.filter((x) => grupo.includes(x.id)).map((x) => cajaU(x, g)).filter(Boolean) : [];
     arrastre.current = {
-      id: c.id, zonaId, g, solo: grupo.length === 1, texto: c.tipo === 'texto', tactil: e.pointerType === 'touch',
+      id: c.id, zonaId, g, grupo, juntas, solo: grupo.length === 1, texto: c.tipo === 'texto', tactil: e.pointerType === 'touch',
       dx: p.x - (c.x ?? 0.5), dy: p.y - (c.y ?? 0.5), x0: c.x ?? 0.5, y0: c.y ?? 0.5,
       cajaGrupo: cajas.length === grupo.length ? unir(cajas) : null,
       otras: juntas ? lista.filter((x) => !grupo.includes(x.id)).map((x) => cajaU(x, g)).filter(Boolean) : [],
@@ -539,7 +561,6 @@ export function LienzoPrenda({
     const p = a.g.aZona(e.clientX, e.clientY);
     let x = p.x - a.dx;
     let y = p.y - a.dy;
-    a.movio = true;
     let lineas = [];
     if (a.cajaGrupo && !e.altKey) {
       const dx = (x - a.x0) * ANCHO_U;
@@ -552,14 +573,27 @@ export function LienzoPrenda({
       if (lineas.length && !a.pegado && a.tactil) vibrar();
       a.pegado = lineas.length > 0;
     }
-    // Fuera de su zona y sobre otra de este lado: al soltar pasa a esa.
+    // Sobre un destino de otro lado ("Suelta aquí para pasar a Espalda").
+    const lado = onPasarALado
+      ? document.elementsFromPoint(e.clientX, e.clientY).map((el) => el.closest?.('[data-soltar-lado]')).find(Boolean)?.getAttribute('data-soltar-lado') || null
+      : null;
+    if (!a.movio || lado !== a.lado) onArrastre?.({ activo: true, lado });
+    a.lado = lado;
+    // Fuera de su zona y sobre otra de este lado: al soltar pasa a esa. Una
+    // capa sola, por su centro; varias (de una misma zona), por el puntero.
     let destino = null;
-    if (a.solo && onPasarCapa && (x < 0 || x > 1 || y < 0 || y > 1)) {
-      const enPantalla = a.g.aPantalla(x, y);
-      destino = zonaEnPunto(enPantalla.x, enPantalla.y, a.zonaId);
+    if (!lado && onPasarCapa) {
+      if (a.solo && (x < 0 || x > 1 || y < 0 || y > 1)) {
+        const enPantalla = a.g.aPantalla(x, y);
+        destino = zonaEnPunto(enPantalla.x, enPantalla.y, a.zonaId);
+      } else if (!a.solo && a.juntas) {
+        const q = a.g.aZona(e.clientX, e.clientY);
+        if (q.x < 0 || q.x > 1 || q.y < 0 || q.y > 1) destino = zonaEnPunto(e.clientX, e.clientY, a.zonaId);
+      }
     }
     a.destino = destino;
     a.ultimo = { x, y };
+    a.movio = true;
     setPasarA(destino);
     setAyudas(lineas.length ? { zid: a.zonaId, hu: a.g.hu, cmPorU: a.g.cmPorU, lineas } : null);
     onMoverCapa(a.id, a.solo ? { x: Math.min(1.5, Math.max(-0.5, x)), y: Math.min(1.5, Math.max(-0.5, y)) } : { x, y });
@@ -570,11 +604,13 @@ export function LienzoPrenda({
     setAyudas(null);
     setPasarA(null);
     if (!a?.movio) return;
+    onArrastre?.({ activo: false });
+    if (a.lado) { onPasarALado(a.grupo, a.lado); return; }
     if (a.destino) {
       const enPantalla = a.g.aPantalla(a.ultimo.x, a.ultimo.y);
       const g2 = geometria(a.destino);
       const punto = g2 ? g2.aZona(enPantalla.x, enPantalla.y) : { x: 0.5, y: 0.5 };
-      onPasarCapa(a.id, a.destino, { x: Math.min(1, Math.max(0, punto.x)), y: Math.min(1, Math.max(0, punto.y)) });
+      onPasarCapa(a.id, a.destino, { x: Math.min(1, Math.max(0, punto.x)), y: Math.min(1, Math.max(0, punto.y)) }, { grupo: a.grupo });
       return;
     }
     if (a.solo) {
@@ -594,6 +630,25 @@ export function LienzoPrenda({
       if (x !== a.ultimo.x || y !== a.ultimo.y) onMoverCapa(a.id, { x, y });
     }
     onSoltarCapa?.();
+  };
+
+  /** La caja de varias: se toma de cualquier parte; con Shift, suma o quita la de debajo. */
+  const capaBajo = (e) => {
+    const el = document.elementsFromPoint(e.clientX, e.clientY).find((x) => x.hasAttribute?.('data-capa') && marco.current?.contains(x));
+    const id = el?.getAttribute('data-capa');
+    return id ? { capa: ubicada(id).capa, zid: ubicada(id).zid } : {};
+  };
+  const empezarVarias = (e) => {
+    if (e.button === 2) return;
+    const bajo = capaBajo(e);
+    if (e.shiftKey || e.ctrlKey || e.metaKey) {
+      e.stopPropagation();
+      if (bajo.capa) onElegirCapa?.(bajo.capa.id, bajo.zid, { sumar: true });
+      return;
+    }
+    // La que se arrastra: la de debajo del puntero o, en un hueco, la primera.
+    const principal = bajo.capa && elegidas.includes(bajo.capa.id) ? bajo : ubicada(elegidas.find((id) => capaEnDom(id)));
+    if (principal.capa) empezar(e, principal.capa, principal.zid);
   };
 
   /* ── Recuadro con el ratón sobre el fondo: elige lo que toca (Shift suma) ── */
@@ -833,6 +888,24 @@ export function LienzoPrenda({
         </p>
       )}
       {rect && <span className={s.recuadro} style={rect} aria-hidden="true" />}
+      {cajaVarias && (
+        <span
+          className={s.cajaVarias}
+          style={cajaVarias}
+          title="Arrastra para moverlas juntas (Shift + clic: sumar o quitar)"
+          data-componente="CajaVarias"
+          onPointerDown={empezarVarias}
+          onPointerMove={mover}
+          onPointerUp={soltar}
+          onPointerCancel={soltar}
+          onClick={(e) => e.stopPropagation()}
+          onContextMenu={onMenu ? (e) => {
+            e.preventDefault();
+            const bajo = capaBajo(e);
+            onMenu({ x: e.clientX, y: e.clientY, capaId: bajo.capa?.id || elegidas[0], zonaId: bajo.zid });
+          } : undefined}
+        />
+      )}
       {ayudas?.etiqueta && <span className={s.medida} style={{ left: ayudas.etiqueta.x, top: ayudas.etiqueta.y }} aria-live="polite">{ayudas.etiqueta.texto}</span>}
       {cargando && <p className={s.cargandoDiseno} role="status"><LoaderCircle aria-hidden="true" className={s.girando} /> Cargando tu diseño…</p>}
       {encima}

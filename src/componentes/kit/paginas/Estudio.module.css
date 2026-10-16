@@ -359,3 +359,47 @@
   gap: 0.4rem;
   margin-bottom: 0.5rem;
 }
+
+/* Al arrastrar algo: arriba de la prenda, los destinos de los otros lados. */
+.soltarLados {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  left: 0.6rem;
+  z-index: 7;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  pointer-events: none;
+}
+
+.soltarLado {
+  display: inline-flex;
+  pointer-events: auto; /* el lienzo los busca bajo el puntero */
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.9rem;
+  border: 2px dashed var(--violet-500, #8b5cf6);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.85rem;
+  box-shadow: 0 6px 18px rgba(28, 20, 51, 0.12);
+}
+
+.soltarLado svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--violet-500, #8b5cf6);
+}
+
+.soltarLadoActivo {
+  border-style: solid;
+  background: var(--violet-500, #8b5cf6);
+  color: #fff;
+}
+
+.soltarLadoActivo svg {
+  color: #fff;
+}
