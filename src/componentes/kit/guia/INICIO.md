@@ -223,7 +223,7 @@ al inicio.
 
 1. ✓ Marco: `BarraAdmin`, `AvisoSistema`, `BannerApp`, flotantes, `PieLegal` (2026-10-16, un commit por pieza). Al migrar, el kit ganó `BarraAdmin` `fija` y `editarEn`, `BannerApp` `onAccion`, `AvisoIdioma` `flotante`, `VentanaCampana` `textoCerrar`, `PilaFlotante` `ocultarEnCelular` y los adaptadores `avisoDesdeEstadoApp`, `numeroWhatsApp`, `campanaDesdePopup` y `pieLegalDesdeEmpresa`.
 2. ✓ `TarjetaProducto` en los carruseles (`TarjetaDeProducto`, 2026-10-16).
-3. Secciones del inicio con `RenderSecciones` + `respaldo`, conservando `DeferredSection` y las excepciones. Comparar capturas antes y después.
+3. ✓ Secciones del inicio (2026-10-16): `SeccionDelKit` por cada una dentro del bucle de `TiendaPage`, conservando `DeferredSection`, el editor y las excepciones; datos de las mismas consultas (`featured-products`, `query-carousel`, `brands`, `categories` + `storefront-category-grid-products` con `categoriasDeGrilla`); preguntas frecuentes con el WhatsApp de `useWhatsAppDeLaRuta` y sin Kapi cuando está el flotante. Interruptor `seccionesViejo`.
 4. `BarraInferior` y luego `Cabecera` (la más conectada).
 5. Editor del kit en lugar de `VisualEditorPanel`.
 

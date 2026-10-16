@@ -1,4 +1,4 @@
-# Llevar el kit a la tienda (en marcha: pasos 1 a 4 hechos)
+# Llevar el kit a la tienda (en marcha: pasos 1 a 4 hechos; el 5, en el inicio)
 
 Lo común a todas las páginas: qué ya usa la tienda, cómo se importa y en qué
 orden se migraría. El detalle de cada página (reemplazos con archivo y línea,
@@ -73,6 +73,12 @@ Cada paso en su propio commit, verificable por separado.
 5. **Secciones del builder**, página por página, con `RenderSecciones` (o
    `PaginaTienda`) + `respaldo`. Primero el inicio (INICIO.md), después
    `/tienda` con el catálogo (TIENDA.md). Comparar capturas antes y después.
+   ✓ **El inicio** (2026-10-16): sus 10 tipos con `SeccionDelKit` dentro del
+   mismo bucle de `TiendaPage` (carga diferida, editor, mapa de calor y
+   secciones que no se dibujan siguen como estaban), solo con `pageId ===
+   'home'` (lista `TIPOS_DEL_KIT`). Las tarjetas de los carruseles son
+   `TarjetaDeProducto` (prop `tarjeta`). Falta: `/tienda`, las marcas y las
+   landings (agregar sus tipos a la lista y quitar la condición del inicio).
    Las landings de marca, con `PaginaMarca` (identidad + plantilla) cuando
    el admin de marcas guarde `identidad` (NAVEGAR.md).
 6. **Páginas propias** (no son del builder): la ficha de producto
@@ -114,6 +120,7 @@ nada), o en un solo navegador con `localStorage.wala_kit_viejo = "pagos,carrito"
 | `pagosViejo` | la ventana "Pagar saldo" de Mis pedidos (`Modal` viejo) y la pantalla de Culqi mientras cobra |
 | `carritoViejo` | las preguntas del carrito (quitar seleccionados, vaciar) con `window.confirm` |
 | `tarjetasViejo` | la tarjeta de producto (`PremiumProductCard`) en carruseles y grillas |
+| `seccionesViejo` | las secciones del builder del inicio (los componentes de `seccionesPorTipo.jsx`) |
 
 Se retiran cuando lo nuevo lleve un tiempo en producción (y con ellos lo viejo
 de [ELIMINAR.md](ELIMINAR.md)).
