@@ -205,7 +205,7 @@
 
   .compraPrecio,
   .compraNota,
-  .textoAccion,
+  .soloAncho,
   .precioBoton {
     display: none;
   }
@@ -215,25 +215,29 @@
     flex-wrap: nowrap;
   }
 
-  /* Guardar y descargar: cuadrados, del alto del botón de agregar. */
-  .accionIcono {
-    width: 46px;
-    min-height: 46px;
-    padding: 0;
-  }
-
   /* Agregar se achica con la pantalla; si aun así no entra, puntos
      suspensivos (nunca un texto cortado por el borde). */
   .compra > :nth-child(2),
   .compra > :nth-child(2) span {
     min-width: 0;
   }
+}
 
-  .compra > :nth-child(2) span:last-child {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+/* La versión de ícono de Guardar y Descargar: solo en el celular. */
+@media (min-width: 960px) {
+  .soloCelular {
+    display: none;
   }
+}
+
+/* El texto de Agregar: con su propio alto de línea, así los puntos
+   suspensivos no le cortan la g ni la j por abajo. */
+.etiquetaAgregar {
+  display: block;
+  overflow: hidden;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Pantallas angostas (320 px): "Agregar" a secas. */

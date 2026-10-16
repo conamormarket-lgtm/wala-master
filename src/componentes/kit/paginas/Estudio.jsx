@@ -1049,6 +1049,18 @@ export function PaginaEstudio({
     }
   };
 
+  const textoGuardar = yaGuardada && !hayCambios ? 'Guardado' : yaGuardada ? 'Guardar cambios' : 'Guardar';
+  const botonGuardar = {
+    variante: 'contorno',
+    tamano: 'sm',
+    icono: yaGuardada && !hayCambios ? <CheckCircle2 aria-hidden="true" /> : <Save aria-hidden="true" />,
+    disabled: vacio || !hayCambios,
+    cargando: ocupado === 'guardando' && hoja !== 'guardar',
+    onClick: guardar,
+    title: hayCambios ? 'Guardar (Ctrl+S)' : 'No hay cambios por guardar',
+  };
+  const botonDescargar = { tamano: 'sm', icono: <Download aria-hidden="true" />, disabled: vacio, onClick: () => onDescargar?.(diseno), title: 'Descargar' };
+
   const aviso = borradorAdmin ? (
     <Aviso compacto tipo="aviso">Borrador: solo los administradores ven esta prenda. Publícala desde Admin → Productos para poder comprarla.</Aviso>
   ) : combo ? (
@@ -1089,7 +1101,9 @@ export function PaginaEstudio({
     <Boton bloque disabled>Agotado por ahora</Boton>
   ) : (
     <Boton bloque icono={<IconoAgregar agregado={agregado} />} disabled={vacio || borradorAdmin} cargando={ocupado === 'agregando'} onClick={agregar}>
-      {agregado ? '¡Agregado!' : <>Agregar<span className={s.textoLargo}> al carrito</span><span className={s.precioBoton}> · {soles(precio)}</span></>}
+      <span className={s.etiquetaAgregar}>
+        {agregado ? '¡Agregado!' : <>Agregar<span className={s.textoLargo}> al carrito</span><span className={s.precioBoton}> · {soles(precio)}</span></>}
+      </span>
     </Boton>
   );
 
@@ -1282,23 +1296,13 @@ export function PaginaEstudio({
             </div>
             {accionPrincipal}
             <div className={s.compraOtras}>
-              {/* Sin cambios se apaga; si ya se guardó, dice "Guardado". */}
-              <Boton
-                variante="contorno"
-                tamano="sm"
-                icono={yaGuardada && !hayCambios ? <CheckCircle2 aria-hidden="true" /> : <Save aria-hidden="true" />}
-                disabled={vacio || !hayCambios}
-                cargando={ocupado === 'guardando' && hoja !== 'guardar'}
-                onClick={guardar}
-                title={hayCambios ? 'Guardar (Ctrl+S)' : 'No hay cambios por guardar'}
-                aria-label={yaGuardada && !hayCambios ? 'Guardado' : yaGuardada ? 'Guardar cambios' : 'Guardar'}
-                className={s.accionIcono}
-              >
-                <span className={s.textoAccion}>{yaGuardada && !hayCambios ? 'Guardado' : yaGuardada ? 'Guardar cambios' : 'Guardar'}</span>
-              </Boton>
-              <Boton variante="fantasma" tamano="sm" icono={<Download aria-hidden="true" />} disabled={vacio} onClick={() => onDescargar?.(diseno)} aria-label="Descargar" title="Descargar" className={s.accionIcono}>
-                <span className={s.textoAccion}>Descargar</span>
-              </Boton>
+              {/* Sin cambios se apaga; si ya se guardó, dice "Guardado". En el
+                  celular van solo como íconos (otra versión del mismo botón:
+                  así el ícono queda centrado). */}
+              <Boton {...botonGuardar} className={s.soloAncho}>{textoGuardar}</Boton>
+              <Boton {...botonGuardar} tamano="md" soloIcono aria-label={textoGuardar} className={s.soloCelular} />
+              <Boton {...botonDescargar} variante="fantasma" className={s.soloAncho}>Descargar</Boton>
+              <Boton {...botonDescargar} tamano="md" variante="contorno" soloIcono aria-label="Descargar" className={s.soloCelular} />
             </div>
             {vacio && <p className={s.compraNota}>Agrega una imagen o un texto para continuar.</p>}
           </div>
