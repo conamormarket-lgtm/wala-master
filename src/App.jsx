@@ -54,7 +54,8 @@ import { EN_VISTA_PREVIA_CALOR } from './utils/vistaPreviaCalor';
 // Se montan en el mismo sitio de siempre, pero su código llega en paralelo
 // justo después del arranque en vez de ir en el archivo principal.
 const Footer = lazy(() => import('./components/common/Footer'));
-const CampaignPopup = lazy(() => import('./components/common/CampaignPopup/CampaignPopup'));
+// Anuncio de campaña con el kit (paso 2; CampaignPopup, en guia/ELIMINAR.md).
+const AnuncioDeCampana = lazy(() => import('./components/marco/AnuncioDeCampana'));
 const AvisoInvitacion = lazy(() => import('./components/common/AvisoInvitacion/AvisoInvitacion'));
 const FirebaseWarning = lazy(() => import('./components/common/FirebaseWarning'));
 const RastreoCalor = lazy(() => import('./components/analytics/RastreoCalor'));
@@ -349,7 +350,7 @@ const GlobalLayout = ({ children }) => {
       {!EN_VISTA_PREVIA_CALOR && <AvisoDeIdioma />}
 
       {/* Popups de campaña (encuesta, promos…) configurados en /admin/popups. */}
-      {!EN_VISTA_PREVIA_CALOR && <Suspense fallback={null}><CampaignPopup /></Suspense>}
+      {!EN_VISTA_PREVIA_CALOR && <Suspense fallback={null}><AnuncioDeCampana /></Suspense>}
     </div>
   );
 };
