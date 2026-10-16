@@ -157,7 +157,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `Acordeon.jsx` | `Acordeon` | Plegables: preguntas frecuentes (variante de tarjetas) y grupos de filtros o detalles (`variante="lista"`); la respuesta puede ser texto o cualquier contenido |
 | `Seccion.jsx` | `BloqueSeccion`, `TituloSeccion`, `tituloDesdeAjustes` | Relleno, fondo y título iguales en todas las secciones |
 | `piezas/TarjetaCategoria.jsx` | `TarjetaCategoria` (cuadro · círculo · burbuja; el cuadro lleva `detalle`, una línea de texto bajo el nombre), `TarjetaCategoriaEsqueleto` | category_grid y categories_nav |
-| `piezas/TemaMarca.jsx` | `TemaMarca`, `temaDeMarca` | El color de una marca solo en lo suyo (la portada, el "Todos" y el aro de la burbuja elegida, el trazo bajo los títulos) con su versión de noche; botones, filtros y sellos de productos siguen violeta |
+| `piezas/TemaMarca.jsx` | `TemaMarca`, `temaDeMarca` | El color de una marca solo en su portada y en el trazo bajo los títulos, con su versión de noche; botones, burbujas de categorías, filtros y sellos de productos siguen violeta |
 | `piezas/PortadaMarca.jsx` | `PortadaMarca` | La portada de una marca: logo, nombre con trazo, frase, "Ver productos" y sus cifras en sellos (productos, en oferta, categorías); estilo foto · color · collage (con el sello grande de la marca detrás de las cartas) |
 | `paginas/Marca.jsx` | `PaginaMarca` | La página de una marca sin armarla: identidad + plantilla, o sus secciones del builder (guía: `guia/NAVEGAR.md`) |
 | `piezas/FotoProducto.jsx` | `FotoProducto` | Foto de producto sobre su escenario (`src`, `relleno`, `respaldo` sin foto, `children` encima) |
@@ -297,7 +297,7 @@ que TiendaPage), más `categorias`, `marcas`, `marcaActual` y `navPorMarca`
 productos, categorias })`, la lista curada de la marca). Con `marcas` y
 `categorias` las tarjetas muestran el sello de la marca y la categoría
 (`catalogo` en `RenderSecciones` / `tarjetaDesdeProducto`). `tema` (una
-identidad `{ color, color2 }`) pinta la portada, las burbujas y los trazos con `TemaMarca`, `antes`
+identidad `{ color, color2 }`) pinta la portada y los trazos con `TemaMarca`, `antes`
 va arriba de las secciones (la portada de una marca) y `kapiEnPie={false}`
 quita el Kapi del pie (cuando la página ya muestra uno).
 

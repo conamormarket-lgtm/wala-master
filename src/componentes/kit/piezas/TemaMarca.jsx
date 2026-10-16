@@ -2,13 +2,13 @@ import React from 'react';
 import s from './TemaMarca.module.css';
 
 /*
- * El color de una marca en su página, sin dejar de ser Walá: va SOLO en lo
- * que es de la marca (la portada, el "Todos" y el aro de la burbuja elegida,
- * el trazo bajo los títulos). Los botones, los filtros, los sellos de los
- * productos, la cabecera y Kapi siguen violeta, como en toda la tienda
- * (mezclar los dos colores en los filtros se veía raro). Cada color trae su
- * versión de noche: un negro (Yoryo) se volvería
- * invisible sobre la noche violeta, así que ahí manda el segundo color.
+ * El color de una marca en su página, sin dejar de ser Walá: va SOLO en su
+ * portada y en el trazo bajo los títulos. Los botones, las burbujas de
+ * categorías, los filtros, los sellos de los productos, la cabecera y Kapi
+ * siguen violeta, como en toda la tienda (mezclar los dos colores en lo que
+ * se toca se veía raro). Cada color trae su versión de noche: un negro
+ * (Yoryo) se volvería invisible sobre la noche violeta, así que ahí manda el
+ * segundo color.
  */
 
 const hexARgb = (hex) => {
@@ -47,9 +47,9 @@ const degradado = (a, b) => `linear-gradient(135deg, ${rgbAHex(mezclar(a, BLANCO
 /**
  * Las variables del tema de una marca ({ color, color2 } en hex). Sin color
  * válido, null (la página queda con el violeta de Walá).
- *  - --tema-degradado: el de la portada y el "Todos" (color claro → color →
- *    segundo color o el mismo oscurecido)
- *  - --tema-acento: el aro de la burbuja elegida · --tema-sobre: el texto encima
+ *  - --tema-degradado: el de la portada (color claro → color → segundo color
+ *    o el mismo oscurecido)
+ *  - --tema-acento: los adornos y los íconos de las cifras de la portada
  *  - --tema-trazo: el trazo bajo los títulos · --tema-suave: un fondo tenue
  *    (el segundo color si es claro: el crema de Yoryo) · --tema-tinta: el
  *    oscuro detrás del texto blanco (la portada con foto)
@@ -62,14 +62,11 @@ export function temaDeMarca({ color, color2 } = {}) {
   const oscuro = c2 || mezclar(c1, NEGRO, 0.35);
   const n1 = deNoche(c1, c2);
   const n2 = c2 && contraste(c2, NOCHE) >= 3 ? mezclar(c2, NEGRO, 0.2) : mezclar(n1, NEGRO, 0.3);
-  const sobre = (rgb) => (contraste(rgb, BLANCO) >= 3 ? '#ffffff' : '#1c1917');
   return {
     '--tema-degradado-dia': degradado(c1, oscuro),
     '--tema-degradado-noche': degradado(n1, n2),
     '--tema-acento-dia': rgbAHex(c1),
     '--tema-acento-noche': rgbAHex(n1),
-    '--tema-sobre-dia': sobre(c1),
-    '--tema-sobre-noche': sobre(n1),
     '--tema-trazo-dia': rgbAHex(mezclar(c1, BLANCO, 0.35)),
     '--tema-trazo-noche': rgbAHex(mezclar(n1, BLANCO, 0.15)),
     '--tema-suave-dia': rgbAHex(c2 && luz(c2) > 0.6 ? mezclar(c2, BLANCO, 0.35) : mezclar(c1, BLANCO, 0.9)),
