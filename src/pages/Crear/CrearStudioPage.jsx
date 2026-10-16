@@ -5,7 +5,7 @@ import { fabric } from 'fabric';
 import {
   ArrowLeft, ImagePlus, Images, Plus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
   Crosshair, Maximize2, RotateCw, Crop, Eraser, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info, Undo2, Redo2, Keyboard, Clipboard, ClipboardPaste, Pencil, Check, Minus, Hand, ZoomIn, ZoomOut, HelpCircle, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
-  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter,
+  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter, ArrowLeftRight,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -299,6 +299,11 @@ const CrearStudioPage = () => {
   const cerrarMenu = useCallback(() => setMenu(null), []);
   const [soltando, setSoltando] = useState(false);
   const [historialInfo, setHistorialInfo] = useState({ puedeDeshacer: false, puedeRehacer: false });
+  // Mientras se arrastra un diseño (o varios): { lado } = el destino "Suelta
+  // aquí para pasar a…" bajo el puntero (o null). Se ven sobre la prenda.
+  const [arrastreLado, setArrastreLado] = useState(null);
+  const ladoBajoRef = useRef(null);
+  const punteroArrastreRef = useRef(null); // el puntero al arrastrar, en el lienzo
   // Nombre de la creación (se pide al guardar) y aviso de "guardada".
   const [nombre, setNombre] = useState('');
   const [nombreEditado, setNombreEditado] = useState('');
@@ -1126,6 +1131,19 @@ const CrearStudioPage = () => {
       guiasRef.current = guiasAlLienzo(guias, t);
       avisarPegado(e, Boolean(dx || dy));
     });
+    // Pasar a otro lado o a otra zona arrastrando: se mira dónde está el
+    // puntero (con el dedo, el primer toque) y si hay un destino debajo.
+    const enPantalla = (ev) => ev?.touches?.[0] || ev?.changedTouches?.[0] || ev;
+    lienzo.on('object:moving', (e) => {
+      const p = enPantalla(e.e);
+      if (!p || p.clientX == null) return;
+      punteroArrastreRef.current = lienzo.getPointer(e.e);
+      const lado = document.elementsFromPoint(p.clientX, p.clientY)
+        .map((el) => el.closest?.('[data-soltar-lado]')).find(Boolean)?.getAttribute('data-soltar-lado') || null;
+      accionesRef.current.alArrastrar?.(lado);
+    });
+    // object:modified llega antes que mouse:up: ahí ya se usó el destino.
+    lienzo.on('mouse:up', () => accionesRef.current.finArrastre?.());
     // Al agrandar desde una esquina, el borde se pega igual; y se ve la medida.
     lienzo.on('object:scaling', (e) => {
       const obj = e.target;
@@ -1430,7 +1448,11 @@ const CrearStudioPage = () => {
 
     lienzo.on('object:modified', (e) => {
       const obj = e.target;
+      // Soltado sobre "Suelta aquí para pasar a Espalda": va a ese lado.
+      if (obj && ladoBajoRef.current && accionesRef.current.pasarALado?.(obj, ladoBajoRef.current)) return;
       if (obj?.type === 'activeSelection') {
+        // Varias de una zona, soltadas con el puntero sobre otra: pasan juntas.
+        if (accionesRef.current.grupoAOtraZona?.(obj)) return;
         accionesRef.current.sincronizarGrupo?.(obj);
         return;
       }
@@ -2107,6 +2129,110 @@ const CrearStudioPage = () => {
     // Un texto que pasa a una zona más chica se ajusta para entrar.
     setTimeout(() => { if (movida.type === 'text') editarCapa(movida.id, {}); }, 400);
     setVersion((v) => v + 1);
+  };
+
+  /**
+   * Arrastrados (uno o varios) hasta "Suelta aquí para pasar a Espalda": pasan
+   * a ese lado, a la zona del mismo nombre (o a la primera), en el lugar
+   * donde estaban antes de arrastrarlos. Si una imagen no entra, al 90% y
+   * al centro; un texto en una manga va a lo largo. La vista cambia a ese
+   * lado y siguen elegidos. Un solo paso de deshacer.
+   */
+  const pasarALado = (obj, ladoId) => {
+    const destinoVista = cfg?.vistas.find((v) => v.id === ladoId);
+    const ids = (obj.type === 'activeSelection' ? obj.getObjects() : [obj]).map((o) => o.capaId).filter(Boolean);
+    if (!destinoVista?.zonas.length || !ids.length || destinoVista.id === vista?.id) return false;
+    // El lienzo todavía no escribió el arrastre: las capas tienen su lugar de antes.
+    const movidas = ids.map((capaId) => {
+      const zId = zonaDe(capaId);
+      return { zId, capa: zId && (capasRef.current[zId] || []).find((c) => c.id === capaId) };
+    }).filter((m) => m.capa);
+    if (!movidas.length) return false;
+    const next = { ...capasRef.current };
+    const destinos = [];
+    movidas.forEach(({ zId, capa }) => {
+      const antes = zonaPorId(zId);
+      const destino = destinoVista.zonas.find((z) => z.nombre === antes?.nombre) || destinoVista.zonas[0];
+      const alto = altoEnUnidades(destino);
+      const movida = {
+        ...capa,
+        left: Math.min(UNIDADES_ZONA, Math.max(0, capa.left)),
+        top: Math.min(alto, Math.max(0, capa.top)),
+      };
+      if (capa.type === 'text' && alto > UNIDADES_ZONA * 1.8 && Math.abs(Math.round((capa.angulo || 0) / 90)) % 2 === 0) movida.angulo = 90;
+      if (capa.type === 'image' && capa.anchoNatural && capa.altoNatural) {
+        const deCostado = Math.abs(Math.round((movida.angulo || 0) / 90)) % 2 === 1;
+        const [maxAncho, maxAlto] = deCostado ? [alto, UNIDADES_ZONA] : [UNIDADES_ZONA, alto];
+        const escalaMax = Math.min((maxAncho * 0.9) / capa.anchoNatural, (maxAlto * 0.9) / capa.altoNatural);
+        if (Math.abs(movida.escalaX) > escalaMax) {
+          Object.assign(movida, { escalaX: escalaMax * Math.sign(movida.escalaX || 1), escalaY: escalaMax, ...centroDe(destino) });
+        }
+      }
+      next[zId] = (next[zId] || []).filter((c) => c.id !== capa.id);
+      next[destino.id] = [...(next[destino.id] || []), movida];
+      destinos.push(destino.id);
+    });
+    capasRef.current = next;
+    setCapasPorZona(next);
+    // Siguen elegidos en el otro lado (el lienzo los vuelve a elegir al dibujarlo).
+    const elegidos = movidas.map((m) => m.capa.id);
+    if (elegidos.length > 1) {
+      multiRef.current = elegidos;
+      setMultiIds(elegidos);
+      setSeleccionId(null);
+    } else {
+      multiRef.current = [];
+      setMultiIds([]);
+      setSeleccionId(elegidos[0]);
+    }
+    setVistaId(destinoVista.id);
+    setZonaId(destinos[0]);
+    setVersion((v) => v + 1);
+    // Un texto que pasa a una zona más chica se ajusta para entrar.
+    setTimeout(() => movidas.forEach(({ capa }) => { if (capa.type === 'text') editarCapa(capa.id, {}); }), 400);
+    toast.info(movidas.length > 1 ? `Pasaron a ${destinoVista.nombre}` : `Pasó a ${destinoVista.nombre}`);
+    return true;
+  };
+
+  /**
+   * Varias de una misma zona, soltadas con el puntero sobre otra zona de
+   * este lado: pasan juntas a esa, donde se soltaron (con la misma distancia
+   * entre ellas). Una sola ya lo hace el lienzo (por su centro).
+   */
+  const grupoAOtraZona = (sel) => {
+    const objs = sel.getObjects().filter((o) => o.capaId);
+    const origen = objs[0]?.zonaId;
+    const p = punteroArrastreRef.current;
+    if (!p || !origen || objs.some((o) => o.zonaId !== origen)) return false;
+    const dentro = (tz) => {
+      const q = desdeLienzo(tz, p.x, p.y);
+      return q.left >= 0 && q.top >= 0 && q.left <= tz.wu && q.top <= tz.hu;
+    };
+    const t0 = transformsRef.current[origen];
+    if (!t0 || dentro(t0)) return false;
+    const otra = Object.entries(transformsRef.current).find(([zId, tz]) => zId !== origen && dentro(tz));
+    if (!otra) return false;
+    const [destinoId, tz] = otra;
+    const m = sel.calcTransformMatrix();
+    const cambios = {};
+    objs.forEach((o) => {
+      const q = fabric.util.transformPoint({ x: o.left, y: o.top }, m);
+      const leido = leerTransformacion({
+        left: q.x, top: q.y, scaleX: o.scaleX * sel.scaleX, scaleY: o.scaleY * sel.scaleY, angle: o.angle, flipX: o.flipX,
+      }, tz);
+      cambios[o.capaId] = { ...leido, left: Math.min(tz.wu, Math.max(0, leido.left)), top: Math.min(tz.hu, Math.max(0, leido.top)) };
+    });
+    const movidas = (capasRef.current[origen] || []).filter((c) => cambios[c.id]).map((c) => ({ ...c, ...cambios[c.id] }));
+    const next = {
+      ...capasRef.current,
+      [origen]: (capasRef.current[origen] || []).filter((c) => !cambios[c.id]),
+      [destinoId]: [...(capasRef.current[destinoId] || []), ...movidas],
+    };
+    capasRef.current = next;
+    setCapasPorZona(next);
+    setZonaId(destinoId);
+    setVersion((v) => v + 1);
+    return true;
   };
 
   const centrar = () => {
@@ -2916,6 +3042,18 @@ const CrearStudioPage = () => {
   };
 
   accionesRef.current = {
+    pasarALado,
+    grupoAOtraZona,
+    alArrastrar: (lado) => {
+      if (!cfg || cfg.vistas.length < 2) return;
+      ladoBajoRef.current = lado;
+      setArrastreLado((a) => (a && a.lado === lado ? a : { lado }));
+    },
+    finArrastre: () => {
+      ladoBajoRef.current = null;
+      punteroArrastreRef.current = null;
+      setArrastreLado(null);
+    },
     dobleToque: (obj) => {
       if (capaPorId(obj?.capaId)?.type !== 'text') return;
       setTimeout(() => mostrarEditor(true), 60);
@@ -3216,6 +3354,16 @@ const CrearStudioPage = () => {
                   <li><Type size={18} aria-hidden="true" /> <span><strong>Dos toques</strong> en un texto para escribirlo.</span></li>
                 </ul>
                 <button type="button" onClick={cerrarGuiaGestos}>Entendido</button>
+              </div>
+            )}
+            {arrastreLado && cfg.vistas.length > 1 && (
+              // Mientras se arrastra: a qué otro lado de la prenda se puede pasar.
+              <div className={styles.soltarLados} role="status">
+                {cfg.vistas.filter((v) => v.id !== vista.id).map((v) => (
+                  <span key={v.id} data-soltar-lado={v.id} className={`${styles.soltarLado} ${arrastreLado.lado === v.id ? styles.soltarLadoActivo : ''}`}>
+                    <ArrowLeftRight size={16} aria-hidden="true" /> Suelta aquí para pasar a <strong>{v.nombre}</strong>
+                  </span>
+                ))}
               </div>
             )}
             {soltando && (

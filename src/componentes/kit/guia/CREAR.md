@@ -460,15 +460,12 @@ alrededor, por partes.
   `anchoZonaCm`; la guía de los dedos se marca como vista con
   `onGuiaGestosVista` (hoy, `localStorage` `crear_guia_gestos`). `LienzoPrenda` sirve para las
   miniaturas y para la vista previa de Crear, no reemplaza al lienzo.
-- **Lo que vive en el lienzo no llega solo.** Las guías, las asas, escribir
-  sobre la prenda, el recuadro, pasar a otra zona y el acercamiento en el
-  teléfono ya los tiene el lienzo de fabric (el kit los copió de ahí). Lo
-  que el kit tiene y fabric no, hay que hacerlo en `CrearStudioPage` al
-  migrar:
-  - arrastrar a otro lado de la prenda ("Suelta aquí para pasar a…");
-  - pasar varias juntas a otra zona arrastrándolas;
-  - "Agregar otro: Imagen · Texto" en el panel y "Editar" en la barra
-    (estos son de `PanelCapa` y `BarraLienzo`: llegan con ellos).
+- **Lo que vive en el lienzo no llega solo**: el lienzo de fabric se queda,
+  así que lo que se haga en `LienzoPrenda` hay que hacerlo también en
+  `CrearStudioPage`. Hoy los dos hacen lo mismo: guías e imán, asas, escribir
+  sobre la prenda, recuadro, pasar a otra zona (una o varias juntas),
+  arrastrar a otro lado ("Suelta aquí para pasar a…", desde el 2026-10-16
+  también en la tienda) y el acercamiento en el teléfono.
 - No se puede perder: el autoguardado del borrador, el aviso al salir sin
   guardar, la regla de la calidad (`calidadDeCapa`), quitar el fondo y
   recortar solo con sesión, `?combo=&pieza=` que vuelve al combo, `?copiar=`

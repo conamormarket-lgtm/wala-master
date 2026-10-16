@@ -1413,6 +1413,50 @@
   pointer-events: none;
 }
 
+/* Al arrastrar un diseño: arriba de la prenda, los otros lados a los que
+   puede pasar. El lienzo los busca bajo el puntero (por eso reciben el
+   puntero aunque la fila no). */
+.soltarLados {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  left: 0.6rem;
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  pointer-events: none;
+}
+
+.soltarLado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.9rem;
+  border: 2px dashed var(--primary-color);
+  border-radius: 999px;
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+  font-size: 0.85rem;
+  box-shadow: 0 6px 18px rgba(28, 20, 51, 0.12);
+  pointer-events: auto;
+}
+
+.soltarLado svg {
+  color: var(--primary-color);
+}
+
+.soltarLadoActivo {
+  border-style: solid;
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.soltarLadoActivo svg {
+  color: #fff;
+}
+
 /* ── Deshacer, rehacer y atajos ────────────────────────────────────────── */
 .barraLienzo {
   display: flex;
