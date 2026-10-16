@@ -486,3 +486,50 @@
     animation: none;
   }
 }
+
+/* ── Barra de admin fija (en la tienda) ───────────────── */
+/* Pegada arriba; la cabecera se pega debajo con --admin-bar-height, que
+   publica BarraAdmin. Encima de la cabecera y de los flotantes. */
+.adminFija {
+  position: sticky;
+  top: 0;
+  z-index: 1001;
+  user-select: none;
+}
+
+/* ── Aviso de idioma flotante (en la tienda) ──────────── */
+/* Abajo y centrado; en el celular, sobre la barra inferior. Solo la tarjeta
+   recibe los toques. */
+.idiomaFlotante {
+  position: fixed;
+  inset: auto 0 calc(18px + var(--safe-bottom, 0px)) 0;
+  z-index: 1200;
+  display: flex;
+  justify-content: center;
+  padding: 0 0.75rem;
+  pointer-events: none;
+  animation: idiomaSube 0.32s var(--ease-signature, ease) both;
+}
+
+.idiomaFlotante > * {
+  pointer-events: auto;
+}
+
+@media (max-width: 768px) {
+  .idiomaFlotante {
+    bottom: calc(var(--bottom-nav-height, 56px) + 14px + var(--safe-bottom, 0px));
+  }
+}
+
+@keyframes idiomaSube {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .idiomaFlotante {
+    animation: none;
+  }
+}

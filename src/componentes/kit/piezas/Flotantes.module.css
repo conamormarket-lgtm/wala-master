@@ -27,6 +27,13 @@
   }
 }
 
+/* Páginas con su propio botón fijo abajo (la ficha): sin flotantes en el celular. */
+@media (max-width: 768px) {
+  .capaSinCelular {
+    display: none;
+  }
+}
+
 /* Dentro de un marco con scroll propio: se pega abajo del marco. */
 .capaContenida {
   position: sticky;

@@ -2,12 +2,13 @@ import React from 'react';
 import { X } from 'lucide-react';
 import { Enlace } from '../Enlace';
 import { IconoWala } from '../IconosWala';
+import { useTexto } from '../Traduccion';
 import s from './Flotantes.module.css';
 
 /*
  * Lo que flota sobre la página: WhatsApp, Kapi y la píldora de
  * recompensa. Todo por props: quién lo ve (sesión, rutas) y qué
- * pasa al tocar lo decide la tienda.
+ * pasa al tocar lo decide la tienda. Los textos pasan por la traducción.
  */
 
 /**
@@ -16,9 +17,11 @@ import s from './Flotantes.module.css';
  * abajo a la izquierda (la píldora de recompensa).
  *  - contenida: dentro de un marco con su propio scroll (demo, editor) en vez
  *    de fija a la ventana.
+ *  - ocultarEnCelular: en páginas que ya tienen su botón fijo abajo (la ficha
+ *    de producto), en el celular la pila tapaba título, precio y opciones.
  */
-export function PilaFlotante({ children, izquierda, contenida = false }) {
-  const clase = [s.capa, contenida && s.capaContenida].filter(Boolean).join(' ');
+export function PilaFlotante({ children, izquierda, contenida = false, ocultarEnCelular = false }) {
+  const clase = [s.capa, contenida && s.capaContenida, ocultarEnCelular && s.capaSinCelular].filter(Boolean).join(' ');
   return (
     <div className={clase}>
       {izquierda && <div className={s.izquierda}>{izquierda}</div>}
@@ -53,11 +56,13 @@ export const enlaceWhatsApp = (numero, mensaje) => {
  */
 export function BotonWhatsApp({ numero, mensaje, etiqueta = '¿Te ayudamos?' }) {
   const url = enlaceWhatsApp(numero, mensaje);
+  const escribenos = useTexto('Escríbenos por WhatsApp');
+  const burbuja = useTexto(etiqueta);
   if (!url) return null;
   return (
-    <Enlace to={url} className={`${s.flotante} ${s.whatsapp}`} aria-label={`Escríbenos por WhatsApp${etiqueta ? `: ${etiqueta}` : ''}`}>
+    <Enlace to={url} className={`${s.flotante} ${s.whatsapp}`} aria-label={`${escribenos}${burbuja ? `: ${burbuja}` : ''}`}>
       <LogoWhatsApp />
-      {etiqueta && <span className={s.burbuja} aria-hidden="true">{etiqueta}</span>}
+      {burbuja && <span className={s.burbuja} aria-hidden="true">{burbuja}</span>}
     </Enlace>
   );
 }
@@ -86,8 +91,10 @@ export const CARAS_KAPI_MINI = {
  *  - estado: 'feliz' | 'hambre' | 'triste'
  */
 export function KapiFlotante({ estado = 'feliz', aviso = false, onAbrir, etiqueta = 'Tu mascota Kapi' }) {
+  const nombre = useTexto(etiqueta);
+  const algo = useTexto('tiene algo para ti');
   return (
-    <button type="button" className={`${s.flotante} ${s.kapi}`} onClick={onAbrir} aria-label={aviso ? `${etiqueta} (tiene algo para ti)` : etiqueta}>
+    <button type="button" className={`${s.flotante} ${s.kapi}`} onClick={onAbrir} aria-label={aviso ? `${nombre} (${algo})` : nombre}>
       <img src={CARAS_KAPI_MINI[estado] || CARAS_KAPI_MINI.feliz} alt="" draggable="false" />
       {aviso && <span className={s.exclamacion} aria-hidden="true">!</span>}
     </button>
@@ -98,23 +105,25 @@ export function KapiFlotante({ estado = 'feliz', aviso = false, onAbrir, etiquet
  * Píldora de recompensa ("Gana 15 monedas · Completa tu perfil de regalos").
  * Va con la moneda en un sello blanco de aro dorado. En el celular se
  * recoge en ese sello con "+15".
- *  - to: adónde lleva  · onCerrar: la X (la tienda decide cuánto se oculta)
+ *  - to: adónde lleva  · onIr: además de ir (cerrar menús…)
+ *  - onCerrar: la X (la tienda decide cuánto se oculta)
  */
-export function PildoraRecompensa({ titulo, texto, monedas, to, onCerrar, icono = 'moneda' }) {
+export function PildoraRecompensa({ titulo, texto, monedas, to, onCerrar, onIr, icono = 'moneda' }) {
+  const t = { titulo: useTexto(titulo), texto: useTexto(texto), ocultar: useTexto('Ocultar') };
   return (
     <div className={s.pildora}>
-      <Enlace to={to} className={s.pildoraEnlace} aria-label={[titulo, texto].filter(Boolean).join('. ')}>
+      <Enlace to={to} onClick={onIr} className={s.pildoraEnlace} aria-label={[t.titulo, t.texto].filter(Boolean).join('. ')}>
         <span className={s.pildoraSello}>
           <IconoWala nombre={icono} tamano={36} sticker={false} />
           {monedas ? <span className={s.pildoraMonedas} aria-hidden="true">+{monedas}</span> : null}
         </span>
         <span className={s.pildoraTexto}>
-          <strong>{titulo}</strong>
-          {texto && <span>{texto}</span>}
+          <strong>{t.titulo}</strong>
+          {t.texto && <span>{t.texto}</span>}
         </span>
       </Enlace>
       {onCerrar && (
-        <button type="button" className={s.pildoraCerrar} onClick={onCerrar} aria-label="Ocultar">
+        <button type="button" className={s.pildoraCerrar} onClick={onCerrar} aria-label={t.ocultar}>
           <X aria-hidden="true" />
         </button>
       )}

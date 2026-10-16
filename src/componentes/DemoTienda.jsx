@@ -538,6 +538,9 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         <Parte n="M3" nombre="BarraAdmin">
           <BarraAdmin
             editando={enEditor}
+            // En la ficha, como en la tienda: editar ese producto en el panel.
+            editarEn={pagina === 'producto' ? `/admin/productos/${rutaProducto.split('/producto/')[1] || ''}` : undefined}
+            textoEditor={pagina === 'producto' ? 'Editar este producto' : undefined}
             onEditor={() => {
               if (enEditor) { setEditando(false); setSeleccionada(null); setInsertarEn(null); return; }
               irA('inicio');

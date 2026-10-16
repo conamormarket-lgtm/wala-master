@@ -5,6 +5,7 @@ import { Campo } from '../Formulario';
 import { Aviso } from '../Feedback';
 import { IconoWala } from '../IconosWala';
 import { BarraProgreso } from './BarraProgreso';
+import { Texto, useTexto } from '../Traduccion';
 import s from './RetoSemanal.module.css';
 
 /**
@@ -24,6 +25,12 @@ export function RetoSemanal({ titulo, descripcion, recompensa, progreso = 0, met
   const [url, setUrl] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState(null);
+  const t = {
+    reto: useTexto('Reto semanal'),
+    avance: useTexto('Tu avance'),
+    pega: useTexto('Pega el enlace de tu foto o historia'),
+    enlace: useTexto('Enlace de tu evidencia'),
+  };
 
   const enviar = async (e) => {
     e.preventDefault();
@@ -41,38 +48,38 @@ export function RetoSemanal({ titulo, descripcion, recompensa, progreso = 0, met
   };
 
   return (
-    <section className={s.reto} aria-label="Reto semanal">
+    <section className={s.reto} aria-label={t.reto}>
       <div className={s.cabeza}>
         <IconoWala nombre="estrella" tamano={40} />
         <div className={s.textos}>
-          <p className={s.antetitulo}>Reto semanal</p>
-          <h3 className={s.titulo}>{titulo}</h3>
-          {recompensa && <p className={s.premio}>Premio: <strong>{recompensa}</strong></p>}
+          <p className={s.antetitulo}>{t.reto}</p>
+          <h3 className={s.titulo}><Texto>{titulo}</Texto></h3>
+          {recompensa && <p className={s.premio}><Texto>Premio:</Texto> <strong><Texto>{recompensa}</Texto></strong></p>}
         </div>
       </div>
-      {descripcion && <p className={s.descripcion}>{descripcion}</p>}
+      {descripcion && <p className={s.descripcion}><Texto>{descripcion}</Texto></p>}
 
       {completado ? (
-        <Aviso compacto tipo="exito">¡Reto completado! Ya te dimos el premio.</Aviso>
+        <Aviso compacto tipo="exito"><Texto>¡Reto completado! Ya te dimos el premio.</Texto></Aviso>
       ) : (
         <>
-          <BarraProgreso valor={Math.min(progreso, meta)} max={meta} minimo={0} etiqueta="Tu avance" />
+          <BarraProgreso valor={Math.min(progreso, meta)} max={meta} minimo={0} etiqueta={t.avance} />
           {conEvidencia && (
             <form className={s.evidencia} onSubmit={enviar}>
               <Campo
                 type="url"
                 inputMode="url"
-                placeholder="Pega el enlace de tu foto o historia"
-                aria-label="Enlace de tu evidencia"
+                placeholder={t.pega}
+                aria-label={t.enlace}
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
               />
               <Boton type="submit" variante="secundario" cargando={enviando} disabled={!url.trim()} icono={<Send aria-hidden="true" />}>
-                Enviar
+                <Texto>Enviar</Texto>
               </Boton>
             </form>
           )}
-          {resultado && <Aviso compacto tipo={resultado.tipo}>{resultado.texto}</Aviso>}
+          {resultado && <Aviso compacto tipo={resultado.tipo}><Texto>{resultado.texto}</Texto></Aviso>}
         </>
       )}
     </section>

@@ -489,6 +489,68 @@ export function retoDesdePerfil(reto, perfil = {}) {
   };
 }
 
+/* ── Marco: avisos, WhatsApp, campañas y pie legal ─────── */
+
+const TIPOS_AVISO = { warning: 'aviso', info: 'info', error: 'error' };
+
+/**
+ * Props de AvisoSistema desde configuracion/estado_app ({ mostrarAviso, tipo,
+ * mensaje }). Solo con mostrarAviso === true; si no, null. El tipo de
+ * Firestore ('warning' | 'info' | 'error', 'warning' si falta) pasa al del kit.
+ */
+export function avisoDesdeEstadoApp(estado) {
+  if (!estado || estado.mostrarAviso !== true) return null;
+  return {
+    tipo: TIPOS_AVISO[estado.tipo] || 'aviso',
+    mensaje: estado.mensaje || 'Tenemos una actualización importante programada.',
+  };
+}
+
+/**
+ * Número de WhatsApp listo para wa.me, como el botón de la tienda: sin
+ * espacios, guiones ni paréntesis, y con +51 si no trae código de país.
+ */
+export function numeroWhatsApp(crudo) {
+  const limpio = String(crudo || '').replace(/[\s\-()]/g, '');
+  if (!limpio) return '';
+  return limpio.startsWith('+') ? limpio : `+51${limpio}`;
+}
+
+/**
+ * Props de VentanaCampana desde un popup de storeConfig/popups (las reglas
+ * de cuándo sale siguen en services/popupsLogic.mjs).
+ *  - 'imagen' con imagenUrl: solo la imagen, que es el botón
+ *  - 'tarjeta': título, texto, botón (botonTexto) y el de cerrar (cerrarTexto,
+ *    sin él no hay segundo botón)
+ */
+export function campanaDesdePopup(popup = {}) {
+  return {
+    formato: popup.formato === 'imagen' && popup.imagenUrl ? 'imagen' : 'tarjeta',
+    imagen: popup.imagenUrl || undefined,
+    titulo: popup.titulo || '',
+    texto: popup.texto || '',
+    accion: popup.botonTexto || 'Continuar',
+    textoCerrar: popup.cerrarTexto || null,
+  };
+}
+
+/**
+ * Props de PieLegal desde config/empresa.js. La dirección fiscal solo si ya
+ * está llena (mientras dice "RELLENAR…" no se muestra).
+ */
+export function pieLegalDesdeEmpresa(empresa = {}) {
+  const direccion = empresa.domicilioFiscal && !String(empresa.domicilioFiscal).startsWith('RELLENAR')
+    ? empresa.domicilioFiscal : undefined;
+  return {
+    empresa: { nombre: empresa.nombreComercial, email: empresa.email, telefono: empresa.telefono, direccion },
+    enlaces: [
+      { texto: 'Términos y Condiciones', url: '/terminos-y-condiciones' },
+      { texto: 'Políticas de Privacidad', url: '/politicas-privacidad' },
+    ],
+    reclamaciones: '/libro-de-reclamaciones',
+  };
+}
+
 /* ── Búsqueda ───────────────────────────────────────────── */
 
 /**
