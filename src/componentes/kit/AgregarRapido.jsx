@@ -13,12 +13,12 @@ import s from './AgregarRapido.module.css';
  * Sirve para cualquier producto, no solo ropa (mismo modelo que la tienda):
  *
  *  - variantes: [{ id, nombre, colorHex?, imagen?, opciones?: string[] }]
- *      Cada variante es un color o un estilo. Si todas tienen color o foto se
+ *      Cada variante es un color o un estilo. Si todas tienen color se
  *      muestran como muestras; si no, como botones con el nombre ("Feliz",
  *      "Clásico"…). Una sola variante solo se muestra si tiene tallas y color.
  *  - opciones: string[] por defecto (mainSizes) si la variante no trae las suyas.
  *  - etiquetaOpcion: 'Talla' | 'Medida' | 'Número' | 'Tamaño'… (sizeLabel).
- *  - piezas: combos → [{ nombre, colores: [{ nombre, hex, imagen?, tallas }] }], un color por pieza
+ *  - piezas: combos → [{ nombre, colores: [{ nombre, hex, tallas }] }], un color por pieza
  *      y la opción (talla) compartida: las que tienen los colores elegidos.
  *  - personalizable + onPersonalizar(eleccion): botón secundario "Personalizar".
  *  - onConfirmar({ variante, opcion, piezas, cantidad }).

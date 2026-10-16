@@ -96,6 +96,7 @@ export function PaginaProducto({
   const [salto, setSalto] = useState(null);
   const compraRef = useRef(null);
   const opcionesRef = useRef(null);
+  const finRef = useRef(null);
   const reloj = useRef(null);
   useEffect(() => () => clearTimeout(reloj.current), []);
 
@@ -324,6 +325,8 @@ export function PaginaProducto({
         </section>
       </BloqueSeccion>
 
+      {/* Desde aquí (los relacionados y el pie) la barra de compra ya no se muestra. */}
+      <div ref={finRef} aria-hidden="true" />
       {relacionados.length > 0 && (
         <BloqueSeccion ajustes={{ paddingTop: '0.5rem', paddingBottom: '2.5rem' }}>
           <div data-componente="Carrusel · TarjetaProducto">
@@ -336,7 +339,7 @@ export function PaginaProducto({
       )}
 
       {!producto.agotado && (
-        <BarraCompra mirar={compraRef} imagen={galeria[0]?.url} nombre={nombre} detalle={detalle} precio={producto.precio}>
+        <BarraCompra mirar={compraRef} hasta={finRef} imagen={galeria[0]?.url} nombre={nombre} detalle={detalle} precio={producto.precio}>
           {botonAgregar({ tamano: 'md' }, true)}
         </BarraCompra>
       )}

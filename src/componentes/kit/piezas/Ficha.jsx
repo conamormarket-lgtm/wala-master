@@ -91,23 +91,42 @@ export function ConfianzaCompra() {
  * elegido, el precio y el botón. Solo en escritorio: en el celular la compra
  * ya va pegada abajo. Va al final de la página (se pega al fondo de la vista
  * mientras se baja por ella).
- *  - mirar: ref del bloque de compra · imagen, nombre, detalle ("Perla · M"),
- *    precio · children: el botón
+ *  - mirar: ref del bloque de compra · hasta: ref de lo que viene después
+ *    (los relacionados, el pie): cuando asoma, la barra se va para no
+ *    taparlo · imagen, nombre, detalle ("Perla · M"), precio · children: el botón
  */
-export function BarraCompra({ mirar, imagen, nombre, detalle, precio, children }) {
+export function BarraCompra({ mirar, hasta, imagen, nombre, detalle, precio, children }) {
   const [ver, setVer] = useState(false);
   useEffect(() => {
     const el = mirar?.current;
-    if (!el || typeof IntersectionObserver === 'undefined') return undefined;
-    // Se mira contra lo que se desplaza (la ventana o un marco con scroll
-    // propio) y aparece solo cuando los botones quedaron arriba.
+    if (!el) return undefined;
+    // Se mide contra lo que se desplaza (la ventana o un marco con scroll
+    // propio). Aparece cuando los botones quedaron arriba y se va cuando lo de
+    // abajo (`hasta`) llega cerca de la barra. Se mide en cada desplazamiento
+    // (no con IntersectionObserver: un salto largo lo dejaba sin enterarse).
     let raiz = el.parentElement;
     while (raiz && raiz !== document.body && !/(auto|scroll)/.test(getComputedStyle(raiz).overflowY)) raiz = raiz.parentElement;
-    if (raiz === document.body) raiz = null;
-    const io = new IntersectionObserver(([e]) => setVer(!e.isIntersecting && e.boundingClientRect.top < (e.rootBounds?.top ?? 0)), { root: raiz });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [mirar]);
+    const objetivo = raiz && raiz !== document.body ? raiz : window;
+    let cuadro = 0;
+    const medir = () => {
+      cuadro = 0;
+      const r = objetivo === window ? { top: 0, bottom: window.innerHeight } : objetivo.getBoundingClientRect();
+      const arriba = el.getBoundingClientRect().bottom < r.top;
+      const alFinal = hasta?.current ? hasta.current.getBoundingClientRect().top < r.bottom + 120 : false;
+      setVer(arriba && !alFinal);
+    };
+    const pedir = () => { if (!cuadro) cuadro = requestAnimationFrame(medir); };
+    medir();
+    // La ventana también: un marco con scroll propio se mueve con ella.
+    const fuentes = objetivo === window ? [window] : [objetivo, window];
+    fuentes.forEach((f) => f.addEventListener('scroll', pedir, { passive: true }));
+    window.addEventListener('resize', pedir);
+    return () => {
+      cancelAnimationFrame(cuadro);
+      fuentes.forEach((f) => f.removeEventListener('scroll', pedir));
+      window.removeEventListener('resize', pedir);
+    };
+  }, [mirar, hasta]);
   return (
     <div className={s.barraAncla} data-componente="BarraCompra">
       <div className={[s.barraCompra, ver && s.barraVisible].filter(Boolean).join(' ')} aria-hidden={!ver}>

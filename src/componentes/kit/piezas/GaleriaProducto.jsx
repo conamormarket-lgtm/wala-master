@@ -74,8 +74,12 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
               onClick={() => ir(i)}
               onMouseEnter={() => ir(i)}
             >
-              <img src={img.url} alt="" loading="lazy" draggable={false} />
-              {(img.corto || img.nombre) && <span>{img.corto || img.nombre}</span>}
+              {/* La foto y su nombre se recortan aquí dentro; el borde va fuera
+                  de ese recorte para que al viajar no se vea cortado. */}
+              <span className={s.miniaturaFoto}>
+                <img src={img.url} alt="" loading="lazy" draggable={false} />
+                {(img.corto || img.nombre) && <span className={s.miniaturaNombre}>{img.corto || img.nombre}</span>}
+              </span>
               {/* El borde de la elegida viaja de una miniatura a otra. */}
               {i === sel && <motion.i layoutId={`mini-${marca}`} className={s.miniaturaAro} transition={reducir ? { duration: 0 } : RESORTE} aria-hidden="true" />}
             </button>

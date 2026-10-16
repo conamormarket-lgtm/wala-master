@@ -7,13 +7,28 @@
 .opcion {
   display: grid;
   gap: 0.4rem;
-  border-radius: 14px;
-  transition: box-shadow var(--dur-media) var(--ease-signature);
 }
 
-/* Falta la talla: se marca la fila con un borde rojo suave, sin mover nada. */
-.falta {
-  box-shadow: 0 0 0 2px var(--danger-soft, rgba(220, 38, 38, 0.18)), 0 0 0 8px var(--danger-soft, rgba(220, 38, 38, 0.08));
+/* Falta la talla: sin recuadro. Las tallas toman un borde rojo y se sacuden
+   una vez a los lados (solo transform), y abajo va el aviso. */
+.falta button[role='radio'] {
+  border-color: color-mix(in srgb, var(--danger, #dc2626) 55%, var(--color-border));
+}
+
+.falta [role='radiogroup'] {
+  animation: sacudir 0.38s var(--ease-signature);
+}
+
+@keyframes sacudir {
+  20% { transform: translateX(-5px); }
+  45% { transform: translateX(4px); }
+  70% { transform: translateX(-2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .falta [role='radiogroup'] {
+    animation: none;
+  }
 }
 
 .aviso {

@@ -73,15 +73,14 @@ reseñas de prueba en un producto borrado, así que no sirven para ver el diseñ
   está el cursor. La foto se funde con el escenario (`multiply`), así que su
   fondo blanco no deja una franja.
 - **Opciones:** el color en muestras (o el modelo en botones, si las
-  variantes no tienen color ni foto) y la talla con su nombre (`sizeLabel`: Talla,
+  variantes no tienen color) y la talla con su nombre (`sizeLabel`: Talla,
   Medida…). **Lo elegido viaja**: el aro del color y el fondo violeta de la
   talla se deslizan de la opción anterior a la nueva (con resorte; sin
-  movimiento si se pide reducirlo). **Muestras con foto:** la variante que
-  trae foto (`imageUrl`) la muestra en su círculo, sobre el escenario de las
-  fotos y con el recorte del admin (`thumbnailCrop`); las demás, su color. Si
-  a una variante le falta `colorHex`, el color sale del nombre
-  (`getFallbackHex`: "Negro", "Celeste"…); solo sin color ni foto pasa a
-  botones "Modelo". **Una sola variante con tallas** muestra igual su color
+  movimiento si se pide reducirlo). **Las muestras son siempre de color**,
+  nunca la foto de la variante (se probó el 2026-10-16 y se veía mal). Si a
+  una variante le falta `colorHex`, el color sale del nombre
+  (`getFallbackHex`: "Negro", "Celeste"…); solo sin color pasa a botones
+  "Modelo". **Una sola variante con tallas** muestra igual su color
   (como la tienda); sin tallas ("Principal" de un sérum) no se muestra.
   Al cambiar de color, la galería pasa a
   sus fotos y **la talla elegida se queda** si el nuevo color la tiene (igual
@@ -92,15 +91,18 @@ reseñas de prueba en un producto borrado, así que no sirven para ver el diseñ
   entra con un golpe de sello.
 - **Comprar:** Agregar al carrito (y Personalizar, si es personalizable),
   Comprar ahora y, si ya hay algo en el carrito, "Ir a pagar mi carrito (N)".
-  Sin talla no se agrega: se marca la talla y dice "Elige una talla para
-  continuar". Agotado: "Agotado por ahora", sin "Comprar ahora" ni cantidad.
+  Sin talla no se agrega: las tallas toman un borde rojo y se sacuden una
+  vez a los lados (sin recuadro alrededor; quietas si se pide menos
+  movimiento) y debajo dice "Elige una talla para continuar". Agotado: "Agotado por ahora", sin "Comprar ahora" ni cantidad.
   Al agregar, el botón dice **"¡Agregado!"** con un check un momento (1,8 s).
   **En el celular, Agregar y Personalizar quedan pegados abajo**, sobre la
   barra inferior, y los flotantes (WhatsApp, Kapi) suben por encima
   (`data-compra-fija` → `--flotante-extra`). **En escritorio, al bajar**
   hasta la descripción o las opiniones, sube desde abajo la `BarraCompra`:
   la foto, el nombre, lo elegido ("Perla · M" o "Elige talla"), el precio y
-  Agregar. Si falta la talla, la vista vuelve hasta ella.
+  Agregar. Si falta la talla, la vista vuelve hasta ella. **Se va antes de
+  "También te puede gustar" y del pie** (`hasta`), para no taparlos; vuelve
+  al subir de nuevo a las opiniones.
   "Ir a pagar mi carrito" llama a `onPagarCarrito` si se pasa.
 - **Confianza:** envío, cambios y pago seguro con los íconos de Walá
   (`IconoWala`), no con íconos de línea.
@@ -109,7 +111,8 @@ reseñas de prueba en un producto borrado, así que no sirven para ver el diseñ
   alineación (`ql-align-*` o `text-align`).
 - **Descripción:** el HTML del producto en un `Acordeon` abierto (las líneas
   vacías del editor no dejan huecos).
-- **Opiniones:** a la izquierda, el resumen (fijo al bajar): el promedio
+- **Opiniones:** a la izquierda, el resumen (fijo al bajar, debajo de la
+  cabecera, que también va pegada arriba): el promedio
   grande, las estrellas y una barra por estrella (tocarla deja solo esas).
   Debajo, "Escribir una opinión". A la derecha:
   - **Fotos de clientes:** una tira con todas las fotos de las opiniones. Al
@@ -219,7 +222,8 @@ reseñas de prueba en un producto borrado, así que no sirven para ver el diseñ
   la galería con la foto que hay (rotulada con su color); en la tienda
   desaparece y la galería vuelve a la portada. Con los datos reales casi
   ningún color tiene foto propia (en "Rodar Contigo", 1 de 9 por prenda).
-- La muestra con foto es redonda como las demás (en la tienda, rectángulos).
+- Las muestras son de color, no la foto de la variante (en la tienda, la
+  foto si la hay).
 
 ### Lo encontrado de paso (2026-10-16, comparando con `ProductDetail.jsx`)
 

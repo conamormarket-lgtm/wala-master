@@ -148,16 +148,23 @@
   flex: 0 0 auto;
   width: 72px;
   padding: 0;
-  overflow: hidden;
   border: 0;
   border-radius: 14px;
-  background: var(--escenario);
+  background: none;
   cursor: pointer;
-  isolation: isolate;
   transition: transform var(--dur-media) var(--ease-signature);
 }
 
-.miniatura img {
+.miniaturaFoto {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: inherit;
+  background: var(--escenario);
+  isolation: isolate;
+}
+
+.miniaturaFoto img {
   display: block;
   width: 100%;
   aspect-ratio: 1 / 1;
@@ -165,7 +172,7 @@
   mix-blend-mode: multiply;
 }
 
-.miniatura span {
+.miniaturaNombre {
   position: absolute;
   inset: auto 0 0 0;
   padding: 0.15rem 0.2rem;

@@ -27,12 +27,6 @@ const hexDeVariante = (v) => v?.colorHex || getFallbackHex(v?.name);
 /** La muestra es clara (el visto va oscuro): la misma regla que las de Crear. */
 const esClaro = (hex) => esColorBlanco(hex) || textoSobre(hex) !== '#FFFFFF';
 
-/** El recorte de la foto de la muestra (thumbnailCrop del admin, en porcentajes). */
-const recorteDe = (v) => {
-  const r = v?.thumbnailCrop?.percentages;
-  return r?.width > 0 && r?.height > 0 ? { x: r.x, y: r.y, ancho: r.width, alto: r.height } : undefined;
-};
-
 /** Las variantes de una prenda de un combo que el combo permite (allowedColors). */
 const variantesDePieza = (sub, it) => {
   const permitidos = (it?.variantMapping?.allowedColors || []).map(normalColor);
@@ -40,10 +34,10 @@ const variantesDePieza = (sub, it) => {
   return permitidos.length ? vs.filter((v) => permitidos.includes(normalColor(v.name))) : vs;
 };
 
-/** Los colores de una prenda de un combo: muestra (o foto) y las tallas de ese color. */
+/** Los colores de una prenda de un combo: su muestra de color y las tallas de ese color. */
 const coloresDePieza = (sub, it) => variantesDePieza(sub, it).map((v) => {
   const hex = hexDeVariante(v) || '#cccccc';
-  return { nombre: v.name, hex, claro: esClaro(hex), imagen: v.imageUrl, recorte: recorteDe(v), tallas: v.sizes || [] };
+  return { nombre: v.name, hex, claro: esClaro(hex), tallas: v.sizes || [] };
 });
 
 /**
@@ -118,8 +112,8 @@ export function tarjetaDesdeProducto(p, { imagen, catalogo = {} } = {}) {
  *  - subproductos: { [productId]: producto } de las piezas de un combo
  *    (la tienda ya los carga en ProductDetail para mostrar sus colores).
  * Las muestras llevan el color guardado o el que dice el nombre
- * (getFallbackHex), la foto de la variante (imageUrl, con su thumbnailCrop) y,
- * en un combo, las tallas de cada color.
+ * (getFallbackHex) y, en un combo, las tallas de cada color. La foto de la
+ * variante (imagen) es para "Agregar rápido", no para la muestra.
  */
 export function opcionesDeProducto(p, { subproductos = {} } = {}) {
   const vs = variantesDe(p);
@@ -146,7 +140,7 @@ export function opcionesDeProducto(p, { subproductos = {} } = {}) {
     producto: { nombre: p.name, imagen: p.mainImage || p.images?.[0], precio: p.salePrice || p.price, precioAntes: p.salePrice ? p.price : undefined },
     variantes: piezas.length ? [] : vs.map((v) => {
       const hex = hexDeVariante(v);
-      return { id: v.id, nombre: v.name, colorHex: hex, claro: hex ? esClaro(hex) : undefined, imagen: v.imageUrl, recorte: recorteDe(v), opciones: v.sizes || [] };
+      return { id: v.id, nombre: v.name, colorHex: hex, claro: hex ? esClaro(hex) : undefined, imagen: v.imageUrl, opciones: v.sizes || [] };
     }),
     opciones: piezas.length ? opcionesCombo : p.mainSizes || [],
     // Los productos guardados antes de que products.js conservara sizeLabel

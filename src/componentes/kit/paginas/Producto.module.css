@@ -300,9 +300,10 @@
     gap: 2.5rem;
   }
 
+  /* Debajo de la cabecera, que también va pegada arriba (70px + su margen). */
   .opinionesCuerpo > :first-child {
     position: sticky;
-    top: 1rem;
+    top: 6rem;
   }
 }
 

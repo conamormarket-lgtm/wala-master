@@ -161,23 +161,9 @@ export function CampoHex({ valor, onChange, etiqueta = 'Color en hexadecimal' })
   );
 }
 
-/** La parte de la foto que se ve en la muestra (el thumbnailCrop, como OptimizedImage de la tienda). */
-const estiloRecorte = (r) => (r ? {
-  position: 'absolute',
-  top: `${-(r.y / r.alto) * 100}%`,
-  left: `${-(r.x / r.ancho) * 100}%`,
-  width: `${(100 / r.ancho) * 100}%`,
-  height: `${(100 / r.alto) * 100}%`,
-  maxWidth: 'none',
-  objectFit: 'fill',
-} : undefined);
-
 /**
  * Selector de color con el nombre visible del color elegido.
- *  - colores: [{ nombre, hex, claro, imagen?, recorte? }] · valor: nombre del
- *    elegido · onChange(nombre). Con `imagen`, la muestra es la foto de esa
- *    variante (sobre el escenario de las fotos); `recorte` = { x, y, ancho,
- *    alto } en % de la foto (el thumbnailCrop del admin) elige qué parte se ve.
+ *  - colores: [{ nombre, hex, claro }] · valor: nombre del elegido · onChange(nombre)
  *  - libre: { hex, onCambiar(hex) } suma "otro color" (el del sistema) y el
  *    código hexadecimal. Con `libre` y sin onChange, las muestras también
  *    llaman a onCambiar con su hex; si `hex` no está en la lista, la leyenda
@@ -221,18 +207,13 @@ export function SelectorColor({ colores, valor, onChange, etiqueta = 'Color', li
             role="radio"
             aria-checked={elegido(c)}
             aria-label={c.nombre}
-            className={[s.color, c.imagen && s.colorConFoto].filter(Boolean).join(' ')}
+            className={s.color}
             style={{ '--muestra': c.hex }}
             onClick={() => elegir(c)}
           >
-            {c.imagen && (
-              <span className={s.colorFoto} aria-hidden="true">
-                <img src={c.imagen} alt="" loading="lazy" decoding="async" draggable={false} style={estiloRecorte(c.recorte)} />
-              </span>
-            )}
             {/* El aro de la elegida se desliza hasta la nueva. */}
             {elegido(c) && <motion.span layoutId={`color-${marca}`} className={s.colorAro} transition={reducir ? { duration: 0 } : RESORTE} aria-hidden="true" />}
-            {elegido(c) && <Check aria-hidden="true" className={c.imagen ? s.checkFoto : c.claro ? s.checkOscuro : undefined} />}
+            {elegido(c) && <Check aria-hidden="true" className={c.claro ? s.checkOscuro : undefined} />}
           </button>
         ))}
         {libre && (
