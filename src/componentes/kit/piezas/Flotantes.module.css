@@ -15,6 +15,9 @@
   gap: 12px;
   padding: 0 18px;
   pointer-events: none;
+  /* La capa mide lo que la página (en la tienda, la ventana; en la demo, el
+     marco): la píldora se recoge con una consulta de contenedor sobre ella. */
+  container-type: inline-size;
 }
 
 /* En el celular, sobre la barra inferior. */
@@ -306,8 +309,8 @@
 }
 
 /* Celular: solo el sello con "+15"; la X queda como puntito en la esquina.
-   Container query: dentro del marco de la tienda (o la vista celular del
-   editor) responde al ancho de la página. */
+   Container query sobre .capa: responde al ancho de la página (la ventana
+   en la tienda; el marco en la demo o la vista celular del editor). */
 @container (max-width: 720px) {
   .pildora {
     background: transparent;

@@ -109,6 +109,10 @@ const RUTAS_SIN_FAB_ENCUESTA = [
   '/producto/', '/creacion/', '/login', '/registro', '/completar-perfil', '/recuperar-contrasena',
 ];
 const CLAVE_FAB_ENCUESTA = 'surveyFabHiddenUntil';
+// La píldora "Gana 15 monedas" ya la dibuja el kit (components/marco/
+// FlotantesDeLaTienda.jsx, paso 2 de la migración). Esto queda apagado hasta
+// borrarlo con la cabecera vieja (guia/ELIMINAR.md); en false vuelve la de antes.
+const PILDORA_EN_EL_KIT = true;
 
 const Header = () => {
   const { items: cartItems, getTotalItems, getTotalPrice } = useCart();
@@ -1329,7 +1333,7 @@ const Header = () => {
           la condición era TRUE mientras cargaba (`!undefined` = true), así que el
           botón aparecía a TODOS los usuarios logueados —incluidos los que ya
           hicieron la encuesta— y se iba solo un segundo después. */}
-      {user && userProfile && !userProfile._perfilNoCargado && !userProfile.hasCompletedSurvey && !surveyFabOculto && !RUTAS_SIN_FAB_ENCUESTA.some((r) => location.pathname.startsWith(r)) && (
+      {!PILDORA_EN_EL_KIT && user && userProfile && !userProfile._perfilNoCargado && !userProfile.hasCompletedSurvey && !surveyFabOculto && !RUTAS_SIN_FAB_ENCUESTA.some((r) => location.pathname.startsWith(r)) && (
         <div className={styles.floatingSurvey}>
           <Link
             to="/encuesta-suscripcion"
