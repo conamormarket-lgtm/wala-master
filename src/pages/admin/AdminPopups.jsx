@@ -8,7 +8,8 @@ import {
   OPCIONES, POPUP_VACIO, PAGINAS_SUGERIDAS, idDesdeNombre, normalizarPopup, normalizarRuta,
 } from '../../services/popupsLogic.mjs';
 import { uploadFile } from '../../services/firebase/storage';
-import PopupCard from '../../components/common/CampaignPopup/PopupCard';
+import { VentanaCampana } from '../../componentes/kit/piezas/Marco';
+import { campanaDesdePopup } from '../../componentes/kit/adaptadores';
 import styles from './AdminPopups.module.css';
 
 const etiqueta = (campo, valor) => OPCIONES[campo].find((o) => o.value === valor)?.label || valor;
@@ -273,7 +274,12 @@ const Editor = ({ inicial, idsExistentes, onGuardar, onCancelar, guardando }) =>
       </div>
 
       {previa && (
-        <PopupCard popup={normalizarPopup(form)} onCta={() => setPrevia(false)} onClose={() => setPrevia(false)} />
+        <VentanaCampana
+          abierta
+          onCerrar={() => setPrevia(false)}
+          onAccion={() => setPrevia(false)}
+          {...campanaDesdePopup(normalizarPopup(form))}
+        />
       )}
     </form>
   );
@@ -424,7 +430,14 @@ const AdminPopups = () => {
         (p. ej. terminaron la encuesta) en los 7 días siguientes, y % sobre los clics.
       </p>
 
-      {previa && <PopupCard popup={previa} onCta={() => setPrevia(null)} onClose={() => setPrevia(null)} />}
+      {previa && (
+        <VentanaCampana
+          abierta
+          onCerrar={() => setPrevia(null)}
+          onAccion={() => setPrevia(null)}
+          {...campanaDesdePopup(previa)}
+        />
+      )}
     </div>
   );
 };
