@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  PaginaSorteo, PaginaSuscripcionSorteo, PaginaSuscripciones, PaginaEnlaces, tarjetaDesdeProducto,
+  PaginaSorteo, PaginaSuscripcionSorteo, PaginaSuscripciones, PaginaInvitacion, PaginaEnlaces, tarjetaDesdeProducto,
 } from './kit';
 import INICIO from './demo/inicio.json';
 import MARCAS from './demo/marcas.json';
@@ -9,8 +9,9 @@ import CAMPANAS from './demo/campanas.json';
 /*
  * Sorteos y campañas en la Tienda de prueba: el sorteo (/sorteos), el sorteo
  * por suscripción (/suscrito-sorteo), la suscripción de regalos
- * (/suscripciones) y una página de enlaces (/l/:slug). La invitación
- * (/invitar/:código) es el aviso de arriba sobre el registro (DemoTienda).
+ * (/suscripciones), la invitación (/invitar/:código: cómo debe verse; hoy la
+ * tienda lleva directo al registro con el aviso de arriba) y una página de
+ * enlaces (/l/:slug, sola, sin la cabecera ni el pie de la tienda).
  * Regalos con amor (/regalos-con-amor) salió del kit el 2026-10-16: sigue en
  * la tienda (NuevosUsuariosPage), sin tocar.
  *
@@ -40,6 +41,7 @@ export const ESTADOS_CAMPANAS = {
   '/suscrito-sorteo': [['suscrito', 'Ya suscrito'], ['pendiente', 'PayPal queda pendiente'], ['noDisponible', 'No disponible'], ['cargando', 'Cargando']],
   '/suscripciones': [['cargando', 'Cargando']],
   enlaces: [['noDisponible', 'No disponible'], ['cargando', 'Cargando']],
+  invitar: [['conCuenta', 'Ya tiene cuenta'], ['aceptada', 'Ya recibió el bono'], ['invalida', 'Link no válido'], ['cargando', 'Cargando']],
 };
 
 /* Sorteo de ejemplo (mismos campos que sorteos, ya traducidos para la página). */
@@ -95,6 +97,12 @@ export function CampanasDemo({ ruta = VISTAS_CAMPANAS[0][1], sesion = true, usua
     return <PaginaEnlaces estado={cargando || (estados.includes('noDisponible') ? 'noDisponible' : undefined)} pagina={ENLACES} onClic={(b) => avisar('Clic contado', b.titulo || b.nombre || b.tipo)} />;
   }
   if (ruta === '/suscripciones') return <PaginaSuscripciones />;
+  if (ruta.startsWith('/invitar/')) {
+    const estado = cargando || ['conCuenta', 'aceptada', 'invalida'].find((e) => estados.includes(e)) || 'nueva';
+    const codigo = ruta.split('/')[2] || '';
+    // "Crear mi cuenta" lleva al registro con la invitación, como InvitarPage (?ref=…&tipo=invitacion).
+    return <PaginaInvitacion nombre={usuario?.nombre?.split(' ')[0] || 'Isaac'} estado={estado} urlRegistro={`/registro?ref=${codigo}&tipo=invitacion`} urlLogin={`/login?ref=${codigo}&tipo=invitacion`} />;
+  }
   if (ruta === '/suscrito-sorteo') return <SuscripcionDemo key={estados.join()} sesion={sesion} usuario={usuario} estados={estados} cargando={cargando} avisar={avisar} />;
   return <SorteoDemo key={`${sesion}-${estados.join()}`} sesion={sesion} usuario={usuario} estados={estados} cargando={cargando} avisar={avisar} />;
 }

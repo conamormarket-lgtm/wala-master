@@ -200,8 +200,10 @@
 
 /* ── Página de enlaces ── */
 .enlaces {
-  min-height: 100%;
-  padding: 2.5rem 1rem 3rem;
+  /* Toda la pantalla, como LinkInBioPage: va sola, sin la cabecera ni el pie. */
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 3.5rem 1rem 3rem;
   color: var(--enl-texto);
 }
 
@@ -264,5 +266,184 @@
 
   .caja:hover {
     transform: rotate(3deg);
+  }
+}
+
+/* El botón de compartir del Link en bio: arriba a la derecha, del color del texto del diseño. */
+.enlaces {
+  position: relative;
+}
+
+.enlacesCompartir {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--enl-titulo, #fff) 35%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--enl-titulo, #fff) 10%, transparent);
+  color: var(--enl-titulo, #fff);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--dur-rapida) ease;
+}
+
+.enlacesCompartir svg {
+  width: 17px;
+  height: 17px;
+}
+
+.enlacesCompartir:active {
+  transform: scale(0.95);
+}
+
+/* ── La invitación ── */
+.invitar {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 1.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 28px 28px 28px;
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.invitar > :not(.invitarAdornos) {
+  position: relative;
+}
+
+.invitarAdornos {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.invitarPuntos {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 100px;
+  color: rgba(124, 58, 237, 0.14);
+}
+
+.invitarDestello1,
+.invitarDestello2 {
+  position: absolute;
+  color: var(--violet-400, #a78bfa);
+}
+
+.invitarDestello1 {
+  top: 2.2rem;
+  left: 12%;
+  width: 20px;
+}
+
+.invitarDestello2 {
+  top: 4.4rem;
+  left: 18%;
+  width: 11px;
+  color: #fcd34d;
+}
+
+.invitarSelloIcono {
+  width: 40%;
+  height: 40%;
+  color: #fff;
+  stroke-width: 3;
+}
+
+.invitarTitulo {
+  margin: 0.25rem 0 0;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: clamp(1.7rem, 5.5vw, 2.4rem);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+}
+
+.invitarTitulo .trazo {
+  margin: 0.25rem auto 0;
+}
+
+.invitarNombre {
+  color: var(--primary-color);
+}
+
+.invitarBajada {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
+.invitarPremio {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  /* En el celular baja a dos líneas: redondo pero no píldora. */
+  border-radius: 18px;
+  background: var(--primary-light, #f3e8ff);
+  color: var(--violet-800, #5b21b6);
+  font-weight: 700;
+}
+
+:global([data-theme='dark']) .invitarPremio {
+  background: rgba(167, 139, 250, 0.14);
+  color: var(--violet-200, #ddd6fe);
+}
+
+.invitarAviso {
+  width: 100%;
+  text-align: left;
+}
+
+.invitarPasos {
+  width: 100%;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.invitarBotones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.invitarNota {
+  max-width: 56ch;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 600px) {
+  .invitar {
+    padding: 1.6rem 1.1rem 1.4rem;
+  }
+
+  .invitarBotones > * {
+    flex: 1 1 100%;
+  }
+
+  .invitarAdornos {
+    display: none;
   }
 }

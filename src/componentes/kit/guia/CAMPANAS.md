@@ -19,12 +19,86 @@ tiene cinco opciones:
   PayPal queda pendiente, no disponible y cargando. "Suscribirme" abre la
   hoja con tres pasos: entrar, los datos con la autorización y el pago.
 - **Suscripciones** (`/suscripciones`).
-- **Link en bio** (`/l/sorteos-y-atencion`). Estados: no disponible y
-  cargando.
-- **Invitar** (`/invitar/ISAAC7K`): como en la tienda, lleva al registro con
-  el aviso de la invitación arriba. El aviso también se prende en cualquier
-  página desde "Mostrar también" → "Aviso de invitación", con sus tres
-  estados.
+- **Link en bio** (`/l/sorteos-y-atencion`), sola, sin la cabecera ni el
+  pie de la tienda. Estados: no disponible y cargando.
+- **Invitar** (`/invitar/ISAAC7K`): la página de la invitación
+  (`PaginaInvitacion`, cómo debe verse). Estados: ya tiene cuenta, ya recibió
+  el bono, link no válido y cargando. "Crear mi cuenta" lleva al registro con
+  el aviso de la invitación arriba, como hoy la tienda. El aviso también se
+  prende en cualquier página desde "Mostrar también" → "Aviso de
+  invitación", con sus tres estados.
+
+## Cómo funcionan el Link en bio y la invitación
+
+### Link en bio (`/l/:slug`)
+
+**Qué es:** una página de botones estilo Linktree para poner en la bio de
+Instagram o TikTok (las redes dejan un solo link). Se arma en el admin, en
+**Enlaces** (`/admin/enlaces`, `AdminEnlaceEditor`): título, foto,
+descripción, redes, botones con su miniatura, y el diseño (fondo, estilo de
+botón, colores, letra). Se guarda en `link_pages` y se publica en
+`/l/{slug}` cuando está "Activo".
+
+**Hoy:** hay una sola, "Sorteos y Atencion" (`/l/sorteos-y-atencion`), con
+dos botones (Sorteos y WhatsApp). Cuenta las visitas al cargar y los clics
+de cada botón (en la nube, con la función `registrarClicEnlace`); el admin
+los ve por botón, país, aparato y día.
+
+**¿Sirve en la página principal?** No: nada de la tienda enlaza a `/l/`.
+Solo se llega desde afuera (la bio de una red, un QR, un mensaje). No es una
+sección de la tienda.
+
+**Cómo debe funcionar (y así está el diseño del kit):**
+
+1. Va **sola**, a pantalla completa, sin la cabecera, el pie ni las
+   ventanas de la tienda: quien llega desde Instagram solo ve los botones.
+   Hoy la tienda la muestra dentro de la cabecera y el pie: al migrar, quitar
+   el marco en `/l/`.
+2. **"Compartir"** arriba a la derecha: el menú de compartir del teléfono o,
+   si no hay, copia el link.
+3. Cada clic se cuenta, **también el de las redes** (hoy la función solo
+   busca en `botones`: arreglarlo al migrar; el kit ya los manda).
+4. Al pie, "Creado con Walá" lleva a la tienda.
+
+### La invitación (`/invitar/:código`)
+
+**Qué es:** el link permanente de cada cuenta para invitar gente nueva
+(Mis referidos → "Compartir invitación").
+
+**Hoy en la tienda:**
+
+1. `InvitarPage` no muestra nada: lleva directo a `/registro` (sin cuenta)
+   o al inicio (con cuenta), con `?ref=CÓDIGO&tipo=invitacion`.
+2. `ReferralTracker` registra la visita (un doc de `referrals` por persona)
+   y la guarda en el navegador (`wala_referral`). Arriba sale el aviso
+   (`AvisoInvitacion`): "Isaac te invitó a Walá".
+3. Cuando la cuenta nueva tiene **DNI y celular**, el servidor acepta la
+   invitación (`aceptarInvitacionSecure`) si son de verdad nuevos (que no
+   estén en otra cuenta ni en pedidos del ERP): **10 monedas** de bienvenida
+   para quien llega.
+4. Quien invita gana con la **primera compra** de esa persona en 30 días:
+   15 monedas o el %, lo que sea mayor.
+5. Si quien abre el link **ya tenía cuenta**, la invitación no aplica, pero
+   el link vale como uno de compra: si compra en 36 h, quien invitó gana.
+
+**Cómo debe funcionar (y así está el diseño del kit):** antes de pedir
+datos, una página que explique la invitación (`PaginaInvitacion`):
+
+- "**Isaac** te invitó a Walá", qué es Walá en una línea y "+10 de
+  bienvenida al crear tu cuenta".
+- Tres pasos con sello: crea tu cuenta, completa tu DNI y celular (así
+  sabemos que es nueva) y recibes 10 monedas.
+- "Crear mi cuenta" (al registro, con `?ref=…&tipo=invitacion`, como hoy) y
+  "Ya tengo cuenta".
+- La letra chica: quien invita gana con tu primera compra y la regla de
+  cuenta nueva.
+- **Con cuenta:** "La invitación es para cuentas nuevas", y que si compras
+  en 36 h quien te invitó gana. **Ya aceptada:** "¡Ya tienes tus 10
+  monedas!". **Código que no existe:** Kapi triste y "Ir a la tienda".
+
+Al migrar, `InvitarPage` deja de redirigir y monta `PaginaInvitacion` con
+el nombre de `getNombreInvitacion` y el estado según la sesión y
+`wala_referral`. Lo demás (el aviso, el tracker, el servidor) no cambia.
 
 | El sorteo (celular, noche: el boleto y la cuenta atrás) | Por suscripción | Link en bio (el real) |
 |---|---|---|
@@ -71,10 +145,10 @@ Revisado el 2026-10-15 contra estos archivos:
 | P21 Sorteo por suscripción | `PaginaSuscripcionSorteo` | `TarjetaPlan`, `TarjetaAliado`, `ListaGanadores` (nuevas); `Pestanas`, `ListaDatos`, `Estadistica`, `BotonGoogle`, `Casilla`, `PagoTarjeta`, `PagoPaypal`, `Chip` | `getCampaignBySlug`, `getContadorSuscriptores`, `getBeneficios`, `getGanadoresGaleria`, `getMiSuscripcion`, `getRecibos`; `crearSuscripcionCulqi`, `crearSuscripcionPaypal` + `confirmarSuscripcionPaypal`, `cancelarSuscripcion` |
 | P21 Suscripciones | `PaginaSuscripciones` (`paginas/Campanas.jsx`) | `FormaGanar` (los 4 pasos), `IconoWala`, `Garabatos`, `Trazo`, `TituloSeccion` | — (textos fijos) |
 | P21 Link en bio | `PaginaEnlaces` | `RedesEnlaces` y `BotonEnlace` (nuevas), `Avatar`, `LogoWala` | `getLinkPageBySlug` (`link_pages`), `registrarClicEnlace`, `registrarVisitaEnlace`; el fondo y los botones con `construirFondoStyle` / `estiloBotonStyle` (`services/linkThemes`) |
-| M12 La invitación | `AvisoInvitacion` (nueva, `piezas/Campanas.jsx`) | `IconoWala`, `Trazo`, `Boton` | `useInvitacionReferido` (localStorage `wala_referral`), `getNombreInvitacion` |
+| M12 La invitación | `AvisoInvitacion` (nueva, `piezas/Campanas.jsx`) y `PaginaInvitacion` (`paginas/Campanas.jsx`, 2026-10-16) | `IconoWala`, `Trazo`, `Boton`; la página: `PasosSellos` (nueva, `piezas/PasosSellos.jsx`; también la usa el libro de reclamaciones), `GananciaMonedas`, `Sello`, `Aviso`, `EstadoVacio` | `useInvitacionReferido` (localStorage `wala_referral`), `getNombreInvitacion` |
 
 Esqueletos: `EsqueletoPagina forma="sorteo"`, `"suscripcionSorteo"`,
-`"landing"` (Suscripciones) y `"enlaces"`. El del sorteo trae el talón del
+`"landing"` (Suscripciones), `"invitacion"` y `"enlaces"`. El del sorteo trae el talón del
 boleto y la píldora de la cuenta atrás.
 
 ### Lo que hace
@@ -267,8 +341,10 @@ boleto y la píldora de la cuenta atrás.
 ### Pasos
 
 1. `AvisoInvitacion` del kit en `#app-top-banner-slot` (chico y aislado).
-2. `PaginaEnlaces` en `LinkInBioPage`, compartiendo `linkThemes`; de paso,
-   que la función también cuente las redes.
+   Luego `PaginaInvitacion` en `InvitarPage` (en vez de redirigir).
+2. `PaginaEnlaces` en `LinkInBioPage`, sin el marco de la tienda en `/l/` y
+   compartiendo `linkThemes`; de paso, que la función también cuente las
+   redes.
 3. `PaginaSuscripciones` (Regalos con amor se queda con
    `NuevosUsuariosPage`).
 4. `PaginaSorteo` con el mismo flujo de Culqi y PayPal (y el slug en

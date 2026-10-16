@@ -48,3 +48,4 @@ export { CabezaSorteo, ListaGanadores, TarjetaPlan, TarjetaAliado } from './Sort
 export { AvisoInvitacion, RedesEnlaces, BotonEnlace } from './Campanas';
 export { TemaMarca, temaDeMarca } from './TemaMarca';
 export { PortadaMarca } from './PortadaMarca';
+export { PasosSellos } from './PasosSellos';

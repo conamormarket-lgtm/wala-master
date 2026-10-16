@@ -64,4 +64,4 @@ export { PaginaPagoRapido } from './paginas/PagoRapido';
 export { PaginaLegal, PaginaReclamaciones, validarReclamacion } from './paginas/Legales';
 export { PaginaPalabra, PaginaRuleta, PaginaBolitas } from './paginas/Juegos';
 export { PaginaSorteo, PaginaSuscripcionSorteo } from './paginas/Sorteos';
-export { PaginaSuscripciones, PaginaEnlaces } from './paginas/Campanas';
+export { PaginaSuscripciones, PaginaInvitacion, PaginaEnlaces } from './paginas/Campanas';

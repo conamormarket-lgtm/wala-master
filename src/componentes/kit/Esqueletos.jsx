@@ -917,6 +917,28 @@ const PAGINAS = {
       </span>
     </span>
   ),
+  invitacion: () => (
+    // La invitación: el sello, el título, la bajada, el premio, los tres pasos y los dos botones.
+    <span className={s.invitacionEsq}>
+      <Hueso forma="circulo" ancho={76} alto={76} />
+      <Hueso alto={34} ancho="min(80%, 420px)" />
+      <Hueso alto={12} ancho="min(70%, 360px)" />
+      <Hueso forma="pildora" alto={40} ancho={280} />
+      <span className={s.invitacionPasosEsq}>
+        {repetir(3, (k) => (
+          <span key={k} className={s.invitacionPasoEsq}>
+            <Hueso forma="circulo" ancho={40} alto={40} />
+            <Hueso alto={14} ancho="70%" />
+            <Hueso alto={11} ancho="85%" />
+          </span>
+        ))}
+      </span>
+      <span className={s.invitacionBotonesEsq}>
+        <Hueso forma="pildora" alto={52} ancho={190} />
+        <Hueso forma="pildora" alto={52} ancho={190} />
+      </span>
+    </span>
+  ),
   sorteo: () => (
     // El sorteo: el boleto (la foto y su talón) con el título y la cuenta atrás; abajo, las dos
     // columnas y el botón.
@@ -996,7 +1018,7 @@ const PAGINAS = {
  *    'acceso' | 'cuenta' | 'lista' | 'formulario' |
  *    'legal' (privacidad, términos) | 'reclamaciones' | 'verDiseno' |
  *    'palabra' | 'ruleta' | 'bolitas' (los minijuegos por dentro) | 'sorteo' |
- *    'suscripcionSorteo' | 'landing' (Suscripciones) | 'enlaces'
+ *    'suscripcionSorteo' | 'landing' (Suscripciones) | 'invitacion' | 'enlaces'
  *  - sesion: false para quien no entró (la cuenta y la encuesta muestran la
  *    invitación a entrar; Minijuegos, su aviso en vez del progreso)
  *  - modulo (con forma 'cuenta'): uno de MODULOS_ESQUELETO_CUENTA (resumen,

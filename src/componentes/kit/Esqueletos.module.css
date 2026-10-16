@@ -1326,3 +1326,45 @@
   padding-top: 1rem;
 }
 
+/* ── La invitación ── */
+.invitacionEsq {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  width: min(100%, 720px);
+  margin: 0 auto;
+  padding: 2rem 1.5rem 1.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 28px 28px 28px;
+}
+
+.invitacionPasosEsq {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.invitacionPasoEsq {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+}
+
+.invitacionBotonesEsq {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+@container esqueleto (max-width: 600px) {
+  .invitacionPasosEsq {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .invitacionPasoEsq {
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: start;
+  }
+}

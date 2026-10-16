@@ -4,6 +4,7 @@ import Boton from '../Boton';
 import { Sello, Trazo } from '../Marca';
 import { Enlace } from '../Enlace';
 import { Texto } from '../Traduccion';
+import { PasosSellos } from './PasosSellos';
 import s from './Legales.module.css';
 
 /*
@@ -130,27 +131,19 @@ export function DatosProveedor({ empresa = {}, fecha, codigo }) {
 /**
  * Lo que pasa con una hoja de reclamación, en tres pasos con su sello: la
  * llenas, recibes tu código y te respondemos (en cuántos días hábiles).
- * Unidos por una costura punteada; en el celular, uno debajo del otro.
+ * Es PasosSellos con los pasos del libro.
  *  - plazo: días hábiles (15)
  */
 export function PasosAtencion({ plazo = 15 }) {
-  const pasos = [
-    { icono: <PenLine aria-hidden="true" />, titulo: 'Llenas tu hoja', texto: 'Tus datos, lo que compraste y qué pasó.' },
-    { icono: <Hash aria-hidden="true" />, titulo: 'Recibes tu código', texto: 'Al enviarla, para hacerle seguimiento.' },
-    { icono: <Mail aria-hidden="true" />, titulo: 'Te respondemos', texto: `En máximo ${plazo} días hábiles, a tu correo.` },
-  ];
   return (
-    <ol className={s.atencion} aria-label="Lo que sigue" data-componente="PasosAtencion">
-      {pasos.map((p, k) => (
-        <li key={p.titulo} className={s.atencionPaso}>
-          <Sello tamano={40} girar={k % 2 ? 6 : -8}>{p.icono}</Sello>
-          <span className={s.atencionTextos}>
-            <strong>{p.titulo}</strong>
-            <span>{p.texto}</span>
-          </span>
-        </li>
-      ))}
-    </ol>
+    <PasosSellos
+      etiqueta="Lo que sigue"
+      pasos={[
+        { icono: <PenLine aria-hidden="true" />, titulo: 'Llenas tu hoja', texto: 'Tus datos, lo que compraste y qué pasó.' },
+        { icono: <Hash aria-hidden="true" />, titulo: 'Recibes tu código', texto: 'Al enviarla, para hacerle seguimiento.' },
+        { icono: <Mail aria-hidden="true" />, titulo: 'Te respondemos', texto: `En máximo ${plazo} días hábiles, a tu correo.` },
+      ]}
+    />
   );
 }
 

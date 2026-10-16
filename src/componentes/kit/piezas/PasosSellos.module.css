@@ -1,0 +1,76 @@
+/* Pasos con sello, unidos por una costura (PasosSellos). */
+.pasos {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* La costura que une los sellos. */
+.pasos::before {
+  position: absolute;
+  top: 20px;
+  right: 16%;
+  left: 16%;
+  border-top: 2px dashed rgba(124, 58, 237, 0.25);
+  content: '';
+}
+
+.paso {
+  position: relative;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 0.55rem;
+  text-align: center;
+}
+
+/* El sello tapa la costura. */
+.paso > span:first-child {
+  box-shadow: 0 0 0 5px var(--color-bg, var(--gris-fondo));
+}
+
+.textos {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.textos strong {
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.textos span {
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 600px) {
+  .pasos {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.85rem;
+  }
+
+  .pasos::before {
+    top: 20px;
+    right: auto;
+    bottom: 20px;
+    left: 19px;
+    border-top: 0;
+    border-left: 2px dashed rgba(124, 58, 237, 0.25);
+  }
+
+  .paso {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    justify-items: start;
+    gap: 0.85rem;
+    text-align: left;
+  }
+}

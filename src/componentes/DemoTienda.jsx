@@ -102,7 +102,7 @@ const PAGINA_DE_RUTA = {
   '/': 'inicio', '/tienda': 'tienda', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/checkout': 'checkout', '/encuesta-suscripcion': 'encuesta', '/personalizar': 'crear', '/comunidad': 'comunidad', '/ofertas': 'tienda', '/nichos': 'tienda',
   ...Object.fromEntries(VISTAS_LEGALES.map(([, r]) => [r, 'legales'])),
   ...Object.fromEntries(VISTAS_JUEGOS.map(([, r]) => [r, 'juego'])),
-  ...Object.fromEntries(VISTAS_CAMPANAS.filter(([, r]) => !r.startsWith('/invitar/')).map(([, r]) => [r, 'campanas'])),
+  ...Object.fromEntries(VISTAS_CAMPANAS.map(([, r]) => [r, 'campanas'])),
   ...Object.fromEntries(MODULOS_CUENTA.map((m) => [m.ruta, 'cuenta'])),
   ...Object.fromEntries(VISTAS_ACCESO.map((v) => [v.ruta, 'acceso'])),
 };
@@ -348,7 +348,9 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     if (/^\/(wishlist|regalar|regalo)\//.test(ruta)) { setRutaRegalar(ruta); irA('regalar'); return; }
     if (ruta.startsWith('/pago-rapido/')) { irA('pagoRapido'); return; }
     // Una invitación no tiene página: como la tienda, lleva al registro y el aviso queda arriba.
-    if (ruta.startsWith('/invitar/')) { setExtras((xs) => (xs.includes('invitacion') ? xs : [...xs, 'invitacion'])); setEstadoInvitacion('nueva'); setRutaAcceso('/registro'); irA('acceso'); return; }
+    // La invitación: su página (PaginaInvitacion). "Crear mi cuenta" sigue al registro con ?tipo=invitacion.
+    if (ruta.startsWith('/invitar/')) { setRutaCampana(ruta); setEstadosCampana([]); irA('campanas'); return; }
+    if (/(^|&)tipo=invitacion(&|$)/.test(query)) { setExtras((xs) => (xs.includes('invitacion') ? xs : [...xs, 'invitacion'])); setEstadoInvitacion('nueva'); }
     if (ruta.startsWith('/l/') || ruta.startsWith('/sorteos/') || ruta.startsWith('/suscrito-sorteo/')) { setRutaCampana(ruta.startsWith('/l/') ? ruta : ruta.replace(/\/[^/]+$/, '')); setEstadosCampana([]); irA('campanas'); return; }
     // Los nichos y los vendedores se retiraron: como la tienda, van a /tienda.
     if (/^\/(nicho|tienda-vendedor)\//.test(ruta) || ruta === '/nichos' || ruta === '/vendedor') { irA('tienda'); return; }
@@ -630,7 +632,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   });
 
   const formaEsqueleto = {
-    tienda: 'tienda', campanas: { '/sorteos': 'sorteo', '/suscrito-sorteo': 'suscripcionSorteo', '/suscripciones': 'landing' }[rutaCampana] || 'enlaces', juego: { '/ruleta': 'ruleta', '/ball-sort': 'bolitas' }[rutaJuego] || 'palabra', legales: rutaLegal === '/libro-de-reclamaciones' ? 'reclamaciones' : 'legal', producto: 'producto', checkout: 'checkout', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', ver: 'verDiseno', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
+    tienda: 'tienda', campanas: rutaCampana.startsWith('/invitar/') ? 'invitacion' : { '/sorteos': 'sorteo', '/suscrito-sorteo': 'suscripcionSorteo', '/suscripciones': 'landing' }[rutaCampana] || 'enlaces', juego: { '/ruleta': 'ruleta', '/ball-sort': 'bolitas' }[rutaJuego] || 'palabra', legales: rutaLegal === '/libro-de-reclamaciones' ? 'reclamaciones' : 'legal', producto: 'producto', checkout: 'checkout', buscar: 'busqueda', carrito: 'carrito', crear: 'crear', estudio: 'estudio', comunidad: 'comunidad', creacion: 'producto', combo: 'producto', ver: 'verDiseno', minijuegos: 'minijuegos', encuesta: 'encuesta', acceso: 'acceso', cuenta: 'cuenta',
   }[pagina] || 'productos';
   // /cuenta/… → su módulo (el detalle de una compra usa el de pedidos).
   const moduloEsqueleto = {
@@ -649,11 +651,20 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
       </Parte>
     </MarcoTienda>
   ) : pagina === 'campanas' ? (
-    <MarcoTienda {...marco} kapiEnPie={!estadosCampana.some((e) => ['vacio', 'error', 'noDisponible'].includes(e))}>
-      <Parte n="P21" nombre={{ '/sorteos': 'PaginaSorteo', '/suscrito-sorteo': 'PaginaSuscripcionSorteo', '/suscripciones': 'PaginaSuscripciones' }[rutaCampana] || 'PaginaEnlaces'}>
-        <CampanasDemo ruta={rutaCampana} sesion={conSesion} usuario={usuario} estados={estadosCampana} toast={toast} />
-      </Parte>
-    </MarcoTienda>
+    // El Link en bio va solo (es la página de la bio de Instagram o TikTok): sin cabecera, pie, barra ni flotantes.
+    rutaCampana.startsWith('/l/') ? (
+      <MarcoTienda {...marco} cabecera={null} pie={null} pieLegal={null} barraInferior={null} flotantes={undefined} kapiEnPie={false}>
+        <Parte n="P21" nombre="PaginaEnlaces">
+          <CampanasDemo ruta={rutaCampana} sesion={conSesion} usuario={usuario} estados={estadosCampana} toast={toast} />
+        </Parte>
+      </MarcoTienda>
+    ) : (
+      <MarcoTienda {...marco} kapiEnPie={!estadosCampana.some((e) => ['vacio', 'error', 'noDisponible', 'invalida'].includes(e))}>
+        <Parte n={rutaCampana.startsWith('/invitar/') ? 'M12' : 'P21'} nombre={rutaCampana.startsWith('/invitar/') ? 'PaginaInvitacion' : { '/sorteos': 'PaginaSorteo', '/suscrito-sorteo': 'PaginaSuscripcionSorteo', '/suscripciones': 'PaginaSuscripciones' }[rutaCampana]}>
+          <CampanasDemo ruta={rutaCampana} sesion={conSesion} usuario={usuario} estados={estadosCampana} toast={toast} />
+        </Parte>
+      </MarcoTienda>
+    )
   ) : pagina === 'juego' ? (
     // Un juego es una herramienta: sin Kapi en el pie (aparece en el resultado).
     <MarcoTienda {...marco} kapiEnPie={false}>
@@ -938,11 +949,11 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
             <span className={cs.controlesTitulo}>Cómo se abre</span>
             <div className={cs.controlesChips}>
               {VISTAS_CAMPANAS.map(([texto, r]) => (
-                <Chip key={texto} tamano="sm" activo={rutaCampana === r} onClick={() => { if (r.startsWith('/invitar/')) { navegar.current(r); return; } setRutaCampana(r); setEstadosCampana([]); if (marcoRef.current) marcoRef.current.scrollTop = 0; }}>{texto}</Chip>
+                <Chip key={texto} tamano="sm" activo={rutaCampana === r} onClick={() => { setRutaCampana(r); setEstadosCampana([]); if (marcoRef.current) marcoRef.current.scrollTop = 0; }}>{texto}</Chip>
               ))}
             </div>
             <div className={cs.controlesChips}>
-              {(ESTADOS_CAMPANAS[rutaCampana.startsWith('/l/') ? 'enlaces' : rutaCampana] || []).map(([id, texto]) => (
+              {(ESTADOS_CAMPANAS[rutaCampana.startsWith('/l/') ? 'enlaces' : rutaCampana.startsWith('/invitar/') ? 'invitar' : rutaCampana] || []).map(([id, texto]) => (
                 <Chip key={id} tamano="sm" activo={estadosCampana.includes(id)} onClick={() => setEstadosCampana((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
               ))}
             </div>
