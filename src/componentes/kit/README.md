@@ -158,7 +158,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `Seccion.jsx` | `BloqueSeccion`, `TituloSeccion`, `tituloDesdeAjustes` | Relleno, fondo y título iguales en todas las secciones |
 | `piezas/TarjetaCategoria.jsx` | `TarjetaCategoria` (cuadro · círculo · burbuja; el cuadro lleva `detalle`, una línea de texto bajo el nombre), `TarjetaCategoriaEsqueleto` | category_grid y categories_nav |
 | `piezas/TemaMarca.jsx` | `TemaMarca`, `temaDeMarca` | El color de una marca en los acentos (sellos, "Todos", trazos, chips y aros) con su versión de noche; los botones de compra siguen violeta |
-| `piezas/PortadaMarca.jsx` | `PortadaMarca` | La portada de una marca: logo, nombre con trazo, frase y "Ver productos"; estilo foto · color · collage |
+| `piezas/PortadaMarca.jsx` | `PortadaMarca` | La portada de una marca: logo, nombre con trazo, frase, "Ver productos" y sus cifras en sellos (productos, en oferta, categorías); estilo foto · color · collage (con el sello grande de la marca detrás de las cartas) |
 | `paginas/Marca.jsx` | `PaginaMarca` | La página de una marca sin armarla: identidad + plantilla, o sus secciones del builder (guía: `guia/NAVEGAR.md`) |
 | `piezas/FotoProducto.jsx` | `FotoProducto` | Foto de producto sobre su escenario (`src`, `relleno`, `respaldo` sin foto, `children` encima) |
 | `piezas/Avatar.jsx` | `Avatar`, `iniciales` | Foto o iniciales de una persona |

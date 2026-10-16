@@ -69,7 +69,7 @@
   color: var(--color-text);
 }
 
-/* ── Adornos (quietos) ── */
+/* ── Adornos (quietos): blancos sobre el color, del color de la marca en el collage ── */
 .adornos {
   position: absolute;
   z-index: -1;
@@ -107,6 +107,26 @@
 .p_foto .puntos,
 .p_foto .destello1 {
   display: none;
+}
+
+.p_collage .puntos {
+  top: 6%;
+  right: 2%;
+  bottom: auto;
+  color: color-mix(in srgb, var(--tema-acento, var(--primary-color)) 22%, transparent);
+}
+
+.p_collage .destello1 {
+  top: 12%;
+  right: 46%;
+  color: var(--tema-acento, var(--primary-color));
+  opacity: 0.55;
+}
+
+.p_collage .destello2 {
+  top: auto;
+  right: 6%;
+  bottom: 12%;
 }
 
 /* ── El texto ── */
@@ -193,15 +213,43 @@
   margin-top: 0.35rem;
 }
 
-.cuenta {
-  font-size: 0.86rem;
-  font-weight: 700;
-  opacity: 0.85;
+/* Las cifras de la marca en sellos. */
+.cifras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  list-style: none;
 }
 
-.p_collage .cuenta {
-  color: var(--color-text-muted);
-  opacity: 1;
+.cifra {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.7rem 0.32rem 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.cifra svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.p_collage .cifra {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.p_collage .cifra svg {
+  color: var(--tema-acento, var(--primary-color));
 }
 
 /* ── El lado derecho (logo grande o collage) ── */
@@ -225,7 +273,20 @@
   }
 }
 
+/* El sello grande de la marca detrás de las cartas. */
+.disco {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(78%, 300px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--degradado-logo);
+  transform: translate(-50%, -50%) rotate(-8deg);
+}
+
 .collage {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
@@ -254,6 +315,15 @@
   .collage {
     width: 100%;
     margin-top: 0.25rem;
+  }
+
+  .p_collage .lado {
+    padding-top: 1rem;
+  }
+
+  .disco {
+    top: calc(50% + 0.5rem);
+    width: min(46%, 170px);
   }
 }
 

@@ -86,15 +86,16 @@ la de hoy) y los estados (cargando, error, sin productos).
 logo y la foto de Con Amor Geeks es la de su landing real, pero en
 `tienda_brands` todavía no existe `identidad` (todas tienen `bgColor`
 blanco). Las frases también son de ejemplo. Los productos y las burbujas sí
-son reales.
+son reales (los combos de Yoryo traen sus piezas, `comboItems`, copiadas
+de `productos_wala` el 2026-10-16: sin ellas la tarjeta salía sin foto).
 
 ### Partes
 
 | Parte | Componente | Qué hace |
 |---|---|---|
 | El color | `TemaMarca` (`temaDeMarca`) | Cambia solo los acentos: el degradado de los sellos y del "Todos", el trazo bajo los títulos, el aro de la burbuja elegida y los chips activos. Los botones de compra, la cabecera, el pie y Kapi siguen violeta. |
-| La portada | `PortadaMarca` | Logo en sello girado, el nombre con trazo, la frase, "Ver productos" (baja al catálogo) y cuántos productos. Tres estilos: `foto` (la foto de fondo con el color de la marca detrás del texto), `color` (el degradado de la marca con el logo grande) y `collage` (fondo tenue con tres productos en cartas giradas). |
-| Las secciones | `plantillaDeMarca` | `categories_nav` (las burbujas curadas, `navDeMarca`), `featured_carousel` "Lo más pedido", `sale_carousel` "En oferta" y `sidebar_catalog` "Todo {marca}" con `anchorId: 'catalogo'`. Sin destacados o sin ofertas, esa fila no sale. |
+| La portada | `PortadaMarca` | Logo en sello girado, el nombre con trazo, la frase, "Ver productos" (baja al catálogo) y sus cifras en sellos: productos, en oferta ("Todo en oferta" si lo están todos) y categorías (las que son 0, o una sola categoría, no salen). Tres estilos: `foto` (la foto de fondo con el color de la marca detrás del texto), `color` (el degradado de la marca con el logo grande) y `collage` (fondo tenue con tres productos en cartas giradas sobre el sello grande de la marca, con puntos y destellos de su color). |
+| Las secciones | `plantillaDeMarca` | `categories_nav` (las burbujas curadas, `navDeMarca`), `featured_carousel` "Lo más pedido", `sale_carousel` "En oferta" y `sidebar_catalog` "Todo {marca}" con `anchorId: 'catalogo'`. Sin destacados o sin ofertas, esa fila no sale. Las filas van más juntas que en el inicio (1 rem arriba, 1,5 abajo). |
 | La página | `PaginaMarca` | `PaginaTienda` con la portada (`antes`) y el tema (`tema`). Si la marca ya tiene secciones propias (una landing del builder), mandan esas; la portada sale solo si no traen `hero_banner` ni `hero_carousel`. |
 
 Esqueleto: `EsqueletoPagina secciones={ESQUELETO_MARCA}` (portada, burbujas,

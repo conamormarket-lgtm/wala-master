@@ -5712,7 +5712,45 @@
      "hasVariants": false,
      "fulfillmentType": "stock",
      "featured": false,
-     "featuredOrder": 0
+     "featuredOrder": 0,
+     "comboItems": [
+      {
+       "productId": "BrSFBNeep6FXODg4Pqyp",
+       "name": "Reloj Yoryo Monarca",
+       "variantMapping": {
+        "color": "Oro Rosa Medianoche"
+       },
+       "customizable": false,
+       "scale": 1,
+       "position": 0,
+       "viewId": "default",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r2%2Fmain_variant_1790088293597_r2_0_1790088293597_R2_oro-rosa.webp?alt=media&token=ebe9b766-28e2-4d3b-a197-9566f6732cf8"
+      },
+      {
+       "productId": "WAxcEpXkgODfj0JBc4qB",
+       "name": "Esclava Yoryo de Cuero Trenzado",
+       "variantMapping": {
+        "color": "Negro Acero"
+       },
+       "customizable": false,
+       "scale": 1,
+       "position": 1,
+       "viewId": "default",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-esclava%2Fmain_variant_1790095662837_esc_0_1790095662837_esclava.webp?alt=media&token=9905cc89-2ac6-4909-88ca-a86c81e73175"
+      },
+      {
+       "productId": "NEtavILSA0EoxJgGD7ou",
+       "name": "Billetera Yoryo Cónsul",
+       "variantMapping": {
+        "color": "Deep Blue"
+       },
+       "customizable": false,
+       "scale": 1,
+       "position": 2,
+       "viewId": "default",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fmain_variant_1790092445170_b1_0_1790092445170_BIL_3.webp?alt=media&token=b4d5d931-a0b4-4d84-a692-170bcdebfa39"
+      }
+     ]
     },
     {
      "id": "xpRJ063Yl1NNIgSQ8KcY",
@@ -5739,7 +5777,45 @@
      "hasVariants": false,
      "fulfillmentType": "stock",
      "featured": false,
-     "featuredOrder": 0
+     "featuredOrder": 0,
+     "comboItems": [
+      {
+       "productId": "foF1l7x33v3zFmRs2CVG",
+       "name": "Reloj Yoryo Magnate",
+       "variantMapping": {
+        "color": "Oro Imperial"
+       },
+       "customizable": false,
+       "scale": 1,
+       "position": 0,
+       "viewId": "default",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r1%2Fmain_variant_1790088280690_r1_0_1790088280690_R1_acero-onix.webp?alt=media&token=8eb0b7ff-a38c-4241-8009-0519838e4141"
+      },
+      {
+       "productId": "WAxcEpXkgODfj0JBc4qB",
+       "name": "Esclava Yoryo de Cuero Trenzado",
+       "variantMapping": {
+        "color": "Negro Acero"
+       },
+       "customizable": false,
+       "scale": 1,
+       "position": 1,
+       "viewId": "default",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-esclava%2Fmain_variant_1790095662837_esc_0_1790095662837_esclava.webp?alt=media&token=9905cc89-2ac6-4909-88ca-a86c81e73175"
+      },
+      {
+       "productId": "NEtavILSA0EoxJgGD7ou",
+       "name": "Billetera Yoryo Cónsul",
+       "variantMapping": {
+        "color": "Marrón Coñac"
+       },
+       "customizable": false,
+       "scale": 1,
+       "position": 2,
+       "viewId": "default",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fmain_variant_1790093590594_bil_0_1790093590594_BILMAR_cerrada.webp?alt=media&token=da49be48-745d-4dc3-9853-6c7728c2b7ed"
+      }
+     ]
     },
     {
      "id": "ZEz7WkCa6bsvWh8Feikn",
@@ -5766,7 +5842,45 @@
      "hasVariants": false,
      "fulfillmentType": "stock",
      "featured": false,
-     "featuredOrder": 0
+     "featuredOrder": 0,
+     "comboItems": [
+      {
+       "productId": "foF1l7x33v3zFmRs2CVG",
+       "name": "Reloj Yoryo Magnate",
+       "variantMapping": {
+        "color": "Acero Ónix"
+       },
+       "customizable": false,
+       "scale": 1,
+       "position": 0,
+       "viewId": "default",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-r1%2Fmain_variant_1790088280690_r1_0_1790088280690_R1_acero-onix.webp?alt=media&token=8eb0b7ff-a38c-4241-8009-0519838e4141"
+      },
+      {
+       "productId": "WAxcEpXkgODfj0JBc4qB",
+       "name": "Esclava Yoryo de Cuero Trenzado",
+       "variantMapping": {
+        "color": "Negro Acero"
+       },
+       "customizable": false,
+       "scale": 1,
+       "position": 1,
+       "viewId": "default",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-esclava%2Fmain_variant_1790095662837_esc_0_1790095662837_esclava.webp?alt=media&token=9905cc89-2ac6-4909-88ca-a86c81e73175"
+      },
+      {
+       "productId": "NEtavILSA0EoxJgGD7ou",
+       "name": "Billetera Yoryo Cónsul",
+       "variantMapping": {
+        "color": "Negro Azabache"
+       },
+       "customizable": false,
+       "scale": 1,
+       "position": 2,
+       "viewId": "default",
+       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/productos_v2%2Fyoryo-b1%2Fmain_variant_1790093590594_bil_1_1790093590594_BILNEG_cerrada.webp?alt=media&token=1491fc90-b78c-4587-8156-c71a5ae4b031"
+      }
+     ]
     },
     {
      "id": "JbO3IFaCRX57CwGtSIj5",

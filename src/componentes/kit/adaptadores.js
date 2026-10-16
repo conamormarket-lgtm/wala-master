@@ -1124,13 +1124,16 @@ export function identidadDeMarca(marca = {}) {
 /** La forma de la página de una marca mientras carga (EsqueletoPagina secciones). */
 export const ESQUELETO_MARCA = ['hero_banner', 'categories_nav', 'featured_carousel', 'sidebar_catalog'];
 
+/** Las filas de la página de una marca van más juntas que las del inicio (es una sola marca). */
+const JUNTAS = { paddingTop: '1rem', paddingBottom: '1.5rem' };
+
 export function plantillaDeMarca({ brandId, nombre = '', bloques = BLOQUES_MARCA, hayDestacados = true, hayOfertas = true } = {}) {
   const pedidas = new Set(bloques);
   const secciones = [
     pedidas.has('categorias') && { type: 'categories_nav', settings: { brandId } },
-    pedidas.has('destacados') && hayDestacados && { type: 'featured_carousel', settings: { title: 'Lo más pedido', titleUnderline: true, visibleItems: 5 } },
-    pedidas.has('ofertas') && hayOfertas && { type: 'sale_carousel', settings: { title: 'En oferta', titleUnderline: true, visibleItems: 5 } },
-    pedidas.has('catalogo') && { type: 'sidebar_catalog', settings: { title: nombre ? `Todo ${nombre}` : 'Todos los productos', titleUnderline: true, brandId, anchorId: 'catalogo' } },
+    pedidas.has('destacados') && hayDestacados && { type: 'featured_carousel', settings: { title: 'Lo más pedido', titleUnderline: true, visibleItems: 5, ...JUNTAS } },
+    pedidas.has('ofertas') && hayOfertas && { type: 'sale_carousel', settings: { title: 'En oferta', titleUnderline: true, visibleItems: 5, ...JUNTAS } },
+    pedidas.has('catalogo') && { type: 'sidebar_catalog', settings: { title: nombre ? `Todo ${nombre}` : 'Todos los productos', titleUnderline: true, brandId, anchorId: 'catalogo', ...JUNTAS } },
   ].filter(Boolean);
   return secciones.map((sec, k) => ({ id: `marca-${sec.type}`, order: k + 1, ...sec }));
 }

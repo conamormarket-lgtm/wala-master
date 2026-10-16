@@ -95,6 +95,8 @@ export function PaginaMarca({ marca = {}, identidad, secciones, productos = {}, 
             imagen={id.imagen}
             fotos={fotos}
             cuenta={todos.length}
+            ofertas={(productos.ofertas || []).length}
+            categorias={(resto.categorias || []).length}
           />
         </BloqueSeccion>
       )}
