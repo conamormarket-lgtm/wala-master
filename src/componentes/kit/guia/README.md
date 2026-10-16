@@ -26,6 +26,7 @@ página), **A** = las páginas de acceso (A1-A4).
 | Página | Ficha | Estado |
 |---|---|---|
 | Lo viejo que se borra al final | [ELIMINAR.md](ELIMINAR.md) | una fila por archivo o componente viejo: qué lo reemplazó, quién lo importa todavía y cuándo se puede borrar |
+| Avisos, hojas y confirmaciones (paso 3) | [MIGRACION.md](MIGRACION.md) (paso 3 e interruptores) | en la tienda desde el 2026-10-16: `HojaInferior` (`bloqueada`, `tamano`, foco), `Confirmar` + `useConfirmar` en vez de `confirm()`, toasts en vez de `alert()`; fichas en la demo de Piezas |
 | Inicio (`/`) | [INICIO.md](INICIO.md) | armada en la Tienda de prueba; con plan de migración (a futuro). **El marco (M1-M3, M7-M12 y el pie legal) ya está en la tienda** desde el 2026-10-16 (paso 2) |
 | Tienda (`/tienda`) | [TIENDA.md](TIENDA.md) | armada en la Tienda de prueba (catálogo con filtros reales); con plan de migración (a futuro) |
 | Kapi (M8, en todas las páginas) | [KAPI.md](KAPI.md) | botón y ventana (`KapiFlotante`, `VentanaKapi`, `RetoSemanal`); **en la tienda** desde el 2026-10-16 |

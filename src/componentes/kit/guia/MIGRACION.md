@@ -1,4 +1,4 @@
-# Llevar el kit a la tienda (en marcha: pasos 1 y 2 hechos)
+# Llevar el kit a la tienda (en marcha: pasos 1, 2 y 3 hechos)
 
 Lo común a todas las páginas: qué ya usa la tienda, cómo se importa y en qué
 orden se migraría. El detalle de cada página (reemplazos con archivo y línea,
@@ -55,8 +55,14 @@ Cada paso en su propio commit, verificable por separado.
    (`PilaFlotante` y compañía; Kapi con su ventana, KAPI.md), `PieLegal`,
    `VentanaCampana`, `AvisoIdioma`. Cada uno con su conector en
    `src/components/marco/` (arriba). Lo viejo, en [ELIMINAR.md](ELIMINAR.md).
-3. **Avisos y hojas**: `Aviso` y `HojaInferior` en lugar de los modales
-   sueltos de la tienda.
+3. ✓ **Avisos y hojas** (2026-10-16): `Aviso`, `HojaInferior` y `Confirmar` en lugar de los modales
+   sueltos de la tienda. Hecho: el `Modal` común (registro y las 5 ventanas de
+   `PedidoAcciones`), los `confirm()` / `alert()` (con `useConfirmar` y toasts),
+   las ventanas compartidas de Crear (eliminar creación, comunidad, llevar en
+   combo) y la pantalla de Culqi mientras cobra (`CapaCargando`). Esperan a su
+   página: las ventanas del estudio y del combo, los juegos, los sorteos, Fechas
+   importantes, el recorte de la foto de perfil, la cabecera (paso 7) y los
+   filtros del catálogo (paso 5).
 4. **`TarjetaProducto`** en carruseles y grillas, con `tarjetaDesdeProducto`
    (antes, lo que le falta: la impresión; el favorito ya se controla con
    `deseado` + `onDeseo`; ver INICIO.md).
@@ -90,6 +96,22 @@ Cada paso en su propio commit, verificable por separado.
    CartContext, WishlistContext, notificaciones y la configuración de
    Firestore).
 8. **Editor del kit** (`PanelEditor`) en lugar de `VisualEditorPanel`.
+
+## Interruptores (volver a lo de antes sin publicar)
+
+Para lo delicado (pagos, carrito, checkout): `useLoViejo(nombre)`
+(`src/hooks/useLoViejo.js`). Se encienden para todos con un admin en
+Firestore, `configuracion/kit_interruptores` → `<nombre>Viejo: true` (las
+reglas ya permiten leerlo y solo el admin lo escribe; no hay que desplegar
+nada), o en un solo navegador con `localStorage.wala_kit_viejo = "pagos,carrito"`.
+
+| Interruptor | Qué vuelve a lo de antes |
+|---|---|
+| `pagosViejo` | la ventana "Pagar saldo" de Mis pedidos (`Modal` viejo) y la pantalla de Culqi mientras cobra |
+| `carritoViejo` | las preguntas del carrito (quitar seleccionados, vaciar) con `window.confirm` |
+
+Se retiran cuando lo nuevo lleve un tiempo en producción (y con ellos lo viejo
+de [ELIMINAR.md](ELIMINAR.md)).
 
 ## Volver atrás
 
