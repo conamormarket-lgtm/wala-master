@@ -137,17 +137,19 @@
   border-radius: 10px;
 }
 
-/* La compra: en el celular, pegada abajo sobre la barra inferior. */
+/* La compra: en el celular, pegada abajo sobre la barra inferior. El fondo
+   es opaco y baja 12px por detrás de la barra inferior (que va encima), así
+   no queda una franja donde se ve lo de atrás. */
 .compra {
   position: sticky;
-  bottom: var(--alto-barra-inferior, 72px);
+  bottom: calc(var(--alto-barra-inferior, 72px) - 12px);
   z-index: 20;
   display: flex;
   gap: 0.6rem;
   margin: 0 -1rem;
-  padding: 0.6rem 1rem;
-  background: color-mix(in srgb, var(--color-bg, #fff) 88%, transparent);
-  backdrop-filter: blur(8px);
+  padding: 0.6rem 1rem calc(0.6rem + 12px);
+  background: var(--color-bg, #f8fafc);
+  box-shadow: 0 -1px 0 var(--color-border);
 }
 
 .compra > :first-child {
@@ -177,7 +179,7 @@
     margin: 0;
     padding: 0;
     background: none;
-    backdrop-filter: none;
+    box-shadow: none;
   }
 }
 

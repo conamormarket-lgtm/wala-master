@@ -72,7 +72,7 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
               aria-label={img.nombre || `Foto ${i + 1}`}
               className={s.miniatura}
               onClick={() => ir(i)}
-              onMouseEnter={() => ir(i)}
+              onPointerEnter={(e) => { if (e.pointerType === 'mouse') ir(i); }}
             >
               {/* La foto y su nombre se recortan aquí dentro; el borde va fuera
                   de ese recorte para que al viajar no se vea cortado. */}
@@ -88,10 +88,12 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
       )}
       <div
         className={[s.marco, zoom && s.acercado].filter(Boolean).join(' ')}
-        onMouseEnter={() => setZoom(true)}
-        onMouseLeave={() => setZoom(false)}
-        onMouseMove={mover}
-        onTouchStart={() => setZoom(false)}
+        // El zoom es solo con ratón: con el dedo, el toque también dispara
+        // eventos de ratón y la foto se acercaba sola al deslizar.
+        onPointerEnter={(e) => { if (e.pointerType === 'mouse') setZoom(true); }}
+        onPointerLeave={() => setZoom(false)}
+        onPointerMove={(e) => { if (e.pointerType === 'mouse') mover(e); }}
+        onPointerDown={(e) => { if (e.pointerType !== 'mouse') setZoom(false); }}
       >
         <div ref={tira} className={s.tira} onScroll={alDeslizar}>
           {imagenes.map((img, i) => (
