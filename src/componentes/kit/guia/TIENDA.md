@@ -141,15 +141,13 @@ página.
 
 - `GrillaProductos`: estado de error con "Reintentar" (`productsError`) y
   textos propios del vacío con enlace (`emptyTitle`, `emptyHomeLink`).
-- Lo mismo que el inicio en `TarjetaProducto` (la impresión; el favorito ya
-  se controla con `deseado` + `onDeseo`) y la traducción (`<T>`).
+- ✓ `TarjetaProducto`: la impresión, el favorito y la traducción (paso 4).
 - Si se quiere "N productos" con la lista paginada: una cuenta en servidor
   (`getCountFromServer`) que llegue como `total`.
 
 ### Pasos (cada uno se verifica solo y se puede volver atrás)
 
-1. `TarjetaProducto` dentro de `ProductGrid` (el mismo paso 2 del inicio):
-   comparar `/tienda` antes y después.
+1. ✓ `TarjetaProducto` dentro de `ProductGrid` (`TarjetaDeProducto`, 2026-10-16).
 2. S1 y S3 con `RenderSecciones` + `respaldo` para lo demás (como el inicio).
 3. S2: en `case 'sidebar_catalog'`, `CatalogoConFiltros` con los datos de
    arriba en vez de `SidebarCatalogLayout`. Probar: cada grupo, precio,

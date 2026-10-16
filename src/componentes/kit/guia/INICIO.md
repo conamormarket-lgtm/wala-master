@@ -210,7 +210,7 @@ cabecera (paso 7).
 
 ### Qué le falta al kit antes de migrar
 
-- `TarjetaProducto`: avisar la impresión (`recordImpression`). (El favorito controlado ya está: `deseado` + `onDeseo`, conectar con `WishlistContext`.)
+- ✓ `TarjetaProducto`: la impresión (`onVisible`), el favorito con `WishlistContext`, el recorte del admin, el fondo de la marca y la precarga de la ficha (paso 4, 2026-10-16).
 - `Cabecera`: selector de idioma en `MenuCuenta`, aviso para activar notificaciones push. (El buscador con sugerencias ya está: `buscarSugerencias`, ver BUSCAR.md.)
 - ✓ Traducción: `ProveedorTraduccion` ya está en `App.jsx` y los textos fijos del marco pasan por `useTexto`. Falta hacer lo mismo con los de las secciones y la cabecera al migrarlas.
 - `imageSource: 'product'` de las categorías: la página debe pasar `imagenProducto`.
@@ -222,7 +222,7 @@ Siguen el orden común de [MIGRACION.md](MIGRACION.md); aquí, lo que le toca
 al inicio.
 
 1. ✓ Marco: `BarraAdmin`, `AvisoSistema`, `BannerApp`, flotantes, `PieLegal` (2026-10-16, un commit por pieza). Al migrar, el kit ganó `BarraAdmin` `fija` y `editarEn`, `BannerApp` `onAccion`, `AvisoIdioma` `flotante`, `VentanaCampana` `textoCerrar`, `PilaFlotante` `ocultarEnCelular` y los adaptadores `avisoDesdeEstadoApp`, `numeroWhatsApp`, `campanaDesdePopup` y `pieLegalDesdeEmpresa`.
-2. `TarjetaProducto` en los carruseles (con lo que le falta, arriba).
+2. ✓ `TarjetaProducto` en los carruseles (`TarjetaDeProducto`, 2026-10-16).
 3. Secciones del inicio con `RenderSecciones` + `respaldo`, conservando `DeferredSection` y las excepciones. Comparar capturas antes y después.
 4. `BarraInferior` y luego `Cabecera` (la más conectada).
 5. Editor del kit en lugar de `VisualEditorPanel`.

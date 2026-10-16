@@ -1,4 +1,4 @@
-# Llevar el kit a la tienda (en marcha: pasos 1, 2 y 3 hechos)
+# Llevar el kit a la tienda (en marcha: pasos 1 a 4 hechos)
 
 Lo común a todas las páginas: qué ya usa la tienda, cómo se importa y en qué
 orden se migraría. El detalle de cada página (reemplazos con archivo y línea,
@@ -27,6 +27,7 @@ principal (y a la APK de Capacitor).
 | `PaginaCuentaInvitado`: solo /cuenta sin sesión (la pestaña "Cuenta"); cada sección (/cuenta/pedidos…) es una página privada y va al login con `?redirect=` (`utils/rutaPrivada.js`), así que la variante `pedidos` ya no se usa. `CuentaLoginPrompt` y `PedidosLoginPrompt` quedan sin usar hasta borrarlos; los textos del `accountPopup` del editor visual siguen solo en el pop-up de la cabecera | `pages/CuentaLayout.jsx` |
 | Marco (paso 2), cada pieza con su conector en `src/components/marco/`: `AvisoSistema` (`AvisoDelSistema.jsx`), `BarraAdmin` `fija` (`BarraDeAdmin.jsx`; publica `--admin-bar-height` para la cabecera), `AvisoIdioma` `flotante` (`AvisoDeIdioma.jsx`), `VentanaCampana` (`AnuncioDeCampana.jsx`), la pila de flotantes (`FlotantesDeLaTienda.jsx`: `PilaFlotante`, `BotonWhatsApp` con `useWhatsAppDeLaRuta.js`, `PildoraRecompensa` y Kapi en `Kapi.jsx` con `KapiFlotante` + `VentanaKapi` y las caras 3D) | `src/App.jsx` |
 | `BannerApp` (`components/marco/BannerDeLaApp.jsx`, montado donde siempre, con su portal antes de la cabecera) | `pages/Tienda/TiendaPage.jsx` |
+| `TarjetaProducto` por `components/producto/TarjetaDeProducto.jsx` (paso 4) | `ProductGrid`, `FeaturedCarousel`, `CollectionCarousel`, `FlashSales` |
 | `PieLegal` (`pieLegalDesdeEmpresa`) dentro del pie viejo; las columnas y su editor siguen igual. El bloque viejo queda apagado con `PIE_LEGAL_EN_EL_KIT` | `components/common/Footer/Footer.jsx` |
 | La píldora "Gana 15 monedas" de la cabecera vieja, apagada con `PILDORA_EN_EL_KIT` (la dibuja `FlotantesDeLaTienda`) | `components/common/Header/Header.jsx` |
 
@@ -63,9 +64,12 @@ Cada paso en su propio commit, verificable por separado.
    página: las ventanas del estudio y del combo, los juegos, los sorteos, Fechas
    importantes, el recorte de la foto de perfil, la cabecera (paso 7) y los
    filtros del catálogo (paso 5).
-4. **`TarjetaProducto`** en carruseles y grillas, con `tarjetaDesdeProducto`
-   (antes, lo que le falta: la impresión; el favorito ya se controla con
-   `deseado` + `onDeseo`; ver INICIO.md).
+4. ✓ **`TarjetaProducto`** en carruseles y grillas (2026-10-16), con `tarjetaDesdeProducto`:
+   `components/producto/TarjetaDeProducto.jsx` (mismas props que
+   `PremiumProductCard`) en `ProductGrid`, `FeaturedCarousel`,
+   `CollectionCarousel` y `FlashSales`. "Elegir" sigue llevando a la ficha
+   (decidido: `AgregarRapido` llega con la ficha, paso 6). Las listas de deseos,
+   `/regalar` y Fechas importantes cambian de tarjeta con su página.
 5. **Secciones del builder**, página por página, con `RenderSecciones` (o
    `PaginaTienda`) + `respaldo`. Primero el inicio (INICIO.md), después
    `/tienda` con el catálogo (TIENDA.md). Comparar capturas antes y después.
@@ -109,6 +113,7 @@ nada), o en un solo navegador con `localStorage.wala_kit_viejo = "pagos,carrito"
 |---|---|
 | `pagosViejo` | la ventana "Pagar saldo" de Mis pedidos (`Modal` viejo) y la pantalla de Culqi mientras cobra |
 | `carritoViejo` | las preguntas del carrito (quitar seleccionados, vaciar) con `window.confirm` |
+| `tarjetasViejo` | la tarjeta de producto (`PremiumProductCard`) en carruseles y grillas |
 
 Se retiran cuando lo nuevo lleve un tiempo en producción (y con ellos lo viejo
 de [ELIMINAR.md](ELIMINAR.md)).

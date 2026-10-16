@@ -145,7 +145,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `ListaOpciones.jsx` | `ListaOpciones` | Lista desplegable de Walá: panel en escritorio, hoja en el celular, buscador, teclado, `creable` |
 | `Fecha.jsx` | `CampoFecha`, `Calendario`, `fechaEnTexto` | Fechas con el calendario de Walá (años, meses, días; "No sé el año") |
 | `PanelFlotante.jsx` | `PanelFlotante`, `enCelular` | Lo que se abre desde un campo: panel pegado (escritorio) u hoja (celular); como un `<select>`, se cierra con el scroll de afuera |
-| `TarjetaProducto.jsx` | `TarjetaProducto`, `TarjetaProductoEsqueleto`, `soles` | Tarjeta de la tienda (fotos con fondo blanco, alturas parejas; corazón controlado con `deseado` + `onDeseo`) |
+| `TarjetaProducto.jsx` | `TarjetaProducto`, `TarjetaProductoEsqueleto`, `soles` | Tarjeta de la tienda (fotos con fondo blanco, alturas parejas; corazón controlado con `deseado` + `onDeseo`; de la tienda: `srcSet` / `sizes`, `recorte` del admin, `respaldo`, `prioridad`, `fondo` de la marca, `textoAccion`, `onVisible` (impresión), `onAcercar` (precarga), `onMenu`). **Ya en la tienda** (`components/producto/TarjetaDeProducto.jsx`, paso 4) |
 | `Navegacion.jsx` | `Cabecera`, `BarraInferior`, `Pestanas`, `Logo` | Navegación |
 | `Desplegable.jsx` | `Desplegable` | Base de todos los menús: hover en escritorio, hoja/globo en celular |
 | `MenusCabecera.jsx` | `MenuTienda`, `MenuMarcas`, `AyudaMonedas`, `MenuCuenta` (`lateral` + `activo`: el menú al costado de /cuenta), `VistaFavoritos`, `VistaCarrito` (filas que entran una tras otra y se levantan al pasar, `metaEnvio` con la `BarraEnvioGratis compacta`, total que corre) | Contenido de los menús de la cabecera |
