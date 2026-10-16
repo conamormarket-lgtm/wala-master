@@ -2,7 +2,11 @@ import React, { useState, useMemo, useCallback, useRef, useEffect, Suspense } fr
 // Secciones del inicio con el kit (paso 5 de la migración). seccionesViejo
 // (useLoViejo) vuelve a los componentes de antes; lo viejo, en guia/ELIMINAR.md.
 import { SeccionDelKit } from '../../componentes/kit/Secciones';
-import { categoriasDeGrilla } from '../../componentes/kit/adaptadores';
+import { categoriasDeGrilla, gruposDeCatalogo, grillaDesdeConfiguracion, limitesDePrecio } from '../../componentes/kit/adaptadores';
+import { getCollections } from '../../services/collections';
+import { getTags } from '../../services/tags';
+import { getCharacters } from '../../services/characters';
+import { getProductTypes } from '../../services/productTypes';
 import { enlaceWhatsApp } from '../../componentes/kit/piezas/Flotantes';
 import useLoViejo from '../../hooks/useLoViejo';
 import useWhatsAppDeLaRuta from '../../components/marco/useWhatsAppDeLaRuta';
@@ -76,6 +80,17 @@ import styles from './TiendaPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
 
+
+// Secciones del builder que ya dibuja el kit, y en qué páginas (paso 5).
+const TIPOS_DEL_KIT = new Set([
+  'announcement_bar', 'hero_carousel', 'trust_badges', 'testimonials', 'faq_accordion',
+  'featured_carousel', 'new_arrivals_carousel', 'sale_carousel',
+  'banner_grid', 'category_grid', 'header', 'marquee', 'sidebar_catalog', 'product_grid',
+]);
+const PAGINAS_DEL_KIT = new Set(['home', 'tienda']);
+const PRECIO_VACIO = { min: '', max: '' };
+// El <section> del catálogo del kit no lleva ref: se busca por su id.
+const idDelCatalogo = (section) => section?.settings?.anchorId || 'catalogo';
 
 const DEFAULT_STORE_TITLE = 'Nuestra Tienda';
 const DEFAULT_STORE_SUBTITLE = 'Explora nuestros productos y personaliza el que más te guste.';
@@ -508,7 +523,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // ACOTA a esa marca (filtro client-side en getProductsByCategory, sin índices
   // nuevos) para no expulsar al usuario al catálogo global. SIN marca, la query
   // key y el resultado quedan EXACTOS a hoy (pageBrandId es null fuera de marca).
-  const { data: productsData, isLoading: productsLoading, error: productsError } = useQuery({
+  const { data: productsData, isLoading: productsLoading, error: productsError, refetch: productsRefetch } = useQuery({
     queryKey: ['products', categoryId, searchTerm, sortBy, pageBrandId || null],
     queryFn: async () => {
       let result;
@@ -594,7 +609,8 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     if (catalog) markSectionVisible(catalog.id);
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
-        catalogSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const destino = catalogSectionRef.current || (catalog && document.getElementById(idDelCatalogo(catalog)));
+        destino?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     });
   }, [configuredSections, markSectionVisible]);
@@ -752,6 +768,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     hasNextPage: catalogHasMore,
     fetchNextPage: catalogFetchNext,
     error: catalogError,
+    refetch: catalogRefetch,
   } = useInfiniteQuery({
     queryKey: ['products-infinite', sortBy, catalogFacet?.type ?? null, catalogFacet?.value ?? null],
     queryFn: async ({ pageParam }) => {
@@ -921,16 +938,10 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // ¿Está vacío el catálogo? (respeta el spinner: durante la carga no se da por vacío)
   const catalogIsEmpty = !catalogLoadingResolved && catalogProducts.length === 0;
 
-  // ── Secciones con el kit: por ahora en el inicio y /tienda, y estos tipos ──
+  // ── Secciones con el kit: por ahora en el inicio y /tienda (TIPOS_DEL_KIT) ──
   const seccionesViejo = useLoViejo('secciones');
   const whatsappTienda = useWhatsAppDeLaRuta();
   const { userProfile } = useAuth();
-  const TIPOS_DEL_KIT = new Set([
-    'announcement_bar', 'hero_carousel', 'trust_badges', 'testimonials', 'faq_accordion',
-    'featured_carousel', 'new_arrivals_carousel', 'sale_carousel',
-    'banner_grid', 'category_grid', 'header', 'marquee',
-  ]);
-  const PAGINAS_DEL_KIT = new Set(['home', 'tienda']);
   const paginaConKit = PAGINAS_DEL_KIT.has(pageId) && !seccionesViejo;
   const usaKit = (section) => paginaConKit && TIPOS_DEL_KIT.has(section.type);
   const conTipoDelKit = (tipo) => paginaConKit && configuredSections.some((x) => x.type === tipo);
@@ -954,10 +965,98 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     staleTime: 5 * 60 * 1000,
   });
 
-  // La tarjeta de la tienda (paso 4) dentro de las secciones del kit.
-  const TarjetaDeTienda = useMemo(() => function TarjetaDeTienda({ producto }) {
-    return <TarjetaDeProducto product={producto} categories={categoriesData || []} currentBrandId={pageBrandId} />;
+  // La tarjeta de la tienda (paso 4) dentro de las secciones del kit. En las
+  // grillas, las 4 primeras cargan ya y la segunda foto sigue al admin.
+  const TarjetaDeTienda = useMemo(() => function TarjetaDeTienda({ producto, indice, segundaFoto }) {
+    return (
+      <TarjetaDeProducto
+        product={producto}
+        categories={categoriesData || []}
+        currentBrandId={pageBrandId}
+        isAboveFold={indice != null && indice < 4}
+        {...(segundaFoto != null ? { showHoverSecondaryMedia: segundaFoto } : {})}
+      />
+    );
   }, [categoriesData, pageBrandId]);
+
+  // ── Catálogo con filtros (sidebar_catalog) con el kit ──
+  // Lo que antes guardaba y pedía SidebarCatalogLayout vive aquí: las listas
+  // de los filtros (mismas claves de caché), la elección y la búsqueda.
+  const catalogoConKit = conTipoDelKit('sidebar_catalog');
+  const listaDe = (fn) => async () => (await fn()).data;
+  const { data: coleccionesKit } = useQuery({ queryKey: ['collections'], queryFn: listaDe(getCollections), enabled: catalogoConKit });
+  const { data: marcasKit } = useQuery({ queryKey: ['brands'], queryFn: listaDe(getBrands), enabled: catalogoConKit && !pageBrandId });
+  const { data: etiquetasKit } = useQuery({ queryKey: ['tags'], queryFn: listaDe(getTags), enabled: catalogoConKit });
+  const { data: personajesKit } = useQuery({ queryKey: ['characters'], queryFn: listaDe(getCharacters), enabled: catalogoConKit });
+  const { data: tiposKit } = useQuery({ queryKey: ['productTypes'], queryFn: listaDe(getProductTypes), enabled: catalogoConKit });
+  // Todos los productos de la tienda (o de la marca): de ahí salen los
+  // filtros (no solo de la primera página) y, en una marca, la búsqueda.
+  const { data: productosDeFiltros } = useQuery({
+    queryKey: ['storefront-category-grid-products', pageBrandId || 'global'],
+    queryFn: async () => {
+      const { data, error } = pageBrandId ? await getProductsByBrand(pageBrandId) : await getProducts([], null, null);
+      if (error || !Array.isArray(data)) return [];
+      return data;
+    },
+    enabled: catalogoConKit && (Boolean(pageBrandId) || usePaginatedCatalog),
+    meta: { segundoPlano: true },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // Elección de filtros: se vacía al cambiar de página (antes el sidebar se
+  // volvía a montar). La categoría arranca en la de la URL (?categoria=) y la
+  // comparte el nav de burbujas si la página lo tiene.
+  const filtrosVacios = { pageId, sel: {}, precio: PRECIO_VACIO, busqueda: '' };
+  const [filtrosKit, setFiltrosKit] = useState(filtrosVacios);
+  const filtrosActuales = filtrosKit.pageId === pageId ? filtrosKit : filtrosVacios;
+  const cambiarFiltrosKit = (cambio) => setFiltrosKit((prev) => ({ ...(prev.pageId === pageId ? prev : filtrosVacios), ...cambio }));
+  const claveCategoriaUrl = `${pageId}|${categoryId || ''}`;
+  const [categoriaKit, setCategoriaKit] = useState({ clave: claveCategoriaUrl, valor: categoryId || null });
+  const categoriaPropia = categoriaKit.clave === claveCategoriaUrl ? categoriaKit.valor : (categoryId || null);
+  const categoriaCatalogo = hasCategoriesNav ? navCategoryId : categoriaPropia;
+  const elegirFiltroKit = (grupo, valor) => {
+    if (grupo !== 'categoria') cambiarFiltrosKit({ sel: { ...filtrosActuales.sel, [grupo]: valor } });
+    else if (hasCategoriesNav) setNavCategoryId(valor ?? null);
+    else setCategoriaKit({ clave: claveCategoriaUrl, valor: valor ?? null });
+  };
+  const seleccionKit = { ...filtrosActuales.sel, categoria: categoriaCatalogo };
+
+  // Con paginación, la categoría elegida también acota lo que se pide al
+  // servidor (en una marca, handleServerFacetChange la ignora: manda la marca).
+  useEffect(() => {
+    if (!catalogoConKit || !usePaginatedCatalog) return;
+    const tipo = categoriaCatalogo ? 'category' : null;
+    if ((catalogFacet?.type ?? null) === tipo && (catalogFacet?.value ?? null) === (categoriaCatalogo || null)) return;
+    handleServerFacetChange(categoriaCatalogo ? { type: 'category', value: categoriaCatalogo } : null);
+  }, [catalogoConKit, usePaginatedCatalog, categoriaCatalogo, catalogFacet, handleServerFacetChange]);
+
+  // Los filtros salen de los productos de la página: todos los de la tienda o
+  // la marca, o los de la categoría de la URL. Sin ellos todavía, sin grupos.
+  const fuenteDeFiltros = (pageBrandId || usePaginatedCatalog) ? productosDeFiltros : productsData;
+  const gruposKit = useMemo(() => (fuenteDeFiltros?.length ? gruposDeCatalogo({
+    categorias: categoriesData || [],
+    colecciones: coleccionesKit || [],
+    marcas: marcasKit || [],
+    tipos: tiposKit || [],
+    etiquetas: etiquetasKit || [],
+    personajes: personajesKit || [],
+    productos: fuenteDeFiltros,
+    marcaActual: pageBrandId || undefined,
+  }) : []), [fuenteDeFiltros, categoriesData, coleccionesKit, marcasKit, tiposKit, etiquetasKit, personajesKit, pageBrandId]);
+
+  // Buscador de la marca: busca en TODOS sus productos (no solo en lo cargado)
+  // y, mientras hay texto, no hay "más" que cargar.
+  const buscandoEnMarca = Boolean(pageBrandId) && filtrosActuales.busqueda.trim() !== '' && Array.isArray(productosDeFiltros);
+  const grillaKit = grillaDesdeConfiguracion(storeConfig?.layout);
+  const paginacionKit = usePaginatedCatalog
+    ? { hayMas: !!catalogHasMore, onCargarMas: catalogFetchNext, cargandoMas: catalogFetchingMore }
+    : {};
+  const vacioKit = {
+    titulo: 'Próximamente más productos',
+    texto: emptyMessage || 'Estamos preparando novedades. Revisa de nuevo en unos días.',
+    accion: { texto: 'Volver al inicio', url: '/' },
+  };
+  const reintentarCatalogo = () => (usePaginatedCatalog ? catalogRefetch() : productsRefetch());
   const PRODUCTOS_DEL_KIT = { featured_carousel: featuredProducts, new_arrivals_carousel: nuevosKit, sale_carousel: ofertasKit };
   // Las categorías con productos, como las calculaba CategoryGrid (la misma
   // regla que el menú de la cabecera: idsDeCategoriaDe).
@@ -977,6 +1076,46 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     // Con items puestos a mano (dataSource manual) mandan esos.
     if (section.type === 'category_grid') datos.categorias = section.settings?.dataSource === 'products' ? categoriasDeGrillaKit : undefined;
     let seccion = section;
+    if (section.type === 'sidebar_catalog' || section.type === 'product_grid') {
+      // Un solo "no hay productos" por página, y sin título encima (como antes).
+      if (catalogIsEmpty) {
+        if (emptyMessageShown) return null;
+        emptyMessageShown = true;
+        seccion = { ...section, settings: { ...section.settings, title: '' } };
+      }
+      Object.assign(datos, {
+        tarjeta: TarjetaDeTienda,
+        cargando: catalogLoadingResolved,
+        error: catalogErrorResolved,
+        onReintentar: reintentarCatalogo,
+        columnas: grillaKit.columnas,
+        segundaFoto: grillaKit.segundaFoto,
+        ...(catalogIsEmpty ? { vacio: vacioKit } : {}),
+        // Un solo Kapi a la vista: con sesión ya está el flotante.
+        sinKapi: Boolean(userProfile),
+      });
+    }
+    if (section.type === 'product_grid') Object.assign(datos, { productos: catalogProducts, ...paginacionKit });
+    if (section.type === 'sidebar_catalog') {
+      Object.assign(datos, {
+        productos: buscandoEnMarca ? productosDeFiltros : catalogProducts,
+        ...(buscandoEnMarca ? {} : paginacionKit),
+        grupos: gruposKit,
+        seleccion: seleccionKit,
+        onFiltrar: elegirFiltroKit,
+        filtrarAqui: true,
+        precio: filtrosActuales.precio,
+        onPrecio: (precio) => cambiarFiltrosKit({ precio }),
+        limitesPrecio: limitesDePrecio(pageBrandId && productosDeFiltros?.length ? productosDeFiltros : catalogProducts) || undefined,
+        // El buscador solo en la página de una marca (en /buscar va arriba).
+        conBuscador: Boolean(pageBrandId),
+        busqueda: filtrosActuales.busqueda,
+        onBuscar: (busqueda) => cambiarFiltrosKit({ busqueda }),
+        buscarAlEscribir: true,
+        // El ancla para bajar desde las burbujas; el margen deja ver la cabecera.
+        bloque: { id: idDelCatalogo(section), style: { scrollMarginTop: '7rem' } },
+      });
+    }
     // Sin título guardado, el de siempre (HeaderBlock lo ponía por defecto).
     if (section.type === 'header' && section.settings?.title === undefined) {
       seccion = { ...section, settings: { ...section.settings, title: DEFAULT_STORE_TITLE } };
@@ -1548,12 +1687,13 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   const primeraPantalla = useMemo(() => sorted.filter((section, index) => sectionIsActive(section, index)), [sorted, sectionIsActive]);
   useEffect(() => {
     let vivo = true;
-    precargarSecciones(primeraPantalla).then(
+    // Lo que dibuja el kit no necesita el código de su componente viejo.
+    precargarSecciones(paginaConKit ? primeraPantalla.filter((section) => !TIPOS_DEL_KIT.has(section.type)) : primeraPantalla).then(
       () => { if (vivo) setSeccionesListas(pageId); },
       () => { if (vivo) setSeccionesListas(pageId); }, // el error lo muestra la sección al dibujarse
     );
     return () => { vivo = false; };
-  }, [primeraPantalla, pageId]);
+  }, [primeraPantalla, pageId, paginaConKit]);
   const contenidoRenderizando = !(isConfigLoading && !storefrontConfig) && seccionesListas === pageId;
 
   useEffect(() => {

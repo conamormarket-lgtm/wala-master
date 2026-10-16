@@ -1,10 +1,11 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useDragControls, useMotionValue, useTransform } from 'framer-motion';
-import { CheckCircle2, Info, AlertTriangle, XCircle, X, Sparkles, BellOff, CheckCheck } from 'lucide-react';
+import { CheckCircle2, Info, AlertTriangle, XCircle, X, Sparkles, BellOff, CheckCheck, PackageSearch } from 'lucide-react';
 import { useBloquearScroll, useCerrarConAtras } from './Efectos';
 import { FotoProducto } from './piezas/FotoProducto';
 import Boton from './Boton';
+import { Sello } from './Marca';
 import { Texto, useTexto } from './Traduccion';
 import s from './Feedback.module.css';
 
@@ -263,15 +264,23 @@ export function ProveedorToasts({ children, iniciales = [] }) {
   );
 }
 
-/** Estado vacío con Kapi y una salida clara. */
-export function EstadoVacio({ imagen = '/assets/kapi/kapi-sad.webp', titulo, texto, children }) {
+/**
+ * Estado vacío con Kapi y una salida clara.
+ *  - imagen={null}: sin Kapi (cuando ya está el flotante: un solo Kapi a la
+ *    vista); en su lugar, un sello con `icono` (una caja con lupa).
+ */
+export function EstadoVacio({ imagen = '/assets/kapi/kapi-sad.webp', icono, titulo, texto, children }) {
   return (
     <div className={s.vacio}>
-      <div className={s.kapi}>
-        <img src={imagen} alt="" width="112" height="112" />
-        <Sparkles className={`${s.chispa} ${s.chispa1}`} aria-hidden="true" />
-        <Sparkles className={`${s.chispa} ${s.chispa2}`} aria-hidden="true" />
-      </div>
+      {imagen ? (
+        <div className={s.kapi}>
+          <img src={imagen} alt="" width="112" height="112" />
+          <Sparkles className={`${s.chispa} ${s.chispa1}`} aria-hidden="true" />
+          <Sparkles className={`${s.chispa} ${s.chispa2}`} aria-hidden="true" />
+        </div>
+      ) : (
+        <Sello tamano={64} className={s.vacioSello}>{icono || <PackageSearch />}</Sello>
+      )}
       <h3>{titulo}</h3>
       {texto && <p>{texto}</p>}
       {children && <div className={s.vacioAcciones}>{children}</div>}

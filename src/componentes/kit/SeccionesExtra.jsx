@@ -275,12 +275,14 @@ function useCargarAlLlegar(activo, alLlegar) {
  *  - segundaFoto: la segunda foto al pasar el ratón (true por defecto).
  *  - vacio.accion: { texto, url } → un botón en el estado vacío ("Volver al inicio").
  *  - error + onReintentar: no se pudo cargar (con "Reintentar").
- *  - finDeLista: con paginación, "Has visto todos los productos" al terminar.
+ *  - finDeLista: "Has visto todos los productos" cuando ya no queda nada
+ *    por mostrar (con o sin paginación, como ProductGrid).
  *  - tarjeta: la de la tienda; recibe también `indice` (las primeras cargan ya).
+ *  - sinKapi: los avisos sin Kapi (la página ya muestra el flotante).
  * Si la lista quedó vacía pero el servidor tiene más (un filtro descartó lo
  * cargado), sigue pidiendo páginas en vez de decir que no hay nada.
  */
-export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargando = false, hayMas, onCargarMas, cargandoMas, onAgregar, vacio, columnas, segundaFoto = true, tarjeta: Tarjeta = TarjetaDeCatalogo, error, onReintentar, finDeLista = true }) {
+export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargando = false, hayMas, onCargarMas, cargandoMas, onAgregar, vacio, columnas, segundaFoto = true, tarjeta: Tarjeta = TarjetaDeCatalogo, error, onReintentar, finDeLista = true, sinKapi = false }) {
   const servidor = typeof onCargarMas === 'function';
   const [visibles, setVisibles] = useState(12);
   useEffect(() => { if (!servidor) setVisibles(12); }, [productos, servidor]);
@@ -300,7 +302,7 @@ export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargan
 
   if (error && !cargando && !productos.length) {
     return (
-      <EstadoVacio titulo={t.error} texto={<Texto>{typeof error === 'string' ? error : 'Revisa tu conexión e inténtalo de nuevo.'}</Texto>}>
+      <EstadoVacio imagen={sinKapi ? null : undefined} titulo={t.error} texto={<Texto>{typeof error === 'string' ? error : 'Revisa tu conexión e inténtalo de nuevo.'}</Texto>}>
         {onReintentar && <Boton variante="secundario" onClick={onReintentar}>{t.reintentar}</Boton>}
       </EstadoVacio>
     );
@@ -309,7 +311,7 @@ export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargan
   const esperandoMas = !cargando && !productos.length && servidor && (hayMas || cargandoMas);
   if (!cargando && !productos.length && !esperandoMas) {
     return vacio ? (
-      <EstadoVacio titulo={t.vacio} texto={vacio.texto && <Texto>{vacio.texto}</Texto>}>
+      <EstadoVacio imagen={sinKapi ? null : undefined} titulo={t.vacio} texto={vacio.texto && <Texto>{vacio.texto}</Texto>}>
         {vacio.accion?.url && <Boton to={vacio.accion.url} variante="secundario"><Texto>{vacio.accion.texto || 'Volver al inicio'}</Texto></Boton>}
       </EstadoVacio>
     ) : null;
@@ -333,7 +335,7 @@ export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargan
           <Boton variante="secundario" cargando={cargandoMas} onClick={pedirMas}>{t.verMas}</Boton>
         </div>
       )}
-      {servidor && finDeLista && !quedan && !cargando && !cargandoMas && lista.length > 0 && (
+      {finDeLista && !quedan && !cargando && !cargandoMas && lista.length > 0 && (
         <p className={s.finLista}>{t.fin}</p>
       )}
     </>
