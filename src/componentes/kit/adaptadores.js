@@ -489,6 +489,41 @@ export function retoDesdePerfil(reto, perfil = {}) {
   };
 }
 
+/* ── Grilla de categorías automática (category_grid, dataSource 'products') ── */
+
+const idDeCategoriaGrilla = (c) => (c && typeof c === 'object' ? c.id || c.slug || c.name || '' : c || '');
+const fotoDeProducto = (p) => p?.mainImage || p?.imageUrl || p?.images?.[0] || p?.variants?.find((v) => v?.imageUrl)?.imageUrl || '';
+
+/**
+ * Las categorías con productos, como las calculaba CategoryGrid: cuántos
+ * productos tiene cada una, la foto de su primer producto y el orden del
+ * admin (order y luego nombre). GrillaCategorias aplica sortMode y límite.
+ *  - idsDe(producto) → ids de sus categorías (la tienda pasa idsDeCategoriaDe,
+ *    la misma regla que el menú de la cabecera)
+ */
+export function categoriasDeGrilla(categorias = [], productos = [], { idsDe = (p) => p?.categories || [] } = {}) {
+  const cuentas = new Map();
+  const fotos = new Map();
+  productos.forEach((p) => {
+    if (!p || p.visible === false || p.active === false) return;
+    new Set(idsDe(p)).forEach((id) => {
+      cuentas.set(id, (cuentas.get(id) || 0) + 1);
+      if (!fotos.has(id) && fotoDeProducto(p)) fotos.set(id, fotoDeProducto(p));
+    });
+  });
+  return categorias
+    .filter((c) => c && c.active !== false && cuentas.has(idDeCategoriaGrilla(c)))
+    .map((c) => ({
+      categoryId: idDeCategoriaGrilla(c),
+      name: c.name || c.title || 'Categoría',
+      imageUrl: c.imageUrl || c.image || '',
+      imagenProducto: fotos.get(idDeCategoriaGrilla(c)) || '',
+      cuenta: cuentas.get(idDeCategoriaGrilla(c)) || 0,
+      order: Number(c.order) || 0,
+    }))
+    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'es'));
+}
+
 /* ── Marco: avisos, WhatsApp, campañas y pie legal ─────── */
 
 const TIPOS_AVISO = { warning: 'aviso', info: 'info', error: 'error' };

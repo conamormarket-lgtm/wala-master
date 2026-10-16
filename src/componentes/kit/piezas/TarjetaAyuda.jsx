@@ -21,7 +21,7 @@ export function TarjetaAyuda({
 }) {
   return (
     <aside className={s.ayuda}>
-      <img className={s.kapi} src={imagen} alt="" width="104" height="96" loading="lazy" decoding="async" />
+      {imagen && <img className={s.kapi} src={imagen} alt="" width="104" height="96" loading="lazy" decoding="async" />}
       <h3 className={s.titulo}>{titulo}</h3>
       {texto && <p className={s.texto}>{texto}</p>}
       {accion?.url && (

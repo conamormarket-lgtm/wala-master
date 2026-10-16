@@ -8,6 +8,7 @@ import { FotoProducto } from './piezas/FotoProducto';
 import { LogoMarca } from './piezas/LogoMarca';
 import { iniciales } from './piezas/Avatar';
 import { EsqueletoProducto } from './Esqueletos';
+import { tarjetaDesdeProducto } from './adaptadores';
 import s from './TarjetaProducto.module.css';
 
 // Formato peruano: separador de miles y 2 decimales (S/ 1,250.00).
@@ -390,4 +391,21 @@ export default function TarjetaProducto({
 /** Esqueleto con la misma silueta que la tarjeta (el de Esqueletos.jsx, mismo brillo que todo el kit). */
 export function TarjetaProductoEsqueleto() {
   return <EsqueletoProducto />;
+}
+
+/**
+ * La tarjeta que dibujan las secciones con productos (carruseles, grillas,
+ * catálogo, ofertas). Recibe el producto de Firestore; la tienda puede pasar
+ * la suya con la prop `tarjeta` de las secciones (la misma forma: { producto,
+ * catalogo, onAgregar, segundaFoto }) para conectarla con su carrito, sus
+ * deseos y su analítica.
+ */
+export function TarjetaDeCatalogo({ producto, catalogo, onAgregar, segundaFoto = true }) {
+  return (
+    <TarjetaProducto
+      {...tarjetaDesdeProducto(producto, { catalogo })}
+      {...(segundaFoto ? {} : { imagenHover: undefined })}
+      onAgregar={onAgregar?.(producto)}
+    />
+  );
 }

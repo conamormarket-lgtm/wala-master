@@ -4,7 +4,7 @@ export { Campo, Buscador, Selector, SelectorTalla, SelectorColor, Cantidad, Inte
 export { default as ListaOpciones } from './ListaOpciones';
 export { PanelFlotante, enCelular } from './PanelFlotante';
 export { CampoFecha, Calendario, fechaEnTexto } from './Fecha';
-export { default as TarjetaProducto, TarjetaProductoEsqueleto, soles } from './TarjetaProducto';
+export { default as TarjetaProducto, TarjetaProductoEsqueleto, TarjetaDeCatalogo, soles } from './TarjetaProducto';
 export { Cabecera, BarraInferior, Pestanas, Logo } from './Navegacion';
 export { SeguimientoPedido, ItemCarrito, BarraEnvioGratis, ResumenPedido, PASOS_PEDIDO, ETAPAS_PRODUCCION } from './Pedido';
 export { PantallaCarga, Cargando, CapaCargando, FRASES_CARGA } from './Cargando';
@@ -20,7 +20,7 @@ export { accionDeProducto, tarjetaDesdeProducto, esNuevo, opcionesDeProducto, ru
   sugerenciasDesdeBusqueda, grupoModalidad, ORDENES_BUSQUEDA, ordenarProductos, perfilDesdeUsuario, direccionDesdeFirestore, direccionAFirestore,
   recompensaDesdeFirestore, cuponDesdeFirestore, misionDesdeServidor, creacionDesdeDiseno, personaDesdeRecipient, personaARecipient, encuestaDesdeConfig,
   prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaCreacionDesde, prendaEstudioDesde,
-  fichaProductoDesde, opinionesDesde, navDeMarca, identidadDeMarca, plantillaDeMarca, BLOQUES_MARCA, ESQUELETO_MARCA, portadaDeCombo } from './adaptadores';
+  fichaProductoDesde, opinionesDesde, navDeMarca, identidadDeMarca, plantillaDeMarca, BLOQUES_MARCA, ESQUELETO_MARCA, portadaDeCombo, categoriasDeGrilla } from './adaptadores';
 export { tipoDeEnlace } from './Enlace';
 export { default as Carrusel } from './Carrusel';
 export { default as Marquesina } from './Marquesina';
@@ -29,7 +29,7 @@ export { default as Acordeon } from './Acordeon';
 export { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
 export {
   BarraAnuncios, HeroCarrusel, InsigniasConfianza, CarruselProductos, OfertaRelampago,
-  Testimonios, PreguntasFrecuentes, MarcasMarquesina, GrillaCategorias, REGISTRO_SECCIONES, RenderSecciones,
+  Testimonios, PreguntasFrecuentes, MarcasMarquesina, GrillaCategorias, REGISTRO_SECCIONES, RenderSecciones, SeccionDelKit,
 } from './Secciones';
 export { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados, videoIncrustado } from './SeccionesContenido';
 export { BannerPrincipal, ListaBeneficios, Ubicacion, urlDeMapa, NavCategorias, GrillaProductos, CatalogoConFiltros, PiePagina } from './SeccionesExtra';

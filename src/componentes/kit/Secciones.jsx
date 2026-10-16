@@ -7,9 +7,9 @@ import Carrusel from './Carrusel';
 import Marquesina from './Marquesina';
 import CuentaRegresiva from './CuentaRegresiva';
 import Acordeon from './Acordeon';
-import TarjetaProducto from './TarjetaProducto';
+import { TarjetaDeCatalogo } from './TarjetaProducto';
 import { Enlace } from './Enlace';
-import { tarjetaDesdeProducto, testimonioDesdeAjuste } from './adaptadores';
+import { testimonioDesdeAjuste } from './adaptadores';
 import { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
 import { EtiquetaColgante, Destello, acento } from './Marca';
 import { IconoWala, iconoDesde } from './IconosWala';
@@ -262,21 +262,30 @@ export function InsigniasConfianza({ ajustes = {} }) {
 }
 
 /* ── Carrusel de productos (featured / new_arrivals / sale / category / collection) ── */
-export function CarruselProductos({ ajustes = {}, productos = [], catalogo, onAgregar }) {
+
+/* Sin título guardado, el de la tienda vieja para estos tipos. */
+const TITULOS_POR_TIPO = { new_arrivals_carousel: 'Novedades', sale_carousel: 'Ofertas' };
+
+/**
+ *  - tipo: el `type` de la sección (para el título por defecto)
+ *  - tarjeta: la tarjeta de cada producto (por defecto, la del kit)
+ */
+export function CarruselProductos({ ajustes = {}, productos = [], catalogo, onAgregar, tipo, tarjeta: Tarjeta = TarjetaDeCatalogo }) {
   if (!productos.length) return null;
   // 1 a 8 a la vista, como en la tienda.
   const visibles = Math.min(8, Math.max(1, Number(ajustes.visibleItems) || 5));
+  const titulo = ajustes.title || TITULOS_POR_TIPO[tipo];
   return (
     <>
-      <TituloSeccion {...tituloDesdeAjustes(ajustes)} />
+      <TituloSeccion {...tituloDesdeAjustes({ ...ajustes, title: titulo })} />
       <Carrusel
         visibles={{ escritorio: visibles, tablet: Math.min(3, visibles), movil: visibles === 1 ? 1.1 : 2.15 }}
         espacio="0.85rem"
         autoplay={ajustes.autoPlay ? ajustes.autoPlaySpeed || 5000 : 0}
-        etiqueta={ajustes.title || 'Productos'}
+        etiqueta={titulo || 'Productos'}
       >
         {productos.map((p) => (
-          <TarjetaProducto key={p.id} {...tarjetaDesdeProducto(p, { catalogo })} onAgregar={onAgregar?.(p)} />
+          <Tarjeta key={p.id} producto={p} catalogo={catalogo} onAgregar={onAgregar} />
         ))}
       </Carrusel>
     </>
@@ -297,7 +306,7 @@ const mayorDescuento = (productos) => productos.reduce((max, p) => {
  * de Walá (en claro y en noche), rayo en sticker, etiqueta "Hasta -X%",
  * cuenta regresiva grande y, bajo cada producto, cuántos quedan.
  */
-export function OfertaRelampago({ ajustes = {}, productos = [], catalogo, onAgregar }) {
+export function OfertaRelampago({ ajustes = {}, productos = [], catalogo, onAgregar, tarjeta: Tarjeta = TarjetaDeCatalogo }) {
   const [terminada, setTerminada] = useState(false);
   if (!productos.length || terminada) return null;
   const lista = productos.slice(0, 8);
@@ -328,7 +337,7 @@ export function OfertaRelampago({ ajustes = {}, productos = [], catalogo, onAgre
       <Carrusel visibles={{ escritorio: 4, tablet: 3, movil: 2.15 }} espacio="0.85rem" etiqueta={ajustes.title || 'Ofertas'}>
         {lista.map((p) => (
           <div key={p.id} className={s.flashItem}>
-            <TarjetaProducto {...tarjetaDesdeProducto(p, { catalogo })} onAgregar={onAgregar?.(p)} />
+            <Tarjeta producto={p} catalogo={catalogo} onAgregar={onAgregar} />
             <StockBajo stock={p.inStock} />
           </div>
         ))}
@@ -365,7 +374,7 @@ export function Testimonios({ ajustes = {} }) {
  *  - contacto: URL para "Escríbenos" (en la tienda, el WhatsApp de la zona;
  *    llega por propsPara). Sin ella la tarjeta no lleva botón.
  */
-export function PreguntasFrecuentes({ ajustes = {}, contacto }) {
+export function PreguntasFrecuentes({ ajustes = {}, contacto, sinKapi = false }) {
   const items = (ajustes.items || []).filter((i) => i?.question);
   if (!items.length) return null;
   const dividido = (ajustes.layout || 'split') === 'split';
@@ -381,6 +390,7 @@ export function PreguntasFrecuentes({ ajustes = {}, contacto }) {
         <TarjetaAyuda
           texto="Kapi y el equipo te responden rapidito."
           accion={contacto ? { texto: 'Escríbenos', url: contacto } : undefined}
+          imagen={sinKapi ? null : undefined}
         />
       </div>
     </div>
@@ -441,11 +451,14 @@ export function GrillaCategorias({ ajustes = {}, categorias }) {
   const auto = Boolean(categorias);
   const base = auto ? [...categorias] : [...(ajustes.items || [])];
   if (auto && ORDEN_CATEGORIAS[ajustes.sortMode]) base.sort(ORDEN_CATEGORIAS[ajustes.sortMode]);
-  const lista = auto ? base.slice(0, Number(ajustes.limit) || 6) : base;
+  const lista = auto ? base.slice(0, Math.min(12, Math.max(2, Number(ajustes.limit) || 6))) : base;
   if (!lista.length) return null;
   const columnas = Math.min(lista.length, Math.min(6, Math.max(2, Number(ajustes.columns) || 6)));
   const redonda = ajustes.cardStyle === 'round';
-  const fotoDe = (c) => (auto && ajustes.imageSource === 'product' && c.imagenProducto) || c.imageUrl;
+  // Sin imageSource guardado, la foto de un producto (como la tienda); si
+  // falta la elegida, la otra.
+  const deProducto = (ajustes.imageSource || 'product') === 'product';
+  const fotoDe = (c) => (auto && deProducto ? c.imagenProducto || c.imageUrl : c.imageUrl || c.imagenProducto);
   return (
     <>
       <TituloSeccion {...tituloDesdeAjustes(ajustes)} />
@@ -535,37 +548,65 @@ export const REGISTRO_SECCIONES = {
  *    categories_nav, { onClicBoton } en hero_banner…
  *  - envolver(seccion, nodo, indice) → para el editor: envuelve cada sección
  *    (p. ej. con <SeccionEditable>) sin que RenderSecciones lo conozca.
+ *  - tarjeta → la tarjeta de producto de la tienda ({ producto, catalogo,
+ *    onAgregar, segundaFoto }); sin ella, TarjetaDeCatalogo del kit.
  */
 /** Sin valor guardado (el 0 sí es un valor: la sección sin relleno). */
 const vacio = (v) => v == null || v === '';
 
-export function RenderSecciones({ secciones = [], productosPara, categoriasPara, marcasPara, catalogo, propsPara, onAgregar, respaldo, envolver }) {
+/**
+ * Una sola sección del registro, dentro de su <BloqueSeccion>. Es lo que usa
+ * RenderSecciones por cada una; la tienda la usa sola dentro de su propio
+ * bucle (carga diferida, editor, secciones que no se dibujan).
+ *  - seccion: { id, type, settings }  · primera: lo primero que se ve
+ *  - productos, categorias, marcas: los datos de esa sección
+ *  - catalogo, onAgregar, tarjeta: para las tarjetas de producto
+ *  - el resto, props de esa sección (propsPara)
+ * Devuelve null si el kit no tiene ese tipo.
+ */
+export function SeccionDelKit({ seccion, primera = false, productos, categorias, marcas, catalogo, onAgregar, tarjeta, ...props }) {
+  const reg = REGISTRO_SECCIONES[seccion?.type];
+  if (!reg) return null;
+  const { Componente } = reg;
+  const extra = {};
+  if (reg.productos) Object.assign(extra, { productos: productos || [], onAgregar, catalogo, tipo: seccion.type, ...(tarjeta ? { tarjeta } : {}) });
+  if (reg.categorias) extra.categorias = categorias;
+  if (reg.marcas) extra.marcas = marcas || [];
+  if (primera) extra.primera = true; // lo primero que se ve: sin carga diferida
+  const ajustes = seccion.settings || {};
+  return (
+    <BloqueSeccion
+      ajustes={reg.sinRelleno ? { ...ajustes, paddingTop: '0', paddingBottom: '0' }
+        : reg.relleno ? { ...ajustes, paddingTop: vacio(ajustes.paddingTop) ? reg.relleno : ajustes.paddingTop, paddingBottom: vacio(ajustes.paddingBottom) ? reg.relleno : ajustes.paddingBottom }
+          : ajustes}
+      ancho={reg.ancho}
+      pegado={reg.sinRelleno}
+    >
+      <Componente ajustes={ajustes} {...extra} {...props} />
+    </BloqueSeccion>
+  );
+}
+
+export function RenderSecciones({ secciones = [], productosPara, categoriasPara, marcasPara, catalogo, propsPara, onAgregar, respaldo, envolver, tarjeta }) {
   return [...secciones]
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
     .map((sec, indice) => {
       const reg = REGISTRO_SECCIONES[sec.type];
       const conMarco = (nodo) => (envolver ? <React.Fragment key={sec.id}>{envolver(sec, nodo, indice)}</React.Fragment> : nodo);
       if (!reg) return conMarco(respaldo ? <React.Fragment key={sec.id}>{respaldo(sec)}</React.Fragment> : null);
-      const { Componente } = reg;
-      const extra = {};
-      if (reg.productos) extra.productos = productosPara?.(sec) || [];
-      if (reg.categorias) extra.categorias = categoriasPara?.(sec);
-      if (reg.marcas) extra.marcas = marcasPara?.(sec) || [];
-      if (indice === 0) extra.primera = true; // lo primero que se ve: sin carga diferida
-      if (reg.productos) Object.assign(extra, { onAgregar, catalogo });
-      Object.assign(extra, propsPara?.(sec));
-      const ajustes = sec.settings || {};
       return conMarco(
-        <BloqueSeccion
+        <SeccionDelKit
           key={sec.id}
-          ajustes={reg.sinRelleno ? { ...ajustes, paddingTop: '0', paddingBottom: '0' }
-            : reg.relleno ? { ...ajustes, paddingTop: vacio(ajustes.paddingTop) ? reg.relleno : ajustes.paddingTop, paddingBottom: vacio(ajustes.paddingBottom) ? reg.relleno : ajustes.paddingBottom }
-              : ajustes}
-          ancho={reg.ancho}
-          pegado={reg.sinRelleno}
-        >
-          <Componente ajustes={ajustes} {...extra} />
-        </BloqueSeccion>
+          seccion={sec}
+          primera={indice === 0}
+          productos={reg.productos ? productosPara?.(sec) : undefined}
+          categorias={reg.categorias ? categoriasPara?.(sec) : undefined}
+          marcas={reg.marcas ? marcasPara?.(sec) : undefined}
+          catalogo={catalogo}
+          onAgregar={onAgregar}
+          tarjeta={tarjeta}
+          {...propsPara?.(sec)}
+        />
       );
     });
 }

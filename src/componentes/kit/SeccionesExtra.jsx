@@ -3,13 +3,13 @@ import { Clock, MapPin, SlidersHorizontal, MessageCircle, Music2, Mail } from 'l
 import Boton from './Boton';
 import Marquesina from './Marquesina';
 import Acordeon from './Acordeon';
-import TarjetaProducto, { TarjetaProductoEsqueleto } from './TarjetaProducto';
+import { TarjetaProductoEsqueleto, TarjetaDeCatalogo } from './TarjetaProducto';
 import { Enlace } from './Enlace';
 import { Buscador, Campo, Selector } from './Formulario';
 import { Chip } from './Etiquetas';
 import { EstadoVacio, HojaInferior } from './Feedback';
 import { TituloSeccion, tituloDesdeAjustes } from './Seccion';
-import { tarjetaDesdeProducto, precioEfectivo, limitesDePrecio } from './adaptadores';
+import { precioEfectivo, limitesDePrecio } from './adaptadores';
 import { TextoCampo, BotonDeAjustes, fuenteDe, prefiereQuieto } from './SeccionesContenido';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import { EtiquetaColgante, Garabatos, LogoWala, Destello, Corazon, acento } from './Marca';
@@ -271,7 +271,7 @@ function useCargarAlLlegar(activo, alLlegar) {
  *    grillaDesdeConfiguracion). Sin ellas, tantas como quepan.
  *  - segundaFoto: la segunda foto al pasar el ratón (true por defecto).
  */
-export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargando = false, hayMas, onCargarMas, cargandoMas, onAgregar, vacio, columnas, segundaFoto = true }) {
+export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargando = false, hayMas, onCargarMas, cargandoMas, onAgregar, vacio, columnas, segundaFoto = true, tarjeta: Tarjeta = TarjetaDeCatalogo }) {
   const servidor = typeof onCargarMas === 'function';
   const [visibles, setVisibles] = useState(12);
   useEffect(() => { if (!servidor) setVisibles(12); }, [productos, servidor]);
@@ -295,7 +295,7 @@ export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargan
         {cargando
           ? Array.from({ length: 8 }, (_, k) => <li key={k}><TarjetaProductoEsqueleto /></li>)
           : lista.map((p) => (
-            <li key={p.id}><TarjetaProducto {...tarjetaDesdeProducto(p, { catalogo })} {...(segundaFoto ? {} : { imagenHover: undefined })} onAgregar={onAgregar?.(p)} /></li>
+            <li key={p.id}><Tarjeta producto={p} catalogo={catalogo} onAgregar={onAgregar} segundaFoto={segundaFoto} /></li>
           ))}
         {cargandoMas && Array.from({ length: 4 }, (_, k) => <li key={`m${k}`}><TarjetaProductoEsqueleto /></li>)}
       </ul>
