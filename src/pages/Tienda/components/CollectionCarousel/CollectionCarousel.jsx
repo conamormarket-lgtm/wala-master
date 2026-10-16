@@ -2,7 +2,9 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getProductsByCollection } from '../../../../services/products';
 import { getCollectionById } from '../../../../services/collections';
-import PremiumProductCard from '../PremiumProductCard/PremiumProductCard';
+// La tarjeta con el kit (paso 4 de la migración); con el interruptor
+// tarjetasViejo vuelve PremiumProductCard (guia/ELIMINAR.md).
+import TarjetaDeProducto from '../../../../components/producto/TarjetaDeProducto';
 import ProductCardSkeleton from '../../../../components/common/ProductCardSkeleton/ProductCardSkeleton';
 import { TextoSeccion, BotonSeccion } from '../textStyleUtils.jsx';
 import styles from './CollectionCarousel.module.css';
@@ -107,7 +109,7 @@ const CollectionCarousel = ({ title, config, collectionName, categories, brandId
       <div className={styles.carouselScrollArea}>
         {validProducts.map((product) => (
           <div key={product.id} className={styles.carouselItem}>
-            <PremiumProductCard product={product} categories={categories} currentBrandId={brandId} />
+            <TarjetaDeProducto product={product} categories={categories} currentBrandId={brandId} />
           </div>
         ))}
       </div>

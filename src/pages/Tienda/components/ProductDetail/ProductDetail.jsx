@@ -851,6 +851,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
             title={tituloTambienTeGusta}
             products={relatedProducts}
             categories={categories}
+            brandId={product?.brandId || null}
           />
         </div>
       )}

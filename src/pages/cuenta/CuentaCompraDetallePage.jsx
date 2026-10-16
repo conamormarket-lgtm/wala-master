@@ -25,7 +25,7 @@ import { normalizarPedidoParaVista } from '../../utils/pedidos';
 
 import { getBrands } from '../../services/brands';
 import { getMessage } from '../../services/messages';
-import { getFeaturedProducts, getProductsByCategory } from '../../services/products';
+import { getFeaturedProducts, getProductsByCategory, getCategories } from '../../services/products';
 import { getOrderByIdAnyCollection } from '../../services/erp/firebase';
 
 import FeaturedCarousel from '../Tienda/components/FeaturedCarousel/FeaturedCarousel';
@@ -269,6 +269,17 @@ const CuentaCompraDetallePage = () => {
   // Recomendación: si hay categoría, productos de esa categoría; si no hay o
   // devuelve poco (<2), caemos a destacados. La key incluye categoryId para que
   // cambie por pedido/categoría sin colisionar con la caché de otras vistas.
+  // Las categorías (misma consulta y caché que la cabecera): sin ellas las
+  // tarjetas de abajo decían todas "Esencial".
+  const { data: categoriasTienda = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data } = await getCategories();
+      return data || [];
+    },
+    staleTime: 15 * 60 * 1000,
+  });
+
   const { data: reco = [] } = useQuery({
     queryKey: ['reco-detalle', categoryId],
     queryFn: async () => {
@@ -785,7 +796,7 @@ const CuentaCompraDetallePage = () => {
         <FeaturedCarousel
           title={<T>También te puede interesar</T>}
           products={relacionados}
-          categories={[]}
+          categories={categoriasTienda}
           visibleItems={4}
         />
       )}

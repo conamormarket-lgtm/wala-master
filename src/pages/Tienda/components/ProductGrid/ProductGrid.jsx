@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import PremiumProductCard from '../PremiumProductCard/PremiumProductCard';
+// La tarjeta con el kit (paso 4 de la migración); con el interruptor
+// tarjetasViejo vuelve PremiumProductCard (guia/ELIMINAR.md).
+import TarjetaDeProducto from '../../../../components/producto/TarjetaDeProducto';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 import styles from './ProductGrid.module.css';
 
@@ -195,7 +197,7 @@ const ProductGrid = React.memo(({
     <>
       <div className={styles.grid} style={gridStyle}>
         {visibleProducts.map((product, index) => (
-          <PremiumProductCard
+          <TarjetaDeProducto
             key={product.id}
             product={product}
             categories={categories}

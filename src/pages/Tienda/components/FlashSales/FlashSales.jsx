@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getProductsByCollection } from '../../../../services/products';
-import PremiumProductCard from '../PremiumProductCard/PremiumProductCard';
+// La tarjeta con el kit (paso 4 de la migración); con el interruptor
+// tarjetasViejo vuelve PremiumProductCard (guia/ELIMINAR.md).
+import TarjetaDeProducto from '../../../../components/producto/TarjetaDeProducto';
 import ProductCardSkeleton from '../../../../components/common/ProductCardSkeleton/ProductCardSkeleton';
 import { TextoSeccion, BotonSeccion } from '../textStyleUtils.jsx';
 import styles from './FlashSales.module.css';
@@ -118,7 +120,7 @@ const FlashSales = ({ title = "Ofertas Relámpago", config, collectionName, endT
       <BotonSeccion settings={config} style={{ marginTop: '0.75rem' }} />
       <div className={styles.flashSalesProducts}>
          {validProducts.slice(0, 4).map((product) => ( // Máximo 4 productos por fila para urgencia
-          <PremiumProductCard key={product.id} product={product} categories={categories} currentBrandId={brandId} />
+          <TarjetaDeProducto key={product.id} product={product} categories={categories} currentBrandId={brandId} />
         ))}
       </div>
     </div>

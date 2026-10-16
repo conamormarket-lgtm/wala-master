@@ -89,6 +89,22 @@ const srcSetDeVariantes = (principal, variantes) => {
     return partes.join(', ');
 };
 
+/**
+ * Las mismas fuentes que pinta OptimizedImage, sin pintar nada: para quien
+ * dibuja su propia <img> (la tarjeta de producto del kit).
+ *  → { src, srcSet, sizes } (srcSet y sizes undefined si no hay copias)
+ */
+export const fuentesDeImagen = (src, { variantes, sizes } = {}) => {
+    if (!src) return { src };
+    const esCloudinary = typeof src === 'string' && src.includes('cloudinary.com');
+    const srcSet = esCloudinary ? getCloudinarySrcSet(src) : srcSetDeVariantes(src, variantes);
+    return {
+        src: esCloudinary ? getCloudinaryOptimized(src, 800) : src,
+        srcSet: srcSet || undefined,
+        sizes: srcSet ? sizes : undefined,
+    };
+};
+
 // Cache de imágenes verificadas
 const verifiedCache = new Set();
 

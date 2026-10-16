@@ -1,6 +1,8 @@
 import React, { useRef, useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import PremiumProductCard from '../PremiumProductCard/PremiumProductCard';
+// La tarjeta con el kit (paso 4 de la migración); con el interruptor
+// tarjetasViejo vuelve PremiumProductCard (guia/ELIMINAR.md).
+import TarjetaDeProducto from '../../../../components/producto/TarjetaDeProducto';
 import ProductCardSkeleton from '../../../../components/common/ProductCardSkeleton/ProductCardSkeleton';
 import { TextoSeccion, BotonSeccion } from '../textStyleUtils.jsx';
 import styles from './FeaturedCarousel.module.css';
@@ -18,7 +20,7 @@ import styles from './FeaturedCarousel.module.css';
  * @param {string}   props.title           Título de la sección
  * @param {object}   props.config          Settings completos de la sección (estilo de texto + botón)
  * @param {Array}    props.products        Productos a mostrar (ya cargados)
- * @param {Array}    props.categories      Categorías (se pasan a PremiumProductCard)
+ * @param {Array}    props.categories      Categorías (se pasan a la tarjeta)
  * @param {number}   props.visibleItems    Nº de tarjetas visibles en desktop (default 5)
  * @param {boolean}  props.autoPlay        Activar avance automático
  * @param {number}   props.autoPlaySpeed   Velocidad del autoplay en ms (default 5000)
@@ -205,7 +207,7 @@ const FeaturedCarousel = ({
         <div className={`${styles.carouselScrollArea} ${isUnderfilled ? styles.carouselCentered : ''}`} ref={scrollRef}>
           {validProducts.map((product) => (
             <div key={product.id} className={styles.carouselItem}>
-              <PremiumProductCard product={product} categories={categories} currentBrandId={brandId} />
+              <TarjetaDeProducto product={product} categories={categories} currentBrandId={brandId} />
             </div>
           ))}
         </div>

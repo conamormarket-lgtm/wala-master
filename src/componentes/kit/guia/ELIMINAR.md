@@ -47,3 +47,11 @@ cambiado) y borrar también su CSS.
 | `Comunidad.module.css`: `.iconoComunidad`, `.confirmar`, `.girando` | la confirmación de la comunidad | `Confirmar` | — (revisar que ninguna otra regla las use) | **listo para borrar** |
 | `CulqiCustomCheckout`: la pantalla "Confirmando tu pago…" (`.overlay`, `.overlayCard`, `.overlaySpinner`, `.overlayTitle`, `.overlayText`) | checkout, pago rápido y "Pagar saldo" | `CapaCargando` del kit (`pantallaCompleta`, en un portal) | el mismo archivo, solo con el interruptor `pagosViejo` | al retirar `pagosViejo` |
 
+## Paso 4: tarjeta de producto
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/Tienda/components/PremiumProductCard/` (`PremiumProductCard.jsx` + `.module.css`) | `ProductGrid`, `FeaturedCarousel`, `CollectionCarousel`, `FlashSales` (inicio, `/tienda`, `/buscar`, marcas, relacionados de la ficha y del pedido) | `components/producto/TarjetaDeProducto.jsx` → `TarjetaProducto` del kit | `TarjetaDeProducto.jsx` (solo con el interruptor `tarjetasViejo`), `pages/cuenta/WishlistPage.jsx`, `pages/WishlistPublic/WishlistPublic.jsx`; comentarios en `ThumbnailCropEditor.jsx`, `useAlternarFotos.js`, `GiftRegistryPage.jsx`, `TiendaPage.jsx` | cuando migren las listas de deseos (paso 6, CUENTA.md y REGALAR.md) y se retire `tarjetasViejo` |
+| `pages/Tienda/components/ProductCard/` (`ProductCard.jsx` + `.module.css`; con reseñas inventadas) | nadie (ya estaba sin uso) | — | nadie | **listo para borrar** |
+| `components/common/ProductCardSkeleton/` | `FeaturedCarousel`, `CollectionCarousel`, `FlashSales` mientras cargan | `EsqueletoProducto` del kit | esos tres | con la carga (paso 7, CARGA.md) |
+
