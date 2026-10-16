@@ -28,18 +28,17 @@
 > (los commits dicen "retirados").
 
 Cómo verlo en vivo: `npm run dev` → http://localhost:3000/componentes.html →
-**Páginas** → **Tienda de prueba** → **Landing de marca** (`/:slug`): dos
-landings reales del builder, Con Amor Geeks (catálogo con filtros) y Yoryo
-(carruseles por categoría). El menú Marcas de la cabecera también lleva a la
-de Con Amor Geeks. Al lado, **Página de marca**: la página de una marca
-sin armarla (abajo).
-
-![La landing de Con Amor Geeks](landing-marca.webp)
+**Páginas** → **Tienda de prueba** → **Página de marca** (`/:slug`): el
+diseño nuevo, la página de una marca sin armarla (abajo). El menú Marcas de
+la cabecera también lleva ahí (las marcas con productos en los datos de la
+demo). La pestaña "Landing de marca", con las landings tal como están hoy,
+se quitó el 2026-10-16: la demo muestra solo el diseño nuevo.
 
 Revisado el 2026-10-15 contra `pages/Tienda/DynamicLandingPage.jsx` →
-`TiendaPage` (143 líneas). Las landings de la demo son reales:
+`TiendaPage` (143 líneas). Los datos de la demo son reales:
 `landingPages`, `pages/{slug}` y los productos de esas marcas, leídos con la
-API pública (`demo/landings.json`).
+API pública (`demo/landings.json`; de ahí salen los productos de la página de
+marca y la foto de Con Amor Geeks).
 
 ## Partes
 
@@ -123,8 +122,8 @@ Comprobado el 2026-10-15 contra las 18 landings de `landingPages`:
 
 | Landings | Secciones | ¿Las dibuja el kit? |
 |---|---|---|
-| catas, conamorequipos, conamorgeeks, conamorparejas, factos, lumi, nova | `hero_banner`, `categories_nav`, `featured_carousel`, `sale_carousel`, `sidebar_catalog`, `marquee` | Sí (en la demo, Con Amor Geeks) |
-| yoryo | `hero_carousel`, 4 × `category_carousel`, `marquee` | Sí (en la demo) |
+| catas, conamorequipos, conamorgeeks, conamorparejas, factos, lumi, nova | `hero_banner`, `categories_nav`, `featured_carousel`, `sale_carousel`, `sidebar_catalog`, `marquee` | Sí |
+| yoryo | `hero_carousel`, 4 × `category_carousel`, `marquee` | Sí |
 | muebleria | `header`, `sidebar_catalog` | Sí |
 | regalos-con-amor | `header`, `text`, `video`, `marquee`, `map_location`, `image` | Sí, pero hoy nadie la ve (ver abajo) |
 | testing | `text` | Sí |

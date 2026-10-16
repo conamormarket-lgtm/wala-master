@@ -20,7 +20,7 @@ import { ENVIO_ESTANDAR, ENVIO_GRATIS_DESDE } from '../constants/envio';
 import { LegalesDemo, VISTAS_LEGALES, ESTADOS_LEGALES } from './DemoLegales';
 import { JuegosDemo, VISTAS_JUEGOS, ESTADOS_JUEGOS } from './DemoJuegos';
 import { CampanasDemo, VISTAS_CAMPANAS, ESTADOS_CAMPANAS } from './DemoCampanas';
-import { LANDINGS_DEMO, VISTAS_LANDING, datosLanding, CASOS_MARCA, ESTADOS_MARCA, datosMarca } from './DemoNavegar';
+import { CASOS_MARCA, ESTADOS_MARCA, datosMarca, casoDeRuta } from './DemoNavegar';
 import { CuentaDemo, MODULOS_CUENTA, ESTADOS_CUENTA, EncuestaDemo, ESTADOS_ENCUESTA, AccesoDemo, VISTAS_ACCESO, CrearDemo, ESTADOS_CREAR, ComunidadDemo, ESTADOS_COMUNIDAD, CreacionDemo, ESTADOS_CREACION, VerDisenoDemo, ESTADOS_VER, CASOS_VER, ComboDemo, ESTADOS_COMBO, EstudioDemo, ESTADOS_ESTUDIO } from './DemoCuenta';
 import INICIO from './demo/inicio.json';
 import TIENDA from './demo/tienda.json';
@@ -70,7 +70,6 @@ const PAGINAS = [
   { id: 'minijuegos', texto: 'Minijuegos', ruta: '/minijuegos' },
   { id: 'juego', texto: 'Un juego', ruta: '/palabra-del-dia' },
   { id: 'buscar', texto: 'Buscar', ruta: '/buscar' },
-  { id: 'landing', texto: 'Landing de marca', ruta: '/conamorgeeks' },
   { id: 'marca', texto: 'Página de marca', ruta: '/marca' },
   { id: 'legales', texto: 'Legales', ruta: '/libro-de-reclamaciones' },
   { id: 'campanas', texto: 'Sorteos y campañas', ruta: '/sorteos' },
@@ -109,7 +108,7 @@ const PAGINA_DE_RUTA = {
 };
 
 /** Pestaña de la barra inferior que se enciende en cada página. */
-const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', landing: 'tienda', marca: 'tienda', juego: 'juegos', campanas: 'tienda', producto: 'tienda', checkout: 'tienda', regalar: 'tienda', pagoRapido: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
+const PESTANA_DE_PAGINA = { inicio: 'inicio', tienda: 'tienda', marca: 'tienda', juego: 'juegos', campanas: 'tienda', producto: 'tienda', checkout: 'tienda', regalar: 'tienda', pagoRapido: 'tienda', minijuegos: 'juegos', buscar: 'tienda', carrito: 'tienda', cuenta: 'cuenta', acceso: 'cuenta', crear: 'crear', estudio: 'crear', comunidad: 'crear', creacion: 'cuenta', combo: 'crear' };
 
 /* Estados de la Zona Arcade para probar (como el modo diseño de la tienda). */
 const RULETAS = [
@@ -286,9 +285,6 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [estadosEstudio, setEstadosEstudio] = useState([]);
   const [estadosCombo, setEstadosCombo] = useState([]);
   const [rutaAcceso, setRutaAcceso] = useState('/login');
-  // Las landings del builder.
-  const [rutaLanding, setRutaLanding] = useState(VISTAS_LANDING[0][1]);
-  const [filtrosLanding, setFiltrosLanding] = useState({});
   // Página de marca: identidad + plantilla (PaginaMarca).
   const [casoMarca, setCasoMarca] = useState('geeks');
   const [estadosMarca, setEstadosMarca] = useState([]);
@@ -356,8 +352,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     if (ruta.startsWith('/l/') || ruta.startsWith('/sorteos/') || ruta.startsWith('/suscrito-sorteo/')) { setRutaCampana(ruta.startsWith('/l/') ? ruta : ruta.replace(/\/[^/]+$/, '')); setEstadosCampana([]); irA('campanas'); return; }
     // Los nichos y los vendedores se retiraron: como la tienda, van a /tienda.
     if (/^\/(nicho|tienda-vendedor)\//.test(ruta) || ruta === '/nichos' || ruta === '/vendedor') { irA('tienda'); return; }
-    // Una landing del builder (/:slug): las copiadas en demo/landings.json.
-    if (LANDINGS_DEMO.some((l) => `/${l.slug}` === ruta)) { setRutaLanding(ruta); setFiltrosLanding({}); irA('landing'); return; }
+    // La página de una marca (/:slug): el diseño nuevo (PaginaMarca).
+    if (casoDeRuta(ruta)) { setCasoMarca(casoDeRuta(ruta)); setFiltrosMarca({}); setEstadosMarca([]); irA('marca'); return; }
     if (!PAGINA_DE_RUTA[ruta]) { avisar('En la tienda iría a', to); return; }
     if (ruta === '/buscar') {
       const p = new URLSearchParams(query);
@@ -605,31 +601,13 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     categorias: TIENDA.categorias, colecciones: TIENDA.colecciones, marcas: visibles, tipos: TIENDA.tipos,
     etiquetas: TIENDA.etiquetas, personajes: TIENDA.personajes, productos: datosDeMarca.productos.todos, marcaActual: datosDeMarca.marca.id,
   }), [datosDeMarca, visibles]);
-  // Como en la landing: las burbujas filtran el catálogo de la misma página.
+  // Como TiendaPage en una página de marca: las burbujas filtran el catálogo de la misma página.
   const propsMarca = (sec) => {
     if (sec.type === 'sidebar_catalog') {
       return { grupos: gruposMarca, seleccion: filtrosMarca, onFiltrar: (grupo, valor) => setFiltrosMarca((f) => ({ ...f, [grupo]: valor })), filtrarAqui: true, conBuscador: true };
     }
     if (sec.type === 'categories_nav') {
       return { activa: filtrosMarca.categoria || null, onSeleccionar: (id) => setFiltrosMarca((f) => ({ ...f, categoria: id || undefined })) };
-    }
-    return undefined;
-  };
-
-  /* ── Landing de marca (/:slug): la copia real de pages/{slug} ── */
-  const datosDeLanding = useMemo(() => datosLanding(rutaLanding.slice(1)), [rutaLanding]);
-  const { landing } = datosDeLanding;
-  const gruposLanding = useMemo(() => gruposDeCatalogo({
-    categorias: TIENDA.categorias, colecciones: TIENDA.colecciones, marcas: visibles, tipos: TIENDA.tipos,
-    etiquetas: TIENDA.etiquetas, personajes: TIENDA.personajes, productos: datosDeLanding.productos.todos, marcaActual: landing.brandId,
-  }), [datosDeLanding, landing.brandId, visibles]);
-  // Como TiendaPage en una página de marca: las burbujas filtran el catálogo de la misma página.
-  const propsLanding = (sec) => {
-    if (sec.type === 'sidebar_catalog') {
-      return { grupos: gruposLanding, seleccion: filtrosLanding, onFiltrar: (grupo, valor) => setFiltrosLanding((f) => ({ ...f, [grupo]: valor })), filtrarAqui: true, conBuscador: true };
-    }
-    if (sec.type === 'categories_nav') {
-      return { activa: filtrosLanding.categoria || null, onSeleccionar: (id) => setFiltrosLanding((f) => ({ ...f, categoria: id || undefined })) };
     }
     return undefined;
   };
@@ -665,8 +643,8 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
     <MarcoTienda {...marco} kapiEnPie={false}>
       <Parte n="M11" nombre="EsqueletoPagina">
         {/* El inicio, sección por sección (las del builder). */}
-        {pagina === 'inicio' || pagina === 'landing' || pagina === 'marca'
-          ? <EsqueletoPagina secciones={pagina === 'marca' ? ESQUELETO_MARCA : (pagina === 'landing' ? landing.secciones : secciones).map((x) => x.type)} />
+        {pagina === 'inicio' || pagina === 'marca'
+          ? <EsqueletoPagina secciones={pagina === 'marca' ? ESQUELETO_MARCA : secciones.map((x) => x.type)} />
           : <EsqueletoPagina forma={formaEsqueleto} modulo={moduloEsqueleto} sesion={conSesion} tarjetas={pagina === 'ver' ? CASOS_VER.find((c) => c[0] === casoVer)?.[2] : undefined} />}
       </Parte>
     </MarcoTienda>
@@ -699,23 +677,6 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
         <LegalesDemo ruta={rutaLegal} sesion={conSesion} usuario={usuario} estados={estadosLegales} />
       </Parte>
     </MarcoTienda>
-  ) : pagina === 'landing' ? (
-    // Una landing del builder (/:slug): PaginaTienda con su marca, como
-    // DynamicLandingPage → TiendaPage con pageBrandIdOverride.
-    <PaginaTienda
-      {...marco}
-      cabecera={landing.hideHeader ? null : marco.cabecera}
-      pie={landing.hideFooter ? null : marco.pie}
-      secciones={landing.secciones}
-      productos={datosDeLanding.productos}
-      categorias={datosDeLanding.categorias}
-      navPorMarca={datosDeLanding.navPorMarca}
-      marcas={marcas}
-      marcaActual={landing.brandId}
-      onAgregar={onAgregar}
-      propsPara={propsLanding}
-      envolver={envolverTienda}
-    />
   ) : pagina === 'marca' ? (
     // La página de una marca sin armarla: su identidad (TemaMarca + portada) y la plantilla.
     <PaginaMarca
@@ -1037,16 +998,6 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
             <div className={cs.controlesChips}>
               {ESTADOS_MARCA.map(([id, texto]) => (
                 <Chip key={id} tamano="sm" activo={estadosMarca.includes(id)} onClick={() => setEstadosMarca((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))}>{texto}</Chip>
-              ))}
-            </div>
-          </div>
-        )}
-        {pagina === 'landing' && (
-          <div>
-            <span className={cs.controlesTitulo}>Cómo se abre</span>
-            <div className={cs.controlesChips}>
-              {VISTAS_LANDING.map(([texto, r]) => (
-                <Chip key={texto} tamano="sm" activo={rutaLanding === r} onClick={() => { setRutaLanding(r); setFiltrosLanding({}); if (marcoRef.current) marcoRef.current.scrollTop = 0; }}>{texto}</Chip>
               ))}
             </div>
           </div>
