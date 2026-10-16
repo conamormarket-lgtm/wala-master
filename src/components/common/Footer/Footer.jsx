@@ -8,6 +8,14 @@ import { esAppNativa } from '../../../utils/vistaPreviaCalor';
 import { empresa } from '../../../config/empresa';
 import styles from './Footer.module.css';
 import { T } from '../../../i18n/useTranslatedText';
+import { PieLegal } from '../../../componentes/kit/piezas/Marco';
+import { pieLegalDesdeEmpresa } from '../../../componentes/kit/adaptadores';
+
+// El pie legal (contacto, enlaces legales y Libro de Reclamaciones) ya lo
+// dibuja el kit (paso 2 de la migración). Las columnas y el editor del pie
+// siguen aquí hasta migrar el pie entero. En false vuelve el bloque de antes
+// (se borra al final: guia/ELIMINAR.md).
+const PIE_LEGAL_EN_EL_KIT = true;
 
 // Importamos algunos de los bloques que pueden renderizarse en el footer
 // Para simplificar, implementaremos el renderizado directamente o reutilizaremos componentes
@@ -238,6 +246,11 @@ const Footer = () => {
         {/* ModuleInserter al final */}
         {isEditModeActive && isEditingFooter && renderSection({ id: 'dummy_inserter', type: 'dummy' }, displaySections.length)}
 
+        {PIE_LEGAL_EN_EL_KIT ? (
+          <div style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            <PieLegal {...pieLegalDesdeEmpresa(empresa)} />
+          </div>
+        ) : (
         <div className={styles.copyright} style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
           <p style={{ fontSize: '0.82rem', opacity: 0.8, marginBottom: '0.75rem', lineHeight: 1.6 }}>
             {empresa.nombreComercial} · {empresa.email} · Tel. {empresa.telefono}
@@ -257,6 +270,7 @@ const Footer = () => {
           </div>
           <p>&copy; {new Date().getFullYear()} Walá. <T>Todos los derechos reservados.</T></p>
         </div>
+        )}
       </div>
     </footer>
   );
