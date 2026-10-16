@@ -67,6 +67,26 @@ export default function Kapi() {
     };
   }, []);
 
+  // Celebra el reto una sola vez: solo al pasar de pendiente a completado
+  // (el perfil se relee tras cada acción del servidor). Si ya llega completado
+  // al cargar, no se celebra; la marca por cuenta y reto evita repetirlo.
+  const retoCompletado = Boolean(retoDesdePerfil(activeWeeklyChallenge, userProfile)?.completado);
+  const retoAntesRef = useRef(null);
+  useEffect(() => {
+    if (!user || !userProfile || userProfile._perfilNoCargado || !activeWeeklyChallenge) return;
+    const clave = `kapiRetoCelebrado:${user.uid}:${activeWeeklyChallenge.challengeId}`;
+    const antes = retoAntesRef.current;
+    retoAntesRef.current = { clave, completado: retoCompletado };
+    if (!retoCompletado || !antes || antes.clave !== clave || antes.completado) return;
+    try {
+      if (localStorage.getItem(clave)) return;
+      localStorage.setItem(clave, '1');
+    } catch {
+      /* sin storage: vale el cambio visto en esta visita */
+    }
+    window.dispatchEvent(new CustomEvent('weekly-challenge-completed'));
+  }, [user, userProfile, activeWeeklyChallenge, retoCompletado]);
+
   const tutorialVisto = () => Boolean(userProfile?.kapiTutorialVisto) || tutorialEnNavegador();
   const marcarTutorialVisto = () => {
     try {
