@@ -44,7 +44,9 @@ import BottomNav from './components/common/BottomNav';
 import WhatsAppButton from './components/common/WhatsAppButton';
 import AdminBar from './components/common/AdminBar/AdminBar';
 import DeepLinkHandler from './components/common/DeepLinkHandler';
-import SystemAlert from './components/common/SystemAlert/SystemAlert';
+// Marco con el kit (paso 2 de la migración): cada uno reemplaza a un componente
+// viejo, que sigue en su sitio hasta borrarlo todo junto (guia/ELIMINAR.md).
+import AvisoDelSistema from './components/marco/AvisoDelSistema';
 import LanguagePopup from './components/i18n/LanguagePopup';
 import { EN_VISTA_PREVIA_CALOR } from './utils/vistaPreviaCalor';
 
@@ -307,7 +309,7 @@ const GlobalLayout = ({ children }) => {
   return (
     <div className="App">
       {rastreoCalor}
-      <SystemAlert />
+      <AvisoDelSistema />
       <NavProgressBar />
       <RouteTracker />
       <PushLinkHandler />

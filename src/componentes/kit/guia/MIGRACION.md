@@ -26,6 +26,12 @@ principal (y a la APK de Capacitor).
 | `IconoWala` y `Trazo` en referidos | `components/common/AvisoInvitacion/AvisoInvitacion.jsx`, `pages/cuenta/components/GrupoReferidos.jsx`, `pages/cuenta/CuentaReferidosPage.jsx` |
 | `PaginaCuentaInvitado`: solo /cuenta sin sesión (la pestaña "Cuenta"); cada sección (/cuenta/pedidos…) es una página privada y va al login con `?redirect=` (`utils/rutaPrivada.js`), así que la variante `pedidos` ya no se usa. `CuentaLoginPrompt` y `PedidosLoginPrompt` quedan sin usar hasta borrarlos; los textos del `accountPopup` del editor visual siguen solo en el pop-up de la cabecera | `pages/CuentaLayout.jsx` |
 
+| Marco (paso 2): `AvisoSistema` | `components/marco/AvisoDelSistema.jsx` (en `App.jsx`) |
+
+Cada pieza del marco tiene un conector chico en `src/components/marco/`: lee
+lo de la tienda (Firestore, rutas, sesión) y dibuja la pieza del kit. Lo viejo
+queda en su sitio hasta el final ([ELIMINAR.md](ELIMINAR.md)).
+
 Cambiar `Boton`, `Feedback`, `Enlace`, `IconosWala` o `Marca` ya cambia la
 tienda real: revisar también esas pantallas. (`Feedback` usa `Efectos`:
 `useCerrarConAtras` ahora cierra solo la hoja de encima cuando hay dos.) (`Marca.jsx` ahora también
