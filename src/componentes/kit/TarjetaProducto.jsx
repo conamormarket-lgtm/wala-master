@@ -1,9 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Heart, Star, Plus, Check, Palette, SlidersHorizontal } from 'lucide-react';
 import { Etiqueta } from './Etiquetas';
 import { Estallido } from './Efectos';
 import { Enlace } from './Enlace';
-import { useTexto } from './Traduccion';
+import { Texto, useTexto } from './Traduccion';
 import { FotoProducto } from './piezas/FotoProducto';
 import { LogoMarca } from './piezas/LogoMarca';
 import { iniciales } from './piezas/Avatar';
@@ -15,6 +15,59 @@ const formatoSoles = new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, 
 export const soles = (n) => `S/ ${formatoSoles.format(n)}`;
 
 const INCLINACION = 4; // grados máximos, suave
+
+/** Un recorte guardado ({ x, y, width, height } en %) que sirve. */
+const recorteValido = (r) => Boolean(r && r.width > 0 && r.height > 0);
+
+/**
+ * Foto de la tarjeta. Con `recorte` (el encuadre que fijó el admin, en %) se
+ * ve solo esa parte, dentro del mismo hueco con aire de siempre. Si la foto
+ * falla, prueba con `respaldo` (otra URL) una vez.
+ */
+function FotoTarjeta({ src, srcSet, sizes, recorte, respaldo, prioridad = false, className }) {
+  const [fallo, setFallo] = useState(false);
+  const url = fallo && respaldo ? respaldo : src;
+  const img = (
+    <img
+      src={url}
+      srcSet={fallo ? undefined : srcSet}
+      sizes={!fallo && srcSet ? sizes : undefined}
+      alt=""
+      className={recorteValido(recorte) ? s.imgRecortada : className}
+      style={recorteValido(recorte) ? {
+        top: `${-(recorte.y / recorte.height) * 100}%`,
+        left: `${-(recorte.x / recorte.width) * 100}%`,
+        width: `${(100 / recorte.width) * 100}%`,
+        height: `${(100 / recorte.height) * 100}%`,
+      } : undefined}
+      loading={prioridad ? 'eager' : 'lazy'}
+      fetchPriority={prioridad ? 'high' : undefined}
+      decoding="async"
+      onError={() => { if (!fallo && respaldo && respaldo !== src) setFallo(true); }}
+    />
+  );
+  if (!recorteValido(recorte)) return img;
+  return <span className={`${s.recorte} ${className === s.img ? '' : s.recorteHover}`}>{img}</span>;
+}
+
+/** Fondo de la marca detrás de la foto: color, imagen y cuánto se ve la imagen (0-100). */
+const estiloFondo = (fondo) => {
+  if (!fondo?.color && !fondo?.imagen) return undefined;
+  const capa = fondo.color && fondo.imagen ? colorConTransparencia(fondo.color, 1 - (fondo.opacidad ?? 100) / 100) : null;
+  return {
+    backgroundColor: fondo.color || 'transparent',
+    backgroundImage: fondo.imagen ? `${capa ? `linear-gradient(${capa}, ${capa}), ` : ''}url(${fondo.imagen})` : 'none',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  };
+};
+
+const colorConTransparencia = (hex, alfa) => {
+  const h = String(hex || '').replace('#', '');
+  const largo = h.length === 3 ? h.split('').map((c) => c + c).join('') : h.padEnd(6, 'f');
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(largo.slice(i, i + 2), 16) || 255);
+  return `rgba(${r}, ${g}, ${b}, ${alfa})`;
+};
 const STOCK_BAJO = 10; // desde aquí se avisa "¡Quedan N!"
 
 /**
@@ -54,6 +107,18 @@ const ACCIONES = {
  *  - deseado, onDeseo(nuevo): el corazón controlado (WishlistContext); sin
  *    `deseado`, la tarjeta lo recuerda sola.
  *
+ *  Fotos (las que llegan de la tienda):
+ *  - srcSet, srcSetHover, sizes: copias de cada foto en varios tamaños
+ *  - recorte, recorteHover: el encuadre del admin ({ x, y, width, height } en %)
+ *  - respaldo: otra URL si la foto falla  · prioridad: arriba del todo (carga ya)
+ *  - fondo: { color, imagen, opacidad } de la marca detrás de la foto
+ *
+ *  Para la tienda:
+ *  - textoAccion: el texto del botón ("Elegir talla", "Elegir color y talla")
+ *  - onVisible(): una vez, cuando la tarjeta entra en pantalla (la impresión)
+ *  - onAcercar(): al pasar el ratón o tocarla (precargar la ficha)
+ *  - onMenu(e): el menú del clic derecho o del dedo mantenido
+ *
  * Etiquetas de la foto, por importancia: descuento, Combo, Nuevo, Tu diseño.
  * En una tarjeta angosta (2 columnas del celular) van en tamaño chico (para no
  * llegar al corazón) y solo las dos primeras; si "Nuevo" queda fuera, pasa a la
@@ -83,12 +148,54 @@ export default function TarjetaProducto({
   onAgregar,
   deseado: deseadoProp,
   onDeseo,
+  srcSet,
+  srcSetHover,
+  sizes,
+  recorte,
+  recorteHover,
+  respaldo,
+  prioridad = false,
+  fondo,
+  textoAccion,
+  onVisible,
+  onAcercar,
+  onMenu,
 }) {
   // Los textos de los datos pasan por la traducción de la tienda (si hay).
   const nombre = useTexto(nombreOriginal);
   const categoria = useTexto(categoriaOriginal);
   const ref = useRef(null);
   const temporizador = useRef(0);
+  // Los textos fijos también pasan por la traducción.
+  const t = {
+    accion: useTexto(textoAccion || ACCIONES[accion].texto),
+    aria: useTexto(ACCIONES[accion].aria),
+    agregado: useTexto('Agregado'),
+    agregadoAria: useTexto('Agregado al carrito'),
+    agotado: useTexto('Agotado'),
+    nuevo: useTexto('Nuevo'),
+    quitar: useTexto('Quitar de deseos'),
+    deseos: useTexto('Agregar a deseos'),
+    nuevoEnWala: useTexto('Nuevo en Walá'),
+    personalizable: useTexto('Personalizable'),
+    tuDiseno: useTexto('Tu diseño'),
+  };
+
+  // La impresión: una vez, cuando la tarjeta entra en pantalla.
+  const visibleRef = useRef(onVisible);
+  visibleRef.current = onVisible;
+  const conVisible = Boolean(onVisible);
+  useEffect(() => {
+    const el = ref.current;
+    if (!conVisible || !el || typeof IntersectionObserver === 'undefined') return undefined;
+    const observador = new IntersectionObserver((entradas) => {
+      if (!entradas[0]?.isIntersecting) return;
+      observador.disconnect();
+      visibleRef.current?.();
+    }, { rootMargin: '50px', threshold: 0.1 });
+    observador.observe(el);
+    return () => observador.disconnect();
+  }, [conVisible]);
   // Favorito: controlado si llega `deseado` (la lista de deseos real); si
   // no, la tarjeta lo recuerda sola (demo).
   const [deseadoLocal, setDeseadoLocal] = useState(false);
@@ -147,12 +254,15 @@ export default function TarjetaProducto({
       className={[s.tarjeta, agotado && s.agotado, inclinar && s.inclinable].filter(Boolean).join(' ')}
       onPointerMove={mover}
       onPointerLeave={salir}
+      onPointerEnter={onAcercar}
+      onTouchStart={onAcercar}
+      onContextMenu={onMenu}
     >
       <span className={s.bordeLuz} aria-hidden="true" />
-      <div className={s.media}>
+      <div className={s.media} style={estiloFondo(fondo)}>
         <Enlace to={url} className={s.enlaceImagen} aria-label={nombre}>
-          {imagen && <img src={imagen} alt="" className={s.img} loading="lazy" decoding="async" />}
-          {imagen && imagenHover && <img src={imagenHover} alt="" className={`${s.img} ${s.imgHover}`} loading="lazy" decoding="async" />}
+          {imagen && <FotoTarjeta src={imagen} srcSet={srcSet} sizes={sizes} recorte={recorte} respaldo={respaldo} prioridad={prioridad} className={s.img} />}
+          {imagen && imagenHover && <FotoTarjeta src={imagenHover} srcSet={srcSetHover} sizes={sizes} recorte={recorteHover} className={`${s.img} ${s.imgHover}`} />}
           {collage.length > 0 && (
             <span className={[s.collage, collage.length === 3 && s.collageTres].filter(Boolean).join(' ')} style={{ '--piezas': collage.length }}>
               {collage.map((pz, i) => <FotoProducto key={pz.nombre || i} className={s.collagePieza} src={pz.imagen} relleno="6%" />)}
@@ -166,9 +276,9 @@ export default function TarjetaProducto({
         <div className={s.badges}>
           {descuento > 0 && <Etiqueta tono="peligro" solida>-{descuento}%</Etiqueta>}
           {esCombo && <Etiqueta tono="violeta" solida>Combo · {piezas.length}</Etiqueta>}
-          {nuevo && <Etiqueta tono="violeta" solida>Nuevo</Etiqueta>}
+          {nuevo && <Etiqueta tono="violeta" solida>{t.nuevo}</Etiqueta>}
           {tuDiseno && (
-            <Etiqueta tono="violeta" solida icono={<Palette aria-label="Personalizable" />}><span className={s.badgeTexto}>Tu diseño</span></Etiqueta>
+            <Etiqueta tono="violeta" solida icono={<Palette aria-label={t.personalizable} />}><span className={s.badgeTexto}>{t.tuDiseno}</span></Etiqueta>
           )}
         </div>
 
@@ -177,7 +287,7 @@ export default function TarjetaProducto({
           // (hasta 4 y "+N") y los nombres en un renglón: el panel no crece
           // y no tapa la foto aunque el combo traiga muchas piezas.
           <div className={[s.incluye, piezas.length >= 3 && s.incluyeCompacto].filter(Boolean).join(' ')} aria-hidden="true">
-            <span className={s.incluyeTitulo}>{piezas.length >= 3 ? `Incluye ${piezas.length} piezas` : 'Incluye'}</span>
+            <span className={s.incluyeTitulo}><Texto>{piezas.length >= 3 ? `Incluye ${piezas.length} piezas` : 'Incluye'}</Texto></span>
             {piezas.length >= 3 ? (
               <>
                 <ul className={s.incluyeFotos}>
@@ -188,14 +298,14 @@ export default function TarjetaProducto({
                   ))}
                   {piezas.length > 4 && <li><span className={`${s.incluyeFoto} ${s.incluyeMas}`}>+{piezas.length - 4}</span></li>}
                 </ul>
-                <span className={s.incluyeNombres}>{piezas.map((pz) => pz.nombre).filter(Boolean).join(' · ')}</span>
+                <span className={s.incluyeNombres}><Texto>{piezas.map((pz) => pz.nombre).filter(Boolean).join(' · ')}</Texto></span>
               </>
             ) : (
               <ul>
                 {piezas.map((pz, i) => (
                   <li key={pz.nombre || i}>
                     <FotoProducto className={s.incluyeFoto} src={pz.imagen} respaldo={iniciales(pz.nombre, 1) || '?'} />
-                    <span className={s.incluyeNombre}>{pz.nombre}</span>
+                    <span className={s.incluyeNombre}><Texto>{pz.nombre}</Texto></span>
                   </li>
                 ))}
               </ul>
@@ -211,7 +321,7 @@ export default function TarjetaProducto({
           type="button"
           className={[s.deseo, deseado && s.deseoActivo].filter(Boolean).join(' ')}
           aria-pressed={deseado}
-          aria-label={deseado ? 'Quitar de deseos' : 'Agregar a deseos'}
+          aria-label={deseado ? t.quitar : t.deseos}
           onClick={alternarDeseo}
         >
           <Heart aria-hidden="true" />
@@ -219,18 +329,18 @@ export default function TarjetaProducto({
         </button>
 
         {agotado ? (
-          <span className={s.capaAgotado}>Agotado</span>
+          <span className={s.capaAgotado}>{t.agotado}</span>
         ) : sinAccion ? null : (
           <button
             type="button"
             className={[s.agregar, agregado && s.agregarOk].filter(Boolean).join(' ')}
             onClick={agregar}
-            aria-label={agregado ? 'Agregado al carrito' : `${ACCIONES[accion].aria} ${nombre}`}
+            aria-label={agregado ? t.agregadoAria : `${t.aria} ${nombre}`}
           >
             <span className={s.agregarIcono}>
               {agregado ? <Check key="ok" aria-hidden="true" /> : React.createElement(ACCIONES[accion].Icono, { key: accion, 'aria-hidden': true })}
             </span>
-            <span className={s.agregarTexto}>{agregado ? 'Agregado' : ACCIONES[accion].texto}</span>
+            <span className={s.agregarTexto}>{agregado ? t.agregado : t.accion}</span>
             {sumas > 0 && <span key={sumas} className={s.masUno} aria-hidden="true">+1</span>}
           </button>
         )}
@@ -239,7 +349,7 @@ export default function TarjetaProducto({
       <div className={s.cuerpo}>
         <p className={s.categoria}>
           {categoria || ' '}
-          {nuevoEnLinea && <span className={s.nuevoEnLinea}>{categoria ? ' · ' : ''}Nuevo</span>}
+          {nuevoEnLinea && <span className={s.nuevoEnLinea}>{categoria ? ' · ' : ''}{t.nuevo}</span>}
         </p>
         <h3 className={s.nombre}><Enlace to={url}>{nombre}</Enlace></h3>
 
@@ -252,9 +362,9 @@ export default function TarjetaProducto({
               {vendidos && <span className={s.vendidos}>· {vendidos} vendidos</span>}
             </>
           ) : quedan ? (
-            <span className={s.quedan}>{quedan === 1 ? '¡Queda 1!' : `¡Quedan ${quedan}!`}</span>
+            <span className={s.quedan}><Texto>{quedan === 1 ? '¡Queda 1!' : `¡Quedan ${quedan}!`}</Texto></span>
           ) : nuevo ? (
-            <span className={s.sinResenas}>Nuevo en Walá</span>
+            <span className={s.sinResenas}>{t.nuevoEnWala}</span>
           ) : ' '}
         </p>
 

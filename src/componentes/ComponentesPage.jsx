@@ -745,6 +745,19 @@ function Contenido({ tema, cambiarTema }) {
             ))}
             <Revelar retraso={0.4} className={s.celda}><TarjetaProductoEsqueleto /></Revelar>
           </div>
+          {/* Lo que llega de la tienda: el encuadre del admin, el fondo de la
+              marca y el texto exacto de lo que hay que elegir. */}
+          <div className={s.gridProductos}>
+            <div className={s.celda}>
+              <TarjetaProducto imagen={FRENTE_BLANCO} categoria="Con encuadre" nombre="Polera (recorte del admin)" precio={89.9} recorte={{ x: 20, y: 10, width: 60, height: 60 }} accion="elegir" textoAccion="Elegir talla" inclinar={false} />
+            </div>
+            <div className={s.celda}>
+              <TarjetaProducto imagen={TAZA} categoria="Con fondo de marca" nombre="Taza sobre el fondo de su marca" precio={34.9} fondo={{ color: '#fde68a' }} inclinar={false} />
+            </div>
+            <div className={s.celda}>
+              <TarjetaProducto imagen={FRENTE_BLANCO} categoria="Elegir antes" nombre="Polera con colores y tallas" precio={89.9} accion="elegir" textoAccion="Elegir color y talla" colores={['#111827', '#f5f5f4', '#7c3aed']} inclinar={false} />
+            </div>
+          </div>
         </Seccion>
 
         {/* ── PIEZAS DE SECCIÓN ── */}

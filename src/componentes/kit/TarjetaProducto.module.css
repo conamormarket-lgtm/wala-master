@@ -174,15 +174,17 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .tarjeta:hover .img {
+  .tarjeta:hover .img,
+  .tarjeta:hover .recorte {
     transform: scale(1.04);
   }
 
-  .tarjeta:hover .img:not(.imgHover):has(+ .imgHover) {
+  /* La segunda foto (con o sin el encuadre del admin) reemplaza a la primera. */
+  .tarjeta:hover :is(.img:not(.imgHover), .recorte:not(.recorteHover)):has(+ :is(.imgHover, .recorteHover)) {
     opacity: 0;
   }
 
-  .tarjeta:hover .imgHover {
+  .tarjeta:hover :is(.imgHover, .recorteHover) {
     opacity: 1;
   }
 
@@ -557,7 +559,8 @@
   text-transform: uppercase;
 }
 
-.agotado .img {
+.agotado .img,
+.agotado .recorte {
   filter: grayscale(0.8);
   opacity: 0.5;
 }
@@ -764,6 +767,7 @@
 
   .tarjeta,
   .img,
+  .recorte,
   .agregar,
   .sello,
   .incluye,
@@ -780,4 +784,25 @@
   .masUno {
     animation: none;
   }
+}
+
+/* ── Foto con el encuadre del admin ─────────────────────── */
+/* El mismo hueco con aire que .img; adentro, solo la parte elegida. */
+.recorte {
+  position: absolute;
+  inset: 7%;
+  overflow: hidden;
+  mix-blend-mode: multiply;
+  transition: opacity var(--dur-lenta) var(--ease-signature), transform 0.6s var(--ease-signature);
+}
+
+.recorteHover {
+  opacity: 0;
+}
+
+.imgRecortada {
+  position: absolute;
+  max-width: none;
+  max-height: none;
+  object-fit: fill;
 }
