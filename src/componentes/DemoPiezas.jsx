@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   TarjetaCategoria, TarjetaTestimonio, TarjetaMarca, LogoMarca, TarjetaDestacado, Beneficio, StockBajo, Chip, tarjetaDesdeMarca, acento,
   FotoProducto, Avatar, Moneda, EtiquetaColgante, OpcionesFiltro, Acordeon, TarjetaJuego, Etiqueta, GananciaMonedas,
-  Aviso, CuentaRegresiva, IconoWala, BarraProgreso, RetoSemanal, VentanaKapi, Boton, PanelBusqueda, Buscador, Selector,
+  Aviso, CuentaRegresiva, IconoWala, BarraProgreso, RetoSemanal, VentanaKapi, Boton, PanelBusqueda, Buscador, Selector, Confirmar, HojaInferior,
   ORDENES_BUSQUEDA,
 } from './kit';
 import { Lock } from 'lucide-react';
@@ -30,6 +30,9 @@ const PERSONAJES = ['Akaza', 'Asta', 'Eren Yeager', 'Gohan', 'Goku', 'Inosuke', 
   .map((nombre, k) => ({ valor: nombre, nombre, cuenta: (k % 4) + 1 }));
 
 export default function DemoPiezas({ categorias, marcas, imagenes }) {
+  const [confirmar, setConfirmar] = useState(null);
+  const [confirmado, setConfirmado] = useState('');
+  const [hoja, setHoja] = useState(null);
   const [activa, setActiva] = useState(null);
   const [personaje, setPersonaje] = useState('Goku');
   const [kapiAbierta, setKapiAbierta] = useState(false);
@@ -210,6 +213,40 @@ export default function DemoPiezas({ categorias, marcas, imagenes }) {
           hasta={new Date(Date.now() + 7.5 * 3600 * 1000).toISOString()}
           onAlimentar={() => new Promise((r) => setTimeout(() => { setKapiComio(true); r(); }, 600))}
         />
+      </Ficha>
+
+      <Ficha nombre="Confirmar" usadaEn="Antes de algo que no se deshace: quitar del carrito, eliminar una dirección, una persona, un combo o la foto (en la tienda, con useConfirmar en vez de confirm())">
+        <div className={s.filaCentrada}>
+          <Boton variante="peligro" onClick={() => setConfirmar('borrar')}>Eliminar una dirección</Boton>
+          <Boton variante="secundario" onClick={() => setConfirmar('lento')}>Confirmar que tarda</Boton>
+          {confirmado && <span>{confirmado}</span>}
+        </div>
+        <Confirmar
+          abierta={confirmar === 'borrar'}
+          titulo="¿Eliminar la dirección de Casa?"
+          texto="No se puede deshacer."
+          confirmar="Eliminar"
+          peligro
+          onConfirmar={() => { setConfirmar(null); setConfirmado('Eliminada'); }}
+          onCancelar={() => { setConfirmar(null); setConfirmado('Cancelado'); }}
+        />
+        <Confirmar
+          abierta={confirmar === 'lento'}
+          titulo="¿Guardar los cambios?"
+          texto="Mientras guarda, la hoja no se cierra (bloqueada)."
+          confirmar="Guardar"
+          onConfirmar={() => new Promise((r) => setTimeout(() => { setConfirmar(null); setConfirmado('Guardado'); r(); }, 1500))}
+          onCancelar={() => setConfirmar(null)}
+        />
+      </Ficha>
+
+      <Ficha nombre="HojaInferior" usadaEn="Ventanas y hojas de todo el kit: Kapi, filtros, talla, confirmar… (bloqueada y tamano: 'sm' · 'md' · 'lg')">
+        <div className={s.filaCentrada}>
+          {['sm', 'md', 'lg'].map((t) => <Boton key={t} variante="secundario" onClick={() => setHoja(t)}>Hoja {t}</Boton>)}
+        </div>
+        <HojaInferior abierta={Boolean(hoja)} onCerrar={() => setHoja(null)} titulo={`Tamaño ${hoja || ''}`} tamano={hoja || 'md'} pie={<Boton bloque onClick={() => setHoja(null)}>Listo</Boton>}>
+          <p>En el celular sube desde abajo; en escritorio es una ventana de este ancho. El foco no se escapa con Tab.</p>
+        </HojaInferior>
       </Ficha>
 
       <Ficha nombre="Moneda" usadaEn="Saldo, costo y ganancia en monedas, Mis monedas, resumen del pedido">

@@ -762,3 +762,32 @@
   width: 0.95rem;
   height: 0.95rem;
 }
+
+/* ── Anchos de la ventana en escritorio ──────────────────── */
+.hoja_sm {
+  width: min(400px, 100%);
+}
+
+.hoja_lg {
+  width: min(640px, 100%);
+}
+
+/* ── Confirmar ─────────────────────────────────────────── */
+.confirmarTexto {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.confirmarAcciones {
+  display: flex;
+  flex: 1;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+@media (max-width: 719px) {
+  .confirmarAcciones > * {
+    flex: 1;
+  }
+}

@@ -66,15 +66,23 @@ const alVolverGlobal = () => {
  * en vez de salir de la pantalla. Capacitor, sin un listener propio de
  * backButton, retrocede en el historial: por eso basta con apilar un estado.
  * Con varios modales uno encima de otro, cierra solo el de encima.
+ *  - bloqueado: mientras sea true (un pago o un guardado en curso), "atrás"
+ *    no cierra ni sale de la pantalla: se vuelve a apilar el estado.
  */
-export function useCerrarConAtras(activo, onCerrar) {
+export function useCerrarConAtras(activo, onCerrar, bloqueado = false) {
   const cerrar = useRef(onCerrar);
   cerrar.current = onCerrar;
+  const bloqueadoRef = useRef(bloqueado);
+  bloqueadoRef.current = bloqueado;
   useEffect(() => {
     if (!activo) return undefined;
     let apilado = false;
     let porAtras = false;
     const alVolver = () => {
+      if (bloqueadoRef.current) {
+        window.history.pushState({ walaModal: true }, '');
+        return;
+      }
       porAtras = true;
       cerrar.current();
     };

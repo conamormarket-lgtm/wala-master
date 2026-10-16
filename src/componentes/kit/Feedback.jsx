@@ -4,6 +4,8 @@ import { AnimatePresence, motion, useDragControls, useMotionValue, useTransform 
 import { CheckCircle2, Info, AlertTriangle, XCircle, X, Sparkles, BellOff, CheckCheck } from 'lucide-react';
 import { useBloquearScroll, useCerrarConAtras } from './Efectos';
 import { FotoProducto } from './piezas/FotoProducto';
+import Boton from './Boton';
+import { Texto, useTexto } from './Traduccion';
 import s from './Feedback.module.css';
 
 const ICONOS = { exito: CheckCircle2, info: Info, aviso: AlertTriangle, error: XCircle };
@@ -20,16 +22,17 @@ const SALE = { type: 'tween', duration: 0.26, ease: [0.4, 0, 1, 1] };
  */
 export function Aviso({ tipo = 'info', titulo, children, accion, onCerrar, icono, compacto = false }) {
   const Icono = ICONOS[tipo];
+  const cerrar = useTexto('Cerrar aviso');
   return (
     <div className={[s.caja, s[tipo], compacto && s.compacto].filter(Boolean).join(' ')} role={tipo === 'error' ? 'alert' : 'status'}>
       <span className={s.avisoIcono}>{icono || <Icono aria-hidden="true" />}</span>
       <div className={s.avisoTexto}>
-        {titulo && <p className={s.avisoTitulo}>{titulo}</p>}
-        {children && <p>{children}</p>}
+        {titulo && <p className={s.avisoTitulo}><Texto>{titulo}</Texto></p>}
+        {children && <p><Texto>{children}</Texto></p>}
         {accion && <div className={s.avisoAccion}>{accion}</div>}
       </div>
       {onCerrar && (
-        <button type="button" className={s.cerrar} onClick={onCerrar} aria-label="Cerrar aviso">
+        <button type="button" className={s.cerrar} onClick={onCerrar} aria-label={cerrar}>
           <X aria-hidden="true" />
         </button>
       )}
@@ -278,6 +281,9 @@ export function EstadoVacio({ imagen = '/assets/kapi/kapi-sad.webp', titulo, tex
 
 const enEscritorio = () => typeof window !== 'undefined' && window.matchMedia('(min-width: 720px)').matches;
 
+/* Lo que recibe el foco con Tab (para que no se escape de la hoja). */
+const ENFOCABLES = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 /**
  * Hoja inferior (móvil / app) y modal centrado (escritorio).
  * Móvil: sube desde abajo con la curva de las hojas nativas, sin rebote;
@@ -285,16 +291,27 @@ const enEscritorio = () => typeof window !== 'undefined' && window.matchMedia('(
  * tocando fuera, con Esc o con el botón atrás de Android. El fondo de la
  * página no se mueve mientras está abierta.
  * `contenida`: se dibuja dentro de su marco (la maqueta de teléfono).
+ *  - bloqueada: mientras sea true no se cierra de ninguna forma (X, fuera,
+ *    Esc, arrastre ni "atrás"): un pago o un guardado en curso
+ *  - tamano: ancho de la ventana en escritorio: 'sm' (400) · 'md' (480) · 'lg' (640)
+ * El foco queda dentro mientras está abierta (Tab da la vuelta) y vuelve a
+ * donde estaba al cerrarla.
  */
-export function HojaInferior({ abierta, onCerrar, titulo, acciones, children, pie, contenida = false }) {
+export function HojaInferior({ abierta, onCerrar, titulo, acciones, children, pie, contenida = false, bloqueada = false, tamano = 'md' }) {
   const panelRef = useRef(null);
+  const tituloTraducido = useTexto(titulo);
+  const textoCerrar = useTexto('Cerrar');
+  const bloqueadaRef = useRef(bloqueada);
+  bloqueadaRef.current = bloqueada;
+  // Todo cierre pasa por aquí: bloqueada, no se cierra.
+  const pedirCierre = () => { if (!bloqueadaRef.current) onCerrar?.(); };
   const controles = useDragControls();
   const modal = !contenida && enEscritorio();
   const arrastre = useMotionValue(0);
   const opacidadFondo = useTransform(arrastre, (v) => (typeof v === 'number' ? Math.max(0.15, 1 - v / 420) : 1));
 
   useBloquearScroll(abierta && !contenida);
-  useCerrarConAtras(abierta && !contenida, onCerrar);
+  useCerrarConAtras(abierta && !contenida, onCerrar, bloqueada);
 
   // onCerrar por referencia: casi siempre llega como función nueva en cada
   // render, y si el efecto dependiera de ella, cada tecla escrita en un campo
@@ -306,12 +323,33 @@ export function HojaInferior({ abierta, onCerrar, titulo, acciones, children, pi
     const previo = document.activeElement;
     const t = window.setTimeout(() => panelRef.current?.focus({ preventScroll: true }), 40);
     const onKey = (e) => {
-      if (e.key !== 'Escape') return;
-      // Con otra ventana encima (una lista abierta desde esta hoja), Esc es
-      // de ella: esta solo se cierra si el foco está adentro o en ningún lado.
+      const panel = panelRef.current;
       const foco = document.activeElement;
-      if (foco && foco !== document.body && !panelRef.current?.contains(foco)) return;
-      cerrarRef.current?.();
+      // Con otra ventana encima (una lista abierta desde esta hoja), las
+      // teclas son de ella: esta solo responde si el foco está adentro o en
+      // ningún lado.
+      if (foco && foco !== document.body && !panel?.contains(foco)) return;
+      if (e.key === 'Escape') {
+        if (!bloqueadaRef.current) cerrarRef.current?.();
+        return;
+      }
+      // Tab da la vuelta dentro de la hoja.
+      if (e.key !== 'Tab' || !panel) return;
+      const enfocables = [...panel.querySelectorAll(ENFOCABLES)].filter((el) => el.offsetParent !== null);
+      if (!enfocables.length) {
+        e.preventDefault();
+        panel.focus();
+        return;
+      }
+      const primero = enfocables[0];
+      const ultimo = enfocables[enfocables.length - 1];
+      if (e.shiftKey && (foco === primero || foco === panel)) {
+        e.preventDefault();
+        ultimo.focus();
+      } else if (!e.shiftKey && foco === ultimo) {
+        e.preventDefault();
+        primero.focus();
+      }
     };
     document.addEventListener('keydown', onKey);
     return () => {
@@ -340,27 +378,28 @@ export function HojaInferior({ abierta, onCerrar, titulo, acciones, children, pi
             animate={{ opacity: 1, transition: { duration: 0.3 } }}
             exit={{ opacity: 0, transition: { duration: 0.24 } }}
           >
-            <motion.div className={s.velo} style={{ opacity: opacidadFondo }} onClick={onCerrar} />
+            <motion.div className={s.velo} style={{ opacity: opacidadFondo }} onClick={pedirCierre} />
           </motion.div>
           <motion.div
             ref={panelRef}
-            className={[s.hoja, modal && s.hojaModal].filter(Boolean).join(' ')}
+            className={[s.hoja, modal && s.hojaModal, modal && s[`hoja_${tamano}`]].filter(Boolean).join(' ')}
             role="dialog"
             aria-modal="true"
-            aria-label={titulo}
+            aria-label={typeof tituloTraducido === 'string' ? tituloTraducido : undefined}
+            aria-busy={bloqueada || undefined}
             tabIndex={-1}
             style={modal ? undefined : { y: arrastre }}
             initial={modal ? { opacity: 0, scale: 0.97, y: 8 } : { y: '100%' }}
             animate={modal ? { opacity: 1, scale: 1, y: 0, transition: { duration: 0.22, ease: [0.16, 1, 0.3, 1] } } : { y: 0, transition: ENTRA }}
             exit={modal ? { opacity: 0, scale: 0.98, transition: { duration: 0.16 } } : { y: '100%', transition: SALE }}
-            drag={modal ? false : 'y'}
+            drag={modal || bloqueada ? false : 'y'}
             dragControls={controles}
             dragListener={false}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 1 }}
             dragMomentum={false}
             dragTransition={{ bounceStiffness: 500, bounceDamping: 45 }}
-            onDragEnd={(_, info) => { if (info.offset.y > 100 || info.velocity.y > 500) onCerrar(); }}
+            onDragEnd={(_, info) => { if (info.offset.y > 100 || info.velocity.y > 500) pedirCierre(); }}
           >
             {!modal && (
               <div className={s.asaZona} onPointerDown={empezarArrastre} aria-hidden="true">
@@ -368,10 +407,10 @@ export function HojaInferior({ abierta, onCerrar, titulo, acciones, children, pi
               </div>
             )}
             <header className={s.hojaCabeza} onPointerDown={empezarArrastre}>
-              <h3>{titulo}</h3>
+              <h3>{tituloTraducido}</h3>
               <div className={s.hojaAcciones} onPointerDown={(e) => e.stopPropagation()}>
                 {acciones}
-                <button type="button" className={s.cerrar} onClick={onCerrar} aria-label="Cerrar">
+                <button type="button" className={s.cerrar} onClick={pedirCierre} disabled={bloqueada} aria-label={textoCerrar}>
                   <X aria-hidden="true" />
                 </button>
               </div>
@@ -389,4 +428,88 @@ export function HojaInferior({ abierta, onCerrar, titulo, acciones, children, pi
   // fixed quedaría atrapado en ese contenedor en vez de cubrir la pantalla.
   if (contenida || typeof document === 'undefined') return hoja;
   return createPortal(hoja, document.body);
+}
+
+/* ── Confirmar ─────────────────────────────────────────── */
+
+/**
+ * Pregunta antes de algo que no se deshace (quitar del carrito, eliminar una
+ * dirección…). Es una HojaInferior chica: hoja en el celular, ventana en
+ * escritorio. Reemplaza al confirm() del navegador.
+ *  - titulo, texto  · confirmar: el botón ('Sí') · cancelar ('Cancelar')
+ *  - peligro: el botón de confirmar en rojo (borrar, vaciar)
+ *  - onConfirmar → puede ser una promesa: mientras dura, la hoja queda
+ *    bloqueada y el botón cargando  · onCancelar
+ */
+export function Confirmar({ abierta, titulo, texto, confirmar = 'Sí', cancelar = 'Cancelar', peligro = false, onConfirmar, onCancelar, contenida = false }) {
+  const [cargando, setCargando] = useState(false);
+  const aceptar = async () => {
+    setCargando(true);
+    try {
+      await onConfirmar?.();
+    } finally {
+      setCargando(false);
+    }
+  };
+  return (
+    <HojaInferior
+      abierta={abierta}
+      onCerrar={onCancelar}
+      titulo={titulo}
+      tamano="sm"
+      bloqueada={cargando}
+      contenida={contenida}
+      pie={(
+        <div className={s.confirmarAcciones}>
+          <Boton variante="fantasma" onClick={onCancelar} disabled={cargando}><Texto>{cancelar}</Texto></Boton>
+          <Boton variante={peligro ? 'peligro' : 'primario'} onClick={aceptar} cargando={cargando}><Texto>{confirmar}</Texto></Boton>
+        </div>
+      )}
+    >
+      {texto && <p className={s.confirmarTexto}><Texto>{texto}</Texto></p>}
+    </HojaInferior>
+  );
+}
+
+const ConfirmarCtx = createContext(null);
+
+/**
+ * Para pasar de window.confirm() sin rehacer la lógica: el proveedor dibuja
+ * una sola <Confirmar> y useConfirmar() devuelve una función que la abre y
+ * resuelve true / false, como confirm() pero sin congelar la página.
+ *   const confirmar = useConfirmar();
+ *   if (!(await confirmar({ titulo: '¿Eliminar la dirección?', peligro: true, confirmar: 'Eliminar' }))) return;
+ */
+export function ProveedorConfirmar({ children, contenida = false }) {
+  const [pedido, setPedido] = useState(null);
+  const confirmar = useCallback((opciones = {}) => new Promise((resolver) => {
+    setPedido({ ...opciones, abierta: true, resolver });
+  }), []);
+  const responder = (si) => {
+    pedido?.resolver(si);
+    // Se cierra con su animación; los textos quedan hasta que termina.
+    setPedido((p) => (p ? { ...p, abierta: false } : p));
+  };
+  return (
+    <ConfirmarCtx.Provider value={confirmar}>
+      {children}
+      <Confirmar
+        abierta={Boolean(pedido?.abierta)}
+        titulo={pedido?.titulo}
+        texto={pedido?.texto}
+        confirmar={pedido?.confirmar}
+        cancelar={pedido?.cancelar}
+        peligro={pedido?.peligro}
+        contenida={contenida}
+        onConfirmar={() => responder(true)}
+        onCancelar={() => responder(false)}
+      />
+    </ConfirmarCtx.Provider>
+  );
+}
+
+/** confirmar(opciones) → Promise<boolean>. Sin proveedor, el confirm() del navegador. */
+export function useConfirmar() {
+  const confirmar = useContext(ConfirmarCtx);
+  return confirmar || ((o = {}) => Promise.resolve(window.confirm([o.titulo, o.texto].filter(Boolean).join('\n\n'))));
 }
