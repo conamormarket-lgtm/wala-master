@@ -55,3 +55,18 @@ cambiado) y borrar también su CSS.
 | `pages/Tienda/components/ProductCard/` (`ProductCard.jsx` + `.module.css`; con reseñas inventadas) | nadie (ya estaba sin uso) | — | nadie | **listo para borrar** |
 | `components/common/ProductCardSkeleton/` | `FeaturedCarousel`, `CollectionCarousel`, `FlashSales` mientras cargan | `EsqueletoProducto` del kit | esos tres | con la carga (paso 7, CARGA.md) |
 
+## Paso 5: secciones del builder (inicio)
+
+Cada tipo pasa al kit primero en el inicio (`/`); en `/tienda`, las marcas y
+las landings sigue el componente viejo hasta su paso. Todos siguen cargados
+por `pages/Tienda/services/seccionesPorTipo.jsx` y por el interruptor
+`seccionesViejo`.
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/Tienda/components/AnnouncementBar/` | `announcement_bar` | `BarraAnuncios` (`SeccionDelKit`) | `seccionesPorTipo.jsx` (`/tienda`, marcas, landings, `seccionesViejo`) | cuando esas páginas pasen al kit y se retire `seccionesViejo` |
+| `pages/Tienda/components/HeroCarousel/` | `hero_carousel` | `HeroCarrusel` | ídem | ídem |
+| `pages/Tienda/components/TrustBadges/` | `trust_badges` | `InsigniasConfianza` | ídem | ídem |
+| `pages/Tienda/components/Testimonials/` | `testimonials` | `Testimonios` | ídem y `VisualEditorPanel.jsx` (editor viejo, paso 8) | ídem y con el editor del kit |
+| `pages/Tienda/components/FaqAccordion/` | `faq_accordion` | `PreguntasFrecuentes` (sin Kapi con sesión) | ídem | ídem |
+

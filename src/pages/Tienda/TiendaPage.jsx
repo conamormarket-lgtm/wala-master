@@ -1,4 +1,11 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect, Suspense } from 'react';
+// Secciones del inicio con el kit (paso 5 de la migración). seccionesViejo
+// (useLoViejo) vuelve a los componentes de antes; lo viejo, en guia/ELIMINAR.md.
+import { SeccionDelKit } from '../../componentes/kit/Secciones';
+import { enlaceWhatsApp } from '../../componentes/kit/piezas/Flotantes';
+import useLoViejo from '../../hooks/useLoViejo';
+import useWhatsAppDeLaRuta from '../../components/marco/useWhatsAppDeLaRuta';
+import { useAuth } from '../../contexts/AuthContext';
 import { Plus } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useInfiniteQuery, keepPreviousData, useIsFetching, useQueryClient } from '@tanstack/react-query';
@@ -910,8 +917,28 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // ¿Está vacío el catálogo? (respeta el spinner: durante la carga no se da por vacío)
   const catalogIsEmpty = !catalogLoadingResolved && catalogProducts.length === 0;
 
+  // ── Secciones con el kit: por ahora solo en el inicio y estos tipos ──
+  const seccionesViejo = useLoViejo('secciones');
+  const whatsappTienda = useWhatsAppDeLaRuta();
+  const { userProfile } = useAuth();
+  const TIPOS_DEL_KIT = new Set(['announcement_bar', 'hero_carousel', 'trust_badges', 'testimonials', 'faq_accordion']);
+  const usaKit = (section) => pageId === 'home' && !seccionesViejo && TIPOS_DEL_KIT.has(section.type);
+  const seccionDelKit = (section) => {
+    // Lo de la primera pantalla carga ya (como antes, sin esperar a bajar).
+    const indice = configuredSections.findIndex((x) => x.id === section.id);
+    const datos = {};
+    if (section.type === 'faq_accordion') {
+      // "Escríbenos" con el WhatsApp de la página; y un solo Kapi a la vista:
+      // con sesión ya está el flotante.
+      datos.contacto = whatsappTienda ? enlaceWhatsApp(whatsappTienda.numero) : undefined;
+      datos.sinKapi = Boolean(userProfile);
+    }
+    return <SeccionDelKit key={section.id} seccion={section} primera={indice >= 0 && indice < initialSectionCount(configuredSections)} {...datos} />;
+  };
+
   const renderSection = (section) => {
     const s = section.settings || {};
+    if (usaKit(section)) return seccionDelKit(section);
     switch (section.type) {
       case 'header': {
         // Landing específica: "reloj matador" ya tiene otra forma de elegir acabado

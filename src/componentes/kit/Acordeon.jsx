@@ -17,7 +17,8 @@ import s from './Acordeon.module.css';
  */
 export default function Acordeon({ items = [], abiertoInicial = false, multiple = false, variante = 'tarjetas' }) {
   const uid = useId();
-  const inicial = abiertoInicial === true ? [items[0]?.id] : [].concat(abiertoInicial || []);
+  // Sin id, cada item usa p0, p1… (abajo): el primero también.
+  const inicial = abiertoInicial === true ? [items[0]?.id ?? 'p0'] : [].concat(abiertoInicial || []);
   const [abiertos, setAbiertos] = useState(() => inicial.filter((x) => x != null));
 
   const alternar = (id) => setAbiertos((a) => {

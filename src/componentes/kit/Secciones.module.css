@@ -360,12 +360,20 @@ a.anuncio:hover {
 /* ── Íconos de confianza ── */
 .insignias {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(140px, 45%), 1fr));
+  /* De a dos (parejas, sin una suelta) hasta que entren todas en fila: con
+     columnas angostas "personalizados" se partía a la mitad. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
   align-items: stretch;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+@container (min-width: 900px) {
+  .insignias {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
 }
 
 

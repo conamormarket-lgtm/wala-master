@@ -11,6 +11,12 @@
   overflow-x: clip;
 }
 
+/* Si la sección no tiene nada que mostrar (sin productos, sin mensajes…),
+   no queda un hueco con su relleno. */
+.bloque:has(> .contenido:empty) {
+  display: none;
+}
+
 .contenido {
   /* Contenedor: las secciones se acomodan a SU ancho, no al de la ventana
      (así la vista de celular del editor se ve como en un celular). */
