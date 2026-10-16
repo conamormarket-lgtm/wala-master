@@ -3,6 +3,7 @@ import { getCollection, getDocument, createDocument, updateDocument, deleteDocum
 // Visual). Se importan para que la plantilla de página de marca no duplique
 // decenas de campos ni se quede desfasada cuando cambien esos defaults.
 import { getDefaultSettings } from '../pages/Tienda/services/storefront';
+import { BLOQUES_MARCA } from '../componentes/kit/adaptadores';
 
 const COLLECTION = 'tienda_brands';
 
@@ -50,6 +51,32 @@ const normalizeCategoryNav = (categoryNav) => {
       imageUrl: item.imageUrl || '',
       order: typeof item.order === 'number' ? item.order : idx
     }));
+};
+
+/**
+ * Normaliza la `identidad` de la página de una marca (la lee identidadDeMarca
+ * del kit): { color, color2 } en hex de 6, estilo 'foto' | 'color' |
+ * 'collage', imagen (URL de Storage), frase de una línea y los bloques de
+ * BLOQUES_MARCA en su orden. Un campo vacío no se guarda (updateDocument quita
+ * los '') y la página usa su valor por defecto. Los bloques nunca quedan
+ * vacíos: una lista vacía tampoco se guardaría y la página volvería a
+ * mostrarlos todos.
+ */
+const normalizeIdentidad = (identidad) => {
+  const i = identidad && typeof identidad === 'object' ? identidad : {};
+  const hex = (v) => {
+    const t = String(v || '').trim().toLowerCase();
+    return /^#[0-9a-f]{6}$/.test(t) ? t : '';
+  };
+  const bloques = Array.isArray(i.bloques) ? BLOQUES_MARCA.filter((b) => i.bloques.includes(b)) : [];
+  return {
+    color: hex(i.color),
+    color2: hex(i.color2),
+    estilo: ['foto', 'color', 'collage'].includes(i.estilo) ? i.estilo : 'color',
+    imagen: String(i.imagen || '').trim(),
+    frase: String(i.frase || '').replace(/\s+/g, ' ').trim(),
+    bloques: bloques.length ? bloques : BLOQUES_MARCA
+  };
 };
 
 /**
@@ -401,7 +428,7 @@ export const dedupeBrandLandings = async () => {
 
 /**
  * Crear marca (Firestore genera ID)
- * @param {{ name: string, slug?: string, logoUrl?: string, order: number, bgColor?: string, bgImage?: string, bgOpacity?: number, categoryNav?: Array, categoryNavStyle?: { align?: string, animation?: string }, storeTitle?: string, storeSubtitle?: string, storeEmpty?: string }} data
+ * @param {{ name: string, slug?: string, logoUrl?: string, order: number, bgColor?: string, bgImage?: string, bgOpacity?: number, categoryNav?: Array, categoryNavStyle?: { align?: string, animation?: string }, storeTitle?: string, storeSubtitle?: string, storeEmpty?: string, identidad?: { color?: string, color2?: string, estilo?: string, imagen?: string, frase?: string, bloques?: string[] } }} data
  */
 export const createBrand = async (data) => {
   // Slug de primera clase: si viene explícito se respeta (normalizado); si no, se
@@ -426,7 +453,9 @@ export const createBrand = async (data) => {
     // global de la colección 'messages').
     storeTitle: data.storeTitle || '',
     storeSubtitle: data.storeSubtitle || '',
-    storeEmpty: data.storeEmpty || ''
+    storeEmpty: data.storeEmpty || '',
+    // Identidad de su página (color, portada, frase y bloques). Solo si viene.
+    ...(data.identidad !== undefined && { identidad: normalizeIdentidad(data.identidad) })
   });
 
   // Auto-crear su página de marca con la plantilla COMPLETA (hero, nav de
@@ -446,7 +475,7 @@ export const createBrand = async (data) => {
 /**
  * Actualizar marca
  * @param {string} id
- * @param {{ name?: string, slug?: string, logoUrl?: string, order?: number, bgColor?: string, bgImage?: string, bgOpacity?: number, categoryNav?: Array, categoryNavStyle?: { align?: string, animation?: string }, storeTitle?: string, storeSubtitle?: string, storeEmpty?: string }} data
+ * @param {{ name?: string, slug?: string, logoUrl?: string, order?: number, bgColor?: string, bgImage?: string, bgOpacity?: number, categoryNav?: Array, categoryNavStyle?: { align?: string, animation?: string }, storeTitle?: string, storeSubtitle?: string, storeEmpty?: string, identidad?: { color?: string, color2?: string, estilo?: string, imagen?: string, frase?: string, bloques?: string[] } }} data
  */
 export const updateBrand = async (id, data) => {
   const payload = {};
@@ -473,6 +502,8 @@ export const updateBrand = async (id, data) => {
   if (data.storeTitle !== undefined) payload.storeTitle = data.storeTitle;
   if (data.storeSubtitle !== undefined) payload.storeSubtitle = data.storeSubtitle;
   if (data.storeEmpty !== undefined) payload.storeEmpty = data.storeEmpty;
+  // Identidad de la página de la marca: el mapa entero se reescribe.
+  if (data.identidad !== undefined) payload.identidad = normalizeIdentidad(data.identidad);
   return await updateDocument(COLLECTION, id, payload);
 };
 

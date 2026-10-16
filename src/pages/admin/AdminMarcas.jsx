@@ -7,6 +7,7 @@ import { Edit2, Trash2, UploadCloud, Palette, ImageIcon, ImagePlus, MessageCircl
 import Button from '../../components/common/Button';
 import AdminImageCropper from '../../components/admin/AdminImageCropper/AdminImageCropper';
 import AdminMarcaProductos from './AdminMarcaProductos';
+import IdentidadPaginaMarca, { IDENTIDAD_VACIA, identidadDelDoc } from './IdentidadPaginaMarca';
 import styles from './AdminMarcas.module.css';
 
 const hexToRgba = (hex, alpha) => {
@@ -20,7 +21,7 @@ const hexToRgba = (hex, alpha) => {
 const AdminMarcas = () => {
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '' });
+  const [form, setForm] = useState({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '', identidad: IDENTIDAD_VACIA });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [bgUploading, setBgUploading] = useState(false);
@@ -46,7 +47,7 @@ const AdminMarcas = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       queryClient.invalidateQueries({ queryKey: ['brands'] });
-      setForm({ name: '', slug: '', logoUrl: '', order: (brandsData?.length ?? 0), bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '' });
+      setForm({ name: '', slug: '', logoUrl: '', order: (brandsData?.length ?? 0), bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '', identidad: IDENTIDAD_VACIA });
     }
   });
 
@@ -56,7 +57,7 @@ const AdminMarcas = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       queryClient.invalidateQueries({ queryKey: ['brands'] });
       setEditingId(null);
-      setForm({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '' });
+      setForm({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '', identidad: IDENTIDAD_VACIA });
     }
   });
 
@@ -150,7 +151,9 @@ const AdminMarcas = () => {
       // Mensajes de tienda propios de la marca (opcionales, vacío = usa el global).
       storeTitle: (form.storeTitle || '').trim(),
       storeSubtitle: (form.storeSubtitle || '').trim(),
-      storeEmpty: (form.storeEmpty || '').trim()
+      storeEmpty: (form.storeEmpty || '').trim(),
+      // Identidad de la página de la marca (brands.js la normaliza).
+      identidad: form.identidad
     };
     if (editingId) {
       updateMutation.mutate({ id: editingId, data: payload });
@@ -172,14 +175,15 @@ const AdminMarcas = () => {
       whatsappNumber: brand.whatsappNumber || '',
       storeTitle: brand.storeTitle || '',
       storeSubtitle: brand.storeSubtitle || '',
-      storeEmpty: brand.storeEmpty || ''
+      storeEmpty: brand.storeEmpty || '',
+      identidad: identidadDelDoc(brand)
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setForm({ name: '', slug: '', logoUrl: '', order: brands.length, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '' });
+    setForm({ name: '', slug: '', logoUrl: '', order: brands.length, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '', identidad: IDENTIDAD_VACIA });
   };
 
   const handleLogoUpload = async (e) => {
@@ -618,6 +622,12 @@ const AdminMarcas = () => {
             </div>
           </div>
         </div>
+
+        <IdentidadPaginaMarca
+          valor={form.identidad}
+          onChange={(identidad) => setForm((f) => ({ ...f, identidad }))}
+          marca={{ id: editingId, name: form.name, logoUrl: form.logoUrl, bgColor: form.bgColor }}
+        />
 
         <div className={styles.formFooter}>
           {editingId && (
