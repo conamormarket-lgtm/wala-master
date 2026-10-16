@@ -37,6 +37,12 @@ const nuevoId = () => `c${Date.now().toString(36)}${Math.random().toString(36).s
 const MOD = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || '') ? '⌘' : 'Ctrl';
 const ZOOM_MAX = NIVELES_ZOOM[NIVELES_ZOOM.length - 1];
 const limitar = (v, a, b) => Math.min(b, Math.max(a, v));
+const conRaton = () => typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
+const enTelefono = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
+/** Una zona larga (una manga): el texto nuevo va girado, a lo largo. */
+const esLarga = (z) => (z?.proporcion || 0) > 1.8;
+/** Dónde va lo nuevo si la zona ya tiene algo: arriba y abajo del centro, como la tienda. */
+const CORRIMIENTOS = [0, 0.22, -0.22, 0.36, -0.36];
 
 /**
  * Medio ancho y medio alto aproximados de una capa (0–1 de su zona), para
@@ -74,13 +80,18 @@ const calidadPorDefecto = (capa, zona) => {
  * ¿Una parte de la imagen queda fuera de su zona? (no se imprime). Del texto
  * no se sabe el ancho aquí: lo avisa la tienda con `fueraDeZona`.
  */
-const fueraPorDefecto = (capa) => {
+const fueraPorDefecto = (capa, zona) => {
   if (capa?.tipo !== 'imagen') return false;
-  const medioAncho = (capa.ancho ?? 0.8) / 2;
-  const medioAlto = capa.aspecto ? (medioAncho * capa.aspecto) : 0;
+  // Las esquinas giradas, en fracción de la zona (el alto, en anchos de zona).
+  const prop = zona?.proporcion || 1;
+  const w = capa.ancho ?? 0.8;
+  const h = capa.aspecto ? w * capa.aspecto : 0;
+  const a = ((capa.angulo || 0) * Math.PI) / 180;
+  const ex = (Math.abs(Math.cos(a)) * w + Math.abs(Math.sin(a)) * h) / 2;
+  const ey = (Math.abs(Math.sin(a)) * w + Math.abs(Math.cos(a)) * h) / 2 / prop;
   const x = capa.x ?? 0.5;
   const y = capa.y ?? 0.5;
-  return x - medioAncho < -0.01 || x + medioAncho > 1.01 || (medioAlto > 0 && (y - medioAlto < -0.01 || y + medioAlto > 1.01));
+  return x - ex < -0.01 || x + ex > 1.01 || (h > 0 && (y - ey < -0.01 || y + ey > 1.01));
 };
 
 /**
@@ -172,10 +183,15 @@ export function PaginaEstudio({
   const elegidas = varios.length > 1 ? varios : seleccion ? [seleccion] : [];
   const [zoom, setZoomEstado] = useState(1);
   const [camara, setCamara] = useState({ x: 0, y: 0 });
-  const setZoom = (z) => { const nz = limitar(z, 1, ZOOM_MAX); setZoomEstado(nz); if (nz === 1) setCamara({ x: 0, y: 0 }); };
+  const setZoom = (z) => { const nz = limitar(z, 1, ZOOM_MAX); zoomAuto.current = false; setZoomEstado(nz); if (nz === 1) setCamara({ x: 0, y: 0 }); };
   const [espacio, setEspacio] = useState(false); // Espacio mantenida: arrastrar mueve la vista
   const [menu, setMenu] = useState(null); // { x, y, capaId, zonaId, punto }
   const portapapeles = useRef(null); // lo copiado: [{ capa, zonaId }]
+  const pegadas = useRef(0); // cada pegado en la misma zona va un poco más corrido
+  const [editando, setEditando] = useState(null); // el texto que se escribe sobre la prenda
+  const [completa, setCompleta] = useState(false); // teléfono: la prenda entera aunque haya algo elegido
+  const [camaraSuave, setCamaraSuave] = useState(false);
+  const zoomAuto = useRef(false); // el zoom lo puso el acercamiento a la zona (no la persona)
   const [copiarA, setCopiarA] = useState([]); // combo: las otras prendas que llevan este diseño
   const [nombre, setNombre] = useState(inicial.nombre || '');
   const [hoja, setHoja] = useState(null);
@@ -217,13 +233,13 @@ export function PaginaEstudio({
       if (!arrastreInicio.current) arrastreInicio.current = h.capas;
       return { ...h, capas: capasNuevas };
     }
-    return { pasado: [...h.pasado.slice(-29), h.capas], capas: capasNuevas, futuro: [] };
+    return { pasado: [...h.pasado.slice(-79), h.capas], capas: capasNuevas, futuro: [] };
   });
   // El ref se lee fuera del actualizador: React puede llamarlo dos veces.
   const soltar = () => {
     const antes = arrastreInicio.current;
     arrastreInicio.current = null;
-    if (antes) setHistoria((h) => ({ pasado: [...h.pasado.slice(-29), antes], capas: h.capas, futuro: [] }));
+    if (antes) setHistoria((h) => ({ pasado: [...h.pasado.slice(-79), antes], capas: h.capas, futuro: [] }));
   };
   const deshacer = () => setHistoria((h) => (h.pasado.length ? { pasado: h.pasado.slice(0, -1), capas: h.pasado[h.pasado.length - 1], futuro: [h.capas, ...h.futuro] } : h));
   const rehacer = () => setHistoria((h) => (h.futuro.length ? { pasado: [...h.pasado, h.capas], capas: h.futuro[0], futuro: h.futuro.slice(1) } : h));
@@ -231,6 +247,11 @@ export function PaginaEstudio({
   const cambiarCapa = (id, cambios, guardar = true) => cambiarCapas((cs) => Object.fromEntries(
     Object.entries(cs).map(([zid, lista]) => [zid, lista.map((c) => (c.id === id ? { ...c, ...cambios } : c))]),
   ), guardar);
+  /** Un ajuste que hace el lienzo solo (el texto que no entra): va en el mismo paso de deshacer. */
+  const encajar = (id, cambios) => setHistoria((h) => ({
+    ...h,
+    capas: Object.fromEntries(Object.entries(h.capas).map(([zid, lista]) => [zid, lista.map((c) => (c.id === id ? { ...c, ...cambios } : c))])),
+  }));
   /** Quita una o varias capas (las elegidas, si no se dice cuáles). */
   const quitarCapas = (ids = elegidas) => {
     if (!ids.length) return;
@@ -248,7 +269,7 @@ export function PaginaEstudio({
     const id = nuevoId();
     cambiarCapas((cs) => {
       const n = (cs[zid] || []).length;
-      const pos = punto || { x: limitar(0.5 + (n ? 0.06 * (n % 4) : 0), 0.1, 0.9), y: limitar(0.5 + (n ? 0.06 * (n % 4) : 0), 0.1, 0.9) };
+      const pos = punto || { x: 0.5, y: limitar(0.5 + CORRIMIENTOS[n % CORRIMIENTOS.length], 0.1, 0.9) };
       return { ...cs, [zid]: [...(cs[zid] || []), { id, ...pos, ...capa }] };
     });
     if (zid !== zonaId) setZonaId(zid);
@@ -258,8 +279,8 @@ export function PaginaEstudio({
   const escalar = (factor) => {
     const { capa } = elegida;
     if (!capa) return;
-    if (capa.tipo === 'imagen') cambiarCapa(capa.id, { ancho: Math.min(1.5, Math.max(0.1, (capa.ancho ?? 0.8) * factor)) });
-    else cambiarCapa(capa.id, { tamano: Math.min(0.6, Math.max(0.04, (capa.tamano ?? 0.18) * factor)) });
+    if (capa.tipo === 'imagen') cambiarCapa(capa.id, { ancho: limitar((capa.ancho ?? 0.8) * factor, 0.02, 4) });
+    else cambiarCapa(capa.id, { tamano: limitar((capa.tamano ?? 0.18) * factor, 0.01, 2) });
   };
   /** Contra los bordes de su zona (por su tamaño), como en la tienda. */
   const alinear = (donde) => {
@@ -346,6 +367,7 @@ export function PaginaEstudio({
   /* ── Copiar, cortar y pegar (también de un lado al otro) ── */
   const copiar = () => {
     if (!capasElegidas.length) return;
+    pegadas.current = 0;
     portapapeles.current = capasElegidas.map(({ capa, zonaId: zid }) => ({ capa, zonaId: zid }));
     onAviso?.({ tipo: 'info', titulo: capasElegidas.length > 1 ? `Copiaste ${capasElegidas.length} elementos` : 'Copiado' });
   };
@@ -356,7 +378,15 @@ export function PaginaEstudio({
     if (!copiado?.length) return;
     const enVista = new Set((vista?.zonas || []).map((z) => z.id));
     const destino = (zid) => (enVista.has(zid) ? zid : zonaId);
-    const nuevas = copiado.map(({ capa, zonaId: zid }) => ({ zid: destino(zid), capa: { ...capa, id: nuevoId(), x: limitar((capa.x ?? 0.5) + 0.05, 0, 1), y: limitar((capa.y ?? 0.5) + 0.05, 0, 1) } }));
+    pegadas.current += 1;
+    const corrido = 0.04 * pegadas.current;
+    const nuevas = copiado.map(({ capa, zonaId: zid }) => {
+      const z = destino(zid);
+      // En su zona, un poco corrido (cada vez más); en otra, al centro y que entre.
+      return z === zid
+        ? { zid: z, capa: { ...capa, id: nuevoId(), x: limitar((capa.x ?? 0.5) + corrido, 0, 1), y: limitar((capa.y ?? 0.5) + corrido, 0, 1) } }
+        : { zid: z, capa: { ...capa, id: nuevoId(), x: 0.5, y: 0.5, ...(capa.tipo === 'imagen' && { ancho: Math.min(capa.ancho ?? 0.8, 0.8) }) } };
+    });
     cambiarCapas((cs) => nuevas.reduce((acc, { zid, capa }) => ({ ...acc, [zid]: [...(acc[zid] || []), capa] }), cs));
     const ids = nuevas.map((n) => n.capa.id);
     if (ids.length > 1) { setSeleccionUna(null); setVarios(ids); } else setSeleccion(ids[0]);
@@ -377,6 +407,28 @@ export function PaginaEstudio({
     const z = todasLasZonas.find((x) => x.id === destino);
     setZonaId(destino);
     if (z) setVistaId(z.vista.id);
+  };
+
+  /**
+   * Arrastrada fuera de su zona y soltada sobre otra de este lado: pasa a esa
+   * donde se soltó. Si no entra, al 90% y al centro; un texto en una zona
+   * larga va girado (como la tienda). Un solo paso de deshacer.
+   */
+  const pasarCapa = (id, destino, punto) => {
+    const { capa, zonaId: origen } = ubicar(id);
+    const z = todasLasZonas.find((x) => x.id === destino);
+    if (!capa || !z) { soltar(); return; }
+    let nueva = { ...capa, ...punto };
+    if (capa.tipo === 'imagen' && (capa.ancho ?? 0.8) > 0.9) nueva = { ...nueva, ancho: 0.9, x: 0.5, y: 0.5 };
+    if (capa.tipo === 'texto' && esLarga(z) && !esLarga(todasLasZonas.find((x) => x.id === origen)) && !(capa.angulo % 180)) nueva = { ...nueva, angulo: 90 };
+    cambiarCapas((cs) => ({ ...cs, [origen]: cs[origen].filter((c) => c.id !== id), [destino]: [...(cs[destino] || []), nueva] }), false);
+    soltar();
+    setZonaId(destino);
+  };
+  /** El recuadro del ratón: lo que tocó (con Shift, se suma a lo elegido). */
+  const elegirVarias = (ids, { sumar } = {}) => {
+    const lista = sumar ? [...new Set([...elegidas, ...ids])] : ids;
+    if (lista.length > 1) { setSeleccionUna(null); setVarios(lista); } else setSeleccion(lista[0] || null);
   };
 
   const elegirZona = (id) => {
@@ -463,10 +515,28 @@ export function PaginaEstudio({
     }
   };
   /** Un texto nuevo (en la zona elegida, o donde se hizo doble clic). */
-  const escribirTexto = ({ zid = zonaId, punto, texto = 'Tu texto' } = {}) => agregarCapa({
-    tipo: 'texto', texto, fuente: fuentes[0]?.valor, tamano: 0.2, negrita: true,
-    color: color?.oscura ? '#FFFFFF' : '#111111',
-  }, { zid, punto });
+  const escribirTexto = ({ zid = zonaId, punto, texto = 'Tu texto', editar = true } = {}) => {
+    const larga = esLarga(todasLasZonas.find((z) => z.id === zid));
+    const id = agregarCapa({
+      tipo: 'texto', texto, fuente: fuentes[0]?.valor, tamano: larga ? 0.5 : 0.2, negrita: true,
+      color: color?.oscura ? '#FFFFFF' : '#111111', ...(larga && { angulo: 90 }),
+    }, { zid, punto });
+    // En la computadora se escribe ahí mismo, con todo elegido (como la tienda).
+    if (editar && conRaton()) setEditando(id);
+    return id;
+  };
+  /** Mientras se escribe sobre la prenda (un solo paso de deshacer al terminar). */
+  const escribir = (id, texto) => cambiarCapa(id, { texto }, false);
+  /** Al terminar de escribir: si quedó vacío, se quita. */
+  const terminarTexto = (id) => {
+    setEditando((e) => (e === id ? null : e));
+    const { capa } = ubicar(id);
+    if (capa && !String(capa.texto || '').trim()) {
+      cambiarCapas((cs) => Object.fromEntries(Object.entries(cs).map(([zid, lista]) => [zid, lista.filter((c) => c.id !== id)])), false);
+      setSeleccion(null);
+    }
+    soltar();
+  };
   /** Lleva el foco al campo del texto elegido, para escribir (doble clic en un texto). */
   const escribirEnPanel = () => window.requestAnimationFrame(() => {
     const campo = document.querySelector('[data-componente="PanelCapa"] textarea');
@@ -590,11 +660,11 @@ export function PaginaEstudio({
    * la prenda y la recorren. Se guarda una sola vez, al soltar.
    */
   const gestoBase = useRef(null);
-  const alGesto = ({ fase, factor = 1, giro = 0, centro }) => {
+  const alGesto = ({ fase, factor = 1, giro = 0, centro, desplazar }) => {
     if (fase === 'inicio') {
       const { capa } = elegida;
       gestoBase.current = capa
-        ? { id: capa.id, imagen: capa.tipo === 'imagen', ancho: capa.ancho ?? 0.8, tamano: capa.tamano ?? 0.18, angulo: capa.angulo || 0 }
+        ? { id: capa.id, imagen: capa.tipo === 'imagen', ancho: capa.ancho ?? 0.8, tamano: capa.tamano ?? 0.18, angulo: capa.angulo || 0, x: capa.x ?? 0.5, y: capa.y ?? 0.5 }
         : { zoom, camara, centro };
       return;
     }
@@ -610,9 +680,11 @@ export function PaginaEstudio({
       const derecho = Math.round(angulo / 90) * 90;
       if (Math.abs(angulo - derecho) < 6) angulo = derecho;
       angulo = Math.round(((angulo % 360) + 360) % 360);
+      // El punto medio de los dedos también la mueve.
+      const pos = desplazar ? { x: limitar(b.x + desplazar.x, 0, 1), y: limitar(b.y + desplazar.y, 0, 1) } : {};
       cambiarCapa(b.id, b.imagen
-        ? { ancho: limitar(b.ancho * factor, 0.1, 1.5), angulo }
-        : { tamano: limitar(b.tamano * factor, 0.04, 0.6), angulo }, false);
+        ? { ancho: limitar(b.ancho * factor, 0.02, 4), angulo, ...pos }
+        : { tamano: limitar(b.tamano * factor, 0.01, 2), angulo, ...pos }, false);
       return;
     }
     // El punto de la prenda que estaba bajo los dedos los sigue.
@@ -622,6 +694,61 @@ export function PaginaEstudio({
     setZoomEstado(z);
     setCamara({ x: centro.x - u.x * z, y: centro.y - u.y * z });
   };
+  /**
+   * Teléfono: con algo elegido, la vista se acerca a su zona (con una
+   * animación corta, cuando se levanta el dedo); al soltarlo vuelve a la
+   * prenda entera. "Ver la prenda completa" lo apaga. El zoom a mano manda.
+   */
+  const zonaDeLaElegida = elegida.zonaId;
+  const dedoAbajo = useRef(false);
+  useEffect(() => {
+    const marco = lienzoRef.current?.querySelector('[data-componente="LienzoPrenda"]');
+    const esc = marco?.querySelector('[data-escala]');
+    const animar = (z, cam) => {
+      setCamaraSuave(true);
+      setZoomEstado(z);
+      setCamara(cam);
+      setTimeout(() => setCamaraSuave(false), 300);
+    };
+    if (!zonaDeLaElegida || completa || !enTelefono()) {
+      if (zoomAuto.current) { zoomAuto.current = false; animar(1, { x: 0, y: 0 }); }
+      return undefined;
+    }
+    if (zoom > 1 && !zoomAuto.current) return undefined; // el zoom que puso la persona
+    const el = marco?.querySelector(`[data-zona="${CSS.escape(zonaDeLaElegida)}"]`);
+    if (!el || !esc) return undefined;
+    const acercar = () => {
+      const z0 = todasLasZonas.find((x) => x.id === zonaDeLaElegida);
+      const a = ((z0?.angulo || 0) * Math.PI) / 180;
+      const bw = Math.abs(Math.cos(a)) * el.offsetWidth + Math.abs(Math.sin(a)) * el.offsetHeight;
+      const bh = Math.abs(Math.sin(a)) * el.offsetWidth + Math.abs(Math.cos(a)) * el.offsetHeight;
+      const z = limitar(Math.min(marco.clientWidth / (bw * 1.3), marco.clientHeight / (bh * 1.3)), 1, 3);
+      const u = { x: el.offsetLeft + el.offsetWidth / 2 - esc.offsetWidth / 2, y: el.offsetTop + el.offsetHeight / 2 - esc.offsetHeight / 2 };
+      zoomAuto.current = true;
+      animar(z, { x: -u.x * z, y: -u.y * z });
+    };
+    // Si el dedo sigue abajo (arrastrando), espera a que se levante.
+    if (dedoAbajo.current) {
+      window.addEventListener('pointerup', acercar, { once: true });
+      return () => window.removeEventListener('pointerup', acercar);
+    }
+    acercar();
+    return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zonaDeLaElegida, completa]);
+  useEffect(() => { if (!seleccion) setCompleta(false); }, [seleccion]);
+  useEffect(() => {
+    const abajo = (e) => { if (e.pointerType === 'touch') dedoAbajo.current = true; };
+    const arriba = () => { dedoAbajo.current = false; };
+    window.addEventListener('pointerdown', abajo, true);
+    window.addEventListener('pointerup', arriba, true);
+    window.addEventListener('pointercancel', arriba, true);
+    return () => {
+      window.removeEventListener('pointerdown', abajo, true);
+      window.removeEventListener('pointerup', arriba, true);
+      window.removeEventListener('pointercancel', arriba, true);
+    };
+  }, []);
   const cerrarGuia = () => { setGuia(false); onGuiaGestosVista?.(); };
   /** En el celular el panel queda debajo: "Editar" baja hasta él. */
   const irAlPanel = () => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -643,7 +770,7 @@ export function PaginaEstudio({
   // Atajos de teclado (no mientras se escribe en un campo ni con una hoja abierta). Ver AtajosEstudio.
   const teclas = useRef(null);
   teclas.current = (e) => {
-    if (e.target.closest?.('input, textarea, select, [contenteditable="true"], [role="dialog"], [role="menu"]')) return;
+    if (e.target.isContentEditable || e.target.closest?.('input, textarea, select, [contenteditable], [role="dialog"], [role="menu"]')) return;
     const ctrl = e.ctrlKey || e.metaKey;
     const tecla = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     if (ctrl && tecla === 'z') { e.preventDefault(); if (e.shiftKey) rehacer(); else deshacer(); return; }
@@ -685,7 +812,7 @@ export function PaginaEstudio({
     if (tecla === 'Delete' || tecla === 'Backspace') { e.preventDefault(); quitarCapas(); return; }
     if (tecla.startsWith('Arrow')) {
       e.preventDefault();
-      const paso = e.shiftKey ? 0.05 : 0.01;
+      const paso = e.shiftKey ? 0.05 : 0.005; // como la tienda: 0,5% (con Shift, 5%)
       const [dx, dy] = { ArrowLeft: [-paso, 0], ArrowRight: [paso, 0], ArrowUp: [0, -paso], ArrowDown: [0, paso] }[tecla];
       moverElegidas(dx, dy);
       return;
@@ -694,8 +821,10 @@ export function PaginaEstudio({
       if (tecla === 'c') centrarVarios();
       return;
     }
-    if (tecla === '+' || tecla === '=') escalar(1.1);
-    else if (tecla === '-') escalar(0.9);
+    if (tecla === '+' || tecla === '=') escalar(1.05);
+    else if (tecla === '-') escalar(1 / 1.05);
+    else if (tecla === 'PageUp') { e.preventDefault(); reordenar(true); }
+    else if (tecla === 'PageDown') { e.preventDefault(); reordenar(false); }
     else if (tecla === 'r') girar(e.shiftKey ? -1 : 1);
     else if (tecla === 'c') cambiarCapa(elegida.capa.id, { x: 0.5, y: 0.5 });
     else if (tecla === 'f' && elegida.capa?.tipo === 'imagen') cambiarCapa(elegida.capa.id, { voltear: !elegida.capa.voltear });
@@ -705,12 +834,12 @@ export function PaginaEstudio({
   // Ctrl+V: una imagen copiada (de otra página o una captura), lo copiado aquí o un texto.
   const pegarEvento = useRef(null);
   pegarEvento.current = (e) => {
-    if (estado || hoja || menu || e.target.closest?.('input, textarea, [contenteditable="true"], [role="dialog"]')) return;
+    if (estado || hoja || menu || e.target.isContentEditable || e.target.closest?.('input, textarea, [contenteditable], [role="dialog"]')) return;
     const archivo = [...(e.clipboardData?.files || [])].find((f) => f.type.startsWith('image/'));
     if (archivo) { e.preventDefault(); subirImagen(archivo); return; }
     if (portapapeles.current?.length) { e.preventDefault(); pegar(); return; }
     const texto = (e.clipboardData?.getData('text/plain') || '').trim();
-    if (texto && zona) { e.preventDefault(); escribirTexto({ texto: texto.slice(0, 120) }); }
+    if (texto && zona) { e.preventDefault(); escribirTexto({ texto: texto.slice(0, 120), editar: false }); }
   };
   useEffect(() => {
     const abajo = (e) => teclas.current(e);
@@ -914,14 +1043,21 @@ export function PaginaEstudio({
             onSoltarCapa: soltar,
             onMenu: setMenu,
             onDobleClic: ({ capaId, zonaId: zid, punto }) => {
-              if (!capaId) { escribirTexto({ zid, punto }); escribirEnPanel(); return; }
+              if (!capaId) { escribirTexto({ zid, punto }); if (!conRaton()) escribirEnPanel(); return; }
               const { capa } = ubicar(capaId);
               setSeleccion(capaId);
-              if (capa?.tipo === 'imagen') { if (sesion) setRecortando(capa); } else escribirEnPanel();
+              if (capa?.tipo === 'imagen') { if (sesion) setRecortando(capa); } else if (conRaton()) setEditando(capaId); else escribirEnPanel();
             },
             onSoltarArchivo: (archivo, zid) => subirImagen(archivo, zid),
             onGesto: alGesto,
             cargando: cargandoDiseno,
+            onPasarCapa: pasarCapa,
+            onElegirVarias: elegirVarias,
+            onEncajar: encajar,
+            editando,
+            onEscribir: escribir,
+            onTerminarTexto: terminarTexto,
+            camaraSuave,
             encima: guia ? <GuiaGestos onEntendido={cerrarGuia} /> : vacio && !cargandoDiseno && zona && zoom === 1 && (
               <div className={s.empezar}>
                 <p>Empieza tu diseño en <strong>{nombreZona(zona)}</strong></p>
@@ -938,8 +1074,8 @@ export function PaginaEstudio({
             onDeshacer={deshacer}
             onRehacer={rehacer}
             elegido={Boolean(elegida.capa)}
-            onAchicar={() => escalar(0.9)}
-            onAgrandar={() => escalar(1.1)}
+            onAchicar={() => escalar(1 / 1.12)}
+            onAgrandar={() => escalar(1.12)}
             onCentrar={() => elegida.capa && cambiarCapa(elegida.capa.id, { x: 0.5, y: 0.5 })}
             onQuitar={() => elegida.capa && quitarCapa(elegida.capa.id)}
             onImagen={() => subirImagen()}
@@ -948,6 +1084,8 @@ export function PaginaEstudio({
             onZoom={setZoom}
             onAtajos={() => setHoja('atajos')}
             onEditar={irAlPanel}
+            completa={completa}
+            onVerCompleta={zoomAuto.current || completa ? () => setCompleta((c) => !c) : undefined}
           />
           {zona && <p className={s.zonaInfo}>Zona elegida: <strong>{nombreZona(zona)}</strong></p>}
         </section>
@@ -977,8 +1115,8 @@ export function PaginaEstudio({
                 sinSesion={!sesion}
                 onCambiar={(c) => cambiarCapa(elegida.capa.id, c)}
                 onListo={() => setSeleccion(null)}
-                onAchicar={() => escalar(0.9)}
-                onAgrandar={() => escalar(1.1)}
+                onAchicar={() => escalar(1 / 1.12)}
+                onAgrandar={() => escalar(1.12)}
                 onCentrar={() => cambiarCapa(elegida.capa.id, { x: 0.5, y: 0.5 })}
                 onAlinear={alinear}
                 onQuitar={() => quitarCapa(elegida.capa.id)}

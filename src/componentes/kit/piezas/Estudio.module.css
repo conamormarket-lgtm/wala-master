@@ -60,7 +60,7 @@
 .zona {
   position: absolute;
   z-index: 1;
-  border: 1.5px dashed rgba(124, 58, 237, 0.4);
+  border: 1.25px dashed rgba(124, 58, 237, 0.45);
   border-radius: 6px;
   container-type: inline-size;
   cursor: pointer;
@@ -88,7 +88,7 @@
 
 .zonaActiva {
   border: 2px dashed var(--violet-500, #8b5cf6);
-  background: rgba(124, 58, 237, 0.06);
+  background: rgba(124, 58, 237, 0.08);
 }
 
 .oscura .zona {
@@ -853,8 +853,9 @@
   color: #c4b5fd;
 }
 
-/* Las asas de lo elegido: las esquinas agrandan, la de arriba gira. Se ven
-   igual con zoom (se dividen por él) y en el celular tienen más área. */
+/* Las asas de lo elegido: círculos blancos con borde violeta (como la
+   tienda). Las esquinas agrandan desde la esquina contraria; la de arriba
+   gira. No crecen con el zoom y en el celular tienen más área. */
 .asas {
   position: absolute;
   z-index: 3;
@@ -864,10 +865,10 @@
 .asa,
 .asaGiro {
   position: absolute;
-  width: calc(12px / var(--zoom, 1));
-  height: calc(12px / var(--zoom, 1));
-  border: calc(2px / var(--zoom, 1)) solid var(--violet-500, #8b5cf6);
-  border-radius: calc(3px / var(--zoom, 1));
+  width: calc(14px / var(--zoom, 1));
+  height: calc(14px / var(--zoom, 1));
+  border: calc(1.5px / var(--zoom, 1)) solid #7c3aed;
+  border-radius: 50%;
   background: #fff;
   box-shadow: 0 1px 3px rgba(28, 20, 51, 0.25);
   pointer-events: auto;
@@ -878,27 +879,26 @@
 .asa::before,
 .asaGiro::before {
   position: absolute;
-  inset: calc(-8px / var(--zoom, 1));
+  inset: calc(-6px / var(--zoom, 1));
   content: '';
 }
 
 @media (pointer: coarse) {
   .asa::before,
   .asaGiro::before {
-    inset: calc(-14px / var(--zoom, 1));
+    inset: calc(-12px / var(--zoom, 1));
   }
 }
 
 /* A 3px de la capa, donde va su borde. */
-.asa_no { top: calc(-3px - 6px / var(--zoom, 1)); left: calc(-3px - 6px / var(--zoom, 1)); cursor: nwse-resize; }
-.asa_ne { top: calc(-3px - 6px / var(--zoom, 1)); right: calc(-3px - 6px / var(--zoom, 1)); cursor: nesw-resize; }
-.asa_so { bottom: calc(-3px - 6px / var(--zoom, 1)); left: calc(-3px - 6px / var(--zoom, 1)); cursor: nesw-resize; }
-.asa_se { bottom: calc(-3px - 6px / var(--zoom, 1)); right: calc(-3px - 6px / var(--zoom, 1)); cursor: nwse-resize; }
+.asa_no { top: calc(-3px - 7px / var(--zoom, 1)); left: calc(-3px - 7px / var(--zoom, 1)); cursor: nwse-resize; }
+.asa_ne { top: calc(-3px - 7px / var(--zoom, 1)); right: calc(-3px - 7px / var(--zoom, 1)); cursor: nesw-resize; }
+.asa_so { bottom: calc(-3px - 7px / var(--zoom, 1)); left: calc(-3px - 7px / var(--zoom, 1)); cursor: nesw-resize; }
+.asa_se { bottom: calc(-3px - 7px / var(--zoom, 1)); right: calc(-3px - 7px / var(--zoom, 1)); cursor: nwse-resize; }
 
 .asaGiro {
-  top: calc(-3px - 30px / var(--zoom, 1));
+  top: calc(-3px - 32px / var(--zoom, 1));
   left: 50%;
-  border-radius: 50%;
   cursor: grab;
   transform: translateX(-50%);
 }
@@ -913,8 +913,8 @@
   top: 100%;
   left: 50%;
   width: calc(1.5px / var(--zoom, 1));
-  height: calc(16px / var(--zoom, 1));
-  background: var(--violet-500, #8b5cf6);
+  height: calc(18px / var(--zoom, 1));
+  background: #7c3aed;
   transform: translateX(-50%);
   content: '';
 }
@@ -922,6 +922,131 @@
 @media (hover: hover) {
   .asa:hover,
   .asaGiro:hover {
-    background: var(--violet-500, #8b5cf6);
+    background: #ede9fe;
+  }
+
+  /* Al pasar el ratón: el borde de lo que se puede tomar. */
+  .capa:not(.capaElegida):hover {
+    outline: 1.5px dashed rgba(124, 58, 237, 0.85);
+    outline-offset: 3px;
+  }
+}
+
+/* Las guías rosadas al mover o agrandar (1px en pantalla con cualquier zoom). */
+.guiasCapa {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.guiaV,
+.guiaH,
+.espacioH,
+.espacioV {
+  position: absolute;
+  display: block;
+}
+
+.guiaV {
+  width: calc(1px / var(--zoom, 1));
+  background: #ec4899;
+  transform: translateX(-50%);
+}
+
+.guiaH {
+  height: calc(1px / var(--zoom, 1));
+  background: #ec4899;
+  transform: translateY(-50%);
+}
+
+/* Espacios iguales: una línea con sus topes y los cm en una pastilla. */
+.espacioH {
+  height: calc(8px / var(--zoom, 1));
+  border-right: calc(1px / var(--zoom, 1)) solid #ec4899;
+  border-left: calc(1px / var(--zoom, 1)) solid #ec4899;
+  background: linear-gradient(#ec4899, #ec4899) center / 100% calc(1px / var(--zoom, 1)) no-repeat;
+  transform: translateY(-50%);
+}
+
+.espacioV {
+  width: calc(8px / var(--zoom, 1));
+  border-top: calc(1px / var(--zoom, 1)) solid #ec4899;
+  border-bottom: calc(1px / var(--zoom, 1)) solid #ec4899;
+  background: linear-gradient(#ec4899, #ec4899) center / calc(1px / var(--zoom, 1)) 100% no-repeat;
+  transform: translateX(-50%);
+}
+
+.espacioCm {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  padding: 0 calc(5px / var(--zoom, 1));
+  border-radius: 999px;
+  background: #ec4899;
+  color: #fff;
+  font-family: var(--fuente-marca, Montserrat, sans-serif);
+  font-size: calc(10px / var(--zoom, 1));
+  font-weight: 700;
+  line-height: calc(16px / var(--zoom, 1));
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+}
+
+/* La medida al agrandar ("12 × 8 cm") o el ángulo al girar. */
+.medida {
+  position: absolute;
+  z-index: 6;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: 6px;
+  background: #1f1530;
+  color: #fff;
+  font-family: var(--fuente-marca, Montserrat, sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+/* El recuadro con el ratón para elegir varias. */
+.recuadro {
+  position: absolute;
+  z-index: 6;
+  border: 1.5px dashed #7c3aed;
+  background: rgba(124, 58, 237, 0.08);
+  pointer-events: none;
+}
+
+/* Al escribir sobre la prenda. */
+.textoEditando {
+  min-width: 1ch;
+  outline: none;
+  cursor: text;
+  caret-color: #7c3aed;
+  user-select: text;
+}
+
+.textoEditando::selection {
+  background: rgba(124, 58, 237, 0.25);
+}
+
+/* El acercamiento automático a la zona (celular): corto y sin rebote. */
+.camaraSuave {
+  transition: transform 260ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .camaraSuave {
+    transition: none;
+  }
+}
+
+/* Solo en el teléfono (donde lo elegido acerca su zona). */
+@media (min-width: 769px) {
+  .soloTelefono {
+    display: none;
   }
 }

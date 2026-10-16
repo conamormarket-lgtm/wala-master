@@ -12,6 +12,7 @@ import { Chip } from '../Etiquetas';
 import { Campo, Cantidad, Casilla, Deslizador, Interruptor, SelectorColor } from '../Formulario';
 import { Sello } from '../Marca';
 import { TituloEditable } from './Ficha';
+import { imanAlMover, imanAlEscalar, enCm } from '../../../utils/guiasInteligentes';
 import s from './Estudio.module.css';
 
 /*
@@ -154,8 +155,18 @@ function TextoCurvo({ capa: c }) {
  *    · oscura: prenda oscura (las guías van en blanco) · guias: false para la
  *    foto final (sin zonas ni nada que tocar)
  *  - onElegirZona(id) · onElegirCapa(id, zonaId, { sumar }) (sumar: con Shift
- *    o Ctrl, suma o quita de la selección) · onMoverCapa(id, { x, y })
- *    mientras se arrastra · onSoltarCapa() al terminar (para deshacer)
+ *    o Ctrl, suma o quita de la selección) · onMoverCapa(id, cambios)
+ *    mientras se arrastra o se usan las asas · onSoltarCapa() al terminar
+ *    (para deshacer)
+ *  - Al arrastrar, guías rosadas e imán (como la tienda: utils/
+ *    guiasInteligentes) contra la zona y los otros diseños; Alt lo apaga.
+ *    onPasarCapa(id, zonaId, punto): se soltó sobre otra zona de este lado
+ *  - onElegirVarias(ids, { sumar }): el recuadro del ratón sobre el fondo
+ *  - onEncajar(id, cambios): un texto que se pasa del 96% de su zona se
+ *    achica (sin un paso de deshacer propio)
+ *  - editando: el texto que se escribe sobre la prenda · onEscribir(id,
+ *    texto) · onTerminarTexto(id)
+ *  - camaraSuave: el cambio de zoom se anima (el acercamiento automático)
  *  - onMenu({ x, y, capaId, zonaId, punto }): clic derecho (x, y de la
  *    ventana; punto: 0–1 de la zona) · onDobleClic({ capaId, zonaId, punto })
  *  - onSoltarArchivo(archivo, zonaId): una imagen arrastrada desde la
@@ -164,35 +175,154 @@ function TextoCurvo({ capa: c }) {
  *    y }) al arrastrar el fondo (con zoom) · moverVista: arrastrar mueve la
  *    vista (Espacio mantenida) · onRueda({ deltaX, deltaY, ctrl, shift, x, y })
  *    (x, y desde el centro del lienzo; la rueda no desplaza la página)
- *  - onGesto({ fase: 'inicio' | 'cambio' | 'fin', factor, giro, centro }):
- *    dos dedos (factor: separación; giro: grados; centro: px desde el centro
- *    del lienzo). La página decide: con una capa elegida la agranda y la
- *    gira; si no, hace zoom.
+ *  - onGesto({ fase: 'inicio' | 'cambio' | 'fin', factor, giro, centro,
+ *    desplazar }): dos dedos (factor: separación; giro: grados; centro: px
+ *    desde el centro del lienzo; desplazar: cuánto se movió el punto medio,
+ *    en 0–1 de la zona de lo elegido). La página decide: con una capa
+ *    elegida la agranda, la gira y la mueve; si no, hace zoom.
  *  - cargando: "Cargando tu diseño…" encima (y aria-busy)
- *  - con onGesto y una capa elegida, sus asas: las esquinas agrandan y
- *    achican, la de arriba gira (llegan por onGesto, como los dos dedos)
+ *  - una capa elegida lleva asas: las esquinas agrandan desde la esquina
+ *    contraria (con imán y "12 × 8 cm"), la de arriba gira (derecha cerca de
+ *    90°; Shift, de 15° en 15°; muestra los grados)
  *  - encima: lo que va sobre el lienzo (empezar…)
  */
+/** La zona mide 1000 unidades de ancho para las guías (como el lienzo de la tienda). */
+const ANCHO_U = 1000;
+
+/**
+ * Un texto que se escribe sobre la prenda (doble clic, o uno nuevo en la
+ * computadora). El contenido lo lleva el navegador: React no lo vuelve a
+ * pintar mientras se escribe (así el cursor no salta).
+ */
+function TextoEnPrenda({ capa, seleccionar, onEscribir, onTerminar }) {
+  const ref = useRef(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    el.textContent = capa.texto || '';
+    el.focus({ preventScroll: true });
+    const rango = document.createRange();
+    rango.selectNodeContents(el);
+    if (!seleccionar) rango.collapse(false); // el cursor al final
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(rango);
+    // Solo al empezar: lo que se escribe ya está en el DOM.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <span
+      ref={ref}
+      className={[s.texto, s.textoEditando].join(' ')}
+      style={estiloTexto(capa)}
+      contentEditable="plaintext-only"
+      suppressContentEditableWarning
+      role="textbox"
+      aria-multiline="true"
+      aria-label="Escribe tu texto"
+      spellCheck={false}
+      onInput={(e) => onEscribir?.(e.currentTarget.innerText.replace(/\n$/, ''))}
+      onBlur={() => onTerminar?.()}
+      onKeyDown={(e) => {
+        e.stopPropagation(); // las teclas son del texto, no del estudio
+        if (e.key === 'Escape') e.currentTarget.blur();
+      }}
+      onPointerDown={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
+    />
+  );
+}
+
 export function LienzoPrenda({
   imagen, foto, tinte, voltear = false, anchoImg = 1000, altoImg = 1200, zonas = [], capas = {},
   zonaActiva, seleccion, oscura = false, guias = true, onElegirZona, onElegirCapa, onMoverCapa, onSoltarCapa,
   onMenu, onDobleClic, onSoltarArchivo, encima, zoom = 1, camara, onCamara, moverVista = false, onRueda, onGesto,
-  cargando = false, className,
+  cargando = false, className, onPasarCapa, onElegirVarias, onEncajar, editando, onEscribir, onTerminarTexto,
+  camaraSuave = false,
 }) {
   const marco = useRef(null);
   const arrastre = useRef(null);
   const paneo = useRef(null);
   const toques = useRef(new Map());
   const gesto = useRef(null);
+  const recuadro = useRef(null);
+  const sinClic = useRef(false); // el clic que sigue a un recuadro no suelta lo elegido
   const [soltarEn, setSoltarEn] = useState(null);
+  const [pasarA, setPasarA] = useState(null); // la zona a la que pasa la capa arrastrada
+  const [ayudas, setAyudas] = useState(null); // { zid, hu, cmPorU, lineas, etiqueta }
+  const [rect, setRect] = useState(null); // el recuadro de selección (px del lienzo)
   const elegidas = Array.isArray(seleccion) ? seleccion : seleccion ? [seleccion] : [];
+
+  /* ── Medidas en pantalla ──
+     La zona mide ANCHO_U unidades de ancho (como en la tienda): así las guías
+     usan el mismo cálculo (utils/guiasInteligentes) aunque la zona esté girada. */
+  const capaEnDom = (id) => (id ? marco.current?.querySelector(`[data-capa="${CSS.escape(id)}"]`) : null);
+  const zonaEnDom = (zid) => marco.current?.querySelector(`[data-zona="${CSS.escape(zid)}"]`);
+  /** De px de la ventana a 0–1 de la zona y al revés, con su giro y el zoom. */
+  const geometria = (zid) => {
+    const el = zonaEnDom(zid);
+    const esc = marco.current?.querySelector('[data-escala]');
+    if (!el || !esc) return null;
+    const k = esc.getBoundingClientRect().width / (esc.offsetWidth || 1);
+    const r = el.getBoundingClientRect();
+    const z = zonas.find((x) => x.id === zid);
+    const ang = ((z?.angulo || 0) * Math.PI) / 180;
+    const w = el.offsetWidth * k;
+    const h = el.offsetHeight * k;
+    const c = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    return {
+      zona: z, k, w, h, ang, c, wl: el.offsetWidth || 1, hl: el.offsetHeight || 1,
+      hu: (ANCHO_U * el.offsetHeight) / (el.offsetWidth || 1),
+      cmPorU: z?.anchoCm > 0 ? z.anchoCm / ANCHO_U : 0,
+      aZona: (px, py) => {
+        const dx = px - c.x;
+        const dy = py - c.y;
+        return { x: (dx * Math.cos(ang) + dy * Math.sin(ang)) / w + 0.5, y: (-dx * Math.sin(ang) + dy * Math.cos(ang)) / h + 0.5 };
+      },
+      aPantalla: (fx, fy) => {
+        const dx = (fx - 0.5) * w;
+        const dy = (fy - 0.5) * h;
+        return { x: c.x + dx * Math.cos(ang) - dy * Math.sin(ang), y: c.y + dx * Math.sin(ang) + dy * Math.cos(ang) };
+      },
+    };
+  };
+  /** Tamaño de una capa (sin girar) en unidades de su zona: lo mide el DOM (el texto depende de la letra). */
+  const tamanoU = (id, g) => {
+    const el = capaEnDom(id);
+    return el ? { w: (el.offsetWidth / g.wl) * ANCHO_U, h: (el.offsetHeight / g.wl) * ANCHO_U } : null;
+  };
+  /** Caja girada de una capa en unidades de su zona ({ x1, x2, y1, y2 }). */
+  const cajaU = (capa, g, t = tamanoU(capa.id, g)) => {
+    if (!t) return null;
+    const a = ((capa.angulo || 0) * Math.PI) / 180;
+    const ex = (Math.abs(Math.cos(a)) * t.w + Math.abs(Math.sin(a)) * t.h) / 2;
+    const ey = (Math.abs(Math.sin(a)) * t.w + Math.abs(Math.cos(a)) * t.h) / 2;
+    const cx = (capa.x ?? 0.5) * ANCHO_U;
+    const cy = (capa.y ?? 0.5) * g.hu;
+    return { x1: cx - ex, x2: cx + ex, y1: cy - ey, y2: cy + ey };
+  };
+  const unir = (cajas) => ({
+    x1: Math.min(...cajas.map((b) => b.x1)), x2: Math.max(...cajas.map((b) => b.x2)),
+    y1: Math.min(...cajas.map((b) => b.y1)), y2: Math.max(...cajas.map((b) => b.y2)),
+  });
+  /** Otra zona de este lado bajo un punto de la ventana. */
+  const zonaEnPunto = (x, y, menos) => document.elementsFromPoint(x, y)
+    .map((el) => el.closest?.('[data-zona]'))
+    .find((el) => el && marco.current?.contains(el) && el.getAttribute('data-zona') !== menos)
+    ?.getAttribute('data-zona') || null;
+  /** Una etiqueta (cm o grados) bajo la caja, o encima si no entra. Px del lienzo. */
+  const etiquetaBajo = (centro, medioAlto, texto) => {
+    const m = marco.current.getBoundingClientRect();
+    const abajo = centro.y + medioAlto + 20 + 18 < m.bottom;
+    return { texto, x: centro.x - m.left, y: abajo ? centro.y + medioAlto + 20 - m.top : centro.y - medioAlto - 20 - 18 - m.top };
+  };
+  const vibrar = () => { try { navigator.vibrate?.(8); } catch { /* sin vibración */ } };
+  const tolU = (g, tactil) => (tactil ? 10 : 6) / (g.w / ANCHO_U); // el imán: igual en pantalla con cualquier zoom
 
   // Las asas de lo elegido (una sola capa): su caja se mide en el DOM, porque
   // el tamaño de un texto depende de la letra (y cambia cuando la letra carga).
-  const unaElegida = guias && onGesto && elegidas.length === 1 ? elegidas[0] : null;
+  const unaElegida = guias && onMoverCapa && elegidas.length === 1 && editando !== elegidas[0] ? elegidas[0] : null;
   const [caja, setCaja] = useState(null);
   const asa = useRef(null);
-  const capaEnDom = (id) => (id ? marco.current?.querySelector(`[data-capa="${CSS.escape(id)}"]`) : null);
   useLayoutEffect(() => {
     const el = capaEnDom(unaElegida);
     const medir = () => {
@@ -205,34 +335,110 @@ export function LienzoPrenda({
     ro.observe(el);
     return () => ro.disconnect();
   });
-  // Arrastrar una esquina agranda o achica desde el centro; el asa de arriba
-  // gira. Van por onGesto, como los dos dedos (se guarda una vez, al soltar).
+  const ubicada = (id) => {
+    for (const [zid, lista] of Object.entries(capas)) {
+      const c = lista.find((x) => x.id === id);
+      if (c) return { capa: c, zid };
+    }
+    return {};
+  };
+  // Un texto elegido que se pasa del 96% de su zona se achica (al escribir o
+  // al agrandarlo), como en la tienda; girado 90°, se mide contra el alto.
+  useLayoutEffect(() => {
+    const id = Array.isArray(seleccion) ? (seleccion.length === 1 ? seleccion[0] : null) : seleccion;
+    if (!guias || !onEncajar || !id) return;
+    const { capa, zid } = ubicada(id);
+    const el = capaEnDom(id);
+    const ze = zid && zonaEnDom(zid);
+    if (capa?.tipo !== 'texto' || !el || !ze) return;
+    const derecho = Math.abs(Math.sin(((capa.angulo || 0) * Math.PI) / 180)) < 0.5;
+    const limite = (derecho ? ze.offsetWidth : ze.offsetHeight) * 0.96;
+    if (el.offsetWidth > limite * 1.01) onEncajar(id, { tamano: (capa.tamano ?? 0.18) * (limite / el.offsetWidth) });
+  });
+
+  /* ── Asas: las esquinas agrandan desde la esquina contraria, la de arriba gira ── */
+  const ESQUINAS = { no: [-1, -1], ne: [1, -1], so: [-1, 1], se: [1, 1] };
   const empezarAsa = (e, tipo) => {
     if (e.button !== 0) return;
     e.stopPropagation();
     e.preventDefault();
+    const { capa, zid } = ubicada(unaElegida);
     const el = capaEnDom(unaElegida);
-    if (!el) return;
+    const g = capa && geometria(zid);
+    if (!el || !g) return;
     const r = el.getBoundingClientRect();
-    const c = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-    asa.current = { tipo, c, d0: Math.hypot(e.clientX - c.x, e.clientY - c.y) || 1, a0: Math.atan2(e.clientY - c.y, e.clientX - c.x) };
+    const centro = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    const total = g.ang + ((capa.angulo || 0) * Math.PI) / 180;
+    const rot = (vx, vy) => ({ x: vx * Math.cos(total) - vy * Math.sin(total), y: vx * Math.sin(total) + vy * Math.cos(total) });
+    const medio = { w: (el.offsetWidth * g.k) / 2, h: (el.offsetHeight * g.k) / 2 };
+    const a = {
+      tipo, id: capa.id, zid, g, capa, centro, medio, tactil: e.pointerType === 'touch',
+      a0: Math.atan2(e.clientY - centro.y, e.clientX - centro.x),
+      t: tamanoU(capa.id, g),
+      otras: (capas[zid] || []).filter((x) => x.id !== capa.id).map((x) => cajaU(x, g)).filter(Boolean),
+    };
+    if (tipo !== 'giro') {
+      const [sx, sy] = ESQUINAS[tipo];
+      const o = rot(-sx * medio.w, -sy * medio.h);
+      const q = rot(sx * medio.w, sy * medio.h);
+      a.fijo = { x: centro.x + o.x, y: centro.y + o.y };
+      a.v0 = { x: q.x - o.x, y: q.y - o.y };
+    }
+    asa.current = a;
     try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch { /* el puntero ya se soltó */ }
-    onGesto({ fase: 'inicio', factor: 1, giro: 0 });
   };
   const moverAsa = (e) => {
     const a = asa.current;
     if (!a) return;
     e.stopPropagation();
-    const dx = e.clientX - a.c.x;
-    const dy = e.clientY - a.c.y;
-    if (a.tipo === 'giro') onGesto({ fase: 'cambio', factor: 1, giro: ((Math.atan2(dy, dx) - a.a0) * 180) / Math.PI });
-    else onGesto({ fase: 'cambio', factor: Math.hypot(dx, dy) / a.d0, giro: 0 });
+    a.movio = true;
+    const imagenCapa = a.capa.tipo === 'imagen';
+    if (a.tipo === 'giro') {
+      let angulo = (a.capa.angulo || 0) + ((Math.atan2(e.clientY - a.centro.y, e.clientX - a.centro.x) - a.a0) * 180) / Math.PI;
+      if (e.shiftKey) angulo = Math.round(angulo / 15) * 15; // Shift: de 15° en 15°
+      else if (Math.abs(angulo - Math.round(angulo / 90) * 90) < 4) angulo = Math.round(angulo / 90) * 90; // derecho
+      angulo = Math.round(((angulo % 360) + 360) % 360);
+      const ext = Math.max(a.medio.w, a.medio.h);
+      setAyudas({ zid: a.zid, lineas: [], etiqueta: etiquetaBajo(a.centro, ext, `${angulo}°`) });
+      onMoverCapa(a.id, { angulo });
+      return;
+    }
+    // El largo a lo largo de la diagonal: no se voltea al pasar la esquina contraria.
+    const v = { x: e.clientX - a.fijo.x, y: e.clientY - a.fijo.y };
+    let factor = Math.max(0.05, (v.x * a.v0.x + v.y * a.v0.y) / (a.v0.x ** 2 + a.v0.y ** 2 || 1));
+    const centroCon = (f) => ({ x: a.fijo.x + (a.centro.x - a.fijo.x) * f, y: a.fijo.y + (a.centro.y - a.fijo.y) * f });
+    let lineas = [];
+    // Imán al agrandar: solo derecho o a 90° (como la tienda); Alt lo apaga.
+    const derecho = Math.abs(((a.capa.angulo || 0) % 90 + 90) % 90) < 0.5 || Math.abs(((a.capa.angulo || 0) % 90 + 90) % 90) > 89.5;
+    if (derecho && !e.altKey && a.t) {
+      const p = a.g.aZona(centroCon(factor).x, centroCon(factor).y);
+      const caja = cajaU({ ...a.capa, x: p.x, y: p.y }, a.g, { w: a.t.w * factor, h: a.t.h * factor });
+      const fp = a.g.aZona(a.fijo.x, a.fijo.y);
+      const r = imanAlEscalar(caja, { left: fp.x * ANCHO_U, top: fp.y * a.g.hu }, a.otras, { wu: ANCHO_U, hu: a.g.hu }, tolU(a.g, a.tactil));
+      if (r.factor !== 1) {
+        factor *= r.factor;
+        lineas = r.guias;
+        if (!a.pegado && a.tactil) vibrar();
+      }
+      a.pegado = r.factor !== 1;
+    }
+    const c = centroCon(factor);
+    const p = a.g.aZona(c.x, c.y);
+    const medidas = a.t && a.g.cmPorU ? `${enCm(a.t.w * factor, a.g.cmPorU).replace(' cm', '')} × ${enCm(a.t.h * factor, a.g.cmPorU)}` : '';
+    const ext = Math.abs(Math.sin(a.g.ang + ((a.capa.angulo || 0) * Math.PI) / 180)) * a.medio.w + Math.abs(Math.cos(a.g.ang + ((a.capa.angulo || 0) * Math.PI) / 180)) * a.medio.h;
+    setAyudas({ zid: a.zid, hu: a.g.hu, cmPorU: a.g.cmPorU, lineas, etiqueta: medidas ? etiquetaBajo(c, ext * factor, medidas) : null });
+    onMoverCapa(a.id, {
+      x: p.x, y: p.y,
+      ...(imagenCapa ? { ancho: Math.max(0.02, (a.capa.ancho ?? 0.8) * factor) } : { tamano: Math.max(0.01, (a.capa.tamano ?? 0.18) * factor) }),
+    });
   };
   const soltarAsa = (e) => {
-    if (!asa.current) return;
+    const a = asa.current;
+    if (!a) return;
     e.stopPropagation();
     asa.current = null;
-    onGesto({ fase: 'fin' });
+    setAyudas(null);
+    if (a.movio) onSoltarCapa?.();
   };
   const eventosAsa = (tipo) => ({
     onPointerDown: (e) => empezarAsa(e, tipo),
@@ -247,10 +453,12 @@ export function LienzoPrenda({
   const medirToques = () => {
     const [a, b] = [...toques.current.values()];
     const r = marco.current.getBoundingClientRect();
+    const medio = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
     return {
       d: Math.hypot(a.x - b.x, a.y - b.y) || 1,
       ang: (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI,
-      centro: { x: (a.x + b.x) / 2 - (r.left + r.width / 2), y: (a.y + b.y) / 2 - (r.top + r.height / 2) },
+      medio,
+      centro: { x: medio.x - (r.left + r.width / 2), y: medio.y - (r.top + r.height / 2) },
     };
   };
   const gestos = guias && onGesto ? {
@@ -260,16 +468,26 @@ export function LienzoPrenda({
       if (toques.current.size !== 2) return;
       arrastre.current = null; // el segundo dedo convierte el arrastre en gesto
       paneo.current = null;
+      setAyudas(null);
+      setPasarA(null);
       const m = medirToques();
-      gesto.current = { d0: m.d, ang0: m.ang };
+      // Con una capa elegida, el punto medio de los dedos también la mueve.
+      const { zid } = elegidas.length === 1 ? ubicada(elegidas[0]) : {};
+      const g = zid && geometria(zid);
+      gesto.current = { d0: m.d, ang0: m.ang, g, p0: g ? g.aZona(m.medio.x, m.medio.y) : null };
       onGesto({ fase: 'inicio', factor: 1, giro: 0, centro: m.centro });
     },
     onPointerMoveCapture: (e) => {
       if (!toques.current.has(e.pointerId)) return;
       toques.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (!gesto.current || toques.current.size < 2) return;
+      const gs = gesto.current;
+      if (!gs || toques.current.size < 2) return;
       const m = medirToques();
-      onGesto({ fase: 'cambio', factor: m.d / gesto.current.d0, giro: m.ang - gesto.current.ang0, centro: m.centro });
+      const p = gs.g ? gs.g.aZona(m.medio.x, m.medio.y) : null;
+      onGesto({
+        fase: 'cambio', factor: m.d / gs.d0, giro: m.ang - gs.ang0, centro: m.centro,
+        desplazar: p ? { x: p.x - gs.p0.x, y: p.y - gs.p0.y } : undefined,
+      });
     },
     onPointerUpCapture: (e) => {
       toques.current.delete(e.pointerId);
@@ -281,43 +499,149 @@ export function LienzoPrenda({
     },
   } : {};
 
-  /** Punto (0–1) de la zona bajo el puntero. */
-  const puntoEnZona = (e, el) => {
-    const caja = el.getBoundingClientRect();
-    return { x: Math.min(1, Math.max(0, (e.clientX - caja.left) / caja.width)), y: Math.min(1, Math.max(0, (e.clientY - caja.top) / caja.height)) };
+  /** Punto (0–1) de la zona bajo el puntero (con su giro). */
+  const puntoEnZona = (e, zid) => {
+    const g = geometria(zid);
+    if (!g) return { x: 0.5, y: 0.5 };
+    const p = g.aZona(e.clientX, e.clientY);
+    return { x: Math.min(1, Math.max(0, p.x)), y: Math.min(1, Math.max(0, p.y)) };
   };
 
+  /* ── Arrastrar: guías e imán (Alt lo apaga) y, al soltar sobre otra zona, pasa a ella ── */
   const empezar = (e, c, zonaId) => {
+    if (editando === c.id) { e.stopPropagation(); return; } // escribiendo: el clic pone el cursor
     if (moverVista || e.button === 1) return; // se mueve la vista, no la capa
     if (e.button === 2) return; // el clic derecho abre el menú
     e.stopPropagation();
     const sumar = e.shiftKey || e.ctrlKey || e.metaKey;
     onElegirCapa?.(c.id, zonaId, { sumar, tactil: e.pointerType === 'touch' });
     if (!onMoverCapa || sumar) return;
-    const caja = e.currentTarget.closest('[data-zona]').getBoundingClientRect();
-    arrastre.current = { id: c.id, caja, dx: e.clientX - (caja.left + (c.x ?? 0.5) * caja.width), dy: e.clientY - (caja.top + (c.y ?? 0.5) * caja.height), movio: false };
+    const g = geometria(zonaId);
+    if (!g) return;
+    const p = g.aZona(e.clientX, e.clientY);
+    // Si es una de varias elegidas, se mueven juntas (el imán, si están en la misma zona).
+    const grupo = elegidas.length > 1 && elegidas.includes(c.id) ? elegidas : [c.id];
+    const lista = capas[zonaId] || [];
+    const juntas = grupo.every((id) => lista.some((x) => x.id === id));
+    const cajas = juntas ? lista.filter((x) => grupo.includes(x.id)).map((x) => cajaU(x, g)).filter(Boolean) : [];
+    arrastre.current = {
+      id: c.id, zonaId, g, solo: grupo.length === 1, texto: c.tipo === 'texto', tactil: e.pointerType === 'touch',
+      dx: p.x - (c.x ?? 0.5), dy: p.y - (c.y ?? 0.5), x0: c.x ?? 0.5, y0: c.y ?? 0.5,
+      cajaGrupo: cajas.length === grupo.length ? unir(cajas) : null,
+      otras: juntas ? lista.filter((x) => !grupo.includes(x.id)).map((x) => cajaU(x, g)).filter(Boolean) : [],
+      movio: false,
+    };
     try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch { /* el puntero ya se soltó */ }
   };
   const mover = (e) => {
     const a = arrastre.current;
     if (!a) return;
-    const x = Math.min(1, Math.max(0, (e.clientX - a.dx - a.caja.left) / a.caja.width));
-    const y = Math.min(1, Math.max(0, (e.clientY - a.dy - a.caja.top) / a.caja.height));
+    const p = a.g.aZona(e.clientX, e.clientY);
+    let x = p.x - a.dx;
+    let y = p.y - a.dy;
     a.movio = true;
-    onMoverCapa(a.id, { x, y });
+    let lineas = [];
+    if (a.cajaGrupo && !e.altKey) {
+      const dx = (x - a.x0) * ANCHO_U;
+      const dy = (y - a.y0) * a.g.hu;
+      const cajaAhora = { x1: a.cajaGrupo.x1 + dx, x2: a.cajaGrupo.x2 + dx, y1: a.cajaGrupo.y1 + dy, y2: a.cajaGrupo.y2 + dy };
+      const r = imanAlMover(cajaAhora, a.otras, { wu: ANCHO_U, hu: a.g.hu }, tolU(a.g, a.tactil));
+      x += r.dx / ANCHO_U;
+      y += r.dy / a.g.hu;
+      lineas = r.guias;
+      if (lineas.length && !a.pegado && a.tactil) vibrar();
+      a.pegado = lineas.length > 0;
+    }
+    // Fuera de su zona y sobre otra de este lado: al soltar pasa a esa.
+    let destino = null;
+    if (a.solo && onPasarCapa && (x < 0 || x > 1 || y < 0 || y > 1)) {
+      const enPantalla = a.g.aPantalla(x, y);
+      destino = zonaEnPunto(enPantalla.x, enPantalla.y, a.zonaId);
+    }
+    a.destino = destino;
+    a.ultimo = { x, y };
+    setPasarA(destino);
+    setAyudas(lineas.length ? { zid: a.zonaId, hu: a.g.hu, cmPorU: a.g.cmPorU, lineas } : null);
+    onMoverCapa(a.id, a.solo ? { x: Math.min(1.5, Math.max(-0.5, x)), y: Math.min(1.5, Math.max(-0.5, y)) } : { x, y });
   };
   const soltar = () => {
-    if (arrastre.current?.movio) onSoltarCapa?.();
+    const a = arrastre.current;
     arrastre.current = null;
+    setAyudas(null);
+    setPasarA(null);
+    if (!a?.movio) return;
+    if (a.destino) {
+      const enPantalla = a.g.aPantalla(a.ultimo.x, a.ultimo.y);
+      const g2 = geometria(a.destino);
+      const punto = g2 ? g2.aZona(enPantalla.x, enPantalla.y) : { x: 0.5, y: 0.5 };
+      onPasarCapa(a.id, a.destino, { x: Math.min(1, Math.max(0, punto.x)), y: Math.min(1, Math.max(0, punto.y)) });
+      return;
+    }
+    if (a.solo) {
+      // El centro vuelve a su zona y un texto que se pasa del borde vuelve adentro (como la tienda).
+      let x = Math.min(1, Math.max(0, a.ultimo.x));
+      let y = Math.min(1, Math.max(0, a.ultimo.y));
+      const capa = (capas[a.zonaId] || []).find((c) => c.id === a.id);
+      const b = a.texto && capa && cajaU({ ...capa, x, y }, a.g);
+      if (b) {
+        if (b.x2 - b.x1 > ANCHO_U) x = 0.5;
+        else if (b.x1 < 0) x -= b.x1 / ANCHO_U;
+        else if (b.x2 > ANCHO_U) x -= (b.x2 - ANCHO_U) / ANCHO_U;
+        if (b.y2 - b.y1 > a.g.hu) y = 0.5;
+        else if (b.y1 < 0) y -= b.y1 / a.g.hu;
+        else if (b.y2 > a.g.hu) y -= (b.y2 - a.g.hu) / a.g.hu;
+      }
+      if (x !== a.ultimo.x || y !== a.ultimo.y) onMoverCapa(a.id, { x, y });
+    }
+    onSoltarCapa?.();
+  };
+
+  /* ── Recuadro con el ratón sobre el fondo: elige lo que toca (Shift suma) ── */
+  const empezarRecuadro = (e) => {
+    if (!onElegirVarias || e.pointerType !== 'mouse' || e.button !== 0) return false;
+    const m = marco.current.getBoundingClientRect();
+    // Sin capturar el puntero todavía: un clic simple sigue llegando a la zona.
+    recuadro.current = { x0: e.clientX, y0: e.clientY, m, sumar: e.shiftKey || e.ctrlKey || e.metaKey, activo: false, el: e.currentTarget, puntero: e.pointerId };
+    return true;
+  };
+  const moverRecuadro = (e) => {
+    const r = recuadro.current;
+    if (!r) return false;
+    if (!r.activo && Math.hypot(e.clientX - r.x0, e.clientY - r.y0) < 5) return true;
+    if (!r.activo) {
+      r.activo = true;
+      try { r.el.setPointerCapture?.(r.puntero); } catch { /* el puntero ya se soltó */ }
+    }
+    r.x1 = e.clientX;
+    r.y1 = e.clientY;
+    setRect({ left: Math.min(r.x0, r.x1) - r.m.left, top: Math.min(r.y0, r.y1) - r.m.top, width: Math.abs(r.x1 - r.x0), height: Math.abs(r.y1 - r.y0) });
+    return true;
+  };
+  const soltarRecuadro = () => {
+    const r = recuadro.current;
+    recuadro.current = null;
+    if (!r) return false;
+    setRect(null);
+    if (!r.activo) return true;
+    sinClic.current = true;
+    setTimeout(() => { sinClic.current = false; }, 0);
+    const caja = { l: Math.min(r.x0, r.x1), r: Math.max(r.x0, r.x1), t: Math.min(r.y0, r.y1), b: Math.max(r.y0, r.y1) };
+    const ids = [...marco.current.querySelectorAll('[data-capa]')].filter((el) => {
+      const b = el.getBoundingClientRect();
+      return b.left < caja.r && b.right > caja.l && b.top < caja.b && b.bottom > caja.t;
+    }).map((el) => el.getAttribute('data-capa'));
+    onElegirVarias(ids, { sumar: r.sumar });
+    return true;
   };
 
   // Con zoom, arrastrar el fondo (o con Espacio, o el botón del medio) mueve la vista.
   const empezarPaneo = (e) => {
-    if (!onCamara || !(zoom > 1 || moverVista || e.button === 1)) return;
-    if (e.button !== 0 && e.button !== 1) return;
+    if (!onCamara || !(zoom > 1 || moverVista || e.button === 1)) return false;
+    if (e.button !== 0 && e.button !== 1) return false;
     e.preventDefault();
     paneo.current = { x0: e.clientX, y0: e.clientY, c0: camara || { x: 0, y: 0 } };
     try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch { /* el puntero ya se soltó */ }
+    return true;
   };
   const moverPaneo = (e) => {
     const p = paneo.current;
@@ -369,15 +693,15 @@ export function LienzoPrenda({
       ].filter(Boolean).join(' ')}
       data-componente="LienzoPrenda"
       aria-busy={cargando || undefined}
-      onPointerDown={guias ? empezarPaneo : undefined}
-      onPointerMove={guias ? moverPaneo : undefined}
-      onPointerUp={guias ? soltarPaneo : undefined}
-      onPointerCancel={guias ? soltarPaneo : undefined}
+      onPointerDown={guias ? (e) => { if (!empezarPaneo(e)) empezarRecuadro(e); } : undefined}
+      onPointerMove={guias ? (e) => { if (!moverRecuadro(e)) moverPaneo(e); } : undefined}
+      onPointerUp={guias ? (e) => { if (!soltarRecuadro(e)) soltarPaneo(e); } : undefined}
+      onPointerCancel={guias ? (e) => { if (!soltarRecuadro(e)) soltarPaneo(e); } : undefined}
       onAuxClick={(e) => e.preventDefault()}
       {...gestos}
       {...soltarArchivo}
     >
-      <div className={s.lienzoEscala} style={{ aspectRatio: `${anchoImg} / ${altoImg}`, '--proporcion': anchoImg / altoImg, transform: transformacion }}>
+      <div data-escala className={[s.lienzoEscala, camaraSuave && s.camaraSuave].filter(Boolean).join(' ')} style={{ aspectRatio: `${anchoImg} / ${altoImg}`, '--proporcion': anchoImg / altoImg, transform: transformacion }}>
         {/* Sin foto del color: la foto blanca teñida (el color recortado con su silueta + multiply). */}
         {!foto && tinte && <span className={s.tinte} style={{ ...espejo, background: tinte, WebkitMaskImage: `url("${imagen}")`, maskImage: `url("${imagen}")` }} aria-hidden="true" />}
         <img className={[s.prenda, !foto && tinte && s.prendaTenida].filter(Boolean).join(' ')} style={espejo} src={foto || imagen} alt="" draggable={false} />
@@ -399,9 +723,9 @@ export function LienzoPrenda({
                 transform: z.angulo ? `rotate(${z.angulo}deg)` : undefined,
                 zIndex: conAsas ? 2 : undefined, // sus asas quedan sobre las otras zonas
               }}
-              onClick={guias ? () => onElegirZona?.(z.id) : undefined}
-              onDoubleClick={guias && onDobleClic ? (e) => onDobleClic({ zonaId: z.id, punto: puntoEnZona(e, e.currentTarget) }) : undefined}
-              onContextMenu={guias && onMenu ? (e) => { e.preventDefault(); onMenu({ x: e.clientX, y: e.clientY, zonaId: z.id, punto: puntoEnZona(e, e.currentTarget) }); } : undefined}
+              onClick={guias ? () => { if (!sinClic.current) onElegirZona?.(z.id); } : undefined}
+              onDoubleClick={guias && onDobleClic ? (e) => onDobleClic({ zonaId: z.id, punto: puntoEnZona(e, z.id) }) : undefined}
+              onContextMenu={guias && onMenu ? (e) => { e.preventDefault(); onMenu({ x: e.clientX, y: e.clientY, zonaId: z.id, punto: puntoEnZona(e, z.id) }); } : undefined}
               role={guias ? 'button' : undefined}
               tabIndex={guias ? 0 : undefined}
               aria-label={guias ? `Zona ${z.nombre}` : undefined}
@@ -425,7 +749,7 @@ export function LienzoPrenda({
                     onPointerUp={guias ? soltar : undefined}
                     onPointerCancel={guias ? soltar : undefined}
                     onClick={(e) => e.stopPropagation()}
-                    onDoubleClick={guias && onDobleClic ? (e) => { e.stopPropagation(); onDobleClic({ capaId: c.id, zonaId: z.id }); } : undefined}
+                    onDoubleClick={guias && onDobleClic ? (e) => { e.stopPropagation(); if (editando !== c.id) onDobleClic({ capaId: c.id, zonaId: z.id }); } : undefined}
                     onContextMenu={guias && onMenu ? (e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -446,6 +770,9 @@ export function LienzoPrenda({
                   >
                     {c.tipo === 'imagen' ? (
                       <img src={c.src} alt="" draggable={false} />
+                    ) : guias && editando === c.id ? (
+                      // Mientras se escribe, derecho (como la tienda); al terminar vuelve el arco.
+                      <TextoEnPrenda capa={{ ...c, curva: 0 }} seleccionar={c.texto === 'Tu texto'} onEscribir={(t) => onEscribir?.(c.id, t)} onTerminar={() => onTerminarTexto?.(c.id)} />
                     ) : efectoNum(c.curva) ? (
                       <TextoCurvo capa={c} />
                     ) : (
@@ -468,14 +795,34 @@ export function LienzoPrenda({
                   }}
                   data-componente="AsasCapa"
                 >
-                  {['no', 'ne', 'so', 'se'].map((esquina) => (
-                    <span key={esquina} className={[s.asa, s[`asa_${esquina}`]].join(' ')} title="Arrastra para agrandar o achicar" {...eventosAsa('tamano')} />
+                  {Object.keys(ESQUINAS).map((esquina) => (
+                    <span key={esquina} className={[s.asa, s[`asa_${esquina}`]].join(' ')} title="Arrastra para agrandar o achicar (Alt: sin imán)" {...eventosAsa(esquina)} />
                   ))}
-                  <span className={s.asaGiro} title="Arrastra para girar" {...eventosAsa('giro')} />
+                  <span className={s.asaGiro} title="Arrastra para girar (Shift: de 15° en 15°)" {...eventosAsa('giro')} />
                 </span>
               )}
               {activa && <span className={s.zonaNombre} style={z.angulo ? { transform: `translateX(-50%) rotate(${-z.angulo}deg)` } : undefined}>{z.nombre}</span>}
-              {soltarEn === z.id && <span className={s.zonaSoltar} aria-hidden="true" />}
+              {(soltarEn === z.id || pasarA === z.id) && <span className={s.zonaSoltar} aria-hidden="true" />}
+              {ayudas?.zid === z.id && ayudas.lineas?.length > 0 && (
+                // Las guías rosadas: alineado con la zona o con otro diseño, y espacios iguales.
+                <span className={s.guiasCapa} style={{ '--zoom': zoom }} aria-hidden="true">
+                  {ayudas.lineas.map((l, i) => {
+                    const pctX = (v) => `${(v / ANCHO_U) * 100}%`;
+                    const pctY = (v) => `${(v / ayudas.hu) * 100}%`;
+                    if (l.tipo === 'linea') {
+                      return l.eje === 'x'
+                        ? <span key={i} className={s.guiaV} style={{ left: pctX(l.valor), top: pctY(l.desde), height: pctY(l.hasta - l.desde) }} />
+                        : <span key={i} className={s.guiaH} style={{ top: pctY(l.valor), left: pctX(l.desde), width: pctX(l.hasta - l.desde) }} />;
+                    }
+                    const cm = enCm(l.hasta - l.desde, ayudas.cmPorU);
+                    return l.eje === 'x' ? (
+                      <span key={i} className={s.espacioH} style={{ top: pctY(l.en), left: pctX(l.desde), width: pctX(l.hasta - l.desde) }}>{cm && <span className={s.espacioCm}>{cm}</span>}</span>
+                    ) : (
+                      <span key={i} className={s.espacioV} style={{ left: pctX(l.en), top: pctY(l.desde), height: pctY(l.hasta - l.desde) }}>{cm && <span className={s.espacioCm}>{cm}</span>}</span>
+                    );
+                  })}
+                </span>
+              )}
             </div>
           );
         })}
@@ -485,6 +832,8 @@ export function LienzoPrenda({
           Suelta tu imagen en <strong>{zonas.find((z) => z.id === soltarEn)?.nombre || 'la zona'}</strong>
         </p>
       )}
+      {rect && <span className={s.recuadro} style={rect} aria-hidden="true" />}
+      {ayudas?.etiqueta && <span className={s.medida} style={{ left: ayudas.etiqueta.x, top: ayudas.etiqueta.y }} aria-live="polite">{ayudas.etiqueta.texto}</span>}
       {cargando && <p className={s.cargandoDiseno} role="status"><LoaderCircle aria-hidden="true" className={s.girando} /> Cargando tu diseño…</p>}
       {encima}
     </div>
@@ -508,6 +857,7 @@ export const zoomVecino = (zoom, sube) => (sube
 export function BarraLienzo({
   puedeDeshacer, puedeRehacer, onDeshacer, onRehacer, elegido = false,
   onAchicar, onAgrandar, onCentrar, onQuitar, onImagen, onTexto, zoom = 1, onZoom, onAtajos, onEditar,
+  completa = false, onVerCompleta,
 }) {
   const B = (props) => <Boton variante="fantasma" tamano="sm" soloIcono {...props} />;
   return (
@@ -524,6 +874,16 @@ export function BarraLienzo({
           <Boton variante="fantasma" tamano="sm" soloIcono aria-label="Quitar" icono={<Trash2 aria-hidden="true" />} onClick={onQuitar} className={s.peligro} />
           {/* En el celular el panel queda debajo de la prenda: "Editar" baja hasta él. */}
           {onEditar && <Boton variante="secundario" tamano="sm" icono={<Pencil aria-hidden="true" />} onClick={onEditar} className={s.soloCelular}>Editar</Boton>}
+          {/* En el teléfono, lo elegido acerca su zona: esto muestra la prenda entera (y vuelve). */}
+          {onVerCompleta && (
+            <B
+              aria-label={completa ? 'Acercar a la zona' : 'Ver la prenda completa'}
+              title={completa ? 'Acercar a la zona' : 'Ver la prenda completa'}
+              icono={completa ? <ZoomIn aria-hidden="true" /> : <ZoomOut aria-hidden="true" />}
+              onClick={onVerCompleta}
+              className={s.soloTelefono}
+            />
+          )}
         </span>
       )}
       <span className={s.grupoBarra}>

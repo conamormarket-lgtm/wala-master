@@ -239,10 +239,27 @@ Las piezas están en `piezas/Estudio.jsx`:
   - `onGesto({ fase, factor, giro, centro })`: dos dedos. Con algo elegido o
     con zoom los dedos son del lienzo (`touch-action: none`); si no, un dedo
     desplaza la página y dos acercan la prenda (`pan-x pan-y`).
-  - Asas de lo elegido (una sola capa, con `onGesto`): las cuatro esquinas
-    agrandan y achican desde el centro y la de arriba gira; van fuera del
-    recorte de la zona, así se ven aunque la capa llegue al borde, y no
-    crecen con el zoom.
+  - **Guías rosadas e imán** al arrastrar (como Canva y como la tienda): se
+    pega a los bordes y al centro de la zona y de los otros diseños, y a
+    espacios iguales (con los cm en una pastilla). 6 px con el ratón, 10 con
+    el dedo (vibra al pegarse); Alt lo apaga. El cálculo es el de la tienda,
+    sin fabric: `utils/guiasInteligentes.js`.
+  - **Asas** de lo elegido (círculos blancos con borde violeta): las cuatro
+    esquinas agrandan desde la esquina contraria, con imán (derecha o a 90°)
+    y la medida "12 × 8 cm"; la de arriba gira, se queda derecha cerca de
+    90° (4°) y con Shift va de 15° en 15°, mostrando los grados. Van fuera
+    del recorte de la zona y no crecen con el zoom.
+  - Soltar una capa fuera de su zona, sobre otra de este lado
+    (`onPasarCapa`), la pasa a esa (la zona se marca mientras se arrastra).
+    Si no entra, al 90% y al centro; un texto en una manga va girado.
+  - Un texto que se pasa del borde vuelve adentro al soltarlo, y uno que no
+    entra en el 96% de su zona se achica solo (`onEncajar`).
+  - **Recuadro** con el ratón sobre el fondo para elegir varias (Shift
+    suma) y un borde punteado al pasar el ratón.
+  - **Escribir sobre la prenda** (en la computadora): doble clic en un texto
+    o uno nuevo (T, "Texto", doble clic en la zona) se escribe ahí mismo;
+    mientras tanto va derecho aunque tenga arco. Vacío al terminar, se quita.
+    Un solo paso de deshacer.
   - `cargando`: "Cargando tu diseño…" encima, con `aria-busy`.
   - Con el teclado: Tab llega a cada zona y a cada capa; Enter la elige.
 - **`BarraLienzo`**: deshacer y rehacer; con algo elegido, achicar, agrandar,
@@ -323,9 +340,16 @@ La página (`PaginaEstudio`):
   C para centrar, [ y ] para el orden, T e I para agregar, 1–9 para el lado,
   zoom (Ctrl + / − / 0, Shift+1, Shift+2), Supr y Esc.
 - **Mouse y dedos:** las asas de lo elegido agrandan y giran; en el celular,
-  además, dos dedos agrandan y giran lo elegido o acercan la prenda. Cerca
-  de un múltiplo de 90° se queda derecho, y se guarda una sola vez en el
-  deshacer, al soltar.
+  además, dos dedos agrandan, giran y mueven lo elegido o acercan la prenda.
+  Cerca de un múltiplo de 90° se queda derecho, y se guarda una sola vez en
+  el deshacer, al soltar.
+- **Teléfono (≤768 px):** al elegir algo, la vista se acerca a su zona
+  (animación corta, cuando se levanta el dedo) y al soltarlo vuelve; "Ver la
+  prenda completa" en la barra lo apaga. El zoom a mano manda.
+- **Como la tienda:** flechas de 0,5% (Shift, 5%), + y − de ×1,05, los
+  botones de ×1,12, RePág y AvPág para el orden, 80 pasos de deshacer; lo
+  nuevo va al centro y luego arriba y abajo; pegar en la misma zona corre
+  cada vez un poco más y en otra va al centro.
 - **Estados:** cargando (`EsqueletoPagina forma="estudio"`), error, prenda no
   disponible, agotada, en borrador y el diseño que aún llega
   (`cargandoDiseno`).
