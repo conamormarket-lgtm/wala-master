@@ -58,6 +58,7 @@ import { useTranslatedText, useTranslatedHtml } from './i18n/useTranslatedText';
 | `ItemCarrito` | el nombre; desde el 2026-10-17 también "Combo", "Con tu diseño", los detalles, las prendas, lo que falta y los textos ocultos |
 | `PaginaCheckout`, `ResumenCompra`, `FilaMonedas`, `CampoCupon`, `MetodoPago`, `PasosCompra`, `CamposDireccion` | los textos fijos, las etiquetas y placeholders de los campos, los avisos y la nota de invitación (desde el 2026-10-17) |
 | `PaginaPagoRapido`, `PagoTarjeta`, `PagoPaypal` | los textos fijos y el concepto del enlace (desde el 2026-10-17) |
+| `PaginaListaPublica`, `PaginaRegalar`, `PaginaRegaloSorpresa`, `TarjetaRegalo`, `FechaEntrega`, `SobreRegalo` | los textos fijos, la relación, la ocasión, "En 9 días" y las fechas festivas (desde el 2026-10-17); el nombre de la persona y el mensaje del regalo van tal cual |
 | `PaginaCarrito`, `ResumenPedido`, `BarraEnvioGratis`, `Casilla` | los textos fijos (botones, avisos, la selección, el resumen, el envío gratis, la etiqueta de la casilla) |
 | `ResumenCompra` (checkout) y el menú del carrito | el nombre de cada producto |
 

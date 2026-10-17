@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Gift, Heart, PartyPopper, Smile, PackageX } from 'lucide-react';
 import Boton from '../Boton';
 import TarjetaProducto from '../TarjetaProducto';
@@ -7,6 +7,7 @@ import { Sello } from '../Marca';
 import { Avatar } from './Avatar';
 import { HojaCalendario, textoFaltan } from './Regalos';
 import { CARAS_KAPI } from './Flotantes';
+import { Texto } from '../Traduccion';
 import s from './Regalar.module.css';
 
 /*
@@ -16,31 +17,40 @@ import s from './Regalar.module.css';
 
 /**
  * Un producto de la lista de deseos de otra persona: la tarjeta de la tienda
- * (sin su botón de agregar) y "Regalar esto" debajo, siempre a la vista. Si
- * ya se lo regalaron, un sello lo dice (y no se puede regalar dos veces); si
- * ya no está en la tienda, la foto que guardó y el aviso.
- *  - producto: props de TarjetaProducto · regalado · disponible
+ * (sin su botón de agregar ni el corazón) y "Regalar esto" debajo, siempre a
+ * la vista. Si ya se lo regalaron, un sello lo dice (y no se puede regalar dos
+ * veces); si ya no está en la tienda, la foto que guardó y el aviso.
+ *  - producto: props de TarjetaProducto (con srcSet, sizes, onVisible…)
+ *  - regalado · disponible · cargando: el producto todavía llega (la tarjeta
+ *    se ve con lo que guardó la lista y el botón espera)
  *  - onRegalar() · bloqueado: texto de por qué no se puede todavía
  */
-export function TarjetaRegalo({ producto = {}, regalado = false, disponible = true, onRegalar, bloqueado }) {
+export function TarjetaRegalo({ producto = {}, regalado = false, disponible = true, cargando = false, onRegalar, bloqueado }) {
+  const [sinFoto, setSinFoto] = useState(false);
+  const yaRegalado = (
+    <p className={s.yaRegalado}><Sello tamano={22} girar={-8} tono="menta"><Gift aria-hidden="true" /></Sello> <Texto>¡Ya se lo regalaron!</Texto></p>
+  );
   if (!disponible) {
     return (
       <div className={s.noDisponible} data-componente="TarjetaRegalo">
-        {producto.imagen ? <img src={producto.imagen} alt="" loading="lazy" /> : <PackageX aria-hidden="true" />}
-        <strong>{producto.nombre}</strong>
-        <span>Ya no está en la tienda.</span>
+        {producto.imagen && !sinFoto
+          ? <img src={producto.imagen} alt="" loading="lazy" decoding="async" onError={() => setSinFoto(true)} />
+          : <PackageX aria-hidden="true" />}
+        <strong><Texto>{producto.nombre}</Texto></strong>
+        <span><Texto>Ya no está en la tienda.</Texto></span>
+        {regalado && yaRegalado}
       </div>
     );
   }
   return (
     <div className={[s.regalo, regalado && s.regalado].filter(Boolean).join(' ')} data-componente="TarjetaRegalo">
-      <TarjetaProducto {...producto} sinAccion />
-      {regalado ? (
-        <p className={s.yaRegalado}><Sello tamano={22} girar={-8} tono="menta"><Gift aria-hidden="true" /></Sello> ¡Ya se lo regalaron!</p>
-      ) : (
+      <TarjetaProducto {...producto} sinAccion sinDeseo />
+      {regalado ? yaRegalado : (
         <>
-          <Boton bloque icono={<Gift aria-hidden="true" />} disabled={Boolean(bloqueado) || producto.agotado} onClick={onRegalar}>Regalar esto</Boton>
-          {bloqueado && <p className={s.pista}>{bloqueado}</p>}
+          <Boton bloque icono={<Gift aria-hidden="true" />} cargando={cargando} disabled={Boolean(bloqueado) || producto.agotado} onClick={onRegalar}>
+            <Texto>Regalar esto</Texto>
+          </Boton>
+          {bloqueado && <p className={s.pista}><Texto>{bloqueado}</Texto></p>}
         </>
       )}
     </div>
@@ -61,15 +71,15 @@ export function FechaEntrega({ nombre, foto, relacion, ocasion, fecha, dias, fes
       <button type="button" role="radio" aria-checked={elegida} className={s.fechaBoton} onClick={onElegir}>
         <Avatar className={s.fechaAvatar} nombre={nombre} imagen={foto} letras={1} />
         <span className={s.fechaTextos}>
-          <strong>{nombre || 'Alguien'}</strong>
-          {relacion && <small>{relacion}</small>}
-          <span className={s.ocasion}>{ocasion}</span>
-          {dias != null && <span className={s.faltan}>{textoFaltan(dias)}</span>}
+          <strong>{nombre || <Texto>Alguien</Texto>}</strong>
+          {relacion && <small><Texto>{relacion}</Texto></small>}
+          <span className={s.ocasion}><Texto>{ocasion}</Texto></span>
+          {dias != null && <span className={s.faltan}><Texto>{textoFaltan(dias)}</Texto></span>}
         </span>
         <HojaCalendario fecha={fecha} tono={dias != null && dias <= 7 ? 'rosa' : 'violeta'} />
       </button>
       {festivas.length > 0 && (
-        <span className={s.festivas}>{festivas.map((f) => <Etiqueta key={f} tono="rosa">{f}</Etiqueta>)}</span>
+        <span className={s.festivas}>{festivas.map((f) => <Etiqueta key={f} tono="rosa"><Texto>{f}</Texto></Etiqueta>)}</span>
       )}
     </article>
   );
@@ -93,7 +103,7 @@ export function SobreRegalo({ para, mensaje, sticker = 'kapi-love', abierto = fa
       </div>
       {abierto ? (
         <div className={s.carta}>
-          <small>Para {para}</small>
+          <small><Texto>Para</Texto> {para}</small>
           <p className={s.mensaje}>{mensaje}</p>
           {children}
         </div>
@@ -101,9 +111,9 @@ export function SobreRegalo({ para, mensaje, sticker = 'kapi-love', abierto = fa
         <button type="button" className={s.cerrado} onClick={onAbrir}>
           <span className={s.solapa} aria-hidden="true" />
           <span className={s.cerradoTexto}>
-            <small>Para</small>
+            <small><Texto>Para</Texto></small>
             <strong>{para}</strong>
-            <span>Toca para abrir</span>
+            <span><Texto>Toca para abrir</Texto></span>
           </span>
         </button>
       )}

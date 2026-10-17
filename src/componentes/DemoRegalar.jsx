@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  PaginaListaPublica, PaginaRegalar, PaginaRegaloSorpresa, PaginaPagoRapido, tarjetaDesdeProducto, diaYMes, faltanDias,
+  PaginaListaPublica, PaginaRegalar, PaginaRegaloSorpresa, PaginaPagoRapido, tarjetaDesdeProducto, itemRegaloDesde, diaYMes, faltanDias,
 } from './kit';
 import INICIO from './demo/inicio.json';
 
@@ -17,10 +17,16 @@ const espera = (ms) => new Promise((r) => { setTimeout(r, ms); });
 const { nuevos = [], ofertas = [], destacados = [] } = INICIO.productos;
 const DUENO = { nombre: 'Isaac' };
 
-/* Su lista: uno ya regalado y uno que salió de la tienda. */
-const ITEMS = [...nuevos.slice(0, 4), ...ofertas.slice(1, 3)].map((p, k) => ({
-  id: p.id, crudo: p, producto: tarjetaDesdeProducto(p), regalado: k === 2,
-})).concat([{ id: 'retirado', producto: { nombre: destacados[4]?.name, imagen: tarjetaDesdeProducto(destacados[4] || {}).imagen }, disponible: false }]);
+/* Su lista: uno ya regalado y uno que salió de la tienda (borrado). Cada item
+   guarda lo que la tienda guarda al agregarlo (nombre, foto, precio). */
+const retirado = destacados[4] ? { ...destacados[4], deleted: true } : null;
+const LISTA = [...nuevos.slice(0, 4), ...ofertas.slice(1, 3), retirado].filter(Boolean).map((p, k) => ({
+  item: { productId: p.id, productName: p.name, productImage: tarjetaDesdeProducto(p).imagen, price: p.salePrice || p.price, isGifted: k === 2 },
+  producto: p,
+}));
+const ITEMS = LISTA.map(({ item, producto }) => itemRegaloDesde(item, producto));
+// Mientras llegan los productos: lo que guardó la lista y "Regalar esto" esperando.
+const ITEMS_LLEGANDO = LISTA.map(({ item }) => itemRegaloDesde(item, undefined));
 
 /** La próxima vez que cae una fecha 'MM-DD' → 'AAAA-MM-DD'. */
 const proxima = (mmdd) => {
@@ -47,6 +53,7 @@ export const ESTADOS_REGALAR = [
   ['cargando', 'Cargando'],
   ['noEncontrada', 'No encontrada'],
   ['vacia', 'Lista vacía'],
+  ['llegando', 'Llegan los productos'],
   ['sinFechas', 'Sin fechas'],
   ['enApp', 'Abierto en la app'],
 ];
@@ -54,7 +61,9 @@ export const ESTADOS_REGALAR = [
 export function RegalarDemo({ ruta = VISTAS_REGALAR[0][1], estados = [], toast, onCarrito, onIrA }) {
   const avisar = (titulo, texto, tipo = 'exito') => toast?.({ tipo, titulo, texto, duracion: 2600 });
   const estado = estados.includes('cargando') ? 'cargando' : estados.includes('noEncontrada') ? 'noEncontrada' : undefined;
-  const items = estados.includes('vacia') ? [] : ITEMS;
+  let items = ITEMS;
+  if (estados.includes('vacia')) items = [];
+  else if (estados.includes('llegando')) items = ITEMS_LLEGANDO;
   const regalar = (it, fecha) => {
     onCarrito?.({
       id: `${it.id}-regalo-${Date.now()}`, imagen: it.producto.imagen, nombre: it.producto.nombre, precio: it.producto.precio, precioAntes: it.producto.precioAntes,

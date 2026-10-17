@@ -8,6 +8,7 @@ import { EsqueletoPagina } from '../Esqueletos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { PasoEstudio } from '../piezas/Estudio';
 import { TarjetaRegalo, FechaEntrega, SobreRegalo } from '../piezas/Regalar';
+import { Texto, useTexto } from '../Traduccion';
 import s from './Regalar.module.css';
 
 /*
@@ -18,6 +19,8 @@ import s from './Regalar.module.css';
  *  - /regalar/:código → PaginaRegalar: primero la fecha de entrega (sus
  *    fechas especiales) y después el regalo
  *  - /regalo/:pedido → PaginaRegaloSorpresa: quien lo recibe abre el sobre
+ * Los textos fijos pasan por la traducción (<Texto>); el nombre de la
+ * persona va tal cual.
  */
 
 /** El encabezado de las dos páginas: sello del regalo, el título con su trazo y la bajada. */
@@ -26,18 +29,19 @@ function CabezaRegalo({ titulo, texto, accion }) {
     <header className={s.cabeza}>
       <Sello tamano={56} girar={-8}><Gift aria-hidden="true" /></Sello>
       <h1 className={s.titulo}>{titulo}<Trazo className={s.trazo} /></h1>
-      {texto && <p className={s.texto}>{texto}</p>}
+      {texto && <p className={s.texto}><Texto>{texto}</Texto></p>}
       {accion}
     </header>
   );
 }
 
+// Sin la cara de Kapi: en la tienda ya está el flotante (un solo Kapi a la vista).
 function NoEncontrada({ urlTienda, titulo = 'No encontramos esta lista' }) {
   return (
     <BloqueSeccion ajustes={{ paddingTop: '2rem', paddingBottom: '2.5rem' }}>
       <div className={s.estado}>
-        <EstadoVacio imagen={CARAS_KAPI.triste} titulo={titulo} texto="El enlace no es válido o la lista ya no existe. Revisa que esté completo.">
-          <Boton to={urlTienda} icono={<Store aria-hidden="true" />}>Ir a la tienda</Boton>
+        <EstadoVacio imagen={null} titulo={<Texto>{titulo}</Texto>} texto={<Texto>El enlace no es válido o la lista ya no existe. Revisa que esté completo.</Texto>}>
+          <Boton to={urlTienda} icono={<Store aria-hidden="true" />}><Texto>Ir a la tienda</Texto></Boton>
         </EstadoVacio>
       </div>
     </BloqueSeccion>
@@ -47,27 +51,27 @@ function NoEncontrada({ urlTienda, titulo = 'No encontramos esta lista' }) {
 /**
  * La lista de deseos de alguien (/wishlist/:código).
  *  - dueno: { nombre } · items: [{ id, producto: props de TarjetaProducto,
- *    regalado, disponible }] · onRegalar(item)
+ *    regalado, disponible, cargando }] (itemRegaloDesde) · onRegalar(item)
  *  - urlFechas: "Elegir el día de entrega" (/regalar/:código)
  *  - estado: 'cargando' | 'noEncontrada' · urlTienda
  */
 export function PaginaListaPublica({ dueno = {}, items = [], onRegalar, urlFechas, estado, urlTienda = '/tienda' }) {
   if (estado === 'cargando') return <EsqueletoPagina forma="productos" />;
   if (estado === 'noEncontrada') return <NoEncontrada urlTienda={urlTienda} />;
-  const nombre = dueno.nombre || 'Alguien';
+  const nombre = dueno.nombre || <Texto>Alguien</Texto>;
   return (
     <BloqueSeccion ajustes={{ paddingTop: '1.75rem', paddingBottom: '2.5rem' }}>
       <div className={s.pagina} data-componente="PaginaListaPublica">
         <CabezaRegalo
-          titulo={`La lista de deseos de ${nombre}`}
+          titulo={<><Texto>La lista de deseos de</Texto> {nombre}</>}
           texto="Elige algo de su lista y sorpréndele: tú pagas y nosotros se lo llevamos."
           accion={urlFechas && items.length > 0 && (
-            <Boton to={urlFechas} variante="contorno" icono={<CalendarHeart aria-hidden="true" />}>Elegir el día de entrega</Boton>
+            <Boton to={urlFechas} variante="contorno" icono={<CalendarHeart aria-hidden="true" />}><Texto>Elegir el día de entrega</Texto></Boton>
           )}
         />
         {items.length === 0 ? (
-          <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Su lista está vacía por ahora" texto="Vuelve más tarde o mira la tienda.">
-            <Boton to={urlTienda} icono={<Store aria-hidden="true" />}>Ir a la tienda</Boton>
+          <EstadoVacio imagen={null} icono={<Gift />} titulo={<Texto>Su lista está vacía por ahora</Texto>} texto={<Texto>Vuelve más tarde o mira la tienda.</Texto>}>
+            <Boton to={urlTienda} icono={<Store aria-hidden="true" />}><Texto>Ir a la tienda</Texto></Boton>
           </EstadoVacio>
         ) : (
           <ul className={s.rejilla}>
@@ -87,34 +91,37 @@ export function PaginaListaPublica({ dueno = {}, items = [], onRegalar, urlFecha
  *    ("24 de octubre") }] · items (como PaginaListaPublica)
  *  - onRegalar({ item, fecha }): fecha es null si no registró ninguna
  *  - estado: 'cargando' | 'noEncontrada' · urlTienda
+ * Viene elegida la primera fecha, también si las fechas llegan después de montar.
  */
 export function PaginaRegalar({ dueno = {}, fechas = [], items = [], onRegalar, estado, urlTienda = '/tienda' }) {
-  const [elegida, setElegida] = useState(fechas[0]?.id);
+  const [tocada, setElegida] = useState(null);
+  const etiquetaFechas = useTexto('Fechas especiales');
   if (estado === 'cargando') return <EsqueletoPagina forma="productos" />;
   if (estado === 'noEncontrada') return <NoEncontrada urlTienda={urlTienda} titulo="No encontramos sus fechas" />;
-  const nombre = dueno.nombre || 'Alguien';
+  const nombre = dueno.nombre || <Texto>Alguien</Texto>;
+  const elegida = fechas.some((f) => f.id === tocada) ? tocada : fechas[0]?.id;
   const fecha = fechas.find((f) => f.id === elegida);
   return (
     <BloqueSeccion ajustes={{ paddingTop: '1.75rem', paddingBottom: '2.5rem' }}>
       <div className={s.pagina} data-componente="PaginaRegalar">
         <CabezaRegalo
-          titulo={`Regálale a ${nombre}`}
+          titulo={<><Texto>Regálale a</Texto> {nombre}</>}
           texto="Elige una de sus fechas especiales y lo que quieras de su lista: llega ese día."
         />
 
-        <PasoEstudio numero={1} titulo="Elige el día de entrega" detalle={fecha?.ocasion}>
+        <PasoEstudio numero={1} titulo={<Texto>Elige el día de entrega</Texto>} detalle={fecha?.ocasion && <Texto>{fecha.ocasion}</Texto>}>
           {fechas.length ? (
-            <div className={s.fechas} role="radiogroup" aria-label="Fechas especiales">
+            <div className={s.fechas} role="radiogroup" aria-label={etiquetaFechas}>
               {fechas.map((f) => <FechaEntrega key={f.id} {...f} elegida={f.id === elegida} onElegir={() => setElegida(f.id)} />)}
             </div>
           ) : (
-            <Aviso tipo="info" compacto>{nombre} todavía no registró fechas especiales. Igual puedes regalarle algo de su lista.</Aviso>
+            <Aviso tipo="info" compacto>{nombre} <Texto>todavía no registró fechas especiales. Igual puedes regalarle algo de su lista.</Texto></Aviso>
           )}
         </PasoEstudio>
 
-        <PasoEstudio numero={2} titulo="Elige el regalo">
+        <PasoEstudio numero={2} titulo={<Texto>Elige el regalo</Texto>}>
           {items.length === 0 ? (
-            <p className={s.vacia}>Su lista está vacía por ahora. Vuelve más tarde.</p>
+            <p className={s.vacia}><Texto>Su lista está vacía por ahora. Vuelve más tarde.</Texto></p>
           ) : (
             <>
               <ul className={s.rejilla}>
@@ -123,7 +130,7 @@ export function PaginaRegalar({ dueno = {}, fechas = [], items = [], onRegalar, 
                 ))}
               </ul>
               {fecha && (
-                <p className={s.entrega}>Se entrega el <strong>{fecha.fechaTexto}</strong> ({fecha.ocasion}) a <strong>{nombre}</strong>.</p>
+                <p className={s.entrega}><Texto>Se entrega el</Texto> <strong>{fecha.fechaTexto}</strong> (<Texto>{fecha.ocasion}</Texto>) <Texto>a</Texto> <strong>{nombre}</strong>.</p>
               )}
             </>
           )}
@@ -146,8 +153,8 @@ export function PaginaRegaloSorpresa({ regalo = {}, enApp = false, urlDescargar 
     return (
       <BloqueSeccion ajustes={{ paddingTop: '2rem', paddingBottom: '2.5rem' }}>
         <div className={s.estado}>
-          <EstadoVacio imagen={CARAS_KAPI.triste} titulo="No encontramos este regalo" texto="Puede que el enlace esté incompleto. Pídele a quien te lo mandó que lo copie otra vez.">
-            <Boton to={urlTienda} icono={<Store aria-hidden="true" />}>Ir a la tienda</Boton>
+          <EstadoVacio imagen={CARAS_KAPI.triste} titulo={<Texto>No encontramos este regalo</Texto>} texto={<Texto>Puede que el enlace esté incompleto. Pídele a quien te lo mandó que lo copie otra vez.</Texto>}>
+            <Boton to={urlTienda} icono={<Store aria-hidden="true" />}><Texto>Ir a la tienda</Texto></Boton>
           </EstadoVacio>
         </div>
       </BloqueSeccion>
@@ -156,17 +163,17 @@ export function PaginaRegaloSorpresa({ regalo = {}, enApp = false, urlDescargar 
   return (
     <BloqueSeccion ajustes={{ paddingTop: '2rem', paddingBottom: '3rem' }}>
       <div className={s.sorpresa} data-componente="PaginaRegaloSorpresa">
-        <p className={s.antetitulo}>{abierto ? 'Te mandaron un regalo' : 'Tienes un regalo'}</p>
+        <p className={s.antetitulo}><Texto>{abierto ? 'Te mandaron un regalo' : 'Tienes un regalo'}</Texto></p>
         <SobreRegalo {...regalo} abierto={abierto} onAbrir={() => setAbierto(true)}>
           {enApp ? (
             <>
-              <p className={s.invitacion}>¡Bienvenido a Walá! Mira la tienda y regala tú también.</p>
-              <Boton to={urlTienda} icono={<Store aria-hidden="true" />}>Ver la tienda</Boton>
+              <p className={s.invitacion}><Texto>¡Bienvenido a Walá! Mira la tienda y regala tú también.</Texto></p>
+              <Boton to={urlTienda} icono={<Store aria-hidden="true" />}><Texto>Ver la tienda</Texto></Boton>
             </>
           ) : (
             <>
-              <p className={s.invitacion}>Alguien pensó en ti. Descarga Walá para ver más y regalar tú también.</p>
-              <Boton to={urlDescargar} icono={<Download aria-hidden="true" />}>Descargar Walá</Boton>
+              <p className={s.invitacion}><Texto>Alguien pensó en ti. Descarga Walá para ver más y regalar tú también.</Texto></p>
+              <Boton to={urlDescargar} icono={<Download aria-hidden="true" />}><Texto>Descargar Walá</Texto></Boton>
             </>
           )}
         </SobreRegalo>

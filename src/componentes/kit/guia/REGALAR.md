@@ -15,6 +15,8 @@ Cómo verlo en vivo: `npm run dev` → http://localhost:3000/componentes.html �
   con PayPal. Estados: ya pagado, vencido, no encontrado, el pago falla y
   cargando. **En la tienda desde el 2026-10-17** (ver "Pago rápido en la
   tienda", abajo).
+- **Su lista de deseos, en la tienda desde el 2026-10-17** (ver "La lista
+  pública en la tienda", abajo).
 
 | Regalar para una fecha | Su lista (celular) | El regalo y el pago rápido (celular) |
 |---|---|---|
@@ -38,7 +40,7 @@ ejemplo.
 
 | Parte | Componente | Piezas que usa | Datos (en la tienda) |
 |---|---|---|---|
-| P15 Su lista | `PaginaListaPublica` | `TarjetaRegalo` (pieza nueva: `TarjetaProducto sinAccion` + "Regalar esto"), `Sello`, `Trazo`, `EstadoVacio` | `getWishlistByUserCode`, `getPublicGiftRegistry` (el nombre), `useProducts` |
+| P15 Su lista | `PaginaListaPublica` | `TarjetaRegalo` (pieza nueva: `TarjetaProducto sinAccion sinDeseo` + "Regalar esto"), `Sello`, `Trazo`, `EstadoVacio` | `getWishlistByUserCode`, `getPublicGiftRegistry` (el nombre y si tiene fechas), `getProduct` de cada uno (`itemRegaloDesde`) |
 | P15 Regalar para una fecha | `PaginaRegalar` | `FechaEntrega` (pieza nueva: `Avatar`, `HojaCalendario`, `Etiqueta`), `PasoEstudio`, `TarjetaRegalo` | `getPublicGiftRegistry` (fechas y lista), `proximaOcurrencia` |
 | P15 Abrir el regalo | `PaginaRegaloSorpresa` | `SobreRegalo` (pieza nueva: Kapi 3D, el sticker en un `Sello`) | `getOrderGiftDetails` |
 | P16 Pago rápido | `PaginaPagoRapido` | `PagoTarjeta`, `PagoPaypal` (piezas nuevas), `LogoWala`, `EstadoVacio` | `enlaces_pago/{id}` |
@@ -133,13 +135,71 @@ No se probó: el cobro (en local no está la llave de Culqi,
 `REACT_APP_CULQI_PUBLIC_KEY`, y las Cloud Functions no corren; nunca se
 cobra de verdad), la captura de PayPal ni la app Android.
 
+## La lista pública en la tienda (hecho el 2026-10-17)
+
+![La lista de deseos de otra persona en la tienda real, en el celular: el título con su trazo, "Elegir el día de entrega", las tarjetas con "Regalar esto", y abajo el producto retirado y el que ya no existe](lista-publica-tienda.webp)
+
+(Celular, 390 px, claro, con la lista de prueba del emulador. Se probó
+también a 1366 y en oscuro.)
+
+- **Conector:** `src/components/regalar/ListaPublicaDeTienda.jsx`, desde
+  `pages/WishlistPublic/WishlistPublic.jsx` (el interruptor). Lo que
+  comparte con regalar para una fecha está en
+  `src/components/regalar/regaloDeLista.js`: el código en mayúsculas, el
+  aviso de la ficha, la consulta del registro, los productos de la lista y
+  la tarjeta de cada uno (`itemDeTarjeta` → `itemRegaloDesde`).
+- **Carga:**
+  - Antes bajaba **todo el catálogo**, con ocultos y borrados, para cruzar
+    unos pocos productos, y esperaba a pantalla completa a la lista, al
+    catálogo y a la Cloud Function, una detrás de otra.
+  - Ahora la lista (`getWishlistByUserCode`) y el registro
+    (`getPublicGiftRegistry`, el nombre) salen a la vez; mientras, el
+    esqueleto de productos.
+  - Las tarjetas se ven al tiro con lo que guardó la lista (nombre, foto con
+    sus copias, precio) y "Regalar esto" espera (`cargando`) a que llegue su
+    producto (`getProduct`, uno por uno). Usa la caché de la ficha
+    (`['product', id]`): abrirla después es inmediato.
+  - La consulta de categorías ya no se hace (la tarjeta del kit no la usa).
+- **La tarjeta:** `TarjetaProducto` del kit con la foto de la tienda (la
+  miniatura elegida, `srcSet`, respaldo) y la impresión de la miniatura al
+  verse, **sin el corazón** (`sinDeseo`) ni Agregar rápido: esos botones no
+  llevan los datos del regalo.
+- **"Regalar esto":** igual que antes. Sin opciones, `addToCart` con
+  `isWishlistGift` y el código en mayúsculas, el aviso y el carrito. Con
+  talla, color o piezas, la ficha con `state.regalo` y su aviso.
+- **Se avisa al dueño** (`notifyWishlistVisitSecure`) una vez por visita.
+- **Interruptor `regalarViejo`:** vuelve la página de antes
+  (`WishlistPublicViejo.jsx`, que baja aparte).
+
+### Qué se probó (2026-10-17, localhost con los emuladores)
+
+Con la lista de prueba de `cliente-uid` (`KS-CLI001`), con un regalo ya
+hecho, un producto retirado (`deleted`) y uno que ya no existe (y ya
+regalado):
+- Las tarjetas, el sello "¡Ya se lo regalaron!" (también en el que ya no
+  existe) y los dos apagados con "Ya no está en la tienda".
+- "Regalar esto" de un serum: el carrito, con `isWishlistGift` y
+  `KS-CLI001`.
+- "Regalar esto" de una casaca con talla: la ficha con "Regalo para Cliente
+  Demo, de su lista de deseos…", sin esperar (la caché).
+- "Elegir el día de entrega" (`/regalar/KS-CLI001`) aparece con fechas y no
+  sin ellas; el aviso al dueño corre.
+- La lista vacía (`KS-6N28JH`), un código que no existe y el esqueleto.
+- El `srcSet` de las fotos, con un producto de prueba (los del emulador no
+  traen copias).
+- `regalarViejo` en `localStorage.wala_kit_viejo` → la página de antes.
+- 390 y 1366, claro y oscuro.
+
+No se probó: un visitante sin sesión (en el emulador entra con la cuenta de
+admin), la traducción a otro idioma ni la app Android.
+
 ## Llevar a la tienda (lo que falta: TODAVÍA NO se hace)
 
 ### Reemplazos
 
 | Hoy | Pasa a (kit) |
 |---|---|
-| `WishlistPublic` con `PremiumProductCard` y "Regalar esto" | `PaginaListaPublica` + `TarjetaRegalo` |
+| ✓ `WishlistPublic` con `PremiumProductCard` y "Regalar esto" | `PaginaListaPublica` + `TarjetaRegalo` (hecho) |
 | `GiftRegistryPage` (fechas arrastrables, `GiftProductCard`) | `PaginaRegalar` + `FechaEntrega` + `TarjetaRegalo` |
 | `GiftExperiencePage` (Kapi en CSS, emojis) | `PaginaRegaloSorpresa` + `SobreRegalo` |
 | ✓ `PagoRapidoPage` (estilos en línea) | `PaginaPagoRapido` (hecho) |
@@ -151,9 +211,10 @@ vigía del modal cerrado y el anti doble cobro.
 
 ### De dónde sale cada dato
 
-- **`items`:** los de la lista cruzados con `useProducts`
-  (`tarjetaDesdeProducto`). `regalado` sale de `isGifted`. `disponible` es
-  falso si el producto no existe, si está oculto o si está borrado.
+- **`items`:** los de la lista, cada uno con su producto (`getProduct`, no
+  el catálogo entero) por `itemRegaloDesde`. `regalado` sale de `isGifted`.
+  `disponible` es falso si el producto no existe, si está oculto o si está
+  borrado (y, para una fecha, si no tiene precio).
 - **`fechas`:** `dates` de `getPublicGiftRegistry`, con `proximaOcurrencia`.
   `festivas` sale de `getGlobalDates(roleKey, gender)`.
 - **`onRegalar({ item, fecha })`:** `addToCart` con `isWishlistGift`,
@@ -176,6 +237,12 @@ vigía del modal cerrado y el anti doble cobro.
   mandarlos juntos. Tocar funciona igual con el dedo, y un regalo a la vez es
   lo común.
 - Sin emojis (🎁, 🎉, 📅, ⚠️, ✅).
+- Un solo Kapi a la vista: la lista vacía y la no encontrada llevan un
+  sello con ícono (en la tienda ya está el Kapi flotante).
+- Un producto agotado no se puede regalar ("Regalar esto" apagado); antes
+  se agregaba igual.
+- "Elegir el día de entrega" en la lista pública, solo si la persona tiene
+  fechas especiales (antes no había ese enlace).
 - Los textos de no encontrado dicen qué hacer, y el pago rápido vencido lleva
   a escribirle al asesor.
 
@@ -193,7 +260,7 @@ anónimo.
 ### Pasos
 
 1. ✓ `PaginaPagoRapido` (2026-10-17, arriba).
-2. La lista pública.
+2. ✓ La lista pública (2026-10-17, arriba).
 3. Regalar para una fecha (decidir si se mantiene el arrastre).
 4. Abrir el regalo.
 5. Cambiar el botón de Culqi y la caja de PayPal del checkout y del saldo de

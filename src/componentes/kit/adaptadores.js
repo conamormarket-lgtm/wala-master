@@ -121,6 +121,35 @@ export function tarjetaDesdeProducto(p, { imagen, catalogo = {} } = {}) {
 }
 
 /**
+ * Un producto de la lista de deseos de otra persona, para <TarjetaRegalo>
+ * (/wishlist/:código y /regalar/:código).
+ *  - item: el de la lista (productId y lo que guardó al agregarlo:
+ *    productName, productImage, price, isGifted)
+ *  - producto: el del catálogo; undefined mientras llega (la tarjeta se ve
+ *    con lo que guardó la lista y "Regalar esto" espera), null si no existe
+ *  - imagen: la foto que elige la tienda · catalogo: como tarjetaDesdeProducto
+ *  - exigirPrecio: sin precio no se puede regalar (/regalar/:código)
+ * Oculto o borrado (deleted), se ve apagado: su foto y "Ya no está en la tienda".
+ */
+export function itemRegaloDesde(item = {}, producto, { imagen, catalogo, exigirPrecio = false } = {}) {
+  const id = item.productId;
+  const base = { id, regalado: Boolean(item.isGifted) };
+  const guardado = {
+    url: `/producto/${id}`,
+    nombre: item.productName || 'Producto',
+    imagen: item.productImage || undefined,
+    precio: item.price > 0 ? item.price : undefined,
+  };
+  if (producto === undefined) return { ...base, producto: guardado, cargando: true };
+  const precio = producto ? producto.salePrice || producto.price || 0 : 0;
+  const disponible = Boolean(producto) && producto.visible !== false && producto.deleted !== true && (!exigirPrecio || precio > 0);
+  if (!disponible) {
+    return { ...base, disponible: false, producto: { nombre: producto?.name || guardado.nombre, imagen: producto?.mainImage || guardado.imagen } };
+  }
+  return { ...base, disponible: true, producto: tarjetaDesdeProducto(producto, { imagen, catalogo }) };
+}
+
+/**
  * Props de <AgregarRapido> desde un producto.
  *  - subproductos: { [productId]: producto } de las piezas de un combo
  *    (la tienda ya los carga en ProductDetail para mostrar sus colores).

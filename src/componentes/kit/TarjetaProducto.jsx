@@ -105,6 +105,7 @@ const ACCIONES = {
  *    ratón, qué trae. Si el combo no trae `imagen`, sus piezas van como cartas.
  *
  *  - sinAccion: sin el botón de agregar (el regalo de una lista de deseos lleva el suyo).
+ *  - sinDeseo: sin el corazón (la lista de deseos de otra persona).
  *
  *  - deseado, onDeseo(nuevo): el corazón controlado (WishlistContext); sin
  *    `deseado`, la tarjeta lo recuerda sola.
@@ -147,6 +148,7 @@ export default function TarjetaProducto({
   url = '#producto',
   accion = 'agregar',
   sinAccion = false,
+  sinDeseo = false,
   onAgregar,
   deseado: deseadoProp,
   onDeseo,
@@ -319,16 +321,18 @@ export default function TarjetaProducto({
           <LogoMarca variante="sello" className={s.sello} nombre={marca.nombre} imagen={marca.logo} />
         )}
 
-        <button
-          type="button"
-          className={[s.deseo, deseado && s.deseoActivo].filter(Boolean).join(' ')}
-          aria-pressed={deseado}
-          aria-label={deseado ? t.quitar : t.deseos}
-          onClick={alternarDeseo}
-        >
-          <Heart aria-hidden="true" />
-          <Estallido disparo={latidos} cantidad={8} distancia={22} colores={['#f43f5e', '#fb7185', '#8b5cf6']} />
-        </button>
+        {!sinDeseo && (
+          <button
+            type="button"
+            className={[s.deseo, deseado && s.deseoActivo].filter(Boolean).join(' ')}
+            aria-pressed={deseado}
+            aria-label={deseado ? t.quitar : t.deseos}
+            onClick={alternarDeseo}
+          >
+            <Heart aria-hidden="true" />
+            <Estallido disparo={latidos} cantidad={8} distancia={22} colores={['#f43f5e', '#fb7185', '#8b5cf6']} />
+          </button>
+        )}
 
         {agotado ? (
           <span className={s.capaAgotado}>{t.agotado}</span>
