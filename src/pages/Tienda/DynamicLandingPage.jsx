@@ -20,6 +20,10 @@ const DynamicLandingPage = () => {
   const [loading, setLoading] = useState(true);
   const [landingPage, setLandingPage] = useState(null);
   const [themeContent, setThemeContent] = useState(null);
+  // Lo avisa TiendaPage cuando ya conoce las secciones: true si la página va
+  // con el kit. Entonces lleva el fondo y los colores de la tienda (como las
+  // de marca); el fondo negro queda solo para el cacherito.
+  const [conKit, setConKit] = useState(false);
 
   // Oculta el header/footer de la tienda DE INMEDIATO. Si esperamos al fetch de
   // la landing, el cliente ve por un instante el chrome de WALA + el esqueleto
@@ -119,7 +123,7 @@ const DynamicLandingPage = () => {
   }
 
   return (
-    <div className={`landing-page-wrapper ${landingPage.hideHeader ? 'no-header' : ''} ${landingPage.brandId ? 'landing-store-page' : ''}`} id="landing-theme-wrapper" translate="no">
+    <div className={`landing-page-wrapper ${landingPage.hideHeader ? 'no-header' : ''} ${landingPage.brandId || conKit ? 'landing-store-page' : ''}`} id="landing-theme-wrapper" translate="no">
       {themeContent && (
         <style dangerouslySetInnerHTML={{ __html: themeContent }} />
       )}
@@ -134,6 +138,7 @@ const DynamicLandingPage = () => {
         isLandingPage={true}
         pageIdOverride={landingPage.slug || landingPage.id}
         pageBrandIdOverride={landingPage.brandId || null}
+        onConKit={setConKit}
       />
     </div>
   );

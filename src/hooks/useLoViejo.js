@@ -16,7 +16,8 @@ import { getDocument } from '../services/firebase/firestore';
  */
 const CLAVE_LOCAL = 'wala_kit_viejo';
 
-const forzadoLocal = (nombre) => {
+/** ¿Está puesto en este navegador? (localStorage; también lo mira el arranque de la tienda). */
+export const forzadoLocal = (nombre) => {
   try {
     return String(window.localStorage.getItem(CLAVE_LOCAL) || '')
       .split(',').map((x) => x.trim()).includes(nombre);

@@ -3,7 +3,8 @@ import React, { useState, useMemo, useCallback, useRef, useEffect, Suspense } fr
 // (useLoViejo) vuelve a los componentes de antes; lo viejo, en guia/ELIMINAR.md.
 import { SeccionDelKit } from '../../componentes/kit/Secciones';
 import { categoriasDeGrilla, gruposDeCatalogo, grillaDesdeConfiguracion, limitesDePrecio } from '../../componentes/kit/adaptadores';
-import { getCollections } from '../../services/collections';
+import { getCollections, getCollectionById } from '../../services/collections';
+import { TIPOS_DEL_KIT, esDelCacherito } from './services/seccionesDelKit';
 import { getTags } from '../../services/tags';
 import { getCharacters } from '../../services/characters';
 import { getProductTypes } from '../../services/productTypes';
@@ -51,6 +52,7 @@ import {
   searchProducts,
   getProductsByCategory,
   getProductsByBrand,
+  getProductsByCollection,
   getFeaturedProducts,
   getStoreProductsPage,
   getOnSaleProducts,
@@ -82,16 +84,6 @@ import { T } from '../../i18n/useTranslatedText';
 
 
 
-// Secciones del builder que ya dibuja el kit, y en qué páginas (paso 5).
-const TIPOS_DEL_KIT = new Set([
-  'announcement_bar', 'hero_carousel', 'trust_badges', 'testimonials', 'faq_accordion',
-  'featured_carousel', 'new_arrivals_carousel', 'sale_carousel',
-  'banner_grid', 'category_grid', 'header', 'marquee', 'sidebar_catalog', 'product_grid',
-  'hero_banner', 'categories_nav', 'category_carousel',
-]);
-// Más las páginas de marca (landing con marca); las del reloj (cacherito)
-// siguen enteras con lo de antes.
-const PAGINAS_DEL_KIT = new Set(['home', 'tienda']);
 const PRECIO_VACIO = { min: '', max: '' };
 // El <section> del catálogo del kit no lleva ref: se busca por su id.
 const idDelCatalogo = (section) => section?.settings?.anchorId || 'catalogo';
@@ -308,7 +300,7 @@ const renderBotonSeccion = (s) => {
   );
 };
 
-const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdOverride = null }) => {
+const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdOverride = null, onConKit }) => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -942,12 +934,19 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // ¿Está vacío el catálogo? (respeta el spinner: durante la carga no se da por vacío)
   const catalogIsEmpty = !catalogLoadingResolved && catalogProducts.length === 0;
 
-  // ── Secciones con el kit: el inicio, /tienda y las marcas (TIPOS_DEL_KIT) ──
+  // ── Secciones con el kit (TIPOS_DEL_KIT): el inicio, /tienda y todas las
+  // landings menos las del cacherito, que siguen enteras con lo de antes ──
   const seccionesViejo = useLoViejo('secciones');
   const whatsappTienda = useWhatsAppDeLaRuta();
   const { user, userProfile } = useAuth();
-  const esPaginaDeMarca = isLandingPage && Boolean(pageBrandId) && !isKcheroLanding(pageId);
-  const paginaConKit = (PAGINAS_DEL_KIT.has(pageId) || esPaginaDeMarca) && !seccionesViejo;
+  const paginaConKit = !seccionesViejo && !esDelCacherito(pageId, configuredSections);
+  // A la landing que la envuelve (DynamicLandingPage): si va con el kit, toma
+  // el fondo de la tienda. Solo cuando ya llegaron las secciones (antes no se
+  // sabe si es del cacherito).
+  const seccionesConocidas = Boolean(storeConfigDraft?.sections || storefrontConfig?.sections);
+  useEffect(() => {
+    if (onConKit) onConKit(seccionesConocidas && paginaConKit);
+  }, [onConKit, seccionesConocidas, paginaConKit]);
   const usaKit = (section) => paginaConKit && TIPOS_DEL_KIT.has(section.type);
   const conTipoDelKit = (tipo) => paginaConKit && configuredSections.some((x) => x.type === tipo);
 
@@ -1076,6 +1075,43 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   });
   const productosDeCategoria = (id) => carruselesPorCategoria[categoriasDeCarrusel.indexOf(id)]?.data || [];
 
+  // Colecciones (collection_carousel y flash_sales): las mismas consultas que
+  // CollectionCarousel y FlashSales, sin los productos ocultos.
+  const coleccionesDe = (tipo) => (paginaConKit
+    ? [...new Set(configuredSections.filter((x) => x.type === tipo && x.settings?.collection).map((x) => x.settings.collection))]
+    : []);
+  const coleccionesDeCarrusel = coleccionesDe('collection_carousel');
+  const coleccionesDeOferta = coleccionesDe('flash_sales');
+  const deColeccion = (clave) => (nombre) => ({
+    queryKey: [clave, nombre, marcaDeCarrusel],
+    queryFn: async () => {
+      const { data, error } = await getProductsByCollection(nombre, marcaDeCarrusel);
+      if (error) throw new Error(error);
+      return data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+  const carruselesPorColeccion = useQueries({ queries: coleccionesDeCarrusel.map(deColeccion('collection-products')) });
+  const ofertasPorColeccion = useQueries({ queries: coleccionesDeOferta.map(deColeccion('flash-sales')) });
+  // Sin título (o con el de ejemplo), el nombre de la colección.
+  const sinTitulo = (x) => !x.settings?.title || x.settings.title === 'Nuestra Colección';
+  const coleccionesSinTitulo = paginaConKit
+    ? [...new Set(configuredSections.filter((x) => x.type === 'collection_carousel' && x.settings?.collection && sinTitulo(x)).map((x) => x.settings.collection))]
+    : [];
+  const nombresDeColeccion = useQueries({
+    queries: coleccionesSinTitulo.map((nombre) => ({
+      queryKey: ['collection-details', nombre],
+      queryFn: async () => {
+        const { data, error } = await getCollectionById(nombre);
+        if (error && error !== 'Documento no encontrado') throw new Error(error);
+        return data;
+      },
+      staleTime: 60 * 60 * 1000,
+    })),
+  });
+  const consultaDe = (lista, nombres, nombre) => lista[nombres.indexOf(nombre)];
+  const visibles = (productos) => (Array.isArray(productos) ? productos.filter((p) => p.visible !== false) : []);
+
   const PRODUCTOS_DEL_KIT = { featured_carousel: featuredProducts, new_arrivals_carousel: nuevosKit, sale_carousel: ofertasKit };
   // Las categorías con productos, como las calculaba CategoryGrid (la misma
   // regla que el menú de la cabecera: idsDeCategoriaDe).
@@ -1095,10 +1131,44 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       datos.productos = productosDeCategoria(section.settings?.categoryId);
       datos.tarjeta = TarjetaDeTienda;
     }
+    let seccion = section;
+    if (section.type === 'collection_carousel' || section.type === 'flash_sales') {
+      const coleccion = section.settings?.collection;
+      if (!coleccion) return null;
+      const carrusel = section.type === 'collection_carousel';
+      const consulta = carrusel
+        ? consultaDe(carruselesPorColeccion, coleccionesDeCarrusel, coleccion)
+        : consultaDe(ofertasPorColeccion, coleccionesDeOferta, coleccion);
+      Object.assign(datos, {
+        productos: visibles(consulta?.data),
+        cargando: Boolean(consulta?.isLoading),
+        tarjeta: TarjetaDeTienda,
+        // La colección avisa si falló; la oferta, como antes, no se dibuja.
+        ...(carrusel && consulta?.error ? { error: 'No se pudo cargar la colección' } : {}),
+      });
+      if (carrusel && sinTitulo(section)) {
+        const nombre = consultaDe(nombresDeColeccion, coleccionesSinTitulo, coleccion)?.data?.name || '';
+        seccion = { ...section, settings: { ...section.settings, title: nombre } };
+      }
+    }
+    if (section.type === 'featured_products') {
+      // Un solo "no hay productos" por página, y sin título ni botón encima.
+      const vacia = !featuredProducts.length;
+      if (vacia) {
+        if (emptyMessageShown) return null;
+        emptyMessageShown = true;
+        seccion = { ...section, settings: { ...section.settings, title: '', buttonText: '' } };
+      }
+      Object.assign(datos, {
+        productos: featuredProducts,
+        tarjeta: TarjetaDeTienda,
+        ...(vacia ? { vacio: vacioKit } : {}),
+        sinKapi: Boolean(userProfile),
+      });
+    }
     if (section.type === 'banner_grid') datos.marcas = automaticGridBrands;
     // Con items puestos a mano (dataSource manual) mandan esos.
     if (section.type === 'category_grid') datos.categorias = section.settings?.dataSource === 'products' ? categoriasDeGrillaKit : undefined;
-    let seccion = section;
     if (section.type === 'hero_banner') {
       // Lo que no trae la sección sale del banner global (como antes).
       const banner = { ...activeConfig.heroBanner, ...section.settings };
