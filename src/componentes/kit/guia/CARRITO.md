@@ -5,6 +5,9 @@ Cómo verlo en vivo: `npm run dev` → http://localhost:3000/componentes.html �
 tarjeta o ficha lo llena. En "Estado del carrito": un pedido esperando el
 pago, falta una talla y "Restaurar carrito".
 
+**En la tienda desde el 2026-10-17** (paso 6): `/carrito` es esta página (ver
+"En la tienda", abajo).
+
 | Escritorio | Celular (pedido esperando el pago) |
 |---|---|
 | ![El carrito con un producto sin talla](carrito-escritorio.webp) | ![El carrito en el celular con un pedido pendiente](carrito-celular.webp) |
@@ -17,8 +20,8 @@ Revisado el 2026-10-15 contra `src/pages/CartPage.jsx`,
 
 | Parte | Componente | Piezas que usa | Diseño en | Datos (en la tienda) |
 |---|---|---|---|---|
-| P1 Página | `PaginaCarrito` | `TituloSeccion`, `Aviso`, `Casilla`, `EstadoVacio`, `CarruselProductos` | `paginas/Paginas.module.css` (`.carrito…`, `.seleccion`) | `useCart` |
-| Cada producto | `ItemCarrito` | `FotoProducto`, `Cantidad`, `Etiqueta`, `Enlace` | `Pedido.module.css` (`.item…`) | un item de `CartContext` |
+| P1 Página | `PaginaCarrito` (`paginas/Carrito.jsx`, en su propio archivo desde el 2026-10-17; `Paginas.jsx` lo reexporta) | `TituloSeccion`, `Aviso`, `Casilla`, `EstadoVacio`, `CarruselProductos` | `paginas/Carrito.module.css` (`.carrito…`, `.seleccion`) | `useCart` |
+| Cada producto | `ItemCarrito` | `FotoProducto` (con `srcSet`), `Cantidad`, `Etiqueta`, `Enlace` | `Pedido.module.css` (`.item…`) | un item de `CartContext` → `itemCarritoDesde` |
 | Envío gratis | `BarraEnvioGratis estricto` | `Estallido` | `Pedido.module.css` (`.envio…`) | `constants/envio` |
 | Resumen | `ResumenPedido` | `Boton`, `Moneda` | `Pedido.module.css` (`.resumen…`) | `getTotalPrice`, monedas del perfil |
 
@@ -48,13 +51,79 @@ Revisado el 2026-10-15 contra `src/pages/CartPage.jsx`,
     y el total.
   - Con monedas: "Tienes 43 monedas: podrás usarlas al pagar".
   - El botón: "Ir a pagar (2)" o el motivo por el que no se puede.
+  - Debajo: "Pago seguro con tarjeta, Yape, Plin o transferencia" (los medios
+    de la tienda; `notaPago` lo cambia).
+- **También te puede gustar:** se pide cuando se acerca a la vista
+  (`onVerAbajo`, a 300px). Con `tarjeta`, la tarjeta de la tienda.
 - **Envío:** la regla de la tienda, S/ 15 y gratis en compras de **más** de
   S/ 100 (`estricto`: con S/ 100 justos dice "Pasa de S/ 100.00 y el envío es
   gratis"). Sin nada elegido, no hay envío.
 
-## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
+## En la tienda (hecho el 2026-10-17)
 
-### Reemplazos
+![El carrito en la tienda real, en el celular: envío gratis, la selección y un combo con sus prendas](carrito-tienda-celular.webp)
+
+(Celular, 390 px, con los emuladores. Se probó también a 1366 y en oscuro.)
+
+- **Conector:** `src/components/carrito/CarritoDeTienda.jsx`, desde
+  `pages/CartPage.jsx`. Las líneas pasan por `itemCarritoDesde`
+  (`adaptadores.js`); las acciones son las de CartContext (tabla de abajo).
+  CartContext no cambió: localStorage, la nube, las pestañas, restaurar al
+  entrar y el pedido aprobado por el ERP siguen igual.
+- **Interruptor `carritoViejo`:** ahora vuelve **toda** la página vieja
+  (`Cart.jsx`, que baja aparte, solo con el interruptor) y, con ella, sus
+  preguntas con `window.confirm`.
+- **Combos sin portada:** la foto de su primera prenda (`comboItems[].imageUrl`),
+  sin pedir nada. Antes, `ComboProductImage` pedía las prendas a Firestore y
+  precargaba todas sus fotos en cada línea.
+- **También te puede gustar:** la consulta de la ficha
+  (`['related-products', categoría, marca, id]`: categoría y marca del primer
+  producto elegido sin diseño), sin lo que ya está en el carrito ni prendas
+  de Crear, hasta 10, con `TarjetaDeProducto` ("Agregar rápido", corazón).
+  Se pide al acercarse; las categorías y las marcas también.
+- **Carga:**
+  - `muestraColor` y `queLeFalta` leían y parseaban **todo** el catálogo de
+    localStorage por cada línea y en cada dibujo. Ahora el catálogo se lee
+    una vez por cambio del carrito (`catalogoPorId` en
+    `utils/cartValidation.js`; las tres funciones aceptan ese Map y, sin él,
+    hacen lo de antes, como en el checkout).
+  - Las fotos de las líneas bajan en su tamaño (`productImageVariantes`, que
+    el carrito ya guardaba, con `fuentesDeImagen`).
+  - El paquete de `/carrito` pesa 11,6 KB gzip (antes 7,4). Casi todo es
+    `Pedido.module.css`, que también trae el seguimiento de pedidos; el
+    checkout lo reutiliza. `PaginaCarrito` vive en su propio archivo para no
+    bajar las demás páginas.
+  - Queda para después (decidido): CartContext escribe el carrito entero en
+    Firestore en cada cambio (cada + o − es una escritura).
+- **Arreglado de paso:** con el carrito vacío ya no salen "Seguir comprando"
+  y "Ver la tienda" a la vez.
+
+### Qué se probó (2026-10-17, localhost con los emuladores)
+
+- Mismo total que la página vieja con el mismo carrito (S/ 693,00; el kit
+  muestra el subtotal sin descuento y la línea "Descuentos").
+- + y − (el − se apaga en 1, "S/ x c/u" con 2), desmarcar una línea ("No se
+  cobra en esta compra", el subtotal y "4 de 5 elegidos"), quitar y volver a
+  marcar todo, "Eliminar elegidos" con su pregunta.
+- Una línea sin talla: el aviso, "Falta elegir talla · Elegir ahora" (a la
+  ficha) y el botón bloqueado; al desmarcarla se puede pagar.
+- Envío: S/ 15 con S/ 99 ("Te faltan S/ 1.00"), gratis con más de S/ 100.
+- Pedido pendiente: el aviso con el código, "Esperando la confirmación…" y
+  "Cancelar pedido" → vacío.
+- Combo de la tienda (sus prendas con nombre, color y talla), creación ("Con
+  tu diseño", a `/creacion/:id`) y combo de Crear (a `/combo/:id?mio=`), con
+  líneas de prueba.
+- Fotos con `srcset` (con copias de prueba: el emulador no tiene).
+- Recomendados: en el celular aparecen recién al bajar, con la tarjeta de la
+  tienda y sin lo que está en el carrito.
+- "Ir a pagar" → `/checkout`; `carritoViejo` → la página vieja.
+- 1366 y 390, claro y oscuro.
+
+No se probó: el pedido aprobado por el ERP (el escucha de `pedidos_web` es
+de CartContext y no cambió), restaurar el carrito de la nube al entrar (tampoco
+cambió) y la app Android.
+
+### Reemplazos (hechos)
 
 | Parte | Hoy | Pasa a (kit) |
 |---|---|---|
@@ -107,11 +176,8 @@ Las acciones son las de `CartContext`:
 - Sin cupón en el carrito: va en el checkout (`cupones` queda solo para
   probarlo en la página de componentes).
 
-### Pasos
+### Pendiente
 
-1. El adaptador del item, comparado fila por fila (prenda, combo, creación,
-   combo de Crear).
-2. Cambiar la fila y el resumen.
-3. Cambiar la barra de selección y los avisos.
-4. Borrar `Cart.module.css` y `CartItem.module.css` cuando lleve un tiempo
-   en producción.
+- Borrar lo viejo cuando lleve un tiempo en producción (ELIMINAR.md, paso 6).
+- Un regalo de una lista se ve como una compra normal (también en la página
+  vieja); podría decir para quién es.

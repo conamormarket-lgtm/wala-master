@@ -1057,6 +1057,82 @@ const vistasPorColor = (p, color) => (p?.customizationViews || []).flatMap((vist
   return [...de(vista.imagesByColor), ...(vista.hasBackSide ? de(vista.backSide?.imagesByColor) : [])];
 });
 
+/* ── Carrito ─────────────────────────────────────────────── */
+
+const esRelleno = (u) => !u || String(u).includes('placeholder');
+
+/**
+ * Una línea del carrito (CartContext) → props de ItemCarrito.
+ *  - catalogo: Map productId → producto (la caché de la tienda, leída UNA vez
+ *    para todo el carrito): para no mostrar "Color: Principal" y para las
+ *    bolitas de color de las prendas de un combo
+ *  - falta: lo que le falta (['color', 'talla'], de cartValidation) si la
+ *    línea está incompleta
+ * Mismos enlaces que CartItem: el combo de Crear a /combo/:id?mio=, una
+ * creación a /creacion/:designId, lo demás a /producto/:id.
+ */
+export function itemCarritoDesde(item = {}, { catalogo = new Map(), falta } = {}) {
+  const custom = item.customization || null;
+  const piezasCrear = custom?.tipo === 'comboCrear' ? custom.piezas || [] : null;
+  let url = `/producto/${item.productId}`;
+  if (piezasCrear) url = `/combo/${item.productId}${custom.miComboId ? `?mio=${custom.miComboId}` : ''}`;
+  else if (custom?.tipo === 'crear' && custom.designId) url = `/creacion/${custom.designId}`;
+
+  const precio = custom?.finalPrice || item.price || 0;
+  // El precio de antes solo sin personalización (con diseño, el precio es otro).
+  const precioAntes = !custom && item.regularPrice > precio ? item.regularPrice : undefined;
+
+  // Un combo sin portada se ve con la foto de su primera prenda (sin pedir nada).
+  const imagen = item.isComboProduct && esRelleno(item.productImage)
+    ? (item.comboItems || []).map((it) => it.imageUrl).find((u) => !esRelleno(u)) || item.productImage
+    : item.productImage;
+
+  // "Color: Principal" no dice nada: el color se muestra si hay talla o si el
+  // producto tiene más de un color (sin el producto, se muestra).
+  const producto = catalogo.get(item.productId);
+  const conColor = Boolean(item.variant?.size) || !producto || (producto.variants?.length || 0) > 1;
+  const color = item.variant?.selectedVariant?.name || item.variant?.color || '';
+  const detalles = [];
+  if (!item.isComboProduct && !piezasCrear) {
+    if (color && conColor) detalles.push({ etiqueta: 'Color', valor: color, hex: item.variant?.colorHex || item.variant?.selectedVariant?.colorHex || undefined });
+    if (item.variant?.size) detalles.push({ etiqueta: item.variant?.selectedVariant?.sizeLabel || 'Talla', valor: item.variant.size });
+  }
+
+  let piezas = [];
+  if (piezasCrear) {
+    piezas = piezasCrear.map((p) => ({
+      texto: [p.prendaNombre, p.color?.nombre, p.talla && `Talla ${p.talla}`].filter(Boolean).join(' · ')
+        + (p.nombre && !String(p.nombre).toLowerCase().includes(String(p.prendaNombre || '').toLowerCase()) ? ` · “${p.nombre}”` : ''),
+      hex: p.color?.hex,
+    }));
+  } else if (item.isComboProduct) {
+    // Cada prenda con su nombre (antes "Producto 1: …"), su color y la talla.
+    piezas = Object.entries(item.comboVariantSelections || {}).map(([i, sel]) => {
+      const it = (item.comboItems || [])[i] || {};
+      const sub = catalogo.get(it.productId);
+      const hex = sub?.variants?.find((v) => mismoColor(v.name, sel?.color))?.colorHex;
+      return { texto: [it.name || `Prenda ${Number(i) + 1}`, sel?.color, sel?.size && `Talla ${sel.size}`].filter(Boolean).join(' · '), hex };
+    });
+  }
+
+  return {
+    id: item.id,
+    imagen,
+    nombre: item.productName,
+    precio,
+    precioAntes,
+    cantidad: item.quantity || 1,
+    seleccionado: item.selected !== false,
+    url,
+    detalles,
+    combo: Boolean(item.isComboProduct || piezasCrear),
+    piezas,
+    personalizado: Boolean(custom) && !piezasCrear,
+    incompleto: falta?.length ? falta.join(' y ') : undefined,
+    urlElegir: falta?.length ? url : undefined,
+  };
+}
+
 /**
  * Un producto de productos_wala → props de PaginaProducto (sin las opiniones
  * ni los relacionados, que llegan por su lado).

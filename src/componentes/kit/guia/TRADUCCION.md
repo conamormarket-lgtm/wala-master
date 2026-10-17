@@ -55,7 +55,8 @@ import { useTranslatedText, useTranslatedHtml } from './i18n/useTranslatedText';
 | `Opiniones` (`ResumenOpiniones`, `TarjetaOpinion`, `FormularioOpinion`) | sus textos fijos, el placeholder y los errores |
 | `AgregarRapido` | el nombre del producto, "Personalizar", "Agregar" y "Elige…" (el título lo traduce `HojaInferior`) |
 | `GaleriaProducto`, `ConfianzaCompra` | "Pasa el cursor para ver de cerca" y las tres líneas de confianza |
-| `ItemCarrito` | el nombre |
+| `ItemCarrito` | el nombre; desde el 2026-10-17 también "Combo", "Con tu diseño", los detalles, las prendas, lo que falta y los textos ocultos |
+| `PaginaCarrito`, `ResumenPedido`, `BarraEnvioGratis`, `Casilla` | los textos fijos (botones, avisos, la selección, el resumen, el envío gratis, la etiqueta de la casilla) |
 | `ResumenCompra` (checkout) y el menú del carrito | el nombre de cada producto |
 
 ### Lo que falta (a futuro)

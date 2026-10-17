@@ -14,11 +14,13 @@ import s from './FotoProducto.module.css';
  *  - children: lo que va siempre encima de la foto (una etiqueta, un puesto)
  *  - como: etiqueta del contenedor ('span' por defecto)
  *  - loading, decoding: los de la imagen (lazy / async por defecto)
+ *  - srcSet, sizes: copias de la foto en varios tamaños (la tienda las tiene),
+ *    para bajar solo la que hace falta
  *
  * Las reglas de aquí no pesan (:where), así que cualquier clase de quien la
  * usa gana sin pelear por especificidad.
  */
-export function FotoProducto({ src, alt = '', relleno, className, style, respaldo, children, como: Etiqueta = 'span', loading = 'lazy', decoding = 'async', ...rest }) {
+export function FotoProducto({ src, srcSet, sizes, alt = '', relleno, className, style, respaldo, children, como: Etiqueta = 'span', loading = 'lazy', decoding = 'async', ...rest }) {
   return (
     <Etiqueta
       className={[s.foto, className].filter(Boolean).join(' ')}
@@ -26,7 +28,7 @@ export function FotoProducto({ src, alt = '', relleno, className, style, respald
       {...rest}
     >
       {children}
-      {src ? <img src={src} alt={alt} loading={loading} decoding={decoding} draggable={false} /> : respaldo}
+      {src ? <img src={src} srcSet={srcSet} sizes={srcSet ? sizes : undefined} alt={alt} loading={loading} decoding={decoding} draggable={false} /> : respaldo}
     </Etiqueta>
   );
 }

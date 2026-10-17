@@ -366,8 +366,8 @@ export function Casilla({ activo = false, onChange, etiqueta, descripcion, disab
       <input id={id} type="checkbox" checked={activo} disabled={disabled} onChange={(e) => onChange?.(e.target.checked)} />
       <Visto activo={activo} forma="cuadro" className={s.caja} />
       <span className={s.interruptorTexto}>
-        <span>{etiqueta}</span>
-        {descripcion && <small>{descripcion}</small>}
+        <span><Texto>{etiqueta}</Texto></span>
+        {descripcion && <small><Texto>{descripcion}</Texto></small>}
       </span>
     </label>
   );

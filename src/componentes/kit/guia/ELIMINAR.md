@@ -113,3 +113,12 @@ Siguen en uso y **no** se borran: `HistorialPersonalizacionesModal` y
 `YoryoPersonalizadoCliente` (Yoryo queda fuera del kit; los carga
 `FichaDeProducto`) y `FeaturedCarousel` (ver el paso 5: ya no lo usa la
 ficha nueva, solo `ProductDetail` con `fichaVieja`).
+
+### El carrito (2026-10-17)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/Tienda/components/Cart/` (`Cart.jsx`, `Cart.module.css` de 347 líneas, `index.js`) | `/carrito` | `components/carrito/CarritoDeTienda.jsx` → `PaginaCarrito` del kit | `pages/CartPage.jsx` (lazy, solo con `carritoViejo`) | al retirar `carritoViejo` |
+| `pages/Tienda/components/CartItem/` (`CartItem.jsx`, `CartItem.module.css` de 463 líneas) | `Cart.jsx` | `ItemCarrito` + `itemCarritoDesde` | solo `Cart.jsx` | junto con `Cart/` |
+| `CartPage.jsx`: la rama vieja (título "Carrito de Compras", "Continuar comprando", `AuroraBackground`) + `CartPage.module.css` | `/carrito` | `PaginaCarrito` (título, "Seguir comprando") | — | al retirar `carritoViejo` |
+| `pages/Tienda/components/ComboProductImage/` (en el carrito) | `CartItem.jsx` (pedía las prendas y precargaba sus fotos por línea) | la portada o la foto de la primera prenda (`itemCarritoDesde`) | `ProductTable.jsx` y `AdminProductos.jsx` (admin), `MiCreacionCard.jsx` (cuenta) | **no borrar**: lo usan el admin y la cuenta |

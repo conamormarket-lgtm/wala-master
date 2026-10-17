@@ -36,17 +36,30 @@ const tallasDe = (product) => {
 };
 
 /**
+ * El catálogo de la caché como Map productId → producto. getCachedProducts
+ * parsea todo el JSON de localStorage en cada llamada: quien revisa varias
+ * líneas lo lee UNA vez con esto y se lo pasa a las funciones de abajo.
+ */
+export const catalogoPorId = () => {
+  const catalogo = getCachedProducts();
+  return new Map(Array.isArray(catalogo) ? catalogo.map((p) => [p.id, p]) : []);
+};
+
+const productoDe = (item, porId) => {
+  if (porId) return porId.get(item?.productId) || null;
+  const lista = getCachedProducts();
+  return Array.isArray(lista) ? lista.find((p) => p.id === item?.productId) || null : null;
+};
+
+/**
  * @param {Array} items artículos del carrito
+ * @param {Map} [porId] el catálogo ya leído (catalogoPorId); sin él, se lee aquí
  * @returns {Set<string>} ids de los artículos incompletos
  */
-export const idsDeItemsIncompletos = (items = []) => {
+export const idsDeItemsIncompletos = (items = [], porId = catalogoPorId()) => {
   const incompletos = new Set();
   if (!Array.isArray(items) || items.length === 0) return incompletos;
-
-  // Una sola lectura de la caché para todo el carrito.
-  const catalogo = getCachedProducts();
-  if (!Array.isArray(catalogo) || catalogo.length === 0) return incompletos;
-  const porId = new Map(catalogo.map((p) => [p.id, p]));
+  if (!porId || porId.size === 0) return incompletos;
 
   for (const item of items) {
     if (!item || item.isComboProduct || item.customization) continue;
@@ -74,10 +87,9 @@ export const idsDeItemsIncompletos = (items = []) => {
  * Principal". Si el producto tiene una sola variante y el artículo no lleva
  * talla, no hay nada que decir. Sin el producto en caché se muestra (lo seguro).
  */
-export const muestraColor = (item) => {
+export const muestraColor = (item, porId) => {
   if (item?.variant?.size) return true;
-  const catalogo = getCachedProducts();
-  const product = Array.isArray(catalogo) ? catalogo.find((p) => p.id === item?.productId) : null;
+  const product = productoDe(item, porId);
   if (!product) return true;
   return (product.variants?.length || 0) > 1;
 };
@@ -91,11 +103,8 @@ export const muestraColor = (item) => {
  * Si el producto no está en la caché se nombran ambos, que es lo que hacía
  * hasta ahora y es el lado seguro.
  */
-export const queLeFalta = (item) => {
-  const catalogo = getCachedProducts();
-  const product = Array.isArray(catalogo)
-    ? catalogo.find((p) => p.id === item?.productId)
-    : null;
+export const queLeFalta = (item, porId) => {
+  const product = productoDe(item, porId);
 
   const pideColor = product ? Boolean(product.hasVariants && product.variants?.length > 0) : true;
   const pideTalla = product ? tallasDe(product).length > 0 : true;

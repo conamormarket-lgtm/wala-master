@@ -32,6 +32,7 @@ principal (y a la APK de Capacitor).
 | `PieLegal` (`pieLegalDesdeEmpresa`) dentro del pie viejo; las columnas y su editor siguen igual. El bloque viejo queda apagado con `PIE_LEGAL_EN_EL_KIT` | `components/common/Footer/Footer.jsx` |
 | La píldora "Gana 15 monedas" de la cabecera vieja, apagada con `PILDORA_EN_EL_KIT` (la dibuja `FlotantesDeLaTienda`) | `components/common/Header/Header.jsx` |
 | La ficha de producto (paso 6): `PaginaProducto` por `components/producto/FichaDeProducto.jsx` (con `usePiezasDelCombo.js` y `eleccionCarrito.js`); `ProductDetail` baja solo con `fichaVieja` | `pages/ProductPage.jsx` |
+| El carrito (paso 6): `PaginaCarrito` por `components/carrito/CarritoDeTienda.jsx` (`itemCarritoDesde`); `Cart.jsx` baja solo con `carritoViejo` | `pages/CartPage.jsx` |
 | "Agregar rápido" (`AgregarRapido`) en todas las tarjetas: "Elegir…" abre la hoja (`components/producto/AgregarRapidoDeProducto.jsx`, en su propio paquete) | `components/producto/TarjetaDeProducto.jsx` |
 
 Cada pieza del marco tiene un conector chico en `src/components/marco/`: lee
@@ -52,6 +53,9 @@ Desde el paso 5 también `Secciones`, `SeccionesExtra`, `SeccionesContenido`,
 `TarjetaCategoria`, `LogoMarca`…). `EstadoVacio` acepta `imagen={null}`
 (sin Kapi, un sello) y `BloqueSeccion` marca su `<section>` con
 `data-kit-seccion` (lo usa `landing-mobile.css`).
+Desde el carrito (paso 6), `paginas/Carrito` y `Pedido` (`ItemCarrito`,
+`BarraEnvioGratis`, `ResumenPedido`); `FotoProducto` acepta `srcSet` y
+`Casilla` traduce su etiqueta.
 Desde la ficha (paso 6) también `paginas/Producto`, `piezas/Ficha`,
 `GaleriaProducto`, `OpcionesProducto`, `Opiniones`, `AgregarRapido`,
 `Carrusel`, `Acordeon` y `Esqueletos` (`Hueso`, `EsqueletoPagina forma="producto"`).
@@ -134,6 +138,10 @@ Cada paso en su propio commit, verificable por separado.
    "Agregar rápido" en todas las tarjetas. Lo de abajo (opiniones y
    relacionados) se pide al acercarse y las fotos bajan en su tamaño
    (PRODUCTO.md, "En la tienda"). Interruptor `fichaVieja`.
+   ✓ **El carrito** (2026-10-17): `CarritoDeTienda` con el kit; el catálogo
+   se lee una vez por cambio, los combos no piden sus prendas y "También te
+   puede gustar" se pide al acercarse (CARRITO.md, "En la tienda").
+   Interruptor `carritoViejo` para toda la página.
 7. **Cargando** (`PantallaCarga`, `Cargando`, `EsqueletoPagina`: CARGA.md; el
    splash de `index.html` cambia en el mismo commit), **`BarraInferior` y luego `Cabecera`**: la más conectada (AuthContext,
    CartContext, WishlistContext, notificaciones y la configuración de
@@ -151,7 +159,7 @@ nada), o en un solo navegador con `localStorage.wala_kit_viejo = "pagos,carrito"
 | Interruptor | Qué vuelve a lo de antes |
 |---|---|
 | `pagosViejo` | la ventana "Pagar saldo" de Mis pedidos (`Modal` viejo) y la pantalla de Culqi mientras cobra |
-| `carritoViejo` | las preguntas del carrito (quitar seleccionados, vaciar) con `window.confirm` |
+| `carritoViejo` | todo el carrito (`Cart.jsx` y `CartItem.jsx`, con sus preguntas por `window.confirm`) |
 | `tarjetasViejo` | la tarjeta de producto (`PremiumProductCard`) en carruseles y grillas |
 | `fichaVieja` (`useLoViejo('ficha')`: en Firestore el campo es `fichaViejo: true`; en localStorage, `"ficha"`) | la ficha de producto (`ProductDetail` y `ProductReviews`) y que "Elegir" de las tarjetas lleve a la ficha en vez de abrir "Agregar rápido" |
 | `seccionesViejo` | las secciones del builder de todas las páginas (inicio, `/tienda`, marcas y landings; el cacherito nunca dejó lo de antes): los componentes de `seccionesPorTipo.jsx`, con `SidebarCatalogLayout`, y el fondo negro en las landings sin marca |

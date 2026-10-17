@@ -32,7 +32,7 @@ Todo se arma con lo del nivel de abajo; nada se dibuja dos veces.
    piezas está hecha.
 3. **Páginas** (`paginas/Paginas.jsx`): `MarcoTienda` (cabecera, pie y barra
    inferior), `PaginaTienda` (marco + secciones del builder), `PaginaMarca` (`paginas/Marca.jsx`: la página de una marca con su color y su portada, NAVEGAR.md), `PaginaCarrito`
-   (piezas del pedido + la sección de carrusel para recomendar),
+   (`paginas/Carrito.jsx`: piezas del pedido + la sección de carrusel para recomendar),
    `PaginaPedidos`, `PaginaMinijuegos` (Zona Arcade: `Encabezado` +
    `TarjetaJuego`) y `PaginaBusqueda` (el catálogo de /tienda con orden).
    La cuenta (`paginas/Cuenta.jsx`, `CuentaRecompensas.jsx`,
@@ -150,7 +150,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `Desplegable.jsx` | `Desplegable` | Base de todos los menús: hover en escritorio, hoja/globo en celular |
 | `MenusCabecera.jsx` | `MenuTienda`, `MenuMarcas`, `AyudaMonedas`, `MenuCuenta` (`lateral` + `activo`: el menú al costado de /cuenta), `VistaFavoritos`, `VistaCarrito` (filas que entran una tras otra y se levantan al pasar, `metaEnvio` con la `BarraEnvioGratis compacta`, total que corre) | Contenido de los menús de la cabecera |
 | `AgregarRapido.jsx` | `AgregarRapido` (`varianteInicial`: abre con la principal; `cargando`: las prendas del combo en esqueleto) | Elegir talla, color y cantidad antes de agregar al carrito. **Ya en la tienda**: "Elegir…" de todas las tarjetas (`components/producto/AgregarRapidoDeProducto.jsx`) |
-| `Pedido.jsx` | `SeguimientoPedido` (`pasos`, `estado`, `deuda`, `anulado`, `urlDetalle`, `onPagar`), `ItemCarrito`, `BarraEnvioGratis`, `ResumenPedido`, `PASOS_PEDIDO`, `ETAPAS_PRODUCCION` | Carrito y Mis pedidos |
+| `Pedido.jsx` | `SeguimientoPedido` (`pasos`, `estado`, `deuda`, `anulado`, `urlDetalle`, `onPagar`), `ItemCarrito` (`srcSet`), `BarraEnvioGratis`, `ResumenPedido` (`nota`: por defecto los medios de pago reales), `PASOS_PEDIDO`, `ETAPAS_PRODUCCION` | Carrito y Mis pedidos. **Ya en la tienda** el carrito (`components/carrito/CarritoDeTienda.jsx`) |
 | `Feedback.jsx` | `Aviso`, `ProveedorToasts`, `useToast`, `useNotificaciones`, `ListaNotificaciones`, `EstadoVacio`, `HojaInferior` (`bloqueada`: no se cierra mientras paga o guarda; `tamano` 'sm' · 'md' · 'lg' en escritorio; el foco no se escapa con Tab), `Confirmar` (antes de algo que no se deshace; `peligro`, notas como children) + `ProveedorConfirmar` / `useConfirmar` (reemplaza a `window.confirm`) | Avisos, notificaciones y modales. **Ya en la tienda** (toasts, hojas y confirmaciones; paso 3 de MIGRACION.md). `EstadoVacio imagen={null}`: sin Kapi, un sello con `icono` |
 | `Enlace.jsx` | `Enlace`, `ProveedorEnlaces`, `tipoDeEnlace` | La única regla de enlaces: internos por el router, externos en otra pestaña, `#ancla` con scroll suave |
 | `Traduccion.jsx` | `ProveedorTraduccion`, `useTexto`, `useHtml`, `Texto` | Los textos de los datos (y, desde el marco, los fijos) pasan por la traducción de la tienda (guía: `guia/TRADUCCION.md`); sin proveedor, quedan igual. **Ya en la tienda** (`App.jsx`) |
@@ -163,9 +163,10 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `piezas/TarjetaCategoria.jsx` | `TarjetaCategoria` (cuadro · círculo · burbuja; el cuadro lleva `detalle`, una línea de texto bajo el nombre), `TarjetaCategoriaEsqueleto` | category_grid y categories_nav |
 | `piezas/TemaMarca.jsx` | `TemaMarca`, `temaDeMarca` | El color de una marca solo en su portada y en el trazo bajo los títulos, con su versión de noche; botones, burbujas de categorías, filtros y sellos de productos siguen violeta |
 | `piezas/PortadaMarca.jsx` | `PortadaMarca` | La portada de una marca: logo, nombre con trazo, frase, "Ver productos" y sus cifras en sellos (productos, en oferta, categorías); estilo foto · color · collage (con el sello grande de la marca detrás de las cartas) |
+| `paginas/Carrito.jsx` | `PaginaCarrito` (`tarjeta` y `catalogo` para los recomendados, `onVerAbajo` para pedirlos al acercarse, `notaPago`) | /carrito (guía: `guia/CARRITO.md`); `Paginas.jsx` lo reexporta. **Ya en la tienda** (`components/carrito/CarritoDeTienda.jsx`, 2026-10-17) |
 | `paginas/Producto.jsx` | `PaginaProducto` (galería, precio, opciones, compra, descripción, opiniones y relacionados; `fuentes` para las copias de las fotos, `onVerAbajo` para pedir lo de abajo al acercarse, `tarjeta` para la de la tienda, `regalo`, `textoPersonalizar`, `piezasCargando`, `opiniones.cargando`) | /producto/:id (guía: `guia/PRODUCTO.md`). **Ya en la tienda** (`components/producto/FichaDeProducto.jsx`, 2026-10-17) |
 | `paginas/Marca.jsx` | `PaginaMarca` | La página de una marca sin armarla: identidad + plantilla, o sus secciones del builder (guía: `guia/NAVEGAR.md`) |
-| `piezas/FotoProducto.jsx` | `FotoProducto` | Foto de producto sobre su escenario (`src`, `relleno`, `respaldo` sin foto, `children` encima) |
+| `piezas/FotoProducto.jsx` | `FotoProducto` | Foto de producto sobre su escenario (`src`, `srcSet` + `sizes`, `relleno`, `respaldo` sin foto, `children` encima) |
 | `piezas/Avatar.jsx` | `Avatar`, `iniciales` | Foto o iniciales de una persona |
 | `piezas/OpcionesFiltro.jsx` | `OpcionesFiltro` | Opciones de un filtro como chips con su cuenta; una a la vez y "Ver N más" |
 | `piezas/PanelBusqueda.jsx` | `PanelBusqueda`, `useBusquedasRecientes`, `TextoResaltado`, `ChipsBusqueda`, `InvitacionBusqueda` | Sugerencias del buscador: recientes, productos con foto y precio, marcas y categorías, "Ver todos los resultados" |
