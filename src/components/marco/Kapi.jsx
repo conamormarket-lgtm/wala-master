@@ -34,7 +34,8 @@ const tutorialEnNavegador = () => {
  * Kapi (M8) con el kit: KapiFlotante en la pila y VentanaKapi. Todo lo de
  * KapiPet sigue igual:
  *  - No sale sin perfil, en landings (cabecera oculta: protege el pago) ni
- *    en el estudio de Crear (tapaba el botón de compra).
+ *    en el estudio de Crear (tapaba el botón de compra) ni al abrir un regalo
+ *    (ya está el del sobre).
  *  - Lo abren el evento open-kapi-pet (Zona Arcade) y weekly-challenge-completed.
  *  - Recorrido de bienvenida (driver.js) una vez por cuenta, en momentos
  *    tranquilos; cuenta como visto solo si la persona lo termina o lo cierra.
@@ -50,6 +51,8 @@ export default function Kapi() {
   const enLanding = layout && layout.isHeaderVisible === false;
   const { pathname } = useLocation();
   const enEstudioCrear = pathname.startsWith('/crear/');
+  // Al abrir un regalo, el Kapi del sobre es el único a la vista.
+  const enRegalo = pathname.startsWith('/regalo/');
   const enMomentoTranquilo = esMomentoTranquilo(pathname);
   const [abierta, setAbierta] = useState(false);
 
@@ -157,7 +160,7 @@ export default function Kapi() {
     if (abierta && comidaPendiente) calentarKapi();
   }, [abierta, comidaPendiente, calentarKapi]);
 
-  if (enLanding || enEstudioCrear) return null;
+  if (enLanding || enEstudioCrear || enRegalo) return null;
   // ?sesion=activa pinta a Kapi sin cuenta (solo fuera de producción; no
   // concede nada: el servidor decide si se puede alimentar).
   const perfil = userProfile || (diseno('sesion') === 'activa'

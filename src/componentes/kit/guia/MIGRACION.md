@@ -37,6 +37,7 @@ principal (y a la APK de Capacitor).
 | El pago rápido (paso 6): `PaginaPagoRapido` por `components/pago/PagoRapidoDeTienda.jsx` (`enlacePagoDesde`; Culqi con `renderBoton`, PayPal con `soloBotones` y lazy); la página de antes baja solo con `pagosViejo` | `pages/PagoRapidoPage.jsx` |
 | La lista de deseos de otra persona (paso 6): `PaginaListaPublica` por `components/regalar/ListaPublicaDeTienda.jsx` (`itemRegaloDesde`, lo compartido en `regaloDeLista.js`); cada producto con `getProduct`, no el catálogo; la página de antes baja solo con `regalarViejo` | `pages/WishlistPublic/WishlistPublic.jsx` |
 | Regalar para una fecha (paso 6): `PaginaRegalar` por `components/regalar/RegalarDeTienda.jsx` (`fechaEntregaDesde`, sin el arrastre); la página de antes baja solo con `regalarViejo` | `pages/GiftRegistry/GiftRegistryPage.jsx` |
+| Abrir el regalo (paso 6): `PaginaRegaloSorpresa` por `components/regalar/RegaloSorpresaDeTienda.jsx`; sin el Kapi flotante en `/regalo/`; la página de antes baja solo con `regalarViejo` | `pages/GiftExperiencePage.jsx` |
 | "Agregar rápido" (`AgregarRapido`) en todas las tarjetas: "Elegir…" abre la hoja (`components/producto/AgregarRapidoDeProducto.jsx`, en su propio paquete) | `components/producto/TarjetaDeProducto.jsx` |
 
 Cada pieza del marco tiene un conector chico en `src/components/marco/`: lee
@@ -168,6 +169,9 @@ Cada paso en su propio commit, verificable por separado.
    fecha y "Regalar esto" (sin el arrastre), el registro con la caché de la
    lista pública y los productos uno por uno (REGALAR.md, "Regalar para una
    fecha en la tienda"). Interruptor `regalarViejo`.
+   ✓ **Abrir el regalo** (2026-10-17): `RegaloSorpresaDeTienda`; "Descargar
+   Walá" sin recargar y un solo Kapi (REGALAR.md, "Abrir el regalo en la
+   tienda"). Interruptor `regalarViejo`.
 7. **Cargando** (`PantallaCarga`, `Cargando`, `EsqueletoPagina`: CARGA.md; el
    splash de `index.html` cambia en el mismo commit), **`BarraInferior` y luego `Cabecera`**: la más conectada (AuthContext,
    CartContext, WishlistContext, notificaciones y la configuración de
@@ -186,7 +190,7 @@ nada), o en un solo navegador con `localStorage.wala_kit_viejo = "pagos,carrito"
 |---|---|
 | `pagosViejo` | la ventana "Pagar saldo" de Mis pedidos (`Modal` viejo), la pantalla de Culqi mientras cobra, el pago rápido entero (`PagoRapidoViejo.jsx`) y el checkout entero (`CheckoutViejo.jsx`) |
 | `carritoViejo` | todo el carrito (`Cart.jsx` y `CartItem.jsx`, con sus preguntas por `window.confirm`) |
-| `regalarViejo` | regalarle a alguien: su lista de deseos (`WishlistPublicViejo.jsx`) y regalar para una fecha (`GiftRegistryPageViejo.jsx`, con el arrastre); después, abrir el regalo |
+| `regalarViejo` | regalarle a alguien: su lista de deseos (`WishlistPublicViejo.jsx`), regalar para una fecha (`GiftRegistryPageViejo.jsx`, con el arrastre) y abrir el regalo (`GiftExperienceViejo.jsx`) |
 | `tarjetasViejo` | la tarjeta de producto (`PremiumProductCard`) en carruseles y grillas |
 | `fichaVieja` (`useLoViejo('ficha')`: en Firestore el campo es `fichaViejo: true`; en localStorage, `"ficha"`) | la ficha de producto (`ProductDetail` y `ProductReviews`) y que "Elegir" de las tarjetas lleve a la ficha en vez de abrir "Agregar rápido" |
 | `seccionesViejo` | las secciones del builder de todas las páginas (inicio, `/tienda`, marcas y landings; el cacherito nunca dejó lo de antes): los componentes de `seccionesPorTipo.jsx`, con `SidebarCatalogLayout`, y el fondo negro en las landings sin marca |

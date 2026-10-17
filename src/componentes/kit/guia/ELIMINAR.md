@@ -157,3 +157,9 @@ página nueva.
 |---|---|---|---|---|
 | `pages/GiftRegistry/GiftRegistryPageViejo.jsx` (la página de antes: `useGiftDrag`, `DragGhost`, `GiftProductCard`, `getGlobalDates` copiado) + `GiftRegistryPage.module.css` (908 líneas) | `/regalar/:referralCode` | `components/regalar/RegalarDeTienda.jsx` → `PaginaRegalar` del kit (`fechaEntregaDesde`, `festivasDePersona`) | `GiftRegistryPage.jsx` (lazy, solo con `regalarViejo`) | al retirar `regalarViejo` |
 | `AuroraBackground`, `GlassCard`, `GlassButton` en esta página | la página vieja | `BloqueSeccion`, `PasoEstudio`, `Boton` | el admin y otras páginas | **no borrar**: los usan otros |
+
+### Abrir el regalo (2026-10-17)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/GiftExperienceViejo.jsx` (la página de antes, con el Kapi en CSS y los emojis) + `GiftExperiencePage.module.css` (274 líneas) | `/regalo/:orderId` | `components/regalar/RegaloSorpresaDeTienda.jsx` → `PaginaRegaloSorpresa` del kit | `GiftExperiencePage.jsx` (lazy, solo con `regalarViejo`) | al retirar `regalarViejo` |

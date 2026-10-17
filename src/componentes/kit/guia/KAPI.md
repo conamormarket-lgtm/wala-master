@@ -1,7 +1,8 @@
 # Kapi (M8): el botón flotante y su ventana
 
-Kapi es parte del marco: está en todas las páginas con sesión (no en landings
-ni en el estudio de Crear). Cómo verlo en vivo: `npm run dev` →
+Kapi es parte del marco: está en todas las páginas con sesión (no en landings,
+ni en el estudio de Crear, ni al abrir un regalo en `/regalo/:pedido`, donde
+ya está el del sobre: un solo Kapi a la vista). Cómo verlo en vivo: `npm run dev` →
 http://localhost:3000/componentes.html → **Páginas** → **Tienda de prueba** →
 **Ver como: Con sesión** → toca a Kapi (abajo a la derecha). También lo abre
 "Reclamar moneda" en **Minijuegos**. Chips para probar:

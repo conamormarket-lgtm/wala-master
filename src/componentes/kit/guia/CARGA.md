@@ -186,6 +186,10 @@ Ya en la tienda (paso 6, regalar para una fecha, 2026-10-17): mientras llega
 el registro, `EsqueletoPagina forma="productos"` (si se llega desde la lista
 pública ya está en caché y no se ve); las tarjetas, como en la lista pública.
 
+Ya en la tienda (paso 6, abrir el regalo, 2026-10-17): mientras llega el
+regalo, `EsqueletoPagina forma="formulario"` (antes, "Preparando tu
+sorpresa...").
+
 Ya en la tienda (paso 6, el carrito, 2026-10-17): el carrito sale de
 localStorage al instante, así que no tiene esqueleto propio (la ruta sigue con
 el `PageLoading` de `App.jsx` hasta el paso 7). "También te puede gustar" no

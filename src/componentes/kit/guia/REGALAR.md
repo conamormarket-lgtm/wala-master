@@ -15,9 +15,10 @@ Cómo verlo en vivo: `npm run dev` → http://localhost:3000/componentes.html �
   con PayPal. Estados: ya pagado, vencido, no encontrado, el pago falla y
   cargando. **En la tienda desde el 2026-10-17** (ver "Pago rápido en la
   tienda", abajo).
-- **Su lista de deseos y regalar para una fecha, en la tienda desde el
-  2026-10-17** (ver "La lista pública en la tienda" y "Regalar para una fecha
-  en la tienda", abajo).
+- **Su lista de deseos, regalar para una fecha y abrir el regalo, en la
+  tienda desde el 2026-10-17** (ver "La lista pública en la tienda",
+  "Regalar para una fecha en la tienda" y "Abrir el regalo en la tienda",
+  abajo).
 
 | Regalar para una fecha | Su lista (celular) | El regalo y el pago rápido (celular) |
 |---|---|---|
@@ -242,6 +243,38 @@ aniversario con nombre propio):
 No se probó: un visitante sin sesión, una foto de la persona (las de prueba
 no tienen; sale la inicial) ni la app Android.
 
+## Abrir el regalo en la tienda (hecho el 2026-10-17)
+
+![Abrir el regalo en la tienda real, en el celular: el sobre cerrado "Para María · Toca para abrir" y, abierto, el mensaje con "Descargar Walá"](regalo-sorpresa-tienda.webp)
+
+(Celular, 390 px, claro, con un pedido de regalo de prueba del emulador. Se
+probó también a 1366 y en oscuro.)
+
+- **Conector:** `src/components/regalar/RegaloSorpresaDeTienda.jsx`, desde
+  `pages/GiftExperiencePage.jsx` (el interruptor). Lee
+  `getOrderGiftDetails` (la Cloud Function `obtenerRegaloSecure`: para quién,
+  el mensaje y el sticker) y lo guarda 5 minutos.
+- **La app:** `window.Capacitor.isNativePlatform()`, como antes: en la app,
+  "Ver la tienda"; en la web, "Descargar Walá".
+- **"Descargar Walá"** va a `/descargar` (la misma redirección a la Play
+  Store, `AppRedirect`) sin recargar; antes recargaba `https://wala.pe/descargar`.
+- **Un solo Kapi:** el flotante no sale en `/regalo/` (`components/marco/Kapi.jsx`).
+- **Interruptor `regalarViejo`:** vuelve la página de antes
+  (`GiftExperienceViejo.jsx`, con el Kapi en CSS y los emojis).
+
+### Qué se probó (2026-10-17, localhost con los emuladores)
+
+Con un pedido de prueba en `pedidos_web` (`PD-REGALO1`, sticker `kapi-party`):
+- Cerrado ("Tienes un regalo", "Para María", "Toca para abrir") y abierto
+  ("Te mandaron un regalo", el mensaje, "Descargar Walá" → `/descargar`).
+- En la app (`window.Capacitor` de prueba): "Ver la tienda" → `/tienda`.
+- Un pedido que no existe; el flotante de Kapi no sale.
+- `regalarViejo` → la página de antes.
+- 390 y 1366, claro y oscuro.
+
+No se probó: la app Android de verdad ni los otros stickers (`kapi-smile`,
+`kapi-love`; en la demo sí).
+
 ## Llevar a la tienda (lo que falta: TODAVÍA NO se hace)
 
 ### Reemplazos
@@ -250,7 +283,7 @@ no tienen; sale la inicial) ni la app Android.
 |---|---|
 | ✓ `WishlistPublic` con `PremiumProductCard` y "Regalar esto" | `PaginaListaPublica` + `TarjetaRegalo` (hecho) |
 | ✓ `GiftRegistryPage` (fechas arrastrables, `GiftProductCard`) | `PaginaRegalar` + `FechaEntrega` + `TarjetaRegalo` (hecho) |
-| `GiftExperiencePage` (Kapi en CSS, emojis) | `PaginaRegaloSorpresa` + `SobreRegalo` |
+| ✓ `GiftExperiencePage` (Kapi en CSS, emojis) | `PaginaRegaloSorpresa` + `SobreRegalo` (hecho) |
 | ✓ `PagoRapidoPage` (estilos en línea) | `PaginaPagoRapido` (hecho) |
 | El botón y la nota de `CulqiCustomCheckout`; la caja de `PaypalCheckout` | `PagoTarjeta`, `PagoPaypal` |
 
@@ -296,6 +329,8 @@ vigía del modal cerrado y el anti doble cobro.
   de entrega (antes pedía elegir una fecha y no dejaba).
 - La línea de la entrega dice de quién es la ocasión si no es del dueño
   ("Cumpleaños de María").
+- Abrir el regalo: "Descargar Walá" va a `/descargar` sin recargar, y el Kapi
+  flotante no sale (el del sobre es el único).
 - Los textos de no encontrado dicen qué hacer, y el pago rápido vencido lleva
   a escribirle al asesor.
 
@@ -315,6 +350,6 @@ anónimo.
 1. ✓ `PaginaPagoRapido` (2026-10-17, arriba).
 2. ✓ La lista pública (2026-10-17, arriba).
 3. ✓ Regalar para una fecha (2026-10-17, arriba; sin el arrastre).
-4. Abrir el regalo.
+4. ✓ Abrir el regalo (2026-10-17, arriba).
 5. Cambiar el botón de Culqi y la caja de PayPal del checkout y del saldo de
    un pedido por `PagoTarjeta` y `PagoPaypal`.
