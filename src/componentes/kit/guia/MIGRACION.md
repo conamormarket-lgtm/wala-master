@@ -1,4 +1,4 @@
-# Llevar el kit a la tienda (en marcha: pasos 1 a 5 hechos)
+# Llevar el kit a la tienda (en marcha: pasos 1 a 5 hechos; el 6, página por página)
 
 Lo común a todas las páginas: qué ya usa la tienda, cómo se importa y en qué
 orden se migraría. El detalle de cada página (reemplazos con archivo y línea,
@@ -31,6 +31,8 @@ principal (y a la APK de Capacitor).
 | Secciones del builder con `SeccionDelKit` (paso 5): todas las páginas menos el cacherito; `TIPOS_DEL_KIT` y `esDelCacherito` (`pages/Tienda/services/seccionesDelKit.js`) dicen qué; el catálogo con `CatalogoConFiltros` y su estado en la página | `pages/Tienda/TiendaPage.jsx`, `DynamicLandingPage.jsx` (fondo), `services/startup.js` (precarga) |
 | `PieLegal` (`pieLegalDesdeEmpresa`) dentro del pie viejo; las columnas y su editor siguen igual. El bloque viejo queda apagado con `PIE_LEGAL_EN_EL_KIT` | `components/common/Footer/Footer.jsx` |
 | La píldora "Gana 15 monedas" de la cabecera vieja, apagada con `PILDORA_EN_EL_KIT` (la dibuja `FlotantesDeLaTienda`) | `components/common/Header/Header.jsx` |
+| La ficha de producto (paso 6): `PaginaProducto` por `components/producto/FichaDeProducto.jsx` (con `usePiezasDelCombo.js` y `eleccionCarrito.js`); `ProductDetail` baja solo con `fichaVieja` | `pages/ProductPage.jsx` |
+| "Agregar rápido" (`AgregarRapido`) en todas las tarjetas: "Elegir…" abre la hoja (`components/producto/AgregarRapidoDeProducto.jsx`, en su propio paquete) | `components/producto/TarjetaDeProducto.jsx` |
 
 Cada pieza del marco tiene un conector chico en `src/components/marco/`: lee
 lo de la tienda (Firestore, rutas, sesión) y dibuja la pieza del kit. Lo viejo
@@ -50,6 +52,11 @@ Desde el paso 5 también `Secciones`, `SeccionesExtra`, `SeccionesContenido`,
 `TarjetaCategoria`, `LogoMarca`…). `EstadoVacio` acepta `imagen={null}`
 (sin Kapi, un sello) y `BloqueSeccion` marca su `<section>` con
 `data-kit-seccion` (lo usa `landing-mobile.css`).
+Desde la ficha (paso 6) también `paginas/Producto`, `piezas/Ficha`,
+`GaleriaProducto`, `OpcionesProducto`, `Opiniones`, `AgregarRapido`,
+`Carrusel`, `Acordeon` y `Esqueletos` (`Hueso`, `EsqueletoPagina forma="producto"`).
+`SelectorColor` y `SelectorTalla` (`Formulario`) ahora pasan su etiqueta por
+`<Texto>` (en español no cambia nada).
 
 ## Orden
 
@@ -74,7 +81,7 @@ Cada paso en su propio commit, verificable por separado.
    `components/producto/TarjetaDeProducto.jsx` (mismas props que
    `PremiumProductCard`) en `ProductGrid`, `FeaturedCarousel`,
    `CollectionCarousel` y `FlashSales`. "Elegir" sigue llevando a la ficha
-   (decidido: `AgregarRapido` llega con la ficha, paso 6). Las listas de deseos,
+   (decidido: `AgregarRapido` llega con la ficha, paso 6: ✓ 2026-10-17). Las listas de deseos,
    `/regalar` y Fechas importantes cambian de tarjeta con su página.
 5. **Secciones del builder**, página por página, con `RenderSecciones` (o
    `PaginaTienda`) + `respaldo`. Primero el inicio (INICIO.md), después
@@ -123,6 +130,10 @@ Cada paso en su propio commit, verificable por separado.
    landings y los sorteos: CAMPANAS.md) y las generales (no encontrada y
    descargar la app, GENERALES.md; chicas, pero no encontrada cambia a dónde
    van las landings que no existen: revisarlas antes).
+   ✓ **La ficha de producto** (2026-10-17): `FichaDeProducto` con el kit, y
+   "Agregar rápido" en todas las tarjetas. Lo de abajo (opiniones y
+   relacionados) se pide al acercarse y las fotos bajan en su tamaño
+   (PRODUCTO.md, "En la tienda"). Interruptor `fichaVieja`.
 7. **Cargando** (`PantallaCarga`, `Cargando`, `EsqueletoPagina`: CARGA.md; el
    splash de `index.html` cambia en el mismo commit), **`BarraInferior` y luego `Cabecera`**: la más conectada (AuthContext,
    CartContext, WishlistContext, notificaciones y la configuración de
@@ -142,6 +153,7 @@ nada), o en un solo navegador con `localStorage.wala_kit_viejo = "pagos,carrito"
 | `pagosViejo` | la ventana "Pagar saldo" de Mis pedidos (`Modal` viejo) y la pantalla de Culqi mientras cobra |
 | `carritoViejo` | las preguntas del carrito (quitar seleccionados, vaciar) con `window.confirm` |
 | `tarjetasViejo` | la tarjeta de producto (`PremiumProductCard`) en carruseles y grillas |
+| `fichaVieja` (`useLoViejo('ficha')`: en Firestore el campo es `fichaViejo: true`; en localStorage, `"ficha"`) | la ficha de producto (`ProductDetail` y `ProductReviews`) y que "Elegir" de las tarjetas lleve a la ficha en vez de abrir "Agregar rápido" |
 | `seccionesViejo` | las secciones del builder de todas las páginas (inicio, `/tienda`, marcas y landings; el cacherito nunca dejó lo de antes): los componentes de `seccionesPorTipo.jsx`, con `SidebarCatalogLayout`, y el fondo negro en las landings sin marca |
 
 Se retiran cuando lo nuevo lleve un tiempo en producción (y con ellos lo viejo

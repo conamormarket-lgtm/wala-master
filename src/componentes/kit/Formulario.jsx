@@ -5,6 +5,7 @@ import Boton from './Boton';
 import ListaOpciones from './ListaOpciones';
 import { RESORTE } from './Efectos';
 import { Visto } from './Marca';
+import { Texto } from './Traduccion';
 import s from './Formulario.module.css';
 
 /**
@@ -102,8 +103,8 @@ export function SelectorTalla({ tallas, valor, onChange, agotadas = [], guia, et
   return (
     <fieldset className={s.grupo}>
       <legend className={s.leyenda}>
-        <span>{etiqueta}{valor && <strong>: {valor}</strong>}</span>
-        {guia && <button type="button" className={s.enlace} onClick={guia}>Guía de tallas</button>}
+        <span><Texto>{etiqueta}</Texto>{valor && <strong>: {valor}</strong>}</span>
+        {guia && <button type="button" className={s.enlace} onClick={guia}><Texto>Guía de tallas</Texto></button>}
       </legend>
       <div className={s.tallas} role="radiogroup">
         {tallas.map((t) => {
@@ -200,7 +201,7 @@ export function SelectorColor({ colores, valor, onChange, etiqueta = 'Color', li
     <fieldset className={s.grupo}>
       <legend className={s.leyenda}>
         <span>
-          {etiqueta}
+          <Texto>{etiqueta}</Texto>
           <AnimatePresence mode="wait" initial={false}>
             {actual && (
               <motion.strong

@@ -79,7 +79,7 @@ export function ConfianzaCompra() {
   return (
     <ul className={s.confianza} data-componente="ConfianzaCompra">
       {CONFIANZA.map(([icono, texto]) => (
-        <li key={icono}><IconoWala nombre={icono} tamano={34} /> <span>{texto}</span></li>
+        <li key={icono}><IconoWala nombre={icono} tamano={34} /> <span><Texto>{texto}</Texto></span></li>
       ))}
     </ul>
   );

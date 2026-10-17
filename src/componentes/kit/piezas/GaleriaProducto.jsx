@@ -2,6 +2,7 @@ import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'reac
 import { motion, useReducedMotion } from 'framer-motion';
 import { ZoomIn } from 'lucide-react';
 import { RESORTE } from '../Efectos';
+import { Texto } from '../Traduccion';
 import s from './GaleriaProducto.module.css';
 
 /**
@@ -11,20 +12,29 @@ import s from './GaleriaProducto.module.css';
  * al elegir una miniatura pasa deslizándose hasta ella. Con ratón, la foto se
  * acerca donde está el cursor. Cada foto lleva su nombre ("Frente",
  * "Espalda") en una píldora.
- *  - imagenes: [{ url, nombre, corto? }] (corto: el de la miniatura, si el
- *    nombre no cabe: "Ella" en vez de "Ella · Melange") · nombre: el del
- *    producto (para el alt)
+ *  - imagenes: [{ url, nombre, corto?, srcSet? }] (corto: el de la miniatura,
+ *    si el nombre no cabe: "Ella" en vez de "Ella · Melange"; srcSet: copias
+ *    de la foto en varios tamaños, para bajar solo la que hace falta) ·
+ *    nombre: el del producto (para el alt)
  *  - inicial: la que se ve primero
  *  - salto: { indice, vez } para ir a otra foto desde fuera (la prenda de un
  *    combo que se recoloreó): cada `vez` nueva, la tira se desliza hasta ella
+ * La foto con la que abre se pide primero (fetchPriority alta): es la que
+ * más se ve al entrar. Las demás, solo al acercarse.
  */
+// El ancho que ocupa la foto grande y una miniatura (para elegir la copia).
+export const SIZES_FOTO = '(max-width: 900px) 100vw, 46vw';
+const SIZES_MINIATURA = '76px';
+
 export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto }) {
   const total = imagenes.length;
   const [sel, setSel] = useState(Math.min(inicial, Math.max(total - 1, 0)));
   const [zoom, setZoom] = useState(false);
   const [pos, setPos] = useState({ x: 50, y: 50 });
   const tira = useRef(null);
+  const minis = useRef(null);
   const quieto = useRef(null);
+  const primera = useRef(sel);
   const marca = useId();
   const reducir = useReducedMotion();
   const actual = imagenes[Math.min(sel, total - 1)];
@@ -45,6 +55,19 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
   useEffect(() => { if (salto) ir(salto.indice); }, [salto?.vez]); // eslint-disable-line react-hooks/exhaustive-deps
   // Si cambian las fotos y quedan menos, la elegida pasa a la última.
   useEffect(() => { if (sel > total - 1) setSel(Math.max(total - 1, 0)); }, [sel, total]);
+  // Con muchas fotos las miniaturas se desplazan: la elegida queda a la vista
+  // (moviendo solo la columna, nunca la página).
+  useEffect(() => {
+    const caja = minis.current;
+    const el = caja?.children[sel];
+    if (!caja || !el) return;
+    const c = caja.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    if (r.top < c.top) caja.scrollTop += r.top - c.top - 4;
+    else if (r.bottom > c.bottom) caja.scrollTop += r.bottom - c.bottom + 4;
+    if (r.left < c.left) caja.scrollLeft += r.left - c.left - 4;
+    else if (r.right > c.right) caja.scrollLeft += r.right - c.right + 4;
+  }, [sel]);
 
   // Al deslizar con el dedo, la elegida es la que queda a la vista cuando la tira se detiene.
   const alDeslizar = () => {
@@ -62,7 +85,7 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
   return (
     <div className={[s.galeria, total > 1 && s.conMiniaturas].filter(Boolean).join(' ')} data-componente="GaleriaProducto">
       {total > 1 && (
-        <div className={s.miniaturas} role="tablist" aria-label="Fotos">
+        <div ref={minis} className={s.miniaturas} role="tablist" aria-label="Fotos">
           {imagenes.map((img, i) => (
             <button
               key={`${img.url}-${i}`}
@@ -77,7 +100,7 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
               {/* La foto y su nombre se recortan aquí dentro; el borde va fuera
                   de ese recorte para que al viajar no se vea cortado. */}
               <span className={s.miniaturaFoto}>
-                <img src={img.url} alt="" loading="lazy" draggable={false} />
+                <img src={img.url} srcSet={img.srcSet} sizes={img.srcSet ? SIZES_MINIATURA : undefined} alt="" loading="lazy" decoding="async" draggable={false} />
                 {(img.corto || img.nombre) && <span className={s.miniaturaNombre}>{img.corto || img.nombre}</span>}
               </span>
               {/* El borde de la elegida viaja de una miniatura a otra. */}
@@ -100,17 +123,22 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
             <div key={`${img.url}-${i}`} className={s.lamina} aria-hidden={i !== sel || undefined}>
               <img
                 src={img.url}
+                srcSet={img.srcSet}
+                sizes={img.srcSet ? SIZES_FOTO : undefined}
                 alt={[nombre, img.nombre].filter(Boolean).join(' · ')}
                 className={s.foto}
                 draggable={false}
                 loading={i === sel ? 'eager' : 'lazy'}
+                decoding={i === primera.current ? undefined : 'async'}
+                // En minúsculas: React 18 no conoce fetchPriority.
+                fetchpriority={i === primera.current ? 'high' : undefined}
                 style={zoom && i === sel ? { transform: 'scale(2.2)', transformOrigin: `${pos.x}% ${pos.y}%` } : undefined}
               />
             </div>
           ))}
         </div>
         {actual?.nombre && <span key={actual.nombre} className={s.lado}>{actual.nombre}</span>}
-        {actual && <span className={s.pista} aria-hidden="true"><ZoomIn /> Pasa el cursor para ver de cerca</span>}
+        {actual && <span className={s.pista} aria-hidden="true"><ZoomIn /> <Texto>Pasa el cursor para ver de cerca</Texto></span>}
         {total > 1 && (
           <span className={s.puntos} aria-hidden="true">
             {imagenes.map((img, i) => <i key={`${img.url}-${i}`} className={i === sel ? s.puntoActivo : undefined} />)}

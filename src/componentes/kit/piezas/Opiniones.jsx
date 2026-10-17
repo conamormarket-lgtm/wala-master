@@ -1,9 +1,10 @@
-import React, { useEffect, useId, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { Star, ThumbsUp, ImagePlus, X, Award, LogIn, Send } from 'lucide-react';
 import Boton from '../Boton';
 import { Campo } from '../Formulario';
 import { Sello } from '../Marca';
 import { Avatar } from './Avatar';
+import { Texto, useTexto } from '../Traduccion';
 import s from './Opiniones.module.css';
 
 /*
@@ -59,7 +60,7 @@ export function ResumenOpiniones({ promedio = 0, total = 0, porEstrella = {}, fi
         <strong>{total ? promedio.toFixed(1) : '–'}</strong>
         <span>
           <Estrellas valor={promedio} tamano={18} />
-          <small>{total === 1 ? '1 opinión' : `${total} opiniones`}</small>
+          <small><Texto>{total === 1 ? '1 opinión' : `${total} opiniones`}</Texto></small>
         </span>
       </div>
       <ul className={s.barras}>
@@ -99,7 +100,7 @@ export function TarjetaOpinion({ autor, fecha, puntuacion = 5, texto, fotos = []
   return (
     <article className={[s.opinion, destacada && s.destacada].filter(Boolean).join(' ')} data-componente="TarjetaOpinion">
       {destacada && (
-        <p className={s.destacadaEtiqueta}><Sello tamano={22} girar={-8}><Award aria-hidden="true" /></Sello> La más útil para la comunidad</p>
+        <p className={s.destacadaEtiqueta}><Sello tamano={22} girar={-8}><Award aria-hidden="true" /></Sello> <Texto>La más útil para la comunidad</Texto></p>
       )}
       <header className={s.opinionCabeza}>
         <Avatar className={s.avatar} nombre={autor} letras={1} />
@@ -121,7 +122,7 @@ export function TarjetaOpinion({ autor, fecha, puntuacion = 5, texto, fotos = []
       )}
       <footer className={s.opinionPie}>
         <button type="button" className={[s.util, marcada && s.utilMarcada].filter(Boolean).join(' ')} onClick={onUtil} aria-pressed={marcada}>
-          <ThumbsUp aria-hidden="true" /> Útil{utiles > 0 && <span> · {utiles}</span>}
+          <ThumbsUp aria-hidden="true" /> <Texto>Útil</Texto>{utiles > 0 && <span> · {utiles}</span>}
         </button>
       </footer>
     </article>
@@ -140,15 +141,20 @@ export function FormularioOpinion({ onEnviar, onCancelar, sesion = true, urlLogi
   const [fotos, setFotos] = useState([]);
   const [error, setError] = useState(null);
   const [enviando, setEnviando] = useState(false);
+  const placeholder = useTexto('¿Qué te pareció? ¿La talla, el color, la calidad?');
+  const etiquetaOpinion = useTexto('Tu opinión');
 
-  // Las vistas previas se sueltan al quitar la foto o al salir.
-  useEffect(() => () => fotos.forEach((f) => URL.revokeObjectURL(f.url)), []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Las vistas previas se sueltan al quitar la foto o al salir (las de ese
+  // momento, no las del principio).
+  const vivas = useRef(fotos);
+  vivas.current = fotos;
+  useEffect(() => () => vivas.current.forEach((f) => URL.revokeObjectURL(f.url)), []);
 
   if (!sesion) {
     return (
       <div className={s.entrar} data-componente="FormularioOpinion">
-        <p>Inicia sesión para contar qué te pareció.</p>
-        <Boton to={urlLogin} tamano="sm" icono={<LogIn aria-hidden="true" />}>Iniciar sesión</Boton>
+        <p><Texto>Inicia sesión para contar qué te pareció.</Texto></p>
+        <Boton to={urlLogin} tamano="sm" icono={<LogIn aria-hidden="true" />}><Texto>Iniciar sesión</Texto></Boton>
       </div>
     );
   }
@@ -171,6 +177,9 @@ export function FormularioOpinion({ onEnviar, onCancelar, sesion = true, urlLogi
     setEnviando(true);
     try {
       await onEnviar?.({ puntuacion, texto: texto.trim(), fotos: fotos.map((f) => f.archivo) });
+    } catch (err) {
+      // Lo que no se pudo publicar se queda en el formulario, con el motivo.
+      setError(err?.message || 'No pudimos publicar tu opinión. Inténtalo de nuevo.');
     } finally {
       setEnviando(false);
     }
@@ -179,19 +188,19 @@ export function FormularioOpinion({ onEnviar, onCancelar, sesion = true, urlLogi
   return (
     <form className={s.formulario} onSubmit={enviar} data-componente="FormularioOpinion">
       <div className={s.grupo}>
-        <span className={s.rotulo}>Tu calificación</span>
+        <span className={s.rotulo}><Texto>Tu calificación</Texto></span>
         <Estrellas valor={puntuacion} tamano={30} onCambiar={(n) => { setPuntuacion(n); setError(null); }} etiqueta="Tu calificación" />
       </div>
       <Campo
-        etiqueta="Tu opinión"
+        etiqueta={etiquetaOpinion}
         multilinea
         maxLength={800}
-        placeholder="¿Qué te pareció? ¿La talla, el color, la calidad?"
+        placeholder={placeholder}
         value={texto}
         onChange={(e) => { setTexto(e.target.value); setError(null); }}
       />
       <div className={s.grupo}>
-        <span className={s.rotulo}>Fotos <small>(opcional, hasta {maxFotos})</small></span>
+        <span className={s.rotulo}><Texto>Fotos</Texto> <small><Texto>{`(opcional, hasta ${maxFotos})`}</Texto></small></span>
         <div className={s.fotos}>
           {fotos.map((f, i) => (
             <span key={f.url} className={s.foto}>
@@ -203,15 +212,15 @@ export function FormularioOpinion({ onEnviar, onCancelar, sesion = true, urlLogi
             <label className={s.agregarFoto}>
               <input type="file" accept="image/*" multiple onChange={elegir} />
               <ImagePlus aria-hidden="true" />
-              <span>Agregar</span>
+              <span><Texto>Agregar</Texto></span>
             </label>
           )}
         </div>
       </div>
-      {error && <p className={s.error} role="alert">{error}</p>}
+      {error && <p className={s.error} role="alert"><Texto>{error}</Texto></p>}
       <div className={s.botones}>
-        {onCancelar && <Boton variante="fantasma" onClick={onCancelar} disabled={enviando}>Cancelar</Boton>}
-        <Boton type="submit" icono={<Send aria-hidden="true" />} cargando={enviando}>Publicar opinión</Boton>
+        {onCancelar && <Boton variante="fantasma" onClick={onCancelar} disabled={enviando}><Texto>Cancelar</Texto></Boton>}
+        <Boton type="submit" icono={<Send aria-hidden="true" />} cargando={enviando}><Texto>Publicar opinión</Texto></Boton>
       </div>
     </form>
   );

@@ -1,5 +1,6 @@
 import React from 'react';
 import { SelectorTalla, SelectorColor, Cantidad } from '../Formulario';
+import { Texto } from '../Traduccion';
 import s from './OpcionesProducto.module.css';
 
 /**
@@ -68,14 +69,14 @@ export function OpcionesProducto({
             onChange={onOpcion}
             guia={etiquetaOpcion === 'Talla' ? onGuia : undefined}
           />
-          {falta && <p className={s.aviso} role="alert">Elige {articulo(etiquetaOpcion)} para continuar.</p>}
-          {!falta && notaOpcion && <p className={s.nota}>{notaOpcion}</p>}
+          {falta && <p className={s.aviso} role="alert"><Texto>{`Elige ${articulo(etiquetaOpcion)} para continuar.`}</Texto></p>}
+          {!falta && notaOpcion && <p className={s.nota}><Texto>{notaOpcion}</Texto></p>}
         </div>
       )}
 
       {onCantidad && (
         <div className={s.fila}>
-          <span>Cantidad</span>
+          <span><Texto>Cantidad</Texto></span>
           <Cantidad valor={cantidad} onChange={onCantidad} max={maxCantidad} />
         </div>
       )}

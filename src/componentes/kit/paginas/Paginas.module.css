@@ -1,5 +1,7 @@
 /* ── Marco de la tienda ── */
 .marco {
+  /* La altura de la BarraInferior del kit (la compra de la ficha se pega encima). */
+  --alto-barra-inferior: calc(64px + var(--safe-bottom, 0px));
   container-type: inline-size;
   display: flex;
   flex-direction: column;

@@ -45,6 +45,17 @@
   font-weight: 400;
 }
 
+/* Los colores de las prendas del combo mientras llegan. */
+.cargando {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.cargando > span {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .pie {
   display: flex;
   gap: 0.6rem;

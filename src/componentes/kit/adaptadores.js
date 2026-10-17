@@ -150,7 +150,9 @@ export function opcionesDeProducto(p, { subproductos = {} } = {}) {
     opcionesCombo = comunes.length ? comunes : [...new Set(listas.flat())];
   }
   return {
-    producto: { nombre: p.name, imagen: p.mainImage || p.images?.[0], precio: p.salePrice || p.price, precioAntes: p.salePrice ? p.price : undefined },
+    // Un combo se ve con su portada o, sin ella, con la foto de una prenda (su
+    // mainImage suele ser el relleno "Producto").
+    producto: { nombre: p.name, imagen: portadaDeCombo(p) || [p.mainImage, ...(p.images || []), ...(p.comboItems || []).map((it) => it.imageUrl)].find((u) => u && !String(u).includes('placeholder')), precio: p.salePrice || p.price, precioAntes: p.salePrice ? p.price : undefined },
     variantes: piezas.length ? [] : vs.map((v) => {
       const hex = hexDeVariante(v);
       return { id: v.id, nombre: v.name, colorHex: hex, claro: hex ? esClaro(hex) : undefined, imagen: v.imageUrl, opciones: v.sizes || [] };
@@ -1043,14 +1045,28 @@ const fotosGaleria = (urls, nombres = {}) => [...new Set(urls.filter(Boolean))]
   .map((url) => ({ url, nombre: nombres[url] || '' }));
 
 /**
+ * Las fotos de las vistas de personalización en un color (frente y, si
+ * tiene, espalda: customizationViews[].imagesByColor), como buildImages de
+ * ProductDetail. El nombre del color se compara sin espacios ni mayúsculas.
+ */
+const vistasPorColor = (p, color) => (p?.customizationViews || []).flatMap((vista) => {
+  const de = (mapa) => {
+    const k = Object.keys(mapa || {}).find((x) => mismoColor(x, color));
+    return k ? [mapa[k]] : [];
+  };
+  return [...de(vista.imagesByColor), ...(vista.hasBackSide ? de(vista.backSide?.imagesByColor) : [])];
+});
+
+/**
  * Un producto de productos_wala → props de PaginaProducto (sin las opiniones
  * ni los relacionados, que llegan por su lado).
  *  - catalogo: { marcas, categorias } (para la marca y las migas)
  *  - subproductos: { [productId]: producto } de las piezas de un combo
  * Devuelve { producto, opciones (las de opcionesDeProducto), varianteInicial,
  * fotos: { base: [...], [varianteId]: [...], combo? } }. Las fotos de una
- * variante son las suyas (imageUrl, galleryImages, images) y, si no tiene,
- * las del producto: el mismo orden que buildImages de ProductDetail.
+ * variante son las de sus vistas de personalización en ese color y las suyas
+ * (imageUrl, galleryImages, images) y, si no tiene, las del producto: el
+ * mismo orden que buildImages de ProductDetail.
  * En un combo, `combo` = { portada, piezas: [{ porColor: { [color]: urls },
  * general: urls }], producto }: PaginaProducto arma la galería con el color
  * elegido de cada prenda; si ese color no tiene foto (o la prenda no tiene
@@ -1073,7 +1089,7 @@ export function fichaProductoDesde(p = {}, { catalogo = {}, subproductos = {} } 
         const sub = subproductos[it.productId];
         const vs = variantesDePieza(sub, it);
         return {
-          porColor: Object.fromEntries(vs.map((v) => [v.name, urls([v.imageUrl, ...(v.galleryImages || []), ...(v.images || [])])])),
+          porColor: Object.fromEntries(vs.map((v) => [v.name, urls([...vistasPorColor(sub, v.name), v.imageUrl, ...(v.galleryImages || []), ...(v.images || [])])])),
           general: urls([it.imageUrl, sub?.mainImage, ...(sub?.images || [])]),
         };
       }),
@@ -1081,7 +1097,7 @@ export function fichaProductoDesde(p = {}, { catalogo = {}, subproductos = {} } 
     };
   }
   variantesDe(p).forEach((v) => {
-    const propias = [v.imageUrl, ...(v.galleryImages || []), ...(v.images || [])].filter(Boolean);
+    const propias = [...vistasPorColor(p, v.name), v.imageUrl, ...(v.galleryImages || []), ...(v.images || [])].filter(Boolean);
     fotos[v.id] = propias.length && variantesDe(p).length > 1 ? fotosGaleria([...propias, ...delProducto], { [propias[0]]: v.name }) : base;
   });
   const precio = p.salePrice || p.price;

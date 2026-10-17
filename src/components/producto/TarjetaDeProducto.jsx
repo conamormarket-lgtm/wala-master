@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getBrands } from '../../services/brands';
@@ -14,6 +14,9 @@ import { fuentesDeImagen, SIZES_TARJETA_PRODUCTO } from '../common/OptimizedImag
 import PremiumProductCard from '../../pages/Tienda/components/PremiumProductCard/PremiumProductCard';
 import TarjetaProducto from '../../componentes/kit/TarjetaProducto';
 import { tarjetaDesdeProducto, portadaDeCombo } from '../../componentes/kit/adaptadores';
+
+// La hoja "Agregar rápido" baja aparte, la primera vez que alguien la abre.
+const AgregarRapidoDeProducto = lazy(() => import('./AgregarRapidoDeProducto'));
 
 // Qué hay que elegir antes de comprar, dicho con precisión (como la tarjeta de antes).
 const textoElegir = (product) => {
@@ -36,7 +39,8 @@ const sinMenu = (e) => e.preventDefault();
  *    sus copias en varios tamaños, la de respaldo y el fondo de la marca;
  *    la segunda foto al pasar el ratón (no en los combos)
  *  - "Agregar" sin opciones → addToCart (trackAddToCart va en CartContext);
- *    con opciones → la ficha, diciendo qué hay que elegir
+ *    con opciones ("Elegir talla"…) → la hoja "Agregar rápido"
+ *    (AgregarRapidoDeProducto, paso 6); con el interruptor fichaVieja, la ficha
  *  - el corazón con WishlistContext y su aviso
  *  - la impresión cuando entra en pantalla y la ficha precargada al acercarse
  * El interruptor tarjetasViejo (useLoViejo) vuelve a PremiumProductCard.
@@ -57,6 +61,9 @@ function TarjetaNueva({
   const { isFavorite, toggleFavorite } = useWishlist();
   const { addToast } = useGlobalToast();
   const { thumbnailImageUrl, recordImpression } = useProductThumbnailVariant(product);
+  const fichaVieja = useLoViejo('ficha');
+  // null: la hoja nunca se abrió (no se monta ni baja su código).
+  const [hoja, setHoja] = useState(null);
 
   const { data: marcas } = useQuery({
     queryKey: ['brands'],
@@ -103,7 +110,8 @@ function TarjetaNueva({
 
   const alAgregar = () => {
     if (necesitaElegir) {
-      navigate(`/producto/${product.id}`);
+      if (fichaVieja) navigate(`/producto/${product.id}`);
+      else setHoja(true);
       return false;
     }
     addToCart(product, {}, null, 1);
@@ -115,6 +123,7 @@ function TarjetaNueva({
   }, [queryClient, product]);
 
   return (
+    <>
     <TarjetaProducto
       {...base}
       categoria={categoria}
@@ -139,6 +148,12 @@ function TarjetaNueva({
       onAcercar={precargar}
       onMenu={sinMenu}
     />
+    {hoja !== null && (
+      <Suspense fallback={null}>
+        <AgregarRapidoDeProducto product={product} abierto={hoja} onCerrar={() => setHoja(false)} />
+      </Suspense>
+    )}
+    </>
   );
 }
 

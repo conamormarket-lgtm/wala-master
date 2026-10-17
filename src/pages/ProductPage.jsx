@@ -1,13 +1,19 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useProduct } from '../hooks/useProducts';
+import useLoViejo from '../hooks/useLoViejo';
 import { getCategories } from '../services/products';
-import ProductDetail from './Tienda/components/ProductDetail';
+import FichaDeProducto from '../components/producto/FichaDeProducto';
+
+// La ficha vieja solo baja si el interruptor fichaVieja está puesto.
+const ProductDetail = lazy(() => import('./Tienda/components/ProductDetail'));
 
 const ProductPage = () => {
   const { id } = useParams();
-  const { data: product, isLoading, error } = useProduct(id);
+  // Paso 6 de la migración: la ficha del kit. fichaVieja vuelve a ProductDetail.
+  const fichaVieja = useLoViejo('ficha');
+  const { data: product, isLoading, error, refetch } = useProduct(id);
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
@@ -25,6 +31,23 @@ const ProductPage = () => {
   // El recordatorio "¡Sigue disponible!" ya no lo arma el navegador mientras
   // el cliente mira el producto: lo manda el servidor al día siguiente (aviso
   // "Producto que estuvo mirando", functions/notificationsEngine.js).
+
+  if (!fichaVieja) {
+    // Las prendas de Crear y sus combos no tienen ficha (ver abajo).
+    if (product?.esPrendaBase === true && !noDisponible) return <Navigate to={`/crear/${id}`} replace />;
+    if (product?.esComboCrear === true) return <Navigate to={`/combo/${id}`} replace />;
+    return (
+      <FichaDeProducto
+        key={id}
+        product={product}
+        cargando={isLoading}
+        error={error}
+        noDisponible={noDisponible}
+        categories={categories}
+        onReintentar={() => refetch()}
+      />
+    );
+  }
 
   if (error) {
     return <div>Error al cargar el producto: {error.message}</div>;
@@ -72,7 +95,11 @@ const ProductPage = () => {
     );
   }
 
-  return <ProductDetail product={product} loading={isLoading} categories={categories} />;
+  return (
+    <Suspense fallback={null}>
+      <ProductDetail product={product} loading={isLoading} categories={categories} />
+    </Suspense>
+  );
 };
 
 export default ProductPage;

@@ -6,7 +6,11 @@ Cómo verla en vivo: `npm run dev` → http://localhost:3000/componentes.html �
 favoritos, el carrito). En "Cómo se abre": una prenda con colores y tallas,
 uno sin opciones, un combo de pareja y un producto de un solo modelo. En los
 estados: cargando, error, ya no está disponible, agotado, personalizable (para
-ver el botón) y sin opiniones.
+ver el botón), personalizable con Yoryo, sin opiniones, opiniones cargando,
+combo con las prendas cargando y el regalo de una lista.
+
+**En la tienda desde el 2026-10-17** (paso 6): `/producto/:id` es esta página
+(ver "En la tienda", abajo).
 
 ![La ficha en el celular: la galería, el precio, color y talla, los botones y la confianza](producto-celular.webp)
 
@@ -35,14 +39,14 @@ reseñas de prueba en un producto borrado, así que no sirven para ver el diseñ
 | Parte | Componente | Piezas que usa | Diseño en | Datos (en la tienda) |
 |---|---|---|---|---|
 | P13 Página | `PaginaProducto` | `MarcoFicha`, `Migas`, `PrecioFicha`, `ConfianzaCompra`, `BarraCompra` (el marco de `piezas/Ficha`, el mismo de una creación y de un combo) | `paginas/Producto.module.css` | `fichaProductoDesde(producto, { catalogo, subproductos })` |
-| Galería | `GaleriaProducto` | — | `piezas/GaleriaProducto.module.css` | `fotos.base` y `fotos[varianteId]` |
+| Galería | `GaleriaProducto` | — | `piezas/GaleriaProducto.module.css` | `fotos.base` y `fotos[varianteId]`; las copias de cada foto con `fuentes` |
 | Migas y precio | `Migas`, `PrecioFicha` | `useContador` (el precio corre) | `piezas/Ficha.module.css` | `producto.categoria`, `precio`, `precioAntes` |
 | Opciones | `OpcionesProducto` (la misma de "Agregar rápido") | `SelectorColor`, `SelectorTalla`, `Cantidad` | `piezas/OpcionesProducto.module.css` y `Formulario.module.css` (`.colorAro`, `.tallaMarca`) | `opcionesDeProducto` (ya existía) |
-| Compra | `.compra` de `PaginaProducto` (pegada abajo en el celular) | `Boton` | `paginas/Producto.module.css` | `onAgregar`, `onComprar`, `onPersonalizar`, `carrito`, `onPagarCarrito` |
+| Compra | `.compra` de `PaginaProducto` (pegada abajo en el celular) | `Boton`, `IconoWala` (el regalo) | `paginas/Producto.module.css` | `onAgregar`, `onComprar`, `onPersonalizar` y `textoPersonalizar`, `carrito`, `onPagarCarrito`, `regalo` |
 | Confianza | `ConfianzaCompra` | `IconoWala` (`camion`, `cambio`, `escudo`) | `piezas/Ficha.module.css` | fija |
 | Barra de compra (escritorio, al bajar) | `BarraCompra` (pieza nueva) | `FotoProducto`, `Boton` | `piezas/Ficha.module.css` | la foto, el nombre, lo elegido y el precio de la ficha |
-| Opiniones | `ResumenOpiniones`, `TarjetaOpinion`, `FormularioOpinion`, `Estrellas` (piezas nuevas) | `Avatar`, `Sello`, `Campo`, `Boton` | `piezas/Opiniones.module.css` | `getProductReviews` → `opinionesDesde` |
-| También te puede gustar | `Carrusel` + `TarjetaProducto` | — | los suyos | `getProductsByCategory` → `tarjetaDesdeProducto` |
+| Opiniones | `ResumenOpiniones`, `TarjetaOpinion`, `FormularioOpinion`, `Estrellas` (piezas nuevas) | `Avatar`, `Sello`, `Campo`, `Boton`, `Hueso` (mientras llegan) | `piezas/Opiniones.module.css` | `getProductReviews` → `opinionesDesde` (+ `cargando`); se piden con `onVerAbajo` |
+| También te puede gustar | `Carrusel` + `TarjetaProducto` (o la de la tienda con `tarjeta`) | — | los suyos | `getProductsByCategory` → `tarjetaDesdeProducto`; se piden con `onVerAbajo` |
 
 ### Lo que hace
 
@@ -129,8 +133,23 @@ reseñas de prueba en un producto borrado, así que no sirven para ver el diseñ
   - Cargando: `EsqueletoPagina forma="producto"`.
   - Error: Kapi triste y "Reintentar". En la tienda se ve un `div` con
     "Error al cargar el producto: Documento no encontrado".
-  - Retirado (`deleted` o `visible: false`): "Este producto ya no está
-    disponible" e "Ir a la tienda".
+  - Retirado (`deleted` o `visible: false`) o que no existe: "Este producto
+    ya no está disponible" e "Ir a la tienda".
+  - Combo con las prendas cargando (`piezasCargando`): los colores de cada
+    prenda van en esqueleto; al llegar, cada una abre con su color (el del
+    combo o el primero).
+  - Opiniones cargando (`opiniones.cargando`): dos tarjetas en esqueleto.
+  - Regalo de una lista (`regalo`): el aviso con el regalo de Walá sobre los
+    botones.
+- **Lo de abajo, cuando se acerca:** `onVerAbajo` se llama una vez, cuando
+  las opiniones quedan a 300px de la vista (`IntersectionObserver`). La
+  tienda pide recién ahí las opiniones y los relacionados.
+- **Fotos:** cada foto puede traer `srcSet` (con `fuentes(url) → { src,
+  srcSet }`): la grande pide la copia de `SIZES_FOTO` (`(max-width: 900px)
+  100vw, 46vw`) y la miniatura la de 76px. La foto con la que abre se pide
+  primero (`fetchpriority="high"`); las demás, al acercarse. Con muchas
+  fotos, la columna de miniaturas mide lo que la foto grande y se desplaza
+  (la elegida queda a la vista).
 
 ## Para cambiar el diseño rápido: qué se repite
 
@@ -145,9 +164,68 @@ reseñas de prueba en un producto borrado, así que no sirven para ver el diseñ
   combo) y el estudio. En `CrearStudioPage` se hizo igual (CREAR.md, P12).
 - **`ConfianzaCompra` y `GaleriaProducto`** son las de una creación y un combo.
 
-## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
+## En la tienda (hecho el 2026-10-17)
 
-### Reemplazos
+![La ficha en la tienda real, en el celular: la galería, la marca y "Agregar al carrito" pegado sobre la barra inferior](producto-tienda-celular.webp)
+
+![Agregar rápido desde una tarjeta de la tienda: un combo con el color de cada prenda y la talla](agregar-rapido-tienda.webp)
+
+(Celular, 390 px, con los emuladores. Se probó también a 1366 en claro y
+oscuro; el panel achica esa captura y no se dejó.)
+
+- **Conector:** `src/components/producto/FichaDeProducto.jsx`, desde
+  `pages/ProductPage.jsx` (las redirecciones a `/crear/:id` y `/combo/:id`
+  siguen ahí). Lee `useProduct`, las marcas, las prendas del combo
+  (`usePiezasDelCombo.js`: caché primero, red si falta), las opiniones y los
+  relacionados; arma todo con `fichaProductoDesde` y `opinionesDesde`.
+- **Lo elegido → carrito:** `components/producto/eleccionCarrito.js`
+  (`argumentosDelCarrito`, `rutaDelEditor`): el mismo `addToCart` que
+  `ProductDetail`, también para "Agregar rápido".
+- **Interruptor `fichaVieja`** (`useLoViejo`): vuelve a `ProductDetail`
+  (que ahora baja aparte, solo con el interruptor) y hace que "Elegir" de
+  las tarjetas vuelva a llevar a la ficha.
+- **"Agregar rápido" en las tarjetas** (decidido en el paso 4, llega con la
+  ficha): "Elegir talla"/"Elegir color" abre la hoja
+  (`components/producto/AgregarRapidoDeProducto.jsx`, que baja aparte la
+  primera vez que se abre) en todas las tarjetas de la tienda
+  (`TarjetaDeProducto`). Abre con la variante principal; en un combo, pide
+  las prendas al abrir (los colores van en esqueleto mientras llegan).
+  Personalizar va al editor con lo elegido; Yoryo, a la ficha.
+- **Se mantiene igual:** `recordProductClick` y `trackProductView` al abrir,
+  `recordVariantViewTime` (segundos por variante, ahora contados por reloj
+  en vez de un `setInterval`), `trackAddToCart` (en CartContext), el
+  regalo de una lista (`location.state.regalo`: aviso, `isWishlistGift` y
+  al carrito), comprar ahora (`selectOnly`), "Ir a pagar mi carrito"
+  (`selectAllItems`), compartir con el código real, Yoryo y su historial
+  (fuera del kit, bajan al tocar "Personalizable"), el WhatsApp del producto
+  (el marco lee la misma consulta `['product', id]`) y `initialData` desde
+  las listas.
+- **Carga:**
+  - Ya no se precargan todas las URLs del producto (`useImagePreloader`
+    recorría el documento entero, también las copias chicas, y volvía a
+    dibujar la ficha una vez por foto). Ahora baja la foto que se ve, en su
+    tamaño (`fuentesDeImagen`, como las tarjetas), y cuando el navegador
+    queda libre, la primera foto de cada color (hasta 8).
+  - Opiniones y relacionados se piden al acercarse (`onVerAbajo`), con
+    caché (`['product-reviews', id]`); antes se pedían al entrar y las
+    opiniones de nuevo en cada visita.
+  - El paquete de la ficha pesa casi lo mismo (gzip: 15,8 KB de JS y 4,9 de
+    CSS; antes 13,6 y 6,5) y ya no trae `ProductDetail`, el historial de
+    Yoryo ni `PremiumProductCard`.
+  - Queda para después (decidido): `useProduct` lee y reescribe todo el
+    catálogo de localStorage en cada ficha.
+- **Arreglado de paso:** un solo toast al agregar (el de CartContext); una
+  opinión recién publicada ya se puede marcar útil (`addReview` devuelve el
+  id aparte y la ficha vieja lo perdía); si las prendas del combo no llegan,
+  avisa en vez de quedarse cargando; sin portada, la hoja del combo muestra
+  la foto de una prenda (no el relleno "Producto").
+- **Sesión:** "con sesión" es `tieneCuenta` (no la sesión anónima del
+  cacherito), como el resto de la tienda. Opinar sin cuenta lleva a
+  `/login?redirect=` y vuelve a la ficha.
+- **Traducción:** los textos fijos de la ficha, las opciones, las opiniones,
+  la galería y "Agregar rápido" pasan por `<Texto>` (TRADUCCION.md).
+
+### Reemplazos (hechos)
 
 | Parte | Hoy en la tienda | Pasa a (kit) |
 |---|---|---|
@@ -228,30 +306,53 @@ reseñas de prueba en un producto borrado, así que no sirven para ver el diseñ
 
 ### Lo encontrado de paso (2026-10-16, comparando con `ProductDetail.jsx`)
 
-Falta en el kit y queda para cuando se migre (o se pida):
+Resuelto al llevarla a la tienda (2026-10-17):
 
-- **Fotos:** la tienda pide el tamaño justo (`imagesVariantes`), la primera
-  con `fetchPriority="high"`, precarga las demás y usa las vistas de
-  personalización por color. El kit usa la URL tal cual.
-- **Muchas fotos:** en la tienda la columna de miniaturas tiene alto máximo y
-  scroll; en el kit crece con ellas.
-- El **WhatsApp del producto** (`whatsappEnabled`, `whatsappNumber`,
-  `whatsappMessage`) sigue siendo de la tienda.
-- **En la tienda sale un toast doble al agregar** (`ProductDetail.jsx` y
-  `CartContext.jsx` muestran uno cada uno).
-- `--alto-barra-inferior` (la altura que usa `.compra`) no está definida en
-  ningún lado: vale su respaldo de 72px. La tienda usa `--bottom-nav-height`.
+- **Fotos:** `fuentes` (copias en varios tamaños), la primera con
+  `fetchpriority="high"` y las vistas de personalización por color en
+  `fichaProductoDesde` (`vistasPorColor`).
+- **Muchas fotos:** la columna de miniaturas mide lo que la foto grande y se
+  desplaza.
+- El **WhatsApp del producto** sigue en el marco de la tienda
+  (`useWhatsAppDeLaRuta`), sin cambios.
+- **El toast doble** al agregar: queda solo el de CartContext.
+- `.compra` usa `--alto-barra-inferior` (la demo la define en su marco) o,
+  en la tienda, `--bottom-nav-height` + la zona segura.
 - Con "Ver componentes", el resumen de opiniones dejaba de quedarse fijo al
   bajar (la regla de la demo le ganaba al `sticky`): arreglado con `:where()`
   en `DemoTienda.module.css`.
 
-### Pasos
+### Qué se probó (2026-10-17, localhost con los emuladores)
 
-1. Usar `fichaProductoDesde` y `opinionesDesde` con los datos reales y
-   comparar con la ficha de hoy, producto por producto (prenda, combo, sin
-   opciones, agotado).
-2. Cambiar las reseñas por las piezas del kit. Es lo más aislado.
-3. Cambiar la columna de información (opciones y CTAs) y la galería.
-4. Cambiar los relacionados y los estados.
-5. Borrar `ProductDetail.module.css` y `ProductReviews.module.css` cuando
-   lleve un tiempo en producción.
+- Prenda (Casaca One Piece): sin talla avisa y no agrega; color + talla →
+  carrito con `selectedVariant` y talla; al cambiar de color la talla se
+  queda; "¡Agregado!" y un solo toast; comprar ahora deja solo ese elegido y
+  va a `/checkout`; "Ir a pagar mi carrito (2)" elige todo.
+- Combo (Rodar Contigo, con sus dos prendas sembradas en el emulador desde
+  `demo/producto.json`): las prendas llegan después y cada una abre con su
+  color; cambiar el color de una y la talla → `comboVariantSelections` con
+  color y talla por prenda. Otro combo sin sus prendas en el emulador (Snoopy
+  Corazón): deja de cargar, avisa al agregar y el botón no dice "¡Agregado!".
+- Sin opciones (SKIN1004): agrega con su única variante.
+- No existe (`/producto/no-existe-123`): "ya no está disponible".
+- Opiniones: publicar (4 estrellas, sin fotos), "Útil" marca y desmarca;
+  en el celular se piden recién al bajar.
+- Relacionados con la tarjeta de la tienda; "Elegir" abre "Agregar rápido"
+  (prenda y combo) y agrega.
+- Regalo de una lista (`location.state`): aviso, `isWishlistGift` y al
+  carrito.
+- Compartir: copia `/producto/:id?ref=` con el código de la cuenta.
+- `fichaVieja` en `localStorage.wala_kit_viejo`: vuelve `ProductDetail`.
+- 1366 y 390, claro y oscuro.
+
+No se probó en la tienda: Yoryo (ningún producto del emulador lo tiene; el
+botón "Personalizable" se vio en la demo), el editor desde "Personalizar"
+(ningún producto personalizable en el emulador), un producto agotado o con
+fotos de variantes (el emulador casi no tiene; se vieron en la demo), subir
+fotos en una opinión (sin emulador de Storage) y la app Android.
+
+### Pendiente
+
+- Borrar lo viejo cuando lleve un tiempo en producción (ELIMINAR.md, paso 6).
+- La ficha no pone título ni descripción propios para buscadores (tampoco la
+  vieja).

@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ShoppingBag, Wand2 } from 'lucide-react';
 import Boton from './Boton';
 import { HojaInferior } from './Feedback';
+import { Texto } from './Traduccion';
+import { Hueso } from './Esqueletos';
 import { soles } from './TarjetaProducto';
 import { FotoProducto } from './piezas/FotoProducto';
 import { OpcionesProducto, tallasDe, conMuestras } from './piezas/OpcionesProducto';
@@ -22,6 +24,9 @@ import s from './AgregarRapido.module.css';
  *      y la opción (talla) compartida: las que tienen los colores elegidos.
  *  - personalizable + onPersonalizar(eleccion): botón secundario "Personalizar".
  *  - onConfirmar({ variante, opcion, piezas, cantidad }).
+ *  - varianteInicial: el id de la que abre (la principal del producto; si
+ *    no, la primera) · cargando: las prendas del combo todavía no llegan
+ *    (sus colores van en esqueleto y no se puede agregar)
  */
 export default function AgregarRapido({
   abierto,
@@ -36,6 +41,8 @@ export default function AgregarRapido({
   onPersonalizar,
   onConfirmar,
   onGuia,
+  varianteInicial,
+  cargando = false,
 }) {
   const [varId, setVarId] = useState(null);
   const [opcion, setOpcion] = useState(null);
@@ -45,11 +52,26 @@ export default function AgregarRapido({
   // Cada vez que se abre para un producto, empieza limpio.
   useEffect(() => {
     if (!abierto) return;
-    setVarId(variantes[0]?.id ?? null);
+    setVarId((variantes.some((v) => v.id === varianteInicial) ? varianteInicial : variantes[0]?.id) ?? null);
     setOpcion(null);
     setColores(Object.fromEntries(piezas.map((p, i) => [i, p.colores.some((c) => c.nombre === p.color) ? p.color : p.colores[0]?.nombre])));
     setCantidad(1);
   }, [abierto, producto?.nombre]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Las prendas de un combo pueden llegar con la hoja abierta: cada una toma su color.
+  const firmaPiezas = piezas.map((p) => p.colores.map((c) => c.nombre).join('|')).join('/');
+  useEffect(() => {
+    setColores((x) => {
+      const n = { ...x };
+      let cambio = false;
+      piezas.forEach((p, i) => {
+        if (p.colores.some((c) => c.nombre === n[i])) return;
+        const v = p.colores.some((c) => c.nombre === p.color) ? p.color : p.colores[0]?.nombre;
+        if (v !== n[i]) { n[i] = v; cambio = true; }
+      });
+      return cambio ? n : x;
+    });
+  }, [firmaPiezas]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const variante = variantes.find((v) => v.id === varId) || variantes[0];
   const lista = tallasDe({ variante, opciones, piezas, colores });
@@ -80,17 +102,17 @@ export default function AgregarRapido({
         <div className={s.pie}>
           {personalizable && (
             <Boton variante="contorno" icono={<Wand2 aria-hidden="true" />} onClick={() => onPersonalizar?.(eleccion)}>
-              Personalizar
+              <Texto>Personalizar</Texto>
             </Boton>
           )}
           <Boton
             bloque
             tamano="lg"
             icono={<ShoppingBag aria-hidden="true" />}
-            disabled={falta}
+            disabled={falta || cargando}
             onClick={() => onConfirmar?.(eleccion)}
           >
-            {falta ? `Elige ${etiquetaOpcion.toLowerCase()}` : `Agregar · ${soles(producto.precio * cantidad)}`}
+            {falta ? <Texto>{`Elige ${etiquetaOpcion.toLowerCase()}`}</Texto> : <><Texto>Agregar</Texto> · {soles(producto.precio * cantidad)}</>}
           </Boton>
         </div>
       )}
@@ -99,7 +121,7 @@ export default function AgregarRapido({
         <div className={s.producto}>
           <FotoProducto className={s.foto} src={variante?.imagen || producto.imagen} relleno="4px" loading="eager" />
           <div>
-            <strong>{producto.nombre}</strong>
+            <strong><Texto>{producto.nombre}</Texto></strong>
             <span className={s.precio}>
               {soles(producto.precio)}
               {producto.precioAntes && <s>{soles(producto.precioAntes)}</s>}
@@ -107,6 +129,12 @@ export default function AgregarRapido({
           </div>
         </div>
 
+        {cargando && (
+          <div className={s.cargando} aria-hidden="true">
+            <Hueso ancho="45%" alto={12} />
+            <span>{[0, 1, 2, 3, 4].map((k) => <Hueso key={k} forma="circulo" ancho={34} alto={34} />)}</span>
+          </div>
+        )}
         <OpcionesProducto
           variantes={variantes}
           varId={variante?.id}

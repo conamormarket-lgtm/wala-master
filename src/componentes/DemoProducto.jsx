@@ -20,7 +20,11 @@ export const ESTADOS_PRODUCTO = [
   ['noDisponible', 'Ya no está disponible'],
   ['agotado', 'Agotado'],
   ['personalizable', 'Personalizable'],
+  ['yoryo', 'Personalizable (Yoryo)'],
   ['sinOpiniones', 'Sin opiniones'],
+  ['opinionesCargando', 'Opiniones cargando'],
+  ['piezasCargando', 'Combo: prendas cargando'],
+  ['regalo', 'Regalo de una lista'],
 ];
 
 /** Para "Cómo se abre": un producto de cada tipo. */
@@ -64,13 +68,16 @@ export function ProductoDemo({ ruta = ABRIR_PRODUCTO[0][1], sesion, estados = []
   const p = {
     ...crudo,
     ...(estados.includes('agotado') && { inStock: 0 }),
-    ...(estados.includes('personalizable') && { customizable: true }),
+    ...((estados.includes('personalizable') || estados.includes('yoryo')) && { customizable: true }),
   };
   const catalogo = { marcas, categorias: TIENDA.categorias };
-  const subproductos = Object.fromEntries((p.comboItems || []).map((it) => [it.productId, TODOS.get(it.productId)]).filter(([, x]) => x));
+  // "Combo: prendas cargando": las prendas todavía no llegan (como en la tienda al entrar).
+  const subproductos = estados.includes('piezasCargando') ? {} : Object.fromEntries((p.comboItems || []).map((it) => [it.productId, TODOS.get(it.productId)]).filter(([, x]) => x));
   const ficha = fichaProductoDesde(p, { catalogo, subproductos });
   const [resenas, setResenas] = useState(() => opinionesDe(p));
-  const opiniones = useMemo(() => opinionesDesde(estados.includes('sinOpiniones') ? [] : resenas, { uid: sesion ? 'yo' : undefined }), [resenas, estados, sesion]);
+  const opiniones = useMemo(() => (estados.includes('opinionesCargando')
+    ? { ...opinionesDesde([]), cargando: true }
+    : opinionesDesde(estados.includes('sinOpiniones') ? [] : resenas, { uid: sesion ? 'yo' : undefined })), [resenas, estados, sesion]);
   const relacionadosCrudos = useMemo(() => [...TODOS.values()]
     .filter((x) => x.id !== p.id && x.visible !== false && !x.esPrendaBase && (x.categories || []).some((c) => (p.categories || []).includes(c)))
     .slice(0, 12), [p.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -103,7 +110,12 @@ export function ProductoDemo({ ruta = ABRIR_PRODUCTO[0][1], sesion, estados = []
       onAgregarRelacionado={(i) => onAgregar?.(relacionadosCrudos[i])}
       onAgregar={agregar}
       onComprar={async (e) => { await agregar(e); onIrA?.('/checkout'); }}
-      onPersonalizar={() => avisar('En la tienda iría al editor', `/editor/${p.id}`, 'info')}
+      onPersonalizar={() => (estados.includes('yoryo')
+        ? avisar('En la tienda abre el personalizador de Yoryo', 'Se queda fuera del kit.', 'info')
+        : avisar('En la tienda iría al editor', `/editor/${p.id}`, 'info'))}
+      textoPersonalizar={estados.includes('yoryo') ? 'Personalizable' : undefined}
+      piezasCargando={estados.includes('piezasCargando') && (p.comboItems || []).length > 0}
+      regalo={estados.includes('regalo') ? 'Estás comprando un regalo de una lista de deseos.' : undefined}
       onCompartir={async () => { await espera(200); avisar('¡Enlace copiado!', 'Compártelo y gana monedas cuando alguien compre.'); }}
       onOpinar={async ({ puntuacion, texto, fotos }) => {
         await espera(700);

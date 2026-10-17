@@ -157,6 +157,18 @@ catálogo y la grilla esperan con `TarjetaProductoEsqueleto` (8 al empezar, 4
 al pedir más o mientras un filtro busca en las páginas siguientes) y las
 burbujas de una marca con `TarjetaCategoriaEsqueleto` (5).
 
+Ya en la tienda (paso 6, la ficha de producto, 2026-10-17):
+
+- `/producto/:id` sin el producto en caché: `EsqueletoPagina forma="producto"`
+  (lo dibuja `PaginaProducto` con `estado="cargando"`).
+- Las opiniones, hasta que se piden y llegan (se piden al acercarse): dos
+  tarjetas con un `Hueso` de 35% × 13px y `EsqueletoTexto` de 2 líneas.
+- Los colores de cada prenda de un combo mientras llegan las prendas (en la
+  ficha y en "Agregar rápido"): por prenda, un `Hueso` de 40-45% × 12px y
+  cinco círculos de 34px (las muestras de `SelectorColor`).
+- Los relacionados no tienen esqueleto: aparecen debajo de las opiniones
+  cuando llegan, fuera de la vista.
+
 ### Qué se queda en la tienda (no es del kit)
 
 `BrandLoaderOverlay` sigue siendo el que decide. El kit solo dibuja, y la

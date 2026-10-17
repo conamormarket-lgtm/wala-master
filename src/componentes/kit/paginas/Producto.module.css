@@ -137,12 +137,47 @@
   border-radius: 10px;
 }
 
+/* Los colores de cada prenda del combo mientras llegan. */
+.piezaCargando {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.muestrasCargando {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* El aviso de un regalo de una lista de deseos. */
+.regalo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0.55rem 0.8rem 0.55rem 0.55rem;
+  border: 1px solid var(--violet-200, #ddd6fe);
+  border-radius: 6px 16px 16px 16px;
+  background: var(--violet-50, #f5f3ff);
+  color: #4c1d95;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+:global([data-theme='dark']) .regalo {
+  border-color: rgba(167, 139, 250, 0.35);
+  background: rgba(139, 92, 246, 0.14);
+  color: #ddd6fe;
+}
+
 /* La compra: en el celular, pegada abajo sobre la barra inferior. El fondo
    es opaco y baja 12px por detrás de la barra inferior (que va encima), así
    no queda una franja donde se ve lo de atrás. */
 .compra {
   position: sticky;
-  bottom: calc(var(--alto-barra-inferior, 72px) - 12px);
+  /* La altura de la barra inferior de la tienda (--bottom-nav-height, con la
+     zona segura del celular); la demo pasa la suya en --alto-barra-inferior. */
+  bottom: calc(var(--alto-barra-inferior, calc(var(--bottom-nav-height, 64px) + var(--safe-bottom, 0px))) - 12px);
   z-index: 20;
   display: flex;
   gap: 0.6rem;
@@ -302,6 +337,19 @@
   align-content: start;
   gap: 0.25rem;
   min-width: 0;
+}
+
+.opinionesCargando {
+  display: grid;
+  gap: 1rem;
+}
+
+.opinionCargando {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 18px 18px 18px;
 }
 
 .fotosClientes {

@@ -50,7 +50,11 @@ import { useTranslatedText, useTranslatedHtml } from './i18n/useTranslatedText';
 | `TituloSeccion` | título, subtítulo y antetítulo (los del builder) |
 | Secciones del builder | lo que escribe el admin: anuncios y su "Ver", diapositivas (título, subtítulo, botón), encabezado, texto (`TextoCampo`), banner (botón), insignias y beneficios (`Beneficio`), testimonios (opinión y tema; nombre y ciudad, tal cual), preguntas y respuestas (`Acordeon`), la tarjeta de ayuda, la fila de destacados (`TarjetaDestacado`), la cita, la oferta relámpago y las líneas del mapa. Como `<T>`: solo textos sueltos; un título con resalte va tal cual |
 | `Migas` | cada miga (la categoría) |
-| `PaginaProducto` | el nombre, la galería y la descripción (`useHtml`) |
+| `PaginaProducto` | el nombre, la galería y la descripción (`useHtml`); desde el 2026-10-17 también sus textos fijos (botones, estados, "Este conjunto incluye", "¡Quedan N!", opiniones, el aviso del regalo) con `<Texto>` y `useTexto` en los atributos |
+| `OpcionesProducto`, `SelectorColor`, `SelectorTalla` | la etiqueta ("Color · Ella", "Talla"), "Cantidad", el aviso de la talla y la nota del combo; los nombres de los colores y las tallas, todavía no |
+| `Opiniones` (`ResumenOpiniones`, `TarjetaOpinion`, `FormularioOpinion`) | sus textos fijos, el placeholder y los errores |
+| `AgregarRapido` | el nombre del producto, "Personalizar", "Agregar" y "Elige…" (el título lo traduce `HojaInferior`) |
+| `GaleriaProducto`, `ConfianzaCompra` | "Pasa el cursor para ver de cerca" y las tres líneas de confianza |
 | `ItemCarrito` | el nombre |
 | `ResumenCompra` (checkout) y el menú del carrito | el nombre de cada producto |
 

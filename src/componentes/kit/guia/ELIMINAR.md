@@ -73,7 +73,7 @@ retirar `seccionesViejo`.
 | `pages/Tienda/components/Testimonials/` | `testimonials` | `Testimonios` | ídem y `VisualEditorPanel.jsx` (editor viejo, paso 8) | ídem y con el editor del kit |
 | `pages/Tienda/components/FaqAccordion/` | `faq_accordion` | `PreguntasFrecuentes` (sin Kapi con sesión) | ídem | ídem |
 | `pages/Tienda/components/ProductQueryCarousel/` | `new_arrivals_carousel`, `sale_carousel`, `category_carousel` | `CarruselProductos` con las mismas consultas (`query-carousel`) hechas en `TiendaPage` (las de categoría con `useQueries`) | `seccionesPorTipo.jsx` (`seccionesViejo`) | al retirar `seccionesViejo` |
-| `pages/Tienda/components/FeaturedCarousel/` (en secciones) | `featured_carousel` del inicio | `CarruselProductos` | `ProductQueryCarousel`, `ProductDetail.jsx` (relacionados), `CuentaCompraDetallePage.jsx`, `seccionesPorTipo.jsx` | cuando migren la ficha (paso 6), el detalle del pedido y las demás páginas |
+| `pages/Tienda/components/FeaturedCarousel/` (en secciones) | `featured_carousel` del inicio | `CarruselProductos` | `ProductQueryCarousel`, `ProductDetail.jsx` (relacionados, solo con `fichaVieja`: la ficha nueva usa `Carrusel` + `TarjetaDeProducto`), `CuentaCompraDetallePage.jsx`, `seccionesPorTipo.jsx` | al retirar `fichaVieja`, cuando migren el detalle del pedido y las demás páginas |
 | `pages/Tienda/components/BannerGrid/` | `banner_grid` del inicio | `MosaicoBanners` (con `marcas` de la consulta `['brands']`) | `seccionesPorTipo.jsx` (`seccionesViejo`) | al retirar `seccionesViejo` |
 | `pages/Tienda/components/CategoryGrid/` | `category_grid` del inicio | `GrillaCategorias` + `categoriasDeGrilla` (misma cuenta, foto y orden) | `seccionesPorTipo.jsx` (`/tienda` y marcas: `migrateHomeCategoryGrid`) | ídem |
 | `pages/Tienda/components/HeaderBlock/` | `header` (`/tienda`, marcas) | `Encabezado` ("Nuestra Tienda" si no hay título) | `seccionesPorTipo.jsx` (cacherito: "Elige tu acabado"…), `services/storefront.js` (solo el nombre del tipo) | cuando no quede el cacherito y se retire `seccionesViejo` |
@@ -94,3 +94,22 @@ retirar `seccionesViejo`.
 | `pages/Tienda/components/FlashSales/` | `flash_sales` | `OfertaRelampago` con la consulta `flash-sales` en `TiendaPage` | ídem | ídem |
 | `TiendaPage.jsx`: `case 'featured_products'` | `featured_products` | `GrillaProductos` | — | al retirar `seccionesViejo`; con él, `ProductGrid` queda solo para la búsqueda |
 | `landing-mobile.css`: el tema oscuro de `.landing-page-wrapper` | todas las landings | las sin marca con el kit llevan `landing-store-page` | el cacherito | **no borrar**: es el tema del cacherito |
+
+## Paso 6: páginas propias
+
+### La ficha de producto (2026-10-17)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/Tienda/components/ProductDetail/` (`ProductDetail.jsx`, `ProductDetail.module.css` de 1111 líneas, `index.js`) | `/producto/:id` | `components/producto/FichaDeProducto.jsx` → `PaginaProducto` del kit | `pages/ProductPage.jsx` (lazy, solo con el interruptor `fichaVieja`); comentarios en `adaptadores.js`, `WhatsAppButton.jsx`, `CartContext.jsx`, `i18n/dictionaries.js`, `WishlistPage.jsx`, `GiftRegistryPage.jsx`, `AdminComboEditor.jsx` | al retirar `fichaVieja` |
+| `pages/Tienda/components/ProductReviews/` (`ProductReviews.jsx`, `ProductReviews.module.css` de 598 líneas, `index.js`) | `ProductDetail` | `ResumenOpiniones`, `TarjetaOpinion`, `FormularioOpinion` del kit (`opinionesDesde`) | solo `ProductDetail.jsx` | junto con `ProductDetail` |
+| `ProductPage.jsx`: la rama vieja (el `div` "Error al cargar el producto", la tarjeta "ya no está disponible" con estilos en línea y el `Suspense` de `ProductDetail`) | `/producto/:id` | los estados de `PaginaProducto` | — | al retirar `fichaVieja` (las redirecciones a `/crear` y `/combo` se quedan) |
+| `TarjetaDeProducto.jsx`: `if (fichaVieja) navigate('/producto/…')` en `alAgregar` | "Elegir…" de las tarjetas | `components/producto/AgregarRapidoDeProducto.jsx` → `AgregarRapido` del kit | — | al retirar `fichaVieja` |
+| `components/common/DraggableContainer/` | los colores y tallas de `ProductDetail` | `OpcionesProducto` del kit | `components/editor/ComboUserEditor/ComboUserEditor.jsx`, `pages/EditorPage.jsx` (editor viejo), `hooks/useDragScroll.js` | **no borrar** mientras lo use el editor viejo |
+| `useImagePreloader` (en `OptimizedImage.jsx`) | `ProductDetail` (precargaba todas las URLs del producto) | la precarga de `FichaDeProducto` (la primera foto de cada color, hasta 8, en tiempo libre) | `pages/EditorPage.jsx`, `ComboProductImage.jsx` | cuando nadie lo use |
+| Textos de `i18n/dictionaries.js` que solo usaba la ficha: `card.descripcion`, `card.envioPais`, `card.cambiosDevoluciones`, `card.pagoSeguro`, `card.comprarCarrito`, `card.compartirGanar`, `card.noEncontrado`, `card.inicio`, `card.cantidad` (y `card.personalizable`, que también usa `PremiumProductCard`) | `ProductDetail` | los textos del kit con `<Texto>` | `card.personalizable`: `PremiumProductCard` | con `ProductDetail` (volver a buscar cada clave antes) |
+
+Siguen en uso y **no** se borran: `HistorialPersonalizacionesModal` y
+`YoryoPersonalizadoCliente` (Yoryo queda fuera del kit; los carga
+`FichaDeProducto`) y `FeaturedCarousel` (ver el paso 5: ya no lo usa la
+ficha nueva, solo `ProductDetail` con `fichaVieja`).
