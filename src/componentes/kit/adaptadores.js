@@ -741,14 +741,18 @@ export function ordenarProductos(productos = [], orden = 'newest') {
  */
 export function perfilDesdeUsuario(perfil = {}, usuario = {}) {
   const pais = perfil.country || 'PE';
+  const tipo = perfil.tipoDocumento === 'CE' || perfil.tipoDocumento === 'Pasaporte' ? perfil.tipoDocumento : 'DNI';
   return {
-    nombre: perfil.displayName || perfil.nombre || usuario.displayName || String(usuario.email || '').split('@')[0],
+    // Sin nombre guardado queda vacío: el del correo no se propone (se guardaría sin notarlo).
+    nombre: perfil.displayName || perfil.nombre || usuario.displayName || '',
     email: usuario.email || perfil.email || '',
-    avatar: perfil.avatarConfig?.avatarUrl || usuario.photoURL || null,
+    // Solo la foto propia (la de Google no se puede quitar desde aquí).
+    avatar: perfil.avatarConfig?.avatarUrl || null,
     pais,
-    tipoDocumento: pais === 'PE' ? (perfil.tipoDocumento || 'DNI') : 'OTRO',
-    documento: perfil.dni || '',
-    telefono: pais === 'PE' ? (perfil.phone || '') : (perfil.phoneIntl?.localNumber || perfil.phone || ''),
+    // En el Perú, DNI, carnet o pasaporte (un tipo viejo, como 'OTRO', pasa a DNI); fuera, 'OTRO'.
+    tipoDocumento: pais === 'PE' ? tipo : 'OTRO',
+    documento: perfil.dni ? String(perfil.dni).trim() : '',
+    telefono: pais === 'PE' ? String(perfil.phone || '').replace(/\D/g, '') : String(perfil.phoneIntl?.localNumber ?? perfil.phone ?? ''),
     cumpleanos: perfil.birthDate || '',
   };
 }

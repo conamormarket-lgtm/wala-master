@@ -422,7 +422,7 @@ const agrupar = (n) => String(n || '').replace(/\D/g, '').replace(/(\d{3})(?=\d)
  *  - pais · onPais(codigo) · paises: [{ valor: 'PE', texto: 'Perú', prefijo: '+51' }]
  *  - valor (solo números) · onCambiar(numeros) · maximo (9 en el Perú)
  */
-export function CampoTelefono({ etiqueta = 'Celular', ayuda, error, pais = 'PE', onPais, paises = [{ valor: 'PE', texto: 'Perú', prefijo: '+51' }], valor = '', onCambiar, maximo, id }) {
+export function CampoTelefono({ etiqueta = 'Celular', ayuda, error, pais = 'PE', onPais, paises = [{ valor: 'PE', texto: 'Perú', prefijo: '+51' }], valor = '', onCambiar, maximo, id, disabled = false }) {
   const tope = maximo ?? (pais === 'PE' ? 9 : 15);
   const opciones = paises.map((p) => ({ ...p, detalle: p.prefijo, corto: p.prefijo, icono: <span className={s.codigoPais}>{p.valor}</span> }));
   return (
@@ -431,10 +431,11 @@ export function CampoTelefono({ etiqueta = 'Celular', ayuda, error, pais = 'PE',
       etiqueta={etiqueta}
       ayuda={ayuda}
       error={error}
+      disabled={disabled}
       control={(aria) => (
         <span className={s.telefono}>
           {paises.length > 1 ? (
-            <ListaOpciones compacto opciones={opciones} value={pais} onChange={(e) => onPais?.(e.target.value)} etiqueta="País del número" buscable aria-label="País del número" />
+            <ListaOpciones compacto opciones={opciones} value={pais} onChange={(e) => onPais?.(e.target.value)} etiqueta="País del número" buscable aria-label="País del número" disabled={disabled} />
           ) : (
             <span className={s.prefijoFijo}>{paises[0]?.prefijo}</span>
           )}
@@ -448,6 +449,7 @@ export function CampoTelefono({ etiqueta = 'Celular', ayuda, error, pais = 'PE',
             value={agrupar(valor)}
             onChange={(e) => onCambiar?.(e.target.value.replace(/\D/g, '').slice(0, tope))}
             placeholder={pais === 'PE' ? '987 654 321' : 'Tu número'}
+            disabled={disabled}
           />
         </span>
       )}
@@ -455,8 +457,8 @@ export function CampoTelefono({ etiqueta = 'Celular', ayuda, error, pais = 'PE',
   );
 }
 
-/** Interruptor encendido/apagado; la perilla se estira al presionarla. */
-export function Interruptor({ activo, onChange, etiqueta, descripcion }) {
+/** Interruptor encendido/apagado; la perilla se estira al presionarla. disabled: mientras se guarda. */
+export function Interruptor({ activo, onChange, etiqueta, descripcion, disabled = false }) {
   const id = useId();
   return (
     <label className={s.interruptor} htmlFor={id}>
@@ -464,7 +466,7 @@ export function Interruptor({ activo, onChange, etiqueta, descripcion }) {
         <span>{etiqueta}</span>
         {descripcion && <small>{descripcion}</small>}
       </span>
-      <input id={id} type="checkbox" role="switch" checked={activo} onChange={(e) => onChange(e.target.checked)} />
+      <input id={id} type="checkbox" role="switch" checked={activo} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
       <span className={s.pista} aria-hidden="true"><span className={s.perilla} /></span>
     </label>
   );

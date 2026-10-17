@@ -137,7 +137,7 @@ ficha nueva, solo `ProductDetail` con `fichaVieja`).
 |---|---|---|---|---|
 | `pages/CheckoutViejo.jsx` (la página de antes, ya sin el armado del pedido) + `pages/CheckoutPage.module.css` (1762 líneas) | `/checkout` | `components/checkout/CheckoutDeTienda.jsx` → `PaginaCheckout` del kit | `pages/CheckoutPage.jsx` (lazy, solo con `pagosViejo`) | al retirar `pagosViejo` |
 | `formik` y `yup` (dependencias) | solo el checkout viejo | la validación del kit (`validarDireccion`) | nadie más | con `CheckoutViejo.jsx` (quitarlas de `package.json`) |
-| `components/intl/CountrySelect`, `components/intl/PhoneIntlInput` | el checkout viejo | `Campo` con `paises` y `CampoTelefono` | `RegisterPage.jsx`, `CompleteProfilePage.jsx`, `cuenta/PerfilPage.jsx` | cuando migre el acceso y Mi perfil |
+| `components/intl/CountrySelect`, `components/intl/PhoneIntlInput` | el checkout viejo y Mi perfil de antes | `Campo` con `paises` y `CampoTelefono` | `RegisterPage.jsx`, `CompleteProfilePage.jsx`, `LandingPaymentBlock.jsx` (el cacherito: **no se toca**), `PerfilViejo.jsx` | cuando migre el acceso; **no borrar** mientras la landing del reloj los use |
 | `PaypalCheckout.jsx`: las cajas propias (título, monto, error, "Procesando pago...") | el checkout viejo | `PagoPaypal` (`soloBotones`) | "Pagar saldo" (`PedidoAcciones`), `SorteosPage.jsx` y la landing del reloj (`LandingPaymentBlock`: **no se toca**) | **no borrar** mientras la landing del reloj las use |
 
 `services/pedidoCheckout.js` **no se borra**: es el armado del pedido de la
@@ -175,3 +175,11 @@ página nueva.
 
 `pages/cuenta/useCuentaNavGroups.js` **no se borra**: es la fuente de los
 grupos del marco nuevo (`gruposDeCuenta.js`).
+
+### Mi perfil y Mis direcciones (2026-10-17)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/cuenta/PerfilViejo.jsx` + `PerfilPage.module.css` (445 líneas) | `/cuenta/perfil` | `components/cuenta/PerfilDeCuenta.jsx` → `PaginaPerfil` | `PerfilPage.jsx` (lazy, solo con `cuentaVieja`); `CuentaRastreoPage.jsx` solo lo nombra en un comentario | al retirar `cuentaVieja` |
+| `components/profile/AvatarStudio.jsx` + `AvatarCropModal.jsx` (y sus CSS, 157 y 111 líneas) | Mi perfil de antes | `IdentidadCuenta` + `RecortarFoto` | solo `PerfilViejo.jsx` (`CuentaFechasImportantesPage.jsx` lo nombra en comentarios) | con `PerfilViejo.jsx`; `react-easy-crop` se queda (`AdminImageCropper`) |
+| `pages/cuenta/MisDireccionesViejo.jsx` + `MisDireccionesPage.module.css` (355 líneas) | `/cuenta/direcciones` | `components/cuenta/DireccionesDeCuenta.jsx` → `PaginaDirecciones` | `MisDireccionesPage.jsx` (lazy, solo con `cuentaVieja`) | al retirar `cuentaVieja` |

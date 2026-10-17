@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MapPin, Pencil, Trash2, Star } from 'lucide-react';
 import { Sello } from '../Marca';
+import { Texto, useTexto } from '../Traduccion';
 import s from './TarjetaDireccion.module.css';
 
 /**
@@ -16,13 +17,14 @@ import s from './TarjetaDireccion.module.css';
  */
 export function TarjetaDireccion({ nombre, direccion, lugar, documento, telefono, principal = false, onPrincipal, onEditar, onEliminar, ocupada = false }) {
   const [confirmar, setConfirmar] = useState(false);
+  const t = { editar: useTexto('Editar la dirección de'), eliminar: useTexto('Eliminar la dirección de') };
   return (
     <article className={[s.tarjeta, principal && s.principal].filter(Boolean).join(' ')} data-componente="TarjetaDireccion">
       <div className={s.cabeza}>
         <Sello tamano={36} tono={principal ? 'degradado' : 'suave'} girar={principal ? -8 : 0}><MapPin /></Sello>
         <div className={s.quien}>
-          <h3 className={s.nombre}>{nombre || 'Sin nombre'}</h3>
-          {principal && <p className={s.esPrincipal}>Dirección principal</p>}
+          <h3 className={s.nombre}>{nombre || <Texto>Sin nombre</Texto>}</h3>
+          {principal && <p className={s.esPrincipal}><Texto>Dirección principal</Texto></p>}
         </div>
       </div>
       <div className={s.lineas}>
@@ -33,11 +35,11 @@ export function TarjetaDireccion({ nombre, direccion, lugar, documento, telefono
 
       {confirmar ? (
         <div className={s.confirmar} role="alert">
-          <p>¿Eliminar la dirección de {nombre || 'esta persona'}?</p>
+          <p><Texto>¿Eliminar esta dirección?</Texto> {nombre && <strong>{nombre}</strong>}</p>
           <div className={s.confirmarBotones}>
-            <button type="button" className={s.textoBoton} onClick={() => setConfirmar(false)}>Cancelar</button>
+            <button type="button" className={s.textoBoton} onClick={() => setConfirmar(false)}><Texto>Cancelar</Texto></button>
             <button type="button" className={`${s.textoBoton} ${s.peligro}`} disabled={ocupada} onClick={() => { setConfirmar(false); onEliminar(); }}>
-              <Trash2 aria-hidden="true" /> Sí, eliminar
+              <Trash2 aria-hidden="true" /> <Texto>Sí, eliminar</Texto>
             </button>
           </div>
         </div>
@@ -45,17 +47,17 @@ export function TarjetaDireccion({ nombre, direccion, lugar, documento, telefono
         <div className={s.acciones}>
           {!principal && onPrincipal && (
             <button type="button" className={s.textoBoton} disabled={ocupada} onClick={onPrincipal}>
-              <Star aria-hidden="true" /> Usar como principal
+              <Star aria-hidden="true" /> <Texto>Usar como principal</Texto>
             </button>
           )}
           <span className={s.iconos}>
             {onEditar && (
-              <button type="button" className={s.icono} disabled={ocupada} onClick={onEditar} aria-label={`Editar la dirección de ${nombre}`}>
+              <button type="button" className={s.icono} disabled={ocupada} onClick={onEditar} aria-label={`${t.editar} ${nombre}`}>
                 <Pencil aria-hidden="true" />
               </button>
             )}
             {onEliminar && (
-              <button type="button" className={`${s.icono} ${s.iconoPeligro}`} disabled={ocupada} onClick={() => setConfirmar(true)} aria-label={`Eliminar la dirección de ${nombre}`}>
+              <button type="button" className={`${s.icono} ${s.iconoPeligro}`} disabled={ocupada} onClick={() => setConfirmar(true)} aria-label={`${t.eliminar} ${nombre}`}>
                 <Trash2 aria-hidden="true" />
               </button>
             )}

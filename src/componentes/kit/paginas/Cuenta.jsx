@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, IdCard, LogIn, LogOut, MapPin, Pencil, Plus, Settings, User, Moon, Languages, Gift } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { Aviso, EstadoVacio, HojaInferior } from '../Feedback';
 import { Interruptor } from '../Formulario';
-import { CamposDatosPersonales, validarPerfil, NOMBRE_DOCUMENTO } from '../piezas/DatosPersonales';
+import { CamposDatosPersonales, validarPerfil, tipoDocumentoPara, NOMBRE_DOCUMENTO } from '../piezas/DatosPersonales';
 import { RecortarFoto } from '../piezas/RecortarFoto';
 import { Moneda } from '../Etiquetas';
 import { MenuCuenta } from '../MenusCabecera';
@@ -172,15 +172,19 @@ export { validarPerfil };
  *  - onGuardar(datos): promesa; si falla, su mensaje se muestra en la tarjeta
  *  - onCambiarFoto(blob): promesa con la foto ya recortada (RecortarFoto, JPG
  *    cuadrado) · onQuitarFoto: promesa, se confirma en la página · subiendoFoto
+ *    (si alguna falla, su mensaje sale bajo la foto)
  *  - paises: [{ valor, texto, prefijo }] para el campo País
  *  - validar: reglas propias (por defecto validarPerfil)
+ *  - guardandoWhatsapp: el interruptor espera mientras se guarda
+ *  - cargando: el perfil todavía no llegó (esqueleto; no se puede editar)
  * "Cancelar" deja los datos como estaban (cada vez que se abre la edición,
- * empieza desde `perfil`).
+ * empieza desde `perfil`). Al cambiar de país, el tipo de documento pasa al
+ * que corresponde (tipoDocumentoPara).
  */
 export function PaginaPerfil({
   perfil = {}, monedas = 0, enEspera = 0, urlInvitar = '/cuenta/referidos', urlCanjear = '/cuenta/catalogo',
-  whatsapp = false, onWhatsapp, onGuardar, onCambiarFoto, onQuitarFoto, subiendoFoto = false,
-  paises = [{ valor: 'PE', texto: 'Perú', prefijo: '+51' }], validar = validarPerfil,
+  whatsapp = false, onWhatsapp, guardandoWhatsapp = false, onGuardar, onCambiarFoto, onQuitarFoto, subiendoFoto = false,
+  paises = [{ valor: 'PE', texto: 'Perú', prefijo: '+51' }], validar = validarPerfil, cargando = false,
 }) {
   const [form, setForm] = useState(null);
   const [errores, setErrores] = useState({});
@@ -188,13 +192,28 @@ export function PaginaPerfil({
   const [guardando, setGuardando] = useState(false);
   const [recorte, setRecorte] = useState(null);
   const [quitarFoto, setQuitarFoto] = useState(false);
+  const [quitando, setQuitando] = useState(false);
+  const [errorFoto, setErrorFoto] = useState('');
   const editando = form !== null;
   const pais = paises.find((p) => p.valor === (perfil.pais || 'PE')) || paises[0];
   const completo = Boolean(perfil.documento && perfil.telefono);
 
+  // La foto elegida se muestra con una URL temporal: se suelta al cerrar el recorte.
+  useEffect(() => () => { if (recorte) URL.revokeObjectURL(recorte); }, [recorte]);
+
+  if (cargando) {
+    return (
+      <div className={s.perfilRejilla} aria-busy="true">
+        <EsqueletoTarjeta lineas={2} alto={150} />
+        <EsqueletoTarjeta lineas={4} alto={260} />
+      </div>
+    );
+  }
+
   const abrir = () => {
+    const paisForm = perfil.pais || 'PE';
     setForm({
-      nombre: perfil.nombre || '', pais: perfil.pais || 'PE', tipoDocumento: perfil.tipoDocumento || 'DNI',
+      nombre: perfil.nombre || '', pais: paisForm, tipoDocumento: tipoDocumentoPara(paisForm, perfil.tipoDocumento),
       documento: perfil.documento || '', telefono: perfil.telefono || '', cumpleanos: perfil.cumpleanos || '',
     });
     setErrores({});
@@ -202,10 +221,36 @@ export function PaginaPerfil({
   };
   const cambiar = (campo) => (e) => {
     let v = e.target.value;
-    if (campo === 'documento') v = v.replace(/\s/g, '');
+    if (campo === 'documento' && form.pais === 'PE') v = v.replace(/\s/g, '');
     if (campo === 'telefono' && form.pais === 'PE') v = v.replace(/\D/g, '').slice(0, 9);
-    setForm((f) => ({ ...f, [campo]: v }));
+    setForm((f) => ({
+      ...f,
+      [campo]: v,
+      ...(campo === 'pais' ? { tipoDocumento: tipoDocumentoPara(v, f.tipoDocumento) } : {}),
+    }));
     setErrores((x) => ({ ...x, [campo]: undefined }));
+  };
+  const cambiarFoto = async (blob) => {
+    setErrorFoto('');
+    try {
+      await onCambiarFoto(blob);
+    } catch (err) {
+      setErrorFoto(err?.message || 'No se pudo subir la foto. Inténtalo de nuevo.');
+    } finally {
+      setRecorte(null);
+    }
+  };
+  const confirmarQuitar = async () => {
+    setQuitando(true);
+    setErrorFoto('');
+    try {
+      await onQuitarFoto();
+    } catch (err) {
+      setErrorFoto(err?.message || 'No se pudo quitar la foto. Inténtalo de nuevo.');
+    } finally {
+      setQuitando(false);
+      setQuitarFoto(false);
+    }
   };
   const guardar = async (e) => {
     e.preventDefault();
@@ -232,18 +277,19 @@ export function PaginaPerfil({
         email={perfil.email}
         avatar={perfil.avatar}
         completo={completo}
-        onCambiarFoto={onCambiarFoto && ((archivo) => setRecorte(URL.createObjectURL(archivo)))}
+        onCambiarFoto={onCambiarFoto && ((archivo) => { setErrorFoto(''); setRecorte(URL.createObjectURL(archivo)); })}
         onQuitarFoto={onQuitarFoto && (() => setQuitarFoto(true))}
-        subiendo={subiendoFoto}
+        subiendo={subiendoFoto || quitando}
       />
+      {errorFoto && <Aviso tipo="error" compacto>{errorFoto}</Aviso>}
       {quitarFoto && (
         <Aviso
           tipo="aviso"
           titulo="¿Quitar tu foto de perfil?"
           accion={(
             <span className={s.botonesAviso}>
-              <Boton tamano="sm" variante="fantasma" onClick={() => setQuitarFoto(false)}>Cancelar</Boton>
-              <Boton tamano="sm" variante="peligro" onClick={async () => { await onQuitarFoto(); setQuitarFoto(false); }}>Quitar foto</Boton>
+              <Boton tamano="sm" variante="fantasma" onClick={() => setQuitarFoto(false)} disabled={quitando}><Texto>Cancelar</Texto></Boton>
+              <Boton tamano="sm" variante="peligro" cargando={quitando} onClick={confirmarQuitar}><Texto>Quitar foto</Texto></Boton>
             </span>
           )}
         >
@@ -254,25 +300,29 @@ export function PaginaPerfil({
         abierta={Boolean(recorte)}
         src={recorte}
         onCancelar={() => setRecorte(null)}
-        onListo={async (blob) => { await onCambiarFoto(blob); setRecorte(null); }}
+        onListo={cambiarFoto}
       />
       <div className={s.perfilRejilla}>
         <Estadistica
           grande
           icono={<Moneda tamano={56} />}
           sello={false}
-          etiqueta="Tus monedas"
+          etiqueta={<Texto>Tus monedas</Texto>}
           valor={monedas.toLocaleString('es-PE')}
-          unidad={monedas === 1 ? 'moneda' : 'monedas'}
-          nota={enEspera > 0 ? `+${enEspera} en espera: llegan cuando se entregue tu pedido.` : 'Cada moneda es S/ 1 de descuento.'}
+          unidad={<Texto>{monedas === 1 ? 'moneda' : 'monedas'}</Texto>}
+          nota={<Texto>{enEspera > 0 ? `+${enEspera} en espera: llegan cuando se entregue tu pedido.` : 'Cada moneda es S/ 1 de descuento.'}</Texto>}
         >
           <div className={s.botonesCifra}>
-            <Boton to={urlInvitar} variante="contorno" bloque>Invita y gana monedas</Boton>
-            <Boton to={urlCanjear} variante="fantasma" bloque>Canjear en el catálogo</Boton>
+            <Boton to={urlInvitar} variante="contorno" bloque><Texto>Invita y gana monedas</Texto></Boton>
+            <Boton to={urlCanjear} variante="fantasma" bloque><Texto>Canjear en el catálogo</Texto></Boton>
           </div>
         </Estadistica>
 
-        <TarjetaCuenta icono={<User />} titulo="Datos personales" subtitulo={editando ? 'Revisa y guarda tus cambios.' : 'Con estos datos ubicamos tus pedidos.'}>
+        <TarjetaCuenta
+          icono={<User />}
+          titulo={<Texto>Datos personales</Texto>}
+          subtitulo={<Texto>{editando ? 'Revisa y guarda tus cambios.' : 'Con estos datos ubicamos tus pedidos.'}</Texto>}
+        >
           {editando ? (
             <form className={s.formulario} onSubmit={guardar} noValidate>
               <CamposDatosPersonales
@@ -284,8 +334,8 @@ export function PaginaPerfil({
               />
               {error && <Aviso tipo="error" compacto>{error}</Aviso>}
               <div className={s.botonesForm}>
-                <Boton type="button" variante="fantasma" onClick={() => setForm(null)} disabled={guardando}>Cancelar</Boton>
-                <Boton type="submit" cargando={guardando}>Guardar</Boton>
+                <Boton type="button" variante="fantasma" onClick={() => setForm(null)} disabled={guardando}><Texto>Cancelar</Texto></Boton>
+                <Boton type="submit" cargando={guardando}><Texto>Guardar</Texto></Boton>
               </div>
             </form>
           ) : (
@@ -306,12 +356,13 @@ export function PaginaPerfil({
                   <Interruptor
                     activo={whatsapp}
                     onChange={onWhatsapp}
-                    etiqueta="Ofertas por WhatsApp"
-                    descripcion="Te avisamos de descuentos y novedades. Puedes desactivarlo cuando quieras."
+                    disabled={guardandoWhatsapp}
+                    etiqueta={<Texto>Ofertas por WhatsApp</Texto>}
+                    descripcion={<Texto>Te avisamos de descuentos y novedades. Puedes desactivarlo cuando quieras.</Texto>}
                   />
                 </div>
               )}
-              {onGuardar && <Boton bloque icono={<Pencil aria-hidden="true" />} onClick={abrir}>Editar mis datos</Boton>}
+              {onGuardar && <Boton bloque icono={<Pencil aria-hidden="true" />} onClick={abrir}><Texto>Editar mis datos</Texto></Boton>}
             </>
           )}
         </TarjetaCuenta>
@@ -335,11 +386,18 @@ export { validarDireccion };
  *  - cargando · maximo (10)
  *  - lugares: { departamentos, provincias(dep), distritos(dir), legible(dir) }
  *    (en la tienda: constants/peruUbigeo y utils/ubicacionErp)
- *  - perfil: { nombre, tipoDocumento, documento, telefono } para llenar una nueva
+ *  - perfil: { nombre, tipoDocumento, documento, telefono, pais } para llenar una nueva
  *  - onGuardar(direccion): promesa (nueva sin id) · onPrincipal(id) · onEliminar(id)
+ *  - ocupada: algo se está guardando (las tarjetas esperan)
+ *  - error: no se pudo leer la libreta (sin "Agregar": guardar la reemplazaría
+ *    entera) · onReintentar
+ *  - paises: [{ valor, texto, prefijo }] para elegir el país de la dirección
+ *    (con su prefijo en el teléfono)
+ * El distrito tiene que ser uno del lugar (lugares.distritos).
  */
 export function PaginaDirecciones({
   direcciones = [], cargando = false, maximo = 10, lugares = {}, perfil = {}, onGuardar, onPrincipal, onEliminar,
+  ocupada = false, error: errorCarga, onReintentar, paises,
 }) {
   const [form, setForm] = useState(null);
   const [errores, setErrores] = useState({});
@@ -353,7 +411,7 @@ export function PaginaDirecciones({
   const abrir = (dir) => {
     const base = dir || {
       nombre: perfil.nombre || '', tipoDocumento: perfil.tipoDocumento || 'DNI', documento: perfil.documento || '',
-      telefono: perfil.telefono || '', pais: 'PE', ciudad: 'Lima', departamento: '', provincia: '', distrito: '', direccion: '',
+      telefono: perfil.telefono || '', pais: perfil.pais || 'PE', ciudad: (perfil.pais || 'PE') === 'PE' ? 'Lima' : '', departamento: '', provincia: '', distrito: '', direccion: '',
     };
     setForm({ ...base });
     setErrores({});
@@ -366,7 +424,7 @@ export function PaginaDirecciones({
   };
   const guardar = async (e) => {
     e?.preventDefault();
-    const encontrados = validarDireccion(form);
+    const encontrados = validarDireccion(form, { distritos: form.pais && form.pais !== 'PE' ? undefined : lugares.distritos?.(form) });
     setErrores(encontrados);
     if (Object.keys(encontrados).length) {
       if (encontrados.nombre || encontrados.documento || encontrados.telefono) setVerDestinatario(true);
@@ -389,27 +447,37 @@ export function PaginaDirecciones({
     <>
       <CabezaCuenta
         icono={<MapPin />}
-        titulo="Mis direcciones"
-        subtitulo="Se guarda sola en tu primera compra. Aquí eliges a cuál te llega."
-        accion={direcciones.length > 0 && onGuardar && (
-          <Boton icono={<Plus aria-hidden="true" />} onClick={() => abrir()} disabled={lleno}>Agregar dirección</Boton>
+        titulo={<Texto>Mis direcciones</Texto>}
+        subtitulo={<Texto>Se guarda sola en tu primera compra. Aquí eliges a cuál te llega.</Texto>}
+        accion={!errorCarga && direcciones.length > 0 && onGuardar && (
+          <Boton icono={<Plus aria-hidden="true" />} onClick={() => abrir()} disabled={lleno || ocupada}><Texto>Agregar dirección</Texto></Boton>
         )}
       />
-      {lleno && (
-        <Aviso tipo="info" compacto>Llegaste a {maximo} direcciones. Elimina una para agregar otra.</Aviso>
+      {lleno && !errorCarga && (
+        <Aviso tipo="info" compacto>{`Llegaste a ${maximo} direcciones. Elimina una para agregar otra.`}</Aviso>
       )}
 
-      {cargando ? (
+      {errorCarga ? (
+        <Aviso
+          tipo="error"
+          titulo="No pudimos cargar tus direcciones"
+          accion={onReintentar && <Boton tamano="sm" variante="contorno" onClick={onReintentar}><Texto>Reintentar</Texto></Boton>}
+        >
+          Revisa tu conexión e inténtalo de nuevo.
+        </Aviso>
+      ) : cargando ? (
         <ul className={s.direcciones} aria-busy="true">
           {[0, 1].map((k) => <li key={k}><EsqueletoTarjeta lineas={3} alto={190} /></li>)}
         </ul>
       ) : ordenadas.length === 0 ? (
+        // Sin la cara de Kapi: en la tienda ya está el flotante (un solo Kapi a la vista).
         <EstadoVacio
-          imagen={CARAS_KAPI.feliz}
-          titulo="Aún no tienes direcciones"
-          texto="Se guarda sola en tu primera compra, o agrégala aquí para pagar más rápido."
+          imagen={null}
+          icono={<MapPin />}
+          titulo={<Texto>Aún no tienes direcciones</Texto>}
+          texto={<Texto>Se guarda sola en tu primera compra, o agrégala aquí para pagar más rápido.</Texto>}
         >
-          {onGuardar && <Boton icono={<Plus aria-hidden="true" />} onClick={() => abrir()}>Agregar dirección</Boton>}
+          {onGuardar && <Boton icono={<Plus aria-hidden="true" />} onClick={() => abrir()} disabled={ocupada}><Texto>Agregar dirección</Texto></Boton>}
         </EstadoVacio>
       ) : (
         <ul className={s.direcciones}>
@@ -422,6 +490,7 @@ export function PaginaDirecciones({
                 documento={d.documento ? documentoDe(d) : ''}
                 telefono={d.telefono}
                 principal={d.principal}
+                ocupada={ocupada}
                 onPrincipal={onPrincipal && (() => onPrincipal(d.id))}
                 onEditar={onGuardar && (() => abrir(d))}
                 onEliminar={onEliminar && (() => onEliminar(d.id))}
@@ -434,11 +503,12 @@ export function PaginaDirecciones({
       <HojaInferior
         abierta={form !== null}
         onCerrar={() => !guardando && setForm(null)}
+        bloqueada={guardando}
         titulo={form?.id ? 'Editar dirección' : 'Nueva dirección'}
         pie={(
           <div className={s.botonesForm}>
-            <Boton variante="fantasma" onClick={() => setForm(null)} disabled={guardando}>Cancelar</Boton>
-            <Boton onClick={guardar} cargando={guardando}>Guardar dirección</Boton>
+            <Boton variante="fantasma" onClick={() => setForm(null)} disabled={guardando}><Texto>Cancelar</Texto></Boton>
+            <Boton onClick={guardar} cargando={guardando}><Texto>Guardar dirección</Texto></Boton>
           </div>
         )}
       >
@@ -449,6 +519,7 @@ export function PaginaDirecciones({
               onCambiar={cambiar}
               errores={errores}
               lugares={lugares}
+              paises={paises}
               verDestinatario={verDestinatario}
               onVerDestinatario={() => setVerDestinatario(true)}
             />

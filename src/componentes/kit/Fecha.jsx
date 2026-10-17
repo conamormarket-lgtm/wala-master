@@ -197,9 +197,10 @@ export function Calendario({ valor, onElegir, min, max, sinAnio = false, vistaIn
  *  - valor ('AAAA-MM-DD'; año 0000 = sin año) · onCambiar(iso)
  *  - min, max · vistaInicial ('anios' para cumpleaños)
  *  - anioOpcional: casilla "No sé el año" (fechas de otras personas)
+ *  - disabled: mientras se guarda
  */
 export function CampoFecha({
-  etiqueta, ayuda, error, placeholder = 'Elige una fecha', valor = '', onCambiar, min, max, vistaInicial = 'dias', anioOpcional = false, id,
+  etiqueta, ayuda, error, placeholder = 'Elige una fecha', valor = '', onCambiar, min, max, vistaInicial = 'dias', anioOpcional = false, id, disabled = false,
 }) {
   const disparador = useRef(null);
   const [abierto, setAbierto] = useState(false);
@@ -225,10 +226,12 @@ export function CampoFecha({
         error={error}
         icono={<CalendarDays />}
         id={id}
+        disabled={disabled}
         control={(aria) => (
           <button
             ref={disparador}
             type="button"
+            disabled={disabled}
             className={s.disparador}
             aria-haspopup="dialog"
             aria-expanded={abierto}

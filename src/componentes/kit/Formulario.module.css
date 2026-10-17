@@ -667,6 +667,15 @@
   transform: translateX(14px);
 }
 
+/* Mientras se guarda: no se puede tocar y se ve en pausa. */
+.interruptor:has(input:disabled) {
+  cursor: progress;
+}
+
+.interruptor input:disabled + .pista {
+  opacity: 0.55;
+}
+
 .interruptor input:focus-visible + .pista {
   outline: 2px solid var(--violet-500);
   outline-offset: 2px;

@@ -32,8 +32,10 @@ export const DOC_EXTRANJERO = 'Documento de identidad nacional';
  *    teléfono de 6 dígitos o más) | 'checkout' (las del checkout de la tienda,
  *    más laxas: nombre y teléfono escritos, documento de 3 o más; el tipo
  *    exacto lo interpreta el ERP)
+ *  - distritos: los del lugar elegido (lugares.distritos); con ellos, en el
+ *    Perú el distrito tiene que ser uno de la lista (Mis direcciones)
  */
-export function validarDireccion(d, { reglas = 'cuenta' } = {}) {
+export function validarDireccion(d, { reglas = 'cuenta', distritos } = {}) {
   const e = {};
   const fuera = d.pais && d.pais !== 'PE';
   const checkout = reglas === 'checkout';
@@ -45,7 +47,7 @@ export function validarDireccion(d, { reglas = 'cuenta' } = {}) {
     if (!String(d.distrito || '').trim()) e.distrito = 'Escribe la ciudad.';
   } else {
     if (d.ciudad === 'Provincias' && (!d.departamento || !d.provincia)) e.provincia = 'Elige el departamento y la provincia.';
-    if (!d.distrito) e.distrito = 'Elige el distrito.';
+    if (!d.distrito || (distritos?.length && !distritos.includes(d.distrito))) e.distrito = 'Elige el distrito.';
   }
   if (String(d.direccion || '').trim().length < (checkout ? 1 : 5)) e.direccion = 'Escribe la dirección exacta.';
   return e;
@@ -97,6 +99,8 @@ export function CamposDireccion({ valor: d, onCambiar, errores = {}, lugares = {
     elige: useTexto('Elige…'), primeroDep: useTexto('Primero el departamento'), primeroProv: useTexto('Primero la provincia'),
     ejemploDireccion: useTexto('Calle, número, dpto. y una referencia'),
   };
+  // Los mensajes de validarDireccion también pasan por la traducción.
+  const err = (campo) => errores[campo] && <Texto>{errores[campo]}</Texto>;
   return (
     <div className={s.campos} data-componente="CamposDireccion">
       {paises?.length > 0 && (
@@ -104,19 +108,19 @@ export function CamposDireccion({ valor: d, onCambiar, errores = {}, lugares = {
       )}
       {verDestinatario ? (
         <>
-          <Campo etiqueta={t.nombre} placeholder="Ej.: Juana Pérez" value={d.nombre} onChange={cambiar('nombre')} error={errores.nombre} autoComplete="name" />
+          <Campo etiqueta={t.nombre} placeholder="Ej.: Juana Pérez" value={d.nombre} onChange={cambiar('nombre')} error={err('nombre')} autoComplete="name" />
           {fuera ? (
-            <Campo etiqueta={t.extranjero} value={d.documento} onChange={cambiar('documento')} error={errores.documento} />
+            <Campo etiqueta={t.extranjero} value={d.documento} onChange={cambiar('documento')} error={err('documento')} />
           ) : (
             <div className={s.fila}>
               <Campo etiqueta={t.documento} opciones={DOCS_DIRECCION} value={d.tipoDocumento} onChange={cambiar('tipoDocumento')} />
-              <Campo etiqueta={t.numero} value={d.documento} onChange={cambiar('documento')} error={errores.documento} inputMode={d.tipoDocumento === 'DNI' ? 'numeric' : undefined} />
+              <Campo etiqueta={t.numero} value={d.documento} onChange={cambiar('documento')} error={err('documento')} inputMode={d.tipoDocumento === 'DNI' ? 'numeric' : undefined} />
             </div>
           )}
           <CampoTelefono
             valor={d.telefono}
             onCambiar={(v) => onCambiar?.('telefono', v)}
-            error={errores.telefono}
+            error={err('telefono')}
             {...(paisTel?.prefijo ? { pais: paisTel.valor, paises: [{ valor: paisTel.valor, texto: paisTel.texto, prefijo: paisTel.prefijo }] } : {})}
           />
         </>
@@ -133,8 +137,8 @@ export function CamposDireccion({ valor: d, onCambiar, errores = {}, lugares = {
 
       {fuera ? (
         <div className={s.fila}>
-          <Campo etiqueta={t.region} placeholder="Ej.: Región Metropolitana" value={d.provincia} onChange={cambiar('provincia')} error={errores.provincia} />
-          <Campo etiqueta={t.ciudad} placeholder="Ej.: Santiago" value={d.distrito} onChange={cambiar('distrito')} error={errores.distrito} />
+          <Campo etiqueta={t.region} placeholder="Ej.: Región Metropolitana" value={d.provincia} onChange={cambiar('provincia')} error={err('provincia')} />
+          <Campo etiqueta={t.ciudad} placeholder="Ej.: Santiago" value={d.distrito} onChange={cambiar('distrito')} error={err('distrito')} />
         </div>
       ) : (
         <>
@@ -152,7 +156,7 @@ export function CamposDireccion({ valor: d, onCambiar, errores = {}, lugares = {
                 opciones={opcionesDe(d.departamento ? provincias(d.departamento).filter((p) => !(d.departamento === 'Lima' && p === 'Lima')) : [], d.departamento ? t.elige : t.primeroDep)}
                 value={d.provincia}
                 onChange={cambiar('provincia')}
-                error={errores.provincia}
+                error={err('provincia')}
                 disabled={!d.departamento}
               />
             </div>
@@ -162,7 +166,7 @@ export function CamposDireccion({ valor: d, onCambiar, errores = {}, lugares = {
             opciones={opcionesDe(listaDistritos, listaDistritos.length ? t.elige : t.primeroProv)}
             value={d.distrito}
             onChange={cambiar('distrito')}
-            error={errores.distrito}
+            error={err('distrito')}
             disabled={!listaDistritos.length}
           />
         </>
@@ -171,7 +175,7 @@ export function CamposDireccion({ valor: d, onCambiar, errores = {}, lugares = {
         etiqueta={t.direccion}
         value={d.direccion}
         onChange={cambiar('direccion')}
-        error={errores.direccion}
+        error={err('direccion')}
         placeholder={t.ejemploDireccion}
         autoComplete="street-address"
       />

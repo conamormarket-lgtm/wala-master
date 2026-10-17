@@ -195,6 +195,12 @@ la sesión, `EsqueletoPagina forma="cuenta"` con el módulo de la sección
 (`moduloDeRuta`: /cuenta → resumen, /cuenta/wishlist → deseos…). Antes era
 una caja del menú y otra del contenido.
 
+Ya en la tienda (paso 6, Mi perfil y Mis direcciones, 2026-10-17): Mi perfil
+con el perfil sin llegar, dos `EsqueletoTarjeta` (150 y 260 px de alto, 2 y
+4 líneas) en la rejilla del perfil (antes no se dibujaba nada); Mis
+direcciones, las dos `EsqueletoTarjeta` de 190 px que ya tenía (antes,
+"Cargando tus direcciones…").
+
 Ya en la tienda (paso 6, el carrito, 2026-10-17): el carrito sale de
 localStorage al instante, así que no tiene esqueleto propio (la ruta sigue con
 el `PageLoading` de `App.jsx` hasta el paso 7). "También te puede gustar" no

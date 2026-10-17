@@ -1,0 +1,337 @@
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { useGlobalToast } from '../../contexts/ToastContext';
+import { validateDNI, validateCE, validatePhone, validateDocInternacional } from '../../utils/helpers';
+import AvatarStudio from '../../components/profile/AvatarStudio';
+import CountrySelect from '../../components/intl/CountrySelect';
+import PhoneIntlInput from '../../components/intl/PhoneIntlInput';
+import { dialCodeByCountry } from '../../constants/countries';
+import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../../constants/documentTypes';
+// Sistema de diseño Walá: superficie de vidrio (la tarjeta, no un botón) y
+// envoltorios de entrada. Los BOTONES usan clases planas propias (.btnSave/
+// .btnCancel más abajo) en vez de GlassButton -su degradado con brillo no
+// calza con el resto del sitio, mismo criterio ya aplicado en Carrito/
+// Wishlist/Header-. SOLO presentación/animación; no alteran la lógica.
+import { GlassCard, Reveal, Stagger, StaggerItem } from '../../components/ui';
+import styles from './PerfilPage.module.css';
+import { T } from '../../i18n/useTranslatedText';
+import Moneda from '../../components/common/Moneda';
+
+const Icons = {
+  Gift: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12" /><rect x="2" y="7" width="20" height="5" /><line x1="12" y1="22" x2="12" y2="7" /><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" /><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" /></svg>,
+  User: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,
+  Shirt: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z" /></svg>,
+};
+
+const PerfilViejo = () => {
+  const { user, userProfile, updateUserProfile } = useAuth();
+  const toast = useGlobalToast();
+
+  const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Form State
+  const [fullName, setFullName] = useState('');
+  const [country, setCountry] = useState('PE');
+  const [tipoDoc, setTipoDoc] = useState('DNI');
+  const [documento, setDocumento] = useState('');
+  const [phone, setPhone] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+
+  const isPE = isPeru(country);
+  // Lista de tipos de documento según país (Perú: DNI/CE/Pasaporte; extranjero: null).
+  const docTypes = getDocTypesForCountry(country);
+
+  // Avatar config state
+  const [avatarConfig, setAvatarConfig] = useState({
+    skinTone: '#FFCD94',
+    hairStyle: 'short',
+    hairColor: '#090806',
+    eyeStyle: 'normal',
+    mouthStyle: 'smile',
+    accessory: 'none',
+    weight: 50,
+    height: 170,
+    activeItemId: 'none'
+  });
+
+  const [isAvatarSaving, setIsAvatarSaving] = useState(false);
+  const [savingConsent, setSavingConsent] = useState(false);
+
+  // El código de referido ya NO se muestra acá: vive solo en Mis Referidos
+  // (ver el comentario del enlace más abajo).
+  const monedasBalance = userProfile?.monedas || 0;
+  const monedasEnEspera = userProfile?.monedasEnEspera || 0;
+
+  useEffect(() => {
+    if (userProfile) {
+      setFullName(userProfile.displayName || user?.displayName || '');
+      const profileCountry = userProfile.country || 'PE';
+      setCountry(profileCountry);
+      // PE conserva el toggle DNI/CE original; fuera de PE el tipo es 'OTRO'.
+      setTipoDoc(userProfile.tipoDocumento === 'CE' ? 'CE' : (userProfile.tipoDocumento || 'DNI'));
+      setDocumento(userProfile.dni ? String(userProfile.dni).trim() : '');
+      // En PE el teléfono se guarda sin formato (solo dígitos). Fuera de PE puede
+      // venir con código internacional; mostramos lo guardado tal cual / sin código.
+      if (profileCountry === 'PE') {
+        setPhone(userProfile.phone ? String(userProfile.phone).replace(/\D/g, '') : '');
+      } else {
+        const savedLocal = userProfile.phoneIntl?.localNumber;
+        setPhone(savedLocal != null ? String(savedLocal) : (userProfile.phone ? String(userProfile.phone) : ''));
+      }
+      setBirthDate(userProfile.birthDate || '');
+
+      if (userProfile.avatarConfig) {
+        setAvatarConfig(prev => ({ ...prev, ...userProfile.avatarConfig }));
+      }
+    }
+  }, [userProfile, user]);
+
+  if (!user || !userProfile) return null;
+
+  // Validación ESTRICTA peruana solo si country === 'PE'. Fuera de PE el documento
+  // es texto libre (>=3) y el teléfono internacional (cualquier número no vacío).
+  const docValid = isPE
+    ? (tipoDoc === 'DNI' ? validateDNI(documento) : validateCE(documento))
+    : validateDocInternacional(documento);
+  const phoneValid = isPE ? validatePhone(phone) : String(phone || '').trim().length >= 4;
+  const formValid = docValid && fullName.trim() && phoneValid;
+
+  const handleSaveInfo = async (e) => {
+    e.preventDefault();
+    setError(null);
+    if (!formValid) return;
+    setLoading(true);
+    const documentoNorm = isPE ? documento.replace(/\s/g, '') : documento.trim();
+    // ERP: el documento SIEMPRE va en dni (y clienteNumeroDocumento / envioNumeroDocumento).
+    // tipoDocumento = 'DNI'/'CE'/'Pasaporte' si PE, 'OTRO' si extranjero.
+    // docType es aditivo y refleja el mismo tipo elegido.
+    const tipoDocFinal = isPE ? tipoDoc : 'OTRO';
+    const updates = {
+      displayName: fullName.trim(),
+      country,
+      dni: documentoNorm,
+      clienteNumeroDocumento: documentoNorm,
+      envioNumeroDocumento: documentoNorm,
+      tipoDocumento: tipoDocFinal,
+      clienteTipoDocumento: tipoDocFinal,
+      docType: tipoDocFinal,
+      birthDate: birthDate,
+    };
+    if (isPE) {
+      // Comportamiento peruano EXACTO: teléfono solo dígitos, sin phoneIntl.
+      updates.phone = phone.replace(/\D/g, '');
+    } else {
+      // Extranjero: teléfono internacional con código de país; phoneIntl es aditivo.
+      const dialCode = dialCodeByCountry(country) || '';
+      const localNumber = String(phone || '').trim();
+      const full = `${dialCode}${localNumber}`;
+      updates.phone = full;
+      updates.phoneIntl = { dialCode, localNumber, full };
+    }
+    const { error: err } = await updateUserProfile(updates);
+    setLoading(false);
+    if (err) {
+      setError(err);
+      toast.error('Error al guardar datos personales');
+    } else {
+      setEditing(false);
+      toast.success('Datos actualizados correctamente');
+    }
+  };
+
+  // AvatarStudio ahora guarda solo (al recortar una foto nueva o al
+  // quitarla) sin un botón "Guardar" aparte. Acepta un configOverride
+  // explícito en vez de leer únicamente el `avatarConfig` de este closure:
+  // AvatarStudio llama a setConfig (= setAvatarConfig) y a onSave casi en el
+  // mismo tick, y setState es async — sin el override, este guardado podría
+  // ejecutarse con el avatarConfig VIEJO (todavía sin la foto nueva/quitada)
+  // porque el closure de este render aún no vio el próximo. También
+  // necesita saber si el guardado tuvo éxito para recién ahí borrar el
+  // archivo viejo de Storage (ver AvatarStudio.jsx).
+  const handleSaveAvatar = async (configOverride) => {
+    setIsAvatarSaving(true);
+    const { error } = await updateUserProfile({ avatarConfig: configOverride || avatarConfig });
+    setIsAvatarSaving(false);
+    if (error) {
+      toast.error('Ocurrió un error al guardar tu avatar');
+    } else {
+      toast.success('¡Avatar actualizado increíblemente bien! 😎');
+    }
+    return { error };
+  };
+
+  // Permiso para ofertas por WhatsApp. Se guarda al tocarlo (sin pasar por
+  // "Editar"): el admin solo ve el botón de WhatsApp destacado para quien lo
+  // aceptó (ver /admin/interes-productos). Se guarda la fecha del cambio como
+  // constancia del consentimiento.
+  const aceptaWhatsApp = userProfile?.marketingConsent?.whatsapp === true;
+  const handleToggleWhatsApp = async (e) => {
+    const valor = e.target.checked;
+    setSavingConsent(true);
+    const { error: err } = await updateUserProfile({
+      marketingConsent: { ...(userProfile?.marketingConsent || {}), whatsapp: valor, updatedAt: new Date().toISOString() },
+    });
+    setSavingConsent(false);
+    if (err) toast.error('No pudimos guardar tu preferencia');
+    else toast.success(valor ? '¡Listo! Te avisaremos de ofertas por WhatsApp' : 'Ya no te enviaremos ofertas por WhatsApp');
+  };
+
+  const email = user.email || userProfile?.email || '';
+  const hasCompleteProfile = !!(userProfile?.dni && userProfile?.phone);
+
+  return (
+    <div className={styles.container}>
+      {/* Encabezado de identidad: antes el nombre/email vivían repetidos
+          (una vez en "Datos Personales", sin conexión visual con la foto,
+          que a su vez era una card propia y desbalanceada). Ahora avatar +
+          nombre + email + estado del perfil van juntos, una sola vez,
+          arriba de todo — como la cabecera de cualquier panel de cuenta. */}
+      <Reveal as="header" className={styles.identityHeader}>
+        <AvatarStudio
+          config={avatarConfig}
+          setConfig={setAvatarConfig}
+          onSave={handleSaveAvatar}
+          isSaving={isAvatarSaving}
+          uid={user.uid}
+        />
+        <div className={styles.identityText}>
+          <h1>{userProfile.displayName || user.displayName || <T>Mi Perfil</T>}</h1>
+          <p className={styles.identityEmail}>{email || '—'}</p>
+          <span className={hasCompleteProfile ? styles.identityBadgeOk : styles.identityBadgeWarn}>
+            {hasCompleteProfile ? <T>Perfil completo</T> : <T>Faltan datos por completar</T>}
+          </span>
+        </div>
+      </Reveal>
+
+      <Stagger className={styles.grid}>
+        {/* Left Column: Wallet (más angosta — solo recompensas y referido) */}
+        <StaggerItem className={styles.leftColumn}>
+          <div className={styles.walletBanner}>
+            <div className={styles.walletTitle}><Icons.Gift /> Recompensas</div>
+            <h4 className={styles.walletAmount}>
+              <Moneda size={44} className={styles.coinEmoji} style={{ marginInlineEnd: 0 }} />
+              {monedasBalance.toLocaleString()}
+              <span className={styles.walletCurrency}>Monedas</span>
+            </h4>
+            {monedasEnEspera > 0 && (
+              <div className={styles.walletEspera}>
+                + {monedasEnEspera.toLocaleString()} monedas en espera ⏳
+              </div>
+            )}
+            {/* Acá había SOLO el código de referido pelado (ej. "KS-LXECDU"),
+                sin botones: no se podía hacer nada con él —el que cuenta como
+                referido en el checkout es el link completo
+                (?ref=CODE&shareId=..., ver ReferralTracker.jsx), no el código
+                suelto— y además lo repetía la tarjeta "Tu código de referido"
+                de Mis Referidos, que sí tiene copiar y generar enlace. El
+                código vive ahora en un solo lugar; desde acá se va hasta él. */}
+            <Link to="/cuenta/referidos" className={styles.walletLink}>
+              Invita y gana monedas
+              <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+        </StaggerItem>
+
+        {/* Right Column: Datos Personales (más ancha — antes vivía a la
+            izquierda apilada bajo Recompensas, mientras la derecha solo
+            tenía la card de foto; ahora la foto está en el encabezado y
+            esta columna tiene el peso principal). */}
+        <StaggerItem as="div">
+          <GlassCard variant="solid" animate={false} padding="lg" hover>
+            <div className={styles.cardHeader}>
+              <div className={styles.headerIcon}><Icons.User /></div>
+              <h3>Datos Personales</h3>
+            </div>
+
+            {editing ? (
+              <form onSubmit={handleSaveInfo} className={styles.form}>
+                <div className={styles.formGroup}>
+                  <label><T>Nombre completo</T></label>
+                  <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={loading} />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>País</label>
+                  <CountrySelect value={country} onChange={(code) => setCountry(code || 'PE')} />
+                </div>
+                {isPE ? (
+                  <>
+                    {/* Perú: tipo de documento (DNI/CE/Pasaporte) + número. */}
+                    <div className={styles.formGroup}>
+                      <label><T>Tipo de documento</T></label>
+                      <select className={styles.select} value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)} disabled={loading}>
+                        {docTypes.map((t) => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>{tipoDoc === 'DNI' ? 'Número de DNI' : `Número de ${tipoDoc}`}</label>
+                      <input type="text" value={documento} onChange={(e) => setDocumento(e.target.value.replace(/\s/g, ''))} disabled={loading} maxLength={tipoDoc === 'DNI' ? 8 : 12} />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label><T>Teléfono</T></label>
+                      <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))} disabled={loading} />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className={styles.formGroup}>
+                      <label>{FOREIGN_DOC_LABEL}</label>
+                      <input type="text" value={documento} onChange={(e) => setDocumento(e.target.value)} disabled={loading} placeholder="Pasaporte, ID o documento" />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label><T>Teléfono</T></label>
+                      <PhoneIntlInput
+                        countryCode={country}
+                        value={phone}
+                        onChange={({ localNumber }) => setPhone(localNumber)}
+                      />
+                    </div>
+                  </>
+                )}
+                <div className={styles.formGroup}>
+                  <label><T>Fecha de Nacimiento</T></label>
+                  <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} disabled={loading} />
+                </div>
+                {error && <div className={styles.errorMessage}>{error}</div>}
+
+                <div className={styles.actionsGroup}>
+                  <button type="button" className={styles.btnCancel} onClick={() => setEditing(false)} disabled={loading}>Cancelar</button>
+                  <button type="submit" className={styles.btnSave} disabled={!formValid || loading}>{loading ? 'Guardando...' : 'Guardar'}</button>
+                </div>
+              </form>
+            ) : (
+              <div>
+                {/* Nombre y email ya viven en el encabezado de identidad de
+                    arriba — aquí solo los datos que ese encabezado no
+                    muestra. */}
+                <div className={styles.infoRow}><span className={styles.infoLabel}>DNI</span><span className={styles.infoValue}>{userProfile.dni || '—'}</span></div>
+                <div className={styles.infoRow}><span className={styles.infoLabel}><T>Teléfono</T></span><span className={styles.infoValue}>{userProfile.phone || '—'}</span></div>
+                <div className={styles.infoRow}><span className={styles.infoLabel}><T>Cumpleaños</T></span><span className={styles.infoValue}>{userProfile.birthDate || '—'}</span></div>
+                <label className={styles.consentRow}>
+                  <input type="checkbox" checked={aceptaWhatsApp} onChange={handleToggleWhatsApp} disabled={savingConsent} />
+                  <span>
+                    <T>Quiero recibir ofertas y novedades por WhatsApp</T>
+                    <small><T>Puedes desactivarlo cuando quieras.</T></small>
+                  </span>
+                </label>
+
+                {!hasCompleteProfile && (
+                  <div className={styles.errorMessage}><T>Para ver tus pedidos necesitamos tu DNI y número de teléfono.</T></div>
+                )}
+                <div className={styles.actionsGroup}>
+                  <button type="button" className={styles.btnSave} onClick={() => setEditing(true)}>Editar</button>
+                </div>
+              </div>
+            )}
+          </GlassCard>
+        </StaggerItem>
+      </Stagger>
+    </div>
+  );
+};
+
+export default PerfilViejo;

@@ -176,6 +176,84 @@ local) ni la app Android. En un teléfono de 390 px, "Catálogo Recompensas"
 parte "Recompensas" en dos líneas (Chrome en Windows no tiene silabeo; en
 Android el `hyphens: auto` lo corta con guion).
 
+## Mi perfil y Mis direcciones en la tienda (hecho el 2026-10-17)
+
+![Mi perfil y Mis direcciones en la tienda real, en el celular: la identidad con "Perfil completo", tus monedas, y la dirección principal con sus botones](cuenta-perfil-direcciones-tienda.webp)
+
+(Celular, 390 px, claro, con la cuenta de prueba del emulador. Se probó
+también a 1366 y en noche.)
+
+- **Conectores** (`src/components/cuenta/`): `PerfilDeCuenta.jsx` (desde
+  `pages/cuenta/PerfilPage.jsx`) y `DireccionesDeCuenta.jsx` (desde
+  `pages/cuenta/MisDireccionesPage.jsx`).
+- **Mi perfil guarda lo mismo que antes:**
+  - el documento en `dni`, `clienteNumeroDocumento` y `envioNumeroDocumento`
+    (en el Perú sin espacios; fuera, como se escribió);
+  - el tipo en `tipoDocumento`, `clienteTipoDocumento` y `docType` ('OTRO'
+    fuera del Perú);
+  - en el Perú, el celular solo con números; fuera, `phone` con el código
+    del país y `phoneIntl`;
+  - `marketingConsent` con la fecha, al tocar el interruptor (que espera
+    mientras guarda).
+- **La foto:** el kit la recorta (`RecortarFoto`, 512 px, sin
+  react-easy-crop) y la tienda la sube a `users/{uid}/avatars/…`, guarda
+  `avatarConfig` sin los restos del avatar 3D y borra la anterior solo
+  cuando la nueva quedó guardada (igual al quitarla). Si algo falla, el
+  mensaje sale bajo la foto.
+- **Los ocho cambios acordados:**
+  1. `validarPerfil` como `utils/helpers`: en el Perú, DNI de 8 y cualquier
+     otro documento de 9 a 12 (el pasaporte también; un tipo viejo como
+     'OTRO' ya no deja pasar un documento vacío); el nombre, no vacío. Al
+     cambiar de país, el tipo pasa al que corresponde (`tipoDocumentoPara`).
+     (Crear cuenta y Completar perfil todavía no usan esta pieza.)
+  2. Solo la foto propia (`avatarConfig.avatarUrl`), como antes; la × sale
+     solo con ella.
+  3. Sin nombre guardado, el campo queda vacío (no se propone el del correo).
+  4. Con el perfil sin llegar (`_perfilNoCargado`), esqueleto y sin editar.
+  5. Si la libreta no se puede leer: el aviso con "Reintentar" y sin
+     "Agregar" (antes quedaba vacía y guardar la reemplazaba entera).
+  6. En Mis direcciones el distrito tiene que ser del lugar
+     (`validarDireccion(…, { distritos })`); al cargar, el distrito se lleva
+     al de la lista sin mirar tildes (`distritoDeLista`). El checkout no
+     cambia (no pasa `distritos`).
+  7. Los países van al formulario (`paises`): una dirección de fuera del
+     Perú lleva el prefijo de su país y el teléfono ya no se corta a 9.
+  8. Mientras guarda: el interruptor de WhatsApp, la fecha y el teléfono
+     (`disabled`, nuevo en `Interruptor`, `CampoFecha` y `CampoTelefono`),
+     las tarjetas (`ocupada`) y la hoja (`bloqueada`).
+- **Traducción:** los textos de las dos páginas, `CamposDatosPersonales`
+  (etiquetas, ejemplos y errores), `TarjetaDireccion` y los errores de
+  `CamposDireccion`.
+- **La libreta** usa la caché `['direcciones', uid]` (fresca al volver).
+- **Interruptor `cuentaVieja`:** también vuelven `PerfilViejo.jsx` y
+  `MisDireccionesViejo.jsx`.
+
+### Qué se probó (2026-10-17, localhost con los emuladores)
+
+- Mi perfil con un perfil de Chile: guardar escribe los mismos campos que la
+  página de antes (`OTRO` en los tres, `+56987654321` y `phoneIntl`, el
+  documento con sus puntos); cambiar a Perú pasa el tipo a DNI y pide 8
+  números; pasaporte de 8 caracteres pide de 9 a 12; "Cancelar" deja todo
+  como estaba.
+- WhatsApp: se guarda con la fecha y el interruptor se bloquea mientras
+  guarda.
+- La foto: subir (al emulador de Storage, se ve con su ×) y quitar (el
+  archivo se borra); en el kit, un error al quitar sale bajo la foto.
+- Mis direcciones: agregar una de Chile (región, ciudad, +56), "Usar como
+  principal", eliminar la principal (la otra pasa a serlo), cambiar a Callao
+  sin elegir distrito ("Elige el distrito."), "rímac" guardado se ve como
+  "Rimac".
+- En el kit: el esqueleto del perfil, la libreta que no se pudo leer y la
+  lista vacía con el sello.
+- El checkout: la dirección guardada, "Agregar una dirección nueva" y sus
+  errores.
+- `cuentaVieja` → las dos páginas de antes. 390 y 1366, claro y noche.
+
+No se probó: subir una foto que falle en la tienda (solo en el kit), la
+traducción a otro idioma de estas dos páginas ni la app Android. Las copias
+webp que `uploadFile` crea de cada foto no se borran al cambiarla (pasa
+igual que antes).
+
 ## Llevar a la tienda (lo que falta)
 
 Páginas propias: van en el paso 6 de [MIGRACION.md](MIGRACION.md). Se migra
@@ -189,17 +267,17 @@ componente o su forma de recibir datos.
 | ✓ Marco | `pages/CuentaLayout.jsx` (hoy `CuentaLayoutViejo.jsx`): `<aside>`, aviso de perfil, `<Outlet>` | `MarcoCuenta` con `usuario`, `grupos`, `activo`, `perfilIncompleto`, `estadoCompletar` (hecho) |
 | Sin sesión | ✓ Ya en la tienda, solo en /cuenta (`CuentaLayout.jsx`; antes `CuentaLoginPrompt` / `PedidosLoginPrompt`). Las secciones van al login y vuelven (`RutaPrivada`, `utils/rutaPrivada.js`) | `PaginaCuentaInvitado` |
 | ✓ Resumen | `pages/cuenta/CuentaResumenPage.jsx` (hoy `CuentaResumenViejo.jsx`) | `PaginaResumenCuenta` (el "Cerrar sesión" lo pone `MarcoCuenta`) (hecho) |
-| Perfil | `PerfilPage.jsx`: `AvatarStudio` (~193), recompensas, `GlassCard` "Datos Personales" (~243-330) | `PaginaPerfil` |
+| ✓ Perfil | `PerfilPage.jsx` (hoy `PerfilViejo.jsx`): `AvatarStudio`, recompensas, "Datos Personales" | `PaginaPerfil` (hecho) |
 | Mis pedidos | `CuentaRastreoPage.jsx` (tarjetas ~365-484, `ProgresoResumen` ~204-230) y `PedidosPorVerificar.jsx` | `PaginaPedidos` + `SeguimientoPedido` (`pasos`, `estado`, `deuda`, `anulado`, `urlDetalle`) + `PedidosPorVerificar` |
 | Detalle de compra | `CuentaCompraDetallePage.jsx` (`Timeline`, `PedidoAcciones`, `HistorialPagos`, modales de pago y boletas) | `PaginaDetallePedido` + `LineaProduccion` + `PagosPedido` + `HojaPagarSaldo` |
-| Foto de perfil | `AvatarStudio` + `AvatarCropModal` (react-easy-crop) | `IdentidadCuenta` + `RecortarFoto` (sin librería) |
-| País y teléfono | `CountrySelect`, `PhoneIntlInput` (`<select>` con banderas emoji) | `Campo opciones` (buscador) y `CampoTelefono` |
+| ✓ Foto de perfil | `AvatarStudio` + `AvatarCropModal` (react-easy-crop) | `IdentidadCuenta` + `RecortarFoto` (sin librería) (hecho) |
+| ✓ País y teléfono (en Mi perfil y Mis direcciones) | `CountrySelect`, `PhoneIntlInput` (`<select>` con banderas emoji) | `Campo opciones` (buscador) y `CampoTelefono` (hecho) |
 | Fechas de una persona | `FechaEventoInput` (día, mes, año) | `CampoFecha anioOpcional` |
 | Gustos | `<input list>` con `<datalist>` | `Campo opciones creable` |
 | Combo guardado | `TarjetaMiCombo` | `TarjetaCreacion` con `imagenes`, `subtitulo`, `aviso` |
 | Publicar en la comunidad | `AccionesComunidad`, `InsigniaPublicada` | `TarjetaCreacion comunidad={…}` |
 | Ranking | `ReferralRanking` | `RankingReferidos` |
-| Direcciones | `MisDireccionesPage.jsx` (lista ~155-180, formulario ~183-286) | `PaginaDirecciones` + `TarjetaDireccion` |
+| ✓ Direcciones | `MisDireccionesPage.jsx` (hoy `MisDireccionesViejo.jsx`) | `PaginaDirecciones` + `TarjetaDireccion` (hecho) |
 | ✓ Ajustes | `CuentaAjustesPage.jsx` (hoy `CuentaAjustesViejo.jsx`): `ThemeToggle`, idiomas | `PaginaAjustes` (hecho) |
 | Catálogo | `CatalogReward.jsx` (tarjetas ~133) | `PaginaCatalogo` + `TarjetaRecompensa` |
 | Cupones | `MisCuponesPage.jsx` (tarjetas ~120) | `PaginaCupones` + `TarjetaCupon` |
@@ -221,10 +299,10 @@ componente o su forma de recibir datos.
 | `PaginaPerfil.perfil` | `perfilDesdeUsuario(userProfile, user)` |
 | `whatsapp` / `onWhatsapp` | `marketingConsent.whatsapp` / `handleToggleWhatsApp` (`updateUserProfile`) |
 | `onGuardar` (perfil) | `handleSaveInfo` con los campos de hoy (`dni`, `clienteNumeroDocumento`, `envioNumeroDocumento`, `tipoDocumento`, `docType`, `phoneIntl`…); lanzar error para que la tarjeta lo muestre |
-| `onCambiarFoto` | abrir `AvatarCropModal` con el archivo y luego `handleSaveAvatar` |
+| `onCambiarFoto` | recibe la foto ya recortada (blob): `uploadFile` a `users/{uid}/avatars/…`, `updateUserProfile({ avatarConfig })` y borrar la anterior; lanzar un error con su mensaje si algo falla |
 | `paises` | `constants/countries` (con `prefijo`) |
 | `PaginaDirecciones.direcciones` | `obtenerDirecciones(uid)` → `direccionDesdeFirestore` |
-| `lugares` | `{ departamentos: DEPARTAMENTOS, provincias: getProvincias, distritos: (d) => distritosSugeridos({…}), legible: (d) => lugarLegible({…}) }` (`constants/peruUbigeo`, `utils/ubicacionErp`) |
+| `lugares` | `{ departamentos: DEPARTAMENTOS, provincias: getProvincias, distritos: (d) => distritosSugeridos(direccionAFirestore(d)), legible: (d) => lugarLegible(direccionAFirestore(d)) }` (`constants/peruUbigeo`, `utils/ubicacionErp`: los nombres de campo de la tienda) |
 | `onGuardar` / `onPrincipal` / `onEliminar` (direcciones) | `guardarDirecciones(uid, lista)` con `direccionAFirestore` (el servicio normaliza la principal) |
 | `tema`, `onTema`, `idioma`, `idiomas`, `onIdioma` | `useTheme()`, `useLanguage()` (`available`, `LANG_NAMES`, `setLang`) |
 | `recompensas`, `onCanjear` | `getCollection('rewardsCatalog', …)` → `recompensaDesdeFirestore(r, beneficioDe(r))`; `httpsCallable('redeemRewardSecure')` → `{ codigo: data.coupon.code }` y `reloadProfile()` |
@@ -293,6 +371,10 @@ componente o su forma de recibir datos.
   "Canjear monedas"; antes eran solo los accesos.
 - Ajustes: el idioma con su código (ES, EN, PT) en vez de la bandera, y un
   detalle debajo ("Perú", "Inglés", "Portugués (Brasil)").
+- Mis direcciones deja elegir el país de la dirección (como el checkout);
+  antes se quedaba el de la dirección. Una nueva empieza con el país del
+  perfil.
+- Los avisos del perfil sin emoji ("Foto de perfil actualizada").
 
 ### Qué le falta al kit antes de migrar
 
@@ -313,8 +395,7 @@ componente o su forma de recibir datos.
    cuenta"), con el `<Outlet>` adentro y las páginas viejas sin cambios
    (2026-10-17, arriba).
 2. ✓ Resumen y Ajustes (2026-10-17, arriba).
-3. Perfil y Direcciones (con `perfilDesdeUsuario`, `direccionDesdeFirestore` /
-   `direccionAFirestore`): probar guardar, errores y "Cancelar".
+3. ✓ Perfil y Direcciones (2026-10-17, arriba).
 4. Catálogo, Cupones y Misiones (canje, copiar, completar, check-in).
 5. Referidos (con los mismos grupos y estados de hoy).
 6. Lista de deseos, Fechas importantes y Mis creaciones (lo que les falta,

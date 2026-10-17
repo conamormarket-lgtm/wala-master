@@ -317,6 +317,7 @@ export function CuentaDemo({
   if (ruta === '/cuenta/perfil') {
     pagina = (
       <PaginaPerfil
+        cargando={cargando}
         perfil={perfilVisto}
         monedas={monedas}
         enEspera={50}
@@ -398,6 +399,9 @@ export function CuentaDemo({
       <PaginaDirecciones
         direcciones={listaDirecciones}
         cargando={cargando}
+        error={conError}
+        onReintentar={() => avisar('Volvería a leer tus direcciones', undefined, 'info')}
+        paises={[{ valor: 'PE', texto: 'Perú', prefijo: '+51' }, { valor: 'CL', texto: 'Chile', prefijo: '+56' }, { valor: 'MX', texto: 'México', prefijo: '+52' }]}
         lugares={LUGARES}
         perfil={perfilVisto}
         onGuardar={guardarDireccion}
