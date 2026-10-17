@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowRight, ChevronDown, Loader2, LogOut, RefreshCw, ShoppingBag, Heart, Sparkles, Coins, CalendarClock, Trophy } from 'lucide-react';
 import { Enlace } from './Enlace';
-import { Texto } from './Traduccion';
+import { Texto, useTexto } from './Traduccion';
 import Boton from './Boton';
 import { soles } from './TarjetaProducto';
 import { IconoWala } from './IconosWala';
@@ -203,14 +203,15 @@ export function AyudaMonedas({
  */
 export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNavegar, urlLogin = '/login', urlRegistro = '/registro', lateral = false, activo }) {
   const esActual = (to) => Boolean(activo) && (activo === to || activo.startsWith(`${to}/`));
+  const etiquetaAccesos = useTexto('Accesos de cuenta');
   if (!usuario) {
     return (
       <div className={s.cuentaInvitado}>
-        <h3>Tu cuenta Walá</h3>
-        <p>Inicia sesión para ver tus pedidos, monedas y diseños guardados.</p>
+        <h3><Texto>Tu cuenta Walá</Texto></h3>
+        <p><Texto>Inicia sesión para ver tus pedidos, monedas y diseños guardados.</Texto></p>
         <div className={s.botones}>
-          <Boton to={urlLogin} variante="primario" bloque onClick={onNavegar}>Iniciar sesión</Boton>
-          <Boton to={urlRegistro} variante="contorno" bloque onClick={onNavegar}>Crear cuenta</Boton>
+          <Boton to={urlLogin} variante="primario" bloque onClick={onNavegar}><Texto>Iniciar sesión</Texto></Boton>
+          <Boton to={urlRegistro} variante="contorno" bloque onClick={onNavegar}><Texto>Crear cuenta</Texto></Boton>
         </div>
       </div>
     );
@@ -220,7 +221,7 @@ export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNave
       <div className={s.identidad}>
         <Avatar className={s.avatar} nombre={usuario.nombre} imagen={usuario.avatar} />
         <div className={s.identidadTexto}>
-          <strong>{lateral ? usuario.nombre : `Hola, ${usuario.nombre}`}</strong>
+          <strong>{lateral ? usuario.nombre : <><Texto>Hola,</Texto> {usuario.nombre}</>}</strong>
           <span>{usuario.email}</span>
         </div>
       </div>
@@ -240,7 +241,7 @@ export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNave
           )}
         </Enlace>
       )}
-      <nav aria-label="Accesos de cuenta">
+      <nav aria-label={etiquetaAccesos}>
         {grupos.map((g) => (
           <div key={g.titulo} className={s.grupo}>
             <p className={s.titulo}>{g.titulo}</p>
@@ -269,9 +270,9 @@ export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNave
         ))}
       </nav>
       <div className={s.cuentaPie}>
-        {!lateral && <Enlace to="/cuenta" className={s.verTodo} onClick={onNavegar}>Ver toda mi cuenta <ArrowRight aria-hidden="true" /></Enlace>}
+        {!lateral && <Enlace to="/cuenta" className={s.verTodo} onClick={onNavegar}><Texto>Ver toda mi cuenta</Texto> <ArrowRight aria-hidden="true" /></Enlace>}
         <button type="button" className={s.salir} onClick={() => { onCerrarSesion?.(); onNavegar?.(); }}>
-          <LogOut aria-hidden="true" /> Cerrar sesión
+          <LogOut aria-hidden="true" /> <Texto>Cerrar sesión</Texto>
         </button>
       </div>
     </div>

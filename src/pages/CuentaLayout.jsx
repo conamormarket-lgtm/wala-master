@@ -1,162 +1,19 @@
-import React, { useMemo } from 'react';
-import { Outlet, NavLink, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, IdCard } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { useLanguage } from '../contexts/LanguageContext';
-import { logout } from '../services/firebase/auth';
-import { PaginaCuentaInvitado } from '../componentes/kit/paginas/Cuenta';
-import { IrALogin } from '../components/RutaPrivada/RutaPrivada';
-import { tieneCuenta, urlLogin } from '../utils/rutaPrivada';
-import { useCuentaNavGroups } from './cuenta/useCuentaNavGroups';
-import styles from './CuentaPage.module.css';
-import { T } from '../i18n/useTranslatedText';
+import React, { lazy, Suspense } from 'react';
+import useLoViejo from '../hooks/useLoViejo';
+import MarcoDeCuenta from '../components/cuenta/MarcoDeCuenta';
 
-// Iniciales (1-2 letras) para el avatar del sidebar cuando no hay foto —
-// mismo criterio que usa el header (Header.jsx) para que el avatar de
-// iniciales se vea igual en toda la app.
-const initialsOf = (name) => {
-  const clean = String(name || '').trim();
-  if (!clean) return '?';
-  return clean.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
-};
+// La página de antes solo baja con el interruptor cuentaVieja.
+const CuentaLayoutViejo = lazy(() => import('./CuentaLayoutViejo'));
 
+// El marco de /cuenta (MarcoCuenta), paso 6 de la migración: el kit. cuentaVieja (useLoViejo('cuenta'):
+// en Firestore el campo es cuentaViejo) vuelve a la de antes (CuentaLayoutViejo.jsx).
 const CuentaLayout = () => {
-  const { user, userProfile, loading, profileIncomplete } = useAuth();
-  const { t } = useLanguage();
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  // Menú de cuenta agrupado por categoría (antes: una sola fila de 9 tabs en
-  // píldora, sin jerarquía — "Mis Cupones" pesaba visualmente igual que
-  // "Mis Pedidos"). Un sidebar agrupado es el patrón de un panel de cuenta
-  // "serio" (Stripe/Notion/Linear) en vez de un segmented-control de app.
-  // Datos compartidos con CuentaResumenPage (la grilla de accesos directos
-  // que ve el usuario apenas entra a /cuenta) — ver useCuentaNavGroups.
-  const rawNavGroups = useCuentaNavGroups();
-  const navGroups = useMemo(
-    () => rawNavGroups.map((group) => ({
-      label: t(group.label, group.labelFallback),
-      items: group.items.map((item) => ({ ...item, label: t(item.labelKey, item.label) })),
-    })),
-    [rawNavGroups, t]
-  );
-
-  if (loading) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.skeletonLayout}>
-          <div className={styles.skeletonShell}>
-            <div className={styles.skeletonSidebar} />
-            <div className={styles.skeletonContentBox} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!tieneCuenta(user)) {
-    // Sin cuenta, la pestaña "Cuenta" (/cuenta) es la bienvenida del kit, como
-    // en las apps de compras: se llega tocando el menú y espera ver una
-    // pantalla. Cada sección (/cuenta/pedidos, /cuenta/perfil…) es una página
-    // privada más: al login y, al entrar, de vuelta ahí (utils/rutaPrivada.js).
-    // (CuentaLoginPrompt y PedidosLoginPrompt quedan sin usar hasta que esto
-    // lleve un tiempo en producción; ver kit/guia/MIGRACION.md.)
-    if (location.pathname.replace(/\/+$/, '') === '/cuenta') {
-      return <PaginaCuentaInvitado urlLogin={urlLogin('/cuenta')} urlRegistro={`/registro?redirect=${encodeURIComponent('/cuenta')}`} />;
-    }
-    return <IrALogin />;
-  }
-
-  // Mis Pedidos necesita el documento y el teléfono del perfil: sin ellos no
-  // hay cómo ubicar ni vincular pedidos. En vez de una página casi vacía, se
-  // lleva a "Completar perfil" y, al guardar, se vuelve aquí mismo (state.from).
-  // El resto de la cuenta sigue accesible, con un aviso discreto arriba.
-  const enPedidos =
-    location.pathname === '/cuenta/pedidos' || location.pathname.startsWith('/cuenta/pedidos/');
-  if (profileIncomplete && enPedidos) {
-    return <Navigate to="/completar-perfil" replace state={{ from: location.pathname }} />;
-  }
-
-  const avatarUrl = userProfile?.avatarConfig?.avatarUrl || user?.photoURL || null;
-  const displayName = userProfile?.displayName || userProfile?.nombre || user?.displayName || user?.email?.split('@')[0] || '';
-  const handleLogout = async () => {
-    await logout();
-    navigate('/');
-  };
-
+  const cuentaVieja = useLoViejo('cuenta');
+  if (!cuentaVieja) return <MarcoDeCuenta />;
   return (
-    <div className={styles.container}>
-      <div className={styles.contentLoggedIn}>
-        <div className={styles.shell}>
-          {/* Sidebar (≥900px): agrupado por categoría, con identidad arriba. */}
-          <aside className={styles.sidebar} aria-label={t('account.menu', 'Menú de cuenta')}>
-            <div className={styles.sidebarIdentity}>
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className={styles.sidebarAvatar} referrerPolicy="no-referrer" />
-              ) : (
-                <span className={styles.sidebarAvatarFallback} aria-hidden="true">{initialsOf(displayName)}</span>
-              )}
-              <div className={styles.sidebarIdentityText}>
-                <p className={styles.sidebarName}>{displayName}</p>
-                <p className={styles.sidebarEmail}>{user.email}</p>
-              </div>
-            </div>
-
-            {navGroups.map((group) => (
-              <div key={group.label} className={styles.navGroup}>
-                <p className={styles.navGroupLabel}>{group.label}</p>
-                {group.items.map((item) => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    className={({ isActive }) =>
-                      isActive ? `${styles.navItem} ${styles.navItemActive}` : styles.navItem
-                    }
-                  >
-                    <item.icon size={18} strokeWidth={1.75} className={styles.navItemIcon} aria-hidden="true" />
-                    <span>{item.label}</span>
-                  </NavLink>
-                ))}
-              </div>
-            ))}
-
-            <button type="button" className={styles.navLogout} onClick={handleLogout}>
-              <LogOut size={18} strokeWidth={1.75} aria-hidden="true" />
-              <span>{t('account.cerrarSesion', 'Cerrar sesión')}</span>
-            </button>
-          </aside>
-
-          {/* Antes había acá, en móvil: una tarjeta de identidad (avatar/
-              nombre/correo/monedas) y un selector "Menú de cuenta" — ambos
-              repetidos en CADA página de /cuenta. La identidad ya está en
-              "Mi Perfil" y en las monedas del header; el selector, en la
-              grilla de accesos directos de CuentaResumenPage (que además es
-              justo a donde vuelve el tab "Mi cuenta" del BottomNav). Sin
-              ellos, cada sección de /cuenta se ve como una pantalla propia
-              en vez de una lista de tabs con la misma cabecera repetida
-              arriba de cada una. */}
-
-          <div className={styles.outlet} key={location.pathname}>
-            {profileIncomplete && (
-              <div className={styles.avisoPerfil} role="status">
-                <IdCard size={18} strokeWidth={1.75} aria-hidden="true" className={styles.avisoPerfilIcono} />
-                <p className={styles.avisoPerfilTexto}>
-                  <T>Te faltan tu documento y tu teléfono para ver tus pedidos y comprar más rápido.</T>
-                </p>
-                <Link
-                  to="/completar-perfil"
-                  state={{ from: location.pathname }}
-                  className={styles.avisoPerfilBoton}
-                >
-                  <T>Completar</T>
-                </Link>
-              </div>
-            )}
-            <Outlet />
-          </div>
-        </div>
-      </div>
-    </div>
+    <Suspense fallback={null}>
+      <CuentaLayoutViejo />
+    </Suspense>
   );
 };
 

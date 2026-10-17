@@ -113,7 +113,70 @@ anteriores) es **C3**.
 | `GananciaMonedas` / `CostoMonedas` | misiones, referidos / catálogo | `Etiquetas.module.css` |
 | `FotoProducto` | recompensas, creaciones, ideas de regalo, pedido de un referido | `piezas/FotoProducto.module.css` |
 
-## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
+## El marco, el resumen y los ajustes en la tienda (hecho el 2026-10-17)
+
+![La cuenta en la tienda real, en el celular: el resumen en noche (saludo, tus monedas y los accesos de Cuenta y Recompensas) y Ajustes en claro (Apariencia e Idioma)](cuenta-tienda-celular.webp)
+
+(Celular, 390 px. Se probó también a 1366, con el menú lateral, en claro y
+en noche.)
+
+- **Conectores** (`src/components/cuenta/`):
+  - `MarcoDeCuenta.jsx`, desde `pages/CuentaLayout.jsx`: `MarcoCuenta` con
+    el `<Outlet>` de siempre adentro (las secciones que todavía no migran
+    se ven con su diseño de antes, dentro del marco nuevo).
+  - `ResumenDeCuenta.jsx` (desde `CuentaResumenPage.jsx`) y
+    `AjustesDeCuenta.jsx` (desde `CuentaAjustesPage.jsx`).
+  - `gruposDeCuenta.js`: los grupos desde `useCuentaNavGroups` (la misma
+    fuente que antes), con el diccionario `t()` y el tono de cada grupo; el
+    esqueleto de cada sección (`moduloDeRuta`).
+- **Igual que antes:**
+  - mientras carga la sesión, el esqueleto (ahora `EsqueletoPagina
+    forma="cuenta"` con el de la sección);
+  - sin cuenta, la bienvenida en /cuenta y el login en cada sección;
+  - Mis pedidos sin documento ni teléfono va a `/completar-perfil` con
+    `state.from`;
+  - el aviso de perfil incompleto, con "Completar" que también lleva
+    `state.from` (prop nueva `estadoCompletar`; `Enlace` pasa `state` al
+    router);
+  - cerrar sesión (`logout` y la portada);
+  - el modo noche con `useTheme().toggle()` y el idioma con `setLang`.
+- **Traducción:** los textos fijos del marco, `MenuCuenta`, el resumen, los
+  ajustes y las piezas de `piezas/Cuenta.jsx` pasan por `<Texto>`. Los
+  grupos llegan traducidos por el diccionario; se agregaron las claves que
+  faltaban (los tres grupos, Ajustes y Mis cupones) en español, inglés y
+  portugués.
+- **La entrada del contenido** ya no deja un `transform` puesto al terminar
+  (`animation-fill-mode: backwards`): con él, una ventana `position: fixed`
+  de una sección quedaba corrida (el marco de antes tenía lo mismo con
+  `will-change: transform`).
+- **Interruptor `cuentaVieja`** (`useLoViejo('cuenta')`; en Firestore,
+  `cuentaViejo: true`): vuelven el marco, el resumen y los ajustes de antes
+  (`CuentaLayoutViejo.jsx`, `CuentaResumenViejo.jsx`, `CuentaAjustesViejo.jsx`),
+  que bajan aparte.
+
+### Qué se probó (2026-10-17, localhost con los emuladores)
+
+- El resumen (saludo, 10 monedas, accesos con sus tonos, "Cerrar sesión" al
+  final en el celular) y Ajustes (modo noche se apaga y se guarda; English
+  traduce el marco, el resumen y los grupos).
+- Escritorio: el menú lateral con la sección encendida, sin "← Mi cuenta";
+  las nueve secciones viejas cargan dentro del marco.
+- Con el teléfono borrado del perfil de prueba: el aviso, "Completar" con
+  `from: /cuenta/ajustes` y Mis pedidos que manda a completar con
+  `from: /cuenta/pedidos`.
+- `cuentaVieja` en `localStorage.wala_kit_viejo` → el marco y las páginas
+  de antes.
+- Una ventana fija dentro del contenido queda en (0, 0).
+- 390 y 1366, claro y noche.
+
+No se probó en la tienda: cerrar sesión y la bienvenida sin cuenta (la cuenta
+de prueba no está en la semilla del emulador; ese código no cambió y en la
+demo funciona), el esqueleto mientras carga la sesión (dura muy poco en
+local) ni la app Android. En un teléfono de 390 px, "Catálogo Recompensas"
+parte "Recompensas" en dos líneas (Chrome en Windows no tiene silabeo; en
+Android el `hyphens: auto` lo corta con guion).
+
+## Llevar a la tienda (lo que falta)
 
 Páginas propias: van en el paso 6 de [MIGRACION.md](MIGRACION.md). Se migra
 **un módulo a la vez**, empezando por el marco. Mantener al día si cambia un
@@ -123,9 +186,9 @@ componente o su forma de recibir datos.
 
 | Parte | Hoy en la tienda | Pasa a (kit) |
 |---|---|---|
-| Marco | `pages/CuentaLayout.jsx`: `<aside>` (~95-130), aviso de perfil (~143-157), `<Outlet>` (~158) | `MarcoCuenta` con `usuario`, `grupos`, `activo={location.pathname}`, `perfilIncompleto` |
+| ✓ Marco | `pages/CuentaLayout.jsx` (hoy `CuentaLayoutViejo.jsx`): `<aside>`, aviso de perfil, `<Outlet>` | `MarcoCuenta` con `usuario`, `grupos`, `activo`, `perfilIncompleto`, `estadoCompletar` (hecho) |
 | Sin sesión | ✓ Ya en la tienda, solo en /cuenta (`CuentaLayout.jsx`; antes `CuentaLoginPrompt` / `PedidosLoginPrompt`). Las secciones van al login y vuelven (`RutaPrivada`, `utils/rutaPrivada.js`) | `PaginaCuentaInvitado` |
-| Resumen | `pages/cuenta/CuentaResumenPage.jsx` (grilla ~34-48, "Cerrar sesión" ~58) | `PaginaResumenCuenta` (el "Cerrar sesión" lo pone `MarcoCuenta`) |
+| ✓ Resumen | `pages/cuenta/CuentaResumenPage.jsx` (hoy `CuentaResumenViejo.jsx`) | `PaginaResumenCuenta` (el "Cerrar sesión" lo pone `MarcoCuenta`) (hecho) |
 | Perfil | `PerfilPage.jsx`: `AvatarStudio` (~193), recompensas, `GlassCard` "Datos Personales" (~243-330) | `PaginaPerfil` |
 | Mis pedidos | `CuentaRastreoPage.jsx` (tarjetas ~365-484, `ProgresoResumen` ~204-230) y `PedidosPorVerificar.jsx` | `PaginaPedidos` + `SeguimientoPedido` (`pasos`, `estado`, `deuda`, `anulado`, `urlDetalle`) + `PedidosPorVerificar` |
 | Detalle de compra | `CuentaCompraDetallePage.jsx` (`Timeline`, `PedidoAcciones`, `HistorialPagos`, modales de pago y boletas) | `PaginaDetallePedido` + `LineaProduccion` + `PagosPedido` + `HojaPagarSaldo` |
@@ -137,7 +200,7 @@ componente o su forma de recibir datos.
 | Publicar en la comunidad | `AccionesComunidad`, `InsigniaPublicada` | `TarjetaCreacion comunidad={…}` |
 | Ranking | `ReferralRanking` | `RankingReferidos` |
 | Direcciones | `MisDireccionesPage.jsx` (lista ~155-180, formulario ~183-286) | `PaginaDirecciones` + `TarjetaDireccion` |
-| Ajustes | `CuentaAjustesPage.jsx`: `ThemeToggle` (~56), idiomas (~61-87) | `PaginaAjustes` |
+| ✓ Ajustes | `CuentaAjustesPage.jsx` (hoy `CuentaAjustesViejo.jsx`): `ThemeToggle`, idiomas | `PaginaAjustes` (hecho) |
 | Catálogo | `CatalogReward.jsx` (tarjetas ~133) | `PaginaCatalogo` + `TarjetaRecompensa` |
 | Cupones | `MisCuponesPage.jsx` (tarjetas ~120) | `PaginaCupones` + `TarjetaCupon` |
 | Misiones | `MisionesPage.jsx` (cifras, nivel ~141, lista) | `PaginaMisiones` + `NivelCuenta` + `TarjetaMision` |
@@ -151,7 +214,8 @@ componente o su forma de recibir datos.
 | Prop del kit | En la tienda |
 |---|---|
 | `MarcoCuenta.usuario` | `{ nombre: displayName…, email: user.email, avatar: avatarConfig.avatarUrl \|\| user.photoURL }` (como CuentaLayout) |
-| `grupos` | `useCuentaNavGroups()` con `t(labelKey)`: `{ titulo, tono, items: [{ to, texto, Icono }] }` (tono: 'degradado', 'oro', 'rosa' por grupo) |
+| `grupos` | `useGruposDeCuenta()` (`src/components/cuenta/gruposDeCuenta.js`): `useCuentaNavGroups()` con `t(labelKey)`, `{ titulo, tono, items: [{ to, texto, Icono }] }` (tono: 'degradado', 'oro', 'rosa' por grupo) |
+| `estadoCompletar` | `{ from: location.pathname }` (Completar perfil vuelve ahí) |
 | `perfilIncompleto` | `profileIncomplete` de `AuthContext` |
 | `monedas`, `enEspera` | `userProfile.monedas`, `userProfile.monedasEnEspera` |
 | `PaginaPerfil.perfil` | `perfilDesdeUsuario(userProfile, user)` |
@@ -225,6 +289,10 @@ componente o su forma de recibir datos.
   (hoy cambia a "Editar a…" mientras se escribe el nombre).
 - Los errores del servidor ("internal") no se muestran tal cual.
 - En el celular, "← Mi cuenta" en cada sección.
+- El resumen saluda y muestra tus monedas (y las que están en espera) con
+  "Canjear monedas"; antes eran solo los accesos.
+- Ajustes: el idioma con su código (ES, EN, PT) en vez de la bandera, y un
+  detalle debajo ("Perú", "Inglés", "Portugués (Brasil)").
 
 ### Qué le falta al kit antes de migrar
 
@@ -241,10 +309,10 @@ componente o su forma de recibir datos.
 
 ### Pasos (cada uno se verifica solo y se puede volver atrás)
 
-1. `MarcoCuenta` en `CuentaLayout` (menú lateral, aviso de perfil, "← Mi
-   cuenta"), con el `<Outlet>` adentro y las páginas viejas sin cambios.
-   Probar escritorio y celular, claro y noche.
-2. Resumen y Ajustes (los más simples).
+1. ✓ `MarcoCuenta` en `CuentaLayout` (menú lateral, aviso de perfil, "← Mi
+   cuenta"), con el `<Outlet>` adentro y las páginas viejas sin cambios
+   (2026-10-17, arriba).
+2. ✓ Resumen y Ajustes (2026-10-17, arriba).
 3. Perfil y Direcciones (con `perfilDesdeUsuario`, `direccionDesdeFirestore` /
    `direccionAFirestore`): probar guardar, errores y "Cancelar".
 4. Catálogo, Cupones y Misiones (canje, copiar, completar, check-in).

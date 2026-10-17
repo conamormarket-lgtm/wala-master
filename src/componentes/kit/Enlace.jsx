@@ -10,6 +10,7 @@ import React, { createContext, forwardRef, useContext } from 'react';
  *    con rel seguro (salvo mailto/tel, que abren su app).
  *  - Anclas ("#pagar-ahora"): se desplaza suave hasta ese id en la página.
  *  - Vacío / sin `to`: se dibuja como <span> (no deja enlaces rotos).
+ *  - state: el del router (p. ej. { from }); solo llega al enlace interno con proveedor.
  */
 const EnlaceCtx = createContext(null);
 
@@ -29,7 +30,7 @@ export function tipoDeEnlace(to) {
 
 const conProtocolo = (t) => (/^(www\.|wa\.me\/)/i.test(t) ? `https://${t}` : t);
 
-export const Enlace = forwardRef(function Enlace({ to, children, onClick, ...rest }, ref) {
+export const Enlace = forwardRef(function Enlace({ to, children, onClick, state, ...rest }, ref) {
   const Componente = useContext(EnlaceCtx);
   const tipo = tipoDeEnlace(to);
   const destino = String(to ?? '').trim();
@@ -70,7 +71,7 @@ export const Enlace = forwardRef(function Enlace({ to, children, onClick, ...res
   }
 
   if (Componente) {
-    return <Componente ref={ref} to={destino} onClick={onClick} {...rest}>{children}</Componente>;
+    return <Componente ref={ref} to={destino} state={state} onClick={onClick} {...rest}>{children}</Componente>;
   }
   return <a ref={ref} href={destino} onClick={onClick} {...rest}>{children}</a>;
 });

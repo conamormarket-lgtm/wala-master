@@ -190,6 +190,11 @@ Ya en la tienda (paso 6, abrir el regalo, 2026-10-17): mientras llega el
 regalo, `EsqueletoPagina forma="formulario"` (antes, "Preparando tu
 sorpresa...").
 
+Ya en la tienda (paso 6, el marco de la cuenta, 2026-10-17): mientras carga
+la sesión, `EsqueletoPagina forma="cuenta"` con el módulo de la sección
+(`moduloDeRuta`: /cuenta → resumen, /cuenta/wishlist → deseos…). Antes era
+una caja del menú y otra del contenido.
+
 Ya en la tienda (paso 6, el carrito, 2026-10-17): el carrito sale de
 localStorage al instante, así que no tiene esqueleto propio (la ruta sigue con
 el `PageLoading` de `App.jsx` hasta el paso 7). "También te puede gustar" no

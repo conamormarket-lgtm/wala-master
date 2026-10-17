@@ -30,7 +30,9 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
   min-width: 0;
-  animation: entrar var(--dur-lenta, 500ms) var(--ease-signature) both;
+  /* backwards, no both: al terminar no queda un transform puesto, que haría de
+     contenedor de lo fijo (las ventanas de una página se correrían). */
+  animation: entrar var(--dur-lenta, 500ms) var(--ease-signature) backwards;
 }
 
 @keyframes entrar {

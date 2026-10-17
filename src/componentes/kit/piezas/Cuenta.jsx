@@ -4,6 +4,7 @@ import { Enlace } from '../Enlace';
 import { Contador } from '../Etiquetas';
 import { Sello, Puntos, Trazo, Visto } from '../Marca';
 import { Avatar } from './Avatar';
+import { Texto, useTexto } from '../Traduccion';
 import s from './Cuenta.module.css';
 
 /*
@@ -12,6 +13,9 @@ import s from './Cuenta.module.css';
  * del resumen, la identidad del perfil y una lista para elegir una opción.
  * Datos por props; la página decide qué hacer con cada acción. Cada pieza
  * lleva data-componente con su nombre ("Ver componentes" de la demo).
+ * Traducción: las piezas traducen sus textos fijos ("Por completar", "Perfil
+ * completo"…); los títulos, etiquetas y cifras que reciben los traduce quien
+ * los pasa (<Texto>), porque a veces son datos (un nombre no se traduce).
  */
 
 /**
@@ -67,8 +71,8 @@ export function ListaDatos({ datos = [], vacio = 'Por completar' }) {
     <dl className={s.datos}>
       {datos.map((d) => (
         <div key={d.etiqueta} className={s.dato}>
-          <dt>{d.etiqueta}</dt>
-          <dd className={d.valor ? undefined : s.datoVacio}>{d.valor || vacio}</dd>
+          <dt><Texto>{d.etiqueta}</Texto></dt>
+          <dd className={d.valor ? undefined : s.datoVacio}>{d.valor || <Texto>{vacio}</Texto>}</dd>
         </div>
       ))}
     </dl>
@@ -112,8 +116,9 @@ export function Estadistica({ icono, tono = 'degradado', sello = true, etiqueta,
  *  - onNavegar
  */
 export function AccesosCuenta({ grupos = [], onNavegar }) {
+  const etiqueta = useTexto('Secciones de tu cuenta');
   return (
-    <nav className={s.accesos} aria-label="Secciones de tu cuenta" data-componente="AccesosCuenta">
+    <nav className={s.accesos} aria-label={etiqueta} data-componente="AccesosCuenta">
       {grupos.map((g) => (
         <section key={g.titulo} className={s.accesosGrupo}>
           <h2 className={s.accesosTitulo}>{g.titulo}</h2>
@@ -148,6 +153,7 @@ export function AccesosCuenta({ grupos = [], onNavegar }) {
  */
 export function IdentidadCuenta({ nombre, email, avatar, completo, onCambiarFoto, onQuitarFoto, subiendo = false }) {
   const archivo = useRef(null);
+  const t = { cambiar: useTexto('Cambiar foto de perfil'), quitar: useTexto('Quitar foto de perfil') };
   return (
     <section className={s.identidad} data-componente="IdentidadCuenta">
       <Puntos className={s.identidadPuntos} filas={4} columnas={6} />
@@ -161,7 +167,7 @@ export function IdentidadCuenta({ nombre, email, avatar, completo, onCambiarFoto
                 className={[s.identidadCamara, subiendo && s.subiendo].filter(Boolean).join(' ')}
                 onClick={() => archivo.current?.click()}
                 disabled={subiendo}
-                aria-label="Cambiar foto de perfil"
+                aria-label={t.cambiar}
               >
                 <Camera aria-hidden="true" />
               </button>
@@ -175,18 +181,18 @@ export function IdentidadCuenta({ nombre, email, avatar, completo, onCambiarFoto
             </>
           )}
           {avatar && onQuitarFoto && (
-            <button type="button" className={s.identidadQuitar} onClick={onQuitarFoto} aria-label="Quitar foto de perfil">
+            <button type="button" className={s.identidadQuitar} onClick={onQuitarFoto} aria-label={t.quitar}>
               <X aria-hidden="true" />
             </button>
           )}
         </div>
         <div className={s.identidadTextos}>
-          <h1 className={s.identidadNombre}>{nombre || 'Mi perfil'}</h1>
+          <h1 className={s.identidadNombre}>{nombre || <Texto>Mi perfil</Texto>}</h1>
           <p className={s.identidadEmail}>{email || '—'}</p>
           {completo != null && (
             <p className={[s.identidadEstado, completo ? s.estadoOk : s.estadoFalta].filter(Boolean).join(' ')}>
               {completo ? <CheckCircle2 aria-hidden="true" /> : <AlertCircle aria-hidden="true" />}
-              {completo ? 'Perfil completo' : 'Faltan datos por completar'}
+              <Texto>{completo ? 'Perfil completo' : 'Faltan datos por completar'}</Texto>
             </p>
           )}
         </div>

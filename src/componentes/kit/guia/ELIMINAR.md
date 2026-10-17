@@ -163,3 +163,15 @@ página nueva.
 | Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
 |---|---|---|---|---|
 | `pages/GiftExperienceViejo.jsx` (la página de antes, con el Kapi en CSS y los emojis) + `GiftExperiencePage.module.css` (274 líneas) | `/regalo/:orderId` | `components/regalar/RegaloSorpresaDeTienda.jsx` → `PaginaRegaloSorpresa` del kit | `GiftExperiencePage.jsx` (lazy, solo con `regalarViejo`) | al retirar `regalarViejo` |
+
+### La cuenta: el marco, el resumen y los ajustes (2026-10-17)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/CuentaLayoutViejo.jsx` (el marco de antes: menú lateral, aviso de perfil) + `pages/CuentaPage.module.css` (475 líneas) | `/cuenta/*` | `components/cuenta/MarcoDeCuenta.jsx` → `MarcoCuenta` del kit | `CuentaLayout.jsx` (lazy, solo con `cuentaVieja`); `CuentaFechasImportantesPage.jsx` solo lo nombra en un comentario | al retirar `cuentaVieja` |
+| `pages/cuenta/CuentaResumenViejo.jsx` + `CuentaResumenPage.module.css` (135 líneas) | `/cuenta` | `ResumenDeCuenta.jsx` → `PaginaResumenCuenta` | `CuentaResumenPage.jsx` (lazy, solo con `cuentaVieja`) | al retirar `cuentaVieja` |
+| `pages/cuenta/CuentaAjustesViejo.jsx` + `CuentaAjustesPage.module.css` (172 líneas) | `/cuenta/ajustes` | `AjustesDeCuenta.jsx` → `PaginaAjustes` | `CuentaAjustesPage.jsx` (lazy, solo con `cuentaVieja`) | al retirar `cuentaVieja` |
+| `ThemeToggle`, `FlagIcon` en Ajustes | Ajustes de antes | `Interruptor` y el código del idioma | `Header.jsx` (y `LanguagePopup.jsx`) | **no borrar**: la cabecera los usa (paso 7) |
+
+`pages/cuenta/useCuentaNavGroups.js` **no se borra**: es la fuente de los
+grupos del marco nuevo (`gruposDeCuenta.js`).

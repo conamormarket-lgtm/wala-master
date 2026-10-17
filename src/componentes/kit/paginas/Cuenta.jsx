@@ -13,6 +13,7 @@ import { CabezaCuenta, TarjetaCuenta, ListaDatos, Estadistica, AccesosCuenta, Id
 import { TarjetaDireccion } from '../piezas/TarjetaDireccion';
 import { CamposDireccion, validarDireccion, cambiarDireccion, documentoDe } from '../piezas/Direccion';
 import { EsqueletoTarjeta } from '../Esqueletos';
+import { Texto, useTexto } from '../Traduccion';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import s from './Cuenta.module.css';
 
@@ -35,33 +36,38 @@ import s from './Cuenta.module.css';
  *  - perfilIncompleto: aviso arriba con "Completar" (falta documento o teléfono)
  *    · urlCompletar
  *  - volver: { texto, url } enlace a los accesos en el celular (null: sin él)
+ *  - estadoCompletar: el state del enlace "Completar" (en la tienda,
+ *    { from: ruta } para volver aquí al terminar)
+ * Los grupos llegan ya traducidos (en la tienda, con el diccionario t());
+ * los textos propios del marco pasan por la traducción.
  * El menú lateral aparece cuando el marco mide 860px o más (container query:
  * la vista de celular del editor se ve igual que un celular). En el resumen
  * (activo = '/cuenta') y sin el menú lateral, "Cerrar sesión" va al final.
  */
 export function MarcoCuenta({
   usuario, grupos = [], activo, onCerrarSesion, promo, perfilIncompleto = false, urlCompletar = '/completar-perfil',
-  volver = { texto: 'Mi cuenta', url: '/cuenta' }, children,
+  volver = { texto: 'Mi cuenta', url: '/cuenta' }, estadoCompletar, children,
 }) {
   const enResumen = activo === '/cuenta';
+  const etiquetaMenu = useTexto('Menú de tu cuenta');
   return (
     <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }}>
       <div className={s.cuenta}>
         <div className={s.rejilla}>
-          <aside className={s.lateral} aria-label="Menú de tu cuenta" data-componente="MenuCuenta">
+          <aside className={s.lateral} aria-label={etiquetaMenu} data-componente="MenuCuenta">
             <MenuCuenta lateral usuario={usuario} grupos={grupos} activo={activo} promo={promo} onCerrarSesion={onCerrarSesion} />
           </aside>
           <div className={s.contenido}>
             {!enResumen && volver && (
               <Enlace to={volver.url} className={`${s.volver} ${s.soloAngosto}`}>
-                <ArrowLeft aria-hidden="true" /> {volver.texto}
+                <ArrowLeft aria-hidden="true" /> <Texto>{volver.texto}</Texto>
               </Enlace>
             )}
             {perfilIncompleto && (
               <Aviso
                 tipo="info"
                 icono={<IdCard aria-hidden="true" />}
-                accion={<Boton to={urlCompletar} tamano="sm">Completar</Boton>}
+                accion={<Boton to={urlCompletar} state={estadoCompletar} tamano="sm"><Texto>Completar</Texto></Boton>}
               >
                 Te faltan tu documento y tu teléfono para ver tus pedidos y comprar más rápido.
               </Aviso>
@@ -69,7 +75,7 @@ export function MarcoCuenta({
             <div key={activo} className={s.pagina}>{children}</div>
             {enResumen && onCerrarSesion && (
               <button type="button" className={`${s.salir} ${s.soloAngosto}`} onClick={onCerrarSesion}>
-                <LogOut aria-hidden="true" /> Cerrar sesión
+                <LogOut aria-hidden="true" /> <Texto>Cerrar sesión</Texto>
               </button>
             )}
           </div>
@@ -115,19 +121,19 @@ export function PaginaResumenCuenta({ usuario, monedas = 0, enEspera = 0, grupos
   return (
     <>
       <CabezaCuenta
-        titulo={nombre ? `Hola, ${nombre}` : 'Mi cuenta'}
+        titulo={nombre ? <><Texto>Hola,</Texto> {nombre}</> : <Texto>Mi cuenta</Texto>}
         subrayado
-        subtitulo="Tus pedidos, tus monedas y tus diseños, a un toque."
+        subtitulo={<Texto>Tus pedidos, tus monedas y tus diseños, a un toque.</Texto>}
       />
       <Estadistica
         icono={<Moneda tamano={44} />}
         sello={false}
-        etiqueta="Tus monedas"
+        etiqueta={<Texto>Tus monedas</Texto>}
         valor={monedas.toLocaleString('es-PE')}
-        unidad={monedas === 1 ? 'moneda' : 'monedas'}
-        nota={enEspera > 0 ? `+${enEspera} en espera: llegan cuando se entregue tu pedido.` : 'Cada moneda es S/ 1 de descuento en tu próxima compra.'}
+        unidad={<Texto>{monedas === 1 ? 'moneda' : 'monedas'}</Texto>}
+        nota={<Texto>{enEspera > 0 ? `+${enEspera} en espera: llegan cuando se entregue tu pedido.` : 'Cada moneda es S/ 1 de descuento en tu próxima compra.'}</Texto>}
       >
-        <Boton to={urlCanjear} variante="contorno" tamano="sm" icono={<Gift aria-hidden="true" />}>Canjear monedas</Boton>
+        <Boton to={urlCanjear} variante="contorno" tamano="sm" icono={<Gift aria-hidden="true" />}><Texto>Canjear monedas</Texto></Boton>
       </Estadistica>
       <AccesosCuenta grupos={grupos} />
     </>
@@ -471,32 +477,38 @@ export function PaginaAjustes({
   ],
 }) {
   const noche = tema === 'noche' || tema === 'dark';
+  const etiquetaIdioma = useTexto('Idioma de la tienda');
   return (
     <>
-      <CabezaCuenta icono={<Settings />} titulo="Ajustes" subtitulo="Cómo se ve Walá en este dispositivo." />
+      <CabezaCuenta icono={<Settings />} titulo={<Texto>Ajustes</Texto>} subtitulo={<Texto>Cómo se ve Walá en este dispositivo.</Texto>} />
       <div className={s.ajustes}>
-        <TarjetaCuenta icono={<Moon />} titulo="Apariencia">
+        <TarjetaCuenta icono={<Moon />} titulo={<Texto>Apariencia</Texto>}>
           <div className={s.interruptor}>
             <Interruptor
               activo={noche}
               onChange={() => onTema?.()}
-              etiqueta="Modo noche"
-              descripcion="Colores oscuros, más cómodos de noche y con poca luz."
+              etiqueta={<Texto>Modo noche</Texto>}
+              descripcion={<Texto>Colores oscuros, más cómodos de noche y con poca luz.</Texto>}
             />
           </div>
         </TarjetaCuenta>
-        <TarjetaCuenta icono={<Languages />} titulo="Idioma">
+        <TarjetaCuenta icono={<Languages />} titulo={<Texto>Idioma</Texto>}>
           <ListaEleccion
-            etiqueta="Idioma de la tienda"
+            etiqueta={etiquetaIdioma}
             valor={idioma}
             onElegir={onIdioma}
-            opciones={idiomas.map((i) => ({ ...i, icono: <span className={s.codigoIdioma}>{i.valor.toUpperCase()}</span> }))}
+            // El nombre de cada idioma va en su propio idioma; el detalle se traduce.
+            opciones={idiomas.map((i) => ({
+              ...i,
+              detalle: i.detalle && <Texto>{i.detalle}</Texto>,
+              icono: <span className={s.codigoIdioma}>{i.valor.toUpperCase()}</span>,
+            }))}
           />
         </TarjetaCuenta>
       </div>
       {onCerrarSesion && (
         <button type="button" className={`${s.salir} ${s.soloAngosto}`} onClick={onCerrarSesion}>
-          <LogOut aria-hidden="true" /> Cerrar sesión
+          <LogOut aria-hidden="true" /> <Texto>Cerrar sesión</Texto>
         </button>
       )}
     </>
