@@ -1,5 +1,6 @@
 import React from 'react';
 import { IconoWala } from '../IconosWala';
+import { Texto } from '../Traduccion';
 import s from './Beneficio.module.css';
 
 /**
@@ -8,8 +9,10 @@ import s from './Beneficio.module.css';
  *  - icono: nombre de IconoWala (también acepta emojis o nombres viejos)
  *  - numero: para la fila (01, 02…)
  *  - como: etiqueta HTML (por defecto 'li', van dentro de una lista)
+ * El texto pasa por la traducción de la tienda.
  */
-export function Beneficio({ icono, texto, variante = 'pildora', numero, como: Etiqueta = 'li' }) {
+export function Beneficio({ icono, texto: original, variante = 'pildora', numero, como: Etiqueta = 'li' }) {
+  const texto = typeof original === 'string' ? <Texto>{original}</Texto> : original;
   if (variante === 'fila') {
     return (
       <Etiqueta className={s.fila}>

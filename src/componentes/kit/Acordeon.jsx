@@ -1,5 +1,6 @@
 import React, { useId, useState } from 'react';
 import { Plus } from 'lucide-react';
+import { Texto } from './Traduccion';
 import s from './Acordeon.module.css';
 
 /**
@@ -41,14 +42,14 @@ export default function Acordeon({ items = [], abiertoInicial = false, multiple 
                 aria-controls={`${uid}-r-${i}`}
                 onClick={() => alternar(id)}
               >
-                <span className={s.pregunta}>{it.question}</span>
+                <span className={s.pregunta}>{typeof it.question === 'string' ? <Texto>{it.question}</Texto> : it.question}</span>
                 {it.extra}
                 <span className={s.signo} aria-hidden="true"><Plus /></span>
               </button>
             </h3>
             <div id={`${uid}-r-${i}`} role="region" aria-labelledby={`${uid}-b-${i}`} className={s.cuerpo} inert={abierto ? undefined : ''}>
               <div className={s.interior}>
-                {typeof it.answer === 'string' ? <p>{it.answer}</p> : <div className={s.contenido}>{it.answer}</div>}
+                {typeof it.answer === 'string' ? <p><Texto>{it.answer}</Texto></p> : <div className={s.contenido}>{it.answer}</div>}
               </div>
             </div>
           </div>

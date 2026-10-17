@@ -3,6 +3,7 @@ import { Enlace } from '../Enlace';
 import { EtiquetaColgante } from '../Marca';
 import { toDirectImageUrl } from '../../../utils/imageUrl';
 import { FotoProducto } from './FotoProducto';
+import { Texto } from '../Traduccion';
 import s from './TarjetaDestacado.module.css';
 
 /**
@@ -11,6 +12,7 @@ import s from './TarjetaDestacado.module.css';
  *  - puesto: número en una etiqueta colgante (#1 en oro)
  *  - acento: color de la línea sobre la foto
  *  - alinearTitulo / alinearSubtitulo: 'left' | 'center' | 'right'
+ * Título y subtítulo pasan por la traducción de la tienda.
  */
 export function TarjetaDestacado({ titulo, subtitulo, imagen, url, puesto, acento, alinearTitulo, alinearSubtitulo }) {
   return (
@@ -19,8 +21,8 @@ export function TarjetaDestacado({ titulo, subtitulo, imagen, url, puesto, acent
         {puesto != null && <EtiquetaColgante tono={puesto === 1 ? 'oro' : 'violeta'} className={s.destacadoPuesto}>#{puesto}</EtiquetaColgante>}
       </FotoProducto>
       <span className={s.destacadoTexto}>
-        {titulo && <strong style={{ textAlign: alinearTitulo || undefined }}>{titulo}</strong>}
-        {subtitulo && <small style={{ textAlign: alinearSubtitulo || undefined }}>{subtitulo}</small>}
+        {titulo && <strong style={{ textAlign: alinearTitulo || undefined }}><Texto>{titulo}</Texto></strong>}
+        {subtitulo && <small style={{ textAlign: alinearSubtitulo || undefined }}><Texto>{subtitulo}</Texto></small>}
       </span>
     </Enlace>
   );

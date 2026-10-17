@@ -7,7 +7,8 @@ import Carrusel from './Carrusel';
 import Marquesina from './Marquesina';
 import CuentaRegresiva from './CuentaRegresiva';
 import Acordeon from './Acordeon';
-import { TarjetaDeCatalogo } from './TarjetaProducto';
+import { TarjetaDeCatalogo, TarjetaProductoEsqueleto } from './TarjetaProducto';
+import { Texto, useTexto } from './Traduccion';
 import { Enlace } from './Enlace';
 import { testimonioDesdeAjuste } from './adaptadores';
 import { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
@@ -58,8 +59,8 @@ function MensajeAnuncio({ m, acento, oculto = false }) {
         : icono ? <IconoWala nombre={icono} tamano={24} sticker={false} className={s.anuncioIcono} />
           : emoji ? <span aria-hidden="true">{emoji}</span>
             : acento ? <Destello className={s.anuncioDestello} /> : null}
-      <span className={s.anuncioTexto} style={estilo}>{texto}</span>
-      {m.link && <span className={s.anuncioCta}>Ver <ArrowRight aria-hidden="true" /></span>}
+      <span className={s.anuncioTexto} style={estilo}><Texto>{texto}</Texto></span>
+      {m.link && <span className={s.anuncioCta}><Texto>Ver</Texto> <ArrowRight aria-hidden="true" /></span>}
     </>
   );
   return m.link
@@ -82,6 +83,7 @@ export function BarraAnuncios({ ajustes = {} }) {
     variant = 'soft', density = 'compact', showAccent = true,
   } = ajustes;
   const mensajes = messages.filter((m) => m?.text);
+  const t = { anuncios: useTexto('Anuncios'), anterior: useTexto('Anuncio anterior'), siguiente: useTexto('Anuncio siguiente') };
   const [estado, setEstado] = useState({ i: 0, previo: null, dir: 1 });
   const pausa = useRef(false);
   const toque = useRef(null);
@@ -147,12 +149,12 @@ export function BarraAnuncios({ ajustes = {} }) {
       className={clase}
       style={{ '--anuncio-color': bgColor, '--anuncio-texto': textColor }}
       role="region"
-      aria-label="Anuncios"
+      aria-label={t.anuncios}
       onPointerEnter={(e) => { if (e.pointerType === 'mouse') pausa.current = true; }}
       onPointerLeave={() => { pausa.current = false; }}
     >
       {animationType === 'scroll' ? (
-        <Marquesina segundos={segundosCinta} espacio="0px" etiqueta="Anuncios">
+        <Marquesina segundos={segundosCinta} espacio="0px" etiqueta={t.anuncios}>
           {mensajes.map((m, k) => (
             <span key={k} className={s.anuncioTramo}>
               <MensajeAnuncio m={m} acento={false} />
@@ -179,13 +181,13 @@ export function BarraAnuncios({ ajustes = {} }) {
           </div>
           {total > 1 && (
             <div className={s.anuncioControles}>
-              <button type="button" className={s.anuncioFlecha} onClick={() => ir(-1)} aria-label="Anuncio anterior">
+              <button type="button" className={s.anuncioFlecha} onClick={() => ir(-1)} aria-label={t.anterior}>
                 <ChevronLeft aria-hidden="true" />
               </button>
               <span className={s.anuncioPuntos} aria-hidden="true">
                 {mensajes.map((_, k) => <span key={k} className={k === i ? s.anuncioPuntoActivo : undefined} />)}
               </span>
-              <button type="button" className={s.anuncioFlecha} onClick={() => ir(1)} aria-label="Anuncio siguiente">
+              <button type="button" className={s.anuncioFlecha} onClick={() => ir(1)} aria-label={t.siguiente}>
                 <ChevronRight aria-hidden="true" />
               </button>
             </div>
@@ -229,11 +231,11 @@ export function HeroCarrusel({ ajustes = {} }) {
               <span className={s.heroVelo} style={{ background: d.overlayColor || '#111827', opacity: (d.overlayOpacity ?? 20) / 100 }} />
               {(d.title || d.subtitle || d.buttonText) && (
                 <div className={s.heroTexto} style={{ alignItems: pos, justifyContent: vert, textAlign: d.contentPosition === 'center' ? 'center' : d.contentPosition === 'right' ? 'right' : 'left' }}>
-                  {d.title && <h2 style={{ color: d.titleColor || '#fff' }}>{d.title}</h2>}
-                  {d.subtitle && <p style={{ color: d.subtitleColor || '#fff' }}>{d.subtitle}</p>}
+                  {d.title && <h2 style={{ color: d.titleColor || '#fff' }}><Texto>{d.title}</Texto></h2>}
+                  {d.subtitle && <p style={{ color: d.subtitleColor || '#fff' }}><Texto>{d.subtitle}</Texto></p>}
                   {d.buttonText && (
                     <Boton to={d.buttonLink || d.link} tamano="lg" variante="contorno" className={s.heroBoton} style={{ '--b-fondo': d.buttonBgColor || '#fff', '--b-fondo-hover': d.buttonBgColor || '#fff', '--b-texto': d.buttonTextColor || '#111827', '--b-borde': 'transparent' }}>
-                      {d.buttonText}
+                      <Texto>{d.buttonText}</Texto>
                     </Boton>
                   )}
                 </div>
@@ -269,25 +271,38 @@ const TITULOS_POR_TIPO = { new_arrivals_carousel: 'Novedades', sale_carousel: 'O
 /**
  *  - tipo: el `type` de la sección (para el título por defecto)
  *  - tarjeta: la tarjeta de cada producto (por defecto, la del kit)
+ *  - cargando: el título y una fila de esqueletos
+ *  - error: texto bajo el título si no se pudo cargar (sin él, la sección no
+ *    se dibuja)
  */
-export function CarruselProductos({ ajustes = {}, productos = [], catalogo, onAgregar, tipo, tarjeta: Tarjeta = TarjetaDeCatalogo }) {
-  if (!productos.length) return null;
+export function CarruselProductos({ ajustes = {}, productos = [], catalogo, onAgregar, tipo, tarjeta: Tarjeta = TarjetaDeCatalogo, cargando = false, error }) {
   // 1 a 8 a la vista, como en la tienda.
   const visibles = Math.min(8, Math.max(1, Number(ajustes.visibleItems) || 5));
   const titulo = ajustes.title || TITULOS_POR_TIPO[tipo];
+  const etiqueta = useTexto(titulo || 'Productos');
+  if (!cargando && !productos.length && !error) return null;
+  const vistas = { escritorio: visibles, tablet: Math.min(3, visibles), movil: visibles === 1 ? 1.1 : 2.15 };
   return (
     <>
       <TituloSeccion {...tituloDesdeAjustes({ ...ajustes, title: titulo })} />
-      <Carrusel
-        visibles={{ escritorio: visibles, tablet: Math.min(3, visibles), movil: visibles === 1 ? 1.1 : 2.15 }}
-        espacio="0.85rem"
-        autoplay={ajustes.autoPlay ? ajustes.autoPlaySpeed || 5000 : 0}
-        etiqueta={titulo || 'Productos'}
-      >
-        {productos.map((p) => (
-          <Tarjeta key={p.id} producto={p} catalogo={catalogo} onAgregar={onAgregar} />
-        ))}
-      </Carrusel>
+      {cargando ? (
+        <Carrusel visibles={vistas} espacio="0.85rem" etiqueta={etiqueta}>
+          {Array.from({ length: Math.ceil(visibles) + 1 }, (_, k) => <TarjetaProductoEsqueleto key={k} />)}
+        </Carrusel>
+      ) : !productos.length ? (
+        <p className={s.carruselError}><Texto>{error}</Texto></p>
+      ) : (
+        <Carrusel
+          visibles={vistas}
+          espacio="0.85rem"
+          autoplay={ajustes.autoPlay ? ajustes.autoPlaySpeed || 5000 : 0}
+          etiqueta={etiqueta}
+        >
+          {productos.map((p, i) => (
+            <Tarjeta key={p.id} producto={p} catalogo={catalogo} onAgregar={onAgregar} indice={i} />
+          ))}
+        </Carrusel>
+      )}
     </>
   );
 }
@@ -301,15 +316,28 @@ const mayorDescuento = (productos) => productos.reduce((max, p) => {
   return antes > 0 && ahora > 0 && ahora < antes ? Math.max(max, Math.round((1 - ahora / antes) * 100)) : max;
 }, 0);
 
+/** ¿Ya pasó la fecha de fin? (sin fecha, la oferta no termina). */
+const vencida = (fin) => {
+  const ms = fin ? new Date(fin).getTime() : NaN;
+  return Number.isFinite(ms) && ms <= Date.now();
+};
+
 /**
  * Ofertas relámpago: un evento dentro de la página. Panel en la noche violeta
  * de Walá (en claro y en noche), rayo en sticker, etiqueta "Hasta -X%",
  * cuenta regresiva grande y, bajo cada producto, cuántos quedan.
+ *  - Al terminar (o si ya terminó al abrir la página) la sección se esconde.
+ *    Sin `endTime`, sin reloj.
+ *  - cargando: el panel con esqueletos mientras llegan los productos.
  */
-export function OfertaRelampago({ ajustes = {}, productos = [], catalogo, onAgregar, tarjeta: Tarjeta = TarjetaDeCatalogo }) {
-  const [terminada, setTerminada] = useState(false);
-  if (!productos.length || terminada) return null;
-  const lista = productos.slice(0, 8);
+export function OfertaRelampago({ ajustes = {}, productos = [], catalogo, onAgregar, tarjeta: Tarjeta = TarjetaDeCatalogo, cargando = false }) {
+  const [terminada, setTerminada] = useState(() => vencida(ajustes.endTime));
+  const t = {
+    titulo: useTexto(ajustes.title || 'Ofertas relámpago'),
+    terminaEn: useTexto('Termina en'),
+  };
+  if ((!cargando && !productos.length) || terminada) return null;
+  const lista = productos;
   const hasta = mayorDescuento(lista);
   return (
     <div className={s.flash}>
@@ -322,29 +350,33 @@ export function OfertaRelampago({ ajustes = {}, productos = [], catalogo, onAgre
           <div>
             {(ajustes.eyebrow || hasta > 0) && (
               <p className={s.flashEtiqueta}>
-                <EtiquetaColgante tono="rojo">{ajustes.eyebrow || `Hasta -${hasta}%`}</EtiquetaColgante>
+                <EtiquetaColgante tono="rojo"><Texto>{ajustes.eyebrow || `Hasta -${hasta}%`}</Texto></EtiquetaColgante>
               </p>
             )}
-            <h2 className={s.flashTitulo}>{ajustes.title || 'Ofertas relámpago'}</h2>
-            {ajustes.subtitle && <p className={s.flashSubtitulo}>{ajustes.subtitle}</p>}
+            <h2 className={s.flashTitulo}>{t.titulo}</h2>
+            {ajustes.subtitle && <p className={s.flashSubtitulo}><Texto>{ajustes.subtitle}</Texto></p>}
           </div>
         </div>
-        <div className={s.flashReloj}>
-          <span className={s.flashTermina}>Termina en</span>
-          <CuentaRegresiva hasta={ajustes.endTime} variante="evento" etiqueta="Termina en" onTerminar={() => setTerminada(true)} />
-        </div>
+        {ajustes.endTime && (
+          <div className={s.flashReloj}>
+            <span className={s.flashTermina}>{t.terminaEn}</span>
+            <CuentaRegresiva hasta={ajustes.endTime} variante="evento" etiqueta={t.terminaEn} onTerminar={() => setTerminada(true)} />
+          </div>
+        )}
       </div>
-      <Carrusel visibles={{ escritorio: 4, tablet: 3, movil: 2.15 }} espacio="0.85rem" etiqueta={ajustes.title || 'Ofertas'}>
-        {lista.map((p) => (
-          <div key={p.id} className={s.flashItem}>
-            <Tarjeta producto={p} catalogo={catalogo} onAgregar={onAgregar} />
-            <StockBajo stock={p.inStock} />
-          </div>
-        ))}
+      <Carrusel visibles={{ escritorio: 4, tablet: 3, movil: 2.15 }} espacio="0.85rem" etiqueta={t.titulo}>
+        {cargando
+          ? Array.from({ length: 5 }, (_, k) => <TarjetaProductoEsqueleto key={k} />)
+          : lista.map((p, i) => (
+            <div key={p.id} className={s.flashItem}>
+              <Tarjeta producto={p} catalogo={catalogo} onAgregar={onAgregar} indice={i} />
+              <StockBajo stock={p.inStock} />
+            </div>
+          ))}
       </Carrusel>
       {ajustes.buttonText && ajustes.buttonLink && (
         <div className={s.flashPie}>
-          <Boton to={ajustes.buttonLink} variante="contorno" style={{ '--b-fondo': '#fff', '--b-fondo-hover': '#fff', '--b-texto': '#14121c', '--b-borde': 'transparent' }}>{ajustes.buttonText}</Boton>
+          <Boton to={ajustes.buttonLink} variante="contorno" style={{ '--b-fondo': '#fff', '--b-fondo-hover': '#fff', '--b-texto': '#14121c', '--b-borde': 'transparent' }}><Texto>{ajustes.buttonText}</Texto></Boton>
         </div>
       )}
     </div>

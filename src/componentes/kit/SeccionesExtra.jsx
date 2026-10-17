@@ -138,7 +138,7 @@ export function ListaBeneficios({ ajustes = {} }) {
         )}
         {ajustes.quote && (
           <blockquote className={s.cita}>
-            <p>{ajustes.quote}</p>
+            <p><Texto>{ajustes.quote}</Texto></p>
             {ajustes.quoteAuthor && <cite>— {ajustes.quoteAuthor}</cite>}
           </blockquote>
         )}
@@ -156,8 +156,9 @@ export function urlDeMapa(embed) {
   return /^https:\/\//i.test(src) ? src : '';
 }
 
+/** Sin título ni descripción guardados, los de siempre (como MapLocation). */
 export function Ubicacion({ ajustes = {} }) {
-  const { title, description, layout = 'mapRight', mapWidth = '50%', mapHeight = '400px' } = ajustes;
+  const { title = 'Encuéntranos', description = 'Visita nuestra tienda física', layout = 'mapRight', mapWidth = '50%', mapHeight = '400px' } = ajustes;
   const src = urlDeMapa(ajustes.embedUrl);
   if (!src && !title) return null;
   const apilado = layout === 'mapTop' || layout === 'mapBottom';
@@ -171,7 +172,7 @@ export function Ubicacion({ ajustes = {} }) {
           <TextoCampo ajustes={ajustes} campo="description" como="div" className={s.mapaDescripcion}>
             <ul className={s.mapaDatos}>
               {String(description).split(/\n/).filter((l) => l.trim()).map((linea, k) => (
-                <li key={k}>{k === 0 ? <MapPin aria-hidden="true" /> : <Clock aria-hidden="true" />}<span>{linea}</span></li>
+                <li key={k}>{k === 0 ? <MapPin aria-hidden="true" /> : <Clock aria-hidden="true" />}<span><Texto>{linea}</Texto></span></li>
               ))}
             </ul>
           </TextoCampo>
@@ -182,7 +183,7 @@ export function Ubicacion({ ajustes = {} }) {
         {src ? (
           <iframe src={src} title={title || 'Ubicación'} loading="lazy" referrerPolicy="no-referrer-when-downgrade" allowFullScreen />
         ) : (
-          <span className={s.mapaVacio}><MapPin aria-hidden="true" /> Falta el enlace de Google Maps</span>
+          <span className={s.mapaVacio}><MapPin aria-hidden="true" /> <Texto>Falta el enlace de Google Maps</Texto></span>
         )}
       </div>
     </div>

@@ -377,6 +377,13 @@ a.anuncio:hover {
 }
 
 
+/* Un carrusel que no pudo cargar: el aviso bajo su título. */
+.carruselError {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+}
+
 /* ── Ofertas flash: un evento que sigue el tema ──
    Claro: panel luminoso cálido (crema → rosa → lila) con acentos rojo y oro.
    Noche: la noche violeta de Walá con brillo rojo y violeta. */

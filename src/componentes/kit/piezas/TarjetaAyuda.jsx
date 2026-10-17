@@ -2,6 +2,7 @@ import React from 'react';
 import { MessageCircle } from 'lucide-react';
 import Boton from '../Boton';
 import { CARAS_KAPI } from './Flotantes';
+import { Texto } from '../Traduccion';
 import s from './TarjetaAyuda.module.css';
 
 /**
@@ -22,11 +23,11 @@ export function TarjetaAyuda({
   return (
     <aside className={s.ayuda}>
       {imagen && <img className={s.kapi} src={imagen} alt="" width="104" height="96" loading="lazy" decoding="async" />}
-      <h3 className={s.titulo}>{titulo}</h3>
-      {texto && <p className={s.texto}>{texto}</p>}
+      <h3 className={s.titulo}><Texto>{titulo}</Texto></h3>
+      {texto && <p className={s.texto}><Texto>{texto}</Texto></p>}
       {accion?.url && (
         <Boton to={accion.url} tamano="sm" icono={<MessageCircle aria-hidden="true" />}>
-          {accion.texto || 'Escríbenos'}
+          <Texto>{accion.texto || 'Escríbenos'}</Texto>
         </Boton>
       )}
     </aside>
