@@ -150,3 +150,10 @@ página nueva.
 | `pages/WishlistPublic/WishlistPublicViejo.jsx` (la página de antes, copia de lo que era `WishlistPublic.jsx`) + `WishlistPublic.module.css` (211 líneas) | `/wishlist/:userCode` | `components/regalar/ListaPublicaDeTienda.jsx` → `PaginaListaPublica` del kit | `WishlistPublic.jsx` (lazy, solo con `regalarViejo`) | al retirar `regalarViejo` |
 | `useProducts([], { includeHidden: true })` en esta página (el catálogo entero) | la lista pública vieja | `getProduct` de cada producto (`useProductosDeLista`) | `GiftRegistryPage`, Mis pedidos y la lista propia | **no borrar** `includeHidden`: lo usan otras páginas |
 | `PremiumProductCard` en esta página | la lista pública vieja | `TarjetaRegalo` (`TarjetaProducto` del kit) | `TarjetaDeProducto.jsx` (`tarjetasViejo`) y `cuenta/WishlistPage.jsx` | **no borrar**: la usan otros |
+
+### Regalar para una fecha (2026-10-17)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/GiftRegistry/GiftRegistryPageViejo.jsx` (la página de antes: `useGiftDrag`, `DragGhost`, `GiftProductCard`, `getGlobalDates` copiado) + `GiftRegistryPage.module.css` (908 líneas) | `/regalar/:referralCode` | `components/regalar/RegalarDeTienda.jsx` → `PaginaRegalar` del kit (`fechaEntregaDesde`, `festivasDePersona`) | `GiftRegistryPage.jsx` (lazy, solo con `regalarViejo`) | al retirar `regalarViejo` |
+| `AuroraBackground`, `GlassCard`, `GlassButton` en esta página | la página vieja | `BloqueSeccion`, `PasoEstudio`, `Boton` | el admin y otras páginas | **no borrar**: los usan otros |

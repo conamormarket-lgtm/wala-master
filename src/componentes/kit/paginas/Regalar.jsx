@@ -130,7 +130,7 @@ export function PaginaRegalar({ dueno = {}, fechas = [], items = [], onRegalar, 
                 ))}
               </ul>
               {fecha && (
-                <p className={s.entrega}><Texto>Se entrega el</Texto> <strong>{fecha.fechaTexto}</strong> (<Texto>{fecha.ocasion}</Texto>) <Texto>a</Texto> <strong>{nombre}</strong>.</p>
+                <p className={s.entrega}><Texto>Se entrega el</Texto> <strong>{fecha.fechaTexto}</strong> (<Texto>{fecha.ocasion}</Texto>{fecha.nombre && fecha.nombre !== dueno.nombre && <> <Texto>de</Texto> {fecha.nombre}</>}) <Texto>a</Texto> <strong>{nombre}</strong>.</p>
               )}
             </>
           )}

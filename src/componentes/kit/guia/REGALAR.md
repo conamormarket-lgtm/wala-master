@@ -15,8 +15,9 @@ Cómo verlo en vivo: `npm run dev` → http://localhost:3000/componentes.html �
   con PayPal. Estados: ya pagado, vencido, no encontrado, el pago falla y
   cargando. **En la tienda desde el 2026-10-17** (ver "Pago rápido en la
   tienda", abajo).
-- **Su lista de deseos, en la tienda desde el 2026-10-17** (ver "La lista
-  pública en la tienda", abajo).
+- **Su lista de deseos y regalar para una fecha, en la tienda desde el
+  2026-10-17** (ver "La lista pública en la tienda" y "Regalar para una fecha
+  en la tienda", abajo).
 
 | Regalar para una fecha | Su lista (celular) | El regalo y el pago rápido (celular) |
 |---|---|---|
@@ -41,7 +42,7 @@ ejemplo.
 | Parte | Componente | Piezas que usa | Datos (en la tienda) |
 |---|---|---|---|
 | P15 Su lista | `PaginaListaPublica` | `TarjetaRegalo` (pieza nueva: `TarjetaProducto sinAccion sinDeseo` + "Regalar esto"), `Sello`, `Trazo`, `EstadoVacio` | `getWishlistByUserCode`, `getPublicGiftRegistry` (el nombre y si tiene fechas), `getProduct` de cada uno (`itemRegaloDesde`) |
-| P15 Regalar para una fecha | `PaginaRegalar` | `FechaEntrega` (pieza nueva: `Avatar`, `HojaCalendario`, `Etiqueta`), `PasoEstudio`, `TarjetaRegalo` | `getPublicGiftRegistry` (fechas y lista), `proximaOcurrencia` |
+| P15 Regalar para una fecha | `PaginaRegalar` | `FechaEntrega` (pieza nueva: `Avatar`, `HojaCalendario`, `Etiqueta`), `PasoEstudio`, `TarjetaRegalo` | `getPublicGiftRegistry` (fechas y lista) por `fechaEntregaDesde` (`proximaOcurrencia`, `festivasDePersona`); `getProduct` de cada uno |
 | P15 Abrir el regalo | `PaginaRegaloSorpresa` | `SobreRegalo` (pieza nueva: Kapi 3D, el sticker en un `Sello`) | `getOrderGiftDetails` |
 | P16 Pago rápido | `PaginaPagoRapido` | `PagoTarjeta`, `PagoPaypal` (piezas nuevas), `LogoWala`, `EstadoVacio` | `enlaces_pago/{id}` |
 | Pagar (también en el checkout) | `PagoTarjeta`, `PagoPaypal` | `Boton`, `Aviso`, `CapaCargando` | Culqi Checkout v4, el SDK de PayPal |
@@ -193,6 +194,54 @@ regalado):
 No se probó: un visitante sin sesión (en el emulador entra con la cuenta de
 admin), la traducción a otro idioma ni la app Android.
 
+## Regalar para una fecha en la tienda (hecho el 2026-10-17)
+
+![Regalar para una fecha en la tienda real, en el celular: el título, las tres fechas con su hoja de calendario, "En 7 días" y sus ocasiones, y abajo "Elige el regalo" con las tarjetas](regalar-fecha-tienda.webp)
+
+(Celular, 390 px, claro, con las fechas de prueba del emulador. Se probó
+también a 1366 y en oscuro.)
+
+- **Conector:** `src/components/regalar/RegalarDeTienda.jsx`, desde
+  `pages/GiftRegistry/GiftRegistryPage.jsx` (el interruptor). Usa lo de
+  `regaloDeLista.js` (los productos uno por uno y sus tarjetas, `exigirPrecio`).
+- **Las fechas:** `fechaEntregaDesde` (`adaptadores.js`): la próxima vez que
+  cae (`proximaOcurrencia`), cuánto falta, "24 de octubre", las ocasiones de
+  la persona (`festivasDePersona`, lo que antes era `getGlobalDates`
+  copiado en la página) y la etiqueta del carrito ("Cumpleaños de María
+  (Hermana)", como `construirLabel`). Viene elegida la primera.
+- **"Regalar esto":** igual que antes. Sin opciones, `addToCart` con
+  `isWishlistGift`, el código en mayúsculas, `deliveryDate`,
+  `deliveryEventLabel` y `deliveryRecipient`, el aviso "¡Regalo agregado!
+  Se entregará el 24/10/2026 para…" y el carrito. Con talla, color o piezas,
+  la ficha con `state.regalo` y su aviso. Sin precio, no se agrega.
+- **Carga:** el registro con la caché de la lista pública (de "Elegir el día
+  de entrega" se ve al tiro) y fresco al volver; cada producto con
+  `getProduct`, no el catálogo entero. Las 908 líneas de CSS, Aurora, Glass y
+  el arrastre con su portal ya no bajan: 1,5 KB gzip propios (antes 6,4 KB
+  más 3,6 KB de CSS), más el kit de Regalar, que comparte con la lista pública.
+- **Interruptor `regalarViejo`:** vuelve la página de antes
+  (`GiftRegistryPageViejo.jsx`, con el arrastre, que baja aparte).
+
+### Qué se probó (2026-10-17, localhost con los emuladores)
+
+Con fechas de prueba en `cliente-uid` (su cumpleaños, el de su hermana y un
+aniversario con nombre propio):
+- Las tres fechas, "En 7 días", la hoja de calendario y las ocasiones (Día
+  del Hombre, Día de la Mujer, San Valentín); tocar otra la elige y cambia
+  "Se entrega el 12 de noviembre (Cumpleaños de María) a Cliente Demo".
+- "Regalar esto" de un serum con la fecha de María: el carrito con
+  `2026-11-12`, "Cumpleaños de María (Hermana)" y "Cliente Demo".
+- "Regalar esto" de una casaca con talla: la ficha con "Regalo para Cliente
+  Demo · se entregará el 24/10/2026 (Cumpleaños de Cliente Demo)…" y los
+  datos de entrega en `state.regalo`.
+- Sin fechas: el aviso y se regala sin datos de entrega.
+- Un código que no existe; de la lista pública a esta página, ya pintada.
+- `regalarViejo` → la página de antes, con el arrastre.
+- 390 y 1366, claro y oscuro.
+
+No se probó: un visitante sin sesión, una foto de la persona (las de prueba
+no tienen; sale la inicial) ni la app Android.
+
 ## Llevar a la tienda (lo que falta: TODAVÍA NO se hace)
 
 ### Reemplazos
@@ -200,7 +249,7 @@ admin), la traducción a otro idioma ni la app Android.
 | Hoy | Pasa a (kit) |
 |---|---|
 | ✓ `WishlistPublic` con `PremiumProductCard` y "Regalar esto" | `PaginaListaPublica` + `TarjetaRegalo` (hecho) |
-| `GiftRegistryPage` (fechas arrastrables, `GiftProductCard`) | `PaginaRegalar` + `FechaEntrega` + `TarjetaRegalo` |
+| ✓ `GiftRegistryPage` (fechas arrastrables, `GiftProductCard`) | `PaginaRegalar` + `FechaEntrega` + `TarjetaRegalo` (hecho) |
 | `GiftExperiencePage` (Kapi en CSS, emojis) | `PaginaRegaloSorpresa` + `SobreRegalo` |
 | ✓ `PagoRapidoPage` (estilos en línea) | `PaginaPagoRapido` (hecho) |
 | El botón y la nota de `CulqiCustomCheckout`; la caja de `PaypalCheckout` | `PagoTarjeta`, `PagoPaypal` |
@@ -243,6 +292,10 @@ vigía del modal cerrado y el anti doble cobro.
   se agregaba igual.
 - "Elegir el día de entrega" en la lista pública, solo si la persona tiene
   fechas especiales (antes no había ese enlace).
+- Regalar para una fecha sin fechas registradas: se regala igual, sin datos
+  de entrega (antes pedía elegir una fecha y no dejaba).
+- La línea de la entrega dice de quién es la ocasión si no es del dueño
+  ("Cumpleaños de María").
 - Los textos de no encontrado dicen qué hacer, y el pago rápido vencido lleva
   a escribirle al asesor.
 
@@ -261,7 +314,7 @@ anónimo.
 
 1. ✓ `PaginaPagoRapido` (2026-10-17, arriba).
 2. ✓ La lista pública (2026-10-17, arriba).
-3. Regalar para una fecha (decidir si se mantiene el arrastre).
+3. ✓ Regalar para una fecha (2026-10-17, arriba; sin el arrastre).
 4. Abrir el regalo.
 5. Cambiar el botón de Culqi y la caja de PayPal del checkout y del saldo de
    un pedido por `PagoTarjeta` y `PagoPaypal`.

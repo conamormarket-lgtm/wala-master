@@ -8,6 +8,8 @@
 
 import { limaTodayStr, felicidadKapiHoy } from '../../utils/fechaLima';
 import { getFallbackHex } from '../../utils/colors';
+import { proximaOcurrencia, textoFechaEvento } from '../../utils/fechaEvento.mjs';
+import { hoyLocal } from '../../utils/fechasFestivas.mjs';
 import {
   leerPrendaBase, colorDisponible, fondoMuestra, precioBase, precioPersonalizado, tallasDeColor, fondoColorGuardado,
   vistasDelColor, esColorBlanco, textoSobre, medidaZona,
@@ -147,6 +149,49 @@ export function itemRegaloDesde(item = {}, producto, { imagen, catalogo, exigirP
     return { ...base, disponible: false, producto: { nombre: producto?.name || guardado.nombre, imagen: producto?.mainImage || guardado.imagen } };
   }
   return { ...base, disponible: true, producto: tarjetaDesdeProducto(producto, { imagen, catalogo }) };
+}
+
+/**
+ * Las ocasiones del año que le tocan a una persona por su relación y su
+ * género (las mismas que "Fechas importantes"): "Día de la Madre"…
+ */
+export function festivasDePersona(roleKey, gender) {
+  const festivas = [];
+  if (gender === 'Femenino') festivas.push('Día de la Mujer');
+  if (gender === 'Masculino') festivas.push('Día del Hombre');
+  if (roleKey === 'pareja') festivas.push('San Valentín');
+  if (roleKey === 'padres' && gender === 'Femenino') festivas.push('Día de la Madre');
+  if (roleKey === 'padres' && gender === 'Masculino') festivas.push('Día del Padre');
+  if (roleKey === 'hijos') festivas.push('Día del Niño');
+  if (roleKey === 'amigos') festivas.push('Día de la Amistad');
+  return festivas;
+}
+
+/**
+ * Una fecha especial de getPublicGiftRegistry (dates[i]) → props de
+ * <FechaEntrega> para PaginaRegalar, con lo que necesita el carrito:
+ *  - fecha: la PRÓXIMA vez que cae (el evento guarda el año de nacimiento, o
+ *    "0000"), dias: cuánto falta, fechaTexto: "24 de octubre"
+ *  - etiqueta: "Cumpleaños de María (Hermana)" (deliveryEventLabel)
+ */
+export function fechaEntregaDesde(d = {}, i = 0, { hoy = hoyLocal() } = {}) {
+  const proxima = proximaOcurrencia(d.date, hoy) || d.date || '';
+  const [a, m, dia] = String(proxima).split('-').map(Number);
+  const [ha, hm, hd] = hoy.split('-').map(Number);
+  const dias = a && m && dia ? Math.round((Date.UTC(a, m - 1, dia) - Date.UTC(ha, hm - 1, hd)) / 86400000) : null;
+  const ocasion = d.label || d.type || 'Fecha especial';
+  return {
+    id: d.id || d.eventId || `${d.date}-${i}`,
+    nombre: d.recipientName || '',
+    foto: d.recipientPhoto || undefined,
+    relacion: d.relation || undefined,
+    ocasion,
+    fecha: proxima,
+    dias,
+    fechaTexto: textoFechaEvento(proxima, { conAnio: false }),
+    festivas: festivasDePersona(d.roleKey, d.gender),
+    etiqueta: `${ocasion}${d.recipientName ? ` de ${d.recipientName}` : ''}${d.relation ? ` (${d.relation})` : ''}`,
+  };
 }
 
 /**
