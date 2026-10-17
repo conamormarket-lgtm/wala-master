@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ChevronDown, Tag, Check, X, Package } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
-import { Texto } from '../Traduccion';
+import { Texto, useTexto } from '../Traduccion';
 import { Moneda } from '../Etiquetas';
 import { Interruptor } from '../Formulario';
 import { Sello } from '../Marca';
@@ -21,8 +21,9 @@ import s from './Checkout.module.css';
  *  - pasos: ['Envío', 'Pago'] · actual (índice)
  */
 export function PasosCompra({ pasos = ['Envío', 'Pago'], actual = 0 }) {
+  const etiqueta = useTexto('Pasos de la compra');
   return (
-    <ol className={s.pasos} aria-label="Pasos de la compra" data-componente="PasosCompra">
+    <ol className={s.pasos} aria-label={etiqueta} data-componente="PasosCompra">
       {pasos.map((p, i) => {
         const hecho = i < actual;
         return (
@@ -30,7 +31,7 @@ export function PasosCompra({ pasos = ['Envío', 'Pago'], actual = 0 }) {
             <Sello tamano={28} girar={i % 2 ? 6 : -8} tono={i <= actual ? 'degradado' : 'suave'}>
               {hecho ? <Check aria-hidden="true" /> : <b className={s.pasoNumero}>{i + 1}</b>}
             </Sello>
-            <span>{p}</span>
+            <span><Texto>{p}</Texto></span>
           </li>
         );
       })}
@@ -47,18 +48,18 @@ export function PasosCompra({ pasos = ['Envío', 'Pago'], actual = 0 }) {
 export function FilaMonedas({ saldo = 0, maximo = 0, usar = false, onUsar, cargando = false, sesion = true, urlLogin = '/login', bloqueado = false }) {
   const usables = Math.min(saldo, maximo);
   let cuerpo;
-  if (cargando) cuerpo = <span className={s.monedasTexto}><span className={s.cargandoLinea} /><span className={s.oculto}>Cargando tus monedas…</span></span>;
-  else if (!sesion) cuerpo = <span className={s.monedasTexto}><strong>Monedas Walá</strong><small><Enlace to={urlLogin}>Inicia sesión</Enlace> y paga parte de tu compra con tus monedas.</small></span>;
-  else if (!saldo) cuerpo = <span className={s.monedasTexto}><strong>Monedas Walá</strong><small>Aún no tienes monedas. Gánalas en los minijuegos y retos.</small></span>;
-  else if (usables < 1) cuerpo = <span className={s.monedasTexto}><strong>Tienes {saldo} monedas</strong><small>Puedes pagar con monedas hasta la mitad del precio de tus productos; en esta compra no alcanza.</small></span>;
+  if (cargando) cuerpo = <span className={s.monedasTexto}><span className={s.cargandoLinea} /><span className={s.oculto}><Texto>Cargando tus monedas…</Texto></span></span>;
+  else if (!sesion) cuerpo = <span className={s.monedasTexto}><strong><Texto>Monedas Walá</Texto></strong><small><Enlace to={urlLogin}><Texto>Inicia sesión</Texto></Enlace> <Texto>y paga parte de tu compra con tus monedas.</Texto></small></span>;
+  else if (!saldo) cuerpo = <span className={s.monedasTexto}><strong><Texto>Monedas Walá</Texto></strong><small><Texto>Aún no tienes monedas. Gánalas en los minijuegos y retos.</Texto></small></span>;
+  else if (usables < 1) cuerpo = <span className={s.monedasTexto}><strong><Texto>{`Tienes ${saldo} monedas`}</Texto></strong><small><Texto>Puedes pagar con monedas hasta la mitad del precio de tus productos; en esta compra no alcanza.</Texto></small></span>;
   else {
     cuerpo = (
       <span className={s.monedasInterruptor}>
         <Interruptor
           activo={usar}
           onChange={(v) => !bloqueado && onUsar?.(v)}
-          etiqueta={<>Usar {usables} monedas <b className={s.menos}>−{soles(usables)}</b></>}
-          descripcion={usables < saldo ? `Tienes ${saldo}; en esta compra puedes usar hasta la mitad del precio.` : `Tienes ${saldo} monedas. 1 moneda = S/ 1.00`}
+          etiqueta={<><Texto>{`Usar ${usables} monedas`}</Texto> <b className={s.menos}>−{soles(usables)}</b></>}
+          descripcion={<Texto>{usables < saldo ? `Tienes ${saldo}; en esta compra puedes usar hasta la mitad del precio.` : `Tienes ${saldo} monedas. 1 moneda = S/ 1.00`}</Texto>}
         />
       </span>
     );
@@ -73,20 +74,25 @@ export function FilaMonedas({ saldo = 0, maximo = 0, usar = false, onUsar, carga
 
 /**
  * El cupón: el código y "Aplicar" (o Enter); aplicado, su texto y "Quitar".
- *  - aplicado: { codigo, texto } · onAplicar(codigo): promesa (si no vale,
- *    lanza un Error con el mensaje) · onQuitar (sin él, el aplicado no se quita)
+ *  - aplicado: { codigo, texto, aviso? } (aviso: lo que dice el servidor del
+ *    cupón, debajo) · onAplicar(codigo): promesa (si no vale, lanza un Error
+ *    con el mensaje) · onQuitar (sin él, el aplicado no se quita)
  */
 export function CampoCupon({ aplicado, onAplicar, onQuitar }) {
   const [codigo, setCodigo] = useState('');
   const [error, setError] = useState('');
   const [validando, setValidando] = useState(false);
+  const textos = { placeholder: useTexto('¿Tienes un cupón?'), etiqueta: useTexto('Código de cupón') };
   if (aplicado) {
     return (
-      <div className={s.cuponAplicado} data-componente="CampoCupon">
-        <Tag aria-hidden="true" />
-        <span><strong>{aplicado.codigo}</strong>{aplicado.texto && <> · {aplicado.texto}</>}</span>
-        {onQuitar && <button type="button" onClick={onQuitar}><X aria-hidden="true" /> Quitar</button>}
-      </div>
+      <>
+        <div className={s.cuponAplicado} data-componente="CampoCupon">
+          <Tag aria-hidden="true" />
+          <span><strong>{aplicado.codigo}</strong>{aplicado.texto && <> · <Texto>{aplicado.texto}</Texto></>}</span>
+          {onQuitar && <button type="button" onClick={onQuitar}><X aria-hidden="true" /> <Texto>Quitar</Texto></button>}
+        </div>
+        {aplicado.aviso && <p className={s.cuponMensaje} role="status"><Texto>{aplicado.aviso}</Texto></p>}
+      </>
     );
   }
   const aplicar = async (e) => {
@@ -108,10 +114,10 @@ export function CampoCupon({ aplicado, onAplicar, onQuitar }) {
     <form className={[s.cupon, error && s.cuponError].filter(Boolean).join(' ')} onSubmit={aplicar} data-componente="CampoCupon">
       <div className={s.cuponCaja}>
         <Tag aria-hidden="true" />
-        <input value={codigo} onChange={(e) => { setCodigo(e.target.value); setError(''); }} placeholder="¿Tienes un cupón?" aria-label="Código de cupón" autoCapitalize="characters" />
-        <Boton type="submit" tamano="sm" variante="contorno" cargando={validando} disabled={!codigo.trim()}>Aplicar</Boton>
+        <input value={codigo} onChange={(e) => { setCodigo(e.target.value); setError(''); }} placeholder={textos.placeholder} aria-label={textos.etiqueta} autoCapitalize="characters" />
+        <Boton type="submit" tamano="sm" variante="contorno" cargando={validando} disabled={!codigo.trim()}><Texto>Aplicar</Texto></Boton>
       </div>
-      {error && <p className={s.cuponMensaje} role="alert">{error}</p>}
+      {error && <p className={s.cuponMensaje} role="alert"><Texto>{error}</Texto></p>}
     </form>
   );
 }
@@ -135,14 +141,15 @@ export function ResumenCompra({
   // El envío es gratis en compras de MÁS de gratisDesde (con S/ 100 justos se cobra).
   const avisoEnvio = gratisDesde && envio > 0 && !cupon?.envioGratis;
   const falta = Math.max(0, (gratisDesde || 0) - subtotal);
+  const etiqueta = useTexto('Resumen del pedido');
   return (
-    <section className={[s.resumen, abierto && s.resumenAbierto].filter(Boolean).join(' ')} aria-label="Resumen del pedido" data-componente="ResumenCompra">
+    <section className={[s.resumen, abierto && s.resumenAbierto].filter(Boolean).join(' ')} aria-label={etiqueta} data-componente="ResumenCompra">
       <button type="button" className={s.resumenCabeza} onClick={onAlternar} aria-expanded={abierto}>
-        <span>Tu pedido <em>({unidades})</em></span>
+        <span><Texto>Tu pedido</Texto> <em>({unidades})</em></span>
         <strong>{soles(total)}</strong>
         <ChevronDown aria-hidden="true" />
       </button>
-      <h2 className={s.resumenTitulo}>Resumen del pedido</h2>
+      <h2 className={s.resumenTitulo}>{etiqueta}</h2>
       <div className={s.resumenCuerpo}>
         <ul className={s.items}>
           {items.map((it) => (
@@ -153,7 +160,7 @@ export function ResumenCompra({
               </span>
               <span className={s.itemTexto}>
                 <strong><Texto>{it.nombre}</Texto></strong>
-                {it.variante && <small>{it.variante}</small>}
+                {it.variante && <small><Texto>{it.variante}</Texto></small>}
               </span>
               <span className={s.itemPrecio}>{soles(it.precio * it.cantidad)}</span>
             </li>
@@ -162,18 +169,18 @@ export function ResumenCompra({
         {monedas && <FilaMonedas {...monedas} />}
         {cupones && <CampoCupon {...cupones} />}
         <dl className={s.cuentas}>
-          <div><dt>Subtotal</dt><dd>{soles(subtotal)}</dd></div>
-          {descuentoMonedas > 0 && <div className={s.ahorro}><dt>Monedas Walá</dt><dd>−{soles(descuentoMonedas)}</dd></div>}
-          {cupon?.descuento > 0 && <div className={s.ahorro}><dt>Cupón {cupon.codigo}</dt><dd>−{soles(cupon.descuento)}</dd></div>}
-          <div><dt>Envío</dt><dd>{envio === 0 ? <span className={s.gratis}>Gratis</span> : soles(envio)}</dd></div>
+          <div><dt><Texto>Subtotal</Texto></dt><dd>{soles(subtotal)}</dd></div>
+          {descuentoMonedas > 0 && <div className={s.ahorro}><dt><Texto>Monedas Walá</Texto></dt><dd>−{soles(descuentoMonedas)}</dd></div>}
+          {cupon?.descuento > 0 && !cupon?.envioGratis && <div className={s.ahorro}><dt><Texto>Cupón</Texto> {cupon.codigo}</dt><dd>−{soles(cupon.descuento)}</dd></div>}
+          <div><dt><Texto>Envío</Texto></dt><dd>{envio === 0 ? <span className={s.gratis}><Texto>Gratis</Texto></span> : soles(envio)}</dd></div>
         </dl>
         {avisoEnvio && (
           <p className={s.falta}>
-            {falta > 0 ? <>Te faltan <strong>{soles(falta)}</strong> para el envío gratis (compras de más de {soles(gratisDesde)}).</> : <>El envío es gratis en compras de más de {soles(gratisDesde)}.</>}
+            <Texto>{falta > 0 ? `Te faltan ${soles(falta)} para el envío gratis (compras de más de ${soles(gratisDesde)}).` : `El envío es gratis en compras de más de ${soles(gratisDesde)}.`}</Texto>
           </p>
         )}
         <div className={s.total}>
-          <span>Total a pagar</span>
+          <span><Texto>Total a pagar</Texto></span>
           <strong>{soles(total)}</strong>
         </div>
         {pie}
@@ -193,8 +200,8 @@ export function MetodoPago({ icono, titulo, texto, destacado = false, children }
       <header className={s.metodoCabeza}>
         <Sello tamano={40} girar={-8} tono={destacado ? 'degradado' : 'suave'}>{icono}</Sello>
         <span>
-          <strong>{titulo}</strong>
-          {texto && <small>{texto}</small>}
+          <strong><Texto>{titulo}</Texto></strong>
+          {texto && <small><Texto>{texto}</Texto></small>}
         </span>
       </header>
       {children}

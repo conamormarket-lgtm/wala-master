@@ -169,6 +169,10 @@ Ya en la tienda (paso 6, la ficha de producto, 2026-10-17):
 - Los relacionados no tienen esqueleto: aparecen debajo de las opiniones
   cuando llegan, fuera de la vista.
 
+Ya en la tienda (paso 6, el checkout, 2026-10-17): `EsqueletoPagina
+forma="checkout"` mientras llegan la sesión, el perfil y la libreta (la página
+se monta de nuevo al terminar: su estado inicial sale de ellos).
+
 Ya en la tienda (paso 6, el pago rápido, 2026-10-17): mientras llega el
 enlace (y la sesión), `EsqueletoPagina forma="formulario"`.
 

@@ -206,7 +206,7 @@ export function ListaEleccion({ opciones = [], valor, onElegir, etiqueta }) {
     <div className={s.eleccion} role="group" aria-label={etiqueta}>
       {opciones.map((o) => {
         const activa = o.valor === valor;
-        return (
+        const boton = (
           <button
             key={o.valor}
             type="button"
@@ -221,6 +221,14 @@ export function ListaEleccion({ opciones = [], valor, onElegir, etiqueta }) {
             </span>
             <Visto activo={activa} className={s.opcionVisto} />
           </button>
+        );
+        // accion: { texto, onClick, etiqueta } → un botón al lado ("Editar"), fuera del de elegir.
+        if (!o.accion) return boton;
+        return (
+          <div key={o.valor} className={s.opcionConAccion}>
+            {boton}
+            <button type="button" className={s.opcionAccion} onClick={o.accion.onClick} aria-label={o.accion.etiqueta}>{o.accion.texto}</button>
+          </div>
         );
       })}
     </div>

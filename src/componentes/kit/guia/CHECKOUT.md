@@ -8,6 +8,9 @@ formulario). En los estados: cargando, carrito vacío, sin direcciones
 guardadas, la tarjeta falla, varias marcas, regalo programado, con invitación
 y falta una talla. Cupones de prueba: `WALA10` y `ENVIOGRATIS`.
 
+**En la tienda desde el 2026-10-17** (paso 6): `/checkout` es esta página (ver
+"En la tienda", abajo).
+
 | Envío (escritorio) | Pago (escritorio) | Celular |
 |---|---|---|
 | ![El paso de envío con la dirección principal y el resumen](checkout-envio.webp) | ![El paso de pago: tarjeta o WhatsApp](checkout-pago.webp) | ![El formulario en el celular con el resumen plegado arriba](checkout-celular.webp) |
@@ -128,11 +131,97 @@ la tarjeta, WhatsApp y PayPal esperan y avisan.
 ## Para cambiar el diseño rápido: qué se repite
 
 - **`CamposDireccion`** es la misma en Mis direcciones y en el checkout.
+  Desde el 2026-10-17: fuera del Perú el documento es un solo campo
+  ("Documento de identidad nacional") y, si `paises` trae `prefijo`, el
+  teléfono va con el del país. `validarDireccion(d, { reglas })`: 'cuenta'
+  (Mis direcciones) o 'checkout' (las de la tienda, más laxas).
+- **`ListaEleccion`** acepta una `accion` por opción ("Editar"), al lado.
 - **`TarjetaDireccion`** y **`ListaEleccion`** son las de la cuenta.
 - **`PasosCompra`** usa los sellos de la marca, como los pasos de Crear y del
   estudio.
 
-## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
+## En la tienda (hecho el 2026-10-17)
+
+![El checkout en la tienda real, en el celular: los pasos, el resumen plegado con el total y la dirección principal con "Cambiar"](checkout-tienda-celular.webp)
+
+(Celular, 390 px, con los emuladores. Se probó también a 1366 y en oscuro.)
+
+- **Conector:** `src/components/checkout/CheckoutDeTienda.jsx`, desde
+  `pages/CheckoutPage.jsx`. Pasa los elegidos (con `itemCarritoDesde`), el
+  perfil, la libreta (`direccionDesdeFirestore`), los países con su prefijo,
+  lo ya llenado (`inicial`: el borrador al volver de entrar, o lo de la compra
+  anterior si no hay libreta) y el país detectado (`paisSugerido`).
+- **El pedido:** `services/pedidoCheckout.js`, sacado **tal cual** de la
+  página de antes (por rangos de líneas, sin reescribir): `armarPedidoWeb`
+  (el payload del ERP), `armarWhatsapp` (uno, o uno por marca),
+  `aplicarEfectosDeCompra` (regalos, creaciones, referido, pendiente,
+  monedas, cupón), `completarPerfilDesdeCheckout`, `formatDeliveryDate` y
+  `businessDaysUntil`. Lo usan las dos páginas.
+- **Tarjeta:** `CulqiCustomCheckout` con `renderBoton` (el botón es
+  `PagoTarjeta` controlado; se abre solo al llegar al pago, como antes) por
+  `pago.botonTarjeta`; cerrar la ventana sin pagar → `pago.tarjetaFallo`.
+  Al cobrar, la tienda pone `listo`.
+- **PayPal:** `PaypalCheckout` con `soloBotones` (nueva, opcional: sin ella,
+  todo igual) por `pago.botonesPaypal`; baja solo si se paga desde otro país.
+- **WhatsApp:** la pestaña se abre en el clic con `htmlAbriendoWhatsApp` del
+  kit (la tienda seguía con su HTML viejo) mientras el servidor crea el pedido.
+- **Interruptor `pagosViejo`:** vuelve la página de antes
+  (`pages/CheckoutViejo.jsx`, que baja aparte).
+- **Carga:**
+  - El paquete del checkout: **28,4 KB gzip de JS** (antes 43,5; sin Formik,
+    Yup, `CountrySelect`, `PhoneIntlInput` ni la página vieja) y 5,6 de CSS.
+  - Los cinco mensajes del WhatsApp se piden a la vez (antes, uno detrás de
+    otro); la tasa de cambio, cuando el navegador queda libre.
+  - El catálogo de la caché se lee una vez (`catalogoPorId`).
+  - La moneda 3D que giraba sin parar pasó a la `Moneda` quieta del kit.
+- **Arreglado de paso:** el sticker "Feliz" vuelve a guardarse como
+  `kapi-smile` (el kit decía `kapi-happy`); el cupón de envío gratis ya no
+  aparece dos veces en el resumen.
+
+### Diferencias a propósito que se suman
+
+- En el pago, las monedas y el cupón quedan como se prepararon; para
+  cambiarlos, "Cambiar el envío" (la tienda volvía a preparar el pago).
+- La pantalla "listo" en vez de ir a Mis pedidos.
+- Con un solo asesor de marca, el botón dice "Continuar por WhatsApp" (antes,
+  "Continuar con el asesor de …"); la pestaña sí nombra la marca.
+- En el Perú se manda el teléfono tal cual; fuera, con el código del país.
+
+### Qué se probó (2026-10-17, localhost con los emuladores)
+
+Con el emulador de Functions (`demo-wala`: no toca nada real) para
+`prepareCheckoutPayment` y `crearSolicitudWhatsappSecure`:
+- Llenar la dirección (Lima, distrito de la lista) → "Continuar al pago" → el
+  pago con tarjeta y WhatsApp; se guardan los datos y la dirección.
+- Un precio que el servidor no acepta: su mensaje exacto en la página.
+- "Continuar por WhatsApp": el pedido queda en `pedidos_web` del emulador,
+  el enlace lleva el mensaje del módulo, "¡Tu pedido está creado!" y en el
+  carrito quedan solo los "no comprar esta vez".
+- La libreta: "Enviar a" con la principal, "Cambiar", "Editar" desde la lista
+  y el cambio guardado en `wala_direcciones`.
+- Chile: un solo documento, +56, región y ciudad; en el pago, US$, el aviso
+  de 7 a 30 días y los botones de PayPal (modo de prueba).
+- Un cupón que no existe: el mensaje del servidor.
+- El borrador al volver de entrar: la dirección de Callao, el regalo y el
+  sticker.
+- `pagosViejo`: la página de antes llega al pago y crea el pedido por
+  WhatsApp con el mismo módulo (y lee lo que guardó la nueva).
+- 1366 y 390, claro y oscuro.
+
+No se probó: un cobro con tarjeta (en local no está la llave de Culqi y
+`processCulqiPayment` necesita su secreto) ni con PayPal; un cupón válido y
+las monedas (el emulador no tiene cupones ni monedas para la cuenta de
+prueba); el equivalente en otra moneda (el emulador no tiene `config/fx`);
+varias marcas; sin sesión en la tienda (sí en la demo); la app Android.
+
+### Pendiente
+
+- El estado "pedido esperando el pago" del carrito no llega a verse (la
+  página de antes ya era así; decidido dejarlo para después): el checkout
+  escribe `pending_confirmation` en localStorage y `clearSelectedItems()` lo
+  pisa.
+
+## Llevar a la tienda (el plan original, ya hecho)
 
 ### Reemplazos
 

@@ -33,6 +33,7 @@ principal (y a la APK de Capacitor).
 | La píldora "Gana 15 monedas" de la cabecera vieja, apagada con `PILDORA_EN_EL_KIT` (la dibuja `FlotantesDeLaTienda`) | `components/common/Header/Header.jsx` |
 | La ficha de producto (paso 6): `PaginaProducto` por `components/producto/FichaDeProducto.jsx` (con `usePiezasDelCombo.js` y `eleccionCarrito.js`); `ProductDetail` baja solo con `fichaVieja` | `pages/ProductPage.jsx` |
 | El carrito (paso 6): `PaginaCarrito` por `components/carrito/CarritoDeTienda.jsx` (`itemCarritoDesde`); `Cart.jsx` baja solo con `carritoViejo` | `pages/CartPage.jsx` |
+| El checkout (paso 6): `PaginaCheckout` por `components/checkout/CheckoutDeTienda.jsx`; el pedido con `services/pedidoCheckout.js` (compartido con la página de antes); Culqi con `renderBoton`, PayPal con `soloBotones`; la página de antes baja solo con `pagosViejo` | `pages/CheckoutPage.jsx` |
 | El pago rápido (paso 6): `PaginaPagoRapido` por `components/pago/PagoRapidoDeTienda.jsx` (`enlacePagoDesde`; Culqi con `renderBoton`, PayPal con `soloBotones` y lazy); la página de antes baja solo con `pagosViejo` | `pages/PagoRapidoPage.jsx` |
 | "Agregar rápido" (`AgregarRapido`) en todas las tarjetas: "Elegir…" abre la hoja (`components/producto/AgregarRapidoDeProducto.jsx`, en su propio paquete) | `components/producto/TarjetaDeProducto.jsx` |
 
@@ -54,6 +55,8 @@ Desde el paso 5 también `Secciones`, `SeccionesExtra`, `SeccionesContenido`,
 `TarjetaCategoria`, `LogoMarca`…). `EstadoVacio` acepta `imagen={null}`
 (sin Kapi, un sello) y `BloqueSeccion` marca su `<section>` con
 `data-kit-seccion` (lo usa `landing-mobile.css`).
+Desde el checkout (paso 6), `paginas/Checkout`, `piezas/Checkout`,
+`piezas/Direccion` (`CamposDireccion`) y `ListaEleccion` (con `accion`).
 Desde el pago rápido (paso 6), `paginas/PagoRapido` y `piezas/Pago`
 (`PagoTarjeta` controlado, `PagoPaypal`).
 Desde el carrito (paso 6), `paginas/Carrito` y `Pedido` (`ItemCarrito`,
@@ -150,6 +153,11 @@ Cada paso en su propio commit, verificable por separado.
    ventana de Culqi de siempre (`renderBoton`, sin ella nada cambia) y PayPal
    solo con sus botones (REGALAR.md, "Pago rápido en la tienda").
    Interruptor `pagosViejo`.
+   ✓ **El checkout** (2026-10-17): `CheckoutDeTienda`; el armado del pedido
+   en `services/pedidoCheckout.js` (sacado tal cual, lo usan las dos
+   páginas), las reglas de dirección de la tienda (`reglas="checkout"`) y el
+   paquete de 43,5 a 28,4 KB gzip (CHECKOUT.md, "En la tienda"). Interruptor
+   `pagosViejo`.
 7. **Cargando** (`PantallaCarga`, `Cargando`, `EsqueletoPagina`: CARGA.md; el
    splash de `index.html` cambia en el mismo commit), **`BarraInferior` y luego `Cabecera`**: la más conectada (AuthContext,
    CartContext, WishlistContext, notificaciones y la configuración de
@@ -166,7 +174,7 @@ nada), o en un solo navegador con `localStorage.wala_kit_viejo = "pagos,carrito"
 
 | Interruptor | Qué vuelve a lo de antes |
 |---|---|
-| `pagosViejo` | la ventana "Pagar saldo" de Mis pedidos (`Modal` viejo), la pantalla de Culqi mientras cobra y el pago rápido entero (`PagoRapidoViejo.jsx`) |
+| `pagosViejo` | la ventana "Pagar saldo" de Mis pedidos (`Modal` viejo), la pantalla de Culqi mientras cobra, el pago rápido entero (`PagoRapidoViejo.jsx`) y el checkout entero (`CheckoutViejo.jsx`) |
 | `carritoViejo` | todo el carrito (`Cart.jsx` y `CartItem.jsx`, con sus preguntas por `window.confirm`) |
 | `tarjetasViejo` | la tarjeta de producto (`PremiumProductCard`) en carruseles y grillas |
 | `fichaVieja` (`useLoViejo('ficha')`: en Firestore el campo es `fichaViejo: true`; en localStorage, `"ficha"`) | la ficha de producto (`ProductDetail` y `ProductReviews`) y que "Elegir" de las tarjetas lleve a la ficha en vez de abrir "Agregar rápido" |

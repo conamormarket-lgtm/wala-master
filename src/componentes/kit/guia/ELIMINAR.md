@@ -130,3 +130,15 @@ ficha nueva, solo `ProductDetail` con `fichaVieja`).
 | `pages/PagoRapidoViejo.jsx` (la página de antes, con estilos en línea; copia de lo que era `PagoRapidoPage.jsx`) | `/pago-rapido/:id` | `components/pago/PagoRapidoDeTienda.jsx` → `PaginaPagoRapido` del kit | `pages/PagoRapidoPage.jsx` (lazy, solo con `pagosViejo`) | al retirar `pagosViejo` |
 | `PaypalEnlaceCheckout.jsx`: las cajas de error y "Procesando pago..." con estilos en línea (todo menos `botones`) | el pago rápido viejo | `PagoPaypal` del kit (`soloBotones`) | solo `PagoRapidoViejo.jsx` | al retirar `pagosViejo`; queda `soloBotones` como única forma |
 | `CulqiCustomCheckout`: el botón y la nota propios (`.payButton`, `.secureNote`, `.spinner` del CSS) | checkout, "Pagar saldo" y la landing del reloj | `PagoTarjeta` del kit por `renderBoton` (por ahora solo el pago rápido) | `CheckoutPage.jsx`, `PedidoAcciones.jsx`, `LandingPaymentBlock.jsx` (el cacherito: **no se toca**) | **no borrar** mientras la landing del reloj lo use sin `renderBoton` |
+
+### El checkout (2026-10-17)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/CheckoutViejo.jsx` (la página de antes, ya sin el armado del pedido) + `pages/CheckoutPage.module.css` (1762 líneas) | `/checkout` | `components/checkout/CheckoutDeTienda.jsx` → `PaginaCheckout` del kit | `pages/CheckoutPage.jsx` (lazy, solo con `pagosViejo`) | al retirar `pagosViejo` |
+| `formik` y `yup` (dependencias) | solo el checkout viejo | la validación del kit (`validarDireccion`) | nadie más | con `CheckoutViejo.jsx` (quitarlas de `package.json`) |
+| `components/intl/CountrySelect`, `components/intl/PhoneIntlInput` | el checkout viejo | `Campo` con `paises` y `CampoTelefono` | `RegisterPage.jsx`, `CompleteProfilePage.jsx`, `cuenta/PerfilPage.jsx` | cuando migre el acceso y Mi perfil |
+| `PaypalCheckout.jsx`: las cajas propias (título, monto, error, "Procesando pago...") | el checkout viejo | `PagoPaypal` (`soloBotones`) | "Pagar saldo" (`PedidoAcciones`), `SorteosPage.jsx` y la landing del reloj (`LandingPaymentBlock`: **no se toca**) | **no borrar** mientras la landing del reloj las use |
+
+`services/pedidoCheckout.js` **no se borra**: es el armado del pedido de la
+página nueva.

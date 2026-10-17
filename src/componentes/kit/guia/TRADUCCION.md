@@ -56,6 +56,7 @@ import { useTranslatedText, useTranslatedHtml } from './i18n/useTranslatedText';
 | `AgregarRapido` | el nombre del producto, "Personalizar", "Agregar" y "Elige…" (el título lo traduce `HojaInferior`) |
 | `GaleriaProducto`, `ConfianzaCompra` | "Pasa el cursor para ver de cerca" y las tres líneas de confianza |
 | `ItemCarrito` | el nombre; desde el 2026-10-17 también "Combo", "Con tu diseño", los detalles, las prendas, lo que falta y los textos ocultos |
+| `PaginaCheckout`, `ResumenCompra`, `FilaMonedas`, `CampoCupon`, `MetodoPago`, `PasosCompra`, `CamposDireccion` | los textos fijos, las etiquetas y placeholders de los campos, los avisos y la nota de invitación (desde el 2026-10-17) |
 | `PaginaPagoRapido`, `PagoTarjeta`, `PagoPaypal` | los textos fijos y el concepto del enlace (desde el 2026-10-17) |
 | `PaginaCarrito`, `ResumenPedido`, `BarraEnvioGratis`, `Casilla` | los textos fijos (botones, avisos, la selección, el resumen, el envío gratis, la etiqueta de la casilla) |
 | `ResumenCompra` (checkout) y el menú del carrito | el nombre de cada producto |

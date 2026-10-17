@@ -677,3 +677,40 @@
     border-color: rgba(167, 139, 250, 0.3);
   }
 }
+
+/* ListaEleccion con una acción al lado de cada opción ("Editar"). */
+.opcionConAccion {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.opcionAccion {
+  padding: 0.45rem 0.6rem;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--primary-color, #6d28d9);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.opcionAccion:hover {
+  background: var(--violet-50, #f5f3ff);
+}
+
+:global([data-theme='dark']) .opcionAccion {
+  color: var(--violet-300, #c4b5fd);
+}
+
+:global([data-theme='dark']) .opcionAccion:hover {
+  background: rgba(139, 92, 246, 0.14);
+}
+
+.opcionAccion:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}

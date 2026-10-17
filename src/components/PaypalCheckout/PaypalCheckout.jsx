@@ -26,6 +26,10 @@ import { T } from '../../i18n/useTranslatedText';
  * - webOrderId (string): id de la intención de pago o del pedido que se paga.
  *     Si no viene, se usa `pedido.id`.
  */
+// soloBotones (el checkout con el kit): solo los botones del SDK; "procesando"
+// y el error se los avisa a la página (onProcesando, onError) y los muestra
+// PagoPaypal. Sin él, todo como siempre (saldo de un pedido, sorteos, la
+// landing del reloj).
 const PaypalCheckout = ({
   pedido,
   onSuccess,
@@ -33,9 +37,14 @@ const PaypalCheckout = ({
   amountUsd,
   localLabel,
   webOrderId,
+  soloBotones = false,
+  onProcesando,
+  onError: onErrorPagina,
 }) => {
-  const [error, setError] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setErrorPropio] = useState(null);
+  const [isProcessing, setProcesandoPropio] = useState(false);
+  const setError = (msg) => { setErrorPropio(msg); onErrorPagina?.(msg); };
+  const setIsProcessing = (v) => { setProcesandoPropio(v); onProcesando?.(v); };
 
   // Tasa de conversión de respaldo para convertir la deuda en PEN a USD,
   // ya que PayPal generalmente usa USD para cuentas internacionales.
@@ -125,6 +134,19 @@ const PaypalCheckout = ({
 
   if (montoDeuda <= 0) {
     return null; // Nada que cobrar
+  }
+
+  if (soloBotones) {
+    return (
+      <PayPalScriptProvider options={initialOptions}>
+        <PayPalButtons
+          createOrder={createOrder}
+          onApprove={onApprove}
+          onError={onError}
+          style={{ layout: "vertical", shape: "rect" }}
+        />
+      </PayPalScriptProvider>
+    );
   }
 
   return (

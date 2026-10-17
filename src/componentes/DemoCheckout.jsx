@@ -75,6 +75,8 @@ export function CheckoutDemo({ items = [], sesion, usuario, monedas = 0, estados
       }}
       pago={{
         usd: (total) => total * USD_POR_SOL,
+        // El equivalente en la moneda del país (de ejemplo: pesos chilenos).
+        local: (total, pais) => (pais === 'CL' ? `$ ${Math.round(total * 250).toLocaleString('es-CL')} CLP` : null),
         marcas: estados.includes('variasMarcas') ? [{ id: 'm1', nombre: 'Con Amor Geeks', cantidad: 1 }, { id: 'm2', nombre: 'Mussa Beauty', cantidad: 1 }] : undefined,
         onTarjeta: async () => {
           await espera(1800);
@@ -91,7 +93,7 @@ export function CheckoutDemo({ items = [], sesion, usuario, monedas = 0, estados
         },
       }}
       entrega={estados.includes('regalo') ? { fecha: '24 de octubre', ocasion: 'Cumpleaños', destinatario: 'María', aviso: 'Está cerca: la preparación y el envío toman de 7 a 30 días hábiles.' } : undefined}
-      invitacion={estados.includes('invitacion') ? { nombre: 'Andrea' } : undefined}
+      invitacion={estados.includes('invitacion') ? { nombre: 'Andrea', aceptada: true } : undefined}
       onEntrar={() => avisar('Lo llenado queda guardado', 'En la tienda vuelve al checkout después de entrar.', 'info')}
       onIrA={onIrA}
     />
