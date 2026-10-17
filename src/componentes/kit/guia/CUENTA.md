@@ -254,6 +254,67 @@ traducción a otro idioma de estas dos páginas ni la app Android. Las copias
 webp que `uploadFile` crea de cada foto no se borran al cambiarla (pasa
 igual que antes).
 
+## Catálogo, Cupones y Misiones en la tienda (hecho el 2026-10-17)
+
+![Catálogo, Mis cupones y Misiones en la tienda real, en el celular: la recompensa con su beneficio en texto, el cupón recién canjeado arriba del vencido, y las misiones con "Ganas +N", una completada y "Ir a hacerlo"](cuenta-recompensas-tienda.webp)
+
+(Celular, 390 px, claro, con datos de prueba del emulador. Se probó también
+a 1366 y en noche.)
+
+- **Conectores** (`src/components/cuenta/`): `CatalogoDeCuenta.jsx`,
+  `CuponesDeCuenta.jsx` y `MisionesDeCuenta.jsx`, desde
+  `CatalogReward.jsx`, `MisCuponesPage.jsx` y `MisionesPage.jsx`.
+- **Igual que antes:** `recordMissionAction` al entrar al catálogo y a los
+  cupones; canjear con `redeemRewardSecure` y después `reloadProfile` (el
+  saldo de la cabecera); el estado de cada cupón con `estadoCupon`; el
+  check-in al entrar a Misiones con la lluvia de monedas si dio algo;
+  completar con `completeMissionSecure`, la lluvia, `trackMissionComplete`
+  y releer misiones y perfil.
+- **Las siete recomendaciones acordadas:**
+  1. Una misión verificable con una acción que la tienda no conoce lleva
+     "Ir a hacerlo" (a Misiones, como antes), nunca "Completar"
+     (`misionDesdeServidor`).
+  2. Los niveles salen de `constants/tiers.js` (`nivelesDesdeTiers`); los
+     `NIVELES` del kit quedan para la demo.
+  3. El beneficio de una recompensa va en texto dorado bajo el título, sin
+     etiqueta colgante (es solo de los productos).
+  4. Una sola confirmación abierta a la vez en el catálogo
+     (`confirmando`/`onConfirmar` en `TarjetaRecompensa`).
+  5. Si completar falla, se ve el mensaje del servidor (los códigos de
+     Firebase no); "Ganas" junto al +N (`GananciaMonedas etiqueta`).
+  6. El catálogo queda en caché 5 minutos (`['recompensas-catalogo']`); el
+     check-in y las misiones salen a la vez. Canjear invalida los cupones
+     (`['mis-cupones', uid]`, frescos al entrar).
+  7. Lo de arriba ("Igual que antes") no cambia.
+- **Además:** los textos pasan por la traducción; los estados vacíos llevan un
+  sello (un solo Kapi a la vista); Misiones tiene "Reintentar" si no cargan;
+  la barra del nivel tiene nombre para lectores y el nivel actual
+  `aria-current`.
+- **Interruptor `cuentaVieja`:** también vuelven `CatalogRewardViejo.jsx`,
+  `MisCuponesViejo.jsx` y `MisionesViejo.jsx`.
+
+### Qué se probó (2026-10-17, localhost con los emuladores)
+
+Con dos recompensas, tres misiones y un cupón vencido de prueba:
+- Catálogo: el beneficio "10% de descuento (hasta S/ 30.00)", "Te faltan 490"
+  en la que no alcanza, canjear (código `WALA-…`, saldo de 10 a 5 también en
+  la cabecera) y "Ver mis cupones"; en el kit, una sola confirmación abierta.
+- Cupones: el nuevo arriba ("1 disponible de 2", "Válido hasta el 16 de
+  noviembre") y el vencido abajo; "Copiar" → "Copiado".
+- Misiones: "Ganas +3", la de cupones verificada se completa (+3 monedas, la
+  cabecera a 8, "1 de 3 completadas"), la desconocida con "Ir a hacerlo".
+- `cuentaVieja` → las tres páginas de antes. 390 y 1366, claro y noche.
+
+**Encontrado (ya pasaba antes, no se arregló aquí):** a veces, al entrar a
+Misiones (también con la página de antes), `reloadProfile` recibe del
+navegador un perfil a medias (`{ id, cart }`: lo que el carrito acaba de
+escribir) y la pantalla muestra 0 monedas y "Te faltan tu documento…" hasta
+recargar. Viene de `AuthContext.reloadProfile` (acepta lo que devuelve
+`getDoc`, aunque sea la caché local); se propone aparte.
+
+No se probó: un canje que falle en el servidor (sin monedas suficientes no
+se puede tocar), la traducción de estas páginas ni la app Android.
+
 ## Llevar a la tienda (lo que falta)
 
 Páginas propias: van en el paso 6 de [MIGRACION.md](MIGRACION.md). Se migra
@@ -279,9 +340,9 @@ componente o su forma de recibir datos.
 | Ranking | `ReferralRanking` | `RankingReferidos` |
 | ✓ Direcciones | `MisDireccionesPage.jsx` (hoy `MisDireccionesViejo.jsx`) | `PaginaDirecciones` + `TarjetaDireccion` (hecho) |
 | ✓ Ajustes | `CuentaAjustesPage.jsx` (hoy `CuentaAjustesViejo.jsx`): `ThemeToggle`, idiomas | `PaginaAjustes` (hecho) |
-| Catálogo | `CatalogReward.jsx` (tarjetas ~133) | `PaginaCatalogo` + `TarjetaRecompensa` |
-| Cupones | `MisCuponesPage.jsx` (tarjetas ~120) | `PaginaCupones` + `TarjetaCupon` |
-| Misiones | `MisionesPage.jsx` (cifras, nivel ~141, lista) | `PaginaMisiones` + `NivelCuenta` + `TarjetaMision` |
+| ✓ Catálogo | `CatalogReward.jsx` (hoy `CatalogRewardViejo.jsx`) | `PaginaCatalogo` + `TarjetaRecompensa` (hecho) |
+| ✓ Cupones | `MisCuponesPage.jsx` (hoy `MisCuponesViejo.jsx`) | `PaginaCupones` + `TarjetaCupon` (hecho) |
+| ✓ Misiones | `MisionesPage.jsx` (hoy `MisionesViejo.jsx`) | `PaginaMisiones` + `NivelCuenta` + `TarjetaMision` (hecho) |
 | Referidos | `CuentaReferidosPage.jsx`, `components/GrupoReferidos.jsx`, `components/DetallePedidoReferido.jsx` | `PaginaReferidos` + `FilaReferido` + `DetallePedidoReferido` |
 | Creaciones | `MisCreacionesPage.jsx` (`MiCreacionCard` ~151, `TusBorradores` ~168) | `PaginaCreaciones` + `TarjetaCreacion` |
 | Lista de deseos | `WishlistPage.jsx` (`PremiumProductCard` ~275) | `PaginaListaDeseos` (`TarjetaProducto` con `deseado`) |
@@ -375,6 +436,10 @@ componente o su forma de recibir datos.
   antes se quedaba el de la dirección. Una nueva empieza con el país del
   perfil.
 - Los avisos del perfil sin emoji ("Foto de perfil actualizada").
+- Catálogo: el saldo arriba, el beneficio en texto y el error de carga sin
+  mezclarse con el vacío; el cupón como boleto con talón (sin el banner de
+  Kapi) y la fecha legible ("16 de noviembre", antes AAAA-MM-DD); los niveles
+  con sellos en vez de 🥉🥈🥇💎.
 
 ### Qué le falta al kit antes de migrar
 
@@ -396,7 +461,7 @@ componente o su forma de recibir datos.
    (2026-10-17, arriba).
 2. ✓ Resumen y Ajustes (2026-10-17, arriba).
 3. ✓ Perfil y Direcciones (2026-10-17, arriba).
-4. Catálogo, Cupones y Misiones (canje, copiar, completar, check-in).
+4. ✓ Catálogo, Cupones y Misiones (2026-10-17, arriba).
 5. Referidos (con los mismos grupos y estados de hoy).
 6. Lista de deseos, Fechas importantes y Mis creaciones (lo que les falta,
    arriba, antes).

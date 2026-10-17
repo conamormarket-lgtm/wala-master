@@ -183,3 +183,12 @@ grupos del marco nuevo (`gruposDeCuenta.js`).
 | `pages/cuenta/PerfilViejo.jsx` + `PerfilPage.module.css` (445 líneas) | `/cuenta/perfil` | `components/cuenta/PerfilDeCuenta.jsx` → `PaginaPerfil` | `PerfilPage.jsx` (lazy, solo con `cuentaVieja`); `CuentaRastreoPage.jsx` solo lo nombra en un comentario | al retirar `cuentaVieja` |
 | `components/profile/AvatarStudio.jsx` + `AvatarCropModal.jsx` (y sus CSS, 157 y 111 líneas) | Mi perfil de antes | `IdentidadCuenta` + `RecortarFoto` | solo `PerfilViejo.jsx` (`CuentaFechasImportantesPage.jsx` lo nombra en comentarios) | con `PerfilViejo.jsx`; `react-easy-crop` se queda (`AdminImageCropper`) |
 | `pages/cuenta/MisDireccionesViejo.jsx` + `MisDireccionesPage.module.css` (355 líneas) | `/cuenta/direcciones` | `components/cuenta/DireccionesDeCuenta.jsx` → `PaginaDirecciones` | `MisDireccionesPage.jsx` (lazy, solo con `cuentaVieja`) | al retirar `cuentaVieja` |
+
+### Catálogo, Mis cupones y Misiones (2026-10-17)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/cuenta/CatalogRewardViejo.jsx` + `CatalogReward.module.css` (290 líneas) | `/cuenta/catalogo` | `components/cuenta/CatalogoDeCuenta.jsx` → `PaginaCatalogo` | `CatalogReward.jsx` (lazy, solo con `cuentaVieja`) | al retirar `cuentaVieja` |
+| `pages/cuenta/MisCuponesViejo.jsx` + `MisCuponesPage.module.css` (245 líneas) + `public/assets/kapi/cupon-ruleta.webp`, `cupon-catalogo.webp` | `/cuenta/cupones` | `CuponesDeCuenta.jsx` → `PaginaCupones` (el talón con `IconoWala`) | `MisCuponesPage.jsx` (lazy, solo con `cuentaVieja`); las imágenes, solo la página de antes | al retirar `cuentaVieja` |
+| `pages/cuenta/MisionesViejo.jsx` + `MisionesPage.module.css` (864 líneas) | `/cuenta/misiones` | `MisionesDeCuenta.jsx` → `PaginaMisiones` | `MisionesPage.jsx` (lazy, solo con `cuentaVieja`) | al retirar `cuentaVieja` |
+| `tierForXp` y los `icon` (emojis) de `constants/tiers.js` | Misiones de antes | `nivelesDesdeTiers` + `NivelCuenta` | buscar antes de borrar (`TIERS` se queda: es la fuente de los niveles) | con `MisionesViejo.jsx`, si nadie más los usa |

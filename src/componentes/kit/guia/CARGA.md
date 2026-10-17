@@ -201,6 +201,11 @@ con el perfil sin llegar, dos `EsqueletoTarjeta` (150 y 260 px de alto, 2 y
 direcciones, las dos `EsqueletoTarjeta` de 190 px que ya tenía (antes,
 "Cargando tus direcciones…").
 
+Ya en la tienda (paso 6, Catálogo, Cupones y Misiones, 2026-10-17): los
+esqueletos que ya tenían las páginas del kit: tres `EsqueletoProducto` en el
+catálogo, dos `EsqueletoTarjeta` de 150 px en cupones y tres `EsqueletoFila`
+en las misiones (antes, textos "Cargando…").
+
 Ya en la tienda (paso 6, el carrito, 2026-10-17): el carrito sale de
 localStorage al instante, así que no tiene esqueleto propio (la ruta sigue con
 el `PageLoading` de `App.jsx` hasta el paso 7). "También te puede gustar" no

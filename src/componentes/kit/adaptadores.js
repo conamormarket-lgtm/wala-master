@@ -829,19 +829,27 @@ export const cuponDesdeFirestore = (c = {}, estado = 'activo') => ({
 /**
  * Misión de getDailyMissionsSecure → TarjetaMision.
  *  - acciones: MISSION_ACTIONS (constants/missionActions): las que se cumplen
- *    en otra página llevan su botón ("Ir a Mis cupones").
+ *    en otra página llevan su botón ("Ir a Mis cupones"). Una verificable con
+ *    una acción que no está en la lista lleva "Ir a hacerlo" (a las misiones,
+ *    como antes): nunca "Completar", que el servidor rechazaría.
  */
 export const misionDesdeServidor = (m = {}, acciones = {}) => {
-  const a = m.actionKey && !m.verified ? acciones[m.actionKey] : null;
+  const pendiente = Boolean(m.actionKey) && !m.verified && !m.completed;
+  const a = pendiente ? acciones[m.actionKey] : null;
+  let accion;
+  if (pendiente) accion = a ? { texto: a.goLabel || 'Ir a hacerlo', url: a.path } : { texto: 'Ir a hacerlo', url: '/cuenta/misiones' };
   return {
     id: m.missionId,
     titulo: m.title,
     descripcion: m.description,
     recompensa: Number(m.rewardPoints) || 0,
     completada: Boolean(m.completed),
-    accion: a && !m.completed ? { texto: a.goLabel || 'Ir a hacerlo', url: a.path } : undefined,
+    accion,
   };
 };
+
+/** TIERS de constants/tiers.js → niveles de NivelCuenta (sin el emoji: cada uno lleva su sello). */
+export const nivelesDesdeTiers = (tiers = []) => tiers.map((t) => ({ clave: t.key, nombre: t.name, min: Number(t.min) || 0 }));
 
 /** "Guardada hoy / ayer / hace N días" desde una fecha (Timestamp, ms o ISO). */
 const haceCuanto = (f, prefijo = 'Guardada') => {

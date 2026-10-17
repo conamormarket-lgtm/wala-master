@@ -10,14 +10,15 @@ import { TarjetaRecompensa, TarjetaCupon, TarjetaMision, NivelCuenta, NIVELES } 
 import { FormaGanar, EnlaceInvitacion, FilaReferido, DetallePedidoReferido, RankingReferidos } from '../piezas/Referidos';
 import { FotoProducto } from '../piezas/FotoProducto';
 import { EsqueletoProducto, EsqueletoFila, EsqueletoTarjeta } from '../Esqueletos';
-import { CARAS_KAPI } from '../piezas/Flotantes';
+import { Texto } from '../Traduccion';
 import s from './CuentaRecompensas.module.css';
 
 /*
  * Páginas del grupo Recompensas de la cuenta: catálogo, cupones, misiones y
  * referidos. Van dentro de MarcoCuenta. Lo que va al servidor (canjear,
  * completar, reclamar) entra como promesas; si falla, su mensaje se muestra
- * en la página.
+ * en la página. Los estados vacíos llevan un sello, no la cara de Kapi (en la
+ * tienda ya está el flotante: un solo Kapi a la vista).
  */
 
 const miles = (n) => Number(n || 0).toLocaleString('es-PE');
@@ -45,14 +46,16 @@ function Esqueletos({ n = 3, alto = 220, forma = 'tarjeta' }) {
  *  - cargando · error · onReintentar
  *  - onCanjear(id): promesa → { codigo } (redeemRewardSecure)
  *  - urlCupones
+ * Una sola confirmación abierta a la vez (abrir otra cierra la anterior).
  */
 export function PaginaCatalogo({ recompensas = [], saldo = 0, cargando = false, error = false, onReintentar, onCanjear, urlCupones = '/cuenta/cupones' }) {
   const [aviso, setAviso] = useState(null);
+  const [confirmando, setConfirmando] = useState(null);
   const canjear = (r) => async () => {
     setAviso(null);
     try {
       const res = await onCanjear?.(r.id);
-      setAviso({ tipo: 'exito', titulo: `¡Canjeaste «${r.titulo}»!`, codigo: res?.codigo });
+      setAviso({ tipo: 'exito', titulo: r.titulo, codigo: res?.codigo });
     } catch (err) {
       setAviso({ tipo: 'error', titulo: 'No pudimos canjearla', texto: mensajeDe(err, 'Inténtalo de nuevo en unos minutos. Tus monedas no se gastaron.') });
     }
@@ -62,35 +65,41 @@ export function PaginaCatalogo({ recompensas = [], saldo = 0, cargando = false, 
       <CabezaCuenta
         icono={<Gift />}
         tono="oro"
-        titulo="Catálogo de recompensas"
-        subtitulo="Canjea tus monedas por descuentos y premios."
-        accion={<p className={s.saldo}><Moneda tamano={22} /><strong>{miles(saldo)}</strong> monedas</p>}
+        titulo={<Texto>Catálogo de recompensas</Texto>}
+        subtitulo={<Texto>Canjea tus monedas por descuentos y premios.</Texto>}
+        accion={<p className={s.saldo}><Moneda tamano={22} /><strong>{miles(saldo)}</strong> <Texto>monedas</Texto></p>}
       />
       {aviso && (
         <Aviso
           tipo={aviso.tipo}
-          titulo={aviso.titulo}
+          titulo={aviso.tipo === 'exito' ? <><Texto>¡Canjeaste</Texto> «<Texto>{aviso.titulo}</Texto>»!</> : aviso.titulo}
           onCerrar={() => setAviso(null)}
-          accion={aviso.tipo === 'exito' && <Boton to={urlCupones} tamano="sm" iconoFin={<ArrowRight aria-hidden="true" />}>Ver mis cupones</Boton>}
+          accion={aviso.tipo === 'exito' && <Boton to={urlCupones} tamano="sm" iconoFin={<ArrowRight aria-hidden="true" />}><Texto>Ver mis cupones</Texto></Boton>}
         >
           {aviso.tipo === 'exito'
-            ? (aviso.codigo ? <>Tu código es <strong>{aviso.codigo}</strong>. Lo tienes en Mis cupones.</> : 'Ya está en Mis cupones.')
+            ? (aviso.codigo ? <><Texto>Tu código es</Texto> <strong>{aviso.codigo}</strong>. <Texto>Lo tienes en Mis cupones.</Texto></> : 'Ya está en Mis cupones.')
             : aviso.texto}
         </Aviso>
       )}
       {error ? (
-        <Aviso tipo="error" titulo="No pudimos cargar el catálogo" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={onReintentar}>Reintentar</Boton>}>
+        <Aviso tipo="error" titulo="No pudimos cargar el catálogo" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={onReintentar}><Texto>Reintentar</Texto></Boton>}>
           Intenta de nuevo en unos minutos.
         </Aviso>
       ) : cargando ? (
         <ul className={s.rejilla} aria-busy="true"><Esqueletos n={3} forma="producto" /></ul>
       ) : recompensas.length === 0 ? (
-        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="No hay recompensas por ahora" texto="Vuelve pronto: se agregan seguido." />
+        <EstadoVacio imagen={null} icono={<Gift />} titulo={<Texto>No hay recompensas por ahora</Texto>} texto={<Texto>Vuelve pronto: se agregan seguido.</Texto>} />
       ) : (
         <ul className={s.rejilla}>
           {recompensas.map((r) => (
             <li key={r.id}>
-              <TarjetaRecompensa {...r} saldo={saldo} onCanjear={onCanjear && canjear(r)} />
+              <TarjetaRecompensa
+                {...r}
+                saldo={saldo}
+                onCanjear={onCanjear && canjear(r)}
+                confirmando={confirmando === r.id}
+                onConfirmar={(abierta) => setConfirmando(abierta ? r.id : null)}
+              />
             </li>
           ))}
         </ul>
@@ -116,22 +125,22 @@ export function PaginaCupones({ cupones = [], cargando = false, error = false, o
       <CabezaCuenta
         icono={<Ticket />}
         tono="oro"
-        titulo="Mis cupones"
-        subtitulo="Escribe el código en el carrito, en el paso de pago, para aplicar el descuento."
+        titulo={<Texto>Mis cupones</Texto>}
+        subtitulo={<Texto>Escribe el código en el carrito, en el paso de pago, para aplicar el descuento.</Texto>}
       />
       {cupones.length > 0 && !cargando && (
-        <p className={s.cuenta}><strong>{disponibles}</strong> {disponibles === 1 ? 'disponible' : 'disponibles'} de {cupones.length}</p>
+        <p className={s.cuenta}><strong>{disponibles}</strong> <Texto>{disponibles === 1 ? 'disponible' : 'disponibles'}</Texto> <Texto>de</Texto> {cupones.length}</p>
       )}
       {error ? (
-        <Aviso tipo="error" titulo="No pudimos cargar tus cupones" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={onReintentar}>Reintentar</Boton>}>
+        <Aviso tipo="error" titulo="No pudimos cargar tus cupones" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={onReintentar}><Texto>Reintentar</Texto></Boton>}>
           Revisa tu conexión e inténtalo de nuevo.
         </Aviso>
       ) : cargando ? (
         <ul className={s.cupones} aria-busy="true"><Esqueletos n={2} alto={150} /></ul>
       ) : ordenados.length === 0 ? (
-        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Todavía no tienes cupones" texto="Los ganas en la Ruleta semanal o canjeando tus monedas en el catálogo.">
-          <Boton to={urlRuleta}>Ir a la ruleta</Boton>
-          <Boton to={urlCatalogo} variante="contorno">Ver el catálogo</Boton>
+        <EstadoVacio imagen={null} icono={<Ticket />} titulo={<Texto>Todavía no tienes cupones</Texto>} texto={<Texto>Los ganas en la Ruleta semanal o canjeando tus monedas en el catálogo.</Texto>}>
+          <Boton to={urlRuleta}><Texto>Ir a la ruleta</Texto></Boton>
+          <Boton to={urlCatalogo} variante="contorno"><Texto>Ver el catálogo</Texto></Boton>
         </EstadoVacio>
       ) : (
         <ul className={s.cupones}>
@@ -151,12 +160,13 @@ export function PaginaCupones({ cupones = [], cargando = false, error = false, o
  *  - racha: { dias, hoy: true si ya hizo check-in hoy, ganado: monedas de hoy }
  *  - misiones: [{ id, titulo, descripcion, recompensa, completada, accion }]
  *    (misionDesdeServidor) · fecha: "14 de octubre"
- *  - cargando · error
- *  - onCompletar(id): promesa → { recompensa } (completeMission)
+ *  - cargando · error · onReintentar
+ *  - onCompletar(id): promesa → { recompensa } (completeMission); si falla,
+ *    se muestra el mensaje del servidor (los de Firebase en crudo no)
  *  - urlCatalogo
  */
 export function PaginaMisiones({
-  monedas = 0, xp = 0, niveles = NIVELES, racha = {}, misiones = [], fecha, cargando = false, error = false, onCompletar, urlCatalogo = '/cuenta/catalogo',
+  monedas = 0, xp = 0, niveles = NIVELES, racha = {}, misiones = [], fecha, cargando = false, error = false, onReintentar, onCompletar, urlCatalogo = '/cuenta/catalogo',
 }) {
   const [aviso, setAviso] = useState(null);
   const hechas = misiones.filter((m) => m.completada).length;
@@ -166,8 +176,8 @@ export function PaginaMisiones({
       const res = await onCompletar?.(m.id);
       const n = res?.recompensa ?? m.recompensa;
       setAviso({ tipo: 'exito', texto: n ? `¡Misión completada! +${n} monedas.` : '¡Misión completada!' });
-    } catch {
-      setAviso({ tipo: 'error', texto: 'No pudimos completar la misión. Intenta de nuevo.' });
+    } catch (err) {
+      setAviso({ tipo: 'error', texto: mensajeDe(err, 'No pudimos completar la misión. Intenta de nuevo.') });
     }
   };
   const dias = racha.dias || 0;
@@ -176,40 +186,42 @@ export function PaginaMisiones({
       <CabezaCuenta
         icono={<Trophy />}
         tono="oro"
-        titulo="Misiones diarias"
-        subtitulo="Completa tus misiones cada día y cuida tu racha para ganar monedas y experiencia."
+        titulo={<Texto>Misiones diarias</Texto>}
+        subtitulo={<Texto>Completa tus misiones cada día y cuida tu racha para ganar monedas y experiencia.</Texto>}
       />
       <div className={s.cifras}>
         <Estadistica
           icono={<Moneda tamano={38} />}
           sello={false}
-          etiqueta="Monedas"
+          etiqueta={<Texto>Monedas</Texto>}
           valor={miles(monedas)}
-          nota={<Enlace to={urlCatalogo} className={s.enlaceNota}>Canjéalas en el catálogo <ArrowRight aria-hidden="true" /></Enlace>}
+          nota={<Enlace to={urlCatalogo} className={s.enlaceNota}><Texto>Canjéalas en el catálogo</Texto> <ArrowRight aria-hidden="true" /></Enlace>}
         />
-        <Estadistica icono={<Sparkles />} etiqueta="Experiencia" valor={miles(xp)} unidad="XP" nota="La XP sube tu nivel; no se gasta." />
+        <Estadistica icono={<Sparkles />} etiqueta={<Texto>Experiencia</Texto>} valor={miles(xp)} unidad="XP" nota={<Texto>La XP sube tu nivel; no se gasta.</Texto>} />
         <Estadistica
           icono={<Flame />}
           tono="rosa"
-          etiqueta="Racha"
+          etiqueta={<Texto>Racha</Texto>}
           valor={dias}
-          unidad={dias === 1 ? 'día' : 'días'}
-          nota={racha.hoy ? `Entraste hoy${racha.ganado ? `: +${racha.ganado} ${racha.ganado === 1 ? 'moneda' : 'monedas'}` : ''}.` : 'Entra cada día para no perderla.'}
+          unidad={<Texto>{dias === 1 ? 'día' : 'días'}</Texto>}
+          nota={<Texto>{racha.hoy ? `Entraste hoy${racha.ganado ? `: +${racha.ganado} ${racha.ganado === 1 ? 'moneda' : 'monedas'}` : ''}.` : 'Entra cada día para no perderla.'}</Texto>}
         />
       </div>
       <NivelCuenta xp={xp} niveles={niveles} />
       {aviso && <Aviso tipo={aviso.tipo} onCerrar={() => setAviso(null)}>{aviso.texto}</Aviso>}
       <CabezaCuenta
         nivel={2}
-        titulo="Misiones de hoy"
-        subtitulo={misiones.length ? `${hechas} de ${misiones.length} completadas${fecha ? ` · ${fecha}` : ''}` : fecha}
+        titulo={<Texto>Misiones de hoy</Texto>}
+        subtitulo={misiones.length ? <><Texto>{`${hechas} de ${misiones.length} completadas`}</Texto>{fecha ? ` · ${fecha}` : ''}</> : fecha}
       />
       {error ? (
-        <Aviso tipo="error">No pudimos cargar tus misiones. Intenta de nuevo en unos minutos.</Aviso>
+        <Aviso tipo="error" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={onReintentar}><Texto>Reintentar</Texto></Boton>}>
+          No pudimos cargar tus misiones. Intenta de nuevo en unos minutos.
+        </Aviso>
       ) : cargando ? (
         <ul className={s.misiones} aria-busy="true"><Esqueletos n={3} forma="fila" /></ul>
       ) : misiones.length === 0 ? (
-        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Todavía no hay misiones activas" texto="Vuelve pronto: se agregan seguido." />
+        <EstadoVacio imagen={null} icono={<Trophy />} titulo={<Texto>Todavía no hay misiones activas</Texto>} texto={<Texto>Vuelve pronto: se agregan seguido.</Texto>} />
       ) : (
         <ul className={s.misiones}>
           {misiones.map((m) => (

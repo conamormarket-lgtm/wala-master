@@ -140,7 +140,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | Archivo | Componentes | Para qué |
 |---|---|---|
 | `Boton.jsx` | `Boton` | Botón violeta liso; variantes, tamaños, cargando, `brillo` para CTA de pago. Con `to` es un enlace; con `insignia` lleva un contador en la esquina |
-| `Etiquetas.jsx` | `Etiqueta`, `Chip`, `Moneda`, `MONEDA`, `CostoMonedas`, `GananciaMonedas`, `SaldoMonedas` (sube de a una con cada moneda que aterriza), `Contador` | Badges, filtros y monedas |
+| `Etiquetas.jsx` | `Etiqueta`, `Chip`, `Moneda`, `MONEDA`, `CostoMonedas`, `GananciaMonedas` (`etiqueta`: "Ganas"), `SaldoMonedas` (sube de a una con cada moneda que aterriza), `Contador` | Badges, filtros y monedas |
 | `Formulario.jsx` | `Campo` (con `opciones` es una `ListaOpciones`; `control` para otro control en la misma caja; `multilinea` para un texto largo que crece solo con lo escrito, sin agarradera para estirarlo, con la cuenta de letras si hay `maxLength`), `Buscador` (`grande`, `boton`), `Selector`, `SelectorTalla`, `SelectorColor`, `Cantidad`, `Interruptor` (`disabled`), `Casilla` (con el `Visto`), `CampoTelefono` (`disabled`), `CampoContrasena` (con el ojo que parpadea) | Formularios, búsqueda (atajo "/"), "Ordenar por" y variantes de producto (en `SelectorColor` y `SelectorTalla` lo elegido viaja de una opción a otra) |
 | `ListaOpciones.jsx` | `ListaOpciones` | Lista desplegable de Walá: panel en escritorio, hoja en el celular, buscador, teclado, `creable` |
 | `Fecha.jsx` | `CampoFecha` (`disabled`), `Calendario`, `fechaEnTexto` | Fechas con el calendario de Walá (años, meses, días; "No sé el año") |
@@ -179,7 +179,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `piezas/QuitarFondo.jsx` | `QuitarFondo` | El editor de quitar el fondo de una imagen (varita, borrar, restaurar, zoom); los píxeles los hace el `motor` que llega por props |
 | `piezas/MenuContextual.jsx` | `MenuContextual` | El menú del clic derecho o del toque largo: lista flotante en escritorio, `HojaInferior` en el celular |
 | `piezas/TarjetaDireccion.jsx` | `TarjetaDireccion` | Una dirección guardada (principal, editar, eliminar con confirmación) |
-| `piezas/Recompensas.jsx` | `TarjetaRecompensa`, `TarjetaCupon`, `TarjetaMision`, `NivelCuenta`, `NIVELES` | Catálogo, cupones, misiones y nivel por XP |
+| `piezas/Recompensas.jsx` | `TarjetaRecompensa` (beneficio en texto; `confirmando`/`onConfirmar`), `TarjetaCupon`, `TarjetaMision` ("Ganas"), `NivelCuenta`, `NIVELES` (la demo; en la tienda, `nivelesDesdeTiers`) | Catálogo, cupones, misiones y nivel por XP (en la tienda desde el 2026-10-17) |
 | `piezas/Referidos.jsx` | `FormaGanar` (con `premio`: lo que suma, en un sello), `EnlaceInvitacion`, `FilaReferido`, `DetallePedidoReferido`, `RankingReferidos` | Mis referidos |
 | `piezas/Creaciones.jsx` | `TarjetaCreacion` | Un diseño guardado (frente y espalda, renombrar, eliminar; también borradores) |
 | `piezas/Regalos.jsx` | `IdeaRegalo`, `TarjetaPersonaRegalo`, `AvisoFestiva` (cuenta atrás), `HojaCalendario`, `AgendaFechas` ("Lo que se viene"), `faltanDias`, `textoFaltan`, `diaYMes` | Fechas importantes |

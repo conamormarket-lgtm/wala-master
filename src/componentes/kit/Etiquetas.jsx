@@ -2,6 +2,7 @@ import React, { forwardRef, useEffect, useRef, useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { useContador } from './Efectos';
 import { EtiquetaColgante } from './Marca';
+import { Texto } from './Traduccion';
 import s from './Etiquetas.module.css';
 
 /** La moneda de Walá (una sola imagen para todo el kit). */
@@ -73,7 +74,7 @@ export function Moneda({ tamano = 16, className }) {
 export function CostoMonedas({ monto }) {
   return (
     <span className={s.costo}>
-      <span className={s.costoTexto}>Cuesta</span>
+      <span className={s.costoTexto}><Texto>Cuesta</Texto></span>
       <Moneda />
       <strong>{miles(monto)}</strong>
     </span>
@@ -86,9 +87,10 @@ export function CostoMonedas({ monto }) {
  *  - children: en vez de "+N", una frase ("Hasta +4 monedas al acertar")
  *  - icono: en vez de la moneda (p. ej. <IconoWala nombre="regalo" /> de un premio)
  */
-export function GananciaMonedas({ monto, children, icono }) {
+export function GananciaMonedas({ monto, children, icono, etiqueta }) {
   return (
     <span className={s.ganancia}>
+      {etiqueta && <span className={s.costoTexto}><Texto>{etiqueta}</Texto></span>}
       {icono || <Moneda />}
       {children ? <span className={s.gananciaTexto}>{children}</span> : <strong>+{miles(monto)}</strong>}
     </span>

@@ -12,8 +12,9 @@ import s from './BarraProgreso.module.css';
  *    (días de una racha: se cuentan de un vistazo).
  *  - etiqueta: en vez de `texto`, una fila con la etiqueta a la izquierda y
  *    "valor/max" a la derecha ("Felicidad … 40/100", "Días reclamados … 4/7").
+ *  - ariaLabel: nombre de la barra para lectores de pantalla (sin texto visible)
  */
-export function BarraProgreso({ valor, max = 100, texto: textoPropio, minimo = 8, pasos = false, etiqueta }) {
+export function BarraProgreso({ valor, max = 100, texto: textoPropio, minimo = 8, pasos = false, etiqueta, ariaLabel }) {
   const texto = etiqueta
     ? <span className={s.fila}><span>{etiqueta}</span><strong>{Number(valor) || 0}/{max}</strong></span>
     : textoPropio;
@@ -32,7 +33,7 @@ export function BarraProgreso({ valor, max = 100, texto: textoPropio, minimo = 8
   return (
     <div className={s.barra}>
       {texto && <span className={s.texto}>{texto}</span>}
-      <span className={s.pista} role="progressbar" aria-valuemin={0} aria-valuemax={max} aria-valuenow={valor}>
+      <span className={s.pista} role="progressbar" aria-valuemin={0} aria-valuemax={max} aria-valuenow={valor} aria-label={ariaLabel}>
         <span style={{ width: `${pct}%` }} />
       </span>
     </div>
