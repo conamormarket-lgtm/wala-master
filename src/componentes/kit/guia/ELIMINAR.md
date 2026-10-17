@@ -55,29 +55,42 @@ cambiado) y borrar también su CSS.
 | `pages/Tienda/components/ProductCard/` (`ProductCard.jsx` + `.module.css`; con reseñas inventadas) | nadie (ya estaba sin uso) | — | nadie | **listo para borrar** |
 | `components/common/ProductCardSkeleton/` | `FeaturedCarousel`, `CollectionCarousel`, `FlashSales` mientras cargan | `EsqueletoProducto` del kit | esos tres | con la carga (paso 7, CARGA.md) |
 
-## Paso 5: secciones del builder (inicio, /tienda y marcas)
+## Paso 5: secciones del builder (todas las páginas menos el cacherito)
 
-Cada tipo pasa al kit en el inicio (`/`), `/tienda` y las páginas de marca;
-en las landings sin marca y en el cacherito sigue el componente viejo. Todos
-siguen cargados por `pages/Tienda/services/seccionesPorTipo.jsx` y por el
-interruptor `seccionesViejo` (que vuelve a todos a la vez).
+Desde el 2026-10-17 todos los tipos del builder van con el kit en todas las
+páginas, salvo las del cacherito (`esDelCacherito`): ahí, y con el
+interruptor `seccionesViejo`, siguen los componentes viejos, que carga
+`pages/Tienda/services/seccionesPorTipo.jsx`. Lo que el cacherito usa
+(`announcement_bar`, `header`, `video`, `faq_accordion`, `conversion_fold`,
+`landing_payment`) **no se borra** mientras esa landing exista; el resto, al
+retirar `seccionesViejo`.
 
 | Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
 |---|---|---|---|---|
-| `pages/Tienda/components/AnnouncementBar/` | `announcement_bar` | `BarraAnuncios` (`SeccionDelKit`) | `seccionesPorTipo.jsx` (`/tienda`, marcas, landings, `seccionesViejo`) | cuando esas páginas pasen al kit y se retire `seccionesViejo` |
+| `pages/Tienda/components/AnnouncementBar/` | `announcement_bar` | `BarraAnuncios` (`SeccionDelKit`) | `seccionesPorTipo.jsx` (cacherito y `seccionesViejo`) | cuando no quede el cacherito y se retire `seccionesViejo` |
 | `pages/Tienda/components/HeroCarousel/` | `hero_carousel` | `HeroCarrusel` | ídem | ídem |
 | `pages/Tienda/components/TrustBadges/` | `trust_badges` | `InsigniasConfianza` | ídem | ídem |
 | `pages/Tienda/components/Testimonials/` | `testimonials` | `Testimonios` | ídem y `VisualEditorPanel.jsx` (editor viejo, paso 8) | ídem y con el editor del kit |
 | `pages/Tienda/components/FaqAccordion/` | `faq_accordion` | `PreguntasFrecuentes` (sin Kapi con sesión) | ídem | ídem |
-| `pages/Tienda/components/ProductQueryCarousel/` | `new_arrivals_carousel`, `sale_carousel`, `category_carousel` | `CarruselProductos` con las mismas consultas (`query-carousel`) hechas en `TiendaPage` (las de categoría con `useQueries`) | `seccionesPorTipo.jsx` (landings sin marca, `seccionesViejo`) | cuando esas landings pasen al kit y se retire `seccionesViejo` |
+| `pages/Tienda/components/ProductQueryCarousel/` | `new_arrivals_carousel`, `sale_carousel`, `category_carousel` | `CarruselProductos` con las mismas consultas (`query-carousel`) hechas en `TiendaPage` (las de categoría con `useQueries`) | `seccionesPorTipo.jsx` (`seccionesViejo`) | al retirar `seccionesViejo` |
 | `pages/Tienda/components/FeaturedCarousel/` (en secciones) | `featured_carousel` del inicio | `CarruselProductos` | `ProductQueryCarousel`, `ProductDetail.jsx` (relacionados), `CuentaCompraDetallePage.jsx`, `seccionesPorTipo.jsx` | cuando migren la ficha (paso 6), el detalle del pedido y las demás páginas |
-| `pages/Tienda/components/BannerGrid/` | `banner_grid` del inicio | `MosaicoBanners` (con `marcas` de la consulta `['brands']`) | `seccionesPorTipo.jsx` (otras páginas, `seccionesViejo`) | cuando esas páginas pasen al kit y se retire `seccionesViejo` |
+| `pages/Tienda/components/BannerGrid/` | `banner_grid` del inicio | `MosaicoBanners` (con `marcas` de la consulta `['brands']`) | `seccionesPorTipo.jsx` (`seccionesViejo`) | al retirar `seccionesViejo` |
 | `pages/Tienda/components/CategoryGrid/` | `category_grid` del inicio | `GrillaCategorias` + `categoriasDeGrilla` (misma cuenta, foto y orden) | `seccionesPorTipo.jsx` (`/tienda` y marcas: `migrateHomeCategoryGrid`) | ídem |
-| `pages/Tienda/components/HeaderBlock/` | `header` (`/tienda`, marcas) | `Encabezado` ("Nuestra Tienda" si no hay título) | `seccionesPorTipo.jsx` (landings sin marca, cacherito: "Elige tu acabado"…), `services/storefront.js` (solo el nombre del tipo) | cuando las landings pasen al kit y se retire `seccionesViejo` |
+| `pages/Tienda/components/HeaderBlock/` | `header` (`/tienda`, marcas) | `Encabezado` ("Nuestra Tienda" si no hay título) | `seccionesPorTipo.jsx` (cacherito: "Elige tu acabado"…), `services/storefront.js` (solo el nombre del tipo) | cuando no quede el cacherito y se retire `seccionesViejo` |
 | `pages/Tienda/components/BrandMarquee/` (con su `.module.css`) | `marquee` | `MarcasMarquesina` | `seccionesPorTipo.jsx`; `services/brands.js` solo lo nombra en un comentario | ídem |
 | `pages/Tienda/components/HeroBanner.jsx` y `HeroBanner.module.css` | `hero_banner` (marcas) | `BannerPrincipal` (`onClicBoton` → `trackBannerClick`) | `seccionesPorTipo.jsx`. `HeroBannerMediaUploader` de `VisualEditorPanel.jsx` es otra cosa (el editor viejo) | ídem |
 | `pages/Tienda/components/VisualCategoryNav/` | `categories_nav` (marcas) | `NavCategorias` (`estilo` de la marca, `cargando`) | `seccionesPorTipo.jsx`; `SidebarCatalogLayout.jsx` solo lo nombra en un comentario | ídem |
 | `pages/Tienda/components/SidebarCatalogLayout.jsx` y `.module.css` | `sidebar_catalog` (`/tienda`, marcas) | `CatalogoConFiltros` con el estado en `TiendaPage` (`filtrosKit`, `categoriaKit`, consultas `collections`/`tags`/`characters`/`productTypes`/`brands`/`storefront-category-grid-products`) | **`pages/SearchPage.jsx`** (la búsqueda, `/buscar`), `seccionesPorTipo.jsx`; los textos `cat.*` de `i18n/dictionaries.js` | cuando pase la búsqueda (BUSCAR.md) y se retire `seccionesViejo`; con él, las claves `cat.*` que nadie más use |
 | `pages/Tienda/components/ProductGrid/` | `product_grid` y el catálogo (`/tienda`, marcas) | `GrillaProductos` | `SidebarCatalogLayout.jsx` (la búsqueda), `featured_products` (aún viejo, en `TiendaPage`), `seccionesPorTipo.jsx` | cuando pasen la búsqueda y `featured_products` |
 | `landing-mobile.css`: `.heroContainer`, `.title`, `.subtitle`, `.actionButton` dentro de `@media (max-width: 768px)` | el `HeroBanner` viejo en las landings | — (el kit no usa esas clases) | revisar si el cacherito las usa antes de borrar | cuando no quede `HeroBanner` en ninguna landing |
-| `TiendaPage.jsx`: `catalogSectionRef` y las ramas viejas de `renderSection` (`case 'header'`, `'marquee'`, `'sidebar_catalog'`, `'product_grid'`, `'hero_banner'`, `'categories_nav'`…) | lo de antes | `seccionDelKit` | el interruptor y las landings sin marca | junto con sus componentes |
+| `TiendaPage.jsx`: `catalogSectionRef` y las ramas viejas de `renderSection` (`case 'header'`, `'marquee'`, `'sidebar_catalog'`, `'product_grid'`, `'hero_banner'`, `'categories_nav'`…) | lo de antes | `seccionDelKit` | el interruptor y el cacherito | junto con sus componentes |
+| `pages/Tienda/components/TextBlock/` | `text` | `BloqueTexto` | `seccionesPorTipo.jsx` (`seccionesViejo`) | al retirar `seccionesViejo` |
+| `pages/Tienda/components/ImageBlock/` | `image` | `BloqueImagen` | ídem | ídem |
+| `TiendaPage.jsx`: `case 'video'` (el video armado a mano, con el salto de `video-02.mp4` del reloj) | `video` | `BloqueVideo` | el cacherito | cuando no quede el cacherito |
+| `pages/Tienda/components/BestSellersRow/` | `bestsellers_row` | `FilaDestacados` | `seccionesPorTipo.jsx` (`seccionesViejo`) | al retirar `seccionesViejo` |
+| `pages/Tienda/components/FeatureList/` | `feature_list` | `ListaBeneficios` | ídem | ídem |
+| `pages/Tienda/components/MapLocation/` | `map_location` | `Ubicacion` | ídem | ídem |
+| `pages/Tienda/components/CollectionCarousel/` | `collection_carousel` | `CarruselProductos` con las consultas `collection-products` / `collection-details` en `TiendaPage` | ídem | ídem |
+| `pages/Tienda/components/FlashSales/` | `flash_sales` | `OfertaRelampago` con la consulta `flash-sales` en `TiendaPage` | ídem | ídem |
+| `TiendaPage.jsx`: `case 'featured_products'` | `featured_products` | `GrillaProductos` | — | al retirar `seccionesViejo`; con él, `ProductGrid` queda solo para la búsqueda |
+| `landing-mobile.css`: el tema oscuro de `.landing-page-wrapper` | todas las landings | las sin marca con el kit llevan `landing-store-page` | el cacherito | **no borrar**: es el tema del cacherito |

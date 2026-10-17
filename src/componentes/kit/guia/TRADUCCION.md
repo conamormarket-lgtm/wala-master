@@ -48,6 +48,7 @@ import { useTranslatedText, useTranslatedHtml } from './i18n/useTranslatedText';
 |---|---|
 | `TarjetaProducto` | el nombre y la categoría (también en el aria-label) |
 | `TituloSeccion` | título, subtítulo y antetítulo (los del builder) |
+| Secciones del builder | lo que escribe el admin: anuncios y su "Ver", diapositivas (título, subtítulo, botón), encabezado, texto (`TextoCampo`), banner (botón), insignias y beneficios (`Beneficio`), testimonios (opinión y tema; nombre y ciudad, tal cual), preguntas y respuestas (`Acordeon`), la tarjeta de ayuda, la fila de destacados (`TarjetaDestacado`), la cita, la oferta relámpago y las líneas del mapa. Como `<T>`: solo textos sueltos; un título con resalte va tal cual |
 | `Migas` | cada miga (la categoría) |
 | `PaginaProducto` | el nombre, la galería y la descripción (`useHtml`) |
 | `ItemCarrito` | el nombre |

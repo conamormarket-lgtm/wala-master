@@ -26,7 +26,7 @@ página), **A** = las páginas de acceso (A1-A4).
 | Página | Ficha | Estado |
 |---|---|---|
 | Lo viejo que se borra al final | [ELIMINAR.md](ELIMINAR.md) | una fila por archivo o componente viejo: qué lo reemplazó, quién lo importa todavía y cuándo se puede borrar |
-| Secciones del builder (paso 5) | [MIGRACION.md](MIGRACION.md) (paso 5), [INICIO.md](INICIO.md), [TIENDA.md](TIENDA.md) y [NAVEGAR.md](NAVEGAR.md) | el inicio, `/tienda` (catálogo con filtros) y las páginas de marca ya con el kit desde el 2026-10-16 (`SeccionDelKit` en `TiendaPage`); landings sin marca y cacherito, con lo de antes; interruptor `seccionesViejo` |
+| Secciones del builder (paso 5) | [MIGRACION.md](MIGRACION.md) (paso 5), [INICIO.md](INICIO.md), [TIENDA.md](TIENDA.md) y [NAVEGAR.md](NAVEGAR.md) | hecho: el inicio, `/tienda` (catálogo con filtros) y las páginas de marca desde el 2026-10-16, las landings sin marca y los tipos restantes desde el 2026-10-17 (`SeccionDelKit` en `TiendaPage`); el cacherito, con lo de antes; interruptor `seccionesViejo` |
 | Tarjeta de producto (paso 4) | [MIGRACION.md](MIGRACION.md) (paso 4) e [INICIO.md](INICIO.md) | en la tienda desde el 2026-10-16 en carruseles y grillas (`TarjetaDeProducto`); interruptor `tarjetasViejo` |
 | Avisos, hojas y confirmaciones (paso 3) | [MIGRACION.md](MIGRACION.md) (paso 3 e interruptores) | en la tienda desde el 2026-10-16: `HojaInferior` (`bloqueada`, `tamano`, foco), `Confirmar` + `useConfirmar` en vez de `confirm()`, toasts en vez de `alert()`; fichas en la demo de Piezas |
 | Inicio (`/`) | [INICIO.md](INICIO.md) | armada en la Tienda de prueba; con plan de migración (a futuro). **El marco (M1-M3, M7-M12 y el pie legal) ya está en la tienda** desde el 2026-10-16 (paso 2) |

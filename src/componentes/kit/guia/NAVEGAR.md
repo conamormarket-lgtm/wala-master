@@ -150,8 +150,20 @@ hasta él), `featured_carousel` / `sale_carousel` / `category_carousel` →
 Marcas, con buscador en vivo sobre todos los productos de la marca) y
 `marquee` → `MarcasMarquesina`. En `landing-mobile.css` la regla de los
 h1-h3 (y la de `.landing-store-page`) deja fuera `[data-kit-seccion]` con
-`:where()`, sin cambiar su peso para lo demás. Las landings sin marca y el
-cacherito siguen enteros con lo de antes. Interruptor: `seccionesViejo`.
+`:where()`, sin cambiar su peso para lo demás. Interruptor: `seccionesViejo`.
+
+Desde el 2026-10-17 también las **landings sin marca** van con el kit (todos
+los tipos) y con el fondo y los colores de la tienda: `TiendaPage` avisa con
+`onConKit` y `DynamicLandingPage` les pone `landing-store-page`, como a las de
+marca. El **cacherito** sigue entero con lo de antes y con su fondo negro:
+se reconoce por el slug del reloj (`isKcheroLanding`) o por llevar
+`conversion_fold` / `landing_payment` (`esDelCacherito`, en
+`pages/Tienda/services/seccionesDelKit.js`), así entra también
+`combo-reloj-billetera-2026`.
+
+En producción (2026-10-17): `testing` (un texto), `regalos-con-amor` (no se
+ve: la ruta es de `NuevosUsuariosPage`) y tres sin documento en `pages`
+(`deportes-top`, `pareja-viral`, `veranito-promo`, vacías como antes).
 
 **Falta:** lo de abajo (`PaginaMarca` con la identidad).
 
