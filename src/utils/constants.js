@@ -55,18 +55,24 @@ const ESTADO_BADGE_LABEL = {
 /**
  * Normaliza el estado del pedido a una key (ej. "impresion", "diseno") para comparaciones.
  * "En Impresión" -> "impresion", "En Diseño" -> "diseno", etc., para que coincida con ETAPAS_TIMELINE.
+ * Solo se quita "En" cuando es una palabra suelta: antes se recortaba cualquier
+ * "en" del principio y "Entregado" quedaba en "tregado" (el pedido entregado se
+ * veía en el paso 1 y sus monedas no se podían reclamar).
  */
 export function estadoToKey(estado) {
   if (estado == null || estado === '') return null;
-  let key = String(estado)
+  return String(estado)
     .toLowerCase()
+    .trim()
+    .replace(/^en\s+/, '')
     .replace(/\s/g, '')
     .replace(/ó/g, 'o')
     .replace(/í/g, 'i')
-    .replace(/ñ/g, 'n');
-  if (key.startsWith('en') && key.length > 2) key = key.slice(2);
-  return key;
+    .replace(/ñ/g, 'n') || null;
 }
+
+/** La etapa de ETAPAS_TIMELINE de una key de estado: entregado y completado son "finalizado". */
+export const etapaDeTimeline = (key) => (key === 'entregado' || key === 'completado' ? 'finalizado' : key);
 
 /**
  * Normaliza el estado para detectar en qué cola se encuentra (para casos como "LISTO PARA ...").

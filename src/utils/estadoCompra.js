@@ -198,8 +198,8 @@ function derivarEstadoErp(safe, permitirNull = false) {
   // Eje 1: etapa de producción normalizada a key (p.ej. "impresion", "reparto").
   const etapa = estadoToKey(safe.estadoGeneral || safe.status || safe.estado) || '';
 
-  // estadoToKey recorta el prefijo "en " y corrompe literales como "Entregado"
-  // (-> "tregado"); por eso comprobamos también el texto crudo para terminal/anulado.
+  // Además del key, se mira el texto crudo para terminal/anulado ("Entregado al
+  // cliente", "Cancelado por…").
   const rawEstado = String(safe.estadoGeneral || safe.status || safe.estado || '').toLowerCase();
   const esFinalizadoRaw = /entreg|finaliz|complet/.test(rawEstado);
   const esAnuladoRaw = /anul|cancel/.test(rawEstado);

@@ -12,6 +12,7 @@ import { GlassCard, GlassButton, Reveal, Stagger, StaggerItem } from '../../comp
 import {
   getEtapaBadgeLabel,
   estadoToKey,
+  etapaDeTimeline,
   getQueueStage,
   ESTADOS_COLORS,
   ETAPAS_TIMELINE,
@@ -168,7 +169,7 @@ function resumirRastreo(pedido, indiceCatalogo) {
   let pasoLabel = null; // nombre del paso actual (ej. "Pago", "Preparación") — pedido a mano
   if (hayFaseErpReal) {
     totalPasos = ETAPAS_TIMELINE.length; // 8 (Compra…Finalizado)
-    const idx = ETAPAS_TIMELINE.findIndex((e) => e.key === faseKey);
+    const idx = ETAPAS_TIMELINE.findIndex((e) => e.key === etapaDeTimeline(faseKey));
     pasoActual = idx >= 0 ? idx + 1 : 1;
     pasoLabel = ETAPAS_TIMELINE[pasoActual - 1]?.nombre || null;
   } else if (coarse && coarse.paso >= 0) {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ETAPAS_TIMELINE, estadoToKey, getQueueStage } from '../../utils/constants';
+import { ETAPAS_TIMELINE, estadoToKey, etapaDeTimeline, getQueueStage } from '../../utils/constants';
 import { Check } from 'lucide-react';
 import styles from './Timeline.module.css';
 
@@ -7,7 +7,7 @@ const STAGGER_MS = 60;
 
 const Timeline = ({ fechas, fechaCompra, pedido, onEtapaClick }) => {
   const fechasSeguras = fechas || {};
-  const estadoActualKey = pedido?.estadoGeneral ? (getQueueStage(pedido.estadoGeneral) || estadoToKey(pedido.estadoGeneral)) : null;
+  const estadoActualKey = pedido?.estadoGeneral ? etapaDeTimeline(getQueueStage(pedido.estadoGeneral) || estadoToKey(pedido.estadoGeneral)) : null;
 
   const etapas = ETAPAS_TIMELINE.map(etapa => {
     let fecha = null;
