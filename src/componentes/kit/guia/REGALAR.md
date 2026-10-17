@@ -13,7 +13,8 @@ Cómo verlo en vivo: `npm run dev` → http://localhost:3000/componentes.html �
   carrito.
 - **Pago rápido** (`/pago-rapido/:id`): en soles con tarjeta o en dólares
   con PayPal. Estados: ya pagado, vencido, no encontrado, el pago falla y
-  cargando.
+  cargando. **En la tienda desde el 2026-10-17** (ver "Pago rápido en la
+  tienda", abajo).
 
 | Regalar para una fecha | Su lista (celular) | El regalo y el pago rápido (celular) |
 |---|---|---|
@@ -69,15 +70,70 @@ ejemplo.
 - **`PagoTarjeta`:**
   - "Pagar S/ x" abre la ventana de Culqi.
   - Mientras cobra, "Confirmando tu pago" a pantalla completa.
+  - **Controlado** (`procesando`, `error`): tocar solo llama a `onPagar`
+    (abre la ventana, que cobra después) y la capa la pone la tienda. Si no,
+    la capa quedaría encima de la ventana mientras se escribe la tarjeta.
   - El error sale debajo, y bajo el mínimo (S/ 3 o US$ 1), el aviso de
     coordinar por WhatsApp.
 - **`PagoPaypal`:**
   - "Pagarás US$ x (≈ …)" y los botones del SDK (`botones`); en la demo, un
     botón.
-  - Mientras captura, "Procesando el pago… No cierres esta ventana".
+  - Mientras captura, "Procesando el pago… No cierres esta ventana". Los
+    botones del SDK quedan montados (ocultos): desmontarlos a mitad del pago
+    cortaba su aviso de vuelta.
   - El error sale debajo, y bajo US$ 1, el aviso.
 
-## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
+## Pago rápido en la tienda (hecho el 2026-10-17)
+
+![El pago rápido en la tienda real, en el celular: el concepto, el total en dólares, cuándo vence y los botones de PayPal](pago-rapido-tienda.webp)
+
+(Celular, 390 px, con un enlace de prueba del emulador. Se probó también a
+1366 y en oscuro.)
+
+- **Conector:** `src/components/pago/PagoRapidoDeTienda.jsx`, desde
+  `pages/PagoRapidoPage.jsx`. Lee `enlaces_pago/{id}` y lo pasa por
+  `enlacePagoDesde` (`adaptadores.js`): las reglas de la página vieja (vence
+  en `expiresAt` o a las 36 h de `createdAt`, salvo pagado; sin moneda es USD;
+  el monto en `monto`, `montoUSD` o `montoPEN`), "Vence hoy a las 18:30" y
+  el número de operación (`culqiChargeId` o el de PayPal).
+- **Tarjeta:** el mismo `CulqiCustomCheckout` (cobro, anti doble cobro, vigía
+  del modal cerrado, el píxel), con la prop nueva `renderBoton({ abrir,
+  procesando })`: el botón es `PagoTarjeta` controlado. **Sin esa prop todo
+  sigue igual** (checkout, saldo de un pedido y la landing del reloj).
+- **PayPal:** `PaypalEnlaceCheckout` con `soloBotones`: avisa "procesando" y
+  el error (`onProcesando`, `onError`) y `PagoPaypal` los muestra. Baja
+  aparte, solo con los enlaces en dólares.
+- **Escribir al asesor** (vencido o no encontrado): el número principal de
+  WhatsApp (`whatsapp_number_principal`, como el checkout) con "Hola, mi
+  enlace de pago (id) ya venció. ¿Me mandas uno nuevo?".
+- **Sin cuenta:** "Inicia sesión para pagar" y "Crear mi cuenta" con
+  `?redirect=` al enlace.
+- **Interruptor `pagosViejo`:** ahora también vuelve la página de antes
+  (`pages/PagoRapidoViejo.jsx`, que baja aparte).
+- **Carga:** 3,8 KB + 0,8 KB de CSS (gzip). PayPal (4,6 KB y su script) ya no
+  baja con los enlaces en soles; el SDK de Culqi, solo con ellos.
+
+### Qué se probó (2026-10-17, localhost con los emuladores)
+
+Enlaces de prueba sembrados en el emulador (`prueba-kit-*`):
+- En soles: el concepto, el total, "Vence hoy a las…", el botón del kit; el
+  SDK de Culqi baja y el de PayPal no. Tocar "Pagar" llega a la apertura de
+  Culqi, sin capa encima.
+- En dólares: "Vence mañana…" y los botones de PayPal (modo de prueba)
+  dentro de `PagoPaypal`; Culqi no baja.
+- Pagado ("¡Pago recibido!", "Operación chr_test_ABC123"), vencido, viejo sin
+  `expiresAt` de hace 40 h (vencido), sin moneda (en dólares) y un id que no
+  existe, con "Escribir al asesor".
+- `pagosViejo` en `localStorage.wala_kit_viejo` → la página de antes.
+- Sin cuenta, en la demo ("Visitante"); `PagoTarjeta` sin modo controlado, en
+  la demo (capa y "¡Pago recibido!").
+- 390 y 1366, claro y oscuro.
+
+No se probó: el cobro (en local no está la llave de Culqi,
+`REACT_APP_CULQI_PUBLIC_KEY`, y las Cloud Functions no corren; nunca se
+cobra de verdad), la captura de PayPal ni la app Android.
+
+## Llevar a la tienda (lo que falta: TODAVÍA NO se hace)
 
 ### Reemplazos
 
@@ -86,7 +142,7 @@ ejemplo.
 | `WishlistPublic` con `PremiumProductCard` y "Regalar esto" | `PaginaListaPublica` + `TarjetaRegalo` |
 | `GiftRegistryPage` (fechas arrastrables, `GiftProductCard`) | `PaginaRegalar` + `FechaEntrega` + `TarjetaRegalo` |
 | `GiftExperiencePage` (Kapi en CSS, emojis) | `PaginaRegaloSorpresa` + `SobreRegalo` |
-| `PagoRapidoPage` (estilos en línea) | `PaginaPagoRapido` |
+| ✓ `PagoRapidoPage` (estilos en línea) | `PaginaPagoRapido` (hecho) |
 | El botón y la nota de `CulqiCustomCheckout`; la caja de `PaypalCheckout` | `PagoTarjeta`, `PagoPaypal` |
 
 **Lo que no cambia:** la ventana de Culqi (`culqiSingleton`,
@@ -136,7 +192,7 @@ anónimo.
 
 ### Pasos
 
-1. `PaginaPagoRapido` primero: es chica y usa las piezas de pago.
+1. ✓ `PaginaPagoRapido` (2026-10-17, arriba).
 2. La lista pública.
 3. Regalar para una fecha (decidir si se mantiene el arrastre).
 4. Abrir el regalo.

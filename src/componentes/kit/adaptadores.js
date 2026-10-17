@@ -1057,6 +1057,53 @@ const vistasPorColor = (p, color) => (p?.customizationViews || []).flatMap((vist
   return [...de(vista.imagesByColor), ...(vista.hasBackSide ? de(vista.backSide?.imagesByColor) : [])];
 });
 
+/* ── Pago rápido ─────────────────────────────────────────── */
+
+const aFecha = (v) => {
+  if (!v) return null;
+  const f = typeof v.toDate === 'function' ? v.toDate() : new Date(typeof v.seconds === 'number' ? v.seconds * 1000 : v);
+  return Number.isNaN(f.getTime()) ? null : f;
+};
+const HORAS_ENLACE_VIEJO = 36;
+
+/**
+ * Un documento de enlaces_pago → { enlace, estado } para PaginaPagoRapido.
+ * Las reglas de PagoRapidoPage: vence en expiresAt (o a las 36 h de
+ * createdAt en los enlaces viejos), salvo que ya esté pagado; sin moneda es
+ * USD; el monto puede venir en monto, montoUSD o montoPEN.
+ *  - estado: undefined (se puede pagar) | 'vencido' | 'noEncontrado' (sin doc)
+ *  - enlace.vence: "Vence hoy a las 18:30", "Vence mañana a las 09:00",
+ *    "Vence el 20 de octubre a las 10:15"
+ */
+export function enlacePagoDesde(doc, { ahora = new Date() } = {}) {
+  if (!doc) return { enlace: {}, estado: 'noEncontrado' };
+  const pagado = doc.estado === 'pagado';
+  const creado = aFecha(doc.createdAt);
+  const vence = aFecha(doc.expiresAt) || (creado ? new Date(creado.getTime() + HORAS_ENLACE_VIEJO * 3600000) : null);
+  const vencido = Boolean(vence) && vence <= ahora && !pagado;
+  let textoVence;
+  if (vence && !pagado && !vencido) {
+    const hora = vence.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const dia = (f) => f.toLocaleDateString('es-PE', { year: 'numeric', month: 'numeric', day: 'numeric' });
+    const manana = new Date(ahora.getTime() + 86400000);
+    if (dia(vence) === dia(ahora)) textoVence = `Vence hoy a las ${hora}`;
+    else if (dia(vence) === dia(manana)) textoVence = `Vence mañana a las ${hora}`;
+    else textoVence = `Vence el ${vence.toLocaleDateString('es-PE', { day: 'numeric', month: 'long' })} a las ${hora}`;
+  }
+  return {
+    estado: vencido ? 'vencido' : undefined,
+    enlace: {
+      id: doc.id,
+      concepto: doc.concepto || '',
+      monto: Number(doc.monto || doc.montoUSD || doc.montoPEN || 0),
+      moneda: doc.moneda || 'USD',
+      vence: textoVence,
+      pagado,
+      transaccion: doc.paypalOrderId || doc.culqiChargeId || doc.transaccion || undefined,
+    },
+  };
+}
+
 /* ── Carrito ─────────────────────────────────────────────── */
 
 const esRelleno = (u) => !u || String(u).includes('placeholder');

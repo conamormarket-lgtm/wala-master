@@ -6,6 +6,7 @@ import { LogoWala, Trazo } from '../Marca';
 import { BloqueSeccion } from '../Seccion';
 import { EsqueletoPagina } from '../Esqueletos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
+import { Texto } from '../Traduccion';
 import { PagoTarjeta, PagoPaypal } from '../piezas/Pago';
 import s from './PagoRapido.module.css';
 
@@ -22,12 +23,15 @@ const importe = (monto, moneda) => `${moneda === 'USD' ? 'US$' : 'S/'} ${Number(
  *  - enlace: { concepto, monto, moneda ('PEN' | 'USD'), vence ("Vence hoy a
  *    las 18:30"), pagado, transaccion }
  *  - onTarjeta(): promesa · onPaypal(): promesa · botonesPaypal (los del SDK)
+ *  - tarjeta: { procesando, error } para PagoTarjeta controlado (la tienda:
+ *    onTarjeta abre la ventana de Culqi y, al cobrar, el enlace llega pagado)
+ *  - paypal: { procesando, error } mientras la tienda captura
  *  - sesion: para pagar hace falta una cuenta; sin ella, "Inicia sesión para
  *    pagar" (urlLogin, urlRegistro; al entrar, vuelve aquí)
  *  - urlWhatsApp: para pedir un enlace nuevo
  *  - estado: 'cargando' | 'noEncontrado' | 'vencido'
  */
-export function PaginaPagoRapido({ enlace = {}, sesion = true, urlLogin = '/login', urlRegistro = '/registro', onTarjeta, onPaypal, botonesPaypal, urlWhatsApp, estado }) {
+export function PaginaPagoRapido({ enlace = {}, sesion = true, urlLogin = '/login', urlRegistro = '/registro', onTarjeta, onPaypal, botonesPaypal, urlWhatsApp, estado, tarjeta, paypal }) {
   const [pagado, setPagado] = useState(false);
   if (estado === 'cargando') return <EsqueletoPagina forma="formulario" />;
   if (estado === 'noEncontrado' || estado === 'vencido') {
@@ -37,10 +41,10 @@ export function PaginaPagoRapido({ enlace = {}, sesion = true, urlLogin = '/logi
         <div className={s.tarjeta}>
           <EstadoVacio
             imagen={CARAS_KAPI.triste}
-            titulo={vencido ? 'Este enlace ya venció' : 'No encontramos este enlace'}
-            texto={vencido ? 'Por seguridad, los enlaces de pago duran poco. Pídele uno nuevo a tu asesor.' : 'Revisa que esté completo o pídele a tu asesor que te lo mande otra vez.'}
+            titulo={<Texto>{vencido ? 'Este enlace ya venció' : 'No encontramos este enlace'}</Texto>}
+            texto={<Texto>{vencido ? 'Por seguridad, los enlaces de pago duran poco. Pídele uno nuevo a tu asesor.' : 'Revisa que esté completo o pídele a tu asesor que te lo mande otra vez.'}</Texto>}
           >
-            {urlWhatsApp && <Boton to={urlWhatsApp} icono={<MessageCircle aria-hidden="true" />}>Escribir al asesor</Boton>}
+            {urlWhatsApp && <Boton to={urlWhatsApp} icono={<MessageCircle aria-hidden="true" />}><Texto>Escribir al asesor</Texto></Boton>}
           </EstadoVacio>
         </div>
       </BloqueSeccion>
@@ -56,34 +60,37 @@ export function PaginaPagoRapido({ enlace = {}, sesion = true, urlLogin = '/logi
         {listo ? (
           <div className={s.listo}>
             <img src={CARAS_KAPI.feliz} alt="" width="110" height="110" />
-            <h1 className={s.titulo}>¡Pago recibido!<Trazo className={s.trazo} /></h1>
-            <p>Tu pago de <strong>{importe(enlace.monto, enlace.moneda)}</strong> se hizo correctamente. Tu asesor ya lo ve.</p>
-            {enlace.transaccion && <p className={s.transaccion}><CheckCircle2 aria-hidden="true" /> Operación {enlace.transaccion}</p>}
+            <h1 className={s.titulo}><Texto>¡Pago recibido!</Texto><Trazo className={s.trazo} /></h1>
+            <p><Texto>Tu pago de</Texto> <strong>{importe(enlace.monto, enlace.moneda)}</strong> <Texto>se hizo correctamente. Tu asesor ya lo ve.</Texto></p>
+            {enlace.transaccion && <p className={s.transaccion}><CheckCircle2 aria-hidden="true" /> <Texto>Operación</Texto> {enlace.transaccion}</p>}
           </div>
         ) : (
           <>
-            <h1 className={s.titulo}>Pago rápido<Trazo className={s.trazo} /></h1>
+            <h1 className={s.titulo}><Texto>Pago rápido</Texto><Trazo className={s.trazo} /></h1>
             <dl className={s.detalle}>
               <div>
-                <dt>Concepto</dt>
-                <dd>{enlace.concepto}</dd>
+                <dt><Texto>Concepto</Texto></dt>
+                <dd><Texto>{enlace.concepto}</Texto></dd>
               </div>
               <div className={s.total}>
-                <dt>Total a pagar</dt>
+                <dt><Texto>Total a pagar</Texto></dt>
                 <dd>{importe(enlace.monto, enlace.moneda)}</dd>
               </div>
             </dl>
-            {enlace.vence && <p className={s.vence}>{enlace.vence}</p>}
+            {enlace.vence && <p className={s.vence}><Texto>{enlace.vence}</Texto></p>}
             {!sesion ? (
               <div className={s.entrar}>
-                <p><strong>Para pagar necesitas tu cuenta.</strong> Así el pago queda a tu nombre. Al entrar, vuelves aquí.</p>
-                <Boton to={urlLogin} bloque tamano="lg" icono={<LogIn aria-hidden="true" />}>Inicia sesión para pagar</Boton>
-                <Boton to={urlRegistro} bloque variante="contorno">Crear mi cuenta</Boton>
+                <p><strong><Texto>Para pagar necesitas tu cuenta.</Texto></strong> <Texto>Así el pago queda a tu nombre. Al entrar, vuelves aquí.</Texto></p>
+                <Boton to={urlLogin} bloque tamano="lg" icono={<LogIn aria-hidden="true" />}><Texto>Inicia sesión para pagar</Texto></Boton>
+                <Boton to={urlRegistro} bloque variante="contorno"><Texto>Crear mi cuenta</Texto></Boton>
               </div>
             ) : usd ? (
-              <PagoPaypal montoUsd={Number(enlace.monto) || 0} mostrarMonto={false} botones={botonesPaypal} onPagar={async () => { await onPaypal?.(); setPagado(true); }} />
+              <PagoPaypal montoUsd={Number(enlace.monto) || 0} mostrarMonto={false} botones={botonesPaypal} procesando={paypal?.procesando} error={paypal?.error} onPagar={async () => { await onPaypal?.(); setPagado(true); }} />
             ) : (
-              <PagoTarjeta monto={Number(enlace.monto) || 0} onPagar={async () => { await onTarjeta?.(); setPagado(true); }} />
+              <PagoTarjeta
+                monto={Number(enlace.monto) || 0}
+                {...(tarjeta ? { procesando: Boolean(tarjeta.procesando), error: tarjeta.error, onPagar: onTarjeta } : { onPagar: async () => { await onTarjeta?.(); setPagado(true); } })}
+              />
             )}
           </>
         )}

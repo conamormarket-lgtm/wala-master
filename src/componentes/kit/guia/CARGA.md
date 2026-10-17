@@ -169,6 +169,9 @@ Ya en la tienda (paso 6, la ficha de producto, 2026-10-17):
 - Los relacionados no tienen esqueleto: aparecen debajo de las opiniones
   cuando llegan, fuera de la vista.
 
+Ya en la tienda (paso 6, el pago rápido, 2026-10-17): mientras llega el
+enlace (y la sesión), `EsqueletoPagina forma="formulario"`.
+
 Ya en la tienda (paso 6, el carrito, 2026-10-17): el carrito sale de
 localStorage al instante, así que no tiene esqueleto propio (la ruta sigue con
 el `PageLoading` de `App.jsx` hasta el paso 7). "También te puede gustar" no

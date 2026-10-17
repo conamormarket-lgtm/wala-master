@@ -59,7 +59,11 @@ const bloquearScrollDeFondo = (bloquear) => {
   }
 };
 
-const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, onOpen, autoOpen = false, reopenKey = 0, buttonLabel, title: tituloModal }) => {
+// renderBoton (opcional): ({ abrir, procesando }) => el botón de quien lo usa
+// (el del kit, en el pago rápido). Solo cambia lo que se dibuja: el cobro, los
+// guardas y la capa "Confirmando tu pago" son los mismos. Sin ella, el botón y
+// la nota de siempre (checkout, saldo de un pedido, el cacherito).
+const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, onOpen, autoOpen = false, reopenKey = 0, buttonLabel, title: tituloModal, renderBoton }) => {
   const toast = useGlobalToast();
   const [isReady, setIsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -365,23 +369,27 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, onOpen, autoO
   }, []);
 
   return (
-    <div className={styles.wrap}>
-      <button
-        type="button"
-        className={styles.payButton}
-        onClick={handleOpenCheckout}
-        disabled={isProcessing}
-      >
-        {isProcessing ? (
-          <><span className={styles.spinner} aria-hidden="true" /> Procesando tu pago...</>
-        ) : (
-          <><CreditCard size={20} aria-hidden="true" /> {buttonLabel || 'Pagar con tarjeta'}</>
-        )}
-      </button>
-      <p className={styles.secureNote}>
-        <Lock size={13} aria-hidden="true" />
-        Pago seguro con Culqi. Walá no guarda los datos de tu tarjeta.
-      </p>
+    <div className={renderBoton ? undefined : styles.wrap}>
+      {renderBoton ? renderBoton({ abrir: handleOpenCheckout, procesando: isProcessing }) : (
+        <>
+          <button
+            type="button"
+            className={styles.payButton}
+            onClick={handleOpenCheckout}
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <><span className={styles.spinner} aria-hidden="true" /> Procesando tu pago...</>
+            ) : (
+              <><CreditCard size={20} aria-hidden="true" /> {buttonLabel || 'Pagar con tarjeta'}</>
+            )}
+          </button>
+          <p className={styles.secureNote}>
+            <Lock size={13} aria-hidden="true" />
+            Pago seguro con Culqi. Walá no guarda los datos de tu tarjeta.
+          </p>
+        </>
+      )}
       {/* En un portal: dentro de la hoja de "Pagar saldo" (que se mueve con
           transform) una capa fija quedaría atrapada en la hoja. */}
       {pantalla && !pagosViejo && typeof document !== 'undefined' && createPortal(

@@ -1,144 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import Boton from '../componentes/kit/Boton';
-import { getDocument } from '../services/firebase/firestore';
-import PaypalEnlaceCheckout from '../components/PaypalCheckout/PaypalEnlaceCheckout';
-import CulqiCustomCheckout from '../components/CulqiCustomCheckout';
-import { T } from '../i18n/useTranslatedText';
+import React, { lazy, Suspense } from 'react';
+import useLoViejo from '../hooks/useLoViejo';
+import PagoRapidoDeTienda from '../components/pago/PagoRapidoDeTienda';
 
+// La página de antes solo baja con el interruptor pagosViejo.
+const PagoRapidoViejo = lazy(() => import('./PagoRapidoViejo'));
+
+// Pago rápido (/pago-rapido/:id), paso 6 de la migración: PaginaPagoRapido del
+// kit. pagosViejo vuelve a la página de antes (PagoRapidoViejo.jsx).
 const PagoRapidoPage = () => {
-  const { id } = useParams();
-  const [enlace, setEnlace] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [pagoCompletado, setPagoCompletado] = useState(false);
-  // Pagar pide una cuenta (no un anónimo): el cobro con tarjeta exige sesión
-  // en el servidor y así el pago queda a su nombre. Al entrar, vuelve aquí.
-  const { user, loading: authLoading } = useAuth();
-  const sinCuenta = !authLoading && (!user || user.isAnonymous);
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
-
-  useEffect(() => {
-    const fetchEnlace = async () => {
-      setLoading(true);
-      const { data, error: fetchError } = await getDocument('enlaces_pago', id);
-      
-      if (fetchError || !data) {
-        setError('El enlace de pago no es válido o no existe.');
-      } else {
-        // Los enlaces nuevos traen expiración autoritativa del servidor. Los
-        // enlaces legacy conservan el límite histórico de 36 horas.
-        if (data.expiresAt || data.createdAt) {
-          const rawExpiry = data.expiresAt;
-          const expiryDate = rawExpiry
-            ? (rawExpiry.toDate ? rawExpiry.toDate() : new Date(rawExpiry))
-            : (() => {
-                const created = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
-                return new Date(created.getTime() + (36 * 60 * 60 * 1000));
-              })();
-
-          if (expiryDate <= new Date() && data.estado !== 'pagado') {
-            // La página pública nunca elimina documentos. La limpieza corresponde al servidor.
-            setError('Este enlace de pago ha expirado. Solicita uno nuevo por el chat.');
-            setLoading(false);
-            return;
-          }
-        }
-
-        setEnlace(data);
-        if (data.estado === 'pagado') {
-          setPagoCompletado(true);
-        }
-      }
-      setLoading(false);
-    };
-
-    if (id) {
-      fetchEnlace();
-    }
-  }, [id]);
-
-  const handlePagoExitoso = (details) => {
-    setPagoCompletado(true);
-    // Opcionalmente actualizar el estado local
-    setEnlace(prev => ({ ...prev, estado: 'pagado', paypalOrderId: details.id }));
-  };
-
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
-        <p style={{ color: '#64748b', fontSize: '1.1rem' }}><T>Cargando detalles del pago...</T></p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', padding: '1rem' }}>
-        <div style={{ maxWidth: '400px', width: '100%', background: 'white', padding: '2rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-          <span style={{ fontSize: '3rem' }}>⚠️</span>
-          <h2 style={{ color: '#334155', marginTop: '1rem' }}><T>Enlace no encontrado</T></h2>
-          <p style={{ color: '#64748b', marginTop: '0.5rem' }}>{error}</p>
-        </div>
-      </div>
-    );
-  }
-
+  const pagosViejo = useLoViejo('pagos');
+  if (!pagosViejo) return <PagoRapidoDeTienda />;
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', padding: '1rem' }}>
-      <div style={{ maxWidth: '450px', width: '100%', background: 'white', padding: '2.5rem 2rem', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
-        
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <img src="/logo-wala.svg" alt="Walá" style={{ height: '40px', marginBottom: '1rem' }} onError={(e) => { e.target.style.display = 'none' }} />
-          <h1 style={{ fontSize: '1.5rem', color: '#1e293b', margin: 0 }}><T>Pago Rápido</T></h1>
-        </div>
-
-        {pagoCompletado ? (
-          <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✅</div>
-            <h2 style={{ color: '#16a34a', marginBottom: '0.5rem', fontSize: '1.5rem' }}><T>¡Pago Exitoso!</T></h2>
-            <p style={{ color: '#475569' }}>
-              Tu pago por <strong>{enlace.moneda === 'PEN' ? 'S/' : '$'}{Number(enlace.monto || enlace.montoUSD || 0).toFixed(2)} {enlace.moneda || 'USD'}</strong> se ha procesado correctamente.
-            </p>
-            <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '1.5rem' }}>
-              ID de Transacción: {enlace?.paypalOrderId || 'Procesado'}
-            </p>
-          </div>
-        ) : (
-          <>
-            <div style={{ background: '#f1f5f9', padding: '1.25rem', borderRadius: '12px', marginBottom: '2rem' }}>
-              <p style={{ margin: '0 0 0.5rem 0', color: '#64748b', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Concepto</p>
-              <p style={{ margin: '0 0 1.25rem 0', color: '#1e293b', fontSize: '1.1rem', fontWeight: 500 }}>{enlace.concepto}</p>
-              
-              <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <span style={{ color: '#64748b' }}><T>Total a pagar</T></span>
-                <span style={{ color: '#0f172a', fontSize: '1.75rem', fontWeight: 'bold' }}>
-                  {enlace.moneda === 'PEN' ? 'S/' : '$'}{Number(enlace.monto || enlace.montoUSD || 0).toFixed(2)} <span style={{ fontSize: '1rem', color: '#64748b', fontWeight: 'normal' }}>{enlace.moneda || 'USD'}</span>
-                </span>
-              </div>
-            </div>
-
-            {sinCuenta ? (
-              <div style={{ display: 'grid', gap: '0.75rem' }}>
-                <p style={{ margin: 0, color: '#475569', fontSize: '0.95rem', lineHeight: 1.5 }}>
-                  <strong style={{ color: '#1e293b' }}><T>Para pagar necesitas tu cuenta.</T></strong>{' '}
-                  <T>Así el pago queda a tu nombre. Al entrar, vuelves aquí.</T>
-                </p>
-                <Boton bloque tamano="lg" onClick={() => navigate('/login', { state: { from: pathname } })}><T>Inicia sesión para pagar</T></Boton>
-                <Boton bloque variante="contorno" onClick={() => navigate('/registro', { state: { from: pathname } })}><T>Crear mi cuenta</T></Boton>
-              </div>
-            ) : (!enlace.moneda || enlace.moneda === 'USD') ? (
-              <PaypalEnlaceCheckout enlace={enlace} onSuccess={handlePagoExitoso} />
-            ) : (
-              <CulqiCustomCheckout enlace={enlace} onSuccess={handlePagoExitoso} />
-            )}
-          </>
-        )}
-        
-      </div>
-    </div>
+    <Suspense fallback={null}>
+      <PagoRapidoViejo />
+    </Suspense>
   );
 };
 

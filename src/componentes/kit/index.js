@@ -20,7 +20,7 @@ export { accionDeProducto, tarjetaDesdeProducto, esNuevo, opcionesDeProducto, ru
   sugerenciasDesdeBusqueda, grupoModalidad, ORDENES_BUSQUEDA, ordenarProductos, perfilDesdeUsuario, direccionDesdeFirestore, direccionAFirestore,
   recompensaDesdeFirestore, cuponDesdeFirestore, misionDesdeServidor, creacionDesdeDiseno, personaDesdeRecipient, personaARecipient, encuestaDesdeConfig,
   prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaCreacionDesde, prendaEstudioDesde,
-  fichaProductoDesde, opinionesDesde, itemCarritoDesde, navDeMarca, identidadDeMarca, plantillaDeMarca, BLOQUES_MARCA, ESQUELETO_MARCA, portadaDeCombo, categoriasDeGrilla } from './adaptadores';
+  fichaProductoDesde, opinionesDesde, itemCarritoDesde, enlacePagoDesde, navDeMarca, identidadDeMarca, plantillaDeMarca, BLOQUES_MARCA, ESQUELETO_MARCA, portadaDeCombo, categoriasDeGrilla } from './adaptadores';
 export { tipoDeEnlace } from './Enlace';
 export { default as Carrusel } from './Carrusel';
 export { default as Marquesina } from './Marquesina';

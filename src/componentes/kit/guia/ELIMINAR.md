@@ -122,3 +122,11 @@ ficha nueva, solo `ProductDetail` con `fichaVieja`).
 | `pages/Tienda/components/CartItem/` (`CartItem.jsx`, `CartItem.module.css` de 463 líneas) | `Cart.jsx` | `ItemCarrito` + `itemCarritoDesde` | solo `Cart.jsx` | junto con `Cart/` |
 | `CartPage.jsx`: la rama vieja (título "Carrito de Compras", "Continuar comprando", `AuroraBackground`) + `CartPage.module.css` | `/carrito` | `PaginaCarrito` (título, "Seguir comprando") | — | al retirar `carritoViejo` |
 | `pages/Tienda/components/ComboProductImage/` (en el carrito) | `CartItem.jsx` (pedía las prendas y precargaba sus fotos por línea) | la portada o la foto de la primera prenda (`itemCarritoDesde`) | `ProductTable.jsx` y `AdminProductos.jsx` (admin), `MiCreacionCard.jsx` (cuenta) | **no borrar**: lo usan el admin y la cuenta |
+
+### El pago rápido (2026-10-17)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/PagoRapidoViejo.jsx` (la página de antes, con estilos en línea; copia de lo que era `PagoRapidoPage.jsx`) | `/pago-rapido/:id` | `components/pago/PagoRapidoDeTienda.jsx` → `PaginaPagoRapido` del kit | `pages/PagoRapidoPage.jsx` (lazy, solo con `pagosViejo`) | al retirar `pagosViejo` |
+| `PaypalEnlaceCheckout.jsx`: las cajas de error y "Procesando pago..." con estilos en línea (todo menos `botones`) | el pago rápido viejo | `PagoPaypal` del kit (`soloBotones`) | solo `PagoRapidoViejo.jsx` | al retirar `pagosViejo`; queda `soloBotones` como única forma |
+| `CulqiCustomCheckout`: el botón y la nota propios (`.payButton`, `.secureNote`, `.spinner` del CSS) | checkout, "Pagar saldo" y la landing del reloj | `PagoTarjeta` del kit por `renderBoton` (por ahora solo el pago rápido) | `CheckoutPage.jsx`, `PedidoAcciones.jsx`, `LandingPaymentBlock.jsx` (el cacherito: **no se toca**) | **no borrar** mientras la landing del reloj lo use sin `renderBoton` |

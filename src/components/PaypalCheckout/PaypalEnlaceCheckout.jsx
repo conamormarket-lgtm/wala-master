@@ -6,9 +6,14 @@ import { T } from '../../i18n/useTranslatedText';
 
 const INTERNATIONAL_ADVANCE_TYPE = 'tiktok_live_international_advance';
 
-const PaypalEnlaceCheckout = ({ enlace, onSuccess }) => {
-  const [error, setError] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+// soloBotones (pago rápido con el kit): dibuja solo los botones del SDK y le
+// avisa a la página (onProcesando, onError) para que PagoPaypal muestre el
+// "Procesando…" y el error. Sin él, las cajas de siempre (pagosViejo).
+const PaypalEnlaceCheckout = ({ enlace, onSuccess, soloBotones = false, onProcesando, onError: onErrorPagina }) => {
+  const [error, setErrorPropio] = useState(null);
+  const [isProcessing, setProcesandoPropio] = useState(false);
+  const setError = (msg) => { setErrorPropio(msg); onErrorPagina?.(msg); };
+  const setIsProcessing = (v) => { setProcesandoPropio(v); onProcesando?.(v); };
 
   const usesSecureInternationalAdvance = enlace.tipo === INTERNATIONAL_ADVANCE_TYPE;
 
@@ -68,6 +73,18 @@ const PaypalEnlaceCheckout = ({ enlace, onSuccess }) => {
     setError("Ocurrió un error al cargar la pasarela de PayPal o al procesar tu pago.");
   };
 
+  const botones = (
+    <PayPalScriptProvider options={initialOptions}>
+      <PayPalButtons
+        createOrder={createOrder}
+        onApprove={onApprove}
+        onError={onError}
+        style={{ layout: "vertical", shape: "rect", color: "gold" }}
+      />
+    </PayPalScriptProvider>
+  );
+  if (soloBotones) return botones;
+
   return (
     <div style={{ marginTop: '1.5rem', width: '100%' }}>
       {error && (
@@ -77,14 +94,7 @@ const PaypalEnlaceCheckout = ({ enlace, onSuccess }) => {
       )}
 
       <div style={{ display: isProcessing ? 'none' : 'block' }}>
-        <PayPalScriptProvider options={initialOptions}>
-          <PayPalButtons 
-            createOrder={createOrder}
-            onApprove={onApprove}
-            onError={onError}
-            style={{ layout: "vertical", shape: "rect", color: "gold" }}
-          />
-        </PayPalScriptProvider>
+        {botones}
       </div>
 
       {isProcessing && (
