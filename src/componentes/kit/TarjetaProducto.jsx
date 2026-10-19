@@ -177,7 +177,7 @@ export default function TarjetaProducto({
   // Los textos fijos también pasan por la traducción.
   const t = {
     accion: useTexto(textoAccion || ACCIONES[accion].texto),
-    aria: useTexto(ACCIONES[accion].aria),
+    aria: useTexto(textoAccion || ACCIONES[accion].aria),
     agregado: useTexto('Agregado'),
     agregadoAria: useTexto('Agregado al carrito'),
     agotado: useTexto('Agotado'),

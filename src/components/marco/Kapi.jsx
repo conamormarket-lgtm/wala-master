@@ -58,6 +58,8 @@ export default function Kapi() {
   const enAcceso = ['/login', '/registro', '/completar-perfil', '/recuperar-contrasena'].some((r) => pathname.startsWith(r));
   // En la encuesta, el Kapi de la portada (y del final) es el único.
   const enEncuesta = pathname.startsWith('/encuesta-suscripcion');
+  // Crear ya tiene a Kapi diseñando en el arte de la portada (CREAR.md).
+  const enCrear = pathname === '/personalizar';
   const enMomentoTranquilo = esMomentoTranquilo(pathname);
   const [abierta, setAbierta] = useState(false);
 
@@ -165,7 +167,7 @@ export default function Kapi() {
     if (abierta && comidaPendiente) calentarKapi();
   }, [abierta, comidaPendiente, calentarKapi]);
 
-  if (enLanding || enEstudioCrear || enRegalo || enAcceso || enEncuesta) return null;
+  if (enLanding || enEstudioCrear || enRegalo || enAcceso || enEncuesta || enCrear) return null;
   // ?sesion=activa pinta a Kapi sin cuenta (solo fuera de producción; no
   // concede nada: el servidor decide si se puede alimentar).
   const perfil = userProfile || (diseno('sesion') === 'activa'

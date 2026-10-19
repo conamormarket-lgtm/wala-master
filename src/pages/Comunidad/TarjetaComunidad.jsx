@@ -1,8 +1,6 @@
 import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { ImageOff, Paintbrush, Users } from 'lucide-react';
-import { listarComunidad } from '../../services/comunidad';
 import { fondoColorGuardado } from '../../utils/prendaBase';
 import { useAlternarFotos } from '../../hooks/useAlternarFotos';
 import { useAlVerUnaVez } from '../../hooks/useAlVerUnaVez';
@@ -12,17 +10,9 @@ import duo from '../Crear/TarjetaMiCombo.module.css';
 import propios from './Comunidad.module.css';
 import PuntosColor from '../Crear/PuntosColor';
 
-/**
- * La galería (pública, sin sesión). Se vuelve a pedir cada vez que se muestra
- * (mientras, la de caché): con refetchOnMount: false global, una publicación
- * actualizada no se veía hasta recargar. El servidor ya la tiene en caché.
- */
-export const useComunidad = () => useQuery({
-  queryKey: ['comunidad'],
-  queryFn: listarComunidad,
-  staleTime: 60 * 1000,
-  refetchOnMount: 'always',
-});
+// useComunidad vive en su archivo (lo usan Crear y Comunidad del kit sin
+// bajar esta tarjeta); se reexporta para lo de antes.
+export { useComunidad } from './useComunidad';
 
 /**
  * Abre el estudio con este diseño de punto de partida. Un combo abre su

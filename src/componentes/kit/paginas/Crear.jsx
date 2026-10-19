@@ -10,6 +10,7 @@ import { EsqueletoProducto } from '../Esqueletos';
 import { TarjetaCreacion } from '../piezas/Creaciones';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { PortadaCrear, textoPara } from '../piezas/Crear';
+import { Texto, useTexto } from '../Traduccion';
 import s from './Crear.module.css';
 
 /*
@@ -17,13 +18,15 @@ import s from './Crear.module.css';
  * borradores y sus creaciones), los diseños de la comunidad para empezar
  * desde uno ya hecho y "Empieza una nueva": ¿para cuántos? y las prendas (o
  * los combos) para diseñar. Va dentro de MarcoTienda. Datos por props
- * (prendaCrearDesdeProducto, comboCrearDesde… en adaptadores).
+ * (prendaCrearDesdeProducto, comboCrearDesde… en adaptadoresCrear.js). Los
+ * textos pasan por la traducción.
  */
 
 const VISIBLES = { escritorio: 4, tablet: 2.5, movil: 1.35 };
 
 /** Una fila de tarjetas con su título y "Ver todas (N)". */
-function Fila({ titulo, subtitulo, accion, etiqueta, children }) {
+function Fila({ titulo, subtitulo, accion, etiqueta: etiquetaOriginal, children }) {
+  const etiqueta = useTexto(etiquetaOriginal);
   return (
     <BloqueSeccion ajustes={{ paddingTop: '1rem', paddingBottom: '1rem' }}>
       <div className={s.fila} data-componente="FilaCrear">
@@ -61,6 +64,11 @@ export function PaginaCrear({
   const hayAlgoArriba = borradores.length > 0 || creaciones.length > 0 || comunidad.length > 0;
   const nCreaciones = totalCreaciones ?? creaciones.length;
   const nComunidad = totalComunidad ?? comunidad.length;
+  const t = {
+    verTodas: useTexto(`Ver todas${nCreaciones > 1 ? ` (${nCreaciones})` : ''}`),
+    verTodos: useTexto(`Ver todos${nComunidad > 1 ? ` (${nComunidad})` : ''}`),
+    para: useTexto('¿Para cuántas personas?'),
+  };
 
   return (
     <>
@@ -78,7 +86,7 @@ export function PaginaCrear({
         <Fila
           titulo="Tus creaciones"
           subtitulo="Listas para comprar o seguir editando."
-          accion={{ texto: `Ver todas${nCreaciones > 1 ? ` (${nCreaciones})` : ''}`, url: urlCreaciones }}
+          accion={{ texto: t.verTodas, url: urlCreaciones }}
           etiqueta="Tus creaciones"
         >
           {creaciones.map(({ id, ...c }) => <TarjetaCreacion key={id} vertical {...c} />)}
@@ -89,7 +97,7 @@ export function PaginaCrear({
         <Fila
           titulo="Diseños de la comunidad"
           subtitulo="Elige uno y hazlo tuyo."
-          accion={{ texto: `Ver todos${nComunidad > 1 ? ` (${nComunidad})` : ''}`, url: urlComunidad }}
+          accion={{ texto: t.verTodos, url: urlComunidad }}
           etiqueta="Diseños de la comunidad"
         >
           {comunidad.map(({ id, ...d }) => <TarjetaCreacion key={id} vertical {...d} />)}
@@ -106,10 +114,10 @@ export function PaginaCrear({
             />
           )}
           {opciones.length > 1 && (
-            <div className={s.para} role="group" aria-label="¿Para cuántas personas?">
+            <div className={s.para} role="group" aria-label={t.para}>
               {opciones.map((o) => (
                 <Chip key={o.valor} activo={o.valor === elegido} icono={o.grupo ? <Users aria-hidden="true" /> : <User aria-hidden="true" />} onClick={() => onPara?.(o.valor)}>
-                  {o.texto}
+                  <Texto>{o.texto}</Texto>
                 </Chip>
               ))}
             </div>
@@ -129,8 +137,8 @@ export function PaginaCrear({
             </ul>
           ) : (
             <div className={s.vacio}>
-              <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Muy pronto" texto="Estamos preparando las prendas que podrás diseñar. Mientras tanto, mira lo que tenemos en la tienda.">
-                <Boton to={urlTienda}>Ir a la tienda</Boton>
+              <EstadoVacio imagen={CARAS_KAPI.feliz} titulo={<Texto>Muy pronto</Texto>} texto={<Texto>Estamos preparando las prendas que podrás diseñar. Mientras tanto, mira lo que tenemos en la tienda.</Texto>}>
+                <Boton to={urlTienda}><Texto>Ir a la tienda</Texto></Boton>
               </EstadoVacio>
             </div>
           )}

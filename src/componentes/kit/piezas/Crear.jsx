@@ -5,12 +5,14 @@ import { SelectorTalla } from '../Formulario';
 import { Sello, Trazo, Garabatos } from '../Marca';
 import { FotoProducto } from './FotoProducto';
 import { TituloEditable } from './Ficha';
+import { Texto } from '../Traduccion';
 import s from './Crear.module.css';
 
 /*
  * Piezas de Crear (/personalizar): la portada con los tres pasos y el texto
  * de "¿Para cuántos?". Las prendas y los combos son TarjetaProducto (accion
- * "crear") y el selector, Chip: ya estaban en el kit.
+ * "crear") y el selector, Chip: ya estaban en el kit. Los textos pasan por
+ * la traducción.
  */
 
 /* ── Portada ─────────────────────────────────────────────── */
@@ -53,10 +55,10 @@ export function PortadaCrear({
       <div className={s.portadaTexto}>
         <Garabatos variante="titulo" className={s.portadaGarabatos} />
         <h1 className={s.portadaTitulo}>
-          {titulo}
+          <Texto>{titulo}</Texto>
           <Trazo className={s.portadaTrazo} />
         </h1>
-        <p className={s.portadaBajada}>{texto}</p>
+        <p className={s.portadaBajada}><Texto>{texto}</Texto></p>
         <ol className={s.pasos}>
           {pasos.map(({ Icono, titulo: t, texto: x }, i) => (
             <li key={t} className={s.paso} style={{ '--i': i }}>
@@ -65,8 +67,8 @@ export function PortadaCrear({
                 <span className={s.pasoNumero} aria-hidden="true">{i + 1}</span>
               </span>
               <span className={s.pasoTextos}>
-                <strong><span className={s.oculto}>{i + 1}. </span>{t}</strong>
-                <span>{x}</span>
+                <strong><span className={s.oculto}>{i + 1}. </span><Texto>{t}</Texto></strong>
+                <span><Texto>{x}</Texto></span>
               </span>
             </li>
           ))}
