@@ -17,6 +17,7 @@ import { IconoWala, iconoDesde } from './IconosWala';
 import { Beneficio, TarjetaTestimonio, LogoMarca, TarjetaCategoria, StockBajo, TarjetaAyuda } from './piezas';
 import { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados } from './SeccionesContenido';
 import { BannerPrincipal, ListaBeneficios, Ubicacion, NavCategorias, GrillaProductos, CatalogoConFiltros, PiePagina } from './SeccionesExtra';
+import { atributosDeFoto, fuentesPorFetch } from '../../components/common/OptimizedImage/OptimizedImage';
 import s from './Secciones.module.css';
 
 /*
@@ -55,7 +56,7 @@ function MensajeAnuncio({ m, acento, oculto = false }) {
   };
   const cuerpo = (
     <>
-      {m.imageUrl ? <img src={m.imageUrl} alt="" className={s.anuncioImagen} />
+      {m.imageUrl ? <img {...atributosDeFoto(m.imageUrl, '64px')} alt="" className={s.anuncioImagen} />
         : icono ? <IconoWala nombre={icono} tamano={24} sticker={false} className={s.anuncioIcono} />
           : emoji ? <span aria-hidden="true">{emoji}</span>
             : acento ? <Destello className={s.anuncioDestello} /> : null}
@@ -225,8 +226,8 @@ export function HeroCarrusel({ ajustes = {} }) {
           const contenido = (
             <>
               <picture>
-                {d.mobileImageUrl && <source media="(max-width: 640px)" srcSet={d.mobileImageUrl} />}
-                <img src={d.imageUrl} alt={d.alt || d.title || ''} loading={k === 0 ? 'eager' : 'lazy'} style={{ objectPosition: d.imagePosition || 'center' }} />
+                {d.mobileImageUrl && <source media="(max-width: 640px)" srcSet={fuentesPorFetch(d.mobileImageUrl)?.srcSet || d.mobileImageUrl} sizes="100vw" />}
+                <img {...atributosDeFoto(d.imageUrl, '100vw')} alt={d.alt || d.title || ''} loading={k === 0 ? 'eager' : 'lazy'} style={{ objectPosition: d.imagePosition || 'center' }} />
               </picture>
               <span className={s.heroVelo} style={{ background: d.overlayColor || '#111827', opacity: (d.overlayOpacity ?? 20) / 100 }} />
               {(d.title || d.subtitle || d.buttonText) && (

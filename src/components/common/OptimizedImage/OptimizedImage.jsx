@@ -105,6 +105,12 @@ export const fuentesPorFetch = (src, sizes) => (fetchActivo() && sePuedeTraerPor
     ? { src: urlPorFetch(src, 800), srcSet: srcSetPorFetch(src), sizes: sizes || SIZES_POR_DEFECTO }
     : null);
 
+/** Para esparcir en una <img> propia: por fetch si se puede, si no la URL tal cual. */
+export const atributosDeFoto = (url, sizes) => fuentesPorFetch(url, sizes) || { src: url };
+
+// De una URL de fetch, la de Storage que lleva dentro.
+const urlOriginal = (urlFetch) => decodeURIComponent(urlFetch.slice(urlFetch.indexOf('/', BASE_FETCH.length) + 1));
+
 // La red de seguridad para TODAS las <img>, también las que dibujan su propia
 // etiqueta con fuentesDeImagen: el evento `error` no burbujea, pero se ve en
 // la fase de captura. Se cambia la <img> que falló a la original y se cuenta.
@@ -114,10 +120,19 @@ if (typeof window !== 'undefined') {
         if (!(img instanceof HTMLImageElement)) return;
         const pedida = img.currentSrc || img.src || '';
         if (!pedida.startsWith(BASE_FETCH)) return;
-        const original = decodeURIComponent(pedida.slice(pedida.indexOf('/', BASE_FETCH.length) + 1));
         fallosDeFetch += 1;
+        // Dentro de un <picture> manda el <source>: también vuelve a la original.
+        if (img.parentElement?.tagName === 'PICTURE') {
+            img.parentElement.querySelectorAll('source').forEach((fuente) => {
+                const copias = fuente.getAttribute('srcset') || '';
+                if (copias.startsWith(BASE_FETCH)) {
+                    fuente.removeAttribute('sizes');
+                    fuente.setAttribute('srcset', urlOriginal(copias.split(' ')[0]));
+                }
+            });
+        }
         img.removeAttribute('srcset');
-        img.src = original;
+        img.src = urlOriginal(pedida);
     }, true);
 }
 

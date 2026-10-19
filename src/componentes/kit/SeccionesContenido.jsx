@@ -7,6 +7,7 @@ import { TituloSeccion, tituloDesdeAjustes } from './Seccion';
 import { tarjetaDesdeMarca } from './adaptadores';
 import { EtiquetaColgante, Garabatos, Trazo, Destello, acento } from './Marca';
 import { toDirectImageUrl } from '../../utils/imageUrl';
+import { atributosDeFoto } from '../../components/common/OptimizedImage/OptimizedImage';
 import { TarjetaMarca, TarjetaDestacado } from './piezas';
 import { Texto } from './Traduccion';
 import s from './SeccionesContenido.module.css';
@@ -189,7 +190,7 @@ export function BloqueImagen({ ajustes = {}, primera = false }) {
   if (!url?.trim()) return null;
   const imagen = (
     <img
-      src={toDirectImageUrl(url)}
+      {...atributosDeFoto(toDirectImageUrl(url), '100vw')}
       alt={alt}
       className={s.imagen}
       style={{ borderRadius: borderRadius || undefined }}
@@ -336,7 +337,7 @@ export function MosaicoBanners({ ajustes = {}, marcas = [] }) {
         {banners.map((b, k) => (
           <li key={b.id || k}>
             <Enlace to={b.link} className={s.banner}>
-              <img src={toDirectImageUrl(b.imageUrl)} alt={b.alt || ''} loading="lazy" decoding="async" />
+              <img {...atributosDeFoto(toDirectImageUrl(b.imageUrl), '100vw')} alt={b.alt || ''} loading="lazy" decoding="async" />
             </Enlace>
           </li>
         ))}

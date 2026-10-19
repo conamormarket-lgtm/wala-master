@@ -12,6 +12,7 @@ import { TituloSeccion, tituloDesdeAjustes } from './Seccion';
 import { precioEfectivo, limitesDePrecio } from './adaptadores';
 import { TextoCampo, BotonDeAjustes, fuenteDe, prefiereQuieto } from './SeccionesContenido';
 import { toDirectImageUrl } from '../../utils/imageUrl';
+import { atributosDeFoto } from '../../components/common/OptimizedImage/OptimizedImage';
 import { EtiquetaColgante, Garabatos, LogoWala, Destello, Corazon, acento } from './Marca';
 import { TarjetaCategoria, TarjetaCategoriaEsqueleto, Beneficio, FotoProducto, OpcionesFiltro } from './piezas';
 import { CARAS_KAPI } from './piezas/Flotantes';
@@ -64,7 +65,7 @@ export function BannerPrincipal({ ajustes = {}, primera = false, onClicBoton }) 
           <video ref={video} src={mediaUrl} poster={thumbnailUrl || undefined} muted loop playsInline preload="none" aria-hidden="true" />
         ) : mediaUrl ? (
           <img
-            src={toDirectImageUrl(mediaUrl)}
+            {...atributosDeFoto(toDirectImageUrl(mediaUrl), '100vw')}
             alt=""
             loading={primera ? 'eager' : 'lazy'}
             fetchpriority={primera ? 'high' : undefined}

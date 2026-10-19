@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { Enlace } from '../Enlace';
 import { EtiquetaColgante } from '../Marca';
 import { toDirectImageUrl } from '../../../utils/imageUrl';
+import { atributosDeFoto } from '../../../components/common/OptimizedImage/OptimizedImage';
 import { iniciales } from './Avatar';
 import s from './TarjetaMarca.module.css';
 
@@ -47,7 +48,7 @@ export function TarjetaMarca({ marca, indice = 0, estilo = 'editorial', mostrarN
         <span className={s.marcaHilo} aria-hidden="true" />
         <span className={s.marcaLogo}>
           {marca.logo
-            ? <img src={toDirectImageUrl(marca.logo)} alt="" loading="lazy" decoding="async" />
+            ? <img {...atributosDeFoto(toDirectImageUrl(marca.logo), '160px')} alt="" loading="lazy" decoding="async" />
             : <span className={s.marcaIniciales} aria-hidden="true">{iniciales(marca.nombre)}</span>}
         </span>
       </span>

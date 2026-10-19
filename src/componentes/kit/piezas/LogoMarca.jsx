@@ -1,6 +1,7 @@
 import React from 'react';
 import { Enlace } from '../Enlace';
 import { toDirectImageUrl } from '../../../utils/imageUrl';
+import { atributosDeFoto } from '../../../components/common/OptimizedImage/OptimizedImage';
 import { iniciales } from './Avatar';
 import s from './LogoMarca.module.css';
 
@@ -27,7 +28,7 @@ export function LogoMarca({ variante = 'sticker', nombre, imagen, url, alt, form
     const sello = (
       <span className={[s.sello, className].filter(Boolean).join(' ')} style={giro != null ? { '--giro': `${giro}deg` } : undefined} title={nombre}>
         {imagen
-          ? <img src={toDirectImageUrl(imagen)} alt={alt ?? nombre ?? ''} loading="lazy" decoding="async" />
+          ? <img {...atributosDeFoto(toDirectImageUrl(imagen), '96px')} alt={alt ?? nombre ?? ''} loading="lazy" decoding="async" />
           : iniciales(nombre, 1) || '?'}
       </span>
     );
@@ -39,7 +40,7 @@ export function LogoMarca({ variante = 'sticker', nombre, imagen, url, alt, form
       <span className={[s.marcaForma, s[`forma_${forma}`]].filter(Boolean).join(' ')} style={FORMAS[forma] ? { clipPath: FORMAS[forma] } : undefined}>
         {imagen ? (
           <img
-            src={toDirectImageUrl(imagen)}
+            {...atributosDeFoto(toDirectImageUrl(imagen), '160px')}
             alt={alt || nombre || ''}
             loading="lazy"
             decoding="async"
