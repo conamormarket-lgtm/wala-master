@@ -3,12 +3,14 @@ import { Ticket } from 'lucide-react';
 import { IconoWala } from '../IconosWala';
 import { Enlace } from '../Enlace';
 import { colorDeGajo } from '../../../utils/ruletaModel';
+import { Texto, useTexto } from '../Traduccion';
 import s from './Ruleta.module.css';
 
 /*
  * Piezas de la Ruleta Semanal (/ruleta): la rueda y lo que ya ganaste.
  * La rueda es la de components/ruleta/RuedaRuleta.jsx (mismo SVG, mismo
  * origen de ángulos que anguloDeParada), sin los emojis de los gajos.
+ * Los textos (también los nombres de los premios) pasan por la traducción.
  */
 
 const CENTRO = 100;
@@ -38,6 +40,11 @@ const recortar = (texto, max) => {
   return t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t;
 };
 
+/* El nombre de un gajo, traducido y recortado a lo que cabe. */
+function TextoGajo({ texto, max }) {
+  return recortar(useTexto(texto), max);
+}
+
 /**
  * La rueda: un gajo por premio (en el orden que da el servidor), el aro, el
  * puntero fijo arriba y el centro con el logo.
@@ -50,6 +57,7 @@ export function RuedaRuleta({ premios = [], colores, colorAro = '#FFFFFF', color
   const anguloGajo = total > 0 ? 360 / total : 360;
   const tamTexto = total <= 6 ? 8.4 : total <= 9 ? 7.2 : total <= 12 ? 6 : 5.2;
   const maxCaracteres = total <= 3 ? 22 : total <= 6 ? 16 : total <= 9 ? 13 : 10;
+  const t = { con: useTexto(`Rueda con ${total} premios`), sin: useTexto('Rueda sin premios') };
   return (
     <div className={s.rueda} data-componente="RuedaRuleta">
       <div className={s.puntero} style={{ color: colorPuntero }} aria-hidden="true">
@@ -63,7 +71,7 @@ export function RuedaRuleta({ premios = [], colores, colorAro = '#FFFFFF', color
         viewBox="0 0 200 200"
         style={{ transform: `rotate(${rotacion}deg)`, transition: duracion > 0 ? `transform ${duracion}ms cubic-bezier(0.33, 1, 0.68, 1)` : 'none' }}
         role="img"
-        aria-label={total ? `Rueda con ${total} premios: ${premios.map((p) => p.nombre || p.etiqueta).join(', ')}` : 'Rueda sin premios'}
+        aria-label={total ? `${t.con}: ${premios.map((p) => p.nombre || p.etiqueta).join(', ')}` : t.sin}
       >
         <circle cx={CENTRO} cy={CENTRO} r={RADIO + 3} fill={colorAro} />
         {total === 0 && <circle cx={CENTRO} cy={CENTRO} r={RADIO} fill="var(--color-border)" />}
@@ -84,7 +92,7 @@ export function RuedaRuleta({ premios = [], colores, colorAro = '#FFFFFF', color
           return (
             <g key={`t-${p.id || i}`} transform={`rotate(${centroGajo} ${CENTRO} ${CENTRO})`}>
               <text x={CENTRO} y={y} transform={volteado ? `rotate(180 ${CENTRO} ${y})` : undefined} textAnchor="middle" fontSize={tamTexto} fill={color} className={s.etiqueta}>
-                {recortar(p.etiqueta || p.nombre, maxCaracteres)}
+                <TextoGajo texto={p.etiqueta || p.nombre} max={maxCaracteres} />
               </text>
             </g>
           );
@@ -113,10 +121,11 @@ export const ICONO_PREMIO = {
  *  - urlCupones: "Ver mis cupones" si alguno trae cupón
  */
 export function HistorialRuleta({ historial = [], urlCupones = '/cuenta/cupones' }) {
+  const giros = useTexto(historial.length === 1 ? '1 giro' : `${historial.length} giros`);
   return (
     <section className={s.historial} aria-labelledby="historial-ruleta" data-componente="HistorialRuleta">
       <h2 id="historial-ruleta" className={s.historialTitulo}>
-        Tus premios <small>{historial.length === 1 ? '1 giro' : `${historial.length} giros`}</small>
+        <Texto>Tus premios</Texto> <small>{giros}</small>
       </h2>
       {historial.length ? (
         <ul className={s.historialLista}>
@@ -124,7 +133,7 @@ export function HistorialRuleta({ historial = [], urlCupones = '/cuenta/cupones'
             <li key={h.id}>
               <IconoWala nombre={ICONO_PREMIO[h.tipo] || 'regalo'} tamano={34} />
               <span className={s.historialTexto}>
-                <strong>{h.texto}</strong>
+                <strong><Texto>{h.texto}</Texto></strong>
                 {h.cupon && <code>{h.cupon}</code>}
               </span>
               {h.fecha && <small className={s.historialFecha}>{h.fecha}</small>}
@@ -132,10 +141,10 @@ export function HistorialRuleta({ historial = [], urlCupones = '/cuenta/cupones'
           ))}
         </ul>
       ) : (
-        <p className={s.historialVacio}>Todavía no has girado. Lo que ganes aparecerá aquí.</p>
+        <p className={s.historialVacio}><Texto>Todavía no has girado. Lo que ganes aparecerá aquí.</Texto></p>
       )}
       {historial.some((h) => h.cupon) && (
-        <Enlace to={urlCupones} className={s.enlace}><Ticket aria-hidden="true" /> Ver mis cupones</Enlace>
+        <Enlace to={urlCupones} className={s.enlace}><Ticket aria-hidden="true" /> <Texto>Ver mis cupones</Texto></Enlace>
       )}
     </section>
   );

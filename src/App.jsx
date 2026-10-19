@@ -542,7 +542,7 @@ function App() {
                                   <Route path="/palabra-del-dia" element={<WordlePage />} />
                                   <Route path="/minijuegos" element={<MinijuegosPage />} />
                                   <Route path="/ruleta" element={<RuletaPage />} />
-                                  <Route path="/ball-sort" element={<RutaPrivada><BallSortPage /></RutaPrivada>} />
+                                  <Route path="/ball-sort" element={<BallSortPage />} />
                                   <Route path="/recuperar-contrasena" element={<ResetPasswordPage />} />
                                   <Route path="/politicas-privacidad" element={<PoliticasPrivacidadPage />} />
                                   <Route path="/terminos-y-condiciones" element={<TerminosCondicionesPage />} />

@@ -2,11 +2,12 @@ import React from 'react';
 import { Delete, CornerDownLeft, Flame } from 'lucide-react';
 import { Pestanas } from '../Navegacion';
 import { Avatar } from './Avatar';
+import { Texto, useTexto } from '../Traduccion';
 import s from './Palabra.module.css';
 
 /*
  * Piezas de la Palabra del día (/palabra-del-dia): las reglas (puras), el
- * tablero, el teclado y el ranking.
+ * tablero, el teclado y el ranking. Los textos pasan por la traducción.
  */
 
 export const INTENTOS_PALABRA = 6;
@@ -55,13 +56,14 @@ const NOMBRES = { correcta: 'en su sitio', presente: 'en otro sitio', ausente: '
 /** Una letra del tablero; al revelarse se voltea y muestra su color por detrás. */
 export function FichaPalabra({ letra, estado, activa, revelar, retraso = 0, onClick, tamano }) {
   const Etiqueta = onClick ? 'button' : 'span';
+  const t = { estado: useTexto(estado ? NOMBRES[estado] : undefined), vacia: useTexto('vacía') };
   return (
     <Etiqueta
       type={onClick ? 'button' : undefined}
       className={[s.ficha, letra && s.conLetra, estado && s.revelada, revelar && s.volteando, activa && s.activa, tamano === 'chica' && s.chica].filter(Boolean).join(' ')}
       style={{ '--retraso': `${retraso}ms` }}
       onClick={onClick}
-      aria-label={letra ? `${letra}${estado ? `, ${NOMBRES[estado]}` : ''}` : 'vacía'}
+      aria-label={letra ? `${letra}${estado ? `, ${t.estado}` : ''}` : t.vacia}
     >
       <span className={s.cara}>{letra}</span>
       {estado && <span className={[s.reverso, s[estado]].join(' ')} aria-hidden="true">{letra}</span>}
@@ -78,8 +80,9 @@ export function FichaPalabra({ letra, estado, activa, revelar, retraso = 0, onCl
  *  - revelando: índice de la fila que se acaba de enviar (se voltea)
  */
 export function TableroPalabra({ largo = 5, filas = [], actual = [], indice = 0, onIndice, sacudir = 0, revelando = -1, jugando = true }) {
+  const etiqueta = useTexto('Tablero');
   return (
-    <div className={s.tablero} style={{ '--largo': largo }} role="grid" aria-label="Tablero" data-componente="TableroPalabra">
+    <div className={s.tablero} style={{ '--largo': largo }} role="grid" aria-label={etiqueta} data-componente="TableroPalabra">
       {Array.from({ length: INTENTOS_PALABRA }, (_, f) => {
         const enviada = filas[f];
         const esActual = jugando && f === filas.length;
@@ -113,22 +116,23 @@ const FILAS_TECLADO = [
  *  - onTecla('A' | 'ENVIAR' | 'BORRAR')
  */
 export function TecladoPalabra({ estados = {}, onTecla, deshabilitado = false }) {
+  const t = { teclado: useTexto('Teclado'), borrar: useTexto('Borrar'), enviar: useTexto('Enviar palabra') };
   return (
-    <div className={s.teclado} aria-label="Teclado" data-componente="TecladoPalabra">
+    <div className={s.teclado} aria-label={t.teclado} data-componente="TecladoPalabra">
       {FILAS_TECLADO.map((fila) => (
         <div key={fila.join('')} className={s.filaTeclas}>
-          {fila.map((t) => {
-            const especial = t === 'ENVIAR' || t === 'BORRAR';
+          {fila.map((tecla) => {
+            const especial = tecla === 'ENVIAR' || tecla === 'BORRAR';
             return (
               <button
-                key={t}
+                key={tecla}
                 type="button"
-                className={[s.tecla, especial && s.teclaAncha, estados[t] && s[`tecla_${estados[t]}`]].filter(Boolean).join(' ')}
-                onClick={() => onTecla?.(t)}
+                className={[s.tecla, especial && s.teclaAncha, estados[tecla] && s[`tecla_${estados[tecla]}`]].filter(Boolean).join(' ')}
+                onClick={() => onTecla?.(tecla)}
                 disabled={deshabilitado}
-                aria-label={t === 'BORRAR' ? 'Borrar' : t === 'ENVIAR' ? 'Enviar palabra' : t}
+                aria-label={tecla === 'BORRAR' ? t.borrar : tecla === 'ENVIAR' ? t.enviar : tecla}
               >
-                {t === 'BORRAR' ? <Delete aria-hidden="true" /> : t === 'ENVIAR' ? <><CornerDownLeft aria-hidden="true" /><span>Enviar</span></> : t}
+                {tecla === 'BORRAR' ? <Delete aria-hidden="true" /> : tecla === 'ENVIAR' ? <><CornerDownLeft aria-hidden="true" /><span><Texto>Enviar</Texto></span></> : tecla}
               </button>
             );
           })}
@@ -142,17 +146,12 @@ export function TecladoPalabra({ estados = {}, onTecla, deshabilitado = false })
 export function LeyendaPalabra() {
   return (
     <ul className={s.leyenda}>
-      <li><FichaPalabra letra="M" estado="correcta" tamano="chica" /><span>La letra está en la palabra y en el sitio correcto.</span></li>
-      <li><FichaPalabra letra="A" estado="presente" tamano="chica" /><span>La letra está en la palabra, pero en otro sitio.</span></li>
-      <li><FichaPalabra letra="R" estado="ausente" tamano="chica" /><span>La letra no está en la palabra.</span></li>
+      <li><FichaPalabra letra="M" estado="correcta" tamano="chica" /><span><Texto>La letra está en la palabra y en el sitio correcto.</Texto></span></li>
+      <li><FichaPalabra letra="A" estado="presente" tamano="chica" /><span><Texto>La letra está en la palabra, pero en otro sitio.</Texto></span></li>
+      <li><FichaPalabra letra="R" estado="ausente" tamano="chica" /><span><Texto>La letra no está en la palabra.</Texto></span></li>
     </ul>
   );
 }
-
-const PESTANAS_RANKING = [
-  { id: 'hoy', texto: 'Hoy' },
-  { id: 'global', texto: 'Global' },
-];
 
 const tiempoEnTexto = (seg) => {
   const n = Number(seg);
@@ -170,18 +169,27 @@ const tiempoEnTexto = (seg) => {
  */
 export function RankingPalabra({ hoy = [], global = [], pestana = 'hoy', onPestana, cargando = false }) {
   const lista = pestana === 'hoy' ? hoy : global;
+  const t = {
+    ranking: useTexto('Ranking'),
+    hoy: useTexto('Hoy'),
+    global: useTexto('Global'),
+    tu: useTexto('Tú'),
+    intentos: useTexto('intentos'),
+    victorias: useTexto('victorias'),
+    racha: useTexto(pestana === 'hoy' ? 'Racha actual' : 'Mejor racha'),
+  };
   return (
     <section className={s.ranking} aria-labelledby="ranking-palabra" data-componente="RankingPalabra">
-      <h2 id="ranking-palabra" className={s.rankingTitulo}>Ranking</h2>
-      <Pestanas opciones={PESTANAS_RANKING} valor={pestana} onChange={onPestana} etiqueta="Ranking" />
+      <h2 id="ranking-palabra" className={s.rankingTitulo}>{t.ranking}</h2>
+      <Pestanas opciones={[{ id: 'hoy', texto: t.hoy }, { id: 'global', texto: t.global }]} valor={pestana} onChange={onPestana} etiqueta={t.ranking} />
       <p className={s.rankingNota}>
-        {pestana === 'hoy' ? 'Quienes adivinaron la palabra de hoy, por intentos usados.' : 'Por la racha más larga de victorias seguidas.'}
+        <Texto>{pestana === 'hoy' ? 'Quienes adivinaron la palabra de hoy, por intentos usados.' : 'Por la racha más larga de victorias seguidas.'}</Texto>
       </p>
       {cargando ? (
-        <p className={s.rankingVacio} role="status">Cargando el ranking…</p>
+        <p className={s.rankingVacio} role="status"><Texto>Cargando el ranking…</Texto></p>
       ) : !lista.length ? (
         <p className={s.rankingVacio}>
-          {pestana === 'hoy' ? 'Nadie ha adivinado la palabra de hoy todavía. ¡Sé la primera persona!' : 'Todavía no hay datos del ranking.'}
+          <Texto>{pestana === 'hoy' ? 'Nadie ha adivinado la palabra de hoy todavía. ¡Sé la primera persona!' : 'Todavía no hay datos del ranking.'}</Texto>
         </p>
       ) : (
         <ol className={s.rankingLista}>
@@ -190,14 +198,14 @@ export function RankingPalabra({ hoy = [], global = [], pestana = 'hoy', onPesta
               <span className={s.puesto}>{k + 1}</span>
               <Avatar nombre={p.nombre} className={s.avatar} />
               <span className={s.persona}>
-                <strong>{p.nombre}{p.yo && <small className={s.tu}>Tú</small>}</strong>
+                <strong>{p.nombre}{p.yo && <small className={s.tu}>{t.tu}</small>}</strong>
                 <small>
                   {pestana === 'hoy'
-                    ? `${p.intentos}/${INTENTOS_PALABRA} intentos · ${tiempoEnTexto(p.segundos)}`
-                    : `${p.victorias}/${p.jugadas} victorias`}
+                    ? `${p.intentos}/${INTENTOS_PALABRA} ${t.intentos} · ${tiempoEnTexto(p.segundos)}`
+                    : `${p.victorias}/${p.jugadas} ${t.victorias}`}
                 </small>
               </span>
-              <span className={s.racha} title={pestana === 'hoy' ? 'Racha actual' : 'Mejor racha'}>
+              <span className={s.racha} title={t.racha}>
                 <Flame aria-hidden="true" />{pestana === 'hoy' ? p.racha : p.mejorRacha}
               </span>
             </li>

@@ -13,6 +13,7 @@ export const claimBallSortReward = async () => {
     const res = await httpsCallable(getFunctions(), 'claimBallSortRewardSecure')();
     return { success: true, reward: res.data?.reward ?? REWARD_AMOUNT };
   } catch (error) {
-    return { success: false, error: error?.message || 'Error al reclamar la recompensa' };
+    // code: 'functions/already-exists' si ya cobró hoy (lo usa la página del kit).
+    return { success: false, error: error?.message || 'Error al reclamar la recompensa', code: error?.code };
   }
 };

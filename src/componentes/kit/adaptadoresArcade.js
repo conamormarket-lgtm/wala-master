@@ -121,10 +121,11 @@ export function juegosDelArcade({
       recompensa: { texto: '+2 monedas al día' },
       atenuada: bolitasHechas,
       espera: bolitasHechas && sesion ? esperaDiaria : undefined,
-      // Ya hecha, se puede jugar por diversión, sin prometer premio.
-      accion: boton(bolitasHechas
-        ? { tipo: 'hecho', texto: 'Completado — jugar igual', url: '/ball-sort' }
-        : { tipo: 'jugar', texto: 'Jugar ahora', url: '/ball-sort' }),
+      // Ya hecha, se puede jugar por diversión, sin prometer premio. Se juega
+      // también sin cuenta (la página invita a entrar para cobrar).
+      accion: cargando ? boton()
+        : bolitasHechas ? { tipo: 'hecho', texto: 'Completado — jugar igual', url: '/ball-sort' }
+          : { tipo: 'jugar', texto: 'Jugar ahora', url: '/ball-sort' },
     },
   ];
 

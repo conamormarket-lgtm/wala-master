@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Estallido } from '../Efectos';
+import { useTexto } from '../Traduccion';
 import s from './Bolitas.module.css';
 
 /*
@@ -74,13 +75,14 @@ export function Bolita({ color, id, levantada = false, chica = false }) {
  */
 export function TuboBolitas({ bolas = [], capacidad = CAPACIDAD_TUBO, elegido = false, destino = false, listo = false, onClick, numero, chico = false }) {
   const Etiqueta = onClick ? 'button' : 'span';
+  const etiqueta = useTexto(onClick ? `Tubo ${numero}: ${bolas.length} de ${capacidad}${listo ? ', listo' : ''}${elegido ? ', elegido' : ''}` : undefined);
   return (
     <Etiqueta
       type={onClick ? 'button' : undefined}
       className={[s.tubo, elegido && s.elegido, destino && s.destino, listo && s.listo, chico && s.tuboChico].filter(Boolean).join(' ')}
       style={{ '--capacidad': capacidad }}
       onClick={onClick}
-      aria-label={onClick ? `Tubo ${numero}: ${bolas.length} de ${capacidad}${listo ? ', listo' : ''}${elegido ? ', elegido' : ''}` : undefined}
+      aria-label={etiqueta}
       aria-pressed={onClick ? elegido : undefined}
       data-componente={chico ? undefined : 'TuboBolitas'}
     >
