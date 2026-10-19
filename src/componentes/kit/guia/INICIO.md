@@ -23,7 +23,7 @@ el carrito y Mis pedidos.
 | M1 | Aviso del sistema (franja arriba) | `AvisoSistema` | — | `piezas/Marco.module.css` | `configuracion/estado_app` | todos, si está activo |
 | M2 | Banner "Walá App" | `BannerApp` | ícono de la app en el violeta de la cabecera (`public/assets/marca/app-icono.webp`), `Boton` | `piezas/Marco.module.css` | — | celular web, no en la app |
 | M3 | Barra de admin | `BarraAdmin` | `Boton`, `Enlace` | `piezas/Marco.module.css` | `isAdmin` (AuthContext) | admins. En el celular "Panel" queda como botón con escudo: es el acceso al panel (la barra inferior no lleva pestaña Admin) |
-| M4 | Cabecera | `Cabecera` | `Logo`, `Desplegable`, `MenuTienda`, `MenuMarcas`, `SaldoMonedas` + `AyudaMonedas`, `ListaNotificaciones`, `VistaFavoritos`, `VistaCarrito`, `MenuCuenta`, `Buscador`, `BotonTema`, `Boton`, `Contador` | `Navegacion.module.css` (+ `MenusCabecera.module.css`) | enlaces: `storeConfig/homePage.header.navLinks`; categorías y marcas; AuthContext, CartContext, WishlistContext, NotificationsContext | todos (monedas y campana con sesión; la cuenta solo en escritorio) |
+| M4 | Cabecera | `Cabecera` | `Logo`, `Desplegable`, `MenuTienda`, `MenuMarcas`, `SaldoMonedas` + `AyudaMonedas`, `ListaNotificaciones`, `VistaFavoritos`, `VistaCarrito`, `MenuCuenta`, `Buscador`, `BotonTema`, `Boton`, `Contador` | `Navegacion.module.css` (+ `MenusCabecera.module.css`) | enlaces: `storeConfig/homePage.header.navLinks`; categorías y marcas; AuthContext, CartContext, WishlistContext, NotificationsContext | todos (monedas y campana con sesión; la cuenta fuera del celular y de la app). Ancha en una fila; en la tablet (hasta 1100 px) dos filas: logo y accesos arriba, enlaces y buscador abajo |
 | M5 | Pie | `PiePagina` (`footer_columns`) + `PieLegal` | `LogoWala`, `EtiquetaColgante`, `Garabatos`, `Enlace` | `SeccionesExtra.module.css` (`.pie…`) y `piezas/Marco.module.css` (`.legal…`) | columnas: `pages/footer`; contacto: `config/empresa.js` | todos (no en la app) |
 | M6 | Barra inferior | `BarraInferior` (siempre 5 pestañas, "Crear" al centro; en "Mi cuenta" las iniciales o la foto en un aro del mismo trazo que los íconos) | `Enlace`, `Avatar`, `Contador` | `BarraInferior.module.css` (`.barra`, `.tab…`; en su propio archivo desde el 2026-10-19) | ruta actual, AuthContext | celular (hasta 768 px) |
 | M7 | WhatsApp flotante | `BotonWhatsApp` (dentro de `PilaFlotante`) | `Enlace` | `piezas/Flotantes.module.css` | Firestore `messages` (número por zona) | todos (no admin, checkout ni landings) |
@@ -136,7 +136,7 @@ cabecera (paso 7).
 |---|---|---|
 | Secciones (S1-S10) | `pages/Tienda/TiendaPage.jsx`: `renderSection` (switch desde ~914) + el bucle de ~1504 | `PaginaTienda` / `RenderSecciones` con `respaldo` para lo que no está en el kit |
 | Tarjeta de producto | `PremiumProductCard` (carruseles), `ProductCard` (grillas) | `TarjetaProducto` + `tarjetaDesdeProducto` |
-| Cabecera (M4) | `components/common/Header/Header.jsx` (+ `HeaderSearch`, `NotificationTray`, `ThemeToggle`) | `Cabecera` + menús de `MenusCabecera` |
+| Cabecera (M4) | `components/common/Header/Header.jsx` (+ `HeaderSearch`, `NotificationTray`, `ThemeToggle`) | `Cabecera` + menús de `MenusCabecera` (✓ 2026-10-19, `components/marco/CabeceraDeTienda.jsx`) |
 | Barra inferior (M6) | `components/common/BottomNav/BottomNav.jsx` | `BarraInferior` (✓ 2026-10-19, `components/marco/BarraInferiorDeTienda.jsx`) |
 | Pie (M5) | `components/common/Footer/Footer.jsx` | `PiePagina` + `PieLegal` (dentro de `MarcoTienda`) |
 | Barra de admin (M3) | `components/common/AdminBar/AdminBar.jsx` | `BarraAdmin` |
@@ -212,11 +212,23 @@ cabecera (paso 7).
   agrega una casita a `Cabecera`. Lo demás de la app sí se mantiene: sin pie,
   sin el banner de descargar la app y sin `BarraAdmin` en la tienda.
 - El menú Tienda solo lleva categorías (las marcas tienen su menú).
+- Cabecera: los enlaces sin el color, la letra, la negrita ni la cursiva que
+  les ponía el admin (decidido el 2026-10-19: todos con la letra y el violeta
+  de la marca). El editor todavía deja elegirlos; no se ven.
+- Cabecera: la sesión anónima (la de las landings) se ve como sin sesión:
+  sin monedas, sin campana y con el menú para entrar (antes, un "?" y un
+  saldo de 0).
+- Cabecera en la tablet (761-1100 px): dos filas. Antes los íconos de la
+  derecha (campana, carrito, cuenta) se salían de la pantalla.
+- Cabecera: el buscador es un campo siempre a la vista (antes, una lupa en
+  escritorio), con el panel debajo; en el celular, una hoja (BUSCAR.md).
+- Cabecera: los textos del menú de favoritos que edita el admin se ven
+  también guardados (antes solo en el borrador del editor).
 
 ### Qué le falta al kit antes de migrar
 
 - ✓ `TarjetaProducto`: la impresión (`onVisible`), el favorito con `WishlistContext`, el recorte del admin, el fondo de la marca y la precarga de la ficha (paso 4, 2026-10-16).
-- `Cabecera`: selector de idioma en `MenuCuenta`, aviso para activar notificaciones push. (El buscador con sugerencias ya está: `buscarSugerencias`, ver BUSCAR.md.)
+- ✓ `Cabecera`: selector de idioma en `MenuCuenta`, aviso para activar notificaciones push, el buscador con sugerencias (2026-10-19).
 - ✓ Traducción: `ProveedorTraduccion` ya está en `App.jsx` y los textos fijos del marco pasan por `useTexto`. Falta hacer lo mismo con los de las secciones y la cabecera al migrarlas.
 - `imageSource: 'product'` de las categorías: la página debe pasar `imagenProducto`.
 - La `TrustBadges` vieja no entiende los íconos nuevos del editor del kit (`camion`, `escudo`…): mientras convivan, usar `iconoDesde`.
@@ -229,7 +241,7 @@ al inicio.
 1. ✓ Marco: `BarraAdmin`, `AvisoSistema`, `BannerApp`, flotantes, `PieLegal` (2026-10-16, un commit por pieza). Al migrar, el kit ganó `BarraAdmin` `fija` y `editarEn`, `BannerApp` `onAccion`, `AvisoIdioma` `flotante`, `VentanaCampana` `textoCerrar`, `PilaFlotante` `ocultarEnCelular` y los adaptadores `avisoDesdeEstadoApp`, `numeroWhatsApp`, `campanaDesdePopup` y `pieLegalDesdeEmpresa`.
 2. ✓ `TarjetaProducto` en los carruseles (`TarjetaDeProducto`, 2026-10-16).
 3. ✓ Secciones del inicio (2026-10-16): `SeccionDelKit` por cada una dentro del bucle de `TiendaPage`, conservando `DeferredSection`, el editor y las excepciones; datos de las mismas consultas (`featured-products`, `query-carousel`, `brands`, `categories` + `storefront-category-grid-products` con `categoriasDeGrilla`); preguntas frecuentes con el WhatsApp de `useWhatsAppDeLaRuta` y sin Kapi cuando está el flotante. Interruptor `seccionesViejo`.
-4. ✓ `BarraInferior` (2026-10-19), luego `Cabecera` (la más conectada).
+4. ✓ `BarraInferior` (2026-10-19) y ✓ `Cabecera` (2026-10-19, ver abajo).
    `components/marco/BarraInferiorDeTienda.jsx` la monta en todas las
    páginas con las mismas reglas que `BottomNav`: solo hasta 768 px, fija
    abajo, 56 px (`--bottom-nav-height`) más la zona segura; no sale si la
@@ -248,6 +260,32 @@ al inicio.
    pestaña, el ícono de persona dentro del aro si la cuenta no tiene nombre ni
    foto, el foco con teclado dentro de la pestaña y sin rebote con
    "reducir movimiento".
+
+   **La cabecera:** `components/marco/CabeceraDeTienda.jsx` reemplaza a
+   `Header` con los mismos datos y reglas: el menú de
+   `storeConfig/homePage` (el borrador del editor si se edita; mientras
+   llega, la copia del navegador) más "Minijuegos"; "Tienda" con las
+   categorías que tienen productos, pedidas al abrir el menú (en la página de
+   una marca, las suyas y "Ver todo" a la marca); "Marcas" con 6 y "Ver N
+   más"; los desplegables del admin y los de colección como menús de
+   enlaces; monedas (la píldora vacía mientras llega el perfil, "–" a los
+   4 s), notificaciones (10, "Marcar leídas", abrir sigue su enlace, invitar
+   a los avisos), favoritos y carrito ("Ir a pagar" al carrito, barra del
+   envío gratis); la cuenta con los 6 accesos, la encuesta, "Ver toda mi
+   cuenta" y cerrar sesión; sin sesión, los textos del admin, volver a la
+   página después de entrar y el idioma. Buscar acotado a la marca de la
+   página, con `trackSearchQuery` y el mismo historial. Pegada arriba bajo
+   la barra de admin, publica su alto (`--header-height`, en todos los
+   anchos: en la tablet tiene dos filas), las fuentes propias de la página
+   (`CustomFontsInjector`) y la caja "Menú de Navegación" del editor.
+   Interruptor `cabeceraVieja`. El archivo principal pesa menos que antes
+   (JS 652 KB y CSS 262 KB, antes 661 y 291): la cabecera vieja y su
+   buscador salen de él y los menús del kit llegan aparte.
+
+   ![La cabecera en la tienda real: en la tablet, en dos filas (logo, tema, monedas, campana, favoritos, carrito y cuenta arriba; Tienda, Marcas, Ayuda, Crear y Minijuegos con el buscador abajo); en el celular y en modo noche, logo y accesos arriba y el buscador abajo](cabecera-tienda.webp)
+
+   Al migrarla, el kit ganó lo que se lista en MIGRACION.md (paso 7) y en el
+   README del kit (`Navegacion.jsx`, `MenusCabecera.jsx`).
 5. Editor del kit en lugar de `VisualEditorPanel`.
 
 Para volver atrás: cada paso en su propio commit, y el componente viejo no se borra hasta que el nuevo lleve un tiempo en producción.

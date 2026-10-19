@@ -42,7 +42,6 @@ import './App.css';
 
 // ── Páginas principales y Layout Crítico (Carga Inmediata para evitar efecto Waterfall de Suspense) ──
 import TiendaPage from './pages/Tienda/TiendaPage';
-import Header from './components/common/Header';
 import DeepLinkHandler from './components/common/DeepLinkHandler';
 // Marco con el kit (paso 2 de la migración): cada uno reemplaza a un componente
 // viejo, que sigue en su sitio hasta borrarlo todo junto (guia/ELIMINAR.md).
@@ -50,6 +49,8 @@ import AvisoDelSistema from './components/marco/AvisoDelSistema';
 import BarraDeAdmin from './components/marco/BarraDeAdmin';
 import AvisoDeIdioma from './components/marco/AvisoDeIdioma';
 import FlotantesDeLaTienda from './components/marco/FlotantesDeLaTienda';
+// Cabecera con el kit (paso 7); con cabeceraVieja, Header.
+import CabeceraDeTienda from './components/marco/CabeceraDeTienda';
 // Barra inferior con el kit (paso 7); con barraVieja, BottomNav.
 import BarraInferiorDeTienda from './components/marco/BarraInferiorDeTienda';
 import { EN_VISTA_PREVIA_CALOR } from './utils/vistaPreviaCalor';
@@ -337,7 +338,7 @@ const GlobalLayout = ({ children }) => {
           de visibilidad — solo que ahora hace portal hacia acá. */}
       <div id="app-top-banner-slot" />
 
-      <Header />
+      <CabeceraDeTienda />
 
       <main id="main-content-area">
         {children}

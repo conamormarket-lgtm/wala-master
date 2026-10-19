@@ -1,0 +1,32 @@
+/* La cabecera del kit, pegada arriba bajo la barra de admin (que publica su
+   alto en --admin-bar-height mientras está). La tarjeta flota con un margen. */
+.fija {
+  position: sticky;
+  top: var(--admin-bar-height, 0px);
+  z-index: 100;
+  padding: calc(0.6rem + var(--safe-top, 0px)) max(1rem, var(--safe-right, 0px)) 0 max(1rem, var(--safe-left, 0px));
+  pointer-events: none;
+}
+
+/* En la app, la franja de la hora (zona segura) va pintada: el contenido no
+   se ve pasar por debajo de la barra del sistema. */
+.fija::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--safe-top, 0px);
+  background: var(--color-bg, var(--gris-fondo));
+}
+
+/* Solo la tarjeta recibe clics: el margen deja pasar los de la página. */
+.fija > * {
+  pointer-events: auto;
+}
+
+@media (max-width: 768px) {
+  .fija {
+    padding: calc(0.45rem + var(--safe-top, 0px)) max(0.6rem, var(--safe-right, 0px)) 0 max(0.6rem, var(--safe-left, 0px));
+  }
+}

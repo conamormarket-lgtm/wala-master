@@ -163,8 +163,10 @@ recibir datos.
    búsqueda, el cursor y los textos como están. Probar: término, orden, cada
    filtro, "Ver más", sin resultados, con marca y en el celular.
 2. Cambiar el encabezado por el de `PaginaBusqueda` (o la página completa).
-3. Con la cabecera (paso 7): pasarle `buscarSugerencias` y retirar
-   `HeaderSearch`.
+3. ✓ Con la cabecera (paso 7): pasarle `buscarSugerencias` y retirar
+   `HeaderSearch` (2026-10-19, `components/marco/CabeceraDeTienda.jsx`:
+   `getSearchSuggestions` + `sugerenciasDesdeBusqueda`, acotado a la marca
+   de la página, `trackSearchQuery` y el mismo historial).
 
 Para volver atrás: cada paso en su propio commit; `SearchPage` y
 `HeaderSearch` no se borran hasta que lo nuevo lleve un tiempo en producción.
