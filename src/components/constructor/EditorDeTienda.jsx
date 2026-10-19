@@ -14,6 +14,7 @@ import CategoryNavEditor from '../admin/CategoryNavEditor/CategoryNavEditor';
 import PanelEditor from '../../componentes/kit/editor/PanelEditor';
 import { useConfirmar } from '../../componentes/kit/Feedback';
 import { FormularioPrimeraImpresion, FormularioCheckoutDePago } from './FormulariosDelCacherito';
+import { COLUMNAS_POR_DEFECTO } from '../common/Footer/Footer';
 import s from './EditorDeTienda.module.css';
 
 // La página vacía puede empezar con la misma base que ofrecía el editor de antes.
@@ -33,6 +34,9 @@ const MENU_POR_DEFECTO = [
 ];
 
 const PAGINAS_GLOBALES = ['home', 'tienda', 'footer'];
+// El pie solo dibuja columnas, texto e imagen (Footer.jsx), y empieza con las columnas de siempre.
+const TIPOS_DEL_PIE = ['footer_columns', 'text', 'image'];
+const BASE_DEL_PIE = [{ type: 'footer_columns', settings: { columns: COLUMNAS_POR_DEFECTO } }];
 const tituloDePagina = (id) => ({ home: 'Inicio', tienda: 'Tienda', footer: 'Pie de página' }[id] || `/${id}`);
 const ordenadas = (lista) => [...lista].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
@@ -172,7 +176,8 @@ export default function EditorDeTienda() {
           formularios: { conversion_fold: FormularioPrimeraImpresion, landing_payment: FormularioCheckoutDePago },
         }}
         globales={globales}
-        base={BASE}
+        base={activePageId === 'footer' ? BASE_DEL_PIE : BASE}
+        tipos={activePageId === 'footer' ? TIPOS_DEL_PIE : undefined}
         onGuardar={publicar}
         guardando={isSaving}
         sinGuardar={sinGuardar}

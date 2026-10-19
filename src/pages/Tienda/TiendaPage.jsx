@@ -74,6 +74,8 @@ import { getDocument } from '../../services/firebase/firestore';
 import { getBrand, getBrands } from '../../services/brands';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import EditableSection from '../../components/admin/EditableSection';
+// El "+" entre secciones del editor del kit (paso 8); con editorViejo, ModuleInserter.
+import PuntoDeInsercion from '../../components/constructor/PuntoDeInsercion';
 import { useVisualEditor } from './contexts/VisualEditorContext';
 // Banner "Walá App" con el kit (paso 2 de la migración; el viejo, en guia/ELIMINAR.md).
 import BannerDeLaApp from '../../components/marco/BannerDeLaApp';
@@ -1860,9 +1862,9 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         
         return (
           <React.Fragment key={pageId + ":" + section.id}>
-            <ModuleInserter index={index} />
+            <PuntoDeInsercion indice={index} viejo={<ModuleInserter index={index} />} />
             <DeferredSection active={active} observe={pageReady && heroListo && (index === 0 || sectionIsActive(sorted[index - 1], index - 1))} onVisible={markSectionVisible} section={section}>
-              <EditableSection sectionId={section.id} currentConfig={activeConfig} label={typeLabel}>
+              <EditableSection sectionId={section.id} tipo={section.type} currentConfig={activeConfig} label={typeLabel}>
                 {/* Mientras llega el código de la sección, el mismo hueco que
                     DeferredSection, para que lo de abajo no salte. */}
                 <Suspense fallback={<div aria-hidden="true" style={{ minHeight: section.type === 'header' ? 140 : 360 }} />}>
@@ -1873,7 +1875,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           </React.Fragment>
         );
       })}
-      <ModuleInserter index={sorted.length} />
+      <PuntoDeInsercion indice={sorted.length} viejo={<ModuleInserter index={sorted.length} />} />
     </div>
   );
 };

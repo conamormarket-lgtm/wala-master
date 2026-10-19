@@ -13,38 +13,11 @@ import { FormularioSeccion, ProveedorEditor } from './CamposEditor';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import s from './Editor.module.css';
 
-/* ── Operaciones sobre la lista de secciones (siempre devuelven otra lista) ── */
-
-const renumerar = (lista) => lista.map((x, order) => (x.order === order ? x : { ...x, order }));
-const ordenadas = (lista) => [...lista].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-export const nuevoIdSeccion = () => `section_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-
-export function actualizarAjustes(secciones, id, parche) {
-  return secciones.map((x) => (x.id === id ? { ...x, settings: { ...(x.settings || {}), ...parche } } : x));
-}
-export function insertarSeccion(secciones, seccion, indice = secciones.length) {
-  const l = ordenadas(secciones);
-  l.splice(indice, 0, seccion);
-  return renumerar(l);
-}
-export function moverSeccion(secciones, id, paso) {
-  const l = ordenadas(secciones);
-  const i = l.findIndex((x) => x.id === id);
-  const j = i + paso;
-  if (i < 0 || j < 0 || j >= l.length) return secciones;
-  [l[i], l[j]] = [l[j], l[i]];
-  return renumerar(l);
-}
-export function duplicarSeccion(secciones, id) {
-  const l = ordenadas(secciones);
-  const i = l.findIndex((x) => x.id === id);
-  if (i < 0) return secciones;
-  l.splice(i + 1, 0, { ...JSON.parse(JSON.stringify(l[i])), id: nuevoIdSeccion() });
-  return renumerar(l);
-}
-export function quitarSeccion(secciones, id) {
-  return renumerar(ordenadas(secciones).filter((x) => x.id !== id));
-}
+/* Las operaciones sobre la lista viven en operaciones.js (la página las usa
+   desde la barra de cada sección sin cargar el panel); se siguen exportando
+   desde aquí. */
+import { renumerar, ordenadas, nuevoIdSeccion, actualizarAjustes, insertarSeccion, moverSeccion, duplicarSeccion, quitarSeccion } from './operaciones';
+export { nuevoIdSeccion, actualizarAjustes, insertarSeccion, moverSeccion, duplicarSeccion, quitarSeccion };
 
 /* El borrador con deshacer/rehacer vive en su propio archivo (la tienda lo usa
    en su contexto sin cargar el panel); se sigue exportando desde aquí. */
@@ -107,11 +80,13 @@ function FilaSeccion({ seccion, indice, total, resaltada, onEditar, onResaltar, 
 }
 
 /* ── Catálogo de módulos ── */
-function CatalogoModulos({ onElegir, marcas = [] }) {
+function CatalogoModulos({ onElegir, marcas = [], permitidos }) {
   const [filtro, setFiltro] = useState('');
   const [conMarca, setConMarca] = useState(null);
   const q = filtro.trim().toLowerCase();
-  const tipos = Object.entries(ESQUEMAS).filter(([, e]) => !q || `${e.nombre} ${e.descripcion}`.toLowerCase().includes(q));
+  const tipos = Object.entries(ESQUEMAS)
+    .filter(([tipo]) => !permitidos || permitidos.includes(tipo))
+    .filter(([, e]) => !q || `${e.nombre} ${e.descripcion}`.toLowerCase().includes(q));
   return (
     <div className={s.catalogo}>
       <Buscador placeholder="Buscar módulo" atajo={null} onChange={(e) => setFiltro(e.target.value)} onBuscar={setFiltro} />
@@ -173,13 +148,14 @@ const transicionVista = { initial: { opacity: 0, x: 16 }, animate: { opacity: 1,
  *    onAbrir }] para lo que se abre aparte (el pie). Se abren con
  *    onSeleccionar(id), como una sección.
  *  - base: secciones para empezar una página vacía ([{ type, settings }])
+ *  - tipos: los únicos módulos del catálogo (p. ej. el pie: columnas, texto e imagen)
  *  - ajustesPagina: nodo de la pestaña "Página" (tema, ocultar header…)
  *  - incrustado: se dibuja dentro de su contenedor (demo) en vez de fijo a la ventana
  * Fijo a la ventana, empieza en --editor-arriba (la tienda: bajo su barra de admin).
  */
 export default function PanelEditor({
   secciones = [], onCambiar, seleccionada, onSeleccionar, resaltada, onResaltar, insertarEn = null, onInsertarEn,
-  crearAjustes = ajustesIniciales, fuentes = {}, extensiones = {}, globales = [], base,
+  crearAjustes = ajustesIniciales, fuentes = {}, extensiones = {}, globales = [], base, tipos,
   onGuardar, guardando = false, sinGuardar = false, onDeshacer, onRehacer, puedeDeshacer, puedeRehacer,
   titulo = 'Página', vista, onVista, lado = 'derecha', onLado, onCerrar, cabecera, ajustesPagina, incrustado = false,
 }) {
@@ -268,7 +244,7 @@ export default function PanelEditor({
                   <button type="button" className={s.volver} onClick={() => onInsertarEn?.(null)}><ArrowLeft aria-hidden="true" /> Volver</button>
                   <h3>Añadir sección{insertarEn != null && insertarEn < lista.length ? ` en el lugar ${insertarEn + 1}` : ''}</h3>
                 </div>
-                <CatalogoModulos onElegir={elegirModulo} marcas={fuentes.marcas || []} />
+                <CatalogoModulos onElegir={elegirModulo} marcas={fuentes.marcas || []} permitidos={tipos} />
               </motion.div>
             )}
 

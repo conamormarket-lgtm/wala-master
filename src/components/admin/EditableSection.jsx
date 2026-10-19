@@ -1,13 +1,32 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { useVisualEditor } from '../../pages/Tienda/contexts/VisualEditorContext';
+import useLoViejo from '../../hooks/useLoViejo';
 import styles from './EditableSection.module.css';
 
-const EditableSection = ({ sectionId, currentConfig, label, children }) => {
-  const { isEditModeActive, openEditorForSection, activeSection, hoveredSectionId } = useVisualEditor();
+// El marco del editor del kit (paso 8): llega cuando un admin abre el editor.
+const SeccionDeLaPagina = lazy(() => import('../constructor/MarcasDeEdicion').then((m) => ({ default: m.SeccionDeLaPagina })));
 
-  if (!isEditModeActive) {
-    return <>{children}</>;
-  }
+/*
+ * Una parte de la página que se edita con el editor visual. Fuera del editor
+ * no dibuja nada propio. En el editor del kit, el marco con su barra
+ * (SeccionEditable); con editorViejo, el velo de antes.
+ *  - tipo: el de la sección del builder (con él, la barra puede subirla,
+ *    bajarla y duplicarla); sin él es algo global (menú, buscador…)
+ */
+const EditableSection = (props) => {
+  const { isEditModeActive } = useVisualEditor();
+  const editorViejo = useLoViejo('editor');
+  if (!isEditModeActive) return <>{props.children}</>;
+  if (editorViejo) return <SeccionVieja {...props} />;
+  return (
+    <Suspense fallback={props.children}>
+      <SeccionDeLaPagina {...props} />
+    </Suspense>
+  );
+};
+
+const SeccionVieja = ({ sectionId, currentConfig, label, children }) => {
+  const { openEditorForSection, activeSection, hoveredSectionId } = useVisualEditor();
 
   const isActive = activeSection === sectionId;
 

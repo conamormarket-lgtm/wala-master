@@ -10,12 +10,32 @@ import styles from './Footer.module.css';
 import { T } from '../../../i18n/useTranslatedText';
 import { PieLegal } from '../../../componentes/kit/piezas/Marco';
 import { pieLegalDesdeEmpresa } from '../../../componentes/kit/adaptadores';
+// Editar el pie con el editor del kit (paso 8); con editorViejo, lo de antes.
+import Boton from '../../../componentes/kit/Boton';
+import { useConfirmar } from '../../../componentes/kit/Feedback';
+import useLoViejo from '../../../hooks/useLoViejo';
+import EditableSection from '../../admin/EditableSection';
+import PuntoDeInsercion from '../../constructor/PuntoDeInsercion';
 
 // El pie legal (contacto, enlaces legales y Libro de Reclamaciones) ya lo
 // dibuja el kit (paso 2 de la migración). Las columnas y el editor del pie
 // siguen aquí hasta migrar el pie entero. En false vuelve el bloque de antes
 // (se borra al final: guia/ELIMINAR.md).
 const PIE_LEGAL_EN_EL_KIT = true;
+
+// Las columnas que se ven si el pie no tiene nada guardado. El editor del kit
+// las ofrece como base para empezar a editarlo.
+export const COLUMNAS_POR_DEFECTO = [
+  { id: 'c1', title: 'Walá', content: 'Prendas personalizadas con amor y dedicación', type: 'text' },
+  { id: 'c2', title: 'Enlaces', type: 'links', links: [
+    { text: 'Tienda', url: '/tienda' },
+    { text: 'Crear', url: '/personalizar' },
+    { text: 'Mi cuenta', url: '/cuenta' },
+    { text: 'Contacto WhatsApp', url: 'https://wa.me/51912881722' },
+    { text: 'Políticas de Privacidad', url: '/politicas-privacidad' },
+    { text: 'Términos y Condiciones', url: '/terminos-y-condiciones' }
+  ]}
+];
 
 // Importamos algunos de los bloques que pueden renderizarse en el footer
 // Para simplificar, implementaremos el renderizado directamente o reutilizaremos componentes
@@ -24,6 +44,9 @@ const Footer = () => {
   const location = useLocation();
   const { isEditModeActive, activePageId, setActivePageId, storeConfigDraft, updateSectionsDraft, activeSection, openEditorForSection } = useVisualEditor();
   const { isFooterVisible } = useLayoutContext();
+  const editorViejo = useLoViejo('editor');
+  const confirmar = useConfirmar();
+  const { sinGuardar } = useVisualEditor();
 
   // Buscar la configuración del footer
   const { data: footerConfig, isLoading } = useQuery({
@@ -152,8 +175,10 @@ const Footer = () => {
 
     return (
       <React.Fragment key={section.id}>
-        <ModuleInserter idx={index} />
-        {isEditingThisSection ? (
+        {editorViejo ? <ModuleInserter idx={index} /> : isEditingFooter && <PuntoDeInsercion indice={index} />}
+        {isEditingThisSection && !editorViejo ? (
+          <EditableSection sectionId={section.id} tipo={section.type} currentConfig={storeConfigDraft}>{content}</EditableSection>
+        ) : isEditingThisSection ? (
           <div 
             style={{ 
               position: 'relative', 
@@ -196,17 +221,7 @@ const Footer = () => {
         type: 'footer_columns',
         order: 0,
         settings: {
-          columns: [
-            { id: 'c1', title: 'Walá', content: 'Prendas personalizadas con amor y dedicación', type: 'text' },
-            { id: 'c2', title: 'Enlaces', type: 'links', links: [
-              { text: 'Tienda', url: '/tienda' },
-              { text: 'Crear', url: '/personalizar' },
-              { text: 'Mi cuenta', url: '/cuenta' },
-              { text: 'Contacto WhatsApp', url: 'https://wa.me/51912881722' },
-              { text: 'Políticas de Privacidad', url: '/politicas-privacidad' },
-              { text: 'Términos y Condiciones', url: '/terminos-y-condiciones' }
-            ]}
-          ]
+          columns: COLUMNAS_POR_DEFECTO
         }
       }
     ];
@@ -217,7 +232,29 @@ const Footer = () => {
 
   return (
     <footer id="site-footer" className={styles.footer} style={{ position: 'relative' }}>
-      {isEditModeActive && !isEditingFooter && (
+      {isEditModeActive && !isEditingFooter && !editorViejo && (
+        <div className={styles.editarPie}>
+          <Boton onClick={handleEditFooter}>Editar el pie de página</Boton>
+        </div>
+      )}
+
+      {isEditModeActive && isEditingFooter && !editorViejo && (
+        <div className={styles.editandoPie} role="status">
+          <span>Estás editando el pie de página: se ve en todas las páginas.</span>
+          <Boton
+            variante="contorno"
+            tamano="sm"
+            onClick={async () => {
+              if (sinGuardar && !(await confirmar({ titulo: '¿Volver sin publicar el pie?', texto: 'Los cambios del pie que no publicaste se pierden.', confirmar: 'Volver', peligro: true }))) return;
+              setActivePageId(pageId);
+            }}
+          >
+            Volver a la página
+          </Boton>
+        </div>
+      )}
+
+      {isEditModeActive && !isEditingFooter && editorViejo && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(139, 92, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, backdropFilter: 'blur(2px)' }}>
           <button 
             onClick={handleEditFooter}
@@ -228,7 +265,7 @@ const Footer = () => {
         </div>
       )}
 
-      {isEditModeActive && isEditingFooter && (
+      {isEditModeActive && isEditingFooter && editorViejo && (
         <div style={{ background: '#8b5cf6', color: 'white', padding: '10px', textAlign: 'center', fontWeight: 'bold' }}>
           Estás editando el Pie de Página Global
           <button 

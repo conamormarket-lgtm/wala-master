@@ -228,3 +228,28 @@
 [data-theme="dark"] .section a {
   color: rgba(241, 238, 249, 0.78);
 }
+
+/* Editor del kit (paso 8): entrar a editar el pie (sin desenfoque) y el aviso
+   mientras se edita. */
+.editarPie {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(139, 92, 246, 0.14);
+}
+
+.editandoPie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem 1rem;
+  padding: 0.7rem 1rem;
+  background: #ede9fe;
+  color: #4c1d95;
+  font-weight: 700;
+  text-align: center;
+}
