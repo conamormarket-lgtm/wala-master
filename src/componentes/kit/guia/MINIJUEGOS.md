@@ -159,6 +159,8 @@ resuelve la sesión y el modo diseño con su aviso.
   pantalla de densidad 2 baja la de 800 (34 KB en vez de 55); en una de 3,
   la de 1000 de siempre.
 - Sin la entrada escalonada (`Stagger`): las tarjetas salen de una.
+- Las bolitas se juegan sin cuenta (desde el 2026-10-19, JUEGOS.md): su
+  tarjeta dice "Jugar ahora" también sin sesión.
 - Todo pasa por la traducción.
 - `PaginaMinijuegos` y `juegosDelArcade` en archivos propios
   (`paginas/Minijuegos.jsx`, `adaptadoresArcade.js`): no van en el archivo

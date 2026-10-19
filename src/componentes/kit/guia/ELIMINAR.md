@@ -245,14 +245,25 @@ grupos del marco nuevo (`gruposDeCuenta.js`).
 |---|---|---|---|---|
 | `pages/SearchPageViejo.jsx` + `pages/SearchPage.module.css` (la página de antes: título, campo, barra con el `<select>`, Modalidad como `gruposExtra` y `SidebarCatalogLayout`) | `/buscar` | `components/busqueda/BusquedaDeTienda.jsx` → `PaginaBusqueda` del kit (`paginas/Busqueda.jsx`) | `pages/SearchPage.jsx` (lazy, solo con el interruptor `busquedaVieja`) | al retirar `busquedaVieja`; con ella, `SidebarCatalogLayout` pierde su último uso fuera de `seccionesViejo` |
 
+### Los juegos por dentro (2026-10-19)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/Minijuegos/BallSortViejo.jsx` + `BallSortPage.module.css` | `/ball-sort` | `components/minijuegos/BolitasDeTienda.jsx` → `PaginaBolitas` | `pages/Minijuegos/BallSortPage.jsx` (lazy, solo con `juegosViejo`) | al retirar `juegosViejo` |
+| `pages/Minijuegos/RuletaViejo.jsx` + `RuletaPage.module.css` | `/ruleta` | `components/minijuegos/RuletaDeTienda.jsx` → `PaginaRuleta` | `pages/Minijuegos/RuletaPage.jsx` (lazy, solo con `juegosViejo`) | al retirar `juegosViejo` |
+| `pages/Tienda/WordleViejo.jsx` + `WordlePage.module.css` | `/palabra-del-dia` | `components/minijuegos/PalabraDeTienda.jsx` → `PaginaPalabra` | `pages/Tienda/WordlePage.jsx` (lazy, solo con `juegosViejo`) | al retirar `juegosViejo` |
+| `components/ruleta/RuedaRuleta.jsx` + su CSS | la ruleta y la vista previa del admin | `RuedaRuleta` del kit (`piezas/Ruleta.jsx`; el admin ya la usa) | solo `RuletaViejo.jsx` | con `RuletaViejo` |
+| `pages/Minijuegos/ArcadeShell.jsx` + su CSS | el marco de los tres juegos | `MarcoJuego` | `BallSortViejo`, `RuletaViejo`, `WordleViejo` y `MinijuegosViejo` | al retirar `juegosViejo` y `minijuegosViejo` |
+| `hooks/useEntregaMonedas.js` | el bloqueo de los premios | `components/minijuegos/entregarMonedas.js` | solo las tres páginas viejas | con ellas |
+
 ### La Zona Arcade (2026-10-19)
 
 | Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
 |---|---|---|---|---|
 | `pages/Minijuegos/MinijuegosViejo.jsx` + `MinijuegosPage.module.css` (con `JuegoCard`) | `/minijuegos` | `components/minijuegos/MinijuegosDeTienda.jsx` → `PaginaMinijuegos` | `pages/Minijuegos/MinijuegosPage.jsx` (lazy, solo con `minijuegosViejo`) | al retirar `minijuegosViejo` |
 
-Se quedan: `ArcadeShell` (lo usan la palabra, la ruleta y las bolitas, hasta
-que migren: JUEGOS.md) y `Badge` / `Stagger` de `components/ui` (los usan
+Se quedan: `ArcadeShell` (lo usan las tres páginas viejas de los juegos,
+con `juegosViejo`: ver arriba) y `Badge` / `Stagger` de `components/ui` (los usan
 otras páginas).
 
 ### Las legales (2026-10-19)

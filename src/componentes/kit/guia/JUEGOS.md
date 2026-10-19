@@ -57,9 +57,9 @@ Revisado el 2026-10-15 contra estos archivos:
 | Parte | Componente | Piezas que usa | Datos (en la tienda) |
 |---|---|---|---|
 | P20 Lo común | `MarcoJuego`, `AyudaJuego`, `ResultadoJuego`, `PremioJuego`, `CifrasJuego` (nuevas, `piezas/Juegos.jsx`) | `Boton`, `HojaInferior`, `Sello`, `Trazo`, `GananciaMonedas`, `Cargando` | — |
-| P20 Palabra del día | `PaginaPalabra` (`paginas/Juegos.jsx`) | `TableroPalabra`, `FichaPalabra`, `TecladoPalabra`, `LeyendaPalabra`, `RankingPalabra` y las reglas `evaluarIntento`, `estadosDeTeclas` y `normalizarPalabra` (nuevas, `piezas/Palabra.jsx`); `Pestanas`, `Avatar`, `CuentaRegresiva` | `getDailyWord`, `VALID_GUESSES`, `getEstadoPartidaDeHoy` + localStorage (`wala_wordle_{fecha}`), `getWordleRankingToday` / `getWordleRanking`, el perfil (`wordlePlayed`…), `saveWordleResult` + `claimWordleRewardSecure` |
-| P20 Ruleta | `PaginaRuleta` | `RuedaRuleta` y `HistorialRuleta` (nuevas, `piezas/Ruleta.jsx`); `BarraProgreso` (la racha), `CodigoCopiable` (el cupón), `IconoWala` por tipo de premio | `getRuletaBoard` (config, premios, historial), `getRuletaEligibility`, `spinRuletaSecure` |
-| P20 Bolitas | `PaginaBolitas` | `TuboBolitas` y `Bolita`, y las reglas `nivelBolitas`, `puedeSoltar`, `moverBolita`, `tuboListo` y `nivelResuelto` (nuevas, `piezas/Bolitas.jsx`); `Estallido`, `BarraProgreso` | `lastBallSortReward`, `claimBallSortRewardSecure` |
+| P20 Palabra del día | `PaginaPalabra` (`paginas/Palabra.jsx`) | `TableroPalabra`, `FichaPalabra`, `TecladoPalabra`, `LeyendaPalabra`, `RankingPalabra` y las reglas `evaluarIntento`, `estadosDeTeclas` y `normalizarPalabra` (nuevas, `piezas/Palabra.jsx`); `Pestanas`, `Avatar`, `CuentaRegresiva` | `getDailyWord`, `VALID_GUESSES`, `getEstadoPartidaDeHoy` + localStorage (`wala_wordle_{fecha}`), `getWordleRankingToday` / `getWordleRanking`, el perfil (`wordlePlayed`…), `saveWordleResult` + `claimWordleRewardSecure` |
+| P20 Ruleta | `PaginaRuleta` (`paginas/Ruleta.jsx`) | `RuedaRuleta` y `HistorialRuleta` (nuevas, `piezas/Ruleta.jsx`); `BarraProgreso` (la racha), `CodigoCopiable` (el cupón), `IconoWala` por tipo de premio | `getRuletaBoard` (config, premios, historial), `getRuletaEligibility`, `spinRuletaSecure` |
+| P20 Bolitas | `PaginaBolitas` (`paginas/Bolitas.jsx`) | `TuboBolitas` y `Bolita`, y las reglas `nivelBolitas`, `puedeSoltar`, `moverBolita`, `tuboListo` y `nivelResuelto` (nuevas, `piezas/Bolitas.jsx`); `Estallido`, `BarraProgreso` | `lastBallSortReward`, `claimBallSortRewardSecure` |
 
 Esqueletos: `EsqueletoPagina forma="palabra"`, `"ruleta"` y `"bolitas"`
 (nuevas, con la medida real en escritorio y en el celular).
@@ -120,7 +120,7 @@ con `rotulo` y `detalle`. Lo usan la reclamación y el cupón de la ruleta.
   - Al ganar: "¡Nivel completado! Lo resolviste en N movimientos", el
     premio, "Jugar otra vez" y "Ver otros juegos".
 
-## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
+## Llevar a la tienda (hecho el 2026-10-19: ver "En la tienda" al final)
 
 ### Reemplazos
 
@@ -245,11 +245,96 @@ con `rotulo` y `detalle`. Lo usan la reclamación y el cupón de la ruleta.
 
 ### Pasos
 
-1. `MarcoJuego` + `AyudaJuego` + `ResultadoJuego` en las bolitas (es la más
-   chica), con el mismo `claimBallSortReward`.
-2. La ruleta: primero cambiar `components/ruleta/RuedaRuleta` por la del
-   kit (también en la vista previa del admin) y comprobar con
-   `?premios=demo` que para en el gajo correcto. Después, `PaginaRuleta`.
-3. La palabra: `PaginaPalabra`, manteniendo `saveWordleResult`, el
-   localStorage y el ranking.
+1. ✓ Las bolitas (2026-10-19), con el mismo `claimBallSortReward` y sin
+   cuenta.
+2. ✓ La ruleta (2026-10-19): la rueda del kit también en la vista previa
+   del admin; comprobado con `?premios=demo` y con un giro de verdad que
+   para en el gajo del premio.
+3. ✓ La palabra (2026-10-19), con `saveWordleResult`, el localStorage y el
+   ranking.
 4. Decidir aparte la Ñ y el largo de las palabras del admin.
+
+## En la tienda (2026-10-19)
+
+| Las bolitas sin cuenta (celular) | Su resultado | En inglés y en claro |
+|---|---|---|
+| ![Los tubos con una bolita levantada y los destinos marcados](bolitas-tienda-celular.webp) | ![¡Nivel completado! con "Inicia sesión para ganar monedas"](bolitas-sin-cuenta.webp) | ![Kapi's Balls, en claro](bolitas-ingles-claro.webp) |
+
+| La ruleta: un giro de verdad | El cupón (modo diseño), en inglés y en claro |
+|---|---|
+| ![¡Felicidades! +5 acreditadas, con la rueda parada en 5 monedas](ruleta-premio-celular.webp) | ![Congratulations! con el cupón y su vencimiento](ruleta-cupon-ingles-claro.webp) |
+
+| La palabra como invitada (perdida, al volver) | Ganada: acreditando | Escritorio en inglés y en claro |
+|---|---|---|
+| ![El tablero terminado con "La palabra era JULIO"](palabra-invitado-celular.webp) | ![¡Lo lograste! en 3 intentos, acreditando](palabra-acreditando.webp) | ![The Word of the Day con el resultado y el ranking](palabra-ingles-claro.webp) |
+
+Las tres páginas (`pages/Minijuegos/BallSortPage.jsx`, `RuletaPage.jsx` y
+`pages/Tienda/WordlePage.jsx`) montan `components/minijuegos/BolitasDeTienda.jsx`,
+`RuletaDeTienda.jsx` y `PalabraDeTienda.jsx`. Las de antes (`BallSortViejo`,
+`RuletaViejo`, `WordleViejo`) bajan solo con el interruptor `juegosViejo`
+(`useLoViejo('juegos')`: en Firestore `juegosViejo: true`; en localStorage,
+`"juegos"`). Con él, las bolitas vuelven a pedir cuenta.
+
+El kit separó los juegos: `paginas/Palabra.jsx`, `Ruleta.jsx` y
+`Bolitas.jsx` (`paginas/Juegos.jsx` solo los reúne para la demo); cada
+página baja solo el suyo. Las monedas vuelan con `entregarMonedas` (la
+promesa termina con `coins-animation-end` o a los 8 s) y la hoja del premio
+no se cierra mientras tanto.
+
+**Lo mismo que antes:** los cobros del servidor (`claimBallSortRewardSecure`,
+`spinRuletaSecure`, `claimWordleRewardSecure`), `getRuletaBoard`, la
+elegibilidad con las reglas del admin, `saveWordleResult` y las rachas, el
+día de Lima, "ya jugaste hoy" según el servidor, la partida a medias en
+`wala_wordle_{fecha}`, las claves de la ayuda, `trackMinigame` (inicio y
+fin), la ruleta que manda al login sin cuenta, "reducir movimiento" (una
+vuelta en 600 ms) y el modo diseño de la ruleta (`?sesion=activa`,
+`?premios=demo`, `?ruleta=…`, `?resultado=nada|premio|cupon`) y de las
+bolitas (`?bolitas=completado`).
+
+**Lo que cambia (además de las diferencias a propósito de arriba):**
+
+- **Bolitas sin cuenta:** `/ball-sort` ya no pasa por `RutaPrivada`; la
+  tarjeta de la Zona Arcade dice "Jugar ahora" también sin cuenta.
+- **Bolitas:** si el servidor dice que ya cobraste hoy, se dice eso (antes
+  salía como error); mientras se acredita no se reparte otro nivel ni se
+  sale de la hoja.
+- **Ruleta:** si el premio ganado ya no está en la rueda ni al volver a
+  pedirla (era el último en stock), se pone en su sitio y la rueda para ahí
+  (antes paraba en el primer gajo). Si el tablero no carga, "No pudimos
+  cargar la ruleta" con "Reintentar" (antes, "en preparación"). Con 0
+  monedas no se espera ningún vuelo. El cupón vence "el 8 de octubre"
+  (antes, 2026-10-08). La rueda muestra la imagen del centro del admin y,
+  si un premio no tiene nombre ni etiqueta, su texto.
+- **Palabra:** las estadísticas salen del perfil (en otro equipo salían en
+  0) y el navegador ya no guarda el perfil entero; si guardar o cobrar
+  falla, se dice, gane o pierda (antes, el cobro fallaba en silencio); la
+  partida se guarda con la palabra tal cual, con sus tildes (el servidor
+  compara con la oficial: con una palabra con tilde puesta por el admin no
+  pagaba); el tiempo sigue tras recargar. La sesión anónima juega como
+  invitada y no guarda la partida.
+- `PremioJuego` es un `div` (con "Acreditando" dentro de un párrafo la
+  consola avisaba).
+- Todo pasa por la traducción; las cifras siguen en negrita
+  (`TextoResaltado`).
+
+**Carga:** las bolitas bajan 10,1 KB + 2,3 KB de CSS más lo común de los
+tres juegos (6,4 KB + 5,3 KB de CSS, compartido); antes, 13,3 + 12,1 KB de
+CSS más `ArcadeShell`. La ruleta, 13 KB más la rueda (4,5 + 2,6 KB, la
+misma del admin); antes, 14,8 + 10 KB de CSS más su rueda. La palabra,
+17,6 + 5,1 KB de CSS; antes, 17,2 + 12,8 KB. El archivo principal no crece
+(644,6 KB, 204,4 KB gzip).
+
+**Probado** con los emuladores: las bolitas resueltas de verdad con cuenta
+(+2, 31 → 33; otra vez, "ya ganaste hoy"; con `?bolitas=disponible`, el
+"ya cobraste" del servidor), sin cuenta (la tarjeta, jugar, el premio que
+invita y su enlace con `?redirect=`), en inglés y claro, a 1366 y a 390; la
+ruleta con un giro de verdad (para en el gajo, +5, 65 → 70, el historial y
+"Ya giraste" al volver), `?premios=demo`, `?resultado=cupon` en inglés, la
+imagen del centro, la vista previa del admin y sin cuenta al login; la
+palabra con cuenta (un intento que no existe, recargar a medias, ganar en 3:
++4 con el bonus, las estadísticas 1/1/1/1, el ranking con "Tú", volver
+con y sin el tablero en este navegador) y como invitada (perder y volver);
+Escape; el interruptor en las tres (las bolitas viejas piden cuenta); la
+demo. **No probado:** el error al cargar la ruleta (el tablero tiene
+respaldo y no se pudo forzar), un cobro fallido de la palabra, la app
+(Capacitor).
