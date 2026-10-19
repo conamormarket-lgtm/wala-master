@@ -597,6 +597,15 @@ Los textos de estas piezas pasan por la traducción. Las fotos que se están
 subiendo no permiten recortar ni quitar fondo. La cabeza y las ventanas
 siguen pendientes del siguiente paso.
 
+Tercer paso: la cabeza y la composición (`MarcoEstudio`), el inicio sobre
+la prenda, la compra (`CompraEstudio`) y las hojas (`HojasEstudio`) se
+comparten con la demo. La talla mantiene el flujo de la tienda (una unidad
+y después `/carrito`). Recortar y quitar fondo cargan sus piezas aparte al
+abrirlas; el motor sigue siendo `fondoPixeles`. La miniatura usa el render
+de Fabric. Las hojas funcionan también con el body fijo del editor móvil.
+El regreso del login conserva la marca y el borrador aunque StrictMode
+cancele la primera inicialización.
+
 1. ✓ Hacer los adaptadores con los datos reales y comparar las tarjetas.
 2. ✓ Cambiar la portada y la grilla (prendas y combos) por las del kit.
 3. ✓ Cambiar las tres filas por las del kit (después de Mis creaciones).

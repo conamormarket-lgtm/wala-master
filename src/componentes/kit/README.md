@@ -137,6 +137,14 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 
 ## Qué hay
 
+El estudio está migrando con Fabric: `paginas/MarcoEstudio.jsx` comparte la
+cabeza, los huecos del lienzo y panel y `InicioLienzoEstudio` entre la demo
+y la tienda. `piezas/CompraEstudio.jsx` y `piezas/HojasEstudio.jsx` comparten
+la compra y las hojas controladas; `ControlesEstudio.jsx` traduce las
+etiquetas de sus controles. Los tamaños se adaptan con
+`adaptadoresEstudio.js`, sin cambiar las capas persistidas. Ver CREAR.md,
+P12 y los pasos en marcha.
+
 | Archivo | Componentes | Para qué |
 |---|---|---|
 | `Boton.jsx` | `Boton` | Botón violeta liso; variantes, tamaños, cargando, `brillo` para CTA de pago. Con `to` es un enlace; con `insignia` lleva un contador en la esquina |

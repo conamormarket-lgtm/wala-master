@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Wand2, Eraser, Brush, Hand, Undo2, Sparkles, ZoomIn, ZoomOut, Scan, RotateCcw } from 'lucide-react';
-import Boton from '../Boton';
 import { Chip } from '../Etiquetas';
 import { Aviso, HojaInferior } from '../Feedback';
-import { Deslizador } from '../Formulario';
 import { cargarImagen, cajaVisible, recortarImagen } from '../imagenes';
+import { Texto } from '../Traduccion';
+import { BotonEstudio, DeslizadorEstudio } from './ControlesEstudio';
 import s from './QuitarFondo.module.css';
 
 /*
@@ -139,7 +139,7 @@ export function QuitarFondo({ abierta, src, motor, onCancelar, onAplicar }) {
       setFuente(img);
     }).catch(() => vigente && setAviso('No pudimos abrir la imagen.'));
     return () => { vigente = false; cancelAnimationFrame(cuadroRef.current); };
-  }, [abierta, src, motor]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [abierta, src, motor]);
 
   // El lienzo aparece después de cargar; la imagen entra entera en el visor.
   useEffect(() => {
@@ -370,8 +370,8 @@ export function QuitarFondo({ abierta, src, motor, onCancelar, onAplicar }) {
       titulo="Quitar el fondo"
       pie={(
         <div className={s.pie}>
-          <Boton variante="fantasma" onClick={onCancelar} disabled={aplicando} title="Cancelar (Esc)">Cancelar</Boton>
-          <Boton onClick={aplicar} cargando={aplicando} disabled={!fuente} title="Aplicar (Enter)">Aplicar</Boton>
+          <BotonEstudio variante="fantasma" onClick={onCancelar} disabled={aplicando} title="Cancelar (Esc)"><Texto>{"Cancelar"}</Texto></BotonEstudio>
+          <BotonEstudio onClick={aplicar} cargando={aplicando} disabled={!fuente} title="Aplicar (Enter)"><Texto>{"Aplicar"}</Texto></BotonEstudio>
         </div>
       )}
     >
@@ -379,11 +379,11 @@ export function QuitarFondo({ abierta, src, motor, onCancelar, onAplicar }) {
         <div className={s.herramientas} role="group" aria-label="Herramienta">
           {HERRAMIENTAS.map(({ id, Icono, nombre, tecla }) => (
             <Chip key={id} tamano="sm" activo={herramienta === id} onClick={() => setHerramienta(id)} icono={<Icono aria-hidden="true" />}>
-              {nombre}<span className={s.oculto}> (tecla {tecla})</span>
+              <Texto>{nombre}</Texto><span className={s.oculto}><Texto>{" (tecla "}</Texto>{tecla}<Texto>{")"}</Texto></span>
             </Chip>
           ))}
         </div>
-        <p className={s.ayuda}>{actual?.ayuda} Acerca con la rueda del ratón o con dos dedos.</p>
+        <p className={s.ayuda}><Texto>{actual?.ayuda}</Texto><Texto>{" Acerca con la rueda del ratón o con dos dedos."}</Texto></p>
 
         <div
           ref={visorRef}
@@ -419,10 +419,10 @@ export function QuitarFondo({ abierta, src, motor, onCancelar, onAplicar }) {
         {fuente && (
           <div className={s.vista}>
             <span className={s.zoom} role="group" aria-label="Zoom">
-              <Boton variante="fantasma" tamano="sm" soloIcono aria-label="Alejar (−)" icono={<ZoomOut aria-hidden="true" />} onClick={() => zoomEn(zoom / PASO_ZOOM)} disabled={zoom <= ZOOM_MIN} />
-              <span className={s.zoomValor}>{Math.round(zoom * 100)}%</span>
-              <Boton variante="fantasma" tamano="sm" soloIcono aria-label="Acercar (+)" icono={<ZoomIn aria-hidden="true" />} onClick={() => zoomEn(zoom * PASO_ZOOM)} disabled={zoom >= ZOOM_MAX} />
-              <Boton variante="fantasma" tamano="sm" icono={<Scan aria-hidden="true" />} onClick={ajustarVista} disabled={zoom === 1}>Ajustar</Boton>
+              <BotonEstudio variante="fantasma" tamano="sm" soloIcono aria-label="Alejar (−)" icono={<ZoomOut aria-hidden="true" />} onClick={() => zoomEn(zoom / PASO_ZOOM)} disabled={zoom <= ZOOM_MIN} />
+              <span className={s.zoomValor}>{Math.round(zoom * 100)}<Texto>{"%"}</Texto></span>
+              <BotonEstudio variante="fantasma" tamano="sm" soloIcono aria-label="Acercar (+)" icono={<ZoomIn aria-hidden="true" />} onClick={() => zoomEn(zoom * PASO_ZOOM)} disabled={zoom >= ZOOM_MAX} />
+              <BotonEstudio variante="fantasma" tamano="sm" icono={<Scan aria-hidden="true" />} onClick={ajustarVista} disabled={zoom === 1}><Texto>{"Ajustar"}</Texto></BotonEstudio>
             </span>
             <span className={s.fondos} role="radiogroup" aria-label="Fondo de la vista">
               {FONDOS.map(([id, nombre]) => (
@@ -432,20 +432,20 @@ export function QuitarFondo({ abierta, src, motor, onCancelar, onAplicar }) {
           </div>
         )}
 
-        {fuente && aviso && <Aviso compacto tipo="info">{aviso}</Aviso>}
+        {fuente && aviso && <Aviso compacto tipo="info"><Texto>{aviso}</Texto></Aviso>}
 
         {fuente && herramienta !== 'mover' && (
           herramienta === 'varita' ? (
-            <Deslizador etiqueta={ajustaRelleno ? 'Tolerancia · ajusta el último borrado' : 'Tolerancia'} valor={tolerancia} min={5} max={100} onChange={cambiarTolerancia} disabled={aplicando} />
+            <DeslizadorEstudio etiqueta={ajustaRelleno ? 'Tolerancia · ajusta el último borrado' : 'Tolerancia'} valor={tolerancia} min={5} max={100} onChange={cambiarTolerancia} disabled={aplicando} />
           ) : (
-            <Deslizador etiqueta="Tamaño del pincel" valor={tamano} min={1} max={100} onChange={setTamano} disabled={aplicando} />
+            <DeslizadorEstudio etiqueta="Tamaño del pincel" valor={tamano} min={1} max={100} onChange={setTamano} disabled={aplicando} />
           )
         )}
 
         <div className={s.acciones}>
-          <Boton variante="contorno" tamano="sm" icono={<Sparkles aria-hidden="true" />} onClick={quitarFondoAuto} disabled={!fuente || aplicando}>Quitar fondo</Boton>
-          <Boton variante="contorno" tamano="sm" icono={<Undo2 aria-hidden="true" />} onClick={deshacer} disabled={!hayOps || aplicando} title="Deshacer (Ctrl+Z)">Deshacer</Boton>
-          <Boton variante="fantasma" tamano="sm" icono={<RotateCcw aria-hidden="true" />} onClick={restablecer} disabled={!hayOps || aplicando}>Restablecer</Boton>
+          <BotonEstudio variante="contorno" tamano="sm" icono={<Sparkles aria-hidden="true" />} onClick={quitarFondoAuto} disabled={!fuente || aplicando}><Texto>{"Quitar fondo"}</Texto></BotonEstudio>
+          <BotonEstudio variante="contorno" tamano="sm" icono={<Undo2 aria-hidden="true" />} onClick={deshacer} disabled={!hayOps || aplicando} title="Deshacer (Ctrl+Z)"><Texto>{"Deshacer"}</Texto></BotonEstudio>
+          <BotonEstudio variante="fantasma" tamano="sm" icono={<RotateCcw aria-hidden="true" />} onClick={restablecer} disabled={!hayOps || aplicando}><Texto>{"Restablecer"}</Texto></BotonEstudio>
         </div>
       </div>
     </HojaInferior>

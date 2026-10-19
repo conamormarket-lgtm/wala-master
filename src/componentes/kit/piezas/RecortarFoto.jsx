@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Minus, Plus, Scissors, RotateCcw } from 'lucide-react';
-import Boton from '../Boton';
 import { Aviso, HojaInferior } from '../Feedback';
-import { Deslizador } from '../Formulario';
 import { cargarImagen, cajaVisible, recortarImagen } from '../imagenes';
+import { Texto } from '../Traduccion';
+import { BotonEstudio, DeslizadorEstudio } from './ControlesEstudio';
 import s from './RecortarFoto.module.css';
 
 const limitar = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -119,13 +119,13 @@ function RecortarFija({
       titulo={titulo}
       pie={(
         <div className={s.botones}>
-          <Boton variante="fantasma" onClick={onCancelar} disabled={guardando}>Cancelar</Boton>
-          <Boton onClick={usar} cargando={guardando} disabled={!natural}>Usar esta foto</Boton>
+          <BotonEstudio variante="fantasma" onClick={onCancelar} disabled={guardando}><Texto>{"Cancelar"}</Texto></BotonEstudio>
+          <BotonEstudio onClick={usar} cargando={guardando} disabled={!natural}><Texto>{"Usar esta foto"}</Texto></BotonEstudio>
         </div>
       )}
     >
       <div className={s.recortar}>
-        <p className={s.texto}>{texto}</p>
+        <p className={s.texto}><Texto>{texto}</Texto></p>
         <div
           ref={escenario}
           className={[s.escenario, forma === 'circulo' && s.circulo].filter(Boolean).join(' ')}
@@ -150,7 +150,7 @@ function RecortarFija({
         </div>
         <div className={s.zoom}>
           <button type="button" className={s.paso} onClick={() => cambiarZoom(zoom - 0.2)} aria-label="Alejar"><Minus aria-hidden="true" /></button>
-          <Deslizador soloBarra etiqueta="Zoom de la foto" min={1} max={3} paso={0.01} valor={zoom} onChange={cambiarZoom} />
+          <DeslizadorEstudio soloBarra etiqueta="Zoom de la foto" min={1} max={3} paso={0.01} valor={zoom} onChange={cambiarZoom} />
           <button type="button" className={s.paso} onClick={() => cambiarZoom(zoom + 0.2)} aria-label="Acercar"><Plus aria-hidden="true" /></button>
         </div>
       </div>
@@ -268,13 +268,13 @@ function RecortarLibre({
       titulo={titulo}
       pie={(
         <div className={s.botones}>
-          <Boton variante="fantasma" onClick={onCancelar} disabled={guardando} title="Cancelar (Esc)">Cancelar</Boton>
-          <Boton onClick={aplicar} cargando={guardando} disabled={!img} title="Aplicar (Enter)">Aplicar recorte</Boton>
+          <BotonEstudio variante="fantasma" onClick={onCancelar} disabled={guardando} title="Cancelar (Esc)"><Texto>{"Cancelar"}</Texto></BotonEstudio>
+          <BotonEstudio onClick={aplicar} cargando={guardando} disabled={!img} title="Aplicar (Enter)"><Texto>{"Aplicar recorte"}</Texto></BotonEstudio>
         </div>
       )}
     >
       <div className={s.recortar}>
-        <p className={s.texto}>{texto}</p>
+        <p className={s.texto}><Texto>{texto}</Texto></p>
         <div className={s.areaLibre}>
           {img ? (
             <div ref={caja} className={s.cajaLibre} onPointerMove={mover} onPointerUp={soltar} onPointerCancel={soltar}>
@@ -298,10 +298,10 @@ function RecortarLibre({
             <p className={s.texto}>{aviso || 'Cargando imagen…'}</p>
           )}
         </div>
-        {img && aviso && <Aviso compacto tipo="info">{aviso}</Aviso>}
+        {img && aviso && <Aviso compacto tipo="info"><Texto>{aviso}</Texto></Aviso>}
         <div className={s.accionesLibre}>
-          <Boton variante="contorno" tamano="sm" icono={<Scissors aria-hidden="true" />} onClick={quitarBordes} disabled={!img || guardando}>Quitar bordes transparentes</Boton>
-          <Boton variante="fantasma" tamano="sm" icono={<RotateCcw aria-hidden="true" />} onClick={() => { setRect(COMPLETA); setAviso(''); }} disabled={!img || guardando}>Restablecer</Boton>
+          <BotonEstudio variante="contorno" tamano="sm" icono={<Scissors aria-hidden="true" />} onClick={quitarBordes} disabled={!img || guardando}><Texto>{"Quitar bordes transparentes"}</Texto></BotonEstudio>
+          <BotonEstudio variante="fantasma" tamano="sm" icono={<RotateCcw aria-hidden="true" />} onClick={() => { setRect(COMPLETA); setAviso(''); }} disabled={!img || guardando}><Texto>{"Restablecer"}</Texto></BotonEstudio>
         </div>
       </div>
     </HojaInferior>

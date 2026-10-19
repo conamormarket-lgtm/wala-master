@@ -6,15 +6,14 @@ import {
   AlignLeft, AlignCenter, AlignRight, LoaderCircle, CheckCircle2, AlertTriangle,
   AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter, Pencil, Hand, Sparkles,
 } from 'lucide-react';
-import Boton from '../Boton';
-import { Texto, useTexto } from '../Traduccion';
+import { Texto } from '../Traduccion';
 import Acordeon from '../Acordeon';
 import { Chip } from '../Etiquetas';
-import { Campo, Cantidad, Casilla, Deslizador, Interruptor, SelectorColor } from '../Formulario';
 import { Sello } from '../Marca';
 import { BarraProgreso } from './BarraProgreso';
 import { TituloEditable } from './Ficha';
 import { imanAlMover, imanAlEscalar, enCm } from '../../../utils/guiasInteligentes';
+import { BotonEstudio, CampoEstudio, CantidadEstudio, DeslizadorEstudio, SelectorColorEstudio, CasillaEstudio, InterruptorEstudio } from './ControlesEstudio';
 import s from './Estudio.module.css';
 
 /*
@@ -1313,7 +1312,7 @@ export function PanelCapa({
   capa, zona, onCambiar, onListo, fuentes = [], calidad, onNitida,
   onCentrar, onAlinear, onQuitar, onDuplicar, onAdelante, onAtras,
   onRecortar, onQuitarFondo, onLlenar, zonas = [], onPasarAZona, sinSesion = false,
-  anchoZonaCm, fueraDeZona = false, onImagen, onTexto, subiendo = false,
+  anchoZonaCm, fueraDeZona = false, onImagen, onTexto, subiendo = false, puntosPorZona = 100,
 }) {
   if (!capa) return null;
   const imagen = capa.tipo === 'imagen';
@@ -1360,7 +1359,7 @@ export function PanelCapa({
                   onChange={(cm) => onCambiar?.({ tamano: cm / anchoZonaCm })}
                 />
               ) : (
-                <CantidadEstudio editable etiqueta="Tamaño de la letra" valor={Math.round(tamano * 100)} min={4} max={60} sufijo="pt" onChange={(v) => onCambiar?.({ tamano: v / 100 })} />
+                <CantidadEstudio editable etiqueta="Tamaño de la letra" valor={Math.round(tamano * puntosPorZona)} min={4} max={Math.round(puntosPorZona * 0.6)} sufijo="pt" onChange={(v) => onCambiar?.({ tamano: v / puntosPorZona })} />
               )}
             </div>
             <div className={s.grupoCampo}>
@@ -1555,6 +1554,7 @@ export function PanelVarios({ cantidad, mismaZona = true, onListo, onAlinear, on
 }
 
 const MOD = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || '') ? '⌘' : 'Ctrl';
+export { MOD as MOD_ESTUDIO };
 
 /** Los atajos del estudio en cuatro grupos (los de Crear). `lados`: los nombres de los lados, para 1, 2… */
 const gruposAtajos = (lados = []) => [
@@ -1660,26 +1660,3 @@ export function AtajosEstudio({ lados = [] }) {
     </div>
   );
 }
-
-/** Traduce también las etiquetas accesibles de los botones del estudio. */
-function BotonEstudio({ children, title, 'aria-label': etiqueta, ...props }) {
-  const titulo = useTexto(title);
-  const accesible = useTexto(etiqueta);
-  return <Boton {...props} title={titulo} aria-label={accesible}>{typeof children === 'string' ? <Texto>{children}</Texto> : children}</Boton>;
-}
-
-// Las etiquetas siguen siendo cadenas para los atributos accesibles de los
-// controles; los nombres de fuentes y los textos del diseño no se traducen.
-function conTextoEstudio(Componente) {
-  return function ControlEstudio({ etiqueta, descripcion, ...props }) {
-    const rotulo = useTexto(etiqueta);
-    const detalle = useTexto(descripcion);
-    return <Componente {...props} etiqueta={rotulo} descripcion={detalle} />;
-  };
-}
-const CampoEstudio = conTextoEstudio(Campo);
-const CantidadEstudio = conTextoEstudio(Cantidad);
-const DeslizadorEstudio = conTextoEstudio(Deslizador);
-const SelectorColorEstudio = conTextoEstudio(SelectorColor);
-const CasillaEstudio = conTextoEstudio(Casilla);
-const InterruptorEstudio = conTextoEstudio(Interruptor);

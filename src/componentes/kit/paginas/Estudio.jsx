@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ArrowLeft, Save, Download, ShoppingBag, CheckCircle2, LogIn, RotateCcw, Images,
+import { LogIn, RotateCcw,
   Type, ImagePlus, ClipboardPaste, Clipboard, Copy, Undo2, Redo2, ArrowUpToLine, ArrowDownToLine, Crosshair,
   RotateCw, FlipHorizontal, Crop, Eraser, Maximize2, Trash2, Pencil, MousePointerSquareDashed, ArrowLeftRight,
   AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
@@ -8,20 +7,21 @@ import {
 } from 'lucide-react';
 import Boton from '../Boton';
 import { Aviso, EstadoVacio, HojaInferior } from '../Feedback';
-import { Campo, Cantidad, Casilla, SelectorTalla } from '../Formulario';
 import { Pestanas } from '../Navegacion';
 import { CapaCargando } from '../Cargando';
 import { BloqueSeccion } from '../Seccion';
 import { EsqueletoPagina } from '../Esqueletos';
-import { soles } from '../TarjetaProducto';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { RecortarFoto } from '../piezas/RecortarFoto';
 import { QuitarFondo } from '../piezas/QuitarFondo';
 import { MenuContextual } from '../piezas/MenuContextual';
-import { useAgregado, IconoAgregar } from '../piezas/Ficha';
+import { useAgregado } from '../piezas/Ficha';
 import {
   LienzoPrenda, BarraLienzo, PasosEstudio, PanelCapa, PanelVarios, EstadoEdicion, AtajosEstudio, GuiaGestos, zoomVecino, NIVELES_ZOOM,
 } from '../piezas/Estudio';
+import { MarcoEstudio, InicioLienzoEstudio } from './MarcoEstudio';
+import { HojasEstudio } from '../piezas/HojasEstudio';
+import { CompraEstudio } from '../piezas/CompraEstudio';
 import s from './Estudio.module.css';
 
 /*
@@ -1049,18 +1049,6 @@ export function PaginaEstudio({
     }
   };
 
-  const textoGuardar = yaGuardada && !hayCambios ? 'Guardado' : yaGuardada ? 'Guardar cambios' : 'Guardar';
-  const botonGuardar = {
-    variante: 'contorno',
-    tamano: 'sm',
-    icono: yaGuardada && !hayCambios ? <CheckCircle2 aria-hidden="true" /> : <Save aria-hidden="true" />,
-    disabled: vacio || !hayCambios,
-    cargando: ocupado === 'guardando' && hoja !== 'guardar',
-    onClick: guardar,
-    title: hayCambios ? 'Guardar (Ctrl+S)' : 'No hay cambios por guardar',
-  };
-  const botonDescargar = { tamano: 'sm', icono: <Download aria-hidden="true" />, disabled: vacio, onClick: () => onDescargar?.(diseno), title: 'Descargar' };
-
   const aviso = borradorAdmin ? (
     <Aviso compacto tipo="aviso">Borrador: solo los administradores ven esta prenda. Publícala desde Admin → Productos para poder comprarla.</Aviso>
   ) : combo ? (
@@ -1080,53 +1068,7 @@ export function PaginaEstudio({
 
   // En un combo: además, este diseño en las otras prendas (las que tienen otro, lo reemplaza).
   const otrasDelCombo = [...(combo?.otras?.iguales || []).map((n) => ({ n, reemplaza: false })), ...(combo?.otras?.conOtroDiseno || []).map((n) => ({ n, reemplaza: true }))];
-  const accionPrincipal = combo ? (
-    <>
-      {otrasDelCombo.length > 0 && !vacio && (
-        <div className={s.otrasCombo}>
-          {otrasDelCombo.map(({ n, reemplaza }) => (
-            <Casilla
-              key={n}
-              activo={copiarA.includes(n)}
-              onChange={(v) => setCopiarA((a) => (v ? [...a, n] : a.filter((x) => x !== n)))}
-              etiqueta={`Ponerlo también en la prenda ${n}`}
-              descripcion={reemplaza ? 'Reemplaza el diseño que ya tiene.' : undefined}
-            />
-          ))}
-        </div>
-      )}
-      <Boton bloque icono={<CheckCircle2 aria-hidden="true" />} disabled={vacio} onClick={() => onUsarEnCombo?.(diseno, { copiarA })}>Listo, usar en el combo</Boton>
-    </>
-  ) : agotado ? (
-    <Boton bloque disabled>Agotado por ahora</Boton>
-  ) : (
-    <Boton bloque icono={<IconoAgregar agregado={agregado} />} disabled={vacio || borradorAdmin} cargando={ocupado === 'agregando'} onClick={agregar}>
-      <span className={s.etiquetaAgregar}>
-        {agregado ? '¡Agregado!' : <>Agregar<span className={s.textoLargo}> al carrito</span><span className={s.precioBoton}> · {soles(precio)}</span></>}
-      </span>
-    </Boton>
-  );
-
-  return (
-    <div className={s.pagina} data-componente="PaginaEstudio">
-      <header className={s.cabeza}>
-        <Boton to={urlVolver} variante="fantasma" tamano="sm" soloIcono aria-label={etiquetaVolver} title={etiquetaVolver} icono={<ArrowLeft aria-hidden="true" />} />
-        <div className={s.titulo}>
-          <h1>{prenda.nombre}</h1>
-          <span className={s.subtitulo}>
-            <span className={s.punto} style={{ background: color?.hex }} aria-hidden="true" />
-            {color?.nombre}
-            {ladosConDiseno.length > 0 && <> · {ladosConDiseno.map((v) => v.nombre).join(' + ')}</>}
-          </span>
-        </div>
-        <span className={s.precio}>
-          {soles(precio)}
-          {prenda.precioAntes > precio && <s>{soles(prenda.precioAntes)}</s>}
-        </span>
-        {sesion && <Boton to={urlCreaciones} variante="fantasma" tamano="sm" icono={<Images aria-hidden="true" />} className={s.misCreaciones}>Mis creaciones</Boton>}
-      </header>
-
-      {modo === 'editar' && sesion && (
+  const avisos = (<>      {modo === 'editar' && sesion && (
         <div className={s.aviso}>
           <EstadoEdicion
             esBorrador={esBorrador}
@@ -1140,8 +1082,8 @@ export function PaginaEstudio({
       )}
       {aviso && <div className={s.aviso}>{aviso}</div>}
 
-      <div className={s.cuerpo}>
-        <section className={s.escena} aria-label="Tu prenda" ref={lienzoRef}>
+</>);
+  const escena = (        <section className={s.escena} aria-label="Tu prenda" ref={lienzoRef}>
           {vistas.length > 1 && (
             <Pestanas
               etiqueta="Lado de la prenda"
@@ -1192,13 +1134,7 @@ export function PaginaEstudio({
                 ))}
               </div>
             ) : guia ? <GuiaGestos onEntendido={cerrarGuia} /> : vacio && !cargandoDiseno && zona && zoom === 1 && (
-              <div className={s.empezar}>
-                <p>Empieza tu diseño en <strong>{nombreZona(zona)}</strong></p>
-                <span className={s.empezarBotones}>
-                  <Boton tamano="sm" icono={<ImagePlus aria-hidden="true" />} onClick={() => subirImagen()} cargando={ocupado === 'subiendo'}>Subir imagen</Boton>
-                  <Boton tamano="sm" variante="secundario" icono={<Type aria-hidden="true" />} onClick={() => escribirTexto()}>Escribir texto</Boton>
-                </span>
-              </div>
+              <InicioLienzoEstudio zona={nombreZona(zona)} onImagen={() => subirImagen()} onTexto={() => escribirTexto()} subiendo={ocupado === "subiendo"} />
             ),
           })}
           <BarraLienzo
@@ -1223,8 +1159,8 @@ export function PaginaEstudio({
           {zona && <p className={s.zonaInfo}>Zona elegida: <strong>{nombreZona(zona)}</strong></p>}
         </section>
 
-        <aside className={s.panel} ref={panelRef}>
-          <div className={s.panelCuerpo}>
+);
+  const panel = (<>
             {varios.length > 1 ? (
               <PanelVarios
                 cantidad={capasElegidas.length}
@@ -1285,107 +1221,32 @@ export function PaginaEstudio({
                 conDiseno={!vacio}
               />
             )}
-          </div>
-
-          {/* En el celular, pegada abajo en una fila: guardar y descargar como
-              íconos y agregar (como la tienda); los flotantes suben encima. */}
-          <div className={s.compra} data-compra-fija="">
-            <div className={s.compraPrecio}>
-              <span>{combo ? 'Precio en el combo' : 'Total'}</span>
-              <strong>{combo ? 'Incluido' : soles(precio)}</strong>
-            </div>
-            {accionPrincipal}
-            <div className={s.compraOtras}>
-              {/* Sin cambios se apaga; si ya se guardó, dice "Guardado". En el
-                  celular van solo como íconos (otra versión del mismo botón:
-                  así el ícono queda centrado). */}
-              <Boton {...botonGuardar} className={s.soloAncho}>{textoGuardar}</Boton>
-              <Boton {...botonGuardar} tamano="md" soloIcono aria-label={textoGuardar} className={s.soloCelular} />
-              <Boton {...botonDescargar} variante="fantasma" className={s.soloAncho}>Descargar</Boton>
-              <Boton {...botonDescargar} tamano="md" variante="contorno" soloIcono aria-label="Descargar" className={s.soloCelular} />
-            </div>
-            {vacio && <p className={s.compraNota}>Agrega una imagen o un texto para continuar.</p>}
-          </div>
-        </aside>
-      </div>
-
-      {/* Talla y cantidad antes de agregar. */}
-      <HojaInferior
-        abierta={hoja === 'talla'}
-        onCerrar={() => setHoja(null)}
-        titulo="Elige la talla"
-        pie={<Boton bloque icono={<ShoppingBag aria-hidden="true" />} disabled={!talla} cargando={ocupado === 'agregando'} onClick={agregar}>Agregar · {soles(precio * cantidad)}</Boton>}
-      >
-        <div className={s.hojaTalla}>
-          <p className={s.compraNota}>Incluye la impresión de todos tus diseños.</p>
-          <SelectorTalla tallas={tallas} valor={talla} onChange={setTalla} />
-          <div className={s.filaCantidad}>
-            <span>Cantidad</span>
-            <Cantidad valor={cantidad} onChange={setCantidad} min={1} max={20} />
-          </div>
-        </div>
-      </HojaInferior>
-
-      {/* Guardar: el nombre de la creación. */}
-      <HojaInferior
-        abierta={hoja === 'guardar'}
-        onCerrar={() => setHoja(null)}
-        titulo={modo === 'editar' ? 'Guardar los cambios' : 'Guarda tu creación'}
-        pie={<Boton bloque icono={<Save aria-hidden="true" />} cargando={ocupado === 'guardando'} onClick={() => confirmarGuardar()}>Guardar</Boton>}
-      >
-        <div className={s.hojaGuardar}>
-          <div className={s.miniatura}>{lienzo({ guias: false, className: s.lienzoMini })}</div>
-          <Campo etiqueta="Ponle un nombre" placeholder="Ej.: Polera de mi equipo" maxLength={40} value={nombre} onChange={(e) => setNombre(e.target.value)} ayuda="Lo verás en Mis creaciones." />
-        </div>
-      </HojaInferior>
-
-      {/* ¡Guardada! */}
-      <HojaInferior
-        abierta={hoja === 'guardada'}
-        onCerrar={() => setHoja(null)}
-        titulo="¡Creación guardada!"
-        pie={(
-          <div className={s.pieGuardada}>
-            {combo ? (
-              <Boton bloque icono={<CheckCircle2 aria-hidden="true" />} onClick={() => { setHoja(null); onUsarEnCombo?.(diseno, { copiarA }); }}>Volver al combo</Boton>
-            ) : !agotado && !borradorAdmin && (
-              <Boton bloque icono={<ShoppingBag aria-hidden="true" />} onClick={() => { setHoja(null); agregar(); }}>Agregar al carrito · {soles(precio)}</Boton>
-            )}
-            {urlCreacion
-              ? <Boton bloque variante="contorno" icono={<Images aria-hidden="true" />} to={urlCreacion}>Ver mi creación</Boton>
-              : <Boton bloque variante="contorno" icono={<Images aria-hidden="true" />} to={urlCreaciones}>Ver mis creaciones</Boton>}
-            <Boton bloque variante="fantasma" onClick={() => setHoja(null)}>Seguir diseñando</Boton>
-          </div>
-        )}
-      >
-        <div className={s.hojaGuardar}>
-          <div className={s.miniatura}>{lienzo({ guias: false, className: s.lienzoMini })}</div>
-          <p className={s.guardadaTexto}><strong>{nombre.trim() || 'Tu creación'}</strong> ya está en Mis creaciones. Puedes volver a editarla cuando quieras.</p>
-        </div>
-      </HojaInferior>
-
-      {/* Sin sesión: guardar, subir una imagen o agregar al carrito piden entrar (el diseño no se pierde). */}
-      <HojaInferior
-        abierta={hoja === 'login'}
-        onCerrar={() => setHoja(null)}
-        titulo={motivoLogin === 'guardar' ? 'Inicia sesión para guardar' : 'Inicia sesión para continuar'}
-        pie={(
-          <div className={s.pieGuardada}>
-            <Boton bloque icono={<LogIn aria-hidden="true" />} to={urlLogin}>Iniciar sesión</Boton>
-            <Boton bloque variante="contorno" to={urlRegistro}>Crear una cuenta</Boton>
-            <Boton bloque variante="fantasma" onClick={() => setHoja(null)}>Seguir diseñando</Boton>
-          </div>
-        )}
-      >
-        <div className={s.hojaLogin}>
-          <img src={CARAS_KAPI.feliz} alt="" width="96" height="96" />
-          <p>
-            {motivoLogin === 'guardar'
-              ? 'Tu diseño te espera aquí mismo: al volver lo encuentras tal cual y lo guardas en Mis creaciones.'
-              : 'Así guardamos tus imágenes y tu diseño. Tus textos y elecciones se quedan como los dejaste.'}
-          </p>
-        </div>
-      </HojaInferior>
+</>);
+  return (
+    <MarcoEstudio nombre={prenda.nombre} color={color} lados={ladosConDiseno.map((v) => v.nombre)}
+      precio={precio} precioAntes={prenda.precioAntes} sesion={sesion} urlVolver={urlVolver}
+      etiquetaVolver={etiquetaVolver} urlCreaciones={urlCreaciones} panelRef={panelRef}
+      avisos={avisos}
+      lienzo={escena}
+      panel={panel}
+      compra={<CompraEstudio precio={precio} vacio={vacio} agotado={agotado} borradorAdmin={borradorAdmin}
+        ocupado={ocupado} hayCambios={hayCambios} yaGuardada={yaGuardada} agregado={agregado}
+        onGuardar={guardar} onDescargar={() => onDescargar?.(diseno)}
+        onAgregar={combo ? () => onUsarEnCombo?.(diseno, { copiarA }) : agregar}
+        combo={combo ? { opciones: otrasDelCombo.map(({ n, reemplaza }) => ({
+          id: n, activo: copiarA.includes(n), etiqueta: 'Ponerlo también en la prenda ' + n,
+          descripcion: reemplaza ? 'Reemplaza el diseño que ya tiene.' : undefined,
+          onCambiar: (v) => setCopiarA((a) => v ? [...a,n] : a.filter((x) => x !== n)),
+        })) } : undefined} />}
+    >
+      <HojasEstudio prenda={prenda.nombre} color={color?.nombre} precio={precio} tallas={tallas} talla={talla} onTalla={setTalla} cantidad={cantidad} onCantidad={setCantidad} ocupado={ocupado}
+        pidiendoTalla={hoja === "talla"} onCerrarTalla={() => setHoja(null)} onComprar={agregar}
+        guardando={hoja === "guardar"} onCerrarGuardar={() => setHoja(null)} nombre={nombre} onNombre={setNombre} onGuardar={() => confirmarGuardar()}
+        vistaPrevia={hoja === "guardar" || hoja === "guardada" ? lienzo({ guias: false, className: s.lienzoMini }) : undefined}
+        guardada={hoja === "guardada" ? { name: nombre.trim() || "Tu creación" } : null} onCerrarGuardada={() => setHoja(null)} urlCreacion={urlCreacion}
+        onVolverCombo={combo ? () => { setHoja(null); onUsarEnCombo?.(diseno, { copiarA }); } : undefined}
+        login={hoja === "login"} onCerrarLogin={() => setHoja(null)} urlLogin={urlLogin} urlRegistro={urlRegistro} motivoLogin={motivoLogin}
+      />
 
       {/* Atajos de teclado. */}
       <HojaInferior abierta={hoja === 'atajos'} onCerrar={() => setHoja(null)} titulo="Atajos de teclado">
@@ -1430,6 +1291,7 @@ export function PaginaEstudio({
       {ocupado === 'fondo' && <CapaCargando texto="Quitando el fondo" detalle="Tarda unos segundos." />}
       {/* La tienda avisa lo que está haciendo ("Preparando el archivo de impresión (Frente · Pecho)…"). */}
       {procesando && <CapaCargando texto={procesando} detalle="No cierres esta página." />}
-    </div>
+
+    </MarcoEstudio>
   );
 }

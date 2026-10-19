@@ -216,9 +216,9 @@ img[loading="lazy"] {
     height: 100dvh !important;
     touch-action: none !important;
   }
-  body.mobile-editor-active header,
+  body.mobile-editor-active #root header,
   body.mobile-editor-active [class*="Header_"],
-  body.mobile-editor-active footer,
+  body.mobile-editor-active #root footer,
   body.mobile-editor-active #site-footer,
   body.mobile-editor-active [class*="Footer_"],
   body.mobile-editor-active [class*="footer"],

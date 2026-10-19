@@ -1,21 +1,19 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { motion, useReducedMotion } from 'framer-motion';
 import { fabric } from 'fabric';
-import {
-  ArrowLeft, ImagePlus, Images, Plus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
-  Crosshair, Maximize2, RotateCw, Crop, Eraser, Download, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info, Undo2, Redo2, Clipboard, ClipboardPaste, Pencil, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
+import { ImagePlus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
+  Crosshair, Maximize2, RotateCw, Crop, Eraser, Loader2, Info, Undo2, Redo2, Clipboard, ClipboardPaste, Pencil, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
   AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter, ArrowLeftRight,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getPrendaBase } from '../../services/prendasBase';
-import { getDesignById, saveDesign, guardarTallaCreacion } from '../../services/designs';
+import { getDesignById, saveDesign, guardarTallaCreacion, renombrarCreacion } from '../../services/designs';
 import { obtenerDisenoComunidad, registrarUsoComunidad } from '../../services/comunidad';
 import {
-  prepararImagenCliente, subirImagenCliente, subirArchivoImpresion, subirVistaPrevia, recortarImagen,
+  prepararImagenCliente, subirImagenCliente, subirArchivoImpresion, subirVistaPrevia,
 } from '../../services/crearArchivos';
 import {
   UNIDADES_ZONA, leerPrendaBase, precioPersonalizado, zonasConDiseno, listarZonas,
@@ -27,21 +25,27 @@ import {
   propiedadesTexto, renderizarImpresion, renderizarVistaPrevia, componerVistas, transformDeZona, rectDeZona,
   recorteDeZona, seSaleDeZona, ubicacion, desdeLienzo, aLienzo, curvarTexto,
 } from '../../pages/Crear/renderDiseno';
-import RecorteImagen from '../../pages/Crear/RecorteImagen';
-import QuitarFondo from '../../pages/Crear/QuitarFondo';
+const RecortarFoto = lazy(() => import('../../componentes/kit/piezas/RecortarFoto').then((m) => ({ default: m.RecortarFoto })));
+const QuitarFondo = lazy(() => import('./QuitarFondoDeEstudio'));
 import { itemDeCreacion } from '../../pages/Crear/creacionCarrito';
 import { ponerPieza, leerArmado, guardarArmado, leerMetaArmado, guardarMetaArmado } from '../../pages/Crear/comboCrear';
 import { sincronizarMiCombo } from '../../services/misCombos';
 import { getComboCrear } from '../../services/combosCrear';
-import AtajosTeclado, { MOD } from '../../pages/Crear/AtajosTeclado';
-import CapaModal from '../../pages/Crear/CapaModal';
-import MenuContextual from '../../pages/Crear/MenuContextual';
-import NombreEditable from '../../pages/Crear/NombreEditable';
+import { MenuContextual } from '../../componentes/kit/piezas/MenuContextual';
 import { registrarGuardado, ponerBorradorEnCache, quitarBorradorDeCache } from '../../pages/Crear/borradoresCache';
 import { cajaEnZona, imanAlMover, imanAlEscalar, enCm } from '../../pages/Crear/guiasInteligentes';
-import { BarraLienzo, PasosEstudio, PanelCapa, PanelVarios, GuiaGestos } from '../../componentes/kit/piezas/Estudio';
+import { BarraLienzo, PasosEstudio, PanelCapa, PanelVarios, GuiaGestos, EstadoEdicion, AtajosEstudio, MOD_ESTUDIO as MOD } from '../../componentes/kit/piezas/Estudio';
 import { capaEstudioDesde, cambiosDePanelEstudio } from '../../componentes/kit/adaptadoresEstudio';
-import styles from '../../pages/Crear/CrearStudioPage.module.css';
+import Boton from '../../componentes/kit/Boton';
+import { Aviso, EstadoVacio, HojaInferior } from '../../componentes/kit/Feedback';
+import { EsqueletoPagina } from '../../componentes/kit/Esqueletos';
+import { CapaCargando } from '../../componentes/kit/Cargando';
+import { Pestanas } from '../../componentes/kit/Navegacion';
+import { Texto } from '../../componentes/kit/Traduccion';
+import { MarcoEstudio, InicioLienzoEstudio } from '../../componentes/kit/paginas/MarcoEstudio';
+import { CompraEstudio } from '../../componentes/kit/piezas/CompraEstudio';
+import { HojasEstudio } from '../../componentes/kit/piezas/HojasEstudio';
+import styles from './EstudioDeTienda.module.css';
 
 const VIOLETA = '#7C3AED';
 // Con mouse se escribe directo sobre la prenda (doble clic). En el celular
@@ -57,7 +61,6 @@ const ROSA = '#EC4899';
 const ZOOM_MAX = 8;
 
 
-const soles = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
 const nuevoId = () => `capa_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 const claveBorrador = (id) => `crear_borrador_${id}`;
 
@@ -140,7 +143,6 @@ const capasParaGuardar = (capasPorZona) => {
 };
 
 // El resorte del kit (Efectos.RESORTE): lo elegido viaja de una opción a otra.
-const RESORTE_ELEGIDO = { type: 'spring', stiffness: 420, damping: 34 };
 
 
 const EstudioDeTienda = () => {
@@ -148,8 +150,6 @@ const EstudioDeTienda = () => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const reducirMovimiento = useReducedMotion();
-  const viajeElegido = reducirMovimiento ? { duration: 0 } : RESORTE_ELEGIDO;
   const { user, loading: authLoading, isAdmin } = useAuth();
   const { addToCart } = useCart();
   const toast = useGlobalToast();
@@ -304,6 +304,7 @@ const EstudioDeTienda = () => {
   const [nombre, setNombre] = useState('');
   const [nombreEditado, setNombreEditado] = useState('');
   const [dialogoGuardar, setDialogoGuardar] = useState(false);
+  const [miniaturaGuardar, setMiniaturaGuardar] = useState(null);
   const [guardada, setGuardada] = useState(null);
   // Firma de lo último guardado como creación (null = nunca se guardó).
   const [firmaGuardada, setFirmaGuardada] = useState(null);
@@ -361,6 +362,9 @@ const EstudioDeTienda = () => {
   const burbujaRef = useRef(null);
   const editarAlCrearRef = useRef(null);
   const recargadaRef = useRef(null);
+  // StrictMode puede iniciar y cancelar la carga dos veces. Consumir la
+  // marca de regreso una sola vez no debe borrar el borrador en la segunda.
+  const borradorSesionRef = useRef(undefined);
   if (recargadaRef.current === null) recargadaRef.current = !estudioAbierto && recargadaEn(location.pathname);
   useEffect(() => { estudioAbierto = true; }, []);
 
@@ -679,6 +683,12 @@ const EstudioDeTienda = () => {
   const ajustarPanel = useCallback(() => {
     const panel = panelRef.current;
     if (!panel) return;
+    const escena = areaLienzoRef.current;
+    if (escena?.parentElement) {
+      // Al enfocar un control con la prenda fija, desplazarlo debajo de
+      // ella: scrollIntoView no debe dejarlo tapado por el propio lienzo.
+      escena.parentElement.style.scrollPaddingTop = window.innerWidth <= 768 ? `${escena.offsetHeight + 12}px` : '';
+    }
     if (window.innerWidth <= 768) {
       panel.style.maxHeight = '';
       return;
@@ -764,16 +774,19 @@ const EstudioDeTienda = () => {
       }
       // La plantilla se abre limpia. El borrador solo vuelve si el cliente fue
       // a iniciar sesión a mitad del diseño o si recargó la página.
-      let borrador = null;
-      try {
-        const vuelve = sessionStorage.getItem(claveVolver(id)) === '1';
-        sessionStorage.removeItem(claveVolver(id));
-        if (vuelve || recargadaRef.current) {
-          borrador = JSON.parse(sessionStorage.getItem(claveBorrador(id)) || 'null');
-        } else {
-          sessionStorage.removeItem(claveBorrador(id));
-        }
-      } catch { /* sin borrador */ }
+      if (borradorSesionRef.current === undefined) {
+        borradorSesionRef.current = null;
+        try {
+          const vuelve = sessionStorage.getItem(claveVolver(id)) === '1';
+          sessionStorage.removeItem(claveVolver(id));
+          if (vuelve || recargadaRef.current) {
+            borradorSesionRef.current = JSON.parse(sessionStorage.getItem(claveBorrador(id)) || 'null');
+          } else {
+            sessionStorage.removeItem(claveBorrador(id));
+          }
+        } catch { /* sin borrador */ }
+      }
+      const borrador = borradorSesionRef.current;
       if (copiarParam && user && !designIdRef.current) {
         if (borrador) return aplicar(borrador);
         const { data: origen } = await getDesignById(copiarParam);
@@ -2155,6 +2168,10 @@ const EstudioDeTienda = () => {
   };
 
   const soltarSeleccion = () => {
+    editarAlCrearRef.current = null;
+    seleccionRef.current = null;
+    multiRef.current = [];
+    fabricRef.current?.getActiveObject()?.exitEditing?.();
     fabricRef.current?.discardActiveObject();
     fabricRef.current?.requestRenderAll();
     setSeleccionId(null);
@@ -2348,23 +2365,6 @@ const EstudioDeTienda = () => {
     }
   };
 
-  const aplicarRecorte = async (capa, corte) => {
-    setRecortando(null);
-    if (!corte) return;
-    try {
-      const img = await cargarImagen(srcDe(capa));
-      // El recorte se mide en la imagen tal como se cargó (igual a anchoNatural).
-      const escala = capa.anchoNatural / img.naturalWidth;
-      const { blob, ancho, alto } = await recortarImagen(img, corte);
-      await reemplazarImagen(capa, {
-        blob, ancho, alto, factor: 1 / escala,
-        corte: { x: corte.x * escala, y: corte.y * escala, w: corte.w * escala, h: corte.h * escala },
-      });
-    } catch (err) {
-      toast.error(err?.message || 'No pudimos recortar la imagen.');
-    }
-  };
-
   const aplicarSinFondo = async (capa, resultado) => {
     setQuitandoFondo(null);
     if (!resultado) return;
@@ -2519,11 +2519,12 @@ const EstudioDeTienda = () => {
   };
 
   // ── Guardar y comprar ────────────────────────────────────────────────────
-  const irALogin = () => {
+  const irAAcceso = (ruta) => {
     guardarBorrador();
     try { sessionStorage.setItem(claveVolver(id), '1'); } catch { /* almacenamiento bloqueado */ }
-    navigate('/login', { state: { from: location.pathname + location.search } });
+    navigate(ruta + '?redirect=' + encodeURIComponent(location.pathname + location.search), { state: { from: location.pathname + location.search } });
   };
+  const irALogin = () => irAAcceso('/login');
 
   /** Todas las vistas de la prenda (con o sin diseño) en una sola imagen. */
   const imagenConjunta = async (capas, previasHechas = {}) => {
@@ -3254,24 +3255,34 @@ const EstudioDeTienda = () => {
     ];
   };
 
-  // ── Render ───────────────────────────────────────────────────────────────
-  if (isLoading || (cfg && !listo && disponible)) {
-    return (
-      <div className={styles.estado}>
-        <Loader2 className={styles.girando} size={28} aria-hidden="true" />
-        <p>Preparando tu prenda…</p>
-      </div>
-    );
-  }
+  // Las hojas no deben seguir bloqueando los atajos si ya cambió la capa.
+  useEffect(() => {
+    if (recortando && recortando !== seleccionId) setRecortando(null);
+    if (quitandoFondo && quitandoFondo !== seleccionId) setQuitandoFondo(null);
+  }, [seleccionId, recortando, quitandoFondo]);
 
+  // La miniatura de Guardar usa el mismo render de la tienda, nunca el
+  // lienzo CSS de la demo ni los archivos de impresión.
+  useEffect(() => {
+    if (!dialogoGuardar) return undefined;
+    let cancelado = false;
+    let url;
+    setMiniaturaGuardar(null);
+    imagenConjunta(capasParaGuardar(capasRef.current)).then((blob) => {
+      if (cancelado) return;
+      url = URL.createObjectURL(blob);
+      setMiniaturaGuardar(url);
+    }).catch(() => { /* El guardado mostrará su error si la imagen tampoco se pudo generar. */ });
+    return () => { cancelado = true; if (url) URL.revokeObjectURL(url); };
+  // La miniatura es una captura al abrir la hoja, no por cada letra del nombre.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dialogoGuardar]);
+
+  // ── Render ───────────────────────────────────────────────────────────────
+  if (isLoading || (cfg && !listo && disponible)) return <EsqueletoPagina forma="estudio" />;
   if (error || !prenda || !disponible || !cfg?.vistas.length) {
-    return (
-      <div className={styles.estado}>
-        <h1 className={styles.estadoTitulo}>Esta prenda no está disponible</h1>
-        <p>Elige otra para empezar a crear.</p>
-        <Link to="/personalizar" className={styles.botonPrincipal}>Ver prendas</Link>
-      </div>
-    );
+    return <EstadoVacio imagen={null} titulo={<Texto>{error ? 'No pudimos cargar la prenda' : 'Esta prenda no está disponible'}</Texto>}
+      texto={<Texto>Elige otra para empezar a crear.</Texto>}><Boton to="/personalizar"><Texto>Ver prendas</Texto></Boton></EstadoVacio>;
   }
 
   const vistaSel = zonaSel ? cfg.vistas.find((v) => v.id === zonaSel.vistaId) : null;
@@ -3291,71 +3302,31 @@ const EstudioDeTienda = () => {
       : volverA.startsWith('/combo') ? 'Volver al combo' : 'Volver a las prendas';
 
   return (
-    <div className={`${styles.studio} ${editandoAlgo ? styles.enfoque : ''}`}>
-      <div className={styles.barraSuperior}>
-        <Link to={volverA} className={styles.volver} aria-label={etiquetaVolver} title={etiquetaVolver}>
-          <ArrowLeft size={20} aria-hidden="true" />
-        </Link>
-        <div className={styles.tituloBloque}>
-          <h1 className={styles.titulo}>{prenda.name}</h1>
-          <span className={styles.subtitulo}>{color.nombre}{enCombo ? ` · Prenda ${piezaParam + 1} de tu combo` : ''}</span>
-        </div>
-        {!enCombo && <span className={styles.precioMovil}>{soles(total)}</span>}
-        {user && (
-          <Link to="/cuenta/creaciones" className={styles.misCreaciones} aria-label="Mis creaciones" title="Mis creaciones">
-            <Images size={18} aria-hidden="true" />
-            <span>Mis creaciones</span>
-          </Link>
-        )}
-      </div>
-
-      {designId && (
-        <div className={styles.editando}>
-          {esBorrador ? (
-            <span className={styles.estadoBorrador} role="status">
-              {estadoBorrador === 'guardando'
-                ? <Loader2 size={15} className={styles.girando} aria-hidden="true" />
-                : estadoBorrador === 'error'
-                  ? <AlertTriangle size={15} aria-hidden="true" />
-                  : <CheckCircle2 size={15} aria-hidden="true" />}
-              {estadoBorrador === 'guardando'
-                ? 'Guardando borrador…'
-                : estadoBorrador === 'error'
-                  ? 'No pudimos guardar el borrador. Revisa tu conexión.'
-                  : 'Borrador guardado: lo encuentras en Crear para continuarlo después.'}
-            </span>
-          ) : (
-            <span className={styles.editandoTexto}>
-              Estás editando{' '}
-              <NombreEditable designId={designId} nombre={nombre} como="strong" onCambiado={setNombre} />
-              <span className={hayCambios ? styles.estadoSinGuardar : styles.estadoGuardado}>
-                <span className={styles.textoLargo}>{hayCambios ? 'Tienes cambios sin guardar.' : 'Todo está guardado.'}</span>
-                {hayCambios && <span className={styles.textoCorto}>Sin guardar</span>}
-              </span>
-            </span>
-          )}
-          <button type="button" className={styles.botonTexto} onClick={empezarNuevo}>
-            <Plus size={16} aria-hidden="true" />
-            <span className={styles.textoLargo}>Empezar uno nuevo</span>
-            <span className={styles.textoCorto}>Nuevo</span>
-          </button>
-        </div>
+    <MarcoEstudio
+      nombre={prenda.name} color={{ nombre: color.nombre, hex: fondoMuestra(color) }}
+      lados={cfg.vistas.filter((v) => v.zonas.some((z) => zonasUsadas.includes(z.id))).map((v) => v.nombre)}
+      precio={total} sesion={Boolean(user)} urlVolver={volverA} etiquetaVolver={etiquetaVolver}
+      className={[styles.studio, editandoAlgo && styles.enfoque].filter(Boolean).join(' ')}
+      claseCuerpo={styles.cuerpo} clasePanel={styles.panel} clasePanelContenido={styles.panelContenido}
+      panelRef={panelRef} panelContenidoRef={panelScrollRef}
+      avisos={(
+        <>
+          {designId && <EstadoEdicion esBorrador={esBorrador} estadoBorrador={estadoBorrador || 'guardado'}
+            nombre={nombre} hayCambios={hayCambios} onEmpezarNuevo={empezarNuevo}
+            onRenombrar={async (nuevo) => {
+              const { error } = await renombrarCreacion(designId, nuevo);
+              if (error) { toast.error(error); return; }
+              setNombre(nuevo);
+              queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'] });
+              queryClient.removeQueries({ queryKey: ['creacion', designId] });
+            }} />}
+          {borrador ? <Aviso compacto tipo="aviso"><Texto>Borrador: solo los administradores ven esta prenda. Publícala desde Admin → Productos para poder comprarla.</Texto></Aviso>
+            : enCombo ? <Aviso compacto tipo="info"><Texto>{'Prenda ' + (piezaParam + 1) + ' de tu combo. Al terminar, vuelve al combo con tu diseño.'}</Texto></Aviso>
+              : plantillaParam ? <Aviso compacto tipo="info"><Texto>Partes de un diseño de la comunidad. Cámbiale el nombre, la foto o lo que quieras.</Texto></Aviso>
+                : !user && !authLoading && <Aviso compacto tipo="info" accion={zonasUsadas.length ? <Boton variante="fantasma" tamano="sm" onClick={irALogin}><Texto>Iniciar sesión</Texto></Boton> : undefined}><Texto>{zonasUsadas.length ? 'Inicia sesión para guardar tu diseño como borrador y continuarlo después.' : 'Puedes diseñar sin cuenta. Para subir una imagen o guardar, inicia sesión.'}</Texto></Aviso>}
+        </>
       )}
-
-      {!user && !authLoading && zonasUsadas.length > 0 && (
-        <div className={styles.editando}>
-          <span>Inicia sesión para guardar tu diseño como borrador y continuarlo después.</span>
-          <button type="button" className={styles.botonTexto} onClick={irALogin}>Iniciar sesión</button>
-        </div>
-      )}
-
-      {borrador && (
-        <p className={styles.borrador}>
-          Borrador: solo los administradores ven esta prenda. Publícala desde Admin → Productos.
-        </p>
-      )}
-
-      <div className={styles.cuerpo}>
+      lienzo={(
         <section
           ref={areaLienzoRef}
           className={styles.areaLienzo}
@@ -3376,26 +3347,7 @@ const EstudioDeTienda = () => {
             else toast.info('Suelta una imagen PNG, JPG o WebP.');
           }}
         >
-          {cfg.vistas.length > 1 && (
-            <div className={styles.vistas} role="tablist" aria-label="Vistas de la prenda">
-              {cfg.vistas.map((v) => {
-                const conDiseno = v.zonas.some((z) => zonasUsadas.includes(z.id));
-                return (
-                  <button
-                    key={v.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={v.id === vista.id}
-                    className={`${styles.vistaTab} ${v.id === vista.id ? styles.vistaTabActiva : ''}`}
-                    onClick={() => cambiarVista(v.id)}
-                  >
-                    {v.nombre}
-                    {conDiseno && <span className={styles.puntoDiseno} aria-label="con diseño" />}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          {cfg.vistas.length > 1 && <Pestanas etiqueta="Lado de la prenda" opciones={cfg.vistas.map((v) => ({ id: v.id, texto: v.nombre, cuenta: v.zonas.reduce((n,z) => n + (capasPorZona[z.id]?.length || 0), 0) || undefined }))} valor={vista.id} onChange={cambiarVista} />}
 
           <div ref={contenedorRef} className={styles.lienzoCaja} aria-busy={cargandoLienzo}>
             <canvas ref={canvasElRef} />
@@ -3405,15 +3357,7 @@ const EstudioDeTienda = () => {
                 <span>Cargando tu diseño…</span>
               </div>
             )}
-            {listo && !cargandoLienzo && !soltando && zonasUsadas.length === 0 && (
-              <div className={styles.empezar}>
-                <span className={styles.empezarTitulo}>Empieza tu diseño</span>
-                <div className={styles.empezarBotones}>
-                  <button type="button" onClick={elegirImagen}><ImagePlus size={18} aria-hidden="true" /> Subir imagen</button>
-                  <button type="button" onClick={() => agregarTexto(undefined, { editar: true })}><Type size={18} aria-hidden="true" /> Escribir texto</button>
-                </div>
-              </div>
-            )}
+            {listo && !cargandoLienzo && !soltando && zonasUsadas.length === 0 && <InicioLienzoEstudio zona={vista.nombre + " · " + zona.nombre} onImagen={elegirImagen} onTexto={() => agregarTexto(undefined, { editar: true })} subiendo={subiendo > 0} />}
             {guiaGestos && <GuiaGestos onEntendido={cerrarGuiaGestos} />}
             {arrastreLado && cfg.vistas.length > 1 && (
               // Mientras se arrastra: a qué otro lado de la prenda se puede pasar.
@@ -3456,9 +3400,9 @@ const EstudioDeTienda = () => {
                 : 'Toca tu imagen o tu texto para moverlo o cambiarlo.'}
           </p>
         </section>
-
-        <aside ref={panelRef} className={styles.panel}>
-          <div ref={panelScrollRef} className={styles.panelContenido}>
+      )}
+      panel={(
+        <>
           {!editandoAlgo && (
             <PasosEstudio
               colores={cfg.colores.filter((c) => !c.espejo).map((original) => {
@@ -3502,7 +3446,7 @@ const EstudioDeTienda = () => {
                   editarCapa(capa.id, cambiosDePanelEstudio(capa, cambios, UNIDADES_ZONA));
                 }}
                 onListo={terminarEdicion} calidad={calidad} onNitida={dejarNitida}
-                anchoZonaCm={medidaSel?.anchoCm} fueraDeZona={fueraDeZona}
+                anchoZonaCm={medidaSel?.anchoCm} puntosPorZona={UNIDADES_ZONA} fueraDeZona={fueraDeZona}
                 sinSesion={!user} subiendo={Boolean(capaSel.subiendo)}
                 onCentrar={centrar} onAlinear={alinear} onQuitar={eliminar}
                 onDuplicar={duplicar} onAdelante={() => mover(true)} onAtras={() => mover(false)}
@@ -3514,184 +3458,48 @@ const EstudioDeTienda = () => {
             )}
           </div>
           <input ref={inputArchivoRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={alElegirArchivo} />
-          </div>
-
-          <div className={styles.acciones}>
-            {enCombo && otrasIguales.length > 0 && (
-              <label className={styles.copiarCombo}>
-                <input type="checkbox" checked={copiarALasOtras} onChange={(e) => setCopiarALasOtras(e.target.checked)} />
-                <span>
-                  Ponerlo también en la {otrasIguales.map((i) => `prenda ${i + 1}`).join(' y la ')}
-                  <small>Luego puedes cambiarle el color o editarla aparte.</small>
-                </span>
-              </label>
-            )}
-            {enCombo && otrasConOtroDiseno.length > 0 && (
-              <label className={styles.copiarCombo}>
-                <input type="checkbox" checked={reemplazarOtras} onChange={(e) => setReemplazarOtras(e.target.checked)} />
-                <span>
-                  Usar este diseño también en la {otrasConOtroDiseno.map((p) => `prenda ${p.i + 1}`).join(' y la ')}
-                  <small>Reemplaza el diseño que tiene ahora. Luego puedes cambiarle el color o editarla aparte.</small>
-                </span>
-              </label>
-            )}
-            {enCombo ? (
-              <button type="button" className={styles.botonPrincipal} onClick={usarEnCombo} disabled={!!procesando}>
-                <CheckCircle2 size={18} aria-hidden="true" />
-                Listo, usar en el combo
-              </button>
-            ) : (
-              <button type="button" className={styles.botonPrincipal} onClick={agregarAlCarrito} disabled={!!procesando || agotado}>
-                <ShoppingBag size={18} aria-hidden="true" />
-                {agotado ? 'Agotado por ahora' : 'Agregar al carrito'}
-                {!agotado && <span className={styles.precioBoton}>{soles(total)}</span>}
-              </button>
-            )}
-            <div className={`${styles.accionesSecundarias} ${enCombo ? styles.accionesSolo : ''}`}>
-              {/* En un combo "Listo, usar en el combo" ya guarda: no hace falta otro botón. */}
-              {!enCombo && (
-              <button
-                type="button"
-                className={`${styles.botonSecundario} ${!hayCambios ? styles.sinCambios : ''}`}
-                onClick={guardar}
-                disabled={!!procesando || !hayCambios}
-                aria-label={firmaGuardada !== null && !hayCambios ? 'Guardado' : 'Guardar'}
-                title={hayCambios ? `Guardar (${MOD}+S)` : 'No hay cambios por guardar'}
-              >
-                {firmaGuardada !== null && !hayCambios
-                  ? <><CheckCircle2 size={17} aria-hidden="true" /> <span className={styles.textoAccion}>Guardado</span></>
-                  : <><Save size={17} aria-hidden="true" /> <span className={styles.textoAccion}>Guardar</span></>}
-              </button>
-              )}
-              <button
-                type="button"
-                className={styles.botonSecundario}
-                onClick={descargarImagen}
-                disabled={!!procesando}
-                aria-label="Descargar imagen"
-                title="Descarga una imagen con todos los lados"
-              >
-                <Download size={17} aria-hidden="true" /> <span className={styles.textoAccion}>Descargar</span>
-              </button>
-            </div>
-          </div>
-        </aside>
-      </div>
-
-      {procesando && (
-        <CapaModal className={styles.capaBloqueo} role="status" aria-live="polite">
-          <div className={styles.cajaBloqueo}>
-            <Loader2 size={28} className={styles.girando} aria-hidden="true" />
-            <p>{procesando}</p>
-          </div>
-        </CapaModal>
+        </>
       )}
-
-      {recortando && capaSel?.id === recortando && capaSel.type === 'image' && (
-        <RecorteImagen
-          src={srcDe(capaSel)}
-          onCancelar={() => setRecortando(null)}
-          onAplicar={(corte) => aplicarRecorte(capaSel, corte)}
+      compra={(
+        <CompraEstudio precio={total} vacio={!zonasUsadas.length} agotado={agotado} borradorAdmin={borrador}
+          ocupado={procesando ? 'agregando' : null} hayCambios={hayCambios} yaGuardada={firmaGuardada !== null}
+          onGuardar={guardar} onDescargar={descargarImagen} onAgregar={enCombo ? usarEnCombo : agregarAlCarrito}
+          className={styles.acciones}
+          combo={enCombo ? { opciones: [
+            ...(otrasIguales.length ? [{ id: 'copiar', activo: copiarALasOtras, onCambiar: setCopiarALasOtras,
+              etiqueta: 'Ponerlo también en la ' + otrasIguales.map((i) => 'prenda ' + (i + 1)).join(' y la '), descripcion: 'Luego puedes cambiarle el color o editarla aparte.' }] : []),
+            ...(otrasConOtroDiseno.length ? [{ id: 'reemplazar', activo: reemplazarOtras, onCambiar: setReemplazarOtras,
+              etiqueta: 'Usar este diseño también en la ' + otrasConOtroDiseno.map((p) => 'prenda ' + (p.i + 1)).join(' y la '), descripcion: 'Reemplaza el diseño que tiene ahora. Luego puedes cambiarle el color o editarla aparte.' }] : []),
+          ] } : undefined}
         />
       )}
-
-      {quitandoFondo && capaSel?.id === quitandoFondo && capaSel.type === 'image' && (
-        <QuitarFondo
-          src={srcDe(capaSel)}
-          onCancelar={() => setQuitandoFondo(null)}
-          onAplicar={(resultado) => aplicarSinFondo(capaSel, resultado)}
-        />
-      )}
-
-      {verAtajos && <AtajosTeclado vistas={cfg.vistas} onCerrar={() => setVerAtajos(false)} />}
-
-      {menu && <MenuContextual x={menu.x} y={menu.y} items={opcionesMenu()} onCerrar={cerrarMenu} />}
-
-      {pidiendoTalla && (
-        <CapaModal className={styles.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="crear-talla-titulo" onClick={() => setPidiendoTalla(false)}>
-          <form
-            className={styles.cajaBloqueo}
-            onClick={(e) => e.stopPropagation()}
-            onSubmit={(e) => { e.preventDefault(); if (tallaCompra) comprar(tallaCompra); }}
-          >
-            <h2 id="crear-talla-titulo" className={styles.estadoTitulo}>¿Qué talla quieres?</h2>
-            <p>{prenda.name} · {color.nombre}</p>
-            <div className={`${styles.tallas} ${styles.tallasDialogo}`} role="radiogroup" aria-label="Talla">
-              {tallas.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  role="radio"
-                  aria-checked={t === tallaCompra}
-                  className={`${styles.talla} ${t === tallaCompra ? styles.tallaActiva : ''}`}
-                  onClick={() => setTallaCompra(t)}
-                >
-                  {t === tallaCompra && <motion.span layoutId="crear-talla-compra" className={styles.tallaFondo} transition={viajeElegido} aria-hidden="true" />}
-                  <span className={styles.tallaTexto}>{t}</span>
-                </button>
-              ))}
-            </div>
-            <p className={styles.incluye}>Incluye la impresión de todos tus diseños, en las zonas que quieras.</p>
-            <button type="submit" className={styles.botonPrincipal} disabled={!tallaCompra}>
-              <ShoppingBag size={18} aria-hidden="true" />
-              Agregar al carrito · {soles(total)}
-            </button>
-            <button type="button" className={styles.botonTexto} onClick={() => setPidiendoTalla(false)}>Cancelar</button>
-          </form>
-        </CapaModal>
-      )}
-
-      {dialogoGuardar && (
-        <CapaModal className={styles.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="crear-guardar-titulo" onClick={() => setDialogoGuardar(false)}>
-          <form
-            className={styles.cajaBloqueo}
-            onClick={(e) => e.stopPropagation()}
-            onSubmit={(e) => { e.preventDefault(); confirmarGuardar(); }}
-          >
-            <h2 id="crear-guardar-titulo" className={styles.estadoTitulo}>Guarda tu creación</h2>
-            <p>Queda en tu cuenta, en Mis creaciones, con sus dos lados. Puedes comprarla o seguir editándola cuando quieras.</p>
-            <label className={styles.campoNombre}>
-              <span>Ponle un nombre</span>
-              <input
-                value={nombreEditado}
-                maxLength={60}
-                onChange={(e) => setNombreEditado(e.target.value)}
-                autoFocus
-              />
-            </label>
-            <button type="submit" className={styles.botonPrincipal}>Guardar creación</button>
-            <button type="button" className={styles.botonTexto} onClick={() => setDialogoGuardar(false)}>Cancelar</button>
-          </form>
-        </CapaModal>
-      )}
-
-      {guardada && (
-        <CapaModal className={styles.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="crear-guardada-titulo" onClick={() => setGuardada(null)}>
-          <div className={styles.cajaBloqueo} onClick={(e) => e.stopPropagation()}>
-            <h2 id="crear-guardada-titulo" className={styles.estadoTitulo}>¡Creación guardada!</h2>
-            {guardada.imagenConjunta && <img src={guardada.imagenConjunta} alt={guardada.name} className={styles.imagenGuardada} />}
-            <p><strong>{guardada.name}</strong></p>
-            {enCombo ? (
-              <Link to={urlCombo()} className={styles.botonPrincipal}>Volver al combo</Link>
-            ) : (
-              <Link to={`/creacion/${guardada.id}`} className={styles.botonPrincipal}>Ver mi creación</Link>
-            )}
-            <button type="button" className={styles.botonTexto} onClick={() => setGuardada(null)}>Seguir diseñando</button>
-          </div>
-        </CapaModal>
-      )}
-
-      {pedirLogin && (
-        <CapaModal className={styles.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="crear-login-titulo" onClick={() => setPedirLogin(false)}>
-          <div className={styles.cajaBloqueo} onClick={(e) => e.stopPropagation()}>
-            <h2 id="crear-login-titulo" className={styles.estadoTitulo}>Inicia sesión para continuar</h2>
-            <p>Así guardamos tus imágenes y tu diseño. Tus textos y elecciones se quedan como los dejaste.</p>
-            <button type="button" className={styles.botonPrincipal} onClick={irALogin}>Iniciar sesión</button>
-            <button type="button" className={styles.botonTexto} onClick={() => setPedirLogin(false)}>Seguir diseñando</button>
-          </div>
-        </CapaModal>
-      )}
-    </div>
+    >
+      {procesando && <CapaCargando texto={<Texto>{procesando}</Texto>} />}
+      <HojasEstudio prenda={prenda.name} color={color.nombre} precio={total}
+        tallas={tallas} talla={tallaCompra} onTalla={setTallaCompra}
+        pidiendoTalla={pidiendoTalla} onCerrarTalla={() => setPidiendoTalla(false)} onComprar={() => comprar(tallaCompra)}
+        guardando={dialogoGuardar} onCerrarGuardar={() => setDialogoGuardar(false)}
+        nombre={nombreEditado} onNombre={setNombreEditado} onGuardar={() => confirmarGuardar()} miniatura={miniaturaGuardar}
+        guardada={guardada} onCerrarGuardada={() => setGuardada(null)} urlCombo={enCombo ? urlCombo() : undefined}
+        login={pedirLogin} onCerrarLogin={() => setPedirLogin(false)} onLogin={irALogin} onRegistro={() => irAAcceso('/registro')}
+      />
+      <HojaInferior abierta={verAtajos} onCerrar={() => setVerAtajos(false)} titulo={<Texto>Atajos de teclado</Texto>}>
+        <AtajosEstudio lados={cfg.vistas.map((v) => v.nombre)} />
+      </HojaInferior>
+      {menu && <MenuContextual abierto x={menu.x} y={menu.y} items={opcionesMenu().map((opcion) => opcion === 'separador' ? opcion : { ...opcion, Icono: opcion.icono })} onCerrar={cerrarMenu} />}
+      <Suspense fallback={<CapaCargando texto={<Texto>Preparando la herramienta…</Texto>} />}>
+        {recortando && capaSel?.id === recortando && capaSel.type === 'image' && <RecortarFoto abierta forma="libre" src={srcDe(capaSel)} onCancelar={() => setRecortando(null)}
+          onListo={async (blob, { corte, natural }) => {
+            if (blob && corte) {
+              const escala = capaSel.anchoNatural / natural.w;
+              await reemplazarImagen(capaSel, { blob, ancho: Math.max(1, Math.round(corte.w)), alto: Math.max(1, Math.round(corte.h)), factor: 1 / escala,
+                corte: { x: corte.x * escala, y: corte.y * escala, w: corte.w * escala, h: corte.h * escala } });
+            }
+            setRecortando(null);
+          }} />}
+        {quitandoFondo && capaSel?.id === quitandoFondo && capaSel.type === 'image' && <QuitarFondo abierta src={srcDe(capaSel)} onCancelar={() => setQuitandoFondo(null)} onAplicar={(resultado) => aplicarSinFondo(capaSel, resultado)} />}
+      </Suspense>
+    </MarcoEstudio>
   );
 };
 
