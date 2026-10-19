@@ -4,6 +4,7 @@ import styles from './OptimizedImage.module.css';
 /**
  * OptimizedImage — Componente profesional de imagen optimizado para E-commerce
  * - Detecta URLs de Cloudinary y genera automáticamente srcSet, WebP/AVIF (f_auto) y compresión (q_auto).
+ * - Las de Firebase Storage pasan por el modo fetch de Cloudinary (ver más abajo).
  * - Skeleton placeholder mientras carga (shimmer)
  * - Precarga en background sin parpadeos
  * - Fallback si la imagen falla
@@ -35,6 +36,90 @@ const getCloudinarySrcSet = (url) => {
         ${getCloudinaryOptimized(url, 1200)} 1200w
     `.trim();
 };
+
+/**
+ * MODO FETCH DE CLOUDINARY
+ * ════════════════════════
+ * Las fotos siguen guardadas en Firebase Storage; la tienda las pide a través
+ * de Cloudinary, que las baja una vez, las reduce al ancho pedido, las pasa a
+ * AVIF/WebP según el navegador y las sirve desde su CDN:
+ *     res.cloudinary.com/dtixoxgsf/image/fetch/f_auto,q_auto,c_limit,w_400/<url de Storage codificada>
+ * Una foto de producto de 1,6 MB (PNG) llega en 18 KB a 400 px.
+ *
+ * En el panel de Cloudinary (Seguridad) fetch solo acepta
+ * firebasestorage.googleapis.com: cualquier otro dominio responde 401, así que
+ * nadie puede gastar la cuenta con imágenes ajenas.
+ *
+ * Solo para MOSTRAR (OptimizedImage y fuentesDeImagen). getCloudinaryOptimized
+ * no lo usa a propósito: lo llaman los lienzos que componen diseños y combos,
+ * y esos necesitan la foto original.
+ *
+ * Si una foto no llega por fetch (cuota agotada, Cloudinary caído, archivo
+ * borrado), esa <img> vuelve sola a la URL de Storage; tras FALLOS_PARA_APAGAR
+ * fallos se apaga fetch para el resto de la visita. Para apagarlo del todo:
+ * USAR_FETCH_CLOUDINARY = false.
+ */
+const USAR_FETCH_CLOUDINARY = true;
+const BASE_FETCH = 'https://res.cloudinary.com/dtixoxgsf/image/fetch/';
+const ANCHOS_FETCH = [200, 400, 800, 1200, 1600];
+const FALLOS_PARA_APAGAR = 3;
+
+let fallosDeFetch = 0;
+const fetchActivo = () => USAR_FETCH_CLOUDINARY && fallosDeFetch < FALLOS_PARA_APAGAR;
+
+// Solo las carpetas de Storage con fotos públicas de la tienda. Los diseños,
+// pedidos y archivos de clientes (designs/, pedidos/, users/, gift_recipients/,
+// YoryoPersonalizado/, boletas_envio/…) NO: Cloudinary se quedaría una copia
+// en su CDN y además los recomprimiría. Una carpeta nueva queda fuera hasta
+// que se agregue aquí.
+const CARPETAS_FETCH = new Set([
+    'productos', 'productos_v2', 'reconvertidas', 'storefront', 'brands', 'brand_nav',
+    'categories', 'collections', 'link_pages', 'mockups', 'rewards', 'sorteos',
+    'sorteos_suscripcion', 'config', 'cliparts', 'product_reviews',
+]);
+
+const carpetaDeStorage = (url) => {
+    const despues = url.split('/o/')[1];
+    if (!despues) return '';
+    try { return decodeURIComponent(despues.split('?')[0]).split('/')[0]; } catch { return ''; }
+};
+
+// SVG y GIF no: el primero es vectorial y el segundo perdería la animación.
+const sePuedeTraerPorFetch = (url) => typeof url === 'string'
+    && url.startsWith('https://firebasestorage.googleapis.com/')
+    && !/\.(svg|gif)$/i.test(url.split('?')[0])
+    && CARPETAS_FETCH.has(carpetaDeStorage(url));
+
+const urlPorFetch = (url, ancho) => `${BASE_FETCH}f_auto,q_auto,c_limit,w_${ancho}/${encodeURIComponent(url)}`;
+const srcSetPorFetch = (url) => ANCHOS_FETCH.map((ancho) => `${urlPorFetch(url, ancho)} ${ancho}w`).join(', ');
+
+// El mismo `sizes` por defecto que las fotos de Cloudinary.
+const SIZES_POR_DEFECTO = '(max-width: 400px) 400px, (max-width: 600px) 600px, (max-width: 1024px) 800px, 1200px';
+
+/**
+ * { src, srcSet, sizes } por fetch, o null si la URL no es de Storage o fetch
+ * está apagado. Para las <img> del kit que reciben la URL tal cual (portadas
+ * de combo, FotoProducto): solo cuando no traen ya su propio srcSet.
+ */
+export const fuentesPorFetch = (src, sizes) => (fetchActivo() && sePuedeTraerPorFetch(src)
+    ? { src: urlPorFetch(src, 800), srcSet: srcSetPorFetch(src), sizes: sizes || SIZES_POR_DEFECTO }
+    : null);
+
+// La red de seguridad para TODAS las <img>, también las que dibujan su propia
+// etiqueta con fuentesDeImagen: el evento `error` no burbujea, pero se ve en
+// la fase de captura. Se cambia la <img> que falló a la original y se cuenta.
+if (typeof window !== 'undefined') {
+    window.addEventListener('error', (evento) => {
+        const img = evento.target;
+        if (!(img instanceof HTMLImageElement)) return;
+        const pedida = img.currentSrc || img.src || '';
+        if (!pedida.startsWith(BASE_FETCH)) return;
+        const original = decodeURIComponent(pedida.slice(pedida.indexOf('/', BASE_FETCH.length) + 1));
+        fallosDeFetch += 1;
+        img.removeAttribute('srcset');
+        img.src = original;
+    }, true);
+}
 
 /**
  * srcSet a partir del mapa de variantes que devuelve uploadFile
@@ -96,6 +181,8 @@ const srcSetDeVariantes = (principal, variantes) => {
  */
 export const fuentesDeImagen = (src, { variantes, sizes } = {}) => {
     if (!src) return { src };
+    const porFetch = fuentesPorFetch(src, sizes);
+    if (porFetch) return porFetch;
     const esCloudinary = typeof src === 'string' && src.includes('cloudinary.com');
     const srcSet = esCloudinary ? getCloudinarySrcSet(src) : srcSetDeVariantes(src, variantes);
     return {
@@ -137,6 +224,8 @@ const OptimizedImage = ({
     const [loaded, setLoaded] = useState(false);
     const [errored, setErrored] = useState(false);
     const [isCached, setIsCached] = useState(false);
+    // Fetch no trajo esta foto: se muestra la de Storage, con sus variantes.
+    const [fetchFallo, setFetchFallo] = useState(false);
     const imgRef = useRef(null);
     const mountedRef = useRef(true);
 
@@ -150,6 +239,7 @@ const OptimizedImage = ({
         setLoaded(false);
         setErrored(false);
         setIsCached(false);
+        setFetchFallo(false);
     }, [src, seamless, loaded]);
 
     // ¿Ya sabemos que esta URL cargó bien antes? Entonces nos ahorramos el
@@ -186,8 +276,16 @@ const OptimizedImage = ({
         }
     };
 
+    const porFetch = !fetchFallo && fetchActivo() && sePuedeTraerPorFetch(src);
+
     const handleError = () => {
         if (mountedRef.current) {
+            // El primer fallo por fetch no es un error de la foto: se reintenta
+            // con la de Storage antes de pasar a fallbackSrc.
+            if (porFetch) {
+                setFetchFallo(true);
+                return;
+            }
             setErrored(true);
             onErrorProp?.();
         }
@@ -204,16 +302,16 @@ const OptimizedImage = ({
     const isCloudinary = src && typeof src === 'string' && src.includes('cloudinary.com');
     const baseDisplaySrc = errored && fallbackSrc ? fallbackSrc : src;
     
-    const finalSrc = errored ? baseDisplaySrc : (isCloudinary ? getCloudinaryOptimized(baseDisplaySrc, 800) : baseDisplaySrc);
-    // Cloudinary transforma por URL; Firebase no, así que ahí las alternativas
-    // son los archivos que uploadFile dejó subidos.
+    const finalSrc = errored
+        ? baseDisplaySrc
+        : (porFetch ? urlPorFetch(src, 800) : (isCloudinary ? getCloudinaryOptimized(baseDisplaySrc, 800) : baseDisplaySrc));
+    // Cloudinary transforma por URL (también las de Storage, por fetch); si no,
+    // las alternativas son los archivos que uploadFile dejó subidos.
     const srcSet = errored
         ? null
-        : (isCloudinary ? getCloudinarySrcSet(baseDisplaySrc) : srcSetDeVariantes(baseDisplaySrc, variantes));
+        : (porFetch ? srcSetPorFetch(src) : (isCloudinary ? getCloudinarySrcSet(baseDisplaySrc) : srcSetDeVariantes(baseDisplaySrc, variantes)));
     const sizes = srcSet
-        ? (sizesProp || (isCloudinary
-            ? "(max-width: 400px) 400px, (max-width: 600px) 600px, (max-width: 1024px) 800px, 1200px"
-            : undefined))
+        ? (sizesProp || ((isCloudinary || porFetch) ? SIZES_POR_DEFECTO : undefined))
         : undefined;
 
     const containerCls = [

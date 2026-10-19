@@ -9,6 +9,7 @@ import { LogoMarca } from './piezas/LogoMarca';
 import { iniciales } from './piezas/Avatar';
 import { EsqueletoProducto } from './Esqueletos';
 import { tarjetaDesdeProducto } from './adaptadores';
+import { fuentesPorFetch } from '../../components/common/OptimizedImage/OptimizedImage';
 import s from './TarjetaProducto.module.css';
 
 // Formato peruano: separador de miles y 2 decimales (S/ 1,250.00).
@@ -27,12 +28,15 @@ const recorteValido = (r) => Boolean(r && r.width > 0 && r.height > 0);
  */
 function FotoTarjeta({ src, srcSet, sizes, recorte, respaldo, prioridad = false, className }) {
   const [fallo, setFallo] = useState(false);
-  const url = fallo && respaldo ? respaldo : src;
+  // Sin copias propias (la portada de un combo), las pide a Cloudinary.
+  const porFetch = srcSet ? null : fuentesPorFetch(src, sizes);
+  const copias = srcSet || porFetch?.srcSet;
+  const url = fallo && respaldo ? respaldo : (porFetch?.src || src);
   const img = (
     <img
       src={url}
-      srcSet={fallo ? undefined : srcSet}
-      sizes={!fallo && srcSet ? sizes : undefined}
+      srcSet={fallo ? undefined : copias}
+      sizes={!fallo && copias ? (sizes || porFetch?.sizes) : undefined}
       alt=""
       className={recorteValido(recorte) ? s.imgRecortada : className}
       style={recorteValido(recorte) ? {

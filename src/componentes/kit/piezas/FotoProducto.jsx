@@ -1,4 +1,5 @@
 import React from 'react';
+import { fuentesPorFetch } from '../../../components/common/OptimizedImage/OptimizedImage';
 import s from './FotoProducto.module.css';
 
 /**
@@ -28,7 +29,13 @@ export function FotoProducto({ src, srcSet, sizes, alt = '', relleno, className,
       {...rest}
     >
       {children}
-      {src ? <img src={src} srcSet={srcSet} sizes={srcSet ? sizes : undefined} alt={alt} loading={loading} decoding={decoding} draggable={false} /> : respaldo}
+      {src ? <img {...fuentes(src, srcSet, sizes)} alt={alt} loading={loading} decoding={decoding} draggable={false} /> : respaldo}
     </Etiqueta>
   );
+}
+
+// Sin copias propias, las pide a Cloudinary (si la foto es de Storage).
+function fuentes(src, srcSet, sizes) {
+  if (srcSet) return { src, srcSet, sizes };
+  return fuentesPorFetch(src, sizes) || { src };
 }
