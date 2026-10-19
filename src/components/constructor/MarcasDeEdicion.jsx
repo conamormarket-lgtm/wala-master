@@ -1,7 +1,7 @@
 import React from 'react';
 import { useVisualEditor } from '../../pages/Tienda/contexts/VisualEditorContext';
 import { SeccionEditable, InsertarAqui } from '../../componentes/kit/editor/SeccionEditable';
-import { ESQUEMAS_GLOBALES } from '../../componentes/kit/editor/esquemas';
+import { ESQUEMAS, ESQUEMAS_GLOBALES } from '../../componentes/kit/editor/esquemas';
 import { ordenadas, moverSeccion, duplicarSeccion } from '../../componentes/kit/editor/operaciones';
 
 /*
@@ -22,7 +22,7 @@ export function SeccionDeLaPagina({ sectionId, tipo, label, currentConfig, child
     <SeccionEditable
       id={sectionId}
       tipo={tipo}
-      nombre={tipo ? undefined : global?.nombre || label}
+      nombre={tipo ? (ESQUEMAS[tipo] ? undefined : label) : global?.nombre || label}
       icono={global?.icono}
       activa={activeSection === sectionId}
       resaltada={hoveredSectionId === sectionId}

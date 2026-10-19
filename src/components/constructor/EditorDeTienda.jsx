@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, PanelBottom } from 'lucide-react';
+import { useLayoutContext } from '../../contexts/LayoutContext';
 import { useVisualEditor } from '../../pages/Tienda/contexts/VisualEditorContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getCollections } from '../../services/collections';
@@ -8,10 +11,13 @@ import { getCategories } from '../../services/categories';
 import { getProductsByBrand } from '../../services/products';
 import { getDocument } from '../../services/firebase/firestore';
 import { uploadFile } from '../../services/firebase/storage';
-import { getLandingPageBySlug } from '../../pages/Tienda/services/landingPages';
+import { getLandingPageBySlug, saveLandingPage } from '../../pages/Tienda/services/landingPages';
+import { getThemes } from '../../pages/Tienda/services/themes';
 import { getDefaultSettings } from '../../pages/Tienda/services/storefront';
 import CategoryNavEditor from '../admin/CategoryNavEditor/CategoryNavEditor';
 import PanelEditor from '../../componentes/kit/editor/PanelEditor';
+import { ControlOpciones, ControlInterruptor } from '../../componentes/kit/editor/CamposEditor';
+import Boton from '../../componentes/kit/Boton';
 import { useConfirmar } from '../../componentes/kit/Feedback';
 import { FormularioPrimeraImpresion, FormularioCheckoutDePago } from './FormulariosDelCacherito';
 import { COLUMNAS_POR_DEFECTO } from '../common/Footer/Footer';
@@ -36,9 +42,54 @@ const MENU_POR_DEFECTO = [
 const PAGINAS_GLOBALES = ['home', 'tienda', 'footer'];
 // El pie solo dibuja columnas, texto e imagen (Footer.jsx), y empieza con las columnas de siempre.
 const TIPOS_DEL_PIE = ['footer_columns', 'text', 'image'];
+// Los bloques del cacherito con sus nombres de siempre (SECTION_TYPES).
+const NOMBRES_DEL_CACHERITO = { conversion_fold: 'Primera Impresión (Balvi)', landing_payment: 'Checkout de Pago (Culqi + PayPal)' };
 const BASE_DEL_PIE = [{ type: 'footer_columns', settings: { columns: COLUMNAS_POR_DEFECTO } }];
 const tituloDePagina = (id) => ({ home: 'Inicio', tienda: 'Tienda', footer: 'Pie de página' }[id] || `/${id}`);
 const ordenadas = (lista) => [...lista].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+// La página de la ruta (la misma cuenta que TiendaPage y el pie).
+const paginaDeRuta = (ruta) => (ruta === '/' || ruta === '/home' ? 'home' : ruta.replace(/^\/+/, '').split('/')[0] || 'home');
+
+/*
+ * Pestaña "Página" de una landing: su tema y si oculta la cabecera o el pie.
+ * Se guardan al momento en la landing (como el editor de antes), sin
+ * "Publicar". Al guardar se manda también su marca: saveLandingPage la
+ * escribe siempre y sin ella la borraba.
+ */
+function AjustesDeLanding({ slug }) {
+  const { isHeaderVisible, setHeaderVisible, isFooterVisible, setFooterVisible } = useLayoutContext();
+  const queryClient = useQueryClient();
+  const { data: temas } = useQuery({ queryKey: ['admin-themes'], queryFn: getThemes });
+  const { data: landing } = useQuery({ queryKey: ['editor-landing', slug], queryFn: () => getLandingPageBySlug(slug) });
+  const guardar = async (cambios) => {
+    if (!landing?.id) return;
+    await saveLandingPage(landing.id, { ...cambios, brandId: landing.brandId || '' });
+    queryClient.setQueryData(['editor-landing', slug], { ...landing, ...cambios });
+  };
+  if (!landing) return <p>Esta página no es una landing guardada: no tiene ajustes propios.</p>;
+  return (
+    <>
+      <ControlOpciones
+        etiqueta="Tema visual"
+        ayuda="Cambia los colores solo en esta landing. Se ve al recargar la página."
+        valor={landing.themeId || ''}
+        opciones={[{ valor: '', texto: 'El de la tienda' }, ...(temas || []).map((t) => ({ valor: t.id, texto: t.name || t.id }))]}
+        onCambiar={(themeId) => guardar({ themeId })}
+      />
+      <ControlInterruptor
+        etiqueta="Ocultar la cabecera"
+        descripcion="Para una landing sin distracciones."
+        valor={!isHeaderVisible}
+        onCambiar={(ocultar) => { setHeaderVisible(!ocultar); guardar({ hideHeader: ocultar }); }}
+      />
+      <ControlInterruptor
+        etiqueta="Ocultar el pie de página"
+        valor={!isFooterVisible}
+        onCambiar={(ocultar) => { setFooterVisible(!ocultar); guardar({ hideFooter: ocultar }); }}
+      />
+    </>
+  );
+}
 
 /*
  * El editor del builder con el kit (paso 8), en lugar de VisualEditorPanel.
@@ -54,12 +105,13 @@ export default function EditorDeTienda() {
   const ed = useVisualEditor();
   const {
     activeSection, openEditorForSection, closeEditor, hoveredSectionId, setHoveredSectionId,
-    editorPosition, setEditorPosition, activePageId, storeConfigDraft, updateDraft, updateSectionsDraft,
+    editorPosition, setEditorPosition, activePageId, setActivePageId, storeConfigDraft, updateDraft, updateSectionsDraft,
     saveDraftToFirestore, isSaving, isPreviewMobile, toggleMobilePreview, toggleEditMode,
     deshacer, rehacer, puedeDeshacer, puedeRehacer, sinGuardar, insertarEn, setInsertarEn,
   } = ed;
   const toast = useGlobalToast();
   const confirmar = useConfirmar();
+  const { pathname } = useLocation();
 
   // ── Datos de los selectores (las mismas consultas que el editor de antes).
   const { data: colecciones } = useQuery({ queryKey: ['admin-collections'], queryFn: async () => (await getCollections()).data || [] });
@@ -136,12 +188,27 @@ export default function EditorDeTienda() {
   // ── Toda la tienda (en el inicio y /tienda, como el editor de antes).
   const conGlobales = activePageId === 'home' || activePageId === 'tienda';
   const global = (id, porDefecto) => ({ id, esquema: id, ajustes: config[id] || porDefecto || {}, onCambiar: (parche) => updateDraft(id, parche) });
+  // El pie es su propia página: el panel pasa a editarlo (y vuelve con "Volver a la página").
+  const cambiarDePagina = async (id) => {
+    if (sinGuardar && !(await confirmar({ titulo: '¿Cambiar sin publicar?', texto: 'Los cambios que no publicaste se pierden.', confirmar: 'Cambiar', peligro: true }))) return;
+    setActivePageId(id);
+    if (id === 'footer') window.setTimeout(() => document.getElementById('site-footer')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+  };
   const globales = conGlobales ? [
     global('header', { navLinks: MENU_POR_DEFECTO }),
     global('accountPopup'),
     global('favoritesPopup'),
     global('searchPage'),
+    { id: 'pie', nombre: 'Pie de página', descripcion: 'Columnas y enlaces del final, en todas las páginas.', icono: PanelBottom, onAbrir: () => cambiarDePagina('footer') },
   ] : [];
+  const volverALaPagina = activePageId === 'footer' ? (
+    <div className={s.volver}>
+      <Boton variante="contorno" tamano="sm" bloque icono={<ArrowLeft aria-hidden="true" />} onClick={() => cambiarDePagina(paginaDeRuta(pathname))}>
+        Volver a la página
+      </Boton>
+    </div>
+  ) : null;
+  const esLanding = activePageId && !PAGINAS_GLOBALES.includes(activePageId);
 
   const publicar = async () => {
     const r = await saveDraftToFirestore({ avisar: false });
@@ -176,8 +243,11 @@ export default function EditorDeTienda() {
           formularios: { conversion_fold: FormularioPrimeraImpresion, landing_payment: FormularioCheckoutDePago },
         }}
         globales={globales}
+        cabecera={volverALaPagina}
+        ajustesPagina={esLanding ? <AjustesDeLanding slug={activePageId} /> : undefined}
         base={activePageId === 'footer' ? BASE_DEL_PIE : BASE}
         tipos={activePageId === 'footer' ? TIPOS_DEL_PIE : undefined}
+        nombres={NOMBRES_DEL_CACHERITO}
         onGuardar={publicar}
         guardando={isSaving}
         sinGuardar={sinGuardar}

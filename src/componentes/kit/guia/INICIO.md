@@ -145,7 +145,7 @@ cabecera (paso 7).
 | Flotantes (M7-M10) | `WhatsAppButton`, `KapiPet` (solo el botón), `PackageBubble` (retirada el 2026-10-15, sin equivalente en el kit), píldora de la encuesta en `Header.jsx` ~1333-1359, `.floating-action-stack` de `App.jsx` | `PilaFlotante` + `BotonWhatsApp`, `KapiFlotante`, `PildoraRecompensa` (la ventana de Kapi ya está en el kit: `VentanaKapi`, ver KAPI.md) |
 | Anuncio de campaña (M11) | `components/common/CampaignPopup/PopupCard.jsx` | `VentanaCampana` (las reglas de `services/popupsLogic.mjs` se quedan) |
 | Idioma (M12) | `components/i18n/LanguagePopup.jsx` | `AvisoIdioma` |
-| Editor | `VisualEditorPanel`, `EditableSection`, `ModuleInserter` | `PanelEditor`, `SeccionEditable`, `InsertarAqui`, `useBorrador` |
+| Editor | `VisualEditorPanel`, `EditableSection`, `ModuleInserter` | `PanelEditor`, `SeccionEditable`, `InsertarAqui`, `useBorrador` (✓ 2026-10-19, `components/constructor/`) |
 | Toasts | ya hecho: `contexts/ToastContext.jsx` usa `ProveedorToasts` | — |
 
 ### De dónde sale cada dato
@@ -212,6 +212,18 @@ cabecera (paso 7).
   agrega una casita a `Cabecera`. Lo demás de la app sí se mantiene: sin pie,
   sin el banner de descargar la app y sin `BarraAdmin` en la tienda.
 - El menú Tienda solo lleva categorías (las marcas tienen su menú).
+- Editor: sin el modo flotante que se arrastraba (a un lado en escritorio, en
+  una hoja abajo en el celular) y la página se corre para que el panel no la
+  tape; eliminar se confirma en el mismo botón; avisos en vez de `alert`.
+- Editor: no se pasan los formularios que nadie abría (`heroBanner`,
+  `layout`), "Nuestras marcas" del menú de cuenta (nadie las dibujaba) ni el
+  color, la letra, la negrita y la cursiva de los enlaces del menú y del
+  texto de favoritos (la cabecera nueva no los usa).
+- Editor: el menú de la cabecera ahora también puede ser "con las marcas de
+  la tienda" (`isBrandAuto`, que la cabecera ya entendía).
+- Editor: el pie solo ofrece columnas, texto e imagen (lo que dibuja) y, si
+  no tiene nada guardado, empieza con sus columnas de siempre. La columna
+  "Redes" no se ofrece hasta migrar el pie.
 - Cabecera: los enlaces sin el color, la letra, la negrita ni la cursiva que
   les ponía el admin (decidido el 2026-10-19: todos con la letra y el violeta
   de la marca). El editor todavía deja elegirlos; no se ven.
@@ -286,7 +298,35 @@ al inicio.
 
    Al migrarla, el kit ganó lo que se lista en MIGRACION.md (paso 7) y en el
    README del kit (`Navegacion.jsx`, `MenusCabecera.jsx`).
-5. Editor del kit en lugar de `VisualEditorPanel`.
+5. ✓ Editor del kit en lugar de `VisualEditorPanel` (2026-10-19, en cuatro
+   commits, interruptor `editorViejo`).
+
+   ![El editor del kit en la tienda real: en escritorio, el panel a la derecha con el formulario del Encabezado y la página corrida a su lado; en el celular y en modo noche, el panel en una hoja abajo con el Banner principal elegido en la página](editor-tienda.webp)
+
+   - **El panel** (`components/constructor/EditorDeTienda.jsx`): lee y
+     escribe el mismo borrador que antes (`VisualEditorContext`, ahora con
+     deshacer y rehacer y "sin publicar"), así la página, la cabecera y el pie
+     dibujan cada cambio al instante. Publicar guarda igual que antes: página
+     bloqueada, `storeConfig/homePage` + las secciones, la copia en
+     `storeConfigLogs` y la caché; avisa con un toast.
+   - **Los datos de los selectores** son los de antes: colecciones, marcas y,
+     en la página de una marca, solo las categorías que usan sus productos.
+     Las burbujas de una marca se editan con `CategoryNavEditor` dentro del
+     panel.
+   - **Toda la tienda** (en el inicio y `/tienda`): el menú de la cabecera,
+     el menú de cuenta, el de favoritos, los textos de `/buscar` y el pie
+     (el panel pasa a editarlo y vuelve con "Volver a la página").
+   - **En la página** (`MarcasDeEdicion`, llega con el editor): el marco de
+     cada sección con su barra (subir, bajar, duplicar) y el "+" entre
+     secciones, que abre el catálogo del panel en ese lugar. Lo global
+     (menú, buscador, cuenta) usa el mismo marco con su nombre.
+   - **Landings** (pestaña "Página"): el tema y ocultar la cabecera o el pie;
+     se guardan al momento en la landing, con su marca.
+   - **El cacherito**: "Primera Impresión" y "Checkout de Pago" con sus
+     formularios de siempre, copiados tal cual
+     (`FormulariosDelCacherito.jsx`); los bloques no se tocaron.
+   - "Salir del editor" (en la barra de admin y en el panel) pregunta si hay
+     cambios sin publicar; antes los perdía sin avisar.
 
 Para volver atrás: cada paso en su propio commit, y el componente viejo no se borra hasta que el nuevo lleve un tiempo en producción.
 

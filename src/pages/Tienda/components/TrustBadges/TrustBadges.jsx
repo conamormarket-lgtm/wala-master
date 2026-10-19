@@ -11,7 +11,16 @@ const ICON_MAP = {
   return: RotateCcw,
   heart: Heart,
   star: Star,
-  check: CheckCircle
+  check: CheckCircle,
+  // Los nombres que guarda el editor del kit (IconosWala): las landings que
+  // aún se dibujan con este componente (cacherito, seccionesViejo) los entienden.
+  camion: Truck,
+  escudo: ShieldCheck,
+  reloj: Clock,
+  tarjeta: CreditCard,
+  cambio: RotateCcw,
+  corazon: Heart,
+  estrella: Star
 };
 
 const TrustBadges = ({ badges = [] }) => {

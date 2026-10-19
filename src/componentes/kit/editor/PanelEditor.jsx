@@ -45,9 +45,15 @@ function BotonQuitar({ onQuitar, etiqueta = 'Eliminar', compacto }) {
 }
 
 /* ── Fila de la lista (arrastrable desde el asa) ── */
-function FilaSeccion({ seccion, indice, total, resaltada, onEditar, onResaltar, onMover, onDuplicar, onQuitar, onSoltar }) {
+/* El esquema de un tipo con el nombre que le da la página si el kit no lo conoce. */
+const esquemaConNombre = (tipo, nombres) => {
+  const e = esquemaDe(tipo);
+  return e.desconocido && nombres?.[tipo] ? { ...e, nombre: nombres[tipo], descripcion: 'Su formulario de siempre.' } : e;
+};
+
+function FilaSeccion({ seccion, indice, total, resaltada, onEditar, onResaltar, onMover, onDuplicar, onQuitar, onSoltar, nombres }) {
   const controles = useDragControls();
-  const esquema = esquemaDe(seccion.type);
+  const esquema = esquemaConNombre(seccion.type, nombres);
   const Icono = esquema.icono;
   const resumen = resumenDe(seccion);
   return (
@@ -149,13 +155,15 @@ const transicionVista = { initial: { opacity: 0, x: 16 }, animate: { opacity: 1,
  *    onSeleccionar(id), como una sección.
  *  - base: secciones para empezar una página vacía ([{ type, settings }])
  *  - tipos: los únicos módulos del catálogo (p. ej. el pie: columnas, texto e imagen)
+ *  - nombres: { tipo: nombre } para los tipos sin esquema (los que la página
+ *    edita con extensiones.formularios)
  *  - ajustesPagina: nodo de la pestaña "Página" (tema, ocultar header…)
  *  - incrustado: se dibuja dentro de su contenedor (demo) en vez de fijo a la ventana
  * Fijo a la ventana, empieza en --editor-arriba (la tienda: bajo su barra de admin).
  */
 export default function PanelEditor({
   secciones = [], onCambiar, seleccionada, onSeleccionar, resaltada, onResaltar, insertarEn = null, onInsertarEn,
-  crearAjustes = ajustesIniciales, fuentes = {}, extensiones = {}, globales = [], base, tipos,
+  crearAjustes = ajustesIniciales, fuentes = {}, extensiones = {}, globales = [], base, tipos, nombres,
   onGuardar, guardando = false, sinGuardar = false, onDeshacer, onRehacer, puedeDeshacer, puedeRehacer,
   titulo = 'Página', vista, onVista, lado = 'derecha', onLado, onCerrar, cabecera, ajustesPagina, incrustado = false,
 }) {
@@ -193,7 +201,7 @@ export default function PanelEditor({
     return () => window.removeEventListener('keydown', tecla);
   }, [sinGuardar, guardando, onGuardar, puedeDeshacer, puedeRehacer, onDeshacer, onRehacer]);
 
-  const esquemaAbierta = abierta && esquemaDe(abierta.type);
+  const esquemaAbierta = abierta && esquemaConNombre(abierta.type, nombres);
   const IconoAbierta = esquemaAbierta?.icono;
   const esquemaGlobal = globalAbierto && ESQUEMAS_GLOBALES[globalAbierto.esquema];
   const IconoGlobal = esquemaGlobal?.icono;
@@ -350,6 +358,7 @@ export default function PanelEditor({
                         return (
                           <FilaSeccion
                             key={id}
+                            nombres={nombres}
                             seccion={sec}
                             indice={i}
                             total={ids.length}

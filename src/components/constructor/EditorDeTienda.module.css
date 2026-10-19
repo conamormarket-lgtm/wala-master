@@ -4,3 +4,8 @@
   display: contents;
   --editor-arriba: var(--admin-bar-height, 0px);
 }
+
+/* "Volver a la página" al editar el pie. */
+.volver {
+  margin-bottom: 0.6rem;
+}
