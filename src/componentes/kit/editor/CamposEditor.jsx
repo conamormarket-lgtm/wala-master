@@ -25,7 +25,7 @@ import s from './Editor.module.css';
  *  - extensiones: { nombre: (props) => nodo } para campos que dibuja la
  *    página (p. ej. el editor de burbujas de categories_nav), y
  *    extensiones.formularios: { tipo: ({ ajustes, cambiar }) => nodo } para
- *    los tipos sin esquema que la página edita a su modo (el cacherito)
+ *    los tipos sin esquema que la página edita a su modo
  *  - crearAjustes(tipo): los ajustes de una sección nueva (para "plantilla")
  */
 

@@ -12,8 +12,8 @@ const ICON_MAP = {
   heart: Heart,
   star: Star,
   check: CheckCircle,
-  // Los nombres que guarda el editor del kit (IconosWala): las landings que
-  // aún se dibujan con este componente (cacherito, seccionesViejo) los entienden.
+  // Los nombres que guarda el editor del kit (IconosWala): con el interruptor
+  // seccionesViejo este componente también los entiende.
   camion: Truck,
   escudo: ShieldCheck,
   reloj: Clock,

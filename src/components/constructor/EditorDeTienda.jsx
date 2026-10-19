@@ -19,7 +19,6 @@ import PanelEditor from '../../componentes/kit/editor/PanelEditor';
 import { ControlOpciones, ControlInterruptor } from '../../componentes/kit/editor/CamposEditor';
 import Boton from '../../componentes/kit/Boton';
 import { useConfirmar } from '../../componentes/kit/Feedback';
-import { FormularioPrimeraImpresion, FormularioCheckoutDePago } from './FormulariosDelCacherito';
 import { COLUMNAS_POR_DEFECTO } from '../common/Footer/Footer';
 import s from './EditorDeTienda.module.css';
 
@@ -42,8 +41,6 @@ const MENU_POR_DEFECTO = [
 const PAGINAS_GLOBALES = ['home', 'tienda', 'footer'];
 // El pie solo dibuja columnas, texto e imagen (Footer.jsx), y empieza con las columnas de siempre.
 const TIPOS_DEL_PIE = ['footer_columns', 'text', 'image'];
-// Los bloques del cacherito con sus nombres de siempre (SECTION_TYPES).
-const NOMBRES_DEL_CACHERITO = { conversion_fold: 'Primera Impresión (Balvi)', landing_payment: 'Checkout de Pago (Culqi + PayPal)' };
 const BASE_DEL_PIE = [{ type: 'footer_columns', settings: { columns: COLUMNAS_POR_DEFECTO } }];
 const tituloDePagina = (id) => ({ home: 'Inicio', tienda: 'Tienda', footer: 'Pie de página' }[id] || `/${id}`);
 const ordenadas = (lista) => [...lista].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -240,14 +237,12 @@ export default function EditorDeTienda() {
         fuentes={{ colecciones: colecciones || [], categorias, marcas: marcas || [], subirArchivo: uploadFile, pieConRedes: false }}
         extensiones={{
           burbujasDeMarca: ({ ajustes }) => <CategoryNavEditor brandId={ajustes.brandId} brandName={nombreMarca(ajustes.brandId)} />,
-          formularios: { conversion_fold: FormularioPrimeraImpresion, landing_payment: FormularioCheckoutDePago },
         }}
         globales={globales}
         cabecera={volverALaPagina}
         ajustesPagina={esLanding ? <AjustesDeLanding slug={activePageId} /> : undefined}
         base={activePageId === 'footer' ? BASE_DEL_PIE : BASE}
         tipos={activePageId === 'footer' ? TIPOS_DEL_PIE : undefined}
-        nombres={NOMBRES_DEL_CACHERITO}
         onGuardar={publicar}
         guardando={isSaving}
         sinGuardar={sinGuardar}

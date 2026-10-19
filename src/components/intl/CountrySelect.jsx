@@ -22,8 +22,8 @@ export default function CountrySelect({
   onChange,
   placeholder = 'Selecciona tu país',
   isDisabled = false,
-  // Alias: LandingPaymentBlock lo pasaba como `disabled` y react-select lo
-  // ignoraba (el país seguía editable con el formulario bloqueado).
+  // Alias: `disabled` (react-select solo entiende isDisabled; sin esto el
+  // país seguía editable con el formulario bloqueado).
   disabled = false,
   id,
   name = 'country',

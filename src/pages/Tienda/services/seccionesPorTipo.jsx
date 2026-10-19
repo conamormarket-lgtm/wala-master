@@ -34,7 +34,6 @@ export const BestSellersRow = seccion(() => import('../components/BestSellersRow
 export const BrandMarquee = seccion(() => import('../components/BrandMarquee/BrandMarquee'));
 export const CategoryGrid = seccion(() => import('../components/CategoryGrid/CategoryGrid'));
 export const CollectionCarousel = seccion(() => import('../components/CollectionCarousel'));
-export const ConversionFold = seccion(() => import('../components/ConversionFold/ConversionFold'));
 export const FaqAccordion = seccion(() => import('../components/FaqAccordion/FaqAccordion'));
 export const FeatureList = seccion(() => import('../components/FeatureList/FeatureList'));
 export const FeaturedCarousel = seccion(() => import('../components/FeaturedCarousel'));
@@ -43,9 +42,6 @@ export const HeaderBlock = seccion(() => import('../components/HeaderBlock/Heade
 export const HeroBanner = seccion(() => import('../components/HeroBanner'));
 export const HeroCarousel = seccion(() => import('../components/HeroCarousel'));
 export const ImageBlock = seccion(() => import('../components/ImageBlock/ImageBlock'));
-// El bloque de pago arrastra react-select (con emotion, floating-ui y stylis:
-// ~270 KB) más el ubigeo de Perú.
-export const LandingPaymentBlock = seccion(() => import('../components/LandingPaymentBlock/LandingPaymentBlock'));
 export const MapLocation = seccion(() => import('../components/MapLocation'));
 export const ProductGrid = seccion(() => import('../components/ProductGrid'));
 export const ProductQueryCarousel = seccion(() => import('../components/ProductQueryCarousel/ProductQueryCarousel'));
@@ -71,8 +67,6 @@ const POR_TIPO = {
   trust_badges: TrustBadges,
   feature_list: FeatureList,
   faq_accordion: FaqAccordion,
-  conversion_fold: ConversionFold,
-  landing_payment: LandingPaymentBlock,
   marquee: BrandMarquee,
   bestsellers_row: BestSellersRow,
   featured_products: ProductGrid,

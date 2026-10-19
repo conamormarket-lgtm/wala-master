@@ -62,7 +62,7 @@ const bloquearScrollDeFondo = (bloquear) => {
 // renderBoton (opcional): ({ abrir, procesando }) => el botón de quien lo usa
 // (el del kit, en el pago rápido). Solo cambia lo que se dibuja: el cobro, los
 // guardas y la capa "Confirmando tu pago" son los mismos. Sin ella, el botón y
-// la nota de siempre (checkout, saldo de un pedido, el cacherito).
+// la nota de siempre (checkout, saldo de un pedido).
 const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, onOpen, autoOpen = false, reopenKey = 0, buttonLabel, title: tituloModal, renderBoton }) => {
   const toast = useGlobalToast();
   const [isReady, setIsReady] = useState(false);

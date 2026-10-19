@@ -9,8 +9,7 @@ const CATEGORIAS_REALES = INICIO.categorias.slice(0, 6);
 /*
  * Catálogo de secciones del builder: cada tipo por separado, con su nombre,
  * su `type` (como se guarda en Firestore) y sus variantes. Los ajustes son
- * los mismos campos que guarda el editor. Las secciones de la landing del
- * reloj (conversion_fold, landing_payment) no están en el kit.
+ * los mismos campos que guarda el editor.
  */
 
 const VIDEO_DEMO = 'https://www.youtube.com/watch?v=aqz-KE-bpKQ';

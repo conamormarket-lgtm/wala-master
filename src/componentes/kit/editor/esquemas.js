@@ -25,9 +25,6 @@ import {
  *    desde los datos de la tienda (todas: { etiqueta, filtro?(x) } = un botón
  *    para añadir todas las que faltan); plantilla: { etiqueta } = reemplazar
  *    la lista por la de una sección nueva (crearAjustes de la página)
- *
- * Fuera a propósito: conversion_fold y landing_payment (landing del reloj):
- * la tienda pasa sus formularios en extensiones.formularios.
  */
 
 /* ── Piezas compartidas (mismos campos que los controles de hoy) ── */

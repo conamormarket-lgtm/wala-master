@@ -1,0 +1,14 @@
+/* La caja de cada landing del builder (DynamicLandingPage). Lleva el tema y
+   los colores de la tienda, como cualquier página; aquí solo lo que es de
+   la landing. (El tema oscuro del reloj K-CHERO se retiró el 2026-10-19.) */
+
+.landing-page-wrapper {
+  /* Que nada empuje la página hacia los lados, sin romper los sticky de dentro. */
+  overflow-x: clip;
+}
+
+/* La invitación a descargar la app no va en una landing pública. */
+.landing-page-wrapper [class*="AppDownload"],
+.landing-page-wrapper [class*="appDownload"] {
+  display: none !important;
+}

@@ -6,12 +6,23 @@ import { useLayoutContext } from '../../contexts/LayoutContext';
 import { useVisualEditor } from './contexts/VisualEditorContext';
 import TiendaPage from './TiendaPage';
 import { useAuth } from '../../contexts/AuthContext';
-import { KCHERO_SLUG, KCHERO_SLUG_LEGACY } from '../../constants/landingSlugs';
 import BrandLoaderOverlay from '../../components/common/BrandLoader/BrandLoaderOverlay';
-import './landing-mobile.css';
+import './landing.css';
+
+// Las landings de K-CHERO (reloj, billetera y el combo, más la URL vieja del
+// reloj) se retiraron el 2026-10-19: sus enlaces (anuncios, compartidos) van
+// a la tienda en vez de a una página vacía.
+const LANDINGS_RETIRADAS = new Set([
+  'reloj-kchero-2026', 'reloj-matador-pro-2026', 'billetera-kchero-2026', 'combo-reloj-billetera-2026',
+]);
 
 const DynamicLandingPage = () => {
   const { slug } = useParams();
+  if (LANDINGS_RETIRADAS.has(String(slug || '').toLowerCase())) return <Navigate to="/tienda" replace />;
+  return <LandingDinamica slug={slug} />;
+};
+
+const LandingDinamica = ({ slug }) => {
   const location = useLocation();
   const { setHeaderVisible, setFooterVisible } = useLayoutContext();
   const { setActivePageId, storeConfigDraft } = useVisualEditor();
@@ -20,10 +31,6 @@ const DynamicLandingPage = () => {
   const [loading, setLoading] = useState(true);
   const [landingPage, setLandingPage] = useState(null);
   const [themeContent, setThemeContent] = useState(null);
-  // Lo avisa TiendaPage cuando ya conoce las secciones: true si la página va
-  // con el kit. Entonces lleva el fondo y los colores de la tienda (como las
-  // de marca); el fondo negro queda solo para el cacherito.
-  const [conKit, setConKit] = useState(false);
 
   // Oculta el header/footer de la tienda DE INMEDIATO. Si esperamos al fetch de
   // la landing, el cliente ve por un instante el chrome de WALA + el esqueleto
@@ -92,11 +99,6 @@ const DynamicLandingPage = () => {
   // Solo bloquear por auth al resolver el redirect cuando la LP no existe.
   // Si ya tenemos landing, NO remountar a PageLoading cuando authLoading
   // cambia (login anónimo / onAuthChange): ese unmount produce removeChild.
-  // La landing se renombró a K-CHERO: la URL antigua redirige a la nueva para no
-  // romper links ya publicados (anuncios, compartidos, historial).
-  if (slug === KCHERO_SLUG_LEGACY) {
-    return <Navigate to={`/${KCHERO_SLUG}`} replace />;
-  }
 
   // Mientras carga la landing NO mostramos el esqueleto del catálogo (PageLoading
   // dibuja tarjetas de producto y parece la tienda).
@@ -123,7 +125,7 @@ const DynamicLandingPage = () => {
   }
 
   return (
-    <div className={`landing-page-wrapper ${landingPage.hideHeader ? 'no-header' : ''} ${landingPage.brandId || conKit ? 'landing-store-page' : ''}`} id="landing-theme-wrapper" translate="no">
+    <div className={`landing-page-wrapper ${landingPage.hideHeader ? 'no-header' : ''}`} id="landing-theme-wrapper" translate="no">
       {themeContent && (
         <style dangerouslySetInnerHTML={{ __html: themeContent }} />
       )}
@@ -138,7 +140,6 @@ const DynamicLandingPage = () => {
         isLandingPage={true}
         pageIdOverride={landingPage.slug || landingPage.id}
         pageBrandIdOverride={landingPage.brandId || null}
-        onConKit={setConKit}
       />
     </div>
   );

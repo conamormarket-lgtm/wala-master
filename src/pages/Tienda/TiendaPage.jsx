@@ -4,7 +4,7 @@ import React, { useState, useMemo, useCallback, useRef, useEffect, Suspense } fr
 import { SeccionDelKit } from '../../componentes/kit/Secciones';
 import { categoriasDeGrilla, gruposDeCatalogo, grillaDesdeConfiguracion, limitesDePrecio } from '../../componentes/kit/adaptadores';
 import { getCollections, getCollectionById } from '../../services/collections';
-import { TIPOS_DEL_KIT, esDelCacherito } from './services/seccionesDelKit';
+import { TIPOS_DEL_KIT } from './services/seccionesDelKit';
 import { getTags } from '../../services/tags';
 import { getCharacters } from '../../services/characters';
 import { getProductTypes } from '../../services/productTypes';
@@ -26,7 +26,6 @@ import {
   BrandMarquee,
   CategoryGrid,
   CollectionCarousel,
-  ConversionFold,
   FaqAccordion,
   FeatureList,
   FeaturedCarousel,
@@ -35,7 +34,6 @@ import {
   HeroBanner,
   HeroCarousel,
   ImageBlock,
-  LandingPaymentBlock,
   MapLocation,
   ProductGrid,
   ProductQueryCarousel,
@@ -79,7 +77,6 @@ import PuntoDeInsercion from '../../components/constructor/PuntoDeInsercion';
 import { useVisualEditor } from './contexts/VisualEditorContext';
 // Banner "Walá App" con el kit (paso 2 de la migración; el viejo, en guia/ELIMINAR.md).
 import BannerDeLaApp from '../../components/marco/BannerDeLaApp';
-import { isKcheroLanding } from '../../constants/landingSlugs';
 import BrandLoaderOverlay from '../../components/common/BrandLoader/BrandLoaderOverlay';
 import styles from './TiendaPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
@@ -92,24 +89,6 @@ const idDelCatalogo = (section) => section?.settings?.anchorId || 'catalogo';
 
 const DEFAULT_STORE_TITLE = 'Nuestra Tienda';
 const DEFAULT_STORE_SUBTITLE = 'Explora nuestros productos y personaliza el que más te guste.';
-
-const MATADOR_FAQ_ITEMS = [
-  {
-    question: '¿De verdad puedo pagar al recibir?',
-    answer:
-      'Sí. Trabajamos con pago contra entrega verificado: liquidas el total cuando el courier te entrega el pedido en mano. Si quieres asegurar tu unidad antes del despacho, puedes separarla con un adelanto de S/ 10 (reserva de stock) y completar el saldo al recibir. Si cambias de opinión antes de que salga de almacén, puedes solicitar la anulación completa del pedido sin penalidad.',
-  },
-  {
-    question: '¿Cuánto demora el delivery?',
-    answer:
-      'En Lima Metropolitana despachamos en modalidad express: entrega en un máximo de 48 horas hábiles desde la confirmación de tu pedido. Te enviamos seguimiento por WhatsApp en cuanto el paquete sale de nuestro centro de distribución.',
-  },
-  {
-    question: '¿Puedo elegir color o acabado?',
-    answer:
-      'Sí. El reloj incluye 14 acabados oficiales disponibles en catálogo (variedad de cronógrafos, deportivos y ediciones limitadas). Al comprar indicas la referencia que ves en el carrusel o nos confirmas por WhatsApp; validamos stock del acabado elegido antes del despacho para garantizar que recibes exactamente el modelo que seleccionaste.',
-  },
-];
 
 // Ordena un array de productos EN MEMORIA según el criterio de la UI.
 // Se usa en los modos NO paginados (categoría/búsqueda) y como red de seguridad
@@ -302,7 +281,7 @@ const renderBotonSeccion = (s) => {
   );
 };
 
-const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdOverride = null, onConKit }) => {
+const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdOverride = null }) => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -937,18 +916,11 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   const catalogIsEmpty = !catalogLoadingResolved && catalogProducts.length === 0;
 
   // ── Secciones con el kit (TIPOS_DEL_KIT): el inicio, /tienda y todas las
-  // landings menos las del cacherito, que siguen enteras con lo de antes ──
+  // landings; con el interruptor seccionesViejo, lo de antes ──
   const seccionesViejo = useLoViejo('secciones');
   const whatsappTienda = useWhatsAppDeLaRuta();
   const { user, userProfile } = useAuth();
-  const paginaConKit = !seccionesViejo && !esDelCacherito(pageId, configuredSections);
-  // A la landing que la envuelve (DynamicLandingPage): si va con el kit, toma
-  // el fondo de la tienda. Solo cuando ya llegaron las secciones (antes no se
-  // sabe si es del cacherito).
-  const seccionesConocidas = Boolean(storeConfigDraft?.sections || storefrontConfig?.sections);
-  useEffect(() => {
-    if (onConKit) onConKit(seccionesConocidas && paginaConKit);
-  }, [onConKit, seccionesConocidas, paginaConKit]);
+  const paginaConKit = !seccionesViejo;
   const usaKit = (section) => paginaConKit && TIPOS_DEL_KIT.has(section.type);
   const conTipoDelKit = (tipo) => paginaConKit && configuredSections.some((x) => x.type === tipo);
 
@@ -1249,19 +1221,6 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     if (usaKit(section)) return seccionDelKit(section);
     switch (section.type) {
       case 'header': {
-        // Landing específica: "reloj matador" ya tiene otra forma de elegir acabado
-        // (evitamos duplicidad en la estructura final).
-        if (isKcheroLanding(pageId) && (s.title || '').trim() === 'Elige tu acabado') {
-          return null;
-        }
-        if (isKcheroLanding(pageId) && (s.title || '').trim() === 'En acción') {
-          return null;
-        }
-        // Bloque final "Últimas unidades" (CTA "Comprar ahora") — eliminado a pedido:
-        // la barra sticky ya cumple ese rol de cierre.
-        if (isKcheroLanding(pageId) && (s.title || '').trim() === 'Últimas unidades') {
-          return null;
-        }
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ padding: 0, overflow: 'hidden' }}>
             <SectionBackground config={s} />
@@ -1324,12 +1283,6 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         );
       case 'video': {
         if (!s.url?.trim()) return null;
-        if (
-          isKcheroLanding(pageId) &&
-          /video-02\.mp4/i.test(s.url)
-        ) {
-          return null;
-        }
         let finalUrl = s.url;
         let isEmbed = false;
 
@@ -1435,8 +1388,6 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           </section>
         );
       case 'testimonials':
-        // Comentarios ya están en el conversion_fold (carrusel arriba)
-        if (isKcheroLanding(pageId)) return null;
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ overflow: 'hidden' }}>
             <SectionBackground config={s} />
@@ -1459,24 +1410,6 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           </section>
         );
       case 'feature_list': {
-        if (isKcheroLanding(pageId)) {
-          const sub = (s.subtitle || '').trim();
-          const title = (s.title || '').trim();
-          const itemsText = Array.isArray(s.items) ? s.items.map((item) => (item?.text || '').trim()) : [];
-          // Galería redundante (imagen grande + bullets de color)
-          if (sub === 'Indica tu color al pedir o por WhatsApp') return null;
-          // Segunda imagen suelta + testimonio embebido
-          if (!title && !sub && (s.quote || '').trim()) return null;
-          // Bloque compra segura / garantías redundante
-          if (sub === 'Tu dinero protegido hasta que lo tengas en mano') return null;
-          // Bloque de beneficios redundante antes del carrusel
-          if (
-            sub === 'Un reloj elegante, resistente y listo para usar todos los días.' ||
-            itemsText.includes('Cronógrafo funcional + ventana de fecha')
-          ) {
-            return null;
-          }
-        }
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ padding: 0, overflow: 'hidden' }}>
             <FeatureList config={s} />
@@ -1484,39 +1417,9 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         );
       }
       case 'faq_accordion': {
-        const faqConfig = isKcheroLanding(pageId)
-          ? { ...s, items: MATADOR_FAQ_ITEMS }
-          : s;
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ padding: 0, overflow: 'hidden' }}>
-            <FaqAccordion config={faqConfig} />
-          </section>
-        );
-      }
-      case 'conversion_fold':
-        return (
-          <section key={section.id} className={styles.sectionBlock} style={{ padding: 0, overflow: 'hidden' }}>
-            <ConversionFold config={s} />
-          </section>
-        );
-      case 'landing_payment': {
-        const payConfig = isKcheroLanding(pageId)
-          ? {
-              ...s,
-              landingSlug: pageId,
-              peruOnly: true,
-              showPayPal: false,
-              montoUSD: 0,
-            }
-          : { ...s, landingSlug: pageId };
-        return (
-          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '1.5rem', paddingBottom: s.paddingBottom || '0', overflow: 'hidden' }}>
-            <SectionBackground config={s} />
-            {/* minHeight reserva el hueco mientras llega el chunk: sin eso, el
-                contenido de debajo salta cuando aparece el formulario. */}
-            <Suspense fallback={<div style={{ minHeight: '420px' }} aria-hidden="true" />}>
-              <LandingPaymentBlock config={payConfig} />
-            </Suspense>
+            <FaqAccordion config={s} />
           </section>
         );
       }
@@ -1528,8 +1431,6 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           </section>
         );
       case 'bestsellers_row':
-        // Coverflow del fold ya muestra los 14 acabados arriba
-        if (isKcheroLanding(pageId)) return null;
         return (
           <section
             key={section.id}

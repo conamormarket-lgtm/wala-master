@@ -564,12 +564,6 @@ export const REGISTRO_SECCIONES = {
   footer_columns: { Componente: PiePagina, nombre: 'PiePagina' },
 };
 
-/*
- * Fuera del kit a propósito: conversion_fold y landing_payment son de la
- * landing del reloj (cacherito) y siguen con su propio componente vía
- * `respaldo`.
- */
-
 /**
  * Dibuja una página del builder: `secciones` = [{ id, type, order, settings }]
  * tal como están en Firestore. Cada una va envuelta en <BloqueSeccion>

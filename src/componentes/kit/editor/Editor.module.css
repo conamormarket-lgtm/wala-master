@@ -1380,7 +1380,7 @@
   color: #dc2626;
 }
 
-/* Un formulario que trae la página (los bloques del cacherito): sus campos
+/* Un formulario que trae la página (extensiones.formularios): sus campos
    con los colores del panel. */
 .formularioPropio label {
   display: block;

@@ -42,8 +42,6 @@ export const SECTION_TYPES = [
   { id: 'bestsellers_row', label: 'Lo Más Vendido (Fila de 5)' },
   { id: 'footer_columns', label: 'Pie de Página (Columnas/Enlaces)' },
   { id: 'map_location', label: 'Ubicación / Mapa' },
-  { id: 'landing_payment', label: 'Checkout de Pago (Culqi + PayPal)' },
-  { id: 'conversion_fold', label: 'Primera Impresión (Balvi — Above the Fold)' },
   { id: 'feature_list', label: 'Lista de Beneficios (Compacta)' },
   { id: 'faq_accordion', label: 'Preguntas Frecuentes (Acordeón)' }
 ];
@@ -297,54 +295,6 @@ export function getDefaultSettings(type) {
         backgroundColor: '#ffffff',
         paddingTop: '0.5rem',
         paddingBottom: '0.5rem',
-      };
-    case 'conversion_fold':
-      return {
-        imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200&q=85&auto=format&fit=crop',
-        imageAlt: 'Producto destacado',
-        imageCaption: '',
-        title: '💕 Producto Estrella 2026 🌹',
-        subtitle: 'El detalle perfecto para enamorar ❤️',
-        socialProofBadge: '🔥 +10,000 CLIENTES LO ELIGIERON ESTE MES',
-        endTime: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
-        countdownLabel: '⏳ Oferta termina en',
-        montoPEN: 89.9,
-        precioOriginal: 149.9,
-        discountLabel: '',
-        rating: 5,
-        reviewCount: '1867',
-        ctaPrimaryText: '¡SORPRENDER AHORA!',
-        ctaPrimarySub: '¡ENTREGAS EL MISMO DÍA!',
-        ctaPrimaryLink: '#pagar-ahora',
-        ctaSecondaryText: '¡COMPRAR AHORA!',
-        ctaSecondaryLink: '#pagar-ahora',
-        trustText: 'Tu pedido está en camino',
-        showWhatsApp: true,
-        whatsappNumber: '',
-        whatsappMessage: 'Hola, me interesa el producto de la landing',
-        accentColor: '#dc2626',
-        backgroundColor: '#ffffff',
-        paddingTop: '0',
-        paddingBottom: '0',
-      };
-    case 'landing_payment':
-      return {
-        title: 'Paga ahora y asegura tu pedido',
-        subtitle: 'Tarjeta, Yape (Culqi) o PayPal — sin salir de esta página',
-        concepto: 'Compra en línea',
-        montoPEN: 89.9,
-        montoUSD: 23.99,
-        precioOriginal: 149.9,
-        offerBadge: '40% OFF — Oferta limitada',
-        stickyCTA: 'COMPRAR AHORA',
-        productId: '',
-        showCulqi: true,
-        showPayPal: true,
-        anchorId: 'pagar-ahora',
-        backgroundColor: '#0a0a0a',
-        titleColor: '#fbbf24',
-        paddingTop: '2rem',
-        paddingBottom: '1rem',
       };
     case 'map_location':
       return {
