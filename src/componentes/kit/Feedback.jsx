@@ -64,14 +64,20 @@ const haceCuanto = (fecha) => {
   return d === 1 ? 'Ayer' : `Hace ${d} días`;
 };
 
-/** Lista de notificaciones agrupadas (Hoy / Antes), con punto de no leída. */
-export function ListaNotificaciones({ items, onAbrir, limite }) {
+/**
+ * Lista de notificaciones agrupadas (Hoy / Antes), con punto de no leída.
+ *  - items: [{ id, titulo, texto, fecha, leida, tipo, imagen }]
+ *  - vacio: { titulo, texto } sin notificaciones (por defecto, "No tienes notificaciones")
+ */
+export function ListaNotificaciones({ items, onAbrir, limite, vacio }) {
+  const sinLeer = useTexto('Sin leer');
   const lista = limite ? items.slice(0, limite) : items;
   if (!lista.length) {
     return (
       <div className={s.listaVacia}>
         <BellOff aria-hidden="true" />
-        <p>No tienes notificaciones</p>
+        {vacio?.titulo ? <strong><Texto>{vacio.titulo}</Texto></strong> : <p><Texto>No tienes notificaciones</Texto></p>}
+        {vacio?.texto && <p><Texto>{vacio.texto}</Texto></p>}
       </div>
     );
   }
@@ -85,7 +91,7 @@ export function ListaNotificaciones({ items, onAbrir, limite }) {
     <div className={s.lista}>
       {grupos.map(([nombre, grupo]) => (
         <section key={nombre}>
-          <h4 className={s.grupo}>{nombre}</h4>
+          <h4 className={s.grupo}><Texto>{nombre}</Texto></h4>
           <ul>
             {grupo.map((n) => {
               const Icono = ICONOS[n.tipo] || Info;
@@ -100,9 +106,9 @@ export function ListaNotificaciones({ items, onAbrir, limite }) {
                     <span className={s.notifTexto}>
                       <strong>{n.titulo}</strong>
                       {n.texto && <span>{n.texto}</span>}
-                      <small>{haceCuanto(n.fecha)}</small>
+                      {n.fecha && <small><Texto>{haceCuanto(n.fecha)}</Texto></small>}
                     </span>
-                    {!n.leida && <span className={s.punto} aria-label="Sin leer" />}
+                    {!n.leida && <span className={s.punto} aria-label={sinLeer} />}
                   </button>
                 </li>
               );

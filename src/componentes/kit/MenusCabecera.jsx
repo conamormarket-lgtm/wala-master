@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, ChevronDown, Loader2, LogOut, RefreshCw, ShoppingBag, Heart, Sparkles, Coins, CalendarClock, Trophy } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Loader2, LogOut, RefreshCw, ShoppingBag, Heart, Sparkles, Coins, CalendarClock, Trophy } from 'lucide-react';
 import { Enlace } from './Enlace';
 import { Texto, useTexto } from './Traduccion';
 import Boton from './Boton';
@@ -26,10 +26,13 @@ import s from './MenusCabecera.module.css';
 /**
  * Menú grande de "Tienda": solo categorías, como en la tienda real. Las
  * marcas tienen su propia pestaña con su menú (MenuMarcas); no se repiten aquí.
- *  - categorias: [{ id, nombre, url }]
+ *  - categorias: [{ id, nombre, url }] (los nombres pasan por la traducción)
  *  - activa: id de la categoría actual (se resalta)
  *  - cargando / error / onReintentar: estados mientras llegan de Firestore
  *  - destacado: { titulo, texto, url, imagen } tarjeta opcional a la derecha
+ *  - titulo: el de arriba ("Categorías"); verTodo: { texto, url } o null
+ * También sirve para un menú de enlaces cualquiera (los desplegables que arma
+ * el admin): `categorias` son entonces sus enlaces.
  */
 export function MenuTienda({
   categorias = [],
@@ -37,6 +40,7 @@ export function MenuTienda({
   cargando = false,
   error = false,
   onReintentar,
+  titulo = 'Categorías',
   verTodo = { texto: 'Ver todo el catálogo', url: '/tienda' },
   destacado,
   onNavegar,
@@ -44,15 +48,15 @@ export function MenuTienda({
   return (
     <div className={[s.tienda, destacado && s.tiendaConDestacado].filter(Boolean).join(' ')}>
       <section>
-        <h4 className={s.titulo}>Categorías</h4>
+        <h4 className={s.titulo}><Texto>{titulo}</Texto></h4>
         {cargando || error ? (
           <p className={s.estado} role="status">
             {error ? (
               <button type="button" className={s.reintentar} onClick={onReintentar}>
-                <RefreshCw aria-hidden="true" /> Reintentar cargar categorías
+                <RefreshCw aria-hidden="true" /> <Texto>Reintentar cargar categorías</Texto>
               </button>
             ) : (
-              <><Loader2 className={s.girando} aria-hidden="true" /> Cargando categorías…</>
+              <><Loader2 className={s.girando} aria-hidden="true" /> <Texto>Cargando categorías…</Texto></>
             )}
           </p>
         ) : (
@@ -65,22 +69,24 @@ export function MenuTienda({
                   aria-current={activa === c.id ? 'page' : undefined}
                   onClick={onNavegar}
                 >
-                  {c.nombre}
+                  <Texto>{c.nombre}</Texto>
                 </Enlace>
               </li>
             ))}
           </ul>
         )}
-        <Enlace to={verTodo.url} className={s.verTodo} onClick={onNavegar}>
-          {verTodo.texto} <ArrowRight aria-hidden="true" />
-        </Enlace>
+        {verTodo?.url && (
+          <Enlace to={verTodo.url} className={s.verTodo} onClick={onNavegar}>
+            <Texto>{verTodo.texto}</Texto> <ArrowRight aria-hidden="true" />
+          </Enlace>
+        )}
       </section>
 
       {destacado && (
         <Enlace to={destacado.url} className={s.destacado} onClick={onNavegar}>
           <FotoProducto className={s.destacadoImg} src={destacado.imagen} />
-          <strong>{destacado.titulo}</strong>
-          <span>{destacado.texto}</span>
+          <strong><Texto>{destacado.titulo}</Texto></strong>
+          <span><Texto>{destacado.texto}</Texto></span>
         </Enlace>
       )}
     </div>
@@ -130,23 +136,23 @@ export function MenuMarcas({ marcas = [], limite = 0, activa, verTodas, onNavega
 
   return (
     <div className={s.marcas}>
-      <h4 className={s.titulo}>Universo Walá</h4>
+      <h4 className={s.titulo}><Texto>Universo Walá</Texto></h4>
       <ul className={s.listaLogos}>{primeras.map(fila)}</ul>
       {larga && todas && (
         <div className={s.masMarcas}>
-          <h5 className={s.masMarcasTitulo}>Más marcas</h5>
+          <h5 className={s.masMarcasTitulo}><Texto>Más marcas</Texto></h5>
           <ul className={s.listaLogos}>{resto.map(fila)}</ul>
         </div>
       )}
       {larga && (
         <button type="button" className={[s.verMasMarcas, todas && s.verMenosMarcas].filter(Boolean).join(' ')} aria-expanded={todas} onClick={() => setTodas((v) => !v)}>
-          {todas ? 'Ver menos' : `Ver ${resto.length} ${resto.length === 1 ? 'marca' : 'marcas'} más`}
+          <Texto>{todas ? 'Ver menos' : `Ver ${resto.length} ${resto.length === 1 ? 'marca' : 'marcas'} más`}</Texto>
           <ChevronDown aria-hidden="true" />
         </button>
       )}
       {verTodas?.url && (
         <Enlace to={verTodas.url} className={s.verTodo} onClick={onNavegar}>
-          {verTodas.texto} <ArrowRight aria-hidden="true" />
+          <Texto>{verTodas.texto}</Texto> <ArrowRight aria-hidden="true" />
         </Enlace>
       )}
     </div>
@@ -164,24 +170,25 @@ export function AyudaMonedas({
   urlGanar = '/cuenta/misiones',
   onNavegar,
 }) {
+  const conSaldo = typeof saldo === 'number';
   return (
     <div className={s.monedas}>
       <div className={s.monedasSaldo}>
         <Moneda tamano={40} />
         <div>
-          <span className={s.monedasEtiqueta}>Tus monedas</span>
-          <strong>{saldo.toLocaleString('es-PE')}</strong>
-          <span className={s.monedasValor}>= {soles(saldo * valorMoneda)} en descuentos</span>
+          <span className={s.monedasEtiqueta}><Texto>Tus monedas</Texto></span>
+          <strong>{conSaldo ? saldo.toLocaleString('es-PE') : '–'}</strong>
+          {conSaldo && <span className={s.monedasValor}>= {soles(saldo * valorMoneda)} <Texto>en descuentos</Texto></span>}
         </div>
       </div>
       <ul className={s.monedasDatos}>
-        <li><Coins aria-hidden="true" /><span><strong>1 moneda = {soles(valorMoneda)}</strong> de descuento en tus compras</span></li>
-        <li><CalendarClock aria-hidden="true" /><span>Vencen a fin de mes, el <strong>{finDeMes()}</strong></span></li>
-        <li><Trophy aria-hidden="true" /><span>Gana más con misiones, sorteos y referidos</span></li>
+        <li><Coins aria-hidden="true" /><span><strong><Texto>{`1 moneda = ${soles(valorMoneda)}`}</Texto></strong> <Texto>de descuento en tus compras</Texto></span></li>
+        <li><CalendarClock aria-hidden="true" /><span><Texto>Vencen a fin de mes, el</Texto> <strong>{finDeMes()}</strong></span></li>
+        <li><Trophy aria-hidden="true" /><span><Texto>Gana más con misiones, sorteos y referidos</Texto></span></li>
       </ul>
       <div className={s.monedasAcciones}>
-        <Boton to={urlCanjear} variante="primario" bloque onClick={onNavegar}>Canjear</Boton>
-        <Boton to={urlGanar} variante="contorno" bloque onClick={onNavegar}>Ganar más</Boton>
+        <Boton to={urlCanjear} variante="primario" bloque onClick={onNavegar}><Texto>Canjear</Texto></Boton>
+        <Boton to={urlGanar} variante="contorno" bloque onClick={onNavegar}><Texto>Ganar más</Texto></Boton>
       </div>
     </div>
   );
@@ -200,19 +207,26 @@ export function AyudaMonedas({
  *    tarjeta propia, el nombre sin "Hola", sin "Ver toda mi cuenta"
  *  - activo: ruta actual; su acceso se enciende con el sello del logo
  *    (también una subruta: /cuenta/pedidos/123 enciende Mis pedidos)
+ *  - textos (sin sesión): { titulo, descripcion, login, registro, urlLogin,
+ *    urlRegistro }; los edita el admin (storeConfig accountPopup). Se traducen.
+ *  - estadoLogin: el state del router para "Iniciar sesión" (p. ej. { from })
+ *  - idiomas: { opciones: [{ codigo, nombre }], actual, onCambiar } → elegir
+ *    el idioma (la tienda lo pasa sin sesión: con sesión está en Ajustes)
+ * Los grupos llegan ya traducidos (la tienda usa su diccionario).
  */
-export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNavegar, urlLogin = '/login', urlRegistro = '/registro', lateral = false, activo }) {
+export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNavegar, urlLogin = '/login', urlRegistro = '/registro', lateral = false, activo, textos = {}, estadoLogin, idiomas }) {
   const esActual = (to) => Boolean(activo) && (activo === to || activo.startsWith(`${to}/`));
   const etiquetaAccesos = useTexto('Accesos de cuenta');
   if (!usuario) {
     return (
       <div className={s.cuentaInvitado}>
-        <h3><Texto>Tu cuenta Walá</Texto></h3>
-        <p><Texto>Inicia sesión para ver tus pedidos, monedas y diseños guardados.</Texto></p>
+        <h3><Texto>{textos.titulo || 'Tu cuenta Walá'}</Texto></h3>
+        <p><Texto>{textos.descripcion || 'Inicia sesión para ver tus pedidos, monedas y diseños guardados.'}</Texto></p>
         <div className={s.botones}>
-          <Boton to={urlLogin} variante="primario" bloque onClick={onNavegar}><Texto>Iniciar sesión</Texto></Boton>
-          <Boton to={urlRegistro} variante="contorno" bloque onClick={onNavegar}><Texto>Crear cuenta</Texto></Boton>
+          <Boton to={textos.urlLogin || urlLogin} state={estadoLogin} variante="primario" bloque onClick={onNavegar}><Texto>{textos.login || 'Iniciar sesión'}</Texto></Boton>
+          <Boton to={textos.urlRegistro || urlRegistro} variante="contorno" bloque onClick={onNavegar}><Texto>{textos.registro || 'Crear cuenta'}</Texto></Boton>
         </div>
+        {idiomas?.opciones?.length > 1 && <ElegirIdioma {...idiomas} />}
       </div>
     );
   }
@@ -269,6 +283,7 @@ export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNave
           </div>
         ))}
       </nav>
+      {idiomas?.opciones?.length > 1 && <ElegirIdioma {...idiomas} />}
       <div className={s.cuentaPie}>
         {!lateral && <Enlace to="/cuenta" className={s.verTodo} onClick={onNavegar}><Texto>Ver toda mi cuenta</Texto> <ArrowRight aria-hidden="true" /></Enlace>}
         <button type="button" className={s.salir} onClick={() => { onCerrarSesion?.(); onNavegar?.(); }}>
@@ -279,22 +294,51 @@ export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNave
   );
 }
 
+/** Idioma de la tienda: un botón por idioma, el actual marcado. */
+function ElegirIdioma({ opciones, actual, onCambiar }) {
+  const etiqueta = useTexto('Idioma');
+  return (
+    <div className={s.idiomas} role="group" aria-label={etiqueta}>
+      <p className={s.titulo}>{etiqueta}</p>
+      <div className={s.idiomasLista}>
+        {opciones.map((o) => (
+          <button
+            key={o.codigo}
+            type="button"
+            lang={o.codigo}
+            aria-pressed={actual === o.codigo}
+            className={[s.idioma, actual === o.codigo && s.idiomaActual].filter(Boolean).join(' ')}
+            onClick={() => onCambiar?.(o.codigo)}
+          >
+            <span className={s.idiomaCodigo} aria-hidden="true">{o.codigo.slice(0, 2).toUpperCase()}</span>
+            <span>{o.nombre}</span>
+            {actual === o.codigo && <Check className={s.idiomaCheck} aria-hidden="true" />}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ── Favoritos ──────────────────────────────────────────── */
 
 /**
  * Vista previa de favoritos.
  *  - items: [{ id, nombre, imagen }]; sesion: boolean
+ *  - textos: los que edita el admin (storeConfig favoritesPopup):
+ *    { tituloInvitado, textoInvitado, tituloVacio, textoVacio, boton, urlBoton }
+ *  - estadoLogin: el state del router para "Iniciar sesión" (p. ej. { from })
  */
-export function VistaFavoritos({ items = [], sesion = true, urlLista = '/cuenta/wishlist', onNavegar }) {
+export function VistaFavoritos({ items = [], sesion = true, urlLista = '/cuenta/wishlist', onNavegar, textos = {}, estadoLogin }) {
   if (!sesion) {
     return (
       <div className={s.vacio}>
         <Heart aria-hidden="true" />
-        <h3>Tus favoritos</h3>
-        <p>Inicia sesión para guardar lo que te gusta y verlo desde cualquier lado.</p>
+        <h3><Texto>{textos.tituloInvitado || 'Tus favoritos'}</Texto></h3>
+        <p><Texto>{textos.textoInvitado || 'Inicia sesión para guardar lo que te gusta y verlo desde cualquier lado.'}</Texto></p>
         <div className={s.botones}>
-          <Boton to="/login" variante="primario" bloque onClick={onNavegar}>Iniciar sesión</Boton>
-          <Boton to="/tienda" variante="contorno" bloque onClick={onNavegar}>Explorar tienda</Boton>
+          <Boton to="/login" state={estadoLogin} variante="primario" bloque onClick={onNavegar}><Texto>Iniciar sesión</Texto></Boton>
+          <Boton to="/tienda" variante="contorno" bloque onClick={onNavegar}><Texto>Explorar tienda</Texto></Boton>
         </div>
       </div>
     );
@@ -303,9 +347,9 @@ export function VistaFavoritos({ items = [], sesion = true, urlLista = '/cuenta/
     return (
       <div className={s.vacio}>
         <Heart aria-hidden="true" />
-        <h3>Aún no tienes favoritos</h3>
-        <p>Toca el corazón de un producto y lo guardamos aquí.</p>
-        <Boton to="/tienda" variante="primario" bloque onClick={onNavegar}>Mira lo que te puede interesar</Boton>
+        <h3><Texto>{textos.tituloVacio || 'Aún no tienes favoritos'}</Texto></h3>
+        <p><Texto>{textos.textoVacio || 'Toca el corazón de un producto y lo guardamos aquí.'}</Texto></p>
+        <Boton to={textos.urlBoton || '/tienda'} variante="primario" bloque onClick={onNavegar}><Texto>{textos.boton || 'Mira lo que te puede interesar'}</Texto></Boton>
       </div>
     );
   }
@@ -322,11 +366,11 @@ export function VistaFavoritos({ items = [], sesion = true, urlLista = '/cuenta/
   return (
     <div className={s.vista}>
       <div className={s.vistaCabeza}>
-        <h3>Tu lista de deseos</h3>
-        <span>{items.length} {items.length === 1 ? 'producto' : 'productos'}</span>
+        <h3><Texto>Tu lista de deseos</Texto></h3>
+        <span><Texto>{items.length === 1 ? '1 producto' : `${items.length} productos`}</Texto></span>
       </div>
       <p className={s.vistaTexto}>
-        {items.length === 1 ? 'Tienes 1 producto guardado en tu lista.' : `Tienes ${items.length} productos guardados en tu lista.`}
+        <Texto>{items.length === 1 ? 'Tienes 1 producto guardado en tu lista.' : `Tienes ${items.length} productos guardados en tu lista.`}</Texto>
       </p>
       <ul className={s.abanico}>
         {visibles.map((it, i) => (
@@ -344,7 +388,7 @@ export function VistaFavoritos({ items = [], sesion = true, urlLista = '/cuenta/
           </li>
         )}
       </ul>
-      <Boton to={urlLista} variante="primario" bloque onClick={onNavegar}>Ver mi lista</Boton>
+      <Boton to={urlLista} variante="primario" bloque onClick={onNavegar}><Texto>Ver mi lista</Texto></Boton>
     </div>
   );
 }
@@ -358,6 +402,8 @@ export function VistaFavoritos({ items = [], sesion = true, urlLista = '/cuenta/
  *  - items: [{ id, nombre, imagen, precio, cantidad, variante, url }]
  *    (sin `url`, la fila lleva al carrito)
  *  - metaEnvio: monto del envío gratis (sin él, no hay barra)
+ *  - urlPagar: adónde va "Pagar"; null = un solo botón, "Ir a pagar", que
+ *    lleva al carrito (así la tienda: ahí se eligen los productos a pagar)
  */
 export function VistaCarrito({ items = [], urlCarrito = '/carrito', urlPagar = '/checkout', metaEnvio, onNavegar }) {
   const totalReal = items.reduce((a, it) => a + it.precio * it.cantidad, 0);
@@ -366,9 +412,9 @@ export function VistaCarrito({ items = [], urlCarrito = '/carrito', urlPagar = '
     return (
       <div className={s.vacio}>
         <ShoppingBag aria-hidden="true" />
-        <h3>Tu carrito está vacío</h3>
-        <p>Explora la tienda y agrega lo que te guste.</p>
-        <Boton to="/tienda" variante="primario" bloque onClick={onNavegar}>Explorar tienda</Boton>
+        <h3><Texto>Tu carrito está vacío</Texto></h3>
+        <p><Texto>Explora la tienda y agrega lo que te guste.</Texto></p>
+        <Boton to="/tienda" variante="primario" bloque onClick={onNavegar}><Texto>Explorar tienda</Texto></Boton>
       </div>
     );
   }
@@ -378,8 +424,8 @@ export function VistaCarrito({ items = [], urlCarrito = '/carrito', urlPagar = '
   return (
     <div className={s.vista}>
       <div className={s.vistaCabeza}>
-        <h3>Mi carrito</h3>
-        <span>{unidades} {unidades === 1 ? 'producto' : 'productos'}</span>
+        <h3><Texto>Mi carrito</Texto></h3>
+        <span><Texto>{unidades === 1 ? '1 producto' : `${unidades} productos`}</Texto></span>
       </div>
       <ul className={s.listaCarrito}>
         {visibles.map((it, i) => (
@@ -403,17 +449,23 @@ export function VistaCarrito({ items = [], urlCarrito = '/carrito', urlPagar = '
       </ul>
       {restantes > 0 && (
         <Enlace to={urlCarrito} className={s.masItems} onClick={onNavegar}>
-          +{restantes} {restantes === 1 ? 'artículo' : 'artículos'} más en tu carrito
+          <Texto>{`+${restantes} ${restantes === 1 ? 'artículo' : 'artículos'} más en tu carrito`}</Texto>
         </Enlace>
       )}
       {metaEnvio > 0 && <BarraEnvioGratis actual={totalReal} meta={metaEnvio} compacta estricto />}
       <div className={s.total}>
-        <span>Total</span>
+        <span><Texto>Total</Texto></span>
         <strong>{soles(total)}</strong>
       </div>
       <div className={s.botones}>
-        <Boton to={urlCarrito} variante="contorno" bloque onClick={onNavegar}>Ver carrito</Boton>
-        <Boton to={urlPagar} variante="primario" bloque iconoFin={<ArrowRight aria-hidden="true" />} onClick={onNavegar}>Pagar</Boton>
+        {urlPagar ? (
+          <>
+            <Boton to={urlCarrito} variante="contorno" bloque onClick={onNavegar}><Texto>Ver carrito</Texto></Boton>
+            <Boton to={urlPagar} variante="primario" bloque iconoFin={<ArrowRight aria-hidden="true" />} onClick={onNavegar}><Texto>Pagar</Texto></Boton>
+          </>
+        ) : (
+          <Boton to={urlCarrito} variante="primario" bloque iconoFin={<ArrowRight aria-hidden="true" />} onClick={onNavegar}><Texto>Ir a pagar</Texto></Boton>
+        )}
       </div>
     </div>
   );

@@ -1023,3 +1023,74 @@
     transform: none;
   }
 }
+
+/* ── Idioma (menú de cuenta) ───────────────────────────── */
+.idiomas {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.idiomasLista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.idioma {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 40px;
+  padding: 0 0.6rem;
+  margin: 0 -0.6rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--dur-rapida) ease;
+}
+
+.idioma:hover,
+.idioma:focus-visible {
+  background: var(--color-hover);
+  outline: none;
+}
+
+.idioma:focus-visible {
+  box-shadow: 0 0 0 2px var(--violet-500);
+}
+
+/* El código del idioma en un sello chico (las banderas en emoji no se ven en Windows). */
+.idiomaCodigo {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 22px;
+  border-radius: 7px;
+  background: var(--color-hover);
+  color: var(--color-text-muted);
+  font-family: var(--fuente-marca);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.idiomaActual {
+  font-weight: 700;
+}
+
+.idiomaActual .idiomaCodigo {
+  background: var(--violet-700);
+  color: #fff;
+}
+
+.idiomaCheck {
+  width: 1rem;
+  height: 1rem;
+  margin-left: auto;
+  color: var(--primary-color);
+}

@@ -496,6 +496,10 @@ function Contenido({ tema, cambiarTema }) {
     window.scrollTo({ top: 0 });
   };
   const [conSesion, setConSesion] = useState(true);
+  // Cabecera: el saldo mientras llega, la invitación a los avisos y el idioma (sin sesión).
+  const [saldoCargando, setSaldoCargando] = useState(false);
+  const [conAvisoPush, setConAvisoPush] = useState(true);
+  const [idioma, setIdioma] = useState('es');
   const [seleccion, setSeleccion] = useState(null); // producto en el selector rápido
   const [tiendaCargando, setTiendaCargando] = useState(false);
   const { historial, noLeidas, marcarLeidas, leer, abrirCentro } = useNotificaciones();
@@ -779,6 +783,9 @@ function Contenido({ tema, cambiarTema }) {
               activo="tienda"
               menuTienda={{ ...MENU_TIENDA, destacado: { titulo: 'Polera Essentials', texto: 'Lo más vendido · -31%', url: '/producto/essentials', imagen: FRENTE_BLANCO } }}
               monedas={saldo}
+              monedasCargando={saldoCargando}
+              avisoPush={conAvisoPush ? { onActivar: () => { setConAvisoPush(false); toast({ tipo: 'exito', titulo: 'Avisos activados' }); } } : undefined}
+              idiomas={{ opciones: [{ codigo: 'es', nombre: 'Español' }, { codigo: 'en', nombre: 'English' }, { codigo: 'pt', nombre: 'Português (Brasil)' }], actual: idioma, onCambiar: setIdioma }}
               notificaciones={historial}
               onLeer={leer}
               onMarcarLeidas={marcarLeidas}
@@ -792,8 +799,10 @@ function Contenido({ tema, cambiarTema }) {
             />
             <div className={s.fila}>
               <Interruptor etiqueta="Con sesión iniciada" descripcion="Cambia el menú de cuenta y favoritos" activo={conSesion} onChange={setConSesion} />
+              <Interruptor etiqueta="Saldo cargando" descripcion="La píldora vacía mientras llega el perfil" activo={saldoCargando} onChange={setSaldoCargando} />
+              <Interruptor etiqueta="Invitar a los avisos" descripcion="En la campana, antes de la lista" activo={conAvisoPush} onChange={setConAvisoPush} />
             </div>
-            <p className={s.nota}>Pasa el ratón por “Tienda”, las monedas, la campana, el corazón, la bolsa y el avatar. Un clic deja el menú fijo; Esc o un clic fuera lo cierran.</p>
+            <p className={s.nota}>Pasa el ratón por “Tienda”, las monedas, la campana, el corazón, la bolsa y el avatar. Un clic deja el menú fijo; Esc o un clic fuera lo cierran. Achica la ventana: hasta 1100 px va en dos filas (tablet) y hasta 760 px, como en el celular. Sin sesión, el menú de cuenta deja elegir el idioma.</p>
           </Panel>
           <div className={s.gridNav}>
             <Panel titulo="Pestañas (Mis pedidos)">

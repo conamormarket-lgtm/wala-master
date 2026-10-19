@@ -2,7 +2,7 @@ import React, { forwardRef, useEffect, useRef, useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { useContador } from './Efectos';
 import { EtiquetaColgante } from './Marca';
-import { Texto } from './Traduccion';
+import { Texto, useTexto } from './Traduccion';
 import s from './Etiquetas.module.css';
 
 /** La moneda de Walá (una sola imagen para todo el kit). */
@@ -103,8 +103,13 @@ export function GananciaMonedas({ monto, children, icono, etiqueta }) {
  * (volarMonedasGanadas de utils/animations), el número sube con cada una que
  * aterriza, como la cabecera de la tienda: escucha 'coins-animation-start',
  * 'coin-reached-target' y 'coins-animation-end'.
+ *  - cargando: mientras llega el saldo, la píldora vacía (nunca un "0" falso)
+ *  - saldo null: se sabe que hay cuenta pero no el número → "–"
  */
-export const SaldoMonedas = forwardRef(function SaldoMonedas({ saldo, ...rest }, ref) {
+export const SaldoMonedas = forwardRef(function SaldoMonedas({ saldo, cargando = false, ...rest }, ref) {
+  const etiquetaCargando = useTexto('Cargando tus monedas');
+  const conSaldo = typeof saldo === 'number';
+  const etiqueta = useTexto(conSaldo ? `Tienes ${saldo} monedas` : 'Tus monedas');
   // El saldo de antes de la última subida: si la página ya sumó las monedas
   // (justo antes de hacerlas volar), el contador parte de ahí.
   const historia = useRef({ actual: saldo, previo: saldo, cuando: 0 });
@@ -127,15 +132,24 @@ export const SaldoMonedas = forwardRef(function SaldoMonedas({ saldo, ...rest },
       window.removeEventListener('coins-animation-end', terminar);
     };
   }, []);
-  const objetivo = vuelo ? Math.min(saldo, vuelo.base + vuelo.llegado) : saldo;
+  const real = conSaldo ? saldo : 0;
+  const objetivo = vuelo ? Math.min(real, vuelo.base + vuelo.llegado) : real;
   const mostrado = useContador(objetivo, vuelo ? 0.28 : 0.9);
+  if (cargando) {
+    return (
+      <span ref={ref} className={`${s.saldo} ${s.saldoCargando} global-coins-target`} role="status" aria-label={etiquetaCargando}>
+        <span className={s.saldoCargandoMoneda} aria-hidden="true" />
+        <span className={s.saldoCargandoNumero} aria-hidden="true" />
+      </span>
+    );
+  }
   return (
     // global-coins-target: adonde vuelan las monedas ganadas (volarMonedasGanadas
     // de utils/animations busca esa clase, como en la cabecera de la tienda).
-    <button ref={ref} type="button" className={`${s.saldo} global-coins-target`} aria-label={`Tienes ${saldo} monedas`} {...rest}>
+    <button ref={ref} type="button" className={`${s.saldo} ${s.saldoAparece} global-coins-target`} aria-label={etiqueta} {...rest}>
       <span className={s.saldoDestello} aria-hidden="true" />
       <Moneda tamano={20} />
-      <span key={vuelo ? vuelo.llegado : 'quieto'} className={[s.saldoNumero, vuelo?.llegado && s.saldoSube].filter(Boolean).join(' ')}>{miles(mostrado)}</span>
+      <span key={vuelo ? vuelo.llegado : 'quieto'} className={[s.saldoNumero, vuelo?.llegado && s.saldoSube].filter(Boolean).join(' ')}>{conSaldo ? miles(mostrado) : '–'}</span>
     </button>
   );
 });

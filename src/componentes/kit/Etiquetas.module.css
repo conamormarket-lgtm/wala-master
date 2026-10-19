@@ -451,3 +451,47 @@
     animation: none;
   }
 }
+
+/* Saldo mientras llega: la píldora quieta con la moneda y el número en gris
+   (sin "0" falso). Al llegar, el saldo aparece con un fundido corto. */
+.saldoCargando {
+  width: 74px;
+  cursor: default;
+  border-color: rgba(217, 119, 6, 0.18);
+  background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 140%);
+  box-shadow: none;
+}
+
+.saldoCargandoMoneda {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(217, 119, 6, 0.22);
+}
+
+.saldoCargandoNumero {
+  width: 28px;
+  height: 10px;
+  border-radius: 5px;
+  background: rgba(217, 119, 6, 0.18);
+}
+
+:global([data-theme='dark']) .saldoCargando {
+  background: rgba(217, 119, 6, 0.12);
+}
+
+.saldoAparece {
+  animation: saldoAparece var(--dur-media, 0.25s) ease-out;
+}
+
+@keyframes saldoAparece {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saldoAparece {
+    animation: none;
+  }
+}

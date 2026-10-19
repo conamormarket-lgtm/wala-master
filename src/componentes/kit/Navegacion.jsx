@@ -1,6 +1,6 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingBag, User, Heart, Bell, ChevronDown } from 'lucide-react';
+import { ShoppingBag, User, Heart, Bell, BellRing, ChevronDown } from 'lucide-react';
 import { Contador, SaldoMonedas } from './Etiquetas';
 import Boton from './Boton';
 import { Buscador } from './Formulario';
@@ -8,11 +8,33 @@ import { RESORTE } from './Efectos';
 import { ListaNotificaciones, HojaInferior } from './Feedback';
 import { Enlace } from './Enlace';
 import Desplegable from './Desplegable';
-import { MenuTienda, MenuMarcas, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito } from './MenusCabecera';
 import { BotonTema } from './piezas/Marco';
 import { Avatar } from './piezas/Avatar';
 import { PanelBusqueda, useBusquedasRecientes } from './piezas/PanelBusqueda';
+import { Texto, useTexto } from './Traduccion';
+import { Cargando } from './Cargando';
 import s from './Navegacion.module.css';
+
+/*
+ * El contenido de los menús llega cuando hace falta: la cabecera está en todas
+ * las páginas y sus menús solo se ven al abrirlos. Se piden en cuanto el
+ * puntero o el foco llegan a la cabecera (precargarMenus), así al abrir uno ya
+ * suelen estar.
+ */
+const cargarMenus = () => import('./MenusCabecera');
+const precargarMenus = () => { cargarMenus().catch(() => {}); };
+const perezoso = (nombre) => lazy(() => cargarMenus().then((m) => ({ default: m[nombre] })));
+const MenuTienda = perezoso('MenuTienda');
+const MenuMarcas = perezoso('MenuMarcas');
+const AyudaMonedas = perezoso('AyudaMonedas');
+const MenuCuenta = perezoso('MenuCuenta');
+const VistaFavoritos = perezoso('VistaFavoritos');
+const VistaCarrito = perezoso('VistaCarrito');
+
+/** Un menú mientras llega su contenido (casi nunca se ve: se precarga). */
+function ConMenu({ children }) {
+  return <Suspense fallback={<div className={s.menuLlegando}><Cargando tamano="sm" /></div>}>{children}</Suspense>;
+}
 
 /**
  * Logo de marca: las mismas dos máscaras que el Header (forma con el violeta
@@ -38,59 +60,113 @@ export function Logo({ alto = 32 }) {
  * carrito navegan directo. Solo hay un menú abierto a la vez.
  *
  * Todo llega por props (en la app: AuthContext, CartContext, Firestore…):
- *  - enlaces: [{ id, texto, url, menu?: 'tienda' | 'marcas' }]   activo: id actual
+ *  - enlaces: [{ id, texto, url, menu?: 'tienda' | 'marcas' | 'lista', props?, traducir? }]
+ *    · menu 'lista': un menú de enlaces (MenuTienda con `props.categorias`
+ *      como enlaces y su `titulo`); `props` sirve también para dar a cada
+ *      menú sus propios datos.
+ *    · los textos pasan por la traducción salvo `traducir: false` (la tienda
+ *      ya los tradujo con su diccionario)
+ *  - activo: id del enlace de la página
+ *  - onAbrirMenu(id): se abrió el menú de un enlace (p. ej. para pedir las
+ *    categorías solo entonces)
  *  - menuTienda: props de <MenuTienda>  · menuMarcas: props de <MenuMarcas>
- *  - tema: 'claro' | 'noche' + onTema → botón de tema (solo escritorio)
- *  - monedas, notificaciones (+ onLeer, onMarcarLeidas, onVerTodas)
- *  - usuario, gruposCuenta, promoCuenta, onCerrarSesion
- *  - favoritos: [{ id, nombre, imagen }]   carrito: [{ id, nombre, imagen, precio, cantidad, variante, url }]
- *  - metaEnvio: monto del envío gratis (barra en el menú del carrito)
+ *  - tema: 'claro' | 'noche' + onTema → botón de tema (no en el celular)
+ *  - monedas (null = aún no se sabe: "–"), monedasCargando (la píldora vacía)
+ *  - notificaciones: [{ id, titulo, texto, fecha, leida, tipo, imagen, url }]
+ *    + onLeer(id, notificacion) (con `url` el menú se cierra), onMarcarLeidas,
+ *    onVerTodas (sin ella no hay botón), limiteNotificaciones (5),
+ *    vacioNotificaciones: { titulo, texto },
+ *    avisoPush: { onActivar, activando } → invitar a activar los avisos
+ *  - usuario, gruposCuenta, promoCuenta, onCerrarSesion, textosCuenta,
+ *    idiomas (ver MenuCuenta), cuenta: false = sin el botón de cuenta (la app)
+ *  - estadoLogin: el state del router para volver después de entrar
+ *  - favoritos: [{ id, nombre, imagen }], urlFavoritos, textosFavoritos
+ *  - carrito: [{ id, nombre, imagen, precio, cantidad, variante, url }],
+ *    urlPagar (null = "Ir a pagar" al carrito), metaEnvio (barra del envío gratis)
  *  - onBuscar(termino): ir a los resultados
  *  - buscarSugerencias(texto) → promesa de sugerencias (PanelBusqueda): con
  *    ella, el buscador abre el panel (recientes y sugerencias) debajo del
  *    campo; en el celular, una hoja con su propio campo. Sin ella, solo Enter.
  *  - ideasBusqueda: términos para "Lo más buscado" en el panel
+ *  - celular: true / false fuerza la versión de celular (la tienda la decide
+ *    con el mismo corte que la barra inferior); sin pasarla, se mide.
  *
- * Monedas y notificaciones solo aparecen con sesión. En el celular la
- * cabecera tiene dos filas (como la tienda): logo y accesos arriba, el
- * buscador abajo; la cuenta va en la barra inferior.
+ * Tres formas según su ancho (se mide la caja, así en la vista de celular del
+ * editor también se ve como en un celular):
+ *  - ancha (más de 1100 px): una fila, el buscador entre enlaces y accesos.
+ *  - mediana (761 a 1100, tablet): dos filas; arriba el logo y los accesos,
+ *    abajo los enlaces y el buscador. Nada se queda fuera de la pantalla.
+ *  - celular (hasta 760): dos filas, logo y accesos arriba y el buscador
+ *    abajo; sin enlaces ni cuenta (están en la barra inferior).
+ * Monedas y notificaciones solo aparecen con sesión.
  */
 export function Cabecera({
   enlaces = ENLACES_POR_DEFECTO,
   activo = 'tienda',
+  onAbrirMenu,
   menuTienda = {},
   menuMarcas = {},
   tema,
   onTema,
   monedas = 0,
+  monedasCargando = false,
   notificaciones = [],
   onLeer,
   onMarcarLeidas,
   onVerTodas,
+  limiteNotificaciones = 5,
+  vacioNotificaciones,
+  avisoPush,
   usuario = null,
   gruposCuenta = [],
   promoCuenta,
   onCerrarSesion,
+  textosCuenta,
+  idiomas,
+  cuenta = true,
+  estadoLogin,
   favoritos = [],
+  urlFavoritos = '/cuenta/wishlist',
+  textosFavoritos,
   carrito = [],
+  urlPagar = '/checkout',
   metaEnvio,
   onBuscar,
   buscarSugerencias,
   ideasBusqueda = [],
   placeholder = 'Buscar productos y marcas',
+  celular,
 }) {
   const uid = useId();
+  const marcoRef = useRef(null);
   const cajaRef = useRef(null);
-  const busqueda = useBuscadorConPanel({ buscarSugerencias, onBuscar, cajaRef, ideas: ideasBusqueda });
+  const forma = useFormaCabecera(marcoRef, celular);
+  const busqueda = useBuscadorConPanel({ buscarSugerencias, onBuscar, cajaRef, ideas: ideasBusqueda, enCelular: forma === 'celular' });
   const [sobre, setSobre] = useState(null);
   const [abierto, setAbierto] = useState(null);
   const noLeidas = notificaciones.filter((n) => !n.leida).length;
   const enCarrito = carrito.reduce((a, it) => a + it.cantidad, 0);
 
-  // Un solo menú abierto a la vez.
-  const control = (clave) => ({
+  const t = {
+    inicio: useTexto('Walá, inicio'),
+    principal: useTexto('Principal'),
+    sugerencias: useTexto('Sugerencias de búsqueda'),
+    buscar: useTexto('Buscar'),
+    placeholder: useTexto(placeholder),
+    notificaciones: useTexto('Notificaciones'),
+    campana: useTexto(`Notificaciones (${noLeidas} sin leer)`),
+    favoritos: useTexto(`Favoritos (${favoritos.length})`),
+    carrito: useTexto(`Carrito (${enCarrito})`),
+    cuenta: useTexto('Mi cuenta'),
+  };
+
+  // Un solo menú abierto a la vez. `alAbrir` avisa cuando se abre (el menú de un enlace).
+  const control = (clave, alAbrir) => ({
     abierto: abierto === clave,
-    onAbiertoChange: (v) => setAbierto((prev) => (v ? clave : prev === clave ? null : prev)),
+    onAbiertoChange: (v) => {
+      setAbierto((prev) => (v ? clave : prev === clave ? null : prev));
+      if (v) alAbrir?.();
+    },
   });
 
   const pildoras = (id) => (
@@ -99,27 +175,34 @@ export function Cabecera({
       {activo === id && <motion.span layoutId={`${uid}-activo`} className={s.subrayado} transition={RESORTE} />}
     </>
   );
+  const textoDe = (e) => (e.traducir === false ? e.texto : <Texto>{e.texto}</Texto>);
 
   return (
-    <div className={s.cabeceraCaja}>
-    <header className={s.cabecera}>
-      <Enlace to="/" className={s.logo} aria-label="Walá, inicio">
+    <div className={s.cabeceraCaja} ref={marcoRef}>
+    <header
+      className={[s.cabecera, forma === 'celular' && s.celular, forma === 'mediana' && s.mediana].filter(Boolean).join(' ')}
+      onPointerEnter={precargarMenus}
+      onFocusCapture={precargarMenus}
+      onTouchStart={precargarMenus}
+    >
+      <Enlace to="/" className={s.logo} aria-label={t.inicio}>
         <Logo alto={36} />
       </Enlace>
 
-      <nav className={s.enlaces} aria-label="Principal" onMouseLeave={() => setSobre(null)}>
+      <nav className={s.enlaces} aria-label={t.principal} onMouseLeave={() => setSobre(null)}>
         {enlaces.map((e) => {
           const clases = [s.enlace, activo === e.id && s.enlaceActivo].filter(Boolean).join(' ');
           const menu = MENUS[e.menu];
           if (menu) {
-            const props = e.menu === 'tienda' ? menuTienda : menuMarcas;
+            const props = e.props || (e.menu === 'tienda' ? menuTienda : e.menu === 'marcas' ? menuMarcas : {});
+            const clave = `menu-${e.id}`;
             return (
               <Desplegable
                 key={e.id}
                 titulo={e.texto}
                 alinear="izquierda"
                 ancho={menu.ancho(props)}
-                {...control(e.menu)}
+                {...control(clave, () => onAbrirMenu?.(e.id))}
                 disparador={(dp) => (
                   <button
                     type="button"
@@ -131,13 +214,13 @@ export function Cabecera({
                   >
                     {pildoras(e.id)}
                     <span className={s.enlaceTexto}>
-                      {e.texto}
-                      <ChevronDown className={[s.chevron, abierto === e.menu && s.chevronAbierto].filter(Boolean).join(' ')} aria-hidden="true" />
+                      {textoDe(e)}
+                      <ChevronDown className={[s.chevron, abierto === clave && s.chevronAbierto].filter(Boolean).join(' ')} aria-hidden="true" />
                     </span>
                   </button>
                 )}
               >
-                {(cerrar) => React.createElement(menu.Componente, { ...props, onNavegar: cerrar })}
+                {(cerrar) => <ConMenu>{React.createElement(menu.Componente, { ...props, onNavegar: cerrar })}</ConMenu>}
               </Desplegable>
             );
           }
@@ -151,30 +234,35 @@ export function Cabecera({
               onFocus={() => setSobre(e.id)}
             >
               {pildoras(e.id)}
-              <span className={s.enlaceTexto}>{e.texto}</span>
+              <span className={s.enlaceTexto}>{textoDe(e)}</span>
             </Enlace>
           );
         })}
       </nav>
 
       <div className={s.buscadorCaja} ref={cajaRef}>
-        <Buscador placeholder={placeholder} onBuscar={busqueda.activo ? busqueda.buscar : onBuscar} {...busqueda.campo} />
+        <Buscador placeholder={t.placeholder} onBuscar={busqueda.activo ? busqueda.buscar : onBuscar} {...busqueda.campo} />
         {busqueda.abierto && !busqueda.enHoja && (
-          <div className={s.panelBusqueda} role="dialog" aria-label="Sugerencias de búsqueda">
+          <div className={s.panelBusqueda} role="dialog" aria-label={t.sugerencias}>
             <PanelBusqueda {...busqueda.panel} />
           </div>
         )}
       </div>
       {busqueda.activo && (
-        <HojaInferior abierta={busqueda.abierto && busqueda.enHoja} onCerrar={busqueda.cerrar} titulo="Buscar">
+        <HojaInferior abierta={busqueda.abierto && busqueda.enHoja} onCerrar={busqueda.cerrar} titulo={t.buscar}>
           <PanelBusqueda {...busqueda.panel} conCampo />
         </HojaInferior>
       )}
 
+      {/* En la forma mediana las acciones van arriba y esto parte la fila. */}
+      <span className={s.salto} aria-hidden="true" />
+
       <div className={s.acciones}>
         {onTema && <span className={s.ocultarMovil}><BotonTema tema={tema} onCambiar={onTema} /></span>}
 
-        {usuario && (
+        {usuario && (monedasCargando ? (
+          <SaldoMonedas cargando />
+        ) : (
           <Desplegable
             alTocar="globo"
             variante="globo"
@@ -183,13 +271,13 @@ export function Cabecera({
             {...control('monedas')}
             disparador={(props) => <SaldoMonedas saldo={monedas} {...props} />}
           >
-            {(cerrar) => <AyudaMonedas saldo={monedas} onNavegar={cerrar} />}
+            {(cerrar) => <ConMenu><AyudaMonedas saldo={monedas} onNavegar={cerrar} /></ConMenu>}
           </Desplegable>
-        )}
+        ))}
 
         {usuario && (
           <Desplegable
-            titulo="Notificaciones"
+            titulo={t.notificaciones}
             ancho={370}
             {...control('notificaciones')}
             disparador={(props) => (
@@ -198,7 +286,7 @@ export function Cabecera({
                 variante="fantasma"
                 {...props}
                 className={[s.iconoBtn, s.campana, abierto === 'notificaciones' && s.iconoActivo].filter(Boolean).join(' ')}
-                aria-label={`Notificaciones (${noLeidas} sin leer)`}
+                aria-label={t.campana}
                 insignia={<Contador valor={noLeidas} />}
               >
                 <Bell aria-hidden="true" />
@@ -208,17 +296,33 @@ export function Cabecera({
             {(cerrar) => (
               <div className={s.bandeja}>
                 <div className={s.bandejaCabeza}>
-                  <span>{noLeidas ? `${noLeidas} sin leer` : 'Todo al día'}</span>
-                  {noLeidas > 0 && <Boton variante="fantasma" tamano="sm" onClick={onMarcarLeidas}>Marcar leídas</Boton>}
+                  <span><Texto>{noLeidas ? `${noLeidas} sin leer` : 'Todo al día'}</Texto></span>
+                  {noLeidas > 0 && <Boton variante="fantasma" tamano="sm" onClick={onMarcarLeidas}><Texto>Marcar leídas</Texto></Boton>}
                 </div>
+                {avisoPush && (
+                  <div className={s.avisoPush}>
+                    <BellRing className={s.avisoPushIcono} aria-hidden="true" />
+                    <p><Texto>Activa los avisos y te contamos cuando tu pedido avance o haya una oferta para ti.</Texto></p>
+                    <Boton variante="primario" tamano="sm" cargando={avisoPush.activando} onClick={avisoPush.onActivar}>
+                      <Texto>{avisoPush.activando ? 'Activando…' : 'Activar avisos'}</Texto>
+                    </Boton>
+                  </div>
+                )}
                 <div className={s.bandejaLista}>
-                  <ListaNotificaciones items={notificaciones} limite={5} onAbrir={(n) => onLeer?.(n.id)} />
+                  <ListaNotificaciones
+                    items={notificaciones}
+                    limite={limiteNotificaciones}
+                    vacio={vacioNotificaciones}
+                    onAbrir={(n) => { onLeer?.(n.id, n); if (n.url) cerrar(); }}
+                  />
                 </div>
-                <div className={s.bandejaPie}>
-                  <Boton variante="contorno" bloque onClick={() => { cerrar(); onVerTodas?.(); }}>
-                    Ver todas las notificaciones
-                  </Boton>
-                </div>
+                {onVerTodas && (
+                  <div className={s.bandejaPie}>
+                    <Boton variante="contorno" bloque onClick={() => { cerrar(); onVerTodas(); }}>
+                      <Texto>Ver todas las notificaciones</Texto>
+                    </Boton>
+                  </div>
+                )}
               </div>
             )}
           </Desplegable>
@@ -231,19 +335,19 @@ export function Cabecera({
             {...control('favoritos')}
             disparador={(props) => (
               <Boton
-                to="/cuenta/wishlist"
+                to={urlFavoritos}
                 soloIcono
                 variante="fantasma"
                 {...props}
                 className={[s.iconoBtn, s.corazon, abierto === 'favoritos' && s.iconoActivo].filter(Boolean).join(' ')}
-                aria-label={`Favoritos (${favoritos.length})`}
+                aria-label={t.favoritos}
                 insignia={<Contador valor={favoritos.length} />}
               >
                 <Heart aria-hidden="true" />
               </Boton>
             )}
           >
-            {(cerrar) => <VistaFavoritos items={favoritos} sesion={Boolean(usuario)} onNavegar={cerrar} />}
+            {(cerrar) => <ConMenu><VistaFavoritos items={favoritos} sesion={Boolean(usuario)} textos={textosFavoritos} estadoLogin={estadoLogin} onNavegar={cerrar} /></ConMenu>}
           </Desplegable>
         </span>
 
@@ -258,42 +362,81 @@ export function Cabecera({
               variante="fantasma"
               {...props}
               className={[s.iconoBtn, s.bolsa, abierto === 'carrito' && s.iconoActivo].filter(Boolean).join(' ')}
-              aria-label={`Carrito (${enCarrito})`}
+              aria-label={t.carrito}
               insignia={<Contador valor={enCarrito} />}
             >
               <ShoppingBag aria-hidden="true" />
             </Boton>
           )}
         >
-          {(cerrar) => <VistaCarrito items={carrito} metaEnvio={metaEnvio} onNavegar={cerrar} />}
+          {(cerrar) => <ConMenu><VistaCarrito items={carrito} metaEnvio={metaEnvio} urlPagar={urlPagar} onNavegar={cerrar} /></ConMenu>}
         </Desplegable>
 
+        {cuenta && (
         <span className={s.ocultarMovil}>
         <Desplegable
-          titulo="Mi cuenta"
+          titulo={t.cuenta}
           ancho={340}
           {...control('cuenta')}
           disparador={(props) => (
-            <button type="button" {...props} className={s.avatar} aria-label="Mi cuenta">
+            <button type="button" {...props} className={s.avatar} aria-label={t.cuenta}>
               <Avatar className={s.avatarCara} nombre={usuario?.nombre} imagen={usuario?.avatar}><User aria-hidden="true" /></Avatar>
             </button>
           )}
         >
           {(cerrar) => (
-            <MenuCuenta usuario={usuario} grupos={gruposCuenta} promo={promoCuenta} onCerrarSesion={onCerrarSesion} onNavegar={cerrar} />
+            <ConMenu>
+            <MenuCuenta
+              usuario={usuario}
+              grupos={gruposCuenta}
+              promo={promoCuenta}
+              textos={textosCuenta}
+              idiomas={idiomas}
+              estadoLogin={estadoLogin}
+              onCerrarSesion={onCerrarSesion}
+              onNavegar={cerrar}
+            />
+            </ConMenu>
           )}
         </Desplegable>
         </span>
+        )}
       </div>
     </header>
     </div>
   );
 }
 
+/*
+ * La forma de la cabecera según el ancho de su caja: 'celular' (hasta 760),
+ * 'mediana' (hasta 1100) o 'ancha'. Se mide antes de pintar (sin saltos) y
+ * cada vez que cambia. `celular` (true / false) lo decide quien la usa.
+ */
+const CORTE_CELULAR = 760;
+const CORTE_MEDIANA = 1100;
+function useFormaCabecera(marcoRef, celular) {
+  const [ancho, setAncho] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 1280));
+  useLayoutEffect(() => {
+    const el = marcoRef.current;
+    if (!el) return undefined;
+    const medir = () => setAncho(el.offsetWidth || window.innerWidth);
+    medir();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const observador = new ResizeObserver(medir);
+    observador.observe(el);
+    return () => observador.disconnect();
+  }, [marcoRef]);
+  if (celular === true) return 'celular';
+  if (celular === undefined && ancho <= CORTE_CELULAR) return 'celular';
+  return ancho <= CORTE_MEDIANA ? 'mediana' : 'ancha';
+}
+
 /** Menús que puede abrir un enlace de la cabecera (enlace.menu). */
 const MENUS = {
   tienda: { Componente: MenuTienda, ancho: (p) => (p.destacado ? 600 : 420) },
   marcas: { Componente: MenuMarcas, ancho: () => 500 },
+  // Un desplegable de enlaces que arma el admin (o uno de colección).
+  lista: { Componente: MenuTienda, ancho: () => 380 },
 };
 
 const ENLACES_POR_DEFECTO = [
@@ -340,7 +483,7 @@ export function Pestanas({ opciones, valor, onChange, etiqueta }) {
    lo escrito, las sugerencias con un respiro entre teclas, las búsquedas
    recientes y dónde se abre (debajo del campo, o en una hoja si la cabecera
    está en su versión de celular). */
-function useBuscadorConPanel({ buscarSugerencias, onBuscar, cajaRef, ideas = [] }) {
+function useBuscadorConPanel({ buscarSugerencias, onBuscar, cajaRef, ideas = [], enCelular = false }) {
   const activo = typeof buscarSugerencias === 'function';
   const [abierto, setAbierto] = useState(false);
   const [enHoja, setEnHoja] = useState(false);
@@ -381,12 +524,11 @@ function useBuscadorConPanel({ buscarSugerencias, onBuscar, cajaRef, ideas = [] 
     onBuscar?.(limpio);
   };
   const abrir = (e) => {
-    // La cabecera pasa a dos filas (celular) a los 760 px de ancho.
-    const angosta = (cajaRef.current?.closest('header')?.offsetWidth || 1000) <= 760;
+    // En la forma de celular, el panel es una hoja con su propio campo.
     releer();
-    setEnHoja(angosta);
+    setEnHoja(enCelular);
     setAbierto(true);
-    if (angosta) e.target.blur();
+    if (enCelular) e.target.blur();
   };
 
   return {
