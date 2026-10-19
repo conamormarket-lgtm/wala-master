@@ -6,7 +6,7 @@ import { Sello, Trazo } from '../Marca';
 import { BloqueSeccion } from '../Seccion';
 import { EsqueletoPagina } from '../Esqueletos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
-import { PasoEstudio } from '../piezas/Estudio';
+import { PasoEstudio } from '../piezas/PasoEstudio';
 import { TarjetaRegalo, FechaEntrega, SobreRegalo } from '../piezas/Regalar';
 import { Texto, useTexto } from '../Traduccion';
 import s from './Regalar.module.css';

@@ -1,9 +1,8 @@
+import { generarArchivosCreacion } from './generarArchivosCreacion';
 import { saveDesign } from '../../services/designs';
-import { subirArchivoImpresion, subirVistaPrevia } from '../../services/crearArchivos';
 import {
-  leerPrendaBase, colorDisponible, vistasDelColor, medidaZona, cargarImagen, fotoDeVista, fondoDeVista,
+  leerPrendaBase, colorDisponible, vistasDelColor,
 } from '../../utils/prendaBase';
-import { asegurarFuentesDe, renderizarImpresion, renderizarVistaPrevia, componerVistas } from './renderDiseno';
 
 /**
  * Una prenda de un diseño de la comunidad, tal cual, como creación del
@@ -38,41 +37,7 @@ export async function crearDesdePlantilla({ uid, prenda, pieza, talla, basadoEn,
     if (Array.isArray(lista) && lista.length) capas[zonaId] = lista;
   });
   if (!Object.keys(capas).length) throw new Error(`"${pieza?.nombre || prenda.name}" no tiene diseño.`);
-  await asegurarFuentesDe(capas);
-
-  const srcDe = (capa) => capa.src;
-  const renderizarVista = async (v) => {
-    const img = await cargarImagen(fotoDeVista(v, color));
-    return renderizarVistaPrevia({
-      fuente: fondoDeVista(img, v, color), anchoImg: img.naturalWidth, altoImg: img.naturalHeight,
-      vista: v, capasPorZona: capas, srcDe,
-    });
-  };
-
-  const archivosImpresion = [];
-  const vistasPrevias = [];
-  const blobsPrevias = {};
-  for (const v of vistas.filter((x) => x.zonas.some((z) => capas[z.id]))) {
-    const zonasConCapas = v.zonas.filter((z) => capas[z.id]);
-    for (const z of zonasConCapas) {
-      onPaso(`Preparando ${prenda.name} (${v.nombre} · ${z.nombre})…`);
-      const medida = medidaZona(z, v);
-      const { blob, ancho, alto } = await renderizarImpresion(capas[z.id], z, srcDe, medida);
-      const url = await subirArchivoImpresion(uid, blob, z.id);
-      archivosImpresion.push({
-        vista: z.id, vistaId: v.id, nombre: `${v.nombre} · ${z.nombre}`, url, ancho, alto,
-        ...(medida && { anchoCm: medida.anchoCm, altoCm: medida.altoCm }),
-      });
-    }
-    const previa = await renderizarVista(v);
-    blobsPrevias[v.id] = previa;
-    const url = await subirVistaPrevia(uid, previa, v.id);
-    vistasPrevias.push({ vista: v.id, nombre: v.nombre, url, zonas: zonasConCapas.map((z) => z.id) });
-  }
-  // Todos los lados en una imagen (con y sin diseño), como el estudio.
-  const lados = [];
-  for (const v of vistas) lados.push({ nombre: v.nombre, blob: blobsPrevias[v.id] || await renderizarVista(v) });
-  const imagenConjunta = await subirVistaPrevia(uid, await componerVistas(lados, { titulo: `${prenda.name} · ${color.nombre}` }), 'conjunto');
+  const { archivosImpresion, vistasPrevias, imagenConjunta } = await generarArchivosCreacion({ uid, prenda, color, vistas, capas, onPaso });
 
   const creacion = {
     productId: prenda.id,

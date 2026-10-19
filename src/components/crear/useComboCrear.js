@@ -11,7 +11,6 @@ import { guardarMiCombo } from '../../services/misCombos';
 import { obtenerDisenoComunidad, registrarUsoComunidad } from '../../services/comunidad';
 import { creacionLista } from '../../pages/Crear/creacionCarrito';
 import { leerArmado, guardarArmado, olvidarArmado, preciosDeCombo, itemDeCombo, leerMetaArmado, guardarMetaArmado } from '../../pages/Crear/comboCrear';
-import { crearDesdePlantilla } from '../../pages/Crear/crearDesdePlantilla';
 import { esperarGuardados } from '../../pages/Crear/borradoresCache';
 import { tallasPara, useFotosDePiezas } from '../../pages/Crear/fotosCombo';
 
@@ -363,6 +362,7 @@ export default function useComboCrear() {
       try {
         for (const [k, p] of deComunidad.entries()) {
           setPreparando(`Preparando tu combo (prenda ${k + 1} de ${deComunidad.length})…`);
+          const { crearDesdePlantilla } = await import('../../pages/Crear/crearDesdePlantilla');
           finales[p.i] = await crearDesdePlantilla({
             uid: user.uid, prenda: p.prenda, pieza: p.plantilla, talla: p.talla, basadoEn: plantillaId,
             combo: { id, nombre: combo.name || '', pieza: p.i },

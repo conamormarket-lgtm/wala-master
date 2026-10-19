@@ -1,6 +1,5 @@
 import { useQueries } from '@tanstack/react-query';
 import { leerPrendaBase, tallasDeColor, fotoDeVista, fondoDeVista, cargarImagen } from '../../utils/prendaBase';
-import { renderizarVistaPrevia } from './renderDiseno';
 
 /*
  * Las fotos y las tallas de las prendas de un combo de Crear (/combo/:id).
@@ -78,6 +77,7 @@ export const useFotosDePiezas = (piezas) => {
       queryKey: ['prenda-lisa', b.p.prenda.id, b.color.id, v.id],
       staleTime: Infinity,
       queryFn: async () => {
+        const { renderizarVistaPrevia } = await import('./renderDiseno');
         const img = await cargarImagen(fotoDeVista(v, b.color));
         const blob = await renderizarVistaPrevia({
           fuente: fondoDeVista(img, v, b.color), anchoImg: img.naturalWidth, altoImg: img.naturalHeight,

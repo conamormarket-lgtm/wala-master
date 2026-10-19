@@ -31,6 +31,8 @@ export { CamposDatosPersonales, validarPerfil, tipoDocumentoPara, TIPOS_DOCUMENT
 export { CampoContrasena, RequisitosContrasena, requisitosContrasena, contrasenaValida, BotonGoogle, SeparadorAcceso } from './Acceso';
 export { PortadaCrear, PASOS_CREAR, textoPara, FilaPiezaCombo } from './Crear';
 export { LienzoPrenda, BarraLienzo, PasoEstudio, PasosEstudio, PanelCapa } from './Estudio';
+export { CompraEstudio } from './CompraEstudio';
+export { HojasEstudio } from './HojasEstudio';
 export { OpcionesProducto, opcionesDe } from './OpcionesProducto';
 export { CamposDireccion, cambiarDireccion, documentoDe, CIUDADES, DOCS_DIRECCION } from './Direccion';
 export { PasosCompra, FilaMonedas, CampoCupon, ResumenCompra, MetodoPago } from './Checkout';

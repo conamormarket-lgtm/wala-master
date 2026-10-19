@@ -18,9 +18,9 @@ function conTextoEstudio(Componente) {
   };
 }
 
-export const CampoEstudio = conTextoEstudio(Campo);
-export const CantidadEstudio = conTextoEstudio(Cantidad);
-export const DeslizadorEstudio = conTextoEstudio(Deslizador);
-export const SelectorColorEstudio = conTextoEstudio(SelectorColor);
-export const CasillaEstudio = conTextoEstudio(Casilla);
-export const InterruptorEstudio = conTextoEstudio(Interruptor);
+export const CampoEstudio = /* @__PURE__ */ conTextoEstudio(Campo);
+export const CantidadEstudio = /* @__PURE__ */ conTextoEstudio(Cantidad);
+export const DeslizadorEstudio = /* @__PURE__ */ conTextoEstudio(Deslizador);
+export const SelectorColorEstudio = /* @__PURE__ */ conTextoEstudio(SelectorColor);
+export const CasillaEstudio = /* @__PURE__ */ conTextoEstudio(Casilla);
+export const InterruptorEstudio = /* @__PURE__ */ conTextoEstudio(Interruptor);

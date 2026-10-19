@@ -8,7 +8,7 @@ import { Trazo, Sello, Puntos, Destello } from '../Marca';
 import { Texto, useTexto } from '../Traduccion';
 import { BloqueSeccion } from '../Seccion';
 import { EsqueletoPagina } from '../Esqueletos';
-import { PasoEstudio } from '../piezas/Estudio';
+import { PasoEstudio } from '../piezas/PasoEstudio';
 import { ListaEleccion } from '../piezas/Cuenta';
 import { CamposDatosPersonales, validarPerfil } from '../piezas/DatosPersonales';
 import { CabezaLegal, DatosProveedor, CodigoCopiable, PasosAtencion, AvanceHoja } from '../piezas/Legales';

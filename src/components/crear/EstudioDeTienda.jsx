@@ -1,3 +1,5 @@
+import { firmaDiseno, firmaBorrador, capasParaGuardar, archivosVigentes } from '../../pages/Crear/estadoEstudio';
+import { generarArchivosCreacion } from '../../pages/Crear/generarArchivosCreacion';
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,7 +15,7 @@ import { getPrendaBase } from '../../services/prendasBase';
 import { getDesignById, saveDesign, guardarTallaCreacion, renombrarCreacion } from '../../services/designs';
 import { obtenerDisenoComunidad, registrarUsoComunidad } from '../../services/comunidad';
 import {
-  prepararImagenCliente, subirImagenCliente, subirArchivoImpresion, subirVistaPrevia,
+  prepararImagenCliente, subirImagenCliente,
 } from '../../services/crearArchivos';
 import {
   UNIDADES_ZONA, leerPrendaBase, precioPersonalizado, zonasConDiseno, listarZonas,
@@ -22,7 +24,7 @@ import {
 } from '../../utils/prendaBase';
 import {
   FUENTES, asegurarFuente, asegurarFuentesDe, altoEnUnidades, crearObjeto, leerTransformacion,
-  propiedadesTexto, renderizarImpresion, renderizarVistaPrevia, componerVistas, transformDeZona, rectDeZona,
+  propiedadesTexto, renderizarVistaPrevia, componerVistas, transformDeZona, rectDeZona,
   recorteDeZona, seSaleDeZona, ubicacion, desdeLienzo, aLienzo, curvarTexto,
 } from '../../pages/Crear/renderDiseno';
 const RecortarFoto = lazy(() => import('../../componentes/kit/piezas/RecortarFoto').then((m) => ({ default: m.RecortarFoto })));
@@ -59,7 +61,6 @@ const IMAN_DEDO_PX = 10;
 const ROSA = '#EC4899';
 // Zoom máximo de la prenda (8 = 800 %).
 const ZOOM_MAX = 8;
-
 
 const nuevoId = () => `capa_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 const claveBorrador = (id) => `crear_borrador_${id}`;
@@ -103,24 +104,6 @@ const estilizar = (obj) => {
 };
 
 /**
- * Firma del diseño, para saber si cambió desde lo último guardado: capas y
- * color. La talla no es parte del diseño (se guarda sola). No cuenta lo que solo dice si una imagen terminó de
- * subirse, ni el orden de los campos, ni un false que equivale a no tenerlo.
- */
-const firmaDiseno = (capasPorZona, colorId) => {
-  const capas = Object.keys(capasPorZona || {}).sort()
-    .filter((zId) => capasPorZona[zId]?.length)
-    .map((zId) => [zId, capasPorZona[zId]]);
-  return JSON.stringify({ capas, colorId: colorId || null }, (k, v) => {
-    if (k === 'src' || k === 'subiendo' || v === false) return undefined;
-    if (v && typeof v === 'object' && !Array.isArray(v)) {
-      return Object.fromEntries(Object.keys(v).sort().map((key) => [key, v[key]]));
-    }
-    return v;
-  });
-};
-
-/**
  * Selección de varios: se mueve y cambia de tamaño en bloque, sin girar
  * (cada diseño vive en su zona y su giro se maneja de a uno).
  */
@@ -129,21 +112,6 @@ const estilizarGrupo = (sel) => {
   sel.set({ lockRotation: true, borderDashArray: [6, 4] });
   sel.setControlsVisibility({ mtr: false });
 };
-
-/** Quita lo que solo sirve mientras se edita (marcas de subida) y las zonas vacías. */
-const capasParaGuardar = (capasPorZona) => {
-  const out = {};
-  Object.entries(capasPorZona || {}).forEach(([zonaId, capas]) => {
-    const limpias = (capas || [])
-      .filter((c) => c.type !== 'image' || (c.src && !c.src.startsWith('blob:')))
-      .map(({ subiendo, ...resto }) => resto);
-    if (limpias.length) out[zonaId] = limpias;
-  });
-  return out;
-};
-
-// El resorte del kit (Efectos.RESORTE): lo elegido viaja de una opción a otra.
-
 
 const EstudioDeTienda = () => {
   const { id } = useParams();
@@ -325,6 +293,7 @@ const EstudioDeTienda = () => {
   const multiRef = useRef([]);
   const localSrcRef = useRef(new Map());
   const tokenRef = useRef(0);
+  const textosTrasDibujoRef = useRef(new Set());
   const inputArchivoRef = useRef(null);
   const editorRef = useRef(null);
   const animacionZoomRef = useRef(0);
@@ -338,6 +307,8 @@ const EstudioDeTienda = () => {
   const basadoEnRef = useRef(null);
   const esBorradorRef = useRef(false);
   const guardandoRef = useRef(false);
+  const operacionRef = useRef(false);
+  const creacionGuardadaRef = useRef(null);
   const colaBorradorRef = useRef(Promise.resolve());
   const timerBorradorRef = useRef(null);
   const firmaBorradorRef = useRef(null);
@@ -697,15 +668,24 @@ const EstudioDeTienda = () => {
     panel.style.maxHeight = `${Math.max(360, window.innerHeight - arriba - 16)}px`;
   }, []);
   useEffect(() => {
-    window.addEventListener('scroll', ajustarPanel, { passive: true });
-    window.addEventListener('resize', ajustarPanel);
-    return () => {
-      window.removeEventListener('scroll', ajustarPanel);
-      window.removeEventListener('resize', ajustarPanel);
+    let cuadro = 0;
+    const programar = () => {
+      if (cuadro) return;
+      cuadro = requestAnimationFrame(() => { cuadro = 0; ajustarPanel(); });
     };
-  }, [ajustarPanel]);
-  // Los avisos de arriba (sesión, borrador…) aparecen y desaparecen.
-  useEffect(() => { ajustarPanel(); });
+    const observador = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(programar);
+    [panelRef.current, areaLienzoRef.current, areaLienzoRef.current?.closest('[data-componente="PaginaEstudio"]')]
+      .filter(Boolean).forEach((elemento) => observador?.observe(elemento));
+    window.addEventListener('scroll', programar, { passive: true });
+    window.addEventListener('resize', programar);
+    programar();
+    return () => {
+      cancelAnimationFrame(cuadro);
+      observador?.disconnect();
+      window.removeEventListener('scroll', programar);
+      window.removeEventListener('resize', programar);
+    };
+  }, [ajustarPanel, listo]);
 
   // ── Pantalla completa en el celular (oculta header, footer y barra inferior)
   useEffect(() => {
@@ -726,7 +706,6 @@ const EstudioDeTienda = () => {
       if (cancelado) return;
       capasRef.current = capas;
       setCapasPorZona(capas);
-      firmaBorradorRef.current = JSON.stringify({ capas: capasParaGuardar(capas), colorId: estado?.colorId, talla: estado?.talla || '' });
       const principal = cfg.colores.find((c) => c.id === prenda?.defaultVariantId) || cfg.colores[0];
       const colorInicial = cfg.colores.some((c) => c.id === estado?.colorId) ? estado.colorId : principal?.id;
       // Las zonas son las de ese color (un bicolor puede tener otras).
@@ -734,7 +713,10 @@ const EstudioDeTienda = () => {
       const vistaInicial = vistasIniciales.find((v) => v.id === estado?.vistaId) || vistasIniciales[0];
       setVistaId(vistaInicial?.id);
       setZonaId(vistaInicial?.zonas.some((z) => z.id === estado?.zonaId) ? estado.zonaId : vistaInicial?.zonas[0]?.id);
-      const tallaInicial = cfg.tallas.includes(estado?.talla) ? estado.talla : '';
+      const tallaInicial = tallasDeColor(cfg.colores.find((c) => c.id === colorInicial), cfg).includes(estado?.talla) ? estado.talla : '';
+      // Un borrador de la pestaña todavía no existe en la cuenta: al
+      // volver del login debe guardarse aunque no se vuelva a tocar.
+      firmaBorradorRef.current = designIdRef.current ? firmaBorrador(capas, colorInicial, tallaInicial) : null;
       setColorId(colorInicial);
       setTalla(tallaInicial);
       // Una creación guardada abre "sin cambios": Guardar se activa al cambiar algo.
@@ -747,6 +729,7 @@ const EstudioDeTienda = () => {
         const { data: diseno } = await getDesignById(designIdParam);
         if (diseno && diseno.userId === user.uid && diseno.productId === id) {
           const deBorrador = diseno.estado === 'borrador';
+          creacionGuardadaRef.current = deBorrador ? null : { ...diseno, id: designIdParam };
           esBorradorRef.current = deBorrador;
           setEsBorrador(deBorrador);
           const colorGuardado = cfg.colores.find((c) => c.nombre === diseno.variant?.color || c.id === diseno.color?.id);
@@ -832,10 +815,10 @@ const EstudioDeTienda = () => {
       return aplicar(borrador);
     })();
     return () => { cancelado = true; };
-  }, [cfgPrenda, listo, authLoading, designIdParam, plantillaParam, plantillaPiezaParam, copiarParam, user, id]);
+  }, [cfgPrenda, listo, authLoading, designIdParam, plantillaParam, plantillaPiezaParam, copiarParam, user, id, enCombo, location.state, navigate, prenda?.defaultVariantId, toast]);
 
-  // Las fuentes del selector se cargan en segundo plano para la vista previa.
-  useEffect(() => { FUENTES.forEach((f) => { asegurarFuente(f); }); }, []);
+  // Solo la fuente inicial: las demás muestras se piden al enfocar el selector.
+  useEffect(() => { asegurarFuente('Montserrat'); }, []);
 
   // El borrador es solo para un diseño nuevo sin guardar: una creación ya
   // guardada vive en la cuenta y no debe reaparecer al abrir la plantilla.
@@ -1722,6 +1705,11 @@ const EstudioDeTienda = () => {
         });
         transformsRef.current = transforms;
         objetos.forEach((obj) => lienzo.add(obj));
+        textosTrasDibujoRef.current.forEach((capaId) => {
+          if (!objetoDe(capaId)) return;
+          textosTrasDibujoRef.current.delete(capaId);
+          editarCapa(capaId, {});
+        });
         pintarGuias();
         const grupo = elegidos.map((capaId) => objetoDe(capaId)).filter(Boolean);
         if (grupo.length > 1) {
@@ -1996,7 +1984,7 @@ const EstudioDeTienda = () => {
     if (pp.src) localSrcRef.current.set(copia.id, pp.src);
     setSeleccionId(copia.id);
     modificarCapas(zona.id, (capas) => [...capas, copia], true);
-    if (copia.type === 'text') setTimeout(() => editarCapa(copia.id, {}), 400);
+    if (copia.type === 'text') textosTrasDibujoRef.current.add(copia.id);
   };
 
   const capaPorId = (capaId) => Object.values(capasRef.current).flat().find((c) => c.id === capaId) || null;
@@ -2209,7 +2197,7 @@ const EstudioDeTienda = () => {
     if (destino.vistaId && destino.vistaId !== vista.id) setVistaId(destino.vistaId);
     setZonaId(destino.id);
     // Un texto que pasa a una zona más chica se ajusta para entrar.
-    setTimeout(() => { if (movida.type === 'text') editarCapa(movida.id, {}); }, 400);
+    if (movida.type === 'text') textosTrasDibujoRef.current.add(movida.id);
     setVersion((v) => v + 1);
   };
 
@@ -2271,7 +2259,7 @@ const EstudioDeTienda = () => {
     setZonaId(destinos[0]);
     setVersion((v) => v + 1);
     // Un texto que pasa a una zona más chica se ajusta para entrar.
-    setTimeout(() => movidas.forEach(({ capa }) => { if (capa.type === 'text') editarCapa(capa.id, {}); }), 400);
+    movidas.forEach(({ capa }) => { if (capa.type === 'text') textosTrasDibujoRef.current.add(capa.id); });
     toast.info(movidas.length > 1 ? `Pasaron a ${destinoVista.nombre}` : `Pasó a ${destinoVista.nombre}`);
     return true;
   };
@@ -2394,7 +2382,6 @@ const EstudioDeTienda = () => {
     const escala = Math.min(UNIDADES_ZONA / capaSel.anchoNatural, altoEnUnidades(zonaSel) / capaSel.altoNatural);
     editarCapa(capaSel.id, { ...centroDe(zonaSel), escalaX: escala, escalaY: escala, angulo: 0 });
   };
-
 
   // ── Atajos de teclado (escritorio) ───────────────────────────────────────
   // La lista completa está en AtajosTeclado.jsx (se abre con "?").
@@ -2604,33 +2591,9 @@ const EstudioDeTienda = () => {
    * Genera todo lo de una creación: un archivo de impresión por zona con
    * diseño, una vista previa por lado y la imagen con todos los lados.
    */
-  const generarArchivos = async (capas) => {
-    const archivosImpresion = [];
-    const vistasPrevias = [];
-    const blobsPrevias = {};
-    for (const v of vistasConCapas(capas)) {
-      const zonasConCapas = v.zonas.filter((z) => capas[z.id]);
-      for (const z of zonasConCapas) {
-        setProcesando(`Preparando el archivo de impresión (${v.nombre} · ${z.nombre})…`);
-        const medida = medidaZona(z, v);
-        const { blob, ancho, alto } = await renderizarImpresion(capas[z.id], z, srcDe, medida);
-        const url = await subirArchivoImpresion(user.uid, blob, z.id);
-        archivosImpresion.push({
-          vista: z.id, vistaId: v.id, nombre: `${v.nombre} · ${z.nombre}`, url, ancho, alto,
-          ...(medida && { anchoCm: medida.anchoCm, altoCm: medida.altoCm }),
-        });
-      }
-      setProcesando(`Preparando la vista previa (${v.nombre})…`);
-      const previa = await renderizarVista(v, capas);
-      blobsPrevias[v.id] = previa;
-      const url = await subirVistaPrevia(user.uid, previa, v.id);
-      vistasPrevias.push({ vista: v.id, nombre: v.nombre, url, zonas: zonasConCapas.map((z) => z.id) });
-    }
-    setProcesando('Uniendo las vistas…');
-    const conjunta = await imagenConjunta(capas, blobsPrevias);
-    const imagenConjuntaUrl = await subirVistaPrevia(user.uid, conjunta, 'conjunto');
-    return { archivosImpresion, vistasPrevias, imagenConjunta: imagenConjuntaUrl };
-  };
+  const generarArchivos = (capas) => generarArchivosCreacion({
+    uid: user.uid, prenda, color, vistas: cfg.vistas, capas, srcDe, onPaso: setProcesando,
+  });
 
   /**
    * Guarda el diseño sin terminar como borrador en la cuenta. Solo un diseño
@@ -2645,7 +2608,7 @@ const EstudioDeTienda = () => {
       const capas = capasParaGuardar(capasRef.current);
       // Sin nada diseñado todavía no hay borrador que guardar.
       if (!designIdRef.current && !Object.keys(capas).length) return;
-      const firma = JSON.stringify({ capas, colorId: color.id, talla });
+      const firma = firmaBorrador(capas, color.id, talla);
       if (firma === firmaBorradorRef.current) return;
       if (montadoRef.current) setEstadoBorrador('guardando');
       // Una miniatura por lado con diseño (frente, espalda…): así el borrador
@@ -2786,7 +2749,8 @@ const EstudioDeTienda = () => {
     tallaGuardadaRef.current = tallaElegida;
     // Ya está guardada: la próxima vez la plantilla se abre limpia.
     try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
-    return { ...creacion, id: idFinal };
+    creacionGuardadaRef.current = { ...creacion, id: idFinal };
+    return creacionGuardadaRef.current;
   };
 
   const guardar = () => {
@@ -2861,7 +2825,10 @@ const EstudioDeTienda = () => {
   };
 
   const confirmarGuardar = async (nombreFinal = nombreEditado, { actualizar = false } = {}) => {
+    if (operacionRef.current || !validar()) return;
+    operacionRef.current = true;
     setDialogoGuardar(false);
+    setProcesando('Preparando tu creación…');
     try {
       const creacion = await guardarCreacion(nombreFinal);
       // Dentro de un combo, guardar también la deja puesta en su pieza.
@@ -2875,6 +2842,7 @@ const EstudioDeTienda = () => {
     } catch (err) {
       toast.error(`No pudimos guardar tu creación: ${err?.message || err}`);
     } finally {
+      operacionRef.current = false;
       setProcesando(null);
     }
   };
@@ -2898,7 +2866,9 @@ const EstudioDeTienda = () => {
    * ella puesta. La talla se elige allá, junto a las demás piezas.
    */
   const usarEnCombo = async () => {
-    if (!validar()) return;
+    if (agotado || operacionRef.current || !validar()) return;
+    operacionRef.current = true;
+    setProcesando('Preparando tu creación…');
     try {
       let idPieza = designIdRef.current;
       if (!idPieza || esBorradorRef.current || hayCambios) {
@@ -2912,22 +2882,45 @@ const EstudioDeTienda = () => {
     } catch (err) {
       toast.error(`No pudimos preparar tu diseño: ${err?.message || err}`);
     } finally {
+      operacionRef.current = false;
       setProcesando(null);
     }
   };
 
   const comprar = async (tallaElegida) => {
+    if (agotado || operacionRef.current || !validar()) return;
+    operacionRef.current = true;
     setPidiendoTalla(false);
-    setTalla(tallaElegida);
+    setProcesando('Preparando tu creación…');
     try {
-      const creacion = await guardarCreacion(nombre, tallaElegida);
+      await terminarBorrador();
+      const anterior = creacionGuardadaRef.current;
+      const sinCambios = firmaGuardada !== null && firmaDiseno(capasRef.current, color.id) === firmaGuardada;
+      let creacion;
+      if (sinCambios && !esBorradorRef.current && anterior?.id === designIdRef.current
+          && archivosVigentes(anterior, capasRef.current, cfg.vistas)) {
+        // La talla no cambia los archivos de impresión. Si solo cambió
+        // ella, se escribe una vez y se reutilizan todas las URLs vigentes.
+        if (anterior.variant?.size !== tallaElegida) {
+          const { error } = await guardarTallaCreacion(anterior.id, tallaElegida);
+          if (error) throw new Error(error);
+          queryClient.removeQueries({ queryKey: ['creacion', anterior.id] });
+        }
+        creacion = { ...anterior, name: nombre || anterior.name, variant: { ...anterior.variant, size: tallaElegida } };
+        creacionGuardadaRef.current = creacion;
+      } else {
+        creacion = await guardarCreacion(nombre, tallaElegida);
+      }
+      tallaGuardadaRef.current = tallaElegida;
+      setTalla(tallaElegida);
       setProcesando('Agregando al carrito…');
       addToCart(...itemDeCreacion({ prenda, creacion, talla: tallaElegida }));
       try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
       navigate('/carrito');
     } catch (err) {
-      toast.error(`No pudimos preparar tu diseño: ${err?.message || err}`);
+      toast.error('No pudimos preparar tu diseño: ' + (err?.message || err));
     } finally {
+      operacionRef.current = false;
       setProcesando(null);
     }
   };
@@ -3130,7 +3123,6 @@ const EstudioDeTienda = () => {
       if (capaPorId(obj?.capaId)?.type !== 'text') return;
       setTimeout(() => mostrarEditor(true), 60);
     },
-    escalar,
     sincronizarGrupo,
     mantenerEnZona,
     quitarCapa: (capaId) => {
@@ -3440,6 +3432,7 @@ const EstudioDeTienda = () => {
               <PanelCapa
                 capa={capaEstudioDesde(capaSel, UNIDADES_ZONA)} zona={zonaSel?.nombre}
                 fuentes={FUENTES.map((f) => ({ valor: f, texto: f }))}
+                onAbrirFuentes={() => FUENTES.forEach(asegurarFuente)}
                 onCambiar={async (cambios) => {
                   const capa = capaSel;
                   if (cambios.fuente) await asegurarFuente(cambios.fuente);

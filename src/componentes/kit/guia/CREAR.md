@@ -606,6 +606,20 @@ de Fabric. Las hojas funcionan también con el body fijo del editor móvil.
 El regreso del login conserva la marca y el borrador aunque StrictMode
 cancele la primera inicialización.
 
+Cuarto paso: la generación del estudio y de las plantillas se comparte en
+`pages/Crear/generarArchivosCreacion.js`. Comprar sin cambios reutiliza sus
+archivos si están completos; cambiar solo talla escribe la talla una vez.
+Las firmas del borrador usan los valores normalizados; un borrador de la
+pestaña que todavía no existe en la cuenta sí se guarda al volver del login.
+Las muestras de las fuentes llegan al enfocar el selector. Los textos que
+se pegan o pasan de zona se ajustan al terminar el redibujado, sin esperas
+arbitrarias. El panel se mide con ResizeObserver y requestAnimationFrame.
+
+El combo difiere los dos caminos que cargaban Fabric (las fotos de lados
+lisos y crear desde una plantilla). Completar un lado liso todavía puede
+cargarlo cuando sea necesario. Las secciones del builder importan piezas
+directas; `PasoEstudio` vive aparte para no adelantar el editor al inicio.
+
 1. ✓ Hacer los adaptadores con los datos reales y comparar las tarjetas.
 2. ✓ Cambiar la portada y la grilla (prendas y combos) por las del kit.
 3. ✓ Cambiar las tres filas por las del kit (después de Mis creaciones).

@@ -14,6 +14,8 @@ import { BarraProgreso } from './BarraProgreso';
 import { TituloEditable } from './Ficha';
 import { imanAlMover, imanAlEscalar, enCm } from '../../../utils/guiasInteligentes';
 import { BotonEstudio, CampoEstudio, CantidadEstudio, DeslizadorEstudio, SelectorColorEstudio, CasillaEstudio, InterruptorEstudio } from './ControlesEstudio';
+import { PasoEstudio } from './PasoEstudio';
+export { PasoEstudio } from './PasoEstudio';
 import s from './Estudio.module.css';
 
 /*
@@ -1031,20 +1033,6 @@ export function BarraLienzo({
  * Un paso del panel, con su número en un sello. Hecho, el sello pasa a menta
  * con un check: se ve de un vistazo cuánto falta.
  */
-export function PasoEstudio({ numero, titulo, detalle, hecho = false, children }) {
-  return (
-    <section className={[s.paso, hecho && s.pasoHecho].filter(Boolean).join(' ')} data-componente="PasoEstudio">
-      <h2 className={s.pasoTitulo}>
-        <Sello tamano={30} girar={numero % 2 ? -8 : 6} tono={hecho ? 'menta' : 'degradado'}>
-          {hecho ? <Check key="hecho" className={s.pasoCheck} aria-hidden="true" /> : <b className={s.pasoNumero}>{numero}</b>}
-        </Sello>
-        <span><Texto>{titulo}</Texto>{detalle && <em><Texto>{": "}</Texto><Texto>{detalle}</Texto></em>}{hecho && <span className={s.oculto}><Texto>{" (listo)"}</Texto></span>}</span>
-      </h2>
-      {children}
-    </section>
-  );
-}
-
 /**
  * Una opción grande con su sello: agregar una imagen o un texto, quitar el
  * fondo, recortar. La misma tarjeta punteada en el paso 3 y en el panel.
@@ -1312,7 +1300,7 @@ export function PanelCapa({
   capa, zona, onCambiar, onListo, fuentes = [], calidad, onNitida,
   onCentrar, onAlinear, onQuitar, onDuplicar, onAdelante, onAtras,
   onRecortar, onQuitarFondo, onLlenar, zonas = [], onPasarAZona, sinSesion = false,
-  anchoZonaCm, fueraDeZona = false, onImagen, onTexto, subiendo = false, puntosPorZona = 100,
+  anchoZonaCm, fueraDeZona = false, onImagen, onTexto, subiendo = false, puntosPorZona = 100, onAbrirFuentes,
 }) {
   if (!capa) return null;
   const imagen = capa.tipo === 'imagen';
@@ -1340,7 +1328,9 @@ export function PanelCapa({
           {/* Crece solo con lo escrito, sin agarradera (Campo multilinea). */}
           <CampoEstudio etiqueta="Escribe tu texto" multilinea={2} maxLength={120} value={capa.texto || ''} onChange={(e) => onCambiar?.({ texto: e.target.value })} />
           {fuentes.length > 0 && (
-            <CampoEstudio etiqueta="Letra" opciones={fuentes.map((f) => ({ ...f, icono: <span className={s.muestraLetra} style={{ fontFamily: `'${f.valor}'` }}><Texto>{"Aa"}</Texto></span> }))} buscable value={capa.fuente} onChange={(e) => onCambiar?.({ fuente: e.target.value })} />
+            <div onFocusCapture={onAbrirFuentes}>
+              <CampoEstudio etiqueta="Letra" opciones={fuentes.map((f) => ({ ...f, icono: <span className={s.muestraLetra} style={{ fontFamily: `'${f.valor}'` }}><Texto>{"Aa"}</Texto></span> }))} buscable value={capa.fuente} onChange={(e) => onCambiar?.({ fuente: e.target.value })} />
+            </div>
           )}
           <div className={s.fila}>
             <div className={s.grupoCampo}>

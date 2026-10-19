@@ -8,7 +8,8 @@ import { tarjetaDesdeMarca } from './adaptadores';
 import { EtiquetaColgante, Garabatos, Trazo, Destello, acento } from './Marca';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import { atributosDeFoto } from '../../components/common/OptimizedImage/OptimizedImage';
-import { TarjetaMarca, TarjetaDestacado } from './piezas';
+import { TarjetaMarca } from "./piezas/TarjetaMarca";
+import { TarjetaDestacado } from "./piezas/TarjetaDestacado";
 import { Texto } from './Traduccion';
 import s from './SeccionesContenido.module.css';
 

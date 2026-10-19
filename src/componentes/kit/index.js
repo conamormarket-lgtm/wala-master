@@ -59,6 +59,8 @@ export { PaginaCreacion } from './paginas/Creacion';
 export { PaginaVerDiseno, resumenDeDiseno } from './paginas/VerDiseno';
 export { PaginaCombo } from './paginas/Combo';
 export { PaginaEstudio } from './paginas/Estudio';
+export { MarcoEstudio, InicioLienzoEstudio } from './paginas/MarcoEstudio';
+export { capaEstudioDesde, cambiosDePanelEstudio } from './adaptadoresEstudio';
 export { PaginaProducto } from './paginas/Producto';
 export { PaginaCheckout } from './paginas/Checkout';
 export { PaginaListaPublica, PaginaRegalar, PaginaRegaloSorpresa } from './paginas/Regalar';

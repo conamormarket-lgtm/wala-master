@@ -14,7 +14,10 @@ import { TextoCampo, BotonDeAjustes, fuenteDe, prefiereQuieto } from './Seccione
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import { atributosDeFoto } from '../../components/common/OptimizedImage/OptimizedImage';
 import { EtiquetaColgante, Garabatos, LogoWala, Destello, Corazon, acento } from './Marca';
-import { TarjetaCategoria, TarjetaCategoriaEsqueleto, Beneficio, FotoProducto, OpcionesFiltro } from './piezas';
+import { TarjetaCategoria, TarjetaCategoriaEsqueleto } from "./piezas/TarjetaCategoria";
+import { Beneficio } from "./piezas/Beneficio";
+import { FotoProducto } from "./piezas/FotoProducto";
+import { OpcionesFiltro } from "./piezas/OpcionesFiltro";
 import { CARAS_KAPI } from './piezas/Flotantes';
 import { Texto, useTexto } from './Traduccion';
 import s from './SeccionesExtra.module.css';
