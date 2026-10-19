@@ -291,7 +291,11 @@ export const queryClient = new QueryClient({
 const GlobalLayout = ({ children }) => {
   const location = useLocation();
   const { isEditModeActive } = useVisualEditor();
-  const isIndependentRoute = location.pathname.startsWith('/regalos-con-amor');
+  // Páginas que van solas, sin la cabecera, el pie ni los flotantes: la landing
+  // de Regalos con amor y el Link en bio (/l/:slug, la página de la bio de las
+  // redes: CAMPANAS.md).
+  const esLinkEnBio = location.pathname.startsWith('/l/');
+  const isIndependentRoute = location.pathname.startsWith('/regalos-con-amor') || esLinkEnBio;
 
   // Activar Heatmap Tracker globalmente (menos para admins: no son clientes y
   // su barra cambia la estructura de la página respecto a la del visitante).
@@ -306,6 +310,8 @@ const GlobalLayout = ({ children }) => {
     return (
       <div className="App independent-app">
         {rastreoCalor}
+        {/* El Link en bio sigue contando la página vista, como con el marco. */}
+        {esLinkEnBio && <RouteTracker />}
         <main style={{ width: '100%', minHeight: '100vh', padding: 0, margin: 0 }}>
           {children}
         </main>

@@ -8042,18 +8042,23 @@ exports.registrarClicEnlace = functions.https.onCall(async (data, context) => {
 
   const pageRef = db.collection("link_pages").doc(pageId);
 
-  // 1) La página debe existir y el botón debe pertenecer a ella (evita inflar
-  //    contadores de páginas/botones inexistentes desde clientes maliciosos).
+  // 1) La página debe existir y el botón (o la red) debe pertenecer a ella
+  //    (evita inflar contadores de páginas/botones inexistentes desde clientes
+  //    maliciosos). Las redes también se cuentan: sus ids (red_…) no chocan
+  //    con los de los botones (btn_…).
   const pageSnap = await pageRef.get();
   if (!pageSnap.exists) {
     throw new functions.https.HttpsError("not-found", "La página de enlaces no existe.");
   }
   const page = pageSnap.data() || {};
   const botones = Array.isArray(page.botones) ? page.botones : [];
-  const boton = botones.find((b) => b && b.id === botonId);
+  const redes = Array.isArray(page.redes) ? page.redes : [];
+  const enBotones = botones.find((b) => b && b.id === botonId);
+  const boton = enBotones || redes.find((r) => r && r.id === botonId);
   if (!boton) {
     throw new functions.https.HttpsError("not-found", "El botón no existe en esta página.");
   }
+  const tipoItem = enBotones ? "boton" : "red";
   // La URL de confianza es la del modelo server-side, no la que envíe el cliente.
   const url = boton.url || (data && typeof data.url === "string" ? data.url : null) || null;
 
@@ -8094,7 +8099,8 @@ exports.registrarClicEnlace = functions.https.onCall(async (data, context) => {
         device: ctx.device,
         clientTsMs: Date.now(),
         serverTs: FieldValue.serverTimestamp(),
-        eventData: { pageId, botonId, url },
+        tipoItem,
+        eventData: { pageId, botonId, url, tipoItem },
       });
     } catch (evErr) {
       // El evento de analítica jamás debe romper el conteo del clic.

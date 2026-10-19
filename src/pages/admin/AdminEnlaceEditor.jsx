@@ -994,17 +994,21 @@ const AdminEnlaceEditor = () => {
               </div>
             </div>
 
-            {/* Mini-desglose de clics por botón (barato: ya lo leímos) */}
+            {/* Mini-desglose de clics por botón y por red (barato: ya lo
+                leímos). Las redes se cuentan desde el 2026-10-19. */}
             <div className={styles.clicsTable}>
-              {form.botones.length === 0 && (
+              {form.botones.length === 0 && form.redes.length === 0 && (
                 <p className={styles.emptyMini}>Agrega botones para ver sus clics.</p>
               )}
-              {form.botones.map((b) => {
+              {[
+                ...form.botones.map((b) => ({ id: b.id, nombre: b.titulo || '(sin título)' })),
+                ...form.redes.map((r) => ({ id: r.id, nombre: `Red: ${r.nombre || r.tipo || 'sin nombre'}` })),
+              ].map((b) => {
                 const n = clics[b.id] ?? 0;
                 const pct = totalClics > 0 ? Math.round((n / totalClics) * 100) : 0;
                 return (
                   <div key={b.id} className={styles.clicRow}>
-                    <span className={styles.clicName}>{b.titulo || '(sin título)'}</span>
+                    <span className={styles.clicName}>{b.nombre}</span>
                     <div className={styles.clicBarWrap}>
                       <div className={styles.clicBar} style={{ width: `${pct}%` }} />
                     </div>
