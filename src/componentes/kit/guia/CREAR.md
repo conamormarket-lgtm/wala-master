@@ -589,6 +589,14 @@ los controles se sustituyen a continuación, sin cambiar Fabric ni las
 fuentes originales de impresión. Cloudinary sigue limitado a la entrega
 de fotos públicas, como en el resto de Crear.
 
+Segundo paso: la barra rápida, los tres pasos, los paneles de una o varias
+capas y la guía de gestos ya son las piezas del kit. `adaptadoresEstudio.js`
+convierte solo los valores de los controles (alto de letra y ancho de
+imagen), conservando las escalas originales y el formato `layersByView`.
+Los textos de estas piezas pasan por la traducción. Las fotos que se están
+subiendo no permiten recortar ni quitar fondo. La cabeza y las ventanas
+siguen pendientes del siguiente paso.
+
 1. ✓ Hacer los adaptadores con los datos reales y comparar las tarjetas.
 2. ✓ Cambiar la portada y la grilla (prendas y combos) por las del kit.
 3. ✓ Cambiar las tres filas por las del kit (después de Mis creaciones).

@@ -7,6 +7,7 @@ import {
   AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter, Pencil, Hand, Sparkles,
 } from 'lucide-react';
 import Boton from '../Boton';
+import { Texto, useTexto } from '../Traduccion';
 import Acordeon from '../Acordeon';
 import { Chip } from '../Etiquetas';
 import { Campo, Cantidad, Casilla, Deslizador, Interruptor, SelectorColor } from '../Formulario';
@@ -985,7 +986,7 @@ export function BarraLienzo({
   onAchicar, onAgrandar, onCentrar, onQuitar, onImagen, onTexto, zoom = 1, onZoom, onAtajos, onEditar,
   completa = false, onVerCompleta,
 }) {
-  const B = (props) => <Boton variante="fantasma" tamano="sm" soloIcono {...props} />;
+  const B = (props) => <BotonEstudio variante="fantasma" tamano="sm" soloIcono {...props} />;
   return (
     <div className={s.barra} role="toolbar" aria-label="Herramientas del lienzo" data-componente="BarraLienzo">
       <span className={s.grupoBarra}>
@@ -997,9 +998,9 @@ export function BarraLienzo({
           <B aria-label="Achicar" icono={<Minus aria-hidden="true" />} onClick={onAchicar} />
           <B aria-label="Agrandar" icono={<Plus aria-hidden="true" />} onClick={onAgrandar} />
           <B aria-label="Centrar" icono={<Crosshair aria-hidden="true" />} onClick={onCentrar} />
-          <Boton variante="fantasma" tamano="sm" soloIcono aria-label="Quitar" icono={<Trash2 aria-hidden="true" />} onClick={onQuitar} className={s.peligro} />
+          <BotonEstudio variante="fantasma" tamano="sm" soloIcono aria-label="Quitar" icono={<Trash2 aria-hidden="true" />} onClick={onQuitar} className={s.peligro} />
           {/* En el celular el panel queda debajo de la prenda: "Editar" baja hasta él. */}
-          {onEditar && <Boton variante="secundario" tamano="sm" icono={<Pencil aria-hidden="true" />} onClick={onEditar} className={s.soloCelular}>Editar</Boton>}
+          {onEditar && <BotonEstudio variante="secundario" tamano="sm" icono={<Pencil aria-hidden="true" />} onClick={onEditar} className={s.soloCelular}><Texto>{"Editar"}</Texto></BotonEstudio>}
           {/* En el teléfono, lo elegido acerca su zona: esto muestra la prenda entera (y vuelve). */}
           {onVerCompleta && (
             <B
@@ -1013,13 +1014,13 @@ export function BarraLienzo({
         </span>
       )}
       <span className={s.grupoBarra}>
-        <Boton variante="contorno" tamano="sm" icono={<ImagePlus aria-hidden="true" />} onClick={onImagen}>Imagen</Boton>
-        <Boton variante="contorno" tamano="sm" icono={<Type aria-hidden="true" />} onClick={onTexto}>Texto</Boton>
+        <BotonEstudio variante="contorno" tamano="sm" icono={<ImagePlus aria-hidden="true" />} onClick={onImagen}><Texto>{"Imagen"}</Texto></BotonEstudio>
+        <BotonEstudio variante="contorno" tamano="sm" icono={<Type aria-hidden="true" />} onClick={onTexto}><Texto>{"Texto"}</Texto></BotonEstudio>
       </span>
       {/* En el celular se acerca con los dedos: el zoom queda para el ratón. */}
       <span className={[s.grupoBarra, s.grupoZoom].join(' ')}>
         <B aria-label="Alejar (Ctrl −)" icono={<ZoomOut aria-hidden="true" />} disabled={zoom <= 1} onClick={() => onZoom?.(zoomVecino(zoom, false))} />
-        <button type="button" className={s.zoomValor} onClick={() => onZoom?.(1)} title="Ver la prenda completa (Shift+1)">{Math.round(zoom * 100)}%</button>
+        <button type="button" className={s.zoomValor} onClick={() => onZoom?.(1)} title="Ver la prenda completa (Shift+1)">{Math.round(zoom * 100)}<Texto>{"%"}</Texto></button>
         <B aria-label="Acercar (Ctrl +)" icono={<ZoomIn aria-hidden="true" />} disabled={zoom >= NIVELES_ZOOM[NIVELES_ZOOM.length - 1]} onClick={() => onZoom?.(zoomVecino(zoom, true))} />
         {onAtajos && <B aria-label="Atajos de teclado" icono={<Keyboard aria-hidden="true" />} onClick={onAtajos} className={s.soloRaton} />}
       </span>
@@ -1038,7 +1039,7 @@ export function PasoEstudio({ numero, titulo, detalle, hecho = false, children }
         <Sello tamano={30} girar={numero % 2 ? -8 : 6} tono={hecho ? 'menta' : 'degradado'}>
           {hecho ? <Check key="hecho" className={s.pasoCheck} aria-hidden="true" /> : <b className={s.pasoNumero}>{numero}</b>}
         </Sello>
-        <span>{titulo}{detalle && <em>: {detalle}</em>}{hecho && <span className={s.oculto}> (listo)</span>}</span>
+        <span><Texto>{titulo}</Texto>{detalle && <em><Texto>{": "}</Texto><Texto>{detalle}</Texto></em>}{hecho && <span className={s.oculto}><Texto>{" (listo)"}</Texto></span>}</span>
       </h2>
       {children}
     </section>
@@ -1054,8 +1055,8 @@ export function OpcionSello({ icono, tono, girar = -8, titulo, detalle, onClick,
   return (
     <button type="button" className={s.agregarOpcion} onClick={onClick} disabled={disabled}>
       <Sello tamano={42} girar={girar} tono={tono}>{icono}</Sello>
-      <strong>{titulo}</strong>
-      {detalle && <small>{detalle}</small>}
+      <strong><Texto>{titulo}</Texto></strong>
+      {detalle && <small><Texto>{detalle}</Texto></small>}
     </button>
   );
 }
@@ -1078,11 +1079,11 @@ export function MedidorCalidad({ calidad, onNitida }) {
   if (!n) return null;
   return (
     <div className={[s.medidor, s[`medidor_${n.tono}`]].join(' ')} data-componente="MedidorCalidad">
-      <BarraProgreso pasos max={3} valor={n.paso} texto={<>Calidad de impresión: <strong>{n.nombre}</strong></>} />
+      <BarraProgreso pasos max={3} valor={n.paso} texto={<><Texto>{"Calidad de impresión: "}</Texto><strong><Texto>{n.nombre}</Texto></strong></>} />
       <div className={s.medidorPie}>
-        <p>{n.texto}</p>
+        <p><Texto>{n.texto}</Texto></p>
         {n.paso < 3 && onNitida && (
-          <Boton variante="contorno" tamano="sm" icono={<Sparkles aria-hidden="true" />} onClick={onNitida}>Dejarla nítida</Boton>
+          <BotonEstudio variante="contorno" tamano="sm" icono={<Sparkles aria-hidden="true" />} onClick={onNitida}><Texto>{"Dejarla nítida"}</Texto></BotonEstudio>
         )}
       </div>
     </div>
@@ -1102,17 +1103,17 @@ export function PasosEstudio({ colores = [], color, onColor, invertir, lados = [
   return (
     <div className={s.pasos} data-componente="PasosEstudio">
       <PasoEstudio numero={1} titulo="Elige el color" detalle={actual?.nombre} hecho={Boolean(actual)}>
-        <SelectorColor etiqueta="Color de la prenda" colores={colores} valor={actual?.nombre} onChange={(nombre) => onColor?.(colores.find((c) => c.nombre === nombre)?.id)} />
-        {invertir && <Interruptor activo={invertir.activo} onChange={invertir.onCambiar} etiqueta="Invertir colores" descripcion={invertir.texto} />}
+        <SelectorColorEstudio etiqueta="Color de la prenda" colores={colores} valor={actual?.nombre} onChange={(nombre) => onColor?.(colores.find((c) => c.nombre === nombre)?.id)} />
+        {invertir && <InterruptorEstudio activo={invertir.activo} onChange={invertir.onCambiar} etiqueta="Invertir colores" descripcion={invertir.texto} />}
       </PasoEstudio>
       <PasoEstudio numero={2} titulo="¿Dónde va tu diseño?" hecho={Boolean(zona)}>
         {lados.map((l) => (
           <div key={l.nombre} className={s.lado}>
-            <span className={s.ladoNombre}>{l.nombre}</span>
+            <span className={s.ladoNombre}><Texto>{l.nombre}</Texto></span>
             <div className={s.chips}>
               {l.zonas.map((z) => (
                 <Chip key={z.id} tamano="sm" activo={z.id === zona} onClick={() => onZona?.(z.id)}>
-                  {z.nombre}{z.conDiseno && <span className={s.conDiseno} title="Con diseño"><span className={s.oculto}>, con diseño</span></span>}
+                  <Texto>{z.nombre}</Texto>{z.conDiseno && <span className={s.conDiseno} title="Con diseño"><span className={s.oculto}><Texto>{", con diseño"}</Texto></span></span>}
                 </Chip>
               ))}
             </div>
@@ -1124,7 +1125,7 @@ export function PasosEstudio({ colores = [], color, onColor, invertir, lados = [
           <OpcionSello icono={<ImagePlus aria-hidden="true" />} titulo="Subir imagen" detalle="Una foto o un logo" onClick={onImagen} disabled={subiendo} />
           <OpcionSello icono={<Type aria-hidden="true" />} tono="rosa" girar={6} titulo="Escribir texto" detalle="Un nombre o una frase" onClick={onTexto} />
         </div>
-        {donde && <p className={s.donde}>{subiendo ? 'Subiendo tu imagen…' : <>Se agrega en: <strong>{donde}</strong></>}</p>}
+        {donde && <p className={s.donde}>{subiendo ? 'Subiendo tu imagen…' : <><Texto>{"Se agrega en: "}</Texto><strong>{donde}</strong></>}</p>}
       </PasoEstudio>
     </div>
   );
@@ -1183,7 +1184,7 @@ export function EfectosTexto({ capa, onCambiar }) {
   const activo = estiloDe(capa);
   const afinado = contorno > 0 || sombra > 0 || curva !== 0 || espaciado !== 0;
   const colorLibre = (campo, porDefecto) => (
-    <SelectorColor
+    <SelectorColorEstudio
       etiqueta={campo === 'contornoColor' ? 'Color del contorno' : 'Color de la sombra'}
       colores={COLORES_TEXTO}
       libre={{ hex: capa[campo] || porDefecto, onCambiar: (hex) => onCambiar?.({ [campo]: hex }) }}
@@ -1192,7 +1193,7 @@ export function EfectosTexto({ capa, onCambiar }) {
   return (
     <div className={s.efectos} data-componente="EfectosTexto">
       <div className={s.grupoCampo}>
-        <span className={s.rotulo}>Estilo de la letra</span>
+        <span className={s.rotulo}><Texto>{"Estilo de la letra"}</Texto></span>
         <span className={s.estilos}>
           {ESTILOS.map((e) => (
             <button
@@ -1202,7 +1203,7 @@ export function EfectosTexto({ capa, onCambiar }) {
               onClick={() => onCambiar?.(e.cambios(capa))}
               aria-pressed={activo === e.id}
             >
-              <span className={[s.estiloMuestra, s[`muestra_${e.id}`]].filter(Boolean).join(' ')}>Aa</span>
+              <span className={[s.estiloMuestra, s[`muestra_${e.id}`]].filter(Boolean).join(' ')}><Texto>{"Aa"}</Texto></span>
               {e.nombre}
             </button>
           ))}
@@ -1218,7 +1219,7 @@ export function EfectosTexto({ capa, onCambiar }) {
           answer: (
             <div className={s.fino}>
               <div className={s.efecto}>
-                <Interruptor
+                <InterruptorEstudio
                   activo={contorno > 0}
                   etiqueta="Contorno"
                   onChange={(on) => onCambiar?.(on
@@ -1228,13 +1229,13 @@ export function EfectosTexto({ capa, onCambiar }) {
                 {contorno > 0 && (
                   <div className={s.efectoCuerpo}>
                     {colorLibre('contornoColor', '#FFFFFF')}
-                    <Deslizador etiqueta="Grosor" valor={contorno} min={1} max={25} onChange={(v) => onCambiar?.({ contorno: v })} />
-                    <Casilla activo={Boolean(capa.sinRelleno)} onChange={(v) => onCambiar?.({ sinRelleno: v })} etiqueta="Letra transparente" descripcion="Solo se ve (y se imprime) el contorno." />
+                    <DeslizadorEstudio etiqueta="Grosor" valor={contorno} min={1} max={25} onChange={(v) => onCambiar?.({ contorno: v })} />
+                    <CasillaEstudio activo={Boolean(capa.sinRelleno)} onChange={(v) => onCambiar?.({ sinRelleno: v })} etiqueta="Letra transparente" descripcion="Solo se ve (y se imprime) el contorno." />
                   </div>
                 )}
               </div>
               <div className={s.efecto}>
-                <Interruptor
+                <InterruptorEstudio
                   activo={sombra > 0}
                   etiqueta="Sombra"
                   onChange={(on) => onCambiar?.(on ? { sombra: 6, sombraColor: capa.sombraColor || contrasteDe(capa.color) } : { sombra: 0 })}
@@ -1242,12 +1243,12 @@ export function EfectosTexto({ capa, onCambiar }) {
                 {sombra > 0 && (
                   <div className={s.efectoCuerpo}>
                     {colorLibre('sombraColor', '#111111')}
-                    <Deslizador etiqueta="Distancia" valor={sombra} min={1} max={20} onChange={(v) => onCambiar?.({ sombra: v })} />
+                    <DeslizadorEstudio etiqueta="Distancia" valor={sombra} min={1} max={20} onChange={(v) => onCambiar?.({ sombra: v })} />
                   </div>
                 )}
               </div>
               <div className={s.efecto}>
-                <Deslizador
+                <DeslizadorEstudio
                   etiqueta="Curva"
                   valor={curva}
                   min={-100}
@@ -1256,10 +1257,10 @@ export function EfectosTexto({ capa, onCambiar }) {
                   // Cerca del medio se queda recta: fácil de volver a 0.
                   onChange={(v) => onCambiar?.({ curva: Math.abs(v) < 5 ? 0 : v })}
                 />
-                {curva !== 0 && <Boton variante="fantasma" tamano="sm" onClick={() => onCambiar?.({ curva: 0 })}>Enderezar</Boton>}
+                {curva !== 0 && <BotonEstudio variante="fantasma" tamano="sm" onClick={() => onCambiar?.({ curva: 0 })}><Texto>{"Enderezar"}</Texto></BotonEstudio>}
               </div>
               <div className={s.efecto}>
-                <Deslizador
+                <DeslizadorEstudio
                   etiqueta="Espacio entre letras"
                   valor={espaciado}
                   min={-100}
@@ -1271,7 +1272,7 @@ export function EfectosTexto({ capa, onCambiar }) {
               </div>
               {variasLineas && (
                 <div className={s.efecto}>
-                  <span className={s.rotulo}>Alineación</span>
+                  <span className={s.rotulo}><Texto>{"Alineación"}</Texto></span>
                   <span className={s.chips}>
                     {[['left', AlignLeft, 'Izquierda'], ['center', AlignCenter, 'Centro'], ['right', AlignRight, 'Derecha']].map(([valor, Icono, nombre]) => (
                       <Chip key={valor} tamano="sm" activo={alineacion === valor} onClick={() => onCambiar?.({ alineacion: valor })} icono={<Icono aria-hidden="true" />}>
@@ -1279,7 +1280,7 @@ export function EfectosTexto({ capa, onCambiar }) {
                       </Chip>
                     ))}
                   </span>
-                  <Deslizador etiqueta="Interlineado" valor={Number(capa.interlineado) || 1.05} min={0.7} max={2} paso={0.05} formato={(v) => v.toFixed(2)} onChange={(v) => onCambiar?.({ interlineado: v })} />
+                  <DeslizadorEstudio etiqueta="Interlineado" valor={Number(capa.interlineado) || 1.05} min={0.7} max={2} paso={0.05} formato={(v) => v.toFixed(2)} onChange={(v) => onCambiar?.({ interlineado: v })} />
                 </div>
               )}
             </div>
@@ -1312,7 +1313,7 @@ export function PanelCapa({
   capa, zona, onCambiar, onListo, fuentes = [], calidad, onNitida,
   onCentrar, onAlinear, onQuitar, onDuplicar, onAdelante, onAtras,
   onRecortar, onQuitarFondo, onLlenar, zonas = [], onPasarAZona, sinSesion = false,
-  anchoZonaCm, fueraDeZona = false, onImagen, onTexto,
+  anchoZonaCm, fueraDeZona = false, onImagen, onTexto, subiendo = false,
 }) {
   if (!capa) return null;
   const imagen = capa.tipo === 'imagen';
@@ -1320,34 +1321,34 @@ export function PanelCapa({
   const ancho = capa.ancho ?? 0.8;
   return (
     <div className={s.panelCapa} data-componente="PanelCapa">
-      <header className={s.panelCabeza}>
+      <div className={s.panelCabeza}>
         <div>
-          <h2 className={s.panelTitulo}>{imagen ? 'Tu imagen' : 'Tu texto'} <em>en {zona}</em></h2>
-          <p className={s.panelAyuda}>Los cambios se ven en la prenda al instante.</p>
+          <h2 className={s.panelTitulo}><Texto>{imagen ? 'Tu imagen' : 'Tu texto'}</Texto> <em><Texto>{"en "}</Texto>{zona}</em></h2>
+          <p className={s.panelAyuda}><Texto>{"Los cambios se ven en la prenda al instante."}</Texto></p>
         </div>
         {/* Quitar, aparte y como ícono: lejos de lo que se toca seguido. */}
         <span className={s.panelAcciones}>
-          <Boton variante="fantasma" tamano="sm" soloIcono aria-label="Quitar" title="Quitar (Supr)" icono={<Trash2 aria-hidden="true" />} onClick={onQuitar} className={s.peligro} />
-          <Boton tamano="sm" icono={<Check aria-hidden="true" />} onClick={onListo}>Listo</Boton>
+          <BotonEstudio variante="fantasma" tamano="sm" soloIcono aria-label="Quitar" title="Quitar (Supr)" icono={<Trash2 aria-hidden="true" />} onClick={onQuitar} className={s.peligro} />
+          <BotonEstudio tamano="sm" icono={<Check aria-hidden="true" />} onClick={onListo}><Texto>{"Listo"}</Texto></BotonEstudio>
         </span>
-      </header>
+      </div>
 
       {imagen && <MedidorCalidad calidad={calidad} onNitida={onNitida} />}
-      {fueraDeZona && <p className={[s.calidad, s.calidad_aviso].join(' ')}>Una parte queda fuera de la zona y no se imprimirá.</p>}
+      {fueraDeZona && <p className={[s.calidad, s.calidad_aviso].join(' ')}><Texto>{"Una parte queda fuera de la zona y no se imprimirá."}</Texto></p>}
 
       {!imagen && (
         <>
           {/* Crece solo con lo escrito, sin agarradera (Campo multilinea). */}
-          <Campo etiqueta="Escribe tu texto" multilinea={2} maxLength={120} value={capa.texto || ''} onChange={(e) => onCambiar?.({ texto: e.target.value })} />
+          <CampoEstudio etiqueta="Escribe tu texto" multilinea={2} maxLength={120} value={capa.texto || ''} onChange={(e) => onCambiar?.({ texto: e.target.value })} />
           {fuentes.length > 0 && (
-            <Campo etiqueta="Letra" opciones={fuentes.map((f) => ({ ...f, icono: <span className={s.muestraLetra} style={{ fontFamily: `'${f.valor}'` }}>Aa</span> }))} buscable value={capa.fuente} onChange={(e) => onCambiar?.({ fuente: e.target.value })} />
+            <CampoEstudio etiqueta="Letra" opciones={fuentes.map((f) => ({ ...f, icono: <span className={s.muestraLetra} style={{ fontFamily: `'${f.valor}'` }}><Texto>{"Aa"}</Texto></span> }))} buscable value={capa.fuente} onChange={(e) => onCambiar?.({ fuente: e.target.value })} />
           )}
           <div className={s.fila}>
             <div className={s.grupoCampo}>
-              <span className={s.rotulo}>{anchoZonaCm ? 'Alto de la letra' : 'Tamaño de letra'}</span>
+              <span className={s.rotulo}><Texto>{anchoZonaCm ? 'Alto de la letra' : 'Tamaño de letra'}</Texto></span>
               {anchoZonaCm ? (
                 // En cm de la prenda, como en la tienda: el alto de la letra.
-                <Cantidad
+                <CantidadEstudio
                   editable
                   etiqueta="Alto de la letra en centímetros"
                   valor={Math.round(tamano * anchoZonaCm * 10) / 10}
@@ -1359,18 +1360,18 @@ export function PanelCapa({
                   onChange={(cm) => onCambiar?.({ tamano: cm / anchoZonaCm })}
                 />
               ) : (
-                <Cantidad editable etiqueta="Tamaño de la letra" valor={Math.round(tamano * 100)} min={4} max={60} sufijo="pt" onChange={(v) => onCambiar?.({ tamano: v / 100 })} />
+                <CantidadEstudio editable etiqueta="Tamaño de la letra" valor={Math.round(tamano * 100)} min={4} max={60} sufijo="pt" onChange={(v) => onCambiar?.({ tamano: v / 100 })} />
               )}
             </div>
             <div className={s.grupoCampo}>
-              <span className={s.rotulo}>Estilo</span>
+              <span className={s.rotulo}><Texto>{"Estilo"}</Texto></span>
               <span className={s.chips}>
-                <Chip tamano="sm" activo={Boolean(capa.negrita)} onClick={() => onCambiar?.({ negrita: !capa.negrita })}><b>N</b><span className={s.oculto}> negrita</span></Chip>
-                <Chip tamano="sm" activo={Boolean(capa.cursiva)} onClick={() => onCambiar?.({ cursiva: !capa.cursiva })}><i>C</i><span className={s.oculto}> cursiva</span></Chip>
+                <Chip tamano="sm" activo={Boolean(capa.negrita)} onClick={() => onCambiar?.({ negrita: !capa.negrita })}><b><Texto>{"N"}</Texto></b><span className={s.oculto}><Texto>{" negrita"}</Texto></span></Chip>
+                <Chip tamano="sm" activo={Boolean(capa.cursiva)} onClick={() => onCambiar?.({ cursiva: !capa.cursiva })}><i><Texto>{"C"}</Texto></i><span className={s.oculto}><Texto>{" cursiva"}</Texto></span></Chip>
               </span>
             </div>
           </div>
-          <SelectorColor
+          <SelectorColorEstudio
             etiqueta="Color de la letra"
             colores={COLORES_TEXTO}
             libre={{ hex: capa.color || '#111111', onCambiar: (hex) => onCambiar?.({ color: hex }) }}
@@ -1383,9 +1384,9 @@ export function PanelCapa({
         <>
           {/* El tamaño en un solo control (en cm de la prenda si la zona tiene medida). */}
           <div className={s.grupoCampo}>
-            <span className={s.rotulo}>{anchoZonaCm ? 'Ancho de la imagen' : 'Tamaño'}</span>
+            <span className={s.rotulo}><Texto>{anchoZonaCm ? 'Ancho de la imagen' : 'Tamaño'}</Texto></span>
             {anchoZonaCm ? (
-              <Cantidad
+              <CantidadEstudio
                 editable
                 etiqueta="Ancho de la imagen en centímetros"
                 valor={Math.round(ancho * anchoZonaCm * 10) / 10}
@@ -1397,33 +1398,33 @@ export function PanelCapa({
                 onChange={(cm) => onCambiar?.({ ancho: cm / anchoZonaCm })}
               />
             ) : (
-              <Cantidad editable etiqueta="Tamaño de la imagen" valor={Math.round(ancho * 100)} min={5} max={200} paso={5} sufijo="%" onChange={(v) => onCambiar?.({ ancho: v / 100 })} />
+              <CantidadEstudio editable etiqueta="Tamaño de la imagen" valor={Math.round(ancho * 100)} min={5} max={200} paso={5} sufijo="%" onChange={(v) => onCambiar?.({ ancho: v / 100 })} />
             )}
           </div>
           <div className={s.grupoCampo}>
-            <span className={s.rotulo}>Arreglar la imagen</span>
+            <span className={s.rotulo}><Texto>{"Arreglar la imagen"}</Texto></span>
             <div className={s.agregar}>
-              <OpcionSello icono={<Eraser aria-hidden="true" />} tono="rosa" titulo="Quitar fondo" detalle="Deja solo lo importante" onClick={onQuitarFondo} disabled={sinSesion} />
-              <OpcionSello icono={<Crop aria-hidden="true" />} girar={6} titulo="Recortar" detalle="Elige qué parte va" onClick={onRecortar} disabled={sinSesion} />
+              <OpcionSello icono={<Eraser aria-hidden="true" />} tono="rosa" titulo="Quitar fondo" detalle="Deja solo lo importante" onClick={onQuitarFondo} disabled={sinSesion || subiendo} />
+              <OpcionSello icono={<Crop aria-hidden="true" />} girar={6} titulo="Recortar" detalle="Elige qué parte va" onClick={onRecortar} disabled={sinSesion || subiendo} />
             </div>
-            {sinSesion && <span className={s.nota}>Inicia sesión para recortar o quitar el fondo.</span>}
+            {sinSesion && <span className={s.nota}><Texto>{"Inicia sesión para recortar o quitar el fondo."}</Texto></span>}
           </div>
         </>
       )}
 
       <div className={s.grupoCampo}>
-        <span className={s.rotulo}>Acomodar en la zona</span>
+        <span className={s.rotulo}><Texto>{"Acomodar en la zona"}</Texto></span>
         {/* Dos bloques (acomodar | alinear) que bajan de línea enteros. */}
         <span className={s.acomodar}>
           <span className={s.grupoIconos}>
-            <Boton variante="contorno" tamano="sm" soloIcono aria-label="Centrar" title="Centrar (C)" icono={<Crosshair aria-hidden="true" />} onClick={onCentrar} />
-            {imagen && <Boton variante="contorno" tamano="sm" soloIcono aria-label="Llenar zona" title="Llenar zona" icono={<Maximize2 aria-hidden="true" />} onClick={onLlenar} />}
+            <BotonEstudio variante="contorno" tamano="sm" soloIcono aria-label="Centrar" title="Centrar (C)" icono={<Crosshair aria-hidden="true" />} onClick={onCentrar} />
+            {imagen && <BotonEstudio variante="contorno" tamano="sm" soloIcono aria-label="Llenar zona" title="Llenar zona" icono={<Maximize2 aria-hidden="true" />} onClick={onLlenar} />}
             {/* De 90° en 90°, como la tecla R de la tienda. */}
-            <Boton variante="contorno" tamano="sm" soloIcono aria-label="Girar" title="Girar (R)" icono={<RotateCw aria-hidden="true" />} onClick={() => onCambiar?.({ angulo: (Math.round((capa.angulo || 0) / 90) * 90 + 90) % 360 })} />
+            <BotonEstudio variante="contorno" tamano="sm" soloIcono aria-label="Girar" title="Girar (R)" icono={<RotateCw aria-hidden="true" />} onClick={() => onCambiar?.({ angulo: (Math.round((capa.angulo || 0) / 90) * 90 + 90) % 360 })} />
           </span>
           <span className={s.grupoIconos}>
             {ALINEAR.map(([id, Icono, texto]) => (
-              <Boton key={id} variante="contorno" tamano="sm" soloIcono aria-label={texto} title={texto} icono={<Icono aria-hidden="true" />} onClick={() => onAlinear?.(id)} />
+              <BotonEstudio key={id} variante="contorno" tamano="sm" soloIcono aria-label={texto} title={texto} icono={<Icono aria-hidden="true" />} onClick={() => onAlinear?.(id)} />
             ))}
           </span>
         </span>
@@ -1437,15 +1438,15 @@ export function PanelCapa({
           answer: (
             <div className={s.mas}>
               <span className={s.chips}>
-                {imagen && <Boton variante="fantasma" tamano="sm" icono={<FlipHorizontal aria-hidden="true" />} onClick={() => onCambiar?.({ voltear: !capa.voltear })}>Voltear</Boton>}
-                <Boton variante="fantasma" tamano="sm" icono={<ArrowUpToLine aria-hidden="true" />} onClick={onAdelante}>Traer adelante</Boton>
-                <Boton variante="fantasma" tamano="sm" icono={<ArrowDownToLine aria-hidden="true" />} onClick={onAtras}>Enviar atrás</Boton>
-                <Boton variante="fantasma" tamano="sm" icono={<Copy aria-hidden="true" />} onClick={onDuplicar}>Duplicar</Boton>
+                {imagen && <BotonEstudio variante="fantasma" tamano="sm" icono={<FlipHorizontal aria-hidden="true" />} onClick={() => onCambiar?.({ voltear: !capa.voltear })}><Texto>{"Voltear"}</Texto></BotonEstudio>}
+                <BotonEstudio variante="fantasma" tamano="sm" icono={<ArrowUpToLine aria-hidden="true" />} onClick={onAdelante}><Texto>{"Traer adelante"}</Texto></BotonEstudio>
+                <BotonEstudio variante="fantasma" tamano="sm" icono={<ArrowDownToLine aria-hidden="true" />} onClick={onAtras}><Texto>{"Enviar atrás"}</Texto></BotonEstudio>
+                <BotonEstudio variante="fantasma" tamano="sm" icono={<Copy aria-hidden="true" />} onClick={onDuplicar}><Texto>{"Duplicar"}</Texto></BotonEstudio>
               </span>
               {zonas.length > 1 && (
                 <div className={s.grupoCampo}>
-                  <span className={s.rotulo}>Pasar a otra zona</span>
-                  <span className={s.chips}>{zonas.map((z) => <Chip key={z.id} tamano="sm" onClick={() => onPasarAZona?.(z.id)}>{z.nombre}</Chip>)}</span>
+                  <span className={s.rotulo}><Texto>{"Pasar a otra zona"}</Texto></span>
+                  <span className={s.chips}>{zonas.map((z) => <Chip key={z.id} tamano="sm" onClick={() => onPasarAZona?.(z.id)}><Texto>{z.nombre}</Texto></Chip>)}</span>
                 </div>
               )}
             </div>
@@ -1455,10 +1456,10 @@ export function PanelCapa({
 
       {(onImagen || onTexto) && (
         <div className={s.grupoCampo}>
-          <span className={s.rotulo}>Agregar otro</span>
+          <span className={s.rotulo}><Texto>{"Agregar otro"}</Texto></span>
           <span className={s.chips}>
-            {onImagen && <Boton variante="contorno" tamano="sm" icono={<ImagePlus aria-hidden="true" />} onClick={onImagen}>Imagen</Boton>}
-            {onTexto && <Boton variante="contorno" tamano="sm" icono={<Type aria-hidden="true" />} onClick={onTexto}>Texto</Boton>}
+            {onImagen && <BotonEstudio variante="contorno" tamano="sm" icono={<ImagePlus aria-hidden="true" />} onClick={onImagen}><Texto>{"Imagen"}</Texto></BotonEstudio>}
+            {onTexto && <BotonEstudio variante="contorno" tamano="sm" icono={<Type aria-hidden="true" />} onClick={onTexto}><Texto>{"Texto"}</Texto></BotonEstudio>}
           </span>
         </div>
       )}
@@ -1486,17 +1487,17 @@ export function EstadoEdicion({ esBorrador = false, estadoBorrador = 'guardado',
       {esBorrador ? (
         <span className={s.edicionTexto} role="status">
           {Icono && <Icono aria-hidden="true" className={clase} />}
-          {texto}
+          <Texto>{texto}</Texto>
         </span>
       ) : (
         <span className={s.edicionTexto}>
-          <span className={s.edicionNombre}>Estás editando <TituloEditable nombre={nombre || 'tu creación'} onRenombrar={onRenombrar} como="strong" /></span>
+          <span className={s.edicionNombre}><Texto>{"Estás editando "}</Texto><TituloEditable nombre={nombre || 'tu creación'} onRenombrar={onRenombrar} como="strong" /></span>
           <span className={hayCambios ? s.sinGuardar : s.todoGuardado} role="status">
-            {hayCambios ? 'Tienes cambios sin guardar.' : 'Todo está guardado.'}
+            <Texto>{hayCambios ? 'Tienes cambios sin guardar.' : 'Todo está guardado.'}</Texto>
           </span>
         </span>
       )}
-      {onEmpezarNuevo && <Boton variante="fantasma" tamano="sm" icono={<Plus aria-hidden="true" />} onClick={onEmpezarNuevo}>Empezar uno nuevo</Boton>}
+      {onEmpezarNuevo && <BotonEstudio variante="fantasma" tamano="sm" icono={<Plus aria-hidden="true" />} onClick={onEmpezarNuevo}><Texto>{"Empezar uno nuevo"}</Texto></BotonEstudio>}
     </div>
   );
 }
@@ -1511,42 +1512,42 @@ export function EstadoEdicion({ esBorrador = false, estadoBorrador = 'guardado',
 export function PanelVarios({ cantidad, mismaZona = true, onListo, onAlinear, onDistribuir, onCentrar, onDuplicar, onQuitar }) {
   return (
     <div className={s.panelCapa} data-componente="PanelVarios">
-      <header className={s.panelCabeza}>
+      <div className={s.panelCabeza}>
         <div>
-          <h2 className={s.panelTitulo}>{cantidad} elementos elegidos</h2>
-          <p className={s.panelAyuda}>Se mueven juntos al arrastrar uno.</p>
+          <h2 className={s.panelTitulo}>{cantidad}<Texto>{" elementos elegidos"}</Texto></h2>
+          <p className={s.panelAyuda}><Texto>{"Se mueven juntos al arrastrar uno."}</Texto></p>
         </div>
-        <Boton tamano="sm" icono={<Check aria-hidden="true" />} onClick={onListo}>Listo</Boton>
-      </header>
+        <BotonEstudio tamano="sm" icono={<Check aria-hidden="true" />} onClick={onListo}><Texto>{"Listo"}</Texto></BotonEstudio>
+      </div>
       {mismaZona ? (
         <>
           <div className={s.grupoCampo}>
-            <span className={s.rotulo}>Alinear entre ellos</span>
+            <span className={s.rotulo}><Texto>{"Alinear entre ellos"}</Texto></span>
             <span className={s.alinear}>
               {ALINEAR.map(([id, Icono, texto]) => (
-                <Boton key={id} variante="contorno" tamano="sm" soloIcono aria-label={texto} title={texto} icono={<Icono aria-hidden="true" />} onClick={() => onAlinear?.(id)} />
+                <BotonEstudio key={id} variante="contorno" tamano="sm" soloIcono aria-label={texto} title={texto} icono={<Icono aria-hidden="true" />} onClick={() => onAlinear?.(id)} />
               ))}
             </span>
           </div>
           {cantidad > 2 && (
             <div className={s.grupoCampo}>
-              <span className={s.rotulo}>Mismo espacio entre ellos</span>
+              <span className={s.rotulo}><Texto>{"Mismo espacio entre ellos"}</Texto></span>
               <span className={s.chips}>
-                <Boton variante="contorno" tamano="sm" icono={<AlignHorizontalDistributeCenter aria-hidden="true" />} onClick={() => onDistribuir?.('h')}>De lado a lado</Boton>
-                <Boton variante="contorno" tamano="sm" icono={<AlignVerticalDistributeCenter aria-hidden="true" />} onClick={() => onDistribuir?.('v')}>De arriba abajo</Boton>
+                <BotonEstudio variante="contorno" tamano="sm" icono={<AlignHorizontalDistributeCenter aria-hidden="true" />} onClick={() => onDistribuir?.('h')}><Texto>{"De lado a lado"}</Texto></BotonEstudio>
+                <BotonEstudio variante="contorno" tamano="sm" icono={<AlignVerticalDistributeCenter aria-hidden="true" />} onClick={() => onDistribuir?.('v')}><Texto>{"De arriba abajo"}</Texto></BotonEstudio>
               </span>
             </div>
           )}
         </>
       ) : (
-        <p className={[s.calidad, s.calidad_aviso].join(' ')}>Están en zonas distintas: para alinearlos, elige solo los de una zona.</p>
+        <p className={[s.calidad, s.calidad_aviso].join(' ')}><Texto>{"Están en zonas distintas: para alinearlos, elige solo los de una zona."}</Texto></p>
       )}
       <div className={s.grupoCampo}>
-        <span className={s.rotulo}>El grupo</span>
+        <span className={s.rotulo}><Texto>{"El grupo"}</Texto></span>
         <span className={s.chips}>
-          {mismaZona && <Boton variante="contorno" tamano="sm" icono={<Crosshair aria-hidden="true" />} onClick={onCentrar}>Centrar en la zona</Boton>}
-          <Boton variante="contorno" tamano="sm" icono={<Copy aria-hidden="true" />} onClick={onDuplicar}>Duplicar</Boton>
-          <Boton variante="contorno" tamano="sm" icono={<Trash2 aria-hidden="true" />} onClick={onQuitar} className={s.peligro}>Quitar los {cantidad}</Boton>
+          {mismaZona && <BotonEstudio variante="contorno" tamano="sm" icono={<Crosshair aria-hidden="true" />} onClick={onCentrar}><Texto>{"Centrar en la zona"}</Texto></BotonEstudio>}
+          <BotonEstudio variante="contorno" tamano="sm" icono={<Copy aria-hidden="true" />} onClick={onDuplicar}><Texto>{"Duplicar"}</Texto></BotonEstudio>
+          <BotonEstudio variante="contorno" tamano="sm" icono={<Trash2 aria-hidden="true" />} onClick={onQuitar} className={s.peligro}><Texto>{"Quitar los "}</Texto>{cantidad}</BotonEstudio>
         </span>
       </div>
     </div>
@@ -1619,12 +1620,12 @@ export function GuiaGestos({ onEntendido }) {
     // Sus toques no llegan al lienzo (no eligen ni mueven nada).
     <div className={s.guiaGestos} role="dialog" aria-label="Cómo editar con los dedos" data-componente="GuiaGestos" onPointerDown={(e) => e.stopPropagation()} onPointerDownCapture={(e) => e.stopPropagation()}>
       <ul>
-        <li><Hand aria-hidden="true" /> <span><strong>Un dedo:</strong> arrástralo para moverlo.</span></li>
-        <li><Maximize2 aria-hidden="true" /> <span><strong>Dos dedos:</strong> sepáralos o júntalos para agrandar o achicar, y gíralos para girarlo.</span></li>
-        <li><Type aria-hidden="true" /> <span><strong>Dos toques</strong> en un texto para escribirlo.</span></li>
-        <li><ZoomIn aria-hidden="true" /> <span><strong>Sin nada elegido,</strong> dos dedos acercan la prenda.</span></li>
+        <li><Hand aria-hidden="true" /> <span><strong><Texto>{"Un dedo:"}</Texto></strong><Texto>{" arrástralo para moverlo."}</Texto></span></li>
+        <li><Maximize2 aria-hidden="true" /> <span><strong><Texto>{"Dos dedos:"}</Texto></strong><Texto>{" sepáralos o júntalos para agrandar o achicar, y gíralos para girarlo."}</Texto></span></li>
+        <li><Type aria-hidden="true" /> <span><strong><Texto>{"Dos toques"}</Texto></strong><Texto>{" en un texto para escribirlo."}</Texto></span></li>
+        <li><ZoomIn aria-hidden="true" /> <span><strong><Texto>{"Sin nada elegido,"}</Texto></strong><Texto>{" dos dedos acercan la prenda."}</Texto></span></li>
       </ul>
-      <Boton bloque tamano="sm" onClick={onEntendido}>Entendido</Boton>
+      <BotonEstudio bloque tamano="sm" onClick={onEntendido}><Texto>{"Entendido"}</Texto></BotonEstudio>
     </div>
   );
 }
@@ -1635,7 +1636,7 @@ export function AtajosEstudio({ lados = [] }) {
       <div className={s.atajosGrupos}>
         {gruposAtajos(lados).map((g) => (
           <section key={g.titulo} className={s.atajosGrupo}>
-            <h3 className={s.rotulo}>{g.titulo}</h3>
+            <h3 className={s.rotulo}><Texto>{g.titulo}</Texto></h3>
             <dl className={s.atajosLista}>
               {g.atajos.map(([combinaciones, que]) => (
                 <React.Fragment key={que}>
@@ -1643,13 +1644,13 @@ export function AtajosEstudio({ lados = [] }) {
                     {/* Cada combinación entera en una línea; si no caben, la siguiente baja. */}
                     {combinaciones.map((teclas, i) => (
                       <span key={teclas.join('+')} className={s.atajoCombo}>
-                        {i > 0 && <span className={s.atajoO}>o</span>}
+                        {i > 0 && <span className={s.atajoO}><Texto>{"o"}</Texto></span>}
                         {/* Las flechas son cualquiera de ellas, no una combinación: van sin "+". */}
-                        {teclas.map((t, j) => <React.Fragment key={t}>{j > 0 && !teclas.every((x) => '←↑→↓'.includes(x)) && <span className={s.atajoMas}>+</span>}<kbd>{t}</kbd></React.Fragment>)}
+                        {teclas.map((t, j) => <React.Fragment key={t}>{j > 0 && !teclas.every((x) => '←↑→↓'.includes(x)) && <span className={s.atajoMas}><Texto>{"+"}</Texto></span>}<kbd>{t}</kbd></React.Fragment>)}
                       </span>
                     ))}
                   </dt>
-                  <dd>{que}</dd>
+                  <dd><Texto>{que}</Texto></dd>
                 </React.Fragment>
               ))}
             </dl>
@@ -1659,3 +1660,26 @@ export function AtajosEstudio({ lados = [] }) {
     </div>
   );
 }
+
+/** Traduce también las etiquetas accesibles de los botones del estudio. */
+function BotonEstudio({ children, title, 'aria-label': etiqueta, ...props }) {
+  const titulo = useTexto(title);
+  const accesible = useTexto(etiqueta);
+  return <Boton {...props} title={titulo} aria-label={accesible}>{typeof children === 'string' ? <Texto>{children}</Texto> : children}</Boton>;
+}
+
+// Las etiquetas siguen siendo cadenas para los atributos accesibles de los
+// controles; los nombres de fuentes y los textos del diseño no se traducen.
+function conTextoEstudio(Componente) {
+  return function ControlEstudio({ etiqueta, descripcion, ...props }) {
+    const rotulo = useTexto(etiqueta);
+    const detalle = useTexto(descripcion);
+    return <Componente {...props} etiqueta={rotulo} descripcion={detalle} />;
+  };
+}
+const CampoEstudio = conTextoEstudio(Campo);
+const CantidadEstudio = conTextoEstudio(Cantidad);
+const DeslizadorEstudio = conTextoEstudio(Deslizador);
+const SelectorColorEstudio = conTextoEstudio(SelectorColor);
+const CasillaEstudio = conTextoEstudio(Casilla);
+const InterruptorEstudio = conTextoEstudio(Interruptor);

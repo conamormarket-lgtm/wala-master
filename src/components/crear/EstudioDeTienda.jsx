@@ -5,8 +5,8 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { fabric } from 'fabric';
 import {
   ArrowLeft, ImagePlus, Images, Plus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
-  Crosshair, Maximize2, RotateCw, Crop, Eraser, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info, Undo2, Redo2, Keyboard, Clipboard, ClipboardPaste, Pencil, Check, Minus, Hand, ZoomIn, ZoomOut, HelpCircle, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
-  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter, ArrowLeftRight, Sparkles,
+  Crosshair, Maximize2, RotateCw, Crop, Eraser, Download, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info, Undo2, Redo2, Clipboard, ClipboardPaste, Pencil, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
+  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter, ArrowLeftRight,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -18,7 +18,7 @@ import {
   prepararImagenCliente, subirImagenCliente, subirArchivoImpresion, subirVistaPrevia, recortarImagen,
 } from '../../services/crearArchivos';
 import {
-  UNIDADES_ZONA, leerPrendaBase, precioBase, precioPersonalizado, zonasConDiseno, listarZonas,
+  UNIDADES_ZONA, leerPrendaBase, precioPersonalizado, zonasConDiseno, listarZonas,
   calidadDeCapa, medidaZona, cargarImagen, fotoDeVista, fondoDeVista, textoSobre, esColorBlanco,
   colorDisponible, tallasDeColor, slug, fondoMuestra, vistasDelColor, pixelesDeImpresion,
 } from '../../utils/prendaBase';
@@ -36,13 +36,11 @@ import { getComboCrear } from '../../services/combosCrear';
 import AtajosTeclado, { MOD } from '../../pages/Crear/AtajosTeclado';
 import CapaModal from '../../pages/Crear/CapaModal';
 import MenuContextual from '../../pages/Crear/MenuContextual';
-import EfectosTexto from '../../pages/Crear/EfectosTexto';
-import CampoHex from '../../pages/Crear/CampoHex';
-import SelectorFuente from '../../pages/Crear/SelectorFuente';
-import TamanoLetra from '../../pages/Crear/TamanoLetra';
 import NombreEditable from '../../pages/Crear/NombreEditable';
 import { registrarGuardado, ponerBorradorEnCache, quitarBorradorDeCache } from '../../pages/Crear/borradoresCache';
 import { cajaEnZona, imanAlMover, imanAlEscalar, enCm } from '../../pages/Crear/guiasInteligentes';
+import { BarraLienzo, PasosEstudio, PanelCapa, PanelVarios, GuiaGestos } from '../../componentes/kit/piezas/Estudio';
+import { capaEstudioDesde, cambiosDePanelEstudio } from '../../componentes/kit/adaptadoresEstudio';
 import styles from '../../pages/Crear/CrearStudioPage.module.css';
 
 const VIOLETA = '#7C3AED';
@@ -57,17 +55,7 @@ const IMAN_DEDO_PX = 10;
 const ROSA = '#EC4899';
 // Zoom máximo de la prenda (8 = 800 %).
 const ZOOM_MAX = 8;
-const COLORES_TEXTO = ['#111111', '#FFFFFF', '#7C3AED', '#E11D48', '#F59E0B', '#10B981', '#2563EB', '#F472B6'];
 
-// Botones de alinear: [modo, ícono, nombre].
-const MODOS_ALINEAR = [
-  ['izquierda', AlignStartVertical, 'Alinear a la izquierda'],
-  ['centroH', AlignCenterVertical, 'Alinear al centro'],
-  ['derecha', AlignEndVertical, 'Alinear a la derecha'],
-  ['arriba', AlignStartHorizontal, 'Alinear arriba'],
-  ['centroV', AlignCenterHorizontal, 'Alinear al medio'],
-  ['abajo', AlignEndHorizontal, 'Alinear abajo'],
-];
 
 const soles = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
 const nuevoId = () => `capa_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -154,19 +142,6 @@ const capasParaGuardar = (capasPorZona) => {
 // El resorte del kit (Efectos.RESORTE): lo elegido viaja de una opción a otra.
 const RESORTE_ELEGIDO = { type: 'spring', stiffness: 420, damping: 34 };
 
-/** El número de un paso; hecho, un check sobre menta (como PasoEstudio del kit). */
-const NumeroPaso = ({ numero, hecho }) => (
-  <span className={`${styles.numeroPaso} ${hecho ? styles.numeroHecho : ''}`} aria-hidden="true">
-    {hecho ? <Check key="hecho" size={15} strokeWidth={3.2} className={styles.checkPaso} /> : numero}
-  </span>
-);
-
-/** La calidad de impresión en tres tramos (como MedidorCalidad del kit). */
-const NIVELES_CALIDAD = {
-  baja: { paso: 1, nombre: 'Borrosa', texto: 'Se verá borrosa a este tamaño. Achícala o usa una imagen más grande.' },
-  regular: { paso: 2, nombre: 'Aceptable', texto: 'Si la achicas un poco se verá más nítida.' },
-  buena: { paso: 3, nombre: 'Nítida', texto: 'Se imprimirá con buena calidad.' },
-};
 
 const EstudioDeTienda = () => {
   const { id } = useParams();
@@ -2420,11 +2395,6 @@ const EstudioDeTienda = () => {
     editarCapa(capaSel.id, { ...centroDe(zonaSel), escalaX: escala, escalaY: escala, angulo: 0 });
   };
 
-  const cambiarFuente = async (fuente) => {
-    if (!capaSel) return;
-    await asegurarFuente(fuente);
-    editarCapa(capaSel.id, { fuente });
-  };
 
   // ── Atajos de teclado (escritorio) ───────────────────────────────────────
   // La lista completa está en AtajosTeclado.jsx (se abre con "?").
@@ -3307,9 +3277,7 @@ const EstudioDeTienda = () => {
   const vistaSel = zonaSel ? cfg.vistas.find((v) => v.id === zonaSel.vistaId) : null;
   // cm de la prenda por unidad de la zona elegida (0 si su vista no tiene escala).
   const medidaSel = zonaSel && vistaSel ? medidaZona(zonaSel, vistaSel) : null;
-  const cmPorUnidadSel = medidaSel ? medidaSel.anchoCm / UNIDADES_ZONA : 0;
   const calidad = capaSel?.type === 'image' ? calidadDeCapa(capaSel, zonaSel, zonaSel && medidaZona(zonaSel, vistaSel)) : null;
-  const base = precioBase(prenda);
   // Con algo elegido el panel muestra sus opciones (los pasos vuelven con "Listo").
   const editandoAlgo = Boolean(capaSel) || multiIds.length > 1;
   // La flecha vuelve a la página desde la que se abrió el estudio (Mis
@@ -3446,17 +3414,7 @@ const EstudioDeTienda = () => {
                 </div>
               </div>
             )}
-            {guiaGestos && (
-              <div className={styles.guiaGestos} role="dialog" aria-label="Cómo editar con los dedos">
-                <ul>
-                  <li><ImagePlus size={18} aria-hidden="true" /> <span><strong>Para subir una foto o un logo,</strong> toca <strong>+ Imagen</strong> (debajo de la prenda) o <strong>Subir imagen</strong> en el paso 3.</span></li>
-                  <li><Hand size={18} aria-hidden="true" /> <span><strong>Un dedo:</strong> arrástralo para moverlo.</span></li>
-                  <li><Maximize2 size={18} aria-hidden="true" /> <span><strong>Dos dedos:</strong> sepáralos o júntalos para agrandar o achicar, y gíralos para girarlo.</span></li>
-                  <li><Type size={18} aria-hidden="true" /> <span><strong>Dos toques</strong> en un texto para escribirlo.</span></li>
-                </ul>
-                <button type="button" onClick={cerrarGuiaGestos}>Entendido</button>
-              </div>
-            )}
+            {guiaGestos && <GuiaGestos onEntendido={cerrarGuiaGestos} />}
             {arrastreLado && cfg.vistas.length > 1 && (
               // Mientras se arrastra: a qué otro lado de la prenda se puede pasar.
               <div className={styles.soltarLados} role="status">
@@ -3475,117 +3433,17 @@ const EstudioDeTienda = () => {
             )}
           </div>
 
-          {/* Acciones rápidas junto a la prenda: siempre a mano, también en el
-              celular (donde el panel queda debajo y hay que bajar para verlo). */}
-          <div className={`${styles.barraLienzo} ${capaSel ? styles.barraConSeleccion : ''}`}>
-            <button
-              type="button"
-              className={styles.botonBarra}
-              onClick={deshacer}
-              disabled={!historialInfo.puedeDeshacer}
-              aria-label="Deshacer"
-              title={`Deshacer (${MOD}+Z)`}
-            >
-              <Undo2 size={17} aria-hidden="true" /><span className={styles.textoBarra}>Deshacer</span>
-            </button>
-            <button
-              type="button"
-              className={styles.botonBarra}
-              onClick={rehacer}
-              disabled={!historialInfo.puedeRehacer}
-              aria-label="Rehacer"
-              title={`Rehacer (${MOD}+Y)`}
-            >
-              <Redo2 size={17} aria-hidden="true" />
-            </button>
-            {capaSel && (
-              <div className={styles.rapidas} role="group" aria-label="Ajustar lo elegido">
-                <button type="button" className={styles.botonBarra} onClick={() => escalar(1 / 1.12)} aria-label="Achicar" title="Achicar (-)">
-                  <Minus size={17} aria-hidden="true" />
-                </button>
-                <button type="button" className={styles.botonBarra} onClick={() => escalar(1.12)} aria-label="Agrandar" title="Agrandar (+)">
-                  <Plus size={17} aria-hidden="true" />
-                </button>
-                <button type="button" className={styles.botonBarra} onClick={centrar} aria-label="Centrar" title="Centrar (C)">
-                  <Crosshair size={17} aria-hidden="true" />
-                </button>
-                {zonaAcercada && (
-                  <button
-                    type="button"
-                    className={`${styles.botonBarra} ${styles.soloMovil}`}
-                    onClick={alternarVerCompleta}
-                    aria-label={verCompleta ? 'Acercar a la zona' : 'Ver la prenda completa'}
-                    title={verCompleta ? 'Acercar a la zona' : 'Ver la prenda completa'}
-                  >
-                    {verCompleta ? <ZoomIn size={17} aria-hidden="true" /> : <ZoomOut size={17} aria-hidden="true" />}
-                  </button>
-                )}
-                {/* En el celular el panel queda debajo: esto lleva a sus opciones. */}
-                <button
-                  type="button"
-                  className={`${styles.botonBarra} ${styles.soloMovil}`}
-                  onClick={() => mostrarEditor(capaSel.type === 'text')}
-                >
-                  <Pencil size={16} aria-hidden="true" /><span className={styles.textoBarra}>Editar</span>
-                </button>
-                <button type="button" className={`${styles.botonBarra} ${styles.botonBarraPeligro}`} onClick={eliminar} aria-label="Quitar" title="Quitar (Supr)">
-                  <Trash2 size={17} aria-hidden="true" />
-                </button>
-              </div>
-            )}
-            {/* Agregar, siempre a mano (con algo elegido, en el celular la fila
-                es para ajustarlo: ahí agregar está en el panel). */}
-            {!(capaSel && !CON_MOUSE) && multiIds.length < 2 && (
-              <div className={styles.agregarRapido} role="group" aria-label="Agregar al diseño">
-                <button type="button" className={`${styles.botonBarra} ${styles.botonAgregarRapido}`} onClick={elegirImagen} title="Subir imagen (I)">
-                  <ImagePlus size={17} aria-hidden="true" /> Imagen
-                </button>
-                <button type="button" className={`${styles.botonBarra} ${styles.botonAgregarRapido}`} onClick={() => agregarTexto(undefined, { editar: true })} title="Agregar texto (T)">
-                  <Type size={17} aria-hidden="true" /> Texto
-                </button>
-              </div>
-            )}
-            {(CON_MOUSE || !capaSel) && (
-              <div className={styles.zoomLienzo} role="group" aria-label="Zoom de la prenda">
-                <button type="button" className={styles.botonBarra} onClick={alejar} disabled={zoomManual <= 1} aria-label="Alejar" title={`Alejar (${MOD} + −)`}>
-                  <ZoomOut size={17} aria-hidden="true" />
-                </button>
-                <button
-                  ref={valorZoomRef}
-                  type="button"
-                  className={styles.valorZoom}
-                  onClick={verPrendaEntera}
-                  disabled={zoomManual <= 1}
-                  title={zoomManual > 1 ? `Ver la prenda entera (${MOD} + 0)` : `Zoom: ${MOD} + rueda`}
-                >
-                  {`${Math.round(zoomManual * 100)}%`}
-                </button>
-                <button type="button" className={styles.botonBarra} onClick={acercar} disabled={zoomManual >= ZOOM_MAX} aria-label="Acercar" title={`Acercar (${MOD} + +)`}>
-                  <ZoomIn size={17} aria-hidden="true" />
-                </button>
-              </div>
-            )}
-            {CON_MOUSE ? (
-              <button
-                type="button"
-                className={`${styles.botonBarra} ${styles.botonAtajos}`}
-                onClick={() => setVerAtajos(true)}
-                title="Atajos de teclado (?)"
-              >
-                <Keyboard size={17} aria-hidden="true" /><span className={styles.textoBarra}>Atajos</span>
-              </button>
-            ) : !capaSel && (
-              <button
-                type="button"
-                className={styles.botonBarra}
-                onClick={() => setGuiaGestos(true)}
-                aria-label="Cómo se usa"
-                title="Cómo se usa"
-              >
-                <HelpCircle size={17} aria-hidden="true" />
-              </button>
-            )}
-          </div>
+          <BarraLienzo
+            {...historialInfo} onDeshacer={deshacer} onRehacer={rehacer}
+            elegido={Boolean(capaSel) || multiIds.length > 1}
+            onAchicar={() => escalar(1 / 1.12)} onAgrandar={() => escalar(1.12)}
+            onCentrar={centrar} onQuitar={eliminar} onImagen={elegirImagen}
+            onTexto={() => agregarTexto(undefined, { editar: true })}
+            zoom={zoomManual} onZoom={(z) => zoomHacia(z, null, true)}
+            onAtajos={CON_MOUSE ? () => setVerAtajos(true) : undefined}
+            onEditar={() => mostrarEditor(capaSel?.type === 'text')}
+            completa={verCompleta} onVerCompleta={zonaAcercada ? alternarVerCompleta : undefined}
+          />
 
           <p className={styles.zonaInfo}>
             <Info size={14} aria-hidden="true" />
@@ -3602,385 +3460,60 @@ const EstudioDeTienda = () => {
         <aside ref={panelRef} className={styles.panel}>
           <div ref={panelScrollRef} className={styles.panelContenido}>
           {!editandoAlgo && (
-          <>
-          {/* Paso 1 — Color */}
-          <section className={styles.seccion} aria-label="Color de la prenda">
-            <h2 className={styles.paso}>
-              <NumeroPaso numero={1} hecho={Boolean(color)} />
-              Elige el color
-              <span className={styles.valor}>{color.nombre}</span>
-            </h2>
-            <div className={styles.coloresPrenda}>
-              {cfg.colores.filter((o) => !o.espejo).map((original) => {
-                // Si está puesto su invertido, la muestra se ve al revés (como la prenda).
-                const activo = original.id === color.id || original.id === color.espejoDe;
-                const c = activo ? color : original;
-                return (
-                <button
-                  key={original.id}
-                  type="button"
-                  className={`${styles.colorPrenda} ${activo ? styles.colorPrendaActivo : ''}`}
-                  style={{ background: fondoMuestra(c) }}
-                  aria-label={c.nombre}
-                  aria-pressed={activo}
-                  title={c.nombre}
-                  onClick={() => cambiarColorPrenda(c)}
-                >
-                  {activo && <motion.span layoutId="crear-color-prenda" className={styles.aroColor} transition={viajeElegido} aria-hidden="true" />}
-                  {activo && (c.hex2
-                    // En un bicolor el centro cae sobre el corte: va sobre un disco oscuro.
-                    ? <Check size={14} strokeWidth={3} className={`${styles.checkColor} ${styles.checkBicolor}`} aria-hidden="true" />
-                    : <Check size={16} strokeWidth={3} className={styles.checkColor} style={{ color: textoSobre(c.hex) }} aria-hidden="true" />)}
-                </button>
-                );
+            <PasosEstudio
+              colores={cfg.colores.filter((c) => !c.espejo).map((original) => {
+                const c = original.id === color.espejoDe ? color : original;
+                return { id: c.id, nombre: c.nombre, hex: fondoMuestra(c), claro: textoSobre(c.hex) !== '#FFFFFF' };
               })}
-            </div>
-            {/* Bicolor con versión invertida: un interruptor para ponerlo al revés
-                (p.ej. la segunda polera de una pareja rosado/celeste). */}
-            {(color?.espejo || invertidoDe(color, cfg.colores)) && (
-              <label className={styles.interruptorInvertir}>
-                <input
-                  type="checkbox"
-                  role="switch"
-                  checked={Boolean(color.espejo)}
-                  onChange={(e) => {
-                    const original = color.espejo ? cfg.colores.find((o) => o.id === color.espejoDe) : color;
-                    const destino = e.target.checked ? invertidoDe(original, cfg.colores) : original;
-                    if (destino) cambiarColorPrenda(destino);
-                  }}
-                />
-                <span className={styles.interruptor} aria-hidden="true" />
-                <span>
-                  <strong>Invertir colores</strong>
-                  <small>{color.espejo ? `Al revés: ${color.nombre}` : `Queda ${invertidoDe(color, cfg.colores)?.nombre}`}</small>
-                </span>
-              </label>
-            )}
-          </section>
-
-          {/* Paso 2 — Dónde va (todas las zonas, de cada lado) */}
-          <section className={styles.seccion} aria-label="Dónde va tu diseño">
-            <h2 className={styles.paso}>
-              <NumeroPaso numero={2} hecho={Boolean(zona)} />
-              ¿Dónde va tu diseño?
-            </h2>
-            {cfg.vistas.map((v) => (
-              <div key={v.id} className={styles.grupoZonas}>
-                {cfg.vistas.length > 1 && <span className={styles.ladoZonas}>{v.nombre}</span>}
-                <div className={styles.zonas} role="radiogroup" aria-label={`Zonas de ${v.nombre}`}>
-                  {v.zonas.map((z) => {
-                    const conDiseno = zonasUsadas.includes(z.id);
-                    const activa = v.id === vista.id && z.id === zona.id;
-                    return (
-                      <button
-                        key={z.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={activa}
-                        className={`${styles.zonaChip} ${activa ? styles.zonaChipActiva : ''}`}
-                        onClick={() => {
-                          if (v.id !== vista.id) cambiarVista(v.id);
-                          elegirZona(z.id);
-                        }}
-                      >
-                        <span className={styles.zonaNombre}>{z.nombre}</span>
-                        {conDiseno && (
-                          <span className={styles.zonaConDiseno}><Check size={12} strokeWidth={3} aria-hidden="true" /> Con diseño</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </section>
-
-          {/* Paso 3 — Agregar imagen o texto */}
-          <section className={styles.seccion} aria-label="Agregar al diseño">
-            <h2 className={styles.paso}>
-              <NumeroPaso numero={3} hecho={Object.values(capasPorZona).some((l) => l?.length)} />
-              Agrega tu imagen o tu texto
-            </h2>
-            <div className={styles.agregar}>
-              <button type="button" className={styles.botonAgregar} onClick={elegirImagen} title="Subir imagen (I) · también puedes arrastrarla o pegarla">
-                <ImagePlus size={24} aria-hidden="true" />
-                <span className={styles.botonAgregarTexto}>
-                  <strong>Subir imagen</strong>
-                  <small>Una foto o un logo</small>
-                </span>
-              </button>
-              <button type="button" className={styles.botonAgregar} onClick={() => agregarTexto(undefined, { editar: true })} title="Agregar texto (T)">
-                <Type size={24} aria-hidden="true" />
-                <span className={styles.botonAgregarTexto}>
-                  <strong>Escribir texto</strong>
-                  <small>Un nombre o una frase</small>
-                </span>
-              </button>
-              <input
-                ref={inputArchivoRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                hidden
-                onChange={alElegirArchivo}
+              color={color.id}
+              onColor={(cId) => cambiarColorPrenda(cfg.colores.find((c) => c.id === cId))}
+              invertir={(color.espejo || invertidoDe(color, cfg.colores)) ? {
+                activo: Boolean(color.espejo),
+                texto: color.espejo ? 'Al revés: ' + color.nombre : 'Queda ' + invertidoDe(color, cfg.colores)?.nombre,
+                onCambiar: (invertir) => {
+                  const original = color.espejo ? cfg.colores.find((c) => c.id === color.espejoDe) : color;
+                  const destino = invertir ? invertidoDe(original, cfg.colores) : original;
+                  if (destino) cambiarColorPrenda(destino);
+                },
+              } : undefined}
+              lados={cfg.vistas.map((v) => ({ nombre: v.nombre, zonas: v.zonas.map((z) => ({ ...z, conDiseno: zonasUsadas.includes(z.id) })) }))}
+              zona={zona.id}
+              onZona={(zId) => {
+                const destino = zonaPorId(zId);
+                if (destino?.vistaId !== vista.id) cambiarVista(destino.vistaId);
+                elegirZona(zId);
+              }}
+              onImagen={elegirImagen} onTexto={() => agregarTexto(undefined, { editar: true })}
+              subiendo={subiendo > 0} donde={vista.nombre + ' · ' + zona.nombre} conDiseno={zonasUsadas.length > 0}
+            />
+          )}
+          <div ref={editorRef}>
+            {multiIds.length > 1 ? (
+              <PanelVarios cantidad={multiIds.length} mismaZona={Boolean(mismaZonaMulti)}
+                onListo={terminarEdicion} onAlinear={alinear} onDistribuir={distribuir}
+                onCentrar={centrar} onDuplicar={duplicar} onQuitar={eliminar} />
+            ) : capaSel && (
+              <PanelCapa
+                capa={capaEstudioDesde(capaSel, UNIDADES_ZONA)} zona={zonaSel?.nombre}
+                fuentes={FUENTES.map((f) => ({ valor: f, texto: f }))}
+                onCambiar={async (cambios) => {
+                  const capa = capaSel;
+                  if (cambios.fuente) await asegurarFuente(cambios.fuente);
+                  editarCapa(capa.id, cambiosDePanelEstudio(capa, cambios, UNIDADES_ZONA));
+                }}
+                onListo={terminarEdicion} calidad={calidad} onNitida={dejarNitida}
+                anchoZonaCm={medidaSel?.anchoCm} fueraDeZona={fueraDeZona}
+                sinSesion={!user} subiendo={Boolean(capaSel.subiendo)}
+                onCentrar={centrar} onAlinear={alinear} onQuitar={eliminar}
+                onDuplicar={duplicar} onAdelante={() => mover(true)} onAtras={() => mover(false)}
+                onRecortar={() => setRecortando(capaSel.id)} onQuitarFondo={() => setQuitandoFondo(capaSel.id)}
+                onLlenar={ajustarAZona} zonas={zonasPrenda.filter((z) => z.id !== zonaSel?.id)}
+                onPasarAZona={(zId) => moverAZona(zonaPorId(zId))}
+                onImagen={elegirImagen} onTexto={() => agregarTexto(undefined, { editar: true })}
               />
-            </div>
-            <p className={styles.destino}>
-              Se agrega en: <strong>{cfg.vistas.length > 1 && vista.nombre !== zona.nombre ? `${vista.nombre} · ` : ''}{zona.nombre}</strong>
-            </p>
-            {subiendo > 0 && (
-              <p className={styles.subiendo}><Loader2 size={14} className={styles.girando} aria-hidden="true" /> Subiendo tu imagen…</p>
             )}
-          </section>
-          </>
-          )}
-
-          {multiIds.length > 1 && (
-            <section className={`${styles.seccion} ${styles.seccionCapa}`} aria-label="Varios elementos seleccionados">
-              <div className={styles.seccionCabecera}>
-                <h2 className={styles.seccionTitulo}>{multiIds.length} elementos elegidos</h2>
-                <button type="button" className={styles.botonListo} onClick={terminarEdicion} title="Listo (Esc)">
-                  <Check size={16} aria-hidden="true" /> Listo
-                </button>
-              </div>
-              <p className={styles.ayudaVarios}>
-                Muévelos o cambia su tamaño juntos. Shift o {MOD} + clic suma o quita uno.
-              </p>
-              {mismaZonaMulti ? (
-                <>
-                  <div className={styles.alinearVarios} role="group" aria-label="Alinear">
-                    {MODOS_ALINEAR.map(([modo, Icono, nombreAlinear]) => (
-                      <button key={modo} type="button" className={styles.botonAlinear} onClick={() => alinear(modo)} aria-label={nombreAlinear} title={nombreAlinear}>
-                        <Icono size={18} aria-hidden="true" />
-                      </button>
-                    ))}
-                  </div>
-                  {multiIds.length > 2 && (
-                    <div className={styles.distribuir} role="group" aria-label="Distribuir">
-                      <button type="button" className={styles.herramienta} onClick={() => distribuir('h')} title="El mismo espacio entre ellos, de lado a lado">
-                        <AlignHorizontalDistributeCenter size={16} aria-hidden="true" />Mismo espacio ↔
-                      </button>
-                      <button type="button" className={styles.herramienta} onClick={() => distribuir('v')} title="El mismo espacio entre ellos, de arriba abajo">
-                        <AlignVerticalDistributeCenter size={16} aria-hidden="true" />Mismo espacio ↕
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p className={styles.ayudaVarios}>Están en zonas distintas: para alinearlos, elige los de una misma zona.</p>
-              )}
-              <div className={styles.herramientas}>
-                {mismaZonaMulti && (
-                  <button type="button" className={styles.herramienta} onClick={() => alinear('zona')} title="Centrar en la zona (C)">
-                    <Crosshair size={16} aria-hidden="true" />Centrar
-                  </button>
-                )}
-                <button type="button" className={styles.herramienta} onClick={() => { asentarHistorial(); duplicar(); }} title={`Duplicar (${MOD}+D)`}>
-                  <Copy size={16} aria-hidden="true" />Duplicar
-                </button>
-                <button type="button" className={`${styles.herramienta} ${styles.herramientaPeligro}`} onClick={() => { asentarHistorial(); eliminar(); }} title="Quitar (Supr)">
-                  <Trash2 size={16} aria-hidden="true" />Quitar
-                </button>
-              </div>
-            </section>
-          )}
-
-          {capaSel && (
-            <section ref={editorRef} className={`${styles.seccion} ${styles.seccionCapa}`} aria-label="Elemento seleccionado">
-              <div className={styles.seccionCabecera}>
-                <h2 className={styles.seccionTitulo}>
-                  {capaSel.type === 'image' ? <ImagePlus size={17} aria-hidden="true" /> : <Type size={17} aria-hidden="true" />}
-                  {capaSel.type === 'image' ? 'Tu imagen' : 'Tu texto'}
-                  {zonaSel && <span className={styles.valor}>en {zonaSel.nombre.toLowerCase()}</span>}
-                </h2>
-                {/* Quitar, aparte y como ícono: lejos de lo que se toca seguido. */}
-                <span className={styles.accionesCabecera}>
-                  <button type="button" className={styles.botonQuitar} onClick={() => { asentarHistorial(); eliminar(); }} aria-label="Quitar" title="Quitar (Supr)">
-                    <Trash2 size={17} aria-hidden="true" />
-                  </button>
-                  <button type="button" className={styles.botonListo} onClick={terminarEdicion} title="Listo (Esc)">
-                    <Check size={16} aria-hidden="true" /> Listo
-                  </button>
-                </span>
-              </div>
-              <p className={styles.ayudaEditar}>
-                Los cambios se ven en la prenda al instante. Cuando termines, toca <strong>Listo</strong>.
-              </p>
-              <div className={`${styles.agregarOtro} ${styles.soloMovil}`}>
-                <span>Agregar otro:</span>
-                <button type="button" onClick={elegirImagen}><ImagePlus size={15} aria-hidden="true" /> Imagen</button>
-                <button type="button" onClick={() => agregarTexto(undefined, { editar: true })}><Type size={15} aria-hidden="true" /> Texto</button>
-              </div>
-
-              {fueraDeZona && (
-                <div className={`${styles.calidad} ${styles.calidad_regular}`}>
-                  <AlertTriangle size={16} aria-hidden="true" />
-                  <span>Una parte queda fuera de la zona punteada y no se imprimirá. Usa “Centrar” o achícalo.</span>
-                </div>
-              )}
-
-              {capaSel.type === 'image' && NIVELES_CALIDAD[calidad] && (
-                <div className={`${styles.medidor} ${styles[`medidor_${calidad}`]}`}>
-                  <span className={styles.medidorTitulo}>Calidad de impresión: <strong>{NIVELES_CALIDAD[calidad].nombre}</strong></span>
-                  <span className={styles.medidorPista} role="progressbar" aria-valuemin={0} aria-valuemax={3} aria-valuenow={NIVELES_CALIDAD[calidad].paso}>
-                    {[1, 2, 3].map((n) => <i key={n} className={n <= NIVELES_CALIDAD[calidad].paso ? styles.medidorOn : undefined} />)}
-                  </span>
-                  <div className={styles.medidorPie}>
-                    <span>{NIVELES_CALIDAD[calidad].texto}</span>
-                    {calidad !== 'buena' && (
-                      <button type="button" className={styles.botonNitida} onClick={dejarNitida}>
-                        <Sparkles size={15} aria-hidden="true" /> Dejarla nítida
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {capaSel.type === 'text' && (
-                <>
-                  <label className={styles.etiquetaCampo}>
-                    Escribe tu texto
-                    {/* Crece solo con lo escrito, sin agarradera (como Campo multilinea del kit). */}
-                    <textarea
-                      className={styles.textoInput}
-                      value={capaSel.text}
-                      rows={2}
-                      maxLength={120}
-                      onChange={(e) => editarCapa(capaSel.id, { text: e.target.value })}
-                      onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }}
-                    />
-                  </label>
-                  <span className={styles.etiquetaCampo}>Letra</span>
-                  <SelectorFuente valor={capaSel.fuente} onCambiar={cambiarFuente} />
-                  <span className={styles.etiquetaCampo}>Tamaño de letra</span>
-                  <TamanoLetra
-                    capa={capaSel}
-                    cmPorUnidad={cmPorUnidadSel}
-                    onCambiar={(escala) => editarCapa(capaSel.id, { escalaX: escala, escalaY: escala })}
-                  />
-                  <span className={styles.etiquetaCampo}>Color de la letra</span>
-                  <div className={styles.filaTexto}>
-                    <div className={styles.coloresTexto} aria-label="Color del texto">
-                      {COLORES_TEXTO.map((c) => (
-                        <button
-                          key={c}
-                          type="button"
-                          className={`${styles.muestra} ${capaSel.color === c ? styles.muestraActiva : ''}`}
-                          style={{ background: c }}
-                          aria-label={`Color ${c}`}
-                          onClick={() => editarCapa(capaSel.id, { color: c })}
-                        >
-                          {capaSel.color === c && <motion.span layoutId="crear-color-texto" className={styles.aroColor} transition={viajeElegido} aria-hidden="true" />}
-                        </button>
-                      ))}
-                      <label className={styles.muestraLibre} aria-label="Otro color" title="Otro color">
-                        <input type="color" value={capaSel.color} onChange={(e) => editarCapa(capaSel.id, { color: e.target.value })} />
-                      </label>
-                      <CampoHex valor={capaSel.color} onChange={(hex) => editarCapa(capaSel.id, { color: hex })} etiqueta="Color de la letra en hexadecimal" />
-                    </div>
-                    <div className={styles.estilos}>
-                      <button
-                        type="button"
-                        aria-pressed={!!capaSel.negrita}
-                        className={`${styles.icono} ${capaSel.negrita ? styles.iconoActivo : ''}`}
-                        onClick={() => editarCapa(capaSel.id, { negrita: !capaSel.negrita })}
-                        aria-label="Negrita"
-                        title="Negrita"
-                      >
-                        <Bold size={16} aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-pressed={!!capaSel.cursiva}
-                        className={`${styles.icono} ${capaSel.cursiva ? styles.iconoActivo : ''}`}
-                        onClick={() => editarCapa(capaSel.id, { cursiva: !capaSel.cursiva })}
-                        aria-label="Cursiva"
-                        title="Cursiva"
-                      >
-                        <Italic size={16} aria-hidden="true" />
-                      </button>
-                    </div>
-                  </div>
-                  <EfectosTexto capa={capaSel} onCambiar={(cambios) => editarCapa(capaSel.id, cambios)} />
-                </>
-              )}
-
-              {capaSel.type === 'image' && (
-                <>
-                  {/* El tamaño en un solo control (en cm de la prenda si la zona tiene medida). */}
-                  <span className={styles.etiquetaCampo}>{cmPorUnidadSel ? 'Ancho de la imagen' : 'Tamaño'}</span>
-                  <TamanoLetra
-                    imagen
-                    capa={capaSel}
-                    cmPorUnidad={cmPorUnidadSel}
-                    onCambiar={(escala) => editarCapa(capaSel.id, { escalaX: escala, escalaY: escala })}
-                  />
-                  <span className={styles.etiquetaCampo}>Arreglar la imagen</span>
-                  <div className={styles.agregar}>
-                    <button type="button" className={styles.botonAgregar} onClick={() => setQuitandoFondo(capaSel.id)} disabled={!user || capaSel.subiendo}>
-                      <Eraser size={22} aria-hidden="true" />
-                      <span className={styles.botonAgregarTexto}>
-                        <strong>Quitar fondo</strong>
-                        <small>Deja solo lo importante</small>
-                      </span>
-                    </button>
-                    <button type="button" className={styles.botonAgregar} onClick={() => setRecortando(capaSel.id)} disabled={!user}>
-                      <Crop size={22} aria-hidden="true" />
-                      <span className={styles.botonAgregarTexto}>
-                        <strong>Recortar</strong>
-                        <small>Elige qué parte va</small>
-                      </span>
-                    </button>
-                  </div>
-                  {!user && <span className={styles.notaSesion}>Inicia sesión para recortar o quitar el fondo.</span>}
-                </>
-              )}
-
-              {/* Acomodar | alinear: dos bloques de íconos que bajan de línea enteros. */}
-              <span className={styles.etiquetaCampo}>Acomodar en la zona</span>
-              <div className={styles.acomodar} role="group" aria-label="Acomodar en la zona">
-                <span className={styles.grupoIconos}>
-                  <button type="button" className={styles.botonAlinear} onClick={centrar} aria-label="Centrar" title="Centrar (C)"><Crosshair size={18} aria-hidden="true" /></button>
-                  {capaSel.type === 'image' && (
-                    <button type="button" className={styles.botonAlinear} onClick={() => { asentarHistorial(); ajustarAZona(); }} aria-label="Llenar zona" title="Llenar zona"><Maximize2 size={18} aria-hidden="true" /></button>
-                  )}
-                  <button type="button" className={styles.botonAlinear} onClick={() => girar(1)} aria-label="Girar" title="Girar (R)"><RotateCw size={18} aria-hidden="true" /></button>
-                </span>
-                <span className={styles.grupoIconos}>
-                  {MODOS_ALINEAR.map(([modo, Icono, nombreAlinear]) => (
-                    <button key={modo} type="button" className={styles.botonAlinear} onClick={() => alinear(modo)} aria-label={`${nombreAlinear} de la zona`} title={`${nombreAlinear} de la zona`}>
-                      <Icono size={18} aria-hidden="true" />
-                    </button>
-                  ))}
-                </span>
-              </div>
-
-              <details className={styles.masOpciones}>
-                <summary>Más opciones</summary>
-                <div className={styles.herramientas}>
-                  {capaSel.type === 'image' && (
-                    <>
-                      <button type="button" className={styles.herramienta} onClick={() => girar(1)} title="Girar (R)"><RotateCw size={16} aria-hidden="true" />Girar</button>
-                      <button type="button" className={styles.herramienta} onClick={() => editarCapa(capaSel.id, { flipX: !capaSel.flipX })} title="Voltear (F)"><FlipHorizontal size={16} aria-hidden="true" />Voltear</button>
-                    </>
-                  )}
-                  <button type="button" className={styles.herramienta} onClick={() => mover(true)} title="Adelante (])"><ArrowUpToLine size={16} aria-hidden="true" />Traer adelante</button>
-                  <button type="button" className={styles.herramienta} onClick={() => mover(false)} title="Atrás ([)"><ArrowDownToLine size={16} aria-hidden="true" />Enviar atrás</button>
-                  <button type="button" className={styles.herramienta} onClick={duplicar} title={`Duplicar (${MOD}+D)`}><Copy size={16} aria-hidden="true" />Duplicar</button>
-                </div>
-                {zonaSel && zonasPrenda.length > 1 && (
-                  <div className={styles.moverA}>
-                    <span>Pasar a otra zona:</span>
-                    {zonasPrenda.filter((z) => z.id !== zonaSel.id).map((z) => (
-                      <button key={z.id} type="button" className={styles.zonaMini} onClick={() => moverAZona(z)}>
-                        {z.vistaId === vista.id || z.vistaNombre === z.nombre ? z.nombre : `${z.vistaNombre} · ${z.nombre}`}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </details>
-            </section>
-          )}
-
+          </div>
+          <input ref={inputArchivoRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={alElegirArchivo} />
           </div>
 
           <div className={styles.acciones}>
