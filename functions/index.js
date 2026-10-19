@@ -357,8 +357,8 @@ async function registrarAnomaliaPago(id, datos) {
 
 // ── Verificación de precio/stock reales contra el catálogo ──────────────────
 // Recorre un mapa de productos (mismo formato que orderPayload.productos:
-// valores con productoId/cantidad/precio/personalizado/esCombo — el que arman
-// CheckoutPage.jsx y LandingPaymentBlock.jsx) y lanza HttpsError con un
+// valores con productoId/cantidad/precio/personalizado/esCombo — el que arma
+// el checkout) y lanza HttpsError con un
 // mensaje claro en el primer problema real que encuentra. `lector` es
 // opcional: se pasa la transacción (t) para leer dentro de una (como hace
 // prepareCheckoutPayment) o se omite para leer suelto (validateCartPricingSecure,
@@ -379,9 +379,9 @@ async function registrarAnomaliaPago(id, datos) {
 const verificarPreciosYStock = createCartValidator({ db, HttpsError: functions.https.HttpsError });
 
 // Callable standalone para flujos que crean el pedido DIRECTO, sin pasar por
-// prepareCheckoutPayment (ej. LandingPaymentBlock.jsx, que llama createWebOrder
-// de una vez). Mismo criterio que prepareCheckoutPayment, vía la misma función
-// verificarPreciosYStock — no es una segunda validación distinta.
+// prepareCheckoutPayment (lo usaba el pago de las landings de K-CHERO, que se
+// retiraron el 2026-10-19). Mismo criterio que prepareCheckoutPayment, vía la
+// misma función verificarPreciosYStock — no es una segunda validación distinta.
 // "wala.pe/ver/<id>": la creación de un pedido (o publicada) para quien abre
 // el enlace del WhatsApp, sin sesión. Ver disenoCompartido (pedidoDisenos.js).
 exports.verDisenoCompartido = functions.https.onCall(async (data) => {
@@ -437,20 +437,18 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
   if (!orderPayload || typeof orderPayload !== "object" || Array.isArray(orderPayload)) {
     throw new functions.https.HttpsError("invalid-argument", "Faltan los datos del checkout.");
   }
+  // Las landings con pago propio (K-CHERO) se retiraron el 2026-10-19: un
+  // navegador con la página vieja guardada no puede crear un pedido de landing.
+  if (orderPayload.origen === "landing_page") {
+    throw new functions.https.HttpsError("failed-precondition", "Esta página de compra ya no está disponible. Recarga la página.");
+  }
   const intentId = checkoutOrderId(orderPayload);
-  // El TOTAL del pedido. En una landing con adelanto, montoPendiente es el saldo
-  // contra entrega, no lo que se cobra: lo que se cobra lo decide el servidor.
+  // El TOTAL del pedido.
   const amountPen = Number(orderPayload.montoTotal ?? orderPayload.montoPendiente ?? orderPayload.montoDeuda);
   if (!intentId || !Number.isFinite(amountPen) || amountPen <= 0) {
     throw new functions.https.HttpsError("invalid-argument", "El checkout no tiene un código o monto válido.");
   }
   const uid = context.auth ? context.auth.uid : null;
-  // Landing: el envío va incluido y puede cobrarse un adelanto. Ambas cosas salen
-  // de la configuración de la landing (pages/{slug}), que solo edita el admin.
-  const landingSlug = orderPayload.origen === "landing_page"
-    ? String(orderPayload.landingSlug || "").trim().replace(/[/\\#?[\].]/g, "-")
-    : "";
-  const landingRef = landingSlug ? db.collection("pages").doc(landingSlug) : null;
   const monedasPedidas = Math.max(0, Number(orderPayload.descuentoMonedas) || 0);
   if (monedasPedidas > 0 && !uid) {
     throw new functions.https.HttpsError("failed-precondition", "Inicia sesión para usar tus monedas.");
@@ -477,33 +475,9 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
     const userSnap = userRef ? await t.get(userRef) : null;
     const u = userSnap && userSnap.exists ? userSnap.data() : {};
     const anteriorSnap = anteriorRef ? await t.get(anteriorRef) : null;
-    const landingSnap = landingRef ? await t.get(landingRef) : null;
-
-    let ajustesLanding = null;
-    if (landingRef) {
-      ajustesLanding = landingSnap.exists ? pagos.ajustesPagoLanding(landingSnap.data()) : null;
-      if (!ajustesLanding) {
-        throw new functions.https.HttpsError("failed-precondition", "Esta página de compra ya no está disponible. Recarga la página.");
-      }
-      // Solo el producto de la landing: si no, cualquier carrito podría pedir el
-      // envío incluido o el adelanto de la landing.
-      const productoLanding = String(ajustesLanding.productId || "").trim();
-      const lineas = Object.values(orderPayload.productos || {}).filter(Boolean);
-      const ajenas = lineas.filter((p) => String(p.productoId || "").trim() &&
-        String(p.productoId).trim() !== productoLanding);
-      const precioLanding = Number(ajustesLanding.montoPEN) || 0;
-      if (ajenas.length || (!productoLanding && !(precioLanding > 0)) ||
-        (precioLanding > 0 && Math.abs(subtotal - precioLanding) > 0.01)) {
-        console.warn(`prepareCheckoutPayment: landing ${landingSlug} con productos o precio distintos`, {
-          subtotal, precioLanding, productoLanding, ajenas: ajenas.map((p) => p.productoId),
-        });
-        throw new functions.https.HttpsError("failed-precondition",
-          "El precio de este producto cambió. Recarga la página e inténtalo de nuevo.");
-      }
-    }
 
     let descuentoCupon = 0;
-    let envioGratis = !!ajustesLanding;
+    let envioGratis = false;
     if (uid && cuponCode) {
       const encontrado = await buscarCupon(uid, cuponCode, t);
       if (!motivoRechazo(encontrado && encontrado.cupon)) {
@@ -569,11 +543,8 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
       });
     }
 
-    // Lo que se cobra ahora: el total o, en una landing, el adelanto que fija su
-    // configuración. Nunca lo que diga el navegador.
-    const cobro = ajustesLanding
-      ? pagos.cobroLanding({ total: amountPen, modalidad: orderPayload.modalidadPago, ajustes: ajustesLanding })
-      : { modalidad: "completo", cobroPen: pagos.redondear(amountPen), saldoPen: 0 };
+    // Lo que se cobra ahora: el total. Nunca lo que diga el navegador.
+    const cobro = { modalidad: "completo", cobroPen: pagos.redondear(amountPen), saldoPen: 0 };
 
     // El pedido que se guarda es el del navegador SIN campos de pago (los pone el
     // servidor al confirmar el cobro) y con la cuenta real de quien compra. El

@@ -47,28 +47,6 @@ function coincideMonto(clienteCentimos, servidorCentimos) {
   return Math.abs(Number(clienteCentimos) - Number(servidorCentimos)) <= 1;
 }
 
-/** Ajustes de la sección de pago de una landing (pages/{slug}.sections[]). */
-function ajustesPagoLanding(pageDoc) {
-  const sections = pageDoc && Array.isArray(pageDoc.sections) ? pageDoc.sections : [];
-  const seccion = sections.find((s) => s && s.type === "landing_payment");
-  return seccion ? (seccion.settings || {}) : null;
-}
-
-/**
- * Pago completo o adelanto de una landing, con el adelanto de la configuración
- * de la landing (no del navegador). Misma regla que LandingPaymentBlock.jsx.
- */
-function cobroLanding({ total, modalidad, ajustes }) {
-  const t = redondear(Math.max(0, Number(total) || 0));
-  const permiteAdelanto = !ajustes || ajustes.allowAdelanto !== false;
-  if (modalidad !== "adelanto" || !permiteAdelanto) {
-    return { modalidad: "completo", cobroPen: t, saldoPen: 0 };
-  }
-  const adelanto = Math.max(MINIMO_CULQI_PEN, Number(ajustes && ajustes.adelantoMonto) || 10);
-  const cobroPen = redondear(Math.min(adelanto, t));
-  return { modalidad: "adelanto", cobroPen, saldoPen: redondear(Math.max(0, t - cobroPen)) };
-}
-
 // Campos de pago que el navegador no puede poner en el pedido: los escribe el
 // servidor después de comprobar el cobro con la pasarela.
 const CAMPOS_PAGO = [
@@ -193,8 +171,6 @@ module.exports = {
   cobroEnCursoVigente,
   cobroDeIntencion,
   coincideMonto,
-  ajustesPagoLanding,
-  cobroLanding,
   limpiarPayloadCliente,
   montosPedidoPagado,
   enlaceVencido,

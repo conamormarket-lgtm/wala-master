@@ -5,20 +5,6 @@ const assert = require("node:assert/strict");
 const p = require("../pagosLogic");
 const { puedeUsarPuente } = require("../adminAuth");
 
-test("el adelanto de una landing sale de su configuración, no del navegador", () => {
-  const ajustes = { allowAdelanto: true, adelantoMonto: 10 };
-  assert.deepEqual(p.cobroLanding({ total: 129, modalidad: "adelanto", ajustes }),
-    { modalidad: "adelanto", cobroPen: 10, saldoPen: 119 });
-  assert.deepEqual(p.cobroLanding({ total: 129, modalidad: "completo", ajustes }),
-    { modalidad: "completo", cobroPen: 129, saldoPen: 0 });
-  // Sin adelanto permitido se cobra todo aunque el navegador pida adelanto.
-  assert.equal(p.cobroLanding({ total: 129, modalidad: "adelanto", ajustes: { allowAdelanto: false } }).cobroPen, 129);
-  // Culqi cobra al menos S/3.
-  assert.equal(p.cobroLanding({ total: 129, modalidad: "adelanto", ajustes: { adelantoMonto: 1 } }).cobroPen, 3);
-  // Un adelanto mayor que el total es el total.
-  assert.equal(p.cobroLanding({ total: 8, modalidad: "adelanto", ajustes: { adelantoMonto: 10 } }).saldoPen, 0);
-});
-
 test("lo que se cobra de una intención: primero lo que fijó el servidor", () => {
   assert.equal(p.cobroDeIntencion({ cobro: { cobroPen: 10 }, orderPayload: { montoPendiente: 119, montoTotal: 129 } }), 10);
   // Intenciones de antes de guardar `cobro`.
@@ -87,12 +73,6 @@ test("enlaces: vencen por expiresAt o, los antiguos, a las 36 h", () => {
   assert.equal(p.enlaceVencido({ expiresAt: { toMillis: () => ahora - 1000 } }, ahora), true);
   assert.equal(p.enlaceVencido({ createdAt: "2026-10-08T00:00:00Z" }, ahora), true);
   assert.equal(p.enlaceVencido({ createdAt: "2026-10-10T00:00:00Z" }, ahora), false);
-});
-
-test("sección de pago de una landing", () => {
-  const page = { sections: [{ type: "hero", settings: {} }, { type: "landing_payment", settings: { productId: "p1" } }] };
-  assert.deepEqual(p.ajustesPagoLanding(page), { productId: "p1" });
-  assert.equal(p.ajustesPagoLanding({ sections: [] }), null);
 });
 
 test("adminUsers solo vale para correos verificados de ADMIN_BRIDGE_EMAILS", () => {
