@@ -2,14 +2,15 @@ import React from 'react';
 import { PaginaLegal, PaginaReclamaciones, enlaceWhatsApp } from './kit';
 import { empresa } from '../config/empresa';
 import { limaTodayStr } from '../utils/fechaLima';
-import { PRIVACIDAD, TERMINOS } from './demo/legales';
+import { PRIVACIDAD } from '../config/legales/privacidad';
+import { TERMINOS } from '../config/legales/terminos';
 
 /*
  * Legales en la Tienda de prueba: el libro de reclamaciones
  * (/libro-de-reclamaciones), la política de privacidad (/politicas-privacidad)
  * y los términos y condiciones (/terminos-y-condiciones).
- * Los textos son los reales (demo/legales.js, copiados de las páginas de la
- * tienda) y la empresa sale de config/empresa. Enviar una reclamación aquí no
+ * Los textos son los reales (config/legales/, los mismos de la tienda) y
+ * la empresa sale de config/empresa. Enviar una reclamación aquí no
  * guarda nada: arma el código como la tienda (WALA-AAAAMMDD-NNNN).
  */
 

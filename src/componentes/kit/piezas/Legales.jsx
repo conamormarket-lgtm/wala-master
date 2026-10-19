@@ -3,7 +3,7 @@ import { ChevronDown, Copy, Check, CalendarDays, PenLine, Hash, Mail } from 'luc
 import Boton from '../Boton';
 import { Sello, Trazo } from '../Marca';
 import { Enlace } from '../Enlace';
-import { Texto } from '../Traduccion';
+import { Texto, useTexto } from '../Traduccion';
 import { PasosSellos } from './PasosSellos';
 import s from './Legales.module.css';
 
@@ -23,7 +23,7 @@ export function CabezaLegal({ icono, titulo, detalle }) {
       <Sello tamano={52}>{icono}</Sello>
       <div className={s.cabezaTextos}>
         <h1 className={s.titulo}><Texto>{titulo}</Texto><Trazo className={s.trazo} /></h1>
-        {detalle && <p className={s.detalle}>{detalle}</p>}
+        {detalle && <p className={s.detalle}><Texto>{detalle}</Texto></p>}
       </div>
     </header>
   );
@@ -37,6 +37,8 @@ export function CabezaLegal({ icono, titulo, detalle }) {
  */
 export function IndiceLegal({ secciones = [] }) {
   const [abierto, setAbierto] = useState(false);
+  const enEstaPagina = useTexto('En esta página');
+  const cuantas = useTexto(`${secciones.length} secciones`);
   const lista = (
     <ol className={s.indiceLista}>
       {secciones.map((sec, k) => (
@@ -50,11 +52,11 @@ export function IndiceLegal({ secciones = [] }) {
     </ol>
   );
   return (
-    <nav className={s.indice} aria-label="En esta página" data-componente="IndiceLegal">
-      <p className={s.indiceTitulo}>En esta página</p>
+    <nav className={s.indice} aria-label={enEstaPagina} data-componente="IndiceLegal">
+      <p className={s.indiceTitulo}>{enEstaPagina}</p>
       <button type="button" className={s.indicePlegable} aria-expanded={abierto} onClick={() => setAbierto((a) => !a)}>
-        <span>En esta página</span>
-        <small>{secciones.length} secciones</small>
+        <span>{enEstaPagina}</span>
+        <small>{cuantas}</small>
         <ChevronDown aria-hidden="true" className={abierto ? s.girada : undefined} />
       </button>
       <div className={[s.indiceCuerpo, abierto && s.indiceAbierto].filter(Boolean).join(' ')}>{lista}</div>
@@ -103,7 +105,7 @@ export function DatosProveedor({ empresa = {}, fecha, codigo }) {
   return (
     <dl className={s.proveedor} data-componente="DatosProveedor">
       <div className={s.proveedorEmpresa}>
-        <dt>Proveedor</dt>
+        <dt><Texto>Proveedor</Texto></dt>
         <dd><strong>{empresa.razonSocial}</strong></dd>
       </div>
       <div>
@@ -111,17 +113,17 @@ export function DatosProveedor({ empresa = {}, fecha, codigo }) {
         <dd>{empresa.ruc}</dd>
       </div>
       <div className={s.proveedorAncho}>
-        <dt>Domicilio</dt>
+        <dt><Texto>Domicilio</Texto></dt>
         <dd>{empresa.domicilioFiscal}</dd>
       </div>
       <div>
-        <dt>Hoja de reclamación</dt>
-        <dd>{codigo || <em>Se genera al enviar</em>}</dd>
+        <dt><Texto>Hoja de reclamación</Texto></dt>
+        <dd>{codigo || <em><Texto>Se genera al enviar</Texto></em>}</dd>
       </div>
       {fecha && (
         <div>
-          <dt>Fecha</dt>
-          <dd>{fecha}</dd>
+          <dt><Texto>Fecha</Texto></dt>
+          <dd><Texto>{fecha}</Texto></dd>
         </div>
       )}
     </dl>
@@ -165,7 +167,7 @@ export function AvanceHoja({ pasos = [], listo = 'Todo listo: revisa y envía.' 
       </span>
       <p className={s.avanceTexto} aria-live="polite">
         {faltan.length === 0 && <Check aria-hidden="true" />}
-        {texto}
+        <Texto>{texto}</Texto>
       </p>
     </div>
   );
@@ -188,12 +190,12 @@ export function CodigoCopiable({ codigo, rotulo = 'Tu código', fecha, detalle }
   };
   return (
     <div className={s.codigo} data-componente="CodigoCopiable">
-      <span className={s.codigoRotulo}>{rotulo}</span>
+      <span className={s.codigoRotulo}><Texto>{rotulo}</Texto></span>
       <strong className={s.codigoValor}>{codigo}</strong>
-      {fecha && <span className={s.codigoFecha}><CalendarDays aria-hidden="true" /> {fecha}</span>}
-      {detalle && <span className={s.codigoFecha}>{detalle}</span>}
+      {fecha && <span className={s.codigoFecha}><CalendarDays aria-hidden="true" /> <Texto>{fecha}</Texto></span>}
+      {detalle && <span className={s.codigoFecha}><Texto>{detalle}</Texto></span>}
       <Boton variante="secundario" tamano="sm" icono={copiado ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />} onClick={copiar}>
-        {copiado ? 'Copiado' : 'Copiar código'}
+        <Texto>{copiado ? 'Copiado' : 'Copiar código'}</Texto>
       </Boton>
     </div>
   );

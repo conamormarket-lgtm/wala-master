@@ -28,6 +28,22 @@
   font-size: 1rem;
 }
 
+/* Los datos de contacto del documento (el equipo, el correo…), tal cual. */
+.contactoDatos {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 1rem;
+  padding: 0.9rem 1.1rem;
+  border-left: 3px solid var(--primary-color);
+  border-radius: 4px 14px 14px 4px;
+  background: var(--primary-light);
+  color: var(--color-text);
+}
+
+.contactoDatos p {
+  margin: 0;
+}
+
 .contacto {
   max-width: 540px;
   margin-top: 2.5rem;
