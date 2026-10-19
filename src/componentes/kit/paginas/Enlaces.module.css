@@ -1,0 +1,94 @@
+/* ── Página de enlaces ── */
+.enlaces {
+  /* Toda la pantalla, como LinkInBioPage: va sola, sin la cabecera ni el pie. */
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 3.5rem 1rem 3rem;
+  color: var(--enl-texto);
+}
+
+.enlacesColumna {
+  display: grid;
+  /* La alineación del diseño (izquierda, centro o derecha). */
+  justify-items: var(--enl-alinear, center);
+  gap: 1rem;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.enlacesAvatar {
+  width: 96px;
+  height: 96px;
+  border: 3px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  background: var(--violet-100);
+  color: var(--violet-700);
+  font-family: var(--fuente-marca);
+  font-size: 1.8rem;
+  font-weight: 900;
+  object-fit: cover;
+}
+
+.enlacesTitulo {
+  margin: 0;
+  color: var(--enl-titulo);
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.enlacesTexto {
+  margin: 0;
+  color: var(--enl-texto);
+}
+
+.enlacesBotones {
+  display: grid;
+  gap: 0.8rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.creado,
+.creado:hover {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1.5rem;
+  color: var(--enl-texto);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+/* El botón de compartir del Link en bio: arriba a la derecha, del color del texto del diseño. */
+.enlaces {
+  position: relative;
+}
+
+.enlacesCompartir {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--enl-titulo, #fff) 35%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--enl-titulo, #fff) 10%, transparent);
+  color: var(--enl-titulo, #fff);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--dur-rapida) ease;
+}
+
+.enlacesCompartir svg {
+  width: 17px;
+  height: 17px;
+}
+
+.enlacesCompartir:active {
+  transform: scale(0.95);
+}

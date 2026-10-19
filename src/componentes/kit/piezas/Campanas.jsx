@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X, Music2, MessageCircle, Link2 } from 'lucide-react';
 import Boton from '../Boton';
 import { IconoWala } from '../IconosWala';
 import { Trazo } from '../Marca';
 import { Enlace } from '../Enlace';
-import { Texto } from '../Traduccion';
+import { Texto, useTexto } from '../Traduccion';
+import { TextoResaltado } from './TextoResaltado';
 import s from './Campanas.module.css';
 
 /*
  * Piezas de las campañas: el aviso de una invitación (/invitar/:código) y
  * los botones de una página de enlaces (/l/:slug). (El antes y después y la
  * reseña con foto eran de Regalos con amor, que salió del kit el 2026-10-16.)
+ * Los textos pasan por la traducción.
  */
 
 /**
@@ -30,21 +32,28 @@ export function AvisoInvitacion({ nombre, estado = 'nueva', plazo, bono = 10, ur
     aceptada: [`Ya tienes tus ${bono} monedas de bienvenida. Tu primera compra${plazo ? ` ${plazo}` : ''} le suma monedas a ${quien}.`, `Ya tienes tus ${bono} monedas de bienvenida.`],
     compra: [`Compra${plazo ? ` ${plazo}` : ''} y ${quien} gana monedas con tu pedido. A ti no te cuesta nada.`, `Compra${plazo ? ` ${plazo}` : ''} y ${quien} gana monedas.`],
   }[estado] || [];
+  const t = {
+    largo: useTexto(texto[0]),
+    corto: useTexto(texto[1]),
+    titulo: useTexto(nombre ? `${nombre} te invitó a Walá` : 'Llegaste con una invitación'),
+    marca: useTexto('invitación'),
+    aviso: useTexto('Invitación'),
+    cerrar: useTexto('Cerrar el aviso de la invitación'),
+  };
+  const resaltado = (parte, k) => <span key={k} className={s.resaltado}>{parte}<Trazo className={s.trazo} /></span>;
   return (
-    <aside className={s.invitacion} aria-label="Invitación" data-componente="AvisoInvitacion">
+    <aside className={s.invitacion} aria-label={t.aviso} data-componente="AvisoInvitacion">
       <IconoWala nombre="regalo" tamano={36} />
       <div className={s.invitacionTexto}>
         <p className={s.invitacionTitulo}>
-          {nombre
-            ? <><span className={s.resaltado}>{nombre}<Trazo className={s.trazo} /></span> te invitó a Walá</>
-            : <>Llegaste con una <span className={s.resaltado}>invitación<Trazo className={s.trazo} /></span></>}
+          <TextoResaltado resaltar={[nombre || t.marca]} envolver={resaltado}>{t.titulo}</TextoResaltado>
         </p>
-        <p className={s.soloAncho}>{texto[0]}</p>
-        <p className={s.soloAngosto}>{texto[1]}</p>
+        <p className={s.soloAncho}>{t.largo}</p>
+        <p className={s.soloAngosto}>{t.corto}</p>
       </div>
-      {estado === 'nueva' && urlRegistro && <Boton to={urlRegistro} tamano="sm">Crear cuenta</Boton>}
+      {estado === 'nueva' && urlRegistro && <Boton to={urlRegistro} tamano="sm"><Texto>Crear cuenta</Texto></Boton>}
       {onCerrar && (
-        <button type="button" className={s.cerrar} onClick={onCerrar} aria-label="Cerrar el aviso de la invitación">
+        <button type="button" className={s.cerrar} onClick={onCerrar} aria-label={t.cerrar}>
           <X aria-hidden="true" />
         </button>
       )}
@@ -71,9 +80,10 @@ const ICONOS_RED = { instagram: Instagram, facebook: Facebook, tiktok: Music2, w
  *  - redes: [{ id, tipo, nombre, url, icono }] · onClic(red)
  */
 export function RedesEnlaces({ redes = [], onClic }) {
+  const etiqueta = useTexto('Redes sociales');
   if (!redes.length) return null;
   return (
-    <nav className={s.redes} aria-label="Redes sociales" data-componente="RedesEnlaces">
+    <nav className={s.redes} aria-label={etiqueta} data-componente="RedesEnlaces">
       {redes.map((r) => {
         const Icono = ICONOS_RED[r.tipo] || Link2;
         return (
@@ -90,11 +100,13 @@ export function RedesEnlaces({ redes = [], onClic }) {
  * Un botón de una página de enlaces, con el estilo que eligió el admin.
  *  - titulo · url · imagen (miniatura a la izquierda) · estilo (el style de
  *    estiloBotonStyle) · onClic
+ * Si la miniatura no carga, queda el hueco (el texto sigue centrado).
  */
 export function BotonEnlace({ titulo, url, imagen, estilo, onClic }) {
+  const [rota, setRota] = useState(false);
   return (
     <Enlace to={url} className={s.botonEnlace} style={estilo} onClick={onClic} data-componente="BotonEnlace">
-      {imagen ? <img src={imagen} alt="" className={s.botonImagen} /> : <span className={s.botonHueco} aria-hidden="true" />}
+      {imagen && !rota ? <img src={imagen} alt="" className={s.botonImagen} onError={() => setRota(true)} /> : <span className={s.botonHueco} aria-hidden="true" />}
       <span className={s.botonTexto}><Texto>{titulo}</Texto></span>
       <span className={s.botonHueco} aria-hidden="true" />
     </Enlace>

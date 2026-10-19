@@ -24,25 +24,8 @@ export const compartirTexto = async (texto) => {
   } catch { return false; }
 };
 
-/**
- * Un texto traducido con sus cifras en negrita: `resaltar` son los valores
- * (en el orden en que salen) que se marcan dentro del texto ya traducido.
- * Así la frase se traduce entera y el número sigue destacado.
- */
-export function TextoResaltado({ children, resaltar = [] }) {
-  const t = useTexto(children);
-  if (typeof t !== 'string') return t ?? null;
-  const partes = [];
-  let resto = t;
-  resaltar.map(String).filter(Boolean).forEach((marca, k) => {
-    const i = resto.indexOf(marca);
-    if (i < 0) return;
-    partes.push(resto.slice(0, i), <strong key={k}>{marca}</strong>);
-    resto = resto.slice(i + marca.length);
-  });
-  partes.push(resto);
-  return <>{partes}</>;
-}
+// TextoResaltado vive en su archivo (también lo usan las campañas).
+export { TextoResaltado } from './TextoResaltado';
 
 /**
  * La barra del juego: "Volver" (a la Zona Arcade), el título con su trazo y

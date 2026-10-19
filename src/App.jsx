@@ -61,7 +61,8 @@ import { EN_VISTA_PREVIA_CALOR } from './utils/vistaPreviaCalor';
 const Footer = lazy(() => import('./components/common/Footer'));
 // Anuncio de campaña con el kit (paso 2; CampaignPopup, en guia/ELIMINAR.md).
 const AnuncioDeCampana = lazy(() => import('./components/marco/AnuncioDeCampana'));
-const AvisoInvitacion = lazy(() => import('./components/common/AvisoInvitacion/AvisoInvitacion'));
+// El aviso de una invitación (el del kit; con campanasViejo, el de antes).
+const AvisoInvitacion = lazy(() => import('./components/marco/AvisoInvitacionDeTienda'));
 const FirebaseWarning = lazy(() => import('./components/common/FirebaseWarning'));
 const RastreoCalor = lazy(() => import('./components/analytics/RastreoCalor'));
 

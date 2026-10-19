@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
@@ -9,6 +9,7 @@ import {
   leerReferidoGuardado,
   guardarReferido,
   getNombreInvitacion,
+  EVENTO_REFERIDO,
 } from '../../services/referrals';
 
 // Completa el link guardado con el primer nombre de quien invitó, para que
@@ -38,6 +39,15 @@ const ReferralTracker = () => {
   const miCodigo = (userProfile?.referralCode || '').toUpperCase();
   const aceptando = useRef(false);
   const ultimoIntento = useRef(0);
+  // La página de la invitación (/invitar/:código) guarda el link ella misma,
+  // sin ?ref en la URL: al cambiar lo guardado se vuelve a mirar si hay una
+  // invitación por aceptar.
+  const [cambioGuardado, setCambioGuardado] = useState(0);
+  useEffect(() => {
+    const alCambiar = () => setCambioGuardado((n) => n + 1);
+    window.addEventListener(EVENTO_REFERIDO, alCambiar);
+    return () => window.removeEventListener(EVENTO_REFERIDO, alCambiar);
+  }, []);
 
   // Links guardados antes de existir el aviso (o cuyo nombre no llegó): se
   // completa una vez al cargar.
@@ -116,7 +126,7 @@ const ReferralTracker = () => {
       })
       .catch(() => { /* sin red: se reintenta en la próxima carga */ })
       .finally(() => { aceptando.current = false; });
-  }, [conCuenta, loading, location.pathname, user?.uid, userProfile?.dni, userProfile?.phone, miCodigo, toast, reloadProfile]);
+  }, [conCuenta, loading, location.pathname, user?.uid, userProfile?.dni, userProfile?.phone, miCodigo, toast, reloadProfile, cambioGuardado]);
 
   return null;
 };

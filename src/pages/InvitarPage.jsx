@@ -1,26 +1,24 @@
-import { useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import React, { lazy, Suspense } from 'react';
+import useLoViejo from '../hooks/useLoViejo';
+import InvitacionDeTienda from '../components/campanas/InvitacionDeTienda';
 
-/**
- * /invitar/:codigo — link de invitación permanente de cada cuenta (Mis
- * Referidos). Quien no tiene sesión va a crear su cuenta; quien ya la tiene, a
- * la tienda. En los dos casos con ?ref=CODIGO&tipo=invitacion: ReferralTracker
- * lo registra y, si resulta ser una cuenta nueva, le da el bono de bienvenida.
+// La página de antes (que solo redirigía) baja solo con el interruptor campanasViejo.
+const InvitarViejo = lazy(() => import('./InvitarViejo'));
+
+/*
+ * /invitar/:codigo (el link de invitación de cada cuenta). Paso 6 de la
+ * migración (CAMPANAS.md): la invitación del kit por InvitacionDeTienda.
+ * campanasViejo (useLoViejo('campanas'): en Firestore `campanasViejo: true`;
+ * en localStorage, "campanas") vuelve a la de antes.
  */
 const InvitarPage = () => {
-  const { codigo = '' } = useParams();
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (loading) return;
-    const params = `?ref=${encodeURIComponent(codigo.trim().toUpperCase())}&tipo=invitacion`;
-    const conCuenta = user && !user.isAnonymous;
-    navigate(`${conCuenta ? '/' : '/registro'}${params}`, { replace: true });
-  }, [codigo, user, loading, navigate]);
-
-  return null;
+  const campanasViejo = useLoViejo('campanas');
+  if (!campanasViejo) return <InvitacionDeTienda />;
+  return (
+    <Suspense fallback={null}>
+      <InvitarViejo />
+    </Suspense>
+  );
 };
 
 export default InvitarPage;
