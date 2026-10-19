@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import PageLoading from '../common/PageLoading/PageLoading';
+import CargandoRuta from '../carga/CargandoRuta';
 import { tieneCuenta, urlLogin } from '../../utils/rutaPrivada';
 
 /**
@@ -21,7 +21,7 @@ export function IrALogin() {
  */
 export default function RutaPrivada({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <PageLoading />;
+  if (loading) return <CargandoRuta />;
   if (!tieneCuenta(user)) return <IrALogin />;
   return children ?? <Outlet />;
 }

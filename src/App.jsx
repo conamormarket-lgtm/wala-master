@@ -29,7 +29,8 @@ import PushLinkHandler from './components/common/PushLinkHandler/PushLinkHandler
 import ErrorBoundary from './components/common/ErrorBoundary/ErrorBoundary';
 import AppErrorBoundary from './components/system/AppErrorBoundary';
 import { initObservability } from './services/observability';
-import PageLoading from './components/common/PageLoading/PageLoading';
+// Mientras llega una página: su esqueleto (paso 7, CARGA.md); con cargaVieja, PageLoading.
+import CargandoRuta from './components/carga/CargandoRuta';
 import AppPrefetcher from './components/common/AppPrefetcher/AppPrefetcher';
 import NavProgressBar from './components/common/NavProgressBar/NavProgressBar';
 import CustomFontsInjector from './components/common/CustomFontsInjector/CustomFontsInjector';
@@ -385,7 +386,7 @@ function App() {
 
                           <GlobalLayout>
                             <ErrorBoundary>
-                              <Suspense fallback={<PageLoading />}>
+                              <Suspense fallback={<CargandoRuta />}>
                                 <Routes>
                                   {/* Tienda abierta para todos */}
                                   <Route path="/" element={<TiendaPage />} />
@@ -398,7 +399,7 @@ function App() {
                                   <Route
                                     path="/encuesta-suscripcion"
                                     element={
-                                      <Suspense fallback={<PageLoading />}>
+                                      <Suspense fallback={<CargandoRuta />}>
                                         <RutaPrivada><SubscriptionSurveyPage /></RutaPrivada>
                                       </Suspense>
                                     }
@@ -407,7 +408,7 @@ function App() {
                                   <Route
                                     path="/suscripciones"
                                     element={
-                                      <Suspense fallback={<PageLoading />}>
+                                      <Suspense fallback={<CargandoRuta />}>
                                         <SubscriptionLandingPage />
                                       </Suspense>
                                     }

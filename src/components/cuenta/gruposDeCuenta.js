@@ -25,22 +25,9 @@ export function useGruposDeCuenta() {
   })), [grupos, t]);
 }
 
-/** Qué esqueleto de /cuenta toca mientras carga la sesión (EsqueletoPagina forma="cuenta"). */
-const MODULOS = {
-  perfil: 'perfil',
-  pedidos: 'pedidos',
-  direcciones: 'direcciones',
-  ajustes: 'ajustes',
-  catalogo: 'catalogo',
-  cupones: 'cupones',
-  misiones: 'misiones',
-  referidos: 'referidos',
-  creaciones: 'creaciones',
-  wishlist: 'deseos',
-  'fechas-importantes': 'fechas',
-};
-
-export const moduloDeRuta = (ruta) => MODULOS[String(ruta || '').split('/')[2]] || 'resumen';
+// Qué esqueleto de /cuenta toca cada ruta (EsqueletoPagina forma="cuenta"): vive
+// aparte (moduloDeRuta.js) porque lo usa también la carga entre páginas.
+export { moduloDeRuta } from './moduloDeRuta';
 
 /** La ruta sin la barra final ("/cuenta/" → "/cuenta"). */
 export const rutaLimpia = (ruta) => String(ruta || '').replace(/\/+$/, '') || '/';

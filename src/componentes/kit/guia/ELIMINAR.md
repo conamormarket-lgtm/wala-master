@@ -241,3 +241,9 @@ grupos del marco nuevo (`gruposDeCuenta.js`).
 | `components/PedidoCard/PedidoAcciones.jsx` + su CSS, `HistorialPagos.jsx` + su CSS | la página de antes | `PagosPedido` y `HojaPagarSaldo` del kit (los datos, en el conector) | solo `CuentaCompraDetalleViejo.jsx` (y un comentario en `App.jsx`) | con la página de antes; ahí se va también el `Modal` viejo de "Pagar saldo" bajo `pagosViejo` |
 | `components/Timeline/` | la página de antes | `LineaProduccion` con `hechos` | solo `CuentaCompraDetalleViejo.jsx` | con la página de antes |
 | `getOrderByIdAnyCollection` en el detalle (la segunda lectura del pedido) | la página de antes | el pedido de `usePedidos` | revisar con `grep getOrderByIdAnyCollection` (otros usos en el admin) | la función se queda; solo se va su uso aquí |
+
+### La carga entre páginas (2026-10-19)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `components/common/PageLoading/` (+ CSS) | el `Suspense` de `App.jsx` y `RutaPrivada` | `components/carga/CargandoRuta.jsx` → `EsqueletoPagina` | `CargandoRuta` (con `cargaVieja` y en el admin) | cuando el admin tenga su esqueleto y se retire `cargaVieja` |

@@ -127,7 +127,23 @@ La **fase compartida** viene de la idea de `BrandLoader`. Dos cargas
 seguidas (la landing y la tienda) toman el vaivén desde el reloj de la
 página, así que el relevo no se nota.
 
-## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
+## En la tienda (paso 7 de MIGRACION.md, desde el 2026-10-19)
+
+- **Entre páginas** (el fallback de `Suspense` en `App.jsx`) y mientras
+  `RutaPrivada` espera la sesión: `components/carga/CargandoRuta.jsx`
+  dibuja `EsqueletoPagina` con la forma de la ruta
+  (`components/carga/formaDeRuta.js`: `/` el inicio, `/carrito` el carrito,
+  `/cuenta/…` la cuenta con su módulo, `/:slug` una landing…; el admin no
+  es del kit y sigue con `PageLoading`). Con la sesión aún cargando se
+  asume que la hay (si no, quien sí entró veía un instante la invitación a
+  entrar). Antes, una grilla de 8 productos para todo.
+- Con `v7_startTransition` del router, al navegar dentro de la tienda la
+  página de antes se queda hasta que llega la nueva: el esqueleto se ve al
+  abrir un enlace o recargar (y mientras llega la sesión).
+- **Interruptor `cargaVieja`** (`useLoViejo('carga')`): vuelve
+  `PageLoading` en todas.
+
+## Llevar a la tienda (el plan; los pasos hechos llevan ✓)
 
 Va con el marco, en el paso 7 de [MIGRACION.md](MIGRACION.md) (junto a la
 cabecera), o antes y suelto, porque no depende de datos.
@@ -276,7 +292,7 @@ lógica es de la tienda:
 
 ### Pasos
 
-1. `PageLoading` → `EsqueletoPagina` (lo más simple: sin estado; la forma sale de la ruta).
+1. ✓ `PageLoading` → `EsqueletoPagina` (lo más simple: sin estado; la forma sale de la ruta). Hecho el 2026-10-19 (arriba, "En la tienda").
 2. El círculo de `BrandLoaderOverlay` → `EsqueletoPagina` de la ruta (y `CapaCargando` donde hoy hay esperas de una acción).
 3. `BrandLoader` → `PantallaCarga`, **en el mismo commit** que el splash de
    `index.html`. Probar la primera carga con la caché vacía y la red
