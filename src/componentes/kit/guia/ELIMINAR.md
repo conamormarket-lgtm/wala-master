@@ -232,3 +232,12 @@ grupos del marco nuevo (`gruposDeCuenta.js`).
 | `pages/cuenta/CuentaRastreoViejo.jsx` + `CuentaRastreoPage.module.css` | `/cuenta/pedidos` | `components/cuenta/PedidosDeCuenta.jsx` → `PaginaPedidos` (`resumirRastreo` → `seguimientoDesdePedido`) | `CuentaRastreoPage.jsx` (lazy, con `cuentaVieja` o `pagosViejo`) | al retirar los dos interruptores para Mis pedidos |
 | `pages/cuenta/PedidosPorVerificar.jsx` + su CSS | la página de antes | `PedidosPorVerificar` del kit | solo `CuentaRastreoViejo.jsx` | con la página de antes |
 | `pages/PedidosPage.module.css` (`.content`, esqueletos) | la página de antes | el kit | solo `CuentaRastreoViejo.jsx` | con la página de antes |
+
+### Mis pedidos, el detalle (2026-10-19)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/cuenta/CuentaCompraDetalleViejo.jsx` + `CuentaCompraDetallePage.module.css` | `/cuenta/pedidos/:id` | `components/cuenta/DetallePedidoDeCuenta.jsx` → `PaginaDetallePedido` | `CuentaCompraDetallePage.jsx` (lazy, con `cuentaVieja` o `pagosViejo`) | al retirar los dos interruptores para Mis pedidos |
+| `components/PedidoCard/PedidoAcciones.jsx` + su CSS, `HistorialPagos.jsx` + su CSS | la página de antes | `PagosPedido` y `HojaPagarSaldo` del kit (los datos, en el conector) | solo `CuentaCompraDetalleViejo.jsx` (y un comentario en `App.jsx`) | con la página de antes; ahí se va también el `Modal` viejo de "Pagar saldo" bajo `pagosViejo` |
+| `components/Timeline/` | la página de antes | `LineaProduccion` con `hechos` | solo `CuentaCompraDetalleViejo.jsx` | con la página de antes |
+| `getOrderByIdAnyCollection` en el detalle (la segunda lectura del pedido) | la página de antes | el pedido de `usePedidos` | revisar con `grep getOrderByIdAnyCollection` (otros usos en el admin) | la función se queda; solo se va su uso aquí |

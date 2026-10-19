@@ -173,7 +173,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `piezas/OpcionesFiltro.jsx` | `OpcionesFiltro` | Opciones de un filtro como chips con su cuenta; una a la vez y "Ver N más" |
 | `piezas/PanelBusqueda.jsx` | `PanelBusqueda`, `useBusquedasRecientes`, `TextoResaltado`, `ChipsBusqueda`, `InvitacionBusqueda` | Sugerencias del buscador: recientes, productos con foto y precio, marcas y categorías, "Ver todos los resultados" |
 | `piezas/Cuenta.jsx` | `CabezaCuenta`, `TarjetaCuenta`, `ListaDatos`, `Estadistica`, `AccesosCuenta`, `IdentidadCuenta`, `ListaEleccion` (con `accion` por opción) | Lo común de las páginas de la cuenta |
-| `piezas/DetallePedido.jsx` | `LineaProduccion`, `PagosPedido`, `HojaPagarSaldo` | Detalle de una compra |
+| `piezas/DetallePedido.jsx` | `LineaProduccion` (`hechos`: por fecha; con `deuda`, en rojo), `PagosPedido` (`onReclamar(boton)`, boletas y fotos una sola vez), `HojaPagarSaldo` (comprobante apagado sin número) | Detalle de una compra (en la tienda desde el 2026-10-19; `PaginaDetallePedido` con `avisoDeuda`, `tarjeta` y `onVerAbajo`) |
 | `piezas/PedidosPorVerificar.jsx` | `PedidosPorVerificar` | Pedidos que coinciden con el documento: verificar el correo o vincular (en la tienda desde el 2026-10-19; el teléfono acepta + y espacios) |
 | `piezas/RecortarFoto.jsx` | `RecortarFoto` | Recortar una foto antes de subirla (arrastrar, zoom) o, con `forma="libre"`, un recuadro con esquinas que conserva la transparencia (el estudio) |
 | `piezas/QuitarFondo.jsx` | `QuitarFondo` | El editor de quitar el fondo de una imagen (varita, borrar, restaurar, zoom); los píxeles los hace el `motor` que llega por props |

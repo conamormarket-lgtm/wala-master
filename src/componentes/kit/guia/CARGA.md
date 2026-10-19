@@ -239,6 +239,13 @@ con `modulo="pedidos"`; antes, tres cajas grises); al volver, la copia en
 memoria de `usePedidos` al instante mientras se pide de nuevo. Las fotos de
 las líneas sin foto propia llegan después (la tarjeta no salta).
 
+Ya en la tienda (paso 7, el detalle de una compra, 2026-10-19): con la lista
+ya en memoria el pedido sale al instante; si no, `EsqueletoPedido` y una
+tarjeta de 240 px en la columna principal y dos tarjetas al costado (la forma
+de la página; antes, dos cajas grises). Los recomendados se piden al
+acercarse; los datos de pago, al abrir "Pagar el saldo" ("Cargando los
+datos de pago…").
+
 Ya en la tienda (paso 6, el carrito, 2026-10-17): el carrito sale de
 localStorage al instante, así que no tiene esqueleto propio (la ruta sigue con
 el `PageLoading` de `App.jsx` hasta el paso 7). "También te puede gustar" no

@@ -239,4 +239,48 @@
   margin-top: 0.5rem;
 }
 
+/* Detalle: la pieza de un combo de Crear y las prendas de un combo de la tienda. */
+.productoCombo {
+  color: var(--primary-color);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
 
+.piezas {
+  display: grid;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0 0 0 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+/* El texto del pago bajo el total ("Pagado con tarjeta"…). */
+.pagoResumen {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  text-align: right;
+}
+
+/* El aviso del taller (impresión detenida por la deuda). */
+.avisoDeuda {
+  display: grid;
+  gap: 1rem;
+}
+
+.avisoDeuda p {
+  display: flex;
+  gap: 0.6rem;
+  margin: 0;
+  color: #e11d48;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.avisoDeuda p svg {
+  width: 1.3rem;
+  height: 1.3rem;
+  flex-shrink: 0;
+}

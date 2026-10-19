@@ -530,3 +530,17 @@
     animation-duration: 2.4s;
   }
 }
+
+/* Con deuda, la línea entera en rojo (como la del taller): el pedido se detuvo. */
+.lineaDeuda .hecho::before {
+  background: #fb7185;
+}
+
+.lineaDeuda .hecho .punto {
+  background: #e11d48;
+}
+
+.lineaDeuda .actual .punto {
+  background: linear-gradient(135deg, #fb7185, #e11d48);
+  box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.15);
+}

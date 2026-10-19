@@ -632,6 +632,87 @@ taller y uno de otra persona con el mismo documento:
 No se probó: verificar el correo (el emulador no envía correos), un error
 del servidor al cargar, la traducción ni la app Android.
 
+## Detalle de una compra en la tienda (hecho el 2026-10-19)
+
+![Detalle de una compra en la tienda real, en el celular: el seguimiento de producción en rojo con "Esperando tu pago" en Impresión; al lado, el detalle de la compra con el texto del pago bajo el total y "Pagos y documentos" con el saldo pendiente de S/ 80.00 y "Pagar"](cuenta-detalle-tienda.webp)
+
+(Celular, 390 px, claro, con pedidos de prueba del emulador. Se probó
+también a 1366 y en noche.)
+
+Paso 7, segunda parte: con esto, Mis pedidos queda entero en el kit.
+
+- **Conector:** `src/components/cuenta/DetallePedidoDeCuenta.jsx`, desde
+  `pages/cuenta/CuentaCompraDetallePage.jsx`. El pedido es el de la lista
+  (`usePedidos` → `misPedidosSecure`: el documento completo, con la deuda
+  que se cobra); antes se volvía a leer por id y se le pegaba esa deuda
+  encima. Solo se ve si el servidor confirmó que es de la cuenta.
+- **Interruptores:** vuelve `CuentaCompraDetalleViejo.jsx` con
+  `cuentaVieja` **o** `pagosViejo` (aquí se paga).
+- **El dinero sale igual que antes:**
+  - Culqi cobra `pedido.montoDeuda` con el mismo `CulqiCustomCheckout`
+    (solo cambia su botón: `renderBoton` con `PagoTarjeta`, como el
+    checkout); el servidor lo vuelve a calcular y rechaza otro monto.
+  - PayPal (el mismo `PaypalCheckout`) ahora recibe `amountUsd` de
+    `config/fx` con su margen: muestra los dólares que cobra el servidor
+    (antes calculaba con 3.8 fijo y sin margen: S/ 80 decía $21.05 y se
+    cobraban $21.89). Se muestra recién con el tipo de cambio leído.
+  - "Pagar" solo con deuda (`conDeuda`); nunca "Pagar total".
+  - El comprobante por WhatsApp: el mismo mensaje (`whatsapp_text_pagos`,
+    con el id del pedido y el monto de la deuda).
+  - Al pagar se cierra la hoja y se recarga el pedido: la deuda vieja no se
+    queda en pantalla (antes seguía hasta recargar y un segundo intento lo
+    rechazaba el servidor).
+  - Al abrir la hoja se despiertan `processCulqiPayment` y los de PayPal
+    (`precalentarFunciones`), y recién ahí se leen los números de Yape,
+    Plin y WhatsApp (antes, al entrar a cualquier pedido con deuda).
+- **Lo que no se pierde (en el kit):**
+  - El aviso del taller "STOP… TIENES UNA DEUDA PENDIENTE…" se abre solo al
+    entrar (impresión con deuda) y lleva a pagar (`pedido.avisoDeuda`).
+  - La línea del taller cuenta como hecha la etapa que tiene fecha (sin
+    importar el orden, `hechos`) y con deuda se pone en rojo entera.
+  - Los combos: "Combo Pareja · 1 de 2" y las prendas de un combo de la
+    tienda con su color y talla.
+  - El texto del pago bajo el total, "Producto(s)", el envío oculto en los
+    pedidos del taller (sin precios por línea).
+  - WhatsApp de cada marca o el general, con las mismas reglas del número;
+    sin número, el botón apagado.
+  - Reclamar las 10 monedas (`secureClaimMonedas`) con las monedas
+    volando desde el botón; si falla, ahora avisa.
+- **Lo que cambia (acordado):**
+  - El historial de pagos lee también los pagos del taller
+    (`cobranza.historialPagos`, por `normalizarPedidoParaVista`), el más
+    nuevo primero, con fecha, hora y medio; "Total abonado" es el total
+    menos la deuda del servidor (incluye el adelanto).
+  - Las boletas y fotos de envío se piden una vez (al volver a abrirlas ya
+    están); cada imagen se abre en grande y su enlace dice cuál es.
+  - Sin el catálogo entero: los productos de las líneas uno por uno (foto,
+    marca para WhatsApp y categoría); los recomendados (la tarjeta de la
+    tienda) se piden al acercarse.
+  - Textos con `<Texto>`, "No encontramos esta compra" con sello y el
+    esqueleto con la forma de la página (principal y costado).
+
+### Qué se probó (2026-10-19, localhost con los emuladores y misPedidosSecure)
+
+- El pedido con deuda (impresión): el aviso STOP se abre solo; "Ver
+  detalles de pago" abre "Pagar el saldo" con S/ 80.00, "Pagar S/ 80.00"
+  (Culqi) y PayPal "Pagarás $21.89 USD" (80 ÷ 3.8 × 1.04, la fórmula del
+  servidor); con números de prueba, Yape y Plin y "Enviar comprobante" →
+  `wa.me/51999000111` con "…del pedido *#T-DEUDA*… S/ *80*".
+- La línea en rojo con "Esperando tu pago", el historial (S/ 20 por Yape,
+  abonado S/ 70, falta S/ 80), boletas vacías.
+- El entregado del taller: sin precio por línea ni fila de envío; "Reclamar
+  10 monedas" → el servidor suma 10 (50 → 60) y queda reclamado.
+- El de la tienda con los 5 pasos, el anulado (sin seguimiento ni pagos), un
+  id que no existe ("No encontramos esta compra"), los recomendados al bajar.
+- `pagosViejo` → la página de antes. 390 y 1366, claro y noche.
+
+No se probó: un cobro de verdad con Culqi o PayPal (no se abren sus
+ventanas), por lo tanto tampoco la recarga después de pagar; las fotos de
+envío con imágenes; la traducción ni la app Android. El pedido de la tienda
+de prueba dice "Pago confirmado" en el detalle y "Pendiente de pago" en la
+lista: la página de antes muestra lo mismo (viene de `derivarEstadoCompra`
+contra `estadoWala`), no es de la migración.
+
 ## Llevar a la tienda (lo que falta)
 
 Páginas propias: van en el paso 6 de [MIGRACION.md](MIGRACION.md). Se migra
@@ -647,7 +728,7 @@ componente o su forma de recibir datos.
 | ✓ Resumen | `pages/cuenta/CuentaResumenPage.jsx` (hoy `CuentaResumenViejo.jsx`) | `PaginaResumenCuenta` (el "Cerrar sesión" lo pone `MarcoCuenta`) (hecho) |
 | ✓ Perfil | `PerfilPage.jsx` (hoy `PerfilViejo.jsx`): `AvatarStudio`, recompensas, "Datos Personales" | `PaginaPerfil` (hecho) |
 | ✓ Mis pedidos | `CuentaRastreoPage.jsx` (hoy `CuentaRastreoViejo.jsx`; tarjetas ~365-484, `ProgresoResumen` ~204-230) y `PedidosPorVerificar.jsx` | `PaginaPedidos` + `SeguimientoPedido` (`pasos`, `estado`, `deuda`, `anulado`, `urlDetalle`) + `PedidosPorVerificar` (hecho) |
-| Detalle de compra | `CuentaCompraDetallePage.jsx` (`Timeline`, `PedidoAcciones`, `HistorialPagos`, modales de pago y boletas) | `PaginaDetallePedido` + `LineaProduccion` + `PagosPedido` + `HojaPagarSaldo` |
+| ✓ Detalle de compra | `CuentaCompraDetallePage.jsx` (hoy `CuentaCompraDetalleViejo.jsx`; `Timeline`, `PedidoAcciones`, `HistorialPagos`, modales de pago y boletas) | `PaginaDetallePedido` + `LineaProduccion` + `PagosPedido` + `HojaPagarSaldo` (hecho) |
 | ✓ Foto de perfil | `AvatarStudio` + `AvatarCropModal` (react-easy-crop) | `IdentidadCuenta` + `RecortarFoto` (sin librería) (hecho) |
 | ✓ País y teléfono (en Mi perfil y Mis direcciones) | `CountrySelect`, `PhoneIntlInput` (`<select>` con banderas emoji) | `Campo opciones` (buscador) y `CampoTelefono` (hecho) |
 | Fechas de una persona | `FechaEventoInput` (día, mes, año) | `CampoFecha anioOpcional` |
@@ -696,9 +777,9 @@ componente o su forma de recibir datos.
 | `items` (deseos) | `wishlistItems` + `useProductosDeLista` (un producto por item) → `{ id, cargando, disponible, producto (solo el apagado: nombre, imagen), guardado, regalado: isGifted }`; `tarjeta`: `TarjetaDeProducto` |
 | `PaginaPedidos.pedidos` | cada pedido de `usePedidos` por `seguimientoDesdePedido` (`components/cuenta/resumenPedido.js`, lo mismo que `resumirRastreo`); sin `onPagar` ni `pagoPendiente`: `{ id, codigo, fecha, items, total, paso, pasos: ETAPAS_PRODUCCION si hay fase del taller (o los 5 generales), estado: { texto: getEtapaBadgeLabel / estadoWalaADisplay, tono }, deuda: montoDeuda si conDeuda, anulado, urlDetalle }` |
 | `porVerificar` | `{ pendientes: data.pendientes (fecha ya legible y fase con ETIQUETA_FASE), correoVerificado: data.emailVerificado, onEnviarVerificacion: enviarVerificacionCorreo, onYaVerifique: refrescarVerificacionCorreo + recargar, onVincular: vincularPedido }`; los servicios devuelven `{ error }` y el kit espera promesas que fallan: el conector lanza `new Error(mensaje)` |
-| `PaginaDetallePedido.pedido` | el pedido efectivo de la página: `getCodigoPedido`, `getNumeroProduccion`, `derivarEstadoCompra` (estado y `paymentLabel`), `fechas` → `fechasPasos`, líneas de `getProductosPedido`, dirección y montos como hoy |
+| `PaginaDetallePedido.pedido` | el pedido de la lista (`_raw` de `usePedidos`, con `conDeuda`/`montoDeuda` del servidor; ya no se lee por id) y `getCodigoPedido`, `getNumeroProduccion`, `derivarEstadoCompra` (estado y `paymentLabel`), `fechas` → `fechasPasos`, líneas de `getProductosPedido`, dirección y montos como hoy |
 | `pagos` | `historialPagos` → `historial`; `onBoletas`: `listFilesInFolder('00'+id)`; `onFotosEnvio`: `reparto.boletasEnvio` o Storage; `monedas`: `claimMonedas(id, 10)` y `monedasReclamadas` |
-| `onPagar` → `HojaPagarSaldo` | `tarjeta`: `CulqiCustomCheckout` + `PaypalCheckout`; `yape`, `plin`: `getMessage('yape_number')`…; `urlComprobante`: `whatsapp_number_pagos` con `whatsapp_text_pagos` |
+| `onPagar` → `HojaPagarSaldo` | `tarjeta`: `CulqiCustomCheckout` con `renderBoton` (`PagoTarjeta`) + `PaypalCheckout` con `amountUsd={penToUsd(deuda, fx)}`; al pagar, `recargar()`; `yape`, `plin`: `getMessage('yape_number')`…; `urlComprobante`: `whatsapp_number_pagos` con `whatsapp_text_pagos` |
 | `ranking` | `getTopReferrersOfMonth()` → `{ codigo: referrerCode, compras: count, monedas: coins }` |
 | `comunidadPara(c)` | con `usePuedePublicar(design)`: `{ estado: design.comunidad, onPublicar: publicarEnComunidad, onActualizar: publicarEnComunidad, onRetirar: retirarDeComunidad }` |
 | `onAgregarTodo`, `onCompartir` | `handleAddAll` (devolver `{ texto, tipo }`), copiar `/wishlist/{referralCode}` (con `origenPublico`) |
@@ -772,8 +853,9 @@ componente o su forma de recibir datos.
 - Las páginas públicas para compartir: la lista de deseos
   (`/wishlist/:código`, `WishlistPublic`) y el registro de regalos
   (`/regalar/:código`, `GiftRegistryPage`, con arrastrar a una fecha).
-- El aviso de impresión con deuda ("STOP…") del detalle: el kit lo muestra
-  como la etapa actual en rojo ("Esperando tu pago") y el aviso de deuda.
+- El aviso de impresión con deuda ("STOP…") del detalle: además del aviso
+  que se abre solo, la línea en rojo con "Esperando tu pago" en la etapa
+  actual.
 
 ### Pasos (cada uno se verifica solo y se puede volver atrás)
 
@@ -786,8 +868,8 @@ componente o su forma de recibir datos.
 5. ✓ Referidos (2026-10-19, arriba).
 6. ✓ Lista de deseos, Fechas importantes y Mis creaciones (2026-10-19,
    arriba).
-7. Mis pedidos: ✓ la lista (2026-10-19, arriba); falta el detalle de una
-   compra con sus pagos.
+7. ✓ Mis pedidos: la lista y el detalle de una compra con sus pagos
+   (2026-10-19, arriba). Con esto, toda la cuenta está en el kit.
 
 Para volver atrás: cada paso en su propio commit; las páginas viejas no se
 borran hasta que las nuevas lleven un tiempo en producción.

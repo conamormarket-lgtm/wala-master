@@ -39,6 +39,7 @@ principal (y a la APK de Capacitor).
 | Regalar para una fecha (paso 6): `PaginaRegalar` por `components/regalar/RegalarDeTienda.jsx` (`fechaEntregaDesde`, sin el arrastre); la página de antes baja solo con `regalarViejo` | `pages/GiftRegistry/GiftRegistryPage.jsx` |
 | Abrir el regalo (paso 6): `PaginaRegaloSorpresa` por `components/regalar/RegaloSorpresaDeTienda.jsx`; sin el Kapi flotante en `/regalo/`; la página de antes baja solo con `regalarViejo` | `pages/GiftExperiencePage.jsx` |
 | El marco de la cuenta, el resumen y los ajustes (paso 6): `MarcoCuenta`, `PaginaResumenCuenta` y `PaginaAjustes` por `components/cuenta/` (`MarcoDeCuenta`, `ResumenDeCuenta`, `AjustesDeCuenta`, `gruposDeCuenta`); las demás secciones, las de antes dentro del marco nuevo; lo de antes baja solo con `cuentaVieja` | `pages/CuentaLayout.jsx`, `pages/cuenta/CuentaResumenPage.jsx`, `pages/cuenta/CuentaAjustesPage.jsx` |
+| Mis pedidos (paso 7, el detalle): `PaginaDetallePedido` por `components/cuenta/DetallePedidoDeCuenta.jsx` (el pedido de la lista, sin volver a leerlo); pagar el saldo con el mismo Culqi (`renderBoton`) y PayPal (`amountUsd` de `config/fx`), recarga al pagar; el aviso STOP, la línea por fechas, combos; lo de antes baja con `cuentaVieja` o `pagosViejo` | `pages/cuenta/CuentaCompraDetallePage.jsx` |
 | Mis pedidos (paso 7, la lista): `PaginaPedidos` por `components/cuenta/PedidosDeCuenta.jsx` (`seguimientoDesdePedido`); pagar solo en el detalle; sin el catálogo entero; vincular acepta teléfonos con + y espacios; lo de antes baja con `cuentaVieja` o `pagosViejo` | `pages/cuenta/CuentaRastreoPage.jsx` |
 | Mis creaciones (paso 6): `PaginaCreaciones` por `components/cuenta/CreacionesDeCuenta.jsx`; "Comprado" de `enPedido` (sin pedir los pedidos), eliminar con una sola confirmación, combos, borradores y diseños de antes completos, `VersionesAnteriores`; lo de antes baja solo con `cuentaVieja` | `pages/cuenta/MisCreacionesPage.jsx` |
 | Fechas importantes (paso 6): `PaginaFechas` por `components/cuenta/FechasDeCuenta.jsx`; guardar conserva lo de la encuesta, varios paquetes por persona, lo que pide talla abre Agregar rápido; lo de antes baja solo con `cuentaVieja` | `pages/cuenta/CuentaFechasImportantesPage.jsx` |
@@ -215,7 +216,13 @@ Cada paso en su propio commit, verificable por separado.
    lectura de fase, pagar solo en el detalle, pestañas que abren donde hay
    pedidos, sin "Gratis" en las líneas del taller y sin el catálogo entero
    (CUENTA.md, "Mis pedidos en la tienda"). Interruptores `cuentaVieja` o
-   `pagosViejo`. Falta el detalle con los pagos.
+   `pagosViejo`.
+   ✓ **Mis pedidos, el detalle** (2026-10-19): el mismo cobro (Culqi y
+   PayPal sin cambios; PayPal ahora muestra los dólares que cobra), la
+   recarga al pagar, el aviso del taller, la línea por fechas, los pagos del
+   taller en el historial y sin el catálogo entero (CUENTA.md, "Detalle de
+   una compra en la tienda"). Interruptores `cuentaVieja` o `pagosViejo`.
+   Con esto, toda la cuenta está en el kit.
 7. **Cargando** (`PantallaCarga`, `Cargando`, `EsqueletoPagina`: CARGA.md; el
    splash de `index.html` cambia en el mismo commit), **`BarraInferior` y luego `Cabecera`**: la más conectada (AuthContext,
    CartContext, WishlistContext, notificaciones y la configuración de
@@ -232,8 +239,8 @@ nada), o en un solo navegador con `localStorage.wala_kit_viejo = "pagos,carrito"
 
 | Interruptor | Qué vuelve a lo de antes |
 |---|---|
-| `pagosViejo` | Mis pedidos entero (`CuentaRastreoViejo.jsx`, también con `cuentaVieja`), la ventana "Pagar saldo" de Mis pedidos (`Modal` viejo), la pantalla de Culqi mientras cobra, el pago rápido entero (`PagoRapidoViejo.jsx`) y el checkout entero (`CheckoutViejo.jsx`) |
-| `cuentaVieja` (`useLoViejo('cuenta')`: en Firestore el campo es `cuentaViejo: true`; en localStorage, `"cuenta"`) | la cuenta: el marco (`CuentaLayoutViejo.jsx`), el resumen (`CuentaResumenViejo.jsx`) y los ajustes (`CuentaAjustesViejo.jsx`), Mi perfil (`PerfilViejo.jsx`), Mis direcciones (`MisDireccionesViejo.jsx`), el catálogo (`CatalogRewardViejo.jsx`), Mis cupones (`MisCuponesViejo.jsx`), Misiones (`MisionesViejo.jsx`), Mis referidos (`CuentaReferidosViejo.jsx`) la lista de deseos (`WishlistViejo.jsx`) Fechas importantes (`CuentaFechasImportantesViejo.jsx`) Mis creaciones (`MisCreacionesViejo.jsx`) y Mis pedidos (`CuentaRastreoViejo.jsx`, también con `pagosViejo`); después, cada sección que migre |
+| `pagosViejo` | Mis pedidos entero, la lista y el detalle (`CuentaRastreoViejo.jsx`, `CuentaCompraDetalleViejo.jsx`, también con `cuentaVieja`), la ventana "Pagar saldo" de Mis pedidos (`Modal` viejo), la pantalla de Culqi mientras cobra, el pago rápido entero (`PagoRapidoViejo.jsx`) y el checkout entero (`CheckoutViejo.jsx`) |
+| `cuentaVieja` (`useLoViejo('cuenta')`: en Firestore el campo es `cuentaViejo: true`; en localStorage, `"cuenta"`) | la cuenta: el marco (`CuentaLayoutViejo.jsx`), el resumen (`CuentaResumenViejo.jsx`) y los ajustes (`CuentaAjustesViejo.jsx`), Mi perfil (`PerfilViejo.jsx`), Mis direcciones (`MisDireccionesViejo.jsx`), el catálogo (`CatalogRewardViejo.jsx`), Mis cupones (`MisCuponesViejo.jsx`), Misiones (`MisionesViejo.jsx`), Mis referidos (`CuentaReferidosViejo.jsx`) la lista de deseos (`WishlistViejo.jsx`) Fechas importantes (`CuentaFechasImportantesViejo.jsx`) Mis creaciones (`MisCreacionesViejo.jsx`) y Mis pedidos (`CuentaRastreoViejo.jsx` y `CuentaCompraDetalleViejo.jsx`, también con `pagosViejo`); después, cada sección que migre |
 | `carritoViejo` | todo el carrito (`Cart.jsx` y `CartItem.jsx`, con sus preguntas por `window.confirm`) |
 | `regalarViejo` | regalarle a alguien: su lista de deseos (`WishlistPublicViejo.jsx`), regalar para una fecha (`GiftRegistryPageViejo.jsx`, con el arrastre) y abrir el regalo (`GiftExperienceViejo.jsx`) |
 | `tarjetasViejo` | la tarjeta de producto (`PremiumProductCard`) en carruseles y grillas |

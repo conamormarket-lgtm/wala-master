@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { ShoppingBag, Package, RotateCcw, IdCard, ChevronRight, MapPin, Receipt, Truck, MessageCircle, Wallet } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ShoppingBag, Package, RotateCcw, IdCard, ChevronRight, MapPin, Receipt, Truck, MessageCircle, Wallet, SearchX, AlertTriangle } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
-import { Aviso, EstadoVacio } from '../Feedback';
+import { Aviso, EstadoVacio, HojaInferior } from '../Feedback';
 import { Etiqueta } from '../Etiquetas';
 import { Pestanas } from '../Navegacion';
 import { SeguimientoPedido } from '../Pedido';
@@ -114,30 +114,70 @@ export function PaginaPedidos({ pedidos = [], porVerificar, cargando = false, er
  * documentos y WhatsApp; abajo, recomendados.
  *  - pedido: { codigo, numeroProduccion, fecha, estado: { texto, tono },
  *    pago: { texto, pagado }, produccion (8 etapas o no), pasos, paso,
- *    fechasPasos, anulado, deuda, productos: [{ id, nombre, imagen, talla,
- *    color, personalizado, cantidad, subtotal }], direccion: { linea, lugar },
- *    resumen: { productos, descuentoMonedas, envio, total } }
+ *    fechasPasos, hechos (por fecha, LineaProduccion), anulado, deuda,
+ *    avisoDeuda: el aviso del taller (impresión con deuda) que se abre solo al
+ *    entrar y lleva a pagar, productos: [{ id, nombre, imagen, talla, color,
+ *    personalizado, cantidad, subtotal (sin él no hay precio), combo ("Combo
+ *    Pareja · 1 de 2"), piezas: [texto] }], direccion: { linea, lugar },
+ *    resumen: { productos, descuentoMonedas, envio (sin él no hay fila),
+ *    total, pago: el texto del pago bajo el total } }
  *  - pagos: props de PagosPedido (historial, onBoletas, onFotosEnvio, monedas…)
- *  - onPagar · whatsapp: [{ texto, url }] · recomendados, catalogo, onAgregar
+ *  - onPagar · whatsapp: [{ texto, url }] (sin url: el botón apagado)
+ *  - recomendados, catalogo, onAgregar · tarjeta: la de la tienda ·
+ *    onVerAbajo(): una vez, al acercarse a los recomendados (se piden ahí)
  *  - cargando · noEncontrado · urlVolver
  */
 export function PaginaDetallePedido({
-  pedido, pagos = {}, onPagar, whatsapp = [], recomendados = [], catalogo, onAgregar,
+  pedido, pagos = {}, onPagar, whatsapp = [], recomendados = [], catalogo, onAgregar, tarjeta, onVerAbajo,
   cargando = false, noEncontrado = false, urlVolver = '/cuenta/pedidos',
 }) {
+  // El aviso del taller se abre solo, una vez por pedido.
+  const [aviso, setAviso] = useState(false);
+  const avisado = useRef(null);
+  useEffect(() => {
+    if (pedido?.avisoDeuda && avisado.current !== pedido.codigo) {
+      avisado.current = pedido.codigo;
+      setAviso(true);
+    }
+  }, [pedido?.avisoDeuda, pedido?.codigo]);
+  // Lo de abajo (recomendados) se pide al acercarse.
+  const abajoRef = useRef(null);
+  const verAbajo = useRef(onVerAbajo);
+  verAbajo.current = onVerAbajo;
+  const hayPedido = Boolean(pedido) && !cargando;
+  useEffect(() => {
+    const el = abajoRef.current;
+    if (!el || !verAbajo.current || !hayPedido) return undefined;
+    if (typeof IntersectionObserver === 'undefined') { verAbajo.current(); return undefined; }
+    const ojo = new IntersectionObserver((entradas) => {
+      if (entradas.some((e) => e.isIntersecting)) { ojo.disconnect(); verAbajo.current?.(); }
+    }, { rootMargin: '300px 0px' });
+    ojo.observe(el);
+    return () => ojo.disconnect();
+  }, [hayPedido]);
+
   const migas = (
     <nav className={s.migas} aria-label="Estás en">
-      <Enlace to={urlVolver}>Mis pedidos</Enlace>
+      <Enlace to={urlVolver}><Texto>Mis pedidos</Texto></Enlace>
       <ChevronRight aria-hidden="true" />
-      <span aria-current="page">Estado de la compra</span>
+      <span aria-current="page"><Texto>Estado de la compra</Texto></span>
     </nav>
   );
   if (cargando) {
+    // La forma de lo que viene: el pedido y sus productos; al costado, el detalle y los pagos.
     return (
       <>
         {migas}
-        <div aria-busy="true"><EsqueletoPedido /></div>
-        <EsqueletoTarjeta lineas={5} alto={260} boton={false} />
+        <div className={s.detalle} aria-busy="true">
+          <div className={s.principal}>
+            <EsqueletoPedido />
+            <EsqueletoTarjeta lineas={4} alto={240} boton={false} />
+          </div>
+          <aside className={s.lado}>
+            <EsqueletoTarjeta lineas={3} alto={190} boton={false} />
+            <EsqueletoTarjeta lineas={2} alto={170} />
+          </aside>
+        </div>
       </>
     );
   }
@@ -145,8 +185,9 @@ export function PaginaDetallePedido({
     return (
       <>
         {migas}
-        <EstadoVacio titulo="No encontramos esta compra" texto="Es posible que el pedido ya no esté disponible o que no pertenezca a tu cuenta.">
-          <Boton to={urlVolver}>Volver a Mis pedidos</Boton>
+        {/* Sin la cara de Kapi: en la tienda ya está el flotante (un solo Kapi a la vista). */}
+        <EstadoVacio imagen={null} icono={<SearchX />} titulo={<Texto>No encontramos esta compra</Texto>} texto={<Texto>Es posible que el pedido ya no esté disponible o que no pertenezca a tu cuenta.</Texto>}>
+          <Boton to={urlVolver}><Texto>Volver a Mis pedidos</Texto></Boton>
         </EstadoVacio>
       </>
     );
@@ -161,81 +202,99 @@ export function PaginaDetallePedido({
           <section className={s.encabezado} data-componente="EncabezadoPedido">
             <CabezaCuenta
               icono={<Package />}
-              titulo={`Pedido #${pedido.codigo}`}
-              subtitulo={sub}
-              accion={pedido.estado && <Etiqueta tono={pedido.estado.tono || 'violeta'} punto>{pedido.estado.texto}</Etiqueta>}
+              titulo={<><Texto>Pedido</Texto> #{pedido.codigo || '—'}</>}
+              subtitulo={sub ? <Texto>{sub}</Texto> : undefined}
+              accion={pedido.estado && <Etiqueta tono={pedido.estado.tono || 'violeta'} punto><Texto>{pedido.estado.texto}</Texto></Etiqueta>}
             />
             {pedido.pago?.texto && (
-              <p className={[s.pago, pedido.pago.pagado && s.pagoOk].filter(Boolean).join(' ')}><Wallet aria-hidden="true" /> {pedido.pago.texto}</p>
+              <p className={[s.pago, pedido.pago.pagado && s.pagoOk].filter(Boolean).join(' ')}><Wallet aria-hidden="true" /> <Texto>{pedido.pago.texto}</Texto></p>
             )}
           </section>
 
           {!pedido.anulado && (
-            <TarjetaCuenta icono={<Truck />} titulo={pedido.produccion ? 'Seguimiento de producción' : 'Seguimiento general'}
-              subtitulo={pedido.produccion ? undefined : 'El detalle por etapas (8 pasos) aparece cuando el taller registra el pedido.'}>
-              <LineaProduccion pasos={pedido.pasos} paso={pedido.paso} fechas={pedido.fechasPasos} deuda={pedido.deuda > 0} />
+            <TarjetaCuenta icono={<Truck />} titulo={<Texto>{pedido.produccion ? 'Seguimiento de producción' : 'Seguimiento general'}</Texto>}
+              subtitulo={pedido.produccion ? undefined : <Texto>El detalle por etapas (8 pasos) aparece cuando el taller registra el pedido.</Texto>}>
+              <LineaProduccion pasos={pedido.pasos} paso={pedido.paso} fechas={pedido.fechasPasos} hechos={pedido.hechos} deuda={pedido.deuda > 0} />
             </TarjetaCuenta>
           )}
 
-          <TarjetaCuenta icono={<ShoppingBag />} titulo={productos.length === 1 ? 'Tu producto' : 'Tus productos'}>
+          <TarjetaCuenta icono={<ShoppingBag />} titulo={<Texto>{productos.length === 1 ? 'Tu producto' : 'Tus productos'}</Texto>}>
             {productos.length ? (
               <ul className={s.productos}>
                 {productos.map((p, i) => (
                   <li key={p.id || i} className={s.producto}>
                     <FotoProducto className={s.foto} src={p.imagen} relleno="4px" respaldo={<Package className={s.sinFoto} aria-hidden="true" />} />
                     <div className={s.productoTextos}>
-                      <strong>{p.nombre}</strong>
+                      {p.combo && <small className={s.productoCombo}><Texto>{p.combo}</Texto></small>}
+                      <strong><Texto>{p.nombre}</Texto></strong>
+                      {p.piezas?.length > 0 && (
+                        <ul className={s.piezas}>
+                          {p.piezas.map((t, k) => <li key={k}><Texto>{t}</Texto></li>)}
+                        </ul>
+                      )}
                       <span className={s.chips}>
-                        {p.talla && <Etiqueta tono="neutro">Talla {p.talla}</Etiqueta>}
-                        {p.color && <Etiqueta tono="neutro">{p.color}</Etiqueta>}
-                        {p.personalizado && <Etiqueta tono="violeta">Tu diseño</Etiqueta>}
+                        {p.talla && <Etiqueta tono="neutro"><Texto>Talla</Texto> {p.talla}</Etiqueta>}
+                        {p.color && <Etiqueta tono="neutro"><Texto>{p.color}</Texto></Etiqueta>}
+                        {p.personalizado && <Etiqueta tono="violeta"><Texto>Tu diseño</Texto></Etiqueta>}
                       </span>
-                      <small>Cantidad: {p.cantidad || 1}</small>
+                      <small><Texto>Cantidad:</Texto> {p.cantidad || 1}</small>
                     </div>
                     {p.subtotal != null && <span className={s.subtotal}>{soles(p.subtotal)}</span>}
                   </li>
                 ))}
               </ul>
-            ) : <p className={s.nada}>No hay detalle de productos para este pedido.</p>}
+            ) : <p className={s.nada}><Texto>No hay detalle de productos para este pedido.</Texto></p>}
           </TarjetaCuenta>
 
           {pedido.direccion?.linea && (
-            <TarjetaCuenta icono={<MapPin />} titulo="Dirección de entrega">
+            <TarjetaCuenta icono={<MapPin />} titulo={<Texto>Dirección de entrega</Texto>}>
               <p className={s.direccion}><strong>{pedido.direccion.linea}</strong>{pedido.direccion.lugar && <span>{pedido.direccion.lugar}</span>}</p>
             </TarjetaCuenta>
           )}
         </div>
 
         <aside className={s.lado}>
-          <TarjetaCuenta icono={<Receipt />} titulo="Detalle de la compra">
+          <TarjetaCuenta icono={<Receipt />} titulo={<Texto>Detalle de la compra</Texto>}>
             <ListaDatos datos={[
-              { etiqueta: 'Productos', valor: soles(resumen.productos ?? resumen.total ?? 0) },
+              { etiqueta: productos.length === 1 ? 'Producto' : 'Productos', valor: soles(resumen.productos ?? resumen.total ?? 0) },
               ...(resumen.descuentoMonedas > 0 ? [{ etiqueta: 'Descuento (monedas)', valor: `−${soles(resumen.descuentoMonedas)}` }] : []),
-              ...(resumen.envio != null ? [{ etiqueta: 'Envío', valor: resumen.envio > 0 ? soles(resumen.envio) : 'Gratis' }] : []),
+              ...(resumen.envio != null ? [{ etiqueta: 'Envío', valor: resumen.envio > 0 ? soles(resumen.envio) : <Texto>Gratis</Texto> }] : []),
             ]}
             />
-            <p className={s.total}><span>Total</span><strong>{soles(resumen.total ?? 0)}</strong></p>
+            <p className={s.total}><span><Texto>Total</Texto></span><strong>{soles(resumen.total ?? 0)}</strong></p>
+            {resumen.pago && <p className={s.pagoResumen}><Texto>{resumen.pago}</Texto></p>}
           </TarjetaCuenta>
           {!pedido.anulado && (
-            <TarjetaCuenta icono={<Wallet />} titulo="Pagos y documentos">
+            <TarjetaCuenta icono={<Wallet />} titulo={<Texto>Pagos y documentos</Texto>}>
               <PagosPedido total={resumen.total ?? 0} deuda={pedido.deuda} pagado={pedido.pago?.pagado} estadoPago={pedido.pago?.texto} onPagar={onPagar} {...pagos} />
             </TarjetaCuenta>
           )}
           {whatsapp.length > 0 && (
-            <TarjetaCuenta icono={<MessageCircle />} tono="menta" titulo="¿Dudas con tu pedido?" subtitulo="Te respondemos por WhatsApp.">
+            <TarjetaCuenta icono={<MessageCircle />} tono="menta" titulo={<Texto>¿Dudas con tu pedido?</Texto>} subtitulo={<Texto>Te respondemos por WhatsApp.</Texto>}>
               <div className={s.whatsapp}>
-                {whatsapp.map((w) => <Boton key={w.url} to={w.url} variante="contorno" bloque icono={<MessageCircle aria-hidden="true" />}>{w.texto}</Boton>)}
+                {/* Sin número, el botón se ve apagado (como antes). */}
+                {whatsapp.map((w) => <Boton key={w.url || w.texto} to={w.url || undefined} disabled={!w.url} variante="contorno" bloque icono={<MessageCircle aria-hidden="true" />}><Texto>{w.texto}</Texto></Boton>)}
               </div>
             </TarjetaCuenta>
           )}
         </aside>
       </div>
 
+      {/* Desde aquí, lo de abajo: se pide al acercarse (onVerAbajo). */}
+      <div ref={abajoRef} aria-hidden="true" />
       {recomendados.length > 0 && (
         <div className={s.recomendados}>
-          <CarruselProductos ajustes={{ title: 'También te puede interesar', visibleItems: 4 }} productos={recomendados} onAgregar={onAgregar} catalogo={catalogo} />
+          <CarruselProductos ajustes={{ title: 'También te puede interesar', visibleItems: 4 }} productos={recomendados} onAgregar={onAgregar} catalogo={catalogo} {...(tarjeta ? { tarjeta } : {})} />
         </div>
       )}
+
+      {/* El aviso del taller: se detuvo en la impresión por la deuda. */}
+      <HojaInferior abierta={aviso} onCerrar={() => setAviso(false)} titulo="Aviso de impresión">
+        <div className={s.avisoDeuda}>
+          <p><AlertTriangle aria-hidden="true" /> <Texto>{pedido.avisoDeuda || ''}</Texto></p>
+          {onPagar && <Boton bloque onClick={() => { setAviso(false); onPagar(); }}><Texto>Ver detalles de pago</Texto></Boton>}
+        </div>
+      </HojaInferior>
     </>
   );
 }
