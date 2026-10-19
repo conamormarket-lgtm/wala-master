@@ -180,7 +180,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `piezas/MenuContextual.jsx` | `MenuContextual` | El menú del clic derecho o del toque largo: lista flotante en escritorio, `HojaInferior` en el celular |
 | `piezas/TarjetaDireccion.jsx` | `TarjetaDireccion` | Una dirección guardada (principal, editar, eliminar con confirmación) |
 | `piezas/Recompensas.jsx` | `TarjetaRecompensa` (beneficio en texto; `confirmando`/`onConfirmar`), `TarjetaCupon`, `TarjetaMision` ("Ganas"), `NivelCuenta`, `NIVELES` (la demo; en la tienda, `nivelesDesdeTiers`) | Catálogo, cupones, misiones y nivel por XP (en la tienda desde el 2026-10-17) |
-| `piezas/Referidos.jsx` | `FormaGanar` (con `premio`: lo que suma, en un sello), `EnlaceInvitacion`, `FilaReferido`, `DetallePedidoReferido`, `RankingReferidos` | Mis referidos |
+| `piezas/Referidos.jsx` | `FormaGanar` (con `premio`: lo que suma, en un sello), `EnlaceInvitacion`, `FilaReferido` (`anonima`: "?"), `DetallePedidoReferido` (`paso`: la fase del taller; `error` con el mensaje), `RankingReferidos` | Mis referidos (en la tienda desde el 2026-10-19) |
 | `piezas/Creaciones.jsx` | `TarjetaCreacion` | Un diseño guardado (frente y espalda, renombrar, eliminar; también borradores) |
 | `piezas/Regalos.jsx` | `IdeaRegalo`, `TarjetaPersonaRegalo`, `AvisoFestiva` (cuenta atrás), `HojaCalendario`, `AgendaFechas` ("Lo que se viene"), `faltanDias`, `textoFaltan`, `diaYMes` | Fechas importantes |
 | `piezas/FormularioPersona.jsx` | `HojaPersona` (formulario de una persona en una hoja: foto, género, relación o fija, presupuesto, gustos, "Conjunto familia", fechas), `validarPersona`, `RELACIONES`, `GENEROS`, `PRESUPUESTOS` | Fechas importantes y la encuesta |

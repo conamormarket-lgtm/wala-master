@@ -196,6 +196,12 @@
   font-size: 0.82rem;
 }
 
+/* La fase del taller ("En Estampado…"), junto a la etapa. */
+.detallePaso {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
 .detalleFecha,
 .detalleTotal,
 .detalleEstado {

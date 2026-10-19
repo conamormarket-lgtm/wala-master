@@ -192,3 +192,11 @@ grupos del marco nuevo (`gruposDeCuenta.js`).
 | `pages/cuenta/MisCuponesViejo.jsx` + `MisCuponesPage.module.css` (245 líneas) + `public/assets/kapi/cupon-ruleta.webp`, `cupon-catalogo.webp` | `/cuenta/cupones` | `CuponesDeCuenta.jsx` → `PaginaCupones` (el talón con `IconoWala`) | `MisCuponesPage.jsx` (lazy, solo con `cuentaVieja`); las imágenes, solo la página de antes | al retirar `cuentaVieja` |
 | `pages/cuenta/MisionesViejo.jsx` + `MisionesPage.module.css` (864 líneas) | `/cuenta/misiones` | `MisionesDeCuenta.jsx` → `PaginaMisiones` | `MisionesPage.jsx` (lazy, solo con `cuentaVieja`) | al retirar `cuentaVieja` |
 | `tierForXp` y los `icon` (emojis) de `constants/tiers.js` | Misiones de antes | `nivelesDesdeTiers` + `NivelCuenta` | buscar antes de borrar (`TIERS` se queda: es la fuente de los niveles) | con `MisionesViejo.jsx`, si nadie más los usa |
+
+### Mis referidos (2026-10-19)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/cuenta/CuentaReferidosViejo.jsx` + `CuentaReferidosPage.module.css` (971 líneas) | `/cuenta/referidos` | `components/cuenta/ReferidosDeCuenta.jsx` → `PaginaReferidos` | `CuentaReferidosPage.jsx` (lazy, solo con `cuentaVieja`) | al retirar `cuentaVieja` |
+| `pages/cuenta/components/GrupoReferidos.jsx` + `DetallePedidoReferido.jsx` | la página de antes | `FilaReferido` y `DetallePedidoReferido` del kit (la lógica de estados, en el conector) | solo `CuentaReferidosViejo.jsx` | con la página de antes |
+| `components/analytics/ReferralRanking.jsx` + su CSS (213 líneas) | la página de antes | `RankingReferidos` | solo `CuentaReferidosViejo.jsx` | con la página de antes |

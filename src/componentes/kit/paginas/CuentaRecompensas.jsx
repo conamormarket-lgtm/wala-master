@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Gift, Ticket, Trophy, Users, Sparkles, Flame, MousePointerClick, ShoppingBag, Coins, Receipt, Link2, RotateCcw, ArrowRight, Send } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
@@ -260,24 +260,40 @@ function GrupoReferidos({ grupo, onReclamar, onVerPedido }) {
     setAbiertos((a) => (a.includes(id) ? a.filter((x) => x !== id) : [...a, id]));
     if (!abiertos.includes(id)) onVerPedido?.(id);
   };
-  const reclamar = (p) => async () => {
+  // El botón se toma antes del await (de él salen las monedas que vuelan).
+  // Si el reclamo falla, se abre el pedido para ver en qué etapa va.
+  const reclamar = (p) => async (ev) => {
+    const boton = ev?.currentTarget || null;
     setReclamando(p.id);
-    try { await onReclamar?.(p.id); } catch { setAbiertos((a) => (a.includes(p.id) ? a : [...a, p.id])); } finally { setReclamando(null); }
+    try {
+      await onReclamar?.(p.id, boton);
+    } catch {
+      setAbiertos((a) => (a.includes(p.id) ? a : [...a, p.id]));
+      onVerPedido?.(p.id);
+    } finally {
+      setReclamando(null);
+    }
   };
   const figura = grupo.imagen
     ? <FotoProducto className={s.grupoFoto} src={grupo.imagen} />
     : <IconoWala nombre={FIGURA_GRUPO[grupo.tipo] || 'regalo'} tamano={44} girar={-6} />;
   return (
-    <TarjetaCuenta figura={figura} antetitulo={grupo.antetitulo} titulo={grupo.titulo} subtitulo={meta}>
-      {grupo.descripcion && <p className={s.grupoTexto}>{grupo.descripcion}</p>}
+    <TarjetaCuenta
+      figura={figura}
+      antetitulo={grupo.antetitulo && <Texto>{grupo.antetitulo}</Texto>}
+      titulo={<Texto>{grupo.titulo}</Texto>}
+      subtitulo={<Texto>{meta}</Texto>}
+    >
+      {grupo.descripcion && <p className={s.grupoTexto}><Texto>{grupo.descripcion}</Texto></p>}
       {personas.length === 0 ? (
-        <p className={s.grupoTexto}>Todavía nadie entró por este link.</p>
+        <p className={s.grupoTexto}><Texto>Todavía nadie entró por este link.</Texto></p>
       ) : (
         <ul className={s.personas}>
           {visibles.map((p) => (
             <FilaReferido
               key={p.id}
               nombre={p.nombre}
+              anonima={p.anonima}
               chips={p.chips}
               detalle={p.detalle}
               ganancia={p.ganancia}
@@ -286,14 +302,15 @@ function GrupoReferidos({ grupo, onReclamar, onVerPedido }) {
                 <>
                   {p.pedido && (
                     <Boton variante="fantasma" tamano="sm" icono={<Receipt aria-hidden="true" />} onClick={() => alternar(p.id)} aria-expanded={abiertos.includes(p.id)}>
-                      {abiertos.includes(p.id) ? 'Ocultar pedido' : 'Ver pedido'}
+                      <Texto>{abiertos.includes(p.id) ? 'Ocultar pedido' : 'Ver pedido'}</Texto>
                     </Boton>
                   )}
                   {p.reclamo === 'listo' && (
-                    <Boton tamano="sm" icono={<Coins aria-hidden="true" />} cargando={reclamando === p.id} onClick={reclamar(p)}>Reclamar monedas</Boton>
+                    <Boton tamano="sm" icono={<Coins aria-hidden="true" />} cargando={reclamando === p.id} onClick={reclamar(p)}><Texto>Reclamar monedas</Texto></Boton>
                   )}
-                  {p.reclamo === 'revisando' && <Boton tamano="sm" variante="contorno" disabled>Revisando pedido…</Boton>}
-                  {p.reclamo === 'alEntregarse' && <Boton tamano="sm" variante="contorno" disabled title="Se activa cuando el pedido se entrega">Reclamar al entregarse</Boton>}
+                  {p.reclamo === 'revisando' && <Boton tamano="sm" variante="contorno" disabled><Texto>Revisando pedido…</Texto></Boton>}
+                  {p.reclamo === 'alEntregarse' && <Boton tamano="sm" variante="contorno" disabled title="Se activa cuando el pedido se entrega"><Texto>Reclamar al entregarse</Texto></Boton>}
+                  {p.reclamo === 'anulado' && <span className={s.grupoTexto}><Texto>El pedido se anuló, así que no genera monedas.</Texto></span>}
                 </>
               )}
             >
@@ -304,11 +321,11 @@ function GrupoReferidos({ grupo, onReclamar, onVerPedido }) {
       )}
       {personas.length > VISIBLES && (
         <button type="button" className={s.verTodas} onClick={() => setTodas((v) => !v)}>
-          {todas ? 'Ver menos' : `Ver las ${personas.length} personas`}
+          <Texto>{todas ? 'Ver menos' : `Ver las ${personas.length} personas`}</Texto>
         </button>
       )}
       {grupo.sinAbrir > 0 && (
-        <p className={s.grupoNota}>{grupo.sinAbrir} {grupo.sinAbrir === 1 ? 'link generado sigue sin abrir' : 'links generados siguen sin abrir'}.</p>
+        <p className={s.grupoNota}><Texto>{`${grupo.sinAbrir} ${grupo.sinAbrir === 1 ? 'link generado sigue sin abrir' : 'links generados siguen sin abrir'}.`}</Texto></p>
       )}
     </TarjetaCuenta>
   );
@@ -321,54 +338,80 @@ function GrupoReferidos({ grupo, onReclamar, onVerPedido }) {
  *  - url (linkInvitacion), codigo · monedas: saldo actual
  *  - resumen: { entraron, cuentasNuevas, compras, porReclamar, ganadas }
  *  - grupos: [{ id, tipo, antetitulo, titulo, imagen, descripcion, sinAbrir,
- *    personas: [{ id, nombre, chips, detalle, ganancia, confirmada,
- *    cuentaNueva, compro, reclamo: 'listo' | 'revisando' | 'alEntregarse',
- *    pedido: props de DetallePedidoReferido }] }] (el de la invitación primero)
+ *    personas: [{ id, nombre, anonima, chips, detalle, ganancia, confirmada,
+ *    cuentaNueva, compro, reclamo: 'listo' | 'revisando' | 'alEntregarse' |
+ *    'anulado', pedido: props de DetallePedidoReferido }] }] (el de la
+ *    invitación primero)
  *  - cargando · bono (10), premio (15): los números de la invitación
- *  - onCompartir() · onCopiar(url) · onReclamar(id): promesas
+ *  - onCompartir() · onCopiar(url) · onReclamar(id, boton): promesas (boton:
+ *    de dónde salen las monedas que vuelan)
  *  - onVerPedido(id): para pedir el detalle al abrirlo · urlTienda
  *  - ranking: { items, cargando } los que más regalaron este mes
+ *  - onVerAbajo(): una vez, al acercarse al ranking (para pedirlo recién ahí)
  */
 export function PaginaReferidos({
   url, codigo, monedas = 0, resumen = {}, grupos = [], cargando = false, bono = 10, premio = 15,
-  onCompartir, onCopiar, onReclamar, onVerPedido, urlTienda = '/tienda', ranking,
+  onCompartir, onCopiar, onReclamar, onVerPedido, urlTienda = '/tienda', ranking, onVerAbajo,
 }) {
   const { entraron = 0, cuentasNuevas = 0, compras = 0, porReclamar = 0, ganadas = 0 } = resumen;
   const otros = grupos.filter((g) => g.tipo !== 'invitacion');
+  const abajo = useRef(null);
+  const verAbajo = useRef(onVerAbajo);
+  verAbajo.current = onVerAbajo;
+  const conVerAbajo = Boolean(onVerAbajo);
+  useEffect(() => {
+    const el = abajo.current;
+    if (!conVerAbajo || !el) return undefined;
+    if (typeof IntersectionObserver === 'undefined') { verAbajo.current?.(); return undefined; }
+    const obs = new IntersectionObserver((e) => {
+      if (!e[0]?.isIntersecting) return;
+      obs.disconnect();
+      verAbajo.current?.();
+    }, { rootMargin: '300px' });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [conVerAbajo]);
   return (
     <>
       <CabezaCuenta
         icono={<Users />}
         tono="oro"
-        titulo="Invita y gana monedas"
-        subtitulo="Cada moneda vale S/ 1 de descuento, y la ganas cuando el pedido se entrega."
+        titulo={<Texto>Invita y gana monedas</Texto>}
+        subtitulo={<Texto>Cada moneda vale S/ 1 de descuento, y la ganas cuando el pedido se entrega.</Texto>}
       />
       <div className={s.formas}>
         <FormaGanar icono="regalo" titulo="Invita a alguien nuevo">
-          Con tu link crea su cuenta y recibe <strong>{bono} monedas</strong>. Con su primera compra (tiene 30 días) tú ganas <strong>{premio} monedas</strong>, o el 5 % / 10 % si es más.
+          <Texto>Con tu link crea su cuenta y recibe</Texto> <strong>{bono} <Texto>monedas</Texto></strong>. <Texto>Con su primera compra (tiene 30 días) tú ganas</Texto> <strong>{premio} <Texto>monedas</Texto></strong><Texto>, o el 5 % / 10 % si es más.</Texto>
         </FormaGanar>
         <FormaGanar icono="polera" titulo="Comparte un producto">
-          Quien compre dentro de las 36 h desde que abre tu link te suma el <strong>5 %</strong> de su compra, o el <strong>10 %</strong> si pasa de S/ 200.
+          <Texto>Quien compre dentro de las 36 h desde que abre tu link te suma el</Texto> <strong>5 %</strong> <Texto>de su compra, o el</Texto> <strong>10 %</strong> <Texto>si pasa de S/ 200.</Texto>
         </FormaGanar>
       </div>
+      <p className={s.grupoNota}>
+        <Texto>Cada persona que entra cuenta aparte: puedes mandar el mismo link a un grupo o ponerlo en tu estado. Si alguien abrió varios links, cuenta el último. Quien lo abra verá tu primer nombre.</Texto>
+      </p>
 
-      <TarjetaCuenta icono={<Link2 />} titulo="Tu link de invitación" subtitulo="No caduca y es siempre el mismo.">
+      <TarjetaCuenta
+        icono={<Link2 />}
+        titulo={<Texto>Tu link de invitación</Texto>}
+        subtitulo={<Texto>No caduca y es siempre el mismo. Si quien lo abre ya tiene cuenta, igual te suma si compra en 36 h.</Texto>}
+      >
         <EnlaceInvitacion url={url} onCompartir={onCompartir} onCopiar={onCopiar} />
         <p className={s.grupoNota}>
-          Para un producto: ábrelo en la <Enlace to={urlTienda} className={s.enlaceNota}>tienda</Enlace> y toca compartir.
-          {codigo && <> Tu código es <strong>{codigo}</strong>.</>}
+          <Texto>Para un producto: ábrelo en la</Texto> <Enlace to={urlTienda} className={s.enlaceNota}><Texto>tienda</Texto></Enlace> <Texto>y toca compartir.</Texto>
+          {codigo && <> <Texto>Tu código es</Texto> <strong>{codigo}</strong>.</>}
         </p>
       </TarjetaCuenta>
 
       <div className={s.cifras}>
-        <Estadistica icono={<MousePointerClick />} etiqueta="Entraron" valor={miles(entraron)} unidad={entraron === 1 ? 'persona' : 'personas'}
-          nota={cuentasNuevas ? `${cuentasNuevas} ${cuentasNuevas === 1 ? 'creó su cuenta' : 'crearon su cuenta'} con tu invitación` : 'Por cualquiera de tus links.'} />
-        <Estadistica icono={<ShoppingBag />} tono="rosa" etiqueta="Compras" valor={miles(compras)}
-          nota={porReclamar ? `${porReclamar} por reclamar` : 'Hechas con tus links.'} />
-        <Estadistica icono={<Coins />} tono="oro" etiqueta="Ganadas" valor={miles(ganadas)} unidad="monedas" nota={`Saldo actual: ${miles(monedas)}`} />
+        <Estadistica icono={<MousePointerClick />} etiqueta={<Texto>Entraron</Texto>} valor={miles(entraron)} unidad={<Texto>{entraron === 1 ? 'persona' : 'personas'}</Texto>}
+          nota={<Texto>{cuentasNuevas ? `${cuentasNuevas} ${cuentasNuevas === 1 ? 'creó su cuenta' : 'crearon su cuenta'} con tu invitación` : 'Por cualquiera de tus links.'}</Texto>} />
+        <Estadistica icono={<ShoppingBag />} tono="rosa" etiqueta={<Texto>Compras</Texto>} valor={miles(compras)}
+          nota={<Texto>{porReclamar ? `${porReclamar} por reclamar` : 'Hechas con tus links.'}</Texto>} />
+        <Estadistica icono={<Coins />} tono="oro" etiqueta={<Texto>Ganadas</Texto>} valor={miles(ganadas)} unidad={<Texto>monedas</Texto>} nota={<><Texto>Saldo actual:</Texto> {miles(monedas)}</>} />
       </div>
 
-      <CabezaCuenta nivel={2} titulo="Quiénes entraron a tus links" subtitulo={cargando ? undefined : `${entraron} ${entraron === 1 ? 'persona' : 'personas'}`} />
+      <CabezaCuenta nivel={2} titulo={<Texto>Quiénes entraron a tus links</Texto>} subtitulo={cargando ? undefined : <Texto>{`${entraron} ${entraron === 1 ? 'persona' : 'personas'}`}</Texto>} />
       {cargando ? (
         <ul className={s.misiones} aria-busy="true"><Esqueletos n={2} alto={180} /></ul>
       ) : (
@@ -377,12 +420,13 @@ export function PaginaReferidos({
             <GrupoReferidos key={g.id} grupo={g} onReclamar={onReclamar} onVerPedido={onVerPedido} />
           ))}
           {otros.length === 0 ? (
-            <TarjetaCuenta icono={<Send />} tono="suave" titulo="Todavía no compartiste productos" subtitulo="Abre un producto en la tienda y toca compartir: aquí verás quién entró y quién compró." />
+            <TarjetaCuenta icono={<Send />} tono="suave" titulo={<Texto>Todavía no compartiste productos</Texto>} subtitulo={<Texto>Abre un producto en la tienda y toca compartir: aquí verás quién entró y quién compró.</Texto>} />
           ) : otros.map((g) => (
             <GrupoReferidos key={g.id} grupo={g} onReclamar={onReclamar} onVerPedido={onVerPedido} />
           ))}
         </div>
       )}
+      <div ref={abajo} aria-hidden="true" />
       {ranking && <RankingReferidos {...ranking} tuCodigo={codigo} />}
     </>
   );

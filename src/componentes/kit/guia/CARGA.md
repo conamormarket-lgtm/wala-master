@@ -206,6 +206,12 @@ esqueletos que ya tenían las páginas del kit: tres `EsqueletoProducto` en el
 catálogo, dos `EsqueletoTarjeta` de 150 px en cupones y tres `EsqueletoFila`
 en las misiones (antes, textos "Cargando…").
 
+Ya en la tienda (paso 6, Mis referidos, 2026-10-19): mientras llegan los
+referidos, dos `EsqueletoTarjeta` de 180 px (como antes, dos cajas); el
+ranking no se pide ni se dibuja hasta acercarse, y entonces tres
+`EsqueletoFila` con foto en círculo mientras llega. "Ver pedido" y el
+botón de reclamar dicen "Cargando el pedido…" y "Revisando pedido…".
+
 Ya en la tienda (paso 6, el carrito, 2026-10-17): el carrito sale de
 localStorage al instante, así que no tiene esqueleto propio (la ruta sigue con
 el `PageLoading` de `App.jsx` hasta el paso 7). "También te puede gustar" no

@@ -102,11 +102,17 @@ export async function aceptarInvitacion(referralId) {
   return res?.data || { aceptada: false };
 }
 
+// En la app (Capacitor) la página corre en https://localhost: un link armado
+// con ese origen no abre nada en otro teléfono. Ahí se usa el sitio público
+// (el mismo de PUBLIC_SITE_URL en las functions).
+const SITIO_PUBLICO = 'https://wala.pe';
+const origenPublico = () => (window.Capacitor?.isNativePlatform?.() ? SITIO_PUBLICO : window.location.origin);
+
 /** Link de invitación permanente de una cuenta (para gente sin cuenta todavía). */
-export const linkInvitacion = (code) => `${window.location.origin}/invitar/${encodeURIComponent(code)}`;
+export const linkInvitacion = (code) => `${origenPublico()}/invitar/${encodeURIComponent(code)}`;
 /** Link de un producto con tu código: cualquiera que compre en 36 h te suma. */
 export const linkProducto = (productId, code) =>
-  `${window.location.origin}/producto/${productId}?ref=${encodeURIComponent(code)}`;
+  `${origenPublico()}/producto/${productId}?ref=${encodeURIComponent(code)}`;
 
 /**
  * Estimado de cuántas monedas gana el referente por un pedido de este monto:

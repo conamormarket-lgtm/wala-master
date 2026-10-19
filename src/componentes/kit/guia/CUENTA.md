@@ -315,6 +315,57 @@ recargar. Viene de `AuthContext.reloadProfile` (acepta lo que devuelve
 No se probó: un canje que falle en el servidor (sin monedas suficientes no
 se puede tocar), la traducción de estas páginas ni la app Android.
 
+## Mis referidos en la tienda (hecho el 2026-10-19)
+
+![Mis referidos en la tienda real, en el celular: las dos formas de ganar con la nota de privacidad, y el grupo "Links a la tienda" con un visitante anónimo en producción, un pedido anulado y uno reclamado](cuenta-referidos-tienda.webp)
+
+(Celular, 390 px, claro, con referidos de prueba del emulador. Se probó
+también a 1366 y en noche.)
+
+- **Conector:** `src/components/cuenta/ReferidosDeCuenta.jsx`, desde
+  `pages/cuenta/CuentaReferidosPage.jsx`. Los mismos grupos (tu invitación
+  siempre, cada producto, la tienda, los links anteriores), el mismo orden por
+  actividad, "Visitante N" por orden de llegada, los mismos estados y plazos
+  (36 h, 30 días), los avisos de los últimos 3 días
+  (`notified_referrals_{código}`), el reloj de 60 s solo con un plazo
+  corriendo y compartir con copia de respaldo.
+- **Las cinco recomendaciones acordadas:**
+  1. El kit suma lo que faltaba: la nota "cuenta aparte / cuenta el último /
+     verá tu primer nombre", "si ya tiene cuenta, igual te suma en 36 h", el
+     estado anulado (`reclamo: 'anulado'`, sin ganancia), el avatar "?" del
+     visitante sin nombre (`anonima`) y las monedas que vuelan desde el botón
+     (`onReclamar(id, boton)`).
+  2. En la app (Capacitor) `linkInvitacion` y `linkProducto` usan
+     `https://wala.pe` (antes, `https://localhost`, que no abría en otro
+     teléfono). En la web, el origen de siempre.
+  3. El pedido de cada persona (`detalleReferidoSecure`) se pide solo para
+     las compras por reclamar (para saber si ya se entregó) y, para las demás,
+     al abrir "Ver pedido". El ranking, al acercarse (`onVerAbajo`).
+  4. El detalle muestra la fase del taller (`paso`, de `estadoErp`) junto a
+     la etapa, y el mensaje del servidor si falla.
+  5. Lo de arriba (grupos, avisos, reloj, compartir) no cambia.
+- **Interruptor `cuentaVieja`:** también vuelve `CuentaReferidosViejo.jsx`.
+
+### Qué se probó (2026-10-19, localhost con los emuladores)
+
+Con referidos de prueba de `cliente@wala.test` (KS-CLI001): dos por la
+invitación (una cuenta nueva y un visitante con su plazo corriendo), una
+compra entregada, una en el taller, una anulada, una ya reclamada y un link
+viejo sin abrir:
+- Los grupos, "Visitante 2/3" con "?", los chips (Cuenta nueva, el tiempo
+  que queda, En producción, Entregado, Anulado, Reclamado) y "Ganarías / Ganas".
+- "Ver pedido" del pedido en el taller ("En producción · En Estampado") y del
+  ya reclamado (se pide recién al abrirlo).
+- "Reclamar monedas": el servidor da +6, el saldo pasa de 50 a 56 y
+  "Ganadas" de 3 a 9.
+- El ranking aparece solo al bajar; "Copiar link" → "Copiado"; el link en la
+  app sale con `https://wala.pe` (simulando Capacitor).
+- Los avisos de los últimos 3 días quedan marcados para no repetirse.
+- `cuentaVieja` → la página de antes. 390 y 1366, claro y noche.
+
+No se probó: un reclamo que falle (el kit abre el pedido), compartir con el
+menú del teléfono ni la app Android.
+
 ## Llevar a la tienda (lo que falta)
 
 Páginas propias: van en el paso 6 de [MIGRACION.md](MIGRACION.md). Se migra
@@ -337,13 +388,13 @@ componente o su forma de recibir datos.
 | Gustos | `<input list>` con `<datalist>` | `Campo opciones creable` |
 | Combo guardado | `TarjetaMiCombo` | `TarjetaCreacion` con `imagenes`, `subtitulo`, `aviso` |
 | Publicar en la comunidad | `AccionesComunidad`, `InsigniaPublicada` | `TarjetaCreacion comunidad={…}` |
-| Ranking | `ReferralRanking` | `RankingReferidos` |
+| ✓ Ranking | `ReferralRanking` | `RankingReferidos` (hecho) |
 | ✓ Direcciones | `MisDireccionesPage.jsx` (hoy `MisDireccionesViejo.jsx`) | `PaginaDirecciones` + `TarjetaDireccion` (hecho) |
 | ✓ Ajustes | `CuentaAjustesPage.jsx` (hoy `CuentaAjustesViejo.jsx`): `ThemeToggle`, idiomas | `PaginaAjustes` (hecho) |
 | ✓ Catálogo | `CatalogReward.jsx` (hoy `CatalogRewardViejo.jsx`) | `PaginaCatalogo` + `TarjetaRecompensa` (hecho) |
 | ✓ Cupones | `MisCuponesPage.jsx` (hoy `MisCuponesViejo.jsx`) | `PaginaCupones` + `TarjetaCupon` (hecho) |
 | ✓ Misiones | `MisionesPage.jsx` (hoy `MisionesViejo.jsx`) | `PaginaMisiones` + `NivelCuenta` + `TarjetaMision` (hecho) |
-| Referidos | `CuentaReferidosPage.jsx`, `components/GrupoReferidos.jsx`, `components/DetallePedidoReferido.jsx` | `PaginaReferidos` + `FilaReferido` + `DetallePedidoReferido` |
+| ✓ Referidos | `CuentaReferidosPage.jsx` (hoy `CuentaReferidosViejo.jsx`), `components/GrupoReferidos.jsx`, `components/DetallePedidoReferido.jsx` | `PaginaReferidos` + `FilaReferido` + `DetallePedidoReferido` (hecho) |
 | Creaciones | `MisCreacionesPage.jsx` (`MiCreacionCard` ~151, `TusBorradores` ~168) | `PaginaCreaciones` + `TarjetaCreacion` |
 | Lista de deseos | `WishlistPage.jsx` (`PremiumProductCard` ~275) | `PaginaListaDeseos` (`TarjetaProducto` con `deseado`) |
 | Fechas importantes | `CuentaFechasImportantesPage.jsx` (+ `FechasFestivasSeccion.jsx`, modal con portal ~739) | `PaginaFechas` + `TarjetaPersonaRegalo` + `AvisoFestiva` |
@@ -440,6 +491,8 @@ componente o su forma de recibir datos.
   mezclarse con el vacío; el cupón como boleto con talón (sin el banner de
   Kapi) y la fecha legible ("16 de noviembre", antes AAAA-MM-DD); los niveles
   con sellos en vez de 🥉🥈🥇💎.
+- Referidos: las cifras con sellos y el ranking con sellos oro, plata y
+  bronce (sin 🥇🥈🥉), con "Tú" en tu código.
 
 ### Qué le falta al kit antes de migrar
 
@@ -462,7 +515,7 @@ componente o su forma de recibir datos.
 2. ✓ Resumen y Ajustes (2026-10-17, arriba).
 3. ✓ Perfil y Direcciones (2026-10-17, arriba).
 4. ✓ Catálogo, Cupones y Misiones (2026-10-17, arriba).
-5. Referidos (con los mismos grupos y estados de hoy).
+5. ✓ Referidos (2026-10-19, arriba).
 6. Lista de deseos, Fechas importantes y Mis creaciones (lo que les falta,
    arriba, antes).
 7. Mis pedidos cuando el kit tenga `PedidosPorVerificar`.
