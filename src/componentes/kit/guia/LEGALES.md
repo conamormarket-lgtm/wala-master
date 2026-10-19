@@ -190,7 +190,34 @@ las rutas, incluida la redirección de `/terminos-condiciones`.
    archivo) y `PaginaLegal` en las dos páginas.
 2. ✓ `PaginaReclamaciones` en `LibroReclamacionesPage`, con el mismo
    `createDocument` (comparado en Firestore; el admin no se miró en pantalla).
-3. Decidir aparte el correo de copia y el código con contador.
+3. Decidir aparte el correo de copia y el código con contador. **En pausa
+   desde el 2026-10-19** por decisión del usuario; el plan quedó así:
+
+   - **Lo que hay:** el código lo arma el navegador con la fecha del aparato
+     (no la de Lima). Las functions no mandan ningún correo (solo
+     `firebase-admin` y `firebase-functions`). La app Android 1.3.23 lleva la
+     web empaquetada y seguirá guardando directo con código al azar hasta
+     que se actualice.
+   - **Código:** una callable pública `registrarReclamacion` (sin cuenta).
+     Saca el número de un contador por día de Lima (0001, 0002…) en una
+     transacción y guarda la hoja con la misma forma (sin `null` ni `''`, y
+     `createdAt`/`updatedAt` del servidor). También limita las hojas por
+     correo y por día. El contador va en `contador/libro_reclamaciones_AAAAMMDD`:
+     esa colección ya está en `esSoloWala` y cerrada al navegador. Una
+     colección nueva caería en la regla general del ERP.
+   - **Correos:** un trigger al crear la hoja manda la copia al cliente (el
+     reglamento de INDECOPI pide la constancia por correo) y el aviso a
+     `empresa.email`. Cubre también la app vieja. Otro trigger, al pasar a
+     `respondido`, manda la respuesta al cliente. Cada envío queda marcado
+     en la hoja (`correos.*`) para no repetirse. En el admin: confirmar
+     antes de enviar y mostrar si llegó.
+   - **Servicio:** nodemailer por SMTP de Google desde amorwala0@gmail.com,
+     con una contraseña de aplicación como secreto
+     (`functions:secrets:set`, la pone el usuario). wala.pe tiene Google
+     Workspace con SPF, DKIM y DMARC: si algún día hay una cuenta @wala.pe,
+     se cambia el remitente sin tocar el código.
+   - **Después:** `create: if false` en `libro_reclamaciones` cuando salga
+     la app nueva, junto con el deploy de reglas pendiente.
 
 ## En la tienda (2026-10-19)
 
