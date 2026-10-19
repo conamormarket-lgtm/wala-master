@@ -19,15 +19,17 @@ import s from './Juegos.module.css';
  * teclado en pantalla o el de la computadora; se puede tocar una casilla para
  * corregirla.
  *  - objetivo: la palabra de hoy · esValida(palabra): ¿existe? (el diccionario)
- *  - inicial: { filas: ['CASAS', …] } lo jugado hoy (se restaura) o
- *    { terminada: { gano, intentos, palabra } } si el servidor dice que ya jugó
+ *  - inicial: { filas: ['CASAS', …], inicio } lo jugado hoy (se restaura; inicio:
+ *    ms de la primera tecla, para el tiempo) y/o { terminada: { gano, intentos,
+ *    palabra } } si el servidor dice que ya jugó
  *  - sesion · estadisticas: { jugadas, victorias, racha, mejorRacha }
  *  - ranking: { hoy, global } (RankingPalabra) · cargandoRanking
  *  - hasta: ISO de la próxima palabra (medianoche de Lima)
- *  - onIntento(palabras): tras cada intento enviado, todas las de hoy (para
- *    guardarlas y seguir después)
+ *  - onIntento({ palabras, inicio }): tras cada intento enviado, todas las de
+ *    hoy y cuándo empezó (para guardarlas y seguir después)
  *  - onTerminar({ gano, intentos, segundos }): guarda la partida y cobra;
- *    promesa → { monto, rapido } | { ya: true } | null (si falla, lanza)
+ *    promesa → { monto, rapido } | { ya: true } | null. Si falla, lanza un
+ *    Error con el mensaje para el cliente (con sesión se ve, gane o pierda)
  *  - ayudaVista: false la primera vez (la ayuda se abre sola) · onAyudaVista
  *  - estado: 'cargando'
  * Los textos pasan por la traducción.
@@ -52,7 +54,7 @@ export function PaginaPalabra({
   const [resultado, setResultado] = useState(() => !jugando);
   const [premio, setPremio] = useState(null);
   const [pestana, setPestana] = useState('hoy');
-  const inicio = useRef(null);
+  const inicio = useRef(inicial.inicio || null);
   const tiempos = useRef([]);
   useEffect(() => () => tiempos.current.forEach(clearTimeout), []);
   const despues = (ms, fn) => { tiempos.current.push(setTimeout(fn, ms)); };
@@ -81,8 +83,8 @@ export function PaginaPalabra({
       if (r?.ya) setPremio({ estado: 'ya' });
       else if (r?.monto) setPremio({ estado: 'acreditado', monto: r.monto, texto: r.rapido ? 'acreditadas. ¡Bonus por acertar rápido!' : undefined });
       else setPremio(null);
-    } catch {
-      if (gano && sesion) setPremio({ estado: 'error' });
+    } catch (e) {
+      if (sesion) setPremio({ estado: 'error', texto: e?.message });
     }
   };
 
@@ -101,7 +103,7 @@ export function PaginaPalabra({
       const fila = { letras: [...actual], evaluacion: evaluarIntento(palabra, obj) };
       const n = filas.length + 1;
       setFilas((f) => [...f, fila]);
-      onIntento?.([...filas.map((f) => f.letras.join('')), palabra]);
+      onIntento?.({ palabras: [...filas.map((f) => f.letras.join('')), palabra], inicio: inicio.current });
       setRevelando(n - 1);
       setActual(Array(largo).fill(''));
       setIndice(0);

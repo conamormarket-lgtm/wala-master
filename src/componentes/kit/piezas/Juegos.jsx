@@ -145,9 +145,11 @@ export function PremioJuego({ estado = 'promesa', monto, texto, urlLogin = '/log
     cuerpo = <><GananciaMonedas monto={monto} /><span>{t}</span></>;
   }
   return (
-    <p className={[s.premio, s[`premio_${estado}`]].filter(Boolean).join(' ')} role={estado === 'acreditando' ? 'status' : undefined} data-componente="PremioJuego">
+    // Un div y no un párrafo: "Acreditando" lleva el Cargando (un div que ya
+    // avisa a los lectores de pantalla).
+    <div className={[s.premio, s[`premio_${estado}`]].filter(Boolean).join(' ')} data-componente="PremioJuego">
       {cuerpo}
-    </p>
+    </div>
   );
 }
 
