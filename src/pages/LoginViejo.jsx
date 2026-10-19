@@ -1,0 +1,234 @@
+import React from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { signInWithEmail, signInWithGoogle } from '../services/firebase/auth';
+import { registrarConversionPopup } from '../services/popups';
+import { useAuth } from '../contexts/AuthContext';
+import { getAuthErrorMessage } from '../utils/authErrorMessages';
+import { shouldPromptSurvey } from '../utils/surveyHelper';
+import { LOGO_URL } from '../utils/constants';
+import Button from '../components/common/Button';
+// Esperas a pantalla completa con el kit (paso 7, CARGA.md); con cargaVieja, el círculo.
+import EsperaPantalla from '../components/carga/EsperaPantalla';
+import { EyeIcon, EyeOffIcon } from '../components/common/Icons/Icons';
+import styles from './LoginPage.module.css';
+import { T } from '../i18n/useTranslatedText';
+import { leerDestino, motivoDeRuta, tieneCuenta } from '../utils/rutaPrivada';
+
+const LoginViejo = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  // Ruta a la que volver tras iniciar sesión: el state.from de quien la mandó
+  // o el ?redirect= de una página que pide cuenta (utils/rutaPrivada.js).
+  // Si no vino de ningún lado, el destino por defecto es la home / encuesta.
+  const from = leerDestino(location);
+  const motivo = motivoDeRuta(from);
+  const { user, userProfile, loading: authLoading } = useAuth();
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [error, setError] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (authLoading || !tieneCuenta(user)) return;
+    // El perfil no se pudo leer (red lenta): no se sabe si está completo, así
+    // que se entra normal en vez de mandar a "Completar perfil" con todo vacío.
+    if (userProfile?._perfilNoCargado) {
+      navigate(from || '/', { replace: true });
+      return;
+    }
+    if (userProfile?.dni && userProfile?.phone) {
+      // Perfil completo: si vino de una página concreta (ej. /sorteos), vuelve ahí;
+      // si no, encuesta o home como siempre.
+      if (from) {
+        navigate(from, { replace: true });
+      } else if (shouldPromptSurvey(userProfile)) {
+        navigate('/encuesta-suscripcion', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
+    } else {
+      // Perfil incompleto: completar datos, conservando el destino para después.
+      navigate('/completar-perfil', { replace: true, state: from ? { from } : undefined });
+    }
+  }, [user, userProfile, authLoading, navigate, from]);
+
+  const handleEmailLogin = async (e) => {
+    e.preventDefault();
+    if (loading) return;
+    setError(null);
+    setLoading(true);
+
+    const { error: err, errorCode } = await signInWithEmail(email.trim().toLowerCase(), password);
+    if (err) {
+      setError(getAuthErrorMessage(errorCode, err));
+    }
+    // En éxito, la redirección la maneja el useEffect cuando carga el perfil
+    // (así respeta el retorno a la página de origen, p.ej. /sorteos).
+    setLoading(false);
+  };
+
+  const handleGoogleLogin = async () => {
+    if (loading) return;
+    setError(null);
+    setLoading(true);
+
+    const { error: err, errorCode, user: usuarioGoogle, esNuevo } = await signInWithGoogle();
+    // Con Google, "iniciar sesión" también crea la cuenta si no existía:
+    // si vino de un popup "Crear una cuenta", cuenta como su conversión.
+    if (esNuevo && usuarioGoogle) {
+      registrarConversionPopup('registro', { uid: usuarioGoogle.uid, email: usuarioGoogle.email });
+    }
+    // Cerrar la ventana de Google no es un error: solo se deja de cargar.
+    if (err && errorCode !== 'auth/popup-closed-by-user' && errorCode !== 'auth/cancelled-popup-request') {
+      setError(getAuthErrorMessage(errorCode, err));
+    }
+    // En éxito, la redirección la maneja el useEffect (respeta el retorno).
+    setLoading(false);
+  };
+
+  // Círculo de carga a pantalla completa (centrado). El splash de marca de
+  // Walá se reserva para la PRIMERA carga de la app; el resto —login incluido—
+  // usa el círculo.
+  if (loading && !error) {
+    return <EsperaPantalla texto="Iniciando sesión..." />;
+  }
+
+  if (tieneCuenta(user)) {
+    // Cubre también el instante en que `user` ya llegó pero el perfil (authLoading)
+    // todavía se está resolviendo: sin esto, entre medias se veía otra vez el
+    // formulario de login por un instante.
+    return <EsperaPantalla texto={authLoading ? 'Cargando tu perfil...' : 'Redirigiendo...'} />;
+  }
+
+  return (
+    <div className={styles.container}>
+      <div className={styles.wrapper}>
+        <div className={styles.branding}>
+          <img src={LOGO_URL} alt="Walá" />
+          <h2><T>Bienvenido de vuelta</T></h2>
+          <p><T>Inicia sesión para acceder a tu cuenta y gestionar tus pedidos personalizados.</T></p>
+          <div className={styles.brandingFeatures}>
+            <div className={styles.feature}>
+              <span className={styles.featureIcon}>✓</span>
+              <span><T>Gestiona tus pedidos</T></span>
+            </div>
+            <div className={styles.feature}>
+              <span className={styles.featureIcon}>✓</span>
+              <span><T>Personaliza tus prendas</T></span>
+            </div>
+            <div className={styles.feature}>
+              <span className={styles.featureIcon}>✓</span>
+              <span><T>Acceso rápido y seguro</T></span>
+            </div>
+          </div>
+        </div>
+        <div className={styles.formContainer}>
+          <img src={LOGO_URL} alt="Walá" className={styles.logoMovil} />
+          <h1><T>Iniciar sesión</T></h1>
+          <p><T>{motivo || 'Ingresa tus credenciales para acceder a tu cuenta.'}</T></p>
+          
+          <form onSubmit={handleEmailLogin} className={styles.form}>
+            <div className={styles.formGroup}>
+              <label htmlFor="email"><T>Correo electrónico</T></label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                autoComplete="username"
+                inputMode="email"
+                autoCapitalize="none"
+                spellCheck={false}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading}
+                placeholder="Ingresa tu correo electrónico"
+              />
+            </div>
+            
+            <div className={styles.formGroup}>
+              <label htmlFor="password"><T>Contraseña</T></label>
+              <div className={styles.passwordField}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  name="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                  placeholder="Ingresa tu contraseña"
+                />
+                <button
+                  type="button"
+                  className={styles.passwordToggle}
+                  onClick={() => setShowPassword((v) => !v)}
+                  disabled={loading}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  aria-pressed={showPassword}
+                >
+                  {showPassword ? <EyeIcon size={20} /> : <EyeOffIcon size={20} />}
+                </button>
+              </div>
+              <div className={styles.forgotRow}>
+                <Link to="/recuperar-contrasena" className={styles.forgotLink}>
+                  <T>¿Olvidaste tu contraseña?</T>
+                </Link>
+              </div>
+            </div>
+            
+            {error && (
+              <div className={styles.errorMessage} role="alert">
+                <span className={styles.errorIcon}>⚠</span>
+                {error}
+              </div>
+            )}
+            
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              disabled={loading}
+              loading={loading}
+            >
+              <T>Iniciar sesión</T>
+            </Button>
+          </form>
+          
+          <div className={styles.divider}>
+            <span><T>o continúa con</T></span>
+          </div>
+          
+          <Button
+            onClick={handleGoogleLogin}
+            variant="secondary"
+            fullWidth
+            disabled={loading}
+            className={styles.googleButton}
+          >
+            <svg className={styles.googleIcon} viewBox="0 0 24 24" width="20" height="20">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            <T>Iniciar con Google</T>
+          </Button>
+          
+          <div className={styles.footer}>
+            <p>
+              <T>¿No tienes una cuenta?</T>{' '}
+              <Link to="/registro" state={from ? { from } : undefined} className={styles.link}>
+                <T>Regístrate aquí</T>
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LoginViejo;
