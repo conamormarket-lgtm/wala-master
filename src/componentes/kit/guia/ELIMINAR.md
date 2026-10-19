@@ -247,3 +247,4 @@ grupos del marco nuevo (`gruposDeCuenta.js`).
 | Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
 |---|---|---|---|---|
 | `components/common/PageLoading/` (+ CSS) | el `Suspense` de `App.jsx` y `RutaPrivada` | `components/carga/CargandoRuta.jsx` → `EsqueletoPagina` | `CargandoRuta` (con `cargaVieja` y en el admin) | cuando el admin tenga su esqueleto y se retire `cargaVieja` |
+| `components/common/Loading/` (el círculo) | `BrandLoaderOverlay` después de la marca; el login, el registro y la contraseña (`fullScreen portal`) | `EsqueletoPagina` de la ruta y `CapaCargando` (`components/carga/EsperaPantalla.jsx`) | `BrandLoaderOverlay` y `EsperaPantalla` (con `cargaVieja`); `WishlistPublicViejo.jsx`; revisar con `grep "common/Loading"` | al retirar `cargaVieja` y la lista pública de antes |

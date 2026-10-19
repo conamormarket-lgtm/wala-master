@@ -10,7 +10,8 @@ import { shouldPromptSurvey } from '../utils/surveyHelper';
 import { LOGO_URL } from '../utils/constants';
 import { validateDNI, validateCE, validatePhone, validateDocInternacional, getPasswordRequirements, isPasswordValid } from '../utils/helpers';
 import Button from '../components/common/Button';
-import Loading from '../components/common/Loading';
+// Esperas a pantalla completa con el kit (paso 7, CARGA.md); con cargaVieja, el círculo.
+import EsperaPantalla from '../components/carga/EsperaPantalla';
 import { Confirmar } from '../componentes/kit/Feedback';
 import { EyeIcon, EyeOffIcon } from '../components/common/Icons/Icons';
 import CountrySelect from '../components/intl/CountrySelect';
@@ -196,7 +197,7 @@ const RegisterPage = () => {
   };
 
   if (loading && step === 1 && !user) {
-    return <Loading fullScreen portal message="Creando cuenta..." />;
+    return <EsperaPantalla texto="Creando cuenta..." />;
   }
 
   return (

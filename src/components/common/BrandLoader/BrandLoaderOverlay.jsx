@@ -1,9 +1,13 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { EASE_SIGNATURE, useReducedMotionSafe } from '../../../theme/motion';
 import BrandLoader from './BrandLoader';
 import Loading from '../Loading';
+import useLoViejo from '../../../hooks/useLoViejo';
+import { EsqueletoPagina } from '../../../componentes/kit/Esqueletos';
+import { formaDeRuta } from '../../carga/formaDeRuta';
 
 // El splash de marca de Walá (la bolsa con la "W" sobre el degradado violeta)
 // se muestra UNA sola vez por navegador: la PRIMERA carga de la app. A partir
@@ -48,6 +52,8 @@ const marcarMarcaVista = () => {
  *
  * @param {boolean} show  true = cargando (overlay visible); false = listo
  *   (dispara la transicion de salida y luego desmonta).
+ * @param {string[]} [secciones]  los tipos de las secciones del builder de la
+ *   pagina (el esqueleto dibuja su forma, seccion por seccion).
  * @param {boolean} [relevo]  true = este overlay NO es el ultimo: al ocultarse
  *   hay OTRO loader identico detras que sigue la carga (es el caso de la
  *   landing, que releva a la tienda). Entonces se desmonta en seco, sin la
@@ -65,8 +71,15 @@ const marcarMarcaVista = () => {
 // el padre.
 const MAX_SHOW_MS = 15000;
 
-const BrandLoaderOverlay = ({ show, relevo = false }) => {
+const BrandLoaderOverlay = ({ show, relevo = false, secciones }) => {
   const reducedMotion = useReducedMotionSafe();
+  // Después de la marca, bajo la cabecera: el esqueleto de la página que llega
+  // (paso 7, CARGA.md); en el inicio y las landings, con sus secciones del
+  // builder si ya se conocen. Con cargaVieja, el círculo de antes.
+  const { pathname } = useLocation();
+  const cargaVieja = useLoViejo('carga');
+  const forma = formaDeRuta(pathname);
+  const conEsqueleto = !cargaVieja && Boolean(forma);
 
   // ¿Esta instancia muestra el splash de MARCA o el círculo? Se decide UNA vez
   // al montar (useState con inicializador): si ya se consumió el splash de
@@ -231,7 +244,10 @@ const BrandLoaderOverlay = ({ show, relevo = false }) => {
                   // que bajan por encima de esta zona y quedaban cortados.
                   zIndex: 99, transformOrigin: 'center',
                   pointerEvents: effectiveShow ? 'auto' : 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  // El esqueleto va arriba, como la página; el círculo, al centro.
+                  ...(conEsqueleto
+                    ? { overflow: 'hidden' }
+                    : { display: 'flex', alignItems: 'center', justifyContent: 'center' }),
                   // Fondo por TEMA: antes estaba hardcodeado en blanco y en modo
                   // oscuro producía un flash blanco al cargar. --color-bg lo
                   // publica el tema (claro/oscuro).
@@ -253,7 +269,9 @@ const BrandLoaderOverlay = ({ show, relevo = false }) => {
             ease: EASE_SIGNATURE,
           }}
         >
-          {useBrand ? <BrandLoader /> : <Loading />}
+          {useBrand ? <BrandLoader /> : conEsqueleto ? (
+            <EsqueletoPagina forma={forma.forma} modulo={forma.modulo} secciones={secciones?.length ? secciones : undefined} />
+          ) : <Loading />}
         </motion.div>
       )}
     </AnimatePresence>,

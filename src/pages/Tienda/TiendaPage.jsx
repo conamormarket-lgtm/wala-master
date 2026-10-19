@@ -1848,7 +1848,8 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     // mapa de calor la guarda con cada clic para separar versiones de la página.
     <div className={styles.container} data-version-pagina={storefrontConfig?.version || undefined}>
       {/* Keep the first screen complete; lower sections load near the viewport. */}
-      <BrandLoaderOverlay show={!pageReady || !heroListo} />
+      {/* El esqueleto bajo la cabecera dibuja las secciones de esta página (las primeras). */}
+      <BrandLoaderOverlay show={!pageReady || !heroListo} secciones={sorted.slice(0, 8).map((s) => s.type)} />
       <CustomFontsInjector config={activeSections} all={isEditModeActive} />
       {!isLandingPage && !categoryId && !searchTerm && <BannerDeLaApp />}
       {sorted.map((section, index) => {

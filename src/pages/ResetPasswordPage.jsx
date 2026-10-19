@@ -4,7 +4,8 @@ import { sendPasswordResetEmail } from '../services/firebase/auth';
 import { getAuthErrorMessage } from '../utils/authErrorMessages';
 import { LOGO_URL } from '../utils/constants';
 import Button from '../components/common/Button';
-import Loading from '../components/common/Loading';
+// Esperas a pantalla completa con el kit (paso 7, CARGA.md); con cargaVieja, el círculo.
+import EsperaPantalla from '../components/carga/EsperaPantalla';
 import styles from './ResetPasswordPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
@@ -29,7 +30,7 @@ const ResetPasswordPage = () => {
   };
 
   if (loading) {
-    return <Loading fullScreen portal message="Enviando enlace..." />;
+    return <EsperaPantalla texto="Enviando enlace..." />;
   }
 
   return (

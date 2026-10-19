@@ -7,7 +7,8 @@ import { getAuthErrorMessage } from '../utils/authErrorMessages';
 import { shouldPromptSurvey } from '../utils/surveyHelper';
 import { LOGO_URL } from '../utils/constants';
 import Button from '../components/common/Button';
-import Loading from '../components/common/Loading';
+// Esperas a pantalla completa con el kit (paso 7, CARGA.md); con cargaVieja, el círculo.
+import EsperaPantalla from '../components/carga/EsperaPantalla';
 import { EyeIcon, EyeOffIcon } from '../components/common/Icons/Icons';
 import styles from './LoginPage.module.css';
 import { T } from '../i18n/useTranslatedText';
@@ -90,14 +91,14 @@ const LoginPage = () => {
   // Walá se reserva para la PRIMERA carga de la app; el resto —login incluido—
   // usa el círculo.
   if (loading && !error) {
-    return <Loading fullScreen portal message="Iniciando sesión..." />;
+    return <EsperaPantalla texto="Iniciando sesión..." />;
   }
 
   if (tieneCuenta(user)) {
     // Cubre también el instante en que `user` ya llegó pero el perfil (authLoading)
     // todavía se está resolviendo: sin esto, entre medias se veía otra vez el
     // formulario de login por un instante.
-    return <Loading fullScreen portal message={authLoading ? 'Cargando tu perfil...' : 'Redirigiendo...'} />;
+    return <EsperaPantalla texto={authLoading ? 'Cargando tu perfil...' : 'Redirigiendo...'} />;
   }
 
   return (

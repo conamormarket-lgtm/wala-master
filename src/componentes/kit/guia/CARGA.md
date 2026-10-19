@@ -140,8 +140,21 @@ página, así que el relevo no se nota.
 - Con `v7_startTransition` del router, al navegar dentro de la tienda la
   página de antes se queda hasta que llega la nueva: el esqueleto se ve al
   abrir un enlace o recargar (y mientras llega la sesión).
+- **Después de la marca, bajo la cabecera** (`BrandLoaderOverlay`, en el
+  inicio, `/tienda` y las landings del builder, también la del cacherito):
+  `EsqueletoPagina` de la ruta en vez del círculo; en el inicio y las
+  landings, con los tipos de sus secciones (`secciones`, las 8 primeras)
+  cuando ya llegaron. Va arriba como la página, no al centro. Lo demás del
+  overlay no cambia (una sola vez la marca, bajo la cabecera, el tope de 15
+  s, el scroll quieto, el relevo).
+- **Esperar una acción a pantalla completa** (iniciar sesión, crear la
+  cuenta, mandar el enlace de la contraseña):
+  `components/carga/EsperaPantalla.jsx` → `CapaCargando pantallaCompleta`
+  en `<body>` (antes, `Loading fullScreen portal`), con el texto sin los
+  puntos (los pone `Cargando`, animados) y traducido.
 - **Interruptor `cargaVieja`** (`useLoViejo('carga')`): vuelve
-  `PageLoading` en todas.
+  `PageLoading`, el círculo bajo la cabecera y el círculo a pantalla
+  completa.
 
 ## Llevar a la tienda (el plan; los pasos hechos llevan ✓)
 
@@ -293,7 +306,7 @@ lógica es de la tienda:
 ### Pasos
 
 1. ✓ `PageLoading` → `EsqueletoPagina` (lo más simple: sin estado; la forma sale de la ruta). Hecho el 2026-10-19 (arriba, "En la tienda").
-2. El círculo de `BrandLoaderOverlay` → `EsqueletoPagina` de la ruta (y `CapaCargando` donde hoy hay esperas de una acción).
+2. ✓ El círculo de `BrandLoaderOverlay` → `EsqueletoPagina` de la ruta (y `CapaCargando` donde hoy hay esperas de una acción). Hecho el 2026-10-19.
 3. `BrandLoader` → `PantallaCarga`, **en el mismo commit** que el splash de
    `index.html`. Probar la primera carga con la caché vacía y la red
    lenta: el relevo no debe saltar.
