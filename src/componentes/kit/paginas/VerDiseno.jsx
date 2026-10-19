@@ -7,6 +7,7 @@ import { BloqueSeccion } from '../Seccion';
 import { EsqueletoPagina } from '../Esqueletos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { FotoProducto } from '../piezas/FotoProducto';
+import { Texto, useTexto } from '../Traduccion';
 import s from './VerDiseno.module.css';
 
 /*
@@ -15,7 +16,8 @@ import s from './VerDiseno.module.css';
  * talla y sus lados; un lado sin diseño se dice ("va liso", con su color),
  * para que no parezca que falta la foto. Una foto se ve en grande al tocarla
  * y "Copiar resumen" deja el pedido en texto (para el ERP o el WhatsApp).
- * Va dentro de MarcoTienda.
+ * Va dentro de MarcoTienda. Los textos de la página pasan por la
+ * traducción; el resumen que se copia queda en español (es para el ERP).
  */
 
 /** El pedido en texto: una línea por prenda (prenda · color · talla · nombre · lados). */
@@ -44,6 +46,11 @@ export const resumenDeDiseno = (titulo, piezas = []) => {
 export function PaginaVerDiseno({ titulo, piezas = [], cargando = false, noDisponible = false }) {
   const [ver, setVer] = useState(null);
   const [copiado, setCopiado] = useState(false);
+  const t = {
+    rotulo: useTexto(piezas.length > 1 ? `Combo · ${piezas.length} prendas` : 'Diseño del pedido'),
+    verGrande: useTexto('Ver en grande'),
+    diseno: useTexto('diseño'),
+  };
 
   if (cargando) {
     return <EsqueletoPagina forma="verDiseno" />;
@@ -52,7 +59,7 @@ export function PaginaVerDiseno({ titulo, piezas = [], cargando = false, noDispo
     return (
       <BloqueSeccion ajustes={{ paddingTop: '2rem', paddingBottom: '2.5rem' }}>
         <div className={s.vacio}>
-          <EstadoVacio imagen={CARAS_KAPI.triste} titulo="Este diseño no está disponible" texto="Solo se pueden ver por enlace los diseños que ya están en un pedido o publicados." />
+          <EstadoVacio imagen={CARAS_KAPI.triste} titulo={<Texto>Este diseño no está disponible</Texto>} texto={<Texto>Solo se pueden ver por enlace los diseños que ya están en un pedido o publicados.</Texto>} />
         </div>
       </BloqueSeccion>
     );
@@ -72,11 +79,11 @@ export function PaginaVerDiseno({ titulo, piezas = [], cargando = false, noDispo
       <div className={s.pagina} data-componente="PaginaVerDiseno">
         <header className={s.cabeza}>
           <div>
-            <span className={s.rotulo}>{combo ? `Combo · ${piezas.length} prendas` : 'Diseño del pedido'}</span>
+            <span className={s.rotulo}>{t.rotulo}</span>
             <h1 className={s.titulo}>{nombre}<Trazo className={s.trazo} /></h1>
           </div>
           <Boton variante="contorno" tamano="sm" icono={copiado ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />} onClick={copiar}>
-            {copiado ? 'Copiado' : 'Copiar resumen'}
+            <Texto>{copiado ? 'Copiado' : 'Copiar resumen'}</Texto>
           </Boton>
         </header>
 
@@ -96,28 +103,28 @@ export function PaginaVerDiseno({ titulo, piezas = [], cargando = false, noDispo
                       {p.color && (
                         <span className={s.color}>
                           {p.colorHex && <span className={s.punto} style={{ background: p.colorHex }} aria-hidden="true" />}
-                          {p.color}
+                          <Texto>{p.color}</Texto>
                         </span>
                       )}
-                      {p.talla && <span className={s.talla}>Talla {p.talla}</span>}
+                      {p.talla && <span className={s.talla}><Texto>Talla</Texto> {p.talla}</span>}
                     </p>
                     {p.prenda && p.nombre && <p className={s.nombre}>«{p.nombre}»</p>}
                   </div>
                 </div>
                 <div className={s.fotos}>
                   {(p.lados || []).map((lado, k) => (lado.url ? (
-                    <button key={k} type="button" className={s.foto} onClick={() => setVer({ prenda, lado })} aria-label={`Ver en grande: ${prenda}, ${lado.nombre || 'diseño'}`}>
+                    <button key={k} type="button" className={s.foto} onClick={() => setVer({ prenda, lado })} aria-label={`${t.verGrande}: ${prenda}, ${lado.nombre || t.diseno}`}>
                       <FotoProducto className={s.fotoImagen} src={lado.url} alt={`${prenda}: ${lado.nombre || 'diseño'}`} />
                       {lado.nombre && <span className={s.lado}>{lado.nombre}</span>}
                       <span className={s.lupa} aria-hidden="true"><ZoomIn /></span>
                     </button>
                   ) : (
                     <div key={k} className={`${s.foto} ${s.liso}`}>
-                      <span className={s.lado}>{lado.nombre}</span>
+                      {lado.nombre && <span className={s.lado}>{lado.nombre}</span>}
                       <span className={s.lisoTexto}>
                         {p.colorHex && <span className={s.muestraLiso} style={{ background: p.colorHex }} aria-hidden="true" />}
-                        <strong>Sin diseño</strong>
-                        Este lado va liso{p.color ? `, en ${p.color}` : ''}.
+                        <strong><Texto>Sin diseño</Texto></strong>
+                        <Texto>{p.color ? `Este lado va liso, en ${p.color}.` : 'Este lado va liso.'}</Texto>
                       </span>
                     </div>
                   )))}
@@ -133,7 +140,7 @@ export function PaginaVerDiseno({ titulo, piezas = [], cargando = false, noDispo
         abierta={Boolean(ver)}
         onCerrar={() => setVer(null)}
         titulo={ver ? `${ver.prenda} · ${ver.lado.nombre || 'Diseño'}` : ''}
-        pie={ver && <Boton bloque variante="contorno" to={ver.lado.url} icono={<ExternalLink aria-hidden="true" />}>Abrir la imagen original</Boton>}
+        pie={ver && <Boton bloque variante="contorno" to={ver.lado.url} icono={<ExternalLink aria-hidden="true" />}><Texto>Abrir la imagen original</Texto></Boton>}
       >
         {ver && <FotoProducto className={s.fotoGrande} src={ver.lado.url} alt={`${ver.prenda}: ${ver.lado.nombre || 'diseño'}`} />}
       </HojaInferior>
