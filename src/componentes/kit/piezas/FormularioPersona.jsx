@@ -6,13 +6,19 @@ import { Campo, Interruptor, Casilla } from '../Formulario';
 import { CampoFecha } from '../Fecha';
 import { Avatar } from './Avatar';
 import { RecortarFoto } from './RecortarFoto';
+import { Texto, useTexto } from '../Traduccion';
 import s from './FormularioPersona.module.css';
 
 /*
  * El formulario de una persona a la que se le regala (Fechas importantes y la
  * encuesta). Los datos tienen la forma de personaDesdeRecipient
  * (adaptadores): { id, nombre, genero, relacion, presupuesto, foto, gustos,
- * familia: { activo, q1, q2, q3 }, eventos: [{ id, tipo, nombre, fecha }] }.
+ * gustosApagados, familia: { activo, q1, q2, q3 }, eventos: [{ id, tipo,
+ * nombre, fecha }] }.
+ *  - gustos: los conjuntos marcados con sus respuestas; gustosApagados: las
+ *    respuestas de los que se apagaron (no se pierden: vuelven al prenderlo)
+ *  - el cumpleaños va fijo arriba solo si la primera fecha ES un cumpleaños;
+ *    el tipo de cada fecha se guarda tal cual
  */
 
 export const RELACIONES = [
@@ -26,6 +32,10 @@ export const PRESUPUESTOS = [
   { valor: '100a200', texto: 'S/ 100 – 200' }, { valor: 'mas200', texto: 'Más de S/ 200' },
 ];
 const TIPOS_FECHA = [{ valor: 'Aniversario', texto: 'Aniversario' }, { valor: 'Fecha Especial', texto: 'Fecha especial' }];
+// Un cumpleaños que no está arriba (datos de antes) se puede ver y cambiar.
+const tiposPara = (tipo) => (tipo === 'Cumpleaños' ? [{ valor: 'Cumpleaños', texto: 'Cumpleaños' }, ...TIPOS_FECHA] : TIPOS_FECHA);
+/** ¿Es la fila fija del cumpleaños? (la primera, si es un cumpleaños) */
+const esFijo = (e, i) => i === 0 && e.tipo === 'Cumpleaños';
 
 let siguienteId = 0;
 const nuevoId = () => { siguienteId += 1; return `f${Date.now().toString(36)}${siguienteId}`; };
@@ -34,10 +44,9 @@ const nuevoId = () => { siguienteId += 1; return `f${Date.now().toString(36)}${s
 export function validarPersona(p) {
   if (!String(p.nombre || '').trim()) return 'Falta el nombre de la persona.';
   if (!p.genero) return 'Falta elegir el género.';
-  for (let i = 0; i < p.eventos.length; i += 1) {
-    const e = p.eventos[i];
-    const cual = i === 0 ? 'Cumpleaños' : (e.tipo === 'Fecha Especial' ? (e.nombre || 'Fecha especial') : e.tipo);
-    if (i > 0 && e.tipo === 'Fecha Especial' && !String(e.nombre || '').trim()) return 'Escribe qué se celebra en la fecha especial.';
+  for (const e of p.eventos) {
+    const cual = e.tipo === 'Fecha Especial' ? (e.nombre || 'Fecha especial') : e.tipo;
+    if (e.tipo === 'Fecha Especial' && !String(e.nombre || '').trim()) return 'Escribe qué se celebra en la fecha especial.';
     if (!e.fecha) return `Falta la fecha de "${cual}".`;
   }
   return '';
@@ -53,7 +62,7 @@ const preguntasFamilia = (genero) => [
 /** Estado y partes (cuerpo y pie) del formulario de una persona, para la hoja. */
 function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, onSubirFoto, relacionFija = false, familia = false, textoGuardar = 'Guardar' }) {
   const [p, setP] = useState(() => ({
-    nombre: '', genero: '', relacion: 'otros', presupuesto: '', foto: null, gustos: {}, familia: { activo: false },
+    nombre: '', genero: '', relacion: 'otros', presupuesto: '', foto: null, gustos: {}, gustosApagados: {}, familia: { activo: false },
     ...inicial,
     eventos: (inicial?.eventos?.length ? inicial.eventos : [{ id: nuevoId(), tipo: 'Cumpleaños', fecha: '' }]).map((e) => ({ ...e })),
   }));
@@ -68,7 +77,7 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
     if (msg) return;
     setGuardando(true);
     try {
-      await onGuardar({ ...p, eventos: p.eventos.map(({ id, tipo, nombre, fecha }, i) => ({ id, tipo: i === 0 ? 'Cumpleaños' : tipo, nombre, fecha })) });
+      await onGuardar({ ...p, eventos: p.eventos.map(({ id, tipo, nombre, fecha }) => ({ id, tipo, nombre, fecha })) });
       onCerrar();
     } catch {
       setError('No pudimos guardar los cambios. Intenta de nuevo.');
@@ -96,13 +105,22 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
       setSubiendo(false);
     }
   };
+  const t = {
+    nombre: useTexto('Nombre de la persona'), genero: useTexto('Género'), relacion: useTexto('Relación'),
+    relacionAyuda: useTexto('Con la relación y el género sumamos las fechas del calendario que le tocan (Día de la Madre, del Padre, de la Amistad…).'),
+    presupuesto: useTexto('¿Cuánto sueles gastar en su regalo?'), presupuestoAyuda: useTexto('Para que las ideas entren en tu presupuesto.'),
+    tipo: useTexto('Tipo'), celebra: useTexto('¿Qué se celebra?'), fechaCumple: useTexto('Fecha de su cumpleaños'), fecha: useTexto('Fecha'),
+    sinAnio: useTexto('Si no sabes en qué año nació, marca «No sé el año».'), quitarFecha: useTexto('Quitar esta fecha'),
+    escribe: useTexto('Escribe o elige una sugerencia'), familia: useTexto('Conjunto familia'), familiaTexto: useTexto('Regalos para compartir en casa.'),
+  };
   return {
+    ocupado: guardando || subiendo,
     pie: (
       <div className={s.pieForm}>
-        {error && <Aviso tipo="error" compacto>{error}</Aviso>}
+        {error && <Aviso tipo="error" compacto><Texto>{error}</Texto></Aviso>}
         <div className={s.botonesForm}>
-          <Boton variante="fantasma" onClick={onCerrar} disabled={guardando || subiendo}>Cancelar</Boton>
-          <Boton onClick={guardar} cargando={guardando} disabled={subiendo}>{textoGuardar}</Boton>
+          <Boton variante="fantasma" onClick={onCerrar} disabled={guardando || subiendo}><Texto>Cancelar</Texto></Boton>
+          <Boton onClick={guardar} cargando={guardando} disabled={subiendo}><Texto>{textoGuardar}</Texto></Boton>
         </div>
       </div>
     ),
@@ -128,35 +146,33 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
             <div className={s.fotoTextos}>
               <span className={s.fotoBotones}>
                 <Boton tamano="sm" icono={<Camera aria-hidden="true" />} cargando={subiendo} onClick={() => archivo.current?.click()}>
-                  {p.foto ? 'Cambiar foto' : 'Subir foto'}
+                  <Texto>{p.foto ? 'Cambiar foto' : 'Subir foto'}</Texto>
                 </Boton>
-                {p.foto && <Boton variante="fantasma" tamano="sm" icono={<Trash2 aria-hidden="true" />} onClick={() => setP((x) => ({ ...x, foto: null }))}>Quitar</Boton>}
+                {p.foto && <Boton variante="fantasma" tamano="sm" icono={<Trash2 aria-hidden="true" />} onClick={() => setP((x) => ({ ...x, foto: null }))} disabled={subiendo}><Texto>Quitar</Texto></Boton>}
               </span>
-              <small>Opcional. Ayuda a reconocerla de un vistazo.</small>
+              <small><Texto>Opcional. Ayuda a reconocerla de un vistazo.</Texto></small>
             </div>
           </div>
         )}
         <div className={s.fila}>
-          <Campo etiqueta="Nombre de la persona" value={p.nombre} onChange={poner('nombre')} placeholder="Ej. Carlos" />
-          <Campo etiqueta="Género" opciones={GENEROS} value={p.genero} onChange={poner('genero')} />
+          <Campo etiqueta={t.nombre} value={p.nombre} onChange={poner('nombre')} placeholder="Ej. Carlos" />
+          <Campo etiqueta={t.genero} opciones={GENEROS} value={p.genero} onChange={poner('genero')} />
         </div>
         {!relacionFija && (
-          <Campo etiqueta="Relación" opciones={RELACIONES} value={p.relacion} onChange={poner('relacion')}
-            ayuda="Con la relación y el género sumamos las fechas del calendario que le tocan (Día de la Madre, del Padre, de la Amistad…)." />
+          <Campo etiqueta={t.relacion} opciones={RELACIONES} value={p.relacion} onChange={poner('relacion')} ayuda={t.relacionAyuda} />
         )}
-        <Campo etiqueta="¿Cuánto sueles gastar en su regalo?" opciones={PRESUPUESTOS} value={p.presupuesto} onChange={poner('presupuesto')}
-          ayuda="Para que las ideas entren en tu presupuesto." />
+        <Campo etiqueta={t.presupuesto} opciones={PRESUPUESTOS} value={p.presupuesto} onChange={poner('presupuesto')} ayuda={t.presupuestoAyuda} />
 
         {(conjuntos.length > 0 || familia) && (
           <fieldset className={s.grupoForm}>
-            <legend>¿Qué le gusta a {p.nombre || 'esta persona'}?</legend>
-            <p className={s.ayudaGrupo}>Opcional, pero es lo que más mejora las ideas de regalo.</p>
+            <legend><Texto>{`¿Qué le gusta a ${p.nombre || 'esta persona'}?`}</Texto></legend>
+            <p className={s.ayudaGrupo}><Texto>Opcional, pero es lo que más mejora las ideas de regalo.</Texto></p>
             {familia && (
               <div className={s.gusto}>
                 <Interruptor
                   activo={Boolean(p.familia?.activo)}
-                  etiqueta="Conjunto familia"
-                  descripcion="Regalos para compartir en casa."
+                  etiqueta={t.familia}
+                  descripcion={t.familiaTexto}
                   onChange={(v) => setP((x) => ({ ...x, familia: { ...x.familia, activo: v } }))}
                 />
                 {p.familia?.activo && (
@@ -181,9 +197,11 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
                     activo={activo}
                     etiqueta={c.nombre}
                     onChange={(v) => setP((x) => {
+                      // Apagar no borra lo respondido: queda aparte y vuelve al prenderlo.
                       const gustos = { ...x.gustos };
-                      if (v) gustos[c.id] = gustos[c.id] || {}; else delete gustos[c.id];
-                      return { ...x, gustos };
+                      const apagados = { ...x.gustosApagados };
+                      if (v) { gustos[c.id] = gustos[c.id] || apagados[c.id] || {}; delete apagados[c.id]; } else { if (gustos[c.id] && Object.keys(gustos[c.id]).length) apagados[c.id] = gustos[c.id]; delete gustos[c.id]; }
+                      return { ...x, gustos, gustosApagados: apagados };
                     })}
                   />
                   {activo && (c.campos || []).map((campo) => (
@@ -194,7 +212,7 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
                         ? [{ valor: '', texto: 'Elige…', deshabilitada: true }, ...campo.opciones.map((o) => ({ valor: o, texto: o }))]
                         : (campo.sugerencias || []).map((o) => ({ valor: o, texto: o }))}
                       creable={!campo.opciones}
-                      placeholder={campo.opciones ? undefined : 'Escribe o elige una sugerencia'}
+                      placeholder={campo.opciones ? undefined : t.escribe}
                       value={p.gustos[c.id]?.[campo.id] || ''}
                       onChange={(e) => setP((x) => ({ ...x, gustos: { ...x.gustos, [c.id]: { ...x.gustos[c.id], [campo.id]: e.target.value } } }))}
                     />
@@ -206,35 +224,38 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
         )}
 
         <fieldset className={s.grupoForm}>
-          <legend>Fechas de esta persona</legend>
-          {p.eventos.map((e, i) => (
-            <div key={e.id} className={s.evento}>
-              <div className={s.eventoCabeza}>
-                {i === 0 ? <strong>Cumpleaños</strong> : (
-                  <Campo etiqueta="Tipo" opciones={TIPOS_FECHA} value={e.tipo === 'Cumpleaños' ? 'Aniversario' : e.tipo} onChange={(ev) => ponerEvento(i, 'tipo', ev.target.value)} />
+          <legend><Texto>Fechas de esta persona</Texto></legend>
+          {p.eventos.map((e, i) => {
+            const cumple = e.tipo === 'Cumpleaños';
+            return (
+              <div key={e.id} className={s.evento}>
+                <div className={s.eventoCabeza}>
+                  {esFijo(e, i) ? <strong><Texto>Cumpleaños</Texto></strong> : (
+                    <Campo etiqueta={t.tipo} opciones={tiposPara(e.tipo)} value={e.tipo} onChange={(ev) => ponerEvento(i, 'tipo', ev.target.value)} />
+                  )}
+                  {!esFijo(e, i) && (
+                    <Boton variante="fantasma" tamano="sm" soloIcono aria-label={t.quitarFecha} icono={<Trash2 aria-hidden="true" />}
+                      onClick={() => setP((x) => ({ ...x, eventos: x.eventos.filter((_, k) => k !== i) }))} />
+                  )}
+                </div>
+                {e.tipo === 'Fecha Especial' && (
+                  <Campo etiqueta={t.celebra} value={e.nombre || ''} onChange={(ev) => ponerEvento(i, 'nombre', ev.target.value)} placeholder="Ej. Bautizo" />
                 )}
-                {i > 0 && (
-                  <Boton variante="fantasma" tamano="sm" soloIcono aria-label="Quitar esta fecha" icono={<Trash2 aria-hidden="true" />}
-                    onClick={() => setP((x) => ({ ...x, eventos: x.eventos.filter((_, k) => k !== i) }))} />
-                )}
+                <CampoFecha
+                  etiqueta={cumple ? t.fechaCumple : t.fecha}
+                  valor={e.fecha}
+                  onCambiar={(iso) => ponerEvento(i, 'fecha', iso)}
+                  anioOpcional
+                  vistaInicial={cumple ? 'anios' : 'dias'}
+                  max={cumple ? new Date().toISOString().slice(0, 10) : undefined}
+                  ayuda={cumple ? t.sinAnio : undefined}
+                />
               </div>
-              {i > 0 && e.tipo === 'Fecha Especial' && (
-                <Campo etiqueta="¿Qué se celebra?" value={e.nombre || ''} onChange={(ev) => ponerEvento(i, 'nombre', ev.target.value)} placeholder="Ej. Bautizo" />
-              )}
-              <CampoFecha
-                etiqueta={i === 0 ? 'Fecha de su cumpleaños' : 'Fecha'}
-                valor={e.fecha}
-                onCambiar={(iso) => ponerEvento(i, 'fecha', iso)}
-                anioOpcional
-                vistaInicial={i === 0 ? 'anios' : 'dias'}
-                max={i === 0 ? new Date().toISOString().slice(0, 10) : undefined}
-                ayuda={i === 0 ? 'Si no sabes en qué año nació, marca «No sé el año».' : undefined}
-              />
-            </div>
-          ))}
+            );
+          })}
           <Boton variante="contorno" tamano="sm" icono={<Plus aria-hidden="true" />}
             onClick={() => setP((x) => ({ ...x, eventos: [...x.eventos, { id: nuevoId(), tipo: 'Aniversario', fecha: '' }] }))}>
-            Agregar otra fecha
+            <Texto>Agregar otra fecha</Texto>
           </Boton>
         </fieldset>
       </div>
@@ -257,7 +278,8 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
 export function HojaPersona({ persona, abierta, onCerrar, titulo, ...resto }) {
   const formulario = useFormularioPersona({ inicial: persona, onCerrar, ...resto });
   return (
-    <HojaInferior abierta={abierta} onCerrar={onCerrar} titulo={titulo || (persona?.id ? `Editar a ${persona.nombre}` : 'Añadir persona')} pie={formulario.pie}>
+    // Mientras guarda o sube la foto no se cierra (perder el formulario a mitad es peor que esperar).
+    <HojaInferior abierta={abierta} onCerrar={onCerrar} bloqueada={formulario.ocupado} titulo={titulo || (persona?.id ? `Editar a ${persona.nombre}` : 'Añadir persona')} pie={formulario.pie}>
       {formulario.cuerpo}
     </HojaInferior>
   );

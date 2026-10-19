@@ -9,6 +9,7 @@ import { soles } from '../TarjetaProducto';
 import { Avatar } from './Avatar';
 import { FotoProducto } from './FotoProducto';
 import { BarraProgreso } from './BarraProgreso';
+import { Texto } from '../Traduccion';
 import s from './Regalos.module.css';
 
 /*
@@ -76,15 +77,15 @@ export function AgendaFechas({ items = [] }) {
   if (!items.length) return null;
   return (
     <section className={s.agenda} data-componente="AgendaFechas" aria-label="Lo que se viene">
-      <h3 className={s.agendaTitulo}>Lo que se viene</h3>
+      <h3 className={s.agendaTitulo}><Texto>Lo que se viene</Texto></h3>
       <Carrusel visibles={{ escritorio: 3.3, tablet: 2.4, movil: 1.3 }} espacio="0.75rem" etiqueta="Lo que se viene">
         {items.map((it) => (
           <Enlace key={it.id} to={it.url} className={[s.agendaItem, it.dias <= 7 && s.agendaPronto].filter(Boolean).join(' ')}>
             <HojaCalendario fecha={it.fecha} tono={it.dias <= 7 ? 'rosa' : 'violeta'} grande />
             <span className={s.agendaTextos}>
-              <strong>{it.titulo}</strong>
-              {it.persona && <small>{it.persona}</small>}
-              <span className={s.agendaFalta}>{it.dias === 0 ? '¡Es hoy!' : it.dias === 1 ? 'Mañana' : <>En <b>{it.dias}</b> días</>}</span>
+              <strong><Texto>{it.titulo}</Texto></strong>
+              {it.persona && <small><Texto>{it.persona}</Texto></small>}
+              <span className={s.agendaFalta}>{it.dias === 0 ? <Texto>¡Es hoy!</Texto> : it.dias === 1 ? <Texto>Mañana</Texto> : <><Texto>En</Texto> <b>{it.dias}</b> <Texto>días</Texto></>}</span>
             </span>
           </Enlace>
         ))}
@@ -96,27 +97,28 @@ export function AgendaFechas({ items = [] }) {
 /** Cuánto falta, como etiqueta (solo si es en 30 días o menos). */
 function Faltan({ dias, hasta = 30 }) {
   if (dias == null || dias > hasta) return null;
-  return <Etiqueta tono={dias <= 1 ? 'aviso' : 'violeta'}>{textoFaltan(dias)}</Etiqueta>;
+  return <Etiqueta tono={dias <= 1 ? 'aviso' : 'violeta'}><Texto>{textoFaltan(dias)}</Texto></Etiqueta>;
 }
 
 /**
  * Una idea de regalo: foto, nombre (lleva al producto), por qué le pega y
  * precio, con un botón para agregarla al carrito.
- *  - nombre, imagen, motivo, precio, url
- *  - agregada · necesitaOpciones: el botón lleva al producto ("Elegir")
- *  - onAgregar()
+ *  - nombre, imagen, srcSet, sizes, motivo, precio, url
+ *  - agregada · necesitaOpciones: pide talla o color; el botón dice "Elegir"
+ *    y llama a onElegir (la hoja "Agregar rápido") o, sin él, lleva al producto
+ *  - onAgregar(), onElegir()
  */
-export function IdeaRegalo({ nombre, imagen, motivo, precio, url, agregada = false, necesitaOpciones = false, onAgregar }) {
+export function IdeaRegalo({ nombre, imagen, srcSet, sizes, motivo, precio, url, agregada = false, necesitaOpciones = false, onAgregar, onElegir }) {
   return (
     <li className={s.idea} data-componente="IdeaRegalo">
-      <FotoProducto className={s.ideaFoto} src={imagen} respaldo={<Gift aria-hidden="true" />} />
+      <FotoProducto className={s.ideaFoto} src={imagen} srcSet={srcSet} sizes={sizes} respaldo={<Gift aria-hidden="true" />} />
       <span className={s.ideaTextos}>
         <Enlace to={url} className={s.ideaNombre}>{nombre}</Enlace>
-        {motivo && <small>{motivo}</small>}
+        {motivo && <small><Texto>{motivo}</Texto></small>}
       </span>
       <span className={s.ideaPrecio}>{soles(precio)}</span>
       {necesitaOpciones ? (
-        <Boton to={url} variante="contorno" tamano="sm">Elegir</Boton>
+        <Boton to={onElegir ? undefined : url} onClick={onElegir} variante="contorno" tamano="sm"><Texto>Elegir</Texto></Boton>
       ) : (
         <Boton
           tamano="sm"
@@ -133,30 +135,81 @@ export function IdeaRegalo({ nombre, imagen, motivo, precio, url, agregada = fal
 }
 
 /**
+ * Un paquete armado por el equipo: sus productos (el que pide talla o color,
+ * con "Elegir talla"), lo que se quitó y el botón para agregar el resto.
+ *  - total, productos: [{ id, nombre, imagen, precio, url, necesitaOpciones }]
+ *  - quitados · agregado · onAgregar() · onElegir(producto)
+ */
+function PaqueteEquipo({ total, productos = [], quitados = 0, agregado = false, onAgregar, onElegir }) {
+  const porElegir = productos.filter((p) => p.necesitaOpciones).length;
+  const directos = productos.length - porElegir;
+  const textoBoton = agregado
+    ? 'Agregado al carrito'
+    : porElegir > 0 ? `Agregar ${directos === 1 ? 'el otro' : `los otros ${directos}`} al carrito` : 'Agregar todo al carrito';
+  return (
+    <section className={s.paquete}>
+      <h4><Package aria-hidden="true" /> <Texto>Elegido por nuestro equipo</Texto> <strong>{soles(total)}</strong></h4>
+      <ul className={s.paqueteLista}>
+        {productos.map((p) => (
+          <li key={p.id || p.nombre}>
+            <FotoProducto className={s.paqueteFoto} src={p.imagen} srcSet={p.srcSet} sizes={p.sizes} />
+            <span className={s.paqueteTextos}>
+              <Enlace to={p.url} className={s.ideaNombre}>{p.nombre}</Enlace>
+              {p.necesitaOpciones && (onElegir
+                ? <button type="button" className={s.textoBoton} onClick={() => onElegir(p)}><Texto>Elegir talla</Texto></button>
+                : <Enlace to={p.url} className={s.textoBoton}><Texto>Elegir talla</Texto></Enlace>)}
+            </span>
+            <span className={s.ideaPrecio}>{soles(p.precio)}</span>
+          </li>
+        ))}
+      </ul>
+      {quitados > 0 && (
+        <p className={s.nota}><Texto>{quitados === 1 ? 'Un producto de esta sugerencia ya no está disponible y se quitó.' : `${quitados} productos de esta sugerencia ya no están disponibles y se quitaron.`}</Texto></p>
+      )}
+      {porElegir > 0 && (
+        <p className={s.nota}><Texto>{porElegir === 1 ? 'Un producto pide elegir talla o color: tócalo para elegirlo.' : `${porElegir} productos piden elegir talla o color: tócalos para elegirlos.`}</Texto></p>
+      )}
+      {onAgregar && directos > 0 && (
+        <Boton variante={agregado ? 'contorno' : 'primario'} tamano="sm" bloque disabled={agregado}
+          icono={agregado ? <Check aria-hidden="true" /> : <ShoppingBag aria-hidden="true" />} onClick={onAgregar}>
+          <Texto>{textoBoton}</Texto>
+        </Boton>
+      )}
+    </section>
+  );
+}
+
+/**
  * Una persona a la que le regalas.
  *  - nombre, relacion ("Hermano/a"), foto
  *  - eventos: [{ id, tipo, nombre, fecha ('AAAA-MM-DD') }] · festivas: [{ nombre, fecha }]
- *  - paquete: { total, productos: [{ nombre, imagen, precio, url }], quitados, agregado }
+ *  - paquetes: [{ id, total, productos: [{ id, nombre, imagen, precio, url,
+ *    necesitaOpciones }], quitados, agregado }] (los que armó el equipo; antes
+ *    `paquete`, uno solo: se sigue aceptando)
  *  - ideas: props de IdeaRegalo · ideasGenerales: aún no sabemos qué le gusta
- *  - sinIdeas: tiene gustos pero no hay productos de eso
+ *  - sinIdeas: tiene gustos pero no hay productos de eso · buscando: las ideas
+ *    todavía se están armando ("Buscando ideas…")
  *  - id: la tarjeta queda en #persona-{id} (la agenda lleva ahí)
- *  - onEditar, onEliminar (pide confirmar en la tarjeta), onAgregarPaquete,
- *    onAgregarIdea(idea), onAgregarIdeas · urlTienda · hoy (para "En N días")
+ *  - onEditar, onEliminar (pide confirmar en la tarjeta), onAgregarPaquete(idPaquete),
+ *    onAgregarIdea(idea), onAgregarIdeas, onElegir(idea o producto del paquete):
+ *    lo que pide talla o color · urlTienda · hoy (para "En N días")
  */
 export function TarjetaPersonaRegalo({
-  id, nombre, relacion, foto, eventos = [], festivas = [], paquete, ideas = [], ideasGenerales = false, sinIdeas = false,
-  onEditar, onEliminar, onAgregarPaquete, onAgregarIdea, onAgregarIdeas, urlTienda = '/tienda', hoy,
+  id, nombre, relacion, foto, eventos = [], festivas = [], paquetes, paquete, ideas = [], ideasGenerales = false, sinIdeas = false, buscando = false,
+  onEditar, onEliminar, onAgregarPaquete, onAgregarIdea, onAgregarIdeas, onElegir, urlTienda = '/tienda', hoy,
 }) {
   const [confirmar, setConfirmar] = useState(false);
+  const listaPaquetes = (paquetes || (paquete ? [paquete] : [])).filter((pq) => pq.productos?.length > 0);
   const directas = ideas.filter((i) => !i.necesitaOpciones && !i.agregada);
+  const conTalla = ideas.filter((i) => i.necesitaOpciones).length;
   const totalIdeas = directas.reduce((a, i) => a + Number(i.precio || 0), 0);
   return (
     <article className={s.persona} data-componente="TarjetaPersonaRegalo" id={id ? `persona-${id}` : undefined}>
       <header className={s.cabeza}>
         <Avatar className={s.avatar} nombre={nombre} imagen={foto} letras={1} />
         <div className={s.quien}>
-          <h3>{nombre || 'Sin nombre'}</h3>
-          {relacion && <p>{relacion}</p>}
+          <h3>{nombre || <Texto>Sin nombre</Texto>}</h3>
+          {relacion && <p><Texto>{relacion}</Texto></p>}
         </div>
         <span className={s.botones}>
           {onEditar && <button type="button" className={s.icono} onClick={onEditar} aria-label={`Editar a ${nombre}`}><Pencil aria-hidden="true" /></button>}
@@ -165,10 +218,10 @@ export function TarjetaPersonaRegalo({
       </header>
       {confirmar && (
         <div className={s.confirmar} role="alert">
-          <p>¿Quitar a {nombre} de tus fechas importantes?</p>
+          <p><Texto>{`¿Quitar a ${nombre} de tus fechas importantes?`}</Texto></p>
           <span>
-            <Boton variante="fantasma" tamano="sm" onClick={() => setConfirmar(false)}>Cancelar</Boton>
-            <Boton variante="peligro" tamano="sm" onClick={() => { setConfirmar(false); onEliminar(); }}>Quitar</Boton>
+            <Boton variante="fantasma" tamano="sm" onClick={() => setConfirmar(false)}><Texto>Cancelar</Texto></Boton>
+            <Boton variante="peligro" tamano="sm" onClick={() => { setConfirmar(false); onEliminar(); }}><Texto>Quitar</Texto></Boton>
           </span>
         </div>
       )}
@@ -184,8 +237,8 @@ export function TarjetaPersonaRegalo({
             <li key={e.id} className={s.fecha}>
               <HojaCalendario fecha={e.fecha} tono={dias != null && dias <= 7 ? 'rosa' : 'violeta'} />
               <span className={s.fechaTextos}>
-                <span className={s.fechaNombre}>{e.tipo === 'Fecha Especial' ? (e.nombre || 'Fecha especial') : e.tipo}</span>
-                <span className={s.fechaDia}>{detalle}</span>
+                <span className={s.fechaNombre}>{e.tipo === 'Fecha Especial' ? (e.nombre || <Texto>Fecha especial</Texto>) : <Texto>{e.tipo}</Texto>}</span>
+                <span className={s.fechaDia}><Texto>{detalle}</Texto></span>
               </span>
               <Faltan dias={dias} />
             </li>
@@ -195,62 +248,50 @@ export function TarjetaPersonaRegalo({
           <li key={f.nombre} className={`${s.fecha} ${s.festivaFila}`}>
             <HojaCalendario fecha={f.fecha} tono="oro" />
             <span className={s.fechaTextos}>
-              <span className={s.fechaNombre}><Globe aria-hidden="true" /> {f.nombre}</span>
-              <span className={s.fechaDia}>{diaYMes(f.fecha)} · del calendario</span>
+              <span className={s.fechaNombre}><Globe aria-hidden="true" /> <Texto>{f.nombre}</Texto></span>
+              <span className={s.fechaDia}><Texto>{`${diaYMes(f.fecha)} · del calendario`}</Texto></span>
             </span>
             <Faltan dias={faltanDias(f.fecha, hoy)} />
           </li>
         ))}
       </ul>
 
-      {paquete?.productos?.length > 0 && (
-        <section className={s.paquete}>
-          <h4><Package aria-hidden="true" /> Elegido por nuestro equipo <strong>{soles(paquete.total)}</strong></h4>
-          <ul className={s.paqueteLista}>
-            {paquete.productos.map((p) => (
-              <li key={p.nombre}>
-                <FotoProducto className={s.paqueteFoto} src={p.imagen} />
-                <Enlace to={p.url} className={s.ideaNombre}>{p.nombre}</Enlace>
-                <span className={s.ideaPrecio}>{soles(p.precio)}</span>
-              </li>
-            ))}
-          </ul>
-          {paquete.quitados > 0 && (
-            <p className={s.nota}>{paquete.quitados === 1 ? 'Un producto de esta sugerencia ya no está disponible y se quitó.' : `${paquete.quitados} productos de esta sugerencia ya no están disponibles y se quitaron.`}</p>
-          )}
-          {onAgregarPaquete && (
-            <Boton variante={paquete.agregado ? 'contorno' : 'primario'} tamano="sm" bloque disabled={paquete.agregado}
-              icono={paquete.agregado ? <Check aria-hidden="true" /> : <ShoppingBag aria-hidden="true" />} onClick={onAgregarPaquete}>
-              {paquete.agregado ? 'Agregado al carrito' : 'Agregar todo al carrito'}
-            </Boton>
-          )}
-        </section>
-      )}
+      {listaPaquetes.map((pq, k) => (
+        <PaqueteEquipo
+          key={pq.id || k}
+          {...pq}
+          onAgregar={onAgregarPaquete && (() => onAgregarPaquete(pq.id))}
+          onElegir={onElegir}
+        />
+      ))}
 
       <section className={s.ideas}>
-        <h4><Gift aria-hidden="true" /> Ideas de regalo para {nombre}</h4>
+        <h4><Gift aria-hidden="true" /> <Texto>{`Ideas de regalo para ${nombre}`}</Texto></h4>
         {ideasGenerales && ideas.length > 0 && (
           <p className={s.nota}>
-            Son ideas generales. {onEditar ? <button type="button" className={s.textoBoton} onClick={onEditar}>Cuéntanos qué le gusta</button> : 'Cuéntanos qué le gusta'} y las hacemos a su medida.
+            <Texto>Son ideas generales.</Texto> {onEditar ? <button type="button" className={s.textoBoton} onClick={onEditar}><Texto>Cuéntanos qué le gusta</Texto></button> : <Texto>Cuéntanos qué le gusta</Texto>} <Texto>y las hacemos a su medida.</Texto>
           </p>
         )}
-        {ideas.length > 0 ? (
+        {buscando ? <p className={s.nota} role="status"><Texto>Buscando ideas…</Texto></p> : ideas.length > 0 ? (
           <ul className={s.ideasLista}>
-            {ideas.map((i) => <IdeaRegalo key={i.id || i.nombre} {...i} onAgregar={() => onAgregarIdea?.(i)} />)}
+            {ideas.map((i) => <IdeaRegalo key={i.id || i.nombre} {...i} onAgregar={() => onAgregarIdea?.(i)} onElegir={onElegir && (() => onElegir(i))} />)}
           </ul>
         ) : (
           <p className={s.nota}>
-            {sinIdeas
+            <Texto>{sinIdeas
               ? `Todavía no tenemos productos de lo que le gusta a ${nombre}. Preferimos no recomendarte algo que no le va.`
-              : `Cuéntanos qué le gusta (equipo, anime, personaje…) editando a ${nombre} y te recomendamos regalos a su medida.`}
+              : `Cuéntanos qué le gusta (equipo, anime, personaje…) editando a ${nombre} y te recomendamos regalos a su medida.`}</Texto>
           </p>
         )}
         {directas.length >= 2 && onAgregarIdeas && (
           <Boton variante="contorno" tamano="sm" bloque icono={<Plus aria-hidden="true" />} onClick={onAgregarIdeas}>
-            Agregar las {directas.length} al carrito · {soles(totalIdeas)}
+            <Texto>{`Agregar las ${directas.length} al carrito`}</Texto> · {soles(totalIdeas)}
           </Boton>
         )}
-        <Enlace to={urlTienda} className={s.masRegalos}>Ver más regalos en la tienda <ArrowRight aria-hidden="true" /></Enlace>
+        {conTalla > 0 && (
+          <p className={s.nota}><Texto>{conTalla === 1 ? 'Una idea pide elegir talla o color: toca «Elegir».' : `${conTalla} ideas piden elegir talla o color: toca «Elegir».`}</Texto></p>
+        )}
+        <Enlace to={urlTienda} className={s.masRegalos}><Texto>Ver más regalos en la tienda</Texto> <ArrowRight aria-hidden="true" /></Enlace>
       </section>
     </article>
   );
@@ -261,21 +302,22 @@ export function TarjetaPersonaRegalo({
  * por cada persona a la que le toca, sus ideas. Sin personas, invita a
  * agregar a alguien.
  *  - nombre, fecha ('AAAA-MM-DD'), icono (IconoWala; sin emojis)
- *  - personas: [{ nombre, ideas, buscando }] · onAgregarPersona · onAgregarIdea(idea)
+ *  - personas: [{ id, nombre, ideas, buscando }] · onAgregarPersona
+ *  - onAgregarIdea(idea) · onElegir(idea): la que pide talla o color
  *  - urlTienda · hoy
  */
-export function AvisoFestiva({ nombre, fecha, icono = 'regalo', personas = [], onAgregarPersona, onAgregarIdea, urlTienda = '/tienda', hoy }) {
+export function AvisoFestiva({ nombre, fecha, icono = 'regalo', personas = [], onAgregarPersona, onAgregarIdea, onElegir, urlTienda = '/tienda', hoy }) {
   const dias = faltanDias(fecha, hoy);
   return (
     <section className={s.festiva} data-componente="AvisoFestiva">
       <header className={s.festivaCabeza}>
         <span className={s.festivaIcono}><IconoWala nombre={icono} tamano={48} girar={-6} /></span>
         <div className={s.quien}>
-          <h3>{dias === 0 ? `¡Hoy es ${nombre}!` : `Se acerca el ${nombre}`}</h3>
-          <p>{diaYMes(fecha)}</p>
+          <h3><Texto>{dias === 0 ? `¡Hoy es ${nombre}!` : `Se acerca el ${nombre}`}</Texto></h3>
+          <p><Texto>{diaYMes(fecha)}</Texto></p>
         </div>
         <span className={s.cuentaAtras} aria-label={textoFaltan(dias)}>
-          {dias === 0 ? <strong>¡Hoy!</strong> : <><strong>{dias}</strong><small>{dias === 1 ? 'día' : 'días'}</small></>}
+          {dias === 0 ? <strong><Texto>¡Hoy!</Texto></strong> : <><strong>{dias}</strong><small><Texto>{dias === 1 ? 'día' : 'días'}</Texto></small></>}
         </span>
       </header>
       {dias != null && dias <= 30 && (
@@ -284,21 +326,21 @@ export function AvisoFestiva({ nombre, fecha, icono = 'regalo', personas = [], o
         </div>
       )}
       {personas.length > 0 ? personas.slice(0, 3).map((p) => (
-        <div key={p.nombre} className={s.festivaPersona}>
-          <h4>Ideas para {p.nombre}</h4>
-          {p.buscando ? <p className={s.nota}>Buscando ideas…</p> : p.ideas?.length ? (
+        <div key={p.id || p.nombre} className={s.festivaPersona}>
+          <h4><Texto>{`Ideas para ${p.nombre}`}</Texto></h4>
+          {p.buscando ? <p className={s.nota}><Texto>Buscando ideas…</Texto></p> : p.ideas?.length ? (
             <ul className={s.ideasLista}>
-              {p.ideas.map((i) => <IdeaRegalo key={i.id || i.nombre} {...i} onAgregar={() => onAgregarIdea?.(i)} />)}
+              {p.ideas.map((i) => <IdeaRegalo key={i.id || i.nombre} {...i} onAgregar={() => onAgregarIdea?.(i)} onElegir={onElegir && (() => onElegir(i))} />)}
             </ul>
-          ) : <p className={s.nota}>Todavía no tenemos algo pensado para {p.nombre}. Mira la tienda o cuéntanos qué le gusta.</p>}
+          ) : <p className={s.nota}><Texto>{`Todavía no tenemos algo pensado para ${p.nombre}. Mira la tienda o cuéntanos qué le gusta.`}</Texto></p>}
         </div>
       )) : (
         <div className={s.festivaVacia}>
-          <p className={s.nota}>¿Le vas a regalar a alguien por el {nombre}? Agrégalo y te damos ideas a su medida, con aviso antes de la fecha.</p>
-          {onAgregarPersona && <Boton tamano="sm" icono={<Plus aria-hidden="true" />} onClick={onAgregarPersona}>Añadir persona</Boton>}
+          <p className={s.nota}><Texto>{`¿Le vas a regalar a alguien por el ${nombre}? Agrégalo y te damos ideas a su medida, con aviso antes de la fecha.`}</Texto></p>
+          {onAgregarPersona && <Boton tamano="sm" icono={<Plus aria-hidden="true" />} onClick={onAgregarPersona}><Texto>Añadir persona</Texto></Boton>}
         </div>
       )}
-      <Enlace to={urlTienda} className={s.masRegalos}>Ver regalos en la tienda <ArrowRight aria-hidden="true" /></Enlace>
+      <Enlace to={urlTienda} className={s.masRegalos}><Texto>Ver regalos en la tienda</Texto> <ArrowRight aria-hidden="true" /></Enlace>
     </section>
   );
 }

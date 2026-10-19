@@ -207,3 +207,11 @@ grupos del marco nuevo (`gruposDeCuenta.js`).
 |---|---|---|---|---|
 | `pages/cuenta/WishlistViejo.jsx` + `WishlistPage.module.css` | `/cuenta/wishlist` | `components/cuenta/ListaDeseosDeCuenta.jsx` → `PaginaListaDeseos` | `WishlistPage.jsx` (lazy, solo con `cuentaVieja`) | al retirar `cuentaVieja` |
 | `useProducts([], { includeHidden: true })` en esta página (el catálogo entero) | la página de antes | `useProductosDeLista` (`components/regalar/regaloDeLista.js`) | el hook sigue en la tienda; solo se va su uso aquí | con la página de antes |
+
+### Fechas importantes (2026-10-19)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/cuenta/CuentaFechasImportantesViejo.jsx` + `CuentaFechasImportantesPage.module.css` | `/cuenta/fechas-importantes` | `components/cuenta/FechasDeCuenta.jsx` → `PaginaFechas` | `CuentaFechasImportantesPage.jsx` (lazy, solo con `cuentaVieja`) | al retirar `cuentaVieja` |
+| `pages/cuenta/FechasFestivasSeccion.jsx` | la página de antes | `AvisoFestiva` | solo `CuentaFechasImportantesViejo.jsx` (usa el mismo CSS) | con la página de antes |
+| `components/common/FechaEventoInput/` | el modal de antes | `CampoFecha anioOpcional` | `pages/SubscriptionSurveyPage.jsx` (la encuesta) | cuando ya nadie lo importe |

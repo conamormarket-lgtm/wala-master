@@ -901,6 +901,8 @@ export const personaDesdeRecipient = (r = {}) => ({
   foto: r.photoUrl || null,
   presupuesto: r.budget || '',
   gustos: Object.fromEntries((r.selectedCategories || []).map((c) => [c, (r.categoryAnswers || {})[c] || {}])),
+  // Lo respondido de un conjunto que se apagó: no se pierde al guardar.
+  gustosApagados: Object.fromEntries(Object.entries(r.categoryAnswers || {}).filter(([c]) => !(r.selectedCategories || []).includes(c))),
   eventos: (r.events || []).map((e) => ({ id: e.id, tipo: e.type, nombre: e.customName || '', fecha: e.date || '' })),
   // "Conjunto familia" de la encuesta (familySet + sus tres respuestas).
   familia: { activo: Boolean(r.familySet), q1: Boolean(r.familyAnswers?.q1), q2: Boolean(r.familyAnswers?.q2), q3: Boolean(r.familyAnswers?.q3) },
@@ -916,7 +918,7 @@ export const personaARecipient = (p = {}, id) => ({
   photoUrl: p.foto || null,
   budget: p.presupuesto || '',
   selectedCategories: Object.keys(p.gustos || {}),
-  categoryAnswers: p.gustos || {},
+  categoryAnswers: { ...(p.gustosApagados || {}), ...(p.gustos || {}) },
   events: (p.eventos || []).map((e) => ({
     id: e.id, type: e.tipo, date: e.fecha, ...(e.tipo === 'Fecha Especial' ? { customName: e.nombre } : {}),
   })),

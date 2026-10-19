@@ -219,6 +219,13 @@ propio `EsqueletoProducto` en su lugar (antes se esperaba el catálogo
 entero). La lista sale de la caché local de WishlistContext, así que al
 volver aparece al instante.
 
+Ya en la tienda (paso 6, Fechas importantes, 2026-10-19): sin perfil, dos
+`EsqueletoTarjeta` de 360 px; con las personas ya, cada tarjeta dice
+"Buscando ideas…" (y cada festiva por persona) mientras se arma el
+buscador de regalos, y los paquetes aparecen cuando llega el catálogo
+(antes no se pintaba nada hasta entonces). Agregar rápido baja su código la
+primera vez que se toca "Elegir".
+
 Ya en la tienda (paso 6, el carrito, 2026-10-17): el carrito sale de
 localStorage al instante, así que no tiene esqueleto propio (la ruta sigue con
 el `PageLoading` de `App.jsx` hasta el paso 7). "También te puede gustar" no

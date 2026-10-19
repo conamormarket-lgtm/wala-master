@@ -424,6 +424,80 @@ No se probó: el esqueleto de un solo producto que tarda (llegan juntos en
 el emulador), Agregar rápido desde esta página (es la misma tarjeta de la
 tienda), copiar sin permiso del portapapeles ni la app Android.
 
+## Fechas importantes en la tienda (hecho el 2026-10-19)
+
+![Fechas importantes en la tienda real, en el celular: "Lo que se viene" con el cumpleaños de María, el aviso de Halloween con su cuenta atrás, y la tarjeta de María con sus fechas y el paquete del equipo, con "Elegir talla" y "Agregar el otro al carrito"](cuenta-fechas-tienda.webp)
+
+(Celular, 390 px, claro, con personas de prueba del emulador. Se probó
+también a 1366 y en noche.)
+
+- **Conector:** `src/components/cuenta/FechasDeCuenta.jsx`, desde
+  `pages/cuenta/CuentaFechasImportantesPage.jsx`. Lo mismo de antes: las
+  personas de `giftRecipients`, las festivas del admin que se acercan (30
+  días), las ideas del buscador de regalos con la próxima ocasión de cada
+  persona, los paquetes del equipo cruzados con el catálogo de hoy (lo
+  retirado se cae, lo que sigue va con su precio de hoy), el banner de la
+  encuesta, las monedas por fechas nuevas (`claimDatesReward`, con las
+  monedas volando) y la foto en `gift_recipients/{uid}/`.
+- **Las seis recomendaciones acordadas:**
+  1. Interruptor `cuentaVieja`: vuelve `CuentaFechasImportantesViejo.jsx`.
+  2. Guardar no pierde nada: se conserva lo que esta página no edita (lo
+     de la encuesta: "Conjunto familia" con sus respuestas, otros campos);
+     las respuestas de un gusto apagado se quedan (`gustosApagados`, como
+     antes en `categoryAnswers`) y vuelven al prenderlo; la primera fecha
+     guarda su tipo (un aniversario que estaba primero ya no se vuelve
+     cumpleaños: la fila fija del cumpleaños es solo la de un cumpleaños).
+  3. El kit suma lo que faltaba: varios paquetes por persona (`paquetes`),
+     "Elegir talla" en cada producto que lo pide, "Agregar el otro / los
+     otros N al carrito", la nota de las ideas con talla, el subtítulo con
+     los días del admin (`aviso`, `textoDiasAviso`), cada festiva con un
+     `IconoWala` (San Valentín y Día de la Madre, corazón; Navidad,
+     estrella; Día de la Mujer, destello; Amistad, mano; el resto, regalo),
+     la hoja que no se cierra mientras guarda o sube la foto
+     (`bloqueada`), "Buscando ideas…" mientras carga, los textos con
+     `<Texto>` y la lista vacía con el sello.
+  4. Lo que pide talla o color (una idea o un producto del paquete) abre
+     "Agregar rápido" (`AgregarRapidoDeProducto`, el mismo de las
+     tarjetas); con `fichaVieja`, su ficha, como antes.
+  5. Más liviano: las fotos de ideas y paquetes son la miniatura de la
+     tienda con sus copias (`fotoDeTarjeta`), no la foto grande; los
+     paquetes se guardan en caché 5 min (`['paquetes-sugeridos', uid]`);
+     el catálogo se lee una vez para ideas y paquetes.
+  6. La foto de la persona pasa por el recorte del kit (como en Mi perfil)
+     y se sube como JPEG a la misma carpeta.
+- **Diferencias a propósito:** borrar a alguien se confirma en la misma
+  tarjeta (antes, una ventana); "Lo que se viene" junta las próximas
+  fechas de todos arriba.
+
+### Qué se probó (2026-10-19, localhost con los emuladores)
+
+Con dos personas de prueba de `cliente@wala.test` (María, de la encuesta,
+con "Conjunto familia" y un gusto apagado con respuestas; Carlos, con un
+aniversario como primera fecha), dos paquetes para María (uno con un
+producto retirado y una casaca con tallas) y Halloween en 12 días:
+- "Lo que se viene", Halloween con su cuenta atrás, el subtítulo "dos
+  semanas antes y un día antes" (del admin), las dos tarjetas con sus
+  fechas, los dos paquetes, la nota del retirado y la de la talla. La
+  página de antes muestra lo mismo.
+- "Elegir talla" → Agregar rápido → talla M → al carrito; "Agregar el otro
+  al carrito" y "Agregar todo al carrito" del segundo paquete.
+- Editar a María (presupuesto) y guardar: en Firestore siguen
+  `familySet`, `familyAnswers` (con sus textos), el campo extra y las
+  respuestas del gusto apagado. Editar a Carlos: la primera fila dice
+  "Aniversario" y se guarda así. El servidor pagó 15 monedas (3 fechas) y
+  después 5 por una persona nueva.
+- Añadir persona: sin nombre avisa "Falta el nombre de la persona."; con
+  nombre, género y cumpleaños (calendario del kit) se guarda; Escape
+  mientras guarda no cierra la hoja. Quitar a una persona.
+- La lista vacía; `cuentaVieja` → la página de antes. 390 y 1366, claro y
+  noche.
+
+No se probó: las ideas de regalo con productos (el catálogo de prueba no
+da ninguna, tampoco en la página de antes: se ven "Buscando ideas…" y los
+textos sin ideas), los gustos en el formulario (la configuración de la
+encuesta no se puede leer en el emulador), subir una foto, un guardado que
+falle, la traducción ni la app Android.
+
 ## Llevar a la tienda (lo que falta)
 
 Páginas propias: van en el paso 6 de [MIGRACION.md](MIGRACION.md). Se migra
@@ -455,7 +529,7 @@ componente o su forma de recibir datos.
 | ✓ Referidos | `CuentaReferidosPage.jsx` (hoy `CuentaReferidosViejo.jsx`), `components/GrupoReferidos.jsx`, `components/DetallePedidoReferido.jsx` | `PaginaReferidos` + `FilaReferido` + `DetallePedidoReferido` (hecho) |
 | Creaciones | `MisCreacionesPage.jsx` (`MiCreacionCard` ~151, `TusBorradores` ~168) | `PaginaCreaciones` + `TarjetaCreacion` |
 | ✓ Lista de deseos | `WishlistPage.jsx` (hoy `WishlistViejo.jsx`, `PremiumProductCard` ~275) | `PaginaListaDeseos` con `TarjetaDeProducto` por `tarjeta` (hecho) |
-| Fechas importantes | `CuentaFechasImportantesPage.jsx` (+ `FechasFestivasSeccion.jsx`, modal con portal ~739) | `PaginaFechas` + `TarjetaPersonaRegalo` + `AvisoFestiva` |
+| ✓ Fechas importantes | `CuentaFechasImportantesPage.jsx` (hoy `CuentaFechasImportantesViejo.jsx`, + `FechasFestivasSeccion.jsx`, modal con portal ~739) | `PaginaFechas` + `TarjetaPersonaRegalo` + `AvisoFestiva` (hecho) |
 
 ### De dónde sale cada dato
 
@@ -494,7 +568,7 @@ componente o su forma de recibir datos.
 | `comunidadPara(c)` | con `usePuedePublicar(design)`: `{ estado: design.comunidad, onPublicar: publicarEnComunidad, onActualizar: publicarEnComunidad, onRetirar: retirarDeComunidad }` |
 | `onAgregarTodo`, `onCompartir` | `handleAddAll` (devolver `{ texto, tipo }`), copiar `/wishlist/{referralCode}` (con `origenPublico`) |
 | `personas`, `festivas` | `giftRecipients` → `personaDesdeRecipient` + `recomendar()` de `useGiftCatalog`; `useFechasFestivas` / `proximasFestivas` (con un `icono` de IconoWala, no el emoji) |
-| `onGuardar` (persona) | `updateUserProfile({ giftRecipients })` con `personaARecipient`, luego `claimDatesReward()` → `ganadas` |
+| `onGuardar` (persona) | `updateUserProfile({ giftRecipients })` con `personaARecipient` encima del recipient de antes (sin `familySet`/`familyAnswers`: son de la encuesta), luego `claimDatesReward()` → `ganadas` |
 
 ### Comportamiento que no se puede perder
 
@@ -574,8 +648,8 @@ componente o su forma de recibir datos.
 3. ✓ Perfil y Direcciones (2026-10-17, arriba).
 4. ✓ Catálogo, Cupones y Misiones (2026-10-17, arriba).
 5. ✓ Referidos (2026-10-19, arriba).
-6. Lista de deseos (✓ 2026-10-19, arriba), Fechas importantes y Mis
-   creaciones (lo que les falta, arriba, antes).
+6. Lista de deseos y Fechas importantes (✓ 2026-10-19, arriba) y Mis
+   creaciones (lo que le falta, arriba, antes).
 7. Mis pedidos cuando el kit tenga `PedidosPorVerificar`.
 
 Para volver atrás: cada paso en su propio commit; las páginas viejas no se

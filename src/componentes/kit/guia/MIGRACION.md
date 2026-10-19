@@ -39,6 +39,7 @@ principal (y a la APK de Capacitor).
 | Regalar para una fecha (paso 6): `PaginaRegalar` por `components/regalar/RegalarDeTienda.jsx` (`fechaEntregaDesde`, sin el arrastre); la página de antes baja solo con `regalarViejo` | `pages/GiftRegistry/GiftRegistryPage.jsx` |
 | Abrir el regalo (paso 6): `PaginaRegaloSorpresa` por `components/regalar/RegaloSorpresaDeTienda.jsx`; sin el Kapi flotante en `/regalo/`; la página de antes baja solo con `regalarViejo` | `pages/GiftExperiencePage.jsx` |
 | El marco de la cuenta, el resumen y los ajustes (paso 6): `MarcoCuenta`, `PaginaResumenCuenta` y `PaginaAjustes` por `components/cuenta/` (`MarcoDeCuenta`, `ResumenDeCuenta`, `AjustesDeCuenta`, `gruposDeCuenta`); las demás secciones, las de antes dentro del marco nuevo; lo de antes baja solo con `cuentaVieja` | `pages/CuentaLayout.jsx`, `pages/cuenta/CuentaResumenPage.jsx`, `pages/cuenta/CuentaAjustesPage.jsx` |
+| Fechas importantes (paso 6): `PaginaFechas` por `components/cuenta/FechasDeCuenta.jsx`; guardar conserva lo de la encuesta, varios paquetes por persona, lo que pide talla abre Agregar rápido; lo de antes baja solo con `cuentaVieja` | `pages/cuenta/CuentaFechasImportantesPage.jsx` |
 | Lista de deseos (paso 6): `PaginaListaDeseos` por `components/cuenta/ListaDeseosDeCuenta.jsx` con `TarjetaDeProducto` en el hueco `tarjeta`; los productos uno por uno (no el catálogo entero); los links con `https://wala.pe` en la app; lo de antes baja solo con `cuentaVieja` | `pages/cuenta/WishlistPage.jsx` |
 | Mis referidos (paso 6): `PaginaReferidos` por `components/cuenta/ReferidosDeCuenta.jsx` (los pedidos por reclamar y el ranking al acercarse); `linkInvitacion`/`linkProducto` con `https://wala.pe` en la app; lo de antes baja solo con `cuentaVieja` | `pages/cuenta/CuentaReferidosPage.jsx` |
 | Catálogo, Mis cupones y Misiones (paso 6): `PaginaCatalogo`, `PaginaCupones` y `PaginaMisiones` por `components/cuenta/CatalogoDeCuenta.jsx`, `CuponesDeCuenta.jsx` y `MisionesDeCuenta.jsx` (`misionDesdeServidor`, `nivelesDesdeTiers`); lo de antes baja solo con `cuentaVieja` | `pages/cuenta/CatalogReward.jsx`, `MisCuponesPage.jsx`, `MisionesPage.jsx` |
@@ -198,6 +199,11 @@ Cada paso en su propio commit, verificable por separado.
    tienda, solo los productos de la lista, el link con `https://wala.pe` en
    la app y el consejo del cumpleaños también con la lista vacía (CUENTA.md,
    "Lista de deseos en la tienda"). Interruptor `cuentaVieja`.
+   ✓ **Fechas importantes** (2026-10-19): paso 6 de CUENTA.md; guardar sin
+   perder lo de la encuesta ni los gustos apagados, varios paquetes por
+   persona, Agregar rápido para lo que pide talla, fotos chicas y los días
+   de aviso del admin (CUENTA.md, "Fechas importantes en la tienda").
+   Interruptor `cuentaVieja`.
 7. **Cargando** (`PantallaCarga`, `Cargando`, `EsqueletoPagina`: CARGA.md; el
    splash de `index.html` cambia en el mismo commit), **`BarraInferior` y luego `Cabecera`**: la más conectada (AuthContext,
    CartContext, WishlistContext, notificaciones y la configuración de
@@ -215,7 +221,7 @@ nada), o en un solo navegador con `localStorage.wala_kit_viejo = "pagos,carrito"
 | Interruptor | Qué vuelve a lo de antes |
 |---|---|
 | `pagosViejo` | la ventana "Pagar saldo" de Mis pedidos (`Modal` viejo), la pantalla de Culqi mientras cobra, el pago rápido entero (`PagoRapidoViejo.jsx`) y el checkout entero (`CheckoutViejo.jsx`) |
-| `cuentaVieja` (`useLoViejo('cuenta')`: en Firestore el campo es `cuentaViejo: true`; en localStorage, `"cuenta"`) | la cuenta: el marco (`CuentaLayoutViejo.jsx`), el resumen (`CuentaResumenViejo.jsx`) y los ajustes (`CuentaAjustesViejo.jsx`), Mi perfil (`PerfilViejo.jsx`), Mis direcciones (`MisDireccionesViejo.jsx`), el catálogo (`CatalogRewardViejo.jsx`), Mis cupones (`MisCuponesViejo.jsx`), Misiones (`MisionesViejo.jsx`), Mis referidos (`CuentaReferidosViejo.jsx`) y la lista de deseos (`WishlistViejo.jsx`); después, cada sección que migre |
+| `cuentaVieja` (`useLoViejo('cuenta')`: en Firestore el campo es `cuentaViejo: true`; en localStorage, `"cuenta"`) | la cuenta: el marco (`CuentaLayoutViejo.jsx`), el resumen (`CuentaResumenViejo.jsx`) y los ajustes (`CuentaAjustesViejo.jsx`), Mi perfil (`PerfilViejo.jsx`), Mis direcciones (`MisDireccionesViejo.jsx`), el catálogo (`CatalogRewardViejo.jsx`), Mis cupones (`MisCuponesViejo.jsx`), Misiones (`MisionesViejo.jsx`), Mis referidos (`CuentaReferidosViejo.jsx`) la lista de deseos (`WishlistViejo.jsx`) y Fechas importantes (`CuentaFechasImportantesViejo.jsx`); después, cada sección que migre |
 | `carritoViejo` | todo el carrito (`Cart.jsx` y `CartItem.jsx`, con sus preguntas por `window.confirm`) |
 | `regalarViejo` | regalarle a alguien: su lista de deseos (`WishlistPublicViejo.jsx`), regalar para una fecha (`GiftRegistryPageViejo.jsx`, con el arrastre) y abrir el regalo (`GiftExperienceViejo.jsx`) |
 | `tarjetasViejo` | la tarjeta de producto (`PremiumProductCard`) en carruseles y grillas |

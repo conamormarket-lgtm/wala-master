@@ -214,17 +214,20 @@ export function PaginaListaDeseos({
 /**
  * Fechas importantes: a quién le regalas y cuándo, con ideas a su medida.
  *  - personas: [{ id, nombre, relacion, relacionTexto, genero, foto, presupuesto,
- *    gustos, eventos: [{ id, tipo, nombre, fecha }], festivas, paquete, ideas,
+ *    gustos, eventos: [{ id, tipo, nombre, fecha }], festivas, paquetes, ideas,
  *    ideasGenerales, sinIdeas }] (personaDesdeRecipient + useGiftCatalog)
  *  - festivas: fechas que se acercan, props de AvisoFestiva
  *  - encuesta: { monedas, url } banner del perfil de regalos (sin encuesta hecha)
  *  - ganadas: monedas que acaba de ganar (aviso) · conjuntos: gustos que se pueden marcar
+ *  - aviso: cuándo avisamos ("una semana antes y un día antes", del admin)
  *  - onGuardar(persona): promesa (nueva sin id) · onEliminar(id) · onSubirFoto(archivo) → url
- *  - onAgregarIdea(idea) · onAgregarPaquete(id) · onAgregarIdeas(id) · urlTienda · hoy
+ *  - onAgregarIdea(idea) · onAgregarPaquete(idPersona, idPaquete) · onAgregarIdeas(id)
+ *  - onElegir(idea o producto): lo que pide talla o color (sin él, va al producto)
+ *  - urlTienda · hoy
  */
 export function PaginaFechas({
-  personas = [], festivas = [], encuesta, ganadas = 0, conjuntos = [], cargando = false,
-  onGuardar, onEliminar, onSubirFoto, onAgregarIdea, onAgregarPaquete, onAgregarIdeas, urlTienda = '/tienda', hoy,
+  personas = [], festivas = [], encuesta, ganadas = 0, conjuntos = [], cargando = false, aviso = 'una semana antes y un día antes',
+  onGuardar, onEliminar, onSubirFoto, onAgregarIdea, onAgregarPaquete, onAgregarIdeas, onElegir, urlTienda = '/tienda', hoy,
 }) {
   // La hoja se queda montada al cerrarse (para que baje animada); cada vez
   // que se abre, `clave` nueva = formulario desde cero.
@@ -248,26 +251,32 @@ export function PaginaFechas({
       <CabezaCuenta
         icono={<CalendarHeart />}
         tono="rosa"
-        titulo="Fechas importantes"
-        subtitulo="Guarda a quién quieres regalarle y cuándo. Te avisamos una semana y un día antes, con ideas que le pegan. Ganas 5 monedas por cada fecha nueva (hasta 50)."
-        accion={onGuardar && personas.length > 0 && <Boton icono={<Plus aria-hidden="true" />} onClick={() => abrir()}>Añadir persona</Boton>}
+        titulo={<Texto>Fechas importantes</Texto>}
+        subtitulo={<Texto>{`Guarda a quién quieres regalarle y cuándo. Te avisamos ${aviso || 'antes de cada fecha'}, con ideas que le pegan. Ganas 5 monedas por cada fecha nueva (hasta 50).`}</Texto>}
+        accion={onGuardar && personas.length > 0 && <Boton icono={<Plus aria-hidden="true" />} onClick={() => abrir()}><Texto>Añadir persona</Texto></Boton>}
       />
-      {ganadas > 0 && <Aviso tipo="exito" titulo={`¡Ganaste ${ganadas} monedas!`}>Úsalas como descuento en tu próxima compra.</Aviso>}
+      {ganadas > 0 && <Aviso tipo="exito" titulo={<Texto>{`¡Ganaste ${ganadas} monedas!`}</Texto>}><Texto>Úsalas como descuento en tu próxima compra.</Texto></Aviso>}
       {encuesta && (
-        <Aviso tipo="info" icono={<Gift aria-hidden="true" />} titulo={`Completa tu perfil de regalos y gana ${encuesta.monedas || 15} monedas`}
-          accion={<Boton to={encuesta.url || '/encuesta-suscripcion'} tamano="sm">Completar la encuesta</Boton>}>
-          Cuéntanos qué le gusta a cada persona y te recomendamos mejor.
+        <Aviso tipo="info" icono={<Gift aria-hidden="true" />} titulo={<Texto>{`Completa tu perfil de regalos y gana ${encuesta.monedas || 15} monedas`}</Texto>}
+          accion={<Boton to={encuesta.url || '/encuesta-suscripcion'} tamano="sm"><Texto>Completar la encuesta</Texto></Boton>}>
+          <Texto>Cuéntanos qué le gusta a cada persona y te recomendamos mejor.</Texto>
         </Aviso>
       )}
       {!cargando && <AgendaFechas items={agenda} />}
       {festivas.map((f) => (
-        <AvisoFestiva key={f.nombre} {...f} hoy={hoy} urlTienda={urlTienda} onAgregarIdea={onAgregarIdea} onAgregarPersona={onGuardar && (() => abrir())} />
+        <AvisoFestiva key={f.id || f.nombre} {...f} hoy={hoy} urlTienda={urlTienda} onAgregarIdea={onAgregarIdea} onElegir={onElegir} onAgregarPersona={onGuardar && (() => abrir())} />
       ))}
       {cargando ? (
         <ul className={s.personas} aria-busy="true"><Esqueletos n={2} alto={360} /></ul>
       ) : personas.length === 0 ? (
-        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Todavía no agregaste a nadie" texto="Empieza por la persona a la que más le regalas: con su cumpleaños alcanza.">
-          {onGuardar && <Boton icono={<Plus aria-hidden="true" />} onClick={() => abrir()}>Añadir persona</Boton>}
+        // Sin la cara de Kapi: en la tienda ya está el flotante (un solo Kapi a la vista).
+        <EstadoVacio
+          imagen={null}
+          icono={<CalendarHeart />}
+          titulo={<Texto>Todavía no agregaste a nadie</Texto>}
+          texto={<Texto>Empieza por la persona a la que más le regalas: con su cumpleaños alcanza.</Texto>}
+        >
+          {onGuardar && <Boton icono={<Plus aria-hidden="true" />} onClick={() => abrir()}><Texto>Añadir persona</Texto></Boton>}
         </EstadoVacio>
       ) : (
         <ul className={s.personas}>
@@ -281,8 +290,9 @@ export function PaginaFechas({
                 onEditar={onGuardar && (() => abrir(p))}
                 onEliminar={onEliminar && (() => onEliminar(p.id))}
                 onAgregarIdea={onAgregarIdea}
-                onAgregarPaquete={onAgregarPaquete && (() => onAgregarPaquete(p.id))}
+                onAgregarPaquete={onAgregarPaquete && ((idPaquete) => onAgregarPaquete(p.id, idPaquete))}
                 onAgregarIdeas={onAgregarIdeas && (() => onAgregarIdeas(p.id))}
+                onElegir={onElegir}
               />
             </li>
           ))}

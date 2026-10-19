@@ -242,7 +242,7 @@ const personasDemo = (fotos) => [
   { id: 'per1', nombre: 'María', relacion: 'hermanos', genero: 'Femenino', presupuesto: '50a100', gustos: { cat_geek: { geek_q1: 'Demon Slayer', geek_q2: 'Nezuko' } },
     eventos: [{ id: 'e1', tipo: 'Cumpleaños', fecha: '1998-10-20' }],
     festivas: [{ nombre: 'Navidad', fecha: '0000-12-25' }],
-    paquete: { total: 84.8, productos: fotos.slice(0, 2).map((f, k) => ({ nombre: f.nombre, imagen: f.imagen, precio: [49.9, 34.9][k], url: '/producto/x' })), quitados: 1 },
+    paquetes: [{ id: 'pq1', total: 84.8, productos: fotos.slice(0, 2).map((f, k) => ({ id: `pp${k}`, nombre: f.nombre, imagen: f.imagen, precio: [49.9, 34.9][k], url: '/producto/x', necesitaOpciones: k === 1 })), quitados: 1 }],
     ideas: ideasDe(fotos, 1) },
   { id: 'per2', nombre: 'Carlos', relacion: 'pareja', genero: 'Masculino',
     eventos: [{ id: 'e2', tipo: 'Cumpleaños', fecha: '0000-03-08' }, { id: 'e3', tipo: 'Aniversario', fecha: '2021-11-02' }],
@@ -544,7 +544,8 @@ export function CuentaDemo({
         onEliminar={(id) => { setPersonas((l) => l.filter((x) => x.id !== id)); avisar('Persona quitada', undefined, 'info'); }}
         onSubirFoto={async (archivo) => { await espera(700); return URL.createObjectURL(archivo); }}
         onAgregarIdea={(i) => avisar('Agregado al carrito', i.nombre)}
-        onAgregarPaquete={(id) => { setPersonas((l) => l.map((x) => (x.id === id ? { ...x, paquete: { ...x.paquete, agregado: true } } : x))); avisar('Paquete agregado al carrito'); }}
+        onAgregarPaquete={(id, idPaquete) => { setPersonas((l) => l.map((x) => (x.id === id ? { ...x, paquetes: x.paquetes.map((pq) => (pq.id === idPaquete ? { ...pq, agregado: true } : pq)) } : x))); avisar('Paquete agregado al carrito'); }}
+        onElegir={(i) => avisar('En la tienda', `Abriría Agregar rápido de ${i.nombre}`, 'info')}
         onAgregarIdeas={(id) => { setPersonas((l) => l.map((x) => (x.id === id ? { ...x, ideas: x.ideas.map((i) => ({ ...i, agregada: true })) } : x))); avisar('Ideas agregadas al carrito'); }}
       />
     );
