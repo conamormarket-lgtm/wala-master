@@ -4,6 +4,7 @@ import { IconoWala } from '../IconosWala';
 import { Enlace } from '../Enlace';
 import { colorDeGajo } from '../../../utils/ruletaModel';
 import { Texto, useTexto } from '../Traduccion';
+import { atributosDeFoto } from '../../../components/common/OptimizedImage/OptimizedImage';
 import s from './Ruleta.module.css';
 
 /*
@@ -108,7 +109,7 @@ export function RuedaRuleta({ premios = [], colores, colorAro = '#FFFFFF', color
       </svg>
       {/* El centro no gira: el logo (o la imagen del admin) se queda derecho. */}
       <span className={s.centro} style={{ '--aro': colorAro, '--puntero': colorPuntero }} aria-hidden="true">
-        {imagenCentro ? <img src={imagenCentro} alt="" className={s.centroImagen} /> : 'W'}
+        {imagenCentro ? <img {...atributosDeFoto(imagenCentro, '160px')} alt="" className={s.centroImagen} /> : 'W'}
       </span>
     </div>
   );

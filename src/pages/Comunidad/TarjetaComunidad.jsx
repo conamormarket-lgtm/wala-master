@@ -6,6 +6,7 @@ import { listarComunidad } from '../../services/comunidad';
 import { fondoColorGuardado } from '../../utils/prendaBase';
 import { useAlternarFotos } from '../../hooks/useAlternarFotos';
 import { useAlVerUnaVez } from '../../hooks/useAlVerUnaVez';
+import { atributosDeFoto, SIZES_TARJETA_PRODUCTO } from '../../components/common/OptimizedImage/OptimizedImage';
 import styles from '../cuenta/MisCreacionesPage.module.css';
 import duo from '../Crear/TarjetaMiCombo.module.css';
 import propios from './Comunidad.module.css';
@@ -66,15 +67,15 @@ const TarjetaComunidad = ({ diseno }) => {
             <span className={`${duo.prendas} ${visto ? duo.saludo : ''} ${verEspalda ? duo.verDetras : ''}`} style={{ '--n': fotosCombo.length }}>
               {fotosCombo.map((f, i) => (
                 <span key={`${f.src}-${i}`} className={duo.prenda}>
-                  <img src={f.src} alt="" loading="lazy" />
-                  {f.espalda && <img src={f.espalda} alt="" loading="lazy" className={duo.detras} />}
+                  <img {...atributosDeFoto(f.src, '240px')} alt="" loading="lazy" />
+                  {f.espalda && <img {...atributosDeFoto(f.espalda, '240px')} alt="" loading="lazy" className={duo.detras} />}
                 </span>
               ))}
             </span>
           ) : frente ? (
             <>
-              <img src={frente} alt={diseno.nombre} className={styles.fotoFrente} loading="lazy" />
-              {espalda && <img src={espalda} alt="" aria-hidden="true" className={styles.fotoEspalda} loading="lazy" />}
+              <img {...atributosDeFoto(frente, SIZES_TARJETA_PRODUCTO)} alt={diseno.nombre} className={styles.fotoFrente} loading="lazy" />
+              {espalda && <img {...atributosDeFoto(espalda, SIZES_TARJETA_PRODUCTO)} alt="" aria-hidden="true" className={styles.fotoEspalda} loading="lazy" />}
             </>
           ) : (
             <span className={styles.fotoVacia}><ImageOff size={34} aria-hidden="true" /></span>

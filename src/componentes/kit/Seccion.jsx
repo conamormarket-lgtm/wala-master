@@ -4,6 +4,7 @@ import Boton from './Boton';
 import { Enlace } from './Enlace';
 import { useTexto } from './Traduccion';
 import { EtiquetaColgante, Garabatos, Trazo } from './Marca';
+import { urlDeFondo } from '../../components/common/OptimizedImage/OptimizedImage';
 import s from './Seccion.module.css';
 
 /**
@@ -57,7 +58,7 @@ export function BloqueSeccion({ ajustes = {}, ancho = 'contenido', pegado = fals
           {backgroundImageUrl && (
             <span
               className={s.fondoImagen}
-              style={{ backgroundImage: `url("${backgroundImageUrl}")`, filter: backgroundBlur ? `blur(${parseFloat(backgroundBlur) || 0}px)` : undefined }}
+              style={{ backgroundImage: `url("${urlDeFondo(backgroundImageUrl)}")`, filter: backgroundBlur ? `blur(${parseFloat(backgroundBlur) || 0}px)` : undefined }}
             />
           )}
           {backgroundOverlay && <span style={{ background: backgroundOverlay }} />}

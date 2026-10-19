@@ -5,6 +5,7 @@ import { Campo } from '../Formulario';
 import { Sello } from '../Marca';
 import { Avatar } from './Avatar';
 import { Texto, useTexto } from '../Traduccion';
+import { atributosDeFoto } from '../../../components/common/OptimizedImage/OptimizedImage';
 import s from './Opiniones.module.css';
 
 /*
@@ -115,7 +116,7 @@ export function TarjetaOpinion({ autor, fecha, puntuacion = 5, texto, fotos = []
         <div className={s.fotos}>
           {fotos.map((f, i) => (
             <button key={f} type="button" className={s.foto} onClick={() => onFoto?.(f)} aria-label={`Ver la foto ${i + 1}`}>
-              <img src={f} alt="" loading="lazy" />
+              <img {...atributosDeFoto(f, '120px')} alt="" loading="lazy" />
             </button>
           ))}
         </div>

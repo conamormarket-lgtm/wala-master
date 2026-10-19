@@ -76,6 +76,9 @@ const CARPETAS_FETCH = new Set([
     'productos', 'productos_v2', 'reconvertidas', 'storefront', 'brands', 'brand_nav',
     'categories', 'collections', 'link_pages', 'mockups', 'rewards', 'sorteos',
     'sorteos_suscripcion', 'config', 'cliparts', 'product_reviews',
+    // Copias públicas de los diseños que publica el admin (functions/comunidad.js),
+    // no los originales de designs/.
+    'comunidad',
 ]);
 
 const carpetaDeStorage = (url) => {
@@ -108,6 +111,13 @@ export const fuentesPorFetch = (src, sizes) => (fetchActivo() && sePuedeTraerPor
 /** Para esparcir en una <img> propia: por fetch si se puede, si no la URL tal cual. */
 export const atributosDeFoto = (url, sizes) => fuentesPorFetch(url, sizes) || { src: url };
 
+/**
+ * Una sola URL, para un fondo CSS (`background-image` no tiene srcSet). Ojo:
+ * un fondo que falla no avisa, así que aquí no hay vuelta a Storage foto por
+ * foto; sí se apaga con las demás si fetch empieza a fallar en la visita.
+ */
+export const urlDeFondo = (url, ancho = 1600) => (fetchActivo() && sePuedeTraerPorFetch(url) ? urlPorFetch(url, ancho) : url);
+
 // De una URL de fetch, la de Storage que lleva dentro.
 const urlOriginal = (urlFetch) => decodeURIComponent(urlFetch.slice(urlFetch.indexOf('/', BASE_FETCH.length) + 1));
 
@@ -132,9 +142,24 @@ if (typeof window !== 'undefined') {
             });
         }
         img.removeAttribute('srcset');
+        img.dataset.volvioDeFetch = '1';
         img.src = urlOriginal(pedida);
     }, true);
 }
+
+/**
+ * Para el onError de una <img> que oculta la foto o pone otra al fallar: el
+ * primer fallo por fetch no cuenta (la red de seguridad ya volvió a la de
+ * Storage); si la de Storage también falla, ahí sí se llama a `alFallar`.
+ */
+export const siFallaDeVerdad = (alFallar) => (evento) => {
+    const img = evento.currentTarget;
+    if (img?.dataset?.volvioDeFetch === '1') {
+        delete img.dataset.volvioDeFetch;
+        return;
+    }
+    alFallar(evento);
+};
 
 /**
  * srcSet a partir del mapa de variantes que devuelve uploadFile

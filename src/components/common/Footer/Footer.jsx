@@ -6,6 +6,7 @@ import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorCont
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import { esAppNativa } from '../../../utils/vistaPreviaCalor';
 import { empresa } from '../../../config/empresa';
+import { atributosDeFoto } from '../OptimizedImage/OptimizedImage';
 import styles from './Footer.module.css';
 import { T } from '../../../i18n/useTranslatedText';
 import { PieLegal } from '../../../componentes/kit/piezas/Marco';
@@ -162,7 +163,7 @@ const Footer = () => {
         if (!s.url?.trim()) break;
         content = (
           <div style={{ textAlign: 'center', margin: '2rem 0' }}>
-            <img src={s.url} alt={s.alt} style={{ maxWidth: '100%', height: 'auto', maxHeight: '200px' }} />
+            <img {...atributosDeFoto(s.url, '600px')} alt={s.alt} style={{ maxWidth: '100%', height: 'auto', maxHeight: '200px' }} />
           </div>
         );
         break;

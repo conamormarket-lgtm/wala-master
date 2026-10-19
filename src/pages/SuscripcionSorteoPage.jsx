@@ -40,6 +40,7 @@ import {
   formatoPrecioUsd,
 } from '../services/suscripcionSorteos';
 import { CulqiSuscripcionButton, PaypalSuscripcionButtons } from './suscripcion/PagoSuscripcion';
+import { atributosDeFoto, siFallaDeVerdad } from '../components/common/OptimizedImage/OptimizedImage';
 import styles from './SuscripcionSorteoPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
@@ -67,10 +68,10 @@ function ImgFallback({ src, alt, className }) {
   return (
     <img
       className={className}
-      src={error || !src ? PLACEHOLDER_IMG : src}
+      {...(error || !src ? { src: PLACEHOLDER_IMG } : atributosDeFoto(src, '400px'))}
       alt={alt}
       loading="lazy"
-      onError={() => setError(true)}
+      onError={siFallaDeVerdad(() => setError(true))}
     />
   );
 }
@@ -280,11 +281,11 @@ const SuscripcionSorteoPage = () => {
         {/* HERO ----------------------------------------------------------- */}
         <section className={styles.hero}>
           {campaign.heroImagenUrl && (
-            <img className={styles.heroBg} src={campaign.heroImagenUrl} alt="" aria-hidden="true" />
+            <img className={styles.heroBg} {...atributosDeFoto(campaign.heroImagenUrl, '100vw')} alt="" aria-hidden="true" />
           )}
           <div className={styles.heroInner}>
             {campaign.logoUrl && (
-              <img className={styles.heroLogo} src={campaign.logoUrl} alt={`Logo ${campaign.titulo}`} />
+              <img className={styles.heroLogo} {...atributosDeFoto(campaign.logoUrl, '200px')} alt={`Logo ${campaign.titulo}`} />
             )}
             <h1 className={styles.heroTitle}>{campaign.titulo}</h1>
             {campaign.descripcion && <p className={styles.heroDesc}>{campaign.descripcion}</p>}

@@ -3,6 +3,7 @@ import { ArrowDown, Package, Tag, LayoutGrid } from 'lucide-react';
 import Boton from '../Boton';
 import { Trazo, Puntos, Destello } from '../Marca';
 import { toDirectImageUrl } from '../../../utils/imageUrl';
+import { atributosDeFoto } from '../../../components/common/OptimizedImage/OptimizedImage';
 import { iniciales } from './Avatar';
 import { FotoProducto } from './FotoProducto';
 import s from './PortadaMarca.module.css';
@@ -37,12 +38,12 @@ export function PortadaMarca({
   ].filter(Boolean);
   const sticker = (grande) => (
     <span className={[s.logo, grande && s.logoGrande].filter(Boolean).join(' ')}>
-      {logo ? <img src={toDirectImageUrl(logo)} alt={grande ? '' : `Logo de ${nombre}`} loading="eager" decoding="async" /> : <strong>{iniciales(nombre) || '?'}</strong>}
+      {logo ? <img {...atributosDeFoto(toDirectImageUrl(logo), '200px')} alt={grande ? '' : `Logo de ${nombre}`} loading="eager" decoding="async" /> : <strong>{iniciales(nombre) || '?'}</strong>}
     </span>
   );
   return (
     <section className={[s.portada, s[`p_${tipo}`]].join(' ')} data-componente="PortadaMarca" aria-label={nombre}>
-      {tipo === 'foto' && <img className={s.fondo} src={toDirectImageUrl(imagen)} alt="" loading="eager" decoding="async" />}
+      {tipo === 'foto' && <img className={s.fondo} {...atributosDeFoto(toDirectImageUrl(imagen), '100vw')} alt="" loading="eager" decoding="async" />}
       <span className={s.adornos} aria-hidden="true">
         <Puntos className={s.puntos} />
         <Destello className={s.destello1} />

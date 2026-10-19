@@ -20,6 +20,7 @@ import TarjetaMiCombo from './Crear/TarjetaMiCombo';
 import { esMiCombo, agruparCombos } from '../services/misCombos';
 import { useEliminarMiCombo } from './Crear/useEliminarMiCombo';
 import { useVersionesReemplazadas } from './Crear/useVersionesReemplazadas';
+import { atributosDeFoto, SIZES_TARJETA_PRODUCTO } from '../components/common/OptimizedImage/OptimizedImage';
 import styles from './PersonalizarPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
@@ -43,8 +44,8 @@ const TarjetaPrenda = ({ prenda }) => {
     <Link to={`/crear/${prenda.id}`} className={styles.tarjeta}>
       <div ref={fotoRef} className={`${styles.foto} ${verEspalda ? styles.fotoConEspalda : ''}`}>
         {prenda.visible === false && <span className={styles.borrador}>Borrador</span>}
-        {frente && <img src={frente} alt={prenda.name} className={styles.fotoFrente} loading="lazy" />}
-        {espalda && <img src={espalda} alt="" aria-hidden="true" className={styles.fotoEspalda} loading="lazy" />}
+        {frente && <img {...atributosDeFoto(frente, SIZES_TARJETA_PRODUCTO)} alt={prenda.name} className={styles.fotoFrente} loading="lazy" />}
+        {espalda && <img {...atributosDeFoto(espalda, SIZES_TARJETA_PRODUCTO)} alt="" aria-hidden="true" className={styles.fotoEspalda} loading="lazy" />}
         {frente && espalda && (
           <span className={styles.puntosFoto} aria-hidden="true">
             <span className={`${styles.puntoFoto} ${!verEspalda ? styles.puntoFotoActivo : ''}`} />
@@ -100,7 +101,7 @@ const TarjetaCombo = ({ combo, prendas }) => {
         <span ref={fotoRef} className={`${styles.prendasCombo} ${visto ? styles.saludo : ''}`} style={{ '--n': prendas.length }}>
           {prendas.map((p, i) => {
             const img = leerPrendaBase(p).vistas[0]?.imagen || p.mainImage;
-            return img ? <img key={`${p.id}-${i}`} src={img} alt="" aria-hidden="true" loading="lazy" /> : null;
+            return img ? <img key={`${p.id}-${i}`} {...atributosDeFoto(img, '240px')} alt="" aria-hidden="true" loading="lazy" /> : null;
           })}
         </span>
         <span className={styles.lados}><Users size={12} aria-hidden="true" /> {prendas.length} prendas</span>

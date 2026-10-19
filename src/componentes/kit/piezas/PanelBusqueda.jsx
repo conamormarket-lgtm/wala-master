@@ -7,6 +7,7 @@ import { soles } from '../TarjetaProducto';
 import { FotoProducto } from './FotoProducto';
 import { LogoMarca } from './LogoMarca';
 import { Texto, useTexto } from '../Traduccion';
+import { atributosDeFoto } from '../../../components/common/OptimizedImage/OptimizedImage';
 import s from './PanelBusqueda.module.css';
 
 // El historial vive aparte: la cabecera lo usa siempre y este panel baja solo al abrirlo.
@@ -59,7 +60,7 @@ export function ChipsBusqueda({ items = [], tipo = 'idea' }) {
           >
             {tipo === 'reciente' && <Clock aria-hidden="true" />}
             {tipo === 'idea' && <Search aria-hidden="true" />}
-            {tipo === 'afinar' && it.imagen && <img src={it.imagen} alt="" loading="lazy" decoding="async" className={s.chipFoto} />}
+            {tipo === 'afinar' && it.imagen && <img {...atributosDeFoto(it.imagen, '64px')} alt="" loading="lazy" decoding="async" className={s.chipFoto} />}
             {/* Lo que escribiste antes va tal cual; las ideas y categorías, traducidas. */}
             <span className={s.chipTexto}>{tipo === 'reciente' ? it.texto : <Texto>{it.texto}</Texto>}</span>
             {it.cuenta != null && <span className={s.chipCuenta}>{it.cuenta}</span>}
@@ -261,7 +262,7 @@ export function PanelBusqueda({
                     {categorias.map((c) => (
                       <li key={c.id}>
                         <Enlace to={c.url} className={`${s.chip} ${s.chip_afinar}`} onClick={onNavegar}>
-                          {c.imagen && <img src={c.imagen} alt="" loading="lazy" decoding="async" className={s.chipFoto} />}
+                          {c.imagen && <img {...atributosDeFoto(c.imagen, '64px')} alt="" loading="lazy" decoding="async" className={s.chipFoto} />}
                           <span className={s.chipTexto}><Texto>{c.nombre}</Texto></span>
                           {c.cuenta != null && <span className={s.chipCuenta}>{c.cuenta}</span>}
                         </Enlace>

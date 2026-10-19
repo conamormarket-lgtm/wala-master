@@ -16,6 +16,7 @@ import { GaleriaProducto } from '../piezas/GaleriaProducto';
 import { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra, BarraCompra, useAgregado, IconoAgregar } from '../piezas/Ficha';
 import { OpcionesProducto, tallasDe, verVariantes } from '../piezas/OpcionesProducto';
 import { Estrellas, ResumenOpiniones, TarjetaOpinion, FormularioOpinion } from '../piezas/Opiniones';
+import { atributosDeFoto } from '../../../components/common/OptimizedImage/OptimizedImage';
 import s from './Producto.module.css';
 
 /*
@@ -234,7 +235,7 @@ export function PaginaProducto({
         <div className={s.cabeza}>
           {producto.marca && (
             <Enlace to={producto.marca.url} className={s.marca}>
-              {producto.marca.logo && <img src={producto.marca.logo} alt="" />}
+              {producto.marca.logo && <img {...atributosDeFoto(producto.marca.logo, '64px')} alt="" />}
               {producto.marca.nombre}
             </Enlace>
           )}
@@ -383,7 +384,7 @@ export function PaginaProducto({
                   <span className={s.rotulo}><Texto>Fotos de clientes</Texto></span>
                   <div className={s.tiraFotos}>
                     {conFotos.map((f, i) => (
-                      <button key={`${f}-${i}`} type="button" onClick={() => setFotoCliente(f)} aria-label={`Ver la foto ${i + 1}`}><img src={f} alt="" loading="lazy" /></button>
+                      <button key={`${f}-${i}`} type="button" onClick={() => setFotoCliente(f)} aria-label={`Ver la foto ${i + 1}`}><img {...atributosDeFoto(f, '120px')} alt="" loading="lazy" /></button>
                     ))}
                   </div>
                 </div>
@@ -425,7 +426,7 @@ export function PaginaProducto({
       )}
 
       <HojaInferior abierta={Boolean(fotoCliente)} onCerrar={() => setFotoCliente(null)} titulo="Foto de un cliente">
-        {fotoCliente && <img className={s.fotoGrande} src={fotoCliente} alt="" />}
+        {fotoCliente && <img className={s.fotoGrande} {...atributosDeFoto(fotoCliente, '100vw')} alt="" />}
       </HojaInferior>
     </>
   );

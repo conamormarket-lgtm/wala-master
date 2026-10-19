@@ -9,7 +9,7 @@ import { LogoMarca } from './piezas/LogoMarca';
 import { iniciales } from './piezas/Avatar';
 import { EsqueletoProducto } from './Esqueletos';
 import { tarjetaDesdeProducto } from './adaptadores';
-import { fuentesPorFetch } from '../../components/common/OptimizedImage/OptimizedImage';
+import { fuentesPorFetch, siFallaDeVerdad, urlDeFondo } from '../../components/common/OptimizedImage/OptimizedImage';
 import s from './TarjetaProducto.module.css';
 
 // Formato peruano: separador de miles y 2 decimales (S/ 1,250.00).
@@ -49,7 +49,7 @@ function FotoTarjeta({ src, srcSet, sizes, recorte, respaldo, prioridad = false,
       // En minúsculas: React 18 no conoce fetchPriority y lo dejaba como aviso.
       {...(prioridad ? { fetchpriority: 'high' } : {})}
       decoding="async"
-      onError={() => { if (!fallo && respaldo && respaldo !== src) setFallo(true); }}
+      onError={siFallaDeVerdad(() => { if (!fallo && respaldo && respaldo !== src) setFallo(true); })}
     />
   );
   if (!recorteValido(recorte)) return img;
@@ -62,7 +62,7 @@ const estiloFondo = (fondo) => {
   const capa = fondo.color && fondo.imagen ? colorConTransparencia(fondo.color, 1 - (fondo.opacidad ?? 100) / 100) : null;
   return {
     backgroundColor: fondo.color || 'transparent',
-    backgroundImage: fondo.imagen ? `${capa ? `linear-gradient(${capa}, ${capa}), ` : ''}url(${fondo.imagen})` : 'none',
+    backgroundImage: fondo.imagen ? `${capa ? `linear-gradient(${capa}, ${capa}), ` : ''}url(${urlDeFondo(fondo.imagen, 800)})` : 'none',
     backgroundSize: 'cover',
     backgroundPosition: 'center',
   };

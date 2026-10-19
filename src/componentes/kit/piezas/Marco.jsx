@@ -8,6 +8,7 @@ import { HojaInferior } from '../Feedback';
 import { useBloquearScroll, useCerrarConAtras } from '../Efectos';
 import { EtiquetaColgante } from '../Marca';
 import { Texto, useTexto } from '../Traduccion';
+import { atributosDeFoto } from '../../../components/common/OptimizedImage/OptimizedImage';
 import s from './Marco.module.css';
 
 /*
@@ -234,7 +235,7 @@ function AnuncioImagen({ abierta, onCerrar, imagen, titulo, onAccion, contenida 
               <X aria-hidden="true" />
             </button>
             <button type="button" className={s.anuncioImagen} onClick={onAccion}>
-              <img src={imagen} alt={titulo || ''} />
+              <img {...atributosDeFoto(imagen, '600px')} alt={titulo || ''} />
             </button>
           </motion.div>
         </motion.div>
@@ -264,7 +265,7 @@ export function VentanaCampana({
   return (
     <HojaInferior abierta={abierta} onCerrar={onCerrar} contenida={contenida} titulo={tituloTraducido}>
       <div className={s.campana}>
-        {imagen && <div className={s.campanaFoto}><img src={imagen} alt="" /></div>}
+        {imagen && <div className={s.campanaFoto}><img {...atributosDeFoto(imagen, '600px')} alt="" /></div>}
         {antetitulo && <EtiquetaColgante tamano="sm"><Texto>{antetitulo}</Texto></EtiquetaColgante>}
         {texto && <p className={s.campanaTexto}><Texto>{texto}</Texto></p>}
         <div className={s.campanaAcciones}>

@@ -9,6 +9,7 @@ import { TextoResaltado } from './TextoResaltado';
 import CuentaRegresiva from '../CuentaRegresiva';
 import { Avatar } from './Avatar';
 import { FotoProducto } from './FotoProducto';
+import { atributosDeFoto } from '../../../components/common/OptimizedImage/OptimizedImage';
 import s from './Sorteos.module.css';
 
 /*
@@ -144,7 +145,7 @@ export function TarjetaPlan({ nombre, intervalo, precio, precioUsd, alMes, chanc
 export function TarjetaAliado({ marca, titulo, descuento, ubicacion, imagen, url }) {
   const cuerpo = (
     <>
-      <span className={s.aliadoLogo}>{imagen ? <img src={imagen} alt="" loading="lazy" /> : <Avatar nombre={marca} />}</span>
+      <span className={s.aliadoLogo}>{imagen ? <img {...atributosDeFoto(imagen, '96px')} alt="" loading="lazy" /> : <Avatar nombre={marca} />}</span>
       <span className={s.aliadoTexto}>
         <small className={s.aliadoMarca}>{marca}</small>
         <strong><Texto>{titulo}</Texto></strong>

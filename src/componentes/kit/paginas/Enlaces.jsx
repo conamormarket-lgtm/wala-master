@@ -11,6 +11,7 @@ import { Avatar } from '../piezas/Avatar';
 import { RedesEnlaces, BotonEnlace } from '../piezas/Campanas';
 import { Texto, useTexto } from '../Traduccion';
 import { construirFondoStyle, estiloBotonStyle } from '../../../services/linkThemes';
+import { atributosDeFoto, siFallaDeVerdad } from '../../../components/common/OptimizedImage/OptimizedImage';
 import s from './Enlaces.module.css';
 
 /* ── Una página de enlaces (/l/:slug) ───────────────────── */
@@ -79,7 +80,7 @@ export function PaginaEnlaces({ pagina = {}, onClic, urlCompartir, estado }) {
       </button>
       <div className={s.enlacesColumna}>
         {pagina.avatar && !sinFoto
-          ? <img src={pagina.avatar} alt="" className={s.enlacesAvatar} onError={() => setSinFoto(true)} />
+          ? <img {...atributosDeFoto(pagina.avatar, '160px')} alt="" className={s.enlacesAvatar} onError={siFallaDeVerdad(() => setSinFoto(true))} />
           : <Avatar nombre={pagina.titulo} className={s.enlacesAvatar} />}
         {pagina.titulo && <h1 className={s.enlacesTitulo}><Texto>{pagina.titulo}</Texto></h1>}
         {pagina.descripcion && <p className={s.enlacesTexto}><Texto>{pagina.descripcion}</Texto></p>}

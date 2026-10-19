@@ -8,6 +8,7 @@ import { Avatar } from './Avatar';
 import { HojaCalendario, textoFaltan } from './Regalos';
 import { CARAS_KAPI } from './Flotantes';
 import { Texto } from '../Traduccion';
+import { atributosDeFoto, siFallaDeVerdad } from '../../../components/common/OptimizedImage/OptimizedImage';
 import s from './Regalar.module.css';
 
 /*
@@ -34,7 +35,7 @@ export function TarjetaRegalo({ producto = {}, regalado = false, disponible = tr
     return (
       <div className={s.noDisponible} data-componente="TarjetaRegalo">
         {producto.imagen && !sinFoto
-          ? <img src={producto.imagen} alt="" loading="lazy" decoding="async" onError={() => setSinFoto(true)} />
+          ? <img {...atributosDeFoto(producto.imagen, '240px')} alt="" loading="lazy" decoding="async" onError={siFallaDeVerdad(() => setSinFoto(true))} />
           : <PackageX aria-hidden="true" />}
         <strong><Texto>{producto.nombre}</Texto></strong>
         <span><Texto>Ya no está en la tienda.</Texto></span>

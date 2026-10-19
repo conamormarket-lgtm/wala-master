@@ -3,7 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { Enlace } from '../Enlace';
 import { EtiquetaColgante } from '../Marca';
 import { toDirectImageUrl } from '../../../utils/imageUrl';
-import { atributosDeFoto } from '../../../components/common/OptimizedImage/OptimizedImage';
+import { atributosDeFoto, urlDeFondo } from '../../../components/common/OptimizedImage/OptimizedImage';
 import { iniciales } from './Avatar';
 import s from './TarjetaMarca.module.css';
 
@@ -36,7 +36,7 @@ export function TarjetaMarca({ marca, indice = 0, estilo = 'editorial', mostrarN
         '--marca-color': estilo === 'uniform' ? '#6d28d9' : marca.color || color,
         '--marca-suave': suave,
         backgroundImage: marca.fondo && estilo === 'editorial'
-          ? `linear-gradient(120deg, rgba(15,23,42,.86), rgba(15,23,42,.34)), url("${toDirectImageUrl(marca.fondo)}")`
+          ? `linear-gradient(120deg, rgba(15,23,42,.86), rgba(15,23,42,.34)), url("${urlDeFondo(toDirectImageUrl(marca.fondo), 1200)}")`
           : undefined,
       }}
       aria-label={`Explorar ${marca.nombre}`}

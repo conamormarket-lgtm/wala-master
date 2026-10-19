@@ -6,6 +6,7 @@ import { Trazo } from '../Marca';
 import { Enlace } from '../Enlace';
 import { Texto, useTexto } from '../Traduccion';
 import { TextoResaltado } from './TextoResaltado';
+import { atributosDeFoto, siFallaDeVerdad } from '../../../components/common/OptimizedImage/OptimizedImage';
 import s from './Campanas.module.css';
 
 /*
@@ -88,7 +89,7 @@ export function RedesEnlaces({ redes = [], onClic }) {
         const Icono = ICONOS_RED[r.tipo] || Link2;
         return (
           <Enlace key={r.id || r.url} to={r.url} className={s.red} aria-label={r.nombre || r.tipo} title={r.nombre || r.tipo} onClick={() => onClic?.(r)}>
-            {r.icono ? <img src={r.icono} alt="" /> : <Icono aria-hidden="true" />}
+            {r.icono ? <img {...atributosDeFoto(r.icono, '64px')} alt="" /> : <Icono aria-hidden="true" />}
           </Enlace>
         );
       })}
@@ -106,7 +107,7 @@ export function BotonEnlace({ titulo, url, imagen, estilo, onClic }) {
   const [rota, setRota] = useState(false);
   return (
     <Enlace to={url} className={s.botonEnlace} style={estilo} onClick={onClic} data-componente="BotonEnlace">
-      {imagen && !rota ? <img src={imagen} alt="" className={s.botonImagen} onError={() => setRota(true)} /> : <span className={s.botonHueco} aria-hidden="true" />}
+      {imagen && !rota ? <img {...atributosDeFoto(imagen, '96px')} alt="" className={s.botonImagen} onError={siFallaDeVerdad(() => setRota(true))} /> : <span className={s.botonHueco} aria-hidden="true" />}
       <span className={s.botonTexto}><Texto>{titulo}</Texto></span>
       <span className={s.botonHueco} aria-hidden="true" />
     </Enlace>
