@@ -168,6 +168,23 @@ export const CartProvider = ({ children }) => {
   // mismos escribimos, se ignora (no re-hidratar ni re-escribir en bucle).
   const lastCartJsonRef = useRef(null);
 
+  // Avisos que deciden los updaters de setItems. No se muestran ahí: React
+  // corre esos updaters DURANTE el render de CartProvider (y en desarrollo dos
+  // veces), y un toast en ese momento actualiza ProveedorToasts en pleno render
+  // ("Cannot update a component while rendering a different component"). Se
+  // guardan por clave -la segunda pasada pisa la primera en vez de repetir el
+  // aviso- y el efecto de abajo los muestra apenas se confirma el cambio.
+  const avisosRef = useRef(new Map());
+  const avisar = React.useCallback((clave, tipo, mensaje, duracion) => {
+    avisosRef.current.set(clave, { tipo, mensaje, duracion });
+  }, []);
+  useEffect(() => {
+    if (avisosRef.current.size === 0) return;
+    const pendientes = [...avisosRef.current.values()];
+    avisosRef.current.clear();
+    pendientes.forEach(({ tipo, mensaje, duracion }) => toast[tipo](mensaje, duracion));
+  }, [items, toast]);
+
   // Guardar carrito en localStorage cuando cambie y en Firestore si el usuario está logueado
   useEffect(() => {
     const serializado = JSON.stringify(items);
@@ -231,17 +248,6 @@ export const CartProvider = ({ children }) => {
   // de reemplazar — así un invitado que agrega algo y LUEGO inicia sesión no
   // pierde lo que acaba de agregar aquí.
   const restoredUidRef = useRef(null);
-  // Cuántas líneas de la nube entraron sin marcar; el aviso sale una vez, fuera
-  // del updater de setItems (que React puede correr dos veces).
-  const avisoNubeRef = useRef(0);
-  useEffect(() => {
-    const n = avisoNubeRef.current;
-    if (!n) return;
-    avisoNubeRef.current = 0;
-    toast.info(n === 1
-      ? 'Tu cuenta tenía 1 producto guardado: quedó en tu carrito para otra vez.'
-      : `Tu cuenta tenía ${n} productos guardados: quedaron en tu carrito para otra vez.`, 6000);
-  }, [items, toast]);
   useEffect(() => {
     // Al cerrar sesión se olvida: quien vuelve a entrar en la misma pestaña (sin
     // recargar) también recupera lo que tenía guardado.
@@ -278,7 +284,10 @@ export const CartProvider = ({ children }) => {
           //    esta compra, queda para otra vez. Con el carrito local vacío (entrar
           //    desde otro dispositivo) se restaura tal como estaba guardado.
           if (propios.length === 0) return consolidarDuplicados(nuevosDeLaNube);
-          avisoNubeRef.current = nuevosDeLaNube.length;
+          const n = nuevosDeLaNube.length;
+          avisar('nube', 'info', n === 1
+            ? 'Tu cuenta tenía 1 producto guardado: quedó en tu carrito para otra vez.'
+            : `Tu cuenta tenía ${n} productos guardados: quedaron en tu carrito para otra vez.`, 6000);
           return consolidarDuplicados([
             ...propios,
             ...nuevosDeLaNube.map((remoto) => ({ ...remoto, selected: false })),
@@ -288,7 +297,7 @@ export const CartProvider = ({ children }) => {
         console.warn('No se pudo restaurar el carrito guardado en la nube:', err);
       }
     })();
-  }, [uid]);
+  }, [uid, avisar]);
 
   // ── Multi-pestaña: re-hidratar el carrito cuando OTRA pestaña lo cambie ────
   // El evento 'storage' solo se dispara en las demás pestañas (no en la que
@@ -343,7 +352,7 @@ export const CartProvider = ({ children }) => {
             setItems((prev) => {
               const remaining = prev.filter((i) => i.webOrderId !== webOrderId);
               if (remaining.length < prev.length) {
-                toast.success('✅ Tu pedido fue aprobado y confirmado. ¡Gracias!');
+                avisar(`aprobado:${webOrderId}`, 'success', '✅ Tu pedido fue aprobado y confirmado. ¡Gracias!');
               }
               return remaining;
             });
@@ -370,7 +379,7 @@ export const CartProvider = ({ children }) => {
         delete listenersRef.current[webOrderId];
       }
     });
-  }, [items, toast]);
+  }, [items, avisar]);
 
   // Limpiar todos los listeners al desmontar el provider
   useEffect(() => {
@@ -550,15 +559,15 @@ export const CartProvider = ({ children }) => {
           }
           return selectOnly ? { ...it, selected: false } : it;
         });
-        if (!options.silent) toast.success(`Se agregaron ${quantity} unidades de ${product.name} a tu carrito`);
+        if (!options.silent) avisar(itemId, 'success', `Se agregaron ${quantity} unidades de ${product.name} a tu carrito`);
         return updated;
       } else {
-        if (!options.silent) toast.success(`Se agregó ${product.name} a tu carrito`);
+        if (!options.silent) avisar(itemId, 'success', `Se agregó ${product.name} a tu carrito`);
         const base = selectOnly ? prev.map(it => ({ ...it, selected: false })) : prev;
         return [...base, cartItem];
       }
     });
-  }, [toast]);
+  }, [avisar]);
 
   const removeFromCart = React.useCallback((itemId) => {
     setItems(prev => prev.filter(item => item.id !== itemId));
