@@ -16,7 +16,7 @@ Revisado el 2026-10-13 contra wala.pe/minijuegos (visitante y con sesión) y
 `src/pages/Minijuegos/MinijuegosPage.jsx`. No es una página del builder: es
 contenido propio (P).
 
-## Partes (P3: `PaginaMinijuegos`)
+## Partes (P3: `PaginaMinijuegos`, en `paginas/Minijuegos.jsx`)
 
 | Parte | Componente | Piezas que usa | Diseño en | Datos (en la tienda) | Quién la ve |
 |---|---|---|---|---|---|
@@ -51,7 +51,7 @@ juego ya hecho como disponible).
 | `Encabezado` | "Zona Arcade" (y `header` del builder: "Tienda Completa") | `SeccionesContenido.module.css` |
 | `Boton` | todos los botones | `Boton.module.css` |
 
-## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
+## Llevar a la tienda (hecho el 2026-10-19: ver "En la tienda" al final)
 
 Página propia: va en el paso 6 de [MIGRACION.md](MIGRACION.md) (páginas que
 no son del builder). Mantener al día si cambia un componente o su forma de
@@ -125,14 +125,55 @@ recibir datos.
 
 ### Pasos (cada uno se verifica solo y se puede volver atrás)
 
-1. Dentro de `MinijuegosPage`, armar `juegosDelArcade(...)` con los datos de
-   arriba y cambiar `JuegoCard` por `TarjetaJuego`. Probar cada estado con el
-   modo diseño (`?sesion=activa&moneda=reclamada&ruleta=girada…`), visitante y
-   modo noche.
-2. Cambiar el encabezado por `Encabezado` + el estado (o usar
-   `PaginaMinijuegos` completa dentro de `ArcadeShell`).
-3. Cuando el marco se migre (paso 2 y 7 de MIGRACION.md), la página queda
-   dentro de `MarcoTienda`.
+1. ✓ y 2. ✓ (juntos, 2026-10-19): `PaginaMinijuegos` completa, con
+   `juegosDelArcade`, fuera de `ArcadeShell` (que sigue en los juegos).
+3. ✓ La página ya va dentro del marco de la tienda (cabecera y barra del kit).
+
+## En la tienda (2026-10-19)
+
+| Escritorio (con sesión, Kapi ya alimentado) | Celular en inglés y oscuro |
+|---|---|
+| ![La Zona Arcade en la tienda](minijuegos-tienda.webp) | ![La Zona Arcade en inglés, modo noche](minijuegos-ingles-oscuro.webp) |
+
+`pages/Minijuegos/MinijuegosPage.jsx` monta
+`components/minijuegos/MinijuegosDeTienda.jsx`, que arma `juegosDelArcade`
+(`adaptadoresArcade.js`) y dibuja `PaginaMinijuegos` (`paginas/Minijuegos.jsx`).
+La página de antes (`MinijuegosViejo.jsx`) baja solo con el interruptor
+`minijuegosViejo` (`useLoViejo('minijuegos')`: en Firestore
+`minijuegosViejo: true`; en localStorage, `"minijuegos"`).
+
+**Lo mismo que antes:** el día de Lima, la moneda de Kapi, el doble del reto
+semanal, las bolitas, la ruleta (`getRuletaEligibility`), la palabra
+(`getMiPartidaDeHoy`), la misión `visit_minijuegos`, "Reclamar moneda" que
+abre a Kapi (o el toast si ya reclamó), los botones "Cargando…" mientras se
+resuelve la sesión y el modo diseño con su aviso.
+
+**Lo que cambia (además de las diferencias a propósito de arriba):**
+
+- La sesión anónima (la de algunas landings) ya no cuenta como cuenta
+  (`tieneCuenta`), como en el resto de la tienda.
+- "Inicia sesión" lleva el destino en `?redirect=`.
+- Las ilustraciones tienen copias de 640 y 800 px (`/assets/kapi/banners/*-640.webp`,
+  `*-800.webp`) con `srcSet`; la primera carga de inmediato
+  (`prioridad`, `fetchpriority="high"`) y todas reservan su alto. En una
+  pantalla de densidad 2 baja la de 800 (34 KB en vez de 55); en una de 3,
+  la de 1000 de siempre.
+- Sin la entrada escalonada (`Stagger`): las tarjetas salen de una.
+- Todo pasa por la traducción.
+- `PaginaMinijuegos` y `juegosDelArcade` en archivos propios
+  (`paginas/Minijuegos.jsx`, `adaptadoresArcade.js`): no van en el archivo
+  principal.
+
+**Carga:** la página baja 10,7 KB (4,4 KB gzip) + 2,4 KB de CSS; antes,
+12,1 KB + 8,4 KB de CSS más `ArcadeShell`. El archivo principal no cambia.
+
+**Probado** con los emuladores: sin sesión (un aviso y los cuatro "Inicia
+sesión"), con el modo diseño todo hecho y los cinco estados de la ruleta
+(comparados con la página de antes), con una cuenta real: la misión al
+entrar, "Reclamar moneda" abre a Kapi, alimentarlo paga la moneda (30 → 31) y
+la tarjeta pasa a "Hecho hoy" con su cuenta atrás, el toast al tocar
+"Reclamado hoy"; cargando; a 1366 y 390, en claro, oscuro e inglés; el
+interruptor. **No probado:** la entrada desde la app (Capacitor).
 
 Para volver atrás: cada paso en su propio commit; `JuegoCard` no se borra
 hasta que `TarjetaJuego` lleve un tiempo en producción.

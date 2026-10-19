@@ -6,6 +6,7 @@ import { Aviso } from '../Feedback';
 import CuentaRegresiva from '../CuentaRegresiva';
 import { IconoWala } from '../IconosWala';
 import { BarraProgreso } from './BarraProgreso';
+import { Texto, useTexto } from '../Traduccion';
 import s from './TarjetaJuego.module.css';
 
 /* Botón según lo que se puede hacer: el violeta lleno es siempre "jugar". */
@@ -24,6 +25,7 @@ const ICONOS_NOTA = { bloqueo: <Lock aria-hidden="true" />, hecho: <Check aria-h
  * le pasa lo que ya calcula (juegosDelArcade arma todo desde el perfil).
  *
  *  - imagen: banner ilustrado; llena su marco (en blanco y negro si `bloqueada`)
+ *  - srcSet: sus copias por ancho · prioridad: la que se ve al llegar (carga ya)
  *  - titulo, descripcion
  *  - estado: { texto, tono, punto } → Etiqueta sobre el banner
  *  - recompensa: { texto, icono? } → GananciaMonedas (icono: nombre de
@@ -36,28 +38,47 @@ const ICONOS_NOTA = { bloqueo: <Lock aria-hidden="true" />, hecho: <Check aria-h
  *    → CuentaRegresiva en frase ("Disponible de nuevo en 7 h 56 min")
  *  - atenuada: ya jugada hoy; bloqueada: todavía no es tuya
  */
-export function TarjetaJuego({ imagen, titulo, descripcion, estado, recompensa, racha, nota, accion, espera, atenuada = false, bloqueada = false }) {
+export function TarjetaJuego({ imagen, srcSet, prioridad = false, titulo, descripcion, estado, recompensa, racha, nota, accion, espera, atenuada = false, bloqueada = false }) {
   const boton = accion ? ACCIONES[accion.tipo] || ACCIONES.jugar : null;
+  const t = {
+    racha: useTexto(racha?.texto || 'Días reclamados'),
+    espera: useTexto(espera && typeof espera === 'object' ? espera.texto || 'Disponible de nuevo en' : undefined),
+    listo: useTexto('¡Ya está disponible!'),
+  };
   return (
     <article className={[s.juego, atenuada && s.atenuada, bloqueada && s.bloqueada].filter(Boolean).join(' ')}>
       <div className={s.banner}>
         <div className={s.bannerRecorte}>
-          {imagen && <img src={imagen} alt="" loading="lazy" decoding="async" draggable={false} />}
+          {imagen && (
+            <img
+              src={imagen}
+              srcSet={srcSet}
+              // Una columna en el celular; dos desde 640 px de ancho.
+              sizes={srcSet ? '(max-width: 680px) calc(100vw - 2rem), 530px' : undefined}
+              alt=""
+              width="1000"
+              height="667"
+              loading={prioridad ? 'eager' : 'lazy'}
+              fetchpriority={prioridad ? 'high' : undefined}
+              decoding="async"
+              draggable={false}
+            />
+          )}
         </div>
         {estado?.texto && (
           <span className={s.estado}>
-            <Etiqueta tono={estado.tono || 'violeta'} punto={estado.punto} sobreFoto>{estado.texto}</Etiqueta>
+            <Etiqueta tono={estado.tono || 'violeta'} punto={estado.punto} sobreFoto><Texto>{estado.texto}</Texto></Etiqueta>
           </span>
         )}
       </div>
 
       <div className={s.cuerpo}>
-        <h2 className={s.titulo}>{titulo}</h2>
-        {descripcion && <p className={s.descripcion}>{descripcion}</p>}
+        <h2 className={s.titulo}><Texto>{titulo}</Texto></h2>
+        {descripcion && <p className={s.descripcion}><Texto>{descripcion}</Texto></p>}
 
         {recompensa?.texto && (
           <span className={s.recompensa}>
-            <GananciaMonedas icono={recompensa.icono ? <IconoWala nombre={recompensa.icono} tamano={18} /> : undefined}>{recompensa.texto}</GananciaMonedas>
+            <GananciaMonedas icono={recompensa.icono ? <IconoWala nombre={recompensa.icono} tamano={18} /> : undefined}><Texto>{recompensa.texto}</Texto></GananciaMonedas>
           </span>
         )}
 
@@ -66,7 +87,7 @@ export function TarjetaJuego({ imagen, titulo, descripcion, estado, recompensa, 
             pasos
             valor={racha.dias}
             max={racha.de || 7}
-            etiqueta={racha.texto || 'Días reclamados'}
+            etiqueta={t.racha}
           />
         )}
 
@@ -76,13 +97,13 @@ export function TarjetaJuego({ imagen, titulo, descripcion, estado, recompensa, 
 
         {accion && (
           <div className={s.accion}>
-            <Boton bloque to={boton.disabled ? undefined : accion.url} onClick={accion.onClick} {...boton}>{accion.texto}</Boton>
+            <Boton bloque to={boton.disabled ? undefined : accion.url} onClick={accion.onClick} {...boton}><Texto>{accion.texto}</Texto></Boton>
           </div>
         )}
 
         {espera && (
           <p className={s.espera}>
-            {typeof espera === 'string' ? espera : <CuentaRegresiva variante="frase" hasta={espera.hasta} etiqueta={espera.texto || 'Disponible de nuevo en'} textoFin="¡Ya está disponible!" />}
+            {typeof espera === 'string' ? <Texto>{espera}</Texto> : <CuentaRegresiva variante="frase" hasta={espera.hasta} etiqueta={t.espera} textoFin={t.listo} />}
           </p>
         )}
       </div>

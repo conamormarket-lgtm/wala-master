@@ -17,7 +17,7 @@ export { ProveedorTraduccion, useTexto, useHtml, Texto } from './Traduccion';
 export { default as Desplegable } from './Desplegable';
 export { MenuTienda, MenuMarcas, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito } from './MenusCabecera';
 export { default as AgregarRapido } from './AgregarRapido';
-export { accionDeProducto, tarjetaDesdeProducto, esNuevo, opcionesDeProducto, rutaDeMarca, tarjetaDesdeMarca, testimonioDesdeAjuste, precioEfectivo, limitesDePrecio, esTemporada, gruposDeCatalogo, grillaDesdeConfiguracion, juegosDelArcade, kapiDesdePerfil, retoDesdePerfil,
+export { accionDeProducto, tarjetaDesdeProducto, esNuevo, opcionesDeProducto, rutaDeMarca, tarjetaDesdeMarca, testimonioDesdeAjuste, precioEfectivo, limitesDePrecio, esTemporada, gruposDeCatalogo, grillaDesdeConfiguracion, kapiDesdePerfil, retoDesdePerfil,
   sugerenciasDesdeBusqueda, grupoModalidad, ORDENES_BUSQUEDA, ordenarProductos, perfilDesdeUsuario, direccionDesdeFirestore, direccionAFirestore,
   recompensaDesdeFirestore, cuponDesdeFirestore, misionDesdeServidor, creacionDesdeDiseno, personaDesdeRecipient, personaARecipient,
   prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaCreacionDesde, prendaEstudioDesde,
@@ -70,3 +70,4 @@ export { PaginaPalabra, PaginaRuleta, PaginaBolitas } from './paginas/Juegos';
 export { PaginaSorteo, PaginaSuscripcionSorteo } from './paginas/Sorteos';
 export { PaginaSuscripciones, PaginaInvitacion, PaginaEnlaces } from './paginas/Campanas';
 export { encuestaDesdeConfig } from './adaptadoresEncuesta';
+export { juegosDelArcade, BANNERS_ARCADE } from './adaptadoresArcade';

@@ -1,10 +1,5 @@
 import React, { useMemo } from 'react';
-import { LogIn, Sparkles } from 'lucide-react';
-import Boton from '../Boton';
 import { Cabecera, BarraInferior } from '../Navegacion';
-import { Aviso } from '../Feedback';
-import { Encabezado } from '../SeccionesContenido';
-import { TarjetaJuego } from '../piezas/TarjetaJuego';
 import { BloqueSeccion } from '../Seccion';
 import { RenderSecciones } from '../Secciones';
 import { PiePagina } from '../SeccionesExtra';
@@ -141,52 +136,8 @@ export { PaginaCarrito } from './Carrito';
 
 /* ── Zona Arcade (/minijuegos) ─────────────────────────── */
 
-/**
- * Zona Arcade: el encabezado con el estado del día y las tarjetas de los
- * juegos. Va dentro de MarcoTienda, como el carrito.
- *  - juegos: props de TarjetaJuego (juegosDelArcade los arma desde el perfil)
- *  - listos: cuántos juegos quedan hoy
- *  - sesion, cargando: sin sesión, una invitación a entrar; cargando, "Cargando
- *    tu progreso…" (no se anuncia nada hasta saberlo)
- *  - titulo, subtitulo, urlLogin
- */
-export function PaginaMinijuegos({
-  juegos = [], listos = 0, sesion = false, cargando = false, urlLogin = '/login',
-  titulo = 'Zona Arcade', subtitulo = 'Cuatro juegos, una rutina diaria y premios que sí se canjean en tus compras.',
-}) {
-  // Cuántos juegos quedan: dato de la página, en texto (no en etiqueta).
-  let estado;
-  if (cargando) {
-    estado = <p className={s.arcadeListos} role="status"><Sparkles aria-hidden="true" />Cargando tu progreso…</p>;
-  } else if (sesion) {
-    estado = (
-      <p className={s.arcadeListos} role="status">
-        <Sparkles aria-hidden="true" />
-        {listos === 0 ? 'Ya hiciste todo por hoy. Vuelve mañana.' : <span><strong>{listos}</strong> {listos === 1 ? 'juego listo para hoy' : 'juegos listos para hoy'}</span>}
-      </p>
-    );
-  } else {
-    estado = (
-      <div className={s.arcadeEntrar}>
-        <Aviso titulo="Entra con tu cuenta" accion={<Boton to={urlLogin} icono={<LogIn aria-hidden="true" />}>Iniciar sesión</Boton>}>
-          Para reclamar monedas, guardar tu racha y girar la ruleta.
-        </Aviso>
-      </div>
-    );
-  }
-  return (
-    <>
-      <BloqueSeccion ajustes={{ paddingTop: '1.75rem', paddingBottom: '0.5rem' }}>
-        <Encabezado ajustes={{ title: titulo, subtitle: subtitulo }}>{estado}</Encabezado>
-      </BloqueSeccion>
-      <BloqueSeccion ajustes={{ paddingTop: '1rem', paddingBottom: '2.5rem' }}>
-        <ul className={s.juegos}>
-          {juegos.map((j) => <li key={j.id || j.titulo}><TarjetaJuego {...j} /></li>)}
-        </ul>
-      </BloqueSeccion>
-    </>
-  );
-}
+// La Zona Arcade vive en su propio archivo (baja solo con /minijuegos).
+export { PaginaMinijuegos } from './Minijuegos';
 
 /* ── Búsqueda (/buscar) ─────────────────────────────────── */
 

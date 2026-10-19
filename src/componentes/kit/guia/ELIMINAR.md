@@ -245,6 +245,16 @@ grupos del marco nuevo (`gruposDeCuenta.js`).
 |---|---|---|---|---|
 | `pages/SearchPageViejo.jsx` + `pages/SearchPage.module.css` (la página de antes: título, campo, barra con el `<select>`, Modalidad como `gruposExtra` y `SidebarCatalogLayout`) | `/buscar` | `components/busqueda/BusquedaDeTienda.jsx` → `PaginaBusqueda` del kit (`paginas/Busqueda.jsx`) | `pages/SearchPage.jsx` (lazy, solo con el interruptor `busquedaVieja`) | al retirar `busquedaVieja`; con ella, `SidebarCatalogLayout` pierde su último uso fuera de `seccionesViejo` |
 
+### La Zona Arcade (2026-10-19)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/Minijuegos/MinijuegosViejo.jsx` + `MinijuegosPage.module.css` (con `JuegoCard`) | `/minijuegos` | `components/minijuegos/MinijuegosDeTienda.jsx` → `PaginaMinijuegos` | `pages/Minijuegos/MinijuegosPage.jsx` (lazy, solo con `minijuegosViejo`) | al retirar `minijuegosViejo` |
+
+Se quedan: `ArcadeShell` (lo usan la palabra, la ruleta y las bolitas, hasta
+que migren: JUEGOS.md) y `Badge` / `Stagger` de `components/ui` (los usan
+otras páginas).
+
 ### Las legales (2026-10-19)
 
 | Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
