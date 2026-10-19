@@ -40,6 +40,13 @@ const recortar = (texto, max) => {
   return t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t;
 };
 
+/* El nombre y lo que da (al pasar el ratón por el gajo). */
+const descripcion = (p) => {
+  const nombre = String(p?.nombre || p?.etiqueta || p?.texto || '').trim();
+  const texto = String(p?.texto || '').trim();
+  return texto && texto !== nombre ? `${nombre} · ${texto}` : nombre;
+};
+
 /* El nombre de un gajo, traducido y recortado a lo que cabe. */
 function TextoGajo({ texto, max }) {
   return recortar(useTexto(texto), max);
@@ -48,11 +55,12 @@ function TextoGajo({ texto, max }) {
 /**
  * La rueda: un gajo por premio (en el orden que da el servidor), el aro, el
  * puntero fijo arriba y el centro con el logo.
- *  - premios: [{ id, nombre, etiqueta, color }] · colores (la paleta del admin)
- *  - colorAro, colorPuntero
+ *  - premios: [{ id, nombre, etiqueta, texto, color }] (sin nombre ni etiqueta,
+ *    el gajo dice el `texto`) · colores (la paleta del admin)
+ *  - colorAro, colorPuntero · imagenCentro: la del admin (si no, la W)
  *  - rotacion (grados, acumulada) · duracion (ms del giro; 0 = sin animar)
  */
-export function RuedaRuleta({ premios = [], colores, colorAro = '#FFFFFF', colorPuntero = '#6D28D9', rotacion = 0, duracion = 0 }) {
+export function RuedaRuleta({ premios = [], colores, colorAro = '#FFFFFF', colorPuntero = '#6D28D9', imagenCentro = '', rotacion = 0, duracion = 0 }) {
   const total = premios.length;
   const anguloGajo = total > 0 ? 360 / total : 360;
   const tamTexto = total <= 6 ? 8.4 : total <= 9 ? 7.2 : total <= 12 ? 6 : 5.2;
@@ -71,14 +79,14 @@ export function RuedaRuleta({ premios = [], colores, colorAro = '#FFFFFF', color
         viewBox="0 0 200 200"
         style={{ transform: `rotate(${rotacion}deg)`, transition: duracion > 0 ? `transform ${duracion}ms cubic-bezier(0.33, 1, 0.68, 1)` : 'none' }}
         role="img"
-        aria-label={total ? `${t.con}: ${premios.map((p) => p.nombre || p.etiqueta).join(', ')}` : t.sin}
+        aria-label={total ? `${t.con}: ${premios.map((p) => p.nombre || p.etiqueta || p.texto).join(', ')}` : t.sin}
       >
         <circle cx={CENTRO} cy={CENTRO} r={RADIO + 3} fill={colorAro} />
         {total === 0 && <circle cx={CENTRO} cy={CENTRO} r={RADIO} fill="var(--color-border)" />}
         {total === 1 && <circle cx={CENTRO} cy={CENTRO} r={RADIO} fill={colorDeGajo(premios[0], 0, 1, colores)} />}
         {total > 1 && premios.map((p, i) => (
           <path key={p.id || i} d={arcoGajo(RADIO, i * anguloGajo, (i + 1) * anguloGajo)} fill={colorDeGajo(p, i, total, colores)} stroke={colorAro} strokeWidth="0.7">
-            <title>{p.nombre || p.etiqueta}</title>
+            <title>{descripcion(p)}</title>
           </path>
         ))}
         {premios.map((p, i) => {
@@ -92,14 +100,16 @@ export function RuedaRuleta({ premios = [], colores, colorAro = '#FFFFFF', color
           return (
             <g key={`t-${p.id || i}`} transform={`rotate(${centroGajo} ${CENTRO} ${CENTRO})`}>
               <text x={CENTRO} y={y} transform={volteado ? `rotate(180 ${CENTRO} ${y})` : undefined} textAnchor="middle" fontSize={tamTexto} fill={color} className={s.etiqueta}>
-                <TextoGajo texto={p.etiqueta || p.nombre} max={maxCaracteres} />
+                <TextoGajo texto={p.etiqueta || p.nombre || p.texto} max={maxCaracteres} />
               </text>
             </g>
           );
         })}
       </svg>
-      {/* El centro no gira: el logo se queda derecho. */}
-      <span className={s.centro} style={{ '--aro': colorAro, '--puntero': colorPuntero }} aria-hidden="true">W</span>
+      {/* El centro no gira: el logo (o la imagen del admin) se queda derecho. */}
+      <span className={s.centro} style={{ '--aro': colorAro, '--puntero': colorPuntero }} aria-hidden="true">
+        {imagenCentro ? <img src={imagenCentro} alt="" className={s.centroImagen} /> : 'W'}
+      </span>
     </div>
   );
 }

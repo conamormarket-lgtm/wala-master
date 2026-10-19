@@ -8,7 +8,7 @@ import CuentaRegresiva from '../CuentaRegresiva';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { BarraProgreso } from '../piezas/BarraProgreso';
 import { CodigoCopiable } from '../piezas/Legales';
-import { MarcoJuego, AyudaJuego, PremioJuego, ResultadoJuego, compartirTexto } from '../piezas/Juegos';
+import { MarcoJuego, AyudaJuego, PremioJuego, ResultadoJuego, TextoResaltado, compartirTexto } from '../piezas/Juegos';
 import { RuedaRuleta, HistorialRuleta } from '../piezas/Ruleta';
 import { Texto, useTexto } from '../Traduccion';
 import { anguloDeParada } from '../../../utils/ruletaModel';
@@ -26,25 +26,28 @@ const SIN_HISTORIAL = [];
  *  - tema: { colores, colorAro, colorPuntero } · reglas: { vueltas, duracionGiroMs, modoDesbloqueo }
  *  - eleccion: { desbloqueada, girada, perdida, pendienteAnterior, dias }
  *  - historial: HistorialRuleta · hasta: ISO del próximo lunes (Lima)
- *  - onGirar(): promesa → { indice, premio: { tipo, texto, monedas }, cupon: { codigo, vence } }
- *    (si falla, lanza un Error con el mensaje para el cliente)
+ *  - onGirar(): promesa → { indice, total, premio: { tipo, texto, monedas }, cupon: { codigo, vence }, fecha }
+ *    (si falla, lanza un Error con el mensaje para el cliente). `total`: los
+ *    gajos de la rueda donde va a parar, si quien gira tuvo que cambiarla
+ *    (el premio no estaba en la rueda cargada)
  *  - onParar(r): cuando la rueda se detiene, con lo que dio onGirar; si
  *    devuelve una promesa (las monedas volando), la hoja no se cierra hasta
  *    que termine
  *  - sesion · estado: 'cargando' | 'cerrada' | 'preparacion' | 'error'
  *    (con onReintentar) · error: un aviso bajo la rueda
+ *  - resultadoInicial: lo de onGirar, para abrir la hoja sin girar (el modo diseño)
  *  - ayudaVista · onAyudaVista · urlLogin · urlCupones
  * Los textos pasan por la traducción.
  */
 export function PaginaRuleta({
   premios = [], tema = {}, reglas = {}, eleccion = {}, historial: historialInicial = SIN_HISTORIAL, hasta, onGirar, onParar, sesion = true,
-  estado, error: errorCarga, onReintentar, ayudaVista = true, onAyudaVista, urlLogin = '/login', urlCupones = '/cuenta/cupones',
+  estado, error: errorCarga, onReintentar, resultadoInicial = null, ayudaVista = true, onAyudaVista, urlLogin = '/login', urlCupones = '/cuenta/cupones',
 }) {
   const [rotacion, setRotacion] = useState(0);
   const [duracion, setDuracion] = useState(0);
   const [girando, setGirando] = useState(false);
-  const [ganado, setGanado] = useState(null);
-  const [abierto, setAbierto] = useState(false);
+  const [ganado, setGanado] = useState(resultadoInicial);
+  const [abierto, setAbierto] = useState(Boolean(resultadoInicial));
   const [entregando, setEntregando] = useState(false);
   const [historial, setHistorial] = useState(historialInicial);
   const [error, setError] = useState('');
@@ -69,6 +72,7 @@ export function PaginaRuleta({
   const t = {
     boton: useTexto(textoBoton),
     compartir: useTexto(premio?.texto ? `¡Gané ${premio.texto} en la Ruleta Semanal de Walá!` : undefined),
+    premio: useTexto(premio?.texto),
     vence: useTexto(ganado?.cupon?.vence ? `Válido hasta el ${ganado.cupon.vence}` : undefined),
     vuelve: useTexto('Vuelve el lunes, en'),
     otraSemana: useTexto('¡Ya empezó otra semana!'),
@@ -135,7 +139,7 @@ export function PaginaRuleta({
       const ms = reducir ? 600 : Math.max(1500, Math.min(10000, Number(reglas.duracionGiroMs) || 3500));
       const indice = Math.max(0, r?.indice ?? 0);
       setDuracion(ms);
-      setRotacion((actual) => actual - (actual % 360) + anguloDeParada(indice, premios.length, vueltas));
+      setRotacion((actual) => actual - (actual % 360) + anguloDeParada(indice, r?.total || premios.length, vueltas));
       temporizador.current = setTimeout(async () => {
         setGirando(false);
         setGanado(r);
@@ -170,7 +174,7 @@ export function PaginaRuleta({
                   </p>
                 </div>
               )}
-              <RuedaRuleta premios={premios} colores={tema.colores} colorAro={tema.colorAro} colorPuntero={tema.colorPuntero} rotacion={rotacion} duracion={duracion} />
+              <RuedaRuleta premios={premios} colores={tema.colores} colorAro={tema.colorAro} colorPuntero={tema.colorPuntero} imagenCentro={tema.imagenCentro} rotacion={rotacion} duracion={duracion} />
               {(errorCarga || error) && <Aviso tipo="error" compacto><Texto>{error || errorCarga}</Texto></Aviso>}
               <div className={s.controles}>
                 <Boton tamano="lg" bloque brillo={desbloqueada && !girada && !girando} cargando={girando} disabled={!desbloqueada || girada || girando} onClick={girar}>
@@ -193,7 +197,13 @@ export function PaginaRuleta({
         titulo={nada ? '¡Casi!' : '¡Felicidades!'}
         tituloHoja="Tu giro"
         imagen={nada ? CARAS_KAPI.triste : CARAS_KAPI.feliz}
-        texto={<p>{nada ? <Texto>{premio?.texto || 'Esta vez no salió premio.'}</Texto> : <><Texto>Ganaste</Texto> <strong><Texto>{premio?.texto}</Texto></strong>.</>}</p>}
+        texto={(
+          <p>
+            {nada
+              ? <Texto>{premio?.texto || 'Esta vez no salió premio.'}</Texto>
+              : <TextoResaltado resaltar={[t.premio]}>{`Ganaste ${premio?.texto || ''}.`}</TextoResaltado>}
+          </p>
+        )}
         acciones={(
           <>
             {!nada && (

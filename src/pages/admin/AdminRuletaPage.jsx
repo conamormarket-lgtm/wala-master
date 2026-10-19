@@ -24,7 +24,8 @@ import {
   normalizarPremio, premiosDeHoy, sumaProbabilidades, textoPremio,
 } from '../../utils/ruletaModel';
 import { limaTodayStr, limaDayOfWeek } from '../../utils/fechaLima';
-import RuedaRuleta from '../../components/ruleta/RuedaRuleta';
+// La rueda del kit, la misma que ve el cliente en /ruleta (JUEGOS.md).
+import { RuedaRuleta } from '../../componentes/kit/piezas/Ruleta';
 import BuscadorProducto from '../../components/admin/BuscadorProducto/BuscadorProducto';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import styles from './AdminRuletaPage.module.css';
