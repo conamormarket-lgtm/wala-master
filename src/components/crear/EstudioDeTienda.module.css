@@ -394,7 +394,7 @@
 }
 @media (max-width: 768px) {
   .studio.studio { padding: calc(env(safe-area-inset-top, 0px) + .6rem) .75rem 0; background: var(--color-bg); }
-  .studio > [data-avisos-estudio] { max-height: 100px; overflow: auto; }
+  .studio > [data-avisos-estudio] { flex-shrink: 0; }
   .enfoque > [data-avisos-estudio] { display: none; }
   .cuerpo.cuerpo { min-height: 0; margin: 0 -.75rem; gap: .75rem; }
   .panel.panel { padding: .75rem 0; border: none; border-radius: 0; background: none; }

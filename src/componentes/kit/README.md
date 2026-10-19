@@ -137,7 +137,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 
 ## Qué hay
 
-El estudio está migrando con Fabric: `paginas/MarcoEstudio.jsx` comparte la
+El estudio está en la tienda con Fabric (2026-10-19): `paginas/MarcoEstudio.jsx` comparte la
 cabeza, los huecos del lienzo y panel y `InicioLienzoEstudio` entre la demo
 y la tienda. `piezas/CompraEstudio.jsx` y `piezas/HojasEstudio.jsx` comparten
 la compra y las hojas controladas; `ControlesEstudio.jsx` traduce las
@@ -237,7 +237,8 @@ P12 y los pasos en marcha.
 | `piezas/TarjetaJuego.jsx` | `TarjetaJuego` (`srcSet`, `prioridad`; traducida) | Tarjeta de un minijuego: banner, estado, recompensa, racha, nota, botón y cuenta atrás (recibe datos; `juegosDelArcade` los arma) |
 | `adaptadoresArcade.js` | `juegosDelArcade`, `BANNERS_ARCADE` (las ilustraciones con sus copias de 640 y 800 px) | La Zona Arcade; aparte de `adaptadores.js` para no ir en el archivo principal. **Ya en la tienda** (`components/minijuegos/MinijuegosDeTienda.jsx`, 2026-10-19) |
 | `adaptadoresCrear.js` | `prendaCrearDesdeProducto`, `comboCrearDesde`, `disenoComunidadDesde`, `fichaCreacionDesde` | Crear, la comunidad y una creación; aparte de `adaptadores.js` para no ir en el archivo principal (`prendaEstudioDesde` sigue allí). **Ya en la tienda** (`components/crear/`, con `components/cuenta/useTarjetasCreaciones.js` para las tarjetas de tus creaciones) |
-| `paginas/Crear.jsx`, `Comunidad.jsx`, `VerDiseno.jsx`, `Creacion.jsx`, `Combo.jsx` | `PaginaCrear`, `PaginaComunidad`, `PaginaVerDiseno`, `PaginaCreacion` (`combo.onIr`, `estadoEditar`, `eliminar.notas`, `comunidad.onActualizar`), `PaginaCombo` (`preparando`, `estadoEnlaces`, `comunidad.onActualizar`, galería con `pieza` y "Todo el combo") | Crear y lo que sale de ahí (guía: `guia/CREAR.md`). **Ya en la tienda** (`components/crear/`, interruptor `crearViejo`); el estudio, todavía no |
+| `paginas/Crear.jsx`, `Comunidad.jsx`, `VerDiseno.jsx`, `Creacion.jsx`, `Combo.jsx` | `PaginaCrear`, `PaginaComunidad`, `PaginaVerDiseno`, `PaginaCreacion` (`combo.onIr`, `estadoEditar`, `eliminar.notas`, `comunidad.onActualizar`), `PaginaCombo` (`preparando`, `estadoEnlaces`, `comunidad.onActualizar`, galería con `pieza` y "Todo el combo") | Crear y lo que sale de ahí (guía: `guia/CREAR.md`). **Ya en la tienda** (`components/crear/`, interruptor `crearViejo`), incluido el estudio con Fabric |
+| `paginas/MarcoEstudio.jsx`, `piezas/CompraEstudio.jsx`, `HojasEstudio.jsx`, `ControlesEstudio.jsx`, `adaptadoresEstudio.js` | marco controlado, inicio del lienzo, compra, talla, guardar, guardada, login y controles traducidos; adaptación de medidas sin cambiar capas persistidas | La demo y `components/crear/EstudioDeTienda.jsx`; el kit recibe datos y acciones, sin Firestore ni Fabric |
 | `piezas/LogoMarca.jsx` | `LogoMarca` | Logo de una marca: `sticker` (con nombre) o `sello` (círculo chico girado) |
 | `piezas/Flotantes.jsx` | `PilaFlotante` (`ocultarEnCelular` en páginas con botón fijo abajo; la capa es el contenedor de la píldora), `BotonWhatsApp`, `KapiFlotante`, `CARAS_KAPI` y `CARAS_KAPI_MINI` (las caras de Kapi 3D: la fuente única del kit), `PildoraRecompensa` (`onIr`) | Lo que flota sobre la página (sobre la barra inferior en el celular). **Ya en la tienda** (`components/marco/FlotantesDeLaTienda.jsx`) |
 | `piezas/Marco.jsx` | `AvisoSistema`, `BannerApp` (`onAccion`), `BarraAdmin` (`fija`: pegada y publica `--admin-bar-height`; `editarEn`), `PieLegal`, `AvisoIdioma` (`flotante`), `VentanaCampana` (`textoCerrar`), `BotonTema` | Lo que rodea a las secciones: avisos arriba, barra de admin, pie legal, ventanas. **Ya en la tienda** salvo `BotonTema` (`components/marco/`, paso 2 de MIGRACION.md) |

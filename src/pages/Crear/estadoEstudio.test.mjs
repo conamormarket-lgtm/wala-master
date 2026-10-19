@@ -32,5 +32,6 @@ test('reutilizar exige impresi√≥n de cada zona y vista previa de cada lado dise√
   assert.equal(archivosVigentes(creacion, capas, vistas), true);
   assert.equal(archivosVigentes({ ...creacion, archivosImpresion: creacion.archivosImpresion.slice(0, 1) }, capas, vistas), false);
   assert.equal(archivosVigentes({ ...creacion, vistasPrevias: [] }, capas, vistas), false);
+  assert.equal(archivosVigentes({ ...creacion, vistasPrevias: {} }, capas, vistas), false);
   assert.equal(archivosVigentes(null, capas, vistas), false);
 });

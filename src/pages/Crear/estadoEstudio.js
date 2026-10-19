@@ -30,7 +30,7 @@ export const firmaBorrador = (capas, colorId, talla) => firma({ capas: capasPara
 
 /** No reutiliza una creación anterior con archivos incompletos o sin URLs. */
 export function archivosVigentes(creacion, capas, vistas) {
-  if (!creacion?.imagenConjunta) return false;
+  if (!creacion?.imagenConjunta || !Array.isArray(creacion.archivosImpresion) || !Array.isArray(creacion.vistasPrevias)) return false;
   let hayDiseno = false;
   return vistas.every((vista) => {
     const zonas = vista.zonas.filter((z) => capas[z.id]?.length);

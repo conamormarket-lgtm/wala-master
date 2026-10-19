@@ -254,8 +254,8 @@ creación lleva ahí) y **Ver diseño**, cada una con sus estados.
 ### P12 · El estudio (`paginas/Estudio.jsx`)
 
 Donde se diseña una prenda: el color, la zona y una imagen o un texto. En la
-tienda el lienzo que se arrastra es fabric.js (`CrearStudioPage`, ~3.900
-líneas); en el kit el diseño vive en el estado de la página y
+tienda el lienzo que se arrastra es fabric.js (`EstudioDeTienda`, separado
+de `CrearStudioPage`, que solo elige la versión); en la demo del kit el diseño vive en el estado de la página y
 **`LienzoPrenda`** lo dibuja con CSS, así se ve y se prueba todo lo demás.
 Las piezas están en `piezas/Estudio.jsx`:
 
@@ -452,7 +452,7 @@ fondo" usa el motor real de la tienda. En "Estados" están agotada, en
 borrador, editando un borrador, el borrador que no se guardó y el diseño
 que aún llega.
 
-## Llevar a la tienda (hecho el 2026-10-19 menos el estudio: ver "En la tienda" al final)
+## Llevar a la tienda (hecho el 2026-10-19: ver "En la tienda" al final)
 
 Va en el paso 6 de [MIGRACION.md](MIGRACION.md), después de Mis creaciones,
 porque comparten `TarjetaCreacion`.
@@ -581,7 +581,7 @@ alrededor, por partes.
 
 ### Pasos
 
-**Estudio en marcha (2026-10-19).** Primer paso: `CrearStudioPage` elige
+**Estudio migrado (2026-10-19).** Primer paso: `CrearStudioPage` elige
 `components/crear/EstudioDeTienda` o `CrearStudioViejo` con
 `useLoViejo('crear')`; ambos se cargan con `lazy`. El respaldo conserva el
 estudio anterior completo. Este primer paso solo separa las dos versiones;
@@ -594,8 +594,7 @@ capas y la guía de gestos ya son las piezas del kit. `adaptadoresEstudio.js`
 convierte solo los valores de los controles (alto de letra y ancho de
 imagen), conservando las escalas originales y el formato `layersByView`.
 Los textos de estas piezas pasan por la traducción. Las fotos que se están
-subiendo no permiten recortar ni quitar fondo. La cabeza y las ventanas
-siguen pendientes del siguiente paso.
+subiendo no permiten recortar ni quitar fondo.
 
 Tercer paso: la cabeza y la composición (`MarcoEstudio`), el inicio sobre
 la prenda, la compra (`CompraEstudio`) y las hojas (`HojasEstudio`) se
@@ -620,12 +619,18 @@ lisos y crear desde una plantilla). Completar un lado liso todavía puede
 cargarlo cuando sea necesario. Las secciones del builder importan piezas
 directas; `PasoEstudio` vive aparte para no adelantar el editor al inicio.
 
+Quinto paso: pruebas con los emuladores, capturas y cierre de esta guía.
+El lienzo móvil reserva altura para las herramientas, los avisos completos
+y el panel. Los comandos discretos del panel asientan el historial antes
+de actuar, conservando un paso de deshacer por comando. Si una creación
+antigua trae listas de archivos mal formadas, se regeneran al comprar.
+
 1. ✓ Hacer los adaptadores con los datos reales y comparar las tarjetas.
 2. ✓ Cambiar la portada y la grilla (prendas y combos) por las del kit.
 3. ✓ Cambiar las tres filas por las del kit (después de Mis creaciones).
    Con Crear pasaron también la Comunidad, Ver diseño, una creación y el
    combo (2026-10-19, un commit por página).
-4. El estudio (P12), aparte: lo más delicado.
+4. ✓ El estudio (P12), por los cinco pasos anteriores, con Fabric.
 5. Borrar `PersonalizarPage.module.css` cuando lleve un tiempo en
    producción.
 
@@ -639,6 +644,14 @@ directas; `PasoEstudio` vive aparte para no adelantar el editor al inicio.
 |---|---|
 | ![Una creación con su talla, Agregar y Comprar ahora](creacion-tienda-celular.webp) | ![Todo el combo: una prenda diseñada y otra en blanco](combo-tienda-celular.webp) |
 
+| Estudio · celular claro (390 × 844) | Estudio · celular oscuro (390 × 844) |
+|---|---|
+| ![El estudio del kit con una creación guardada](estudio-tienda-celular-claro.jpg) | ![El mismo estudio en modo oscuro](estudio-tienda-celular-oscuro.jpg) |
+
+| Estudio · escritorio claro (1366 × 900) | Estudio · escritorio oscuro (1366 × 900) |
+|---|---|
+| ![Estudio con Fabric en escritorio](estudio-tienda-escritorio-claro.jpg) | ![Estudio con Fabric en escritorio oscuro](estudio-tienda-escritorio-oscuro.jpg) |
+
 Las páginas (`pages/PersonalizarPage.jsx`, `pages/Comunidad/ComunidadPage.jsx`,
 `pages/Crear/VerDisenoPage.jsx`, `CreacionPage.jsx` y `ComboCrearPage.jsx`)
 montan `components/crear/CrearDeTienda.jsx`, `ComunidadDeTienda.jsx`,
@@ -646,8 +659,9 @@ montan `components/crear/CrearDeTienda.jsx`, `ComunidadDeTienda.jsx`,
 antes (`PersonalizarViejo`, `ComunidadViejo`, `VerDisenoViejo`,
 `CreacionViejo` y `ComboCrearViejo`) baja solo con el interruptor
 `crearViejo` (`useLoViejo('crear')`: en Firestore `crearViejo: true`; en
-localStorage, `"crear"`). **El estudio (`/crear/:id`) sigue con la página de
-antes** (se ve después).
+localStorage, `"crear"`). El estudio (`/crear/:id`) monta
+`EstudioDeTienda.jsx`; con ese mismo interruptor carga `CrearStudioViejo.jsx`
+(la página anterior íntegra, sin cambios).
 
 **Lo que comparten.** Los adaptadores de Crear (`prendaCrearDesdeProducto`,
 `comboCrearDesde`, `disenoComunidadDesde`, `fichaCreacionDesde`) viven en
@@ -746,3 +760,70 @@ comprar un combo de la comunidad de punta a punta (los diseños sembrados no
 traen capas en el emulador: "no tiene diseño", igual en la página de antes),
 publicar / actualizar / retirar como admin, las capturas de escritorio (el
 panel no las toma nítidas a 1366) y la app (Capacitor).
+
+### Estudio: cierre de la migración (2026-10-19)
+
+`CrearStudioPage` solo decide qué versión montar; el conector
+`components/crear/EstudioDeTienda.jsx` conserva consultas, borrador,
+historial, selección, gestos, stock, carrito y render de Fabric. La demo
+sigue con su lienzo CSS. Ambas usan el mismo `MarcoEstudio`,
+`CompraEstudio`, `HojasEstudio` y piezas del panel; el kit recibe props y
+acciones, sin leer Firestore. El recorte y quitar fondo se cargan al abrir
+sus hojas. Se mantiene el motor `fondoPixeles`.
+
+**Cloudinary.** Se conserva el uso actual de `OptimizedImage` para entregar
+fotos públicas: `image/fetch`, formato y calidad automáticos, tamaños
+adaptables y vuelta a la URL original si falla. Los archivos privados de
+`designs/{uid}/crear` y las fuentes de impresión siguen por Storage.
+`generarArchivosCreacion.js` comparte la generación del estudio y las
+plantillas: PNG por zona, vista previa por lado diseñado y composición de
+todos los lados, siempre desde los originales. No se cambiaron reglas,
+funciones ni el servicio de subida.
+
+**Medición comparable** contra `dfb0f06b`, mismo `.env`, compilación Vite
+con manifiesto y sourcemaps. Bytes gzip del archivo principal; para rutas,
+JS + CSS de su grafo de imports estáticos, descontando lo inicial:
+
+| Carga | Antes | Ahora |
+|---|---:|---:|
+| Archivo principal JS | 207.398 B | 207.207 B |
+| Estudio (incluye Fabric) | 172.049 B | 168.253 B |
+| Combo (sin adelantar Fabric) | 131.616 B | 34.509 B |
+
+Son tamaños de archivos, no tiempos de red. Un combo que deba completar
+la foto de un lado liso o generar una plantilla cargará Fabric al
+necesitarlo. La página de demostración del estudio no entra en la tienda.
+
+**Verificado en `demo-wala` (emuladores):**
+
+- Interfaz a 390 × 844 y 1366 × 900, claro y oscuro; lienzo, avisos,
+  compra fija, panel y hojas utilizables. Capturas arriba.
+- Texto en Fabric, imagen subida a Storage, recorte aplicado, apertura de
+  quitar fondo con sus herramientas y calidad / "Dejarla nítida".
+- Guardar con nombre y miniatura real; creación con PNG de impresión,
+  vista previa y composición. Descarga recibida por el navegador.
+- Invitado → guardar → login → misma prenda y texto; autoguardado del
+  borrador al volver. Reabrir el borrador sin cambios no escribió de nuevo
+  (comparado `updateTime` del documento).
+- Talla M → carrito; comprar sin editar conservó las URLs de impresión,
+  vistas previas y composición (comparadas en Firestore).
+- Selección de dos capas, duplicar y deshacer en un paso. Combo → estudio
+  con `?combo=&pieza=` → guardar con copia en la otra prenda → combo con
+  dos diseños listos; reabrir mediante `?copiar=` conserva el diseño y la
+  vuelta al mismo `?mio=`.
+- Prenda inexistente: estado de error con regreso a prendas. `crearViejo`
+  carga los controles anteriores y, al apagarlo, vuelve el kit. El archivo
+  del respaldo es idéntico al original (`git hash-object`: `bee0d53c…`).
+- Demo del estudio montada con el marco compartido; inicio y Crear siguen
+  mostrando las imágenes públicas por Cloudinary con sus `srcset`.
+- Siete pruebas de adaptadores, firmas y vigencia de archivos; lint con
+  0 errores (131 avisos del repositorio); build de tienda y demo correcto.
+
+**Pendiente de validación:** gestos con dos dedos en un dispositivo real y
+Capacitor; inglés con el traductor del servicio; red interrumpida durante
+subida/guardado, todas las combinaciones de stock y bicolor y las acciones
+de publicación del admin. Quitar fondo se abrió con una imagen ya
+transparente: queda probar la edición de píxeles sobre una foto opaca.
+Se conserva el aviso visual de cambios; la página anterior tampoco tenía
+un bloqueo de navegación global al salir. No se hicieron cobros ni
+despliegues. Conservar los respaldos hasta validar en producción.

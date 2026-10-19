@@ -221,6 +221,7 @@ const EstudioDeTienda = () => {
   const [listo, setListo] = useState(false);
   const [anchoLienzo, setAnchoLienzo] = useState(0);
   const [altoVentana, setAltoVentana] = useState(() => (typeof window === 'undefined' ? 800 : window.innerHeight));
+  const [altoDisponibleLienzo, setAltoDisponibleLienzo] = useState(0);
   const [subiendo, setSubiendo] = useState(0);
   const [procesando, setProcesando] = useState(null);
   const [designId, setDesignId] = useState(designIdParam || null);
@@ -659,6 +660,10 @@ const EstudioDeTienda = () => {
       // Al enfocar un control con la prenda fija, desplazarlo debajo de
       // ella: scrollIntoView no debe dejarlo tapado por el propio lienzo.
       escena.parentElement.style.scrollPaddingTop = window.innerWidth <= 768 ? `${escena.offsetHeight + 12}px` : '';
+      // Con avisos o varias filas de herramientas, el lienzo deja espacio
+      // para al menos una parte utilizable del panel y para la compra fija.
+      const herramientas = escena.offsetHeight - (contenedorRef.current?.offsetHeight || 0);
+      setAltoDisponibleLienzo(window.innerWidth <= 768 ? Math.max(180, escena.parentElement.clientHeight - herramientas - 84 - 120) : 0);
     }
     if (window.innerWidth <= 768) {
       panel.style.maxHeight = '';
@@ -674,7 +679,7 @@ const EstudioDeTienda = () => {
       cuadro = requestAnimationFrame(() => { cuadro = 0; ajustarPanel(); });
     };
     const observador = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(programar);
-    [panelRef.current, areaLienzoRef.current, areaLienzoRef.current?.closest('[data-componente="PaginaEstudio"]')]
+    [panelRef.current, areaLienzoRef.current, areaLienzoRef.current?.parentElement, areaLienzoRef.current?.closest('[data-componente="PaginaEstudio"]')]
       .filter(Boolean).forEach((elemento) => observador?.observe(elemento));
     window.addEventListener('scroll', programar, { passive: true });
     window.addEventListener('resize', programar);
@@ -1634,7 +1639,7 @@ const EstudioDeTienda = () => {
         // arriba (título, avisos, pestañas) y lo de abajo (deshacer, ayuda):
         // con un 78 % fijo se pasaba del borde y había que bajar la página.
         const altoMax = window.innerWidth <= 768
-          ? Math.max(260, window.innerHeight * 0.47)
+          ? Math.max(180, Math.min(window.innerHeight * 0.47, altoDisponibleLienzo || window.innerHeight * 0.47))
           : Math.max(380, window.innerHeight
             - ((contenedorRef.current?.getBoundingClientRect().top || 0) + window.scrollY) - 110);
         const ancho = Math.min(anchoLienzo, Math.floor(altoMax / proporcion));
@@ -1744,7 +1749,7 @@ const EstudioDeTienda = () => {
       }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vista?.id, color?.id, anchoLienzo, altoVentana, version, listo]);
+  }, [vista?.id, color?.id, anchoLienzo, altoVentana, altoDisponibleLienzo, version, listo]);
 
   // ── Acciones ─────────────────────────────────────────────────────────────
   const centroDe = (z) => ({ left: UNIDADES_ZONA / 2, top: altoEnUnidades(z) / 2 });
@@ -3271,6 +3276,12 @@ const EstudioDeTienda = () => {
   }, [dialogoGuardar]);
 
   // ── Render ───────────────────────────────────────────────────────────────
+  // Los comandos discretos conservan el estado anterior antes de actuar;
+  // escribir o arrastrar sigue agrupándose con el debounce del historial.
+  const conPasoHistorial = (accion) => (...args) => {
+    asentarHistorial();
+    return accion(...args);
+  };
   if (isLoading || (cfg && !listo && disponible)) return <EsqueletoPagina forma="estudio" />;
   if (error || !prenda || !disponible || !cfg?.vistas.length) {
     return <EstadoVacio imagen={null} titulo={<Texto>{error ? 'No pudimos cargar la prenda' : 'Esta prenda no está disponible'}</Texto>}
@@ -3426,8 +3437,8 @@ const EstudioDeTienda = () => {
           <div ref={editorRef}>
             {multiIds.length > 1 ? (
               <PanelVarios cantidad={multiIds.length} mismaZona={Boolean(mismaZonaMulti)}
-                onListo={terminarEdicion} onAlinear={alinear} onDistribuir={distribuir}
-                onCentrar={centrar} onDuplicar={duplicar} onQuitar={eliminar} />
+                onListo={terminarEdicion} onAlinear={conPasoHistorial(alinear)} onDistribuir={conPasoHistorial(distribuir)}
+                onCentrar={conPasoHistorial(centrar)} onDuplicar={conPasoHistorial(duplicar)} onQuitar={conPasoHistorial(eliminar)} />
             ) : capaSel && (
               <PanelCapa
                 capa={capaEstudioDesde(capaSel, UNIDADES_ZONA)} zona={zonaSel?.nombre}
@@ -3441,11 +3452,11 @@ const EstudioDeTienda = () => {
                 onListo={terminarEdicion} calidad={calidad} onNitida={dejarNitida}
                 anchoZonaCm={medidaSel?.anchoCm} puntosPorZona={UNIDADES_ZONA} fueraDeZona={fueraDeZona}
                 sinSesion={!user} subiendo={Boolean(capaSel.subiendo)}
-                onCentrar={centrar} onAlinear={alinear} onQuitar={eliminar}
-                onDuplicar={duplicar} onAdelante={() => mover(true)} onAtras={() => mover(false)}
+                onCentrar={conPasoHistorial(centrar)} onAlinear={conPasoHistorial(alinear)} onQuitar={conPasoHistorial(eliminar)}
+                onDuplicar={conPasoHistorial(duplicar)} onAdelante={conPasoHistorial(() => mover(true))} onAtras={conPasoHistorial(() => mover(false))}
                 onRecortar={() => setRecortando(capaSel.id)} onQuitarFondo={() => setQuitandoFondo(capaSel.id)}
-                onLlenar={ajustarAZona} zonas={zonasPrenda.filter((z) => z.id !== zonaSel?.id)}
-                onPasarAZona={(zId) => moverAZona(zonaPorId(zId))}
+                onLlenar={conPasoHistorial(ajustarAZona)} zonas={zonasPrenda.filter((z) => z.id !== zonaSel?.id)}
+                onPasarAZona={conPasoHistorial((zId) => moverAZona(zonaPorId(zId)))}
                 onImagen={elegirImagen} onTexto={() => agregarTexto(undefined, { editar: true })}
               />
             )}

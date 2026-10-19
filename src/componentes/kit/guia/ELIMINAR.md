@@ -1,11 +1,21 @@
 # Lo viejo que se borra al final de la migración
 
-## Estudio de Crear (en marcha, 2026-10-19)
+## Estudio de Crear (migrado, 2026-10-19)
 
 `pages/Crear/CrearStudioViejo.jsx` conserva el estudio anterior completo.
-Solo lo carga `CrearStudioPage` con `crearViejo`. No borrarlo hasta cerrar
-la migración del estudio, verificarla y retirar el interruptor. Su CSS y
-sus piezas siguen compartidos mientras se sustituyen los controles.
+Solo lo carga `CrearStudioPage` con `crearViejo`. Conservarlo hasta validar
+en producción y retirar el interruptor. La versión nueva usa su propio
+`EstudioDeTienda.module.css` y los controles del kit.
+
+| Qué se conserva | Quién lo necesita | Cuándo revisar su borrado |
+|---|---|---|
+| `pages/Crear/CrearStudioViejo.jsx` | `CrearStudioPage` con `crearViejo` | al retirar el interruptor |
+| `CrearStudioPage.module.css` | el estudio anterior y `ComboCrearViejo` | al retirar ambos respaldos |
+| `RecorteImagen`, `QuitarFondo`, `SelectorFuente`, `TamanoLetra`, `AtajosTeclado` y sus CSS | el estudio anterior; comprobar otros imports al retirar | junto al respaldo, solo si ya no tienen consumidores |
+| `CapaModal` | las hojas anteriores y `ComboCrearViejo` | junto a sus últimos consumidores |
+
+`fondoPixeles.js`, `renderDiseno.js`, las fuentes y las utilidades del
+lienzo siguen en uso en la versión nueva: **no son residuos de la migración**.
 
 Durante la migración ([MIGRACION.md](MIGRACION.md)) no se borra nada: cada
 pieza nueva entra en su propio commit y lo viejo queda en su sitio, así que
@@ -48,7 +58,7 @@ cambiado) y borrar también su CSS.
 | `components/common/Modal/Modal.jsx` + `Modal.module.css` (el modal común: sin Esc ni botón atrás) | `/registro` (¿Tus datos son correctos?) y las 5 ventanas de `PedidoAcciones` (`/cuenta/pedidos/:id`) | `Confirmar` y `HojaInferior` del kit | `PedidoAcciones.jsx` (solo con el interruptor `pagosViejo`), un comentario en `profile/AvatarCropModal.jsx`, y fuera de la tienda `EditorPage.jsx` y `pages/admin/AdminCrearCuentasPedidos.jsx` | de la tienda, cuando se retire `pagosViejo` y migre Mi perfil (paso 6); el archivo, solo si el editor viejo y el admin dejan de usarlo |
 | `RegisterPage.module.css`: `.modalText`, `.modalActions` | la confirmación del registro | `Confirmar` | — | **listo para borrar** |
 | `window.confirm` / `alert` de la tienda (carrito, direcciones, fechas importantes, foto de perfil, Mi combo, encuesta, palabra del día) | esas páginas | `useConfirmar` (Confirmar del kit) y toasts | `Cart.jsx` usa `window.confirm` solo con el interruptor `carritoViejo` | al retirar `carritoViejo` |
-| `pages/Crear/CapaModal.jsx` (fondo de las ventanas de Crear) | eliminar creación, comunidad y "llevar en combo" (ya con el kit) | `Confirmar` / `HojaInferior` | `CrearStudioPage.jsx` (5), `ComboCrearViejo.jsx` (2), `AtajosTeclado.jsx`, `RecorteImagen.jsx`, `QuitarFondo.jsx` | cuando migren el estudio y el combo (paso 6, CREAR.md) |
+| `pages/Crear/CapaModal.jsx` (fondo de las ventanas de Crear) | eliminar creación, comunidad y "llevar en combo" (ya con el kit) | `Confirmar` / `HojaInferior` | `CrearStudioViejo.jsx`, `ComboCrearViejo.jsx`, `AtajosTeclado.jsx`, `RecorteImagen.jsx`, `QuitarFondo.jsx` | al retirar `crearViejo` y sus últimos consumidores (CREAR.md) |
 | `EliminarCreacion.module.css`: `.capa`, `.caja`, `.icono`, `.titulo`, `.eliminar`, `.cancelar` (la caja de la confirmación) | `useEliminarCreacion` y `AccionesComunidad` | `Confirmar` | el archivo lo siguen importando `TarjetaMiCombo.jsx`, `TusBorradores.jsx` y `MiCreacionCard.jsx` (revisar qué clases usan) | al borrar, solo las clases que nadie use |
 | `LlevarEnCombo.module.css`: `.capa`, `.caja`, `.cabecera`, `.titulo`, `.cerrar` | "Llevar en combo" | `HojaInferior` (la lista y la ayuda siguen con sus clases) | — | **listo para borrar** (esas clases) |
 | `Comunidad.module.css`: `.iconoComunidad`, `.confirmar`, `.girando` | la confirmación de la comunidad | `Confirmar` | — (revisar que ninguna otra regla las use) | **listo para borrar** |

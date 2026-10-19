@@ -84,6 +84,14 @@ import { useTranslatedText, useTranslatedHtml } from './i18n/useTranslatedText';
 
 ### Lo que falta (a futuro)
 
+El estudio pasó al kit el 2026-10-19: `MarcoEstudio`, `CompraEstudio`,
+`HojasEstudio`, `ControlesEstudio`, `BarraLienzo`, `PasosEstudio`,
+`PanelCapa`, `PanelVarios`, `AtajosEstudio`, Recortar y Quitar fondo pasan
+sus textos por `Texto` / `useTexto`. Los nombres escritos por el cliente,
+el contenido de sus capas y los nombres de fuentes se conservan.
+No se validó el resultado en inglés: el traductor no respondió en la
+sesión de pruebas. Los mensajes heredados del motor se revisarán aparte.
+
 - **Los textos fijos del kit** ("Agregar al carrito", "Talla", los avisos)
   están en español. Hay dos caminos: pasarlos por el mismo `useTexto`, que
   traduce cualquier texto con caché, o un diccionario del kit con las
