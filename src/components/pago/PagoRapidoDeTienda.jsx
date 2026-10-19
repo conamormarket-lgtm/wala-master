@@ -1,10 +1,8 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '../../contexts/AuthContext';
 import { getDocument } from '../../services/firebase/firestore';
 import { getMessage } from '../../services/messages';
-import { tieneCuenta, urlLogin } from '../../utils/rutaPrivada';
 import CulqiCustomCheckout from '../CulqiCustomCheckout';
 import { PaginaPagoRapido } from '../../componentes/kit/paginas/PagoRapido';
 import { enlacePagoDesde } from '../../componentes/kit/adaptadores';
@@ -23,14 +21,12 @@ const limpiarNumero = (n) => {
  * Pago rápido con el kit (paso 6 de la migración): PaginaPagoRapido con el
  * enlace de enlaces_pago (enlacePagoDesde). Mismo cobro que PagoRapidoPage:
  * en soles, la ventana de Culqi de CulqiCustomCheckout (con el botón del kit
- * por renderBoton); en dólares, los botones de PayPalEnlaceCheckout. Pagar
- * pide una cuenta; al entrar, vuelve aquí (?redirect=).
+ * por renderBoton); en dólares, los botones de PayPalEnlaceCheckout. No pide
+ * cuenta: basta con tener el link (el servidor cobra el enlace sin sesión).
  * El interruptor pagosViejo (en PagoRapidoPage) vuelve a la página de antes.
  */
 export default function PagoRapidoDeTienda() {
   const { id } = useParams();
-  const { pathname } = useLocation();
-  const { user, loading: authLoading } = useAuth();
   // undefined: cargando · null: no existe
   const [doc, setDoc] = useState(undefined);
   // El pago recién hecho en esta visita (el documento lo marca el servidor).
@@ -60,8 +56,7 @@ export default function PagoRapidoDeTienda() {
     ? `https://wa.me/${numero || NUMERO_PRINCIPAL}?text=${encodeURIComponent(`Hola, mi enlace de pago (${id}) ${estado === 'vencido' ? 'ya venció' : 'no abre'}. ¿Me mandas uno nuevo?`)}`
     : undefined;
 
-  const cargando = doc === undefined || authLoading;
-  const sesion = tieneCuenta(user);
+  const cargando = doc === undefined;
   const listo = Boolean(pagadoAhora) || enlace.pagado;
   const enlaceVista = pagadoAhora ? { ...enlace, pagado: true, transaccion: pagadoAhora.transaccion || enlace.transaccion } : enlace;
 
@@ -69,16 +64,13 @@ export default function PagoRapidoDeTienda() {
     <PaginaPagoRapido
       enlace={enlaceVista}
       estado={cargando ? 'cargando' : (doc === null ? 'noEncontrado' : estado)}
-      sesion={sesion}
-      urlLogin={urlLogin(pathname)}
-      urlRegistro={`/registro?redirect=${encodeURIComponent(pathname)}`}
       urlWhatsApp={urlWhatsApp}
       {...extra}
     />
   );
 
-  // Sin poder pagar todavía (cargando, sin cuenta, pagado, vencido): solo la página.
-  if (cargando || !doc || estado || listo || !sesion) return pagina();
+  // Sin poder pagar todavía (cargando, pagado, vencido): solo la página.
+  if (cargando || !doc || estado || listo) return pagina();
 
   // En dólares: los botones de PayPal (el kit muestra "Procesando…" y el error).
   if (enlace.moneda === 'USD') {

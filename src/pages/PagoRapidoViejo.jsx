@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import Boton from '../componentes/kit/Boton';
+import { useParams } from 'react-router-dom';
 import { getDocument } from '../services/firebase/firestore';
 import PaypalEnlaceCheckout from '../components/PaypalCheckout/PaypalEnlaceCheckout';
 import CulqiCustomCheckout from '../components/CulqiCustomCheckout';
@@ -15,12 +13,7 @@ const PagoRapidoViejo = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pagoCompletado, setPagoCompletado] = useState(false);
-  // Pagar pide una cuenta (no un anónimo): el cobro con tarjeta exige sesión
-  // en el servidor y así el pago queda a su nombre. Al entrar, vuelve aquí.
-  const { user, loading: authLoading } = useAuth();
-  const sinCuenta = !authLoading && (!user || user.isAnonymous);
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
+  // No pide cuenta: basta con tener el link (el servidor cobra el enlace sin sesión).
 
   useEffect(() => {
     const fetchEnlace = async () => {
@@ -122,16 +115,7 @@ const PagoRapidoViejo = () => {
               </div>
             </div>
 
-            {sinCuenta ? (
-              <div style={{ display: 'grid', gap: '0.75rem' }}>
-                <p style={{ margin: 0, color: '#475569', fontSize: '0.95rem', lineHeight: 1.5 }}>
-                  <strong style={{ color: '#1e293b' }}><T>Para pagar necesitas tu cuenta.</T></strong>{' '}
-                  <T>Así el pago queda a tu nombre. Al entrar, vuelves aquí.</T>
-                </p>
-                <Boton bloque tamano="lg" onClick={() => navigate('/login', { state: { from: pathname } })}><T>Inicia sesión para pagar</T></Boton>
-                <Boton bloque variante="contorno" onClick={() => navigate('/registro', { state: { from: pathname } })}><T>Crear mi cuenta</T></Boton>
-              </div>
-            ) : (!enlace.moneda || enlace.moneda === 'USD') ? (
+            {(!enlace.moneda || enlace.moneda === 'USD') ? (
               <PaypalEnlaceCheckout enlace={enlace} onSuccess={handlePagoExitoso} />
             ) : (
               <CulqiCustomCheckout enlace={enlace} onSuccess={handlePagoExitoso} />

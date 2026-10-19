@@ -2278,12 +2278,17 @@ exports.processCulqiPayment = functions
   .runWith({ secrets: ["CULQI_SECRET_KEY"] })
   .https.onCall(async (data, context) => {
   if (esPrecalentamiento(data)) return precalentar();
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado para pagar.");
-  }
-  const uid = context.auth.uid;
   const { amount, currency, email, tokenId, description } = data || {};
   const metadata = data && data.metadata && typeof data.metadata === "object" ? data.metadata : {};
+  // El enlace de pago (pago rápido) se paga sin cuenta: el asesor lo manda por
+  // el chat y basta con tener el link. Lo demás (checkout, saldo, sorteo) pide
+  // sesión. Sin sesión, el uid de los cerrojos es "invitado".
+  const soloEnlace = typeof metadata.enlaceId === "string" && Boolean(metadata.enlaceId.trim()) &&
+    metadata.tipo !== "sorteo" && !String((data && data.checkoutIntentId) || metadata.checkoutIntentId || "").trim();
+  if (!context.auth && !soloEnlace) {
+    throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado para pagar.");
+  }
+  const uid = context.auth ? context.auth.uid : "invitado";
 
   if (!amount || !email || !tokenId) {
     throw new functions.https.HttpsError("invalid-argument", "Faltan datos requeridos para el pago.");

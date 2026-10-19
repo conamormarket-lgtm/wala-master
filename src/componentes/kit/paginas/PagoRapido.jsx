@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, MessageCircle, LogIn } from 'lucide-react';
+import { CheckCircle2, MessageCircle } from 'lucide-react';
 import Boton from '../Boton';
 import { EstadoVacio } from '../Feedback';
 import { LogoWala, Trazo } from '../Marca';
@@ -26,12 +26,11 @@ const importe = (monto, moneda) => `${moneda === 'USD' ? 'US$' : 'S/'} ${Number(
  *  - tarjeta: { procesando, error } para PagoTarjeta controlado (la tienda:
  *    onTarjeta abre la ventana de Culqi y, al cobrar, el enlace llega pagado)
  *  - paypal: { procesando, error } mientras la tienda captura
- *  - sesion: para pagar hace falta una cuenta; sin ella, "Inicia sesión para
- *    pagar" (urlLogin, urlRegistro; al entrar, vuelve aquí)
+ *  - sin cuenta: el enlace se paga con solo tener el link (no pide sesión)
  *  - urlWhatsApp: para pedir un enlace nuevo
  *  - estado: 'cargando' | 'noEncontrado' | 'vencido'
  */
-export function PaginaPagoRapido({ enlace = {}, sesion = true, urlLogin = '/login', urlRegistro = '/registro', onTarjeta, onPaypal, botonesPaypal, urlWhatsApp, estado, tarjeta, paypal }) {
+export function PaginaPagoRapido({ enlace = {}, onTarjeta, onPaypal, botonesPaypal, urlWhatsApp, estado, tarjeta, paypal }) {
   const [pagado, setPagado] = useState(false);
   if (estado === 'cargando') return <EsqueletoPagina forma="formulario" />;
   if (estado === 'noEncontrado' || estado === 'vencido') {
@@ -78,13 +77,7 @@ export function PaginaPagoRapido({ enlace = {}, sesion = true, urlLogin = '/logi
               </div>
             </dl>
             {enlace.vence && <p className={s.vence}><Texto>{enlace.vence}</Texto></p>}
-            {!sesion ? (
-              <div className={s.entrar}>
-                <p><strong><Texto>Para pagar necesitas tu cuenta.</Texto></strong> <Texto>Así el pago queda a tu nombre. Al entrar, vuelves aquí.</Texto></p>
-                <Boton to={urlLogin} bloque tamano="lg" icono={<LogIn aria-hidden="true" />}><Texto>Inicia sesión para pagar</Texto></Boton>
-                <Boton to={urlRegistro} bloque variante="contorno"><Texto>Crear mi cuenta</Texto></Boton>
-              </div>
-            ) : usd ? (
+            {usd ? (
               <PagoPaypal montoUsd={Number(enlace.monto) || 0} mostrarMonto={false} botones={botonesPaypal} procesando={paypal?.procesando} error={paypal?.error} onPagar={async () => { await onPaypal?.(); setPagado(true); }} />
             ) : (
               <PagoTarjeta

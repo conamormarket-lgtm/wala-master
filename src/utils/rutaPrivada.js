@@ -40,7 +40,6 @@ const MOTIVOS = [
   ['/ball-sort', 'Inicia sesión para jugar y ganar monedas.'],
   ['/encuesta-suscripcion', 'Inicia sesión para responder la encuesta y ganar tus monedas.'],
   ['/checkout', 'Inicia sesión para terminar tu compra.'],
-  ['/pago-rapido', 'Inicia sesión para pagar tu pedido.'],
   ['/sorteos', 'Inicia sesión para participar en el sorteo.'],
 ];
 

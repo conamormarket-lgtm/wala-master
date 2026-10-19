@@ -110,8 +110,8 @@ ejemplo.
 - **Escribir al asesor** (vencido o no encontrado): el número principal de
   WhatsApp (`whatsapp_number_principal`, como el checkout) con "Hola, mi
   enlace de pago (id) ya venció. ¿Me mandas uno nuevo?".
-- **Sin cuenta:** "Inicia sesión para pagar" y "Crear mi cuenta" con
-  `?redirect=` al enlace.
+- **Sin cuenta:** se paga igual; basta con tener el link (ver "Pagar sin
+  cuenta", abajo).
 - **Interruptor `pagosViejo`:** ahora también vuelve la página de antes
   (`pages/PagoRapidoViejo.jsx`, que baja aparte).
 - **Carga:** 3,8 KB + 0,8 KB de CSS (gzip). PayPal (4,6 KB y su script) ya no
@@ -334,16 +334,19 @@ vigía del modal cerrado y el anti doble cobro.
 - Los textos de no encontrado dicen qué hacer, y el pago rápido vencido lleva
   a escribirle al asesor.
 
-### Pagar pide una cuenta (2026-10-15)
+### Pagar sin cuenta (2026-10-19)
 
-El enlace se ve sin sesión, pero para pagar hace falta entrar: "Para pagar
-necesitas tu cuenta", "Inicia sesión para pagar" y "Crear mi cuenta" (prop
-`sesion` de `PaginaPagoRapido`). Al entrar, vuelve al enlace.
+El enlace de pago lo manda el asesor por el chat: se paga con solo tener el
+link, sin entrar ni crear cuenta. Del 2026-10-15 al 2026-10-19 pidió cuenta
+("Inicia sesión para pagar"); se quitó, también la prop `sesion` de
+`PaginaPagoRapido`.
 
-La tienda ya lo hace así en `PagoRapidoPage`. Hoy se probó primero con una
-sesión anónima justo antes de cobrar (commit 7ec335d), pero se quitó:
-pagar pide cuenta, como en el checkout, y no se suma otro uso del login
-anónimo.
+En el servidor, `processCulqiPayment` acepta una llamada sin sesión solo si
+cobra un enlace (`metadata.enlaceId`, sin `checkoutIntentId` ni sorteo); el
+uid de los cerrojos es entonces `"invitado"`. El monto, el estado y el
+vencimiento los sigue poniendo el servidor (`objetivoEnlace`). Las funciones
+de PayPal de los enlaces ya no pedían sesión. El checkout, el saldo de un
+pedido y los sorteos siguen pidiendo cuenta.
 
 ### Pasos
 
