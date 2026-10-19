@@ -141,11 +141,11 @@ Revisado el 2026-10-15 contra estos archivos:
 
 | Parte | Componente | Piezas que usa | Datos (en la tienda) |
 |---|---|---|---|
-| P21 Sorteo | `PaginaSorteo` (`paginas/Sorteos.jsx`) | `CabezaSorteo` (el premio como boleto), `ListaGanadores` (nuevas, `piezas/Sorteos.jsx`); `TarjetaCuenta`, `Estadistica`, `FormaGanar` (con `premio`: "+1"), `EnlaceInvitacion`, `CamposDatosPersonales` + `validarPerfil`, `Cantidad`, `PagoTarjeta`, `PagoPaypal`, `HojaInferior`, `Estallido`, `CuentaRegresiva` | `getSorteoActivo` / `getSorteoBySlug`, `getMiParticipacion`, `getContadorSorteo`; `participarSorteoGratis`, `comprarTicketSorteoSecure` + Culqi / PayPal, `sumarChanceCompartir` |
-| P21 Sorteo por suscripción | `PaginaSuscripcionSorteo` | `TarjetaPlan`, `TarjetaAliado`, `ListaGanadores` (nuevas); `Pestanas`, `ListaDatos`, `Estadistica`, `BotonGoogle`, `Casilla`, `PagoTarjeta`, `PagoPaypal`, `Chip` | `getCampaignBySlug`, `getContadorSuscriptores`, `getBeneficios`, `getGanadoresGaleria`, `getMiSuscripcion`, `getRecibos`; `crearSuscripcionCulqi`, `crearSuscripcionPaypal` + `confirmarSuscripcionPaypal`, `cancelarSuscripcion` |
-| P21 Suscripciones | `PaginaSuscripciones` (`paginas/Campanas.jsx`) | `FormaGanar` (los 4 pasos), `IconoWala`, `Garabatos`, `Trazo`, `TituloSeccion` | — (textos fijos) |
-| P21 Link en bio | `PaginaEnlaces` | `RedesEnlaces` y `BotonEnlace` (nuevas), `Avatar`, `LogoWala` | `getLinkPageBySlug` (`link_pages`), `registrarClicEnlace`, `registrarVisitaEnlace`; el fondo y los botones con `construirFondoStyle` / `estiloBotonStyle` (`services/linkThemes`) |
-| M12 La invitación | `AvisoInvitacion` (nueva, `piezas/Campanas.jsx`) y `PaginaInvitacion` (`paginas/Campanas.jsx`, 2026-10-16) | `IconoWala`, `Trazo`, `Boton`; la página: `PasosSellos` (nueva, `piezas/PasosSellos.jsx`; también la usa el libro de reclamaciones), `GananciaMonedas`, `Sello`, `Aviso`, `EstadoVacio` | `useInvitacionReferido` (localStorage `wala_referral`), `getNombreInvitacion` |
+| P21 Sorteo | `PaginaSorteo` (`paginas/Sorteo.jsx`) | `CabezaSorteo` (el premio como boleto), `ListaGanadores` (nuevas, `piezas/Sorteos.jsx`); `TarjetaCuenta`, `Estadistica`, `FormaGanar` (con `premio`: "+1"), `EnlaceInvitacion`, `CamposDatosPersonales` + `validarPerfil`, `Cantidad`, `PagoTarjeta`, `PagoPaypal`, `HojaInferior`, `Estallido`, `CuentaRegresiva` | `getSorteoActivo` / `getSorteoBySlug`, `getMiParticipacion`, `getContadorSorteo`; `participarSorteoGratis`, `comprarTicketSorteoSecure` + Culqi / PayPal, `sumarChanceCompartir` |
+| P21 Sorteo por suscripción | `PaginaSuscripcionSorteo` (`paginas/Sorteos.jsx`) | `TarjetaPlan`, `TarjetaAliado`, `ListaGanadores` (nuevas); `Pestanas`, `ListaDatos`, `Estadistica`, `BotonGoogle`, `Casilla`, `PagoTarjeta`, `PagoPaypal`, `Chip` | `getCampaignBySlug`, `getContadorSuscriptores`, `getBeneficios`, `getGanadoresGaleria`, `getMiSuscripcion`, `getRecibos`; `crearSuscripcionCulqi`, `crearSuscripcionPaypal` + `confirmarSuscripcionPaypal`, `cancelarSuscripcion` |
+| P21 Suscripciones | `PaginaSuscripciones` (`paginas/Suscripciones.jsx`) | `FormaGanar` (los 4 pasos), `IconoWala`, `Garabatos`, `Trazo`, `TituloSeccion` | — (textos fijos) |
+| P21 Link en bio | `PaginaEnlaces` (`paginas/Enlaces.jsx`) | `RedesEnlaces` y `BotonEnlace` (nuevas), `Avatar`, `LogoWala` | `getLinkPageBySlug` (`link_pages`), `registrarClicEnlace`, `registrarVisitaEnlace`; el fondo y los botones con `construirFondoStyle` / `estiloBotonStyle` (`services/linkThemes`) |
+| M12 La invitación | `AvisoInvitacion` (nueva, `piezas/Campanas.jsx`) y `PaginaInvitacion` (`paginas/Invitacion.jsx`, 2026-10-16) | `IconoWala`, `Trazo`, `Boton`; la página: `PasosSellos` (nueva, `piezas/PasosSellos.jsx`; también la usa el libro de reclamaciones), `GananciaMonedas`, `Sello`, `Aviso`, `EstadoVacio` | `useInvitacionReferido` (localStorage `wala_referral`), `getNombreInvitacion` |
 
 Esqueletos: `EsqueletoPagina forma="sorteo"`, `"suscripcionSorteo"`,
 `"landing"` (Suscripciones), `"invitacion"` y `"enlaces"`. El del sorteo trae el talón del
@@ -216,7 +216,7 @@ boleto y la píldora de la cuenta atrás.
     - link de compra: "Compra hasta … y Isaac gana monedas".
   - En el celular, el texto corto.
 
-## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
+## Llevar a la tienda (hecho el 2026-10-19, menos el sorteo por suscripción: ver "En la tienda" al final)
 
 ### Reemplazos
 
@@ -235,7 +235,7 @@ boleto y la píldora de la cuenta atrás.
   visitas.
 - `ReferralTracker` y `useInvitacionReferido`: la invitación sigue
   aceptándose sola.
-- `InvitarPage` sigue redirigiendo.
+- ~~`InvitarPage` sigue redirigiendo.~~ Ya no: muestra `PaginaInvitacion` (ver "Cómo funcionan…" y "En la tienda").
 - `linkThemes.js` se comparte con el editor del admin, para que la vista
   previa sea igual a la página.
 
@@ -340,14 +340,111 @@ boleto y la píldora de la cuenta atrás.
 
 ### Pasos
 
-1. `AvisoInvitacion` del kit en `#app-top-banner-slot` (chico y aislado).
-   Luego `PaginaInvitacion` en `InvitarPage` (en vez de redirigir).
-2. `PaginaEnlaces` en `LinkInBioPage`, sin el marco de la tienda en `/l/` y
-   compartiendo `linkThemes`; de paso, que la función también cuente las
-   redes.
-3. `PaginaSuscripciones` (Regalos con amor se queda con
+1. ✓ `AvisoInvitacion` del kit en `#app-top-banner-slot` y
+   `PaginaInvitacion` en `InvitarPage` (2026-10-19).
+2. ✓ `PaginaEnlaces` en `LinkInBioPage`, sin el marco de la tienda en `/l/`;
+   la función cuenta también las redes (2026-10-19).
+3. ✓ `PaginaSuscripciones` (2026-10-19; Regalos con amor se queda con
    `NuevosUsuariosPage`).
-4. `PaginaSorteo` con el mismo flujo de Culqi y PayPal (y el slug en
-   compartir y en el login).
+4. ✓ `PaginaSorteo` con el mismo flujo de Culqi y PayPal, y el slug en
+   compartir y en el login (2026-10-19).
 5. `PaginaSuscripcionSorteo` cuando haya una campaña real para probarla de
-   punta a punta.
+   punta a punta. Antes, en el kit: los botones de PayPal
+   (`createSubscription`), la tarjeta controlada (`procesando`), "campaña
+   cerrada", "ya suscrito", `correo` en vez de `email` y el precio en
+   dólares del plan. En el servidor, para decidir aparte: cancelar saca del
+   sorteo al instante (el sorteo solo cuenta `activo`), volver a
+   suscribirse cobra otra vez y, con PayPal, deja la suscripción anterior
+   cobrando; una campaña en borrador acepta pagos.
+
+## En la tienda (2026-10-19)
+
+| La invitación (sin cuenta) | Ya recibió el bono | El aviso, en inglés y claro |
+|---|---|---|
+| ![Cliente te invitó a Walá, los tres pasos](invitacion-tienda-celular.webp) | ![¡Ya tienes tus 10 monedas!](invitacion-aceptada.webp) | ![Client invited you to Walá, sobre la cabecera](invitacion-aviso-ingles-claro.webp) |
+
+| Link en bio (solo, sin la tienda) | Suscripciones, en inglés y claro | El sorteo | Pagar un ticket |
+|---|---|---|---|
+| ![Sorteos y Atencion con sus redes y botones](enlaces-tienda-celular.webp) | ![Perfect gifts, all year round](suscripciones-ingles-claro.webp) | ![El boleto: se sortea el 30 de octubre, 2 ganadores](sorteo-tienda-celular.webp) | ![Elige cómo pagar: Culqi o PayPal](sorteo-pago-celular.webp) |
+
+Las páginas (`pages/InvitarPage.jsx`, `LinkInBioPage.jsx`,
+`SubscriptionLandingPage.jsx` y `SorteosPage.jsx`) montan
+`components/campanas/InvitacionDeTienda.jsx`, `EnlacesDeTienda.jsx`,
+`SuscripcionesDeTienda.jsx` y `SorteoDeTienda.jsx`; el aviso de arriba es
+`components/marco/AvisoInvitacionDeTienda.jsx`. Lo de antes (`InvitarViejo`,
+`LinkInBioViejo`, `SubscriptionLandingViejo`, `SorteosViejo` y el aviso de
+`components/common`) baja solo con el interruptor `campanasViejo`
+(`useLoViejo('campanas')`: en Firestore `campanasViejo: true`; en
+localStorage, `"campanas"`). El sorteo por suscripción sigue con la página
+de antes.
+
+**La invitación.** `/invitar/:código` ya no redirige: la página registra la
+visita ella misma (`registrarVisitaReferidoSecure`, el mismo
+`wala_referral` que el tracker) y así sabe si el código no existe
+(`'invalida'`) o es el tuyo (`'propia'`, nuevo). Sin cuenta, "Crear mi
+cuenta" lleva al registro con `?ref=…&tipo=invitacion` como antes. Con
+cuenta, `ReferralTracker` acepta la invitación (ahora también cuando cambia
+lo guardado: escucha `wala:referido`) y la página muestra lo que decidió el
+servidor: `'aceptada'`, `'conCuenta'` (no aplica) o `'faltanDatos'` (nuevo:
+falta el DNI o el celular). Si el servidor no responde en 15 s,
+`'error'` con "Reintentar". El aviso de arriba es el del kit, baja solo si
+hay una invitación y no sale en `/invitar/`.
+
+**Link en bio.** Sola (en `App.jsx`, como Regalos con amor), sin la
+cabecera, el pie ni los flotantes, pero contando la página vista. La misma
+lectura por slug, el borrador como no disponible, la visita después de la
+sesión de analítica (ahora una vez por entrada: antes se contaba otra al
+llegar la sesión) y cada clic sin esperar. `registrarClicEnlace` (desplegada)
+cuenta también las redes (antes las rechazaba) y marca `tipoItem`; el
+editor del admin muestra una fila por red. Los colores sin poner caen en
+los de antes; un link sin `https://` abre afuera; la página vieja con el
+interruptor también va sin el marco.
+
+**Suscripciones.** Los mismos textos y los dos botones a la encuesta, todo
+traducido.
+
+**El sorteo.** El mismo sorteo (por slug o el activo), la participación, el
+contador cada 20 s, participar gratis, comprar tickets (el monto lo fija el
+servidor) y pagarlos con Culqi (la ventana del checkout:
+`CulqiCustomCheckout` acepta un `cobro`, el ticket, sin el píxel de compra)
+o con PayPal (`PaypalTicketSorteo`, las mismas funciones), compartir (+1
+chance) y el referido con `?ref=`. Diferente: compartir, el link y el login
+llevan el slug (y el login el `?ref`); termina al final del día de Lima
+(antes, a las 7 p. m. del día anterior); un borrador por su slug es "no hay
+sorteo"; "ganaste" solo con el sorteo cerrado; quien no es del Perú elige su
+país; la sesión anónima no cuenta como cuenta; sin emojis y traducido.
+
+**Servidor (desplegado el 2026-10-19):** `processCulqiPayment` solo cobra un
+ticket a quien lo compró y se lo acredita a esa cuenta (antes, al uid que
+mandara el navegador); "solo desde la app" se confirma con el origen de la
+llamada (`https://localhost` o `capacitor://localhost`, el de la app) en
+`participarSorteoGratis` y ahora también al comprar tickets
+(`comprarTicketSorteoSecure`). Sin App Check no resiste una llamada armada
+fuera del navegador. Las reglas no se tocaron: los datos de quienes
+participan siguen legibles para cualquier cuenta (para decidir aparte).
+
+**Carga:** la invitación baja 8,8 KB + 2,2 KB de CSS (antes 0,4 KB: solo
+redirigía); el aviso, 1,9 KB y el del kit (3,9 + 2,3 KB, compartido con el
+Link en bio) solo si hay invitación; el Link en bio, 5,4 + 1,4 KB (antes 5,7
++ 4,5); Suscripciones, 4,8 + 2,9 KB (antes 4,9 + 4,9); el sorteo, 20,6 + 9,5
+KB más los botones de PayPal cuando se paga (antes 23,5 + 9,6). El archivo
+principal: +240 B gzip (los mapas de las rutas nuevas y el aviso).
+
+**Probado** con los emuladores: la invitación sin cuenta (la página, "Crear
+mi cuenta" al registro con el aviso), con un código que no existe, el
+propio link, una cuenta que ya existía ("no aplica"), una sin DNI
+("faltan datos") y una cuenta nueva de punta a punta (registro, DNI y
+celular, el bono: 0 → 10 monedas, "Ya tienes tus 10 monedas"); el aviso en
+otras páginas, en inglés y claro; el Link en bio (sin marco, una visita, el
+clic de un botón y de una red contados, el borrador, el interruptor);
+Suscripciones (los botones a la encuesta, en inglés); el sorteo gratis
+(participar, el contador, compartir +1), el pagado hasta elegir cómo pagar
+(el ticket creado en el servidor, los botones de PayPal, el monto en
+dólares con `config/fx`), cerrado con ganadores, solo desde la app, el
+borrador, sin cuenta (el login con el slug y el `?ref`) y el interruptor;
+el servidor con llamadas directas (desde la web, "debes entrar desde el
+app"; con el origen de la app, sí; el ticket de otra cuenta, rechazado).
+**No probado:** el pago de punta a punta con Culqi y con PayPal (no hay
+llaves de prueba en esta carpeta: la ventana de Culqi avisa que falta la
+llave), el sorteo en inglés (el traductor de la tienda no respondió en esa
+prueba), la app (Capacitor) y el referido del sorteo con dos cuentas.

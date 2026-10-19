@@ -245,6 +245,16 @@ grupos del marco nuevo (`gruposDeCuenta.js`).
 |---|---|---|---|---|
 | `pages/SearchPageViejo.jsx` + `pages/SearchPage.module.css` (la página de antes: título, campo, barra con el `<select>`, Modalidad como `gruposExtra` y `SidebarCatalogLayout`) | `/buscar` | `components/busqueda/BusquedaDeTienda.jsx` → `PaginaBusqueda` del kit (`paginas/Busqueda.jsx`) | `pages/SearchPage.jsx` (lazy, solo con el interruptor `busquedaVieja`) | al retirar `busquedaVieja`; con ella, `SidebarCatalogLayout` pierde su último uso fuera de `seccionesViejo` |
 
+### Las campañas (2026-10-19)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/InvitarViejo.jsx` | `/invitar/:código` | `components/campanas/InvitacionDeTienda.jsx` → `PaginaInvitacion` | `pages/InvitarPage.jsx` (lazy, solo con `campanasViejo`) | al retirar `campanasViejo` |
+| `components/common/AvisoInvitacion/AvisoInvitacion.jsx` (el aviso; `NotaInvitacion` se queda) + su CSS | el aviso sobre la cabecera | `components/marco/AvisoInvitacionDeTienda.jsx` → `AvisoInvitacion` del kit | `AvisoInvitacionDeTienda` (lazy, solo con `campanasViejo`); `NotaInvitacion` la usa `CheckoutViejo.jsx` | el aviso, al retirar `campanasViejo`; `NotaInvitacion`, con `CheckoutViejo` |
+| `pages/LinkInBioViejo.jsx` + `LinkInBioPage.module.css` | `/l/:slug` | `components/campanas/EnlacesDeTienda.jsx` → `PaginaEnlaces` | `pages/LinkInBioPage.jsx` (lazy, solo con `campanasViejo`) | al retirar `campanasViejo` (`linkThemes.js` se queda: lo usan el kit y el admin) |
+| `pages/SubscriptionLandingViejo.jsx` + `SubscriptionLandingPage.module.css` | `/suscripciones` | `components/campanas/SuscripcionesDeTienda.jsx` → `PaginaSuscripciones` | `pages/SubscriptionLandingPage.jsx` (lazy, solo con `campanasViejo`) | al retirar `campanasViejo` |
+| `pages/SorteosViejo.jsx` + `SorteosPage.module.css` (con `CulqiTicketButton`, `PaypalTicketButtons` y `FormularioDatosSorteo`) | `/sorteos`, `/sorteos/:slug` | `components/campanas/SorteoDeTienda.jsx` → `PaginaSorteo`, con `CulqiCustomCheckout` (`cobro`) y `PaypalTicketSorteo` | `pages/SorteosPage.jsx` (lazy, solo con `campanasViejo`) | al retirar `campanasViejo` |
+
 ### Los juegos por dentro (2026-10-19)
 
 | Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
