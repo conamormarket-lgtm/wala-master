@@ -20,7 +20,7 @@ export { CabezaCuenta, TarjetaCuenta, ListaDatos, Estadistica, AccesosCuenta, Id
 export { TarjetaDireccion } from './TarjetaDireccion';
 export { TarjetaRecompensa, TarjetaCupon, TarjetaMision, NivelCuenta, NIVELES } from './Recompensas';
 export { FormaGanar, EnlaceInvitacion, FilaReferido, DetallePedidoReferido, RankingReferidos } from './Referidos';
-export { TarjetaCreacion } from './Creaciones';
+export { TarjetaCreacion, VersionesAnteriores } from './Creaciones';
 export { RecortarFoto } from './RecortarFoto';
 export { IdeaRegalo, TarjetaPersonaRegalo, AvisoFestiva, HojaCalendario, AgendaFechas, faltanDias, textoFaltan, diaYMes } from './Regalos';
 export { LineaProduccion, PagosPedido, HojaPagarSaldo } from './DetallePedido';

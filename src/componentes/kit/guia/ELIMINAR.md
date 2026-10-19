@@ -215,3 +215,12 @@ grupos del marco nuevo (`gruposDeCuenta.js`).
 | `pages/cuenta/CuentaFechasImportantesViejo.jsx` + `CuentaFechasImportantesPage.module.css` | `/cuenta/fechas-importantes` | `components/cuenta/FechasDeCuenta.jsx` → `PaginaFechas` | `CuentaFechasImportantesPage.jsx` (lazy, solo con `cuentaVieja`) | al retirar `cuentaVieja` |
 | `pages/cuenta/FechasFestivasSeccion.jsx` | la página de antes | `AvisoFestiva` | solo `CuentaFechasImportantesViejo.jsx` (usa el mismo CSS) | con la página de antes |
 | `components/common/FechaEventoInput/` | el modal de antes | `CampoFecha anioOpcional` | `pages/SubscriptionSurveyPage.jsx` (la encuesta) | cuando ya nadie lo importe |
+
+### Mis creaciones (2026-10-19)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/cuenta/MisCreacionesViejo.jsx` | `/cuenta/creaciones` | `components/cuenta/CreacionesDeCuenta.jsx` → `PaginaCreaciones` | `MisCreacionesPage.jsx` (lazy, solo con `cuentaVieja`) | al retirar `cuentaVieja` |
+| `pages/cuenta/components/MiCreacionCard.jsx` + `MisCreacionesPage.module.css` | la página de antes | `TarjetaCreacion` (`fechaDeCreacion`/`guardadaHace` → `fechaDeDiseno`/`haceCuanto` en adaptadores) | `PersonalizarPage.jsx` (la tarjeta y `fechaDeCreacion`), `Crear/CreacionPage.jsx` (`fechaDeCreacion`), `Comunidad/ComunidadPage.jsx` (`MiCreacionCardSkeleton`), `Crear/TarjetaMiCombo.jsx` y `TusBorradores.jsx` (estilos y fechas) | cuando Crear y la Comunidad dejen de usarla |
+| `pages/Crear/TarjetaMiCombo.jsx`, `TusBorradores.jsx` (el componente; `useBorradoresCrear` se queda) | la página de antes y Crear | `TarjetaCreacion` con `imagenes` / `borrador` | `PersonalizarPage.jsx`; `TarjetaMiCombo.module.css` también lo usan `Comunidad/TarjetaComunidad.jsx` y `Crear/ComboCrearPage.jsx` | cuando Crear pase al kit (el CSS, cuando nadie lo importe) |
+| `usePedidos(dni)` en Mis creaciones (y su `purchasedDesignIds`, que nunca encontraba nada) | la página de antes | `design.enPedido` | Mis pedidos sigue usando `usePedidos` | con la página de antes |

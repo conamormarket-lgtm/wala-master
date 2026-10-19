@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { Clock, Paintbrush, ShoppingBag, Trash2, Pencil, Check, RotateCw, ImageOff, Users, RefreshCw, EyeOff, ArrowRight } from 'lucide-react';
+import { Clock, Paintbrush, ShoppingBag, Trash2, Pencil, Check, RotateCw, ImageOff, Users, RefreshCw, EyeOff, ArrowRight, History } from 'lucide-react';
 import Boton from '../Boton';
+import { Enlace } from '../Enlace';
+import { Texto, useTexto } from '../Traduccion';
 import { HojaInferior } from '../Feedback';
 import { Etiqueta } from '../Etiquetas';
 import { soles } from '../TarjetaProducto';
@@ -33,14 +35,25 @@ const COMUNIDAD = {
  * lado. Sobre la foto van como mucho dos etiquetas. Toda confirmación
  * (eliminar, publicar…) es una capa sobre la foto, sin ventanas del navegador.
  *  - nombre · imagen, imagenEspalda · imagenes: [url] (prendas de un combo)
- *  - producto, color: { nombre, hex } · subtitulo: en vez de "producto · color"
- *  - fecha: "Guardada hace 3 días" (ya legible) · precio, precioAntes
+ *  - foto: un nodo en lugar de la foto (los diseños del editor de antes, que
+ *    se dibujan con sus capas en la tienda)
+ *  - url: adónde lleva la foto (su página, el editor o el combo)
+ *  - producto, color: { nombre, hex, fondo } (fondo: el CSS del punto, p. ej.
+ *    un bicolor) · colores: [fondo] un punto por prenda (combos)
+ *  - subtitulo: en vez de "producto · color" (el punto de color se queda)
+ *  - fecha: "Guardada hace 3 días" (ya legible) · fechaCompleta: la fecha
+ *    exacta, al pasar el ratón · precio, precioAntes (también en borradores)
  *  - comprado, disponible (false: ya no está), publicada, combo (texto corto
  *    de la etiqueta, como en la tarjeta de producto: "2", "Pareja"), lados
  *    ("Frente + Espalda")
  *  - aviso: texto en lugar del precio ("Este combo ya no se vende…")
  *  - urlEditar, urlComprar · borrador: un solo botón "Continuar" (urlEditar)
- *  - onRenombrar(nombre), onEliminar(): promesas
+ *  - estadoEditar: el state del router al editar o continuar (p. ej.
+ *    { desde: '/cuenta/creaciones' }: el estudio vuelve ahí con su flecha)
+ *  - soloEditar: un solo botón "Editar" (los diseños del editor de antes)
+ *  - onRenombrar(nombre), onEliminar(): promesas (si fallan, la página avisa)
+ *  - eliminar: { titulo, texto, notas: [texto] } lo que dice la confirmación
+ *    (sin él: lo de una creación, de un combo con sus prendas o de lo comprado)
  *  - comunidad: { estado: 'publicada' | 'retirada' | null, onPublicar,
  *    onActualizar, onRetirar } (promesas; solo para quien puede publicar)
  *  - usar: { url, autor, usos } un diseño de la comunidad (TarjetaComunidad):
@@ -50,10 +63,13 @@ const COMUNIDAD = {
  *    botón "Llevar en combo" que abre una hoja para elegir uno (se usa una copia)
  */
 export function TarjetaCreacion({
-  nombre, imagen, imagenEspalda, imagenes, producto, color, subtitulo, fecha, precio, precioAntes,
+  nombre, imagen, imagenEspalda, imagenes, foto, url, producto, color, colores, subtitulo, fecha, fechaCompleta, precio, precioAntes,
   comprado = false, disponible = true, publicada = false, combo, lados, aviso,
-  urlEditar, urlComprar, onRenombrar, onEliminar, borrador = false, comunidad, usar, vertical = false, combos = [],
+  urlEditar, urlComprar, estadoEditar, soloEditar = false, onRenombrar, onEliminar, eliminar, borrador = false, comunidad, usar, vertical = false, combos = [],
 }) {
+  const tNombreCampo = useTexto('Nombre de la creación');
+  const tEditar = useTexto('Editar diseño');
+  const tLlevar = useTexto('Llevar en combo (pareja, trío…)');
   const [espalda, setEspalda] = useState(false);
   const [pregunta, setPregunta] = useState(null);
   const [trabajando, setTrabajando] = useState(false);
@@ -83,19 +99,24 @@ export function TarjetaCreacion({
 
   // Etiquetas de la foto por importancia; solo las dos primeras.
   const etiquetas = [
-    !disponible && <Etiqueta key="no" tono="peligro" sobreFoto>No disponible</Etiqueta>,
-    borrador && prendas.length > 1 && <Etiqueta key="borrador" tono="aviso" sobreFoto>Borrador</Etiqueta>,
-    comprado && <Etiqueta key="comprado" tono="exito" sobreFoto icono={<Check aria-hidden="true" />}>Comprado</Etiqueta>,
-    combo && <Etiqueta key="combo" tono="violeta" solida>Combo · {combo}</Etiqueta>,
-    enComunidad && <Etiqueta key="pub" tono="violeta" sobreFoto icono={<Users aria-hidden="true" />}>En la comunidad</Etiqueta>,
+    !disponible && <Etiqueta key="no" tono="peligro" sobreFoto><Texto>No disponible</Texto></Etiqueta>,
+    borrador && prendas.length > 1 && <Etiqueta key="borrador" tono="aviso" sobreFoto><Texto>Borrador</Texto></Etiqueta>,
+    comprado && <Etiqueta key="comprado" tono="exito" sobreFoto icono={<Check aria-hidden="true" />}><Texto>Comprado</Texto></Etiqueta>,
+    combo && <Etiqueta key="combo" tono="violeta" solida><Texto>{`Combo · ${combo}`}</Texto></Etiqueta>,
+    enComunidad && <Etiqueta key="pub" tono="violeta" sobreFoto icono={<Users aria-hidden="true" />}><Texto>En la comunidad</Texto></Etiqueta>,
   ].filter(Boolean).slice(0, 2);
 
   const preguntar = (clave, accion) => setPregunta({ ...COMUNIDAD[clave], accion });
+  // Un combo se lleva sus prendas (las que se usan en otro lado se quedan).
+  const esCombo = prendas.length > 1;
   const preguntarEliminar = () => setPregunta({
-    titulo: `¿Eliminar «${nombre || 'esta creación'}»?`,
-    texto: comprado
-      ? 'Se borra de tus creaciones. Como ya está en un pedido, guardamos sus imágenes para imprimirlo.'
-      : (prendas.length > 1 ? 'Se quita el combo. Sus prendas siguen en tus creaciones.' : 'Se borra para siempre junto con sus imágenes.'),
+    titulo: eliminar?.titulo || (esCombo ? `¿Eliminar el combo «${nombre || 'Mi combo'}» y sus prendas?` : `¿Eliminar «${nombre || 'esta creación'}»?`),
+    texto: eliminar?.texto || (esCombo
+      ? 'Las que uses en otro combo, en un pedido o en el carrito se quedan.'
+      : comprado
+        ? 'Se borra de tus creaciones. Como ya está en un pedido, guardamos sus imágenes para imprimirlo.'
+        : 'Se borra para siempre junto con sus imágenes.'),
+    notas: eliminar?.notas || [],
     boton: 'Eliminar',
     peligro: true,
     accion: onEliminar,
@@ -105,7 +126,8 @@ export function TarjetaCreacion({
     try { await pregunta.accion?.(); } finally { setTrabajando(false); setPregunta(null); }
   };
   const renombrar = async (e) => {
-    e.preventDefault();
+    e?.preventDefault?.();
+    if (guardando) return;
     const nuevo = editando.trim();
     if (!nuevo || nuevo === nombre) { setEditando(null); return; }
     setGuardando(true);
@@ -130,7 +152,7 @@ export function TarjetaCreacion({
               </div>
             </div>
           ) : (
-            <FotoProducto
+            foto ? <div className={s.foto}>{foto}</div> : <FotoProducto
               className={[s.foto, imagenEspalda && s.conEspalda, espalda && s.verEspalda].filter(Boolean).join(' ')}
               src={imagen}
               alt=""
@@ -140,6 +162,7 @@ export function TarjetaCreacion({
             </FotoProducto>
           )}
           <span className={s.barrido} aria-hidden="true" />
+          {url && <Enlace to={url} state={borrador ? estadoEditar : undefined} className={s.fotoEnlace} aria-label={`Ver ${nombre || 'la creación'}`} />}
           {etiquetas.length > 0 && <div className={s.etiquetas}>{etiquetas}</div>}
           {onEliminar && (
             <button type="button" className={s.eliminar} onClick={preguntarEliminar} aria-label={`Eliminar ${nombre || 'esta creación'}`}>
@@ -148,20 +171,10 @@ export function TarjetaCreacion({
           )}
           {imagenEspalda && prendas.length < 2 && (
             <button type="button" className={s.girar} onClick={() => setEspalda((v) => !v)} aria-pressed={espalda}>
-              <RotateCw aria-hidden="true" /> {espalda ? 'Ver frente' : 'Ver espalda'}
+              <RotateCw aria-hidden="true" /> <Texto>{espalda ? 'Ver frente' : 'Ver espalda'}</Texto>
             </button>
           )}
           {lados && !imagenEspalda && prendas.length < 2 && <span className={s.lados}>{lados}</span>}
-          {pregunta && (
-            <div className={s.confirmar} role="alertdialog" aria-label={pregunta.titulo}>
-              <p><strong>{pregunta.titulo}</strong></p>
-              <p>{pregunta.texto}</p>
-              <div className={s.confirmarBotones}>
-                <Boton variante="fantasma" tamano="sm" onClick={() => setPregunta(null)} disabled={trabajando}>Cancelar</Boton>
-                <Boton variante={pregunta.peligro ? 'peligro' : 'primario'} tamano="sm" cargando={trabajando} onClick={confirmar}>{pregunta.boton}</Boton>
-              </div>
-            </div>
-          )}
         </div>
 
         <div className={s.cuerpo}>
@@ -172,16 +185,18 @@ export function TarjetaCreacion({
                 value={editando}
                 onChange={(e) => setEditando(e.target.value)}
                 maxLength={60}
-                aria-label="Nombre de la creación"
+                aria-label={tNombreCampo}
                 autoFocus
                 onFocus={(e) => e.currentTarget.select()}
                 onKeyDown={(e) => { if (e.key === 'Escape') setEditando(null); }}
+                // Como antes: al salir del campo también se guarda (no si se toca el botón de guardar).
+                onBlur={(e) => { if (!e.currentTarget.form?.contains(e.relatedTarget)) renombrar(); }}
               />
               <Boton type="submit" tamano="sm" soloIcono aria-label="Guardar nombre" cargando={guardando} icono={<Check aria-hidden="true" />} />
             </form>
           ) : (
             <h3 className={s.nombre}>
-              <span>{nombre || 'Sin nombre'}</span>
+              <span>{nombre || <Texto>Sin nombre</Texto>}</span>
               {onRenombrar && (
                 <button type="button" className={s.lapiz} onClick={() => setEditando(nombre || '')} aria-label="Cambiar el nombre">
                   <Pencil aria-hidden="true" />
@@ -190,27 +205,27 @@ export function TarjetaCreacion({
             </h3>
           )}
           <p className={s.producto}>
-            {subtitulo || (disponible ? (
-              <>
-                {color?.hex && <span className={s.punto} style={{ background: color.hex }} aria-hidden="true" />}
-                {[producto, color?.nombre].filter(Boolean).join(' · ')}
-              </>
-            ) : 'Este producto ya no está disponible')}
+            {(colores?.length ? colores : [color?.fondo || color?.hex]).filter(Boolean).map((fondo, k) => (
+              <span key={k} className={s.punto} style={{ background: fondo }} aria-hidden="true" />
+            ))}
+            {subtitulo ? <Texto>{subtitulo}</Texto> : (disponible || producto)
+              ? [producto, color?.nombre].filter(Boolean).join(' · ')
+              : <Texto>Este producto ya no está disponible</Texto>}
           </p>
-          {fecha && <p className={s.fecha}><Clock aria-hidden="true" /> {fecha}</p>}
+          {fecha && <p className={s.fecha} title={fechaCompleta}><Clock aria-hidden="true" /> <Texto>{fecha}</Texto></p>}
           {usar?.usos > 0 && (
-            <p className={s.fecha}><Users aria-hidden="true" /> {usar.usos === 1 ? '1 persona lo usó' : `${usar.usos} personas lo usaron`}</p>
+            <p className={s.fecha}><Users aria-hidden="true" /> <Texto>{usar.usos === 1 ? '1 persona lo usó' : `${usar.usos} personas lo usaron`}</Texto></p>
           )}
           {usar ? (
             <div className={s.pie}>
-              <span className={s.autor}>Por {usar.autor || 'Walá'}</span>
+              <span className={s.autor}><Texto>Por</Texto> {usar.autor || 'Walá'}</span>
               <span className={s.acciones}>
-                <Boton to={usar.url} tamano="sm" icono={<Paintbrush aria-hidden="true" />}>Usar diseño</Boton>
+                <Boton to={usar.url} tamano="sm" icono={<Paintbrush aria-hidden="true" />}><Texto>Usar diseño</Texto></Boton>
               </span>
             </div>
           ) : (
           <div className={s.pie}>
-            {aviso ? <p className={s.aviso}>{aviso}</p> : !borrador && precio != null && disponible && (
+            {aviso ? <p className={s.aviso}><Texto>{aviso}</Texto></p> : precio != null && precio > 0 && disponible && (
               <span className={s.precios}>
                 <strong>{soles(precio)}</strong>
                 {precioAntes > precio && <s>{soles(precioAntes)}</s>}
@@ -218,26 +233,29 @@ export function TarjetaCreacion({
             )}
             <span className={s.acciones}>
               {combos.length > 0 && disponible && (
-                <Boton variante="contorno" tamano="sm" soloIcono aria-label="Llevar en combo (pareja, trío…)" title="Llevar en combo" icono={<Users aria-hidden="true" />} onClick={() => setEligiendoCombo(true)} />
+                <Boton variante="contorno" tamano="sm" soloIcono aria-label={tLlevar} title={tLlevar} icono={<Users aria-hidden="true" />} onClick={() => setEligiendoCombo(true)} />
               )}
+              {/* Lo que ya no está en la tienda no se edita ni se compra. */}
               {borrador ? (
-                urlEditar && disponible && <Boton to={urlEditar} tamano="sm" iconoFin={<ArrowRight aria-hidden="true" />}>Continuar</Boton>
+                urlEditar && disponible && <Boton to={urlEditar} state={estadoEditar} tamano="sm" iconoFin={<ArrowRight aria-hidden="true" />}><Texto>Continuar</Texto></Boton>
+              ) : soloEditar ? (
+                urlEditar && disponible && <Boton to={urlEditar} state={estadoEditar} tamano="sm" icono={<Paintbrush aria-hidden="true" />}><Texto>Editar</Texto></Boton>
               ) : (
                 <>
-                  {urlEditar && <Boton to={urlEditar} variante="contorno" tamano="sm" soloIcono aria-label="Editar diseño" icono={<Paintbrush aria-hidden="true" />} />}
-                  {urlComprar && disponible && <Boton to={urlComprar} tamano="sm" icono={<ShoppingBag aria-hidden="true" />}>Comprar</Boton>}
+                  {urlEditar && disponible && <Boton to={urlEditar} state={estadoEditar} variante="contorno" tamano="sm" soloIcono aria-label={tEditar} title={tEditar} icono={<Paintbrush aria-hidden="true" />} />}
+                  {urlComprar && disponible && <Boton to={urlComprar} tamano="sm" icono={<ShoppingBag aria-hidden="true" />}><Texto>Comprar</Texto></Boton>}
                 </>
               )}
             </span>
             {comunidad && !borrador && (
               enComunidad ? (
                 <span className={s.comunidad}>
-                  <Boton variante="fantasma" tamano="sm" icono={<RefreshCw aria-hidden="true" />} onClick={() => preguntar('actualizar', comunidad.onActualizar)}>Actualizar</Boton>
-                  <Boton variante="fantasma" tamano="sm" icono={<EyeOff aria-hidden="true" />} onClick={() => preguntar('retirar', comunidad.onRetirar)}>Retirar</Boton>
+                  <Boton variante="fantasma" tamano="sm" icono={<RefreshCw aria-hidden="true" />} onClick={() => preguntar('actualizar', comunidad.onActualizar)}><Texto>Actualizar</Texto></Boton>
+                  <Boton variante="fantasma" tamano="sm" icono={<EyeOff aria-hidden="true" />} onClick={() => preguntar('retirar', comunidad.onRetirar)}><Texto>Retirar</Texto></Boton>
                 </span>
               ) : (
                 <button type="button" className={s.publicar} onClick={() => preguntar('publicar', comunidad.onPublicar)}>
-                  <Users aria-hidden="true" /> {comunidad.estado === 'retirada' ? 'Volver a publicar' : 'Publicar en la comunidad'}
+                  <Users aria-hidden="true" /> <Texto>{comunidad.estado === 'retirada' ? 'Volver a publicar' : 'Publicar en la comunidad'}</Texto>
                 </button>
               )
             )}
@@ -245,9 +263,21 @@ export function TarjetaCreacion({
           )}
         </div>
       </div>
+      {/* La confirmación tapa toda la tarjeta (en el celular la foto es angosta). */}
+      {pregunta && (
+        <div className={s.confirmar} role="alertdialog" aria-label={pregunta.titulo}>
+          <p><strong><Texto>{pregunta.titulo}</Texto></strong></p>
+          <p><Texto>{pregunta.texto}</Texto></p>
+          {(pregunta.notas || []).map((n) => <p key={n}><Texto>{n}</Texto></p>)}
+          <div className={s.confirmarBotones}>
+            <Boton variante="fantasma" tamano="sm" onClick={() => setPregunta(null)} disabled={trabajando}><Texto>Cancelar</Texto></Boton>
+            <Boton variante={pregunta.peligro ? 'peligro' : 'primario'} tamano="sm" cargando={trabajando} onClick={confirmar}><Texto>{pregunta.boton}</Texto></Boton>
+          </div>
+        </div>
+      )}
       {combos.length > 0 && (
         <HojaInferior abierta={eligiendoCombo} onCerrar={() => !llevando && setEligiendoCombo(false)} titulo="Llevar en combo">
-          <p className={s.comboAyuda}>Usamos una copia de «{nombre || 'tu diseño'}»: tu creación sigue igual. En el combo le cambias el color o el diseño a cada prenda.</p>
+          <p className={s.comboAyuda}><Texto>{`Usamos una copia de «${nombre || 'tu diseño'}»: tu creación sigue igual. En el combo le cambias el color o el diseño a cada prenda.`}</Texto></p>
           <ul className={s.comboLista}>
             {combos.map((c) => (
               <li key={c.id}>
@@ -258,7 +288,7 @@ export function TarjetaCreacion({
                   onClick={async () => { setLlevando(c.id); try { await c.onLlevar?.(); } finally { setLlevando(null); setEligiendoCombo(false); } }}
                 >
                   <Users aria-hidden="true" />
-                  <span><strong>{c.nombre}</strong><small>{c.piezas} prendas · {soles(c.precio)}</small></span>
+                  <span><strong>{c.nombre}</strong><small>{c.piezas} <Texto>prendas</Texto> · {soles(c.precio)}</small></span>
                   {llevando === c.id ? <RotateCw className={s.girando} aria-hidden="true" /> : <ArrowRight aria-hidden="true" />}
                 </button>
               </li>
@@ -267,5 +297,66 @@ export function TarjetaCreacion({
         </HojaInferior>
       )}
     </article>
+  );
+}
+
+/** Una versión anterior: recuperar o eliminar ya (con su confirmación en la fila). */
+function FilaVersion({ id, nombre, imagen, combo, dias, enPedido, onRecuperar, onEliminar }) {
+  const [confirmar, setConfirmar] = useState(false);
+  const [trabajando, setTrabajando] = useState(null);
+  const tEliminar = useTexto(`Eliminar ${nombre || 'este diseño'} ya`);
+  const hacer = async (cual, accion) => {
+    setTrabajando(cual);
+    try { await accion?.(id); } finally { setTrabajando(null); setConfirmar(false); }
+  };
+  const detalle = enPedido
+    ? 'Está en un pedido: no se borra sola'
+    : dias > 0 ? `Se borra en ${dias} ${dias === 1 ? 'día' : 'días'}` : 'Se borra hoy';
+  return (
+    <li className={s.version}>
+      <FotoProducto className={s.versionFoto} src={imagen} respaldo={<span className={s.sinFoto}><ImageOff aria-hidden="true" /></span>} />
+      <span className={s.versionTextos}>
+        <strong>{nombre || <Texto>Mi diseño</Texto>}</strong>
+        <small>{combo ? `${combo} · ` : ''}<Texto>{detalle}</Texto></small>
+      </span>
+      {confirmar ? (
+        <span className={s.versionAcciones} role="alert">
+          <small><Texto>¿Eliminar ya? No se puede deshacer.</Texto></small>
+          <Boton variante="fantasma" tamano="sm" onClick={() => setConfirmar(false)} disabled={Boolean(trabajando)}><Texto>Cancelar</Texto></Boton>
+          <Boton variante="peligro" tamano="sm" cargando={trabajando === 'eliminar'} onClick={() => hacer('eliminar', onEliminar)}><Texto>Eliminar</Texto></Boton>
+        </span>
+      ) : (
+        <span className={s.versionAcciones}>
+          {onRecuperar && <Boton variante="contorno" tamano="sm" cargando={trabajando === 'recuperar'} onClick={() => hacer('recuperar', onRecuperar)}><Texto>Recuperar</Texto></Boton>}
+          {onEliminar && <Boton variante="fantasma" tamano="sm" soloIcono aria-label={tEliminar} title={tEliminar} icono={<Trash2 aria-hidden="true" />} onClick={() => setConfirmar(true)} disabled={Boolean(trabajando)} />}
+        </span>
+      )}
+    </li>
+  );
+}
+
+/**
+ * Versiones anteriores de las prendas de los combos (las que un combo ya no
+ * usa): no salen en las creaciones y se borran solas a los días. Se abre y
+ * cierra (cerrada al llegar).
+ *  - versiones: [{ id, nombre, imagen, combo (nombre), dias (que le quedan),
+ *    enPedido (no se borra sola) }]
+ *  - diasTotal: a los cuántos días se borran · onRecuperar(id), onEliminar(id): promesas
+ */
+export function VersionesAnteriores({ versiones = [], diasTotal = 7, onRecuperar, onEliminar }) {
+  if (!versiones.length) return null;
+  return (
+    <details className={s.versiones} data-componente="VersionesAnteriores">
+      <summary>
+        <History aria-hidden="true" />
+        <Texto>{`Versiones anteriores de tus combos (${versiones.length})`}</Texto>
+      </summary>
+      <p className={s.versionesAyuda}>
+        <Texto>{`Son diseños que tus combos ya no usan (los cambiaste por otro). No salen en tus creaciones y se borran solos a los ${diasTotal} días. Recupera los que quieras guardar.`}</Texto>
+      </p>
+      <ul className={s.versionesLista}>
+        {versiones.map((v) => <FilaVersion key={v.id} {...v} onRecuperar={onRecuperar} onEliminar={onEliminar} />)}
+      </ul>
+    </details>
   );
 }

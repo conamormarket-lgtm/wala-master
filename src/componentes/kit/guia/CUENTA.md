@@ -498,6 +498,81 @@ textos sin ideas), los gustos en el formulario (la configuración de la
 encuesta no se puede leer en el emulador), subir una foto, un guardado que
 falle, la traducción ni la app Android.
 
+## Mis creaciones en la tienda (hecho el 2026-10-19)
+
+![Mis creaciones en la tienda real, en el celular: un combo con sus dos prendas y su etiqueta, una creación comprada; abajo, una que ya no está, las versiones anteriores de los combos abiertas con "Recuperar" y el comienzo de los borradores](cuenta-creaciones-tienda.webp)
+
+(Celular, 390 px, claro, con creaciones de prueba del emulador. Se probó
+también a 1366 y en noche.)
+
+- **Conector:** `src/components/cuenta/CreacionesDeCuenta.jsx`, desde
+  `pages/cuenta/MisCreacionesPage.jsx`. Lo mismo de antes: cada combo es
+  una tarjeta (sus prendas no se repiten), los borradores en su carrusel,
+  renombrar (con Enter o al salir del campo), eliminar, publicar en la
+  comunidad (admins con permiso, el servidor lo vuelve a comprobar),
+  "Llevar en combo", y las versiones anteriores con su borrado a los 7
+  días con el mismo cuidado (`useVersionesReemplazadas` solo con las dos
+  listas cargadas y al día).
+- **Las siete recomendaciones acordadas:**
+  1. Interruptor `cuentaVieja`: vuelve `MisCreacionesViejo.jsx`.
+  2. "Comprado" sale de `design.enPedido` (lo pone el checkout). Antes se
+     pedían todos los pedidos (`misPedidosSecure`) y se buscaban en un
+     campo que no existe: nunca se veía, y además pisaba la caché de Mis
+     pedidos. La misma marca guarda los archivos al eliminar.
+  3. Eliminar con una sola confirmación (la de la tarjeta): `useEliminarCreacion`
+     suma `eliminar(diseno, { enPedido })` y `notasDe(diseno)` (lo mismo
+     de su ventana, sin la ventana: saca del carrito, deja las listas al
+     día, avisa) y `useEliminarMiCombo` acepta `{ confirmado: true }`.
+     Los textos son los reales: un combo se lleva sus prendas ("Las que
+     uses en otro combo, en un pedido o en el carrito se quedan"; antes el
+     kit decía que se quedaban todas), "También se quitará de tu carrito" y
+     el aviso de lo publicado en la comunidad.
+  4. El kit suma lo que faltaba: combos (`imagenes`, `colores` por prenda,
+     `/combo/:id?mio=`), borradores (`miniatura`, precio, "Editado hace 25
+     minutos"), diseños del editor de antes (su foto con capas por `foto`,
+     un solo "Editar"), la foto como enlace (`url`), la vuelta del estudio
+     (`estadoEditar`: "Volver a Mis creaciones"), sin acciones lo que ya
+     no está, colores bicolor (`color.fondo`), las fechas de los diseños
+     antiguos (`fechaDeDiseno`), meses y años ("Guardada el año pasado"),
+     "Llevar en combo" y `VersionesAnteriores` (recuperar, eliminar ya
+     con su confirmación en la fila, días que quedan, "Está en un pedido").
+  5. Como las demás: textos con `<Texto>`, la lista vacía con el sello,
+     seis `EsqueletoCreacion` (la tarjeta acostada) y los borradores
+     también con error o sin creaciones.
+  6. Las creaciones en caché (`['mis-creaciones-cuenta', uid]`): al
+     volver se ven al instante y se refrescan. Las fotos siguen siendo las
+     de 900 px (no hay copias chicas en Storage).
+  7. La espalda en el celular con "Ver espalda" (antes cambiaban solas
+     cada 2,2 s).
+- **También, en el kit:** la confirmación tapa toda la tarjeta (en la foto
+  angosta del celular no entraba), y con tres botones "Comprar" se queda
+  sin su ícono para no salirse de la tarjeta.
+
+### Qué se probó (2026-10-19, localhost con los emuladores)
+
+Con creaciones de prueba de `cliente@wala.test`: un combo con dos
+prendas, una creación comprada (`enPedido`) con frente y espalda, otra
+de una sola cara, un diseño del editor de antes, una de un producto que ya
+no está, una versión anterior a 4 días de borrarse y un borrador:
+- Las tarjetas, sus etiquetas (Combo · 2, Comprado, No disponible), los
+  precios, "Guardada ayer / anteayer / el mes pasado / hace 3 meses / el
+  año pasado" y "Editado hace 25 minutos"; los enlaces de la foto, editar
+  y comprar como antes; editar lleva `desde: /cuenta/creaciones`.
+- Renombrar con Enter y al salir del campo (los dos quedan en Firestore).
+- Eliminar: el texto de lo comprado; una creación (aviso "Creación
+  eliminada."); el combo con una sola confirmación, y se fueron el combo y
+  sus dos prendas.
+- Versiones anteriores: "Se borra en 4 días" y "Recuperar" (vuelve a las
+  creaciones y se van la marca y el combo).
+- "Llevar en combo": la hoja con "Combo pareja · 2 prendas · S/ 99.90" y,
+  al elegirlo, el combo con la copia.
+- La lista vacía; `cuentaVieja` → la página de antes. 390 y 1366, claro y
+  noche.
+
+No se probó: la comunidad (la cuenta de prueba no es admin), eliminar una
+creación que está en el carrito o publicada (las notas), un error al
+cargar, la traducción ni la app Android.
+
 ## Llevar a la tienda (lo que falta)
 
 Páginas propias: van en el paso 6 de [MIGRACION.md](MIGRACION.md). Se migra
@@ -527,7 +602,7 @@ componente o su forma de recibir datos.
 | ✓ Cupones | `MisCuponesPage.jsx` (hoy `MisCuponesViejo.jsx`) | `PaginaCupones` + `TarjetaCupon` (hecho) |
 | ✓ Misiones | `MisionesPage.jsx` (hoy `MisionesViejo.jsx`) | `PaginaMisiones` + `NivelCuenta` + `TarjetaMision` (hecho) |
 | ✓ Referidos | `CuentaReferidosPage.jsx` (hoy `CuentaReferidosViejo.jsx`), `components/GrupoReferidos.jsx`, `components/DetallePedidoReferido.jsx` | `PaginaReferidos` + `FilaReferido` + `DetallePedidoReferido` (hecho) |
-| Creaciones | `MisCreacionesPage.jsx` (`MiCreacionCard` ~151, `TusBorradores` ~168) | `PaginaCreaciones` + `TarjetaCreacion` |
+| ✓ Creaciones | `MisCreacionesPage.jsx` (hoy `MisCreacionesViejo.jsx`; `MiCreacionCard` ~151, `TusBorradores` ~168) | `PaginaCreaciones` + `TarjetaCreacion` + `VersionesAnteriores` (hecho) |
 | ✓ Lista de deseos | `WishlistPage.jsx` (hoy `WishlistViejo.jsx`, `PremiumProductCard` ~275) | `PaginaListaDeseos` con `TarjetaDeProducto` por `tarjeta` (hecho) |
 | ✓ Fechas importantes | `CuentaFechasImportantesPage.jsx` (hoy `CuentaFechasImportantesViejo.jsx`, + `FechasFestivasSeccion.jsx`, modal con portal ~739) | `PaginaFechas` + `TarjetaPersonaRegalo` + `AvisoFestiva` (hecho) |
 
@@ -556,8 +631,9 @@ componente o su forma de recibir datos.
 | `PaginaReferidos.url`, `codigo` | `linkInvitacion(referralCode)`, `referralCode` |
 | `grupos` (referidos) | `getReferralsByReferrer` agrupado como hoy (`grupoDe`); cada persona con `chips`/`detalle` de `estadoDe` y `restanteLegible`, `reclamo` según `pedido.finalizado` |
 | `onReclamar`, `onVerPedido` | `claimReferralCoins(id)` (+ `volarMonedasGanadas`, toast, invalidar queries) / `getReferralOrderDetail(id)` |
-| `creaciones`, `borradores` | `getDesignsByUser(uid)` → `creacionDesdeDiseno(d, { precio, precioAntes, disponible, comprado })`; `useBorradoresCrear` |
-| `onEliminar` (creación) | `useEliminarCreacion` (sin su modal: la tarjeta ya confirma) |
+| `creaciones`, `borradores` | `getDesignsByUser(uid)` (caché `['mis-creaciones-cuenta', uid]`) → `agruparCombos` → `creacionDesdeDiseno(d, { precio, precioAntes, disponible, foto, colores, combos, estadoEditar… })`; `useBorradoresCrear`; "Comprado" = `d.enPedido` |
+| `onEliminar` (creación) | `useEliminarCreacion().eliminar(d, { enPedido })` (sin su ventana: la tarjeta ya confirma) o `useEliminarMiCombo()(combo, { confirmado: true })` |
+| `versiones` | `useVersionesReemplazadas` → `{ id, nombre, imagen, combo, dias: diasParaBorrar(d), enPedido }`; `recuperarVersion` |
 | `items` (deseos) | `wishlistItems` + `useProductosDeLista` (un producto por item) → `{ id, cargando, disponible, producto (solo el apagado: nombre, imagen), guardado, regalado: isGifted }`; `tarjeta`: `TarjetaDeProducto` |
 | `PaginaPedidos.pedidos` | cada pedido de `usePedidos` como lo arma `resumirRastreo`: `{ id, codigo, fecha, items, total, paso, pasos: ETAPAS_PRODUCCION si hay fase del taller (o los 5 generales), estado: { texto: getEtapaBadgeLabel / estadoWalaADisplay, tono }, deuda: montoDeuda si conDeuda, anulado, urlDetalle }` |
 | `porVerificar` | `{ pendientes: data.pendientes (fecha ya legible y fase con ETIQUETA_FASE), correoVerificado: data.emailVerificado, onEnviarVerificacion: enviarVerificacionCorreo, onYaVerifique: refrescarVerificacionCorreo + recargar, onVincular: vincularPedido }` |
@@ -632,7 +708,8 @@ componente o su forma de recibir datos.
 - El formulario de tarjeta (Culqi, PayPal) entra como `tarjeta` en
   `HojaPagarSaldo`: el kit no lo dibuja.
 - Mis creaciones: los diseños de legado con capas (`DomOverlay`,
-  `ComboProductImage`) se ven con su imagen de vista previa.
+  `ComboProductImage`) siguen dibujándose como antes, por `foto` (hecho
+  el 2026-10-19).
 - Las páginas públicas para compartir: la lista de deseos
   (`/wishlist/:código`, `WishlistPublic`) y el registro de regalos
   (`/regalar/:código`, `GiftRegistryPage`, con arrastrar a una fecha).
@@ -648,8 +725,8 @@ componente o su forma de recibir datos.
 3. ✓ Perfil y Direcciones (2026-10-17, arriba).
 4. ✓ Catálogo, Cupones y Misiones (2026-10-17, arriba).
 5. ✓ Referidos (2026-10-19, arriba).
-6. Lista de deseos y Fechas importantes (✓ 2026-10-19, arriba) y Mis
-   creaciones (lo que le falta, arriba, antes).
+6. ✓ Lista de deseos, Fechas importantes y Mis creaciones (2026-10-19,
+   arriba).
 7. Mis pedidos cuando el kit tenga `PedidosPorVerificar`.
 
 Para volver atrás: cada paso en su propio commit; las páginas viejas no se

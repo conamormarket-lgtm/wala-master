@@ -16,6 +16,10 @@ import { Confirmar } from '../../componentes/kit/Feedback';
  *   pedir(diseno, { enPedido })  → abre la confirmación
  *   {dialogo}                    → se renderiza donde sea (Confirmar del kit)
  *
+ * Quien ya preguntó (la tarjeta del kit confirma sobre su foto) usa
+ * `eliminar(diseno, { enPedido })` → true si se borró: lo mismo, sin la
+ * ventana. `notasDe(diseno)` da lo que la confirmación tiene que decir.
+ *
  * También quita la creación del carrito: sin ella, el artículo quedaría
  * apuntando a imágenes que ya no existen.
  */
@@ -35,37 +39,47 @@ export const useEliminarCreacion = ({ alEliminar } = {}) => {
   const pedir = (diseno, { enPedido = false } = {}) => setPendiente({ diseno, enPedido });
   const cerrar = () => { if (!borrando) setPendiente(null); };
 
-  const enCarrito = visto
-    ? (items || []).filter((i) => i.customization?.designId === visto.diseno.id)
-    : [];
+  const enCarritoDe = (diseno) => (items || []).filter((i) => i.customization?.designId === diseno?.id);
   const enPedido = Boolean(visto && (visto.enPedido || visto.diseno.enPedido));
   const esBorrador = visto?.diseno.estado === 'borrador';
 
-  const confirmar = async () => {
-    if (!user || !pendiente) return;
-    const { diseno } = pendiente;
-    setBorrando(true);
-    const { error } = await eliminarCreacion(user.uid, diseno, { conservarArchivos: enPedido });
-    setBorrando(false);
+  /** Lo que la confirmación tiene que decir además del texto (carrito, comunidad). */
+  const notasDe = (diseno) => [
+    enCarritoDe(diseno).length > 0 && 'También se quitará de tu carrito.',
+    diseno?.comunidad === 'publicada' && 'Está publicada en la comunidad: la publicación seguirá ahí. Para quitarla, retírala antes.',
+  ].filter(Boolean);
+
+  // Borra (ya confirmado): saca la creación del carrito, deja las listas al
+  // día y avisa. Lo que está en un pedido conserva sus archivos.
+  const eliminar = async (diseno, { enPedido: enPedidoDado = false } = {}) => {
+    if (!user || !diseno) return false;
+    const conservarArchivos = Boolean(enPedidoDado || diseno.enPedido);
+    const deCarrito = enCarritoDe(diseno);
+    const { error } = await eliminarCreacion(user.uid, diseno, { conservarArchivos });
     if (error) {
       toast.error(`No pudimos eliminar tu creación: ${error}`);
-      return;
+      return false;
     }
-    enCarrito.forEach((i) => removeFromCart(i.id));
+    deCarrito.forEach((i) => removeFromCart(i.id));
     quitarBorradorDeCache(queryClient, user.uid, diseno.id);
     queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'], refetchType: 'all' });
     queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'], refetchType: 'all' });
     queryClient.removeQueries({ queryKey: ['creacion', diseno.id] });
-    setPendiente(null);
     toast.success(diseno.estado === 'borrador' ? 'Borrador eliminado.' : 'Creación eliminada.');
     alEliminar?.(diseno);
+    return true;
+  };
+
+  const confirmar = async () => {
+    if (!user || !pendiente) return;
+    setBorrando(true);
+    const hecho = await eliminar(pendiente.diseno, { enPedido });
+    setBorrando(false);
+    if (hecho) setPendiente(null);
   };
 
   // Mientras borra, Confirmar queda bloqueada (no se cierra) y el botón cargando.
-  const notas = [
-    enCarrito.length > 0 && 'También se quitará de tu carrito.',
-    visto?.diseno.comunidad === 'publicada' && 'Está publicada en la comunidad: la publicación seguirá ahí. Para quitarla, retírala antes.',
-  ].filter(Boolean);
+  const notas = visto ? notasDe(visto.diseno) : [];
   const dialogo = (
     <Confirmar
       abierta={Boolean(pendiente)}
@@ -82,7 +96,7 @@ export const useEliminarCreacion = ({ alEliminar } = {}) => {
     </Confirmar>
   );
 
-  return { pedir, dialogo, borrando };
+  return { pedir, dialogo, borrando, eliminar, notasDe };
 };
 
 export default useEliminarCreacion;

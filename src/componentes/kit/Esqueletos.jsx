@@ -296,6 +296,21 @@ const Caja = ({ alto, className, children }) => (
   <span className={cx(s.tarjeta, className)} style={{ minHeight: alto }}>{children}</span>
 );
 
+/** Una creación guardada (TarjetaCreacion acostada): foto a la izquierda, textos y botones. */
+export function EsqueletoCreacion() {
+  return (
+    <Caja alto={200} className={s.creacion}>
+      <Hueso forma="bloque" ancho="42%" alto="auto" className={s.creacionFoto} />
+      <span className={s.filaTextos}>
+        <Hueso alto={15} ancho="80%" />
+        <Hueso alto={10} ancho="50%" />
+        <Hueso alto={18} ancho="40%" />
+        <span className={s.parLinea}><Hueso forma="circulo" ancho={30} alto={30} /><Hueso forma="pildora" alto={34} ancho="70%" /></span>
+      </span>
+    </Caja>
+  );
+}
+
 /** La cabeza de una página de la tienda (Encabezado): título grande centrado y subtítulo. */
 const EncabezadoCentrado = ({ extra = false }) => (
   <span className={s.encabezado}>

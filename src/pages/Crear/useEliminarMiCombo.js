@@ -10,6 +10,7 @@ import { eliminarMiComboConPrendas } from '../../services/misCombos';
  * borradores: se van el combo y sus prendas, salvo las que se usan en otro
  * lado (ver eliminarMiComboConPrendas). Devuelve los ids que ya no están (el
  * combo y las prendas borradas) y los de las prendas que quedaron sueltas.
+ * Con `{ confirmado: true }` no pregunta (la tarjeta del kit ya lo hizo).
  */
 export const useEliminarMiCombo = () => {
   const { user } = useAuth();
@@ -17,10 +18,10 @@ export const useEliminarMiCombo = () => {
   const toast = useGlobalToast();
   const confirmar = useConfirmar();
   const queryClient = useQueryClient();
-  return async (combo) => {
+  return async (combo, { confirmado = false } = {}) => {
     if (!user) return null;
     const nombre = combo.name || 'Mi combo';
-    if (!(await confirmar({
+    if (!confirmado && !(await confirmar({
       titulo: `¿Eliminar el combo "${nombre}" y sus prendas?`,
       texto: 'Las que uses en otro combo, en un pedido o en el carrito se quedan.',
       confirmar: 'Eliminar',

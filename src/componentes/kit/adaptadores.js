@@ -851,37 +851,128 @@ export const misionDesdeServidor = (m = {}, acciones = {}) => {
 /** TIERS de constants/tiers.js → niveles de NivelCuenta (sin el emoji: cada uno lleva su sello). */
 export const nivelesDesdeTiers = (tiers = []) => tiers.map((t) => ({ clave: t.key, nombre: t.name, min: Number(t.min) || 0 }));
 
-/** "Guardada hoy / ayer / hace N días" desde una fecha (Timestamp, ms o ISO). */
-const haceCuanto = (f, prefijo = 'Guardada') => {
-  const ms = typeof f === 'number' ? f : typeof f === 'string' ? Date.parse(f) : ((f?.seconds || f?._seconds || 0) * 1000);
-  if (!ms) return '';
-  const dias = Math.floor((Date.now() - ms) / 86400000);
-  if (dias <= 0) return `${prefijo} hoy`;
-  if (dias === 1) return `${prefijo} ayer`;
-  return `${prefijo} hace ${dias} días`;
+/**
+ * Milisegundos del último guardado de un diseño, o null. `updatedAt` llega
+ * como Timestamp, { seconds }, texto, número o Date; los diseños guardados
+ * antes de arreglar el guardado tienen ahí un mapa sin fecha: para esos se
+ * usa la hora que llevan en el nombre sus vistas previas
+ * (designs/{uid}/crear/previas/{ms}_…). Lo mismo que fechaDeCreacion.
+ */
+export const fechaDeDiseno = (d) => {
+  for (const ts of [d?.updatedAt, d?.createdAt]) {
+    if (!ts) continue;
+    if (typeof ts.toMillis === 'function') return ts.toMillis();
+    const segundos = ts.seconds ?? ts._seconds;
+    if (typeof segundos === 'number') return segundos * 1000;
+    if (ts instanceof Date || typeof ts === 'string' || typeof ts === 'number') {
+      const ms = new Date(ts).getTime();
+      if (!Number.isNaN(ms)) return ms;
+    }
+  }
+  let ultima = null;
+  [d?.imagenConjunta, d?.previewUrl, ...(d?.vistasPrevias || []).map((p) => p?.url)].forEach((u) => {
+    const m = typeof u === 'string' && u.match(/previas(?:%2F|\/)(\d{13})_/);
+    if (m) ultima = Math.max(ultima || 0, Number(m[1]));
+  });
+  return ultima;
 };
 
+const relativo = new Intl.RelativeTimeFormat('es', { numeric: 'auto' });
+
 /**
- * Diseño guardado (services/designs) → TarjetaCreacion. Lo que sale del
- * catálogo vivo va en `extra`: { precio, precioAntes, disponible, comprado }
- * (MisCreacionesPage lo cruza con getProduct y usePedidos).
+ * "Guardada hoy / ayer / hace 3 días / hace 2 meses" desde milisegundos. Con
+ * `fino` (borradores): también minutos y horas ("Editado hace 5 minutos").
+ */
+export const haceCuanto = (ms, prefijo = 'Guardada', { fino = false } = {}) => {
+  if (!ms) return '';
+  if (fino) {
+    let valor = (ms - Date.now()) / 1000;
+    for (const [tope, unidad] of [[60, 'second'], [60, 'minute'], [24, 'hour'], [7, 'day'], [4.35, 'week'], [12, 'month'], [Infinity, 'year']]) {
+      if (Math.abs(valor) < tope) return `${prefijo} ${relativo.format(Math.round(valor), unidad)}`;
+      valor /= tope;
+    }
+    return '';
+  }
+  const dias = Math.round((Date.now() - ms) / 86400000);
+  if (dias < 30) return `${prefijo} ${relativo.format(-dias, 'day')}`;
+  const meses = Math.round(dias / 30);
+  if (meses < 12) return `${prefijo} ${relativo.format(-meses, 'month')}`;
+  return `${prefijo} ${relativo.format(-Math.round(meses / 12), 'year')}`;
+};
+
+const fechaLarga = (ms) => (ms ? new Date(ms).toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' }) : undefined);
+
+/**
+ * Diseño guardado (services/designs) → TarjetaCreacion, según lo que es:
+ *  - "Mi combo" (tipo 'comboCrear'): sus prendas lado a lado, su combo y el
+ *    enlace al combo con lo suyo puesto
+ *  - un borrador de Crear: su miniatura, "Editado hace…" y "Continuar"
+ *  - una creación de Crear: su página (ver, comprar) y el estudio
+ *  - un diseño del editor de antes (sin tipo): solo "Editar" en el editor
+ *    (su foto, con sus capas, la dibuja la tienda: `foto`)
+ * Lo que sale del catálogo vivo va en `extra` ({ precio, precioAntes,
+ * disponible, comprado, imagenes, colores, aviso… }).
  */
 export const creacionDesdeDiseno = (d = {}, extra = {}) => {
-  const deCrear = d.tipo === 'crear';
-  const vistas = d.vistasPrevias || [];
-  return {
+  const fecha = fechaDeDiseno(d);
+  const base = {
     id: d.id,
-    nombre: d.name,
-    imagen: vistas[0]?.url || d.imagenConjunta || d.previewUrl || null,
+    publicada: d.comunidad === 'publicada',
+    comprado: d.enPedido === true,
+    fechaCompleta: fechaLarga(fecha),
+  };
+  if (d.tipo === 'comboCrear') {
+    const piezas = d.piezas || [];
+    const borrador = d.estado === 'borrador';
+    const url = `/combo/${d.comboId}?mio=${d.id}`;
+    return {
+      ...base,
+      nombre: d.name || 'Mi combo',
+      imagenes: piezas.some((p) => p.frente) ? piezas.map((p) => p.frente || '') : (d.previas || []),
+      subtitulo: borrador
+        ? `${piezas.filter((p) => p.designId).length} de ${piezas.length} prendas con diseño · sin terminar`
+        : (d.comboNombre || 'Combo'),
+      combo: String(piezas.length),
+      fecha: haceCuanto(fecha, borrador ? 'Editado' : 'Guardada', { fino: borrador }),
+      borrador,
+      url,
+      urlEditar: url,
+      urlComprar: borrador ? undefined : url,
+      ...extra,
+    };
+  }
+  if (d.estado === 'borrador') {
+    const url = `/crear/${d.productId}?designId=${d.id}`;
+    return {
+      ...base,
+      nombre: d.productName || 'Mi diseño',
+      imagen: d.miniatura || d.miniaturas?.[0]?.url || null,
+      imagenEspalda: d.miniaturas?.[1]?.url || null,
+      color: d.color?.hex ? { nombre: d.color.nombre, hex: d.color.hex } : undefined,
+      subtitulo: d.color?.nombre ? `${d.color.nombre} · sin terminar` : 'Sin terminar',
+      fecha: haceCuanto(fecha, 'Editado', { fino: true }),
+      borrador: true,
+      url,
+      urlEditar: url,
+      ...extra,
+    };
+  }
+  const deCrear = d.tipo === 'crear';
+  const vistas = (d.vistasPrevias || []).filter((v) => v?.url);
+  const editor = `/editor/${d.productId || 'unknown'}?designId=${d.id}`;
+  return {
+    ...base,
+    nombre: d.name || 'Sin nombre',
+    imagen: deCrear ? (vistas[0]?.url || d.imagenConjunta || d.previewUrl || null) : null,
     imagenEspalda: deCrear ? (vistas[1]?.url || null) : null,
     producto: d.productName,
-    color: d.color ? { nombre: d.color.nombre, hex: d.color.hex } : undefined,
-    fecha: haceCuanto(d.updatedAt || d.createdAt),
-    publicada: d.comunidad === 'publicada',
-    combo: d.combo?.nombre,
-    lados: vistas.length > 1 ? 'Frente + Espalda' : undefined,
-    urlEditar: deCrear ? `/crear/${d.productId}?designId=${d.id}` : `/editor/${d.productId}?designId=${d.id}`,
+    color: d.color?.nombre ? { nombre: d.color.nombre, hex: d.color.hex } : undefined,
+    fecha: haceCuanto(fecha),
+    lados: vistas.map((v) => v.nombre).filter(Boolean).join(' + ') || undefined,
+    url: deCrear ? `/creacion/${d.id}` : editor,
+    urlEditar: deCrear ? `/crear/${d.productId}?designId=${d.id}` : editor,
     urlComprar: deCrear ? `/creacion/${d.id}` : undefined,
+    soloEditar: !deCrear,
     ...extra,
   };
 };

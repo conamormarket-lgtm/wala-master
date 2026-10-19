@@ -24,6 +24,19 @@
   min-width: 0;
 }
 
+/* La foto lleva a su página: un enlace encima de ella, debajo de los botones. */
+.fotoEnlace {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.fotoEnlace:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: -3px;
+}
+
 .fotoMarco {
   position: relative;
   /* La foto en su recuadro dentro de la tarjeta, como la de TarjetaProducto
@@ -176,13 +189,19 @@
 /* Confirmar eliminar: una capa sobre la foto. */
 .confirmar {
   position: absolute;
-  z-index: 3;
+  /* Sobre toda la tarjeta, también sobre el canto iluminado (.bordeLuz). */
+  z-index: 6;
   inset: 0;
+  border-radius: inherit;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  gap: 0.4rem;
-  padding: 1rem;
+  /* Si no entra (la foto angosta del celular), empieza arriba y se desliza:
+     antes el título quedaba cortado por encima. */
+  justify-content: safe flex-end;
+  gap: 0.35rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.75rem;
   background: color-mix(in srgb, var(--color-surface) 94%, transparent);
   animation: aparecer var(--dur-media) var(--ease-signature);
 }
@@ -350,6 +369,13 @@
 .acciones > :last-child:not(:first-child),
 .borrador .acciones > :only-child {
   flex: 1;
+  min-width: 0;
+}
+
+/* Con tres botones (Llevar en combo, pincel y Comprar) no entra el ícono de
+   Comprar en la tarjeta acostada del celular: queda solo la palabra. */
+.acciones:has(> :nth-child(3)) > :last-child svg {
+  display: none;
 }
 
 .noDisponible .foto {
@@ -744,4 +770,98 @@
 
 @keyframes girar {
   to { transform: rotate(360deg); }
+}
+
+/* Versiones anteriores de los combos */
+.versiones {
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.versiones summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0.6rem 1rem;
+  color: var(--color-text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.versiones summary svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+  color: var(--primary-color);
+}
+
+.versiones summary:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+  border-radius: 18px;
+}
+
+.versionesAyuda {
+  margin: 0;
+  padding: 0 1rem 0.75rem;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.versionesLista {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0 0.75rem 0.75rem;
+  list-style: none;
+}
+
+.version {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem;
+  border-radius: 14px;
+  background: var(--color-background, transparent);
+}
+
+.versionFoto {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 12px;
+}
+
+.versionTextos {
+  display: grid;
+  flex: 1 1 140px;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.versionTextos strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.versionTextos small,
+.versionAcciones small {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.versionAcciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  margin-left: auto;
 }

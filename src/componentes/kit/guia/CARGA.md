@@ -226,6 +226,13 @@ buscador de regalos, y los paquetes aparecen cuando llega el catálogo
 (antes no se pintaba nada hasta entonces). Agregar rápido baja su código la
 primera vez que se toca "Elegir".
 
+Ya en la tienda (paso 6, Mis creaciones, 2026-10-19): la primera vez, seis
+`EsqueletoCreacion` (la tarjeta acostada, como `EsqueletoPagina` con
+`modulo="creaciones"`; antes, seis esqueletos de la tarjeta vieja); al
+volver, las creaciones de la caché al instante mientras se piden de nuevo.
+Un diseño del editor de antes deja su foto vacía mientras llega su
+producto; precios y combos aparecen al llegar (las tarjetas no saltan).
+
 Ya en la tienda (paso 6, el carrito, 2026-10-17): el carrito sale de
 localStorage al instante, así que no tiene esqueleto propio (la ruta sigue con
 el `PageLoading` de `App.jsx` hasta el paso 7). "También te puede gustar" no

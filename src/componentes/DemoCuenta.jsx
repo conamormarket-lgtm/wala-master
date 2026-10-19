@@ -499,6 +499,12 @@ export function CuentaDemo({
         cargando={cargando}
         error={conError}
         onReintentar={() => avisar('En la tienda', 'Volvería a pedir tus creaciones', 'info')}
+        versiones={vacio ? [] : [
+          { id: 'v1', nombre: 'Polo de él (antes)', imagen: creaciones[0]?.imagen, combo: 'Combo pareja', dias: 4 },
+          { id: 'v2', nombre: 'Casaca de ella (antes)', imagen: creaciones[1]?.imagen, combo: 'Combo pareja', enPedido: true },
+        ]}
+        onRecuperarVersion={async () => { await espera(500); avisar('Diseño recuperado', 'En la tienda vuelve a tus creaciones'); }}
+        onEliminarVersion={async () => { await espera(500); avisar('Eliminado', undefined, 'info'); }}
         onEliminar={async (id) => {
           await espera(700);
           setCreaciones((l) => l.filter((x) => x.id !== id));

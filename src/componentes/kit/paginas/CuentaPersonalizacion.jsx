@@ -5,11 +5,10 @@ import { Aviso, EstadoVacio } from '../Feedback';
 import TarjetaProducto from '../TarjetaProducto';
 import Carrusel from '../Carrusel';
 import { CabezaCuenta } from '../piezas/Cuenta';
-import { TarjetaCreacion } from '../piezas/Creaciones';
+import { TarjetaCreacion, VersionesAnteriores } from '../piezas/Creaciones';
 import { TarjetaPersonaRegalo, AvisoFestiva, AgendaFechas, faltanDias } from '../piezas/Regalos';
 import { HojaPersona, RELACIONES } from '../piezas/FormularioPersona';
-import { EsqueletoProducto, EsqueletoFila, EsqueletoTarjeta } from '../Esqueletos';
-import { CARAS_KAPI } from '../piezas/Flotantes';
+import { EsqueletoProducto, EsqueletoFila, EsqueletoTarjeta, EsqueletoCreacion } from '../Esqueletos';
 import { Texto } from '../Traduccion';
 import s from './CuentaPersonalizacion.module.css';
 
@@ -30,16 +29,21 @@ function Esqueletos({ n = 3, alto = 300, forma = 'tarjeta' }) {
 /* ── Mis creaciones (/cuenta/creaciones) ────────────────── */
 
 /**
- * Mis creaciones: los diseños guardados (comprar o seguir editando) y, si
- * hay, los borradores en un carrusel.
+ * Mis creaciones: los diseños guardados (comprar o seguir editando), las
+ * versiones anteriores de los combos y, si hay, los borradores en un carrusel.
  *  - creaciones: props de TarjetaCreacion con `id` (creacionDesdeDiseno)
- *  - borradores: ídem, sin precio (useBorradoresCrear)
- *  - cargando · error · onReintentar
+ *  - borradores: ídem (los combos sin terminar también se renombran)
+ *  - cargando · error · onReintentar (los borradores se ven igual)
  *  - onEliminar(id), onRenombrar(id, nombre): promesas · urlCrear
  *  - comunidadPara(creacion): la prop `comunidad` de cada tarjeta (publicar,
  *    actualizar, retirar; solo para quien puede publicar) o nada
+ *  - versiones, diasVersion, onRecuperarVersion(id), onEliminarVersion(id):
+ *    las de VersionesAnteriores
  */
-export function PaginaCreaciones({ creaciones = [], borradores = [], cargando = false, error = false, onReintentar, onEliminar, onRenombrar, comunidadPara, urlCrear = '/personalizar' }) {
+export function PaginaCreaciones({
+  creaciones = [], borradores = [], cargando = false, error = false, onReintentar, onEliminar, onRenombrar, comunidadPara, urlCrear = '/personalizar',
+  versiones = [], diasVersion = 7, onRecuperarVersion, onEliminarVersion,
+}) {
   const n = creaciones.length;
   let subtitulo = 'Tus diseños guardados, listos para comprar o seguir editando.';
   if (!cargando && n) subtitulo = `${n} ${n === 1 ? 'diseño guardado' : 'diseños guardados'} · cómpralos o sigue editándolos cuando quieras.`;
@@ -49,48 +53,64 @@ export function PaginaCreaciones({ creaciones = [], borradores = [], cargando = 
       <CabezaCuenta
         icono={<Sparkles />}
         tono="rosa"
-        titulo="Mis creaciones"
-        subtitulo={subtitulo}
-        accion={(cargando || n > 0) && <Boton to={urlCrear} icono={<Plus aria-hidden="true" />}>Crear nuevo diseño</Boton>}
+        titulo={<Texto>Mis creaciones</Texto>}
+        subtitulo={<Texto>{subtitulo}</Texto>}
+        accion={(cargando || n > 0) && <Boton to={urlCrear} icono={<Plus aria-hidden="true" />}><Texto>Crear nuevo diseño</Texto></Boton>}
       />
       {error ? (
-        <Aviso tipo="error" titulo="No pudimos cargar tus creaciones" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={onReintentar}>Reintentar</Boton>}>
-          Revisa tu conexión e inténtalo de nuevo.
+        <Aviso tipo="error" titulo={<Texto>No pudimos cargar tus creaciones</Texto>} accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={onReintentar}><Texto>Reintentar</Texto></Boton>}>
+          <Texto>Revisa tu conexión e inténtalo de nuevo.</Texto>
         </Aviso>
       ) : cargando ? (
-        <ul className={s.rejilla} aria-busy="true"><Esqueletos n={3} forma="producto" /></ul>
-      ) : n === 0 && borradores.length === 0 ? (
-        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Aún no tienes creaciones" texto="Elige una prenda, ponle tu imagen o tu frase y guárdala: aquí la tendrás lista para comprar o seguir editando.">
-          <Boton to={urlCrear} icono={<Sparkles aria-hidden="true" />}>Empezar a crear</Boton>
+        <ul className={s.rejilla} aria-busy="true">
+          {Array.from({ length: 6 }, (_, k) => <li key={k}><EsqueletoCreacion /></li>)}
+        </ul>
+      ) : n === 0 ? (
+        // Sin la cara de Kapi: en la tienda ya está el flotante (un solo Kapi a la vista).
+        <EstadoVacio
+          imagen={null}
+          icono={<Sparkles />}
+          titulo={<Texto>Aún no tienes creaciones</Texto>}
+          texto={<Texto>Elige una prenda, ponle tu imagen o tu frase y guárdala: aquí la tendrás lista para comprar o seguir editando.</Texto>}
+        >
+          <Boton to={urlCrear} icono={<Plus aria-hidden="true" />}><Texto>Empezar a crear</Texto></Boton>
         </EstadoVacio>
       ) : (
         <>
-          {borradores.length > 0 && n > 0 && <CabezaCuenta nivel={2} titulo="Guardadas" subtitulo="Listas para comprar o seguir editando." />}
-          {n > 0 && (
-            <ul className={s.rejilla}>
-              {creaciones.map((c) => (
-                <li key={c.id}>
-                  <TarjetaCreacion
-                    {...c}
-                    onEliminar={onEliminar && (() => onEliminar(c.id))}
-                    onRenombrar={onRenombrar && ((nombre) => onRenombrar(c.id, nombre))}
-                    comunidad={comunidadPara?.(c)}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
-          {borradores.length > 0 && (
-            <section className={s.borradores}>
-              <CabezaCuenta nivel={2} titulo="Tus borradores" subtitulo="Diseños sin terminar. Sigue donde lo dejaste." />
-              <Carrusel visibles={{ escritorio: 4.3, tablet: 3.3, movil: 1.8 }} etiqueta="Tus borradores">
-                {borradores.map((b) => (
-                  <TarjetaCreacion key={b.id} {...b} borrador onEliminar={onEliminar && (() => onEliminar(b.id))} />
-                ))}
-              </Carrusel>
-            </section>
-          )}
+          {borradores.length > 0 && <CabezaCuenta nivel={2} titulo={<Texto>Guardadas</Texto>} subtitulo={<Texto>Listas para comprar o seguir editando.</Texto>} />}
+          <ul className={s.rejilla}>
+            {creaciones.map((c) => (
+              <li key={c.id}>
+                <TarjetaCreacion
+                  {...c}
+                  onEliminar={onEliminar && (() => onEliminar(c.id))}
+                  onRenombrar={onRenombrar && ((nombre) => onRenombrar(c.id, nombre))}
+                  comunidad={comunidadPara?.(c)}
+                />
+              </li>
+            ))}
+          </ul>
         </>
+      )}
+      {!cargando && (
+        <VersionesAnteriores versiones={versiones} diasTotal={diasVersion} onRecuperar={onRecuperarVersion} onEliminar={onEliminarVersion} />
+      )}
+      {!cargando && borradores.length > 0 && (
+        <section className={s.borradores}>
+          <CabezaCuenta nivel={2} titulo={<Texto>Tus borradores</Texto>} subtitulo={<Texto>Diseños sin terminar. Continúa donde lo dejaste.</Texto>} />
+          <Carrusel visibles={{ escritorio: 4.3, tablet: 3.3, movil: 1.8 }} etiqueta="Tus borradores">
+            {borradores.map((b) => (
+              <TarjetaCreacion
+                key={b.id}
+                {...b}
+                borrador
+                onEliminar={onEliminar && (() => onEliminar(b.id))}
+                // Un combo sin terminar también se renombra (como antes).
+                onRenombrar={onRenombrar && b.imagenes?.length > 1 ? ((nombre) => onRenombrar(b.id, nombre)) : undefined}
+              />
+            ))}
+          </Carrusel>
+        </section>
       )}
     </>
   );

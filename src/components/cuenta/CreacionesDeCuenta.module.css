@@ -1,0 +1,19 @@
+/* La foto de un diseño del editor de antes (con sus capas), dentro de la
+   tarjeta del kit: llena el recuadro sobre fondo blanco, como antes. */
+.legado {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  pointer-events: none;
+}
+
+.legadoApagado {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.legadoImagen {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
