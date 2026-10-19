@@ -245,6 +245,13 @@ grupos del marco nuevo (`gruposDeCuenta.js`).
 |---|---|---|---|---|
 | `pages/SearchPageViejo.jsx` + `pages/SearchPage.module.css` (la página de antes: título, campo, barra con el `<select>`, Modalidad como `gruposExtra` y `SidebarCatalogLayout`) | `/buscar` | `components/busqueda/BusquedaDeTienda.jsx` → `PaginaBusqueda` del kit (`paginas/Busqueda.jsx`) | `pages/SearchPage.jsx` (lazy, solo con el interruptor `busquedaVieja`) | al retirar `busquedaVieja`; con ella, `SidebarCatalogLayout` pierde su último uso fuera de `seccionesViejo` |
 
+### Las legales (2026-10-19)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/PoliticasPrivacidadViejo.jsx` y `pages/TerminosCondicionesViejo.jsx` + `pages/PoliticasPrivacidad.module.css` (el texto escrito en el JSX) | `/politicas-privacidad`, `/terminos-y-condiciones` | `components/legales/LegalDeTienda.jsx` → `PaginaLegal`, con el texto en `config/legales/` | las páginas nuevas (lazy, solo con `legalesViejo`) | al retirar `legalesViejo` (un cambio legal ya se hace solo en `config/legales/`) |
+| `pages/LibroReclamacionesViejo.jsx` + `pages/LibroReclamaciones.module.css` | `/libro-de-reclamaciones` | `components/legales/ReclamacionesDeTienda.jsx` → `PaginaReclamaciones` | `pages/LibroReclamacionesPage.jsx` (lazy, solo con `legalesViejo`) | al retirar `legalesViejo` |
+
 ### La encuesta (2026-10-19)
 
 | Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |

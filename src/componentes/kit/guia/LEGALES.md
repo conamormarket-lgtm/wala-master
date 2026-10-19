@@ -30,8 +30,9 @@ Revisado el 2026-10-15 contra estos archivos:
 | Estilos de las dos | `pages/PoliticasPrivacidad.module.css` | 285 |
 | Datos de la empresa | `config/empresa.js` | — |
 
-**Los textos de la demo son los reales.** Están copiados tal cual de las dos
-páginas en `demo/legales.js`, como datos. La empresa (razón social, RUC,
+**Los textos son los reales.** Viven en `src/config/legales/privacidad.js` y
+`terminos.js` (antes en `demo/legales.js`), como datos: los leen la tienda y
+la demo. La empresa (razón social, RUC,
 domicilio, correo, WhatsApp, plazo de 15 días hábiles) sale de
 `config/empresa.js`. En la reclamación, el DNI y el celular "con sesión" son
 de ejemplo.
@@ -40,7 +41,7 @@ de ejemplo.
 
 | Parte | Componente | Piezas que usa | Datos (en la tienda) |
 |---|---|---|---|
-| P19 Libro de reclamaciones | `PaginaReclamaciones` (`paginas/Legales.jsx`) | `CabezaLegal`, `DatosProveedor`, `CodigoCopiable`, `PasosAtencion` y `AvanceHoja` (nuevas, `piezas/Legales.jsx`); `PasoEstudio` (los 3 pasos con su costura), `CamposDatosPersonales` (nombre, documento y celular, con las reglas de Mi perfil), `Campo` (con `multilinea`, nuevo), `ListaEleccion`, `Casilla`, `Aviso`, `Boton` | `empresa`; al enviar, `createDocument('libro_reclamaciones', …)` |
+| P19 Libro de reclamaciones | `PaginaReclamaciones` (`paginas/Reclamaciones.jsx`) | `CabezaLegal`, `DatosProveedor`, `CodigoCopiable`, `PasosAtencion` y `AvanceHoja` (nuevas, `piezas/Legales.jsx`); `PasoEstudio` (los 3 pasos con su costura), `CamposDatosPersonales` (nombre, documento y celular, con las reglas de Mi perfil), `Campo` (con `multilinea`, nuevo), `ListaEleccion`, `Casilla`, `Aviso`, `Boton` | `empresa`; al enviar, `createDocument('libro_reclamaciones', …)` |
 | P19 Privacidad y términos | `PaginaLegal` | `CabezaLegal`, `IndiceLegal`, `SeccionLegal` (nuevas), `TarjetaAyuda` (Kapi, el correo y WhatsApp), `Boton` | hoy los textos están escritos en el JSX de cada página (ver abajo) |
 
 Validación: `validarReclamacion(datos)` (exportada) usa `validarPerfil` para
@@ -107,7 +108,7 @@ el foco al primer error.
     por WhatsApp". Como Kapi ya asoma ahí, el pie no lo repite.
   - Abajo, el enlace al otro documento ("¿Buscabas cómo tratamos tus datos?").
 
-## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
+## Llevar a la tienda (hecho el 2026-10-19: ver "En la tienda" al final)
 
 ### Reemplazos
 
@@ -185,8 +186,60 @@ las rutas, incluida la redirección de `/terminos-condiciones`.
 
 ### Pasos
 
-1. Sacar los textos de privacidad y términos a `src/config/legales.js` (sin
-   cambiar una palabra) y usar `PaginaLegal` en las dos páginas.
-2. `PaginaReclamaciones` en `LibroReclamacionesPage`, con el mismo
-   `createDocument`. Comparar en el admin una hoja vieja y una nueva.
+1. ✓ Los textos de privacidad y términos en `src/config/legales/` (uno por
+   archivo) y `PaginaLegal` en las dos páginas.
+2. ✓ `PaginaReclamaciones` en `LibroReclamacionesPage`, con el mismo
+   `createDocument` (comparado en Firestore; el admin no se miró en pantalla).
 3. Decidir aparte el correo de copia y el código con contador.
+
+## En la tienda (2026-10-19)
+
+| Privacidad: contacto (celular, con sesión) | El libro en inglés y oscuro (celular) |
+|---|---|
+| ![El contacto con sus datos y la tarjeta sin Kapi](privacidad-contacto-tienda.webp) | ![El libro de reclamaciones en inglés, modo noche](reclamaciones-ingles-oscuro.webp) |
+
+Las páginas (`pages/PoliticasPrivacidadPage.jsx`,
+`TerminosCondicionesPage.jsx`, `LibroReclamacionesPage.jsx`) montan
+`components/legales/LegalDeTienda.jsx` y `ReclamacionesDeTienda.jsx`. Las de
+antes (`*Viejo.jsx`) bajan solo con el interruptor `legalesViejo`
+(`useLoViejo('legales')`: en Firestore `legalesViejo: true`; en
+localStorage, `"legales"`).
+
+**El texto legal, igual:** se comparó lo que se lee en la página vieja contra
+la nueva, párrafo por párrafo. Términos, idéntico; privacidad, idéntico salvo
+el guion de la sublista ("- Audio/Micrófono"). Los datos de contacto ("Equipo
+de Soporte WALÁ", el correo y la atención por WhatsApp) se ven tal cual,
+antes de la tarjeta de ayuda (`contacto: { equipo, lineas }`, el correo de
+`config/empresa`).
+
+**El libro, igual:** público, el mismo documento en `libro_reclamaciones`
+(código, estado, la copia de la empresa, consumidor, bien, reclamo). Con
+sesión llega con el nombre, el documento, el celular y el correo.
+
+**Lo que cambia (además de las diferencias a propósito de arriba):**
+
+- **País en el libro:** en el kit solo se aceptaba un DNI y un celular
+  peruanos; ahora se elige el país (Perú por defecto) y fuera del Perú el
+  documento y el teléfono son libres. Se guarda `tipoDocumento: 'OTRO'`
+  (como en el perfil) y el teléfono con su código (`+56 912345678`). El admin
+  lo muestra tal cual ("OTRO CL-445566").
+- Si el envío falla, un mensaje para el cliente (antes, el de Firebase).
+- Con sesión, la tarjeta de ayuda de "Contacto" va sin Kapi (`sinKapi`):
+  ya está el flotante.
+- Todo pasa por la traducción (antes, partes sueltas). Una sola `<main>`.
+- `PaginaReclamaciones` está en `paginas/Reclamaciones.jsx`: privacidad y
+  términos no bajan su formulario.
+
+**Carga:** privacidad y términos bajan unos 30 KB propios (el trozo de la
+página legal y su CSS, compartido entre las dos) más su texto (6,1 y 4,6 KB);
+el libro, unos 67 KB propios, con piezas que ya usa la cuenta (la lista de
+elección, los datos personales, la fecha). Antes: 8,3 + 5,8 KB y un CSS
+compartido; el libro, 11,1 + 4,9 KB. El archivo principal no suma código:
+46 B gzip del mapa de rutas.
+
+**Probado** con los emuladores: el texto contra la página vieja; el contacto
+a 390 con sesión (un solo Kapi); el libro con sesión (datos puestos), enviar
+vacío (cada error y el foco en el primero), Chile con documento y teléfono
+libres, registrada con su código y el documento revisado en Firestore; sin
+sesión, vacío; en inglés y oscuro; el interruptor. **No probado:** la hoja
+nueva en la pantalla del admin y "Copiar código" (el portapapeles).
