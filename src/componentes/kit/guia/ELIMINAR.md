@@ -200,3 +200,10 @@ grupos del marco nuevo (`gruposDeCuenta.js`).
 | `pages/cuenta/CuentaReferidosViejo.jsx` + `CuentaReferidosPage.module.css` (971 líneas) | `/cuenta/referidos` | `components/cuenta/ReferidosDeCuenta.jsx` → `PaginaReferidos` | `CuentaReferidosPage.jsx` (lazy, solo con `cuentaVieja`) | al retirar `cuentaVieja` |
 | `pages/cuenta/components/GrupoReferidos.jsx` + `DetallePedidoReferido.jsx` | la página de antes | `FilaReferido` y `DetallePedidoReferido` del kit (la lógica de estados, en el conector) | solo `CuentaReferidosViejo.jsx` | con la página de antes |
 | `components/analytics/ReferralRanking.jsx` + su CSS (213 líneas) | la página de antes | `RankingReferidos` | solo `CuentaReferidosViejo.jsx` | con la página de antes |
+
+### Lista de deseos (2026-10-19)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/cuenta/WishlistViejo.jsx` + `WishlistPage.module.css` | `/cuenta/wishlist` | `components/cuenta/ListaDeseosDeCuenta.jsx` → `PaginaListaDeseos` | `WishlistPage.jsx` (lazy, solo con `cuentaVieja`) | al retirar `cuentaVieja` |
+| `useProducts([], { includeHidden: true })` en esta página (el catálogo entero) | la página de antes | `useProductosDeLista` (`components/regalar/regaloDeLista.js`) | el hook sigue en la tienda; solo se va su uso aquí | con la página de antes |

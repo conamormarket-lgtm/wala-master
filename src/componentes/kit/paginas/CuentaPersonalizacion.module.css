@@ -135,6 +135,31 @@
   opacity: 0.6;
 }
 
+/* En el celular la tarjeta mide ~165 px: el botón ocupa el ancho y parte la línea. */
+.noDisponible > button {
+  justify-self: stretch;
+  max-width: 100%;
+  white-space: normal;
+  padding-block: 0.45rem;
+  line-height: 1.2;
+}
+
+.noDisponibleFoto {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 14px;
+  background: var(--escenario-foto, #f5f4f8);
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+.noDisponibleFoto svg {
+  width: 2rem;
+  height: 2rem;
+}
+
 .noDisponible p {
   margin: 0;
   color: var(--color-text-muted);

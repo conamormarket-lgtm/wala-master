@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Sparkles, Plus, RotateCcw, Heart, ShoppingCart, CalendarHeart, Share2, Gift, Trash2, Lightbulb } from 'lucide-react';
 import Boton from '../Boton';
 import { Aviso, EstadoVacio } from '../Feedback';
@@ -10,6 +10,7 @@ import { TarjetaPersonaRegalo, AvisoFestiva, AgendaFechas, faltanDias } from '..
 import { HojaPersona, RELACIONES } from '../piezas/FormularioPersona';
 import { EsqueletoProducto, EsqueletoFila, EsqueletoTarjeta } from '../Esqueletos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
+import { Texto } from '../Traduccion';
 import s from './CuentaPersonalizacion.module.css';
 
 /*
@@ -97,29 +98,52 @@ export function PaginaCreaciones({ creaciones = [], borradores = [], cargando = 
 
 /* ── Lista de deseos (/cuenta/wishlist) ─────────────────── */
 
+/** La foto de un producto que ya no está: apagada y, si tampoco carga, una caja vacía. */
+function FotoApagada({ src }) {
+  const [rota, setRota] = useState(false);
+  if (!src || rota) return <span className={s.noDisponibleFoto} aria-hidden="true"><Heart /></span>;
+  return <img src={src} alt="" loading="lazy" onError={() => setRota(true)} />;
+}
+
 /**
  * Lista de deseos: lo guardado con el corazón, "Agregar todo al carrito" y
  * compartir la lista.
  *  - items: [{ id, producto: props de TarjetaProducto, guardado: "hace 3 días",
- *    regalado, disponible }] (tarjetaDesdeProducto + WishlistContext)
- *  - cargando · sinCumpleanos: muestra el consejo de registrar el cumpleaños
- *  - onQuitar(id) · onAgregar(item) · onAgregarTodo(): promesa → texto del resultado
+ *    regalado, disponible, cargando }] (tarjetaDesdeProducto + WishlistContext);
+ *    `cargando`: su producto todavía no llega (esqueleto en su lugar)
+ *  - tarjeta: otra tarjeta (la de la tienda) → <Tarjeta item={it} indice={i} />;
+ *    sin ella, TarjetaProducto con `deseado`
+ *  - cargando · sinCumpleanos: el consejo de registrar el cumpleaños (también
+ *    con la lista vacía)
+ *  - onQuitar(id) · onAgregar(item) · onAgregarTodo(): promesa → el resultado:
+ *    un texto (aviso de éxito) o { texto, tipo } ('info' si no se agregó nada)
  *  - onCompartir(): promesa (copia /wishlist/{código}) · onFechasEspeciales()
  *  - urlPerfil, urlTienda
  */
 export function PaginaListaDeseos({
-  items = [], cargando = false, sinCumpleanos = false, onQuitar, onAgregar, onAgregarTodo, onCompartir, onFechasEspeciales,
+  items = [], cargando = false, sinCumpleanos = false, tarjeta: Tarjeta, onQuitar, onAgregar, onAgregarTodo, onCompartir, onFechasEspeciales,
   urlPerfil = '/cuenta/perfil', urlTienda = '/tienda',
 }) {
   const [agregando, setAgregando] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [copiado, setCopiado] = useState(false);
+  const reloj = useRef(null);
+  useEffect(() => () => window.clearTimeout(reloj.current), []);
   const agregarTodo = async () => {
     setAgregando(true);
-    try { setResultado(await onAgregarTodo?.()); } finally { setAgregando(false); }
+    setResultado(null);
+    try {
+      const r = await onAgregarTodo?.();
+      if (r) setResultado(typeof r === 'string' ? { texto: r, tipo: 'exito' } : r);
+    } finally { setAgregando(false); }
   };
   const compartir = async () => {
-    try { await onCompartir?.(); setCopiado(true); window.setTimeout(() => setCopiado(false), 2000); } catch { /* la página avisa */ }
+    try {
+      await onCompartir?.();
+      setCopiado(true);
+      window.clearTimeout(reloj.current);
+      reloj.current = window.setTimeout(() => setCopiado(false), 2000);
+    } catch { /* la página avisa */ }
   };
   const hay = items.length > 0;
   return (
@@ -127,45 +151,56 @@ export function PaginaListaDeseos({
       <CabezaCuenta
         icono={<Heart />}
         tono="rosa"
-        titulo="Mi lista de deseos"
-        subtitulo={hay ? `${items.length} ${items.length === 1 ? 'producto guardado' : 'productos guardados'}. Compártela para que te regalen justo lo que quieres.` : 'Guarda con el corazón lo que te encantaría recibir.'}
+        titulo={<Texto>Mi lista de deseos</Texto>}
+        subtitulo={hay
+          ? <><Texto>{`${items.length} ${items.length === 1 ? 'producto guardado' : 'productos guardados'}.`}</Texto> <Texto>Compártela para que te regalen justo lo que quieres.</Texto></>
+          : <Texto>Guarda con el corazón lo que te encantaría recibir.</Texto>}
       />
-      {hay && (
+      {hay && !cargando && (
         <div className={s.accionesLista}>
-          {onAgregarTodo && <Boton icono={<ShoppingCart aria-hidden="true" />} cargando={agregando} onClick={agregarTodo}>Agregar todo al carrito</Boton>}
-          {onCompartir && <Boton variante="contorno" icono={<Share2 aria-hidden="true" />} onClick={compartir}>{copiado ? '¡Link copiado!' : 'Compartir mi lista'}</Boton>}
-          {onFechasEspeciales && <Boton variante="fantasma" icono={<CalendarHeart aria-hidden="true" />} onClick={onFechasEspeciales}>Mis fechas especiales</Boton>}
+          {onAgregarTodo && <Boton icono={<ShoppingCart aria-hidden="true" />} cargando={agregando} onClick={agregarTodo}><Texto>{agregando ? 'Agregando…' : 'Agregar todo al carrito'}</Texto></Boton>}
+          {onCompartir && <Boton variante="contorno" icono={<Share2 aria-hidden="true" />} onClick={compartir}><Texto>{copiado ? '¡Link copiado!' : 'Compartir mi lista'}</Texto></Boton>}
+          {onFechasEspeciales && <Boton variante="fantasma" icono={<CalendarHeart aria-hidden="true" />} onClick={onFechasEspeciales}><Texto>Mis fechas especiales</Texto></Boton>}
         </div>
       )}
-      {resultado && <Aviso tipo="exito" onCerrar={() => setResultado(null)}>{resultado}</Aviso>}
-      {sinCumpleanos && !cargando && hay && (
-        <Aviso tipo="info" icono={<Lightbulb aria-hidden="true" />} accion={<Boton to={urlPerfil} tamano="sm" variante="contorno">Ir a mi perfil</Boton>}>
-          Registra tu cumpleaños en tu perfil y te recordamos compartir esta lista antes de tu gran día.
+      {resultado && <Aviso tipo={resultado.tipo || 'exito'} onCerrar={() => setResultado(null)}><Texto>{resultado.texto}</Texto></Aviso>}
+      {sinCumpleanos && (
+        <Aviso tipo="info" icono={<Lightbulb aria-hidden="true" />} accion={<Boton to={urlPerfil} tamano="sm" variante="contorno"><Texto>Ir a mi perfil</Texto></Boton>}>
+          <Texto>Registra tu cumpleaños en tu perfil y te recordamos compartir esta lista antes de tu gran día.</Texto>
         </Aviso>
       )}
       {cargando ? (
         <ul className={s.rejillaProductos} aria-busy="true"><Esqueletos n={4} forma="producto" /></ul>
       ) : !hay ? (
-        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Tu lista de deseos está vacía" texto="Explora la tienda y guarda los productos que te encantaría recibir o comprar después.">
-          <Boton to={urlTienda}>Explorar la tienda</Boton>
+        // Sin la cara de Kapi: en la tienda ya está el flotante (un solo Kapi a la vista).
+        <EstadoVacio
+          imagen={null}
+          icono={<Heart />}
+          titulo={<Texto>Tu lista de deseos está vacía</Texto>}
+          texto={<Texto>Explora la tienda y guarda los productos que te encantaría recibir o comprar después.</Texto>}
+        >
+          <Boton to={urlTienda}><Texto>Explorar la tienda</Texto></Boton>
         </EstadoVacio>
       ) : (
         <ul className={s.rejillaProductos}>
-          {items.map((it) => (
+          {items.map((it, i) => (
             <li key={it.id} className={s.deseo}>
-              {it.disponible === false ? (
+              {it.cargando ? (
+                <EsqueletoProducto />
+              ) : it.disponible === false ? (
                 <div className={s.noDisponible}>
-                  <img src={it.producto?.imagen} alt="" loading="lazy" />
-                  <p><strong>{it.producto?.nombre}</strong></p>
-                  <p>Este producto ya no está en la tienda.</p>
-                  {onQuitar && <Boton variante="contorno" tamano="sm" icono={<Trash2 aria-hidden="true" />} onClick={() => onQuitar(it.id)}>Quitar de mi lista</Boton>}
+                  <FotoApagada src={it.producto?.imagen} />
+                  <p><strong>{it.producto?.nombre || <Texto>Producto</Texto>}</strong></p>
+                  <p><Texto>Este producto ya no está en la tienda.</Texto></p>
+                  {onQuitar && <Boton variante="contorno" tamano="sm" icono={<Trash2 aria-hidden="true" />} onClick={() => onQuitar(it.id)}><Texto>Quitar de mi lista</Texto></Boton>}
                 </div>
+              ) : Tarjeta ? (
+                <Tarjeta item={it} indice={i} />
               ) : (
                 <TarjetaProducto {...it.producto} deseado onDeseo={(v) => { if (!v) onQuitar?.(it.id); }} onAgregar={onAgregar && (() => onAgregar(it))} />
               )}
-              <p className={s.guardado}>
-                {it.regalado ? <><Gift aria-hidden="true" /> ¡Ya te lo regalaron!</> : <><Heart aria-hidden="true" /> Guardado {it.guardado}</>}
-              </p>
+              {it.regalado && <p className={s.guardado}><Gift aria-hidden="true" /> <Texto>¡Ya te lo regalaron!</Texto></p>}
+              {it.guardado && <p className={s.guardado}><Heart aria-hidden="true" /> <Texto>{`Guardado ${it.guardado}`}</Texto></p>}
             </li>
           ))}
         </ul>

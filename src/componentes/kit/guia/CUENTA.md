@@ -64,7 +64,7 @@ anteriores) es **C3**.
 | C8 Misiones | `PaginaMisiones` | `Estadistica` ×3, `NivelCuenta` (`BarraProgreso`, `Sello` bronce/plata/oro), `TarjetaMision` (`GananciaMonedas`) | `piezas/Recompensas.module.css` | `getDailyMissions()` → `misionDesdeServidor`, `dailyCheckIn()`, `xp`, `dailyStreak` | con sesión |
 | C9 Mis referidos | `PaginaReferidos` | `FormaGanar` ×2, `EnlaceInvitacion`, `Estadistica` ×3, grupos en `TarjetaCuenta` con `FilaReferido` y `DetallePedidoReferido`, `RankingReferidos` (puestos en sellos oro, plata y bronce) | `piezas/Referidos.module.css` | `getReferralsByReferrer(code)`, `claimReferralCoins`, `getReferralOrderDetail` | con sesión |
 | C10 Mis creaciones | `PaginaCreaciones` | `TarjetaCreacion` (también combos con sus prendas lado a lado, borradores en `Carrusel`, renombrar, publicar en la comunidad para admins) | `piezas/Creaciones.module.css` | `getDesignsByUser(uid)` → `creacionDesdeDiseno`; borradores `useBorradoresCrear` | con sesión |
-| C11 Lista de deseos | `PaginaListaDeseos` | `TarjetaProducto` (`deseado` + `onDeseo`), `Aviso` | `paginas/CuentaPersonalizacion.module.css` | `useWishlist()` + `useProducts` → `tarjetaDesdeProducto` | con sesión |
+| C11 Lista de deseos | `PaginaListaDeseos` | `TarjetaProducto` (`deseado` + `onDeseo`) o la de la tienda por `tarjeta`, `Aviso` | `paginas/CuentaPersonalizacion.module.css` | `useWishlist()` + `useProductosDeLista` (uno por uno) | con sesión |
 | C12 Fechas importantes | `PaginaFechas` | `AgendaFechas` ("Lo que se viene": las próximas fechas de todos, llevan a su persona), `AvisoFestiva` (cuenta atrás en un sello y barra de los últimos 30 días), `TarjetaPersonaRegalo` (cada fecha en una `HojaCalendario`, con los años que cumple), `IdeaRegalo`, `HojaPersona` (el formulario, compartido con la encuesta: `piezas/FormularioPersona.jsx`) | `piezas/Regalos.module.css`, `piezas/FormularioPersona.module.css` | `userProfile.giftRecipients` → `personaDesdeRecipient`; ideas `useGiftCatalog` | con sesión |
 
 ### Cada módulo
@@ -366,6 +366,64 @@ viejo sin abrir:
 No se probó: un reclamo que falle (el kit abre el pedido), compartir con el
 menú del teléfono ni la app Android.
 
+## Lista de deseos en la tienda (hecho el 2026-10-19)
+
+![Lista de deseos en la tienda real, en el celular: arriba los botones y el consejo del cumpleaños; abajo las tarjetas de la tienda, una ya regalada, una agotada y una que ya no está, apagada y con "Quitar de mi lista"](cuenta-deseos-tienda.webp)
+
+(Celular, 390 px, claro, con una lista de prueba del emulador. Se probó
+también a 1366 y en noche.)
+
+- **Conector:** `src/components/cuenta/ListaDeseosDeCuenta.jsx`, desde
+  `pages/cuenta/WishlistPage.jsx`. Lo mismo de antes: quitar, "Agregar todo
+  al carrito", "Compartir mi lista" (`/wishlist/{código}`), "Mis fechas
+  especiales" (copia y abre `/regalar/{código}`), "Guardado hace…", "¡Ya
+  te lo regalaron!" y la tarjeta apagada de lo borrado u oculto con el
+  nombre y la foto que guardó la lista.
+- **Las cuatro recomendaciones acordadas:**
+  1. Los productos de la lista se piden uno por uno
+     (`useProductosDeLista` de `components/regalar/regaloDeLista.js`, la
+     caché de la ficha), no el catálogo entero. Cada uno muestra su
+     esqueleto hasta que llega (`cargando` en el item). "Agregar todo"
+     espera a todos y omite lo mismo de antes: los regalados (sin contarlos),
+     los borrados u ocultos, los agotados, los que ya están en el carrito y
+     los que piden color o talla.
+  2. Cada tarjeta es la de la tienda (`TarjetaDeProducto`: Agregar rápido,
+     el corazón con su aviso, sus fotos en varios tamaños) por el hueco
+     `tarjeta` del kit, como los relacionados de la ficha; sin "NUEVO" ni
+     "X disponibles", como antes.
+  3. En la app (Capacitor) los dos links salen con `https://wala.pe`
+     (`origenPublico` de `services/referrals.js`); en la web, el origen de
+     siempre. Se arman al tocar, no al dibujar.
+  4. El consejo del cumpleaños se ve también con la lista vacía.
+- **Diferencias a propósito:** el resultado de "Agregar todo" queda en un
+  aviso arriba (de éxito, o informativo si no se agregó nada) en vez del
+  toast; la lista vacía lleva un sello con el corazón (el Kapi flotante ya
+  está); la foto apagada que tampoco carga deja una caja con un corazón.
+- **Interruptor `cuentaVieja`:** también vuelve `WishlistViejo.jsx`.
+
+### Qué se probó (2026-10-19, localhost con los emuladores)
+
+Con una lista de prueba de `cliente@wala.test`: una taza con stock, un
+gorro ya regalado, un polo agotado, un llavero oculto y borrado, y un
+producto que ya no existe con una foto rota:
+- Las cinco tarjetas: las tres de la tienda con sus etiquetas, las dos
+  apagadas (la de la foto rota con la caja), "Guardado hoy / hace 3 días /
+  hace 12 días / hace 2 meses / el año pasado" y "¡Ya te lo regalaron!".
+- "Agregar todo al carrito" → "1 producto agregado al carrito · 3
+  omitidos." y el carrito en 1; otra vez → "Esos productos ya están en tu
+  carrito o no están disponibles."
+- "Compartir mi lista" → "¡Link copiado!" con `/wishlist/KS-CLI001`; "Mis
+  fechas especiales" copia y abre `/regalar/KS-CLI001`; simulando
+  Capacitor, `https://wala.pe/wishlist/KS-CLI001`.
+- "Quitar de mi lista" en una apagada y el corazón de una tarjeta de la
+  tienda: los dos la sacan de la lista.
+- La lista vacía con el consejo del cumpleaños; `cuentaVieja` → la página
+  de antes. 390 y 1366, claro y noche.
+
+No se probó: el esqueleto de un solo producto que tarda (llegan juntos en
+el emulador), Agregar rápido desde esta página (es la misma tarjeta de la
+tienda), copiar sin permiso del portapapeles ni la app Android.
+
 ## Llevar a la tienda (lo que falta)
 
 Páginas propias: van en el paso 6 de [MIGRACION.md](MIGRACION.md). Se migra
@@ -396,7 +454,7 @@ componente o su forma de recibir datos.
 | ✓ Misiones | `MisionesPage.jsx` (hoy `MisionesViejo.jsx`) | `PaginaMisiones` + `NivelCuenta` + `TarjetaMision` (hecho) |
 | ✓ Referidos | `CuentaReferidosPage.jsx` (hoy `CuentaReferidosViejo.jsx`), `components/GrupoReferidos.jsx`, `components/DetallePedidoReferido.jsx` | `PaginaReferidos` + `FilaReferido` + `DetallePedidoReferido` (hecho) |
 | Creaciones | `MisCreacionesPage.jsx` (`MiCreacionCard` ~151, `TusBorradores` ~168) | `PaginaCreaciones` + `TarjetaCreacion` |
-| Lista de deseos | `WishlistPage.jsx` (`PremiumProductCard` ~275) | `PaginaListaDeseos` (`TarjetaProducto` con `deseado`) |
+| ✓ Lista de deseos | `WishlistPage.jsx` (hoy `WishlistViejo.jsx`, `PremiumProductCard` ~275) | `PaginaListaDeseos` con `TarjetaDeProducto` por `tarjeta` (hecho) |
 | Fechas importantes | `CuentaFechasImportantesPage.jsx` (+ `FechasFestivasSeccion.jsx`, modal con portal ~739) | `PaginaFechas` + `TarjetaPersonaRegalo` + `AvisoFestiva` |
 
 ### De dónde sale cada dato
@@ -426,7 +484,7 @@ componente o su forma de recibir datos.
 | `onReclamar`, `onVerPedido` | `claimReferralCoins(id)` (+ `volarMonedasGanadas`, toast, invalidar queries) / `getReferralOrderDetail(id)` |
 | `creaciones`, `borradores` | `getDesignsByUser(uid)` → `creacionDesdeDiseno(d, { precio, precioAntes, disponible, comprado })`; `useBorradoresCrear` |
 | `onEliminar` (creación) | `useEliminarCreacion` (sin su modal: la tarjeta ya confirma) |
-| `items` (deseos) | `wishlistItems` + `useProducts([], { includeHidden: true })` → `{ id, producto: tarjetaDesdeProducto(p), guardado, regalado: isGifted, disponible }` |
+| `items` (deseos) | `wishlistItems` + `useProductosDeLista` (un producto por item) → `{ id, cargando, disponible, producto (solo el apagado: nombre, imagen), guardado, regalado: isGifted }`; `tarjeta`: `TarjetaDeProducto` |
 | `PaginaPedidos.pedidos` | cada pedido de `usePedidos` como lo arma `resumirRastreo`: `{ id, codigo, fecha, items, total, paso, pasos: ETAPAS_PRODUCCION si hay fase del taller (o los 5 generales), estado: { texto: getEtapaBadgeLabel / estadoWalaADisplay, tono }, deuda: montoDeuda si conDeuda, anulado, urlDetalle }` |
 | `porVerificar` | `{ pendientes: data.pendientes (fecha ya legible y fase con ETIQUETA_FASE), correoVerificado: data.emailVerificado, onEnviarVerificacion: enviarVerificacionCorreo, onYaVerifique: refrescarVerificacionCorreo + recargar, onVincular: vincularPedido }` |
 | `PaginaDetallePedido.pedido` | el pedido efectivo de la página: `getCodigoPedido`, `getNumeroProduccion`, `derivarEstadoCompra` (estado y `paymentLabel`), `fechas` → `fechasPasos`, líneas de `getProductosPedido`, dirección y montos como hoy |
@@ -434,7 +492,7 @@ componente o su forma de recibir datos.
 | `onPagar` → `HojaPagarSaldo` | `tarjeta`: `CulqiCustomCheckout` + `PaypalCheckout`; `yape`, `plin`: `getMessage('yape_number')`…; `urlComprobante`: `whatsapp_number_pagos` con `whatsapp_text_pagos` |
 | `ranking` | `getTopReferrersOfMonth()` → `{ codigo: referrerCode, compras: count, monedas: coins }` |
 | `comunidadPara(c)` | con `usePuedePublicar(design)`: `{ estado: design.comunidad, onPublicar: publicarEnComunidad, onActualizar: publicarEnComunidad, onRetirar: retirarDeComunidad }` |
-| `onAgregarTodo`, `onCompartir` | `handleAddAll` (devolver el texto del resultado), copiar `/wishlist/{referralCode}` |
+| `onAgregarTodo`, `onCompartir` | `handleAddAll` (devolver `{ texto, tipo }`), copiar `/wishlist/{referralCode}` (con `origenPublico`) |
 | `personas`, `festivas` | `giftRecipients` → `personaDesdeRecipient` + `recomendar()` de `useGiftCatalog`; `useFechasFestivas` / `proximasFestivas` (con un `icono` de IconoWala, no el emoji) |
 | `onGuardar` (persona) | `updateUserProfile({ giftRecipients })` con `personaARecipient`, luego `claimDatesReward()` → `ganadas` |
 
@@ -516,8 +574,8 @@ componente o su forma de recibir datos.
 3. ✓ Perfil y Direcciones (2026-10-17, arriba).
 4. ✓ Catálogo, Cupones y Misiones (2026-10-17, arriba).
 5. ✓ Referidos (2026-10-19, arriba).
-6. Lista de deseos, Fechas importantes y Mis creaciones (lo que les falta,
-   arriba, antes).
+6. Lista de deseos (✓ 2026-10-19, arriba), Fechas importantes y Mis
+   creaciones (lo que les falta, arriba, antes).
 7. Mis pedidos cuando el kit tenga `PedidosPorVerificar`.
 
 Para volver atrás: cada paso en su propio commit; las páginas viejas no se

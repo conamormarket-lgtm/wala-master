@@ -212,6 +212,13 @@ ranking no se pide ni se dibuja hasta acercarse, y entonces tres
 `EsqueletoFila` con foto en círculo mientras llega. "Ver pedido" y el
 botón de reclamar dicen "Cargando el pedido…" y "Revisando pedido…".
 
+Ya en la tienda (paso 6, Lista de deseos, 2026-10-19): mientras llega la
+lista, cuatro `EsqueletoProducto` (antes, "Cargando tu lista de
+deseos..."); con la lista ya, cada producto que todavía no llega es su
+propio `EsqueletoProducto` en su lugar (antes se esperaba el catálogo
+entero). La lista sale de la caché local de WishlistContext, así que al
+volver aparece al instante.
+
 Ya en la tienda (paso 6, el carrito, 2026-10-17): el carrito sale de
 localStorage al instante, así que no tiene esqueleto propio (la ruta sigue con
 el `PageLoading` de `App.jsx` hasta el paso 7). "También te puede gustar" no

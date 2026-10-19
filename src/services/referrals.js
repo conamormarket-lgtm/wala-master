@@ -106,7 +106,7 @@ export async function aceptarInvitacion(referralId) {
 // con ese origen no abre nada en otro teléfono. Ahí se usa el sitio público
 // (el mismo de PUBLIC_SITE_URL en las functions).
 const SITIO_PUBLICO = 'https://wala.pe';
-const origenPublico = () => (window.Capacitor?.isNativePlatform?.() ? SITIO_PUBLICO : window.location.origin);
+export const origenPublico = () => (window.Capacitor?.isNativePlatform?.() ? SITIO_PUBLICO : window.location.origin);
 
 /** Link de invitación permanente de una cuenta (para gente sin cuenta todavía). */
 export const linkInvitacion = (code) => `${origenPublico()}/invitar/${encodeURIComponent(code)}`;
