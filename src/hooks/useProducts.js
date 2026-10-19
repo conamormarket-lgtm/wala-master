@@ -9,6 +9,7 @@ import { getProducts, getProduct, searchProducts, getProductsByCategory } from '
  *  - useProducts(filters, orderBy)          → igual que siempre.
  *  - useProducts(filters, { includeHidden:true })          → incluye ocultos/borrados (tombstones).
  *  - useProducts(filters, orderBy, { includeHidden:true }) → ídem, con orderBy explícito.
+ *  - useProducts(filters, orderBy, { enabled:false })     → no lo pide todavía (misma caché).
  *
  * Con includeHidden:true llama getProducts(filters, orderBy, null, { includeHidden:true })
  * y usa una queryKey DISTINTA (['products-all', ...]) para NO contaminar la caché
@@ -38,7 +39,8 @@ export const useProducts = (filters = [], orderBy = null, options = {}) => {
       return data;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes (reduced from 1h for better freshness)
-    gcTime: 1000 * 60 * 60 * 24 // 24 hours
+    gcTime: 1000 * 60 * 60 * 24, // 24 hours
+    enabled: options?.enabled !== false,
   });
 };
 

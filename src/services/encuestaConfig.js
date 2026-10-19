@@ -139,6 +139,21 @@ export const getSurveyConfig = async () => {
   }
 };
 
+/**
+ * La config para quien responde (la encuesta, el buscador de regalos): solo
+ * lee. Sin documento, los textos por defecto; nunca lo crea (eso es del
+ * admin: un cliente no puede escribirlo y el intento salía como error).
+ */
+export const leerSurveyConfig = async () => {
+  try {
+    const docSnap = await getDoc(doc(db, COLLECTION_NAME, GLOBAL_DOC_ID));
+    return { data: docSnap.exists() ? docSnap.data() : DEFAULT_SURVEY_CONFIG, error: null };
+  } catch (error) {
+    console.warn('No se pudo leer la config de la encuesta:', error);
+    return { data: null, error: error.message };
+  }
+};
+
 export const saveSurveyConfig = async (configData) => {
   try {
     const docRef = doc(db, COLLECTION_NAME, GLOBAL_DOC_ID);

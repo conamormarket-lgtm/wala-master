@@ -245,6 +245,17 @@ grupos del marco nuevo (`gruposDeCuenta.js`).
 |---|---|---|---|---|
 | `pages/SearchPageViejo.jsx` + `pages/SearchPage.module.css` (la página de antes: título, campo, barra con el `<select>`, Modalidad como `gruposExtra` y `SidebarCatalogLayout`) | `/buscar` | `components/busqueda/BusquedaDeTienda.jsx` → `PaginaBusqueda` del kit (`paginas/Busqueda.jsx`) | `pages/SearchPage.jsx` (lazy, solo con el interruptor `busquedaVieja`) | al retirar `busquedaVieja`; con ella, `SidebarCatalogLayout` pierde su último uso fuera de `seccionesViejo` |
 
+### La encuesta (2026-10-19)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/SubscriptionSurveyViejo.jsx` + `pages/SubscriptionSurveyPage.module.css` | `/encuesta-suscripcion` | `components/encuesta/EncuestaDeTienda.jsx` → `PaginaEncuesta` | `pages/SubscriptionSurveyPage.jsx` (lazy, solo con `encuestaVieja`) | al retirar `encuestaVieja` |
+| `components/common/FechaEventoInput/` | la persona de la encuesta de antes (y Fechas importantes de antes) | `CampoFecha` con "No sé el año" (`HojaPersona`) | `SubscriptionSurveyViejo.jsx`, `pages/cuenta/CuentaFechasImportantesViejo.jsx` (volver a buscar) | al retirar `encuestaVieja` y `cuentaVieja` |
+
+Se queda: `getSurveyConfig` (`services/encuestaConfig.js`), que crea el
+documento si falta: lo usa el admin (`AdminEncuestas`,
+`AdminRespuestasEncuesta`). Quien responde lee con `leerSurveyConfig`.
+
 ### El acceso (2026-10-19)
 
 | Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |

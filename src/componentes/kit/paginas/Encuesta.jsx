@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Gift, UserRound, Users, UsersRound, Heart, Baby, House, Smile, Handshake, Plus, ArrowLeft, ArrowRight,
   Check, CalendarHeart, LogIn, RotateCcw,
@@ -16,6 +16,7 @@ import { HojaPersona, validarPersona } from '../piezas/FormularioPersona';
 import { IdeaRegalo } from '../piezas/Regalos';
 import { Hueso, EsqueletoFormulario } from '../Esqueletos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
+import { Texto, useTexto } from '../Traduccion';
 import s from './Encuesta.module.css';
 
 /*
@@ -23,7 +24,8 @@ import s from './Encuesta.module.css';
  * sobre ti, a quiénes regalas y, grupo por grupo, los datos de cada persona.
  * Al terminar, las monedas ganadas y las primeras ideas de regalo.
  * Va dentro de MarcoTienda. Datos por props (encuestaDesdeConfig y
- * personaDesdeRecipient en adaptadores).
+ * personaDesdeRecipient en adaptadores). Los textos (también los del admin)
+ * pasan por la traducción.
  */
 
 /** Los grupos de "¿A quiénes sueles regalar?" (roleKey de la encuesta). */
@@ -70,11 +72,27 @@ function CabezaPaso({ Icono, tono, titulo, subtitulo, trazo = false }) {
     <header className={s.cabeza}>
       {Icono && <Sello tamano={52} tono={tono} girar={-8}><Icono aria-hidden="true" /></Sello>}
       <h1 className={s.titulo}>
-        {titulo}
+        <Texto>{titulo}</Texto>
         {trazo && <Trazo className={s.trazo} />}
       </h1>
-      {subtitulo && <p className={s.subtitulo}>{subtitulo}</p>}
+      {subtitulo && <p className={s.subtitulo}><Texto>{subtitulo}</Texto></p>}
     </header>
+  );
+}
+
+/** Una pregunta de "Un poco sobre ti" (la etiqueta y el error, traducidos). */
+function PreguntaSobreTi({ campo, valor, error, onCambiar }) {
+  const etiqueta = useTexto(campo.etiqueta);
+  const elige = useTexto('Elige…');
+  return (
+    <Campo
+      id={`encuesta-${campo.id}`}
+      etiqueta={etiqueta}
+      error={error && <Texto>{error}</Texto>}
+      opciones={campo.tipo === 'opciones' ? [{ valor: '', texto: elige, deshabilitada: true }, ...(campo.opciones || []).map((o) => ({ valor: o, texto: o }))] : undefined}
+      value={valor || ''}
+      onChange={(e) => onCambiar(e.target.value)}
+    />
   );
 }
 
@@ -96,12 +114,14 @@ function Acciones({ children, centro = false }) {
  *  - onTerminar({ respuestas, cumpleanos, grupos, personas, quitadas }):
  *    promesa → { monedas, ideas: [{ id, nombre, ideas: [props de IdeaRegalo] }] }
  *  - onSubirFoto(blob) → url · onAgregarIdea(idea)
+ *  - onEmpezar(): al dejar la portada (la tienda pide ahí lo que necesitan
+ *    las personas y las ideas: en la portada no hace falta el catálogo)
  */
 export function PaginaEncuesta({
   config = CONFIG_ENCUESTA, conjuntos = [], inicial = {}, recompensa = { base: 15, porFecha: 5, tope: 50 },
   sesion = true, completada = false, cargando = false,
   urlLogin = '/login', urlRegistro = '/registro', urlFechas = '/cuenta/fechas-importantes', urlTienda = '/',
-  onOmitir, onTerminar, onSubirFoto, onAgregarIdea,
+  onOmitir, onTerminar, onSubirFoto, onAgregarIdea, onEmpezar,
 }) {
   const portada = unir(CONFIG_ENCUESTA.portada, config.portada);
   const sobreTi = unir(CONFIG_ENCUESTA.sobreTi, config.sobreTi);
@@ -124,6 +144,14 @@ export function PaginaEncuesta({
   const [fin, setFin] = useState(null);
   const [hoja, setHoja] = useState({ abierta: false, persona: null, clave: 0 });
   const [agregadas, setAgregadas] = useState([]);
+  const t = {
+    progreso: useTexto(paso === 4 ? '¡Listo!' : `Paso ${Math.min(Math.max(paso, 1), 3)} de 3`),
+    cumpleanos: useTexto('Tu cumpleaños'),
+    opcional: useTexto('Opcional.'),
+    aQuienes: useTexto('A quiénes sueles regalar'),
+  };
+  const empezo = paso > 0;
+  useEffect(() => { if (empezo) onEmpezar?.(); }, [empezo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const ir = (n, haciaAtras = false) => {
     setSentido(haciaAtras ? 'atras' : 'adelante');
@@ -150,14 +178,14 @@ export function PaginaEncuesta({
       <BloqueSeccion ajustes={{ paddingTop: '2rem', paddingBottom: '2.5rem' }}>
         <div className={`${s.columna} ${s.estado}`}>
           {!sesion ? (
-            <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Cuéntanos a quién le regalas" texto={`Inicia sesión para responder la encuesta y ganar hasta ${recompensa.tope} monedas.`}>
-              <Boton to={urlLogin} icono={<LogIn aria-hidden="true" />}>Iniciar sesión</Boton>
-              <Boton to={urlRegistro} variante="contorno">Crear cuenta</Boton>
+            <EstadoVacio imagen={CARAS_KAPI.feliz} titulo={<Texto>Cuéntanos a quién le regalas</Texto>} texto={<Texto>{`Inicia sesión para responder la encuesta y ganar hasta ${recompensa.tope} monedas.`}</Texto>}>
+              <Boton to={urlLogin} icono={<LogIn aria-hidden="true" />}><Texto>Iniciar sesión</Texto></Boton>
+              <Boton to={urlRegistro} variante="contorno"><Texto>Crear cuenta</Texto></Boton>
             </EstadoVacio>
           ) : (
-            <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Ya respondiste la encuesta" texto="Tus personas y sus fechas están en Fechas importantes. Puedes volver a responderla: no se pierde nada de lo que ya guardaste.">
-              <Boton to={urlFechas} icono={<CalendarHeart aria-hidden="true" />}>Ver mis fechas</Boton>
-              <Boton variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={() => setRehacer(true)}>Volver a responder</Boton>
+            <EstadoVacio imagen={CARAS_KAPI.feliz} titulo={<Texto>Ya respondiste la encuesta</Texto>} texto={<Texto>Tus personas y sus fechas están en Fechas importantes. Puedes volver a responderla: no se pierde nada de lo que ya guardaste.</Texto>}>
+              <Boton to={urlFechas} icono={<CalendarHeart aria-hidden="true" />}><Texto>Ver mis fechas</Texto></Boton>
+              <Boton variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={() => setRehacer(true)}><Texto>Volver a responder</Texto></Boton>
             </EstadoVacio>
           )}
         </div>
@@ -195,7 +223,7 @@ export function PaginaEncuesta({
       setAviso({
         tipo: 'info',
         texto: 'Elige al menos un grupo. Si por ahora no le regalas a nadie, puedes terminar igual.',
-        accion: <Boton tamano="sm" variante="contorno" onClick={terminar} cargando={guardando}>Terminar sin personas</Boton>,
+        accion: <Boton tamano="sm" variante="contorno" onClick={terminar} cargando={guardando}><Texto>Terminar sin personas</Texto></Boton>,
       });
       return;
     }
@@ -216,7 +244,7 @@ export function PaginaEncuesta({
       setAviso({
         tipo: 'info',
         texto: `No agregaste a nadie en ${grupo.texto.toLowerCase()}. ¿Sigues igual?`,
-        accion: <Boton tamano="sm" variante="contorno" onClick={() => siguienteGrupo(true)}>Seguir sin nadie</Boton>,
+        accion: <Boton tamano="sm" variante="contorno" onClick={() => siguienteGrupo(true)}><Texto>Seguir sin nadie</Texto></Boton>,
       });
       return;
     }
@@ -266,14 +294,14 @@ export function PaginaEncuesta({
         <div className={s.premio}>
           <Moneda tamano={30} className={s.premioMoneda} />
           <p>
-            <strong>Gana {recompensa.base} monedas</strong> al terminar y <strong>{recompensa.porFecha} más</strong> por cada fecha importante
-            que registres (hasta {recompensa.tope}). Úsalas como descuento en tus compras.
+            <strong><Texto>{`Gana ${recompensa.base} monedas`}</Texto></strong> <Texto>al terminar y</Texto> <strong><Texto>{`${recompensa.porFecha} más`}</Texto></strong>{' '}
+            <Texto>{`por cada fecha importante que registres (hasta ${recompensa.tope}). Úsalas como descuento en tus compras.`}</Texto>
           </p>
         </div>
-        <p className={s.texto}>Completa esta encuesta para recibir recomendaciones y regalos a la medida de cada persona. Es muy rápido: 3 pasos.</p>
+        <p className={s.texto}><Texto>Completa esta encuesta para recibir recomendaciones y regalos a la medida de cada persona. Es muy rápido: 3 pasos.</Texto></p>
         <Acciones centro>
-          <Boton variante="fantasma" onClick={onOmitir}>{portada.textoOmitir}</Boton>
-          <Boton iconoFin={<ArrowRight aria-hidden="true" />} onClick={() => ir(1)}>{portada.textoEmpezar}</Boton>
+          <Boton variante="fantasma" onClick={onOmitir}><Texto>{portada.textoOmitir}</Texto></Boton>
+          <Boton iconoFin={<ArrowRight aria-hidden="true" />} onClick={() => ir(1)}><Texto>{portada.textoEmpezar}</Texto></Boton>
         </Acciones>
       </>
     );
@@ -283,20 +311,18 @@ export function PaginaEncuesta({
         <CabezaPaso Icono={UserRound} titulo={sobreTi.titulo} subtitulo={sobreTi.subtitulo} />
         <div className={s.formulario}>
           {(sobreTi.campos || []).map((c) => (
-            <Campo
+            <PreguntaSobreTi
               key={c.id}
-              id={`encuesta-${c.id}`}
-              etiqueta={c.etiqueta}
+              campo={c}
+              valor={respuestas[c.id]}
               error={errores[c.id]}
-              opciones={c.tipo === 'opciones' ? [{ valor: '', texto: 'Elige…', deshabilitada: true }, ...(c.opciones || []).map((o) => ({ valor: o, texto: o }))] : undefined}
-              value={respuestas[c.id] || ''}
-              onChange={(e) => { const v = e.target.value; setRespuestas((r) => ({ ...r, [c.id]: v })); setErrores((x) => ({ ...x, [c.id]: undefined })); }}
+              onCambiar={(v) => { setRespuestas((r) => ({ ...r, [c.id]: v })); setErrores((x) => ({ ...x, [c.id]: undefined })); }}
             />
           ))}
           <CampoFecha
             id="encuesta-cumpleanos"
-            etiqueta="Tu cumpleaños"
-            ayuda="Opcional."
+            etiqueta={t.cumpleanos}
+            ayuda={t.opcional}
             valor={cumpleanos}
             onCambiar={setCumpleanos}
             vistaInicial="anios"
@@ -304,8 +330,8 @@ export function PaginaEncuesta({
           />
         </div>
         <Acciones>
-          <Boton variante="fantasma" icono={<ArrowLeft aria-hidden="true" />} onClick={() => ir(0, true)}>Atrás</Boton>
-          <Boton iconoFin={<ArrowRight aria-hidden="true" />} onClick={seguirSobreTi}>Continuar</Boton>
+          <Boton variante="fantasma" icono={<ArrowLeft aria-hidden="true" />} onClick={() => ir(0, true)}><Texto>Atrás</Texto></Boton>
+          <Boton iconoFin={<ArrowRight aria-hidden="true" />} onClick={seguirSobreTi}><Texto>Continuar</Texto></Boton>
         </Acciones>
       </>
     );
@@ -313,11 +339,11 @@ export function PaginaEncuesta({
     cuerpo = (
       <>
         <CabezaPaso Icono={Users} titulo="¿A quiénes sueles regalar?" subtitulo="Elige todos los que quieras. Después nos cuentas de cada uno." />
-        <ElegirVarios etiqueta="A quiénes sueles regalar" opciones={GRUPOS_ENCUESTA} valores={grupos} onCambiar={(v) => { setGrupos(v); setAviso(null); }} />
+        <ElegirVarios etiqueta={t.aQuienes} opciones={GRUPOS_ENCUESTA} valores={grupos} onCambiar={(v) => { setGrupos(v); setAviso(null); }} />
         <Acciones>
-          <Boton variante="fantasma" icono={<ArrowLeft aria-hidden="true" />} onClick={() => ir(1, true)}>Atrás</Boton>
+          <Boton variante="fantasma" icono={<ArrowLeft aria-hidden="true" />} onClick={() => ir(1, true)}><Texto>Atrás</Texto></Boton>
           <Boton iconoFin={<ArrowRight aria-hidden="true" />} onClick={seguirGrupos}>
-            {orden.length ? `Continuar · ${orden.length} ${orden.length === 1 ? 'grupo' : 'grupos'}` : 'Continuar'}
+            <Texto>{orden.length ? `Continuar · ${orden.length} ${orden.length === 1 ? 'grupo' : 'grupos'}` : 'Continuar'}</Texto>
           </Boton>
         </Acciones>
       </>
@@ -326,11 +352,11 @@ export function PaginaEncuesta({
     const ultimo = indice + 1 >= orden.length;
     cuerpo = (
       <>
-        <span className={s.grupoDe}>Grupo {indice + 1} de {orden.length}</span>
+        <span className={s.grupoDe}><Texto>{`Grupo ${indice + 1} de ${orden.length}`}</Texto></span>
         <CabezaPaso Icono={grupo.Icono} tono={grupo.tono} titulo={grupo.plural}
           subtitulo={grupo.unico ? 'Cuéntanos de tu pareja: te avisamos de sus fechas y te damos ideas a su medida.' : 'Agrega a cada uno: te avisamos de sus fechas y te damos ideas a su medida.'} />
         <p className={s.porFecha}>
-          <GananciaMonedas>+{recompensa.porFecha} por cada fecha nueva</GananciaMonedas>
+          <GananciaMonedas><Texto>{`+${recompensa.porFecha} por cada fecha nueva`}</Texto></GananciaMonedas>
         </p>
         <ul className={s.personas}>
           {delGrupo.map((p) => (
@@ -350,13 +376,13 @@ export function PaginaEncuesta({
         </ul>
         {!grupo.unico && (
           <button type="button" className={s.anadir} onClick={() => abrir({ relacion: grupo.valor })}>
-            <Plus aria-hidden="true" /> Añadir {grupo.singular.toLowerCase()}
+            <Plus aria-hidden="true" /> <Texto>{`Añadir ${grupo.singular.toLowerCase()}`}</Texto>
           </button>
         )}
         <Acciones>
-          <Boton variante="fantasma" icono={<ArrowLeft aria-hidden="true" />} onClick={grupoAnterior}>{indice === 0 ? 'Atrás' : 'Grupo anterior'}</Boton>
+          <Boton variante="fantasma" icono={<ArrowLeft aria-hidden="true" />} onClick={grupoAnterior}><Texto>{indice === 0 ? 'Atrás' : 'Grupo anterior'}</Texto></Boton>
           <Boton iconoFin={!ultimo && <ArrowRight aria-hidden="true" />} icono={ultimo && <Check aria-hidden="true" />} cargando={guardando} onClick={() => siguienteGrupo()}>
-            {ultimo ? 'Terminar encuesta' : 'Siguiente grupo'}
+            <Texto>{ultimo ? 'Terminar encuesta' : 'Siguiente grupo'}</Texto>
           </Boton>
         </Acciones>
       </>
@@ -369,15 +395,15 @@ export function PaginaEncuesta({
         {fin?.monedas > 0 && (
           <div className={s.ganaste}>
             <Moneda tamano={30} className={s.premioMoneda} />
-            <p><strong>Ganaste {fin.monedas} monedas.</strong> Ya están en tu saldo.</p>
+            <p><strong><Texto>{`Ganaste ${fin.monedas} monedas.`}</Texto></strong> <Texto>Ya están en tu saldo.</Texto></p>
           </div>
         )}
         {conIdeas.length > 0 && (
           <section className={s.ideas} aria-labelledby="encuesta-ideas">
-            <h2 id="encuesta-ideas" className={s.ideasTitulo}><Gift aria-hidden="true" /> Ya tenemos ideas de regalo</h2>
+            <h2 id="encuesta-ideas" className={s.ideasTitulo}><Gift aria-hidden="true" /> <Texto>Ya tenemos ideas de regalo</Texto></h2>
             {conIdeas.map((x) => (
               <div key={x.id} className={s.ideasPersona}>
-                <p className={s.ideasPara}>Para {x.nombre}</p>
+                <p className={s.ideasPara}><Texto>Para</Texto> {x.nombre}</p>
                 <ul className={s.ideasLista}>
                   {x.ideas.slice(0, 3).map((i) => (
                     <IdeaRegalo
@@ -395,11 +421,11 @@ export function PaginaEncuesta({
         <p className={s.consejo}>
           <CalendarHeart aria-hidden="true" />
           <span>
-            Desde ahora puedes agregar personas y fechas en <Enlace to={urlFechas} className={s.consejoEnlace}>Fechas importantes</Enlace>, dentro de tu cuenta.
+            <Texto>Desde ahora puedes agregar personas y fechas en</Texto> <Enlace to={urlFechas} className={s.consejoEnlace}><Texto>Fechas importantes</Texto></Enlace><Texto>, dentro de tu cuenta.</Texto>
           </span>
         </p>
         <Acciones centro>
-          <Boton to={urlTienda} iconoFin={<ArrowRight aria-hidden="true" />}>{gracias.textoBoton}</Boton>
+          <Boton to={urlTienda} iconoFin={<ArrowRight aria-hidden="true" />}><Texto>{gracias.textoBoton}</Texto></Boton>
         </Acciones>
       </>
     );
@@ -408,7 +434,7 @@ export function PaginaEncuesta({
   return (
     <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }}>
       <div className={s.columna}>
-        {paso > 0 && <ProgresoEncuesta texto={paso === 4 ? '¡Listo!' : `Paso ${Math.min(paso, 3)} de 3`} avance={avance} />}
+        {paso > 0 && <ProgresoEncuesta texto={t.progreso} avance={avance} />}
         <div key={clavePaso} className={[s.tarjeta, sentido === 'atras' ? s.entraAtras : s.entraAdelante].join(' ')}>
           <Garabatos variante="titulo" className={s.garabatos} />
           {cuerpo}

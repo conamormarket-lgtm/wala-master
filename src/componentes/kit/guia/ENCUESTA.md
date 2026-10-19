@@ -67,7 +67,7 @@ del builder: contenido propio, numerado **P6**.
 - **`Sello`**, **`BarraProgreso`**, **`Campo`**, **`CampoFecha`** y
   **`EstadoVacio`** son los de todo el kit.
 
-## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
+## Llevar a la tienda (hecho el 2026-10-19: ver "En la tienda" al final)
 
 Página propia: va en el paso 6 de [MIGRACION.md](MIGRACION.md), después de
 Fechas importantes (comparten `HojaPersona`). Mantener al día si cambia un
@@ -139,13 +139,65 @@ componente o su forma de recibir datos.
 
 ### Pasos (cada uno se verifica solo y se puede volver atrás)
 
-1. Agregar `familia` al formulario de Fechas importantes no hace falta; sí
-   verificar que `personaARecipient` guarda `familySet`/`familyAnswers` (ya lo
-   hace el adaptador).
-2. En `SubscriptionSurveyPage.jsx`, armar `config`, `conjuntos`, `inicial`,
-   `onOmitir` y `onTerminar` con lo de arriba y devolver `<PaginaEncuesta>`
-   en lugar del JSX actual (mantener el archivo viejo hasta probar).
-3. Probar: sin sesión, primera vez, volver a responder (no se pierde nadie),
-   quitar a alguien, pareja sin datos, falla de red, monedas pagadas.
+1. ✓ `personaARecipient` guarda `familySet`/`familyAnswers`.
+2. ✓ `SubscriptionSurveyPage.jsx` monta `EncuestaDeTienda`; lo de antes
+   quedó en `SubscriptionSurveyViejo.jsx` (interruptor `encuestaVieja`).
+3. ✓ Probado (ver "En la tienda").
 4. Borrar `SubscriptionSurveyPage.module.css` cuando lleve un tiempo en
-   producción.
+   producción (ELIMINAR.md, "La encuesta").
+
+## En la tienda (2026-10-19)
+
+| Portada (celular) | Gracias, con ideas (celular) | Grupos en inglés y oscuro (escritorio) |
+|---|---|---|
+| ![La portada en la tienda](encuesta-portada-tienda.webp) | ![Gracias: monedas, ideas de regalo y Fechas importantes](encuesta-gracias-tienda.webp) | ![A quiénes regalas, en inglés y modo noche](encuesta-grupos-ingles-oscuro.webp) |
+
+`pages/SubscriptionSurveyPage.jsx` monta
+`components/encuesta/EncuestaDeTienda.jsx`, que dibuja `PaginaEncuesta`. La
+página de antes (`pages/SubscriptionSurveyViejo.jsx`) baja solo con el
+interruptor `encuestaVieja` (`useLoViejo('encuesta')`: en Firestore
+`encuestaViejo: true`; en localStorage, `"encuesta"`).
+
+**Lo mismo que antes al terminar:** `surveyBasicData`, `giftRoles` (los ocho
+grupos en true o false), `giftRecipients` fusionado (las personas listas
+sobre lo que ya tenían guardado, con lo que la encuesta no edita, y las del
+perfil que no se tocaron), `hasCompletedSurvey` y el cumpleaños propio solo
+si hay fecha; la conversión del pop-up `encuesta`; las monedas las paga el
+servidor (`grantSurveyReward` + `claimDatesReward`) y vuelan solo si pagó.
+"No, gracias" guarda `lastSurveyPromptedAt` y va al inicio. Sin el perfil
+leído no se guarda (la fusión pisaría a quien no se ve).
+
+**Lo que cambia (además de las diferencias a propósito de arriba):**
+
+- El catálogo de regalos (`useGiftCatalog({ activo })`: el catálogo entero,
+  etiquetas, personajes y colecciones) se pide al dejar la portada
+  (`onEmpezar`), no al abrir la página: quien dice "No, gracias" no lo baja.
+- La config se lee con `leerSurveyConfig` (sin intentar crearla: el
+  "PERMISSION_DENIED" de la consola salía de ahí; `getSurveyConfig` queda
+  para el admin). El buscador de regalos también la lee así.
+- "Elegir" en una idea abre "Agregar rápido" (antes las ideas llevaban a la
+  ficha); lo que no pide talla se agrega al tiro.
+- Los grupos que ya tenía vienen marcados al volver a responder.
+- El color de la config (`design.primaryColor`) ya no se usa: la encuesta
+  va con los colores de Walá.
+- Sin el Kapi flotante en la encuesta (`components/marco/Kapi.jsx`): ya está
+  el de la portada.
+- Todo pasa por la traducción (antes, solo algunos textos).
+- `encuestaDesdeConfig` vive en `adaptadoresEncuesta.js` (en
+  `adaptadores.js` iba al archivo principal).
+
+**Carga:** la página baja 21,4 KB (8,4 KB gzip) + 5,6 KB de CSS, más el
+formulario de la persona (compartido con Fechas importantes) y las piezas de
+la encuesta; antes, 24,2 KB + 10,9 KB de CSS y el catálogo entero apenas se
+abría. El archivo principal: unos 130 B gzip más, del mapa de dependencias
+de la ruta (ningún código de la encuesta entra en él).
+
+**Probado** con los emuladores a 390 y 1366, en claro y en oscuro: la
+portada (un solo Kapi), "Un poco sobre ti" con su error, los grupos, la
+pareja sin datos (aviso), su hoja (nombre, género, gusto con sugerencia,
+cumpleaños sin año), un grupo vacío ("Seguir sin nadie"), terminar (20
+monedas: 15 + 5), lo guardado en Firestore, volver a responder (todo
+precargado), quitar a alguien (se quita de verdad y la persona de otro
+grupo se conserva), las ideas de regalo y "Elegir" (Agregar rápido), "No,
+gracias", inglés y el interruptor. **No probado:** subir la foto de una
+persona y una falla de red al guardar.

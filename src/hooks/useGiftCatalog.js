@@ -4,7 +4,7 @@ import { useProducts } from './useProducts';
 import { getTags } from '../services/tags';
 import { getCharacters } from '../services/characters';
 import { getCollections } from '../services/collections';
-import { getSurveyConfig } from '../services/encuestaConfig';
+import { leerSurveyConfig } from '../services/encuestaConfig';
 import { recomendarRegalos, sugerenciasRespuestas, sugerenciasPorCampo } from '../utils/giftRecommender.mjs';
 
 const aMapa = (lista) => Object.fromEntries((lista || []).map((x) => [x.id, x.name || '']));
@@ -17,15 +17,17 @@ const aMapa = (lista) => Object.fromEntries((lista || []).map((x) => [x.id, x.na
  *
  * Devuelve `recomendar(recipient, { ocasion, limite })` listo para usar y las
  * `sugerencias` para autocompletar respuestas en la encuesta.
+ *  - activo: false para no pedir nada todavía (la encuesta lo enciende al
+ *    empezar: en la portada no hace falta el catálogo entero)
  */
-export function useGiftCatalog() {
-  const { data: productos, isLoading: cargandoProductos } = useProducts();
+export function useGiftCatalog({ activo = true } = {}) {
+  const { data: productos, isLoading: cargandoProductos } = useProducts([], null, { enabled: activo });
 
   const { data: extra, isLoading: cargandoExtra } = useQuery({
     queryKey: ['gift-catalog-dicts'],
     queryFn: async () => {
       const [tags, characters, collections, config] = await Promise.all([
-        getTags(), getCharacters(), getCollections(), getSurveyConfig(),
+        getTags(), getCharacters(), getCollections(), leerSurveyConfig(),
       ]);
       const conjuntoCategorias = {};
       const conjuntos = (config.data && config.data.brandsPanel && config.data.brandsPanel.categories) || [];
@@ -43,6 +45,7 @@ export function useGiftCatalog() {
       };
     },
     staleTime: 1000 * 60 * 10,
+    enabled: activo,
   });
 
   const dicts = extra?.dicts;

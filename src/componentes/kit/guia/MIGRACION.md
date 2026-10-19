@@ -54,6 +54,7 @@ principal (y a la APK de Capacitor).
 | Mis referidos (paso 6): `PaginaReferidos` por `components/cuenta/ReferidosDeCuenta.jsx` (los pedidos por reclamar y el ranking al acercarse); `linkInvitacion`/`linkProducto` con `https://wala.pe` en la app; lo de antes baja solo con `cuentaVieja` | `pages/cuenta/CuentaReferidosPage.jsx` |
 | Catálogo, Mis cupones y Misiones (paso 6): `PaginaCatalogo`, `PaginaCupones` y `PaginaMisiones` por `components/cuenta/CatalogoDeCuenta.jsx`, `CuponesDeCuenta.jsx` y `MisionesDeCuenta.jsx` (`misionDesdeServidor`, `nivelesDesdeTiers`); lo de antes baja solo con `cuentaVieja` | `pages/cuenta/CatalogReward.jsx`, `MisCuponesPage.jsx`, `MisionesPage.jsx` |
 | Mi perfil y Mis direcciones (paso 6): `PaginaPerfil` y `PaginaDirecciones` por `components/cuenta/PerfilDeCuenta.jsx` y `DireccionesDeCuenta.jsx` (`perfilDesdeUsuario`, `direccionDesdeFirestore`/`direccionAFirestore`); lo de antes baja solo con `cuentaVieja` | `pages/cuenta/PerfilPage.jsx`, `pages/cuenta/MisDireccionesPage.jsx` |
+| La encuesta (paso 6): `PaginaEncuesta` por `components/encuesta/EncuestaDeTienda.jsx`; lo mismo al guardar (la fusión de personas, los grupos, las monedas del servidor, la conversión), quitar a alguien lo quita, el catálogo de regalos al empezar, la config sin intentar crearla; lo de antes baja solo con `encuestaVieja` | `pages/SubscriptionSurveyPage.jsx` |
 | El acceso (paso 6): `PaginaLogin`, `PaginaRecuperar` (`paginas/Acceso.jsx`), `PaginaRegistro` y `PaginaCompletarPerfil` (`paginas/AccesoDatos.jsx`) por `components/acceso/` (`LoginDeTienda`, `RecuperarDeTienda`, `RegistroDeTienda`, `CompletarPerfilDeTienda`); las mismas llamadas, campos y redirecciones; el destino en `?redirect=`; el registro con `updateUserProfile`; lo de antes baja solo con `accesoViejo` | `pages/LoginPage.jsx`, `RegisterPage.jsx`, `ResetPasswordPage.jsx`, `CompleteProfilePage.jsx` |
 | La búsqueda (paso 6): `PaginaBusqueda` (`paginas/Busqueda.jsx`) por `components/busqueda/BusquedaDeTienda.jsx`; la misma búsqueda por cursor, los filtros de lo encontrado (sin bajar el catálogo de la marca), la analítica también desde la página, textos traducidos; el panel de la cabecera baja al tocarla; lo de antes baja solo con `busquedaVieja` | `pages/SearchPage.jsx` |
 | "Agregar rápido" (`AgregarRapido`) en todas las tarjetas: "Elegir…" abre la hoja (`components/producto/AgregarRapidoDeProducto.jsx`, en su propio paquete) | `components/producto/TarjetaDeProducto.jsx` |
@@ -249,6 +250,11 @@ Cada paso en su propio commit, verificable por separado.
    dos archivos y traducido, `CampoContrasena` fuera del archivo principal,
    el registro que deja la sesión al día y sin el Kapi flotante en el acceso
    (ACCESO.md, "En la tienda"). Interruptor `accesoViejo`.
+   ✓ **La encuesta** (2026-10-19): ENCUESTA.md pasos 1 a 3; la página del
+   kit traducida, el catálogo de regalos al dejar la portada, la config que
+   ya no intenta crearse, "Elegir" con Agregar rápido, sin el Kapi flotante y
+   `encuestaDesdeConfig` fuera del archivo principal (ENCUESTA.md, "En la
+   tienda"). Interruptor `encuestaVieja`.
 7. ✓ **Cargando** (`PantallaCarga`, `Cargando`, `EsqueletoPagina`: CARGA.md; el
    splash de `index.html` cambia en el mismo commit; hecho el 2026-10-19 en
    tres commits, interruptor `cargaVieja`), ✓ **`BarraInferior`** (2026-10-19,
@@ -272,6 +278,7 @@ nada), o en un solo navegador con `localStorage.wala_kit_viejo = "pagos,carrito"
 | `cuentaVieja` (`useLoViejo('cuenta')`: en Firestore el campo es `cuentaViejo: true`; en localStorage, `"cuenta"`) | la cuenta: el marco (`CuentaLayoutViejo.jsx`), el resumen (`CuentaResumenViejo.jsx`) y los ajustes (`CuentaAjustesViejo.jsx`), Mi perfil (`PerfilViejo.jsx`), Mis direcciones (`MisDireccionesViejo.jsx`), el catálogo (`CatalogRewardViejo.jsx`), Mis cupones (`MisCuponesViejo.jsx`), Misiones (`MisionesViejo.jsx`), Mis referidos (`CuentaReferidosViejo.jsx`) la lista de deseos (`WishlistViejo.jsx`) Fechas importantes (`CuentaFechasImportantesViejo.jsx`) Mis creaciones (`MisCreacionesViejo.jsx`) y Mis pedidos (`CuentaRastreoViejo.jsx` y `CuentaCompraDetalleViejo.jsx`, también con `pagosViejo`); después, cada sección que migre |
 | `carritoViejo` | todo el carrito (`Cart.jsx` y `CartItem.jsx`, con sus preguntas por `window.confirm`) |
 | `editorViejo` (`useLoViejo('editor')`: en Firestore `editorViejo: true`; en localStorage, `"editor"`) | el editor del builder: `VisualEditorPanel`, el velo "Editar…" de cada sección, el "+" de la página y el del pie |
+| `encuestaVieja` (`useLoViejo('encuesta')`: en Firestore `encuestaViejo: true`; en localStorage, `"encuesta"`) | la encuesta: `SubscriptionSurveyViejo.jsx` (con `getSurveyConfig`, `FechaEventoInput` y el catálogo al abrir) |
 | `accesoViejo` (`useLoViejo('acceso')`: en Firestore `accesoViejo: true`; en localStorage, `"acceso"`) | las cuatro páginas de acceso: `LoginViejo.jsx`, `RegisterViejo.jsx`, `ResetPasswordViejo.jsx` y `CompleteProfileViejo.jsx` (el Kapi flotante sigue oculto en esas rutas) |
 | `busquedaVieja` (`useLoViejo('busqueda')`: en Firestore `busquedaViejo: true`; en localStorage, `"busqueda"`) | la página `/buscar`: `SearchPageViejo.jsx` con `SidebarCatalogLayout` (el panel de la cabecera no: va con `cabeceraVieja`) |
 | `cabeceraVieja` (`useLoViejo('cabecera')`: en Firestore `cabeceraViejo: true`; en localStorage, `"cabecera"`) | la cabecera: `Header` con `HeaderSearch` y `NotificationTray` |

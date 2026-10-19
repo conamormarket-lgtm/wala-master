@@ -19,7 +19,7 @@ export { MenuTienda, MenuMarcas, AyudaMonedas, MenuCuenta, VistaFavoritos, Vista
 export { default as AgregarRapido } from './AgregarRapido';
 export { accionDeProducto, tarjetaDesdeProducto, esNuevo, opcionesDeProducto, rutaDeMarca, tarjetaDesdeMarca, testimonioDesdeAjuste, precioEfectivo, limitesDePrecio, esTemporada, gruposDeCatalogo, grillaDesdeConfiguracion, juegosDelArcade, kapiDesdePerfil, retoDesdePerfil,
   sugerenciasDesdeBusqueda, grupoModalidad, ORDENES_BUSQUEDA, ordenarProductos, perfilDesdeUsuario, direccionDesdeFirestore, direccionAFirestore,
-  recompensaDesdeFirestore, cuponDesdeFirestore, misionDesdeServidor, creacionDesdeDiseno, personaDesdeRecipient, personaARecipient, encuestaDesdeConfig,
+  recompensaDesdeFirestore, cuponDesdeFirestore, misionDesdeServidor, creacionDesdeDiseno, personaDesdeRecipient, personaARecipient,
   prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaCreacionDesde, prendaEstudioDesde,
   fichaProductoDesde, opinionesDesde, itemCarritoDesde, itemRegaloDesde, fechaEntregaDesde, festivasDePersona, nivelesDesdeTiers, enlacePagoDesde, navDeMarca, identidadDeMarca, plantillaDeMarca, BLOQUES_MARCA, ESQUELETO_MARCA, portadaDeCombo, categoriasDeGrilla } from './adaptadores';
 export { tipoDeEnlace } from './Enlace';
@@ -68,3 +68,4 @@ export { PaginaLegal, PaginaReclamaciones, validarReclamacion } from './paginas/
 export { PaginaPalabra, PaginaRuleta, PaginaBolitas } from './paginas/Juegos';
 export { PaginaSorteo, PaginaSuscripcionSorteo } from './paginas/Sorteos';
 export { PaginaSuscripciones, PaginaInvitacion, PaginaEnlaces } from './paginas/Campanas';
+export { encuestaDesdeConfig } from './adaptadoresEncuesta';

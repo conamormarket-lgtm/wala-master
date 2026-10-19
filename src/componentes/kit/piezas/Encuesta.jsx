@@ -3,6 +3,7 @@ import { Check, CheckCircle2, AlertCircle, Pencil, Trash2 } from 'lucide-react';
 import { Sello } from '../Marca';
 import { Avatar } from './Avatar';
 import { BarraProgreso } from './BarraProgreso';
+import { Texto, useTexto } from '../Traduccion';
 import s from './Encuesta.module.css';
 
 /*
@@ -32,9 +33,10 @@ export function ProgresoEncuesta({ texto, avance = 0 }) {
  *  - onCambiar(valores) · etiqueta: nombre del grupo para lectores
  */
 export function ElegirVarios({ opciones = [], valores = [], onCambiar, etiqueta }) {
+  const nombre = useTexto(etiqueta);
   const alternar = (v) => onCambiar?.(valores.includes(v) ? valores.filter((x) => x !== v) : [...valores, v]);
   return (
-    <div className={s.varios} role="group" aria-label={etiqueta} data-componente="ElegirVarios">
+    <div className={s.varios} role="group" aria-label={nombre} data-componente="ElegirVarios">
       {opciones.map(({ valor, texto, Icono, tono }, k) => {
         const activo = valores.includes(valor);
         return (
@@ -49,7 +51,7 @@ export function ElegirVarios({ opciones = [], valores = [], onCambiar, etiqueta 
             <span className={s.opcionSello}>
               <Sello tamano={44} tono={activo ? (tono || 'degradado') : 'suave'} girar={0}>{Icono && <Icono aria-hidden="true" />}</Sello>
             </span>
-            <span className={s.opcionTexto}>{texto}</span>
+            <span className={s.opcionTexto}><Texto>{texto}</Texto></span>
             <span className={s.visto} aria-hidden="true"><Check /></span>
           </button>
         );
@@ -65,21 +67,23 @@ export function ElegirVarios({ opciones = [], valores = [], onCambiar, etiqueta 
  *  - onEditar · onQuitar (sin ella no hay tacho; la pareja no se quita)
  */
 export function FichaPersonaEncuesta({ nombre, relacion, foto, completa = false, onEditar, onQuitar }) {
+  const relacionTexto = useTexto(relacion);
+  const quitarA = useTexto('Quitar a');
   return (
     <li className={[s.ficha, completa ? s.fichaLista : s.fichaFalta].filter(Boolean).join(' ')} data-componente="FichaPersonaEncuesta">
       <button type="button" className={s.fichaPrincipal} onClick={onEditar}>
         <Avatar className={s.fichaAvatar} nombre={nombre} imagen={foto} letras={1}>?</Avatar>
         <span className={s.fichaTextos}>
-          <strong>{nombre || relacion}</strong>
+          <strong>{nombre || relacionTexto}</strong>
           <span className={completa ? s.estadoOk : s.estadoFalta}>
             {completa ? <CheckCircle2 aria-hidden="true" /> : <AlertCircle aria-hidden="true" />}
-            {completa ? 'Lista' : 'Faltan datos'}
+            <Texto>{completa ? 'Lista' : 'Faltan datos'}</Texto>
           </span>
         </span>
-        <span className={s.fichaAccion}><Pencil aria-hidden="true" /> <span className={s.fichaAccionTexto}>{completa ? 'Editar' : 'Completar'}</span></span>
+        <span className={s.fichaAccion}><Pencil aria-hidden="true" /> <span className={s.fichaAccionTexto}><Texto>{completa ? 'Editar' : 'Completar'}</Texto></span></span>
       </button>
       {onQuitar && (
-        <button type="button" className={s.quitar} onClick={onQuitar} aria-label={`Quitar a ${nombre || relacion}`}>
+        <button type="button" className={s.quitar} onClick={onQuitar} aria-label={`${quitarA} ${nombre || relacionTexto}`}>
           <Trash2 aria-hidden="true" />
         </button>
       )}
