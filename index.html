@@ -100,83 +100,68 @@
       })();
     </script>
     <div id="root">
-      <!-- Pantalla de carga mientras React carga — mismo diseño que BrandLoader.jsx
-           (etiqueta y "WALÁ" del logo oficial + halo + barra de progreso indeterminada,
-           sobre el mismo degradado de marca con un par de glows suaves), asi
-           que cuando React monta y toma el relevo con su propio BrandLoader, la
-           transicion es invisible en vez de un salto de un layout a otro.
-           Inline (sin CSS module: esto pinta ANTES de que cargue ningun bundle). -->
-      <div id="app-loading" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:radial-gradient(60% 55% at 18% 12%,rgba(255,255,255,.16) 0%,rgba(255,255,255,0) 60%),radial-gradient(55% 50% at 88% 92%,rgba(76,29,149,.35) 0%,rgba(76,29,149,0) 60%),linear-gradient(135deg,#8B5CF6 0%,#5B21B6 100%);">
+      <!-- Pantalla de carga mientras React carga: la misma que PantallaCarga del
+           kit (componentes/kit/Cargando.jsx): el degradado plano de la marca, la
+           etiqueta del logo colgada de su cordón que se mece (2,4 s, ±6°, origen
+           75% 4%), WALÁ y una barra que va y viene. Mismas medidas y tiempos:
+           cuando React toma el relevo con PantallaCarga, no se nota el cambio.
+           Inline (sin CSS module: esto pinta ANTES de que cargue ningún bundle). -->
+      <div id="app-loading" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#8B5CF6 0%,#5B21B6 100%);">
         <div style="display:flex;flex-direction:column;align-items:center;gap:18px;">
-          <div style="position:relative;width:148px;height:148px;display:flex;align-items:center;justify-content:center;">
-            <span id="app-loading-halo-wide" style="position:absolute;inset:-28%;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.14) 0%,rgba(255,255,255,0) 68%);transform-origin:center;animation:appLoadingHaloWide 3.2s ease-in-out infinite;"></span>
-            <span id="app-loading-halo" style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.3) 0%,rgba(255,255,255,0) 70%);transform-origin:center;animation:appLoadingHalo 3.2s ease-in-out infinite;"></span>
-            <img id="app-loading-mark" src="/assets/marca/splash-etiqueta.webp" width="88" height="118" alt="" aria-hidden="true" draggable="false" style="position:relative;width:88px;height:auto;transform-origin:center;animation:appLoadingBreathe 3.2s ease-in-out infinite;filter:drop-shadow(0 5px 14px rgba(76,29,149,.28));" />
-          </div>
-          <img src="/assets/marca/splash-wala.webp" width="122" height="53" alt="Walá" draggable="false" style="display:block;width:122px;height:auto;filter:drop-shadow(0 2px 10px rgba(76,29,149,.35));" />
+          <img id="app-loading-mark" src="/assets/marca/splash-etiqueta.webp" width="88" height="118" alt="" aria-hidden="true" draggable="false" style="display:block;width:88px;height:auto;margin-bottom:4px;transform-origin:75% 4%;animation:appLoadingVaiven 2.4s ease-in-out infinite;filter:drop-shadow(0 5px 12px rgba(76,29,149,.28));" />
+          <img src="/assets/marca/splash-wala.webp" width="122" height="53" alt="Walá" draggable="false" style="display:block;width:122px;height:auto;" />
           <div style="position:relative;width:132px;height:4px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.22);">
-            <span id="app-loading-bar" style="position:absolute;inset:0;width:36%;border-radius:inherit;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.95) 50%,rgba(255,255,255,0) 100%);box-shadow:0 0 12px rgba(255,255,255,.55);animation:appLoadingSweep 1.4s ease-in-out infinite;"></span>
+            <span id="app-loading-bar" style="position:absolute;top:0;bottom:0;left:0;width:40%;border-radius:inherit;background:#fff;animation:appLoadingVaYViene 1.4s ease-in-out infinite;"></span>
           </div>
         </div>
       </div>
       <style>
-        /* Respiracion: el icono flota (sube ~6px + escala 1.05) en un ciclo
-           continuo y calmado de 3.2s, y los dos halos PULSAN en sincronia
-           (mas brillo + algo mas grandes en el mismo 50%). Mismo gesto y
-           mismos numeros que el BrandLoader de React (BREATHE_TRANSITION)
-           para que el relevo splash->React sea invisible. */
-        @keyframes appLoadingBreathe {
-          0%, 100% { transform: scale(1) translateY(0); }
-          50%      { transform: scale(1.05) translateY(-6px); }
+        /* Los mismos movimientos que PantallaCarga (Cargando.module.css: vaiven
+           y vaYViene): solo transform, en CSS. */
+        @keyframes appLoadingVaiven {
+          0%, 100% { transform: rotate(-6deg); }
+          50%      { transform: rotate(6deg); }
         }
-        @keyframes appLoadingHalo {
-          0%, 100% { opacity: .8; transform: scale(1); }
-          50%      { opacity: 1;  transform: scale(1.12); }
+        @keyframes appLoadingVaYViene {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(250%); }
         }
-        @keyframes appLoadingHaloWide {
-          0%, 100% { opacity: .7; transform: scale(1); }
-          50%      { opacity: 1;  transform: scale(1.1); }
+        /* Las cargas siguientes (la marca ya se vio, ver el script de abajo):
+           el fondo de la página según el tema y la etiqueta chica a color que se
+           mece, como Cargando del kit; React pinta enseguida la cabecera y el
+           esqueleto de la página. */
+        .app-loading-mini {
+          display: inline-block; width: 34px; aspect-ratio: 246 / 330;
+          background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #5b21b6 100%);
+          -webkit-mask: url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat;
+          mask: url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat;
+          transform-origin: 75% 4%;
+          animation: appLoadingVaiven 2.4s ease-in-out infinite;
         }
-        @keyframes appLoadingSweep {
-          0% { transform: translateX(-140%); }
-          100% { transform: translateX(340%); }
-        }
-        /* Círculo simple para las cargas POSTERIORES a la primera (ver el
-           script de abajo): el splash de marca de Walá solo se muestra la
-           primera vez; después este spinner reemplaza su contenido, igual que
-           el <Loading> de React que toma el relevo. */
-        .app-loading-circle {
-          width: 40px; height: 40px; border-radius: 50%;
-          border: 3px solid #e5e7eb; border-top-color: #7C3AED;
-          border-right-color: transparent;
-          animation: appLoadingSpin .8s linear infinite;
-        }
-        @keyframes appLoadingSpin { to { transform: rotate(360deg); } }
-        @media (prefers-reduced-motion: reduce) {
-          .app-loading-circle { animation: none !important; }
+        [data-theme='dark'] .app-loading-mini {
+          background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%);
         }
         @media (prefers-reduced-motion: reduce) {
-          #app-loading-mark, #app-loading-bar,
-          #app-loading-halo, #app-loading-halo-wide { animation: none !important; }
+          #app-loading-mark, #app-loading-bar, .app-loading-mini { animation: none !important; }
           #app-loading-bar { width: 45%; opacity: .8; }
         }
       </style>
       <script>
-        /* Si el splash de marca de Walá ya se mostró alguna vez (flag que pone
-           BrandLoaderOverlay tras la primera carga), en las recargas siguientes
-           NO repetimos la marca: se reemplaza el contenido del splash por un
-           círculo simple sobre fondo claro, en sintonía con el <Loading> que
-           React monta enseguida. Corre inline, antes de cualquier bundle. */
+        /* Si la pantalla de marca ya se vio alguna vez (wala_brand_seen, lo pone
+           BrandLoaderOverlay), en las recargas siguientes no se repite: el fondo
+           de la página (claro u oscuro, data-theme ya está puesto) con la
+           etiqueta chica. Corre inline, antes de cualquier bundle. */
         (function () {
           try {
             if (localStorage.getItem('wala_brand_seen') === '1') {
               var el = document.getElementById('app-loading');
               if (el) {
-                el.style.background = '#f8f9fa';
-                el.innerHTML = '<div class="app-loading-circle"></div>';
+                var oscuro = document.documentElement.getAttribute('data-theme') === 'dark';
+                el.style.background = oscuro ? '#14121C' : '#F8FAFC';
+                el.innerHTML = '<span class="app-loading-mini" aria-hidden="true"></span>';
               }
             }
-          } catch (e) { /* localStorage no disponible: se deja el splash de marca */ }
+          } catch (e) { /* localStorage no disponible: se deja la pantalla de marca */ }
         })();
       </script>
     </div>

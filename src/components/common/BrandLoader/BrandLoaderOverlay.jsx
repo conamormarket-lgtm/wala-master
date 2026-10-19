@@ -7,6 +7,7 @@ import BrandLoader from './BrandLoader';
 import Loading from '../Loading';
 import useLoViejo from '../../../hooks/useLoViejo';
 import { EsqueletoPagina } from '../../../componentes/kit/Esqueletos';
+import { PantallaCarga } from '../../../componentes/kit/Cargando';
 import { formaDeRuta } from '../../carga/formaDeRuta';
 
 // El splash de marca de Walá (la bolsa con la "W" sobre el degradado violeta)
@@ -269,7 +270,10 @@ const BrandLoaderOverlay = ({ show, relevo = false, secciones }) => {
             ease: EASE_SIGNATURE,
           }}
         >
-          {useBrand ? <BrandLoader /> : conEsqueleto ? (
+          {/* La marca: PantallaCarga del kit (la etiqueta colgada que se mece,
+              igual que el splash de index.html); con cargaVieja, BrandLoader.
+              La salida la sigue haciendo este motion.div. */}
+          {useBrand ? (cargaVieja ? <BrandLoader /> : <PantallaCarga />) : conEsqueleto ? (
             <EsqueletoPagina forma={forma.forma} modulo={forma.modulo} secciones={secciones?.length ? secciones : undefined} />
           ) : <Loading />}
         </motion.div>

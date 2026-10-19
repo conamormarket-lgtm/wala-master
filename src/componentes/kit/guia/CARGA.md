@@ -152,9 +152,21 @@ página, así que el relevo no se nota.
   `components/carga/EsperaPantalla.jsx` → `CapaCargando pantallaCompleta`
   en `<body>` (antes, `Loading fullScreen portal`), con el texto sin los
   puntos (los pone `Cargando`, animados) y traducido.
+- **La primera vez (marca):** `BrandLoaderOverlay` dibuja `PantallaCarga`
+  (sin frases, como el splash) y el splash estático de `index.html` es el
+  mismo: degradado plano, sin halos, la etiqueta de 88 px colgada que se mece
+  (`vaiven`, 2,4 s, ±6°, origen 75% 4%), WALÁ de 122 px y la barra blanca de
+  132 × 4 que va y viene. Medido el 2026-10-19 a 390 px: WALÁ en (127, 439)
+  y la barra en (122, 510) en los dos; el relevo no salta. La salida la sigue
+  haciendo el `motion.div` del overlay (se funde y se abre un poco).
+- **Las cargas siguientes** (la marca ya se vio): el splash estático pinta el
+  fondo de la página según el tema (`data-theme`, ya puesto en el `<head>`)
+  con la etiqueta chica a color que se mece (como `Cargando`), y React
+  pinta enseguida la cabecera y el esqueleto. Antes, un círculo gris.
 - **Interruptor `cargaVieja`** (`useLoViejo('carga')`): vuelve
-  `PageLoading`, el círculo bajo la cabecera y el círculo a pantalla
-  completa.
+  `PageLoading`, el círculo bajo la cabecera, el círculo a pantalla completa
+  y `BrandLoader`. El splash de `index.html` no lo sigue (es estático): se
+  queda el nuevo.
 
 ## Llevar a la tienda (el plan; los pasos hechos llevan ✓)
 
@@ -292,9 +304,10 @@ lógica es de la tienda:
 - **Bloquea el scroll hasta que termina la salida.**
 - **Deja de bloquear clics al ocultarse** (`pointer-events: none`).
 - **Marca o relevo.** Ahí solo cambia `<BrandLoader />` por `<PantallaCarga />`.
-- **El momento de la salida.** La salida la anima el kit (`saliendo` y
-  `onSalio`), no framer-motion. Por eso `AnimatePresence` tiene que esperar
-  a `onSalio`, o la salida se puede quedar en un `motion.div` sin animación.
+- **El momento de la salida.** En la tienda la sigue animando el
+  `motion.div` de `BrandLoaderOverlay` (como con `BrandLoader`): `PantallaCarga`
+  solo dibuja. Si algún día la anima el kit (`saliendo` y `onSalio`),
+  `AnimatePresence` tiene que esperar a `onSalio`.
 
 ### Diferencias a propósito
 
@@ -307,6 +320,7 @@ lógica es de la tienda:
 
 1. ✓ `PageLoading` → `EsqueletoPagina` (lo más simple: sin estado; la forma sale de la ruta). Hecho el 2026-10-19 (arriba, "En la tienda").
 2. ✓ El círculo de `BrandLoaderOverlay` → `EsqueletoPagina` de la ruta (y `CapaCargando` donde hoy hay esperas de una acción). Hecho el 2026-10-19.
-3. `BrandLoader` → `PantallaCarga`, **en el mismo commit** que el splash de
+3. ✓ `BrandLoader` → `PantallaCarga`, **en el mismo commit** que el splash de
    `index.html`. Probar la primera carga con la caché vacía y la red
-   lenta: el relevo no debe saltar.
+   lenta: el relevo no debe saltar. Hecho el 2026-10-19 (medido: las mismas
+   posiciones en el splash y en `PantallaCarga`).
