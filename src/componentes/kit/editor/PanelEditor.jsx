@@ -2,13 +2,13 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, Reorder, motion, useDragControls } from 'framer-motion';
 import {
   ArrowLeft, ArrowDown, ArrowUp, Copy, GripVertical, Monitor, PanelLeft, PanelRight, Plus, Redo2, Smartphone, Trash2, Undo2, X,
-  Maximize2, Minimize2,
+  Maximize2, Minimize2, ChevronRight, LayoutTemplate,
 } from 'lucide-react';
 import Boton from '../Boton';
 import { Buscador } from '../Formulario';
 import { Pestanas } from '../Navegacion';
 import { IsoWala } from '../Marca';
-import { ESQUEMAS, GRUPOS_MODULOS, ajustesIniciales, esquemaDe, resumenDe } from './esquemas';
+import { ESQUEMAS, ESQUEMAS_GLOBALES, GRUPOS_MODULOS, ajustesIniciales, esquemaDe, resumenDe } from './esquemas';
 import { FormularioSeccion, ProveedorEditor } from './CamposEditor';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import s from './Editor.module.css';
@@ -193,13 +193,20 @@ const transicionVista = { initial: { opacity: 0, x: 16 }, animate: { opacity: 1,
  *  - fuentes { colecciones, categorias, marcas, subirArchivo }, extensiones
  *  - onGuardar, guardando, sinGuardar, onDeshacer/onRehacer + puede…
  *  - vista 'escritorio'|'movil' + onVista, lado 'derecha'|'izquierda' + onLado, onCerrar
- *  - cabecera: nodo sobre la lista (p. ej. accesos al header global)
+ *  - cabecera: nodo sobre la lista (p. ej. un aviso)
+ *  - globales: lo que se edita para toda la tienda (grupo "Toda la tienda"
+ *    sobre las secciones): [{ id, esquema (clave de ESQUEMAS_GLOBALES),
+ *    ajustes, onCambiar(parche) }] o [{ id, nombre, descripcion, icono,
+ *    onAbrir }] para lo que se abre aparte (el pie). Se abren con
+ *    onSeleccionar(id), como una sección.
+ *  - base: secciones para empezar una página vacía ([{ type, settings }])
  *  - ajustesPagina: nodo de la pestaña "Página" (tema, ocultar header…)
  *  - incrustado: se dibuja dentro de su contenedor (demo) en vez de fijo a la ventana
+ * Fijo a la ventana, empieza en --editor-arriba (la tienda: bajo su barra de admin).
  */
 export default function PanelEditor({
   secciones = [], onCambiar, seleccionada, onSeleccionar, resaltada, onResaltar, insertarEn = null, onInsertarEn,
-  crearAjustes = ajustesIniciales, fuentes = {}, extensiones = {},
+  crearAjustes = ajustesIniciales, fuentes = {}, extensiones = {}, globales = [], base,
   onGuardar, guardando = false, sinGuardar = false, onDeshacer, onRehacer, puedeDeshacer, puedeRehacer,
   titulo = 'Página', vista, onVista, lado = 'derecha', onLado, onCerrar, cabecera, ajustesPagina, incrustado = false,
 }) {
@@ -211,7 +218,8 @@ export default function PanelEditor({
   useEffect(() => { setIds(lista.map((x) => x.id)); }, [lista]);
 
   const abierta = lista.find((x) => x.id === seleccionada);
-  const vistaActual = insertarEn != null ? 'catalogo' : abierta ? 'formulario' : 'lista';
+  const globalAbierto = !abierta ? globales.find((g) => g.id === seleccionada && g.esquema) : null;
+  const vistaActual = insertarEn != null ? 'catalogo' : abierta ? 'formulario' : globalAbierto ? 'global' : 'lista';
   useEffect(() => { cuerpo.current?.scrollTo({ top: 0 }); }, [vistaActual, seleccionada]);
 
   const cambiar = (l, clave) => onCambiar?.(l, clave);
@@ -238,9 +246,15 @@ export default function PanelEditor({
 
   const esquemaAbierta = abierta && esquemaDe(abierta.type);
   const IconoAbierta = esquemaAbierta?.icono;
+  const esquemaGlobal = globalAbierto && ESQUEMAS_GLOBALES[globalAbierto.esquema];
+  const IconoGlobal = esquemaGlobal?.icono;
+  const empezarConBase = () => {
+    const nuevas = (base || []).map((x, order) => ({ id: nuevoIdSeccion(), order, type: x.type, settings: { ...crearAjustes(x.type), ...(x.settings || {}) } }));
+    if (nuevas.length) cambiar(nuevas);
+  };
 
   return (
-    <ProveedorEditor fuentes={fuentes} extensiones={extensiones}>
+    <ProveedorEditor fuentes={fuentes} extensiones={extensiones} crearAjustes={crearAjustes}>
       <aside
         className={[s.panel, incrustado ? s.incrustado : s[lado], grande && s.grande].filter(Boolean).join(' ')}
         aria-label="Editor de la página"
@@ -310,6 +324,26 @@ export default function PanelEditor({
               </motion.div>
             )}
 
+            {vistaActual === 'global' && esquemaGlobal && (
+              <motion.div key={`g-${globalAbierto.id}`} {...transicionVista}>
+                <div className={s.vistaCabeza}>
+                  <button type="button" className={s.volver} onClick={() => onSeleccionar?.(null)}><ArrowLeft aria-hidden="true" /> Secciones</button>
+                  <div className={s.formularioTitulo}>
+                    <span className={s.filaIcono}><IconoGlobal aria-hidden="true" /></span>
+                    <div>
+                      <h3>{esquemaGlobal.nombre}</h3>
+                      <p>{esquemaGlobal.descripcion}</p>
+                    </div>
+                  </div>
+                </div>
+                <FormularioSeccion
+                  seccion={{ id: globalAbierto.id, type: globalAbierto.id, settings: globalAbierto.ajustes || {} }}
+                  esquema={esquemaGlobal}
+                  onCambiar={(parche) => globalAbierto.onCambiar?.(parche)}
+                />
+              </motion.div>
+            )}
+
             {vistaActual === 'lista' && (
               <motion.div key="lista" {...transicionVista}>
                 {ajustesPagina && (
@@ -322,11 +356,36 @@ export default function PanelEditor({
                 ) : (
                   <>
                     {cabecera}
+                    {globales.length > 0 && (
+                      <div className={s.globales}>
+                        <h4 className={s.globalesTitulo}>Toda la tienda</h4>
+                        {globales.map((g) => {
+                          const e = g.esquema ? ESQUEMAS_GLOBALES[g.esquema] : null;
+                          const Icono = g.icono || e?.icono || LayoutTemplate;
+                          return (
+                            <div key={g.id} className={`${s.filaSeccion} ${s.filaGlobal}`}>
+                              <button type="button" className={s.filaPrincipal} onClick={() => (g.onAbrir ? g.onAbrir() : onSeleccionar?.(g.id))}>
+                                <span className={s.filaIcono}><Icono aria-hidden="true" /></span>
+                                <span className={s.filaTextos}>
+                                  <strong>{g.nombre || e?.nombre}</strong>
+                                  <small>{g.descripcion || e?.descripcion}</small>
+                                </span>
+                                <ChevronRight className={s.filaFlecha} aria-hidden="true" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                        <h4 className={s.globalesTitulo}>Esta página</h4>
+                      </div>
+                    )}
                     {lista.length === 0 && (
                       <div className={s.vacio}>
                         <img src={CARAS_KAPI.hambre} alt="" width="88" height="88" />
                         <strong>Esta página tiene hambre</strong>
                         <span>Dale de comer un banner o un título y ve sumando secciones.</span>
+                        {base?.length > 0 && (
+                          <Boton variante="contorno" tamano="sm" onClick={empezarConBase} icono={<LayoutTemplate aria-hidden="true" />}>Empezar con una base</Boton>
+                        )}
                       </div>
                     )}
                     <Reorder.Group

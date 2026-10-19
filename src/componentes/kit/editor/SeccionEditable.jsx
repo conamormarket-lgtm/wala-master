@@ -14,12 +14,15 @@ import s from './Editor.module.css';
  *  - vacia: la sección no dibuja nada (le falta contenido). Si no se pasa,
  *    se detecta sola: sin texto ni imágenes adentro.
  *  - onEditar(id), onMover(id, ±1), onDuplicar(id)
+ *  - nombre / icono: para lo que no es una sección del builder (el menú de
+ *    la cabecera, el de cuenta…); si no, los del esquema de su tipo
  */
-export function SeccionEditable({ id, tipo, activa, resaltada, vacia, primera, ultima, onEditar, onMover, onDuplicar, children }) {
+export function SeccionEditable({ id, tipo, nombre, icono, activa, resaltada, vacia, primera, ultima, onEditar, onMover, onDuplicar, children }) {
   const caja = useRef(null);
   const contenido = useRef(null);
   const [sinContenido, setSinContenido] = useState(false);
-  const esquema = esquemaDe(tipo);
+  const base = esquemaDe(tipo);
+  const esquema = { ...base, nombre: nombre || base.nombre, icono: icono || base.icono };
 
   // Una sección recién creada (p. ej. preguntas sin preguntas) no dibuja nada:
   // se muestra un aviso para que no quede un hueco que no se puede tocar.

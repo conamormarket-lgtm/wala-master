@@ -227,7 +227,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `Secciones.jsx` | `BarraAnuncios`, `HeroCarrusel`, `InsigniasConfianza`, `CarruselProductos`, `OfertaRelampago`, `Testimonios`, `PreguntasFrecuentes` (`sinKapi`), `MarcasMarquesina`, `GrillaCategorias`, `RenderSecciones` (`tarjeta`: la de la tienda), `SeccionDelKit` (una sección suelta, para el bucle propio de la tienda), `REGISTRO_SECCIONES` | Secciones del builder; reciben el mismo `settings` que guarda Firestore y lo que escribe el admin pasa por la traducción. `CarruselProductos` y `OfertaRelampago` con `cargando` (y el carrusel con `error`); la oferta se esconde al terminar. **Ya en toda la tienda** menos el cacherito (paso 5); una sección sin contenido no deja hueco |
 | `SeccionesContenido.jsx` | `Encabezado`, `BloqueTexto`, `BloqueImagen`, `BloqueVideo`, `MosaicoBanners`, `FilaDestacados`, `videoIncrustado` | Secciones de contenido del builder (header, text, image, video, banner_grid, bestsellers_row); los textos sueltos pasan por la traducción. **Ya en la tienda:** `Encabezado` y `MosaicoBanners` |
 | `SeccionesExtra.jsx` | `BannerPrincipal`, `ListaBeneficios`, `Ubicacion`, `NavCategorias`, `GrillaProductos` (`error`/`onReintentar`, `vacio.accion`, `finDeLista`, `sinKapi`), `CatalogoConFiltros` (`buscarAlEscribir`, `sinTraducir`), `PiePagina` | Resto de secciones (hero_banner, feature_list, map_location, categories_nav, featured_products, product_grid, sidebar_catalog, footer_columns). **Ya en la tienda:** banner, burbujas, grilla y catálogo (`/tienda` y marcas) |
-| `editor/` | `PanelEditor`, `useBorrador`, `SeccionEditable`, `InsertarAqui`, `FormularioSeccion`, `ESQUEMAS` | Editor del builder armado por esquemas (ver abajo) |
+| `editor/` | `PanelEditor` (`globales`: lo de toda la tienda; `base` para una página vacía; arriba en `--editor-arriba`), `useBorrador`, `SeccionEditable` (`nombre`, `icono`), `InsertarAqui`, `FormularioSeccion` (`esquema` propio; `extensiones.formularios` para tipos sin esquema), `ESQUEMAS`, `ESQUEMAS_GLOBALES` | Editor del builder armado por esquemas (ver abajo) |
 | `Efectos.jsx` | `Revelar`, `useContador`, `Estallido`, `useBloquearScroll` (cuenta los bloqueos: el scroll vuelve con el último), `useCerrarConAtras` (con `bloqueado`), `esApp` | Utilidades de animación y de app |
 
 ## Ejemplos rápidos
@@ -395,3 +395,13 @@ const borrador = useBorrador(seccionesDeFirestore);   // deshacer/rehacer y "sin
 - Ctrl+Z / Ctrl+Shift+Z fuera de los campos y Ctrl+S para publicar.
 - Arrastrar filas para reordenar (o flechas), duplicar secciones y elementos.
 - `feature_list` por fin se puede editar completo (antes solo el título).
+- **Toda la tienda** (`globales` + `ESQUEMAS_GLOBALES`): el menú de la cabecera,
+  el de cuenta, el de favoritos y los textos de /buscar se editan en el mismo
+  panel, sobre las secciones; el pie abre su propia página (`onAbrir`).
+- Listas que se llenan desde la tienda: "(sin logo)" / "(sin foto)" y un
+  botón para añadir todas las que faltan; las preguntas frecuentes tienen
+  "Usar las preguntas recomendadas" (las de `crearAjustes`, confirmando en el
+  mismo botón).
+- Una opción puede depender de la tienda (`si(fuentes)`): "Redes" en el pie
+  solo si la página la dibuja (`fuentes.pieConRedes`).
+- Página vacía: "Empezar con una base" (`base`).

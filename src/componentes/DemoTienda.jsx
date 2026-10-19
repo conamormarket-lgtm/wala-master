@@ -320,6 +320,12 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   const [insertarEn, setInsertarEn] = useState(null);
   const [vistaEditor, setVistaEditor] = useState('escritorio');
   const [guardando, setGuardando] = useState(false);
+  // Lo global del editor (en la tienda: storeConfig/homePage): el menú de la cabecera y el de cuenta.
+  const [globalesDemo, setGlobalesDemo] = useState({
+    header: { navLinks: [{ id: '1', text: 'Tienda', type: 'dropdown', url: '/tienda', isCategoryAuto: true }, { id: '2', text: 'Crear', type: 'link', url: '/personalizar' }] },
+    accountPopup: { title: 'Tu cuenta Walá', description: 'Inicia sesión para ver tus pedidos.' },
+  });
+  const cambiarGlobal = (id) => (parche) => setGlobalesDemo((g) => ({ ...g, [id]: { ...g[id], ...parche } }));
 
   const conSesion = rol !== 'visitante';
   const esAdmin = rol === 'admin';
@@ -1283,6 +1289,12 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
               vista={vistaEditor}
               onVista={setVistaEditor}
               onCerrar={() => setEditando(false)}
+              globales={[
+                { id: 'header', esquema: 'header', ajustes: globalesDemo.header, onCambiar: cambiarGlobal('header') },
+                { id: 'accountPopup', esquema: 'accountPopup', ajustes: globalesDemo.accountPopup, onCambiar: cambiarGlobal('accountPopup') },
+                { id: 'pie', nombre: 'Pie de página', descripcion: 'En la tienda abre su propia página.', onAbrir: () => avisar('Pie de página', 'En la tienda, el panel pasa a editar el pie.') },
+              ]}
+              base={[{ type: 'hero_banner' }, { type: 'trust_badges' }, { type: 'featured_carousel' }, { type: 'faq_accordion' }]}
             />
           </div>
         )}

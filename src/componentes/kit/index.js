@@ -37,7 +37,7 @@ export { BannerPrincipal, ListaBeneficios, Ubicacion, urlDeMapa, NavCategorias, 
 export { default as PanelEditor, useBorrador, actualizarAjustes, insertarSeccion, moverSeccion, duplicarSeccion, quitarSeccion, nuevoIdSeccion } from './editor/PanelEditor';
 export { SeccionEditable, InsertarAqui } from './editor/SeccionEditable';
 export { FormularioSeccion, ProveedorEditor } from './editor/CamposEditor';
-export { ESQUEMAS, GRUPOS_MODULOS, esquemaDe, ajustesIniciales, resumenDe } from './editor/esquemas';
+export { ESQUEMAS, ESQUEMAS_GLOBALES, GRUPOS_MODULOS, esquemaDe, ajustesIniciales, resumenDe } from './editor/esquemas';
 export { EtiquetaColgante, IsoWala, LogoWala, Garabatos, Destello, Corazon, Puntos, Trazo, Sello, Visto } from './Marca';
 export { IconoWala, ICONOS_WALA, iconoDesde } from './IconosWala';
 export { PASTELES, pastel, ACENTOS, acento } from './Marca';

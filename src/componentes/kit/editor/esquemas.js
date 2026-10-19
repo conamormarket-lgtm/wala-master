@@ -1,7 +1,7 @@
 import {
   Image, Images, Megaphone, Heading, Type, Video, Star, LayoutGrid, Layers, Navigation, Grid3x3, Store, ShieldCheck,
   Zap, MessageSquareQuote, Infinity as Cinta, Trophy, PanelBottom, MapPin, ListChecks, CircleHelp, Sparkles, Tag, Clock,
-  FolderOpen, Rows3,
+  FolderOpen, Rows3, Menu, UserRound, Heart, Search,
 } from 'lucide-react';
 
 /*
@@ -19,8 +19,15 @@ import {
  * interruptor, fecha, medida, lista, fuente (colección/categoría/marca),
  * nota, extension (lo dibuja la página) y los compuestos estiloTexto,
  * tipografia, boton, fondo y espaciado.
+ *  - opciones: cada opción puede llevar si(fuentes) (p. ej. "Redes" del pie
+ *    solo si la página la dibuja)
+ *  - lista: desde { datos, etiqueta, crear, clave, nota?(x), todas? } añade
+ *    desde los datos de la tienda (todas: { etiqueta, filtro?(x) } = un botón
+ *    para añadir todas las que faltan); plantilla: { etiqueta } = reemplazar
+ *    la lista por la de una sección nueva (crearAjustes de la página)
  *
- * Fuera a propósito: conversion_fold y landing_payment (landing del reloj).
+ * Fuera a propósito: conversion_fold y landing_payment (landing del reloj):
+ * la tienda pasa sus formularios en extensiones.formularios.
  */
 
 /* ── Piezas compartidas (mismos campos que los controles de hoy) ── */
@@ -304,6 +311,7 @@ export const ESQUEMAS = {
           { tipo: 'texto', campo: 'subtitle', etiqueta: 'Descripción breve' },
           { tipo: 'enlace', campo: 'link', etiqueta: 'Enlace' },
           { tipo: 'opciones', campo: 'titleAlign', etiqueta: 'Alinear título', opciones: [{ valor: '', texto: 'Auto' }, ...ALINEAR] },
+          { tipo: 'opciones', campo: 'subtitleAlign', etiqueta: 'Alinear descripción', opciones: [{ valor: '', texto: 'Auto' }, ...ALINEAR] },
         ],
       },
       ...pieComun(),
@@ -333,7 +341,7 @@ export const ESQUEMAS = {
       { tipo: 'opciones', campo: 'sortMode', etiqueta: 'Orden', opciones: [{ valor: 'admin', texto: 'El de administración' }, { valor: 'products', texto: 'Más productos primero' }, { valor: 'alphabetical', texto: 'Alfabético' }], si: categoriasAuto },
       {
         tipo: 'lista', campo: 'items', etiqueta: 'Categorías', si: (a) => !categoriasAuto(a), titulo: (c) => c.name || 'Categoría', miniatura: (c) => c.imageUrl,
-        desde: { datos: 'categorias', etiqueta: 'Añadir una categoría', crear: (c) => ({ categoryId: c.id, name: c.name || '', imageUrl: c.imageUrl || '' }), clave: 'categoryId' },
+        desde: { datos: 'categorias', etiqueta: 'Añadir una categoría', crear: (c) => ({ categoryId: c.id, name: c.name || '', imageUrl: c.imageUrl || '' }), clave: 'categoryId', nota: (c) => (c.imageUrl ? '' : 'sin foto'), todas: { etiqueta: 'Añadir todas las categorías' } },
         nuevo: () => ({ categoryId: '', name: 'Nueva categoría', imageUrl: '' }),
         campos: [
           { tipo: 'texto', campo: 'name', etiqueta: 'Nombre a mostrar' },
@@ -425,7 +433,12 @@ export const ESQUEMAS = {
       ...cabeceraSeccion('Título (opcional)'),
       {
         tipo: 'lista', campo: 'items', etiqueta: 'Logos', titulo: (m, i) => m.name || `Logo ${i + 1}`, miniatura: (m) => m.imageUrl,
-        desde: { datos: 'marcas', etiqueta: 'Añadir una marca de la tienda', crear: (b) => ({ name: b.name || '', imageUrl: b.logoUrl || b.imageUrl || '', link: b.slug ? `/${b.slug}` : '', shape: 'circle', zoom: 1, posX: 50, posY: 50, brandId: b.id }), clave: 'brandId' },
+        desde: {
+          datos: 'marcas', etiqueta: 'Añadir una marca de la tienda', clave: 'brandId',
+          crear: (b) => ({ name: b.name || '', imageUrl: b.logoUrl || b.imageUrl || '', link: b.slug ? `/${b.slug}` : '', shape: 'circle', zoom: 1, posX: 50, posY: 50, brandId: b.id }),
+          nota: (b) => (b.logoUrl || b.imageUrl ? '' : 'sin logo'),
+          todas: { etiqueta: 'Añadir todas las marcas con logo', filtro: (b) => Boolean(b.logoUrl || b.imageUrl) },
+        },
         nuevo: () => ({ name: 'Nueva marca', imageUrl: '', link: '', shape: 'circle', zoom: 1, posX: 50, posY: 50 }),
         campos: [
           { tipo: 'imagen', campo: 'imageUrl', etiqueta: 'Logo', carpeta: 'storefront/brands' },
@@ -474,6 +487,7 @@ export const ESQUEMAS = {
       {
         tipo: 'lista', campo: 'items', etiqueta: 'Preguntas', titulo: (q, i) => q.question || `Pregunta ${i + 1}`,
         nuevo: () => ({ id: `faq_${Date.now()}`, question: 'Nueva pregunta', answer: '' }),
+        plantilla: { etiqueta: 'Usar las preguntas recomendadas' },
         campos: [
           { tipo: 'texto', campo: 'question', etiqueta: 'Pregunta' },
           { tipo: 'parrafo', campo: 'answer', etiqueta: 'Respuesta', filas: 4 },
@@ -511,7 +525,7 @@ export const ESQUEMAS = {
         nuevo: () => ({ id: `col_${Date.now()}`, title: 'Nueva columna', type: 'text', content: '' }),
         campos: [
           { tipo: 'texto', campo: 'title', etiqueta: 'Título' },
-          { tipo: 'opciones', campo: 'type', etiqueta: 'Tipo', opciones: [{ valor: 'text', texto: 'Texto' }, { valor: 'links', texto: 'Enlaces' }, { valor: 'social', texto: 'Redes' }] },
+          { tipo: 'opciones', campo: 'type', etiqueta: 'Tipo', opciones: [{ valor: 'text', texto: 'Texto' }, { valor: 'links', texto: 'Enlaces' }, { valor: 'social', texto: 'Redes', si: (f) => f.pieConRedes !== false }] },
           { tipo: 'parrafo', campo: 'content', etiqueta: 'Texto', filas: 3, si: (c) => (c.type || 'text') === 'text' },
           {
             tipo: 'lista', campo: 'links', etiqueta: 'Enlaces', si: (c) => c.type === 'links' || c.type === 'social', titulo: (l, i) => l.text || l.url || `Enlace ${i + 1}`,
@@ -527,6 +541,75 @@ export const ESQUEMAS = {
       },
     ],
     inicial: { columns: [] },
+  },
+};
+
+/*
+ * Lo que no es una sección de la página pero se edita desde el mismo panel
+ * (en la tienda: storeConfig/homePage). Cada uno guarda en su propio objeto,
+ * con los mismos nombres que el editor de antes.
+ */
+export const ESQUEMAS_GLOBALES = {
+  header: {
+    nombre: 'Menú de la cabecera', icono: Menu, descripcion: 'Los enlaces de arriba, en todas las páginas.',
+    campos: [
+      {
+        tipo: 'lista', campo: 'navLinks', etiqueta: 'Enlaces', titulo: (l, i) => l.text || `Enlace ${i + 1}`,
+        nuevo: () => ({ id: String(Date.now()), text: 'Nuevo enlace', type: 'link', url: '/' }),
+        campos: [
+          { tipo: 'texto', campo: 'text', etiqueta: 'Texto' },
+          { tipo: 'opciones', campo: 'type', etiqueta: 'Al tocarlo', opciones: [{ valor: 'link', texto: 'Va a una página' }, { valor: 'dropdown', texto: 'Abre un menú' }] },
+          { tipo: 'enlace', campo: 'url', etiqueta: 'Enlace' },
+          { tipo: 'interruptor', campo: 'isCategoryAuto', etiqueta: 'Con las categorías de la tienda', descripcion: 'Solo las que tienen productos.', si: (l) => l.type === 'dropdown' && !l.isBrandAuto },
+          { tipo: 'interruptor', campo: 'isBrandAuto', etiqueta: 'Con las marcas de la tienda', si: (l) => l.type === 'dropdown' && !l.isCategoryAuto },
+          { tipo: 'fuente', campo: 'autoCollectionId', etiqueta: 'O las categorías de una colección', datos: 'colecciones', vacio: 'Enlaces a mano', si: (l) => l.type === 'dropdown' && !l.isCategoryAuto && !l.isBrandAuto },
+          {
+            tipo: 'lista', campo: 'dropdownLinks', etiqueta: 'Enlaces del menú', titulo: (d, i) => d.text || `Enlace ${i + 1}`,
+            si: (l) => l.type === 'dropdown' && !l.isCategoryAuto && !l.isBrandAuto && !l.autoCollectionId,
+            nuevo: () => ({ id: String(Date.now()), text: 'Nuevo', url: '/' }),
+            campos: [
+              { tipo: 'texto', campo: 'text', etiqueta: 'Texto' },
+              { tipo: 'enlace', campo: 'url', etiqueta: 'Enlace' },
+            ],
+          },
+        ],
+      },
+      { tipo: 'nota', texto: '"Minijuegos" se suma solo al final. Todos los enlaces llevan la letra y el violeta de la marca.' },
+    ],
+  },
+  accountPopup: {
+    nombre: 'Menú de cuenta', icono: UserRound, descripcion: 'Lo que ve quien aún no entra.',
+    campos: [
+      { tipo: 'texto', campo: 'title', etiqueta: 'Título', placeholder: 'Tu cuenta Walá' },
+      { tipo: 'parrafo', campo: 'description', etiqueta: 'Texto', filas: 2 },
+      { tipo: 'texto', campo: 'loginButtonText', etiqueta: 'Botón para entrar', placeholder: 'Iniciar sesión' },
+      { tipo: 'enlace', campo: 'loginButtonUrl', etiqueta: 'Enlace para entrar', placeholder: '/login' },
+      { tipo: 'texto', campo: 'registerButtonText', etiqueta: 'Botón para crear la cuenta', placeholder: 'Crear cuenta' },
+      { tipo: 'enlace', campo: 'registerButtonUrl', etiqueta: 'Enlace para crear la cuenta', placeholder: '/registro' },
+    ],
+  },
+  favoritesPopup: {
+    nombre: 'Menú de favoritos', icono: Heart, descripcion: 'El corazón de la cabecera.',
+    campos: [
+      { tipo: 'texto', campo: 'loggedOutTitle', etiqueta: 'Título sin sesión', placeholder: 'Tus favoritos' },
+      { tipo: 'parrafo', campo: 'loggedOutText', etiqueta: 'Texto sin sesión', filas: 2 },
+      { tipo: 'texto', campo: 'loggedInTitle', etiqueta: 'Título con sesión y sin favoritos', placeholder: 'Aún no tienes favoritos' },
+      { tipo: 'parrafo', campo: 'loggedInText', etiqueta: 'Texto con sesión y sin favoritos', filas: 2 },
+      { tipo: 'texto', campo: 'buttonText', etiqueta: 'Texto del botón', placeholder: 'Mira lo que te puede interesar' },
+      { tipo: 'enlace', campo: 'buttonLink', etiqueta: 'Enlace del botón', placeholder: '/tienda' },
+    ],
+  },
+  searchPage: {
+    nombre: 'Página de búsqueda', icono: Search, descripcion: 'Los textos de /buscar. Los resultados los decide el catálogo.',
+    campos: [
+      { tipo: 'texto', campo: 'titulo', etiqueta: 'Título', placeholder: 'Buscar productos' },
+      { tipo: 'texto', campo: 'subtitulo', etiqueta: 'Frase de apoyo', ayuda: 'Cuando aún no se buscó nada.' },
+      { tipo: 'texto', campo: 'marcador', etiqueta: 'Texto guía dentro del campo' },
+      { tipo: 'texto', campo: 'boton', etiqueta: 'Texto del botón' },
+      { tipo: 'texto', campo: 'vacioTitulo', etiqueta: 'Sin resultados: título' },
+      { tipo: 'parrafo', campo: 'vacioTexto', etiqueta: 'Sin resultados: mensaje', filas: 2 },
+      { tipo: 'parrafo', campo: 'vacioConFiltros', etiqueta: 'Sin resultados con filtros: mensaje', filas: 2 },
+    ],
   },
 };
 

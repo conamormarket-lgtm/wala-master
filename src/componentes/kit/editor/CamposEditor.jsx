@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useId, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useId, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowUp, ChevronDown, Copy, ImagePlus, Link2, Loader2, Plus, Trash2, Underline, X,
@@ -23,14 +23,19 @@ import s from './Editor.module.css';
  *  - subirArchivo(file, ruta) → Promise<{ url, error }> (uploadFile de
  *    services/firebase/storage.js tiene esa misma firma)
  *  - extensiones: { nombre: (props) => nodo } para campos que dibuja la
- *    página (p. ej. el editor de burbujas de categories_nav)
+ *    página (p. ej. el editor de burbujas de categories_nav), y
+ *    extensiones.formularios: { tipo: ({ ajustes, cambiar }) => nodo } para
+ *    los tipos sin esquema que la página edita a su modo (el cacherito)
+ *  - crearAjustes(tipo): los ajustes de una sección nueva (para "plantilla")
  */
 
 const EditorCtx = createContext({ fuentes: {}, extensiones: {} });
-export function ProveedorEditor({ fuentes = {}, extensiones = {}, children }) {
-  return <EditorCtx.Provider value={{ fuentes, extensiones }}>{children}</EditorCtx.Provider>;
+export function ProveedorEditor({ fuentes = {}, extensiones = {}, crearAjustes, children }) {
+  return <EditorCtx.Provider value={{ fuentes, extensiones, crearAjustes }}>{children}</EditorCtx.Provider>;
 }
 const useEditor = () => useContext(EditorCtx);
+/** El tipo de la sección que se edita (para la plantilla de una lista). */
+const TipoCtx = createContext(null);
 
 /* ── Marco común: etiqueta + control + ayuda ── */
 function Fila({ etiqueta, ayuda, htmlFor, children, linea = false, extra }) {
@@ -425,6 +430,8 @@ function ControlLista({ campo: def, valor, onCambiar }) {
     if (abierto === i) setAbierto(j);
   };
   const desde = def.desde && (fuentes[def.desde.datos] || []).filter((x) => !items.some((it) => it[def.desde.clave] === x.id));
+  const todas = def.desde?.todas && desde ? desde.filter((x) => !def.desde.todas.filtro || def.desde.todas.filtro(x)) : [];
+  const conLugar = (lista) => (def.max ? lista.slice(0, Math.max(0, def.max - items.length)) : lista);
 
   return (
     <div className={s.lista}>
@@ -484,19 +491,56 @@ function ControlLista({ campo: def, valor, onCambiar }) {
           <div className={s.selector}>
             <select className={s.input} value="" onChange={(e) => { const x = desde.find((d) => d.id === e.target.value); if (x) poner([...items, def.desde.crear(x)]); }} aria-label={def.desde.etiqueta}>
               <option value="">{def.desde.etiqueta}…</option>
-              {desde.map((x) => <option key={x.id} value={x.id}>{x.name || x.id}</option>)}
+              {desde.map((x) => {
+                const nota = def.desde.nota?.(x);
+                return <option key={x.id} value={x.id}>{x.name || x.id}{nota ? ` (${nota})` : ''}</option>;
+              })}
             </select>
             <ChevronDown aria-hidden="true" />
           </div>
         )}
+        {todas.length > 1 && !lleno && (
+          <button type="button" className={`${s.agregar} ${s.agregarAncho}`} onClick={() => poner([...items, ...conLugar(todas).map(def.desde.crear)])}>
+            <Plus aria-hidden="true" /> {def.desde.todas.etiqueta} ({conLugar(todas).length})
+          </button>
+        )}
+        {def.plantilla && <BotonPlantilla etiqueta={def.plantilla.etiqueta} campo={def.campo} hay={items.length} onUsar={poner} />}
       </div>
     </div>
   );
 }
 
+/* Reemplazar una lista por la de una sección nueva; si ya tiene elementos, pide
+   confirmar en el mismo botón (sin window.confirm). */
+function BotonPlantilla({ etiqueta, campo, hay, onUsar }) {
+  const { crearAjustes } = useEditor();
+  const tipo = useContext(TipoCtx);
+  const [seguro, setSeguro] = useState(false);
+  useEffect(() => {
+    if (!seguro) return undefined;
+    const t = window.setTimeout(() => setSeguro(false), 3000);
+    return () => window.clearTimeout(t);
+  }, [seguro]);
+  const lista = tipo && crearAjustes ? crearAjustes(tipo)?.[campo] : null;
+  if (!Array.isArray(lista) || !lista.length) return null;
+  return (
+    <button
+      type="button"
+      className={[s.agregar, s.agregarAncho, seguro && s.agregarConfirmar].filter(Boolean).join(' ')}
+      onClick={() => {
+        if (hay && !seguro) { setSeguro(true); return; }
+        setSeguro(false);
+        onUsar(JSON.parse(JSON.stringify(lista)));
+      }}
+    >
+      {seguro ? `¿Reemplazar las ${hay}?` : etiqueta}
+    </button>
+  );
+}
+
 /* ── Despachador: un campo del esquema → su control ── */
 function CampoEsquema({ def, ajustes, cambiar }) {
-  const { extensiones } = useEditor();
+  const { extensiones, fuentes } = useEditor();
   const v = ajustes[def.campo];
   const poner = (x) => cambiar({ [def.campo]: x });
   switch (def.tipo) {
@@ -507,7 +551,7 @@ function CampoEsquema({ def, ajustes, cambiar }) {
     case 'color': return <ControlColor {...def} valor={v} onCambiar={poner} />;
     case 'imagen': return <ControlImagen {...def} valor={v} onCambiar={poner} />;
     case 'enlace': return <ControlEnlace etiqueta={def.etiqueta} ayuda={def.ayuda} placeholder={def.placeholder} valor={v} onCambiar={poner} />;
-    case 'opciones': return <ControlOpciones etiqueta={def.etiqueta} ayuda={def.ayuda} opciones={def.opciones} valor={v ?? def.porDefecto ?? def.opciones[0]?.valor} onCambiar={poner} />;
+    case 'opciones': return <ControlOpciones etiqueta={def.etiqueta} ayuda={def.ayuda} opciones={def.opciones.filter((o) => !o.si || o.si(fuentes))} valor={v ?? def.porDefecto ?? def.opciones[0]?.valor} onCambiar={poner} />;
     case 'interruptor': return <ControlInterruptor etiqueta={def.etiqueta} descripcion={def.descripcion} valor={v ?? def.porDefecto ?? false} onCambiar={poner} />;
     case 'fecha': return <ControlFecha etiqueta={def.etiqueta} valor={v} onCambiar={poner} />;
     case 'icono': return <ControlIcono etiqueta={def.etiqueta} valor={v} onCambiar={poner} ninguno={def.ninguno} />;
@@ -544,9 +588,12 @@ const PESTANAS = [
  * Formulario de una sección, armado desde su esquema.
  *  - seccion: { id, type, settings }
  *  - onCambiar(parche): fusiona el parche en settings (la página guarda el borrador)
+ *  - esquema: otro esquema (lo global: ESQUEMAS_GLOBALES)
+ * Un tipo sin esquema usa extensiones.formularios[tipo] si la página lo da.
  */
-export function FormularioSeccion({ seccion, onCambiar }) {
-  const esquema = esquemaDe(seccion.type);
+export function FormularioSeccion({ seccion, onCambiar, esquema: propio }) {
+  const { extensiones } = useEditor();
+  const esquema = propio || esquemaDe(seccion.type);
   const ajustes = seccion.settings || {};
   const visibles = esquema.campos.filter((c) => !c.si || c.si(ajustes));
   const disponibles = PESTANAS.filter((p) => visibles.some((c) => (c.pestana || 'contenido') === p.id));
@@ -554,9 +601,12 @@ export function FormularioSeccion({ seccion, onCambiar }) {
   const actual = disponibles.some((p) => p.id === pestana) ? pestana : disponibles[0]?.id;
 
   if (esquema.desconocido) {
+    const Propio = extensiones.formularios?.[seccion.type];
+    if (Propio) return <div className={`${s.formulario} ${s.formularioPropio}`}><Propio ajustes={ajustes} cambiar={onCambiar} /></div>;
     return <p className={s.nota}>Este módulo tiene su propio editor y no se cambia desde aquí.</p>;
   }
   return (
+    <TipoCtx.Provider value={seccion.type}>
     <div className={s.formulario}>
       {disponibles.length > 1 && (
         <div className={s.pestanasPanel}>
@@ -567,5 +617,6 @@ export function FormularioSeccion({ seccion, onCambiar }) {
         <CamposDe campos={esquema.campos.filter((c) => (c.pestana || 'contenido') === actual)} ajustes={ajustes} cambiar={onCambiar} />
       </div>
     </div>
+    </TipoCtx.Provider>
   );
 }

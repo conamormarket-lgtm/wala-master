@@ -15,7 +15,7 @@
 
   position: fixed;
   z-index: 1200;
-  top: 0;
+  top: var(--editor-arriba, 0px);
   bottom: 0;
   display: flex;
   flex-direction: column;
@@ -442,6 +442,41 @@
   .filaSeccion:focus-within .filaAcciones {
     opacity: 1;
   }
+}
+
+/* "Toda la tienda": lo global sobre las secciones de la página. */
+.globales {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.globalesTitulo {
+  margin: 0.4rem 0 0.1rem;
+  color: var(--ed-tenue);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.filaGlobal {
+  background: var(--ed-suave);
+}
+
+.filaGlobal .filaIcono {
+  background: var(--ed-fondo);
+  color: var(--ed-acento);
+  box-shadow: inset 0 0 0 1.5px var(--ed-acento);
+}
+
+.filaFlecha {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  margin-left: auto;
+  color: var(--ed-tenue);
 }
 
 .anadirSeccion {
@@ -1330,6 +1365,46 @@
 .agregar svg {
   width: 1rem;
   height: 1rem;
+}
+
+/* "Añadir todas…" y la plantilla: a lo ancho, debajo de "Añadir". */
+.agregarAncho {
+  grid-column: 1 / -1;
+  justify-content: center;
+}
+
+/* Pedir confirmación en el mismo botón (reemplazar la lista). */
+.agregarConfirmar {
+  border-style: solid;
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+/* Un formulario que trae la página (los bloques del cacherito): sus campos
+   con los colores del panel. */
+.formularioPropio label {
+  display: block;
+  margin: 0.2rem 0 0.25rem;
+  color: var(--ed-tenue);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.formularioPropio input:not([type='checkbox']):not([type='color']),
+.formularioPropio select,
+.formularioPropio textarea {
+  box-sizing: border-box;
+  border: 1px solid var(--ed-borde);
+  border-radius: 9px;
+  background: var(--ed-suave);
+  color: var(--ed-texto);
+  font: inherit;
+}
+
+.formularioPropio h4,
+.formularioPropio h5 {
+  margin: 0.6rem 0 0.4rem;
+  color: var(--ed-texto);
 }
 
 /* ── Sección editable en la página ── */
