@@ -54,6 +54,7 @@ principal (y a la APK de Capacitor).
 | Mis referidos (paso 6): `PaginaReferidos` por `components/cuenta/ReferidosDeCuenta.jsx` (los pedidos por reclamar y el ranking al acercarse); `linkInvitacion`/`linkProducto` con `https://wala.pe` en la app; lo de antes baja solo con `cuentaVieja` | `pages/cuenta/CuentaReferidosPage.jsx` |
 | Catálogo, Mis cupones y Misiones (paso 6): `PaginaCatalogo`, `PaginaCupones` y `PaginaMisiones` por `components/cuenta/CatalogoDeCuenta.jsx`, `CuponesDeCuenta.jsx` y `MisionesDeCuenta.jsx` (`misionDesdeServidor`, `nivelesDesdeTiers`); lo de antes baja solo con `cuentaVieja` | `pages/cuenta/CatalogReward.jsx`, `MisCuponesPage.jsx`, `MisionesPage.jsx` |
 | Mi perfil y Mis direcciones (paso 6): `PaginaPerfil` y `PaginaDirecciones` por `components/cuenta/PerfilDeCuenta.jsx` y `DireccionesDeCuenta.jsx` (`perfilDesdeUsuario`, `direccionDesdeFirestore`/`direccionAFirestore`); lo de antes baja solo con `cuentaVieja` | `pages/cuenta/PerfilPage.jsx`, `pages/cuenta/MisDireccionesPage.jsx` |
+| La búsqueda (paso 6): `PaginaBusqueda` (`paginas/Busqueda.jsx`) por `components/busqueda/BusquedaDeTienda.jsx`; la misma búsqueda por cursor, los filtros de lo encontrado (sin bajar el catálogo de la marca), la analítica también desde la página, textos traducidos; el panel de la cabecera baja al tocarla; lo de antes baja solo con `busquedaVieja` | `pages/SearchPage.jsx` |
 | "Agregar rápido" (`AgregarRapido`) en todas las tarjetas: "Elegir…" abre la hoja (`components/producto/AgregarRapidoDeProducto.jsx`, en su propio paquete) | `components/producto/TarjetaDeProducto.jsx` |
 
 Cada pieza del marco tiene un conector chico en `src/components/marco/`: lee
@@ -74,6 +75,9 @@ Desde el paso 5 también `Secciones`, `SeccionesExtra`, `SeccionesContenido`,
 `TarjetaCategoria`, `LogoMarca`…). `EstadoVacio` acepta `imagen={null}`
 (sin Kapi, un sello) y `BloqueSeccion` marca su `<section>` con
 `data-kit-seccion` (lo usaba `landing-mobile.css`, ya borrado).
+Desde la búsqueda (paso 6), `piezas/PanelBusqueda` también traduce sus
+textos y la `Cabecera` lo carga aparte (con `piezas/busquedasRecientes.js`
+en el archivo principal).
 Desde el checkout (paso 6), `paginas/Checkout`, `piezas/Checkout`,
 `piezas/Direccion` (`CamposDireccion`) y `ListaEleccion` (con `accion`).
 Desde el pago rápido (paso 6), `paginas/PagoRapido` y `piezas/Pago`
@@ -230,6 +234,12 @@ Cada paso en su propio commit, verificable por separado.
    taller en el historial y sin el catálogo entero (CUENTA.md, "Detalle de
    una compra en la tienda"). Interruptores `cuentaVieja` o `pagosViejo`.
    Con esto, toda la cuenta está en el kit.
+   ✓ **La búsqueda** (2026-10-19): BUSCAR.md pasos 1 y 2 juntos;
+   `PaginaBusqueda` en su propio archivo, los filtros de lo encontrado (con
+   marca ya no baja su catálogo entero), las listas solo con resultados, la
+   analítica también desde la página, la traducción del panel y la página, y
+   el panel de la cabecera fuera del archivo principal (BUSCAR.md, "En la
+   tienda"). Interruptor `busquedaVieja`.
 7. ✓ **Cargando** (`PantallaCarga`, `Cargando`, `EsqueletoPagina`: CARGA.md; el
    splash de `index.html` cambia en el mismo commit; hecho el 2026-10-19 en
    tres commits, interruptor `cargaVieja`), ✓ **`BarraInferior`** (2026-10-19,
@@ -253,6 +263,7 @@ nada), o en un solo navegador con `localStorage.wala_kit_viejo = "pagos,carrito"
 | `cuentaVieja` (`useLoViejo('cuenta')`: en Firestore el campo es `cuentaViejo: true`; en localStorage, `"cuenta"`) | la cuenta: el marco (`CuentaLayoutViejo.jsx`), el resumen (`CuentaResumenViejo.jsx`) y los ajustes (`CuentaAjustesViejo.jsx`), Mi perfil (`PerfilViejo.jsx`), Mis direcciones (`MisDireccionesViejo.jsx`), el catálogo (`CatalogRewardViejo.jsx`), Mis cupones (`MisCuponesViejo.jsx`), Misiones (`MisionesViejo.jsx`), Mis referidos (`CuentaReferidosViejo.jsx`) la lista de deseos (`WishlistViejo.jsx`) Fechas importantes (`CuentaFechasImportantesViejo.jsx`) Mis creaciones (`MisCreacionesViejo.jsx`) y Mis pedidos (`CuentaRastreoViejo.jsx` y `CuentaCompraDetalleViejo.jsx`, también con `pagosViejo`); después, cada sección que migre |
 | `carritoViejo` | todo el carrito (`Cart.jsx` y `CartItem.jsx`, con sus preguntas por `window.confirm`) |
 | `editorViejo` (`useLoViejo('editor')`: en Firestore `editorViejo: true`; en localStorage, `"editor"`) | el editor del builder: `VisualEditorPanel`, el velo "Editar…" de cada sección, el "+" de la página y el del pie |
+| `busquedaVieja` (`useLoViejo('busqueda')`: en Firestore `busquedaViejo: true`; en localStorage, `"busqueda"`) | la página `/buscar`: `SearchPageViejo.jsx` con `SidebarCatalogLayout` (el panel de la cabecera no: va con `cabeceraVieja`) |
 | `cabeceraVieja` (`useLoViejo('cabecera')`: en Firestore `cabeceraViejo: true`; en localStorage, `"cabecera"`) | la cabecera: `Header` con `HeaderSearch` y `NotificationTray` |
 | `barraVieja` (`useLoViejo('barra')`: en Firestore `barraViejo: true`; en localStorage, `"barra"`) | la barra inferior del celular: `BottomNav` (con la pestaña Admin) |
 | `cargaVieja` (`useLoViejo('carga')`: en Firestore `cargaViejo: true`; en localStorage, `"carga"`) | la carga: `PageLoading` (la grilla de 8 productos) entre páginas y en `RutaPrivada`, el círculo bajo la cabecera de `BrandLoaderOverlay` y el círculo a pantalla completa del login, el registro y la contraseña, y `BrandLoader` (el splash de `index.html` no: es estático) |

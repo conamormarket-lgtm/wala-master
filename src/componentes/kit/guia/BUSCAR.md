@@ -86,7 +86,7 @@ categoría o marca y sin tildes, como `services/search.js`.
 | `FotoProducto` | fotos del panel (y miniaturas del carrito, menús…) | `piezas/FotoProducto.module.css` |
 | `LogoMarca` (`sello`) | marcas del panel, menú Marcas, tarjetas | `piezas/LogoMarca.module.css` |
 
-## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
+## Llevar a la tienda (hecho el 2026-10-19: ver "En la tienda" al final)
 
 Página propia: paso 6 de [MIGRACION.md](MIGRACION.md); el panel va con la
 cabecera (paso 7). Mantener al día si cambia un componente o su forma de
@@ -150,23 +150,88 @@ recibir datos.
   cortaba).
 - Sin resultados: Kapi triste (hoy solo texto).
 
-### Qué le falta al kit antes de migrar
+### Qué le faltaba al kit (hecho al migrar)
 
-- Un `onIrA(url)` en `PanelBusqueda` si se quiere registrar en la analítica qué
-  sugerencia se eligió (hoy los enlaces navegan solos).
-- Traducción (`<T>`).
+- ✓ Traducción: los textos de `PaginaBusqueda`, `InvitacionBusqueda`,
+  `ChipsBusqueda` (ideas y categorías; lo que escribiste antes va tal cual) y
+  `PanelBusqueda` pasan por `useTexto`. El panel ya estaba en la tienda sin
+  traducir.
+- ✓ `tarjeta`, `columnas`, `segundaFoto` y `sinKapi` en `PaginaBusqueda`
+  (llegan al catálogo) y `envolverMostrador` para el marco del editor.
+- Queda opcional: un `onIrA(url)` en `PanelBusqueda` si se quiere registrar en
+  la analítica qué sugerencia se eligió (hoy los enlaces navegan solos).
 
 ### Pasos (cada uno se verifica solo y se puede volver atrás)
 
-1. `SearchPage`: cambiar la barra, los filtros y la grilla por
+1. ✓ (junto con el 2, 2026-10-19) `SearchPage`: cambiar la barra, los filtros y la grilla por
    `CatalogoConFiltros` (con `orden`, `unidad` y `grupoModalidad`) dejando la
    búsqueda, el cursor y los textos como están. Probar: término, orden, cada
    filtro, "Ver más", sin resultados, con marca y en el celular.
-2. Cambiar el encabezado por el de `PaginaBusqueda` (o la página completa).
+2. ✓ Cambiar el encabezado por el de `PaginaBusqueda` (o la página completa):
+   la página completa, en un solo paso (los dos juntos evitan una página a
+   medias). Interruptor `busquedaVieja`.
 3. ✓ Con la cabecera (paso 7): pasarle `buscarSugerencias` y retirar
    `HeaderSearch` (2026-10-19, `components/marco/CabeceraDeTienda.jsx`:
    `getSearchSuggestions` + `sugerenciasDesdeBusqueda`, acotado a la marca
    de la página, `trackSearchQuery` y el mismo historial).
 
-Para volver atrás: cada paso en su propio commit; `SearchPage` y
+Para volver atrás: cada paso en su propio commit; `SearchPageViejo` y
 `HeaderSearch` no se borran hasta que lo nuevo lleve un tiempo en producción.
+
+## En la tienda (2026-10-19)
+
+| Escritorio (con "Afina por categoría" y un filtro puesto) | Celular |
+|---|---|
+| ![/buscar en la tienda, escritorio](buscar-tienda.webp) | ![/buscar en la tienda, celular](buscar-tienda-celular.webp) |
+
+`pages/SearchPage.jsx` monta `components/busqueda/BusquedaDeTienda.jsx`, que
+dibuja `PaginaBusqueda` (`paginas/Busqueda.jsx`, en su propio archivo: baja
+solo con /buscar). La página de antes (`pages/SearchPageViejo.jsx`, con
+`SidebarCatalogLayout`) baja solo con el interruptor `busquedaVieja`
+(`useLoViejo('busqueda')`: en Firestore `busquedaViejo: true`; en
+localStorage, `"busqueda"`).
+
+**Lo mismo que antes:** `searchProductsFirestore` de a 24 por cursor (sin
+término, toda la tienda en memoria, como siempre), las respuestas que llegan
+tarde de un término anterior se descartan, sin `visible === false`, `?brand=`
+acota a la marca (y se conserva al volver a buscar), "Buscar en todo el
+catálogo", los mismos cuatro órdenes, los textos del admin
+(`storeConfig/homePage.searchPage`, con el borrador del editor en vivo) y el
+mostrador marcado como "Página de búsqueda" en el editor (`EditableSection
+sectionId="searchPage"`).
+
+**Lo que cambia:**
+
+- Los filtros (Modalidad primero, luego los de /tienda) salen de lo
+  encontrado. Con `?brand=` ya no se baja el catálogo entero de la marca solo
+  para los filtros.
+- Las listas de nombres (colecciones, etiquetas, personajes, tipos) se piden
+  solo cuando hay resultados; las categorías y las marcas salen de la caché
+  que ya llenó la cabecera (antes `getCategories` en cada visita y `getBrand`
+  aparte; ahora `getBrand` solo si la marca no está en la lista).
+- Los filtros se vacían al cambiar el término o la marca (antes Modalidad se
+  quedaba puesta).
+- Buscar desde la página (el campo grande o una idea) se registra en la
+  analítica con `trackSearchQuery`, como desde la cabecera.
+- "Ver más" también llega solo al bajar (como en /tienda), y mientras llegan
+  los primeros no dice "0 resultados" sobre los esqueletos (también en
+  /tienda).
+- Sin resultados: Kapi triste sin sesión; con sesión, un sello (ya está el
+  flotante: uno solo a la vista).
+- El panel de la cabecera (`PanelBusqueda`) baja al tocar la cabecera, como
+  sus menús: el archivo principal pesa menos.
+
+**Carga:** el archivo principal baja de 206,4 a 204,7 KB gzip (JS) y de 51,3
+a 50,0 KB (CSS). /buscar pide su página (8,4 KB + 1,5 KB de CSS) y el panel
+(8,7 KB + 8 KB de CSS, el mismo que usa la cabecera) en vez de `SearchPage`
+(7,6 KB + 5,6 KB) y `SidebarCatalogLayout` (12,8 KB + 12,5 KB).
+
+**Probado** con los emuladores (35 productos de la demo y copias, marcas
+MUSSA, Nova y Con Amor): término, "24+" y la carga al bajar hasta 30, los
+cuatro órdenes (nombre comprobado), Modalidad, "Afina por categoría", la hoja
+de filtros en el celular, una marca desde el panel y desde la URL, sin
+resultados con y sin sesión, sin término ("¿Qué se te antoja hoy?" y "Lo más
+buscado"), en inglés (la página, el vacío y el panel), el editor (el texto del
+botón cambia al escribirlo y se deshace), el interruptor y /tienda, a 1366 y
+390, en claro y en oscuro. El evento de analítica quedó guardado con la ruta
+/buscar.

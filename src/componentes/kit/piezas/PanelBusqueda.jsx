@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ArrowRight, Clock, Search, X } from 'lucide-react';
 import { IconoWala } from '../IconosWala';
 import { Trazo } from '../Marca';
@@ -6,38 +6,11 @@ import { Enlace } from '../Enlace';
 import { soles } from '../TarjetaProducto';
 import { FotoProducto } from './FotoProducto';
 import { LogoMarca } from './LogoMarca';
+import { Texto, useTexto } from '../Traduccion';
 import s from './PanelBusqueda.module.css';
 
-const CLAVE_RECIENTES = 'wala_busquedas_recientes';
-const MAX_RECIENTES = 6;
-
-/**
- * Lo que buscaste antes, en ESTE navegador (misma clave que el buscador de la
- * tienda: no se pierde al migrar). Si no hay almacenamiento, lista vacía.
- */
-export function useBusquedasRecientes(clave = CLAVE_RECIENTES) {
-  const leer = useCallback(() => {
-    try {
-      const lista = JSON.parse(localStorage.getItem(clave) || '[]');
-      return Array.isArray(lista) ? lista.filter((t) => typeof t === 'string') : [];
-    } catch (e) {
-      return [];
-    }
-  }, [clave]);
-  const [recientes, setRecientes] = useState(leer);
-  const guardar = useCallback((termino) => {
-    const limpio = String(termino || '').trim();
-    if (!limpio) return;
-    const nuevas = [limpio, ...leer().filter((t) => t.toLowerCase() !== limpio.toLowerCase())].slice(0, MAX_RECIENTES);
-    try { localStorage.setItem(clave, JSON.stringify(nuevas)); } catch (e) { /* sin almacenamiento */ }
-    setRecientes(nuevas);
-  }, [clave, leer]);
-  const limpiar = useCallback(() => {
-    try { localStorage.removeItem(clave); } catch (e) { /* sin almacenamiento */ }
-    setRecientes([]);
-  }, [clave]);
-  return { recientes, guardar, limpiar, releer: () => setRecientes(leer()) };
-}
+// El historial vive aparte: la cabecera lo usa siempre y este panel baja solo al abrirlo.
+export { useBusquedasRecientes } from './busquedasRecientes';
 
 const sinTildes = (t) => String(t || '').normalize('NFC').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -87,7 +60,8 @@ export function ChipsBusqueda({ items = [], tipo = 'idea' }) {
             {tipo === 'reciente' && <Clock aria-hidden="true" />}
             {tipo === 'idea' && <Search aria-hidden="true" />}
             {tipo === 'afinar' && it.imagen && <img src={it.imagen} alt="" loading="lazy" decoding="async" className={s.chipFoto} />}
-            <span className={s.chipTexto}>{it.texto}</span>
+            {/* Lo que escribiste antes va tal cual; las ideas y categorías, traducidas. */}
+            <span className={s.chipTexto}>{tipo === 'reciente' ? it.texto : <Texto>{it.texto}</Texto>}</span>
             {it.cuenta != null && <span className={s.chipCuenta}>{it.cuenta}</span>}
           </button>
         </li>
@@ -95,6 +69,8 @@ export function ChipsBusqueda({ items = [], tipo = 'idea' }) {
     </ul>
   );
 }
+
+const PREGUNTA = '¿Qué se te antoja hoy?';
 
 /**
  * Lo que se está buscando, con la voz de Walá. Sin término: "¿Qué se te
@@ -106,13 +82,24 @@ export function ChipsBusqueda({ items = [], tipo = 'idea' }) {
  *  - texto: la línea de abajo (sin término)
  */
 export function InvitacionBusqueda({ termino = '', grande = false, como: Titulo = 'p', titulo, texto = 'Escribe un producto, una marca o tu personaje favorito.' }) {
+  const t = {
+    antes: useTexto('Resultados para'),
+    titulo: useTexto(titulo || undefined),
+    texto: useTexto(texto || undefined),
+    pregunta: useTexto(PREGUNTA),
+  };
+  // En español, la pregunta con "antoja" subrayado a mano; traducida, la frase
+  // entera (el subrayado no sabría qué palabra marcar).
+  const pregunta = t.pregunta === PREGUNTA
+    ? <>¿Qué se te <span className={s.resaltado}>antoja<Trazo className={s.trazo} /></span> hoy?</>
+    : t.pregunta;
   return (
     <div className={[s.invitacion, grande && s.invitacionGrande].filter(Boolean).join(' ')}>
       <IconoWala nombre={termino ? 'estrella' : 'destello'} tamano={grande ? 58 : 46} girar={-8} />
       <div className={s.invitacionTexto}>
         {termino ? (
           <>
-            <p className={s.invitacionAntes}>Resultados para</p>
+            <p className={s.invitacionAntes}>{t.antes}</p>
             <Titulo className={s.invitacionTitulo}>
               <span className={s.resaltado}>«{termino}»<Trazo className={s.trazo} /></span>
             </Titulo>
@@ -120,15 +107,18 @@ export function InvitacionBusqueda({ termino = '', grande = false, como: Titulo 
         ) : (
           <>
             <Titulo className={s.invitacionTitulo}>
-              {titulo || <>¿Qué se te <span className={s.resaltado}>antoja<Trazo className={s.trazo} /></span> hoy?</>}
+              {t.titulo || pregunta}
             </Titulo>
-            {texto && <p className={s.pista}>{texto}</p>}
+            {t.texto && <p className={s.pista}>{t.texto}</p>}
           </>
         )}
       </div>
     </div>
   );
 }
+
+/* La frase de "Ver todos" sin el término (va aparte, en negrita). */
+const VER_TODO = (total) => (total === 1 ? 'Ver el resultado de' : total > 0 ? `Ver los ${total} resultados de` : 'Buscar');
 
 /**
  * Panel del buscador: con el campo vacío, lo que buscaste antes; escribiendo,
@@ -163,6 +153,25 @@ export function PanelBusqueda({
   }, [conCampo]);
   const escribiendo = texto.trim().length >= 2;
   const { productos = [], marcas = [], categorias = [], total = 0 } = sugerencias || {};
+  const buscado = texto.trim();
+  const t = {
+    marcador: useTexto(placeholder),
+    queBuscas: useTexto('Qué buscas'),
+    borrarEscrito: useTexto('Borrar lo escrito'),
+    recientes: useTexto('Buscaste hace poco'),
+    borrar: useTexto('Borrar'),
+    masBuscado: useTexto('Lo más buscado'),
+    productos: useTexto('Productos'),
+    buscando: useTexto('Buscando…'),
+    nada: useTexto('Nada con ese nombre.'),
+    marcas: useTexto('Marcas'),
+    categorias: useTexto('Categorías'),
+    verTodo: useTexto(VER_TODO(total)),
+  };
+  // "Ver los 21 resultados de" con el número en negrita; traducido, la frase entera.
+  const verTodo = t.verTodo !== VER_TODO(total)
+    ? <>{t.verTodo} </>
+    : total > 0 ? <>Ver {total === 1 ? 'el resultado' : <>los <strong>{total}</strong> resultados</>} de </> : 'Buscar ';
 
   return (
     <div className={s.panel}>
@@ -175,11 +184,11 @@ export function PanelBusqueda({
             enterKeyHint="search"
             value={texto}
             onChange={(e) => onTexto?.(e.target.value)}
-            placeholder={placeholder}
-            aria-label="Qué buscas"
+            placeholder={t.marcador}
+            aria-label={t.queBuscas}
           />
           {texto && (
-            <button type="button" className={s.limpiarCampo} onClick={() => { onTexto?.(''); campo.current?.focus(); }} aria-label="Borrar lo escrito">
+            <button type="button" className={s.limpiarCampo} onClick={() => { onTexto?.(''); campo.current?.focus(); }} aria-label={t.borrarEscrito}>
               <X aria-hidden="true" />
             </button>
           )}
@@ -192,8 +201,8 @@ export function PanelBusqueda({
       {!escribiendo && recientes.length > 0 && (
         <section className={s.bloque}>
           <div className={s.bloqueCabeza}>
-            <h3 className={s.bloqueTitulo}>Buscaste hace poco</h3>
-            {onLimpiarRecientes && <button type="button" className={s.enlaceChico} onClick={onLimpiarRecientes}>Borrar</button>}
+            <h3 className={s.bloqueTitulo}>{t.recientes}</h3>
+            {onLimpiarRecientes && <button type="button" className={s.enlaceChico} onClick={onLimpiarRecientes}>{t.borrar}</button>}
           </div>
           <ChipsBusqueda tipo="reciente" items={recientes.map((r) => ({ texto: r, onClick: () => onBuscar?.(r) }))} />
         </section>
@@ -201,7 +210,7 @@ export function PanelBusqueda({
 
       {!escribiendo && ideas.length > 0 && (
         <section className={s.bloque}>
-          <h3 className={s.bloqueTitulo}>Lo más buscado</h3>
+          <h3 className={s.bloqueTitulo}>{t.masBuscado}</h3>
           <ChipsBusqueda tipo="idea" items={ideas.map((idea) => ({ texto: idea, onClick: () => onBuscar?.(idea) }))} />
         </section>
       )}
@@ -209,9 +218,9 @@ export function PanelBusqueda({
       {escribiendo && (
         <div className={s.columnas} aria-busy={buscando}>
           <section className={s.bloque}>
-            <h3 className={s.seccionTitulo}>Productos{total > 0 && <span> · {total}</span>}</h3>
+            <h3 className={s.seccionTitulo}>{t.productos}{total > 0 && <span> · {total}</span>}</h3>
             {productos.length === 0 ? (
-              <p className={s.pista}>{buscando ? 'Buscando…' : 'Nada con ese nombre.'}</p>
+              <p className={s.pista}>{buscando ? t.buscando : t.nada}</p>
             ) : (
               <ul className={s.productos}>
                 {productos.map((p) => (
@@ -231,7 +240,7 @@ export function PanelBusqueda({
             <div className={s.atajos}>
               {marcas.length > 0 && (
                 <section className={s.bloque}>
-                  <h3 className={s.seccionTitulo}>Marcas</h3>
+                  <h3 className={s.seccionTitulo}>{t.marcas}</h3>
                   <ul className={s.lista}>
                     {marcas.map((m) => (
                       <li key={m.id}>
@@ -247,13 +256,13 @@ export function PanelBusqueda({
               )}
               {categorias.length > 0 && (
                 <section className={s.bloque}>
-                  <h3 className={s.seccionTitulo}>Categorías</h3>
+                  <h3 className={s.seccionTitulo}>{t.categorias}</h3>
                   <ul className={s.chips}>
                     {categorias.map((c) => (
                       <li key={c.id}>
                         <Enlace to={c.url} className={`${s.chip} ${s.chip_afinar}`} onClick={onNavegar}>
                           {c.imagen && <img src={c.imagen} alt="" loading="lazy" decoding="async" className={s.chipFoto} />}
-                          <span className={s.chipTexto}>{c.nombre}</span>
+                          <span className={s.chipTexto}><Texto>{c.nombre}</Texto></span>
                           {c.cuenta != null && <span className={s.chipCuenta}>{c.cuenta}</span>}
                         </Enlace>
                       </li>
@@ -269,8 +278,8 @@ export function PanelBusqueda({
       {escribiendo && (
         <button type="button" className={s.verTodo} onClick={() => onBuscar?.(texto.trim())}>
           <span className={s.verTodoTexto}>
-            {total > 0 ? <>Ver {total === 1 ? 'el resultado' : <>los <strong>{total}</strong> resultados</>} de </> : 'Buscar '}
-            <strong>«{texto.trim()}»</strong>
+            {verTodo}
+            <strong>«{buscado}»</strong>
           </span>
           <span className={s.verTodoSello} aria-hidden="true"><ArrowRight /></span>
         </button>

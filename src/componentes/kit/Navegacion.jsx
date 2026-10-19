@@ -10,7 +10,7 @@ import { Enlace } from './Enlace';
 import Desplegable from './Desplegable';
 import { BotonTema } from './piezas/Marco';
 import { Avatar } from './piezas/Avatar';
-import { PanelBusqueda, useBusquedasRecientes } from './piezas/PanelBusqueda';
+import { useBusquedasRecientes } from './piezas/busquedasRecientes';
 import { Texto, useTexto } from './Traduccion';
 import { Cargando } from './Cargando';
 import s from './Navegacion.module.css';
@@ -22,7 +22,7 @@ import s from './Navegacion.module.css';
  * suelen estar.
  */
 const cargarMenus = () => import('./MenusCabecera');
-const precargarMenus = () => { cargarMenus().catch(() => {}); };
+const precargarMenus = () => { cargarMenus().catch(() => {}); cargarPanel().catch(() => {}); };
 const perezoso = (nombre) => lazy(() => cargarMenus().then((m) => ({ default: m[nombre] })));
 const MenuTienda = perezoso('MenuTienda');
 const MenuMarcas = perezoso('MenuMarcas');
@@ -30,6 +30,9 @@ const AyudaMonedas = perezoso('AyudaMonedas');
 const MenuCuenta = perezoso('MenuCuenta');
 const VistaFavoritos = perezoso('VistaFavoritos');
 const VistaCarrito = perezoso('VistaCarrito');
+// El panel de sugerencias del buscador, igual: baja con la misma precarga.
+const cargarPanel = () => import('./piezas/PanelBusqueda');
+const PanelBusqueda = lazy(() => cargarPanel().then((m) => ({ default: m.PanelBusqueda })));
 
 /** Un menú mientras llega su contenido (casi nunca se ve: se precarga). */
 function ConMenu({ children }) {
@@ -244,13 +247,13 @@ export function Cabecera({
         <Buscador placeholder={t.placeholder} onBuscar={busqueda.activo ? busqueda.buscar : onBuscar} {...busqueda.campo} />
         {busqueda.abierto && !busqueda.enHoja && (
           <div className={s.panelBusqueda} role="dialog" aria-label={t.sugerencias}>
-            <PanelBusqueda {...busqueda.panel} />
+            <ConMenu><PanelBusqueda {...busqueda.panel} /></ConMenu>
           </div>
         )}
       </div>
       {busqueda.activo && (
         <HojaInferior abierta={busqueda.abierto && busqueda.enHoja} onCerrar={busqueda.cerrar} titulo={t.buscar}>
-          <PanelBusqueda {...busqueda.panel} conCampo />
+          <ConMenu><PanelBusqueda {...busqueda.panel} conCampo /></ConMenu>
         </HojaInferior>
       )}
 

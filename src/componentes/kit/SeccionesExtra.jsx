@@ -504,7 +504,8 @@ export function CatalogoConFiltros({
         <aside className={s.catalogoLado} aria-label={t.filtros}>{filtros}</aside>
         <div className={s.catalogoPrincipal}>
           <div className={s.catalogoBarra}>
-            {cantidad != null && (
+            {/* Mientras llegan los primeros, sin cuenta (no "0 resultados" sobre los esqueletos). */}
+            {cantidad != null && !grilla.cargando && (
               <p className={s.catalogoCuenta} role="status">
                 <strong>{cantidad}{grilla.hayMas ? '+' : ''}</strong> {nombreUnidad}
               </p>

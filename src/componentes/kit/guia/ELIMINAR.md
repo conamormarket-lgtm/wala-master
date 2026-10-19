@@ -79,8 +79,8 @@ antes, se retiró el 2026-10-19 y se borró entera: `ConversionFold`,
 | `pages/Tienda/components/BrandMarquee/` (con su `.module.css`) | `marquee` | `MarcasMarquesina` | `seccionesPorTipo.jsx`; `services/brands.js` solo lo nombra en un comentario | ídem |
 | `pages/Tienda/components/HeroBanner.jsx` y `HeroBanner.module.css` | `hero_banner` (marcas) | `BannerPrincipal` (`onClicBoton` → `trackBannerClick`) | `seccionesPorTipo.jsx`. `HeroBannerMediaUploader` de `VisualEditorPanel.jsx` es otra cosa (el editor viejo) | ídem |
 | `pages/Tienda/components/VisualCategoryNav/` | `categories_nav` (marcas) | `NavCategorias` (`estilo` de la marca, `cargando`) | `seccionesPorTipo.jsx`; `SidebarCatalogLayout.jsx` solo lo nombra en un comentario | ídem |
-| `pages/Tienda/components/SidebarCatalogLayout.jsx` y `.module.css` | `sidebar_catalog` (`/tienda`, marcas) | `CatalogoConFiltros` con el estado en `TiendaPage` (`filtrosKit`, `categoriaKit`, consultas `collections`/`tags`/`characters`/`productTypes`/`brands`/`storefront-category-grid-products`) | **`pages/SearchPage.jsx`** (la búsqueda, `/buscar`), `seccionesPorTipo.jsx`; los textos `cat.*` de `i18n/dictionaries.js` | cuando pase la búsqueda (BUSCAR.md) y se retire `seccionesViejo`; con él, las claves `cat.*` que nadie más use |
-| `pages/Tienda/components/ProductGrid/` | `product_grid` y el catálogo (`/tienda`, marcas) | `GrillaProductos` | `SidebarCatalogLayout.jsx` (la búsqueda), `featured_products` (aún viejo, en `TiendaPage`), `seccionesPorTipo.jsx` | cuando pasen la búsqueda y `featured_products` |
+| `pages/Tienda/components/SidebarCatalogLayout.jsx` y `.module.css` | `sidebar_catalog` (`/tienda`, marcas) | `CatalogoConFiltros` con el estado en `TiendaPage` (`filtrosKit`, `categoriaKit`, consultas `collections`/`tags`/`characters`/`productTypes`/`brands`/`storefront-category-grid-products`) | `pages/SearchPageViejo.jsx` (la búsqueda de antes, solo con `busquedaVieja`), `seccionesPorTipo.jsx`; los textos `cat.*` de `i18n/dictionaries.js` | al retirar `busquedaVieja` y `seccionesViejo`; con él, las claves `cat.*` que nadie más use |
+| `pages/Tienda/components/ProductGrid/` | `product_grid` y el catálogo (`/tienda`, marcas) | `GrillaProductos` | `SidebarCatalogLayout.jsx` (la búsqueda de antes), `featured_products` (aún viejo, en `TiendaPage`), `seccionesPorTipo.jsx` | cuando pasen la búsqueda y `featured_products` |
 | `TiendaPage.jsx`: `catalogSectionRef` y las ramas viejas de `renderSection` (`case 'header'`, `'marquee'`, `'sidebar_catalog'`, `'product_grid'`, `'hero_banner'`, `'categories_nav'`…) | lo de antes | `seccionDelKit` | el interruptor `seccionesViejo` | junto con sus componentes |
 | `pages/Tienda/components/TextBlock/` | `text` | `BloqueTexto` | `seccionesPorTipo.jsx` (`seccionesViejo`) | al retirar `seccionesViejo` |
 | `pages/Tienda/components/ImageBlock/` | `image` | `BloqueImagen` | ídem | ídem |
@@ -238,6 +238,12 @@ grupos del marco nuevo (`gruposDeCuenta.js`).
 | `components/PedidoCard/PedidoAcciones.jsx` + su CSS, `HistorialPagos.jsx` + su CSS | la página de antes | `PagosPedido` y `HojaPagarSaldo` del kit (los datos, en el conector) | solo `CuentaCompraDetalleViejo.jsx` (y un comentario en `App.jsx`) | con la página de antes; ahí se va también el `Modal` viejo de "Pagar saldo" bajo `pagosViejo` |
 | `components/Timeline/` | la página de antes | `LineaProduccion` con `hechos` | solo `CuentaCompraDetalleViejo.jsx` | con la página de antes |
 | `getOrderByIdAnyCollection` en el detalle (la segunda lectura del pedido) | la página de antes | el pedido de `usePedidos` | revisar con `grep getOrderByIdAnyCollection` (otros usos en el admin) | la función se queda; solo se va su uso aquí |
+
+### La búsqueda (2026-10-19)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/SearchPageViejo.jsx` + `pages/SearchPage.module.css` (la página de antes: título, campo, barra con el `<select>`, Modalidad como `gruposExtra` y `SidebarCatalogLayout`) | `/buscar` | `components/busqueda/BusquedaDeTienda.jsx` → `PaginaBusqueda` del kit (`paginas/Busqueda.jsx`) | `pages/SearchPage.jsx` (lazy, solo con el interruptor `busquedaVieja`) | al retirar `busquedaVieja`; con ella, `SidebarCatalogLayout` pierde su último uso fuera de `seccionesViejo` |
 
 ### La carga entre páginas (2026-10-19)
 

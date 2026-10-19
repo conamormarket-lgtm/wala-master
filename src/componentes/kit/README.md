@@ -34,7 +34,7 @@ Todo se arma con lo del nivel de abajo; nada se dibuja dos veces.
    inferior), `PaginaTienda` (marco + secciones del builder), `PaginaMarca` (`paginas/Marca.jsx`: la página de una marca con su color y su portada, NAVEGAR.md), `PaginaCarrito`
    (`paginas/Carrito.jsx`: piezas del pedido + la sección de carrusel para recomendar),
    `PaginaPedidos`, `PaginaMinijuegos` (Zona Arcade: `Encabezado` +
-   `TarjetaJuego`) y `PaginaBusqueda` (el catálogo de /tienda con orden).
+   `TarjetaJuego`) y `PaginaBusqueda` (`paginas/Busqueda.jsx`: el catálogo de /tienda con orden).
    La cuenta (`paginas/Cuenta.jsx`, `CuentaRecompensas.jsx`,
    `CuentaPersonalizacion.jsx`): `MarcoCuenta` (menú lateral o "← Mi cuenta")
    y sus páginas, armadas con las piezas de `piezas/Cuenta.jsx`,
@@ -164,6 +164,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `piezas/TarjetaCategoria.jsx` | `TarjetaCategoria` (cuadro · círculo · burbuja; el cuadro lleva `detalle`, una línea de texto bajo el nombre), `TarjetaCategoriaEsqueleto` | category_grid y categories_nav |
 | `piezas/TemaMarca.jsx` | `TemaMarca`, `temaDeMarca` | El color de una marca solo en su portada y en el trazo bajo los títulos, con su versión de noche; botones, burbujas de categorías, filtros y sellos de productos siguen violeta |
 | `piezas/PortadaMarca.jsx` | `PortadaMarca` | La portada de una marca: logo, nombre con trazo, frase, "Ver productos" y sus cifras en sellos (productos, en oferta, categorías); estilo foto · color · collage (con el sello grande de la marca detrás de las cartas) |
+| `paginas/Busqueda.jsx` | `PaginaBusqueda` (`tarjeta`, `columnas`, `segundaFoto`, `sinKapi`, `envolverMostrador` para el marco del editor; textos traducidos) | /buscar (guía: `guia/BUSCAR.md`); `Paginas.jsx` lo reexporta. **Ya en la tienda** (`components/busqueda/BusquedaDeTienda.jsx`, 2026-10-19) |
 | `paginas/Carrito.jsx` | `PaginaCarrito` (`tarjeta` y `catalogo` para los recomendados, `onVerAbajo` para pedirlos al acercarse, `notaPago`) | /carrito (guía: `guia/CARRITO.md`); `Paginas.jsx` lo reexporta. **Ya en la tienda** (`components/carrito/CarritoDeTienda.jsx`, 2026-10-17) |
 | `paginas/Checkout.jsx` | `PaginaCheckout` (envío y pago; `reglas`, `inicial`, `paisSugerido`, `listo`/`onListo`, `onPaso`, `vacio`; `pago.botonTarjeta`, `botonesPaypal`, `local`, `tarjetaFallo`) | /checkout (guía: `guia/CHECKOUT.md`). **Ya en la tienda** (`components/checkout/CheckoutDeTienda.jsx`, 2026-10-17) |
 | `paginas/PagoRapido.jsx` | `PaginaPagoRapido` (`tarjeta` y `paypal`: procesando y error que pone la tienda) | /pago-rapido/:id (guía: `guia/REGALAR.md`). **Ya en la tienda** (`components/pago/PagoRapidoDeTienda.jsx`, 2026-10-17) |
@@ -172,7 +173,7 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `piezas/FotoProducto.jsx` | `FotoProducto` | Foto de producto sobre su escenario (`src`, `srcSet` + `sizes`, `relleno`, `respaldo` sin foto, `children` encima) |
 | `piezas/Avatar.jsx` | `Avatar`, `iniciales` | Foto o iniciales de una persona |
 | `piezas/OpcionesFiltro.jsx` | `OpcionesFiltro` | Opciones de un filtro como chips con su cuenta; una a la vez y "Ver N más" |
-| `piezas/PanelBusqueda.jsx` | `PanelBusqueda`, `useBusquedasRecientes`, `TextoResaltado`, `ChipsBusqueda`, `InvitacionBusqueda` | Sugerencias del buscador: recientes, productos con foto y precio, marcas y categorías, "Ver todos los resultados" |
+| `piezas/PanelBusqueda.jsx` | `PanelBusqueda`, `useBusquedasRecientes` (vive en `piezas/busquedasRecientes.js`, que la cabecera importa sola), `TextoResaltado`, `ChipsBusqueda`, `InvitacionBusqueda` | Sugerencias del buscador: recientes, productos con foto y precio, marcas y categorías, "Ver todos los resultados"; sus textos pasan por la traducción. La `Cabecera` lo carga al tocarla (con los menús), no va en el archivo principal |
 | `piezas/Cuenta.jsx` | `CabezaCuenta`, `TarjetaCuenta`, `ListaDatos`, `Estadistica`, `AccesosCuenta`, `IdentidadCuenta`, `ListaEleccion` (con `accion` por opción) | Lo común de las páginas de la cuenta |
 | `piezas/DetallePedido.jsx` | `LineaProduccion` (`hechos`: por fecha; con `deuda`, en rojo), `PagosPedido` (`onReclamar(boton)`, boletas y fotos una sola vez), `HojaPagarSaldo` (comprobante apagado sin número) | Detalle de una compra (en la tienda desde el 2026-10-19; `PaginaDetallePedido` con `avisoDeuda`, `tarjeta` y `onVerAbajo`) |
 | `piezas/PedidosPorVerificar.jsx` | `PedidosPorVerificar` | Pedidos que coinciden con el documento: verificar el correo o vincular (en la tienda desde el 2026-10-19; el teléfono acepta + y espacios) |
