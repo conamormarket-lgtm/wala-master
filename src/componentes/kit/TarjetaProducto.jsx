@@ -273,7 +273,7 @@ export default function TarjetaProducto({
           {imagen && imagenHover && <FotoTarjeta src={imagenHover} srcSet={srcSetHover} sizes={sizes} recorte={recorteHover} className={`${s.img} ${s.imgHover}`} />}
           {collage.length > 0 && (
             <span className={[s.collage, collage.length === 3 && s.collageTres].filter(Boolean).join(' ')} style={{ '--piezas': collage.length }}>
-              {collage.map((pz, i) => <FotoProducto key={pz.nombre || i} className={s.collagePieza} src={pz.imagen} relleno="6%" />)}
+              {collage.map((pz, i) => <FotoProducto key={`${i}-${pz.nombre || ''}`} className={s.collagePieza} src={pz.imagen} relleno="6%" />)}
             </span>
           )}
         </Enlace>
@@ -300,7 +300,7 @@ export default function TarjetaProducto({
               <>
                 <ul className={s.incluyeFotos}>
                   {piezas.slice(0, 4).map((pz, i) => (
-                    <li key={pz.nombre || i}>
+                    <li key={`${i}-${pz.nombre || ''}`}>
                       <FotoProducto className={s.incluyeFoto} src={pz.imagen} respaldo={iniciales(pz.nombre, 1) || '?'} />
                     </li>
                   ))}
@@ -311,7 +311,7 @@ export default function TarjetaProducto({
             ) : (
               <ul>
                 {piezas.map((pz, i) => (
-                  <li key={pz.nombre || i}>
+                  <li key={`${i}-${pz.nombre || ''}`}>
                     <FotoProducto className={s.incluyeFoto} src={pz.imagen} respaldo={iniciales(pz.nombre, 1) || '?'} />
                     <span className={s.incluyeNombre}><Texto>{pz.nombre}</Texto></span>
                   </li>

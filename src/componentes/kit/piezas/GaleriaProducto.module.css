@@ -246,6 +246,41 @@
   }
 }
 
+/* La prenda todavía sin diseño. filter y no opacity (la foto ya usa multiply). */
+.atenuada {
+  filter: opacity(0.5);
+}
+
+/* "Todo el combo": las prendas lado a lado (no se acerca). */
+.sinZoom {
+  cursor: default;
+}
+
+.juntas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2%;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  padding: 10% 4%;
+  box-sizing: border-box;
+}
+
+.juntasGrande {
+  height: 100%;
+  padding: 8% 3%;
+}
+
+.juntas img {
+  display: block;
+  width: calc((100% - 2% * (var(--n) - 1)) / var(--n));
+  max-height: 100%;
+  aspect-ratio: auto;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .foto,
   .lado,
