@@ -1,17 +1,66 @@
-import React from 'react';
-import { Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, Eye, EyeOff, LockKeyhole } from 'lucide-react';
 import Boton from '../Boton';
+import { Campo } from '../Formulario';
+import { Texto, useTexto } from '../Traduccion';
+import f from '../Formulario.module.css';
 import s from './Acceso.module.css';
 
 /*
- * Piezas de iniciar sesión, crear cuenta y recuperar la contraseña: las
- * reglas de la contraseña con su avance, el botón de Google y la línea "o
- * continúa con".
+ * Piezas de iniciar sesión, crear cuenta y recuperar la contraseña: el
+ * campo de la contraseña (con el ojo), las reglas de la contraseña con su
+ * avance, el botón de Google y la línea "o continúa con". Van aparte de
+ * Formulario.jsx para no ir en el archivo principal de la tienda.
  */
 
 // Los símbolos que acepta la política de contraseñas de Firebase Auth (ni
 // `=` ni `+` cuentan): la misma lista que utils/helpers.js.
 const SIMBOLO = /[\^$*.[\]{}()?"!@#%&/\\,><':;|_~`-]/;
+
+/**
+ * Contraseña con el candado y el ojo para mostrarla u ocultarla (el ojo
+ * parpadea al cambiar). Es un Campo: mismas etiqueta, ayuda y error.
+ *  - valor · onCambiar(texto) · nueva: autocompletar como contraseña nueva
+ *  - etiqueta, ayuda, error, placeholder, disabled, id, aria-describedby
+ */
+export function CampoContrasena({ etiqueta = 'Contraseña', valor = '', onCambiar, nueva = false, ayuda, error, placeholder, disabled, id, ...resto }) {
+  const [ver, setVer] = useState(false);
+  // Sus textos pasan por la traducción aquí (Campo muestra lo que recibe).
+  const t = {
+    etiqueta: useTexto(etiqueta),
+    placeholder: useTexto(placeholder),
+    ocultar: useTexto('Ocultar contraseña'),
+    mostrar: useTexto('Mostrar contraseña'),
+  };
+  return (
+    <Campo
+      id={id}
+      etiqueta={t.etiqueta}
+      ayuda={ayuda && <Texto>{ayuda}</Texto>}
+      error={error && <Texto>{error}</Texto>}
+      icono={<LockKeyhole />}
+      type={ver ? 'text' : 'password'}
+      autoComplete={nueva ? 'new-password' : 'current-password'}
+      value={valor}
+      onChange={(e) => onCambiar?.(e.target.value)}
+      placeholder={t.placeholder}
+      disabled={disabled}
+      {...resto}
+      sufijo={(
+        <button
+          type="button"
+          className={f.ojo}
+          onClick={() => setVer((v) => !v)}
+          disabled={disabled}
+          aria-label={ver ? t.ocultar : t.mostrar}
+          aria-pressed={ver}
+        >
+          <span key={ver ? 'si' : 'no'} className={f.ojoIcono}>{ver ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}</span>
+        </button>
+      )}
+    />
+  );
+}
 
 /** Las reglas de una contraseña nueva: [{ clave, texto, cumple }]. */
 export const requisitosContrasena = (p = '') => [
@@ -42,14 +91,14 @@ export function RequisitosContrasena({ contrasena = '', id }) {
         <span className={s.tramos} aria-hidden="true">
           {reglas.map((r, i) => <span key={r.clave} className={i < n ? s.tramoOn : undefined} />)}
         </span>
-        <span className={s.nivel} aria-live="polite">{contrasena ? NIVELES[n] : 'Tu contraseña necesita'}</span>
+        <span className={s.nivel} aria-live="polite"><Texto>{contrasena ? NIVELES[n] : 'Tu contraseña necesita'}</Texto></span>
       </div>
       <ul className={s.reglas}>
         {reglas.map((r) => (
           <li key={r.clave} className={r.cumple ? s.cumple : undefined}>
             <span className={s.visto} aria-hidden="true"><Check /></span>
-            {r.texto}
-            <span className={s.oculto}>{r.cumple ? ' (listo)' : ' (falta)'}</span>
+            <Texto>{r.texto}</Texto>
+            <span className={s.oculto}> <Texto>{r.cumple ? '(listo)' : '(falta)'}</Texto></span>
           </li>
         ))}
       </ul>
@@ -76,12 +125,12 @@ function LogoGoogle() {
 export function BotonGoogle({ onClick, cargando = false, disabled = false, children = 'Continuar con Google' }) {
   return (
     <Boton variante="contorno" bloque icono={<LogoGoogle />} onClick={onClick} cargando={cargando} disabled={disabled} className={s.google}>
-      {children}
+      <Texto>{children}</Texto>
     </Boton>
   );
 }
 
 /** Línea con un texto al medio ("o continúa con"). */
 export function SeparadorAcceso({ children = 'o continúa con' }) {
-  return <p className={s.separador}><span>{children}</span></p>;
+  return <p className={s.separador}><span><Texto>{children}</Texto></span></p>;
 }

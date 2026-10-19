@@ -53,6 +53,9 @@ export default function Kapi() {
   const enEstudioCrear = pathname.startsWith('/crear/');
   // Al abrir un regalo, el Kapi del sobre es el único a la vista.
   const enRegalo = pathname.startsWith('/regalo/');
+  // En el acceso, el Kapi del panel de la marca es el único (la cuenta recién
+  // creada ya tiene perfil y el flotante salía al lado).
+  const enAcceso = ['/login', '/registro', '/completar-perfil', '/recuperar-contrasena'].some((r) => pathname.startsWith(r));
   const enMomentoTranquilo = esMomentoTranquilo(pathname);
   const [abierta, setAbierta] = useState(false);
 
@@ -160,7 +163,7 @@ export default function Kapi() {
     if (abierta && comidaPendiente) calentarKapi();
   }, [abierta, comidaPendiente, calentarKapi]);
 
-  if (enLanding || enEstudioCrear || enRegalo) return null;
+  if (enLanding || enEstudioCrear || enRegalo || enAcceso) return null;
   // ?sesion=activa pinta a Kapi sin cuenta (solo fuera de producción; no
   // concede nada: el servidor decide si se puede alimentar).
   const perfil = userProfile || (diseno('sesion') === 'activa'

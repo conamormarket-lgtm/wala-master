@@ -1,0 +1,103 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { sendPasswordResetEmail } from '../services/firebase/auth';
+import { getAuthErrorMessage } from '../utils/authErrorMessages';
+import { LOGO_URL } from '../utils/constants';
+import Button from '../components/common/Button';
+// Esperas a pantalla completa con el kit (paso 7, CARGA.md); con cargaVieja, el círculo.
+import EsperaPantalla from '../components/carga/EsperaPantalla';
+import styles from './ResetPasswordPage.module.css';
+import { T } from '../i18n/useTranslatedText';
+
+const ResetPasswordViejo = () => {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    if (!email.trim()) return;
+    setLoading(true);
+    const { error: err, errorCode } = await sendPasswordResetEmail(email.trim().toLowerCase());
+    setLoading(false);
+    if (err) {
+      setError(getAuthErrorMessage(errorCode, err));
+      return;
+    }
+    setSent(true);
+  };
+
+  if (loading) {
+    return <EsperaPantalla texto="Enviando enlace..." />;
+  }
+
+  return (
+    <div className={styles.container}>
+      <div className={styles.wrapper}>
+        <div className={styles.branding}>
+          <img src={LOGO_URL} alt="Logo" />
+          <h2><T>Recupera tu acceso</T></h2>
+          <p><T>Te enviaremos un enlace seguro para restablecer tu contraseña.</T></p>
+        </div>
+        <div className={styles.formContainer}>
+          <img src={LOGO_URL} alt="Logo" className={styles.logoMovil} />
+          {sent ? (
+            <>
+              <h1 className={styles.title}><T>Correo enviado</T></h1>
+              <p className={styles.message} role="status">
+                <T>Si existe una cuenta con ese correo, te llegará un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada y la carpeta de spam.</T>
+              </p>
+              <Link to="/login" className={styles.backLink}>
+                <T>Volver a iniciar sesión</T>
+              </Link>
+            </>
+          ) : (
+            <>
+              <h1 className={styles.title}><T>Recuperar contraseña</T></h1>
+              <p className={styles.subtitle}>
+                <T>Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.</T>
+              </p>
+              <form onSubmit={handleSubmit} className={styles.form}>
+                <div className={styles.formGroup}>
+                  <label htmlFor="email"><T>Correo electrónico</T></label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    autoComplete="email"
+                    inputMode="email"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={loading}
+                    placeholder="Ingresa tu correo electrónico"
+                  />
+                </div>
+                {error && (
+                  <div className={styles.errorMessage} role="alert">
+                    <span className={styles.errorIcon}>⚠</span>
+                    {error}
+                  </div>
+                )}
+                <Button type="submit" variant="primary" fullWidth disabled={loading}>
+                  <T>Enviar enlace</T>
+                </Button>
+              </form>
+              <div className={styles.footer}>
+                <Link to="/login" className={styles.link}>
+                  <T>Volver a iniciar sesión</T>
+                </Link>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ResetPasswordViejo;

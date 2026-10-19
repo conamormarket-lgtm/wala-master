@@ -1,6 +1,6 @@
 export { default as Boton } from './Boton';
 export { Etiqueta, Chip, Moneda, MONEDA, CostoMonedas, GananciaMonedas, SaldoMonedas, Contador } from './Etiquetas';
-export { Campo, Buscador, Selector, SelectorTalla, SelectorColor, Cantidad, Interruptor, Casilla, CampoTelefono, CampoContrasena, CampoHex, Deslizador, normalizarHex } from './Formulario';
+export { Campo, Buscador, Selector, SelectorTalla, SelectorColor, Cantidad, Interruptor, Casilla, CampoTelefono, CampoHex, Deslizador, normalizarHex } from './Formulario';
 export { default as ListaOpciones } from './ListaOpciones';
 export { PanelFlotante, enCelular } from './PanelFlotante';
 export { CampoFecha, Calendario, fechaEnTexto } from './Fecha';
@@ -51,7 +51,8 @@ export { MarcoCuenta, PaginaCuentaInvitado, PaginaResumenCuenta, PaginaPerfil, P
 export { PaginaCatalogo, PaginaCupones, PaginaMisiones, PaginaReferidos } from './paginas/CuentaRecompensas';
 export { PaginaCreaciones, PaginaListaDeseos, PaginaFechas } from './paginas/CuentaPersonalizacion';
 export { PaginaEncuesta, GRUPOS_ENCUESTA, CONFIG_ENCUESTA } from './paginas/Encuesta';
-export { MarcoAcceso, PaginaLogin, PaginaRegistro, PaginaRecuperar, PaginaCompletarPerfil } from './paginas/Acceso';
+export { MarcoAcceso, PaginaLogin, PaginaRecuperar } from './paginas/Acceso';
+export { PaginaRegistro, PaginaCompletarPerfil } from './paginas/AccesoDatos';
 export { PaginaCrear } from './paginas/Crear';
 export { PaginaComunidad } from './paginas/Comunidad';
 export { PaginaCreacion } from './paginas/Creacion';

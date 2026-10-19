@@ -28,7 +28,7 @@ export { PedidosPorVerificar } from './PedidosPorVerificar';
 export { HojaPersona, validarPersona, RELACIONES, GENEROS, PRESUPUESTOS } from './FormularioPersona';
 export { ProgresoEncuesta, ElegirVarios, FichaPersonaEncuesta } from './Encuesta';
 export { CamposDatosPersonales, validarPerfil, tipoDocumentoPara, TIPOS_DOCUMENTO, NOMBRE_DOCUMENTO } from './DatosPersonales';
-export { RequisitosContrasena, requisitosContrasena, contrasenaValida, BotonGoogle, SeparadorAcceso } from './Acceso';
+export { CampoContrasena, RequisitosContrasena, requisitosContrasena, contrasenaValida, BotonGoogle, SeparadorAcceso } from './Acceso';
 export { PortadaCrear, PASOS_CREAR, textoPara, FilaPiezaCombo } from './Crear';
 export { LienzoPrenda, BarraLienzo, PasoEstudio, PasosEstudio, PanelCapa } from './Estudio';
 export { OpcionesProducto, opcionesDe } from './OpcionesProducto';
