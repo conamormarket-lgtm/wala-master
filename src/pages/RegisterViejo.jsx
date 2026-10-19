@@ -1,0 +1,519 @@
+import React, { useState } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { signUpWithEmail, signInWithGoogle, enviarVerificacionCorreo } from '../services/firebase/auth';
+import { registrarConversionPopup } from '../services/popups';
+import { setDocument } from '../services/firebase/firestore';
+import { useAuth } from '../contexts/AuthContext';
+import { getAuthErrorMessage } from '../utils/authErrorMessages';
+import { shouldPromptSurvey } from '../utils/surveyHelper';
+import { LOGO_URL } from '../utils/constants';
+import { validateDNI, validateCE, validatePhone, validateDocInternacional, getPasswordRequirements, isPasswordValid } from '../utils/helpers';
+import Button from '../components/common/Button';
+// Esperas a pantalla completa con el kit (paso 7, CARGA.md); con cargaVieja, el círculo.
+import EsperaPantalla from '../components/carga/EsperaPantalla';
+import { Confirmar } from '../componentes/kit/Feedback';
+import { EyeIcon, EyeOffIcon } from '../components/common/Icons/Icons';
+import CountrySelect from '../components/intl/CountrySelect';
+import PhoneIntlInput from '../components/intl/PhoneIntlInput';
+import { dialCodeByCountry } from '../constants/countries';
+import { detectCountry } from '../services/geo';
+import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
+import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../constants/documentTypes';
+import styles from './RegisterPage.module.css';
+import { T } from '../i18n/useTranslatedText';
+import { leerDestino, tieneCuenta } from '../utils/rutaPrivada';
+
+const RegisterViejo = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  // Adónde volver al terminar (p. ej. el checkout, que pide cuenta para pagar):
+  // el state.from o el ?redirect= (utils/rutaPrivada.js).
+  const from = leerDestino(location);
+  const { user, userProfile, loading: authLoading } = useAuth();
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+  const [country, setCountry] = useState('PE');
+  const [tipoDoc, setTipoDoc] = useState('DNI');
+  const [documento, setDocumento] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+
+  const isPE = isPeru(country);
+  // Lista de tipos de documento según país (Perú: DNI/CE/Pasaporte; extranjero: null).
+  const docTypes = getDocTypesForCountry(country);
+
+  // Detección de país por IP. Default 'PE' si falla (PRINCIPIO DE SEGURIDAD).
+  React.useEffect(() => {
+    let active = true;
+    detectCountry()
+      .then((res) => { if (active && res?.code) setCountry(res.code); })
+      .catch(() => { if (active) setCountry('PE'); });
+    return () => { active = false; };
+  }, []);
+
+  const passwordReqs = getPasswordRequirements(password);
+  const passwordsMatch = password && confirmPassword && password === confirmPassword;
+  const step1Valid = email && isPasswordValid(password) && passwordsMatch && acceptedTerms;
+
+  // Validación ESTRICTA peruana solo si es Perú. DNI usa su regla; CE y Pasaporte
+  // comparten la validación alfanumérica (validateCE). Extranjero: documento libre.
+  const docValid = isPE
+    ? (tipoDoc === 'DNI' ? validateDNI(documento) : validateCE(documento))
+    : validateDocInternacional(documento);
+  const phoneValid = isPE ? validatePhone(phone) : String(phone || '').trim().length >= 4;
+  const step2Valid = docValid && fullName.trim() && phoneValid;
+
+  React.useEffect(() => {
+    if (authLoading || !tieneCuenta(user)) return;
+    if (userProfile?._perfilNoCargado) {
+      navigate(from || '/', { replace: true });
+      return;
+    }
+    if (userProfile?.dni && userProfile?.phone) {
+      if (from) {
+        navigate(from, { replace: true });
+      } else if (shouldPromptSurvey(userProfile)) {
+        navigate('/encuesta-suscripcion', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
+    } else if (step === 1) {
+      setStep(2);
+    }
+  }, [user, userProfile, authLoading, step, navigate, from]);
+
+  const handleStep1 = async (e) => {
+    e.preventDefault();
+    if (loading) return;
+    setError(null);
+    if (!step1Valid) return;
+    setLoading(true);
+    const { error: err, errorCode } = await signUpWithEmail(email.trim().toLowerCase(), password);
+    setLoading(false);
+    if (err) {
+      setError(getAuthErrorMessage(errorCode, err));
+      return;
+    }
+    // Correo de verificación (gratis, de Firebase). Con el correo verificado,
+    // los pedidos hechos con él aparecen solos en "Mis Pedidos". No se espera.
+    enviarVerificacionCorreo().catch(() => {});
+    // Si llegó desde un popup "Crear una cuenta", esto es su conversión.
+    registrarConversionPopup('registro', { email: email.trim().toLowerCase() });
+    setStep(2);
+  };
+
+  const handleStep2 = async (e) => {
+    e.preventDefault();
+    setError(null);
+    if (!user || !step2Valid) return;
+    setConfirmModalOpen(true);
+  };
+
+  const handleConfirmRegister = async () => {
+    setConfirmModalOpen(false);
+    setError(null);
+    if (!user || !step2Valid) return;
+    const documentoNorm = isPE ? documento.trim().replace(/\s/g, '') : documento.trim();
+    // El chequeo de DNI duplicado se hace en una Cloud Function (checkDniAvailableSecure):
+    // las reglas de Firestore no permiten leer portal_clientes_users filtrando por `dni`
+    // (solo por dueño), así que una query directa del cliente siempre daba permission-denied.
+    try {
+      const { data: dniCheck } = await httpsCallable(getFunctions(), 'checkDniAvailableSecure')({ dni: documentoNorm });
+      if (!dniCheck?.available) {
+        setError('Este documento ya está registrado en otra cuenta. Si es tuyo, inicia sesión con esa cuenta o recupera tu contraseña.');
+        return;
+      }
+    } catch (err) {
+      console.warn('[Registro] checkDniAvailableSecure:', err);
+      setError('No se pudo verificar el documento. Revisa tu conexión e inténtalo de nuevo.');
+      return;
+    }
+    setLoading(true);
+    // ERP: el documento SIEMPRE en dni / clienteNumeroDocumento / envioNumeroDocumento.
+    // El número se guarda en dni; el tipo elegido (DNI/CE/Pasaporte u 'OTRO' si
+    // extranjero) se guarda en tipoDocumento y, de forma aditiva, en docType.
+    const tipoDocFinal = isPE ? tipoDoc : 'OTRO';
+    const docFields = {
+      email: user.email,
+      displayName: fullName.trim(),
+      country,
+      dni: documentoNorm,
+      clienteNumeroDocumento: documentoNorm,
+      envioNumeroDocumento: documentoNorm,
+      tipoDocumento: tipoDocFinal,
+      clienteTipoDocumento: tipoDocFinal,
+      docType: tipoDocFinal,
+      accessSystem: 'portal_clientes',
+      accountOrigin: 'register_form',
+    };
+    if (isPE) {
+      docFields.phone = phone.replace(/\D/g, '');
+    } else {
+      const dialCode = dialCodeByCountry(country) || '';
+      const localNumber = String(phone || '').trim();
+      const full = `${dialCode}${localNumber}`;
+      docFields.phone = full;
+      docFields.phoneIntl = { dialCode, localNumber, full };
+    }
+    const { error: err } = await setDocument(PORTAL_USERS_COLLECTION, user.uid, docFields);
+    setLoading(false);
+    if (err) {
+      console.warn('[Registro] guardar perfil:', err);
+      setError('No se pudieron guardar tus datos. Revisa tu conexión e inténtalo de nuevo.');
+      return;
+    }
+    navigate(from || '/encuesta-suscripcion');
+  };
+
+  const handleGoogle = async () => {
+    if (loading) return;
+    setError(null);
+    setLoading(true);
+    const { error: err, errorCode, user: usuarioGoogle, esNuevo } = await signInWithGoogle();
+    if (esNuevo && usuarioGoogle) {
+      registrarConversionPopup('registro', { uid: usuarioGoogle.uid, email: usuarioGoogle.email });
+    }
+    setLoading(false);
+    // Cerrar la ventana de Google no es un error: solo se deja de cargar.
+    if (err && errorCode !== 'auth/popup-closed-by-user' && errorCode !== 'auth/cancelled-popup-request') {
+      setError(getAuthErrorMessage(errorCode, err));
+      return;
+    }
+    // Cerró el selector de cuentas: se queda en el registro.
+    if (errorCode === 'auth/cancelled' || !usuarioGoogle) return;
+    navigate('/completar-perfil', from ? { state: { from } } : undefined);
+  };
+
+  if (loading && step === 1 && !user) {
+    return <EsperaPantalla texto="Creando cuenta..." />;
+  }
+
+  return (
+    <div className={styles.container}>
+      <div className={styles.wrapper}>
+        <div className={styles.branding}>
+          <img src={LOGO_URL} alt="Logo" />
+          <h2><T>Crear cuenta</T></h2>
+          <p><T>Regístrate para hacer pedidos y rastrear tus compras.</T></p>
+        </div>
+        <div className={styles.formContainer}>
+          <img src={LOGO_URL} alt="Logo" className={styles.logoMovil} />
+          <div className={styles.steps} aria-label={`Paso ${step} de 2`}>
+            <div className={styles.stepCircle + (step === 1 ? ' ' + styles.stepActive : '')}>1</div>
+            <div className={styles.stepLine} />
+            <div className={styles.stepCircle + (step === 2 ? ' ' + styles.stepActive : '')}>2</div>
+          </div>
+          <h1><T>{step === 1 ? 'Crear cuenta' : 'Tus datos para el pedido'}</T></h1>
+          <p><T>{step === 1 ? 'Correo y contraseña' : 'Tu documento, nombre y teléfono.'}</T></p>
+
+          {step === 1 && (
+            <form onSubmit={handleStep1} className={styles.form}>
+              <div className={styles.formGroup}>
+                <label htmlFor="email"><T>Correo electrónico</T></label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  autoComplete="email"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={loading}
+                  placeholder="Ingresa tu correo electrónico"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="password"><T>Contraseña</T></label>
+                <div className={styles.passwordField}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    name="new-password"
+                    autoComplete="new-password"
+                    aria-describedby="passwordReqs"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                    placeholder="Crea tu contraseña"
+                  />
+                  <button
+                    type="button"
+                    className={styles.passwordToggle}
+                    onClick={() => setShowPassword((v) => !v)}
+                    disabled={loading}
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    aria-pressed={showPassword}
+                  >
+                    {showPassword ? <EyeIcon size={20} /> : <EyeOffIcon size={20} />}
+                  </button>
+                </div>
+              </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="confirmPassword"><T>Confirmar contraseña</T></label>
+                <div className={styles.passwordField}>
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    id="confirmPassword"
+                    name="confirm-password"
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                    placeholder="Confirma tu contraseña"
+                  />
+                  <button
+                    type="button"
+                    className={styles.passwordToggle}
+                    onClick={() => setShowConfirmPassword((v) => !v)}
+                    disabled={loading}
+                    aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    aria-pressed={showConfirmPassword}
+                  >
+                    {showConfirmPassword ? <EyeIcon size={20} /> : <EyeOffIcon size={20} />}
+                  </button>
+                </div>
+                {confirmPassword && !passwordsMatch && (
+                  <span className={styles.fieldError}><T>Las contraseñas no coinciden</T></span>
+                )}
+              </div>
+              <div className={styles.passwordReqs} id="passwordReqs">
+                <span className={styles.passwordReqsTitle}><T>Requisitos de contraseña</T></span>
+                <ul>
+                  <li className={passwordReqs.length ? styles.met : ''}><T>Al menos 8 caracteres</T></li>
+                  <li className={passwordReqs.uppercase ? styles.met : ''}><T>Al menos 1 mayúscula</T></li>
+                  <li className={passwordReqs.lowercase ? styles.met : ''}><T>Al menos 1 minúscula</T></li>
+                  <li className={passwordReqs.number ? styles.met : ''}><T>Al menos 1 número</T></li>
+                  <li className={passwordReqs.special ? styles.met : ''}><T>Al menos 1 símbolo (por ejemplo ! @ # $ . -)</T></li>
+                </ul>
+              </div>
+              <div className={styles.termsRow}>
+                <input
+                  type="checkbox"
+                  id="acceptedTerms"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  disabled={loading}
+                />
+                <label htmlFor="acceptedTerms" className={styles.termsLabel}>
+                  <T>Acepto los</T>{' '}
+                  <Link to="/terminos-y-condiciones" target="_blank" rel="noopener noreferrer" className={styles.link}>
+                    <T>Términos y Condiciones</T>
+                  </Link>{' '}
+                  <T>y la</T>{' '}
+                  <Link to="/politicas-privacidad" target="_blank" rel="noopener noreferrer" className={styles.link}>
+                    <T>Política de Privacidad</T>
+                  </Link>
+                </label>
+              </div>
+              {error && (
+                <div className={styles.errorMessage} role="alert">
+                  <span className={styles.errorIcon}>⚠</span>
+                  {error}
+                </div>
+              )}
+              <Button type="submit" variant="primary" fullWidth disabled={!step1Valid || loading}>
+                <T>Siguiente</T>
+              </Button>
+            </form>
+          )}
+
+          {step === 2 && (
+            <div className={styles.step2Layout}>
+              <form
+                onSubmit={handleStep2}
+                className={styles.form}
+              >
+                {/* País: viene detectado por IP, pero se puede corregir (VPN,
+                    viajeros, peruanos fuera del país). Define qué documento
+                    y qué formato de teléfono se piden. */}
+                <div className={styles.formGroup}>
+                  <label htmlFor="country"><T>País</T></label>
+                  <CountrySelect id="country" value={country} isDisabled={loading} onChange={(code) => setCountry(code || 'PE')} />
+                </div>
+                {isPE ? (
+                <>
+                  {/* Perú: tipo de documento (DNI/CE/Pasaporte) + número. */}
+                  <div className={styles.formGroup}>
+                    <label htmlFor="tipoDoc"><T>Tipo de documento</T></label>
+                    <select
+                      id="tipoDoc"
+                      className={styles.select}
+                      value={tipoDoc}
+                      onChange={(e) => setTipoDoc(e.target.value)}
+                      disabled={loading}
+                    >
+                      {docTypes.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="documento">
+                      {tipoDoc === 'DNI' ? 'Número de DNI' : `Número de ${tipoDoc}`}
+                    </label>
+                    <input
+                      type="text"
+                      id="documento"
+                      value={documento}
+                      onChange={(e) => setDocumento(e.target.value.replace(/\s/g, ''))}
+                      required
+                      disabled={loading}
+                      placeholder={tipoDoc === 'DNI' ? '8 dígitos' : '9 a 12 caracteres'}
+                      maxLength={tipoDoc === 'DNI' ? 8 : 12}
+                    />
+                    {documento && !docValid && (
+                      <span className={styles.fieldError}>
+                        {tipoDoc === 'DNI' ? 'DNI debe tener 8 dígitos' : 'Debe tener 9 a 12 caracteres alfanuméricos'}
+                      </span>
+                    )}
+                  </div>
+                </>
+              ) : (
+                /* Extranjero: un único campo abierto de documento nacional. */
+                <div className={styles.formGroup}>
+                  <label htmlFor="documento">{FOREIGN_DOC_LABEL}</label>
+                  <input
+                    type="text"
+                    id="documento"
+                    value={documento}
+                    onChange={(e) => setDocumento(e.target.value)}
+                    required
+                    disabled={loading}
+                    placeholder="Pasaporte, ID o documento"
+                  />
+                  {documento && !docValid && (
+                    <span className={styles.fieldError}><T>Ingresa un documento válido (mín. 3 caracteres)</T></span>
+                  )}
+                </div>
+              )}
+              <div className={styles.formGroup}>
+                <label htmlFor="fullName"><T>Nombre completo</T></label>
+                <input
+                  type="text"
+                  id="fullName"
+                  name="name"
+                  autoComplete="name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                  disabled={loading}
+                  placeholder="Ej. Juan Pérez"
+                />
+              </div>
+              {/* Mismo esquema que Completar perfil. Antes el extranjero tenía el
+                  campo peruano: se le cortaba el número a 9 dígitos y veía el
+                  error "debe empezar por 9". */}
+              {isPE ? (
+                <div className={styles.formGroup}>
+                  <label htmlFor="phone"><T>Teléfono</T></label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    autoComplete="tel-national"
+                    inputMode="numeric"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                    required
+                    disabled={loading}
+                    placeholder="9 dígitos (ej. 987654321)"
+                  />
+                  {phone && !validatePhone(phone) && (
+                    <span className={styles.fieldError}><T>El teléfono debe tener 9 dígitos y empezar por 9</T></span>
+                  )}
+                </div>
+              ) : (
+                <div className={styles.formGroup}>
+                  <label htmlFor="phone"><T>Teléfono</T></label>
+                  <PhoneIntlInput
+                    id="phone"
+                    countryCode={country}
+                    value={phone}
+                    disabled={loading}
+                    onChange={({ localNumber }) => setPhone(localNumber)}
+                  />
+                  {phone && !phoneValid && (
+                    <span className={styles.fieldError}><T>Ingresa un número de teléfono válido</T></span>
+                  )}
+                </div>
+              )}
+              {error && (
+                <div className={styles.errorMessage} role="alert">
+                  <span className={styles.errorIcon}>⚠</span>
+                  {error}
+                </div>
+              )}
+              <div className={styles.step2Actions}>
+                <Button type="button" variant="secondary" onClick={() => setStep(1)}>
+                  <T>Atrás</T>
+                </Button>
+                <Button type="submit" variant="primary" disabled={!step2Valid || loading}>
+                  <T>Registrarme</T>
+                </Button>
+              </div>
+            </form>
+          </div>
+          )}
+
+          {step === 1 && (
+            <>
+              <div className={styles.divider}>
+                <span><T>o continúa con</T></span>
+              </div>
+              <Button
+                onClick={handleGoogle}
+                variant="secondary"
+                fullWidth
+                disabled={loading}
+                className={styles.googleButton}
+              >
+                <svg className={styles.googleIcon} viewBox="0 0 24 24" width="20" height="20">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                <T>Continuar con Google</T>
+              </Button>
+            </>
+          )}
+
+          <div className={styles.footer}>
+            <p>
+              ¿Ya tienes cuenta? <Link to="/login" state={from ? { from } : undefined} className={styles.link}><T>Iniciar sesión</T></Link>
+            </p>
+          </div>
+        </div>
+      </div>
+      {/* Con el kit (paso 3 de la migración): antes era el Modal común. */}
+      <Confirmar
+        abierta={confirmModalOpen}
+        titulo="¿Tus datos son correctos?"
+        texto="Usaremos tu documento y tu teléfono para rastrear tus pedidos. Revisa que estén bien antes de continuar."
+        cancelar="Revisar"
+        confirmar="Sí, registrarme"
+        onCancelar={() => setConfirmModalOpen(false)}
+        onConfirmar={handleConfirmRegister}
+      />
+    </div>
+  );
+};
+
+export default RegisterViejo;

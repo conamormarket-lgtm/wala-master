@@ -245,6 +245,21 @@ grupos del marco nuevo (`gruposDeCuenta.js`).
 |---|---|---|---|---|
 | `pages/SearchPageViejo.jsx` + `pages/SearchPage.module.css` (la página de antes: título, campo, barra con el `<select>`, Modalidad como `gruposExtra` y `SidebarCatalogLayout`) | `/buscar` | `components/busqueda/BusquedaDeTienda.jsx` → `PaginaBusqueda` del kit (`paginas/Busqueda.jsx`) | `pages/SearchPage.jsx` (lazy, solo con el interruptor `busquedaVieja`) | al retirar `busquedaVieja`; con ella, `SidebarCatalogLayout` pierde su último uso fuera de `seccionesViejo` |
 
+### El acceso (2026-10-19)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/LoginViejo.jsx` + `LoginPage.module.css` | `/login` | `components/acceso/LoginDeTienda.jsx` → `PaginaLogin` | `pages/LoginPage.jsx` (lazy, solo con `accesoViejo`) | al retirar `accesoViejo` |
+| `pages/RegisterViejo.jsx` + `RegisterPage.module.css` | `/registro` | `components/acceso/RegistroDeTienda.jsx` → `PaginaRegistro` | `pages/RegisterPage.jsx` (lazy, solo con `accesoViejo`) | al retirar `accesoViejo` |
+| `pages/ResetPasswordViejo.jsx` + `ResetPasswordPage.module.css` | `/recuperar-contrasena` | `components/acceso/RecuperarDeTienda.jsx` → `PaginaRecuperar` | `pages/ResetPasswordPage.jsx` (lazy, solo con `accesoViejo`) | al retirar `accesoViejo` |
+| `pages/CompleteProfileViejo.jsx` + `CompleteProfilePage.module.css` | `/completar-perfil` | `components/acceso/CompletarPerfilDeTienda.jsx` → `PaginaCompletarPerfil` | `pages/CompleteProfilePage.jsx` (lazy, solo con `accesoViejo`) | al retirar `accesoViejo` |
+| `components/intl/CountrySelect.jsx` y `PhoneIntlInput.jsx` (+ CSS) | registro y completar perfil (antes también Mi perfil) | `CamposDatosPersonales` (`ListaOpciones`, `CampoTelefono`) | `RegisterViejo.jsx`, `CompleteProfileViejo.jsx`, `pages/cuenta/PerfilViejo.jsx` | al retirar `accesoViejo` y `cuentaVieja` (volver a buscar) |
+| `getPasswordRequirements` e `isPasswordValid` (`utils/helpers.js`) | el registro de antes | `requisitosContrasena` / `contrasenaValida` (`piezas/Acceso.jsx`, la misma lista de símbolos) | solo `RegisterViejo.jsx` | con `RegisterViejo.jsx` |
+
+Se quedan: `EsperaPantalla` (la espera tras entrar, también en
+`LoginDeTienda`), `EyeIcon` / `EyeOffIcon` de `common/Icons` (los usa el admin)
+y `validateDNI` y compañía (`utils/helpers.js`, los usan otras páginas).
+
 ### La carga entre páginas (2026-10-19)
 
 | Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
