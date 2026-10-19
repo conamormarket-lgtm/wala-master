@@ -116,7 +116,15 @@ const sePuedeTraerPorFetch = (url) => typeof url === 'string'
     // Si ni sin token cabe, va directo a Storage: Cloudinary la rechazaría siempre.
     && urlParaCloudinary(url).length <= LARGO_MAXIMO_FETCH;
 
-const urlPorFetch = (url, ancho) => `${BASE_FETCH}f_auto,q_auto,c_limit,w_${ancho}/${encodeURIComponent(urlParaCloudinary(url))}`;
+// Cloudinary recibe la URL sin token; si falla, hay que volver a la de
+// Storage CON token, que se descarga aunque algún día se cierren las reglas.
+// Por eso se recuerda cuál era la original de cada URL de fetch.
+const originalesDeFetch = new Map();
+const urlPorFetch = (url, ancho) => {
+    const pedida = `${BASE_FETCH}f_auto,q_auto,c_limit,w_${ancho}/${encodeURIComponent(urlParaCloudinary(url))}`;
+    originalesDeFetch.set(pedida, url);
+    return pedida;
+};
 const srcSetPorFetch = (url) => ANCHOS_FETCH.map((ancho) => `${urlPorFetch(url, ancho)} ${ancho}w`).join(', ');
 
 // El mismo `sizes` por defecto que las fotos de Cloudinary.
@@ -141,8 +149,10 @@ export const atributosDeFoto = (url, sizes) => fuentesPorFetch(url, sizes) || { 
  */
 export const urlDeFondo = (url, ancho = 1600) => (fetchActivo() && sePuedeTraerPorFetch(url) ? urlPorFetch(url, ancho) : url);
 
-// De una URL de fetch, la de Storage que lleva dentro.
-const urlOriginal = (urlFetch) => decodeURIComponent(urlFetch.slice(urlFetch.indexOf('/', BASE_FETCH.length) + 1));
+// De una URL de fetch, la de Storage: la recordada (con token) o, si no está,
+// la que lleva dentro (sin token).
+const urlOriginal = (urlFetch) => originalesDeFetch.get(urlFetch)
+    || decodeURIComponent(urlFetch.slice(urlFetch.indexOf('/', BASE_FETCH.length) + 1));
 
 // La red de seguridad para TODAS las <img>, también las que dibujan su propia
 // etiqueta con fuentesDeImagen: el evento `error` no burbujea, pero se ve en
