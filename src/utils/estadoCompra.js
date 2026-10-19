@@ -95,12 +95,19 @@ const ETAPAS_FINALIZADAS = ['finalizado', 'entregado', 'completado'];
  * (p. ej. una solicitud por WhatsApp): no está pagado aunque traiga
  * conDeuda === false (misPedidosSecure lo pone para no ofrecer "Pagar deuda",
  * y se leía como "Pago confirmado").
+ *
+ * Y en general cualquier doc de pedidos_web (la cola que el ERP aún no
+ * aprueba): ahí solo valen pagado === true o estadoPago === 'pagado', que el
+ * servidor escribe al cobrar. Las solicitudes por WhatsApp que creaba el
+ * navegador antes del 2026-10-10 no traen `pagado`, y con el conDeuda === false
+ * de misPedidosSecure salían "Pago confirmado" sin haber pagado.
  */
 export function esPagado(pedido) {
   if (!pedido || typeof pedido !== 'object') return false;
   if (pedido.pagado === true) return true;
   if (pedido.web === true && pedido.pagado === false) return false;
   if (pedido.estadoPago === 'pagado') return true;
+  if (pedido._coleccion === 'pedidos_web') return false;
   if (pedido.web === false) return true;
   if (pedido.conDeuda === false) return true;
   if (
