@@ -88,12 +88,35 @@ const carpetaDeStorage = (url) => {
 };
 
 // SVG y GIF no: el primero es vectorial y el segundo perdería la animación.
+/**
+ * La URL que se le da a Cloudinary, SIN el `token` de descarga.
+ *
+ * Cloudinary guarda cada foto traída con la URL entera como nombre, y ese
+ * nombre no puede pasar de 255 caracteres ("public_id is too long", error
+ * 400). Las de Storage son largas y el token suma 43: con nombres de archivo
+ * largos ("ChatGPT Image 10 sept 2026, 09_50_29 (1).webp") se pasaban. Sin
+ * token se descargan igual, porque las reglas de Storage dejan leer estas
+ * carpetas (firebase/storage.rules).
+ */
+const LARGO_MAXIMO_FETCH = 255;
+const urlParaCloudinary = (url) => {
+    try {
+        const u = new URL(url);
+        u.searchParams.delete('token');
+        return u.toString();
+    } catch {
+        return url;
+    }
+};
+
 const sePuedeTraerPorFetch = (url) => typeof url === 'string'
     && url.startsWith('https://firebasestorage.googleapis.com/')
     && !/\.(svg|gif)$/i.test(url.split('?')[0])
-    && CARPETAS_FETCH.has(carpetaDeStorage(url));
+    && CARPETAS_FETCH.has(carpetaDeStorage(url))
+    // Si ni sin token cabe, va directo a Storage: Cloudinary la rechazaría siempre.
+    && urlParaCloudinary(url).length <= LARGO_MAXIMO_FETCH;
 
-const urlPorFetch = (url, ancho) => `${BASE_FETCH}f_auto,q_auto,c_limit,w_${ancho}/${encodeURIComponent(url)}`;
+const urlPorFetch = (url, ancho) => `${BASE_FETCH}f_auto,q_auto,c_limit,w_${ancho}/${encodeURIComponent(urlParaCloudinary(url))}`;
 const srcSetPorFetch = (url) => ANCHOS_FETCH.map((ancho) => `${urlPorFetch(url, ancho)} ${ancho}w`).join(', ');
 
 // El mismo `sizes` por defecto que las fotos de Cloudinary.
