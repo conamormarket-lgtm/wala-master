@@ -213,8 +213,9 @@ const AdminWordlePage = lazy(() => import('./pages/admin/AdminWordlePage'));
 // editor de navegacion) y arranca con `if (!isEditModeActive) return null`.
 // Estaba montado de forma estatica en GlobalLayout: TODOS los visitantes se lo
 // descargaban para no pintar nada. Ahora ni se pide hasta que un admin abre el
-// editor.
-const VisualEditorPanel = lazy(() => import('./pages/Tienda/admin/VisualEditorPanel'));
+// editor. Con el kit (paso 8): EditorVisual elige el del kit o, con
+// editorViejo, VisualEditorPanel; los dos llegan en su propio archivo.
+const EditorVisual = lazy(() => import('./components/constructor/EditorVisual'));
 // AdminNotifications importa recharts. Cargado de forma estatica arrastraba el
 // chunk de graficas (413 KB) al arranque de TODOS los visitantes, aunque solo
 // se usa en /admin/notificaciones. lazy() lo devuelve a su propio chunk.
@@ -326,7 +327,7 @@ const GlobalLayout = ({ children }) => {
       <BarraDeAdmin />
       {isEditModeActive && (
         <Suspense fallback={null}>
-          <VisualEditorPanel />
+          <EditorVisual />
         </Suspense>
       )}
 

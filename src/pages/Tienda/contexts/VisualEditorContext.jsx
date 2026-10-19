@@ -4,6 +4,8 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { setDocument, createDocument, getDocument } from '../../../services/firebase/firestore';
 import { saveStorefrontConfig, getStorefrontConfig } from '../services/storefront';
 import { getLockedPages } from '../../../services/lockedPages';
+// Deshacer/rehacer del editor (paso 8): el borrador es toda la configuración.
+import { useBorrador } from '../../../componentes/kit/editor/useBorrador';
 
 const VisualEditorContext = createContext();
 
@@ -19,9 +21,16 @@ export const VisualEditorProvider = ({ children }) => {
   
   const [activePageId, setActivePageId] = useState('home');
 
-  // Borrador local (draft) de la configuración de la tienda. 
-  const [storeConfigDraft, setStoreConfigDraft] = useState(null);
+  // Borrador local (draft) de la configuración de la tienda: secciones de la
+  // página + lo global (menú, cuenta, favoritos, buscador). Con deshacer y
+  // rehacer, y sabe si hay cambios sin publicar.
+  const borrador = useBorrador(null);
+  const storeConfigDraft = borrador.secciones;
+  const { reiniciar, cambiar } = borrador;
+  const setStoreConfigDraft = reiniciar;
   const [isSaving, setIsSaving] = useState(false);
+  // Dónde se insertará una sección nueva (el "+" de la página abre el catálogo del panel).
+  const [insertarEn, setInsertarEn] = useState(null);
 
   // Modo vista móvil
   const [isPreviewMobile, setIsPreviewMobile] = useState(false);
@@ -64,12 +73,13 @@ export const VisualEditorProvider = ({ children }) => {
         if (mounted) {
           setStoreConfigDraft(null);
           setActiveSection(null);
+          setInsertarEn(null);
         }
       }
     };
     loadDraft();
     return () => { mounted = false; };
-  }, [isEditModeActive, activePageId]);
+  }, [isEditModeActive, activePageId, setStoreConfigDraft]);
 
   const toggleEditMode = () => {
     setIsEditModeActive(!isEditModeActive);
@@ -97,31 +107,33 @@ export const VisualEditorProvider = ({ children }) => {
     setActiveSection(null);
   };
 
-  const updateDraft = (sectionId, data) => {
-    setStoreConfigDraft(prev => ({
+  // `clave`: los cambios seguidos de un mismo campo cuentan como un solo paso al deshacer.
+  const updateDraft = (sectionId, data, clave = `${sectionId}:${Object.keys(data || {}).join(',')}`) => {
+    cambiar(prev => ({
       ...prev,
       [sectionId]: {
         ...prev?.[sectionId],
         ...data
       }
-    }));
+    }), clave);
   };
 
-  const updateSectionsDraft = (newSections) => {
-    setStoreConfigDraft(prev => ({
+  const updateSectionsDraft = (newSections, clave) => {
+    cambiar(prev => ({
       ...prev,
       sections: newSections
-    }));
+    }), clave);
   };
 
-  const saveDraftToFirestore = async () => {
+  // avisar: false = sin alert (el editor del kit avisa con un toast).
+  const saveDraftToFirestore = async ({ avisar = true } = {}) => {
     if (!storeConfigDraft) return { error: 'No hay cambios' };
 
     // Verificar si la página está bloqueada
     const lockedPages = await getLockedPages();
     if (lockedPages.includes(activePageId)) {
-      alert(`⚠️ Esta página (${activePageId}) está BLOQUEADA por el Administrador. No se pueden guardar cambios.`);
-      return { error: 'Página bloqueada' };
+      if (avisar) alert(`⚠️ Esta página (${activePageId}) está BLOQUEADA por el Administrador. No se pueden guardar cambios.`);
+      return { error: 'Página bloqueada', bloqueada: true };
     }
 
     setIsSaving(true);
@@ -148,6 +160,7 @@ export const VisualEditorProvider = ({ children }) => {
 
     setIsSaving(false);
     if (!error && !legacyError) {
+      borrador.marcarGuardado();
       // Invalidar la caché de react-query de la config de esta página para que el
       // cambio publicado se vea SIN refrescar (el query tiene staleTime alto y
       // refetchOnMount:false; sin esto, la vista pública seguía mostrando lo viejo).
@@ -187,7 +200,15 @@ export const VisualEditorProvider = ({ children }) => {
         saveDraftToFirestore,
         isSaving,
         isPreviewMobile,
-        toggleMobilePreview
+        toggleMobilePreview,
+        // Editor del kit (paso 8).
+        deshacer: borrador.deshacer,
+        rehacer: borrador.rehacer,
+        puedeDeshacer: borrador.puedeDeshacer,
+        puedeRehacer: borrador.puedeRehacer,
+        sinGuardar: borrador.sinGuardar,
+        insertarEn,
+        setInsertarEn
       }}
     >
       {children}

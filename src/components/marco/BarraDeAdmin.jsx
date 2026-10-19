@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useVisualEditor } from '../../pages/Tienda/contexts/VisualEditorContext';
 import { EN_VISTA_PREVIA_CALOR } from '../../utils/vistaPreviaCalor';
 import { BarraAdmin } from '../../componentes/kit/piezas/Marco';
+import { useConfirmar } from '../../componentes/kit/Feedback';
 
 /*
  * Barra de admin (M3) con el kit. Mismas reglas que AdminBar:
@@ -19,7 +20,14 @@ import { BarraAdmin } from '../../componentes/kit/piezas/Marco';
 export default function BarraDeAdmin() {
   const { isAdmin } = useAuth();
   const { pathname } = useLocation();
-  const { isEditModeActive, toggleEditMode } = useVisualEditor();
+  const { isEditModeActive, toggleEditMode, sinGuardar } = useVisualEditor();
+  const confirmar = useConfirmar();
+  // Con el editor abierto el botón solo lo cierra (publicar es del panel):
+  // "Salir del editor", y si hay cambios sin publicar, se pregunta antes.
+  const alternarEditor = async () => {
+    if (isEditModeActive && sinGuardar && !(await confirmar({ titulo: '¿Salir sin publicar?', texto: 'Los cambios que no publicaste se pierden.', confirmar: 'Salir', peligro: true }))) return;
+    toggleEditMode();
+  };
 
   if (!isAdmin || EN_VISTA_PREVIA_CALOR) return null;
 
@@ -34,5 +42,5 @@ export default function BarraDeAdmin() {
 
   if (Capacitor.isNativePlatform()) return null;
 
-  return <BarraAdmin fija editando={isEditModeActive} onEditor={toggleEditMode} />;
+  return <BarraAdmin fija editando={isEditModeActive} onEditor={alternarEditor} textoEditor={isEditModeActive ? 'Salir del editor' : undefined} />;
 }

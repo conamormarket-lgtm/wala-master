@@ -1,0 +1,6 @@
+/* El panel del kit va fijo a la ventana; aquí solo empieza bajo la barra de
+   admin (que publica su alto en --admin-bar-height). */
+.editor {
+  display: contents;
+  --editor-arriba: var(--admin-bar-height, 0px);
+}
