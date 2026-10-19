@@ -104,10 +104,10 @@ Sus partes, en orden:
 
 | Página | Estado en el kit | Se llega desde |
 |---|---|---|
-| Comunidad (`/comunidad`) | **P8 · `PaginaComunidad`** | "Ver todos (8)" de Diseños de la comunidad |
-| Creación (`/creacion/:id`) | **P9 · `PaginaCreacion`** | "Comprar" de una creación |
-| Ver diseño (`/ver/:id`) | **P10 · `PaginaVerDiseno`** | el enlace del WhatsApp de un pedido |
-| Combo (`/combo/:id`) | **P11 · `PaginaCombo`** | "Armar" de un combo, "Usar diseño" de un combo de la comunidad, un combo de Mis creaciones |
+| Comunidad (`/comunidad`) | **P8 · `PaginaComunidad`** (en la tienda) | "Ver todos (8)" de Diseños de la comunidad |
+| Creación (`/creacion/:id`) | **P9 · `PaginaCreacion`** (en la tienda) | "Comprar" de una creación |
+| Ver diseño (`/ver/:id`) | **P10 · `PaginaVerDiseno`** (en la tienda) | el enlace del WhatsApp de un pedido |
+| Combo (`/combo/:id`) | **P11 · `PaginaCombo`** (en la tienda) | "Armar" de un combo, "Usar diseño" de un combo de la comunidad, un combo de Mis creaciones |
 | Estudio (`/crear/:id`) | **P12 · `PaginaEstudio`** | "Diseñar", "Continuar", "Editar", "Personalizar" y "Usar diseño" (Crear, Comunidad, una creación y un combo) |
 
 ### P8 · Comunidad (`paginas/Comunidad.jsx`)
@@ -452,7 +452,7 @@ fondo" usa el motor real de la tienda. En "Estados" están agotada, en
 borrador, editando un borrador, el borrador que no se guardó y el diseño
 que aún llega.
 
-## Llevar a la tienda (a futuro: TODAVÍA NO se hace)
+## Llevar a la tienda (hecho el 2026-10-19 menos el estudio: ver "En la tienda" al final)
 
 Va en el paso 6 de [MIGRACION.md](MIGRACION.md), después de Mis creaciones,
 porque comparten `TarjetaCreacion`.
@@ -581,8 +581,129 @@ alrededor, por partes.
 
 ### Pasos
 
-1. Hacer los adaptadores con los datos reales y comparar las tarjetas.
-2. Cambiar la portada y la grilla (prendas y combos) por las del kit.
-3. Cambiar las tres filas por las del kit (después de Mis creaciones).
-4. Borrar `PersonalizarPage.module.css` cuando lleve un tiempo en
+1. ✓ Hacer los adaptadores con los datos reales y comparar las tarjetas.
+2. ✓ Cambiar la portada y la grilla (prendas y combos) por las del kit.
+3. ✓ Cambiar las tres filas por las del kit (después de Mis creaciones).
+   Con Crear pasaron también la Comunidad, Ver diseño, una creación y el
+   combo (2026-10-19, un commit por página).
+4. El estudio (P12), aparte: lo más delicado.
+5. Borrar `PersonalizarPage.module.css` cuando lleve un tiempo en
    producción.
+
+## En la tienda (2026-10-19)
+
+| Crear (con sesión) | Diseños de la comunidad | Ver diseño |
+|---|---|---|
+| ![Crear con sesión, en el celular](crear-tienda-celular.webp) | ![La galería con el filtro por prenda](comunidad-tienda-celular.webp) | ![El diseño de un pedido, prenda por prenda](ver-diseno-tienda-celular.webp) |
+
+| Una creación | Un combo: Mi combo |
+|---|---|
+| ![Una creación con su talla, Agregar y Comprar ahora](creacion-tienda-celular.webp) | ![Todo el combo: una prenda diseñada y otra en blanco](combo-tienda-celular.webp) |
+
+Las páginas (`pages/PersonalizarPage.jsx`, `pages/Comunidad/ComunidadPage.jsx`,
+`pages/Crear/VerDisenoPage.jsx`, `CreacionPage.jsx` y `ComboCrearPage.jsx`)
+montan `components/crear/CrearDeTienda.jsx`, `ComunidadDeTienda.jsx`,
+`VerDisenoDeTienda.jsx`, `CreacionDeTienda.jsx` y `ComboDeTienda.jsx`. Lo de
+antes (`PersonalizarViejo`, `ComunidadViejo`, `VerDisenoViejo`,
+`CreacionViejo` y `ComboCrearViejo`) baja solo con el interruptor
+`crearViejo` (`useLoViejo('crear')`: en Firestore `crearViejo: true`; en
+localStorage, `"crear"`). **El estudio (`/crear/:id`) sigue con la página de
+antes** (se ve después).
+
+**Lo que comparten.** Los adaptadores de Crear (`prendaCrearDesdeProducto`,
+`comboCrearDesde`, `disenoComunidadDesde`, `fichaCreacionDesde`) viven en
+`adaptadoresCrear.js`, fuera del archivo principal. Las tarjetas de tus
+creaciones y lo que se hace con ellas (eliminar, renombrar, la comunidad,
+"Llevar en combo") salen de `components/cuenta/useTarjetasCreaciones.js`:
+Mis creaciones, Crear y una creación hacen lo mismo. `useBorradoresCrear` y
+`useComunidad` pasaron a sus propios archivos (los de antes los reexportan).
+Los textos van traducidos; los nombres que pone el cliente (sus creaciones,
+su combo) van tal cual.
+
+**Crear.** Las prendas (el admin ve también las de borrador) y los combos
+con sus botones al estudio o al combo ("Armar" con `?nuevo=1`); "¿Para
+cuántos?" en la dirección (`?para=2`); tus borradores, tus creaciones (las 8
+más recientes, cada combo una tarjeta) y la comunidad (8); las versiones
+viejas de los combos se marcan y se borran a los días como antes. Sin el
+Kapi flotante (está en la portada).
+
+**La comunidad.** La galería pública (se vuelve a pedir al mostrarse), el
+filtro por prenda, "Reintentar" y "Empezar desde cero"; "Usar diseño" abre
+el estudio o el combo con la plantilla.
+
+**Ver diseño.** `verDisenoCompartido` como antes (5 min en caché, un
+reintento); un enlace que no existe dice "no disponible". Nuevo del kit:
+la foto en grande y "Copiar resumen" (el resumen se copia en español: es
+para el taller).
+
+**Una creación.** La prenda se vuelve a leer al entrar; la talla elegida
+queda guardada en la creación (al instante en pantalla); agregar al carrito
+con la cantidad o "Comprar ahora" (solo esta línea elegida y al pago);
+"Ir al combo" deja la creación en su prenda del combo si estaba vacía;
+renombrar, eliminar (y volver a Mis creaciones) y la comunidad.
+
+**El combo.** La lógica de antes pasó entera a `useComboCrear.js` (el
+armado en el navegador, `?nuevo` / `?plantilla` / `?mio`, "Mi combo" que se
+guarda solo y deja su `?mio=` en la dirección, una talla para el conjunto,
+comprar con `crearDesdePlantilla`, `registrarUsoComunidad`, la misma línea
+del carrito, `olvidarArmado` y al carrito); las fotos de las prendas, a
+`pages/Crear/fotosCombo.js` (las usa también la página de antes). Al kit le
+faltaban cosas y se sumaron:
+
+- `FilaPiezaCombo` con `estado="cargando"` (con el nombre guardado si se
+  sabe) y `estadoEnlaces`: Diseñar, Editar, Copiar y Personalizar vuelven al
+  combo con su flecha;
+- `GaleriaProducto` con "Todo el combo" (`juntas`: las prendas lado a lado,
+  sin zoom), `relleno` y `atenuada` para la prenda en blanco, y los nombres
+  de las fotos traducidos;
+- `PaginaCombo`: `preparando` ("Preparando tu combo (prenda 1 de 2)…" en el
+  botón), "Actualizar publicación", el aviso de la comunidad que espera y
+  sigue abierto si falla, "ver la prenda" que se desliza a su foto
+  (`salto`; antes volvía a montar la galería) y sube a la galería en el
+  celular;
+- `TarjetaProducto`: las piezas de una pareja (dos "Polera clásica") ya no
+  repiten su clave.
+
+### Diferencias a propósito (no "corregirlas")
+
+- **Crear:** el producto de cada creación se lee con la misma caché que la
+  ficha (antes, otra forma que dejaba tarjetas "Ya no disponible" después
+  de pasar por Mis creaciones).
+- **Una creación:** una talla guardada que ya no existe para su color no
+  cuenta como elegida (antes pasaba el control); la publicación también se
+  actualiza desde aquí; las migas no llevan el nombre (es del cliente: no
+  se traduce).
+- **El combo:** "Agregar al carrito" se activa con los diseños listos y, si
+  falta una talla, la pide en una hoja (antes el botón esperaba la talla);
+  "N de N listas" cuenta los diseños; "Reintentar" vuelve a pedir el combo
+  sin recargar la página; la compra no queda fija abajo en el celular
+  (como una creación con el kit).
+
+### Carga
+
+Lo que baja cada página además del archivo principal (JS + CSS, gzip,
+contra el commit de antes de Crear y con el mismo `.env`; incluye Firestore,
+que ya bajaba): Crear 182,5 → 184,3 KB, la comunidad 168,7 → 166,7, Ver
+diseño 146,3 → 149,6, una creación 176,2 → 179,6 y el combo 270,9 → 274,6.
+Lo que suma son las piezas del kit (`Ficha`, `GaleriaProducto`,
+`Creaciones`), compartidas con la ficha de producto y Mis creaciones: si se
+viene de ahí, ya están. El archivo principal queda igual (−37 B sin
+comprimir; +135 B gzip por los nombres de los archivos nuevos).
+
+**Probado** con los emuladores: Crear sin cuenta y con cuenta (las filas,
+Diseñar y Armar, `?para`, renombrar guardado en Firestore, eliminar, Llevar
+en combo, el interruptor) y Mis creaciones de nuevo; la comunidad (el
+filtro, "Usar diseño"); Ver diseño (uno real y uno que no existe); una
+creación (la talla guardada, agregar 6 → 7, Comprar ahora → /checkout,
+eliminar → Mis creaciones, el interruptor); el combo (`?nuevo`, Mis
+creaciones en su hoja, "Mi combo" guardado solo con su `?mio=`, Usar en la
+otra, editar una copia con `&copiar=`, ver la prenda, agregar 3 → 4 con una
+línea de combo, sus dos prendas y tallas, y al carrito; desde la comunidad
+con la hoja de tallas por prenda; renombrar "Mi combo", Quitar, el estudio
+con su vuelta y el interruptor), a 390 claro y oscuro y a 1366 sin
+desbordes.
+**No probado:** el inglés (el traductor no responde en este navegador),
+comprar un combo de la comunidad de punta a punta (los diseños sembrados no
+traen capas en el emulador: "no tiene diseño", igual en la página de antes),
+publicar / actualizar / retirar como admin, las capturas de escritorio (el
+panel no las toma nítidas a 1366) y la app (Capacitor).
