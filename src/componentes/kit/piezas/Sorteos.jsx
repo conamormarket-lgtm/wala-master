@@ -4,7 +4,8 @@ import Boton from '../Boton';
 import { Etiqueta } from '../Etiquetas';
 import { Trazo, Destello, Puntos } from '../Marca';
 import { Enlace } from '../Enlace';
-import { Texto } from '../Traduccion';
+import { Texto, useTexto } from '../Traduccion';
+import { TextoResaltado } from './TextoResaltado';
 import CuentaRegresiva from '../CuentaRegresiva';
 import { Avatar } from './Avatar';
 import { FotoProducto } from './FotoProducto';
@@ -13,7 +14,7 @@ import s from './Sorteos.module.css';
 /*
  * Piezas de los sorteos: el sorteo de /sorteos (un premio, una cuenta atrás)
  * y la campaña por suscripción de /suscrito-sorteo (planes, ganadores y
- * beneficios de marcas aliadas).
+ * beneficios de marcas aliadas). Los textos pasan por la traducción.
  */
 
 const miles = (n) => Number(n || 0).toLocaleString('es-PE');
@@ -28,6 +29,16 @@ const diaYMes = (iso) => new Date(iso).toLocaleDateString('es-PE', { day: 'numer
  *  - ganadores (cuántos) · hasta (ISO del fin) · cerrado · participantes
  */
 export function CabezaSorteo({ premio, imagen, descripcion, precio, ganadores = 1, hasta, cerrado = false, participantes }) {
+  const fecha = hasta ? diaYMes(hasta) : '';
+  const cuantos = miles(participantes);
+  const t = {
+    cuando: useTexto(cerrado ? 'Sorteo cerrado' : hasta ? `Se sortea el ${fecha}` : 'Sorteo de Walá'),
+    ganan: useTexto(ganadores === 1 ? '1 ganador' : `${ganadores} ganadores`),
+    gana: useTexto('Gana:'),
+    termina: useTexto('Termina en'),
+    termino: useTexto('Ya terminó: pronto anunciamos a quien ganó'),
+    participan: useTexto(participantes === 1 ? '1 persona ya participa' : `${cuantos} personas ya participan`),
+  };
   return (
     <header className={s.cabeza} data-componente="CabezaSorteo">
       <div className={s.cabezaFoto}>
@@ -36,11 +47,11 @@ export function CabezaSorteo({ premio, imagen, descripcion, precio, ganadores = 
           <div className={s.talon}>
             <span className={s.talonDato}>
               <CalendarDays aria-hidden="true" />
-              {cerrado ? 'Sorteo cerrado' : hasta ? <>Se sortea el <strong>{diaYMes(hasta)}</strong></> : 'Sorteo de Walá'}
+              <TextoResaltado resaltar={!cerrado && hasta ? [fecha] : []}>{t.cuando}</TextoResaltado>
             </span>
             <span className={s.talonDato}>
               <Trophy aria-hidden="true" />
-              <strong>{ganadores}</strong> {ganadores === 1 ? 'ganador' : 'ganadores'}
+              <TextoResaltado resaltar={[ganadores]}>{t.ganan}</TextoResaltado>
             </span>
           </div>
         </div>
@@ -56,20 +67,20 @@ export function CabezaSorteo({ premio, imagen, descripcion, precio, ganadores = 
           <Destello className={s.destello1} />
           <Destello className={s.destello2} />
         </span>
-        <h1 className={s.titulo}>Gana: <Texto>{premio}</Texto><Trazo className={s.trazo} /></h1>
+        <h1 className={s.titulo}>{t.gana} <Texto>{premio}</Texto><Trazo className={s.trazo} /></h1>
         {descripcion && <p className={s.descripcion}><Texto>{descripcion}</Texto></p>}
         {cerrado ? (
-          <p className={s.cerrado}>El sorteo ya cerró.</p>
+          <p className={s.cerrado}><Texto>El sorteo ya cerró.</Texto></p>
         ) : hasta && (
           // Con más de dos días por delante, en palabras ("Termina en 4 d 7 h"); al final, los bloques.
           <div className={s.reloj}>
             {new Date(hasta) - Date.now() > 48 * 3600000
-              ? <span className={s.relojPildora}><Clock aria-hidden="true" /><CuentaRegresiva hasta={hasta} variante="frase" etiqueta="Termina en" textoFin="Ya terminó: pronto anunciamos a quien ganó" /></span>
-              : <CuentaRegresiva hasta={hasta} variante="bloques" etiqueta="Termina en" textoFin="Ya terminó: pronto anunciamos a quien ganó" />}
+              ? <span className={s.relojPildora}><Clock aria-hidden="true" /><CuentaRegresiva hasta={hasta} variante="frase" etiqueta={t.termina} textoFin={t.termino} /></span>
+              : <CuentaRegresiva hasta={hasta} variante="bloques" etiqueta={t.termina} textoFin={t.termino} />}
           </div>
         )}
         {participantes != null && (
-          <p className={s.participan}><Users aria-hidden="true" /><strong>{miles(participantes)}</strong> {participantes === 1 ? 'persona ya participa' : 'personas ya participan'}</p>
+          <p className={s.participan}><Users aria-hidden="true" /><span><TextoResaltado resaltar={[participantes === 1 ? '1' : cuantos]}>{t.participan}</TextoResaltado></span></p>
         )}
       </div>
     </header>
@@ -87,7 +98,7 @@ export function ListaGanadores({ ganadores = [], yo }) {
         <li key={g.id || g.nombre} className={g.id && g.id === yo ? s.ganadorYo : undefined}>
           <Avatar nombre={g.nombre} imagen={g.foto} className={s.ganadorAvatar} />
           <span className={s.ganadorTexto}>
-            <strong>{g.nombre}{g.id && g.id === yo && <small className={s.tu}>Tú</small>}</strong>
+            <strong>{g.nombre}{g.id && g.id === yo && <small className={s.tu}><Texto>Tú</Texto></small>}</strong>
             {(g.premio || g.fecha) && <small>{[g.premio, g.fecha].filter(Boolean).join(' · ')}</small>}
           </span>
           <Trophy aria-hidden="true" className={s.trofeo} />

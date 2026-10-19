@@ -1,23 +1,20 @@
 import React, { useState } from 'react';
-import { LogIn, Share2, Ticket, Star, Sparkles, Download, ArrowRight, Trophy, Repeat, Receipt, Gift, CheckCircle2 } from 'lucide-react';
+import { Star, Sparkles, ArrowRight, Repeat, Receipt, Gift } from 'lucide-react';
 import Boton from '../Boton';
 import { Aviso, EstadoVacio, HojaInferior } from '../Feedback';
-import { Campo, Cantidad, Casilla } from '../Formulario';
+import { Campo, Casilla } from '../Formulario';
 import { Chip, Etiqueta } from '../Etiquetas';
 import { Pestanas } from '../Navegacion';
 import { Enlace } from '../Enlace';
 import { Sello, Trazo } from '../Marca';
-import { Estallido } from '../Efectos';
 import { BloqueSeccion, TituloSeccion } from '../Seccion';
 import { EsqueletoPagina } from '../Esqueletos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { TarjetaCuenta, Estadistica, ListaDatos } from '../piezas/Cuenta';
-import { FormaGanar, EnlaceInvitacion } from '../piezas/Referidos';
-import { CamposDatosPersonales, validarPerfil } from '../piezas/DatosPersonales';
 import { PagoTarjeta, PagoPaypal } from '../piezas/Pago';
 import { BotonGoogle, SeparadorAcceso } from '../piezas/Acceso';
 import { FotoProducto } from '../piezas/FotoProducto';
-import { CabezaSorteo, ListaGanadores, TarjetaPlan, TarjetaAliado } from '../piezas/Sorteos';
+import { ListaGanadores, TarjetaPlan, TarjetaAliado } from '../piezas/Sorteos';
 import s from './Sorteos.module.css';
 
 /*
@@ -29,218 +26,11 @@ import s from './Sorteos.module.css';
 
 const soles = (n, moneda = 'PEN') => `${moneda === 'USD' ? 'US$' : 'S/'} ${Number(n || 0).toFixed(2)}`;
 
-/* ── El sorteo (/sorteos) ───────────────────────────────── */
+/* ── El sorteo (/sorteos) ─────────────────────────────── */
 
-/**
- * Un sorteo: el premio con su cuenta atrás, tu participación, cómo sumar
- * chances, quién ganó y el botón para participar (abajo y pegado en el
- * celular). Los datos se piden en una hoja; con tickets, ahí mismo se paga.
- *  - sorteo: { premio, imagen, descripcion, tipo: 'gratis' | 'pagado',
- *    precioTicket, moneda, numGanadores, hasta (ISO), cerrado, participantes,
- *    reglas: { compartir, referido, appExtra, appObligatorio }, ganadores: [{ id, nombre }] }
- *  - participacion: { tickets, chances, compartio } (null si aún no participa)
- *  - sesion · yo (uid) · enApp · urlLogin · urlApp
- *  - urlInvitacion: tu link para sumar chances con referidos
- *  - datosIniciales: { nombre, tipoDocumento, documento, telefono, correo } (el perfil)
- *  - onParticipar(datos): promesa (gratis) · onComprar({ datos, cantidad }):
- *    promesa → { monto, moneda } (el servidor fija el monto)
- *  - onPagarTarjeta(), onPagarPaypal(): promesas · onCompartir(): promesa (+1 chance)
- *  - estado: 'cargando' | 'error' | 'vacio'
- */
-export function PaginaSorteo({
-  sorteo = {}, participacion, sesion = true, yo, enApp = false, urlLogin = '/login', urlApp = '/descargar', urlInvitacion,
-  datosIniciales = {}, onParticipar, onComprar, onPagarTarjeta, onPagarPaypal, onCompartir, estado,
-}) {
-  const [hoja, setHoja] = useState(false);
-  const [datos, setDatos] = useState(() => ({ tipoDocumento: 'DNI', ...datosIniciales }));
-  const [errores, setErrores] = useState({});
-  const [cantidad, setCantidad] = useState(1);
-  const [enviando, setEnviando] = useState(false);
-  const [error, setError] = useState('');
-  const [compra, setCompra] = useState(null);
-  const [compartiendo, setCompartiendo] = useState(false);
-
-  if (estado === 'cargando') return <EsqueletoPagina forma="sorteo" />;
-  if (estado === 'error' || estado === 'vacio') {
-    return (
-      <BloqueSeccion ajustes={{ paddingTop: '2rem', paddingBottom: '2.5rem' }}>
-        <EstadoVacio
-          imagen={estado === 'error' ? CARAS_KAPI.triste : CARAS_KAPI.feliz}
-          titulo={estado === 'error' ? 'No pudimos cargar el sorteo' : 'Pronto habrá sorteos'}
-          texto={estado === 'error' ? 'Revisa tu conexión e inténtalo otra vez.' : 'Aún no hay un sorteo activo. ¡Vuelve pronto para participar y ganar!'}
-        >
-          <Boton to="/tienda" variante="secundario">Ver la tienda</Boton>
-        </EstadoVacio>
-      </BloqueSeccion>
-    );
-  }
-
-  const pagado = sorteo.tipo === 'pagado';
-  const moneda = sorteo.moneda || 'PEN';
-  const reglas = sorteo.reglas || {};
-  const ganadores = sorteo.ganadores || [];
-  const soyGanador = Boolean(yo) && ganadores.some((g) => g.id === yo);
-  const participa = Boolean(participacion);
-
-  const abrir = () => { setError(''); setCompra(null); setHoja(true); };
-  const enviar = async () => {
-    const e = validarPerfil({ ...datos, pais: 'PE' });
-    setErrores(e);
-    if (Object.keys(e).length) return;
-    setEnviando(true);
-    setError('');
-    try {
-      if (pagado) setCompra(await onComprar?.({ datos, cantidad }));
-      else { await onParticipar?.(datos); setHoja(false); }
-    } catch (err) {
-      setError(err?.message || 'No se pudo registrar tu participación. Inténtalo de nuevo.');
-    } finally {
-      setEnviando(false);
-    }
-  };
-  const pagar = (fn) => async () => { await fn?.(); setHoja(false); setCompra(null); };
-
-  let accion;
-  if (!sesion) accion = <Boton to={urlLogin} bloque tamano="lg" icono={<LogIn aria-hidden="true" />}>Inicia sesión para participar</Boton>;
-  else if (sorteo.cerrado) accion = <Boton bloque tamano="lg" disabled>El sorteo ya cerró</Boton>;
-  else if (reglas.appObligatorio && !enApp) {
-    accion = (
-      <div className={s.accionApp}>
-        <p>Este sorteo solo está disponible desde la app de Walá.</p>
-        <Boton to={urlApp} bloque tamano="lg" icono={<Download aria-hidden="true" />}>Descargar la app</Boton>
-      </div>
-    );
-  } else if (participa && !pagado) accion = <Boton bloque tamano="lg" disabled icono={<CheckCircle2 aria-hidden="true" />}>Ya estás participando</Boton>;
-  else {
-    accion = (
-      <>
-        {pagado && <p className={s.precioTicket}>{soles(sorteo.precioTicket, moneda)} por ticket</p>}
-        <Boton bloque tamano="lg" brillo icono={<Ticket aria-hidden="true" />} onClick={abrir}>
-          {pagado ? (participa ? 'Comprar más tickets' : 'Quiero participar') : '¡Participar gratis!'}
-        </Boton>
-      </>
-    );
-  }
-
-  // [icono, título, texto, lo que suma]
-  const formas = [
-    pagado ? ['regalo', 'Cada ticket cuenta', 'Cada ticket pagado suma 1 chance para el sorteo.', '+1 por ticket'] : ['regalo', 'Participar', 'Participar te da 1 chance.', '+1'],
-    reglas.appExtra && ['estrella', 'Desde la app', 'Entrar desde la app de Walá te da 1 chance extra.', '+1'],
-    reglas.compartir && ['corazon', 'Compartir', 'Compartir el sorteo te suma 1 chance (una vez).', '+1'],
-    reglas.referido && ['mano', 'Invitar', 'Ganas 1 chance por cada amigo que participe con tu link.', '+1 por amigo'],
-  ].filter(Boolean);
-
-  return (
-    <>
-      <BloqueSeccion ajustes={{ paddingTop: '1.5rem', paddingBottom: '1rem' }}>
-        <div className={s.sorteo} data-componente="PaginaSorteo">
-          <CabezaSorteo
-            premio={sorteo.premio}
-            imagen={sorteo.imagen}
-            descripcion={sorteo.descripcion}
-            precio={pagado ? `${soles(sorteo.precioTicket, moneda)} por ticket` : 'Gratis'}
-            ganadores={sorteo.numGanadores}
-            hasta={sorteo.hasta}
-            cerrado={sorteo.cerrado}
-            participantes={sorteo.participantes}
-          />
-          {soyGanador && (
-            <div className={s.ganaste} role="status">
-              <span className={s.ganasteSello}>
-                <Sello tamano={60} tono="oro"><Trophy aria-hidden="true" /></Sello>
-                <Estallido disparo="gane" forma="confeti" cantidad={14} distancia={56} />
-              </span>
-              <div>
-                <p className={s.ganasteTitulo}>¡Felicidades, ganaste!<Trazo className={s.trazo} /></p>
-                <p>Pronto nos contactaremos contigo para entregarte tu premio.</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </BloqueSeccion>
-
-      <BloqueSeccion ajustes={{ paddingTop: '0.5rem', paddingBottom: '2.5rem' }}>
-        <div className={s.columnas}>
-            {participa && (
-              <TarjetaCuenta icono={<Ticket aria-hidden="true" />} titulo="Tu participación" subtitulo={sorteo.cerrado ? 'El sorteo ya cerró.' : 'Estás participando.'}>
-                <div className={s.cifras}>
-                  <Estadistica icono={<Ticket aria-hidden="true" />} etiqueta={pagado ? 'Tickets pagados' : 'Tickets'} valor={participacion.tickets ?? 1} />
-                  <Estadistica icono={<Star aria-hidden="true" />} tono="oro" etiqueta="Chances" valor={participacion.chances ?? 1} />
-                </div>
-              </TarjetaCuenta>
-            )}
-            {participa && !sorteo.cerrado && (reglas.compartir || (reglas.referido && urlInvitacion)) && (
-              <TarjetaCuenta icono={<Sparkles aria-hidden="true" />} titulo="Suma más chances" subtitulo="Cada chance es una oportunidad más de ganar.">
-                {reglas.compartir && (
-                  participacion.compartio
-                    ? <p className={s.hecho}><CheckCircle2 aria-hidden="true" /> Ya sumaste tu chance por compartir.</p>
-                    : (
-                      <div className={s.compartir}>
-                        <p>Comparte este sorteo y gana <strong>1 chance</strong> (una sola vez).</p>
-                        <Boton variante="secundario" icono={<Share2 aria-hidden="true" />} cargando={compartiendo} onClick={async () => { setCompartiendo(true); try { await onCompartir?.(); } finally { setCompartiendo(false); } }}>
-                          Compartir y ganar 1 chance
-                        </Boton>
-                      </div>
-                    )
-                )}
-                {reglas.referido && urlInvitacion && (
-                  <div className={s.compartir}>
-                    <p>Tu link: ganas <strong>1 chance</strong> por cada persona que participe con él.</p>
-                    <EnlaceInvitacion url={urlInvitacion} onCopiar={() => navigator.clipboard?.writeText(urlInvitacion)} />
-                  </div>
-                )}
-              </TarjetaCuenta>
-            )}
-            {ganadores.length > 0 && sorteo.cerrado && (
-              <TarjetaCuenta icono={<Trophy aria-hidden="true" />} tono="oro" titulo={ganadores.length === 1 ? 'Quién ganó' : 'Quiénes ganaron'}>
-                <ListaGanadores ganadores={ganadores} yo={yo} />
-              </TarjetaCuenta>
-            )}
-            <TarjetaCuenta icono={<Star aria-hidden="true" />} titulo="Cómo ganar más chances">
-              <div className={s.formas}>
-                {formas.map(([icono, titulo, texto, premio]) => <FormaGanar key={titulo} icono={icono} titulo={titulo} premio={premio}>{texto}</FormaGanar>)}
-                {reglas.appObligatorio && <Aviso tipo="info" compacto>Este sorteo solo se juega desde la app.</Aviso>}
-              </div>
-            </TarjetaCuenta>
-        </div>
-        <div className={s.accion} data-componente="AccionSorteo">{accion}</div>
-      </BloqueSeccion>
-
-      <HojaInferior
-        abierta={hoja}
-        onCerrar={() => { if (!enviando) setHoja(false); }}
-        titulo={compra ? 'Elige cómo pagar' : 'Tus datos para participar'}
-        pie={!compra && (
-          <Boton bloque cargando={enviando} onClick={enviar}>{pagado ? 'Continuar al pago' : 'Participar'}</Boton>
-        )}
-      >
-        {compra ? (
-          <div className={s.pago}>
-            <p className={s.pagoResumen}><strong>{cantidad} {cantidad === 1 ? 'ticket' : 'tickets'}</strong> · {soles(compra.monto, compra.moneda)}</p>
-            <p className={s.nota}>El monto lo confirma el servidor.</p>
-            <PagoTarjeta monto={compra.monto} moneda={compra.moneda || moneda} onPagar={pagar(onPagarTarjeta)} />
-            <SeparadorAcceso>o paga desde el extranjero</SeparadorAcceso>
-            <PagoPaypal montoUsd={compra.montoUsd || compra.monto / 3.75} equivalente={`≈ ${soles(compra.monto)}`} onPagar={pagar(onPagarPaypal)} />
-          </div>
-        ) : (
-          <div className={s.formulario}>
-            <p className={s.nota}>Con estos datos {pagado ? 'generamos tu ticket' : 'validamos tu participación'} y te contactamos si ganas.</p>
-            <CamposDatosPersonales datos={{ ...datos, pais: 'PE' }} onCambiar={(c, v) => { setDatos((d) => ({ ...d, [c]: v })); setErrores((x) => ({ ...x, [c]: undefined })); }} errores={errores} cumpleanos={false} disabled={enviando} />
-            <Campo etiqueta="Correo (opcional)" type="email" value={datos.correo || ''} onChange={(e) => setDatos((d) => ({ ...d, correo: e.target.value }))} disabled={enviando} />
-            {pagado && (
-              <div className={s.tickets}>
-                <span>Tickets</span>
-                <Cantidad valor={cantidad} onChange={setCantidad} min={1} max={99} />
-                <strong>{soles(cantidad * (sorteo.precioTicket || 0), moneda)}</strong>
-              </div>
-            )}
-            {error && <Aviso tipo="error" compacto>{error}</Aviso>}
-          </div>
-        )}
-      </HojaInferior>
-    </>
-  );
-}
+// El sorteo vive en su archivo (Sorteo.jsx): /sorteos no baja la campaña por
+// suscripción.
+export { PaginaSorteo } from './Sorteo';
 
 /* ── Sorteo por suscripción (/suscrito-sorteo) ──────────── */
 

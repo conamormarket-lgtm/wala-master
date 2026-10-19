@@ -19,6 +19,7 @@ import {
 import { db } from './firebase/config';
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getClientType } from './analytics/tracker';
 
 // Colección raíz de sorteos.
 const COLLECTION = 'sorteos';
@@ -346,7 +347,9 @@ export const comprarTicketSorteo = async ({ sorteoId, cantidad, datos = {} }) =>
     const callable = httpsCallable(getFunctions(), 'comprarTicketSorteoSecure');
     // `datos` = formulario público; el servidor lo guarda en el ticket (no afecta
     // el MONTO, que se recalcula precioTicket*cantidad server-side).
-    const res = await callable({ sorteoId, cantidad: Number(cantidad) || 1, datos });
+    // origenApp: un sorteo solo para la app tampoco vende tickets desde la web
+    // (el servidor lo confirma con el origen de la llamada).
+    const res = await callable({ sorteoId, cantidad: Number(cantidad) || 1, datos, origenApp: getClientType() === 'APP' });
     return { data: res.data, error: null };
   } catch (e) {
     return { data: null, error: e?.message || 'No se pudo crear la intención de compra.' };

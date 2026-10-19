@@ -59,11 +59,26 @@ const bloquearScrollDeFondo = (bloquear) => {
   }
 };
 
+// Lo que se cobra: un `cobro` armado por quien lo usa (un ticket de sorteo) o,
+// si no, el saldo del pedido o el enlace de pago de siempre.
+const datosDelCobro = ({ cobro, enlace, pedido }) => {
+  if (cobro) return { currency: cobro.moneda || 'PEN', amountFloat: Number(cobro.monto || 0), email: cobro.email || '' };
+  const isEnlace = !!enlace;
+  return {
+    currency: isEnlace ? (enlace.moneda || 'USD') : 'PEN',
+    amountFloat: isEnlace ? Number(enlace.monto || enlace.montoUSD || enlace.montoPEN || 0) : Number(pedido?.montoDeuda || 0),
+    email: isEnlace ? (enlace.email || '') : '',
+  };
+};
+
 // renderBoton (opcional): ({ abrir, procesando }) => el botón de quien lo usa
 // (el del kit, en el pago rápido). Solo cambia lo que se dibuja: el cobro, los
 // guardas y la capa "Confirmando tu pago" son los mismos. Sin ella, el botón y
 // la nota de siempre (checkout, saldo de un pedido).
-const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, onOpen, autoOpen = false, reopenKey = 0, buttonLabel, title: tituloModal, renderBoton }) => {
+// cobro (opcional, en vez de pedido/enlace): { id, monto, moneda, email,
+// titulo, descripcion, metadata } — el ticket de un sorteo. El servidor
+// recalcula el monto desde la metadata; aquí no se dispara el píxel de compra.
+const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen, autoOpen = false, reopenKey = 0, buttonLabel, title: tituloModal, renderBoton }) => {
   const toast = useGlobalToast();
   const [isReady, setIsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -76,7 +91,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, onOpen, autoO
   // Identidad ESTABLE del pedido (sobrevive a remontes): con ella reutilizamos la
   // misma instancia de Culqi y evitamos parpadeo/reapertura. `reopenKey` (=culqiKey
   // del checkout) distingue un REINTENTO explícito para permitir reabrir.
-  const orderKey = String(pedido?.id || pedido?.numeroPedido || enlace?.id || 'anon');
+  const orderKey = String(cobro?.id || pedido?.id || pedido?.numeroPedido || enlace?.id || 'anon');
   const openGuardKey = `${orderKey}::${reopenKey}`;
   // Guard para asegurar que el auto-abrir solo se dispare UNA vez (no en cada render).
   const autoOpenedRef = useRef(false);
@@ -122,9 +137,8 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, onOpen, autoO
     if (!isReady || !window.CulqiCheckout) return;
 
     const isEnlace = !!enlace;
-    const title = tituloModal || (isEnlace ? 'Pago Seguro' : 'Pago de Saldo - Walá');
-    const currency = isEnlace ? (enlace.moneda || 'USD') : 'PEN';
-    const amountFloat = isEnlace ? Number(enlace.monto || enlace.montoUSD || enlace.montoPEN || 0) : Number(pedido?.montoDeuda || 0);
+    const title = tituloModal || cobro?.titulo || (isEnlace ? 'Pago Seguro' : 'Pago de Saldo - Walá');
+    const { currency, amountFloat, email: emailCliente } = datosDelCobro({ cobro, enlace, pedido });
     const amountInt = Math.round(amountFloat * 100);
 
     const publicKey = process.env.REACT_APP_CULQI_PUBLIC_KEY;
@@ -148,7 +162,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, onOpen, autoO
         amount: amountInt,
       },
       client: {
-        email: isEnlace ? (enlace.email || '') : '',
+        email: emailCliente,
       },
       options: {
         // 'auto' toma el idioma del navegador y el modal salía en inglés.
@@ -200,9 +214,9 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, onOpen, autoO
             amount: amountInt,
             currency: currency,
             email: email,
-            description: title,
-            checkoutIntentId: pedido?.checkoutIntentId || '',
-            metadata: {
+            description: cobro?.descripcion || title,
+            checkoutIntentId: cobro ? '' : (pedido?.checkoutIntentId || ''),
+            metadata: cobro ? cobro.metadata : {
               pedidoId: pedido?.id || '',
               checkoutIntentId: pedido?.checkoutIntentId || '',
               enlaceId: enlace?.id || ''
@@ -214,7 +228,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, onOpen, autoO
             setPantalla('aprobado');
             // Por si el padre no navega (p. ej. pago de saldo): no dejarla puesta.
             setTimeout(() => setPantalla(null), 5000);
-            trackCulqiPurchase(result.data, currency, pedido);
+            if (!cobro) trackCulqiPurchase(result.data, currency, pedido);
             toast.success('¡Pago procesado exitosamente!');
             // Usa la versión más reciente del callback (ref estable): NO depende
             // de la identidad del arrow inline del padre, así que la instancia
@@ -253,7 +267,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, onOpen, autoO
     // Si estuvieran aquí, la instancia de Culqi se recrearía en cada render del
     // padre (arrows inline) y el modal "saltaría dos veces".
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isReady, pedido, enlace, tituloModal]);
+  }, [isReady, pedido, enlace, cobro, tituloModal]);
 
   const handleOpenCheckout = () => {
     if (!isReady) {
@@ -281,9 +295,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, onOpen, autoO
       return;
     }
 
-    const isEnlace = !!enlace;
-    const currency = isEnlace ? (enlace.moneda || 'USD') : 'PEN';
-    const amountFloat = isEnlace ? Number(enlace.monto || enlace.montoUSD || enlace.montoPEN || 0) : Number(pedido?.montoDeuda || 0);
+    const { currency, amountFloat } = datosDelCobro({ cobro, enlace, pedido });
 
     if ((currency === 'USD' && amountFloat < 1) || (currency === 'PEN' && amountFloat < 3)) {
        toast.error(`El monto mínimo de Culqi es ${currency === 'USD' ? '$1.00 USD' : 'S/ 3.00 PEN'}`);

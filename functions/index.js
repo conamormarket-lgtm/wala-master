@@ -2311,13 +2311,18 @@ exports.processCulqiPayment = functions
     if (ticket.pagoConfirmado === true) {
       throw new functions.https.HttpsError("failed-precondition", "Este ticket ya está pagado.");
     }
+    // Solo quien compró el ticket lo paga, y los tickets se acreditan a esa
+    // cuenta (antes, al uid que mandara el navegador en la metadata).
+    if (ticket.participanteUid && ticket.participanteUid !== uid) {
+      throw new functions.https.HttpsError("permission-denied", "Este ticket no es de tu cuenta.");
+    }
     const { montoCentimos } = await leerPrecioTicketSorteo(metadata.sorteoId, Number(ticket.cantidad));
     objetivo = {
       tipo: "sorteo",
       clave: `sorteo:${metadata.sorteoId}/${metadata.ticketId}`,
       montoCentimos,
       moneda: "PEN",
-      metaCulqi: { sorteoId: String(metadata.sorteoId), ticketId: String(metadata.ticketId), uid: String(metadata.uid || uid) },
+      metaCulqi: { sorteoId: String(metadata.sorteoId), ticketId: String(metadata.ticketId), uid: String(ticket.participanteUid || uid) },
     };
   } else if (checkoutIntentId) {
     // Si ya está pagada o reemplazada lo rechaza reservarCobroIntencion (paso 3),
@@ -6661,6 +6666,19 @@ const SORTEO_CONTADOR_SHARDS = 10;
 // strings limpios + `nombre` (nombre completo listo para mostrar). NO valida
 // obligatoriedad: cada CF decide qué campos exige. Se usa tanto en la
 // participación gratis como en la compra de tickets para capturar el lead.
+// ¿La llamada viene de la app (Capacitor)? La app corre en https://localhost
+// (Android) o capacitor://localhost (iOS); la web, en wala.pe (o en un origen
+// con puerto, en desarrollo). Antes bastaba con que el navegador mandara
+// origenApp: true, y cualquiera lo ponía desde la web; ahora además tiene que
+// venir del origen de la app, que un navegador no puede falsear. Sin App Check
+// no resiste una llamada armada fuera del navegador.
+const ORIGENES_APP = new Set(["https://localhost", "capacitor://localhost"]);
+function vieneDeLaApp(data, context) {
+  const cabeceras = (context && context.rawRequest && context.rawRequest.headers) || {};
+  const origen = String(cabeceras.origin || "").toLowerCase();
+  return Boolean(data && data.origenApp === true) && ORIGENES_APP.has(origen);
+}
+
 function sanitizarDatosSorteo(datos) {
   const d = datos && typeof datos === "object" ? datos : {};
   const s = (v) => (typeof v === "string" ? v.trim() : "");
@@ -6694,8 +6712,9 @@ exports.participarSorteoGratis = functions.https.onCall(async (data, context) =>
   if (!sorteoId || typeof sorteoId !== "string") {
     throw new functions.https.HttpsError("invalid-argument", "Falta sorteoId.");
   }
-  // Único dato de confianza que aporta el cliente: si la sesión corre en el app.
-  const origenApp = data && data.origenApp === true;
+  // Si la sesión corre en el app: lo que dice el cliente, confirmado con el
+  // origen de la llamada (vieneDeLaApp).
+  const origenApp = vieneDeLaApp(data, context);
   // Datos del participante que llegan del formulario público (recortados).
   const datos = sanitizarDatosSorteo(data && data.datos);
 
@@ -6888,6 +6907,10 @@ exports.comprarTicketSorteoSecure = functions.https.onCall(async (data, context)
   // Precio y validaciones 100% server-side (precioTicket*cantidad, en céntimos).
   const { sorteoRef, sorteo, cantidad: n, precioCentimos, montoCentimos } =
     await leerPrecioTicketSorteo(sorteoId, cantidad);
+  // Un sorteo solo para la app tampoco vende tickets desde la web (antes, sí).
+  if (sorteo.requisitoApp === "obligatorio" && !vieneDeLaApp(data, context)) {
+    throw new functions.https.HttpsError("failed-precondition", "debes entrar desde el app");
+  }
 
   // Datos del comprador: PRIORIZA el formulario público (captura el lead aunque
   // no tenga perfil completo); cae al perfil del portal como respaldo. Estos
