@@ -233,6 +233,12 @@ volver, las creaciones de la caché al instante mientras se piden de nuevo.
 Un diseño del editor de antes deja su foto vacía mientras llega su
 producto; precios y combos aparecen al llegar (las tarjetas no saltan).
 
+Ya en la tienda (paso 7, Mis pedidos, 2026-10-19): la primera vez, las
+pestañas y cuatro `EsqueletoPedido` (la misma forma que `EsqueletoPagina`
+con `modulo="pedidos"`; antes, tres cajas grises); al volver, la copia en
+memoria de `usePedidos` al instante mientras se pide de nuevo. Las fotos de
+las líneas sin foto propia llegan después (la tarjeta no salta).
+
 Ya en la tienda (paso 6, el carrito, 2026-10-17): el carrito sale de
 localStorage al instante, así que no tiene esqueleto propio (la ruta sigue con
 el `PageLoading` de `App.jsx` hasta el paso 7). "También te puede gustar" no

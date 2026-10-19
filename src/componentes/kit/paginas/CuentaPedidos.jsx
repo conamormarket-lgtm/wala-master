@@ -13,7 +13,8 @@ import { FotoProducto } from '../piezas/FotoProducto';
 import { PedidosPorVerificar } from '../piezas/PedidosPorVerificar';
 import { LineaProduccion, PagosPedido } from '../piezas/DetallePedido';
 import { EsqueletoPedido, EsqueletoTarjeta } from '../Esqueletos';
-import { CARAS_KAPI } from '../piezas/Flotantes';
+import { Hueso } from '../Esqueletos';
+import { Texto } from '../Traduccion';
 import s from './CuentaPedidos.module.css';
 
 /*
@@ -28,22 +29,28 @@ import s from './CuentaPedidos.module.css';
  *  - porVerificar: props de PedidosPorVerificar
  *  - cargando · error, onReintentar
  *  - sinDocumento: falta el DNI o CE (no se pueden ubicar) · urlCompletar
- *  - onIrATienda
+ *  - urlTienda (o onIrATienda)
+ * Abre en "En curso"; si no hay ninguno en curso, en "Terminados" (también
+ * cuando los pedidos llegan después de cargar).
  */
-export function PaginaPedidos({ pedidos = [], porVerificar, cargando = false, error, onReintentar, sinDocumento = false, urlCompletar = '/completar-perfil', onIrATienda }) {
+export function PaginaPedidos({ pedidos = [], porVerificar, cargando = false, error, onReintentar, sinDocumento = false, urlCompletar = '/completar-perfil', urlTienda, onIrATienda }) {
   const terminado = (p) => p.anulado || p.paso >= (p.pasos?.length || 5) - 1;
   const terminados = pedidos.filter(terminado);
   const activos = pedidos.filter((p) => !terminado(p));
-  const [pestana, setPestana] = useState(activos.length || !terminados.length ? 'activos' : 'terminados');
+  // Hasta que la persona elige, la pestaña sale de los pedidos (antes se
+  // fijaba al montar, con la lista vacía, y quedaba en un "En curso" sin nada).
+  const [elegida, setElegida] = useState(null);
+  const pestana = elegida || (activos.length || !terminados.length ? 'activos' : 'terminados');
   const lista = pestana === 'activos' ? activos : terminados;
-  const cabeza = <CabezaCuenta icono={<Package />} titulo="Mis pedidos" subtitulo="Por dónde va cada uno, del pago a tu puerta." />;
+  const cabeza = <CabezaCuenta icono={<Package />} titulo={<Texto>Mis pedidos</Texto>} subtitulo={<Texto>Por dónde va cada uno, del pago a tu puerta.</Texto>} />;
 
   if (sinDocumento) {
     return (
       <>
         {cabeza}
-        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Completa tu perfil para rastrear" texto="Para ubicar tus pedidos necesitamos tu DNI o carnet de extranjería.">
-          <Boton to={urlCompletar} icono={<IdCard aria-hidden="true" />}>Completar perfil</Boton>
+        {/* Sin la cara de Kapi: en la tienda ya está el flotante (un solo Kapi a la vista). */}
+        <EstadoVacio imagen={null} icono={<IdCard />} titulo={<Texto>Completa tu perfil para rastrear</Texto>} texto={<Texto>Para ubicar tus pedidos necesitamos tu DNI o carnet de extranjería.</Texto>}>
+          <Boton to={urlCompletar} icono={<IdCard aria-hidden="true" />}><Texto>Completar perfil</Texto></Boton>
         </EstadoVacio>
       </>
     );
@@ -52,8 +59,8 @@ export function PaginaPedidos({ pedidos = [], porVerificar, cargando = false, er
     return (
       <>
         {cabeza}
-        <Aviso tipo="error" titulo="No pudimos cargar tus pedidos" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={onReintentar}>Reintentar</Boton>}>
-          {typeof error === 'string' ? error : 'Revisa tu conexión e inténtalo de nuevo.'}
+        <Aviso tipo="error" titulo={<Texto>No pudimos cargar tus pedidos</Texto>} accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={onReintentar}><Texto>Reintentar</Texto></Boton>}>
+          <Texto>{typeof error === 'string' ? error : 'Revisa tu conexión e inténtalo de nuevo.'}</Texto>
         </Aviso>
       </>
     );
@@ -63,12 +70,16 @@ export function PaginaPedidos({ pedidos = [], porVerificar, cargando = false, er
       {cabeza}
       {porVerificar && <PedidosPorVerificar {...porVerificar} />}
       {cargando ? (
-        <ul className={s.pedidos} aria-busy="true">
-          {[0, 1].map((k) => <li key={k}><EsqueletoPedido /></li>)}
-        </ul>
+        // La forma de lo que viene: las pestañas y cuatro pedidos (como EsqueletoPagina).
+        <>
+          <div className={s.pestanas}><Hueso forma="pildora" alto={44} ancho={260} /></div>
+          <ul className={s.pedidos} aria-busy="true">
+            {[0, 1, 2, 3].map((k) => <li key={k}><EsqueletoPedido /></li>)}
+          </ul>
+        </>
       ) : !pedidos.length && !porVerificar?.pendientes?.length ? (
-        <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Aún no tienes pedidos" texto="Cuando compres algo, aquí verás por dónde va, paso a paso.">
-          {onIrATienda && <Boton icono={<ShoppingBag aria-hidden="true" />} onClick={onIrATienda}>Ir a la tienda</Boton>}
+        <EstadoVacio imagen={null} icono={<Package />} titulo={<Texto>Aún no tienes pedidos</Texto>} texto={<Texto>Cuando compres algo, aquí verás por dónde va, paso a paso.</Texto>}>
+          {(urlTienda || onIrATienda) && <Boton to={urlTienda} icono={<ShoppingBag aria-hidden="true" />} onClick={onIrATienda}><Texto>Ir a la tienda</Texto></Boton>}
         </EstadoVacio>
       ) : pedidos.length > 0 && (
         <>
@@ -76,10 +87,10 @@ export function PaginaPedidos({ pedidos = [], porVerificar, cargando = false, er
             <Pestanas
               etiqueta="Filtrar pedidos"
               valor={pestana}
-              onChange={setPestana}
+              onChange={setElegida}
               opciones={[
-                { id: 'activos', texto: 'En curso', cuenta: activos.length },
-                { id: 'terminados', texto: 'Terminados', cuenta: terminados.length },
+                { id: 'activos', texto: <Texto>En curso</Texto>, cuenta: activos.length },
+                { id: 'terminados', texto: <Texto>Terminados</Texto>, cuenta: terminados.length },
               ]}
             />
           </div>
@@ -88,7 +99,7 @@ export function PaginaPedidos({ pedidos = [], porVerificar, cargando = false, er
               {lista.map((p) => <li key={p.id || p.codigo}><SeguimientoPedido {...p} /></li>)}
             </ul>
           ) : (
-            <p className={s.nada}>{pestana === 'activos' ? 'No tienes pedidos en curso ahora.' : 'Tus pedidos entregados aparecerán aquí.'}</p>
+            <p className={s.nada}><Texto>{pestana === 'activos' ? 'No tienes pedidos en curso ahora.' : 'Tus pedidos entregados aparecerán aquí.'}</Texto></p>
           )}
         </>
       )}

@@ -263,7 +263,8 @@
   inset: -2px;
   border-radius: 50%;
   border: 2px solid var(--violet-500);
-  animation: latir 1.8s var(--ease-signature) infinite;
+  /* Dos latidos al aparecer y quieto (sin bucles). */
+  animation: latir 1.8s var(--ease-signature) 2;
 }
 
 @keyframes latir {
@@ -345,7 +346,8 @@
 .camion {
   display: inline-flex;
   color: var(--primary-color);
-  animation: conducir 1.2s ease-in-out infinite;
+  /* Arranca un par de veces al aparecer y se queda quieto (sin bucles). */
+  animation: conducir 1.2s ease-in-out 2;
 }
 
 .camion svg {

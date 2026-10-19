@@ -26,6 +26,8 @@ function Monto({ valor, className }) {
  * La línea se llena paso a paso al entrar en pantalla; el paso actual late.
  * Si falta pagar, el pago es la acción que manda (y el paso se marca en ámbar).
  *  - codigo, fecha, total, items: [{ nombre, imagen, variante, cantidad, precio }]
+ *    (sin precio en la línea —los pedidos hechos en el taller—: no se muestra;
+ *    sin fecha o sin total, la línea de arriba los omite)
  *  - paso (0…) · pasos: nombres (PASOS_PEDIDO; con más de 5, p. ej.
  *    ETAPAS_PRODUCCION, va como barra compacta "Paso 5 de 8 · Estampado")
  *  - estado: { texto, tono } la etiqueta de arriba (si no, sale del paso)
@@ -39,6 +41,9 @@ export function SeguimientoPedido({
 }) {
   const lineaRef = useRef(null);
   const visible = useInView(lineaRef, { once: true, margin: '0px 0px -40px 0px' });
+  const tCopiar = useTexto('Copiar número de pedido');
+  const tEstado = useTexto('Estado del pedido');
+  const meta = [fecha, `${items.length} ${items.length === 1 ? 'producto' : 'productos'}`].filter(Boolean).join(' · ');
   const [abierto, setAbierto] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const entregado = !anulado && paso >= pasos.length - 1;
@@ -61,8 +66,8 @@ export function SeguimientoPedido({
         </div>
         <div className={s.datos}>
           <p className={s.codigo}>
-            Pedido <strong>#{codigo}</strong>
-            <button type="button" onClick={copiar} aria-label="Copiar número de pedido" className={s.copiar}>
+            <Texto>Pedido</Texto> <strong>#{codigo}</strong>
+            <button type="button" onClick={copiar} aria-label={tCopiar} className={s.copiar}>
               {copiado ? <Check key="ok" className={s.copiadoIcono} aria-hidden="true" /> : <Copy key="copiar" aria-hidden="true" />}
               <AnimatePresence>
                 {copiado && (
@@ -73,26 +78,26 @@ export function SeguimientoPedido({
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.22, ease: EASE }}
                   >
-                    ¡Copiado!
+                    <Texto>¡Copiado!</Texto>
                   </motion.span>
                 )}
               </AnimatePresence>
             </button>
           </p>
-          <p className={s.meta}>{fecha} · {items.length} {items.length === 1 ? 'producto' : 'productos'} · {soles(total)}</p>
+          <p className={s.meta}><Texto>{meta}</Texto>{total > 0 && <> · {soles(total)}</>}</p>
         </div>
         {/* En tarjetas angostas se oculta: la línea de tiempo ya dice el estado. */}
         <span className={s.estado}>
           {estado ? (
-            <Etiqueta tono={estado.tono || 'violeta'}>{estado.texto}</Etiqueta>
+            <Etiqueta tono={estado.tono || 'violeta'}><Texto>{estado.texto}</Texto></Etiqueta>
           ) : anulado ? (
-            <Etiqueta tono="neutro" icono={<XCircle aria-hidden="true" />}>Anulado</Etiqueta>
+            <Etiqueta tono="neutro" icono={<XCircle aria-hidden="true" />}><Texto>Anulado</Texto></Etiqueta>
           ) : pagoPendiente ? (
-            <Etiqueta tono="aviso" icono={<Clock aria-hidden="true" />}>Falta pagar</Etiqueta>
+            <Etiqueta tono="aviso" icono={<Clock aria-hidden="true" />}><Texto>Falta pagar</Texto></Etiqueta>
           ) : entregado ? (
-            <Etiqueta tono="exito" icono={<Check aria-hidden="true" />}>Entregado</Etiqueta>
+            <Etiqueta tono="exito" icono={<Check aria-hidden="true" />}><Texto>Entregado</Texto></Etiqueta>
           ) : (
-            <Etiqueta tono="violeta">{pasos[paso]}</Etiqueta>
+            <Etiqueta tono="violeta"><Texto>{pasos[paso]}</Texto></Etiqueta>
           )}
         </span>
       </header>
@@ -105,11 +110,11 @@ export function SeguimientoPedido({
             ))}
           </span>
           <span className={s.barraTexto}>
-            {anulado ? 'Pedido cancelado' : <>Paso <strong>{Math.min(paso + 1, pasos.length)}</strong> de {pasos.length} · {pasos[Math.min(paso, pasos.length - 1)]}</>}
+            {anulado ? <Texto>Pedido cancelado</Texto> : <><Texto>Paso</Texto> <strong>{Math.min(paso + 1, pasos.length)}</strong> <Texto>de</Texto> {pasos.length} · <Texto>{pasos[Math.min(paso, pasos.length - 1)]}</Texto></>}
           </span>
         </div>
       ) : (
-      <ol ref={lineaRef} className={[s.linea, visible && s.lineaVisible].filter(Boolean).join(' ')} style={{ '--pasos': pasos.length }} aria-label="Estado del pedido">
+      <ol ref={lineaRef} className={[s.linea, visible && s.lineaVisible].filter(Boolean).join(' ')} style={{ '--pasos': pasos.length }} aria-label={tEstado}>
         {pasos.map((nombre, i) => {
           const hecho = i < paso || (entregado && i === paso);
           const actual = i === paso && !entregado;
@@ -122,7 +127,7 @@ export function SeguimientoPedido({
               aria-current={actual ? 'step' : undefined}
             >
               <span className={s.punto}>{hecho ? <Check aria-hidden="true" /> : null}</span>
-              <span className={s.nombrePaso}>{nombre}</span>
+              <span className={s.nombrePaso}><Texto>{nombre}</Texto></span>
             </li>
           );
         })}
@@ -132,35 +137,35 @@ export function SeguimientoPedido({
       {!entregado && !pagoPendiente && !anulado && entregaEstimada && (
         <p className={s.estimado}>
           <span className={s.camion}><Truck aria-hidden="true" /></span>
-          Llega aprox. <strong>{entregaEstimada}</strong>
+          <Texto>Llega aprox.</Texto> <strong><Texto>{entregaEstimada}</Texto></strong>
         </p>
       )}
 
       {pagoPendiente && !anulado && (
         <div className={s.pagoAviso}>
-          <p>Tu pedido se separa por 72 h. Paga para que pase a producción.</p>
-          <Boton brillo icono={<CreditCard aria-hidden="true" />} onClick={onPagar}>Pagar {soles(total)}</Boton>
+          <p><Texto>Tu pedido se separa por 72 h. Paga para que pase a producción.</Texto></p>
+          <Boton brillo icono={<CreditCard aria-hidden="true" />} onClick={onPagar}><Texto>Pagar</Texto> {soles(total)}</Boton>
         </div>
       )}
 
       {deuda > 0 && !pagoPendiente && !anulado && (
         <div className={`${s.pagoAviso} ${s.deudaAviso}`}>
-          <p><AlertTriangle aria-hidden="true" /><span>Te falta pagar <strong>{soles(deuda)}</strong> para que tu pedido siga avanzando.</span></p>
-          <Boton icono={<CreditCard aria-hidden="true" />} onClick={onPagar} to={onPagar ? undefined : urlDetalle}>Pagar deuda</Boton>
+          <p><AlertTriangle aria-hidden="true" /><span><Texto>Te falta pagar</Texto> <strong>{soles(deuda)}</strong> <Texto>para que tu pedido siga avanzando.</Texto></span></p>
+          <Boton icono={<CreditCard aria-hidden="true" />} onClick={onPagar} to={onPagar ? undefined : urlDetalle}><Texto>Pagar deuda</Texto></Boton>
         </div>
       )}
 
       {anulado && (
-        <p className={s.anuladoAviso}><XCircle aria-hidden="true" /> Este pedido se anuló.</p>
+        <p className={s.anuladoAviso}><XCircle aria-hidden="true" /> <Texto>Este pedido se anuló.</Texto></p>
       )}
 
       <div className={s.pieSeguimiento}>
         <button type="button" className={s.verDetalle} aria-expanded={abierto} onClick={() => setAbierto((v) => !v)}>
-          {abierto ? 'Ocultar productos' : 'Ver productos'}
+          <Texto>{abierto ? 'Ocultar productos' : 'Ver productos'}</Texto>
           <ChevronDown aria-hidden="true" />
         </button>
         {urlDetalle && (
-          <Boton to={urlDetalle} variante="contorno" tamano="sm" iconoFin={<ArrowRight aria-hidden="true" />}>Ver detalle</Boton>
+          <Boton to={urlDetalle} variante="contorno" tamano="sm" iconoFin={<ArrowRight aria-hidden="true" />}><Texto>Ver detalle</Texto></Boton>
         )}
       </div>
 
@@ -181,8 +186,9 @@ export function SeguimientoPedido({
                 transition={{ delay: 0.05 * i + 0.1, duration: 0.35, ease: EASE }}
               >
                 <FotoProducto respaldo={<Package className={s.sinFoto} aria-hidden="true" />} className={s.detalleFoto} src={it.imagen} relleno="3px" />
-                <span className={s.detalleNombre}>{it.nombre}<small>{it.variante} · x{it.cantidad}</small></span>
-                <strong>{it.precio === 0 ? 'Gratis' : soles(it.precio * it.cantidad)}</strong>
+                <span className={s.detalleNombre}><Texto>{it.nombre}</Texto><small>{[it.variante, `x${it.cantidad}`].filter(Boolean).join(' · ')}</small></span>
+                {/* Sin precio en la línea (pedido hecho en el taller): nada, no "Gratis". */}
+                {it.precio != null && <strong>{it.precio === 0 ? <Texto>Gratis</Texto> : soles(it.precio * it.cantidad)}</strong>}
               </motion.li>
             ))}
           </motion.ul>

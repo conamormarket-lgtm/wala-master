@@ -224,3 +224,11 @@ grupos del marco nuevo (`gruposDeCuenta.js`).
 | `pages/cuenta/components/MiCreacionCard.jsx` + `MisCreacionesPage.module.css` | la página de antes | `TarjetaCreacion` (`fechaDeCreacion`/`guardadaHace` → `fechaDeDiseno`/`haceCuanto` en adaptadores) | `PersonalizarPage.jsx` (la tarjeta y `fechaDeCreacion`), `Crear/CreacionPage.jsx` (`fechaDeCreacion`), `Comunidad/ComunidadPage.jsx` (`MiCreacionCardSkeleton`), `Crear/TarjetaMiCombo.jsx` y `TusBorradores.jsx` (estilos y fechas) | cuando Crear y la Comunidad dejen de usarla |
 | `pages/Crear/TarjetaMiCombo.jsx`, `TusBorradores.jsx` (el componente; `useBorradoresCrear` se queda) | la página de antes y Crear | `TarjetaCreacion` con `imagenes` / `borrador` | `PersonalizarPage.jsx`; `TarjetaMiCombo.module.css` también lo usan `Comunidad/TarjetaComunidad.jsx` y `Crear/ComboCrearPage.jsx` | cuando Crear pase al kit (el CSS, cuando nadie lo importe) |
 | `usePedidos(dni)` en Mis creaciones (y su `purchasedDesignIds`, que nunca encontraba nada) | la página de antes | `design.enPedido` | Mis pedidos sigue usando `usePedidos` | con la página de antes |
+
+### Mis pedidos, la lista (2026-10-19)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/cuenta/CuentaRastreoViejo.jsx` + `CuentaRastreoPage.module.css` | `/cuenta/pedidos` | `components/cuenta/PedidosDeCuenta.jsx` → `PaginaPedidos` (`resumirRastreo` → `seguimientoDesdePedido`) | `CuentaRastreoPage.jsx` (lazy, con `cuentaVieja` o `pagosViejo`) | al retirar los dos interruptores para Mis pedidos |
+| `pages/cuenta/PedidosPorVerificar.jsx` + su CSS | la página de antes | `PedidosPorVerificar` del kit | solo `CuentaRastreoViejo.jsx` | con la página de antes |
+| `pages/PedidosPage.module.css` (`.content`, esqueletos) | la página de antes | el kit | solo `CuentaRastreoViejo.jsx` | con la página de antes |

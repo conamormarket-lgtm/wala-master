@@ -573,6 +573,65 @@ No se probó: la comunidad (la cuenta de prueba no es admin), eliminar una
 creación que está en el carrito o publicada (las notas), un error al
 cargar, la traducción ni la app Android.
 
+## Mis pedidos en la tienda (hecho el 2026-10-19)
+
+![Mis pedidos en la tienda real, en el celular: las pestañas En curso y Terminados, un pedido de la tienda en el paso "Pago" de 5, otro en "Paso 5 de 8 · Estampado" y uno con deuda "Te falta pagar S/ 80.00" y su botón "Pagar deuda"](cuenta-pedidos-tienda.webp)
+
+(Celular, 390 px, claro, con pedidos de prueba del emulador. Se probó
+también a 1366 y en noche.)
+
+Paso 7, primera parte (la lista; el detalle con los pagos va aparte).
+
+- **Conector:** `src/components/cuenta/PedidosDeCuenta.jsx`, desde
+  `pages/cuenta/CuentaRastreoPage.jsx`; cada pedido pasa por
+  `seguimientoDesdePedido` (`components/cuenta/resumenPedido.js`), la
+  misma lectura de fase de antes (`resumirRastreo`): la fase del taller
+  con sus 8 etapas cuando la hay, si no el estado de Walá o el combinado con
+  los 5 pasos de siempre (Pago, Pagado, En preparación, Enviado,
+  Entregado); deuda, anulado y "PAGAR DEUDA" con falta de stock.
+- **Interruptores:** vuelve `CuentaRastreoViejo.jsx` con `cuentaVieja`
+  **o** `pagosViejo` (los pedidos llevan a pagar las deudas).
+- **Lo acordado:**
+  - Pagar es solo en el detalle: "Pagar deuda" lleva a
+    `/cuenta/pedidos/:id`; nunca "Pagar total" ni el aviso de las 72 h.
+  - Pestañas "En curso / Terminados": abre en "En curso" y, si no hay
+    ninguno en curso, en "Terminados" (antes de esta corrección se fijaba
+    al montar, con la lista vacía, y quedaba en un "En curso" sin nada).
+  - Las líneas sin precio (pedidos hechos en el taller) no dicen "Gratis":
+    no muestran precio.
+  - Sin bucles: el latido del paso actual y el camión se mueven dos veces
+    al aparecer y se quedan quietos.
+  - Vincular un pedido acepta el teléfono como antes (dígitos, + y
+    espacios: "+51 987 654 321" o uno de fuera del Perú); antes el kit
+    usaba `CampoTelefono` (9 dígitos del Perú).
+  - Ya no se baja el catálogo entero: la foto sale de la línea del pedido
+    (su diseño o la que guardó al comprar); solo las líneas sin foto piden
+    su producto, uno por uno.
+  - Textos con `<Texto>`, la lista vacía y "Completa tu perfil" con sello
+    (sin la cara de Kapi) y el esqueleto con las pestañas y cuatro pedidos.
+- **Diferencias a propósito:** la tarjeta dice la fecha, cuántos productos
+  y el total, y "Ver productos" abre la lista de lo comprado.
+
+### Qué se probó (2026-10-19, localhost con los emuladores y misPedidosSecure)
+
+Con pedidos de prueba de `cliente@wala.test`: uno en estampado, uno con
+deuda (150 − 50 de adelanto − 20 pagados), uno entregado del taller (sin
+precios ni fotos en sus líneas), uno anulado, uno de la tienda sin fase del
+taller y uno de otra persona con el mismo documento:
+- "En curso 3 / Terminados 3", "Paso 5 de 8 · Estampado", los 5 pasos del
+  pedido de la tienda en "Pago", "Te falta pagar S/ 80.00" (lo que calcula
+  el servidor) con "Pagar deuda" → `/cuenta/pedidos/T-DEUDA`.
+- "Tienes 1 pedido por verificar" con la pista del correo; vincular con un
+  teléfono que no coincide muestra el mensaje del servidor; con
+  "+51 987 654 321" se vincula y la lista se recarga sola (En curso 4).
+- "Terminados": el entregado del taller sin "Gratis" y con la foto de su
+  producto; el anulado con "Pedido cancelado".
+- La lista vacía; `pagosViejo` y `cuentaVieja` → la página de antes.
+  390 y 1366, claro y noche.
+
+No se probó: verificar el correo (el emulador no envía correos), un error
+del servidor al cargar, la traducción ni la app Android.
+
 ## Llevar a la tienda (lo que falta)
 
 Páginas propias: van en el paso 6 de [MIGRACION.md](MIGRACION.md). Se migra
@@ -587,7 +646,7 @@ componente o su forma de recibir datos.
 | Sin sesión | ✓ Ya en la tienda, solo en /cuenta (`CuentaLayout.jsx`; antes `CuentaLoginPrompt` / `PedidosLoginPrompt`). Las secciones van al login y vuelven (`RutaPrivada`, `utils/rutaPrivada.js`) | `PaginaCuentaInvitado` |
 | ✓ Resumen | `pages/cuenta/CuentaResumenPage.jsx` (hoy `CuentaResumenViejo.jsx`) | `PaginaResumenCuenta` (el "Cerrar sesión" lo pone `MarcoCuenta`) (hecho) |
 | ✓ Perfil | `PerfilPage.jsx` (hoy `PerfilViejo.jsx`): `AvatarStudio`, recompensas, "Datos Personales" | `PaginaPerfil` (hecho) |
-| Mis pedidos | `CuentaRastreoPage.jsx` (tarjetas ~365-484, `ProgresoResumen` ~204-230) y `PedidosPorVerificar.jsx` | `PaginaPedidos` + `SeguimientoPedido` (`pasos`, `estado`, `deuda`, `anulado`, `urlDetalle`) + `PedidosPorVerificar` |
+| ✓ Mis pedidos | `CuentaRastreoPage.jsx` (hoy `CuentaRastreoViejo.jsx`; tarjetas ~365-484, `ProgresoResumen` ~204-230) y `PedidosPorVerificar.jsx` | `PaginaPedidos` + `SeguimientoPedido` (`pasos`, `estado`, `deuda`, `anulado`, `urlDetalle`) + `PedidosPorVerificar` (hecho) |
 | Detalle de compra | `CuentaCompraDetallePage.jsx` (`Timeline`, `PedidoAcciones`, `HistorialPagos`, modales de pago y boletas) | `PaginaDetallePedido` + `LineaProduccion` + `PagosPedido` + `HojaPagarSaldo` |
 | ✓ Foto de perfil | `AvatarStudio` + `AvatarCropModal` (react-easy-crop) | `IdentidadCuenta` + `RecortarFoto` (sin librería) (hecho) |
 | ✓ País y teléfono (en Mi perfil y Mis direcciones) | `CountrySelect`, `PhoneIntlInput` (`<select>` con banderas emoji) | `Campo opciones` (buscador) y `CampoTelefono` (hecho) |
@@ -635,8 +694,8 @@ componente o su forma de recibir datos.
 | `onEliminar` (creación) | `useEliminarCreacion().eliminar(d, { enPedido })` (sin su ventana: la tarjeta ya confirma) o `useEliminarMiCombo()(combo, { confirmado: true })` |
 | `versiones` | `useVersionesReemplazadas` → `{ id, nombre, imagen, combo, dias: diasParaBorrar(d), enPedido }`; `recuperarVersion` |
 | `items` (deseos) | `wishlistItems` + `useProductosDeLista` (un producto por item) → `{ id, cargando, disponible, producto (solo el apagado: nombre, imagen), guardado, regalado: isGifted }`; `tarjeta`: `TarjetaDeProducto` |
-| `PaginaPedidos.pedidos` | cada pedido de `usePedidos` como lo arma `resumirRastreo`: `{ id, codigo, fecha, items, total, paso, pasos: ETAPAS_PRODUCCION si hay fase del taller (o los 5 generales), estado: { texto: getEtapaBadgeLabel / estadoWalaADisplay, tono }, deuda: montoDeuda si conDeuda, anulado, urlDetalle }` |
-| `porVerificar` | `{ pendientes: data.pendientes (fecha ya legible y fase con ETIQUETA_FASE), correoVerificado: data.emailVerificado, onEnviarVerificacion: enviarVerificacionCorreo, onYaVerifique: refrescarVerificacionCorreo + recargar, onVincular: vincularPedido }` |
+| `PaginaPedidos.pedidos` | cada pedido de `usePedidos` por `seguimientoDesdePedido` (`components/cuenta/resumenPedido.js`, lo mismo que `resumirRastreo`); sin `onPagar` ni `pagoPendiente`: `{ id, codigo, fecha, items, total, paso, pasos: ETAPAS_PRODUCCION si hay fase del taller (o los 5 generales), estado: { texto: getEtapaBadgeLabel / estadoWalaADisplay, tono }, deuda: montoDeuda si conDeuda, anulado, urlDetalle }` |
+| `porVerificar` | `{ pendientes: data.pendientes (fecha ya legible y fase con ETIQUETA_FASE), correoVerificado: data.emailVerificado, onEnviarVerificacion: enviarVerificacionCorreo, onYaVerifique: refrescarVerificacionCorreo + recargar, onVincular: vincularPedido }`; los servicios devuelven `{ error }` y el kit espera promesas que fallan: el conector lanza `new Error(mensaje)` |
 | `PaginaDetallePedido.pedido` | el pedido efectivo de la página: `getCodigoPedido`, `getNumeroProduccion`, `derivarEstadoCompra` (estado y `paymentLabel`), `fechas` → `fechasPasos`, líneas de `getProductosPedido`, dirección y montos como hoy |
 | `pagos` | `historialPagos` → `historial`; `onBoletas`: `listFilesInFolder('00'+id)`; `onFotosEnvio`: `reparto.boletasEnvio` o Storage; `monedas`: `claimMonedas(id, 10)` y `monedasReclamadas` |
 | `onPagar` → `HojaPagarSaldo` | `tarjeta`: `CulqiCustomCheckout` + `PaypalCheckout`; `yape`, `plin`: `getMessage('yape_number')`…; `urlComprobante`: `whatsapp_number_pagos` con `whatsapp_text_pagos` |
@@ -727,7 +786,8 @@ componente o su forma de recibir datos.
 5. ✓ Referidos (2026-10-19, arriba).
 6. ✓ Lista de deseos, Fechas importantes y Mis creaciones (2026-10-19,
    arriba).
-7. Mis pedidos cuando el kit tenga `PedidosPorVerificar`.
+7. Mis pedidos: ✓ la lista (2026-10-19, arriba); falta el detalle de una
+   compra con sus pagos.
 
 Para volver atrás: cada paso en su propio commit; las páginas viejas no se
 borran hasta que las nuevas lleven un tiempo en producción.
