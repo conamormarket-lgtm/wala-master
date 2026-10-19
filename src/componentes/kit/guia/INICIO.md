@@ -25,7 +25,7 @@ el carrito y Mis pedidos.
 | M3 | Barra de admin | `BarraAdmin` | `Boton`, `Enlace` | `piezas/Marco.module.css` | `isAdmin` (AuthContext) | admins. En el celular "Panel" queda como botón con escudo: es el acceso al panel (la barra inferior no lleva pestaña Admin) |
 | M4 | Cabecera | `Cabecera` | `Logo`, `Desplegable`, `MenuTienda`, `MenuMarcas`, `SaldoMonedas` + `AyudaMonedas`, `ListaNotificaciones`, `VistaFavoritos`, `VistaCarrito`, `MenuCuenta`, `Buscador`, `BotonTema`, `Boton`, `Contador` | `Navegacion.module.css` (+ `MenusCabecera.module.css`) | enlaces: `storeConfig/homePage.header.navLinks`; categorías y marcas; AuthContext, CartContext, WishlistContext, NotificationsContext | todos (monedas y campana con sesión; la cuenta solo en escritorio) |
 | M5 | Pie | `PiePagina` (`footer_columns`) + `PieLegal` | `LogoWala`, `EtiquetaColgante`, `Garabatos`, `Enlace` | `SeccionesExtra.module.css` (`.pie…`) y `piezas/Marco.module.css` (`.legal…`) | columnas: `pages/footer`; contacto: `config/empresa.js` | todos (no en la app) |
-| M6 | Barra inferior | `BarraInferior` (siempre 5 pestañas, "Crear" al centro; en "Mi cuenta" las iniciales o la foto en un aro del mismo trazo que los íconos) | `Enlace`, `Contador` | `Navegacion.module.css` (`.barra`, `.tab…`) | ruta actual, AuthContext | celular |
+| M6 | Barra inferior | `BarraInferior` (siempre 5 pestañas, "Crear" al centro; en "Mi cuenta" las iniciales o la foto en un aro del mismo trazo que los íconos) | `Enlace`, `Avatar`, `Contador` | `BarraInferior.module.css` (`.barra`, `.tab…`; en su propio archivo desde el 2026-10-19) | ruta actual, AuthContext | celular (hasta 768 px) |
 | M7 | WhatsApp flotante | `BotonWhatsApp` (dentro de `PilaFlotante`) | `Enlace` | `piezas/Flotantes.module.css` | Firestore `messages` (número por zona) | todos (no admin, checkout ni landings) |
 | M8 | Kapi | `KapiFlotante` (abre `VentanaKapi`, ficha en [KAPI.md](KAPI.md)) | `CARAS_KAPI` | `piezas/Flotantes.module.css`, `piezas/VentanaKapi.module.css` | perfil (`kapiDesdePerfil`: comida del día, felicidad, tutorial) | con sesión |
 | M9 | (retirada) | — | — | — | La burbuja de regalos sugeridos se quitó el 2026-10-15: ya no tenía uso | — |
@@ -137,7 +137,7 @@ cabecera (paso 7).
 | Secciones (S1-S10) | `pages/Tienda/TiendaPage.jsx`: `renderSection` (switch desde ~914) + el bucle de ~1504 | `PaginaTienda` / `RenderSecciones` con `respaldo` para lo que no está en el kit |
 | Tarjeta de producto | `PremiumProductCard` (carruseles), `ProductCard` (grillas) | `TarjetaProducto` + `tarjetaDesdeProducto` |
 | Cabecera (M4) | `components/common/Header/Header.jsx` (+ `HeaderSearch`, `NotificationTray`, `ThemeToggle`) | `Cabecera` + menús de `MenusCabecera` |
-| Barra inferior (M6) | `components/common/BottomNav/BottomNav.jsx` | `BarraInferior` |
+| Barra inferior (M6) | `components/common/BottomNav/BottomNav.jsx` | `BarraInferior` (✓ 2026-10-19, `components/marco/BarraInferiorDeTienda.jsx`) |
 | Pie (M5) | `components/common/Footer/Footer.jsx` | `PiePagina` + `PieLegal` (dentro de `MarcoTienda`) |
 | Barra de admin (M3) | `components/common/AdminBar/AdminBar.jsx` | `BarraAdmin` |
 | Aviso del sistema (M1) | `components/common/SystemAlert` | `AvisoSistema` |
@@ -188,7 +188,12 @@ cabecera (paso 7).
 
 ### Diferencias a propósito (no "corregirlas" al migrar)
 
-- Barra inferior siempre de 5 pestañas, sin "Admin": el panel se abre desde `BarraAdmin`.
+- Barra inferior siempre de 5 pestañas, sin "Admin": el panel se abre desde `BarraAdmin`
+  (en el celular, el botón del escudo).
+- Barra inferior: sin el "?" de la sesión anónima (las landings la abren):
+  el ícono de persona, como sin sesión; sin número en "Tienda" (el carrito ya
+  lo tiene en la cabecera); los textos no se esconden por debajo de 380 px
+  (caben en 320).
 - "¡Quedan N!" solo con 10 unidades o menos (hoy dice "N disponibles" en todos).
 - Sin puntuación ni reseñas inventadas (`ProductCard.jsx:169`): solo si hay reseñas reales.
 - Píldora de la encuesta con moneda (no regalo).
@@ -224,7 +229,25 @@ al inicio.
 1. ✓ Marco: `BarraAdmin`, `AvisoSistema`, `BannerApp`, flotantes, `PieLegal` (2026-10-16, un commit por pieza). Al migrar, el kit ganó `BarraAdmin` `fija` y `editarEn`, `BannerApp` `onAccion`, `AvisoIdioma` `flotante`, `VentanaCampana` `textoCerrar`, `PilaFlotante` `ocultarEnCelular` y los adaptadores `avisoDesdeEstadoApp`, `numeroWhatsApp`, `campanaDesdePopup` y `pieLegalDesdeEmpresa`.
 2. ✓ `TarjetaProducto` en los carruseles (`TarjetaDeProducto`, 2026-10-16).
 3. ✓ Secciones del inicio (2026-10-16): `SeccionDelKit` por cada una dentro del bucle de `TiendaPage`, conservando `DeferredSection`, el editor y las excepciones; datos de las mismas consultas (`featured-products`, `query-carousel`, `brands`, `categories` + `storefront-category-grid-products` con `categoriasDeGrilla`); preguntas frecuentes con el WhatsApp de `useWhatsAppDeLaRuta` y sin Kapi cuando está el flotante. Interruptor `seccionesViejo`.
-4. `BarraInferior` y luego `Cabecera` (la más conectada).
+4. ✓ `BarraInferior` (2026-10-19), luego `Cabecera` (la más conectada).
+   `components/marco/BarraInferiorDeTienda.jsx` la monta en todas las
+   páginas con las mismas reglas que `BottomNav`: solo hasta 768 px, fija
+   abajo, 56 px (`--bottom-nav-height`) más la zona segura; no sale si la
+   página la apaga (landings con "sin pie", el editor visual), en el estudio
+   (`/crear/…`) ni en el editor viejo (`/editor`). La pestaña activa sale de
+   la ruta: Inicio, Tienda, Crear y Juegos exactas, "Mi cuenta" con todo
+   `/cuenta/…`; en otra página (la ficha, el carrito), ninguna. Interruptor
+   `barraVieja`.
+
+   ![La barra inferior en la tienda real, en el celular: claro con "Tienda" activa y oscuro con "Juegos" activa; "Crear" sube al centro y "Mi cuenta" lleva las iniciales en un aro](barra-inferior-tienda.webp)
+
+   Al migrarla, el kit ganó: la barra en su propio archivo
+   (`BarraInferior.jsx`, Navegacion.jsx la sigue exportando: la tienda la
+   carga sin la cabecera), el alto de la tienda (`--bottom-nav-height` en vez
+   de 64 px fijos), los textos por la traducción, `activo={null}` = ninguna
+   pestaña, el ícono de persona dentro del aro si la cuenta no tiene nombre ni
+   foto, el foco con teclado dentro de la pestaña y sin rebote con
+   "reducir movimiento".
 5. Editor del kit en lugar de `VisualEditorPanel`.
 
 Para volver atrás: cada paso en su propio commit, y el componente viejo no se borra hasta que el nuevo lleve un tiempo en producción.

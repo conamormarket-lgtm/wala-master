@@ -289,7 +289,6 @@
 }
 
 .avatar:focus-visible,
-.tab:focus-visible,
 .pestana:focus-visible {
   outline: 2px solid var(--violet-500);
   outline-offset: 2px;
@@ -452,177 +451,6 @@
   }
 }
 
-/* ── Barra inferior móvil ──────────────────────────────── */
-.barra {
-  position: relative;
-  display: flex;
-  justify-content: space-around;
-  align-items: stretch;
-  height: calc(64px + var(--safe-bottom, 0px));
-  padding: 0 0.25rem var(--safe-bottom, 0px);
-  border-top: var(--glass-border);
-  background: var(--glass-bg-strong);
-  -webkit-backdrop-filter: var(--glass-blur-solid);
-  backdrop-filter: var(--glass-blur-solid);
-  box-shadow: 0 -6px 20px -14px rgba(76, 29, 149, 0.3);
-}
-
-.tab {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  min-width: 0;
-  border: 0;
-  background: transparent;
-  color: var(--color-text-muted);
-  font: inherit;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: color var(--dur-media) ease;
-}
-
-.tabIcono {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 32px;
-  border-radius: 999px;
-  transition: transform var(--dur-rapida) ease;
-}
-
-.tabIcono svg {
-  position: relative;
-  z-index: 1;
-  width: 1.3rem;
-  height: 1.3rem;
-}
-
-/* Contador junto al icono (el icono va centrado en una píldora de 56 px). */
-/* El contador (número rojo); no el avatar ni la píldora. */
-.tabIcono > span:not(.tabPildora):not(.tabAvatar) {
-  top: -5px;
-  right: 7px;
-  z-index: 2;
-}
-
-.tabPildora {
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  background: var(--primary-light);
-}
-
-.tab:active .tabIcono {
-  transform: scale(0.88);
-}
-
-.rebota {
-  animation: rebota 0.5s var(--ease-signature);
-}
-
-@keyframes rebota {
-  0% {
-    transform: translateY(0) scale(1);
-  }
-
-  35% {
-    transform: translateY(-6px) scale(1.15);
-  }
-
-  70% {
-    transform: translateY(1px) scale(0.96);
-  }
-
-  100% {
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* Las pestañas son enlaces: globals.css pinta a:hover, aquí se repite. */
-.tab,
-.tab:hover,
-.tab:focus {
-  color: var(--color-text-muted);
-  text-decoration: none;
-}
-
-.tabActivo,
-.tabActivo:hover,
-.tabActivo:focus {
-  color: var(--primary-color);
-}
-
-/* Foto o iniciales en "Mi cuenta", con anillo violeta. */
-.tabAvatar {
-  position: relative;
-  z-index: 1;
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  /* Mismo tamaño y trazo que los íconos de las otras pestañas: un círculo de
-     contorno (del color del texto) con las iniciales dentro. */
-  width: 1.45rem;
-  height: 1.45rem;
-  border: 2px solid currentColor;
-  border-radius: 50%;
-  background: transparent;
-  color: inherit;
-  font-size: 0.56rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  overflow: hidden;
-}
-
-/* Con foto, el aro va en el color de la pestaña y la foto adentro. */
-.tabAvatar:has(img) {
-  padding: 1.5px;
-}
-
-.tabTexto {
-  font-size: 0.68rem;
-  font-weight: 500;
-  line-height: 1;
-  transition: transform var(--dur-media) var(--ease-signature);
-}
-
-.tabActivo {
-  color: var(--primary-color);
-}
-
-.tabActivo .tabTexto {
-  font-weight: 700;
-}
-
-/* "Crear" flota al centro. */
-.tabDestacado .tabIcono {
-  width: 50px;
-  height: 50px;
-  margin-top: -22px;
-  border-radius: 18px;
-  background: var(--violet-700);
-  color: #fff;
-  box-shadow: 0 0 0 4px var(--color-surface), 0 4px 10px -4px rgba(76, 29, 149, 0.45);
-}
-
-.tabDestacado.tabActivo .tabIcono {
-  background: var(--violet-600);
-}
-
-.tabDestacado .tabIcono svg {
-  color: #fff;
-}
-
-:global([data-theme='dark']) .tabDestacado .tabIcono {
-  background: var(--violet-600);
-}
-
 /* ── Pestañas segmentadas ──────────────────────────────── */
 .pestanas {
   display: inline-flex;
@@ -706,10 +534,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rebota {
-    animation: none;
-  }
-
   .campana:hover svg,
   .corazon:hover svg,
   .bolsa:hover svg {

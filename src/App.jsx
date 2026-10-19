@@ -43,7 +43,6 @@ import './App.css';
 // ── Páginas principales y Layout Crítico (Carga Inmediata para evitar efecto Waterfall de Suspense) ──
 import TiendaPage from './pages/Tienda/TiendaPage';
 import Header from './components/common/Header';
-import BottomNav from './components/common/BottomNav';
 import DeepLinkHandler from './components/common/DeepLinkHandler';
 // Marco con el kit (paso 2 de la migración): cada uno reemplaza a un componente
 // viejo, que sigue en su sitio hasta borrarlo todo junto (guia/ELIMINAR.md).
@@ -51,6 +50,8 @@ import AvisoDelSistema from './components/marco/AvisoDelSistema';
 import BarraDeAdmin from './components/marco/BarraDeAdmin';
 import AvisoDeIdioma from './components/marco/AvisoDeIdioma';
 import FlotantesDeLaTienda from './components/marco/FlotantesDeLaTienda';
+// Barra inferior con el kit (paso 7); con barraVieja, BottomNav.
+import BarraInferiorDeTienda from './components/marco/BarraInferiorDeTienda';
 import { EN_VISTA_PREVIA_CALOR } from './utils/vistaPreviaCalor';
 
 // ── Lo que no hace falta para ver la página: su propio archivo ────────────
@@ -343,7 +344,7 @@ const GlobalLayout = ({ children }) => {
       </main>
 
       <Suspense fallback={null}><Footer /></Suspense>
-      <BottomNav />
+      <BarraInferiorDeTienda />
 
       <FlotantesDeLaTienda />
 

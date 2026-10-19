@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Home, ShoppingBag, Brush, Gamepad2, User, Heart, Bell, ChevronDown } from 'lucide-react';
+import { ShoppingBag, User, Heart, Bell, ChevronDown } from 'lucide-react';
 import { Contador, SaldoMonedas } from './Etiquetas';
 import Boton from './Boton';
 import { Buscador } from './Formulario';
@@ -303,63 +303,9 @@ const ENLACES_POR_DEFECTO = [
   { id: 'minijuegos', texto: 'Minijuegos', url: '/minijuegos' },
 ];
 
-const TABS = [
-  { id: 'inicio', texto: 'Inicio', url: '/', Icono: Home },
-  { id: 'tienda', texto: 'Tienda', url: '/tienda', Icono: ShoppingBag },
-  { id: 'crear', texto: 'Crear', url: '/personalizar', Icono: Brush, destacado: true },
-  { id: 'juegos', texto: 'Juegos', url: '/minijuegos', Icono: Gamepad2 },
-  { id: 'cuenta', texto: 'Mi cuenta', url: '/cuenta', Icono: User },
-];
-
-/**
- * Barra inferior móvil. La píldora del activo se desliza entre tabs, el
- * icono rebota al elegirlo y "Crear" va destacado al centro.
- *  - activo: id de la pestaña de la ruta actual (la tienda lo saca de la
- *    URL). Sin él, la barra recuerda la última tocada (demo).
- *  - usuario: { nombre, avatar } → su foto o iniciales en "Mi cuenta"
- *  - Siempre 5 pestañas con "Crear" al centro: el acceso de admin va en
- *    <BarraAdmin> (arriba), no aquí (una sexta pestaña descentraba Crear).
- *  - items: para cambiar las pestañas ({ id, texto, url, Icono, destacado })
- */
-export function BarraInferior({ items = TABS, activo, usuario, carrito = 0, onNavegar }) {
-  const uid = useId();
-  const [propio, setPropio] = useState('inicio');
-  const actual = activo ?? propio;
-  const tabs = items;
-  return (
-    <nav className={s.barra} aria-label="Navegación principal">
-      {tabs.map(({ id, texto, url, Icono, destacado }) => {
-        const esActivo = actual === id;
-        const conAvatar = id === 'cuenta' && usuario;
-        return (
-          <Enlace
-            key={id}
-            to={url}
-            className={[s.tab, esActivo && s.tabActivo, destacado && s.tabDestacado].filter(Boolean).join(' ')}
-            aria-current={esActivo ? 'page' : undefined}
-            onClick={(e) => {
-              if (activo === undefined) { e.preventDefault(); setPropio(id); }
-              onNavegar?.(id);
-            }}
-          >
-            <span className={s.tabIcono}>
-              {esActivo && !destacado && (
-                <motion.span layoutId={`${uid}-tab`} className={s.tabPildora} transition={RESORTE} />
-              )}
-              {conAvatar ? (
-                <Avatar className={[s.tabAvatar, esActivo && s.rebota].filter(Boolean).join(' ')} nombre={usuario.nombre} imagen={usuario.avatar} />
-              ) : (
-                <Icono key={esActivo ? 'on' : 'off'} className={esActivo ? s.rebota : undefined} aria-hidden="true" />
-              )}
-              {id === 'tienda' && <Contador valor={carrito} />}
-            </span>
-            <span className={s.tabTexto}>{texto}</span>
-          </Enlace>
-        );
-      })}
-    </nav>
-  );
-}
+/* La barra inferior vive en su propio archivo (la tienda la carga sin la
+   cabecera); se sigue exportando desde aquí. */
+export { BarraInferior } from './BarraInferior';
 
 /** Control segmentado (Mis pedidos: Activos / Por pagar…). El fondo blanco se desliza. */
 export function Pestanas({ opciones, valor, onChange, etiqueta }) {

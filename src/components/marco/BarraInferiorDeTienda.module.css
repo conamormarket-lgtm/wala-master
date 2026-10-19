@@ -1,0 +1,17 @@
+/* La barra del kit, fija abajo solo en celular y tablet (como BottomNav). */
+.fija {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .fija {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 90;
+    display: block;
+    padding-right: var(--safe-right, 0px);
+    padding-left: var(--safe-left, 0px);
+  }
+}
