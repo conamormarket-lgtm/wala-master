@@ -4,7 +4,7 @@ import { onAuthChange } from '../services/firebase/auth';
 import { getDocument, setDocument } from '../services/firebase/firestore';
 import { getAdminRoleByEmail } from '../services/adminRoles';
 import { LEGACY_USERS_COLLECTION, PORTAL_USERS_COLLECTION } from '../constants/userCollections';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, waitForPendingWrites } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../services/firebase/config';
 
@@ -24,6 +24,50 @@ const PERSONAL_DATA_KEYS = [
 // avisó "sigue disponible" de ESE producto) — no hay una lista fija de ids,
 // así que se limpian todas las que empiecen con este prefijo.
 const NOTIFIED_BEHAVIOR_PREFIX = 'notified_behavior_';
+
+// ── Lectura del perfil sin fiarse de un documento a medias ─────────────────
+// El carrito (CartContext), el token de notificaciones y el propio arranque
+// escriben en portal_clientes_users/{uid} con merge. Mientras esa escritura
+// está pendiente, getDoc puede contestar con solo esos campos ({ id, cart }),
+// aunque diga que viene del servidor: sin monedas, DNI ni teléfono. Puesto en
+// el contexto, la cabecera marcaba 0 monedas y la cuenta pedía documento y
+// teléfono hasta recargar (pasaba al entrar a /cuenta/misiones con productos
+// en el carrito). Por eso, si la respuesta lleva escrituras pendientes o viene
+// de la caché y no trae nada de un perfil, se espera a que esas escrituras se
+// confirmen y se lee una vez más. Si sigue a medias, se devuelve un error y
+// quien llama conserva el perfil que tenía.
+const PERFIL_A_MEDIAS = 'Perfil a medias (escritura local pendiente)';
+const pareceUnPerfil = (datos) =>
+  ['email', 'dni', 'phone', 'monedas', 'accessSystem'].some((campo) => datos?.[campo] != null && datos[campo] !== '');
+const conTope = (promesa, ms) => Promise.race([
+  promesa,
+  new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore timeout')), ms)),
+]);
+const esFiable = (snap) => {
+  const { fromCache, hasPendingWrites } = snap.metadata;
+  if (!fromCache && !hasPendingWrites) return true;
+  return snap.exists() && pareceUnPerfil(snap.data());
+};
+const resultadoDe = (snap) => (snap.exists()
+  ? { data: { id: snap.id, ...snap.data() }, error: null }
+  : { data: null, error: 'Documento no encontrado' });
+
+async function leerPerfil(uid) {
+  if (!db) return getDocument(PORTAL_USERS_COLLECTION, uid);
+  const ref = doc(db, PORTAL_USERS_COLLECTION, uid);
+  try {
+    const snap = await conTope(getDoc(ref), 12000);
+    if (esFiable(snap)) return resultadoDe(snap);
+    // Sin red, waitForPendingWrites no termina nunca: se espera poco.
+    await conTope(waitForPendingWrites(db), 5000).catch(() => {});
+    const otraVez = await conTope(getDoc(ref), 8000);
+    if (esFiable(otraVez)) return resultadoDe(otraVez);
+    return { data: null, error: PERFIL_A_MEDIAS };
+  } catch (error) {
+    console.warn(`[Firestore] leerPerfil ${PORTAL_USERS_COLLECTION}/${uid}:`, error?.message || error);
+    return { data: null, error: error?.message || 'error' };
+  }
+}
 
 // Cuánto se espera a que Firebase diga quién entra antes de seguir sin sesión.
 // Generoso a propósito: en una red mala la comprobación del token tarda unos
@@ -98,16 +142,17 @@ export const AuthProvider = ({ children }) => {
   // Lectura del perfil con un reintento si falla por algo que no sea "no existe".
   const esNoEncontrado = (error) => /no encontrado|not found|no existe/i.test(String(error || ''));
   const leerPerfilPortal = async (uid) => {
-    const leer = () => getDocument(PORTAL_USERS_COLLECTION, uid).catch((e) => ({ data: null, error: e?.message || 'error' }));
+    const leer = () => leerPerfil(uid).catch((e) => ({ data: null, error: e?.message || 'error' }));
     const primero = await leer();
-    if (primero.data || esNoEncontrado(primero.error)) return primero;
+    // A medias ya se volvió a leer dentro de leerPerfil: no se repite la espera.
+    if (primero.data || esNoEncontrado(primero.error) || primero.error === PERFIL_A_MEDIAS) return primero;
     return leer();
   };
   // Si el perfil no cargó, se vuelve a intentar por detrás (cada 5 s, hasta 6
   // veces) y, cuando llega, se coloca: las pantallas se corrigen solas.
   const reintentarPerfil = (uid, intento = 1) => {
     setTimeout(async () => {
-      const { data } = await getDocument(PORTAL_USERS_COLLECTION, uid).catch(() => ({ data: null }));
+      const { data } = await leerPerfil(uid).catch(() => ({ data: null }));
       if (data) {
         setUserProfile((actual) => (actual && actual._perfilNoCargado ? data : actual));
       } else if (intento < 6) {
@@ -308,7 +353,8 @@ export const AuthProvider = ({ children }) => {
   const reloadProfile = React.useCallback(async () => {
     if (!user) return null;
 
-    const { data, error } = await getDocument(PORTAL_USERS_COLLECTION, user.uid);
+    // Si no llega un perfil fiable se devuelve null y se conserva el que había.
+    const { data, error } = await leerPerfil(user.uid);
 
     if (!error && data) {
       setUserProfile(data);
