@@ -255,3 +255,10 @@
     animation: none;
   }
 }
+
+/* Lo que hay que saber antes de eliminar (en el carrito, publicada…). */
+.notas {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.86rem;
+}
