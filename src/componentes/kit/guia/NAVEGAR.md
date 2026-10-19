@@ -130,7 +130,7 @@ Comprobado el 2026-10-15 contra las 18 landings de `landingPages`:
 | muebleria | `header`, `sidebar_catalog` | Sí |
 | regalos-con-amor | `header`, `text`, `video`, `marquee`, `map_location`, `image` | Sí, pero hoy nadie la ve (ver abajo) |
 | testing | `text` | Sí |
-| reloj-kchero-2026, reloj-matador-pro-2026, combo-reloj-billetera-2026 | `announcement_bar`, `header`, `video`, `conversion_fold`, `landing_payment`, `faq_accordion` | Todo menos `conversion_fold` y `landing_payment`: son del cacherito y siguen con su componente por `respaldo` |
+| reloj-kchero-2026, reloj-matador-pro-2026, billetera-kchero-2026, combo-reloj-billetera-2026 | — | Retiradas el 2026-10-19 (K-CHERO): sus URLs llevan a `/tienda` (`DynamicLandingPage`) |
 | deportes-top, pareja-viral, relojes-promocion, veranito-promo | ninguna | Página vacía (también hoy) |
 
 Hoy ni `DynamicLandingPage` ni `TiendaPage` usan el kit: dibujan con su
@@ -139,8 +139,7 @@ propio `renderSection`. Migrarlas es el mismo paso que el inicio y /tienda
 
 ## Llevar a la tienda (en parte: las secciones, 2026-10-16)
 
-**Hecho:** las páginas de marca (landing con `brandId`, menos las del reloj:
-`isKcheroLanding`) dibujan sus secciones con el kit dentro de `TiendaPage`
+**Hecho:** las páginas de marca (landing con `brandId`) dibujan sus secciones con el kit dentro de `TiendaPage`
 (`esPaginaDeMarca`), igual que `/tienda` (TIENDA.md): `hero_banner` →
 `BannerPrincipal` (con `trackBannerClick` y lo que falte del banner global),
 `categories_nav` → `NavCategorias` (`navCategoriesByBrand`: burbujas y
@@ -148,18 +147,14 @@ estilo de la marca, esqueleto mientras cargan; filtran el catálogo y bajan
 hasta él), `featured_carousel` / `sale_carousel` / `category_carousel` →
 `CarruselProductos`, `sidebar_catalog` → `CatalogoConFiltros` (sin grupo
 Marcas, con buscador en vivo sobre todos los productos de la marca) y
-`marquee` → `MarcasMarquesina`. En `landing-mobile.css` la regla de los
-h1-h3 (y la de `.landing-store-page`) deja fuera `[data-kit-seccion]` con
-`:where()`, sin cambiar su peso para lo demás. Interruptor: `seccionesViejo`.
+`marquee` → `MarcasMarquesina`. Interruptor: `seccionesViejo`.
 
 Desde el 2026-10-17 también las **landings sin marca** van con el kit (todos
-los tipos) y con el fondo y los colores de la tienda: `TiendaPage` avisa con
-`onConKit` y `DynamicLandingPage` les pone `landing-store-page`, como a las de
-marca. El **cacherito** sigue entero con lo de antes y con su fondo negro:
-se reconoce por el slug del reloj (`isKcheroLanding`) o por llevar
-`conversion_fold` / `landing_payment` (`esDelCacherito`, en
-`pages/Tienda/services/seccionesDelKit.js`), así entra también
-`combo-reloj-billetera-2026`.
+los tipos) y con el fondo y los colores de la tienda. Las de **K-CHERO** (el
+cacherito: reloj, billetera y combo), que seguían con lo de antes y un tema
+oscuro (`landing-mobile.css`), se retiraron el 2026-10-19 con sus dos
+bloques: sus URLs llevan a `/tienda` y la caja de cualquier landing queda en
+`landing.css`.
 
 En producción (2026-10-17): `testing` (un texto), `regalos-con-amor` (no se
 ve: la ruta es de `NuevosUsuariosPage`) y tres sin documento en `pages`
@@ -171,11 +166,11 @@ ve: la ruta es de `NuevosUsuariosPage`) y tres sin documento en `pages`
 
 | Hoy | Pasa a (kit) |
 |---|---|
-| `TiendaPage isLandingPage` dentro de `DynamicLandingPage` | `PaginaTienda` (`secciones`, `marcaActual = brandId`, `respaldo` para el cacherito). Por ahora: `SeccionDelKit` dentro de `TiendaPage` (arriba) |
+| `TiendaPage isLandingPage` dentro de `DynamicLandingPage` | `PaginaTienda` (`secciones`, `marcaActual = brandId`, `respaldo` para lo que el kit no tenga). Por ahora: `SeccionDelKit` dentro de `TiendaPage` (arriba) |
 
 **Lo que no cambia:** `DynamicLandingPage` sigue resolviendo el slug (por
 `slug`, sin mayúsculas, y `slugsAnteriores` → `redirigirA`), el tema
-(`themeId` → `cssContent`) y el atajo del slug viejo de K-CHERO. Solo cambia
+(`themeId` → `cssContent`) y manda a `/tienda` las URLs retiradas de K-CHERO. Solo cambia
 lo que dibuja.
 
 ### De dónde sale cada dato
@@ -211,4 +206,4 @@ secciones vacías.
 
 Junto con la migración del inicio y /tienda a `PaginaTienda` (paso 5 de
 MIGRACION.md): `DynamicLandingPage` deja de montar `TiendaPage` y monta
-`PaginaTienda` con `respaldo` para el cacherito.
+`PaginaTienda`.

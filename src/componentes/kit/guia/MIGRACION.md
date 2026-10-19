@@ -28,7 +28,7 @@ principal (y a la APK de Capacitor).
 | Marco (paso 2), cada pieza con su conector en `src/components/marco/`: `AvisoSistema` (`AvisoDelSistema.jsx`), `BarraAdmin` `fija` (`BarraDeAdmin.jsx`; publica `--admin-bar-height` para la cabecera), `AvisoIdioma` `flotante` (`AvisoDeIdioma.jsx`), `VentanaCampana` (`AnuncioDeCampana.jsx`), la pila de flotantes (`FlotantesDeLaTienda.jsx`: `PilaFlotante`, `BotonWhatsApp` con `useWhatsAppDeLaRuta.js`, `PildoraRecompensa` y Kapi en `Kapi.jsx` con `KapiFlotante` + `VentanaKapi` y las caras 3D) | `src/App.jsx` |
 | `BannerApp` (`components/marco/BannerDeLaApp.jsx`, montado donde siempre, con su portal antes de la cabecera) | `pages/Tienda/TiendaPage.jsx` |
 | `TarjetaProducto` por `components/producto/TarjetaDeProducto.jsx` (paso 4) | `ProductGrid`, `FeaturedCarousel`, `CollectionCarousel`, `FlashSales` |
-| Secciones del builder con `SeccionDelKit` (paso 5): todas las páginas menos el cacherito; `TIPOS_DEL_KIT` y `esDelCacherito` (`pages/Tienda/services/seccionesDelKit.js`) dicen qué; el catálogo con `CatalogoConFiltros` y su estado en la página | `pages/Tienda/TiendaPage.jsx`, `DynamicLandingPage.jsx` (fondo), `services/startup.js` (precarga) |
+| Secciones del builder con `SeccionDelKit` (paso 5): todas las páginas (el cacherito, la única excepción, se retiró el 2026-10-19); `TIPOS_DEL_KIT` (`pages/Tienda/services/seccionesDelKit.js`) dice qué; el catálogo con `CatalogoConFiltros` y su estado en la página | `pages/Tienda/TiendaPage.jsx`, `DynamicLandingPage.jsx` (fondo), `services/startup.js` (precarga) |
 | `PieLegal` (`pieLegalDesdeEmpresa`) dentro del pie viejo; las columnas y su editor siguen igual. El bloque viejo queda apagado con `PIE_LEGAL_EN_EL_KIT` | `components/common/Footer/Footer.jsx` |
 | La píldora "Gana 15 monedas" de la cabecera vieja, apagada con `PILDORA_EN_EL_KIT` (la dibuja `FlotantesDeLaTienda`) | `components/common/Header/Header.jsx` |
 | La ficha de producto (paso 6): `PaginaProducto` por `components/producto/FichaDeProducto.jsx` (con `usePiezasDelCombo.js` y `eleccionCarrito.js`); `ProductDetail` baja solo con `fichaVieja` | `pages/ProductPage.jsx` |
@@ -39,7 +39,8 @@ principal (y a la APK de Capacitor).
 | Regalar para una fecha (paso 6): `PaginaRegalar` por `components/regalar/RegalarDeTienda.jsx` (`fechaEntregaDesde`, sin el arrastre); la página de antes baja solo con `regalarViejo` | `pages/GiftRegistry/GiftRegistryPage.jsx` |
 | Abrir el regalo (paso 6): `PaginaRegaloSorpresa` por `components/regalar/RegaloSorpresaDeTienda.jsx`; sin el Kapi flotante en `/regalo/`; la página de antes baja solo con `regalarViejo` | `pages/GiftExperiencePage.jsx` |
 | El marco de la cuenta, el resumen y los ajustes (paso 6): `MarcoCuenta`, `PaginaResumenCuenta` y `PaginaAjustes` por `components/cuenta/` (`MarcoDeCuenta`, `ResumenDeCuenta`, `AjustesDeCuenta`, `gruposDeCuenta`); las demás secciones, las de antes dentro del marco nuevo; lo de antes baja solo con `cuentaVieja` | `pages/CuentaLayout.jsx`, `pages/cuenta/CuentaResumenPage.jsx`, `pages/cuenta/CuentaAjustesPage.jsx` |
-| El editor del builder (paso 8, INICIO.md paso 5): `PanelEditor` por `components/constructor/EditorDeTienda.jsx` sobre el mismo borrador (`VisualEditorContext` con deshacer/rehacer), el marco y el "+" del kit en la página y el pie (`MarcasDeEdicion`, `PuntoDeInsercion`, `EditableSection`), Toda la tienda (menú, cuenta, favoritos, /buscar, pie), la pestaña Página de las landings y los formularios del cacherito tal cual. `VisualEditorPanel`, el velo y el "+" de antes vuelven con `editorViejo` | `App.jsx`, `components/constructor/`, `components/admin/EditableSection.jsx`, `pages/Tienda/TiendaPage.jsx`, `components/common/Footer/Footer.jsx` |
+| Fuera K-CHERO (2026-10-19): las landings del reloj, la billetera y el combo, sus bloques `conversion_fold` (`ConversionFold`) y `landing_payment` (`LandingPaymentBlock`), sus excepciones en `TiendaPage`, el tema oscuro `landing-mobile.css` (queda `landing.css`), `landingSlugs.js`, sus formularios del editor y la rama de pedidos de landing en `prepareCheckoutPayment` (`ajustesPagoLanding`, `cobroLanding`). Sus cuatro URLs llevan a `/tienda`. Ya no hay excepción "cacherito": todas las páginas van con el kit | `pages/Tienda/DynamicLandingPage.jsx`, `TiendaPage.jsx`, `services/seccionesDelKit.js`, `functions/index.js`, `functions/pagosLogic.js` |
+| El editor del builder (paso 8, INICIO.md paso 5): `PanelEditor` por `components/constructor/EditorDeTienda.jsx` sobre el mismo borrador (`VisualEditorContext` con deshacer/rehacer), el marco y el "+" del kit en la página y el pie (`MarcasDeEdicion`, `PuntoDeInsercion`, `EditableSection`), Toda la tienda (menú, cuenta, favoritos, /buscar, pie), la pestaña Página de las landings (los formularios del cacherito se retiraron con él el 2026-10-19). `VisualEditorPanel`, el velo y el "+" de antes vuelven con `editorViejo` | `App.jsx`, `components/constructor/`, `components/admin/EditableSection.jsx`, `pages/Tienda/TiendaPage.jsx`, `components/common/Footer/Footer.jsx` |
 | La cabecera (paso 7, INICIO.md paso 4): `Cabecera` del kit por `components/marco/CabeceraDeTienda.jsx` (los mismos datos y reglas; en la tablet dos filas; el buscador con sugerencias en lugar de `HeaderSearch`; los menús llegan aparte). El kit ganó las tres formas medidas (`celular` para fijarla), menús de enlaces (`menu: 'lista'`), `onAbrirMenu`, el saldo cargando, la invitación a los avisos, el idioma y los textos del admin en los menús de cuenta y favoritos y un solo "Ir a pagar". `Header` vuelve con `cabeceraVieja` | `App.jsx`, `components/marco/CabeceraDeTienda.jsx` |
 | La barra inferior (paso 7, INICIO.md paso 4): `BarraInferior` del kit, en su propio archivo, por `components/marco/BarraInferiorDeTienda.jsx` (mismas reglas de cuándo sale; sin pestaña Admin ni el "?" de la sesión anónima); `BottomNav` vuelve con `barraVieja` | `App.jsx`, `components/marco/BarraInferiorDeTienda.jsx` |
 | La pantalla de marca (paso 7, CARGA.md paso 3): `PantallaCarga` en `BrandLoaderOverlay` y el splash de `index.html` igual a ella (sin halos ni brillo, el mismo vaivén); en las cargas siguientes, el fondo del tema con la etiqueta chica; lo de antes baja con `cargaVieja` (menos el splash, que es estático) | `components/common/BrandLoader/BrandLoaderOverlay.jsx`, `index.html` |
@@ -72,7 +73,7 @@ Desde el paso 5 también `Secciones`, `SeccionesExtra`, `SeccionesContenido`,
 `Seccion`, `Acordeon`, `Marquesina` y las piezas que usan (`OpcionesFiltro`,
 `TarjetaCategoria`, `LogoMarca`…). `EstadoVacio` acepta `imagen={null}`
 (sin Kapi, un sello) y `BloqueSeccion` marca su `<section>` con
-`data-kit-seccion` (lo usa `landing-mobile.css`).
+`data-kit-seccion` (lo usaba `landing-mobile.css`, ya borrado).
 Desde el checkout (paso 6), `paginas/Checkout`, `piezas/Checkout`,
 `piezas/Direccion` (`CamposDireccion`) y `ListaEleccion` (con `accion`).
 Desde el pago rápido (paso 6), `paginas/PagoRapido` y `piezas/Pago`
@@ -126,8 +127,8 @@ Cada paso en su propio commit, verificable por separado.
    (`esPaginaDeMarca`). El catálogo guarda su estado en `TiendaPage`
    (TIENDA.md); `landing-mobile.css` ya no pisa los títulos del kit.
    ✓ **El resto** (2026-10-17): todas las páginas del builder van con el
-   kit salvo las del cacherito (`esDelCacherito`: el slug del reloj o una
-   sección `conversion_fold` / `landing_payment`), y se suman
+   kit (el cacherito, que seguía con lo de antes, se retiró el 2026-10-19),
+   y se suman
    `featured_products`, `collection_carousel`, `flash_sales`, `text`,
    `image`, `video`, `bestsellers_row`, `feature_list` y `map_location`.
    La lista está en `pages/Tienda/services/seccionesDelKit.js` (la usa
@@ -258,7 +259,7 @@ nada), o en un solo navegador con `localStorage.wala_kit_viejo = "pagos,carrito"
 | `regalarViejo` | regalarle a alguien: su lista de deseos (`WishlistPublicViejo.jsx`), regalar para una fecha (`GiftRegistryPageViejo.jsx`, con el arrastre) y abrir el regalo (`GiftExperienceViejo.jsx`) |
 | `tarjetasViejo` | la tarjeta de producto (`PremiumProductCard`) en carruseles y grillas |
 | `fichaVieja` (`useLoViejo('ficha')`: en Firestore el campo es `fichaViejo: true`; en localStorage, `"ficha"`) | la ficha de producto (`ProductDetail` y `ProductReviews`) y que "Elegir" de las tarjetas lleve a la ficha en vez de abrir "Agregar rápido" |
-| `seccionesViejo` | las secciones del builder de todas las páginas (inicio, `/tienda`, marcas y landings; el cacherito nunca dejó lo de antes): los componentes de `seccionesPorTipo.jsx`, con `SidebarCatalogLayout`, y el fondo negro en las landings sin marca |
+| `seccionesViejo` | las secciones del builder de todas las páginas (inicio, `/tienda`, marcas y landings): los componentes de `seccionesPorTipo.jsx`, con `SidebarCatalogLayout` |
 
 Se retiran cuando lo nuevo lleve un tiempo en producción (y con ellos lo viejo
 de [ELIMINAR.md](ELIMINAR.md)).

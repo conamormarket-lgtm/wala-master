@@ -141,7 +141,7 @@ página, así que el relevo no se nota.
   página de antes se queda hasta que llega la nueva: el esqueleto se ve al
   abrir un enlace o recargar (y mientras llega la sesión).
 - **Después de la marca, bajo la cabecera** (`BrandLoaderOverlay`, en el
-  inicio, `/tienda` y las landings del builder, también la del cacherito):
+  inicio, `/tienda` y las landings del builder):
   `EsqueletoPagina` de la ruta en vez del círculo; en el inicio y las
   landings, con los tipos de sus secciones (`secciones`, las 8 primeras)
   cuando ya llegaron. Va arriba como la página, no al centro. Lo demás del

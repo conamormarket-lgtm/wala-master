@@ -178,7 +178,7 @@ cabecera (paso 7).
 ### Comportamiento que no se puede perder
 
 - **Carga:** `DeferredSection` (las secciones de abajo se cargan al acercarse), `BrandLoaderOverlay` hasta que el hero está listo, y el `prefetchQuery` de `index.jsx`.
-- **Excepciones:** `isKcheroLanding` (cacherito: títulos y secciones que se ocultan o cambian) se filtra ANTES de pasar `secciones`; `conversion_fold` y `landing_payment` siguen por `respaldo`.
+- **Excepciones:** ninguna. Las de la landing del reloj K-CHERO (`isKcheroLanding`, `conversion_fold`, `landing_payment`) se fueron con ella el 2026-10-19.
 - **Visibilidad:** quién ve cada parte (columna "Quién lo ve" del Marco): sesión, admin, rutas sin WhatsApp (admin, checkout, landings), Capacitor sin pie ni banner de app, landings sin cabecera (`LayoutContext`).
 - **Página de marca:** `pageBrandId` acota productos y oculta el sello de la marca (`catalogo.marcaActual`).
 - **Analítica:** `recordImpression` de las miniaturas, `trackAddToCart` (ya en `CartContext`), eventos de popups.
@@ -322,9 +322,8 @@ al inicio.
      (menú, buscador, cuenta) usa el mismo marco con su nombre.
    - **Landings** (pestaña "Página"): el tema y ocultar la cabecera o el pie;
      se guardan al momento en la landing, con su marca.
-   - **El cacherito**: "Primera Impresión" y "Checkout de Pago" con sus
-     formularios de siempre, copiados tal cual
-     (`FormulariosDelCacherito.jsx`); los bloques no se tocaron.
+   - **K-CHERO** (el cacherito): sus landings, sus dos bloques y sus
+     formularios se retiraron el 2026-10-19.
    - "Salir del editor" (en la barra de admin y en el panel) pregunta si hay
      cambios sin publicar; antes los perdía sin avisar.
 

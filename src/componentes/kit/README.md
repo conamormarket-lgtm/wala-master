@@ -297,9 +297,8 @@ Una página del builder (`pages/{pageId}` en Firestore) se dibuja así:
 />
 ```
 
-Ya cubiertos: todos los tipos del builder menos `conversion_fold` y
-`landing_payment`, que son de la landing del reloj (cacherito) y siguen con su
-componente vía `respaldo`.
+Ya cubiertos: todos los tipos del builder (`conversion_fold` y
+`landing_payment`, de la landing del reloj, se retiraron con ella el 2026-10-19).
 
 Con `PaginaTienda` no hace falta repartir los productos a mano: recibe
 `productos = { destacados, nuevos, ofertas, porCategoria, porColeccion,
@@ -334,8 +333,8 @@ Notas de las secciones de contenido:
   y con "reducir movimiento" no arrancan solos (muestran controles).
 - `banner_grid` con marcas usa el `Carrusel` (una fila deslizable con puntos)
   en vez del mosaico paginado de dos filas.
-- Las excepciones de una landing concreta (p. ej. `isKcheroLanding` en
-  TiendaPage) se filtran antes de pasar `secciones`, no dentro del kit.
+- Las excepciones de una landing concreta se filtran en la tienda antes de
+  pasar `secciones`, no dentro del kit.
 - El kit no traduce: TextoSeccion de la tienda envuelve los textos en `<T>`.
   Al migrar, hará falta un proveedor de traducción o pasar los textos ya
   traducidos.

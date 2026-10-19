@@ -219,8 +219,7 @@ oscuro; el panel achica esa captura y no se dejó.)
   id aparte y la ficha vieja lo perdía); si las prendas del combo no llegan,
   avisa en vez de quedarse cargando; sin portada, la hoja del combo muestra
   la foto de una prenda (no el relleno "Producto").
-- **Sesión:** "con sesión" es `tieneCuenta` (no la sesión anónima del
-  cacherito), como el resto de la tienda. Opinar sin cuenta lleva a
+- **Sesión:** "con sesión" es `tieneCuenta` (no la sesión anónima de las landings), como el resto de la tienda. Opinar sin cuenta lleva a
   `/login?redirect=` y vuelve a la ficha.
 - **Traducción:** los textos fijos de la ficha, las opciones, las opiniones,
   la galería y "Agregar rápido" pasan por `<Texto>` (TRADUCCION.md).

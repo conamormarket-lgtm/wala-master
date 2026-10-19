@@ -55,19 +55,18 @@ cambiado) y borrar también su CSS.
 | `pages/Tienda/components/ProductCard/` (`ProductCard.jsx` + `.module.css`; con reseñas inventadas) | nadie (ya estaba sin uso) | — | nadie | **listo para borrar** |
 | `components/common/ProductCardSkeleton/` | `FeaturedCarousel`, `CollectionCarousel`, `FlashSales` mientras cargan | `EsqueletoProducto` del kit | esos tres | con la carga (paso 7, CARGA.md) |
 
-## Paso 5: secciones del builder (todas las páginas menos el cacherito)
+## Paso 5: secciones del builder (todas las páginas)
 
 Desde el 2026-10-17 todos los tipos del builder van con el kit en todas las
-páginas, salvo las del cacherito (`esDelCacherito`): ahí, y con el
-interruptor `seccionesViejo`, siguen los componentes viejos, que carga
-`pages/Tienda/services/seccionesPorTipo.jsx`. Lo que el cacherito usa
-(`announcement_bar`, `header`, `video`, `faq_accordion`, `conversion_fold`,
-`landing_payment`) **no se borra** mientras esa landing exista; el resto, al
-retirar `seccionesViejo`.
+páginas. Con el interruptor `seccionesViejo` siguen los componentes viejos,
+que carga `pages/Tienda/services/seccionesPorTipo.jsx`: se borran al
+retirarlo. (El cacherito, la landing del reloj K-CHERO que seguía con lo de
+antes, se retiró el 2026-10-19 y se borró entera: `ConversionFold`,
+`LandingPaymentBlock`, `landing-mobile.css` y `landingSlugs.js`.)
 
 | Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
 |---|---|---|---|---|
-| `pages/Tienda/components/AnnouncementBar/` | `announcement_bar` | `BarraAnuncios` (`SeccionDelKit`) | `seccionesPorTipo.jsx` (cacherito y `seccionesViejo`) | cuando no quede el cacherito y se retire `seccionesViejo` |
+| `pages/Tienda/components/AnnouncementBar/` | `announcement_bar` | `BarraAnuncios` (`SeccionDelKit`) | `seccionesPorTipo.jsx` (`seccionesViejo`) | al retirar `seccionesViejo` |
 | `pages/Tienda/components/HeroCarousel/` | `hero_carousel` | `HeroCarrusel` | ídem | ídem |
 | `pages/Tienda/components/TrustBadges/` | `trust_badges` | `InsigniasConfianza` | ídem | ídem |
 | `pages/Tienda/components/Testimonials/` | `testimonials` | `Testimonios` | ídem y `VisualEditorPanel.jsx` (editor viejo, paso 8) | ídem y con el editor del kit |
@@ -76,24 +75,22 @@ retirar `seccionesViejo`.
 | `pages/Tienda/components/FeaturedCarousel/` (en secciones) | `featured_carousel` del inicio | `CarruselProductos` | `ProductQueryCarousel`, `ProductDetail.jsx` (relacionados, solo con `fichaVieja`: la ficha nueva usa `Carrusel` + `TarjetaDeProducto`), `CuentaCompraDetallePage.jsx`, `seccionesPorTipo.jsx` | al retirar `fichaVieja`, cuando migren el detalle del pedido y las demás páginas |
 | `pages/Tienda/components/BannerGrid/` | `banner_grid` del inicio | `MosaicoBanners` (con `marcas` de la consulta `['brands']`) | `seccionesPorTipo.jsx` (`seccionesViejo`) | al retirar `seccionesViejo` |
 | `pages/Tienda/components/CategoryGrid/` | `category_grid` del inicio | `GrillaCategorias` + `categoriasDeGrilla` (misma cuenta, foto y orden) | `seccionesPorTipo.jsx` (`/tienda` y marcas: `migrateHomeCategoryGrid`) | ídem |
-| `pages/Tienda/components/HeaderBlock/` | `header` (`/tienda`, marcas) | `Encabezado` ("Nuestra Tienda" si no hay título) | `seccionesPorTipo.jsx` (cacherito: "Elige tu acabado"…), `services/storefront.js` (solo el nombre del tipo) | cuando no quede el cacherito y se retire `seccionesViejo` |
+| `pages/Tienda/components/HeaderBlock/` | `header` (`/tienda`, marcas) | `Encabezado` ("Nuestra Tienda" si no hay título) | `seccionesPorTipo.jsx`, `services/storefront.js` (solo el nombre del tipo) | al retirar `seccionesViejo` |
 | `pages/Tienda/components/BrandMarquee/` (con su `.module.css`) | `marquee` | `MarcasMarquesina` | `seccionesPorTipo.jsx`; `services/brands.js` solo lo nombra en un comentario | ídem |
 | `pages/Tienda/components/HeroBanner.jsx` y `HeroBanner.module.css` | `hero_banner` (marcas) | `BannerPrincipal` (`onClicBoton` → `trackBannerClick`) | `seccionesPorTipo.jsx`. `HeroBannerMediaUploader` de `VisualEditorPanel.jsx` es otra cosa (el editor viejo) | ídem |
 | `pages/Tienda/components/VisualCategoryNav/` | `categories_nav` (marcas) | `NavCategorias` (`estilo` de la marca, `cargando`) | `seccionesPorTipo.jsx`; `SidebarCatalogLayout.jsx` solo lo nombra en un comentario | ídem |
 | `pages/Tienda/components/SidebarCatalogLayout.jsx` y `.module.css` | `sidebar_catalog` (`/tienda`, marcas) | `CatalogoConFiltros` con el estado en `TiendaPage` (`filtrosKit`, `categoriaKit`, consultas `collections`/`tags`/`characters`/`productTypes`/`brands`/`storefront-category-grid-products`) | **`pages/SearchPage.jsx`** (la búsqueda, `/buscar`), `seccionesPorTipo.jsx`; los textos `cat.*` de `i18n/dictionaries.js` | cuando pase la búsqueda (BUSCAR.md) y se retire `seccionesViejo`; con él, las claves `cat.*` que nadie más use |
 | `pages/Tienda/components/ProductGrid/` | `product_grid` y el catálogo (`/tienda`, marcas) | `GrillaProductos` | `SidebarCatalogLayout.jsx` (la búsqueda), `featured_products` (aún viejo, en `TiendaPage`), `seccionesPorTipo.jsx` | cuando pasen la búsqueda y `featured_products` |
-| `landing-mobile.css`: `.heroContainer`, `.title`, `.subtitle`, `.actionButton` dentro de `@media (max-width: 768px)` | el `HeroBanner` viejo en las landings | — (el kit no usa esas clases) | revisar si el cacherito las usa antes de borrar | cuando no quede `HeroBanner` en ninguna landing |
-| `TiendaPage.jsx`: `catalogSectionRef` y las ramas viejas de `renderSection` (`case 'header'`, `'marquee'`, `'sidebar_catalog'`, `'product_grid'`, `'hero_banner'`, `'categories_nav'`…) | lo de antes | `seccionDelKit` | el interruptor y el cacherito | junto con sus componentes |
+| `TiendaPage.jsx`: `catalogSectionRef` y las ramas viejas de `renderSection` (`case 'header'`, `'marquee'`, `'sidebar_catalog'`, `'product_grid'`, `'hero_banner'`, `'categories_nav'`…) | lo de antes | `seccionDelKit` | el interruptor `seccionesViejo` | junto con sus componentes |
 | `pages/Tienda/components/TextBlock/` | `text` | `BloqueTexto` | `seccionesPorTipo.jsx` (`seccionesViejo`) | al retirar `seccionesViejo` |
 | `pages/Tienda/components/ImageBlock/` | `image` | `BloqueImagen` | ídem | ídem |
-| `TiendaPage.jsx`: `case 'video'` (el video armado a mano, con el salto de `video-02.mp4` del reloj) | `video` | `BloqueVideo` | el cacherito | cuando no quede el cacherito |
+| `TiendaPage.jsx`: `case 'video'` (el video armado a mano) | `video` | `BloqueVideo` | `seccionesViejo` | al retirar `seccionesViejo` |
 | `pages/Tienda/components/BestSellersRow/` | `bestsellers_row` | `FilaDestacados` | `seccionesPorTipo.jsx` (`seccionesViejo`) | al retirar `seccionesViejo` |
 | `pages/Tienda/components/FeatureList/` | `feature_list` | `ListaBeneficios` | ídem | ídem |
 | `pages/Tienda/components/MapLocation/` | `map_location` | `Ubicacion` | ídem | ídem |
 | `pages/Tienda/components/CollectionCarousel/` | `collection_carousel` | `CarruselProductos` con las consultas `collection-products` / `collection-details` en `TiendaPage` | ídem | ídem |
 | `pages/Tienda/components/FlashSales/` | `flash_sales` | `OfertaRelampago` con la consulta `flash-sales` en `TiendaPage` | ídem | ídem |
 | `TiendaPage.jsx`: `case 'featured_products'` | `featured_products` | `GrillaProductos` | — | al retirar `seccionesViejo`; con él, `ProductGrid` queda solo para la búsqueda |
-| `landing-mobile.css`: el tema oscuro de `.landing-page-wrapper` | todas las landings | las sin marca con el kit llevan `landing-store-page` | el cacherito | **no borrar**: es el tema del cacherito |
 
 ## Paso 6: páginas propias
 
@@ -129,7 +126,7 @@ ficha nueva, solo `ProductDetail` con `fichaVieja`).
 |---|---|---|---|---|
 | `pages/PagoRapidoViejo.jsx` (la página de antes, con estilos en línea; copia de lo que era `PagoRapidoPage.jsx`) | `/pago-rapido/:id` | `components/pago/PagoRapidoDeTienda.jsx` → `PaginaPagoRapido` del kit | `pages/PagoRapidoPage.jsx` (lazy, solo con `pagosViejo`) | al retirar `pagosViejo` |
 | `PaypalEnlaceCheckout.jsx`: las cajas de error y "Procesando pago..." con estilos en línea (todo menos `botones`) | el pago rápido viejo | `PagoPaypal` del kit (`soloBotones`) | solo `PagoRapidoViejo.jsx` | al retirar `pagosViejo`; queda `soloBotones` como única forma |
-| `CulqiCustomCheckout`: el botón y la nota propios (`.payButton`, `.secureNote`, `.spinner` del CSS) | checkout, "Pagar saldo" y la landing del reloj | `PagoTarjeta` del kit por `renderBoton` (por ahora solo el pago rápido) | `CheckoutPage.jsx`, `PedidoAcciones.jsx`, `LandingPaymentBlock.jsx` (el cacherito: **no se toca**) | **no borrar** mientras la landing del reloj lo use sin `renderBoton` |
+| `CulqiCustomCheckout`: el botón y la nota propios (`.payButton`, `.secureNote`, `.spinner` del CSS) | checkout y "Pagar saldo" | `PagoTarjeta` del kit por `renderBoton` | `CheckoutPage.jsx`, `PedidoAcciones.jsx` | cuando todos pasen `renderBoton` |
 
 ### El checkout (2026-10-17)
 
@@ -137,8 +134,8 @@ ficha nueva, solo `ProductDetail` con `fichaVieja`).
 |---|---|---|---|---|
 | `pages/CheckoutViejo.jsx` (la página de antes, ya sin el armado del pedido) + `pages/CheckoutPage.module.css` (1762 líneas) | `/checkout` | `components/checkout/CheckoutDeTienda.jsx` → `PaginaCheckout` del kit | `pages/CheckoutPage.jsx` (lazy, solo con `pagosViejo`) | al retirar `pagosViejo` |
 | `formik` y `yup` (dependencias) | solo el checkout viejo | la validación del kit (`validarDireccion`) | nadie más | con `CheckoutViejo.jsx` (quitarlas de `package.json`) |
-| `components/intl/CountrySelect`, `components/intl/PhoneIntlInput` | el checkout viejo y Mi perfil de antes | `Campo` con `paises` y `CampoTelefono` | `RegisterPage.jsx`, `CompleteProfilePage.jsx`, `LandingPaymentBlock.jsx` (el cacherito: **no se toca**), `PerfilViejo.jsx` | cuando migre el acceso; **no borrar** mientras la landing del reloj los use |
-| `PaypalCheckout.jsx`: las cajas propias (título, monto, error, "Procesando pago...") | el checkout viejo | `PagoPaypal` (`soloBotones`) | "Pagar saldo" (`PedidoAcciones`), `SorteosPage.jsx` y la landing del reloj (`LandingPaymentBlock`: **no se toca**) | **no borrar** mientras la landing del reloj las use |
+| `components/intl/CountrySelect`, `components/intl/PhoneIntlInput` | el checkout viejo y Mi perfil de antes | `Campo` con `paises` y `CampoTelefono` | `RegisterPage.jsx`, `CompleteProfilePage.jsx`, `PerfilViejo.jsx` | cuando migre el acceso |
+| `PaypalCheckout.jsx`: las cajas propias (título, monto, error, "Procesando pago...") | el checkout viejo | `PagoPaypal` (`soloBotones`) | "Pagar saldo" (`PedidoAcciones`), `SorteosPage.jsx` | cuando migren "Pagar saldo" y los sorteos |
 
 `services/pedidoCheckout.js` **no se borra**: es el armado del pedido de la
 página nueva.
@@ -254,6 +251,6 @@ grupos del marco nuevo (`gruposDeCuenta.js`).
 | `components/common/HeaderSearch/` (`HeaderSearch.jsx` + CSS) | `Header.jsx` | el buscador de `Cabecera` con `buscarSugerencias` (`PanelBusqueda`) | solo `Header.jsx` | junto con `Header` |
 | `components/common/ThemeToggle/` y `components/i18n/FlagIcon.jsx` | `Header.jsx` (y `CuentaAjustesViejo.jsx`) | `BotonTema` y el idioma de `MenuCuenta` | `CuentaAjustesViejo.jsx` | al retirar `cabeceraVieja` y `cuentaVieja` |
 | `pages/Tienda/admin/VisualEditorPanel.jsx` + `components/admin/VisualEditorPanel.module.css` | `App.jsx` (el editor de cada página) | `components/constructor/EditorDeTienda.jsx` → `PanelEditor` del kit | `components/constructor/EditorVisual.jsx` (con `editorViejo`) | al retirar `editorViejo` |
-| `pages/Tienda/admin/editor/controls/` `TypographyControl`, `TextStyleControl`, `ButtonFieldsControl` | `VisualEditorPanel.jsx` | los campos del kit (`tipografia`, `estiloTexto`, `boton`) | solo `VisualEditorPanel.jsx` | junto con `VisualEditorPanel`. `BackgroundStylesControl` se queda: lo usa el formulario del cacherito |
+| `pages/Tienda/admin/editor/controls/` `TypographyControl`, `TextStyleControl`, `ButtonFieldsControl` | `VisualEditorPanel.jsx` | los campos del kit (`tipografia`, `estiloTexto`, `boton`) | solo `VisualEditorPanel.jsx` | junto con `VisualEditorPanel` (con `BackgroundStylesControl`: el formulario del cacherito que también lo usaba se retiró) |
 | `SeccionVieja` en `components/admin/EditableSection.jsx` + `EditableSection.module.css` | todas las `EditableSection` mientras se edita | `SeccionEditable` del kit (`components/constructor/MarcasDeEdicion.jsx`) | `EditableSection` (con `editorViejo`) | al retirar `editorViejo`; `EditableSection` se queda como el puente |
 | `ModuleInserter` de `pages/Tienda/TiendaPage.jsx` y de `components/common/Footer/Footer.jsx`, y el velo "Editar Pie de Página" / la franja "Volver al Cuerpo" del pie | la página y el pie mientras se edita | `InsertarAqui` (`PuntoDeInsercion`) y lo del kit en el pie | `PuntoDeInsercion` y el pie (con `editorViejo`) | al retirar `editorViejo` |

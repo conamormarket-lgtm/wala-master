@@ -103,7 +103,7 @@ ejemplo.
 - **Tarjeta:** el mismo `CulqiCustomCheckout` (cobro, anti doble cobro, vigía
   del modal cerrado, el píxel), con la prop nueva `renderBoton({ abrir,
   procesando })`: el botón es `PagoTarjeta` controlado. **Sin esa prop todo
-  sigue igual** (checkout, saldo de un pedido y la landing del reloj).
+  sigue igual** (checkout y saldo de un pedido).
 - **PayPal:** `PaypalEnlaceCheckout` con `soloBotones`: avisa "procesando" y
   el error (`onProcesando`, `onError`) y `PagoPaypal` los muestra. Baja
   aparte, solo con los enlaces en dólares.
