@@ -3,6 +3,7 @@ import { ArrowRight, LayoutGrid } from 'lucide-react';
 import { Enlace } from '../Enlace';
 import { EtiquetaColgante } from '../Marca';
 import { toDirectImageUrl } from '../../../utils/imageUrl';
+import { atributosDeFoto } from '../../../components/common/OptimizedImage/OptimizedImage';
 import { FotoProducto } from './FotoProducto';
 import { Hueso } from '../Esqueletos';
 import { Texto } from '../Traduccion';
@@ -32,7 +33,7 @@ const tonoDe = (texto) => {
  */
 export function TarjetaCategoria({ forma = 'cuadro', nombre, imagen, cuenta, url, onClick, activa = false, todos = false, acento, fondo, giro = -2.5, detalle, className }) {
   const foto = todos ? <LayoutGrid aria-hidden="true" />
-    : imagen ? <img src={toDirectImageUrl(imagen)} alt="" loading="lazy" decoding="async" />
+    : imagen ? <img {...atributosDeFoto(toDirectImageUrl(imagen), '320px')} alt="" loading="lazy" decoding="async" />
       : <span aria-hidden="true">{String(nombre || '').trim()[0]?.toUpperCase()}</span>;
 
   if (forma === 'burbuja') {
@@ -43,6 +44,7 @@ export function TarjetaCategoria({ forma = 'cuadro', nombre, imagen, cuenta, url
           className={s.burbujaFoto}
           style={todos ? undefined : { '--acento': acento, background: imagen ? fondo : tonoDe(nombre) }}
           src={!todos && imagen ? toDirectImageUrl(imagen) : undefined}
+          sizes="160px"
           respaldo={foto}
         />
         <span className={s.burbujaNombre}><Texto>{nombre}</Texto></span>
