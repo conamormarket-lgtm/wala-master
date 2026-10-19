@@ -581,6 +581,14 @@ alrededor, por partes.
 
 ### Pasos
 
+**Estudio en marcha (2026-10-19).** Primer paso: `CrearStudioPage` elige
+`components/crear/EstudioDeTienda` o `CrearStudioViejo` con
+`useLoViejo('crear')`; ambos se cargan con `lazy`. El respaldo conserva el
+estudio anterior completo. Este primer paso solo separa las dos versiones;
+los controles se sustituyen a continuación, sin cambiar Fabric ni las
+fuentes originales de impresión. Cloudinary sigue limitado a la entrega
+de fotos públicas, como en el resto de Crear.
+
 1. ✓ Hacer los adaptadores con los datos reales y comparar las tarjetas.
 2. ✓ Cambiar la portada y la grilla (prendas y combos) por las del kit.
 3. ✓ Cambiar las tres filas por las del kit (después de Mis creaciones).

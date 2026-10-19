@@ -1,5 +1,12 @@
 # Lo viejo que se borra al final de la migración
 
+## Estudio de Crear (en marcha, 2026-10-19)
+
+`pages/Crear/CrearStudioViejo.jsx` conserva el estudio anterior completo.
+Solo lo carga `CrearStudioPage` con `crearViejo`. No borrarlo hasta cerrar
+la migración del estudio, verificarla y retirar el interruptor. Su CSS y
+sus piezas siguen compartidos mientras se sustituyen los controles.
+
 Durante la migración ([MIGRACION.md](MIGRACION.md)) no se borra nada: cada
 pieza nueva entra en su propio commit y lo viejo queda en su sitio, así que
 revertir el commit devuelve la tienda como estaba. Esta lista junta lo que

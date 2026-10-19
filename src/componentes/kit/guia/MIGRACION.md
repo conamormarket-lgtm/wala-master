@@ -299,6 +299,11 @@ Cada paso en su propio commit, verificable por separado.
 
 ## Interruptores (volver a lo de antes sin publicar)
 
+Desde el primer paso del estudio (2026-10-19), `crearViejo` también elige
+`Crear/CrearStudioViejo.jsx` para `/crear/:id`. La versión nueva vive en
+`components/crear/EstudioDeTienda.jsx`; ambas se cargan por separado. El
+estudio está en migración: este primer paso conserva sus controles.
+
 Para lo delicado (pagos, carrito, checkout): `useLoViejo(nombre)`
 (`src/hooks/useLoViejo.js`). Se encienden para todos con un admin en
 Firestore, `configuracion/kit_interruptores` → `<nombre>Viejo: true` (las
