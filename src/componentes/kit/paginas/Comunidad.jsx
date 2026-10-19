@@ -8,12 +8,14 @@ import { EsqueletoProducto } from '../Esqueletos';
 import { CabezaCuenta } from '../piezas/Cuenta';
 import { TarjetaCreacion } from '../piezas/Creaciones';
 import { CARAS_KAPI } from '../piezas/Flotantes';
+import { Texto, useTexto } from '../Traduccion';
 import s from './Comunidad.module.css';
 
 /*
  * Diseños de la comunidad (/comunidad): los que publica Walá para usarlos de
  * punto de partida. Se ve sin iniciar sesión (el estudio pide la sesión al
- * subir una imagen, guardar o comprar). Va dentro de MarcoTienda.
+ * subir una imagen, guardar o comprar). Va dentro de MarcoTienda. Los textos
+ * pasan por la traducción.
  */
 
 /**
@@ -37,6 +39,11 @@ export function PaginaComunidad({ disenos = [], cargando = false, error = false,
   }, [disenos]);
   const visibles = prenda ? disenos.filter((d) => d.prendaId === prenda) : disenos;
   const n = disenos.length;
+  const t = {
+    sub: useTexto(!cargando && n > 0 ? `${n} ${n === 1 ? 'diseño listo' : 'diseños listos'} para usar. Elige uno, cámbialo a tu gusto y hazlo tuyo.` : 'Elige uno, cámbialo a tu gusto y hazlo tuyo.'),
+    filtrar: useTexto('Filtrar por prenda'),
+    cargando: useTexto('Cargando diseños'),
+  };
 
   return (
     <BloqueSeccion ajustes={{ paddingTop: '1.5rem', paddingBottom: '2.5rem' }}>
@@ -44,36 +51,36 @@ export function PaginaComunidad({ disenos = [], cargando = false, error = false,
         <CabezaCuenta
           icono={<Users />}
           tono="rosa"
-          titulo="Diseños de la comunidad"
-          subtitulo={!cargando && n > 0 ? `${n} ${n === 1 ? 'diseño listo' : 'diseños listos'} para usar. Elige uno, cámbialo a tu gusto y hazlo tuyo.` : 'Elige uno, cámbialo a tu gusto y hazlo tuyo.'}
-          accion={<Boton to={urlCrear} variante="contorno" icono={<Shirt aria-hidden="true" />}>Empezar desde cero</Boton>}
+          titulo={<Texto>Diseños de la comunidad</Texto>}
+          subtitulo={t.sub}
+          accion={<Boton to={urlCrear} variante="contorno" icono={<Shirt aria-hidden="true" />}><Texto>Empezar desde cero</Texto></Boton>}
         />
 
         {!cargando && !error && prendas.length > 1 && (
-          <div className={s.filtros} role="group" aria-label="Filtrar por prenda">
-            <Chip activo={!prenda} cuenta={n} onClick={() => setPrenda('')}>Todas</Chip>
+          <div className={s.filtros} role="group" aria-label={t.filtrar}>
+            <Chip activo={!prenda} cuenta={n} onClick={() => setPrenda('')}><Texto>Todas</Texto></Chip>
             {prendas.map(([id, { nombre, n: cuantos }]) => (
-              <Chip key={id} activo={prenda === id} cuenta={cuantos} onClick={() => setPrenda(id)}>{nombre}</Chip>
+              <Chip key={id} activo={prenda === id} cuenta={cuantos} onClick={() => setPrenda(id)}><Texto>{nombre}</Texto></Chip>
             ))}
           </div>
         )}
 
         {cargando ? (
-          <ul className={s.grilla} aria-busy="true" aria-label="Cargando diseños">
+          <ul className={s.grilla} aria-busy="true" aria-label={t.cargando}>
             {[0, 1, 2, 3, 4, 5, 6, 7].map((k) => <li key={k}><EsqueletoProducto /></li>)}
           </ul>
         ) : error ? (
           <Aviso
             tipo="error"
             titulo="No pudimos cargar los diseños"
-            accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={onReintentar}>Reintentar</Boton>}
+            accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={onReintentar}><Texto>Reintentar</Texto></Boton>}
           >
             Revisa tu conexión e inténtalo de nuevo.
           </Aviso>
         ) : visibles.length === 0 ? (
           <div className={s.vacio}>
-            <EstadoVacio imagen={CARAS_KAPI.feliz} titulo="Muy pronto" texto="Aquí verás diseños listos para usar. Mientras tanto, crea el tuyo desde cero.">
-              <Boton to={urlCrear} icono={<Shirt aria-hidden="true" />}>Empezar a crear</Boton>
+            <EstadoVacio imagen={CARAS_KAPI.feliz} titulo={<Texto>Muy pronto</Texto>} texto={<Texto>Aquí verás diseños listos para usar. Mientras tanto, crea el tuyo desde cero.</Texto>}>
+              <Boton to={urlCrear} icono={<Shirt aria-hidden="true" />}><Texto>Empezar a crear</Texto></Boton>
             </EstadoVacio>
           </div>
         ) : (
