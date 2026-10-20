@@ -39,6 +39,9 @@ const COMUNIDAD = {
  * lado. Sobre la foto van como mucho dos etiquetas. Toda confirmación
  * (eliminar, publicar…) es una capa sobre la foto, sin ventanas del navegador.
  *  - nombre · imagen, imagenEspalda · imagenes: [url] (prendas de un combo)
+ *    · imagenesEspalda: [url | ''] la espalda de cada prenda del combo (en el
+ *    mismo orden; '' si no tiene): como una creación suelta, al pasar el ratón
+ *    o con "Ver espalda" 
  *  - foto: un nodo en lugar de la foto (los diseños del editor de antes, que
  *    se dibujan con sus capas en la tienda)
  *  - url: adónde lleva la foto (su página, el editor o el combo)
@@ -67,7 +70,7 @@ const COMUNIDAD = {
  *    botón "Llevar en combo" que abre una hoja para elegir uno (se usa una copia)
  */
 export function TarjetaCreacion({
-  nombre, imagen, imagenEspalda, imagenes, foto, url, producto, color, colores, subtitulo, fecha, fechaCompleta, precio, precioAntes,
+  nombre, imagen, imagenEspalda, imagenes, imagenesEspalda, foto, url, producto, color, colores, subtitulo, fecha, fechaCompleta, precio, precioAntes,
   comprado = false, disponible = true, publicada = false, combo, lados, aviso,
   urlEditar, urlComprar, estadoEditar, soloEditar = false, onRenombrar, onEliminar, eliminar, borrador = false, comunidad, usar, vertical = false, combos = [],
 }) {
@@ -94,6 +97,8 @@ export function TarjetaCreacion({
   // suelta. Las prendas sin diseño van con su hueco.
   const esCombo = Boolean(combo) || prendas.length > 1;
   const fotosCombo = esCombo && (imagenes?.length || 0) > 1 ? imagenes : null;
+  const espaldasCombo = fotosCombo ? fotosCombo.map((_, i) => imagenesEspalda?.[i] || '') : [];
+  const conEspalda = fotosCombo ? espaldasCombo.some(Boolean) : Boolean(imagenEspalda);
   // Como la tarjeta de producto: con ratón se inclina siguiendo al puntero
   // (4° como mucho) y el canto se ilumina donde está.
   const ref = useRef(null);
@@ -167,12 +172,14 @@ export function TarjetaCreacion({
                 {fotosCombo.map((src, i) => (
                   <FotoProducto
                     key={`${i}-${src}`}
-                    className={s.prenda}
+                    className={[s.prenda, src && espaldasCombo[i] && s.conEspalda, src && espaldasCombo[i] && espalda && s.verEspalda].filter(Boolean).join(' ')}
                     src={src || undefined}
                     relleno="6%"
                     style={{ '--i': i }}
                     respaldo={<span className={s.porDisenar} title={tPorDisenar}><Paintbrush aria-hidden="true" /></span>}
-                  />
+                  >
+                    {src && espaldasCombo[i] && <img className={s.espalda} src={espaldasCombo[i]} alt="" loading="lazy" draggable={false} />}
+                  </FotoProducto>
                 ))}
               </div>
             </div>
@@ -194,7 +201,7 @@ export function TarjetaCreacion({
               <Trash2 aria-hidden="true" />
             </button>
           )}
-          {imagenEspalda && !fotosCombo && (
+          {conEspalda && (
             <button type="button" className={s.girar} onClick={() => setEspalda((v) => !v)} aria-pressed={espalda}>
               <RotateCw aria-hidden="true" /> <Texto>{espalda ? 'Ver frente' : 'Ver espalda'}</Texto>
             </button>

@@ -5,7 +5,7 @@ import { useGlobalToast } from '../../contexts/ToastContext';
 import { getDesignById, renombrarCreacion } from '../../services/designs';
 import { getComboCrear, getCombosCrear } from '../../services/combosCrear';
 import { publicarEnComunidad, retirarDeComunidad } from '../../services/comunidad';
-import { esMiCombo, imagenDe } from '../../services/misCombos';
+import { esMiCombo, imagenDe, espaldaDe } from '../../services/misCombos';
 import { precioBase, fondoColorGuardado } from '../../utils/prendaBase';
 import { useEliminarCreacion } from '../../pages/Crear/useEliminarCreacion';
 import { useEliminarMiCombo, notasEliminarCombo } from '../../pages/Crear/useEliminarMiCombo';
@@ -100,7 +100,10 @@ export default function useTarjetasCreaciones({ uid, designs, borradores, claveC
         colores: piezas.map((p) => (guardadas ? p.color : piezaDe(p.designId)?.color)).filter((c) => c?.hex).map((c) => fondoColorGuardado(c)),
         estadoEditar,
       };
-      if (leidas) extra.imagenes = piezas.map((p) => imagenDe(piezaDe(p.designId)));
+      if (leidas) {
+        extra.imagenes = piezas.map((p) => imagenDe(piezaDe(p.designId)));
+        extra.imagenesEspalda = piezas.map((p) => espaldaDe(piezaDe(p.designId)));
+      }
       if (q?.isSuccess && !extra.disponible) extra.aviso = 'Este combo ya no se vende.';
       const notasCombo = notasEliminarCombo(d, items);
       if (notasCombo.length) extra.eliminar = { notas: notasCombo };

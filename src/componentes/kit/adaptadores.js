@@ -807,6 +807,8 @@ export const creacionDesdeDiseno = (d = {}, extra = {}) => {
       ...base,
       nombre: d.name || 'Mi combo',
       imagenes: piezas.some((p) => p.frente) ? piezas.map((p) => p.frente || '') : (d.previas || []),
+      // La espalda de cada prenda (la tarjeta la muestra al pasar el mouse).
+      imagenesEspalda: piezas.some((p) => p.frente) ? piezas.map((p) => p.espalda || '') : undefined,
       subtitulo: borrador
         ? `${piezas.filter((p) => p.designId).length} de ${piezas.length} prendas con diseño · sin terminar`
         : (d.comboNombre || 'Combo'),
