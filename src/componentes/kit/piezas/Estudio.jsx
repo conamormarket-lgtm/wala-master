@@ -15,6 +15,7 @@ import { TituloEditable } from './Ficha';
 import { imanAlMover, imanAlEscalar, enCm } from '../../../utils/guiasInteligentes';
 import { BotonEstudio, CampoEstudio, CantidadEstudio, DeslizadorEstudio, SelectorColorEstudio, CasillaEstudio, InterruptorEstudio } from './ControlesEstudio';
 import { PasoEstudio } from './PasoEstudio';
+import { TextoResaltado } from './TextoResaltado';
 export { PasoEstudio } from './PasoEstudio';
 import s from './Estudio.module.css';
 
@@ -1021,7 +1022,7 @@ export function BarraLienzo({
       {/* En el celular se acerca con los dedos: el zoom queda para el ratón. */}
       <span className={[s.grupoBarra, s.grupoZoom].join(' ')}>
         <B aria-label="Alejar (Ctrl −)" icono={<ZoomOut aria-hidden="true" />} disabled={zoom <= 1} onClick={() => onZoom?.(zoomVecino(zoom, false))} />
-        <button type="button" className={s.zoomValor} onClick={() => onZoom?.(1)} title="Ver la prenda completa (Shift+1)">{Math.round(zoom * 100)}<Texto>{"%"}</Texto></button>
+        <button type="button" className={s.zoomValor} onClick={() => onZoom?.(1)} title="Ver la prenda completa (Shift+1)">{Math.round(zoom * 100)}%</button>
         <B aria-label="Acercar (Ctrl +)" icono={<ZoomIn aria-hidden="true" />} disabled={zoom >= NIVELES_ZOOM[NIVELES_ZOOM.length - 1]} onClick={() => onZoom?.(zoomVecino(zoom, true))} />
         {onAtajos && <B aria-label="Atajos de teclado" icono={<Keyboard aria-hidden="true" />} onClick={onAtajos} className={s.soloRaton} />}
       </span>
@@ -1066,7 +1067,7 @@ export function MedidorCalidad({ calidad, onNitida }) {
   if (!n) return null;
   return (
     <div className={[s.medidor, s[`medidor_${n.tono}`]].join(' ')} data-componente="MedidorCalidad">
-      <BarraProgreso pasos max={3} valor={n.paso} texto={<><Texto>{"Calidad de impresión: "}</Texto><strong><Texto>{n.nombre}</Texto></strong></>} />
+      <BarraProgreso pasos max={3} valor={n.paso} texto={<><Texto>Calidad de impresión</Texto>: <strong><Texto>{n.nombre}</Texto></strong></>} />
       <div className={s.medidorPie}>
         <p><Texto>{n.texto}</Texto></p>
         {n.paso < 3 && onNitida && (
@@ -1100,7 +1101,7 @@ export function PasosEstudio({ colores = [], color, onColor, invertir, lados = [
             <div className={s.chips}>
               {l.zonas.map((z) => (
                 <Chip key={z.id} tamano="sm" activo={z.id === zona} onClick={() => onZona?.(z.id)}>
-                  <Texto>{z.nombre}</Texto>{z.conDiseno && <span className={s.conDiseno} title="Con diseño"><span className={s.oculto}><Texto>{", con diseño"}</Texto></span></span>}
+                  <Texto>{z.nombre}</Texto>{z.conDiseno && <span className={s.conDiseno} title="Con diseño"><span className={s.oculto}>, <Texto>con diseño</Texto></span></span>}
                 </Chip>
               ))}
             </div>
@@ -1112,7 +1113,7 @@ export function PasosEstudio({ colores = [], color, onColor, invertir, lados = [
           <OpcionSello icono={<ImagePlus aria-hidden="true" />} titulo="Subir imagen" detalle="Una foto o un logo" onClick={onImagen} disabled={subiendo} />
           <OpcionSello icono={<Type aria-hidden="true" />} tono="rosa" girar={6} titulo="Escribir texto" detalle="Un nombre o una frase" onClick={onTexto} />
         </div>
-        {donde && <p className={s.donde}>{subiendo ? 'Subiendo tu imagen…' : <><Texto>{"Se agrega en: "}</Texto><strong>{donde}</strong></>}</p>}
+        {donde && <p className={s.donde}>{subiendo ? <Texto>Subiendo tu imagen…</Texto> : <><Texto>Se agrega en</Texto>: <strong><Texto>{donde}</Texto></strong></>}</p>}
       </PasoEstudio>
     </div>
   );
@@ -1190,7 +1191,7 @@ export function EfectosTexto({ capa, onCambiar }) {
               onClick={() => onCambiar?.(e.cambios(capa))}
               aria-pressed={activo === e.id}
             >
-              <span className={[s.estiloMuestra, s[`muestra_${e.id}`]].filter(Boolean).join(' ')}><Texto>{"Aa"}</Texto></span>
+              <span className={[s.estiloMuestra, s[`muestra_${e.id}`]].filter(Boolean).join(' ')}>Aa</span>
               {e.nombre}
             </button>
           ))}
@@ -1310,7 +1311,7 @@ export function PanelCapa({
     <div className={s.panelCapa} data-componente="PanelCapa">
       <div className={s.panelCabeza}>
         <div>
-          <h2 className={s.panelTitulo}><Texto>{imagen ? 'Tu imagen' : 'Tu texto'}</Texto> <em><Texto>{"en "}</Texto>{zona}</em></h2>
+          <h2 className={s.panelTitulo}><TextoResaltado resaltar={[zona]} envolver={(x, k) => <em key={k}>{x}</em>}>{`${imagen ? 'Tu imagen' : 'Tu texto'} en ${zona}`}</TextoResaltado></h2>
           <p className={s.panelAyuda}><Texto>{"Los cambios se ven en la prenda al instante."}</Texto></p>
         </div>
         {/* Quitar, aparte y como ícono: lejos de lo que se toca seguido. */}
@@ -1329,7 +1330,7 @@ export function PanelCapa({
           <CampoEstudio etiqueta="Escribe tu texto" multilinea={2} maxLength={120} value={capa.texto || ''} onChange={(e) => onCambiar?.({ texto: e.target.value })} />
           {fuentes.length > 0 && (
             <div onFocusCapture={onAbrirFuentes}>
-              <CampoEstudio etiqueta="Letra" opciones={fuentes.map((f) => ({ ...f, icono: <span className={s.muestraLetra} style={{ fontFamily: `'${f.valor}'` }}><Texto>{"Aa"}</Texto></span> }))} buscable value={capa.fuente} onChange={(e) => onCambiar?.({ fuente: e.target.value })} />
+              <CampoEstudio etiqueta="Letra" opciones={fuentes.map((f) => ({ ...f, icono: <span className={s.muestraLetra} style={{ fontFamily: `'${f.valor}'` }}>Aa</span> }))} buscable value={capa.fuente} onChange={(e) => onCambiar?.({ fuente: e.target.value })} />
             </div>
           )}
           <div className={s.fila}>
@@ -1355,8 +1356,8 @@ export function PanelCapa({
             <div className={s.grupoCampo}>
               <span className={s.rotulo}><Texto>{"Estilo"}</Texto></span>
               <span className={s.chips}>
-                <Chip tamano="sm" activo={Boolean(capa.negrita)} onClick={() => onCambiar?.({ negrita: !capa.negrita })}><b><Texto>{"N"}</Texto></b><span className={s.oculto}><Texto>{" negrita"}</Texto></span></Chip>
-                <Chip tamano="sm" activo={Boolean(capa.cursiva)} onClick={() => onCambiar?.({ cursiva: !capa.cursiva })}><i><Texto>{"C"}</Texto></i><span className={s.oculto}><Texto>{" cursiva"}</Texto></span></Chip>
+                <Chip tamano="sm" activo={Boolean(capa.negrita)} onClick={() => onCambiar?.({ negrita: !capa.negrita })}><b>N</b><span className={s.oculto}> <Texto>negrita</Texto></span></Chip>
+                <Chip tamano="sm" activo={Boolean(capa.cursiva)} onClick={() => onCambiar?.({ cursiva: !capa.cursiva })}><i>C</i><span className={s.oculto}> <Texto>cursiva</Texto></span></Chip>
               </span>
             </div>
           </div>
@@ -1480,7 +1481,7 @@ export function EstadoEdicion({ esBorrador = false, estadoBorrador = 'guardado',
         </span>
       ) : (
         <span className={s.edicionTexto}>
-          <span className={s.edicionNombre}><Texto>{"Estás editando "}</Texto><TituloEditable nombre={nombre || 'tu creación'} onRenombrar={onRenombrar} como="strong" /></span>
+          <span className={s.edicionNombre}><Texto>Estás editando</Texto>{' '}<TituloEditable nombre={nombre || 'tu creación'} onRenombrar={onRenombrar} como="strong" /></span>
           <span className={hayCambios ? s.sinGuardar : s.todoGuardado} role="status">
             <Texto>{hayCambios ? 'Tienes cambios sin guardar.' : 'Todo está guardado.'}</Texto>
           </span>
@@ -1503,7 +1504,7 @@ export function PanelVarios({ cantidad, mismaZona = true, onListo, onAlinear, on
     <div className={s.panelCapa} data-componente="PanelVarios">
       <div className={s.panelCabeza}>
         <div>
-          <h2 className={s.panelTitulo}>{cantidad}<Texto>{" elementos elegidos"}</Texto></h2>
+          <h2 className={s.panelTitulo}><Texto>{`${cantidad} elementos elegidos`}</Texto></h2>
           <p className={s.panelAyuda}><Texto>{"Se mueven juntos al arrastrar uno."}</Texto></p>
         </div>
         <BotonEstudio tamano="sm" icono={<Check aria-hidden="true" />} onClick={onListo}><Texto>{"Listo"}</Texto></BotonEstudio>
@@ -1536,7 +1537,7 @@ export function PanelVarios({ cantidad, mismaZona = true, onListo, onAlinear, on
         <span className={s.chips}>
           {mismaZona && <BotonEstudio variante="contorno" tamano="sm" icono={<Crosshair aria-hidden="true" />} onClick={onCentrar}><Texto>{"Centrar en la zona"}</Texto></BotonEstudio>}
           <BotonEstudio variante="contorno" tamano="sm" icono={<Copy aria-hidden="true" />} onClick={onDuplicar}><Texto>{"Duplicar"}</Texto></BotonEstudio>
-          <BotonEstudio variante="contorno" tamano="sm" icono={<Trash2 aria-hidden="true" />} onClick={onQuitar} className={s.peligro}><Texto>{"Quitar los "}</Texto>{cantidad}</BotonEstudio>
+          <BotonEstudio variante="contorno" tamano="sm" icono={<Trash2 aria-hidden="true" />} onClick={onQuitar} className={s.peligro}><Texto>{`Quitar los ${cantidad}`}</Texto></BotonEstudio>
         </span>
       </div>
     </div>
@@ -1610,10 +1611,10 @@ export function GuiaGestos({ onEntendido }) {
     // Sus toques no llegan al lienzo (no eligen ni mueven nada).
     <div className={s.guiaGestos} role="dialog" aria-label="Cómo editar con los dedos" data-componente="GuiaGestos" onPointerDown={(e) => e.stopPropagation()} onPointerDownCapture={(e) => e.stopPropagation()}>
       <ul>
-        <li><Hand aria-hidden="true" /> <span><strong><Texto>{"Un dedo:"}</Texto></strong><Texto>{" arrástralo para moverlo."}</Texto></span></li>
-        <li><Maximize2 aria-hidden="true" /> <span><strong><Texto>{"Dos dedos:"}</Texto></strong><Texto>{" sepáralos o júntalos para agrandar o achicar, y gíralos para girarlo."}</Texto></span></li>
-        <li><Type aria-hidden="true" /> <span><strong><Texto>{"Dos toques"}</Texto></strong><Texto>{" en un texto para escribirlo."}</Texto></span></li>
-        <li><ZoomIn aria-hidden="true" /> <span><strong><Texto>{"Sin nada elegido,"}</Texto></strong><Texto>{" dos dedos acercan la prenda."}</Texto></span></li>
+        <li><Hand aria-hidden="true" /> <span><strong><Texto>Un dedo:</Texto></strong> <Texto>arrástralo para moverlo.</Texto></span></li>
+        <li><Maximize2 aria-hidden="true" /> <span><strong><Texto>Dos dedos:</Texto></strong> <Texto>sepáralos o júntalos para agrandar o achicar, y gíralos para girarlo.</Texto></span></li>
+        <li><Type aria-hidden="true" /> <span><strong><Texto>Dos toques</Texto></strong> <Texto>en un texto para escribirlo.</Texto></span></li>
+        <li><ZoomIn aria-hidden="true" /> <span><strong><Texto>Sin nada elegido,</Texto></strong> <Texto>dos dedos acercan la prenda.</Texto></span></li>
       </ul>
       <BotonEstudio bloque tamano="sm" onClick={onEntendido}><Texto>{"Entendido"}</Texto></BotonEstudio>
     </div>
@@ -1634,9 +1635,9 @@ export function AtajosEstudio({ lados = [] }) {
                     {/* Cada combinación entera en una línea; si no caben, la siguiente baja. */}
                     {combinaciones.map((teclas, i) => (
                       <span key={teclas.join('+')} className={s.atajoCombo}>
-                        {i > 0 && <span className={s.atajoO}><Texto>{"o"}</Texto></span>}
+                        {i > 0 && <span className={s.atajoO}><Texto>o</Texto></span>}
                         {/* Las flechas son cualquiera de ellas, no una combinación: van sin "+". */}
-                        {teclas.map((t, j) => <React.Fragment key={t}>{j > 0 && !teclas.every((x) => '←↑→↓'.includes(x)) && <span className={s.atajoMas}><Texto>{"+"}</Texto></span>}<kbd>{t}</kbd></React.Fragment>)}
+                        {teclas.map((t, j) => <React.Fragment key={t}>{j > 0 && !teclas.every((x) => '←↑→↓'.includes(x)) && <span className={s.atajoMas}>+</span>}<kbd>{t}</kbd></React.Fragment>)}
                       </span>
                     ))}
                   </dt>

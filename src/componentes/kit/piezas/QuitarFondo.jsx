@@ -379,11 +379,11 @@ export function QuitarFondo({ abierta, src, motor, onCancelar, onAplicar }) {
         <div className={s.herramientas} role="group" aria-label="Herramienta">
           {HERRAMIENTAS.map(({ id, Icono, nombre, tecla }) => (
             <Chip key={id} tamano="sm" activo={herramienta === id} onClick={() => setHerramienta(id)} icono={<Icono aria-hidden="true" />}>
-              <Texto>{nombre}</Texto><span className={s.oculto}><Texto>{" (tecla "}</Texto>{tecla}<Texto>{")"}</Texto></span>
+              <Texto>{nombre}</Texto><span className={s.oculto}> (<Texto>tecla</Texto> {tecla})</span>
             </Chip>
           ))}
         </div>
-        <p className={s.ayuda}><Texto>{actual?.ayuda}</Texto><Texto>{" Acerca con la rueda del ratón o con dos dedos."}</Texto></p>
+        <p className={s.ayuda}><Texto>{actual?.ayuda}</Texto> <Texto>Acerca con la rueda del ratón o con dos dedos.</Texto></p>
 
         <div
           ref={visorRef}
@@ -420,7 +420,7 @@ export function QuitarFondo({ abierta, src, motor, onCancelar, onAplicar }) {
           <div className={s.vista}>
             <span className={s.zoom} role="group" aria-label="Zoom">
               <BotonEstudio variante="fantasma" tamano="sm" soloIcono aria-label="Alejar (−)" icono={<ZoomOut aria-hidden="true" />} onClick={() => zoomEn(zoom / PASO_ZOOM)} disabled={zoom <= ZOOM_MIN} />
-              <span className={s.zoomValor}>{Math.round(zoom * 100)}<Texto>{"%"}</Texto></span>
+              <span className={s.zoomValor}>{Math.round(zoom * 100)}%</span>
               <BotonEstudio variante="fantasma" tamano="sm" soloIcono aria-label="Acercar (+)" icono={<ZoomIn aria-hidden="true" />} onClick={() => zoomEn(zoom * PASO_ZOOM)} disabled={zoom >= ZOOM_MAX} />
               <BotonEstudio variante="fantasma" tamano="sm" icono={<Scan aria-hidden="true" />} onClick={ajustarVista} disabled={zoom === 1}><Texto>{"Ajustar"}</Texto></BotonEstudio>
             </span>

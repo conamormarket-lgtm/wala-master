@@ -91,6 +91,10 @@ sus textos por `Texto` / `useTexto`. Los nombres escritos por el cliente,
 el contenido de sus capas y los nombres de fuentes se conservan.
 No se validó el resultado en inglés: el traductor no respondió en la
 sesión de pruebas. Los mensajes heredados del motor se revisarán aparte.
+Desde el 2026-10-20 las frases van enteras (el traductor quita los espacios
+de los bordes: "Quitar los " + 3 salía "Remove the3"); los símbolos ("%",
+"Aa", "N", "+") ya no se mandan a traducir y la escena (`EscenaEstudio`)
+traduce las pestañas de los lados y "Zona elegida".
 
 - **Los textos fijos del kit** ("Agregar al carrito", "Talla", los avisos)
   están en español. Hay dos caminos: pasarlos por el mismo `useTexto`, que
