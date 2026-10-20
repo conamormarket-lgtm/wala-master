@@ -7,7 +7,6 @@ import { LogIn, RotateCcw,
 } from 'lucide-react';
 import Boton from '../Boton';
 import { Aviso, EstadoVacio, HojaInferior } from '../Feedback';
-import { Pestanas } from '../Navegacion';
 import { CapaCargando } from '../Cargando';
 import { BloqueSeccion } from '../Seccion';
 import { EsqueletoPagina } from '../Esqueletos';
@@ -19,7 +18,8 @@ import { useAgregado } from '../piezas/Ficha';
 import {
   LienzoPrenda, BarraLienzo, PasosEstudio, PanelCapa, PanelVarios, EstadoEdicion, AtajosEstudio, GuiaGestos, zoomVecino, NIVELES_ZOOM,
 } from '../piezas/Estudio';
-import { MarcoEstudio, InicioLienzoEstudio } from './MarcoEstudio';
+import { MarcoEstudio, InicioLienzoEstudio, EscenaEstudio } from './MarcoEstudio';
+import { TextoResaltado } from '../piezas/TextoResaltado';
 import { HojasEstudio } from '../piezas/HojasEstudio';
 import { CompraEstudio } from '../piezas/CompraEstudio';
 import s from './Estudio.module.css';
@@ -1083,15 +1083,14 @@ export function PaginaEstudio({
       {aviso && <div className={s.aviso}>{aviso}</div>}
 
 </>);
-  const escena = (        <section className={s.escena} aria-label="Tu prenda" ref={lienzoRef}>
-          {vistas.length > 1 && (
-            <Pestanas
-              etiqueta="Lado de la prenda"
-              opciones={vistas.map((v) => ({ id: v.id, texto: v.nombre, cuenta: v.zonas.reduce((n, z) => n + (capas[z.id]?.length || 0), 0) || undefined }))}
-              valor={vista.id}
-              onChange={(id) => { setVistaId(id); const v = vistas.find((x) => x.id === id); if (v && !v.zonas.some((z) => z.id === zonaId)) setZonaId(v.zonas[0]?.id); setSeleccion(null); }}
-            />
-          )}
+  const escena = (
+        <EscenaEstudio
+          escenaRef={lienzoRef}
+          lados={vistas.map((v) => ({ id: v.id, nombre: v.nombre, cuenta: v.zonas.reduce((n, z) => n + (capas[z.id]?.length || 0), 0) }))}
+          lado={vista.id}
+          onLado={(id) => { setVistaId(id); const v = vistas.find((x) => x.id === id); if (v && !v.zonas.some((z) => z.id === zonaId)) setZonaId(v.zonas[0]?.id); setSeleccion(null); }}
+          zona={zona ? nombreZona(zona) : undefined}
+        >
           {lienzo({
             className: s.lienzo,
             zonaActiva: zonaId,
@@ -1129,7 +1128,7 @@ export function PaginaEstudio({
               <div className={s.soltarLados} role="status">
                 {vistas.filter((v) => v.id !== vista.id).map((v) => (
                   <span key={v.id} data-soltar-lado={v.id} className={[s.soltarLado, arrastrando.lado === v.id && s.soltarLadoActivo].filter(Boolean).join(' ')}>
-                    <ArrowLeftRight aria-hidden="true" /> Suelta aquí para pasar a <strong>{v.nombre}</strong>
+                    <ArrowLeftRight aria-hidden="true" /> <TextoResaltado resaltar={[v.nombre]}>{`Suelta aquí para pasar a ${v.nombre}`}</TextoResaltado>
                   </span>
                 ))}
               </div>
@@ -1156,8 +1155,7 @@ export function PaginaEstudio({
             completa={completa}
             onVerCompleta={zoomAuto.current || completa ? () => setCompleta((c) => !c) : undefined}
           />
-          {zona && <p className={s.zonaInfo}>Zona elegida: <strong>{nombreZona(zona)}</strong></p>}
-        </section>
+        </EscenaEstudio>
 
 );
   const panel = (<>

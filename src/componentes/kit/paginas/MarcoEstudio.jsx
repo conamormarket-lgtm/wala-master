@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, Images, ImagePlus, Type } from 'lucide-react';
 import Boton from '../Boton';
+import { Pestanas } from '../Navegacion';
 import { Texto, useTexto } from '../Traduccion';
 import { soles } from '../TarjetaProducto';
 import s from './Estudio.module.css';
@@ -57,5 +58,34 @@ export function InicioLienzoEstudio({ zona, onImagen, onTexto, subiendo }) {
         <Boton tamano="sm" variante="secundario" icono={<Type aria-hidden="true" />} onClick={onTexto}><Texto>Escribir texto</Texto></Boton>
       </span>
     </div>
+  );
+}
+
+/**
+ * La escena de P12, igual en la demo y en la tienda: las pestañas de los
+ * lados (con cuántos diseños lleva cada uno), la prenda, la barra y la zona
+ * elegida. La prenda llega de fuera (LienzoPrenda en la demo; el lienzo de
+ * Fabric en la tienda).
+ *  - lados: [{ id, nombre, cuenta }] · lado · onLado(id)
+ *  - barra: la BarraLienzo · zona: "Frente · Pecho"
+ *  - escenaRef y el resto (soltar archivos…) van a la <section>
+ */
+export function EscenaEstudio({ lados = [], lado, onLado, barra, zona, escenaRef, className, children, ...props }) {
+  const etiqueta = useTexto('Tu prenda');
+  const etiquetaLados = useTexto('Lado de la prenda');
+  return (
+    <section ref={escenaRef} className={[s.escena, className].filter(Boolean).join(' ')} aria-label={etiqueta} {...props}>
+      {lados.length > 1 && (
+        <Pestanas
+          etiqueta={etiquetaLados}
+          opciones={lados.map((l) => ({ id: l.id, texto: <Texto>{l.nombre}</Texto>, cuenta: l.cuenta || undefined }))}
+          valor={lado}
+          onChange={onLado}
+        />
+      )}
+      {children}
+      {barra}
+      {zona && <p className={s.zonaInfo}><Texto>Zona elegida</Texto>: <strong><Texto>{zona}</Texto></strong></p>}
+    </section>
   );
 }

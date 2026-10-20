@@ -646,7 +646,10 @@ antigua trae listas de archivos mal formadas, se regeneran al comprar.
 
 | Estudio · celular claro (390 × 844) | Estudio · celular oscuro (390 × 844) |
 |---|---|
-| ![El estudio del kit con una creación guardada](estudio-tienda-celular-claro.jpg) | ![El mismo estudio en modo oscuro](estudio-tienda-celular-oscuro.jpg) |
+| ![El estudio con la escena del kit: pestañas, escenario claro y la zona Pecho con su nombre](estudio-tienda-celular-claro.webp) | ![El mismo estudio en modo oscuro](estudio-tienda-celular-oscuro.webp) |
+
+Las de escritorio son del 2026-10-19, con el marco del lienzo de antes (el
+recuadro); falta volver a tomarlas con la escena del kit en una ventana ancha.
 
 | Estudio · escritorio claro (1366 × 900) | Estudio · escritorio oscuro (1366 × 900) |
 |---|---|
@@ -827,3 +830,43 @@ transparente: queda probar la edición de píxeles sobre una foto opaca.
 Se conserva el aviso visual de cambios; la página anterior tampoco tenía
 un bloqueo de navegación global al salir. No se hicieron cobros ni
 despliegues. Conservar los respaldos hasta validar en producción.
+
+### Estudio: el marco del lienzo del kit (2026-10-20)
+
+El lienzo de Fabric quedaba dentro del recuadro de la página de antes (con
+su ayuda "Tu diseño irá en…" y un escenario oscuro de noche). Ahora la
+escena es la de P12 en los dos lados: **`EscenaEstudio`**
+(`paginas/MarcoEstudio.jsx`) pone las pestañas de los lados (con cuántos
+diseños lleva cada uno), la prenda, la `BarraLienzo` y "Zona elegida: Frente
+· Pecho"; la demo le pasa `LienzoPrenda` y la tienda, el lienzo de Fabric.
+
+- El escenario de la prenda es el de `LienzoPrenda`: `--escenario-foto`
+  (claro también de noche) con la esquina de etiqueta, sin recuadro.
+- La zona elegida lleva su nombre en una pastilla violeta encima, como en
+  el kit. Fabric la pinta (`after:render`) con el nombre ya traducido; no se
+  pinta mientras otra zona recibe lo que se arrastra.
+- En escritorio el lienzo mide lo del kit (`min(66vh, 680px)`) y la escena
+  queda fija al bajar, debajo de la cabecera. El panel sigue como en la
+  tienda: con su propio desplazamiento y la compra siempre a la vista.
+- En el celular la prenda sigue arriba mientras el panel sube por debajo;
+  la separa el fondo de la página con una línea, sin recuadro ni sombra.
+- La ayuda de antes ("Arrástralo para moverlo…", "Un dedo lo mueve…") deja
+  su lugar a "Zona elegida", como el kit; los gestos los explica la guía de
+  la primera vez (`GuiaGestos`) y los atajos, su hoja.
+
+**Traducción.** Las frases van enteras: el traductor quita los espacios de
+los bordes, y "Quitar los " + 3 salía "Remove the3". "Tu texto en Frente ·
+Pecho", "3 elementos elegidos", "Quitar los 3" y "Suelta aquí para pasar a
+Espalda" se traducen como una frase (`TextoResaltado` marca la zona); las
+etiquetas van con su valor aparte ("Calidad de impresión: buena", "Se agrega
+en: Frente · Pecho"). Ya no se mandan a traducir "%", "Aa", "N", "C" ni
+"+". También pasan por la traducción "Subiendo tu imagen…", "Cargando tu
+diseño…", "Suelta tu imagen en …" y las pestañas de los lados.
+
+**Probado** con los emuladores: la escena en el celular (claro y oscuro,
+capturas arriba), cambiar de lado, la pastilla de la zona, el lienzo fijo
+mientras sube el panel, agregar un texto (la vista se acerca a su zona), la
+guía de gestos, escritorio a 1280 (medidas y lienzo grande; la captura no:
+el panel del navegador mide 780 px) y la demo del estudio con la misma
+escena. **No probado:** el inglés (el traductor no responde en este
+navegador) y un teléfono de verdad.

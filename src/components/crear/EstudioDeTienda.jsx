@@ -5,7 +5,7 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fabric } from 'fabric';
 import { ImagePlus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
-  Crosshair, Maximize2, RotateCw, Crop, Eraser, Loader2, Info, Undo2, Redo2, Clipboard, ClipboardPaste, Pencil, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
+  Crosshair, Maximize2, RotateCw, Crop, Eraser, Loader2, Undo2, Redo2, Clipboard, ClipboardPaste, Pencil, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
   AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter, ArrowLeftRight,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -42,9 +42,9 @@ import Boton from '../../componentes/kit/Boton';
 import { Aviso, EstadoVacio, HojaInferior } from '../../componentes/kit/Feedback';
 import { EsqueletoPagina } from '../../componentes/kit/Esqueletos';
 import { CapaCargando } from '../../componentes/kit/Cargando';
-import { Pestanas } from '../../componentes/kit/Navegacion';
-import { Texto } from '../../componentes/kit/Traduccion';
-import { MarcoEstudio, InicioLienzoEstudio } from '../../componentes/kit/paginas/MarcoEstudio';
+import { TextoResaltado } from '../../componentes/kit/piezas/TextoResaltado';
+import { Texto, useTexto } from '../../componentes/kit/Traduccion';
+import { MarcoEstudio, InicioLienzoEstudio, EscenaEstudio } from '../../componentes/kit/paginas/MarcoEstudio';
 import { CompraEstudio } from '../../componentes/kit/piezas/CompraEstudio';
 import { HojasEstudio } from '../../componentes/kit/piezas/HojasEstudio';
 import styles from './EstudioDeTienda.module.css';
@@ -349,6 +349,11 @@ const EstudioDeTienda = () => {
   const vista = cfg?.vistas.find((v) => v.id === vistaId) || cfg?.vistas[0] || null;
   const zona = vista?.zonas.find((z) => z.id === zonaId) || vista?.zonas[0] || null;
   zonaRef.current = zona?.id || null;
+  // El nombre de la zona elegida va en una pastilla encima de ella (como
+  // LienzoPrenda del kit); Fabric lo pinta, así que se pasa ya traducido.
+  const nombreZona = useTexto(zona?.nombre || '');
+  const nombreZonaRef = useRef('');
+  nombreZonaRef.current = nombreZona;
   // Sin elección, la variante principal del producto (no la primera de la lista).
   const colorPrincipal = cfg?.colores.find((c) => c.id === prenda?.defaultVariantId) || cfg?.colores[0] || null;
   const color = cfg?.colores.find((c) => c.id === colorId) || colorPrincipal;
@@ -1300,13 +1305,13 @@ const EstudioDeTienda = () => {
       camaraApiRef.current.mover(dx, dy);
     });
     // Etiqueta redondeada (medidas de las guías y burbuja al agrandar o girar).
-    const etiqueta = (ctx, texto, x, y, fondo) => {
+    const etiqueta = (ctx, texto, x, y, fondo, { pastilla = false } = {}) => {
       ctx.font = '700 11px Montserrat, system-ui, sans-serif';
-      const w = ctx.measureText(texto).width + 12;
+      const w = ctx.measureText(texto).width + (pastilla ? 16 : 12);
       const h = 18;
       const x0 = Math.round(Math.min(Math.max(x - w / 2, 2), lienzo.getWidth() - w - 2));
       const y0 = Math.round(Math.min(Math.max(y - h / 2, 2), lienzo.getHeight() - h - 2));
-      const r = 6;
+      const r = pastilla ? h / 2 : 6;
       ctx.beginPath();
       ctx.moveTo(x0 + r, y0);
       ctx.arcTo(x0 + w, y0, x0 + w, y0 + h, r);
@@ -1322,6 +1327,15 @@ const EstudioDeTienda = () => {
       ctx.fillText(texto, x0 + w / 2, y0 + h / 2 + 0.5);
     };
     lienzo.on('after:render', ({ ctx }) => {
+      // La zona elegida lleva su nombre encima (no mientras otra zona recibe lo arrastrado).
+      const guiaElegida = zonaRef.current && !destinoZonaRef.current && nombreZonaRef.current
+        ? lienzo.getObjects().find((o) => o.guiaZona === zonaRef.current) : null;
+      if (guiaElegida) {
+        const z = guiaElegida.getBoundingRect(false, true);
+        ctx.save();
+        etiqueta(ctx, nombreZonaRef.current, z.left + z.width / 2, z.top - 13, VIOLETA, { pastilla: true });
+        ctx.restore();
+      }
       const h = hoverRef.current;
       const hayHover = h && !h.group && h !== lienzo.getActiveObject() && lienzo.getObjects().includes(h);
       const guias = guiasRef.current;
@@ -1607,7 +1621,7 @@ const EstudioDeTienda = () => {
     lienzo.requestRenderAll();
   }, [color]);
 
-  useEffect(() => { pintarGuias(); }, [zona?.id, pintarGuias]);
+  useEffect(() => { pintarGuias(); }, [zona?.id, nombreZona, pintarGuias]);
 
   // Redibuja todo al cambiar de vista, de color, de tamaño o de estructura.
   // Primero se prepara todo (foto, zonas e imágenes del diseño) y después se
@@ -1640,8 +1654,7 @@ const EstudioDeTienda = () => {
         // con un 78 % fijo se pasaba del borde y había que bajar la página.
         const altoMax = window.innerWidth <= 768
           ? Math.max(180, Math.min(window.innerHeight * 0.47, altoDisponibleLienzo || window.innerHeight * 0.47))
-          : Math.max(380, window.innerHeight
-            - ((contenedorRef.current?.getBoundingClientRect().top || 0) + window.scrollY) - 110);
+          : Math.max(380, Math.min(window.innerHeight * 0.66, 680));
         const ancho = Math.min(anchoLienzo, Math.floor(altoMax / proporcion));
         const margen = ancho * 0.04;
         const iw = ancho - margen * 2;
@@ -3330,10 +3343,26 @@ const EstudioDeTienda = () => {
         </>
       )}
       lienzo={(
-        <section
-          ref={areaLienzoRef}
-          className={styles.areaLienzo}
-          aria-label="Lienzo de diseño"
+        <EscenaEstudio
+          escenaRef={areaLienzoRef}
+          className={styles.escena}
+          lados={cfg.vistas.map((v) => ({ id: v.id, nombre: v.nombre, cuenta: v.zonas.reduce((n, z) => n + (capasPorZona[z.id]?.length || 0), 0) }))}
+          lado={vista.id}
+          onLado={cambiarVista}
+          zona={zona ? `${vista.nombre} · ${zona.nombre}` : undefined}
+          barra={(
+            <BarraLienzo
+              {...historialInfo} onDeshacer={deshacer} onRehacer={rehacer}
+              elegido={Boolean(capaSel) || multiIds.length > 1}
+              onAchicar={() => escalar(1 / 1.12)} onAgrandar={() => escalar(1.12)}
+              onCentrar={centrar} onQuitar={eliminar} onImagen={elegirImagen}
+              onTexto={() => agregarTexto(undefined, { editar: true })}
+              zoom={zoomManual} onZoom={(z) => zoomHacia(z, null, true)}
+              onAtajos={CON_MOUSE ? () => setVerAtajos(true) : undefined}
+              onEditar={() => mostrarEditor(capaSel?.type === 'text')}
+              completa={verCompleta} onVerCompleta={zonaAcercada ? alternarVerCompleta : undefined}
+            />
+          )}
           onDragOver={(e) => {
             if (![...e.dataTransfer.types].includes('Files')) return;
             e.preventDefault();
@@ -3350,14 +3379,12 @@ const EstudioDeTienda = () => {
             else toast.info('Suelta una imagen PNG, JPG o WebP.');
           }}
         >
-          {cfg.vistas.length > 1 && <Pestanas etiqueta="Lado de la prenda" opciones={cfg.vistas.map((v) => ({ id: v.id, texto: v.nombre, cuenta: v.zonas.reduce((n,z) => n + (capasPorZona[z.id]?.length || 0), 0) || undefined }))} valor={vista.id} onChange={cambiarVista} />}
-
           <div ref={contenedorRef} className={styles.lienzoCaja} aria-busy={cargandoLienzo}>
             <canvas ref={canvasElRef} />
             {cargandoLienzo && (
               <div className={`${styles.cargandoLienzo} ${primerDibujoRef.current ? styles.cargandoPrimero : ''}`} role="status">
                 <Loader2 size={26} className={styles.girando} aria-hidden="true" />
-                <span>Cargando tu diseño…</span>
+                <span><Texto>Cargando tu diseño…</Texto></span>
               </div>
             )}
             {listo && !cargandoLienzo && !soltando && zonasUsadas.length === 0 && <InicioLienzoEstudio zona={vista.nombre + " · " + zona.nombre} onImagen={elegirImagen} onTexto={() => agregarTexto(undefined, { editar: true })} subiendo={subiendo > 0} />}
@@ -3367,7 +3394,7 @@ const EstudioDeTienda = () => {
               <div className={styles.soltarLados} role="status">
                 {cfg.vistas.filter((v) => v.id !== vista.id).map((v) => (
                   <span key={v.id} data-soltar-lado={v.id} className={`${styles.soltarLado} ${arrastreLado.lado === v.id ? styles.soltarLadoActivo : ''}`}>
-                    <ArrowLeftRight size={16} aria-hidden="true" /> Suelta aquí para pasar a <strong>{v.nombre}</strong>
+                    <ArrowLeftRight size={16} aria-hidden="true" /> <TextoResaltado resaltar={[v.nombre]}>{`Suelta aquí para pasar a ${v.nombre}`}</TextoResaltado>
                   </span>
                 ))}
               </div>
@@ -3375,34 +3402,12 @@ const EstudioDeTienda = () => {
             {soltando && (
               <div className={styles.soltarAqui} aria-hidden="true">
                 <ImagePlus size={28} />
-                Suelta tu imagen en {zona?.nombre || 'la prenda'}
+                <Texto>{zona?.nombre ? `Suelta tu imagen en ${zona.nombre}` : 'Suelta tu imagen en la prenda'}</Texto>
               </div>
             )}
           </div>
 
-          <BarraLienzo
-            {...historialInfo} onDeshacer={deshacer} onRehacer={rehacer}
-            elegido={Boolean(capaSel) || multiIds.length > 1}
-            onAchicar={() => escalar(1 / 1.12)} onAgrandar={() => escalar(1.12)}
-            onCentrar={centrar} onQuitar={eliminar} onImagen={elegirImagen}
-            onTexto={() => agregarTexto(undefined, { editar: true })}
-            zoom={zoomManual} onZoom={(z) => zoomHacia(z, null, true)}
-            onAtajos={CON_MOUSE ? () => setVerAtajos(true) : undefined}
-            onEditar={() => mostrarEditor(capaSel?.type === 'text')}
-            completa={verCompleta} onVerCompleta={zonaAcercada ? alternarVerCompleta : undefined}
-          />
-
-          <p className={styles.zonaInfo}>
-            <Info size={14} aria-hidden="true" />
-            {capaSel
-              ? (CON_MOUSE
-                ? 'Arrástralo para moverlo. Usa las esquinas o − y + para cambiar su tamaño.'
-                : 'Un dedo lo mueve. Con dos dedos lo agrandas, achicas o giras.')
-              : zonasUsadas.length === 0
-                ? `Tu diseño irá en ${zona.nombre.toLowerCase()} (la zona punteada). Sube una imagen o escribe un texto.`
-                : 'Toca tu imagen o tu texto para moverlo o cambiarlo.'}
-          </p>
-        </section>
+        </EscenaEstudio>
       )}
       panel={(
         <>
