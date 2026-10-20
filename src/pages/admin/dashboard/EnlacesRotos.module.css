@@ -1,0 +1,184 @@
+/* Tarjeta "Enlaces rotos" de dashboard/paginas. Botones violeta lisos. */
+
+.total {
+  display: inline-flex;
+  padding: 0.28rem 0.66rem;
+  border-radius: 999px;
+  background: rgba(109, 40, 217, 0.08);
+  color: var(--primary-color, #6d28d9);
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.fila {
+  padding: 0.7rem 0.8rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  display: grid;
+  gap: 0.35rem;
+}
+
+.cabeza {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.direccion {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.visitas {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  color: var(--primary-color, #6d28d9);
+  font-variant-numeric: tabular-nums;
+}
+
+.detalle {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.origenes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.origen {
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.05);
+  font-size: 0.72rem;
+  color: var(--gris-texto-secundario, #475569);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.atajos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.15rem;
+}
+
+.boton,
+.botonSecundario {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.38rem 0.75rem;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid var(--primary-color, #6d28d9);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.boton {
+  background: var(--primary-color, #6d28d9);
+  color: #fff;
+}
+
+.boton:hover {
+  background: #5b21b6;
+}
+
+.botonSecundario {
+  background: #fff;
+  color: var(--primary-color, #6d28d9);
+}
+
+.botonSecundario:hover:not(:disabled) {
+  background: rgba(109, 40, 217, 0.08);
+}
+
+.botonSecundario:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.o {
+  font-size: 0.74rem;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.select {
+  max-width: 220px;
+  padding: 0.34rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.15);
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.76rem;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.resuelta {
+  justify-self: start;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.nota {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.error {
+  width: 100%;
+  font-size: 0.74rem;
+  color: #b91c1c;
+}
+
+.verTodos {
+  margin-top: 0.6rem;
+  border: none;
+  background: none;
+  padding: 0.2rem 0;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--primary-color, #6d28d9);
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boton,
+  .botonSecundario {
+    transition: none;
+  }
+}

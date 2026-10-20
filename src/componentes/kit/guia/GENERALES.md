@@ -92,6 +92,12 @@ páginas no cargan datos, así que casi nunca se ve.
     `services/analytics/enlacesRotos.js`, aparte de `tracker.js` para no
     pesar en el archivo principal; la misma dirección no se cuenta dos veces
     seguidas. Las reglas ya dejaban crear eventos: nada que desplegar.
+    En el admin se ven en `dashboard/paginas`, tarjeta "Enlaces rotos"
+    (`pages/admin/dashboard/EnlacesRotos.jsx`): las direcciones más pedidas
+    del rango, cuántas veces, cuántas personas y de dónde venían. Una
+    dirección de un tramo (`/promo`) trae dos atajos: crear la landing
+    (`/admin/landing-pages?nueva=promo`) o que lleve a una que ya existe
+    (se suma a sus `slugsAnteriores`).
 - **Descargar la app:** `pages/AppRedirect.jsx` monta
   `components/generales/DescargarAppDeTienda.jsx` (`PaginaDescargarApp`). La
   plataforma sale de `plataformaDesdeNavegador` (`adaptadoresGenerales.js`,

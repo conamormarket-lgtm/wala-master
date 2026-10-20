@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   BarChart,
   Bar,
@@ -32,6 +33,7 @@ import {
 } from './dashShared';
 import styles from '../AdminDashboard.module.css';
 import extra from './DashPaginas.extra.module.css';
+import EnlacesRotos, { CLAVE_ENLACES_ROTOS } from './EnlacesRotos';
 
 /**
  * DashPaginas — sub-página de PÁGINAS:
@@ -40,6 +42,7 @@ import extra from './DashPaginas.extra.module.css';
  *   - Top rutas por page views (BarChart horizontal)
  *   - Páginas más visitadas (RankingConMiniaturas)
  *   - Búsquedas más frecuentes
+ *   - Enlaces rotos (page_not_found, con atajos a landings)
  *
  * Conserva el comportamiento original: mismo origen de datos
  * (useGlobalAnalytics), misma serie temporal derivada de `eventsForCharts`,
@@ -51,6 +54,7 @@ export default function DashPaginas() {
   const { rangeDays, setRangeDays, dateRange } = useDateRange(30);
   const { data, isLoading, isFetching, error, refetch, dataUpdatedAt } = useGlobalAnalytics(dateRange);
   const [trafficMode, setTrafficMode] = useState('total');
+  const queryClient = useQueryClient();
 
   /* ----- series temporales de page_views por dia (mismo origen que antes) ----- */
   const trafficByDay = useMemo(() => {
@@ -253,7 +257,10 @@ export default function DashPaginas() {
             subtitle={`Tráfico por página y búsquedas · últimos ${rangeDays} días`}
             rangeDays={rangeDays}
             setRangeDays={setRangeDays}
-            onRefresh={() => refetch()}
+            onRefresh={() => {
+              refetch();
+              queryClient.invalidateQueries({ queryKey: [CLAVE_ENLACES_ROTOS] });
+            }}
             isFetching={isFetching}
             lastUpdated={lastUpdated}
           />
@@ -377,6 +384,11 @@ export default function DashPaginas() {
               )}
             </ul>
           </GlassCard>
+        </motion.div>
+
+        {/* Enlaces rotos: direcciones que no existen (page_not_found). */}
+        <motion.div variants={itemVariants}>
+          <EnlacesRotos dateRange={dateRange} />
         </motion.div>
 
         {/* Seguimiento de pedidos (WALA) — engagement sobre el estado del pedido.

@@ -5,7 +5,7 @@ import { getProducts } from '../../../services/products';
 import { getBrands } from '../../../services/brands';
 import Button from '../../../components/common/Button';
 import styles from '../../admin/AdminLandingPages.module.css';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const AdminLandingPages = () => {
   const [pages, setPages] = useState([]);
@@ -15,6 +15,10 @@ const AdminLandingPages = () => {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
+  // ?nueva=<slug>: viene del atajo "Crear landing" de Enlaces rotos
+  // (dashboard/paginas) y abre una landing nueva con esa URL.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const slugNueva = searchParams.get('nueva');
 
   const [formData, setFormData] = useState({
     id: null,
@@ -32,6 +36,13 @@ const AdminLandingPages = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (loading || !slugNueva) return;
+    handleAddNew();
+    setFormData((f) => ({ ...f, slug: slugNueva }));
+    setSearchParams({}, { replace: true });
+  }, [loading, slugNueva]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchData = async () => {
     setLoading(true);
