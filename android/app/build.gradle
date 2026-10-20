@@ -39,7 +39,12 @@ android {
     buildTypes {
         release {
             signingConfig signingConfigs.release
-            minifyEnabled false
+            // R8: achica, optimiza y ofusca el código (Play Console marcaba la
+            // optimización DEX como "Baja" y la ofuscación en 3 %). Lo que se
+            // carga por reflexión o desde la web está en proguard-rules.pro.
+            // shrinkResources quita los recursos que nadie usa.
+            minifyEnabled true
+            shrinkResources true
             proguardFiles(getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro')
         }
     }
