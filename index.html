@@ -159,10 +159,13 @@
            BrandLoaderOverlay), en las recargas siguientes no se repite el
            morado: el fondo de la página (claro u oscuro, data-theme ya está
            puesto) con el mismo conjunto a color. Corre inline, antes de
-           cualquier bundle. */
+           cualquier bundle. En la app de Android no: cada arranque sale del
+           splash nativo (la etiqueta sobre violeta) y sigue en esta pantalla
+           de marca, como una app. */
         (function () {
           try {
-            if (localStorage.getItem('wala_brand_seen') === '1') {
+            var app = Boolean(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+            if (!app && localStorage.getItem('wala_brand_seen') === '1') {
               var el = document.getElementById('app-loading');
               if (el) {
                 var oscuro = document.documentElement.getAttribute('data-theme') === 'dark';

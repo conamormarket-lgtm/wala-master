@@ -4,4 +4,7 @@
     <color name="colorPrimaryDark">#5B21B6</color>
     <color name="colorAccent">#8B5CF6</color>
     <color name="splashBackground">#7C3AED</color>
+    <!-- El centro del degradado de la pantalla de carga de la web
+         (#8B5CF6 → #5B21B6): el splash del sistema solo admite un color. -->
+    <color name="splashFondo">#733ED6</color>
 </resources>

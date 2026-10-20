@@ -18,10 +18,16 @@
         <item name="android:navigationBarColor">@color/splashBackground</item>
     </style>
 
+    <!-- Arranque: el splash del sistema (Android 12+, y el mismo en las versiones
+         anteriores con core-splashscreen) con la etiqueta blanca de la pantalla
+         de carga de la web, al mismo tamaño (88 dp). MainActivity lo mantiene
+         hasta que la web pintó la suya y entonces sube la etiqueta a su lugar y
+         se funde: se ve una sola pantalla de carga, no tres. -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
-        <item name="android:windowBackground">@drawable/splash</item>
-        <item name="android:statusBarColor">@color/splashBackground</item>
-        <item name="android:navigationBarColor">@color/splashBackground</item>
+        <item name="windowSplashScreenBackground">@color/splashFondo</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_etiqueta</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+        <item name="android:statusBarColor">@color/splashFondo</item>
+        <item name="android:navigationBarColor">@color/splashFondo</item>
     </style>
-</resources>
+</resources>
