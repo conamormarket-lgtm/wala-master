@@ -180,7 +180,7 @@ img[loading="lazy"] {
     color: inherit;
   }
 
-  /* La capa táctil de la app y la web móvil dibuja su propio halo. */
+  /* La capa táctil de la app y la web móvil dibuja el indicador del dedo. */
   * {
     -webkit-tap-highlight-color: transparent;
   }

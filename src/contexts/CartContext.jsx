@@ -8,7 +8,6 @@ import { db, auth } from '../services/firebase/config';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 import { trackAddToCart } from '../services/analytics/tracker';
 import { nombreConCreacion } from '../utils/nombreCreacion';
-import { captureTouchConfirmation } from '../interactions/touchFeedback.mjs';
 
 const CartContext = createContext();
 
@@ -391,7 +390,6 @@ export const CartProvider = ({ children }) => {
   }, []);
 
   const addToCart = React.useCallback((product, variant = {}, customization = null, quantity = 1, comboData = null, options = {}) => {
-    const confirmTouch = captureTouchConfirmation();
     // Producto con UNA sola variante (un sérum, un reloj): no hay nada que
     // elegir, así que se usa esa. Sin esto, los "agregar" rápidos (ideas de
     // regalo, lista de deseos…) lo dejaban en el carrito con "Falta elegir
@@ -569,7 +567,6 @@ export const CartProvider = ({ children }) => {
         return [...base, cartItem];
       }
     });
-    confirmTouch();
   }, [avisar]);
 
   const removeFromCart = React.useCallback((itemId) => {
