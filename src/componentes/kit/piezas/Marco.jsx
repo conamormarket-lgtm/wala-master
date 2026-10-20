@@ -85,8 +85,9 @@ export function BarraAdmin({ editando = false, onEditor, editarEn, panel = '/adm
     modo: useTexto('Modo administrador'),
     panel: useTexto('Panel de administración'),
     corto: useTexto('Panel'),
-    editor: useTexto(textoEditor || (editarEn ? 'Editar' : editando ? 'Guardar y salir' : 'Editar esta página')),
   };
+  // En español: Boton lo traduce.
+  const editor = textoEditor || (editarEn ? 'Editar' : editando ? 'Guardar y salir' : 'Editar esta página');
 
   // El alto real (cambia con el idioma y el tamaño de letra), no un número fijo.
   useLayoutEffect(() => {
@@ -117,10 +118,10 @@ export function BarraAdmin({ editando = false, onEditor, editarEn, panel = '/adm
           </Enlace>
         )}
         {editarEn ? (
-          <Boton tamano="sm" to={editarEn} icono={<Pencil aria-hidden="true" />}>{t.editor}</Boton>
+          <Boton tamano="sm" to={editarEn} icono={<Pencil aria-hidden="true" />}>{editor}</Boton>
         ) : onEditor && (
           <Boton tamano="sm" variante={editando ? 'secundario' : 'primario'} onClick={onEditor}>
-            {t.editor}
+            {editor}
           </Boton>
         )}
       </div>
@@ -180,8 +181,9 @@ export function AvisoIdioma({ idioma = {}, onCambiar, onMantener, flotante = fal
         {idioma.texto && <span>{idioma.texto}</span>}
       </div>
       <div className={s.idiomaAcciones}>
-        <Boton tamano="sm" onClick={onCambiar}>{idioma.cambiar || idioma.nombre}</Boton>
-        <Boton tamano="sm" variante="fantasma" onClick={onMantener}>{idioma.mantener || 'Seguir en español'}</Boton>
+        {/* En un fragmento: así Boton no los vuelve a traducir. */}
+        <Boton tamano="sm" onClick={onCambiar}><>{idioma.cambiar || idioma.nombre}</></Boton>
+        <Boton tamano="sm" variante="fantasma" onClick={onMantener}><>{idioma.mantener || 'Seguir en español'}</></Boton>
       </div>
     </div>
   );
@@ -262,7 +264,7 @@ export function VentanaCampana({
     return <AnuncioImagen {...{ abierta, onCerrar, imagen, titulo: tituloTraducido, onAccion, contenida }} />;
   }
   return (
-    <HojaInferior abierta={abierta} onCerrar={onCerrar} contenida={contenida} titulo={tituloTraducido}>
+    <HojaInferior abierta={abierta} onCerrar={onCerrar} contenida={contenida} titulo={titulo}>
       <div className={s.campana}>
         {imagen && <div className={s.campanaFoto}><img {...atributosDeFoto(imagen, '600px')} alt="" /></div>}
         {antetitulo && <EtiquetaColgante tamano="sm"><Texto>{antetitulo}</Texto></EtiquetaColgante>}

@@ -4,6 +4,7 @@ import Boton from '../Boton';
 import { Aviso } from '../Feedback';
 import { CapaCargando } from '../Cargando';
 import { Texto } from '../Traduccion';
+import { TextoResaltado } from './TextoResaltado';
 import s from './Pago.module.css';
 
 /*
@@ -93,7 +94,7 @@ export function PagoPaypal({ montoUsd = 0, equivalente, mostrarMonto = true, bot
     <div className={s.pago} data-componente="PagoPaypal">
       {mostrarMonto && (
         <p className={s.monto}>
-          <Texto>Pagarás</Texto> <strong>US$ {montoUsd.toFixed(2)}</strong>
+          <TextoResaltado resaltar={[`US$ ${montoUsd.toFixed(2)}`]}>{`Pagarás US$ ${montoUsd.toFixed(2)}`}</TextoResaltado>
           {equivalente && <span> ({equivalente})</span>}
         </p>
       )}

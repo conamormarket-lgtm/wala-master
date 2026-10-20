@@ -9,6 +9,7 @@ import styles from './CulqiCustomCheckout.module.css';
 // El bloqueo mientras cobra, con el kit (paso 3). pagosViejo vuelve al de antes.
 import { CapaCargando } from '../../componentes/kit/Cargando';
 import useLoViejo from '../../hooks/useLoViejo';
+import { Texto, useTexto } from '../../componentes/kit/Traduccion';
 
 const CULQI_SCRIPT_ID = 'culqi-js-v4';
 
@@ -86,6 +87,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen
   // del cobro ('aprobado'), hasta que el padre navegue.
   const [pantalla, setPantalla] = useState(null);
   const pagosViejo = useLoViejo('pagos');
+  const textoBoton = useTexto(buttonLabel || 'Pagar con tarjeta');
   const culqiRef = useRef(null);
 
   // Identidad ESTABLE del pedido (sobrevive a remontes): con ella reutilizamos la
@@ -391,14 +393,14 @@ const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen
             disabled={isProcessing}
           >
             {isProcessing ? (
-              <><span className={styles.spinner} aria-hidden="true" /> Procesando tu pago...</>
+              <><span className={styles.spinner} aria-hidden="true" /> <Texto>{'Procesando tu pago...'}</Texto></>
             ) : (
-              <><CreditCard size={20} aria-hidden="true" /> {buttonLabel || 'Pagar con tarjeta'}</>
+              <><CreditCard size={20} aria-hidden="true" /> {textoBoton}</>
             )}
           </button>
           <p className={styles.secureNote}>
             <Lock size={13} aria-hidden="true" />
-            Pago seguro con Culqi. Walá no guarda los datos de tu tarjeta.
+            <Texto>{'Pago seguro con Culqi. Walá no guarda los datos de tu tarjeta.'}</Texto>
           </p>
         </>
       )}

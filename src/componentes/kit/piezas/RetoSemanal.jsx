@@ -27,8 +27,6 @@ export function RetoSemanal({ titulo, descripcion, recompensa, progreso = 0, met
   const [resultado, setResultado] = useState(null);
   const t = {
     reto: useTexto('Reto semanal'),
-    avance: useTexto('Tu avance'),
-    pega: useTexto('Pega el enlace de tu foto o historia'),
     enlace: useTexto('Enlace de tu evidencia'),
   };
 
@@ -63,13 +61,13 @@ export function RetoSemanal({ titulo, descripcion, recompensa, progreso = 0, met
         <Aviso compacto tipo="exito"><Texto>¡Reto completado! Ya te dimos el premio.</Texto></Aviso>
       ) : (
         <>
-          <BarraProgreso valor={Math.min(progreso, meta)} max={meta} minimo={0} etiqueta={t.avance} />
+          <BarraProgreso valor={Math.min(progreso, meta)} max={meta} minimo={0} etiqueta="Tu avance" />
           {conEvidencia && (
             <form className={s.evidencia} onSubmit={enviar}>
               <Campo
                 type="url"
                 inputMode="url"
-                placeholder={t.pega}
+                placeholder="Pega el enlace de tu foto o historia"
                 aria-label={t.enlace}
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}

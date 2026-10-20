@@ -1,6 +1,25 @@
 import React, { Children, useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTexto } from './Traduccion';
 import s from './Carrusel.module.css';
+
+/** Un elemento del carrusel ("2 de 8" para lectores de pantalla, traducido entero). */
+function Elemento({ numero, total, children }) {
+  return <div className={s.elemento} role="group" aria-label={useTexto(`${numero} de ${total}`)}>{children}</div>;
+}
+
+/** Un punto de la paginación ("Ir a la página 2"). */
+function Punto({ numero, activo, onClick }) {
+  return (
+    <button
+      type="button"
+      className={[s.punto, activo && s.puntoActivo].filter(Boolean).join(' ')}
+      aria-label={useTexto(`Ir a la página ${numero}`)}
+      aria-current={activo ? 'true' : undefined}
+      onClick={onClick}
+    />
+  );
+}
 
 /**
  * Carrusel único del kit (antes había 6: FeaturedCarousel, Testimonials,
@@ -36,6 +55,7 @@ export default function Carrusel({
   const [estado, setEstado] = useState({ inicio: true, fin: true, pagina: 0, paginas: 1 });
   const pausa = useRef({ raton: false, foco: false, toque: 0 });
   const elementos = Children.toArray(children);
+  const t = { nombre: useTexto(etiqueta), tipo: useTexto('carrusel'), anterior: useTexto('Anterior'), siguiente: useTexto('Siguiente') };
 
   const medir = useCallback(() => {
     const el = pista.current;
@@ -106,8 +126,8 @@ export default function Carrusel({
       className={[s.carrusel, variante && s[variante], className].filter(Boolean).join(' ')}
       style={estilo}
       role="region"
-      aria-roledescription="carrusel"
-      aria-label={etiqueta}
+      aria-roledescription={t.tipo}
+      aria-label={t.nombre}
       onPointerEnter={(e) => { if (e.pointerType === 'mouse' && pausarConRaton) pausa.current.raton = true; }}
       onPointerLeave={() => { pausa.current.raton = false; }}
       onFocus={() => { pausa.current.foco = true; }}
@@ -117,18 +137,18 @@ export default function Carrusel({
     >
       <div className={s.pista} ref={pista}>
         {elementos.map((el, i) => (
-          <div key={el.key ?? i} className={s.elemento} role="group" aria-label={`${i + 1} de ${elementos.length}`}>
+          <Elemento key={el.key ?? i} numero={i + 1} total={elementos.length}>
             {el}
-          </div>
+          </Elemento>
         ))}
       </div>
 
       {flechas && !(estado.inicio && estado.fin) && (
         <>
-          <button type="button" className={`${s.flecha} ${s.anterior}`} onClick={() => mover(-1)} disabled={estado.inicio} aria-label="Anterior">
+          <button type="button" className={`${s.flecha} ${s.anterior}`} onClick={() => mover(-1)} disabled={estado.inicio} aria-label={t.anterior}>
             <ChevronLeft aria-hidden="true" />
           </button>
-          <button type="button" className={`${s.flecha} ${s.siguiente}`} onClick={() => mover(1)} disabled={estado.fin && !autoplay} aria-label="Siguiente">
+          <button type="button" className={`${s.flecha} ${s.siguiente}`} onClick={() => mover(1)} disabled={estado.fin && !autoplay} aria-label={t.siguiente}>
             <ChevronRight aria-hidden="true" />
           </button>
         </>
@@ -137,14 +157,7 @@ export default function Carrusel({
       {puntos && estado.paginas > 1 && (
         <div className={s.puntos}>
           {Array.from({ length: estado.paginas }, (_, i) => (
-            <button
-              key={i}
-              type="button"
-              className={[s.punto, i === estado.pagina && s.puntoActivo].filter(Boolean).join(' ')}
-              aria-label={`Ir a la página ${i + 1}`}
-              aria-current={i === estado.pagina ? 'true' : undefined}
-              onClick={() => irA(i)}
-            />
+            <Punto key={i} numero={i + 1} activo={i === estado.pagina} onClick={() => irA(i)} />
           ))}
         </div>
       )}

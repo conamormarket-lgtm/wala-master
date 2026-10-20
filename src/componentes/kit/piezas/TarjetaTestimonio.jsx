@@ -12,13 +12,13 @@ import s from './TarjetaTestimonio.module.css';
  * La opinión y el tema pasan por la traducción (el nombre y la ciudad, tal cual).
  */
 export function TarjetaTestimonio({ texto, autor, ciudad, tema, puntuacion = 0, avatar, verificado = false, giro = 0 }) {
-  const deEstrellas = useTexto('de 5 estrellas');
+  const estrellas = useTexto(`${puntuacion} de 5 estrellas`);
   return (
     <figure className={s.testimonio} style={{ '--giro': `${giro}deg` }}>
       <span className={s.comillas} aria-hidden="true">“</span>
       {tema && <p className={s.tema}><Texto>{tema}</Texto></p>}
       {puntuacion > 0 && (
-        <p className={s.estrellas} aria-label={`${puntuacion} ${deEstrellas}`}>
+        <p className={s.estrellas} aria-label={estrellas}>
           {Array.from({ length: 5 }, (_, n) => <Star key={n} className={n < puntuacion ? s.llena : undefined} aria-hidden="true" />)}
         </p>
       )}

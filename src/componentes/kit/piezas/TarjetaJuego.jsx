@@ -6,7 +6,7 @@ import { Aviso } from '../Feedback';
 import CuentaRegresiva from '../CuentaRegresiva';
 import { IconoWala } from '../IconosWala';
 import { BarraProgreso } from './BarraProgreso';
-import { Texto, useTexto } from '../Traduccion';
+import { Texto } from '../Traduccion';
 import s from './TarjetaJuego.module.css';
 
 /* Botón según lo que se puede hacer: el violeta lleno es siempre "jugar". */
@@ -40,11 +40,6 @@ const ICONOS_NOTA = { bloqueo: <Lock aria-hidden="true" />, hecho: <Check aria-h
  */
 export function TarjetaJuego({ imagen, srcSet, prioridad = false, titulo, descripcion, estado, recompensa, racha, nota, accion, espera, atenuada = false, bloqueada = false }) {
   const boton = accion ? ACCIONES[accion.tipo] || ACCIONES.jugar : null;
-  const t = {
-    racha: useTexto(racha?.texto || 'Días reclamados'),
-    espera: useTexto(espera && typeof espera === 'object' ? espera.texto || 'Disponible de nuevo en' : undefined),
-    listo: useTexto('¡Ya está disponible!'),
-  };
   return (
     <article className={[s.juego, atenuada && s.atenuada, bloqueada && s.bloqueada].filter(Boolean).join(' ')}>
       <div className={s.banner}>
@@ -87,7 +82,7 @@ export function TarjetaJuego({ imagen, srcSet, prioridad = false, titulo, descri
             pasos
             valor={racha.dias}
             max={racha.de || 7}
-            etiqueta={t.racha}
+            etiqueta={racha.texto || 'Días reclamados'}
           />
         )}
 
@@ -103,7 +98,7 @@ export function TarjetaJuego({ imagen, srcSet, prioridad = false, titulo, descri
 
         {espera && (
           <p className={s.espera}>
-            {typeof espera === 'string' ? <Texto>{espera}</Texto> : <CuentaRegresiva variante="frase" hasta={espera.hasta} etiqueta={t.espera} textoFin={t.listo} />}
+            {typeof espera === 'string' ? <Texto>{espera}</Texto> : <CuentaRegresiva variante="frase" hasta={espera.hasta} etiqueta={espera.texto || 'Disponible de nuevo en'} textoFin="¡Ya está disponible!" />}
           </p>
         )}
       </div>

@@ -10,7 +10,8 @@ import { TarjetaRecompensa, TarjetaCupon, TarjetaMision, NivelCuenta, NIVELES } 
 import { FormaGanar, EnlaceInvitacion, FilaReferido, DetallePedidoReferido, RankingReferidos } from '../piezas/Referidos';
 import { FotoProducto } from '../piezas/FotoProducto';
 import { EsqueletoProducto, EsqueletoFila, EsqueletoTarjeta } from '../Esqueletos';
-import { Texto } from '../Traduccion';
+import { TextoResaltado } from '../piezas/TextoResaltado';
+import { Texto, useTexto } from '../Traduccion';
 import s from './CuentaRecompensas.module.css';
 
 /*
@@ -67,17 +68,17 @@ export function PaginaCatalogo({ recompensas = [], saldo = 0, cargando = false, 
         tono="oro"
         titulo={<Texto>Catálogo de recompensas</Texto>}
         subtitulo={<Texto>Canjea tus monedas por descuentos y premios.</Texto>}
-        accion={<p className={s.saldo}><Moneda tamano={22} /><strong>{miles(saldo)}</strong> <Texto>monedas</Texto></p>}
+        accion={<p className={s.saldo}><Moneda tamano={22} /><TextoResaltado resaltar={[miles(saldo)]}>{`${miles(saldo)} monedas`}</TextoResaltado></p>}
       />
       {aviso && (
         <Aviso
           tipo={aviso.tipo}
-          titulo={aviso.tipo === 'exito' ? <><Texto>¡Canjeaste</Texto> «<Texto>{aviso.titulo}</Texto>»!</> : aviso.titulo}
+          titulo={aviso.tipo === 'exito' ? `¡Canjeaste «${aviso.titulo}»!` : aviso.titulo}
           onCerrar={() => setAviso(null)}
           accion={aviso.tipo === 'exito' && <Boton to={urlCupones} tamano="sm" iconoFin={<ArrowRight aria-hidden="true" />}><Texto>Ver mis cupones</Texto></Boton>}
         >
           {aviso.tipo === 'exito'
-            ? (aviso.codigo ? <><Texto>Tu código es</Texto> <strong>{aviso.codigo}</strong>. <Texto>Lo tienes en Mis cupones.</Texto></> : 'Ya está en Mis cupones.')
+            ? (aviso.codigo ? <TextoResaltado resaltar={[aviso.codigo]}>{`Tu código es ${aviso.codigo}. Lo tienes en Mis cupones.`}</TextoResaltado> : 'Ya está en Mis cupones.')
             : aviso.texto}
         </Aviso>
       )}
@@ -129,7 +130,7 @@ export function PaginaCupones({ cupones = [], cargando = false, error = false, o
         subtitulo={<Texto>Escribe el código en el carrito, en el paso de pago, para aplicar el descuento.</Texto>}
       />
       {cupones.length > 0 && !cargando && (
-        <p className={s.cuenta}><strong>{disponibles}</strong> <Texto>{disponibles === 1 ? 'disponible' : 'disponibles'}</Texto> <Texto>de</Texto> {cupones.length}</p>
+        <p className={s.cuenta}><TextoResaltado resaltar={[disponibles]}>{`${disponibles} ${disponibles === 1 ? 'disponible' : 'disponibles'} de ${cupones.length}`}</TextoResaltado></p>
       )}
       {error ? (
         <Aviso tipo="error" titulo="No pudimos cargar tus cupones" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={onReintentar}><Texto>Reintentar</Texto></Boton>}>
@@ -212,7 +213,7 @@ export function PaginaMisiones({
       <CabezaCuenta
         nivel={2}
         titulo={<Texto>Misiones de hoy</Texto>}
-        subtitulo={misiones.length ? <><Texto>{`${hechas} de ${misiones.length} completadas`}</Texto>{fecha ? ` · ${fecha}` : ''}</> : fecha}
+        subtitulo={<Texto>{misiones.length ? `${hechas} de ${misiones.length} completadas${fecha ? ` · ${fecha}` : ''}` : fecha}</Texto>}
       />
       {error ? (
         <Aviso tipo="error" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RotateCcw aria-hidden="true" />} onClick={onReintentar}><Texto>Reintentar</Texto></Boton>}>
@@ -244,6 +245,7 @@ function GrupoReferidos({ grupo, onReclamar, onVerPedido }) {
   const [todas, setTodas] = useState(false);
   const [abiertos, setAbiertos] = useState([]);
   const [reclamando, setReclamando] = useState(null);
+  const alEntregarse = useTexto('Se activa cuando el pedido se entrega');
   const personas = grupo.personas || [];
   const visibles = todas ? personas : personas.slice(0, VISIBLES);
   const cuentas = {
@@ -309,7 +311,7 @@ function GrupoReferidos({ grupo, onReclamar, onVerPedido }) {
                     <Boton tamano="sm" icono={<Coins aria-hidden="true" />} cargando={reclamando === p.id} onClick={reclamar(p)}><Texto>Reclamar monedas</Texto></Boton>
                   )}
                   {p.reclamo === 'revisando' && <Boton tamano="sm" variante="contorno" disabled><Texto>Revisando pedido…</Texto></Boton>}
-                  {p.reclamo === 'alEntregarse' && <Boton tamano="sm" variante="contorno" disabled title="Se activa cuando el pedido se entrega"><Texto>Reclamar al entregarse</Texto></Boton>}
+                  {p.reclamo === 'alEntregarse' && <Boton tamano="sm" variante="contorno" disabled title={alEntregarse}><Texto>Reclamar al entregarse</Texto></Boton>}
                   {p.reclamo === 'anulado' && <span className={s.grupoTexto}><Texto>El pedido se anuló, así que no genera monedas.</Texto></span>}
                 </>
               )}
@@ -359,6 +361,8 @@ export function PaginaReferidos({
   const verAbajo = useRef(onVerAbajo);
   verAbajo.current = onVerAbajo;
   const conVerAbajo = Boolean(onVerAbajo);
+  // El enlace va dentro de la frase: se busca la palabra traducida en la frase traducida.
+  const tienda = useTexto('tienda');
   useEffect(() => {
     const el = abajo.current;
     if (!conVerAbajo || !el) return undefined;
@@ -381,10 +385,10 @@ export function PaginaReferidos({
       />
       <div className={s.formas}>
         <FormaGanar icono="regalo" titulo="Invita a alguien nuevo">
-          <Texto>Con tu link crea su cuenta y recibe</Texto> <strong>{bono} <Texto>monedas</Texto></strong>. <Texto>Con su primera compra (tiene 30 días) tú ganas</Texto> <strong>{premio} <Texto>monedas</Texto></strong><Texto>, o el 5 % / 10 % si es más.</Texto>
+          <TextoResaltado resaltar={[`${bono} monedas`, `${premio} monedas`]}>{`Con tu link crea su cuenta y recibe ${bono} monedas. Con su primera compra (tiene 30 días) tú ganas ${premio} monedas, o el 5 % / 10 % si es más.`}</TextoResaltado>
         </FormaGanar>
         <FormaGanar icono="polera" titulo="Comparte un producto">
-          <Texto>Quien compre dentro de las 36 h desde que abre tu link te suma el</Texto> <strong>5 %</strong> <Texto>de su compra, o el</Texto> <strong>10 %</strong> <Texto>si pasa de S/ 200.</Texto>
+          <TextoResaltado resaltar={['5 %', '10 %']}>Quien compre dentro de las 36 h desde que abre tu link te suma el 5 % de su compra, o el 10 % si pasa de S/ 200.</TextoResaltado>
         </FormaGanar>
       </div>
       <p className={s.grupoNota}>
@@ -398,8 +402,8 @@ export function PaginaReferidos({
       >
         <EnlaceInvitacion url={url} onCompartir={onCompartir} onCopiar={onCopiar} />
         <p className={s.grupoNota}>
-          <Texto>Para un producto: ábrelo en la</Texto> <Enlace to={urlTienda} className={s.enlaceNota}><Texto>tienda</Texto></Enlace> <Texto>y toca compartir.</Texto>
-          {codigo && <> <Texto>Tu código es</Texto> <strong>{codigo}</strong>.</>}
+          <TextoResaltado resaltar={[tienda]} envolver={(parte, k) => <Enlace key={k} to={urlTienda} className={s.enlaceNota}>{parte}</Enlace>}>Para un producto: ábrelo en la tienda y toca compartir.</TextoResaltado>
+          {codigo && <> <TextoResaltado resaltar={[codigo]}>{`Tu código es ${codigo}.`}</TextoResaltado></>}
         </p>
       </TarjetaCuenta>
 
@@ -408,7 +412,7 @@ export function PaginaReferidos({
           nota={<Texto>{cuentasNuevas ? `${cuentasNuevas} ${cuentasNuevas === 1 ? 'creó su cuenta' : 'crearon su cuenta'} con tu invitación` : 'Por cualquiera de tus links.'}</Texto>} />
         <Estadistica icono={<ShoppingBag />} tono="rosa" etiqueta={<Texto>Compras</Texto>} valor={miles(compras)}
           nota={<Texto>{porReclamar ? `${porReclamar} por reclamar` : 'Hechas con tus links.'}</Texto>} />
-        <Estadistica icono={<Coins />} tono="oro" etiqueta={<Texto>Ganadas</Texto>} valor={miles(ganadas)} unidad={<Texto>monedas</Texto>} nota={<><Texto>Saldo actual:</Texto> {miles(monedas)}</>} />
+        <Estadistica icono={<Coins />} tono="oro" etiqueta={<Texto>Ganadas</Texto>} valor={miles(ganadas)} unidad={<Texto>monedas</Texto>} nota={<Texto>{`Saldo actual: ${miles(monedas)}`}</Texto>} />
       </div>
 
       <CabezaCuenta nivel={2} titulo={<Texto>Quiénes entraron a tus links</Texto>} subtitulo={cargando ? undefined : <Texto>{`${entraron} ${entraron === 1 ? 'persona' : 'personas'}`}</Texto>} />

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTexto } from './Traduccion';
 import s from './Esqueletos.module.css';
 
 /*
@@ -274,11 +275,12 @@ export const FORMA_DE_SECCION = {
  *  - etiqueta: lo que oye un lector de pantalla
  */
 export function EsqueletoSeccion({ tipo, etiqueta = 'Cargando' }) {
+  const nombre = useTexto(etiqueta);
   const forma = SECCIONES[tipo] ? tipo : FORMA_DE_SECCION[tipo] === undefined ? 'texto' : FORMA_DE_SECCION[tipo];
   if (!forma) return null;
   const Forma = SECCIONES[forma];
   return (
-    <div className={cx(s.seccion, s[`s_${forma}`])} role="status" aria-busy="true" aria-label={etiqueta} data-componente="EsqueletoSeccion">
+    <div className={cx(s.seccion, s[`s_${forma}`])} role="status" aria-busy="true" aria-label={nombre} data-componente="EsqueletoSeccion">
       <Forma />
     </div>
   );
@@ -1059,8 +1061,9 @@ const PAGINAS = {
  */
 export function EsqueletoPagina({ forma = 'productos', modulo, sesion = true, secciones, tarjetas, titulo = true }) {
   const lista = secciones || (forma === 'inicio' ? INICIO : null);
+  const nombre = useTexto('Cargando página');
   return (
-    <div className={s.pagina} role="status" aria-busy="true" aria-label="Cargando página" data-componente="EsqueletoPagina">
+    <div className={s.pagina} role="status" aria-busy="true" aria-label={nombre} data-componente="EsqueletoPagina">
       {lista ? lista.map((tipo, k) => {
         const f = SECCIONES[tipo] ? tipo : FORMA_DE_SECCION[tipo];
         if (!f) return null;

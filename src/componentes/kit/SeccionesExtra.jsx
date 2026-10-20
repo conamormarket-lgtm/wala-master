@@ -83,7 +83,7 @@ export function BannerPrincipal({ ajustes = {}, primera = false, onClicBoton }) 
         className={s.bannerTexto}
         style={{ justifyContent: POSICION_VERTICAL[textPosition] || 'center', alignItems: alinear, textAlign }}
       >
-        {ajustes.eyebrow && <EtiquetaColgante tono="blanco" tamano="lg">{ajustes.eyebrow}</EtiquetaColgante>}
+        {ajustes.eyebrow && <EtiquetaColgante tono="blanco" tamano="lg"><Texto>{ajustes.eyebrow}</Texto></EtiquetaColgante>}
         <TextoCampo ajustes={ajustes} campo="title" como="h1" className={s.bannerTitulo} style={{ color: titleColor || '#fff', ...fuenteDe(ajustes, 'title') }}>
           {title}
         </TextoCampo>
@@ -162,13 +162,14 @@ export function urlDeMapa(embed) {
 export function Ubicacion({ ajustes = {} }) {
   const { title = 'Encuéntranos', description = 'Visita nuestra tienda física', layout = 'mapRight', mapWidth = '50%', mapHeight = '400px' } = ajustes;
   const src = urlDeMapa(ajustes.embedUrl);
+  const tituloMapa = useTexto(src ? title || 'Ubicación' : undefined);
   if (!src && !title) return null;
   const apilado = layout === 'mapTop' || layout === 'mapBottom';
   return (
     <div className={[s.mapa, s[layout] || s.mapRight].filter(Boolean).join(' ')} style={{ '--ancho-mapa': apilado ? '100%' : mapWidth, '--alto-mapa': mapHeight }}>
       <div className={s.mapaTexto}>
         <span className={s.mapaSello} aria-hidden="true"><MapPin /></span>
-        {ajustes.eyebrow && <p className={s.mapaEtiqueta}><EtiquetaColgante tono="suave">{ajustes.eyebrow}</EtiquetaColgante></p>}
+        {ajustes.eyebrow && <p className={s.mapaEtiqueta}><EtiquetaColgante tono="suave"><Texto>{ajustes.eyebrow}</Texto></EtiquetaColgante></p>}
         <TextoCampo ajustes={ajustes} campo="title" como="h2" className={s.mapaTitulo}>{title}</TextoCampo>
         {description && (
           <TextoCampo ajustes={ajustes} campo="description" como="div" className={s.mapaDescripcion}>
@@ -183,7 +184,7 @@ export function Ubicacion({ ajustes = {} }) {
       </div>
       <div className={s.mapaMarco}>
         {src ? (
-          <iframe src={src} title={title || 'Ubicación'} loading="lazy" referrerPolicy="no-referrer-when-downgrade" allowFullScreen />
+          <iframe src={src} title={tituloMapa} loading="lazy" referrerPolicy="no-referrer-when-downgrade" allowFullScreen />
         ) : (
           <span className={s.mapaVacio}><MapPin aria-hidden="true" /> <Texto>Falta el enlace de Google Maps</Texto></span>
         )}
@@ -239,7 +240,7 @@ export function NavCategorias({ ajustes: ajustesSeccion = {}, categorias = [], a
 
   if (ajustes.animation === 'slider') {
     return (
-      <Marquesina segundos={Math.max(18, todas.length * 3)} espacio="1rem" etiqueta={tCategorias}>
+      <Marquesina segundos={Math.max(18, todas.length * 3)} espacio="1rem" etiqueta="Categorías">
         {todas.map(burbuja)}
       </Marquesina>
     );
@@ -295,18 +296,13 @@ export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargan
     if (servidor) { if (hayMas && !cargandoMas) onCargarMas(); } else setVisibles((v) => v + 12);
   }, [servidor, hayMas, cargandoMas, onCargarMas]);
   const marca = useCargarAlLlegar(quedan && !cargando, pedirMas);
-  const t = {
-    verMas: useTexto('Ver más productos'),
-    fin: useTexto('Has visto todos los productos'),
-    error: useTexto('No pudimos cargar los productos'),
-    reintentar: useTexto('Reintentar'),
-    vacio: useTexto(vacio?.titulo || 'Próximamente más productos'),
-  };
+  // EstadoVacio y Boton traducen lo suyo: les llegan tal cual.
+  const tFin = useTexto('Has visto todos los productos');
 
   if (error && !cargando && !productos.length) {
     return (
-      <EstadoVacio imagen={sinKapi ? null : undefined} titulo={t.error} texto={<Texto>{typeof error === 'string' ? error : 'Revisa tu conexión e inténtalo de nuevo.'}</Texto>}>
-        {onReintentar && <Boton variante="secundario" onClick={onReintentar}>{t.reintentar}</Boton>}
+      <EstadoVacio imagen={sinKapi ? null : undefined} titulo="No pudimos cargar los productos" texto={typeof error === 'string' ? error : 'Revisa tu conexión e inténtalo de nuevo.'}>
+        {onReintentar && <Boton variante="secundario" onClick={onReintentar}>Reintentar</Boton>}
       </EstadoVacio>
     );
   }
@@ -314,7 +310,7 @@ export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargan
   const esperandoMas = !cargando && !productos.length && servidor && (hayMas || cargandoMas);
   if (!cargando && !productos.length && !esperandoMas) {
     return vacio ? (
-      <EstadoVacio imagen={sinKapi ? null : undefined} titulo={t.vacio} texto={vacio.texto && <Texto>{vacio.texto}</Texto>}>
+      <EstadoVacio imagen={sinKapi ? null : undefined} titulo={vacio.titulo || 'Próximamente más productos'} texto={vacio.texto}>
         {vacio.accion?.url && <Boton to={vacio.accion.url} variante="secundario"><Texto>{vacio.accion.texto || 'Volver al inicio'}</Texto></Boton>}
       </EstadoVacio>
     ) : null;
@@ -335,11 +331,11 @@ export function GrillaProductos({ ajustes = {}, productos = [], catalogo, cargan
       </ul>
       {quedan && !cargando && (
         <div ref={marca} className={s.cargarMas}>
-          <Boton variante="secundario" cargando={cargandoMas} onClick={pedirMas}>{t.verMas}</Boton>
+          <Boton variante="secundario" cargando={cargandoMas} onClick={pedirMas}>Ver más productos</Boton>
         </div>
       )}
       {finDeLista && !quedan && !cargando && !cargandoMas && lista.length > 0 && (
-        <p className={s.finLista}>{t.fin}</p>
+        <p className={s.finLista}>{tFin}</p>
       )}
     </>
   );
@@ -386,16 +382,11 @@ export function CatalogoConFiltros({
     filtros: useTexto('Filtros'),
     limpiar: useTexto('Limpiar'),
     limpiarTodo: useTexto('Limpiar todo'),
-    precio: useTexto('Precio'),
-    buscar: useTexto('Buscar en el catálogo'),
-    verProductos: useTexto('Ver productos'),
-    nadaTitulo: useTexto('Nada coincide con tu búsqueda'),
-    nadaTexto: useTexto('Prueba con otros filtros o quítalos.'),
     unidad: [useTexto(unidad[0]), useTexto(unidad[1])],
     min: useTexto('Precio mínimo'),
     max: useTexto('Precio máximo'),
-    ordenarPor: useTexto('Ordenar por'),
   };
+  // El buscador, el selector, la hoja y la grilla vacía traducen lo suyo: les llega tal cual.
   const [propia, setPropia] = useState({});
   const [textoPropio, setTextoPropio] = useState('');
   const [precioPropio, setPrecioPropio] = useState({ min: '', max: '' });
@@ -449,7 +440,8 @@ export function CatalogoConFiltros({
   };
   const cantidad = total ?? (filtrarAqui ? visibles.length : null);
   const nombreUnidad = cantidad === 1 ? t.unidad[0] : t.unidad[1];
-  const textoCantidad = `${cantidad}${grilla.hayMas ? '+' : ''} ${nombreUnidad}`;
+  // El botón de la hoja: la frase entera en español (Boton la traduce).
+  const verCantidad = `Ver ${cantidad}${grilla.hayMas ? '+' : ''} ${cantidad === 1 ? unidad[0] : unidad[1]}`;
   const elegidoEn = (g) => activos.find((a) => a.grupo === g)?.nombre;
   const textoPrecio = `S/ ${rango.min || 0} – ${rango.max || '∞'}`;
 
@@ -475,7 +467,7 @@ export function CatalogoConFiltros({
           })),
           {
             id: 'precio',
-            question: t.precio,
+            question: 'Precio', // el Acordeon lo traduce
             extra: hayPrecio && <span className={s.filtroElegido}>{textoPrecio}</span>,
             answer: (
               <>
@@ -483,7 +475,7 @@ export function CatalogoConFiltros({
                   {RANGOS_PRECIO.map(([min, max, nombre]) => {
                     const marcado = rango.min === min && rango.max === max;
                     return (
-                      <Chip key={nombre} tamano="sm" activo={marcado} onClick={() => cambiarPrecio(marcado ? { min: '', max: '' } : { min, max })}>{nombre}</Chip>
+                      <Chip key={nombre} tamano="sm" activo={marcado} onClick={() => cambiarPrecio(marcado ? { min: '', max: '' } : { min, max })}><Texto>{nombre}</Texto></Chip>
                     );
                   })}
                 </div>
@@ -516,7 +508,7 @@ export function CatalogoConFiltros({
               <Buscador
                 // key: "Limpiar todo" borra el texto también en el campo.
                 key={vueltaBuscador}
-                placeholder={t.buscar}
+                placeholder="Buscar en el catálogo"
                 atajo={null}
                 defaultValue={texto}
                 onBuscar={buscar}
@@ -525,7 +517,7 @@ export function CatalogoConFiltros({
               />
             )}
             {orden?.opciones?.length > 0 && (
-              <Selector className={s.catalogoOrden} etiqueta={orden.etiqueta ?? t.ordenarPor} opciones={orden.opciones} valor={orden.valor} onCambiar={orden.onCambiar} />
+              <Selector className={s.catalogoOrden} etiqueta={orden.etiqueta ?? 'Ordenar por'} opciones={orden.opciones} valor={orden.valor} onCambiar={orden.onCambiar} />
             )}
             <Boton variante="contorno" className={s.botonFiltros} icono={<SlidersHorizontal aria-hidden="true" />} onClick={() => setHoja(true)}>
               {t.filtros}{cuantos ? ` (${cuantos})` : ''}
@@ -540,13 +532,13 @@ export function CatalogoConFiltros({
               <button type="button" className={s.limpiar} onClick={limpiar}>{t.limpiarTodo}</button>
             </div>
           )}
-          <GrillaProductos {...grilla} productos={visibles} vacio={grilla.vacio || { titulo: t.nadaTitulo, texto: t.nadaTexto }} />
+          <GrillaProductos {...grilla} productos={visibles} vacio={grilla.vacio || { titulo: 'Nada coincide con tu búsqueda', texto: 'Prueba con otros filtros o quítalos.' }} />
         </div>
         <HojaInferior
           abierta={hoja}
           onCerrar={() => setHoja(false)}
-          titulo={t.filtros}
-          pie={<Boton bloque onClick={() => setHoja(false)}>{cantidad != null ? <Texto>{`Ver ${textoCantidad}`}</Texto> : t.verProductos}</Boton>}
+          titulo="Filtros"
+          pie={<Boton bloque onClick={() => setHoja(false)}>{cantidad != null ? verCantidad : 'Ver productos'}</Boton>}
         >
           <div className={s.filtrosEnHoja}>{filtros}</div>
         </HojaInferior>

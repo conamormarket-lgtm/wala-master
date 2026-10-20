@@ -6,7 +6,7 @@ import {
   AlignLeft, AlignCenter, AlignRight, LoaderCircle, CheckCircle2, AlertTriangle,
   AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter, Pencil, Hand, Sparkles,
 } from 'lucide-react';
-import { Texto } from '../Traduccion';
+import { Texto, useTexto } from '../Traduccion';
 import Acordeon from '../Acordeon';
 import { Chip } from '../Etiquetas';
 import { Sello } from '../Marca';
@@ -208,6 +208,7 @@ const ANCHO_U = 1000;
  */
 function TextoEnPrenda({ capa, seleccionar, onEscribir, onTerminar }) {
   const ref = useRef(null);
+  const nombre = useTexto('Escribe tu texto');
   useLayoutEffect(() => {
     const el = ref.current;
     el.textContent = capa.texto || '';
@@ -230,7 +231,7 @@ function TextoEnPrenda({ capa, seleccionar, onEscribir, onTerminar }) {
       suppressContentEditableWarning
       role="textbox"
       aria-multiline="true"
-      aria-label="Escribe tu texto"
+      aria-label={nombre}
       spellCheck={false}
       onInput={(e) => onEscribir?.(e.currentTarget.innerText.replace(/\n$/, ''))}
       onBlur={() => onTerminar?.()}
@@ -268,6 +269,12 @@ export function LienzoPrenda({
   const [ayudas, setAyudas] = useState(null); // { zid, hu, cmPorU, lineas, etiqueta }
   const [rect, setRect] = useState(null); // el recuadro de selección (px del lienzo)
   const elegidas = Array.isArray(seleccion) ? seleccion : seleccion ? [seleccion] : [];
+  // Los nombres y las ayudas de las capas, traducidos una vez (van dentro de listas).
+  const nombreImagen = useTexto('Imagen');
+  const nombreTexto = useTexto('Texto');
+  const ayudaEscalar = useTexto('Arrastra para agrandar o achicar (Alt: sin imán)');
+  const ayudaGirar = useTexto('Arrastra para girar (Shift: de 15° en 15°)');
+  const ayudaVarias = useTexto('Arrastra para moverlas juntas (Shift + clic: sumar o quitar)');
 
   /* ── Medidas en pantalla ──
      La zona mide ANCHO_U unidades de ancho (como en la tienda): así las guías
@@ -864,7 +871,7 @@ export function LienzoPrenda({
                     tabIndex={guias ? 0 : undefined}
                     role={guias ? 'button' : undefined}
                     aria-pressed={guias ? elegidas.includes(c.id) : undefined}
-                    aria-label={guias ? (c.tipo === 'imagen' ? 'Imagen' : `Texto «${c.texto || ''}»`) : undefined}
+                    aria-label={guias ? (c.tipo === 'imagen' ? nombreImagen : `${nombreTexto} «${c.texto || ''}»`) : undefined}
                     onKeyDown={guias ? (e) => {
                       if (e.key !== 'Enter' && e.key !== ' ') return;
                       e.preventDefault();
@@ -903,16 +910,16 @@ export function LienzoPrenda({
                   data-componente="AsasCapa"
                 >
                   {Object.keys(ESQUINAS).map((esquina) => (
-                    <span key={esquina} className={[s.asa, s[`asa_${esquina}`]].join(' ')} title="Arrastra para agrandar o achicar (Alt: sin imán)" {...eventosAsa(esquina)} />
+                    <span key={esquina} className={[s.asa, s[`asa_${esquina}`]].join(' ')} title={ayudaEscalar} {...eventosAsa(esquina)} />
                   ))}
-                  <span className={s.asaGiro} title="Arrastra para girar (Shift: de 15° en 15°)" {...eventosAsa('giro')} />
+                  <span className={s.asaGiro} title={ayudaGirar} {...eventosAsa('giro')} />
                 </span>
               )}
-              {activa && <span className={s.zonaNombre} style={z.angulo ? { transform: `translateX(-50%) rotate(${-z.angulo}deg)` } : undefined}>{z.nombre}</span>}
+              {activa && <span className={s.zonaNombre} style={z.angulo ? { transform: `translateX(-50%) rotate(${-z.angulo}deg)` } : undefined}><Texto>{z.nombre}</Texto></span>}
               {(soltarEn === z.id || pasarA === z.id) && <span className={s.zonaSoltar} aria-hidden="true" />}
               {pasarA === z.id && (
                 <span className={s.zonaDestino} style={z.angulo ? { transform: `translateX(-50%) rotate(${-z.angulo}deg)` } : undefined} aria-live="polite">
-                  Soltar en <strong>{z.nombre}</strong>
+                  <SoltarEnZona zona={z.nombre} />
                 </span>
               )}
               {ayudas?.zid === z.id && ayudas.lineas?.length > 0 && (
@@ -947,7 +954,7 @@ export function LienzoPrenda({
         <span
           className={s.cajaVarias}
           style={cajaVarias}
-          title="Arrastra para moverlas juntas (Shift + clic: sumar o quitar)"
+          title={ayudaVarias}
           data-componente="CajaVarias"
           onPointerDown={empezarVarias}
           onPointerMove={mover}
@@ -966,6 +973,12 @@ export function LienzoPrenda({
       {encima}
     </div>
   );
+}
+
+/** "Soltar en Pecho": la frase entera; el nombre de la zona, ya traducido, queda en negrita. */
+function SoltarEnZona({ zona }) {
+  const nombre = useTexto(zona);
+  return <TextoResaltado resaltar={[nombre]}>{`Soltar en ${zona}`}</TextoResaltado>;
 }
 
 /**
@@ -988,8 +1001,10 @@ export function BarraLienzo({
   completa = false, onVerCompleta,
 }) {
   const B = (props) => <BotonEstudio variante="fantasma" tamano="sm" soloIcono {...props} />;
+  const nombreBarra = useTexto('Herramientas del lienzo');
+  const verCompleta = useTexto('Ver la prenda completa (Shift+1)');
   return (
-    <div className={s.barra} role="toolbar" aria-label="Herramientas del lienzo" data-componente="BarraLienzo">
+    <div className={s.barra} role="toolbar" aria-label={nombreBarra} data-componente="BarraLienzo">
       <span className={s.grupoBarra}>
         <B aria-label="Deshacer" icono={<Undo2 aria-hidden="true" />} disabled={!puedeDeshacer} onClick={onDeshacer} />
         <B aria-label="Rehacer" icono={<Redo2 aria-hidden="true" />} disabled={!puedeRehacer} onClick={onRehacer} />
@@ -1021,7 +1036,7 @@ export function BarraLienzo({
       {/* En el celular se acerca con los dedos: el zoom queda para el ratón. */}
       <span className={[s.grupoBarra, s.grupoZoom].join(' ')}>
         <B aria-label="Alejar (Ctrl −)" icono={<ZoomOut aria-hidden="true" />} disabled={zoom <= 1} onClick={() => onZoom?.(zoomVecino(zoom, false))} />
-        <button type="button" className={s.zoomValor} onClick={() => onZoom?.(1)} title="Ver la prenda completa (Shift+1)">{Math.round(zoom * 100)}%</button>
+        <button type="button" className={s.zoomValor} onClick={() => onZoom?.(1)} title={verCompleta}>{Math.round(zoom * 100)}%</button>
         <B aria-label="Acercar (Ctrl +)" icono={<ZoomIn aria-hidden="true" />} disabled={zoom >= NIVELES_ZOOM[NIVELES_ZOOM.length - 1]} onClick={() => onZoom?.(zoomVecino(zoom, true))} />
         {onAtajos && <B aria-label="Atajos de teclado" icono={<Keyboard aria-hidden="true" />} onClick={onAtajos} className={s.soloRaton} />}
       </span>
@@ -1087,6 +1102,7 @@ export function MedidorCalidad({ calidad, onNitida }) {
  */
 export function PasosEstudio({ colores = [], color, onColor, invertir, lados = [], zona, onZona, onImagen, onTexto, subiendo = false, donde, conDiseno = false }) {
   const actual = colores.find((c) => c.id === color);
+  const tituloConDiseno = useTexto('Con diseño');
   return (
     <div className={s.pasos} data-componente="PasosEstudio">
       <PasoEstudio numero={1} titulo="Elige el color" detalle={actual?.nombre} hecho={Boolean(actual)}>
@@ -1100,7 +1116,7 @@ export function PasosEstudio({ colores = [], color, onColor, invertir, lados = [
             <div className={s.chips}>
               {l.zonas.map((z) => (
                 <Chip key={z.id} tamano="sm" activo={z.id === zona} onClick={() => onZona?.(z.id)}>
-                  <Texto>{z.nombre}</Texto>{z.conDiseno && <span className={s.conDiseno} title="Con diseño"><span className={s.oculto}>, <Texto>con diseño</Texto></span></span>}
+                  <Texto>{z.nombre}</Texto>{z.conDiseno && <span className={s.conDiseno} title={tituloConDiseno}><span className={s.oculto}>, <Texto>con diseño</Texto></span></span>}
                 </Chip>
               ))}
             </div>
@@ -1170,6 +1186,11 @@ export function EfectosTexto({ capa, onCambiar }) {
   const alineacion = capa.alineacion || 'center';
   const activo = estiloDe(capa);
   const afinado = contorno > 0 || sombra > 0 || curva !== 0 || espaciado !== 0;
+  // Lo que muestran los deslizadores junto al número.
+  const recta = useTexto('Recta');
+  const arco = useTexto('Arco');
+  const haciaAbajo = useTexto('Hacia abajo');
+  const normal = useTexto('Normal');
   const colorLibre = (campo, porDefecto) => (
     <SelectorColorEstudio
       etiqueta={campo === 'contornoColor' ? 'Color del contorno' : 'Color de la sombra'}
@@ -1191,7 +1212,7 @@ export function EfectosTexto({ capa, onCambiar }) {
               aria-pressed={activo === e.id}
             >
               <span className={[s.estiloMuestra, s[`muestra_${e.id}`]].filter(Boolean).join(' ')}>Aa</span>
-              {e.nombre}
+              <Texto>{e.nombre}</Texto>
             </button>
           ))}
         </span>
@@ -1240,7 +1261,7 @@ export function EfectosTexto({ capa, onCambiar }) {
                   valor={curva}
                   min={-100}
                   max={100}
-                  formato={(v) => (v === 0 ? 'Recta' : v > 0 ? `Arco ${v}` : `Hacia abajo ${-v}`)}
+                  formato={(v) => (v === 0 ? recta : v > 0 ? `${arco} ${v}` : `${haciaAbajo} ${-v}`)}
                   // Cerca del medio se queda recta: fácil de volver a 0.
                   onChange={(v) => onCambiar?.({ curva: Math.abs(v) < 5 ? 0 : v })}
                 />
@@ -1253,7 +1274,7 @@ export function EfectosTexto({ capa, onCambiar }) {
                   min={-100}
                   max={800}
                   paso={10}
-                  formato={(v) => (v === 0 ? 'Normal' : v > 0 ? `+${v}` : v)}
+                  formato={(v) => (v === 0 ? normal : v > 0 ? `+${v}` : v)}
                   onChange={(v) => onCambiar?.({ espaciado: v })}
                 />
               </div>
@@ -1263,7 +1284,7 @@ export function EfectosTexto({ capa, onCambiar }) {
                   <span className={s.chips}>
                     {[['left', AlignLeft, 'Izquierda'], ['center', AlignCenter, 'Centro'], ['right', AlignRight, 'Derecha']].map(([valor, Icono, nombre]) => (
                       <Chip key={valor} tamano="sm" activo={alineacion === valor} onClick={() => onCambiar?.({ alineacion: valor })} icono={<Icono aria-hidden="true" />}>
-                        <span className={s.oculto}>{nombre}</span>
+                        <span className={s.oculto}><Texto>{nombre}</Texto></span>
                       </Chip>
                     ))}
                   </span>
@@ -1302,6 +1323,7 @@ export function PanelCapa({
   onRecortar, onQuitarFondo, onLlenar, zonas = [], onPasarAZona, sinSesion = false,
   anchoZonaCm, fueraDeZona = false, onImagen, onTexto, subiendo = false, puntosPorZona = 100, onAbrirFuentes,
 }) {
+  const zonaTraducida = useTexto(zona);
   if (!capa) return null;
   const imagen = capa.tipo === 'imagen';
   const tamano = capa.tamano ?? 0.18;
@@ -1310,7 +1332,7 @@ export function PanelCapa({
     <div className={s.panelCapa} data-componente="PanelCapa">
       <div className={s.panelCabeza}>
         <div>
-          <h2 className={s.panelTitulo}><TextoResaltado resaltar={[zona]} envolver={(x, k) => <em key={k}>{x}</em>}>{`${imagen ? 'Tu imagen' : 'Tu texto'} en ${zona}`}</TextoResaltado></h2>
+          <h2 className={s.panelTitulo}><TextoResaltado resaltar={[zonaTraducida]} envolver={(x, k) => <em key={k}>{x}</em>}>{`${imagen ? 'Tu imagen' : 'Tu texto'} en ${zona}`}</TextoResaltado></h2>
           <p className={s.panelAyuda}><Texto>{"Los cambios se ven en la prenda al instante."}</Texto></p>
         </div>
         {/* Quitar, aparte y como ícono: lejos de lo que se toca seguido. */}
@@ -1471,6 +1493,7 @@ export function EstadoEdicion({ esBorrador = false, estadoBorrador = 'guardado',
     guardado: [CheckCircle2, 'Borrador guardado: lo encuentras en Crear para continuarlo después.', s.estadoOk],
   }[estadoBorrador] || [];
   const [Icono, texto, clase] = borrador;
+  const sinNombre = useTexto('tu creación');
   return (
     <div className={s.edicion} data-componente="EstadoEdicion">
       {esBorrador ? (
@@ -1480,7 +1503,7 @@ export function EstadoEdicion({ esBorrador = false, estadoBorrador = 'guardado',
         </span>
       ) : (
         <span className={s.edicionTexto}>
-          <span className={s.edicionNombre}><Texto>Estás editando</Texto>{' '}<TituloEditable nombre={nombre || 'tu creación'} onRenombrar={onRenombrar} como="strong" /></span>
+          <span className={s.edicionNombre}><Texto>Estás editando</Texto>{' '}<TituloEditable nombre={nombre || sinNombre} onRenombrar={onRenombrar} como="strong" /></span>
           <span className={hayCambios ? s.sinGuardar : s.todoGuardado} role="status">
             <Texto>{hayCambios ? 'Tienes cambios sin guardar.' : 'Todo está guardado.'}</Texto>
           </span>
@@ -1606,19 +1629,30 @@ const gruposAtajos = (lados = []) => [
  *  - onEntendido
  */
 export function GuiaGestos({ onEntendido }) {
+  const nombre = useTexto('Cómo editar con los dedos');
   return (
     // Sus toques no llegan al lienzo (no eligen ni mueven nada).
-    <div className={s.guiaGestos} role="dialog" aria-label="Cómo editar con los dedos" data-componente="GuiaGestos" onPointerDown={(e) => e.stopPropagation()} onPointerDownCapture={(e) => e.stopPropagation()}>
+    <div className={s.guiaGestos} role="dialog" aria-label={nombre} data-componente="GuiaGestos" onPointerDown={(e) => e.stopPropagation()} onPointerDownCapture={(e) => e.stopPropagation()}>
       <ul>
-        <li><Hand aria-hidden="true" /> <span><strong><Texto>Un dedo:</Texto></strong> <Texto>arrástralo para moverlo.</Texto></span></li>
-        <li><Maximize2 aria-hidden="true" /> <span><strong><Texto>Dos dedos:</Texto></strong> <Texto>sepáralos o júntalos para agrandar o achicar, y gíralos para girarlo.</Texto></span></li>
-        <li><Type aria-hidden="true" /> <span><strong><Texto>Dos toques</Texto></strong> <Texto>en un texto para escribirlo.</Texto></span></li>
-        <li><ZoomIn aria-hidden="true" /> <span><strong><Texto>Sin nada elegido,</Texto></strong> <Texto>dos dedos acercan la prenda.</Texto></span></li>
+        <LineaGesto icono={<Hand aria-hidden="true" />} fuerte="Un dedo:" texto="arrástralo para moverlo." />
+        <LineaGesto icono={<Maximize2 aria-hidden="true" />} fuerte="Dos dedos:" texto="sepáralos o júntalos para agrandar o achicar, y gíralos para girarlo." />
+        <LineaGesto icono={<Type aria-hidden="true" />} fuerte="Dos toques" texto="en un texto para escribirlo." />
+        <LineaGesto icono={<ZoomIn aria-hidden="true" />} fuerte="Sin nada elegido," texto="dos dedos acercan la prenda." />
       </ul>
       <BotonEstudio bloque tamano="sm" onClick={onEntendido}><Texto>{"Entendido"}</Texto></BotonEstudio>
     </div>
   );
 }
+
+/** Una línea de la guía: la frase va entera y su comienzo (ya traducido) queda en negrita. */
+function LineaGesto({ icono, fuerte, texto }) {
+  const marca = useTexto(fuerte);
+  return <li>{icono} <span><TextoResaltado resaltar={[marca]}>{`${fuerte} ${texto}`}</TextoResaltado></span></li>;
+}
+
+/** Las teclas que se escriben igual en todos los idiomas (y los símbolos) no se mandan a traducir. */
+const TECLAS_IGUALES = new Set(['Ctrl', 'Shift', 'Esc', '⌘']);
+const Tecla = ({ tecla }) => <kbd>{tecla.length > 1 && !TECLAS_IGUALES.has(tecla) ? <Texto>{tecla}</Texto> : tecla}</kbd>;
 
 export function AtajosEstudio({ lados = [] }) {
   return (
@@ -1636,7 +1670,7 @@ export function AtajosEstudio({ lados = [] }) {
                       <span key={teclas.join('+')} className={s.atajoCombo}>
                         {i > 0 && <span className={s.atajoO}><Texto>o</Texto></span>}
                         {/* Las flechas son cualquiera de ellas, no una combinación: van sin "+". */}
-                        {teclas.map((t, j) => <React.Fragment key={t}>{j > 0 && !teclas.every((x) => '←↑→↓'.includes(x)) && <span className={s.atajoMas}>+</span>}<kbd>{t}</kbd></React.Fragment>)}
+                        {teclas.map((t, j) => <React.Fragment key={t}>{j > 0 && !teclas.every((x) => '←↑→↓'.includes(x)) && <span className={s.atajoMas}>+</span>}<Tecla tecla={t} /></React.Fragment>)}
                       </span>
                     ))}
                   </dt>
@@ -1666,9 +1700,10 @@ export function CargandoLienzo({ opaco = false }) {
 
 /** "Suelta tu imagen en Pecho": la pastilla mientras se arrastra un archivo sobre la prenda. */
 export function AvisoSoltarArchivo({ zona }) {
+  const nombre = useTexto(zona);
   return (
     <p className={s.soltarAviso} role="status">
-      <TextoResaltado resaltar={[zona]}>{zona ? `Suelta tu imagen en ${zona}` : 'Suelta tu imagen en la prenda'}</TextoResaltado>
+      <TextoResaltado resaltar={[nombre]}>{zona ? `Suelta tu imagen en ${zona}` : 'Suelta tu imagen en la prenda'}</TextoResaltado>
     </p>
   );
 }

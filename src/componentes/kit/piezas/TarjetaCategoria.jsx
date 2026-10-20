@@ -75,7 +75,7 @@ export function TarjetaCategoria({ forma = 'cuadro', nombre, imagen, cuenta, url
           )}
         </span>
         <span className={s.cuadroNombre}>
-          <span><Texto>{nombre}</Texto>{detalle && <small className={s.cuadroDetalle}>{detalle}</small>}</span>
+          <span><Texto>{nombre}</Texto>{detalle && <small className={s.cuadroDetalle}><Texto>{detalle}</Texto></small>}</span>
           <ArrowRight aria-hidden="true" />
         </span>
       </Enlace>
@@ -91,7 +91,7 @@ export function TarjetaCategoria({ forma = 'cuadro', nombre, imagen, cuenta, url
     >
       <span className={s.foto} style={{ background: fondo || undefined, '--acento': acento }}>{foto}</span>
       <span className={s.nombre}><Texto>{nombre}</Texto></span>
-      {cuenta != null && <small>{cuenta === 1 ? '1 producto' : `${cuenta} productos`}</small>}
+      {cuenta != null && <small><Texto>{cuenta === 1 ? '1 producto' : `${cuenta} productos`}</Texto></small>}
     </Enlace>
   );
 }

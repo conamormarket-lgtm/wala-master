@@ -10,6 +10,7 @@ import { limaTodayStr, msHastaMananaLima } from '../../utils/fechaLima';
 import { tieneCuenta } from '../../utils/rutaPrivada';
 import { PaginaPalabra } from '../../componentes/kit/paginas/Palabra';
 import { normalizarPalabra } from '../../componentes/kit/piezas/Palabra';
+import { useTexto } from '../../componentes/kit/Traduccion';
 import entregarMonedas from './entregarMonedas';
 
 /*
@@ -51,6 +52,7 @@ const ayudaYaVista = () => {
 export default function PalabraDeTienda() {
   const { user, userProfile, loading, reloadProfile } = useAuth();
   const queryClient = useQueryClient();
+  const anonimo = useTexto('Anónimo');
   const sesion = tieneCuenta(user);
   const hoy = limaTodayStr();
   const clave = `wala_wordle_${hoy}`;
@@ -110,12 +112,12 @@ export default function PalabraDeTienda() {
 
   const ranking = useMemo(() => ({
     hoy: (rankingHoy || []).map((p) => ({
-      id: p.id, nombre: p.displayName || 'Anónimo', intentos: p.todayAttempts, segundos: p.timeSeconds, racha: p.currentStreak || 0, yo: Boolean(user && p.id === user.uid),
+      id: p.id, nombre: p.displayName || anonimo, intentos: p.todayAttempts, segundos: p.timeSeconds, racha: p.currentStreak || 0, yo: Boolean(user && p.id === user.uid),
     })),
     global: (rankingGlobal || []).map((p) => ({
-      id: p.id, nombre: p.displayName || 'Anónimo', victorias: p.wins, jugadas: p.played, mejorRacha: p.maxStreak, yo: Boolean(user && p.id === user.uid),
+      id: p.id, nombre: p.displayName || anonimo, victorias: p.wins, jugadas: p.played, mejorRacha: p.maxStreak, yo: Boolean(user && p.id === user.uid),
     })),
-  }), [rankingHoy, rankingGlobal, user]);
+  }), [rankingHoy, rankingGlobal, user, anonimo]);
 
   const intento = ({ palabras, inicio }) => {
     const ultima = palabras[palabras.length - 1];

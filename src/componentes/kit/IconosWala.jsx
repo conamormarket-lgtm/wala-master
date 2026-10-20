@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTexto } from './Traduccion';
 import s from './IconosWala.module.css';
 
 /*
@@ -224,8 +225,9 @@ export function iconoDesde(valor) {
 export function IconoWala({ nombre, tamano = 44, sticker = true, girar = 0, titulo, className }) {
   const clave = iconoDesde(nombre);
   const dibujo = clave ? DIBUJOS[clave] : null;
+  const nombreVisible = useTexto(titulo);
   const contenido = dibujo ? (
-    <svg viewBox="0 0 48 48" className={s.svg} shapeRendering="geometricPrecision" role={titulo ? 'img' : undefined} aria-label={titulo} aria-hidden={titulo ? undefined : true}>
+    <svg viewBox="0 0 48 48" className={s.svg} shapeRendering="geometricPrecision" role={titulo ? 'img' : undefined} aria-label={nombreVisible} aria-hidden={titulo ? undefined : true}>
       {dibujo}
     </svg>
   ) : (

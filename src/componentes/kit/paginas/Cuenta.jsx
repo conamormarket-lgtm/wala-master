@@ -121,7 +121,7 @@ export function PaginaResumenCuenta({ usuario, monedas = 0, enEspera = 0, grupos
   return (
     <>
       <CabezaCuenta
-        titulo={nombre ? <><Texto>Hola,</Texto> {nombre}</> : <Texto>Mi cuenta</Texto>}
+        titulo={<Texto>{nombre ? `Hola, ${nombre}` : 'Mi cuenta'}</Texto>}
         subrayado
         subtitulo={<Texto>Tus pedidos, tus monedas y tus diseños, a un toque.</Texto>}
       />

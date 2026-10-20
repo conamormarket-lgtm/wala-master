@@ -4,6 +4,7 @@ import { Enlace } from '../Enlace';
 import { EtiquetaColgante } from '../Marca';
 import { toDirectImageUrl } from '../../../utils/imageUrl';
 import { atributosDeFoto, urlDeFondo } from '../../../components/common/OptimizedImage/OptimizedImage';
+import { Texto, useTexto } from '../Traduccion';
 import { iniciales } from './Avatar';
 import s from './TarjetaMarca.module.css';
 
@@ -28,6 +29,7 @@ const PALETA_MARCAS = [
  */
 export function TarjetaMarca({ marca, indice = 0, estilo = 'editorial', mostrarNombre = true }) {
   const [color, suave] = PALETA_MARCAS[indice % PALETA_MARCAS.length];
+  const explorar = useTexto(`Explorar ${marca.nombre}`);
   return (
     <Enlace
       to={marca.url}
@@ -39,7 +41,7 @@ export function TarjetaMarca({ marca, indice = 0, estilo = 'editorial', mostrarN
           ? `linear-gradient(120deg, rgba(15,23,42,.86), rgba(15,23,42,.34)), url("${urlDeFondo(toDirectImageUrl(marca.fondo), 1200)}")`
           : undefined,
       }}
-      aria-label={`Explorar ${marca.nombre}`}
+      aria-label={explorar}
     >
       <span className={s.marcaNumero} aria-hidden="true">{String(indice + 1).padStart(2, '0')}</span>
       {/* El logo cuelga de una etiqueta (como la del logo de Walá): sirve
@@ -55,7 +57,7 @@ export function TarjetaMarca({ marca, indice = 0, estilo = 'editorial', mostrarN
       <span className={s.marcaTexto}>
         <EtiquetaColgante tono={estilo === 'outline' ? 'violeta' : 'blanco'} tamano="sm" className={s.marcaEtiqueta}>Universo Walá</EtiquetaColgante>
         {mostrarNombre && <strong>{marca.nombre}</strong>}
-        <span className={s.marcaCta}>Explorar colección <ArrowRight aria-hidden="true" /></span>
+        <span className={s.marcaCta}><Texto>Explorar colección</Texto> <ArrowRight aria-hidden="true" /></span>
       </span>
     </Enlace>
   );

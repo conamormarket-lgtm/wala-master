@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Minus, Plus, Scissors, RotateCcw } from 'lucide-react';
 import { Aviso, HojaInferior } from '../Feedback';
 import { cargarImagen, cajaVisible, recortarImagen } from '../imagenes';
-import { Texto } from '../Traduccion';
+import { Texto, useTexto } from '../Traduccion';
 import { BotonEstudio, DeslizadorEstudio } from './ControlesEstudio';
 import s from './RecortarFoto.module.css';
 
@@ -111,6 +111,9 @@ function RecortarFija({
     setGuardando(true);
     try { await onListo?.(blob); } finally { setGuardando(false); }
   };
+  const nombreVista = useTexto('Vista previa del recorte');
+  const alejar = useTexto('Alejar');
+  const acercar = useTexto('Acercar');
 
   return (
     <HojaInferior
@@ -134,7 +137,7 @@ function RecortarFija({
           onPointerUp={subir}
           onPointerCancel={subir}
           role="img"
-          aria-label="Vista previa del recorte"
+          aria-label={nombreVista}
         >
           {src && (
             <img
@@ -149,9 +152,9 @@ function RecortarFija({
           <span className={s.guia} aria-hidden="true" />
         </div>
         <div className={s.zoom}>
-          <button type="button" className={s.paso} onClick={() => cambiarZoom(zoom - 0.2)} aria-label="Alejar"><Minus aria-hidden="true" /></button>
+          <button type="button" className={s.paso} onClick={() => cambiarZoom(zoom - 0.2)} aria-label={alejar}><Minus aria-hidden="true" /></button>
           <DeslizadorEstudio soloBarra etiqueta="Zoom de la foto" min={1} max={3} paso={0.01} valor={zoom} onChange={cambiarZoom} />
-          <button type="button" className={s.paso} onClick={() => cambiarZoom(zoom + 0.2)} aria-label="Acercar"><Plus aria-hidden="true" /></button>
+          <button type="button" className={s.paso} onClick={() => cambiarZoom(zoom + 0.2)} aria-label={acercar}><Plus aria-hidden="true" /></button>
         </div>
       </div>
     </HojaInferior>
@@ -161,6 +164,12 @@ function RecortarFija({
 const COMPLETA = { x: 0, y: 0, w: 1, h: 1 };
 const MINIMO = 0.04;
 const ESQUINAS = [['no', 'arriba a la izquierda'], ['ne', 'arriba a la derecha'], ['so', 'abajo a la izquierda'], ['se', 'abajo a la derecha']];
+
+/** Una esquina del recuadro: su nombre va en el title, traducido. */
+function Esquina({ esquina, nombre, onPointerDown }) {
+  const titulo = useTexto(`Esquina ${nombre}`);
+  return <span className={[s.esquina, s[`esquina_${esquina}`]].join(' ')} onPointerDown={onPointerDown} title={titulo} aria-hidden="true" />;
+}
 
 /** Recorte libre de una imagen del diseño (ver RecortarFoto, forma 'libre'). */
 function RecortarLibre({
@@ -260,6 +269,8 @@ function RecortarLibre({
     window.addEventListener('keydown', f);
     return () => window.removeEventListener('keydown', f);
   }, [abierta]);
+  const altImagen = useTexto('Imagen a recortar');
+  const nombreRecuadro = useTexto('Recuadro del recorte (muévelo con las flechas)');
 
   return (
     <HojaInferior
@@ -278,7 +289,7 @@ function RecortarLibre({
         <div className={s.areaLibre}>
           {img ? (
             <div ref={caja} className={s.cajaLibre} onPointerMove={mover} onPointerUp={soltar} onPointerCancel={soltar}>
-              <img src={src} alt="Imagen a recortar" className={s.imagenLibre} draggable={false} />
+              <img src={src} alt={altImagen} className={s.imagenLibre} draggable={false} />
               <div
                 className={s.recuadro}
                 style={{ left: `${rect.x * 100}%`, top: `${rect.y * 100}%`, width: `${rect.w * 100}%`, height: `${rect.h * 100}%` }}
@@ -286,16 +297,17 @@ function RecortarLibre({
                 onKeyDown={teclaRecuadro}
                 role="slider"
                 tabIndex={0}
-                aria-label="Recuadro del recorte (muévelo con las flechas)"
+                aria-label={nombreRecuadro}
+                // Cambia a cada paso del arrastre: tal cual (traducirlo pediría una frase por medida).
                 aria-valuetext={`${Math.round(rect.w * 100)} % de ancho, ${Math.round(rect.h * 100)} % de alto`}
               >
                 {ESQUINAS.map(([esquina, nombre]) => (
-                  <span key={esquina} className={[s.esquina, s[`esquina_${esquina}`]].join(' ')} onPointerDown={empezar(esquina)} title={`Esquina ${nombre}`} aria-hidden="true" />
+                  <Esquina key={esquina} esquina={esquina} nombre={nombre} onPointerDown={empezar(esquina)} />
                 ))}
               </div>
             </div>
           ) : (
-            <p className={s.texto}>{aviso || 'Cargando imagen…'}</p>
+            <p className={s.texto}><Texto>{aviso || 'Cargando imagen…'}</Texto></p>
           )}
         </div>
         {img && aviso && <Aviso compacto tipo="info"><Texto>{aviso}</Texto></Aviso>}

@@ -1051,9 +1051,9 @@ export function PaginaEstudio({
   const aviso = borradorAdmin ? (
     <Aviso compacto tipo="aviso">Borrador: solo los administradores ven esta prenda. Publícala desde Admin → Productos para poder comprarla.</Aviso>
   ) : combo ? (
-    <Aviso compacto tipo="info">Prenda {combo.numero} de {combo.total} de tu combo «{combo.nombre}». Al terminar, vuelve al combo con tu diseño.</Aviso>
+    <Aviso compacto tipo="info">{`Prenda ${combo.numero} de ${combo.total} de tu combo «${combo.nombre}». Al terminar, vuelve al combo con tu diseño.`}</Aviso>
   ) : modo === 'plantilla' ? (
-    <Aviso compacto tipo="info">Partes del diseño «{plantilla || 'de la comunidad'}». Cámbiale el nombre, la foto o lo que quieras.</Aviso>
+    <Aviso compacto tipo="info">{`Partes del diseño «${plantilla || 'de la comunidad'}». Cámbiale el nombre, la foto o lo que quieras.`}</Aviso>
   ) : !sesion && modo !== 'editar' ? (
     <Aviso
       compacto

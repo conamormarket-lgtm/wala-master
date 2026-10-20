@@ -74,8 +74,15 @@ export function TarjetaCreacion({
   const tNombreCampo = useTexto('Nombre de la creación');
   const tEditar = useTexto('Editar diseño');
   const tLlevar = useTexto('Llevar en combo (pareja, trío…)');
+  const tPorDisenar = useTexto('Por diseñar');
+  const tVer = useTexto(nombre ? `Ver ${nombre}` : 'Ver la creación');
+  const tEliminar = useTexto(nombre ? `Eliminar ${nombre}` : 'Eliminar esta creación');
+  const tGuardarNombre = useTexto('Guardar nombre');
+  const tCambiarNombre = useTexto('Cambiar el nombre');
+  const tFechaCompleta = useTexto(fechaCompleta);
   const [espalda, setEspalda] = useState(false);
   const [pregunta, setPregunta] = useState(null);
+  const tPregunta = useTexto(pregunta?.titulo);
   const [trabajando, setTrabajando] = useState(false);
   const [editando, setEditando] = useState(null);
   const [guardando, setGuardando] = useState(false);
@@ -164,7 +171,7 @@ export function TarjetaCreacion({
                     src={src || undefined}
                     relleno="6%"
                     style={{ '--i': i }}
-                    respaldo={<span className={s.porDisenar} title="Por diseñar"><Paintbrush aria-hidden="true" /></span>}
+                    respaldo={<span className={s.porDisenar} title={tPorDisenar}><Paintbrush aria-hidden="true" /></span>}
                   />
                 ))}
               </div>
@@ -180,10 +187,10 @@ export function TarjetaCreacion({
             </FotoProducto>
           )}
           <span className={s.barrido} aria-hidden="true" />
-          {url && <Enlace to={url} state={borrador ? estadoEditar : undefined} className={s.fotoEnlace} aria-label={`Ver ${nombre || 'la creación'}`} />}
+          {url && <Enlace to={url} state={borrador ? estadoEditar : undefined} className={s.fotoEnlace} aria-label={tVer} />}
           {etiquetas.length > 0 && <div className={s.etiquetas}>{etiquetas}</div>}
           {onEliminar && (
-            <button type="button" className={s.eliminar} onClick={preguntarEliminar} aria-label={`Eliminar ${nombre || 'esta creación'}`}>
+            <button type="button" className={s.eliminar} onClick={preguntarEliminar} aria-label={tEliminar}>
               <Trash2 aria-hidden="true" />
             </button>
           )}
@@ -213,13 +220,13 @@ export function TarjetaCreacion({
                 // Como antes: al salir del campo también se guarda (no si se toca el botón de guardar).
                 onBlur={(e) => { if (!e.currentTarget.form?.contains(e.relatedTarget)) renombrar(); }}
               />
-              <Boton type="submit" tamano="sm" soloIcono aria-label="Guardar nombre" cargando={guardando} icono={<Check aria-hidden="true" />} />
+              <Boton type="submit" tamano="sm" soloIcono aria-label={tGuardarNombre} cargando={guardando} icono={<Check aria-hidden="true" />} />
             </form>
           ) : (
             <h3 className={s.nombre}>
               <span>{nombre || <Texto>Sin nombre</Texto>}</span>
               {onRenombrar && (
-                <button type="button" className={s.lapiz} onClick={() => setEditando(nombre || '')} aria-label="Cambiar el nombre">
+                <button type="button" className={s.lapiz} onClick={() => setEditando(nombre || '')} aria-label={tCambiarNombre}>
                   <Pencil aria-hidden="true" />
                 </button>
               )}
@@ -233,13 +240,13 @@ export function TarjetaCreacion({
               ? [producto, color?.nombre].filter(Boolean).join(' · ')
               : <Texto>Este producto ya no está disponible</Texto>}
           </p>
-          {fecha && <p className={s.fecha} title={fechaCompleta}><Clock aria-hidden="true" /> <Texto>{fecha}</Texto></p>}
+          {fecha && <p className={s.fecha} title={tFechaCompleta}><Clock aria-hidden="true" /> <Texto>{fecha}</Texto></p>}
           {usar?.usos > 0 && (
             <p className={s.fecha}><Users aria-hidden="true" /> <Texto>{usar.usos === 1 ? '1 persona lo usó' : `${usar.usos} personas lo usaron`}</Texto></p>
           )}
           {usar ? (
             <div className={s.pie}>
-              <span className={s.autor}><Texto>Por</Texto> {usar.autor || 'Walá'}</span>
+              <span className={s.autor}><Texto>{`Por ${usar.autor || 'Walá'}`}</Texto></span>
               <span className={s.acciones}>
                 <Boton to={usar.url} tamano="sm" icono={<Paintbrush aria-hidden="true" />}><Texto>Usar diseño</Texto></Boton>
               </span>
@@ -284,7 +291,7 @@ export function TarjetaCreacion({
           )}
         </div>
         {pregunta && (
-          <div className={[s.confirmar, pregunta.peligro && s.confirmarPeligro].filter(Boolean).join(' ')} role="alertdialog" aria-label={pregunta.titulo}>
+          <div className={[s.confirmar, pregunta.peligro && s.confirmarPeligro].filter(Boolean).join(' ')} role="alertdialog" aria-label={tPregunta}>
             <p className={s.confirmarTitulo}>
               {pregunta.icono && <Sello tamano={30} tono={pregunta.peligro ? 'peligro' : 'degradado'}><pregunta.icono /></Sello>}
               <strong><Texto>{pregunta.titulo}</Texto></strong>
@@ -312,7 +319,7 @@ export function TarjetaCreacion({
                   onClick={async () => { setLlevando(c.id); try { await c.onLlevar?.(); } finally { setLlevando(null); setEligiendoCombo(false); } }}
                 >
                   <Users aria-hidden="true" />
-                  <span><strong>{c.nombre}</strong><small>{c.piezas} <Texto>prendas</Texto> · {soles(c.precio)}</small></span>
+                  <span><strong>{c.nombre}</strong><small><Texto>{`${c.piezas} prendas`}</Texto> · {soles(c.precio)}</small></span>
                   {llevando === c.id ? <RotateCw className={s.girando} aria-hidden="true" /> : <ArrowRight aria-hidden="true" />}
                 </button>
               </li>

@@ -1,6 +1,7 @@
 import React, { forwardRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Enlace } from './Enlace';
+import { Texto } from './Traduccion';
 import s from './Boton.module.css';
 
 /**
@@ -75,7 +76,8 @@ const Boton = forwardRef(function Boton({
       </span>
       <span className={s.contenido}>
         {cargando ? <Loader2 className={s.spin} aria-hidden="true" /> : icono && <span className={s.icono}>{icono}</span>}
-        {children != null && <span className={s.texto}>{children}</span>}
+        {/* Un texto suelto se traduce aquí; lo que ya viene armado (<Texto>, íconos) pasa igual. */}
+        {children != null && <span className={s.texto}><Texto>{children}</Texto></span>}
         {!cargando && iconoFin && <span className={s.iconoFin}>{iconoFin}</span>}
         {/* En botones de solo icono la insignia se pega al icono, no a la
             esquina del botón (que es más grande y la dejaba suelta). */}

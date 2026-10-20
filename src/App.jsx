@@ -377,9 +377,11 @@ function App() {
       <QueryClientProvider client={queryClient}>
 
 
+        {/* El idioma va por fuera de los avisos: así los toasts (que se dibujan
+            en ToastProvider, por encima del resto) también se traducen. */}
+        <LanguageProvider>
         <ToastProvider>
           <ThemeProvider>
-            <LanguageProvider>
               <AuthProvider>
                 <NotificationsProvider>
                 <WishlistProvider>
@@ -611,9 +613,9 @@ function App() {
                 </WishlistProvider>
                 </NotificationsProvider>
               </AuthProvider>
-            </LanguageProvider>
           </ThemeProvider>
         </ToastProvider>
+        </LanguageProvider>
       </QueryClientProvider>
     </AppErrorBoundary>
   );

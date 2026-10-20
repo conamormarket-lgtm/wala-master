@@ -8,6 +8,7 @@ import { EsqueletoPagina } from '../Esqueletos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { PasoEstudio } from '../piezas/PasoEstudio';
 import { TarjetaRegalo, FechaEntrega, SobreRegalo } from '../piezas/Regalar';
+import { TextoResaltado } from '../piezas/TextoResaltado';
 import { Texto, useTexto } from '../Traduccion';
 import s from './Regalar.module.css';
 
@@ -23,12 +24,12 @@ import s from './Regalar.module.css';
  * persona va tal cual.
  */
 
-/** El encabezado de las dos páginas: sello del regalo, el título con su trazo y la bajada. */
+/** El encabezado de las dos páginas: sello del regalo, el título con su trazo y la bajada (traducidos aquí). */
 function CabezaRegalo({ titulo, texto, accion }) {
   return (
     <header className={s.cabeza}>
       <Sello tamano={56} girar={-8}><Gift aria-hidden="true" /></Sello>
-      <h1 className={s.titulo}>{titulo}<Trazo className={s.trazo} /></h1>
+      <h1 className={s.titulo}><Texto>{titulo}</Texto><Trazo className={s.trazo} /></h1>
       {texto && <p className={s.texto}><Texto>{texto}</Texto></p>}
       {accion}
     </header>
@@ -58,12 +59,12 @@ function NoEncontrada({ urlTienda, titulo = 'No encontramos esta lista' }) {
 export function PaginaListaPublica({ dueno = {}, items = [], onRegalar, urlFechas, estado, urlTienda = '/tienda' }) {
   if (estado === 'cargando') return <EsqueletoPagina forma="productos" />;
   if (estado === 'noEncontrada') return <NoEncontrada urlTienda={urlTienda} />;
-  const nombre = dueno.nombre || <Texto>Alguien</Texto>;
+  const nombre = dueno.nombre || 'Alguien';
   return (
     <BloqueSeccion ajustes={{ paddingTop: '1.75rem', paddingBottom: '2.5rem' }}>
       <div className={s.pagina} data-componente="PaginaListaPublica">
         <CabezaRegalo
-          titulo={<><Texto>La lista de deseos de</Texto> {nombre}</>}
+          titulo={`La lista de deseos de ${nombre}`}
           texto="Elige algo de su lista y sorpréndele: tú pagas y nosotros se lo llevamos."
           accion={urlFechas && items.length > 0 && (
             <Boton to={urlFechas} variante="contorno" icono={<CalendarHeart aria-hidden="true" />}><Texto>Elegir el día de entrega</Texto></Boton>
@@ -98,14 +99,14 @@ export function PaginaRegalar({ dueno = {}, fechas = [], items = [], onRegalar, 
   const etiquetaFechas = useTexto('Fechas especiales');
   if (estado === 'cargando') return <EsqueletoPagina forma="productos" />;
   if (estado === 'noEncontrada') return <NoEncontrada urlTienda={urlTienda} titulo="No encontramos sus fechas" />;
-  const nombre = dueno.nombre || <Texto>Alguien</Texto>;
+  const nombre = dueno.nombre || 'Alguien';
   const elegida = fechas.some((f) => f.id === tocada) ? tocada : fechas[0]?.id;
   const fecha = fechas.find((f) => f.id === elegida);
   return (
     <BloqueSeccion ajustes={{ paddingTop: '1.75rem', paddingBottom: '2.5rem' }}>
       <div className={s.pagina} data-componente="PaginaRegalar">
         <CabezaRegalo
-          titulo={<><Texto>Regálale a</Texto> {nombre}</>}
+          titulo={`Regálale a ${nombre}`}
           texto="Elige una de sus fechas especiales y lo que quieras de su lista: llega ese día."
         />
 
@@ -115,7 +116,7 @@ export function PaginaRegalar({ dueno = {}, fechas = [], items = [], onRegalar, 
               {fechas.map((f) => <FechaEntrega key={f.id} {...f} elegida={f.id === elegida} onElegir={() => setElegida(f.id)} />)}
             </div>
           ) : (
-            <Aviso tipo="info" compacto>{nombre} <Texto>todavía no registró fechas especiales. Igual puedes regalarle algo de su lista.</Texto></Aviso>
+            <Aviso tipo="info" compacto>{`${nombre} todavía no registró fechas especiales. Igual puedes regalarle algo de su lista.`}</Aviso>
           )}
         </PasoEstudio>
 
@@ -130,7 +131,11 @@ export function PaginaRegalar({ dueno = {}, fechas = [], items = [], onRegalar, 
                 ))}
               </ul>
               {fecha && (
-                <p className={s.entrega}><Texto>Se entrega el</Texto> <strong>{fecha.fechaTexto}</strong> (<Texto>{fecha.ocasion}</Texto>{fecha.nombre && fecha.nombre !== dueno.nombre && <> <Texto>de</Texto> {fecha.nombre}</>}) <Texto>a</Texto> <strong>{nombre}</strong>.</p>
+                <p className={s.entrega}>
+                  <TextoResaltado resaltar={[fecha.fechaTexto, nombre]}>
+                    {`Se entrega el ${fecha.fechaTexto} (${fecha.ocasion}${fecha.nombre && fecha.nombre !== dueno.nombre ? ` de ${fecha.nombre}` : ''}) a ${nombre}.`}
+                  </TextoResaltado>
+                </p>
               )}
             </>
           )}

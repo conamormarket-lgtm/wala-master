@@ -53,7 +53,7 @@ export function MarcoEstudio({
 export function InicioLienzoEstudio({ zona, onImagen, onTexto, subiendo }) {
   return (
     <div className={s.empezar}>
-      <p><Texto>Empieza tu diseño en</Texto> <strong><Texto>{zona}</Texto></strong></p>
+      <p><TextoResaltado resaltar={[zona]}>{`Empieza tu diseño en ${zona}`}</TextoResaltado></p>
       <span className={s.empezarBotones}>
         <Boton tamano="sm" icono={<ImagePlus aria-hidden="true" />} onClick={onImagen} cargando={subiendo}><Texto>Subir imagen</Texto></Boton>
         <Boton tamano="sm" variante="secundario" icono={<Type aria-hidden="true" />} onClick={onTexto}><Texto>Escribir texto</Texto></Boton>
@@ -73,12 +73,11 @@ export function InicioLienzoEstudio({ zona, onImagen, onTexto, subiendo }) {
  */
 export function EscenaEstudio({ lados = [], lado, onLado, barra, zona, escenaRef, className, children, ...props }) {
   const etiqueta = useTexto('Tu prenda');
-  const etiquetaLados = useTexto('Lado de la prenda');
   return (
     <section ref={escenaRef} className={[s.escena, className].filter(Boolean).join(' ')} aria-label={etiqueta} {...props}>
       {lados.length > 1 && (
         <Pestanas
-          etiqueta={etiquetaLados}
+          etiqueta="Lado de la prenda"
           opciones={lados.map((l) => ({ id: l.id, texto: <Texto>{l.nombre}</Texto>, cuenta: l.cuenta || undefined }))}
           valor={lado}
           onChange={onLado}

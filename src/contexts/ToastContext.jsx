@@ -2,6 +2,8 @@ import React, { createContext, useContext, useMemo } from 'react';
 // Directo del archivo (no de kit/index.js): el índice arrastraría el CSS de
 // todo el kit al paquete principal.
 import { ProveedorToasts, useToast as useToastKit } from '../componentes/kit/Feedback';
+import { ProveedorTraduccion } from '../componentes/kit/Traduccion';
+import { useTranslatedText, useTranslatedHtml } from '../i18n/useTranslatedText';
 
 const ToastContext = createContext();
 
@@ -46,8 +48,13 @@ const PuenteToasts = ({ children }) => {
     return <ToastContext.Provider value={valor}>{children}</ToastContext.Provider>;
 };
 
+// Los toasts se dibujan aquí, por encima de App y de su ProveedorTraduccion:
+// este propio los traduce (los mensajes llegan en español desde toda la
+// tienda). Necesita LanguageProvider por fuera (ver App.jsx).
 export const ToastProvider = ({ children }) => (
-    <ProveedorToasts>
-        <PuenteToasts>{children}</PuenteToasts>
-    </ProveedorToasts>
+    <ProveedorTraduccion texto={useTranslatedText} html={useTranslatedHtml}>
+        <ProveedorToasts>
+            <PuenteToasts>{children}</PuenteToasts>
+        </ProveedorToasts>
+    </ProveedorTraduccion>
 );

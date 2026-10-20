@@ -8,6 +8,7 @@ import { EsqueletoPagina } from '../Esqueletos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { Texto } from '../Traduccion';
 import { PagoTarjeta, PagoPaypal } from '../piezas/Pago';
+import { TextoResaltado } from '../piezas/TextoResaltado';
 import s from './PagoRapido.module.css';
 
 /*
@@ -60,7 +61,11 @@ export function PaginaPagoRapido({ enlace = {}, onTarjeta, onPaypal, botonesPayp
           <div className={s.listo}>
             <img src={CARAS_KAPI.feliz} alt="" width="110" height="110" />
             <h1 className={s.titulo}><Texto>¡Pago recibido!</Texto><Trazo className={s.trazo} /></h1>
-            <p><Texto>Tu pago de</Texto> <strong>{importe(enlace.monto, enlace.moneda)}</strong> <Texto>se hizo correctamente. Tu asesor ya lo ve.</Texto></p>
+            <p>
+              <TextoResaltado resaltar={[importe(enlace.monto, enlace.moneda)]}>
+                {`Tu pago de ${importe(enlace.monto, enlace.moneda)} se hizo correctamente. Tu asesor ya lo ve.`}
+              </TextoResaltado>
+            </p>
             {enlace.transaccion && <p className={s.transaccion}><CheckCircle2 aria-hidden="true" /> <Texto>Operación</Texto> {enlace.transaccion}</p>}
           </div>
         ) : (

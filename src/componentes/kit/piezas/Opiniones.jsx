@@ -4,6 +4,7 @@ import Boton from '../Boton';
 import { Campo } from '../Formulario';
 import { Sello } from '../Marca';
 import { Avatar } from './Avatar';
+import { Traducido } from './TextoResaltado';
 import { Texto, useTexto } from '../Traduccion';
 import { atributosDeFoto } from '../../../components/common/OptimizedImage/OptimizedImage';
 import s from './Opiniones.module.css';
@@ -19,12 +20,20 @@ import s from './Opiniones.module.css';
  * para elegirla (un grupo de radios: flechas y Enter).
  *  - valor · tamano (px) · onCambiar(n) · etiqueta (para el lector de pantalla)
  */
+/** "1 estrella" … "5 estrellas", traducidas (para los aria-label). */
+function useNombresEstrellas() {
+  return [useTexto('1 estrella'), useTexto('2 estrellas'), useTexto('3 estrellas'), useTexto('4 estrellas'), useTexto('5 estrellas')];
+}
+
 export function Estrellas({ valor = 0, tamano = 16, onCambiar, etiqueta = 'Calificación' }) {
   const [encima, setEncima] = useState(0);
   const nombre = useId();
+  const nota = useTexto(`${Number(valor).toFixed(1).replace('.0', '')} de 5 estrellas`);
+  const grupo = useTexto(etiqueta);
+  const estrellas = useNombresEstrellas();
   if (!onCambiar) {
     return (
-      <span className={s.estrellas} style={{ '--tam': `${tamano}px` }} role="img" aria-label={`${Number(valor).toFixed(1).replace('.0', '')} de 5 estrellas`}>
+      <span className={s.estrellas} style={{ '--tam': `${tamano}px` }} role="img" aria-label={nota}>
         {[1, 2, 3, 4, 5].map((n) => (
           <span key={n} className={s.estrella} style={{ '--lleno': `${Math.max(0, Math.min(1, valor - n + 1)) * 100}%` }}>
             <Star aria-hidden="true" />
@@ -36,10 +45,10 @@ export function Estrellas({ valor = 0, tamano = 16, onCambiar, etiqueta = 'Calif
   }
   const visible = encima || valor;
   return (
-    <span className={[s.estrellas, s.elegir].join(' ')} style={{ '--tam': `${tamano}px` }} role="radiogroup" aria-label={etiqueta} onMouseLeave={() => setEncima(0)}>
+    <span className={[s.estrellas, s.elegir].join(' ')} style={{ '--tam': `${tamano}px` }} role="radiogroup" aria-label={grupo} onMouseLeave={() => setEncima(0)}>
       {[1, 2, 3, 4, 5].map((n) => (
         <label key={n} className={s.estrella} style={{ '--lleno': n <= visible ? '100%' : '0%' }} onMouseEnter={() => setEncima(n)}>
-          <input type="radio" name={nombre} value={n} checked={valor === n} onChange={() => onCambiar(n)} aria-label={`${n} ${n === 1 ? 'estrella' : 'estrellas'}`} />
+          <input type="radio" name={nombre} value={n} checked={valor === n} onChange={() => onCambiar(n)} aria-label={estrellas[n - 1]} />
           <Star aria-hidden="true" />
           <Star aria-hidden="true" className={s.llena} />
         </label>
@@ -55,6 +64,7 @@ export function Estrellas({ valor = 0, tamano = 16, onCambiar, etiqueta = 'Calif
  *  - accion: el botón "Escribir una opinión"
  */
 export function ResumenOpiniones({ promedio = 0, total = 0, porEstrella = {}, filtro, onFiltro, accion }) {
+  const estrellas = useNombresEstrellas();
   return (
     <div className={s.resumen} data-componente="ResumenOpiniones">
       <div className={s.nota}>
@@ -76,7 +86,7 @@ export function ResumenOpiniones({ promedio = 0, total = 0, porEstrella = {}, fi
                 onClick={() => onFiltro?.(activa ? null : n)}
                 disabled={!cuantas}
                 aria-pressed={activa}
-                aria-label={`${n} ${n === 1 ? 'estrella' : 'estrellas'}: ${cuantas}`}
+                aria-label={`${estrellas[n - 1]}: ${cuantas}`}
               >
                 <span className={s.barraNumero}>{n} <Star aria-hidden="true" /></span>
                 <span className={s.pista}><span style={{ transform: `scaleX(${total ? cuantas / total : 0})` }} /></span>
@@ -115,9 +125,11 @@ export function TarjetaOpinion({ autor, fecha, puntuacion = 5, texto, fotos = []
       {fotos.length > 0 && (
         <div className={s.fotos}>
           {fotos.map((f, i) => (
-            <button key={f} type="button" className={s.foto} onClick={() => onFoto?.(f)} aria-label={`Ver la foto ${i + 1}`}>
-              <img {...atributosDeFoto(f, '120px')} alt="" loading="lazy" />
-            </button>
+            <Traducido key={f} texto={`Ver la foto ${i + 1}`}>{(etiqueta) => (
+              <button type="button" className={s.foto} onClick={() => onFoto?.(f)} aria-label={etiqueta}>
+                <img {...atributosDeFoto(f, '120px')} alt="" loading="lazy" />
+              </button>
+            )}</Traducido>
           ))}
         </div>
       )}
@@ -142,8 +154,6 @@ export function FormularioOpinion({ onEnviar, onCancelar, sesion = true, urlLogi
   const [fotos, setFotos] = useState([]);
   const [error, setError] = useState(null);
   const [enviando, setEnviando] = useState(false);
-  const placeholder = useTexto('¿Qué te pareció? ¿La talla, el color, la calidad?');
-  const etiquetaOpinion = useTexto('Tu opinión');
 
   // Las vistas previas se sueltan al quitar la foto o al salir (las de ese
   // momento, no las del principio).
@@ -193,10 +203,10 @@ export function FormularioOpinion({ onEnviar, onCancelar, sesion = true, urlLogi
         <Estrellas valor={puntuacion} tamano={30} onCambiar={(n) => { setPuntuacion(n); setError(null); }} etiqueta="Tu calificación" />
       </div>
       <Campo
-        etiqueta={etiquetaOpinion}
+        etiqueta="Tu opinión"
         multilinea
         maxLength={800}
-        placeholder={placeholder}
+        placeholder="¿Qué te pareció? ¿La talla, el color, la calidad?"
         value={texto}
         onChange={(e) => { setTexto(e.target.value); setError(null); }}
       />
@@ -206,7 +216,7 @@ export function FormularioOpinion({ onEnviar, onCancelar, sesion = true, urlLogi
           {fotos.map((f, i) => (
             <span key={f.url} className={s.foto}>
               <img src={f.url} alt="" />
-              <button type="button" className={s.quitarFoto} onClick={() => quitar(i)} aria-label={`Quitar la foto ${i + 1}`}><X aria-hidden="true" /></button>
+              <Traducido texto={`Quitar la foto ${i + 1}`}>{(etiqueta) => <button type="button" className={s.quitarFoto} onClick={() => quitar(i)} aria-label={etiqueta}><X aria-hidden="true" /></button>}</Traducido>
             </span>
           ))}
           {fotos.length < maxFotos && (

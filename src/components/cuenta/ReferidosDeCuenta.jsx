@@ -18,6 +18,7 @@ import {
 import { getProduct } from '../../services/products';
 import { volarMonedasGanadas } from '../../utils/animations';
 import { PaginaReferidos } from '../../componentes/kit/paginas/CuentaRecompensas';
+import { useTexto } from '../../componentes/kit/Traduccion';
 
 /*
  * Mis referidos (/cuenta/referidos), paso 6 de la migración: PaginaReferidos
@@ -164,6 +165,8 @@ function personaDesde(r, numero, ahora, consulta) {
 export default function ReferidosDeCuenta() {
   const { userProfile, reloadProfile } = useAuth();
   const toast = useGlobalToast();
+  // Lo que se comparte, en el idioma de quien invita (la frase entera).
+  const textoInvitacion = useTexto(`Te invito a Walá: crea tu cuenta con mi link y recibe ${BONO_BIENVENIDA_INVITACION} monedas para tu primera compra.`);
   const queryClient = useQueryClient();
   const [ahora, setAhora] = useState(() => Date.now());
   const [abiertos, setAbiertos] = useState([]);
@@ -274,7 +277,7 @@ export default function ReferidosDeCuenta() {
   };
 
   const compartir = async () => {
-    const texto = `Te invito a Walá: crea tu cuenta con mi link y recibe ${BONO_BIENVENIDA_INVITACION} monedas para tu primera compra.`;
+    const texto = textoInvitacion;
     if (navigator.share) {
       try { await navigator.share({ title: 'Walá', text: texto, url }); return; } catch { /* cancelado */ }
     }

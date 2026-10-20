@@ -15,6 +15,7 @@ import { tieneCuenta, urlLogin } from '../../utils/rutaPrivada';
 import CulqiCustomCheckout from '../CulqiCustomCheckout';
 import { PaginaSorteo } from '../../componentes/kit/paginas/Sorteo';
 import { PagoTarjeta } from '../../componentes/kit/piezas/Pago';
+import { useTexto } from '../../componentes/kit/Traduccion';
 
 // Los botones de PayPal (su SDK) bajan solo al elegir cómo pagar.
 const PaypalTicketSorteo = lazy(() => import('../PaypalCheckout/PaypalTicketSorteo'));
@@ -131,6 +132,10 @@ export default function SorteoDeTienda() {
   const slugReal = sorteo?.slug || slug || '';
   const urlSorteo = `${origenPublico()}/sorteos${slugReal ? `/${slugReal}` : ''}`;
   const urlInvitacion = miCodigo ? `${urlSorteo}?ref=${encodeURIComponent(miCodigo)}` : undefined;
+  // Lo que se comparte, en el idioma de quien comparte (la frase entera, con el premio).
+  const premioCompartido = sorteo?.premio?.nombre || sorteo?.titulo || 'este sorteo';
+  const tituloCompartido = useTexto('Sorteo Walá');
+  const textoCompartido = useTexto(`¡Estoy participando para ganar ${premioCompartido} en Walá! Participa tú también:`);
 
   const datosIniciales = useMemo(() => ({
     nombre: userProfile?.displayName || user?.displayName || '',
@@ -192,9 +197,8 @@ export default function SorteoDeTienda() {
 
   const compartir = async () => {
     const url = urlInvitacion || urlSorteo;
-    const premio = sorteo?.premio?.nombre || sorteo?.titulo || 'este sorteo';
     try {
-      if (navigator.share) await navigator.share({ title: 'Sorteo Walá', text: `¡Estoy participando para ganar ${premio} en Walá! Participa tú también:`, url });
+      if (navigator.share) await navigator.share({ title: tituloCompartido, text: textoCompartido, url });
       else if (navigator.clipboard) { await navigator.clipboard.writeText(url); toast.success('Enlace copiado. ¡Compártelo!'); }
     } catch (e) {
       // Cerrar el menú de compartir no es un error: la chance se pide igual.

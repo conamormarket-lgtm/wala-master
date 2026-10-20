@@ -8,7 +8,8 @@ import { LogoWala, Garabatos, Trazo, Sello } from '../Marca';
 import { BloqueSeccion } from '../Seccion';
 import { BotonGoogle, SeparadorAcceso, CampoContrasena } from '../piezas/Acceso';
 import { CARAS_KAPI } from '../piezas/Flotantes';
-import { Texto, useTexto } from '../Traduccion';
+import { TextoResaltado } from '../piezas/TextoResaltado';
+import { Texto } from '../Traduccion';
 import s from './Acceso.module.css';
 
 /*
@@ -93,13 +94,11 @@ export function MarcoAcceso({ panel = {}, titulo, texto, arriba, pie, children }
   );
 }
 
-/** El campo del correo de las cuatro páginas (etiqueta y ejemplo traducidos). */
+/** El campo del correo de las cuatro páginas (Campo traduce la etiqueta y el ejemplo). */
 export function CampoCorreo({ autoComplete = 'email', ...props }) {
-  const etiqueta = useTexto('Correo electrónico');
-  const ejemplo = useTexto('nombre@correo.com');
   return (
     <Campo
-      etiqueta={etiqueta}
+      etiqueta="Correo electrónico"
       icono={<Mail />}
       type="email"
       name="email"
@@ -107,7 +106,7 @@ export function CampoCorreo({ autoComplete = 'email', ...props }) {
       inputMode="email"
       autoCapitalize="none"
       spellCheck={false}
-      placeholder={ejemplo}
+      placeholder="nombre@correo.com"
       {...props}
       error={conTexto(props.error)}
     />
@@ -241,7 +240,9 @@ export function PaginaRecuperar({ onEnviar, urlLogin = '/login' }) {
         <div className={`${s.enviado} ${s.entraAdelante}`} role="status">
           <Sello tamano={56} tono="menta" girar={-8}><MailCheck aria-hidden="true" /></Sello>
           <p>
-            <Texto>Si hay una cuenta con</Texto> <strong className={s.correo}>{enviado}</strong><Texto>, te llegará un enlace para cambiar tu contraseña.</Texto>{' '}
+            <TextoResaltado resaltar={[enviado]} envolver={(correo, k) => <strong key={k} className={s.correo}>{correo}</strong>}>
+              {`Si hay una cuenta con ${enviado}, te llegará un enlace para cambiar tu contraseña.`}
+            </TextoResaltado>{' '}
             <Texto>Mira también en spam o promociones.</Texto>
           </p>
           <Boton to={urlLogin} bloque icono={<ArrowLeft aria-hidden="true" />}><Texto>Volver a iniciar sesión</Texto></Boton>

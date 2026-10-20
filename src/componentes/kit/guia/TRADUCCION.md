@@ -58,7 +58,7 @@ import { useTranslatedText, useTranslatedHtml } from './i18n/useTranslatedText';
 | `ItemCarrito` | el nombre; desde el 2026-10-17 también "Combo", "Con tu diseño", los detalles, las prendas, lo que falta y los textos ocultos |
 | `PaginaCheckout`, `ResumenCompra`, `FilaMonedas`, `CampoCupon`, `MetodoPago`, `PasosCompra`, `CamposDireccion` | los textos fijos, las etiquetas y placeholders de los campos, los avisos y la nota de invitación (desde el 2026-10-17) |
 | `PaginaPagoRapido`, `PagoTarjeta`, `PagoPaypal` | los textos fijos y el concepto del enlace (desde el 2026-10-17) |
-| `MarcoCuenta`, `MenuCuenta`, `PaginaResumenCuenta`, `PaginaAjustes`, `ListaDatos`, `AccesosCuenta`, `IdentidadCuenta` | los textos fijos y los aria-label (desde el 2026-10-17). Los grupos del menú y los accesos llegan traducidos por el diccionario (`t()`); `CabezaCuenta`, `TarjetaCuenta`, `Estadistica` e `Interruptor` muestran lo que reciben (quien los usa pasa `<Texto>`, porque a veces es un dato) |
+| `MarcoCuenta`, `MenuCuenta`, `PaginaResumenCuenta`, `PaginaAjustes`, `ListaDatos`, `AccesosCuenta`, `IdentidadCuenta` | los textos fijos y los aria-label (desde el 2026-10-17). Los grupos del menú y los accesos llegan traducidos por el diccionario (`t()`); desde el 2026-10-20 `CabezaCuenta`, `TarjetaCuenta` (titulo, subtitulo, antetitulo), `Estadistica` (etiqueta, unidad, nota) e `Interruptor` traducen lo que reciben; un dato que no se traduce (un nombre) se pasa como nodo, `<>{nombre}</>` |
 | `Cabecera`, `MenuTienda`, `MenuMarcas` (no los nombres de marca), `AyudaMonedas`, `VistaFavoritos`, `VistaCarrito`, `ListaNotificaciones`, `SaldoMonedas`, `MenuCuenta` sin sesión | los textos fijos, los aria-label, los nombres de categoría y los textos del admin (menú de cuenta y favoritos) (desde el 2026-10-19). Los enlaces de la cabecera pasan por la traducción salvo `traducir: false` (la tienda traduce los rótulos estándar con su diccionario) |
 | `PaginaInvitacion`, `AvisoInvitacion`, `PaginaEnlaces` (también el título, la descripción y los botones de la página), `PaginaSuscripciones`, `PaginaSorteo`, `CabezaSorteo` | los textos fijos, los estados, los avisos y lo que se comparte; el nombre de quien invita y las cifras quedan destacados con `TextoResaltado` (desde el 2026-10-19). Los nombres de los ganadores van tal cual |
 | `PaginaPalabra`, `PaginaRuleta`, `PaginaBolitas` y sus piezas (`MarcoJuego`, `AyudaJuego`, `PremioJuego`, `ResultadoJuego`, `CifrasJuego`, el tablero, el teclado, el ranking, la rueda, el historial, los tubos) | los textos fijos, las ayudas, los avisos, los resultados, los nombres de los premios y lo que se comparte; las cifras quedan en negrita con `TextoResaltado` (desde el 2026-10-19). Los nombres del ranking van tal cual |
@@ -83,6 +83,38 @@ import { useTranslatedText, useTranslatedHtml } from './i18n/useTranslatedText';
 | `PaginaListaPublica`, `PaginaRegalar`, `PaginaRegaloSorpresa`, `TarjetaRegalo`, `FechaEntrega`, `SobreRegalo` | los textos fijos, la relación, la ocasión, "En 9 días" y las fechas festivas (desde el 2026-10-17); el nombre de la persona y el mensaje del regalo van tal cual |
 | `PaginaCarrito`, `ResumenPedido`, `BarraEnvioGratis`, `Casilla` | los textos fijos (botones, avisos, la selección, el resumen, el envío gratis, la etiqueta de la casilla) |
 | `ResumenCompra` (checkout) y el menú del carrito | el nombre de cada producto |
+
+### La revisión del 2026-10-20: traducir donde se dibuja
+
+Se recorrieron las rutas de la tienda en el servidor de desarrollo para saber
+qué archivos se usan de verdad (lo de los interruptores "viejo" no) y se
+buscaron los textos en español que no pasaban por la traducción (unos 320,
+más los que llegaban como prop a componentes que los pintaban tal cual).
+
+**La regla:** el texto se traduce DENTRO del componente que lo dibuja, no en
+el sitio de uso. Un componente que recibe una prop de texto la traduce él; quien
+lo usa le pasa el español tal cual. Si se traduce en los dos lados, en inglés se
+manda a traducir lo ya traducido (se ve bien, pero son pedidos de más).
+
+Traducen solos lo que reciben:
+
+| Componente | Qué |
+|---|---|
+| `Boton` | el texto (un string; lo que ya viene armado pasa igual) |
+| Los toasts (`useToast`, `useGlobalToast`, `toast.success`…) y `ListaNotificaciones` | título, texto y acción. `ToastProvider` lleva su propio `ProveedorTraduccion` y `LanguageProvider` va por fuera (App.jsx): antes los avisos se dibujaban fuera de la traducción y ninguno se traducía |
+| `EstadoVacio`, `Aviso`, `Confirmar`, `HojaInferior` | título y texto |
+| `Campo`, `CampoTelefono`, `CampoFecha`, `Calendario`, `Cantidad`, `Deslizador`, `Interruptor`, `Selector` (y sus opciones), `SelectorColor`, `SelectorTalla`, `Buscador` (placeholder), `ListaOpciones` (etiqueta, placeholder; las opciones son datos) | etiqueta, ayuda, error, placeholder, descripción |
+| `Cargando`, `CapaCargando`, `PantallaCarga`, `EsqueletoSeccion`, `EsqueletoPagina` | texto, detalle, "Cargando" |
+| `Carrusel`, `Marquesina`, `Pestanas`, `CuentaRegresiva`, `IconoWala`, `Chip` (el "Quitar"), `PanelFlotante` | etiqueta, textos fijos y aria-label |
+| `BarraProgreso`, `StockBajo`, `Estrellas`, `TarjetaPlan`, `TarjetaAliado`, `PortadaMarca`, `TarjetaMarca`, `TarjetaCategoria`, `GaleriaProducto`, `FormaGanar`, `CabezaRegalo` | sus props de texto y aria-label |
+
+`Etiqueta`, `EtiquetaColgante` y `Chip` (sus hijos) no traducen: muchas
+veces llevan un precio o un nombre; quien los usa pone `<Texto>` si hace falta.
+
+Para un atributo dentro de un `map` (donde no hay hooks) está `Traducido`
+(piezas/TextoResaltado.jsx). Las frases que estaban partidas en trozos
+("Te faltan " + monto + " para…") van enteras con `TextoResaltado`, que
+mantiene el valor destacado.
 
 ### Lo que falta (a futuro)
 

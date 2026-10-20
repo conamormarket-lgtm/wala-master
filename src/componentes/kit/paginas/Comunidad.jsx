@@ -39,8 +39,8 @@ export function PaginaComunidad({ disenos = [], cargando = false, error = false,
   }, [disenos]);
   const visibles = prenda ? disenos.filter((d) => d.prendaId === prenda) : disenos;
   const n = disenos.length;
+  const sub = !cargando && n > 0 ? `${n} ${n === 1 ? 'diseño listo' : 'diseños listos'} para usar. Elige uno, cámbialo a tu gusto y hazlo tuyo.` : 'Elige uno, cámbialo a tu gusto y hazlo tuyo.';
   const t = {
-    sub: useTexto(!cargando && n > 0 ? `${n} ${n === 1 ? 'diseño listo' : 'diseños listos'} para usar. Elige uno, cámbialo a tu gusto y hazlo tuyo.` : 'Elige uno, cámbialo a tu gusto y hazlo tuyo.'),
     filtrar: useTexto('Filtrar por prenda'),
     cargando: useTexto('Cargando diseños'),
   };
@@ -52,7 +52,7 @@ export function PaginaComunidad({ disenos = [], cargando = false, error = false,
           icono={<Users />}
           tono="rosa"
           titulo={<Texto>Diseños de la comunidad</Texto>}
-          subtitulo={t.sub}
+          subtitulo={<Texto>{sub}</Texto>}
           accion={<Boton to={urlCrear} variante="contorno" icono={<Shirt aria-hidden="true" />}><Texto>Empezar desde cero</Texto></Boton>}
         />
 

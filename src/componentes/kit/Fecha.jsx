@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { Campo, Casilla } from './Formulario';
 import { PanelFlotante } from './PanelFlotante';
+import { useTexto } from './Traduccion';
 import s from './Fecha.module.css';
 
 /*
@@ -11,8 +12,8 @@ import s from './Fecha.module.css';
  */
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-const DIAS_SEMANA = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+// Los nombres cortos salen del nombre entero traducido: "Ene" / "Jan", y la inicial del día: "L" / "M".
+const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
 const ANIO_SIN = 2000; // año bisiesto: con "No sé el año" el 29 de febrero existe
 
 const dos = (n) => String(n).padStart(2, '0');
@@ -24,6 +25,22 @@ const partir = (iso) => {
 };
 const diasDelMes = (a, m) => new Date(a || ANIO_SIN, m + 1, 0).getDate();
 const capital = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+
+/** "Ene" (el mes entero traducido, en tres letras). */
+function MesCorto({ m }) {
+  return capital(useTexto(capital(MESES[m]))).slice(0, 3);
+}
+
+/** "L" (la inicial del día traducido). */
+function InicialDia({ dia }) {
+  return capital(useTexto(capital(dia))).charAt(0);
+}
+
+/** Un día del calendario; aparte para traducir entero su nombre ("12 de julio de 2001"). */
+function Dia({ d, mes, anio, ...boton }) {
+  const nombre = useTexto(`${d} de ${MESES[mes]}${anio ? ` de ${anio}` : ''}`);
+  return <button type="button" data-dia={d} aria-label={nombre} {...boton}>{d}</button>;
+}
 
 /** "2001-07-12" → "12 de julio de 2001"; "0000-07-12" → "12 de julio". */
 export const fechaEnTexto = (iso) => {
@@ -88,7 +105,12 @@ export function Calendario({ valor, onElegir, min, max, sinAnio = false, vistaIn
     }
   };
 
-  const titulo = sinAnio ? capital(MESES[visible.m]) : `${capital(MESES[visible.m])} ${visible.a}`;
+  const titulo = useTexto(sinAnio ? capital(MESES[visible.m]) : `${capital(MESES[visible.m])} ${visible.a}`);
+  const t = {
+    antes: useTexto(vista === 'anios' ? 'Años anteriores' : 'Mes anterior'),
+    elegir: useTexto(sinAnio ? 'Elegir el mes' : 'Elegir el año y el mes'),
+    despues: useTexto(vista === 'anios' ? 'Años siguientes' : 'Mes siguiente'),
+  };
   let cuerpo;
   if (vista === 'anios') {
     const anios = Array.from({ length: 20 }, (_, i) => paginaAnios + i);
@@ -110,14 +132,14 @@ export function Calendario({ valor, onElegir, min, max, sinAnio = false, vistaIn
   } else if (vista === 'meses') {
     cuerpo = (
       <div className={s.rejillaGrande}>
-        {MESES_CORTOS.map((nombre, m) => (
+        {MESES.map((nombre, m) => (
           <button
             key={nombre}
             type="button"
             className={[s.celdaGrande, m === visible.m && s.elegida].filter(Boolean).join(' ')}
             onClick={() => { setVisible((v) => ({ ...v, m })); setVista('dias'); }}
           >
-            {capital(nombre)}
+            <MesCorto m={m} />
           </button>
         ))}
       </div>
@@ -125,28 +147,26 @@ export function Calendario({ valor, onElegir, min, max, sinAnio = false, vistaIn
   } else {
     cuerpo = (
       <>
-        <div className={s.semana} aria-hidden="true">{DIAS_SEMANA.map((d, i) => <span key={i}>{d}</span>)}</div>
+        <div className={s.semana} aria-hidden="true">{DIAS.map((d) => <span key={d}><InicialDia dia={d} /></span>)}</div>
         <div className={s.dias} ref={rejilla} role="grid" aria-label={titulo}>
           {celdas.map((d, i) => {
             if (!d) return <span key={`v${i}`} />;
             const sel = elegido && elegido.d === d && elegido.m === visible.m && (sinAnio || elegido.a === visible.a);
             const esHoy = !sinAnio && hoy.getDate() === d && hoy.getMonth() === visible.m && hoy.getFullYear() === visible.a;
             return (
-              <button
+              <Dia
                 key={d}
-                type="button"
-                data-dia={d}
+                d={d}
+                mes={visible.m}
+                anio={sinAnio ? 0 : visible.a}
                 tabIndex={d === Math.min(foco, total) ? 0 : -1}
                 className={[s.dia, sel && s.elegida, esHoy && s.hoy].filter(Boolean).join(' ')}
                 aria-pressed={sel}
-                aria-label={`${d} de ${MESES[visible.m]}${sinAnio ? '' : ` de ${visible.a}`}`}
                 disabled={fuera(visible.a, visible.m, d)}
                 onKeyDown={teclaDia}
                 onFocus={() => setFoco(d)}
                 onClick={() => onElegir?.(aIso(sinAnio ? 0 : visible.a, visible.m, d))}
-              >
-                {d}
-              </button>
+              />
             );
           })}
         </div>
@@ -160,7 +180,7 @@ export function Calendario({ valor, onElegir, min, max, sinAnio = false, vistaIn
         <button
           type="button"
           className={s.flecha}
-          aria-label={vista === 'anios' ? 'Años anteriores' : 'Mes anterior'}
+          aria-label={t.antes}
           onClick={() => (vista === 'anios' ? setPaginaAnios((p) => p - 20) : moverMes(-1))}
           disabled={vista === 'meses'}
         >
@@ -169,7 +189,7 @@ export function Calendario({ valor, onElegir, min, max, sinAnio = false, vistaIn
         <button
           type="button"
           className={s.titulo}
-          aria-label={sinAnio ? 'Elegir el mes' : 'Elegir el año y el mes'}
+          aria-label={t.elegir}
           onClick={() => setVista((v) => (v === 'dias' ? (sinAnio ? 'meses' : 'anios') : 'dias'))}
         >
           {vista === 'anios' ? `${paginaAnios} – ${paginaAnios + 19}` : titulo}
@@ -178,7 +198,7 @@ export function Calendario({ valor, onElegir, min, max, sinAnio = false, vistaIn
         <button
           type="button"
           className={s.flecha}
-          aria-label={vista === 'anios' ? 'Años siguientes' : 'Mes siguiente'}
+          aria-label={t.despues}
           onClick={() => (vista === 'anios' ? setPaginaAnios((p) => p + 20) : moverMes(1))}
           disabled={vista === 'meses'}
         >
@@ -208,7 +228,8 @@ export function CampoFecha({
   // "No sé el año": sale de la fecha (año 0000) o, sin fecha todavía, de la casilla.
   const [sinAnioSuelto, setSinAnioSuelto] = useState(false);
   const sinAnio = anioOpcional && (valor ? String(valor).startsWith('0000') : sinAnioSuelto);
-  const texto = fechaEnTexto(valor);
+  const texto = useTexto(fechaEnTexto(valor) || undefined);
+  const marcador = useTexto(placeholder);
   const elegir = (iso) => { onCambiar?.(iso); setAbierto(false); window.setTimeout(() => disparador.current?.focus({ preventScroll: true }), 0); };
   const alternarAnio = (sin) => {
     const f = partir(valor);
@@ -238,7 +259,7 @@ export function CampoFecha({
             onClick={() => { setClave((k) => k + 1); setAbierto((v) => !v); }}
             {...aria}
           >
-            <span className={texto ? s.valor : s.vacio}>{texto || placeholder}</span>
+            <span className={texto ? s.valor : s.vacio}>{texto || marcador}</span>
             <ChevronDown aria-hidden="true" className={[s.flechaCampo, abierto && s.girada].filter(Boolean).join(' ')} />
           </button>
         )}

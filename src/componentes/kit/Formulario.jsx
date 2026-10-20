@@ -8,6 +8,9 @@ import { Visto } from './Marca';
 import { Texto, useTexto } from './Traduccion';
 import s from './Formulario.module.css';
 
+/** Solo se manda a traducir lo que tiene letras: "987 654 321" o "0.00" quedan igual. */
+const conLetras = (t) => (typeof t === 'string' && /\p{L}/u.test(t) ? t : undefined);
+
 /**
  * Campo de texto con etiqueta, ayuda y error accesibles. El error entra con una sacudida.
  *  - opciones: [{ valor, texto, detalle, icono }] lo vuelve una lista
@@ -25,6 +28,11 @@ export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, opciones, nat
   const campoId = id || autoId;
   const ayudaId = `${campoId}-ayuda`;
   const aria = { 'aria-invalid': error ? true : undefined, 'aria-describedby': error || ayuda ? ayudaId : undefined };
+  // Los textos se traducen aquí (a ListaOpciones le llegan tal cual: traduce los suyos).
+  const tEtiqueta = useTexto(etiqueta);
+  const tAyuda = useTexto(ayuda);
+  const tError = useTexto(error);
+  const tPlaceholder = useTexto(conLetras(input.placeholder)) ?? input.placeholder;
   let cuerpo;
   if (control) {
     cuerpo = control({ id: campoId, ...aria });
@@ -53,14 +61,14 @@ export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, opciones, nat
       </>
     );
   } else if (multilinea) {
-    cuerpo = <AreaTexto id={campoId} filas={multilinea === true ? 3 : multilinea} {...aria} {...input} />;
+    cuerpo = <AreaTexto id={campoId} filas={multilinea === true ? 3 : multilinea} {...aria} {...input} placeholder={tPlaceholder} />;
   } else {
-    cuerpo = <input id={campoId} className={s.input} {...aria} {...input} />;
+    cuerpo = <input id={campoId} className={s.input} {...aria} {...input} placeholder={tPlaceholder} />;
   }
   const contador = multilinea && input.maxLength ? <span className={s.contador}>{String(input.value || '').length}/{input.maxLength}</span> : null;
   return (
     <div className={s.campo}>
-      {etiqueta && <label htmlFor={campoId} className={s.etiqueta}>{etiqueta}</label>}
+      {etiqueta && <label htmlFor={campoId} className={s.etiqueta}>{tEtiqueta}</label>}
       <div className={[s.control, multilinea && s.controlArea, error && s.conError, icono && s.conIcono, input.disabled && s.apagado].filter(Boolean).join(' ')}>
         {icono && <span className={s.icono} aria-hidden="true">{icono}</span>}
         {cuerpo}
@@ -68,9 +76,9 @@ export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, opciones, nat
         <span className={s.brilloFoco} aria-hidden="true" />
       </div>
       {error ? (
-        <p id={ayudaId} className={s.error}><AlertCircle aria-hidden="true" />{error}{contador}</p>
+        <p id={ayudaId} className={s.error}><AlertCircle aria-hidden="true" />{tError}{contador}</p>
       ) : ayuda || contador ? (
-        <p id={ayudaId} className={s.ayuda}>{ayuda}{contador}</p>
+        <p id={ayudaId} className={s.ayuda}>{tAyuda}{contador}</p>
       ) : null}
     </div>
   );
@@ -107,27 +115,30 @@ export function SelectorTalla({ tallas, valor, onChange, agotadas = [], guia, et
         {guia && <button type="button" className={s.enlace} onClick={guia}><Texto>Guía de tallas</Texto></button>}
       </legend>
       <div className={s.tallas} role="radiogroup">
-        {tallas.map((t) => {
-          const agotada = agotadas.includes(t);
-          const activa = valor === t;
-          return (
-            <button
-              key={t}
-              type="button"
-              role="radio"
-              aria-checked={activa}
-              disabled={agotada}
-              className={[s.talla, activa && s.tallaActiva, agotada && s.tallaAgotada].filter(Boolean).join(' ')}
-              onClick={() => onChange(t)}
-              title={agotada ? `${t} agotada` : undefined}
-            >
-              {activa && <motion.span layoutId={`talla-${marca}`} className={s.tallaMarca} transition={reducir ? { duration: 0 } : RESORTE} aria-hidden="true" />}
-              <span className={s.tallaTexto}>{t}</span>
-            </button>
-          );
-        })}
+        {tallas.map((t) => (
+          <BotonTalla key={t} talla={t} activa={valor === t} agotada={agotadas.includes(t)} onChange={onChange} marca={marca} reducir={reducir} />
+        ))}
       </div>
     </fieldset>
+  );
+}
+
+/** Una talla del selector; aparte para traducir entero el aviso de agotada ("M agotada"). */
+function BotonTalla({ talla, activa, agotada, onChange, marca, reducir }) {
+  const titulo = useTexto(agotada ? `${talla} agotada` : undefined);
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={activa}
+      disabled={agotada}
+      className={[s.talla, activa && s.tallaActiva, agotada && s.tallaAgotada].filter(Boolean).join(' ')}
+      onClick={() => onChange(talla)}
+      title={titulo}
+    >
+      {activa && <motion.span layoutId={`talla-${marca}`} className={s.tallaMarca} transition={reducir ? { duration: 0 } : RESORTE} aria-hidden="true" />}
+      <span className={s.tallaTexto}>{talla}</span>
+    </button>
   );
 }
 
@@ -148,6 +159,7 @@ export const normalizarHex = (texto) => {
 export function CampoHex({ valor, onChange, etiqueta = 'Color en hexadecimal' }) {
   const [texto, setTexto] = useState(String(valor || '').toUpperCase());
   const [editando, setEditando] = useState(false);
+  const nombre = useTexto(etiqueta);
   useEffect(() => { if (!editando) setTexto(String(valor || '').toUpperCase()); }, [valor, editando]);
   return (
     <input
@@ -157,8 +169,8 @@ export function CampoHex({ valor, onChange, etiqueta = 'Color en hexadecimal' })
       maxLength={7}
       spellCheck={false}
       autoComplete="off"
-      aria-label={etiqueta}
-      title={etiqueta}
+      aria-label={nombre}
+      title={nombre}
       placeholder="#000000"
       onFocus={(e) => { setEditando(true); e.target.select(); }}
       onChange={(e) => {
@@ -197,6 +209,7 @@ export function SelectorColor({ colores, valor, onChange, etiqueta = 'Color', li
     || (hexLibre ? { nombre: hexLibre, hex: hexLibre, libre: true } : null);
   const elegido = (c) => Boolean(actual && !actual.libre && actual.nombre === c.nombre);
   const elegir = (c) => (libre && !onChange ? libre.onCambiar?.(c.hex.toUpperCase()) : onChange?.(c.nombre));
+  const t = { otro: useTexto(libre ? 'Otro color' : undefined), otroDe: useTexto(libre ? `${etiqueta}: otro color` : undefined) };
   return (
     <fieldset className={s.grupo}>
       <legend className={s.leyenda}>
@@ -241,9 +254,9 @@ export function SelectorColor({ colores, valor, onChange, etiqueta = 'Color', li
             <label
               className={[s.color, s.colorLibre, actual?.libre && s.colorActivo].filter(Boolean).join(' ')}
               style={actual?.libre ? { '--muestra': hexLibre } : undefined}
-              title="Otro color"
+              title={t.otro}
             >
-              <input type="color" value={(hexLibre || '#7C3AED').toLowerCase()} onChange={(e) => libre.onCambiar?.(e.target.value.toUpperCase())} aria-label={`${etiqueta}: otro color`} />
+              <input type="color" value={(hexLibre || '#7C3AED').toLowerCase()} onChange={(e) => libre.onCambiar?.(e.target.value.toUpperCase())} aria-label={t.otroDe} />
             </label>
             <CampoHex valor={hexLibre || ''} onChange={libre.onCambiar} etiqueta={`${etiqueta} en hexadecimal`} />
           </span>
@@ -271,14 +284,15 @@ export function Cantidad({ valor, onChange, min = 1, max = 99, tamano = 'md', pa
   const subir = () => (simple ? onChange(valor + 1) : fijar((Math.floor(valor / paso + 1e-6) + 1) * paso));
   const [texto, setTexto] = useState(mostrar(valor));
   useEffect(() => { setTexto(mostrar(valor)); }, [valor]); // eslint-disable-line react-hooks/exhaustive-deps
+  const t = { nombre: useTexto(etiqueta), quitar: useTexto('Quitar uno'), agregar: useTexto('Agregar uno') };
   const confirmar = () => {
     const n = Number(String(texto).replace(',', '.'));
     if (Number.isFinite(n) && String(texto).trim() !== '') fijar(n);
     else setTexto(mostrar(valor));
   };
   return (
-    <div className={[s.cantidad, tamano === 'sm' && s.cantidadSm].filter(Boolean).join(' ')} role={editable ? 'group' : undefined} aria-label={editable ? etiqueta : undefined}>
-      <button type="button" aria-label="Quitar uno" disabled={valor <= min} onClick={bajar}>
+    <div className={[s.cantidad, tamano === 'sm' && s.cantidadSm].filter(Boolean).join(' ')} role={editable ? 'group' : undefined} aria-label={editable ? t.nombre : undefined}>
+      <button type="button" aria-label={t.quitar} disabled={valor <= min} onClick={bajar}>
         <Minus aria-hidden="true" />
       </button>
       {editable ? (
@@ -293,7 +307,7 @@ export function Cantidad({ valor, onChange, min = 1, max = 99, tamano = 'md', pa
               e.stopPropagation(); // que no dispare los atajos de la página
               if (e.key === 'Enter') { e.preventDefault(); confirmar(); e.currentTarget.blur(); }
             }}
-            aria-label={etiqueta}
+            aria-label={t.nombre}
           />
           {sufijo && <span>{sufijo}</span>}
         </label>
@@ -312,7 +326,7 @@ export function Cantidad({ valor, onChange, min = 1, max = 99, tamano = 'md', pa
         </AnimatePresence>
       </output>
       )}
-      <button type="button" aria-label="Agregar uno" disabled={valor >= max} onClick={subir}>
+      <button type="button" aria-label={t.agregar} disabled={valor >= max} onClick={subir}>
         <Plus aria-hidden="true" />
       </button>
     </div>
@@ -328,6 +342,7 @@ export function Cantidad({ valor, onChange, min = 1, max = 99, tamano = 'md', pa
  */
 export function Deslizador({ etiqueta, valor, min = 0, max = 100, paso = 1, formato, onChange, disabled = false, soloBarra = false }) {
   const avance = max > min ? ((valor - min) / (max - min)) * 100 : 0;
+  const nombre = useTexto(etiqueta);
   const barra = (
     <input
       type="range"
@@ -338,7 +353,7 @@ export function Deslizador({ etiqueta, valor, min = 0, max = 100, paso = 1, form
       value={valor}
       disabled={disabled}
       onChange={(e) => onChange?.(Number(e.target.value))}
-      aria-label={soloBarra ? etiqueta : undefined}
+      aria-label={soloBarra ? nombre : undefined}
       style={{ '--avance': `${Math.min(100, Math.max(0, avance))}%` }}
     />
   );
@@ -346,7 +361,7 @@ export function Deslizador({ etiqueta, valor, min = 0, max = 100, paso = 1, form
   return (
     <label className={[s.deslizador, disabled && s.apagado].filter(Boolean).join(' ')}>
       <span className={s.deslizadorFila}>
-        <span>{etiqueta}</span>
+        <span>{nombre}</span>
         <output>{formato ? formato(valor) : valor}</output>
       </span>
       {barra}
@@ -390,6 +405,7 @@ const agrupar = (n) => String(n || '').replace(/\D/g, '').replace(/(\d{3})(?=\d)
 export function CampoTelefono({ etiqueta = 'Celular', ayuda, error, pais = 'PE', onPais, paises = [{ valor: 'PE', texto: 'Perú', prefijo: '+51' }], valor = '', onCambiar, maximo, id, disabled = false }) {
   const tope = maximo ?? (pais === 'PE' ? 9 : 15);
   const opciones = paises.map((p) => ({ ...p, detalle: p.prefijo, corto: p.prefijo, icono: <span className={s.codigoPais}>{p.valor}</span> }));
+  const t = { pais: useTexto('País del número'), numero: useTexto(pais === 'PE' ? undefined : 'Tu número') };
   return (
     <Campo
       id={id}
@@ -400,7 +416,7 @@ export function CampoTelefono({ etiqueta = 'Celular', ayuda, error, pais = 'PE',
       control={(aria) => (
         <span className={s.telefono}>
           {paises.length > 1 ? (
-            <ListaOpciones compacto opciones={opciones} value={pais} onChange={(e) => onPais?.(e.target.value)} etiqueta="País del número" buscable aria-label="País del número" disabled={disabled} />
+            <ListaOpciones compacto opciones={opciones} value={pais} onChange={(e) => onPais?.(e.target.value)} etiqueta="País del número" buscable aria-label={t.pais} disabled={disabled} />
           ) : (
             <span className={s.prefijoFijo}>{paises[0]?.prefijo}</span>
           )}
@@ -413,7 +429,7 @@ export function CampoTelefono({ etiqueta = 'Celular', ayuda, error, pais = 'PE',
             autoComplete="tel-national"
             value={agrupar(valor)}
             onChange={(e) => onCambiar?.(e.target.value.replace(/\D/g, '').slice(0, tope))}
-            placeholder={pais === 'PE' ? '987 654 321' : 'Tu número'}
+            placeholder={pais === 'PE' ? '987 654 321' : t.numero}
             disabled={disabled}
           />
         </span>
@@ -428,8 +444,8 @@ export function Interruptor({ activo, onChange, etiqueta, descripcion, disabled 
   return (
     <label className={s.interruptor} htmlFor={id}>
       <span className={s.interruptorTexto}>
-        <span>{etiqueta}</span>
-        {descripcion && <small>{descripcion}</small>}
+        <span><Texto>{etiqueta}</Texto></span>
+        {descripcion && <small><Texto>{descripcion}</Texto></small>}
       </span>
       <input id={id} type="checkbox" role="switch" checked={activo} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
       <span className={s.pista} aria-hidden="true"><span className={s.perilla} /></span>
@@ -449,6 +465,7 @@ export function Buscador({ placeholder = 'Buscar…', atajo = '/', onBuscar, def
   const propio = useRef(null);
   const ref = inputRef || propio;
   const borrarTexto = useTexto('Borrar lo escrito');
+  const marcador = useTexto(placeholder);
   // La X aparece con algo escrito; controlado (value) o no (defaultValue).
   const [escrito, setEscrito] = useState(() => Boolean(input.value ?? defaultValue));
   const hayTexto = input.value !== undefined ? Boolean(input.value) : escrito;
@@ -486,8 +503,8 @@ export function Buscador({ placeholder = 'Buscar…', atajo = '/', onBuscar, def
       <input
         ref={ref}
         type="search"
-        placeholder={placeholder}
-        aria-label={placeholder}
+        placeholder={marcador}
+        aria-label={marcador}
         defaultValue={input.value === undefined ? defaultValue : undefined}
         {...input}
         onInput={(e) => { setEscrito(Boolean(e.currentTarget.value)); input.onInput?.(e); }}
@@ -514,13 +531,18 @@ export function Selector({ etiqueta, opciones = [], valor, onCambiar, className,
   const selectId = id || autoId;
   return (
     <span className={[s.selector, className].filter(Boolean).join(' ')}>
-      {etiqueta && <label htmlFor={selectId} className={s.selectorEtiqueta}>{etiqueta}</label>}
+      {etiqueta && <label htmlFor={selectId} className={s.selectorEtiqueta}><Texto>{etiqueta}</Texto></label>}
       <span className={s.selectorCaja}>
         <select id={selectId} value={valor} onChange={(e) => onCambiar?.(e.target.value)}>
-          {opciones.map((o) => <option key={o.valor} value={o.valor}>{o.texto}</option>)}
+          {opciones.map((o) => <OpcionSelector key={o.valor} valor={o.valor} texto={o.texto} />)}
         </select>
         <ChevronDown aria-hidden="true" />
       </span>
     </span>
   );
+}
+
+/** Una opción del Selector ("Más nuevos"…): un <option> solo lleva texto, así que se traduce aquí. */
+function OpcionSelector({ valor, texto }) {
+  return <option value={valor}>{useTexto(texto)}</option>;
 }

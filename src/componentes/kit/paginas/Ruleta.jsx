@@ -70,12 +70,8 @@ export function PaginaRuleta({
   else if (!desbloqueada && perdida) textoBoton = 'Semana perdida';
   else if (!desbloqueada) textoBoton = `Bloqueada: te ${faltan === 1 ? 'falta 1 día' : `faltan ${faltan} días`}`;
   const t = {
-    boton: useTexto(textoBoton),
     compartir: useTexto(premio?.texto ? `¡Gané ${premio.texto} en la Ruleta Semanal de Walá!` : undefined),
     premio: useTexto(premio?.texto),
-    vence: useTexto(ganado?.cupon?.vence ? `Válido hasta el ${ganado.cupon.vence}` : undefined),
-    vuelve: useTexto('Vuelve el lunes, en'),
-    otraSemana: useTexto('¡Ya empezó otra semana!'),
   };
 
   if (estado === 'cargando') return <EsqueletoPagina forma="ruleta" />;
@@ -178,9 +174,9 @@ export function PaginaRuleta({
               {(errorCarga || error) && <Aviso tipo="error" compacto><Texto>{error || errorCarga}</Texto></Aviso>}
               <div className={s.controles}>
                 <Boton tamano="lg" bloque brillo={desbloqueada && !girada && !girando} cargando={girando} disabled={!desbloqueada || girada || girando} onClick={girar}>
-                  {t.boton}
+                  {textoBoton}
                 </Boton>
-                {girada && hasta && <p className={s.notaSuave}><CuentaRegresiva hasta={hasta} variante="frase" etiqueta={t.vuelve} textoFin={t.otraSemana} /></p>}
+                {girada && hasta && <p className={s.notaSuave}><CuentaRegresiva hasta={hasta} variante="frase" etiqueta="Vuelve el lunes, en" textoFin="¡Ya empezó otra semana!" /></p>}
               </div>
             </div>
             <aside className={s.lado}>
@@ -215,7 +211,7 @@ export function PaginaRuleta({
       >
         {premio?.tipo === 'monedas' && <PremioJuego estado={entregando ? 'acreditando' : 'acreditado'} monto={premio.monedas} />}
         {ganado?.cupon && (
-          <CodigoCopiable codigo={ganado.cupon.codigo} rotulo="Tu cupón" detalle={t.vence} />
+          <CodigoCopiable codigo={ganado.cupon.codigo} rotulo="Tu cupón" detalle={ganado.cupon.vence ? `Válido hasta el ${ganado.cupon.vence}` : undefined} />
         )}
         {premio?.tipo === 'manual' && <p className={s.notaSuave}><Texto>Nos pondremos en contacto contigo para entregártelo.</Texto></p>}
         {ganado?.cupon && <Boton to={urlCupones} variante="fantasma" tamano="sm"><Texto>Ver mis cupones</Texto></Boton>}

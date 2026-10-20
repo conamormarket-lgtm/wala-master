@@ -42,7 +42,8 @@ import {
 import { CulqiSuscripcionButton, PaypalSuscripcionButtons } from './suscripcion/PagoSuscripcion';
 import { atributosDeFoto, siFallaDeVerdad } from '../components/common/OptimizedImage/OptimizedImage';
 import styles from './SuscripcionSorteoPage.module.css';
-import { T } from '../i18n/useTranslatedText';
+import { T, useTranslatedText } from '../i18n/useTranslatedText';
+import { TextoResaltado } from '../componentes/kit/piezas/TextoResaltado';
 
 // Slug por defecto de la campaña "principal" si la ruta no trae uno.
 const SLUG_DEFECTO = 'suscrito-sorteo';
@@ -59,7 +60,7 @@ const COLORES_DEFECTO = {
 const PLACEHOLDER_IMG =
   'data:image/svg+xml;utf8,' +
   encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="100%" height="100%" fill="#e9e3f5"/><text x="50%" y="50%" fill="#9b8bc4" font-family="sans-serif" font-size="18" text-anchor="middle" dominant-baseline="middle"><T>Walá</T></text></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="100%" height="100%" fill="#e9e3f5"/><text x="50%" y="50%" fill="#9b8bc4" font-family="sans-serif" font-size="18" text-anchor="middle" dominant-baseline="middle">Walá</text></svg>',
   );
 
 // Imagen con fallback a placeholder si el src falla o falta.
@@ -113,6 +114,7 @@ const SuscripcionSorteoPage = () => {
   const { slug } = useParams();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const etiquetaSecciones = useTranslatedText('Secciones');
 
   // origenApp: distingue app (Capacitor) vs web para el backend (tracker.js).
   const origenApp = useMemo(() => getClientType() === 'APP', []);
@@ -253,7 +255,7 @@ const SuscripcionSorteoPage = () => {
             <div className={styles.stateEmoji} aria-hidden="true">🎁</div>
             <h1 className={styles.stateTitle}><T>No disponible</T></h1>
             <p className={styles.stateText}>
-              Este sorteo por suscripción no está disponible por ahora. ¡Vuelve pronto!
+              <T>Este sorteo por suscripción no está disponible por ahora. ¡Vuelve pronto!</T>
             </p>
           </div>
         </div>
@@ -269,11 +271,11 @@ const SuscripcionSorteoPage = () => {
   return (
     <div className={styles.page} style={themeVars}>
       {/* NAV STICKY por anclas -------------------------------------------- */}
-      <nav className={styles.nav} aria-label="Secciones">
-        <a className={styles.navLink} href="#planes">Planes</a>
-        <a className={styles.navLink} href="#premios">Premios</a>
-        <a className={styles.navLink} href="#ganadores">Ganadores</a>
-        <a className={styles.navLink} href="#beneficios">Beneficios</a>
+      <nav className={styles.nav} aria-label={etiquetaSecciones}>
+        <a className={styles.navLink} href="#planes"><T>Planes</T></a>
+        <a className={styles.navLink} href="#premios"><T>Premios</T></a>
+        <a className={styles.navLink} href="#ganadores"><T>Ganadores</T></a>
+        <a className={styles.navLink} href="#beneficios"><T>Beneficios</T></a>
         {user && <a className={styles.navLink} href="#mi-cuenta"><T>Mi cuenta</T></a>}
       </nav>
 
@@ -288,13 +290,13 @@ const SuscripcionSorteoPage = () => {
               <img className={styles.heroLogo} {...atributosDeFoto(campaign.logoUrl, '200px')} alt={`Logo ${campaign.titulo}`} />
             )}
             <h1 className={styles.heroTitle}>{campaign.titulo}</h1>
-            {campaign.descripcion && <p className={styles.heroDesc}>{campaign.descripcion}</p>}
+            {campaign.descripcion && <p className={styles.heroDesc}><T>{campaign.descripcion}</T></p>}
 
             {/* Contador de suscriptores EN VIVO (suma de shards) */}
             <div className={styles.contadorVivo}>
               <span className={styles.contadorPulso} aria-hidden="true" />
               <span className={styles.contadorNum}>{totalSuscriptores.toLocaleString('es-PE')}</span>
-              <span>suscriptores participando</span>
+              <span><T>suscriptores participando</T></span>
             </div>
 
             <div className={styles.heroCta}>
@@ -305,7 +307,7 @@ const SuscripcionSorteoPage = () => {
                 size="lg"
                 className={styles.btnCampana}
               >
-                ¡Quiero suscribirme!
+                <T>¡Quiero suscribirme!</T>
               </GlassButton>
             </div>
           </div>
@@ -315,8 +317,7 @@ const SuscripcionSorteoPage = () => {
         <section id="planes" className={styles.seccion}>
           <h2 className={styles.seccionTitulo}><T>Elige tu plan</T></h2>
           <p className={styles.seccionSub}>
-            Suscríbete con cobro automático y participa en cada sorteo. Mientras más
-            tiempo suscrito, más chances de ganar.
+            <T>Suscríbete con cobro automático y participa en cada sorteo. Mientras más tiempo suscrito, más chances de ganar.</T>
           </p>
           <div className={styles.planes}>
             {planes.map((plan) => {
@@ -328,10 +329,10 @@ const SuscripcionSorteoPage = () => {
                   key={plan.id}
                   className={`${styles.planCard} ${plan.destacado ? styles.planDestacado : ''}`}
                 >
-                  {plan.destacado && <span className={styles.planBadge}>⭐ Recomendado</span>}
+                  {plan.destacado && <span className={styles.planBadge}>⭐ <T>Recomendado</T></span>}
                   <div>
                     <h3 className={styles.planNombre}>{plan.nombre}</h3>
-                    <span className={styles.planIntervalo}>{plan.intervalo}</span>
+                    <span className={styles.planIntervalo}><T>{plan.intervalo}</T></span>
                   </div>
                   <div className={styles.planPrecio}>
                     <span className={styles.planPrecioValor}>{formatoPrecioPen(plan.precioCentimos)}</span>
@@ -341,15 +342,17 @@ const SuscripcionSorteoPage = () => {
                   </div>
                   {porMes != null && (
                     <p className={styles.planEquivalente}>
-                      Es como pagar <strong>{formatoPrecioPen(porMes)}</strong> al mes
+                      <TextoResaltado resaltar={[formatoPrecioPen(porMes)]}>
+                        {`Es como pagar ${formatoPrecioPen(porMes)} al mes`}
+                      </TextoResaltado>
                     </p>
                   )}
                   <span className={styles.planChances}>
-                    🎟️ {plan.chancesPorCiclo} chance{plan.chancesPorCiclo === 1 ? '' : 's'} por ciclo
+                    🎟️ <T>{`${plan.chancesPorCiclo} chance${plan.chancesPorCiclo === 1 ? '' : 's'} por ciclo`}</T>
                   </span>
                   {Array.isArray(plan.beneficios) && plan.beneficios.length > 0 && (
                     <ul className={styles.planBeneficios}>
-                      {plan.beneficios.map((b, i) => <li key={i}>{b}</li>)}
+                      {plan.beneficios.map((b, i) => <li key={i}><T>{b}</T></li>)}
                     </ul>
                   )}
                   <div className={styles.planBtn}>
@@ -360,7 +363,7 @@ const SuscripcionSorteoPage = () => {
                       className={styles.btnCampana}
                       onClick={() => abrirSuscripcion(plan)}
                     >
-                      ¡Suscribirme!
+                      <T>¡Suscribirme!</T>
                     </GlassButton>
                   </div>
                 </div>
@@ -375,7 +378,7 @@ const SuscripcionSorteoPage = () => {
         {/* PREMIOS -------------------------------------------------------- */}
         {premios.length > 0 && (
           <section id="premios" className={styles.seccion}>
-            <h2 className={styles.seccionTitulo}>Premios</h2>
+            <h2 className={styles.seccionTitulo}><T>Premios</T></h2>
             <p className={styles.seccionSub}><T>Esto es lo que puedes ganar siendo suscriptor.</T></p>
             <div className={styles.premios}>
               {premios.map((p, i) => (
@@ -390,7 +393,7 @@ const SuscripcionSorteoPage = () => {
 
         {/* GANADORES ------------------------------------------------------ */}
         <section id="ganadores" className={styles.seccion}>
-          <h2 className={styles.seccionTitulo}>Ganadores</h2>
+          <h2 className={styles.seccionTitulo}><T>Ganadores</T></h2>
           <p className={styles.seccionSub}><T>Ellos ya ganaron. El próximo puedes ser tú.</T></p>
           {ganadores.length > 0 ? (
             <div className={styles.ganadores}>
@@ -424,7 +427,7 @@ const SuscripcionSorteoPage = () => {
                     className={`${styles.filtroChip} ${filtro === c ? styles.filtroChipActivo : ''}`}
                     onClick={() => setFiltro(c)}
                   >
-                    {c === 'todas' ? 'Todas' : c}
+                    <T>{c === 'todas' ? 'Todas' : c}</T>
                   </button>
                 ))}
               </div>
@@ -440,8 +443,8 @@ const SuscripcionSorteoPage = () => {
                     <ImgFallback src={b.imagenUrl} alt={b.marca} className={styles.beneficioImg} />
                     <div className={styles.beneficioTextos}>
                       {b.marca && <span className={styles.beneficioMarca}>{b.marca}</span>}
-                      {b.titulo && <p className={styles.beneficioTitulo}>{b.titulo}</p>}
-                      {b.descuento && <span className={styles.beneficioDescuento}>{b.descuento}</span>}
+                      {b.titulo && <p className={styles.beneficioTitulo}><T>{b.titulo}</T></p>}
+                      {b.descuento && <span className={styles.beneficioDescuento}><T>{b.descuento}</T></span>}
                       {b.ubicacion && <span className={styles.beneficioUbicacion}>📍 {b.ubicacion}</span>}
                     </div>
                   </Wrapper>
@@ -463,7 +466,7 @@ const SuscripcionSorteoPage = () => {
                 className={`${styles.tab} ${tabCuenta === 'suscripcion' ? styles.tabActivo : ''}`}
                 onClick={() => setTabCuenta('suscripcion')}
               >
-                Mi suscripción
+                <T>Mi suscripción</T>
               </button>
               <button
                 type="button"
@@ -472,7 +475,7 @@ const SuscripcionSorteoPage = () => {
                 className={`${styles.tab} ${tabCuenta === 'chances' ? styles.tabActivo : ''}`}
                 onClick={() => setTabCuenta('chances')}
               >
-                Mis chances
+                <T>Mis chances</T>
               </button>
               <button
                 type="button"
@@ -481,7 +484,7 @@ const SuscripcionSorteoPage = () => {
                 className={`${styles.tab} ${tabCuenta === 'recibos' ? styles.tabActivo : ''}`}
                 onClick={() => setTabCuenta('recibos')}
               >
-                Mis recibos
+                <T>Mis recibos</T>
               </button>
             </div>
 
@@ -533,10 +536,10 @@ function TabMiSuscripcion({ campaignId, miSuscripcion, onCancelado, onIrAPlanes 
     return (
       <GlassCard variant="soft" padding="md">
         <p className={styles.miCuentaVacia}>
-          Aún no tienes una suscripción activa en esta campaña.
+          <T>Aún no tienes una suscripción activa en esta campaña.</T>
         </p>
         <GlassButton variant="primary" size="md" fullWidth className={styles.btnCampana} onClick={onIrAPlanes}>
-          Ver planes y suscribirme
+          <T>Ver planes y suscribirme</T>
         </GlassButton>
       </GlassCard>
     );
@@ -564,14 +567,14 @@ function TabMiSuscripcion({ campaignId, miSuscripcion, onCancelado, onIrAPlanes 
         <div className={styles.kvRow}>
           <span className={styles.kvLabel}><T>Estado</T></span>
           <span className={styles.kvValor}>
-            <Badge tone={est.tone} variant="soft" dot>{est.label}</Badge>
+            <Badge tone={est.tone} variant="soft" dot><T>{est.label}</T></Badge>
           </span>
         </div>
         <div className={styles.kvRow}>
-          <span className={styles.kvLabel}>Plan</span>
+          <span className={styles.kvLabel}><T>Plan</T></span>
           <span className={styles.kvValor}>
             {miSuscripcion.planId || '—'}
-            {miSuscripcion.intervalo ? ` · ${miSuscripcion.intervalo}` : ''}
+            {miSuscripcion.intervalo ? <> · <T>{miSuscripcion.intervalo}</T></> : ''}
           </span>
         </div>
         <div className={styles.kvRow}>
@@ -579,7 +582,7 @@ function TabMiSuscripcion({ campaignId, miSuscripcion, onCancelado, onIrAPlanes 
           <span className={styles.kvValor}>{miSuscripcion.metodoPago || '—'}</span>
         </div>
         <div className={styles.kvRow}>
-          <span className={styles.kvLabel}>Vigente hasta</span>
+          <span className={styles.kvLabel}><T>Vigente hasta</T></span>
           <span className={styles.kvValor}>{fechaLegible(miSuscripcion.vigenciaHasta)}</span>
         </div>
         <div className={styles.kvRow}>
@@ -592,22 +595,21 @@ function TabMiSuscripcion({ campaignId, miSuscripcion, onCancelado, onIrAPlanes 
         confirmarCancel ? (
           <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
             <p className={styles.stateText}>
-              ¿Seguro que quieres cancelar el cobro automático? No se harán más cobros;
-              seguirás participando hasta el fin del periodo ya pagado.
+              <T>¿Seguro que quieres cancelar el cobro automático? No se harán más cobros; seguirás participando hasta el fin del periodo ya pagado.</T>
             </p>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <GlassButton variant="ghost" size="md" onClick={() => setConfirmarCancel(false)} disabled={cancelando}>
-                No, mantener
+                <T>No, mantener</T>
               </GlassButton>
               <GlassButton variant="danger" size="md" loading={cancelando} disabled={cancelando} onClick={handleCancelar}>
-                Sí, cancelar
+                <T>Sí, cancelar</T>
               </GlassButton>
             </div>
           </div>
         ) : (
           <div style={{ marginTop: '1rem' }}>
             <GlassButton variant="ghost" size="md" onClick={() => setConfirmarCancel(true)}>
-              Cancelar suscripción
+              <T>Cancelar suscripción</T>
             </GlassButton>
           </div>
         )
@@ -626,8 +628,7 @@ function TabMisChances({ miSuscripcion }) {
         <div className={styles.chancesLabel}><T>chances acumuladas para el sorteo</T></div>
       </div>
       <p className={styles.stateText}>
-        Cada ciclo pagado te suma chances según tu plan. Mientras más tiempo sigas
-        suscrito, más chances acumulas. Solo los suscriptores vigentes pueden ganar.
+        <T>Cada ciclo pagado te suma chances según tu plan. Mientras más tiempo sigas suscrito, más chances acumulas. Solo los suscriptores vigentes pueden ganar.</T>
       </p>
     </GlassCard>
   );
@@ -771,23 +772,26 @@ function ModalSuscripcion({ campaign, plan, origenApp, onClose, onSuscrito }) {
 
   // Texto del consentimiento con el monto y periodicidad reales del plan.
   const cadaCuanto = plan.intervalo || 'mensual';
+  const precioPlan = formatoPrecioPen(plan.precioCentimos);
+  const periodoPlan = `${plan.meses} mes${plan.meses === 1 ? '' : 'es'}`;
+  const tituloModal = useTranslatedText(pendiente ? 'Casi listo' : `Suscribirme — ${plan.nombre}`);
 
   return (
     <GlassModal
       open
       onClose={onClose}
       size="md"
-      title={pendiente ? 'Casi listo' : `Suscribirme — ${plan.nombre}`}
+      title={tituloModal}
     >
       {/* Resumen del plan siempre visible arriba */}
       {!pendiente && (
         <div className={styles.modalPlanResumen}>
-          <span className={styles.modalPlanNombre}>{plan.nombre} · {plan.intervalo}</span>
+          <span className={styles.modalPlanNombre}>{plan.nombre} · <T>{plan.intervalo}</T></span>
           <span className={styles.modalPlanPrecio}>{formatoPrecioPen(plan.precioCentimos)}</span>
         </div>
       )}
 
-      {error && <div className={styles.errorBox} style={{ marginTop: '0.8rem' }}>{error}</div>}
+      {error && <div className={styles.errorBox} style={{ marginTop: '0.8rem' }}><T>{error}</T></div>}
 
       {/* PASO PENDIENTE (PayPal aún no cobró el primer ciclo) */}
       {pendiente ? (
@@ -795,22 +799,21 @@ function ModalSuscripcion({ campaign, plan, origenApp, onClose, onSuscrito }) {
           <div className={styles.exitoEmoji} aria-hidden="true">⏳</div>
           <h3><T>Tu suscripción se está activando</T></h3>
           <p className={styles.stateText}>
-            Se activará automáticamente cuando se confirme tu primer cobro. Te avisaremos
-            por correo. ¡Gracias por suscribirte!
+            <T>Se activará automáticamente cuando se confirme tu primer cobro. Te avisaremos por correo. ¡Gracias por suscribirte!</T>
           </p>
           <GlassButton variant="primary" size="md" className={styles.btnCampana} onClick={onSuscrito}>
-            Entendido
+            <T>Entendido</T>
           </GlassButton>
         </div>
       ) : paso === 'login' ? (
         // ── PASO 1: gate de login (PRIORIZA Google) ──
         <div className={styles.modalPaso} style={{ marginTop: '1rem' }}>
           <p className={styles.stateText}>
-            Inicia sesión para suscribirte y participar. Es rápido con Google.
+            <T>Inicia sesión para suscribirte y participar. Es rápido con Google.</T>
           </p>
           <button type="button" className={styles.googleBtn} onClick={handleGoogle} disabled={logueando}>
             <GoogleIcon />
-            {logueando ? 'Conectando…' : 'Continuar con Google'}
+            <T>{logueando ? 'Conectando…' : 'Continuar con Google'}</T>
           </button>
         </div>
       ) : paso === 'datos' ? (
@@ -819,7 +822,7 @@ function ModalSuscripcion({ campaign, plan, origenApp, onClose, onSuscrito }) {
           <div className={styles.formGrid}>
             <div className={styles.formRow2}>
               <label className={styles.formField}>
-                <span>Nombres *</span>
+                <span><T>Nombres</T> *</span>
                 <input className={styles.formInput} value={datos.nombres} onChange={set('nombres')} required />
               </label>
               <label className={styles.formField}>
@@ -842,9 +845,9 @@ function ModalSuscripcion({ campaign, plan, origenApp, onClose, onSuscrito }) {
               onChange={(e) => setConsentido(e.target.checked)}
             />
             <label htmlFor="consentimiento-cobro">
-              Autorizo el cobro automático de <strong>{formatoPrecioPen(plan.precioCentimos)}</strong>{' '}
-              cada <strong>{plan.meses} mes{plan.meses === 1 ? '' : 'es'}</strong> ({cadaCuanto}) de forma
-              recurrente hasta que yo cancele mi suscripción.
+              <TextoResaltado resaltar={[precioPlan, periodoPlan]}>
+                {`Autorizo el cobro automático de ${precioPlan} cada ${periodoPlan} (${cadaCuanto}) de forma recurrente hasta que yo cancele mi suscripción.`}
+              </TextoResaltado>
             </label>
           </div>
 
@@ -855,14 +858,14 @@ function ModalSuscripcion({ campaign, plan, origenApp, onClose, onSuscrito }) {
             className={styles.btnCampana}
             onClick={continuarAPago}
           >
-            Continuar al pago
+            <T>Continuar al pago</T>
           </GlassButton>
         </div>
       ) : (
         // ── PASO 3: método de pago (Culqi Perú / PayPal internacional) ──
         <div className={styles.modalPaso} style={{ marginTop: '1rem' }}>
           <p className={styles.stateText}>
-            Elige cómo pagar. El monto lo procesa el servidor de forma segura.
+            <T>Elige cómo pagar. El monto lo procesa el servidor de forma segura.</T>
           </p>
           <div className={styles.metodos}>
             <CulqiSuscripcionButton
@@ -885,7 +888,7 @@ function ModalSuscripcion({ campaign, plan, origenApp, onClose, onSuscrito }) {
             />
           </div>
           <button type="button" className={styles.linkCancelar} onClick={onClose}>
-            Cancelar
+            <T>Cancelar</T>
           </button>
         </div>
       )}

@@ -60,8 +60,6 @@ export function PaginaCreacion({
   const descripcion = useHtml(descripcionPrenda);
   const t = {
     base: useTexto(`Hecha sobre ${creacion.prenda || ''}${creacion.fecha ? ` · guardada el ${creacion.fecha}` : ''}`),
-    detalles: useTexto('Detalles de tu creación'),
-    sobre: useTexto('Sobre la prenda'),
     nota: useTexto('Incluye la impresión de todos tus diseños.'),
   };
 
@@ -105,7 +103,7 @@ export function PaginaCreacion({
   const detalles = [
     {
       id: 'detalles',
-      question: t.detalles,
+      question: 'Detalles de tu creación', // Acordeon traduce la pregunta
       answer: (
         <div className={s.detalles}>
           <dl>
@@ -122,7 +120,7 @@ export function PaginaCreacion({
         </div>
       ),
     },
-    descripcion && { id: 'prenda', question: t.sobre, answer: <div className={s.textoRico} dangerouslySetInnerHTML={{ __html: descripcion }} /> },
+    descripcion && { id: 'prenda', question: 'Sobre la prenda', answer: <div className={s.textoRico} dangerouslySetInnerHTML={{ __html: descripcion }} /> },
   ].filter(Boolean);
 
   return (

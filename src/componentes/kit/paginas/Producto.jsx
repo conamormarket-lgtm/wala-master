@@ -31,6 +31,12 @@ import s from './Producto.module.css';
 const STOCK_BAJO = 10;
 const POR_PAGINA = 4;
 
+/** Una foto de la tira de "Fotos de clientes" (su nombre para lectores, traducido). */
+function FotoCliente({ foto, numero, onVer }) {
+  const etiqueta = useTexto(`Ver la foto ${numero}`);
+  return <button type="button" onClick={() => onVer(foto)} aria-label={etiqueta}><img {...atributosDeFoto(foto, '120px')} alt="" loading="lazy" /></button>;
+}
+
 /**
  * La galería de un combo con el color elegido de cada prenda (fotos.combo de
  * fichaProductoDesde): la portada, la foto de cada prenda en su color ("Ella ·
@@ -230,7 +236,8 @@ export function PaginaProducto({
   return (
     <>
       <MarcoFicha componente="PaginaProducto" galeria={<GaleriaProducto key={variante?.id || 'base'} imagenes={galeria} nombre={nombre} salto={salto} />}>
-        <Migas items={[{ texto: 'Inicio', url: '/' }, producto.categoria && { texto: producto.categoria.nombre, url: producto.categoria.url }, { texto: nombre }].filter(Boolean)} />
+        {/* Migas traduce cada miga: el nombre va sin traducir. */}
+        <Migas items={[{ texto: 'Inicio', url: '/' }, producto.categoria && { texto: producto.categoria.nombre, url: producto.categoria.url }, { texto: producto.nombre }].filter(Boolean)} />
 
         <div className={s.cabeza}>
           {producto.marca && (
@@ -384,7 +391,7 @@ export function PaginaProducto({
                   <span className={s.rotulo}><Texto>Fotos de clientes</Texto></span>
                   <div className={s.tiraFotos}>
                     {conFotos.map((f, i) => (
-                      <button key={`${f}-${i}`} type="button" onClick={() => setFotoCliente(f)} aria-label={`Ver la foto ${i + 1}`}><img {...atributosDeFoto(f, '120px')} alt="" loading="lazy" /></button>
+                      <FotoCliente key={`${f}-${i}`} foto={f} numero={i + 1} onVer={setFotoCliente} />
                     ))}
                   </div>
                 </div>
@@ -397,7 +404,7 @@ export function PaginaProducto({
                 <TarjetaOpinion key={o.id} {...o} onUtil={() => onUtil?.(o.id)} onFoto={setFotoCliente} />
               ))}
               {conFiltro.length > mostradas && (
-                <Boton variante="fantasma" onClick={() => setMostradas((n) => n + POR_PAGINA)}><Texto>Ver más opiniones</Texto> ({conFiltro.length - mostradas})</Boton>
+                <Boton variante="fantasma" onClick={() => setMostradas((n) => n + POR_PAGINA)}>{`Ver más opiniones (${conFiltro.length - mostradas})`}</Boton>
               )}
             </div>
           </div>

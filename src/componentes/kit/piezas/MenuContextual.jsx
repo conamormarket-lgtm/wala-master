@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { HojaInferior } from '../Feedback';
-import { Texto, useTexto } from '../Traduccion';
+import { Texto } from '../Traduccion';
 import s from './MenuContextual.module.css';
 
 const enEscritorio = () => typeof window !== 'undefined' && window.matchMedia('(min-width: 720px) and (pointer: fine)').matches;
@@ -17,7 +17,6 @@ const enEscritorio = () => typeof window !== 'undefined' && window.matchMedia('(
  *    o 'separador'
  */
 export function MenuContextual({ abierto, x = 0, y = 0, items = [], onCerrar, titulo = 'Opciones' }) {
-  const tituloTraducido = useTexto(titulo);
   const [escritorio, setEscritorio] = useState(enEscritorio);
   useEffect(() => { if (abierto) setEscritorio(enEscritorio()); }, [abierto]);
 
@@ -28,7 +27,7 @@ export function MenuContextual({ abierto, x = 0, y = 0, items = [], onCerrar, ti
 
   if (!escritorio) {
     return (
-      <HojaInferior abierta={abierto} onCerrar={onCerrar} titulo={tituloTraducido}>
+      <HojaInferior abierta={abierto} onCerrar={onCerrar} titulo={titulo}>
         <div className={s.lista} role="menu">
           {items.map((item, i) => (item === 'separador' ? (
             <div key={`sep-${i}`} className={s.separador} role="separator" />

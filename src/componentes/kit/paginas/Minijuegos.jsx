@@ -5,7 +5,8 @@ import { Aviso } from '../Feedback';
 import { Encabezado } from '../SeccionesContenido';
 import { BloqueSeccion } from '../Seccion';
 import { TarjetaJuego } from '../piezas/TarjetaJuego';
-import { Texto, useTexto } from '../Traduccion';
+import { TextoResaltado } from '../piezas/TextoResaltado';
+import { Texto } from '../Traduccion';
 import s from './Minijuegos.module.css';
 
 /* ── Zona Arcade (/minijuegos) ─────────────────────────── */
@@ -26,11 +27,6 @@ export function PaginaMinijuegos({
   titulo = 'Zona Arcade', subtitulo = 'Cuatro juegos, una rutina diaria y premios que sí se canjean en tus compras.',
   aviso,
 }) {
-  const t = {
-    titulo: useTexto(titulo),
-    subtitulo: useTexto(subtitulo),
-    listos: useTexto(listos === 1 ? 'juego listo para hoy' : 'juegos listos para hoy'),
-  };
   // Cuántos juegos quedan: dato de la página, en texto (no en etiqueta).
   let estado;
   if (cargando) {
@@ -39,7 +35,7 @@ export function PaginaMinijuegos({
     estado = (
       <p className={s.listos} role="status">
         <Sparkles aria-hidden="true" />
-        {listos === 0 ? <Texto>Ya hiciste todo por hoy. Vuelve mañana.</Texto> : <span><strong>{listos}</strong> {t.listos}</span>}
+        {listos === 0 ? <Texto>Ya hiciste todo por hoy. Vuelve mañana.</Texto> : <span><TextoResaltado resaltar={[listos]}>{`${listos} ${listos === 1 ? 'juego listo para hoy' : 'juegos listos para hoy'}`}</TextoResaltado></span>}
       </p>
     );
   } else {
@@ -54,7 +50,8 @@ export function PaginaMinijuegos({
   return (
     <>
       <BloqueSeccion ajustes={{ paddingTop: '1.75rem', paddingBottom: '0.5rem' }}>
-        <Encabezado ajustes={{ title: t.titulo, subtitle: t.subtitulo }}>{estado}{aviso}</Encabezado>
+        {/* Encabezado traduce el título y el subtítulo. */}
+        <Encabezado ajustes={{ title: titulo, subtitle: subtitulo }}>{estado}{aviso}</Encabezado>
       </BloqueSeccion>
       <BloqueSeccion ajustes={{ paddingTop: '1rem', paddingBottom: '2.5rem' }}>
         <ul className={s.juegos}>

@@ -1,6 +1,7 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, Search } from 'lucide-react';
 import { PanelFlotante } from './PanelFlotante';
+import { Texto, useTexto } from './Traduccion';
 import s from './ListaOpciones.module.css';
 
 const sinTildes = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -45,6 +46,14 @@ export default function ListaOpciones({
   }, [elegibles, busqueda, creable]);
   const elegida = elegibles.find((o) => o.valor === value);
   const textoElegido = elegida ? (compacto && elegida.corto ? elegida.corto : elegida.texto) : (value || '');
+  // Los textos propios se traducen; las opciones (países, regiones, nombres) van tal cual.
+  const t = {
+    vacio: useTexto(vacia?.texto || placeholder),
+    etiqueta: useTexto(etiqueta),
+    buscar: useTexto(conBuscador ? (creable ? 'Busca o escribe…' : 'Buscar…') : undefined),
+    buscarEn: useTexto(conBuscador ? `Buscar en ${etiqueta || 'la lista'}` : undefined),
+    nada: useTexto(abierta && visibles.length === 0 ? `Nada con «${busqueda}»` : undefined),
+  };
 
   const abrir = () => {
     if (disabled) return;
@@ -124,7 +133,7 @@ export default function ListaOpciones({
         {...aria}
       >
         {elegida?.icono && <span className={s.icono}>{elegida.icono}</span>}
-        <span className={textoElegido ? s.valor : s.vacio}>{textoElegido || vacia?.texto || placeholder}</span>
+        <span className={textoElegido ? s.valor : s.vacio}>{textoElegido || t.vacio}</span>
         <ChevronDown className={[s.flecha, abierta && s.flechaAbierta].filter(Boolean).join(' ')} aria-hidden="true" />
       </button>
       <PanelFlotante abierto={abierta} onCerrar={() => cerrar()} ancla={disparador} titulo={etiqueta || 'Elige una opción'} ancho={compacto ? 260 : 'campo'}>
@@ -137,8 +146,8 @@ export default function ListaOpciones({
                 value={busqueda}
                 onChange={(e) => { setBusqueda(e.target.value); setActiva(0); }}
                 onKeyDown={teclaLista}
-                placeholder={creable ? 'Busca o escribe…' : 'Buscar…'}
-                aria-label={`Buscar en ${etiqueta || 'la lista'}`}
+                placeholder={t.buscar}
+                aria-label={t.buscarEn}
                 aria-controls={listaId}
                 aria-activedescendant={visibles[activa] ? `${listaId}-${activa}` : undefined}
                 enterKeyHint="done"
@@ -150,7 +159,7 @@ export default function ListaOpciones({
             id={listaId}
             className={s.lista}
             role="listbox"
-            aria-label={etiqueta}
+            aria-label={t.etiqueta}
             tabIndex={conBuscador ? undefined : -1}
             onKeyDown={conBuscador ? undefined : teclaLista}
             aria-activedescendant={!conBuscador && visibles[activa] ? `${listaId}-${activa}` : undefined}
@@ -171,14 +180,14 @@ export default function ListaOpciones({
                 >
                   {o.icono && <span className={s.icono}>{o.icono}</span>}
                   <span className={s.textos}>
-                    <span>{o.texto}</span>
+                    <span>{o.nueva ? <Texto>{o.texto}</Texto> : o.texto}</span>
                     {o.detalle && <small>{o.detalle}</small>}
                   </span>
                   <span className={s.visto} aria-hidden="true">{sel && <Check />}</span>
                 </li>
               );
             })}
-            {visibles.length === 0 && <li className={s.sinResultados} role="presentation">Nada con «{busqueda}»</li>}
+            {visibles.length === 0 && <li className={s.sinResultados} role="presentation">{t.nada}</li>}
           </ul>
         </div>
       </PanelFlotante>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Campo, CampoTelefono } from '../Formulario';
 import { CampoFecha } from '../Fecha';
-import { Texto, useTexto } from '../Traduccion';
+import { Texto } from '../Traduccion';
 import s from './DatosPersonales.module.css';
 
 /*
@@ -78,42 +78,35 @@ export function CamposDatosPersonales({
   const opcionesPais = paises.map((p) => ({ ...p, detalle: p.prefijo, icono: <span className={s.codigoPais}>{p.valor}</span> }));
   const cambiar = (campo) => (e) => onCambiar?.(campo, e.target.value);
   const tipo = datos.tipoDocumento || 'DNI';
-  // Las etiquetas pasan por la traducción aquí (Campo muestra lo que recibe).
-  const t = {
-    nombre: useTexto('Nombre completo'), pais: useTexto('País'), tipo: useTexto('Tipo de documento'),
-    numero: useTexto(peru ? `Número de ${NOMBRE_DOCUMENTO[tipo] || 'documento'}` : 'Documento de identidad'),
-    celular: useTexto('Celular'), ejemplo: useTexto('Ej. Juan Pérez'), ochoNumeros: useTexto('8 números'),
-    otroDocumento: useTexto('Pasaporte, ID o documento'),
-    fecha: useTexto(cumpleanos ? cumpleanos.etiqueta : ''), ayudaFecha: useTexto(cumpleanos ? cumpleanos.ayuda : ''),
-  };
+  // Las etiquetas, ayudas y ejemplos van en español: Campo, CampoTelefono y CampoFecha los traducen.
   const error = (campo) => errores[campo] && <Texto>{errores[campo]}</Texto>;
   return (
     <div className={s.campos} data-componente="CamposDatosPersonales">
-      <Campo id={ids.nombre} etiqueta={t.nombre} value={datos.nombre || ''} onChange={cambiar('nombre')} error={error('nombre')} ayuda={ayudaNombre}
-        autoComplete="name" placeholder={t.ejemplo} disabled={disabled} />
+      <Campo id={ids.nombre} etiqueta="Nombre completo" value={datos.nombre || ''} onChange={cambiar('nombre')} error={error('nombre')} ayuda={ayudaNombre}
+        autoComplete="name" placeholder="Ej. Juan Pérez" disabled={disabled} />
       {paises.length > 1 && (
-        <Campo etiqueta={t.pais} opciones={opcionesPais} value={datos.pais || 'PE'} onChange={cambiar('pais')} buscable={paises.length > 6} disabled={disabled} />
+        <Campo etiqueta="País" opciones={opcionesPais} value={datos.pais || 'PE'} onChange={cambiar('pais')} buscable={paises.length > 6} disabled={disabled} />
       )}
       <div className={s.fila}>
         {peru && (
-          <Campo etiqueta={t.tipo} opciones={TIPOS_DOCUMENTO} value={tipo} onChange={cambiar('tipoDocumento')} disabled={disabled} />
+          <Campo etiqueta="Tipo de documento" opciones={TIPOS_DOCUMENTO} value={tipo} onChange={cambiar('tipoDocumento')} disabled={disabled} />
         )}
         <Campo
           id={ids.documento}
-          etiqueta={t.numero}
+          etiqueta={peru ? `Número de ${NOMBRE_DOCUMENTO[tipo] || 'documento'}` : 'Documento de identidad'}
           value={datos.documento || ''}
           onChange={(e) => onCambiar?.('documento', peru ? e.target.value.replace(/\s/g, '') : e.target.value)}
           error={error('documento')}
           inputMode={peru && tipo === 'DNI' ? 'numeric' : 'text'}
           maxLength={peru && tipo === 'DNI' ? 8 : 12}
-          placeholder={peru ? (tipo === 'DNI' ? t.ochoNumeros : undefined) : t.otroDocumento}
+          placeholder={peru ? (tipo === 'DNI' ? '8 números' : undefined) : 'Pasaporte, ID o documento'}
           disabled={disabled}
         />
       </div>
       <div className={s.fila}>
         <CampoTelefono
           id={ids.telefono}
-          etiqueta={t.celular}
+          etiqueta="Celular"
           pais={pais?.valor}
           paises={[pais]}
           valor={datos.telefono || ''}
@@ -124,12 +117,12 @@ export function CamposDatosPersonales({
         />
         {cumpleanos && (
           <CampoFecha
-            etiqueta={t.fecha}
+            etiqueta={cumpleanos.etiqueta}
             valor={datos.cumpleanos || ''}
             onCambiar={(v) => onCambiar?.('cumpleanos', v)}
             max={new Date().toISOString().slice(0, 10)}
             vistaInicial="anios"
-            ayuda={t.ayudaFecha}
+            ayuda={cumpleanos.ayuda}
             disabled={disabled}
           />
         )}

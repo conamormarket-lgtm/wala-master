@@ -25,17 +25,15 @@ const SIMBOLO = /[\^$*.[\]{}()?"!@#%&/\\,><':;|_~`-]/;
  */
 export function CampoContrasena({ etiqueta = 'Contraseña', valor = '', onCambiar, nueva = false, ayuda, error, placeholder, disabled, id, ...resto }) {
   const [ver, setVer] = useState(false);
-  // Sus textos pasan por la traducción aquí (Campo muestra lo que recibe).
+  // Campo traduce la etiqueta y el ejemplo; aquí solo el nombre del ojo.
   const t = {
-    etiqueta: useTexto(etiqueta),
-    placeholder: useTexto(placeholder),
     ocultar: useTexto('Ocultar contraseña'),
     mostrar: useTexto('Mostrar contraseña'),
   };
   return (
     <Campo
       id={id}
-      etiqueta={t.etiqueta}
+      etiqueta={etiqueta}
       ayuda={ayuda && <Texto>{ayuda}</Texto>}
       error={error && <Texto>{error}</Texto>}
       icono={<LockKeyhole />}
@@ -43,7 +41,7 @@ export function CampoContrasena({ etiqueta = 'Contraseña', valor = '', onCambia
       autoComplete={nueva ? 'new-password' : 'current-password'}
       value={valor}
       onChange={(e) => onCambiar?.(e.target.value)}
-      placeholder={t.placeholder}
+      placeholder={placeholder}
       disabled={disabled}
       {...resto}
       sufijo={(

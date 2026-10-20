@@ -168,7 +168,7 @@ export function BarraAnuncios({ ajustes = {} }) {
       onPointerLeave={() => { pausa.current = false; }}
     >
       {animationType === 'scroll' ? (
-        <Marquesina segundos={segundosCinta} espacio="0px" etiqueta={t.anuncios}>
+        <Marquesina segundos={segundosCinta} espacio="0px" etiqueta="Anuncios">
           {mensajes.map((m, k) => (
             <span key={k} className={s.anuncioTramo}>
               <MensajeAnuncio m={m} acento={false} />
@@ -293,7 +293,7 @@ export function CarruselProductos({ ajustes = {}, productos = [], catalogo, onAg
   // 1 a 8 a la vista, como en la tienda.
   const visibles = Math.min(8, Math.max(1, Number(ajustes.visibleItems) || 5));
   const titulo = ajustes.title || TITULOS_POR_TIPO[tipo];
-  const etiqueta = useTexto(titulo || 'Productos');
+  const etiqueta = titulo || 'Productos'; // el Carrusel la traduce
   if (!cargando && !productos.length && !error) return null;
   const vistas = { escritorio: visibles, tablet: Math.min(3, visibles), movil: visibles === 1 ? 1.1 : 2.15 };
   return (
@@ -374,11 +374,11 @@ export function OfertaRelampago({ ajustes = {}, productos = [], catalogo, onAgre
         {ajustes.endTime && (
           <div className={s.flashReloj}>
             <span className={s.flashTermina}>{t.terminaEn}</span>
-            <CuentaRegresiva hasta={ajustes.endTime} variante="evento" etiqueta={t.terminaEn} onTerminar={() => setTerminada(true)} />
+            <CuentaRegresiva hasta={ajustes.endTime} variante="evento" etiqueta="Termina en" onTerminar={() => setTerminada(true)} />
           </div>
         )}
       </div>
-      <Carrusel visibles={{ escritorio: 4, tablet: 3, movil: 2.15 }} espacio="0.85rem" etiqueta={t.titulo}>
+      <Carrusel visibles={{ escritorio: 4, tablet: 3, movil: 2.15 }} espacio="0.85rem" etiqueta={ajustes.title || 'Ofertas relámpago'}>
         {cargando
           ? Array.from({ length: 5 }, (_, k) => <TarjetaProductoEsqueleto key={k} />)
           : lista.map((p, i) => (

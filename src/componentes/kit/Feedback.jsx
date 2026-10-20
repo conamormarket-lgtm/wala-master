@@ -104,8 +104,8 @@ export function ListaNotificaciones({ items, onAbrir, limite, vacio }) {
                       <span className={`${s.notifIcono} ${s[n.tipo]}`}><Icono aria-hidden="true" /></span>
                     )}
                     <span className={s.notifTexto}>
-                      <strong>{n.titulo}</strong>
-                      {n.texto && <span>{n.texto}</span>}
+                      <strong><Texto>{n.titulo}</Texto></strong>
+                      {n.texto && <span><Texto>{n.texto}</Texto></span>}
                       {n.fecha && <small><Texto>{haceCuanto(n.fecha)}</Texto></small>}
                     </span>
                     {!n.leida && <span className={s.punto} aria-label={sinLeer} />}
@@ -173,6 +173,9 @@ export function ProveedorToasts({ children, iniciales = [] }) {
 
   const visibles = toasts.slice(-VISIBLES).reverse(); // el más nuevo primero
   const ocultos = toasts.length - visibles.length;
+  const cerrarAviso = useTexto('Cerrar');
+  const verTodas = useTexto(`Ver todas (${toasts.length})`);
+  const mas = useTexto(`+${ocultos} más`);
 
   return (
     <NotifCtx.Provider value={valor}>
@@ -197,7 +200,7 @@ export function ProveedorToasts({ children, iniciales = [] }) {
                 exit={{ opacity: 0, y: 10 }}
                 transition={ENTRA}
               >
-                Ver todas ({toasts.length})
+                {verTodas}
               </motion.button>
             )}
             {visibles.map((t, i) => {
@@ -229,13 +232,14 @@ export function ProveedorToasts({ children, iniciales = [] }) {
                       <span className={s.toastIcono}><Icono aria-hidden="true" /></span>
                     )}
                     <div className={s.toastTexto}>
-                      <strong>{t.titulo}</strong>
-                      {t.texto && <span>{t.texto}</span>}
+                      {/* Los avisos llegan en español desde toda la tienda (toast.success…): se traducen aquí. */}
+                      <strong><Texto>{t.titulo}</Texto></strong>
+                      {t.texto && <span><Texto>{t.texto}</Texto></span>}
                     </div>
                     {t.accion && (
-                      <button type="button" className={s.toastAccion} onClick={(e) => { e.stopPropagation(); cerrar(t.id); }}>{t.accion}</button>
+                      <button type="button" className={s.toastAccion} onClick={(e) => { e.stopPropagation(); cerrar(t.id); }}><Texto>{t.accion}</Texto></button>
                     )}
-                    <button type="button" className={s.cerrar} onClick={(e) => { e.stopPropagation(); cerrar(t.id); }} aria-label="Cerrar">
+                    <button type="button" className={s.cerrar} onClick={(e) => { e.stopPropagation(); cerrar(t.id); }} aria-label={cerrarAviso}>
                       <X aria-hidden="true" />
                     </button>
                   </div>
@@ -251,7 +255,7 @@ export function ProveedorToasts({ children, iniciales = [] }) {
             })}
           </AnimatePresence>
         </div>
-        {ocultos > 0 && desplegado && <span className={s.ocultos}>+{ocultos} más</span>}
+        {ocultos > 0 && desplegado && <span className={s.ocultos}>{mas}</span>}
       </div>
 
       <HojaInferior
@@ -260,7 +264,7 @@ export function ProveedorToasts({ children, iniciales = [] }) {
         titulo="Notificaciones"
         acciones={noLeidas > 0 && (
           <button type="button" className={s.marcar} onClick={marcarLeidas}>
-            <CheckCheck aria-hidden="true" /> Marcar leídas
+            <CheckCheck aria-hidden="true" /> <Texto>Marcar leídas</Texto>
           </button>
         )}
       >
@@ -290,8 +294,8 @@ export function EstadoVacio({ imagen = '/assets/kapi/3d/kapi-triste-256.webp', i
       ) : (
         <Sello tamano={64} className={s.vacioSello}>{icono || <PackageSearch />}</Sello>
       )}
-      <h3>{titulo}</h3>
-      {texto && <p>{texto}</p>}
+      <h3><Texto>{titulo}</Texto></h3>
+      {texto && <p><Texto>{texto}</Texto></p>}
       {children && <div className={s.vacioAcciones}>{children}</div>}
     </div>
   );

@@ -36,8 +36,6 @@ export function CabezaSorteo({ premio, imagen, descripcion, precio, ganadores = 
     cuando: useTexto(cerrado ? 'Sorteo cerrado' : hasta ? `Se sortea el ${fecha}` : 'Sorteo de Walá'),
     ganan: useTexto(ganadores === 1 ? '1 ganador' : `${ganadores} ganadores`),
     gana: useTexto('Gana:'),
-    termina: useTexto('Termina en'),
-    termino: useTexto('Ya terminó: pronto anunciamos a quien ganó'),
     participan: useTexto(participantes === 1 ? '1 persona ya participa' : `${cuantos} personas ya participan`),
   };
   return (
@@ -76,8 +74,8 @@ export function CabezaSorteo({ premio, imagen, descripcion, precio, ganadores = 
           // Con más de dos días por delante, en palabras ("Termina en 4 d 7 h"); al final, los bloques.
           <div className={s.reloj}>
             {new Date(hasta) - Date.now() > 48 * 3600000
-              ? <span className={s.relojPildora}><Clock aria-hidden="true" /><CuentaRegresiva hasta={hasta} variante="frase" etiqueta={t.termina} textoFin={t.termino} /></span>
-              : <CuentaRegresiva hasta={hasta} variante="bloques" etiqueta={t.termina} textoFin={t.termino} />}
+              ? <span className={s.relojPildora}><Clock aria-hidden="true" /><CuentaRegresiva hasta={hasta} variante="frase" etiqueta="Termina en" textoFin="Ya terminó: pronto anunciamos a quien ganó" /></span>
+              : <CuentaRegresiva hasta={hasta} variante="bloques" etiqueta="Termina en" textoFin="Ya terminó: pronto anunciamos a quien ganó" />}
           </div>
         )}
         {participantes != null && (
@@ -119,15 +117,15 @@ export function ListaGanadores({ ganadores = [], yo }) {
 export function TarjetaPlan({ nombre, intervalo, precio, precioUsd, alMes, chances, beneficios = [], destacado = false, onElegir, boton = 'Suscribirme' }) {
   return (
     <article className={[s.plan, destacado && s.planDestacado].filter(Boolean).join(' ')} data-componente="TarjetaPlan">
-      {destacado && <span className={s.planRecomendado}>Recomendado</span>}
+      {destacado && <span className={s.planRecomendado}><Texto>Recomendado</Texto></span>}
       <h3 className={s.planNombre}><Texto>{nombre}</Texto></h3>
-      {intervalo && <p className={s.planIntervalo}>{intervalo}</p>}
+      {intervalo && <p className={s.planIntervalo}><Texto>{intervalo}</Texto></p>}
       <p className={s.planPrecio}>
         <strong>{precio}</strong>
         {precioUsd && <small> · {precioUsd}</small>}
       </p>
-      {alMes && <p className={s.planAlMes}>Es como pagar <strong>{alMes}</strong> al mes</p>}
-      {chances > 0 && <p className={s.planChances}><strong>{chances}</strong> {chances === 1 ? 'chance' : 'chances'} por ciclo</p>}
+      {alMes && <p className={s.planAlMes}><TextoResaltado resaltar={[alMes]}>{`Es como pagar ${alMes} al mes`}</TextoResaltado></p>}
+      {chances > 0 && <p className={s.planChances}><TextoResaltado resaltar={[chances]}>{`${chances} ${chances === 1 ? 'chance' : 'chances'} por ciclo`}</TextoResaltado></p>}
       {beneficios.length > 0 && (
         <ul className={s.planBeneficios}>
           {beneficios.map((b) => <li key={b}><Check aria-hidden="true" /><Texto>{b}</Texto></li>)}
@@ -149,7 +147,7 @@ export function TarjetaAliado({ marca, titulo, descuento, ubicacion, imagen, url
       <span className={s.aliadoTexto}>
         <small className={s.aliadoMarca}>{marca}</small>
         <strong><Texto>{titulo}</Texto></strong>
-        {descuento && <span className={s.aliadoDescuento}>{descuento}</span>}
+        {descuento && <span className={s.aliadoDescuento}><Texto>{descuento}</Texto></span>}
         {ubicacion && <small className={s.aliadoLugar}><MapPin aria-hidden="true" />{ubicacion}</small>}
       </span>
       {url && <ExternalLink aria-hidden="true" className={s.aliadoIr} />}

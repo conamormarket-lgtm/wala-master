@@ -187,6 +187,9 @@ export default function TarjetaProducto({
     nuevoEnWala: useTexto('Nuevo en Walá'),
     personalizable: useTexto('Personalizable'),
     tuDiseno: useTexto('Tu diseño'),
+    combo: useTexto(piezas.length ? 'Combo' : undefined),
+    vendidos: useTexto(vendidos ? `${vendidos} vendidos` : undefined),
+    colores: useTexto(colores.length ? `${colores.length} colores` : undefined),
   };
 
   // La impresión: una vez, cuando la tarjeta entra en pantalla.
@@ -283,7 +286,7 @@ export default function TarjetaProducto({
             primeras (CSS), así que "Nuevo" es la que sobra antes. */}
         <div className={s.badges}>
           {descuento > 0 && <Etiqueta tono="peligro" solida>-{descuento}%</Etiqueta>}
-          {esCombo && <Etiqueta tono="violeta" solida>Combo · {piezas.length}</Etiqueta>}
+          {esCombo && <Etiqueta tono="violeta" solida>{t.combo} · {piezas.length}</Etiqueta>}
           {nuevo && <Etiqueta tono="violeta" solida>{t.nuevo}</Etiqueta>}
           {tuDiseno && (
             <Etiqueta tono="violeta" solida icono={<Palette aria-label={t.personalizable} />}><span className={s.badgeTexto}>{t.tuDiseno}</span></Etiqueta>
@@ -369,7 +372,7 @@ export default function TarjetaProducto({
               <Star aria-hidden="true" />
               <strong>{puntuacion.toFixed(1)}</strong>
               {resenas != null && <span>({resenas})</span>}
-              {vendidos && <span className={s.vendidos}>· {vendidos} vendidos</span>}
+              {vendidos && <span className={s.vendidos}>· {t.vendidos}</span>}
             </>
           ) : quedan ? (
             <span className={s.quedan}><Texto>{quedan === 1 ? '¡Queda 1!' : `¡Quedan ${quedan}!`}</Texto></span>
@@ -384,7 +387,7 @@ export default function TarjetaProducto({
             <span className={[s.precio, descuento > 0 && s.precioOferta].filter(Boolean).join(' ')}>{soles(precio)}</span>
           </div>
           {colores.length > 0 && (
-            <ul className={s.colores} aria-label={`${colores.length} colores`}>
+            <ul className={s.colores} aria-label={t.colores}>
               {colores.slice(0, 3).map((c) => (
                 <li key={c} style={{ background: c }} />
               ))}

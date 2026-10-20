@@ -40,11 +40,12 @@ export function Etiqueta({ tono = 'violeta', icono, solida = false, punto = fals
  *  - onQuitar: chip de un filtro ya aplicado (violeta suave con ×); al tocarlo se quita
  */
 export function Chip({ activo = false, onClick, onQuitar, icono, cuenta, tamano = 'md', children }) {
+  const quitar = useTexto(onQuitar ? 'Quitar' : undefined);
   if (onQuitar) {
     return (
       <button type="button" className={[s.chip, s.chipQuitar, tamano === 'sm' && s.chipSm].filter(Boolean).join(' ')} onClick={onQuitar}>
         {children}
-        <X aria-label="Quitar" />
+        <X aria-label={quitar} />
       </button>
     );
   }

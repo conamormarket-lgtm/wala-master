@@ -1,4 +1,6 @@
 import React from 'react';
+import { Texto, useTexto } from '../Traduccion';
+import { TextoResaltado } from './TextoResaltado';
 import s from './BarraProgreso.module.css';
 
 /**
@@ -13,10 +15,12 @@ import s from './BarraProgreso.module.css';
  *  - etiqueta: en vez de `texto`, una fila con la etiqueta a la izquierda y
  *    "valor/max" a la derecha ("Felicidad … 40/100", "Días reclamados … 4/7").
  *  - ariaLabel: nombre de la barra para lectores de pantalla (sin texto visible)
+ * La etiqueta y ariaLabel se traducen aquí (llegan en español).
  */
 export function BarraProgreso({ valor, max = 100, texto: textoPropio, minimo = 8, pasos = false, etiqueta, ariaLabel }) {
+  const nombre = useTexto(ariaLabel);
   const texto = etiqueta
-    ? <span className={s.fila}><span>{etiqueta}</span><strong>{Number(valor) || 0}/{max}</strong></span>
+    ? <span className={s.fila}><span><Texto>{etiqueta}</Texto></span><strong>{Number(valor) || 0}/{max}</strong></span>
     : textoPropio;
   if (pasos) {
     const n = Math.max(0, Math.min(max, Number(valor) || 0));
@@ -33,7 +37,7 @@ export function BarraProgreso({ valor, max = 100, texto: textoPropio, minimo = 8
   return (
     <div className={s.barra}>
       {texto && <span className={s.texto}>{texto}</span>}
-      <span className={s.pista} role="progressbar" aria-valuemin={0} aria-valuemax={max} aria-valuenow={valor} aria-label={ariaLabel}>
+      <span className={s.pista} role="progressbar" aria-valuemin={0} aria-valuemax={max} aria-valuenow={valor} aria-label={nombre}>
         <span style={{ width: `${pct}%` }} />
       </span>
     </div>
@@ -49,5 +53,5 @@ export function BarraProgresoVacia() {
 export function StockBajo({ stock, limite = 20 }) {
   const n = Number(stock);
   if (!Number.isFinite(n) || n <= 0 || n > limite) return <BarraProgresoVacia />;
-  return <BarraProgreso valor={n} max={limite} texto={n <= 5 ? <>¡Solo quedan <strong>{n}</strong>!</> : <>Quedan <strong>{n}</strong></>} />;
+  return <BarraProgreso valor={n} max={limite} texto={<TextoResaltado resaltar={[n]}>{n <= 5 ? `¡Solo quedan ${n}!` : `Quedan ${n}`}</TextoResaltado>} />;
 }

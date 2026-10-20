@@ -15,6 +15,7 @@ import { DomOverlay } from '../../pages/Tienda/components/ComboProductImage/Comb
 import OptimizedImage from '../common/OptimizedImage/OptimizedImage';
 import { PaginaCreaciones } from '../../componentes/kit/paginas/CuentaPersonalizacion';
 import { fechaDeDiseno } from '../../componentes/kit/adaptadores';
+import { useTexto } from '../../componentes/kit/Traduccion';
 import s from './CreacionesDeCuenta.module.css';
 
 /*
@@ -64,6 +65,8 @@ export default function CreacionesDeCuenta() {
   const queryClient = useQueryClient();
   const { pathname } = useLocation();
   const uid = user?.uid;
+  // El nombre de siempre de una versión sin nombre (los que escribió el cliente van tal cual).
+  const sinNombre = useTexto('Mi diseño');
   // El estudio y el combo vuelven aquí con su flecha.
   const estadoEditar = useMemo(() => ({ desde: pathname }), [pathname]);
 
@@ -133,7 +136,7 @@ export default function CreacionesDeCuenta() {
       comunidadPara={comunidadPara}
       versiones={versiones.map((d) => ({
         id: d.id,
-        nombre: d.name || 'Mi diseño',
+        nombre: d.name || sinNombre,
         imagen: d.vistasPrevias?.[0]?.url || d.previewUrl || '',
         combo: d.combo?.nombre,
         dias: diasParaBorrar(d),

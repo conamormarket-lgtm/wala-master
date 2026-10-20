@@ -65,12 +65,11 @@ export function MarcoJuego({ titulo, urlVolver = '/minijuegos', onAyuda, accione
  * traduce quien los arma.
  */
 export function AyudaJuego({ abierta, onCerrar, intro, pasos = [], children, pie, boton = 'Entendido, a jugar' }) {
-  const titulo = useTexto('Cómo se juega');
   return (
     <HojaInferior
       abierta={abierta}
       onCerrar={onCerrar}
-      titulo={titulo}
+      titulo="Cómo se juega"
       pie={<Boton bloque onClick={onCerrar}><Texto>{boton}</Texto></Boton>}
     >
       <div className={s.ayuda} data-componente="AyudaJuego">
@@ -110,7 +109,7 @@ export function PremioJuego({ estado = 'promesa', monto, texto, urlLogin = '/log
   const t = useTexto(texto || TEXTO_PREMIO[estado]);
   let cuerpo;
   if (estado === 'acreditando') {
-    cuerpo = <Cargando tamano="sm" texto={t} />;
+    cuerpo = <Cargando tamano="sm" texto={texto || TEXTO_PREMIO[estado]} />;
   } else if (estado === 'acreditado') {
     cuerpo = <><GananciaMonedas monto={monto} /><span>{t}</span></>;
   } else if (estado === 'ya') {
@@ -145,9 +144,9 @@ export function PremioJuego({ estado = 'promesa', monto, texto, urlLogin = '/log
  */
 export function ResultadoJuego({ abierta, onCerrar, ocupado = false, titulo, tituloHoja = 'Tu resultado', imagen, icono, texto, children, acciones }) {
   const cerrar = () => { if (!ocupado) onCerrar?.(); };
-  const tHoja = useTexto(tituloHoja);
+  // El título de la hoja lo traduce HojaInferior.
   return (
-    <HojaInferior abierta={abierta} onCerrar={cerrar} titulo={tHoja} pie={acciones && <div className={s.resultadoAcciones}>{acciones}</div>}>
+    <HojaInferior abierta={abierta} onCerrar={cerrar} titulo={tituloHoja} pie={acciones && <div className={s.resultadoAcciones}>{acciones}</div>}>
       <div className={s.resultado} data-componente="ResultadoJuego">
         {imagen ? <img src={imagen} alt="" width="104" height="104" className={s.resultadoKapi} /> : icono && <Sello tamano={68}>{icono}</Sello>}
         <p className={s.resultadoTitulo}><Texto>{titulo}</Texto><Trazo className={s.trazo} /></p>

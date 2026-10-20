@@ -8,6 +8,7 @@ import { ProgresoEncuesta } from '../piezas/Encuesta';
 import { RequisitosContrasena, contrasenaValida, BotonGoogle, SeparadorAcceso, CampoContrasena } from '../piezas/Acceso';
 import { CamposDatosPersonales, validarPerfil, NOMBRE_DOCUMENTO } from '../piezas/DatosPersonales';
 import { EsqueletoFormulario } from '../Esqueletos';
+import { TextoResaltado } from '../piezas/TextoResaltado';
 import { Texto, useTexto } from '../Traduccion';
 import { MarcoAcceso, CampoCorreo, BENEFICIOS, correoValido, mensaje } from './Acceso';
 import s from './Acceso.module.css';
@@ -90,6 +91,9 @@ export function PaginaRegistro({
   const [cargando, setCargando] = useState(null);
   const [confirmar, setConfirmar] = useState(false);
   const textoPaso = useTexto(`Paso ${paso} de 2`);
+  // Los enlaces van dentro de la frase: se buscan ya traducidos en la frase traducida.
+  const terminos = useTexto('Términos y Condiciones');
+  const privacidad = useTexto('Política de Privacidad');
 
   // Con la sesión ya abierta (llegó después), al paso de los datos.
   useEffect(() => { if (pasoInicial === 2) setPaso(2); }, [pasoInicial]);
@@ -194,10 +198,12 @@ export function PaginaRegistro({
               onChange={(v) => { setAcepto(v); setErrores((x) => ({ ...x, acepto: undefined })); }}
               disabled={Boolean(cargando)}
               etiqueta={(
-                <>
-                  <Texto>Acepto los</Texto> <Enlace to={urlTerminos} target="_blank" rel="noopener noreferrer" className={s.enlace}><Texto>Términos y Condiciones</Texto></Enlace>{' '}
-                  <Texto>y la</Texto> <Enlace to={urlPrivacidad} target="_blank" rel="noopener noreferrer" className={s.enlace}><Texto>Política de Privacidad</Texto></Enlace>
-                </>
+                <TextoResaltado
+                  resaltar={[terminos, privacidad]}
+                  envolver={(parte, k) => <Enlace key={k} to={k === 0 ? urlTerminos : urlPrivacidad} target="_blank" rel="noopener noreferrer" className={s.enlace}>{parte}</Enlace>}
+                >
+                  Acepto los Términos y Condiciones y la Política de Privacidad
+                </TextoResaltado>
               )}
             />
             {errores.acepto && <p className={s.errorSuelto} role="alert"><Texto>{errores.acepto}</Texto></p>}
@@ -269,8 +275,6 @@ export function PaginaCompletarPerfil({ inicial = {}, correo, deGoogle = {}, onG
   const [errores, setErrores] = useState({});
   const [error, setError] = useState('');
   const [guardando, setGuardando] = useState(false);
-  // La nota del nombre va traducida; la del cumpleaños la traduce CamposDatosPersonales.
-  const notaNombre = useTexto('Lo tomamos de tu cuenta de Google.');
 
   const guardar = async (e) => {
     e.preventDefault();
@@ -295,7 +299,7 @@ export function PaginaCompletarPerfil({ inicial = {}, correo, deGoogle = {}, onG
       panel={{ titulo: 'Completa tu perfil', texto: 'Con tu documento y tu celular ubicamos tus pedidos y te avisamos cuando estén listos.', beneficios: BENEFICIOS.registro }}
       titulo="Completa tu perfil"
       texto={correo
-        ? <><Texto>Entraste como</Texto> <strong className={s.correo}>{correo}</strong>. <Texto>Solo falta esto para tus pedidos.</Texto></>
+        ? <TextoResaltado resaltar={[correo]} envolver={(c, k) => <strong key={k} className={s.correo}>{c}</strong>}>{`Entraste como ${correo}. Solo falta esto para tus pedidos.`}</TextoResaltado>
         : 'Solo falta esto para tus pedidos.'}
     >
       {cargando ? (
@@ -307,7 +311,7 @@ export function PaginaCompletarPerfil({ inicial = {}, correo, deGoogle = {}, onG
             onCambiar={(campo, valor) => { cambiarDato(campo, valor); setErrores((x) => ({ ...x, [campo]: undefined })); }}
             errores={errores}
             paises={paises}
-            ayudaNombre={nombreDeGoogle ? notaNombre : undefined}
+            ayudaNombre={nombreDeGoogle ? 'Lo tomamos de tu cuenta de Google.' : undefined}
             cumpleanos={{
               etiqueta: 'Tu cumpleaños',
               ayuda: deGoogle.cumpleanos && datos.cumpleanos === deGoogle.cumpleanos

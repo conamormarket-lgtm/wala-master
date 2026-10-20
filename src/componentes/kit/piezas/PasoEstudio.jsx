@@ -12,7 +12,7 @@ export function PasoEstudio({ numero, titulo, detalle, hecho = false, children }
         <Sello tamano={30} girar={numero % 2 ? -8 : 6} tono={hecho ? 'menta' : 'degradado'}>
           {hecho ? <Check key="hecho" className={s.pasoCheck} aria-hidden="true" /> : <b className={s.pasoNumero}>{numero}</b>}
         </Sello>
-        <span><Texto>{titulo}</Texto>{detalle && <em>: <Texto>{detalle}</Texto></em>}{hecho && <span className={s.oculto}><Texto> (listo)</Texto></span>}</span>
+        <span><Texto>{titulo}</Texto>{detalle && <em>: <Texto>{detalle}</Texto></em>}{hecho && <span className={s.oculto}> <Texto>(listo)</Texto></span>}</span>
       </h2>
       {children}
     </section>

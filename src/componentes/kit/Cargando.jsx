@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useBloquearScroll } from './Efectos';
+import { useTexto } from './Traduccion';
 import s from './Cargando.module.css';
 
 /*
@@ -45,6 +46,7 @@ export const FRASES_CARGA = ['Preparando tu tienda', 'Doblando las poleras', 'Ca
 export function PantallaCarga({ frases, pantallaCompleta = false, saliendo = false, relevo = false, onSalio }) {
   const fase = useFase();
   const [frase, setFrase] = useState(0);
+  const t = { cargando: useTexto('Cargando'), frase: useTexto(frases?.[frase]) };
   useEffect(() => {
     if (!frases?.length || saliendo) return undefined;
     const t = setInterval(() => setFrase((n) => (n + 1) % frases.length), CICLO_VAIVEN);
@@ -60,7 +62,7 @@ export function PantallaCarga({ frases, pantallaCompleta = false, saliendo = fal
     <div
       className={[s.pantalla, pantallaCompleta && s.completa, saliendo && (relevo ? s.relevo : s.saliendo)].filter(Boolean).join(' ')}
       role="status"
-      aria-label="Cargando"
+      aria-label={t.cargando}
       data-componente="PantallaCarga"
     >
       <div className={s.conjunto}>
@@ -79,7 +81,7 @@ export function PantallaCarga({ frases, pantallaCompleta = false, saliendo = fal
           <span className={s.barra} style={{ animationDelay: fase.barra }} />
         </span>
         {frases?.length > 0 && (
-          <span key={frase} className={s.frase} aria-hidden="true">{frases[frase]}…</span>
+          <span key={frase} className={s.frase} aria-hidden="true">{t.frase}…</span>
         )}
       </div>
     </div>
@@ -99,12 +101,15 @@ export function PantallaCarga({ frases, pantallaCompleta = false, saliendo = fal
 export function Cargando({ texto = 'Cargando', tamano = 'md', bloque = false, sobreClaro = false }) {
   const fase = useFase();
   const medida = { sm: 20, md: 30, lg: 46 }[tamano] || 30;
-  // Los puntos los pone esta pieza (animados): un "…" al final saldría doble.
-  if (typeof texto === 'string') texto = texto.replace(/\s*(…|\.{3})\s*$/, '');
+  // Los puntos los pone esta pieza (animados): un "…" al final saldría doble
+  // (también si la traducción los trae).
+  const sinPuntos = (x) => (typeof x === 'string' ? x.replace(/\s*(…|\.{3})\s*$/, '') : x);
+  texto = sinPuntos(useTexto(sinPuntos(texto)));
+  const oculto = useTexto(texto ? undefined : 'Cargando');
   return (
     <div className={[s.cargando, s[`t_${tamano}`], bloque && s.bloque, sobreClaro && s.sobreClaro].filter(Boolean).join(' ')} role="status" data-componente="Cargando">
       <span className={s.mini} style={{ width: medida, animationDelay: fase.vaiven }} aria-hidden="true" />
-      {texto ? <span className={s.texto}>{texto}<span className={s.puntos} aria-hidden="true"><i /><i /><i /></span></span> : <span className={s.oculto}>Cargando</span>}
+      {texto ? <span className={s.texto}>{texto}<span className={s.puntos} aria-hidden="true"><i /><i /><i /></span></span> : <span className={s.oculto}>{oculto}</span>}
     </div>
   );
 }
@@ -122,6 +127,7 @@ export function CapaCargando({ texto = 'Procesando', detalle, pantallaCompleta =
   // Mientras se espera, la página no se mueve (el pago, quitar el fondo…):
   // ni la ventana ni un marco con scroll propio debajo de la capa.
   useBloquearScroll(true);
+  const tDetalle = useTexto(detalle);
   const capa = useRef(null);
   useEffect(() => {
     const el = capa.current;
@@ -138,7 +144,7 @@ export function CapaCargando({ texto = 'Procesando', detalle, pantallaCompleta =
     <div ref={capa} className={[s.capa, pantallaCompleta && s.capaCompleta].filter(Boolean).join(' ')} data-componente="CapaCargando">
       <div className={s.capaTarjeta}>
         <Cargando texto={texto} tamano="lg" />
-        {detalle && <p className={s.capaDetalle}>{detalle}</p>}
+        {detalle && <p className={s.capaDetalle}>{tDetalle}</p>}
       </div>
     </div>
   );

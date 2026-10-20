@@ -24,9 +24,8 @@ import s from './Crear.module.css';
 
 const VISIBLES = { escritorio: 4, tablet: 2.5, movil: 1.35 };
 
-/** Una fila de tarjetas con su título y "Ver todas (N)". */
-function Fila({ titulo, subtitulo, accion, etiqueta: etiquetaOriginal, children }) {
-  const etiqueta = useTexto(etiquetaOriginal);
+/** Una fila de tarjetas con su título y "Ver todas (N)" (Carrusel traduce su etiqueta). */
+function Fila({ titulo, subtitulo, accion, etiqueta, children }) {
   return (
     <BloqueSeccion ajustes={{ paddingTop: '1rem', paddingBottom: '1rem' }}>
       <div className={s.fila} data-componente="FilaCrear">
@@ -64,9 +63,10 @@ export function PaginaCrear({
   const hayAlgoArriba = borradores.length > 0 || creaciones.length > 0 || comunidad.length > 0;
   const nCreaciones = totalCreaciones ?? creaciones.length;
   const nComunidad = totalComunidad ?? comunidad.length;
+  // "Ver todas" va en un Boton (TituloSeccion), que ya lo traduce.
   const t = {
-    verTodas: useTexto(`Ver todas${nCreaciones > 1 ? ` (${nCreaciones})` : ''}`),
-    verTodos: useTexto(`Ver todos${nComunidad > 1 ? ` (${nComunidad})` : ''}`),
+    verTodas: `Ver todas${nCreaciones > 1 ? ` (${nCreaciones})` : ''}`,
+    verTodos: `Ver todos${nComunidad > 1 ? ` (${nComunidad})` : ''}`,
     para: useTexto('¿Para cuántas personas?'),
   };
 

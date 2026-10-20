@@ -15,6 +15,8 @@ import { PagoTarjeta, PagoPaypal } from '../piezas/Pago';
 import { BotonGoogle, SeparadorAcceso } from '../piezas/Acceso';
 import { FotoProducto } from '../piezas/FotoProducto';
 import { ListaGanadores, TarjetaPlan, TarjetaAliado } from '../piezas/Sorteos';
+import { TextoResaltado } from '../piezas/TextoResaltado';
+import { Texto, useTexto } from '../Traduccion';
 import s from './Sorteos.module.css';
 
 /*
@@ -61,6 +63,7 @@ const PESTANAS_CUENTA = [
  *  - onGoogle(): promesa · onPagarTarjeta({ plan, datos }), onPagarPaypal({ plan, datos }):
  *    promesas → { pendiente } · onCancelar(): promesa
  *  - estado: 'cargando' | 'noDisponible'
+ * Los textos pasan por la traducción; los nombres de planes y premios, tal cual.
  */
 export function PaginaSuscripcionSorteo({
   campana = {}, suscripcion, recibos = [], sesion = false, usuario, onGoogle, onPagarTarjeta, onPagarPaypal, onCancelar, estado,
@@ -75,6 +78,11 @@ export function PaginaSuscripcionSorteo({
   const [pestana, setPestana] = useState('suscripcion');
   const [cancelar, setCancelar] = useState(false);
   const [cancelando, setCancelando] = useState(false);
+  const meses = (m) => (m === 1 ? 'cada mes' : `cada ${m} meses`);
+  const t = {
+    secciones: useTexto('Secciones'),
+    cobro: useTexto(plan ? `${soles(plan.precio)} ${meses(plan.meses || 1)}` : undefined),
+  };
 
   if (estado === 'cargando') return <EsqueletoPagina forma="suscripcionSorteo" />;
   if (estado === 'noDisponible') {
@@ -104,7 +112,6 @@ export function PaginaSuscripcionSorteo({
     if (r?.pendiente) setPaso('pendiente');
     else cerrar();
   };
-  const meses = (m) => (m === 1 ? 'cada mes' : `cada ${m} meses`);
   const enlaces = [['#planes', 'Planes'], campana.premios?.length && ['#premios', 'Premios'], ['#ganadores', 'Ganadores'], aliados.length && ['#beneficios', 'Beneficios'], sesion && ['#mi-cuenta', 'Mi cuenta']].filter(Boolean);
   const est = ESTADOS_SUSCRIPCION[suscripcion?.estado];
 
@@ -114,13 +121,13 @@ export function PaginaSuscripcionSorteo({
         <div className={s.campana} data-componente="PaginaSuscripcionSorteo">
           <header className={s.portada}>
             <Sello tamano={56} girar={-10}><Repeat aria-hidden="true" /></Sello>
-            <h1 className={s.portadaTitulo}>{campana.titulo}<Trazo className={s.trazoClaro} /></h1>
-            {campana.descripcion && <p className={s.portadaTexto}>{campana.descripcion}</p>}
-            {campana.suscriptores != null && <p className={s.portadaCuenta}><strong>{Number(campana.suscriptores).toLocaleString('es-PE')}</strong> suscriptores participando</p>}
+            <h1 className={s.portadaTitulo}><Texto>{campana.titulo}</Texto><Trazo className={s.trazoClaro} /></h1>
+            {campana.descripcion && <p className={s.portadaTexto}><Texto>{campana.descripcion}</Texto></p>}
+            {campana.suscriptores != null && <p className={s.portadaCuenta}><TextoResaltado resaltar={[Number(campana.suscriptores).toLocaleString('es-PE')]}>{`${Number(campana.suscriptores).toLocaleString('es-PE')} suscriptores participando`}</TextoResaltado></p>}
             <Boton to="#planes" tamano="lg" variante="contorno" iconoFin={<ArrowRight aria-hidden="true" />} style={{ '--b-fondo': '#fff', '--b-fondo-hover': '#fff', '--b-texto': '#4c1d95', '--b-borde': 'transparent' }}>Quiero suscribirme</Boton>
           </header>
-          <nav className={s.anclas} aria-label="Secciones">
-            {enlaces.map(([url, texto]) => <Enlace key={url} to={url} className={s.ancla}>{texto}</Enlace>)}
+          <nav className={s.anclas} aria-label={t.secciones}>
+            {enlaces.map(([url, texto]) => <Enlace key={url} to={url} className={s.ancla}><Texto>{texto}</Texto></Enlace>)}
           </nav>
         </div>
       </BloqueSeccion>
@@ -145,7 +152,7 @@ export function PaginaSuscripcionSorteo({
               </li>
             ))}
           </ul>
-        ) : <p className={s.nota}>Todavía no hay planes.</p>}
+        ) : <p className={s.nota}><Texto>Todavía no hay planes.</Texto></p>}
       </BloqueSeccion>
 
       {campana.premios?.length > 0 && (
@@ -164,7 +171,7 @@ export function PaginaSuscripcionSorteo({
 
       <BloqueSeccion ajustes={{ paddingTop: '1rem', paddingBottom: '1.5rem', anchorId: 'ganadores' }}>
         <TituloSeccion titulo="Ganadores" subtitulo="Ya ganaron. La próxima puede ser tu vez." />
-        {campana.ganadores?.length ? <ListaGanadores ganadores={campana.ganadores} /> : <p className={s.nota}>Pronto anunciaremos a quienes ganen primero.</p>}
+        {campana.ganadores?.length ? <ListaGanadores ganadores={campana.ganadores} /> : <p className={s.nota}><Texto>Pronto anunciaremos a quienes ganen primero.</Texto></p>}
       </BloqueSeccion>
 
       {aliados.length > 0 && (
@@ -172,7 +179,7 @@ export function PaginaSuscripcionSorteo({
           <TituloSeccion titulo="Beneficios para suscriptores" subtitulo="Descuentos exclusivos en marcas aliadas." />
           {categorias.length > 1 && (
             <div className={s.filtros}>
-              {['todas', ...categorias].map((c) => <Chip key={c} activo={categoria === c} onClick={() => setCategoria(c)}>{c === 'todas' ? 'Todas' : c}</Chip>)}
+              {['todas', ...categorias].map((c) => <Chip key={c} activo={categoria === c} onClick={() => setCategoria(c)}><Texto>{c === 'todas' ? 'Todas' : c}</Texto></Chip>)}
             </div>
           )}
           <ul className={s.aliados}>{vistos.map((a) => <li key={a.id}><TarjetaAliado {...a} /></li>)}</ul>
@@ -185,13 +192,13 @@ export function PaginaSuscripcionSorteo({
             <Pestanas opciones={PESTANAS_CUENTA} valor={pestana} onChange={setPestana} etiqueta="Mi cuenta" />
             {pestana === 'suscripcion' && (!suscripcion ? (
               <div className={s.sinSuscripcion}>
-                <p>Aún no tienes una suscripción en esta campaña.</p>
+                <p><Texto>Aún no tienes una suscripción en esta campaña.</Texto></p>
                 <Boton to="#planes" variante="secundario">Ver los planes</Boton>
               </div>
             ) : (
               <div className={s.miSuscripcion}>
                 <ListaDatos datos={[
-                  { etiqueta: 'Estado', valor: est && <Etiqueta tono={est.tono}>{est.texto}</Etiqueta> },
+                  { etiqueta: 'Estado', valor: est && <Etiqueta tono={est.tono}><Texto>{est.texto}</Texto></Etiqueta> },
                   { etiqueta: 'Plan', valor: suscripcion.plan },
                   { etiqueta: 'Método de pago', valor: suscripcion.metodo },
                   { etiqueta: 'Vigente hasta', valor: suscripcion.vigente },
@@ -219,7 +226,7 @@ export function PaginaSuscripcionSorteo({
             )}
             {pestana === 'recibos' && (recibos.length
               ? <ListaDatos datos={recibos.map((r) => ({ etiqueta: r.fecha, valor: r.monto }))} />
-              : <p className={s.nota}>Aún no tienes recibos de cobro.</p>)}
+              : <p className={s.nota}><Texto>Aún no tienes recibos de cobro.</Texto></p>)}
           </TarjetaCuenta>
         </BloqueSeccion>
       )}
@@ -228,11 +235,11 @@ export function PaginaSuscripcionSorteo({
         {plan && (
           <div className={s.formulario}>
             {paso !== 'pendiente' && (
-              <p className={s.pagoResumen}><strong>{plan.nombre}</strong> · {soles(plan.precio)} {meses(plan.meses || 1)}</p>
+              <p className={s.pagoResumen}><strong>{plan.nombre}</strong> · {t.cobro}</p>
             )}
             {paso === 'cuenta' && (
               <>
-                <p>Inicia sesión para suscribirte y participar. Es rápido con Google.</p>
+                <p><Texto>Inicia sesión para suscribirte y participar. Es rápido con Google.</Texto></p>
                 <BotonGoogle cargando={entrando} onClick={async () => { setEntrando(true); try { await onGoogle?.(); setPaso('datos'); } finally { setEntrando(false); } }} />
               </>
             )}
@@ -243,7 +250,7 @@ export function PaginaSuscripcionSorteo({
                 <Casilla
                   activo={autoriza}
                   onChange={setAutoriza}
-                  etiqueta={<>Autorizo el cobro automático de <strong>{soles(plan.precio)}</strong> {meses(plan.meses || 1)} hasta que cancele mi suscripción.</>}
+                  etiqueta={<TextoResaltado resaltar={[soles(plan.precio)]}>{`Autorizo el cobro automático de ${soles(plan.precio)} ${meses(plan.meses || 1)} hasta que cancele mi suscripción.`}</TextoResaltado>}
                 />
                 {error && <Aviso tipo="error" compacto>{error}</Aviso>}
                 <Boton bloque onClick={continuar}>Continuar al pago</Boton>
@@ -259,7 +266,7 @@ export function PaginaSuscripcionSorteo({
             {paso === 'pendiente' && (
               <div className={s.pendiente}>
                 <Sello tamano={56} tono="oro"><Sparkles aria-hidden="true" /></Sello>
-                <p><strong>Tu suscripción se está activando.</strong> Se activa sola cuando se confirme tu primer cobro; te avisamos por correo. ¡Gracias por suscribirte!</p>
+                <p><strong><Texto>Tu suscripción se está activando.</Texto></strong> <Texto>Se activa sola cuando se confirme tu primer cobro; te avisamos por correo. ¡Gracias por suscribirte!</Texto></p>
                 <Boton bloque onClick={cerrar}>Entendido</Boton>
               </div>
             )}

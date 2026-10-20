@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowRight, Check, ChevronDown, Loader2, LogOut, RefreshCw, ShoppingBag, Heart, Sparkles, Coins, CalendarClock, Trophy } from 'lucide-react';
 import { Enlace } from './Enlace';
 import { Texto, useTexto } from './Traduccion';
+import { TextoResaltado } from './piezas/TextoResaltado';
 import Boton from './Boton';
 import { soles } from './TarjetaProducto';
 import { IconoWala } from './IconosWala';
@@ -178,12 +179,12 @@ export function AyudaMonedas({
         <div>
           <span className={s.monedasEtiqueta}><Texto>Tus monedas</Texto></span>
           <strong>{conSaldo ? saldo.toLocaleString('es-PE') : '–'}</strong>
-          {conSaldo && <span className={s.monedasValor}>= {soles(saldo * valorMoneda)} <Texto>en descuentos</Texto></span>}
+          {conSaldo && <span className={s.monedasValor}><Texto>{`= ${soles(saldo * valorMoneda)} en descuentos`}</Texto></span>}
         </div>
       </div>
       <ul className={s.monedasDatos}>
-        <li><Coins aria-hidden="true" /><span><strong><Texto>{`1 moneda = ${soles(valorMoneda)}`}</Texto></strong> <Texto>de descuento en tus compras</Texto></span></li>
-        <li><CalendarClock aria-hidden="true" /><span><Texto>Vencen a fin de mes, el</Texto> <strong>{finDeMes()}</strong></span></li>
+        <li><Coins aria-hidden="true" /><span><TextoResaltado resaltar={[`1 moneda = ${soles(valorMoneda)}`, soles(valorMoneda)]}>{`1 moneda = ${soles(valorMoneda)} de descuento en tus compras`}</TextoResaltado></span></li>
+        <li><CalendarClock aria-hidden="true" /><span><TextoResaltado resaltar={[finDeMes()]}>{`Vencen a fin de mes, el ${finDeMes()}`}</TextoResaltado></span></li>
         <li><Trophy aria-hidden="true" /><span><Texto>Gana más con misiones, sorteos y referidos</Texto></span></li>
       </ul>
       <div className={s.monedasAcciones}>
@@ -245,13 +246,13 @@ export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNave
             <>
               <IconoWala nombre={promo.icono || 'regalo'} tamano={34} />
               <span className={s.promoTexto}>
-                <strong>{promo.titulo}</strong>
-                {promo.texto && <span>{promo.texto}</span>}
+                <strong><Texto>{promo.titulo}</Texto></strong>
+                {promo.texto && <span><Texto>{promo.texto}</Texto></span>}
               </span>
               {promo.monedas ? <span className={s.promoMonedas}>+{promo.monedas}</span> : null}
             </>
           ) : (
-            <><Sparkles aria-hidden="true" /> {promo.texto}</>
+            <><Sparkles aria-hidden="true" /> <Texto>{promo.texto}</Texto></>
           )}
         </Enlace>
       )}
@@ -330,6 +331,8 @@ function ElegirIdioma({ opciones, actual, onCambiar }) {
  *  - estadoLogin: el state del router para "Iniciar sesión" (p. ej. { from })
  */
 export function VistaFavoritos({ items = [], sesion = true, urlLista = '/cuenta/wishlist', onNavegar, textos = {}, estadoLogin }) {
+  // El "+N" del abanico (cabe hasta 4 fotos).
+  const verMas = useTexto(items.length > 4 ? `Ver ${items.length - 4} más` : undefined);
   if (!sesion) {
     return (
       <div className={s.vacio}>
@@ -382,7 +385,7 @@ export function VistaFavoritos({ items = [], sesion = true, urlLista = '/cuenta/
         ))}
         {hayMas && (
           <li style={naipe(visibles.length)}>
-            <Enlace to={urlLista} className={`${s.naipe} ${s.naipeMas}`} onClick={onNavegar} aria-label={`Ver ${items.length - visibles.length} más`}>
+            <Enlace to={urlLista} className={`${s.naipe} ${s.naipeMas}`} onClick={onNavegar} aria-label={verMas}>
               +{items.length - visibles.length}
             </Enlace>
           </li>
@@ -405,6 +408,11 @@ export function VistaFavoritos({ items = [], sesion = true, urlLista = '/cuenta/
  *  - urlPagar: adónde va "Pagar"; null = un solo botón, "Ir a pagar", que
  *    lleva al carrito (así la tienda: ahí se eligen los productos a pagar)
  */
+/** "×2" sobre la foto ("2 unidades" para lectores de pantalla). */
+function CantidadMini({ cantidad }) {
+  return <span className={s.cantidadMini} aria-label={useTexto(`${cantidad} unidades`)}>×{cantidad}</span>;
+}
+
 export function VistaCarrito({ items = [], urlCarrito = '/carrito', urlPagar = '/checkout', metaEnvio, onNavegar }) {
   const totalReal = items.reduce((a, it) => a + it.precio * it.cantidad, 0);
   const total = useContador(totalReal, 0.45);
@@ -433,7 +441,7 @@ export function VistaCarrito({ items = [], urlCarrito = '/carrito', urlPagar = '
             <Enlace to={it.url || urlCarrito} className={s.lineaCarrito} onClick={onNavegar}>
               <span className={s.miniaturaCaja}>
                 <FotoProducto className={s.miniatura} src={it.imagen} relleno="6%" />
-                {it.cantidad > 1 && <span className={s.cantidadMini} aria-label={`${it.cantidad} unidades`}>×{it.cantidad}</span>}
+                {it.cantidad > 1 && <CantidadMini cantidad={it.cantidad} />}
               </span>
               <span className={s.lineaTexto}>
                 <strong><Texto>{it.nombre}</Texto></strong>

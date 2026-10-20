@@ -150,7 +150,7 @@ function CulqiSuscripcionButton({ campaignId, plan, email, datos, origenApp, onO
       onClick={handleOpen}
       className={styles.btnCampana}
     >
-      {isProcessing ? 'Creando tu suscripción…' : `💳 Suscribirme (${formatoPrecioPen(plan.precioCentimos)})`}
+      {isProcessing ? <T>Creando tu suscripción…</T> : <>💳 <T>{`Suscribirme (${formatoPrecioPen(plan.precioCentimos)})`}</T></>}
     </GlassButton>
   );
 }

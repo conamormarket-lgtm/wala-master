@@ -29,7 +29,8 @@ export function FormaGanar({ icono = 'regalo', titulo, premio, children }) {
         <h3 className={s.formaTitulo}><Texto>{titulo}</Texto></h3>
         <p className={s.formaTexto}>{children}</p>
       </div>
-      {premio && <span className={s.formaPremio}>{premio}</span>}
+      {/* "+1 por amigo" se traduce; "+1" solo (sin letras) no se manda. */}
+      {premio && <span className={s.formaPremio}>{typeof premio === 'string' && /\p{L}/u.test(premio) ? <Texto>{premio}</Texto> : premio}</span>}
     </div>
   );
 }

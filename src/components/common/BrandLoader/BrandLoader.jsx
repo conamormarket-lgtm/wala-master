@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { useReducedMotionSafe } from '../../../theme/motion';
+import { useTexto } from '../../../componentes/kit/Traduccion';
 import styles from './BrandLoader.module.css';
 
 /** Duraciones de las animaciones, en ms. Deben coincidir con el CSS. */
@@ -47,6 +48,7 @@ const CICLO_BARRA = 1400;
  */
 const BrandLoader = ({ variant = 'fill' }) => {
   const reducedMotion = useReducedMotionSafe();
+  const cargando = useTexto('Cargando');
 
   // FASE COMPARTIDA. Durante una carga se muestran DOS loaders seguidos: el de
   // la landing y, en cuanto monta, el de la tienda. Son instancias distintas,
@@ -70,7 +72,7 @@ const BrandLoader = ({ variant = 'fill' }) => {
     <div
       className={`${styles.loader} ${variant === 'inline' ? styles.inline : styles.fill}`}
       role="status"
-      aria-label="Cargando"
+      aria-label={cargando}
     >
       <div className={styles.stack}>
         <div className={styles.markWrap}>

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Pencil, Check, ShoppingBag } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
-import { Texto } from '../Traduccion';
+import { Texto, useTexto } from '../Traduccion';
 import { BloqueSeccion } from '../Seccion';
 import { useContador } from '../Efectos';
 import { IconoWala } from '../IconosWala';
@@ -35,8 +35,9 @@ export function MarcoFicha({ galeria, children, componente }) {
 
 /** Migas: [{ texto, url }] (la última sin url, en gris). */
 export function Migas({ items = [] }) {
+  const estasEn = useTexto('Estás en');
   return (
-    <nav className={s.migas} aria-label="Estás en" data-componente="Migas">
+    <nav className={s.migas} aria-label={estasEn} data-componente="Migas">
       {items.map((m, k) => (
         <React.Fragment key={m.texto}>
           {k > 0 && <span aria-hidden="true">/</span>}
@@ -152,6 +153,7 @@ export function TituloEditable({ nombre, onRenombrar, como: Etiqueta = 'h1' }) {
   const [editando, setEditando] = useState(null);
   const [guardando, setGuardando] = useState(false);
   const chico = Etiqueta !== 'h1';
+  const t = { nombre: useTexto('Nombre'), guardar: useTexto('Guardar nombre'), cambiar: useTexto('Cambiar el nombre') };
   const guardar = async (e) => {
     e.preventDefault();
     const nuevo = editando.trim();
@@ -167,12 +169,12 @@ export function TituloEditable({ nombre, onRenombrar, como: Etiqueta = 'h1' }) {
           value={editando}
           onChange={(e) => setEditando(e.target.value)}
           maxLength={60}
-          aria-label="Nombre"
+          aria-label={t.nombre}
           autoFocus
           onFocus={(e) => e.currentTarget.select()}
           onKeyDown={(e) => { if (e.key === 'Escape') setEditando(null); }}
         />
-        <Boton type="submit" tamano="sm" soloIcono aria-label="Guardar nombre" cargando={guardando} icono={<Check aria-hidden="true" />} />
+        <Boton type="submit" tamano="sm" soloIcono aria-label={t.guardar} cargando={guardando} icono={<Check aria-hidden="true" />} />
       </form>
     );
   }
@@ -180,7 +182,7 @@ export function TituloEditable({ nombre, onRenombrar, como: Etiqueta = 'h1' }) {
     <Etiqueta className={chico ? s.nombreChico : s.titulo}>
       {nombre}
       {onRenombrar && (
-        <button type="button" className={s.lapiz} onClick={() => setEditando(nombre || '')} aria-label="Cambiar el nombre"><Pencil aria-hidden="true" /></button>
+        <button type="button" className={s.lapiz} onClick={() => setEditando(nombre || '')} aria-label={t.cambiar}><Pencil aria-hidden="true" /></button>
       )}
     </Etiqueta>
   );

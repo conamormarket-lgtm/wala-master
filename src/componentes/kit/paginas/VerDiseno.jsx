@@ -50,6 +50,7 @@ export function PaginaVerDiseno({ titulo, piezas = [], cargando = false, noDispo
     rotulo: useTexto(piezas.length > 1 ? `Combo · ${piezas.length} prendas` : 'Diseño del pedido'),
     verGrande: useTexto('Ver en grande'),
     diseno: useTexto('diseño'),
+    fotoGrande: useTexto(ver ? `${ver.prenda}: ${ver.lado.nombre || 'diseño'}` : undefined),
   };
 
   if (cargando) {
@@ -142,7 +143,7 @@ export function PaginaVerDiseno({ titulo, piezas = [], cargando = false, noDispo
         titulo={ver ? `${ver.prenda} · ${ver.lado.nombre || 'Diseño'}` : ''}
         pie={ver && <Boton bloque variante="contorno" to={ver.lado.url} icono={<ExternalLink aria-hidden="true" />}><Texto>Abrir la imagen original</Texto></Boton>}
       >
-        {ver && <FotoProducto className={s.fotoGrande} src={ver.lado.url} alt={`${ver.prenda}: ${ver.lado.nombre || 'diseño'}`} />}
+        {ver && <FotoProducto className={s.fotoGrande} src={ver.lado.url} alt={t.fotoGrande} />}
       </HojaInferior>
     </BloqueSeccion>
   );

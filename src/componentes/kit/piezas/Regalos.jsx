@@ -9,7 +9,8 @@ import { soles } from '../TarjetaProducto';
 import { Avatar } from './Avatar';
 import { FotoProducto } from './FotoProducto';
 import { BarraProgreso } from './BarraProgreso';
-import { Texto } from '../Traduccion';
+import { Texto, useTexto } from '../Traduccion';
+import { TextoResaltado } from './TextoResaltado';
 import s from './Regalos.module.css';
 
 /*
@@ -74,9 +75,10 @@ export function HojaCalendario({ fecha, tono = 'violeta', grande = false }) {
  *  - items: [{ id, fecha, titulo, persona, dias, url ('#persona-…') }]
  */
 export function AgendaFechas({ items = [] }) {
+  const nombre = useTexto('Lo que se viene');
   if (!items.length) return null;
   return (
-    <section className={s.agenda} data-componente="AgendaFechas" aria-label="Lo que se viene">
+    <section className={s.agenda} data-componente="AgendaFechas" aria-label={nombre}>
       <h3 className={s.agendaTitulo}><Texto>Lo que se viene</Texto></h3>
       <Carrusel visibles={{ escritorio: 3.3, tablet: 2.4, movil: 1.3 }} espacio="0.75rem" etiqueta="Lo que se viene">
         {items.map((it) => (
@@ -85,7 +87,7 @@ export function AgendaFechas({ items = [] }) {
             <span className={s.agendaTextos}>
               <strong><Texto>{it.titulo}</Texto></strong>
               {it.persona && <small><Texto>{it.persona}</Texto></small>}
-              <span className={s.agendaFalta}>{it.dias === 0 ? <Texto>¡Es hoy!</Texto> : it.dias === 1 ? <Texto>Mañana</Texto> : <><Texto>En</Texto> <b>{it.dias}</b> <Texto>días</Texto></>}</span>
+              <span className={s.agendaFalta}>{it.dias === 0 ? <Texto>¡Es hoy!</Texto> : it.dias === 1 ? <Texto>Mañana</Texto> : <TextoResaltado resaltar={[it.dias]} envolver={(x, k) => <b key={k}>{x}</b>}>{`En ${it.dias} días`}</TextoResaltado>}</span>
             </span>
           </Enlace>
         ))}
@@ -109,6 +111,7 @@ function Faltan({ dias, hasta = 30 }) {
  *  - onAgregar(), onElegir()
  */
 export function IdeaRegalo({ nombre, imagen, srcSet, sizes, motivo, precio, url, agregada = false, necesitaOpciones = false, onAgregar, onElegir }) {
+  const etiquetaAgregar = useTexto(agregada ? 'Agregada al carrito' : `Agregar ${nombre} al carrito`);
   return (
     <li className={s.idea} data-componente="IdeaRegalo">
       <FotoProducto className={s.ideaFoto} src={imagen} srcSet={srcSet} sizes={sizes} respaldo={<Gift aria-hidden="true" />} />
@@ -124,7 +127,7 @@ export function IdeaRegalo({ nombre, imagen, srcSet, sizes, motivo, precio, url,
           tamano="sm"
           variante={agregada ? 'contorno' : 'primario'}
           soloIcono
-          aria-label={agregada ? 'Agregada al carrito' : `Agregar ${nombre} al carrito`}
+          aria-label={etiquetaAgregar}
           icono={agregada ? <Check aria-hidden="true" /> : <ShoppingBag aria-hidden="true" />}
           onClick={onAgregar}
           disabled={agregada}
@@ -199,6 +202,13 @@ export function TarjetaPersonaRegalo({
   onEditar, onEliminar, onAgregarPaquete, onAgregarIdea, onAgregarIdeas, onElegir, urlTienda = '/tienda', hoy,
 }) {
   const [confirmar, setConfirmar] = useState(false);
+  const etiquetaEditar = useTexto(`Editar a ${nombre}`);
+  const etiquetaEliminar = useTexto(`Eliminar a ${nombre}`);
+  // "Cuéntanos qué le gusta" es un botón dentro de la frase: la frase va entera
+  // y el botón se marca dentro; si la traducción no lo trae, va como antes.
+  const fraseGenerales = 'Son ideas generales. Cuéntanos qué le gusta y las hacemos a su medida.';
+  const generales = useTexto(fraseGenerales);
+  const cuentanos = useTexto('Cuéntanos qué le gusta');
   const listaPaquetes = (paquetes || (paquete ? [paquete] : [])).filter((pq) => pq.productos?.length > 0);
   const directas = ideas.filter((i) => !i.necesitaOpciones && !i.agregada);
   const conTalla = ideas.filter((i) => i.necesitaOpciones).length;
@@ -212,8 +222,8 @@ export function TarjetaPersonaRegalo({
           {relacion && <p><Texto>{relacion}</Texto></p>}
         </div>
         <span className={s.botones}>
-          {onEditar && <button type="button" className={s.icono} onClick={onEditar} aria-label={`Editar a ${nombre}`}><Pencil aria-hidden="true" /></button>}
-          {onEliminar && <button type="button" className={`${s.icono} ${s.peligro}`} onClick={() => setConfirmar(true)} aria-label={`Eliminar a ${nombre}`}><Trash2 aria-hidden="true" /></button>}
+          {onEditar && <button type="button" className={s.icono} onClick={onEditar} aria-label={etiquetaEditar}><Pencil aria-hidden="true" /></button>}
+          {onEliminar && <button type="button" className={`${s.icono} ${s.peligro}`} onClick={() => setConfirmar(true)} aria-label={etiquetaEliminar}><Trash2 aria-hidden="true" /></button>}
         </span>
       </header>
       {confirmar && (
@@ -269,7 +279,11 @@ export function TarjetaPersonaRegalo({
         <h4><Gift aria-hidden="true" /> <Texto>{`Ideas de regalo para ${nombre}`}</Texto></h4>
         {ideasGenerales && ideas.length > 0 && (
           <p className={s.nota}>
-            <Texto>Son ideas generales.</Texto> {onEditar ? <button type="button" className={s.textoBoton} onClick={onEditar}><Texto>Cuéntanos qué le gusta</Texto></button> : <Texto>Cuéntanos qué le gusta</Texto>} <Texto>y las hacemos a su medida.</Texto>
+            {!onEditar ? generales : generales.includes(cuentanos) ? (
+              <TextoResaltado resaltar={[cuentanos]} envolver={(x, k) => <button key={k} type="button" className={s.textoBoton} onClick={onEditar}>{x}</button>}>{fraseGenerales}</TextoResaltado>
+            ) : (
+              <><Texto>Son ideas generales.</Texto> <button type="button" className={s.textoBoton} onClick={onEditar}>{cuentanos}</button> <Texto>y las hacemos a su medida.</Texto></>
+            )}
           </p>
         )}
         {buscando ? <p className={s.nota} role="status"><Texto>Buscando ideas…</Texto></p> : ideas.length > 0 ? (
@@ -308,6 +322,7 @@ export function TarjetaPersonaRegalo({
  */
 export function AvisoFestiva({ nombre, fecha, icono = 'regalo', personas = [], onAgregarPersona, onAgregarIdea, onElegir, urlTienda = '/tienda', hoy }) {
   const dias = faltanDias(fecha, hoy);
+  const etiquetaFaltan = useTexto(textoFaltan(dias));
   return (
     <section className={s.festiva} data-componente="AvisoFestiva">
       <header className={s.festivaCabeza}>
@@ -316,7 +331,7 @@ export function AvisoFestiva({ nombre, fecha, icono = 'regalo', personas = [], o
           <h3><Texto>{dias === 0 ? `¡Hoy es ${nombre}!` : `Se acerca el ${nombre}`}</Texto></h3>
           <p><Texto>{diaYMes(fecha)}</Texto></p>
         </div>
-        <span className={s.cuentaAtras} aria-label={textoFaltan(dias)}>
+        <span className={s.cuentaAtras} aria-label={etiquetaFaltan}>
           {dias === 0 ? <strong><Texto>¡Hoy!</Texto></strong> : <><strong>{dias}</strong><small><Texto>{dias === 1 ? 'día' : 'días'}</Texto></small></>}
         </span>
       </header>

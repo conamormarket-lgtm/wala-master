@@ -9,6 +9,7 @@ import { ComboNavArrows, ComboNavDots } from './ComboCarouselNav';
 import useDragScroll from '../../../../hooks/useDragScroll';
 import useComboCarousel from '../../../../hooks/useComboCarousel';
 import styles from './ComboProductImage.module.css';
+import { useTranslatedText } from '../../../../i18n/useTranslatedText';
 
 function getBestImageUrl(product, item, variantSelection = {}) {
   if (!product) return '';
@@ -77,6 +78,8 @@ const ComboProductImage = ({
   onProductsFetched
 }) => {
   const queryClient = useQueryClient();
+  // "producto 1", "producto 2"… en el texto alternativo de cada pieza (el nombre del combo va tal cual).
+  const palabraProducto = useTranslatedText('producto');
   const [itemImageUrls, setItemImageUrls] = useState({});
   const [itemCropData, setItemCropData] = useState({});
   const [itemProducts, setItemProducts] = useState({});
@@ -367,7 +370,7 @@ const ComboProductImage = ({
             >
               <OptimizedImage
                 src={toThumbnailImageUrl(c.url)}
-                alt={`${comboProduct?.name || 'Combo'} - producto ${c.index + 1}`}
+                alt={`${comboProduct?.name || 'Combo'} - ${palabraProducto} ${c.index + 1}`}
                 className={styles.comboThumbImage}
                 // OptimizedImage por defecto usa objectFit="cover" (aplicado
                 // INLINE, gana por especificidad a cualquier CSS de aquí). Sin
@@ -428,7 +431,7 @@ const ComboProductImage = ({
               }}>
                 <OptimizedImage
                   src={toThumbnailImageUrl(imageUrl)}
-                  alt={`${comboProduct?.name || 'Combo'} - producto ${index + 1}`}
+                  alt={`${comboProduct?.name || 'Combo'} - ${palabraProducto} ${index + 1}`}
                   className={styles.comboRowImage}
                   loading={isAboveFold ? "eager" : "lazy"}
                   fetchPriority={isAboveFold ? "high" : "auto"}

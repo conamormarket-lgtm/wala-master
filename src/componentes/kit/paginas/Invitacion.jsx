@@ -39,12 +39,11 @@ export function PaginaInvitacion({
   const t = {
     titulo: useTexto(nombre ? `${nombre} te invitó a Walá` : 'Te invitaron a Walá'),
     aceptada: useTexto(`¡Ya tienes tus ${bono} monedas!`),
-    recibes: useTexto(`Recibes ${bono} monedas`),
     nota: useTexto(`${quien} gana monedas cuando haces tu primera compra (en los ${diasPrimeraCompra} días siguientes). A ti no te cuesta nada. Es solo para cuentas nuevas: el DNI y el celular no deben estar en otra cuenta ni en compras anteriores.`),
-    conCuenta: useTexto(`Ya tienes una cuenta en Walá, así que no aplica el bono de bienvenida. Igual, si compras en las próximas ${horasCompra} h, ${nombre || 'quien te invitó'} gana monedas con tu pedido.`),
-    faltan: useTexto(`Completa tu DNI y tu celular en Mi perfil: si tu cuenta es nueva, recibes tus ${bono} monedas al instante.`),
-    pasos: useTexto('Cómo recibes tus monedas'),
   };
+  // Aviso y PasosSellos traducen lo suyo: estos van sin traducir.
+  const conCuenta = `Ya tienes una cuenta en Walá, así que no aplica el bono de bienvenida. Igual, si compras en las próximas ${horasCompra} h, ${nombre || 'quien te invitó'} gana monedas con tu pedido.`;
+  const faltan = `Completa tu DNI y tu celular en Mi perfil: si tu cuenta es nueva, recibes tus ${bono} monedas al instante.`;
 
   if (estado === 'cargando') return <EsqueletoPagina forma="invitacion" />;
   if (estado === 'invalida' || estado === 'error') {
@@ -93,12 +92,12 @@ export function PaginaInvitacion({
               <span><Texto>de bienvenida al crear tu cuenta</Texto></span>
             </div>
             <PasosSellos
-              etiqueta={t.pasos}
+              etiqueta="Cómo recibes tus monedas"
               className={s.invitarPasos}
               pasos={[
                 { icono: <UserPlus aria-hidden="true" />, titulo: 'Crea tu cuenta', texto: 'Con tu correo o con Google.' },
                 { icono: <IdCard aria-hidden="true" />, titulo: 'Completa tu DNI y celular', texto: 'Así sabemos que tu cuenta es nueva.' },
-                { icono: <Coins aria-hidden="true" />, titulo: t.recibes, texto: 'Para usarlas en tu primera compra.' },
+                { icono: <Coins aria-hidden="true" />, titulo: `Recibes ${bono} monedas`, texto: 'Para usarlas en tu primera compra.' },
               ]}
             />
             <div className={s.invitarBotones}>
@@ -112,7 +111,7 @@ export function PaginaInvitacion({
         {estado === 'faltanDatos' && (
           <>
             <div className={s.invitarAviso}>
-              <Aviso tipo="info" titulo={<Texto>Te falta un paso</Texto>}>{t.faltan}</Aviso>
+              <Aviso tipo="info" titulo={<Texto>Te falta un paso</Texto>}>{faltan}</Aviso>
             </div>
             <div className={s.invitarBotones}>
               <Boton to={urlPerfil} tamano="lg" icono={<IdCard aria-hidden="true" />}><Texto>Completar mis datos</Texto></Boton>
@@ -123,7 +122,7 @@ export function PaginaInvitacion({
         {estado === 'conCuenta' && (
           <>
             <div className={s.invitarAviso}>
-              <Aviso tipo="info" titulo={<Texto>La invitación es para cuentas nuevas</Texto>}>{t.conCuenta}</Aviso>
+              <Aviso tipo="info" titulo={<Texto>La invitación es para cuentas nuevas</Texto>}>{conCuenta}</Aviso>
             </div>
             <div className={s.invitarBotones}>
               <Boton to={urlTienda} tamano="lg" icono={<Store aria-hidden="true" />}><Texto>Ir a la tienda</Texto></Boton>

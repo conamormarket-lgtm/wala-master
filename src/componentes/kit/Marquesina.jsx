@@ -1,4 +1,5 @@
 import React, { Children, useEffect, useRef, useState } from 'react';
+import { useTexto } from './Traduccion';
 import s from './Marquesina.module.css';
 
 /**
@@ -15,6 +16,7 @@ export default function Marquesina({ children, segundos = 30, espacio = '2.5rem'
   const grupo = useRef(null);
   const [copias, setCopias] = useState(2);
   const elementos = Children.toArray(children);
+  const nombre = useTexto(etiqueta);
 
   useEffect(() => {
     const medir = () => {
@@ -44,7 +46,7 @@ export default function Marquesina({ children, segundos = 30, espacio = '2.5rem'
       className={[s.marquesina, invertir && s.invertir, className].filter(Boolean).join(' ')}
       style={{ '--duracion': `${duracion}s`, '--espacio': espacio, '--copias': copias }}
       role="region"
-      aria-label={etiqueta}
+      aria-label={nombre}
     >
       <div className={s.cinta}>
         {Array.from({ length: copias }, (_, n) => <React.Fragment key={n}>{fila(n)}</React.Fragment>)}

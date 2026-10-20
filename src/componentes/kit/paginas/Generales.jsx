@@ -6,7 +6,7 @@ import { Cargando } from '../Cargando';
 import { Trazo, Sello, Puntos, Destello } from '../Marca';
 import { BloqueSeccion } from '../Seccion';
 import { CARAS_KAPI } from '../piezas/Flotantes';
-import { Texto, useTexto } from '../Traduccion';
+import { Texto } from '../Traduccion';
 import s from './Generales.module.css';
 
 /*
@@ -40,7 +40,7 @@ function Adornos() {
  *  - urlTienda · urlCrear
  */
 export function PaginaNoEncontrada({ ruta, onBuscar, urlTienda = '/tienda', urlCrear = '/personalizar' }) {
-  const t = { buscar: useTexto('Busca un producto'), boton: useTexto('Buscar') };
+  // El Buscador traduce su marcador y su botón (un Boton) traduce "Buscar".
   return (
     <BloqueSeccion ajustes={{ paddingTop: '1.75rem', paddingBottom: '2.5rem' }}>
       <section className={s.tarjeta} data-componente="PaginaNoEncontrada">
@@ -52,7 +52,7 @@ export function PaginaNoEncontrada({ ruta, onBuscar, urlTienda = '/tienda', urlC
         {ruta && <code className={s.ruta}>{ruta}</code>}
         {onBuscar && (
           <div className={s.buscador}>
-            <Buscador grande placeholder={t.buscar} onBuscar={onBuscar} boton={t.boton} atajo={null} />
+            <Buscador grande placeholder="Busca un producto" onBuscar={onBuscar} boton="Buscar" atajo={null} />
           </div>
         )}
         <div className={s.botones}>

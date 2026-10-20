@@ -21,3 +21,11 @@ export function TextoResaltado({ children, resaltar = [], envolver }) {
   partes.push(resto);
   return <>{partes}</>;
 }
+
+/**
+ * Un texto traducido para un atributo dentro de una lista (los hooks no van
+ * en un map): <Traducido texto={`Ver la foto ${i + 1}`}>{(t) => <button aria-label={t} />}</Traducido>
+ */
+export function Traducido({ texto, children }) {
+  return children(useTexto(texto));
+}

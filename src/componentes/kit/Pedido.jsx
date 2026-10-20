@@ -4,6 +4,7 @@ import { Check, Copy, CreditCard, Truck, Trash2, Gift, ChevronDown, Clock, Tag, 
 import Boton from './Boton';
 import { Enlace } from './Enlace';
 import { Texto, useTexto } from './Traduccion';
+import { TextoResaltado } from './piezas/TextoResaltado';
 import { Etiqueta, Moneda } from './Etiquetas';
 import { Visto } from './Marca';
 import { FotoProducto } from './piezas/FotoProducto';
@@ -67,7 +68,7 @@ export function SeguimientoPedido({
         </div>
         <div className={s.datos}>
           <p className={s.codigo}>
-            <Texto>Pedido</Texto> <strong>#{codigo}</strong>
+            <TextoResaltado resaltar={[`#${codigo}`]}>{`Pedido #${codigo}`}</TextoResaltado>
             <button type="button" onClick={copiar} aria-label={tCopiar} className={s.copiar}>
               {copiado ? <Check key="ok" className={s.copiadoIcono} aria-hidden="true" /> : <Copy key="copiar" aria-hidden="true" />}
               <AnimatePresence>
@@ -111,7 +112,7 @@ export function SeguimientoPedido({
             ))}
           </span>
           <span className={s.barraTexto}>
-            {anulado ? <Texto>Pedido cancelado</Texto> : <><Texto>Paso</Texto> <strong>{Math.min(paso + 1, pasos.length)}</strong> <Texto>de</Texto> {pasos.length} · <Texto>{pasos[Math.min(paso, pasos.length - 1)]}</Texto></>}
+            {anulado ? <Texto>Pedido cancelado</Texto> : <><TextoResaltado resaltar={[Math.min(paso + 1, pasos.length)]}>{`Paso ${Math.min(paso + 1, pasos.length)} de ${pasos.length}`}</TextoResaltado> · <Texto>{pasos[Math.min(paso, pasos.length - 1)]}</Texto></>}
           </span>
         </div>
       ) : (
@@ -151,7 +152,7 @@ export function SeguimientoPedido({
 
       {deuda > 0 && !pagoPendiente && !anulado && (
         <div className={`${s.pagoAviso} ${s.deudaAviso}`}>
-          <p><AlertTriangle aria-hidden="true" /><span><Texto>Te falta pagar</Texto> <strong>{soles(deuda)}</strong> <Texto>para que tu pedido siga avanzando.</Texto></span></p>
+          <p><AlertTriangle aria-hidden="true" /><span><TextoResaltado resaltar={[soles(deuda)]}>{`Te falta pagar ${soles(deuda)} para que tu pedido siga avanzando.`}</TextoResaltado></span></p>
           <Boton icono={<CreditCard aria-hidden="true" />} onClick={onPagar} to={onPagar ? undefined : urlDetalle}><Texto>Pagar deuda</Texto></Boton>
         </div>
       )}
@@ -306,8 +307,8 @@ export function BarraEnvioGratis({ actual, meta, compacta = false, estricto = fa
             <><Gift aria-hidden="true" /><span><strong><Texto>¡Tienes envío gratis!</Texto></strong></span></>
           ) : (
             falta > 0
-              ? <><Truck aria-hidden="true" /><span><Texto>Te faltan</Texto> <Monto valor={falta} className={s.fuerte} /> <Texto>para el envío gratis</Texto></span></>
-              : <><Truck aria-hidden="true" /><span><Texto>Pasa de</Texto> <strong className={s.fuerte}>{soles(meta)}</strong> <Texto>y el envío es gratis</Texto></span></>
+              ? <><Truck aria-hidden="true" /><span><TextoResaltado resaltar={[soles(falta)]} envolver={(_, k) => <Monto key={k} valor={falta} className={s.fuerte} />}>{`Te faltan ${soles(falta)} para el envío gratis`}</TextoResaltado></span></>
+              : <><Truck aria-hidden="true" /><span><TextoResaltado resaltar={[soles(meta)]} envolver={(parte, k) => <strong key={k} className={s.fuerte}>{parte}</strong>}>{`Pasa de ${soles(meta)} y el envío es gratis`}</TextoResaltado></span></>
           )}
         </motion.p>
       </AnimatePresence>
@@ -344,6 +345,7 @@ export function ResumenPedido({
   etiquetaSubtotal = 'Subtotal', textoBoton = 'Ir a pagar', deshabilitado = false, nota = 'Pago seguro con tarjeta, Yape, Plin o transferencia',
 }) {
   const etiquetaResumen = useTexto('Resumen del pedido');
+  const tCupon = { ejemplo: useTexto(cupones ? 'Prueba WALA10' : undefined), nombre: useTexto(cupones ? 'Código de cupón' : undefined) };
   const [cupon, setCupon] = useState('');
   const [aplicado, setAplicado] = useState(null);
   const [errorCupon, setErrorCupon] = useState(false);
@@ -380,7 +382,7 @@ export function ResumenPedido({
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.35, ease: EASE }}
             >
-              <dt>Cupón {aplicado}</dt><dd>−{soles(descCupon)}</dd>
+              <dt><Texto>{`Cupón ${aplicado}`}</Texto></dt><dd>−{soles(descCupon)}</dd>
             </motion.div>
           )}
         </AnimatePresence>
@@ -393,11 +395,11 @@ export function ResumenPedido({
           <input
             value={cupon}
             onChange={(e) => { setCupon(e.target.value); setAplicado(null); }}
-            placeholder="Prueba WALA10"
-            aria-label="Código de cupón"
+            placeholder={tCupon.ejemplo}
+            aria-label={tCupon.nombre}
           />
           <button type="submit" disabled={!cupon.trim() || !!aplicado}>
-            {aplicado ? <><Check aria-hidden="true" /> Listo</> : 'Aplicar'}
+            {aplicado ? <><Check aria-hidden="true" /> <Texto>Listo</Texto></> : <Texto>Aplicar</Texto>}
             <Estallido disparo={chispas} cantidad={10} distancia={30} />
           </button>
         </form>
@@ -408,10 +410,10 @@ export function ResumenPedido({
         <Monto valor={total} className={s.totalMonto} />
       </div>
       {monedas > 0 && (
-        <p className={s.ganas}><Moneda tamano={18} /><span><Texto>Con esta compra ganas</Texto> <strong><Texto>{`${monedas} monedas`}</Texto></strong></span></p>
+        <p className={s.ganas}><Moneda tamano={18} /><span><TextoResaltado resaltar={[`${monedas} monedas`, monedas]}>{`Con esta compra ganas ${monedas} monedas`}</TextoResaltado></span></p>
       )}
       {saldoMonedas > 0 && (
-        <p className={s.ganas}><Moneda tamano={18} /><span><Texto>Tienes</Texto> <strong><Texto>{`${saldoMonedas} monedas`}</Texto></strong>: <Texto>podrás usarlas al pagar.</Texto></span></p>
+        <p className={s.ganas}><Moneda tamano={18} /><span><TextoResaltado resaltar={[`${saldoMonedas} monedas`, saldoMonedas]}>{`Tienes ${saldoMonedas} monedas: podrás usarlas al pagar.`}</TextoResaltado></span></p>
       )}
       <Boton tamano="lg" bloque brillo={!deshabilitado} disabled={deshabilitado} onClick={onPagar}><Texto>{textoBoton}</Texto></Boton>
       {nota && <p className={s.seguro}><Texto>{nota}</Texto></p>}

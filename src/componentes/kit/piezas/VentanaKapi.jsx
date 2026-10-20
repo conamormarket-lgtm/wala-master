@@ -38,18 +38,14 @@ const FRASES = {
 export function VentanaKapi({ abierta, onCerrar, contenida = false, estado = 'feliz', felicidad = 0, alimentado = false, recompensa = 1, hasta, onAlimentar, reto }) {
   const [comiendo, setComiendo] = useState(false);
   const cerrar = () => { if (!comiendo) onCerrar?.(); };
+  // El título (HojaInferior), el botón (Boton) y la felicidad (BarraProgreso) se traducen allá.
   const t = {
-    titulo: useTexto('Tu mascota Kapi'),
     frase: useTexto(FRASES[estado] || FRASES.feliz),
     lleno: useTexto('¡Kapi está lleno por hoy!'),
-    podras: useTexto('Podrás darle de comer en'),
-    ya: useTexto('Ya puedes darle de comer.'),
-    alimentando: useTexto('Alimentando…'),
-    alimentar: useTexto('Alimentar a Kapi'),
     hecho: useTexto('Hecho hoy'),
     disponible: useTexto('Disponible hoy'),
     monedas: useTexto(recompensa === 2 ? '+2 monedas' : '+1 moneda'),
-    felicidad: useTexto('Felicidad'),
+    retrato: useTexto(`Kapi ${comiendo ? 'comiendo' : estado}`),
   };
 
   const alimentar = async (e) => {
@@ -64,16 +60,16 @@ export function VentanaKapi({ abierta, onCerrar, contenida = false, estado = 'fe
   const pie = alimentado ? (
     <div className={s.lleno}>
       <strong>{t.lleno}</strong>
-      {hasta && <CuentaRegresiva variante="frase" hasta={hasta} etiqueta={t.podras} textoFin={t.ya} />}
+      {hasta && <CuentaRegresiva variante="frase" hasta={hasta} etiqueta="Podrás darle de comer en" textoFin="Ya puedes darle de comer." />}
     </div>
   ) : (
     <Boton id="kapi-feed-btn" bloque tamano="lg" cargando={comiendo} icono={<Bone aria-hidden="true" />} onClick={alimentar}>
-      {comiendo ? t.alimentando : t.alimentar}
+      {comiendo ? 'Alimentando…' : 'Alimentar a Kapi'}
     </Boton>
   );
 
   return (
-    <HojaInferior abierta={abierta} onCerrar={cerrar} titulo={t.titulo} pie={pie} contenida={contenida}>
+    <HojaInferior abierta={abierta} onCerrar={cerrar} titulo="Tu mascota Kapi" pie={pie} contenida={contenida}>
       <div className={s.ventana}>
         <p className={s.frase}>{t.frase}</p>
 
@@ -83,7 +79,7 @@ export function VentanaKapi({ abierta, onCerrar, contenida = false, estado = 'fe
           <Destello className={s.destello2} />
           <img
             src={CARAS_KAPI[comiendo ? 'feliz' : estado] || CARAS_KAPI.feliz}
-            alt={`Kapi ${comiendo ? 'comiendo' : estado}`}
+            alt={t.retrato}
             className={[s.kapi, comiendo && s.comiendo].filter(Boolean).join(' ')}
             draggable={false}
           />
@@ -97,7 +93,7 @@ export function VentanaKapi({ abierta, onCerrar, contenida = false, estado = 'fe
         </div>
 
         <div id="kapi-stats">
-          <BarraProgreso valor={felicidad} max={100} minimo={0} etiqueta={t.felicidad} />
+          <BarraProgreso valor={felicidad} max={100} minimo={0} etiqueta="Felicidad" />
         </div>
 
         {reto && <RetoSemanal {...reto} />}

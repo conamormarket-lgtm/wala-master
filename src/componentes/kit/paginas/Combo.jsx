@@ -71,8 +71,6 @@ export function PaginaCombo({
   const t = {
     nota: useTexto('Incluye la impresión de todos tus diseños.'),
     ahorro: useTexto(`Ahorras ${soles(ahorro)} frente a comprarlas por separado.`),
-    detalles: useTexto('Detalles del combo'),
-    sobre: useTexto('Sobre el combo'),
     descripcion: useTexto(combo.descripcion || ''),
   };
 
@@ -246,7 +244,7 @@ export function PaginaCombo({
         items={[
           {
             id: 'detalles',
-            question: t.detalles,
+            question: 'Detalles del combo', // Acordeon traduce la pregunta
             answer: (
               <div className={s.detalles}>
                 <dl>
@@ -262,7 +260,7 @@ export function PaginaCombo({
               </div>
             ),
           },
-          mio && combo.descripcion && { id: 'sobre', question: t.sobre, answer: <p className={s.nota}>{t.descripcion}</p> },
+          mio && combo.descripcion && { id: 'sobre', question: 'Sobre el combo', answer: <p className={s.nota}>{t.descripcion}</p> },
         ].filter(Boolean)}
       />
 

@@ -118,6 +118,7 @@ export function FilaPiezaCombo({
   const t = {
     ver: useTexto(`Ver la prenda ${i + 1}`),
     lista: useTexto('Lista'),
+    sinNombre: useTexto('Mi creación'),
   };
   return (
     <li className={[s.pieza, lista && s.piezaLista].filter(Boolean).join(' ')} data-componente="FilaPiezaCombo">
@@ -134,7 +135,7 @@ export function FilaPiezaCombo({
             : <p className={s.piezaAyuda}><Texto>Cargando el diseño…</Texto></p>
         ) : disenada ? (
           <>
-            <TituloEditable nombre={nombre || 'Mi creación'} onRenombrar={onRenombrar} como="strong" />
+            <TituloEditable nombre={nombre || t.sinNombre} onRenombrar={onRenombrar} como="strong" />
             {(color?.nombre || lados.length > 0) && (
               <span className={s.piezaDatos}>
                 {color?.nombre && <><span className={s.piezaColor} style={{ background: color.fondo }} aria-hidden="true" /> <Texto>{color.nombre}</Texto></>}

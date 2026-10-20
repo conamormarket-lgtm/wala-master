@@ -4,6 +4,7 @@ import Boton from '../Boton';
 import { Trazo, Puntos, Destello } from '../Marca';
 import { toDirectImageUrl } from '../../../utils/imageUrl';
 import { atributosDeFoto } from '../../../components/common/OptimizedImage/OptimizedImage';
+import { Texto, useTexto } from '../Traduccion';
 import { iniciales } from './Avatar';
 import { FotoProducto } from './FotoProducto';
 import s from './PortadaMarca.module.css';
@@ -36,9 +37,10 @@ export function PortadaMarca({
     ofertas > 0 && { icono: Tag, texto: ofertas >= cuenta ? 'Todo en oferta' : `${ofertas} en oferta` },
     categorias > 1 && { icono: LayoutGrid, texto: `${categorias} categorías` },
   ].filter(Boolean);
+  const altLogo = useTexto(`Logo de ${nombre}`);
   const sticker = (grande) => (
     <span className={[s.logo, grande && s.logoGrande].filter(Boolean).join(' ')}>
-      {logo ? <img {...atributosDeFoto(toDirectImageUrl(logo), '200px')} alt={grande ? '' : `Logo de ${nombre}`} loading="eager" decoding="async" /> : <strong>{iniciales(nombre) || '?'}</strong>}
+      {logo ? <img {...atributosDeFoto(toDirectImageUrl(logo), '200px')} alt={grande ? '' : altLogo} loading="eager" decoding="async" /> : <strong>{iniciales(nombre) || '?'}</strong>}
     </span>
   );
   return (
@@ -55,7 +57,7 @@ export function PortadaMarca({
           {nombre}
           <Trazo className={s.trazo} />
         </h1>
-        {frase && <p className={s.frase}>{frase}</p>}
+        {frase && <p className={s.frase}><Texto>{frase}</Texto></p>}
         <div className={s.acciones}>
           <Boton
             to={urlBoton}
@@ -70,7 +72,7 @@ export function PortadaMarca({
         {cifras.length > 0 && (
           <ul className={s.cifras}>
             {cifras.map(({ icono: Icono, texto }) => (
-              <li key={texto} className={s.cifra}><Icono aria-hidden="true" />{texto}</li>
+              <li key={texto} className={s.cifra}><Icono aria-hidden="true" /><Texto>{texto}</Texto></li>
             ))}
           </ul>
         )}

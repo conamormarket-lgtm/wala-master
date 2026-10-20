@@ -150,13 +150,11 @@ export function Cabecera({
   const noLeidas = notificaciones.filter((n) => !n.leida).length;
   const enCarrito = carrito.reduce((a, it) => a + it.cantidad, 0);
 
+  // El buscador, las hojas y los menús traducen sus títulos: les llegan tal cual.
   const t = {
     inicio: useTexto('Walá, inicio'),
     principal: useTexto('Principal'),
     sugerencias: useTexto('Sugerencias de búsqueda'),
-    buscar: useTexto('Buscar'),
-    placeholder: useTexto(placeholder),
-    notificaciones: useTexto('Notificaciones'),
     campana: useTexto(`Notificaciones (${noLeidas} sin leer)`),
     favoritos: useTexto(`Favoritos (${favoritos.length})`),
     carrito: useTexto(`Carrito (${enCarrito})`),
@@ -244,7 +242,7 @@ export function Cabecera({
       </nav>
 
       <div className={s.buscadorCaja} ref={cajaRef}>
-        <Buscador placeholder={t.placeholder} onBuscar={busqueda.activo ? busqueda.buscar : onBuscar} {...busqueda.campo} />
+        <Buscador placeholder={placeholder} onBuscar={busqueda.activo ? busqueda.buscar : onBuscar} {...busqueda.campo} />
         {busqueda.abierto && !busqueda.enHoja && (
           <div className={s.panelBusqueda} role="dialog" aria-label={t.sugerencias}>
             <ConMenu><PanelBusqueda {...busqueda.panel} /></ConMenu>
@@ -252,7 +250,7 @@ export function Cabecera({
         )}
       </div>
       {busqueda.activo && (
-        <HojaInferior abierta={busqueda.abierto && busqueda.enHoja} onCerrar={busqueda.cerrar} titulo={t.buscar}>
+        <HojaInferior abierta={busqueda.abierto && busqueda.enHoja} onCerrar={busqueda.cerrar} titulo="Buscar">
           <ConMenu><PanelBusqueda {...busqueda.panel} conCampo /></ConMenu>
         </HojaInferior>
       )}
@@ -280,7 +278,7 @@ export function Cabecera({
 
         {usuario && (
           <Desplegable
-            titulo={t.notificaciones}
+            titulo="Notificaciones"
             ancho={370}
             {...control('notificaciones')}
             disparador={(props) => (
@@ -378,7 +376,7 @@ export function Cabecera({
         {cuenta && (
         <span className={s.ocultarMovil}>
         <Desplegable
-          titulo={t.cuenta}
+          titulo="Mi cuenta"
           ancho={340}
           {...control('cuenta')}
           disparador={(props) => (
@@ -456,8 +454,9 @@ export { BarraInferior } from './BarraInferior';
 /** Control segmentado (Mis pedidos: Activos / Por pagar…). El fondo blanco se desliza. */
 export function Pestanas({ opciones, valor, onChange, etiqueta }) {
   const uid = useId();
+  const nombre = useTexto(etiqueta);
   return (
-    <div className={s.pestanas} role="tablist" aria-label={etiqueta}>
+    <div className={s.pestanas} role="tablist" aria-label={nombre}>
       {opciones.map((o) => {
         const op = typeof o === 'string' ? { id: o, texto: o } : o;
         const sel = valor === op.id;
@@ -472,7 +471,7 @@ export function Pestanas({ opciones, valor, onChange, etiqueta }) {
           >
             {sel && <motion.span layoutId={`${uid}-pestana`} className={s.pestanaFondo} transition={RESORTE} />}
             <span className={s.pestanaTexto}>
-              {op.texto}
+              <Texto>{op.texto}</Texto>
               {op.cuenta != null && <span className={s.cuenta}>{op.cuenta}</span>}
             </span>
           </button>

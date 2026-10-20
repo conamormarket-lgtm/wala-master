@@ -16,6 +16,7 @@ import { HojaPersona, validarPersona } from '../piezas/FormularioPersona';
 import { IdeaRegalo } from '../piezas/Regalos';
 import { Hueso, EsqueletoFormulario } from '../Esqueletos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
+import { TextoResaltado } from '../piezas/TextoResaltado';
 import { Texto, useTexto } from '../Traduccion';
 import s from './Encuesta.module.css';
 
@@ -80,14 +81,13 @@ function CabezaPaso({ Icono, tono, titulo, subtitulo, trazo = false }) {
   );
 }
 
-/** Una pregunta de "Un poco sobre ti" (la etiqueta y el error, traducidos). */
+/** Una pregunta de "Un poco sobre ti" (Campo traduce la etiqueta y el error; las opciones van traducidas). */
 function PreguntaSobreTi({ campo, valor, error, onCambiar }) {
-  const etiqueta = useTexto(campo.etiqueta);
   const elige = useTexto('Elige…');
   return (
     <Campo
       id={`encuesta-${campo.id}`}
-      etiqueta={etiqueta}
+      etiqueta={campo.etiqueta}
       error={error && <Texto>{error}</Texto>}
       opciones={campo.tipo === 'opciones' ? [{ valor: '', texto: elige, deshabilitada: true }, ...(campo.opciones || []).map((o) => ({ valor: o, texto: o }))] : undefined}
       value={valor || ''}
@@ -146,9 +146,8 @@ export function PaginaEncuesta({
   const [agregadas, setAgregadas] = useState([]);
   const t = {
     progreso: useTexto(paso === 4 ? '¡Listo!' : `Paso ${Math.min(Math.max(paso, 1), 3)} de 3`),
-    cumpleanos: useTexto('Tu cumpleaños'),
-    opcional: useTexto('Opcional.'),
-    aQuienes: useTexto('A quiénes sueles regalar'),
+    // El enlace va dentro de la frase: se busca ya traducido en la frase traducida.
+    fechas: useTexto('Fechas importantes'),
   };
   const empezo = paso > 0;
   useEffect(() => { if (empezo) onEmpezar?.(); }, [empezo]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -294,8 +293,9 @@ export function PaginaEncuesta({
         <div className={s.premio}>
           <Moneda tamano={30} className={s.premioMoneda} />
           <p>
-            <strong><Texto>{`Gana ${recompensa.base} monedas`}</Texto></strong> <Texto>al terminar y</Texto> <strong><Texto>{`${recompensa.porFecha} más`}</Texto></strong>{' '}
-            <Texto>{`por cada fecha importante que registres (hasta ${recompensa.tope}). Úsalas como descuento en tus compras.`}</Texto>
+            <TextoResaltado resaltar={[`Gana ${recompensa.base} monedas`, `${recompensa.porFecha} más`]}>
+              {`Gana ${recompensa.base} monedas al terminar y ${recompensa.porFecha} más por cada fecha importante que registres (hasta ${recompensa.tope}). Úsalas como descuento en tus compras.`}
+            </TextoResaltado>
           </p>
         </div>
         <p className={s.texto}><Texto>Completa esta encuesta para recibir recomendaciones y regalos a la medida de cada persona. Es muy rápido: 3 pasos.</Texto></p>
@@ -321,8 +321,8 @@ export function PaginaEncuesta({
           ))}
           <CampoFecha
             id="encuesta-cumpleanos"
-            etiqueta={t.cumpleanos}
-            ayuda={t.opcional}
+            etiqueta="Tu cumpleaños"
+            ayuda="Opcional."
             valor={cumpleanos}
             onCambiar={setCumpleanos}
             vistaInicial="anios"
@@ -339,7 +339,7 @@ export function PaginaEncuesta({
     cuerpo = (
       <>
         <CabezaPaso Icono={Users} titulo="¿A quiénes sueles regalar?" subtitulo="Elige todos los que quieras. Después nos cuentas de cada uno." />
-        <ElegirVarios etiqueta={t.aQuienes} opciones={GRUPOS_ENCUESTA} valores={grupos} onCambiar={(v) => { setGrupos(v); setAviso(null); }} />
+        <ElegirVarios etiqueta="A quiénes sueles regalar" opciones={GRUPOS_ENCUESTA} valores={grupos} onCambiar={(v) => { setGrupos(v); setAviso(null); }} />
         <Acciones>
           <Boton variante="fantasma" icono={<ArrowLeft aria-hidden="true" />} onClick={() => ir(1, true)}><Texto>Atrás</Texto></Boton>
           <Boton iconoFin={<ArrowRight aria-hidden="true" />} onClick={seguirGrupos}>
@@ -403,7 +403,7 @@ export function PaginaEncuesta({
             <h2 id="encuesta-ideas" className={s.ideasTitulo}><Gift aria-hidden="true" /> <Texto>Ya tenemos ideas de regalo</Texto></h2>
             {conIdeas.map((x) => (
               <div key={x.id} className={s.ideasPersona}>
-                <p className={s.ideasPara}><Texto>Para</Texto> {x.nombre}</p>
+                <p className={s.ideasPara}><Texto>{`Para ${x.nombre}`}</Texto></p>
                 <ul className={s.ideasLista}>
                   {x.ideas.slice(0, 3).map((i) => (
                     <IdeaRegalo
@@ -421,7 +421,9 @@ export function PaginaEncuesta({
         <p className={s.consejo}>
           <CalendarHeart aria-hidden="true" />
           <span>
-            <Texto>Desde ahora puedes agregar personas y fechas en</Texto> <Enlace to={urlFechas} className={s.consejoEnlace}><Texto>Fechas importantes</Texto></Enlace><Texto>, dentro de tu cuenta.</Texto>
+            <TextoResaltado resaltar={[t.fechas]} envolver={(parte, k) => <Enlace key={k} to={urlFechas} className={s.consejoEnlace}>{parte}</Enlace>}>
+              Desde ahora puedes agregar personas y fechas en Fechas importantes, dentro de tu cuenta.
+            </TextoResaltado>
           </span>
         </p>
         <Acciones centro>

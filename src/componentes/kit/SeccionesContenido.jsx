@@ -10,7 +10,7 @@ import { toDirectImageUrl } from '../../utils/imageUrl';
 import { atributosDeFoto } from '../../components/common/OptimizedImage/OptimizedImage';
 import { TarjetaMarca } from "./piezas/TarjetaMarca";
 import { TarjetaDestacado } from "./piezas/TarjetaDestacado";
-import { Texto } from './Traduccion';
+import { Texto, useTexto } from './Traduccion';
 import s from './SeccionesContenido.module.css';
 
 /*
@@ -118,7 +118,7 @@ export function Encabezado({ ajustes = {}, children }) {
   if (!title && !subtitle) return null;
   return (
     <div className={[s.encabezado, compact && s.compacto, textAlign === 'center' && s.centrado, textAlign === 'right' && s.derecha].filter(Boolean).join(' ')} style={{ textAlign }}>
-      {ajustes.eyebrow && <p className={s.encabezadoEtiqueta}><EtiquetaColgante tono="suave">{ajustes.eyebrow}</EtiquetaColgante></p>}
+      {ajustes.eyebrow && <p className={s.encabezadoEtiqueta}><EtiquetaColgante tono="suave"><Texto>{ajustes.eyebrow}</Texto></EtiquetaColgante></p>}
       <TextoCampo
         ajustes={ajustes}
         campo="title"
@@ -243,6 +243,7 @@ export function BloqueVideo({ ajustes = {} }) {
   const [quieto] = useState(prefiereQuieto);
   const automatico = ajustes.autoplay !== false && !quieto;
   const incrustado = url ? videoIncrustado(url) : null;
+  const tituloVideo = useTexto(incrustado ? ajustes.title || 'Video' : undefined);
 
   useEffect(() => {
     const v = video.current;
@@ -271,7 +272,7 @@ export function BloqueVideo({ ajustes = {} }) {
     <div className={[s.video, formato && s.videoFijo].filter(Boolean).join(' ')} style={estilo}>
       {incrustado ? (
         <iframe
-          title={ajustes.title || 'Video'}
+          title={tituloVideo}
           src={incrustado}
           loading="lazy"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

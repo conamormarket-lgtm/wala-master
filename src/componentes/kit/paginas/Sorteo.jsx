@@ -78,10 +78,8 @@ export function PaginaSorteo({
   const t = {
     porTicket: useTexto(`${soles(sorteo.precioTicket, moneda)} por ticket`),
     gratis: useTexto('Gratis'),
-    hoja: useTexto(compra ? 'Elige cómo pagar' : 'Tus datos para participar'),
     tickets: useTexto(cantidad === 1 ? '1 ticket' : `${cantidad} tickets`),
     nota: useTexto(`Con estos datos ${pagadoTipo ? 'generamos tu ticket' : 'validamos tu participación'} y te contactamos si ganas.`),
-    correo: useTexto('Correo (opcional)'),
   };
 
   if (estado === 'cargando') return <EsqueletoPagina forma="sorteo" />;
@@ -245,7 +243,7 @@ export function PaginaSorteo({
       <HojaInferior
         abierta={hoja}
         onCerrar={() => { if (!enviando && !paypal.procesando) setHoja(false); }}
-        titulo={t.hoja}
+        titulo={compra ? 'Elige cómo pagar' : 'Tus datos para participar'}
         pie={!compra && (
           <Boton bloque cargando={enviando} onClick={enviar}><Texto>{pagadoTipo ? 'Continuar al pago' : 'Participar'}</Texto></Boton>
         )}
@@ -278,7 +276,7 @@ export function PaginaSorteo({
               cumpleanos={false}
               disabled={enviando}
             />
-            <Campo etiqueta={t.correo} type="email" value={datos.correo || ''} onChange={(e) => setDatos((d) => ({ ...d, correo: e.target.value }))} disabled={enviando} />
+            <Campo etiqueta="Correo (opcional)" type="email" value={datos.correo || ''} onChange={(e) => setDatos((d) => ({ ...d, correo: e.target.value }))} disabled={enviando} />
             {pagadoTipo && (
               <div className={s.tickets}>
                 <span><Texto>Tickets</Texto></span>

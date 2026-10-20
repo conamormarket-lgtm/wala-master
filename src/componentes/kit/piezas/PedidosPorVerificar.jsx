@@ -4,7 +4,8 @@ import Boton from '../Boton';
 import { Aviso } from '../Feedback';
 import { Etiqueta } from '../Etiquetas';
 import { Campo } from '../Formulario';
-import { Texto, useTexto } from '../Traduccion';
+import { Texto } from '../Traduccion';
+import { TextoResaltado } from './TextoResaltado';
 import { TarjetaCuenta } from './Cuenta';
 import s from './PedidosPorVerificar.module.css';
 
@@ -13,8 +14,6 @@ function FormVincular({ referencia, onVincular }) {
   const [telefono, setTelefono] = useState('');
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
-  const tNumero = useTexto('Número de pedido');
-  const tTelefono = useTexto('Teléfono con el que compraste');
   const vincular = async (e) => {
     e.preventDefault();
     setEnviando(true);
@@ -30,11 +29,11 @@ function FormVincular({ referencia, onVincular }) {
   return (
     <form className={s.form} onSubmit={vincular} noValidate>
       <div className={s.fila}>
-        <Campo etiqueta={tNumero} value={numero} onChange={(e) => setNumero(e.target.value.toUpperCase())} placeholder="Ej. PD-LQ3X9K2" autoCapitalize="characters" autoComplete="off" spellCheck={false} />
+        <Campo etiqueta="Número de pedido" value={numero} onChange={(e) => setNumero(e.target.value.toUpperCase())} placeholder="Ej. PD-LQ3X9K2" autoCapitalize="characters" autoComplete="off" spellCheck={false} />
         {/* Como antes: dígitos, + y espacios (un número de fuera del Perú también;
             el servidor compara los últimos dígitos). */}
         <Campo
-          etiqueta={tTelefono}
+          etiqueta="Teléfono con el que compraste"
           type="tel"
           inputMode="tel"
           autoComplete="tel"
@@ -119,7 +118,7 @@ export function PedidosPorVerificar({ pendientes = [], correoVerificado = false,
               <Etiqueta tono="violeta" punto><Texto>{p.fase || 'Recibido'}</Texto></Etiqueta>
             </div>
             {p.pistaCorreo && !p.mismoCorreo && (
-              <p className={s.pista}><Texto>Se hizo con el correo</Texto> <strong>{p.pistaCorreo}</strong>. <Texto>Si es tuyo, inicia sesión con ese correo para verlo.</Texto></p>
+              <p className={s.pista}><TextoResaltado resaltar={[p.pistaCorreo]}>{`Se hizo con el correo ${p.pistaCorreo}.`}</TextoResaltado> <Texto>Si es tuyo, inicia sesión con ese correo para verlo.</Texto></p>
             )}
             {onVincular && (abierto === p.ref ? (
               <FormVincular referencia={p.ref} onVincular={onVincular} />

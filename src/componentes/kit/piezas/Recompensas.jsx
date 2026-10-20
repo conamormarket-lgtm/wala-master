@@ -4,6 +4,7 @@ import Boton from '../Boton';
 import { CostoMonedas, GananciaMonedas, Moneda } from '../Etiquetas';
 import { Sello } from '../Marca';
 import { Texto, useTexto } from '../Traduccion';
+import { TextoResaltado } from './TextoResaltado';
 import { IconoWala } from '../IconosWala';
 import { FotoProducto } from './FotoProducto';
 import { BarraProgreso } from './BarraProgreso';
@@ -195,24 +196,23 @@ export function NivelCuenta({ xp = 0, niveles = NIVELES }) {
   const k = Math.max(0, orden.reduce((acc, n, i) => (xp >= n.min ? i : acc), 0));
   const actual = orden[k];
   const siguiente = orden[k + 1];
-  const etiquetaBarra = useTexto(siguiente ? `Progreso hacia el nivel ${siguiente.nombre}` : 'Nivel máximo');
   return (
     <section className={s.nivel} data-componente="NivelCuenta">
       <div className={s.nivelCabeza}>
         <Sello tamano={52} tono={TONO_NIVEL[actual.clave] || 'degradado'}>{iconoNivel(actual.clave)}</Sello>
         <div className={s.nivelTextos}>
           <h2 className={s.nivelNombre}><Texto>Nivel</Texto> <Texto>{actual.nombre}</Texto></h2>
-          <p className={s.nivelXp}><strong>{miles(xp)}</strong> <Texto>XP acumulada</Texto></p>
+          <p className={s.nivelXp}><TextoResaltado resaltar={[miles(xp)]}>{`${miles(xp)} XP acumulada`}</TextoResaltado></p>
         </div>
         <p className={s.nivelFalta}>
-          {siguiente ? <><Texto>Faltan</Texto> <strong>{miles(siguiente.min - xp)} XP</strong> <Texto>para</Texto> <Texto>{siguiente.nombre}</Texto></> : <Texto>¡Nivel máximo alcanzado!</Texto>}
+          {siguiente ? <TextoResaltado resaltar={[`${miles(siguiente.min - xp)} XP`]}>{`Faltan ${miles(siguiente.min - xp)} XP para ${siguiente.nombre}`}</TextoResaltado> : <Texto>¡Nivel máximo alcanzado!</Texto>}
         </p>
       </div>
       <BarraProgreso
         valor={siguiente ? xp - actual.min : 1}
         max={siguiente ? siguiente.min - actual.min : 1}
         minimo={4}
-        ariaLabel={etiquetaBarra}
+        ariaLabel={siguiente ? `Progreso hacia el nivel ${siguiente.nombre}` : 'Nivel máximo'}
       />
       <ol className={s.escala}>
         {orden.map((n, i) => (

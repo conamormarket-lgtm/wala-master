@@ -1,7 +1,23 @@
 import React from 'react';
 import { Star } from 'lucide-react';
 import './NuevosUsuariosPage.module.css';
-import { T } from '../i18n/useTranslatedText';
+import { T, useTranslatedText } from '../i18n/useTranslatedText';
+import { useLanguage } from '../contexts/LanguageContext';
+
+// Una foto con su texto alternativo traducido.
+function ImagenTraducida({ alt, ...props }) {
+  const altTraducido = useTranslatedText(alt);
+  return <img {...props} alt={altTraducido} />;
+}
+
+// Frases con formato (saltos de línea, negritas, una imagen en medio): en
+// español se muestran tal cual; en otro idioma va `texto`, la frase entera
+// traducida y sin el formato, para no traducirla a trozos.
+function FraseConFormato({ texto, children }) {
+  const { lang } = useLanguage();
+  const traducido = useTranslatedText(texto);
+  return lang === 'es' ? children : traducido;
+}
 
 const NuevosUsuariosPage = () => {
   const [vsSlideIndex, setVsSlideIndex] = React.useState(0);
@@ -129,7 +145,7 @@ const NuevosUsuariosPage = () => {
         </video>
       );
     }
-    return <img className={className} src={src} alt={alt} style={style} />;
+    return <ImagenTraducida className={className} src={src} alt={alt} style={style} />;
   };
 
   return (
@@ -622,8 +638,10 @@ const NuevosUsuariosPage = () => {
 
             {/* Título Principal (Responsivo) */}
             <h1 className="hero-title">
-              Convierte tus Mejores Recuerdos <br />
-              en {renderMedia(`${process.env.PUBLIC_URL}/diseno/abrazos.png`, 'Abrazos', {}, 'hero-abrazos-img')} que Duran para Siempre.
+              <FraseConFormato texto="Convierte tus Mejores Recuerdos en abrazos que Duran para Siempre.">
+                Convierte tus Mejores Recuerdos <br />
+                en {renderMedia(`${process.env.PUBLIC_URL}/diseno/abrazos.png`, 'Abrazos', {}, 'hero-abrazos-img')} que Duran para Siempre.
+              </FraseConFormato>
             </h1>
 
             {/* Label estilo botón (Responsivo) */}
@@ -700,12 +718,16 @@ const NuevosUsuariosPage = () => {
           }}>
             <p className="text-block-general" style={{ lineHeight: '1.3', color: '#ffffff', textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
               <strong className="text-block-title" style={{ color: '#292929', textShadow: 'none' }}>
-                <span style={{ fontFamily: 'Georgia, serif' }}>¿</span>Por qué regalar algo personalizado?
+                <FraseConFormato texto="¿Por qué regalar algo personalizado?">
+                  <span style={{ fontFamily: 'Georgia, serif' }}>¿</span>Por qué regalar algo personalizado?
+                </FraseConFormato>
               </strong> <br />
               <span style={{ fontFamily: 'Arial, sans-serif', textShadow: '2px 2px 6px rgba(0, 0, 0, 0.8)' }}>
-                Por que hay fechas que merecen más que un <strong style={{ color: '#292929', textShadow: 'none' }}>regalo</strong> <br />
-                de último minuto. Un detalle <strong style={{ color: '#292929', textShadow: 'none' }}>personalizado</strong> se usa, <br />
-                se abraza y <strong style={{ color: '#292929', textShadow: 'none' }}><T>se guarda para siempre.</T></strong>
+                <FraseConFormato texto="Por que hay fechas que merecen más que un regalo de último minuto. Un detalle personalizado se usa, se abraza y se guarda para siempre.">
+                  Por que hay fechas que merecen más que un <strong style={{ color: '#292929', textShadow: 'none' }}>regalo</strong> <br />
+                  de último minuto. Un detalle <strong style={{ color: '#292929', textShadow: 'none' }}>personalizado</strong> se usa, <br />
+                  se abraza y <strong style={{ color: '#292929', textShadow: 'none' }}>se guarda para siempre.</strong>
+                </FraseConFormato>
               </span>
             </p>
           </div>
@@ -762,7 +784,7 @@ const NuevosUsuariosPage = () => {
 
                         {/* Caja Izquierda */}
                         <div className="vs-box" style={{ position: 'relative' }}>
-                          <div style={{ position: 'absolute', top: '10px', left: '10px', backgroundColor: badgeBg, color: '#ffffff', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold', zIndex: 5, fontFamily: 'Arial, sans-serif' }}>{labelText}</div>
+                          <div style={{ position: 'absolute', top: '10px', left: '10px', backgroundColor: badgeBg, color: '#ffffff', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold', zIndex: 5, fontFamily: 'Arial, sans-serif' }}><T>{labelText}</T></div>
                           {renderMedia(
                             slide.left.startsWith('http') ? slide.left : `${process.env.PUBLIC_URL}/diseno/${slide.left}`,
                             'Opción Común',
@@ -799,7 +821,7 @@ const NuevosUsuariosPage = () => {
 
                         {/* Caja Derecha */}
                         <div className="vs-box" style={{ position: 'relative' }}>
-                          <div style={{ position: 'absolute', top: '10px', right: '10px', backgroundColor: badgeBg, color: '#ffffff', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold', zIndex: 5, fontFamily: 'Arial, sans-serif' }}>{labelText}</div>
+                          <div style={{ position: 'absolute', top: '10px', right: '10px', backgroundColor: badgeBg, color: '#ffffff', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold', zIndex: 5, fontFamily: 'Arial, sans-serif' }}><T>{labelText}</T></div>
                           {renderMedia(
                             slide.right.startsWith('http') ? slide.right : `${process.env.PUBLIC_URL}/diseno/${slide.right}`,
                             'Nuestra App',
@@ -835,7 +857,7 @@ const NuevosUsuariosPage = () => {
               userSelect: 'none',
               WebkitUserSelect: 'none',
             }}>
-              Descubre la Diferencia
+              <T>Descubre la Diferencia</T>
             </div>
 
           </div>
@@ -863,7 +885,7 @@ const NuevosUsuariosPage = () => {
               textAlign: 'center'
             }}>
               <span style={{ fontFamily: 'Georgia, serif' }}>
-                Empresas con las que trabajamos
+                <T>Empresas con las que trabajamos</T>
               </span>
             </div>
 
@@ -941,17 +963,19 @@ const NuevosUsuariosPage = () => {
               zIndex: 3    /* 👈 ORDEN DE CAPAS (3 está hasta el frente) */
             }}>
               <h3 className="text-block-general kapi-text-1" style={{ textAlign: 'left', color: '#000000', margin: '0', lineHeight: '1.2', fontFamily: 'Georgia, serif' }}>
-                Toma la decisión de regalar diferente
+                <T>Toma la decisión de regalar diferente</T>
               </h3>
               <p className="text-block-general kapi-text-2" style={{ textAlign: 'left', maxWidth: '100%', color: '#FF8B6F', fontWeight: 'bold', margin: '0', lineHeight: '1.2' }}>
-                ¡Y llévate S/15 de regalos hoy mismo!
+                <T>¡Y llévate S/15 de regalos hoy mismo!</T>
               </p>
               <p className="text-block-general kapi-text-3" style={{ textAlign: 'left', maxWidth: '100%', color: '#000000', margin: '0', lineHeight: '1.1', fontFamily: 'Georgia, serif' }}>
-                Descarga la app de Wala y empieza<br />
-                a crear regalos con verdadero significado.<br />
-                Al completar tus fechas importantes,<br />
-                recibirás S/.15 en monedas como<br />
-                regalo de Bienvenida.
+                <FraseConFormato texto="Descarga la app de Wala y empieza a crear regalos con verdadero significado. Al completar tus fechas importantes, recibirás S/.15 en monedas como regalo de Bienvenida.">
+                  Descarga la app de Wala y empieza<br />
+                  a crear regalos con verdadero significado.<br />
+                  Al completar tus fechas importantes,<br />
+                  recibirás S/.15 en monedas como<br />
+                  regalo de Bienvenida.
+                </FraseConFormato>
               </p>
             </div>
 
@@ -1000,10 +1024,12 @@ const NuevosUsuariosPage = () => {
               textAlign: 'center',
               fontFamily: 'Arial, sans-serif'
             }}>
-              Ellos ya están Regalando <br />
-              <span className="banner-line2">
-                Momentos inolvidables...
-              </span>
+              <FraseConFormato texto="Ellos ya están Regalando Momentos inolvidables...">
+                Ellos ya están Regalando <br />
+                <span className="banner-line2">
+                  Momentos inolvidables...
+                </span>
+              </FraseConFormato>
             </h2>
           </div>
 
@@ -1081,12 +1107,12 @@ const NuevosUsuariosPage = () => {
 
                           {/* Parte 3: Título */}
                           <h3 className="review-title" style={{ margin: 0, fontWeight: '900', textAlign: 'center' }}>
-                            {review.title}
+                            <T>{review.title}</T>
                           </h3>
 
                           {/* Parte 4: Reseña */}
                           <p className="review-desc" style={{ margin: 0, textAlign: 'center', fontFamily: 'Arial, sans-serif' }}>
-                            {review.review}
+                            <T>{review.review}</T>
                           </p>
 
                           {/* Parte 5: Estrellas */}
@@ -1119,7 +1145,7 @@ const NuevosUsuariosPage = () => {
             marginBottom: '2rem'
           }}>
             <h2 className="enc-main-title" style={{ fontFamily: 'Arial, sans-serif' }}>
-              ¡ENCUÉNTRANOS!
+              <T>¡ENCUÉNTRANOS!</T>
             </h2>
 
             <div className="enc-container">
@@ -1138,7 +1164,7 @@ const NuevosUsuariosPage = () => {
                     {renderMedia(`${process.env.PUBLIC_URL}/diseno/ubicación.png`, 'Ubicación', {}, 'enc-white-icon')}
                     {/* Texto */}
                     <span className="enc-white-text" style={{ fontFamily: 'Arial, sans-serif' }}>
-                      Visita nuestra Fisica de:
+                      <T>Visita nuestra Fisica de:</T>
                     </span>
                   </div>
 
@@ -1147,13 +1173,15 @@ const NuevosUsuariosPage = () => {
                     {/* Primera subdivision izquierda inferior (20%) */}
                     <div className="enc-sub-izq">
                       <span className="enc-no-llegues">
-                        ¡No llegues <br className="hide-mobile" /> tarde!...
+                        <FraseConFormato texto="¡No llegues tarde!...">
+                          ¡No llegues <br className="hide-mobile" /> tarde!...
+                        </FraseConFormato>
                       </span>
                     </div>
                     {/* Segunda subdivision derecha inferior (70%) */}
                     <div className="enc-sub-der">
                       <span className="enc-horario" style={{ fontFamily: 'Arial, sans-serif' }}>
-                        Lunes a Viernes 9am a 6pm
+                        <T>Lunes a Viernes 9am a 6pm</T>
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'center', gap: '5px', marginLeft: '10px' }}>
                         {/* Botón Izquierdo */}
@@ -1217,10 +1245,10 @@ const NuevosUsuariosPage = () => {
           <div className="terms-container" style={{ fontFamily: 'Arial, sans-serif' }}>
             <h4 className="terms-title"><T>Términos, Condiciones y Privacidad</T></h4>
             <p className="terms-text">
-              La descarga y el uso de la aplicación Wala están sujetos a nuestros Términos y Condiciones y Política de Privacidad. Al acceder a nuestros servicios, el usuario acepta el tratamiento de sus datos de acuerdo con las leyes aplicables. La bonificación de S/15 en monedas es una promoción exclusiva para nuevos usuarios que descarguen la app y completen su perfil de fechas importantes, sujeta a disponibilidad y posibles modificaciones sin previo aviso. Google Play y el logotipo de Google Play son marcas comerciales de Google LLC. Las imágenes, mockups e interfaces aquí presentadas son estrictamente referenciales.
+              <T>La descarga y el uso de la aplicación Wala están sujetos a nuestros Términos y Condiciones y Política de Privacidad. Al acceder a nuestros servicios, el usuario acepta el tratamiento de sus datos de acuerdo con las leyes aplicables. La bonificación de S/15 en monedas es una promoción exclusiva para nuevos usuarios que descarguen la app y completen su perfil de fechas importantes, sujeta a disponibilidad y posibles modificaciones sin previo aviso. Google Play y el logotipo de Google Play son marcas comerciales de Google LLC. Las imágenes, mockups e interfaces aquí presentadas son estrictamente referenciales.</T>
             </p>
             <p className="terms-copy">
-              &copy; {new Date().getFullYear()} Wala. Todos los derechos reservados.
+              &copy; {new Date().getFullYear()} Wala. <T>Todos los derechos reservados.</T>
             </p>
           </div>
 

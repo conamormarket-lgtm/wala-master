@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useTexto } from './Traduccion';
 import s from './CuentaRegresiva.module.css';
 import { textoEspera } from '../../utils/fechaLima';
 
@@ -29,10 +30,22 @@ export default function CuentaRegresiva({ hasta, horas, clave = 'wala_oferta_fin
     return () => window.clearInterval(id);
   }, [fin]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!fin) return null;
-  if (restante <= 0) return <span className={s.fin}>{textoFin}</span>;
-
   const total = Math.floor(restante / 1000);
+  const conHoras = variante === 'evento' || variante === 'bloques';
+  const t = {
+    etiqueta: useTexto(etiqueta),
+    fin: useTexto(textoFin),
+    // Para lectores de pantalla, la frase entera (cambia una vez por minuto).
+    tiempo: useTexto(conHoras ? `${etiqueta} ${Math.floor(total / 3600)} horas ${Math.floor((total % 3600) / 60)} minutos` : undefined),
+    // Los rótulos cortos salen de la palabra entera: "min" de "minutos".
+    horas: useTexto(variante === 'evento' ? 'horas' : undefined),
+    minutos: useTexto(variante === 'evento' ? 'minutos' : undefined),
+    segundos: useTexto(variante === 'evento' ? 'segundos' : undefined),
+  };
+
+  if (!fin) return null;
+  if (restante <= 0) return <span className={s.fin}>{t.fin}</span>;
+
   const partes = [
     ['h', Math.floor(total / 3600)],
     ['m', Math.floor((total % 3600) / 60)],
@@ -41,9 +54,9 @@ export default function CuentaRegresiva({ hasta, horas, clave = 'wala_oferta_fin
   const dos = (n) => String(n).padStart(2, '0');
 
   if (variante === 'evento') {
-    const nombres = { h: 'horas', m: 'min', s: 'seg' };
+    const nombres = { h: t.horas, m: t.minutos.slice(0, 3), s: t.segundos.slice(0, 3) };
     return (
-      <div className={s.evento} role="timer" aria-label={`${etiqueta} ${partes[0][1]} horas ${partes[1][1]} minutos`}>
+      <div className={s.evento} role="timer" aria-label={t.tiempo}>
         {partes.map(([u, n], i) => (
           <React.Fragment key={u}>
             {i > 0 && <span className={s.eventoDosPuntos} aria-hidden="true">:</span>}
@@ -70,20 +83,20 @@ export default function CuentaRegresiva({ hasta, horas, clave = 'wala_oferta_fin
   }
 
   if (variante === 'frase') {
-    return <span className={s.frase} role="timer">{etiqueta} {textoEspera(restante)}</span>;
+    return <span className={s.frase} role="timer">{t.etiqueta} {textoEspera(restante)}</span>;
   }
 
   if (variante === 'texto') {
     return (
-      <span className={s.texto} role="timer" aria-label={`${etiqueta} ${partes.map(([u, n]) => `${n}${u}`).join(' ')}`}>
+      <span className={s.texto} role="timer" aria-label={`${t.etiqueta} ${partes.map(([u, n]) => `${n}${u}`).join(' ')}`}>
         {partes.map(([, n]) => dos(n)).join(':')}
       </span>
     );
   }
 
   return (
-    <div className={s.bloques} role="timer" aria-label={`${etiqueta} ${partes[0][1]} horas ${partes[1][1]} minutos`}>
-      {etiqueta && <span className={s.etiqueta}>{etiqueta}</span>}
+    <div className={s.bloques} role="timer" aria-label={t.tiempo}>
+      {etiqueta && <span className={s.etiqueta}>{t.etiqueta}</span>}
       {partes.map(([u, n], i) => (
         <React.Fragment key={u}>
           {i > 0 && <span className={s.separador} aria-hidden="true">:</span>}

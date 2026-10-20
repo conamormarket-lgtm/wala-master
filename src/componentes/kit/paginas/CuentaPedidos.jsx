@@ -14,7 +14,7 @@ import { PedidosPorVerificar } from '../piezas/PedidosPorVerificar';
 import { LineaProduccion, PagosPedido } from '../piezas/DetallePedido';
 import { EsqueletoPedido, EsqueletoTarjeta } from '../Esqueletos';
 import { Hueso } from '../Esqueletos';
-import { Texto } from '../Traduccion';
+import { Texto, useTexto } from '../Traduccion';
 import s from './CuentaPedidos.module.css';
 
 /*
@@ -155,9 +155,10 @@ export function PaginaDetallePedido({
     ojo.observe(el);
     return () => ojo.disconnect();
   }, [hayPedido]);
+  const estasEn = useTexto('Estás en');
 
   const migas = (
-    <nav className={s.migas} aria-label="Estás en">
+    <nav className={s.migas} aria-label={estasEn}>
       <Enlace to={urlVolver}><Texto>Mis pedidos</Texto></Enlace>
       <ChevronRight aria-hidden="true" />
       <span aria-current="page"><Texto>Estado de la compra</Texto></span>

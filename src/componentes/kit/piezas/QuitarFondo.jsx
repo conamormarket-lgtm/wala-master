@@ -3,7 +3,7 @@ import { Wand2, Eraser, Brush, Hand, Undo2, Sparkles, ZoomIn, ZoomOut, Scan, Rot
 import { Chip } from '../Etiquetas';
 import { Aviso, HojaInferior } from '../Feedback';
 import { cargarImagen, cajaVisible, recortarImagen } from '../imagenes';
-import { Texto } from '../Traduccion';
+import { Texto, useTexto } from '../Traduccion';
 import { BotonEstudio, DeslizadorEstudio } from './ControlesEstudio';
 import s from './QuitarFondo.module.css';
 
@@ -38,6 +38,12 @@ const HERRAMIENTAS = [
   { id: 'mover', Icono: Hand, nombre: 'Mover', tecla: 'H', ayuda: 'Arrastra para moverte por la imagen ampliada.' },
 ];
 const FONDOS = [['cuadros', 'Cuadros'], ['oscuro', 'Oscuro'], ['claro', 'Claro']];
+
+/** Una muestra del fondo de la vista (solo color: el nombre va en aria-label y title, traducido). */
+function MuestraFondo({ id, nombre, activo, onElegir }) {
+  const rotulo = useTexto(`Fondo ${nombre.toLowerCase()}`);
+  return <button type="button" role="radio" aria-checked={activo} aria-label={rotulo} title={rotulo} className={[s.fondo, s[`muestra_${id}`], activo && s.fondoActivo].filter(Boolean).join(' ')} onClick={() => onElegir(id)} />;
+}
 
 /** Píxeles de una imagen a un lado máximo: { d, w, h, lienzo, ctx }. */
 const leerPixeles = (fuente, ladoMax) => {
@@ -362,6 +368,10 @@ export function QuitarFondo({ abierta, src, motor, onCancelar, onAplicar }) {
   const diametro = previa ? 2 * radioDe(tamano) * Math.max(previa.w, previa.h) * ajuste : 0;
   const claseCursor = aMano ? (moviendo ? s.cursorMoviendo : s.cursorMano) : conPincel && cursor ? s.cursorOculto : s.cursorPuntero;
   const actual = HERRAMIENTAS.find((h) => h.id === herramienta);
+  const nombreHerramientas = useTexto('Herramienta');
+  const nombreImagen = useTexto('La imagen sin fondo');
+  const nombreZoom = useTexto('Zoom');
+  const nombreFondos = useTexto('Fondo de la vista');
 
   return (
     <HojaInferior
@@ -376,7 +386,7 @@ export function QuitarFondo({ abierta, src, motor, onCancelar, onAplicar }) {
       )}
     >
       <div className={s.quitar} data-componente="QuitarFondo">
-        <div className={s.herramientas} role="group" aria-label="Herramienta">
+        <div className={s.herramientas} role="group" aria-label={nombreHerramientas}>
           {HERRAMIENTAS.map(({ id, Icono, nombre, tecla }) => (
             <Chip key={id} tamano="sm" activo={herramienta === id} onClick={() => setHerramienta(id)} icono={<Icono aria-hidden="true" />}>
               <Texto>{nombre}</Texto><span className={s.oculto}> (<Texto>tecla</Texto> {tecla})</span>
@@ -400,7 +410,7 @@ export function QuitarFondo({ abierta, src, motor, onCancelar, onAplicar }) {
             <canvas
               ref={lienzoRef}
               className={s.lienzo}
-              aria-label="La imagen sin fondo"
+              aria-label={nombreImagen}
               style={previa && ajuste ? {
                 width: previa.w * ajuste,
                 height: previa.h * ajuste,
@@ -409,7 +419,7 @@ export function QuitarFondo({ abierta, src, motor, onCancelar, onAplicar }) {
               } : undefined}
             />
           ) : (
-            <p className={s.ayuda}>{aviso || 'Cargando imagen…'}</p>
+            <p className={s.ayuda}><Texto>{aviso || 'Cargando imagen…'}</Texto></p>
           )}
           {fuente && conPincel && cursor && !moviendo && (
             <span className={[s.pincel, herramienta === 'restaurar' && s.pincelRestaurar].filter(Boolean).join(' ')} style={{ left: cursor.x, top: cursor.y, width: diametro, height: diametro }} aria-hidden="true" />
@@ -418,15 +428,15 @@ export function QuitarFondo({ abierta, src, motor, onCancelar, onAplicar }) {
 
         {fuente && (
           <div className={s.vista}>
-            <span className={s.zoom} role="group" aria-label="Zoom">
+            <span className={s.zoom} role="group" aria-label={nombreZoom}>
               <BotonEstudio variante="fantasma" tamano="sm" soloIcono aria-label="Alejar (−)" icono={<ZoomOut aria-hidden="true" />} onClick={() => zoomEn(zoom / PASO_ZOOM)} disabled={zoom <= ZOOM_MIN} />
               <span className={s.zoomValor}>{Math.round(zoom * 100)}%</span>
               <BotonEstudio variante="fantasma" tamano="sm" soloIcono aria-label="Acercar (+)" icono={<ZoomIn aria-hidden="true" />} onClick={() => zoomEn(zoom * PASO_ZOOM)} disabled={zoom >= ZOOM_MAX} />
               <BotonEstudio variante="fantasma" tamano="sm" icono={<Scan aria-hidden="true" />} onClick={ajustarVista} disabled={zoom === 1}><Texto>{"Ajustar"}</Texto></BotonEstudio>
             </span>
-            <span className={s.fondos} role="radiogroup" aria-label="Fondo de la vista">
+            <span className={s.fondos} role="radiogroup" aria-label={nombreFondos}>
               {FONDOS.map(([id, nombre]) => (
-                <button key={id} type="button" role="radio" aria-checked={fondoVista === id} aria-label={`Fondo ${nombre.toLowerCase()}`} title={`Fondo ${nombre.toLowerCase()}`} className={[s.fondo, s[`muestra_${id}`], fondoVista === id && s.fondoActivo].filter(Boolean).join(' ')} onClick={() => setFondoVista(id)} />
+                <MuestraFondo key={id} id={id} nombre={nombre} activo={fondoVista === id} onElegir={setFondoVista} />
               ))}
             </span>
           </div>

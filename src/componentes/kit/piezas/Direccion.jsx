@@ -91,30 +91,26 @@ export function CamposDireccion({ valor: d, onCambiar, errores = {}, lugares = {
   const listaDistritos = fuera ? [] : distritos(d);
   const cambiar = (campo) => (e) => onCambiar?.(campo, e.target.value);
   const paisTel = paises?.find((p) => p.valor === (d.pais || 'PE'));
+  // Las etiquetas y los ejemplos van en español (Campo los traduce); las opciones, traducidas aquí.
   const t = {
-    nombre: useTexto('Nombre de quien recibe'), documento: useTexto('Documento'), numero: useTexto('Número'),
-    extranjero: useTexto(DOC_EXTRANJERO), region: useTexto('Región / Estado'), ciudad: useTexto('Ciudad'),
-    ciudadRegion: useTexto('Ciudad o región'), departamento: useTexto('Departamento'), provincia: useTexto('Provincia'),
-    distrito: useTexto('Distrito'), direccion: useTexto('Dirección exacta'), pais: useTexto('País'),
     elige: useTexto('Elige…'), primeroDep: useTexto('Primero el departamento'), primeroProv: useTexto('Primero la provincia'),
-    ejemploDireccion: useTexto('Calle, número, dpto. y una referencia'),
   };
   // Los mensajes de validarDireccion también pasan por la traducción.
   const err = (campo) => errores[campo] && <Texto>{errores[campo]}</Texto>;
   return (
     <div className={s.campos} data-componente="CamposDireccion">
       {paises?.length > 0 && (
-        <Campo etiqueta={t.pais} opciones={paises} value={d.pais} onChange={cambiar('pais')} buscable={paises.length > 10} />
+        <Campo etiqueta="País" opciones={paises} value={d.pais} onChange={cambiar('pais')} buscable={paises.length > 10} />
       )}
       {verDestinatario ? (
         <>
-          <Campo etiqueta={t.nombre} placeholder="Ej.: Juana Pérez" value={d.nombre} onChange={cambiar('nombre')} error={err('nombre')} autoComplete="name" />
+          <Campo etiqueta="Nombre de quien recibe" placeholder="Ej.: Juana Pérez" value={d.nombre} onChange={cambiar('nombre')} error={err('nombre')} autoComplete="name" />
           {fuera ? (
-            <Campo etiqueta={t.extranjero} value={d.documento} onChange={cambiar('documento')} error={err('documento')} />
+            <Campo etiqueta={DOC_EXTRANJERO} value={d.documento} onChange={cambiar('documento')} error={err('documento')} />
           ) : (
             <div className={s.fila}>
-              <Campo etiqueta={t.documento} opciones={DOCS_DIRECCION} value={d.tipoDocumento} onChange={cambiar('tipoDocumento')} />
-              <Campo etiqueta={t.numero} value={d.documento} onChange={cambiar('documento')} error={err('documento')} inputMode={d.tipoDocumento === 'DNI' ? 'numeric' : undefined} />
+              <Campo etiqueta="Documento" opciones={DOCS_DIRECCION} value={d.tipoDocumento} onChange={cambiar('tipoDocumento')} />
+              <Campo etiqueta="Número" value={d.documento} onChange={cambiar('documento')} error={err('documento')} inputMode={d.tipoDocumento === 'DNI' ? 'numeric' : undefined} />
             </div>
           )}
           <CampoTelefono
@@ -137,22 +133,22 @@ export function CamposDireccion({ valor: d, onCambiar, errores = {}, lugares = {
 
       {fuera ? (
         <div className={s.fila}>
-          <Campo etiqueta={t.region} placeholder="Ej.: Región Metropolitana" value={d.provincia} onChange={cambiar('provincia')} error={err('provincia')} />
-          <Campo etiqueta={t.ciudad} placeholder="Ej.: Santiago" value={d.distrito} onChange={cambiar('distrito')} error={err('distrito')} />
+          <Campo etiqueta="Región / Estado" placeholder="Ej.: Región Metropolitana" value={d.provincia} onChange={cambiar('provincia')} error={err('provincia')} />
+          <Campo etiqueta="Ciudad" placeholder="Ej.: Santiago" value={d.distrito} onChange={cambiar('distrito')} error={err('distrito')} />
         </div>
       ) : (
         <>
-          <Campo etiqueta={t.ciudadRegion} opciones={CIUDADES} value={d.ciudad} onChange={cambiar('ciudad')} />
+          <Campo etiqueta="Ciudad o región" opciones={CIUDADES} value={d.ciudad} onChange={cambiar('ciudad')} />
           {d.ciudad === 'Provincias' && (
             <div className={s.fila}>
               <Campo
-                etiqueta={t.departamento}
+                etiqueta="Departamento"
                 opciones={opcionesDe(departamentos.filter((x) => x !== 'Callao'), t.elige)}
                 value={d.departamento}
                 onChange={cambiar('departamento')}
               />
               <Campo
-                etiqueta={t.provincia}
+                etiqueta="Provincia"
                 opciones={opcionesDe(d.departamento ? provincias(d.departamento).filter((p) => !(d.departamento === 'Lima' && p === 'Lima')) : [], d.departamento ? t.elige : t.primeroDep)}
                 value={d.provincia}
                 onChange={cambiar('provincia')}
@@ -162,7 +158,7 @@ export function CamposDireccion({ valor: d, onCambiar, errores = {}, lugares = {
             </div>
           )}
           <Campo
-            etiqueta={t.distrito}
+            etiqueta="Distrito"
             opciones={opcionesDe(listaDistritos, listaDistritos.length ? t.elige : t.primeroProv)}
             value={d.distrito}
             onChange={cambiar('distrito')}
@@ -172,11 +168,11 @@ export function CamposDireccion({ valor: d, onCambiar, errores = {}, lugares = {
         </>
       )}
       <Campo
-        etiqueta={t.direccion}
+        etiqueta="Dirección exacta"
         value={d.direccion}
         onChange={cambiar('direccion')}
         error={err('direccion')}
-        placeholder={t.ejemploDireccion}
+        placeholder="Calle, número, dpto. y una referencia"
         autoComplete="street-address"
       />
       {children}

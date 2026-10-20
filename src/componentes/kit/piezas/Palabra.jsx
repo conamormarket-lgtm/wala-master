@@ -169,10 +169,9 @@ const tiempoEnTexto = (seg) => {
  */
 export function RankingPalabra({ hoy = [], global = [], pestana = 'hoy', onPestana, cargando = false }) {
   const lista = pestana === 'hoy' ? hoy : global;
+  // Pestanas traduce sus textos y su etiqueta: van en español.
   const t = {
     ranking: useTexto('Ranking'),
-    hoy: useTexto('Hoy'),
-    global: useTexto('Global'),
     tu: useTexto('Tú'),
     intentos: useTexto('intentos'),
     victorias: useTexto('victorias'),
@@ -181,7 +180,7 @@ export function RankingPalabra({ hoy = [], global = [], pestana = 'hoy', onPesta
   return (
     <section className={s.ranking} aria-labelledby="ranking-palabra" data-componente="RankingPalabra">
       <h2 id="ranking-palabra" className={s.rankingTitulo}>{t.ranking}</h2>
-      <Pestanas opciones={[{ id: 'hoy', texto: t.hoy }, { id: 'global', texto: t.global }]} valor={pestana} onChange={onPestana} etiqueta={t.ranking} />
+      <Pestanas opciones={[{ id: 'hoy', texto: 'Hoy' }, { id: 'global', texto: 'Global' }]} valor={pestana} onChange={onPestana} etiqueta="Ranking" />
       <p className={s.rankingNota}>
         <Texto>{pestana === 'hoy' ? 'Quienes adivinaron la palabra de hoy, por intentos usados.' : 'Por la racha más larga de victorias seguidas.'}</Texto>
       </p>

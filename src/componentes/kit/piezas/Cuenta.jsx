@@ -14,8 +14,10 @@ import s from './Cuenta.module.css';
  * Datos por props; la página decide qué hacer con cada acción. Cada pieza
  * lleva data-componente con su nombre ("Ver componentes" de la demo).
  * Traducción: las piezas traducen sus textos fijos ("Por completar", "Perfil
- * completo"…); los títulos, etiquetas y cifras que reciben los traduce quien
- * los pasa (<Texto>), porque a veces son datos (un nombre no se traduce).
+ * completo"…). CabezaCuenta (y TarjetaCuenta) y Estadistica traducen además
+ * el título, el subtítulo, la etiqueta, la unidad y la nota si llegan como
+ * texto suelto; lo que ya llega armado (<Texto>) pasa igual. Un dato que no
+ * se traduce (un nombre) se pasa como nodo: <>{nombre}</>.
  */
 
 /**
@@ -33,14 +35,14 @@ export function CabezaCuenta({ icono, tono = 'degradado', titulo, subtitulo, acc
     <header className={[s.cabeza, nivel > 1 && s.cabezaTarjeta].filter(Boolean).join(' ')}>
       {figura || (icono && <Sello tamano={nivel > 1 ? 36 : 44} tono={tono}>{icono}</Sello>)}
       <div className={s.cabezaTextos}>
-        {antetitulo && <p className={s.cabezaAntetitulo}>{antetitulo}</p>}
+        {antetitulo && <p className={s.cabezaAntetitulo}><Texto>{antetitulo}</Texto></p>}
         <H className={s.cabezaTitulo}>
           <span className={subrayado ? s.conTrazo : undefined}>
-            {titulo}
+            <Texto>{titulo}</Texto>
             {subrayado && <Trazo className={s.trazo} />}
           </span>
         </H>
-        {subtitulo && <p className={s.cabezaSub}>{subtitulo}</p>}
+        {subtitulo && <p className={s.cabezaSub}><Texto>{subtitulo}</Texto></p>}
       </div>
       {accion && <div className={s.cabezaAccion}>{accion}</div>}
     </header>
@@ -94,12 +96,12 @@ export function Estadistica({ icono, tono = 'degradado', sello = true, etiqueta,
       <div className={[s.cifraCaja, grande && s.cifraCajaGrande].filter(Boolean).join(' ')}>
         {icono && (sello ? <Sello tamano={grande ? 48 : 38} tono={tono} className={s.cifraSello}>{icono}</Sello> : <span className={s.cifraIcono}>{icono}</span>)}
         <div className={s.cifraTextos}>
-          {etiqueta && <p className={s.cifraEtiqueta}>{etiqueta}</p>}
+          {etiqueta && <p className={s.cifraEtiqueta}><Texto>{etiqueta}</Texto></p>}
           <p className={s.cifraValor}>
             <strong>{valor}</strong>
-            {unidad && <span>{unidad}</span>}
+            {unidad && <span><Texto>{unidad}</Texto></span>}
           </p>
-          {nota && <p className={s.cifraNota}>{nota}</p>}
+          {nota && <p className={s.cifraNota}><Texto>{nota}</Texto></p>}
         </div>
         {children && <div className={s.cifraAccion}>{children}</div>}
       </div>

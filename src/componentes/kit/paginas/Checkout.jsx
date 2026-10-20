@@ -16,6 +16,7 @@ import { TarjetaDireccion } from '../piezas/TarjetaDireccion';
 import { CamposDireccion, validarDireccion, cambiarDireccion, documentoDe } from '../piezas/Direccion';
 import { PasosCompra, ResumenCompra, MetodoPago } from '../piezas/Checkout';
 import { PagoTarjeta, PagoPaypal } from '../piezas/Pago';
+import { TextoResaltado } from '../piezas/TextoResaltado';
 import s from './Checkout.module.css';
 
 /*
@@ -127,8 +128,6 @@ export function PaginaCheckout({
   const modoAntesDeLista = useRef('tarjeta');
   const reducir = useReducedMotion();
   const t = {
-    correo: useTexto('Correo'), ayudaCorreo: useTexto('Te enviamos ahí el detalle de tu pedido.'),
-    para: useTexto('Para'), mensaje: useTexto('Tu mensaje'), escribe: useTexto('Escribe algo especial…'),
     direcciones: useTexto('Tus direcciones'), sticker: useTexto('Sticker de Kapi'), editar: useTexto('Editar'),
   };
 
@@ -253,7 +252,7 @@ export function PaginaCheckout({
         <div ref={raiz} className={s.listo} data-componente="PaginaCheckout">
           <img src={CARAS_KAPI.feliz} alt="" width="120" height="120" />
           <h1 className={s.listoTitulo}><Texto>{porWhatsApp ? '¡Tu pedido está creado!' : '¡Pago aprobado!'}</Texto><Trazo className={s.trazo} /></h1>
-          {numero && <p className={s.numero}><Texto>Pedido</Texto> <strong>{numero}</strong></p>}
+          {numero && <p className={s.numero}><TextoResaltado resaltar={[numero]}>{`Pedido ${numero}`}</TextoResaltado></p>}
           <p className={s.listoTexto}>
             <Texto>
               {porWhatsApp
@@ -306,8 +305,8 @@ export function PaginaCheckout({
               pie={(
                 <>
                   {invitacion && <p className={s.invitacion}><Gift aria-hidden="true" /> <Texto>{textoInvitacion(invitacion)}</Texto></p>}
-                  {fuera && local && <p className={s.nota}><Texto>Equivalente aprox.:</Texto> <strong>{local}</strong></p>}
-                  {fuera && usd != null && <p className={s.nota}><Texto>Pagarás por PayPal:</Texto> <strong>US$ {usd.toFixed(2)}</strong>. <Texto>El cobro internacional es en dólares.</Texto></p>}
+                  {fuera && local && <p className={s.nota}><TextoResaltado resaltar={[local]}>{`Equivalente aprox.: ${local}`}</TextoResaltado></p>}
+                  {fuera && usd != null && <p className={s.nota}><TextoResaltado resaltar={[`US$ ${usd.toFixed(2)}`]}>{`Pagarás por PayPal: US$ ${usd.toFixed(2)}. El cobro internacional es en dólares.`}</TextoResaltado></p>}
                 </>
               )}
             />
@@ -342,7 +341,7 @@ export function PaginaCheckout({
                       onElegir={(id) => { setElegida(id); setModo('tarjeta'); }}
                       opciones={direcciones.map((d) => ({
                         valor: d.id,
-                        texto: `${d.nombre}${d.principal ? ' · Principal' : ''}`,
+                        texto: d.principal ? <>{d.nombre} · <Texto>Principal</Texto></> : d.nombre,
                         detalle: `${d.direccion}, ${d.distrito} · ${d.telefono}`,
                         icono: <MapPin aria-hidden="true" />,
                         // Editarla desde aquí (los cambios se guardan en «Mis direcciones»).
@@ -381,13 +380,13 @@ export function PaginaCheckout({
 
                 {pedirCorreo && (
                   <Campo
-                    etiqueta={t.correo}
+                    etiqueta="Correo"
                     type="email"
                     placeholder="correo@ejemplo.com"
                     value={correo}
                     onChange={(e) => { setCorreo(e.target.value); setErrores((x) => ({ ...x, correo: undefined })); }}
                     error={errores.correo}
-                    ayuda={errores.correo ? undefined : t.ayudaCorreo}
+                    ayuda={errores.correo ? undefined : 'Te enviamos ahí el detalle de tu pedido.'}
                     autoComplete="email"
                   />
                 )}
@@ -407,14 +406,14 @@ export function PaginaCheckout({
                   )}
                   {regalo.activo && (
                     <div className={s.regaloCampos}>
-                      <Campo etiqueta={t.para} placeholder="Ej.: María" value={regalo.destinatario} onChange={cambiarRegalo('destinatario')} error={errores.regalo_destinatario} />
+                      <Campo etiqueta="Para" placeholder="Ej.: María" value={regalo.destinatario} onChange={cambiarRegalo('destinatario')} error={errores.regalo_destinatario} />
                       {/* Crece solo con lo escrito y cuenta las letras (Campo multilinea). */}
                       <Campo
-                        etiqueta={t.mensaje}
+                        etiqueta="Tu mensaje"
                         error={errores.regalo_mensaje}
                         multilinea={3}
                         maxLength={200}
-                        placeholder={t.escribe}
+                        placeholder="Escribe algo especial…"
                         value={regalo.mensaje}
                         onChange={cambiarRegalo('mensaje')}
                       />
@@ -451,7 +450,7 @@ export function PaginaCheckout({
                   <span>
                     <small><Texto>Elige cómo pagar</Texto></small>
                     <strong className={s.monto}>{fuera && usd != null ? `US$ ${usd.toFixed(2)}` : soles(cuentas.total)}</strong>
-                    <span className={s.pedido}><Texto>Pedido</Texto> {pedido?.numero} · <Texto>a nombre de</Texto> {direccion?.nombre}</span>
+                    <span className={s.pedido}><Texto>{`Pedido ${pedido?.numero || ''} · a nombre de ${direccion?.nombre || ''}`}</Texto></span>
                   </span>
                   <button type="button" className={s.volverLista} onClick={() => { setPaso(0); setError(''); }}><ArrowLeft aria-hidden="true" /> <Texto>Cambiar el envío</Texto></button>
                 </div>
@@ -491,7 +490,7 @@ export function PaginaCheckout({
                             cargando={ocupado === `marca-${m.id}`}
                             onClick={async () => { setOcupado(`marca-${m.id}`); try { await pago.onWhatsApp?.(m.id); setEnviadas((x) => [...x, m.id]); } catch (err) { setError(err?.message || 'No pudimos crear tu pedido.'); } finally { setOcupado(null); } }}
                           >
-                            <Texto>{enviadas.includes(m.id) ? 'Enviado a' : 'Enviar a'}</Texto> {m.nombre} ({m.cantidad})
+                            {`${enviadas.includes(m.id) ? 'Enviado a' : 'Enviar a'} ${m.nombre} (${m.cantidad})`}
                           </Boton>
                         ))}
                       </div>

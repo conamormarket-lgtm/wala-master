@@ -2,7 +2,8 @@ import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'reac
 import { motion, useReducedMotion } from 'framer-motion';
 import { ZoomIn } from 'lucide-react';
 import { RESORTE } from '../Efectos';
-import { Texto } from '../Traduccion';
+import { Texto, useTexto } from '../Traduccion';
+import { Traducido } from './TextoResaltado';
 import s from './GaleriaProducto.module.css';
 
 /**
@@ -30,6 +31,7 @@ import s from './GaleriaProducto.module.css';
 export const SIZES_FOTO = '(max-width: 900px) 100vw, 46vw';
 const SIZES_MINIATURA = '76px';
 
+
 export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto }) {
   const total = imagenes.length;
   const [sel, setSel] = useState(Math.min(inicial, Math.max(total - 1, 0)));
@@ -43,6 +45,7 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
   const reducir = useReducedMotion();
   const actual = imagenes[Math.min(sel, total - 1)];
   const acercar = zoom && !actual?.juntas;
+  const fotos = useTexto('Fotos');
 
   // Abre en la inicial sin animar.
   useLayoutEffect(() => {
@@ -90,14 +93,14 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
   return (
     <div className={[s.galeria, total > 1 && s.conMiniaturas].filter(Boolean).join(' ')} data-componente="GaleriaProducto">
       {total > 1 && (
-        <div ref={minis} className={s.miniaturas} role="tablist" aria-label="Fotos">
+        <div ref={minis} className={s.miniaturas} role="tablist" aria-label={fotos}>
           {imagenes.map((img, i) => (
+            <Traducido key={`${img.url}-${i}`} texto={img.nombre || `Foto ${i + 1}`}>{(etiqueta) => (
             <button
-              key={`${img.url}-${i}`}
               type="button"
               role="tab"
               aria-selected={i === sel}
-              aria-label={img.nombre || `Foto ${i + 1}`}
+              aria-label={etiqueta}
               className={s.miniatura}
               onClick={() => ir(i)}
               onPointerEnter={(e) => { if (e.pointerType === 'mouse') ir(i); }}
@@ -113,6 +116,7 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
               {/* El borde de la elegida viaja de una miniatura a otra. */}
               {i === sel && <motion.i layoutId={`mini-${marca}`} className={s.miniaturaAro} transition={reducir ? { duration: 0 } : RESORTE} aria-hidden="true" />}
             </button>
+            )}</Traducido>
           ))}
         </div>
       )}
@@ -129,11 +133,13 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
           {imagenes.map((img, i) => (
             <div key={`${img.url}-${i}`} className={s.lamina} aria-hidden={i !== sel || undefined}>
               {img.juntas ? <Juntas fotos={img.juntas} grande /> : (
+              // El nombre del producto llega traducido; el de la foto se traduce aquí.
+              <Traducido texto={img.nombre}>{(lado) => (
               <img
                 src={img.url}
                 srcSet={img.srcSet}
                 sizes={img.srcSet ? SIZES_FOTO : undefined}
-                alt={[nombre, img.nombre].filter(Boolean).join(' · ')}
+                alt={[nombre, lado].filter(Boolean).join(' · ')}
                 className={[s.foto, img.atenuada && s.atenuada].filter(Boolean).join(' ')}
                 draggable={false}
                 loading={i === sel ? 'eager' : 'lazy'}
@@ -142,6 +148,7 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
                 fetchpriority={i === primera.current ? 'high' : undefined}
                 style={acercar && i === sel ? { ...conRelleno(img), transform: 'scale(2.2)', transformOrigin: `${pos.x}% ${pos.y}%` } : conRelleno(img)}
               />
+              )}</Traducido>
               )}
             </div>
           ))}

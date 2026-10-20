@@ -8,6 +8,7 @@ import { BloqueSeccion } from '../Seccion';
 import { CatalogoConFiltros } from '../SeccionesExtra';
 import { Buscador } from '../Formulario';
 import { CARAS_KAPI } from '../piezas/Flotantes';
+import { TextoResaltado } from '../piezas/TextoResaltado';
 import { useTexto } from '../Traduccion';
 import s from './Busqueda.module.css';
 
@@ -60,18 +61,11 @@ export function PaginaBusqueda({
   // va la pregunta corta, como el buscador de la tienda en el celular.
   const angosta = useAngosta(560);
   const propios = { ...TEXTOS, ...(angosta ? { marcador: TEXTOS.marcadorCorto } : {}), ...textos };
+  // El vacío (EstadoVacio), los botones (Boton, también el del Buscador) y el marcador del Buscador traducen lo suyo: van sin traducir.
   const t = {
-    subtitulo: useTexto(propios.subtitulo),
-    marcador: useTexto(propios.marcador),
-    boton: useTexto(propios.boton),
-    vacioTitulo: useTexto(propios.vacioTitulo),
-    vacioTexto: useTexto(propios.vacioTexto),
-    vacioConFiltros: useTexto(propios.vacioConFiltros),
     afinar: useTexto('Afina por categoría'),
     masBuscado: useTexto('Lo más buscado'),
     probar: useTexto('Prueba con'),
-    soloEn: useTexto('Buscando solo en'),
-    todo: useTexto('Buscar en todo el catálogo'),
   };
   const hayFiltros = Object.values(seleccion || {}).some((v) => v != null);
   // Con término: las categorías de los resultados como atajos para afinar (el
@@ -102,16 +96,16 @@ export function PaginaBusqueda({
               <InvitacionBusqueda grande como="h1" termino={termino} titulo={textos.titulo} texto={propios.subtitulo} />
             </div>
             {marcaFiltro && (
-              <Aviso compacto icono={<Store aria-hidden="true" />} accion={marcaFiltro.urlTodo && <Boton to={marcaFiltro.urlTodo} variante="fantasma" tamano="sm">{t.todo}</Boton>}>
-                <>{t.soloEn} <strong>{marcaFiltro.nombre}</strong></>
+              <Aviso compacto icono={<Store aria-hidden="true" />} accion={marcaFiltro.urlTodo && <Boton to={marcaFiltro.urlTodo} variante="fantasma" tamano="sm">Buscar en todo el catálogo</Boton>}>
+                <TextoResaltado resaltar={[marcaFiltro.nombre]}>{`Buscando solo en ${marcaFiltro.nombre}`}</TextoResaltado>
               </Aviso>
             )}
             <Buscador
               key={termino}
               grande
               atajo={null}
-              boton={t.boton}
-              placeholder={t.marcador}
+              boton={propios.boton}
+              placeholder={propios.marcador}
               defaultValue={termino}
               onBuscar={onBuscar}
             />
@@ -132,7 +126,7 @@ export function PaginaBusqueda({
       </BloqueSeccion>
       <BloqueSeccion ajustes={{ paddingTop: '0.75rem', paddingBottom: '2.5rem' }}>
         {!cargando && productos.length === 0 && !hayFiltros ? (
-          <EstadoVacio imagen={sinKapi ? null : CARAS_KAPI.triste} titulo={t.vacioTitulo} texto={termino ? t.vacioTexto : t.subtitulo}>
+          <EstadoVacio imagen={sinKapi ? null : CARAS_KAPI.triste} titulo={propios.vacioTitulo} texto={termino ? propios.vacioTexto : propios.subtitulo}>
             {sugeridas.length > 0 && (
               <div className={s.busquedaProbar}>
                 <span className={s.busquedaAtajosTitulo}>{t.probar}</span>

@@ -12,6 +12,7 @@ import { PasoEstudio } from '../piezas/PasoEstudio';
 import { ListaEleccion } from '../piezas/Cuenta';
 import { CamposDatosPersonales, validarPerfil } from '../piezas/DatosPersonales';
 import { CabezaLegal, DatosProveedor, CodigoCopiable, PasosAtencion, AvanceHoja } from '../piezas/Legales';
+import { TextoResaltado } from '../piezas/TextoResaltado';
 import s from './Legales.module.css';
 
 /*
@@ -49,24 +50,11 @@ const CAMPOS_DE_PASO = [
 ];
 const TITULOS_DE_PASO = ['Tus datos', 'Lo que compraste', 'Tu reclamo'];
 
-/** Los textos de la hoja, traducidos (los campos muestran lo que reciben). */
-function useTextosHoja(esQueja) {
+/** Los textos de la hoja que van a ListaEleccion, traducidos (no traduce lo que recibe; Campo y PasoEstudio sí). */
+function useTextosHoja() {
   const bien = [useTexto(BIENES[0].texto), useTexto(BIENES[0].detalle), useTexto(BIENES[1].texto), useTexto(BIENES[1].detalle)];
   const tipo = [useTexto(TIPOS_RECLAMO[0].texto), useTexto(TIPOS_RECLAMO[0].detalle), useTexto(TIPOS_RECLAMO[1].texto), useTexto(TIPOS_RECLAMO[1].detalle)];
   return {
-    domicilio: useTexto('Domicilio'),
-    domicilioEj: useTexto('Calle, número, distrito y ciudad'),
-    correo: useTexto('Correo electrónico'),
-    correoAyuda: useTexto('Aquí te llega la respuesta.'),
-    apoderado: useTexto('Nombre del padre, madre o apoderado'),
-    monto: useTexto('Monto reclamado (opcional)'),
-    compraste: useTexto('¿Qué compraste?'),
-    comprasteEj: useTexto('Ej. Polo personalizado talla M, pedido PD-20481'),
-    detalle: useTexto(esQueja ? '¿Cómo te atendimos?' : '¿Qué pasó?'),
-    detalleEj: useTexto(esQueja ? 'Cuéntanos qué pasó en la atención: cuándo, por qué canal (WhatsApp, correo…) y qué te molestó.' : 'Cuéntalo con el mayor detalle que puedas: qué pasó, cuándo y con qué pedido.'),
-    pedido: useTexto('¿Qué solución esperas?'),
-    pedidoEj: useTexto(esQueja ? 'Una disculpa, que lo revisen, que te contacten…' : 'Un cambio, un reembolso, que lo vuelvan a hacer…'),
-    pasos: [useTexto(TITULOS_DE_PASO[0]), useTexto(TITULOS_DE_PASO[1]), useTexto(TITULOS_DE_PASO[2])],
     bienes: BIENES.map((x, k) => ({ ...x, texto: bien[k * 2], detalle: bien[k * 2 + 1] })),
     tipos: TIPOS_RECLAMO.map((x, k) => ({ ...x, texto: tipo[k * 2], detalle: tipo[k * 2 + 1] })),
     tipoBien: useTexto('Tipo de bien contratado'),
@@ -112,12 +100,15 @@ export function PaginaReclamaciones({
   paises = [{ valor: 'PE', texto: 'Perú', prefijo: '+51' }],
 }) {
   const [datos, setDatos] = useState(() => ({ ...VACIA, ...inicial }));
-  const t = useTextosHoja(datos.tipoReclamo === 'queja');
+  const t = useTextosHoja();
+  const esQueja = datos.tipoReclamo === 'queja';
   const [errores, setErrores] = useState({});
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState('');
   const [registrada, setRegistrada] = useState(null);
   const cabeza = useRef(null);
+  // El enlace va dentro de la frase: se busca ya traducido en la frase traducida.
+  const privacidad = useTexto('Política de Privacidad');
   const plazo = empresa.plazoRespuestaDiasHabiles || 15;
 
   if (estado === 'cargando') return <EsqueletoPagina forma="reclamaciones" />;
@@ -125,8 +116,8 @@ export function PaginaReclamaciones({
   // Cada paso se marca solo al completarse (la misma regla que al enviar, sin mostrar errores).
   const pendientes = validarReclamacion(datos);
   const hechos = CAMPOS_DE_PASO.map((campos) => campos.every((c) => !pendientes[c]));
-  const bien = t.bienes.find((b) => b.valor === datos.tipoBien);
-  const tipo = t.tipos.find((x) => x.valor === datos.tipoReclamo);
+  const bien = BIENES.find((b) => b.valor === datos.tipoBien);
+  const tipo = TIPOS_RECLAMO.find((x) => x.valor === datos.tipoReclamo);
 
   const cambiar = (campo, valor) => {
     setDatos((d) => ({ ...d, [campo]: valor }));
@@ -172,8 +163,9 @@ export function PaginaReclamaciones({
           <p><Texto>Tu hoja de reclamación quedó guardada. Guarda este código para cualquier consulta.</Texto></p>
           <CodigoCopiable codigo={registrada.codigo} rotulo="Tu código de seguimiento" fecha={`Registrada el ${registrada.fecha || hoy}`} />
           <p>
-            <Texto>Te responderemos al correo</Texto> <strong>{registrada.email}</strong> <Texto>en un plazo máximo de</Texto> <strong><Texto>{`${plazo} días hábiles`}</Texto></strong>,{' '}
-            <Texto>conforme al Código de Protección y Defensa del Consumidor.</Texto>
+            <TextoResaltado resaltar={[registrada.email, `${plazo} días hábiles`]}>
+              {`Te responderemos al correo ${registrada.email} en un plazo máximo de ${plazo} días hábiles, conforme al Código de Protección y Defensa del Consumidor.`}
+            </TextoResaltado>
           </p>
           <div className={s.listoBotones}>
             <Boton variante="secundario" icono={<RotateCcw aria-hidden="true" />} onClick={() => { setDatos({ ...VACIA, ...inicial }); setRegistrada(null); }}><Texto>Registrar otra reclamación</Texto></Boton>
@@ -200,7 +192,7 @@ export function PaginaReclamaciones({
         <DatosProveedor empresa={empresa} fecha={hoy} />
 
         <div className={s.pasos}>
-          <PasoEstudio numero={1} titulo={t.pasos[0]} hecho={hechos[0]}>
+          <PasoEstudio numero={1} titulo={TITULOS_DE_PASO[0]} hecho={hechos[0]}>
             <div className={s.rejilla}>
               <div className={s.ancho}>
                 <CamposDatosPersonales
@@ -213,24 +205,24 @@ export function PaginaReclamaciones({
                   ids={{ nombre: 'reclamo-nombre', documento: 'reclamo-documento', telefono: 'reclamo-telefono' }}
                 />
               </div>
-              <div className={s.ancho}><Campo etiqueta={t.domicilio} autoComplete="street-address" placeholder={t.domicilioEj} {...campo('domicilio')} /></div>
-              <div className={s.ancho}><Campo etiqueta={t.correo} type="email" autoComplete="email" inputMode="email" placeholder="tu@correo.com" ayuda={t.correoAyuda} {...campo('email')} /></div>
+              <div className={s.ancho}><Campo etiqueta="Domicilio" autoComplete="street-address" placeholder="Calle, número, distrito y ciudad" {...campo('domicilio')} /></div>
+              <div className={s.ancho}><Campo etiqueta="Correo electrónico" type="email" autoComplete="email" inputMode="email" placeholder="tu@correo.com" ayuda="Aquí te llega la respuesta." {...campo('email')} /></div>
               <div className={s.ancho}>
                 <Casilla activo={datos.esMenor} onChange={(v) => cambiar('esMenor', v)} disabled={enviando} etiqueta="La persona que reclama es menor de edad" />
               </div>
               {datos.esMenor && (
-                <div className={s.ancho}><Campo etiqueta={t.apoderado} autoComplete="name" {...campo('apoderado')} /></div>
+                <div className={s.ancho}><Campo etiqueta="Nombre del padre, madre o apoderado" autoComplete="name" {...campo('apoderado')} /></div>
               )}
             </div>
           </PasoEstudio>
 
-          <PasoEstudio numero={2} titulo={t.pasos[1]} detalle={hechos[1] ? bien?.texto : undefined} hecho={hechos[1]}>
+          <PasoEstudio numero={2} titulo={TITULOS_DE_PASO[1]} detalle={hechos[1] ? bien?.texto : undefined} hecho={hechos[1]}>
             <div className={s.eleccion}>
               <ListaEleccion opciones={t.bienes} valor={datos.tipoBien} onElegir={(v) => cambiar('tipoBien', v)} etiqueta={t.tipoBien} />
             </div>
             <div className={s.rejilla}>
               <Campo
-                etiqueta={t.monto}
+                etiqueta="Monto reclamado (opcional)"
                 icono={<span className={s.soles}>S/</span>}
                 type="number"
                 inputMode="decimal"
@@ -240,24 +232,24 @@ export function PaginaReclamaciones({
                 {...campo('monto')}
               />
               <div className={s.ancho}>
-                <Campo etiqueta={t.compraste} multilinea maxLength={600} placeholder={t.comprasteEj} {...campo('descripcion')} />
+                <Campo etiqueta="¿Qué compraste?" multilinea maxLength={600} placeholder="Ej. Polo personalizado talla M, pedido PD-20481" {...campo('descripcion')} />
               </div>
             </div>
           </PasoEstudio>
 
-          <PasoEstudio numero={3} titulo={t.pasos[2]} detalle={hechos[2] ? tipo?.texto : undefined} hecho={hechos[2]}>
+          <PasoEstudio numero={3} titulo={TITULOS_DE_PASO[2]} detalle={hechos[2] ? tipo?.texto : undefined} hecho={hechos[2]}>
             <div className={s.eleccion}>
               <ListaEleccion opciones={t.tipos} valor={datos.tipoReclamo} onElegir={(v) => cambiar('tipoReclamo', v)} etiqueta={t.reclamoOQueja} />
             </div>
             {/* Lo que se pregunta cambia con lo elegido: una queja es sobre la atención. */}
             <Campo
-              etiqueta={t.detalle}
+              etiqueta={esQueja ? '¿Cómo te atendimos?' : '¿Qué pasó?'}
               multilinea={4}
               maxLength={2000}
-              placeholder={t.detalleEj}
+              placeholder={esQueja ? 'Cuéntanos qué pasó en la atención: cuándo, por qué canal (WhatsApp, correo…) y qué te molestó.' : 'Cuéntalo con el mayor detalle que puedas: qué pasó, cuándo y con qué pedido.'}
               {...campo('detalle')}
             />
-            <Campo etiqueta={t.pedido} multilinea maxLength={1000} placeholder={t.pedidoEj} {...campo('pedido')} />
+            <Campo etiqueta="¿Qué solución esperas?" multilinea maxLength={1000} placeholder={esQueja ? 'Una disculpa, que lo revisen, que te contacten…' : 'Un cambio, un reembolso, que lo vuelvan a hacer…'} {...campo('pedido')} />
           </PasoEstudio>
         </div>
 
@@ -268,10 +260,9 @@ export function PaginaReclamaciones({
             onChange={(v) => cambiar('acepta', v)}
             disabled={enviando}
             etiqueta={(
-              <>
-                <Texto>Declaro que la información es verídica y autorizo el uso de mis datos para atender esta reclamación, según la</Texto>{' '}
-                <Enlace to={urlPrivacidad} target="_blank" rel="noopener noreferrer" className={s.enlace}><Texto>Política de Privacidad</Texto></Enlace>.
-              </>
+              <TextoResaltado resaltar={[privacidad]} envolver={(parte, k) => <Enlace key={k} to={urlPrivacidad} target="_blank" rel="noopener noreferrer" className={s.enlace}>{parte}</Enlace>}>
+                Declaro que la información es verídica y autorizo el uso de mis datos para atender esta reclamación, según la Política de Privacidad.
+              </TextoResaltado>
             )}
           />
           {errores.acepta && <p id="reclamo-acepta" tabIndex={-1} className={s.errorSuelto} role="alert"><Texto>{errores.acepta}</Texto></p>}

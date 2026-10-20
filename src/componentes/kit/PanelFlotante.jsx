@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { HojaInferior } from './Feedback';
+import { useTexto } from './Traduccion';
 import s from './PanelFlotante.module.css';
 
 /** ¿Pantalla de celular? (lo mismo que decide la hoja inferior). */
@@ -24,6 +25,8 @@ export function PanelFlotante({ abierto, onCerrar, ancla, titulo, ancho = 'campo
   const [pos, setPos] = useState(null);
   const cerrarRef = useRef(onCerrar);
   cerrarRef.current = onCerrar;
+  // La hoja traduce su título; el panel lo traduce aquí para lectores de pantalla.
+  const nombre = useTexto(titulo);
 
   // El modo se decide al abrir (no cambia mientras está abierto).
   useLayoutEffect(() => { if (abierto) setCelular(enCelular()); }, [abierto]);
@@ -87,7 +90,7 @@ export function PanelFlotante({ abierto, onCerrar, ancla, titulo, ancho = 'campo
       className={`${s.panel} ${origen === 'bottom' ? s.arriba : ''}`}
       style={estilo}
       role="dialog"
-      aria-label={titulo}
+      aria-label={nombre}
     >
       {children}
       {pie && <div className={s.pie}>{pie}</div>}

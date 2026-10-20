@@ -10,17 +10,11 @@ export function BotonEstudio({ children, title, 'aria-label': etiqueta, ...props
   return <Boton {...props} title={titulo} aria-label={accesible}>{typeof children === 'string' ? <Texto>{children}</Texto> : children}</Boton>;
 }
 
-function conTextoEstudio(Componente) {
-  return function ControlEstudio({ etiqueta, descripcion, ...props }) {
-    const rotulo = useTexto(etiqueta);
-    const detalle = useTexto(descripcion);
-    return <Componente {...props} etiqueta={rotulo} descripcion={detalle} />;
-  };
-}
-
-export const CampoEstudio = /* @__PURE__ */ conTextoEstudio(Campo);
-export const CantidadEstudio = /* @__PURE__ */ conTextoEstudio(Cantidad);
-export const DeslizadorEstudio = /* @__PURE__ */ conTextoEstudio(Deslizador);
-export const SelectorColorEstudio = /* @__PURE__ */ conTextoEstudio(SelectorColor);
-export const CasillaEstudio = /* @__PURE__ */ conTextoEstudio(Casilla);
-export const InterruptorEstudio = /* @__PURE__ */ conTextoEstudio(Interruptor);
+/* Estos controles ya traducen su etiqueta y su descripción: el estudio les
+   pasa el español tal cual (traducirlo aquí lo traducía dos veces). */
+export const CampoEstudio = Campo;
+export const CantidadEstudio = Cantidad;
+export const DeslizadorEstudio = Deslizador;
+export const SelectorColorEstudio = SelectorColor;
+export const CasillaEstudio = Casilla;
+export const InterruptorEstudio = Interruptor;

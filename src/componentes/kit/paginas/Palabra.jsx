@@ -62,8 +62,6 @@ export function PaginaPalabra({
     faltan: useTexto('Faltan letras'),
     noExiste: useTexto('Esa palabra no está en el diccionario'),
     compartir: useTexto(`Adiviné la Palabra del día de Walá en ${intentos}/${INTENTOS_PALABRA}. ¿Te animas? wala.pe/palabra-del-dia`),
-    nueva: useTexto('Nueva palabra en'),
-    yaHay: useTexto('¡Ya hay palabra nueva!'),
   };
 
   const avisar = (texto) => {
@@ -147,7 +145,7 @@ export function PaginaPalabra({
   ) : (
     <p><Texto>La palabra era</Texto> <strong>{palabraFinal}</strong>.</p>
   );
-  const nuevaPalabra = hasta && <CuentaRegresiva hasta={hasta} variante="frase" etiqueta={t.nueva} textoFin={t.yaHay} />;
+  const nuevaPalabra = hasta && <CuentaRegresiva hasta={hasta} variante="frase" etiqueta="Nueva palabra en" textoFin="¡Ya hay palabra nueva!" />;
 
   return (
     <>
