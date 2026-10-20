@@ -215,19 +215,30 @@ const AdminProductos = () => {
   // guardarse con visible:false a propósito — no se venden sueltas, solo
   // alimentan el combo — y antes se veían igual que un producto archivado en
   // la pestaña "Ocultos", sin forma de distinguirlos sin abrir cada uno.
+  // Las prendas y los combos de Crear tienen su propia sección (Prendas de
+  // Crear, Combos de Crear): aquí solo lo que se vende en la tienda.
+  const deCrear = useMemo(() => ({
+    prendas: (productsData || []).filter((p) => p.esPrendaBase === true && p.deleted !== true).length,
+    combos: (productsData || []).filter((p) => p.esComboCrear === true && p.deleted !== true).length,
+  }), [productsData]);
+  const catalogo = useMemo(
+    () => (productsData || []).filter((p) => p.esPrendaBase !== true && p.esComboCrear !== true),
+    [productsData],
+  );
+
   const comboItemProductIds = useMemo(() => {
     const ids = new Set();
-    (productsData || []).forEach((p) => {
+    catalogo.forEach((p) => {
       if (p.isComboProduct && Array.isArray(p.comboItems)) {
         p.comboItems.forEach((item) => { if (item?.productId) ids.add(item.productId); });
       }
     });
     return ids;
-  }, [productsData]);
+  }, [catalogo]);
 
   const products = useMemo(() => {
     if (!productsData) return [];
-    let filtered = productsData.map((p) => {
+    let filtered = catalogo.map((p) => {
       const withComboFlag = { ...p, isComboPiece: comboItemProductIds.has(p.id) };
       // Aplicar estado optimista si existe
       if (optimisticVisibility[p.id] !== undefined) {
@@ -262,7 +273,7 @@ const AdminProductos = () => {
 
     return filtered;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productsData, comboItemProductIds, optimisticVisibility, searchQuery, statusFilter]);
+  }, [productsData, catalogo, comboItemProductIds, optimisticVisibility, searchQuery, statusFilter]);
 
   // Conteos por estado para las etiquetas del filtro (sobre el total, sin filtrar).
   // "Pieza de combo" es una etiqueta transversal (como "Destacado"): un producto
@@ -274,14 +285,14 @@ const AdminProductos = () => {
   // que estas 7 casacas visibles quedaban en la lista de la pestaña pero sin
   // la etiqueta, una inconsistencia entre el filtro y el badge.
   const statusCounts = useMemo(() => {
-    const base = (productsData || []).map((p) =>
+    const base = catalogo.map((p) =>
       optimisticVisibility[p.id] !== undefined ? { ...p, visible: optimisticVisibility[p.id] } : p
     );
     const active = base.filter((p) => p.visible !== false).length;
     const comboPiece = base.filter((p) => comboItemProductIds.has(p.id)).length;
     const hidden = base.filter((p) => p.visible === false && !comboItemProductIds.has(p.id)).length;
     return { all: base.length, active, hidden, comboPiece };
-  }, [productsData, comboItemProductIds, optimisticVisibility]);
+  }, [catalogo, comboItemProductIds, optimisticVisibility]);
 
   const handleToggleVisibility = (product) => {
     const newVisible = !(product.visible !== false);
@@ -467,6 +478,12 @@ const AdminProductos = () => {
         <div>
           <h1 className={styles.title}>Productos</h1>
           <p className={styles.subtitle}>Gestiona tu catálogo, precios y visibilidad en la tienda</p>
+          {(deCrear.prendas > 0 || deCrear.combos > 0) && (
+            <p className={styles.subtitle}>
+              Las prendas que el cliente diseña están en <Link to="/admin/prendas-crear">Prendas de Crear</Link> ({deCrear.prendas})
+              {' '}y sus combos en <Link to="/admin/combos-crear">Combos de Crear</Link> ({deCrear.combos}).
+            </p>
+          )}
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           <Button

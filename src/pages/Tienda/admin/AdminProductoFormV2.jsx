@@ -83,7 +83,15 @@ const TagInput = ({ tags, setTags, placeholder }) => {
   );
 };
 
-const AdminProductoFormV2 = () => {
+/**
+ * La ficha del catálogo. Con modo="prenda" es la de una prenda de Crear
+ * (/admin/prendas-crear): siempre esPrendaBase, sin formato de venta, con sus
+ * vistas y zonas a la vista y con "publicada en Crear" (antes se guardaba
+ * siempre visible y una prenda a medias salía en Crear).
+ */
+const AdminProductoFormV2 = ({ modo = 'producto' }) => {
+  const esModoPrenda = modo === 'prenda';
+  const rutaLista = esModoPrenda ? '/admin/prendas-crear' : '/admin/productos';
   const { id } = useParams();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -127,7 +135,10 @@ const AdminProductoFormV2 = () => {
     customizable: false,
     customizationViews: [],
     // Apartado Crear: prenda que el cliente diseña (utils/prendaBase.js).
-    esPrendaBase: false,
+    esPrendaBase: esModoPrenda,
+    // Se ve en la tienda (o en Crear, si es una prenda). Antes el guardado
+    // lo ponía siempre en true: ocultar algo duraba hasta volver a guardarlo.
+    visible: true,
     prendaBase: prendaBaseInicial(),
     characters: [],
     tags: [],
@@ -253,6 +264,20 @@ const AdminProductoFormV2 = () => {
 
       const firstVariantId = mappedVariants[0]?.id || '';
 
+      // Cada cosa en su ficha: las prendas y los combos de Crear tienen la suya.
+      if (!esModoPrenda && productData.esPrendaBase === true) {
+        navigate(`/admin/prendas-crear/${id}`, { replace: true });
+        return;
+      }
+      if (!esModoPrenda && productData.esComboCrear === true) {
+        navigate('/admin/combos-crear', { replace: true });
+        return;
+      }
+      if (esModoPrenda && productData.esPrendaBase !== true) {
+        navigate(`/admin/productos/${id}`, { replace: true });
+        return;
+      }
+
       const newForm = {
         name: productData.name || '',
         description: productData.description || '',
@@ -281,6 +306,7 @@ const AdminProductoFormV2 = () => {
         customizable: productData.customizable || false,
         customizationViews: productData.customizable && productData.customizationViews ? productData.customizationViews : [],
         esPrendaBase: productData.esPrendaBase === true,
+        visible: productData.visible !== false,
         prendaBase: productData.prendaBase || prendaBaseInicial(),
         isComboProduct: Boolean(productData.isComboProduct),
         comboItems: productData.comboItems || [],
@@ -341,8 +367,9 @@ const AdminProductoFormV2 = () => {
         variants: [{ id: initialVariantId, name: 'Variante 1', colorHex: '#cccccc', mode: 'mockup', mockupState: { selectedMockupId: '', selectedVariantIndex: 0 }, images: [], imageUrl: '', sizes: [], sizeLabel: 'Talla', showSizeConfig: false }],
         customizable: false,
         customizationViews: [],
-        esPrendaBase: false,
+        esPrendaBase: esModoPrenda,
         prendaBase: prendaBaseInicial(),
+        visible: true,
         characters: [],
         tags: [],
         publico: '',
@@ -741,10 +768,14 @@ const AdminProductoFormV2 = () => {
         queryClient.invalidateQueries({ queryKey: ['products-infinite'] }),
         queryClient.invalidateQueries({ queryKey: ['product', id] }),
         queryClient.invalidateQueries({ queryKey: ['featured-products'] }),
-        queryClient.invalidateQueries({ queryKey: ['collection-products'] })
+        queryClient.invalidateQueries({ queryKey: ['collection-products'] }),
+        // Las prendas de Crear: su lista del admin y lo que muestra Crear.
+        queryClient.invalidateQueries({ queryKey: ['admin-prendas-crear'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['prendas-base'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['prenda-base'], refetchType: 'all' }),
       ].filter(Boolean));
       
-      navigate('/admin/productos');
+      navigate(rutaLista);
     }
   });
 
@@ -843,7 +874,7 @@ const AdminProductoFormV2 = () => {
         equipo: form.equipo || '',
         edadMinima: form.edadMinima,
         variants: isCombo ? [] : finalVariants,
-        visible: true,
+        visible: form.visible !== false,
         featured: form.featured,
         isV2: true,
       };
@@ -880,14 +911,18 @@ const AdminProductoFormV2 = () => {
         </div>
       )}
       <div className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate('/admin/productos')} type="button">
+        <button className={styles.backBtn} onClick={() => navigate(rutaLista)} type="button">
           <ArrowLeft size={20} /> Volver
         </button>
         <div>
-          <h1 className={styles.title}>{isNew ? 'Crear Producto' : 'Editar Producto'}</h1>
+          <h1 className={styles.title}>
+            {esModoPrenda ? (isNew ? 'Nueva prenda de Crear' : 'Editar prenda de Crear') : (isNew ? 'Crear Producto' : 'Editar Producto')}
+          </h1>
           <p className={styles.subtitle}>
             {isNew && <span style={{ color: '#f59f00', fontWeight: 'bold', marginRight: '8px' }}>[Autoguardado Activo]</span>}
-            Crea productos configurando mockups o imágenes independientes por cada variante.
+            {esModoPrenda
+              ? 'La prenda que el cliente diseña en Crear: sus colores y tallas, sus vistas y las zonas donde se imprime.'
+              : 'Crea productos configurando mockups o imágenes independientes por cada variante.'}
           </p>
         </div>
       </div>
@@ -952,7 +987,27 @@ const AdminProductoFormV2 = () => {
 
       <form className={styles.contentGrid} onSubmit={handleSubmit}>
         
-        {/* Formato de venta (distinto de la taxonomía productType del filtro) */}
+        {/* Formato de venta (distinto de la taxonomía productType del filtro).
+            Una prenda de Crear es siempre una prenda suelta: en su lugar, si se
+            ve en Crear o no. */}
+        {esModoPrenda ? (
+          <div className={styles.card} style={{ marginBottom: '1.5rem', padding: '1rem 1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+              <div>
+                <h2 className={styles.cardTitle} style={{ margin: 0, padding: 0, borderBottom: 'none' }}>Publicada en Crear</h2>
+                <p className={styles.cardSubtitle} style={{ marginTop: '0.25rem', marginBottom: 0 }}>
+                  {form.visible !== false
+                    ? 'Los clientes la ven en Crear y pueden diseñarla.'
+                    : 'Borrador: solo la ven los admins (para probarla en Crear).'}
+                </p>
+              </div>
+              <label className={styles.toggleSwitch}>
+                <input type="checkbox" checked={form.visible !== false} onChange={(e) => setForm(f => ({ ...f, visible: e.target.checked }))} />
+                <span className={styles.slider}></span>
+              </label>
+            </div>
+          </div>
+        ) : (
         <div className={styles.card} style={{ marginBottom: '1.5rem', padding: '1rem 1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
@@ -971,6 +1026,7 @@ const AdminProductoFormV2 = () => {
             </div>
           </div>
         </div>
+        )}
 
         {/* COLUMNA IZQUIERDA: Formulario */}
         <div className={styles.leftCol}>
@@ -1740,13 +1796,16 @@ const AdminProductoFormV2 = () => {
           <div className={styles.card} style={{ marginTop: '1.5rem' }}>
             <div className={styles.cardHeaderFlex} style={{ borderBottom: 'none', paddingBottom: 0 }}>
               <div>
-                <h2 className={styles.cardTitle} style={{ borderBottom: 'none', margin: 0, padding: 0 }}>Producto Personalizable</h2>
+                <h2 className={styles.cardTitle} style={{ borderBottom: 'none', margin: 0, padding: 0 }}>
+                  {esModoPrenda ? 'Vistas, zonas, colores y tallas' : 'Producto Personalizable'}
+                </h2>
                 <p className={styles.cardSubtitle} style={{ marginTop: '0.25rem' }}>
                   {form.isComboProduct 
                     ? <span key="combo">Permite a los clientes personalizar los productos de este paquete usando las vistas originales de cada uno.</span>
                     : <span key="single">El cliente la diseña en <strong>Crear</strong> con sus imágenes y textos, y se imprime en las zonas que marques.</span>}
                 </p>
               </div>
+              {!esModoPrenda && (
               <label className={styles.toggleSwitch}>
                 <input
                   type="checkbox"
@@ -1763,6 +1822,7 @@ const AdminProductoFormV2 = () => {
                 />
                 <span className={styles.slider}></span>
               </label>
+              )}
             </div>
             {form.esPrendaBase && !form.isComboProduct && (
               <PersonalizacionPrenda
@@ -1850,7 +1910,7 @@ const AdminProductoFormV2 = () => {
               disabled={uploading || saveMutation.isPending}
             >
               {uploading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-              {uploading ? <span key="uploading">Procesando...</span> : <span key="default">{isNew ? 'Guardar Producto (Oficial)' : 'Guardar Cambios'}</span>}
+              {uploading ? <span key="uploading">Procesando...</span> : <span key="default">{isNew ? (esModoPrenda ? 'Guardar prenda' : 'Guardar Producto (Oficial)') : 'Guardar Cambios'}</span>}
             </Button>
           </div>
 

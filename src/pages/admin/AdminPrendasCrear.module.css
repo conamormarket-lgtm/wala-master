@@ -1,0 +1,23 @@
+/* Lo propio de la lista de prendas; el resto es de AdminCombosCrear.module.css. */
+.foto {
+  display: block;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--escenario-foto, #f5f4f8);
+}
+
+.foto img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.falta {
+  color: #b45309;
+  font-size: 0.8rem;
+  font-weight: 700;
+}

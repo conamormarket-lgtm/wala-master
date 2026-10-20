@@ -988,15 +988,42 @@ como lo hace el servidor).
 - "Quitar" una prenda del combo la deja en "Versiones anteriores" (7 días,
   recuperable), como antes.
 
-**Paso 3 (el admin):** las prendas de Crear (`esPrendaBase`) y los productos
-normales comparten la ficha del admin y un mismo interruptor "Personalizable"
-mueve dos modelos distintos (`esPrendaBase` del estudio nuevo y
-`customizable`/`customizationViews` del editor viejo `/editor/:id`, más el
-`YoryoPersonalizado`). Propuesta: una sección propia "Prendas de Crear" en el
-admin, quitar "Personalizable" de los productos normales y retirar el editor
-viejo para el cliente; falta decidir qué pasa con los productos personalizables
-que ya existen. La ficha además guarda siempre `visible: true` (una prenda
-oculta vuelve a verse al guardarla).
+**Paso 3a (hecho el 2026-10-20): las prendas de Crear tienen su sección en el admin.**
+
+- **Admin → Catálogo → Prendas de Crear** (`/admin/prendas-crear`,
+  `pages/admin/AdminPrendasCrear.jsx`): cada prenda con sus colores, vistas y
+  zonas, si le faltan vistas con zonas (entonces no sale en Crear), en qué
+  combos va, su estado (publicada o borrador) y acciones: ver en Crear,
+  editar, publicar o pasar a borrador, y archivar (avisa si la usa un combo
+  publicado). "Nueva prenda" y "Editar" abren la ficha de productos en
+  **modo prenda** (`AdminProductoFormV2 modo="prenda"`): sin "Formato de
+  venta", con "Publicada en Crear" arriba y las vistas, zonas, colores y
+  tallas sin interruptor.
+- **Productos** ya no lista las prendas ni los combos de Crear (dice cuántos
+  hay y enlaza a sus secciones); abrir uno de ellos desde Productos lleva a
+  su ficha (y una prenda abierta en modo producto, a la suya).
+- **La ficha guarda la visibilidad de verdad** (`visible: form.visible`):
+  antes la ponía siempre en `true`, así que ocultar algo (un producto, o una
+  prenda en borrador) duraba hasta la próxima vez que se guardaba.
+- Las rutas van en un solo paquete aparte (`pages/admin/RutasPrendasCrear.jsx`,
+  con sus dos páginas también aparte): el archivo principal sube 47 B gzip,
+  lo que cuesta una ruta nueva.
+
+Probado con los emuladores: la lista (4 prendas, sus combos), publicar y
+pasar a borrador desde la lista y desde la ficha (queda guardado y la lista
+lo muestra al volver), la ficha nueva (con las vistas y zonas), Productos sin
+las prendas ni los combos de Crear (55 de 61) y la redirección desde
+`/admin/productos/<prenda>`; un producto oculto sigue oculto al guardarlo.
+**No probado:** crear una prenda completa de cero (subir vistas y marcar
+zonas) en esta sección; es la misma ficha y el mismo editor de antes.
+
+**Paso 3b (pendiente, falta decidir):** quitar "Personalizable" de los
+productos normales en el admin y en la tienda (el botón "Personalizar", la
+insignia y el editor viejo `/editor/:id`). Antes hay que decidir qué pasa con
+los productos que hoy son personalizables (pasarlos a Crear o dejarlos como
+normales) y con Yoryo (`YoryoPersonalizado`: ¿es el grabado de las
+esclavas?). En el emulador hay dos normales con `customizable` (sin vistas) y
+ninguno con Yoryo; producción no se revisó.
 
 **Casos que tiene que cubrir el flujo** (para probar en cada cambio): una
 prenda nueva, editada, guardada, comprada, eliminada (antes y después de
