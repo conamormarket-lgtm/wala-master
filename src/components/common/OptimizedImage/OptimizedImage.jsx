@@ -139,6 +139,9 @@ export const fuentesPorFetch = (src, sizes) => (fetchActivo() && sePuedeTraerPor
     ? { src: urlPorFetch(src, 800), srcSet: srcSetPorFetch(src), sizes: sizes || SIZES_POR_DEFECTO }
     : null);
 
+/** Una copia chica (ancho en px) por fetch para leer sus colores, o null si no se puede. */
+export const fotoChicaPorFetch = (src, ancho = 64) => (fetchActivo() && sePuedeTraerPorFetch(src) ? urlPorFetch(src, ancho) : null);
+
 /** Para esparcir en una <img> propia: por fetch si se puede, si no la URL tal cual. */
 export const atributosDeFoto = (url, sizes) => fuentesPorFetch(url, sizes) || { src: url };
 

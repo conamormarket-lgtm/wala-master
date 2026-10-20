@@ -7,6 +7,7 @@ import { atributosDeFoto } from '../../../components/common/OptimizedImage/Optim
 import { FotoProducto } from './FotoProducto';
 import { Hueso } from '../Esqueletos';
 import { Texto } from '../Traduccion';
+import { useColorDeFondo } from './colorDeFondo';
 import s from './TarjetaCategoria.module.css';
 
 /** Color estable para una categoría sin foto (mismo nombre → mismo color). */
@@ -25,13 +26,18 @@ const tonoDe = (texto) => {
  *  - url (enlace) u onClick (botón, p. ej. filtrar la misma página)
  *  - activa: resaltada (burbuja elegida)
  *  - todos: la burbuja "Todos" (sello con el degradado del logo)
- *  - acento: color del aro del círculo y la burbuja (la foto nunca se tiñe)
+ *  - acento: color del aro del círculo y la burbuja (la foto nunca se tiñe).
+ *    Si la foto tiene un fondo liso, el aro toma ese color (colorDeFondo.js);
+ *    el acento queda para las fotos sin fondo parejo.
  *  - fondo: color propio del cuadro (tileBackgroundColor del builder)
  *  - giro: grados al pasar el ratón (cuadros y círculos)
  *  - detalle: una línea de texto bajo el nombre del cuadro (p. ej. el tipo de
  *    un nicho: "Personalizados")
  */
-export function TarjetaCategoria({ forma = 'cuadro', nombre, imagen, cuenta, url, onClick, activa = false, todos = false, acento, fondo, giro = -2.5, detalle, className }) {
+export function TarjetaCategoria({ forma = 'cuadro', nombre, imagen, cuenta, url, onClick, activa = false, todos = false, acento: acentoFijo, fondo, giro = -2.5, detalle, className }) {
+  // El cuadro no tiene aro: no hace falta medir su foto.
+  const colorFoto = useColorDeFondo(forma !== 'cuadro' && !todos ? imagen : null);
+  const acento = colorFoto || acentoFijo;
   const foto = todos ? <LayoutGrid aria-hidden="true" />
     : imagen ? <img {...atributosDeFoto(toDirectImageUrl(imagen), '320px')} alt="" loading="lazy" decoding="async" />
       : <span aria-hidden="true">{String(nombre || '').trim()[0]?.toUpperCase()}</span>;
