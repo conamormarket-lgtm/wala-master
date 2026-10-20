@@ -278,7 +278,7 @@
 
   .escena {
     position: sticky;
-    top: 1rem;
+    top: calc(var(--altura-cabecera, 72px) + 1rem);
   }
 
   .lienzo {

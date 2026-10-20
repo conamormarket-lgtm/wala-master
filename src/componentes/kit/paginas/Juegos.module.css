@@ -19,7 +19,7 @@
 
   .lado {
     position: sticky;
-    top: 6rem;
+    top: calc(var(--altura-cabecera, 72px) + 1rem);
   }
 }
 

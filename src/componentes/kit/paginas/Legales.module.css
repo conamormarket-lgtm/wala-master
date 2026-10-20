@@ -16,7 +16,7 @@
 /* El índice se queda a la vista mientras se lee (debajo de la cabecera fija). */
 .lado {
   position: sticky;
-  top: 6rem;
+  top: calc(var(--altura-cabecera, 72px) + 1rem);
 }
 
 .hoja {

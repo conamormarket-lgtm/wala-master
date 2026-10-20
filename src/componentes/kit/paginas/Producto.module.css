@@ -325,10 +325,10 @@
     gap: 2.5rem;
   }
 
-  /* Debajo de la cabecera, que también va pegada arriba (70px + su margen). */
+  /* Debajo de la cabecera y la barra de admin (--altura-cabecera). */
   .opinionesCuerpo > :first-child {
     position: sticky;
-    top: 6rem;
+    top: calc(var(--altura-cabecera, 72px) + 1rem);
   }
 }
 

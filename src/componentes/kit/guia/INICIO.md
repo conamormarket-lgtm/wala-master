@@ -387,6 +387,22 @@ abierto, el panel va de alto completo (`--editor-arriba: 0`): la página y la
 barra de admin se corren para dejarle su lugar, y arriba a la derecha ya no
 queda un hueco.
 
+**Lo pegado debajo de la cabecera (2026-10-20):**
+
+- `--altura-cabecera` (en `styles/variables.css`) es lo que tapa arriba: la
+  barra de admin más la cabecera, con los altos que publican las dos. Todo
+  lo que se pega al bajar va a `top: calc(var(--altura-cabecera, 72px) +
+  1rem)`: los filtros del catálogo y de las marcas, la galería del producto,
+  las opiniones, el resumen del carrito y del pago, el costado del detalle de
+  una compra, de los juegos y de los legales, y la escena del estudio del
+  kit. Antes usaban 1rem o 6rem fijos y, con la barra de admin, quedaban
+  debajo de la cabecera.
+- La franja sobre la tarjeta de la cabecera (su margen de arriba) va
+  pintada con el fondo: lo que pasa por debajo ya no se asoma entre la
+  barra de admin y la cabecera.
+- En el celular, la barra inferior va sobre la carga al cambiar de página
+  (z-index 100; la carga es 99): antes la tapaba y abajo no se veía nada.
+
 **El editor sobre la cabecera (2026-10-20):**
 
 - La etiqueta de cada sección ("Menú de la cabecera"…) y su borde van sobre

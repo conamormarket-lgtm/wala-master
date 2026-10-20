@@ -747,7 +747,8 @@
   margin-bottom: 0.3rem;
 }
 
-.lateral .item {
+.lateral .item,
+.lateral .itemActual:hover {
   min-height: 42px;
   margin: 0;
   padding: 0 0.45rem;

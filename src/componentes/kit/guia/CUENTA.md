@@ -292,6 +292,12 @@ a 1366 y en noche.)
   `aria-current`.
 - **Interruptor `cuentaVieja`:** también vuelven `CatalogRewardViejo.jsx`,
   `MisCuponesViejo.jsx` y `MisionesViejo.jsx`.
+- **Ajustes del 2026-10-20:** la foto de cada recompensa ocupa todo el
+  recuadro (cuadrado, `object-fit: cover`, sin la mezcla de las fotos con
+  fondo blanco): son ilustraciones con su fondo y, contenidas en 16:10,
+  quedaban al centro con franjas a los lados. En el menú lateral, la
+  sección actual ya no se pone en negrita al pasar el mouse (el texto se
+  partía en dos líneas y saltaba).
 
 ### Qué se probó (2026-10-17, localhost con los emuladores)
 

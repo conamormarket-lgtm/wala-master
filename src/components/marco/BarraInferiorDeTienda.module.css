@@ -9,7 +9,8 @@
     right: 0;
     bottom: 0;
     left: 0;
-    z-index: 90;
+    /* Sobre la carga al cambiar de página (99), como la cabecera. */
+    z-index: 100;
     display: block;
     padding-right: var(--safe-right, 0px);
     padding-left: var(--safe-left, 0px);

@@ -14,10 +14,18 @@
   border-color: var(--violet-300);
 }
 
+/* Las recompensas son ilustraciones cuadradas con su propio fondo: la foto
+   ocupa todo el recuadro (antes, contenida en 16:10, quedaba al centro con
+   franjas a los lados y, en oscuro, oscurecida por la mezcla). */
 .recompensaFoto {
   position: relative;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 1 / 1;
   border-radius: 0;
+}
+
+.recompensaFoto > img {
+  object-fit: cover;
+  mix-blend-mode: normal;
 }
 
 .recompensaRespaldo {

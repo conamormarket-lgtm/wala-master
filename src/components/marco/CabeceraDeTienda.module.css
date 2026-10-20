@@ -8,15 +8,16 @@
   pointer-events: none;
 }
 
-/* En la app, la franja de la hora (zona segura) va pintada: el contenido no
-   se ve pasar por debajo de la barra del sistema. */
+/* La franja de arriba (la zona segura en la app y el margen sobre la
+   tarjeta) va pintada: lo que pasa por debajo al bajar no se asoma entre la
+   barra de admin (o la del sistema) y la cabecera. */
 .fija::before {
   content: '';
   position: absolute;
   top: 0;
   right: 0;
   left: 0;
-  height: var(--safe-top, 0px);
+  height: calc(var(--safe-top, 0px) + 0.6rem);
   background: var(--color-bg, var(--gris-fondo));
 }
 
@@ -26,6 +27,10 @@
 }
 
 @media (max-width: 768px) {
+  .fija::before {
+    height: calc(var(--safe-top, 0px) + 0.45rem);
+  }
+
   .fija {
     padding: calc(0.45rem + var(--safe-top, 0px)) max(0.6rem, var(--safe-right, 0px)) 0 max(0.6rem, var(--safe-left, 0px));
   }
