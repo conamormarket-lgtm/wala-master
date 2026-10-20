@@ -86,7 +86,7 @@ export default function CreacionesDeCuenta() {
   // Cada combo es UNA tarjeta: sus prendas no se repiten sueltas.
   const tarjetas = useMemo(() => agruparCombos(designs, borradores)
     .sort((a, b) => (fechaDeDiseno(b) || 0) - (fechaDeDiseno(a) || 0)), [designs, borradores]);
-  const tarjetasBorrador = useMemo(() => agruparCombos(borradores), [borradores]);
+  const tarjetasBorrador = useMemo(() => agruparCombos(borradores, designs), [borradores, designs]);
 
   // Las tarjetas y sus acciones: las mismas de Crear (useTarjetasCreaciones).
   const { tarjetaDe, eliminar, renombrar, comunidadPara, buscar, cambiarEnAmbas: cambiarAmbas, eliminarDiseno } = useTarjetasCreaciones({

@@ -28,8 +28,8 @@ export const useCombosDePrenda = (productId) => {
 
 /**
  * Lleva una creación (guardada o borrador) a un combo NUEVO: hace una copia
- * para el combo (la creación sigue igual, suelta) y la pone en las prendas
- * del combo que son su misma prenda; lo demás se diseña en el combo.
+ * para CADA prenda del combo que es su misma prenda (la creación sigue igual,
+ * suelta; cada prenda del combo tiene la suya); lo demás se diseña en el combo.
  */
 export const useLlevarEnCombo = () => {
   const { user } = useAuth();
@@ -39,14 +39,18 @@ export const useLlevarEnCombo = () => {
   const llevar = async (combo, creacion) => {
     if (!user || llevando) return;
     setLlevando(combo.id);
-    const pieza = combo.piezas.findIndex((p) => p.prendaId === creacion.productId);
-    const { id, error } = await copiarCreacionParaCombo(user.uid, creacion, combo, Math.max(0, pieza));
-    if (error || !id) {
-      setLlevando(null);
-      toast.error(`No pudimos armar el combo: ${error || 'inténtalo de nuevo.'}`);
-      return;
+    const indices = combo.piezas.map((p, i) => (p.prendaId === creacion.productId ? i : -1)).filter((i) => i >= 0);
+    const porPieza = {};
+    for (const i of indices.length ? indices : [0]) {
+      const { id, error } = await copiarCreacionParaCombo(user.uid, creacion, combo, i);
+      if (error || !id) {
+        setLlevando(null);
+        toast.error(`No pudimos armar el combo: ${error || 'inténtalo de nuevo.'}`);
+        return;
+      }
+      porPieza[i] = id;
     }
-    empezarComboCon(combo, id, creacion.productId);
+    empezarComboCon(combo, porPieza);
     navigate(`/combo/${combo.id}`);
   };
   return { llevar, llevando };

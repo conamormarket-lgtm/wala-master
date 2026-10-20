@@ -14,15 +14,16 @@ export const notasEliminarCombo = (combo, items) => {
     combo?.comunidad === 'publicada' && 'Está publicado en la comunidad: también se retira de la galería.',
     (items || []).some((i) => i.customization?.miComboId === combo?.id)
       || (combo?.piezas || []).some((p) => usadas.has(p.designId))
-      ? 'Está en tu carrito: ahí sigue y sus prendas se quedan para poder comprarlo.' : null,
+      ? 'Está en tu carrito: ahí sigue para que puedas comprarlo.' : null,
   ].filter(Boolean);
 };
 
 /**
  * Eliminar "Mi combo" (con su confirmación) desde Crear, Mis creaciones y Tus
- * borradores: se van el combo y sus prendas, salvo las que se usan en otro
- * lado (ver eliminarMiComboConPrendas). Devuelve los ids que ya no están (el
- * combo y las prendas borradas) y los de las prendas que quedaron sueltas.
+ * borradores: se van el combo y sus prendas; si está comprado o en el carrito
+ * se archiva (ver eliminarMiComboConPrendas). Devuelve los ids que ya no se
+ * ven (el combo y las prendas borradas) y los de las creaciones sueltas que
+ * se habían elegido para él (siguen en la lista).
  * Con `{ confirmado: true }` no pregunta (la tarjeta del kit ya lo hizo).
  */
 export const useEliminarMiCombo = () => {
@@ -37,7 +38,7 @@ export const useEliminarMiCombo = () => {
     const notas = notasEliminarCombo(combo, items);
     if (!confirmado && !(await confirmar({
       titulo: `¿Eliminar el combo "${nombre}" y sus prendas?`,
-      texto: ['Las que uses en otro combo, en un pedido o en el carrito se quedan.', ...notas].join(' '),
+      texto: ['Se borran también sus prendas. Si está en un pedido o en tu carrito, ahí conserva sus diseños.', ...notas].join(' '),
       confirmar: 'Eliminar',
       peligro: true,
     }))) return null;
@@ -51,7 +52,7 @@ export const useEliminarMiCombo = () => {
       }
     }
     const enCarrito = disenosEnCarrito(items);
-    const { error, borradas, sueltas } = await eliminarMiComboConPrendas(user.uid, combo, { enCarrito });
+    const { error, borradas, sueltas, archivado } = await eliminarMiComboConPrendas(user.uid, combo, { enCarrito });
     if (error) {
       toast.error(error);
       return null;
@@ -63,8 +64,9 @@ export const useEliminarMiCombo = () => {
     queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'], refetchType: 'all' });
     queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'], refetchType: 'all' });
     toast.success(sueltas.length
-      ? `Combo eliminado. ${sueltas.length === 1 ? 'Una prenda se quedó' : `${sueltas.length} prendas se quedaron`} en tus creaciones porque las usas en otro lado.`
-      : 'Combo eliminado con sus prendas.');
+      ? 'Combo eliminado. Las creaciones tuyas que elegiste para él siguen en tus creaciones.'
+      : archivado ? 'Combo eliminado. Tu pedido o tu carrito conserva sus diseños.'
+        : 'Combo eliminado con sus prendas.');
     return { quitadas: [combo.id, ...borradas], sueltas };
   };
 };

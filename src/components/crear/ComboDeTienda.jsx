@@ -61,9 +61,11 @@ export default function ComboDeTienda() {
   const piezasKit = piezas.map((p, k) => {
     const otra = piezas.find((o) => o.i !== p.i && o.creacion && creacionLista(o.creacion));
     const vaciasIguales = piezas.filter((o) => o.i !== p.i && !o.designId && piezasCombo[o.i].prendaId === piezasCombo[p.i].prendaId).length;
-    // Si otra prenda lleva este mismo diseño, se edita una copia: cambiarlo
-    // aquí no debe cambiar la otra prenda.
-    const compartido = piezas.some((o) => o.i !== p.i && o.designId === p.designId);
+    // Si otra prenda lleva este mismo diseño (combos de antes), o es una
+    // creación suelta del cliente (elegida antes de que se copiaran), se edita
+    // una copia: cambiarlo aquí no debe cambiar la otra prenda ni la original.
+    const compartido = piezas.some((o) => o.i !== p.i && o.designId === p.designId)
+      || Boolean(p.creacion && !p.creacion.combo?.id);
     const estado = p.cargando ? 'cargando'
       : p.creacion ? (p.lista ? 'disenada' : p.creacion.estado === 'borrador' ? 'borrador' : 'vieja')
         : p.plantilla ? 'plantilla'
@@ -148,7 +150,7 @@ export default function ComboDeTienda() {
       misCreaciones={uid ? (i) => c.opcionesMias(i).map((d) => ({
         id: d.id, nombre: d.name, imagen: d.vistasPrevias?.[0]?.url || d.imagenConjunta || d.previewUrl,
       })) : undefined}
-      onElegirCreacion={(i, id) => c.ponerEn(i, { designId: id, talla: '' })}
+      onElegirCreacion={c.elegirCreacion}
       onAgregar={c.agregar}
       preparando={c.preparando}
       estadoEnlaces={c.estadoEstudio}

@@ -25,7 +25,11 @@ export const getDesignsByUser = async (userId, { soloBorradores = false } = {}) 
     });
   }
 
-  return { data: sortedData.slice(0, 50), error };
+  // Los 50 más recientes, y además TODOS los "Mi combo" (son pocos): sin el
+  // combo, sus prendas se verían sueltas o como versiones anteriores.
+  const recientes = sortedData.slice(0, 50);
+  const combosViejos = sortedData.slice(50).filter((d) => d.tipo === 'comboCrear');
+  return { data: [...recientes, ...combosViejos], error };
 };
 
 /** Borradores del apartado Crear: diseños que el cliente empezó y no guardó. */

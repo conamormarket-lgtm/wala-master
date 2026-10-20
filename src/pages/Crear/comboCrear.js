@@ -49,16 +49,14 @@ export const ponerPieza = (comboId, indice, cambios) => {
 };
 
 /**
- * Empieza un combo NUEVO con un diseño ya hecho: va en todas las prendas del
- * combo que son su misma prenda (en una pareja de poleras, en las dos) y las
- * demás quedan por diseñar. Lo que había a medias sigue en la cuenta (Mi combo).
+ * Empieza un combo NUEVO con un diseño ya hecho: `porPieza` = { [índice]: id }
+ * con la copia de cada prenda que es su misma prenda (en una pareja de
+ * poleras, una copia en cada una); las demás quedan por diseñar. Lo que había
+ * a medias sigue en la cuenta (Mi combo).
  */
-export const empezarComboCon = (combo, designId, prendaId) => {
+export const empezarComboCon = (combo, porPieza) => {
   olvidarArmado(combo.id);
-  guardarArmado(combo.id, combo.piezas.map((p) => ({
-    ...piezaVacia(),
-    designId: p.prendaId === prendaId ? designId : '',
-  })));
+  guardarArmado(combo.id, combo.piezas.map((_, i) => ({ ...piezaVacia(), designId: porPieza[i] || '' })));
 };
 
 export const olvidarArmado = (comboId) => {
@@ -126,6 +124,8 @@ export const esComboCrear = (item) => item?.customization?.tipo === 'comboCrear'
  */
 export const disenosEnCarrito = (items) => new Set((items || []).flatMap((i) => [
   i.customization?.designId,
+  // El "Mi combo" de la línea: eliminarlo lo archiva en vez de borrarlo.
+  i.customization?.miComboId,
   ...(i.customization?.piezas || []).map((p) => p?.designId),
 ]).filter(Boolean));
 

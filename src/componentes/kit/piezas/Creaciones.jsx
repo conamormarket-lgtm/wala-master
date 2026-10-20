@@ -120,7 +120,7 @@ export function TarjetaCreacion({
   const preguntarEliminar = () => setPregunta({
     titulo: eliminar?.titulo || (esCombo ? `¿Eliminar el combo «${nombre || 'Mi combo'}» y sus prendas?` : `¿Eliminar «${nombre || 'esta creación'}»?`),
     texto: eliminar?.texto || (esCombo
-      ? 'Las que uses en otro combo, en un pedido o en el carrito se quedan.'
+      ? 'Se borran también sus prendas. Si está en un pedido o en tu carrito, ahí conserva sus diseños.'
       : comprado
         ? 'Se borra de tus creaciones. Como ya está en un pedido, guardamos sus imágenes para imprimirlo.'
         : 'Se borra para siempre junto con sus imágenes.'),

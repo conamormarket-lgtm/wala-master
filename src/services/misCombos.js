@@ -16,12 +16,28 @@ import { getDesignById, eliminarCreacion, saveDesign } from './designs';
  *     piezas: [{ designId, prendaId, talla, frente, espalda }],
  *     previas: [imagen por pieza] }
  *
+ * Cada pieza es SUYA (desde el 2026-10-20): su propia creación, hecha para
+ * este combo (campo `combo`), nunca la misma en dos piezas ni una creación
+ * suelta del cliente. "Ponerlo también en la prenda 2", "Usar en la otra",
+ * elegir de "Mis creaciones" y "Llevar en combo" ponen una COPIA (con las
+ * mismas imágenes, sin subir nada): cambiar o borrar una no toca la otra.
+ * Los combos de antes pueden tener piezas compartidas: siguen funcionando.
+ *
+ * Un combo comprado (o en el carrito) no se borra al eliminarlo: se ARCHIVA
+ * (`archivado: true`), deja de verse y sus prendas siguen ocultas con él (el
+ * pedido conserva sus archivos). Antes sus prendas volvían a verse sueltas.
+ * Cuando ya no hacen falta (no están en un pedido ni en el carrito), la
+ * limpieza de las listas (cuidarCombosArchivados) los borra del todo.
+ *
  * La foto de frente y la de espalda van DENTRO de cada pieza: el guardado
  * (removeEmptyForFirestore) quita los '' de las listas, y en una lista
  * aparte ("previasEspalda") una pieza sin espalda corría a las demás: la
  * casaca mostraba la espalda del polo. `previas` queda para lo de antes.
  */
 export const esMiCombo = (d) => d?.tipo === 'comboCrear';
+
+/** Un "Mi combo" que sigue en uso (no archivado al eliminarlo). */
+export const esComboVigente = (d) => esMiCombo(d) && d.archivado !== true;
 
 /** ¿La pieza está terminada? (guardada, con vistas previas y archivos para imprimir). */
 const piezaLista = (d) => Boolean(d) && d.estado !== 'borrador'
@@ -119,42 +135,84 @@ const todosLosDisenos = async (userId) => {
   return error ? null : (data || []);
 };
 
+/**
+ * El "Mi combo" (vigente o archivado) que usa esta creación como prenda, o
+ * null. undefined si no se pudo revisar.
+ */
+export const comboQueUsa = async (userId, designId) => {
+  const disenos = await todosLosDisenos(userId);
+  if (!disenos) return undefined;
+  return disenos.find((d) => esMiCombo(d) && (d.piezas || []).some((p) => p.designId === designId)) || null;
+};
+
 /** Ids de las prendas que usa algún "Mi combo" (menos el que se excluye). */
 const usadasPorCombos = (disenos, excepto = null) => new Set(disenos
   .filter((d) => esMiCombo(d) && d.id !== excepto)
   .flatMap((c) => (c.piezas || []).map((p) => p.designId).filter(Boolean)));
 
 /**
- * Elimina "Mi combo" y sus prendas. Una prenda se borra solo si se hizo para
- * ESTE combo (campo combo), ningún otro combo la usa y no está en un pedido,
- * en el carrito ni publicada. Una creación que ya existía y se eligió para el
- * combo ("Mis creaciones") no se borra: vuelve a verse suelta. Las que no se
- * borran quedan como creaciones normales (sin la etiqueta del combo). Lo
- * publicado en la comunidad es una copia: no cambia.
+ * Elimina "Mi combo" y sus prendas. Una prenda se borra si se hizo para ESTE
+ * combo (campo combo), ningún otro combo la usa y no está en un pedido, en el
+ * carrito ni publicada. Si alguna se queda por eso (o el combo mismo está en
+ * un pedido o en el carrito), el combo se ARCHIVA en vez de borrarse: sus
+ * prendas siguen ocultas con él y no vuelven a verse sueltas. Una creación
+ * suelta que se eligió para un combo de antes (sin campo combo) no se toca:
+ * es del cliente. Devuelve { borradas, sueltas, archivado }.
  */
 export const eliminarMiComboConPrendas = async (userId, combo, { enCarrito = new Set() } = {}) => {
   const disenos = await todosLosDisenos(userId);
   // Sin la lista completa no se sabe si otro combo usa una prenda: no se borra nada.
-  if (!disenos) return { error: 'No pudimos revisar tus diseños. Inténtalo de nuevo.', borradas: [], sueltas: [] };
-  const { error } = await deleteDocument('designs', combo.id);
-  if (error) return { error, borradas: [], sueltas: [] };
+  if (!disenos) return { error: 'No pudimos revisar tus diseños. Inténtalo de nuevo.', borradas: [], sueltas: [], archivado: false };
   const enOtro = usadasPorCombos(disenos, combo.id);
   const ids = [...new Set((combo.piezas || []).map((p) => p.designId).filter(Boolean))];
+  const piezas = ids.filter((id) => !enOtro.has(id))
+    .map((id) => disenos.find((x) => x.id === id))
+    .filter((d) => d && d.userId === userId);
+  const propias = piezas.filter((d) => d.combo?.id);
+  const seQuedan = propias.filter((d) => !sePuedeBorrarSola(d, enCarrito));
+  const archivar = combo.enPedido === true || enCarrito.has(combo.id) || seQuedan.length > 0;
+  const { error } = archivar
+    ? await updateDocument('designs', combo.id, { archivado: true, archivadoEn: Date.now() })
+    : await deleteDocument('designs', combo.id);
+  if (error) return { error, borradas: [], sueltas: [], archivado: false };
   const borradas = [];
-  const sueltas = [];
-  await Promise.allSettled(ids.map(async (id) => {
-    if (enOtro.has(id)) return;
-    const d = disenos.find((x) => x.id === id);
-    if (!d || d.userId !== userId) return;
-    if (d.combo?.id === combo.comboId && sePuedeBorrarSola(d, enCarrito)) {
-      const { error: e } = await eliminarCreacion(userId, d);
-      if (!e) borradas.push(id);
-    } else if (d.combo?.id) {
-      const { error: e } = await updateDocument('designs', id, { combo: null, reemplazadaEn: null });
-      if (!e) sueltas.push(id);
-    }
+  await Promise.allSettled(propias.filter((d) => sePuedeBorrarSola(d, enCarrito)).map(async (d) => {
+    const { error: e } = await eliminarCreacion(userId, d);
+    if (!e) borradas.push(d.id);
   }));
-  return { error: null, borradas, sueltas };
+  // Las de antes, elegidas de "Mis creaciones": siguen siendo del cliente.
+  const sueltas = piezas.filter((d) => !d.combo?.id).map((d) => d.id);
+  return { error: null, borradas, sueltas, archivado: archivar };
+};
+
+/**
+ * Limpieza de los combos archivados (la corren las listas): el que ya no
+ * está en un pedido ni en el carrito, y cuyas prendas tampoco, se borra del
+ * todo con ellas. Devuelve los ids borrados.
+ */
+export const cuidarCombosArchivados = async (userId, { todos, enCarrito = new Set() }) => {
+  const archivados = (todos || []).filter((d) => esMiCombo(d) && d.archivado === true
+    && d.enPedido !== true && !enCarrito.has(d.id));
+  if (!userId || !archivados.length) return [];
+  const completos = await todosLosDisenos(userId);
+  if (!completos) return [];
+  const borradas = [];
+  await Promise.allSettled(archivados.map(async (combo) => {
+    const enOtro = usadasPorCombos(completos, combo.id);
+    const piezas = [...new Set((combo.piezas || []).map((p) => p.designId).filter(Boolean))]
+      .filter((id) => !enOtro.has(id))
+      .map((id) => completos.find((x) => x.id === id))
+      .filter((d) => d && d.userId === userId && d.combo?.id);
+    if (piezas.some((d) => !sePuedeBorrarSola(d, enCarrito))) return;
+    for (const d of piezas) {
+      const { error } = await eliminarCreacion(userId, d);
+      if (error) return;
+      borradas.push(d.id);
+    }
+    const { error } = await deleteDocument('designs', combo.id);
+    if (!error) borradas.push(combo.id);
+  }));
+  return borradas;
 };
 
 /** Días que se guarda (oculta) una versión reemplazada antes de borrarse sola. */
@@ -228,10 +286,13 @@ export const recuperarVersion = (id) => updateDocument('designs', id, { combo: n
  * tarjeta y sus prendas no se repiten sueltas (siguen en la cuenta y se abren
  * desde el combo), esté el combo terminado o en borrador. Las versiones
  * reemplazadas tampoco salen (están en "Versiones anteriores de tus combos").
+ * Un combo archivado (eliminado, pero comprado o en el carrito) no se ve, y
+ * sus prendas tampoco: siguen siendo de él.
  */
 export const agruparCombos = (designs, otros = []) => {
-  // `otros`: combos de la otra lista (un combo en borrador puede tener piezas ya guardadas).
+  // `otros`: la otra lista (un combo en borrador puede tener piezas ya
+  // guardadas, y un combo guardado, piezas en borrador).
   const enCombo = new Set([...designs, ...otros].filter(esMiCombo).flatMap((c) => (c.piezas || []).map((p) => p.designId)));
   const reemplazadas = new Set(versionesReemplazadas(designs, otros).map((d) => d.id));
-  return designs.filter((d) => esMiCombo(d) || (!enCombo.has(d.id) && !reemplazadas.has(d.id)));
+  return designs.filter((d) => (esMiCombo(d) ? esComboVigente(d) : !enCombo.has(d.id) && !reemplazadas.has(d.id)));
 };

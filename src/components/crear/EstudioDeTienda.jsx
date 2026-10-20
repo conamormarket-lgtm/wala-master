@@ -31,7 +31,7 @@ const RecortarFoto = lazy(() => import('../../componentes/kit/piezas/RecortarFot
 const QuitarFondo = lazy(() => import('./QuitarFondoDeEstudio'));
 import { itemDeCreacion } from '../../pages/Crear/creacionCarrito';
 import { ponerPieza, leerArmado, guardarArmado, leerMetaArmado, guardarMetaArmado } from '../../pages/Crear/comboCrear';
-import { sincronizarMiCombo } from '../../services/misCombos';
+import { sincronizarMiCombo, copiarCreacionParaCombo, esComboVigente } from '../../services/misCombos';
 import { getComboCrear } from '../../services/combosCrear';
 import { MenuContextual } from '../../componentes/kit/piezas/MenuContextual';
 import { registrarGuardado, ponerBorradorEnCache, quitarBorradorDeCache } from '../../pages/Crear/borradoresCache';
@@ -152,12 +152,25 @@ const EstudioDeTienda = () => {
     enabled: enCombo,
     queryFn: async () => (await getComboCrear(comboParam)).data,
   });
+  // "Mi combo" que se está armando, de la cuenta (la misma consulta y caché
+  // que la página del combo).
+  const mioInicial = enCombo ? searchParams.get('mio') || '' : '';
+  const { data: miComboCuenta } = useQuery({
+    queryKey: ['creacion', mioInicial, user?.uid],
+    enabled: Boolean(mioInicial && user),
+    queryFn: async () => {
+      const { data } = await getDesignById(mioInicial);
+      return data ? { id: mioInicial, ...data } : null;
+    },
+  });
   // Las otras piezas del combo que son esta misma prenda (en una pareja de
   // poleras, la otra polera), con el diseño que llevan (o null).
   const otrasMismaPrenda = (() => {
     // Un combo de la comunidad trae un diseño para cada pieza: no se copia encima.
     if (!enCombo || !comboActual || leerMetaArmado(comboParam).plantilla) return [];
-    const armado = leerArmado(comboParam, comboActual.piezas.length);
+    // Lo de la cuenta manda; lo del navegador puede ser de otro "Mi combo".
+    const deCuenta = miComboCuenta?.tipo === 'comboCrear' && miComboCuenta.comboId === comboParam ? miComboCuenta.piezas : null;
+    const armado = deCuenta || leerArmado(comboParam, comboActual.piezas.length);
     return comboActual.piezas
       .map((p, i) => ({ ...p, i }))
       .filter((p) => p.i !== piezaParam && p.prendaId === id)
@@ -2819,7 +2832,7 @@ const EstudioDeTienda = () => {
     const n = combo.piezas.length;
     if (mioRef.current) {
       const { data } = await getDesignById(mioRef.current);
-      if (data?.tipo === 'comboCrear' && data.userId === user?.uid && data.comboId === comboParam) {
+      if (esComboVigente(data) && data.userId === user?.uid && data.comboId === comboParam) {
         return Array.from({ length: n }, (_, i) => ({
           designId: cambiosPiezasRef.current[i] ?? data.piezas?.[i]?.designId ?? '',
           talla: data.piezas?.[i]?.talla || '',
@@ -2835,13 +2848,14 @@ const EstudioDeTienda = () => {
     if (!combo) return;
     try {
       const piezas = await piezasDelCombo(combo);
-      const previo = mioRef.current || leerMetaArmado(comboParam).miComboId;
-      let sincronizado = await sincronizarMiCombo(user.uid, { id: previo || undefined, combo, piezas });
-      // El combo que se recordaba ya no existe (se eliminó): se crea otro en
-      // vez de seguir actualizando uno que no está.
-      if (sincronizado.error && previo && (await getDesignById(previo)).error === 'Documento no encontrado') {
-        sincronizado = await sincronizarMiCombo(user.uid, { id: undefined, combo, piezas });
+      let previo = mioRef.current || leerMetaArmado(comboParam).miComboId;
+      // El combo que se recordaba ya no existe o se archivó (se eliminó): se
+      // crea otro en vez de seguir actualizando ese.
+      if (previo) {
+        const { data, error } = await getDesignById(previo);
+        if (error === 'Documento no encontrado' || (data && !esComboVigente(data))) previo = '';
       }
+      const sincronizado = await sincronizarMiCombo(user.uid, { id: previo || undefined, combo, piezas });
       const miComboId = sincronizado.error ? '' : sincronizado.id;
       if (miComboId) {
         mioRef.current = miComboId;
@@ -2853,18 +2867,28 @@ const EstudioDeTienda = () => {
     } catch { /* se vuelve a intentar desde la página del combo */ }
   };
 
-  /** Pone la creación en su pieza del combo (y en las iguales, si se pidió). */
-  const ponerEnCombo = (idPieza) => {
+  /**
+   * Pone la creación en su pieza del combo y, si se pidió, una COPIA suya en
+   * las iguales: cada prenda tiene su creación (cambiar o borrar una no toca
+   * la otra). La copia usa las mismas imágenes: no se sube nada.
+   */
+  const ponerEnCombo = async (idPieza) => {
     ponerPieza(comboParam, piezaParam, { designId: idPieza });
     cambiosPiezasRef.current[piezaParam] = idPieza;
     const destinos = [
       ...(copiarALasOtras ? otrasIguales : []),
       ...(reemplazarOtras ? otrasConOtroDiseno.map((p) => p.i) : []),
     ];
-    destinos.forEach((i) => {
-      ponerPieza(comboParam, i, { designId: idPieza });
-      cambiosPiezasRef.current[i] = idPieza;
-    });
+    if (!destinos.length || !user) return;
+    const { data: original } = await getDesignById(idPieza);
+    const combo = comboActual || (await getComboCrear(comboParam)).data;
+    if (!original || !combo) return;
+    for (const i of destinos) {
+      const { id: copia } = await copiarCreacionParaCombo(user.uid, { ...original, id: idPieza }, combo, i);
+      if (!copia) continue;
+      ponerPieza(comboParam, i, { designId: copia });
+      cambiosPiezasRef.current[i] = copia;
+    }
   };
 
   const confirmarGuardar = async (nombreFinal = nombreEditado, { actualizar = false } = {}) => {
@@ -2876,7 +2900,7 @@ const EstudioDeTienda = () => {
       const creacion = await guardarCreacion(nombreFinal);
       // Dentro de un combo, guardar también la deja puesta en su pieza.
       if (enCombo) {
-        ponerEnCombo(creacion.id);
+        await ponerEnCombo(creacion.id);
         await sincronizarCombo();
       }
       // Al actualizar basta un aviso; la primera vez, la ventana con "Ver mi creación".
@@ -2924,7 +2948,7 @@ const EstudioDeTienda = () => {
         const creacion = await guardarCreacion(nombre, talla);
         idPieza = creacion.id;
       }
-      ponerEnCombo(idPieza);
+      await ponerEnCombo(idPieza);
       await sincronizarCombo();
       try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
       navigate(urlCombo());

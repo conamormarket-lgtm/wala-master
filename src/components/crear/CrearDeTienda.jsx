@@ -97,7 +97,7 @@ export default function CrearDeTienda() {
 
   const tarjetas = useMemo(() => agruparCombos(creaciones, borradores)
     .sort((a, b) => (fechaDeDiseno(b) || 0) - (fechaDeDiseno(a) || 0)), [creaciones, borradores]);
-  const tarjetasBorrador = useMemo(() => agruparCombos(borradores), [borradores]);
+  const tarjetasBorrador = useMemo(() => agruparCombos(borradores, creaciones), [borradores, creaciones]);
 
   const prendasBase = prendasQ.data || SIN_NADA;
   const prendaPorId = useMemo(() => new Map(prendasBase.map((p) => [p.id, p])), [prendasBase]);

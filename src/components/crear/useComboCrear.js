@@ -7,7 +7,7 @@ import { useGlobalToast } from '../../contexts/ToastContext';
 import { getComboCrear } from '../../services/combosCrear';
 import { getPrendaBase } from '../../services/prendasBase';
 import { getDesignById, getDesignsByUser } from '../../services/designs';
-import { guardarMiCombo } from '../../services/misCombos';
+import { guardarMiCombo, copiarCreacionParaCombo, esComboVigente } from '../../services/misCombos';
 import { obtenerDisenoComunidad, registrarUsoComunidad } from '../../services/comunidad';
 import { creacionLista } from '../../pages/Crear/creacionCarrito';
 import { leerArmado, guardarArmado, olvidarArmado, preciosDeCombo, itemDeCombo, leerMetaArmado, guardarMetaArmado } from '../../pages/Crear/comboCrear';
@@ -127,7 +127,7 @@ export default function useComboCrear() {
     if (mioParam === mioPropioRef.current) return;
     const data = mioQ.data;
     olvidarArmado(id);
-    if (data && data.tipo === 'comboCrear' && data.userId === user.uid && data.comboId === id) {
+    if (esComboVigente(data) && data.userId === user.uid && data.comboId === id) {
       const siguiente = Array.from({ length: piezasCombo.length }, (_, i) => ({
         designId: data.piezas?.[i]?.designId || '',
         talla: data.piezas?.[i]?.talla || '',
@@ -255,7 +255,8 @@ export default function useComboCrear() {
   // dispositivo): se olvida y se empieza limpio. Antes se seguía guardando en
   // él, fallaba siempre y lo diseñado quedaba sin combo.
   useEffect(() => {
-    if (!meta.miComboId || !miComboQ.isFetchedAfterMount || miComboQ.data !== null) return;
+    if (!meta.miComboId || !miComboQ.isFetchedAfterMount) return;
+    if (miComboQ.data !== null && esComboVigente(miComboQ.data)) return;
     olvidarArmado(id);
     firmaGuardadaRef.current = '';
     setArmado(leerArmado(id, piezasCombo.length));
@@ -328,13 +329,47 @@ export default function useComboCrear() {
   const ponerEn = (i, cambios) => cambiarArmado(armado.map((a, k) => (k === i ? { ...a, ...cambios } : a)));
   const quitar = (i) => ponerEn(i, { designId: '', talla: '' });
 
-  /** El mismo diseño en las piezas vacías de la misma prenda (con su color). */
-  const usarEnLasDemas = (i) => {
+  /**
+   * Una copia de la creación para la prenda i (cada prenda del combo tiene la
+   * suya: cambiar o borrar una no toca la otra, y una creación suelta elegida
+   * de "Mis creaciones" sigue igual). Las imágenes son las mismas: no se sube nada.
+   */
+  const copiaPara = async (creacion, i) => {
+    const { id: copia, error: e } = await copiarCreacionParaCombo(user.uid, creacion, combo, i);
+    if (e || !copia) throw new Error(e || 'No pudimos copiar el diseño.');
+    return copia;
+  };
+
+  /** El mismo diseño (una copia en cada una) en las piezas vacías de la misma prenda. */
+  const usarEnLasDemas = async (i) => {
     const pieza = piezas[i];
     const destinos = piezas.filter((p) => p.i !== i && !p.designId && piezasCombo[p.i].prendaId === piezasCombo[i].prendaId);
-    if (!destinos.length) return;
-    cambiarArmado(armado.map((a, k) => (destinos.some((d) => d.i === k) ? { ...a, designId: pieza.designId } : a)));
-    toast.success(destinos.length === 1 ? 'Listo: la otra prenda lleva el mismo diseño.' : 'Listo: las demás prendas llevan el mismo diseño.');
+    if (!destinos.length || !pieza.creacion || !user || preparando) return;
+    setPreparando('Copiando el diseño…');
+    try {
+      const copias = {};
+      for (const d of destinos) copias[d.i] = await copiaPara(pieza.creacion, d.i);
+      cambiarArmado(armado.map((a, k) => (copias[k] ? { ...a, designId: copias[k] } : a)));
+      toast.success(destinos.length === 1 ? 'Listo: la otra prenda lleva el mismo diseño.' : 'Listo: las demás prendas llevan el mismo diseño.');
+    } catch (e) {
+      toast.error(e?.message || 'No pudimos copiar el diseño.');
+    } finally {
+      setPreparando('');
+    }
+  };
+
+  /** Una creación de "Mis creaciones" en la prenda i: va una copia suya. */
+  const elegirCreacion = async (i, designId) => {
+    const elegida = misCreaciones.find((c) => c.id === designId);
+    if (!elegida || !user || preparando) return;
+    setPreparando('Copiando tu creación…');
+    try {
+      ponerEn(i, { designId: await copiaPara(elegida, i), talla: '' });
+    } catch (e) {
+      toast.error(e?.message || 'No pudimos usar esa creación.');
+    } finally {
+      setPreparando('');
+    }
   };
 
   /** Agregar al carrito con las tallas elegidas ({ todas } o { [i]: talla }). */
@@ -428,14 +463,14 @@ export default function useComboCrear() {
 
   /** Las creaciones terminadas de la cuenta que puede llevar la prenda i. */
   const opcionesMias = (i) => misCreaciones.filter(
-    (c) => c.tipo === 'crear' && c.productId === piezasCombo[i]?.prendaId && c.estado !== 'borrador' && creacionLista(c)
+    (c) => c.tipo === 'crear' && !c.combo?.id && c.productId === piezasCombo[i]?.prendaId && c.estado !== 'borrador' && creacionLista(c)
   );
 
   return {
     id, user, cargando, error, disponible, combo, piezasCombo, piezas, fotosPiezas, meta, miCombo,
     plantillaCombo, precio, sueltas, ahorro, unaTalla, tallasConjunto: unaTalla ? tallasComunes : [], tallaConjunto,
     preparando, agotada, urlEstudio, urlPlantilla, estadoEstudio,
-    elegirTallaConjunto, ponerEn, quitar, usarEnLasDemas, agregar, opcionesMias,
+    elegirTallaConjunto, ponerEn, quitar, usarEnLasDemas, elegirCreacion, agregar, opcionesMias,
     reintentar: () => { comboQ.refetch(); prendasQ.forEach((q) => q.isError && q.refetch()); },
   };
 }

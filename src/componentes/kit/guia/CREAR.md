@@ -909,8 +909,8 @@ administrador de verdad y el pago (no se cobró nada).
 `tipo: 'crear'`. Un combo del cliente ("Mi combo") es otro doc
 `tipo: 'comboCrear'` con `piezas: [{ designId, prendaId, talla, frente… }]`
 por posición, y cada pieza es un doc `crear` aparte (con `combo: { id: <combo
-de la tienda>, pieza }` si se hizo para el combo). Dos piezas pueden apuntar
-al mismo diseño ("Usar en la otra", "Ponerlo también en la prenda 2"). El
+de la tienda>, pieza }` si se hizo para el combo). Hasta el paso 2, dos piezas
+podían apuntar al mismo diseño; ahora cada una lleva su copia (ver abajo). El
 navegador recuerda el armado en `localStorage` `wala:combo-crear:<combo de la
 tienda>`: UNO por combo de la tienda, compartido por todos sus "Mi combo".
 La lista de Mis creaciones esconde las piezas que algún combo usa
@@ -938,26 +938,55 @@ prendas se quedan y el carrito sigue con sus imágenes). Celular claro y
 oscuro. **No probado:** dos pestañas a la vez, un combo comprado, trío y
 conjunto.
 
-**Lo que queda (paso 2: que cada combo sea dueño de sus prendas):**
+**Paso 2 (hecho el 2026-10-20): cada combo es dueño de sus prendas.**
 
-- Las prendas que se quedan (compradas, en el carrito, elegidas de "Mis
-  creaciones") **vuelven a verse sueltas** al eliminar el combo: es lo que se
-  ve como "aparecen los diseños por separado". Propuesta: un combo eliminado
-  que se compró se archiva (no se ve, el pedido conserva sus archivos) y sus
-  prendas no vuelven a la lista.
-- Dos piezas comparten el mismo diseño: editar o borrar una toca a la otra.
-  Propuesta: cada pieza con su propia copia (las imágenes se reutilizan), con
-  el id de SU combo (`miComboId`), no el del combo de la tienda.
-- Elegir una creación de "Mis creaciones" y editarla dentro del combo cambia
-  la original (y al eliminar el combo se borra). Propuesta: siempre una copia.
-- El armado del navegador es uno por combo de la tienda: dos "Mi combo" del
-  mismo combo o dos pestañas se pisan. Propuesta: uno por "Mi combo".
-- Las listas traen los 50 más recientes: un combo viejo deja sus piezas
-  sueltas. Propuesta: listar los combos aparte.
+- **Una copia por prenda.** "Ponerlo también en la prenda 2" (estudio),
+  "Usar en la otra" y elegir de "Mis creaciones" (página del combo) y "Llevar
+  en combo" (Mis creaciones) ponen una COPIA en cada prenda
+  (`copiarCreacionParaCombo`: mismas imágenes, no se sube nada), con el campo
+  `combo`. Cambiar o borrar una ya no toca la otra, y una creación suelta
+  elegida para un combo sigue igual (antes, editarla dentro del combo la
+  cambiaba y eliminar el combo la borraba). "Mis creaciones" del combo ofrece
+  solo creaciones sueltas.
+- **Eliminar un combo comprado o en el carrito lo archiva**
+  (`archivado: true`, `archivadoEn`): deja de verse y sus prendas siguen
+  ocultas con él; el pedido (o el carrito) conserva sus diseños. Antes sus
+  prendas volvían a verse sueltas. Las listas limpian solas los archivados que
+  ya no hacen falta (ni pedido ni carrito: `cuidarCombosArchivados`, con la
+  limpieza de versiones). Un enlace a un combo archivado (el del carrito)
+  empieza uno nuevo en vez de editarlo.
+- **Las listas traen todos los combos** (además de los 50 más recientes): uno
+  viejo ya no deja sus prendas sueltas. Los borradores también miran las
+  creaciones guardadas (una prenda en borrador de un combo guardado no se ve
+  suelta).
+- **Una prenda de un combo no se borra sola** (desde su página): lo avisa y
+  manda al combo. Antes el combo quedaba apuntando a nada.
+- **Qué prendas están vacías** lo dice el combo de la cuenta, no lo del
+  navegador (que es uno por combo de la tienda y puede ser de otro "Mi combo").
+- **Combos de antes** (piezas compartidas o creaciones sueltas elegidas): se
+  siguen viendo y editando ("Editar" trabaja en una copia) y, al eliminarlos,
+  la creación suelta del cliente vuelve a su lista (es suya).
+
+Probado con los emuladores (pareja de poleras): "Ponerlo también" (dos
+creaciones distintas), "Usar en la otra", elegir de "Mis creaciones" (la
+original sin tocar), "Llevar en combo" (una copia por prenda), eliminar un
+combo sin comprar (se borran él y sus prendas), uno en el carrito (archivado;
+al vaciar el carrito la lista lo borra del todo), uno comprado (archivado y la
+limpieza no lo toca), borrar sola una prenda de un combo (no deja), el enlace
+de un combo archivado (empieza uno nuevo) y un combo de antes con una creación
+suelta compartida (vuelve a la lista). **No probado:** un trío o un conjunto,
+dos pestañas a la vez y un pedido real pagado (se marcó `enPedido` a mano,
+como lo hace el servidor).
+
+**Lo que queda:**
+
+- El armado del navegador sigue siendo uno por combo de la tienda (dos "Mi
+  combo" del mismo combo en dos pestañas pueden pisarse lo no guardado);
+  ahora lo que decide el estudio sale de la cuenta.
 - Al guardar de nuevo una creación se suben archivos nuevos y los viejos
   quedan en Storage.
-- Eliminar una prenda suelta que usa un "Mi combo" deja al combo apuntando a
-  nada (no se puede publicar ni autoguardar).
+- "Quitar" una prenda del combo la deja en "Versiones anteriores" (7 días,
+  recuperable), como antes.
 
 **Paso 3 (el admin):** las prendas de Crear (`esPrendaBase`) y los productos
 normales comparten la ficha del admin y un mismo interruptor "Personalizable"

@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { eliminarCreacion } from '../../services/designs';
+import { comboQueUsa } from '../../services/misCombos';
 import { quitarBorradorDeCache } from './borradoresCache';
 // La confirmación con el kit (paso 3 de la migración; antes, CapaModal).
 import { Confirmar } from '../../componentes/kit/Feedback';
@@ -59,6 +60,22 @@ export const useEliminarCreacion = ({ alEliminar } = {}) => {
   const eliminar = async (diseno, { enPedido: enPedidoDado = false } = {}) => {
     if (!user || !diseno) return false;
     const conservarArchivos = Boolean(enPedidoDado || diseno.enPedido);
+    // Una prenda de un combo se cambia o se elimina desde su combo: borrada
+    // sola, el combo quedaba apuntando a nada (sin poder publicarse ni
+    // terminarse).
+    if (diseno.combo?.id) {
+      const combo = await comboQueUsa(user.uid, diseno.id);
+      if (combo === undefined) {
+        toast.error('No pudimos revisar tus combos. Inténtalo de nuevo.');
+        return false;
+      }
+      if (combo) {
+        toast.info(combo.archivado
+          ? 'Es una prenda de un combo que eliminaste y está en un pedido o en tu carrito: se guarda para eso.'
+          : `Es una prenda de tu combo «${combo.name || 'Mi combo'}»: cámbiala o elimina el combo desde ahí.`);
+        return false;
+      }
+    }
     const deCarrito = enCarritoDe(diseno);
     const { error } = await eliminarCreacion(user.uid, diseno, { conservarArchivos });
     if (error) {

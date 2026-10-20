@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCart } from '../../contexts/CartContext';
-import { versionesReemplazadas, cuidarVersionesReemplazadas } from '../../services/misCombos';
+import { versionesReemplazadas, cuidarVersionesReemplazadas, cuidarCombosArchivados } from '../../services/misCombos';
 import { disenosEnCarrito } from './comboCrear';
 
 /**
@@ -26,7 +26,11 @@ export const useVersionesReemplazadas = ({ uid, creaciones, borradores, listo, a
     if (!uid || !listo || hecho.current === uid) return;
     hecho.current = uid;
     const enCarrito = disenosEnCarrito(items);
-    cuidarVersionesReemplazadas(uid, { todos, enCarrito }).then((borradas) => {
+    // También los combos archivados que ya no hacen falta (ni pedido ni carrito).
+    Promise.all([
+      cuidarVersionesReemplazadas(uid, { todos, enCarrito }),
+      cuidarCombosArchivados(uid, { todos, enCarrito }),
+    ]).then((listas) => listas.flat()).then((borradas) => {
       if (!borradas.length) return;
       alBorrar?.(borradas);
       queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'], refetchType: 'all' });
