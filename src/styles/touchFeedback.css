@@ -88,6 +88,18 @@ html[data-wala-touch] :where(input, textarea, [contenteditable]:not([contentedit
   transition: opacity 120ms ease-out;
 }
 
+/* El lienzo de la estela mágica (interactions/estelaMagica.mjs): debajo del
+   aro, encima de todo lo demás y sin tocar los toques. */
+.wala-touch-estela {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 2147482999;
+  pointer-events: none;
+  user-select: none;
+  contain: strict;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wala-touch-point,
   .wala-touch-point[data-visible],

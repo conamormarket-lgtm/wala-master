@@ -1,4 +1,6 @@
 // Capa táctil para Android y la web móvil, sin editar los componentes del kit.
+import { crearEstela } from './estelaMagica.mjs';
+
 const TARGETS = 'button, a[href], summary, [role="button"], [role="link"], [role="tab"], [role="checkbox"], [role="radio"], [data-wala-touch-target]';
 const EXCLUDED = 'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="slider"], canvas, [draggable="true"], [data-componente="LienzoPrenda"], [data-componente="CajaVarias"], [data-wala-touch-feedback="off"]';
 // Lo que puede moverse el dedo y seguir siendo un toque (como el "touch slop"
@@ -12,10 +14,15 @@ export function installTouchFeedback(view = window) {
   const doc = view.document;
   const root = doc.documentElement;
   const coarsePointer = view.matchMedia('(pointer: coarse)');
+  const reducedMotion = view.matchMedia('(prefers-reduced-motion: reduce)');
   const nativeAndroid = view.Capacitor?.getPlatform?.() === 'android' && Boolean(view.Capacitor?.isNativePlatform?.());
   const timers = new Set();
   const effects = new Set();
   let active = null;
+  // El gesto del dedo (aparte del aro, que se apaga al deslizar): si se
+  // desliza, dibuja la estela mágica (estelaMagica.mjs).
+  let gesture = null;
+  let estela = null;
   let lastInputTouch = false;
   let viewportWidth = view.innerWidth;
 
@@ -67,6 +74,7 @@ export function installTouchFeedback(view = window) {
   };
   const down = (event) => {
     cancel();
+    endGesture();
     lastInputTouch = true;
     // También funciona al activar la emulación móvil sin recargar la página.
     setMode(nativeAndroid ? 'android' : 'touch');
@@ -78,6 +86,7 @@ export function installTouchFeedback(view = window) {
     const point = effect('wala-touch-point');
     position(point, touch.clientX, touch.clientY);
     const press = { point, identifier: touch.identifier, x: touch.clientX, y: touch.clientY };
+    gesture = { identifier: touch.identifier, x: touch.clientX, y: touch.clientY, trailing: false };
     active = press;
     // El roce rápido deja actuar solo al kit; un gesto sostenido muestra el dedo.
     later(() => {
@@ -97,16 +106,28 @@ export function installTouchFeedback(view = window) {
     point.setAttribute(state, 'true');
     later(() => remove(point), 260);
   };
+  const endGesture = () => {
+    if (gesture?.trailing) estela?.terminar();
+    gesture = null;
+  };
   const moved = (event) => {
-    if (!active) return;
-    const touch = Array.from(event.touches).find((candidate) => candidate.identifier === active.identifier);
-    if (event.touches.length !== 1 || !touch) { cancel(); return; }
-    if (Math.hypot(touch.clientX - active.x, touch.clientY - active.y) >= SLOP) finish(active, 'data-cancelled');
+    if (!gesture) return;
+    const touch = Array.from(event.touches).find((candidate) => candidate.identifier === gesture.identifier);
+    if (event.touches.length !== 1 || !touch) { cancel(); endGesture(); return; }
+    if (!gesture.trailing) {
+      if (Math.hypot(touch.clientX - gesture.x, touch.clientY - gesture.y) < SLOP) return;
+      if (active) finish(active, 'data-cancelled');
+      if (reducedMotion.matches) { gesture = null; return; }
+      gesture.trailing = true;
+      estela = estela || crearEstela(view);
+      estela.empezar(gesture.x, gesture.y);
+    }
+    estela.agregar(touch.clientX, touch.clientY);
   };
   const up = (event) => {
-    if (!active) return;
-    if (!Array.from(event.changedTouches).some((candidate) => candidate.identifier === active.identifier)) return;
-    finish(active, 'data-released');
+    const ended = (id) => Array.from(event.changedTouches).some((candidate) => candidate.identifier === id);
+    if (gesture && ended(gesture.identifier)) endGesture();
+    if (active && ended(active.identifier)) finish(active, 'data-released');
   };
   const contextMenu = (event) => {
     if (event.pointerType === 'mouse' || (!nativeAndroid && !lastInputTouch)) return;
@@ -122,14 +143,17 @@ export function installTouchFeedback(view = window) {
     const node = event.target instanceof view.Element ? event.target : event.target?.parentElement;
     if (node && !node.closest('[draggable="true"]') && (targetFor(node) || node.closest('a[href]'))) event.preventDefault();
   };
-  const clear = () => { cancel(); effects.forEach((node) => remove(node)); };
+  const clear = () => { cancel(); gesture = null; estela?.limpiar(); effects.forEach((node) => remove(node)); };
   const hidden = () => { if (doc.hidden) clear(); };
   const keyboard = () => { lastInputTouch = false; clear(); };
   const resized = () => {
     // Ocultar la barra del navegador al scrollear cambia el alto, no el gesto.
     if (viewportWidth !== view.innerWidth) clear();
     viewportWidth = view.innerWidth;
+    // El lienzo de la estela sí sigue al alto (la barra que se oculta).
+    estela?.medir();
   };
+  const touchCancelled = () => { cancel(); endGesture(); };
   const listeners = [
     [doc, 'pointerdown', pointerDown, { capture: true, passive: true }],
     // El navegador cancela Pointer Events al tomar el scroll nativo. Touch Events
@@ -137,7 +161,7 @@ export function installTouchFeedback(view = window) {
     [doc, 'touchstart', down, { capture: true, passive: true }],
     [doc, 'touchmove', moved, { capture: true, passive: true }],
     [doc, 'touchend', up, { capture: true, passive: true }],
-    [doc, 'touchcancel', cancel, { capture: true, passive: true }],
+    [doc, 'touchcancel', touchCancelled, { capture: true, passive: true }],
     [doc, 'contextmenu', contextMenu, { capture: true }],
     [doc, 'dragstart', drag, { capture: true }],
     [doc, 'visibilitychange', hidden, false],
@@ -150,6 +174,8 @@ export function installTouchFeedback(view = window) {
   listeners.forEach(([owner, name, handler, options]) => owner.addEventListener(name, handler, options));
   uninstall = () => {
     clear();
+    estela?.quitar();
+    estela = null;
     listeners.forEach(([owner, name, handler, options]) => owner.removeEventListener(name, handler, options));
     timers.forEach((id) => view.clearTimeout(id));
     effects.forEach((node) => node.remove());
