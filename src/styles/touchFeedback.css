@@ -18,72 +18,83 @@ html[data-wala-touch] :where(input, textarea, [contenteditable]:not([contentedit
   user-select: text;
 }
 
+/* El dedo: un aro blanco con borde violeta (se ve sobre fotos, blanco y modo
+   noche) y un punto al centro. Al moverse deja una estela en punta que se
+   alarga con la velocidad (--estela, 0-1); al soltar, el aro se abre en una
+   onda. Sin bucles ni desenfoques: solo transform y opacity. */
 .wala-touch-point {
   position: fixed;
   left: 0;
   top: 0;
   z-index: 2147483000;
+  width: 30px;
+  height: 30px;
   pointer-events: none;
   user-select: none;
+  opacity: 0;
   --wala-touch-tint: 124, 58, 237;
+  --wala-touch-luz: 168, 85, 247;
+  --wala-touch-aro: 255, 255, 255;
   will-change: transform, opacity;
   contain: layout style;
-}
-
-.wala-touch-point {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  opacity: 0;
-  transition: opacity 160ms ease-out;
+  transition: opacity 140ms ease-out;
 }
 
 [data-theme='dark'] .wala-touch-point {
-  --wala-touch-tint: 196, 181, 253;
+  --wala-touch-tint: 167, 139, 250;
+  --wala-touch-luz: 196, 181, 253;
 }
 
+/* Aro + relleno suave + punto central. */
 .wala-touch-point::before {
   content: '';
   position: absolute;
-  border-radius: 50%;
-  transform: scale(0.65);
-  transition: transform 180ms ease-out;
-  z-index: 1;
-}
-
-.wala-touch-point::before {
   inset: 0;
-  background: radial-gradient(circle, rgba(var(--wala-touch-tint), 0.25) 0 6px, rgba(var(--wala-touch-tint), 0.14) 7px, rgba(var(--wala-touch-tint), 0.04) 70%);
-  box-shadow: inset 0 0 0 1px rgba(var(--wala-touch-tint), 0.22);
+  z-index: 1;
+  border-radius: 50%;
+  border: 1.5px solid rgba(var(--wala-touch-aro), 0.92);
+  background:
+    radial-gradient(circle, rgba(var(--wala-touch-tint), 0.95) 0 3px, rgba(var(--wala-touch-tint), 0) 3.6px),
+    radial-gradient(circle at 35% 30%, rgba(var(--wala-touch-luz), 0.32), rgba(var(--wala-touch-tint), 0.16) 75%);
+  box-shadow: 0 0 0 1px rgba(var(--wala-touch-tint), 0.5);
+  transform: scale(0.55);
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .wala-touch-point[data-visible='true'] {
   opacity: 1;
 }
 
-.wala-touch-point[data-released='true'] {
-  opacity: 0;
-}
-
 .wala-touch-point[data-visible='true']::before {
   transform: scale(1);
 }
 
-.wala-touch-point[data-released='true']::before {
-  transform: scale(1.15);
+/* Al soltar: el aro se abre y se apaga (el relleno se va antes que el borde). */
+.wala-touch-point[data-released='true'] {
+  opacity: 0;
+  transition: opacity 240ms ease-out;
 }
 
+.wala-touch-point[data-released='true']::before {
+  transform: scale(1.75);
+  background: transparent;
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Estela: un cono violeta detrás del dedo (el punto gira hacia donde va). */
 .wala-touch-point::after {
   content: '';
   position: absolute;
-  left: -18px;
-  top: 10px;
-  width: 28px;
-  height: 12px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, transparent, rgba(var(--wala-touch-tint), 0.085));
+  top: 8px;
+  right: 15px;
+  width: 48px;
+  height: 14px;
+  background: linear-gradient(90deg, rgba(var(--wala-touch-luz), 0), rgba(var(--wala-touch-luz), 0.45) 45%, rgba(var(--wala-touch-tint), 0.7));
+  clip-path: polygon(0 38%, 100% 0, 100% 100%, 0 62%);
   opacity: 0;
-  transition: opacity 100ms ease-out;
+  transform: scaleX(var(--estela, 0));
+  transform-origin: right center;
+  transition: opacity 120ms ease-out, transform 120ms ease-out;
 }
 
 .wala-touch-point[data-moving='true']::after {

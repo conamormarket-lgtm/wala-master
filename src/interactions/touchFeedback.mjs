@@ -84,7 +84,7 @@ export function installTouchFeedback(view = window) {
       point, identifier: touch.identifier,
       x: touch.clientX, y: touch.clientY,
       renderedX: touch.clientX, renderedY: touch.clientY,
-      frame: 0, trailTimer: 0, trailsShown: false, lastMotion: 0, angle: 0,
+      frame: 0, trailTimer: 0, trailsShown: false, lastMotion: 0, angle: 0, lastRender: 0, trail: 0,
     };
     active = press;
     // El roce rápido deja actuar solo al kit; un gesto sostenido muestra el dedo.
@@ -102,6 +102,8 @@ export function installTouchFeedback(view = window) {
       return;
     }
     press.point.removeAttribute('data-moving');
+    press.point.style.setProperty('--estela', '0');
+    press.trail = 0;
     press.trailsShown = false;
   };
   const render = (press) => {
@@ -121,6 +123,13 @@ export function installTouchFeedback(view = window) {
     position(press.point, press.x, press.y, press.angle);
     press.renderedX = press.x;
     press.renderedY = press.y;
+    // La estela crece con la velocidad (1,2 px/ms = larga del todo) y se suaviza
+    // entre frames para que no tiemble. Solo se escribe si cambia de verdad.
+    const elapsed = press.lastRender ? now - press.lastRender : 16;
+    press.lastRender = now;
+    const trail = press.trail * 0.6 + Math.min(1, distance / Math.max(elapsed, 8) / 1.2) * 0.4;
+    if (Math.abs(trail - press.trail) >= 0.04) press.point.style.setProperty('--estela', trail.toFixed(2));
+    press.trail = trail;
     if (!press.lastMotion || now - press.lastMotion >= 90 || reducedMotion.matches || !press.point.hasAttribute('data-visible')) return;
     if (!press.trailsShown) press.point.setAttribute('data-moving', 'true');
     press.trailsShown = true;
@@ -153,7 +162,7 @@ export function installTouchFeedback(view = window) {
     if (point.hasAttribute('data-visible')) {
       point.removeAttribute('data-visible');
       point.setAttribute('data-released', 'true');
-      later(() => remove(point), 180);
+      later(() => remove(point), 260);
     } else remove(point);
     active = null;
   };
