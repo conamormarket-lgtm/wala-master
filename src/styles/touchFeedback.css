@@ -18,78 +18,9 @@ html[data-wala-touch] :where(input, textarea, [contenteditable]:not([contentedit
   user-select: text;
 }
 
-/* El dedo: un aro blanco con borde violeta (se ve sobre fotos, blanco y modo
-   noche) y un punto al centro, quieto donde se apoyó el dedo. Al soltar, el
-   aro se abre en una onda; si el dedo empieza a deslizar, solo se apaga (como
-   un toque cancelado en Android). Sin bucles ni desenfoques: transform y
-   opacity. */
-.wala-touch-point {
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 2147483000;
-  width: 30px;
-  height: 30px;
-  pointer-events: none;
-  user-select: none;
-  opacity: 0;
-  --wala-touch-tint: 124, 58, 237;
-  --wala-touch-luz: 168, 85, 247;
-  --wala-touch-aro: 255, 255, 255;
-  will-change: transform, opacity;
-  contain: layout style;
-  transition: opacity 140ms ease-out;
-}
-
-[data-theme='dark'] .wala-touch-point {
-  --wala-touch-tint: 167, 139, 250;
-  --wala-touch-luz: 196, 181, 253;
-}
-
-/* Aro + relleno suave + punto central. */
-.wala-touch-point::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  border-radius: 50%;
-  border: 1.5px solid rgba(var(--wala-touch-aro), 0.92);
-  background:
-    radial-gradient(circle, rgba(var(--wala-touch-tint), 0.95) 0 3px, rgba(var(--wala-touch-tint), 0) 3.6px),
-    radial-gradient(circle at 35% 30%, rgba(var(--wala-touch-luz), 0.32), rgba(var(--wala-touch-tint), 0.16) 75%);
-  box-shadow: 0 0 0 1px rgba(var(--wala-touch-tint), 0.5);
-  transform: scale(0.55);
-  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.wala-touch-point[data-visible='true'] {
-  opacity: 1;
-}
-
-.wala-touch-point[data-visible='true']::before {
-  transform: scale(1);
-}
-
-/* Al soltar: el aro se abre y se apaga (el relleno se va antes que el borde). */
-.wala-touch-point[data-released='true'] {
-  opacity: 0;
-  transition: opacity 240ms ease-out;
-}
-
-.wala-touch-point[data-released='true']::before {
-  transform: scale(1.75);
-  background: transparent;
-  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* Deslizar cancela el toque: se apaga en el lugar, más rápido y sin onda. */
-.wala-touch-point[data-cancelled='true'] {
-  opacity: 0;
-  transition: opacity 120ms ease-out;
-}
-
-/* El lienzo de la estela mágica (interactions/estelaMagica.mjs): debajo del
-   aro, encima de todo lo demás y sin tocar los toques. */
+/* El lienzo del brillo mágico del dedo (interactions/estelaMagica.mjs: el
+   orbe al mantener y la estela al deslizar): encima de todo y sin tocar los
+   toques. Con prefers-reduced-motion no se crea. */
 .wala-touch-estela {
   position: fixed;
   left: 0;
@@ -98,19 +29,4 @@ html[data-wala-touch] :where(input, textarea, [contenteditable]:not([contentedit
   pointer-events: none;
   user-select: none;
   contain: strict;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .wala-touch-point,
-  .wala-touch-point[data-visible],
-  .wala-touch-point[data-released],
-  .wala-touch-point[data-cancelled] {
-    transition: none;
-  }
-  .wala-touch-point::before,
-  .wala-touch-point[data-visible]::before,
-  .wala-touch-point[data-released]::before {
-    transition: none;
-    transform: none;
-  }
 }
