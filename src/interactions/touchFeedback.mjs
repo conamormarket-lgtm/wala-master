@@ -146,12 +146,18 @@ export function installTouchFeedback(view = window) {
   };
   const hidden = () => { if (doc.hidden) cancel(); };
   const keyboard = () => { lastInputTouch = false; cancel(); };
+  const scroll = (event) => {
+    if (!lastPress) return;
+    const scroller = event.target;
+    // Un carrusel automático de otra sección no debe apagar el halo.
+    if (scroller === doc || (scroller instanceof view.Element && scroller.contains(lastPress.target))) cancel();
+  };
   const listeners = [
     [doc, 'pointerdown', down, { capture: true, passive: true }],
     [doc, 'pointermove', moved, { capture: true, passive: true }],
     [doc, 'pointerup', up, { capture: true, passive: true }],
     [doc, 'pointercancel', cancel, { capture: true, passive: true }],
-    [doc, 'scroll', cancel, { capture: true, passive: true }],
+    [doc, 'scroll', scroll, { capture: true, passive: true }],
     [doc, 'contextmenu', contextMenu, { capture: true }],
     [doc, 'dragstart', drag, { capture: true }],
     [doc, 'visibilitychange', hidden, false],
