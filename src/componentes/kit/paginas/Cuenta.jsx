@@ -15,6 +15,7 @@ import { CamposDireccion, validarDireccion, cambiarDireccion, documentoDe } from
 import { EsqueletoTarjeta } from '../Esqueletos';
 import { Texto, useTexto } from '../Traduccion';
 import { CARAS_KAPI } from '../piezas/Flotantes';
+import { Destello } from '../Marca';
 import s from './Cuenta.module.css';
 
 /*
@@ -113,6 +114,8 @@ export function PaginaCuentaInvitado({ pedidos = false, urlLogin = '/login', url
 
 /**
  * La pantalla que abre "Mi cuenta": saludo, monedas y los accesos a todo.
+ * Con el menú lateral (escritorio) los accesos repetían el menú: en su lugar,
+ * Kapi invita a elegir una opción de ese menú. En el celular, los accesos.
  *  - usuario: { nombre } · monedas · enEspera (monedas que llegan al
  *    entregarse un pedido) · grupos (los mismos de MarcoCuenta) · urlCanjear
  */
@@ -135,7 +138,22 @@ export function PaginaResumenCuenta({ usuario, monedas = 0, enEspera = 0, grupos
       >
         <Boton to={urlCanjear} variante="contorno" tamano="sm" icono={<Gift aria-hidden="true" />}><Texto>Canjear monedas</Texto></Boton>
       </Estadistica>
-      <AccesosCuenta grupos={grupos} />
+      <div className={s.soloAngosto}>
+        <AccesosCuenta grupos={grupos} />
+      </div>
+      <div className={s.elegirOpcion} data-componente="ElegirOpcionCuenta">
+        <span className={s.elegirKapi} aria-hidden="true">
+          <img src={CARAS_KAPI.feliz} alt="" width="96" height="96" />
+          <Destello className={s.elegirDestello} />
+        </span>
+        <div className={s.elegirTexto}>
+          <h2><Texto>¿Qué quieres ver hoy?</Texto></h2>
+          <p><Texto>Elige una opción del menú: tus pedidos, tus creaciones, tus recompensas y todo lo de tu cuenta.</Texto></p>
+          <span className={s.elegirPista}>
+            <ArrowLeft aria-hidden="true" /> <Texto>Todo está en el menú de la izquierda</Texto>
+          </span>
+        </div>
+      </div>
     </>
   );
 }
@@ -536,11 +554,13 @@ export function PaginaDirecciones({
 /**
  * Ajustes: modo noche e idioma (y, sin el menú lateral, cerrar sesión).
  *  - tema: 'claro' | 'noche' · onTema()
+ *  - brillo · onBrillo(bool): el brillo mágico del dedo; sin onBrillo no se
+ *    muestra (la tienda lo pasa solo en el celular, donde hay dedo)
  *  - idioma: código actual · idiomas: [{ valor, texto, detalle }] · onIdioma(codigo)
  *  - onCerrarSesion
  */
 export function PaginaAjustes({
-  tema = 'claro', onTema, idioma = 'es', onIdioma, onCerrarSesion,
+  tema = 'claro', onTema, brillo = true, onBrillo, idioma = 'es', onIdioma, onCerrarSesion,
   idiomas = [
     { valor: 'es', texto: 'Español', detalle: 'Perú' },
     { valor: 'en', texto: 'English', detalle: 'Inglés' },
@@ -562,6 +582,16 @@ export function PaginaAjustes({
               descripcion={<Texto>Colores oscuros, más cómodos de noche y con poca luz.</Texto>}
             />
           </div>
+          {onBrillo && (
+            <div className={s.interruptor}>
+              <Interruptor
+                activo={brillo}
+                onChange={(v) => onBrillo(v)}
+                etiqueta={<Texto>Brillo mágico</Texto>}
+                descripcion={<Texto>La luz violeta y los destellos que siguen a tu dedo al tocar y deslizar.</Texto>}
+              />
+            </div>
+          )}
         </TarjetaCuenta>
         <TarjetaCuenta icono={<Languages />} titulo={<Texto>Idioma</Texto>}>
           <ListaEleccion

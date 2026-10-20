@@ -1,5 +1,6 @@
 // Capa táctil para Android y la web móvil, sin editar los componentes del kit.
 import { crearEstela } from './estelaMagica.mjs';
+import { brilloActivo } from './preferenciaBrillo.mjs';
 
 const TARGETS = 'button, a[href], summary, [role="button"], [role="link"], [role="tab"], [role="checkbox"], [role="radio"], [data-wala-touch-target]';
 const EXCLUDED = 'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="slider"], canvas, [draggable="true"], [data-componente="LienzoPrenda"], [data-componente="CajaVarias"], [data-wala-touch-feedback="off"]';
@@ -63,7 +64,8 @@ export function installTouchFeedback(view = window) {
     const touch = event.touches[0];
     const target = event.target;
     if (!(target instanceof view.Element) || target.closest(EXCLUDED) || target.closest('[disabled], [aria-disabled="true"], [aria-busy="true"], [inert]')) return;
-    if (reducedMotion.matches) return;
+    // Sin brillo si el sistema pide menos movimiento o se apagó en Ajustes.
+    if (reducedMotion.matches || !brilloActivo()) return;
     // El orbe sale solo si el dedo se queda (el motor espera 70 ms: el roce
     // rápido deja actuar solo al kit). Siempre mide lo mismo: es el dedo,
     // nunca el tamaño de una tarjeta.

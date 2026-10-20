@@ -56,6 +56,98 @@
   }
 }
 
+/* Resumen con el menú lateral: Kapi invita a elegir una opción (en vez de
+   repetir el menú en cuadros). Solo con el menú lateral (arriba). */
+.elegirOpcion {
+  display: none;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.75rem 2rem;
+  border: 2px dashed color-mix(in srgb, var(--violet-300, #c4b5fd) 70%, transparent);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--primary-light) 45%, var(--color-surface));
+}
+
+:global([data-theme='dark']) .elegirOpcion {
+  border-color: rgba(167, 139, 250, 0.3);
+  background: rgba(167, 139, 250, 0.06);
+}
+
+.elegirKapi {
+  position: relative;
+  flex-shrink: 0;
+  width: 96px;
+  height: 96px;
+}
+
+.elegirKapi img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: rotate(-6deg);
+}
+
+.elegirDestello {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  width: 22px;
+  height: 22px;
+  color: var(--violet-500, #8b5cf6);
+}
+
+.elegirTexto {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.elegirTexto h2 {
+  margin: 0;
+  font-family: var(--fuente-marca);
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+.elegirTexto p {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.elegirPista {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  justify-self: start;
+  margin-top: 0.35rem;
+  padding: 0.35rem 0.8rem 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--violet-700, #6d28d9);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+:global([data-theme='dark']) .elegirPista {
+  background: rgba(167, 139, 250, 0.12);
+  color: var(--violet-300, #c4b5fd);
+}
+
+.elegirPista svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Va después de .elegirOpcion: con el menú lateral, a la vista. */
+@container cuenta (min-width: 860px) {
+  .elegirOpcion {
+    display: flex;
+  }
+}
+
 /* "← Mi cuenta": vuelve a los accesos (solo sin el menú lateral). */
 .volver {
   display: inline-flex;
