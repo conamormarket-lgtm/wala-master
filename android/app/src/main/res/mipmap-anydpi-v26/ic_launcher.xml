@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Ícono de la app (Android 8+): la etiqueta blanca con la W calada, como el
+     de la pestaña, sobre el degradado del kit. El launcher le pone la forma
+     (círculo, squircle...). monochrome: íconos temáticos de Android 13+. -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background>
-        <inset android:drawable="@android:color/white" android:inset="16.7%" />
-    </background>
-    <foreground>
-        <inset android:drawable="@mipmap/ic_launcher_foreground" android:inset="16.7%" />
-    </foreground>
+    <background android:drawable="@drawable/ic_launcher_fondo" />
+    <foreground android:drawable="@mipmap/ic_launcher_etiqueta" />
+    <monochrome android:drawable="@mipmap/ic_launcher_etiqueta" />
 </adaptive-icon>
