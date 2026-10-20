@@ -161,8 +161,16 @@ página, así que el relevo no se nota.
   haciendo el `motion.div` del overlay (se funde y se abre un poco).
 - **Las cargas siguientes** (la marca ya se vio): el splash estático pinta el
   fondo de la página según el tema (`data-theme`, ya puesto en el `<head>`)
-  con la etiqueta chica a color que se mece (como `Cargando`), y React
-  pinta enseguida la cabecera y el esqueleto. Antes, un círculo gris.
+  con **el mismo conjunto que la primera vez** (la etiqueta de 88 px que se
+  mece, WALÁ de 122 px y la barra de 132 × 4, en el mismo lugar), pero a
+  color: la etiqueta y WALÁ son máscaras con el degradado, como `Cargando`
+  (de noche, el lila claro). React pinta después la cabecera y el
+  esqueleto. Hasta el 2026-10-20 era una etiqueta de 34 px sola, que con
+  una conexión lenta parecía un error; antes de eso, un círculo gris.
+
+  | Recarga, claro | Recarga, oscuro |
+  |---|---|
+  | ![La etiqueta, WALÁ y la barra en violeta sobre el fondo claro](carga-recarga-claro.webp) | ![Lo mismo en lila sobre el fondo oscuro](carga-recarga-oscuro.webp) |
 - **Interruptor `cargaVieja`** (`useLoViejo('carga')`): vuelve
   `PageLoading`, el círculo bajo la cabecera, el círculo a pantalla completa
   y `BrandLoader`. El splash de `index.html` no lo sigue (es estático): se

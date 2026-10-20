@@ -109,8 +109,8 @@
       <div id="app-loading" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#8B5CF6 0%,#5B21B6 100%);">
         <div style="display:flex;flex-direction:column;align-items:center;gap:18px;">
           <img id="app-loading-mark" src="/assets/marca/splash-etiqueta.webp" width="88" height="118" alt="" aria-hidden="true" draggable="false" style="display:block;width:88px;height:auto;margin-bottom:4px;transform-origin:75% 4%;animation:appLoadingVaiven 2.4s ease-in-out infinite;filter:drop-shadow(0 5px 12px rgba(76,29,149,.28));" />
-          <img src="/assets/marca/splash-wala.webp" width="122" height="53" alt="Walá" draggable="false" style="display:block;width:122px;height:auto;" />
-          <div style="position:relative;width:132px;height:4px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.22);">
+          <img id="app-loading-wala" src="/assets/marca/splash-wala.webp" width="122" height="53" alt="Walá" draggable="false" style="display:block;width:122px;height:auto;" />
+          <div class="app-loading-pista" style="position:relative;width:132px;height:4px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.22);">
             <span id="app-loading-bar" style="position:absolute;top:0;bottom:0;left:0;width:40%;border-radius:inherit;background:#fff;animation:appLoadingVaYViene 1.4s ease-in-out infinite;"></span>
           </div>
         </div>
@@ -127,30 +127,39 @@
           100% { transform: translateX(250%); }
         }
         /* Las cargas siguientes (la marca ya se vio, ver el script de abajo):
-           el fondo de la página según el tema y la etiqueta chica a color que se
-           mece, como Cargando del kit; React pinta enseguida la cabecera y el
-           esqueleto de la página. */
-        .app-loading-mini {
-          display: inline-block; width: 34px; aspect-ratio: 246 / 330;
-          background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #5b21b6 100%);
+           el mismo conjunto que la primera vez (etiqueta de 88 px que se mece,
+           WALÁ de 122 px y la barra de 132 x 4), en el mismo lugar, pero a
+           color sobre el fondo de la página. Las imágenes van de máscara con
+           el degradado, como Cargando del kit (la W calada deja ver el fondo).
+           Antes, una etiqueta de 34 px sola: en una conexión lenta parecía un
+           error. React pinta después la cabecera y el esqueleto. */
+        .app-loading-color { --tinta: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #5b21b6 100%); --pista: rgba(124, 58, 237, .16); --corre: #7c3aed; }
+        [data-theme='dark'] .app-loading-color { --tinta: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%); --pista: rgba(196, 181, 253, .18); --corre: #c4b5fd; }
+        .app-loading-color .app-loading-tag {
+          display: block; width: 88px; aspect-ratio: 246 / 330; margin-bottom: 4px; background: var(--tinta);
           -webkit-mask: url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat;
           mask: url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat;
           transform-origin: 75% 4%;
           animation: appLoadingVaiven 2.4s ease-in-out infinite;
         }
-        [data-theme='dark'] .app-loading-mini {
-          background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%);
+        .app-loading-color .app-loading-wala {
+          display: block; width: 122px; aspect-ratio: 368 / 160; background: var(--tinta);
+          -webkit-mask: url('/assets/marca/splash-wala.webp') center / contain no-repeat;
+          mask: url('/assets/marca/splash-wala.webp') center / contain no-repeat;
         }
+        .app-loading-color .app-loading-pista { background: var(--pista) !important; }
+        .app-loading-color #app-loading-bar { background: var(--corre) !important; }
         @media (prefers-reduced-motion: reduce) {
-          #app-loading-mark, #app-loading-bar, .app-loading-mini { animation: none !important; }
+          #app-loading-mark, #app-loading-bar, .app-loading-tag { animation: none !important; }
           #app-loading-bar { width: 45%; opacity: .8; }
         }
       </style>
       <script>
         /* Si la pantalla de marca ya se vio alguna vez (wala_brand_seen, lo pone
-           BrandLoaderOverlay), en las recargas siguientes no se repite: el fondo
-           de la página (claro u oscuro, data-theme ya está puesto) con la
-           etiqueta chica. Corre inline, antes de cualquier bundle. */
+           BrandLoaderOverlay), en las recargas siguientes no se repite el
+           morado: el fondo de la página (claro u oscuro, data-theme ya está
+           puesto) con el mismo conjunto a color. Corre inline, antes de
+           cualquier bundle. */
         (function () {
           try {
             if (localStorage.getItem('wala_brand_seen') === '1') {
@@ -158,7 +167,11 @@
               if (el) {
                 var oscuro = document.documentElement.getAttribute('data-theme') === 'dark';
                 el.style.background = oscuro ? '#14121C' : '#F8FAFC';
-                el.innerHTML = '<span class="app-loading-mini" aria-hidden="true"></span>';
+                el.classList.add('app-loading-color');
+                var marca = document.getElementById('app-loading-mark');
+                var wala = document.getElementById('app-loading-wala');
+                if (marca) marca.outerHTML = '<span class="app-loading-tag" aria-hidden="true"></span>';
+                if (wala) wala.outerHTML = '<span class="app-loading-wala" role="img" aria-label="Walá"></span>';
               }
             }
           } catch (e) { /* localStorage no disponible: se deja la pantalla de marca */ }
