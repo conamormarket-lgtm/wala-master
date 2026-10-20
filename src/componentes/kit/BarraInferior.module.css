@@ -109,32 +109,38 @@
   color: var(--primary-color);
 }
 
-/* Foto o iniciales en "Mi cuenta", con anillo violeta. */
+/* Foto o iniciales en "Mi cuenta", con anillo del color de la pestaña. */
 .tabAvatar {
   position: relative;
   z-index: 1;
   box-sizing: border-box;
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  /* Mismo tamaño y trazo que los íconos de las otras pestañas: un círculo de
-     contorno (del color del texto) con las iniciales dentro. */
-  width: 1.45rem;
-  height: 1.45rem;
-  border: 2px solid currentColor;
+  /* Del tamaño que SE VE un ícono de las otras pestañas (el dibujo de lucide
+     ocupa ~17 px de sus 21: trae aire alrededor) y con su mismo trazo. Antes,
+     23 px y aro de 2 px: se veía más grande y corrido, más aún con foto. */
+  width: 1.2rem;
+  height: 1.2rem;
+  border: 1.75px solid currentColor;
   border-radius: 50%;
   background: transparent;
   color: inherit;
-  font-size: 0.56rem;
+  font-size: 0.5rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1;
   overflow: hidden;
 }
 
-/* Con foto, el aro va en el color de la pestaña y la foto adentro. */
-.tabAvatar:has(img) {
-  padding: 1.5px;
+/* Con foto: la foto llena el círculo por dentro del aro, fija (no depende de
+   su tamaño ni de cuándo carga). */
+.tabAvatar > img {
+  position: absolute;
+  inset: 1px;
+  width: calc(100% - 2px);
+  height: calc(100% - 2px);
 }
 
 .tabTexto {
