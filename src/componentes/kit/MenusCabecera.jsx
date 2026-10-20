@@ -277,7 +277,8 @@ export function MenuCuenta({ usuario, grupos = [], promo, onCerrarSesion, onNave
                   onClick={onNavegar}
                 >
                   {icono}
-                  <span>{texto}</span>
+                  {/* data-texto: el ancho en negrita queda reservado (ver .itemTexto). */}
+                  <span className={s.itemTexto} data-texto={typeof texto === 'string' ? texto : undefined}>{texto}</span>
                 </Enlace>
               );
             })}

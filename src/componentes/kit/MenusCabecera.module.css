@@ -747,12 +747,34 @@
   margin-bottom: 0.3rem;
 }
 
-.lateral .item,
-.lateral .itemActual:hover {
+.lateral .item {
   min-height: 42px;
   margin: 0;
   padding: 0 0.45rem;
   font-weight: 500;
+}
+
+/* La sección actual, en negrita siempre (antes solo al pasar el mouse, y
+   como la negrita es más ancha el texto saltaba). */
+.lateral .item.itemActual {
+  font-weight: 700;
+}
+
+/* Cada texto reserva el ancho que tendría en negrita (una copia invisible de
+   alto 0): al cambiar de sección nada se corre. */
+.itemTexto {
+  display: inline-grid;
+  min-width: 0;
+}
+
+.itemTexto::after {
+  content: attr(data-texto);
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
 }
 
 .itemHueco {

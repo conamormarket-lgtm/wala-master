@@ -44,7 +44,8 @@
 
 @container cuenta (min-width: 860px) {
   .rejilla {
-    grid-template-columns: 264px minmax(0, 1fr);
+    /* 280 px: 'Catálogo Recompensas' en negrita entra sin cortarse. */
+    grid-template-columns: 280px minmax(0, 1fr);
   }
 
   .lateral {
