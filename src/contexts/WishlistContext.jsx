@@ -3,7 +3,7 @@ import { variantesDeImagen } from '../services/products';
 import { useAuth } from './AuthContext';
 import { getWishlistByUserId, addWishlistItem, removeWishlistItem, createWishlist, syncWishlistUserCode } from '../services/wishlist';
 import { recordMissionAction } from '../services/loyalty';
-import { captureAndroidTouchConfirmation } from '../interactions/androidTouchFeedback.mjs';
+import { captureTouchConfirmation } from '../interactions/touchFeedback.mjs';
 
 const WishlistContext = createContext();
 
@@ -118,7 +118,7 @@ export const WishlistProvider = ({ children }) => {
     }
 
     const alreadyFavorite = isFavorite(product.id);
-    const confirmTouch = captureAndroidTouchConfirmation();
+    const confirmTouch = captureTouchConfirmation();
 
     if (alreadyFavorite) {
       // Remover (Optimistic UI update)

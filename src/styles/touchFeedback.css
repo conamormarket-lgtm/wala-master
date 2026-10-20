@@ -1,19 +1,19 @@
-/* Solo el WebView de Android. La web y los archivos del kit quedan intactos. */
-html[data-wala-touch='android'] * {
+/* Android y navegación táctil web. Los archivos del kit quedan intactos. */
+html[data-wala-touch] * {
   -webkit-tap-highlight-color: transparent;
 }
 
-html[data-wala-touch='android'] :where(button, a[href], summary, [role='button'], [role='link'], [role='tab'], [role='checkbox'], [role='radio'], img) {
+html[data-wala-touch] :where(button, a[href], summary, [role='button'], [role='link'], [role='tab'], [role='checkbox'], [role='radio'], img) {
   -webkit-user-select: none;
   user-select: none;
 }
 
-html[data-wala-touch='android'] img:not([draggable='true']) {
+html[data-wala-touch] img:not([draggable='true']) {
   -webkit-user-drag: none;
   -webkit-touch-callout: none;
 }
 
-html[data-wala-touch='android'] :where(input, textarea, [contenteditable]:not([contenteditable='false'])) {
+html[data-wala-touch] :where(input, textarea, [contenteditable]:not([contenteditable='false'])) {
   -webkit-user-select: text;
   user-select: text;
 }

@@ -180,9 +180,9 @@ img[loading="lazy"] {
     color: inherit;
   }
 
-  /* Tap highlight color personalizado */
+  /* La capa táctil de la app y la web móvil dibuja su propio halo. */
   * {
-    -webkit-tap-highlight-color: rgba(217, 35, 45, 0.12);
+    -webkit-tap-highlight-color: transparent;
   }
 
   /* Touch callout desactivado en imágenes */

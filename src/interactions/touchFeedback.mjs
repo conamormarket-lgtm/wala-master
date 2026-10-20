@@ -1,4 +1,4 @@
-// Capa de la app Android: no cambia el DOM ni los estilos de los componentes del kit.
+// Capa táctil para Android y la web móvil, sin editar los componentes del kit.
 const TARGETS = 'button, a[href], summary, [role="button"], [role="link"], [role="tab"], [role="checkbox"], [role="radio"], [data-wala-touch-target]';
 const EXCLUDED = 'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="slider"], canvas, [draggable="true"], [data-componente="LienzoPrenda"], [data-componente="CajaVarias"], [data-wala-touch-feedback="off"]';
 const NOOP = () => {};
@@ -6,23 +6,24 @@ let captureConfirmation = () => NOOP;
 let uninstall;
 
 /** Capturar al iniciar una acción y llamar SOLO cuando se confirme. */
-export function captureAndroidTouchConfirmation() {
+export function captureTouchConfirmation() {
   return captureConfirmation();
 }
 
-export function installAndroidTouchFeedback(view = window) {
-  if (view.Capacitor?.getPlatform?.() !== 'android' || !view.Capacitor?.isNativePlatform?.()) return NOOP;
+export function installTouchFeedback(view = window) {
   if (uninstall) return uninstall;
 
   const doc = view.document;
   const root = doc.documentElement;
   const reducedMotion = view.matchMedia('(prefers-reduced-motion: reduce)');
+  const coarsePointer = view.matchMedia('(pointer: coarse)');
+  const nativeAndroid = view.Capacitor?.getPlatform?.() === 'android' && Boolean(view.Capacitor?.isNativePlatform?.());
   const timers = new Set();
   const effects = new Set();
   let active = null;
   let lastPress = null;
   let disposed = false;
-  root.setAttribute('data-wala-touch', 'android');
+  let lastInputTouch = false;
 
   const later = (callback, delay) => {
     const id = view.setTimeout(() => { timers.delete(id); callback(); }, delay);
@@ -62,9 +63,22 @@ export function installAndroidTouchFeedback(view = window) {
     }
     active = null;
   };
+  const syncMode = () => {
+    if (nativeAndroid || coarsePointer.matches) {
+      root.setAttribute('data-wala-touch', nativeAndroid ? 'android' : 'touch');
+    } else {
+      cancel();
+      root.removeAttribute('data-wala-touch');
+      lastInputTouch = false;
+    }
+  };
+  syncMode();
   const down = (event) => {
-    if (event.pointerType !== 'touch') return;
     cancel();
+    lastInputTouch = event.pointerType === 'touch';
+    if (!lastInputTouch) { syncMode(); return; }
+    // También funciona al activar la emulación móvil sin recargar la página.
+    root.setAttribute('data-wala-touch', nativeAndroid ? 'android' : 'touch');
     if (!event.isPrimary) return;
     const target = targetFor(event.target);
     if (!target) return;
@@ -101,12 +115,13 @@ export function installAndroidTouchFeedback(view = window) {
     active = null;
   };
   const contextMenu = (event) => {
+    if (event.pointerType === 'mouse' || (!nativeAndroid && !lastInputTouch)) return;
     if (!targetFor(event.target)) return;
-    // Solo el menú del WebView; el evento sigue llegando a los menús propios.
+    // Solo el menú de la pulsación táctil; siguen funcionando los menús propios.
     event.preventDefault();
   };
   const drag = (event) => {
-    if (event.target instanceof view.Element && event.target.matches('img') && targetFor(event.target)) event.preventDefault();
+    if (lastInputTouch && event.target instanceof view.Element && event.target.matches('img') && targetFor(event.target)) event.preventDefault();
   };
   const sparkle = (press) => {
     if (disposed || press.cancelled || reducedMotion.matches || !press.target.isConnected || press.url !== view.location.href) return;
@@ -130,6 +145,7 @@ export function installAndroidTouchFeedback(view = window) {
     };
   };
   const hidden = () => { if (doc.hidden) cancel(); };
+  const keyboard = () => { lastInputTouch = false; cancel(); };
   const listeners = [
     [doc, 'pointerdown', down, { capture: true, passive: true }],
     [doc, 'pointermove', moved, { capture: true, passive: true }],
@@ -139,6 +155,8 @@ export function installAndroidTouchFeedback(view = window) {
     [doc, 'contextmenu', contextMenu, { capture: true }],
     [doc, 'dragstart', drag, { capture: true }],
     [doc, 'visibilitychange', hidden, false],
+    [doc, 'keydown', keyboard, { capture: true, passive: true }],
+    [coarsePointer, 'change', syncMode, false],
     [view, 'blur', cancel, false],
     [view, 'resize', cancel, { passive: true }],
   ];
