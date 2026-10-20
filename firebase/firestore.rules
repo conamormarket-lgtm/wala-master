@@ -21,6 +21,10 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function notSupervision() {
+      return request.auth == null || request.auth.token.get('metricsOnly', false) != true;
+    }
+
 
     // ═════════════════════════════════════════════════════════════════════════
     // WALÁ (repo wala-master)
@@ -87,47 +91,47 @@ service cloud.firestore {
     }
 
     // ── Catálogo y taxonomías (lectura pública, escritura admin) ─────────────────
-    match /productos_wala/{id}        { allow read: if true; allow write: if isAdmin(); }
-    match /tienda_categories/{id}     { allow read: if true; allow write: if isAdmin(); }
-    match /tienda_collections/{id}    { allow read: if true; allow write: if isAdmin(); }
-    match /tienda_brands/{id}         { allow read: if true; allow write: if isAdmin(); }
-    match /tienda_mockups/{id}        { allow read: if true; allow write: if isAdmin(); }
-    match /tienda_themes/{id}         { allow read: if true; allow write: if isAdmin(); }
-    match /tienda_landing_pages/{id}  { allow read: if true; allow write: if isAdmin(); }
-    match /pages/{id}                 { allow read: if true; allow write: if isAdmin(); }
-    match /landingPages/{id}          { allow read: if true; allow write: if isAdmin(); }
-    match /productTypes/{id}          { allow read: if true; allow write: if isAdmin(); }
-    match /tags/{id}                  { allow read: if true; allow write: if isAdmin(); }
-    match /characters/{id}            { allow read: if true; allow write: if isAdmin(); }
-    match /cliparts/{id}              { allow read: if true; allow write: if isAdmin(); }
-    match /customShapes/{id}          { allow read: if true; allow write: if isAdmin(); }
-    match /fonts/{id}                 { allow read: if true; allow write: if isAdmin(); }
-    match /templates/{id}             { allow read: if true; allow write: if isAdmin(); }
-    match /vendors/{id}               { allow read: if true; allow write: if isAdmin(); }
-    match /niches/{id}                { allow read: if true; allow write: if isAdmin(); }
-    match /blueprints/{id}            { allow read: if true; allow write: if isAdmin(); }
-    match /storefront/{id}            { allow read: if true; allow write: if isAdmin(); }
-    match /storeConfig/{id}           { allow read: if true; allow write: if isAdmin(); }
-    match /configuracion/{id}         { allow read: if true; allow write: if isAdmin(); }
-    match /settings/{id}              { allow read: if true; allow write: if isAdmin(); }
-    match /messages/{id}              { allow read: if true; allow write: if isAdmin(); }
+    match /productos_wala/{id}        { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /tienda_categories/{id}     { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /tienda_collections/{id}    { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /tienda_brands/{id}         { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /tienda_mockups/{id}        { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /tienda_themes/{id}         { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /tienda_landing_pages/{id}  { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /pages/{id}                 { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /landingPages/{id}          { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /productTypes/{id}          { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /tags/{id}                  { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /characters/{id}            { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /cliparts/{id}              { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /customShapes/{id}          { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /fonts/{id}                 { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /templates/{id}             { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /vendors/{id}               { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /niches/{id}                { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /blueprints/{id}            { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /storefront/{id}            { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /storeConfig/{id}           { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /configuracion/{id}         { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /settings/{id}              { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /messages/{id}              { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
     // Traducciones publicadas del contenido (translations/{idioma}: mapa
     // hashDelTexto -> traduccion). Lectura publica para que cualquier visitante
     // reutilice lo ya traducido; escritura solo admin, para que nadie de fuera
     // pueda inyectar textos en la tienda.
-    match /translations/{id}          { allow read: if true; allow write: if isAdmin(); }
-    match /suggested_packages/{id}    { allow read: if true; allow write: if isAdmin(); }
-    match /universal_dates/{id}       { allow read: if true; allow write: if isAdmin(); }
-    match /tienda_encuesta_config/{id}{ allow read: if true; allow write: if isAdmin(); }
+    match /translations/{id}          { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /suggested_packages/{id}    { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /universal_dates/{id}       { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /tienda_encuesta_config/{id}{ allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
     // cuestionarios_templates: sin match desde el 2026-10-16 (se retiró el
     // cuestionario de producto). Sigue en esSoloWala: queda cerrada.
 
     // Compat: colecciones legacy (mantener hasta confirmar que no se usan en producción).
-    match /products/{id}    { allow read: if true; allow write: if isAdmin(); }
-    match /categories/{id}  { allow read: if true; allow write: if isAdmin(); }
+    match /products/{id}    { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /categories/{id}  { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
 
     // Fase 5: ofertas flash (lectura pública para la vitrina; escritura solo admin).
-    match /flashOffers/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /flashOffers/{id} { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
 
     // ── ENLACES ÚTILES (link-in-bio / LINKTREE) — NUEVO, NO DESPLEGAR AÚN ─────────
     // Páginas públicas de botones servidas en /l/{slug}. Lectura pública (la página
@@ -138,91 +142,91 @@ service cloud.firestore {
     // subcolección clics (write:false); el admin la LEE vía getClicsDeLinkPage
     // (read:true) para mostrar el conteo por botón en el editor.
     match /link_pages/{id} {
-      allow read: if true;         // Vitrina pública de la página de enlaces.
-      allow write: if isAdmin();   // Solo el admin crea/edita/borra páginas.
+      allow read: if notSupervision() && (true);         // Vitrina pública de la página de enlaces.
+      allow write: if notSupervision() && (isAdmin());   // Solo el admin crea/edita/borra páginas.
 
       // Contadores de clic por botón (id del doc = botonId). Lectura pública
       // (el admin los suma en el editor); solo la CF los incrementa.
       match /clics/{botonId} {
-        allow read: if true;
-        allow write: if false;
+        allow read: if notSupervision() && (true);
+        allow write: if notSupervision() && (false);
       }
     }
 
     // ── Gamificación / fidelización ──────────────────────────────────────────────
-    match /globals/{id}            { allow read: if true;  allow write: if isAdmin(); } // activeChallenge
-    match /weeklyChallenges/{id}   { allow read: if true;  allow write: if isAdmin(); }
+    match /globals/{id}            { allow read: if notSupervision() && (true);  allow write: if notSupervision() && (isAdmin()); } // activeChallenge
+    match /weeklyChallenges/{id}   { allow read: if notSupervision() && (true);  allow write: if notSupervision() && (isAdmin()); }
     // Premios de la ruleta. La lectura sigue siendo pública por compatibilidad
     // con el cliente ya desplegado, que los lee directo; el cliente nuevo usa el
     // callable getRuletaBoard y, cuando ya no queden versiones viejas en
     // circulación, esto puede cerrarse a isAdmin() para que las probabilidades
     // dejen de estar a la vista de cualquiera.
-    match /ruletaPrizes/{id}       { allow read: if true;  allow write: if isAdmin(); }
+    match /ruletaPrizes/{id}       { allow read: if notSupervision() && (true);  allow write: if notSupervision() && (isAdmin()); }
     // Configuración de la ruleta (colores, reglas). Lectura pública: son datos de
     // presentación y sirven de respaldo si el callable no responde.
-    match /ruletaConfig/{id}       { allow read: if true;  allow write: if isAdmin(); }
+    match /ruletaConfig/{id}       { allow read: if notSupervision() && (true);  allow write: if notSupervision() && (isAdmin()); }
     // Premios ganados en la ruleta: los escribe spinRuletaSecure (Admin SDK, evade
     // reglas). Solo el admin los lee, para poder entregar los que no son monedas,
     // y los marca como entregados desde el panel.
-    match /ruletaWins/{id}         { allow read: if isAdmin(); allow write: if isAdmin(); }
-    match /wordle_daily_words/{id} { allow read: if true;  allow write: if isAdmin(); }
+    match /ruletaWins/{id}         { allow read: if notSupervision() && (isAdmin()); allow write: if notSupervision() && (isAdmin()); }
+    match /wordle_daily_words/{id} { allow read: if notSupervision() && (true);  allow write: if notSupervision() && (isAdmin()); }
 
     // ── Fase 2: misiones diarias y libro mayor de fidelización ───────────────────
     // Config de misiones: lectura pública, escritura solo admin.
     match /missions/{id} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read: if notSupervision() && (true);
+      allow write: if notSupervision() && (isAdmin());
     }
     // Progreso diario por usuario (id '<uid>_<YYYY-MM-DD>'). Lo escribe el servidor
     // (getDailyMissionsSecure / completeMissionSecure vía admin SDK). El dueño solo lee.
     match /userMissions/{id} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow write: if isAdmin();
+      allow read: if notSupervision() && (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow write: if notSupervision() && (isAdmin());
     }
     // Acciones verificables de misiones (id '<uid>_<YYYY-MM-DD>'). Lo escribe el
     // servidor (recordMissionActionSecure vía admin SDK). El dueño solo lee.
     match /userActions/{id} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow write: if isAdmin();
+      allow read: if notSupervision() && (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow write: if notSupervision() && (isAdmin());
     }
     // Libro mayor de puntos (earn/spend). Solo el servidor escribe; el dueño lo lee.
     match /loyaltyLedger/{id} {
-      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
-      allow write: if isAdmin();
+      allow read: if notSupervision() && (isAuthenticated() && resource.data.uid == request.auth.uid);
+      allow write: if notSupervision() && (isAdmin());
     }
 
     // ── Fase 2b: catálogo de recompensas y cupones canjeados ─────────────────────
     // Catálogo de recompensas: lectura pública (vitrina), escritura solo admin.
     match /rewardsCatalog/{id} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read: if notSupervision() && (true);
+      allow write: if notSupervision() && (isAdmin());
     }
     // Cupones del usuario: los crea SOLO el servidor (redeemRewardSecure vía admin
     // SDK); el dueño solo los lee. 'write' restringido a admin (Cloud Functions).
     match /userCoupons/{id} {
-      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
-      allow write: if isAdmin();
+      allow read: if notSupervision() && (isAuthenticated() && resource.data.uid == request.auth.uid);
+      allow write: if notSupervision() && (isAdmin());
     }
 
     // Fase 3 — Marketplace multi-vendor.
     // subOrders: las crea el servidor (createOrderWithSubordersSecure); lee el comprador o admin.
     match /subOrders/{id} {
-      allow read: if isAdmin() || (isAuthenticated() && resource.data.buyerUid == request.auth.uid);
-      allow write: if isAdmin();
+      allow read: if notSupervision() && (isAdmin() || (isAuthenticated() && resource.data.buyerUid == request.auth.uid));
+      allow write: if notSupervision() && (isAdmin());
     }
-    match /shippingZones/{id} { allow read: if true; allow write: if isAdmin(); }
-    match /payouts/{id} { allow read, write: if isAdmin(); }
+    match /shippingZones/{id} { allow read: if notSupervision() && (true); allow write: if notSupervision() && (isAdmin()); }
+    match /payouts/{id} { allow read, write: if notSupervision() && (isAdmin()); }
 
     // Partidas de Wordle: lectura pública (ranking); el usuario solo escribe su registro.
     match /wordle/{id} {
-      allow read: if true;
-      allow create, update: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow delete: if isAdmin();
+      allow read: if notSupervision() && (true);
+      allow create, update: if notSupervision() && (isAuthenticated() && request.resource.data.userId == request.auth.uid);
+      allow delete: if notSupervision() && (isAdmin());
     }
 
     // Evidencias de retos: se crean vía Cloud Function (admin SDK, evade reglas); el
     // cliente solo necesita leerlas como admin.
-    match /challengeEvidences/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
+    match /challengeEvidences/{id} { allow read: if notSupervision() && (isAdmin()); allow write: if notSupervision() && (isAdmin()); }
 
     // Referidos: un doc = una persona que abrió un link. Todo lo escribe el
     // servidor (registrarVisitaReferidoSecure, aceptarInvitacionSecure,
@@ -235,57 +239,57 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/portal_clientes_users/$(request.auth.uid)).data.get('referralCode', '');
     }
     match /referrals/{id} {
-      allow read: if isAdmin()
-        || (isAuthenticated() && resource.data.referrerCode == miCodigoReferido());
-      allow create, update: if false;
-      allow delete: if isAdmin();
+      allow read: if notSupervision() && (isAdmin()
+        || (isAuthenticated() && resource.data.referrerCode == miCodigoReferido()));
+      allow create, update: if notSupervision() && (false);
+      allow delete: if notSupervision() && (isAdmin());
     }
 
     // Eventos/fechas importantes del usuario (cumpleaños, aniversarios).
     // TODO: acotar por owner si los documentos llevan userId.
     match /organizable_events/{id} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAuthenticated() || isAdmin();
+      allow read: if notSupervision() && (isAuthenticated());
+      allow create, update, delete: if notSupervision() && (isAuthenticated() || isAdmin());
     }
 
     // ── Datos de usuario ─────────────────────────────────────────────────────────
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow create: if isAuthenticated() && isOwner(userId) && sinSaldoEnCreate();
-      allow update: if isAdmin() || (isOwner(userId) && noTocaCamposSensibles() && dniInmutable());
-      allow delete: if isAdmin();
+      allow read: if notSupervision() && (isOwner(userId) || isAdmin());
+      allow create: if notSupervision() && (isAuthenticated() && isOwner(userId) && sinSaldoEnCreate());
+      allow update: if notSupervision() && (isAdmin() || (isOwner(userId) && noTocaCamposSensibles() && dniInmutable()));
+      allow delete: if notSupervision() && (isAdmin());
       match /notifications/{notifId} {
-        allow read, update: if isOwner(userId) || isAdmin();
-        allow create, delete: if isAdmin();
+        allow read, update: if notSupervision() && (isOwner(userId) || isAdmin());
+        allow create, delete: if notSupervision() && (isAdmin());
       }
     }
     match /portal_clientes_users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow create: if isAuthenticated() && isOwner(userId) && sinSaldoEnCreate();
-      allow update: if isAdmin() || (isOwner(userId) && noTocaCamposSensibles() && dniInmutable());
-      allow delete: if isAdmin();
+      allow read: if notSupervision() && (isOwner(userId) || isAdmin());
+      allow create: if notSupervision() && (isAuthenticated() && isOwner(userId) && sinSaldoEnCreate());
+      allow update: if notSupervision() && (isAdmin() || (isOwner(userId) && noTocaCamposSensibles() && dniInmutable()));
+      allow delete: if notSupervision() && (isAdmin());
       match /notifications/{notifId} {
-        allow read, update: if isOwner(userId) || isAdmin();
-        allow create, delete: if isAdmin();
+        allow read, update: if notSupervision() && (isOwner(userId) || isAdmin());
+        allow create, delete: if notSupervision() && (isAdmin());
       }
     }
 
     match /orders/{orderId} {
-      allow read: if isOwner(resource.data.userId)
+      allow read: if notSupervision() && (isOwner(resource.data.userId)
                      || (isAuthenticated() && resource.data.buyerUid == request.auth.uid)
-                     || isAdmin();
-      allow create: if isAuthenticated() || request.resource.data.dni != null;
-      allow update: if isAdmin() || isOwner(resource.data.userId);
-      allow delete: if isAdmin();
+                     || isAdmin());
+      allow create: if notSupervision() && (isAuthenticated() || request.resource.data.dni != null);
+      allow update: if notSupervision() && (isAdmin() || isOwner(resource.data.userId));
+      allow delete: if notSupervision() && (isAdmin());
     }
 
     // ── ERP (proyecto compartido sistema-gestion-3b225) ──────────────────────────
     // Pedidos del ERP. El checkout web los crea SIN sesión, identificando con DNI.
     // Lectura: admin o el comprador autenticado dueño del pedido.
     match /pedidos/{id} {
-      allow read: if isAdmin() || (isAuthenticated() && resource.data.buyerUid == request.auth.uid);
-      allow create: if isAuthenticated() || request.resource.data.dni != null;
-      allow update, delete: if isAdmin();
+      allow read: if notSupervision() && (isAdmin() || (isAuthenticated() && resource.data.buyerUid == request.auth.uid));
+      allow create: if notSupervision() && (isAuthenticated() || request.resource.data.dni != null);
+      allow update, delete: if notSupervision() && (isAdmin());
     }
     // Pedidos web: los crea y los marca SOLO el servidor (checkout, WhatsApp, pagos;
     // Cloud Functions con Admin SDK, que no pasa por estas reglas). Hasta el
@@ -297,128 +301,128 @@ service cloud.firestore {
     // necesita: su personal no es isAdmin()). Cerrarla del todo pide separar al
     // personal del ERP (ver la revisión de seguridad).
     match /pedidos_web/{id} {
-      allow read: if isAdmin() || (isAuthenticated() && resource.data.buyerUid == request.auth.uid);
-      allow create: if false;
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow read: if notSupervision() && (isAdmin() || (isAuthenticated() && resource.data.buyerUid == request.auth.uid));
+      allow create: if notSupervision() && (false);
+      allow update: if notSupervision() && (isAdmin());
+      allow delete: if notSupervision() && (isAdmin());
     }
 
     match /designs/{designId} {
-      allow read: if isOwner(resource.data.userId) || resource.data.isPublic == true || isAdmin();
-      allow create: if isAuthenticated();
-      allow update, delete: if isOwner(resource.data.userId) || isAdmin();
+      allow read: if notSupervision() && (isOwner(resource.data.userId) || resource.data.isPublic == true || isAdmin());
+      allow create: if notSupervision() && (isAuthenticated());
+      allow update, delete: if notSupervision() && (isOwner(resource.data.userId) || isAdmin());
     }
 
     // Productos personalizados creados por el cliente (pre-compra).
     match /producto_cliente_personalizado/{id} {
-      allow read: if true;
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() || isAdmin();
+      allow read: if notSupervision() && (true);
+      allow create: if notSupervision() && (isAuthenticated());
+      allow update, delete: if notSupervision() && (isAuthenticated() || isAdmin());
     }
 
     // Wishlists (doc id = uid). Lectura pública para compartir por enlace.
     match /wishlists/{userId} {
-      allow read: if true;
-      allow write: if isOwner(userId) || isAdmin();
+      allow read: if notSupervision() && (true);
+      allow write: if notSupervision() && (isOwner(userId) || isAdmin());
     }
 
     // Libreta de direcciones del cliente (doc id = uid): nombre, documento,
     // teléfono y dirección. Solo su dueño (y un admin para soporte).
     match /wala_direcciones/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow delete: if isOwner(userId);
-      allow create, update: if isOwner(userId)
+      allow read: if notSupervision() && (isOwner(userId) || isAdmin());
+      allow delete: if notSupervision() && (isOwner(userId));
+      allow create, update: if notSupervision() && (isOwner(userId)
         && request.resource.data.keys().hasOnly(['lista', 'actualizado'])
         && request.resource.data.lista is list
-        && request.resource.data.lista.size() <= 10;
+        && request.resource.data.lista.size() <= 10);
     }
 
     // Reseñas de productos. Lectura pública; crear autenticado; update permitido para
     // votos útiles. TODO: restringir update a solo 'helpfulVotes' con diff().
     match /product_reviews/{id} {
-      allow read: if true;
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAdmin();
+      allow read: if notSupervision() && (true);
+      allow create: if notSupervision() && (isAuthenticated());
+      allow update: if notSupervision() && (isAuthenticated());
+      allow delete: if notSupervision() && (isAdmin());
     }
 
     // Tipo de cambio que lee la tienda (config/fx). El resto de config es del ERP.
     match /config/{id} {
-      allow read: if id == 'fx';
+      allow read: if notSupervision() && (id == 'fx');
     }
 
     // Copia de los pedidos web del lado Walá ("Mis pedidos", Recepción). La escribe
     // solo el servidor. (Hasta el 2026-10-16 cualquiera, sin cuenta, podía crear
     // una copia "sin pagar": la usaba el cuestionario de producto, que se retiró.)
     match /wala_pedidos/{id} {
-      allow read: if isAdmin() || (isAuthenticated() && resource.data.buyerUid == request.auth.uid);
-      allow create: if false;
-      allow update, delete: if isAdmin();
+      allow read: if notSupervision() && (isAdmin() || (isAuthenticated() && resource.data.buyerUid == request.auth.uid));
+      allow create: if notSupervision() && (false);
+      allow update, delete: if notSupervision() && (isAdmin());
     }
 
     // ── Admin / configuración restringida ────────────────────────────────────────
-    match /adminUsers/{userId} { allow read, write: if isAdmin(); }
+    match /adminUsers/{userId} { allow read, write: if notSupervision() && (isAdmin()); }
     // adminRoles: el cliente autenticado lee su propio rol para computar permisos de UI.
     match /adminRoles/{id} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow read: if notSupervision() && (isAuthenticated());
+      allow write: if notSupervision() && (isAdmin());
     }
-    match /notification_settings/{id} { allow read, write: if isAdmin(); }
+    match /notification_settings/{id} { allow read, write: if notSupervision() && (isAdmin()); }
     // Historial y cola de campañas push: las escribe solo el servidor
     // (sendManualPromoNotification / notificationEngine); el admin las lee.
-    match /notification_campaigns/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /notification_campaigns/{id} { allow read: if notSupervision() && (isAdmin()); allow write: if notSupervision() && (false); }
     // Conteo A/B de avisos y registro de hitos de pedido ya avisados: solo servidor.
-    match /notification_stats/{id}    { allow read: if isAdmin(); allow write: if false; }
-    match /order_notifications/{id}   { allow read: if isAdmin(); allow write: if false; }
+    match /notification_stats/{id}    { allow read: if notSupervision() && (isAdmin()); allow write: if notSupervision() && (false); }
+    match /order_notifications/{id}   { allow read: if notSupervision() && (isAdmin()); allow write: if notSupervision() && (false); }
     // Notificaciones guardadas (borradores reutilizables del panel): solo admin.
-    match /notification_drafts/{id}   { allow read, write: if isAdmin(); }
+    match /notification_drafts/{id}   { allow read, write: if notSupervision() && (isAdmin()); }
     // Aviso "producto que estuvo mirando": control diario y qué se avisó a quién. Solo servidor.
-    match /notification_state/{id}    { allow read: if isAdmin(); allow write: if false; }
-    match /product_view_notifications/{id} { allow read: if isAdmin(); allow write: if false; }
-    match /storeConfigLogs/{id}       { allow read, write: if isAdmin(); }
-    match /inventoryLogs/{id}         { allow read, write: if isAdmin(); }
+    match /notification_state/{id}    { allow read: if notSupervision() && (isAdmin()); allow write: if notSupervision() && (false); }
+    match /product_view_notifications/{id} { allow read: if notSupervision() && (isAdmin()); allow write: if notSupervision() && (false); }
+    match /storeConfigLogs/{id}       { allow read, write: if notSupervision() && (isAdmin()); }
+    match /inventoryLogs/{id}         { allow read, write: if notSupervision() && (isAdmin()); }
     // (regla fantasma 'analytics_kapi' eliminada: ninguna parte del código la usa;
     //  la analítica real vive en las colecciones analytics_* de abajo)
     // Lock de dedup de referidos (H-05): solo lo escribe Cloud Functions (admin SDK).
-    match /referralOrderClaims/{id}   { allow read, write: if isAdmin(); }
+    match /referralOrderClaims/{id}   { allow read, write: if notSupervision() && (isAdmin()); }
 
     // ── Analítica (proyecto compartido) ──────────────────────────────────────────
     // Ingesta pública/anónima desde el cliente; la lectura/gestión queda solo a admin.
     match /analytics_events/{id} {
-      allow create: if true;
-      allow read, update, delete: if isAdmin();
+      allow create: if notSupervision() && (true);
+      allow read, update, delete: if notSupervision() && (isAdmin());
     }
     match /analytics_sessions/{id} {
-      allow create: if true;
-      allow update: if true;
-      allow read, delete: if isAdmin();
+      allow create: if notSupervision() && (true);
+      allow update: if notSupervision() && (true);
+      allow read, delete: if notSupervision() && (isAdmin());
     }
-    match /analytics_user_summary/{id}   { allow read, write: if isAdmin(); }
-    match /analytics_global_summary/{id} { allow read, write: if isAdmin(); }
+    match /analytics_user_summary/{id}   { allow read, write: if notSupervision() && (isAdmin()); }
+    match /analytics_global_summary/{id} { allow read, write: if notSupervision() && (isAdmin()); }
     // Agregado diario pre-computado (CF aggregateAnalyticsDaily escribe con Admin
     // SDK y bypassa rules); el dashboard admin lo lee directo. Sin esta regla,
     // desplegar rules mataría en silencio la vía barata del dashboard (P1).
-    match /analytics_daily/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /analytics_daily/{id} { allow read: if notSupervision() && (isAdmin()); allow write: if notSupervision() && (false); }
 
     // ── Ingestión pública controlada ─────────────────────────────────────────────
     match /heatmap_events/{eventId} {
-      allow create: if true;
-      allow read, update, delete: if isAdmin();
+      allow create: if notSupervision() && (true);
+      allow read, update, delete: if notSupervision() && (isAdmin());
     }
     match /libro_reclamaciones/{reclamoId} {
-      allow create: if true;             // Formulario público de reclamaciones (INDECOPI)
-      allow read, update, delete: if isAdmin();
+      allow create: if notSupervision() && (true);             // Formulario público de reclamaciones (INDECOPI)
+      allow read, update, delete: if notSupervision() && (isAdmin());
     }
     match /enlaces_pago/{enlaceId} {
-      allow get: if true;                // Público para quien tiene el link (id no adivinable)
-      allow list: if isAdmin();          // Impide enumerar enlaces anónimamente.
-      allow create: if isAdmin();
-      allow update, delete: if isAdmin(); // H-08: antes era 'if true' (fraude/DoS)
+      allow get: if notSupervision() && (true);                // Público para quien tiene el link (id no adivinable)
+      allow list: if notSupervision() && (isAdmin());          // Impide enumerar enlaces anónimamente.
+      allow create: if notSupervision() && (isAdmin());
+      allow update, delete: if notSupervision() && (isAdmin()); // H-08: antes era 'if true' (fraude/DoS)
     }
     // Relación privada entre el enlace y el chat de Kenta. Solo Cloud Functions
     // accede mediante Admin SDK; nunca se expone al navegador público.
     match /payment_link_integrations/{enlaceId} {
-      allow read, write: if false;
+      allow read, write: if notSupervision() && (false);
     }
 
     // ── MÓDULO SORTEOS (NUEVO — server-authoritative) ────────────────────────────
@@ -427,28 +431,28 @@ service cloud.firestore {
     // (admin SDK, bypassa estas reglas). Por eso todas las subcolecciones son
     // write:false para el cliente. Los admin gestionan el catálogo de sorteos.
     match /sorteos/{id} {
-      allow read: if true;               // Vitrina pública del sorteo.
-      allow write: if isAdmin();         // Solo el admin crea/edita/cierra sorteos.
+      allow read: if notSupervision() && (true);               // Vitrina pública del sorteo.
+      allow write: if notSupervision() && (isAdmin());         // Solo el admin crea/edita/cierra sorteos.
 
       // Participantes: los crea SOLO la Cloud Function. El cliente autenticado puede
       // leer (p. ej. para verificar su propia participación); nunca escribe.
       match /participantes/{uid} {
-        allow read: if isAuthenticated();
-        allow write: if false;
+        allow read: if notSupervision() && (isAuthenticated());
+        allow write: if notSupervision() && (false);
       }
       // Contador con shards: lectura pública (la página suma los shards); solo la CF escribe.
       match /contador/{shardId} {
-        allow read: if true;
-        allow write: if false;
+        allow read: if notSupervision() && (true);
+        allow write: if notSupervision() && (false);
       }
       // Tickets y sorteos realizados (builds futuros): solo el admin lee; solo la CF escribe.
       match /tickets/{ticketId} {
-        allow read: if isAdmin();
-        allow write: if false;
+        allow read: if notSupervision() && (isAdmin());
+        allow write: if notSupervision() && (false);
       }
       match /sorteos_realizados/{realizadoId} {
-        allow read: if isAdmin();
-        allow write: if false;
+        allow read: if notSupervision() && (isAdmin());
+        allow write: if notSupervision() && (false);
       }
     }
 
@@ -457,51 +461,51 @@ service cloud.firestore {
     // shards del contador. Los suscriptores y recibos SOLO los escribe la Cloud
     // Function (Admin SDK, bypassa estas reglas); el cliente jamás escribe.
     match /sorteos_suscripcion/{id} {
-      allow read: if true;               // Vitrina pública de la campaña.
-      allow write: if isAdmin();         // Solo el admin crea/edita la campaña.
+      allow read: if notSupervision() && (true);               // Vitrina pública de la campaña.
+      allow write: if notSupervision() && (isAdmin());         // Solo el admin crea/edita la campaña.
 
       // Beneficios (marcas/descuentos): lectura pública; el admin los gestiona.
       match /beneficios/{b} {
-        allow read: if true;
-        allow write: if isAdmin();
+        allow read: if notSupervision() && (true);
+        allow write: if notSupervision() && (isAdmin());
       }
       // Galería de ganadores anteriores: lectura pública; el admin la gestiona.
       match /ganadores_galeria/{g} {
-        allow read: if true;
-        allow write: if isAdmin();
+        allow read: if notSupervision() && (true);
+        allow write: if notSupervision() && (isAdmin());
       }
       // Contador con shards: lectura pública (la página suma los shards); solo la CF escribe.
       match /contador/{s} {
-        allow read: if true;
-        allow write: if false;
+        allow read: if notSupervision() && (true);
+        allow write: if notSupervision() && (false);
       }
       // Suscriptor: SOLO su dueño (o el admin) lo lee; nunca lo escribe el cliente.
       match /suscriptores/{uid} {
-        allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
-        allow write: if false;
+        allow read: if notSupervision() && (request.auth != null && (request.auth.uid == uid || isAdmin()));
+        allow write: if notSupervision() && (false);
 
         // Recibos de cobro: mismos permisos de lectura que el suscriptor.
         match /recibos/{r} {
-          allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
-          allow write: if false;
+          allow read: if notSupervision() && (request.auth != null && (request.auth.uid == uid || isAdmin()));
+          allow write: if notSupervision() && (false);
         }
       }
       // Evidencia de sorteos realizados: solo el admin lee; solo la CF escribe.
       match /sorteos_realizados/{d} {
-        allow read: if isAdmin();
-        allow write: if false;
+        allow read: if notSupervision() && (isAdmin());
+        allow write: if notSupervision() && (false);
       }
     }
 
     // Idempotencia de cobros de suscripción: interno (solo la CF con Admin SDK).
     match /suscripcionCharges/{c} {
-      allow read: if false;
-      allow write: if false;
+      allow read: if notSupervision() && (false);
+      allow write: if notSupervision() && (false);
     }
     // Marcas de eventos de webhook de suscripción de PayPal: interno.
     match /paypalSubEvents/{e} {
-      allow read: if false;
-      allow write: if false;
+      allow read: if notSupervision() && (false);
+      allow write: if notSupervision() && (false);
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -538,43 +542,43 @@ service cloud.firestore {
 
     // ─── AUDITORÍA ───────────────────────────────────────────────────────────
     match /audits/{auditId} {
-      allow read: if request.auth != null
-                  && request.auth.token.email == "admin@sistema.com";
-      allow create: if request.auth != null
+      allow read: if notSupervision() && (request.auth != null
+                  && request.auth.token.email == "admin@sistema.com");
+      allow create: if notSupervision() && (request.auth != null
                     && request.resource.data.userId is string
                     && request.resource.data.timestamp != null
                     && request.resource.data.expiresAt != null
                     && request.resource.data.module is string
                     && request.resource.data.action is string
-                    && request.resource.data.entity is string;
-      allow update: if false;
-      allow delete: if false;
+                    && request.resource.data.entity is string);
+      allow update: if notSupervision() && (false);
+      allow delete: if notSupervision() && (false);
     }
 
     // ─── ROLLUPS MENSUALES (solo Cloud Functions escriben) ───────────────────
     match /rollups_mensuales/{mes} {
-      allow read: if request.auth != null;
-      allow write: if false;
+      allow read: if notSupervision() && (request.auth != null);
+      allow write: if notSupervision() && (false);
     }
 
     // ─── RENDIMIENTO DE VENTAS (funnel de leads) ─────────────────────────────
     match /leads_funnels/{id} {
-      allow read, write: if request.auth != null;
+      allow read, write: if notSupervision() && (request.auth != null);
     }
     match /leads_dias/{id} {
-      allow read, write: if request.auth != null;
+      allow read, write: if notSupervision() && (request.auth != null);
     }
     match /leads_avances/{id} {
-      allow read, write: if request.auth != null;
+      allow read, write: if notSupervision() && (request.auth != null);
     }
 
     // ─── REVISIÓN DE STOCK (cola del servidor) ───────────────────────────────
     match /stockReview_requests/{id} {
-      allow create: if request.auth != null
+      allow create: if notSupervision() && (request.auth != null
         && request.resource.data.keys().hasOnly(['requestedBy', 'createdAt', 'status'])
         && request.resource.data.requestedBy == request.auth.uid
         && request.resource.data.createdAt == request.time
-        && request.resource.data.status == 'pending';
+        && request.resource.data.status == 'pending');
     }
     function serverOwnsStockTransition() {
       return exists(/databases/$(database)/documents/stockReview_meta/control)
@@ -591,11 +595,11 @@ service cloud.firestore {
     // ─── REGLA GENERAL DEL ERP ───────────────────────────────────────────────
     // Cualquier sesión, salvo en las colecciones solo de Walá.
     match /{collection}/{document=**} {
-      allow read: if request.auth != null && !esSoloWala(collection);
-      allow write: if request.auth != null
-        && !esSoloWala(collection)
+      allow read: if notSupervision() && (request.auth != null && !esSoloWala(collection) && !collection.matches('supervision_.*'));
+      allow write: if notSupervision() && (request.auth != null
+        && !esSoloWala(collection) && !collection.matches('supervision_.*')
         && !collection.matches('stockReview_.*')
-        && !(changesStockState(collection) && serverOwnsStockTransition());
+        && !(changesStockState(collection) && serverOwnsStockTransition()));
     }
   }
 }
