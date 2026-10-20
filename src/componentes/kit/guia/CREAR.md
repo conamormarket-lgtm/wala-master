@@ -845,8 +845,9 @@ diseños lleva cada uno), la prenda, la `BarraLienzo` y "Zona elegida: Frente
 - La zona elegida lleva su nombre en una pastilla violeta encima, como en
   el kit. Fabric la pinta (`after:render`) con el nombre ya traducido; no se
   pinta mientras otra zona recibe lo que se arrastra.
-- En escritorio el lienzo mide lo del kit (`min(66vh, 680px)`) y la escena
-  queda fija al bajar, debajo de la cabecera. El panel sigue como en la
+- En escritorio el lienzo usa el espacio que queda en la pantalla, hasta los
+  680 px del kit (ver abajo: con `min(66vh, 680px)` a secas no cabía), y la
+  escena queda fija al bajar, debajo de la cabecera. El panel sigue como en la
   tienda: con su propio desplazamiento y la compra siempre a la vista.
 - En el celular la prenda sigue arriba mientras el panel sube por debajo;
   la separa el fondo de la página con una línea, sin recuadro ni sombra.
@@ -870,3 +871,34 @@ guía de gestos, escritorio a 1280 (medidas y lienzo grande; la captura no:
 el panel del navegador mide 780 px) y la demo del estudio con la misma
 escena. **No probado:** el inglés (el traductor no responde en este
 navegador) y un teléfono de verdad.
+
+### Estudio: que quepa, la carga y sin pie (2026-10-20)
+
+En producción, con la barra de administrador y el aviso de "Estás editando",
+el estudio ya no cabía: el lienzo medía `min(66vh, 680px)` (el cambio de
+arriba había quitado la regla de antes, que lo ajustaba a lo que queda), y
+la prenda y el panel, fijos a 90 px, quedaban debajo de la cabecera.
+
+- **El lienzo** usa lo que queda en la pantalla (como antes) y nunca pasa
+  de 680 px ni baja de 300 (`ALTO_MAXIMO_LIENZO`). A 1366 × 768 el estudio
+  mide justo la pantalla (antes 795 px: había que bajar).
+- **Lo fijo** (la escena y el panel) va debajo de la cabecera real:
+  `EstudioDeTienda` mide la cabecera (`[data-componente="Cabecera"]`) y la
+  barra de administrador (`--admin-bar-height`) y publica `--tope-estudio`
+  (92 px sin barra, 142 con ella).
+- **Sin pie**, como en el kit (el estudio es una herramienta): `Footer` no
+  sale en `/crear/…`; con `crearViejo`, sí (como antes).
+- **"Preparando la vista previa (Espalda)….."**: los puntos salían dobles
+  (el texto traía "…" y `Cargando` pone los suyos). El estudio los quita
+  (`sinPuntos`) y `Cargando` también, si le llega texto con "…".
+- **Los avisos sobre la prenda** son piezas del kit en los dos lados:
+  `CargandoLienzo` (la etiqueta de Walá que se mece con "Cargando tu
+  diseño", en vez de un círculo que gira; sobre el escenario claro también
+  de noche, con `Cargando sobreClaro`), `AvisoSoltarArchivo` ("Suelta tu
+  imagen en Pecho") y `SoltarLados` ("Suelta aquí para pasar a Espalda").
+
+**Probado** con los emuladores: 1366 × 768 sin barra y con la barra
+simulada (el tope pasa a 142 px), el pie (no sale; con `crearViejo`, sí),
+soltar una imagen sobre la prenda (la pastilla del kit) y "Cargando tu
+diseño" en la demo, en oscuro. **No probado:** el estudio con la barra de
+administrador de verdad y el pago (no se cobró nada).

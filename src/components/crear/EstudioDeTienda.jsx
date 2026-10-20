@@ -5,8 +5,8 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fabric } from 'fabric';
 import { ImagePlus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
-  Crosshair, Maximize2, RotateCw, Crop, Eraser, Loader2, Undo2, Redo2, Clipboard, ClipboardPaste, Pencil, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
-  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter, ArrowLeftRight,
+  Crosshair, Maximize2, RotateCw, Crop, Eraser, Undo2, Redo2, Clipboard, ClipboardPaste, Pencil, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
+  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -36,15 +36,14 @@ import { getComboCrear } from '../../services/combosCrear';
 import { MenuContextual } from '../../componentes/kit/piezas/MenuContextual';
 import { registrarGuardado, ponerBorradorEnCache, quitarBorradorDeCache } from '../../pages/Crear/borradoresCache';
 import { cajaEnZona, imanAlMover, imanAlEscalar, enCm } from '../../pages/Crear/guiasInteligentes';
-import { BarraLienzo, PasosEstudio, PanelCapa, PanelVarios, GuiaGestos, EstadoEdicion, AtajosEstudio, MOD_ESTUDIO as MOD } from '../../componentes/kit/piezas/Estudio';
+import { BarraLienzo, PasosEstudio, PanelCapa, PanelVarios, GuiaGestos, EstadoEdicion, AtajosEstudio, CargandoLienzo, AvisoSoltarArchivo, MOD_ESTUDIO as MOD } from '../../componentes/kit/piezas/Estudio';
 import { capaEstudioDesde, cambiosDePanelEstudio } from '../../componentes/kit/adaptadoresEstudio';
 import Boton from '../../componentes/kit/Boton';
 import { Aviso, EstadoVacio, HojaInferior } from '../../componentes/kit/Feedback';
 import { EsqueletoPagina } from '../../componentes/kit/Esqueletos';
 import { CapaCargando } from '../../componentes/kit/Cargando';
-import { TextoResaltado } from '../../componentes/kit/piezas/TextoResaltado';
 import { Texto, useTexto } from '../../componentes/kit/Traduccion';
-import { MarcoEstudio, InicioLienzoEstudio, EscenaEstudio } from '../../componentes/kit/paginas/MarcoEstudio';
+import { MarcoEstudio, InicioLienzoEstudio, EscenaEstudio, SoltarLados } from '../../componentes/kit/paginas/MarcoEstudio';
 import { CompraEstudio } from '../../componentes/kit/piezas/CompraEstudio';
 import { HojasEstudio } from '../../componentes/kit/piezas/HojasEstudio';
 import styles from './EstudioDeTienda.module.css';
@@ -87,6 +86,19 @@ const recargadaEn = (ruta) => {
 };
 
 /** Controles de selección: grandes para el dedo, con el violeta de la marca. */
+/** Los textos de lo que se está haciendo, sin "…": los puntos los anima Cargando. */
+const sinPuntos = (texto) => String(texto).replace(/\s*(…|\.{3})\s*$/, '');
+
+// El alto más grande del lienzo en escritorio: el de P12 (680 px).
+const ALTO_MAXIMO_LIENZO = 680;
+
+/** Dónde termina la cabecera fija (y la barra de administrador, si está). */
+const topeBajoCabecera = () => {
+  const cabecera = document.querySelector('[data-componente="Cabecera"]');
+  const barraAdmin = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--admin-bar-height')) || 0;
+  return Math.round(barraAdmin + (cabecera?.offsetHeight || 72) + 12);
+};
+
 const estilizar = (obj) => {
   obj.set({
     borderColor: VIOLETA,
@@ -674,7 +686,9 @@ const EstudioDeTienda = () => {
       panel.style.maxHeight = '';
       return;
     }
-    const arriba = Math.max(panel.getBoundingClientRect().top, 90);
+    const tope = topeBajoCabecera();
+    panel.closest('[data-componente="PaginaEstudio"]')?.style.setProperty('--tope-estudio', `${tope}px`);
+    const arriba = Math.max(panel.getBoundingClientRect().top, tope);
     panel.style.maxHeight = `${Math.max(360, window.innerHeight - arriba - 16)}px`;
   }, []);
   useEffect(() => {
@@ -1654,7 +1668,8 @@ const EstudioDeTienda = () => {
         // con un 78 % fijo se pasaba del borde y había que bajar la página.
         const altoMax = window.innerWidth <= 768
           ? Math.max(180, Math.min(window.innerHeight * 0.47, altoDisponibleLienzo || window.innerHeight * 0.47))
-          : Math.max(380, Math.min(window.innerHeight * 0.66, 680));
+          : Math.min(ALTO_MAXIMO_LIENZO, Math.max(300, window.innerHeight
+            - ((contenedorRef.current?.getBoundingClientRect().top || 0) + window.scrollY) - 130));
         const ancho = Math.min(anchoLienzo, Math.floor(altoMax / proporcion));
         const margen = ancho * 0.04;
         const iw = ancho - margen * 2;
@@ -3381,29 +3396,18 @@ const EstudioDeTienda = () => {
         >
           <div ref={contenedorRef} className={styles.lienzoCaja} aria-busy={cargandoLienzo}>
             <canvas ref={canvasElRef} />
-            {cargandoLienzo && (
-              <div className={`${styles.cargandoLienzo} ${primerDibujoRef.current ? styles.cargandoPrimero : ''}`} role="status">
-                <Loader2 size={26} className={styles.girando} aria-hidden="true" />
-                <span><Texto>Cargando tu diseño…</Texto></span>
-              </div>
-            )}
+            {cargandoLienzo && <CargandoLienzo opaco={primerDibujoRef.current} />}
             {listo && !cargandoLienzo && !soltando && zonasUsadas.length === 0 && <InicioLienzoEstudio zona={vista.nombre + " · " + zona.nombre} onImagen={elegirImagen} onTexto={() => agregarTexto(undefined, { editar: true })} subiendo={subiendo > 0} />}
             {guiaGestos && <GuiaGestos onEntendido={cerrarGuiaGestos} />}
             {arrastreLado && cfg.vistas.length > 1 && (
               // Mientras se arrastra: a qué otro lado de la prenda se puede pasar.
-              <div className={styles.soltarLados} role="status">
-                {cfg.vistas.filter((v) => v.id !== vista.id).map((v) => (
-                  <span key={v.id} data-soltar-lado={v.id} className={`${styles.soltarLado} ${arrastreLado.lado === v.id ? styles.soltarLadoActivo : ''}`}>
-                    <ArrowLeftRight size={16} aria-hidden="true" /> <TextoResaltado resaltar={[v.nombre]}>{`Suelta aquí para pasar a ${v.nombre}`}</TextoResaltado>
-                  </span>
-                ))}
-              </div>
+              <SoltarLados lados={cfg.vistas.filter((v) => v.id !== vista.id).map((v) => ({ id: v.id, nombre: v.nombre }))} activo={arrastreLado.lado} />
             )}
             {soltando && (
-              <div className={styles.soltarAqui} aria-hidden="true">
-                <ImagePlus size={28} />
-                <Texto>{zona?.nombre ? `Suelta tu imagen en ${zona.nombre}` : 'Suelta tu imagen en la prenda'}</Texto>
-              </div>
+              <>
+                <span className={styles.soltarAqui} aria-hidden="true" />
+                <AvisoSoltarArchivo zona={zona?.nombre} />
+              </>
             )}
           </div>
 
@@ -3483,7 +3487,7 @@ const EstudioDeTienda = () => {
         />
       )}
     >
-      {procesando && <CapaCargando texto={<Texto>{procesando}</Texto>} />}
+      {procesando && <CapaCargando texto={<Texto>{sinPuntos(procesando)}</Texto>} />}
       <HojasEstudio prenda={prenda.name} color={color.nombre} precio={total}
         tallas={tallas} talla={tallaCompra} onTalla={setTallaCompra}
         pidiendoTalla={pidiendoTalla} onCerrarTalla={() => setPidiendoTalla(false)} onComprar={() => comprar(tallaCompra)}
@@ -3496,7 +3500,7 @@ const EstudioDeTienda = () => {
         <AtajosEstudio lados={cfg.vistas.map((v) => v.nombre)} />
       </HojaInferior>
       {menu && <MenuContextual abierto x={menu.x} y={menu.y} items={opcionesMenu().map((opcion) => opcion === 'separador' ? opcion : { ...opcion, Icono: opcion.icono })} onCerrar={cerrarMenu} />}
-      <Suspense fallback={<CapaCargando texto={<Texto>Preparando la herramienta…</Texto>} />}>
+      <Suspense fallback={<CapaCargando texto={<Texto>Preparando la herramienta</Texto>} />}>
         {recortando && capaSel?.id === recortando && capaSel.type === 'image' && <RecortarFoto abierta forma="libre" src={srcDe(capaSel)} onCancelar={() => setRecortando(null)}
           onListo={async (blob, { corte, natural }) => {
             if (blob && corte) {

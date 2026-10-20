@@ -46,6 +46,7 @@ const Footer = () => {
   const { isEditModeActive, activePageId, setActivePageId, storeConfigDraft, updateSectionsDraft, activeSection, openEditorForSection } = useVisualEditor();
   const { isFooterVisible } = useLayoutContext();
   const editorViejo = useLoViejo('editor');
+  const crearViejo = useLoViejo('crear');
   const confirmar = useConfirmar();
   const { sinGuardar } = useVisualEditor();
 
@@ -63,6 +64,9 @@ const Footer = () => {
   if (!isFooterVisible) return null;
   // Ocultar footer si está en una app móvil nativa (Capacitor)
   if (window.Capacitor?.isNativePlatform?.() || esAppNativa()) return null;
+  // El estudio es una herramienta: sin pie, como en el kit (P12). El de antes
+  // (interruptor crearViejo) lo sigue mostrando.
+  if (location.pathname.startsWith('/crear/') && !crearViejo) return null;
 
   const isEditingFooter = activePageId === 'footer';
   let displaySections = isEditingFooter ? (storeConfigDraft?.sections || []) : (footerConfig?.sections || []);

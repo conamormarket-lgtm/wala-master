@@ -131,6 +131,16 @@
   background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%);
 }
 
+/* Sobre algo claro también de noche (el escenario de la prenda): los colores
+   del día, si no la etiqueta lila y el gris claro casi no se ven. */
+.sobreClaro {
+  color: #5b5670;
+}
+
+:global([data-theme='dark']) .sobreClaro .mini {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #5b21b6 100%);
+}
+
 .texto {
   display: inline-flex;
   align-items: baseline;

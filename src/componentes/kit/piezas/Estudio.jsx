@@ -16,6 +16,7 @@ import { imanAlMover, imanAlEscalar, enCm } from '../../../utils/guiasInteligent
 import { BotonEstudio, CampoEstudio, CantidadEstudio, DeslizadorEstudio, SelectorColorEstudio, CasillaEstudio, InterruptorEstudio } from './ControlesEstudio';
 import { PasoEstudio } from './PasoEstudio';
 import { TextoResaltado } from './TextoResaltado';
+import { Cargando } from '../Cargando';
 export { PasoEstudio } from './PasoEstudio';
 import s from './Estudio.module.css';
 
@@ -939,9 +940,7 @@ export function LienzoPrenda({
         })}
       </div>
       {soltarEn && (
-        <p className={s.soltarAviso} role="status">
-          Suelta tu imagen en <strong>{zonas.find((z) => z.id === soltarEn)?.nombre || 'la zona'}</strong>
-        </p>
+        <AvisoSoltarArchivo zona={zonas.find((z) => z.id === soltarEn)?.nombre} />
       )}
       {rect && <span className={s.recuadro} style={rect} aria-hidden="true" />}
       {cajaVarias && (
@@ -963,7 +962,7 @@ export function LienzoPrenda({
         />
       )}
       {ayudas?.etiqueta && <span className={s.medida} style={{ left: ayudas.etiqueta.x, top: ayudas.etiqueta.y }} aria-live="polite">{ayudas.etiqueta.texto}</span>}
-      {cargando && <p className={s.cargandoDiseno} role="status"><LoaderCircle aria-hidden="true" className={s.girando} /> Cargando tu diseño…</p>}
+      {cargando && <CargandoLienzo />}
       {encima}
     </div>
   );
@@ -1649,5 +1648,27 @@ export function AtajosEstudio({ lados = [] }) {
         ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * "Cargando tu diseño" sobre la prenda, con la etiqueta de Walá (Cargando):
+ * la misma en LienzoPrenda y sobre el lienzo de Fabric de la tienda.
+ *  - opaco: el primer dibujo, cuando todavía no hay prenda debajo
+ */
+export function CargandoLienzo({ opaco = false }) {
+  return (
+    <div className={[s.cargandoDiseno, opaco && s.cargandoOpaco].filter(Boolean).join(' ')} aria-busy="true">
+      <Cargando texto={<Texto>Cargando tu diseño</Texto>} tamano="md" sobreClaro />
+    </div>
+  );
+}
+
+/** "Suelta tu imagen en Pecho": la pastilla mientras se arrastra un archivo sobre la prenda. */
+export function AvisoSoltarArchivo({ zona }) {
+  return (
+    <p className={s.soltarAviso} role="status">
+      <TextoResaltado resaltar={[zona]}>{zona ? `Suelta tu imagen en ${zona}` : 'Suelta tu imagen en la prenda'}</TextoResaltado>
+    </p>
   );
 }

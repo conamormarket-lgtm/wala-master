@@ -1,8 +1,9 @@
 import React from 'react';
-import { ArrowLeft, Images, ImagePlus, Type } from 'lucide-react';
+import { ArrowLeft, ArrowLeftRight, Images, ImagePlus, Type } from 'lucide-react';
 import Boton from '../Boton';
 import { Pestanas } from '../Navegacion';
 import { Texto, useTexto } from '../Traduccion';
+import { TextoResaltado } from '../piezas/TextoResaltado';
 import { soles } from '../TarjetaProducto';
 import s from './Estudio.module.css';
 
@@ -87,5 +88,23 @@ export function EscenaEstudio({ lados = [], lado, onLado, barra, zona, escenaRef
       {barra}
       {zona && <p className={s.zonaInfo}><Texto>Zona elegida</Texto>: <strong><Texto>{zona}</Texto></strong></p>}
     </section>
+  );
+}
+
+/**
+ * Mientras se arrastra algo, arriba de la prenda: a qué otro lado se puede
+ * pasar. Cada destino lleva data-soltar-lado (el lienzo lo busca bajo el
+ * puntero, en la demo y con Fabric).
+ *  - lados: [{ id, nombre }] (los otros) · activo: el que está bajo el puntero
+ */
+export function SoltarLados({ lados = [], activo }) {
+  return (
+    <div className={s.soltarLados} role="status">
+      {lados.map((v) => (
+        <span key={v.id} data-soltar-lado={v.id} className={[s.soltarLado, activo === v.id && s.soltarLadoActivo].filter(Boolean).join(' ')}>
+          <ArrowLeftRight aria-hidden="true" /> <TextoResaltado resaltar={[v.nombre]}>{`Suelta aquí para pasar a ${v.nombre}`}</TextoResaltado>
+        </span>
+      ))}
+    </div>
   );
 }

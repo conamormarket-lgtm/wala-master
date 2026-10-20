@@ -93,12 +93,16 @@ export function PantallaCarga({ frases, pantallaCompleta = false, saliendo = fal
  * sirve suelta en zonas chicas.
  *  - texto ('Cargando' por defecto; null = sin texto) · tamano: 'sm' | 'md' | 'lg'
  *  - bloque: ocupa su espacio y se centra (alto mínimo 240px)
+ *  - sobreClaro: va sobre algo claro también de noche (el escenario de la
+ *    prenda): conserva los colores del día
  */
-export function Cargando({ texto = 'Cargando', tamano = 'md', bloque = false }) {
+export function Cargando({ texto = 'Cargando', tamano = 'md', bloque = false, sobreClaro = false }) {
   const fase = useFase();
   const medida = { sm: 20, md: 30, lg: 46 }[tamano] || 30;
+  // Los puntos los pone esta pieza (animados): un "…" al final saldría doble.
+  if (typeof texto === 'string') texto = texto.replace(/\s*(…|\.{3})\s*$/, '');
   return (
-    <div className={[s.cargando, s[`t_${tamano}`], bloque && s.bloque].filter(Boolean).join(' ')} role="status" data-componente="Cargando">
+    <div className={[s.cargando, s[`t_${tamano}`], bloque && s.bloque, sobreClaro && s.sobreClaro].filter(Boolean).join(' ')} role="status" data-componente="Cargando">
       <span className={s.mini} style={{ width: medida, animationDelay: fase.vaiven }} aria-hidden="true" />
       {texto ? <span className={s.texto}>{texto}<span className={s.puntos} aria-hidden="true"><i /><i /><i /></span></span> : <span className={s.oculto}>Cargando</span>}
     </div>

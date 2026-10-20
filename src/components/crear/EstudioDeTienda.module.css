@@ -37,8 +37,9 @@
   gap: 1rem;
   min-width: 0;
   position: sticky;
-  top: 90px;
-  max-height: calc(100vh - 110px);
+  /* Debajo de la cabecera real (EstudioDeTienda mide --tope-estudio). */
+  top: var(--tope-estudio, 90px);
+  max-height: calc(100vh - var(--tope-estudio, 90px) - 16px);
   gap: 0;
 }
 
@@ -64,14 +65,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-}
-
-.girando {
-  animation: girar 0.9s linear infinite;
-}
-
-@keyframes girar {
-  to { transform: rotate(360deg); }
 }
 
 @media (max-width: 960px) {
@@ -167,95 +160,27 @@
   }
 }
 
+/* Un archivo sobre la prenda: el escenario se marca (la pastilla la pone
+   AvisoSoltarArchivo del kit). */
 .soltarAqui {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border: 2px dashed var(--primary-color);
-  border-radius: inherit;
-  background: rgba(124, 58, 237, 0.12);
-  color: var(--primary-color);
-  font-weight: 800;
-  pointer-events: none;
-}
-
-.soltarLados {
-  position: absolute;
-  top: 0.6rem;
-  right: 0.6rem;
-  left: 0.6rem;
-  z-index: 4;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.4rem;
-  pointer-events: none;
-}
-
-.soltarLado {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.55rem 0.9rem;
-  border: 2px dashed var(--primary-color);
-  border-radius: 999px;
-  background: var(--blanco);
-  color: var(--gris-texto-principal);
-  font-size: 0.85rem;
-  box-shadow: 0 6px 18px rgba(28, 20, 51, 0.12);
-  pointer-events: auto;
-}
-
-.soltarLado svg {
-  color: var(--primary-color);
-}
-
-.soltarLadoActivo {
-  border-style: solid;
-  background: var(--primary-color);
-  color: #fff;
-}
-
-.soltarLadoActivo svg {
-  color: #fff;
-}
-
-.cargandoLienzo {
-  position: absolute;
-  inset: 0;
   z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
+  border: 2px dashed var(--violet-500, #8b5cf6);
   border-radius: inherit;
-  background: color-mix(in srgb, var(--escenario-foto, #f4f1fb) 80%, transparent);
-  color: #4c1d95;
-  font-size: 0.9rem;
-  font-weight: 700;
-}
-
-.cargandoLienzo svg {
-  color: var(--primary-color);
-}
-
-.cargandoPrimero {
-  background: var(--escenario-foto, #f4f1fb);
+  background: rgba(124, 58, 237, 0.08);
+  pointer-events: none;
 }
 
 /* El marco y los controles son los de P12; aquí solo se integra Fabric. */
-.studio.studio { max-width: 1280px; padding: 1.25rem 1.5rem 2rem; }
+/* Abajo, poco aire: sin pie, el estudio entero cabe en la pantalla. */
+.studio.studio { max-width: 1280px; padding: 1.25rem 1.5rem 1rem; }
 .cuerpo.cuerpo { grid-template-columns: minmax(0, 1fr) 400px; }
 .panel.panel { padding: 1.25rem; border: 1px solid var(--color-border); border-radius: 6px 24px 24px 24px; background: var(--color-surface); }
 .acciones.acciones { display: grid; padding: 1rem 0 0; border-top: 1.5px dashed var(--color-border); }
 /* La escena queda fija al bajar, como en P12, debajo de la cabecera de la tienda. */
 @media (min-width: 960px) {
-  .escena.escena { top: 90px; }
+  .escena.escena { top: var(--tope-estudio, 90px); }
 }
 @media (max-width: 959px) {
   .cuerpo.cuerpo { grid-template-columns: minmax(0, 1fr); }

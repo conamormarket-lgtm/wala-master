@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { LogIn, RotateCcw,
   Type, ImagePlus, ClipboardPaste, Clipboard, Copy, Undo2, Redo2, ArrowUpToLine, ArrowDownToLine, Crosshair,
-  RotateCw, FlipHorizontal, Crop, Eraser, Maximize2, Trash2, Pencil, MousePointerSquareDashed, ArrowLeftRight,
+  RotateCw, FlipHorizontal, Crop, Eraser, Maximize2, Trash2, Pencil, MousePointerSquareDashed,
   AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
   AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter,
 } from 'lucide-react';
@@ -18,8 +18,7 @@ import { useAgregado } from '../piezas/Ficha';
 import {
   LienzoPrenda, BarraLienzo, PasosEstudio, PanelCapa, PanelVarios, EstadoEdicion, AtajosEstudio, GuiaGestos, zoomVecino, NIVELES_ZOOM,
 } from '../piezas/Estudio';
-import { MarcoEstudio, InicioLienzoEstudio, EscenaEstudio } from './MarcoEstudio';
-import { TextoResaltado } from '../piezas/TextoResaltado';
+import { MarcoEstudio, InicioLienzoEstudio, EscenaEstudio, SoltarLados } from './MarcoEstudio';
 import { HojasEstudio } from '../piezas/HojasEstudio';
 import { CompraEstudio } from '../piezas/CompraEstudio';
 import s from './Estudio.module.css';
@@ -1125,13 +1124,7 @@ export function PaginaEstudio({
             onPasarALado: pasarALado,
             encima: arrastrando ? (
               // Mientras se arrastra algo: arriba de la prenda, a qué otro lado se puede pasar.
-              <div className={s.soltarLados} role="status">
-                {vistas.filter((v) => v.id !== vista.id).map((v) => (
-                  <span key={v.id} data-soltar-lado={v.id} className={[s.soltarLado, arrastrando.lado === v.id && s.soltarLadoActivo].filter(Boolean).join(' ')}>
-                    <ArrowLeftRight aria-hidden="true" /> <TextoResaltado resaltar={[v.nombre]}>{`Suelta aquí para pasar a ${v.nombre}`}</TextoResaltado>
-                  </span>
-                ))}
-              </div>
+              <SoltarLados lados={vistas.filter((v) => v.id !== vista.id).map((v) => ({ id: v.id, nombre: v.nombre }))} activo={arrastrando.lado} />
             ) : guia ? <GuiaGestos onEntendido={cerrarGuia} /> : vacio && !cargandoDiseno && zona && zoom === 1 && (
               <InicioLienzoEstudio zona={nombreZona(zona)} onImagen={() => subirImagen()} onTexto={() => escribirTexto()} subiendo={ocupado === "subiendo"} />
             ),
