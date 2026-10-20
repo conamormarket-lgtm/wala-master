@@ -5,6 +5,7 @@ import Boton from './Boton';
 import { Enlace } from './Enlace';
 import { Texto, useTexto } from './Traduccion';
 import { Etiqueta, Moneda } from './Etiquetas';
+import { Visto } from './Marca';
 import { FotoProducto } from './piezas/FotoProducto';
 import { Cantidad } from './Formulario';
 import { soles } from './TarjetaProducto';
@@ -228,7 +229,8 @@ export function ItemCarrito({
       {conCasilla && (
         <label className={s.itemCasilla}>
           <input type="checkbox" checked={seleccionado} onChange={(e) => onSeleccionar?.(e.target.checked)} />
-          <span className={s.itemCaja} aria-hidden="true"><Check /></span>
+          {/* El visto del kit, el mismo de "Seleccionar todo" (Casilla). */}
+          <Visto activo={seleccionado} forma="cuadro" className={s.itemCaja} />
           <span className={s.oculto}><Texto>{`Comprar ${nombreOriginal || ''} esta vez`}</Texto></span>
         </label>
       )}

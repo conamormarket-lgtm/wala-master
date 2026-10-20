@@ -44,21 +44,76 @@
   outline: none;
 }
 
+/* La misma X del Buscador (Formulario.module.css, .buscadorLimpiar): un sello
+   lila con la X violeta, en un área de 40 px para el dedo. Antes, una X gris. */
 .limpiarCampo {
+  position: relative;
   display: inline-grid;
+  flex-shrink: 0;
   place-items: center;
   width: 40px;
   height: 40px;
+  padding: 0;
   border: 0;
-  border-radius: 12px;
+  border-radius: 50%;
   background: none;
-  color: var(--color-text-muted);
+  color: var(--violet-600, #7c3aed);
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.limpiarCampo::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: rgba(124, 58, 237, 0.1);
+  transition: background-color var(--dur-rapida) ease, transform var(--dur-rapida) ease;
 }
 
 .limpiarCampo svg {
-  width: 1.1rem;
-  height: 1.1rem;
+  position: relative;
+  width: 0.95rem;
+  height: 0.95rem;
+  stroke-width: 2.6;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.limpiarCampo:hover,
+.limpiarCampo:active {
+  color: #fff;
+}
+
+.limpiarCampo:hover::before,
+.limpiarCampo:active::before {
+  background: var(--degradado-logo, var(--violet-600));
+}
+
+.limpiarCampo:hover svg {
+  transform: rotate(90deg);
+}
+
+.limpiarCampo:active::before {
+  transform: scale(0.88);
+}
+
+:global([data-theme='dark']) .limpiarCampo {
+  color: var(--violet-300, #c4b5fd);
+}
+
+:global([data-theme='dark']) .limpiarCampo::before {
+  background: rgba(167, 139, 250, 0.16);
+}
+
+:global([data-theme='dark']) .limpiarCampo:hover,
+:global([data-theme='dark']) .limpiarCampo:active {
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .limpiarCampo:hover svg {
+    transform: none;
+  }
 }
 
 .pista {

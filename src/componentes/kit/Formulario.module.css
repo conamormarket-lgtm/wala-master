@@ -743,6 +743,92 @@
   outline: none;
 }
 
+/* La "x" del navegador (azul en Chrome) no es de Walá: va la propia. */
+.buscador input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  display: none;
+}
+
+/* Borrar lo escrito: un sello lila con la X violeta; al pasar o tocar se
+   llena con el degradado del logo y la X da un cuarto de vuelta. */
+.buscadorLimpiar {
+  position: relative;
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-right: -0.15rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--violet-600, #7c3aed);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.buscadorLimpiar::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: rgba(124, 58, 237, 0.1);
+  transition: background-color var(--dur-rapida) ease, transform var(--dur-rapida) ease;
+}
+
+.buscador .buscadorLimpiar svg,
+.buscador:focus-within .buscadorLimpiar svg {
+  position: relative;
+  width: 0.9rem;
+  height: 0.9rem;
+  stroke-width: 2.6;
+  transform: none;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.buscadorLimpiar:hover,
+.buscadorLimpiar:active {
+  color: #fff;
+}
+
+.buscadorLimpiar:hover::before,
+.buscadorLimpiar:active::before {
+  background: var(--degradado-logo, var(--violet-600));
+}
+
+.buscador .buscadorLimpiar:hover svg {
+  transform: rotate(90deg);
+}
+
+.buscadorLimpiar:active::before {
+  transform: scale(0.88);
+}
+
+.buscadorLimpiar:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 1px;
+}
+
+:global([data-theme='dark']) .buscadorLimpiar {
+  color: var(--violet-300, #c4b5fd);
+}
+
+:global([data-theme='dark']) .buscadorLimpiar::before {
+  background: rgba(167, 139, 250, 0.16);
+}
+
+:global([data-theme='dark']) .buscadorLimpiar:hover,
+:global([data-theme='dark']) .buscadorLimpiar:active {
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .buscador .buscadorLimpiar:hover svg {
+    transform: none;
+  }
+}
+
 .buscador kbd {
   padding: 0.1rem 0.45rem;
   border: 1px solid var(--color-border);

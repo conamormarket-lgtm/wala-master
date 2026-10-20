@@ -1,11 +1,11 @@
 import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { AlertCircle, Minus, Plus, Check, Search, ChevronDown } from 'lucide-react';
+import { AlertCircle, Minus, Plus, Check, Search, ChevronDown, X } from 'lucide-react';
 import Boton from './Boton';
 import ListaOpciones from './ListaOpciones';
 import { RESORTE } from './Efectos';
 import { Visto } from './Marca';
-import { Texto } from './Traduccion';
+import { Texto, useTexto } from './Traduccion';
 import s from './Formulario.module.css';
 
 /**
@@ -448,6 +448,20 @@ export function Interruptor({ activo, onChange, etiqueta, descripcion, disabled 
 export function Buscador({ placeholder = 'Buscar…', atajo = '/', onBuscar, defaultValue = '', className, boton, grande = false, inputRef, ...input }) {
   const propio = useRef(null);
   const ref = inputRef || propio;
+  const borrarTexto = useTexto('Borrar lo escrito');
+  // La X aparece con algo escrito; controlado (value) o no (defaultValue).
+  const [escrito, setEscrito] = useState(() => Boolean(input.value ?? defaultValue));
+  const hayTexto = input.value !== undefined ? Boolean(input.value) : escrito;
+  // Borra como si se hubiera escrito: el input dispara su onChange (React lo
+  // ve), sirva el campo controlado o no.
+  const borrar = () => {
+    const campo = ref.current;
+    if (!campo) return;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(campo, '');
+    campo.dispatchEvent(new Event('input', { bubbles: true }));
+    setEscrito(false);
+    campo.focus();
+  };
 
   useEffect(() => {
     if (!atajo) return undefined;
@@ -469,8 +483,21 @@ export function Buscador({ placeholder = 'Buscar…', atajo = '/', onBuscar, def
       onSubmit={(e) => { e.preventDefault(); onBuscar?.(ref.current.value.trim()); }}
     >
       <Search aria-hidden="true" />
-      <input ref={ref} type="search" placeholder={placeholder} aria-label={placeholder} defaultValue={input.value === undefined ? defaultValue : undefined} {...input} />
-      {atajo && <kbd aria-hidden="true">{atajo}</kbd>}
+      <input
+        ref={ref}
+        type="search"
+        placeholder={placeholder}
+        aria-label={placeholder}
+        defaultValue={input.value === undefined ? defaultValue : undefined}
+        {...input}
+        onInput={(e) => { setEscrito(Boolean(e.currentTarget.value)); input.onInput?.(e); }}
+      />
+      {hayTexto && (
+        <button type="button" className={s.buscadorLimpiar} onClick={borrar} aria-label={borrarTexto}>
+          <X aria-hidden="true" />
+        </button>
+      )}
+      {atajo && !hayTexto && <kbd aria-hidden="true">{atajo}</kbd>}
       {boton && <Boton type="submit" className={s.buscadorBoton}>{boton}</Boton>}
     </form>
   );

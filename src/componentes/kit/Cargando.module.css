@@ -127,18 +127,13 @@
   animation: vaiven 2.4s ease-in-out infinite;
 }
 
-:global([data-theme='dark']) .mini {
-  background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%);
-}
+/* De noche también los colores del logo (el de la cabecera): antes se
+   aclaraba a lila y no parecía la misma marca. */
 
-/* Sobre algo claro también de noche (el escenario de la prenda): los colores
-   del día, si no la etiqueta lila y el gris claro casi no se ven. */
+/* Sobre algo claro también de noche (el escenario de la prenda): el texto
+   del día, si no el gris claro casi no se ve. */
 .sobreClaro {
   color: #5b5670;
-}
-
-:global([data-theme='dark']) .sobreClaro .mini {
-  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #5b21b6 100%);
 }
 
 .texto {
