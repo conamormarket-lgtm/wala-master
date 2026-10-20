@@ -272,10 +272,13 @@ export function ProveedorToasts({ children, iniciales = [] }) {
 
 /**
  * Estado vacío con Kapi y una salida clara.
+ *  - imagen: por defecto el Kapi 3D triste (el nuevo, CARAS_KAPI_MINI de
+ *    piezas/Flotantes; la de 256 px, que se ve a 112). Antes el dibujo plano
+ *    viejo (kapi-sad.webp), distinto del flotante.
  *  - imagen={null}: sin Kapi (cuando ya está el flotante: un solo Kapi a la
  *    vista); en su lugar, un sello con `icono` (una caja con lupa).
  */
-export function EstadoVacio({ imagen = '/assets/kapi/kapi-sad.webp', icono, titulo, texto, children }) {
+export function EstadoVacio({ imagen = '/assets/kapi/3d/kapi-triste-256.webp', icono, titulo, texto, children }) {
   return (
     <div className={s.vacio}>
       {imagen ? (

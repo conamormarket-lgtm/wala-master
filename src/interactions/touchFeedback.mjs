@@ -172,8 +172,13 @@ export function installTouchFeedback(view = window) {
     // Solo el menú de la pulsación táctil; siguen funcionando los menús propios.
     event.preventDefault();
   };
+  // Mantener el dedo y moverlo sobre un enlace o una foto empezaba a
+  // ARRASTRARLOS (Android pinta una burbuja con el título y la URL): en una
+  // app nativa eso no pasa. Con el dedo, nada que se toque se arrastra.
   const drag = (event) => {
-    if (lastInputTouch && event.target instanceof view.Element && event.target.matches('img') && targetFor(event.target)) event.preventDefault();
+    if (!lastInputTouch && !nativeAndroid) return;
+    const node = event.target instanceof view.Element ? event.target : event.target?.parentElement;
+    if (node && !node.closest('[draggable="true"]') && (targetFor(node) || node.closest('a[href]'))) event.preventDefault();
   };
   const clear = () => { cancel(); effects.forEach((node) => remove(node)); };
   const hidden = () => { if (doc.hidden) clear(); };

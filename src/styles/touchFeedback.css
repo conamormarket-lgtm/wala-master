@@ -8,7 +8,7 @@ html[data-wala-touch] :where(button, a[href], summary, [role='button'], [role='l
   user-select: none;
 }
 
-html[data-wala-touch] img:not([draggable='true']) {
+html[data-wala-touch] :where(img, a[href]):not([draggable='true']) {
   -webkit-user-drag: none;
   -webkit-touch-callout: none;
 }

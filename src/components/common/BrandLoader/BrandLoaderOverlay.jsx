@@ -21,7 +21,10 @@ export const BRAND_SEEN_KEY = 'wala_brand_seen';
 // primer splash de marca termina su carga se pone en true (y se persiste), así
 // que dentro de la misma sesión SPA las siguientes cargas ya usan el círculo,
 // sin esperar a una recarga completa.
+// En la app de Android cada arranque empieza con la marca (viene del splash
+// nativo, ver MainActivity): el flag guardado no cuenta, solo el de la sesión.
 let brandConsumed = (() => {
+  if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) return false;
   try { return localStorage.getItem(BRAND_SEEN_KEY) === '1'; } catch (_) { return false; }
 })();
 
@@ -82,11 +85,17 @@ const BrandLoaderOverlay = ({ show, relevo = false, secciones }) => {
   const forma = formaDeRuta(pathname);
   const conEsqueleto = !cargaVieja && Boolean(forma);
 
-  // ¿Esta instancia muestra el splash de MARCA o el círculo? Se decide UNA vez
-  // al montar (useState con inicializador): si ya se consumió el splash de
-  // marca, va el círculo. Capturarlo al montar evita que cambie a mitad de
-  // vida si `brandConsumed` se marca durante esta misma carga.
-  const [useBrand] = useState(() => !brandConsumed);
+  // ¿Esta carga muestra el splash de MARCA o el esqueleto? Se decide al
+  // empezar CADA carga (show pasa de false a true), no solo al montar: "/" y
+  // "/tienda" son el mismo TiendaPage, React conserva la instancia al ir de
+  // una a otra y, decidido al montar, la primera visita a la Tienda volvía a
+  // tapar todo con la marca. Durante una carga no cambia, aunque
+  // `brandConsumed` se marque a mitad (la salida sigue siendo la de marca).
+  const marcaRef = useRef(null);
+  const showPrevRef = useRef(false);
+  if (marcaRef.current === null || (show && !showPrevRef.current)) marcaRef.current = !brandConsumed;
+  showPrevRef.current = show;
+  const useBrand = marcaRef.current;
   // ¿Llegó a mostrarse de verdad? Solo entonces "gastamos" el splash único:
   // si el overlay se monta con show:false (tienda ya cacheada) no marcaría nada.
   const wasShownRef = useRef(false);
