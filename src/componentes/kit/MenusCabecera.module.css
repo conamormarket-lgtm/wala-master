@@ -754,14 +754,14 @@
   font-weight: 500;
 }
 
-/* La sección actual, en negrita siempre (antes solo al pasar el mouse, y
-   como la negrita es más ancha el texto saltaba). */
-.lateral .item.itemActual {
+/* Al pasar el mouse, la opción se pone en negrita. La negrita es más ancha
+   y el texto saltaba: por eso cada texto reserva ese ancho (abajo). */
+.lateral .item:hover {
   font-weight: 700;
 }
 
 /* Cada texto reserva el ancho que tendría en negrita (una copia invisible de
-   alto 0): al cambiar de sección nada se corre. */
+   alto 0): al pasar el mouse nada se corre. */
 .itemTexto {
   display: inline-grid;
   min-width: 0;
