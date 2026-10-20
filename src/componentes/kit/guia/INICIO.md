@@ -402,6 +402,17 @@ queda un hueco.
   barra de admin y la cabecera.
 - En el celular, la barra inferior va sobre la carga al cambiar de página
   (z-index 100; la carga es 99): antes la tapaba y abajo no se veía nada.
+- **`--color-bg` en modo claro** (`styles/variables.css`): un comentario
+  dentro de otro cerraba antes de tiempo el de los tokens de tema y se comía
+  la declaración, así que en claro no tenía valor (lo que lo usaba sin
+  respaldo quedaba transparente). Ahora vale `--gris-fondo` (#F8FAFC). Se
+  nota en el estudio en el celular (su barra de arriba ya no deja ver el
+  aviso de invitación por debajo) y en los campos de Ruleta y de la
+  identidad de Marcas en el admin (gris casi blanco en vez de transparente);
+  la carga al cambiar de página y la vista de celular del editor pasan de
+  blanco al fondo de la página. Comparado elemento por elemento en el
+  inicio, la tienda, un producto, el carrito, buscar, los juegos, la cuenta
+  y el admin: nada más cambia. El oscuro, igual.
 
 **El editor sobre la cabecera (2026-10-20):**
 

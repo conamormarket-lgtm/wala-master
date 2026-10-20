@@ -10,9 +10,7 @@
   /* Lo que tapa la parte de arriba de la página: la barra de admin y la
      cabecera pegada (cada una publica su alto). Lo pegado al bajar (los
      filtros, la galería del producto, el resumen del carrito…) va debajo:
-     top: calc(var(--altura-cabecera, 72px) + 1rem). Aquí y no más abajo:
-     el comentario de los tokens de tema se cierra antes de tiempo y se come
-     la declaración que lo sigue. */
+     top: calc(var(--altura-cabecera, 72px) + 1rem). */
   --altura-cabecera: calc(var(--admin-bar-height, 0px) + var(--header-height, 72px));
 
   /* Contenedores */
@@ -93,8 +91,10 @@
 
      Convención de uso en overrides de cobertura:
        background: var(--color-surface);  color: var(--color-text);
-       border-color: var(--color-border);  /* nunca con !important sobre fondos
-       que el admin pueda fijar inline */
+       border-color: var(--color-border);  (nunca con !important sobre
+       fondos que el admin pueda fijar inline; antes era un comentario dentro
+       del comentario: lo cerraba antes de tiempo y se comía --color-bg, que
+       en claro quedó sin valor hasta el 2026-10-20)
      --------------------------------------------------------------------- */
   --color-bg:         var(--gris-fondo);             /* #F8FAFC */
   --color-surface:    var(--blanco);                 /* #FFFFFF */
