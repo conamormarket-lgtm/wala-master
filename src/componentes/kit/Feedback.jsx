@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useDragControls, useMotionValue, useTransform } from 'framer-motion';
-import { CheckCircle2, Info, AlertTriangle, XCircle, X, Sparkles, BellOff, CheckCheck, PackageSearch } from 'lucide-react';
+import { CheckCircle2, Info, AlertTriangle, XCircle, X, Sparkles, BellOff, CheckCheck, PackageSearch, ShoppingBag, Eye, Package, Tag, CalendarHeart, Gift, Heart, Ticket, Trophy, Users } from 'lucide-react';
 import { useBloquearScroll, useCerrarConAtras } from './Efectos';
 import { FotoProducto } from './piezas/FotoProducto';
 import Boton from './Boton';
@@ -10,6 +10,26 @@ import { Texto, useTexto } from './Traduccion';
 import s from './Feedback.module.css';
 
 const ICONOS = { exito: CheckCircle2, info: Info, aviso: AlertTriangle, error: XCircle };
+
+/**
+ * De qué trata cada notificación (`categoria`): su ícono y su color, para que
+ * se reconozca de un vistazo (antes todas llevaban la "i" de información).
+ * "kapi" va con su cara (los avisos de "Kapi te extraña").
+ */
+export const CATEGORIAS_NOTIFICACION = {
+  carrito: { Icono: ShoppingBag, tono: 'violeta' },
+  visto: { Icono: Eye, tono: 'cielo' },
+  pedido: { Icono: Package, tono: 'menta' },
+  promo: { Icono: Tag, tono: 'oro' },
+  cupon: { Icono: Ticket, tono: 'oro' },
+  fecha: { Icono: CalendarHeart, tono: 'rosa' },
+  regalo: { Icono: Gift, tono: 'rosa' },
+  deseos: { Icono: Heart, tono: 'rosa' },
+  logro: { Icono: Trophy, tono: 'oro' },
+  referidos: { Icono: Users, tono: 'violeta' },
+  kapi: { imagen: '/assets/kapi/3d/kapi-hambre-256.webp', tono: 'oro' },
+  novedad: { Icono: Sparkles, tono: 'violeta' },
+};
 
 /** Curvas de hoja nativa (iOS/Android): sale rápido y asienta sin rebote. */
 const ENTRA = { type: 'tween', duration: 0.42, ease: [0.32, 0.72, 0, 1] };
@@ -66,7 +86,8 @@ const haceCuanto = (fecha) => {
 
 /**
  * Lista de notificaciones agrupadas (Hoy / Antes), con punto de no leída.
- *  - items: [{ id, titulo, texto, fecha, leida, tipo, imagen }]
+ *  - items: [{ id, titulo, texto, fecha, leida, tipo, imagen, categoria }]
+ *    (categoria: una de CATEGORIAS_NOTIFICACION; sin ella, el ícono del tipo)
  *  - vacio: { titulo, texto } sin notificaciones (por defecto, "No tienes notificaciones")
  */
 export function ListaNotificaciones({ items, onAbrir, limite, vacio }) {
@@ -94,14 +115,17 @@ export function ListaNotificaciones({ items, onAbrir, limite, vacio }) {
           <h4 className={s.grupo}><Texto>{nombre}</Texto></h4>
           <ul>
             {grupo.map((n) => {
-              const Icono = ICONOS[n.tipo] || Info;
+              const cat = CATEGORIAS_NOTIFICACION[n.categoria];
+              const Icono = cat?.Icono || ICONOS[n.tipo] || Info;
               return (
                 <li key={n.id}>
                   <button type="button" className={[s.notif, !n.leida && s.noLeida].filter(Boolean).join(' ')} onClick={() => onAbrir?.(n)}>
                     {n.imagen ? (
                       <FotoProducto className={s.notifImg} src={n.imagen} relleno="3px" />
                     ) : (
-                      <span className={`${s.notifIcono} ${s[n.tipo]}`}><Icono aria-hidden="true" /></span>
+                      <span className={[s.notifIcono, cat ? s[`tono_${cat.tono}`] : s[n.tipo], cat?.imagen && s.notifKapi].filter(Boolean).join(' ')}>
+                        {cat?.imagen ? <img src={cat.imagen} alt="" loading="lazy" draggable={false} /> : <Icono aria-hidden="true" />}
+                      </span>
                     )}
                     <span className={s.notifTexto}>
                       <strong><Texto>{n.titulo}</Texto></strong>

@@ -477,6 +477,44 @@
   --a-color: #dc2626;
 }
 
+/* Por categoría (CATEGORIAS_NOTIFICACION): los colores de la marca. */
+.notifIcono.tono_violeta { --a-color: #7c3aed; }
+.notifIcono.tono_rosa { --a-color: #db2777; }
+.notifIcono.tono_oro { --a-color: #d97706; }
+.notifIcono.tono_menta { --a-color: #0d9488; }
+.notifIcono.tono_cielo { --a-color: #0284c7; }
+
+:global([data-theme='dark']) .notifIcono.tono_violeta { --a-color: #a78bfa; }
+:global([data-theme='dark']) .notifIcono.tono_rosa { --a-color: #f472b6; }
+:global([data-theme='dark']) .notifIcono.tono_oro { --a-color: #fbbf24; }
+:global([data-theme='dark']) .notifIcono.tono_menta { --a-color: #2dd4bf; }
+:global([data-theme='dark']) .notifIcono.tono_cielo { --a-color: #38bdf8; }
+
+/* El ícono se inclina un poco al pasar (como los sellos de la marca). */
+.notifIcono svg,
+.notifKapi img {
+  transition: transform var(--dur-media, 0.35s) var(--ease-signature, ease);
+}
+
+.notif:hover .notifIcono svg,
+.notif:hover .notifKapi img {
+  transform: rotate(-10deg) scale(1.08);
+}
+
+/* "Kapi te extraña": su cara en vez de un ícono. */
+.notifKapi img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notif:hover .notifIcono svg,
+  .notif:hover .notifKapi img {
+    transform: none;
+  }
+}
+
 .notifIcono svg {
   width: 1.15rem;
   height: 1.15rem;

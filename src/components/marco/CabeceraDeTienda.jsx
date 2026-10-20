@@ -88,6 +88,29 @@ const fechaDe = (f) => {
  * como sin sesión, y en la tablet dos filas (antes los íconos se salían).
  * Interruptor cabeceraVieja: vuelve Header.
  */
+// De qué trata cada aviso (su ícono y color en la lista, CATEGORIAS_NOTIFICACION
+// del kit): por el `type` que pone el servidor (functions/notificationsEngine.js)
+// o, si no lo trae, por adónde lleva.
+const categoriaDeNotificacion = ({ type, link } = {}) => {
+  const t = String(type || '');
+  const url = String(link || '');
+  if (t.startsWith('cart') || url.startsWith('/carrito')) return 'carrito';
+  if (t === 'product_view') return 'visto';
+  if (t.startsWith('retention')) return 'kapi';
+  if (t === 'orders' || url.startsWith('/cuenta/pedidos') || url.startsWith('/pedidos')) return 'pedido';
+  if (t.startsWith('fecha') || url.startsWith('/cuenta/fechas')) return 'fecha';
+  if (t === 'wishlist_gift') return 'regalo';
+  if (t.startsWith('wishlist') || url.startsWith('/cuenta/wishlist')) return 'deseos';
+  if (url.startsWith('/cuenta/cupones')) return 'cupon';
+  if (url.startsWith('/cuenta/referidos')) return 'referidos';
+  if (url.startsWith('/cuenta/misiones') || url.startsWith('/cuenta/recompensas') || url.startsWith('/cuenta/catalogo')) return 'logro';
+  if (t.includes('promo') || t.includes('oferta')) return 'promo';
+  // Lo demás (avisos sueltos de Walá): el destello de la marca, no una "i".
+  return 'novedad';
+};
+
+const sinEmojiInicial = (texto) => (typeof texto === 'string' ? texto.replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u, '') : texto);
+
 export default function CabeceraDeTienda() {
   const cabeceraVieja = useLoViejo('cabecera');
   const { isHeaderVisible } = useLayoutContext();
@@ -325,7 +348,9 @@ function CabeceraConDatos() {
   // ── Notificaciones.
   const notificaciones = useMemo(() => (notifications || []).slice(0, 10).map((n) => ({
     id: n.id,
-    titulo: n.title,
+    // El emoji del inicio ("🛒 Tu Carrito") sobra: el ícono de la categoría lo dice.
+    titulo: sinEmojiInicial(n.title),
+    categoria: categoriaDeNotificacion(n),
     texto: n.body,
     imagen: n.image || undefined,
     fecha: fechaDe(n.createdAt),
