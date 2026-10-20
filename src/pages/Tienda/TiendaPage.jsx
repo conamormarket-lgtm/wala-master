@@ -13,6 +13,7 @@ import useLoViejo from '../../hooks/useLoViejo';
 import useWhatsAppDeLaRuta from '../../components/marco/useWhatsAppDeLaRuta';
 import TarjetaDeProducto from '../../components/producto/TarjetaDeProducto';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLayoutContext } from '../../contexts/LayoutContext';
 import { trackBannerClick } from '../../services/analytics/tracker';
 import { Plus } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate, Link } from 'react-router-dom';
@@ -341,6 +342,14 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     (visibleSections.pageId === pageId && visibleSections.ids.has(section.id)),
   [isEditModeActive, isPreview, visibleSections, pageId, configuredSections]);
   const activeSections = useMemo(() => configuredSections.filter(sectionIsActive), [configuredSections, sectionIsActive]);
+  // Si la página termina con Preguntas frecuentes (su tarjeta trae a Kapi), el
+  // pie no asoma otro.
+  const setPieSinKapi = useLayoutContext()?.setPieSinKapi;
+  const terminaConKapi = configuredSections[configuredSections.length - 1]?.type === 'faq_accordion';
+  useEffect(() => {
+    setPieSinKapi?.(terminaConKapi);
+    return () => setPieSinKapi?.(false);
+  }, [terminaConKapi, setPieSinKapi]);
   const needsSection = (...types) => activeSections.some((section) => types.includes(section.type));
   const needsCatalog = needsSection('product_grid', 'sidebar_catalog');
 

@@ -19,7 +19,7 @@ import PanelEditor from '../../componentes/kit/editor/PanelEditor';
 import { ControlOpciones, ControlInterruptor } from '../../componentes/kit/editor/CamposEditor';
 import Boton from '../../componentes/kit/Boton';
 import { useConfirmar } from '../../componentes/kit/Feedback';
-import { COLUMNAS_POR_DEFECTO } from '../common/Footer/Footer';
+import { COLUMNAS_POR_DEFECTO } from '../marco/columnasDelPie';
 import s from './EditorDeTienda.module.css';
 
 // La página vacía puede empezar con la misma base que ofrecía el editor de antes.
@@ -234,7 +234,7 @@ export default function EditorDeTienda() {
         insertarEn={insertarEn}
         onInsertarEn={(i) => { setInsertarEn(i); if (i != null) closeEditor(); }}
         crearAjustes={getDefaultSettings}
-        fuentes={{ colecciones: colecciones || [], categorias, marcas: marcas || [], subirArchivo: uploadFile, pieConRedes: false }}
+        fuentes={{ colecciones: colecciones || [], categorias, marcas: marcas || [], subirArchivo: uploadFile, pieConRedes: true }}
         extensiones={{
           burbujasDeMarca: ({ ajustes }) => <CategoryNavEditor brandId={ajustes.brandId} brandName={nombreMarca(ajustes.brandId)} />,
         }}

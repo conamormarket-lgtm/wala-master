@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
   ArrowRight, ChevronLeft, ChevronRight,
 } from 'lucide-react';
@@ -21,7 +21,15 @@ import { TarjetaCategoria } from "./piezas/TarjetaCategoria";
 import { StockBajo } from "./piezas/BarraProgreso";
 import { TarjetaAyuda } from "./piezas/TarjetaAyuda";
 import { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados } from './SeccionesContenido';
-import { BannerPrincipal, ListaBeneficios, Ubicacion, NavCategorias, GrillaProductos, CatalogoConFiltros, PiePagina } from './SeccionesExtra';
+import { BannerPrincipal, ListaBeneficios, Ubicacion, NavCategorias, GrillaProductos, CatalogoConFiltros } from './SeccionesExtra';
+
+// El pie como sección (footer_columns) casi nunca va en una página: baja al
+// usarse, y así no pesa en el archivo principal (el pie de cada página lo
+// dibuja la tienda con piezas/Pie.jsx, en su propio paquete).
+const PieDiferido = lazy(() => import('./piezas/Pie').then((m) => ({ default: m.PiePagina })));
+function PiePagina(props) {
+  return <Suspense fallback={null}><PieDiferido {...props} /></Suspense>;
+}
 import { atributosDeFoto, fuentesPorFetch } from '../../components/common/OptimizedImage/OptimizedImage';
 import s from './Secciones.module.css';
 

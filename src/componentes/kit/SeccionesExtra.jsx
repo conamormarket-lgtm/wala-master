@@ -1,10 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Clock, MapPin, SlidersHorizontal, MessageCircle, Music2, Mail } from 'lucide-react';
+import { Clock, MapPin, SlidersHorizontal } from 'lucide-react';
 import Boton from './Boton';
 import Marquesina from './Marquesina';
 import Acordeon from './Acordeon';
 import { TarjetaProductoEsqueleto, TarjetaDeCatalogo } from './TarjetaProducto';
-import { Enlace } from './Enlace';
 import { Buscador, Campo, Selector } from './Formulario';
 import { Chip } from './Etiquetas';
 import { EstadoVacio, HojaInferior } from './Feedback';
@@ -13,12 +12,11 @@ import { precioEfectivo, limitesDePrecio } from './adaptadores';
 import { TextoCampo, BotonDeAjustes, fuenteDe, prefiereQuieto } from './SeccionesContenido';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import { atributosDeFoto } from '../../components/common/OptimizedImage/OptimizedImage';
-import { EtiquetaColgante, Garabatos, LogoWala, Destello, Corazon, acento } from './Marca';
+import { EtiquetaColgante, Garabatos, Destello, Corazon, acento } from './Marca';
 import { TarjetaCategoria, TarjetaCategoriaEsqueleto } from "./piezas/TarjetaCategoria";
 import { Beneficio } from "./piezas/Beneficio";
 import { FotoProducto } from "./piezas/FotoProducto";
 import { OpcionesFiltro } from "./piezas/OpcionesFiltro";
-import { CARAS_KAPI } from './piezas/Flotantes';
 import { Texto, useTexto } from './Traduccion';
 import s from './SeccionesExtra.module.css';
 
@@ -557,73 +555,4 @@ export function CatalogoConFiltros({
   );
 }
 
-/* ── Pie de página (footer_columns) ─────────────────────── */
-
-/* Íconos de redes dibujados a trazo (lucide ya no trae marcas). */
-const trazo = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' };
-const Instagram = (p) => <svg {...trazo} {...p}><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" /></svg>;
-const Facebook = (p) => <svg {...trazo} {...p}><path d="M15 3h-2.5A3.5 3.5 0 0 0 9 6.5V10H6.5v3.5H9V21h3.5v-7.5H15l.5-3.5h-3V7a1 1 0 0 1 1-1H15z" /></svg>;
-const Youtube = (p) => <svg {...trazo} {...p}><rect x="2.5" y="5.5" width="19" height="13" rx="4" /><path d="m10 9.5 4.5 2.5-4.5 2.5z" fill="currentColor" /></svg>;
-
-const REDES = [
-  [/instagram\./i, Instagram, 'Instagram'],
-  [/facebook\.|fb\.com/i, Facebook, 'Facebook'],
-  [/tiktok\./i, Music2, 'TikTok'],
-  [/youtube\.|youtu\.be/i, Youtube, 'YouTube'],
-  [/wa\.me|whatsapp/i, MessageCircle, 'WhatsApp'],
-  [/^mailto:/i, Mail, 'Correo'],
-];
-const redDe = (url) => REDES.find(([re]) => re.test(url || '')) || [null, null, null];
-
-/**
- * Columnas del pie: `type` 'text' (content), 'links' (links: [{ text, url,
- * color, bold }]) o 'social' (links con íconos según la red).
- *  - kapi: Kapi asomado por el borde (la página lo apaga si justo arriba ya
- *    hay otro Kapi, p. ej. la tarjeta de ayuda de Preguntas frecuentes)
- */
-export function PiePagina({ ajustes = {}, pieLegal, kapi = true }) {
-  const columnas = (ajustes.columns || []).filter((c) => c?.title || c?.content || c?.links?.length);
-  if (!columnas.length) return null;
-  return (
-    <footer className={s.pie}>
-      <Garabatos variante="pie" />
-      {kapi && <img className={s.pieKapi} src={CARAS_KAPI.feliz} alt="" width="96" height="96" loading="lazy" decoding="async" />}
-      <div className={s.pieMarca}>
-        <LogoWala tamano={34} tono="blanco" />
-        <EtiquetaColgante tono="magenta" tamano="sm">Hecho con amor en Perú</EtiquetaColgante>
-      </div>
-      <div className={s.pieColumnas}>
-        {columnas.map((c, i) => (
-          <div key={c.id || i} className={s.pieColumna}>
-            {c.title && <h3>{c.title}</h3>}
-            {c.type === 'text' && c.content && <p>{c.content}</p>}
-            {c.type === 'links' && (
-              <ul>
-                {(c.links || []).filter((l) => l?.text).map((l, j) => (
-                  <li key={j}>
-                    <Enlace to={l.url} className={s.pieEnlace} style={{ color: l.color || undefined, fontWeight: l.bold ? 700 : undefined }}>{l.text}</Enlace>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {c.type === 'social' && (
-              <ul className={s.redes}>
-                {(c.links || []).filter((l) => l?.url).map((l, j) => {
-                  const [, Icono, red] = redDe(l.url);
-                  return (
-                    <li key={j}>
-                      <Enlace to={l.url} className={s.red} aria-label={l.text || red || l.url}>
-                        {Icono ? <Icono aria-hidden="true" /> : (l.text || l.url)}
-                      </Enlace>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        ))}
-      </div>
-      {pieLegal && <div className={s.pieLegal}>{pieLegal}</div>}
-    </footer>
-  );
-}
+// El pie de página (footer_columns) vive en piezas/Pie.jsx.

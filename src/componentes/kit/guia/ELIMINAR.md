@@ -362,3 +362,10 @@ Se quedan: `useBorradoresCrear`, `useComunidad`, `useVersionesReemplazadas`,
 `fotosCombo.js` (los usan los conectores del kit). `MiCreacionCard`,
 `TarjetaMiCombo` y `TusBorradores` siguen en su fila de Mis creaciones
 (arriba).
+
+### El pie de página (2026-10-20)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `components/common/Footer/FooterViejo.jsx` + `Footer.module.css` | todas las páginas | `components/marco/PieDeTienda.jsx` → `MarcoPie` y sus bloques | `Footer.jsx` (lazy, solo con `pieViejo` o `editorViejo`) | al retirar `pieViejo` y `editorViejo` |
+| El bloque de antes dentro de `FooterViejo.jsx` (`PIE_LEGAL_EN_EL_KIT` en false) | el pie legal de antes | `PieLegal` | — | con `FooterViejo.jsx` |

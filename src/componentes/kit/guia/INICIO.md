@@ -24,7 +24,7 @@ el carrito y Mis pedidos.
 | M2 | Banner "Walá App" | `BannerApp` | ícono de la app en el violeta de la cabecera (`public/assets/marca/app-icono.webp`), `Boton` | `piezas/Marco.module.css` | — | celular web, no en la app |
 | M3 | Barra de admin | `BarraAdmin` | `Boton`, `Enlace` | `piezas/Marco.module.css` | `isAdmin` (AuthContext) | admins. En el celular "Panel" queda como botón con escudo: es el acceso al panel (la barra inferior no lleva pestaña Admin) |
 | M4 | Cabecera | `Cabecera` | `Logo`, `Desplegable`, `MenuTienda`, `MenuMarcas`, `SaldoMonedas` + `AyudaMonedas`, `ListaNotificaciones`, `VistaFavoritos`, `VistaCarrito`, `MenuCuenta`, `Buscador`, `BotonTema`, `Boton`, `Contador` | `Navegacion.module.css` (+ `MenusCabecera.module.css`) | enlaces: `storeConfig/homePage.header.navLinks`; categorías y marcas; AuthContext, CartContext, WishlistContext, NotificationsContext | todos (monedas y campana con sesión; la cuenta fuera del celular y de la app). Ancha en una fila; en la tablet (hasta 1100 px) dos filas: logo y accesos arriba, enlaces y buscador abajo |
-| M5 | Pie | `PiePagina` (`footer_columns`) + `PieLegal` | `LogoWala`, `EtiquetaColgante`, `Garabatos`, `Enlace` | `SeccionesExtra.module.css` (`.pie…`) y `piezas/Marco.module.css` (`.legal…`) | columnas: `pages/footer`; contacto: `config/empresa.js` | todos (no en la app) |
+| M5 | Pie | `PiePagina` (`MarcoPie` + `ColumnasPie`, `TextoPie`, `ImagenPie`) + `PieLegal` | `LogoWala`, `Garabatos`, `Corazon`, `Enlace` | `piezas/Pie.module.css` y `piezas/Marco.module.css` (`.legal…`) | columnas: `pages/footer`; contacto: `config/empresa.js` | todos (no en la app) |
 | M6 | Barra inferior | `BarraInferior` (siempre 5 pestañas, "Crear" al centro; en "Mi cuenta" las iniciales o la foto en un aro del mismo trazo que los íconos) | `Enlace`, `Avatar`, `Contador` | `BarraInferior.module.css` (`.barra`, `.tab…`; en su propio archivo desde el 2026-10-19) | ruta actual, AuthContext | celular (hasta 768 px) |
 | M7 | WhatsApp flotante | `BotonWhatsApp` (dentro de `PilaFlotante`) | `Enlace` | `piezas/Flotantes.module.css` | Firestore `messages` (número por zona) | todos (no admin, checkout ni landings) |
 | M8 | Kapi | `KapiFlotante` (abre `VentanaKapi`, ficha en [KAPI.md](KAPI.md)) | `CARAS_KAPI` | `piezas/Flotantes.module.css`, `piezas/VentanaKapi.module.css` | perfil (`kapiDesdePerfil`: comida del día, felicidad, tutorial) | con sesión |
@@ -126,9 +126,9 @@ M2 `BannerApp`, M3 `BarraAdmin`, M7-M10 la pila de flotantes (WhatsApp, Kapi
 y la píldora), M11 `VentanaCampana`, M12 `AvisoIdioma` y el pie legal. Cada
 uno con su conector en `src/components/marco/` (lee lo de la tienda y dibuja
 la pieza); lo viejo queda en su sitio hasta el final
-([ELIMINAR.md](ELIMINAR.md)). Faltan del marco: las columnas del pie
-(`PiePagina`, con las secciones del builder: paso 5), la barra inferior y la
-cabecera (paso 7).
+([ELIMINAR.md](ELIMINAR.md)). Después pasaron la barra inferior y la
+cabecera (paso 7, 2026-10-19) y las columnas del pie (2026-10-20, ver "El
+pie en la tienda" al final): el marco entero está en el kit.
 
 ### Reemplazos
 
@@ -138,7 +138,7 @@ cabecera (paso 7).
 | Tarjeta de producto | `PremiumProductCard` (carruseles), `ProductCard` (grillas) | `TarjetaProducto` + `tarjetaDesdeProducto` |
 | Cabecera (M4) | `components/common/Header/Header.jsx` (+ `HeaderSearch`, `NotificationTray`, `ThemeToggle`) | `Cabecera` + menús de `MenusCabecera` (✓ 2026-10-19, `components/marco/CabeceraDeTienda.jsx`) |
 | Barra inferior (M6) | `components/common/BottomNav/BottomNav.jsx` | `BarraInferior` (✓ 2026-10-19, `components/marco/BarraInferiorDeTienda.jsx`) |
-| Pie (M5) | `components/common/Footer/Footer.jsx` | `PiePagina` + `PieLegal` (dentro de `MarcoTienda`) |
+| Pie (M5) | `components/common/Footer/Footer.jsx` | ✓ `MarcoPie` y sus bloques + `PieLegal` (`components/marco/PieDeTienda.jsx`, 2026-10-20) |
 | Barra de admin (M3) | `components/common/AdminBar/AdminBar.jsx` | `BarraAdmin` |
 | Aviso del sistema (M1) | `components/common/SystemAlert` | `AvisoSistema` |
 | Banner de la app (M2) | `pages/Tienda/components/AppDownloadBanner.jsx` | `BannerApp` |
@@ -342,3 +342,49 @@ demo no lee Firestore.
 Con el servidor de desarrollo corriendo, abre la Tienda de prueba, elige
 "Con sesión", enciende "Ver componentes" y captura el lienzo completo
 (escritorio 1366 px y celular 390 px).
+
+## El pie en la tienda (M5, 2026-10-20)
+
+| Celular, oscuro (con sesión: Kapi flota) | Celular, claro | Sin sesión (Kapi en el pie) |
+|---|---|---|
+| ![El pie con el logo, "Hecho con amor en Perú", las columnas y la franja legal](pie-tienda-celular-oscuro.webp) | ![El mismo pie en modo claro](pie-tienda-celular-claro.webp) | ![Kapi asomado por el pie cuando no flota el de la esquina](pie-tienda-sin-sesion.webp) |
+
+`components/common/Footer/Footer.jsx` monta `components/marco/PieDeTienda.jsx`;
+lo de antes (`FooterViejo.jsx`, la franja gris con la línea roja) baja solo
+con el interruptor `pieViejo` (`useLoViejo('pie')`: en Firestore
+`pieViejo: true`; en localStorage, `"pie"`) o con `editorViejo` (su editor
+dibuja dentro de ese pie).
+
+**El kit.** `PiePagina` salió de `SeccionesExtra.jsx` a `piezas/Pie.jsx` (con
+su CSS): el pie ya no le suma a cada página el código de las secciones (el
+catálogo, los filtros), y no entra al archivo principal: la sección
+`footer_columns` del builder lo carga al usarse (`Secciones.jsx`) y la demo
+lo toma de `piezas/Pie`. Se arma por partes: `MarcoPie` (la tarjeta
+noche, los garabatos, el logo, Kapi y la franja legal) recibe los bloques,
+`ColumnasPie` (texto, enlaces y redes), `TextoPie` e `ImagenPie` (los
+bloques `text` e `image` que el pie de la tienda ya admitía). Todo pasa por
+la traducción.
+
+**Lo mismo que antes:** lo que guarda el builder en `pages/footer` (10 min en
+caché), las columnas de siempre si no hay nada guardado
+(`components/marco/columnasDelPie.js`, también la base del editor), no sale
+si la página lo apaga, en la app ni en el estudio; el editor del kit con
+"Editar el pie de página", "Estás editando el pie…", el "+" entre bloques y
+cada bloque con su `EditableSection`; `#site-footer` (el editor baja hasta
+él) y, en el celular, el lugar de la barra inferior.
+
+**Diferencias a propósito:**
+
+- Una tarjeta redondeada dentro del ancho de la página (como el kit), en vez
+  de la franja de borde a borde con la línea roja.
+- "Hecho con amor en Perú" va en texto con un corazón: la etiqueta colgante
+  es solo para productos (antes, en la demo, era una etiqueta).
+- **Un solo Kapi a la vista.** Kapi se asoma por el pie solo cuando no flota
+  el de la esquina (con perfil y fuera de las páginas que lo ocultan,
+  `components/marco/kapiFlotante.js`, que ahora comparten los dos), la página
+  no termina con Preguntas frecuentes (`LayoutContext.pieSinKapi`, lo pone
+  `TiendaPage`) y no trae el suyo (`sinKapiEnPie`: los juegos, regalar,
+  privacidad y términos, pagar y Mi cuenta sin sesión). Las páginas que
+  muestran a Kapi según su estado (buscar sin resultados, un producto
+  retirado) no se ven desde el pie: ahí pueden salir dos.
+- El editor del pie ofrece la columna **Redes** (`pieConRedes`).

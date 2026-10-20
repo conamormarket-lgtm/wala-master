@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Cabecera, BarraInferior } from '../Navegacion';
 import { BloqueSeccion } from '../Seccion';
 import { RenderSecciones } from '../Secciones';
-import { PiePagina } from '../SeccionesExtra';
+import { PiePagina } from '../piezas/Pie';
 import { TemaMarca } from '../piezas/TemaMarca';
 import { PilaFlotante } from '../piezas/Flotantes';
 import { PieLegal } from '../piezas/Marco';

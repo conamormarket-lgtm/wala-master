@@ -1,0 +1,37 @@
+/* El pie va al final de la página (la app es una columna flex) y, en el
+   celular, deja el lugar de la barra inferior fija. */
+.envoltura {
+  position: relative;
+  margin-top: auto;
+}
+
+@media (max-width: 768px) {
+  .envoltura {
+    padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px));
+  }
+}
+
+/* Con el editor abierto en otra página: todo el pie es el botón para editarlo. */
+.editarPie {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 28px;
+  background: rgba(139, 92, 246, 0.14);
+}
+
+.editandoPie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem 1rem;
+  padding: 0.7rem 1rem;
+  background: #ede9fe;
+  color: #4c1d95;
+  font-weight: 700;
+  text-align: center;
+}

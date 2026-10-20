@@ -30,6 +30,7 @@ principal (y a la APK de Capacitor).
 | `TarjetaProducto` por `components/producto/TarjetaDeProducto.jsx` (paso 4) | `ProductGrid`, `FeaturedCarousel`, `CollectionCarousel`, `FlashSales` |
 | Secciones del builder con `SeccionDelKit` (paso 5): todas las páginas (el cacherito, la única excepción, se retiró el 2026-10-19); `TIPOS_DEL_KIT` (`pages/Tienda/services/seccionesDelKit.js`) dice qué; el catálogo con `CatalogoConFiltros` y su estado en la página | `pages/Tienda/TiendaPage.jsx`, `DynamicLandingPage.jsx` (fondo), `services/startup.js` (precarga) |
 | `PieLegal` (`pieLegalDesdeEmpresa`) dentro del pie viejo; las columnas y su editor siguen igual. El bloque viejo queda apagado con `PIE_LEGAL_EN_EL_KIT` | `components/common/Footer/Footer.jsx` |
+| El pie entero (2026-10-20): `MarcoPie` con los bloques de `pages/footer` (`ColumnasPie`, `TextoPie`, `ImagenPie`) por `components/marco/PieDeTienda.jsx`; `PiePagina` en su propio archivo (`piezas/Pie.jsx`), traducido, "Hecho con amor en Perú" en texto, Kapi en el pie solo cuando no flota el de la esquina, la columna Redes en el editor; lo de antes baja con `pieViejo` (o `editorViejo`) | `components/common/Footer/Footer.jsx` |
 | La píldora "Gana 15 monedas" de la cabecera vieja, apagada con `PILDORA_EN_EL_KIT` (la dibuja `FlotantesDeLaTienda`) | `components/common/Header/Header.jsx` |
 | La ficha de producto (paso 6): `PaginaProducto` por `components/producto/FichaDeProducto.jsx` (con `usePiezasDelCombo.js` y `eleccionCarrito.js`); `ProductDetail` baja solo con `fichaVieja` | `pages/ProductPage.jsx` |
 | El carrito (paso 6): `PaginaCarrito` por `components/carrito/CarritoDeTienda.jsx` (`itemCarritoDesde`); `Cart.jsx` baja solo con `carritoViejo` | `pages/CartPage.jsx` |
@@ -298,6 +299,8 @@ Cada paso en su propio commit, verificable por separado.
    WishlistContext, notificaciones y la configuración de Firestore). Con
    esto el marco entero está en el kit.
 8. ✓ **Editor del kit** (`PanelEditor`) en lugar de `VisualEditorPanel` (2026-10-19, cuatro commits, interruptor `editorViejo`; INICIO.md paso 5).
+9. ✓ **Las columnas del pie** (2026-10-20, INICIO.md "El pie en la tienda"):
+   lo último del marco que seguía con lo de antes. Interruptor `pieViejo`.
 
 ## Interruptores (volver a lo de antes sin publicar)
 
@@ -321,6 +324,7 @@ nada), o en un solo navegador con `localStorage.wala_kit_viejo = "pagos,carrito"
 | `carritoViejo` | todo el carrito (`Cart.jsx` y `CartItem.jsx`, con sus preguntas por `window.confirm`) |
 | `editorViejo` (`useLoViejo('editor')`: en Firestore `editorViejo: true`; en localStorage, `"editor"`) | el editor del builder: `VisualEditorPanel`, el velo "Editar…" de cada sección, el "+" de la página y el del pie |
 | `campanasViejo` (`useLoViejo('campanas')`: en Firestore `campanasViejo: true`; en localStorage, `"campanas"`) | la invitación (`InvitarViejo.jsx`, que redirige, y el aviso de `components/common/AvisoInvitacion`), el Link en bio (`LinkInBioViejo.jsx`, que sigue sin el marco), Suscripciones (`SubscriptionLandingViejo.jsx`) y el sorteo (`SorteosViejo.jsx`) |
+| `pieViejo` (`useLoViejo('pie')`: en Firestore `pieViejo: true`; en localStorage, `"pie"`) | el pie de página: `FooterViejo.jsx` (la franja gris con la línea roja, sus columnas y su editor); también sale con `editorViejo` |
 | `crearViejo` (`useLoViejo('crear')`: en Firestore `crearViejo: true`; en localStorage, `"crear"`) | Crear y lo que sale de ahí: `PersonalizarViejo.jsx`, `Comunidad/ComunidadViejo.jsx`, `Crear/VerDisenoViejo.jsx`, `Crear/CreacionViejo.jsx`, `Crear/ComboCrearViejo.jsx` y el estudio completo `Crear/CrearStudioViejo.jsx` |
 | `juegosViejo` (`useLoViejo('juegos')`: en Firestore `juegosViejo: true`; en localStorage, `"juegos"`) | los tres juegos: `BallSortViejo.jsx` (con `RutaPrivada`: vuelve a pedir cuenta), `RuletaViejo.jsx` (con `components/ruleta/RuedaRuleta`) y `WordleViejo.jsx`, todos con `ArcadeShell` |
 | `minijuegosViejo` (`useLoViejo('minijuegos')`: en Firestore `minijuegosViejo: true`; en localStorage, `"minijuegos"`) | la Zona Arcade: `pages/Minijuegos/MinijuegosViejo.jsx` (con `JuegoCard`, `Badge`, `Stagger` y `ArcadeShell`) |
