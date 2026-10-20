@@ -91,7 +91,8 @@ function TarjetaNueva({
   const categoria = useMemo(() => {
     const propias = idsDeCategoriaDe(product);
     const nombre = propias.length ? categories.find((c) => (c?.id || c?.slug) === propias[0])?.name : null;
-    return nombre || (product.customizable ? 'Personalizable' : 'Esencial');
+    // Ya no hay productos "personalizables" en la tienda (eso es Crear).
+    return nombre || 'Esencial';
   }, [product, categories]);
 
   const marca = (marcas || []).find((b) => b.id === product.brandId);

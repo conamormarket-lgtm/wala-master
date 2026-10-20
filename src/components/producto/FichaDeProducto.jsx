@@ -22,6 +22,7 @@ import { fichaProductoDesde, opinionesDesde } from '../../componentes/kit/adapta
 import TarjetaDeProducto from './TarjetaDeProducto';
 import usePiezasDelCombo from './usePiezasDelCombo';
 import { argumentosDelCarrito, rutaDelEditor } from './eleccionCarrito';
+import useLoViejo from '../../hooks/useLoViejo';
 
 // El personalizador de Yoryo y su historial se quedan en la tienda (fuera del
 // kit) y bajan solo al tocar "Personalizable".
@@ -267,6 +268,10 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
       setYoryo({ diseno: null });
     }
   };
+  // Los productos de la tienda ya no se personalizan (2026-10-20): eso es
+  // Crear. Con el interruptor personalizableViejo vuelven el editor viejo y
+  // Yoryo (para las esclavas, la descripción invita a pedirla por WhatsApp).
+  const personalizableViejo = useLoViejo('personalizable');
   const alPersonalizar = (eleccion) => {
     if (product.YoryoPersonalizado) { abrirYoryo(eleccion); return; }
     navigate(rutaDelEditor(product, eleccion, comboProd));
@@ -299,7 +304,7 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
       <PaginaProducto
         key={id}
         {...ficha}
-        producto={{ ...ficha.producto, personalizable: Boolean(product.customizable || product.YoryoPersonalizado) }}
+        producto={{ ...ficha.producto, personalizable: personalizableViejo && Boolean(product.customizable || product.YoryoPersonalizado) }}
         fuentes={fuentes}
         piezasCargando={esCombo && !comboPedido}
         opiniones={opiniones}

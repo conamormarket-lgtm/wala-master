@@ -376,3 +376,12 @@ Se quedan: `useBorradoresCrear`, `useComunidad`, `useVersionesReemplazadas`,
 |---|---|---|---|---|
 | `pages/AppRedirectViejo.jsx` (el texto suelto que salta a la Play Store) | `/descargar`, `/app` | `components/generales/DescargarAppDeTienda.jsx` → `PaginaDescargarApp` | `pages/AppRedirect.jsx` (lazy, solo con `generalesViejo`) | al retirar `generalesViejo` |
 | Las ramas de `generalesViejo` en `pages/NoEncontradaPage.jsx` (`<Navigate>` al inicio o a Mi cuenta) | una dirección que no existe | `NoEncontradaDeTienda` | — | al retirar `generalesViejo` (queda la página sola) |
+
+### Productos personalizables de la tienda (2026-10-20)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/EditorPage.jsx` y lo que solo él usa (`components/editor/*`, `components/admin/AdminViewEditor`, `ComboUserEditor`) | `/editor/:id` (personalizar un producto de la tienda) | Crear (`/crear/:id`); los productos ya no se personalizan | `App.jsx` (lazy); el enlace de una creación vieja en Mis creaciones (`adaptadores.js`, `/editor/…?designId=`) | al retirar `personalizableViejo` (antes: que nadie tenga creaciones del editor viejo por terminar) |
+| `components/YoryoPersonalizadoCliente/*` y `components/YoryoPersonalizado/*` (con su copia `WALA_Editor_Export`) | "Personalizable" de las esclavas (ficha y admin) | la nota de la descripción: pedirla por WhatsApp | `FichaDeProducto.jsx`, `AdminProductoFormV2.jsx` (solo con `personalizableViejo`) | al retirar `personalizableViejo` |
+| `AdminCustomizationViewsEditor` y la tarjeta "Producto personalizable" de la ficha de productos | `customizable` / `customizationViews` | Prendas de Crear (`/admin/prendas-crear`) | `AdminProductoFormV2.jsx` (solo con `personalizableViejo`) | al retirar `personalizableViejo` |
+| `services/personalizacionVieja.js` y el aviso "Quitar la personalización vieja" de Productos | pasar los datos viejos a normales | — | `AdminProductos.jsx` | cuando en producción ya no quede ninguno (el aviso desaparece solo) |

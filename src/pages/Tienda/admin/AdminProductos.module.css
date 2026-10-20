@@ -336,3 +336,33 @@
   gap: 1rem;
   margin-top: 1.5rem;
 }
+
+/* Productos con la personalización de antes (editor viejo o Yoryo). */
+.avisoPersonalizacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  margin-top: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid #fcd34d;
+  border-radius: 12px;
+  background: #fffbeb;
+  color: #78350f;
+  font-size: 0.88rem;
+}
+
+.avisoPersonalizacion button {
+  padding: 0.45rem 0.9rem;
+  border: none;
+  border-radius: 999px;
+  background: #78350f;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.avisoPersonalizacion button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}

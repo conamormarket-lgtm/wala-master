@@ -1,5 +1,22 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate, Link, Navigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { forzadoLocal } from '../hooks/useLoViejo';
+import { getDocument } from '../services/firebase/firestore';
+
+/** El interruptor y si ya se sabe (para no redirigir antes de leer Firestore). */
+function useLoViejoListo(nombre) {
+  const local = forzadoLocal(nombre);
+  const { data, isFetched } = useQuery({
+    queryKey: ['kit-interruptores'],
+    queryFn: async () => {
+      const { data: doc } = await getDocument('configuracion', 'kit_interruptores');
+      return doc || {};
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+  return [local || data?.[`${nombre}Viejo`] === true, local || isFetched];
+}
 import { useProduct } from '../hooks/useProducts';
 import { useEditor, EditorProvider } from '../contexts/EditorContext';
 import { useCart } from '../contexts/CartContext';
@@ -996,10 +1013,19 @@ const EditorPage = () => {
   );
 };
 
+/*
+ * El editor viejo de los productos de la tienda. Desde el 2026-10-20 los
+ * productos ya no se personalizan (eso es Crear): /editor/:id lleva a la
+ * página del producto, salvo con el interruptor personalizableViejo.
+ */
 export default function EditorPageWrapper(props) {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const currentDesignId = searchParams.get('designId') || 'new';
+  const [personalizableViejo, listo] = useLoViejoListo('personalizable');
+
+  if (!listo) return null;
+  if (!personalizableViejo) return <Navigate to={`/producto/${id}`} replace />;
 
   return (
     <DesignClipboardProvider>

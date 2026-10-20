@@ -109,7 +109,8 @@ export function tarjetaDesdeProducto(p, { imagen, catalogo = {} } = {}) {
     categoria: cat?.name,
     precio: p.salePrice || p.price,
     precioAntes: p.salePrice ? p.price : undefined,
-    personalizable: Boolean(p.customizable),
+    // Los productos de la tienda ya no se personalizan (eso es Crear).
+    personalizable: false,
     agotado: !p.inStock,
     stock: typeof p.inStock === 'number' ? p.inStock : undefined,
     nuevo: esNuevo(p),
@@ -236,7 +237,7 @@ export function opcionesDeProducto(p, { subproductos = {} } = {}) {
     // no lo tienen: dicen "Talla" hasta que se vuelvan a guardar.
     etiquetaOpcion: vs.find((v) => v.sizeLabel)?.sizeLabel || 'Talla',
     piezas,
-    personalizable: Boolean(p.customizable),
+    personalizable: false,
   };
 }
 
@@ -1143,8 +1144,9 @@ export function fichaProductoDesde(p = {}, { catalogo = {}, subproductos = {} } 
       precioAntes: p.salePrice && p.salePrice < p.price ? p.price : undefined,
       stock: typeof p.inStock === 'number' ? p.inStock : undefined,
       agotado: !p.inStock,
-      personalizable: Boolean(p.customizable),
-      urlPersonalizar: p.customizable ? `/editor/${p.id}` : undefined,
+      // Los productos de la tienda ya no se personalizan (eso es Crear); la
+      // ficha lo vuelve a poner con el interruptor personalizableViejo.
+      personalizable: false,
       descripcion: p.description || '',
       combo: p.isComboProduct ? (p.comboItems || []).map((it) => ({ nombre: it.name || subproductos[it.productId]?.name || 'Producto', imagen: it.imageUrl })) : undefined,
     },

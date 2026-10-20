@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import useLoViejo from '../../../hooks/useLoViejo';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createProduct, updateProduct, getProduct, generateProductId } from '../../../services/products';
 import { getMockups } from '../../../services/mockups';
@@ -91,6 +92,11 @@ const TagInput = ({ tags, setTags, placeholder }) => {
  */
 const AdminProductoFormV2 = ({ modo = 'producto' }) => {
   const esModoPrenda = modo === 'prenda';
+  // Los productos de la tienda ya no se personalizan (2026-10-20): eso es
+  // Crear. Con el interruptor personalizableViejo vuelven "Producto
+  // personalizable" (editor viejo) y Yoryo en la ficha de productos.
+  const personalizableViejo = useLoViejo('personalizable');
+  const sinPersonalizacion = esModoPrenda || !personalizableViejo;
   const rutaLista = esModoPrenda ? '/admin/prendas-crear' : '/admin/productos';
   const { id } = useParams();
   const location = useLocation();
@@ -853,13 +859,13 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         categories: form.category ? [form.category] : [],
         collections: Array.isArray(form.collections) ? form.collections : [],
         mainImage: currentMainImage,
-        thumbnailWithDesignUrl: form.customizable ? currentMainImage : '',
+        thumbnailWithDesignUrl: form.customizable && !sinPersonalizacion ? currentMainImage : '',
         mainSizes: [],                     // Las tallas viven dentro de cada variante
         defaultVariantId: defaultVariant?.id || '',
         // ── CRÍTICO: persistir hasVariants para que normalizeProductForRead lo lea ──
         hasVariants: !isCombo && finalVariants.length > 0,
-        customizable: esPrenda ? false : form.customizable,
-        customizationViews: esPrenda ? [] : form.customizationViews,
+        customizable: (esPrenda || sinPersonalizacion) ? false : form.customizable,
+        customizationViews: (esPrenda || sinPersonalizacion) ? [] : form.customizationViews,
         esPrendaBase: esPrenda,
         ...(esPrenda && { prendaBase: prendaBaseParaGuardar(form.prendaBase, finalVariants) }),
         whatsappEnabled: form.whatsappEnabled !== false,
@@ -1793,6 +1799,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
           </>
           )}
 
+          {(esModoPrenda || personalizableViejo) && (
           <div className={styles.card} style={{ marginTop: '1.5rem' }}>
             <div className={styles.cardHeaderFlex} style={{ borderBottom: 'none', paddingBottom: 0 }}>
               <div>
@@ -1861,8 +1868,9 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
               </div>
             )}
           </div>
+          )}
 
-          {form.customizable && (
+          {form.customizable && !sinPersonalizacion && (
             <div className={styles.card} style={{ marginTop: '1.5rem' }}>
               <YoryoPersonalizado 
                 ref={yoryoRef}

@@ -1017,13 +1017,38 @@ las prendas ni los combos de Crear (55 de 61) y la redirección desde
 **No probado:** crear una prenda completa de cero (subir vistas y marcar
 zonas) en esta sección; es la misma ficha y el mismo editor de antes.
 
-**Paso 3b (pendiente, falta decidir):** quitar "Personalizable" de los
-productos normales en el admin y en la tienda (el botón "Personalizar", la
-insignia y el editor viejo `/editor/:id`). Antes hay que decidir qué pasa con
-los productos que hoy son personalizables (pasarlos a Crear o dejarlos como
-normales) y con Yoryo (`YoryoPersonalizado`: ¿es el grabado de las
-esclavas?). En el emulador hay dos normales con `customizable` (sin vistas) y
-ninguno con Yoryo; producción no se revisó.
+**Paso 3b (hecho el 2026-10-20): los productos de la tienda ya no se personalizan.**
+
+Decidido: los productos que eran personalizables pasan a normales, y las
+esclavas no se personalizan: su descripción invita a pedirla por WhatsApp.
+
+- **Tienda:** ningún producto ofrece "Personalizar" (ficha y agregar rápido),
+  ni la insignia "Personalizable", ni la ventana de Yoryo; `/editor/:id` lleva
+  a la página del producto. Lo de antes vuelve con el interruptor
+  `personalizableViejo`.
+- **Admin:** la ficha de productos ya no tiene "Producto personalizable" ni la
+  tarjeta de Yoryo, y guardar un producto lo deja como no personalizable. Las
+  prendas se crean en Prendas de Crear.
+- **Los datos:** Productos muestra un aviso con cuántos tienen todavía la
+  personalización de antes y el botón **"Quitar la personalización vieja"**
+  (`services/personalizacionVieja.js`): pregunta con la lista y los pasa a
+  normales (`customizable: false`, sin `customizationViews` ni
+  `YoryoPersonalizado`, también en las piezas de un combo). A las esclavas
+  ("esclava" o "Yoryo" en el nombre, o en una pieza del combo) les agrega a la
+  descripción: *¿La quieres personalizada? Escríbenos por el botón de WhatsApp
+  y la personalizamos para ti.* (una sola vez). Producción no se tocó: el
+  botón lo aprieta el admin.
+- Ojo: la tarjeta de Yoryo del admin escribía un `YoryoPersonalizado` vacío
+  al guardar cualquier producto personalizable; por eso una esclava se
+  reconoce por el nombre y no por ese campo.
+
+Probado con los emuladores: un producto personalizable y una esclava con
+Yoryo sin "Personalizar" en su página, `/editor/:id` a la página del
+producto, el interruptor (vuelven el botón y el editor), la ficha del admin
+sin las tarjetas, y el botón (los tres pasan a normales; solo la esclava
+recibe la nota, que se ve en su página junto al botón de WhatsApp). **No
+probado:** producción (cuántos hay y sus descripciones) y las creaciones
+viejas del editor en Mis creaciones (su "Editar" ahora lleva al producto).
 
 **Casos que tiene que cubrir el flujo** (para probar en cada cambio): una
 prenda nueva, editada, guardada, comprada, eliminada (antes y después de

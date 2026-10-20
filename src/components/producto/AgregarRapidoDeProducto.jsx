@@ -7,6 +7,7 @@ import AgregarRapido from '../../componentes/kit/AgregarRapido';
 import { opcionesDeProducto } from '../../componentes/kit/adaptadores';
 import usePiezasDelCombo from './usePiezasDelCombo';
 import { argumentosDelCarrito, rutaDelEditor } from './eleccionCarrito';
+import useLoViejo from '../../hooks/useLoViejo';
 
 /**
  * "Agregar rápido" de una tarjeta (paso 6 de la migración): elegir color,
@@ -18,6 +19,7 @@ import { argumentosDelCarrito, rutaDelEditor } from './eleccionCarrito';
  */
 export default function AgregarRapidoDeProducto({ product, abierto, onCerrar }) {
   const navigate = useNavigate();
+  const personalizableViejo = useLoViejo('personalizable');
   const { addToCart } = useCart();
   const toast = useGlobalToast();
   const { porIndice, porId, listas, terminado } = usePiezasDelCombo(product, abierto);
@@ -51,8 +53,9 @@ export default function AgregarRapidoDeProducto({ product, abierto, onCerrar }) 
       {...opciones}
       varianteInicial={principal?.id}
       cargando={!terminado}
-      // Yoryo se abre desde la ficha; el editor, directo con lo elegido.
-      personalizable={Boolean(product?.customizable || product?.YoryoPersonalizado)}
+      // Ya no se personaliza (salvo con personalizableViejo): Yoryo se abría
+      // desde la ficha; el editor, directo con lo elegido.
+      personalizable={personalizableViejo && Boolean(product?.customizable || product?.YoryoPersonalizado)}
       onPersonalizar={(eleccion) => {
         onCerrar?.();
         navigate(product.YoryoPersonalizado ? `/producto/${product.id}` : rutaDelEditor(product, eleccion, porIndice));

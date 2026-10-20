@@ -16,6 +16,7 @@ import { EyeIcon, EyeOffIcon, EditIcon, TrashIcon, GridIcon, TableIcon, CopyIcon
 import { Clock, Edit2, Trash2 } from 'lucide-react';
 import { toDirectImageUrl, toThumbnailImageUrl } from '../../../utils/imageUrl';
 import ComboProductImage from '../components/ComboProductImage/ComboProductImage';
+import { tienePersonalizacionVieja, esEsclava, quitarPersonalizacionVieja, NOTA_ESCLAVA } from '../../../services/personalizacionVieja';
 import OptimizedImage from '../../../components/common/OptimizedImage/OptimizedImage';
 import styles from './AdminProductos.module.css';
 
@@ -225,6 +226,29 @@ const AdminProductos = () => {
     () => (productsData || []).filter((p) => p.esPrendaBase !== true && p.esComboCrear !== true),
     [productsData],
   );
+
+  // Los que aún tienen la personalización de antes (editor viejo o Yoryo):
+  // desde el 2026-10-20 la tienda no la ofrece; con un botón pasan a normales.
+  const conPersonalizacion = useMemo(() => catalogo.filter(tienePersonalizacionVieja), [catalogo]);
+  const [quitandoPersonalizacion, setQuitandoPersonalizacion] = useState(false);
+  const quitarPersonalizacion = async () => {
+    const esclavas = conPersonalizacion.filter(esEsclava);
+    const nombres = conPersonalizacion.slice(0, 15).map((p) => `• ${p.name}${esEsclava(p) ? ' (esclava)' : ''}`).join('\n');
+    const mas = conPersonalizacion.length > 15 ? `\n… y ${conPersonalizacion.length - 15} más` : '';
+    if (!window.confirm(`¿Pasar estos ${conPersonalizacion.length} productos a normales (sin personalizar)?\n\n${nombres}${mas}`
+      + (esclavas.length ? `\n\nA las esclavas (${esclavas.length}) se les agrega a la descripción: "${NOTA_ESCLAVA}"` : ''))) return;
+    setQuitandoPersonalizacion(true);
+    let fallos = 0;
+    for (const p of conPersonalizacion) {
+      const { error } = await quitarPersonalizacionVieja(p);
+      if (error) fallos += 1;
+    }
+    setQuitandoPersonalizacion(false);
+    queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+    queryClient.invalidateQueries({ queryKey: ['products'] });
+    if (fallos) showError(`${fallos} no se pudieron cambiar. Vuelve a intentarlo.`);
+    else success('Listo: ya no queda ningún producto con la personalización de antes.');
+  };
 
   const comboItemProductIds = useMemo(() => {
     const ids = new Set();
@@ -483,6 +507,17 @@ const AdminProductos = () => {
               Las prendas que el cliente diseña están en <Link to="/admin/prendas-crear">Prendas de Crear</Link> ({deCrear.prendas})
               {' '}y sus combos en <Link to="/admin/combos-crear">Combos de Crear</Link> ({deCrear.combos}).
             </p>
+          )}
+          {conPersonalizacion.length > 0 && (
+            <div className={styles.avisoPersonalizacion} role="status">
+              <span>
+                {conPersonalizacion.length === 1 ? 'Un producto tiene' : `${conPersonalizacion.length} productos tienen`} la personalización de antes
+                (editor viejo o Yoryo). La tienda ya no la ofrece: pásalos a normales.
+              </span>
+              <button type="button" onClick={quitarPersonalizacion} disabled={quitandoPersonalizacion}>
+                {quitandoPersonalizacion ? 'Cambiando…' : 'Quitar la personalización vieja'}
+              </button>
+            </div>
           )}
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
