@@ -102,7 +102,7 @@ export const textoPara = (n, conjunto) => {
  *  - disenada: su nombre (se renombra ahí), color y lados con diseño, su
  *    talla (si cada prenda lleva la suya) · Editar · Usar en las demás · Quitar
  *  - borrador / vieja: lo mismo, con el aviso de que falta guardarla
- * Props: i, prenda, foto, estado, nombre, color: { nombre, fondo }, lados,
+ * Props: i, prenda, foto, fotoEspalda (al pasar el mouse), estado, nombre, color: { nombre, fondo }, lados,
  * lista, agotada, tallas, talla, onTalla(t), urlDisenar, urlEditar,
  * copiarDe: { numero, url }, estadoEnlaces (el state con que el estudio
  * vuelve al combo), onMisCreaciones, onUsarEnLasDemas (texto: 'la otra' |
@@ -110,7 +110,7 @@ export const textoPara = (n, conjunto) => {
  * Los textos pasan por la traducción (los nombres de los diseños, no).
  */
 export function FilaPiezaCombo({
-  i, prenda, foto, estado = 'vacia', nombre, color, lados = [], lista = false, agotada = false,
+  i, prenda, foto, fotoEspalda, estado = 'vacia', nombre, color, lados = [], lista = false, agotada = false,
   tallas = [], talla, onTalla, urlDisenar, urlEditar, copiarDe, estadoEnlaces, onMisCreaciones, usarEnLasDemas, onUsarEnLasDemas,
   onQuitar, onRenombrar, onVer,
 }) {
@@ -123,7 +123,7 @@ export function FilaPiezaCombo({
   return (
     <li className={[s.pieza, lista && s.piezaLista].filter(Boolean).join(' ')} data-componente="FilaPiezaCombo">
       <button type="button" className={s.piezaFoto} onClick={onVer} aria-label={t.ver}>
-        <FotoProducto className={[s.piezaImagen, estado === 'vacia' && s.atenuada].filter(Boolean).join(' ')} src={foto} relleno={estado === 'vacia' ? '10%' : '4%'} />
+        <FotoProducto className={[s.piezaImagen, estado === 'vacia' && s.atenuada].filter(Boolean).join(' ')} src={foto} espalda={estado === 'vacia' ? undefined : fotoEspalda} relleno={estado === 'vacia' ? '10%' : '4%'} />
         <span className={s.piezaNumero}>{i + 1}</span>
         {lista && <span className={s.piezaVisto} aria-label={t.lista}><CheckCircle2 aria-hidden="true" /></span>}
       </button>

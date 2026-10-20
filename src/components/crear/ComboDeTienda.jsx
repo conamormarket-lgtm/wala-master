@@ -79,6 +79,9 @@ export default function ComboDeTienda() {
       i: p.i,
       prenda: p.prenda?.name,
       foto: fotos[k]?.lados[0]?.url,
+      // La espalda solo si tiene diseño (los lados con diseño van primero; los
+      // demás son la prenda lisa), como en las tarjetas de creación.
+      fotoEspalda: (fotos[k]?.conDiseno?.length || 0) > 1 ? fotos[k]?.lados[1]?.url : undefined,
       estado,
       nombre: p.cargando ? p.respaldo?.nombre : p.creacion ? (p.creacion.name || 'Mi creación') : p.plantilla?.nombre,
       color: colorKit(p.creacion?.color || p.plantilla?.color),
@@ -154,6 +157,7 @@ export default function ComboDeTienda() {
       plantilla={pendientePlantilla && c.plantillaCombo ? { nombre: c.plantillaCombo.nombre, urlPersonalizar: c.urlPlantilla(pendientePlantilla.i) } : undefined}
       misCreaciones={uid ? (i) => c.opcionesMias(i).map((d) => ({
         id: d.id, nombre: d.name, imagen: d.vistasPrevias?.[0]?.url || d.imagenConjunta || d.previewUrl,
+        imagenEspalda: d.vistasPrevias?.[1]?.url,
       })) : undefined}
       onElegirCreacion={c.elegirCreacion}
       onAgregar={c.agregar}

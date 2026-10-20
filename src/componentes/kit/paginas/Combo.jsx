@@ -275,7 +275,7 @@ export function PaginaCombo({
             {opciones.map((c) => (
               <li key={c.id}>
                 <button type="button" className={s.opcion} onClick={() => { onElegirCreacion?.(eligiendo, c.id); setEligiendo(null); }}>
-                  <FotoProducto className={s.opcionFoto} src={c.imagen} relleno="4%" />
+                  <FotoProducto className={s.opcionFoto} src={c.imagen} espalda={c.imagenEspalda} relleno="4%" />
                   <span>{c.nombre || <Texto>Mi creación</Texto>}</span>
                 </button>
               </li>

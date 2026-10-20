@@ -16,3 +16,36 @@
   mix-blend-mode: multiply;
   user-select: none;
 }
+
+/* La espalda (prop espalda): reemplaza al frente al pasar el ratón por el
+   botón o enlace que contiene la foto. No va encima: las dos se mezclan con
+   multiply y una sobre otra la espalda salía oscura. */
+:where(.foto.conEspalda) {
+  position: relative;
+}
+
+:where(.conEspalda) > img {
+  transition: opacity var(--dur-lenta, 0.5s) var(--ease-signature, ease);
+}
+
+:where(.conEspalda) > :where(.espalda) {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :where(:is(a, button, label):hover) > :where(.conEspalda) > :where(.espalda) {
+    opacity: 1;
+  }
+
+  :where(:is(a, button, label):hover) > :where(.conEspalda) > img:not(.espalda) {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.conEspalda) > img {
+    transition: none;
+  }
+}

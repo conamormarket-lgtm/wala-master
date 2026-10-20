@@ -65,6 +65,13 @@ export const comboCrearDesde = (combo = {}, prendaPorId = new Map()) => {
  * frente y espalda (o las prendas de un combo), prenda y color, quién lo
  * hizo y cuántos lo usaron.
  */
+// Frente y espalda de cada prenda de un combo publicado (juntos: si una
+// prenda no tiene foto se quita entera, sin correr las espaldas de las demás).
+const fotosComunidad = (d) => (d.piezas || []).map((p) => {
+  const vistas = (p.vistasPrevias || []).filter((v) => v?.url);
+  return { frente: vistas[0]?.url || p.imagenConjunta || p.previewUrl, espalda: vistas[1]?.url || '' };
+}).filter((f) => f.frente);
+
 export const disenoComunidadDesde = (d = {}) => {
   const previas = (d.vistasPrevias || []).filter((p) => p?.url);
   const esCombo = d.tipo === 'combo';
@@ -74,7 +81,9 @@ export const disenoComunidadDesde = (d = {}) => {
     nombre: d.nombre,
     imagen: previas[0]?.url || d.imagenConjunta || d.previewUrl || '',
     imagenEspalda: esCombo ? undefined : previas[1]?.url,
-    imagenes: esCombo ? (d.piezas || []).map((p) => (p.vistasPrevias || []).find((v) => v?.url)?.url || p.imagenConjunta || p.previewUrl).filter(Boolean) : undefined,
+    imagenes: esCombo ? fotosComunidad(d).map((f) => f.frente) : undefined,
+    // La espalda de cada prenda (la tarjeta la muestra al pasar el mouse).
+    imagenesEspalda: esCombo ? fotosComunidad(d).map((f) => f.espalda) : undefined,
     combo: esCombo ? String((d.piezas || []).length) : undefined,
     producto: esCombo ? (d.comboNombre || d.productName) : d.productName,
     color: !esCombo && d.color?.nombre ? { nombre: d.color.nombre, hex: d.color.hex, fondo: fondoColorGuardado(d.color) || d.color.hex } : undefined,

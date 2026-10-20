@@ -17,18 +17,22 @@ import s from './FotoProducto.module.css';
  *  - loading, decoding: los de la imagen (lazy / async por defecto)
  *  - srcSet, sizes: copias de la foto en varios tamaños (la tienda las tiene),
  *    para bajar solo la que hace falta
+ *  - espalda: la otra cara de una prenda; con ratón, se ve al pasar por el
+ *    botón o enlace que contiene la foto (como en las tarjetas de creación)
  *
  * Las reglas de aquí no pesan (:where), así que cualquier clase de quien la
  * usa gana sin pelear por especificidad.
  */
-export function FotoProducto({ src, srcSet, sizes, alt = '', relleno, className, style, respaldo, children, como: Etiqueta = 'span', loading = 'lazy', decoding = 'async', ...rest }) {
+export function FotoProducto({ src, srcSet, sizes, alt = '', relleno, className, style, respaldo, children, espalda, como: Etiqueta = 'span', loading = 'lazy', decoding = 'async', ...rest }) {
+  const conEspalda = Boolean(src && espalda);
   return (
     <Etiqueta
-      className={[s.foto, className].filter(Boolean).join(' ')}
+      className={[s.foto, conEspalda && s.conEspalda, className].filter(Boolean).join(' ')}
       style={relleno ? { '--relleno': relleno, ...style } : style}
       {...rest}
     >
       {children}
+      {conEspalda && <img className={s.espalda} src={espalda} alt="" loading="lazy" decoding="async" draggable={false} />}
       {src ? <img {...fuentes(src, srcSet, sizes)} alt={alt} loading={loading} decoding={decoding} draggable={false} /> : respaldo}
     </Etiqueta>
   );
