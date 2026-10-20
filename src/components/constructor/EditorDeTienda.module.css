@@ -1,8 +1,10 @@
-/* El panel del kit va fijo a la ventana; aquí solo empieza bajo la barra de
-   admin (que publica su alto en --admin-bar-height). */
+/* El panel del kit va fijo a la ventana y de alto completo: la página (con
+   la barra de admin) se corre para dejarle su lugar, así que el panel ocupa
+   también la esquina de arriba (antes empezaba bajo la barra y quedaba un
+   hueco en esa esquina). */
 .editor {
   display: contents;
-  --editor-arriba: var(--admin-bar-height, 0px);
+  --editor-arriba: 0px;
 }
 
 /* "Volver a la página" al editar el pie. */

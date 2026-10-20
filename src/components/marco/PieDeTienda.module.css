@@ -5,6 +5,11 @@
   margin-top: auto;
 }
 
+/* De borde a borde, con el mismo margen que la cabecera (como el kit). */
+.ancho {
+  padding: 1rem var(--page-padding-movil, 1rem) 1.5rem;
+}
+
 @media (max-width: 768px) {
   .envoltura {
     padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px));
@@ -14,7 +19,8 @@
 /* Con el editor abierto en otra página: todo el pie es el botón para editarlo. */
 .editarPie {
   position: absolute;
-  inset: 0;
+  /* Sobre la tarjeta del pie: su margen de arriba (3.2rem) y el de la página. */
+  inset: calc(1rem + 3.2rem) var(--page-padding-movil, 1rem) 1.5rem;
   z-index: 10;
   display: flex;
   align-items: center;

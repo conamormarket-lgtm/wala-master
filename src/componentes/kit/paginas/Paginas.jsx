@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { Cabecera, BarraInferior } from '../Navegacion';
-import { BloqueSeccion } from '../Seccion';
 import { RenderSecciones } from '../Secciones';
 import { PiePagina } from '../piezas/Pie';
 import { TemaMarca } from '../piezas/TemaMarca';
@@ -37,9 +36,9 @@ export function MarcoTienda({ arriba, cabecera, pie, pieLegal, kapiEnPie = true,
       <main className={s.contenido}>{children}</main>
       {(pie || pieLegal) && (
         <div data-componente="PiePagina">
-          <BloqueSeccion ajustes={{ paddingTop: '1rem', paddingBottom: '1.5rem' }}>
+          <div className={s.pie}>
             <PiePagina ajustes={pie || {}} pieLegal={pieLegal && <PieLegal {...pieLegal} />} kapi={kapiEnPie} />
-          </BloqueSeccion>
+          </div>
         </div>
       )}
       {flotantes && (

@@ -21,6 +21,11 @@
   flex: 1;
 }
 
+/* El pie, de borde a borde con el mismo margen que la cabecera. */
+.pie {
+  padding: 1rem var(--page-padding-movil, 1rem) 1.5rem;
+}
+
 .arriba {
   position: relative;
   z-index: 31;

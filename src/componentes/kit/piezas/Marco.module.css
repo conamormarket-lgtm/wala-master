@@ -135,7 +135,10 @@
   justify-content: space-between;
   gap: 1rem;
   min-height: 46px;
-  padding: 0.4rem max(1rem, calc((100% - 1280px) / 2));
+  /* Alineada con lo de adentro de la cabecera: su margen (1rem) más su
+     relleno (1.25rem a la izquierda, 1rem a la derecha). Antes se centraba
+     en 1280 px y en una pantalla ancha quedaba corrida respecto a ella. */
+  padding: 0.4rem calc(var(--page-padding-movil, 1rem) + 1rem) 0.4rem calc(var(--page-padding-movil, 1rem) + 1.25rem);
   background: var(--noche-wala, #14121c);
   color: #fff;
 }

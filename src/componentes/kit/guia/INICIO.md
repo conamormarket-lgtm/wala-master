@@ -375,8 +375,17 @@ cada bloque con su `EditableSection`; `#site-footer` (el editor baja hasta
 
 **Diferencias a propósito:**
 
-- Una tarjeta redondeada dentro del ancho de la página (como el kit), en vez
-  de la franja de borde a borde con la línea roja.
+- Una tarjeta redondeada de borde a borde, con el mismo margen que la
+  cabecera (desde el 2026-10-20 también en el kit: antes iba en la caja de
+  1280 px y en una pantalla ancha quedaba más angosta que la cabecera), en
+  vez de la franja con la línea roja.
+
+**Alineados con la cabecera (2026-10-20):** la barra de admin ya no centra
+lo suyo en 1280 px: empieza y termina donde lo de adentro de la cabecera
+(su margen más su relleno), en el kit y en la tienda. Con el editor del kit
+abierto, el panel va de alto completo (`--editor-arriba: 0`): la página y la
+barra de admin se corren para dejarle su lugar, y arriba a la derecha ya no
+queda un hueco.
 - "Hecho con amor en Perú" va en texto con un corazón: la etiqueta colgante
   es solo para productos (antes, en la demo, era una etiqueta).
 - **Un solo Kapi a la vista.** Kapi se asoma por el pie solo cuando no flota

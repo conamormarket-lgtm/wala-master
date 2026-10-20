@@ -10,7 +10,6 @@ import { empresa } from '../../config/empresa';
 import useLoViejo from '../../hooks/useLoViejo';
 import Boton from '../../componentes/kit/Boton';
 import { useConfirmar } from '../../componentes/kit/Feedback';
-import { BloqueSeccion } from '../../componentes/kit/Seccion';
 import { PieLegal } from '../../componentes/kit/piezas/Marco';
 import { MarcoPie, ColumnasPie, TextoPie, ImagenPie } from '../../componentes/kit/piezas/Pie';
 import { pieLegalDesdeEmpresa } from '../../componentes/kit/adaptadores';
@@ -99,7 +98,7 @@ export default function PieDeTienda() {
           </Boton>
         </div>
       )}
-      <BloqueSeccion ajustes={{ paddingTop: '1rem', paddingBottom: '1.5rem' }}>
+      <div className={s.ancho}>
         <MarcoPie kapi={kapi} pieLegal={<PieLegal {...pieLegalDesdeEmpresa(empresa)} />}>
           {bloques.map((bloque, i) => (
             <React.Fragment key={bloque.id || i}>
@@ -111,7 +110,7 @@ export default function PieDeTienda() {
           ))}
           {editando && <PuntoDeInsercion indice={bloques.length} />}
         </MarcoPie>
-      </BloqueSeccion>
+      </div>
     </div>
   );
 }
