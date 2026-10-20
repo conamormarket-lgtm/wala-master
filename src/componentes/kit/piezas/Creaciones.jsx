@@ -6,6 +6,7 @@ import { Texto, useTexto } from '../Traduccion';
 import { HojaInferior } from '../Feedback';
 import { Etiqueta } from '../Etiquetas';
 import { soles } from '../TarjetaProducto';
+import { Sello } from '../Marca';
 import { FotoProducto } from './FotoProducto';
 import s from './Creaciones.module.css';
 
@@ -15,16 +16,19 @@ const COMUNIDAD = {
     titulo: '¿Publicar en la comunidad?',
     texto: 'Se verá en Diseños de la comunidad, también sin iniciar sesión, y cualquiera podrá usarlo como punto de partida. Tu creación no cambia.',
     boton: 'Publicar',
+    icono: Users,
   },
   actualizar: {
     titulo: '¿Actualizar la publicación?',
     texto: 'La comunidad verá la versión de ahora. Lo que otros ya hicieron con ella no cambia.',
     boton: 'Actualizar',
+    icono: RefreshCw,
   },
   retirar: {
     titulo: '¿Retirar de la comunidad?',
     texto: 'Deja de verse en la galería. Lo que otros ya hicieron con ella sigue funcionando, y puedes volver a publicarla cuando quieras.',
     boton: 'Retirar',
+    icono: EyeOff,
   },
 };
 
@@ -78,6 +82,11 @@ export function TarjetaCreacion({
   const [eligiendoCombo, setEligiendoCombo] = useState(false);
   const [llevando, setLlevando] = useState(null);
   const prendas = imagenes?.filter(Boolean) || [];
+  // Un combo es combo aunque falte diseñar alguna prenda (un borrador "1 de
+  // 2"): antes, con una sola foto, se veía y se eliminaba como una creación
+  // suelta. Las prendas sin diseño van con su hueco.
+  const esCombo = Boolean(combo) || prendas.length > 1;
+  const fotosCombo = esCombo && (imagenes?.length || 0) > 1 ? imagenes : null;
   // Como la tarjeta de producto: con ratón se inclina siguiendo al puntero
   // (4° como mucho) y el canto se ilumina donde está.
   const ref = useRef(null);
@@ -100,7 +109,7 @@ export function TarjetaCreacion({
   // Etiquetas de la foto por importancia; solo las dos primeras.
   const etiquetas = [
     !disponible && <Etiqueta key="no" tono="peligro" sobreFoto><Texto>No disponible</Texto></Etiqueta>,
-    borrador && prendas.length > 1 && <Etiqueta key="borrador" tono="aviso" sobreFoto><Texto>Borrador</Texto></Etiqueta>,
+    borrador && esCombo && <Etiqueta key="borrador" tono="aviso" sobreFoto><Texto>Borrador</Texto></Etiqueta>,
     comprado && <Etiqueta key="comprado" tono="exito" sobreFoto icono={<Check aria-hidden="true" />}><Texto>Comprado</Texto></Etiqueta>,
     combo && <Etiqueta key="combo" tono="violeta" solida><Texto>{`Combo · ${combo}`}</Texto></Etiqueta>,
     enComunidad && <Etiqueta key="pub" tono="violeta" sobreFoto icono={<Users aria-hidden="true" />}><Texto>En la comunidad</Texto></Etiqueta>,
@@ -108,7 +117,6 @@ export function TarjetaCreacion({
 
   const preguntar = (clave, accion) => setPregunta({ ...COMUNIDAD[clave], accion });
   // Un combo se lleva sus prendas (las que se usan en otro lado se quedan).
-  const esCombo = prendas.length > 1;
   const preguntarEliminar = () => setPregunta({
     titulo: eliminar?.titulo || (esCombo ? `¿Eliminar el combo «${nombre || 'Mi combo'}» y sus prendas?` : `¿Eliminar «${nombre || 'esta creación'}»?`),
     texto: eliminar?.texto || (esCombo
@@ -118,6 +126,7 @@ export function TarjetaCreacion({
         : 'Se borra para siempre junto con sus imágenes.'),
     notas: eliminar?.notas || [],
     boton: 'Eliminar',
+    icono: Trash2,
     peligro: true,
     accion: onEliminar,
   });
@@ -137,7 +146,7 @@ export function TarjetaCreacion({
   return (
     <article
       ref={ref}
-      className={[s.creacion, !disponible && s.noDisponible, borrador && s.borrador, vertical && s.vertical].filter(Boolean).join(' ')}
+      className={[s.creacion, !disponible && s.noDisponible, borrador && s.borrador, vertical && s.vertical, pregunta && s.preguntando].filter(Boolean).join(' ')}
       data-componente="TarjetaCreacion"
       onPointerMove={mover}
       onPointerLeave={salir}
@@ -145,10 +154,19 @@ export function TarjetaCreacion({
       <span className={s.bordeLuz} aria-hidden="true" />
       <div className={s.caja}>
         <div className={s.fotoMarco}>
-          {prendas.length > 1 ? (
+          {fotosCombo ? (
             <div className={`${s.foto} ${s.fotoCombo}`}>
-              <div className={s.prendas} style={{ '--n': prendas.length }}>
-                {prendas.map((src, i) => <FotoProducto key={src + i} className={s.prenda} src={src} relleno="6%" style={{ '--i': i }} />)}
+              <div className={s.prendas} style={{ '--n': fotosCombo.length }}>
+                {fotosCombo.map((src, i) => (
+                  <FotoProducto
+                    key={`${i}-${src}`}
+                    className={s.prenda}
+                    src={src || undefined}
+                    relleno="6%"
+                    style={{ '--i': i }}
+                    respaldo={<span className={s.porDisenar} title="Por diseñar"><Paintbrush aria-hidden="true" /></span>}
+                  />
+                ))}
               </div>
             </div>
           ) : (
@@ -169,15 +187,18 @@ export function TarjetaCreacion({
               <Trash2 aria-hidden="true" />
             </button>
           )}
-          {imagenEspalda && prendas.length < 2 && (
+          {imagenEspalda && !fotosCombo && (
             <button type="button" className={s.girar} onClick={() => setEspalda((v) => !v)} aria-pressed={espalda}>
               <RotateCw aria-hidden="true" /> <Texto>{espalda ? 'Ver frente' : 'Ver espalda'}</Texto>
             </button>
           )}
-          {lados && !imagenEspalda && prendas.length < 2 && <span className={s.lados}>{lados}</span>}
+          {lados && !imagenEspalda && !fotosCombo && <span className={s.lados}>{lados}</span>}
         </div>
 
-        <div className={s.cuerpo}>
+        {/* La pregunta (eliminar, publicar…) ocupa el lugar del texto, en
+            sólido; la foto queda arriba, atenuada, para ver qué se borra. */}
+        <div className={s.zonaCuerpo}>
+        <div className={s.cuerpo} aria-hidden={pregunta ? true : undefined}>
           {editando !== null ? (
             <form className={s.renombrar} onSubmit={renombrar}>
               <input
@@ -262,19 +283,22 @@ export function TarjetaCreacion({
           </div>
           )}
         </div>
-      </div>
-      {/* La confirmación tapa toda la tarjeta (en el celular la foto es angosta). */}
-      {pregunta && (
-        <div className={s.confirmar} role="alertdialog" aria-label={pregunta.titulo}>
-          <p><strong><Texto>{pregunta.titulo}</Texto></strong></p>
-          <p><Texto>{pregunta.texto}</Texto></p>
-          {(pregunta.notas || []).map((n) => <p key={n}><Texto>{n}</Texto></p>)}
-          <div className={s.confirmarBotones}>
-            <Boton variante="fantasma" tamano="sm" onClick={() => setPregunta(null)} disabled={trabajando}><Texto>Cancelar</Texto></Boton>
-            <Boton variante={pregunta.peligro ? 'peligro' : 'primario'} tamano="sm" cargando={trabajando} onClick={confirmar}><Texto>{pregunta.boton}</Texto></Boton>
+        {pregunta && (
+          <div className={[s.confirmar, pregunta.peligro && s.confirmarPeligro].filter(Boolean).join(' ')} role="alertdialog" aria-label={pregunta.titulo}>
+            <p className={s.confirmarTitulo}>
+              {pregunta.icono && <Sello tamano={30} tono={pregunta.peligro ? 'peligro' : 'degradado'}><pregunta.icono /></Sello>}
+              <strong><Texto>{pregunta.titulo}</Texto></strong>
+            </p>
+            <p><Texto>{pregunta.texto}</Texto></p>
+            {(pregunta.notas || []).map((n) => <p key={n}><Texto>{n}</Texto></p>)}
+            <div className={s.confirmarBotones}>
+              <Boton variante="fantasma" tamano="sm" onClick={() => setPregunta(null)} disabled={trabajando}><Texto>Cancelar</Texto></Boton>
+              <Boton variante={pregunta.peligro ? 'peligro' : 'primario'} tamano="sm" cargando={trabajando} onClick={confirmar}><Texto>{pregunta.boton}</Texto></Boton>
+            </div>
           </div>
+        )}
         </div>
-      )}
+      </div>
       {combos.length > 0 && (
         <HojaInferior abierta={eligiendoCombo} onCerrar={() => !llevando && setEligiendoCombo(false)} titulo="Llevar en combo">
           <p className={s.comboAyuda}><Texto>{`Usamos una copia de «${nombre || 'tu diseño'}»: tu creación sigue igual. En el combo le cambias el color o el diseño a cada prenda.`}</Texto></p>

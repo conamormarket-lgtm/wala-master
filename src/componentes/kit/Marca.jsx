@@ -175,6 +175,7 @@ export function Trazo({ className }) {
  *  - tamano: px del círculo (40) · girar: grados (-8; 0 = derecho)
  *  - tono: 'degradado' | 'suave' (lila con el ícono violeta: lo que no está
  *    elegido) | 'oro' | 'menta' | 'rosa' | 'bronce' | 'plata' (niveles)
+ *    | 'peligro' (rojo: lo que no tiene vuelta, como eliminar)
  */
 export function Sello({ children, tamano = 40, girar = -8, tono = 'degradado', className }) {
   return (

@@ -8,7 +8,8 @@ import { publicarEnComunidad, retirarDeComunidad } from '../../services/comunida
 import { esMiCombo, imagenDe } from '../../services/misCombos';
 import { precioBase, fondoColorGuardado } from '../../utils/prendaBase';
 import { useEliminarCreacion } from '../../pages/Crear/useEliminarCreacion';
-import { useEliminarMiCombo } from '../../pages/Crear/useEliminarMiCombo';
+import { useEliminarMiCombo, notasEliminarCombo } from '../../pages/Crear/useEliminarMiCombo';
+import { useCart } from '../../contexts/CartContext';
 import { useLlevarEnCombo } from '../../pages/Crear/LlevarEnCombo';
 import { consultaProducto } from '../regalar/regaloDeLista';
 import { creacionDesdeDiseno } from '../../componentes/kit/adaptadores';
@@ -76,6 +77,7 @@ export default function useTarjetasCreaciones({ uid, designs, borradores, claveC
 
   const { eliminar: eliminarDiseno, notasDe } = useEliminarCreacion();
   const eliminarCombo = useEliminarMiCombo();
+  const { items } = useCart();
   const buscar = (id) => designs.find((x) => x.id === id) || borradores.find((x) => x.id === id);
 
   /* ── Las tarjetas ── */
@@ -96,6 +98,8 @@ export default function useTarjetasCreaciones({ uid, designs, borradores, claveC
       };
       if (leidas) extra.imagenes = piezas.map((p) => imagenDe(piezaDe(p.designId)));
       if (q?.isSuccess && !extra.disponible) extra.aviso = 'Este combo ya no se vende.';
+      const notasCombo = notasEliminarCombo(d, items);
+      if (notasCombo.length) extra.eliminar = { notas: notasCombo };
       return creacionDesdeDiseno(d, extra);
     }
     const deCrear = d.tipo === 'crear';

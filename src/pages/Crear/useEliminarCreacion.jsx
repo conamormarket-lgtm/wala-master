@@ -39,13 +39,18 @@ export const useEliminarCreacion = ({ alEliminar } = {}) => {
   const pedir = (diseno, { enPedido = false } = {}) => setPendiente({ diseno, enPedido });
   const cerrar = () => { if (!borrando) setPendiente(null); };
 
-  const enCarritoDe = (diseno) => (items || []).filter((i) => i.customization?.designId === diseno?.id);
+  // Suelta o como prenda de un combo (la línea del combo no lleva designId
+  // propio: antes no se veía y el combo quedaba con imágenes borradas).
+  const enCarritoDe = (diseno) => (items || []).filter((i) => i.customization?.designId === diseno?.id
+    || (i.customization?.piezas || []).some((p) => p?.designId === diseno?.id));
   const enPedido = Boolean(visto && (visto.enPedido || visto.diseno.enPedido));
   const esBorrador = visto?.diseno.estado === 'borrador';
 
   /** Lo que la confirmación tiene que decir además del texto (carrito, comunidad). */
   const notasDe = (diseno) => [
-    enCarritoDe(diseno).length > 0 && 'También se quitará de tu carrito.',
+    enCarritoDe(diseno).length > 0 && (enCarritoDe(diseno).some((i) => i.customization?.piezas)
+      ? 'La usa un combo de tu carrito: el combo también se quitará del carrito.'
+      : 'También se quitará de tu carrito.'),
     diseno?.comunidad === 'publicada' && 'Está publicada en la comunidad: la publicación seguirá ahí. Para quitarla, retírala antes.',
   ].filter(Boolean);
 

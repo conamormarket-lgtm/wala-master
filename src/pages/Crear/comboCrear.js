@@ -119,6 +119,16 @@ export const itemDeCombo = ({ combo, piezas, miComboId = '' }) => {
 
 export const esComboCrear = (item) => item?.customization?.tipo === 'comboCrear';
 
+/**
+ * Las creaciones que usa el carrito: las sueltas y CADA prenda de un combo
+ * (la línea del combo no lleva designId propio: antes sus prendas quedaban
+ * sin proteger al eliminar un combo o al limpiar versiones anteriores).
+ */
+export const disenosEnCarrito = (items) => new Set((items || []).flatMap((i) => [
+  i.customization?.designId,
+  ...(i.customization?.piezas || []).map((p) => p?.designId),
+]).filter(Boolean));
+
 /** "Polo clásico/Negro (M) + Polo clásico/Blanco (S)", para el resumen del pedido. */
 export const resumenPiezas = (item) => (item?.customization?.piezas || [])
   .map((p) => `${p.prendaNombre}${p.color?.nombre ? `/${p.color.nombre}` : ''}${p.talla ? ` (${p.talla})` : ''}`)

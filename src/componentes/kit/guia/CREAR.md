@@ -902,3 +902,80 @@ simulada (el tope pasa a 142 px), el pie (no sale; con `crearViejo`, sí),
 soltar una imagen sobre la prenda (la pastilla del kit) y "Cargando tu
 diseño" en la demo, en oscuro. **No probado:** el estudio con la barra de
 administrador de verdad y el pago (no se cobró nada).
+
+## Combos y creaciones: cómo funciona y sus casos (mapa del 2026-10-20)
+
+**Cómo se guarda hoy.** Todo está en `designs`. Una prenda suelta es un doc
+`tipo: 'crear'`. Un combo del cliente ("Mi combo") es otro doc
+`tipo: 'comboCrear'` con `piezas: [{ designId, prendaId, talla, frente… }]`
+por posición, y cada pieza es un doc `crear` aparte (con `combo: { id: <combo
+de la tienda>, pieza }` si se hizo para el combo). Dos piezas pueden apuntar
+al mismo diseño ("Usar en la otra", "Ponerlo también en la prenda 2"). El
+navegador recuerda el armado en `localStorage` `wala:combo-crear:<combo de la
+tienda>`: UNO por combo de la tienda, compartido por todos sus "Mi combo".
+La lista de Mis creaciones esconde las piezas que algún combo usa
+(`agruparCombos`); lo que no usa ninguno se ve suelto.
+
+**Paso 1 (hecho el 2026-10-20), sin cambiar cómo se guarda:**
+
+| Qué pasaba | Arreglo |
+|---|---|
+| El aviso de eliminar era un velo al 94 % sobre la tarjeta: el texto quedaba encima de los restos borrosos | La pregunta ocupa el lugar del texto, en sólido y con su sello (rojo para eliminar: `Sello tono="peligro"`); la foto queda arriba, atenuada. Angosta: sello arriba y botones a lo ancho (`piezas/Creaciones.*`) |
+| "Ponerlo también en la prenda 2" no hacía nada: al volver, la página del combo usaba su copia en caché (de antes del estudio) y la escribía encima | La página espera el combo al día (`isFetchedAfterMount`) antes de usarlo y antes de autoguardar (`useComboCrear.js`) |
+| "Editar" en una prenda compartida creaba un borrador nuevo aunque no se cambiara nada: el combo volvía a borrador y la copia quedaba en "Versiones anteriores" | La copia (`&copiar=`) solo se guarda si se cambia algo; "Listo" sin cambios vuelve sin copiar (`EstudioDeTienda.jsx`) |
+| Eliminado un combo, el navegador lo seguía recordando: lo diseñado después iba a un combo que no existe (y se perdía a los 7 días) | Al eliminarlo se olvida; la página del combo y el estudio comprueban que el recordado exista y, si no, empiezan uno nuevo |
+| Las prendas de un combo en el carrito no contaban como "en el carrito": eliminar el combo (o la limpieza de versiones) podía borrarlas | `disenosEnCarrito` (`pages/Crear/comboCrear.js`) cuenta cada prenda de un combo; eliminar una prenda que usa un combo del carrito lo avisa y saca el combo del carrito |
+| Eliminar un combo publicado no avisaba y la publicación quedaba en la galería sin forma de retirarla | Lo avisa y lo retira antes de eliminar (si no se puede retirar, no se elimina) |
+| Un combo con una sola prenda diseñada se veía (y se eliminaba) como una creación suelta | La tarjeta lo trata como combo: sus prendas con el hueco "por diseñar" (punteado, con el pincel) y la etiqueta Borrador |
+
+Probado con los emuladores (cuenta admin, pareja de poleras): "Ponerlo
+también" con las dos prendas en la cuenta, "Editar" y salir sin cambios (sin
+borrador nuevo), "Editar" y cambiar el color (copia nueva, el combo vuelve a
+estar guardado al terminar), el combo a medias en Mis creaciones, eliminarlo
+(se olvida en el navegador), un combo recordado que ya no existe (empieza
+limpio), y uno publicado y en el carrito (se retira de la comunidad, sus
+prendas se quedan y el carrito sigue con sus imágenes). Celular claro y
+oscuro. **No probado:** dos pestañas a la vez, un combo comprado, trío y
+conjunto.
+
+**Lo que queda (paso 2: que cada combo sea dueño de sus prendas):**
+
+- Las prendas que se quedan (compradas, en el carrito, elegidas de "Mis
+  creaciones") **vuelven a verse sueltas** al eliminar el combo: es lo que se
+  ve como "aparecen los diseños por separado". Propuesta: un combo eliminado
+  que se compró se archiva (no se ve, el pedido conserva sus archivos) y sus
+  prendas no vuelven a la lista.
+- Dos piezas comparten el mismo diseño: editar o borrar una toca a la otra.
+  Propuesta: cada pieza con su propia copia (las imágenes se reutilizan), con
+  el id de SU combo (`miComboId`), no el del combo de la tienda.
+- Elegir una creación de "Mis creaciones" y editarla dentro del combo cambia
+  la original (y al eliminar el combo se borra). Propuesta: siempre una copia.
+- El armado del navegador es uno por combo de la tienda: dos "Mi combo" del
+  mismo combo o dos pestañas se pisan. Propuesta: uno por "Mi combo".
+- Las listas traen los 50 más recientes: un combo viejo deja sus piezas
+  sueltas. Propuesta: listar los combos aparte.
+- Al guardar de nuevo una creación se suben archivos nuevos y los viejos
+  quedan en Storage.
+- Eliminar una prenda suelta que usa un "Mi combo" deja al combo apuntando a
+  nada (no se puede publicar ni autoguardar).
+
+**Paso 3 (el admin):** las prendas de Crear (`esPrendaBase`) y los productos
+normales comparten la ficha del admin y un mismo interruptor "Personalizable"
+mueve dos modelos distintos (`esPrendaBase` del estudio nuevo y
+`customizable`/`customizationViews` del editor viejo `/editor/:id`, más el
+`YoryoPersonalizado`). Propuesta: una sección propia "Prendas de Crear" en el
+admin, quitar "Personalizable" de los productos normales y retirar el editor
+viejo para el cliente; falta decidir qué pasa con los productos personalizables
+que ya existen. La ficha además guarda siempre `visible: true` (una prenda
+oculta vuelve a verse al guardarla).
+
+**Casos que tiene que cubrir el flujo** (para probar en cada cambio): una
+prenda nueva, editada, guardada, comprada, eliminada (antes y después de
+comprarla) y publicada; un combo de la misma prenda (pareja, trío) con el
+mismo diseño en todas o uno distinto en cada una, con colores y tallas
+distintos; un conjunto (prendas distintas, una talla); un combo de la
+comunidad; empezar un combo desde una creación ("Llevar en combo"); un combo a
+medias; comprarlo y volver a editarlo (el pedido conserva lo comprado); dos
+"Mi combo" del mismo combo y dos pestañas; sin sesión y al iniciar sesión a
+mitad; que el admin oculte la prenda, quite un color o archive el combo
+después.

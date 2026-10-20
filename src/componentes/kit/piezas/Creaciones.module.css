@@ -100,6 +100,24 @@
   color: var(--color-text-muted);
 }
 
+/* La prenda de un combo que falta diseñar: un hueco punteado con el pincel
+   (no la "imagen rota" de una foto que no cargó). */
+.porDisenar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border: 2px dashed var(--violet-300, #c4b5fd);
+  border-radius: inherit;
+  color: var(--violet-500, #8b5cf6);
+}
+
+.porDisenar svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
 .sinFoto svg {
   width: 2rem;
   height: 2rem;
@@ -186,24 +204,70 @@
   outline-offset: 2px;
 }
 
-/* Confirmar eliminar: una capa sobre la foto. */
+/* El texto y la pregunta comparten lugar: la pregunta (eliminar, publicar…)
+   va en sólido donde estaba el texto, que se queda (oculto) para que la
+   tarjeta no cambie de alto. Antes era un velo al 94 % sobre toda la tarjeta
+   y el texto se mezclaba con lo de abajo. */
+.zonaCuerpo {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.zonaCuerpo > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.preguntando .cuerpo {
+  visibility: hidden;
+}
+
+/* La foto queda a la vista, atenuada: se ve qué se va a borrar. */
+.preguntando .fotoMarco {
+  opacity: 0.55;
+  transition: opacity var(--dur-media) var(--ease-signature);
+}
+
+.preguntando .fotoEnlace,
+.preguntando .eliminar,
+.preguntando .girar {
+  pointer-events: none;
+}
+
+.preguntando .eliminar {
+  opacity: 0;
+}
+
 .confirmar {
-  position: absolute;
-  /* Sobre toda la tarjeta, también sobre el canto iluminado (.bordeLuz). */
-  z-index: 6;
-  inset: 0;
-  border-radius: inherit;
+  position: relative;
+  z-index: 3;
   display: flex;
   flex-direction: column;
-  /* Si no entra (la foto angosta del celular), empieza arriba y se desliza:
-     antes el título quedaba cortado por encima. */
-  justify-content: safe flex-end;
-  gap: 0.35rem;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 0.75rem;
-  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.85rem 1rem 0.95rem;
   animation: aparecer var(--dur-media) var(--ease-signature);
+}
+
+.confirmarTitulo {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+/* Angosta (dos columnas en el celular): el sello arriba del título y los
+   botones a lo ancho, uno bajo otro si no entran. */
+@container creacion (max-width: 230px) {
+  .confirmarTitulo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.45rem;
+  }
+
+  .confirmarBotones > * {
+    flex: 1 1 auto;
+  }
 }
 
 @keyframes aparecer {

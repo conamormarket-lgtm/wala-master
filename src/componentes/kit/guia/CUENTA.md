@@ -554,6 +554,13 @@ también a 1366 y en noche.)
   angosta del celular no entraba), y con tres botones "Comprar" se queda
   sin su ícono para no salirse de la tarjeta.
 
+**Ajustes del 2026-10-20** (detalle en CREAR.md, "Combos y creaciones"):
+el aviso de eliminar (y el de publicar, actualizar o retirar) ocupa el lugar
+del texto de la tarjeta, en sólido y con su sello, con la foto atenuada
+arriba; un combo a medias se ve como combo, con el hueco de la prenda por
+diseñar; eliminar un combo avisa si está publicado (y lo retira) o en el
+carrito, y eliminar una prenda que usa un combo del carrito lo dice.
+
 ### Qué se probó (2026-10-19, localhost con los emuladores)
 
 Con creaciones de prueba de `cliente@wala.test`: un combo con dos

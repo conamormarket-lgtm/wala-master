@@ -12,6 +12,9 @@ import { obtenerDisenoComunidad, registrarUsoComunidad } from '../../services/co
 import { creacionLista } from '../../pages/Crear/creacionCarrito';
 import { leerArmado, guardarArmado, olvidarArmado, preciosDeCombo, itemDeCombo, leerMetaArmado, guardarMetaArmado } from '../../pages/Crear/comboCrear';
 import { esperarGuardados } from '../../pages/Crear/borradoresCache';
+
+// Lo que devuelve getDocument cuando el documento no existe.
+const NO_ENCONTRADO = 'Documento no encontrado';
 import { tallasPara, useFotosDePiezas } from '../../pages/Crear/fotosCombo';
 
 /*
@@ -116,7 +119,10 @@ export default function useComboCrear() {
     },
   });
   useEffect(() => {
-    if (!mioParam || !user || !piezasCombo.length || !mioQ.isFetched) return;
+    // Con lo traído DESPUÉS de abrir la página: lo de la caché es de antes de
+    // ir al estudio y pisaba lo que el estudio acababa de guardar (la otra
+    // prenda de "Ponerlo también en la prenda 2" volvía a quedar vacía).
+    if (!mioParam || !user || !piezasCombo.length || !mioQ.isFetchedAfterMount) return;
     // Lo puso esta misma página al crear el combo: ya está al día.
     if (mioParam === mioPropioRef.current) return;
     const data = mioQ.data;
@@ -139,7 +145,7 @@ export default function useComboCrear() {
     sin.delete('mio');
     setParams(sin, { replace: true });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mioParam, user?.uid, id, piezasCombo.length, mioQ.data, mioQ.isFetched]);
+  }, [mioParam, user?.uid, id, piezasCombo.length, mioQ.data, mioQ.isFetchedAfterMount]);
 
   /** Al crear "Mi combo", su id queda en la dirección (?mio=). */
   const ponerMioEnDireccion = (miComboId) => {
@@ -213,6 +219,9 @@ export default function useComboCrear() {
   const guardandoComboRef = useRef(false);
   useEffect(() => {
     if (!todasConDiseno || guardandoComboRef.current || firmaArmado === firmaGuardadaRef.current) return;
+    // Con ?mio=, nada se guarda hasta tener el combo de la cuenta al día (lo
+    // del navegador puede ser de antes o de otro dispositivo).
+    if (mioParam && !mioQ.isFetchedAfterMount) return;
     guardandoComboRef.current = true;
     firmaGuardadaRef.current = firmaArmado;
     guardarMiCombo(user.uid, { id: meta.miComboId || undefined, combo, piezas: armado, creaciones })
@@ -229,16 +238,35 @@ export default function useComboCrear() {
       })
       .finally(() => { guardandoComboRef.current = false; });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [todasConDiseno, firmaArmado]);
+  }, [todasConDiseno, firmaArmado, mioQ.isFetchedAfterMount]);
 
-  const { data: miCombo } = useQuery({
+  const miComboQ = useQuery({
     queryKey: ['creacion', meta.miComboId, user?.uid],
     enabled: Boolean(user && meta.miComboId),
     queryFn: async () => {
-      const { data } = await getDesignById(meta.miComboId);
+      const { data, error } = await getDesignById(meta.miComboId);
+      // Sin red no es lo mismo que "ya no existe": eso solo con la respuesta.
+      if (error && error !== NO_ENCONTRADO) throw new Error(error);
       return data ? { id: meta.miComboId, ...data } : null;
     },
   });
+  const miCombo = miComboQ.data;
+  // El combo que recordaba el navegador ya no está (se eliminó, quizá en otro
+  // dispositivo): se olvida y se empieza limpio. Antes se seguía guardando en
+  // él, fallaba siempre y lo diseñado quedaba sin combo.
+  useEffect(() => {
+    if (!meta.miComboId || !miComboQ.isFetchedAfterMount || miComboQ.data !== null) return;
+    olvidarArmado(id);
+    firmaGuardadaRef.current = '';
+    setArmado(leerArmado(id, piezasCombo.length));
+    setMeta({ miComboId: '', plantilla: '' });
+    if (new URLSearchParams(window.location.search).get('mio')) {
+      const sin = new URLSearchParams(window.location.search);
+      sin.delete('mio');
+      setParams(sin, { replace: true });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meta.miComboId, miComboQ.isFetchedAfterMount, miComboQ.data]);
 
   const miComboDoc = miCombo || mioQ.data || null;
   // Un conjunto (prendas distintas para una persona) lleva UNA talla para

@@ -740,7 +740,11 @@ const EstudioDeTienda = () => {
       const tallaInicial = tallasDeColor(cfg.colores.find((c) => c.id === colorInicial), cfg).includes(estado?.talla) ? estado.talla : '';
       // Un borrador de la pestaña todavía no existe en la cuenta: al
       // volver del login debe guardarse aunque no se vuelva a tocar.
-      firmaBorradorRef.current = designIdRef.current ? firmaBorrador(capas, colorInicial, tallaInicial) : null;
+      // La copia de otra pieza (&copiar=, "Editar" en una prenda compartida)
+      // tampoco: solo se guarda como borrador nuevo si se cambia algo. Antes
+      // abrirla y salir dejaba una copia igual, el combo pasaba a borrador y
+      // la copia quedaba en "Versiones anteriores".
+      firmaBorradorRef.current = (designIdRef.current || estado?.copia) ? firmaBorrador(capas, colorInicial, tallaInicial) : null;
       setColorId(colorInicial);
       setTalla(tallaInicial);
       // Una creación guardada abre "sin cambios": Guardar se activa al cambiar algo.
@@ -808,7 +812,7 @@ const EstudioDeTienda = () => {
           const primeraZona = Object.keys(capas)[0];
           if (primeraZona) {
             const vistaDeZona = vistasDestino.find((v) => v.zonas.some((z) => z.id === primeraZona));
-            return aplicar({ capasPorZona: capas, vistaId: vistaDeZona?.id, zonaId: primeraZona, colorId: colorOrigen?.id });
+            return aplicar({ capasPorZona: capas, vistaId: vistaDeZona?.id, zonaId: primeraZona, colorId: colorOrigen?.id, copia: true });
           }
         }
         toast.info('Ese diseño no encaja en esta prenda. Puedes empezar desde cero.');
@@ -2832,7 +2836,13 @@ const EstudioDeTienda = () => {
     try {
       const piezas = await piezasDelCombo(combo);
       const previo = mioRef.current || leerMetaArmado(comboParam).miComboId;
-      const { id: miComboId } = await sincronizarMiCombo(user.uid, { id: previo || undefined, combo, piezas });
+      let sincronizado = await sincronizarMiCombo(user.uid, { id: previo || undefined, combo, piezas });
+      // El combo que se recordaba ya no existe (se eliminó): se crea otro en
+      // vez de seguir actualizando uno que no está.
+      if (sincronizado.error && previo && (await getDesignById(previo)).error === 'Documento no encontrado') {
+        sincronizado = await sincronizarMiCombo(user.uid, { id: undefined, combo, piezas });
+      }
+      const miComboId = sincronizado.error ? '' : sincronizado.id;
       if (miComboId) {
         mioRef.current = miComboId;
         guardarArmado(comboParam, piezas);
@@ -2903,6 +2913,12 @@ const EstudioDeTienda = () => {
     operacionRef.current = true;
     setProcesando('Preparando tu creación…');
     try {
+      // "Editar" en una prenda compartida y sin cambiar nada: la pieza sigue
+      // con el mismo diseño, no se hace una copia.
+      if (copiarParam && !designIdRef.current && firmaBorradorRef.current === firmaBorrador(capasRef.current, color.id, talla)) {
+        navigate(urlCombo());
+        return;
+      }
       let idPieza = designIdRef.current;
       if (!idPieza || esBorradorRef.current || hayCambios) {
         const creacion = await guardarCreacion(nombre, talla);

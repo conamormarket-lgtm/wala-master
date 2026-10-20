@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCart } from '../../contexts/CartContext';
 import { versionesReemplazadas, cuidarVersionesReemplazadas } from '../../services/misCombos';
+import { disenosEnCarrito } from './comboCrear';
 
 /**
  * Las versiones anteriores de las prendas de los combos del cliente (ver
@@ -24,7 +25,7 @@ export const useVersionesReemplazadas = ({ uid, creaciones, borradores, listo, a
   useEffect(() => {
     if (!uid || !listo || hecho.current === uid) return;
     hecho.current = uid;
-    const enCarrito = new Set((items || []).map((i) => i.customization?.designId).filter(Boolean));
+    const enCarrito = disenosEnCarrito(items);
     cuidarVersionesReemplazadas(uid, { todos, enCarrito }).then((borradas) => {
       if (!borradas.length) return;
       alBorrar?.(borradas);

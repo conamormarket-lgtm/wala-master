@@ -4,6 +4,19 @@ import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { useConfirmar } from '../../componentes/kit/Feedback';
 import { eliminarMiComboConPrendas } from '../../services/misCombos';
+import { retirarDeComunidad } from '../../services/comunidad';
+import { disenosEnCarrito, leerMetaArmado, olvidarArmado } from './comboCrear';
+
+/** Lo que se avisa antes de eliminar un combo (además de lo de siempre). */
+export const notasEliminarCombo = (combo, items) => {
+  const usadas = disenosEnCarrito(items);
+  return [
+    combo?.comunidad === 'publicada' && 'Está publicado en la comunidad: también se retira de la galería.',
+    (items || []).some((i) => i.customization?.miComboId === combo?.id)
+      || (combo?.piezas || []).some((p) => usadas.has(p.designId))
+      ? 'Está en tu carrito: ahí sigue y sus prendas se quedan para poder comprarlo.' : null,
+  ].filter(Boolean);
+};
 
 /**
  * Eliminar "Mi combo" (con su confirmación) desde Crear, Mis creaciones y Tus
@@ -21,18 +34,32 @@ export const useEliminarMiCombo = () => {
   return async (combo, { confirmado = false } = {}) => {
     if (!user) return null;
     const nombre = combo.name || 'Mi combo';
+    const notas = notasEliminarCombo(combo, items);
     if (!confirmado && !(await confirmar({
       titulo: `¿Eliminar el combo "${nombre}" y sus prendas?`,
-      texto: 'Las que uses en otro combo, en un pedido o en el carrito se quedan.',
+      texto: ['Las que uses en otro combo, en un pedido o en el carrito se quedan.', ...notas].join(' '),
       confirmar: 'Eliminar',
       peligro: true,
     }))) return null;
-    const enCarrito = new Set((items || []).map((i) => i.customization?.designId).filter(Boolean));
+    // Publicado: primero se retira (la publicación se busca por el id del
+    // combo; sin él quedaba en la galería sin forma de retirarla).
+    if (combo.comunidad === 'publicada') {
+      const { error: errorRetirar } = await retirarDeComunidad(combo.id);
+      if (errorRetirar) {
+        toast.error(`No pudimos retirarlo de la comunidad, así que no lo eliminamos. ${errorRetirar}`);
+        return null;
+      }
+    }
+    const enCarrito = disenosEnCarrito(items);
     const { error, borradas, sueltas } = await eliminarMiComboConPrendas(user.uid, combo, { enCarrito });
     if (error) {
       toast.error(error);
       return null;
     }
+    // El navegador recordaba este combo: al volver a abrirlo se seguía
+    // guardando en uno que ya no existe (y lo diseñado se perdía).
+    if (combo.comboId && leerMetaArmado(combo.comboId).miComboId === combo.id) olvidarArmado(combo.comboId);
+    queryClient.removeQueries({ queryKey: ['creacion', combo.id] });
     queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'], refetchType: 'all' });
     queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'], refetchType: 'all' });
     toast.success(sueltas.length
