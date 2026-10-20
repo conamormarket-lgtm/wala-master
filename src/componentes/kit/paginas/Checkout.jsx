@@ -86,7 +86,7 @@ const textoInvitacion = ({ nombre, aceptada }) => {
 export function PaginaCheckout({
   items = [], incompletos = [], sesion = false, perfil = {}, direcciones = [], lugares = {}, paises, reglas = 'cuenta',
   inicial = {}, paisSugerido,
-  envio: reglaEnvio = { costo: 15, gratisDesde: 100 }, monedas = {}, onCupon, onPreparar, pago = {},
+  envio: reglaEnvio = { costo: 15, gratisDesde: 200 }, monedas = {}, onCupon, onPreparar, pago = {},
   listo, onListo, onPaso,
   entrega, invitacion, urlCarrito = '/carrito', urlTienda = '/tienda', urlPedidos = '/cuenta/pedidos', urlLogin = '/login', urlRegistro = '/registro', onEntrar,
   estado, vacio,

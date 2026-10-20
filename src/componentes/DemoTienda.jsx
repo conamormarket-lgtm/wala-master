@@ -192,7 +192,7 @@ const GRUPOS_CUENTA = [
 ];
 const PROMO_CUENTA = { titulo: 'Perfil de regalos', texto: 'Completa la encuesta', monedas: 15, url: '/encuesta-suscripcion', icono: 'moneda' };
 
-// La regla de la tienda (constants/envio): S/ 15, gratis en compras de MÁS de S/ 100.
+// La regla de la tienda (constants/envio): S/ 15, gratis en compras de MÁS de S/ 200.
 const META_ENVIO = ENVIO_GRATIS_DESDE;
 const { destacados, nuevos, ofertas } = INICIO.productos;
 

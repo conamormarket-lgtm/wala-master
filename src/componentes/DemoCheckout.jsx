@@ -7,7 +7,7 @@ import { LUGARES, DIRECCIONES } from './DemoCuenta';
 /*
  * El checkout (/checkout) en la Tienda de prueba, con lo que hay en el
  * carrito de la demo. Las reglas son las de la tienda (constants/envio: S/ 15,
- * gratis en compras de más de S/ 100; monedas hasta la mitad). Nada se cobra:
+ * gratis en compras de más de S/ 200; monedas hasta la mitad). Nada se cobra:
  * la tarjeta, WhatsApp y PayPal solo esperan y avisan.
  */
 

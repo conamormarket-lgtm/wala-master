@@ -56,7 +56,7 @@ Revisado el 2026-10-15 contra `src/pages/CartPage.jsx`,
 - **También te puede gustar:** se pide cuando se acerca a la vista
   (`onVerAbajo`, a 300px). Con `tarjeta`, la tarjeta de la tienda.
 - **Envío:** la regla de la tienda, S/ 15 y gratis en compras de **más** de
-  S/ 100 (`estricto`: con S/ 100 justos dice "Pasa de S/ 100.00 y el envío es
+  S/ 200 (`estricto`: con S/ 200 justos dice "Pasa de S/ 200.00 y el envío es
   gratis"). Sin nada elegido, no hay envío.
 
 ## En la tienda (hecho el 2026-10-17)
@@ -107,7 +107,8 @@ Revisado el 2026-10-15 contra `src/pages/CartPage.jsx`,
   marcar todo, "Eliminar elegidos" con su pregunta.
 - Una línea sin talla: el aviso, "Falta elegir talla · Elegir ahora" (a la
   ficha) y el botón bloqueado; al desmarcarla se puede pagar.
-- Envío: S/ 15 con S/ 99 ("Te faltan S/ 1.00"), gratis con más de S/ 100.
+- Envío: S/ 15 con S/ 199 ("Te faltan S/ 1.00"), gratis con más de S/ 200
+  (S/ 100 hasta el 2026-10-20).
 - Pedido pendiente: el aviso con el código, "Esperando la confirmación…" y
   "Cancelar pedido" → vacío.
 - Combo de la tienda (sus prendas con nombre, color y talla), creación ("Con

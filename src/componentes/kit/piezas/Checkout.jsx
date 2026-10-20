@@ -138,7 +138,7 @@ export function ResumenCompra({
   monedas, cupones, abierto = false, onAlternar, pie,
 }) {
   const unidades = items.reduce((n, it) => n + it.cantidad, 0);
-  // El envío es gratis en compras de MÁS de gratisDesde (con S/ 100 justos se cobra).
+  // El envío es gratis en compras de MÁS de gratisDesde (con S/ 200 justos se cobra).
   const avisoEnvio = gratisDesde && envio > 0 && !cupon?.envioGratis;
   const falta = Math.max(0, (gratisDesde || 0) - subtotal);
   const etiqueta = useTexto('Resumen del pedido');

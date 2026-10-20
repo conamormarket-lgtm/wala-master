@@ -33,7 +33,7 @@ const sumar = (items, f) => items.reduce((a, it) => a + f(it), 0);
  *  - onPagar, onSeguirComprando
  *  - pendiente: { codigo } un pedido por WhatsApp esperando la confirmación
  *    del pago (no se puede volver a pagar; "Vaciar" pasa a "Cancelar pedido")
- *  - metaEnvio, costoEnvio (constants/envio: gratis en compras de MÁS de S/ 100)
+ *  - metaEnvio, costoEnvio (constants/envio: gratis en compras de MÁS de S/ 200)
  *  - saldoMonedas · cupones (solo para probar; en la tienda van en el checkout)
  *  - recomendados: productos_wala para "También te puede gustar"; onAgregar(producto)
  *    · tarjeta: otra tarjeta (la de la tienda) · catalogo: { marcas, categorias }
@@ -43,7 +43,7 @@ const sumar = (items, f) => items.reduce((a, it) => a + f(it), 0);
  */
 export function PaginaCarrito({
   items = [], onCantidad, onQuitar, onSeleccionar, onSeleccionarTodo, onQuitarSeleccionados, onVaciar, onPagar, onSeguirComprando,
-  pendiente, metaEnvio = 100, costoEnvio = 15, saldoMonedas = 0, cupones, recomendados = [], onAgregar, vacio,
+  pendiente, metaEnvio = 200, costoEnvio = 15, saldoMonedas = 0, cupones, recomendados = [], onAgregar, vacio,
   tarjeta, catalogo, onVerAbajo, notaPago,
 }) {
   const [confirmar, setConfirmar] = useState(null);

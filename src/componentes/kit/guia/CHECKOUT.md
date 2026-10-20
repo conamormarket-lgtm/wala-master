@@ -119,9 +119,10 @@ la tarjeta, WhatsApp y PayPal esperan y avisan.
 
 ### Las cuentas (las de la tienda)
 
-- **Envío:** S/ 15, gratis en compras de **más** de S/ 100 sobre el subtotal
-  de los productos (con S/ 100 justos se cobra). Sale de `constants/envio`, y
-  `functions/index.js` tiene los mismos números.
+- **Envío:** S/ 15, gratis en compras de **más** de S/ 200 sobre el subtotal
+  de los productos (con S/ 200 justos se cobra). Sale de `constants/envio`, y
+  `functions/index.js` tiene los mismos números (por ahora sigue en 100 hasta
+  que la app de Android 1.3.24 esté publicada: ver `constants/envio.js`).
 - **Monedas:** hasta la mitad del subtotal (redondeada hacia abajo), a S/ 1 la
   moneda.
 - **Cupón:** lo valida el servidor. Uno de envío gratis deja el envío en 0 y
