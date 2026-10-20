@@ -19,9 +19,10 @@ html[data-wala-touch] :where(input, textarea, [contenteditable]:not([contentedit
 }
 
 /* El dedo: un aro blanco con borde violeta (se ve sobre fotos, blanco y modo
-   noche) y un punto al centro. Al moverse deja una estela en punta que se
-   alarga con la velocidad (--estela, 0-1); al soltar, el aro se abre en una
-   onda. Sin bucles ni desenfoques: solo transform y opacity. */
+   noche) y un punto al centro, quieto donde se apoyó el dedo. Al soltar, el
+   aro se abre en una onda; si el dedo empieza a deslizar, solo se apaga (como
+   un toque cancelado en Android). Sin bucles ni desenfoques: transform y
+   opacity. */
 .wala-touch-point {
   position: fixed;
   left: 0;
@@ -81,31 +82,17 @@ html[data-wala-touch] :where(input, textarea, [contenteditable]:not([contentedit
   transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Estela: un cono violeta detrás del dedo (el punto gira hacia donde va). */
-.wala-touch-point::after {
-  content: '';
-  position: absolute;
-  top: 8px;
-  right: 15px;
-  width: 48px;
-  height: 14px;
-  background: linear-gradient(90deg, rgba(var(--wala-touch-luz), 0), rgba(var(--wala-touch-luz), 0.45) 45%, rgba(var(--wala-touch-tint), 0.7));
-  clip-path: polygon(0 38%, 100% 0, 100% 100%, 0 62%);
+/* Deslizar cancela el toque: se apaga en el lugar, más rápido y sin onda. */
+.wala-touch-point[data-cancelled='true'] {
   opacity: 0;
-  transform: scaleX(var(--estela, 0));
-  transform-origin: right center;
-  transition: opacity 120ms ease-out, transform 120ms ease-out;
-}
-
-.wala-touch-point[data-moving='true']::after {
-  opacity: 1;
+  transition: opacity 120ms ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wala-touch-point::after { display: none; }
   .wala-touch-point,
   .wala-touch-point[data-visible],
-  .wala-touch-point[data-released] {
+  .wala-touch-point[data-released],
+  .wala-touch-point[data-cancelled] {
     transition: none;
   }
   .wala-touch-point::before,

@@ -1,6 +1,9 @@
 // Capa táctil para Android y la web móvil, sin editar los componentes del kit.
 const TARGETS = 'button, a[href], summary, [role="button"], [role="link"], [role="tab"], [role="checkbox"], [role="radio"], [data-wala-touch-target]';
 const EXCLUDED = 'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="slider"], canvas, [draggable="true"], [data-componente="LienzoPrenda"], [data-componente="CajaVarias"], [data-wala-touch-feedback="off"]';
+// Lo que puede moverse el dedo y seguir siendo un toque (como el "touch slop"
+// de Android); más que eso ya es deslizar.
+const SLOP = 8;
 let uninstall;
 
 export function installTouchFeedback(view = window) {
@@ -9,7 +12,6 @@ export function installTouchFeedback(view = window) {
   const doc = view.document;
   const root = doc.documentElement;
   const coarsePointer = view.matchMedia('(pointer: coarse)');
-  const reducedMotion = view.matchMedia('(prefers-reduced-motion: reduce)');
   const nativeAndroid = view.Capacitor?.getPlatform?.() === 'android' && Boolean(view.Capacitor?.isNativePlatform?.());
   const timers = new Set();
   const effects = new Set();
@@ -23,8 +25,8 @@ export function installTouchFeedback(view = window) {
     return id;
   };
   const remove = (node) => { node.remove(); effects.delete(node); };
-  const position = (node, x, y, angle = 0) => {
-    node.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%) rotate(${angle}deg)`;
+  const position = (node, x, y) => {
+    node.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
   };
   const setMode = (value) => {
     if (root.getAttribute('data-wala-touch') !== value) root.setAttribute('data-wala-touch', value);
@@ -44,12 +46,7 @@ export function installTouchFeedback(view = window) {
     return node;
   };
   const cancel = () => {
-    if (active) {
-      view.cancelAnimationFrame(active.frame);
-      view.clearTimeout(active.trailTimer);
-      timers.delete(active.trailTimer);
-      remove(active.point);
-    }
+    if (active) remove(active.point);
     active = null;
   };
   const syncMode = () => {
@@ -80,12 +77,7 @@ export function installTouchFeedback(view = window) {
     // Siempre mide lo mismo: representa el dedo, nunca el tamaño de una tarjeta.
     const point = effect('wala-touch-point');
     position(point, touch.clientX, touch.clientY);
-    const press = {
-      point, identifier: touch.identifier,
-      x: touch.clientX, y: touch.clientY,
-      renderedX: touch.clientX, renderedY: touch.clientY,
-      frame: 0, trailTimer: 0, trailsShown: false, lastMotion: 0, angle: 0, lastRender: 0, trail: 0,
-    };
+    const press = { point, identifier: touch.identifier, x: touch.clientX, y: touch.clientY };
     active = press;
     // El roce rápido deja actuar solo al kit; un gesto sostenido muestra el dedo.
     later(() => {
@@ -93,78 +85,28 @@ export function installTouchFeedback(view = window) {
       point.setAttribute('data-visible', 'true');
     }, 70);
   };
-  const hideTrailWhenIdle = (press) => {
-    press.trailTimer = 0;
-    if (active !== press) return;
-    const remaining = 90 - (view.performance.now() - press.lastMotion);
-    if (remaining > 0) {
-      press.trailTimer = later(() => hideTrailWhenIdle(press), remaining);
-      return;
-    }
-    press.point.removeAttribute('data-moving');
-    press.point.style.setProperty('--estela', '0');
-    press.trail = 0;
-    press.trailsShown = false;
-  };
-  const render = (press) => {
-    press.frame = 0;
-    if (active !== press) return;
-    const dx = press.x - press.renderedX;
-    const dy = press.y - press.renderedY;
-    const distance = Math.hypot(dx, dy);
-    if (distance === 0) return;
-    const now = view.performance.now();
-    if (press.lastMotion && distance >= 1) {
-      const direction = Math.atan2(dy, dx) * 180 / Math.PI;
-      const turn = (((direction - press.angle) % 360 + 540) % 360) - 180;
-      press.angle += turn;
-    }
-    // Una sola capa para círculo y estela; no recalcula el layout al moverla.
-    position(press.point, press.x, press.y, press.angle);
-    press.renderedX = press.x;
-    press.renderedY = press.y;
-    // La estela crece con la velocidad (1,2 px/ms = larga del todo) y se suaviza
-    // entre frames para que no tiemble. Solo se escribe si cambia de verdad.
-    const elapsed = press.lastRender ? now - press.lastRender : 16;
-    press.lastRender = now;
-    const trail = press.trail * 0.6 + Math.min(1, distance / Math.max(elapsed, 8) / 1.2) * 0.4;
-    if (Math.abs(trail - press.trail) >= 0.04) press.point.style.setProperty('--estela', trail.toFixed(2));
-    press.trail = trail;
-    if (!press.lastMotion || now - press.lastMotion >= 90 || reducedMotion.matches || !press.point.hasAttribute('data-visible')) return;
-    if (!press.trailsShown) press.point.setAttribute('data-moving', 'true');
-    press.trailsShown = true;
-    // Al detener el dedo se borra la estela, aunque siga apoyado.
-    // Un solo temporizador activo, sin crearlo de nuevo en cada frame.
-    if (!press.trailTimer) press.trailTimer = later(() => hideTrailWhenIdle(press), 90);
+  // Como en Android: el toque se marca donde se apoya el dedo y, si empieza a
+  // deslizar (scroll, carrusel, arrastre), se apaga ahí mismo. Antes el aro
+  // seguía al dedo con JS: en las páginas pesadas iba detrás del scroll, se
+  // quedaba atrás y saltaba (y Chrome no avisa del movimiento hasta ~15 px).
+  const finish = (press, state) => {
+    const { point } = press;
+    if (active === press) active = null;
+    if (!point.hasAttribute('data-visible')) { remove(point); return; }
+    point.removeAttribute('data-visible');
+    point.setAttribute(state, 'true');
+    later(() => remove(point), 260);
   };
   const moved = (event) => {
     if (!active) return;
-    if (event.touches.length !== 1) { cancel(); return; }
-    const touch = event.touches[0];
-    if (touch.identifier !== active.identifier) { cancel(); return; }
-    if (Math.hypot(touch.clientX - active.x, touch.clientY - active.y) >= 3) active.lastMotion = view.performance.now();
-    active.x = touch.clientX;
-    active.y = touch.clientY;
-    const press = active;
-    if (!press.frame) press.frame = view.requestAnimationFrame(() => render(press));
+    const touch = Array.from(event.touches).find((candidate) => candidate.identifier === active.identifier);
+    if (event.touches.length !== 1 || !touch) { cancel(); return; }
+    if (Math.hypot(touch.clientX - active.x, touch.clientY - active.y) >= SLOP) finish(active, 'data-cancelled');
   };
   const up = (event) => {
     if (!active) return;
-    const touch = Array.from(event.changedTouches).find((candidate) => candidate.identifier === active.identifier);
-    if (!touch) return;
-    const press = active;
-    view.cancelAnimationFrame(press.frame);
-    press.x = touch.clientX;
-    press.y = touch.clientY;
-    render(press);
-    const { point } = press;
-    point.removeAttribute('data-moving');
-    if (point.hasAttribute('data-visible')) {
-      point.removeAttribute('data-visible');
-      point.setAttribute('data-released', 'true');
-      later(() => remove(point), 260);
-    } else remove(point);
-    active = null;
+    if (!Array.from(event.changedTouches).some((candidate) => candidate.identifier === active.identifier)) return;
+    finish(active, 'data-released');
   };
   const contextMenu = (event) => {
     if (event.pointerType === 'mouse' || (!nativeAndroid && !lastInputTouch)) return;
