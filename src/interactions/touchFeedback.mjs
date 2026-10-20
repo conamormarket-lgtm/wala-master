@@ -23,6 +23,12 @@ export function installTouchFeedback(view = window) {
     return id;
   };
   const remove = (node) => { node.remove(); effects.delete(node); };
+  const position = (node, x, y, angle = 0) => {
+    node.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%) rotate(${angle}deg)`;
+  };
+  const setMode = (value) => {
+    if (root.getAttribute('data-wala-touch') !== value) root.setAttribute('data-wala-touch', value);
+  };
   const targetFor = (node) => {
     if (!(node instanceof view.Element) || node.closest(EXCLUDED)) return null;
     const target = node.closest(TARGETS) || node.closest('img');
@@ -40,14 +46,15 @@ export function installTouchFeedback(view = window) {
   const cancel = () => {
     if (active) {
       view.cancelAnimationFrame(active.frame);
+      view.clearTimeout(active.trailTimer);
+      timers.delete(active.trailTimer);
       remove(active.point);
-      active.trails.forEach(remove);
     }
     active = null;
   };
   const syncMode = () => {
     if (nativeAndroid || coarsePointer.matches) {
-      root.setAttribute('data-wala-touch', nativeAndroid ? 'android' : 'touch');
+      setMode(nativeAndroid ? 'android' : 'touch');
     } else {
       cancel();
       root.removeAttribute('data-wala-touch');
@@ -65,25 +72,19 @@ export function installTouchFeedback(view = window) {
     cancel();
     lastInputTouch = true;
     // También funciona al activar la emulación móvil sin recargar la página.
-    root.setAttribute('data-wala-touch', nativeAndroid ? 'android' : 'touch');
+    setMode(nativeAndroid ? 'android' : 'touch');
     if (event.touches.length !== 1) return;
     const touch = event.touches[0];
     const target = event.target;
     if (!(target instanceof view.Element) || target.closest(EXCLUDED) || target.closest('[disabled], [aria-disabled="true"], [aria-busy="true"], [inert]')) return;
     // Siempre mide lo mismo: representa el dedo, nunca el tamaño de una tarjeta.
     const point = effect('wala-touch-point');
-    point.style.left = `${touch.clientX}px`;
-    point.style.top = `${touch.clientY}px`;
-    const trails = [0, 1].map((index) => {
-      const trail = effect('wala-touch-trail');
-      trail.setAttribute('data-tail', String(index));
-      return trail;
-    });
+    position(point, touch.clientX, touch.clientY);
     const press = {
-      point, trails, identifier: touch.identifier,
+      point, identifier: touch.identifier,
       x: touch.clientX, y: touch.clientY,
       renderedX: touch.clientX, renderedY: touch.clientY,
-      frame: 0, trailTimer: 0,
+      frame: 0, trailTimer: 0, trailsShown: false, lastMotion: 0, angle: 0,
     };
     active = press;
     // El roce rápido deja actuar solo al kit; un gesto sostenido muestra el dedo.
@@ -92,33 +93,47 @@ export function installTouchFeedback(view = window) {
       point.setAttribute('data-visible', 'true');
     }, 70);
   };
+  const hideTrailWhenIdle = (press) => {
+    press.trailTimer = 0;
+    if (active !== press) return;
+    const remaining = 90 - (view.performance.now() - press.lastMotion);
+    if (remaining > 0) {
+      press.trailTimer = later(() => hideTrailWhenIdle(press), remaining);
+      return;
+    }
+    press.point.removeAttribute('data-moving');
+    press.trailsShown = false;
+  };
   const render = (press) => {
     press.frame = 0;
     if (active !== press) return;
     const dx = press.x - press.renderedX;
     const dy = press.y - press.renderedY;
     const distance = Math.hypot(dx, dy);
-    press.point.style.left = `${press.x}px`;
-    press.point.style.top = `${press.y}px`;
+    if (distance === 0) return;
+    const now = view.performance.now();
+    if (press.lastMotion && distance >= 1) {
+      const direction = Math.atan2(dy, dx) * 180 / Math.PI;
+      const turn = (((direction - press.angle) % 360 + 540) % 360) - 180;
+      press.angle += turn;
+    }
+    // Una sola capa para círculo y estela; no recalcula el layout al moverla.
+    position(press.point, press.x, press.y, press.angle);
     press.renderedX = press.x;
     press.renderedY = press.y;
-    if (distance < 3 || reducedMotion.matches || !press.point.hasAttribute('data-visible')) return;
-    press.trails.forEach((trail, index) => {
-      const offset = index === 0 ? 18 : 28;
-      trail.style.left = `${press.x - (dx / distance) * offset}px`;
-      trail.style.top = `${press.y - (dy / distance) * offset}px`;
-      trail.setAttribute('data-visible', 'true');
-    });
-    view.clearTimeout(press.trailTimer);
-    timers.delete(press.trailTimer);
+    if (!press.lastMotion || now - press.lastMotion >= 90 || reducedMotion.matches || !press.point.hasAttribute('data-visible')) return;
+    if (!press.trailsShown) press.point.setAttribute('data-moving', 'true');
+    press.trailsShown = true;
     // Al detener el dedo se borra la estela, aunque siga apoyado.
-    press.trailTimer = later(() => press.trails.forEach((trail) => trail.removeAttribute('data-visible')), 90);
+    // Un solo temporizador activo, sin crearlo de nuevo en cada frame.
+    if (!press.trailTimer) press.trailTimer = later(() => hideTrailWhenIdle(press), 90);
   };
   const moved = (event) => {
     if (!active) return;
     if (event.touches.length !== 1) { cancel(); return; }
-    const touch = Array.from(event.touches).find((candidate) => candidate.identifier === active.identifier);
-    if (!touch) { cancel(); return; }
+    const touch = event.touches[0];
+    if (touch.identifier !== active.identifier) { cancel(); return; }
+    if (Math.hypot(touch.clientX - active.x, touch.clientY - active.y) >= 3) active.lastMotion = view.performance.now();
     active.x = touch.clientX;
     active.y = touch.clientY;
     const press = active;
@@ -133,16 +148,13 @@ export function installTouchFeedback(view = window) {
     press.x = touch.clientX;
     press.y = touch.clientY;
     render(press);
-    const { point, trails } = press;
-    trails.forEach((trail) => trail.removeAttribute('data-visible'));
+    const { point } = press;
+    point.removeAttribute('data-moving');
     if (point.hasAttribute('data-visible')) {
       point.removeAttribute('data-visible');
       point.setAttribute('data-released', 'true');
-      later(() => { remove(point); trails.forEach(remove); }, 180);
-    } else {
-      remove(point);
-      trails.forEach(remove);
-    }
+      later(() => remove(point), 180);
+    } else remove(point);
     active = null;
   };
   const contextMenu = (event) => {
