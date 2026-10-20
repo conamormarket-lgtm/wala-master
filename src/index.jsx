@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client';
 import './styles/variables.css';
 import './theme/tokens.css';
 import './styles/globals.css';
+import './styles/androidTouchFeedback.css';
+import { installAndroidTouchFeedback } from './interactions/androidTouchFeedback.mjs';
 import App, { queryClient } from './App';
 import { loadStorefrontPage } from './pages/Tienda/services/startup.js';
 
@@ -68,6 +70,9 @@ if (['/', '/home', '/tienda'].includes(initialPage)) {
     staleTime: 10 * 60 * 1000,
   });
 }
+
+const removeAndroidTouchFeedback = installAndroidTouchFeedback();
+if (import.meta.hot) import.meta.hot.dispose(removeAndroidTouchFeedback);
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

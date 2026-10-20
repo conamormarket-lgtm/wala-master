@@ -1,6 +1,7 @@
 {
   "short_name": "Walá",
-  "name": "Walá · Prendas personalizadas en Perú",
+  "name": "Walá: compras a tu estilo",
+  "description": "Ropa personalizada para expresar quién eres. Descubre, elige y dale tu toque.",
   "icons": [
     {
       "src": "/icons/icon-48.webp",

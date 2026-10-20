@@ -3,6 +3,7 @@ import { variantesDeImagen } from '../services/products';
 import { useAuth } from './AuthContext';
 import { getWishlistByUserId, addWishlistItem, removeWishlistItem, createWishlist, syncWishlistUserCode } from '../services/wishlist';
 import { recordMissionAction } from '../services/loyalty';
+import { captureAndroidTouchConfirmation } from '../interactions/androidTouchFeedback.mjs';
 
 const WishlistContext = createContext();
 
@@ -117,6 +118,7 @@ export const WishlistProvider = ({ children }) => {
     }
 
     const alreadyFavorite = isFavorite(product.id);
+    const confirmTouch = captureAndroidTouchConfirmation();
 
     if (alreadyFavorite) {
       // Remover (Optimistic UI update)
@@ -169,6 +171,7 @@ export const WishlistProvider = ({ children }) => {
       recordMissionAction('add_wishlist').catch(() => {});
     }
 
+    if (!alreadyFavorite) confirmTouch();
     return { success: true };
   };
 
