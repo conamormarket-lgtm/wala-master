@@ -187,13 +187,16 @@ export const saveDesign = async (userId, payload) => {
 };
 
 /** URLs de todo lo que guarda un diseño: imágenes del cliente, vistas previas y archivos de impresión. */
-const urlsDeDiseno = (d) => {
+export const urlsDeDiseno = (d) => {
   const urls = new Set();
   const agregar = (u) => { if (typeof u === 'string' && /^https?:/i.test(u)) urls.add(u); };
   agregar(d?.previewUrl);
   agregar(d?.imagenConjunta);
   (d?.vistasPrevias || []).forEach((p) => agregar(p?.url));
   (d?.archivosImpresion || []).forEach((a) => agregar(a?.url));
+  // "Mi combo" guarda la foto de cada prenda: también está en uso.
+  (d?.piezas || []).forEach((p) => { agregar(p?.frente); agregar(p?.espalda); });
+  (d?.previas || []).forEach(agregar);
   const capas = [
     ...(Array.isArray(d?.layers) ? d.layers : []),
     ...Object.values(d?.layersByView || {}).flat(),

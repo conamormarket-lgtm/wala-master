@@ -1378,7 +1378,8 @@ function normalizeProductPayload(data) {
     images: images.length ? images : [],
     imagesByColor: Object.keys(imagesByColor).length ? imagesByColor : {},
     description: (data.description ?? '').toString(),
-    inStock: typeof data.inStock === 'number' ? data.inStock : parseInt(data.inStock, 10) || 0,
+    // null = sin límite (una prenda de Crear sin stock cargado): borra el campo.
+    inStock: data.inStock === null ? null : typeof data.inStock === 'number' ? data.inStock : parseInt(data.inStock, 10) || 0,
     customizable: Boolean(data.customizable),
     // Apartado Crear (utils/prendaBase.js). Solo viajan si el llamador los
     // trae: un updateProduct parcial no debe apagar la personalización.

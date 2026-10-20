@@ -188,7 +188,7 @@ const AdminCombosCrear = () => {
                 onClick={() => crearSugeridos.mutate()}
               >
                 {crearSugeridos.isPending && <Loader2 size={15} className={styles.girando} aria-hidden="true" />}
-                Crear {sugeridos.filter((c) => c.elegido).length} combos
+                {(() => { const n = sugeridos.filter((c) => c.elegido).length; return `Crear ${n} ${n === 1 ? 'combo' : 'combos'}`; })()}
               </button>
             )}
             <button type="button" className={styles.texto} onClick={() => setSugeridos(null)}>Cancelar</button>

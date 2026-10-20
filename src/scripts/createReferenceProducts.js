@@ -33,7 +33,7 @@ const referenceProducts = [
       colors: ['Negro', 'Blanco', 'Gris', 'Azul Marino']
     },
     inStock: 50,
-    customizable: true,
+    customizable: false,
     featured: false
   },
   {
@@ -50,7 +50,7 @@ const referenceProducts = [
       colors: ['Blanco', 'Negro', 'Azul', 'Rojo']
     },
     inStock: 50,
-    customizable: true,
+    customizable: false,
     featured: false
   },
   {
@@ -67,7 +67,7 @@ const referenceProducts = [
       colors: ['Negro', 'Gris', 'Azul Marino']
     },
     inStock: 50,
-    customizable: true,
+    customizable: false,
     featured: false
   },
   {
@@ -84,7 +84,7 @@ const referenceProducts = [
       colors: ['Negro', 'Blanco', 'Gris', 'Beige']
     },
     inStock: 50,
-    customizable: true,
+    customizable: false,
     featured: false
   },
   {
@@ -101,7 +101,7 @@ const referenceProducts = [
       colors: ['Plata', 'Oro', 'Negro']
     },
     inStock: 50,
-    customizable: true,
+    customizable: false,
     featured: false
   }
 ];

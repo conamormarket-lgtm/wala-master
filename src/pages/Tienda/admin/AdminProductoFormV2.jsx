@@ -156,7 +156,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
     comboItems: [],
     comboPreviewImage: '',
     featured: false,
-    inStock: 0,
+    inStock: esModoPrenda ? '' : 0,
     // WhatsApp por producto. Vacio = hereda el de su marca (/admin/marcas) y,
     // si la marca no tiene, el global de /admin/whatsapp.
     whatsappEnabled: true,
@@ -323,7 +323,8 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         equipo: productData.equipo || '',
         edadMinima: productData.edadMinima ?? '',
         featured: productData.featured || false,
-        inStock: productData.inStock || 0,
+        // Una prenda de Crear sin stock no tiene límite: el campo queda vacío.
+        inStock: productData.esPrendaBase === true ? (productData.inStock ?? '') : (productData.inStock || 0),
         // Sin esto, editar un producto con numero propio lo BORRABA: el form
         // no los leia ni los reenviaba, y el payload los machacaba con ''.
         whatsappEnabled: productData.whatsappEnabled !== false,
@@ -385,7 +386,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         comboItems: [],
         comboPreviewImage: '',
         featured: false,
-        inStock: 0,
+        inStock: esModoPrenda ? '' : 0,
       };
       setInitialFormState(JSON.stringify(newForm));
       return newForm;
@@ -851,7 +852,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         description: form.description,
         price: Number(form.price) || 0,
         salePrice: Number(form.salePrice) || 0,
-        inStock: Number(form.inStock) || 0,
+        inStock: esModoPrenda && form.inStock === '' ? null : Number(form.inStock) || 0,
         sku: form.sku,
         brandId: form.brandId,
         fulfillmentType: form.fulfillmentType || undefined,
@@ -1091,7 +1092,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
                   className={styles.input}
                   value={form.inStock}
                   onChange={e => setForm(f => ({ ...f, inStock: e.target.value }))}
-                  placeholder="0"
+                  placeholder={esModoPrenda ? 'Sin límite' : '0'}
                 />
               </div>
             </div>

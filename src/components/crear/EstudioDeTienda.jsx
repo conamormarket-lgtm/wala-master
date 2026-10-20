@@ -1,4 +1,5 @@
 import { firmaDiseno, firmaBorrador, capasParaGuardar, archivosVigentes } from '../../pages/Crear/estadoEstudio';
+import { capasEnOtraPrenda } from '../../pages/Crear/zonasEquivalentes';
 import { generarArchivosCreacion } from '../../pages/Crear/generarArchivosCreacion';
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -12,7 +13,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getPrendaBase } from '../../services/prendasBase';
-import { getDesignById, saveDesign, guardarTallaCreacion, renombrarCreacion } from '../../services/designs';
+import { getDesignById, saveDesign, guardarTallaCreacion, renombrarCreacion, urlsDeDiseno } from '../../services/designs';
+import { limpiarArchivosSobrantes } from '../../services/limpiarArchivos';
 import { obtenerDisenoComunidad, registrarUsoComunidad } from '../../services/comunidad';
 import {
   prepararImagenCliente, subirImagenCliente,
@@ -131,7 +133,7 @@ const EstudioDeTienda = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, loading: authLoading, isAdmin } = useAuth();
-  const { addToCart } = useCart();
+  const { addToCart, items: itemsCarrito } = useCart();
   const toast = useGlobalToast();
   const designIdParam = searchParams.get('designId');
   // Diseño de la comunidad de punto de partida (/crear/:id?plantilla=X): se
@@ -163,6 +165,14 @@ const EstudioDeTienda = () => {
       return data ? { id: mioInicial, ...data } : null;
     },
   });
+  // ¿Esta pieza ya lleva el diseño de &copiar=? ("Editar" una compartida) o
+  // está vacía ("Copiar de la prenda 1")?
+  const piezaLlevaCopiar = () => {
+    if (!copiarParam) return false;
+    const deCuenta = miComboCuenta?.tipo === 'comboCrear' && miComboCuenta.comboId === comboParam ? miComboCuenta.piezas : null;
+    const armado = deCuenta || leerArmado(comboParam, Math.max(comboActual?.piezas?.length || 0, piezaParam + 1));
+    return armado[piezaParam]?.designId === copiarParam;
+  };
   // Las otras piezas del combo que son esta misma prenda (en una pareja de
   // poleras, la otra polera), con el diseño que llevan (o null).
   const otrasMismaPrenda = (() => {
@@ -816,16 +826,18 @@ const EstudioDeTienda = () => {
         const { data: origen } = await getDesignById(copiarParam);
         if (cancelado) return undefined;
         if (origen && origen.userId === user.uid && origen.tipo === 'crear') {
-          // Solo las zonas que existen en esta prenda (otra prenda tiene las suyas).
+          // Cada zona a la suya en esta prenda: la misma o la equivalente (de la
+          // casaca al polo, pecho con pecho). Antes solo las de igual nombre, y
+          // entre prendas distintas casi nunca encajaba.
           const colorOrigen = cfg.colores.find((c) => c.id === origen.color?.id || c.nombre === origen.color?.nombre);
           const vistasDestino = vistasDelColor(cfg.vistas, colorOrigen);
-          const ids = new Set(listarZonas(vistasDestino).map((z) => z.id));
-          const capas = Object.fromEntries(Object.entries(origen.layersByView || {})
-            .filter(([zId, c]) => ids.has(zId) && Array.isArray(c) && c.length));
+          const capas = capasEnOtraPrenda(origen.layersByView, listarZonas(vistasDestino));
           const primeraZona = Object.keys(capas)[0];
           if (primeraZona) {
             const vistaDeZona = vistasDestino.find((v) => v.zonas.some((z) => z.id === primeraZona));
-            return aplicar({ capasPorZona: capas, vistaId: vistaDeZona?.id, zonaId: primeraZona, colorId: colorOrigen?.id, copia: true });
+            // "Editar" en una prenda que ya lleva ese diseño: solo se guarda si
+            // se cambia algo. "Copiar de la prenda 1" en una vacía: se guarda.
+            return aplicar({ capasPorZona: capas, vistaId: vistaDeZona?.id, zonaId: primeraZona, colorId: colorOrigen?.id, copia: piezaLlevaCopiar() });
           }
         }
         toast.info('Ese diseño no encaja en esta prenda. Puedes empezar desde cero.');
@@ -2758,6 +2770,9 @@ const EstudioDeTienda = () => {
 
   const generarYGuardar = async (nombreCreacion, tallaElegida) => {
     const designIdActual = designIdRef.current;
+    // Lo de antes de esta creación: al terminar, sus archivos que ya no use
+    // se borran (cada guardado sube todo de nuevo).
+    const anterior = designIdActual ? (await getDesignById(designIdActual)).data : null;
     const capas = capasParaGuardar(capasRef.current);
     const archivos = await generarArchivos(capas);
     // Si el combo aún no había cargado, su nombre se pide ahora (va en la creación).
@@ -2783,6 +2798,15 @@ const EstudioDeTienda = () => {
     const { id: guardadoId, error: err } = await saveDesign(user.uid, creacion);
     if (err) throw new Error(err);
     const idFinal = guardadoId || designIdActual;
+    // Lo que en un pedido no se toca (el pedido apunta a esas imágenes); lo del
+    // carrito tampoco. Va en segundo plano: no demora el guardado.
+    if (anterior && anterior.enPedido !== true && anterior.userId === user.uid) {
+      const nuevas = urlsDeDiseno(creacion);
+      const sobrantes = [...urlsDeDiseno(anterior)].filter((u) => !nuevas.has(u));
+      if (sobrantes.length) {
+        limpiarArchivosSobrantes(user.uid, sobrantes, { enUso: JSON.stringify(itemsCarrito || []) }).catch(() => {});
+      }
+    }
     if (!designIdActual && basadoEnRef.current) registrarUsoComunidad(basadoEnRef.current);
     designIdRef.current = idFinal;
     esBorradorRef.current = false;
@@ -2938,8 +2962,10 @@ const EstudioDeTienda = () => {
     setProcesando('Preparando tu creación…');
     try {
       // "Editar" en una prenda compartida y sin cambiar nada: la pieza sigue
-      // con el mismo diseño, no se hace una copia.
-      if (copiarParam && !designIdRef.current && firmaBorradorRef.current === firmaBorrador(capasRef.current, color.id, talla)) {
+      // con el mismo diseño, no se hace una copia. ("Copiar de la prenda 1"
+      // en una vacía sí se guarda aunque no se toque.)
+      if (copiarParam && !designIdRef.current && piezaLlevaCopiar()
+        && firmaBorradorRef.current === firmaBorrador(capasRef.current, color.id, talla)) {
         navigate(urlCombo());
         return;
       }

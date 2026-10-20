@@ -10,6 +10,7 @@ import { precioBase, fondoColorGuardado } from '../../utils/prendaBase';
 import { useEliminarCreacion } from '../../pages/Crear/useEliminarCreacion';
 import { useEliminarMiCombo, notasEliminarCombo } from '../../pages/Crear/useEliminarMiCombo';
 import { useCart } from '../../contexts/CartContext';
+import useLoViejo from '../../hooks/useLoViejo';
 import { useLlevarEnCombo } from '../../pages/Crear/LlevarEnCombo';
 import { consultaProducto } from '../regalar/regaloDeLista';
 import { creacionDesdeDiseno } from '../../componentes/kit/adaptadores';
@@ -78,6 +79,9 @@ export default function useTarjetasCreaciones({ uid, designs, borradores, claveC
   const { eliminar: eliminarDiseno, notasDe } = useEliminarCreacion();
   const eliminarCombo = useEliminarMiCombo();
   const { items } = useCart();
+  // El editor de antes ya no está (2026-10-20): sus diseños se ven, pero no se
+  // editan; llevan al producto. Con personalizableViejo, como antes.
+  const personalizableViejo = useLoViejo('personalizable');
   const buscar = (id) => designs.find((x) => x.id === id) || borradores.find((x) => x.id === id);
 
   /* ── Las tarjetas ── */
@@ -121,6 +125,13 @@ export default function useTarjetasCreaciones({ uid, designs, borradores, claveC
       foto: legado ? (cargando ? null : React.createElement(FotoLegado, { design: d, producto, apagado: sinProducto })) : undefined,
       // Un diseño de antes cuyo producto ya no existe no lleva a ningún lado (como antes).
       ...(!deCrear && !borrador && sinProducto ? { url: undefined } : {}),
+      ...(!deCrear && !borrador && !personalizableViejo ? {
+        url: sinProducto ? undefined : `/producto/${d.productId}`,
+        urlEditar: undefined,
+        urlComprar: undefined,
+        soloEditar: false,
+        aviso: 'Hecho con el editor de antes: ya no se edita. Para uno nuevo, entra a Crear.',
+      } : {}),
       combos: sinProducto ? [] : combosPara(d),
       estadoEditar,
       eliminar: notas.length ? { notas } : undefined,

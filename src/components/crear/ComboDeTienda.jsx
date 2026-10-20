@@ -6,9 +6,10 @@ import { renombrarCreacion } from '../../services/designs';
 import { publicarEnComunidad, retirarDeComunidad } from '../../services/comunidad';
 import { creacionLista } from '../../pages/Crear/creacionCarrito';
 import { piezaVacia } from '../../pages/Crear/fotosCombo';
-import { fondoColorGuardado } from '../../utils/prendaBase';
+import { fondoColorGuardado, listarZonas } from '../../utils/prendaBase';
 import useComboCrear from './useComboCrear';
 import { PaginaCombo } from '../../componentes/kit/paginas/Combo';
+import { capasEnOtraPrenda } from '../../pages/Crear/zonasEquivalentes';
 
 /*
  * Un combo de Crear (/combo/:id) con el kit (paso 6, CREAR.md P11):
@@ -59,7 +60,11 @@ export default function ComboDeTienda() {
   };
 
   const piezasKit = piezas.map((p, k) => {
-    const otra = piezas.find((o) => o.i !== p.i && o.creacion && creacionLista(o.creacion));
+    // De qué otra prenda se puede copiar: una con diseño que encaje en esta
+    // (en un conjunto, pecho con pecho; del polo al jogger no hay nada).
+    const zonasDestino = listarZonas(p.prenda?.prendaBase?.vistas || []);
+    const otra = piezas.find((o) => o.i !== p.i && o.creacion && creacionLista(o.creacion)
+      && Object.keys(capasEnOtraPrenda(o.creacion.layersByView, zonasDestino)).length > 0);
     const vaciasIguales = piezas.filter((o) => o.i !== p.i && !o.designId && piezasCombo[o.i].prendaId === piezasCombo[p.i].prendaId).length;
     // Si otra prenda lleva este mismo diseño (combos de antes), o es una
     // creación suelta del cliente (elegida antes de que se copiaran), se edita

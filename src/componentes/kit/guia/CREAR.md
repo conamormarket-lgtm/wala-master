@@ -978,15 +978,9 @@ suelta compartida (vuelve a la lista). **No probado:** un trío o un conjunto,
 dos pestañas a la vez y un pedido real pagado (se marcó `enPedido` a mano,
 como lo hace el servidor).
 
-**Lo que queda:**
-
-- El armado del navegador sigue siendo uno por combo de la tienda (dos "Mi
-  combo" del mismo combo en dos pestañas pueden pisarse lo no guardado);
-  ahora lo que decide el estudio sale de la cuenta.
-- Al guardar de nuevo una creación se suben archivos nuevos y los viejos
-  quedan en Storage.
-- "Quitar" una prenda del combo la deja en "Versiones anteriores" (7 días,
-  recuperable), como antes.
+**Lo que quedaba** (resuelto en el cierre, más abajo): el armado del
+navegador, los archivos viejos en Storage. "Quitar" una prenda del combo la
+deja en "Versiones anteriores" (7 días, recuperable), como antes.
 
 **Paso 3a (hecho el 2026-10-20): las prendas de Crear tienen su sección en el admin.**
 
@@ -1049,6 +1043,52 @@ sin las tarjetas, y el botón (los tres pasan a normales; solo la esclava
 recibe la nota, que se ve en su página junto al botón de WhatsApp). **No
 probado:** producción (cuántos hay y sus descripciones) y las creaciones
 viejas del editor en Mis creaciones (su "Editar" ahora lleva al producto).
+
+**Cierre de creaciones y productos (2026-10-20).**
+
+- **Dos "Mi combo" del mismo combo a la vez** (dos pestañas): probado y cada
+  uno queda con lo suyo. Cada pestaña trabaja con su combo de la cuenta
+  (`?mio=` en la dirección, y desde el paso 2 el estudio decide con él); lo
+  del navegador solo sirve para el combo que se está empezando. No hizo falta
+  cambiarlo.
+- **Archivos viejos:** al volver a guardar una creación, los archivos de la
+  versión anterior que ya no usa se borran de Storage
+  (`services/limpiarArchivos.js`, en segundo plano). Nunca los de una
+  creación en un pedido, los que usa otra creación (las copias de un combo
+  comparten imágenes; también cuenta la foto de cada prenda de "Mi combo") ni
+  los que guarda el carrito.
+- **Copiar entre prendas distintas** (conjunto): "Copiar de la prenda 1"
+  pasa cada zona a su equivalente (`pages/Crear/zonasEquivalentes.js`:
+  pecho con pecho, manga con manga, espalda con espalda; la casaca tiene
+  "frente-pecho-derecho" y el polo "frente-pecho"). Antes solo copiaba las
+  zonas de igual nombre y entre prendas distintas casi nunca encajaba. Solo
+  se ofrece si el diseño encaja (del polo al jogger no hay nada en común).
+  En una prenda vacía, "Listo" guarda la copia aunque no se toque (el arreglo
+  del paso 1 la saltaba).
+- **Stock de las prendas de Crear:** vacío es "sin límite". La ficha guardaba
+  siempre un número (0 si estaba vacío) y editar una prenda la dejaba agotada
+  en Crear. Los productos de la tienda no cambian.
+- **Creaciones del editor de antes** (Mis creaciones): se ven con su diseño,
+  sin "Editar", llevan a la página del producto y avisan que ya no se editan
+  (con `personalizableViejo`, como antes).
+- Exportar productos: la columna "Personalizable" es ahora "De Crear"
+  (prenda o combo). Los productos de referencia del admin ya no son
+  personalizables. `models/producto_wala_schema.json` documenta lo de Crear.
+  "Crear 1 combo" (no "combos") en los sugeridos.
+
+**Probado de punta a punta con los emuladores:** pareja, **trío** (tres
+copias con "Ponerlo también en la prenda 2 y la prenda 3", "Editar" una sin
+tocar las otras, una talla por prenda, carrito, eliminar con el carrito:
+archivado) y **conjunto** (casaca, polo y jogger: copiar de la casaca al polo
+al pecho, el jogger sin "Copiar de", una talla para todo, carrito); el pago
+(sin pagar) con los dos combos y el pedido que se arma: una línea por prenda
+con su talla, su diseño y el precio repartido. **No probado:** un pago real,
+un Android y un iPhone de verdad y el inglés.
+
+**Para más adelante** (cuando lleve unas semanas estable): retirar los
+interruptores `crearViejo` y `personalizableViejo` y borrar lo que anota
+ELIMINAR.md (el editor viejo, Yoryo y sus copias, las páginas viejas de
+Crear).
 
 **Casos que tiene que cubrir el flujo** (para probar en cada cambio): una
 prenda nueva, editada, guardada, comprada, eliminada (antes y después de

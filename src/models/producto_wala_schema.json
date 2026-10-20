@@ -50,7 +50,8 @@
     }
   ],
   
-  "customizable": true,
+  "_comentario_personalizable": "Desde el 2026-10-20 los productos de la tienda no se personalizan (eso es Crear): customizable va en false y customizationViews, thumbnailWithDesignUrl y YoryoPersonalizado son de antes (el editor viejo /editor/:id y Yoryo, con el interruptor personalizableViejo). Admin -> Productos tiene un boton para pasar los que queden a normales.",
+  "customizable": false,
   "thumbnailWithDesignUrl": "https://firebasestorage.googleapis.com/.../thumbnail.png",
   
   "customizationViews": [
@@ -132,5 +133,21 @@
     "spacing": 20
   },
   "comboItems": [],
-  "comboItemCustomization": []
+  "comboItemCustomization": [],
+
+  "_comentario_crear": "Prendas y combos de Crear (utils/prendaBase.js, services/combosCrear.js). Una prenda de Crear lleva esPrendaBase: true y prendaBase (sus vistas, zonas y colores); no sale en la tienda ni en el buscador y sin inStock no tiene limite. Un combo de Crear (pareja, trio, conjunto) lleva esComboCrear: true, visible: false y comboCrear con sus piezas. Se editan en Admin -> Prendas de Crear y Combos de Crear.",
+  "esPrendaBase": false,
+  "prendaBase": {
+    "vistas": [
+      {
+        "id": "frente",
+        "nombre": "Frente",
+        "imagen": "https://...",
+        "zonas": [{ "id": "frente-pecho", "nombre": "Pecho", "x": 0.35, "y": 0.3, "w": 0.3, "proporcion": 1.3, "angulo": 0 }]
+      }
+    ],
+    "colores": { "variant_1684321000_abc12": { "fotos": { "frente": "https://..." } } }
+  },
+  "esComboCrear": false,
+  "comboCrear": { "publicado": true, "piezas": [{ "prendaId": "id_de_la_prenda" }, { "prendaId": "id_de_la_prenda" }] }
 }
