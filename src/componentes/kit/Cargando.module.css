@@ -115,14 +115,23 @@
   min-height: 240px;
 }
 
-/* La etiqueta del logo (splash-etiqueta.webp como máscara) con el degradado. */
+/* La etiqueta del logo (splash-etiqueta.webp como máscara) con el degradado
+   y la W blanca encima (splash-etiqueta-w.webp), como el logo de la cabecera:
+   calada, de noche se veía el fondo oscuro por la W. Son dos capas de
+   máscara (etiqueta + W) y dos de fondo (la W blanca sobre el degradado). */
 .mini {
   display: inline-block;
   flex-shrink: 0;
   aspect-ratio: 246 / 330;
-  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #5b21b6 100%);
-  -webkit-mask: url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat;
-  mask: url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat;
+  background:
+    url('/assets/marca/splash-etiqueta-w.webp') center / contain no-repeat,
+    linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #5b21b6 100%);
+  -webkit-mask:
+    url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat,
+    url('/assets/marca/splash-etiqueta-w.webp') center / contain no-repeat;
+  mask:
+    url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat,
+    url('/assets/marca/splash-etiqueta-w.webp') center / contain no-repeat;
   transform-origin: 75% 4%;
   animation: vaiven 2.4s ease-in-out infinite;
 }

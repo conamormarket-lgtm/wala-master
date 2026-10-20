@@ -1151,7 +1151,12 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     }
     if (section.type === 'banner_grid') datos.marcas = automaticGridBrands;
     // Con items puestos a mano (dataSource manual) mandan esos.
-    if (section.type === 'category_grid') datos.categorias = section.settings?.dataSource === 'products' ? categoriasDeGrillaKit : undefined;
+    if (section.type === 'category_grid') {
+      datos.categorias = section.settings?.dataSource === 'products' ? categoriasDeGrillaKit : undefined;
+      // Sin catálogo en la página (el inicio), la categoría abre la tienda
+      // filtrada. Se miran todas las secciones, no solo las ya cargadas.
+      if (!configuredSections.some((x) => x.type === 'product_grid' || x.type === 'sidebar_catalog')) datos.rutaCategoria = '/tienda';
+    }
     if (section.type === 'hero_banner') {
       // Lo que no trae la sección sale del banner global (como antes).
       const banner = { ...activeConfig.heroBanner, ...section.settings };

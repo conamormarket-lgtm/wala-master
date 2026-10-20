@@ -136,10 +136,13 @@
         .app-loading-color { --tinta: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #5b21b6 100%); --pista: rgba(124, 58, 237, .16); --corre: #7c3aed; }
         /* De noche, el mismo degradado del logo (no lila): es la misma marca. */
         [data-theme='dark'] .app-loading-color { --pista: rgba(167, 139, 250, .2); --corre: #8b5cf6; }
+        /* La W blanca encima (splash-etiqueta-w.webp), como el logo de la
+           cabecera: calada, de noche se veía el fondo oscuro por ella. */
         .app-loading-color .app-loading-tag {
-          display: block; width: 88px; aspect-ratio: 246 / 330; margin-bottom: 4px; background: var(--tinta);
-          -webkit-mask: url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat;
-          mask: url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat;
+          display: block; width: 88px; aspect-ratio: 246 / 330; margin-bottom: 4px;
+          background: url('/assets/marca/splash-etiqueta-w.webp') center / contain no-repeat, var(--tinta);
+          -webkit-mask: url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat, url('/assets/marca/splash-etiqueta-w.webp') center / contain no-repeat;
+          mask: url('/assets/marca/splash-etiqueta.webp') center / contain no-repeat, url('/assets/marca/splash-etiqueta-w.webp') center / contain no-repeat;
           transform-origin: 75% 4%;
           animation: appLoadingVaiven 2.4s ease-in-out infinite;
         }

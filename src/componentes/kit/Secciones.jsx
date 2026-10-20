@@ -503,8 +503,12 @@ const ORDEN_CATEGORIAS = {
  *    se aplican sortMode, limit (6 por defecto) e imageSource ('product' usa
  *    imagenProducto si llega). Sin ellas, los items puestos a mano, todos.
  *  - Si hay menos categorías que columnas, se reparten en las que hay.
+ *  - rutaCategoria: adónde lleva una categoría sin url propia. '' (por
+ *    defecto) = ?categoria= en la misma página, que filtra su catálogo; una
+ *    página sin catálogo (el inicio) pasa '/tienda', si no el toque solo
+ *    cambiaba la URL y no pasaba nada.
  */
-export function GrillaCategorias({ ajustes = {}, categorias }) {
+export function GrillaCategorias({ ajustes = {}, categorias, rutaCategoria = '' }) {
   const auto = Boolean(categorias);
   const base = auto ? [...categorias] : [...(ajustes.items || [])];
   if (auto && ORDEN_CATEGORIAS[ajustes.sortMode]) base.sort(ORDEN_CATEGORIAS[ajustes.sortMode]);
@@ -526,7 +530,7 @@ export function GrillaCategorias({ ajustes = {}, categorias }) {
               forma={redonda ? 'circulo' : 'cuadro'}
               nombre={c.name}
               imagen={fotoDe(c)}
-              url={c.url || `?categoria=${c.categoryId}`}
+              url={c.url || `${rutaCategoria}?categoria=${encodeURIComponent(c.categoryId)}`}
               cuenta={ajustes.showProductCount ? c.cuenta : undefined}
               detalle={c.detalle}
               fondo={c.backgroundColor || ajustes.tileBackgroundColor}
