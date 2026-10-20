@@ -161,7 +161,7 @@ export default function Kapi() {
     if (abierta && comidaPendiente) calentarKapi();
   }, [abierta, comidaPendiente, calentarKapi]);
 
-  if (enLanding || sinFlotante) return null;
+  if (enLanding || sinFlotante || layout?.kapiFlotanteOculto) return null;
   // ?sesion=activa pinta a Kapi sin cuenta (solo fuera de producción; no
   // concede nada: el servidor decide si se puede alimentar).
   const perfil = userProfile || (diseno('sesion') === 'activa'

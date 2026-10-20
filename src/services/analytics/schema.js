@@ -40,6 +40,8 @@ export const ANALYTICS_EVENT_TYPES = {
   // y el dispositivo se derivan de la sesión (mismo mecanismo que el resto).
   LINK_PAGE_VIEW: 'link_page_view',
   LINK_CLICK: 'link_click',
+  // page_not_found (una dirección que no existe) se registra desde
+  // analytics/enlacesRotos.js, fuera del archivo principal.
   // Popups de campaña (storeConfig/popups). eventData lleva { popupId, objetivo }.
   // La conversión se registra cuando el usuario cumple el objetivo del popup
   // (p. ej. completar la encuesta) después de haber hecho clic en él.

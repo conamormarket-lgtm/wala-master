@@ -369,3 +369,10 @@ Se quedan: `useBorradoresCrear`, `useComunidad`, `useVersionesReemplazadas`,
 |---|---|---|---|---|
 | `components/common/Footer/FooterViejo.jsx` + `Footer.module.css` | todas las páginas | `components/marco/PieDeTienda.jsx` → `MarcoPie` y sus bloques | `Footer.jsx` (lazy, solo con `pieViejo` o `editorViejo`) | al retirar `pieViejo` y `editorViejo` |
 | El bloque de antes dentro de `FooterViejo.jsx` (`PIE_LEGAL_EN_EL_KIT` en false) | el pie legal de antes | `PieLegal` | — | con `FooterViejo.jsx` |
+
+### Las generales (2026-10-20)
+
+| Qué | Lo usaba | Se reemplazó con | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `pages/AppRedirectViejo.jsx` (el texto suelto que salta a la Play Store) | `/descargar`, `/app` | `components/generales/DescargarAppDeTienda.jsx` → `PaginaDescargarApp` | `pages/AppRedirect.jsx` (lazy, solo con `generalesViejo`) | al retirar `generalesViejo` |
+| Las ramas de `generalesViejo` en `pages/NoEncontradaPage.jsx` (`<Navigate>` al inicio o a Mi cuenta) | una dirección que no existe | `NoEncontradaDeTienda` | — | al retirar `generalesViejo` (queda la página sola) |

@@ -243,6 +243,8 @@ const AdminGestionPagos = lazy(() => import('./pages/admin/AdminGestionPagos'));
 const AdminUsuariosApp = lazy(() => import('./pages/admin/AdminUsuariosApp'));
 
 const AppRedirect = lazy(() => import('./pages/AppRedirect'));
+// Una dirección que no existe (GENERALES.md P22).
+const NoEncontradaPage = lazy(() => import('./pages/NoEncontradaPage'));
 const PagoRapidoPage = lazy(() => import('./pages/PagoRapidoPage'));
 
 // ── Cuenta ────────────────────────────────────────────────────────────────────
@@ -592,7 +594,7 @@ function App() {
                                   {/* Dynamic Landing Pages Interceptor */}
                                   <Route path="/:slug" element={<DynamicLandingPage />} />
 
-                                  <Route path="*" element={<Navigate to="/cuenta" replace />} />
+                                  <Route path="*" element={<NoEncontradaPage antes="/cuenta" />} />
                                 </Routes>
                               </Suspense>
                             </ErrorBoundary>

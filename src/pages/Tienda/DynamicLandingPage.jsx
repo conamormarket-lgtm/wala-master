@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { useParams, useLocation, Navigate } from 'react-router-dom';
 import { getLandingPageBySlug } from './services/landingPages';
 import { getThemeById } from './services/themes';
@@ -8,6 +8,9 @@ import TiendaPage from './TiendaPage';
 import { useAuth } from '../../contexts/AuthContext';
 import BrandLoaderOverlay from '../../components/common/BrandLoader/BrandLoaderOverlay';
 import './landing.css';
+
+// Una landing que no existe (GENERALES.md P22): antes, al inicio sin avisar.
+const NoEncontradaPage = lazy(() => import('../NoEncontradaPage'));
 
 // Las landings de K-CHERO (reloj, billetera y el combo, más la URL vieja del
 // reloj) se retiraron el 2026-10-19: sus enlaces (anuncios, compartidos) van
@@ -114,9 +117,10 @@ const LandingDinamica = ({ slug }) => {
 
   if (!landingPage) {
     if (authLoading) return <BrandLoaderOverlay show relevo />;
-    // Landing pública no encontrada: a home si hay sesión; si no, home también
-    // (no mandar a /login: las LP deben ser visibles sin cuenta).
-    return <Navigate to="/" replace />;
+    // Landing pública no encontrada: "No encontramos esta página" (con
+    // generalesViejo, al inicio como antes; nunca a /login: las LP deben ser
+    // visibles sin cuenta).
+    return <Suspense fallback={<BrandLoaderOverlay show relevo />}><NoEncontradaPage antes="/" /></Suspense>;
   }
 
   // URL vieja de una landing renombrada (ej. /mussa → /lumi).

@@ -64,7 +64,7 @@ export default function PieDeTienda() {
     bloques = [{ id: 'default_footer', type: 'footer_columns', order: 0, settings: { columns: COLUMNAS_POR_DEFECTO } }];
   }
 
-  const kapiFlota = Boolean(userProfile) && layout.isHeaderVisible !== false && !sinKapiFlotante(location.pathname);
+  const kapiFlota = Boolean(userProfile) && layout.isHeaderVisible !== false && !layout.kapiFlotanteOculto && !sinKapiFlotante(location.pathname);
   const kapi = !kapiFlota && !layout.pieSinKapi && !sinKapiEnPie(location.pathname, { sesion: Boolean(user) });
   const paginaActual = location.pathname === '/' || location.pathname === '/home' ? 'home'
     : location.pathname.replace(/^\/+/, '').split('/')[0] || 'home';
