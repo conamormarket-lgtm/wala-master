@@ -412,8 +412,12 @@
   color: rgba(167, 139, 250, 0.22);
 }
 
+/* flex: el avatar no se alinea con la línea de texto. Antes era inline y el
+   círculo punteado medía distinto con iniciales (se alinea con las letras) y
+   con foto (con el borde de la imagen): al poner o quitar la foto se movía. */
 .identidadFoto {
   position: relative;
+  display: flex;
   flex-shrink: 0;
   padding: 5px;
   border: 2px dashed var(--violet-300, #c4b5fd);
@@ -421,6 +425,7 @@
 }
 
 .identidadAvatar {
+  flex: none;
   width: 88px;
   height: 88px;
   font-family: var(--fuente-marca);
@@ -471,30 +476,51 @@
   }
 }
 
+/* Quitar la foto: un botón blanco con la X roja (antes gris sobre gris y casi
+   no se veía); al pasar el mouse se llena de rojo y la X da un cuarto de vuelta. */
 .identidadQuitar {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  top: -2px;
+  right: -2px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
   border: 2px solid var(--color-surface);
   border-radius: 50%;
-  background: var(--color-surface-2, var(--color-hover));
-  color: var(--color-text-muted);
+  background: var(--color-surface);
+  color: var(--danger, #dc2626);
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--danger, #dc2626) 35%, transparent), 0 4px 10px -4px rgba(30, 17, 64, 0.35);
   cursor: pointer;
+  transition: background-color var(--dur-rapida) ease, color var(--dur-rapida) ease, transform var(--dur-rapida) ease;
 }
 
 .identidadQuitar:hover {
-  background: var(--danger-soft);
-  color: var(--danger-hover);
+  background: var(--danger, #dc2626);
+  color: #fff;
+}
+
+.identidadQuitar:active {
+  transform: scale(0.9);
 }
 
 .identidadQuitar svg {
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.75;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.identidadQuitar:hover svg {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .identidadQuitar:hover svg {
+    transform: none;
+  }
 }
 
 .identidadTextos {
