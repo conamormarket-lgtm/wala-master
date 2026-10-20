@@ -386,6 +386,20 @@ lo suyo en 1280 px: empieza y termina donde lo de adentro de la cabecera
 abierto, el panel va de alto completo (`--editor-arriba: 0`): la página y la
 barra de admin se corren para dejarle su lugar, y arriba a la derecha ya no
 queda un hueco.
+
+**El editor sobre la cabecera (2026-10-20):**
+
+- La etiqueta de cada sección ("Menú de la cabecera"…) y su borde van sobre
+  todo lo de la sección (`z-index` 30 y 31 en `.editable`). La tarjeta de la
+  cabecera sube a 20 para sus menús: con 3 y 4 la etiqueta quedaba debajo
+  del vidrio y, al pasar el mouse, se veía una mancha morada borrosa.
+- **Ver en celular** (escritorio): la cabecera toma la forma del celular
+  (`CabeceraDeTienda` le pasa `celular` con la vista previa) y cabecera,
+  página y pie son un solo teléfono de 414 px (`App.css`): la cabecera es su
+  parte de arriba, sigue pegada al desplazar, y el pie (`#site-footer`) la de
+  abajo. Antes la caja de la cabecera se encogía a 32 px (la App es una
+  columna flex), la tarjeta de escritorio se salía del teléfono y el pie iba
+  de borde a borde. El fondo sigue al tema (antes, siempre blanco).
 - "Hecho con amor en Perú" va en texto con un corazón: la etiqueta colgante
   es solo para productos (antes, en la demo, era una etiqueta).
 - **Un solo Kapi a la vista.** Kapi se asoma por el pie solo cuando no flota

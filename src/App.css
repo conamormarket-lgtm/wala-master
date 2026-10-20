@@ -51,7 +51,8 @@ body.mobile-preview-active {
 body.mobile-preview-active #main-content-area,
 body.mobile-preview-active .App > header:not([class*="VisualEditor"]),
 body.mobile-preview-active .App > [data-componente="Cabecera"],
-body.mobile-preview-active .App > footer {
+body.mobile-preview-active .App > footer,
+body.mobile-preview-active .App > #site-footer {
   max-width: 414px !important;
   margin: 20px auto !important;
   box-shadow: 0 0 50px rgba(0,0,0,0.3);
@@ -59,7 +60,7 @@ body.mobile-preview-active .App > footer {
   overflow-x: hidden;
   position: relative;
   transition: all 0.3s ease;
-  background-color: white;
+  background-color: var(--color-bg, #fff);
 }
 
 body.mobile-preview-active .App > header:not([class*="VisualEditor"]) {
@@ -67,15 +68,38 @@ body.mobile-preview-active .App > header:not([class*="VisualEditor"]) {
   margin-bottom: 0 !important;
 }
 
-/* La cabecera del kit (CabeceraDeTienda) va dentro de su caja pegada arriba:
-   en la vista celular, la caja con el ancho del celular y sin redondear
-   (la tarjeta de la cabecera ya tiene sus esquinas). */
-body.mobile-preview-active .App > [data-componente="Cabecera"] {
-  margin-bottom: 0 !important;
-  border-radius: 0;
-  box-shadow: none;
+/* Con lo del kit (CabeceraDeTienda y PieDeTienda), cabecera, página y pie
+   son un solo celular: la cabecera es su parte de arriba (con el fondo de
+   la página) y el pie la de abajo, sin huecos entre ellas. La App es una
+   columna flex: sin width, con margin auto la caja se encogía a su relleno
+   (32 px) y la tarjeta se salía del celular. */
+body.mobile-preview-active .App > [data-componente="Cabecera"],
+body.mobile-preview-active .App > #site-footer {
+  width: 100%;
   overflow: visible;
-  background-color: transparent;
+  background-color: var(--color-bg, #fff);
+}
+
+/* Sigue pegada arriba (con position: relative, su top la bajaba el alto de
+   la barra de admin y tapaba el comienzo de la página). */
+body.mobile-preview-active .App > [data-componente="Cabecera"] {
+  position: sticky;
+  margin-bottom: 0 !important;
+  border-radius: 30px 30px 0 0;
+}
+
+body.mobile-preview-active .App > [data-componente="Cabecera"] + #main-content-area {
+  margin-top: 0 !important;
+  border-radius: 0;
+}
+
+body.mobile-preview-active .App > #main-content-area:has(+ #site-footer) {
+  margin-bottom: 0 !important;
+}
+
+body.mobile-preview-active .App > #site-footer {
+  margin-top: 0 !important;
+  border-radius: 0 0 30px 30px;
 }
 
 /* Editor del kit abierto en escritorio: la página se corre para que el panel

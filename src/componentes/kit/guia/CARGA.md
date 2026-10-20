@@ -109,7 +109,13 @@ la página del kit a 1366px y a 390px:
 - **Tarjeta de producto:** 418px de alto.
 - **Filtros del catálogo:** 264px.
 - **Mi cuenta:** el menú mide 264×725px y el contenido 918px; la cabeza de
-  cada módulo mide 57px, y Mi perfil no tiene cabeza.
+  cada módulo mide 57px, y Mi perfil no tiene cabeza. Como `CabezaCuenta`,
+  el botón de la cabeza (creaciones, fechas, direcciones) baja a otra fila
+  cuando no entra al lado del título (`.cabezaCuenta`; antes, en 320 px,
+  aplastaba el título). La agenda de Fechas va en tarjetas de 270 px una
+  tras otra, cortada a la derecha (`.filaAgenda`; antes iban en las columnas
+  de 170 px de los productos y se montaban una sobre otra, en todos los
+  anchos).
 - **Carrito:** la lista y un resumen de 370×425px.
 - **Zona Arcade:** dos columnas hasta 1080px.
 - **Encuesta:** abre en su portada.

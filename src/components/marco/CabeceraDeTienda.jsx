@@ -112,7 +112,7 @@ function CabeceraConDatos() {
   const { lang, setLang, available, t } = useLanguage();
   const { notifications, markAllAsRead, abrirNotificacion, requestPermission, puedeActivarAvisos } = useNotifications();
   const { theme, toggle } = useTheme();
-  const { storeConfigDraft, isEditModeActive } = useVisualEditor();
+  const { storeConfigDraft, isEditModeActive, isPreviewMobile } = useVisualEditor();
   const gruposTodos = useGruposDeCuenta();
   const conCuenta = tieneCuenta(user);
 
@@ -356,7 +356,8 @@ function CabeceraConDatos() {
 
   const cabecera = (
     <Cabecera
-      celular={celular}
+      // En la vista de celular del editor, con la forma del celular.
+      celular={celular || (isEditModeActive && isPreviewMobile)}
       enlaces={enlaces}
       activo={activo}
       onAbrirMenu={alAbrirMenu}

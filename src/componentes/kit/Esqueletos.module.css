@@ -477,6 +477,17 @@
   display: none;
 }
 
+/* La cabeza de un módulo, como CabezaCuenta: el botón baja a otra fila
+   cuando no entra al lado del título (antes, en 320 px, lo aplastaba). */
+.cabezaCuenta {
+  flex-wrap: wrap;
+}
+
+.cabezaCuenta > .filaTextos {
+  flex: 1 1 9rem;
+  min-width: 0;
+}
+
 .cuentaLado {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -563,9 +574,11 @@
   align-items: center;
 }
 
-.agenda {
-  flex: 0 0 auto;
-  width: 270px;
+/* La agenda de Fechas: cada tarjeta con su ancho (270 px) y la fila cortada
+   a la derecha. En la columna de 170 px de los productos se montaban una
+   sobre otra. */
+.filaAgenda {
+  grid-auto-columns: 270px;
 }
 
 .creacion {

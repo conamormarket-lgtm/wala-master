@@ -1413,10 +1413,14 @@
   isolation: isolate;
 }
 
+/* El borde y la etiqueta van sobre todo lo de la sección (cada una es su
+   propia capa: isolation). La cabecera sube su tarjeta a 20 para sus menús:
+   con 3 y 4 quedaban debajo del vidrio y la etiqueta se veía como una mancha
+   morada borrosa. */
 .editable::after {
   content: '';
   position: absolute;
-  z-index: 3;
+  z-index: 30;
   inset: 2px;
   border: 2px solid var(--primary-color);
   border-radius: 14px;
@@ -1428,7 +1432,7 @@
 /* La barra de cada sección es una etiqueta colgante, como la del logo. */
 .barra {
   position: absolute;
-  z-index: 4;
+  z-index: 31;
   top: 10px;
   left: 22px;
   display: flex;

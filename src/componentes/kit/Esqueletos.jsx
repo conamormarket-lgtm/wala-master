@@ -504,7 +504,7 @@ const MODULOS_CUENTA = {
     <>
       <Caja alto={121} />
       <Hueso alto={14} ancho={130} />
-      <span className={s.filaProductos}>{repetir(4, (k) => (
+      <span className={cx(s.filaProductos, s.filaAgenda)}>{repetir(4, (k) => (
         <Caja key={k} alto={128} className={s.agenda}>
           <Hueso forma="bloque" ancho={56} alto={62} />
           <span className={s.filaTextos}><Hueso alto={13} ancho="80%" /><Hueso alto={10} ancho="55%" /></span>
@@ -645,7 +645,7 @@ const PAGINAS = {
         {modulo !== 'resumen' && <Hueso forma="pildora" alto={40} ancho={130} className={s.soloAngosto} />}
         {/* Mi perfil no tiene cabeza: la identidad hace de título. */}
         {modulo !== 'perfil' && (
-          <span className={s.tarjetaCabeza}>
+          <span className={cx(s.tarjetaCabeza, s.cabezaCuenta)}>
             {modulo !== 'resumen' && <Hueso forma="circulo" ancho={44} alto={44} />}
             {/* Con la medida de CabezaCuenta: 57px (el saludo del resumen, con su subrayado, 67px). */}
             <span className={s.filaTextos}>
