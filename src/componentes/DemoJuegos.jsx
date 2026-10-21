@@ -43,7 +43,8 @@ export const ESTADOS_JUEGOS = {
   '/palabra-del-dia': [['ganada', 'Ya jugó hoy (ganó)'], ['perdida', 'Ya jugó hoy (perdió)'], ['primera', 'Primera vez (ayuda)'], ['cargando', 'Cargando']],
   '/ruleta': [['racha', 'Racha 4/7'], ['girada', 'Ya giró esta semana'], ['perdida', 'Semana perdida'], ['pendiente', 'Giro pendiente'], ['cerrada', 'Cerrada'], ['cargando', 'Cargando']],
   '/ball-sort': [
-    ['casi', 'Casi resuelto (2 jugadas)'], ['nivel12', 'Nivel 12 (ocultas)'], ['nivel25', 'Nivel 25 (cortina)'], ['nivel40', 'Nivel 40 (hielo)'],
+    ['casi', 'Casi resuelto (2 jugadas)'], ['racha2', 'Racha 2 (el próximo abre cofre)'], ['mapa', 'El mapa del mundo'],
+    ['nivel12', 'Nivel 12 (ocultas)'], ['nivel20', 'Nivel 20 (jefe)'], ['nivel25', 'Nivel 25 (cortina)'], ['nivel45', 'Nivel 45 (hielo)'],
     ['nivel150', 'Nivel 150'], ['retoHecho', 'Reto de hoy hecho'], ['yaHoy', 'Ya ganó hoy'], ['primera', 'Primera vez (ayuda)'], ['cargando', 'Cargando'],
   ],
 };
@@ -74,7 +75,9 @@ export function JuegosDemo({ ruta = VISTAS_JUEGOS[0][1], sesion = true, usuario,
 
   if (ruta === '/ruleta') return <RuletaDemo key={estados.join()} sesion={sesion} estados={estados} cargando={cargando} lunes={lunes} hoy={hoy} cobrar={cobrar} />;
   if (ruta === '/ball-sort') {
-    const nivel = Number((estados.find((e) => e.startsWith('nivel')) || 'nivel1').slice(5));
+    const nivel = Number((estados.find((e) => e.startsWith('nivel')) || (estados.includes('mapa') ? 'nivel27' : 'nivel1')).slice(5));
+    // Estrellas de ejemplo en los niveles ya pasados (para ver el mapa lleno).
+    const estrellas = Object.fromEntries(Array.from({ length: nivel - 1 }, (_, k) => [k + 1, 1 + ((k * 7) % 3)]));
     return (
       <PaginaBolitas
         key={`${sesion}-${estados.join()}`}
@@ -82,10 +85,16 @@ export function JuegosDemo({ ruta = VISTAS_JUEGOS[0][1], sesion = true, usuario,
         sesion={sesion}
         yaHoy={estados.includes('yaHoy')}
         ayudaVista={!estados.includes('primera')}
-        inicial={estados.includes('casi') ? NIVEL_CASI : undefined}
-        nivel={nivel}
+        inicial={estados.includes('casi') || estados.includes('racha2') ? NIVEL_CASI : undefined}
+        vistaInicial={estados.includes('mapa') ? 'mapa' : 'juego'}
         hoy={hoy}
-        retoHecho={estados.includes('retoHecho')}
+        progreso={{
+          nivel,
+          estrellas,
+          racha: estados.includes('racha2') ? 2 : 0,
+          guardadas: estados.includes('racha2') ? { pista: 1, tubo: 0, deshacer: 3 } : undefined,
+          reto: estados.includes('retoHecho') ? hoy : null,
+        }}
         onGanar={async () => {
           await espera(900); // lo que tarda claimBallSortRewardSecure
           cobrar(2);
@@ -129,6 +138,7 @@ export function JuegosDemo({ ruta = VISTAS_JUEGOS[0][1], sesion = true, usuario,
 const b = (id, c) => ({ id, c, oculta: false, hielo: 0 });
 const NIVEL_CASI = {
   colores: 4,
+  par: 2,
   estado: {
     capacidad: 4,
     cortinas: [null, null, null, null, null, null],

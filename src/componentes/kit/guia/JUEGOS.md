@@ -356,8 +356,9 @@ con niveles propios: no se copió ninguno, se generan con la misma forma.
 - **Obstáculos**, cada uno solo en su primer nivel (con su explicación) y
   después cada tanto: **bolitas ocultas** "?" desde el 12 (se ven al quedar
   arriba), **cortina** desde el 25 (el tubo no se usa hasta completar el
-  color que muestra) y **hielo** desde el 40 (la bolita no se mueve; el
-  número baja con cada movimiento).
+  color que muestra) y **hielo** desde el 45 (la bolita no se mueve; el
+  número baja con cada movimiento). Hasta la fase 1 el hielo llegaba en el
+  40, que pasó a ser un jefe.
 - **Solucionador:** cada nivel se resuelve antes de mostrarlo; si no tiene
   solución se reparte otra vez. También da la pista. Armar un nivel tarda
   0,5 ms la mitad de las veces y 160 ms el peor de 1.500 (en un PC); el
@@ -389,3 +390,54 @@ probado:** el cobro con cuenta (no cambió), la hoja "Sin movimientos" en
 pantalla (la regla sí, en las pruebas del motor), inglés y la app
 (Capacitor). **Pendiente:** el progreso vive en el aparato; para que siga a
 la cuenta haría falta guardarlo en el perfil.
+
+### Fase 1: que sea divertido (2026-10-21)
+
+Sin servidor y sin tocar las monedas: lo que engancha no vale dinero.
+
+- **Estrellas (1 a 3)** según los movimientos (`estrellasPara`): igualar o
+  mejorar la solución del motor (`par`) da 3; hasta un cuarto más, 2. La
+  solución del motor queda entre 0 y 5 movimientos por encima de la óptima
+  (medido contra búsqueda en anchura en los niveles 1 a 35): 3 estrellas
+  piden jugar casi perfecto. Durante el juego se ven las que llevarías y la
+  meta; al ganar entran animadas, con "¡Nuevo récord!" y "Repetir por 3
+  estrellas".
+- **Mundos de 20 niveles** (`NIVELES_POR_MUNDO`, `MUNDOS`: nombre y colores
+  de fondo de la mesa, en claro y en oscuro). El último de cada mundo es un
+  **jefe** (`esJefe`): un color más y todos los obstáculos que ya salieron.
+  El **mapa** (`MapaBolitas`) muestra los 20 niveles con sus estrellas,
+  candado en los que faltan y la corona del jefe; desde ahí se repite
+  cualquier nivel abierto.
+- **Racha de victorias:** cada `RACHA_COFRE` (3) niveles seguidos ganados
+  abre un **cofre** (`premioCofre`): 1 pista, 3 para deshacer o 1 tubo de
+  más, que se **guardan** y se usan cuando se acaban las del nivel.
+  Reiniciar o dejar un nivel empezado corta la racha (con aviso). El reto
+  del día no cuenta.
+- **Sonido y vibración** (`piezas/efectosBolitas.js`): sonidos armados con
+  Web Audio (sin archivos) al levantar, soltar, completar un tubo, ganar,
+  abrir el cofre y en un toque que no vale; vibración con `navigator.vibrate`.
+  Dos interruptores junto a "Cómo jugar". En Android se agregó el permiso
+  `VIBRATE` al manifiesto (no le pregunta nada a la persona; sin él el
+  WebView no vibraba, tampoco en el estudio). En iPhone no hay vibración.
+- **Progreso en una sola clave** (`PROGRESO_BOLITAS`, `progresoBolitas`):
+  la página lo recibe en `progreso` y avisa cada cambio con `onProgreso`;
+  la tienda lo guarda en `wala_bolitas_progreso`. Reemplaza a las claves
+  sueltas de la primera versión, que no llegaron a producción.
+- **Toques rápidos:** el tubo elegido vive también en una referencia; dos
+  toques antes de que se vuelva a pintar (un celular lento) ya no eligen el
+  tubo equivocado.
+
+**Demo:** "Racha 2 (el próximo abre cofre)", "El mapa del mundo" y "Nivel
+20 (jefe)"; el hielo pasó a "Nivel 45".
+
+**Carga:** la página de las bolitas baja 36,5 KB (13,8 KB gzip); antes de
+esta fase, 23,2 KB.
+
+**Probado** en el navegador (sin cuenta, a 638 px): el nivel 1 con la racha
+en 2 (3 estrellas, el cofre con 1 pista y lo guardado), el panel de la
+racha, el mapa (estrellas, actual, candados, jefe), la pista que gasta
+primero las del nivel y después la guardada, reiniciar que corta la racha,
+el jefe del nivel 20, el fondo del mundo en claro y oscuro, y que el sonido
+y la vibración se disparan y se apagan con sus interruptores. **No
+probado:** escuchar los sonidos de verdad, la vibración en un Android real
+(hace falta compilar la app con el permiso nuevo), el inglés.

@@ -154,6 +154,45 @@ span.tubo {
   background: var(--bola);
 }
 
+/* Las estrellas del nivel. */
+.estrellas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1em;
+  line-height: 1;
+}
+
+.estrellas span {
+  display: inline-grid;
+}
+
+.estrellas svg {
+  width: var(--tam-estrella, 14px);
+  height: var(--tam-estrella, 14px);
+  stroke-width: 2;
+}
+
+.estrellas_md {
+  --tam-estrella: 20px;
+}
+
+.estrellas_lg {
+  --tam-estrella: 44px;
+  gap: 0.35rem;
+}
+
+.estrellaLlena {
+  color: #f59e0b;
+}
+
+.estrellaLlena svg {
+  fill: #fbbf24;
+}
+
+.estrellaVacia {
+  color: var(--color-border, #d4d4d8);
+}
+
 @supports not (background: color-mix(in srgb, red 50%, blue)) {
   .bolita {
     background:

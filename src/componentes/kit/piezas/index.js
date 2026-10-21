@@ -45,7 +45,7 @@ export { CabezaLegal, IndiceLegal, SeccionLegal, DatosProveedor, CodigoCopiable,
 export { MarcoJuego, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego } from './Juegos';
 export { TableroPalabra, FichaPalabra, TecladoPalabra, LeyendaPalabra, RankingPalabra, evaluarIntento, estadosDeTeclas, normalizarPalabra, INTENTOS_PALABRA } from './Palabra';
 export { RuedaRuleta, HistorialRuleta, ICONO_PREMIO } from './Ruleta';
-export { TuboBolitas, Bolita, colorDe, tuboListo, COLORES_BOLITAS, CAPACIDAD_TUBO } from './Bolitas';
+export { TuboBolitas, Bolita, EstrellasNivel, colorDe, tuboListo, COLORES_BOLITAS, CAPACIDAD_TUBO } from './Bolitas';
 export { CabezaSorteo, ListaGanadores, TarjetaPlan, TarjetaAliado } from './Sorteos';
 export { AvisoInvitacion, RedesEnlaces, BotonEnlace } from './Campanas';
 export { TemaMarca, temaDeMarca } from './TemaMarca';

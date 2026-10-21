@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Lock } from 'lucide-react';
+import { Lock, Star } from 'lucide-react';
 import { Estallido } from '../Efectos';
 import { useTexto } from '../Traduccion';
 import { COLORES, CAPACIDAD, tramo, tuboListo } from './bolitasMotor.mjs';
@@ -22,6 +22,30 @@ export const CAPACIDAD_TUBO = CAPACIDAD;
 export const colorDe = (b) => b.color || COLORES[b.c]?.hex;
 
 const RESORTE = { type: 'spring', stiffness: 320, damping: 26, mass: 0.8 };
+
+/**
+ * Las estrellas de un nivel (de 0 a 3).
+ *  - valor · tamano: 'sm' (el mapa) | 'md' (el nivel) | 'lg' (el resultado)
+ *  - animar: entran una por una (el resultado)
+ */
+export function EstrellasNivel({ valor = 0, tamano = 'sm', animar = false }) {
+  const etiqueta = useTexto(valor === 1 ? '1 de 3 estrellas' : `${valor} de 3 estrellas`);
+  return (
+    <span className={[s.estrellas, s[`estrellas_${tamano}`]].join(' ')} role="img" aria-label={etiqueta}>
+      {[0, 1, 2].map((k) => (
+        <motion.span
+          key={k}
+          className={k < valor ? s.estrellaLlena : s.estrellaVacia}
+          initial={animar ? { scale: 0, rotate: -40 } : false}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ delay: animar ? 0.25 + k * 0.2 : 0, type: 'spring', stiffness: 420, damping: 14 }}
+        >
+          <Star aria-hidden="true" />
+        </motion.span>
+      ))}
+    </span>
+  );
+}
 
 /**
  * Una bolita (con su brillo). `oculta` se ve como "?"; `hielo` (movimientos

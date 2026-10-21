@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { LayoutGroup } from 'framer-motion';
-import { Gamepad2, RotateCcw, Undo2, Eye, Plus, Lightbulb, ArrowRight } from 'lucide-react';
+import {
+  Gamepad2, RotateCcw, Undo2, Eye, Plus, Lightbulb, ArrowRight, Map as IconoMapa, Crown, Lock, ChevronLeft, ChevronRight,
+  Flame, Gift, Volume2, VolumeX, Vibrate, VibrateOff, Star,
+} from 'lucide-react';
 import Boton from '../Boton';
 import { BloqueSeccion } from '../Seccion';
 import { EsqueletoPagina } from '../Esqueletos';
@@ -9,18 +12,41 @@ import { Pestanas } from '../Navegacion';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { BarraProgreso } from '../piezas/BarraProgreso';
 import { MarcoJuego, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego, TextoResaltado } from '../piezas/Juegos';
-import { TuboBolitas } from '../piezas/Bolitas';
+import { TuboBolitas, EstrellasNivel } from '../piezas/Bolitas';
+import { efectoBolitas } from '../piezas/efectosBolitas';
 import {
   nivel as nivelNumero, retoDelDia, puedeMover, mover, resuelto, tubosListos, hayMovimientos, agregarTubo, volverA, pista,
-  cerrado, tramo, tuboListo, COLORES,
+  cerrado, tramo, tuboListo, COLORES, mundoDe, infoMundo, esJefe, estrellasPara, metasEstrellas, premioCofre, RACHA_COFRE,
 } from '../piezas/bolitasMotor.mjs';
-import { Texto } from '../Traduccion';
+import { Texto, useTexto } from '../Traduccion';
 import s from './Juegos.module.css';
 
 /* ── Las Bolitas de Kapi (/ball-sort) ───────────────────── */
 
 /** Las ayudas de cada nivel (vuelven a estar completas al reiniciarlo). */
 export const AYUDAS_BOLITAS = { deshacer: 5, tubo: 1, pista: 3 };
+
+/** Lo que se guarda del jugador (la tienda lo guarda en el aparato). */
+export const PROGRESO_BOLITAS = {
+  nivel: 1, // el nivel más alto abierto
+  estrellas: {}, // { [nivel]: 1 a 3 }, la mejor
+  racha: 0, // niveles seguidos ganados sin reiniciar ni abandonar
+  guardadas: { pista: 0, tubo: 0, deshacer: 0 }, // ayudas de los cofres
+  vistos: [], // obstáculos ya explicados
+  reto: null, // el día del último reto hecho
+  sonido: true,
+  vibracion: true,
+};
+
+/** Completa un progreso guardado (o viejo) con lo que le falte. */
+export const progresoBolitas = (p = {}) => ({
+  ...PROGRESO_BOLITAS,
+  ...p,
+  nivel: Math.max(1, Number(p.nivel) || 1),
+  estrellas: { ...p.estrellas },
+  guardadas: { ...PROGRESO_BOLITAS.guardadas, ...p.guardadas },
+  vistos: Array.isArray(p.vistos) ? p.vistos : [],
+});
 
 /* Cómo se explica cada obstáculo la primera vez que aparece. */
 const OBSTACULOS = {
@@ -41,6 +67,9 @@ const OBSTACULOS = {
     ejemplo: [{ id: 'h1', c: 1 }, { id: 'h2', c: 0, hielo: 3 }],
   },
 };
+
+const NOMBRE_AYUDA = { pista: ['pista', 'pistas'], tubo: ['tubo de más', 'tubos de más'], deshacer: ['para deshacer', 'para deshacer'] };
+const textoAyuda = (tipo, n) => `${n} ${NOMBRE_AYUDA[tipo][n === 1 ? 0 : 1]}`;
 
 /* Los niveles se arman una vez y quedan guardados: el siguiente se prepara
    mientras se ve el resultado, para que en el celular no haya espera. */
@@ -63,50 +92,116 @@ const columnas = (n) => ({
   '--col-movil': n <= 4 ? n : n <= 6 ? 3 : Math.ceil(n / 2),
 });
 
+/** Los colores del mundo para el fondo de la mesa. */
+const fondoMundo = (m) => {
+  const { fondo } = infoMundo(m);
+  return { '--mundo-a': fondo[0], '--mundo-b': fondo[1] };
+};
+
 /**
- * Las Bolitas de Kapi: ordenar los colores en los tubos, nivel por nivel o
- * en el reto del día. Se toca un tubo para levantar las bolitas de arriba del
- * mismo color y otro para soltarlas (se mueven todas las que quepan). Desde
- * el nivel 12 aparecen los obstáculos: bolitas ocultas, tubos con cortina y
- * bolitas congeladas. Cada nivel tiene ayudas contadas (deshacer, un tubo más
- * y pistas). Ganar (un nivel o el reto) da monedas una vez al día; sin cuenta
- * se juega igual (el premio invita a entrar).
+ * El mapa de un mundo: sus 20 niveles con las estrellas ganadas; los que
+ * faltan abrir, con candado; el último, el jefe.
+ */
+function MapaBolitas({ mundo, progreso, actual, onElegir, onMundo }) {
+  const info = infoMundo(mundo);
+  const ultimo = mundoDe(progreso.nivel);
+  const niveles = Array.from({ length: info.hasta - info.desde + 1 }, (_, k) => info.desde + k);
+  const ganadas = niveles.reduce((t, n) => t + (progreso.estrellas[n] || 0), 0);
+  const t = { anterior: useTexto('Mundo anterior'), siguiente: useTexto('Mundo siguiente') };
+  return (
+    <div className={s.mapa} data-componente="MapaBolitas">
+      <div className={s.mapaCabeza}>
+        <Boton variante="fantasma" tamano="sm" soloIcono icono={<ChevronLeft aria-hidden="true" />} aria-label={t.anterior} disabled={mundo <= 1} onClick={() => onMundo(mundo - 1)} />
+        <div className={s.mapaTitulo}>
+          <p className={s.mundoNumero}><TextoResaltado resaltar={[mundo]}>{`Mundo ${mundo}`}</TextoResaltado></p>
+          <p className={s.mundoNombre}><Texto>{info.nombre}</Texto></p>
+          <p className={s.mundoEstrellas}><Star aria-hidden="true" className={s.estrellaTotal} /> {ganadas}/{niveles.length * 3}</p>
+        </div>
+        <Boton variante="fantasma" tamano="sm" soloIcono icono={<ChevronRight aria-hidden="true" />} aria-label={t.siguiente} disabled={mundo >= ultimo} onClick={() => onMundo(mundo + 1)} />
+      </div>
+      <ol className={s.mapaNiveles}>
+        {niveles.map((n) => (
+          <li key={n}>
+            <NivelDelMapa n={n} estrellas={progreso.estrellas[n] || 0} abierto={n <= progreso.nivel} actual={n === actual} onElegir={onElegir} />
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function NivelDelMapa({ n, estrellas, abierto, actual, onElegir }) {
+  const jefe = esJefe(n);
+  let etiqueta = `Nivel ${n}${jefe ? ', jefe' : ''}`;
+  if (!abierto) etiqueta += ', cerrado';
+  else if (estrellas) etiqueta += `, ${estrellas} de 3 estrellas`;
+  const aria = useTexto(etiqueta);
+  return (
+    <button
+      type="button"
+      className={[s.nivelMapa, jefe && s.nivelJefe, actual && s.nivelActual, !abierto && s.nivelCerrado].filter(Boolean).join(' ')}
+      disabled={!abierto}
+      onClick={() => onElegir(n)}
+      aria-label={aria}
+      aria-current={actual ? 'step' : undefined}
+    >
+      {jefe && <Crown className={s.corona} aria-hidden="true" />}
+      {abierto ? <span className={s.nivelMapaNumero}>{n}</span> : <Lock className={s.candadoMapa} aria-hidden="true" />}
+      {abierto && <EstrellasNivel valor={estrellas} />}
+    </button>
+  );
+}
+
+/**
+ * Las Bolitas de Kapi: ordenar los colores en los tubos. Niveles en mundos de
+ * 20 (el último, un jefe), de 1 a 3 estrellas según los movimientos, una
+ * racha de victorias que abre cofres con ayudas, el reto del día, sonido y
+ * vibración. Se toca un tubo para levantar las bolitas de arriba del mismo
+ * color y otro para soltarlas (se mueven todas las que quepan). Desde el
+ * nivel 12 aparecen los obstáculos. Ganar (un nivel o el reto) da monedas una
+ * vez al día; sin cuenta se juega igual (el premio invita a entrar).
  *  - sesion · yaHoy (ya cobró hoy) · monto (2)
  *  - onGanar({ movimientos }): cobra; promesa → { monto } | { ya: true }
  *    (si falla, lanza). Solo con sesión y si no cobró hoy.
- *  - onCompletar({ modo, nivel | fecha, movimientos }): cada victoria
- *  - nivel: en qué nivel va · onNivel(n): pasó al nivel n (guardarlo)
- *  - hoy ('AAAA-MM-DD', el día de Lima: sin él no hay reto) · retoHecho ·
- *    onRetoHecho
- *  - vistos: obstáculos ya explicados · onVisto(tipo)
- *  - inicial: { estado, colores } para empezar en un tablero puesto (la demo)
- *  - ayudaVista · onAyudaVista · estado: 'cargando'
+ *  - onCompletar({ modo, nivel | fecha, movimientos, estrellas }): cada victoria
+ *  - progreso (ver PROGRESO_BOLITAS) · onProgreso(progreso): cada cambio, para guardarlo
+ *  - hoy ('AAAA-MM-DD', el día de Lima: sin él no hay reto)
+ *  - inicial: { estado, colores, par } para empezar en un tablero puesto (la demo)
+ *  - vistaInicial: 'juego' | 'mapa' · ayudaVista · onAyudaVista · estado: 'cargando'
  * Mientras se acredita, la hoja no se cierra y no se pasa de nivel.
  * Los textos pasan por la traducción.
  */
 export function PaginaBolitas({
-  sesion = true, yaHoy = false, monto = 2, onGanar, onCompletar,
-  nivel = 1, onNivel, hoy, retoHecho = false, onRetoHecho, vistos = [], onVisto,
-  inicial, ayudaVista = true, onAyudaVista, urlLogin = '/login', estado,
+  sesion = true, yaHoy = false, monto = 2, onGanar, onCompletar, hoy, progreso, onProgreso,
+  inicial, vistaInicial = 'juego', ayudaVista = true, onAyudaVista, urlLogin = '/login', estado,
 }) {
+  const [prog, setProg] = useState(() => progresoBolitas(progreso));
   const [modo, setModo] = useState('niveles');
-  const [numero, setNumero] = useState(() => Math.max(1, nivel || 1));
+  const [vista, setVista] = useState(vistaInicial);
+  const [numero, setNumero] = useState(() => progresoBolitas(progreso).nivel);
+  const [mundoMapa, setMundoMapa] = useState(() => mundoDe(progresoBolitas(progreso).nivel));
   const [partidas, setPartidas] = useState({});
-  const [elegido, setElegido] = useState(null);
+  const [elegido, setElegidoEstado] = useState(null);
+  // También en una referencia: dos toques seguidos (antes de que se vuelva a
+  // pintar, en un celular lento) leen el tubo elegido de verdad.
+  const elegidoRef = useRef(null);
+  const setElegido = (i) => { elegidoRef.current = i; setElegidoEstado(i); };
   const [resultado, setResultado] = useState(false);
   const [premio, setPremio] = useState(null);
+  const [logro, setLogro] = useState(null);
   const [cobrado, setCobrado] = useState(yaHoy);
   const [ayuda, setAyuda] = useState(!ayudaVista);
   const [explicar, setExplicar] = useState(null);
   const [atascado, setAtascado] = useState(false);
   const [aviso, setAviso] = useState(null);
-  const [explicados, setExplicados] = useState(() => new Set(vistos));
   const inicialUsado = useRef(false);
+  const t = {
+    sonido: useTexto(prog.sonido ? 'Silenciar' : 'Activar el sonido'),
+    vibracion: useTexto(prog.vibracion ? 'Quitar la vibración' : 'Activar la vibración'),
+  };
 
   // El perfil puede llegar (o refrescarse) después: si ya cobró hoy, no se vuelve a intentar.
   useEffect(() => { if (yaHoy) setCobrado(true); }, [yaHoy]);
-  // Si el nivel guardado llega después (otra pestaña, la cuenta), se sigue desde ahí.
-  useEffect(() => { if (nivel > numero && modo === 'niveles' && !partidas.niveles?.pasados.length) setNumero(nivel); }, [nivel]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const clave = modo === 'reto' ? `reto:${hoy}` : `nivel:${numero}`;
   const p = partidas[modo]?.clave === clave ? partidas[modo] : null;
@@ -118,42 +213,87 @@ export function PaginaBolitas({
       let lv;
       if (inicial && modo === 'niveles' && !inicialUsado.current) {
         inicialUsado.current = true;
-        lv = { numero, obstaculos: [], colores: inicial.colores || inicial.estado.tubos.length, ...inicial };
+        lv = { numero, mundo: mundoDe(numero), obstaculos: [], par: 99, colores: inicial.estado.tubos.length, ...inicial };
       } else lv = armado(modo, numero, hoy);
       setPartidas((todas) => ({ ...todas, [modo]: partidaNueva(lv, clave) }));
-      const nuevo = lv.obstaculos?.find((o) => !explicados.has(o));
+      const nuevo = lv.obstaculos?.find((o) => !prog.vistos.includes(o));
       if (nuevo) setExplicar(nuevo);
+      else if (lv.jefe) setAviso('¡Nivel jefe! Un color más y todos los obstáculos que ya conoces.');
     }, 0);
     return () => clearTimeout(id);
   }, [clave, estado, p]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!aviso) return undefined;
-    const id = setTimeout(() => setAviso(null), 2600);
+    const id = setTimeout(() => setAviso(null), 2800);
     return () => clearTimeout(id);
   }, [aviso]);
 
   if (estado === 'cargando' || !p) return <EsqueletoPagina forma="bolitas" />;
+
+  /** Cambia el progreso y avisa para guardarlo (una vez por acción). */
+  const guardar = (cambios) => {
+    const nuevo = { ...prog, ...cambios };
+    setProg(nuevo);
+    onProgreso?.(nuevo);
+  };
+  const fx = (tipo) => efectoBolitas(tipo, { sonido: prog.sonido, vibracion: prog.vibracion });
 
   const ocupado = premio?.estado === 'acreditando';
   const actual = p.estado;
   const listos = tubosListos(actual);
   const colores = p.nivel.colores;
   const movidas = p.pasados.length;
-  const quedan = {
+  const esReto = modo === 'reto';
+  const enJuego = movidas > 0 && !p.ganada;
+  const quedanNivel = {
     deshacer: AYUDAS_BOLITAS.deshacer - p.usos.deshacer,
     tubo: AYUDAS_BOLITAS.tubo - p.usos.tubo,
     pista: AYUDAS_BOLITAS.pista - p.usos.pista,
   };
-  const esReto = modo === 'reto';
+  // Lo que se puede usar: lo del nivel y, cuando se acaba, lo guardado de los cofres.
+  const quedan = {
+    deshacer: quedanNivel.deshacer + prog.guardadas.deshacer,
+    tubo: quedanNivel.tubo + prog.guardadas.tubo,
+    pista: quedanNivel.pista + prog.guardadas.pista,
+  };
+  const metas = metasEstrellas(p.nivel.par);
+  const mundo = mundoDe(numero);
   const actualizar = (cambios) => setPartidas((todas) => ({ ...todas, [modo]: { ...todas[modo], ...cambios } }));
 
-  const ganar = async (movs) => {
-    setResultado(true);
-    onCompletar?.(esReto ? { modo, fecha: hoy, movimientos: movs } : { modo, nivel: numero, movimientos: movs });
-    if (esReto) onRetoHecho?.();
+  /** Gasta una ayuda: primero las del nivel, después las guardadas. */
+  const gastar = (tipo, cambiosPartida) => {
+    if (quedanNivel[tipo] > 0) actualizar({ ...cambiosPartida, usos: { ...p.usos, [tipo]: p.usos[tipo] + 1 } });
     else {
-      onNivel?.(numero + 1);
+      actualizar(cambiosPartida);
+      guardar({ guardadas: { ...prog.guardadas, [tipo]: prog.guardadas[tipo] - 1 } });
+    }
+  };
+
+  /** Reiniciar o dejar un nivel empezado corta la racha. */
+  const cortarRacha = () => {
+    if (esReto || !enJuego || !prog.racha) return;
+    guardar({ racha: 0 });
+    setAviso('Se cortó tu racha de victorias.');
+  };
+
+  const ganar = async (movs) => {
+    fx('ganar');
+    setResultado(true);
+    if (esReto) {
+      onCompletar?.({ modo, fecha: hoy, movimientos: movs });
+      guardar({ reto: hoy });
+      setLogro(null);
+    } else {
+      const estrellas = estrellasPara(movs, p.nivel.par);
+      const antes = prog.estrellas[numero] || 0;
+      const racha = prog.racha + 1;
+      const cofre = racha % RACHA_COFRE === 0 ? premioCofre() : null;
+      const guardadas = cofre ? { ...prog.guardadas, [cofre.tipo]: prog.guardadas[cofre.tipo] + cofre.cantidad } : prog.guardadas;
+      guardar({ nivel: Math.max(prog.nivel, numero + 1), estrellas: { ...prog.estrellas, [numero]: Math.max(antes, estrellas) }, racha, guardadas });
+      setLogro({ estrellas, record: antes > 0 && estrellas > antes, cofre, racha, mundoCompleto: esJefe(numero) ? mundo : null });
+      onCompletar?.({ modo, nivel: numero, movimientos: movs, estrellas });
+      if (cofre) setTimeout(() => fx('cofre'), 900);
       enReposo(() => armado('niveles', numero + 1));
     }
     if (!sesion) { setPremio({ estado: 'sinSesion' }); return; }
@@ -173,51 +313,51 @@ export function PaginaBolitas({
     const gano = resuelto(sig);
     actualizar({ estado: sig, pasados: [...p.pasados, actual], pista: null, ganada: gano });
     setElegido(null);
-    if (gano) ganar(movidas + 1);
-    else if (!hayMovimientos(sig)) setAtascado(true);
+    if (gano) { ganar(movidas + 1); return; }
+    fx(tubosListos(sig) > listos ? 'listo' : 'soltar');
+    if (!hayMovimientos(sig)) setAtascado(true);
   };
 
   const tocar = (i) => {
     if (p.ganada || ocupado) return;
     if (cerrado(actual, i)) {
       setElegido(null);
+      fx('error');
       setAviso(`Este tubo se abre al completar el ${COLORES[actual.cortinas[i]].nombre}.`);
       return;
     }
     const tubo = actual.tubos[i];
-    if (elegido === null) {
+    const sel = elegidoRef.current;
+    if (sel === null) {
       if (!tubo.length) return;
       const arriba = tubo[tubo.length - 1];
-      if (!tramo(tubo)) { setAviso(`Esa bolita está congelada: se derrite en ${arriba.hielo} movimientos.`); return; }
+      if (!tramo(tubo)) { fx('error'); setAviso(`Esa bolita está congelada: se derrite en ${arriba.hielo} movimientos.`); return; }
+      fx('levantar');
       setElegido(i);
       return;
     }
-    if (elegido === i) { setElegido(null); return; }
-    if (puedeMover(actual, elegido, i)) { jugar(elegido, i); return; }
-    setElegido(tubo.length && tramo(tubo) ? i : null);
+    if (sel === i) { setElegido(null); return; }
+    if (puedeMover(actual, sel, i)) { jugar(sel, i); return; }
+    if (tubo.length && tramo(tubo)) { fx('levantar'); setElegido(i); } else { fx('error'); setElegido(null); }
   };
 
   const reiniciar = () => {
     if (ocupado) return;
+    cortarRacha();
     actualizar(partidaNueva(p.nivel, clave));
     setElegido(null);
     setAtascado(false);
   };
   const deshacer = () => {
     if (!p.pasados.length || p.ganada || quedan.deshacer <= 0) return;
-    actualizar({
-      estado: volverA(p.pasados[p.pasados.length - 1], actual),
-      pasados: p.pasados.slice(0, -1),
-      usos: { ...p.usos, deshacer: p.usos.deshacer + 1 },
-      pista: null,
-    });
+    gastar('deshacer', { estado: volverA(p.pasados[p.pasados.length - 1], actual), pasados: p.pasados.slice(0, -1), pista: null });
     setElegido(null);
     setAtascado(false);
   };
   // El tubo de más también queda en los pasos de antes: deshacer no lo quita.
   const sumarTubo = () => {
     if (p.ganada || quedan.tubo <= 0) return;
-    actualizar({ estado: agregarTubo(actual), pasados: p.pasados.map(agregarTubo), usos: { ...p.usos, tubo: p.usos.tubo + 1 }, pista: null });
+    gastar('tubo', { estado: agregarTubo(actual), pasados: p.pasados.map(agregarTubo), pista: null });
     setAtascado(false);
   };
   const pedirPista = () => {
@@ -225,29 +365,51 @@ export function PaginaBolitas({
     const m = pista(actual);
     setElegido(null);
     if (!m) { setAviso('Desde aquí ya no tiene solución. Deshaz unos pasos o reinicia el nivel.'); return; }
-    actualizar({ pista: m, usos: { ...p.usos, pista: p.usos.pista + 1 } });
+    gastar('pista', { pista: m });
   };
 
+  const irANivel = (n) => {
+    if (ocupado) return;
+    if (n !== numero) cortarRacha();
+    setModo('niveles');
+    setNumero(n);
+    setVista('juego');
+    setResultado(false);
+    setPremio(null);
+    setElegido(null);
+    setAtascado(false);
+  };
   const siguiente = () => {
     if (ocupado) return;
     setResultado(false);
     setPremio(null);
     setElegido(null);
     if (esReto) setModo('niveles');
-    else setNumero((n) => n + 1);
+    else irANivel(numero + 1);
+  };
+  const repetir = () => {
+    if (ocupado) return;
+    setResultado(false);
+    setPremio(null);
+    actualizar(partidaNueva(p.nivel, clave));
   };
   const cambiarModo = (m) => {
     if (m === modo || ocupado) return;
     setModo(m);
+    setVista('juego');
     setElegido(null);
     setResultado(false);
     setAtascado(false);
   };
+  const abrirMapa = () => {
+    setMundoMapa(mundo);
+    setVista('mapa');
+    setElegido(null);
+  };
   const cerrarExplicacion = () => {
     const tipo = explicar;
     setExplicar(null);
-    setExplicados((ya) => new Set(ya).add(tipo));
-    onVisto?.(tipo);
+    if (!prog.vistos.includes(tipo)) guardar({ vistos: [...prog.vistos, tipo] });
   };
 
   const promesa = !sesion
@@ -257,13 +419,26 @@ export function PaginaBolitas({
       : <PremioJuego estado="promesa" monto={monto} texto="al pasar un nivel o el reto del día." />;
   const contador = (n) => <span className={s.cuentaAyuda} aria-hidden="true">{n}</span>;
   const obstaculo = explicar && OBSTACULOS[explicar];
+  const guardadasTexto = Object.entries(prog.guardadas).filter(([, n]) => n > 0).map(([tipo, n]) => textoAyuda(tipo, n));
+  const verMapa = vista === 'mapa' && !esReto;
+
+  const interruptores = (
+    <>
+      <Boton variante="fantasma" tamano="sm" soloIcono aria-label={t.sonido} aria-pressed={prog.sonido} onClick={() => guardar({ sonido: !prog.sonido })}
+        icono={prog.sonido ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}
+      />
+      <Boton variante="fantasma" tamano="sm" soloIcono aria-label={t.vibracion} aria-pressed={prog.vibracion} onClick={() => guardar({ vibracion: !prog.vibracion })}
+        icono={prog.vibracion ? <Vibrate aria-hidden="true" /> : <VibrateOff aria-hidden="true" />}
+      />
+    </>
+  );
 
   return (
     <>
       <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }}>
-        <MarcoJuego titulo="Las Bolitas de Kapi" onAyuda={() => setAyuda(true)}>
+        <MarcoJuego titulo="Las Bolitas de Kapi" onAyuda={() => setAyuda(true)} acciones={interruptores}>
           <div className={s.bolitas} data-componente="PaginaBolitas">
-            <div className={s.mesa}>
+            <div className={[s.mesa, !esReto && s.mesaMundo].filter(Boolean).join(' ')} style={esReto ? undefined : fondoMundo(verMapa ? mundoMapa : mundo)}>
               {hoy && (
                 <div className={s.modos}>
                   <Pestanas
@@ -274,58 +449,90 @@ export function PaginaBolitas({
                   />
                 </div>
               )}
-              <p className={s.nivelTitulo}>
-                {esReto
-                  ? <Texto>Reto del día</Texto>
-                  : <TextoResaltado resaltar={[numero]}>{`Nivel ${numero}`}</TextoResaltado>}
-              </p>
-              {esReto && retoHecho && !p.ganada && (
-                <Aviso compacto tipo="exito"><Texto>Ya hiciste el reto de hoy. Puedes jugarlo otra vez; mañana sale otro.</Texto></Aviso>
+
+              {verMapa ? (
+                <>
+                  <MapaBolitas mundo={mundoMapa} progreso={prog} actual={numero} onElegir={irANivel} onMundo={setMundoMapa} />
+                  <div className={s.botonesMesa}>
+                    <Boton icono={<ArrowRight aria-hidden="true" />} onClick={() => setVista('juego')}>
+                      <TextoResaltado resaltar={[numero]}>{`Volver al nivel ${numero}`}</TextoResaltado>
+                    </Boton>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {esReto ? (
+                    <p className={s.nivelTitulo}><Texto>Reto del día</Texto></p>
+                  ) : (
+                    <div className={s.cabezaNivel}>
+                      <div>
+                        <p className={s.mundoLinea}>
+                          <TextoResaltado resaltar={[mundo]}>{`Mundo ${mundo}`}</TextoResaltado>
+                          {' · '}
+                          <Texto>{infoMundo(mundo).nombre}</Texto>
+                        </p>
+                        <p className={s.nivelTitulo}>
+                          {p.nivel.jefe && <Crown className={s.coronaTitulo} aria-hidden="true" />}
+                          <TextoResaltado resaltar={[numero]}>{p.nivel.jefe ? `Nivel ${numero} · Jefe` : `Nivel ${numero}`}</TextoResaltado>
+                        </p>
+                        <p className={s.metaEstrellas}>
+                          {/* Las que llevaría si ganara ahora: bajan al pasarse de la meta. */}
+                          <EstrellasNivel valor={estrellasPara(movidas, p.nivel.par)} tamano="md" />
+                          <TextoResaltado resaltar={[metas.tres]}>{`3 estrellas con ${metas.tres} movimientos o menos`}</TextoResaltado>
+                        </p>
+                      </div>
+                      <Boton variante="secundario" tamano="sm" icono={<IconoMapa aria-hidden="true" />} onClick={abrirMapa}><Texto>Mapa</Texto></Boton>
+                    </div>
+                  )}
+                  {esReto && prog.reto === hoy && !p.ganada && (
+                    <Aviso compacto tipo="exito"><Texto>Ya hiciste el reto de hoy. Puedes jugarlo otra vez; mañana sale otro.</Texto></Aviso>
+                  )}
+                  <div className={s.mensajeZona} aria-live="polite">
+                    {aviso && <span key={aviso} className={s.mensaje}><Texto>{aviso}</Texto></span>}
+                  </div>
+                  <LayoutGroup>
+                    <div className={[s.tubos, actual.tubos.length > 6 && s.tubosCompactos].filter(Boolean).join(' ')} style={columnas(actual.tubos.length)}>
+                      {actual.tubos.map((tubo, i) => (
+                        <TuboBolitas
+                          key={i}
+                          numero={i + 1}
+                          bolas={tubo}
+                          capacidad={actual.capacidad}
+                          elegido={elegido === i}
+                          destino={elegido !== null && puedeMover(actual, elegido, i)}
+                          listo={!cerrado(actual, i) && tuboListo(tubo, actual.capacidad)}
+                          cortina={actual.cortinas[i]}
+                          pista={p.pista?.[0] === i ? 'origen' : p.pista?.[1] === i ? 'destino' : undefined}
+                          onClick={() => tocar(i)}
+                        />
+                      ))}
+                    </div>
+                  </LayoutGroup>
+                  <div className={s.botonesMesa}>
+                    {p.ganada ? (
+                      <>
+                        <Boton icono={<ArrowRight aria-hidden="true" />} onClick={siguiente} disabled={ocupado}>
+                          <Texto>{esReto ? 'Seguir con los niveles' : 'Siguiente nivel'}</Texto>
+                        </Boton>
+                        {!resultado && <Boton variante="secundario" icono={<Eye aria-hidden="true" />} onClick={() => setResultado(true)}><Texto>Ver resultado</Texto></Boton>}
+                      </>
+                    ) : (
+                      <>
+                        <Boton variante="secundario" icono={<Undo2 aria-hidden="true" />} onClick={deshacer} disabled={!movidas || quedan.deshacer <= 0}>
+                          <Texto>Deshacer</Texto>{contador(quedan.deshacer)}
+                        </Boton>
+                        <Boton variante="secundario" icono={<Plus aria-hidden="true" />} onClick={sumarTubo} disabled={quedan.tubo <= 0}>
+                          <Texto>Un tubo más</Texto>{contador(quedan.tubo)}
+                        </Boton>
+                        <Boton variante="secundario" icono={<Lightbulb aria-hidden="true" />} onClick={pedirPista} disabled={quedan.pista <= 0}>
+                          <Texto>Pista</Texto>{contador(quedan.pista)}
+                        </Boton>
+                        <Boton variante="fantasma" icono={<RotateCcw aria-hidden="true" />} onClick={reiniciar}><Texto>Reiniciar</Texto></Boton>
+                      </>
+                    )}
+                  </div>
+                </>
               )}
-              <div className={s.mensajeZona} aria-live="polite">
-                {aviso && <span key={aviso} className={s.mensaje}><Texto>{aviso}</Texto></span>}
-              </div>
-              <LayoutGroup>
-                <div className={[s.tubos, actual.tubos.length > 6 && s.tubosCompactos].filter(Boolean).join(' ')} style={columnas(actual.tubos.length)}>
-                  {actual.tubos.map((t, i) => (
-                    <TuboBolitas
-                      key={i}
-                      numero={i + 1}
-                      bolas={t}
-                      capacidad={actual.capacidad}
-                      elegido={elegido === i}
-                      destino={elegido !== null && puedeMover(actual, elegido, i)}
-                      listo={!cerrado(actual, i) && tuboListo(t, actual.capacidad)}
-                      cortina={actual.cortinas[i]}
-                      pista={p.pista?.[0] === i ? 'origen' : p.pista?.[1] === i ? 'destino' : undefined}
-                      onClick={() => tocar(i)}
-                    />
-                  ))}
-                </div>
-              </LayoutGroup>
-              <div className={s.botonesMesa}>
-                {p.ganada ? (
-                  <>
-                    <Boton icono={<ArrowRight aria-hidden="true" />} onClick={siguiente} disabled={ocupado}>
-                      <Texto>{esReto ? 'Seguir con los niveles' : 'Siguiente nivel'}</Texto>
-                    </Boton>
-                    {!resultado && <Boton variante="secundario" icono={<Eye aria-hidden="true" />} onClick={() => setResultado(true)}><Texto>Ver resultado</Texto></Boton>}
-                  </>
-                ) : (
-                  <>
-                    <Boton variante="secundario" icono={<Undo2 aria-hidden="true" />} onClick={deshacer} disabled={!movidas || quedan.deshacer <= 0}>
-                      <Texto>Deshacer</Texto>{contador(quedan.deshacer)}
-                    </Boton>
-                    <Boton variante="secundario" icono={<Plus aria-hidden="true" />} onClick={sumarTubo} disabled={quedan.tubo <= 0}>
-                      <Texto>Un tubo más</Texto>{contador(quedan.tubo)}
-                    </Boton>
-                    <Boton variante="secundario" icono={<Lightbulb aria-hidden="true" />} onClick={pedirPista} disabled={quedan.pista <= 0}>
-                      <Texto>Pista</Texto>{contador(quedan.pista)}
-                    </Boton>
-                    <Boton variante="fantasma" icono={<RotateCcw aria-hidden="true" />} onClick={reiniciar}><Texto>Reiniciar</Texto></Boton>
-                  </>
-                )}
-              </div>
             </div>
             <aside className={s.lado}>
               <div className={s.panel}>
@@ -336,11 +543,22 @@ export function PaginaBolitas({
                 ]}
                 />
                 <BarraProgreso pasos valor={listos} max={colores} etiqueta={<Texto>Tubos listos</Texto>} />
-                <p className={s.notaSuave}>
-                  <TextoResaltado resaltar={[quedan.deshacer, quedan.tubo, quedan.pista]}>
-                    {`En este nivel te quedan ${quedan.deshacer} para deshacer, ${quedan.tubo} tubo de más y ${quedan.pista} pistas.`}
-                  </TextoResaltado>
-                </p>
+                <div className={s.rachaBolitas} data-componente="RachaBolitas">
+                  <p className={s.rachaTitulo}>
+                    <Flame aria-hidden="true" className={prog.racha ? s.llamaEncendida : s.llama} />
+                    <TextoResaltado resaltar={[prog.racha]}>{`Racha de victorias: ${prog.racha}`}</TextoResaltado>
+                  </p>
+                  <BarraProgreso pasos valor={prog.racha % RACHA_COFRE} max={RACHA_COFRE} etiqueta={<Texto>Para el próximo cofre</Texto>} />
+                  <p className={s.notaSuave}>
+                    <TextoResaltado resaltar={[RACHA_COFRE]}>{`Gana ${RACHA_COFRE} niveles seguidos sin reiniciar y abre un cofre con ayudas.`}</TextoResaltado>
+                  </p>
+                  {guardadasTexto.length > 0 && (
+                    <p className={s.guardadas}>
+                      <Gift aria-hidden="true" />
+                      <Texto>{`Guardadas: ${guardadasTexto.join(', ')}.`}</Texto>
+                    </p>
+                  )}
+                </div>
               </div>
             </aside>
           </div>
@@ -361,10 +579,14 @@ export function PaginaBolitas({
           <TextoResaltado key="listo" resaltar={[actual.capacidad]}>
             {`Un tubo está listo cuando tiene sus ${actual.capacidad} bolitas del mismo color. Ganas cuando lo están todos.`}
           </TextoResaltado>,
+          'Con menos movimientos ganas más estrellas (hasta 3). Cada mundo tiene 20 niveles y el último es un jefe.',
+          <TextoResaltado key="racha" resaltar={[RACHA_COFRE]}>
+            {`Gana ${RACHA_COFRE} niveles seguidos sin reiniciar y abre un cofre: pistas, tubos o deshacer que se guardan para cuando se acaben los del nivel.`}
+          </TextoResaltado>,
         ]}
         pie={(
           <TextoResaltado resaltar={[AYUDAS_BOLITAS.deshacer, AYUDAS_BOLITAS.pista, `+${monto}`]}>
-            {`En cada nivel tienes ${AYUDAS_BOLITAS.deshacer} para deshacer, un tubo de más y ${AYUDAS_BOLITAS.pista} pistas; «Reiniciar» las devuelve. Cada nivel es más difícil, desde el 12 aparecen obstáculos y cada día hay un reto nuevo. El premio (+${monto} monedas) se gana una vez al día.`}
+            {`En cada nivel tienes ${AYUDAS_BOLITAS.deshacer} para deshacer, un tubo de más y ${AYUDAS_BOLITAS.pista} pistas; «Reiniciar» las devuelve pero corta la racha. Desde el 12 aparecen obstáculos y cada día hay un reto nuevo. El premio (+${monto} monedas) se gana una vez al día.`}
           </TextoResaltado>
         )}
       >
@@ -402,7 +624,7 @@ export function PaginaBolitas({
           </div>
         )}
       >
-        <p className={s.ayudaTexto}><Texto>Ya no queda ningún movimiento posible. Usa una ayuda o empieza el nivel de nuevo.</Texto></p>
+        <p className={s.ayudaTexto}><Texto>Ya no queda ningún movimiento posible. Usa una ayuda o empieza el nivel de nuevo (eso corta la racha).</Texto></p>
       </HojaInferior>
 
       <ResultadoJuego
@@ -412,21 +634,52 @@ export function PaginaBolitas({
         titulo={esReto ? '¡Reto del día completado!' : `¡Nivel ${numero} completado!`}
         imagen={CARAS_KAPI.feliz}
         texto={(
-          <p>
-            <TextoResaltado resaltar={[movidas]}>
-              {movidas === 1 ? 'Lo resolviste en 1 movimiento.' : `Lo resolviste en ${movidas} movimientos.`}
-            </TextoResaltado>
-          </p>
+          <div className={s.logro}>
+            {logro && <EstrellasNivel valor={logro.estrellas} tamano="lg" animar />}
+            <p>
+              <TextoResaltado resaltar={[movidas]}>
+                {movidas === 1 ? 'Lo resolviste en 1 movimiento.' : `Lo resolviste en ${movidas} movimientos.`}
+              </TextoResaltado>
+            </p>
+            {logro?.record && <p className={s.record}><Texto>¡Nuevo récord en este nivel!</Texto></p>}
+            {logro && logro.estrellas < 3 && (
+              <p className={s.notaSuave}>
+                <TextoResaltado resaltar={[metas.tres]}>{`Para 3 estrellas: ${metas.tres} movimientos o menos.`}</TextoResaltado>
+              </p>
+            )}
+            {logro?.mundoCompleto && (
+              <p className={s.mundoCompleto}>
+                <TextoResaltado resaltar={[logro.mundoCompleto + 1]}>
+                  {`¡Venciste al jefe! Se abre el mundo ${logro.mundoCompleto + 1}: ${infoMundo(logro.mundoCompleto + 1).nombre}.`}
+                </TextoResaltado>
+              </p>
+            )}
+          </div>
         )}
         acciones={(
           <>
             <Boton bloque icono={<ArrowRight aria-hidden="true" />} onClick={siguiente} disabled={ocupado}>
               <Texto>{esReto ? 'Seguir con los niveles' : `Ir al nivel ${numero + 1}`}</Texto>
             </Boton>
-            <Boton bloque variante="secundario" to="/minijuegos" icono={<Gamepad2 aria-hidden="true" />} disabled={ocupado}><Texto>Ver otros juegos</Texto></Boton>
+            {logro && logro.estrellas < 3 ? (
+              <Boton bloque variante="secundario" icono={<RotateCcw aria-hidden="true" />} onClick={repetir} disabled={ocupado}><Texto>Repetir por 3 estrellas</Texto></Boton>
+            ) : (
+              <Boton bloque variante="secundario" to="/minijuegos" icono={<Gamepad2 aria-hidden="true" />} disabled={ocupado}><Texto>Ver otros juegos</Texto></Boton>
+            )}
           </>
         )}
       >
+        {logro?.cofre && (
+          <div className={s.cofre} data-componente="CofreBolitas">
+            <Gift aria-hidden="true" className={s.cofreIcono} />
+            <div>
+              <p className={s.cofreTitulo}>
+                <TextoResaltado resaltar={[logro.racha]}>{`¡Racha de ${logro.racha}! Abriste un cofre`}</TextoResaltado>
+              </p>
+              <p className={s.cofreTexto}><Texto>{`Ganaste ${textoAyuda(logro.cofre.tipo, logro.cofre.cantidad)}. Se guarda para cuando se acaben las del nivel.`}</Texto></p>
+            </div>
+          </div>
+        )}
         {premio && <PremioJuego {...premio} urlLogin={urlLogin} />}
       </ResultadoJuego>
     </>

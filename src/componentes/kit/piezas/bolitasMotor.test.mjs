@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   CAPACIDAD, COLORES, PRIMER_NIVEL, nivel, retoDelDia, puedeMover, mover, resuelto, resolver, pista,
   hayMovimientos, agregarTubo, volverA, tramo, tubosListos, obstaculosDelNivel, coloresDelNivel, azar,
+  NIVELES_POR_MUNDO, mundoDe, esJefe, infoMundo, estrellasPara, metasEstrellas, premioCofre,
 } from './bolitasMotor.mjs';
 
 const b = (c, extra = {}) => ({ id: `${c}-${Math.random().toString(36).slice(2, 8)}`, c, oculta: false, hielo: 0, ...extra });
@@ -91,6 +92,47 @@ test('cada obstáculo empieza solo en su nivel y después vuelve', () => {
   }
   const despues = Array.from({ length: 60 }, (_, k) => obstaculosDelNivel(41 + k)).flat();
   for (const tipo of Object.keys(PRIMER_NIVEL)) assert.ok(despues.includes(tipo));
+});
+
+test('mundos de 20 niveles con su jefe al final', () => {
+  assert.equal(NIVELES_POR_MUNDO, 20);
+  assert.equal(mundoDe(1), 1);
+  assert.equal(mundoDe(20), 1);
+  assert.equal(mundoDe(21), 2);
+  assert.deepEqual([infoMundo(2).desde, infoMundo(2).hasta], [21, 40]);
+  assert.ok(infoMundo(9).nombre, 'los nombres vuelven a empezar');
+  assert.ok(esJefe(20) && esJefe(40) && !esJefe(19) && !esJefe(0));
+  for (const n of Object.values(PRIMER_NIVEL)) assert.ok(!esJefe(n), `la presentación del ${n} no puede ser un jefe`);
+  // El jefe trae todos los obstáculos que ya salieron y un color más.
+  assert.deepEqual(obstaculosDelNivel(20), ['ocultas']);
+  assert.deepEqual(obstaculosDelNivel(40), ['ocultas', 'cortina']);
+  assert.deepEqual(obstaculosDelNivel(60), ['ocultas', 'cortina', 'hielo']);
+  const jefe = nivel(60);
+  assert.ok(jefe.jefe);
+  assert.equal(jefe.mundo, 3);
+  assert.ok(resuelto(jugar(jefe.estado, jefe.solucion)));
+});
+
+test('estrellas: 3 igualando la solución del motor, 2 hasta un cuarto más, 1 si no', () => {
+  assert.deepEqual(metasEstrellas(20), { tres: 20, dos: 25 });
+  assert.equal(estrellasPara(18, 20), 3);
+  assert.equal(estrellasPara(20, 20), 3);
+  assert.equal(estrellasPara(25, 20), 2);
+  assert.equal(estrellasPara(26, 20), 1);
+  assert.equal(nivel(30).par, nivel(30).solucion.length);
+});
+
+test('el cofre trae una ayuda', () => {
+  const tipos = new Set();
+  for (let k = 0; k < 200; k += 1) {
+    const p = premioCofre(azar(k));
+    assert.ok(['pista', 'deshacer', 'tubo'].includes(p.tipo));
+    assert.ok(p.cantidad >= 1);
+    tipos.add(p.tipo);
+  }
+  assert.equal(tipos.size, 3);
+  assert.equal(premioCofre(() => 0).tipo, 'pista');
+  assert.equal(premioCofre(() => 0.999).tipo, 'tubo');
 });
 
 test('el mismo número da el mismo nivel', () => {
