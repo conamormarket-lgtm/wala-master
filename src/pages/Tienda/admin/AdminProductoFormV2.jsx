@@ -18,6 +18,7 @@ import ProductImageContainer from '../components/ProductImageContainer/ProductIm
 import ThumbnailCropEditor from '../../../components/admin/ThumbnailCropEditor/ThumbnailCropEditor';
 import AdminCustomizationViewsEditor from '../components/AdminCustomizationViewsEditor/AdminCustomizationViewsEditor';
 import AdminComboEditor from '../components/AdminComboEditor/AdminComboEditor';
+import GenerarFrenteEspalda from './GenerarFrenteEspalda';
 import YoryoPersonalizado from '../../../components/YoryoPersonalizado/YoryoPersonalizado';
 import PersonalizacionPrenda, { prendaBaseInicial, prendaBaseParaGuardar } from '../../admin/prendasCrear/PersonalizacionPrenda';
 import { fabric } from 'fabric';
@@ -637,6 +638,25 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
       updateActiveVariant({
         images: [...(activeVariant.images || []), ...newImages],
         imagesVariantes: mapaVariantes,
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // La imagen "frente y espalda" (GenerarFrenteEspalda) entra como una foto más
+  // de la galería, al final: la principal y la segunda quedan como estaban.
+  const handleGuardarFrenteEspalda = async (blob) => {
+    if (!activeVariant) return;
+    setUploading(true);
+    try {
+      const archivo = new File([blob], 'frente-espalda.png', { type: 'image/png' });
+      const path = `productos_v2/${draftId}/gallery_${Date.now()}_frente-espalda.png`;
+      const { url, variantes } = await uploadFile(archivo, path);
+      if (!url) throw new Error('No se pudo subir la imagen.');
+      updateActiveVariant({
+        images: [...(activeVariant.images || []), url],
+        ...conVariantes(url, variantes),
       });
     } finally {
       setUploading(false);
@@ -1777,6 +1797,13 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
                     <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} disabled={uploading} hidden />
                   </label>
                 </div>
+
+                <GenerarFrenteEspalda
+                  variante={activeVariant}
+                  marca={selectedBrand || null}
+                  onGuardar={handleGuardarFrenteEspalda}
+                  ocupado={uploading}
+                />
 
                 {/* Editor inline de encuadre para la imagen de galería seleccionada */}
                 {galleryCropTarget && (
