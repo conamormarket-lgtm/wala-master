@@ -173,7 +173,9 @@ export const VisualEditorProvider = ({ children }) => {
   };
 
   // avisar: false = sin alert (el editor del kit avisa con un toast).
-  const saveDraftToFirestore = async ({ avisar = true } = {}) => {
+  // preparar(secciones) → secciones: antes de guardar (p. ej. las burbujas de
+  // una marca se guardan en la marca y salen de la sección). Si lanza, no se guarda.
+  const saveDraftToFirestore = async ({ avisar = true, preparar } = {}) => {
     if (!storeConfigDraft) return { error: 'No hay cambios' };
     // El borrador es de otra página (la nueva aún carga): no se guarda encima.
     if (!activePageId || paginaDelBorrador !== activePageId) return { error: 'La página todavía está cargando' };
@@ -186,12 +188,22 @@ export const VisualEditorProvider = ({ children }) => {
     }
 
     setIsSaving(true);
-    
+
+    let borradorAGuardar = storeConfigDraft;
+    if (preparar) {
+      try {
+        borradorAGuardar = { ...storeConfigDraft, sections: await preparar(storeConfigDraft.sections || []) };
+      } catch (e) {
+        setIsSaving(false);
+        return { error: e?.message || String(e) };
+      }
+    }
+
     // Guardar la configuración legacy temporalmente para asegurar retrocompatibilidad
-    const { error: legacyError } = await setDocument('storeConfig', 'homePage', storeConfigDraft);
+    const { error: legacyError } = await setDocument('storeConfig', 'homePage', borradorAGuardar);
     
     // Convertir el heroBanner u otros módulos globales a secciones si es necesario
-    let sectionsToSave = storeConfigDraft.sections || [];
+    let sectionsToSave = borradorAGuardar.sections || [];
     
     // Ahora guardamos usando la nueva colección de páginas
     const { error } = await saveStorefrontConfig(sectionsToSave, activePageId);
@@ -200,7 +212,7 @@ export const VisualEditorProvider = ({ children }) => {
     if (!error && !legacyError) {
       await createDocument('storeConfigLogs', {
         pageId: activePageId,
-        config: storeConfigDraft,
+        config: borradorAGuardar,
         timestamp: new Date().toISOString(),
         user: isAdmin ? 'Admin' : 'Unknown',
         description: `Guardado desde el Editor Visual (Página: ${activePageId})`

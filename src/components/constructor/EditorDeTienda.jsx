@@ -6,7 +6,7 @@ import { useLayoutContext } from '../../contexts/LayoutContext';
 import { useVisualEditor } from '../../pages/Tienda/contexts/VisualEditorContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getCollections } from '../../services/collections';
-import { getBrands } from '../../services/brands';
+import { getBrands, updateBrand } from '../../services/brands';
 import { getCategories } from '../../services/categories';
 import { getProductsByBrand } from '../../services/products';
 import { getDocument } from '../../services/firebase/firestore';
@@ -14,7 +14,7 @@ import { uploadFile } from '../../services/firebase/storage';
 import { getLandingPageBySlug, saveLandingPage } from '../../pages/Tienda/services/landingPages';
 import { getThemes } from '../../pages/Tienda/services/themes';
 import { getDefaultSettings } from '../../pages/Tienda/services/storefront';
-import CategoryNavEditor from '../admin/CategoryNavEditor/CategoryNavEditor';
+import BurbujasDeMarca, { burbujasParaLaMarca } from './BurbujasDeMarca';
 import PanelEditor from '../../componentes/kit/editor/PanelEditor';
 import { ControlOpciones, ControlInterruptor } from '../../componentes/kit/editor/CamposEditor';
 import Boton from '../../componentes/kit/Boton';
@@ -262,8 +262,32 @@ export default function EditorDeTienda() {
   );
   const esLanding = activePageId && !PAGINAS_GLOBALES.includes(activePageId);
 
+  // Las burbujas editadas (settings._burbujas de "Botones de categorías") se
+  // guardan en su marca y salen de la sección antes de guardar la página.
+  const queryClient = useQueryClient();
+  const prepararSecciones = async (lista) => {
+    const marcasTocadas = [];
+    for (const sec of lista) {
+      const b = sec?.settings?._burbujas;
+      const brandId = sec?.settings?.brandId;
+      if (sec?.type !== 'categories_nav' || !b || !brandId) continue;
+      const { error } = await updateBrand(brandId, burbujasParaLaMarca(b));
+      if (error) throw new Error(`no se guardaron las burbujas de la marca (${error})`);
+      marcasTocadas.push(brandId);
+    }
+    if (marcasTocadas.length) {
+      queryClient.invalidateQueries({ queryKey: ['categories-nav-brands'] });
+      marcasTocadas.forEach((id) => queryClient.invalidateQueries({ queryKey: ['admin-brand-doc', id] }));
+    }
+    return lista.map((sec) => {
+      if (!sec?.settings?._burbujas) return sec;
+      const { _burbujas, ...resto } = sec.settings;
+      return { ...sec, settings: resto };
+    });
+  };
+
   const publicar = async () => {
-    const r = await saveDraftToFirestore({ avisar: false });
+    const r = await saveDraftToFirestore({ avisar: false, preparar: prepararSecciones });
     if (r?.success) toast.success('Cambios publicados.');
     else if (r?.bloqueada) toast.error(`Esta página (${activePageId}) está bloqueada por un administrador: no se pueden guardar cambios.`);
     else toast.error(`No se pudo publicar: ${r?.error || 'inténtalo de nuevo'}`);
@@ -274,7 +298,6 @@ export default function EditorDeTienda() {
     toggleEditMode();
   };
 
-  const nombreMarca = (id) => (marcas || []).find((m) => m.id === id)?.name || '';
 
   return (
     <div className={s.editor}>
@@ -295,7 +318,7 @@ export default function EditorDeTienda() {
           todas: { colecciones: colecciones || [], categorias: todasLasCategorias || [] },
         }}
         extensiones={{
-          burbujasDeMarca: ({ ajustes }) => <CategoryNavEditor brandId={ajustes.brandId} brandName={nombreMarca(ajustes.brandId)} />,
+          burbujasDeMarca: (props) => <BurbujasDeMarca {...props} categorias={categorias} />,
         }}
         globales={globales}
         cabecera={cabeceraDelPanel}

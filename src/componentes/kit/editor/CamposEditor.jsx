@@ -116,9 +116,10 @@ export function ControlRango({ etiqueta, valor, onCambiar, min = 0, max = 100, p
 }
 
 /** Botones de opción (hasta 4 cortas) o lista desplegable. */
-export function ControlOpciones({ etiqueta, ayuda, valor, onCambiar, opciones, iconos }) {
+export function ControlOpciones({ etiqueta, ayuda, valor, onCambiar, opciones, iconos, lista = false }) {
   const id = useId();
-  const segmentado = opciones.length <= 4 && opciones.reduce((n, o) => n + String(o.texto).length, 0) <= 30;
+  // `lista`: siempre desplegable (datos que crecen: colecciones, categorías…).
+  const segmentado = !lista && opciones.length <= 4 && opciones.reduce((n, o) => n + String(o.texto).length, 0) <= 30;
   const actual = valor ?? '';
   if (segmentado) {
     return (
@@ -312,6 +313,9 @@ export function ControlFuente({ etiqueta, valor, onCambiar, datos, vacio = 'Ning
       etiqueta={etiqueta}
       valor={valor ?? ''}
       onCambiar={onCambiar}
+      // Colecciones, categorías y marcas crecen: siempre lista desplegable
+      // (con pocas, los botones se cortaban: "ige una colecció").
+      lista
       opciones={[
         { valor: '', texto: vacio },
         ...lista.map((x) => ({ valor: x.id, texto: x.name || x.id })),
@@ -455,7 +459,12 @@ function ControlEspaciado({ ajustes, cambiar }) {
 }
 
 /* ── Lista de elementos (diapositivas, tarjetas, preguntas…) ── */
-function ControlLista({ campo: def, valor, onCambiar }) {
+/**
+ * Lista de elementos (diapositivas, tarjetas, preguntas…). Con def.soloDesde
+ * solo se añade desde def.desde (p. ej. una categoría): sin "Añadir" en
+ * blanco ni duplicar.
+ */
+export function ControlLista({ campo: def, valor, onCambiar }) {
   const { fuentes } = useEditor();
   const items = Array.isArray(valor) ? valor : [];
   const [abierto, setAbierto] = useState(null);
@@ -502,7 +511,7 @@ function ControlLista({ campo: def, valor, onCambiar }) {
                 <span className={s.elementoAcciones}>
                   <button type="button" onClick={() => mover(i, -1)} disabled={i === 0} aria-label="Subir"><ArrowUp /></button>
                   <button type="button" onClick={() => mover(i, 1)} disabled={i === items.length - 1} aria-label="Bajar"><ArrowDown /></button>
-                  {!lleno && <button type="button" onClick={() => poner([...items.slice(0, i + 1), { ...JSON.parse(JSON.stringify(it)), id: it.id ? `${it.id}_copia${Date.now()}` : undefined }, ...items.slice(i + 1)])} aria-label="Duplicar"><Copy /></button>}
+                  {!lleno && !def.soloDesde && <button type="button" onClick={() => poner([...items.slice(0, i + 1), { ...JSON.parse(JSON.stringify(it)), id: it.id ? `${it.id}_copia${Date.now()}` : undefined }, ...items.slice(i + 1)])} aria-label="Duplicar"><Copy /></button>}
                   <button type="button" className={s.peligro} onClick={() => { poner(items.filter((_, j) => j !== i)); setAbierto(null); }} aria-label="Quitar"><Trash2 /></button>
                 </span>
               </div>
@@ -522,7 +531,7 @@ function ControlLista({ campo: def, valor, onCambiar }) {
         </p>
       )}
       <div className={s.listaPie}>
-        {!lleno && (
+        {!lleno && !def.soloDesde && (
           <button type="button" className={s.agregar} onClick={() => { poner([...items, def.nuevo ? def.nuevo() : {}]); setAbierto(items.length); }}>
             <Plus aria-hidden="true" /> Añadir
           </button>

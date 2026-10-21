@@ -1192,9 +1192,11 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       const navBrandId = (section.settings?.brandId || '').trim();
       if (!navBrandId) return null;
       const entrada = navCategoriesByBrand?.[navBrandId];
+      // Editándolas en el panel (settings._burbujas, aún sin publicar), se ven al momento.
+      const propias = section.settings?._burbujas;
       Object.assign(datos, {
-        categorias: entrada?.items || [],
-        estilo: entrada?.style,
+        categorias: propias?.modo === 'mano' ? propias.items.filter((it) => it.categoryId) : entrada?.items || [],
+        estilo: propias ? { align: propias.alinear, animation: propias.animar } : entrada?.style,
         cargando: navCargando,
         activa: navCategoryId,
         onSeleccionar: handleNavCategorySelect,
