@@ -59,7 +59,7 @@ Revisado el 2026-10-15 contra estos archivos:
 | P20 Lo común | `MarcoJuego`, `AyudaJuego`, `ResultadoJuego`, `PremioJuego`, `CifrasJuego` (nuevas, `piezas/Juegos.jsx`) | `Boton`, `HojaInferior`, `Sello`, `Trazo`, `GananciaMonedas`, `Cargando` | — |
 | P20 Palabra del día | `PaginaPalabra` (`paginas/Palabra.jsx`) | `TableroPalabra`, `FichaPalabra`, `TecladoPalabra`, `LeyendaPalabra`, `RankingPalabra` y las reglas `evaluarIntento`, `estadosDeTeclas` y `normalizarPalabra` (nuevas, `piezas/Palabra.jsx`); `Pestanas`, `Avatar`, `CuentaRegresiva` | `getDailyWord`, `VALID_GUESSES`, `getEstadoPartidaDeHoy` + localStorage (`wala_wordle_{fecha}`), `getWordleRankingToday` / `getWordleRanking`, el perfil (`wordlePlayed`…), `saveWordleResult` + `claimWordleRewardSecure` |
 | P20 Ruleta | `PaginaRuleta` (`paginas/Ruleta.jsx`) | `RuedaRuleta` y `HistorialRuleta` (nuevas, `piezas/Ruleta.jsx`); `BarraProgreso` (la racha), `CodigoCopiable` (el cupón), `IconoWala` por tipo de premio | `getRuletaBoard` (config, premios, historial), `getRuletaEligibility`, `spinRuletaSecure` |
-| P20 Bolitas | `PaginaBolitas` (`paginas/Bolitas.jsx`) | `TuboBolitas` y `Bolita`, y las reglas `nivelBolitas`, `puedeSoltar`, `moverBolita`, `tuboListo` y `nivelResuelto` (nuevas, `piezas/Bolitas.jsx`); `Estallido`, `BarraProgreso` | `lastBallSortReward`, `claimBallSortRewardSecure` |
+| P20 Bolitas | `PaginaBolitas` (`paginas/Bolitas.jsx`) | `TuboBolitas` y `Bolita` (`piezas/Bolitas.jsx`); las reglas, los niveles y el solucionador en `piezas/bolitasMotor.mjs` (desde el 2026-10-21; antes `nivelBolitas`, `puedeSoltar`, `moverBolita`…); `Pestanas`, `Estallido`, `BarraProgreso` | `lastBallSortReward`, `claimBallSortRewardSecure`; en el aparato, `wala_bolitas_nivel`, `wala_bolitas_reto`, `wala_bolitas_vistos` |
 
 Esqueletos: `EsqueletoPagina forma="palabra"`, `"ruleta"` y `"bolitas"`
 (nuevas, con la medida real en escritorio y en el celular).
@@ -239,9 +239,9 @@ con `rotulo` y `detalle`. Lo usan la reclamación y el cupón de la ruleta.
 - **Lo que guarda el cliente:** la partida y las estadísticas las escribe el
   cliente, y las reglas solo revisan el `userId`. El cobro sí se valida en el
   servidor, pero el ranking se puede falsear.
-- **Bolitas sin solución:** el nivel se mezcla al azar sin comprobar que
-  tenga solución. Con dos tubos vacíos casi siempre la tiene. "Otro nivel"
-  es la salida.
+- ~~**Bolitas sin solución:** el nivel se mezcla al azar sin comprobar que
+  tenga solución.~~ Resuelto el 2026-10-21: cada nivel pasa por el
+  solucionador (ver "Niveles, obstáculos y reto del día" al final).
 
 ### Pasos
 
@@ -338,3 +338,54 @@ Escape; el interruptor en las tres (las bolitas viejas piden cuenta); la
 demo. **No probado:** el error al cargar la ruleta (el tablero tiene
 respaldo y no se pudo forzar), un cobro fallido de la palabra, la app
 (Capacitor).
+
+## Las bolitas: niveles, obstáculos y reto del día (2026-10-21)
+
+Tomado de cómo funciona un Ball Sort comercial (analizado desde su APK),
+con niveles propios: no se copió ninguno, se generan con la misma forma.
+
+**El motor** (`piezas/bolitasMotor.mjs`, puro; `npm run test:bolitas`):
+
+- **Movimiento:** se llevan juntas todas las bolitas de arriba del mismo
+  color que quepan (antes, una por vez). Es la regla del juego de referencia:
+  sus soluciones solo funcionan así.
+- **Niveles 1, 2, 3…** siempre iguales para el mismo número (semilla). La
+  curva: del 1 al 10 se aprende (2 a 7 colores), sube hasta el 100 (hasta 9)
+  y desde el 101 queda entre 9 y 12 colores, 4 bolitas por tubo y 2 tubos
+  vacíos; lo que varía son los obstáculos.
+- **Obstáculos**, cada uno solo en su primer nivel (con su explicación) y
+  después cada tanto: **bolitas ocultas** "?" desde el 12 (se ven al quedar
+  arriba), **cortina** desde el 25 (el tubo no se usa hasta completar el
+  color que muestra) y **hielo** desde el 40 (la bolita no se mueve; el
+  número baja con cada movimiento).
+- **Solucionador:** cada nivel se resuelve antes de mostrarlo; si no tiene
+  solución se reparte otra vez. También da la pista. Armar un nivel tarda
+  0,5 ms la mitad de las veces y 160 ms el peor de 1.500 (en un PC); el
+  siguiente se prepara mientras se ve el resultado.
+- **Reto del día:** un nivel de 10 a 12 colores con un obstáculo, el mismo
+  para todos según el día de Lima.
+
+**La página** (`paginas/Bolitas.jsx`): pestañas Niveles / Reto del día, el
+número de nivel, ayudas contadas por nivel (`AYUDAS_BOLITAS`: 5 para
+deshacer, 1 tubo de más y 3 pistas; "Reiniciar" las devuelve), la hoja "Sin
+movimientos" y "Siguiente nivel". Deshacer no vuelve a tapar una "?" ya vista
+ni quita el tubo de más.
+
+**En la tienda** (`BolitasDeTienda.jsx`): el nivel, el último reto hecho y los
+obstáculos explicados se guardan en el aparato (`wala_bolitas_nivel`,
+`wala_bolitas_reto`, `wala_bolitas_vistos`); `trackMinigame('complete')`
+manda además el modo, el nivel o la fecha y los movimientos. **El premio no
+cambia:** +2 una vez al día (`claimBallSortRewardSecure`), al pasar un nivel
+o el reto.
+
+**Demo:** estados "Nivel 12 (ocultas)", "Nivel 25 (cortina)", "Nivel 40
+(hielo)", "Nivel 150" y "Reto de hoy hecho".
+
+**Probado** en el navegador (sin cuenta): el nivel 1 resuelto, la pista, la
+hoja del resultado, pasar al 2 y que se guarde; los niveles 12, 25 y 40 con
+su explicación, el aviso de la cortina y el hielo que baja; el 150 a 375 px
+(14 tubos en dos filas, sin desborde); el reto y "Un tubo más". **No
+probado:** el cobro con cuenta (no cambió), la hoja "Sin movimientos" en
+pantalla (la regla sí, en las pruebas del motor), inglés y la app
+(Capacitor). **Pendiente:** el progreso vive en el aparato; para que siga a
+la cuenta haría falta guardarlo en el perfil.
