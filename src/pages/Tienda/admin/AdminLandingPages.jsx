@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { getLandingPages, saveLandingPage, deleteLandingPage, moverDisenoDeLanding } from '../services/landingPages';
 import { getBrands } from '../../../services/brands';
 import Button from '../../../components/common/Button';
+import { useConfirmar } from '../../../componentes/kit/Feedback';
+import { useGlobalToast } from '../../../contexts/ToastContext';
 import styles from '../../admin/AdminLandingPages.module.css';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -29,6 +31,11 @@ const AdminLandingPages = () => {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
+  // La pregunta y los avisos son de la app: el confirm()/alert() del
+  // navegador se pueden bloquear ("no dejar que esta página cree más
+  // diálogos") y entonces "Eliminar" no hacía nada, sin decir por qué.
+  const confirmar = useConfirmar();
+  const toast = useGlobalToast();
   // ?nueva=<slug>: viene del atajo "Crear landing" de Enlaces rotos
   // (dashboard/paginas) y abre una landing nueva con esa URL.
   const [searchParams, setSearchParams] = useSearchParams();
@@ -86,17 +93,24 @@ const AdminLandingPages = () => {
     setIsEditing(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Seguro que quieres eliminar esta página? Esto también borrará su diseño.')) {
-      await deleteLandingPage(id);
-      fetchData();
-    }
+  const handleDelete = async (page) => {
+    const si = await confirmar({
+      titulo: `¿Eliminar /${page.slug}?`,
+      texto: 'Se borran la página y su diseño. Los enlaces a esta dirección dejan de funcionar.',
+      confirmar: 'Eliminar',
+      peligro: true,
+    });
+    if (!si) return;
+    const { error } = await deleteLandingPage(page.id, page.slug);
+    if (error) toast.error(`No se pudo eliminar: ${error}`, 8000);
+    else toast.success(`Se eliminó /${page.slug}.`);
+    fetchData();
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
     if (!formData.title || !formData.slug) {
-      alert("El nombre y la URL son obligatorios.");
+      toast.error('El nombre y la URL son obligatorios.');
       return;
     }
     // Formato slug (remover slash inicial si lo puso)
@@ -106,7 +120,7 @@ const AdminLandingPages = () => {
     // Check if slug is unique
     const existing = pages.find(p => p.slug === cleanSlug && p.id !== formData.id);
     if (existing) {
-      alert("Ya existe una página con esa URL. Escoge otra.");
+      toast.error('Ya existe una página con esa URL. Escoge otra.');
       return;
     }
 
@@ -118,7 +132,7 @@ const AdminLandingPages = () => {
     if (slugViejo && slugViejo !== cleanSlug) {
       const { error: errorDiseno } = await moverDisenoDeLanding(slugViejo, cleanSlug);
       if (errorDiseno) {
-        alert("No se pudo mover el diseño a la nueva URL: " + errorDiseno);
+        toast.error(`No se pudo mover el diseño a la nueva URL: ${errorDiseno}`, 8000);
         return;
       }
       slugsAnteriores = [...new Set([...slugsAnteriores, slugViejo])];
@@ -135,7 +149,7 @@ const AdminLandingPages = () => {
     });
 
     if (error) {
-      alert("Error guardando: " + error);
+      toast.error(`No se pudo guardar: ${error}`, 8000);
     } else {
       setIsEditing(false);
       fetchData();
@@ -271,7 +285,7 @@ const AdminLandingPages = () => {
                         {/* La de una marca se borra con la marca (Marcas), no sola. */}
                         {marca
                           ? <span className={styles.mutedText} title="Se borra al borrar la marca, en Marcas">Se borra con la marca</span>
-                          : <button onClick={() => handleDelete(page.id)} className={`${styles.actionBtn} ${styles.danger}`}>Eliminar</button>}
+                          : <button onClick={() => handleDelete(page)} className={`${styles.actionBtn} ${styles.danger}`}>Eliminar</button>}
                       </div>
                     </td>
                   </tr>

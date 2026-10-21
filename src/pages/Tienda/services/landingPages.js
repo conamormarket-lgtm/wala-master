@@ -102,12 +102,16 @@ export const moverDisenoDeLanding = async (slugViejo, slugNuevo) => {
   }
 };
 
-export const deleteLandingPage = async (id) => {
+/**
+ * Borra la landing y su diseño. El diseño vive en pages/<slug> (así lo lee
+ * DynamicLandingPage); antes solo se borraba pages/<id>, y en las landings con
+ * id 'lp_…' el diseño quedaba huérfano.
+ */
+export const deleteLandingPage = async (id, slug = '') => {
   try {
     await deleteDoc(doc(db, COLLECTION_NAME, id));
-    // Opcional: También deberíamos eliminar las 'sections' en 'pages' pero
-    // por ahora se quedan como documentos huérfanos sin slug o podemos limpiarlos.
     await deleteDoc(doc(db, 'pages', id));
+    if (slug && slug !== id) await deleteDoc(doc(db, 'pages', slug));
     return { success: true };
   } catch (error) {
     console.error("Error eliminando landing page:", error);
