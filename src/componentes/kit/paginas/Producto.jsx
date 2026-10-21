@@ -51,30 +51,25 @@ const esFrenteEspalda = (url) => /_frente-espalda\.\w+(\?|$)/i.test(String(url |
  * foto, va la de la prenda con el color que sí muestra ("Él · Negro"): así la
  * prenda no desaparece de la galería (en la tienda desaparece). Cada foto
  * sabe de qué prenda y color es (`pieza`, `color`) para saltar a ella.
- * Si el color de una prenda tiene su imagen "frente y espalda" (la que se
- * genera en el admin), va solo esa y no sus fotos sueltas: una miniatura por
- * prenda, con la prenda completa. Un color sin ella sigue con sus fotos.
+ * La imagen "frente y espalda" de una prenda (la que se genera en el admin)
+ * no va en el combo: cada prenda muestra sus fotos sueltas, todas iguales.
+ * Solo si una prenda no tuviera otra foto en ese color, va esa.
  */
 const galeriaCombo = (combo, piezas, colores) => {
   const lista = [];
-  const poner = (url, pieza, color, miniatura) => {
+  const poner = (url, pieza, color) => {
     const pz = piezas[pieza];
     const nombre = pz ? [pz.nombre, color].filter(Boolean).join(' · ') : '';
     const ya = lista.find((f) => f.url === url);
-    if (!ya) lista.push({ url, nombre, corto: pz?.nombre, pieza, color, ...(miniatura && { miniatura }) });
+    if (!ya) lista.push({ url, nombre, corto: pz?.nombre, pieza, color });
     else if (pieza != null && ya.pieza == null) Object.assign(ya, { nombre, corto: pz?.nombre, pieza, color });
   };
   combo.portada.forEach((u) => poner(u));
   combo.piezas.forEach((f, i) => {
-    const propias = f.porColor[colores[i]] || [];
-    const juntas = propias.filter(esFrenteEspalda);
-    if (juntas.length) {
-      // Si se generó más de una, la última (la más nueva va al final de la
-      // galería). Su miniatura son las dos fotos de la prenda lado a lado: a
-      // 76 px la imagen generada (fondo, etiquetas, sello) no se entiende.
-      const sueltas = propias.filter((u) => !esFrenteEspalda(u)).slice(0, 2);
-      poner(juntas[juntas.length - 1], i, colores[i], sueltas.length ? sueltas.map((url) => ({ url })) : undefined);
-    } else if (propias.length) propias.forEach((u) => poner(u, i, colores[i]));
+    const todas = f.porColor[colores[i]] || [];
+    const sueltas = todas.filter((u) => !esFrenteEspalda(u));
+    const propias = sueltas.length ? sueltas : todas;
+    if (propias.length) propias.forEach((u) => poner(u, i, colores[i]));
     else f.general.forEach((u) => poner(u, i, Object.keys(f.porColor).find((c) => f.porColor[c].includes(u))));
   });
   combo.producto.forEach((u) => poner(u));
@@ -180,11 +175,10 @@ export function PaginaProducto({
     const lista = fotos.combo ? galeriaCombo(fotos.combo, piezas, colores) : (variante && fotos[variante.id]) || fotos.base || [];
     // Las copias de cada foto (si la tienda las da): la galería baja solo la que hace falta.
     if (!fuentes) return lista;
-    const conCopias = (f) => {
+    return lista.map((f) => {
       const { src, srcSet } = fuentes(f.url) || {};
       return { ...f, url: src || f.url, srcSet };
-    };
-    return lista.map((f) => ({ ...conCopias(f), ...(f.miniatura && { miniatura: f.miniatura.map(conCopias) }) }));
+    });
   }, [fotos, piezas, colores, variante, fuentes]);
   useEffect(() => { if (variante) onVariante?.(variante); }, [variante?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 

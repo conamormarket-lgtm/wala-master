@@ -20,10 +20,7 @@ import s from './GaleriaProducto.module.css';
  *  - una imagen también puede llevar: relleno ('6%': aire alrededor, una
  *    prenda en blanco), atenuada (la prenda todavía sin diseño) o juntas:
  *    [{ url, relleno, atenuada }] (varias fotos lado a lado, como "Todo el
- *    combo"; esa no se acerca) o miniatura: [{ url, srcSet? }] (otras fotos,
- *    lado a lado, solo en su miniatura: la imagen "frente y espalda" de una
- *    prenda se ve en grande y su miniatura son la foto de frente y la de
- *    espalda, que a 76 px se entienden mejor)
+ *    combo"; esa no se acerca)
  *  - inicial: la que se ve primero
  *  - salto: { indice, vez } para ir a otra foto desde fuera (la prenda de un
  *    combo que se recoloreó): cada `vez` nueva, la tira se desliza hasta ella
@@ -33,8 +30,6 @@ import s from './GaleriaProducto.module.css';
 // El ancho que ocupa la foto grande y una miniatura (para elegir la copia).
 export const SIZES_FOTO = '(max-width: 900px) 100vw, 46vw';
 const SIZES_MINIATURA = '76px';
-// Una de dos fotos lado a lado en una miniatura.
-const SIZES_JUNTA = '40px';
 
 
 export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto }) {
@@ -113,8 +108,8 @@ export function GaleriaProducto({ imagenes = [], nombre = '', inicial = 0, salto
               {/* La foto y su nombre se recortan aquí dentro; el borde va fuera
                   de ese recorte para que al viajar no se vea cortado. */}
               <span className={s.miniaturaFoto}>
-                {img.juntas || img.miniatura
-                  ? <Juntas fotos={img.juntas || img.miniatura} />
+                {img.juntas
+                  ? <Juntas fotos={img.juntas} />
                   : <img src={img.url} srcSet={img.srcSet} sizes={img.srcSet ? SIZES_MINIATURA : undefined} alt="" loading="lazy" decoding="async" draggable={false} className={img.atenuada ? s.atenuada : undefined} style={conRelleno(img)} />}
                 {(img.corto || img.nombre) && <span className={s.miniaturaNombre}><Texto>{img.corto || img.nombre}</Texto></span>}
               </span>
@@ -180,8 +175,6 @@ function Juntas({ fotos, grande = false }) {
         <img
           key={`${f.url}-${k}`}
           src={f.url}
-          srcSet={f.srcSet}
-          sizes={f.srcSet ? (grande ? SIZES_FOTO : SIZES_JUNTA) : undefined}
           alt=""
           loading={grande ? 'eager' : 'lazy'}
           decoding="async"
