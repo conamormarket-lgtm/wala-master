@@ -90,123 +90,6 @@
   box-shadow: none !important;
 }
 
-.toggles {
-  display: flex;
-  gap: 30px;
-  margin-bottom: 25px;
-}
-
-.toggleLabel {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 500;
-  color: #374151;
-  cursor: pointer;
-}
-
-.toggleLabel input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: #6366f1;
-}
-
-.divider {
-  border: none;
-  border-top: 1px solid #e5e7eb;
-  margin: 25px 0;
-}
-
-.linkedProductsSection h4 {
-  margin: 0 0 5px 0;
-}
-
-.helpText {
-  color: #6b7280;
-  font-size: 0.85rem;
-  margin-bottom: 15px;
-}
-
-.productSearch {
-  position: relative;
-  margin-bottom: 20px;
-}
-
-.productSearch input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-}
-
-.searchResults {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: white;
-  border: 1px solid #d1d5db;
-  border-top: none;
-  border-radius: 0 0 6px 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  z-index: 10;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.searchResults li {
-  padding: 10px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.searchResults li:hover {
-  background: #f9fafb;
-}
-
-.searchResults img {
-  width: 40px;
-  height: 40px;
-  object-fit: cover;
-  border-radius: 4px;
-}
-
-.linkedTable {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 20px;
-}
-
-.linkedTable th, .linkedTable td {
-  padding: 12px;
-  border-bottom: 1px solid #e5e7eb;
-  text-align: left;
-}
-
-.linkedTable th {
-  background: #f9fafb;
-  font-weight: 600;
-  color: #4b5563;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-}
-
-.linkedTable select, .numberInput {
-  padding: 8px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-}
-
-.numberInput {
-  width: 80px;
-}
-
 .mutedText {
   color: #9ca3af;
   font-size: 0.9rem;
@@ -290,18 +173,6 @@
   background: #eff6ff;
 }
 
-.dangerBtn {
-  background: none;
-  border: none;
-  color: #ef4444;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.dangerBtn:hover {
-  text-decoration: underline;
-}
-
 .actionBtn.danger {
   color: #ef4444;
 }
@@ -346,39 +217,6 @@
   color: var(--color-text-muted);
   border-right-color: var(--color-border);
 }
-[data-theme="dark"] .toggleLabel {
-  color: var(--color-text);
-}
-[data-theme="dark"] .divider {
-  border-top-color: var(--color-border);
-}
-[data-theme="dark"] .helpText {
-  color: var(--color-text-muted);
-}
-[data-theme="dark"] .productSearch input {
-  border-color: var(--color-border);
-}
-[data-theme="dark"] .searchResults {
-  border-color: var(--color-border);
-}
-[data-theme="dark"] .searchResults li {
-  border-bottom-color: var(--color-border);
-}
-[data-theme="dark"] .searchResults li:hover {
-  background: var(--color-surface);
-}
-[data-theme="dark"] .linkedTable th,
-[data-theme="dark"] .linkedTable td {
-  border-bottom-color: var(--color-border);
-}
-[data-theme="dark"] .linkedTable th {
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-}
-[data-theme="dark"] .linkedTable select,
-[data-theme="dark"] .numberInput {
-  border-color: var(--color-border);
-}
 [data-theme="dark"] .formActions {
   border-top-color: var(--color-border);
 }
@@ -393,7 +231,8 @@
 [data-theme="dark"] .urlLink {
   color: #93C5FD;
 }
-[data-theme="dark"] .badge {
+[data-theme="dark"] .badge,
+[data-theme="dark"] .badgeTienda {
   background: var(--color-surface);
   color: var(--color-text);
 }
@@ -402,9 +241,6 @@
 }
 [data-theme="dark"] .actionBtn:hover {
   background: rgba(59, 130, 246, 0.16);
-}
-[data-theme="dark"] .dangerBtn {
-  color: #FCA5A5;
 }
 [data-theme="dark"] .actionBtn.danger {
   color: #FCA5A5;
@@ -431,4 +267,17 @@
   margin-top: 0.35rem;
   color: #6b7280;
   font-size: 0.8rem;
+}
+
+/* El inicio y la tienda: siempre están, solo se diseñan. */
+.badgeTienda {
+  display: inline-block;
+  margin-left: 0.5rem;
+  background: #f3f4f6;
+  color: #374151;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  vertical-align: middle;
 }

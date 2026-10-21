@@ -8,7 +8,10 @@ import { Edit2, Trash2, UploadCloud, Palette, ImageIcon, ImagePlus, MessageCircl
 import Button from '../../components/common/Button';
 import AdminImageCropper from '../../components/admin/AdminImageCropper/AdminImageCropper';
 import AdminMarcaProductos from './AdminMarcaProductos';
-import IdentidadPaginaMarca, { IDENTIDAD_VACIA, identidadDelDoc } from './IdentidadPaginaMarca';
+import TarjetaProducto from '../../componentes/kit/TarjetaProducto';
+import { tarjetaDesdeProducto } from '../../componentes/kit/adaptadores';
+import { getProductsByBrand } from '../../services/products';
+import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import styles from './AdminMarcas.module.css';
 
@@ -24,7 +27,7 @@ const AdminMarcas = () => {
   const queryClient = useQueryClient();
   const toast = useGlobalToast();
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '', identidad: IDENTIDAD_VACIA });
+  const [form, setForm] = useState({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '' });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [bgUploading, setBgUploading] = useState(false);
@@ -50,7 +53,7 @@ const AdminMarcas = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       queryClient.invalidateQueries({ queryKey: ['brands'] });
-      setForm({ name: '', slug: '', logoUrl: '', order: (brandsData?.length ?? 0), bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '', identidad: IDENTIDAD_VACIA });
+      setForm({ name: '', slug: '', logoUrl: '', order: (brandsData?.length ?? 0), bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '' });
     }
   });
 
@@ -66,7 +69,7 @@ const AdminMarcas = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       queryClient.invalidateQueries({ queryKey: ['brands'] });
       setEditingId(null);
-      setForm({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '', identidad: IDENTIDAD_VACIA });
+      setForm({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '' });
     }
   });
 
@@ -80,6 +83,17 @@ const AdminMarcas = () => {
   });
 
   const brands = brandsData ?? [];
+
+  // Un producto de la marca que se edita, para la vista previa de la tarjeta.
+  const { data: productoDeMuestra } = useQuery({
+    queryKey: ['admin-marca-muestra', editingId],
+    enabled: Boolean(editingId),
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await getProductsByBrand(editingId);
+      return (data || []).find((p) => p.mainImage || p.images?.length) || null;
+    },
+  });
 
   // ── Confirmación de pedidos por WhatsApp ──────────────────────────────
   // Número de fábrica por defecto para el WhatsApp principal "Todo a WALA".
@@ -160,9 +174,10 @@ const AdminMarcas = () => {
       // Mensajes de tienda propios de la marca (opcionales, vacío = usa el global).
       storeTitle: (form.storeTitle || '').trim(),
       storeSubtitle: (form.storeSubtitle || '').trim(),
-      storeEmpty: (form.storeEmpty || '').trim(),
-      // Identidad de la página de la marca (brands.js la normaliza).
-      identidad: form.identidad
+      storeEmpty: (form.storeEmpty || '').trim()
+      // La identidad (colores y portada) ya no se edita aquí: sus colores van
+      // en la "Portada de la marca" del editor. No se manda, así lo guardado
+      // no se toca (updateBrand solo escribe lo que llega).
     };
     if (editingId) {
       updateMutation.mutate({ id: editingId, data: payload });
@@ -185,14 +200,13 @@ const AdminMarcas = () => {
       storeTitle: brand.storeTitle || '',
       storeSubtitle: brand.storeSubtitle || '',
       storeEmpty: brand.storeEmpty || '',
-      identidad: identidadDelDoc(brand)
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setForm({ name: '', slug: '', logoUrl: '', order: brands.length, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '', identidad: IDENTIDAD_VACIA });
+    setForm({ name: '', slug: '', logoUrl: '', order: brands.length, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '' });
   };
 
   const handleLogoUpload = async (e) => {
@@ -313,7 +327,7 @@ const AdminMarcas = () => {
         <div className={styles.headerTitles}>
           <h1 className={styles.title}>Gestión de Marcas</h1>
           <p className={styles.subtitle}>
-            Diseña identidades visuales únicas para cada marca y asigna el WhatsApp del asesor de cada una. Los productos heredarán estos fondos en la tienda.
+            Los datos de cada marca que se usan en toda la tienda: nombre, logo, URL, el WhatsApp de su asesor y el fondo de sus productos. Su página (portada, colores, secciones) se arma con "Diseñar página".
           </p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
@@ -579,46 +593,24 @@ const AdminMarcas = () => {
           </div>
         </div>
 
-        {/* Vista Previa */}
+        {/* Vista previa: la tarjeta de verdad de la tienda (TarjetaProducto del
+            kit) con el fondo de la marca, y uno de sus productos si ya tiene. */}
         <div className={styles.previewSection}>
-          <h3 className={styles.previewTitle}>Vista Previa de Tarjeta</h3>
+          <h3 className={styles.previewTitle}>Así se ven sus productos</h3>
           <div className={styles.previewCardWrapper}>
-            <div 
-              className={styles.previewCard}
-              style={{
-                backgroundColor: form.bgColor,
-                backgroundImage: form.bgImage 
-                  ? `linear-gradient(${hexToRgba(form.bgColor, 1 - form.bgOpacity/100)}, ${hexToRgba(form.bgColor, 1 - form.bgOpacity/100)}), url(${form.bgImage})` 
-                  : 'none',
-                backgroundSize: 'cover',
-                backgroundPosition: `center`,
-                backgroundRepeat: 'no-repeat'
-              }}
-            >
-              <div className={styles.previewProductMockup}>
-                {form.logoUrl ? (
-                  <img src={form.logoUrl} className={styles.previewMockupLogo} alt="Logo" />
-                ) : (
-                  <div className={styles.previewMockupPlaceholder} />
-                )}
-                <div className={styles.previewMockupTags}>
-                  <span>NEW</span>
-                </div>
-              </div>
-              <div className={styles.previewCardContent}>
-                <h4>Product Name</h4>
-                <p>S/ 99.00</p>
-                <div className={styles.previewMockupBrand}>{form.name || 'Brand Name'}</div>
-              </div>
+            <div className={styles.previewTarjeta}>
+              <TarjetaProducto
+                {...(productoDeMuestra ? tarjetaDesdeProducto(productoDeMuestra) : { imagen: PLACEHOLDER_IMG, nombre: 'Tu producto', precio: 59.9 })}
+                marca={form.logoUrl ? { nombre: form.name, logo: form.logoUrl } : undefined}
+                fondo={form.bgColor || form.bgImage ? { color: form.bgColor, imagen: form.bgImage, opacidad: form.bgOpacity } : undefined}
+                url="#"
+                inclinar={false}
+                sinDeseo
+                sinAccion
+              />
             </div>
           </div>
         </div>
-
-        <IdentidadPaginaMarca
-          valor={form.identidad}
-          onChange={(identidad) => setForm((f) => ({ ...f, identidad }))}
-          marca={{ id: editingId, name: form.name, slug: editingId ? (brands.find((b) => b.id === editingId)?.slug || '') : '', logoUrl: form.logoUrl, bgColor: form.bgColor }}
-        />
 
         <div className={styles.formFooter}>
           {editingId && (
@@ -680,7 +672,7 @@ const AdminMarcas = () => {
                   <button
                     type="button"
                     className={styles.manageProductsBtn}
-                    onClick={() => setManagingBrand({ id: brand.id, name: brand.name })}
+                    onClick={() => setManagingBrand({ id: brand.id, name: brand.name, slug: brand.slug || '' })}
                   >
                     <Boxes size={16} />
                     Gestionar productos

@@ -96,7 +96,7 @@ const categoriasAuto = (a) => a.dataSource === 'products';
 
 export const ESQUEMAS = {
   hero_banner: {
-    nombre: 'Banner principal', icono: Image, grupo: 'Portada',
+    nombre: 'Portada con foto', icono: Image, grupo: 'Portada',
     descripcion: 'Foto o video grande con título y botón.',
     campos: [
       { tipo: 'opciones', campo: 'mediaType', etiqueta: 'Fondo', opciones: [{ valor: 'image', texto: 'Imagen' }, { valor: 'gif', texto: 'GIF' }, { valor: 'video', texto: 'Video' }] },
@@ -123,12 +123,12 @@ export const ESQUEMAS = {
     inicial: { mediaType: 'image', mediaUrl: '', title: 'Nueva colección', subtitle: 'Diseñada para destacar.', buttonText: 'Comprar ahora', buttonLink: '/tienda', textAlign: 'center', textPosition: 'center', overlayOpacity: 40, minHeight: '500px' },
   },
 
-  // La portada de una marca: el nombre, el logo y los colores son los de Marcas.
+  // La portada de una marca: el nombre y el logo son los de Marcas; sus colores, aquí.
   brand_hero: {
-    nombre: 'Portada de marca', icono: Store, grupo: 'Portada',
-    descripcion: 'El nombre, el logo y el color de la marca de la página, con su foto, su color o un collage.',
+    nombre: 'Portada de la marca', icono: Store, grupo: 'Portada',
+    descripcion: 'El nombre y el logo de la marca de la página, con sus colores y su foto o un collage.',
     campos: [
-      { tipo: 'nota', texto: 'Toma la marca de esta página: su nombre, su logo y sus colores se cambian en Marcas. En una página sin marca no se ve.' },
+      { tipo: 'nota', texto: 'Toma la marca de esta página: su nombre y su logo se cambian en Marcas. En una página sin marca no se ve.' },
       {
         tipo: 'opciones', campo: 'estilo', etiqueta: 'Estilo', porDefecto: 'color',
         ayuda: 'Foto: tu foto con el color detrás del texto. Color: el degradado con el logo grande. Collage: tres de sus productos.',
@@ -138,12 +138,15 @@ export const ESQUEMAS = {
       { tipo: 'nota', texto: 'Sin productos con foto, el collage sale como portada de color.', si: (a) => a.estilo === 'collage' },
       { tipo: 'parrafo', campo: 'frase', etiqueta: 'Frase', filas: 2, ayuda: 'Una línea bajo el nombre. Vacía: "Productos de" y el nombre.' },
       { tipo: 'texto', campo: 'buttonText', etiqueta: 'Texto del botón', ayuda: 'Baja al catálogo de la página.' },
+      { tipo: 'color', campo: 'color', etiqueta: 'Color de la marca', vacio: 'Violeta' },
+      { tipo: 'color', campo: 'color2', etiqueta: 'Segundo color', vacio: 'Automático' },
+      { tipo: 'nota', texto: 'El color pinta la portada; el segundo cierra su degradado (vacío: el primero oscurecido). De noche, si un color no se ve sobre el fondo oscuro, se aclara solo. Los botones de compra siguen violeta.' },
     ],
-    inicial: { estilo: 'color', imagen: '', frase: '', buttonText: 'Ver productos' },
+    inicial: { estilo: 'color', imagen: '', frase: '', buttonText: 'Ver productos', color: '', color2: '' },
   },
 
   hero_carousel: {
-    nombre: 'Carrusel principal', icono: Images, grupo: 'Portada',
+    nombre: 'Fotos que se pasan solas', icono: Images, grupo: 'Portada',
     descripcion: 'Varias fotos grandes que se pasan solas.',
     campos: [
       {
@@ -184,7 +187,7 @@ export const ESQUEMAS = {
   },
 
   announcement_bar: {
-    nombre: 'Barra de anuncios', icono: Megaphone, grupo: 'Portada',
+    nombre: 'Avisos de arriba', icono: Megaphone, grupo: 'Portada',
     descripcion: 'Mensajes cortos arriba de todo.',
     campos: [
       {
@@ -216,7 +219,7 @@ export const ESQUEMAS = {
   },
 
   header: {
-    nombre: 'Encabezado', icono: Heading, grupo: 'Contenido',
+    nombre: 'Título de la página', icono: Heading, grupo: 'Contenido',
     descripcion: 'Un título grande con subtítulo y botón.',
     campos: [
       etiquetaSuperior(),
@@ -289,17 +292,17 @@ export const ESQUEMAS = {
     inicial: { url: '', poster: '', aspectRatio: '16:9', paddingTop: '0rem', paddingBottom: '0rem' },
   },
 
-  featured_products: { nombre: 'Productos destacados', icono: Star, grupo: 'Productos', descripcion: 'Cuadrícula con los productos destacados.', campos: [...cabeceraSeccion(), ...pieComun()], inicial: { title: 'Productos destacados' } },
-  featured_carousel: { nombre: 'Carrusel de destacados', icono: Star, ...carruselProductos('Los productos destacados en una fila deslizable.'), inicial: { title: 'Productos destacados', visibleItems: 5, autoPlay: false, autoPlaySpeed: 5000 } },
-  new_arrivals_carousel: { nombre: 'Novedades', icono: Sparkles, ...carruselProductos('Lo más reciente de la tienda.'), inicial: { title: 'Novedades', visibleItems: 5, autoPlay: false, autoPlaySpeed: 5000 } },
-  sale_carousel: { nombre: 'Ofertas', icono: Tag, ...carruselProductos('Productos con descuento.'), inicial: { title: 'Ofertas', visibleItems: 5, autoPlay: false, autoPlaySpeed: 5000 } },
+  featured_products: { nombre: 'Destacados (cuadrícula)', icono: Star, grupo: 'Productos', descripcion: 'Cuadrícula con los productos destacados.', campos: [...cabeceraSeccion(), ...pieComun()], inicial: { title: 'Productos destacados' } },
+  featured_carousel: { nombre: 'Destacados (fila)', icono: Star, ...carruselProductos('Los productos destacados en una fila deslizable.'), inicial: { title: 'Productos destacados', visibleItems: 5, autoPlay: false, autoPlaySpeed: 5000 } },
+  new_arrivals_carousel: { nombre: 'Lo nuevo (fila)', icono: Sparkles, ...carruselProductos('Lo más reciente de la tienda.'), inicial: { title: 'Novedades', visibleItems: 5, autoPlay: false, autoPlaySpeed: 5000 } },
+  sale_carousel: { nombre: 'Ofertas (fila)', icono: Tag, ...carruselProductos('Productos con descuento.'), inicial: { title: 'Ofertas', visibleItems: 5, autoPlay: false, autoPlaySpeed: 5000 } },
   category_carousel: {
-    nombre: 'Carrusel por categoría', icono: FolderOpen,
+    nombre: 'Productos de una categoría', icono: FolderOpen,
     ...carruselProductos('Productos de una categoría.', [{ tipo: 'fuente', campo: 'categoryId', etiqueta: 'Categoría', datos: 'categorias', vacio: 'Elige una categoría' }]),
     inicial: { title: '', categoryId: '', visibleItems: 5, autoPlay: false, autoPlaySpeed: 5000 },
   },
   collection_carousel: {
-    nombre: 'Carrusel de colección', icono: Layers, grupo: 'Productos', descripcion: 'Productos de una colección.',
+    nombre: 'Productos de una colección', icono: Layers, grupo: 'Productos', descripcion: 'Los productos de una colección en una fila.',
     campos: [{ tipo: 'fuente', campo: 'collection', etiqueta: 'Colección', datos: 'colecciones', vacio: 'Elige una colección' }, ...cabeceraSeccion(), ...pieComun()],
     inicial: { title: '', collection: '' },
   },
@@ -315,7 +318,7 @@ export const ESQUEMAS = {
     inicial: () => ({ title: 'Ofertas relámpago', collection: '', endTime: new Date(Date.now() + 86400000).toISOString() }),
   },
   bestsellers_row: {
-    nombre: 'Lo más vendido', icono: Trophy, grupo: 'Productos', descripcion: 'Hasta 5 tarjetas con foto y enlace.',
+    nombre: 'Tarjetas con foto y enlace', icono: Trophy, grupo: 'Contenido', descripcion: 'Hasta 5 tarjetas que armas a mano: foto, texto y a dónde llevan.',
     campos: [
       titulo('Título (opcional)'),
       {
@@ -335,18 +338,18 @@ export const ESQUEMAS = {
     inicial: { cards: [] },
   },
   product_grid: {
-    nombre: 'Grilla de productos', icono: Grid3x3, grupo: 'Productos', descripcion: 'Todos los productos, de a poco al bajar.',
+    nombre: 'Todos los productos', icono: Grid3x3, grupo: 'Productos', descripcion: 'Todos los productos, de a poco al bajar.',
     campos: [{ tipo: 'fuente', campo: 'brandId', etiqueta: 'Marca', datos: 'marcas', vacio: 'Todas las marcas' }, ...cabeceraSeccion(), ...pieComun()],
     inicial: { title: '', show_search: true, brandId: '' },
   },
   sidebar_catalog: {
-    nombre: 'Catálogo con filtros', icono: Store, grupo: 'Productos', descripcion: 'Productos con filtros por categoría, precio y más.', porMarca: true,
+    nombre: 'Todos los productos con filtros', icono: Store, grupo: 'Productos', descripcion: 'Productos con filtros por categoría, precio y más.', porMarca: true,
     campos: [{ tipo: 'fuente', campo: 'brandId', etiqueta: 'Marca', datos: 'marcas', vacio: 'Todas las marcas' }, ...cabeceraSeccion('Título (opcional)'), ...pieComun()],
     inicial: { title: 'Catálogo completo', brandId: '' },
   },
 
   category_grid: {
-    nombre: 'Cuadrícula de categorías', icono: LayoutGrid, grupo: 'Navegación', descripcion: '¿Qué estás buscando? con fotos.',
+    nombre: 'Categorías con foto', icono: LayoutGrid, grupo: 'Navegación', descripcion: '¿Qué estás buscando? con fotos.',
     campos: [
       { tipo: 'opciones', campo: 'dataSource', etiqueta: 'Contenido', porDefecto: 'manual', opciones: [{ valor: 'products', texto: 'Automático' }, { valor: 'manual', texto: 'A mano' }] },
       { tipo: 'nota', texto: 'Se arma sola con las categorías que tienen productos.', si: categoriasAuto },
@@ -374,7 +377,7 @@ export const ESQUEMAS = {
     inicial: { title: '¿Qué estás buscando?', dataSource: 'products', imageSource: 'product', items: [], columns: 6, limit: 6, sortMode: 'admin', cardStyle: 'compact', paddingTop: '0.75rem', paddingBottom: '0.75rem' },
   },
   categories_nav: {
-    nombre: 'Navegación por categorías', icono: Navigation, grupo: 'Navegación', descripcion: 'Burbujas que filtran el catálogo de la página.', porMarca: true,
+    nombre: 'Botones de categorías', icono: Navigation, grupo: 'Navegación', descripcion: 'Burbujas redondas que filtran los productos de la página.', porMarca: true,
     campos: [
       { tipo: 'fuente', campo: 'brandId', etiqueta: 'Marca', datos: 'marcas', vacio: 'Sin marca' },
       { tipo: 'nota', texto: 'Elige una marca: las burbujas salen de su configuración.', si: (a) => !a.brandId },
@@ -383,7 +386,7 @@ export const ESQUEMAS = {
     inicial: { brandId: '' },
   },
   banner_grid: {
-    nombre: 'Mosaico de marcas o banners', icono: Rows3, grupo: 'Navegación', descripcion: 'Tarjetas de cada marca o banners a mano.',
+    nombre: 'Tarjetas de marcas o banners', icono: Rows3, grupo: 'Navegación', descripcion: 'Tarjetas de cada marca o banners a mano.',
     campos: [
       { tipo: 'opciones', campo: 'dataSource', etiqueta: 'Contenido', porDefecto: 'manual', opciones: [{ valor: 'brands', texto: 'Marcas (automático)' }, { valor: 'manual', texto: 'Banners a mano' }] },
       titulo(),
@@ -408,7 +411,7 @@ export const ESQUEMAS = {
   },
 
   trust_badges: {
-    nombre: 'Íconos de confianza', icono: ShieldCheck, grupo: 'Confianza', descripcion: 'Envío, pago seguro, cambios…',
+    nombre: 'Garantías', icono: ShieldCheck, grupo: 'Confianza', descripcion: 'Envío, pago seguro, cambios…',
     campos: [
       {
         tipo: 'lista', campo: 'badges', etiqueta: 'Insignias', titulo: (b, i) => b.text || `Insignia ${i + 1}`,
@@ -423,7 +426,7 @@ export const ESQUEMAS = {
     inicial: { badges: [{ icon: 'truck', text: 'Envío rápido' }, { icon: 'shield', text: 'Pago seguro' }] },
   },
   testimonials: {
-    nombre: 'Testimonios', icono: MessageSquareQuote, grupo: 'Confianza', descripcion: 'Opiniones reales de clientes.',
+    nombre: 'Opiniones de clientes', icono: MessageSquareQuote, grupo: 'Confianza', descripcion: 'Opiniones reales de clientes.',
     campos: [
       ...cabeceraSeccion(),
       {
@@ -444,7 +447,7 @@ export const ESQUEMAS = {
     inicial: { title: 'Lo que dicen nuestros clientes', testimonials: [] },
   },
   marquee: {
-    nombre: 'Logos en movimiento', icono: Cinta, grupo: 'Confianza', descripcion: 'Marcas o aliados en una cinta sin fin.',
+    nombre: 'Cinta de logos', icono: Cinta, grupo: 'Confianza', descripcion: 'Marcas o aliados en una cinta sin fin.',
     campos: [
       ...cabeceraSeccion('Título (opcional)'),
       {
@@ -473,7 +476,7 @@ export const ESQUEMAS = {
   },
 
   feature_list: {
-    nombre: 'Lista de beneficios', icono: ListChecks, grupo: 'Contenido', descripcion: 'Por qué elegirnos, en puntos.',
+    nombre: 'Beneficios', icono: ListChecks, grupo: 'Contenido', descripcion: 'Por qué elegirnos, en puntos.',
     campos: [
       etiquetaSuperior(),
       titulo('Título'),
@@ -517,7 +520,7 @@ export const ESQUEMAS = {
     inicial: { title: 'Preguntas frecuentes', subtitle: '', items: [], layout: 'split', defaultOpen: false, paddingTop: '1rem', paddingBottom: '1rem' },
   },
   map_location: {
-    nombre: 'Ubicación', icono: MapPin, grupo: 'Contenido', descripcion: 'Mapa de Google con dirección.',
+    nombre: 'Mapa', icono: MapPin, grupo: 'Contenido', descripcion: 'Mapa de Google con dirección.',
     campos: [
       { tipo: 'parrafo', campo: 'embedUrl', etiqueta: 'Mapa de Google', filas: 3, ayuda: 'En Google Maps: Compartir → Insertar un mapa → copia el código o el enlace.' },
       titulo('Título'),

@@ -251,9 +251,46 @@
   transform: scale(0.92);
 }
 
-.confirmar {
-  background: #e11d48 !important;
-  color: #fff !important;
+/* "Eliminaste X · Deshacer", sobre el pie del panel. */
+.avisoQuitada {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 0.75rem 0.5rem;
+  padding: 0.55rem 0.6rem 0.55rem 0.85rem;
+  border-radius: 14px;
+  background: var(--ed-texto);
+  color: var(--ed-fondo);
+  font-size: 0.82rem;
+  animation: entraAviso 0.18s ease-out;
+}
+
+.avisoQuitada button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.65rem;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ed-acento);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.avisoQuitada svg {
+  width: 15px;
+  height: 15px;
+}
+
+@keyframes entraAviso {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avisoQuitada { animation: none; }
 }
 
 /* ── Vistas ── */

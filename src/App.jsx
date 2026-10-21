@@ -227,8 +227,6 @@ const AdminMarcas = lazy(() => import('./pages/admin/AdminMarcas'));
 // Enlaces útiles (constructor tipo Linktree / link-in-bio).
 const AdminEnlaces = lazy(() => import('./pages/admin/AdminEnlaces'));
 const AdminEnlaceEditor = lazy(() => import('./pages/admin/AdminEnlaceEditor'));
-const AdminElementosDiseno = lazy(() => import('./pages/admin/AdminElementosDiseno'));
-const AdminElementoDisenoPage = lazy(() => import('./pages/admin/elementosDiseno/AdminElementoDisenoPage'));
 const AdminLandingPages = lazy(() => import('./pages/Tienda/admin/AdminLandingPages'));
 const AdminThemes = lazy(() => import('./pages/Tienda/admin/AdminThemes'));
 const AdminRuletaPage = lazy(() => import('./pages/admin/AdminRuletaPage'));
@@ -535,8 +533,8 @@ function App() {
                                       <Route path="wordle" element={<AdminWordlePage />} />
                                       <Route path="notificaciones" element={<AdminNotifications />} />
                                       <Route path="marcas" element={<AdminMarcas />} />
-                                      <Route path="elementos-diseno" element={<AdminElementosDiseno />} />
-                                      <Route path="elementos-diseno/:elementSlug" element={<AdminElementoDisenoPage />} />
+                                      {/* "Elementos con diseño" solo editaba las burbujas de categorías: ahora van en el editor de cada página. */}
+                                      <Route path="elementos-diseno/*" element={<Navigate to="/admin/landing-pages" replace />} />
                                       <Route path="landing-pages" element={<AdminLandingPages />} />
                                       <Route path="temas" element={<AdminThemes />} />
                                       <Route path="ruleta" element={<AdminRuletaPage />} />

@@ -91,14 +91,9 @@ const AdminLayout = () => {
               >
                 📦 Recepción de Pedidos
               </NavLink>
-              <NavLink
-                to="/admin/elementos-diseno"
-                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
-              >
-                🎨 Elementos con diseño
-              </NavLink>
-              {/* Raffles (sorteos y rifas): su propio botón, JUSTO DEBAJO de
-                  "Elementos con diseño" (separado, no anidado). */}
+              {/* Raffles (sorteos y rifas): su propio botón (separado, no anidado).
+                  "Elementos con diseño" se quitó: solo editaba las burbujas de
+                  categorías, que ahora se editan en la página con el editor. */}
               <NavLink
                 to="/admin/sorteos"
                 className={({ isActive }) => getLinkClass(isActive, 'diseno')}
@@ -306,7 +301,7 @@ const AdminLayout = () => {
                         to="/admin/landing-pages"
                         className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
                       >
-                        Landing Pages
+                        Páginas
                       </NavLink>
                       <NavLink
                         to="/admin/temas"
@@ -397,8 +392,7 @@ const AdminLayout = () => {
               >
                 Misiones Diarias
               </NavLink>
-              {/* "Raffles" (sorteos) NO va aquí: vive como tarjeta dentro de
-                  "Elementos con diseño" (grupo Diseño de Tienda). */}
+              {/* "Raffles" (sorteos) NO va aquí: tiene su botón en el grupo Diseño de Tienda. */}
             </>
           )}
 

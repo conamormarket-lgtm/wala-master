@@ -23,23 +23,19 @@ export { nuevoIdSeccion, actualizarAjustes, insertarSeccion, moverSeccion, dupli
    en su contexto sin cargar el panel); se sigue exportando desde aquí. */
 export { useBorrador } from './useBorrador';
 
-/* ── Botón con confirmación en el mismo lugar (sin window.confirm) ── */
-function BotonQuitar({ onQuitar, etiqueta = 'Eliminar', compacto }) {
-  const [seguro, setSeguro] = useState(false);
-  useEffect(() => {
-    if (!seguro) return undefined;
-    const t = window.setTimeout(() => setSeguro(false), 3000);
-    return () => window.clearTimeout(t);
-  }, [seguro]);
+/* ── Eliminar: un clic, sin preguntar. Nada se pierde hasta "Publicar" y el
+   aviso de abajo trae "Deshacer" (antes el primer clic solo lo armaba y en la
+   lista no avisaba: parecía que había que darle doble clic). ── */
+function BotonQuitar({ onQuitar, etiqueta = 'Eliminar' }) {
   return (
     <button
       type="button"
-      className={[s.iconoBoton, s.peligro, seguro && s.confirmar].filter(Boolean).join(' ')}
-      onClick={(e) => { e.stopPropagation(); if (seguro) onQuitar(); else setSeguro(true); }}
-      aria-label={seguro ? `Confirmar: ${etiqueta}` : etiqueta}
+      className={[s.iconoBoton, s.peligro].join(' ')}
+      onClick={(e) => { e.stopPropagation(); onQuitar(); }}
+      aria-label={etiqueta}
+      title={etiqueta}
     >
       <Trash2 aria-hidden="true" />
-      {seguro && !compacto && <span>¿Seguro?</span>}
     </button>
   );
 }
@@ -79,7 +75,7 @@ function FilaSeccion({ seccion, indice, total, resaltada, onEditar, onResaltar, 
         <button type="button" className={s.iconoBoton} onClick={() => onMover(seccion.id, -1)} disabled={indice === 0} aria-label="Subir"><ArrowUp aria-hidden="true" /></button>
         <button type="button" className={s.iconoBoton} onClick={() => onMover(seccion.id, 1)} disabled={indice === total - 1} aria-label="Bajar"><ArrowDown aria-hidden="true" /></button>
         <button type="button" className={s.iconoBoton} onClick={() => onDuplicar(seccion.id)} aria-label="Duplicar"><Copy aria-hidden="true" /></button>
-        <BotonQuitar compacto onQuitar={() => onQuitar(seccion.id)} />
+        <BotonQuitar etiqueta="Eliminar sección" onQuitar={() => onQuitar(seccion.id)} />
       </span>
     </Reorder.Item>
   );
@@ -173,6 +169,19 @@ export default function PanelEditor({
   const [pestana, setPestana] = useState('secciones');
   const [grande, setGrande] = useState(false);
   const cuerpo = useRef(null);
+  // "Eliminaste X · Deshacer": unos segundos tras quitar una sección.
+  const [quitada, setQuitada] = useState(null);
+  useEffect(() => {
+    if (!quitada) return undefined;
+    const t = window.setTimeout(() => setQuitada(null), 6000);
+    return () => window.clearTimeout(t);
+  }, [quitada]);
+  const quitar = (id) => {
+    const sec = lista.find((x) => x.id === id);
+    cambiar(quitarSeccion(lista, id));
+    if (seleccionada === id) onSeleccionar?.(null);
+    setQuitada({ id, nombre: sec ? esquemaConNombre(sec.type, nombres).nombre : 'la sección', t: Date.now() });
+  };
   useEffect(() => { setIds(lista.map((x) => x.id)); }, [lista]);
 
   const abierta = lista.find((x) => x.id === seleccionada);
@@ -272,7 +281,7 @@ export default function PanelEditor({
                     <button type="button" className={s.iconoBoton} onClick={() => cambiar(moverSeccion(lista, abierta.id, -1))} disabled={lista[0]?.id === abierta.id} aria-label="Subir sección"><ArrowUp aria-hidden="true" /></button>
                     <button type="button" className={s.iconoBoton} onClick={() => cambiar(moverSeccion(lista, abierta.id, 1))} disabled={lista[lista.length - 1]?.id === abierta.id} aria-label="Bajar sección"><ArrowDown aria-hidden="true" /></button>
                     <button type="button" className={s.iconoBoton} onClick={() => cambiar(duplicarSeccion(lista, abierta.id))} aria-label="Duplicar sección"><Copy aria-hidden="true" /></button>
-                    <BotonQuitar etiqueta="Eliminar sección" onQuitar={() => { cambiar(quitarSeccion(lista, abierta.id)); onSeleccionar?.(null); }} />
+                    <BotonQuitar etiqueta="Eliminar sección" onQuitar={() => quitar(abierta.id)} />
                   </div>
                 </div>
                 <FormularioSeccion
@@ -368,7 +377,7 @@ export default function PanelEditor({
                             onResaltar={onResaltar}
                             onMover={(x, d) => cambiar(moverSeccion(lista, x, d))}
                             onDuplicar={(x) => cambiar(duplicarSeccion(lista, x))}
-                            onQuitar={(x) => cambiar(quitarSeccion(lista, x))}
+                            onQuitar={quitar}
                             onSoltar={() => {
                               const nueva = renumerar(ids.map((x) => lista.find((y) => y.id === x)).filter(Boolean));
                               if (nueva.some((x, k) => x.id !== lista[k]?.id)) cambiar(nueva);
@@ -386,6 +395,17 @@ export default function PanelEditor({
             )}
           </AnimatePresence>
         </div>
+
+        {quitada && (
+          <div key={quitada.t} className={s.avisoQuitada} role="status">
+            <span>Eliminaste «{quitada.nombre}».</span>
+            {onDeshacer && (
+              <button type="button" onClick={() => { onDeshacer(); setQuitada(null); }}>
+                <Undo2 aria-hidden="true" /> Deshacer
+              </button>
+            )}
+          </div>
+        )}
 
         {onGuardar && (
           <footer className={s.panelPie}>

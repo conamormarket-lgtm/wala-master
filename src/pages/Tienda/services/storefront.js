@@ -70,7 +70,7 @@ export function getDefaultSettings(type) {
       };
     // Portada de marca: el nombre, el logo y los colores salen de la marca de la página.
     case 'brand_hero':
-      return { estilo: 'color', imagen: '', frase: '', buttonText: 'Ver productos' };
+      return { estilo: 'color', imagen: '', frase: '', buttonText: 'Ver productos', color: '', color2: '' };
     case 'header':
       return {
         title: 'Nuestra Tienda',

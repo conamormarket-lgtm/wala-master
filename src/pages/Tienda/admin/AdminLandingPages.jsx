@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { getLandingPages, saveLandingPage, deleteLandingPage, moverDisenoDeLanding } from '../services/landingPages';
-import { getThemes } from '../services/themes';
-import { getProducts } from '../../../services/products';
 import { getBrands } from '../../../services/brands';
 import Button from '../../../components/common/Button';
 import styles from '../../admin/AdminLandingPages.module.css';
@@ -10,10 +8,23 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 // La URL sin mayúsculas ni símbolos (como el slug de una marca).
 const llave = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
+// Las páginas de la tienda que también se diseñan con el editor (no son landings).
+const PAGINAS_DE_LA_TIENDA = [
+  { id: 'home', title: 'Inicio', ruta: '/' },
+  { id: 'tienda', title: 'Tienda', ruta: '/tienda' },
+];
+
+/*
+ * "Páginas": la lista de todas las páginas que se diseñan con el editor (el
+ * inicio, la tienda, las de cada marca y las de campaña), con "Diseñar
+ * página". Aquí solo se crean, se les pone nombre, URL y marca, y se borran.
+ * Lo que va dentro (secciones, portada, tema, ocultar la cabecera o el pie)
+ * se hace en la página con el editor (pestaña "Página"), un solo lugar.
+ * Antes también se elegían aquí el tema, la cabecera y el pie (repetido con el
+ * editor) y unos "productos enlazados" que ninguna parte de la tienda leía.
+ */
 const AdminLandingPages = () => {
   const [pages, setPages] = useState([]);
-  const [themes, setThemes] = useState([]);
-  const [products, setProducts] = useState([]);
   const [brands, setBrands] = useState([]); // marcas (tienda_brands) para asignar a la landing
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -28,13 +39,7 @@ const AdminLandingPages = () => {
     title: '',
     slug: '',
     brandId: '', // marca de la página (multimarca); '' = página global
-    hideHeader: false,
-    hideFooter: false,
-    themeId: '',
-    linkedProducts: [] // { productId, stockType: 'global' | 'infinite' | 'exclusive', allocatedStock: 0 }
   });
-
-  const [searchProduct, setSearchProduct] = useState('');
 
   // La página de una marca (la de su URL): su URL y su marca se cambian en
   // Marcas, que mueve la página con ellas. Aquí no, para que no se separen.
@@ -57,30 +62,17 @@ const AdminLandingPages = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [pagesData, productsData, themesData, brandsData] = await Promise.all([
+    const [pagesData, brandsData] = await Promise.all([
       getLandingPages(),
-      getProducts(),
-      getThemes(),
       getBrands()
     ]);
     setPages(pagesData);
-    setProducts(productsData.data || []);
-    setThemes(themesData);
     setBrands(brandsData.data || []);
     setLoading(false);
   };
 
   const handleAddNew = () => {
-    setFormData({
-      id: null,
-      title: '',
-      slug: '',
-      brandId: '',
-      hideHeader: true,
-      hideFooter: true,
-      themeId: '',
-      linkedProducts: []
-    });
+    setFormData({ id: null, title: '', slug: '', brandId: '' });
     setIsEditing(true);
   };
 
@@ -90,16 +82,12 @@ const AdminLandingPages = () => {
       title: page.title || '',
       slug: page.slug || '',
       brandId: page.brandId || '',
-      hideHeader: !!page.hideHeader,
-      hideFooter: !!page.hideFooter,
-      themeId: page.themeId || '',
-      linkedProducts: page.linkedProducts || []
     });
     setIsEditing(true);
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Seguro que quieres eliminar esta Landing Page? Esto también borrará su diseño visual.')) {
+    if (window.confirm('¿Seguro que quieres eliminar esta página? Esto también borrará su diseño.')) {
       await deleteLandingPage(id);
       fetchData();
     }
@@ -108,13 +96,13 @@ const AdminLandingPages = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     if (!formData.title || !formData.slug) {
-      alert("El título y el slug son obligatorios.");
+      alert("El nombre y la URL son obligatorios.");
       return;
     }
     // Formato slug (remover slash inicial si lo puso)
     // La de una marca guarda su URL tal cual (aunque tenga mayúsculas): se cambia en Marcas.
     const cleanSlug = duenaDelForm ? formData.slug : formData.slug.replace(/^\/+/, '').toLowerCase().trim().replace(/\s+/g, '-');
-    
+
     // Check if slug is unique
     const existing = pages.find(p => p.slug === cleanSlug && p.id !== formData.id);
     if (existing) {
@@ -137,8 +125,11 @@ const AdminLandingPages = () => {
     }
     slugsAnteriores = slugsAnteriores.filter(s => s !== cleanSlug);
 
+    // Solo nombre, URL y marca: lo demás de la landing (tema, cabecera, pie)
+    // se conserva tal cual (saveLandingPage mezcla con lo guardado).
     const { error } = await saveLandingPage(formData.id, {
-      ...formData,
+      title: formData.title,
+      brandId: formData.brandId,
       slug: cleanSlug,
       slugsAnteriores
     });
@@ -151,35 +142,7 @@ const AdminLandingPages = () => {
     }
   };
 
-  const addLinkedProduct = (product) => {
-    if (formData.linkedProducts.find(lp => lp.productId === product.id)) return;
-    setFormData(prev => ({
-      ...prev,
-      linkedProducts: [...prev.linkedProducts, { 
-        productId: product.id, 
-        stockType: 'global', // default
-        allocatedStock: 0 
-      }]
-    }));
-  };
-
-  const updateLinkedProduct = (productId, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      linkedProducts: prev.linkedProducts.map(lp => 
-        lp.productId === productId ? { ...lp, [field]: value } : lp
-      )
-    }));
-  };
-
-  const removeLinkedProduct = (productId) => {
-    setFormData(prev => ({
-      ...prev,
-      linkedProducts: prev.linkedProducts.filter(lp => lp.productId !== productId)
-    }));
-  };
-
-  const filteredProducts = products.filter(p => p.name?.toLowerCase().includes(searchProduct.toLowerCase()) || p.sku?.toLowerCase().includes(searchProduct.toLowerCase())).slice(0, 5);
+  const disenar = (ruta) => navigate(`${ruta}?editar`);
 
   if (loading) return <div className={styles.container}>Cargando...</div>;
 
@@ -187,37 +150,37 @@ const AdminLandingPages = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
-          <h2>Landing Pages Dinámicas</h2>
-          <p>Crea páginas promocionales o embudos sin distracciones (con URL personalizada).</p>
+          <h2>Páginas</h2>
+          <p>Todas las páginas que se arman con el editor. Pulsa "Diseñar página" para cambiar lo que tienen dentro.</p>
         </div>
         {!isEditing && (
-          <Button variant="primary" onClick={handleAddNew}>+ Nueva Landing Page</Button>
+          <Button variant="primary" onClick={handleAddNew}>+ Nueva página</Button>
         )}
       </div>
 
       {isEditing ? (
         <div className={styles.formCard}>
-          <h3>{formData.id ? 'Editar Configuración' : 'Nueva Configuración'}</h3>
+          <h3>{formData.id ? 'Nombre, URL y marca' : 'Nueva página'}</h3>
           <form onSubmit={handleSave} className={styles.form}>
             <div className={styles.row}>
               <div className={styles.inputGroup}>
-                <label>Nombre Interno (Título)</label>
-                <input 
-                  type="text" 
-                  value={formData.title} 
-                  onChange={e => setFormData({...formData, title: e.target.value})} 
+                <label>Nombre (solo lo ves tú)</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={e => setFormData({...formData, title: e.target.value})}
                   placeholder="Ej: Promo Navidad 2026"
                   required
                 />
               </div>
               <div className={styles.inputGroup}>
-                <label>URL Personalizada (Slug)</label>
+                <label>Dirección (URL)</label>
                 <div className={styles.slugInput}>
-                  <span>misitio.com/</span>
-                  <input 
-                    type="text" 
-                    value={formData.slug} 
-                    onChange={e => setFormData({...formData, slug: e.target.value})} 
+                  <span>wala.pe/</span>
+                  <input
+                    type="text"
+                    value={formData.slug}
+                    onChange={e => setFormData({...formData, slug: e.target.value})}
                     placeholder="promo-navidad"
                     required
                     disabled={Boolean(duenaDelForm)}
@@ -230,24 +193,10 @@ const AdminLandingPages = () => {
             </div>
 
             <div className={styles.row}>
-              <div className={styles.inputGroup}>
-                <label>Tema Visual Personalizado (Opcional)</label>
-                <select 
-                  value={formData.themeId} 
-                  onChange={e => setFormData({...formData, themeId: e.target.value})}
-                  className={styles.input}
-                  style={{ width: '100%', padding: '0.5rem', border: '1px solid #ccc', borderRadius: '4px' }}
-                >
-                  <option value="">-- Tema Global de la Tienda --</option>
-                  {themes.map(t => (
-                    <option key={t.id} value={t.id}>{t.name} ({t.type === 'custom_css' ? 'CSS' : 'WP'})</option>
-                  ))}
-                </select>
-              </div>
               {/* Marca de la página (multimarca). Si se asigna, carruseles/destacados/
                   flash y el catálogo se acotan a esa marca. '' = página global (actual). */}
               <div className={styles.inputGroup}>
-                <label>Marca de la Página (Opcional)</label>
+                <label>Marca de la página (opcional)</label>
                 <select
                   value={formData.brandId}
                   onChange={e => setFormData({...formData, brandId: e.target.value})}
@@ -255,112 +204,22 @@ const AdminLandingPages = () => {
                   className={styles.input}
                   style={{ width: '100%', padding: '0.5rem', border: '1px solid #ccc', borderRadius: '4px' }}
                 >
-                  <option value="">-- Sin marca (Global / Con Amor) --</option>
+                  <option value="">-- Sin marca (toda la tienda) --</option>
                   {brands.map(b => (
                     <option key={b.id} value={b.id}>{b.name || b.slug || b.id}</option>
                   ))}
                 </select>
+                <small className={styles.notaMarca}>Con marca, sus productos, ofertas y categorías son solo de esa marca.</small>
               </div>
             </div>
 
-            <div className={styles.toggles}>
-              <label className={styles.toggleLabel}>
-                <input 
-                  type="checkbox" 
-                  checked={formData.hideHeader} 
-                  onChange={e => setFormData({...formData, hideHeader: e.target.checked})} 
-                />
-                Ocultar Encabezado (Header global)
-              </label>
-              <label className={styles.toggleLabel}>
-                <input 
-                  type="checkbox" 
-                  checked={formData.hideFooter} 
-                  onChange={e => setFormData({...formData, hideFooter: e.target.checked})} 
-                />
-                Ocultar Pie de Página (Footer global)
-              </label>
-            </div>
-
-            <hr className={styles.divider} />
-            
-            <div className={styles.linkedProductsSection}>
-              <h4>Productos Enlazados (Opcional)</h4>
-              <p className={styles.helpText}>Asigna productos específicos a esta Landing Page y define cómo se descontará su inventario al comprarse desde aquí.</p>
-              
-              <div className={styles.productSearch}>
-                <input 
-                  type="text" 
-                  placeholder="Buscar producto por nombre o SKU para añadir..." 
-                  value={searchProduct}
-                  onChange={e => setSearchProduct(e.target.value)}
-                />
-                {searchProduct && (
-                  <ul className={styles.searchResults}>
-                    {filteredProducts.map(p => (
-                      <li key={p.id} onClick={() => { addLinkedProduct(p); setSearchProduct(''); }}>
-                        <img src={p.images?.[0] || '/images/placeholder.svg'} alt={p.name} />
-                        <span>{p.name}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              {formData.linkedProducts.length > 0 && (
-                <table className={styles.linkedTable}>
-                  <thead>
-                    <tr>
-                      <th>Producto</th>
-                      <th>Tipo de Inventario</th>
-                      <th>Cantidad Asignada</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {formData.linkedProducts.map(lp => {
-                      const product = products.find(p => p.id === lp.productId);
-                      if (!product) return null;
-                      return (
-                        <tr key={lp.productId}>
-                          <td>{product.name} <br/><small>{product.sku || 'Sin SKU'}</small></td>
-                          <td>
-                            <select 
-                              value={lp.stockType} 
-                              onChange={e => updateLinkedProduct(lp.productId, 'stockType', e.target.value)}
-                            >
-                              <option value="global">Descontar del Total (Global)</option>
-                              <option value="exclusive">Stock Exclusivo de Landing</option>
-                              <option value="infinite">Stock Infinito (Sin Límite)</option>
-                            </select>
-                          </td>
-                          <td>
-                            {lp.stockType === 'exclusive' ? (
-                              <input 
-                                type="number" 
-                                min="0" 
-                                value={lp.allocatedStock} 
-                                onChange={e => updateLinkedProduct(lp.productId, 'allocatedStock', parseInt(e.target.value) || 0)}
-                                className={styles.numberInput}
-                              />
-                            ) : (
-                              <span className={styles.mutedText}>No aplica</span>
-                            )}
-                          </td>
-                          <td>
-                            <button type="button" onClick={() => removeLinkedProduct(lp.productId)} className={styles.dangerBtn}>Quitar</button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
+            <p className={styles.notaMarca}>
+              El tema y ocultar la cabecera o el pie se eligen en la página con el editor (pestaña "Página").
+            </p>
 
             <div className={styles.formActions}>
               <Button variant="secondary" onClick={() => setIsEditing(false)}>Cancelar</Button>
-              <Button type="submit" variant="primary">Guardar Configuración</Button>
+              <Button type="submit" variant="primary">Guardar</Button>
             </div>
           </form>
         </div>
@@ -369,43 +228,58 @@ const AdminLandingPages = () => {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>Título</th>
-                <th>URL (Slug)</th>
-                <th>Header / Footer</th>
-                <th>Productos</th>
-                <th>Diseño Visual</th>
+                <th>Página</th>
+                <th>Dirección</th>
+                <th>Diseño</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {pages.map(page => (
-                <tr key={page.id}>
+              {PAGINAS_DE_LA_TIENDA.map((p) => (
+                <tr key={p.id}>
                   <td>
-                    <strong>{page.title}</strong>
-                    {marcaDuena(page) && <span className={styles.badgeMarca}>Página de marca</span>}
+                    <strong>{p.title}</strong>
+                    <span className={styles.badgeTienda}>De la tienda</span>
                   </td>
-                  <td><a href={`/${page.slug}`} target="_blank" rel="noreferrer" className={styles.urlLink}>/{page.slug}</a></td>
+                  <td><a href={p.ruta} target="_blank" rel="noreferrer" className={styles.urlLink}>{p.ruta}</a></td>
                   <td>
-                    <span className={styles.badge}>{page.hideHeader ? 'Oculto' : 'Visible'}</span> / <span className={styles.badge}>{page.hideFooter ? 'Oculto' : 'Visible'}</span>
-                  </td>
-                  <td>{page.linkedProducts?.length || 0} asignados</td>
-                  <td>
-                    {/* La página con el editor ya abierto (?editar, BarraDeAdmin). */}
-                    <Button variant="primary" onClick={() => navigate(`/${page.slug}?editar`)} className={styles.editDesignBtn}>
+                    <Button variant="primary" onClick={() => disenar(p.ruta)} className={styles.editDesignBtn}>
                       Diseñar página
                     </Button>
                   </td>
-                  <td>
-                    <div className={styles.actions}>
-                      <button onClick={() => handleEdit(page)} className={styles.actionBtn}>Configurar</button>
-                      <button onClick={() => handleDelete(page.id)} className={`${styles.actionBtn} ${styles.danger}`}>Eliminar</button>
-                    </div>
-                  </td>
+                  <td><span className={styles.mutedText}>Siempre está</span></td>
                 </tr>
               ))}
+              {pages.map(page => {
+                const marca = marcaDuena(page);
+                return (
+                  <tr key={page.id}>
+                    <td>
+                      <strong>{page.title || page.slug}</strong>
+                      {marca && <span className={styles.badgeMarca}>Página de marca</span>}
+                    </td>
+                    <td><a href={`/${page.slug}`} target="_blank" rel="noreferrer" className={styles.urlLink}>/{page.slug}</a></td>
+                    <td>
+                      {/* La página con el editor ya abierto (?editar, BarraDeAdmin). */}
+                      <Button variant="primary" onClick={() => disenar(`/${page.slug}`)} className={styles.editDesignBtn}>
+                        Diseñar página
+                      </Button>
+                    </td>
+                    <td>
+                      <div className={styles.actions}>
+                        <button onClick={() => handleEdit(page)} className={styles.actionBtn}>{marca ? 'Nombre' : 'Nombre y URL'}</button>
+                        {/* La de una marca se borra con la marca (Marcas), no sola. */}
+                        {marca
+                          ? <span className={styles.mutedText} title="Se borra al borrar la marca, en Marcas">Se borra con la marca</span>
+                          : <button onClick={() => handleDelete(page.id)} className={`${styles.actionBtn} ${styles.danger}`}>Eliminar</button>}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {pages.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '2rem' }}>No has creado ninguna Landing Page todavía.</td>
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '2rem' }}>Todavía no hay páginas de marca ni de campaña.</td>
                 </tr>
               )}
             </tbody>

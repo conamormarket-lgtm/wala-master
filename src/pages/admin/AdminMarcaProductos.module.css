@@ -437,3 +437,17 @@
   color: #FCA5A5;
   border-color: var(--color-border);
 }
+
+/* "Diseñar página": las burbujas de categorías se arman en su página. */
+.disenarLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--primary-color, #7c3aed);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.disenarLink:hover {
+  text-decoration: underline;
+}

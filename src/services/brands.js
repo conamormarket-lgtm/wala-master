@@ -180,8 +180,8 @@ const buildBrandLandingSections = (brandId, name, opts = {}) => {
  * hero_banner con el nombre en mayúsculas, la textura de las tarjetas
  * (bgImage) de foto y un botón que llevaba a la misma página; y aparte, en
  * Marcas, la "Identidad de la página" guardaba otra portada que la tienda no
- * mostraba. Ahora es una sola: el nombre, el logo y los colores salen de la
- * marca, y el estilo, la foto y la frase se editan en el editor.
+ * mostraba. Ahora es una sola: el nombre y el logo salen de la marca, y los
+ * colores, el estilo, la foto y la frase se editan en el editor.
  * Sale de lo que había: lo elegido en Identidad y, si no, lo que mostraba el
  * banner (su foto si no era la de ejemplo, su subtítulo si no era el automático).
  */
@@ -198,7 +198,8 @@ const ajustesDePortada = (brand, banner = null) => {
   const estilo = elegido === 'collage' || (elegido === 'foto' && imagen) || (elegido === 'color' && !fotoDelBanner)
     ? elegido
     : (imagen ? 'foto' : 'color');
-  return { ...getDefaultSettings('brand_hero'), estilo, imagen, frase };
+  // Los colores que la marca tenía en Marcas pasan a la portada (ahí se editan).
+  return { ...getDefaultSettings('brand_hero'), estilo, imagen, frase, color: i.color || '', color2: i.color2 || '' };
 };
 
 /**

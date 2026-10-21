@@ -39,11 +39,12 @@ const POSICION_VERTICAL = { 'flex-start': 'flex-start', top: 'flex-start', cente
  *  - onClicBoton: para medir clics (la tienda llama a trackBannerClick).
  */
 /**
- * La portada de la página de una marca (brand_hero): el nombre, el logo y los
- * colores son los de la marca (se cambian en Marcas); la sección elige el
+ * La portada de la página de una marca (brand_hero): el nombre y el logo son
+ * los de la marca (se cambian en Marcas); la sección elige sus colores, el
  * estilo (foto, color o collage), la foto, la frase y el texto del botón, que
  * baja al catálogo. Es PortadaMarca dentro de TemaMarca. Sin marca no se dibuja.
- *  - ajustes: { estilo, imagen, frase, buttonText }
+ * Sin colores en la sección, los que la marca guardaba antes en Marcas.
+ *  - ajustes: { color, color2, estilo, imagen, frase, buttonText }
  *  - marca: el doc de tienda_brands de la página
  *  - fotos (collage) · cuenta · ofertas · categorias (sus sellos) · urlBoton
  */
@@ -51,7 +52,7 @@ export function PortadaDeMarca({ ajustes = {}, marca, fotos = [], cuenta, oferta
   if (!marca) return null;
   const { color, color2, frase } = identidadDeMarca(marca);
   return (
-    <TemaMarca identidad={{ color, color2 }}>
+    <TemaMarca identidad={{ color: ajustes.color || color, color2: ajustes.color2 || color2 }}>
       <PortadaMarca
         nombre={marca.name}
         logo={marca.logoUrl}

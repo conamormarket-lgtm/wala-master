@@ -1,13 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getProductsByBrand, getProducts, setProductBrand } from '../../services/products';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
-import { ArrowLeft, PlusCircle, Search, Loader2, PackagePlus, PackageMinus, X, CheckCircle2, Package, LayoutGrid } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Search, Loader2, PackagePlus, PackageMinus, X, CheckCircle2, LayoutTemplate } from 'lucide-react';
 import Button from '../../components/common/Button';
-// Editor compartido del nav de categorías por marca (reemplaza al antiguo
-// BrandCategoryNavEditor interno; este sí invalida ['categories-nav-brands']).
-import CategoryNavEditor from '../../components/admin/CategoryNavEditor/CategoryNavEditor';
 import styles from './AdminMarcaProductos.module.css';
 
 /**
@@ -23,14 +20,16 @@ import styles from './AdminMarcaProductos.module.css';
  *  - Lista de productos YA asignados a la marca (getProductsByBrand) con quitar en lote.
  *  - Buscador + lista de productos NO asignados (getProducts) con asignar en lote.
  *
- * @param {{ brand: { id: string, name: string }, onBack: () => void }} props
+ * Las burbujas de categorías ya no se arman aquí: van en la página de la
+ * marca con el editor (sección "Botones de categorías"), un solo lugar.
+ *
+ * @param {{ brand: { id: string, name: string, slug?: string }, onBack: () => void }} props
  */
 const AdminMarcaProductos = ({ brand, onBack }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   // Pestaña activa: 'productos' (gestión existente) o 'nav' (nav de categorías por marca).
-  const [tab, setTab] = useState('productos');
 
   // Selecciones independientes para cada lista (asignados / disponibles).
   const [selectedToRemove, setSelectedToRemove] = useState(() => new Set());
@@ -167,40 +166,26 @@ const AdminMarcaProductos = ({ brand, onBack }) => {
         <button type="button" className={styles.backBtn} onClick={onBack}>
           <ArrowLeft size={18} /> Volver a marcas
         </button>
-        {tab === 'productos' && (
-          <Button onClick={handleCrearEnMarca}>
-            <span className={styles.btnInline}>
-              <PlusCircle size={16} /> Crear producto en {brand.name}
-            </span>
-          </Button>
-        )}
+        <Button onClick={handleCrearEnMarca}>
+          <span className={styles.btnInline}>
+            <PlusCircle size={16} /> Crear producto en {brand.name}
+          </span>
+        </Button>
       </div>
 
       <div className={styles.headerBlock}>
         <h2 className={styles.brandHeading}>{brand.name}</h2>
         <p className={styles.brandSub}>
-          {tab === 'productos'
-            ? 'Asigna o quita productos de esta marca. Solo se cambia la marca del producto; el precio, el stock y la forma de cobro no se tocan.'
-            : 'Arma las burbujas de categorías que verán tus clientes en la página de esta marca. Al pulsar una burbuja, el catálogo se filtra por esa categoría.'}
+          Asigna o quita productos de esta marca. Solo se cambia la marca del producto; el precio, el stock y la forma de cobro no se tocan.
+          {brand.slug && (
+            <>
+              {' '}Las burbujas de categorías se arman en su página:{' '}
+              <Link to={`/${brand.slug}?editar`} className={styles.disenarLink}>
+                <LayoutTemplate size={14} aria-hidden="true" /> Diseñar página
+              </Link>
+            </>
+          )}
         </p>
-      </div>
-
-      {/* Pestañas: Productos (gestión existente) / Nav de categorías (nuevo) */}
-      <div className={styles.tabs}>
-        <button
-          type="button"
-          className={`${styles.tab} ${tab === 'productos' ? styles.tabActive : ''}`}
-          onClick={() => setTab('productos')}
-        >
-          <Package size={16} /> Productos
-        </button>
-        <button
-          type="button"
-          className={`${styles.tab} ${tab === 'nav' ? styles.tabActive : ''}`}
-          onClick={() => setTab('nav')}
-        >
-          <LayoutGrid size={16} /> Nav de categorías
-        </button>
       </div>
 
       {feedback && (
@@ -209,16 +194,6 @@ const AdminMarcaProductos = ({ brand, onBack }) => {
         </div>
       )}
 
-      {/* ═══ PESTAÑA NAV DE CATEGORÍAS ═══ */}
-      {/* Usa el editor compartido CategoryNavEditor: además de guardar en
-          tienda_brands.categoryNav, invalida ['categories-nav-brands'] para que
-          el storefront refresque el nav al instante. Trae su propio feedback. */}
-      {tab === 'nav' && (
-        <CategoryNavEditor brandId={brand.id} brandName={brand.name} />
-      )}
-
-      {/* ═══ PESTAÑA PRODUCTOS (gestión existente, intacta) ═══ */}
-      {tab === 'productos' && (
       <>
       {/* ── SECCIÓN 1: Productos ya en la marca ── */}
       <section className={styles.section}>
@@ -363,7 +338,6 @@ const AdminMarcaProductos = ({ brand, onBack }) => {
         )}
       </section>
       </>
-      )}
     </div>
   );
 };
