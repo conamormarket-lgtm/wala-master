@@ -375,6 +375,8 @@ export const ESQUEMAS = {
     campos: [
       { tipo: 'opciones', campo: 'dataSource', etiqueta: 'Contenido', porDefecto: 'manual', opciones: [{ valor: 'products', texto: 'Automático' }, { valor: 'manual', texto: 'A mano' }] },
       { tipo: 'nota', texto: 'Se arma sola con las categorías que tienen productos.', si: categoriasAuto },
+      { tipo: 'opciones', campo: 'cardStyle', etiqueta: 'Estilo', porDefecto: 'compact', opciones: [{ valor: 'compact', texto: 'Cuadros' }, { valor: 'round', texto: 'Círculos' }, { valor: 'bubble', texto: 'Burbujas' }] },
+      { tipo: 'numero', campo: 'columns', etiqueta: 'Por fila (en computadora)', min: 2, max: 6 },
       titulo(),
       estiloTexto('title', 'Estilo del título'),
       { tipo: 'numero', campo: 'limit', etiqueta: 'Máximo de categorías', min: 2, max: 12, si: categoriasAuto },
@@ -390,8 +392,6 @@ export const ESQUEMAS = {
           { tipo: 'color', campo: 'backgroundColor', etiqueta: 'Color del cuadro', automatico: true, vacio: 'El general' },
         ],
       },
-      { tipo: 'numero', campo: 'columns', etiqueta: 'Columnas (escritorio)', min: 2, max: 6, pestana: 'diseno' },
-      { tipo: 'opciones', campo: 'cardStyle', etiqueta: 'Forma', opciones: [{ valor: 'compact', texto: 'Cuadros' }, { valor: 'round', texto: 'Círculos' }], pestana: 'diseno' },
       { tipo: 'interruptor', campo: 'showProductCount', etiqueta: 'Mostrar cuántos productos hay', pestana: 'diseno', si: categoriasAuto },
       { tipo: 'color', campo: 'tileBackgroundColor', etiqueta: 'Color de los cuadros', automatico: true, pestana: 'diseno' },
       ...pieComun(),

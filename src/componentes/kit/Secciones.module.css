@@ -590,7 +590,8 @@ a.anuncio:hover {
 
 .categorias {
   display: grid;
-  grid-template-columns: repeat(var(--columnas), minmax(0, 1fr));
+  /* Tantas columnas como categorías (hasta --columnas), cada una del ancho de una columna. */
+  grid-template-columns: repeat(var(--cuantas, var(--columnas)), calc((100% - (var(--columnas) - 1) * 0.85rem) / var(--columnas)));
   gap: 0.85rem;
   margin: 0;
   padding: 0;

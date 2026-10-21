@@ -514,8 +514,10 @@ export function GrillaCategorias({ ajustes = {}, categorias, rutaCategoria = '' 
   if (auto && ORDEN_CATEGORIAS[ajustes.sortMode]) base.sort(ORDEN_CATEGORIAS[ajustes.sortMode]);
   const lista = auto ? base.slice(0, Math.min(12, Math.max(2, Number(ajustes.limit) || 6))) : base;
   if (!lista.length) return null;
-  const columnas = Math.min(lista.length, Math.min(6, Math.max(2, Number(ajustes.columns) || 6)));
-  const redonda = ajustes.cardStyle === 'round';
+  // Cada cuadro mide lo de una columna aunque haya menos categorías que
+  // columnas (antes, con una sola categoría, el cuadro ocupaba todo el ancho).
+  const columnas = Math.min(6, Math.max(2, Number(ajustes.columns) || 6));
+  const forma = { round: 'circulo', bubble: 'burbuja' }[ajustes.cardStyle] || 'cuadro';
   // Sin imageSource guardado, la foto de un producto (como la tienda); si
   // falta la elegida, la otra.
   const deProducto = (ajustes.imageSource || 'product') === 'product';
@@ -523,11 +525,11 @@ export function GrillaCategorias({ ajustes = {}, categorias, rutaCategoria = '' 
   return (
     <>
       <TituloSeccion {...tituloDesdeAjustes(ajustes)} />
-      <ul className={s.categorias} style={{ '--columnas': columnas }}>
+      <ul className={s.categorias} style={{ '--columnas': columnas, '--cuantas': Math.min(lista.length, columnas) }}>
         {lista.map((c, k) => (
           <li key={c.categoryId || c.name}>
             <TarjetaCategoria
-              forma={redonda ? 'circulo' : 'cuadro'}
+              forma={forma}
               nombre={c.name}
               imagen={fotoDe(c)}
               url={c.url || `${rutaCategoria}?categoria=${encodeURIComponent(c.categoryId)}`}
