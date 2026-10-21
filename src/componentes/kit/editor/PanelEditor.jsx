@@ -157,6 +157,7 @@ const transicionVista = { initial: { opacity: 0, x: 16 }, animate: { opacity: 1,
  *  - tipos: los únicos módulos del catálogo (p. ej. el pie: columnas, texto e imagen)
  *  - nombres: { tipo: nombre } para los tipos sin esquema (los que la página
  *    edita con extensiones.formularios)
+ *  - tituloSecciones: el título de las secciones bajo "Toda la tienda" ('Esta página')
  *  - ajustesPagina: nodo de la pestaña "Página" (tema, ocultar header…)
  *  - incrustado: se dibuja dentro de su contenedor (demo) en vez de fijo a la ventana
  * Fijo a la ventana, empieza en --editor-arriba (la tienda: bajo su barra de admin).
@@ -165,7 +166,7 @@ export default function PanelEditor({
   secciones = [], onCambiar, seleccionada, onSeleccionar, resaltada, onResaltar, insertarEn = null, onInsertarEn,
   crearAjustes = ajustesIniciales, fuentes = {}, extensiones = {}, globales = [], base, tipos, nombres,
   onGuardar, guardando = false, sinGuardar = false, onDeshacer, onRehacer, puedeDeshacer, puedeRehacer,
-  titulo = 'Página', vista, onVista, lado = 'derecha', onLado, onCerrar, cabecera, ajustesPagina, incrustado = false,
+  titulo = 'Página', tituloSecciones = 'Esta página', vista, onVista, lado = 'derecha', onLado, onCerrar, cabecera, ajustesPagina, incrustado = false,
 }) {
   const lista = useMemo(() => ordenadas(secciones), [secciones]);
   const [ids, setIds] = useState(() => lista.map((x) => x.id));
@@ -332,7 +333,7 @@ export default function PanelEditor({
                             </div>
                           );
                         })}
-                        <h4 className={s.globalesTitulo}>Esta página</h4>
+                        <h4 className={s.globalesTitulo}>{tituloSecciones}</h4>
                       </div>
                     )}
                     {lista.length === 0 && (

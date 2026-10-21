@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
 import { setDocument, createDocument, getDocument } from '../../../services/firebase/firestore';
@@ -19,7 +19,25 @@ export const VisualEditorProvider = ({ children }) => {
   const [hoveredSectionId, setHoveredSectionId] = useState(null); // sectionId from drawer
   const [editorPosition, setEditorPosition] = useState('right'); // 'left', 'right', 'floating'
   
-  const [activePageId, setActivePageId] = useState('home');
+  // La página que se edita sale de la que está en pantalla, no de quien llegó
+  // último a fijarla:
+  //  - paginaDelBuilder: la pageId de la TiendaPage montada ('' mientras una
+  //    landing carga; null en las páginas que no arma el builder: el carrito,
+  //    la cuenta, Crear…). La registran TiendaPage y DynamicLandingPage.
+  //  - enPie: el admin abrió el pie de página.
+  // Fuera del builder solo se edita lo de toda la tienda: el pie y lo global.
+  const [paginaDelBuilder, setPaginaDelBuilder] = useState(null);
+  const [enPie, setEnPie] = useState(false);
+  const activePageId = enPie || paginaDelBuilder === null ? 'footer' : (paginaDelBuilder || null);
+  // 'footer' abre el pie; cualquier otra vuelve a la página en pantalla.
+  const pieAutomatico = useRef(false);
+  const setActivePageId = useCallback((id) => {
+    pieAutomatico.current = false;
+    setEnPie(id === 'footer');
+  }, []);
+  // De qué página es el borrador: hasta que llega el de la nueva, la página no
+  // dibuja las secciones de la anterior.
+  const [paginaDelBorrador, setPaginaDelBorrador] = useState(null);
 
   // Borrador local (draft) de la configuración de la tienda: secciones de la
   // página + lo global (menú, cuenta, favoritos, buscador). Con deshacer y
@@ -29,6 +47,25 @@ export const VisualEditorProvider = ({ children }) => {
   const { reiniciar, cambiar } = borrador;
   const setStoreConfigDraft = reiniciar;
   const [isSaving, setIsSaving] = useState(false);
+
+  // Fuera del builder el editor pasa al pie, y se queda ahí al volver a una
+  // página del builder si quedó algo sin publicar (si no, vuelve a la página).
+  const sinGuardarRef = useRef(false);
+  sinGuardarRef.current = borrador.sinGuardar;
+  const enPieRef = useRef(false);
+  enPieRef.current = enPie;
+  useEffect(() => {
+    if (!isEditModeActive) return;
+    if (paginaDelBuilder === null) {
+      if (!enPieRef.current) {
+        pieAutomatico.current = true;
+        setEnPie(true);
+      }
+    } else if (paginaDelBuilder && pieAutomatico.current && !sinGuardarRef.current) {
+      pieAutomatico.current = false;
+      setEnPie(false);
+    }
+  }, [isEditModeActive, paginaDelBuilder]);
   // Dónde se insertará una sección nueva (el "+" de la página abre el catálogo del panel).
   const [insertarEn, setInsertarEn] = useState(null);
 
@@ -59,21 +96,29 @@ export const VisualEditorProvider = ({ children }) => {
     let mounted = true;
     const loadDraft = async () => {
       if (isEditModeActive) {
+        // Una landing cargando: se espera a saber su página.
+        if (!activePageId) return;
         // Cargar configuración global (header, etc.) y secciones de la página actual
         const { data: globalData } = await getDocument('storeConfig', 'homePage');
         const { sections } = await getStorefrontConfig(activePageId);
-        
+
         if (mounted) {
           setStoreConfigDraft({
             ...(globalData || {}),
             sections: sections || []
           });
+          setPaginaDelBorrador(activePageId);
+          setActiveSection(null);
+          setInsertarEn(null);
         }
       } else {
         if (mounted) {
           setStoreConfigDraft(null);
+          setPaginaDelBorrador(null);
           setActiveSection(null);
           setInsertarEn(null);
+          setEnPie(false);
+          pieAutomatico.current = false;
         }
       }
     };
@@ -92,9 +137,11 @@ export const VisualEditorProvider = ({ children }) => {
     if (!isEditModeActive) return;
     setActiveSection(sectionId);
     if (!storeConfigDraft) {
+      if (!activePageId) return;
       const safeConfig = currentConfig || {};
       setStoreConfigDraft(safeConfig);
-      
+      setPaginaDelBorrador(activePageId);
+
       // Intentar precargar sections si no están en el currentConfig
       if (!safeConfig.sections) {
         const { sections } = await getStorefrontConfig(activePageId);
@@ -128,6 +175,8 @@ export const VisualEditorProvider = ({ children }) => {
   // avisar: false = sin alert (el editor del kit avisa con un toast).
   const saveDraftToFirestore = async ({ avisar = true } = {}) => {
     if (!storeConfigDraft) return { error: 'No hay cambios' };
+    // El borrador es de otra página (la nueva aún carga): no se guarda encima.
+    if (!activePageId || paginaDelBorrador !== activePageId) return { error: 'La página todavía está cargando' };
 
     // Verificar si la página está bloqueada
     const lockedPages = await getLockedPages();
@@ -193,6 +242,9 @@ export const VisualEditorProvider = ({ children }) => {
         setEditorPosition,
         activePageId,
         setActivePageId,
+        paginaDelBuilder,
+        setPaginaDelBuilder,
+        paginaDelBorrador,
         storeConfigDraft,
         setStoreConfigDraft,
         updateDraft,

@@ -8,6 +8,7 @@ import Button from '../../components/common/Button';
 import AdminImageCropper from '../../components/admin/AdminImageCropper/AdminImageCropper';
 import AdminMarcaProductos from './AdminMarcaProductos';
 import IdentidadPaginaMarca, { IDENTIDAD_VACIA, identidadDelDoc } from './IdentidadPaginaMarca';
+import { useGlobalToast } from '../../contexts/ToastContext';
 import styles from './AdminMarcas.module.css';
 
 const hexToRgba = (hex, alpha) => {
@@ -20,6 +21,7 @@ const hexToRgba = (hex, alpha) => {
 
 const AdminMarcas = () => {
   const queryClient = useQueryClient();
+  const toast = useGlobalToast();
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '', identidad: IDENTIDAD_VACIA });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -52,7 +54,13 @@ const AdminMarcas = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => updateBrand(id, data),
+    // Si la URL nueva no se puede usar (otra página la tiene), la marca no cambia y se avisa.
+    mutationFn: async ({ id, data }) => {
+      const res = await updateBrand(id, data);
+      if (res?.error) throw new Error(res.error);
+      return res;
+    },
+    onError: (e) => toast.error(`No se guardó la marca: ${e?.message || e}`, 8000),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       queryClient.invalidateQueries({ queryKey: ['brands'] });

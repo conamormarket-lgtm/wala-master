@@ -305,14 +305,15 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   const pageId = pageIdOverride || (location.pathname === '/' || location.pathname === '/home' ? 'home' :
                  location.pathname.replace(/^\/+/, '').split('/')[0] || 'home');
 
-  const { storeConfigDraft, activePageId, setActivePageId, isEditModeActive, updateSectionsDraft } = useVisualEditor();
-
-  // Actualizar el pageId activo en el contexto del editor para que guarde en el lugar correcto
+  const { storeConfigDraft, paginaDelBorrador, setPaginaDelBuilder, isEditModeActive, updateSectionsDraft } = useVisualEditor();
+  // El editor edita la página que está en pantalla: esta (y al salir, ninguna).
   React.useEffect(() => {
-    if (setActivePageId && activePageId !== pageId && activePageId !== 'footer') {
-      setActivePageId(pageId);
-    }
-  }, [pageId, setActivePageId, activePageId]);
+    setPaginaDelBuilder?.(pageId);
+    return () => setPaginaDelBuilder?.(null);
+  }, [pageId, setPaginaDelBuilder]);
+  // Las secciones del borrador solo si son de esta página (al editar el pie,
+  // o mientras llega el borrador de la nueva, se dibujan las publicadas).
+  const borradorDeEsta = paginaDelBorrador === pageId ? storeConfigDraft : null;
 
   // ── TODAS LAS QUERIES SE LANZAN EN PARALELO ──────────────────────
 
@@ -324,8 +325,8 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   });
 
   const configuredSections = useMemo(() =>
-    [...(storeConfigDraft?.sections || storefrontConfig?.sections || [])]
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0)), [storeConfigDraft, storefrontConfig]);
+    [...(borradorDeEsta?.sections || storefrontConfig?.sections || [])]
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0)), [borradorDeEsta, storefrontConfig]);
   const [visibleSections, setVisibleSections] = useState({ pageId, ids: new Set() });
   const markSectionVisible = useCallback((id) => {
     setVisibleSections((previous) => {
@@ -444,7 +445,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     if (typeof pageBrandIdOverride === 'string' && pageBrandIdOverride.trim() !== '') {
       return pageBrandIdOverride.trim();
     }
-    const secs = storeConfigDraft?.sections || storefrontConfig?.sections || [];
+    const secs = borradorDeEsta?.sections || storefrontConfig?.sections || [];
     const conMarca = (sec) =>
       typeof sec?.settings?.brandId === 'string' && sec.settings.brandId.trim() !== '';
     // Prioridad: la marca la define el CATÁLOGO (sidebar_catalog/product_grid). Si la
@@ -457,7 +458,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     if (catalogo) return catalogo.settings.brandId.trim();
     const nav = secs.find((sec) => sec?.type === 'categories_nav' && conMarca(sec));
     return nav ? nav.settings.brandId.trim() : null;
-  }, [storeConfigDraft, storefrontConfig, pageBrandIdOverride]);
+  }, [borradorDeEsta, storefrontConfig, pageBrandIdOverride]);
 
   // Fuente canónica de la cuadrícula automática. Se consulta aparte del catálogo
   // paginado para que las categorías no desaparezcan al navegar o filtrar.
@@ -888,7 +889,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // ── MANEJO DEL ARRAY DE SECCIONES (DEFAULT FALLBACKS) ────────────────
   // La configuración de secciones ahora proviene 100% de la BD o del borrador,
   // y storefront.js se encarga de inyectar defaults si la BD está vacía.
-  let displaySections = storeConfigDraft?.sections || storefrontConfig?.sections || [];
+  let displaySections = borradorDeEsta?.sections || storefrontConfig?.sections || [];
 
   // ¿Hay una sección 'categories_nav' (con marca) en la página? Solo entonces el
   // sidebar_catalog deja que TiendaPage controle su categoría (estado compartido

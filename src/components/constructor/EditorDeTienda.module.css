@@ -11,3 +11,14 @@
 .volver {
   margin-bottom: 0.6rem;
 }
+
+/* En una página que no arma el builder (el carrito, la cuenta…). */
+.aviso {
+  margin: 0 0 0.6rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 14px;
+  background: var(--ed-acento-suave);
+  color: var(--ed-tenue);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}

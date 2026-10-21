@@ -28,7 +28,7 @@ const DynamicLandingPage = () => {
 const LandingDinamica = ({ slug }) => {
   const location = useLocation();
   const { setHeaderVisible, setFooterVisible } = useLayoutContext();
-  const { setActivePageId, storeConfigDraft } = useVisualEditor();
+  const { setPaginaDelBuilder } = useVisualEditor();
   const { loading: authLoading } = useAuth();
   
   const [loading, setLoading] = useState(true);
@@ -50,13 +50,15 @@ const LandingDinamica = ({ slug }) => {
     // que llegaba la nueva. Volviendo a poner loading se muestra el
     // BrandLoader durante el salto, en vez de contenido de otra marca.
     setLoading(true);
+    // Para el editor es una página del builder que aún carga: su id (el slug
+    // guardado) lo registra TiendaPage cuando llega la landing.
+    setPaginaDelBuilder('');
     const fetchLandingPage = async () => {
       try {
         const page = await getLandingPageBySlug(slug);
         if (mounted) {
           if (page) {
             setLandingPage(page);
-            setActivePageId(page.id);
             setHeaderVisible(!page.hideHeader);
             setFooterVisible(!page.hideFooter);
 
@@ -72,6 +74,8 @@ const LandingDinamica = ({ slug }) => {
                 console.warn('No se pudo cargar el tema de la landing:', themeErr);
               }
             }
+          } else {
+            setPaginaDelBuilder(null);
           }
         }
       } catch (err) {
@@ -83,6 +87,7 @@ const LandingDinamica = ({ slug }) => {
         // Se loguea y se trata como "landing no encontrada" (misma UX que
         // hoy: redirige a home) en vez de dejar al usuario atrapado.
         console.error('Error al cargar la landing page:', err);
+        if (mounted) setPaginaDelBuilder(null);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -95,9 +100,9 @@ const LandingDinamica = ({ slug }) => {
       // Restaurar visibilidad por defecto al salir de la landing page
       setHeaderVisible(true);
       setFooterVisible(true);
-      setActivePageId('home');
+      setPaginaDelBuilder(null);
     };
-  }, [slug, setHeaderVisible, setFooterVisible, setActivePageId]);
+  }, [slug, setHeaderVisible, setFooterVisible, setPaginaDelBuilder]);
 
   // Solo bloquear por auth al resolver el redirect cuando la LP no existe.
   // Si ya tenemos landing, NO remountar a PageLoading cuando authLoading

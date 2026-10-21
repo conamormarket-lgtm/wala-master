@@ -473,6 +473,52 @@ export const createBrand = async (data) => {
 };
 
 /**
+ * La URL de la marca cambió (su slug): su página se va con ella. Antes solo
+ * cambiaba tienda_brands.slug y la landing seguía en el slug viejo: el menú
+ * Marcas y los mosaicos llevaban a /<nuevo> ("No encontramos esta página")
+ * mientras /<viejo> seguía abriendo.
+ *  - La landing de la marca es la que tiene su slug de antes (sin mirar
+ *    mayúsculas) o, si no, la única que tiene. Las de campaña con la misma
+ *    marca no se tocan.
+ *  - Su diseño (pages/<slug>) se copia al nuevo; el viejo queda de respaldo.
+ *  - El slug viejo queda en slugsAnteriores: los links compartidos redirigen.
+ *  - Si la marca no tenía landing, se arma como al crearla.
+ * Si otra landing ya usa la URL nueva, no se hace nada y se avisa.
+ * @returns {{ error:(string|null) }}
+ */
+const moverLandingDeMarca = async (brandId, slugViejo, slugNuevo, name) => {
+  const minus = (v) => String(v || '').toLowerCase();
+  const { data: todas, error } = await getCollection('landingPages');
+  if (error) return { error };
+  const landings = todas || [];
+  const ocupada = landings.find((l) => l.brandId !== brandId && minus(l.slug || l.id) === minus(slugNuevo));
+  if (ocupada) return { error: `La URL /${slugNuevo} ya es de otra página ("${ocupada.title || ocupada.slug || ocupada.id}"). Elige otra.` };
+
+  const deLaMarca = landings.filter((l) => l.brandId === brandId);
+  const landing = deLaMarca.find((l) => minus(l.slug || l.id) === minus(slugViejo)) || (deLaMarca.length === 1 ? deLaMarca[0] : null);
+  if (!landing) {
+    if (deLaMarca.length > 1) return { error: 'La marca tiene varias páginas y ninguna con su URL de antes: cambia la URL en Landing Pages.' };
+    const r = await ensureBrandLanding(brandId, slugNuevo, name);
+    return { error: r?.error || null };
+  }
+  const actual = landing.slug || landing.id;
+  if (minus(actual) === minus(slugNuevo)) return { error: null };
+  if (deLaMarca.some((l) => l.id !== landing.id && minus(l.slug || l.id) === minus(slugNuevo))) {
+    return { error: `La marca ya tiene otra página en /${slugNuevo}: cámbiala en Landing Pages.` };
+  }
+
+  const { data: diseno } = await getDocument('pages', actual);
+  if (diseno) {
+    const { id: _id, updatedAt: _fecha, ...secciones } = diseno;
+    const { error: errorDiseno } = await setDocument('pages', slugNuevo, secciones);
+    if (errorDiseno) return { error: `No se pudo mover el diseño de la página: ${errorDiseno}` };
+  }
+  const slugsAnteriores = [...new Set([...(landing.slugsAnteriores || []), actual])].filter((x) => minus(x) !== minus(slugNuevo));
+  const { error: errorLanding } = await updateDocument('landingPages', landing.id, { slug: slugNuevo, slugsAnteriores });
+  return { error: errorLanding || null };
+};
+
+/**
  * Actualizar marca
  * @param {string} id
  * @param {{ name?: string, slug?: string, logoUrl?: string, order?: number, bgColor?: string, bgImage?: string, bgOpacity?: number, categoryNav?: Array, categoryNavStyle?: { align?: string, animation?: string }, storeTitle?: string, storeSubtitle?: string, storeEmpty?: string, identidad?: { color?: string, color2?: string, estilo?: string, imagen?: string, frase?: string, bloques?: string[] } }} data
@@ -504,6 +550,15 @@ export const updateBrand = async (id, data) => {
   if (data.storeEmpty !== undefined) payload.storeEmpty = data.storeEmpty;
   // Identidad de la página de la marca: el mapa entero se reescribe.
   if (data.identidad !== undefined) payload.identidad = normalizeIdentidad(data.identidad);
+  // Cambió la URL: primero la página (si no se puede, la marca no cambia).
+  if (payload.slug !== undefined) {
+    const { data: previa } = await getDocument(COLLECTION, id);
+    const slugViejo = previa ? (previa.slug ? slugify(previa.slug) : slugify(previa.name)) : '';
+    if (slugViejo && payload.slug && slugViejo !== payload.slug) {
+      const { error } = await moverLandingDeMarca(id, slugViejo, payload.slug, payload.name ?? previa.name ?? '');
+      if (error) return { error };
+    }
+  }
   return await updateDocument(COLLECTION, id, payload);
 };
 

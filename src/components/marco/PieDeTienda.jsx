@@ -36,7 +36,7 @@ import s from './PieDeTienda.module.css';
  */
 export default function PieDeTienda() {
   const location = useLocation();
-  const { isEditModeActive, activePageId, setActivePageId, storeConfigDraft, sinGuardar } = useVisualEditor();
+  const { isEditModeActive, activePageId, setActivePageId, paginaDelBuilder, storeConfigDraft, sinGuardar } = useVisualEditor();
   const layout = useLayoutContext();
   const { user, userProfile } = useAuth();
   const crearViejo = useLoViejo('crear');
@@ -65,8 +65,6 @@ export default function PieDeTienda() {
 
   const kapiFlota = Boolean(userProfile) && layout.isHeaderVisible !== false && !layout.kapiFlotanteOculto && !sinKapiFlotante(location.pathname);
   const kapi = !kapiFlota && !layout.pieSinKapi && !sinKapiEnPie(location.pathname, { sesion: Boolean(user) });
-  const paginaActual = location.pathname === '/' || location.pathname === '/home' ? 'home'
-    : location.pathname.replace(/^\/+/, '').split('/')[0] || 'home';
 
   const contenido = (bloque) => {
     const ajustes = bloque.settings || {};
@@ -86,16 +84,17 @@ export default function PieDeTienda() {
       {editando && (
         <div className={s.editandoPie} role="status">
           <span>Estás editando el pie de página: se ve en todas las páginas.</span>
-          <Boton
+          {/* Volver solo a una página del builder (en el carrito o la cuenta no hay otra cosa que editar). */}
+          {paginaDelBuilder && <Boton
             variante="contorno"
             tamano="sm"
             onClick={async () => {
               if (sinGuardar && !(await confirmar({ titulo: '¿Volver sin publicar el pie?', texto: 'Los cambios del pie que no publicaste se pierden.', confirmar: 'Volver', peligro: true }))) return;
-              setActivePageId(paginaActual);
+              setActivePageId('pagina');
             }}
           >
             Volver a la página
-          </Boton>
+          </Boton>}
         </div>
       )}
       <div className={s.ancho}>

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, PanelBottom } from 'lucide-react';
 import { useLayoutContext } from '../../contexts/LayoutContext';
@@ -42,10 +42,49 @@ const PAGINAS_GLOBALES = ['home', 'tienda', 'footer'];
 // El pie solo dibuja columnas, texto e imagen (Footer.jsx), y empieza con las columnas de siempre.
 const TIPOS_DEL_PIE = ['footer_columns', 'text', 'image'];
 const BASE_DEL_PIE = [{ type: 'footer_columns', settings: { columns: COLUMNAS_POR_DEFECTO } }];
-const tituloDePagina = (id) => ({ home: 'Inicio', tienda: 'Tienda', footer: 'Pie de página' }[id] || `/${id}`);
+const tituloDePagina = (id) => (id ? { home: 'Inicio', tienda: 'Tienda', footer: 'Pie de página' }[id] || `/${id}` : 'Cargando…');
 const ordenadas = (lista) => [...lista].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-// La página de la ruta (la misma cuenta que TiendaPage y el pie).
-const paginaDeRuta = (ruta) => (ruta === '/' || ruta === '/home' ? 'home' : ruta.replace(/^\/+/, '').split('/')[0] || 'home');
+
+/*
+ * Salir de la página con cambios sin publicar: el borrador es de esta página
+ * y al cambiar de página se recarga. Los enlaces preguntan antes (los de una
+ * sección sin abrir no navegan: la eligen) y recargar o cerrar la pestaña
+ * avisa el navegador. Editando el pie no hace falta: el pie sigue al cambiar.
+ */
+function useAvisoAlSalir(activo) {
+  const navigate = useNavigate();
+  const confirmar = useConfirmar();
+  useEffect(() => {
+    if (!activo) return undefined;
+    const alClic = async (e) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = e.target instanceof Element ? e.target.closest('a[href]') : null;
+      if (!a || (a.target && a.target !== '_self') || a.hasAttribute('download')) return;
+      if (a.closest('[data-seccion-editable="cerrada"]')) return;
+      const url = new URL(a.href, window.location.href);
+      if (url.origin !== window.location.origin || url.pathname === window.location.pathname) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const salir = await confirmar({ titulo: '¿Cambiar de página sin publicar?', texto: 'Los cambios que no publicaste en esta página se pierden.', confirmar: 'Cambiar', peligro: true });
+      if (!salir) return;
+      // El aviso se cierra con un "atrás" (useCerrarConAtras): navegar antes
+      // de que llegue lo deshace. Se espera ese atrás (o un momento, si ya pasó).
+      await new Promise((listo) => {
+        const fin = () => { window.removeEventListener('popstate', fin); window.clearTimeout(t); listo(); };
+        const t = window.setTimeout(fin, 400);
+        window.addEventListener('popstate', fin);
+      });
+      navigate(url.pathname + url.search + url.hash);
+    };
+    const alCerrar = (e) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('click', alClic, true);
+    window.addEventListener('beforeunload', alCerrar);
+    return () => {
+      window.removeEventListener('click', alClic, true);
+      window.removeEventListener('beforeunload', alCerrar);
+    };
+  }, [activo, navigate, confirmar]);
+}
 
 /*
  * Pestaña "Página" de una landing: su tema y si oculta la cabecera o el pie.
@@ -102,13 +141,13 @@ export default function EditorDeTienda() {
   const ed = useVisualEditor();
   const {
     activeSection, openEditorForSection, closeEditor, hoveredSectionId, setHoveredSectionId,
-    editorPosition, setEditorPosition, activePageId, setActivePageId, storeConfigDraft, updateDraft, updateSectionsDraft,
+    editorPosition, setEditorPosition, activePageId, setActivePageId, paginaDelBuilder, storeConfigDraft, updateDraft, updateSectionsDraft,
     saveDraftToFirestore, isSaving, isPreviewMobile, toggleMobilePreview, toggleEditMode,
     deshacer, rehacer, puedeDeshacer, puedeRehacer, sinGuardar, insertarEn, setInsertarEn,
   } = ed;
   const toast = useGlobalToast();
   const confirmar = useConfirmar();
-  const { pathname } = useLocation();
+  useAvisoAlSalir(sinGuardar && activePageId !== 'footer');
 
   // ── Datos de los selectores (las mismas consultas que el editor de antes).
   const { data: colecciones } = useQuery({ queryKey: ['admin-collections'], queryFn: async () => (await getCollections()).data || [] });
@@ -182,8 +221,8 @@ export default function EditorDeTienda() {
   const secciones = useMemo(() => ordenadas(storeConfigDraft?.sections || []), [storeConfigDraft]);
   const config = storeConfigDraft || {};
 
-  // ── Toda la tienda (en el inicio y /tienda, como el editor de antes).
-  const conGlobales = activePageId === 'home' || activePageId === 'tienda';
+  // ── Toda la tienda: en todas las páginas (la cabecera y el pie son los mismos).
+  const enPie = activePageId === 'footer';
   const global = (id, porDefecto) => ({ id, esquema: id, ajustes: config[id] || porDefecto || {}, onCambiar: (parche) => updateDraft(id, parche) });
   // El pie es su propia página: el panel pasa a editarlo (y vuelve con "Volver a la página").
   const cambiarDePagina = async (id) => {
@@ -191,20 +230,24 @@ export default function EditorDeTienda() {
     setActivePageId(id);
     if (id === 'footer') window.setTimeout(() => document.getElementById('site-footer')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
   };
-  const globales = conGlobales ? [
+  const globales = [
     global('header', { navLinks: MENU_POR_DEFECTO }),
     global('accountPopup'),
     global('favoritesPopup'),
     global('searchPage'),
-    { id: 'pie', nombre: 'Pie de página', descripcion: 'Columnas y enlaces del final, en todas las páginas.', icono: PanelBottom, onAbrir: () => cambiarDePagina('footer') },
-  ] : [];
-  const volverALaPagina = activePageId === 'footer' ? (
+    !enPie && { id: 'pie', nombre: 'Pie de página', descripcion: 'Columnas y enlaces del final, en todas las páginas.', icono: PanelBottom, onAbrir: () => cambiarDePagina('footer') },
+  ].filter(Boolean);
+  // Volver a la página solo si la que está en pantalla la arma el builder; si
+  // no (el carrito, la cuenta…), aquí solo se edita lo de toda la tienda.
+  const cabeceraDelPanel = !enPie ? null : paginaDelBuilder ? (
     <div className={s.volver}>
-      <Boton variante="contorno" tamano="sm" bloque icono={<ArrowLeft aria-hidden="true" />} onClick={() => cambiarDePagina(paginaDeRuta(pathname))}>
+      <Boton variante="contorno" tamano="sm" bloque icono={<ArrowLeft aria-hidden="true" />} onClick={() => cambiarDePagina('pagina')}>
         Volver a la página
       </Boton>
     </div>
-  ) : null;
+  ) : (
+    <p className={s.aviso} role="note">Esta página no se arma con el editor: aquí se editan la cabecera, el pie y lo de toda la tienda.</p>
+  );
   const esLanding = activePageId && !PAGINAS_GLOBALES.includes(activePageId);
 
   const publicar = async () => {
@@ -239,7 +282,8 @@ export default function EditorDeTienda() {
           burbujasDeMarca: ({ ajustes }) => <CategoryNavEditor brandId={ajustes.brandId} brandName={nombreMarca(ajustes.brandId)} />,
         }}
         globales={globales}
-        cabecera={volverALaPagina}
+        cabecera={cabeceraDelPanel}
+        tituloSecciones={enPie ? 'Pie de página' : 'Esta página'}
         ajustesPagina={esLanding ? <AjustesDeLanding slug={activePageId} /> : undefined}
         base={activePageId === 'footer' ? BASE_DEL_PIE : BASE}
         tipos={activePageId === 'footer' ? TIPOS_DEL_PIE : undefined}

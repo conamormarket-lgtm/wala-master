@@ -47,6 +47,9 @@ export function SeccionEditable({ id, tipo, nombre, icono, activa, resaltada, va
     <div
       ref={caja}
       className={[s.editable, activa && s.editableActiva, resaltada && s.editableResaltada].filter(Boolean).join(' ')}
+      // Sin abrir, un clic la elige en vez de seguir sus enlaces (el aviso de
+      // salir sin publicar del editor lo mira).
+      data-seccion-editable={activa ? 'abierta' : 'cerrada'}
       onClickCapture={(e) => {
         if (activa || e.target.closest(`.${s.barra}`)) return;
         e.preventDefault();

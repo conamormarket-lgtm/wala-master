@@ -13,14 +13,16 @@ import { useConfirmar } from '../../componentes/kit/Feedback';
  *    tiene que verse como la vio el visitante).
  *  - En la ficha de un producto: "Editar este producto" → su página del panel.
  *  - En el panel, el login y el registro: solo el acceso al panel.
- *  - En el resto: el panel y el editor visual. En la app nativa no se edita
- *    la página, así que ahí no sale.
+ *  - En el resto: el panel y el editor visual. En las páginas que arma el
+ *    builder (inicio, /tienda, marcas y landings) edita la página; en las
+ *    demás (carrito, cuenta, Crear…) solo la cabecera, el pie y lo de toda la
+ *    tienda. En la app nativa no se edita la página, así que ahí no sale.
  * Va pegada arriba y publica su alto (--admin-bar-height) para la cabecera.
  */
 export default function BarraDeAdmin() {
   const { isAdmin } = useAuth();
   const { pathname } = useLocation();
-  const { isEditModeActive, toggleEditMode, sinGuardar } = useVisualEditor();
+  const { isEditModeActive, toggleEditMode, sinGuardar, paginaDelBuilder } = useVisualEditor();
   const confirmar = useConfirmar();
   // Con el editor abierto el botón solo lo cierra (publicar es del panel):
   // "Salir del editor", y si hay cambios sin publicar, se pregunta antes.
@@ -42,5 +44,6 @@ export default function BarraDeAdmin() {
 
   if (Capacitor.isNativePlatform()) return null;
 
-  return <BarraAdmin fija editando={isEditModeActive} onEditor={alternarEditor} textoEditor={isEditModeActive ? 'Salir del editor' : undefined} />;
+  const texto = isEditModeActive ? 'Salir del editor' : paginaDelBuilder === null ? 'Editar cabecera y pie' : undefined;
+  return <BarraAdmin fija editando={isEditModeActive} onEditor={alternarEditor} textoEditor={texto} />;
 }
