@@ -12,8 +12,9 @@ import { Pestanas } from '../Navegacion';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { BarraProgreso } from '../piezas/BarraProgreso';
 import { MarcoJuego, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego, TextoResaltado } from '../piezas/Juegos';
-import { TuboBolitas, EstrellasNivel } from '../piezas/Bolitas';
+import { TuboBolitas, EstrellasNivel, RankingBolitas } from '../piezas/Bolitas';
 import { efectoBolitas } from '../piezas/efectosBolitas';
+import { progresoBolitas } from '../piezas/bolitasProgreso.mjs';
 import {
   nivel as nivelNumero, retoDelDia, puedeMover, mover, resuelto, tubosListos, hayMovimientos, agregarTubo, volverA, pista,
   cerrado, tramo, tuboListo, COLORES, mundoDe, infoMundo, esJefe, estrellasPara, metasEstrellas, premioCofre, RACHA_COFRE,
@@ -26,27 +27,9 @@ import s from './Juegos.module.css';
 /** Las ayudas de cada nivel (vuelven a estar completas al reiniciarlo). */
 export const AYUDAS_BOLITAS = { deshacer: 5, tubo: 1, pista: 3 };
 
-/** Lo que se guarda del jugador (la tienda lo guarda en el aparato). */
-export const PROGRESO_BOLITAS = {
-  nivel: 1, // el nivel más alto abierto
-  estrellas: {}, // { [nivel]: 1 a 3 }, la mejor
-  racha: 0, // niveles seguidos ganados sin reiniciar ni abandonar
-  guardadas: { pista: 0, tubo: 0, deshacer: 0 }, // ayudas de los cofres
-  vistos: [], // obstáculos ya explicados
-  reto: null, // el día del último reto hecho
-  sonido: true,
-  vibracion: true,
-};
-
-/** Completa un progreso guardado (o viejo) con lo que le falte. */
-export const progresoBolitas = (p = {}) => ({
-  ...PROGRESO_BOLITAS,
-  ...p,
-  nivel: Math.max(1, Number(p.nivel) || 1),
-  estrellas: { ...p.estrellas },
-  guardadas: { ...PROGRESO_BOLITAS.guardadas, ...p.guardadas },
-  vistos: Array.isArray(p.vistos) ? p.vistos : [],
-});
+// Lo que se guarda del jugador y cómo se une lo del aparato con lo de la
+// cuenta: piezas/bolitasProgreso.mjs (puro, con pruebas).
+export { PROGRESO_BOLITAS, progresoBolitas, unirProgresos } from '../piezas/bolitasProgreso.mjs';
 
 /* Cómo se explica cada obstáculo la primera vez que aparece. */
 const OBSTACULOS = {
@@ -84,7 +67,12 @@ const enReposo = (fn) => {
   else setTimeout(fn, 300);
 };
 
-const partidaNueva = (lv, clave) => ({ clave, nivel: lv, estado: lv.estado, pasados: [], usos: { deshacer: 0, tubo: 0, pista: 0 }, pista: null, ganada: false });
+/* Una partida: el estado, los pasos de antes (para deshacer), los movimientos
+   que valen (deshacer los saca) y los tubos agregados: eso es lo que se manda
+   al servidor para comprobarla. */
+const partidaNueva = (lv, clave) => ({
+  clave, nivel: lv, estado: lv.estado, pasados: [], jugadas: [], extras: 0, usos: { deshacer: 0, tubo: 0, pista: 0 }, pista: null, ganada: false,
+});
 
 /** Columnas de la mesa: una fila con pocos tubos, dos con muchos. */
 const columnas = (n) => ({
@@ -161,18 +149,25 @@ function NivelDelMapa({ n, estrellas, abierto, actual, onElegir }) {
  * nivel 12 aparecen los obstáculos. Ganar (un nivel o el reto) da monedas una
  * vez al día; sin cuenta se juega igual (el premio invita a entrar).
  *  - sesion · yaHoy (ya cobró hoy) · monto (2)
- *  - onGanar({ movimientos }): cobra; promesa → { monto } | { ya: true }
- *    (si falla, lanza). Solo con sesión y si no cobró hoy.
+ *  - onGanar({ movimientos, partida }): cobra; promesa → { monto } | { ya: true }
+ *    (si falla, lanza). Solo con sesión y si no cobró hoy. `partida` es lo que
+ *    el servidor comprueba: { modo: 'nivel' | 'reto', nivel | fecha,
+ *    movimientos: [[de, a]…], tubos }
+ *  - onRegistrar(partida): cada victoria con sesión después de cobrar (la
+ *    misión del día y el ranking del reto); lo que pase no se muestra
  *  - onCompletar({ modo, nivel | fecha, movimientos, estrellas }): cada victoria
  *  - progreso (ver PROGRESO_BOLITAS) · onProgreso(progreso): cada cambio, para guardarlo
  *  - hoy ('AAAA-MM-DD', el día de Lima: sin él no hay reto)
+ *  - ranking (del reto: ver RankingBolitas) · cargandoRanking ·
+ *    onPedirRanking(): al entrar al reto, para traerlo
  *  - inicial: { estado, colores, par } para empezar en un tablero puesto (la demo)
  *  - vistaInicial: 'juego' | 'mapa' · ayudaVista · onAyudaVista · estado: 'cargando'
  * Mientras se acredita, la hoja no se cierra y no se pasa de nivel.
  * Los textos pasan por la traducción.
  */
 export function PaginaBolitas({
-  sesion = true, yaHoy = false, monto = 2, onGanar, onCompletar, hoy, progreso, onProgreso,
+  sesion = true, yaHoy = false, monto = 2, onGanar, onRegistrar, onCompletar, hoy, progreso, onProgreso,
+  ranking, cargandoRanking = false, onPedirRanking,
   inicial, vistaInicial = 'juego', ayudaVista = true, onAyudaVista, urlLogin = '/login', estado,
 }) {
   const [prog, setProg] = useState(() => progresoBolitas(progreso));
@@ -229,6 +224,11 @@ export function PaginaBolitas({
     return () => clearTimeout(id);
   }, [aviso]);
 
+  // El ranking del reto se trae al entrar al reto.
+  useEffect(() => {
+    if (modo === 'reto' && estado !== 'cargando') onPedirRanking?.();
+  }, [modo, estado]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (estado === 'cargando' || !p) return <EsqueletoPagina forma="bolitas" />;
 
   /** Cambia el progreso y avisa para guardarlo (una vez por acción). */
@@ -277,9 +277,12 @@ export function PaginaBolitas({
     setAviso('Se cortó tu racha de victorias.');
   };
 
-  const ganar = async (movs) => {
+  const ganar = async (movs, jugadas) => {
     fx('ganar');
     setResultado(true);
+    const partida = esReto
+      ? { modo: 'reto', fecha: hoy, movimientos: jugadas, tubos: p.extras }
+      : { modo: 'nivel', nivel: numero, movimientos: jugadas, tubos: p.extras };
     if (esReto) {
       onCompletar?.({ modo, fecha: hoy, movimientos: movs });
       guardar({ reto: hoy });
@@ -297,10 +300,14 @@ export function PaginaBolitas({
       enReposo(() => armado('niveles', numero + 1));
     }
     if (!sesion) { setPremio({ estado: 'sinSesion' }); return; }
-    if (cobrado) { setPremio({ estado: 'ya', texto: 'Ya ganaste tus monedas hoy. Puedes seguir jugando por gusto.' }); return; }
+    if (cobrado) {
+      setPremio({ estado: 'ya', texto: 'Ya ganaste tus monedas hoy. Puedes seguir jugando por gusto.' });
+      Promise.resolve(onRegistrar?.(partida)).catch(() => {});
+      return;
+    }
     setPremio({ estado: 'acreditando' });
     try {
-      const r = await onGanar?.({ movimientos: movs });
+      const r = await onGanar?.({ movimientos: movs, partida });
       setCobrado(true);
       setPremio(r?.ya ? { estado: 'ya' } : { estado: 'acreditado', monto: r?.monto || monto });
     } catch {
@@ -311,9 +318,10 @@ export function PaginaBolitas({
   const jugar = (de, a) => {
     const sig = mover(actual, de, a);
     const gano = resuelto(sig);
-    actualizar({ estado: sig, pasados: [...p.pasados, actual], pista: null, ganada: gano });
+    const jugadas = [...p.jugadas, [de, a]];
+    actualizar({ estado: sig, pasados: [...p.pasados, actual], jugadas, pista: null, ganada: gano });
     setElegido(null);
-    if (gano) { ganar(movidas + 1); return; }
+    if (gano) { ganar(movidas + 1, jugadas); return; }
     fx(tubosListos(sig) > listos ? 'listo' : 'soltar');
     if (!hayMovimientos(sig)) setAtascado(true);
   };
@@ -350,14 +358,16 @@ export function PaginaBolitas({
   };
   const deshacer = () => {
     if (!p.pasados.length || p.ganada || quedan.deshacer <= 0) return;
-    gastar('deshacer', { estado: volverA(p.pasados[p.pasados.length - 1], actual), pasados: p.pasados.slice(0, -1), pista: null });
+    gastar('deshacer', {
+      estado: volverA(p.pasados[p.pasados.length - 1], actual), pasados: p.pasados.slice(0, -1), jugadas: p.jugadas.slice(0, -1), pista: null,
+    });
     setElegido(null);
     setAtascado(false);
   };
   // El tubo de más también queda en los pasos de antes: deshacer no lo quita.
   const sumarTubo = () => {
     if (p.ganada || quedan.tubo <= 0) return;
-    gastar('tubo', { estado: agregarTubo(actual), pasados: p.pasados.map(agregarTubo), pista: null });
+    gastar('tubo', { estado: agregarTubo(actual), pasados: p.pasados.map(agregarTubo), extras: p.extras + 1, pista: null });
     setAtascado(false);
   };
   const pedirPista = () => {
@@ -543,22 +553,26 @@ export function PaginaBolitas({
                 ]}
                 />
                 <BarraProgreso pasos valor={listos} max={colores} etiqueta={<Texto>Tubos listos</Texto>} />
-                <div className={s.rachaBolitas} data-componente="RachaBolitas">
-                  <p className={s.rachaTitulo}>
-                    <Flame aria-hidden="true" className={prog.racha ? s.llamaEncendida : s.llama} />
-                    <TextoResaltado resaltar={[prog.racha]}>{`Racha de victorias: ${prog.racha}`}</TextoResaltado>
-                  </p>
-                  <BarraProgreso pasos valor={prog.racha % RACHA_COFRE} max={RACHA_COFRE} etiqueta={<Texto>Para el próximo cofre</Texto>} />
-                  <p className={s.notaSuave}>
-                    <TextoResaltado resaltar={[RACHA_COFRE]}>{`Gana ${RACHA_COFRE} niveles seguidos sin reiniciar y abre un cofre con ayudas.`}</TextoResaltado>
-                  </p>
-                  {guardadasTexto.length > 0 && (
-                    <p className={s.guardadas}>
-                      <Gift aria-hidden="true" />
-                      <Texto>{`Guardadas: ${guardadasTexto.join(', ')}.`}</Texto>
+                {esReto ? (
+                  <RankingBolitas ranking={ranking} cargando={cargandoRanking} sesion={sesion} urlLogin={urlLogin} />
+                ) : (
+                  <div className={s.rachaBolitas} data-componente="RachaBolitas">
+                    <p className={s.rachaTitulo}>
+                      <Flame aria-hidden="true" className={prog.racha ? s.llamaEncendida : s.llama} />
+                      <TextoResaltado resaltar={[prog.racha]}>{`Racha de victorias: ${prog.racha}`}</TextoResaltado>
                     </p>
-                  )}
-                </div>
+                    <BarraProgreso pasos valor={prog.racha % RACHA_COFRE} max={RACHA_COFRE} etiqueta={<Texto>Para el próximo cofre</Texto>} />
+                    <p className={s.notaSuave}>
+                      <TextoResaltado resaltar={[RACHA_COFRE]}>{`Gana ${RACHA_COFRE} niveles seguidos sin reiniciar y abre un cofre con ayudas.`}</TextoResaltado>
+                    </p>
+                    {guardadasTexto.length > 0 && (
+                      <p className={s.guardadas}>
+                        <Gift aria-hidden="true" />
+                        <Texto>{`Guardadas: ${guardadasTexto.join(', ')}.`}</Texto>
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </aside>
           </div>

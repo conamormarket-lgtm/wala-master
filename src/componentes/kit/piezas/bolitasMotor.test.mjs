@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   CAPACIDAD, COLORES, PRIMER_NIVEL, nivel, retoDelDia, puedeMover, mover, resuelto, resolver, pista,
   hayMovimientos, agregarTubo, volverA, tramo, tubosListos, obstaculosDelNivel, coloresDelNivel, azar,
   NIVELES_POR_MUNDO, mundoDe, esJefe, infoMundo, estrellasPara, metasEstrellas, premioCofre,
+  comprobarPartida, semanaDe, LIMITES_PARTIDA,
 } from './bolitasMotor.mjs';
 
 const b = (c, extra = {}) => ({ id: `${c}-${Math.random().toString(36).slice(2, 8)}`, c, oculta: false, hielo: 0, ...extra });
@@ -133,6 +135,43 @@ test('el cofre trae una ayuda', () => {
   assert.equal(tipos.size, 3);
   assert.equal(premioCofre(() => 0).tipo, 'pista');
   assert.equal(premioCofre(() => 0.999).tipo, 'tubo');
+});
+
+test('comprobar una partida: la solución pasa, las trampas no', () => {
+  const lv = nivel(30);
+  assert.deepEqual(comprobarPartida(lv, { movimientos: lv.solucion }), { ok: true, movimientos: lv.solucion.length });
+  assert.equal(comprobarPartida(lv, { movimientos: lv.solucion.slice(0, -1) }).motivo, 'sin_resolver');
+  assert.equal(comprobarPartida(lv, { movimientos: [] }).motivo, 'movimientos');
+  assert.equal(comprobarPartida(lv, { movimientos: [[0, 0]] }).motivo, 'regla');
+  assert.equal(comprobarPartida(lv, { movimientos: [['0', 1]] }).motivo, 'formato');
+  assert.equal(comprobarPartida(lv, { movimientos: lv.solucion, tubos: LIMITES_PARTIDA.tubos + 1 }).motivo, 'tubos');
+  assert.equal(comprobarPartida(lv, { movimientos: Array(LIMITES_PARTIDA.movimientos + 1).fill([0, 1]) }).motivo, 'movimientos');
+  // Otro nivel no sirve para este.
+  assert.equal(comprobarPartida(nivel(31), { movimientos: lv.solucion }).ok, false);
+});
+
+test('comprobar una partida con un tubo de más agregado a mitad del juego', () => {
+  // Un tablero sin salida: solo se resuelve con el tubo de más.
+  const armado = { estado: estadoDe([[b(0), b(1), b(0), b(1)], [b(1), b(0), b(1), b(0)]]) };
+  const conTubo = resolver(agregarTubo(armado.estado));
+  assert.ok(conTubo?.length);
+  assert.ok(comprobarPartida(armado, { movimientos: conTubo, tubos: 1 }).ok);
+  assert.equal(comprobarPartida(armado, { movimientos: conTubo }).motivo, 'regla', 'sin el tubo, los movimientos no valen');
+});
+
+test('la copia del servidor es igual a este motor', () => {
+  const leer = (ruta) => readFileSync(new URL(ruta, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+  const copia = leer('../../../../functions/bolitasMotor.mjs');
+  const fin = copia.indexOf('\n\n', copia.indexOf('GENERADO')) + 2;
+  assert.equal(copia.slice(fin), leer('./bolitasMotor.mjs'), 'corre: node scripts/generar-motor-bolitas.js');
+});
+
+test('la semana del ranking empieza el lunes', () => {
+  assert.equal(semanaDe('2026-10-21'), '2026-10-19'); // miércoles
+  assert.equal(semanaDe('2026-10-19'), '2026-10-19'); // lunes
+  assert.equal(semanaDe('2026-10-25'), '2026-10-19'); // domingo
+  assert.equal(semanaDe('2026-11-01'), '2026-10-26'); // cruza de mes
+  assert.equal(semanaDe('2027-01-01'), '2026-12-28'); // cruza de año
 });
 
 test('el mismo número da el mismo nivel', () => {

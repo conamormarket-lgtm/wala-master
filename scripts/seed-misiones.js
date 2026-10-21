@@ -1,5 +1,5 @@
 /**
- * Siembra 4 misiones diarias de ejemplo en la colección `missions`, para
+ * Siembra 6 misiones diarias de ejemplo (las 2 de las bolitas, apagadas) en la colección `missions`, para
  * poder probar el flujo completo en /cuenta/misiones y /admin/misiones.
  *
  * IDs fijos (mision-catalogo, etc.): correrlo dos veces actualiza los mismos
@@ -127,6 +127,29 @@ const MISIONES = [
     active: true,
     type: "daily",
     actionKey: "visit_minijuegos",
+  },
+  // Las Bolitas de Kapi: el servidor marca la acción solo con una partida
+  // comprobada (registrarPartidaBolitasSecure). Apagadas: pagan monedas de
+  // verdad, se activan a mano en /admin/misiones.
+  {
+    id: "mision-bolitas-nivel",
+    title: "Pasa un nivel de Las Bolitas de Kapi",
+    description: "Ordena todos los tubos de cualquier nivel.",
+    rewardPoints: 2,
+    order: 5,
+    active: false,
+    type: "daily",
+    actionKey: "bolitas_nivel",
+  },
+  {
+    id: "mision-bolitas-reto",
+    title: "Haz el reto del día de Las Bolitas",
+    description: "El mismo nivel para todos: entra al ranking del día.",
+    rewardPoints: 3,
+    order: 6,
+    active: false,
+    type: "daily",
+    actionKey: "bolitas_reto",
   },
 ];
 

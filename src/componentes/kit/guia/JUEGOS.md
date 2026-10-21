@@ -441,3 +441,63 @@ el jefe del nivel 20, el fondo del mundo en claro y oscuro, y que el sonido
 y la vibración se disparan y se apagan con sus interruptores. **No
 probado:** escuchar los sonidos de verdad, la vibración en un Android real
 (hace falta compilar la app con el permiso nuevo), el inglés.
+
+### Fase 2: conectarlo con walá (2026-10-21)
+
+Decidido con el dueño: el cobro se comprueba si la app manda la partida (las
+apps instaladas siguen cobrando sin prueba hasta activar un interruptor), la
+ruleta sigue igual (solo con Kapi) y el ranking muestra nombre e inicial.
+
+- **Partida comprobada en el servidor** (`registrarPartidaBolitasSecure`):
+  cada victoria con sesión manda `{ modo, nivel | fecha, movimientos, tubos }`
+  (los movimientos que valen, después de deshacer, y los tubos de más). El
+  servidor rearma el nivel con **el mismo motor** (`functions/bolitasMotor.mjs`,
+  copia generada con `npm run gen:motor-bolitas`; una prueba avisa si quedó
+  vieja) y repite los movimientos (`comprobarPartida`). Si resuelve el nivel:
+  paga el +2 si hoy no se cobró (libro mayor: `ball_sort_daily`), marca la
+  misión del día (`bolitas_nivel` o `bolitas_reto` en `userActions`, sin que
+  el celular la declare) y, si es el reto de hoy, lo anota en el ranking.
+- **El cobro de antes** (`claimBallSortRewardSecure`, sin prueba) sigue para
+  las apps instaladas (la de Android trae su copia de la web), anotado como
+  `ball_sort_daily_sin_prueba`. Con `loyaltyConfig/global.bolitasExigirPrueba
+  = true` (a mano, en la consola) se deja de aceptar. La web nueva, si la
+  función nueva todavía no existe en el servidor, cobra con la de antes.
+- **Ranking del reto** (`getRankingBolitasSecure`, `RankingBolitas`): hoy
+  (menos movimientos; empate, quien llegó antes) y la semana desde el lunes
+  (más retos; empate, menos movimientos). Los 20 primeros y tu puesto. Se
+  guarda en `bolitasRetos/{fecha}_{uid}` (el mejor del día) y
+  `bolitasSemanas/{lunes}_{uid}`; el celular no las lee ni las escribe. El
+  nombre es "Lucía R." (`nombrePublico`: nunca el correo).
+- **Progreso en la cuenta** (`bolitasProgreso/{uid}`, lo escribe el dueño):
+  al entrar se une con el del aparato (`unirProgresos` en
+  `piezas/bolitasProgreso.mjs`: lo ganado no se pierde; la racha y las
+  ayudas, del que cambió último). Se sube 1,5 s después del último cambio.
+- **Misiones:** `bolitas_nivel` y `bolitas_reto` en `MISSION_ACTIONS` (el
+  admin ya las ve en `/admin/misiones`) y en `seed-misiones.js`, **apagadas**:
+  pagan monedas de verdad y se activan a mano.
+- **Aviso local del reto** (`services/bolitasNotifications.js`, ID 30): en la
+  app y solo con el permiso ya dado, a las 19:00 si el reto de hoy falta (si
+  no, mañana). Tocar un aviso local con `extra.ruta` abre esa página
+  (`NotificationsContext`; antes tocar un aviso local abría el inicio).
+- **Reglas** (`firebase/firestore.rules`): `bolitasProgreso` solo el dueño; y
+  `bolitasProgreso`, `bolitasRetos`, `bolitasSemanas` y `loyaltyConfig` van en
+  `esSoloWala`. Sin eso, la regla general del ERP (al final del archivo)
+  dejaba escribirlas a cualquiera con sesión: se descubrió al probar.
+
+**Orden para publicar:** 1) reglas (`npm run deploy:firestore-rules`),
+2) funciones (`npm run deploy:functions`), 3) la web. Si la web sale antes,
+cobra con la función de antes y el ranking queda vacío hasta que lleguen las
+funciones. La app de Android necesita una versión nueva para mandar partidas
+comprobadas.
+
+**Probado** con los emuladores (`demo-wala`): una prueba de punta a punta
+(partida válida: +2, libro mayor `ball_sort_daily` y misión; otra el mismo
+día: sin pago; partida que no resuelve: rechazada; reto: misión y ranking
+con "Ana P."; reto repetido sin mejorar: no cambia; reglas: el progreso
+propio sí, el de otro no, el ranking nunca; cobro viejo: `sin_prueba` y,
+con el interruptor, bloqueado), y en el navegador con sesión: el progreso de
+la cuenta unido al entrar (nivel 3), ganar el nivel 3 (+2, de 5 a 7, 3
+estrellas), el reto con el ranking ("Prueba N." con "Tú") y que todo quedó en
+la cuenta. **No probado:** el aviso local en un Android real, la web antes
+que las funciones (la vuelta al cobro de antes), y con muchos jugadores (el
+ranking lee hasta 1.000 filas y ordena en el servidor).

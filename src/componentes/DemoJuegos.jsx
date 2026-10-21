@@ -64,7 +64,23 @@ const RANKING = {
   ],
 };
 
-const PALABRA_PERDIDA = ['CARTA', 'MONTE', 'PISTA', 'LUNAR', 'BRISA', 'FRESA'];
+/* Ranking del reto de las bolitas, de ejemplo (el real sale del servidor). */
+const RANKING_BOLITAS = {
+  hoy: [
+    { puesto: 1, nombre: 'Lucía R.', movimientos: 31 },
+    { puesto: 2, nombre: 'Diego P.', movimientos: 34 },
+    { puesto: 3, nombre: 'Camila T.', movimientos: 34 },
+    { puesto: 4, nombre: 'Andrés S.', movimientos: 39 },
+  ],
+  semanal: [
+    { puesto: 1, nombre: 'Mariana V.', completados: 3, total: 98 },
+    { puesto: 2, nombre: 'Lucía R.', completados: 3, total: 104 },
+    { puesto: 3, nombre: 'Diego P.', completados: 2, total: 70 },
+  ],
+  yo: { hoy: 12, semana: 7, jugadoresHoy: 23, jugadoresSemana: 41 },
+};
+
+const PALABRA_PERDIDA =['CARTA', 'MONTE', 'PISTA', 'LUNAR', 'BRISA', 'FRESA'];
 
 export function JuegosDemo({ ruta = VISTAS_JUEGOS[0][1], sesion = true, usuario, estados = [], onMonedas, toast }) {
   const hoy = limaTodayStr();
@@ -88,6 +104,7 @@ export function JuegosDemo({ ruta = VISTAS_JUEGOS[0][1], sesion = true, usuario,
         inicial={estados.includes('casi') || estados.includes('racha2') ? NIVEL_CASI : undefined}
         vistaInicial={estados.includes('mapa') ? 'mapa' : 'juego'}
         hoy={hoy}
+        ranking={sesion ? RANKING_BOLITAS : { ...RANKING_BOLITAS, yo: {} }}
         progreso={{
           nivel,
           estrellas,

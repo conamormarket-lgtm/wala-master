@@ -440,6 +440,42 @@ export function nivel(n) {
   return { numero: n, mundo: mundoDe(n), jefe, colores, ...armarNivel({ semilla: `nivel:${n}`, colores, vacios: n === 1 ? 1 : 2, obstaculos, intro }) };
 }
 
+/* ── Comprobar una partida (el servidor) ──────────────── */
+
+/** Lo más que se acepta en una partida: más es un error o una trampa. */
+export const LIMITES_PARTIDA = { movimientos: 600, tubos: 6 };
+
+/**
+ * ¿Esta partida resuelve el nivel? Se rearma igual que en el celular: los
+ * tubos de más se agregan al principio (deshacer no los quita, y nunca se
+ * mueve hacia uno antes de agregarlo) y se repiten los movimientos con las
+ * reglas. Devuelve { ok, movimientos } o { ok: false, motivo }.
+ *  - armado: lo que devuelve nivel() o retoDelDia()
+ *  - partida: { movimientos: [[de, a]…], tubos: cuántos se agregaron }
+ */
+export function comprobarPartida(armado, partida) {
+  const movs = partida?.movimientos;
+  const tubos = partida?.tubos ?? 0;
+  if (!Array.isArray(movs) || !movs.length || movs.length > LIMITES_PARTIDA.movimientos) return { ok: false, motivo: 'movimientos' };
+  if (!Number.isInteger(tubos) || tubos < 0 || tubos > LIMITES_PARTIDA.tubos) return { ok: false, motivo: 'tubos' };
+  let estado = armado.estado;
+  for (let k = 0; k < tubos; k += 1) estado = agregarTubo(estado);
+  for (const m of movs) {
+    if (!Array.isArray(m) || m.length !== 2 || !m.every(Number.isInteger)) return { ok: false, motivo: 'formato' };
+    if (!puedeMover(estado, m[0], m[1])) return { ok: false, motivo: 'regla' };
+    estado = mover(estado, m[0], m[1]);
+  }
+  return resuelto(estado) ? { ok: true, movimientos: movs.length } : { ok: false, motivo: 'sin_resolver' };
+}
+
+/** El lunes de la semana de `fecha` ('AAAA-MM-DD'): la clave del ranking semanal. */
+export function semanaDe(fecha) {
+  const [y, m, d] = fecha.split('-').map(Number);
+  const dia = new Date(Date.UTC(y, m - 1, d));
+  const desdeLunes = (dia.getUTCDay() + 6) % 7;
+  return new Date(dia.getTime() - desdeLunes * 86400000).toISOString().slice(0, 10);
+}
+
 /** El reto del día (`fecha` como 'AAAA-MM-DD', la de Lima): el mismo para todos. */
 export function retoDelDia(fecha) {
   const rnd = azar(semillaDe(`reto:${fecha}`));

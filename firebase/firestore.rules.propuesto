@@ -176,6 +176,12 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Las Bolitas de Kapi: el progreso del juego (no vale dinero; lo escribe el
+    // dueño). El ranking (bolitasRetos, bolitasSemanas) solo lo toca el servidor.
+    match /bolitasProgreso/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
     // Evidencias de retos: se crean vía Cloud Function (admin SDK, evade reglas); el
     // cliente solo necesita leerlas como admin.
     match /challengeEvidences/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }

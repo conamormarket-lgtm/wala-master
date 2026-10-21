@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Lock, Star } from 'lucide-react';
+import { Lock, Star, Trophy, LogIn } from 'lucide-react';
 import { Estallido } from '../Efectos';
-import { useTexto } from '../Traduccion';
+import { Pestanas } from '../Navegacion';
+import Boton from '../Boton';
+import { TextoResaltado } from './TextoResaltado';
+import { Texto, useTexto } from '../Traduccion';
 import { COLORES, CAPACIDAD, tramo, tuboListo } from './bolitasMotor.mjs';
 import s from './Bolitas.module.css';
 
@@ -44,6 +47,68 @@ export function EstrellasNivel({ valor = 0, tamano = 'sm', animar = false }) {
         </motion.span>
       ))}
     </span>
+  );
+}
+
+/**
+ * El ranking del reto del día: hoy (menos movimientos) y la semana (más retos
+ * hechos; empate, menos movimientos en total). Los nombres llegan cortos
+ * ("Lucía R.") desde el servidor y van tal cual; el tuyo va marcado y, si
+ * quedaste fuera de los primeros, se dice tu puesto.
+ *  - ranking: { hoy: [{ puesto, nombre, movimientos, yo }],
+ *    semanal: [{ puesto, nombre, completados, total, yo }],
+ *    yo: { hoy, semana, jugadoresHoy, jugadoresSemana } } o null
+ *  - cargando · sesion · urlLogin
+ */
+export function RankingBolitas({ ranking, cargando = false, sesion = true, urlLogin = '/login' }) {
+  const [pestana, setPestana] = useState('hoy');
+  const t = { tu: useTexto('Tú'), titulo: useTexto('Ranking del reto') };
+  const lista = (pestana === 'hoy' ? ranking?.hoy : ranking?.semanal) || [];
+  const puesto = pestana === 'hoy' ? ranking?.yo?.hoy : ranking?.yo?.semana;
+  const total = pestana === 'hoy' ? ranking?.yo?.jugadoresHoy : ranking?.yo?.jugadoresSemana;
+  const fuera = puesto && !lista.some((f) => f.yo);
+  let cuerpo;
+  if (cargando && !ranking) cuerpo = <p className={s.rankingVacio} role="status"><Texto>Cargando el ranking…</Texto></p>;
+  else if (!lista.length) {
+    cuerpo = (
+      <p className={s.rankingVacio}>
+        <Texto>{pestana === 'hoy' ? 'Nadie hizo el reto de hoy todavía. ¡Sé la primera persona!' : 'Todavía nadie hizo un reto esta semana.'}</Texto>
+      </p>
+    );
+  } else {
+    cuerpo = (
+      <ol className={s.rankingLista}>
+        {lista.map((f) => (
+          <li key={`${f.puesto}-${f.nombre}`} className={f.yo ? s.rankingYo : undefined}>
+            <span className={[s.rankingPuesto, f.puesto <= 3 && s[`podio${f.puesto}`]].filter(Boolean).join(' ')}>{f.puesto}</span>
+            <span className={s.rankingNombre}>{f.nombre}{f.yo && <small>{t.tu}</small>}</span>
+            <span className={s.rankingValor}>
+              {pestana === 'hoy'
+                ? <Texto>{f.movimientos === 1 ? '1 movimiento' : `${f.movimientos} movimientos`}</Texto>
+                : <Texto>{`${f.completados === 1 ? '1 reto' : `${f.completados} retos`} · ${f.total} mov.`}</Texto>}
+            </span>
+          </li>
+        ))}
+      </ol>
+    );
+  }
+  return (
+    <section className={s.ranking} aria-label={t.titulo} data-componente="RankingBolitas">
+      <p className={s.rankingTitulo}><Trophy aria-hidden="true" />{t.titulo}</p>
+      <Pestanas opciones={[{ id: 'hoy', texto: 'Hoy' }, { id: 'semana', texto: 'Esta semana' }]} valor={pestana} onChange={setPestana} etiqueta="Ranking del reto" />
+      {cuerpo}
+      {fuera && (
+        <p className={s.rankingNota}>
+          <TextoResaltado resaltar={[puesto]}>{total ? `Vas en el puesto ${puesto} de ${total}.` : `Vas en el puesto ${puesto}.`}</TextoResaltado>
+        </p>
+      )}
+      {!sesion && (
+        <div className={s.rankingNota}>
+          <Texto>Inicia sesión para aparecer en el ranking.</Texto>
+          <Boton to={urlLogin} variante="secundario" tamano="sm" icono={<LogIn aria-hidden="true" />}><Texto>Iniciar sesión</Texto></Boton>
+        </div>
+      )}
+    </section>
   );
 }
 

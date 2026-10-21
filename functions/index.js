@@ -37,6 +37,7 @@ const { puedeUsarPuente, tieneClaimAdmin } = require("./adminAuth");
 const pagos = require("./pagosLogic");
 const erpCobranza = require("./erpCobranzaLogic");
 const referidos = require("./referidosLogic");
+const bolitas = require("./bolitasLogic");
 
 admin.initializeApp();
 const auth = admin.auth();
@@ -2896,11 +2897,20 @@ exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
 });
 
 // ── Recompensa diaria de Ball Sort ────────────────────────────────────────────
+// La de antes, SIN prueba de que se jugó: la usan las apps ya instaladas (la
+// app de Android trae su copia de la web). La app nueva cobra con
+// registrarPartidaBolitasSecure, que comprueba la partida. Estos cobros quedan
+// en el libro mayor como "ball_sort_daily_sin_prueba"; con
+// loyaltyConfig/global.bolitasExigirPrueba = true se dejan de aceptar.
 exports.claimBallSortRewardSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
   const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
   const today = limaTodayStr();
   try {
+    const config = await db.collection("loyaltyConfig").doc("global").get();
+    if (config.exists && config.data().bolitasExigirPrueba === true) {
+      throw new functions.https.HttpsError("failed-precondition", "Actualiza la app para ganar monedas con Las Bolitas de Kapi.");
+    }
     return await db.runTransaction(async (t) => {
       const snap = await t.get(userRef);
       if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
@@ -2916,7 +2926,7 @@ exports.claimBallSortRewardSecure = functions.https.onCall(async (data, context)
       writeLedger(t, uid, {
         type: "earn",
         amount: BALLSORT_REWARD,
-        source: "ball_sort_daily",
+        source: "ball_sort_daily_sin_prueba",
         balanceAfter: newBalance,
       });
       return { success: true, reward: BALLSORT_REWARD };
@@ -2925,6 +2935,130 @@ exports.claimBallSortRewardSecure = functions.https.onCall(async (data, context)
     if (e instanceof functions.https.HttpsError) throw e;
     console.error("claimBallSortRewardSecure error:", e);
     throw new functions.https.HttpsError("internal", "Error al reclamar la recompensa.");
+  }
+});
+
+// ── Las Bolitas de Kapi: una partida ganada, comprobada ───────────────────────
+// La app manda cada nivel o reto que gana: { modo: 'nivel' | 'reto', nivel |
+// fecha, movimientos: [[de, a]…], tubos }. El servidor rearma el nivel con el
+// mismo motor del celular (bolitasMotor.mjs, copia generada) y repite los
+// movimientos. Si resuelve el nivel:
+//  - paga el premio diario (+BALLSORT_REWARD) si hoy no se cobró (fuente
+//    "ball_sort_daily" en el libro mayor: la comprobada)
+//  - marca la misión del día ('bolitas_nivel' o 'bolitas_reto') en
+//    userActions, como recordMissionActionSecure, pero sin que el celular la
+//    declare
+//  - si es el reto de hoy, lo anota en el ranking: bolitasRetos/{fecha}_{uid}
+//    (el mejor del día) y bolitasSemanas/{lunes}_{uid} (la semana). Esas dos
+//    colecciones no se leen desde el celular: el ranking sale de
+//    getRankingBolitasSecure, con el nombre corto ("Lucía R.").
+// Devuelve { success, reward, ya (ya había cobrado hoy), movimientos, mejor (el
+// reto mejoró lo de hoy) }.
+exports.registrarPartidaBolitasSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const hoy = limaTodayStr();
+  let partida;
+  try {
+    partida = await bolitas.comprobarPartidaBolitas(data, hoy);
+  } catch (e) {
+    if (e.codigo) throw new functions.https.HttpsError(e.codigo, e.message);
+    console.error("registrarPartidaBolitasSecure (comprobar) error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo comprobar la partida.");
+  }
+  const esReto = partida.modo === "reto";
+  const semana = esReto ? await bolitas.semanaBolitas(hoy) : null;
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  const accionesRef = db.collection("userActions").doc(uid + "_" + hoy);
+  const retoRef = esReto ? db.collection("bolitasRetos").doc(hoy + "_" + uid) : null;
+  const semanaRef = esReto ? db.collection("bolitasSemanas").doc(semana + "_" + uid) : null;
+
+  try {
+    return await db.runTransaction(async (t) => {
+      const [userSnap, accionesSnap, retoSnap, semanaSnap] = await Promise.all([
+        t.get(userRef),
+        t.get(accionesRef),
+        retoRef ? t.get(retoRef) : null,
+        semanaRef ? t.get(semanaRef) : null,
+      ]);
+      if (!userSnap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+      const u = userSnap.data();
+
+      let reward = 0;
+      const ya = u.lastBallSortReward === hoy;
+      if (!ya) {
+        reward = BALLSORT_REWARD;
+        const nuevoSaldo = (u.monedas || 0) + reward;
+        t.update(userRef, { monedas: nuevoSaldo, lastBallSortReward: hoy });
+        writeLedger(t, uid, { type: "earn", amount: reward, source: "ball_sort_daily", balanceAfter: nuevoSaldo });
+      }
+
+      const acciones = accionesSnap.exists ? { ...(accionesSnap.data().actions || {}) } : {};
+      acciones[esReto ? "bolitas_reto" : "bolitas_nivel"] = true;
+      t.set(accionesRef, { userId: uid, date: hoy, actions: acciones });
+
+      let mejor = false;
+      if (esReto) {
+        const antes = retoSnap.exists ? retoSnap.data().movimientos : null;
+        mejor = antes == null || partida.movimientos < antes;
+        if (mejor) {
+          const nombre = bolitas.nombrePublico(u);
+          t.set(retoRef, {
+            uid, fecha: hoy, semana, nombre, movimientos: partida.movimientos, tubos: partida.tubos,
+            hecho: FieldValue.serverTimestamp(),
+          });
+          const suma = bolitas.sumarRetoASemana(semanaSnap.exists ? semanaSnap.data() : null, hoy, partida.movimientos);
+          t.set(semanaRef, { uid, semana, nombre, ...suma, hecho: FieldValue.serverTimestamp() });
+        }
+      }
+
+      return { success: true, reward, ya, movimientos: partida.movimientos, mejor };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("registrarPartidaBolitasSecure error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo registrar la partida.");
+  }
+});
+
+// ── Las Bolitas de Kapi: el ranking del reto ──────────────────────────────────
+// Hoy (menos movimientos; empate, quien llegó antes) y la semana (más retos;
+// empate, menos movimientos en total). Los 20 primeros, con el nombre corto,
+// y dónde quedó quien pregunta (si tiene sesión). Se ordena aquí y no con un
+// índice: con la cantidad de jugadores de hoy, 1000 filas sobran.
+const RANKING_BOLITAS_TOP = 20;
+const RANKING_BOLITAS_LEER = 1000;
+
+exports.getRankingBolitasSecure = functions.https.onCall(async (data, context) => {
+  const uid = context.auth ? context.auth.uid : null;
+  const hoy = limaTodayStr();
+  try {
+    const semana = await bolitas.semanaBolitas(hoy);
+    const [diaSnap, semanaSnap] = await Promise.all([
+      db.collection("bolitasRetos").where("fecha", "==", hoy).limit(RANKING_BOLITAS_LEER).get(),
+      db.collection("bolitasSemanas").where("semana", "==", semana).limit(RANKING_BOLITAS_LEER).get(),
+    ]);
+    const filas = (snap) => snap.docs.map((d) => {
+      const f = d.data();
+      return { ...f, hecho: f.hecho && f.hecho.toMillis ? f.hecho.toMillis() : 0 };
+    });
+    const dia = bolitas.ordenarRankingDia(filas(diaSnap));
+    const sem = bolitas.ordenarRankingSemana(filas(semanaSnap));
+    const publico = (f, k) => ({
+      puesto: k + 1,
+      nombre: f.nombre || "Jugador",
+      yo: Boolean(uid) && f.uid === uid,
+    });
+    const puestoDe = (lista) => (uid ? lista.findIndex((f) => f.uid === uid) + 1 || null : null);
+    return {
+      fecha: hoy,
+      semana,
+      hoy: dia.slice(0, RANKING_BOLITAS_TOP).map((f, k) => ({ ...publico(f, k), movimientos: f.movimientos })),
+      semanal: sem.slice(0, RANKING_BOLITAS_TOP).map((f, k) => ({ ...publico(f, k), completados: f.completados, total: f.total })),
+      yo: { hoy: puestoDe(dia), semana: puestoDe(sem), jugadoresHoy: dia.length, jugadoresSemana: sem.length },
+    };
+  } catch (e) {
+    console.error("getRankingBolitasSecure error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo cargar el ranking.");
   }
 });
 
