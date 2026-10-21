@@ -3,6 +3,8 @@ import { getCollection, getDocument, createDocument, updateDocument, deleteDocum
 // Visual). Se importan para que la plantilla de página de marca no duplique
 // decenas de campos ni se quede desfasada cuando cambien esos defaults.
 import { getDefaultSettings } from '../pages/Tienda/services/storefront';
+// Las landings se leen con su id de documento (ver leerLandingPages).
+import { leerLandingPages } from '../pages/Tienda/services/landingPages';
 import { BLOQUES_MARCA } from '../componentes/kit/adaptadores';
 
 const COLLECTION = 'tienda_brands';
@@ -309,9 +311,7 @@ export const ensureBrandLanding = async (brandId, slug, name, opts = {}) => {
     // Anti-DUPLICADOS: si la marca YA tiene una landing (bajo cualquier slug),
     // se trabaja sobre ESA — no se crea una segunda. brandId es único por marca,
     // así que la capitalización del slug existente da igual.
-    const { data: existentes } = await getCollection('landingPages', [
-      { field: 'brandId', operator: '==', value: brandId }
-    ]);
+    const { data: existentes } = await leerLandingPages(brandId);
     // Con varias (una de campaña con la misma marca), la de su URL.
     const lista = Array.isArray(existentes) ? existentes : [];
     const landingPrevia = lista.find((l) => slugify(l.slug || l.id) === slugify(slug)) || lista[0] || null;
@@ -441,7 +441,7 @@ export const ensureAllBrandLandings = async (opts = {}) => {
 export const dedupeBrandLandings = async () => {
   try {
     const [{ data: landings, error: e1 }, { data: brands, error: e2 }] = await Promise.all([
-      getCollection('landingPages'),
+      leerLandingPages(),
       getBrands(),
     ]);
     if (e1 || e2) return { eliminadas: 0, error: e1 || e2 };
@@ -551,7 +551,7 @@ export const createBrand = async (data) => {
  */
 const moverLandingDeMarca = async (brandId, slugViejo, slugNuevo, name) => {
   const minus = (v) => String(v || '').toLowerCase();
-  const { data: todas, error } = await getCollection('landingPages');
+  const { data: todas, error } = await leerLandingPages();
   if (error) return { error };
   const landings = todas || [];
   const ocupada = landings.find((l) => l.brandId !== brandId && minus(l.slug || l.id) === minus(slugNuevo));
@@ -652,9 +652,7 @@ export const deleteBrand = async (id) => {
   let paginasEliminadas = 0;
   let paginasError = null;
   try {
-    const { data: landings, error } = await getCollection('landingPages', [
-      { field: 'brandId', operator: '==', value: id }
-    ]);
+    const { data: landings, error } = await leerLandingPages(id);
     if (error) throw new Error(error);
     for (const lp of (landings || [])) {
       await deleteDocument('landingPages', lp.id);
