@@ -2,14 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { Layers, Check, RotateCcw, X } from 'lucide-react';
 import Boton from '../../../componentes/kit/Boton';
 import { Sello } from '../../../componentes/kit/Marca';
-import { componerFrenteEspalda } from './frenteEspalda';
+import { Chip } from '../../../componentes/kit/Etiquetas';
+import { componerFrenteEspalda, fondoDeMarca } from './frenteEspalda';
 import s from './GenerarFrenteEspalda.module.css';
+
+/** La muestra de un fondo en su chip: el degradado de la marca o su imagen. */
+const muestraDe = (fondo) => (fondo?.imagen
+  ? { backgroundImage: `url(${fondo.imagen})`, backgroundColor: fondo.color }
+  : { background: `linear-gradient(135deg, ${fondo.color}, ${fondo.color2 || fondo.color})` });
 
 /**
  * "Generar frente y espalda": junta la foto principal (frente) y la segunda
- * (la primera de la galería, la espalda) en una tercera imagen con el fondo
- * de la marca y el sello de Walá. Primero se ve la vista previa; al guardarla
- * se sube como una foto más de la galería, sin tocar las dos originales.
+ * (la primera de la galería, la espalda) en una tercera imagen cuadrada con
+ * el sello de Walá. El fondo es el de Walá o, si se elige, el de la marca
+ * (los colores de su portada). Primero se ve la vista previa; al guardarla se
+ * sube como una foto más de la galería, sin tocar las dos originales.
  *  - variante: la variante activa (imageUrl, images, thumbnailCrop, imagesCrops)
  *  - marca: el doc de tienda_brands del producto, o null
  *  - onGuardar(blob): sube la imagen y la agrega a la galería (async)
@@ -20,6 +27,17 @@ export default function GenerarFrenteEspalda({ variante, marca, onGuardar, ocupa
   const [generando, setGenerando] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+  // El fondo de la marca (null si no tiene colores propios) y el elegido.
+  const [fondoMarca, setFondoMarca] = useState(null);
+  const [conFondoMarca, setConFondoMarca] = useState(false);
+
+  useEffect(() => {
+    let vigente = true;
+    setFondoMarca(null);
+    setConFondoMarca(false);
+    fondoDeMarca(marca).then((f) => { if (vigente) setFondoMarca(f); }).catch(() => {});
+    return () => { vigente = false; };
+  }, [marca]);
 
   const frente = variante?.imageUrl || '';
   const espalda = variante?.images?.[0] || '';
@@ -36,7 +54,7 @@ export default function GenerarFrenteEspalda({ variante, marca, onGuardar, ocupa
   useEffect(() => { setVista(null); setError(''); }, [clave]);
   useEffect(() => () => { if (vista) URL.revokeObjectURL(vista.url); }, [vista]);
 
-  const generar = async () => {
+  const generar = async (usarMarca = conFondoMarca) => {
     setGenerando(true);
     setError('');
     try {
@@ -44,6 +62,7 @@ export default function GenerarFrenteEspalda({ variante, marca, onGuardar, ocupa
         frente: { url: frente, recorte: variante.thumbnailCrop?.percentages },
         espalda: { url: espalda, recorte: variante.imagesCrops?.[espalda]?.percentages },
         marca,
+        fondo: usarMarca ? fondoMarca : null,
       });
       setVista({ blob, url: URL.createObjectURL(blob) });
     } catch (e) {
@@ -74,15 +93,37 @@ export default function GenerarFrenteEspalda({ variante, marca, onGuardar, ocupa
         <div>
           <p className={s.titulo}>Imagen frente y espalda</p>
           <p className={s.texto}>
-            Junta la imagen principal y la segunda en una sola, sobre el fondo de {marca?.name ? <b>{marca.name}</b> : 'Walá'} y con el sello de Walá. Se agrega a la galería; las originales no cambian.
+            Junta la imagen principal y la segunda en una sola imagen cuadrada, como la foto de la ficha, con el sello de Walá{marca?.name ? <> y <b>{marca.name}</b></> : ''}. Se agrega a la galería; las originales no cambian.
           </p>
         </div>
       </div>
 
+      {!falta && fondoMarca && (
+        <div className={s.fondos} role="group" aria-label="Fondo">
+          <span className={s.fondosTitulo}>Fondo</span>
+          <Chip
+            tamano="sm"
+            activo={!conFondoMarca}
+            icono={<i className={`${s.muestra} ${s.muestraWala}`} />}
+            onClick={() => { setConFondoMarca(false); if (vista) generar(false); }}
+          >
+            Walá
+          </Chip>
+          <Chip
+            tamano="sm"
+            activo={conFondoMarca}
+            icono={<i className={s.muestra} style={muestraDe(fondoMarca)} />}
+            onClick={() => { setConFondoMarca(true); if (vista) generar(true); }}
+          >
+            {marca.name || 'La marca'}
+          </Chip>
+        </div>
+      )}
+
       {falta ? (
         <p className={s.falta}>{falta}</p>
       ) : !vista ? (
-        <Boton icono={<Layers size={16} />} onClick={generar} cargando={generando} disabled={ocupado}>
+        <Boton icono={<Layers size={16} />} onClick={() => generar()} cargando={generando} disabled={ocupado}>
           {generando ? 'Generando…' : 'Generar frente y espalda'}
         </Boton>
       ) : (
@@ -92,7 +133,7 @@ export default function GenerarFrenteEspalda({ variante, marca, onGuardar, ocupa
             <Boton icono={<Check size={16} />} onClick={guardar} cargando={guardando} disabled={ocupado}>
               Guardar en la galería
             </Boton>
-            <Boton variante="secundario" icono={<RotateCcw size={16} />} onClick={generar} disabled={guardando || generando}>
+            <Boton variante="secundario" icono={<RotateCcw size={16} />} onClick={() => generar()} disabled={guardando || generando}>
               Volver a generar
             </Boton>
             <Boton variante="fantasma" icono={<X size={16} />} onClick={() => setVista(null)} disabled={guardando}>

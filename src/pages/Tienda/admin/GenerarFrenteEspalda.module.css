@@ -45,9 +45,38 @@
   align-items: flex-start;
 }
 
+.fondos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.fondosTitulo {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #4b5563;
+}
+
+/* La muestra del fondo dentro del chip. */
+.muestra {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.muestraWala {
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe 55%, #fce7f3);
+}
+
 .imagen {
-  width: min(100%, 300px);
-  aspect-ratio: 3 / 4;
+  width: min(100%, 340px);
+  aspect-ratio: 1 / 1;
   border-radius: 10px;
   box-shadow: 0 8px 22px -12px rgba(20, 18, 28, 0.45);
   animation: entrar 0.35s var(--ease-signature, ease) both;
@@ -84,7 +113,8 @@
   color: var(--violet-200, #ddd6fe);
 }
 
-:global([data-theme='dark']) .texto {
+:global([data-theme='dark']) .texto,
+:global([data-theme='dark']) .fondosTitulo {
   color: var(--color-text-muted, #a1a1aa);
 }
 
