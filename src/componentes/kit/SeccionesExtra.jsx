@@ -46,9 +46,10 @@ const POSICION_VERTICAL = { 'flex-start': 'flex-start', top: 'flex-start', cente
  * Sin colores en la sección, los que la marca guardaba antes en Marcas.
  *  - ajustes: { color, color2, estilo, imagen, frase, buttonText }
  *  - marca: el doc de tienda_brands de la página
- *  - fotos (collage) · cuenta · ofertas · categorias (sus sellos) · urlBoton
+ *  - fotos (collage) · cuenta · ofertas · cuentaCategorias (sus sellos; no
+ *    `categorias`, que SeccionDelKit guarda para las secciones de categorías) · urlBoton
  */
-export function PortadaDeMarca({ ajustes = {}, marca, fotos = [], cuenta, ofertas, categorias, urlBoton = '#catalogo' }) {
+export function PortadaDeMarca({ ajustes = {}, marca, fotos = [], cuenta, ofertas, cuentaCategorias, urlBoton = '#catalogo' }) {
   if (!marca) return null;
   const { color, color2, frase } = identidadDeMarca(marca);
   return (
@@ -62,10 +63,12 @@ export function PortadaDeMarca({ ajustes = {}, marca, fotos = [], cuenta, oferta
         fotos={fotos}
         cuenta={cuenta}
         ofertas={ofertas}
-        categorias={categorias}
+        categorias={cuentaCategorias}
         urlBoton={urlBoton}
         textoBoton={ajustes.buttonText?.trim() || 'Ver productos'}
       />
+      {/* "Ver productos" baja aquí si la página no tiene catálogo (lo que sigue a la portada). */}
+      <span id="despues-de-la-portada" style={{ display: 'block', scrollMarginTop: '6rem' }} aria-hidden="true" />
     </TemaMarca>
   );
 }

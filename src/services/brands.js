@@ -107,11 +107,11 @@ const normalizeCategoryNavStyle = (style) => {
  * referencia), para que TODAS las marcas tengan la misma página y no una
  * "hoja suelta" con solo el catálogo:
  *
- *   0. brand_hero        → portada de la marca (nombre, logo y colores de
- *                          Marcas; estilo, foto y frase en el editor)
+ *   0. brand_hero        → portada de la marca (nombre y logo de Marcas;
+ *                          colores, estilo, foto y frase en el editor)
  *   1. categories_nav   → burbujas de categorías de ESA marca (categoryNav)
- *   2. featured_carousel → "Productos Destacados"
- *   3. sale_carousel     → "Ofertas"
+ *   2. featured_carousel → "Lo más pedido"
+ *   3. sale_carousel     → "En oferta"
  *   4. sidebar_catalog   → catálogo con filtros, acotado a la marca
  *   5. marquee           → las demás marcas de Walá (solo si hay logos)
  *
@@ -122,6 +122,11 @@ const normalizeCategoryNavStyle = (style) => {
  * Todo lo que no es propio de la marca sale de getDefaultSettings(type), para
  * que la plantilla no se quede vieja si cambian los defaults del editor.
  */
+// Las filas como en la página de marca del kit (plantillaDeMarca): el título
+// subrayado con el trazo (toma el color de la marca) y más juntas que en el
+// inicio, porque es una sola marca.
+const COMO_EL_KIT = { titleUnderline: true, paddingTop: '1rem', paddingBottom: '1.5rem' };
+
 const buildBrandLandingSections = (brandId, name, opts = {}) => {
   const { brand = null, portadaPrevia = null, marqueeItems = [] } = opts;
   const brandName = String(name || '').trim();
@@ -143,13 +148,13 @@ const buildBrandLandingSections = (brandId, name, opts = {}) => {
       id: 'sec_destacados',
       type: 'featured_carousel',
       order: 2,
-      settings: { ...getDefaultSettings('featured_carousel'), title: 'Productos Destacados' }
+      settings: { ...getDefaultSettings('featured_carousel'), ...COMO_EL_KIT, title: 'Lo más pedido' }
     },
     {
       id: 'sec_ofertas',
       type: 'sale_carousel',
       order: 3,
-      settings: { ...getDefaultSettings('sale_carousel'), title: 'Ofertas' }
+      settings: { ...getDefaultSettings('sale_carousel'), ...COMO_EL_KIT, title: 'En oferta' }
     },
     {
       id: 'sec_catalog',
@@ -157,7 +162,9 @@ const buildBrandLandingSections = (brandId, name, opts = {}) => {
       order: 4,
       settings: {
         ...getDefaultSettings('sidebar_catalog'),
-        title: brandName ? `Productos ${brandName}` : 'Catálogo',
+        ...COMO_EL_KIT,
+        title: brandName ? `Todo ${brandName}` : 'Todos los productos',
+        anchorId: 'catalogo',
         brandId
       }
     }

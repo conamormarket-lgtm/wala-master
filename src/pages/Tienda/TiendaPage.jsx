@@ -2,7 +2,8 @@ import React, { useState, useMemo, useCallback, useRef, useEffect, Suspense } fr
 // Secciones del inicio con el kit (paso 5 de la migración). seccionesViejo
 // (useLoViejo) vuelve a los componentes de antes; lo viejo, en guia/ELIMINAR.md.
 import { SeccionDelKit } from '../../componentes/kit/Secciones';
-import { categoriasDeGrilla, gruposDeCatalogo, grillaDesdeConfiguracion, limitesDePrecio, tarjetaDesdeProducto } from '../../componentes/kit/adaptadores';
+import { categoriasDeGrilla, gruposDeCatalogo, grillaDesdeConfiguracion, limitesDePrecio, tarjetaDesdeProducto, identidadDeMarca } from '../../componentes/kit/adaptadores';
+import { TemaMarca } from '../../componentes/kit/piezas/TemaMarca';
 import { getCollections, getCollectionById } from '../../services/collections';
 import { TIPOS_DEL_KIT } from './services/seccionesDelKit';
 import { getTags } from '../../services/tags';
@@ -986,7 +987,8 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       if (error || !Array.isArray(data)) return [];
       return data;
     },
-    enabled: catalogoConKit && (Boolean(pageBrandId) || usePaginatedCatalog),
+    // También para las cifras de la portada de la marca (aunque la página no tenga catálogo).
+    enabled: (catalogoConKit && (Boolean(pageBrandId) || usePaginatedCatalog)) || (Boolean(pageBrandId) && conTipoDelKit('brand_hero')),
     meta: { segundoPlano: true },
     staleTime: 10 * 60 * 1000,
   });
@@ -1165,19 +1167,23 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       datos.onClicBoton = () => { trackBannerClick(banner.id || banner.title || 'hero_banner', user).catch(console.error); };
     }
     if (section.type === 'brand_hero') {
-      // La marca de la página (Marcas: nombre, logo, colores) y sus cifras;
-      // el botón baja al catálogo de la página.
+      // La marca de la página (Marcas: nombre y logo) y sus cifras, como en
+      // la página de marca del kit (productos, en oferta, categorías). El
+      // botón baja al catálogo; sin catálogo, a lo que sigue a la portada.
       if (!pageBrandData) return null;
       const deLaMarca = productosDeFiltros || [];
       const catalogo = configuredSections.find((x) => x.type === 'sidebar_catalog' || x.type === 'product_grid');
       const conFoto = (lista) => lista.map((p) => tarjetaDesdeProducto(p).imagen).filter(Boolean);
+      const enOferta = deLaMarca.filter((p) => Number(p.salePrice) > 0 && Number(p.salePrice) < Number(p.price)).length;
+      const categoriasDeLaMarca = new Set(deLaMarca.flatMap((p) => (Array.isArray(p.categories) ? p.categories : [])
+        .map((c) => (c && typeof c === 'object' ? c.id : c)).filter(Boolean))).size;
       Object.assign(datos, {
         marca: pageBrandData,
         fotos: [...new Set([...conFoto(featuredProducts), ...conFoto(deLaMarca)])].slice(0, 3),
         cuenta: deLaMarca.length || undefined,
-        ofertas: ofertasKit.length || undefined,
-        categorias: navCategoriesByBrand?.[pageBrandId]?.items?.length,
-        urlBoton: `#${idDelCatalogo(catalogo)}`,
+        ofertas: enOferta || undefined,
+        cuentaCategorias: categoriasDeLaMarca || navCategoriesByBrand?.[pageBrandId]?.items?.length || undefined,
+        urlBoton: catalogo ? `#${idDelCatalogo(catalogo)}` : '#despues-de-la-portada',
       });
     }
     if (section.type === 'categories_nav') {
@@ -1759,6 +1765,13 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     return () => clearTimeout(timeout);
   }, [pageReady, pageId, contenidoRenderizando, queriesEnVuelo, queryClient, esConsultaDePantalla]);
 
+  const portadaDeLaMarca = pageBrandId ? sorted.find((x) => x.type === 'brand_hero') : null;
+  const identidadDeLaPagina = pageBrandId && pageBrandData ? identidadDeMarca(pageBrandData) : null;
+  const temaDeLaPagina = identidadDeLaPagina ? {
+    color: portadaDeLaMarca?.settings?.color || identidadDeLaPagina.color,
+    color2: portadaDeLaMarca?.settings?.color2 || identidadDeLaPagina.color2,
+  } : null;
+
   const { isMobile } = useIsMobile(769); // Matches <picture media="(max-width: 768px)">.
   const heroImagenUrl = toDirectImageUrl(firstHeroUrl(sorted, isMobile));
   const [loadedHero, setLoadedHero] = useState('');
@@ -1786,6 +1799,11 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       <BrandLoaderOverlay show={!pageReady || !heroListo} secciones={sorted.slice(0, 8).map((s) => s.type)} />
       <CustomFontsInjector config={activeSections} all={isEditModeActive} />
       {!isLandingPage && !categoryId && !searchTerm && <BannerDeLaApp />}
+      {/* En la página de una marca todo va con su color, como en la página de
+          marca del kit: el trazo bajo los títulos y la portada (los botones,
+          las burbujas y los sellos siguen violeta). Los colores son los de su
+          "Portada de la marca"; si no, los que guardaba la marca. */}
+      <TemaMarca identidad={temaDeLaPagina || undefined}>
       {sorted.map((section, index) => {
         const active = sectionIsActive(section, index);
         const rendered = active ? renderSection(section) : null;
@@ -1807,6 +1825,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           </React.Fragment>
         );
       })}
+      </TemaMarca>
       <PuntoDeInsercion indice={sorted.length} viejo={<ModuleInserter index={sorted.length} />} />
     </div>
   );
