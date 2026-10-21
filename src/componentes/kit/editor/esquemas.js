@@ -300,6 +300,17 @@ export const ESQUEMAS = {
     descripcion: 'Una imagen, con enlace si quieres.',
     campos: [
       { tipo: 'imagen', campo: 'url', etiqueta: 'Imagen', carpeta: 'storefront/imagenes' },
+      {
+        tipo: 'tamanos', etiqueta: 'Tamaño', ayuda: 'Sin pasar de ese alto: una foto vertical ya no ocupa más que la pantalla.',
+        opciones: [
+          { valor: 'pequena', texto: 'Pequeña', detalle: 'Hasta 320 de alto y 480 de ancho', valores: { alto: '320px', maxWidth: '480px' } },
+          { valor: 'mediana', texto: 'Mediana', detalle: 'Hasta 480 de alto y 800 de ancho', valores: { alto: '480px', maxWidth: '800px' } },
+          { valor: 'grande', texto: 'Grande', detalle: 'Todo el ancho, hasta casi toda la pantalla', porDefecto: true, valores: { alto: '', maxWidth: '100%' } },
+          { valor: 'original', texto: 'Tamaño original', detalle: 'Como se subió, sin límite de alto', valores: { alto: 'none', maxWidth: '100%' } },
+        ],
+      },
+      { tipo: 'opciones', campo: 'ajuste', etiqueta: 'Cómo se ve', porDefecto: 'completa', opciones: [{ valor: 'completa', texto: 'Entera' }, { valor: 'llena', texto: 'Llena el espacio' }], si: (a) => a.alto !== 'none' },
+      { tipo: 'nota', texto: 'Llena el espacio: ocupa todo el ancho y el alto del tamaño, recortando lo que sobre.', si: (a) => a.ajuste === 'llena' && a.alto !== 'none' },
       { tipo: 'texto', campo: 'alt', etiqueta: 'Descripción de la imagen', ayuda: 'La leen los lectores de pantalla y Google.' },
       { tipo: 'enlace', campo: 'link', etiqueta: 'Enlace' },
       { tipo: 'opciones', campo: 'alignment', etiqueta: 'Alineación', opciones: ALINEAR, pestana: 'diseno' },

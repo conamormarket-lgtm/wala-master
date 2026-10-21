@@ -142,14 +142,30 @@
   display: flex;
 }
 
+.imagenCaja {
+  display: flex;
+}
+
+/* Entera, sin pasar del alto (por defecto casi toda la pantalla). */
 .imagen {
   display: block;
-  width: 100%;
+  width: auto;
+  max-width: 100%;
   height: auto;
+  max-height: var(--imagen-alto, min(75vh, 640px));
+}
+
+/* Llena el ancho y el alto elegidos, recortando lo que sobre. */
+.imagenLlena {
+  width: 100%;
+  height: var(--imagen-alto, min(75vh, 640px));
+  max-height: none;
+  object-fit: cover;
 }
 
 .imagenEnlace {
   display: block;
+  max-width: 100%;
 }
 
 /* ── Video ── */
@@ -216,6 +232,8 @@
   display: block;
   width: 100%;
   height: 100%;
+  /* Una imagen muy vertical no pasa de casi toda la pantalla. */
+  max-height: min(75vh, 560px);
   object-fit: cover;
 }
 

@@ -186,15 +186,22 @@ export function BloqueTexto({ ajustes = {} }) {
 const JUSTIFICAR = { left: 'flex-start', right: 'flex-end', center: 'center' };
 
 /** `primera`: es la primera sección de la página → se carga sin esperar (es lo primero que se ve). */
+/*
+ * La imagen ya no se dibuja a su alto natural a todo el ancho (una foto
+ * vertical medía más que la pantalla): tiene un alto máximo (`alto`; sin él,
+ * casi toda la pantalla, 640px) y se ve entera, o llena ese alto recortando
+ * (`ajuste: 'llena'`). `alto: 'none'`: el tamaño original, sin límite.
+ */
 export function BloqueImagen({ ajustes = {}, primera = false }) {
-  const { url, alt = '', link, maxWidth = '100%', alignment = 'center', borderRadius } = ajustes;
+  const { url, alt = '', link, maxWidth = '100%', alignment = 'center', borderRadius, alto, ajuste } = ajustes;
   if (!url?.trim()) return null;
+  const llena = ajuste === 'llena' && alto !== 'none';
   const imagen = (
     <img
       {...atributosDeFoto(toDirectImageUrl(url), '100vw')}
       alt={alt}
-      className={s.imagen}
-      style={{ borderRadius: borderRadius || undefined }}
+      className={[s.imagen, llena && s.imagenLlena].filter(Boolean).join(' ')}
+      style={{ borderRadius: borderRadius || undefined, ...(alto ? { '--imagen-alto': alto } : {}) }}
       loading={primera ? 'eager' : 'lazy'}
       fetchpriority={primera ? 'high' : undefined}
       decoding="async"
@@ -202,7 +209,7 @@ export function BloqueImagen({ ajustes = {}, primera = false }) {
   );
   return (
     <div className={s.imagenMarco} style={{ justifyContent: JUSTIFICAR[alignment] || 'center' }}>
-      <div style={{ maxWidth, width: '100%' }}>
+      <div className={s.imagenCaja} style={{ maxWidth, width: '100%', justifyContent: JUSTIFICAR[alignment] || 'center' }}>
         {link?.trim() ? <Enlace to={link} className={s.imagenEnlace}>{imagen}</Enlace> : imagen}
       </div>
     </div>
