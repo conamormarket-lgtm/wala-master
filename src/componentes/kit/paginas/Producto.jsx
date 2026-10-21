@@ -38,12 +38,22 @@ function FotoCliente({ foto, numero, onVer }) {
 }
 
 /**
+ * ¿Es la imagen "frente y espalda" de un producto? El admin la sube como
+ * …/gallery_<fecha>_frente-espalda.png (WebP al subirla): se reconoce por el
+ * nombre del archivo (en la URL de Storage, antes de la consulta).
+ */
+const esFrenteEspalda = (url) => /_frente-espalda\.\w+(\?|$)/i.test(String(url || ''));
+
+/**
  * La galería de un combo con el color elegido de cada prenda (fotos.combo de
  * fichaProductoDesde): la portada, la foto de cada prenda en su color ("Ella ·
  * Melange") y las del producto, sin repetir. Si el color elegido no tiene
  * foto, va la de la prenda con el color que sí muestra ("Él · Negro"): así la
  * prenda no desaparece de la galería (en la tienda desaparece). Cada foto
  * sabe de qué prenda y color es (`pieza`, `color`) para saltar a ella.
+ * Si el color de una prenda tiene su imagen "frente y espalda" (la que se
+ * genera en el admin), va solo esa y no sus fotos sueltas: una miniatura por
+ * prenda, con la prenda completa. Un color sin ella sigue con sus fotos.
  */
 const galeriaCombo = (combo, piezas, colores) => {
   const lista = [];
@@ -57,7 +67,9 @@ const galeriaCombo = (combo, piezas, colores) => {
   combo.portada.forEach((u) => poner(u));
   combo.piezas.forEach((f, i) => {
     const propias = f.porColor[colores[i]] || [];
-    if (propias.length) propias.forEach((u) => poner(u, i, colores[i]));
+    const juntas = propias.filter(esFrenteEspalda);
+    // Si se generó más de una, la última (la más nueva va al final de la galería).
+    if (propias.length) (juntas.length ? juntas.slice(-1) : propias).forEach((u) => poner(u, i, colores[i]));
     else f.general.forEach((u) => poner(u, i, Object.keys(f.porColor).find((c) => f.porColor[c].includes(u))));
   });
   combo.producto.forEach((u) => poner(u));

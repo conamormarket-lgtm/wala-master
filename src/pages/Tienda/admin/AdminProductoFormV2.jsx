@@ -646,6 +646,8 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
 
   // La imagen "frente y espalda" (GenerarFrenteEspalda) entra como una foto más
   // de la galería, al final: la principal y la segunda quedan como estaban.
+  // El nombre del archivo importa: la ficha de un combo la reconoce por
+  // "_frente-espalda." (esFrenteEspalda en kit/paginas/Producto.jsx).
   const handleGuardarFrenteEspalda = async (blob) => {
     if (!activeVariant) return;
     setUploading(true);
