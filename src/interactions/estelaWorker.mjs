@@ -11,19 +11,24 @@ const cancelarMarco = typeof self.cancelAnimationFrame === 'function'
   ? (id) => self.cancelAnimationFrame(id)
   : (id) => clearTimeout(id);
 
+// El reloj absoluto (timeOrigin + now): el del Worker y el de la página
+// empiezan en momentos distintos, y los toques traen la hora de la página.
+const ahora = () => performance.timeOrigin + performance.now();
+
 self.onmessage = ({ data }) => {
   if (data.tipo === 'iniciar') {
-    motor = crearMotor({ lienzo: data.lienzo, ahora: () => performance.now(), pedirMarco, cancelarMarco });
+    motor = crearMotor({ lienzo: data.lienzo, ahora, pedirMarco, cancelarMarco });
     motor.tamano(data.ancho, data.alto, data.dpr);
     return;
   }
   if (!motor) return;
   switch (data.tipo) {
     case 'tamano': motor.tamano(data.ancho, data.alto, data.dpr); break;
-    case 'presionar': motor.presionar(data.x, data.y, data.oscuro); break;
-    case 'empezar': motor.empezar(data.x, data.y); break;
-    case 'agregar': for (let i = 0; i < data.xy.length; i += 2) motor.agregar(data.xy[i], data.xy[i + 1]); break;
-    case 'soltar': motor.soltar(); break;
+    case 'presionar': motor.presionar(data.x, data.y, data.oscuro, data.t); break;
+    case 'empezar': motor.empezar(data.x, data.y, data.t); break;
+    // De a tres: x, y y la hora del toque.
+    case 'agregar': for (let i = 0; i < data.xyt.length; i += 3) motor.agregar(data.xyt[i], data.xyt[i + 1], data.xyt[i + 2]); break;
+    case 'soltar': motor.soltar(data.t); break;
     case 'cancelar': motor.cancelar(); break;
     case 'limpiar': motor.limpiar(); break;
     default: break;

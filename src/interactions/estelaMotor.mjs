@@ -12,12 +12,31 @@
 // Liviano: sin desenfoques (el brillo son degradados y una cinta ancha y tenue
 // bajo otra fina), las formas son Path2D hechos una vez, solo se borra lo que
 // se pintó y el bucle corre solo mientras queda algo vivo.
+//
+// En las páginas pesadas los toques llegan tarde y en lotes (el hilo principal
+// los entrega cuando se desocupa). Por eso cada toque trae la hora en que pasó
+// (no la de llegada) y la punta no salta al último: lo persigue un poco detrás
+// y, si quedó atrás, recorre el hueco más rápido. Si los cuadros tardan, baja
+// la calidad (menos destellos, sin la cinta ancha).
 
 const VIDA_RAYA = 420;
 const VIDA_DESTELLO = 680;
 const ANCHO = 7;
-const CADA_PX = 22;
-const MAX_DESTELLOS = 48;
+// Un toque que llega más tarde que esto se toma como de hace TARDE_MAX ms.
+const TARDE_MAX = 160;
+// La punta va ~RETRASO_PUNTA ms detrás del último toque; para alcanzarlo corre
+// hasta PRISA_MAX veces más rápido. Simulado a 1 px/ms con toques en lotes de
+// 100 ms: el mayor salto por cuadro baja de 112 px a 48 px, y con toques
+// fluidos la punta va a ~8 px del dedo (con 40 ms iba a 23).
+const RETRASO_PUNTA = 24;
+const PRISA_MAX = 3;
+const CALIDAD = {
+  alta: { maxDestellos: 48, cadaPx: 22, halo: true },
+  baja: { maxDestellos: 20, cadaPx: 34, halo: false },
+};
+// Promedio de ms por cuadro para bajar o volver a subir la calidad.
+const MS_LENTO = 24;
+const MS_FLUIDO = 17;
 const RETRASO_ORBE = 70;
 const ENTRADA_ORBE = 220;
 const SALIDA_ORBE = 260;
@@ -69,7 +88,8 @@ const rellenarForma = (ctx, forma) => {
   ctx.fill();
 };
 
-// Puntos intermedios (Catmull-Rom) cada ~6 px entre los toques que llegan.
+// Puntos intermedios (Catmull-Rom) cada ~6 px entre los toques que llegan
+// (`vista`: cuándo los alcanzó la punta; de eso depende cómo se apagan).
 const suavizar = (pts) => {
   if (pts.length < 3) return pts;
   const out = [pts[0]];
@@ -81,7 +101,7 @@ const suavizar = (pts) => {
       out.push({
         x: 0.5 * (2 * p1.x + (p2.x - p0.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (3 * p1.x - p0.x - 3 * p2.x + p3.x) * t3),
         y: 0.5 * (2 * p1.y + (p2.y - p0.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (3 * p1.y - p0.y - 3 * p2.y + p3.y) * t3),
-        t: p1.t + (p2.t - p1.t) * t,
+        vista: p1.vista + (p2.vista - p1.vista) * t,
       });
     }
   }
@@ -122,16 +142,30 @@ export function crearMotor({ lienzo, ahora, pedirMarco, cancelarMarco }) {
   const ctx = lienzo.getContext('2d');
   let escala = 1;
   let marco = 0;
+  // { x, y, t: hora del toque, vista: hora en que la punta pasó por ahí }
   let puntos = [];
   let destellos = [];
   let orbe = null;
   let tonos = TONOS.claro;
+  let cabeza = 0; // la hora de toque por la que va la punta
+  let punta = null; // dónde quedó la punta en el cuadro anterior
   let recorrido = 0;
   let largo = 0;
+  let remate = false;
   let sucia = null;
+  let ultimoMarco = null;
+  let msMarco = 16;
+  let calidad = CALIDAD.alta;
+
+  // La hora de un toque, en el reloj del motor: nunca en el futuro ni más
+  // vieja que TARDE_MAX (un lote muy atrasado se aprieta en ese margen).
+  const horaDe = (t) => {
+    const ya = ahora();
+    return Math.min(ya, Math.max(Number.isFinite(t) ? t : ya, ya - TARDE_MAX));
+  };
 
   const soltarDestello = (x, y, dx, dy, fuerza = 1) => {
-    if (destellos.length >= MAX_DESTELLOS) destellos.shift();
+    while (destellos.length >= calidad.maxDestellos) destellos.shift();
     const d = Math.hypot(dx, dy) || 1;
     // Al costado de la raya (perpendicular), un poco al azar.
     const lado = fuerza > 1 ? 0 : azar(-11, 11);
@@ -169,11 +203,73 @@ export function crearMotor({ lienzo, ahora, pedirMarco, cancelarMarco }) {
     sucia = null;
   };
 
+  // La punta persigue al último toque (ver arriba). Devuelve los puntos ya
+  // alcanzados más la punta, o null si no hay raya.
+  const avanzarPunta = (t, dt) => {
+    if (!puntos.length) return null;
+    const ultimo = puntos[puntos.length - 1];
+    const antes = cabeza;
+    const atraso = ultimo.t - cabeza;
+    if (atraso > 0) cabeza = Math.min(ultimo.t, cabeza + dt * Math.min(PRISA_MAX, Math.max(0.3, atraso / RETRASO_PUNTA)));
+    // Cada toque alcanzado anota cuándo (repartido dentro del cuadro).
+    for (const p of puntos) {
+      if (p.vista != null) continue;
+      if (p.t > cabeza) break;
+      p.vista = cabeza > antes ? t - dt * ((cabeza - p.t) / (cabeza - antes)) : t;
+    }
+    let i = puntos.length - 1;
+    while (i > 0 && puntos[i].t > cabeza) i -= 1;
+    const a = puntos[i];
+    const b = puntos[i + 1];
+    const k = b ? (cabeza - a.t) / (b.t - a.t) : 0;
+    // Quieta en el último toque, la punta se apaga con él (si no, quedaría un punto encendido).
+    const nueva = b ? { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, vista: t } : { x: a.x, y: a.y, vista: a.vista };
+
+    // Los destellos salen por donde pasa la punta, no por donde llegan los toques.
+    if (punta) {
+      const dx = nueva.x - punta.x; const dy = nueva.y - punta.y;
+      const paso = Math.hypot(dx, dy);
+      if (paso > 0) {
+        recorrido += paso;
+        while (recorrido >= calidad.cadaPx) {
+          recorrido -= calidad.cadaPx;
+          const f = 1 - recorrido / paso;
+          soltarDestello(punta.x + dx * f, punta.y + dy * f, dx, dy);
+        }
+      }
+    }
+    punta = nueva;
+    // El remate del hechizo, cuando la punta llega adonde se levantó el dedo.
+    if (remate && !b) {
+      remate = false;
+      for (let n = 0; n < 4; n++) soltarDestello(nueva.x, nueva.y, azar(-1, 1), azar(-1, 1), 2.2);
+    }
+
+    // Se olvida lo ya apagado, menos el último alcanzado (de ahí sale la punta).
+    let fuera = 0;
+    while (fuera < i && t - puntos[fuera].vista >= VIDA_RAYA) fuera += 1;
+    if (fuera) { puntos = puntos.slice(fuera); i -= fuera; }
+    if (!b && t - a.vista >= VIDA_RAYA) { puntos = []; punta = null; return null; }
+    const visibles = puntos.slice(0, i + 1);
+    if (b) visibles.push(nueva);
+    return visibles;
+  };
+
+  // Si los cuadros tardan (página pesada, celular lento), menos trabajo.
+  const medirCalidad = (dt) => {
+    msMarco = msMarco * 0.9 + dt * 0.1;
+    if (calidad === CALIDAD.alta && msMarco > MS_LENTO) calidad = CALIDAD.baja;
+    else if (calidad === CALIDAD.baja && msMarco < MS_FLUIDO) calidad = CALIDAD.alta;
+  };
+
   const dibujar = () => {
     marco = 0;
     const t = ahora();
-    puntos = puntos.filter((p) => t - p.t < VIDA_RAYA);
+    const dt = ultimoMarco == null ? 16 : Math.min(50, t - ultimoMarco);
+    if (ultimoMarco != null) medirCalidad(dt);
+    ultimoMarco = t;
     destellos = destellos.filter((d) => t - d.nace < VIDA_DESTELLO);
+    const visibles = avanzarPunta(t, dt);
 
     ctx.setTransform(escala, 0, 0, escala, 0, 0);
     ctx.globalAlpha = 1;
@@ -188,15 +284,16 @@ export function crearMotor({ lienzo, ahora, pedirMarco, cancelarMarco }) {
     // transparencia, cada unión se veía como una perla), de la cola vieja,
     // fina y transparente a la punta nueva y gruesa. El centro pasa por una
     // curva suave (Catmull-Rom) aunque los toques lleguen separados.
-    const linea = suavizar(puntos);
+    const linea = visibles ? suavizar(visibles) : [];
     if (linea.length > 1) {
-      const cola = linea[0]; const punta = linea[linea.length - 1];
-      for (const [grosor, tono, alfa] of [[3.2, tonos.halo, 0.3], [0.55, tonos.centro[0], 0.95]]) {
+      const cola = linea[0]; const extremo = linea[linea.length - 1];
+      const pasadas = calidad.halo ? [[3.2, tonos.halo, 0.3], [0.55, tonos.centro[0], 0.95]] : [[0.55, tonos.centro[0], 0.95]];
+      for (const [grosor, tono, alfa] of pasadas) {
         const anchos = linea.map((p, k) => {
-          const vida = Math.max(0, 1 - (t - p.t) / VIDA_RAYA);
+          const vida = Math.max(0, 1 - (t - p.vista) / VIDA_RAYA);
           return ANCHO * grosor * vida ** 0.8 * Math.min(1, (k + 1) / 6);
         });
-        const relleno = ctx.createLinearGradient(cola.x, cola.y, punta.x, punta.y);
+        const relleno = ctx.createLinearGradient(cola.x, cola.y, extremo.x, extremo.y);
         relleno.addColorStop(0, `rgba(${tono}, 0)`);
         relleno.addColorStop(1, `rgba(${tono}, ${alfa})`);
         ctx.fillStyle = relleno;
@@ -278,16 +375,17 @@ export function crearMotor({ lienzo, ahora, pedirMarco, cancelarMarco }) {
     ctx.globalAlpha = 1;
 
     sucia = Number.isFinite(x0) ? { x0, y0, x1, y1 } : null;
-    if (orbe || puntos.length > 1 || destellos.length) marco = pedirMarco(dibujar);
-    else borrar();
+    if (orbe || puntos.length || destellos.length) marco = pedirMarco(dibujar);
+    else { borrar(); ultimoMarco = null; }
   };
   const pedirDibujo = () => { if (!marco) marco = pedirMarco(dibujar); };
 
-  const terminarOrbe = (como) => {
+  // tEvento: cuándo pasó (el toque puede llegar tarde); la salida se anima desde ahora.
+  const terminarOrbe = (como, tEvento) => {
     if (!orbe || orbe.fin != null) return;
     const t = ahora();
     // Aún no se veía (toque rápido): se va sin dibujar nada.
-    if (t < orbe.t0 + RETRASO_ORBE) { orbe = null; return; }
+    if (horaDe(tEvento) < orbe.t0 + RETRASO_ORBE) { orbe = null; return; }
     orbe.fin = t;
     orbe.como = como;
     orbe.tamFin = orbe.tamVivo ?? 1;
@@ -307,55 +405,62 @@ export function crearMotor({ lienzo, ahora, pedirMarco, cancelarMarco }) {
       lienzo.height = Math.round(alto * dpr);
       sucia = null;
     },
-    presionar(x, y, oscuro) {
+    // t: la hora del toque en el reloj del motor (sin ella, la de llegada).
+    presionar(x, y, oscuro, t) {
       tonos = oscuro ? TONOS.oscuro : TONOS.claro;
-      orbe = { x, y, t0: ahora(), fin: null };
+      orbe = { x, y, t0: horaDe(t), fin: null };
       pedirDibujo();
     },
-    empezar(x, y) {
-      terminarOrbe('deslizar');
-      puntos = [{ x, y, t: ahora() }];
+    empezar(x, y, t) {
+      terminarOrbe('deslizar', t);
+      const h = horaDe(t);
+      puntos = [{ x, y, t: h }];
+      cabeza = h;
+      punta = null;
       recorrido = 0;
       largo = 0;
+      remate = false;
       pedirDibujo();
     },
-    agregar(x, y) {
+    agregar(x, y, t) {
       const ultimo = puntos[puntos.length - 1];
-      const t = ahora();
-      if (!ultimo) { puntos.push({ x, y, t }); return; }
-      const dx = x - ultimo.x; const dy = y - ultimo.y;
-      const paso = Math.hypot(dx, dy);
+      // Nunca antes que el anterior (los relojes pueden diferir un poco).
+      const h = Math.max(horaDe(t), ultimo ? ultimo.t : -Infinity);
+      if (!ultimo) {
+        // La raya anterior ya se apagó con el dedo quieto: empieza otra aquí.
+        puntos = [{ x, y, t: h }];
+        cabeza = h;
+        punta = null;
+        pedirDibujo();
+        return;
+      }
+      const paso = Math.hypot(x - ultimo.x, y - ultimo.y);
       if (paso < 1.5) return;
-      puntos.push({ x, y, t });
-      recorrido += paso;
+      puntos.push({ x, y, t: h });
       largo += paso;
-      while (recorrido >= CADA_PX) {
-        recorrido -= CADA_PX;
-        const k = 1 - recorrido / paso;
-        soltarDestello(ultimo.x + dx * k, ultimo.y + dy * k, dx, dy);
-      }
       pedirDibujo();
     },
-    soltar() {
-      terminarOrbe('soltar');
-      const ultimo = puntos[puntos.length - 1];
-      const anterior = puntos[puntos.length - 2];
-      // El remate del hechizo: unos destellos donde se levantó el dedo.
-      if (ultimo && anterior && largo > 60) {
-        for (let i = 0; i < 4; i++) soltarDestello(ultimo.x, ultimo.y, azar(-1, 1), azar(-1, 1), 2.2);
-      }
+    soltar(t) {
+      terminarOrbe('soltar', t);
+      // El remate del hechizo (unos destellos donde se levantó el dedo) sale
+      // cuando la punta llega ahí.
+      remate = puntos.length > 1 && largo > 60;
       largo = 0;
       pedirDibujo();
     },
     cancelar() {
       terminarOrbe('cancelar');
       largo = 0;
+      remate = false;
       pedirDibujo();
     },
     limpiar() {
       puntos = [];
       destellos = [];
       orbe = null;
+      punta = null;
+      remate = false;
+      ultimoMarco = null;
       if (marco) { cancelarMarco(marco); marco = 0; }
       ctx.setTransform(escala, 0, 0, escala, 0, 0);
       borrar();

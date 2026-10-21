@@ -6,12 +6,21 @@
 // inicio, el hilo principal está ocupado con carruseles, fotos y React, y la
 // estela que se dibujaba ahí iba a saltos. Si el navegador no tiene
 // OffscreenCanvas o el Worker no carga, el mismo motor dibuja aquí.
+//
+// Cada toque viaja con su hora (event.timeStamp en el reloj absoluto): en las
+// páginas pesadas llegan tarde y en lotes, y el motor los reparte como pasaron.
 import { crearMotor } from './estelaMotor.mjs';
 
-const MAX_ESCALA = 2;
+// Es luz difusa: no necesita la densidad completa de la pantalla. A 1.5 en vez
+// de 2 son ~44% menos píxeles que la GPU recompone en cada cuadro.
+const MAX_ESCALA = 1.5;
 
 export function crearEstela(view = window) {
   const doc = view.document;
+  const perf = view.performance;
+  // La hora de un evento en el reloj absoluto (el mismo del Worker). Los
+  // navegadores viejos daban timeStamp en ms desde 1970.
+  const reloj = (ts) => (Number.isFinite(ts) && ts > 0 ? (ts > 1e12 ? ts : perf.timeOrigin + ts) : undefined);
   let canvas = null;
   let worker = null;
   let enviar = null;
@@ -37,7 +46,7 @@ export function crearEstela(view = window) {
     worker = null;
     const motor = crearMotor({
       lienzo: nuevoLienzo(),
-      ahora: () => view.performance.now(),
+      ahora: () => perf.timeOrigin + perf.now(),
       pedirMarco: (fn) => view.requestAnimationFrame(fn),
       cancelarMarco: (id) => view.cancelAnimationFrame(id),
     });
@@ -45,10 +54,10 @@ export function crearEstela(view = window) {
     motor.tamano(ancho, alto, dpr);
     enviar = (m) => {
       if (m.tipo === 'tamano') motor.tamano(m.ancho, m.alto, m.dpr);
-      else if (m.tipo === 'presionar') motor.presionar(m.x, m.y, m.oscuro);
-      else if (m.tipo === 'empezar') motor.empezar(m.x, m.y);
-      else if (m.tipo === 'agregar') motor.agregar(m.xy[0], m.xy[1]);
-      else if (m.tipo === 'soltar') motor.soltar();
+      else if (m.tipo === 'presionar') motor.presionar(m.x, m.y, m.oscuro, m.t);
+      else if (m.tipo === 'empezar') motor.empezar(m.x, m.y, m.t);
+      else if (m.tipo === 'agregar') motor.agregar(m.xyt[0], m.xyt[1], m.xyt[2]);
+      else if (m.tipo === 'soltar') motor.soltar(m.t);
       else if (m.tipo === 'cancelar') motor.cancelar();
       else if (m.tipo === 'limpiar') motor.limpiar();
     };
@@ -77,11 +86,12 @@ export function crearEstela(view = window) {
 
   const oscuro = () => doc.documentElement.getAttribute('data-theme') === 'dark';
 
+  // ts: el timeStamp del evento táctil.
   return {
-    presionar(x, y) { asegurar(); enviar({ tipo: 'presionar', x, y, oscuro: oscuro() }); },
-    empezar(x, y) { asegurar(); enviar({ tipo: 'empezar', x, y }); },
-    agregar(x, y) { enviar?.({ tipo: 'agregar', xy: [x, y] }); },
-    soltar() { enviar?.({ tipo: 'soltar' }); },
+    presionar(x, y, ts) { asegurar(); enviar({ tipo: 'presionar', x, y, t: reloj(ts), oscuro: oscuro() }); },
+    empezar(x, y, ts) { asegurar(); enviar({ tipo: 'empezar', x, y, t: reloj(ts) }); },
+    agregar(x, y, ts) { enviar?.({ tipo: 'agregar', xyt: [x, y, reloj(ts)] }); },
+    soltar(ts) { enviar?.({ tipo: 'soltar', t: reloj(ts) }); },
     cancelar() { enviar?.({ tipo: 'cancelar' }); },
     limpiar() { enviar?.({ tipo: 'limpiar' }); },
     medir() {

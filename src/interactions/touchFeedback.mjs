@@ -71,7 +71,8 @@ export function installTouchFeedback(view = window) {
     // nunca el tamaño de una tarjeta.
     gesture = { identifier: touch.identifier, x: touch.clientX, y: touch.clientY, trailing: false };
     estela = estela || crearEstela(view);
-    estela.presionar(touch.clientX, touch.clientY);
+    // Con la hora del evento: en una página ocupada llega tarde (ver estelaMotor.mjs).
+    estela.presionar(touch.clientX, touch.clientY, event.timeStamp);
   };
   // Más de SLOP es deslizar (scroll, carrusel, arrastre): el orbe se vuelve la
   // punta de la estela. La estela no persigue al dedo (en las páginas pesadas
@@ -83,15 +84,15 @@ export function installTouchFeedback(view = window) {
     if (!gesture.trailing) {
       if (Math.hypot(touch.clientX - gesture.x, touch.clientY - gesture.y) < SLOP) return;
       gesture.trailing = true;
-      estela.empezar(gesture.x, gesture.y);
+      estela.empezar(gesture.x, gesture.y, event.timeStamp);
     }
-    estela.agregar(touch.clientX, touch.clientY);
+    estela.agregar(touch.clientX, touch.clientY, event.timeStamp);
   };
   const up = (event) => {
     if (!gesture) return;
     if (!Array.from(event.changedTouches).some((candidate) => candidate.identifier === gesture.identifier)) return;
     gesture = null;
-    estela?.soltar();
+    estela?.soltar(event.timeStamp);
   };
   const contextMenu = (event) => {
     if (event.pointerType === 'mouse' || (!nativeAndroid && !lastInputTouch)) return;
