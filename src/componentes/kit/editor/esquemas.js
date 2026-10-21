@@ -95,6 +95,15 @@ const carruselProductos = (descripcion, extra = []) => ({
 const categoriasAuto = (a) => a.dataSource === 'products';
 
 /*
+ * Para qué páginas es cada sección (paraPaginas): 'marca' (solo tiene sentido
+ * en la página de una marca), 'general' (el inicio, la tienda, campañas sin
+ * marca) o, sin decirlo, las dos. El catálogo de "Añadir sección" solo ofrece
+ * las que van; si una ya está puesta donde no va, su formulario lo dice
+ * (avisoFuera) y propone la que sí.
+ */
+export const vaEnPagina = (esquema, conMarca) => !esquema?.paraPaginas || esquema.paraPaginas === (conMarca ? 'marca' : 'general');
+
+/*
  * Tamaños de un clic para las tres portadas (con foto, fotos que se pasan
  * solas y la de la marca): en cada tamaño miden lo mismo, así una debajo de
  * otra no se ven desparejas. Cada portada dice qué campos fija (campos(t)).
@@ -146,6 +155,8 @@ export const ESQUEMAS = {
   brand_hero: {
     nombre: 'Portada de la marca', icono: Store, grupo: 'Portada',
     descripcion: 'El nombre y el logo de la marca de la página, con sus colores y su foto o un collage.',
+    paraPaginas: 'marca',
+    avisoFuera: 'Es la portada de la página de una marca: en una página sin marca no se ve. Aquí usa «Portada con foto».',
     campos: [
       { tipo: 'nota', texto: 'Toma la marca de esta página: su nombre y su logo se cambian en Marcas. En una página sin marca no se ve.' },
       {
@@ -372,6 +383,8 @@ export const ESQUEMAS = {
 
   category_grid: {
     nombre: 'Categorías con foto', icono: LayoutGrid, grupo: 'Navegación', descripcion: '¿Qué estás buscando? con fotos.',
+    paraPaginas: 'general',
+    avisoFuera: 'Es para el inicio o la tienda: muestra las categorías de toda la tienda. En una marca suelen salir una o dos; aquí va mejor «Botones de categorías».',
     campos: [
       { tipo: 'opciones', campo: 'dataSource', etiqueta: 'Contenido', porDefecto: 'manual', opciones: [{ valor: 'products', texto: 'Automático' }, { valor: 'manual', texto: 'A mano' }] },
       { tipo: 'nota', texto: 'Se arma sola con las categorías que tienen productos.', si: categoriasAuto },
@@ -400,6 +413,8 @@ export const ESQUEMAS = {
   },
   categories_nav: {
     nombre: 'Botones de categorías', icono: Navigation, grupo: 'Navegación', descripcion: 'Burbujas redondas que filtran los productos de la página.', porMarca: true,
+    paraPaginas: 'marca',
+    avisoFuera: 'Filtran los productos de la página de una marca. En una página sin marca no hay qué filtrar: aquí usa «Categorías con foto».',
     campos: [
       { tipo: 'fuente', campo: 'brandId', etiqueta: 'Marca', datos: 'marcas', vacio: 'Sin marca' },
       { tipo: 'nota', texto: 'Elige una marca: las burbujas salen de su configuración.', si: (a) => !a.brandId },

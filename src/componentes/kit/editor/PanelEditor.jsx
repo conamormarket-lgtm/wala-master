@@ -2,13 +2,13 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, Reorder, motion, useDragControls } from 'framer-motion';
 import {
   ArrowLeft, ArrowDown, ArrowUp, Copy, GripVertical, Monitor, PanelLeft, PanelRight, Plus, Redo2, Smartphone, Trash2, Undo2, X,
-  Maximize2, Minimize2, ChevronRight, LayoutTemplate,
+  Maximize2, Minimize2, ChevronRight, LayoutTemplate, AlertTriangle,
 } from 'lucide-react';
 import Boton from '../Boton';
 import { Buscador } from '../Formulario';
 import { Pestanas } from '../Navegacion';
 import { IsoWala } from '../Marca';
-import { ESQUEMAS, ESQUEMAS_GLOBALES, GRUPOS_MODULOS, ajustesIniciales, esquemaDe, resumenDe } from './esquemas';
+import { ESQUEMAS, ESQUEMAS_GLOBALES, GRUPOS_MODULOS, ajustesIniciales, esquemaDe, resumenDe, vaEnPagina } from './esquemas';
 import { FormularioSeccion, ProveedorEditor } from './CamposEditor';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import s from './Editor.module.css';
@@ -47,7 +47,7 @@ const esquemaConNombre = (tipo, nombres) => {
   return e.desconocido && nombres?.[tipo] ? { ...e, nombre: nombres[tipo], descripcion: 'Su formulario de siempre.' } : e;
 };
 
-function FilaSeccion({ seccion, indice, total, resaltada, onEditar, onResaltar, onMover, onDuplicar, onQuitar, onSoltar, nombres }) {
+function FilaSeccion({ seccion, indice, total, resaltada, onEditar, onResaltar, onMover, onDuplicar, onQuitar, onSoltar, nombres, fuera = false }) {
   const controles = useDragControls();
   const esquema = esquemaConNombre(seccion.type, nombres);
   const Icono = esquema.icono;
@@ -67,7 +67,11 @@ function FilaSeccion({ seccion, indice, total, resaltada, onEditar, onResaltar, 
       <button type="button" className={s.filaPrincipal} onClick={() => onEditar(seccion.id)}>
         <span className={s.filaIcono}><Icono aria-hidden="true" /></span>
         <span className={s.filaTextos}>
-          <strong>{esquema.nombre}</strong>
+          <strong>
+            {esquema.nombre}
+            {/* Puesta en una página donde no va (ver vaEnPagina): su formulario dice por qué. */}
+            {fuera && <AlertTriangle className={s.filaFuera} aria-label="No va en esta página" />}
+          </strong>
           {resumen && <small>{resumen}</small>}
         </span>
       </button>
@@ -93,6 +97,8 @@ function CatalogoModulos({ onElegir, marcas = [], marcaFija, permitidos }) {
   const q = filtro.trim().toLowerCase();
   const tipos = Object.entries(ESQUEMAS)
     .filter(([tipo]) => !permitidos || permitidos.includes(tipo))
+    // Solo las que van en esta página (con marca o sin ella).
+    .filter(([, e]) => permitidos || vaEnPagina(e, Boolean(marcaFija)))
     .filter(([, e]) => !q || `${e.nombre} ${e.descripcion}`.toLowerCase().includes(q));
   return (
     <div className={s.catalogo}>
@@ -289,6 +295,9 @@ export default function PanelEditor({
                     <BotonQuitar etiqueta="Eliminar sección" onQuitar={() => quitar(abierta.id)} />
                   </div>
                 </div>
+                {!tipos && !vaEnPagina(esquemaAbierta, Boolean(fuentes.marcaFija)) && esquemaAbierta.avisoFuera && (
+                  <p className={s.avisoFuera} role="note"><AlertTriangle aria-hidden="true" />{esquemaAbierta.avisoFuera}</p>
+                )}
                 <FormularioSeccion
                   seccion={abierta}
                   onCambiar={(parche) => cambiar(actualizarAjustes(lista, abierta.id, parche), `${abierta.id}:${Object.keys(parche).join(',')}`)}
@@ -378,6 +387,7 @@ export default function PanelEditor({
                           <FilaSeccion
                             key={id}
                             nombres={nombres}
+                            fuera={!tipos && !vaEnPagina(esquemaDe(sec.type), Boolean(fuentes.marcaFija))}
                             seccion={sec}
                             indice={i}
                             total={ids.length}
