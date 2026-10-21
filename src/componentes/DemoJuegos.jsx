@@ -42,7 +42,10 @@ export const VISTAS_JUEGOS = [
 export const ESTADOS_JUEGOS = {
   '/palabra-del-dia': [['ganada', 'Ya jugó hoy (ganó)'], ['perdida', 'Ya jugó hoy (perdió)'], ['primera', 'Primera vez (ayuda)'], ['cargando', 'Cargando']],
   '/ruleta': [['racha', 'Racha 4/7'], ['girada', 'Ya giró esta semana'], ['perdida', 'Semana perdida'], ['pendiente', 'Giro pendiente'], ['cerrada', 'Cerrada'], ['cargando', 'Cargando']],
-  '/ball-sort': [['casi', 'Casi resuelto (2 jugadas)'], ['yaHoy', 'Ya ganó hoy'], ['primera', 'Primera vez (ayuda)'], ['cargando', 'Cargando']],
+  '/ball-sort': [
+    ['casi', 'Casi resuelto (2 jugadas)'], ['nivel12', 'Nivel 12 (ocultas)'], ['nivel25', 'Nivel 25 (cortina)'], ['nivel40', 'Nivel 40 (hielo)'],
+    ['nivel150', 'Nivel 150'], ['retoHecho', 'Reto de hoy hecho'], ['yaHoy', 'Ya ganó hoy'], ['primera', 'Primera vez (ayuda)'], ['cargando', 'Cargando'],
+  ],
 };
 
 /* Ranking y estadísticas de ejemplo (el real tiene nombres de clientes). */
@@ -71,6 +74,7 @@ export function JuegosDemo({ ruta = VISTAS_JUEGOS[0][1], sesion = true, usuario,
 
   if (ruta === '/ruleta') return <RuletaDemo key={estados.join()} sesion={sesion} estados={estados} cargando={cargando} lunes={lunes} hoy={hoy} cobrar={cobrar} />;
   if (ruta === '/ball-sort') {
+    const nivel = Number((estados.find((e) => e.startsWith('nivel')) || 'nivel1').slice(5));
     return (
       <PaginaBolitas
         key={`${sesion}-${estados.join()}`}
@@ -78,7 +82,10 @@ export function JuegosDemo({ ruta = VISTAS_JUEGOS[0][1], sesion = true, usuario,
         sesion={sesion}
         yaHoy={estados.includes('yaHoy')}
         ayudaVista={!estados.includes('primera')}
-        nivelInicial={estados.includes('casi') ? NIVEL_CASI : undefined}
+        inicial={estados.includes('casi') ? NIVEL_CASI : undefined}
+        nivel={nivel}
+        hoy={hoy}
+        retoHecho={estados.includes('retoHecho')}
         onGanar={async () => {
           await espera(900); // lo que tarda claimBallSortRewardSecure
           cobrar(2);
@@ -117,17 +124,24 @@ export function JuegosDemo({ ruta = VISTAS_JUEGOS[0][1], sesion = true, usuario,
   );
 }
 
-/* Un nivel a dos jugadas de terminar, para probar la victoria rápido. */
-const b = (id, color) => ({ id, color });
-const [R, A, V, M] = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b'];
-const NIVEL_CASI = [
-  [b('r1', R), b('r2', R), b('r3', R), b('r4', R)],
-  [b('a1', A), b('a2', A), b('a3', A), b('a4', A)],
-  [b('v1', V), b('v2', V), b('v3', V), b('m4', M)],
-  [b('m1', M), b('m2', M), b('m3', M)],
-  [b('v4', V)],
-  [],
-];
+/* Un nivel a dos jugadas de terminar, para probar la victoria rápido
+   (colores del motor: 0 rojo, 1 azul, 2 verde, 3 amarillo). */
+const b = (id, c) => ({ id, c, oculta: false, hielo: 0 });
+const NIVEL_CASI = {
+  colores: 4,
+  estado: {
+    capacidad: 4,
+    cortinas: [null, null, null, null, null, null],
+    tubos: [
+      [b('r1', 0), b('r2', 0), b('r3', 0), b('r4', 0)],
+      [b('a1', 1), b('a2', 1), b('a3', 1), b('a4', 1)],
+      [b('v1', 2), b('v2', 2), b('v3', 2), b('m4', 3)],
+      [b('m1', 3), b('m2', 3), b('m3', 3)],
+      [b('v4', 2)],
+      [],
+    ],
+  },
+};
 
 const ELECCION = {
   lista: { desbloqueada: true, dias: 7 },

@@ -126,19 +126,72 @@
   background: var(--color-surface);
 }
 
+.modos {
+  display: flex;
+  justify-content: center;
+}
+
+.nivelTitulo {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Las columnas las calcula la página (--col-escritorio, --col-movil): una
+   fila con pocos tubos, dos con muchos. */
 .tubos {
   display: grid;
-  grid-template-columns: repeat(var(--tubos), auto);
+  grid-template-columns: repeat(var(--col-escritorio), auto);
   justify-content: center;
-  gap: 0.9rem 1.1rem;
+  gap: 1.6rem 1.1rem;
   padding-top: 1.75rem;
 }
 
 @media (max-width: 575px) {
   .tubos {
-    grid-template-columns: repeat(3, auto);
-    gap: 2rem 1.5rem;
+    grid-template-columns: repeat(var(--col-movil), auto);
+    gap: 2rem 1.2rem;
   }
+
+  /* Muchos tubos en el celular: más chicos para que entren en dos filas. */
+  .tubosCompactos {
+    --mesa-tubo: 38px;
+    --mesa-bola: 28px;
+    gap: 1.6rem 0.45rem;
+  }
+}
+
+/* El número que queda de cada ayuda, dentro de su botón. */
+.cuentaAyuda {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  margin-left: 0.4rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: var(--violet-100, #ede9fe);
+  color: var(--violet-700, #6d28d9);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+:global([data-theme='dark']) .cuentaAyuda {
+  background: rgba(167, 139, 250, 0.2);
+  color: #ddd6fe;
+}
+
+.obstaculo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.accionesHoja {
+  display: grid;
+  gap: 0.5rem;
 }
 
 .botonesMesa {
