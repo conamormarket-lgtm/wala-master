@@ -269,6 +269,7 @@ const AdminMarcas = () => {
         if (res.conservadas) partes.push(`${res.conservadas} conservada(s) por estar editada(s) a mano: ${res.conservadasNombres.join(', ')}`);
         if (res.alDia) partes.push(`${res.alDia} ya estaba(n) al día`);
         if (res.sinSlug) partes.push(`${res.sinSlug} sin slug`);
+        if (res.portadas) partes.push(`${res.portadas} portada(s) pasada(s) al editor`);
         setBackfillMsg(`✅ ${res.total} marca(s). ` + (partes.join(' · ') || 'Todo ya estaba al día.'));
         queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       }
@@ -301,7 +302,7 @@ const AdminMarcas = () => {
   };
 
   const handleGenerarLandings = () => {
-    if (!window.confirm('¿Aplicar la plantilla de página a las marcas que lo necesiten?\n\nCada marca queda con hero, navegación por categorías, destacados, ofertas, catálogo y marquee.\n\nNo modifica marcas ni productos. Se actualizan las páginas que solo tienen encabezado / categorías / catálogo; las que ya tienen contenido propio (hero, carruseles, banners…) se conservan tal cual.')) return;
+    if (!window.confirm('¿Aplicar la plantilla de página a las marcas que lo necesiten?\n\nCada marca queda con portada de marca, navegación por categorías, destacados, ofertas, catálogo y marquee.\n\nNo modifica marcas ni productos. Se actualizan las páginas que solo tienen encabezado / categorías / catálogo; las que ya tienen contenido propio (carruseles, banners…) se conservan, pero su banner de la plantilla vieja pasa a ser la portada de marca (la editas en su página con el editor).')) return;
     aplicarPlantilla(false);
   };
 
@@ -491,31 +492,10 @@ const AdminMarcas = () => {
               </small>
             </div>
 
-            {/* Mensajes de tienda propios de esta marca (opcionales). Si se dejan
-                vacíos, la página de la marca usa los mensajes globales de la tienda
-                (los mismos de siempre en Con Amor / páginas sin marca). */}
-            <div className={styles.field}>
-              <label className={styles.label}>Título de la tienda (opcional)</label>
-              <input
-                type="text"
-                placeholder="Se usa el título global si lo dejas vacío"
-                value={form.storeTitle}
-                onChange={(e) => setForm((f) => ({ ...f, storeTitle: e.target.value }))}
-                className={styles.input}
-              />
-            </div>
-
-            <div className={styles.field}>
-              <label className={styles.label}>Subtítulo de la tienda (opcional)</label>
-              <input
-                type="text"
-                placeholder="Se usa el subtítulo global si lo dejas vacío"
-                value={form.storeSubtitle}
-                onChange={(e) => setForm((f) => ({ ...f, storeSubtitle: e.target.value }))}
-                className={styles.input}
-              />
-            </div>
-
+            {/* Mensaje propio de esta marca (opcional): vacío, el global de la tienda.
+                El título y el subtítulo de antes ya no se veían en la página (la
+                portada y el catálogo llevan los suyos en el editor): se conservan
+                en el doc pero no se editan aquí. */}
             <div className={styles.field}>
               <label className={styles.label}>Mensaje sin productos (opcional)</label>
               <input
@@ -526,21 +506,23 @@ const AdminMarcas = () => {
                 className={styles.input}
               />
               <small style={{ color: 'var(--gris-texto, #6b7280)', fontSize: '0.78rem', marginTop: '0.3rem', display: 'block' }}>
-                Título, subtítulo y mensaje son por marca: si no los completas, la
-                página de esta marca muestra los mismos mensajes globales de la tienda.
+                Lo que ve el cliente en la página de esta marca si no tiene productos. Vacío: el mensaje de toda la tienda.
               </small>
             </div>
           </div>
 
-          {/* Columna Derecha: Identidad Visual */}
+          {/* Columna Derecha: el fondo de sus tarjetas (no la portada de su página) */}
           <div className={styles.visualInfo}>
             <h3 className={styles.sectionTitle}>
               <ImageIcon size={18} />
-              Identidad Visual
+              Tarjetas de producto
             </h3>
+            <small style={{ color: 'var(--gris-texto, #6b7280)', fontSize: '0.78rem', display: 'block', marginBottom: '0.6rem' }}>
+              El fondo detrás de la foto de sus productos y de su mosaico en el inicio. La portada de su página se edita en la página con el editor.
+            </small>
 
             <div className={styles.field}>
-              <label className={styles.label}>Color Base</label>
+              <label className={styles.label}>Color de fondo</label>
               <div className={styles.colorPickerContainer}>
                 <input
                   type="color"
@@ -559,7 +541,7 @@ const AdminMarcas = () => {
             </div>
 
             <div className={styles.field}>
-              <label className={styles.label}>Textura o Imagen de Fondo</label>
+              <label className={styles.label}>Textura de fondo</label>
               <div className={styles.bgUploadWrapper}>
                 {form.bgImage ? (
                   <div className={styles.bgPreviewContainer}>
@@ -634,7 +616,7 @@ const AdminMarcas = () => {
         <IdentidadPaginaMarca
           valor={form.identidad}
           onChange={(identidad) => setForm((f) => ({ ...f, identidad }))}
-          marca={{ id: editingId, name: form.name, logoUrl: form.logoUrl, bgColor: form.bgColor }}
+          marca={{ id: editingId, name: form.name, slug: editingId ? (brands.find((b) => b.id === editingId)?.slug || '') : '', logoUrl: form.logoUrl, bgColor: form.bgColor }}
         />
 
         <div className={styles.formFooter}>

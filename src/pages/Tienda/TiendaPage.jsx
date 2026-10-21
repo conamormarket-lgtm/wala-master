@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, useRef, useEffect, Suspense } fr
 // Secciones del inicio con el kit (paso 5 de la migración). seccionesViejo
 // (useLoViejo) vuelve a los componentes de antes; lo viejo, en guia/ELIMINAR.md.
 import { SeccionDelKit } from '../../componentes/kit/Secciones';
-import { categoriasDeGrilla, gruposDeCatalogo, grillaDesdeConfiguracion, limitesDePrecio } from '../../componentes/kit/adaptadores';
+import { categoriasDeGrilla, gruposDeCatalogo, grillaDesdeConfiguracion, limitesDePrecio, tarjetaDesdeProducto } from '../../componentes/kit/adaptadores';
 import { getCollections, getCollectionById } from '../../services/collections';
 import { TIPOS_DEL_KIT } from './services/seccionesDelKit';
 import { getTags } from '../../services/tags';
@@ -1163,6 +1163,22 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       const banner = { ...activeConfig.heroBanner, ...section.settings };
       seccion = { ...section, settings: banner };
       datos.onClicBoton = () => { trackBannerClick(banner.id || banner.title || 'hero_banner', user).catch(console.error); };
+    }
+    if (section.type === 'brand_hero') {
+      // La marca de la página (Marcas: nombre, logo, colores) y sus cifras;
+      // el botón baja al catálogo de la página.
+      if (!pageBrandData) return null;
+      const deLaMarca = productosDeFiltros || [];
+      const catalogo = configuredSections.find((x) => x.type === 'sidebar_catalog' || x.type === 'product_grid');
+      const conFoto = (lista) => lista.map((p) => tarjetaDesdeProducto(p).imagen).filter(Boolean);
+      Object.assign(datos, {
+        marca: pageBrandData,
+        fotos: [...new Set([...conFoto(featuredProducts), ...conFoto(deLaMarca)])].slice(0, 3),
+        cuenta: deLaMarca.length || undefined,
+        ofertas: ofertasKit.length || undefined,
+        categorias: navCategoriesByBrand?.[pageBrandId]?.items?.length,
+        urlBoton: `#${idDelCatalogo(catalogo)}`,
+      });
     }
     if (section.type === 'categories_nav') {
       // Las burbujas de la marca elegida en el editor filtran el catálogo de

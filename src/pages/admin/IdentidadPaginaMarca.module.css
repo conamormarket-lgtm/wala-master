@@ -29,6 +29,20 @@
   line-height: 1.5;
 }
 
+/* "Abrir /<slug>": la página donde se edita la portada. */
+.enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--primary-color);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.enlace:hover {
+  text-decoration: underline;
+}
+
 .rejilla {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

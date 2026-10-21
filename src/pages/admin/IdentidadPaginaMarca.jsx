@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Sparkles, ImagePlus, Monitor, Smartphone, Sun, Moon, AlertTriangle } from 'lucide-react';
-import { uploadFile } from '../../services/firebase/storage';
+import { Sparkles, Monitor, Smartphone, Sun, Moon, AlertTriangle, ExternalLink } from 'lucide-react';
 import { getProductsByBrand } from '../../services/products';
 import { TemaMarca, temaDeMarca } from '../../componentes/kit/piezas/TemaMarca';
 import { PortadaMarca } from '../../componentes/kit/piezas/PortadaMarca';
-import { identidadDeMarca, tarjetaDesdeProducto, BLOQUES_MARCA } from '../../componentes/kit/adaptadores';
+import { identidadDeMarca, BLOQUES_MARCA } from '../../componentes/kit/adaptadores';
 import s from './IdentidadPaginaMarca.module.css';
 
 /*
- * "Identidad de la página": lo que la página de una marca toma para armarse
- * sola (PaginaMarca del kit): su color, el segundo color, el estilo de la
- * portada, su foto, una frase y qué bloques lleva. Se guarda en
- * tienda_brands/{id}.identidad y la vista previa es la misma PortadaMarca de
- * la tienda, de día y de noche.
+ * "Colores de la marca": su color y el segundo color, los de su portada y el
+ * trazo bajo los títulos. Se guardan en tienda_brands/{id}.identidad y la
+ * vista previa es la misma PortadaMarca de la tienda, de día y de noche.
+ * La portada en sí (estilo foto/color/collage, la foto y la frase) es una
+ * sección de la página de la marca, "Portada de marca", y se edita con el
+ * editor: aquí ya no (antes había dos portadas y la tienda solo mostraba la
+ * del editor). Lo que quedó guardado de entonces (estilo, imagen, frase,
+ * bloques) no se borra: "Aplicar plantilla de página" lo pasa a esa sección.
  */
 
 /** La identidad vacía: sin color propio, portada de color y todos los bloques. */
@@ -30,19 +32,6 @@ export const identidadDelDoc = (marca = {}) => {
     frase: i.frase || '',
     bloques: Array.isArray(i.bloques) && i.bloques.length ? BLOQUES_MARCA.filter((b) => i.bloques.includes(b)) : BLOQUES_MARCA,
   };
-};
-
-const ESTILOS = [
-  { valor: 'foto', nombre: 'Foto', detalle: 'Su foto de portada con el color detrás del texto' },
-  { valor: 'color', nombre: 'Color', detalle: 'El degradado de la marca con el logo grande' },
-  { valor: 'collage', nombre: 'Collage', detalle: 'Tres de sus productos en cartas giradas' },
-];
-
-const NOMBRES_BLOQUES = {
-  categorias: 'Burbujas de categorías',
-  destacados: 'Lo más pedido',
-  ofertas: 'En oferta',
-  catalogo: 'Catálogo con filtros',
 };
 
 const VIOLETA_WALA = '#7c3aed';
@@ -73,8 +62,8 @@ const fijarModo = (vars, modo) => {
   return Object.fromEntries(VARIABLES.map((v) => [v === 'degradado' ? '--degradado-logo' : `--tema-${v}`, vars[`--tema-${v}-${modo}`]]));
 };
 
-/** Avisos de la identidad: colores mal escritos, contraste y estilos sin lo que necesitan. */
-const avisosDe = ({ valor, resuelta, vars, hayFotos, bgColor }) => {
+/** Avisos de los colores: mal escritos y su contraste de día y de noche. */
+const avisosDe = ({ valor, resuelta, vars, bgColor }) => {
   const avisos = [];
   if (valor.color && !esHex(valor.color)) avisos.push({ tipo: 'error', texto: `"${valor.color}" no es un color: escríbelo como #RRGGBB. Así no se guarda.` });
   if (valor.color2 && !esHex(valor.color2)) avisos.push({ tipo: 'error', texto: `"${valor.color2}" no es un color: escríbelo como #RRGGBB. Así no se guarda.` });
@@ -95,8 +84,6 @@ const avisosDe = ({ valor, resuelta, vars, hayFotos, bgColor }) => {
       });
     }
   }
-  if (valor.estilo === 'foto' && !valor.imagen) avisos.push({ tipo: 'aviso', texto: 'Estilo foto sin foto: la portada sale con el color hasta que subas una.' });
-  if (valor.estilo === 'collage' && !hayFotos) avisos.push({ tipo: 'aviso', texto: 'La marca no tiene productos con foto: el collage sale como portada de color.' });
   return avisos;
 };
 
@@ -133,16 +120,14 @@ function CampoColor({ etiqueta, ayuda, valor, porDefecto, onChange }) {
 
 /**
  * El bloque del admin de marcas.
- *  - valor: { color, color2, estilo, imagen, frase, bloques } · onChange(valor)
- *  - marca: lo que ya tiene el formulario ({ id, name, logoUrl, bgColor })
+ *  - valor: { color, color2, … } (lo demás de la identidad se conserva tal cual) · onChange(valor)
+ *  - marca: lo que ya tiene el formulario ({ id, name, slug, logoUrl, bgColor })
  */
 export default function IdentidadPaginaMarca({ valor, onChange, marca = {} }) {
-  const [subiendo, setSubiendo] = useState(false);
-  const [errorFoto, setErrorFoto] = useState('');
   const [ancho, setAncho] = useState('computadora');
   const cambiar = (cambios) => onChange({ ...valor, ...cambios });
 
-  // Los productos de la marca: el collage y la cuenta de la portada.
+  // Los productos de la marca: la cuenta de la portada.
   const { data: productos = [] } = useQuery({
     queryKey: ['admin-marca-portada', marca.id],
     enabled: Boolean(marca.id),
@@ -153,7 +138,6 @@ export default function IdentidadPaginaMarca({ valor, onChange, marca = {} }) {
       return data || [];
     },
   });
-  const fotos = [...new Set(productos.map((p) => tarjetaDesdeProducto(p).imagen).filter(Boolean))].slice(0, 3);
 
   // Lo que verá la tienda: identidadDeMarca con los colores válidos.
   const resuelta = identidadDeMarca({
@@ -162,31 +146,11 @@ export default function IdentidadPaginaMarca({ valor, onChange, marca = {} }) {
     identidad: { ...valor, color: esHex(valor.color) ? valor.color : '', color2: esHex(valor.color2) ? valor.color2 : '' },
   });
   const vars = temaDeMarca(resuelta);
-  const avisos = avisosDe({ valor, resuelta, vars, hayFotos: fotos.length > 0, bgColor: marca.bgColor });
+  const avisos = avisosDe({ valor, resuelta, vars, bgColor: marca.bgColor });
+  const pagina = marca.slug ? `/${marca.slug}` : '';
 
-  const subirFoto = async (e) => {
-    const file = e?.target?.files?.[0];
-    e.target.value = '';
-    if (!file || !file.type.startsWith('image/')) return;
-    setSubiendo(true);
-    setErrorFoto('');
-    try {
-      const limpio = file.name.replace(/[^a-z0-9._-]+/gi, '_');
-      const { url, error } = await uploadFile(file, `brands/portadas/${Date.now()}_${limpio}`);
-      if (url && !error) cambiar({ imagen: url, estilo: 'foto' });
-      else setErrorFoto(error || 'No se pudo subir la foto.');
-    } finally {
-      setSubiendo(false);
-    }
-  };
-
-  const alternarBloque = (b) => {
-    const tiene = valor.bloques.includes(b);
-    if (tiene && valor.bloques.length === 1) return; // al menos uno
-    const bloques = tiene ? valor.bloques.filter((x) => x !== b) : BLOQUES_MARCA.filter((x) => x === b || valor.bloques.includes(x));
-    cambiar({ bloques });
-  };
-
+  // La vista previa con el estilo de color (el que muestra los dos colores) y
+  // sin frase: la de la portada se elige en el editor.
   const portada = (modo) => (
     <figure className={[s.escenario, modo === 'dia' ? s.dia : s.noche].join(' ')} data-theme={modo === 'noche' ? 'dark' : undefined}>
       <figcaption className={s.modo}>
@@ -198,10 +162,7 @@ export default function IdentidadPaginaMarca({ valor, onChange, marca = {} }) {
           <PortadaMarca
             nombre={marca.name || 'Tu marca'}
             logo={marca.logoUrl}
-            frase={resuelta.frase}
-            estilo={resuelta.estilo}
-            imagen={resuelta.imagen}
-            fotos={fotos}
+            estilo="color"
             cuenta={productos.length}
             urlBoton="#vista-identidad"
           />
@@ -214,22 +175,32 @@ export default function IdentidadPaginaMarca({ valor, onChange, marca = {} }) {
     <section className={s.bloque} aria-labelledby="titulo-identidad">
       <h3 className={s.titulo} id="titulo-identidad">
         <Sparkles size={18} aria-hidden="true" />
-        Identidad de la página
+        Colores de la marca
       </h3>
       <p className={s.intro}>
-        Con esto la página de la marca se arma sola: su color en los acentos (los botones de compra siguen violeta),
-        la portada y qué secciones lleva. Lo que dejes vacío usa el valor de siempre.
+        Van en la portada de su página y en el trazo bajo los títulos (los botones de compra siguen violeta).
+        La portada en sí (foto, color o collage, y su frase) se edita en la página de la marca con el editor: es la sección "Portada de marca".
+        {pagina && (
+          <>
+            {' '}
+            <a className={s.enlace} href={pagina} target="_blank" rel="noreferrer">
+              Abrir {pagina} <ExternalLink size={13} aria-hidden="true" />
+            </a>
+          </>
+        )}
       </p>
 
       <div className={s.rejilla}>
         <div className={s.columna}>
           <CampoColor
             etiqueta="Color de la marca"
-            ayuda="Sellos, el trazo bajo los títulos, el aro de la burbuja elegida y la portada."
+            ayuda="La portada, sus sellos y el trazo bajo los títulos."
             valor={valor.color}
             porDefecto={VIOLETA_WALA}
             onChange={(color) => cambiar({ color })}
           />
+        </div>
+        <div className={s.columna}>
           <CampoColor
             etiqueta="Segundo color"
             ayuda="El final del degradado. De noche, el acento si el primero no se ve. Vacío: el primero oscurecido."
@@ -237,68 +208,6 @@ export default function IdentidadPaginaMarca({ valor, onChange, marca = {} }) {
             porDefecto={esHex(resuelta.color) ? resuelta.color : VIOLETA_WALA}
             onChange={(color2) => cambiar({ color2 })}
           />
-
-          <label className={s.campo}>
-            <span className={s.etiqueta}>Frase</span>
-            <input
-              type="text"
-              className={s.entrada}
-              value={valor.frase}
-              maxLength={90}
-              placeholder={`Productos de ${marca.name || 'la marca'}`}
-              onChange={(e) => cambiar({ frase: e.target.value })}
-            />
-            <small className={s.ayuda}>Una línea bajo el nombre. Vacía: "Productos de {marca.name || 'la marca'}".</small>
-          </label>
-        </div>
-
-        <div className={s.columna}>
-          <fieldset className={s.grupo}>
-            <legend className={s.etiqueta}>Estilo de la portada</legend>
-            <div className={s.estilos}>
-              {ESTILOS.map((e) => (
-                <label key={e.valor} className={[s.estilo, valor.estilo === e.valor && s.elegido].filter(Boolean).join(' ')}>
-                  <input type="radio" name="identidad-estilo" value={e.valor} checked={valor.estilo === e.valor} onChange={() => cambiar({ estilo: e.valor })} />
-                  <strong>{e.nombre}</strong>
-                  <span>{e.detalle}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <div className={s.campo}>
-            <span className={s.etiqueta}>Foto de la portada</span>
-            {valor.imagen ? (
-              <div className={s.foto}>
-                <img src={valor.imagen} alt="Foto de la portada" />
-                <button type="button" className={s.quitar} onClick={() => cambiar({ imagen: '' })}>Quitar foto</button>
-              </div>
-            ) : (
-              <label className={[s.subir, subiendo && s.ocupado].filter(Boolean).join(' ')}>
-                <ImagePlus size={18} aria-hidden="true" />
-                <span>{subiendo ? 'Subiendo…' : 'Subir foto (horizontal)'}</span>
-                <input type="file" accept="image/*" onChange={subirFoto} disabled={subiendo} hidden />
-              </label>
-            )}
-            {errorFoto && <small className={s.errorFoto}>{errorFoto}</small>}
-          </div>
-
-          <fieldset className={s.grupo}>
-            <legend className={s.etiqueta}>Bloques de la página</legend>
-            <div className={s.bloques}>
-              {BLOQUES_MARCA.map((b) => {
-                const marcado = valor.bloques.includes(b);
-                const ultimo = marcado && valor.bloques.length === 1;
-                return (
-                  <label key={b} className={s.casilla} title={ultimo ? 'La página necesita al menos un bloque' : undefined}>
-                    <input type="checkbox" checked={marcado} disabled={ultimo} onChange={() => alternarBloque(b)} />
-                    <span>{NOMBRES_BLOQUES[b]}</span>
-                  </label>
-                );
-              })}
-            </div>
-            <small className={s.ayuda}>"Lo más pedido" y "En oferta" no salen si la marca no tiene esos productos.</small>
-          </fieldset>
         </div>
       </div>
 
@@ -314,7 +223,7 @@ export default function IdentidadPaginaMarca({ valor, onChange, marca = {} }) {
       )}
 
       <div className={s.cabeceraVista} id="vista-identidad">
-        <h4 className={s.subtitulo}>Vista previa de la portada</h4>
+        <h4 className={s.subtitulo}>Vista previa de los colores</h4>
         <div className={s.anchos} role="group" aria-label="Ancho de la vista previa">
           <button type="button" aria-pressed={ancho === 'computadora'} onClick={() => setAncho('computadora')}>
             <Monitor size={15} aria-hidden="true" /> Computadora

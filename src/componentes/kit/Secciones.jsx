@@ -21,7 +21,7 @@ import { TarjetaCategoria } from "./piezas/TarjetaCategoria";
 import { StockBajo } from "./piezas/BarraProgreso";
 import { TarjetaAyuda } from "./piezas/TarjetaAyuda";
 import { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados } from './SeccionesContenido';
-import { BannerPrincipal, ListaBeneficios, Ubicacion, NavCategorias, GrillaProductos, CatalogoConFiltros } from './SeccionesExtra';
+import { BannerPrincipal, PortadaDeMarca, ListaBeneficios, Ubicacion, NavCategorias, GrillaProductos, CatalogoConFiltros } from './SeccionesExtra';
 
 // El pie como sección (footer_columns) casi nunca va en una página: baja al
 // usarse, y así no pesa en el archivo principal (el pie de cada página lo
@@ -572,6 +572,7 @@ export const REGISTRO_SECCIONES = {
   banner_grid: { Componente: MosaicoBanners, nombre: 'MosaicoBanners', marcas: true },
   bestsellers_row: { Componente: FilaDestacados, nombre: 'FilaDestacados' },
   hero_banner: { Componente: BannerPrincipal, nombre: 'BannerPrincipal' },
+  brand_hero: { Componente: PortadaDeMarca, nombre: 'PortadaDeMarca', relleno: '1rem' },
   feature_list: { Componente: ListaBeneficios, nombre: 'ListaBeneficios' },
   map_location: { Componente: Ubicacion, nombre: 'Ubicacion' },
   // Compacta como en la tienda: las burbujas casi pegadas al banner y al catálogo.

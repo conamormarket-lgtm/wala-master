@@ -7,7 +7,7 @@ export const TIPOS_DEL_KIT = new Set([
   'announcement_bar', 'hero_carousel', 'trust_badges', 'testimonials', 'faq_accordion',
   'featured_carousel', 'new_arrivals_carousel', 'sale_carousel', 'category_carousel', 'collection_carousel',
   'flash_sales', 'banner_grid', 'category_grid', 'header', 'marquee', 'sidebar_catalog', 'product_grid',
-  'featured_products', 'hero_banner', 'categories_nav', 'text', 'image', 'video', 'bestsellers_row',
+  'featured_products', 'hero_banner', 'brand_hero', 'categories_nav', 'text', 'image', 'video', 'bestsellers_row',
   'feature_list', 'map_location',
 ]);
 

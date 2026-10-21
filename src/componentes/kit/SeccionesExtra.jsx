@@ -8,7 +8,7 @@ import { Buscador, Campo, Selector } from './Formulario';
 import { Chip } from './Etiquetas';
 import { EstadoVacio, HojaInferior } from './Feedback';
 import { TituloSeccion, tituloDesdeAjustes } from './Seccion';
-import { precioEfectivo, limitesDePrecio } from './adaptadores';
+import { precioEfectivo, limitesDePrecio, identidadDeMarca } from './adaptadores';
 import { TextoCampo, BotonDeAjustes, fuenteDe, prefiereQuieto } from './SeccionesContenido';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import { atributosDeFoto } from '../../components/common/OptimizedImage/OptimizedImage';
@@ -17,11 +17,13 @@ import { TarjetaCategoria, TarjetaCategoriaEsqueleto } from "./piezas/TarjetaCat
 import { Beneficio } from "./piezas/Beneficio";
 import { FotoProducto } from "./piezas/FotoProducto";
 import { OpcionesFiltro } from "./piezas/OpcionesFiltro";
+import { PortadaMarca } from "./piezas/PortadaMarca";
+import { TemaMarca } from "./piezas/TemaMarca";
 import { Texto, useTexto } from './Traduccion';
 import s from './SeccionesExtra.module.css';
 
 /*
- * Resto de secciones del builder: banner principal, beneficios, mapa,
+ * Resto de secciones del builder: banner principal, portada de marca, beneficios, mapa,
  * navegación de categorías, grillas de productos, catálogo con filtros y pie
  * de página. Mismos campos de `settings` que getDefaultSettings
  * (src/pages/Tienda/services/storefront.js). Lo que sale de consultas
@@ -36,6 +38,37 @@ const POSICION_VERTICAL = { 'flex-start': 'flex-start', top: 'flex-start', cente
  *  - primera: es lo primero de la página → la imagen se pide con prioridad.
  *  - onClicBoton: para medir clics (la tienda llama a trackBannerClick).
  */
+/**
+ * La portada de la página de una marca (brand_hero): el nombre, el logo y los
+ * colores son los de la marca (se cambian en Marcas); la sección elige el
+ * estilo (foto, color o collage), la foto, la frase y el texto del botón, que
+ * baja al catálogo. Es PortadaMarca dentro de TemaMarca. Sin marca no se dibuja.
+ *  - ajustes: { estilo, imagen, frase, buttonText }
+ *  - marca: el doc de tienda_brands de la página
+ *  - fotos (collage) · cuenta · ofertas · categorias (sus sellos) · urlBoton
+ */
+export function PortadaDeMarca({ ajustes = {}, marca, fotos = [], cuenta, ofertas, categorias, urlBoton = '#catalogo' }) {
+  if (!marca) return null;
+  const { color, color2, frase } = identidadDeMarca(marca);
+  return (
+    <TemaMarca identidad={{ color, color2 }}>
+      <PortadaMarca
+        nombre={marca.name}
+        logo={marca.logoUrl}
+        frase={ajustes.frase?.trim() ? ajustes.frase : frase}
+        estilo={ajustes.estilo}
+        imagen={ajustes.imagen}
+        fotos={fotos}
+        cuenta={cuenta}
+        ofertas={ofertas}
+        categorias={categorias}
+        urlBoton={urlBoton}
+        textoBoton={ajustes.buttonText?.trim() || 'Ver productos'}
+      />
+    </TemaMarca>
+  );
+}
+
 export function BannerPrincipal({ ajustes = {}, primera = false, onClicBoton }) {
   const {
     mediaType = 'image', mediaUrl, thumbnailUrl, title, subtitle, buttonText, buttonLink,

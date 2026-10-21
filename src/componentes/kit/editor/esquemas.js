@@ -123,6 +123,25 @@ export const ESQUEMAS = {
     inicial: { mediaType: 'image', mediaUrl: '', title: 'Nueva colección', subtitle: 'Diseñada para destacar.', buttonText: 'Comprar ahora', buttonLink: '/tienda', textAlign: 'center', textPosition: 'center', overlayOpacity: 40, minHeight: '500px' },
   },
 
+  // La portada de una marca: el nombre, el logo y los colores son los de Marcas.
+  brand_hero: {
+    nombre: 'Portada de marca', icono: Store, grupo: 'Portada',
+    descripcion: 'El nombre, el logo y el color de la marca de la página, con su foto, su color o un collage.',
+    campos: [
+      { tipo: 'nota', texto: 'Toma la marca de esta página: su nombre, su logo y sus colores se cambian en Marcas. En una página sin marca no se ve.' },
+      {
+        tipo: 'opciones', campo: 'estilo', etiqueta: 'Estilo', porDefecto: 'color',
+        ayuda: 'Foto: tu foto con el color detrás del texto. Color: el degradado con el logo grande. Collage: tres de sus productos.',
+        opciones: [{ valor: 'foto', texto: 'Foto' }, { valor: 'color', texto: 'Color' }, { valor: 'collage', texto: 'Collage' }],
+      },
+      { tipo: 'imagen', campo: 'imagen', etiqueta: 'Foto de la portada', ayuda: 'Horizontal. Sin foto, sale la portada de color.', carpeta: 'brands/portadas', si: (a) => a.estilo === 'foto' },
+      { tipo: 'nota', texto: 'Sin productos con foto, el collage sale como portada de color.', si: (a) => a.estilo === 'collage' },
+      { tipo: 'parrafo', campo: 'frase', etiqueta: 'Frase', filas: 2, ayuda: 'Una línea bajo el nombre. Vacía: "Productos de" y el nombre.' },
+      { tipo: 'texto', campo: 'buttonText', etiqueta: 'Texto del botón', ayuda: 'Baja al catálogo de la página.' },
+    ],
+    inicial: { estilo: 'color', imagen: '', frase: '', buttonText: 'Ver productos' },
+  },
+
   hero_carousel: {
     nombre: 'Carrusel principal', icono: Images, grupo: 'Portada',
     descripcion: 'Varias fotos grandes que se pasan solas.',

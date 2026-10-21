@@ -33,7 +33,7 @@ export {
   Testimonios, PreguntasFrecuentes, MarcasMarquesina, GrillaCategorias, REGISTRO_SECCIONES, RenderSecciones, SeccionDelKit,
 } from './Secciones';
 export { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados, videoIncrustado } from './SeccionesContenido';
-export { BannerPrincipal, ListaBeneficios, Ubicacion, urlDeMapa, NavCategorias, GrillaProductos, CatalogoConFiltros } from './SeccionesExtra';
+export { BannerPrincipal, PortadaDeMarca, ListaBeneficios, Ubicacion, urlDeMapa, NavCategorias, GrillaProductos, CatalogoConFiltros } from './SeccionesExtra';
 export { PiePagina, MarcoPie, ColumnasPie, TextoPie, ImagenPie } from './piezas/Pie';
 export { default as PanelEditor, useBorrador, actualizarAjustes, insertarSeccion, moverSeccion, duplicarSeccion, quitarSeccion, nuevoIdSeccion } from './editor/PanelEditor';
 export { SeccionEditable, InsertarAqui } from './editor/SeccionEditable';

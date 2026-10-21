@@ -152,9 +152,9 @@ Cada paso en su propio commit, verificable por separado.
    marca toman el fondo de la tienda (`landing-store-page`). De paso, lo
    que llega del builder (anuncios, diapositivas, insignias, testimonios,
    preguntas…) volvió a pasar por la traducción, que se había perdido en el
-   inicio. Queda para después: las landings de marca con `PaginaMarca`
-   (identidad + plantilla) cuando el admin de marcas guarde `identidad`
-   (NAVEGAR.md).
+   inicio. Las landings de marca no usan `PaginaMarca`: su portada es la
+   sección `brand_hero` (2026-10-21, NAVEGAR.md), con el color de la marca
+   y el estilo, la foto y la frase en el editor.
 6. **Páginas propias** (no son del builder): la ficha de producto
    (`PaginaProducto`, PRODUCTO.md; `onVariante` lleva `recordVariantViewTime`
    y `onPagarCarrito` el `selectAllItems`), el carrito (`PaginaCarrito`, CARRITO.md), el checkout

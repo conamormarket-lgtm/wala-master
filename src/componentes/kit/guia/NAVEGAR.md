@@ -115,6 +115,16 @@ una fila y el catálogo). Error: Kapi triste y "Reintentar". Sin productos:
 | `frase` | Una línea bajo el nombre | "Productos de {marca}" |
 | `bloques` | Qué secciones lleva y cuáles no (`BLOQUES_MARCA`: categorias, destacados, ofertas, catalogo) | Todas |
 
+**En la tienda (2026-10-21):** la portada es la sección del builder
+`brand_hero` ("Portada de marca", `PortadaDeMarca` en `SeccionesExtra.jsx`):
+el nombre, el logo, `color` y `color2` salen de la marca (Marcas → Colores
+de la marca) y `estilo`, `imagen`, `frase` y el texto del botón son ajustes
+de la sección (se editan con el editor). Los bloques son las secciones de la
+página. `estilo`, `imagen`, `frase` y `bloques` de `identidad` ya no se
+editan en Marcas: "Aplicar plantilla de página" los usa para la portada
+(`ajustesDePortada` en `services/brands.js`) y pasa el banner viejo de la
+plantilla (`sec_hero` como `hero_banner`) a `brand_hero`.
+
 Lo lee `identidadDeMarca(marca)`. Para la noche, `temaDeMarca` busca una
 versión del color que se vea sobre el fondo oscuro (contraste 3:1); el texto
 encima de un acento se elige blanco u oscuro por contraste.
