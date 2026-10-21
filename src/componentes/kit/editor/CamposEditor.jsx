@@ -5,6 +5,7 @@ import {
   ExternalLink, Hash, CornerDownRight,
 } from 'lucide-react';
 import { Interruptor } from '../Formulario';
+import ListaOpciones from '../ListaOpciones';
 import { Pestanas } from '../Navegacion';
 import { tipoDeEnlace } from '../Enlace';
 import { FUENTES_TIPOGRAFIA, esquemaDe } from './esquemas';
@@ -139,15 +140,25 @@ export function ControlOpciones({ etiqueta, ayuda, valor, onCambiar, opciones, i
       </Fila>
     );
   }
+  // La lista desplegable del kit (ListaOpciones: panel en computadora, hoja en
+  // el celular, buscador con más de 10) en vez del <select> del navegador.
+  // Trabaja con textos: se devuelve el valor original (número, '' …).
+  const conActual = opciones.some((o) => String(o.valor) === String(actual)) || actual === ''
+    ? opciones
+    : [{ valor: actual, texto: String(actual) }, ...opciones];
   return (
     <Fila etiqueta={etiqueta} ayuda={ayuda} htmlFor={id}>
-      <div className={s.selector}>
-        <select id={id} className={s.input} value={actual} onChange={(e) => onCambiar(e.target.value)}>
-          {!opciones.some((o) => String(o.valor) === String(actual)) && <option value={actual}>{actual || '—'}</option>}
-          {opciones.map((o) => <option key={String(o.valor)} value={o.valor}>{o.texto}</option>)}
-        </select>
-        <ChevronDown aria-hidden="true" />
-      </div>
+      <ListaOpciones
+        id={id}
+        className={s.listaOpciones}
+        etiqueta={etiqueta}
+        opciones={conActual.map((o) => ({ valor: String(o.valor), texto: o.texto, detalle: o.detalle }))}
+        value={String(actual)}
+        onChange={(e) => {
+          const o = conActual.find((x) => String(x.valor) === e.target.value);
+          onCambiar(o ? o.valor : e.target.value);
+        }}
+      />
     </Fila>
   );
 }
@@ -537,16 +548,17 @@ export function ControlLista({ campo: def, valor, onCambiar }) {
           </button>
         )}
         {desde && desde.length > 0 && !lleno && (
-          <div className={s.selector}>
-            <select className={s.input} value="" onChange={(e) => { const x = desde.find((d) => d.id === e.target.value); if (x) poner([...items, def.desde.crear(x)]); }} aria-label={def.desde.etiqueta}>
-              <option value="">{def.desde.etiqueta}…</option>
-              {desde.map((x) => {
-                const nota = def.desde.nota?.(x);
-                return <option key={x.id} value={x.id}>{x.name || x.id}{nota ? ` (${nota})` : ''}</option>;
-              })}
-            </select>
-            <ChevronDown aria-hidden="true" />
-          </div>
+          <ListaOpciones
+            className={s.listaOpciones}
+            etiqueta={def.desde.etiqueta}
+            aria-label={def.desde.etiqueta}
+            opciones={[
+              { valor: '', texto: `${def.desde.etiqueta}…`, deshabilitada: true },
+              ...desde.map((x) => ({ valor: x.id, texto: x.name || x.id, detalle: def.desde.nota?.(x) || undefined })),
+            ]}
+            value=""
+            onChange={(e) => { const x = desde.find((d) => d.id === e.target.value); if (x) poner([...items, def.desde.crear(x)]); }}
+          />
         )}
         {todas.length > 1 && !lleno && (
           <button type="button" className={`${s.agregar} ${s.agregarAncho}`} onClick={() => poner([...items, ...conLugar(todas).map(def.desde.crear)])}>

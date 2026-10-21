@@ -808,6 +808,30 @@
   line-height: 1.45;
 }
 
+/* La lista desplegable del kit (ListaOpciones) con la caja de los demás campos. */
+.listaOpciones {
+  width: 100%;
+  height: auto;
+  min-height: 40px;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--ed-borde);
+  border-radius: 10px;
+  background: var(--color-bg, var(--gris-fondo));
+  color: var(--ed-texto);
+  font-size: 0.86rem;
+  transition: border-color var(--dur-rapida) ease, box-shadow var(--dur-rapida) ease;
+}
+
+.listaOpciones:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ed-acento) 45%, var(--ed-borde));
+}
+
+.listaOpciones:focus-visible,
+.listaOpciones[aria-expanded='true'] {
+  border-color: var(--ed-acento);
+  box-shadow: 0 0 0 3px var(--ed-acento-suave);
+}
+
 .input {
   width: 100%;
   min-height: 40px;
