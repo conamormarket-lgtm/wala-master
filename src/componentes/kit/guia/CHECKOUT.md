@@ -110,8 +110,9 @@ la tarjeta, WhatsApp y PayPal esperan y avisan.
     "Quitar".
   - Subtotal, monedas, cupón, envío, "Te faltan S/ x para el envío gratis" y
     "Total a pagar".
-  - En el pago, las monedas y el cupón quedan como se prepararon (para
-    cambiarlos, "Cambiar el envío").
+  - En el pago, las monedas se pueden prender o apagar: el pago se vuelve a
+    preparar con el total nuevo (sin reabrir la ventana de Culqi). El cupón
+    queda como se preparó (para cambiarlo, "Cambiar el envío").
   - **En el celular** va arriba, plegado en "Tu pedido (2) · S/ 154.00".
 - **Listo:** Kapi feliz, "¡Pago aprobado!" o "¡Tu pedido está creado!" (por
   WhatsApp), el número del pedido, "Ver mi pedido" y "Seguir comprando". En
@@ -181,8 +182,9 @@ la tarjeta, WhatsApp y PayPal esperan y avisan.
 
 ### Diferencias a propósito que se suman
 
-- En el pago, las monedas y el cupón quedan como se prepararon; para
-  cambiarlos, "Cambiar el envío" (la tienda volvía a preparar el pago).
+- En el pago, el cupón queda como se preparó; para cambiarlo, "Cambiar el
+  envío" (la tienda volvía a preparar el pago). Las monedas sí se cambian ahí
+  mismo.
 - La pantalla "listo" en vez de ir a Mis pedidos.
 - Con un solo asesor de marca, el botón dice "Continuar por WhatsApp" (antes,
   "Continuar con el asesor de …"); la pestaña sí nombra la marca.

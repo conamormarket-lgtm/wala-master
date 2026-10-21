@@ -382,6 +382,9 @@ export default function CheckoutDeTienda() {
       waGroups,
       esPeru,
       country: values.country,
+      // Vuelto a preparar porque cambiaron las monedas ya en el pago: la ventana de
+      // Culqi no se abre sola otra vez (ya se abrió al llegar al pago).
+      sinAbrir: datos.motivo === 'monedas',
     });
     return { numero: pseudoOrderId };
   };
@@ -529,7 +532,7 @@ export default function CheckoutDeTienda() {
     botonTarjeta: preparado.esPeru ? (
       <CulqiCustomCheckout
         pedido={preparado}
-        autoOpen
+        autoOpen={!preparado.sinAbrir}
         title="Compra en Walá"
         onSuccess={(r) => terminarPasarela('culqi', r)}
         onOpen={() => setTarjetaFallo(false)}

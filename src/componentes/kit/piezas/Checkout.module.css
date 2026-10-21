@@ -125,6 +125,7 @@
 /* ── Cupón ─────────────────────────────────────────────────── */
 .cupon {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.35rem;
 }
 
@@ -155,7 +156,9 @@
 }
 
 .cuponCaja input {
+  /* width 0: un input pide ~20 letras de ancho mínimo y estiraba la caja. */
   flex: 1;
+  width: 0;
   min-width: 0;
   height: 36px;
   border: 0;
@@ -295,6 +298,9 @@
 
 .resumenCuerpo {
   display: none;
+  /* minmax(0, …): sin esto la columna toma el ancho mínimo del contenido (el
+     cupón con su botón) y en 320 px el resumen se salía por la derecha. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.9rem;
   padding: 0 1rem 1rem;
 }
@@ -435,20 +441,25 @@
 
 .total {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.25rem 1rem;
   padding-top: 0.8rem;
   border-top: 1.5px solid var(--color-border);
 }
 
 .total span {
   font-weight: 700;
+  white-space: nowrap;
 }
 
+/* En 320 px el monto partía "S/" y el número en dos líneas. */
 .total strong {
+  margin-left: auto;
+  white-space: nowrap;
   font-family: var(--fuente-marca);
-  font-size: 1.6rem;
+  font-size: clamp(1.35rem, 6vw, 1.6rem);
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
@@ -457,6 +468,7 @@
 /* ── Una forma de pagar ────────────────────────────────────── */
 .metodo {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.85rem;
   padding: 1rem;
   border: 1.5px solid var(--color-border);

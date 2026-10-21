@@ -34,6 +34,17 @@ const STICKERS = [
   { valor: 'kapi-smile', texto: 'Feliz', icono: <Smile aria-hidden="true" /> },
 ];
 
+/** Las cuentas del resumen (con o sin las monedas). */
+const cuentasDe = ({ items, usar, saldo, cupon, reglaEnvio }) => {
+  const subtotal = items.reduce((tot, it) => tot + it.precio * it.cantidad, 0);
+  const maximo = Math.floor(subtotal / 2);
+  const descuentoMonedas = usar ? Math.min(saldo || 0, maximo) : 0;
+  const descuentoCupon = cupon?.envioGratis ? 0 : cupon?.descuento || 0;
+  const envioBase = subtotal > reglaEnvio.gratisDesde ? 0 : reglaEnvio.costo;
+  const envio = cupon?.envioGratis ? 0 : envioBase;
+  return { subtotal, maximo, descuentoMonedas, envioBase, envio, total: Math.max(0, subtotal - descuentoMonedas - descuentoCupon) + envio };
+};
+
 const correoValido = (c) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(c || '').trim());
 
 /** La nota de quien llega con un enlace de invitación (los textos de NotaInvitacion de la tienda). */
@@ -131,15 +142,12 @@ export function PaginaCheckout({
     direcciones: useTexto('Tus direcciones'), sticker: useTexto('Sticker de Kapi'), editar: useTexto('Editar'),
   };
 
-  const cuentas = useMemo(() => {
-    const subtotal = items.reduce((tot, it) => tot + it.precio * it.cantidad, 0);
-    const maximo = Math.floor(subtotal / 2);
-    const descuentoMonedas = usarMonedas ? Math.min(monedas.saldo || 0, maximo) : 0;
-    const descuentoCupon = cupon?.envioGratis ? 0 : cupon?.descuento || 0;
-    const envioBase = subtotal > reglaEnvio.gratisDesde ? 0 : reglaEnvio.costo;
-    const envio = cupon?.envioGratis ? 0 : envioBase;
-    return { subtotal, maximo, descuentoMonedas, envioBase, envio, total: Math.max(0, subtotal - descuentoMonedas - descuentoCupon) + envio };
-  }, [items, usarMonedas, monedas.saldo, cupon, reglaEnvio]);
+  const cuentas = useMemo(
+    () => cuentasDe({ items, usar: usarMonedas, saldo: monedas.saldo, cupon, reglaEnvio }),
+    [items, usarMonedas, monedas.saldo, cupon, reglaEnvio],
+  );
+  // Lo último que se mandó a preparar (para volver a prepararlo si cambian las monedas en el pago).
+  const preparados = useRef(null);
 
   // El país detectado, si el cliente no eligió otro ni venía uno escrito.
   useEffect(() => {
@@ -214,15 +222,39 @@ export function PaginaCheckout({
     setError('');
     setOcupado('preparar');
     try {
-      const r = await onPreparar?.({
+      const datos = {
         direccion, correo: pedirCorreo ? correo.trim() : perfil.email, guardar: modo === 'formulario' && guardar,
         regalo: regalo.activo ? regalo : null, monedas: cuentas.descuentoMonedas, cupon: cupon?.codigo, total: cuentas.total,
-      });
+      };
+      const r = await onPreparar?.(datos);
+      preparados.current = datos;
       setPedido({ numero: r?.numero });
       setTarjetaFallo(false);
       setPaso(1);
     } catch (err) {
       setError(err?.message || 'No pudimos preparar el pago. Intenta nuevamente.');
+    } finally {
+      setOcupado(null);
+    }
+  };
+
+  // Ya en el pago, las monedas se pueden prender o apagar: se vuelve a preparar
+  // el pago con el total nuevo (antes quedaban bloqueadas hasta "Cambiar el envío").
+  const cambiarMonedasEnPago = async (usar) => {
+    if (ocupado || !preparados.current) return;
+    const nuevas = cuentasDe({ items, usar, saldo: monedas.saldo, cupon, reglaEnvio });
+    const datos = { ...preparados.current, guardar: false, monedas: nuevas.descuentoMonedas, total: nuevas.total, motivo: 'monedas' };
+    setUsarMonedas(usar);
+    setError('');
+    setOcupado('preparar');
+    try {
+      const r = await onPreparar?.(datos);
+      preparados.current = datos;
+      setPedido({ numero: r?.numero });
+      setTarjetaFallo(false);
+    } catch (err) {
+      setUsarMonedas(!usar);
+      setError(err?.message || 'No pudimos cambiar las monedas. Intenta nuevamente.');
     } finally {
       setOcupado(null);
     }
@@ -295,8 +327,8 @@ export function PaginaCheckout({
               total={cuentas.total}
               abierto={resumenAbierto}
               onAlternar={() => setResumenAbierto((a) => !a)}
-              monedas={{ saldo: monedas.saldo || 0, maximo: cuentas.maximo, usar: usarMonedas, onUsar: setUsarMonedas, cargando: monedas.cargando, sesion, urlLogin, bloqueado: Boolean(ocupado) || paso > 0 }}
-              /* Ya en el pago, las monedas y el cupón quedan como se prepararon (para cambiarlos, "Cambiar el envío"). */
+              monedas={{ saldo: monedas.saldo || 0, maximo: cuentas.maximo, usar: usarMonedas, onUsar: paso === 0 ? setUsarMonedas : cambiarMonedasEnPago, cargando: monedas.cargando, sesion, urlLogin, bloqueado: Boolean(ocupado) }}
+              /* Ya en el pago, el cupón queda como se preparó (para cambiarlo, "Cambiar el envío"). */
               cupones={onCupon && (paso === 0 || cupon) ? {
                 aplicado: cupon,
                 onAplicar: async (c) => setCupon(await onCupon(c, { subtotal: cuentas.subtotal - cuentas.descuentoMonedas, subtotalProductos: cuentas.subtotal, envio: cuentas.envioBase })),
@@ -445,7 +477,7 @@ export function PaginaCheckout({
                 </div>
               </form>
             ) : (
-              <div className={s.tarjeta}>
+              <div className={[s.tarjeta, ocupado === 'preparar' && s.preparando].filter(Boolean).join(' ')} aria-busy={ocupado === 'preparar' || undefined}>
                 <div className={s.pagoCabeza}>
                   <span>
                     <small><Texto>Elige cómo pagar</Texto></small>

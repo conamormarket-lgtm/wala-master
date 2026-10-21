@@ -61,6 +61,13 @@
   background: var(--color-surface);
 }
 
+/* Mientras se vuelve a preparar el pago (cambiaron las monedas): no se paga el monto viejo. */
+.preparando {
+  opacity: 0.55;
+  pointer-events: none;
+  transition: opacity var(--dur-rapida) ease;
+}
+
 @media (min-width: 600px) {
   .tarjeta {
     padding: 1.5rem;
