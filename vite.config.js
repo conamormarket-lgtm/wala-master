@@ -20,7 +20,7 @@ const REACT_APP_KEYS = [
   'REACT_APP_ERP_FIREBASE_APP_ID', 'REACT_APP_ERP_FIREBASE_MEASUREMENT_ID',
 ];
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   const define = {
@@ -32,6 +32,14 @@ export default defineConfig(({ mode }) => {
   };
   for (const k of REACT_APP_KEYS) {
     define[`process.env.${k}`] = JSON.stringify(env[k] || '');
+  }
+  // Sin estas llaves el build sale igual, pero no cobra (el APK 1.3.24 salió
+  // sin la de Culqi: en la web viven en Vercel, no en el .env local). Solo el
+  // build local: los de vista previa de Vercel pueden no tenerlas.
+  const llavesDePago = ['REACT_APP_CULQI_PUBLIC_KEY', 'REACT_APP_PAYPAL_CLIENT_ID'];
+  if (command === 'build' && mode === 'production' && !process.env.VERCEL && env.VITE_USE_EMULATORS !== 'true') {
+    const faltan = llavesDePago.filter((k) => !env[k]);
+    if (faltan.length) throw new Error(`Faltan ${faltan.join(' y ')} en el .env: el build no podría cobrar.`);
   }
 
   return {
