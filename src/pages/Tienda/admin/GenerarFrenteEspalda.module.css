@@ -59,6 +59,11 @@
   color: #4b5563;
 }
 
+.ayuda {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
 /* La muestra del fondo dentro del chip. */
 .muestra {
   display: inline-block;
@@ -114,7 +119,8 @@
 }
 
 :global([data-theme='dark']) .texto,
-:global([data-theme='dark']) .fondosTitulo {
+:global([data-theme='dark']) .fondosTitulo,
+:global([data-theme='dark']) .ayuda {
   color: var(--color-text-muted, #a1a1aa);
 }
 

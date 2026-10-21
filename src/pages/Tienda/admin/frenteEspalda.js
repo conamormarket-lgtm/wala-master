@@ -5,8 +5,9 @@ import { getDocument } from '../../../services/firebase/firestore';
 import { leerLandingPages } from '../services/landingPages';
 
 /*
- * La imagen "frente y espalda" de un producto: la foto principal (frente) y la
- * segunda (espalda) en una sola composición, sobre el fondo de Walá o los
+ * La imagen "frente y espalda" de un producto: la foto principal y la segunda
+ * (de ordinario el frente y la espalda, aunque puede ser al revés o dos vistas
+ * cualesquiera) en una sola composición, sobre el fondo de Walá o los
  * colores de su marca, y con el sello de Walá + la marca abajo a la izquierda.
  * Se dibuja en un canvas del
  * navegador y sale como PNG; uploadFile la pasa a WebP con sus tamaños chicos.
@@ -230,8 +231,8 @@ const pintarTarjeta = (ctx, foto, recorte, cx, cy, giro, etiqueta) => {
   ctx.imageSmoothingQuality = 'high';
   contener(ctx, foto, x + TARJETA_BORDE, y + TARJETA_BORDE, TARJETA_ANCHO - TARJETA_BORDE * 2, TARJETA_ALTO - TARJETA_BORDE * 2, recorte);
   ctx.restore();
-  // "FRENTE" / "ESPALDA" colgando del borde de arriba.
-  pintarColgante(ctx, etiqueta, x + 80, y + 12, 84);
+  // "FRENTE" / "ESPALDA" colgando del borde de arriba (si la foto lleva nombre).
+  if (etiqueta) pintarColgante(ctx, etiqueta, x + 80, y + 12, 84);
   ctx.restore();
 };
 
@@ -393,15 +394,18 @@ const pintarSello = (ctx, { logo, huecos, logoMarca, marca }) => {
 
 /**
  * Compone la imagen frente + espalda.
- *  - frente / espalda: { url, recorte? } (recorte = encuadre en porcentajes)
+ *  - principal / segunda: { url, recorte? } (recorte = encuadre en porcentajes);
+ *    la principal va a la izquierda y la segunda a la derecha
+ *  - etiquetas: [de la principal, de la segunda]; null = sin etiqueta. Por
+ *    defecto FRENTE y ESPALDA; al revés si la principal es la espalda.
  *  - marca: el doc de tienda_brands, o null (sello solo de Walá)
  *  - fondo: el de la marca (fondoDeMarca), o null para el de Walá
  * Devuelve un Blob PNG de 2000 × 2000.
  */
-export const componerFrenteEspalda = async ({ frente, espalda, marca = null, fondo = null }) => {
-  const [fotoFrente, fotoEspalda, logo, huecos, logoMarca, fondoMarca] = await Promise.all([
-    cargar(frente.url).catch(() => { throw new Error('No se pudo leer la imagen principal (el frente). Si es un enlace externo, súbela como archivo.'); }),
-    cargar(espalda.url).catch(() => { throw new Error('No se pudo leer la segunda imagen (la espalda). Si es un enlace externo, súbela como archivo.'); }),
+export const componerFrenteEspalda = async ({ principal, segunda, etiquetas = ['FRENTE', 'ESPALDA'], marca = null, fondo = null }) => {
+  const [fotoPrincipal, fotoSegunda, logo, huecos, logoMarca, fondoMarca] = await Promise.all([
+    cargar(principal.url).catch(() => { throw new Error('No se pudo leer la imagen principal. Si es un enlace externo, súbela como archivo.'); }),
+    cargar(segunda.url).catch(() => { throw new Error('No se pudo leer la segunda imagen. Si es un enlace externo, súbela como archivo.'); }),
     cargarOpcional(LOGO),
     cargarOpcional(LOGO_HUECOS),
     esWala(marca) ? null : cargarOpcional(marca?.logoUrl),
@@ -415,10 +419,10 @@ export const componerFrenteEspalda = async ({ frente, espalda, marca = null, fon
   const ctx = canvas.getContext('2d');
   pintarFondo(ctx, fondo, fondoMarca);
 
-  // Frente a la izquierda y espalda a la derecha, un poco giradas hacia
-  // afuera y a distinta altura; bajo ellas queda sitio para el sello.
-  pintarTarjeta(ctx, fotoEspalda, espalda.recorte, 1450, 900, 4, 'ESPALDA');
-  pintarTarjeta(ctx, fotoFrente, frente.recorte, 550, 960, -4, 'FRENTE');
+  // La principal a la izquierda y la segunda a la derecha, un poco giradas
+  // hacia afuera y a distinta altura; bajo ellas queda sitio para el sello.
+  pintarTarjeta(ctx, fotoSegunda, segunda.recorte, 1450, 900, 4, etiquetas[1]);
+  pintarTarjeta(ctx, fotoPrincipal, principal.recorte, 550, 960, -4, etiquetas[0]);
   pintarSello(ctx, { logo, huecos, logoMarca, marca });
 
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));

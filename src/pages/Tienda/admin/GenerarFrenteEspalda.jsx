@@ -12,10 +12,22 @@ const muestraDe = (fondo) => (fondo?.imagen
   : { background: `linear-gradient(135deg, ${fondo.color}, ${fondo.color2 || fondo.color})` });
 
 /**
- * "Generar frente y espalda": junta la foto principal (frente) y la segunda
- * (la primera de la galería, la espalda) en una tercera imagen cuadrada con
- * el sello de Walá. El fondo es el de Walá o, si se elige, el de la marca
- * (los colores de su portada). Primero se ve la vista previa; al guardarla se
+ * Los nombres de las dos fotos (principal, segunda). Hay productos con las
+ * fotos al revés (la principal es la espalda) y otros cuya segunda foto no es
+ * la espalda (un jogger de lado): para esos, sin nombres.
+ */
+const NOMBRES = [
+  { id: 'frente', texto: 'Frente / Espalda', etiquetas: ['FRENTE', 'ESPALDA'] },
+  { id: 'invertido', texto: 'Espalda / Frente', etiquetas: ['ESPALDA', 'FRENTE'] },
+  { id: 'ninguno', texto: 'Sin nombres', etiquetas: [null, null] },
+];
+
+/**
+ * "Generar frente y espalda": junta la foto principal y la segunda (la
+ * primera de la galería) en una tercera imagen cuadrada con el sello de Walá.
+ * La principal va a la izquierda; sus nombres son FRENTE y ESPALDA, al revés
+ * o ninguno. El fondo es el de Walá o, si se elige, el de la marca (los
+ * colores de su portada). Primero se ve la vista previa; al guardarla se
  * sube como una foto más de la galería, sin tocar las dos originales.
  *  - variante: la variante activa (imageUrl, images, thumbnailCrop, imagesCrops)
  *  - marca: el doc de tienda_brands del producto, o null
@@ -30,6 +42,7 @@ export default function GenerarFrenteEspalda({ variante, marca, onGuardar, ocupa
   // El fondo de la marca (null si no tiene colores propios) y el elegido.
   const [fondoMarca, setFondoMarca] = useState(null);
   const [conFondoMarca, setConFondoMarca] = useState(false);
+  const [nombres, setNombres] = useState('frente');
 
   useEffect(() => {
     let vigente = true;
@@ -39,28 +52,30 @@ export default function GenerarFrenteEspalda({ variante, marca, onGuardar, ocupa
     return () => { vigente = false; };
   }, [marca]);
 
-  const frente = variante?.imageUrl || '';
-  const espalda = variante?.images?.[0] || '';
-  const falta = !frente && !espalda
-    ? 'Faltan las dos fotos: sube la imagen principal (el frente) y una foto en la galería (la espalda).'
-    : !frente
-      ? 'Falta la imagen principal (el frente).'
-      : !espalda
-        ? 'Falta la segunda imagen (la espalda): súbela como primera foto de la galería.'
+  const principal = variante?.imageUrl || '';
+  const segunda = variante?.images?.[0] || '';
+  const falta = !principal && !segunda
+    ? 'Faltan las dos fotos: sube la imagen principal y una foto en la galería.'
+    : !principal
+      ? 'Falta la imagen principal.'
+      : !segunda
+        ? 'Falta la segunda imagen: súbela como primera foto de la galería.'
         : '';
 
   // La vista previa es de un par de fotos y una marca: si cambian, ya no vale.
-  const clave = `${frente}|${espalda}|${marca?.id || ''}|${variante?.id || ''}`;
+  const clave = `${principal}|${segunda}|${marca?.id || ''}|${variante?.id || ''}`;
   useEffect(() => { setVista(null); setError(''); }, [clave]);
   useEffect(() => () => { if (vista) URL.revokeObjectURL(vista.url); }, [vista]);
 
-  const generar = async (usarMarca = conFondoMarca) => {
+  // Con la vista previa abierta, cambiar el fondo o los nombres la rehace.
+  const generar = async ({ usarMarca = conFondoMarca, conNombres = nombres } = {}) => {
     setGenerando(true);
     setError('');
     try {
       const blob = await componerFrenteEspalda({
-        frente: { url: frente, recorte: variante.thumbnailCrop?.percentages },
-        espalda: { url: espalda, recorte: variante.imagesCrops?.[espalda]?.percentages },
+        principal: { url: principal, recorte: variante.thumbnailCrop?.percentages },
+        segunda: { url: segunda, recorte: variante.imagesCrops?.[segunda]?.percentages },
+        etiquetas: NOMBRES.find((n) => n.id === conNombres).etiquetas,
         marca,
         fondo: usarMarca ? fondoMarca : null,
       });
@@ -105,7 +120,7 @@ export default function GenerarFrenteEspalda({ variante, marca, onGuardar, ocupa
             tamano="sm"
             activo={!conFondoMarca}
             icono={<i className={`${s.muestra} ${s.muestraWala}`} />}
-            onClick={() => { setConFondoMarca(false); if (vista) generar(false); }}
+            onClick={() => { setConFondoMarca(false); if (vista) generar({ usarMarca: false }); }}
           >
             Walá
           </Chip>
@@ -113,10 +128,27 @@ export default function GenerarFrenteEspalda({ variante, marca, onGuardar, ocupa
             tamano="sm"
             activo={conFondoMarca}
             icono={<i className={s.muestra} style={muestraDe(fondoMarca)} />}
-            onClick={() => { setConFondoMarca(true); if (vista) generar(true); }}
+            onClick={() => { setConFondoMarca(true); if (vista) generar({ usarMarca: true }); }}
           >
             {marca.name || 'La marca'}
           </Chip>
+        </div>
+      )}
+
+      {!falta && (
+        <div className={s.fondos} role="group" aria-label="Nombres">
+          <span className={s.fondosTitulo}>Nombres</span>
+          {NOMBRES.map((n) => (
+            <Chip
+              key={n.id}
+              tamano="sm"
+              activo={nombres === n.id}
+              onClick={() => { setNombres(n.id); if (vista) generar({ conNombres: n.id }); }}
+            >
+              {n.texto}
+            </Chip>
+          ))}
+          <span className={s.ayuda}>La principal va a la izquierda.</span>
         </div>
       )}
 
@@ -128,7 +160,7 @@ export default function GenerarFrenteEspalda({ variante, marca, onGuardar, ocupa
         </Boton>
       ) : (
         <div className={s.previa}>
-          <img src={vista.url} alt="Vista previa de la imagen frente y espalda" className={s.imagen} />
+          <img src={vista.url} alt="Vista previa de la imagen con las dos fotos" className={s.imagen} />
           <div className={s.acciones}>
             <Boton icono={<Check size={16} />} onClick={guardar} cargando={guardando} disabled={ocupado}>
               Guardar en la galería
