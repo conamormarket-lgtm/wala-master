@@ -57,19 +57,24 @@ const esFrenteEspalda = (url) => /_frente-espalda\.\w+(\?|$)/i.test(String(url |
  */
 const galeriaCombo = (combo, piezas, colores) => {
   const lista = [];
-  const poner = (url, pieza, color) => {
+  const poner = (url, pieza, color, miniatura) => {
     const pz = piezas[pieza];
     const nombre = pz ? [pz.nombre, color].filter(Boolean).join(' · ') : '';
     const ya = lista.find((f) => f.url === url);
-    if (!ya) lista.push({ url, nombre, corto: pz?.nombre, pieza, color });
+    if (!ya) lista.push({ url, nombre, corto: pz?.nombre, pieza, color, ...(miniatura && { miniatura }) });
     else if (pieza != null && ya.pieza == null) Object.assign(ya, { nombre, corto: pz?.nombre, pieza, color });
   };
   combo.portada.forEach((u) => poner(u));
   combo.piezas.forEach((f, i) => {
     const propias = f.porColor[colores[i]] || [];
     const juntas = propias.filter(esFrenteEspalda);
-    // Si se generó más de una, la última (la más nueva va al final de la galería).
-    if (propias.length) (juntas.length ? juntas.slice(-1) : propias).forEach((u) => poner(u, i, colores[i]));
+    if (juntas.length) {
+      // Si se generó más de una, la última (la más nueva va al final de la
+      // galería). Su miniatura son las dos fotos de la prenda lado a lado: a
+      // 76 px la imagen generada (fondo, etiquetas, sello) no se entiende.
+      const sueltas = propias.filter((u) => !esFrenteEspalda(u)).slice(0, 2);
+      poner(juntas[juntas.length - 1], i, colores[i], sueltas.length ? sueltas.map((url) => ({ url })) : undefined);
+    } else if (propias.length) propias.forEach((u) => poner(u, i, colores[i]));
     else f.general.forEach((u) => poner(u, i, Object.keys(f.porColor).find((c) => f.porColor[c].includes(u))));
   });
   combo.producto.forEach((u) => poner(u));
@@ -175,10 +180,11 @@ export function PaginaProducto({
     const lista = fotos.combo ? galeriaCombo(fotos.combo, piezas, colores) : (variante && fotos[variante.id]) || fotos.base || [];
     // Las copias de cada foto (si la tienda las da): la galería baja solo la que hace falta.
     if (!fuentes) return lista;
-    return lista.map((f) => {
+    const conCopias = (f) => {
       const { src, srcSet } = fuentes(f.url) || {};
       return { ...f, url: src || f.url, srcSet };
-    });
+    };
+    return lista.map((f) => ({ ...conCopias(f), ...(f.miniatura && { miniatura: f.miniatura.map(conCopias) }) }));
   }, [fotos, piezas, colores, variante, fuentes]);
   useEffect(() => { if (variante) onVariante?.(variante); }, [variante?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
