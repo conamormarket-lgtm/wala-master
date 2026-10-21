@@ -391,6 +391,34 @@ function ControlBoton({ ajustes, cambiar, conColores }) {
   );
 }
 
+/**
+ * Tamaños de un clic (las portadas): cada opción fija varios campos a la vez
+ * ({ texto, ayuda, valores: { campo: valor } }). Se marca la que coincide con
+ * lo guardado; la de `porDefecto` también si esos campos están vacíos. Si no
+ * coincide ninguna, "A medida" (los campos de Diseño siguen ahí).
+ */
+const mismoValor = (a, b) => (typeof b === 'boolean' ? Boolean(a) === b : String(a ?? '').trim() === String(b ?? '').trim());
+function ControlTamanos({ etiqueta = 'Tamaño', ayuda, opciones = [], ajustes, cambiar }) {
+  const vacios = opciones.every((o) => Object.keys(o.valores).every((k) => ajustes[k] === undefined || ajustes[k] === '' || ajustes[k] === false));
+  const actual = opciones.find((o) => Object.entries(o.valores).every(([k, v]) => mismoValor(ajustes[k], v)))
+    || (vacios ? opciones.find((o) => o.porDefecto) : null);
+  return (
+    <Fila etiqueta={etiqueta} ayuda={actual ? ayuda : 'A medida: lo cambiaste en Diseño. Elige uno para volver a un tamaño de siempre.'}>
+      <div className={s.tamanos} role="radiogroup" aria-label={etiqueta}>
+        {opciones.map((o) => {
+          const sel = actual?.valor === o.valor;
+          return (
+            <button key={o.valor} type="button" role="radio" aria-checked={sel} className={[s.tamano, sel && s.tamanoActivo].filter(Boolean).join(' ')} onClick={() => cambiar(o.valores)}>
+              <strong>{o.texto}</strong>
+              {o.detalle && <small>{o.detalle}</small>}
+            </button>
+          );
+        })}
+      </div>
+    </Fila>
+  );
+}
+
 function ControlFondo({ ajustes, cambiar }) {
   const hayImagen = ajustes.backgroundImageUrl || ajustes.backgroundGradient;
   return (
@@ -562,6 +590,7 @@ function CampoEsquema({ def, ajustes, cambiar }) {
     case 'estiloTexto': return <ControlEstiloTexto {...def} ajustes={ajustes} cambiar={cambiar} />;
     case 'tipografia': return <ControlTipografia {...def} ajustes={ajustes} cambiar={cambiar} />;
     case 'boton': return <ControlBoton {...def} ajustes={ajustes} cambiar={cambiar} />;
+    case 'tamanos': return <ControlTamanos {...def} ajustes={ajustes} cambiar={cambiar} />;
     case 'fondo': return <ControlFondo ajustes={ajustes} cambiar={cambiar} />;
     case 'espaciado': return <ControlEspaciado ajustes={ajustes} cambiar={cambiar} />;
     case 'extension': {

@@ -6,7 +6,8 @@
   grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: 1.25rem;
-  min-height: 300px;
+  /* El alto: el de siempre o el del tamaño de un clic (--portada-alto*). */
+  min-height: var(--portada-alto-movil, 300px);
   padding: clamp(1.5rem, 5cqi, 3rem);
   overflow: hidden;
   border-radius: 6px 28px 28px 28px;
@@ -16,8 +17,13 @@
 @container (min-width: 720px) {
   .portada {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-    min-height: 340px;
+    min-height: var(--portada-alto, 400px);
   }
+}
+
+/* Pantalla completa: de borde a borde, sin esquinas. */
+.completa {
+  border-radius: 0;
 }
 
 /* ── Los tres estilos ── */
@@ -27,7 +33,6 @@
 }
 
 .p_foto {
-  min-height: 360px;
   background: var(--tema-tinta, #2e1065);
   color: #fff;
 }
@@ -60,7 +65,7 @@
 @container (max-width: 719px) {
   .p_foto {
     align-items: end;
-    min-height: 440px;
+    min-height: var(--portada-alto-movil, 440px);
   }
 }
 

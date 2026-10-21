@@ -25,9 +25,12 @@ const BOTON_BLANCO = { '--b-fondo': '#fff', '--b-fondo-hover': '#fff', '--b-text
  * oferta, categorías; las que son 0 no salen).
  *  - nombre, logo, frase · estilo · imagen (foto) · fotos (collage)
  *  - cuenta · ofertas · categorias (números) · urlBoton ('#catalogo') · textoBoton
+ *  - alto, altoMovil: su alto mínimo (sin ellos, el de siempre: 400px en
+ *    ancho) · completo: de borde a borde, sin esquinas (los tamaños de un clic)
  */
 export function PortadaMarca({
   nombre, logo, frase, estilo = 'color', imagen, fotos = [], cuenta, ofertas, categorias, urlBoton = '#catalogo', textoBoton = 'Ver productos',
+  alto, altoMovil, completo = false,
 }) {
   // Sin su foto, la portada de foto cae en la de color (nunca una caja vacía).
   const tipo = estilo === 'foto' && imagen ? 'foto' : estilo === 'collage' && fotos.length ? 'collage' : 'color';
@@ -44,7 +47,12 @@ export function PortadaMarca({
     </span>
   );
   return (
-    <section className={[s.portada, s[`p_${tipo}`]].join(' ')} data-componente="PortadaMarca" aria-label={nombre}>
+    <section
+      className={[s.portada, s[`p_${tipo}`], completo && s.completa].filter(Boolean).join(' ')}
+      style={{ ...(alto ? { '--portada-alto': alto } : {}), ...(altoMovil ? { '--portada-alto-movil': altoMovil } : {}) }}
+      data-componente="PortadaMarca"
+      aria-label={nombre}
+    >
       {tipo === 'foto' && <img className={s.fondo} {...atributosDeFoto(toDirectImageUrl(imagen), '100vw')} alt="" loading="eager" decoding="async" />}
       <span className={s.adornos} aria-hidden="true">
         <Puntos className={s.puntos} />

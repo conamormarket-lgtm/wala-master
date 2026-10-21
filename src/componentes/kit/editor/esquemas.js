@@ -94,6 +94,24 @@ const carruselProductos = (descripcion, extra = []) => ({
 /** category_grid automático. Sin dataSource guardado cuenta como "a mano", igual que el editor de la tienda. */
 const categoriasAuto = (a) => a.dataSource === 'products';
 
+/*
+ * Tamaños de un clic para las tres portadas (con foto, fotos que se pasan
+ * solas y la de la marca): en cada tamaño miden lo mismo, así una debajo de
+ * otra no se ven desparejas. Cada portada dice qué campos fija (campos(t)).
+ *  - Como la portada de la marca: dentro del ancho de la página, esquinas redondas
+ *  - Grande: igual, más alta
+ *  - Pantalla completa: de borde a borde, casi todo el alto, sin esquinas
+ */
+const TAMANOS_PORTADA = [
+  { valor: 'portada', texto: 'Como la portada de la marca', detalle: 'Dentro de la página, esquinas redondas', escritorio: '400px', movil: '440px', completo: false },
+  { valor: 'grande', texto: 'Grande', detalle: 'Dentro de la página, más alta', escritorio: '560px', movil: '480px', completo: false },
+  { valor: 'completa', texto: 'Pantalla completa', detalle: 'De borde a borde, casi todo el alto', escritorio: 'max(95vh, 600px)', movil: 'clamp(420px, 78vh, 640px)', completo: true },
+];
+const tamanosDePortada = (campos, porDefecto) => ({
+  tipo: 'tamanos', etiqueta: 'Tamaño', ayuda: 'Las portadas miden lo mismo en cada tamaño.',
+  opciones: TAMANOS_PORTADA.map((t) => ({ valor: t.valor, texto: t.texto, detalle: t.detalle, porDefecto: t.valor === porDefecto, valores: campos(t) })),
+});
+
 export const ESQUEMAS = {
   hero_banner: {
     nombre: 'Portada con foto', icono: Image, grupo: 'Portada',
@@ -102,6 +120,7 @@ export const ESQUEMAS = {
       { tipo: 'opciones', campo: 'mediaType', etiqueta: 'Fondo', opciones: [{ valor: 'image', texto: 'Imagen' }, { valor: 'gif', texto: 'GIF' }, { valor: 'video', texto: 'Video' }] },
       { tipo: 'imagen', campo: 'mediaUrl', etiqueta: 'Imagen o video', acepta: 'image/*,video/*', carpeta: 'storefront/hero-banner' },
       { tipo: 'imagen', campo: 'thumbnailUrl', etiqueta: 'Portada mientras carga el video', si: (a) => a.mediaType === 'video', carpeta: 'storefront/hero-banner' },
+      tamanosDePortada((t) => ({ minHeight: t.escritorio, fullWidth: t.completo })),
       etiquetaSuperior(),
       titulo('Título'),
       { tipo: 'parrafo', campo: 'subtitle', etiqueta: 'Subtítulo', filas: 2 },
@@ -136,6 +155,8 @@ export const ESQUEMAS = {
       },
       { tipo: 'imagen', campo: 'imagen', etiqueta: 'Foto de la portada', ayuda: 'Horizontal. Sin foto, sale la portada de color.', carpeta: 'brands/portadas', si: (a) => a.estilo === 'foto' },
       { tipo: 'nota', texto: 'Sin productos con foto, el collage sale como portada de color.', si: (a) => a.estilo === 'collage' },
+      // "Como la portada de la marca" es su tamaño de siempre (sin alto guardado).
+      tamanosDePortada((t) => (t.valor === 'portada' ? { alto: '', altoMovil: '', fullWidth: false } : { alto: t.escritorio, altoMovil: t.movil, fullWidth: t.completo }), 'portada'),
       { tipo: 'parrafo', campo: 'frase', etiqueta: 'Frase', filas: 2, ayuda: 'Una línea bajo el nombre. Vacía: "Productos de" y el nombre.' },
       { tipo: 'texto', campo: 'buttonText', etiqueta: 'Texto del botón', ayuda: 'Baja al catálogo de la página.' },
       { tipo: 'color', campo: 'color', etiqueta: 'Color de la marca', vacio: 'Violeta' },
@@ -172,6 +193,7 @@ export const ESQUEMAS = {
           { tipo: 'texto', campo: 'alt', etiqueta: 'Descripción de la imagen', ayuda: 'La leen los lectores de pantalla y Google.' },
         ],
       },
+      tamanosDePortada((t) => ({ heightDesktop: t.escritorio, heightMobile: t.movil, fullWidth: t.completo, borderRadius: t.completo ? '0' : '28px' })),
       { tipo: 'interruptor', campo: 'autoPlay', etiqueta: 'Avanzar solo', porDefecto: true, pestana: 'diseno' },
       { tipo: 'numero', campo: 'autoPlaySpeed', etiqueta: 'Cambiar cada', sufijo: 's', escala: 1000, min: 2, max: 30, paso: 0.5, pestana: 'diseno', si: (a) => a.autoPlay !== false },
       { tipo: 'interruptor', campo: 'pauseOnHover', etiqueta: 'Pausar con el ratón encima', porDefecto: true, pestana: 'diseno', si: (a) => a.autoPlay !== false },

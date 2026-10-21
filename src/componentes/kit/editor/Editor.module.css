@@ -1019,6 +1019,44 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Tamaños de un clic (las portadas) */
+.tamanos {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.tamano {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--ed-borde);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ed-texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tamano strong {
+  font-size: 0.82rem;
+}
+
+.tamano small {
+  color: var(--ed-tenue);
+  font-size: 0.72rem;
+}
+
+.tamano:hover {
+  border-color: var(--ed-acento);
+}
+
+.tamanoActivo {
+  border-color: var(--ed-acento);
+  background: var(--ed-acento-suave);
+  box-shadow: inset 0 0 0 1px var(--ed-acento);
+}
+
 /* Enlace */
 .tipoEnlace {
   display: inline-flex;

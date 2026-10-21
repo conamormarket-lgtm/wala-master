@@ -44,7 +44,8 @@ const POSICION_VERTICAL = { 'flex-start': 'flex-start', top: 'flex-start', cente
  * estilo (foto, color o collage), la foto, la frase y el texto del botón, que
  * baja al catálogo. Es PortadaMarca dentro de TemaMarca. Sin marca no se dibuja.
  * Sin colores en la sección, los que la marca guardaba antes en Marcas.
- *  - ajustes: { color, color2, estilo, imagen, frase, buttonText }
+ *  - ajustes: { color, color2, estilo, imagen, frase, buttonText, alto,
+ *    altoMovil, fullWidth } (el tamaño: los de un clic del editor)
  *  - marca: el doc de tienda_brands de la página
  *  - fotos (collage) · cuenta · ofertas · cuentaCategorias (sus sellos; no
  *    `categorias`, que SeccionDelKit guarda para las secciones de categorías) · urlBoton
@@ -66,6 +67,9 @@ export function PortadaDeMarca({ ajustes = {}, marca, fotos = [], cuenta, oferta
         categorias={cuentaCategorias}
         urlBoton={urlBoton}
         textoBoton={ajustes.buttonText?.trim() || 'Ver productos'}
+        alto={ajustes.alto}
+        altoMovil={ajustes.altoMovil}
+        completo={Boolean(ajustes.fullWidth)}
       />
       {/* "Ver productos" baja aquí si la página no tiene catálogo (lo que sigue a la portada). */}
       <span id="despues-de-la-portada" style={{ display: 'block', scrollMarginTop: '6rem' }} aria-hidden="true" />
@@ -97,7 +101,7 @@ export function BannerPrincipal({ ajustes = {}, primera = false, onClicBoton }) 
   const alinear = { left: 'flex-start', right: 'flex-end' }[textAlign] || 'center';
 
   return (
-    <div className={s.banner} style={{ '--alto': minHeight }}>
+    <div className={s.banner} style={{ '--alto': minHeight, ...(ajustes.fullWidth ? { borderRadius: 0 } : {}) }}>
       <div className={s.bannerMedio}>
         {esVideo ? (
           <video ref={video} src={mediaUrl} poster={thumbnailUrl || undefined} muted loop playsInline preload="none" aria-hidden="true" />
