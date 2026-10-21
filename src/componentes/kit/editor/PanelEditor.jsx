@@ -82,7 +82,12 @@ function FilaSeccion({ seccion, indice, total, resaltada, onEditar, onResaltar, 
 }
 
 /* ── Catálogo de módulos ── */
-function CatalogoModulos({ onElegir, marcas = [], permitidos }) {
+/* Los ajustes con los que entra un módulo "por marca". */
+const conMarcaDe = (tipo, m) => ({ brandId: m.id, ...(tipo === 'sidebar_catalog' ? { title: `Productos ${m.name}` } : {}) });
+
+/* En la página de una marca (marcaFija) los módulos "por marca" entran ya con
+   ella, sin preguntar: ahí no tiene sentido elegir otra. */
+function CatalogoModulos({ onElegir, marcas = [], marcaFija, permitidos }) {
   const [filtro, setFiltro] = useState('');
   const [conMarca, setConMarca] = useState(null);
   const q = filtro.trim().toLowerCase();
@@ -104,7 +109,7 @@ function CatalogoModulos({ onElegir, marcas = [], permitidos }) {
                 const abierto = conMarca === tipo;
                 return (
                   <div key={tipo} className={[s.modulo, abierto && s.moduloAbierto].filter(Boolean).join(' ')}>
-                    <button type="button" className={s.moduloBoton} onClick={() => (e.porMarca && marcas.length ? setConMarca(abierto ? null : tipo) : onElegir(tipo))} aria-expanded={e.porMarca && marcas.length ? abierto : undefined}>
+                    <button type="button" className={s.moduloBoton} onClick={() => (e.porMarca && marcaFija ? onElegir(tipo, conMarcaDe(tipo, marcaFija)) : e.porMarca && marcas.length ? setConMarca(abierto ? null : tipo) : onElegir(tipo))} aria-expanded={e.porMarca && !marcaFija && marcas.length ? abierto : undefined}>
                       <span className={s.moduloIcono}><Icono aria-hidden="true" /></span>
                       <strong>{e.nombre}</strong>
                       <small>{e.descripcion}</small>
@@ -113,7 +118,7 @@ function CatalogoModulos({ onElegir, marcas = [], permitidos }) {
                       <div className={s.moduloMarcas}>
                         <button type="button" onClick={() => onElegir(tipo)}>Todas las marcas</button>
                         {marcas.map((m) => (
-                          <button key={m.id} type="button" onClick={() => onElegir(tipo, { brandId: m.id, ...(tipo === 'sidebar_catalog' ? { title: `Productos ${m.name}` } : {}) })}>{m.name}</button>
+                          <button key={m.id} type="button" onClick={() => onElegir(tipo, conMarcaDe(tipo, m))}>{m.name}</button>
                         ))}
                       </div>
                     )}
@@ -262,7 +267,7 @@ export default function PanelEditor({
                   <button type="button" className={s.volver} onClick={() => onInsertarEn?.(null)}><ArrowLeft aria-hidden="true" /> Volver</button>
                   <h3>Añadir sección{insertarEn != null && insertarEn < lista.length ? ` en el lugar ${insertarEn + 1}` : ''}</h3>
                 </div>
-                <CatalogoModulos onElegir={elegirModulo} marcas={fuentes.marcas || []} permitidos={tipos} />
+                <CatalogoModulos onElegir={elegirModulo} marcas={fuentes.marcas || []} marcaFija={fuentes.marcaFija} permitidos={tipos} />
               </motion.div>
             )}
 
@@ -303,11 +308,15 @@ export default function PanelEditor({
                     </div>
                   </div>
                 </div>
-                <FormularioSeccion
-                  seccion={{ id: globalAbierto.id, type: globalAbierto.id, settings: globalAbierto.ajustes || {} }}
-                  esquema={esquemaGlobal}
-                  onCambiar={(parche) => globalAbierto.onCambiar?.(parche)}
-                />
+                {/* Lo de toda la tienda (el menú…) ve todas las colecciones,
+                    categorías y marcas, aunque se edite desde la página de una marca. */}
+                <ProveedorEditor fuentes={{ ...fuentes, ...(fuentes.todas || {}), marcaFija: null }} extensiones={extensiones} crearAjustes={crearAjustes}>
+                  <FormularioSeccion
+                    seccion={{ id: globalAbierto.id, type: globalAbierto.id, settings: globalAbierto.ajustes || {} }}
+                    esquema={esquemaGlobal}
+                    onCambiar={(parche) => globalAbierto.onCambiar?.(parche)}
+                  />
+                </ProveedorEditor>
               </motion.div>
             )}
 

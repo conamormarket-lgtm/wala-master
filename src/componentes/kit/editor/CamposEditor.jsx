@@ -295,16 +295,28 @@ export function ControlIcono({ etiqueta, valor, onCambiar, ninguno = false }) {
   );
 }
 
-/** Selector de colección, categoría o marca (datos de la tienda). */
+/**
+ * Selector de colección, categoría o marca (datos de la tienda). En la página
+ * de una marca (fuentes.marcaFija) el de marca solo la ofrece a ella, y la
+ * tienda ya pasa solo sus categorías y colecciones.
+ */
 export function ControlFuente({ etiqueta, valor, onCambiar, datos, vacio = 'Ninguna' }) {
   const { fuentes } = useEditor();
-  const lista = { colecciones: fuentes.colecciones, categorias: fuentes.categorias, marcas: fuentes.marcas }[datos] || [];
+  const marcas = fuentes.marcaFija ? [fuentes.marcaFija] : fuentes.marcas;
+  const lista = { colecciones: fuentes.colecciones, categorias: fuentes.categorias, marcas }[datos] || [];
+  // Lo que ya estaba elegido sigue a la vista aunque no sea de esta marca (para cambiarlo).
+  const todas = { ...fuentes.todas, marcas: fuentes.marcas }[datos] || [];
+  const elegidaFuera = valor && !lista.some((x) => x.id === valor) ? todas.find((x) => x.id === valor) || { id: valor } : null;
   return (
     <ControlOpciones
       etiqueta={etiqueta}
       valor={valor ?? ''}
       onCambiar={onCambiar}
-      opciones={[{ valor: '', texto: vacio }, ...lista.map((x) => ({ valor: x.id, texto: x.name || x.id }))]}
+      opciones={[
+        { valor: '', texto: vacio },
+        ...lista.map((x) => ({ valor: x.id, texto: x.name || x.id })),
+        ...(elegidaFuera ? [{ valor: elegidaFuera.id, texto: `${elegidaFuera.name || elegidaFuera.id} (no es de esta marca)` }] : []),
+      ]}
     />
   );
 }

@@ -161,24 +161,36 @@ export default function EditorDeTienda() {
       return lp?.brandId || null;
     },
   });
-  // Los valores de categoría que de verdad usan los productos de la marca.
-  const { data: valoresDeMarca } = useQuery({
-    queryKey: ['editor-brand-cat-values', marcaDeLaPagina],
+  // Las categorías y colecciones que de verdad usan los productos de la marca:
+  // en la página de una marca, los selectores solo ofrecen esas (en una página
+  // sin marca, todas).
+  const idDe = (c) => (c && typeof c === 'object' ? c.id : c);
+  const { data: usoDeMarca } = useQuery({
+    queryKey: ['editor-brand-values', marcaDeLaPagina],
     queryFn: async () => {
       const { data } = await getProductsByBrand(marcaDeLaPagina);
-      const vals = new Set();
+      const cats = new Set();
+      const cols = new Set();
       (data || []).forEach((p) => {
-        (Array.isArray(p.categories) ? p.categories : []).forEach((c) => {
-          const v = c && typeof c === 'object' ? c.id : c;
-          if (v) vals.add(v);
-        });
-        const una = p.category && typeof p.category === 'object' ? p.category.id : p.category;
-        if (una) vals.add(una);
+        (Array.isArray(p.categories) ? p.categories : []).forEach((c) => { if (idDe(c)) cats.add(idDe(c)); });
+        if (idDe(p.category)) cats.add(idDe(p.category));
+        (Array.isArray(p.collections) ? p.collections : []).forEach((c) => { if (idDe(c)) cols.add(idDe(c)); });
       });
-      return [...vals];
+      return { categorias: [...cats], colecciones: [...cols] };
     },
     enabled: !!marcaDeLaPagina,
   });
+  const valoresDeMarca = usoDeMarca?.categorias;
+  const coleccionesDeLaPagina = useMemo(() => {
+    const todas = colecciones || [];
+    if (!marcaDeLaPagina || !usoDeMarca) return todas;
+    const usadas = new Set(usoDeMarca.colecciones);
+    return todas.filter((c) => usadas.has(c.id) || usadas.has(c.name));
+  }, [colecciones, usoDeMarca, marcaDeLaPagina]);
+  // La marca de la página: los selectores de marca (catálogo, burbujas,
+  // grillas) solo la ofrecen a ella. Las listas para sumar OTRAS marcas
+  // (cinta de logos, tarjetas de marcas) siguen con todas (fuentes.marcas).
+  const marcaFija = marcaDeLaPagina ? (marcas || []).find((m) => m.id === marcaDeLaPagina) || null : null;
   // Cada una leída por su id (tienda_categories y, si no, categories).
   const { data: docsDeMarca } = useQuery({
     queryKey: ['editor-brand-cat-docs', (valoresDeMarca || []).slice().sort().join(',')],
@@ -277,7 +289,11 @@ export default function EditorDeTienda() {
         insertarEn={insertarEn}
         onInsertarEn={(i) => { setInsertarEn(i); if (i != null) closeEditor(); }}
         crearAjustes={getDefaultSettings}
-        fuentes={{ colecciones: colecciones || [], categorias, marcas: marcas || [], subirArchivo: uploadFile, pieConRedes: true }}
+        fuentes={{
+          colecciones: coleccionesDeLaPagina, categorias, marcas: marcas || [], marcaFija, subirArchivo: uploadFile, pieConRedes: true,
+          // Para "Toda la tienda" (el menú de la cabecera): todas, sin acotar a la marca.
+          todas: { colecciones: colecciones || [], categorias: todasLasCategorias || [] },
+        }}
         extensiones={{
           burbujasDeMarca: ({ ajustes }) => <CategoryNavEditor brandId={ajustes.brandId} brandName={nombreMarca(ajustes.brandId)} />,
         }}
