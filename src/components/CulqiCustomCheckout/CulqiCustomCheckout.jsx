@@ -8,6 +8,7 @@ import { trackCulqiPurchase } from '../../services/analytics/metaPixel.mjs';
 import styles from './CulqiCustomCheckout.module.css';
 // El bloqueo mientras cobra, con el kit (paso 3). pagosViejo vuelve al de antes.
 import { CapaCargando } from '../../componentes/kit/Cargando';
+import { bloquearScroll } from '../../componentes/kit/Efectos';
 import useLoViejo from '../../hooks/useLoViejo';
 import { Texto, useTexto } from '../../componentes/kit/Traduccion';
 
@@ -47,16 +48,14 @@ const isCulqiModalVisible = () => {
 
 // Con el modal abierto, la rueda del mouse desplazaba la página de fondo y el
 // modal se iba con ella. Se bloquea el scroll mientras está abierto.
+// Usa el candado compartido del kit (uno solo para la página).
+let soltarScroll = null;
 const bloquearScrollDeFondo = (bloquear) => {
-  const html = document.documentElement;
   if (bloquear) {
-    if (html.dataset.culqiOverflow == null) {
-      html.dataset.culqiOverflow = html.style.overflow || '';
-      html.style.overflow = 'hidden';
-    }
-  } else if (html.dataset.culqiOverflow != null) {
-    html.style.overflow = html.dataset.culqiOverflow;
-    delete html.dataset.culqiOverflow;
+    if (!soltarScroll) soltarScroll = bloquearScroll();
+  } else if (soltarScroll) {
+    soltarScroll();
+    soltarScroll = null;
   }
 };
 

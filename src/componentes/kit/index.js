@@ -11,7 +11,7 @@ export { SeguimientoPedido, ItemCarrito, BarraEnvioGratis, ResumenPedido, PASOS_
 export { PantallaCarga, Cargando, CapaCargando, FRASES_CARGA } from './Cargando';
 export { Hueso, EsqueletoTexto, EsqueletoCabeza, EsqueletoProducto, EsqueletoFila, EsqueletoPedido, EsqueletoTarjeta, EsqueletoFormulario, EsqueletoSeccion, EsqueletoPagina, FORMA_DE_SECCION, MODULOS_ESQUELETO_CUENTA } from './Esqueletos';
 export { Aviso, ProveedorToasts, useToast, useNotificaciones, ListaNotificaciones, EstadoVacio, HojaInferior, Confirmar, ProveedorConfirmar, useConfirmar } from './Feedback';
-export { EASE, RESORTE, useContador, seguirPuntero, Estallido, Revelar, esApp, useBloquearScroll, useCerrarConAtras } from './Efectos';
+export { EASE, RESORTE, useContador, seguirPuntero, Estallido, Revelar, esApp, useBloquearScroll, bloquearScroll, useCerrarConAtras } from './Efectos';
 export { Enlace, ProveedorEnlaces } from './Enlace';
 export { ProveedorTraduccion, useTexto, useHtml, Texto } from './Traduccion';
 export { default as Desplegable } from './Desplegable';

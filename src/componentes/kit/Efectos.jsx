@@ -38,31 +38,39 @@ export const esApp = () => typeof window !== 'undefined' && Boolean(window.Capac
 /* Bloqueos activos a la vez (una hoja y, encima, la capa de un pago): el
    scroll vuelve cuando se suelta el último, en el orden que sea. Si cada uno
    restaurara "lo que había antes", cerrar primero la hoja y después la capa
-   dejaba la página sin scroll. */
+   dejaba la página sin scroll. Es el ÚNICO candado de la página: los modales
+   de la tienda (hooks/useBloquearScroll), el loader de marca y la ventana de
+   Culqi usan este. Cuando cada uno llevaba el suyo, el loader y el popup de
+   campaña del inicio se cruzaban y la app quedaba sin scroll hasta reabrirla. */
 let bloqueos = 0;
 let previoBloqueo = null;
 
+/** Bloquea el scroll de la página; devuelve la función que lo suelta (una sola vez). */
+export function bloquearScroll() {
+  const raiz = document.documentElement;
+  if (bloqueos === 0) {
+    const barra = window.innerWidth - raiz.clientWidth;
+    previoBloqueo = { overflow: raiz.style.overflow, padding: raiz.style.paddingRight };
+    raiz.style.overflow = 'hidden';
+    if (barra > 0) raiz.style.paddingRight = `${barra}px`;
+  }
+  bloqueos += 1;
+  let suelto = false;
+  return () => {
+    if (suelto) return;
+    suelto = true;
+    bloqueos -= 1;
+    if (bloqueos === 0 && previoBloqueo) {
+      raiz.style.overflow = previoBloqueo.overflow;
+      raiz.style.paddingRight = previoBloqueo.padding;
+      previoBloqueo = null;
+    }
+  };
+}
+
 /** Bloquea el scroll de la página mientras hay un modal abierto, sin saltos por la barra. */
 export function useBloquearScroll(activo) {
-  useEffect(() => {
-    if (!activo) return undefined;
-    const raiz = document.documentElement;
-    if (bloqueos === 0) {
-      const barra = window.innerWidth - raiz.clientWidth;
-      previoBloqueo = { overflow: raiz.style.overflow, padding: raiz.style.paddingRight };
-      raiz.style.overflow = 'hidden';
-      if (barra > 0) raiz.style.paddingRight = `${barra}px`;
-    }
-    bloqueos += 1;
-    return () => {
-      bloqueos -= 1;
-      if (bloqueos === 0 && previoBloqueo) {
-        raiz.style.overflow = previoBloqueo.overflow;
-        raiz.style.paddingRight = previoBloqueo.padding;
-        previoBloqueo = null;
-      }
-    };
-  }, [activo]);
+  useEffect(() => (activo ? bloquearScroll() : undefined), [activo]);
 }
 
 /* Modales abiertos, del más viejo al de encima. "Atrás" cierra solo el de

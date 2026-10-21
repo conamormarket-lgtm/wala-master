@@ -8,6 +8,7 @@ import Loading from '../Loading';
 import useLoViejo from '../../../hooks/useLoViejo';
 import { EsqueletoPagina } from '../../../componentes/kit/Esqueletos';
 import { PantallaCarga } from '../../../componentes/kit/Cargando';
+import { bloquearScroll } from '../../../componentes/kit/Efectos';
 import { formaDeRuta } from '../../carga/formaDeRuta';
 
 // El splash de marca de Walá (la bolsa con la "W" sobre el degradado violeta)
@@ -174,23 +175,16 @@ const BrandLoaderOverlay = ({ show, relevo = false, secciones }) => {
   // Con overflow:hidden vigente hasta que el zoom termina, queda recortado.
   const savedRef = useRef(null);
 
+  // El candado es el compartido del kit: con uno propio que restauraba "lo de
+  // antes", cruzarse con un modal (el popup de campaña del inicio) dejaba la
+  // página sin scroll hasta reabrir la app.
   const lockScroll = () => {
     if (savedRef.current) return; // ya bloqueado (idempotente)
-    const html = document.documentElement;
-    const scrollbarWidth = window.innerWidth - html.clientWidth;
-    savedRef.current = {
-      overflow: html.style.overflow,
-      paddingRight: html.style.paddingRight,
-    };
-    html.style.overflow = 'hidden';
-    if (scrollbarWidth > 0) html.style.paddingRight = `${scrollbarWidth}px`;
+    savedRef.current = bloquearScroll();
   };
 
   const unlockScroll = () => {
-    if (!savedRef.current) return;
-    const html = document.documentElement;
-    html.style.overflow = savedRef.current.overflow;
-    html.style.paddingRight = savedRef.current.paddingRight;
+    savedRef.current?.();
     savedRef.current = null;
   };
 
