@@ -13,6 +13,7 @@ import { tarjetaDesdeProducto } from '../../componentes/kit/adaptadores';
 import { getProductsByBrand } from '../../services/products';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import { useGlobalToast } from '../../contexts/ToastContext';
+import { useConfirmar } from '../../componentes/kit/Feedback';
 import styles from './AdminMarcas.module.css';
 
 const hexToRgba = (hex, alpha) => {
@@ -26,6 +27,9 @@ const hexToRgba = (hex, alpha) => {
 const AdminMarcas = () => {
   const queryClient = useQueryClient();
   const toast = useGlobalToast();
+  // Preguntas con la ventana de la app: el confirm() del navegador se puede
+  // bloquear ("no dejar que esta página cree más diálogos") y el botón no hacía nada.
+  const confirmar = useConfirmar();
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '' });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -285,6 +289,7 @@ const AdminMarcas = () => {
         if (res.alDia) partes.push(`${res.alDia} ya estaba(n) al día`);
         if (res.sinSlug) partes.push(`${res.sinSlug} sin slug`);
         if (res.portadas) partes.push(`${res.portadas} portada(s) pasada(s) al editor`);
+        if (res.estilos) partes.push(`${res.estilos} editada(s) a mano con títulos subrayados y filas juntas`);
         setBackfillMsg(`✅ ${res.total} marca(s). ` + (partes.join(' · ') || 'Todo ya estaba al día.'));
         queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       }
@@ -297,7 +302,12 @@ const AdminMarcas = () => {
 
   // Elimina landings duplicadas por marca (conserva la canónica). No toca marcas ni productos.
   const handleEliminarDuplicadas = async () => {
-    if (!window.confirm('¿Eliminar las landings DUPLICADAS de cada marca?\n\nSon duplicadas las de una misma marca con la misma URL salvo mayúsculas o guiones (/ConAmor y /conamor). Se conserva la que tiene el diseño editado y sus links redirigen a ella. Las landings de campaña con otra URL no se tocan. No modifica marcas ni productos.')) return;
+    if (!(await confirmar({
+      titulo: '¿Eliminar las landings duplicadas de cada marca?',
+      texto: 'Son duplicadas las de una misma marca con la misma URL salvo mayúsculas o guiones (/ConAmor y /conamor). Se conserva la que tiene el diseño editado y sus links redirigen a ella. Las landings de campaña con otra URL no se tocan. No modifica marcas ni productos.',
+      confirmar: 'Eliminar duplicadas',
+      peligro: true,
+    }))) return;
     setBackfilling(true);
     setBackfillMsg('');
     try {
@@ -316,8 +326,12 @@ const AdminMarcas = () => {
     }
   };
 
-  const handleGenerarLandings = () => {
-    if (!window.confirm('¿Aplicar la plantilla de página a las marcas que lo necesiten?\n\nCada marca queda con portada de marca, navegación por categorías, destacados, ofertas, catálogo y marquee.\n\nNo modifica marcas ni productos. Se actualizan las páginas que solo tienen encabezado / categorías / catálogo; las que ya tienen contenido propio (carruseles, banners…) se conservan, pero su banner de la plantilla vieja pasa a ser la portada de marca (la editas en su página con el editor).')) return;
+  const handleGenerarLandings = async () => {
+    if (!(await confirmar({
+      titulo: '¿Aplicar la plantilla de página?',
+      texto: 'Las páginas de marca que siguen con la plantilla se rehacen: portada de la marca, burbujas de categorías, lo más pedido, ofertas, catálogo y marcas. Las que armaste a mano se conservan: solo su banner viejo pasa a portada de la marca, sus títulos se subrayan y sus filas de productos se juntan (no se tocan fotos, textos ni el orden). No modifica marcas ni productos.',
+      confirmar: 'Aplicar',
+    }))) return;
     aplicarPlantilla(false);
   };
 

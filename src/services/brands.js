@@ -127,6 +127,29 @@ const normalizeCategoryNavStyle = (style) => {
 // inicio, porque es una sola marca.
 const COMO_EL_KIT = { titleUnderline: true, paddingTop: '1rem', paddingBottom: '1.5rem' };
 
+// Filas de productos (las que van juntas) y portadas/avisos (sin título que subrayar).
+const FILAS_DE_PRODUCTOS = new Set([
+  'featured_carousel', 'new_arrivals_carousel', 'sale_carousel', 'category_carousel', 'collection_carousel',
+  'flash_sales', 'featured_products', 'product_grid', 'sidebar_catalog', 'bestsellers_row',
+]);
+const SIN_SUBRAYADO = new Set(['hero_banner', 'hero_carousel', 'brand_hero', 'announcement_bar', 'header', 'categories_nav']);
+
+/**
+ * El estilo de la página de marca del kit en una página armada a mano: los
+ * títulos subrayados (el trazo toma el color de la marca) y las filas de
+ * productos más juntas. No toca fotos, textos, secciones ni su orden.
+ */
+const conEstiloDelKit = (sections) => sections.map((sec) => {
+  if (!sec?.settings) return sec;
+  const s = { ...sec.settings };
+  if (!SIN_SUBRAYADO.has(sec.type) && String(s.title || '').trim()) s.titleUnderline = true;
+  if (FILAS_DE_PRODUCTOS.has(sec.type)) {
+    s.paddingTop = COMO_EL_KIT.paddingTop;
+    s.paddingBottom = COMO_EL_KIT.paddingBottom;
+  }
+  return { ...sec, settings: s };
+});
+
 const buildBrandLandingSections = (brandId, name, opts = {}) => {
   const { brand = null, portadaPrevia = null, marqueeItems = [] } = opts;
   const brandName = String(name || '').trim();
@@ -348,9 +371,14 @@ export const ensureBrandLanding = async (brandId, slug, name, opts = {}) => {
     const bannerViejo = delHero('hero_banner');
 
     if (tieneSecciones && !esAuto && !force) {
-      // Editada a mano: solo su banner de la plantilla vieja pasa a portada de marca.
-      if (bannerViejo) await setDocument('pages', pageId, { sections: conPortadaDeMarca(previas, brandDoc) });
-      return { error: null, landingCreada: !landingPrevia, layout: 'conservado', portada: Boolean(bannerViejo) };
+      // Editada a mano: se conserva lo suyo; su banner de la plantilla vieja
+      // pasa a portada de marca y toma el estilo del kit (títulos subrayados,
+      // filas juntas). Solo se escribe si algo cambia.
+      const conPortada = bannerViejo ? conPortadaDeMarca(previas, brandDoc) : previas;
+      const conEstilo = conEstiloDelKit(conPortada);
+      const estilo = JSON.stringify(conEstilo) !== JSON.stringify(conPortada);
+      if (bannerViejo || estilo) await setDocument('pages', pageId, { sections: conEstilo });
+      return { error: null, landingCreada: !landingPrevia, layout: 'conservado', portada: Boolean(bannerViejo), estilo };
     }
 
     let marcas = allBrands;
@@ -397,15 +425,16 @@ export const ensureBrandLanding = async (brandId, slug, name, opts = {}) => {
  * Con `force` se reescriben también esas.
  *
  * Los banners de la plantilla vieja pasan a portada de marca en todas
- * (también en las conservadas): `portadas` cuenta cuántas.
+ * (también en las conservadas): `portadas` cuenta cuántas. Las editadas a mano
+ * toman el estilo del kit (títulos subrayados, filas juntas): `estilos`.
  *
  * @param {{ force?: boolean }} [opts]
- * @returns {{ total:number, creadas:number, actualizadas:number, alDia:number, conservadas:number, sinSlug:number, portadas:number, conservadasNombres:string[], error:(string|null) }}
+ * @returns {{ total:number, creadas:number, actualizadas:number, alDia:number, conservadas:number, sinSlug:number, portadas:number, estilos:number, conservadasNombres:string[], error:(string|null) }}
  */
 export const ensureAllBrandLandings = async (opts = {}) => {
   const { force = false } = opts;
   const { data: brands, error } = await getBrands();
-  if (error) return { total: 0, creadas: 0, actualizadas: 0, alDia: 0, conservadas: 0, sinSlug: 0, portadas: 0, conservadasNombres: [], error };
+  if (error) return { total: 0, creadas: 0, actualizadas: 0, alDia: 0, conservadas: 0, sinSlug: 0, portadas: 0, estilos: 0, conservadasNombres: [], error };
   const marcas = brands || [];
   let creadas = 0;
   let actualizadas = 0;
@@ -413,6 +442,7 @@ export const ensureAllBrandLandings = async (opts = {}) => {
   let conservadas = 0;
   let sinSlug = 0;
   let portadas = 0;
+  let estilos = 0;
   const conservadasNombres = [];
   for (const b of marcas) {
     const slug = b.slug ? slugify(b.slug) : slugify(b.name);
@@ -425,8 +455,9 @@ export const ensureAllBrandLandings = async (opts = {}) => {
     else if (res?.layout === 'al-dia') alDia++;
     else if (res?.layout === 'conservado') { conservadas++; conservadasNombres.push(b.name || slug); }
     if (res?.portada) portadas++;
+    if (res?.estilo) estilos++;
   }
-  return { total: marcas.length, creadas, actualizadas, alDia, conservadas, sinSlug, portadas, conservadasNombres, error: null };
+  return { total: marcas.length, creadas, actualizadas, alDia, conservadas, sinSlug, portadas, estilos, conservadasNombres, error: null };
 };
 
 /**
