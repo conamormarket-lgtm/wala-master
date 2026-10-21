@@ -281,7 +281,7 @@ const AdminMarcas = () => {
 
   // Elimina landings duplicadas por marca (conserva la canónica). No toca marcas ni productos.
   const handleEliminarDuplicadas = async () => {
-    if (!window.confirm('¿Eliminar las landings DUPLICADAS de cada marca?\n\nSe conserva una por marca (la que coincide con su slug). No modifica marcas ni productos.')) return;
+    if (!window.confirm('¿Eliminar las landings DUPLICADAS de cada marca?\n\nSon duplicadas las de una misma marca con la misma URL salvo mayúsculas o guiones (/ConAmor y /conamor). Se conserva la que tiene el diseño editado y sus links redirigen a ella. Las landings de campaña con otra URL no se tocan. No modifica marcas ni productos.')) return;
     setBackfilling(true);
     setBackfillMsg('');
     try {
@@ -330,7 +330,7 @@ const AdminMarcas = () => {
               variant="secondary"
               onClick={handleEliminarDuplicadas}
               disabled={backfilling}
-              title="Elimina landings repetidas de una misma marca, conservando una."
+              title="Elimina las landings de una misma marca con la misma URL (salvo mayúsculas), conservando una. No toca las de campaña."
             >
               Eliminar landings duplicadas
             </Button>

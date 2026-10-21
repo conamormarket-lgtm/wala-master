@@ -385,10 +385,15 @@ export const ensureAllBrandLandings = async (opts = {}) => {
  * canónica. Útil para deshacer duplicados creados por un backfill previo
  * (ej. /ConAmor + /conamor apuntando al mismo brandId).
  *
- * Canónica = la landing cuyo slug coincide EXACTO con el `slug` de la marca
- * (así se conserva la original, p.ej. la capitalizada /ConAmor que puede tener
- * la página real editada); si ninguna coincide, se conserva la primera.
- * Borra también su `pages/{id}` asociado. No toca marcas ni productos.
+ * Duplicadas = misma marca y la MISMA URL salvo mayúsculas y símbolos
+ * (/ConAmor, /conamor, /con-amor). Una landing de campaña con la marca y otra
+ * URL (/geeks-navidad) no es un duplicado: antes se borraba con su diseño.
+ *
+ * Canónica, en este orden: la que tiene un diseño editado a mano (no la
+ * plantilla automática), la que coincide EXACTO con el `slug` de la marca, la
+ * primera. De cada duplicada se borra la landing y su diseño (pages/<slug>), y
+ * su URL queda en slugsAnteriores de la canónica: sus links redirigen.
+ * No toca marcas ni productos.
  * @returns {{ eliminadas:number, error:(string|null) }}
  */
 export const dedupeBrandLandings = async () => {
@@ -400,24 +405,40 @@ export const dedupeBrandLandings = async () => {
     if (e1 || e2) return { eliminadas: 0, error: e1 || e2 };
 
     const brandById = new Map((brands || []).map((b) => [b.id, b]));
-    const byBrand = new Map();
+    const grupos = new Map();
     for (const lp of (landings || [])) {
       if (!lp.brandId) continue; // solo landings ligadas a una marca
-      if (!byBrand.has(lp.brandId)) byBrand.set(lp.brandId, []);
-      byBrand.get(lp.brandId).push(lp);
+      const clave = `${lp.brandId}/${slugify(lp.slug || lp.id)}`;
+      if (!grupos.has(clave)) grupos.set(clave, []);
+      grupos.get(clave).push(lp);
     }
 
     let eliminadas = 0;
-    for (const [brandId, list] of byBrand) {
+    for (const list of grupos.values()) {
       if (list.length <= 1) continue; // no hay duplicados
-      const brandSlug = brandById.get(brandId)?.slug || '';
-      const canonical = list.find((l) => (l.slug || l.id) === brandSlug) || list[0];
+      const brandSlug = brandById.get(list[0].brandId)?.slug || '';
+      const editadas = new Set();
+      for (const l of list) {
+        const { data } = await getDocument('pages', l.slug || l.id);
+        const secciones = data?.sections;
+        if (Array.isArray(secciones) && secciones.length > 0 && !puedeRegenerarse(secciones)) editadas.add(l.id);
+      }
+      const canonical = list.find((l) => editadas.has(l.id))
+        || list.find((l) => (l.slug || l.id) === brandSlug)
+        || list[0];
+      const urlCanonica = canonical.slug || canonical.id;
+      const anteriores = new Set(canonical.slugsAnteriores || []);
       for (const l of list) {
         if (l.id === canonical.id) continue;
+        const url = l.slug || l.id;
         await deleteDocument('landingPages', l.id);
-        await deleteDocument('pages', l.id);
+        // Su diseño vive en pages/<slug>; si es otro doc que el de la canónica, se va con ella.
+        if (url !== urlCanonica) await deleteDocument('pages', url);
+        if (l.id !== url && l.id !== urlCanonica) await deleteDocument('pages', l.id);
+        [url, ...(l.slugsAnteriores || [])].forEach((x) => { if (x && x !== urlCanonica) anteriores.add(x); });
         eliminadas++;
       }
+      if (anteriores.size) await updateDocument('landingPages', canonical.id, { slugsAnteriores: [...anteriores] });
     }
     return { eliminadas, error: null };
   } catch (error) {
