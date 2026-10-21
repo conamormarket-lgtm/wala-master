@@ -1801,6 +1801,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
                 <GenerarFrenteEspalda
                   variante={activeVariant}
                   marca={selectedBrand || null}
+                  nombreProducto={form.name}
                   onGuardar={handleGuardarFrenteEspalda}
                   ocupado={uploading}
                 />
