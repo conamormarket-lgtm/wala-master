@@ -1,5 +1,5 @@
-import React from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../../contexts/AuthContext';
 import { useVisualEditor } from '../../pages/Tienda/contexts/VisualEditorContext';
@@ -18,12 +18,24 @@ import { useConfirmar } from '../../componentes/kit/Feedback';
  *    demás (carrito, cuenta, Crear…) solo la cabecera, el pie y lo de toda la
  *    tienda. En la app nativa no se edita la página, así que ahí no sale.
  * Va pegada arriba y publica su alto (--admin-bar-height) para la cabecera.
+ *
+ * "Diseñar página" (Marcas, Landing Pages) lleva a la página con ?editar:
+ * aquí se abre el editor y se quita el ?editar de la dirección.
  */
 export default function BarraDeAdmin() {
   const { isAdmin } = useAuth();
-  const { pathname } = useLocation();
+  const { pathname, search, hash } = useLocation();
+  const navigate = useNavigate();
   const { isEditModeActive, toggleEditMode, sinGuardar, paginaDelBuilder } = useVisualEditor();
   const confirmar = useConfirmar();
+  const pideEditor = new URLSearchParams(search).has('editar');
+  useEffect(() => {
+    if (!pideEditor || !isAdmin) return;
+    const resto = new URLSearchParams(search);
+    resto.delete('editar');
+    navigate(`${pathname}${resto.toString() ? `?${resto}` : ''}${hash}`, { replace: true });
+    if (!isEditModeActive && !Capacitor.isNativePlatform() && !EN_VISTA_PREVIA_CALOR) toggleEditMode();
+  }, [pideEditor, isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
   // Con el editor abierto el botón solo lo cierra (publicar es del panel):
   // "Salir del editor", y si hay cambios sin publicar, se pregunta antes.
   const alternarEditor = async () => {

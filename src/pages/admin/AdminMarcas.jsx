@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getBrands, createBrand, updateBrand, deleteBrand, ensureAllBrandLandings, dedupeBrandLandings } from '../../services/brands';
 import { getMessage, setMessage } from '../../services/messages';
 import { uploadFile } from '../../services/firebase/storage';
-import { Edit2, Trash2, UploadCloud, Palette, ImageIcon, ImagePlus, MessageCircle, Boxes } from 'lucide-react';
+import { Edit2, Trash2, UploadCloud, Palette, ImageIcon, ImagePlus, MessageCircle, Boxes, LayoutTemplate } from 'lucide-react';
 import Button from '../../components/common/Button';
 import AdminImageCropper from '../../components/admin/AdminImageCropper/AdminImageCropper';
 import AdminMarcaProductos from './AdminMarcaProductos';
@@ -684,6 +685,13 @@ const AdminMarcas = () => {
                     <Boxes size={16} />
                     Gestionar productos
                   </button>
+                  {/* Su página con el editor abierto: la portada, las secciones y su orden. */}
+                  {brand.slug && (
+                    <Link to={`/${brand.slug}?editar`} className={styles.designPageBtn}>
+                      <LayoutTemplate size={16} aria-hidden="true" />
+                      Diseñar página
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>

@@ -412,3 +412,23 @@
 [data-theme="dark"] .actionBtn.danger:hover {
   background: rgba(239, 68, 68, 0.16);
 }
+
+/* La página de una marca: su URL y su marca se cambian en Marcas. */
+.badgeMarca {
+  display: inline-block;
+  margin-left: 0.5rem;
+  background: #ede9fe;
+  color: #6d28d9;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.notaMarca {
+  display: block;
+  margin-top: 0.35rem;
+  color: #6b7280;
+  font-size: 0.8rem;
+}

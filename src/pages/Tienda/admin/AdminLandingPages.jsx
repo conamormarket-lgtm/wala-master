@@ -7,6 +7,9 @@ import Button from '../../../components/common/Button';
 import styles from '../../admin/AdminLandingPages.module.css';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
+// La URL sin mayúsculas ni símbolos (como el slug de una marca).
+const llave = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
 const AdminLandingPages = () => {
   const [pages, setPages] = useState([]);
   const [themes, setThemes] = useState([]);
@@ -32,6 +35,14 @@ const AdminLandingPages = () => {
   });
 
   const [searchProduct, setSearchProduct] = useState('');
+
+  // La página de una marca (la de su URL): su URL y su marca se cambian en
+  // Marcas, que mueve la página con ellas. Aquí no, para que no se separen.
+  const marcaDuena = (page) => {
+    const marca = page?.brandId ? brands.find((b) => b.id === page.brandId) : null;
+    return marca && llave(marca.slug) === llave(page.slug || page.id) ? marca : null;
+  };
+  const duenaDelForm = marcaDuena(pages.find((p) => p.id === formData.id));
 
   useEffect(() => {
     fetchData();
@@ -101,7 +112,8 @@ const AdminLandingPages = () => {
       return;
     }
     // Formato slug (remover slash inicial si lo puso)
-    const cleanSlug = formData.slug.replace(/^\/+/, '').toLowerCase().trim().replace(/\s+/g, '-');
+    // La de una marca guarda su URL tal cual (aunque tenga mayúsculas): se cambia en Marcas.
+    const cleanSlug = duenaDelForm ? formData.slug : formData.slug.replace(/^\/+/, '').toLowerCase().trim().replace(/\s+/g, '-');
     
     // Check if slug is unique
     const existing = pages.find(p => p.slug === cleanSlug && p.id !== formData.id);
@@ -208,8 +220,12 @@ const AdminLandingPages = () => {
                     onChange={e => setFormData({...formData, slug: e.target.value})} 
                     placeholder="promo-navidad"
                     required
+                    disabled={Boolean(duenaDelForm)}
                   />
                 </div>
+                {duenaDelForm && (
+                  <small className={styles.notaMarca}>Es la página de {duenaDelForm.name}: su URL y su marca se cambian en Marcas.</small>
+                )}
               </div>
             </div>
 
@@ -235,6 +251,7 @@ const AdminLandingPages = () => {
                 <select
                   value={formData.brandId}
                   onChange={e => setFormData({...formData, brandId: e.target.value})}
+                  disabled={Boolean(duenaDelForm)}
                   className={styles.input}
                   style={{ width: '100%', padding: '0.5rem', border: '1px solid #ccc', borderRadius: '4px' }}
                 >
@@ -363,18 +380,19 @@ const AdminLandingPages = () => {
             <tbody>
               {pages.map(page => (
                 <tr key={page.id}>
-                  <td><strong>{page.title}</strong></td>
+                  <td>
+                    <strong>{page.title}</strong>
+                    {marcaDuena(page) && <span className={styles.badgeMarca}>Página de marca</span>}
+                  </td>
                   <td><a href={`/${page.slug}`} target="_blank" rel="noreferrer" className={styles.urlLink}>/{page.slug}</a></td>
                   <td>
                     <span className={styles.badge}>{page.hideHeader ? 'Oculto' : 'Visible'}</span> / <span className={styles.badge}>{page.hideFooter ? 'Oculto' : 'Visible'}</span>
                   </td>
                   <td>{page.linkedProducts?.length || 0} asignados</td>
                   <td>
-                    <Button variant="primary" onClick={() => {
-                      // Usar el visual editor en el landing page
-                      navigate(`/${page.slug}`);
-                    }} className={styles.editDesignBtn}>
-                      Abrir Editor Visual
+                    {/* La página con el editor ya abierto (?editar, BarraDeAdmin). */}
+                    <Button variant="primary" onClick={() => navigate(`/${page.slug}?editar`)} className={styles.editDesignBtn}>
+                      Diseñar página
                     </Button>
                   </td>
                   <td>
