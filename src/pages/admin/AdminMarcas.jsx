@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getBrands, createBrand, updateBrand, deleteBrand, ensureAllBrandLandings, dedupeBrandLandings } from '../../services/brands';
+import { pctMonedasDeMarca, TOPE_MONEDAS_PCT_POR_DEFECTO } from '../../utils/topeMonedas';
 import { getMessage, setMessage } from '../../services/messages';
 import { uploadFile } from '../../services/firebase/storage';
 import { Edit2, Trash2, UploadCloud, Palette, ImageIcon, ImagePlus, MessageCircle, Boxes, LayoutTemplate } from 'lucide-react';
@@ -31,7 +32,7 @@ const AdminMarcas = () => {
   // bloquear ("no dejar que esta página cree más diálogos") y el botón no hacía nada.
   const confirmar = useConfirmar();
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '' });
+  const [form, setForm] = useState({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '', topeMonedasPct: TOPE_MONEDAS_PCT_POR_DEFECTO });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [bgUploading, setBgUploading] = useState(false);
@@ -57,7 +58,7 @@ const AdminMarcas = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       queryClient.invalidateQueries({ queryKey: ['brands'] });
-      setForm({ name: '', slug: '', logoUrl: '', order: (brandsData?.length ?? 0), bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '' });
+      setForm({ name: '', slug: '', logoUrl: '', order: (brandsData?.length ?? 0), bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '', topeMonedasPct: TOPE_MONEDAS_PCT_POR_DEFECTO });
     }
   });
 
@@ -73,7 +74,7 @@ const AdminMarcas = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       queryClient.invalidateQueries({ queryKey: ['brands'] });
       setEditingId(null);
-      setForm({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '' });
+      setForm({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '', topeMonedasPct: TOPE_MONEDAS_PCT_POR_DEFECTO });
     }
   });
 
@@ -178,7 +179,9 @@ const AdminMarcas = () => {
       // Mensajes de tienda propios de la marca (opcionales, vacío = usa el global).
       storeTitle: (form.storeTitle || '').trim(),
       storeSubtitle: (form.storeSubtitle || '').trim(),
-      storeEmpty: (form.storeEmpty || '').trim()
+      storeEmpty: (form.storeEmpty || '').trim(),
+      // Qué parte del precio de sus productos se puede pagar con monedas.
+      topeMonedasPct: pctMonedasDeMarca({ topeMonedasPct: form.topeMonedasPct }),
       // La identidad (colores y portada) ya no se edita aquí: sus colores van
       // en la "Portada de la marca" del editor. No se manda, así lo guardado
       // no se toca (updateBrand solo escribe lo que llega).
@@ -204,13 +207,14 @@ const AdminMarcas = () => {
       storeTitle: brand.storeTitle || '',
       storeSubtitle: brand.storeSubtitle || '',
       storeEmpty: brand.storeEmpty || '',
+      topeMonedasPct: pctMonedasDeMarca(brand),
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setForm({ name: '', slug: '', logoUrl: '', order: brands.length, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '' });
+    setForm({ name: '', slug: '', logoUrl: '', order: brands.length, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '', topeMonedasPct: TOPE_MONEDAS_PCT_POR_DEFECTO });
   };
 
   const handleLogoUpload = async (e) => {
@@ -536,6 +540,29 @@ const AdminMarcas = () => {
               />
               <small style={{ color: 'var(--gris-texto, #6b7280)', fontSize: '0.78rem', marginTop: '0.3rem', display: 'block' }}>
                 Lo que ve el cliente en la página de esta marca si no tiene productos. Vacío: el mensaje de toda la tienda.
+              </small>
+            </div>
+
+            {/* Tope de monedas de ESTA marca: cuánto del precio de cada uno de
+                sus productos se puede pagar con monedas (el checkout y el
+                servidor lo aplican producto por producto). */}
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="tope-monedas-marca">Máximo a pagar con monedas (% del precio)</label>
+              <input
+                id="tope-monedas-marca"
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                inputMode="numeric"
+                value={form.topeMonedasPct}
+                onChange={(e) => setForm((f) => ({ ...f, topeMonedasPct: e.target.value === '' ? '' : Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0))) }))}
+                className={styles.input}
+              />
+              <small style={{ color: 'var(--gris-texto, #6b7280)', fontSize: '0.78rem', marginTop: '0.3rem', display: 'block' }}>
+                {Number(form.topeMonedasPct) === 0 && form.topeMonedasPct !== ''
+                  ? 'Sus productos no se pueden pagar con monedas.'
+                  : `En un producto de S/ 100 de esta marca, el cliente usa como máximo ${pctMonedasDeMarca({ topeMonedasPct: form.topeMonedasPct })} monedas (S/ ${pctMonedasDeMarca({ topeMonedasPct: form.topeMonedasPct })}). Vacío: ${TOPE_MONEDAS_PCT_POR_DEFECTO} %, la regla de siempre.`}
               </small>
             </div>
           </div>

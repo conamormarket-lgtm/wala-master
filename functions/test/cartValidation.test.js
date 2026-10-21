@@ -27,7 +27,7 @@ test("checkout batches unique catalog documents and projects only validation fie
   const f = fixture({ a: { price: 45, inStock: 10 }, b: { price: 30, inStock: 2 } });
   await f.validate([line("a"), line("a", 2), line("b", 1, { precio: 30 })]);
   assert.deepEqual(f.calls, [{ ids: ["a", "b"], options: {
-    fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "prendaBase"],
+    fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "prendaBase", "brandId"],
   } }]);
 });
 
@@ -115,4 +115,34 @@ test("unpublished, deleted or missing combos are not sold", async () => {
 test("combo pieces still consume their garment stock", async () => {
   const f = fixture({ polo: { ...prendas.polo, inStock: 3 }, pareja: combo });
   await assert.rejects(f.validate([pieza(0, 67.5, { cantidad: 2 }), pieza(1, 67.5, { cantidad: 2 })]), /stock suficiente/);
+});
+
+test("coin cap uses each product's brand percentage (default half)", async () => {
+  const f = fixture({
+    a: { price: 100, inStock: 10, brandId: "m20" },
+    b: { price: 45, inStock: 10 },
+    c: { price: 30, inStock: 10, brandId: "m0" },
+    d: { price: 10, inStock: 10, brandId: "sinConfig" },
+    m20: { topeMonedasPct: 20 },
+    m0: { topeMonedasPct: 0 },
+    sinConfig: { name: "Marca" },
+  });
+  const r = await f.validate([
+    line("a", 1, { precio: 100 }),
+    line("b"),
+    line("c", 1, { precio: 30 }),
+    line("d", 1, { precio: 10 }),
+  ]);
+  // 20 % de 100 + 50 % de 45 + 0 % de 30 + 50 % de 10 = 20 + 22,5 + 0 + 5 → 47
+  assert.equal(r.subtotal, 185);
+  assert.equal(r.topeMonedas, 47);
+  const brandRead = f.calls.find((c) => c.options.fieldMask.includes("topeMonedasPct"));
+  assert.deepEqual(brandRead.ids.sort(), ["m0", "m20", "sinConfig"]);
+});
+
+test("carts without brands do not read brands and keep the half rule", async () => {
+  const f = fixture({ a: { price: 45, inStock: 10 } });
+  const r = await f.validate([line("a")]);
+  assert.equal(r.topeMonedas, 22);
+  assert.equal(f.calls.length, 1);
 });

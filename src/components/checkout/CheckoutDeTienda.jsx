@@ -30,6 +30,7 @@ import { PaginaCheckout } from '../../componentes/kit/paginas/Checkout';
 import { PagoTarjeta } from '../../componentes/kit/piezas/Pago';
 import { htmlAbriendoWhatsApp } from '../../componentes/kit/piezas/AbriendoWhatsApp';
 import { itemCarritoDesde, direccionDesdeFirestore } from '../../componentes/kit/adaptadores';
+import { pctMonedasDeProducto } from '../../utils/topeMonedas';
 
 // PayPal (su SDK) baja solo si se paga desde otro país.
 const PaypalCheckout = lazy(() => import('../PaypalCheckout/PaypalCheckout'));
@@ -135,6 +136,8 @@ export default function CheckoutDeTienda() {
   const elegidos = useMemo(() => items.filter((i) => i.selected !== false), [items]);
   const itemsCompra = preparado?.selectedItemsSnapshot || elegidos;
   const catalogo = useMemo(() => catalogoPorId(), [items]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Las marcas: el número de WhatsApp de cada una y qué parte de sus productos se paga con monedas.
+  const { data: marcas } = useQuery({ queryKey: ['brands'], queryFn: async () => (await getBrands()).data || [], staleTime: 300_000 });
   const filas = useMemo(() => itemsCompra.map((item) => {
     const fila = itemCarritoDesde(item, { catalogo });
     return {
@@ -144,8 +147,10 @@ export default function CheckoutDeTienda() {
       variante: varianteDe(fila),
       precio: fila.precio,
       cantidad: fila.cantidad,
+      // Qué parte de su precio se paga con monedas: lo decide su marca.
+      topeMonedas: pctMonedasDeProducto(catalogo.get(item.productId)?.brandId || item.brandId, marcas),
     };
-  }), [itemsCompra, catalogo]);
+  }), [itemsCompra, catalogo, marcas]);
   const incompletos = useMemo(() => {
     const ids = idsDeItemsIncompletos(elegidos, catalogo);
     return elegidos.filter((i) => ids.has(i.id)).map((i) => i.productName);
@@ -191,7 +196,6 @@ export default function CheckoutDeTienda() {
   }, [authLoading, userProfile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Lo que se lee de Firestore ── */
-  const { data: marcas } = useQuery({ queryKey: ['brands'], queryFn: async () => (await getBrands()).data || [], staleTime: 300_000 });
   const { data: whatsappConfig } = useQuery({ queryKey: ['whatsapp-config-checkout'], queryFn: leerWhatsappConfig, staleTime: 300_000 });
   // La tasa de cambio solo hace falta fuera del Perú: se pide cuando el navegador queda libre.
   const [conFx, setConFx] = useState(false);
@@ -575,7 +579,7 @@ export default function CheckoutDeTienda() {
       inicial={inicial}
       paisSugerido={paisSugerido}
       envio={{ costo: ENVIO_ESTANDAR, gratisDesde: ENVIO_GRATIS_DESDE }}
-      monedas={{ saldo: sesion ? activeMainCoins || 0 : 0, cargando: authLoading || (Boolean(user) && !userProfile) }}
+      monedas={{ saldo: sesion ? activeMainCoins || 0 : 0, cargando: authLoading || (Boolean(user) && !userProfile) || (sesion && !marcas) }}
       onCupon={alCupon}
       onPreparar={alPreparar}
       pago={pago}

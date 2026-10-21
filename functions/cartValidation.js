@@ -1,6 +1,7 @@
 "use strict";
 
 const { precioDeCatalogo } = require("./catalogPricing");
+const { topeMonedasCheckout, pctMonedasDeMarca } = require("./checkoutTotals");
 
 // Prendas del apartado "Crear" (esPrendaBase): a diferencia del resto de
 // personalizados, su precio SÍ se puede reconstruir aquí. Es el de catálogo,
@@ -36,12 +37,12 @@ function gruposDeCombo(items) {
 }
 
 async function validarCombos(grupos, { db, reader, HttpsError }) {
-  let subtotal = 0;
-  if (!grupos.length) return subtotal;
+  const lineas = [];
+  if (!grupos.length) return lineas;
   const ids = [...new Set(grupos.map((g) => g.comboId).filter(Boolean))];
   const snapshots = ids.length
     ? await reader.getAll(...ids.map((id) => db.collection("productos_wala").doc(id)), {
-      fieldMask: ["price", "salePrice", "deleted", "esComboCrear", "comboCrear"],
+      fieldMask: ["price", "salePrice", "deleted", "esComboCrear", "comboCrear", "brandId"],
     })
     : [];
   const byId = new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
@@ -71,17 +72,19 @@ async function validarCombos(grupos, { db, reader, HttpsError }) {
       throw new HttpsError("failed-precondition",
         `El precio de "${nombre}" cambió a S/ ${price.toFixed(2)}. Vuelve a agregarlo al carrito.`);
     }
-    subtotal += price * cantidad;
+    lineas.push({ importe: price * cantidad, brandId: combo.brandId || null });
   }
-  return subtotal;
+  return lineas;
 }
 
 // Una lectura por producto distinto, dentro de la transacción si se proporciona.
 // El stock pertenece al producto: varias líneas/variantes consumen el mismo saldo.
 //
-// Devuelve { subtotal }: lo que valen los productos según el servidor. Con él
-// prepareCheckoutPayment comprueba el TOTAL que se va a cobrar; antes solo se
-// miraba el precio de cada línea y el total lo ponía el navegador.
+// Devuelve { subtotal, topeMonedas }: lo que valen los productos según el
+// servidor y cuántas monedas se pueden usar (el % de la marca de cada producto,
+// ver checkoutTotals). Con ellos prepareCheckoutPayment comprueba el TOTAL que
+// se va a cobrar; antes solo se miraba el precio de cada línea y el total lo
+// ponía el navegador.
 //   - catálogo y prendas de Crear: el precio que calcula el servidor.
 //   - otros personalizados: el que manda el cliente (el diseño se cobra aparte
 //     y aquí no se puede reconstruir), pero nunca por debajo del de catálogo.
@@ -97,10 +100,28 @@ function createCartValidator({ db, HttpsError }) {
       quantities.set(id, (quantities.get(id) || 0) + quantity);
     }
     const ids = [...quantities.keys()];
-    let subtotal = 0;
-    const sumar = (item, precio) => {
+    const reader = transaction || db;
+    // Cada línea con su marca: la marca la dice el producto, no el navegador.
+    const lineas = [];
+    const sumar = (item, precio, brandId = null) => {
       const cantidad = Math.max(1, Number(item.cantidad) || 1);
-      subtotal += Math.max(0, Number(precio) || 0) * cantidad;
+      lineas.push({ importe: Math.max(0, Number(precio) || 0) * cantidad, brandId });
+    };
+    // Lee el % de monedas de las marcas de las líneas y cierra la cuenta.
+    const cerrar = async () => {
+      const subtotal = lineas.reduce((tot, l) => tot + l.importe, 0);
+      const marcaIds = [...new Set(lineas.map((l) => l.brandId).filter(Boolean))];
+      const marcas = new Map();
+      if (marcaIds.length) {
+        const snaps = await reader.getAll(...marcaIds.map((id) => db.collection("tienda_brands").doc(id)), {
+          fieldMask: ["topeMonedasPct"],
+        });
+        for (const snap of snaps) if (snap.exists) marcas.set(snap.id, snap.data() || {});
+      }
+      const topeMonedas = topeMonedasCheckout(lineas.map((l) => ({
+        importe: l.importe, pct: pctMonedasDeMarca(l.brandId ? marcas.get(l.brandId) : null),
+      })));
+      return { subtotal: redondear(subtotal), topeMonedas };
     };
     for (const item of items) {
       if (item && !item.comboCrear && !String(item.productoId || "").trim()) sumar(item, item.precio);
@@ -110,12 +131,11 @@ function createCartValidator({ db, HttpsError }) {
       if (items.some((item) => item && item.comboCrear)) {
         throw new HttpsError("failed-precondition", "Tu combo está incompleto. Vuelve a armarlo.");
       }
-      return { subtotal: redondear(subtotal) };
+      return { subtotal: redondear(lineas.reduce((tot, l) => tot + l.importe, 0)), topeMonedas: topeMonedasCheckout(lineas) };
     }
     const refs = ids.map((id) => db.collection("productos_wala").doc(id));
-    const reader = transaction || db;
     const snapshots = await reader.getAll(...refs, {
-      fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "prendaBase"],
+      fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "prendaBase", "brandId"],
     });
     const byId = new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
 
@@ -142,21 +162,21 @@ function createCartValidator({ db, HttpsError }) {
           throw new HttpsError("failed-precondition",
             `El precio de "${nombre}" cambió a S/ ${price.toFixed(2)}. Vuelve a agregarlo al carrito.`);
         }
-        sumar(item, price !== null ? price : clientPrice);
+        sumar(item, price !== null ? price : clientPrice, product.brandId || null);
       } else if (!item.personalizado) {
         const price = precioDeCatalogo(product);
         if (price !== null && Number.isFinite(clientPrice) && Math.abs(price - clientPrice) > 0.01) {
           throw new HttpsError("failed-precondition",
             `El precio de "${nombre}" cambió a S/ ${price.toFixed(2)}. Actualiza tu carrito.`);
         }
-        sumar(item, price !== null ? price : clientPrice);
+        sumar(item, price !== null ? price : clientPrice, product.brandId || null);
       } else {
         const price = precioDeCatalogo(product);
-        sumar(item, Math.max(Number.isFinite(clientPrice) ? clientPrice : 0, price || 0));
+        sumar(item, Math.max(Number.isFinite(clientPrice) ? clientPrice : 0, price || 0), product.brandId || null);
       }
     }
-    subtotal += await validarCombos(gruposDeCombo(items), { db, reader, HttpsError });
-    return { subtotal: redondear(subtotal) };
+    lineas.push(...await validarCombos(gruposDeCombo(items), { db, reader, HttpsError }));
+    return cerrar();
   };
 }
 

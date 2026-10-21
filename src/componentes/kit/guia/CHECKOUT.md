@@ -124,8 +124,11 @@ la tarjeta, WhatsApp y PayPal esperan y avisan.
   de los productos (con S/ 200 justos se cobra). Sale de `constants/envio`, y
   `functions/index.js` tiene los mismos números (por ahora sigue en 100 hasta
   que la app de Android 1.3.24 esté publicada: ver `constants/envio.js`).
-- **Monedas:** hasta la mitad del subtotal (redondeada hacia abajo), a S/ 1 la
-  moneda.
+- **Monedas:** a S/ 1 la moneda, hasta un tope que sale producto por
+  producto: el % de su marca (Admin → Marcas, `tienda_brands.topeMonedasPct`;
+  sin marca o sin configurar, la mitad). Se suma todo y se redondea hacia
+  abajo una vez (`utils/topeMonedas.js`, espejo de `functions/checkoutTotals.js`).
+  Cada item lleva su `topeMonedas`; sin él, cuenta la mitad.
 - **Cupón:** lo valida el servidor. Uno de envío gratis deja el envío en 0 y
   no descuenta nada más.
 - **Total** = máx(0, subtotal − monedas − cupón) + envío.

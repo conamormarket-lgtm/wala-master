@@ -40,9 +40,10 @@ export function PasosCompra({ pasos = ['Envío', 'Pago'], actual = 0 }) {
 }
 
 /**
- * Pagar parte con monedas: hasta la mitad del precio de los productos, a
- * S/ 1 la moneda. Dice por qué no se puede si no se puede.
- *  - saldo · maximo (la mitad del subtotal) · usar · onUsar(bool) · cargando
+ * Pagar parte con monedas: hasta el tope de la compra (cada marca decide qué
+ * parte del precio de sus productos; sin decidir, la mitad), a S/ 1 la moneda.
+ * Dice por qué no se puede si no se puede.
+ *  - saldo · maximo (el tope de esta compra) · usar · onUsar(bool) · cargando
  *  - sesion · urlLogin · bloqueado (mientras se procesa)
  */
 export function FilaMonedas({ saldo = 0, maximo = 0, usar = false, onUsar, cargando = false, sesion = true, urlLogin = '/login', bloqueado = false }) {
@@ -51,7 +52,7 @@ export function FilaMonedas({ saldo = 0, maximo = 0, usar = false, onUsar, carga
   if (cargando) cuerpo = <span className={s.monedasTexto}><span className={s.cargandoLinea} /><span className={s.oculto}><Texto>Cargando tus monedas…</Texto></span></span>;
   else if (!sesion) cuerpo = <span className={s.monedasTexto}><strong><Texto>Monedas Walá</Texto></strong><small><Enlace to={urlLogin}><Texto>Inicia sesión</Texto></Enlace> <Texto>y paga parte de tu compra con tus monedas.</Texto></small></span>;
   else if (!saldo) cuerpo = <span className={s.monedasTexto}><strong><Texto>Monedas Walá</Texto></strong><small><Texto>Aún no tienes monedas. Gánalas en los minijuegos y retos.</Texto></small></span>;
-  else if (usables < 1) cuerpo = <span className={s.monedasTexto}><strong><Texto>{`Tienes ${saldo} monedas`}</Texto></strong><small><Texto>Puedes pagar con monedas hasta la mitad del precio de tus productos; en esta compra no alcanza.</Texto></small></span>;
+  else if (usables < 1) cuerpo = <span className={s.monedasTexto}><strong><Texto>{`Tienes ${saldo} monedas`}</Texto></strong><small><Texto>Con monedas se paga solo una parte del precio de los productos; en esta compra no alcanza.</Texto></small></span>;
   else {
     cuerpo = (
       <span className={s.monedasInterruptor}>
@@ -59,7 +60,7 @@ export function FilaMonedas({ saldo = 0, maximo = 0, usar = false, onUsar, carga
           activo={usar}
           onChange={(v) => !bloqueado && onUsar?.(v)}
           etiqueta={<><Texto>{`Usar ${usables} monedas`}</Texto> <b className={s.menos}>−{soles(usables)}</b></>}
-          descripcion={<Texto>{usables < saldo ? `Tienes ${saldo}; en esta compra puedes usar hasta la mitad del precio.` : `Tienes ${saldo} monedas. 1 moneda = S/ 1.00`}</Texto>}
+          descripcion={<Texto>{usables < saldo ? `Tienes ${saldo}; en esta compra puedes usar hasta ${usables}.` : `Tienes ${saldo} monedas. 1 moneda = S/ 1.00`}</Texto>}
         />
       </span>
     );

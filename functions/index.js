@@ -32,7 +32,7 @@ const {
 } = require("./ruletaLogic");
 const { palabraDelDia } = require("./wordleWords");
 const { calcularRecompensaFechas } = require("./fechasLogic");
-const { totalEsperadoCheckout, topeMonedasCheckout, toleranciaCheckout } = require("./checkoutTotals");
+const { totalEsperadoCheckout, toleranciaCheckout } = require("./checkoutTotals");
 const { puedeUsarPuente, tieneClaimAdmin } = require("./adminAuth");
 const pagos = require("./pagosLogic");
 const erpCobranza = require("./erpCobranzaLogic");
@@ -422,7 +422,7 @@ async function reservaCheckoutLiberable(uid, intentIdNuevo) {
 // pero el monto que se cobraba (montoPendiente/montoTotal) era el que mandaba
 // el navegador: editando la petición se pagaba S/1 por cualquier pedido. Ahora:
 //   1. subtotal de los productos con precios del servidor (verificarPreciosYStock);
-//   2. monedas: con tope de la mitad del subtotal y contra el saldo real;
+//   2. monedas: con el tope de cada marca (la mitad si no tiene) y contra el saldo real;
 //   3. cupón: se revalida con el del usuario (calcularDescuentoCupon);
 //   4. envío: misma regla que el checkout.
 // Si lo que se va a cobrar queda por debajo, se rechaza.
@@ -471,7 +471,7 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
       return;
     }
 
-    const { subtotal } = await verificarPreciosYStock(orderPayload.productos, t);
+    const { subtotal, topeMonedas } = await verificarPreciosYStock(orderPayload.productos, t);
     const userSnap = userRef ? await t.get(userRef) : null;
     const u = userSnap && userSnap.exists ? userSnap.data() : {};
     const anteriorSnap = anteriorRef ? await t.get(anteriorRef) : null;
@@ -508,7 +508,8 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
       });
     }
     if (monedasPedidas > 0) {
-      const tope = topeMonedasCheckout(subtotal);
+      // El % de cada marca (Admin → Marcas); sin marca, la mitad.
+      const tope = topeMonedas;
       if (monedasPedidas > tope) {
         throw new functions.https.HttpsError("failed-precondition",
           `En este pedido puedes usar hasta ${tope} monedas. Recarga la página.`);

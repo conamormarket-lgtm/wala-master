@@ -6,6 +6,7 @@ import { getDefaultSettings } from '../pages/Tienda/services/storefront';
 // Las landings se leen con su id de documento (ver leerLandingPages).
 import { leerLandingPages } from '../pages/Tienda/services/landingPages';
 import { BLOQUES_MARCA } from '../componentes/kit/adaptadores';
+import { pctMonedasDeMarca } from '../utils/topeMonedas';
 
 const COLLECTION = 'tienda_brands';
 
@@ -555,6 +556,8 @@ export const createBrand = async (data) => {
     storeTitle: data.storeTitle || '',
     storeSubtitle: data.storeSubtitle || '',
     storeEmpty: data.storeEmpty || '',
+    // Qué parte del precio de sus productos se paga con monedas (0-100; la mitad por defecto).
+    topeMonedasPct: pctMonedasDeMarca(data),
     // Identidad de su página (color, portada, frase y bloques). Solo si viene.
     ...(data.identidad !== undefined && { identidad: normalizeIdentidad(data.identidad) })
   });
@@ -649,6 +652,8 @@ export const updateBrand = async (id, data) => {
   if (data.storeTitle !== undefined) payload.storeTitle = data.storeTitle;
   if (data.storeSubtitle !== undefined) payload.storeSubtitle = data.storeSubtitle;
   if (data.storeEmpty !== undefined) payload.storeEmpty = data.storeEmpty;
+  // Tope de monedas de la marca (lo leen el checkout y prepareCheckoutPayment).
+  if (data.topeMonedasPct !== undefined) payload.topeMonedasPct = pctMonedasDeMarca(data);
   // Identidad de la página de la marca: el mapa entero se reescribe.
   if (data.identidad !== undefined) payload.identidad = normalizeIdentidad(data.identidad);
   // Cambió la URL: primero la página (si no se puede, la marca no cambia).
