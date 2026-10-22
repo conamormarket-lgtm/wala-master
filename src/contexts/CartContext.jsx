@@ -21,6 +21,26 @@ export const useCart = () => {
 
 const CART_STORAGE_KEY = 'shopping_cart';
 
+// De quién es el carrito de este aparato y cuándo cambió por última vez:
+// { uid, cambio } (cambio: ISO, el mismo formato que cart.cartUpdatedAt). Con
+// eso, al abrir la tienda en un aparato que ya tenía el carrito de la cuenta,
+// gana el cambio más nuevo (el de aquí o el de la nube) en vez de sumar los
+// dos: sumarlos devolvía lo que se había borrado en otro aparato.
+const CART_META_KEY = 'shopping_cart_meta';
+const leerMeta = () => {
+  try {
+    const m = JSON.parse(localStorage.getItem(CART_META_KEY) || 'null');
+    return m && typeof m === 'object' ? m : {};
+  } catch {
+    return {};
+  }
+};
+const guardarMeta = (meta) => {
+  try { localStorage.setItem(CART_META_KEY, JSON.stringify(meta)); } catch { /* sin almacenamiento */ }
+};
+// Al volver a la pestaña o a la app, se mira la nube como mucho cada 30 s.
+const REVISAR_NUBE_CADA_MS = 30_000;
+
 /**
  * Clave de "mismo producto" para deduplicar líneas del carrito: productId +
  * color + talla + personalización, TODO normalizado (trim/lowercase, y
@@ -185,29 +205,52 @@ export const CartProvider = ({ children }) => {
     pendientes.forEach(({ tipo, mensaje, duracion }) => toast[tipo](mensaje, duracion));
   }, [items, toast]);
 
-  // Guardar carrito en localStorage cuando cambie y en Firestore si el usuario está logueado
+  // Lo último de items (para leerlo fuera de un render, al volver de la nube).
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  // La cuenta cuyo carrito ya se comparó con la nube en esta pestaña. Hasta
+  // entonces no se escribe en la nube: un aparato con el carrito de hace días
+  // pisaba lo que se había borrado en otro.
+  const listoUidRef = useRef(null);
+  // La próxima persistencia no es un cambio de aquí (llega de la nube o es
+  // cerrar sesión): guarda este meta y no escribe en la nube.
+  const metaSiguienteRef = useRef(null);
+
+  /** Escribe el carrito de la cuenta en la nube con la hora de su cambio. */
+  const escribirNube = React.useCallback((uidNube, lista, cambio) => {
+    if (!db) return;
+    // Vacío también lleva la hora: así otro aparato sabe que se vació (con
+    // `null` no se sabía cuándo y volvía lo que tenía guardado).
+    setDoc(doc(db, PORTAL_USERS_COLLECTION, uidNube), {
+      cart: { items: lista, cartUpdatedAt: cambio, abandonedLevel: 0 },
+    }, { merge: true }).catch((err) => {
+      console.warn('Error sincronizando carrito con Firestore:', err);
+    });
+  }, []);
+
+  // Guardar el carrito en localStorage cuando cambie y, con la cuenta ya
+  // comparada con la nube, también allí (el aviso de Carrito Abandonado y los
+  // demás aparatos lo leen).
   useEffect(() => {
     const serializado = JSON.stringify(items);
+    let antes = null;
+    try { antes = localStorage.getItem(CART_STORAGE_KEY); } catch { /* nada */ }
     lastCartJsonRef.current = serializado;
     localStorage.setItem(CART_STORAGE_KEY, serializado);
 
-    // Sync con Firestore para notificaciones de Carrito Abandonado
-    if (auth?.currentUser && db) {
-      // uidSync: renombrado para no hacer shadowing del uid del provider (arriba).
-      const uidSync = auth.currentUser.uid;
-      const docRef = doc(db, PORTAL_USERS_COLLECTION, uidSync);
-      
-      const cartData = items.length > 0 ? {
-        items,
-        cartUpdatedAt: new Date().toISOString(),
-        abandonedLevel: 0
-      } : null; // Si está vacío, limpiamos el cart del usuario
-      
-      setDoc(docRef, { cart: cartData }, { merge: true }).catch(err => {
-        console.warn('Error sincronizando carrito con Firestore:', err);
-      });
-    }
-  }, [items]);
+    const siguiente = metaSiguienteRef.current;
+    metaSiguienteRef.current = null;
+    if (siguiente) { guardarMeta(siguiente); return; }
+    // Igual a lo guardado: no cambió nada aquí (al abrir, o lo cambió otra pestaña).
+    if (serializado === antes) return;
+
+    const uidSync = auth?.currentUser?.uid || null;
+    const listo = Boolean(uidSync) && listoUidRef.current === uidSync;
+    const cambio = new Date().toISOString();
+    // Hasta compararlo con la nube, el carrito sigue siendo de quien era.
+    guardarMeta({ uid: listo ? uidSync : (leerMeta().uid ?? null), cambio });
+    if (listo) escribirNube(uidSync, items, cambio);
+  }, [items, escribirNube]);
 
   // ── Carrito por usuario: limpiar al CERRAR SESIÓN o CAMBIAR de cuenta ──────
   // prevUidRef arranca en `undefined` para distinguir el PRIMER render y no
@@ -229,7 +272,10 @@ export const CartProvider = ({ children }) => {
     const cambioDeCuenta = !!prevUid && !!uid && prevUid !== uid;
     if (huboLogout || cambioDeCuenta) {
       // setItems([]) dispara el efecto de persistencia: localStorage queda '[]'
-      // y (solo si hay un usuario NUEVO logueado) su cart en Firestore se limpia.
+      // sin dueño. No es "vaciar el carrito": la nube no se toca y, al volver
+      // a entrar, la cuenta recupera lo suyo.
+      listoUidRef.current = null;
+      metaSiguienteRef.current = { uid: null, cambio: null };
       setItems([]);
     }
   }, [uid]);
@@ -242,62 +288,113 @@ export const CartProvider = ({ children }) => {
   // no aparecía nada: el carrito de la nube existía, pero este dispositivo
   // nunca lo pedía.
   //
-  // Se restaura UNA vez por uid por sesión de pestaña (restoredUidRef), y se
-  // FUSIONA con lo que ya haya en este dispositivo (mismo criterio de "mismo
-  // item" que addToCart: productId + color + talla + personalización) en vez
-  // de reemplazar — así un invitado que agrega algo y LUEGO inicia sesión no
-  // pierde lo que acaba de agregar aquí.
-  const restoredUidRef = useRef(null);
-  useEffect(() => {
-    // Al cerrar sesión se olvida: quien vuelve a entrar en la misma pestaña (sin
-    // recargar) también recupera lo que tenía guardado.
-    if (!uid) { restoredUidRef.current = null; return; }
-    if (!db) return;
-    if (restoredUidRef.current === uid) return;
-    restoredUidRef.current = uid;
+  // Se compara al iniciar sesión (una vez por uid por pestaña) y cada vez que
+  // se vuelve a la pestaña o a la app (cada 30 s como mucho):
+  //  - Si este aparato ya tenía el carrito de ESTA cuenta (meta.uid), gana el
+  //    cambio más nuevo: el de la nube reemplaza al de aquí, o el de aquí se
+  //    sube. Antes se sumaban los dos y lo borrado en otro aparato volvía (sin
+  //    marcar, "No se cobra en esta compra").
+  //  - Si era de un invitado (o de antes de esta versión), se FUSIONA como
+  //    siempre (mismo criterio de "mismo item" que addToCart): quien agrega
+  //    algo y LUEGO inicia sesión no pierde lo que acaba de agregar.
+  const comparandoRef = useRef(false);
+  const compararConNube = React.useCallback(async (uidNube) => {
+    /** Pone una lista que no es un cambio de aquí (con su meta). La misma lista no re-renderiza: solo el meta. */
+    const ponerDesdeNube = (lista, meta) => {
+      if (lista === itemsRef.current) { guardarMeta(meta); return; }
+      metaSiguienteRef.current = meta;
+      setItems(lista);
+    };
+    if (!db || comparandoRef.current) return;
+    comparandoRef.current = true;
+    try {
+      const snap = await getDoc(doc(db, PORTAL_USERS_COLLECTION, uidNube));
+      // Cambió la cuenta mientras se leía: lo hará la comparación de la nueva.
+      if (auth?.currentUser?.uid !== uidNube) return;
+      const cart = snap.exists() ? snap.data()?.cart : null;
+      const remotos = Array.isArray(cart?.items) ? cart.items : [];
+      const horaNube = typeof cart?.cartUpdatedAt === 'string' ? cart.cartUpdatedAt : null;
+      const meta = leerMeta();
+      const locales = itemsRef.current;
 
-    (async () => {
-      try {
-        const snap = await getDoc(doc(db, PORTAL_USERS_COLLECTION, uid));
-        const remoteItems = snap.exists() ? snap.data()?.cart?.items : null;
-        if (!Array.isArray(remoteItems) || remoteItems.length === 0) return;
+      if (meta.uid === uidNube) {
+        listoUidRef.current = uidNube;
+        if (horaNube && (!meta.cambio || horaNube > meta.cambio)) {
+          // Cambió en otro aparato después: se toma tal cual.
+          if (JSON.stringify(remotos) === JSON.stringify(locales)) { guardarMeta({ uid: uidNube, cambio: horaNube }); return; }
+          ponerDesdeNube(consolidarDuplicados(remotos), { uid: uidNube, cambio: horaNube });
+        } else if (meta.cambio && (!horaNube || meta.cambio > horaNube)) {
+          // Lo de aquí es más nuevo (p.ej. se cambió sin conexión): se sube.
+          escribirNube(uidNube, locales, meta.cambio);
+        }
+        return;
+      }
 
-        setItems((prev) => {
-          // 1) Limpia PRIMERO los duplicados que ya pudiera tener este dispositivo
-          //    (de cualquier origen, no solo de esta fusión).
-          const propios = consolidarDuplicados(prev);
-          // 2) De lo que trae la nube, solo entra lo que NO esté ya representado
-          //    aquí (por claveDedupItem) — si ya está, es la misma línea synced
-          //    en un reload normal y sumarla de nuevo duplicaría la cantidad.
-          //    Los regalos/combos (clave null) siempre entran, son su propia línea.
-          const clavesLocales = new Set(propios.map(claveDedupItem).filter(Boolean));
-          const idsLocales = new Set(propios.map((i) => i.id).filter(Boolean));
-          const nuevosDeLaNube = remoteItems.filter((remoto) => {
-            // La misma línea (mismo id) ya está aquí: no se vuelve a agregar.
-            if (remoto?.id && idsLocales.has(remoto.id)) return false;
-            const clave = claveDedupItem(remoto);
-            return !clave || !clavesLocales.has(clave);
-          });
-          if (nuevosDeLaNube.length === 0) return propios;
-          // 3) Si este equipo ya tenía algo (p.ej. un invitado que inicia sesión a
-          //    mitad del checkout), lo de la nube entra SIN marcar: no se cobra en
-          //    esta compra, queda para otra vez. Con el carrito local vacío (entrar
-          //    desde otro dispositivo) se restaura tal como estaba guardado.
-          if (propios.length === 0) return consolidarDuplicados(nuevosDeLaNube);
+      // Carrito de invitado: se suma lo de la nube que no esté ya aquí.
+      // 1) Limpia PRIMERO los duplicados que ya pudiera tener este dispositivo.
+      const propios = consolidarDuplicados(locales);
+      // 2) De lo que trae la nube, solo entra lo que NO esté ya representado
+      //    aquí (por claveDedupItem o por id). Los regalos/combos (clave null)
+      //    siempre entran, son su propia línea.
+      const clavesLocales = new Set(propios.map(claveDedupItem).filter(Boolean));
+      const idsLocales = new Set(propios.map((i) => i.id).filter(Boolean));
+      const nuevosDeLaNube = remotos.filter((remoto) => {
+        if (remoto?.id && idsLocales.has(remoto.id)) return false;
+        const clave = claveDedupItem(remoto);
+        return !clave || !clavesLocales.has(clave);
+      });
+      // 3) Si este equipo ya tenía algo (p.ej. un invitado que inicia sesión a
+      //    mitad del checkout), lo de la nube entra SIN marcar: no se cobra en
+      //    esta compra, queda para otra vez. Con el carrito local vacío se
+      //    restaura tal como estaba guardado.
+      let resultado = propios;
+      if (nuevosDeLaNube.length > 0) {
+        if (propios.length === 0) {
+          resultado = consolidarDuplicados(nuevosDeLaNube);
+        } else {
           const n = nuevosDeLaNube.length;
           avisar('nube', 'info', n === 1
             ? 'Tu cuenta tenía 1 producto guardado: quedó en tu carrito para otra vez.'
             : `Tu cuenta tenía ${n} productos guardados: quedaron en tu carrito para otra vez.`, 6000);
-          return consolidarDuplicados([
+          resultado = consolidarDuplicados([
             ...propios,
             ...nuevosDeLaNube.map((remoto) => ({ ...remoto, selected: false })),
           ]);
-        });
-      } catch (err) {
-        console.warn('No se pudo restaurar el carrito guardado en la nube:', err);
+        }
       }
-    })();
-  }, [uid, avisar]);
+      // Desde aquí el carrito es de la cuenta. Si quedó igual a la nube, se
+      // queda con su hora; si no, es un cambio de ahora y se sube.
+      listoUidRef.current = uidNube;
+      const igualANube = JSON.stringify(resultado) === JSON.stringify(remotos);
+      const cambio = igualANube && horaNube ? horaNube : new Date().toISOString();
+      ponerDesdeNube(resultado, { uid: uidNube, cambio });
+      if (!igualANube) escribirNube(uidNube, resultado, cambio);
+    } catch (err) {
+      console.warn('No se pudo comparar el carrito con la nube:', err);
+    } finally {
+      comparandoRef.current = false;
+    }
+  }, [avisar, escribirNube]);
+
+  useEffect(() => {
+    if (!uid || !db) return undefined;
+    if (listoUidRef.current !== uid) compararConNube(uid);
+    // Una pestaña que quedó abierta (o la app en segundo plano) tenía el
+    // carrito de antes: al volver, se compara otra vez.
+    let ultima = Date.now();
+    const alVolver = () => {
+      if (document.visibilityState !== 'visible' || listoUidRef.current !== uid) return;
+      if (Date.now() - ultima < REVISAR_NUBE_CADA_MS) return;
+      ultima = Date.now();
+      compararConNube(uid);
+    };
+    document.addEventListener('visibilitychange', alVolver);
+    window.addEventListener('focus', alVolver);
+    return () => {
+      document.removeEventListener('visibilitychange', alVolver);
+      window.removeEventListener('focus', alVolver);
+    };
+  }, [uid, compararConNube]);
 
   // ── Multi-pestaña: re-hidratar el carrito cuando OTRA pestaña lo cambie ────
   // El evento 'storage' solo se dispara en las demás pestañas (no en la que
