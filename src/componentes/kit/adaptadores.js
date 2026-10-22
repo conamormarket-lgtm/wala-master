@@ -1131,9 +1131,12 @@ export function fichaProductoDesde(p = {}, { catalogo = {}, subproductos = {} } 
       producto: urls(delProducto),
     };
   }
+  // Con un solo color también van sus fotos (su galería no está en el
+  // producto); solo la píldora con el color, que ahí no dice nada, se omite.
+  const unColor = variantesDe(p).length === 1;
   variantesDe(p).forEach((v) => {
     const propias = [...vistasPorColor(p, v.name), v.imageUrl, ...(v.galleryImages || []), ...(v.images || [])].filter(Boolean);
-    fotos[v.id] = propias.length && variantesDe(p).length > 1 ? fotosGaleria([...propias, ...delProducto], { [propias[0]]: v.name }) : base;
+    fotos[v.id] = propias.length ? fotosGaleria([...propias, ...delProducto], unColor ? {} : { [propias[0]]: v.name }) : base;
   });
   const precio = p.salePrice || p.price;
   return {
