@@ -127,3 +127,5 @@ credentials.json
 functions/.env.*
 
 .claude/
+# AAB/APK generados para la Play Store (pesan decenas de MB)
+releases/
