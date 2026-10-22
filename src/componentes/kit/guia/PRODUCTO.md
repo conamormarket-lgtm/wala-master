@@ -62,7 +62,10 @@ reseñas de prueba en un producto borrado, así que no sirven para ver el diseñ
   el color del combo, `variantMapping.color`; `allowedColors` se compara sin
   espacios ni mayúsculas) y, debajo, **la talla de esa prenda** ("Talla ·
   Ella", "Talla · Él"): una pareja puede ser de tallas distintas (desde el
-  2026-10-22; antes era una talla para todas). Las tallas de cada prenda son
+  2026-10-22; antes era una talla para todas). El admin lo elige por combo
+  ("Tallas del combo", campo `comboTallas`): `'una'` vuelve a una sola talla
+  para todas (la que comparten los colores elegidos, con "Se aplica a las N
+  prendas"); sin el campo o `'porPrenda'`, una por prenda. Las tallas de cada prenda son
   las de su color elegido (`tallasDePieza`): si al cambiar el color la talla
   elegida ya no está, se vuelve a pedir. Cada prenda va al carrito con su
   talla (`comboVariantSelections[i].size`), que el pedido ya guardaba por

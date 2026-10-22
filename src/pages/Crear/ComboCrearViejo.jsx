@@ -368,7 +368,9 @@ const ComboCrearPage = () => {
   })();
   // Si las prendas no comparten ninguna talla (una casaca de S a L y un jogger
   // de 28 a 34), una talla común no se podría elegir: cada prenda lleva la suya.
-  const unaTalla = esConjunto && (tallasComunes.length > 0 || tallasPorPieza.every((t) => !t.length));
+  // El admin puede fijar una talla para todas o una por prenda (combo.tallas).
+  const pideUna = combo?.tallas === 'una' || (combo?.tallas !== 'porPrenda' && esConjunto);
+  const unaTalla = pideUna && (tallasComunes.length > 0 || tallasPorPieza.every((t) => !t.length));
   // La del conjunto: la que eligió el cliente (va en todas las piezas). Sin
   // marcar hasta que la elija.
   const tallaConjunto = unaTalla ? (armado.find((a) => a.talla)?.talla || '') : '';

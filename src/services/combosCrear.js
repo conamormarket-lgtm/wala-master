@@ -14,11 +14,17 @@ export const MAX_PIEZAS = 4;
 const piezasDe = (combo) => (Array.isArray(combo?.comboCrear?.piezas) ? combo.comboCrear.piezas : [])
   .filter((p) => p && p.prendaId);
 
-/** El combo listo para la página: piezas limpias y si se puede comprar. */
+// Tallas del combo, elegidas en el admin: 'una' (una talla para todas),
+// 'porPrenda' (cada prenda la suya) o 'auto' (sin elegir: un conjunto de
+// prendas distintas lleva una; una pareja o un trío de la misma, una por prenda).
+export const MODOS_TALLA = ['auto', 'una', 'porPrenda'];
+
+/** El combo listo para la página: piezas limpias, si se puede comprar y cómo se eligen las tallas. */
 export const leerCombo = (doc) => ({
   ...doc,
   piezas: piezasDe(doc),
   publicado: doc?.comboCrear?.publicado === true,
+  tallas: MODOS_TALLA.includes(doc?.comboCrear?.tallas) ? doc.comboCrear.tallas : 'auto',
 });
 
 export const getCombosCrear = async ({ incluirBorradores = false } = {}) => {
@@ -56,6 +62,7 @@ export const guardarComboCrear = async (id, form) => {
     comboCrear: {
       publicado: form.publicado === true,
       piezas: (form.piezas || []).filter((p) => p?.prendaId).map((p) => ({ prendaId: p.prendaId })),
+      tallas: MODOS_TALLA.includes(form.tallas) ? form.tallas : 'auto',
     },
   };
   const res = id

@@ -8,7 +8,14 @@ import { precioBase } from '../../utils/prendaBase';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import styles from './AdminCombosCrear.module.css';
 
-const VACIO = { name: '', description: '', price: '', salePrice: '', publicado: false, piezas: [{ prendaId: '' }, { prendaId: '' }] };
+const VACIO = { name: '', description: '', price: '', salePrice: '', publicado: false, tallas: 'auto', piezas: [{ prendaId: '' }, { prendaId: '' }] };
+
+// Cómo elige la talla el cliente (comboCrear.tallas).
+const OPCIONES_TALLA = [
+  { valor: 'auto', titulo: 'Automático', ayuda: 'Prendas distintas (conjunto de una persona): una sola talla. La misma prenda repetida (pareja, trío): una por prenda.' },
+  { valor: 'porPrenda', titulo: 'Una talla por prenda', ayuda: 'Cada prenda elige la suya: él y ella pueden ser de tallas distintas.' },
+  { valor: 'una', titulo: 'Una sola talla para todas', ayuda: 'Una talla que se aplica a todas las prendas.' },
+];
 const soles = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
 
 /**
@@ -90,6 +97,7 @@ const AdminCombosCrear = () => {
       price: combo.price ?? '',
       salePrice: combo.salePrice ?? '',
       publicado: combo.publicado,
+      tallas: combo.tallas || 'auto',
       piezas: combo.piezas.map((p) => ({ prendaId: p.prendaId })),
     } : { ...VACIO, piezas: VACIO.piezas.map((p) => ({ ...p })) });
   };
@@ -237,6 +245,16 @@ const AdminCombosCrear = () => {
             )}
           </fieldset>
 
+          <fieldset className={styles.piezas}>
+            <legend>Tallas</legend>
+            {OPCIONES_TALLA.map((o) => (
+              <label key={o.valor} className={styles.check}>
+                <input type="radio" name="tallas" checked={form.tallas === o.valor} onChange={() => cambiar('tallas', o.valor)} />
+                <span><strong>{o.titulo}</strong> · {o.ayuda}</span>
+              </label>
+            ))}
+          </fieldset>
+
           <div className={styles.precios}>
             <label className={styles.campo}>
               <span>Precio del combo (S/)</span>
@@ -281,7 +299,10 @@ const AdminCombosCrear = () => {
                 <span className={styles.ayuda}>
                   {c.piezas.map((p) => prendaPorId.get(p.prendaId)?.name || 'Prenda no encontrada').join(' + ')}
                 </span>
-                <span className={styles.ayuda}>{soles(precioBase(c))}</span>
+                <span className={styles.ayuda}>
+                  {soles(precioBase(c))}
+                  {c.tallas !== 'auto' && ` · ${OPCIONES_TALLA.find((o) => o.valor === c.tallas)?.titulo}`}
+                </span>
               </div>
               <span className={c.publicado ? styles.publicado : styles.borrador}>{c.publicado ? 'Publicado' : 'Borrador'}</span>
               <div className={styles.itemAcciones}>

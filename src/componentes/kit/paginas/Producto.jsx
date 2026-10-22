@@ -14,7 +14,7 @@ import { CARAS_KAPI } from '../piezas/Flotantes';
 import { FotoProducto } from '../piezas/FotoProducto';
 import { GaleriaProducto } from '../piezas/GaleriaProducto';
 import { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra, BarraCompra, useAgregado, IconoAgregar } from '../piezas/Ficha';
-import { OpcionesProducto, tallasDe, tallasDePieza, piezasSinTalla, verVariantes } from '../piezas/OpcionesProducto';
+import { OpcionesProducto, tallasDe, tallasDePieza, faltaTalla, verVariantes } from '../piezas/OpcionesProducto';
 import { Estrellas, ResumenOpiniones, TarjetaOpinion, FormularioOpinion } from '../piezas/Opiniones';
 import { atributosDeFoto } from '../../../components/common/OptimizedImage/OptimizedImage';
 import s from './Producto.module.css';
@@ -114,7 +114,8 @@ export function PaginaProducto({
   estado, onReintentar, urlTienda = '/tienda',
   textoPersonalizar = 'Personalizar', piezasCargando = false, regalo, fuentes, tarjeta: Tarjeta, onVerAbajo,
 }) {
-  const { variantes = [], opciones: tallasBase = [], etiquetaOpcion = 'Talla', piezas = [] } = opciones;
+  // tallaUnica: el combo lleva una talla para todas (lo elige el admin).
+  const { variantes = [], opciones: tallasBase = [], etiquetaOpcion = 'Talla', piezas = [], tallaUnica = false } = opciones;
   const [varId, setVarId] = useState(varianteInicial ?? variantes[0]?.id);
   const [opcion, setOpcion] = useState(null);
   const [colores, setColores] = useState(() => Object.fromEntries(piezas.map((p, i) => [i, p.colores.some((c) => c.nombre === p.color) ? p.color : p.colores[0]?.nombre])));
@@ -174,7 +175,6 @@ export function PaginaProducto({
   const textoCargandoPiezas = useTexto('Cargando las prendas del combo');
   const textoCargandoOpiniones = useTexto('Cargando las opiniones');
   const variante = variantes.find((v) => v.id === varId) || variantes[0];
-  const lista = tallasDe({ variante, opciones: tallasBase, piezas, colores });
   const galeria = useMemo(() => {
     const lista = fotos.combo ? galeriaCombo(fotos.combo, piezas, colores) : (variante && fotos[variante.id]) || fotos.base || [];
     // Las copias de cada foto (si la tienda las da): la galería baja solo la que hace falta.
@@ -215,8 +215,9 @@ export function PaginaProducto({
   }
 
   const quedan = !producto.agotado && producto.stock > 0 && producto.stock <= STOCK_BAJO ? producto.stock : 0;
-  const eleccion = { variante, opcion, piezas: colores, tallas, cantidad };
-  const sinTalla = piezas.length ? piezasSinTalla(piezas, colores, tallas).length > 0 : lista.length > 0 && !opcion;
+  const eleccion = { variante, opcion, piezas: colores, tallas: tallaUnica ? {} : tallas, cantidad };
+  const sinTalla = faltaTalla({ variante, opciones: tallasBase, piezas, colores, opcion, tallas, tallaUnica });
+  const porPrenda = piezas.length > 0 && !tallaUnica;
   const accion = async (cual, fn) => {
     if (sinTalla) {
       setFalta((n) => n + 1);
@@ -253,8 +254,8 @@ export function PaginaProducto({
   );
   const detalle = [
     verVariantes(variantes) && variante?.nombre,
-    piezas.length > 0 && piezas.map((_, i) => [colores[i], tallas[i]].filter(Boolean).join(' ')).filter(Boolean).join(' + '),
-    piezas.length ? null : opcion,
+    piezas.length > 0 && piezas.map((_, i) => [colores[i], porPrenda && tallas[i]].filter(Boolean).join(' ')).filter(Boolean).join(' + '),
+    porPrenda ? null : opcion,
     sinTalla && `Elige ${etiquetaOpcion.toLowerCase()}`,
   ].filter(Boolean).join(' · ');
   const foto = (url) => (fuentes && url ? fuentes(url).src || url : url);
@@ -340,9 +341,11 @@ export function PaginaProducto({
             // Solo si ese color tiene foto: si no, la galería se queda donde está.
             const k = fotos.combo ? galeriaCombo(fotos.combo, piezas, nuevos).findIndex((f) => f.pieza === i && f.color === c) : -1;
             if (k >= 0) setSalto((x) => ({ indice: k, vez: (x?.vez || 0) + 1 }));
-            // Las tallas son las del color elegido: si la de esa prenda ya no está, se vuelve a elegir.
+            // Las tallas son las del color elegido: si la elegida ya no está, se vuelve a elegir.
             if (tallas[i] && !tallasDePieza(piezas[i], c).includes(tallas[i])) setTallas((x) => ({ ...x, [i]: undefined }));
+            if (opcion && !tallasDe({ opciones: tallasBase, piezas, colores: nuevos }).includes(opcion)) setOpcion(null);
           }}
+          tallaUnica={tallaUnica}
           tallasPiezas={tallas}
           onTallaPieza={(i, t) => setTallas((x) => ({ ...x, [i]: t }))}
           cantidad={cantidad}

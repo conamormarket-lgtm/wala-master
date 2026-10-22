@@ -1401,6 +1401,8 @@ function normalizeProductPayload(data) {
     isComboProduct,
     ...(isComboProduct && comboLayout && { comboLayout }),
     ...(isComboProduct && comboItems.length > 0 && { comboItems }),
+    // Tallas del combo: 'una' (una para todas) o 'porPrenda' (cada prenda la suya).
+    ...(isComboProduct && { comboTallas: data.comboTallas === 'una' ? 'una' : 'porPrenda' }),
     // ANTES: "...(data.comboPreviewImage && {...})" — con la portada vacía
     // (el admin la quitó a propósito) esto no agregaba la llave al payload,
     // así que updateDocument nunca se enteraba de que había que borrarla y

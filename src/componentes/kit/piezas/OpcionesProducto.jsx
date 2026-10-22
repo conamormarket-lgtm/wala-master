@@ -23,6 +23,9 @@ import s from './OpcionesProducto.module.css';
  *    Cada prenda lleva su color y, debajo, su talla (una pareja puede ser de
  *    tallas distintas): tallasPiezas: { [i]: talla } · onTallaPieza(i, talla).
  *    Las tallas de una prenda son las de su color elegido (tallasDePieza).
+ *    tallaUnica (el admin lo elige por combo): una sola talla para todas
+ *    (opcion/onOpcion), la que comparten los colores elegidos (tallasDe), con
+ *    "Se aplica a las N prendas".
  *  - cantidad · onCantidad · maxCantidad · onGuia (guía de tallas)
  *  - falta: la talla que falta se marca en rojo con "Elige una talla para
  *    continuar" (en un combo, la de cada prenda sin talla). Un número que
@@ -30,7 +33,7 @@ import s from './OpcionesProducto.module.css';
  */
 export function OpcionesProducto({
   variantes = [], varId, onVariante, opciones = [], etiquetaOpcion = 'Talla', agotadas = [], opcion, onOpcion, notaOpcion,
-  piezas = [], colores = {}, onColorPieza, tallasPiezas = {}, onTallaPieza, cantidad, onCantidad, maxCantidad = 10, onGuia, falta = false,
+  piezas = [], colores = {}, onColorPieza, tallasPiezas = {}, onTallaPieza, tallaUnica = false, cantidad, onCantidad, maxCantidad = 10, onGuia, falta = false,
 }) {
   const variante = variantes.find((v) => v.id === varId) || variantes[0];
   const lista = tallasDe({ variante, opciones, piezas, colores });
@@ -67,7 +70,7 @@ export function OpcionesProducto({
                 onChange={(c) => onColorPieza?.(i, c)}
               />
             )}
-            {tallas.length > 0 && talla({
+            {!tallaUnica && tallas.length > 0 && talla({
               etiqueta: `${etiquetaOpcion} · ${p.nombre}`,
               tallas,
               valor: tallasPiezas[i],
@@ -92,7 +95,13 @@ export function OpcionesProducto({
         />
       ))}
 
-      {!piezas.length && lista.length > 0 && talla({ etiqueta: etiquetaOpcion, tallas: lista, valor: opcion, onChange: onOpcion, nota: notaOpcion })}
+      {(!piezas.length || tallaUnica) && lista.length > 0 && talla({
+        etiqueta: etiquetaOpcion,
+        tallas: lista,
+        valor: opcion,
+        onChange: onOpcion,
+        nota: notaOpcion || (tallaUnica && piezas.length > 1 ? `Se aplica a las ${piezas.length} prendas.` : undefined),
+      })}
 
       {onCantidad && (
         <div className={s.fila}>
@@ -116,6 +125,16 @@ export const tallasDePieza = (p, color) => (p?.colores?.length
 export const piezasSinTalla = (piezas = [], colores = {}, tallas = {}) => piezas
   .map((p, i) => (tallasDePieza(p, colores[i]).length && !tallas[i] ? i : -1))
   .filter((i) => i >= 0);
+
+/**
+ * ¿Falta elegir talla? Producto suelto o combo de talla única: la `opcion`; si
+ * no, la de cada prenda (`tallas`).
+ */
+export const faltaTalla = ({ variante, opciones = [], piezas = [], colores = {}, opcion, tallas = {}, tallaUnica = false }) => (
+  piezas.length && !tallaUnica
+    ? piezasSinTalla(piezas, colores, tallas).length > 0
+    : tallasDe({ variante, opciones, piezas, colores }).length > 0 && !opcion
+);
 
 /**
  * Las tallas que se pueden elegir. En un combo, las que comparten las prendas

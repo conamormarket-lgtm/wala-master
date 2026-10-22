@@ -237,6 +237,9 @@ export function opcionesDeProducto(p, { subproductos = {} } = {}) {
     // no lo tienen: dicen "Talla" hasta que se vuelvan a guardar.
     etiquetaOpcion: vs.find((v) => v.sizeLabel)?.sizeLabel || 'Talla',
     piezas,
+    // El admin elige por combo: una talla para todas ('una') o una por prenda
+    // (lo de siempre, sin el campo).
+    tallaUnica: piezas.length > 0 && p.comboTallas === 'una',
     personalizable: false,
   };
 }

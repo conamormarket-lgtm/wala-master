@@ -156,6 +156,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
     isComboProduct: false,
     comboItems: [],
     comboPreviewImage: '',
+    comboTallas: 'porPrenda',
     featured: false,
     inStock: esModoPrenda ? '' : 0,
     // WhatsApp por producto. Vacio = hereda el de su marca (/admin/marcas) y,
@@ -318,6 +319,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         isComboProduct: Boolean(productData.isComboProduct),
         comboItems: productData.comboItems || [],
         comboPreviewImage: productData.comboPreviewImage || '',
+        comboTallas: productData.comboTallas === 'una' ? 'una' : 'porPrenda',
         characters: productData.characters || [],
         tags: productData.tags || [],
         publico: productData.publico || '',
@@ -386,6 +388,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         isComboProduct: false,
         comboItems: [],
         comboPreviewImage: '',
+        comboTallas: 'porPrenda',
         featured: false,
         inStock: esModoPrenda ? '' : 0,
       };
@@ -907,6 +910,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         whatsappMessage: (form.whatsappMessage || '').trim(),
         isComboProduct: isCombo,
         comboItems: isCombo ? form.comboItems : [],
+        comboTallas: form.comboTallas,
         comboPreviewImage: isCombo ? currentComboPreview : '',
         characters: form.characters || [],
         tags: form.tags || [],
@@ -1376,6 +1380,31 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         <div className={styles.rightCol}>
           
           {form.isComboProduct ? (
+            <>
+            <div className={styles.card}>
+              <h2 className={styles.cardTitle}>Tallas del combo</h2>
+              <p className={styles.cardSubtitle}>Cómo elige la talla el cliente en la ficha del producto.</p>
+              <div style={{ display: 'grid', gap: '0.5rem', marginTop: '0.75rem' }}>
+                {[
+                  { valor: 'porPrenda', titulo: 'Una talla por prenda', ayuda: 'Cada prenda elige la suya. Para parejas: él y ella pueden ser de tallas distintas.' },
+                  { valor: 'una', titulo: 'Una sola talla para todas', ayuda: 'Una talla que se aplica a todas las prendas. Para conjuntos de una persona (polo + jogger).' },
+                ].map((o) => (
+                  <label key={o.valor} style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="comboTallas"
+                      checked={(form.comboTallas || 'porPrenda') === o.valor}
+                      onChange={() => setForm((f) => ({ ...f, comboTallas: o.valor }))}
+                      style={{ marginTop: '0.2rem' }}
+                    />
+                    <span>
+                      <span style={{ fontWeight: (form.comboTallas || 'porPrenda') === o.valor ? 600 : 400 }}>{o.titulo}</span>
+                      <span style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280' }}>{o.ayuda}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
             <AdminComboEditor
               comboItems={form.comboItems}
               setComboItems={(items) => setForm(f => ({ ...f, comboItems: items }))}
@@ -1389,6 +1418,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
               // con la captura del lienzo de Yoryo — avisar ANTES de guardar.
               comboWillOverridePreview={form.customizable}
             />
+            </>
           ) : (
             <>
               <div className={styles.card}>

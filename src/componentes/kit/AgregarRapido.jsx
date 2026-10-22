@@ -6,7 +6,7 @@ import { Texto } from './Traduccion';
 import { Hueso } from './Esqueletos';
 import { soles } from './TarjetaProducto';
 import { FotoProducto } from './piezas/FotoProducto';
-import { OpcionesProducto, tallasDe, tallasDePieza, piezasSinTalla, conMuestras } from './piezas/OpcionesProducto';
+import { OpcionesProducto, tallasDe, tallasDePieza, faltaTalla, conMuestras } from './piezas/OpcionesProducto';
 import s from './AgregarRapido.module.css';
 
 /**
@@ -21,7 +21,8 @@ import s from './AgregarRapido.module.css';
  *  - opciones: string[] por defecto (mainSizes) si la variante no trae las suyas.
  *  - etiquetaOpcion: 'Talla' | 'Medida' | 'Número' | 'Tamaño'… (sizeLabel).
  *  - piezas: combos → [{ nombre, colores: [{ nombre, hex, tallas }] }], un color
- *      y una talla por pieza (las de su color elegido).
+ *      y una talla por pieza (las de su color elegido); con tallaUnica, una
+ *      talla para todas (la que comparten los colores elegidos).
  *  - personalizable + onPersonalizar(eleccion): botón secundario "Personalizar".
  *  - onConfirmar({ variante, opcion, piezas, tallas, cantidad }).
  *  - varianteInicial: el id de la que abre (la principal del producto; si
@@ -37,6 +38,7 @@ export default function AgregarRapido({
   etiquetaOpcion = 'Talla',
   agotadas = [],
   piezas = [],
+  tallaUnica = false,
   personalizable = false,
   onPersonalizar,
   onConfirmar,
@@ -96,8 +98,8 @@ export default function AgregarRapido({
   }, [piezas.length, variantes.length, lista.length, etiquetaOpcion, conColor]);
 
   if (!producto) return null;
-  const falta = piezas.length ? piezasSinTalla(piezas, colores, tallas).length > 0 : lista.length > 0 && !opcion;
-  const eleccion = { variante, opcion, piezas: colores, tallas, cantidad };
+  const falta = faltaTalla({ variante, opciones, piezas, colores, opcion, tallas, tallaUnica });
+  const eleccion = { variante, opcion, piezas: colores, tallas: tallaUnica ? {} : tallas, cantidad };
 
   return (
     <HojaInferior
@@ -153,6 +155,7 @@ export default function AgregarRapido({
           piezas={piezas}
           colores={colores}
           onColorPieza={(i, c) => setColores((x) => ({ ...x, [i]: c }))}
+          tallaUnica={tallaUnica}
           tallasPiezas={tallas}
           onTallaPieza={(i, t) => setTallas((x) => ({ ...x, [i]: t }))}
           cantidad={cantidad}

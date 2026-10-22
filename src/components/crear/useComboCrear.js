@@ -26,7 +26,7 @@ import { tallasPara, useFotosDePiezas } from '../../pages/Crear/fotosCombo';
  *  - en cuanto una prenda tiene diseño, el combo se guarda en la cuenta como
  *    "Mi combo" y su id queda en la dirección
  *  - un conjunto (prendas distintas) lleva una talla para todas; una pareja o
- *    un trío, una por prenda
+ *    un trío, una por prenda (salvo que el admin elija otra cosa: combo.tallas)
  *  - comprar: las prendas de la comunidad se guardan antes en la cuenta
  *    (crearDesdePlantilla), el combo entra al carrito como una sola línea
  *    (itemDeCombo) y se va al carrito
@@ -286,8 +286,11 @@ export default function useComboCrear() {
     const [primera, ...resto] = listas;
     return primera.filter((t) => resto.every((l) => l.includes(t)));
   })();
-  // Si las prendas no comparten ninguna talla, cada prenda lleva la suya.
-  const unaTalla = esConjunto && (tallasComunes.length > 0 || tallasPorPieza.every((t) => !t.length));
+  // El admin puede fijar una talla para todas o una por prenda (combo.tallas);
+  // sin elegir, un conjunto lleva una. Si las prendas no comparten ninguna
+  // talla, cada prenda lleva la suya igual.
+  const pideUna = combo?.tallas === 'una' || (combo?.tallas !== 'porPrenda' && esConjunto);
+  const unaTalla = pideUna && (tallasComunes.length > 0 || tallasPorPieza.every((t) => !t.length));
   // La del conjunto: la que eligió el cliente (va en todas las piezas).
   const tallaConjunto = unaTalla ? (armado.find((a) => a.talla)?.talla || '') : '';
   const piezas = armado.map((a, i) => {
