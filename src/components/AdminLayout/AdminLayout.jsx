@@ -202,6 +202,12 @@ const AdminLayout = () => {
               >
                 Ruleta Semanal
               </NavLink>
+              <NavLink
+                to="/admin/bolitas"
+                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
+              >
+                Las Bolitas de Kapi
+              </NavLink>
             </>
           )}
 

@@ -224,6 +224,30 @@ service cloud.firestore {
       allow delete: if notSupervision() && (isAdmin());
     }
 
+    // Las Bolitas de Kapi: el progreso del juego (nivel, estrellas, racha,
+    // ayudas guardadas). No vale dinero: lo escribe el dueño. El premio y el
+    // ranking no lo usan: salen de partidas comprobadas en el servidor
+    // (registrarPartidaBolitasSecure). bolitasRetos y bolitasSemanas (el
+    // ranking) y loyaltyConfig no tienen match: solo las toca el servidor. Las
+    // cuatro están en esSoloWala: sin eso, la regla general del ERP (al final)
+    // dejaría escribirlas a cualquiera con sesión.
+    match /bolitasProgreso/{userId} {
+      allow read, write: if notSupervision() && (isOwner(userId));
+    }
+    // Fase 3: el patrocinio de cada reto (marca, cupón, cupo) y la
+    // configuración (las marcas de los mundos, los premios del ranking): los lee
+    // el juego; los escribe el admin (adminBolitasSecure, en el servidor).
+    // bolitasStats, bolitasJugadores y bolitasPremios (métricas y premios
+    // entregados) no tienen match: solo el servidor.
+    match /bolitasPatrocinios/{fecha} {
+      allow read: if notSupervision() && (true);
+      allow write: if notSupervision() && (isAdmin());
+    }
+    match /bolitasConfig/{id} {
+      allow read: if notSupervision() && (true);
+      allow write: if notSupervision() && (isAdmin());
+    }
+
     // Evidencias de retos: se crean vía Cloud Function (admin SDK, evade reglas); el
     // cliente solo necesita leerlas como admin.
     match /challengeEvidences/{id} { allow read: if notSupervision() && (isAdmin()); allow write: if notSupervision() && (isAdmin()); }
@@ -518,11 +542,13 @@ service cloud.firestore {
       return c in [
         'activeChallenge', 'adminRoles', 'adminUsers', 'analytics_daily', 'analytics_events',
         'analytics_global_summary', 'analytics_kapi', 'analytics_sessions', 'analytics_user_summary',
-        'beneficios', 'blueprints', 'challengeEvidences', 'chancesAjustes', 'characters',
+        'beneficios', 'blueprints', 'bolitasConfig', 'bolitasJugadores', 'bolitasPatrocinios',
+        'bolitasPremios', 'bolitasProgreso', 'bolitasRetos', 'bolitasSemanas', 'bolitasStats',
+        'challengeEvidences', 'chancesAjustes', 'characters',
         'checkout_payment_intents', 'clics', 'cliparts', 'cobros_en_curso', 'comunidad_meta', 'contador',
         'cuestionarios_templates', 'culqiCharges', 'culqiWebhookEvents', 'customShapes', 'designs',
         'enlaces_pago', 'flashOffers', 'fonts', 'fx', 'galeria', 'ganadores_galeria', 'heatmap_events',
-        'inventoryLogs', 'landingPages', 'libro_reclamaciones', 'link_pages', 'loyaltyLedger',
+        'inventoryLogs', 'landingPages', 'libro_reclamaciones', 'link_pages', 'loyaltyConfig', 'loyaltyLedger',
         'messages', 'missions', 'niches', 'notification_campaigns', 'notification_drafts',
         'notification_settings', 'notification_state', 'notification_stats', 'notifications',
         'order_notifications', 'organizable_events', 'pages', 'pagos_anomalias', 'participantes',

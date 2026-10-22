@@ -44,4 +44,6 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- navigator.vibrate en el WebView (juegos, estudio); no se le pregunta a la persona -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 </manifest>

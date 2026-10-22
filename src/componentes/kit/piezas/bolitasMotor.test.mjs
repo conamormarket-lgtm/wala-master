@@ -1,8 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   CAPACIDAD, COLORES, PRIMER_NIVEL, nivel, retoDelDia, puedeMover, mover, resuelto, resolver, pista,
   hayMovimientos, agregarTubo, volverA, tramo, tubosListos, obstaculosDelNivel, coloresDelNivel, azar,
+  NIVELES_POR_MUNDO, mundoDe, esJefe, infoMundo, estrellasPara, metasEstrellas, premioCofre,
+  comprobarPartida, semanaDe, LIMITES_PARTIDA,
 } from './bolitasMotor.mjs';
 
 const b = (c, extra = {}) => ({ id: `${c}-${Math.random().toString(36).slice(2, 8)}`, c, oculta: false, hielo: 0, ...extra });
@@ -91,6 +94,84 @@ test('cada obstáculo empieza solo en su nivel y después vuelve', () => {
   }
   const despues = Array.from({ length: 60 }, (_, k) => obstaculosDelNivel(41 + k)).flat();
   for (const tipo of Object.keys(PRIMER_NIVEL)) assert.ok(despues.includes(tipo));
+});
+
+test('mundos de 20 niveles con su jefe al final', () => {
+  assert.equal(NIVELES_POR_MUNDO, 20);
+  assert.equal(mundoDe(1), 1);
+  assert.equal(mundoDe(20), 1);
+  assert.equal(mundoDe(21), 2);
+  assert.deepEqual([infoMundo(2).desde, infoMundo(2).hasta], [21, 40]);
+  assert.ok(infoMundo(9).nombre, 'los nombres vuelven a empezar');
+  assert.ok(esJefe(20) && esJefe(40) && !esJefe(19) && !esJefe(0));
+  for (const n of Object.values(PRIMER_NIVEL)) assert.ok(!esJefe(n), `la presentación del ${n} no puede ser un jefe`);
+  // El jefe trae todos los obstáculos que ya salieron y un color más.
+  assert.deepEqual(obstaculosDelNivel(20), ['ocultas']);
+  assert.deepEqual(obstaculosDelNivel(40), ['ocultas', 'cortina']);
+  assert.deepEqual(obstaculosDelNivel(60), ['ocultas', 'cortina', 'hielo']);
+  const jefe = nivel(60);
+  assert.ok(jefe.jefe);
+  assert.equal(jefe.mundo, 3);
+  assert.ok(resuelto(jugar(jefe.estado, jefe.solucion)));
+});
+
+test('estrellas: 3 igualando la solución del motor, 2 hasta un cuarto más, 1 si no', () => {
+  assert.deepEqual(metasEstrellas(20), { tres: 20, dos: 25 });
+  assert.equal(estrellasPara(18, 20), 3);
+  assert.equal(estrellasPara(20, 20), 3);
+  assert.equal(estrellasPara(25, 20), 2);
+  assert.equal(estrellasPara(26, 20), 1);
+  assert.equal(nivel(30).par, nivel(30).solucion.length);
+});
+
+test('el cofre trae una ayuda', () => {
+  const tipos = new Set();
+  for (let k = 0; k < 200; k += 1) {
+    const p = premioCofre(azar(k));
+    assert.ok(['pista', 'deshacer', 'tubo'].includes(p.tipo));
+    assert.ok(p.cantidad >= 1);
+    tipos.add(p.tipo);
+  }
+  assert.equal(tipos.size, 3);
+  assert.equal(premioCofre(() => 0).tipo, 'pista');
+  assert.equal(premioCofre(() => 0.999).tipo, 'tubo');
+});
+
+test('comprobar una partida: la solución pasa, las trampas no', () => {
+  const lv = nivel(30);
+  assert.deepEqual(comprobarPartida(lv, { movimientos: lv.solucion }), { ok: true, movimientos: lv.solucion.length });
+  assert.equal(comprobarPartida(lv, { movimientos: lv.solucion.slice(0, -1) }).motivo, 'sin_resolver');
+  assert.equal(comprobarPartida(lv, { movimientos: [] }).motivo, 'movimientos');
+  assert.equal(comprobarPartida(lv, { movimientos: [[0, 0]] }).motivo, 'regla');
+  assert.equal(comprobarPartida(lv, { movimientos: [['0', 1]] }).motivo, 'formato');
+  assert.equal(comprobarPartida(lv, { movimientos: lv.solucion, tubos: LIMITES_PARTIDA.tubos + 1 }).motivo, 'tubos');
+  assert.equal(comprobarPartida(lv, { movimientos: Array(LIMITES_PARTIDA.movimientos + 1).fill([0, 1]) }).motivo, 'movimientos');
+  // Otro nivel no sirve para este.
+  assert.equal(comprobarPartida(nivel(31), { movimientos: lv.solucion }).ok, false);
+});
+
+test('comprobar una partida con un tubo de más agregado a mitad del juego', () => {
+  // Un tablero sin salida: solo se resuelve con el tubo de más.
+  const armado = { estado: estadoDe([[b(0), b(1), b(0), b(1)], [b(1), b(0), b(1), b(0)]]) };
+  const conTubo = resolver(agregarTubo(armado.estado));
+  assert.ok(conTubo?.length);
+  assert.ok(comprobarPartida(armado, { movimientos: conTubo, tubos: 1 }).ok);
+  assert.equal(comprobarPartida(armado, { movimientos: conTubo }).motivo, 'regla', 'sin el tubo, los movimientos no valen');
+});
+
+test('la copia del servidor es igual a este motor', () => {
+  const leer = (ruta) => readFileSync(new URL(ruta, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+  const copia = leer('../../../../functions/bolitasMotor.mjs');
+  const fin = copia.indexOf('\n\n', copia.indexOf('GENERADO')) + 2;
+  assert.equal(copia.slice(fin), leer('./bolitasMotor.mjs'), 'corre: node scripts/generar-motor-bolitas.js');
+});
+
+test('la semana del ranking empieza el lunes', () => {
+  assert.equal(semanaDe('2026-10-21'), '2026-10-19'); // miércoles
+  assert.equal(semanaDe('2026-10-19'), '2026-10-19'); // lunes
+  assert.equal(semanaDe('2026-10-25'), '2026-10-19'); // domingo
+  assert.equal(semanaDe('2026-11-01'), '2026-10-26'); // cruza de mes
+  assert.equal(semanaDe('2027-01-01'), '2026-12-28'); // cruza de año
 });
 
 test('el mismo número da el mismo nivel', () => {

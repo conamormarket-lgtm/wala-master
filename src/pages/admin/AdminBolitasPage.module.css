@@ -1,0 +1,231 @@
+.container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+/* Fuera de las tarjetas (que son blancas), los colores del tema: en modo
+   noche el fondo del admin es oscuro. */
+.header h1 {
+  font-size: 2rem;
+  color: var(--color-text, #1a1a1a);
+  margin-bottom: 0.5rem;
+}
+
+.header p {
+  color: var(--color-text-muted, #666);
+  font-size: 1.1rem;
+}
+
+.secciones {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.card {
+  display: grid;
+  gap: 1rem;
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid #eee;
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+}
+
+.card h3 {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 1rem;
+  color: #333;
+}
+
+.nota {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.error {
+  color: #991b1b;
+}
+
+.form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.filaCampos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.campo {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 140px;
+}
+
+.campo span {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #444;
+}
+
+.campo input,
+.campo select {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.casilla {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding-bottom: 0.55rem;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.card {
+  color: #333;
+}
+
+.boton {
+  justify-self: start;
+  padding: 0.65rem 1.25rem;
+  background-color: #000;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.boton:disabled,
+.botonChico:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.botonChico,
+.botonBorrar {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.botonBorrar {
+  border-color: #fecaca;
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.acciones {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.tabla th,
+.tabla td {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.tabla th {
+  background-color: #f9f9f9;
+  font-weight: 600;
+  color: #555;
+}
+
+.apagado {
+  opacity: 0.5;
+}
+
+.chip {
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: #ede9fe;
+  color: #6d28d9;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.listaMundos {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listaMundos li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #eee;
+  border-radius: 6px;
+}
+
+.premio {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px dashed #ddd;
+  border-radius: 6px;
+}
+
+.cifras {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.cifras div {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem;
+  border: 1px solid #eee;
+  border-radius: 6px;
+}
+
+.cifras strong {
+  font-size: 1.5rem;
+}
+
+.cifras span {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.columnas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}

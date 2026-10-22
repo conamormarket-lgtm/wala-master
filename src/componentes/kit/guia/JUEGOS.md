@@ -356,8 +356,9 @@ con niveles propios: no se copió ninguno, se generan con la misma forma.
 - **Obstáculos**, cada uno solo en su primer nivel (con su explicación) y
   después cada tanto: **bolitas ocultas** "?" desde el 12 (se ven al quedar
   arriba), **cortina** desde el 25 (el tubo no se usa hasta completar el
-  color que muestra) y **hielo** desde el 40 (la bolita no se mueve; el
-  número baja con cada movimiento).
+  color que muestra) y **hielo** desde el 45 (la bolita no se mueve; el
+  número baja con cada movimiento). Hasta la fase 1 el hielo llegaba en el
+  40, que pasó a ser un jefe.
 - **Solucionador:** cada nivel se resuelve antes de mostrarlo; si no tiene
   solución se reparte otra vez. También da la pista. Armar un nivel tarda
   0,5 ms la mitad de las veces y 160 ms el peor de 1.500 (en un PC); el
@@ -389,3 +390,185 @@ probado:** el cobro con cuenta (no cambió), la hoja "Sin movimientos" en
 pantalla (la regla sí, en las pruebas del motor), inglés y la app
 (Capacitor). **Pendiente:** el progreso vive en el aparato; para que siga a
 la cuenta haría falta guardarlo en el perfil.
+
+### Fase 1: que sea divertido (2026-10-21)
+
+Sin servidor y sin tocar las monedas: lo que engancha no vale dinero.
+
+- **Estrellas (1 a 3)** según los movimientos (`estrellasPara`): igualar o
+  mejorar la solución del motor (`par`) da 3; hasta un cuarto más, 2. La
+  solución del motor queda entre 0 y 5 movimientos por encima de la óptima
+  (medido contra búsqueda en anchura en los niveles 1 a 35): 3 estrellas
+  piden jugar casi perfecto. Durante el juego se ven las que llevarías y la
+  meta; al ganar entran animadas, con "¡Nuevo récord!" y "Repetir por 3
+  estrellas".
+- **Mundos de 20 niveles** (`NIVELES_POR_MUNDO`, `MUNDOS`: nombre y colores
+  de fondo de la mesa, en claro y en oscuro). El último de cada mundo es un
+  **jefe** (`esJefe`): un color más y todos los obstáculos que ya salieron.
+  El **mapa** (`MapaBolitas`) muestra los 20 niveles con sus estrellas,
+  candado en los que faltan y la corona del jefe; desde ahí se repite
+  cualquier nivel abierto.
+- **Racha de victorias:** cada `RACHA_COFRE` (3) niveles seguidos ganados
+  abre un **cofre** (`premioCofre`): 1 pista, 3 para deshacer o 1 tubo de
+  más, que se **guardan** y se usan cuando se acaban las del nivel.
+  Reiniciar o dejar un nivel empezado corta la racha (con aviso). El reto
+  del día no cuenta.
+- **Sonido y vibración** (`piezas/efectosBolitas.js`): sonidos armados con
+  Web Audio (sin archivos) al levantar, soltar, completar un tubo, ganar,
+  abrir el cofre y en un toque que no vale; vibración con `navigator.vibrate`.
+  Dos interruptores junto a "Cómo jugar". En Android se agregó el permiso
+  `VIBRATE` al manifiesto (no le pregunta nada a la persona; sin él el
+  WebView no vibraba, tampoco en el estudio). En iPhone no hay vibración.
+- **Progreso en una sola clave** (`PROGRESO_BOLITAS`, `progresoBolitas`):
+  la página lo recibe en `progreso` y avisa cada cambio con `onProgreso`;
+  la tienda lo guarda en `wala_bolitas_progreso`. Reemplaza a las claves
+  sueltas de la primera versión, que no llegaron a producción.
+- **Toques rápidos:** el tubo elegido vive también en una referencia; dos
+  toques antes de que se vuelva a pintar (un celular lento) ya no eligen el
+  tubo equivocado.
+
+**Demo:** "Racha 2 (el próximo abre cofre)", "El mapa del mundo" y "Nivel
+20 (jefe)"; el hielo pasó a "Nivel 45".
+
+**Carga:** la página de las bolitas baja 36,5 KB (13,8 KB gzip); antes de
+esta fase, 23,2 KB.
+
+**Probado** en el navegador (sin cuenta, a 638 px): el nivel 1 con la racha
+en 2 (3 estrellas, el cofre con 1 pista y lo guardado), el panel de la
+racha, el mapa (estrellas, actual, candados, jefe), la pista que gasta
+primero las del nivel y después la guardada, reiniciar que corta la racha,
+el jefe del nivel 20, el fondo del mundo en claro y oscuro, y que el sonido
+y la vibración se disparan y se apagan con sus interruptores. **No
+probado:** escuchar los sonidos de verdad, la vibración en un Android real
+(hace falta compilar la app con el permiso nuevo), el inglés.
+
+### Fase 2: conectarlo con walá (2026-10-21)
+
+Decidido con el dueño: el cobro se comprueba si la app manda la partida (las
+apps instaladas siguen cobrando sin prueba hasta activar un interruptor), la
+ruleta sigue igual (solo con Kapi) y el ranking muestra nombre e inicial.
+
+- **Partida comprobada en el servidor** (`registrarPartidaBolitasSecure`):
+  cada victoria con sesión manda `{ modo, nivel | fecha, movimientos, tubos }`
+  (los movimientos que valen, después de deshacer, y los tubos de más). El
+  servidor rearma el nivel con **el mismo motor** (`functions/bolitasMotor.mjs`,
+  copia generada con `npm run gen:motor-bolitas`; una prueba avisa si quedó
+  vieja) y repite los movimientos (`comprobarPartida`). Si resuelve el nivel:
+  paga el +2 si hoy no se cobró (libro mayor: `ball_sort_daily`), marca la
+  misión del día (`bolitas_nivel` o `bolitas_reto` en `userActions`, sin que
+  el celular la declare) y, si es el reto de hoy, lo anota en el ranking.
+- **El cobro de antes** (`claimBallSortRewardSecure`, sin prueba) sigue para
+  las apps instaladas (la de Android trae su copia de la web), anotado como
+  `ball_sort_daily_sin_prueba`. Con `loyaltyConfig/global.bolitasExigirPrueba
+  = true` (a mano, en la consola) se deja de aceptar. La web nueva, si la
+  función nueva todavía no existe en el servidor, cobra con la de antes.
+- **Ranking del reto** (`getRankingBolitasSecure`, `RankingBolitas`): hoy
+  (menos movimientos; empate, quien llegó antes) y la semana desde el lunes
+  (más retos; empate, menos movimientos). Los 20 primeros y tu puesto. Se
+  guarda en `bolitasRetos/{fecha}_{uid}` (el mejor del día) y
+  `bolitasSemanas/{lunes}_{uid}`; el celular no las lee ni las escribe. El
+  nombre es "Lucía R." (`nombrePublico`: nunca el correo).
+- **Progreso en la cuenta** (`bolitasProgreso/{uid}`, lo escribe el dueño):
+  al entrar se une con el del aparato (`unirProgresos` en
+  `piezas/bolitasProgreso.mjs`: lo ganado no se pierde; la racha y las
+  ayudas, del que cambió último). Se sube 1,5 s después del último cambio.
+- **Misiones:** `bolitas_nivel` y `bolitas_reto` en `MISSION_ACTIONS` (el
+  admin ya las ve en `/admin/misiones`) y en `seed-misiones.js`, **apagadas**:
+  pagan monedas de verdad y se activan a mano.
+- **Aviso local del reto** (`services/bolitasNotifications.js`, ID 30): en la
+  app y solo con el permiso ya dado, a las 19:00 si el reto de hoy falta (si
+  no, mañana). Tocar un aviso local con `extra.ruta` abre esa página
+  (`NotificationsContext`; antes tocar un aviso local abría el inicio).
+- **Reglas** (`firebase/firestore.rules`): `bolitasProgreso` solo el dueño; y
+  `bolitasProgreso`, `bolitasRetos`, `bolitasSemanas` y `loyaltyConfig` van en
+  `esSoloWala`. Sin eso, la regla general del ERP (al final del archivo)
+  dejaba escribirlas a cualquiera con sesión: se descubrió al probar.
+
+**Orden para publicar:** 1) reglas (`npm run deploy:firestore-rules`),
+2) funciones (`npm run deploy:functions`), 3) la web. Si la web sale antes,
+cobra con la función de antes y el ranking queda vacío hasta que lleguen las
+funciones. La app de Android necesita una versión nueva para mandar partidas
+comprobadas.
+
+**Probado** con los emuladores (`demo-wala`): una prueba de punta a punta
+(partida válida: +2, libro mayor `ball_sort_daily` y misión; otra el mismo
+día: sin pago; partida que no resuelve: rechazada; reto: misión y ranking
+con "Ana P."; reto repetido sin mejorar: no cambia; reglas: el progreso
+propio sí, el de otro no, el ranking nunca; cobro viejo: `sin_prueba` y,
+con el interruptor, bloqueado), y en el navegador con sesión: el progreso de
+la cuenta unido al entrar (nivel 3), ganar el nivel 3 (+2, de 5 a 7, 3
+estrellas), el reto con el ranking ("Prueba N." con "Tú") y que todo quedó en
+la cuenta. **No probado:** el aviso local en un Android real, la web antes
+que las funciones (la vuelta al cobro de antes), y con muchos jugadores (el
+ranking lee hasta 1.000 filas y ordena en el servidor).
+
+**Publicado (2026-10-21):** solo las tres funciones
+(`registrarPartidaBolitasSecure`, `getRankingBolitasSecure`,
+`claimBallSortRewardSecure`). Las reglas **no**. Ojo: el 2026-10-21 se leyó
+mal el ruleset vivo (el de la base `lumi`, 2.702 caracteres, en vez del de
+la principal) y se creyó que producción tenía reglas abiertas. No es así: la
+base principal corre las reglas fusionadas Walá+ERP (unos 35.000
+caracteres), algo más viejas que `master`. Pero en ellas las colecciones de
+las bolitas no están en `esSoloWala`, así que la regla general del ERP deja
+escribirlas a cualquiera con sesión hasta que se publiquen las reglas.
+
+### Fase 3: las marcas (2026-10-21)
+
+Decidido con el dueño: el admin elige por fecha qué marca patrocina el reto y
+pone el cupo de cupones.
+
+- **Cupones de marca** (checkout): un cupón con `brandId` descuenta solo
+  sobre los productos de catálogo de esa marca en el carrito
+  (`calcularDescuentoCupon`, paso 2b); sin ninguno, no descuenta y avisa. Los
+  cupones sin `brandId` (ruleta, recompensas) no cambian. Los crea
+  `crearCuponBolitas` (`functions/index.js`), con origen `bolitas_reto` o
+  `bolitas_semana` y el id que asegura uno por persona.
+- **Reto patrocinado** (`bolitasPatrocinios/{fecha}`: marca, cupón, cupo,
+  entregados, texto): el reto de ese día toma los colores y el logo de la
+  marca (`PatrocinioBolitas`) y quien lo completa con sesión recibe su cupón
+  (`registrarPartidaBolitasSecure`, en la misma transacción) mientras quede
+  cupo. El resultado muestra el cupón (`CuponGanado`) y productos de la
+  marca (`ProductosMarca`).
+- **Mundos de marca** (`bolitasConfig/mundos`: las marcas en orden, se
+  repiten): cada mundo toma colores y logo de su marca (`MarcaBolitas`, en la
+  cabecera y el mapa); al vencer al jefe se muestran sus productos.
+- **Premios del ranking semanal** (`bolitasConfig/premios`: puestos y
+  cupón, con marca opcional): `premiarRankingBolitas` cada lunes 00:15 (Lima)
+  premia la semana que terminó; `bolitasPremios/{semana}` y el id del cupón
+  evitan premiar dos veces. El admin puede premiar una semana a mano.
+- **Métricas** (`bolitasStats/{fecha}`: partidas, retos, partidas por
+  nivel, toques hacia la tienda por marca; `bolitasJugadores/{uid}`: primer
+  y último día, días jugados, nivel más alto): las escribe el servidor al
+  comprobar cada partida (solo con sesión); los toques los cuenta
+  `contarClicBolitasSecure` (también sin sesión).
+- **Admin** (`/admin/bolitas`, `AdminBolitasPage`, en el menú junto a la
+  Ruleta): patrocinios por fecha (con entregados/cupo), el orden de las marcas
+  de los mundos, los premios semanales y las métricas (volvieron otro día,
+  siguen 7 días después, dónde se traban, toques por marca). Todo pasa por
+  `adminBolitasSecure` (solo admin).
+- **Topes** (`LIMITES_CUPON`): 50 % o S/ 100 por cupón y 1000 cupones por
+  día, aunque el admin ponga más. En el repo, `bolitasPatrocinios` y
+  `bolitasConfig` se leen y solo el admin las escribe; `bolitasStats`,
+  `bolitasJugadores` y `bolitasPremios` solo el servidor (todas en
+  `esSoloWala`).
+
+**Orden para publicar** (importa: toca el checkout y crea cupones):
+1) `validarCuponSecure` y `canjearCuponSecure` (el cálculo con marca):
+**publicadas el 2026-10-22**; 2) **las reglas** con las colecciones de las
+bolitas en `esSoloWala` (con las reglas vivas de hoy, cualquiera con sesión
+podría escribirse un patrocinio o los premios y el servidor emitiría
+cupones); 3) `registrarPartidaBolitasSecure`, `contarClicBolitasSecure`,
+`adminBolitasSecure` y `premiarRankingBolitas`; 4) la web. Si un cupón de
+marca existiera con el checkout viejo, descontaría sobre todo el carrito.
+
+**Probado** con los emuladores (punta a punta, 7 pasos): solo el admin guarda
+un patrocinio y el servidor lo acota (80 % → 50 %); el reto patrocinado da el
+cupón, uno por persona y hasta el cupo; el cupón de marca descuenta S/ 10 (20 %
+de los S/ 50 de la marca) en un carrito de S/ 150 y nada sin productos de la
+marca; un cupón sin marca sigue sobre todo el carrito; los toques y las
+métricas; los premios semanales una sola vez y con su marca; las reglas (se
+lee el patrocinio, no se escribe; las métricas nunca). En el navegador: el
+mundo con la marca, el reto patrocinado, el cupón y los productos en el
+resultado, y `/admin/bolitas` con datos. **No probado:** guardar desde los
+formularios del admin (usan `alert`), la tarea del lunes ejecutándose sola,
+el checkout de punta a punta con un cupón de marca (solo validar), inglés.

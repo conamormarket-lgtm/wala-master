@@ -189,6 +189,296 @@
   gap: 1rem;
 }
 
+/* El color de cada mundo, suave, sobre la mesa (la página pasa --mundo-a y --mundo-b). */
+.mesaMundo {
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--mundo-a) 45%, var(--color-surface)), color-mix(in srgb, var(--mundo-b) 45%, var(--color-surface)));
+}
+
+:global([data-theme='dark']) .mesaMundo {
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--mundo-a) 9%, var(--color-surface)), color-mix(in srgb, var(--mundo-b) 9%, var(--color-surface)));
+}
+
+@supports not (background: color-mix(in srgb, red 50%, blue)) {
+  .mesaMundo {
+    background: var(--color-surface);
+  }
+}
+
+/* La cabecera del nivel: mundo, número, estrellas y el botón del mapa. */
+.cabezaNivel {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cabezaNivel .nivelTitulo {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  text-align: left;
+}
+
+.mundoLinea {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.coronaTitulo {
+  width: 18px;
+  height: 18px;
+  color: #f59e0b;
+}
+
+.metaEstrellas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.3rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+/* El mapa de un mundo. */
+.mapa {
+  display: grid;
+  gap: 1rem;
+}
+
+.mapaCabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.mapaTitulo {
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+  text-align: center;
+}
+
+.mapaTitulo p {
+  margin: 0;
+}
+
+.mundoNumero {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.mundoNombre {
+  color: var(--color-text);
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.mundoEstrellas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.estrellaTotal {
+  width: 16px;
+  height: 16px;
+  color: #f59e0b;
+  fill: #fbbf24;
+}
+
+.mapaNiveles {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nivelMapa {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0.2rem;
+  width: 100%;
+  min-height: 64px;
+  padding: 0.5rem 0.25rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 6px 16px 16px 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: transform var(--dur-rapida, 0.15s) ease, border-color var(--dur-rapida, 0.15s) ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nivelMapa:not(:disabled):hover {
+    transform: translateY(-2px);
+    border-color: var(--violet-400, #a78bfa);
+  }
+}
+
+.nivelMapaNumero {
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.nivelActual {
+  border-color: var(--violet-500, #8b5cf6);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+
+.nivelJefe {
+  border-color: #f59e0b;
+}
+
+.corona {
+  position: absolute;
+  top: -9px;
+  width: 18px;
+  height: 18px;
+  color: #f59e0b;
+  fill: #fde68a;
+}
+
+.nivelCerrado {
+  cursor: not-allowed;
+}
+
+.nivelCerrado .candadoMapa {
+  opacity: 0.6;
+}
+
+.candadoMapa {
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-muted);
+}
+
+/* La racha de victorias (en el panel; .racha es la de la ruleta). */
+.rachaBolitas {
+  display: grid;
+  gap: 0.6rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--color-border);
+}
+
+.rachaTitulo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-weight: 700;
+}
+
+.llama,
+.llamaEncendida {
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-muted);
+}
+
+.llamaEncendida {
+  color: #f97316;
+  fill: #fdba74;
+}
+
+.guardadas {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.85rem;
+}
+
+.guardadas svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--violet-500, #8b5cf6);
+}
+
+/* Lo ganado en la hoja del resultado. */
+.logro {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+}
+
+.logro p {
+  margin: 0;
+}
+
+.record {
+  color: #d97706;
+  font-weight: 700;
+}
+
+.mundoCompleto {
+  padding: 0.6rem 0.9rem;
+  border-radius: 6px 16px 16px 16px;
+  background: rgba(245, 158, 11, 0.14);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.cofre {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.8rem 1rem;
+  border: 1.5px dashed var(--violet-300, #c4b5fd);
+  border-radius: 6px 18px 18px 18px;
+  text-align: left;
+  animation: cofreEntra 0.5s 0.8s var(--ease-signature, ease-out) both;
+}
+
+.cofre p {
+  margin: 0;
+}
+
+.cofreIcono {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  color: var(--violet-500, #8b5cf6);
+}
+
+.cofreTitulo {
+  font-weight: 700;
+}
+
+.cofreTexto {
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+}
+
+@keyframes cofreEntra {
+  0% { opacity: 0; transform: scale(0.8); }
+  60% { transform: scale(1.05); }
+  100% { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cofre {
+    animation: none;
+  }
+}
+
 .accionesHoja {
   display: grid;
   gap: 0.5rem;

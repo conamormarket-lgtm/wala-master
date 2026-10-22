@@ -34,8 +34,64 @@ export const COLORES = [
   { hex: '#f8fafc', nombre: 'blanco' },
 ];
 
-/** El primer nivel con cada obstáculo (ahí se explica). */
-export const PRIMER_NIVEL = { ocultas: 12, cortina: 25, hielo: 40 };
+/** El primer nivel con cada obstáculo (ahí se explica; nunca es un jefe). */
+export const PRIMER_NIVEL = { ocultas: 12, cortina: 25, hielo: 45 };
+
+/* ── Mundos, estrellas y cofres ───────────────────────── */
+
+export const NIVELES_POR_MUNDO = 20;
+
+/** Los mundos, en orden; después del último vuelven a empezar con otro número. */
+export const MUNDOS = [
+  { nombre: 'El jardín de Kapi', fondo: ['#dcfce7', '#bbf7d0'] },
+  { nombre: 'Playa de colores', fondo: ['#e0f2fe', '#fef3c7'] },
+  { nombre: 'Bosque de caramelo', fondo: ['#fce7f3', '#dcfce7'] },
+  { nombre: 'Ciudad de neón', fondo: ['#ede9fe', '#cffafe'] },
+  { nombre: 'Cueva de cristal', fondo: ['#e0e7ff', '#f1f5f9'] },
+  { nombre: 'Volcán dulce', fondo: ['#ffedd5', '#fee2e2'] },
+  { nombre: 'Nubes de algodón', fondo: ['#f5f3ff', '#e0f2fe'] },
+  { nombre: 'Galaxia de bolitas', fondo: ['#e0e7ff', '#fae8ff'] },
+];
+
+/** El mundo de un nivel (1, 2, 3…). */
+export const mundoDe = (n) => Math.ceil(n / NIVELES_POR_MUNDO);
+
+/** El último nivel de cada mundo es el jefe: todos los obstáculos que ya salieron y un color más. */
+export const esJefe = (n) => n > 0 && n % NIVELES_POR_MUNDO === 0;
+
+/** Un mundo: su número, nombre, colores de fondo y sus niveles. */
+export function infoMundo(m) {
+  const base = MUNDOS[(m - 1) % MUNDOS.length];
+  return { numero: m, ...base, desde: (m - 1) * NIVELES_POR_MUNDO + 1, hasta: m * NIVELES_POR_MUNDO };
+}
+
+/**
+ * Las estrellas de un nivel según los movimientos. `par` es lo que tarda la
+ * solución del motor: igualarla o mejorarla da 3; hasta un cuarto más, 2.
+ */
+export const metasEstrellas = (par) => ({ tres: par, dos: Math.ceil(par * 1.25) });
+
+export function estrellasPara(movimientos, par) {
+  const meta = metasEstrellas(par);
+  if (movimientos <= meta.tres) return 3;
+  return movimientos <= meta.dos ? 2 : 1;
+}
+
+/** Niveles seguidos ganados (sin reiniciar ni abandonar) para abrir un cofre. */
+export const RACHA_COFRE = 3;
+
+const PREMIOS_COFRE = [
+  { tipo: 'pista', cantidad: 1, peso: 40 },
+  { tipo: 'deshacer', cantidad: 3, peso: 35 },
+  { tipo: 'tubo', cantidad: 1, peso: 25 },
+];
+
+/** Lo que trae un cofre: ayudas que se guardan para cuando se acaban las del nivel. */
+export function premioCofre(rnd = Math.random) {
+  let r = rnd() * PREMIOS_COFRE.reduce((t, p) => t + p.peso, 0);
+  const premio = PREMIOS_COFRE.find((p) => { r -= p.peso; return r < 0; }) || PREMIOS_COFRE[0];
+  return { tipo: premio.tipo, cantidad: premio.cantidad };
+}
 
 /* ── Azar con semilla ─────────────────────────────────── */
 
@@ -304,6 +360,7 @@ export function coloresDelNivel(n, rnd) {
 export function obstaculosDelNivel(n) {
   const primero = Object.entries(PRIMER_NIVEL).find(([, nivel]) => nivel === n);
   if (primero) return [primero[0]];
+  if (esJefe(n)) return Object.keys(PRIMER_NIVEL).filter((o) => PRIMER_NIVEL[o] < n);
   const lista = [];
   if (n > PRIMER_NIVEL.ocultas && n % 4 === 0) lista.push('ocultas');
   if (n > PRIMER_NIVEL.cortina && n % 6 === 1) lista.push('cortina');
@@ -366,7 +423,7 @@ export function armarNivel({ semilla, colores, vacios = 2, obstaculos = [], capa
     const armado = ponerObstaculos(tubos, obstaculos, { capacidad, rnd, intro });
     const estado = asentar(armado.tubos, armado.cortinas, capacidad, false);
     const solucion = resolver(estado, { limite });
-    if (solucion) return { estado, solucion, obstaculos };
+    if (solucion) return { estado, solucion, par: solucion.length, obstaculos };
   }
   // Muy raro: con un tubo vacío más y sin obstáculos siempre se puede.
   if (vacios > 4) throw new Error(`Bolitas: no se pudo armar el nivel ${semilla}`);
@@ -376,10 +433,47 @@ export function armarNivel({ semilla, colores, vacios = 2, obstaculos = [], capa
 /** El nivel `n` de la progresión (1, 2, 3…): siempre el mismo. */
 export function nivel(n) {
   const rnd = azar(semillaDe(`nivel:${n}`));
-  const colores = Math.min(coloresDelNivel(n, rnd), COLORES.length);
+  const jefe = esJefe(n);
+  const colores = Math.min(coloresDelNivel(n, rnd) + (jefe ? 1 : 0), COLORES.length);
   const obstaculos = obstaculosDelNivel(n);
   const intro = Object.values(PRIMER_NIVEL).includes(n);
-  return { numero: n, colores, ...armarNivel({ semilla: `nivel:${n}`, colores, vacios: n === 1 ? 1 : 2, obstaculos, intro }) };
+  return { numero: n, mundo: mundoDe(n), jefe, colores, ...armarNivel({ semilla: `nivel:${n}`, colores, vacios: n === 1 ? 1 : 2, obstaculos, intro }) };
+}
+
+/* ── Comprobar una partida (el servidor) ──────────────── */
+
+/** Lo más que se acepta en una partida: más es un error o una trampa. */
+export const LIMITES_PARTIDA = { movimientos: 600, tubos: 6 };
+
+/**
+ * ¿Esta partida resuelve el nivel? Se rearma igual que en el celular: los
+ * tubos de más se agregan al principio (deshacer no los quita, y nunca se
+ * mueve hacia uno antes de agregarlo) y se repiten los movimientos con las
+ * reglas. Devuelve { ok, movimientos } o { ok: false, motivo }.
+ *  - armado: lo que devuelve nivel() o retoDelDia()
+ *  - partida: { movimientos: [[de, a]…], tubos: cuántos se agregaron }
+ */
+export function comprobarPartida(armado, partida) {
+  const movs = partida?.movimientos;
+  const tubos = partida?.tubos ?? 0;
+  if (!Array.isArray(movs) || !movs.length || movs.length > LIMITES_PARTIDA.movimientos) return { ok: false, motivo: 'movimientos' };
+  if (!Number.isInteger(tubos) || tubos < 0 || tubos > LIMITES_PARTIDA.tubos) return { ok: false, motivo: 'tubos' };
+  let estado = armado.estado;
+  for (let k = 0; k < tubos; k += 1) estado = agregarTubo(estado);
+  for (const m of movs) {
+    if (!Array.isArray(m) || m.length !== 2 || !m.every(Number.isInteger)) return { ok: false, motivo: 'formato' };
+    if (!puedeMover(estado, m[0], m[1])) return { ok: false, motivo: 'regla' };
+    estado = mover(estado, m[0], m[1]);
+  }
+  return resuelto(estado) ? { ok: true, movimientos: movs.length } : { ok: false, motivo: 'sin_resolver' };
+}
+
+/** El lunes de la semana de `fecha` ('AAAA-MM-DD'): la clave del ranking semanal. */
+export function semanaDe(fecha) {
+  const [y, m, d] = fecha.split('-').map(Number);
+  const dia = new Date(Date.UTC(y, m - 1, d));
+  const desdeLunes = (dia.getUTCDay() + 6) % 7;
+  return new Date(dia.getTime() - desdeLunes * 86400000).toISOString().slice(0, 10);
 }
 
 /** El reto del día (`fecha` como 'AAAA-MM-DD', la de Lima): el mismo para todos. */
