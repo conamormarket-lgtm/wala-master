@@ -16,7 +16,6 @@ import { getSearchSuggestions } from '../../services/search';
 import { trackSearchQuery } from '../../services/analytics/tracker';
 import { logout } from '../../services/firebase/auth';
 import { registrarTextosSinTraducir } from '../../services/textosSinTraducir';
-import { esAppNativa } from '../../utils/vistaPreviaCalor';
 import { irALink } from '../../utils/pushLink';
 import { tieneCuenta } from '../../utils/rutaPrivada';
 import { ENVIO_GRATIS_DESDE } from '../../constants/envio';
@@ -405,7 +404,6 @@ function CabeceraConDatos() {
       onCerrarSesion={async () => { await logout(); navigate('/'); }}
       textosCuenta={textosCuenta}
       idiomas={usuario ? undefined : { opciones: available.map((c) => ({ codigo: c, nombre: NOMBRES_IDIOMA[c] || c.toUpperCase() })), actual: lang, onCambiar: setLang }}
-      cuenta={!esAppNativa()}
       estadoLogin={{ from: pathname + search }}
       favoritos={usuario ? wishlistItems.map((w) => ({ id: w.productId, nombre: w.productName, imagen: w.productImage })) : []}
       urlFavoritos={usuario ? '/cuenta/wishlist' : '/login'}

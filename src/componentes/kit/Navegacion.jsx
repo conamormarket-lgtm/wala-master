@@ -81,7 +81,9 @@ export function Logo({ alto = 32 }) {
  *    vacioNotificaciones: { titulo, texto },
  *    avisoPush: { onActivar, activando } → invitar a activar los avisos
  *  - usuario, gruposCuenta, promoCuenta, onCerrarSesion, textosCuenta,
- *    idiomas (ver MenuCuenta), cuenta: false = sin el botón de cuenta (la app)
+ *    idiomas (ver MenuCuenta), cuenta: false = sin el botón de cuenta. En
+ *    el celular no sale igual (va en la barra inferior); en la app de una
+ *    tablet sí hace falta: ahí no hay barra inferior.
  *  - estadoLogin: el state del router para volver después de entrar
  *  - favoritos: [{ id, nombre, imagen }], urlFavoritos, textosFavoritos
  *  - carrito: [{ id, nombre, imagen, precio, cantidad, variante, url }],
