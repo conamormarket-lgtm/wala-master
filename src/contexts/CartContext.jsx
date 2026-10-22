@@ -8,6 +8,7 @@ import { db, auth } from '../services/firebase/config';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 import { trackAddToCart } from '../services/analytics/tracker';
 import { nombreConCreacion } from '../utils/nombreCreacion';
+import { fotosGenerales } from '../utils/fotosDeColor';
 
 const CartContext = createContext();
 
@@ -146,11 +147,14 @@ const snapshotProductReferences = (product, selectedVariant, colorName) => {
   });
 
   push(matchingVariant?.imageUrl, 'Frente');
+  // Sin galería propia, las generales del producto que no son de otro color
+  // (product.images empieza con la foto del primer color: el taller recibía
+  // la billetera azul como referencia de una marrón).
   const gallery = matchingVariant?.galleryImages?.length
     ? matchingVariant.galleryImages
     : matchingVariant?.images?.length
       ? matchingVariant.images
-      : product.images || [];
+      : fotosGenerales(product, matchingVariant);
   gallery.forEach((url, index) => push(url, index === 0 ? 'Frente' : index === 1 ? 'Espalda' : `Vista ${index + 1}`));
   if (references.length === 0) push(product.mainImage, 'Frente');
 
@@ -508,8 +512,9 @@ export const CartProvider = ({ children }) => {
     let productImage = '';
     if (product.isComboProduct) {
       productImage = product.comboPreviewImage || product.images?.[0] || '';
-    } else if (selectedVariant?.imageUrl) {
-      productImage = selectedVariant.imageUrl;
+    } else if (selectedVariant?.imageUrl || selectedVariant?.images?.[0] || selectedVariant?.galleryImages?.[0]) {
+      // La del color elegido (su principal o, si no tiene, la primera de su galería).
+      productImage = selectedVariant.imageUrl || selectedVariant.images?.[0] || selectedVariant.galleryImages[0];
     } else if (product.hasVariants && product.variants?.[0]?.imageUrl) {
       productImage = product.variants[0].imageUrl;
     } else if (product.mainImage) {

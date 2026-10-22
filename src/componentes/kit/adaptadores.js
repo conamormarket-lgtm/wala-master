@@ -8,6 +8,7 @@
 
 import { limaTodayStr, felicidadKapiHoy } from '../../utils/fechaLima';
 import { getFallbackHex } from '../../utils/colors';
+import { fotosGenerales } from '../../utils/fotosDeColor';
 import { proximaOcurrencia, textoFechaEvento } from '../../utils/fechaEvento.mjs';
 import { hoyLocal } from '../../utils/fechasFestivas.mjs';
 import {
@@ -100,7 +101,8 @@ export function tarjetaDesdeProducto(p, { imagen, catalogo = {} } = {}) {
   const cat = (p.categories || []).map((id) => categorias.find((c) => (c.categoryId || c.id) === id)).find(Boolean);
   const principal = vs.find((v) => String(v.id) === String(p.defaultVariantId)) || vs[0];
   // Un combo con portada se ve con ella (como en la tienda); sin portada, con sus piezas.
-  const fotos = [portadaDeCombo(p), principal?.imageUrl, ...(principal?.images || []), p.mainImage, ...(p.images || [])].filter(Boolean);
+  // Las generales, sin las de otro color (al pasar el mouse no sale otro color).
+  const fotos = [portadaDeCombo(p), principal?.imageUrl, ...(principal?.images || []), ...fotosGenerales(p, principal)].filter(Boolean);
   return {
     url: p.esPrendaBase ? `/crear/${p.id}` : `/producto/${p.id}`,
     imagen: imagen || fotos[0],
@@ -1103,8 +1105,8 @@ export function itemCarritoDesde(item = {}, { catalogo = new Map(), falta } = {}
  * Devuelve { producto, opciones (las de opcionesDeProducto), varianteInicial,
  * fotos: { base: [...], [varianteId]: [...], combo? } }. Las fotos de una
  * variante son las de sus vistas de personalización en ese color y las suyas
- * (imageUrl, galleryImages, images) y, si no tiene, las del producto: el
- * mismo orden que buildImages de ProductDetail.
+ * (imageUrl, galleryImages, images), y después las generales del producto
+ * que no son de otro color (fotosGenerales); si no tiene, las del producto.
  * En un combo, `combo` = { portada, piezas: [{ porColor: { [color]: urls },
  * general: urls }], producto }: PaginaProducto arma la galería con el color
  * elegido de cada prenda; si ese color no tiene foto (o la prenda no tiene
@@ -1139,7 +1141,8 @@ export function fichaProductoDesde(p = {}, { catalogo = {}, subproductos = {} } 
   const unColor = variantesDe(p).length === 1;
   variantesDe(p).forEach((v) => {
     const propias = [...vistasPorColor(p, v.name), v.imageUrl, ...(v.galleryImages || []), ...(v.images || [])].filter(Boolean);
-    fotos[v.id] = propias.length ? fotosGaleria([...propias, ...delProducto], unColor ? {} : { [propias[0]]: v.name }) : base;
+    // Después de las suyas, las generales del producto que no son de otro color.
+    fotos[v.id] = propias.length ? fotosGaleria([...propias, ...fotosGenerales(p, v)], unColor ? {} : { [propias[0]]: v.name }) : base;
   });
   const precio = p.salePrice || p.price;
   return {
