@@ -594,6 +594,17 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
     updateActiveVariant({ imageUrl: '' });
   };
 
+  // Deja la variante sin foto principal (el producto puede guardarse sin foto).
+  // Al guardar, mainImage/images vacíos se borran del documento (updateDocument).
+  const handleRemoveMainImage = async () => {
+    if (!activeVariant?.imageUrl) return;
+    if (!window.confirm('¿Quitar la imagen principal de esta variante?')) return;
+    const url = activeVariant.imageUrl;
+    updateActiveVariant({ imageUrl: '', thumbnailCrop: null });
+    setCropEditing(false);
+    await safelyDeleteOldImage(url);
+  };
+
   const handleDeleteActiveDesign = () => {
     if (!fabricCanvas) return;
     const activeObjects = fabricCanvas.getActiveObjects();
@@ -1701,6 +1712,14 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
                               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, color: '#374151', fontSize: '0.85rem' }}
                             >
                               <ImageIcon size={16} /> Ajustar encuadre de portada
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleRemoveMainImage}
+                              disabled={uploading}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, color: '#dc2626', fontSize: '0.85rem' }}
+                            >
+                              <Trash2 size={16} /> Quitar imagen
                             </button>
                             {activeVariant.thumbnailCrop?.percentages && (
                               <span style={{ fontSize: '0.8rem', color: '#16a34a', fontWeight: 600 }}>
