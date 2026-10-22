@@ -60,10 +60,17 @@ reseñas de prueba en un producto borrado, así que no sirven para ver el diseñ
 - **Combo:** "Este conjunto incluye (2)", cada prenda con su foto (la del
   color elegido, si ese color tiene). Después, un color por prenda (abre con
   el color del combo, `variantMapping.color`; `allowedColors` se compara sin
-  espacios ni mayúsculas) y una talla para todas, con "Se aplica a las 2
-  prendas". La talla es la que comparten las prendas **con los colores
-  elegidos** (`tallasDe`, la regla de `comboSizeOptions` de la tienda): si al
-  cambiar un color la talla elegida ya no está, se vuelve a pedir.
+  espacios ni mayúsculas) y, debajo, **la talla de esa prenda** ("Talla ·
+  Ella", "Talla · Él"): una pareja puede ser de tallas distintas (desde el
+  2026-10-22; antes era una talla para todas). Las tallas de cada prenda son
+  las de su color elegido (`tallasDePieza`): si al cambiar el color la talla
+  elegida ya no está, se vuelve a pedir. Cada prenda va al carrito con su
+  talla (`comboVariantSelections[i].size`), que el pedido ya guardaba por
+  prenda.
+- **Falta la talla:** al tocar Agregar o Comprar sin talla, la que falta (en
+  un combo, cada una) se marca en rojo y se sacude en cada intento; si no está
+  a la vista (en el celular el botón va pegado abajo), la página baja hasta
+  ella.
   **Al cambiar el color de una prenda, la galería se desliza hasta la foto de
   esa prenda en ese color** ("Él · Negro"; la miniatura dice solo "Él"). Las
   fotos salen de la variante de la prenda (`imageUrl`, `galleryImages`,

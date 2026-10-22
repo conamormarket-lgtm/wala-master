@@ -6,7 +6,7 @@ import { Texto } from './Traduccion';
 import { Hueso } from './Esqueletos';
 import { soles } from './TarjetaProducto';
 import { FotoProducto } from './piezas/FotoProducto';
-import { OpcionesProducto, tallasDe, conMuestras } from './piezas/OpcionesProducto';
+import { OpcionesProducto, tallasDe, tallasDePieza, piezasSinTalla, conMuestras } from './piezas/OpcionesProducto';
 import s from './AgregarRapido.module.css';
 
 /**
@@ -20,10 +20,10 @@ import s from './AgregarRapido.module.css';
  *      "Clásico"…). Una sola variante solo se muestra si tiene tallas y color.
  *  - opciones: string[] por defecto (mainSizes) si la variante no trae las suyas.
  *  - etiquetaOpcion: 'Talla' | 'Medida' | 'Número' | 'Tamaño'… (sizeLabel).
- *  - piezas: combos → [{ nombre, colores: [{ nombre, hex, tallas }] }], un color por pieza
- *      y la opción (talla) compartida: las que tienen los colores elegidos.
+ *  - piezas: combos → [{ nombre, colores: [{ nombre, hex, tallas }] }], un color
+ *      y una talla por pieza (las de su color elegido).
  *  - personalizable + onPersonalizar(eleccion): botón secundario "Personalizar".
- *  - onConfirmar({ variante, opcion, piezas, cantidad }).
+ *  - onConfirmar({ variante, opcion, piezas, tallas, cantidad }).
  *  - varianteInicial: el id de la que abre (la principal del producto; si
  *    no, la primera) · cargando: las prendas del combo todavía no llegan
  *    (sus colores van en esqueleto y no se puede agregar)
@@ -47,6 +47,7 @@ export default function AgregarRapido({
   const [varId, setVarId] = useState(null);
   const [opcion, setOpcion] = useState(null);
   const [colores, setColores] = useState({});
+  const [tallas, setTallas] = useState({});
   const [cantidad, setCantidad] = useState(1);
 
   // Cada vez que se abre para un producto, empieza limpio.
@@ -54,6 +55,7 @@ export default function AgregarRapido({
     if (!abierto) return;
     setVarId((variantes.some((v) => v.id === varianteInicial) ? varianteInicial : variantes[0]?.id) ?? null);
     setOpcion(null);
+    setTallas({});
     setColores(Object.fromEntries(piezas.map((p, i) => [i, p.colores.some((c) => c.nombre === p.color) ? p.color : p.colores[0]?.nombre])));
     setCantidad(1);
   }, [abierto, producto?.nombre]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -80,6 +82,10 @@ export default function AgregarRapido({
   // Si la variante (o el color de una prenda del combo) no tiene la opción marcada, se limpia.
   useEffect(() => {
     if (opcion && !lista.includes(opcion)) setOpcion(null);
+    setTallas((x) => {
+      const quitar = Object.keys(x).filter((i) => x[i] && !tallasDePieza(piezas[i], colores[i]).includes(x[i]));
+      return quitar.length ? { ...x, ...Object.fromEntries(quitar.map((i) => [i, undefined])) } : x;
+    });
   }, [varId, colores]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const titulo = useMemo(() => {
@@ -90,8 +96,8 @@ export default function AgregarRapido({
   }, [piezas.length, variantes.length, lista.length, etiquetaOpcion, conColor]);
 
   if (!producto) return null;
-  const falta = lista.length > 0 && !opcion;
-  const eleccion = { variante, opcion, piezas: colores, cantidad };
+  const falta = piezas.length ? piezasSinTalla(piezas, colores, tallas).length > 0 : lista.length > 0 && !opcion;
+  const eleccion = { variante, opcion, piezas: colores, tallas, cantidad };
 
   return (
     <HojaInferior
@@ -147,6 +153,8 @@ export default function AgregarRapido({
           piezas={piezas}
           colores={colores}
           onColorPieza={(i, c) => setColores((x) => ({ ...x, [i]: c }))}
+          tallasPiezas={tallas}
+          onTallaPieza={(i, t) => setTallas((x) => ({ ...x, [i]: t }))}
           cantidad={cantidad}
           onCantidad={setCantidad}
           onGuia={onGuia}

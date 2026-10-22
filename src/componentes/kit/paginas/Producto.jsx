@@ -14,7 +14,7 @@ import { CARAS_KAPI } from '../piezas/Flotantes';
 import { FotoProducto } from '../piezas/FotoProducto';
 import { GaleriaProducto } from '../piezas/GaleriaProducto';
 import { MarcoFicha, Migas, PrecioFicha, ConfianzaCompra, BarraCompra, useAgregado, IconoAgregar } from '../piezas/Ficha';
-import { OpcionesProducto, tallasDe, verVariantes } from '../piezas/OpcionesProducto';
+import { OpcionesProducto, tallasDe, tallasDePieza, piezasSinTalla, verVariantes } from '../piezas/OpcionesProducto';
 import { Estrellas, ResumenOpiniones, TarjetaOpinion, FormularioOpinion } from '../piezas/Opiniones';
 import { atributosDeFoto } from '../../../components/common/OptimizedImage/OptimizedImage';
 import s from './Producto.module.css';
@@ -91,7 +91,8 @@ const galeriaCombo = (combo, piezas, colores) => {
  *  - fuentes(url) → { src, srcSet }: la foto que se pide y sus copias en
  *    varios tamaños (la tienda las tiene); sin ella, la URL tal cual
  *  - onAgregar(eleccion) · onComprar(eleccion): promesas (false: no se pudo); eleccion = {
- *    variante, opcion, piezas: { [i]: color }, cantidad }
+ *    variante, opcion, piezas: { [i]: color }, tallas: { [i]: talla }, cantidad }
+ *    (en un combo cada prenda lleva su talla en `tallas`)
  *  - onPersonalizar(eleccion) (si es personalizable) · textoPersonalizar
  *    ("Personalizable" para el personalizador de Yoryo) · onCompartir() (con sesión)
  *  - piezasCargando: las prendas de un combo todavía no llegan (sus colores
@@ -117,8 +118,11 @@ export function PaginaProducto({
   const [varId, setVarId] = useState(varianteInicial ?? variantes[0]?.id);
   const [opcion, setOpcion] = useState(null);
   const [colores, setColores] = useState(() => Object.fromEntries(piezas.map((p, i) => [i, p.colores.some((c) => c.nombre === p.color) ? p.color : p.colores[0]?.nombre])));
+  // La talla de cada prenda de un combo (una pareja puede ser de tallas distintas).
+  const [tallas, setTallas] = useState({});
   const [cantidad, setCantidad] = useState(1);
-  const [falta, setFalta] = useState(false);
+  // Cuántas veces se intentó sin talla (0: no falta): cada intento la vuelve a sacudir.
+  const [falta, setFalta] = useState(0);
   const [cargando, setCargando] = useState(null);
   const [escribiendo, setEscribiendo] = useState(false);
   const [filtro, setFiltro] = useState(null);
@@ -211,12 +215,20 @@ export function PaginaProducto({
   }
 
   const quedan = !producto.agotado && producto.stock > 0 && producto.stock <= STOCK_BAJO ? producto.stock : 0;
-  const eleccion = { variante, opcion, piezas: colores, cantidad };
-  const accion = async (cual, fn, desdeBarra = false) => {
-    if (lista.length && !opcion) {
-      setFalta(true);
-      // Desde la barra de abajo la talla no se ve: se lleva la vista hasta ella.
-      if (desdeBarra) opcionesRef.current?.scrollIntoView({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+  const eleccion = { variante, opcion, piezas: colores, tallas, cantidad };
+  const sinTalla = piezas.length ? piezasSinTalla(piezas, colores, tallas).length > 0 : lista.length > 0 && !opcion;
+  const accion = async (cual, fn) => {
+    if (sinTalla) {
+      setFalta((n) => n + 1);
+      // Si la talla que falta no se ve (en el celular el botón va pegado
+      // abajo, lejos de ella), se lleva la vista hasta la primera, ya marcada
+      // (después de que React la pinte con su aviso).
+      setTimeout(() => {
+        const el = opcionesRef.current?.querySelector('[role="alert"]')?.parentElement || opcionesRef.current;
+        const r = el?.getBoundingClientRect();
+        if (!r || (r.top >= 80 && r.bottom <= window.innerHeight - 140)) return;
+        el.scrollIntoView({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+      }, 0);
       return;
     }
     setCargando(cual);
@@ -227,19 +239,24 @@ export function PaginaProducto({
       if (cual === 'agregar' && hecho !== false) marcarAgregado();
     } finally { setCargando(null); }
   };
-  const botonAgregar = (props, desdeBarra) => (
+  const botonAgregar = (props) => (
     <Boton
       tamano="lg"
       icono={<IconoAgregar agregado={agregado} />}
       disabled={producto.agotado}
       cargando={cargando === 'agregar'}
-      onClick={() => accion('agregar', onAgregar, desdeBarra)}
+      onClick={() => accion('agregar', onAgregar)}
       {...props}
     >
       <Texto>{producto.agotado ? 'Agotado por ahora' : agregado ? '¡Agregado!' : 'Agregar al carrito'}</Texto>
     </Boton>
   );
-  const detalle = [verVariantes(variantes) && variante?.nombre, piezas.length > 0 && piezas.map((_, i) => colores[i]).filter(Boolean).join(' + '), opcion || (lista.length ? `Elige ${etiquetaOpcion.toLowerCase()}` : null)].filter(Boolean).join(' · ');
+  const detalle = [
+    verVariantes(variantes) && variante?.nombre,
+    piezas.length > 0 && piezas.map((_, i) => [colores[i], tallas[i]].filter(Boolean).join(' ')).filter(Boolean).join(' + '),
+    piezas.length ? null : opcion,
+    sinTalla && `Elige ${etiquetaOpcion.toLowerCase()}`,
+  ].filter(Boolean).join(' · ');
   const foto = (url) => (fuentes && url ? fuentes(url).src || url : url);
 
   const conFiltro = filtro ? resto.filter((o) => o.puntuacion === filtro) : resto;
@@ -314,8 +331,7 @@ export function PaginaProducto({
           opciones={tallasBase}
           etiquetaOpcion={etiquetaOpcion}
           opcion={opcion}
-          onOpcion={(o) => { setOpcion(o); setFalta(false); }}
-          notaOpcion={piezas.length > 1 ? `Se aplica a las ${piezas.length} prendas.` : undefined}
+          onOpcion={(o) => { setOpcion(o); setFalta(0); }}
           piezas={piezasCargando ? [] : piezas}
           colores={colores}
           onColorPieza={(i, c) => {
@@ -324,9 +340,11 @@ export function PaginaProducto({
             // Solo si ese color tiene foto: si no, la galería se queda donde está.
             const k = fotos.combo ? galeriaCombo(fotos.combo, piezas, nuevos).findIndex((f) => f.pieza === i && f.color === c) : -1;
             if (k >= 0) setSalto((x) => ({ indice: k, vez: (x?.vez || 0) + 1 }));
-            // Las tallas son las de los colores elegidos: si la elegida ya no está, se vuelve a elegir.
-            if (!tallasDe({ opciones: tallasBase, piezas, colores: nuevos }).includes(opcion)) setOpcion(null);
+            // Las tallas son las del color elegido: si la de esa prenda ya no está, se vuelve a elegir.
+            if (tallas[i] && !tallasDePieza(piezas[i], c).includes(tallas[i])) setTallas((x) => ({ ...x, [i]: undefined }));
           }}
+          tallasPiezas={tallas}
+          onTallaPieza={(i, t) => setTallas((x) => ({ ...x, [i]: t }))}
           cantidad={cantidad}
           onCantidad={producto.agotado ? undefined : setCantidad}
           falta={falta}
@@ -440,7 +458,7 @@ export function PaginaProducto({
 
       {!producto.agotado && (
         <BarraCompra mirar={compraRef} hasta={finRef} imagen={galeria[0]?.url} nombre={nombre} detalle={<Texto>{detalle}</Texto>} precio={producto.precio}>
-          {botonAgregar({ tamano: 'md' }, true)}
+          {botonAgregar({ tamano: 'md' })}
         </BarraCompra>
       )}
 

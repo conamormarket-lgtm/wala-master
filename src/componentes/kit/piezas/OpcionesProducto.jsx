@@ -17,32 +17,65 @@ import s from './OpcionesProducto.module.css';
  *    varId · onVariante(id)
  *  - opciones: string[] por defecto (mainSizes) si la variante no trae las
  *    suyas · etiquetaOpcion: 'Talla' | 'Medida'… · agotadas · opcion · onOpcion
- *    · notaOpcion: una línea bajo la talla ("Se aplica a las 2 prendas")
+ *    · notaOpcion: una línea bajo la talla
  *  - piezas: combos → [{ nombre, colores: [{ nombre, hex, claro, tallas }],
  *    tallas }] · colores: { [i]: nombre } · onColorPieza(i, nombre).
- *    Las tallas de un combo son las que comparten los colores elegidos
- *    (tallasDe), así que cambian con cada color.
+ *    Cada prenda lleva su color y, debajo, su talla (una pareja puede ser de
+ *    tallas distintas): tallasPiezas: { [i]: talla } · onTallaPieza(i, talla).
+ *    Las tallas de una prenda son las de su color elegido (tallasDePieza).
  *  - cantidad · onCantidad · maxCantidad · onGuia (guía de tallas)
- *  - falta: la talla se marca en rojo con "Elige una talla para continuar"
+ *  - falta: la talla que falta se marca en rojo con "Elige una talla para
+ *    continuar" (en un combo, la de cada prenda sin talla). Un número que
+ *    cambia la vuelve a sacudir.
  */
 export function OpcionesProducto({
   variantes = [], varId, onVariante, opciones = [], etiquetaOpcion = 'Talla', agotadas = [], opcion, onOpcion, notaOpcion,
-  piezas = [], colores = {}, onColorPieza, cantidad, onCantidad, maxCantidad = 10, onGuia, falta = false,
+  piezas = [], colores = {}, onColorPieza, tallasPiezas = {}, onTallaPieza, cantidad, onCantidad, maxCantidad = 10, onGuia, falta = false,
 }) {
   const variante = variantes.find((v) => v.id === varId) || variantes[0];
   const lista = tallasDe({ variante, opciones, piezas, colores });
   const conColor = conMuestras(variantes);
+  const talla = ({ etiqueta, tallas, valor, onChange, nota }) => {
+    const sinElegir = Boolean(falta) && !valor;
+    return (
+      // La clave cambia con cada aviso: la sacudida se repite en cada intento.
+      <div key={sinElegir ? `falta-${falta}` : 'ok'} className={[s.opcion, sinElegir && s.falta].filter(Boolean).join(' ')}>
+        <SelectorTalla
+          etiqueta={etiqueta}
+          tallas={tallas}
+          agotadas={agotadas}
+          valor={valor}
+          onChange={onChange}
+          guia={etiquetaOpcion === 'Talla' ? onGuia : undefined}
+        />
+        {sinElegir && <p className={s.aviso} role="alert"><Texto>{`Elige ${articulo(etiquetaOpcion)} para continuar.`}</Texto></p>}
+        {!sinElegir && nota && <p className={s.nota}><Texto>{nota}</Texto></p>}
+      </div>
+    );
+  };
   return (
     <div className={s.opciones} data-componente="OpcionesProducto">
-      {piezas.map((p, i) => p.colores.length > 0 && (
-        <SelectorColor
-          key={`${p.nombre}-${i}`}
-          etiqueta={`Color · ${p.nombre}`}
-          colores={p.colores}
-          valor={colores[i]}
-          onChange={(c) => onColorPieza?.(i, c)}
-        />
-      ))}
+      {piezas.map((p, i) => {
+        const tallas = tallasDePieza(p, colores[i]);
+        return (
+          <React.Fragment key={`${p.nombre}-${i}`}>
+            {p.colores.length > 0 && (
+              <SelectorColor
+                etiqueta={`Color · ${p.nombre}`}
+                colores={p.colores}
+                valor={colores[i]}
+                onChange={(c) => onColorPieza?.(i, c)}
+              />
+            )}
+            {tallas.length > 0 && talla({
+              etiqueta: `${etiquetaOpcion} · ${p.nombre}`,
+              tallas,
+              valor: tallasPiezas[i],
+              onChange: (t) => onTallaPieza?.(i, t),
+            })}
+          </React.Fragment>
+        );
+      })}
 
       {verVariantes(variantes) && (conColor ? (
         <SelectorColor
@@ -59,20 +92,7 @@ export function OpcionesProducto({
         />
       ))}
 
-      {lista.length > 0 && (
-        <div className={[s.opcion, falta && s.falta].filter(Boolean).join(' ')}>
-          <SelectorTalla
-            etiqueta={etiquetaOpcion}
-            tallas={lista}
-            agotadas={agotadas}
-            valor={opcion}
-            onChange={onOpcion}
-            guia={etiquetaOpcion === 'Talla' ? onGuia : undefined}
-          />
-          {falta && <p className={s.aviso} role="alert"><Texto>{`Elige ${articulo(etiquetaOpcion)} para continuar.`}</Texto></p>}
-          {!falta && notaOpcion && <p className={s.nota}><Texto>{notaOpcion}</Texto></p>}
-        </div>
-      )}
+      {!piezas.length && lista.length > 0 && talla({ etiqueta: etiquetaOpcion, tallas: lista, valor: opcion, onChange: onOpcion, nota: notaOpcion })}
 
       {onCantidad && (
         <div className={s.fila}>
@@ -87,6 +107,16 @@ export function OpcionesProducto({
 /** Las tallas de la variante elegida (o las del producto). */
 export const opcionesDe = (variante, opciones = []) => (variante?.opciones?.length ? variante.opciones : opciones);
 
+/** Las tallas de una prenda de un combo con su color elegido (sin colores, las de la prenda). */
+export const tallasDePieza = (p, color) => (p?.colores?.length
+  ? (p.colores.find((c) => c.nombre === color) || p.colores[0]).tallas || []
+  : p?.tallas || []);
+
+/** Las prendas de un combo con tallas y todavía sin una elegida (sus índices). */
+export const piezasSinTalla = (piezas = [], colores = {}, tallas = {}) => piezas
+  .map((p, i) => (tallasDePieza(p, colores[i]).length && !tallas[i] ? i : -1))
+  .filter((i) => i >= 0);
+
 /**
  * Las tallas que se pueden elegir. En un combo, las que comparten las prendas
  * con el color elegido de cada una (o todas, si no comparten ninguna; las de
@@ -96,7 +126,7 @@ export const opcionesDe = (variante, opciones = []) => (variante?.opciones?.leng
 export const tallasDe = ({ variante, opciones = [], piezas = [], colores = {} }) => {
   if (!piezas.length) return opcionesDe(variante, opciones);
   const listas = piezas
-    .map((p, i) => (p.colores?.length ? (p.colores.find((c) => c.nombre === colores[i]) || p.colores[0]).tallas || [] : p.tallas || []))
+    .map((p, i) => tallasDePieza(p, colores[i]))
     .filter((l) => l.length);
   if (!listas.length) return opciones;
   const [primera, ...resto] = listas;

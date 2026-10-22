@@ -118,7 +118,7 @@ const PRODUCTOS_DEMO = [
     variants: [{ id: 'v1', name: 'Principal', sizeLabel: 'Medida', sizes: ['20×30 cm', '30×40 cm', '40×60 cm'] }],
   },
   {
-    // Combo: un color por pieza y talla compartida.
+    // Combo: un color y una talla por pieza.
     id: 'combo', name: 'Combo polera x2 · Él y Ella', price: 169.9, inStock: 6, isComboProduct: true, mainImage: FRENTE,
     comboItems: [{ productId: 'el', name: 'Polera Él' }, { productId: 'ella', name: 'Polera Ella' }],
   },

@@ -5,8 +5,8 @@ import { isComboProduct } from '../../utils/comboProductUtils';
  * CartContext.addToCart, igual que lo armaba ProductDetail:
  *   addToCart(product, { size, selectedVariant }, null, cantidad,
  *     combo ? { variantSelections, customizations: {}, subProductsData } : null)
- * eleccion = { variante, opcion, piezas: { [i]: color }, cantidad } (la de
- * PaginaProducto y AgregarRapido).
+ * eleccion = { variante, opcion, piezas: { [i]: color }, tallas: { [i]: talla },
+ * cantidad } (la de PaginaProducto y AgregarRapido).
  */
 
 const normal = (n) => String(n ?? '').trim().toLowerCase();
@@ -35,10 +35,11 @@ export const varianteDelProducto = (product, variante) => {
  * → { variant, cantidad, combo } para addToCart.
  *  - comboProd: { [índice]: producto } de las prendas del combo
  * En un combo, cada prenda lleva su color (el elegido; sin tocarlo, el
- * primero: ese es el que se ve) y la talla única del conjunto.
+ * primero: ese es el que se ve) y su talla (`tallas[i]`; sin ella, la
+ * `opcion` compartida de antes).
  */
 export function argumentosDelCarrito(product, eleccion = {}, comboProd = {}) {
-  const { variante, opcion, piezas = {}, cantidad = 1 } = eleccion;
+  const { variante, opcion, piezas = {}, tallas = {}, cantidad = 1 } = eleccion;
   const combo = isComboProduct(product);
   const variant = { size: combo ? '' : (opcion || ''), selectedVariant: combo ? undefined : varianteDelProducto(product, variante) };
   if (!combo) return { variant, cantidad, combo: null };
@@ -46,7 +47,7 @@ export function argumentosDelCarrito(product, eleccion = {}, comboProd = {}) {
   (product.comboItems || []).forEach((cfg, i) => {
     const { elegida } = infoDePieza(comboProd[i], cfg, piezas[i]);
     const color = elegida?.name || piezas[i] || cfg.variantMapping?.color;
-    variantSelections[i] = { ...(color && { color }), size: opcion || '' };
+    variantSelections[i] = { ...(color && { color }), size: tallas[i] || opcion || '' };
   });
   return { variant, cantidad, combo: { variantSelections, customizations: {}, subProductsData: comboProd } };
 }

@@ -215,9 +215,9 @@ export function opcionesDeProducto(p, { subproductos = {} } = {}) {
       return { nombre: it.name, color: inicial?.nombre || it.variantMapping?.color, colores, tallas: colores.length ? [] : sub?.mainSizes || sub?.sizes || [] };
     })
     : [];
-  // Combos: talla compartida = las que tienen todas las piezas (o todas, si no
-  // coinciden). Es la de todos los colores: con los elegidos la recalcula
-  // OpcionesProducto (tallasDe).
+  // Combos: las tallas que tienen todas las piezas (o todas, si no coinciden).
+  // Solo dice si el combo pide talla: cada prenda elige la suya entre las de
+  // su color (OpcionesProducto, tallasDePieza).
   let opcionesCombo = [];
   if (piezas.length) {
     const listas = piezas.map((pz) => (pz.colores.length ? [...new Set(pz.colores.flatMap((c) => c.tallas))] : pz.tallas)).filter((l) => l.length);
