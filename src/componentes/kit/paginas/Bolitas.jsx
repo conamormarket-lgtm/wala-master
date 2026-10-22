@@ -9,8 +9,8 @@ import { BloqueSeccion } from '../Seccion';
 import { EsqueletoPagina } from '../Esqueletos';
 import { Aviso, HojaInferior } from '../Feedback';
 import { Pestanas } from '../Navegacion';
-import { Destello, Puntos } from '../Marca';
 import { Estallido } from '../Efectos';
+import { FondoBolitas, escenaDelMundo } from '../piezas/FondoBolitas';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { BarraProgreso } from '../piezas/BarraProgreso';
 import { MarcoJuego, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego, TextoResaltado } from '../piezas/Juegos';
@@ -498,12 +498,25 @@ export function PaginaBolitas({
                 ? (marcaMesa?.color ? fondoMundo(1, marcaMesa) : undefined)
                 : fondoMundo(verMapa ? mundoMapa : mundo, verMapa ? marcaDelMundo(marcasMundos, mundoMapa) : marcaMundo)}
             >
-              {/* Adornos quietos de la marca, como en la ilustración del juego. */}
+              {/* El fondo ilustrado: la escena del mundo (o de su marca), el
+                  escenario del reto; los detalles cambian con cada nivel. */}
               <span className={s.adornos} aria-hidden="true">
-                <Destello className={s.adorno1} />
-                <Destello className={s.adorno2} />
-                <Destello className={s.adorno3} />
-                <Puntos className={s.adorno4} />
+                {(() => {
+                  const marcaFondo = verMapa ? marcaDelMundo(marcasMundos, mundoMapa) : marcaMesa;
+                  let escena;
+                  if (marcaFondo) escena = 'marca';
+                  else if (esReto) escena = 'reto';
+                  else escena = escenaDelMundo(verMapa ? mundoMapa : mundo);
+                  return (
+                    <FondoBolitas
+                      escena={escena}
+                      semilla={esReto ? hoy : verMapa ? mundoMapa * 1000 : numero}
+                      jefe={!esReto && !verMapa && Boolean(p.nivel.jefe)}
+                      color={marcaFondo?.color}
+                      color2={marcaFondo?.color2}
+                    />
+                  );
+                })()}
               </span>
               {/* El confeti grande al ganar, desde el centro de la mesa. */}
               <span className={s.fiesta} aria-hidden="true">

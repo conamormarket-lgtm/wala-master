@@ -532,6 +532,30 @@ Nada se mueve solo, de acuerdo con el criterio de diseño animado pero
 liviano. Con muchos tubos, desde 7 se reparten en dos filas; en el celular,
 los aros y las bases se angostan (`--mesa-base-extra`).
 
+**Fondos ilustrados** (`piezas/FondoBolitas.jsx`, SVG quietos, sin imágenes):
+
+| Mundo | Escena |
+|---|---|
+| El jardín de Kapi | colinas, flores y sol |
+| Playa de colores | mar, velero, arena, estrellas de mar |
+| Bosque de caramelo | chupetines y gomitas |
+| Ciudad de neón | edificios con ventanas encendidas |
+| Cueva de cristal | cristales |
+| Volcán dulce | volcán de chocolate con glaseado y chispas |
+| Nubes de algodón | arcoíris y nubes |
+| Galaxia de bolitas | planetas y estrellas |
+
+- Las flores, ventanas, estrellas… cambian de lugar según el número de nivel
+  (semilla): cada nivel se ve un poco distinto.
+- El jefe lleva una luz de atardecer; el reto tiene su escenario con
+  reflectores; los mundos de marca, sus colores.
+- El dibujo va abajo y a todo el ancho, de modo que el suelo queda bajo los
+  tubos. Arriba hay un velo del color de la mesa para leer el título, y los
+  botones van en una franja del mismo color.
+- Lo redondo y de color (chupetines, planetas) va suave y lejos de los tubos,
+  para que no se confunda con las bolitas.
+- De noche, la escena va más tenue.
+
 ### Fase 3: las marcas (2026-10-21)
 
 Decidido con el dueño: el admin elige por fecha qué marca patrocina el reto y

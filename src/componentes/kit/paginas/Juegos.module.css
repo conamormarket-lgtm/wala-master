@@ -133,7 +133,7 @@
   z-index: 1;
 }
 
-/* Adornos quietos (destellos y puntos de la marca), en las esquinas. */
+/* El fondo ilustrado de la mesa (FondoBolitas), recortado a sus esquinas. */
 .adornos {
   position: absolute;
   inset: 0;
@@ -141,19 +141,6 @@
   overflow: hidden;
   border-radius: inherit;
   pointer-events: none;
-}
-
-.adornos svg {
-  position: absolute;
-}
-
-.adorno1 { top: 14px; right: 18px; width: 22px; color: #fbbf24; }
-.adorno2 { top: 46px; right: 8px; width: 12px; color: #f472b6; }
-.adorno3 { bottom: 70px; left: 12px; width: 16px; color: var(--violet-400, #a78bfa); transform: rotate(14deg); }
-.adorno4 { bottom: 10px; right: 12px; width: 64px; color: var(--violet-200, #ddd6fe); opacity: 0.7; }
-
-:global([data-theme='dark']) .adorno4 {
-  color: rgba(167, 139, 250, 0.25);
 }
 
 /* El confeti de la victoria sale del centro de los tubos. */
@@ -531,6 +518,15 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.5rem;
+}
+
+/* Sobre el fondo ilustrado, los botones van en una franja del color de la
+   mesa: se leen sobre cualquier escena (el suelo de neón es oscuro). */
+.mesaMundo .botonesMesa {
+  justify-self: center;
+  padding: 0.5rem;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
 }
 
 .panel {

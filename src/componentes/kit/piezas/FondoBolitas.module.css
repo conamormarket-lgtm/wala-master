@@ -1,0 +1,39 @@
+/* El fondo llena la mesa con el color del cielo; el dibujo va abajo, a todo
+   el ancho, para que el suelo quede bajo los tubos. */
+.marco {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.fondo {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* El velo de arriba: el color de la mesa, para que se lea el título. */
+.marco::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface, #fff) 85%, transparent) 0, transparent 34%);
+}
+
+/* El nivel jefe: luz de atardecer encima de la escena. */
+.jefe::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.22), rgba(236, 72, 153, 0.12));
+}
+
+/* De noche, la escena más tenue sobre la mesa oscura. */
+:global([data-theme='dark']) .marco {
+  opacity: 0.4;
+}
