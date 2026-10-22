@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Lock, Star, Trophy, LogIn, Ticket, Store, Megaphone } from 'lucide-react';
+import { Lock, Star, Trophy, LogIn, Ticket, Store, Megaphone, PawPrint } from 'lucide-react';
 import { Estallido } from '../Efectos';
+import { Destello } from '../Marca';
 import { Pestanas } from '../Navegacion';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
@@ -24,6 +25,9 @@ export const CAPACIDAD_TUBO = CAPACIDAD;
 
 /** El color de una bolita: el del motor (`c`) o uno puesto a mano (`color`). */
 export const colorDe = (b) => b.color || COLORES[b.c]?.hex;
+
+/* Los aros de los tubos, en el orden de la ilustración del juego. */
+const AROS = ['#a78bfa', '#f472b6', '#60a5fa', '#fbbf24'];
 
 const RESORTE = { type: 'spring', stiffness: 320, damping: 26, mass: 0.8 };
 
@@ -265,12 +269,13 @@ export function TuboBolitas({ bolas = [], capacidad = CAPACIDAD, elegido = false
     <Etiqueta
       type={onClick ? 'button' : undefined}
       className={[s.tubo, elegido && s.elegido, destino && s.destino, listo && s.listo, pista && s.pista, chico && s.tuboChico].filter(Boolean).join(' ')}
-      style={{ '--capacidad': capacidad }}
+      style={{ '--capacidad': capacidad, '--aro': AROS[((numero || 1) - 1) % AROS.length] }}
       onClick={onClick}
       aria-label={etiqueta}
       aria-pressed={onClick ? elegido : undefined}
       data-componente={chico ? undefined : 'TuboBolitas'}
     >
+      <span className={s.aro} aria-hidden="true" />
       <span className={s.vidrio}>
         {bolas.map((b, k) => (
           <Bolita
@@ -290,7 +295,13 @@ export function TuboBolitas({ bolas = [], capacidad = CAPACIDAD, elegido = false
           </span>
         )}
       </span>
-      {listo && !chico && <Estallido disparo={`listo-${numero}`} forma="confeti" cantidad={10} distancia={40} colores={[colorDe(bolas[0] || {}), '#8b5cf6', '#f59e0b']} />}
+      <span className={s.base} aria-hidden="true"><PawPrint className={s.huella} /></span>
+      {listo && !chico && (
+        <>
+          <Estallido disparo={`listo-${numero}`} forma="confeti" cantidad={12} distancia={44} colores={[colorDe(bolas[0] || {}), '#8b5cf6', '#f59e0b', '#f472b6']} />
+          <span className={s.destellos} aria-hidden="true"><Destello /><Destello /><Destello /></span>
+        </>
+      )}
     </Etiqueta>
   );
 }

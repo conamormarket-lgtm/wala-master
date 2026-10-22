@@ -118,12 +118,53 @@
 
 /* ── Bolitas ── */
 .mesa {
+  position: relative;
   display: grid;
   gap: 1.25rem;
   padding: 1.5rem 1rem 1.25rem;
   border: 1px solid var(--color-border);
   border-radius: 6px 26px 26px 26px;
   background: var(--color-surface);
+}
+
+/* Lo de la mesa va encima de los adornos. */
+.mesa > :not(.adornos):not(.fiesta) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Adornos quietos (destellos y puntos de la marca), en las esquinas. */
+.adornos {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.adornos svg {
+  position: absolute;
+}
+
+.adorno1 { top: 14px; right: 18px; width: 22px; color: #fbbf24; }
+.adorno2 { top: 46px; right: 8px; width: 12px; color: #f472b6; }
+.adorno3 { bottom: 70px; left: 12px; width: 16px; color: var(--violet-400, #a78bfa); transform: rotate(14deg); }
+.adorno4 { bottom: 10px; right: 12px; width: 64px; color: var(--violet-200, #ddd6fe); opacity: 0.7; }
+
+:global([data-theme='dark']) .adorno4 {
+  color: rgba(167, 139, 250, 0.25);
+}
+
+/* El confeti de la victoria sale del centro de los tubos. */
+.fiesta {
+  position: absolute;
+  top: 55%;
+  left: 50%;
+  z-index: 2;
+  width: 0;
+  height: 0;
+  pointer-events: none;
 }
 
 .modos {
@@ -157,9 +198,10 @@
 
   /* Muchos tubos en el celular: más chicos para que entren en dos filas. */
   .tubosCompactos {
-    --mesa-tubo: 38px;
-    --mesa-bola: 28px;
-    gap: 1.6rem 0.45rem;
+    --mesa-tubo: 36px;
+    --mesa-bola: 27px;
+    --mesa-base-extra: 4px;
+    gap: 1.6rem 0.4rem;
   }
 }
 

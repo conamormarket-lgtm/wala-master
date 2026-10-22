@@ -9,6 +9,8 @@ import { BloqueSeccion } from '../Seccion';
 import { EsqueletoPagina } from '../Esqueletos';
 import { Aviso, HojaInferior } from '../Feedback';
 import { Pestanas } from '../Navegacion';
+import { Destello, Puntos } from '../Marca';
+import { Estallido } from '../Efectos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { BarraProgreso } from '../piezas/BarraProgreso';
 import { MarcoJuego, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego, TextoResaltado } from '../piezas/Juegos';
@@ -78,7 +80,7 @@ const partidaNueva = (lv, clave) => ({
 
 /** Columnas de la mesa: una fila con pocos tubos, dos con muchos. */
 const columnas = (n) => ({
-  '--col-escritorio': n <= 7 ? n : Math.ceil(n / 2),
+  '--col-escritorio': n <= 6 ? n : Math.ceil(n / 2),
   '--col-movil': n <= 4 ? n : n <= 6 ? 3 : Math.ceil(n / 2),
 });
 
@@ -300,7 +302,8 @@ export function PaginaBolitas({
 
   const ganar = async (movs, jugadas) => {
     fx('ganar');
-    setResultado(true);
+    // Un segundo para ver el confeti y los destellos sobre la mesa; después, la hoja.
+    setTimeout(() => setResultado(true), 1000);
     const partida = esReto
       ? { modo: 'reto', fecha: hoy, movimientos: jugadas, tubos: p.extras }
       : { modo: 'nivel', nivel: numero, movimientos: jugadas, tubos: p.extras };
@@ -495,6 +498,23 @@ export function PaginaBolitas({
                 ? (marcaMesa?.color ? fondoMundo(1, marcaMesa) : undefined)
                 : fondoMundo(verMapa ? mundoMapa : mundo, verMapa ? marcaDelMundo(marcasMundos, mundoMapa) : marcaMundo)}
             >
+              {/* Adornos quietos de la marca, como en la ilustración del juego. */}
+              <span className={s.adornos} aria-hidden="true">
+                <Destello className={s.adorno1} />
+                <Destello className={s.adorno2} />
+                <Destello className={s.adorno3} />
+                <Puntos className={s.adorno4} />
+              </span>
+              {/* El confeti grande al ganar, desde el centro de la mesa. */}
+              <span className={s.fiesta} aria-hidden="true">
+                <Estallido
+                  disparo={p.ganada ? `${clave}-${movidas}` : null}
+                  forma="confeti"
+                  cantidad={30}
+                  distancia={160}
+                  colores={['#8b5cf6', '#f472b6', '#fbbf24', '#60a5fa', '#34d399']}
+                />
+              </span>
               {hoy && (
                 <div className={s.modos}>
                   <Pestanas

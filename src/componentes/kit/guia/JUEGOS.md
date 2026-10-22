@@ -512,6 +512,26 @@ caracteres), algo más viejas que `master`. Pero en ellas las colecciones de
 las bolitas no están en `esSoloWala`, así que la regla general del ERP deja
 escribirlas a cualquiera con sesión hasta que se publiquen las reglas.
 
+### El aspecto, como la ilustración del juego (2026-10-22)
+
+Siguiendo la ilustración de la tarjeta de la Zona Arcade
+(`/assets/kapi/banners/bolitas.webp`):
+
+- **Bolitas brillantes**: reflejo grande arriba, uno chico abajo y sombra.
+- **Tubos de vidrio**: con una franja de luz, un **aro de color** en la boca
+  (violeta, rosado, azul y amarillo, en ese orden, como en el dibujo) y una
+  **base violeta con huella** (`PawPrint`).
+- **Al completar un tubo**: el aro se vuelve dorado, salta confeti y tres
+  `Destello` de la marca, una sola vez.
+- **Al ganar**: confeti grande desde el centro de la mesa, y la hoja del
+  resultado se abre un segundo después para que se vea.
+- **Adornos quietos** en las esquinas de la mesa (`Destello` y `Puntos`).
+- **La pista** late tres veces y se queda marcada (antes latía sin parar).
+
+Nada se mueve solo, de acuerdo con el criterio de diseño animado pero
+liviano. Con muchos tubos, desde 7 se reparten en dos filas; en el celular,
+los aros y las bases se angostan (`--mesa-base-extra`).
+
 ### Fase 3: las marcas (2026-10-21)
 
 Decidido con el dueño: el admin elige por fecha qué marca patrocina el reto y
