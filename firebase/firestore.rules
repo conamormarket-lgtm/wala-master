@@ -234,6 +234,19 @@ service cloud.firestore {
     match /bolitasProgreso/{userId} {
       allow read, write: if notSupervision() && (isOwner(userId));
     }
+    // Fase 3: el patrocinio de cada reto (marca, cupón, cupo) y la
+    // configuración (las marcas de los mundos, los premios del ranking): los lee
+    // el juego; los escribe el admin (adminBolitasSecure, en el servidor).
+    // bolitasStats, bolitasJugadores y bolitasPremios (métricas y premios
+    // entregados) no tienen match: solo el servidor.
+    match /bolitasPatrocinios/{fecha} {
+      allow read: if notSupervision() && (true);
+      allow write: if notSupervision() && (isAdmin());
+    }
+    match /bolitasConfig/{id} {
+      allow read: if notSupervision() && (true);
+      allow write: if notSupervision() && (isAdmin());
+    }
 
     // Evidencias de retos: se crean vía Cloud Function (admin SDK, evade reglas); el
     // cliente solo necesita leerlas como admin.
@@ -529,7 +542,8 @@ service cloud.firestore {
       return c in [
         'activeChallenge', 'adminRoles', 'adminUsers', 'analytics_daily', 'analytics_events',
         'analytics_global_summary', 'analytics_kapi', 'analytics_sessions', 'analytics_user_summary',
-        'beneficios', 'blueprints', 'bolitasProgreso', 'bolitasRetos', 'bolitasSemanas',
+        'beneficios', 'blueprints', 'bolitasConfig', 'bolitasJugadores', 'bolitasPatrocinios',
+        'bolitasPremios', 'bolitasProgreso', 'bolitasRetos', 'bolitasSemanas', 'bolitasStats',
         'challengeEvidences', 'chancesAjustes', 'characters',
         'checkout_payment_intents', 'clics', 'cliparts', 'cobros_en_curso', 'comunidad_meta', 'contador',
         'cuestionarios_templates', 'culqiCharges', 'culqiWebhookEvents', 'customShapes', 'designs',

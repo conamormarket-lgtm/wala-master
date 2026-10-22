@@ -2938,6 +2938,41 @@ exports.claimBallSortRewardSecure = functions.https.onCall(async (data, context)
   }
 });
 
+// ── Las Bolitas de Kapi: un cupón de marca ────────────────────────────────────
+// El del reto patrocinado y los premios del ranking semanal. Lleva brandId:
+// calcularDescuentoCupon lo aplica solo sobre los productos de esa marca.
+// Va dentro de una transacción (t) o de un lote; devuelve lo que se muestra.
+function crearCuponBolitas(t, ref, uid, plantilla, { origen, titulo, marcaId, marcaNombre }) {
+  const cupon = {
+    id: ref.id,
+    code: generateCouponCode(),
+    tipo: plantilla.tipo,
+    titulo,
+    texto: bolitas.textoCupon(plantilla, marcaNombre),
+    expiraEn: limaFechaEnDias(plantilla.vigenciaDias),
+    marcaNombre: marcaNombre || null,
+  };
+  t.set(ref, {
+    uid,
+    origen,
+    code: cupon.code,
+    tipo: cupon.tipo,
+    titulo: cupon.titulo,
+    texto: cupon.texto,
+    descuentoPct: plantilla.descuentoPct,
+    descuentoMonto: plantilla.descuentoMonto,
+    topeDescuento: plantilla.topeDescuento,
+    brandId: marcaId || null,
+    marcaNombre: marcaNombre || null,
+    expiraEn: cupon.expiraEn,
+    status: "active",
+    orderId: null,
+    usadoAt: null,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+  return cupon;
+}
+
 // ── Las Bolitas de Kapi: una partida ganada, comprobada ───────────────────────
 // La app manda cada nivel o reto que gana: { modo: 'nivel' | 'reto', nivel |
 // fecha, movimientos: [[de, a]…], tubos }. El servidor rearma el nivel con el
@@ -2971,14 +3006,23 @@ exports.registrarPartidaBolitasSecure = functions.https.onCall(async (data, cont
   const accionesRef = db.collection("userActions").doc(uid + "_" + hoy);
   const retoRef = esReto ? db.collection("bolitasRetos").doc(hoy + "_" + uid) : null;
   const semanaRef = esReto ? db.collection("bolitasSemanas").doc(semana + "_" + uid) : null;
+  // Fase 3: el reto patrocinado da un cupón de la marca (uno por persona y
+  // día: el id del cupón lo asegura) mientras quede cupo; y las métricas.
+  const patrocinioRef = esReto ? db.collection("bolitasPatrocinios").doc(hoy) : null;
+  const cuponRef = esReto ? db.collection("userCoupons").doc("bolitas_reto_" + hoy + "_" + uid) : null;
+  const jugadorRef = db.collection("bolitasJugadores").doc(uid);
+  const statsRef = db.collection("bolitasStats").doc(hoy);
 
   try {
     return await db.runTransaction(async (t) => {
-      const [userSnap, accionesSnap, retoSnap, semanaSnap] = await Promise.all([
+      const [userSnap, accionesSnap, retoSnap, semanaSnap, patrocinioSnap, cuponSnap, jugadorSnap] = await Promise.all([
         t.get(userRef),
         t.get(accionesRef),
         retoRef ? t.get(retoRef) : null,
         semanaRef ? t.get(semanaRef) : null,
+        patrocinioRef ? t.get(patrocinioRef) : null,
+        cuponRef ? t.get(cuponRef) : null,
+        t.get(jugadorRef),
       ]);
       if (!userSnap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
       const u = userSnap.data();
@@ -3011,7 +3055,26 @@ exports.registrarPartidaBolitasSecure = functions.https.onCall(async (data, cont
         }
       }
 
-      return { success: true, reward, ya, movimientos: partida.movimientos, mejor };
+      let cupon = null;
+      const patrocinio = esReto && patrocinioSnap.exists ? bolitas.normalizarPatrocinio(patrocinioSnap.data()) : null;
+      const entregados = patrocinio ? Number(patrocinioSnap.data().entregados) || 0 : 0;
+      if (patrocinio && patrocinio.activo && entregados < patrocinio.cupo && !cuponSnap.exists) {
+        cupon = crearCuponBolitas(t, cuponRef, uid, patrocinio.cupon, {
+          origen: "bolitas_reto",
+          titulo: "Reto del día: " + (patrocinio.marcaNombre || "Las Bolitas de Kapi"),
+          marcaId: patrocinio.marcaId,
+          marcaNombre: patrocinio.marcaNombre,
+        });
+        t.update(patrocinioRef, { entregados: FieldValue.increment(1) });
+      }
+
+      t.set(jugadorRef, bolitas.sumarJugador(jugadorSnap.exists ? jugadorSnap.data() : null, hoy, partida.nivel || 0));
+      t.set(statsRef, esReto
+        ? { fecha: hoy, partidas: FieldValue.increment(1), retos: FieldValue.increment(1) }
+        : { fecha: hoy, partidas: FieldValue.increment(1), niveles: { [partida.nivel]: FieldValue.increment(1) } },
+      { merge: true });
+
+      return { success: true, reward, ya, movimientos: partida.movimientos, mejor, cupon };
     });
   } catch (e) {
     if (e instanceof functions.https.HttpsError) throw e;
@@ -3059,6 +3122,149 @@ exports.getRankingBolitasSecure = functions.https.onCall(async (data, context) =
   } catch (e) {
     console.error("getRankingBolitasSecure error:", e);
     throw new functions.https.HttpsError("internal", "No se pudo cargar el ranking.");
+  }
+});
+
+// ── Las Bolitas de Kapi: premios del ranking semanal ──────────────────────────
+// Cada lunes a las 00:15 (Lima) se premia la semana que terminó, con lo que el
+// admin puso en bolitasConfig/premios { activo, puestos: [{ desde, hasta,
+// cupon }] }: un cupón (de la marca, si el premio la tiene) a cada puesto. El
+// id del cupón (semana + uid) y bolitasPremios/{semana} evitan premiar dos
+// veces si la tarea se repite.
+async function premiarSemanaBolitas(semana) {
+  const marcaRef = db.collection("bolitasPremios").doc(semana);
+  if ((await marcaRef.get()).exists) return { semana, ya: true };
+  const config = await db.collection("bolitasConfig").doc("premios").get();
+  const c = config.exists ? config.data() : null;
+  if (!c || c.activo === false || !Array.isArray(c.puestos) || !c.puestos.length) return { semana, sinPremios: true };
+
+  const snap = await db.collection("bolitasSemanas").where("semana", "==", semana).limit(RANKING_BOLITAS_LEER).get();
+  const filas = snap.docs.map((d) => {
+    const f = d.data();
+    return { ...f, hecho: f.hecho && f.hecho.toMillis ? f.hecho.toMillis() : 0 };
+  });
+  const orden = bolitas.ordenarRankingSemana(filas);
+  const entregados = [];
+  for (let k = 0; k < orden.length; k += 1) {
+    const plantilla = bolitas.premioDePuesto(k + 1, c.puestos);
+    if (!plantilla) continue;
+    const premio = c.puestos.find((p) => k + 1 >= Number(p.desde) && k + 1 <= Number(p.hasta || p.desde)) || {};
+    const ref = db.collection("userCoupons").doc("bolitas_semana_" + semana + "_" + orden[k].uid);
+    try {
+      await db.runTransaction(async (t) => {
+        if ((await t.get(ref)).exists) return;
+        crearCuponBolitas(t, ref, orden[k].uid, plantilla, {
+          origen: "bolitas_semana",
+          titulo: "Puesto " + (k + 1) + " en Las Bolitas de Kapi",
+          marcaId: premio.marcaId || null,
+          marcaNombre: premio.marcaNombre || null,
+        });
+      });
+      entregados.push({ puesto: k + 1, uid: orden[k].uid });
+    } catch (e) {
+      console.error("premiarSemanaBolitas: no se pudo premiar el puesto", k + 1, e);
+    }
+  }
+  await marcaRef.set({ semana, entregados, jugadores: orden.length, hecho: FieldValue.serverTimestamp() });
+  return { semana, entregados: entregados.length };
+}
+
+exports.premiarRankingBolitas = onSchedule({
+  schedule: "15 0 * * 1",
+  timeZone: "America/Lima",
+}, async () => {
+  const semana = bolitas.semanaAnterior(await bolitas.semanaBolitas(limaTodayStr()));
+  const r = await premiarSemanaBolitas(semana);
+  console.log("premiarRankingBolitas:", JSON.stringify(r));
+});
+
+// ── Las Bolitas de Kapi: del juego a la tienda ────────────────────────────────
+// Cuenta los toques en una marca o un producto desde el juego (las métricas
+// del admin). Sin sesión también: solo suma, no guarda quién fue.
+exports.contarClicBolitasSecure = functions.https.onCall(async (data) => {
+  const marcaId = typeof (data && data.marcaId) === "string" ? data.marcaId.slice(0, 80) : "";
+  const destino = (data && data.destino) === "producto" ? "producto" : "marca";
+  const hoy = limaTodayStr();
+  const cambios = { fecha: hoy, clics: FieldValue.increment(1), clicsPorDestino: { [destino]: FieldValue.increment(1) } };
+  if (marcaId && /^[\w-]+$/.test(marcaId)) cambios.clicsPorMarca = { [marcaId]: FieldValue.increment(1) };
+  await db.collection("bolitasStats").doc(hoy).set(cambios, { merge: true });
+  return { success: true };
+});
+
+// ── Las Bolitas de Kapi: el admin ─────────────────────────────────────────────
+// Una sola función para /admin/bolitas (solo admin), con `accion`:
+//  - guardarPatrocinio { fecha, patrocinio } · borrarPatrocinio { fecha }
+//  - guardarMundos { marcas: [{ id, nombre }] } (el orden de las marcas de los mundos)
+//  - guardarPremios { activo, puestos }
+//  - metricas { dias } → por día (partidas, retos, niveles, clics) y jugadores
+//  - premiarSemana { semana } (repetir a mano el premio de una semana)
+// Lo que se guarda pasa por las mismas normalizaciones que usa el juego.
+exports.adminBolitasSecure = functions.https.onCall(async (data, context) => {
+  if (!(await callerIsAdmin(context))) throw new functions.https.HttpsError("permission-denied", "Solo para administradores.");
+  const d = data || {};
+  const FECHA = /^\d{4}-\d{2}-\d{2}$/;
+  try {
+    switch (d.accion) {
+      case "guardarPatrocinio": {
+        if (!FECHA.test(String(d.fecha))) throw new functions.https.HttpsError("invalid-argument", "Fecha inválida.");
+        const p = bolitas.normalizarPatrocinio(d.patrocinio);
+        if (!p) throw new functions.https.HttpsError("invalid-argument", "Falta la marca, el cupón o el cupo.");
+        const ref = db.collection("bolitasPatrocinios").doc(d.fecha);
+        await db.runTransaction(async (t) => {
+          const antes = await t.get(ref);
+          t.set(ref, {
+            ...p, fecha: d.fecha, texto: bolitas.textoCupon(p.cupon, p.marcaNombre),
+            entregados: antes.exists ? Number(antes.data().entregados) || 0 : 0, actualizado: FieldValue.serverTimestamp(),
+          });
+        });
+        return { success: true, patrocinio: p };
+      }
+      case "borrarPatrocinio": {
+        if (!FECHA.test(String(d.fecha))) throw new functions.https.HttpsError("invalid-argument", "Fecha inválida.");
+        await db.collection("bolitasPatrocinios").doc(d.fecha).delete();
+        return { success: true };
+      }
+      case "guardarMundos": {
+        const marcas = (Array.isArray(d.marcas) ? d.marcas : [])
+          .filter((m) => m && typeof m.id === "string" && m.id)
+          .slice(0, 50)
+          .map((m) => ({ id: m.id.slice(0, 80), nombre: String(m.nombre || "").slice(0, 60) }));
+        await db.collection("bolitasConfig").doc("mundos").set({ marcas, actualizado: FieldValue.serverTimestamp() });
+        return { success: true, marcas };
+      }
+      case "guardarPremios": {
+        const puestos = (Array.isArray(d.puestos) ? d.puestos : []).slice(0, 10).map((p) => ({
+          desde: Math.max(1, Math.floor(Number(p.desde)) || 1),
+          hasta: Math.max(1, Math.floor(Number(p.hasta || p.desde)) || 1),
+          cupon: bolitas.normalizarPlantillaCupon(p.cupon),
+          marcaId: typeof p.marcaId === "string" && p.marcaId ? p.marcaId.slice(0, 80) : null,
+          marcaNombre: String(p.marcaNombre || "").slice(0, 60) || null,
+        })).filter((p) => p.cupon && p.hasta >= p.desde);
+        await db.collection("bolitasConfig").doc("premios").set({ activo: d.activo !== false, puestos, actualizado: FieldValue.serverTimestamp() });
+        return { success: true, puestos };
+      }
+      case "metricas": {
+        const dias = Math.min(60, Math.max(1, Math.floor(Number(d.dias)) || 14));
+        const hoy = limaTodayStr();
+        const desde = limaTodayStr(Date.now() - (dias - 1) * 86400000);
+        const [statsSnap, jugadoresSnap] = await Promise.all([
+          db.collection("bolitasStats").where("fecha", ">=", desde).get(),
+          db.collection("bolitasJugadores").where("primerDia", ">=", limaTodayStr(Date.now() - 90 * 86400000)).limit(5000).get(),
+        ]);
+        const porDia = statsSnap.docs.map((x) => x.data()).sort((a, b) => a.fecha.localeCompare(b.fecha));
+        return { success: true, desde, hasta: hoy, porDia, jugadores: bolitas.metricasJugadores(jugadoresSnap.docs.map((x) => x.data()), hoy) };
+      }
+      case "premiarSemana": {
+        if (!FECHA.test(String(d.semana))) throw new functions.https.HttpsError("invalid-argument", "Semana inválida.");
+        return { success: true, ...(await premiarSemanaBolitas(d.semana)) };
+      }
+      default:
+        throw new functions.https.HttpsError("invalid-argument", "Acción desconocida.");
+    }
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("adminBolitasSecure error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo completar la acción.");
   }
 });
 
@@ -4685,10 +4891,12 @@ async function calcularDescuentoCupon(cupon, datos) {
     ? await db.getAll(...ids.map((id) => db.collection("productos_wala").doc(id)))
     : [];
   const precioPorId = new Map();
+  const marcaPorId = new Map();
   snaps.forEach((snap) => {
     if (!snap.exists) return;
     const precio = precioDeCatalogo(snap.data());
     if (precio !== null) precioPorId.set(snap.id, precio);
+    if (snap.data().brandId) marcaPorId.set(snap.id, String(snap.data().brandId));
   });
 
   let subtotalCatalogo = 0;
@@ -4707,7 +4915,28 @@ async function calcularDescuentoCupon(cupon, datos) {
 
   // 2) Base del descuento. Exacta si todo el carrito es de catálogo.
   const exacta = todosValorados;
-  const base = exacta ? subtotalCatalogo : subtotalCliente;
+  let base = exacta ? subtotalCatalogo : subtotalCliente;
+
+  // 2b) Cupón de una marca (Las Bolitas de Kapi: el reto patrocinado y los
+  // premios del ranking): solo cuentan los productos de catálogo de esa marca
+  // (los personalizados no, su precio no se puede rehacer aquí). Sin ninguno
+  // en el carrito, no descuenta. Los cupones sin brandId no cambian.
+  if (cupon.brandId) {
+    let baseMarca = 0;
+    for (const it of items) {
+      const id = String(it.productId || "");
+      if (it.personalizado || marcaPorId.get(id) !== String(cupon.brandId)) continue;
+      const precio = precioPorId.get(id);
+      if (precio !== undefined) baseMarca += precio * Math.max(1, Number(it.qty) || 1);
+    }
+    if (baseMarca <= 0) {
+      return {
+        descuento: 0, envioGratis: false, base: 0, exacta,
+        aviso: "Este cupón es para productos de " + (cupon.marcaNombre || "una marca") + ": añade alguno al carrito para usarlo.",
+      };
+    }
+    base = baseMarca;
+  }
 
   let descuento = 0;
   let envioGratis = false;

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Lock, Star, Trophy, LogIn } from 'lucide-react';
+import { Lock, Star, Trophy, LogIn, Ticket, Store, Megaphone } from 'lucide-react';
 import { Estallido } from '../Efectos';
 import { Pestanas } from '../Navegacion';
 import Boton from '../Boton';
+import { Enlace } from '../Enlace';
 import { TextoResaltado } from './TextoResaltado';
 import { Texto, useTexto } from '../Traduccion';
 import { COLORES, CAPACIDAD, tramo, tuboListo } from './bolitasMotor.mjs';
@@ -47,6 +48,116 @@ export function EstrellasNivel({ valor = 0, tamano = 'sm', animar = false }) {
         </motion.span>
       ))}
     </span>
+  );
+}
+
+/* ── Fase 3: marcas ── */
+
+/**
+ * Una marca en el juego: su logo (o la inicial) y su nombre. Con `url`, es un
+ * enlace a su tienda (onClick avisa, para las métricas).
+ *  - marca: { nombre, logo, url } · tamano: 'sm' | 'md'
+ */
+export function MarcaBolitas({ marca, tamano = 'sm', onClick }) {
+  if (!marca) return null;
+  const cuerpo = (
+    <>
+      {marca.logo
+        ? <img src={marca.logo} alt="" className={s.marcaLogo} loading="lazy" />
+        : <span className={s.marcaInicial} aria-hidden="true">{marca.nombre?.charAt(0)}</span>}
+      <span className={s.marcaNombre}>{marca.nombre}</span>
+    </>
+  );
+  const clase = [s.marca, s[`marca_${tamano}`]].join(' ');
+  return marca.url
+    ? <Enlace to={marca.url} className={[clase, s.marcaEnlace].join(' ')} onClick={onClick}>{cuerpo}</Enlace>
+    : <span className={clase}>{cuerpo}</span>;
+}
+
+/**
+ * El reto patrocinado: la marca, lo que se gana y cuántos cupones quedan.
+ *  - patrocinio: { marca, texto, quedan } · sesion · hecho (ya lo ganó hoy) ·
+ *    urlLogin · onClicMarca
+ */
+export function PatrocinioBolitas({ patrocinio, sesion = true, hecho = false, urlLogin = '/login', onClicMarca }) {
+  if (!patrocinio?.marca) return null;
+  const { marca, texto, quedan } = patrocinio;
+  let nota;
+  if (!sesion) nota = 'Inicia sesión para ganar el cupón.';
+  else if (hecho) nota = 'Ya ganaste el cupón de hoy: está en Mis cupones.';
+  else if (quedan <= 0) nota = 'Ya se entregaron todos los cupones de hoy. El reto sigue en juego para el ranking.';
+  else nota = quedan === 1 ? 'Queda 1 cupón.' : `Quedan ${quedan} cupones.`;
+  return (
+    <div className={s.patrocinio} data-componente="PatrocinioBolitas">
+      <p className={s.patrocinioCabeza}><Megaphone aria-hidden="true" /><Texto>Reto patrocinado por</Texto></p>
+      <MarcaBolitas marca={marca} tamano="md" onClick={() => onClicMarca?.({ marcaId: marca.id, destino: 'marca' })} />
+      {texto && (
+        <p className={s.patrocinioPremio}>
+          <Ticket aria-hidden="true" />
+          <span><Texto>Complétalo y gana:</Texto> <strong><Texto>{texto}</Texto></strong></span>
+        </p>
+      )}
+      <p className={s.patrocinioNota}>
+        {sesion || hecho ? <TextoResaltado resaltar={[quedan]}>{nota}</TextoResaltado> : <Texto>{nota}</Texto>}
+      </p>
+      {!sesion && <Boton to={urlLogin} variante="secundario" tamano="sm" icono={<LogIn aria-hidden="true" />}><Texto>Iniciar sesión</Texto></Boton>}
+    </div>
+  );
+}
+
+/**
+ * El cupón que se acaba de ganar (reto patrocinado), en la hoja del resultado.
+ *  - cupon: { code, titulo, texto, expiraEn, marcaNombre } · urlCupones
+ */
+export function CuponGanado({ cupon, urlCupones = '/cuenta/cupones' }) {
+  if (!cupon) return null;
+  const vence = cupon.expiraEn ? cupon.expiraEn.split('-').reverse().join('/') : null;
+  return (
+    <div className={s.cupon} data-componente="CuponGanado">
+      <Ticket aria-hidden="true" className={s.cuponIcono} />
+      <div className={s.cuponCuerpo}>
+        <p className={s.cuponTitulo}><Texto>{cupon.marcaNombre ? `¡Ganaste un cupón de ${cupon.marcaNombre}!` : '¡Ganaste un cupón!'}</Texto></p>
+        <p className={s.cuponTexto}><Texto>{cupon.texto}</Texto></p>
+        <p className={s.cuponCodigo}><code>{cupon.code}</code>{vence && <small><Texto>{`Vence el ${vence}`}</Texto></small>}</p>
+      </div>
+      <Boton to={urlCupones} variante="secundario" tamano="sm"><Texto>Ver mis cupones</Texto></Boton>
+    </div>
+  );
+}
+
+/**
+ * Productos de una marca (al vencer un mundo o el reto patrocinado): hasta 3,
+ * con su foto, nombre y precio, y el enlace a la tienda de la marca.
+ *  - marca: { id, nombre, url } · productos: [{ url, imagen, nombre, precio }]
+ *  - cargando · onClic({ marcaId, destino: 'producto' | 'marca' })
+ */
+export function ProductosMarca({ marca, productos = [], cargando = false, onClic }) {
+  const t = useTexto(marca ? `Conoce ${marca.nombre}` : undefined);
+  if (!marca) return null;
+  return (
+    <section className={s.productos} aria-label={t} data-componente="ProductosMarca">
+      <p className={s.productosTitulo}><Store aria-hidden="true" />{t}</p>
+      {cargando && !productos.length ? (
+        <p className={s.rankingVacio} role="status"><Texto>Cargando productos…</Texto></p>
+      ) : (
+        <ul className={s.productosLista}>
+          {productos.slice(0, 3).map((p) => (
+            <li key={p.url}>
+              <Enlace to={p.url} className={s.producto} onClick={() => onClic?.({ marcaId: marca.id, destino: 'producto' })}>
+                {p.imagen && <img src={p.imagen} alt="" loading="lazy" />}
+                <span className={s.productoNombre}>{p.nombre}</span>
+                {p.precio != null && <span className={s.productoPrecio}>S/ {Number(p.precio).toFixed(2)}</span>}
+              </Enlace>
+            </li>
+          ))}
+        </ul>
+      )}
+      {marca.url && (
+        <Boton to={marca.url} variante="secundario" tamano="sm" icono={<Store aria-hidden="true" />} onClick={() => onClic?.({ marcaId: marca.id, destino: 'marca' })}>
+          <Texto>{`Ver la tienda de ${marca.nombre}`}</Texto>
+        </Boton>
+      )}
+    </section>
   );
 }
 

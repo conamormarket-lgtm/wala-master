@@ -11,6 +11,7 @@ export const PROGRESO_BOLITAS = {
   guardadas: { pista: 0, tubo: 0, deshacer: 0 }, // ayudas de los cofres
   vistos: [], // obstáculos ya explicados
   reto: null, // el día del último reto hecho
+  cuponReto: null, // el día del último cupón ganado en un reto patrocinado
   sonido: true,
   vibracion: true,
   actualizado: 0, // cuándo cambió (ms): decide la racha y las ayudas al unir
@@ -38,6 +39,7 @@ export function progresoBolitas(p = {}) {
     },
     vistos: Array.isArray(base.vistos) ? base.vistos.filter((v) => typeof v === 'string') : [],
     reto: typeof base.reto === 'string' ? base.reto : null,
+    cuponReto: typeof base.cuponReto === 'string' ? base.cuponReto : null,
     sonido: base.sonido !== false,
     vibracion: base.vibracion !== false,
     actualizado: entero(base.actualizado),
@@ -65,6 +67,7 @@ export function unirProgresos(aparato, cuenta) {
     guardadas: reciente.guardadas,
     vistos: [...new Set([...a.vistos, ...c.vistos])],
     reto: [a.reto, c.reto].filter(Boolean).sort().pop() || null,
+    cuponReto: [a.cuponReto, c.cuponReto].filter(Boolean).sort().pop() || null,
     actualizado: Math.max(a.actualizado, c.actualizado),
   };
 }

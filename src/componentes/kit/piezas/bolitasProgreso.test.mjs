@@ -21,6 +21,7 @@ test('al unir no se pierde lo ganado en ningún lado', () => {
   assert.deepEqual(u.estrellas, { 1: 3, 2: 2, 25: 3 });
   assert.deepEqual(u.vistos.sort(), ['cortina', 'ocultas']);
   assert.equal(u.reto, '2026-10-21');
+  assert.equal(unirProgresos({ cuponReto: '2026-10-20' }, { cuponReto: '2026-10-21' }).cuponReto, '2026-10-21');
   assert.equal(u.actualizado, 100);
 });
 

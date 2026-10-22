@@ -12,7 +12,9 @@ import { Pestanas } from '../Navegacion';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { BarraProgreso } from '../piezas/BarraProgreso';
 import { MarcoJuego, AyudaJuego, PremioJuego, ResultadoJuego, CifrasJuego, TextoResaltado } from '../piezas/Juegos';
-import { TuboBolitas, EstrellasNivel, RankingBolitas } from '../piezas/Bolitas';
+import {
+  TuboBolitas, EstrellasNivel, RankingBolitas, MarcaBolitas, PatrocinioBolitas, CuponGanado, ProductosMarca,
+} from '../piezas/Bolitas';
 import { efectoBolitas } from '../piezas/efectosBolitas';
 import { progresoBolitas } from '../piezas/bolitasProgreso.mjs';
 import {
@@ -80,17 +82,21 @@ const columnas = (n) => ({
   '--col-movil': n <= 4 ? n : n <= 6 ? 3 : Math.ceil(n / 2),
 });
 
-/** Los colores del mundo para el fondo de la mesa. */
-const fondoMundo = (m) => {
+/** Los colores del mundo para el fondo de la mesa (los de su marca, si tiene). */
+const fondoMundo = (m, marca) => {
+  if (marca?.color) return { '--mundo-a': marca.color, '--mundo-b': marca.color2 || marca.color };
   const { fondo } = infoMundo(m);
   return { '--mundo-a': fondo[0], '--mundo-b': fondo[1] };
 };
+
+/** La marca de un mundo: las de los mundos se repiten en orden (o ninguna). */
+const marcaDelMundo = (marcas, m) => (marcas?.length ? marcas[(m - 1) % marcas.length] : null);
 
 /**
  * El mapa de un mundo: sus 20 niveles con las estrellas ganadas; los que
  * faltan abrir, con candado; el último, el jefe.
  */
-function MapaBolitas({ mundo, progreso, actual, onElegir, onMundo }) {
+function MapaBolitas({ mundo, marca, progreso, actual, onElegir, onMundo, onClicMarca }) {
   const info = infoMundo(mundo);
   const ultimo = mundoDe(progreso.nivel);
   const niveles = Array.from({ length: info.hasta - info.desde + 1 }, (_, k) => info.desde + k);
@@ -102,7 +108,9 @@ function MapaBolitas({ mundo, progreso, actual, onElegir, onMundo }) {
         <Boton variante="fantasma" tamano="sm" soloIcono icono={<ChevronLeft aria-hidden="true" />} aria-label={t.anterior} disabled={mundo <= 1} onClick={() => onMundo(mundo - 1)} />
         <div className={s.mapaTitulo}>
           <p className={s.mundoNumero}><TextoResaltado resaltar={[mundo]}>{`Mundo ${mundo}`}</TextoResaltado></p>
-          <p className={s.mundoNombre}><Texto>{info.nombre}</Texto></p>
+          {marca
+            ? <MarcaBolitas marca={marca} tamano="md" onClick={() => onClicMarca?.({ marcaId: marca.id, destino: 'marca' })} />
+            : <p className={s.mundoNombre}><Texto>{info.nombre}</Texto></p>}
           <p className={s.mundoEstrellas}><Star aria-hidden="true" className={s.estrellaTotal} /> {ganadas}/{niveles.length * 3}</p>
         </div>
         <Boton variante="fantasma" tamano="sm" soloIcono icono={<ChevronRight aria-hidden="true" />} aria-label={t.siguiente} disabled={mundo >= ultimo} onClick={() => onMundo(mundo + 1)} />
@@ -160,6 +168,14 @@ function NivelDelMapa({ n, estrellas, abierto, actual, onElegir }) {
  *  - hoy ('AAAA-MM-DD', el día de Lima: sin él no hay reto)
  *  - ranking (del reto: ver RankingBolitas) · cargandoRanking ·
  *    onPedirRanking(): al entrar al reto, para traerlo
+ *  - marcasMundos: [{ id, nombre, logo, url, color, color2 }] las marcas de
+ *    los mundos, en orden (se repiten): el mundo toma sus colores y su logo
+ *  - patrocinio (del reto de hoy): { marca, texto, quedan }
+ *  - onPedirProductos(marcaId) → promesa de [{ url, imagen, nombre, precio }]:
+ *    al vencer el jefe de un mundo de marca o el reto patrocinado
+ *  - onClicMarca({ marcaId, destino: 'marca' | 'producto' }): para las métricas
+ *  - el resultado de onGanar / onRegistrar puede traer `cupon` (el del reto
+ *    patrocinado): { code, titulo, texto, expiraEn, marcaNombre }
  *  - inicial: { estado, colores, par } para empezar en un tablero puesto (la demo)
  *  - vistaInicial: 'juego' | 'mapa' · ayudaVista · onAyudaVista · estado: 'cargando'
  * Mientras se acredita, la hoja no se cierra y no se pasa de nivel.
@@ -168,6 +184,7 @@ function NivelDelMapa({ n, estrellas, abierto, actual, onElegir }) {
 export function PaginaBolitas({
   sesion = true, yaHoy = false, monto = 2, onGanar, onRegistrar, onCompletar, hoy, progreso, onProgreso,
   ranking, cargandoRanking = false, onPedirRanking,
+  marcasMundos = [], patrocinio, onPedirProductos, onClicMarca,
   inicial, vistaInicial = 'juego', ayudaVista = true, onAyudaVista, urlLogin = '/login', estado,
 }) {
   const [prog, setProg] = useState(() => progresoBolitas(progreso));
@@ -189,6 +206,8 @@ export function PaginaBolitas({
   const [explicar, setExplicar] = useState(null);
   const [atascado, setAtascado] = useState(false);
   const [aviso, setAviso] = useState(null);
+  // Los productos de la marca que se muestran en el resultado: { marca, lista, cargando }.
+  const [vitrina, setVitrina] = useState(null);
   const inicialUsado = useRef(false);
   const t = {
     sonido: useTexto(prog.sonido ? 'Silenciar' : 'Activar el sonido'),
@@ -259,6 +278,8 @@ export function PaginaBolitas({
   };
   const metas = metasEstrellas(p.nivel.par);
   const mundo = mundoDe(numero);
+  const marcaMundo = marcaDelMundo(marcasMundos, mundo);
+  const marcaMesa = esReto ? patrocinio?.marca : marcaMundo;
   const actualizar = (cambios) => setPartidas((todas) => ({ ...todas, [modo]: { ...todas[modo], ...cambios } }));
 
   /** Gasta una ayuda: primero las del nivel, después las guardadas. */
@@ -283,10 +304,14 @@ export function PaginaBolitas({
     const partida = esReto
       ? { modo: 'reto', fecha: hoy, movimientos: jugadas, tubos: p.extras }
       : { modo: 'nivel', nivel: numero, movimientos: jugadas, tubos: p.extras };
+    // La marca cuyos productos se muestran: la del reto patrocinado o la del
+    // mundo cuyo jefe se acaba de vencer.
+    let vitrinaMarca = null;
     if (esReto) {
       onCompletar?.({ modo, fecha: hoy, movimientos: movs });
       guardar({ reto: hoy });
-      setLogro(null);
+      setLogro({ reto: true });
+      vitrinaMarca = patrocinio?.marca || null;
     } else {
       const estrellas = estrellasPara(movs, p.nivel.par);
       const antes = prog.estrellas[numero] || 0;
@@ -298,17 +323,33 @@ export function PaginaBolitas({
       onCompletar?.({ modo, nivel: numero, movimientos: movs, estrellas });
       if (cofre) setTimeout(() => fx('cofre'), 900);
       enReposo(() => armado('niveles', numero + 1));
+      if (esJefe(numero)) vitrinaMarca = marcaMundo;
     }
+    setVitrina(null);
+    if (vitrinaMarca && onPedirProductos) {
+      setVitrina({ marca: vitrinaMarca, lista: [], cargando: true });
+      Promise.resolve(onPedirProductos(vitrinaMarca.id))
+        .then((lista) => setVitrina({ marca: vitrinaMarca, lista: lista || [], cargando: false }))
+        .catch(() => setVitrina({ marca: vitrinaMarca, lista: [], cargando: false }));
+    }
+    const conCupon = (r) => {
+      if (r?.cupon) {
+        setLogro((l) => ({ ...l, cupon: r.cupon }));
+        if (esReto) guardar({ reto: hoy, cuponReto: hoy });
+        setTimeout(() => fx('cofre'), 700);
+      }
+    };
     if (!sesion) { setPremio({ estado: 'sinSesion' }); return; }
     if (cobrado) {
       setPremio({ estado: 'ya', texto: 'Ya ganaste tus monedas hoy. Puedes seguir jugando por gusto.' });
-      Promise.resolve(onRegistrar?.(partida)).catch(() => {});
+      Promise.resolve(onRegistrar?.(partida)).then(conCupon).catch(() => {});
       return;
     }
     setPremio({ estado: 'acreditando' });
     try {
       const r = await onGanar?.({ movimientos: movs, partida });
       setCobrado(true);
+      conCupon(r);
       setPremio(r?.ya ? { estado: 'ya' } : { estado: 'acreditado', monto: r?.monto || monto });
     } catch {
       setPremio({ estado: 'error' });
@@ -448,7 +489,12 @@ export function PaginaBolitas({
       <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '2.5rem' }}>
         <MarcoJuego titulo="Las Bolitas de Kapi" onAyuda={() => setAyuda(true)} acciones={interruptores}>
           <div className={s.bolitas} data-componente="PaginaBolitas">
-            <div className={[s.mesa, !esReto && s.mesaMundo].filter(Boolean).join(' ')} style={esReto ? undefined : fondoMundo(verMapa ? mundoMapa : mundo)}>
+            <div
+              className={[s.mesa, (!esReto || marcaMesa) && s.mesaMundo].filter(Boolean).join(' ')}
+              style={esReto
+                ? (marcaMesa?.color ? fondoMundo(1, marcaMesa) : undefined)
+                : fondoMundo(verMapa ? mundoMapa : mundo, verMapa ? marcaDelMundo(marcasMundos, mundoMapa) : marcaMundo)}
+            >
               {hoy && (
                 <div className={s.modos}>
                   <Pestanas
@@ -462,7 +508,15 @@ export function PaginaBolitas({
 
               {verMapa ? (
                 <>
-                  <MapaBolitas mundo={mundoMapa} progreso={prog} actual={numero} onElegir={irANivel} onMundo={setMundoMapa} />
+                  <MapaBolitas
+                    mundo={mundoMapa}
+                    marca={marcaDelMundo(marcasMundos, mundoMapa)}
+                    progreso={prog}
+                    actual={numero}
+                    onElegir={irANivel}
+                    onMundo={setMundoMapa}
+                    onClicMarca={onClicMarca}
+                  />
                   <div className={s.botonesMesa}>
                     <Boton icono={<ArrowRight aria-hidden="true" />} onClick={() => setVista('juego')}>
                       <TextoResaltado resaltar={[numero]}>{`Volver al nivel ${numero}`}</TextoResaltado>
@@ -479,7 +533,9 @@ export function PaginaBolitas({
                         <p className={s.mundoLinea}>
                           <TextoResaltado resaltar={[mundo]}>{`Mundo ${mundo}`}</TextoResaltado>
                           {' · '}
-                          <Texto>{infoMundo(mundo).nombre}</Texto>
+                          {marcaMundo
+                            ? <MarcaBolitas marca={marcaMundo} onClick={() => onClicMarca?.({ marcaId: marcaMundo.id, destino: 'marca' })} />
+                            : <Texto>{infoMundo(mundo).nombre}</Texto>}
                         </p>
                         <p className={s.nivelTitulo}>
                           {p.nivel.jefe && <Crown className={s.coronaTitulo} aria-hidden="true" />}
@@ -493,6 +549,15 @@ export function PaginaBolitas({
                       </div>
                       <Boton variante="secundario" tamano="sm" icono={<IconoMapa aria-hidden="true" />} onClick={abrirMapa}><Texto>Mapa</Texto></Boton>
                     </div>
+                  )}
+                  {esReto && patrocinio?.marca && (
+                    <PatrocinioBolitas
+                      patrocinio={patrocinio}
+                      sesion={sesion}
+                      hecho={prog.cuponReto === hoy}
+                      urlLogin={urlLogin}
+                      onClicMarca={onClicMarca}
+                    />
                   )}
                   {esReto && prog.reto === hoy && !p.ganada && (
                     <Aviso compacto tipo="exito"><Texto>Ya hiciste el reto de hoy. Puedes jugarlo otra vez; mañana sale otro.</Texto></Aviso>
@@ -649,7 +714,7 @@ export function PaginaBolitas({
         imagen={CARAS_KAPI.feliz}
         texto={(
           <div className={s.logro}>
-            {logro && <EstrellasNivel valor={logro.estrellas} tamano="lg" animar />}
+            {logro?.estrellas > 0 && <EstrellasNivel valor={logro.estrellas} tamano="lg" animar />}
             <p>
               <TextoResaltado resaltar={[movidas]}>
                 {movidas === 1 ? 'Lo resolviste en 1 movimiento.' : `Lo resolviste en ${movidas} movimientos.`}
@@ -683,6 +748,7 @@ export function PaginaBolitas({
           </>
         )}
       >
+        {logro?.cupon && <CuponGanado cupon={logro.cupon} />}
         {logro?.cofre && (
           <div className={s.cofre} data-componente="CofreBolitas">
             <Gift aria-hidden="true" className={s.cofreIcono} />
@@ -695,6 +761,9 @@ export function PaginaBolitas({
           </div>
         )}
         {premio && <PremioJuego {...premio} urlLogin={urlLogin} />}
+        {vitrina && (
+          <ProductosMarca marca={vitrina.marca} productos={vitrina.lista} cargando={vitrina.cargando} onClic={onClicMarca} />
+        )}
       </ResultadoJuego>
     </>
   );

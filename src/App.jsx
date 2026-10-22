@@ -230,6 +230,7 @@ const AdminEnlaceEditor = lazy(() => import('./pages/admin/AdminEnlaceEditor'));
 const AdminLandingPages = lazy(() => import('./pages/Tienda/admin/AdminLandingPages'));
 const AdminThemes = lazy(() => import('./pages/Tienda/admin/AdminThemes'));
 const AdminRuletaPage = lazy(() => import('./pages/admin/AdminRuletaPage'));
+const AdminBolitasPage = lazy(() => import('./pages/admin/AdminBolitasPage'));
 const AdminEncuestas = lazy(() => import('./pages/admin/AdminEncuestas'));
 const AdminPopups = lazy(() => import('./pages/admin/AdminPopups'));
 const AdminFechasImportantesPage = lazy(() => import('./pages/admin/AdminFechasImportantesPage'));
@@ -538,6 +539,7 @@ function App() {
                                       <Route path="landing-pages" element={<AdminLandingPages />} />
                                       <Route path="temas" element={<AdminThemes />} />
                                       <Route path="ruleta" element={<AdminRuletaPage />} />
+              <Route path="bolitas" element={<AdminBolitasPage />} />
                                       <Route path="backups" element={<AdminBackups />} />
                                       <Route path="configuracion" element={<AdminConfiguracion />} />
                                       <Route path="encuestas" element={<AdminEncuestas />} />

@@ -2,7 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   claimBallSortReward, registrarPartidaBolitas, getRankingBolitas, leerProgresoBolitas, guardarProgresoBolitas, REWARD_AMOUNT,
+  leerPatrocinioBolitas, leerMundosBolitas, contarClicBolitas,
 } from '../../services/firebase/ballSort';
+import { getBrands } from '../../services/brands';
+import { getProductsByBrand } from '../../services/products';
+import { tarjetaDesdeMarca, identidadDeMarca, tarjetaDesdeProducto } from '../../componentes/kit/adaptadores';
 import { programarAvisoReto } from '../../services/bolitasNotifications';
 import { trackMinigame } from '../../services/analytics/tracker';
 import { limaTodayStr } from '../../utils/fechaLima';
@@ -36,6 +40,11 @@ import entregarMonedas from './entregarMonedas';
  * (getRankingBolitasSecure). Si esa función todavía no existe en el servidor
  * (la web se publicó antes que las funciones), se cobra con la de antes
  * (claimBallSortRewardSecure). En la app, un aviso local recuerda el reto.
+ * Fase 3: las marcas de los mundos (bolitasConfig/mundos, en el orden del
+ * admin) y el patrocinio del reto de hoy (bolitasPatrocinios/{hoy}) se cargan
+ * aparte, sin frenar el juego; al vencer un jefe o el reto patrocinado se
+ * muestran productos de la marca (getProductsByBrand) y cada toque hacia la
+ * tienda se cuenta (contarClicBolitasSecure).
  * Lo de antes: pages/Minijuegos/BallSortViejo.jsx (interruptor juegosViejo).
  */
 
@@ -57,6 +66,37 @@ const guardar = (clave, valor) => {
 // La función nueva todavía no está en el servidor: se cobra con la de antes.
 const faltaFuncion = (e) => e?.code === 'functions/not-found' || e?.code === 'functions/unimplemented';
 
+/** Una marca de la tienda como la usa el juego (o null si está oculta). */
+const marcaParaJuego = (m) => {
+  const tarjeta = m && tarjetaDesdeMarca(m);
+  if (!tarjeta) return null;
+  const { color, color2 } = identidadDeMarca(m);
+  return { ...tarjeta, color: color || tarjeta.color, color2 };
+};
+
+/** Las marcas de los mundos y el patrocinio de hoy. Si algo falla, el juego sigue sin marcas. */
+async function cargarMarcas(hoy) {
+  const [marcas, mundos, patrocinio] = await Promise.all([
+    getBrands().then((r) => r?.data || []).catch(() => []),
+    leerMundosBolitas().catch(() => null),
+    leerPatrocinioBolitas(hoy).catch(() => null),
+  ]);
+  const porId = new Map(marcas.map((m) => [m.id, m]));
+  const marcasMundos = (mundos?.marcas || []).map((m) => marcaParaJuego(porId.get(m.id))).filter(Boolean);
+  const marcaReto = patrocinio && patrocinio.activo !== false ? marcaParaJuego(porId.get(patrocinio.marcaId)) : null;
+  return {
+    marcasMundos,
+    patrocinio: marcaReto
+      ? { marca: marcaReto, texto: patrocinio.texto, quedan: Math.max(0, (Number(patrocinio.cupo) || 0) - (Number(patrocinio.entregados) || 0)) }
+      : null,
+  };
+}
+
+const productosDeMarca = async (marcaId) => {
+  const r = await getProductsByBrand(marcaId);
+  return (r?.data || []).filter((p) => p.inStock !== false && p.inStock !== 0).slice(0, 3).map((p) => tarjetaDesdeProducto(p));
+};
+
 export default function BolitasDeTienda() {
   const { user, userProfile, loading, reloadProfile } = useAuth();
   const sesion = tieneCuenta(user);
@@ -69,7 +109,14 @@ export default function BolitasDeTienda() {
   const [progreso, setProgreso] = useState(null);
   const [ranking, setRanking] = useState(null);
   const [cargandoRanking, setCargandoRanking] = useState(false);
+  const [marcas, setMarcas] = useState({ marcasMundos: [], patrocinio: null });
   const pendiente = useRef(null);
+
+  useEffect(() => {
+    let vigente = true;
+    cargarMarcas(hoy).then((m) => { if (vigente) setMarcas(m); });
+    return () => { vigente = false; };
+  }, [hoy]);
   const quien = () => ({ uid: user?.uid, email: user?.email, displayName: user?.displayName });
 
   useEffect(() => {
@@ -137,15 +184,21 @@ export default function BolitasDeTienda() {
 
   const registrar = async (partida) => {
     const r = await registrarPartidaBolitas(partida);
-    if (partida.modo === 'reto') pedirRanking();
+    if (partida.modo === 'reto') {
+      pedirRanking();
+      // Un cupón menos para el resto (el contador del patrocinio).
+      if (r.cupon) setMarcas((m) => (m.patrocinio ? { ...m, patrocinio: { ...m.patrocinio, quedan: Math.max(0, m.patrocinio.quedan - 1) } } : m));
+    }
     return r;
   };
 
-  // La partida comprobada paga el premio si hoy no se cobró.
+  // La partida comprobada paga el premio si hoy no se cobró (y puede traer el
+  // cupón del reto patrocinado).
   const ganar = async ({ partida }) => {
     let reward;
+    let cupon = null;
     try {
-      reward = (await registrar(partida)).reward;
+      ({ reward, cupon } = await registrar(partida));
     } catch (e) {
       if (!faltaFuncion(e)) throw e;
       const viejo = await claimBallSortReward();
@@ -157,12 +210,12 @@ export default function BolitasDeTienda() {
     }
     if (!reward) {
       reloadProfile?.();
-      return { ya: true };
+      return { ya: true, cupon };
     }
     const monto = Number(reward) || REWARD_AMOUNT;
     // Refrescar el perfil: el saldo de la cabecera y "ya cobró hoy" en la Zona Arcade.
     await Promise.all([entregarMonedas(monto), reloadProfile?.()]);
-    return { monto };
+    return { monto, cupon };
   };
 
   return (
@@ -182,6 +235,10 @@ export default function BolitasDeTienda() {
       ranking={ranking}
       cargandoRanking={cargandoRanking}
       onPedirRanking={pedirRanking}
+      marcasMundos={marcas.marcasMundos}
+      patrocinio={marcas.patrocinio}
+      onPedirProductos={productosDeMarca}
+      onClicMarca={contarClicBolitas}
       ayudaVista={ayudaVista}
       onAyudaVista={() => guardar(CLAVE_AYUDA, '1')}
       urlLogin="/login?redirect=%2Fball-sort"

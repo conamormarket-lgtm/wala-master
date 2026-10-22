@@ -154,6 +154,237 @@ span.tubo {
   background: var(--bola);
 }
 
+/* La marca (logo y nombre). */
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 100%;
+  color: var(--color-text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.marcaEnlace:hover .marcaNombre {
+  text-decoration: underline;
+}
+
+.marcaLogo,
+.marcaInicial {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+
+.marcaInicial {
+  display: inline-grid;
+  place-items: center;
+  background: var(--violet-100, #ede9fe);
+  color: var(--violet-700, #6d28d9);
+  font-size: 0.75rem;
+}
+
+.marca_md .marcaLogo,
+.marca_md .marcaInicial {
+  width: 36px;
+  height: 36px;
+}
+
+.marca_md {
+  font-size: 1.05rem;
+}
+
+.marcaNombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* El reto patrocinado. */
+.patrocinio {
+  display: grid;
+  justify-items: start;
+  gap: 0.45rem;
+  padding: 0.8rem 1rem;
+  border: 1.5px dashed var(--violet-300, #c4b5fd);
+  border-radius: 6px 18px 18px 18px;
+  background: var(--color-surface);
+}
+
+.patrocinio p {
+  margin: 0;
+}
+
+.patrocinioCabeza {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.patrocinioCabeza svg,
+.patrocinioPremio svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--violet-500, #8b5cf6);
+}
+
+.patrocinioPremio {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.patrocinioNota {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+/* El cupón ganado. */
+.cupon {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.6rem 0.8rem;
+  padding: 0.9rem 1rem;
+  border: 2px dashed #f59e0b;
+  border-radius: 6px 18px 18px 18px;
+  background: rgba(245, 158, 11, 0.08);
+  text-align: left;
+  animation: cuponEntra 0.5s 0.6s var(--ease-signature, ease-out) both;
+}
+
+.cupon > :last-child {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.cupon p {
+  margin: 0;
+}
+
+.cuponIcono {
+  width: 34px;
+  height: 34px;
+  color: #d97706;
+}
+
+.cuponCuerpo {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.cuponTitulo {
+  font-weight: 800;
+}
+
+.cuponTexto {
+  font-size: 0.9rem;
+}
+
+.cuponCodigo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.cuponCodigo code {
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  background: var(--color-surface);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.cuponCodigo small {
+  color: var(--color-text-muted);
+}
+
+@keyframes cuponEntra {
+  0% { opacity: 0; transform: scale(0.85) rotate(-2deg); }
+  60% { transform: scale(1.04); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* Productos de la marca. */
+.productos {
+  display: grid;
+  gap: 0.6rem;
+  text-align: left;
+}
+
+.productosTitulo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-weight: 700;
+}
+
+.productosTitulo svg {
+  width: 18px;
+  height: 18px;
+  color: var(--violet-500, #8b5cf6);
+}
+
+.productosLista {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.producto {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 14px 14px 14px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.producto img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 4px 10px 10px 10px;
+  object-fit: cover;
+}
+
+.productoNombre {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.productoPrecio {
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cupon {
+    animation: none;
+  }
+}
+
 /* El ranking del reto. */
 .ranking {
   display: grid;

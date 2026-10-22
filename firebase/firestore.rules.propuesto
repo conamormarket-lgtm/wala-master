@@ -181,6 +181,16 @@ service cloud.firestore {
     match /bolitasProgreso/{userId} {
       allow read, write: if isOwner(userId);
     }
+    // Fase 3: patrocinios y configuración (los lee el juego, los escribe el
+    // admin). Métricas y premios entregados: solo el servidor.
+    match /bolitasPatrocinios/{fecha} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /bolitasConfig/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
 
     // Evidencias de retos: se crean vía Cloud Function (admin SDK, evade reglas); el
     // cliente solo necesita leerlas como admin.

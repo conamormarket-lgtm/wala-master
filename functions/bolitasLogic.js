@@ -102,6 +102,112 @@ function sumarRetoASemana(semana, fecha, movimientos) {
   return { dias, completados: valores.length, total: valores.reduce((t, v) => t + v, 0) };
 }
 
+// ── Fase 3: marcas, cupones y métricas ────────────────────────────────────────
+
+const TIPOS_CUPON_BOLITAS = ["descuento", "envio_gratis"];
+// Topes de un cupón de las bolitas, aunque el admin ponga más: mientras las
+// reglas de producción sigan abiertas (ver JUEGOS.md, fase 3), la
+// configuración se puede tocar desde fuera; esto acota lo que se pierde.
+const LIMITES_CUPON = { pct: 50, monto: 100, cupo: 1000 };
+const numero = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+
+/**
+ * La plantilla de un cupón que pone el admin (patrocinio o premio semanal),
+ * normalizada: { tipo, descuentoPct, descuentoMonto, topeDescuento,
+ * vigenciaDias } o null si no sirve. Solo descuento (porcentaje o monto) y
+ * envío gratis: los cupones de la marca se aplican sobre sus productos.
+ */
+function normalizarPlantillaCupon(p) {
+  if (!p || !TIPOS_CUPON_BOLITAS.includes(p.tipo)) return null;
+  const vigenciaDias = Math.min(90, Math.max(1, Math.floor(numero(p.vigenciaDias)) || 15));
+  if (p.tipo === "envio_gratis") return { tipo: "envio_gratis", descuentoPct: 0, descuentoMonto: 0, topeDescuento: 0, vigenciaDias };
+  const descuentoPct = Math.min(LIMITES_CUPON.pct, Math.max(0, numero(p.descuentoPct)));
+  const descuentoMonto = descuentoPct > 0 ? 0 : Math.min(LIMITES_CUPON.monto, Math.max(0, numero(p.descuentoMonto)));
+  if (!descuentoPct && !descuentoMonto) return null;
+  const topeDescuento = descuentoPct > 0 ? Math.max(0, numero(p.topeDescuento)) : 0;
+  return { tipo: "descuento", descuentoPct, descuentoMonto, topeDescuento, vigenciaDias };
+}
+
+/**
+ * Un patrocinio del reto (lo pone el admin para un día), normalizado:
+ * { marcaId, marcaNombre, cupon (plantilla), cupo, activo } o null si no sirve.
+ */
+function normalizarPatrocinio(p) {
+  if (!p || typeof p.marcaId !== "string" || !p.marcaId) return null;
+  const cupon = normalizarPlantillaCupon(p.cupon);
+  const cupo = Math.min(LIMITES_CUPON.cupo, Math.max(0, Math.floor(numero(p.cupo))));
+  if (!cupon || !cupo) return null;
+  return { marcaId: p.marcaId.slice(0, 80), marcaNombre: String(p.marcaNombre || "").slice(0, 60), cupon, cupo, activo: p.activo !== false };
+}
+
+/** El texto del cupón ("15 % de descuento en productos de Rosaditas"…). */
+function textoCupon(plantilla, marca) {
+  const deMarca = marca ? " en productos de " + marca : "";
+  if (plantilla.tipo === "envio_gratis") return "Envío gratis" + (marca ? " en un pedido con productos de " + marca : "");
+  const tope = plantilla.topeDescuento > 0 ? " (hasta S/ " + plantilla.topeDescuento + ")" : "";
+  return plantilla.descuentoPct > 0
+    ? plantilla.descuentoPct + " % de descuento" + deMarca + tope
+    : "S/ " + plantilla.descuentoMonto + " de descuento" + deMarca;
+}
+
+/**
+ * El premio del ranking semanal que le toca a un puesto (o null).
+ *  - premios: [{ desde, hasta, cupon }] (lo pone el admin)
+ */
+function premioDePuesto(puesto, premios) {
+  const lista = Array.isArray(premios) ? premios : [];
+  const p = lista.find((x) => puesto >= numero(x.desde) && puesto <= numero(x.hasta || x.desde));
+  return p ? normalizarPlantillaCupon(p.cupon) : null;
+}
+
+/** El lunes anterior a `semana` ('AAAA-MM-DD'): la semana que se premia. */
+function semanaAnterior(semana) {
+  const [y, m, d] = semana.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d) - 7 * 86400000).toISOString().slice(0, 10);
+}
+
+/**
+ * Lo que se guarda de cada jugador para las métricas, al ganar: el primer día,
+ * el último, cuántos días distintos jugó y el nivel más alto.
+ */
+function sumarJugador(antes, hoy, nivel) {
+  const a = antes || {};
+  return {
+    primerDia: a.primerDia || hoy,
+    ultimoDia: hoy,
+    dias: (a.dias || 0) + (a.ultimoDia === hoy ? 0 : 1),
+    nivelMax: Math.max(a.nivelMax || 0, nivel || 0),
+  };
+}
+
+/** Días entre dos fechas 'AAAA-MM-DD'. */
+function diasEntre(desde, hasta) {
+  const f = (s) => { const [y, m, d] = s.split("-").map(Number); return Date.UTC(y, m - 1, d); };
+  return Math.round((f(hasta) - f(desde)) / 86400000);
+}
+
+/**
+ * Las métricas de los jugadores (con sesión) para el admin:
+ *  - vuelven: de los que empezaron hace al menos 1 (o 7) días, cuántos
+ *    jugaron otro día (o seguían jugando 7 días después)
+ *  - trabados: de los que no juegan hace 3 días o más, en qué nivel quedaron
+ */
+function metricasJugadores(jugadores, hoy) {
+  const conDia = (n) => jugadores.filter((j) => j.primerDia && diasEntre(j.primerDia, hoy) >= n);
+  const base1 = conDia(1);
+  const base7 = conDia(7);
+  const trabados = {};
+  for (const j of jugadores) {
+    if (j.ultimoDia && diasEntre(j.ultimoDia, hoy) >= 3) trabados[j.nivelMax || 0] = (trabados[j.nivelMax || 0] || 0) + 1;
+  }
+  return {
+    jugadores: jugadores.length,
+    vuelven: { base: base1.length, cantidad: base1.filter((j) => j.dias >= 2).length },
+    siguen7: { base: base7.length, cantidad: base7.filter((j) => diasEntre(j.primerDia, j.ultimoDia) >= 7).length },
+    trabados,
+  };
+}
+
 module.exports = {
   comprobarPartidaBolitas,
   semanaBolitas,
@@ -109,4 +215,12 @@ module.exports = {
   ordenarRankingDia,
   ordenarRankingSemana,
   sumarRetoASemana,
+  LIMITES_CUPON,
+  normalizarPlantillaCupon,
+  normalizarPatrocinio,
+  textoCupon,
+  premioDePuesto,
+  semanaAnterior,
+  sumarJugador,
+  metricasJugadores,
 };

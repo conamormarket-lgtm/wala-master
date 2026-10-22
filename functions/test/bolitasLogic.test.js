@@ -100,6 +100,67 @@ async function run() {
     assert.deepStrictEqual(s, { dias: { "2026-10-19": 40, "2026-10-20": 28 }, completados: 2, total: 68 });
   });
 
+  await check("la plantilla del cupón: solo descuento o envío, con límites", () => {
+    assert.deepStrictEqual(b.normalizarPlantillaCupon({ tipo: "descuento", descuentoPct: 15, topeDescuento: 20, vigenciaDias: 10 }),
+      { tipo: "descuento", descuentoPct: 15, descuentoMonto: 0, topeDescuento: 20, vigenciaDias: 10 });
+    assert.deepStrictEqual(b.normalizarPlantillaCupon({ tipo: "descuento", descuentoMonto: 10 }),
+      { tipo: "descuento", descuentoPct: 0, descuentoMonto: 10, topeDescuento: 0, vigenciaDias: 15 });
+    assert.strictEqual(b.normalizarPlantillaCupon({ tipo: "descuento", descuentoPct: 200 }).descuentoPct, b.LIMITES_CUPON.pct);
+    assert.strictEqual(b.normalizarPlantillaCupon({ tipo: "descuento", descuentoMonto: 9999 }).descuentoMonto, b.LIMITES_CUPON.monto);
+    assert.strictEqual(b.normalizarPlantillaCupon({ tipo: "envio_gratis", vigenciaDias: 400 }).vigenciaDias, 90);
+    assert.strictEqual(b.normalizarPlantillaCupon({ tipo: "descuento" }), null, "sin valor no sirve");
+    assert.strictEqual(b.normalizarPlantillaCupon({ tipo: "producto_gratis", productId: "x" }), null);
+    assert.strictEqual(b.normalizarPlantillaCupon(null), null);
+  });
+
+  await check("el patrocinio: marca, cupón válido y cupo con tope", () => {
+    const p = b.normalizarPatrocinio({ marcaId: "m1", marcaNombre: "Rosaditas", cupon: { tipo: "descuento", descuentoPct: 10 }, cupo: 50 });
+    assert.strictEqual(p.cupo, 50);
+    assert.strictEqual(p.activo, true);
+    assert.strictEqual(b.normalizarPatrocinio({ marcaId: "m1", cupon: { tipo: "envio_gratis" }, cupo: 1e9 }).cupo, b.LIMITES_CUPON.cupo);
+    assert.strictEqual(b.normalizarPatrocinio({ marcaId: "m1", cupon: { tipo: "envio_gratis" }, cupo: 0 }), null, "sin cupo no hay patrocinio");
+    assert.strictEqual(b.normalizarPatrocinio({ cupon: { tipo: "envio_gratis" }, cupo: 5 }), null, "sin marca tampoco");
+    assert.strictEqual(b.normalizarPatrocinio({ marcaId: "m1", cupon: { tipo: "descuento" }, cupo: 5 }), null);
+  });
+
+  await check("el texto del cupón dice qué y de qué marca", () => {
+    assert.strictEqual(b.textoCupon({ tipo: "descuento", descuentoPct: 15, topeDescuento: 20 }, "Rosaditas"),
+      "15 % de descuento en productos de Rosaditas (hasta S/ 20)");
+    assert.strictEqual(b.textoCupon({ tipo: "descuento", descuentoPct: 0, descuentoMonto: 10 }, "Rosaditas"),
+      "S/ 10 de descuento en productos de Rosaditas");
+    assert.strictEqual(b.textoCupon({ tipo: "envio_gratis" }, null), "Envío gratis");
+  });
+
+  await check("el premio de cada puesto del ranking semanal", () => {
+    const premios = [
+      { desde: 1, hasta: 1, cupon: { tipo: "descuento", descuentoPct: 20 } },
+      { desde: 2, hasta: 3, cupon: { tipo: "envio_gratis" } },
+    ];
+    assert.strictEqual(b.premioDePuesto(1, premios).descuentoPct, 20);
+    assert.strictEqual(b.premioDePuesto(3, premios).tipo, "envio_gratis");
+    assert.strictEqual(b.premioDePuesto(4, premios), null);
+    assert.strictEqual(b.premioDePuesto(1, null), null);
+  });
+
+  await check("la semana anterior (la que se premia el lunes)", () => {
+    assert.strictEqual(b.semanaAnterior("2026-10-26"), "2026-10-19");
+    assert.strictEqual(b.semanaAnterior("2027-01-04"), "2026-12-28");
+  });
+
+  await check("las métricas de los jugadores: vuelven, siguen y dónde se traban", () => {
+    let j = b.sumarJugador(null, "2026-10-01", 3);
+    j = b.sumarJugador(j, "2026-10-01", 5);
+    assert.deepStrictEqual(j, { primerDia: "2026-10-01", ultimoDia: "2026-10-01", dias: 1, nivelMax: 5 });
+    j = b.sumarJugador(j, "2026-10-09", 4);
+    assert.deepStrictEqual(j, { primerDia: "2026-10-01", ultimoDia: "2026-10-09", dias: 2, nivelMax: 5 });
+    const m = b.metricasJugadores([
+      j, // volvió y siguió 8 días; no juega hace 12 → trabado en el 5
+      { primerDia: "2026-10-20", ultimoDia: "2026-10-20", dias: 1, nivelMax: 12 }, // empezó ayer
+      { primerDia: "2026-10-21", ultimoDia: "2026-10-21", dias: 1, nivelMax: 2 }, // hoy: no cuenta
+    ], "2026-10-21");
+    assert.deepStrictEqual(m, { jugadores: 3, vuelven: { base: 2, cantidad: 1 }, siguen7: { base: 1, cantidad: 1 }, trabados: { 5: 1 } });
+  });
+
   console.log(`bolitasLogic: ${count} pruebas OK`);
 }
 

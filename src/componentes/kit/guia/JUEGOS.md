@@ -501,3 +501,74 @@ estrellas), el reto con el ranking ("Prueba N." con "Tú") y que todo quedó en
 la cuenta. **No probado:** el aviso local en un Android real, la web antes
 que las funciones (la vuelta al cobro de antes), y con muchos jugadores (el
 ranking lee hasta 1.000 filas y ordena en el servidor).
+
+**Publicado (2026-10-21):** solo las tres funciones
+(`registrarPartidaBolitasSecure`, `getRankingBolitasSecure`,
+`claimBallSortRewardSecure`). Las reglas **no**. Ojo: el 2026-10-21 se leyó
+mal el ruleset vivo (el de la base `lumi`, 2.702 caracteres, en vez del de
+la principal) y se creyó que producción tenía reglas abiertas. No es así: la
+base principal corre las reglas fusionadas Walá+ERP (unos 35.000
+caracteres), algo más viejas que `master`. Pero en ellas las colecciones de
+las bolitas no están en `esSoloWala`, así que la regla general del ERP deja
+escribirlas a cualquiera con sesión hasta que se publiquen las reglas.
+
+### Fase 3: las marcas (2026-10-21)
+
+Decidido con el dueño: el admin elige por fecha qué marca patrocina el reto y
+pone el cupo de cupones.
+
+- **Cupones de marca** (checkout): un cupón con `brandId` descuenta solo
+  sobre los productos de catálogo de esa marca en el carrito
+  (`calcularDescuentoCupon`, paso 2b); sin ninguno, no descuenta y avisa. Los
+  cupones sin `brandId` (ruleta, recompensas) no cambian. Los crea
+  `crearCuponBolitas` (`functions/index.js`), con origen `bolitas_reto` o
+  `bolitas_semana` y el id que asegura uno por persona.
+- **Reto patrocinado** (`bolitasPatrocinios/{fecha}`: marca, cupón, cupo,
+  entregados, texto): el reto de ese día toma los colores y el logo de la
+  marca (`PatrocinioBolitas`) y quien lo completa con sesión recibe su cupón
+  (`registrarPartidaBolitasSecure`, en la misma transacción) mientras quede
+  cupo. El resultado muestra el cupón (`CuponGanado`) y productos de la
+  marca (`ProductosMarca`).
+- **Mundos de marca** (`bolitasConfig/mundos`: las marcas en orden, se
+  repiten): cada mundo toma colores y logo de su marca (`MarcaBolitas`, en la
+  cabecera y el mapa); al vencer al jefe se muestran sus productos.
+- **Premios del ranking semanal** (`bolitasConfig/premios`: puestos y
+  cupón, con marca opcional): `premiarRankingBolitas` cada lunes 00:15 (Lima)
+  premia la semana que terminó; `bolitasPremios/{semana}` y el id del cupón
+  evitan premiar dos veces. El admin puede premiar una semana a mano.
+- **Métricas** (`bolitasStats/{fecha}`: partidas, retos, partidas por
+  nivel, toques hacia la tienda por marca; `bolitasJugadores/{uid}`: primer
+  y último día, días jugados, nivel más alto): las escribe el servidor al
+  comprobar cada partida (solo con sesión); los toques los cuenta
+  `contarClicBolitasSecure` (también sin sesión).
+- **Admin** (`/admin/bolitas`, `AdminBolitasPage`, en el menú junto a la
+  Ruleta): patrocinios por fecha (con entregados/cupo), el orden de las marcas
+  de los mundos, los premios semanales y las métricas (volvieron otro día,
+  siguen 7 días después, dónde se traban, toques por marca). Todo pasa por
+  `adminBolitasSecure` (solo admin).
+- **Topes** (`LIMITES_CUPON`): 50 % o S/ 100 por cupón y 1000 cupones por
+  día, aunque el admin ponga más. En el repo, `bolitasPatrocinios` y
+  `bolitasConfig` se leen y solo el admin las escribe; `bolitasStats`,
+  `bolitasJugadores` y `bolitasPremios` solo el servidor (todas en
+  `esSoloWala`).
+
+**Orden para publicar** (importa: toca el checkout y crea cupones):
+1) `validarCuponSecure` y `canjearCuponSecure` (el cálculo con marca):
+**publicadas el 2026-10-22**; 2) **las reglas** con las colecciones de las
+bolitas en `esSoloWala` (con las reglas vivas de hoy, cualquiera con sesión
+podría escribirse un patrocinio o los premios y el servidor emitiría
+cupones); 3) `registrarPartidaBolitasSecure`, `contarClicBolitasSecure`,
+`adminBolitasSecure` y `premiarRankingBolitas`; 4) la web. Si un cupón de
+marca existiera con el checkout viejo, descontaría sobre todo el carrito.
+
+**Probado** con los emuladores (punta a punta, 7 pasos): solo el admin guarda
+un patrocinio y el servidor lo acota (80 % → 50 %); el reto patrocinado da el
+cupón, uno por persona y hasta el cupo; el cupón de marca descuenta S/ 10 (20 %
+de los S/ 50 de la marca) en un carrito de S/ 150 y nada sin productos de la
+marca; un cupón sin marca sigue sobre todo el carrito; los toques y las
+métricas; los premios semanales una sola vez y con su marca; las reglas (se
+lee el patrocinio, no se escribe; las métricas nunca). En el navegador: el
+mundo con la marca, el reto patrocinado, el cupón y los productos en el
+resultado, y `/admin/bolitas` con datos. **No probado:** guardar desde los
+formularios del admin (usan `alert`), la tarea del lunes ejecutándose sola,
+el checkout de punta a punta con un cupón de marca (solo validar), inglés.
