@@ -1462,8 +1462,10 @@ const EstudioDeTienda = () => {
     };
     document.addEventListener('focusin', alEnfocarOtraCosa);
     // ── Gestos con los dedos (celular, tablet) ──
-    // Un dedo mueve (lo hace fabric). Dos dedos sobre un diseño lo agrandan o
-    // achican, lo giran (con imán a 0°, 90°…) y lo mueven, todo a la vez.
+    // Un dedo mueve (lo hace fabric). Dos dedos sobre un diseño (o con uno
+    // elegido) lo agrandan o achican, lo giran (con imán a 0°, 90°…) y lo
+    // mueven, todo a la vez. Sin diseño, acercan o alejan la prenda hacia los
+    // dedos y la recorren (lo que dice GuiaGestos, como el estudio del kit).
     // Dos toques seguidos sobre un texto abren el teclado para escribirlo.
     const superficie = lienzo.upperCanvasEl;
     const puntoDe = (t) => {
@@ -1487,16 +1489,32 @@ const EstudioDeTienda = () => {
       return [...lienzo.getObjects()].reverse().find((o) => o.capaId && o.containsPoint(pt)) || null;
     };
     let gesto = null;
+    // Los dedos llegan de a uno: el primero, si cae fuera del diseño elegido,
+    // lo suelta (fabric) antes de que llegue el segundo. Se recuerda qué
+    // estaba elegido al apoyarlo para que dos dedos lo sigan agrandando y no
+    // acerquen la prenda.
+    let elegidoAlTocar = null;
     const alPonerDedos = (e) => {
+      if (e.touches.length === 1) {
+        const activo = lienzo.getActiveObject();
+        elegidoAlTocar = activo?.capaId ? { capaId: activo.capaId, cuando: performance.now() } : null;
+        return;
+      }
       if (e.touches.length !== 2) return;
       e.preventDefault();
       e.stopPropagation();
       const m = medidas(e.touches);
-      const obj = disenoBajo(m.medio);
+      // Por su capa: al soltarlo, el lienzo puede haber rehecho el objeto.
+      const antes = elegidoAlTocar && performance.now() - elegidoAlTocar.cuando < 500
+        ? lienzo.getObjects().find((o) => o.capaId === elegidoAlTocar.capaId) || null : null;
+      elegidoAlTocar = null;
+      const obj = disenoBajo(m.medio) || antes;
       // fabric ya empezó a arrastrar con el primer dedo: se suelta.
       lienzo._currentTransform = null;
       if (!obj) {
-        gesto = { vacio: true };
+        // El primer dedo pudo empezar a recorrer la prenda: lo sigue el gesto.
+        paneoRef.current = null;
+        gesto = { vacio: true, medio: m.medio, distancia: m.distancia };
         return;
       }
       if (lienzo.getActiveObject() !== obj) lienzo.setActiveObject(obj);
@@ -1506,8 +1524,18 @@ const EstudioDeTienda = () => {
       if (!gesto) return;
       e.preventDefault();
       e.stopPropagation();
-      if (gesto.vacio || e.touches.length < 2) return;
+      if (e.touches.length < 2) return;
       const m = medidas(e.touches);
+      if (gesto.vacio) {
+        // El punto de la prenda bajo los dedos los sigue: primero se recorre
+        // lo que se movieron y después se acerca hacia donde están.
+        const camara = camaraApiRef.current;
+        camara.mover(gesto.medio.x - m.medio.x, gesto.medio.y - m.medio.y);
+        camara.zoomHacia((z) => z * (m.distancia / gesto.distancia), m.medio);
+        gesto.medio = m.medio;
+        gesto.distancia = m.distancia;
+        return;
+      }
       const factor = m.distancia / gesto.distancia;
       const zoom = lienzo.viewportTransform[0] || 1;
       let angulo = gesto.angulo + (m.giro - gesto.giro);
