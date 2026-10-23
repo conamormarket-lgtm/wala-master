@@ -454,11 +454,18 @@ async function cargarCatalogoRegalos() {
   ]);
   const conjuntoCategorias = {};
   const cats = (cfg.exists && cfg.data().brandsPanel && cfg.data().brandsPanel.categories) || [];
-  cats.forEach((c) => { if (c && c.id && Array.isArray(c.tiendaCategorias)) conjuntoCategorias[c.id] = c.tiendaCategorias; });
+  // Preguntas que "solo ordenan" (admin de Encuestas): { cat_deportes: ['dep_q4'] }.
+  const camposRefinan = {};
+  cats.forEach((c) => {
+    if (c && c.id && Array.isArray(c.tiendaCategorias)) conjuntoCategorias[c.id] = c.tiendaCategorias;
+    const refinan = (c && c.id && Array.isArray(c.fields) ? c.fields : []).filter((f) => f && f.refina).map((f) => f.id);
+    if (refinan.length) camposRefinan[c.id] = refinan;
+  });
   return {
     productos: prods.docs.map((d) => ({ id: d.id, ...d.data() })),
     dicts: { tags, characters, collections },
     conjuntoCategorias,
+    camposRefinan,
   };
 }
 

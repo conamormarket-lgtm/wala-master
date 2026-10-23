@@ -144,18 +144,31 @@ export function edadDe(recipient, hoy = new Date()) {
 // Respuestas escritas de la persona → frases y palabras clave.
 // Solo cuentan los conjuntos ENCENDIDOS: al apagar "Geek" sus respuestas quedan
 // guardadas (por si se vuelve a encender) pero ya no influyen en las ideas.
-export function respuestasDe(recipient) {
+// camposRefinan ({ cat_deportes: ['dep_q4'] }, del admin de Encuestas: "solo
+// ordena"): esas respuestas no buscan productos por sí solas ("Taza" no debe
+// traer cualquier taza a un hincha); van aparte con refinosDe.
+const refina = (camposRefinan, conjuntoId, campoId) => Boolean(
+  camposRefinan && Array.isArray(camposRefinan[conjuntoId]) && camposRefinan[conjuntoId].includes(campoId),
+);
+function recorrerRespuestas(recipient, camposRefinan, quiereRefinos) {
   const out = [];
   const porConjunto = (recipient && recipient.categoryAnswers) || {};
   const activos = recipient && Array.isArray(recipient.selectedCategories) ? new Set(recipient.selectedCategories) : null;
   Object.entries(porConjunto).forEach(([conjuntoId, campos]) => {
     if (activos && !activos.has(conjuntoId)) return;
-    Object.values(campos || {}).forEach((v) => {
+    Object.entries(campos || {}).forEach(([campoId, v]) => {
       const t = String(v || '').trim();
-      if (t) out.push(t);
+      if (t && refina(camposRefinan, conjuntoId, campoId) === quiereRefinos) out.push(t);
     });
   });
   return out;
+}
+export function respuestasDe(recipient, camposRefinan) {
+  return recorrerRespuestas(recipient, camposRefinan, false);
+}
+/** Las respuestas que solo ordenan (el tipo de producto que prefiere de su equipo o anime). */
+export function refinosDe(recipient, camposRefinan) {
+  return recorrerRespuestas(recipient, camposRefinan, true);
 }
 
 export function palabrasClave(respuesta) {
@@ -304,6 +317,7 @@ function motivoPorGusto(r, entidades, acertadas) {
  * @param {Array}  opts.productos   catálogo
  * @param {object} [opts.dicts]     { tags, characters, collections } id → nombre
  * @param {object} [opts.conjuntoCategorias]  { cat_geek: [idCategoriaTienda…] }
+ * @param {object} [opts.camposRefinan]  { cat_deportes: ['dep_q4'] } preguntas que solo ordenan
  * @param {string} [opts.ocasion]   'Cumpleaños' | 'Aniversario' | …
  * @param {Set}    [opts.excluir]   productIds a no recomendar (ya comprados)
  * @param {number} [opts.limite]
@@ -324,11 +338,12 @@ function motivoPorGusto(r, entidades, acertadas) {
  *  - Lo del género contrario y lo fuera de presupuesto no entra.
  */
 export function recomendarRegalos({
-  recipient, productos, dicts = {}, conjuntoCategorias = {}, ocasion = '', excluir = new Set(), limite = 4, hoy = new Date(),
+  recipient, productos, dicts = {}, conjuntoCategorias = {}, camposRefinan = {}, ocasion = '', excluir = new Set(), limite = 4, hoy = new Date(),
 }) {
   if (!recipient || !Array.isArray(productos)) return [];
 
-  const respuestas = respuestasDe(recipient).map(prepararRespuesta);
+  const respuestas = respuestasDe(recipient, camposRefinan).map(prepararRespuesta);
+  const refinos = refinosDe(recipient, camposRefinan).map(prepararRespuesta);
   const contoGustos = respuestas.some((r) => r.palabras.length || r.grupos.length || r.piel);
   const clubesPersona = new Set(respuestas.flatMap((r) => r.grupos
     .map((g) => (g.club ? g.canon : g.implica)).filter(Boolean)));
@@ -419,6 +434,10 @@ export function recomendarRegalos({
       relevante = true;
       if (!motivo) motivo = CONJUNTO;
     }
+
+    // ── 2b) Lo que solo ordena ("Taza", "Camiseta/Polo"): sube lo que ya le
+    // gusta por otra respuesta, nunca trae un producto por sí solo ──
+    if (relevante && refinos.some((r) => r.palabras.some((w) => coincide(w, fuerte, tokens)))) score += 6;
 
     // ── 3) Pareja en ocasión romántica: es justo lo que pide la ocasión ──
     if (dePareja && romantico) {

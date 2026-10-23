@@ -234,14 +234,26 @@ const CONJUNTOS = [
     { id: 'geek_q2', etiqueta: '¿Quién es su personaje favorito?', sugerencias: ['Goku', 'Vegeta', 'Luffy', 'Zoro', 'Nezuko', 'Tanjiro', 'Itachi Uchiha', 'Kakashi', 'Gojo', 'Rengoku', 'Akaza', 'Inosuke'] },
   ] },
 ];
-// La encuesta corta, como la deja el admin: Fútbol y Anime / Geek con una
-// pregunta (enEncuesta: false en las demás); los otros gustos sin preguntas.
+// La encuesta corta, como la deja el admin: una pregunta para escribir como
+// mucho (enEncuesta: false en las demás) y el resto de opción, con un toque.
 const CONJUNTOS_ENCUESTA = [
-  { id: 'cat_deportes', nombre: 'Fútbol', campos: CONJUNTOS[0].campos.map((f) => ({ ...f, enEncuesta: f.id === 'dep_q2' })) },
-  { id: 'cat_geek', nombre: 'Anime / Geek', campos: CONJUNTOS[1].campos.map((f) => ({ ...f, enEncuesta: f.id === 'geek_q1', ...(f.id === 'geek_q1' && { etiqueta: '¿Qué anime o personaje le gusta?' }) })) },
-  { id: 'cat_belleza', nombre: 'Belleza y skincare', campos: [] },
-  { id: 'cat_moda', nombre: 'Moda', campos: [] },
-  { id: 'cat_accesorios', nombre: 'Accesorios', campos: [] },
+  { id: 'cat_deportes', nombre: 'Fútbol', campos: [
+    ...CONJUNTOS[0].campos.map((f) => ({ ...f, enEncuesta: f.id === 'dep_q2' })),
+    { id: 'dep_q4', etiqueta: '¿Qué le regalarías de su equipo?', opciones: ['Camiseta/Polo', 'Casaca', 'Taza', 'Accesorio'] },
+  ] },
+  { id: 'cat_geek', nombre: 'Anime / Geek', campos: [
+    ...CONJUNTOS[1].campos.map((f) => ({ ...f, enEncuesta: f.id === 'geek_q1', ...(f.id === 'geek_q1' && { etiqueta: '¿Qué anime o personaje le gusta?' }) })),
+    { id: 'geek_q3', etiqueta: '¿Qué tipo de producto le gusta?', opciones: ['Polo', 'Casaca/Polera', 'Taza', 'Figura/Accesorio'] },
+  ] },
+  { id: 'cat_belleza', nombre: 'Belleza y skincare', campos: [{ id: 'bel_q1', etiqueta: '¿Qué tipo de piel tiene?', opciones: ['Seca', 'Grasa', 'Mixta', 'Sensible', 'No sé'] }] },
+  { id: 'cat_moda', nombre: 'Moda', campos: [
+    { id: 'moda_q1', etiqueta: '¿Qué prenda le gusta más?', opciones: ['Casaca', 'Polo', 'Jogger', 'Conjunto'] },
+    { id: 'moda_q2', etiqueta: '¿Qué talla usa?', opciones: ['XS', 'S', 'M', 'L', 'XL'] },
+  ] },
+  { id: 'cat_accesorios', nombre: 'Accesorios', campos: [
+    { id: 'acc_q1', etiqueta: '¿Qué usa más?', opciones: ['Reloj', 'Lentes', 'Billetera'] },
+    { id: 'acc_q2', etiqueta: '¿Qué estilo tiene?', opciones: ['Clásico', 'Deportivo', 'Elegante', 'Moderno'] },
+  ] },
 ];
 const ideasDe = (fotos, desde = 0) => fotos.slice(desde, desde + 2).map((f, k) => ({
   id: `i${desde}${k}`, nombre: f.nombre, imagen: f.imagen, precio: [49.9, 34.9, 59.9][(desde + k) % 3], url: '/producto/x',
@@ -610,6 +622,7 @@ const SOBRE_TI = [
   { id: 'nombres', etiqueta: '¿Cómo te llamas?', tipo: 'texto', requerido: true },
   { id: 'familia', enEncuesta: false, etiqueta: '¿Tienes familia?', tipo: 'opciones', opciones: ['Vivo solo/a', 'Vivo en pareja', 'Tengo hijos', 'Vivo con mis padres/familiares'] },
   { id: 'frecuencia_ropa', enEncuesta: false, etiqueta: '¿Con qué frecuencia sueles comprar ropa?', tipo: 'opciones', opciones: ['Cada semana', 'Al menos una vez al mes', 'Solo en ocasiones especiales o cambios de temporada', 'Casi nunca'] },
+  { id: 'para_quien', etiqueta: '¿Para quién compras en Walá?', tipo: 'opciones', opciones: ['Para regalar', 'Para mí', 'Las dos'] },
   { id: 'preferencia_compra', enEncuesta: false, etiqueta: '¿Dónde prefieres comprar?', tipo: 'opciones', opciones: ['Prefiero ir a la tienda física', 'Prefiero comprar 100% online', 'Me gustan ambas opciones'] },
 ];
 

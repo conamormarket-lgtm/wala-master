@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { Check, CheckCircle2, AlertCircle, Pencil, Trash2 } from 'lucide-react';
 import { Sello } from '../Marca';
 import { Avatar } from './Avatar';
 import { BarraProgreso } from './BarraProgreso';
+import { Chip } from '../Etiquetas';
 import { Texto, useTexto } from '../Traduccion';
 import s from './Encuesta.module.css';
 
@@ -22,6 +23,27 @@ export function ProgresoEncuesta({ texto, avance = 0 }) {
     <div className={s.progreso} data-componente="ProgresoEncuesta">
       <span className={s.progresoTexto}>{texto}</span>
       <BarraProgreso valor={Math.round(avance * 100)} max={100} minimo={4} />
+    </div>
+  );
+}
+
+/**
+ * Una pregunta de opción respondida con un toque (encuesta corta): las
+ * opciones como botones; tocar la elegida otra vez la quita.
+ *  - etiqueta · opciones: [texto] · valor · onCambiar(valor | '')
+ */
+export function ElegirUno({ etiqueta, opciones = [], valor = '', onCambiar }) {
+  const id = useId();
+  return (
+    <div className={s.elegirUno} role="group" aria-labelledby={id} data-componente="ElegirUno">
+      <span id={id} className={s.elegirUnoEtiqueta}><Texto>{etiqueta}</Texto></span>
+      <div className={s.elegirUnoOpciones}>
+        {opciones.map((o) => (
+          <Chip key={o} tamano="sm" activo={valor === o} onClick={() => onCambiar?.(valor === o ? '' : o)}>
+            <Texto>{o}</Texto>
+          </Chip>
+        ))}
+      </div>
     </div>
   );
 }

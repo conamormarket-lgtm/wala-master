@@ -7,6 +7,7 @@ import { Chip } from '../Etiquetas';
 import { CampoFecha } from '../Fecha';
 import { Avatar } from './Avatar';
 import { RecortarFoto } from './RecortarFoto';
+import { ElegirUno } from './Encuesta';
 import { Texto, useTexto } from '../Traduccion';
 import s from './FormularioPersona.module.css';
 
@@ -101,7 +102,11 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
       )}
     </div>
   );
-  const preguntasGusto = (c) => (c.campos || []).map((campo) => (
+  const ponerGusto = (c, campo, valor) => setP((x) => ({ ...x, gustos: { ...x.gustos, [c.id]: { ...x.gustos[c.id], [campo.id]: valor } } }));
+  // En la encuesta corta las de opción se responden con un toque (ElegirUno).
+  const preguntasGusto = (c) => (c.campos || []).map((campo) => (gustosEnBotones && campo.opciones ? (
+    <ElegirUno key={campo.id} etiqueta={campo.etiqueta} opciones={campo.opciones} valor={p.gustos[c.id]?.[campo.id] || ''} onCambiar={(v) => ponerGusto(c, campo, v)} />
+  ) : (
     <Campo
       key={campo.id}
       etiqueta={campo.etiqueta}
@@ -111,9 +116,9 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
       creable={!campo.opciones}
       placeholder={campo.opciones ? undefined : 'Escribe o elige una sugerencia'}
       value={p.gustos[c.id]?.[campo.id] || ''}
-      onChange={(e) => setP((x) => ({ ...x, gustos: { ...x.gustos, [c.id]: { ...x.gustos[c.id], [campo.id]: e.target.value } } }))}
+      onChange={(e) => ponerGusto(c, campo, e.target.value)}
     />
-  ));
+  )));
   const guardar = async () => {
     const msg = validarPersona(p);
     setError(msg);

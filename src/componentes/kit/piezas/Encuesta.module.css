@@ -276,3 +276,23 @@
     transition: none;
   }
 }
+
+/* ElegirUno: pregunta de opción con un toque (la etiqueta como la de Campo). */
+.elegirUno {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.elegirUnoEtiqueta {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.elegirUnoOpciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}

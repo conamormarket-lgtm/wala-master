@@ -31,8 +31,12 @@ export function useGiftCatalog({ activo = true } = {}) {
       ]);
       const conjuntoCategorias = {};
       const conjuntos = (config.data && config.data.brandsPanel && config.data.brandsPanel.categories) || [];
+      // Preguntas que "solo ordenan" (admin de Encuestas): { cat_deportes: ['dep_q4'] }.
+      const camposRefinan = {};
       conjuntos.forEach((c) => {
         if (c && c.id && Array.isArray(c.tiendaCategorias)) conjuntoCategorias[c.id] = c.tiendaCategorias;
+        const refinan = (c && c.id && Array.isArray(c.fields) ? c.fields : []).filter((f) => f && f.refina).map((f) => f.id);
+        if (refinan.length) camposRefinan[c.id] = refinan;
       });
       return {
         dicts: {
@@ -41,6 +45,7 @@ export function useGiftCatalog({ activo = true } = {}) {
           collections: aMapa(collections.data),
         },
         conjuntoCategorias,
+        camposRefinan,
         conjuntos,
         // Casilla del admin de Encuestas: el presupuesto de cada persona.
         pedirPresupuesto: Boolean(config.data && config.data.personPanel && config.data.personPanel.budget),
@@ -52,14 +57,16 @@ export function useGiftCatalog({ activo = true } = {}) {
 
   const dicts = extra?.dicts;
   const conjuntoCategorias = extra?.conjuntoCategorias;
+  const camposRefinan = extra?.camposRefinan;
 
   const recomendar = useMemo(() => (recipient, opciones = {}) => recomendarRegalos({
     recipient,
     productos: productos || [],
     dicts: dicts || {},
     conjuntoCategorias: conjuntoCategorias || {},
+    camposRefinan: camposRefinan || {},
     ...opciones,
-  }), [productos, dicts, conjuntoCategorias]);
+  }), [productos, dicts, conjuntoCategorias, camposRefinan]);
 
   const sugerencias = useMemo(() => sugerenciasRespuestas(dicts || {}), [dicts]);
 

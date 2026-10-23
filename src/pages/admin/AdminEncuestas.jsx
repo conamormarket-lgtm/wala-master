@@ -158,7 +158,8 @@ const AdminEncuestas = () => {
   };
 
   // --- Renderizador de Preguntas Genérico ---
-  const renderFieldEditor = (field, index, onUpdate, onRemove) => (
+  // conRefina: preguntas de un interés, que pueden "solo ordenar" las ideas.
+  const renderFieldEditor = (field, index, onUpdate, onRemove, conRefina = false) => (
     <div key={index} className={styles.fieldItem}>
       <div className={styles.fieldHeader}>
         <h3>Pregunta {index + 1}</h3>
@@ -185,7 +186,7 @@ const AdminEncuestas = () => {
           >
             <option value="text">Texto corto</option>
             <option value="textarea">Texto largo</option>
-            <option value="select">Selección múltiple (Dropdown)</option>
+            <option value="select">Opciones (en la encuesta, botones de un toque)</option>
           </select>
         </div>
         <div className={styles.fieldGroup}>
@@ -210,7 +211,26 @@ const AdminEncuestas = () => {
             <option value="no">No</option>
           </select>
         </div>
+        {conRefina && (
+          <div className={styles.fieldGroup}>
+            <label>¿Busca productos por sí sola?</label>
+            <select
+              className={styles.input}
+              value={field.refina ? 'no' : 'yes'}
+              onChange={e => onUpdate(index, 'refina', e.target.value === 'no')}
+            >
+              <option value="yes">Sí</option>
+              <option value="no">No, solo ordena</option>
+            </select>
+          </div>
+        )}
       </div>
+      {conRefina && field.refina && (
+        <p className={styles.notaCampo}>
+          Solo ordena: sube los productos que ya le gustan por sus otras respuestas (por ejemplo, la taza de su
+          equipo). Por sí sola no trae productos.
+        </p>
+      )}
       {field.enEncuesta === false && (
         <p className={styles.notaCampo}>
           No sale en la encuesta. Se guarda para ver las respuestas de antes (y, si es de un interés, sigue en Fechas importantes).
@@ -403,7 +423,8 @@ const AdminEncuestas = () => {
                         field,
                         fieldIndex,
                         (i, k, v) => updateBrandField(catIndex, i, k, v),
-                        (i) => removeBrandField(catIndex, i)
+                        (i) => removeBrandField(catIndex, i),
+                        true
                       )
                     )}
                   </div>

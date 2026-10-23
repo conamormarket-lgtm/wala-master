@@ -26,7 +26,7 @@ export { IdeaRegalo, TarjetaPersonaRegalo, AvisoFestiva, HojaCalendario, AgendaF
 export { LineaProduccion, PagosPedido, HojaPagarSaldo } from './DetallePedido';
 export { PedidosPorVerificar } from './PedidosPorVerificar';
 export { HojaPersona, validarPersona, RELACIONES, GENEROS, PRESUPUESTOS } from './FormularioPersona';
-export { ProgresoEncuesta, ElegirVarios, FichaPersonaEncuesta } from './Encuesta';
+export { ProgresoEncuesta, ElegirVarios, ElegirUno, FichaPersonaEncuesta } from './Encuesta';
 export { CamposDatosPersonales, validarPerfil, tipoDocumentoPara, TIPOS_DOCUMENTO, NOMBRE_DOCUMENTO } from './DatosPersonales';
 export { CampoContrasena, RequisitosContrasena, requisitosContrasena, contrasenaValida, BotonGoogle, SeparadorAcceso } from './Acceso';
 export { PortadaCrear, PASOS_CREAR, textoPara, FilaPiezaCombo } from './Crear';

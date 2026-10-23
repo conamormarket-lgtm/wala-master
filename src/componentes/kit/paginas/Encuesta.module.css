@@ -373,3 +373,15 @@
     transition: none;
   }
 }
+
+/* Error de una pregunta obligatoria de opción (ElegirUno no lleva el suyo). */
+.errorPregunta {
+  margin: 0.35rem 0 0;
+  color: var(--danger-hover);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+:global([data-theme='dark']) .errorPregunta {
+  color: #fca5a5;
+}

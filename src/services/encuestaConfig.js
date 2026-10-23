@@ -46,6 +46,13 @@ export const DEFAULT_SURVEY_CONFIG = {
         options: ['Cada semana', 'Al menos una vez al mes', 'Solo en ocasiones especiales o cambios de temporada', 'Casi nunca']
       },
       {
+        id: 'para_quien',
+        label: '¿Para quién compras en Walá?',
+        type: 'select',
+        required: false,
+        options: ['Para regalar', 'Para mí', 'Las dos']
+      },
+      {
         id: 'preferencia_compra',
         enEncuesta: false,
         label: '¿Dónde prefieres comprar?',
@@ -82,6 +89,14 @@ export const DEFAULT_SURVEY_CONFIG = {
             options: []
           },
           {
+            id: 'dep_q4',
+            label: '¿Qué le regalarías de su equipo?',
+            type: 'select',
+            required: false,
+            refina: true,
+            options: ['Camiseta/Polo', 'Casaca', 'Taza', 'Accesorio']
+          },
+          {
             id: 'dep_q3',
             enEncuesta: false,
             label: '¿Jugador o jugadores favoritos?',
@@ -101,6 +116,14 @@ export const DEFAULT_SURVEY_CONFIG = {
             type: 'text',
             required: false,
             options: []
+          },
+          {
+            id: 'geek_q3',
+            label: '¿Qué tipo de producto le gusta?',
+            type: 'select',
+            required: false,
+            refina: true,
+            options: ['Polo', 'Casaca/Polera', 'Taza', 'Figura/Accesorio']
           },
           {
             id: 'geek_q2',

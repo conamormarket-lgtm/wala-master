@@ -293,15 +293,29 @@ test('sugerencias para autocompletar salen de etiquetas, personajes y coleccione
   assert.ok(s.includes('Alianza Lima') && s.includes('Nezuko Kamado') && s.includes('Fútbol peruano'));
 });
 
+test('"solo ordena": el tipo de producto sube lo de su equipo y no trae cualquier taza', () => {
+  const conTaza = [...productos, { id: 'alTaza', name: 'Taza Alianza Lima', tags: ['t1', 't4'], categories: ['tazas'], price: 35, inStock: 6 }];
+  const recipient = persona({ selectedCategories: ['cat_deportes'], categoryAnswers: { cat_deportes: { dep_q2: 'Alianza Lima', dep_q4: 'Taza' } } });
+  const camposRefinan = { cat_deportes: ['dep_q4'] };
+  const r = recomendarRegalos({ recipient, productos: conTaza, dicts, camposRefinan });
+  assert.equal(r[0].producto.id, 'alTaza');
+  assert.ok(!r.some((x) => x.producto.id === 'taza'), 'una taza que no es de su equipo no entra');
+  // Sin marcarla como "solo ordena", "Taza" sí trae cualquier taza.
+  const sinMarca = recomendarRegalos({ recipient, productos: conTaza, dicts });
+  assert.ok(sinMarca.some((x) => x.producto.id === 'taza'));
+});
+
 test('la copia del servidor (functions/giftLogic.js) da exactamente lo mismo', () => {
   const casos = [
     persona({ categoryAnswers: { a: { q: 'Alianza Lima' } } }),
     persona({ categoryAnswers: { b: { q: 'Demon slayer', r: 'Nezuko' } }, gender: 'Femenino' }),
     persona({ roleKey: 'pareja', budget: '100a200' }),
   ];
+  casos.push(persona({ selectedCategories: ['a'], categoryAnswers: { a: { q: 'Alianza Lima', r: 'Casaca' } } }));
+  const camposRefinan = { a: ['r'] };
   for (const recipient of casos) {
-    const web = recomendarRegalos({ recipient, productos, dicts }).map((x) => [x.producto.id, x.score, x.motivo, x.tipo]);
-    const srv = servidor.recomendarRegalos({ recipient, productos, dicts }).map((x) => [x.producto.id, x.score, x.motivo, x.tipo]);
+    const web = recomendarRegalos({ recipient, productos, dicts, camposRefinan }).map((x) => [x.producto.id, x.score, x.motivo, x.tipo]);
+    const srv = servidor.recomendarRegalos({ recipient, productos, dicts, camposRefinan }).map((x) => [x.producto.id, x.score, x.motivo, x.tipo]);
     assert.deepEqual(srv, web);
   }
 });

@@ -11,7 +11,7 @@ import { Moneda, GananciaMonedas } from '../Etiquetas';
 import { Sello, Trazo, Garabatos } from '../Marca';
 import { Enlace } from '../Enlace';
 import { BloqueSeccion } from '../Seccion';
-import { ProgresoEncuesta, ElegirVarios, FichaPersonaEncuesta } from '../piezas/Encuesta';
+import { ProgresoEncuesta, ElegirVarios, ElegirUno, FichaPersonaEncuesta } from '../piezas/Encuesta';
 import { HojaPersona, validarPersona } from '../piezas/FormularioPersona';
 import { IdeaRegalo } from '../piezas/Regalos';
 import { Hueso, EsqueletoFormulario } from '../Esqueletos';
@@ -85,6 +85,15 @@ function CabezaPaso({ Icono, tono, titulo, subtitulo, trazo = false }) {
 /** Una pregunta de "Un poco sobre ti" (Campo traduce la etiqueta y el error; las opciones van traducidas). */
 function PreguntaSobreTi({ campo, valor, error, onCambiar }) {
   const elige = useTexto('Elige…');
+  // Las de opción se responden con un toque.
+  if (campo.tipo === 'opciones') {
+    return (
+      <div>
+        <ElegirUno etiqueta={campo.etiqueta} opciones={campo.opciones || []} valor={valor || ''} onCambiar={onCambiar} />
+        {error && <p className={s.errorPregunta} role="alert"><Texto>{error}</Texto></p>}
+      </div>
+    );
+  }
   return (
     <Campo
       id={`encuesta-${campo.id}`}
