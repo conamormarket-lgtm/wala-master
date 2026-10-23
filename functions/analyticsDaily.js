@@ -21,6 +21,7 @@ const admin = require("firebase-admin");
 const { FieldValue } = require("firebase-admin/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { buildDailyDoc, ANALYTICS_EVENT_TYPES, safeNumber } = require("./analyticsAggregations");
+const { filtrarTraficoReal, sesionesFaltantes } = require("./analyticsTraficoReal");
 
 const db = admin.firestore();
 
@@ -381,6 +382,37 @@ function buildDailyExtras(events = [], sessions = []) {
   };
 }
 
+// ── Tráfico real: quién es admin y las sesiones de otros días ───────────────
+// uids de administradores (claim admin, o el puente adminUsers con role admin)
+// para sacar lo que navegan. Se guarda 10 min: el backfill procesa muchos días.
+let cacheAdmins = { at: 0, uids: null };
+async function uidsAdmin() {
+  if (cacheAdmins.uids && Date.now() - cacheAdmins.at < 10 * 60 * 1000) return cacheAdmins.uids;
+  const uids = new Set();
+  let token;
+  do {
+    const page = await admin.auth().listUsers(1000, token);
+    page.users.forEach((u) => { if (u.customClaims && u.customClaims.admin === true) uids.add(u.uid); });
+    token = page.pageToken;
+  } while (token);
+  const puente = await db.collection("adminUsers").get().catch(() => null);
+  if (puente) puente.forEach((d) => { if (d.data().role === "admin") uids.add(d.id); });
+  cacheAdmins = { at: Date.now(), uids };
+  return uids;
+}
+
+// Sesiones que empezaron otro día pero tienen eventos en este: solo para saber
+// si eran bots o del admin (no se cuentan como sesiones del día).
+async function leerSesiones(ids) {
+  const out = [];
+  for (let i = 0; i < ids.length; i += 100) {
+    const refs = ids.slice(i, i + 100).map((id) => db.collection(SESSIONS_COLLECTION).doc(id));
+    const snaps = await db.getAll(...refs, { fieldMask: ["userAgent", "uid"] });
+    snaps.forEach((s) => { if (s.exists) out.push({ id: s.id, ...s.data() }); });
+  }
+  return out;
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // procesarDia(dayKey): agrega un día concreto y reescribe su doc.
 // Reutilizada por el cron (día anterior) y por el backfill (rango/un día).
@@ -393,22 +425,31 @@ async function procesarDia(dayKey) {
   const { startMs, endMs } = limaDayRange(dayKey);
 
   // Consultas independientes: misma ventana y paginación, sin espera en serie.
-  const [events, sessions] = await Promise.all([
+  const [eventosCrudos, sesionesCrudas] = await Promise.all([
     fetchAllPaged(EVENTS_COLLECTION, "clientTsMs", startMs, endMs),
     fetchAllPaged(SESSIONS_COLLECTION, "startedAtClientMs", startMs, endMs),
   ]);
+
+  // Solo tráfico real: sin bots, sin el admin y con las permanencias recortadas
+  // (ver analyticsTraficoReal.js). Lo descartado queda contado en traficoReal.
+  const [adminUids, sesionesExtra] = await Promise.all([
+    uidsAdmin(),
+    leerSesiones(sesionesFaltantes(eventosCrudos, sesionesCrudas)),
+  ]);
+  const { events, sessions, descarte } = filtrarTraficoReal(eventosCrudos, sesionesCrudas, { adminUids, sesionesExtra });
 
   // Ensamblar el doc del CONTRATO con las funciones puras compartidas.
   const doc = buildDailyDoc(dayKey, events, sessions);
   // Campos ADITIVOS (Parte 2): desgloses de sesión, identidades, embudo completo
   // y top identidades. No pisan ningún campo existente de buildDailyDoc.
   Object.assign(doc, buildDailyExtras(events, sessions));
+  doc.traficoReal = { version: 1, ...descarte };
   doc.generatedAt = FieldValue.serverTimestamp();
 
   // .set() sin merge: idempotente, reescribe el doc completo del día.
   await db.collection(DAILY_COLLECTION).doc(dayKey).set(doc);
 
-  return { dayKey, eventCount: events.length, sessionCount: sessions.length };
+  return { dayKey, eventCount: events.length, sessionCount: sessions.length, descarte };
 }
 
 // ── Genera los dayKeys del rango [fromDay, toDay] inclusive ──────────────────

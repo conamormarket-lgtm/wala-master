@@ -441,6 +441,22 @@ function buildTodayDailyDoc(events = []) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Tráfico real del día en curso                                               */
+/* -------------------------------------------------------------------------- */
+// Lo mismo que functions/analyticsTraficoReal.js hace con los días cerrados,
+// con lo que se puede saber solo con los eventos: fuera las páginas /admin y
+// todo lo de quien las abrió hoy (solo un admin puede abrirlas), y cada
+// permanencia recortada a 30 min. Los bots ya no se registran (tracker.js).
+const DWELL_MAX_MS = 30 * 60 * 1000;
+export function limpiarEventosHoy(events = []) {
+  const esAdmin = (e) => String(e.path || '').startsWith('/admin');
+  const quienes = new Set(events.filter(esAdmin).map((e) => e.uid || e.anonymousId).filter(Boolean));
+  return events
+    .filter((e) => !esAdmin(e) && !quienes.has(e.uid || e.anonymousId))
+    .map((e) => (e.type === ANALYTICS_EVENT_TYPES.ROUTE_DWELL && Number(e.dwellMs) > DWELL_MAX_MS ? { ...e, dwellMs: DWELL_MAX_MS } : e));
+}
+
+/* -------------------------------------------------------------------------- */
 /* Lectura del rango: N docs diarios + (opcional) hoy en vivo                   */
 /* -------------------------------------------------------------------------- */
 
@@ -495,7 +511,7 @@ export async function getAnalyticsDailyRange({ days = 30 } = {}) {
     );
     // Si la query de hoy falla, NO rompemos: mostramos el histórico ya agregado.
     if (!error && Array.isArray(todayEvents) && todayEvents.length > 0) {
-      todayDoc = buildTodayDailyDoc(todayEvents);
+      todayDoc = buildTodayDailyDoc(limpiarEventosHoy(todayEvents));
     }
   } catch {
     todayDoc = null;

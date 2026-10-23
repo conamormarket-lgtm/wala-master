@@ -107,8 +107,8 @@ const INFO_LOGUEADOS =
   'Identidades que navegaron con sesión iniciada (email/cuenta) en el rango. ' +
   'Solo cuenta los días con la medición nueva de identidades.';
 const INFO_CONVERSION =
-  'Compras ÷ vistas (páginas vistas + permanencias) del rango. Con pocas compras ' +
-  'frente a miles de vistas puede mostrarse 0% por redondeo a 1 decimal.';
+  'Pedidos enviados ÷ sesiones del rango (sin bots ni admin): de cada 100 visitas, ' +
+  'cuántas terminan en un pedido. Un pedido cuenta al enviarse, aunque todavía esté pendiente de pago.';
 // Nota de honestidad cuando un dato no trae el corte APP/WEB pedido.
 const NOTA_SIN_DESGLOSE =
   'Este dato no tiene desglose APP/WEB en el rango seleccionado; se muestra el total.';
@@ -218,8 +218,9 @@ export default function AdminDashboard() {
       adds: pick(fe.adds),
       checkouts: pick(fe.checkouts),
       purchases: pick(fe.purchases),
+      sessions: pick(data?.totalSessions),
     });
-  }, [data?.funnelStats, origen]);
+  }, [data?.funnelStats, data?.totalSessions, origen]);
 
   // Conversión del PERIODO ANTERIOR (solo con comparación activa y datos).
   const conversionAnterior = useMemo(() => {
@@ -231,6 +232,7 @@ export default function AdminDashboard() {
       adds: pick(fe.adds),
       checkouts: pick(fe.checkouts),
       purchases: pick(fe.purchases),
+      sessions: pick(anterior.sessions),
     });
   }, [hayAnterior, anterior, origen]);
 
@@ -337,15 +339,15 @@ export default function AdminDashboard() {
         ...conDelta(tiempo.value, anterior?.dwellMs),
       },
       {
-        // KPI de conversión global (vista → compra) vía deriveConversion.
+        // KPI de conversión: pedidos ÷ sesiones reales (deriveConversion.porSesion).
         // El delta va en PUNTOS porcentuales (pp), no "% de un %" (confuso).
         label: 'Conversión',
-        value: conversion?.global || 0,
+        value: conversion?.porSesion || 0,
         format: (v) => `${(Number(v) || 0).toLocaleString('es-PE', { maximumFractionDigits: 1 })}%`,
         accent: '#EC4899',
-        info: INFO_CONVERSION,
+        info: `${INFO_CONVERSION} De quienes empiezan el checkout, el ${(conversion?.checkoutACompra || 0).toLocaleString('es-PE', { maximumFractionDigits: 1 })}% envía el pedido.`,
         ...((hayAnterior && conversionAnterior
-          ? calcularDeltaPuntos(conversion?.global ?? 0, conversionAnterior.global ?? 0)
+          ? calcularDeltaPuntos(conversion?.porSesion ?? 0, conversionAnterior.porSesion ?? 0)
           : null) || {}),
       },
     ];

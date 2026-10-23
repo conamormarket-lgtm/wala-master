@@ -10,6 +10,30 @@ import { detectCountry, getCachedCountry } from '../geo';
 
 let runtimeSessionDocId = null;
 
+// ── Qué NO se registra ──────────────────────────────────────────────────────
+// Bots (buscadores, navegadores automáticos) y el propio admin: inflaban las
+// sesiones, identidades y páginas vistas del Dashboard Analítica (auditoría del
+// 2026-10-23). La suma diaria también los saca del histórico
+// (functions/analyticsTraficoReal.js: ¡mantener BOT_UA en sync!).
+const BOT_UA = /bot|crawl|spider|slurp|headless|lighthouse|facebookexternalhit|preview|pingdom|uptime/i;
+// Tope de una permanencia: una pestaña olvidada no suma horas.
+const DWELL_MAX_MS = 30 * 60 * 1000;
+let esAdminAnalitica = false;
+/** Lo llama RouteTracker con isAdmin: lo que navega un admin no se registra. */
+export function marcarAdminAnalitica(esAdmin) {
+  esAdminAnalitica = Boolean(esAdmin);
+}
+export function debeRegistrarAnalitica() {
+  if (typeof window === 'undefined') return false;
+  if (esAdminAnalitica || String(window.location?.pathname || '').startsWith('/admin')) return false;
+  const nav = window.navigator || {};
+  return !nav.webdriver && !BOT_UA.test(String(nav.userAgent || ''));
+}
+function registrarEvento(datos) {
+  if (!debeRegistrarAnalitica()) return Promise.resolve({ id: null, error: null });
+  return createDocument(ANALYTICS_COLLECTIONS.EVENTS, datos);
+}
+
 function canUseBrowserStorage() {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
 }
@@ -84,6 +108,7 @@ function parseUTM() {
 let sessionCreationPromise = null;
 
 export async function ensureAnalyticsSession(userCtx = {}, entryPath = '/') {
+  if (!debeRegistrarAnalitica()) return null;
   const stored = getStoredSessionId();
   if (runtimeSessionDocId) return runtimeSessionDocId;
   if (stored) {
@@ -188,7 +213,7 @@ async function crearSesion(userCtx = {}, entryPath = '/') {
       /* fire-and-forget: cualquier fallo aquí se ignora */
     }
   }
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.SESSION_START,
     sessionId: id,
     sessionKey,
@@ -208,7 +233,7 @@ export async function trackPageView(pathname, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx, route);
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.PAGE_VIEW,
     path: route,
     uid: userCtx?.uid || null,
@@ -237,10 +262,10 @@ export async function trackRouteDwell(pathname, dwellMs, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx, route);
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.ROUTE_DWELL,
     path: route,
-    dwellMs: Math.round(dwellMs),
+    dwellMs: Math.round(Math.min(dwellMs, DWELL_MAX_MS)),
     uid: userCtx?.uid || null,
     email: userCtx?.email || null,
     displayName: userCtx?.displayName || null,
@@ -259,7 +284,7 @@ export async function trackRouteDwell(pathname, dwellMs, userCtx = {}) {
 
 export async function linkSessionToUser(userCtx = {}) {
   const sessionId = runtimeSessionDocId || getStoredSessionId();
-  if (!sessionId || !userCtx?.uid) return;
+  if (!sessionId || !userCtx?.uid || !debeRegistrarAnalitica()) return;
   await updateDocument(ANALYTICS_COLLECTIONS.SESSIONS, sessionId, {
     uid: userCtx.uid,
     email: userCtx.email || null,
@@ -270,9 +295,9 @@ export async function linkSessionToUser(userCtx = {}) {
 
 export async function endAnalyticsSession(userCtx = {}, lastPath = '/') {
   const sessionId = runtimeSessionDocId || getStoredSessionId();
-  if (!sessionId) return;
+  if (!sessionId || !debeRegistrarAnalitica()) return;
   const now = Date.now();
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.SESSION_END,
     path: normalizeRoute(lastPath),
     uid: userCtx?.uid || null,
@@ -296,7 +321,7 @@ export async function trackAddToCart(productInfo = {}, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx);
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.ADD_TO_CART,
     path: window.location.pathname || '/',
     uid: userCtx?.uid || null,
@@ -314,7 +339,7 @@ export async function trackCheckoutStart(checkoutInfo = {}, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx, window.location.pathname || '/checkout');
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.CHECKOUT_START,
     path: window.location.pathname || '/checkout',
     uid: userCtx?.uid || null,
@@ -332,7 +357,7 @@ export async function trackPurchaseComplete(orderInfo = {}, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx, window.location.pathname || '/checkout/success');
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.PURCHASE_COMPLETE,
     path: window.location.pathname || '/checkout/success',
     uid: userCtx?.uid || null,
@@ -350,7 +375,7 @@ export async function trackProductView(productInfo = {}, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx);
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.PRODUCT_VIEW,
     path: window.location.pathname || '/',
     uid: userCtx?.uid || null,
@@ -369,7 +394,7 @@ export async function trackSurveyStep(paso, userCtx = {}) {
   if (!paso) return;
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx);
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.SURVEY_STEP,
     path: window.location.pathname || '/encuesta-suscripcion',
     uid: userCtx?.uid || null,
@@ -388,7 +413,7 @@ export async function trackSearchQuery(query, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx);
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.SEARCH_QUERY,
     path: window.location.pathname || '/',
     uid: userCtx?.uid || null,
@@ -406,7 +431,7 @@ export async function trackScrollDepth(percentage, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx);
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.SCROLL_DEPTH,
     path: window.location.pathname || '/',
     uid: userCtx?.uid || null,
@@ -424,7 +449,7 @@ export async function trackBannerClick(bannerId, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx);
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.BANNER_CLICK,
     path: window.location.pathname || '/',
     uid: userCtx?.uid || null,
@@ -442,7 +467,7 @@ export async function trackCategoryView(categoryInfo = {}, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx);
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.CATEGORY_VIEW,
     path: window.location.pathname || '/',
     uid: userCtx?.uid || null,
@@ -460,7 +485,7 @@ export async function trackCollectionView(collectionInfo = {}, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx);
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.COLLECTION_VIEW,
     path: window.location.pathname || '/',
     uid: userCtx?.uid || null,
@@ -478,7 +503,7 @@ export async function trackEditorOpen(editorInfo = {}, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx);
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.EDITOR_OPEN,
     path: window.location.pathname || '/',
     uid: userCtx?.uid || null,
@@ -496,7 +521,7 @@ export async function trackEditorSave(editorInfo = {}, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx);
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.EDITOR_SAVE,
     path: window.location.pathname || '/',
     uid: userCtx?.uid || null,
@@ -518,7 +543,7 @@ export async function trackMinigame(type, gameInfo = {}, userCtx = {}) {
   const eventType = type === 'complete'
     ? ANALYTICS_EVENT_TYPES.MINIGAME_COMPLETE
     : ANALYTICS_EVENT_TYPES.MINIGAME_START;
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: eventType,
     path: window.location.pathname || '/',
     uid: userCtx?.uid || null,
@@ -536,7 +561,7 @@ export async function trackMissionComplete(missionInfo = {}, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx);
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.MISSION_COMPLETE,
     path: window.location.pathname || '/',
     uid: userCtx?.uid || null,
@@ -554,7 +579,7 @@ export async function trackWishlist(wishlistInfo = {}, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx);
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.WISHLIST_ADD,
     path: window.location.pathname || '/',
     uid: userCtx?.uid || null,
@@ -575,7 +600,7 @@ export async function trackPopupEvent(type, popupId, extra = {}, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx);
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type,
     path: window.location.pathname || '/',
     uid: userCtx?.uid || null,
@@ -602,7 +627,7 @@ export async function trackLinkPageView(pageId, slug, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx, window.location.pathname || `/l/${slug || ''}`);
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.LINK_PAGE_VIEW,
     path: window.location.pathname || `/l/${slug || ''}`,
     uid: userCtx?.uid || null,
@@ -623,7 +648,7 @@ export async function trackLinkClick(pageId, botonId, url, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx, window.location.pathname || '/');
-  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+  await registrarEvento({
     type: ANALYTICS_EVENT_TYPES.LINK_CLICK,
     path: window.location.pathname || '/',
     uid: userCtx?.uid || null,

@@ -10,6 +10,8 @@ function fixture() {
   const reads = [];
   const writes = [];
   const db = { collection(name) {
+    // Las cuentas admin (tráfico real): se resuelven al tiro, sin contar como lectura del día.
+    if (name === "adminUsers") return { get: async () => ({ forEach() {} }) };
     const query = {
       where: () => query, orderBy: () => query, limit: () => query,
       startAfter: () => query,
@@ -22,11 +24,11 @@ function fixture() {
   vm.runInNewContext(fs.readFileSync(require.resolve("../analyticsDaily"), "utf8"), {
     exports: output, console,
     require(name) {
-      if (name === "firebase-admin") return { firestore: () => db };
+      if (name === "firebase-admin") return { firestore: () => db, auth: () => ({ listUsers: async () => ({ users: [] }) }) };
       if (name === "firebase-admin/firestore") return { FieldValue: { serverTimestamp: () => "SERVER_TIME" } };
       if (name === "firebase-functions/v2/scheduler") return { onSchedule: (_, fn) => fn };
       if (name === "firebase-functions") return { runWith: () => ({ https: { onCall: fn => fn } }) };
-      return require(name === "./analyticsAggregations" ? "../analyticsAggregations" : name);
+      return require(name.startsWith("./") ? `.${name}` : name);
     },
   });
   return { api: output._internals, reads, writes };
@@ -49,7 +51,9 @@ test("daily aggregation starts both reads together and preserves persisted metri
   await pending;
   assert.equal(writes.length, 1);
   const expected = { ...buildDailyDoc(date, events, sessions),
-    ...api.buildDailyExtras(events, sessions), generatedAt: "SERVER_TIME" };
+    ...api.buildDailyExtras(events, sessions),
+    traficoReal: { version: 1, sesionesBot: 0, sesionesAdmin: 0, eventos: 0, dwellRecortados: 0 },
+    generatedAt: "SERVER_TIME" };
   assert.deepEqual(JSON.parse(JSON.stringify(writes[0].data)), JSON.parse(JSON.stringify(expected)));
 });
 

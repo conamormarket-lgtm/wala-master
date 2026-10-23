@@ -5,6 +5,7 @@ import {
   endAnalyticsSession,
   ensureAnalyticsSession,
   linkSessionToUser,
+  marcarAdminAnalitica,
   trackPageView,
   trackRouteDwell,
 } from '../../services/analytics/tracker';
@@ -15,7 +16,9 @@ const IN_IFRAME = (typeof window !== 'undefined') && window.self !== window.top;
 
 const RouteTracker = () => {
   const location = useLocation();
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, isAdmin } = useAuth();
+  // Lo que navega un admin no cuenta como tráfico de la tienda.
+  marcarAdminAnalitica(isAdmin);
   const lastPathRef = useRef(location.pathname || '/');
   const enteredAtRef = useRef(Date.now());
 

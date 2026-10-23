@@ -134,12 +134,16 @@ export function deriveConversion(funnelStats) {
   const adds = readCount(source.adds);
   const checkouts = readCount(source.checkouts);
   const purchases = readCount(source.purchases != null ? source.purchases : source.compras);
+  // Sesiones reales del rango (sin bots ni admin): la conversión del panel.
+  const sessions = readCount(stats.sessions);
 
   return {
     vistaACarrito: safePct(adds, views),
     carritoACheckout: safePct(checkouts, adds),
     checkoutACompra: safePct(purchases, checkouts),
     global: safePct(purchases, views),
+    // Compras ÷ sesiones: de cada 100 visitas, cuántas terminan en pedido.
+    porSesion: safePct(purchases, sessions),
   };
 }
 
