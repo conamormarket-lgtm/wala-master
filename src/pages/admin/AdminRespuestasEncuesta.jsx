@@ -44,9 +44,12 @@ const Barras = ({ items, max = 8, base }) => {
 // ── Rango de fechas ─────────────────────────────────────────────────────────
 // Marca de una pregunta que el admin quitó de la encuesta (enEncuesta: false
 // o la casilla del presupuesto apagada): sus respuestas son de antes.
-const Retirada = () => (
+// '2026-10-23' → '23/10/2026'.
+const fechaCorta = (dia) => (/^\d{4}-\d{2}-\d{2}/.test(dia || '') ? dia.slice(0, 10).split('-').reverse().join('/') : '');
+
+const Retirada = ({ desde }) => (
   <span className={styles.retirada} title="Ya no sale en la encuesta. Las respuestas son de antes de quitarla.">
-    Ya no se pregunta
+    Ya no se pregunta{fechaCorta(desde) && ` desde el ${fechaCorta(desde)}`}
   </span>
 );
 
@@ -126,9 +129,30 @@ const AdminRespuestasEncuesta = () => {
     [data, rango.desde, rango.hasta],
   );
   const resumen = useMemo(() => (data ? resumenEncuesta(enRango, data.config) : null), [data, enRango]);
-  const hayRetiradas = Boolean(resumen && (resumen.presupuestoRetirado
-    || resumen.basicos.some((b) => b.retirada)
-    || resumen.gustos.some((g) => g.preguntas.some((q) => q.retirada))));
+  // Pestaña "La encuesta actual" | "Cambiadas o retiradas".
+  const [vista, setVista] = useState('actual');
+  const preguntas = useMemo(() => {
+    if (!resumen) return null;
+    const gustos = resumen.gustos.map((g) => ({
+      ...g,
+      actuales: g.preguntas.filter((q) => !q.retirada),
+      retiradas: g.preguntas.filter((q) => q.retirada),
+    }));
+    const basicosRetirados = resumen.basicos.filter((b) => b.retirada);
+    // Lo que cambió de texto: preguntas de "Sobre ti", de cada interés y el nombre del interés.
+    const cambiadas = [
+      ...resumen.basicos.filter((b) => b.antes.length).map((b) => ({ clave: `b-${b.id}`, donde: 'Sobre ti', ahora: b.label, antes: b.antes, retirada: b.retirada })),
+      ...resumen.gustos.filter((g) => g.antes.length).map((g) => ({ clave: `g-${g.id}`, donde: 'Nombre de un interés', ahora: g.nombre, antes: g.antes })),
+      ...gustos.flatMap((g) => g.preguntas.filter((q) => q.antes.length).map((q) => ({ clave: `q-${g.id}-${q.id}`, donde: `Interés · ${g.nombre}`, ahora: q.label, antes: q.antes, retirada: q.retirada }))),
+    ];
+    return {
+      basicos: resumen.basicos.filter((b) => !b.retirada),
+      basicosRetirados,
+      gustos,
+      cambiadas,
+      retiradas: basicosRetirados.length + (resumen.presupuestoRetirado ? 1 : 0) + gustos.reduce((n, g) => n + g.retiradas.length, 0),
+    };
+  }, [resumen]);
 
   const fechas = useMemo(() => {
     if (!data) return null;
@@ -211,7 +235,7 @@ const AdminRespuestasEncuesta = () => {
         </section>
       )}
 
-      {resumen && fechas && (
+      {resumen && fechas && preguntas && (
         <>
           <section className={styles.kpis}>
             <div className={`${styles.kpi} ${styles.kpiDestacado}`}>
@@ -243,51 +267,147 @@ const AdminRespuestasEncuesta = () => {
               : <Barras items={fechas.periodos} max={fechas.periodos.length} />}
           </article>
 
-          {hayRetiradas && (
-            <p className={styles.avisoRetiradas}>
-              <Retirada /> Las preguntas con esta marca ya no salen en la encuesta: sus respuestas son de antes de quitarlas.
-              Se vuelven a preguntar desde <Link to="/admin/encuestas">Editar la encuesta</Link>.
-            </p>
-          )}
+          <div className={styles.pestanas} role="tablist" aria-label="Qué preguntas ver">
+            <button type="button" role="tab" aria-selected={vista === 'actual'} className={vista === 'actual' ? styles.chipActivo : styles.chip} onClick={() => setVista('actual')}>
+              La encuesta actual
+            </button>
+            <button type="button" role="tab" aria-selected={vista === 'cambios'} className={vista === 'cambios' ? styles.chipActivo : styles.chip} onClick={() => setVista('cambios')}>
+              Cambiadas o retiradas ({preguntas.retiradas + preguntas.cambiadas.length})
+            </button>
+          </div>
 
-          <section className={styles.grid}>
-            {resumen.basicos.map((b) => (
-              <article key={b.id} className={`${styles.card} ${b.retirada ? styles.cardRetirada : ''}`}>
-                {b.retirada && <Retirada />}
-                <h3>{b.label}</h3>
-                <p className={styles.nota}>{b.respondieron} respuestas</p>
-                <Barras items={b.opciones} base={b.respondieron || 1} />
-              </article>
-            ))}
-            <article className={styles.card}>
-              <h3>¿A quiénes suelen regalar?</h3>
-              <p className={styles.nota}>Clientes que marcaron cada grupo</p>
-              <Barras items={resumen.aQuien} base={resumen.clientes || 1} />
-            </article>
-            <article className={`${styles.card} ${resumen.presupuestoRetirado ? styles.cardRetirada : ''}`}>
-              {resumen.presupuestoRetirado && <Retirada />}
-              <h3>¿Cuánto suelen gastar por regalo?</h3>
-              <p className={styles.nota}>{resumen.conPresupuesto} de {resumen.personas} personas tienen presupuesto</p>
-              <Barras items={resumen.presupuesto} />
-            </article>
-          </section>
+          {vista === 'actual' ? (
+            <>
+              <p className={styles.nota}>
+                Las preguntas en el orden en que las ve el cliente, con lo que van respondiendo. Se cambian
+                desde <Link to="/admin/encuestas">Editar la encuesta</Link>.
+              </p>
 
-          <h2 className={styles.seccion}>Gustos más pedidos</h2>
-          <section className={styles.grid}>
-            {resumen.gustos.map((g) => (
-              <article key={g.id} className={styles.card}>
-                <h3>{g.nombre}</h3>
-                <p className={styles.nota}>{g.personas} personas con este conjunto</p>
-                {g.preguntas.map((q) => (
-                  <div key={q.id} className={`${styles.pregunta} ${q.retirada ? styles.preguntaRetirada : ''}`}>
-                    {q.retirada && <Retirada />}
-                    <p className={styles.preguntaTitulo}>{q.label} <span>({q.respondieron})</span></p>
-                    <Barras items={q.top} max={10} />
-                  </div>
+              <h2 className={styles.seccion}>Paso 1 · Sobre ti</h2>
+              <section className={styles.grid}>
+                <article className={styles.card}>
+                  <h3>¿Cómo te llamas?</h3>
+                  <p className={styles.nota}>Se toma de su cuenta: solo se le pregunta a quien no tiene nombre.</p>
+                </article>
+                <article className={styles.card}>
+                  <h3>Tu cumpleaños</h3>
+                  <p className={styles.nota}>Solo se le pregunta a quien no lo tiene en su cuenta.</p>
+                  <Barras
+                    items={[{ valor: 'Lo tienen', total: resumen.conCumpleanos }, { valor: 'No lo tienen', total: resumen.clientes - resumen.conCumpleanos }]}
+                    base={resumen.clientes || 1}
+                  />
+                </article>
+                {preguntas.basicos.map((b) => (
+                  <article key={b.id} className={styles.card}>
+                    <h3>{b.label}</h3>
+                    <p className={styles.nota}>{b.respondieron} respuestas</p>
+                    <Barras items={b.opciones} base={b.respondieron || 1} />
+                  </article>
                 ))}
-              </article>
-            ))}
-          </section>
+              </section>
+
+              <h2 className={styles.seccion}>Paso 2 · ¿A quiénes sueles regalar?</h2>
+              <section className={styles.grid}>
+                <article className={styles.card}>
+                  <h3>¿A quiénes suelen regalar?</h3>
+                  <p className={styles.nota}>Clientes que marcaron cada grupo</p>
+                  <Barras items={resumen.aQuien} base={resumen.clientes || 1} />
+                </article>
+              </section>
+
+              <h2 className={styles.seccion}>Paso 3 · Cada persona</h2>
+              <p className={styles.nota}>
+                {resumen.personas} personas cargadas. Cada interés es un botón: al tocarlo salen sus preguntas.
+              </p>
+              <section className={styles.grid}>
+                {!resumen.presupuestoRetirado && (
+                  <article className={styles.card}>
+                    <h3>¿Cuánto suelen gastar por regalo?</h3>
+                    <p className={styles.nota}>{resumen.conPresupuesto} de {resumen.personas} personas tienen presupuesto</p>
+                    <Barras items={resumen.presupuesto} />
+                  </article>
+                )}
+                {preguntas.gustos.map((g) => (
+                  <article key={g.id} className={styles.card}>
+                    <h3>{g.nombre}</h3>
+                    <p className={styles.nota}>{g.personas} personas lo marcaron</p>
+                    {g.actuales.length === 0 && <p className={styles.nota}>Solo se marca: no tiene preguntas en la encuesta.</p>}
+                    {g.actuales.map((q) => (
+                      <div key={q.id} className={styles.pregunta}>
+                        <p className={styles.preguntaTitulo}>
+                          {q.label} <span>({q.respondieron})</span>
+                          {q.refina && <span className={styles.ordena} title="Ordena las ideas de regalo, no busca productos por sí sola">solo ordena</span>}
+                        </p>
+                        <Barras items={q.top} max={10} />
+                      </div>
+                    ))}
+                  </article>
+                ))}
+              </section>
+            </>
+          ) : (
+            <>
+              <p className={styles.nota}>
+                Lo que ya no sale en la encuesta o cambió de texto. Las respuestas que se dieron antes del cambio
+                se conservan y se ven aquí.
+              </p>
+
+              <h2 className={styles.seccion}>Ya no se preguntan</h2>
+              {preguntas.retiradas === 0 && <p className={styles.vacio}>Todas las preguntas siguen en la encuesta.</p>}
+              <section className={styles.grid}>
+                {preguntas.basicosRetirados.map((b) => (
+                  <article key={b.id} className={`${styles.card} ${styles.cardRetirada}`}>
+                    <Retirada desde={b.retiradaEl} />
+                    <p className={styles.donde}>Sobre ti</p>
+                    <h3>{b.label}</h3>
+                    <p className={styles.nota}>{b.respondieron} respuestas</p>
+                    <Barras items={b.opciones} base={b.respondieron || 1} />
+                  </article>
+                ))}
+                {resumen.presupuestoRetirado && (
+                  <article className={`${styles.card} ${styles.cardRetirada}`}>
+                    <Retirada desde={resumen.presupuestoRetiradoEl} />
+                    <p className={styles.donde}>Cada persona</p>
+                    <h3>¿Cuánto suelen gastar por regalo?</h3>
+                    <p className={styles.nota}>{resumen.conPresupuesto} de {resumen.personas} personas tienen presupuesto</p>
+                    <Barras items={resumen.presupuesto} />
+                  </article>
+                )}
+                {preguntas.gustos.filter((g) => g.retiradas.length).map((g) => (
+                  <article key={g.id} className={`${styles.card} ${styles.cardRetirada}`}>
+                    <p className={styles.donde}>Interés · {g.nombre}</p>
+                    {g.retiradas.map((q) => (
+                      <div key={q.id} className={styles.pregunta}>
+                        <Retirada desde={q.retiradaEl} />
+                        <p className={styles.preguntaTitulo}>{q.label} <span>({q.respondieron})</span></p>
+                        <Barras items={q.top} max={10} />
+                      </div>
+                    ))}
+                  </article>
+                ))}
+              </section>
+
+              <h2 className={styles.seccion}>Cambiaron de texto</h2>
+              {preguntas.cambiadas.length === 0 ? (
+                <p className={styles.vacio}>Ninguna pregunta cambió de texto.</p>
+              ) : (
+                <>
+                  <p className={styles.nota}>Es la misma pregunta: sus respuestas de antes y de ahora se cuentan juntas.</p>
+                  <ul className={styles.cambios}>
+                    {preguntas.cambiadas.map((c) => (
+                      <li key={c.clave} className={styles.cambio}>
+                        <p className={styles.donde}>{c.donde}</p>
+                        <p><strong>Ahora:</strong> {c.ahora}{c.retirada && <> <Retirada /></>}</p>
+                        {c.antes.map((a, i) => (
+                          <p key={i} className={styles.nota}>Antes: «{a.label}»{a.hasta && ` (hasta el ${fechaCorta(a.hasta)})`}</p>
+                        ))}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </>
+          )}
 
           <h2 className={styles.seccion}>Por cliente</h2>
           <input

@@ -109,6 +109,14 @@ function contarOpciones(valores, opciones = []) {
     .sort((a, b) => b.total - a.total);
 }
 
+// Historial que guarda el admin de Encuestas al editar: antes = [{ label,
+// hasta }] (textos anteriores, del más viejo al más nuevo) y retiradaEl
+// (YYYY-MM-DD en que se dejó de preguntar).
+const historial = (x) => ({
+  antes: Array.isArray(x && x.antes) ? x.antes.filter((a) => a && a.label) : [],
+  retiradaEl: (x && x.retiradaEl) || '',
+});
+
 /**
  * @param {Array} usuarios  perfiles con hasCompletedSurvey (o con personas)
  * @param {object} config   tienda_encuesta_config/global
@@ -125,7 +133,7 @@ export function resumenEncuesta(usuarios, config) {
     .filter((f) => f.type === 'select')
     .map((f) => {
       const valores = completas.map((u) => u.surveyBasicData && u.surveyBasicData[f.id]).filter(Boolean);
-      return { id: f.id, label: f.label, retirada: f.enEncuesta === false, respondieron: valores.length, opciones: contarOpciones(valores, f.options) };
+      return { id: f.id, label: f.label, retirada: f.enEncuesta === false, ...historial(f), respondieron: valores.length, opciones: contarOpciones(valores, f.options) };
     })
     // Las que ya no se preguntan (enEncuesta: false en el admin) van al final.
     .sort((a, b) => Number(a.retirada) - Number(b.retirada));
@@ -140,6 +148,7 @@ export function resumenEncuesta(usuarios, config) {
     return {
       id: c.id,
       nombre: c.name,
+      antes: historial(c).antes,
       personas: conConjunto.length,
       preguntas: (c.fields || []).map((f) => {
         const valores = conConjunto.map((p) => p.categoryAnswers && p.categoryAnswers[c.id] && p.categoryAnswers[c.id][f.id]).filter(Boolean);
@@ -147,6 +156,8 @@ export function resumenEncuesta(usuarios, config) {
           id: f.id,
           label: f.label,
           retirada: f.enEncuesta === false,
+          ...historial(f),
+          refina: Boolean(f.refina),
           respondieron: valores.length,
           top: f.type === 'select' ? contarOpciones(valores, f.options).filter((x) => x.total > 0) : contarTexto(valores),
         };
@@ -166,6 +177,7 @@ export function resumenEncuesta(usuarios, config) {
     conPresupuesto: personas.filter((p) => p.budget).length,
     // Casilla del admin de Encuestas (personPanel.budget): apagada = ya no se pregunta.
     presupuestoRetirado: !(config && config.personPanel && config.personPanel.budget),
+    presupuestoRetiradoEl: (config && config.personPanel && config.personPanel.budgetRetiradoEl) || '',
     basicos,
     aQuien,
     gustos,

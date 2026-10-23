@@ -3,10 +3,13 @@ import { Link } from 'react-router-dom';
 import { Save, Plus, Trash2 } from 'lucide-react';
 import { getSurveyConfig, saveSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../../services/encuestaConfig';
 import { getCategories } from '../../services/categories';
+import { configConHistorial } from '../../services/encuestaHistorial.mjs';
 import styles from './AdminEncuestas.module.css';
 
 const AdminEncuestas = () => {
   const [config, setConfig] = useState(DEFAULT_SURVEY_CONFIG);
+  // Lo guardado, para anotar el historial de lo que cambie al guardar.
+  const [original, setOriginal] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('intro'); // intro, basic, brands, completion, design
@@ -25,6 +28,7 @@ const AdminEncuestas = () => {
           ...DEFAULT_SURVEY_CONFIG,
           ...data
         });
+        setOriginal(data);
       }
       setLoading(false);
     };
@@ -33,8 +37,11 @@ const AdminEncuestas = () => {
 
   const handleSave = async () => {
     setSaving(true);
-    const { error } = await saveSurveyConfig(config);
+    const nuevo = configConHistorial(config, original);
+    const { error } = await saveSurveyConfig(nuevo);
     if (!error) {
+      setConfig(nuevo);
+      setOriginal(nuevo);
       alert('Configuración guardada correctamente.');
     } else {
       alert('Error al guardar: ' + error);

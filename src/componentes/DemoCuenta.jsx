@@ -251,7 +251,7 @@ const CONJUNTOS_ENCUESTA = [
     { id: 'moda_q2', etiqueta: '¿Qué talla usa?', opciones: ['XS', 'S', 'M', 'L', 'XL'] },
   ] },
   { id: 'cat_accesorios', nombre: 'Accesorios', campos: [
-    { id: 'acc_q1', etiqueta: '¿Qué usa más?', opciones: ['Reloj', 'Lentes', 'Billetera'] },
+    { id: 'acc_q1', etiqueta: '¿Qué accesorio le gusta más?', opciones: ['Reloj', 'Lentes', 'Billetera', 'Termo', 'Mousepad', 'Cuadro'] },
     { id: 'acc_q2', etiqueta: '¿Qué estilo tiene?', opciones: ['Clásico', 'Deportivo', 'Elegante', 'Moderno'] },
   ] },
 ];
