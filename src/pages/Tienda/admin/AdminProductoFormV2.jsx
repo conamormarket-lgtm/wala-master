@@ -863,6 +863,13 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         thumbnailCrop: v.thumbnailCrop || null,
         // Encuadre por imagen de galería: { [url]: { percentages } }.
         imagesCrops: (v.imagesCrops && typeof v.imagesCrops === 'object') ? v.imagesCrops : {},
+        // Copias de 160/400/800 px que dejó uploadFile, solo de las fotos que
+        // siguen en la variante. Antes no viajaban: subir o volver a guardar
+        // un producto lo dejaba sirviendo siempre la foto grande.
+        imagesVariantes: Object.fromEntries(
+          Object.entries(v.imagesVariantes || {})
+            .filter(([url]) => url === v.imageUrl || (v.images || []).includes(url))
+        ),
       }));
 
       // Identify main image
