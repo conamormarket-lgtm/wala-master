@@ -287,7 +287,17 @@ const AdminRespuestasEncuesta = () => {
               <section className={styles.grid}>
                 <article className={styles.card}>
                   <h3>¿Cómo te llamas?</h3>
-                  <p className={styles.nota}>Se toma de su cuenta: solo se le pregunta a quien no tiene nombre.</p>
+                  <p className={styles.nota}>
+                    Se toma de su cuenta (es obligatorio al registrarse o completar el perfil): solo se le pregunta a quien no lo tiene.
+                  </p>
+                  <Barras
+                    items={[
+                      { valor: 'De su cuenta', total: resumen.nombre.cuenta },
+                      { valor: 'Lo escribió en la encuesta', total: resumen.nombre.encuesta },
+                      { valor: 'Sin nombre', total: resumen.clientes - resumen.nombre.cuenta - resumen.nombre.encuesta },
+                    ]}
+                    base={resumen.clientes || 1}
+                  />
                 </article>
                 <article className={styles.card}>
                   <h3>Tu cumpleaños</h3>
