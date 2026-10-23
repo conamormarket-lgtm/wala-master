@@ -83,6 +83,7 @@ const AdminEncuestas = () => {
     });
   };
   const removeBasicField = (index) => {
+    if (!window.confirm('¿Eliminar esta pregunta? Desaparece de la encuesta y también de "Respuestas de la encuesta", y no se puede recuperar.\n\nSi quizás la vuelvas a usar, mejor pon "¿Se pregunta en la encuesta?" en No: así se puede volver a preguntar cuando quieras.')) return;
     const newFields = [...config.basicDataPanel.fields];
     newFields.splice(index, 1);
     setConfig({
@@ -129,6 +130,7 @@ const AdminEncuestas = () => {
     setConfig({ ...config, brandsPanel: { ...config.brandsPanel, categories: newCats } });
   };
   const removeBrandCategory = (catIndex) => {
+    if (!window.confirm('¿Eliminar esta categoría con todas sus preguntas? Desaparece de la encuesta y de "Respuestas de la encuesta", y no se puede recuperar.\n\nSi solo quieres dejar de preguntar algo, pon esas preguntas en No.')) return;
     const newCats = [...config.brandsPanel.categories];
     newCats.splice(catIndex, 1);
     setConfig({
@@ -148,6 +150,7 @@ const AdminEncuestas = () => {
     });
   };
   const removeBrandField = (catIndex, fieldIndex) => {
+    if (!window.confirm('¿Eliminar esta pregunta? Desaparece de la encuesta y también de "Respuestas de la encuesta", y no se puede recuperar.\n\nSi quizás la vuelvas a usar, mejor pon "¿Se pregunta en la encuesta?" en No: así se puede volver a preguntar cuando quieras.')) return;
     const newCats = [...config.brandsPanel.categories];
     newCats[catIndex].fields.splice(fieldIndex, 1);
     setConfig({

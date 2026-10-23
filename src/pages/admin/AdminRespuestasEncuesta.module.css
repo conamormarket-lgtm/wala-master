@@ -481,3 +481,11 @@
 .embudoAparte .barraRelleno {
   background: #f59e0b;
 }
+
+/* "Volver a preguntarla" en las preguntas retiradas. */
+.reactivar {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+  font-size: 0.82rem;
+  padding: 0.35rem 0.75rem;
+}

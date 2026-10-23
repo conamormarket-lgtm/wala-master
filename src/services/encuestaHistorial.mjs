@@ -27,7 +27,7 @@ export const configConHistorial = (config, original, hoy = hoyLocal()) => {
   const personPanel = { ...config.personPanel };
   const tenia = Boolean(original.personPanel?.budget);
   if (tenia && !personPanel.budget) personPanel.budgetRetiradoEl = hoy;
-  if (!tenia && personPanel.budget) delete personPanel.budgetRetiradoEl;
+  if (!tenia && personPanel.budget) personPanel.budgetRetiradoEl = '';
   return {
     ...config,
     personPanel,

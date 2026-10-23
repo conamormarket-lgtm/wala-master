@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getCollection } from '../../services/firebase/firestore';
 import { PORTAL_USERS_COLLECTION } from '../../constants/userCollections';
-import { getSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../../services/encuestaConfig';
+import { getSurveyConfig, saveSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../../services/encuestaConfig';
+import { configConHistorial } from '../../services/encuestaHistorial.mjs';
+import { useGlobalToast } from '../../contexts/ToastContext';
 import {
   resumenEncuesta, fichaCliente, csvRespuestas,
   fechaEncuesta, filtrarPorFecha, porPeriodo, textoFechaEncuesta, diaLocal, embudoEncuesta, EMBUDO_DESDE,
@@ -148,6 +150,45 @@ const AdminRespuestasEncuesta = () => {
   });
   // Pestaña "La encuesta actual" | "Cambiadas o retiradas".
   const [vista, setVista] = useState('actual');
+
+  // "Volver a preguntarla": la misma pregunta vuelve a la encuesta (sus
+  // respuestas de antes se suman a las nuevas). Lee la config guardada, la
+  // cambia y guarda con el historial (se borra la fecha de retiro).
+  const toast = useGlobalToast();
+  const [reactivando, setReactivando] = useState('');
+  const reactivar = async (clave, cambiar) => {
+    if (!window.confirm('¿Volver a hacer esta pregunta en la encuesta? Sus respuestas de antes se suman a las nuevas.')) return;
+    setReactivando(clave);
+    try {
+      const { data: actual, error: errorLeer } = await getSurveyConfig();
+      if (errorLeer || !actual) throw new Error(errorLeer || 'No se encontró la encuesta.');
+      const { error: errorGuardar } = await saveSurveyConfig(configConHistorial(cambiar(actual), actual));
+      if (errorGuardar) throw new Error(errorGuardar);
+      await refetch();
+      toast.success('Listo: la pregunta vuelve a salir en la encuesta.');
+    } catch (err) {
+      toast.error(`No se pudo: ${err.message}`);
+    } finally {
+      setReactivando('');
+    }
+  };
+  const activarCampo = (f) => ({ ...f, enEncuesta: true });
+  const reactivarBasico = (id) => reactivar(`b-${id}`, (c) => ({
+    ...c, basicDataPanel: { ...c.basicDataPanel, fields: c.basicDataPanel.fields.map((f) => (f.id === id ? activarCampo(f) : f)) },
+  }));
+  const reactivarGusto = (catId, id) => reactivar(`q-${catId}-${id}`, (c) => ({
+    ...c,
+    brandsPanel: {
+      ...c.brandsPanel,
+      categories: c.brandsPanel.categories.map((cat) => (cat.id === catId ? { ...cat, fields: cat.fields.map((f) => (f.id === id ? activarCampo(f) : f)) } : cat)),
+    },
+  }));
+  const reactivarPresupuesto = () => reactivar('presupuesto', (c) => ({ ...c, personPanel: { ...c.personPanel, budget: true } }));
+  const BotonReactivar = ({ clave, onClick }) => (
+    <button type="button" className={`${styles.btnSecundario} ${styles.reactivar}`} onClick={onClick} disabled={Boolean(reactivando)}>
+      {reactivando === clave ? 'Guardando…' : '↺ Volver a preguntarla'}
+    </button>
+  );
   const preguntas = useMemo(() => {
     if (!resumen) return null;
     const gustos = resumen.gustos.map((g) => ({
@@ -425,6 +466,7 @@ const AdminRespuestasEncuesta = () => {
                     <h3>{b.label}</h3>
                     <p className={styles.nota}>{b.respondieron} respuestas</p>
                     <Barras items={b.opciones} base={b.respondieron || 1} />
+                    <BotonReactivar clave={`b-${b.id}`} onClick={() => reactivarBasico(b.id)} />
                   </article>
                 ))}
                 {resumen.presupuestoRetirado && (
@@ -434,6 +476,7 @@ const AdminRespuestasEncuesta = () => {
                     <h3>¿Cuánto suelen gastar por regalo?</h3>
                     <p className={styles.nota}>{resumen.conPresupuesto} de {resumen.personas} personas tienen presupuesto</p>
                     <Barras items={resumen.presupuesto} />
+                    <BotonReactivar clave="presupuesto" onClick={reactivarPresupuesto} />
                   </article>
                 )}
                 {preguntas.gustos.filter((g) => g.retiradas.length).map((g) => (
@@ -444,6 +487,7 @@ const AdminRespuestasEncuesta = () => {
                         <Retirada desde={q.retiradaEl} />
                         <p className={styles.preguntaTitulo}>{q.label} <span>({q.respondieron})</span></p>
                         <Barras items={q.top} max={10} />
+                        <BotonReactivar clave={`q-${g.id}-${q.id}`} onClick={() => reactivarGusto(g.id, q.id)} />
                       </div>
                     ))}
                   </article>
