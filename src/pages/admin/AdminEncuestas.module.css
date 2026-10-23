@@ -354,3 +354,30 @@
   font-size: 0.9rem;
   cursor: pointer;
 }
+
+/* Preguntas que ya no se hacen: abajo, plegadas y atenuadas. */
+.retiradas {
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.5rem;
+  background: #f8fafc;
+  padding: 0.6rem 0.9rem;
+}
+
+.retiradas summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.retiradasLista {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.8rem;
+  opacity: 0.75;
+}
+
+.retiradasLista:focus-within,
+.retiradasLista:hover {
+  opacity: 1;
+}

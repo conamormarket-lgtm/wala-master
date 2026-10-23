@@ -261,6 +261,29 @@ const AdminEncuestas = () => {
     </div>
   );
 
+  // Arriba las preguntas que salen en la encuesta; abajo, plegadas, las que ya
+  // no se preguntan. Se separan según lo GUARDADO (original): una pregunta que
+  // se pasa a "No" no salta de lugar hasta guardar. `guardadas` = las de ese
+  // grupo en la config guardada; el índice que se edita es el de la lista real.
+  const listaSeparada = (campos, guardadas, render) => {
+    const retiradaGuardada = (f) => (guardadas || []).some((g) => g.id === f.id && g.enEncuesta === false);
+    const conIndice = (campos || []).map((f, i) => [f, i]);
+    const activas = conIndice.filter(([f]) => !retiradaGuardada(f));
+    const retiradas = conIndice.filter(([f]) => retiradaGuardada(f));
+    return (
+      <>
+        {activas.map(([f, i]) => render(f, i))}
+        {activas.length === 0 && <p className={styles.notaCampo}>Ninguna pregunta de aquí sale en la encuesta.</p>}
+        {retiradas.length > 0 && (
+          <details className={styles.retiradas}>
+            <summary>Ya no se preguntan ({retiradas.length}) · para volver a usar una, ponla en &quot;Sí&quot; y guarda</summary>
+            <div className={styles.retiradasLista}>{retiradas.map(([f, i]) => render(f, i))}</div>
+          </details>
+        )}
+      </>
+    );
+  };
+
   if (loading) return <div>Cargando configuración...</div>;
 
   return (
@@ -339,7 +362,7 @@ const AdminEncuestas = () => {
             los tiene. Si no queda nada que preguntar, este paso se salta.
           </p>
           <div className={styles.fieldsList}>
-            {config.basicDataPanel.fields.map((field, index) => renderFieldEditor(field, index, updateBasicField, removeBasicField))}
+            {listaSeparada(config.basicDataPanel.fields, original?.basicDataPanel?.fields, (field, index) => renderFieldEditor(field, index, updateBasicField, removeBasicField))}
           </div>
           <button className={styles.addBtn} onClick={addBasicField}>
             <Plus size={18} /> Añadir nueva pregunta general
@@ -428,8 +451,10 @@ const AdminEncuestas = () => {
                 <div style={{ padding: '1rem', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '1rem' }}>
                   <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.9rem', color: '#475569' }}>Preguntas para quien seleccione "{cat.name}"</h4>
                   <div className={styles.fieldsList}>
-                    {cat.fields.map((field, fieldIndex) =>
-                      renderFieldEditor(
+                    {listaSeparada(
+                      cat.fields,
+                      original?.brandsPanel?.categories?.find((c) => c.id === cat.id)?.fields,
+                      (field, fieldIndex) => renderFieldEditor(
                         field,
                         fieldIndex,
                         (i, k, v) => updateBrandField(catIndex, i, k, v),
