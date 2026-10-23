@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { resumenEncuesta, fichaCliente, csvRespuestas, filtrarPorFecha, porPeriodo, textoFechaEncuesta } from './surveyResponses.mjs';
+import { resumenEncuesta, fichaCliente, csvRespuestas, filtrarPorFecha, porPeriodo, textoFechaEncuesta, embudoEncuesta } from './surveyResponses.mjs';
 
 const config = {
   basicDataPanel: {
@@ -110,3 +110,20 @@ test('marca las preguntas que el admin quitó de la encuesta', () => {
   assert.equal(resumenEncuesta(usuarios, { ...config, personPanel: { budget: true } }).presupuestoRetirado, false);
 });
 
+
+test('embudo: personas distintas por paso y % sobre las que entraron', () => {
+  const ev = (uid, paso) => ({ uid, eventData: { paso } });
+  const e = embudoEncuesta([
+    ev('a', 'portada'), ev('a', 'portada'), ev('a', 'grupos'), ev('a', 'terminada'),
+    ev('b', 'portada'), ev('b', 'sobre_ti'), ev('b', 'grupos'), ev('b', 'sobre_ti'),
+    ev('c', 'portada'), ev('c', 'no_gracias'),
+    { anonymousId: 'x', eventData: { paso: 'portada' } },
+  ]);
+  const de = (id) => e.find((x) => x.id === id);
+  assert.equal(de('entraron').total, 4);
+  assert.equal(de('empezaron').total, 2, 'empezar = llegar a Sobre ti o directo a los grupos');
+  assert.equal(de('sobre_ti').total, 1);
+  assert.equal(de('no_gracias').total, 1);
+  assert.equal(de('terminaron').total, 1);
+  assert.equal(de('terminaron').porcentaje, 25);
+});

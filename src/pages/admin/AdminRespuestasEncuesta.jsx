@@ -6,7 +6,7 @@ import { PORTAL_USERS_COLLECTION } from '../../constants/userCollections';
 import { getSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../../services/encuestaConfig';
 import {
   resumenEncuesta, fichaCliente, csvRespuestas,
-  fechaEncuesta, filtrarPorFecha, porPeriodo, textoFechaEncuesta, diaLocal,
+  fechaEncuesta, filtrarPorFecha, porPeriodo, textoFechaEncuesta, diaLocal, embudoEncuesta, EMBUDO_DESDE,
 } from '../../services/surveyResponses.mjs';
 import styles from './AdminRespuestasEncuesta.module.css';
 
@@ -129,6 +129,23 @@ const AdminRespuestasEncuesta = () => {
     [data, rango.desde, rango.hasta],
   );
   const resumen = useMemo(() => (data ? resumenEncuesta(enRango, data.config) : null), [data, enRango]);
+
+  // Embudo: los pasos de la encuesta (analytics_events, survey_step) en el mismo rango de fechas.
+  const desdeEmbudo = rango.desde && rango.desde > EMBUDO_DESDE ? rango.desde : EMBUDO_DESDE;
+  const { data: embudo, isLoading: cargandoEmbudo, error: errorEmbudo } = useQuery({
+    queryKey: ['admin-embudo-encuesta', desdeEmbudo, rango.hasta],
+    queryFn: async () => {
+      const filtros = [
+        { field: 'type', operator: '==', value: 'survey_step' },
+        { field: 'clientTsMs', operator: '>=', value: new Date(`${desdeEmbudo}T00:00`).getTime() },
+      ];
+      if (rango.hasta) filtros.push({ field: 'clientTsMs', operator: '<=', value: new Date(`${rango.hasta}T23:59:59.999`).getTime() });
+      const res = await getCollection('analytics_events', filtros);
+      if (res.error) throw new Error(res.error);
+      return embudoEncuesta(res.data || []);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
   // Pestaña "La encuesta actual" | "Cambiadas o retiradas".
   const [vista, setVista] = useState('actual');
   const preguntas = useMemo(() => {
@@ -256,6 +273,35 @@ const AdminRespuestasEncuesta = () => {
             <div className={styles.kpi}><span>{resumen.conCumpleanos}</span>clientes dieron su cumpleaños</div>
             <div className={styles.kpi}><span>{resumen.conPresupuesto}</span>personas con presupuesto{resumen.presupuestoRetirado && ' (ya no se pregunta)'}</div>
           </section>
+
+          <article className={styles.card}>
+            <h3>Embudo de la encuesta</h3>
+            <p className={styles.nota}>
+              Personas distintas que llegaron a cada paso, y su % sobre las que entraron. Se registra desde el{' '}
+              {EMBUDO_DESDE.split('-').reverse().join('/')}: antes de esa fecha no hay datos de pasos.
+            </p>
+            {errorEmbudo && <p className={styles.error}>No se pudo cargar el embudo: {errorEmbudo.message}</p>}
+            {cargandoEmbudo && <p className={styles.vacio}>Cargando el embudo…</p>}
+            {embudo && (embudo[0].total === 0 ? (
+              <p className={styles.vacio}>Nadie entró a la encuesta en este rango todavía.</p>
+            ) : (
+              <ul className={styles.barras}>
+                {embudo.map((p) => (
+                  <li key={p.id} className={`${styles.barra} ${p.aparte ? styles.embudoAparte : ''}`}>
+                    <span className={styles.barraTexto}>
+                      <span className={styles.barraValor}>
+                        {p.label}{p.nota && <span className={styles.embudoNota}> · {p.nota}</span>}
+                      </span>
+                      <span className={styles.barraTotal}>{p.total} <span className={styles.embudoNota}>({p.porcentaje}%)</span></span>
+                    </span>
+                    <span className={styles.barraFondo} aria-hidden="true">
+                      <span className={styles.barraRelleno} style={{ width: `${p.porcentaje}%` }} />
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ))}
+          </article>
 
           <article className={styles.card}>
             <h3>Encuestas completadas por {fechas.unidad === 'dia' ? 'día' : 'mes'}</h3>

@@ -364,6 +364,25 @@ export async function trackProductView(productInfo = {}, userCtx = {}) {
   });
 }
 
+// Un paso de la encuesta (ver SURVEY_STEP en schema.js).
+export async function trackSurveyStep(paso, userCtx = {}) {
+  if (!paso) return;
+  const anonymousId = getAnonymousId();
+  const sessionId = await ensureAnalyticsSession(userCtx);
+  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+    type: ANALYTICS_EVENT_TYPES.SURVEY_STEP,
+    path: window.location.pathname || '/encuesta-suscripcion',
+    uid: userCtx?.uid || null,
+    email: userCtx?.email || null,
+    displayName: userCtx?.displayName || null,
+    anonymousId,
+    sessionId: sessionId || null,
+    clientTsMs: Date.now(),
+    clientType: getClientType(),
+    eventData: { paso },
+  });
+}
+
 export async function trackSearchQuery(query, userCtx = {}) {
   if (!query) return;
   const now = Date.now();

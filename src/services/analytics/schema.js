@@ -49,6 +49,10 @@ export const ANALYTICS_EVENT_TYPES = {
   POPUP_CLICK: 'popup_click',
   POPUP_CLOSE: 'popup_close',
   POPUP_CONVERSION: 'popup_conversion',
+  // Embudo de la encuesta (/encuesta-suscripcion). eventData lleva { paso }:
+  // portada | no_gracias | sobre_ti | grupos | personas | whatsapp | terminada.
+  // Lo lee "Respuestas de la encuesta" (desde el 2026-10-23).
+  SURVEY_STEP: 'survey_step',
 };
 
 export const ANALYTICS_KEYS = {

@@ -470,3 +470,14 @@
 .cambio p {
   margin: 0;
 }
+
+/* Embudo: notas en gris y "No, gracias" en otro tono (no es un paso, se sale). */
+.embudoNota {
+  font-weight: 400;
+  color: var(--color-text-muted, #475569);
+  font-size: 0.78rem;
+}
+
+.embudoAparte .barraRelleno {
+  background: #f59e0b;
+}

@@ -130,6 +130,8 @@ function Acciones({ children, centro = false }) {
  *    llamas?" (se guarda igual en las respuestas). El cumpleaños solo se
  *    pregunta si no viene en inicial; sin nada que preguntar, el paso
  *    "Un poco sobre ti" se salta.
+ *  - onPaso(paso): cada paso que se muestra (embudo): portada, sobre_ti,
+ *    grupos, personas (una vez al entrar a los grupos), whatsapp, terminada
  *  - pedirWhatsapp: al final, "¿Te avisamos de promociones por WhatsApp?"
  *    (si dice que no, "¿Estás seguro?"); la respuesta sale en onTerminar
  *    como whatsapp: true | false (sin el paso, undefined)
@@ -142,7 +144,7 @@ export function PaginaEncuesta({
   config = CONFIG_ENCUESTA, conjuntos = [], inicial = {}, recompensa = { base: 15, porFecha: 5, tope: 50 },
   sesion = true, completada = false, cargando = false,
   urlLogin = '/login', urlRegistro = '/registro', urlFechas = '/cuenta/fechas-importantes', urlTienda = '/',
-  onOmitir, onTerminar, onSubirFoto, onAgregarIdea, onEmpezar, nombreCuenta = '', pedirWhatsapp = false,
+  onOmitir, onTerminar, onSubirFoto, onAgregarIdea, onEmpezar, nombreCuenta = '', pedirWhatsapp = false, onPaso,
 }) {
   const portada = unir(CONFIG_ENCUESTA.portada, config.portada);
   const sobreTi = unir(CONFIG_ENCUESTA.sobreTi, config.sobreTi);
@@ -183,6 +185,11 @@ export function PaginaEncuesta({
   };
   const empezo = paso > 0;
   useEffect(() => { if (empezo) onEmpezar?.(); }, [empezo]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Embudo: cada paso que se ve (la pantalla de "ya respondiste" no cuenta como portada).
+  useEffect(() => {
+    if (!sesion || cargando || (paso === 0 && completada && !rehacer)) return;
+    onPaso?.({ 0: 'portada', 1: 'sobre_ti', 2: 'grupos', 3: 'personas', 3.5: 'whatsapp', 4: 'terminada' }[paso]);
+  }, [paso, rehacer, sesion, cargando]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const ir = (n, haciaAtras = false) => {
     setSentido(haciaAtras ? 'atras' : 'adelante');

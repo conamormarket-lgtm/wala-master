@@ -190,6 +190,39 @@ export function resumenEncuesta(usuarios, config) {
   };
 }
 
+// ── Embudo de la encuesta ───────────────────────────────────────────────────
+// Eventos survey_step de analytics_events (eventData.paso), registrados desde
+// el 2026-10-23. Cada fila cuenta PERSONAS distintas (uid o, sin cuenta, el id
+// anónimo), no veces: quien vuelve atrás y adelante cuenta una sola vez.
+export const EMBUDO_DESDE = '2026-10-23';
+const PASOS_EMBUDO = [
+  { id: 'entraron', label: 'Entraron', pasos: ['portada'] },
+  { id: 'no_gracias', label: 'Dijeron "No, gracias"', pasos: ['no_gracias'], aparte: true },
+  { id: 'empezaron', label: 'Empezaron', pasos: ['sobre_ti', 'grupos'] },
+  { id: 'sobre_ti', label: 'Sobre ti', pasos: ['sobre_ti'], nota: 'solo a quien le falta algo por responder' },
+  { id: 'grupos', label: '¿A quiénes sueles regalar?', pasos: ['grupos'] },
+  { id: 'personas', label: 'Cada persona', pasos: ['personas'], nota: 'solo si eligió algún grupo' },
+  { id: 'whatsapp', label: 'Promociones por WhatsApp', pasos: ['whatsapp'], nota: 'solo a quien no lo tenía activado' },
+  { id: 'terminaron', label: 'Terminaron', pasos: ['terminada'] },
+];
+
+export function embudoEncuesta(eventos = []) {
+  const porPaso = new Map();
+  (eventos || []).forEach((e) => {
+    const paso = e && e.eventData && e.eventData.paso;
+    const quien = e && (e.uid || e.anonymousId);
+    if (!paso || !quien) return;
+    if (!porPaso.has(paso)) porPaso.set(paso, new Set());
+    porPaso.get(paso).add(quien);
+  });
+  const personas = (pasos) => new Set(pasos.flatMap((p) => [...(porPaso.get(p) || [])])).size;
+  const entraron = personas(['portada']);
+  return PASOS_EMBUDO.map((p) => {
+    const total = personas(p.pasos);
+    return { id: p.id, label: p.label, nota: p.nota || '', aparte: Boolean(p.aparte), total, porcentaje: entraron ? Math.round((total / entraron) * 100) : 0 };
+  });
+}
+
 /** Ficha legible de un cliente (para el detalle). */
 export function fichaCliente(u, config) {
   const camposBasicos = (config && config.basicDataPanel && config.basicDataPanel.fields) || [];

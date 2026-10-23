@@ -7,6 +7,7 @@ import { useGiftCatalog } from '../../hooks/useGiftCatalog';
 import useLoViejo from '../../hooks/useLoViejo';
 import { leerSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../../services/encuestaConfig';
 import { registrarConversionPopup } from '../../services/popups';
+import { trackSurveyStep } from '../../services/analytics/tracker';
 import { uploadFile } from '../../services/firebase/storage';
 import { volarMonedasGanadas } from '../../utils/animations';
 import { productNeedsVariantSelection } from '../../utils/comboProductUtils';
@@ -101,7 +102,13 @@ export default function EncuestaDeTienda() {
     onElegir: () => elegir(p),
   });
 
+  // Embudo de la encuesta ("Respuestas de la encuesta"). Sin analítica no se frena nada.
+  const paso = (p) => {
+    try { trackSurveyStep(p, user).catch(() => {}); } catch { /* sin analítica */ }
+  };
+
   const omitir = async () => {
+    paso('no_gracias');
     try {
       await updateUserProfile({ lastSurveyPromptedAt: Date.now() });
     } catch (e) {
@@ -188,6 +195,7 @@ export default function EncuestaDeTienda() {
         urlTienda="/"
         onEmpezar={() => setEmpezo(true)}
         onOmitir={omitir}
+        onPaso={paso}
         onTerminar={terminar}
         onSubirFoto={subirFoto}
         onAgregarIdea={agregarIdea}
