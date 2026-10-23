@@ -613,3 +613,9 @@
 [data-theme="dark"] .btnSecundario {
   color: #c4b5fd;
 }
+
+/* "Enviarme una prueba" debajo de la vista previa de un aviso automático. */
+.previewProbar {
+  margin-top: 8px;
+  align-self: flex-start;
+}

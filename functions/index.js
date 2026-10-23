@@ -5780,6 +5780,7 @@ exports.notifyOrderMilestoneErpAlta = require('./notificationsEngine').notifyOrd
 exports.notifyOrderMilestoneWala = require('./notificationsEngine').notifyOrderMilestoneWala;
 exports.cancelPromoCampaign = require('./notificationsEngine').cancelPromoCampaign;
 exports.surveyReminderEngine = require('./notificationsEngine').surveyReminderEngine;
+exports.probarAvisoAutomatico = require('./notificationsEngine').probarAvisoAutomatico;
 
 // ── Pre-agregación analítica diaria (Fase 2, PARTE 1) ─────────────────────────
 // Cron gen2 (00:20 hora Lima) que agrega el día anterior de analytics_events +

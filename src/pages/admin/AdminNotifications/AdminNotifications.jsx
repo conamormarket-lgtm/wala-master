@@ -83,8 +83,8 @@ const GRUPOS_AVISOS = [
     nombre: '📝 Encuesta pendiente',
     detalle: 'Para quien creó su cuenta y todavía no respondió la encuesta. Lleva a /encuesta-suscripcion.',
     avisos: [
-      { key: 'survey_3d', nombre: 'A los 3 días', cuando: 'Sale 3 días después de crear la cuenta, si no respondió.', titulo: '📝 Tu encuesta te espera' },
-      { key: 'survey_10d', nombre: 'A los 10 días', cuando: 'Sale 10 días después de crear la cuenta, si sigue sin responder. Es el último.', titulo: '📝 Tu encuesta te espera' },
+      { key: 'survey_3d', nombre: 'A los 3 días', cuando: 'Sale 3 días después de crear la cuenta, si no respondió.', titulo: '📝 Tu encuesta te espera', probable: true },
+      { key: 'survey_10d', nombre: 'A los 10 días', cuando: 'Sale 10 días después de crear la cuenta, si sigue sin responder. Es el último.', titulo: '📝 Tu encuesta te espera', probable: true },
     ],
   },
 ];
@@ -251,6 +251,26 @@ const AdminNotifications = () => {
       newCopys[key].b = null;
       return { ...prev, copys: newCopys };
     });
+  };
+
+  // Prueba de un aviso automático: llega solo a quien la pide, con el texto
+  // que está escrito ahora (aunque no se haya guardado).
+  const [probandoAviso, setProbandoAviso] = useState('');
+  const probarAviso = async (key, variant) => {
+    setProbandoAviso(`${key}.${variant}`);
+    try {
+      const fn = httpsCallable(getFunctions(), 'probarAvisoAutomatico');
+      const { data } = await fn({ type: key, copy: settings.copys[key]?.[variant] });
+      toast.success(data.push > 0
+        ? 'Prueba enviada solo a ti: revisa la campanita y tu celular.'
+        : data.tieneApp
+          ? 'Prueba enviada a tu campanita. La push no llegó a tu celular.'
+          : 'Prueba enviada solo a ti: revisa la campanita (tu cuenta no tiene la app).');
+    } catch (err) {
+      toast.error(err?.message || 'No se pudo enviar la prueba.');
+    } finally {
+      setProbandoAviso('');
+    }
   };
 
   // "Anunciar un producto": rellena la campaña con su nombre, foto y link. Si
@@ -506,6 +526,16 @@ const AdminNotifications = () => {
                                 <span className={styles.previewApp}>WALÁ · ahora</span>
                                 <strong className={styles.previewTitulo}>{aviso.titulo}</strong>
                                 <span className={styles.previewTexto}>{vistaPrevia(v) || 'Escribe el mensaje…'}</span>
+                                {aviso.probable && (
+                                  <button
+                                    type="button"
+                                    className={`${styles.textBtn} ${styles.previewProbar}`}
+                                    disabled={!!probandoAviso || !v.text?.trim()}
+                                    onClick={() => probarAviso(aviso.key, variant)}
+                                  >
+                                    {probandoAviso === `${aviso.key}.${variant}` ? 'Enviando…' : 'Enviarme una prueba'}
+                                  </button>
+                                )}
                               </div>
                             </div>
                           </div>

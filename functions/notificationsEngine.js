@@ -1135,3 +1135,50 @@ exports.surveyReminderEngine = onSchedule({
     console.error("Error en avisos de encuesta:", e);
   }
 });
+
+// ── Prueba de un aviso automático desde el panel ─────────────────────────────
+// Le llega SOLO al admin que la pide (campanita + push si tiene la app), con el
+// texto que tiene escrito en el panel aunque no lo haya guardado. No toca las
+// estadísticas, el tope anti-spam ni el registro de enviados.
+const AVISOS_PROBABLES = {
+  survey_3d: { title: SURVEY_TITULO, link: "/encuesta-suscripcion" },
+  survey_10d: { title: SURVEY_TITULO, link: "/encuesta-suscripcion" },
+};
+const textoCorto = (x, max) => String(x || "").slice(0, max);
+
+exports.probarAvisoAutomatico = functions.https.onCall(async (data, context) => {
+  await exigirAdmin(context);
+  const uid = context.auth.uid;
+  const type = String((data && data.type) || "");
+  const aviso = AVISOS_PROBABLES[type];
+  if (!aviso) throw new functions.https.HttpsError("invalid-argument", "Ese aviso no se puede probar.");
+
+  const c = data && data.copy && typeof data.copy === "object" ? data.copy : null;
+  const settings = c
+    ? { copys: { [type]: { a: { text: textoCorto(c.text, 300), cta: textoCorto(c.cta, 100), emoji: textoCorto(c.emoji, 16) } } } }
+    : await leerSettings();
+
+  const userSnap = await db.collection(PORTAL_USERS_COLLECTION).doc(uid).get();
+  const user = userSnap.exists ? userSnap.data() : {};
+  const vars = {
+    nombre: user.displayName ? user.displayName.split(" ")[0] : "",
+    monedas: user.monedas || 0,
+  };
+  const { text } = copyDe(settings, type, uid, vars, SURVEY_TEXTOS_POR_DEFECTO[type]);
+  const payload = { title: `🧪 Prueba · ${aviso.title}`, body: text, type, link: aviso.link };
+
+  const ref = db.collection(`users/${uid}/notifications`).doc();
+  await ref.set({ ...docInApp(payload), prueba: true });
+  const tokens = user.fcmTokens || [];
+  let push = 0;
+  if (tokens.length > 0) {
+    try {
+      const response = await messaging.sendEachForMulticast(mensajeFcm(tokens, { ...payload, notifId: ref.id }));
+      await removeInvalidTokens(userSnap.ref, tokens, response);
+      push = response.successCount;
+    } catch (e) {
+      console.warn("probarAvisoAutomatico: push falló:", e.message);
+    }
+  }
+  return { titulo: payload.title, cuerpo: payload.body, push, tieneApp: tokens.length > 0 };
+});
