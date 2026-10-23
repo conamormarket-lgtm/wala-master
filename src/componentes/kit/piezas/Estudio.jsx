@@ -1053,9 +1053,11 @@ export function BarraLienzo({
  * fondo, recortar. La misma tarjeta punteada en el paso 3 y en el panel.
  *  - icono · tono (del Sello) · girar · titulo · detalle · onClick · disabled
  */
-export function OpcionSello({ icono, tono, girar = -8, titulo, detalle, onClick, disabled = false }) {
+// solido: borde continuo. El punteado es para "agregar algo nuevo"; en una
+// acción sobre lo elegido (Quitar fondo, Recortar) se leía como bloqueado.
+export function OpcionSello({ icono, tono, girar = -8, titulo, detalle, onClick, disabled = false, solido = false }) {
   return (
-    <button type="button" className={s.agregarOpcion} onClick={onClick} disabled={disabled}>
+    <button type="button" className={[s.agregarOpcion, solido && s.opcionSolida].filter(Boolean).join(' ')} onClick={onClick} disabled={disabled}>
       <Sello tamano={42} girar={girar} tono={tono}>{icono}</Sello>
       <strong><Texto>{titulo}</Texto></strong>
       {detalle && <small><Texto>{detalle}</Texto></small>}
@@ -1415,10 +1417,12 @@ export function PanelCapa({
           <div className={s.grupoCampo}>
             <span className={s.rotulo}><Texto>{"Arreglar la imagen"}</Texto></span>
             <div className={s.agregar}>
-              <OpcionSello icono={<Eraser aria-hidden="true" />} tono="rosa" titulo="Quitar fondo" detalle="Deja solo lo importante" onClick={onQuitarFondo} disabled={sinSesion || subiendo} />
-              <OpcionSello icono={<Crop aria-hidden="true" />} girar={6} titulo="Recortar" detalle="Elige qué parte va" onClick={onRecortar} disabled={sinSesion || subiendo} />
+              <OpcionSello solido icono={<Eraser aria-hidden="true" />} tono="rosa" titulo="Quitar fondo" detalle="Deja solo lo importante" onClick={onQuitarFondo} disabled={sinSesion || subiendo} />
+              <OpcionSello solido icono={<Crop aria-hidden="true" />} girar={6} titulo="Recortar" detalle="Elige qué parte va" onClick={onRecortar} disabled={sinSesion || subiendo} />
             </div>
             {sinSesion && <span className={s.nota}><Texto>{"Inicia sesión para recortar o quitar el fondo."}</Texto></span>}
+            {/* Bloqueados sin decir por qué parecían rotos (en una tablet con wifi lento la subida tarda). */}
+            {!sinSesion && subiendo && <span className={s.nota} role="status"><Texto>{"Subiendo tu imagen… en un momento puedes recortarla o quitarle el fondo."}</Texto></span>}
           </div>
         </>
       )}

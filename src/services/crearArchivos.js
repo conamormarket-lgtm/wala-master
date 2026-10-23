@@ -36,16 +36,119 @@ const subir = async (blob, ruta) => {
   return Promise.race([tarea, limite]);
 };
 
-const decodificar = (archivo) => new Promise((resolve, reject) => {
+const decodificarConImagen = (archivo) => new Promise((resolve, reject) => {
   const url = URL.createObjectURL(archivo);
   const img = new Image();
-  img.onload = () => resolve({ img, url });
+  img.onload = () => (img.naturalWidth && img.naturalHeight ? resolve({ img, url }) : (URL.revokeObjectURL(url), reject(new Error('vacía'))));
   img.onerror = () => {
     URL.revokeObjectURL(url);
-    reject(new Error('No pudimos leer esa imagen. Prueba con un PNG o JPG.'));
+    reject(new Error('no se pudo decodificar'));
   };
   img.src = url;
 });
+
+/** Dibuja algo (una imagen o un ImageBitmap) en un lienzo y lo devuelve como archivo. */
+const aArchivo = async (fuente, ancho, alto, tipo) => {
+  const canvas = document.createElement('canvas');
+  canvas.width = ancho;
+  canvas.height = alto;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(fuente, 0, 0, ancho, alto);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, tipo, 0.95));
+  if (!blob) throw new Error('No pudimos procesar esa imagen.');
+  return blob;
+};
+
+// El formato de verdad, por los primeros bytes: el nombre o el tipo que da el
+// teléfono mienten seguido (una foto WebP o AVIF bajada de internet llega como
+// .jpg; en la app de Android el tipo puede venir vacío).
+const leerFormato = async (archivo) => {
+  let b;
+  try { b = new Uint8Array(await archivo.slice(0, 512).arrayBuffer()); } catch { return null; }
+  if (!b.length) return null;
+  const txt = (i, n) => String.fromCharCode(...b.slice(i, i + n));
+  if (b[0] === 0x89 && txt(1, 3) === 'PNG') return 'png';
+  if (b[0] === 0xff && b[1] === 0xd8) return 'jpg';
+  if (txt(0, 4) === 'RIFF' && txt(8, 4) === 'WEBP') return 'webp';
+  if (txt(0, 3) === 'GIF') return 'gif';
+  if (txt(4, 4) === 'ftyp') {
+    const marca = txt(8, 4);
+    if (/^(avif|avis)$/.test(marca)) return 'avif';
+    if (/^(heic|heix|hevc|hevx|heim|heis|mif1|msf1)$/.test(marca)) return 'heic';
+  }
+  if (/<svg[\s>]/i.test(new TextDecoder().decode(b))) return 'svg';
+  return null;
+};
+
+// Lado largo con el que se convierte un SVG (dibujo vectorial) a PNG: alcanza
+// para imprimir a 35 cm.
+const LADO_SVG = 4000;
+
+/** Un SVG pasa a PNG grande; sin tamaño propio se usa su viewBox. */
+const svgAPng = async (archivo) => {
+  const texto = await archivo.text();
+  const doc = new DOMParser().parseFromString(texto, 'image/svg+xml');
+  const svg = doc.documentElement;
+  if (!svg || svg.nodeName.toLowerCase() !== 'svg') throw new Error('No pudimos leer ese SVG.');
+  const caja = (svg.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+  const medida = (n) => (/^[\d.]+(px)?$/.test(String(n || '').trim()) ? parseFloat(n) : 0);
+  let ancho = medida(svg.getAttribute('width')) || caja[2] || 0;
+  let alto = medida(svg.getAttribute('height')) || caja[3] || 0;
+  if (!ancho || !alto) { ancho = 1000; alto = 1000; }
+  if (!svg.getAttribute('viewBox')) svg.setAttribute('viewBox', `0 0 ${ancho} ${alto}`);
+  const escala = LADO_SVG / Math.max(ancho, alto);
+  const w = Math.round(ancho * escala);
+  const h = Math.round(alto * escala);
+  svg.setAttribute('width', String(w));
+  svg.setAttribute('height', String(h));
+  const fuente = new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' });
+  const { img, url } = await decodificarConImagen(fuente).catch(() => { throw new Error('No pudimos leer ese SVG. Expórtalo como PNG y vuelve a subirlo.'); });
+  try {
+    return await aArchivo(img, w, h, 'image/png');
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+};
+
+const NO_SE_LEE = 'No pudimos leer esa imagen. Prueba con un PNG o JPG.';
+
+/**
+ * La imagen lista para usar: { img, url, archivo } (archivo puede cambiar: un
+ * SVG o un formato raro pasan a PNG/JPG). Si el navegador no la abre con
+ * <img>, se intenta con createImageBitmap y se pasa a PNG.
+ */
+const decodificar = async (archivo) => {
+  if (!archivo.size) {
+    throw new Error('No pudimos abrir ese archivo. Si está solo en la nube (Google Fotos, Drive), descárgalo al dispositivo y vuelve a elegirlo.');
+  }
+  const formato = await leerFormato(archivo);
+  let fuente = archivo;
+  if (formato === 'svg' || /svg/i.test(archivo.type)) {
+    fuente = await svgAPng(archivo);
+  } else if (!formato && !/^image\//i.test(archivo.type || '')) {
+    throw new Error('Sube una imagen PNG, JPG, WebP o SVG.');
+  }
+  try {
+    const { img, url } = await decodificarConImagen(fuente);
+    return { img, url, archivo: fuente };
+  } catch { /* se intenta de otra forma */ }
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const mapa = await createImageBitmap(fuente);
+      const png = await aArchivo(mapa, mapa.width, mapa.height, 'image/png');
+      mapa.close?.();
+      const { img, url } = await decodificarConImagen(png);
+      return { img, url, archivo: png };
+    } catch { /* tampoco */ }
+  }
+  if (formato === 'heic') {
+    throw new Error('Esa foto está en formato HEIC y no la podemos leer. Guárdala como JPG (o en la cámara elige JPG en vez de "Alta eficiencia") y vuelve a subirla.');
+  }
+  if (formato === 'gif' || formato === 'avif') throw new Error(`No pudimos leer esa imagen ${formato.toUpperCase()}. Prueba con un PNG o JPG.`);
+  console.warn('[Crear] No se pudo leer la imagen:', { nombre: archivo.name, tipo: archivo.type, tamano: archivo.size, formato });
+  throw new Error(NO_SE_LEE);
+};
 
 /**
  * Caja (en píxeles de la imagen) que contiene todo lo que no es transparente,
@@ -102,20 +205,27 @@ export const recortarImagen = async (fuente, { x, y, w, h }) => {
  * imagen ocupa en la prenda solo lo que se ve). Devuelve el archivo a subir,
  * una URL local para mostrarla ya y su tamaño.
  */
-export const prepararImagenCliente = async (archivo) => {
-  if (!archivo || !/^image\/(png|jpe?g|webp)$/i.test(archivo.type)) {
-    throw new Error('Sube una imagen PNG, JPG o WebP.');
-  }
-  if (archivo.size > TAMANO_MAXIMO_MB * 1024 * 1024) {
+export const prepararImagenCliente = async (original) => {
+  if (!original) throw new Error('Sube una imagen PNG, JPG, WebP o SVG.');
+  if (original.size > TAMANO_MAXIMO_MB * 1024 * 1024) {
     throw new Error(`La imagen pesa más de ${TAMANO_MAXIMO_MB} MB.`);
   }
-  const { img, url } = await decodificar(archivo);
+  const { img, url, archivo } = await decodificar(original);
   const ancho = img.naturalWidth;
   const alto = img.naturalHeight;
-  const conTransparencia = archivo.type === 'image/png' || archivo.type === 'image/webp';
+  // El tipo de verdad (por sus bytes): de eso depende si puede tener transparencia.
+  const formato = archivo === original ? await leerFormato(archivo) : 'png';
+  const conTransparencia = formato !== 'jpg';
+  // Solo PNG, JPG y WebP se suben tal cual; lo demás (GIF, AVIF…) pasa a PNG.
+  const subeTalCual = formato === 'png' || formato === 'jpg' || formato === 'webp';
+  const tipoReal = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' }[formato];
   const escala = Math.min(1, LADO_MAXIMO / Math.max(ancho, alto));
   const caja = conTransparencia ? bordesVisibles(img) : null;
-  if (escala === 1 && !caja) return { blob: archivo, urlLocal: url, ancho, alto };
+  if (escala === 1 && !caja && subeTalCual) {
+    // Con el tipo correcto (en la app el teléfono puede no darlo): así se guarda con su extensión.
+    const blob = archivo.type === tipoReal ? archivo : new Blob([archivo], { type: tipoReal });
+    return { blob, urlLocal: url, ancho, alto };
+  }
 
   const origen = caja || { x: 0, y: 0, w: ancho, h: alto };
   const reduccion = Math.min(1, LADO_MAXIMO / Math.max(origen.w, origen.h));

@@ -3564,7 +3564,8 @@ const EstudioDeTienda = () => {
               />
             )}
           </div>
-          <input ref={inputArchivoRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={alElegirArchivo} />
+          {/* Cualquier imagen: prepararImagenCliente mira el formato de verdad y avisa claro si no sirve (en Android el tipo del archivo no siempre llega). */}
+          <input ref={inputArchivoRef} type="file" accept="image/*,.svg" hidden onChange={alElegirArchivo} />
         </>
       )}
       compra={(
