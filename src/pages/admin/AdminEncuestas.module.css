@@ -331,3 +331,26 @@
 .verRespuestas:hover {
   background: rgba(139, 92, 246, 0.08);
 }
+
+/* Encuesta corta: nota de una pregunta que no se hace y nota del panel. */
+.notaCampo {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.notaPanel {
+  margin: -0.25rem 0 1rem;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+/* Opciones de la hoja de cada persona (presupuesto, Conjunto familia). */
+.checkPersona {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}

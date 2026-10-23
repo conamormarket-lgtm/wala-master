@@ -3,6 +3,7 @@ import { Plus, Trash2, Camera } from 'lucide-react';
 import Boton from '../Boton';
 import { Aviso, HojaInferior } from '../Feedback';
 import { Campo, Interruptor, Casilla } from '../Formulario';
+import { Chip } from '../Etiquetas';
 import { CampoFecha } from '../Fecha';
 import { Avatar } from './Avatar';
 import { RecortarFoto } from './RecortarFoto';
@@ -60,7 +61,7 @@ const preguntasFamilia = (genero) => [
 ];
 
 /** Estado y partes (cuerpo y pie) del formulario de una persona, para la hoja. */
-function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, onSubirFoto, relacionFija = false, familia = false, textoGuardar = 'Guardar' }) {
+function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, onSubirFoto, relacionFija = false, familia = false, presupuesto = true, gustosEnBotones = false, textoGuardar = 'Guardar' }) {
   const [p, setP] = useState(() => ({
     nombre: '', genero: '', relacion: 'otros', presupuesto: '', foto: null, gustos: {}, gustosApagados: {}, familia: { activo: false },
     ...inicial,
@@ -71,6 +72,48 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
   const [subiendo, setSubiendo] = useState(false);
   const poner = (campo) => (e) => setP((x) => ({ ...x, [campo]: e.target.value }));
   const ponerEvento = (i, campo, valor) => setP((x) => ({ ...x, eventos: x.eventos.map((e, k) => (k === i ? { ...e, [campo]: valor } : e)) }));
+  // Apagar un gusto no borra lo respondido: queda aparte y vuelve al prenderlo.
+  const alternarGusto = (id, v) => setP((x) => {
+    const gustos = { ...x.gustos };
+    const apagados = { ...x.gustosApagados };
+    if (v) { gustos[id] = gustos[id] || apagados[id] || {}; delete apagados[id]; } else { if (gustos[id] && Object.keys(gustos[id]).length) apagados[id] = gustos[id]; delete gustos[id]; }
+    return { ...x, gustos, gustosApagados: apagados };
+  });
+  const bloqueFamilia = familia && (
+    <div className={s.gusto}>
+      <Interruptor
+        activo={Boolean(p.familia?.activo)}
+        etiqueta="Conjunto familia"
+        descripcion="Regalos para compartir en casa."
+        onChange={(v) => setP((x) => ({ ...x, familia: { ...x.familia, activo: v } }))}
+      />
+      {p.familia?.activo && (
+        <div className={s.casillas}>
+          {preguntasFamilia(p.genero).map(([clave, texto]) => (
+            <Casilla
+              key={clave}
+              etiqueta={texto}
+              activo={Boolean(p.familia?.[clave])}
+              onChange={(v) => setP((x) => ({ ...x, familia: { ...x.familia, [clave]: v } }))}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+  const preguntasGusto = (c) => (c.campos || []).map((campo) => (
+    <Campo
+      key={campo.id}
+      etiqueta={campo.etiqueta}
+      opciones={campo.opciones
+        ? [{ valor: '', texto: 'Elige…', deshabilitada: true }, ...campo.opciones.map((o) => ({ valor: o, texto: o }))]
+        : (campo.sugerencias || []).map((o) => ({ valor: o, texto: o }))}
+      creable={!campo.opciones}
+      placeholder={campo.opciones ? undefined : 'Escribe o elige una sugerencia'}
+      value={p.gustos[c.id]?.[campo.id] || ''}
+      onChange={(e) => setP((x) => ({ ...x, gustos: { ...x.gustos, [c.id]: { ...x.gustos[c.id], [campo.id]: e.target.value } } }))}
+    />
+  ));
   const guardar = async () => {
     const msg = validarPersona(p);
     setError(msg);
@@ -158,62 +201,38 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
         {!relacionFija && (
           <Campo etiqueta="Relación" opciones={RELACIONES} value={p.relacion} onChange={poner('relacion')} ayuda="Con la relación y el género sumamos las fechas del calendario que le tocan (Día de la Madre, del Padre, de la Amistad…)." />
         )}
-        <Campo etiqueta="¿Cuánto sueles gastar en su regalo?" opciones={PRESUPUESTOS} value={p.presupuesto} onChange={poner('presupuesto')} ayuda="Para que las ideas entren en tu presupuesto." />
+        {presupuesto && (
+          <Campo etiqueta="¿Cuánto sueles gastar en su regalo?" opciones={PRESUPUESTOS} value={p.presupuesto} onChange={poner('presupuesto')} ayuda="Para que las ideas entren en tu presupuesto." />
+        )}
 
-        {(conjuntos.length > 0 || familia) && (
+        {/* Encuesta corta: los gustos son botones y cada uno abre a lo más una pregunta. */}
+        {gustosEnBotones && (conjuntos.length > 0 || familia) && (
+          <fieldset className={s.grupoForm}>
+            <legend><Texto>{`¿A ${p.nombre || 'esta persona'} le gusta algo de esto?`}</Texto></legend>
+            <p className={s.ayudaGrupo}><Texto>Opcional. Con esto las ideas de regalo le atinan mejor.</Texto></p>
+            <div className={s.chipsGusto}>
+              {conjuntos.map((c) => (
+                <Chip key={c.id} activo={Boolean(p.gustos[c.id])} onClick={() => alternarGusto(c.id, !p.gustos[c.id])}>
+                  <Texto>{c.nombre}</Texto>
+                </Chip>
+              ))}
+            </div>
+            {conjuntos.filter((c) => p.gustos[c.id]).map(preguntasGusto)}
+            {bloqueFamilia}
+          </fieldset>
+        )}
+
+        {!gustosEnBotones && (conjuntos.length > 0 || familia) && (
           <fieldset className={s.grupoForm}>
             <legend><Texto>{`¿Qué le gusta a ${p.nombre || 'esta persona'}?`}</Texto></legend>
             <p className={s.ayudaGrupo}><Texto>Opcional, pero es lo que más mejora las ideas de regalo.</Texto></p>
-            {familia && (
-              <div className={s.gusto}>
-                <Interruptor
-                  activo={Boolean(p.familia?.activo)}
-                  etiqueta="Conjunto familia"
-                  descripcion="Regalos para compartir en casa."
-                  onChange={(v) => setP((x) => ({ ...x, familia: { ...x.familia, activo: v } }))}
-                />
-                {p.familia?.activo && (
-                  <div className={s.casillas}>
-                    {preguntasFamilia(p.genero).map(([clave, texto]) => (
-                      <Casilla
-                        key={clave}
-                        etiqueta={texto}
-                        activo={Boolean(p.familia?.[clave])}
-                        onChange={(v) => setP((x) => ({ ...x, familia: { ...x.familia, [clave]: v } }))}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            {bloqueFamilia}
             {conjuntos.map((c) => {
               const activo = Boolean(p.gustos[c.id]);
               return (
                 <div key={c.id} className={s.gusto}>
-                  <Interruptor
-                    activo={activo}
-                    etiqueta={c.nombre}
-                    onChange={(v) => setP((x) => {
-                      // Apagar no borra lo respondido: queda aparte y vuelve al prenderlo.
-                      const gustos = { ...x.gustos };
-                      const apagados = { ...x.gustosApagados };
-                      if (v) { gustos[c.id] = gustos[c.id] || apagados[c.id] || {}; delete apagados[c.id]; } else { if (gustos[c.id] && Object.keys(gustos[c.id]).length) apagados[c.id] = gustos[c.id]; delete gustos[c.id]; }
-                      return { ...x, gustos, gustosApagados: apagados };
-                    })}
-                  />
-                  {activo && (c.campos || []).map((campo) => (
-                    <Campo
-                      key={campo.id}
-                      etiqueta={campo.etiqueta}
-                      opciones={campo.opciones
-                        ? [{ valor: '', texto: 'Elige…', deshabilitada: true }, ...campo.opciones.map((o) => ({ valor: o, texto: o }))]
-                        : (campo.sugerencias || []).map((o) => ({ valor: o, texto: o }))}
-                      creable={!campo.opciones}
-                      placeholder={campo.opciones ? undefined : 'Escribe o elige una sugerencia'}
-                      value={p.gustos[c.id]?.[campo.id] || ''}
-                      onChange={(e) => setP((x) => ({ ...x, gustos: { ...x.gustos, [c.id]: { ...x.gustos[c.id], [campo.id]: e.target.value } } }))}
-                    />
-                  ))}
+                  <Interruptor activo={activo} etiqueta={c.nombre} onChange={(v) => alternarGusto(c.id, v)} />
+                  {activo && preguntasGusto(c)}
                 </div>
               );
             })}
@@ -271,6 +290,9 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
  *  - onGuardar(persona): promesa · onSubirFoto(blob) → url
  *  - relacionFija: sin el campo Relación (la encuesta ya la sabe)
  *  - familia: con el "Conjunto familia" (sus tres casillas) · titulo, textoGuardar
+ *  - presupuesto: con la pregunta del presupuesto (la encuesta corta va sin ella)
+ *  - gustosEnBotones: los gustos como botones en una fila (encuesta corta) en
+ *    vez de un interruptor por conjunto
  */
 export function HojaPersona({ persona, abierta, onCerrar, titulo, ...resto }) {
   const formulario = useFormularioPersona({ inicial: persona, onCerrar, ...resto });

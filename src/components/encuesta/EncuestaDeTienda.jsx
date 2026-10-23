@@ -171,6 +171,7 @@ export default function EncuestaDeTienda() {
         config={config}
         conjuntos={conjuntos}
         inicial={inicial}
+        nombreCuenta={userProfile?.displayName || user?.displayName || ''}
         recompensa={{ base: 15, porFecha: 5, tope: 50 }}
         sesion={tieneCuenta(user)}
         completada={Boolean(userProfile?.hasCompletedSurvey)}

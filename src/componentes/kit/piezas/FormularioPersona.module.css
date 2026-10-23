@@ -200,3 +200,10 @@
   gap: 0.1rem;
   padding-left: 0.25rem;
 }
+
+/* Gustos de la encuesta corta: los botones en una fila que salta de línea. */
+.chipsGusto {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}

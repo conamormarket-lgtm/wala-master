@@ -58,6 +58,11 @@ const AdminEncuestas = () => {
     setConfig({ ...config, basicDataPanel: { ...config.basicDataPanel, [field]: value } });
   };
 
+  // Hoja de cada persona en la encuesta: presupuesto y Conjunto familia.
+  const handlePersonPanelChange = (field, value) => {
+    setConfig({ ...config, personPanel: { ...config.personPanel, [field]: value } });
+  };
+
   const handleBrandsPanelChange = (field, value) => {
     setConfig({ ...config, brandsPanel: { ...config.brandsPanel, [field]: value } });
   };
@@ -194,7 +199,23 @@ const AdminEncuestas = () => {
             <option value="no">No</option>
           </select>
         </div>
+        <div className={styles.fieldGroup}>
+          <label>¿Se pregunta en la encuesta?</label>
+          <select
+            className={styles.input}
+            value={field.enEncuesta === false ? 'no' : 'yes'}
+            onChange={e => onUpdate(index, 'enEncuesta', e.target.value === 'yes')}
+          >
+            <option value="yes">Sí</option>
+            <option value="no">No</option>
+          </select>
+        </div>
       </div>
+      {field.enEncuesta === false && (
+        <p className={styles.notaCampo}>
+          No sale en la encuesta. Se guarda para ver las respuestas de antes (y, si es de un interés, sigue en Fechas importantes).
+        </p>
+      )}
       {field.type === 'select' && (
         <div className={styles.fieldGroup}>
           <label>Opciones (separadas por comas)</label>
@@ -252,7 +273,7 @@ const AdminEncuestas = () => {
             <input type="text" className={styles.input} value={config.introPanel.subtitle} onChange={e => handleIntroChange('subtitle', e.target.value)} />
           </div>
           <div className={styles.fieldGroup}>
-            <label>Descripción / Mensaje de enganche</label>
+            <label>Descripción / Mensaje de enganche <small>(sale debajo del premio, en la portada)</small></label>
             <textarea className={styles.textarea} value={config.introPanel.description} onChange={e => handleIntroChange('description', e.target.value)} />
           </div>
           <div className={styles.row}>
@@ -283,6 +304,10 @@ const AdminEncuestas = () => {
           </div>
 
           <h3>Preguntas Configurables</h3>
+          <p className={styles.notaPanel}>
+            El nombre y el cumpleaños se toman de la cuenta: la encuesta solo se los pregunta a quien no
+            los tiene. Si no queda nada que preguntar, este paso se salta.
+          </p>
           <div className={styles.fieldsList}>
             {config.basicDataPanel.fields.map((field, index) => renderFieldEditor(field, index, updateBasicField, removeBasicField))}
           </div>
@@ -296,8 +321,24 @@ const AdminEncuestas = () => {
         <div className={styles.panel}>
           <h2>Configuración de Intereses (Marcas)</h2>
           <p style={{ color: '#64748b', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-            Aquí puedes crear categorías independientes (ej. Deportes, Geek, Familia). El usuario podrá seleccionarlas como "Pills" y por cada una que seleccione, se le harán las preguntas que configures debajo.
+            Cada categoría sale como un botón en la hoja de cada persona ("¿Le gusta algo de esto?").
+            Al tocarlo, se le hacen las preguntas de esa categoría que tengan "¿Se pregunta en la encuesta?" en Sí.
+            Para que la encuesta sea corta, deja una sola pregunta por categoría o ninguna (si la categoría ya
+            está ligada a categorías de la tienda, marcarla basta).
           </p>
+
+          <div className={styles.ligarCategorias} style={{ marginBottom: '1.5rem' }}>
+            <h4>En la hoja de cada persona (solo en la encuesta)</h4>
+            <p>En Fechas importantes estas preguntas siempre salen.</p>
+            <label className={styles.checkPersona}>
+              <input type="checkbox" checked={Boolean(config.personPanel?.budget)} onChange={e => handlePersonPanelChange('budget', e.target.checked)} />
+              Preguntar cuánto suele gastar en su regalo (presupuesto)
+            </label>
+            <label className={styles.checkPersona}>
+              <input type="checkbox" checked={Boolean(config.personPanel?.familySet)} onChange={e => handlePersonPanelChange('familySet', e.target.checked)} />
+              Mostrar el "Conjunto familia" (regalos para compartir en casa)
+            </label>
+          </div>
 
           <div className={styles.row}>
             <div className={styles.fieldGroup}>

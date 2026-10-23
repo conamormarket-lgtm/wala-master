@@ -9,13 +9,15 @@ export const DEFAULT_SURVEY_CONFIG = {
   introPanel: {
     title: '¡Queremos conocerte mejor!',
     subtitle: 'Tus respuestas nos ayudarán a darte una experiencia increíble.',
-    description: 'Completa esta encuesta para recibir recomendaciones y regalos exclusivos. Es súper rápido.',
+    description: 'Completa esta encuesta para recibir recomendaciones y regalos a la medida de cada persona. Toma unos 2 minutos.',
     continueButtonText: 'Empezar Encuesta',
     skipButtonText: 'No, gracias',
     imageUrl: '' // Opcional, para subir una imagen atractiva
   },
   
-  // Panel 1: Datos Básicos
+  // Panel 1: Datos Básicos. En cada pregunta, enEncuesta: false la guarda
+  // (sale en las respuestas de antes) pero la encuesta ya no la hace. El
+  // nombre y el cumpleaños solo se preguntan a quien no los tiene en su cuenta.
   basicDataPanel: {
     title: 'Un poco sobre ti',
     subtitle: 'Queremos saber qué te gusta',
@@ -29,6 +31,7 @@ export const DEFAULT_SURVEY_CONFIG = {
       },
       {
         id: 'familia',
+        enEncuesta: false,
         label: '¿Tienes familia?',
         type: 'select',
         required: false,
@@ -36,6 +39,7 @@ export const DEFAULT_SURVEY_CONFIG = {
       },
       {
         id: 'frecuencia_ropa',
+        enEncuesta: false,
         label: '¿Con qué frecuencia sueles comprar ropa?',
         type: 'select',
         required: false,
@@ -43,6 +47,7 @@ export const DEFAULT_SURVEY_CONFIG = {
       },
       {
         id: 'preferencia_compra',
+        enEncuesta: false,
         label: '¿Dónde prefieres comprar?',
         type: 'select',
         required: false,
@@ -51,17 +56,19 @@ export const DEFAULT_SURVEY_CONFIG = {
     ]
   },
 
-  // Panel 2: Selección de Marcas / Intereses
+  // Panel 2: Intereses: botones en la hoja de cada persona. Cada pregunta con
+  // enEncuesta: false no sale en la encuesta (en Fechas importantes sí).
   brandsPanel: {
     title: 'Tus Intereses',
     subtitle: 'Selecciona las categorías que más te gusten para personalizar tu experiencia',
     categories: [
       {
         id: 'cat_deportes',
-        name: 'Deportes',
+        name: 'Fútbol',
         fields: [
           {
             id: 'dep_q1',
+            enEncuesta: false,
             label: '¿Cuál es su deporte favorito?',
             type: 'text',
             required: false,
@@ -76,6 +83,7 @@ export const DEFAULT_SURVEY_CONFIG = {
           },
           {
             id: 'dep_q3',
+            enEncuesta: false,
             label: '¿Jugador o jugadores favoritos?',
             type: 'text',
             required: false,
@@ -85,17 +93,18 @@ export const DEFAULT_SURVEY_CONFIG = {
       },
       {
         id: 'cat_geek',
-        name: 'Geek',
+        name: 'Anime / Geek',
         fields: [
           {
             id: 'geek_q1',
-            label: '¿Cuál es su anime o franquicia favorita?',
+            label: '¿Qué anime o personaje le gusta?',
             type: 'text',
             required: false,
             options: []
           },
           {
             id: 'geek_q2',
+            enEncuesta: false,
             label: '¿Quién es su personaje favorito?',
             type: 'text',
             required: false,
@@ -104,6 +113,13 @@ export const DEFAULT_SURVEY_CONFIG = {
         ]
       }
     ]
+  },
+
+  // Hoja de cada persona en la encuesta: qué más se pregunta (en Fechas
+  // importantes siempre salen).
+  personPanel: {
+    budget: false,
+    familySet: false
   },
 
   // Panel Final: Completion

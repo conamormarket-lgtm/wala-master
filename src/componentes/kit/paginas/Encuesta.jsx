@@ -47,6 +47,7 @@ export const CONFIG_ENCUESTA = {
   portada: {
     titulo: '¡Queremos conocerte mejor!',
     subtitulo: 'Tus respuestas nos ayudarán a darte una experiencia increíble.',
+    texto: 'Completa esta encuesta para recibir recomendaciones y regalos a la medida de cada persona. Toma unos 2 minutos.',
     textoEmpezar: 'Empezar encuesta',
     textoOmitir: 'No, gracias',
   },
@@ -116,12 +117,20 @@ function Acciones({ children, centro = false }) {
  *  - onSubirFoto(blob) → url · onAgregarIdea(idea)
  *  - onEmpezar(): al dejar la portada (la tienda pide ahí lo que necesitan
  *    las personas y las ideas: en la portada no hace falta el catálogo)
+ *  - nombreCuenta: el nombre de la cuenta. Con él no se pregunta "¿Cómo te
+ *    llamas?" (se guarda igual en las respuestas). El cumpleaños solo se
+ *    pregunta si no viene en inicial; sin nada que preguntar, el paso
+ *    "Un poco sobre ti" se salta.
+ *  - Lo que decide el admin (encuestaDesdeConfig): las preguntas con
+ *    enEncuesta: false no salen (lo respondido antes se conserva);
+ *    config.persona: { presupuesto, familia } en la hoja de cada persona;
+ *    config.portada.texto: el texto de la portada.
  */
 export function PaginaEncuesta({
   config = CONFIG_ENCUESTA, conjuntos = [], inicial = {}, recompensa = { base: 15, porFecha: 5, tope: 50 },
   sesion = true, completada = false, cargando = false,
   urlLogin = '/login', urlRegistro = '/registro', urlFechas = '/cuenta/fechas-importantes', urlTienda = '/',
-  onOmitir, onTerminar, onSubirFoto, onAgregarIdea, onEmpezar,
+  onOmitir, onTerminar, onSubirFoto, onAgregarIdea, onEmpezar, nombreCuenta = '',
 }) {
   const portada = unir(CONFIG_ENCUESTA.portada, config.portada);
   const sobreTi = unir(CONFIG_ENCUESTA.sobreTi, config.sobreTi);
@@ -131,7 +140,18 @@ export function PaginaEncuesta({
   const [paso, setPaso] = useState(0);
   // Hacia dónde entra el paso nuevo (la animación de entrada).
   const [sentido, setSentido] = useState('adelante');
-  const [respuestas, setRespuestas] = useState(() => ({ ...inicial.respuestas }));
+  const [respuestas, setRespuestas] = useState(() => ({
+    ...inicial.respuestas,
+    ...(String(nombreCuenta).trim() && { nombres: String(nombreCuenta).trim() }),
+  }));
+  // Qué se pregunta en "Un poco sobre ti" se decide al abrir: no cambia a mitad.
+  const [pedir] = useState(() => ({ nombre: !String(nombreCuenta).trim(), cumple: !inicial.cumpleanos }));
+  const camposSobreTi = (sobreTi.campos || [])
+    .filter((c) => c.enEncuesta !== false && (c.id !== 'nombres' || pedir.nombre));
+  // Cada gusto con solo las preguntas que el admin deja en la encuesta.
+  const gustos = conjuntos.map((c) => ({ ...c, campos: (c.campos || []).filter((f) => f.enEncuesta !== false) }));
+  const conSobreTi = camposSobreTi.length > 0 || pedir.cumple;
+  const totalPasos = conSobreTi ? 3 : 2;
   const [cumpleanos, setCumpleanos] = useState(inicial.cumpleanos || '');
   const [grupos, setGrupos] = useState(() => inicial.grupos || []);
   const [personas, setPersonas] = useState(() => inicial.personas || []);
@@ -145,7 +165,7 @@ export function PaginaEncuesta({
   const [hoja, setHoja] = useState({ abierta: false, persona: null, clave: 0 });
   const [agregadas, setAgregadas] = useState([]);
   const t = {
-    progreso: useTexto(paso === 4 ? '¡Listo!' : `Paso ${Math.min(Math.max(paso, 1), 3)} de 3`),
+    progreso: useTexto(paso === 4 ? '¡Listo!' : `Paso ${Math.min(Math.max(conSobreTi ? paso : paso - 1, 1), totalPasos)} de ${totalPasos}`),
     // El enlace va dentro de la frase: se busca ya traducido en la frase traducida.
     fechas: useTexto('Fechas importantes'),
   };
@@ -196,7 +216,7 @@ export function PaginaEncuesta({
 
   const seguirSobreTi = () => {
     const faltan = {};
-    (sobreTi.campos || []).forEach((c) => { if (c.requerido && !String(respuestas[c.id] || '').trim()) faltan[c.id] = 'Completa este dato para seguir.'; });
+    camposSobreTi.forEach((c) => { if (c.requerido && !String(respuestas[c.id] || '').trim()) faltan[c.id] = 'Completa este dato para seguir.'; });
     setErrores(faltan);
     if (Object.keys(faltan).length) return;
     ir(2);
@@ -298,19 +318,19 @@ export function PaginaEncuesta({
             </TextoResaltado>
           </p>
         </div>
-        <p className={s.texto}><Texto>Completa esta encuesta para recibir recomendaciones y regalos a la medida de cada persona. Es muy rápido: 3 pasos.</Texto></p>
+        <p className={s.texto}><Texto>{portada.texto}</Texto></p>
         <Acciones centro>
           <Boton variante="fantasma" onClick={onOmitir}><Texto>{portada.textoOmitir}</Texto></Boton>
-          <Boton iconoFin={<ArrowRight aria-hidden="true" />} onClick={() => ir(1)}><Texto>{portada.textoEmpezar}</Texto></Boton>
+          <Boton iconoFin={<ArrowRight aria-hidden="true" />} onClick={() => ir(conSobreTi ? 1 : 2)}><Texto>{portada.textoEmpezar}</Texto></Boton>
         </Acciones>
       </>
     );
   } else if (paso === 1) {
     cuerpo = (
       <>
-        <CabezaPaso Icono={UserRound} titulo={sobreTi.titulo} subtitulo={sobreTi.subtitulo} />
+        <CabezaPaso Icono={UserRound} titulo={sobreTi.titulo} subtitulo={camposSobreTi.length ? sobreTi.subtitulo : 'Así te saludamos en tu día.'} />
         <div className={s.formulario}>
-          {(sobreTi.campos || []).map((c) => (
+          {camposSobreTi.map((c) => (
             <PreguntaSobreTi
               key={c.id}
               campo={c}
@@ -319,15 +339,17 @@ export function PaginaEncuesta({
               onCambiar={(v) => { setRespuestas((r) => ({ ...r, [c.id]: v })); setErrores((x) => ({ ...x, [c.id]: undefined })); }}
             />
           ))}
-          <CampoFecha
-            id="encuesta-cumpleanos"
-            etiqueta="Tu cumpleaños"
-            ayuda="Opcional."
-            valor={cumpleanos}
-            onCambiar={setCumpleanos}
-            vistaInicial="anios"
-            max={new Date().toISOString().slice(0, 10)}
-          />
+          {pedir.cumple && (
+            <CampoFecha
+              id="encuesta-cumpleanos"
+              etiqueta="Tu cumpleaños"
+              ayuda="Opcional."
+              valor={cumpleanos}
+              onCambiar={setCumpleanos}
+              vistaInicial="anios"
+              max={new Date().toISOString().slice(0, 10)}
+            />
+          )}
         </div>
         <Acciones>
           <Boton variante="fantasma" icono={<ArrowLeft aria-hidden="true" />} onClick={() => ir(0, true)}><Texto>Atrás</Texto></Boton>
@@ -341,7 +363,7 @@ export function PaginaEncuesta({
         <CabezaPaso Icono={Users} titulo="¿A quiénes sueles regalar?" subtitulo="Elige todos los que quieras. Después nos cuentas de cada uno." />
         <ElegirVarios etiqueta="A quiénes sueles regalar" opciones={GRUPOS_ENCUESTA} valores={grupos} onCambiar={(v) => { setGrupos(v); setAviso(null); }} />
         <Acciones>
-          <Boton variante="fantasma" icono={<ArrowLeft aria-hidden="true" />} onClick={() => ir(1, true)}><Texto>Atrás</Texto></Boton>
+          <Boton variante="fantasma" icono={<ArrowLeft aria-hidden="true" />} onClick={() => ir(conSobreTi ? 1 : 0, true)}><Texto>Atrás</Texto></Boton>
           <Boton iconoFin={<ArrowRight aria-hidden="true" />} onClick={seguirGrupos}>
             <Texto>{orden.length ? `Continuar · ${orden.length} ${orden.length === 1 ? 'grupo' : 'grupos'}` : 'Continuar'}</Texto>
           </Boton>
@@ -453,8 +475,10 @@ export function PaginaEncuesta({
           key={hoja.clave}
           abierta={hoja.abierta}
           persona={hoja.persona}
-          conjuntos={conjuntos}
-          familia
+          conjuntos={gustos}
+          presupuesto={Boolean(config.persona?.presupuesto)}
+          familia={Boolean(config.persona?.familia)}
+          gustosEnBotones
           relacionFija
           titulo={hoja.persona?.id ? `Datos de ${hoja.persona.nombre || grupo.singular.toLowerCase()}` : `Añadir ${grupo.singular.toLowerCase()}`}
           textoGuardar={`Guardar ${grupo.unico ? 'a tu pareja' : grupo.singular.toLowerCase()}`}

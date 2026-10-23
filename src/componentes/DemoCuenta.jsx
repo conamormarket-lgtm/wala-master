@@ -234,6 +234,15 @@ const CONJUNTOS = [
     { id: 'geek_q2', etiqueta: '¿Quién es su personaje favorito?', sugerencias: ['Goku', 'Vegeta', 'Luffy', 'Zoro', 'Nezuko', 'Tanjiro', 'Itachi Uchiha', 'Kakashi', 'Gojo', 'Rengoku', 'Akaza', 'Inosuke'] },
   ] },
 ];
+// La encuesta corta, como la deja el admin: Fútbol y Anime / Geek con una
+// pregunta (enEncuesta: false en las demás); los otros gustos sin preguntas.
+const CONJUNTOS_ENCUESTA = [
+  { id: 'cat_deportes', nombre: 'Fútbol', campos: CONJUNTOS[0].campos.map((f) => ({ ...f, enEncuesta: f.id === 'dep_q2' })) },
+  { id: 'cat_geek', nombre: 'Anime / Geek', campos: CONJUNTOS[1].campos.map((f) => ({ ...f, enEncuesta: f.id === 'geek_q1', ...(f.id === 'geek_q1' && { etiqueta: '¿Qué anime o personaje le gusta?' }) })) },
+  { id: 'cat_belleza', nombre: 'Belleza y skincare', campos: [] },
+  { id: 'cat_moda', nombre: 'Moda', campos: [] },
+  { id: 'cat_accesorios', nombre: 'Accesorios', campos: [] },
+];
 const ideasDe = (fotos, desde = 0) => fotos.slice(desde, desde + 2).map((f, k) => ({
   id: `i${desde}${k}`, nombre: f.nombre, imagen: f.imagen, precio: [49.9, 34.9, 59.9][(desde + k) % 3], url: '/producto/x',
   motivo: k ? 'Le gusta el anime' : 'Entra en tu presupuesto',
@@ -598,9 +607,9 @@ export const ESTADOS_ENCUESTA = [
 /** Las preguntas de "Un poco sobre ti" por defecto (basicDataPanel). */
 const SOBRE_TI = [
   { id: 'nombres', etiqueta: '¿Cómo te llamas?', tipo: 'texto', requerido: true },
-  { id: 'familia', etiqueta: '¿Tienes familia?', tipo: 'opciones', opciones: ['Vivo solo/a', 'Vivo en pareja', 'Tengo hijos', 'Vivo con mis padres/familiares'] },
-  { id: 'frecuencia_ropa', etiqueta: '¿Con qué frecuencia sueles comprar ropa?', tipo: 'opciones', opciones: ['Cada semana', 'Al menos una vez al mes', 'Solo en ocasiones especiales o cambios de temporada', 'Casi nunca'] },
-  { id: 'preferencia_compra', etiqueta: '¿Dónde prefieres comprar?', tipo: 'opciones', opciones: ['Prefiero ir a la tienda física', 'Prefiero comprar 100% online', 'Me gustan ambas opciones'] },
+  { id: 'familia', enEncuesta: false, etiqueta: '¿Tienes familia?', tipo: 'opciones', opciones: ['Vivo solo/a', 'Vivo en pareja', 'Tengo hijos', 'Vivo con mis padres/familiares'] },
+  { id: 'frecuencia_ropa', enEncuesta: false, etiqueta: '¿Con qué frecuencia sueles comprar ropa?', tipo: 'opciones', opciones: ['Cada semana', 'Al menos una vez al mes', 'Solo en ocasiones especiales o cambios de temporada', 'Casi nunca'] },
+  { id: 'preferencia_compra', enEncuesta: false, etiqueta: '¿Dónde prefieres comprar?', tipo: 'opciones', opciones: ['Prefiero ir a la tienda física', 'Prefiero comprar 100% online', 'Me gustan ambas opciones'] },
 ];
 
 /**
@@ -614,7 +623,8 @@ export function EncuestaDemo({ sesion, usuario, estados = [], fotos = [], onMone
     <PaginaEncuesta
       key={estados.join('-')}
       config={{ sobreTi: { campos: SOBRE_TI } }}
-      conjuntos={CONJUNTOS}
+      conjuntos={CONJUNTOS_ENCUESTA}
+      nombreCuenta={usuario?.nombre || ''}
       sesion={sesion}
       completada={estados.includes('completada')}
       cargando={estados.includes('cargando')}
