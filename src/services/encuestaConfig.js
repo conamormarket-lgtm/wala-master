@@ -115,8 +115,8 @@ export const DEFAULT_SURVEY_CONFIG = {
     ]
   },
 
-  // Hoja de cada persona en la encuesta: qué más se pregunta (en Fechas
-  // importantes siempre salen).
+  // Hoja de cada persona: budget = presupuesto (encuesta y Fechas
+  // importantes); familySet = Conjunto familia (solo encuesta).
   personPanel: {
     budget: false,
     familySet: false

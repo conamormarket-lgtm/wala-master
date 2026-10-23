@@ -328,15 +328,15 @@ const AdminEncuestas = () => {
           </p>
 
           <div className={styles.ligarCategorias} style={{ marginBottom: '1.5rem' }}>
-            <h4>En la hoja de cada persona (solo en la encuesta)</h4>
-            <p>En Fechas importantes estas preguntas siempre salen.</p>
+            <h4>En la hoja de cada persona</h4>
+            <p>El presupuesto vale para la encuesta y para Fechas importantes; el Conjunto familia, solo para la encuesta.</p>
             <label className={styles.checkPersona}>
               <input type="checkbox" checked={Boolean(config.personPanel?.budget)} onChange={e => handlePersonPanelChange('budget', e.target.checked)} />
-              Preguntar cuánto suele gastar en su regalo (presupuesto)
+              Preguntar cuánto suele gastar en su regalo (presupuesto) · encuesta y Fechas importantes
             </label>
             <label className={styles.checkPersona}>
               <input type="checkbox" checked={Boolean(config.personPanel?.familySet)} onChange={e => handlePersonPanelChange('familySet', e.target.checked)} />
-              Mostrar el "Conjunto familia" (regalos para compartir en casa)
+              Mostrar el "Conjunto familia" (regalos para compartir en casa) · solo encuesta
             </label>
           </div>
 

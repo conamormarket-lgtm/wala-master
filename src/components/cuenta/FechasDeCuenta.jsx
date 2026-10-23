@@ -68,7 +68,7 @@ export default function FechasDeCuenta() {
   // buscador de regalos, así que se lee una sola vez.
   const { data: catalogo, isLoading: cargandoCatalogo } = useProducts();
   const porId = useMemo(() => new Map((catalogo || []).map((p) => [String(p.id), p])), [catalogo]);
-  const { recomendar, sugerenciasCampo, conjuntos, cargando: cargandoIdeas } = useGiftCatalog();
+  const { recomendar, sugerenciasCampo, conjuntos, pedirPresupuesto, cargando: cargandoIdeas } = useGiftCatalog();
 
   const { data: paquetesGuardados = [] } = useQuery({
     queryKey: ['paquetes-sugeridos', uid],
@@ -253,6 +253,7 @@ export default function FechasDeCuenta() {
         encuesta={userProfile && !userProfile.hasCompletedSurvey ? { monedas: 15, url: '/encuesta-suscripcion' } : undefined}
         ganadas={ganadas}
         conjuntos={conjuntosKit}
+        presupuesto={pedirPresupuesto}
         cargando={!userProfile}
         aviso={textoDiasAviso(diasAviso || RECORDATORIO_PERSONAL_DEFAULT)}
         onGuardar={guardar}

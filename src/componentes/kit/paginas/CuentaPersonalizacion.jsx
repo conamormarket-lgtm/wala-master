@@ -239,6 +239,7 @@ export function PaginaListaDeseos({
  *  - festivas: fechas que se acercan, props de AvisoFestiva
  *  - encuesta: { monedas, url } banner del perfil de regalos (sin encuesta hecha)
  *  - ganadas: monedas que acaba de ganar (aviso) · conjuntos: gustos que se pueden marcar
+ *  - presupuesto: con la pregunta del presupuesto en el formulario (casilla del admin de Encuestas)
  *  - aviso: cuándo avisamos ("una semana antes y un día antes", del admin)
  *  - onGuardar(persona): promesa (nueva sin id) · onEliminar(id) · onSubirFoto(archivo) → url
  *  - onAgregarIdea(idea) · onAgregarPaquete(idPersona, idPaquete) · onAgregarIdeas(id)
@@ -246,7 +247,7 @@ export function PaginaListaDeseos({
  *  - urlTienda · hoy
  */
 export function PaginaFechas({
-  personas = [], festivas = [], encuesta, ganadas = 0, conjuntos = [], cargando = false, aviso = 'una semana antes y un día antes',
+  personas = [], festivas = [], encuesta, ganadas = 0, conjuntos = [], presupuesto = true, cargando = false, aviso = 'una semana antes y un día antes',
   onGuardar, onEliminar, onSubirFoto, onAgregarIdea, onAgregarPaquete, onAgregarIdeas, onElegir, urlTienda = '/tienda', hoy,
 }) {
   // La hoja se queda montada al cerrarse (para que baje animada); cada vez
@@ -324,6 +325,7 @@ export function PaginaFechas({
           abierta={hoja.abierta}
           persona={hoja.persona}
           conjuntos={conjuntos}
+          presupuesto={presupuesto}
           onSubirFoto={onSubirFoto}
           onGuardar={onGuardar}
           onCerrar={() => setHoja((h) => ({ ...h, abierta: false }))}

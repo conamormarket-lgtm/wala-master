@@ -550,6 +550,7 @@ export function CuentaDemo({
         encuesta={{ monedas: 15, url: '/encuesta-suscripcion' }}
         ganadas={ganadas}
         conjuntos={CONJUNTOS}
+        presupuesto={false}
         cargando={cargando}
         onGuardar={async (p) => {
           await espera(700);

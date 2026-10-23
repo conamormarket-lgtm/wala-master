@@ -42,6 +42,8 @@ export function useGiftCatalog({ activo = true } = {}) {
         },
         conjuntoCategorias,
         conjuntos,
+        // Casilla del admin de Encuestas: el presupuesto de cada persona.
+        pedirPresupuesto: Boolean(config.data && config.data.personPanel && config.data.personPanel.budget),
       };
     },
     staleTime: 1000 * 60 * 10,
@@ -83,6 +85,7 @@ export function useGiftCatalog({ activo = true } = {}) {
     // Conjuntos de la encuesta (Deportes, Geek…) con sus preguntas, para
     // preguntar gustos también desde "Fechas importantes".
     conjuntos: extra?.conjuntos || [],
+    pedirPresupuesto: Boolean(extra?.pedirPresupuesto),
     cargando: cargandoProductos || cargandoExtra,
   };
 }
