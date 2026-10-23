@@ -385,3 +385,49 @@
 :global([data-theme='dark']) .errorPregunta {
   color: #fca5a5;
 }
+
+/* Paso final de WhatsApp: "Sí, quiero" y "No, gracias", uno debajo del otro. */
+.opcionesWhatsapp {
+  display: grid;
+  gap: 0.6rem;
+  max-width: 360px;
+  width: 100%;
+  margin: 0.5rem auto 0;
+}
+
+/* ── Encuesta de la entrega (EncuestaEntrega.jsx) ── */
+.estrellasEntrega {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.notaEntrega {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.elegirVariosEntrega {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.etiquetaEntrega {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.etiquetaEntrega small {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.chipsEntrega {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}

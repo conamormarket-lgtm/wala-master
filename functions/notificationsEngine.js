@@ -11,6 +11,7 @@ const {
   avisoQueToca: avisoQueTocaEncuesta, MAX_DIAS: MAX_DIAS_ENCUESTA, DIA_MS,
 } = require("./encuestaRecordatorioLogic");
 const { puedeUsarPuente } = require("./adminAuth");
+const { configEntrega } = require("./encuestaEntregaLogic");
 const {
   avisosFestivosDeHoy, festivasDesdeDoc, recordatorioPersonalDesdeDoc, proximaFecha, armarAvisoFestivo,
 } = require("./fechasFestivasLogic");
@@ -835,9 +836,22 @@ async function avisarHitoPedido(pedido, docId, hito) {
   });
   if (!avisar) return;
 
-  const texto = textoHito(hito, codigo);
+  let texto = textoHito(hito, codigo);
   if (!texto) return;
-  const payload = { ...texto, type: "orders", link: "/cuenta/pedidos" };
+  let link = "/cuenta/pedidos";
+  // Entregado: el aviso lleva a "¿Cómo te fue con tu pedido?" (si el admin la tiene prendida).
+  if (hito === "entregado") {
+    const cfgSnap = await db.doc("tienda_encuesta_config/global").get().catch(() => null);
+    const cfg = configEntrega(cfgSnap && cfgSnap.exists ? cfgSnap.data().entregaPanel : null);
+    if (cfg.activo) {
+      link = `/opinar/${encodeURIComponent(codigo)}`;
+      texto = {
+        ...texto,
+        body: `${texto.body} ¿Cómo te fue? Cuéntanos en 30 segundos${cfg.monedas > 0 ? ` y gana ${cfg.monedas} monedas` : ""}.`,
+      };
+    }
+  }
+  const payload = { ...texto, type: "orders", link };
 
   // En la campanita siempre; push solo dentro del horario de ORDERS (para no
   // despertar a nadie a las 3 a. m. si el ERP mueve pedidos de noche).

@@ -326,6 +326,7 @@ const AdminRespuestasEncuesta = () => {
                 )}
                 {preguntas.gustos.map((g) => (
                   <article key={g.id} className={styles.card}>
+                    <p className={styles.donde}>Interés</p>
                     <h3>{g.nombre}</h3>
                     <p className={styles.nota}>{g.personas} personas lo marcaron</p>
                     {g.actuales.length === 0 && <p className={styles.nota}>Solo se marca: no tiene preguntas en la encuesta.</p>}
@@ -340,6 +341,25 @@ const AdminRespuestasEncuesta = () => {
                     ))}
                   </article>
                 ))}
+              </section>
+
+              <h2 className={styles.seccion}>Al final · Promociones por WhatsApp</h2>
+              <p className={styles.nota}>
+                Solo se le pregunta a quien no lo tiene activado; si dice que no, se le pregunta "¿Estás seguro?".
+                Incluye a quienes lo activaron o desactivaron en Mi perfil.
+              </p>
+              <section className={styles.grid}>
+                <article className={styles.card}>
+                  <h3>¿Te avisamos de promociones por WhatsApp?</h3>
+                  <Barras
+                    items={[
+                      { valor: 'Sí, quieren recibirlas', total: resumen.whatsapp.si },
+                      { valor: 'No quieren', total: resumen.whatsapp.no },
+                      { valor: 'Todavía no respondieron', total: resumen.clientes - resumen.whatsapp.si - resumen.whatsapp.no },
+                    ]}
+                    base={resumen.clientes || 1}
+                  />
+                </article>
               </section>
             </>
           ) : (

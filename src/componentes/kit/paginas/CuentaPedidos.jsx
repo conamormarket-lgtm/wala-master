@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ShoppingBag, Package, RotateCcw, IdCard, ChevronRight, MapPin, Receipt, Truck, MessageCircle, Wallet, SearchX, AlertTriangle } from 'lucide-react';
+import { ShoppingBag, Package, RotateCcw, IdCard, ChevronRight, MapPin, Receipt, Truck, MessageCircle, Wallet, SearchX, AlertTriangle, Star } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { Aviso, EstadoVacio, HojaInferior } from '../Feedback';
@@ -123,12 +123,13 @@ export function PaginaPedidos({ pedidos = [], porVerificar, cargando = false, er
  *    total, pago: el texto del pago bajo el total } }
  *  - pagos: props de PagosPedido (historial, onBoletas, onFotosEnvio, monedas…)
  *  - onPagar · whatsapp: [{ texto, url }] (sin url: el botón apagado)
+ *  - opinar: { url, monedas } "¿Cómo te fue con este pedido?" (pedido entregado)
  *  - recomendados, catalogo, onAgregar · tarjeta: la de la tienda ·
  *    onVerAbajo(): una vez, al acercarse a los recomendados (se piden ahí)
  *  - cargando · noEncontrado · urlVolver
  */
 export function PaginaDetallePedido({
-  pedido, pagos = {}, onPagar, whatsapp = [], recomendados = [], catalogo, onAgregar, tarjeta, onVerAbajo,
+  pedido, pagos = {}, onPagar, whatsapp = [], recomendados = [], catalogo, onAgregar, tarjeta, onVerAbajo, opinar,
   cargando = false, noEncontrado = false, urlVolver = '/cuenta/pedidos',
 }) {
   // El aviso del taller se abre solo, una vez por pedido.
@@ -211,6 +212,13 @@ export function PaginaDetallePedido({
               <p className={[s.pago, pedido.pago.pagado && s.pagoOk].filter(Boolean).join(' ')}><Wallet aria-hidden="true" /> <Texto>{pedido.pago.texto}</Texto></p>
             )}
           </section>
+
+          {opinar?.url && (
+            <TarjetaCuenta icono={<Star />} titulo={<Texto>¿Cómo te fue con este pedido?</Texto>}
+              subtitulo={<Texto>{`Cuéntanos en 30 segundos${opinar.monedas > 0 ? ` y gana ${opinar.monedas} monedas` : ''}.`}</Texto>}>
+              <Boton to={opinar.url} icono={<Star aria-hidden="true" />}><Texto>Calificar mi pedido</Texto></Boton>
+            </TarjetaCuenta>
+          )}
 
           {!pedido.anulado && (
             <TarjetaCuenta icono={<Truck />} titulo={<Texto>{pedido.produccion ? 'Seguimiento de producción' : 'Seguimiento general'}</Texto>}

@@ -5781,6 +5781,9 @@ exports.notifyOrderMilestoneWala = require('./notificationsEngine').notifyOrderM
 exports.cancelPromoCampaign = require('./notificationsEngine').cancelPromoCampaign;
 exports.surveyReminderEngine = require('./notificationsEngine').surveyReminderEngine;
 exports.probarAvisoAutomatico = require('./notificationsEngine').probarAvisoAutomatico;
+exports.estadoEncuestaEntrega = require('./encuestaEntrega').estadoEncuestaEntrega;
+exports.responderEncuestaEntrega = require('./encuestaEntrega').responderEncuestaEntrega;
+exports.resultadosEncuestaEntrega = require('./encuestaEntrega').resultadosEncuestaEntrega;
 
 // ── Pre-agregación analítica diaria (Fase 2, PARTE 1) ─────────────────────────
 // Cron gen2 (00:20 hora Lima) que agrega el día anterior de analytics_events +

@@ -134,6 +134,8 @@ const TerminosCondicionesPage = lazy(() => import('./pages/TerminosCondicionesPa
 const LibroReclamacionesPage = lazy(() => import('./pages/LibroReclamacionesPage'));
 const DynamicLandingPage = lazy(() => import('./pages/Tienda/DynamicLandingPage'));
 const SubscriptionSurveyPage = lazy(() => import('./pages/SubscriptionSurveyPage'));
+// "¿Cómo te fue con tu pedido?": llega con el aviso de pedido entregado.
+const EncuestaEntregaPage = lazy(() => import('./components/encuesta/EncuestaEntregaDeTienda'));
 const SubscriptionLandingPage = lazy(() => import('./pages/SubscriptionLandingPage'));
 const NuevosUsuariosPage = lazy(() => import('./pages/NuevosUsuariosPage'));
 const MinijuegosPage = lazy(() => import('./pages/Minijuegos/MinijuegosPage'));
@@ -209,6 +211,7 @@ const AdminUsuariosComportamiento = lazy(() => import('./pages/admin/AdminUsuari
 const AdminInteresProductos = lazy(() => import('./pages/admin/AdminInteresProductos'));
 const AdminPublicoProductos = lazy(() => import('./pages/admin/AdminPublicoProductos'));
 const AdminRespuestasEncuesta = lazy(() => import('./pages/admin/AdminRespuestasEncuesta'));
+const AdminEncuestaEntregas = lazy(() => import('./pages/admin/AdminEncuestaEntregas'));
 const AdminWordlePage = lazy(() => import('./pages/admin/AdminWordlePage'));
 
 // El panel del editor visual son 230 KB de codigo (mas react-easy-crop y el
@@ -420,6 +423,15 @@ function App() {
                                   />
 
                                   <Route
+                                    path="/opinar/:codigo"
+                                    element={
+                                      <Suspense fallback={<CargandoRuta />}>
+                                        <EncuestaEntregaPage />
+                                      </Suspense>
+                                    }
+                                  />
+
+                                  <Route
                                     path="/suscripciones"
                                     element={
                                       <Suspense fallback={<CargandoRuta />}>
@@ -531,6 +543,7 @@ function App() {
                                       <Route path="interes-productos" element={<AdminInteresProductos />} />
                                       <Route path="publico-productos" element={<AdminPublicoProductos />} />
                                       <Route path="respuestas-encuesta" element={<AdminRespuestasEncuesta />} />
+                                      <Route path="encuesta-entregas" element={<AdminEncuestaEntregas />} />
                                       <Route path="wordle" element={<AdminWordlePage />} />
                                       <Route path="notificaciones" element={<AdminNotifications />} />
                                       <Route path="marcas" element={<AdminMarcas />} />

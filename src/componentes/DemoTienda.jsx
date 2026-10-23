@@ -8,6 +8,7 @@ import {
   VentanaCampana, AvisoIdioma, AvisoInvitacion, ProveedorEnlaces, ProveedorTraduccion, PanelEditor, useBorrador, SeccionEditable, InsertarAqui,
   moverSeccion, duplicarSeccion, rutaDeMarca, tarjetaDesdeProducto, REGISTRO_SECCIONES, enlaceWhatsApp, gruposDeCatalogo, ESQUELETO_MARCA, ETAPAS_PRODUCCION,
 } from './kit';
+import { PaginaEncuestaEntrega } from './kit/paginas/EncuestaEntrega';
 import { empresa } from '../config/empresa';
 import { msHastaMananaLima, msHastaLunesLima, limaTodayStr } from '../utils/fechaLima';
 import { volarMonedasGanadas } from '../utils/animations';
@@ -79,6 +80,7 @@ const PAGINAS = [
   { id: 'pagoRapido', texto: 'Pago rápido', ruta: '/pago-rapido/' },
   { id: 'cuenta', texto: 'Mi cuenta', ruta: '/cuenta' },
   { id: 'encuesta', texto: 'Encuesta', ruta: '/encuesta-suscripcion' },
+  { id: 'opinar', texto: 'Calificar un pedido', ruta: '/opinar/PD-2410' },
   { id: 'acceso', texto: 'Acceso', ruta: '/login' },
   { id: 'noEncontrada', texto: 'No encontrada', ruta: '/poleras-anime' },
   { id: 'descargar', texto: 'Descargar la app', ruta: '/descargar' },
@@ -101,7 +103,7 @@ const ABRIR_ESTUDIO = [
 ];
 
 const PAGINA_DE_RUTA = {
-  '/': 'inicio', '/tienda': 'tienda', '/descargar': 'descargar', '/app': 'descargar', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/checkout': 'checkout', '/encuesta-suscripcion': 'encuesta', '/personalizar': 'crear', '/comunidad': 'comunidad', '/ofertas': 'tienda', '/nichos': 'tienda',
+  '/': 'inicio', '/tienda': 'tienda', '/descargar': 'descargar', '/app': 'descargar', '/minijuegos': 'minijuegos', '/buscar': 'buscar', '/carrito': 'carrito', '/checkout': 'checkout', '/encuesta-suscripcion': 'encuesta', '/opinar/PD-2410': 'opinar', '/personalizar': 'crear', '/comunidad': 'comunidad', '/ofertas': 'tienda', '/nichos': 'tienda',
   ...Object.fromEntries(VISTAS_LEGALES.map(([, r]) => [r, 'legales'])),
   ...Object.fromEntries(VISTAS_JUEGOS.map(([, r]) => [r, 'juego'])),
   ...Object.fromEntries(VISTAS_CAMPANAS.map(([, r]) => [r, 'campanas'])),
@@ -888,6 +890,23 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
           onMonedas={(n) => setMonedas((m) => Math.max(0, m + n))}
           toast={toast}
           onIrA={(ruta) => navegar.current(ruta)}
+        />
+      </Parte>
+    </MarcoTienda>
+  ) : pagina === 'opinar' ? (
+    // "¿Cómo te fue con tu pedido?" con datos de prueba: guarda en memoria y paga 5 monedas.
+    <MarcoTienda {...marco} kapiEnPie={false}>
+      <Parte n="P7" nombre="PaginaEncuestaEntrega">
+        <PaginaEncuestaEntrega
+          codigo="PD-2410"
+          sesion={conSesion}
+          estado={{ activo: true, entregado: true, respondida: false, monedas: 5, opcionesMejorar: ['Tiempo de entrega', 'Calidad del producto', 'Empaque', 'Atención', 'Precio', 'Todo estuvo bien'] }}
+          onEnviar={async () => {
+            await new Promise((r) => { setTimeout(r, 700); });
+            setMonedas((m) => m + 5);
+            volarMonedasGanadas(null, 5);
+            return { monedas: 5 };
+          }}
         />
       </Parte>
     </MarcoTienda>

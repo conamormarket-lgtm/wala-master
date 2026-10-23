@@ -14,6 +14,7 @@ import { getFeaturedProducts, getProductsByCategory, getCategories } from '../..
 import { listFilesInFolder } from '../../services/firebase/storage';
 import { precalentarFunciones } from '../../services/checkoutPayment';
 import { getFx, penToUsd } from '../../services/fx';
+import { leerSurveyConfig, configEntregaPanel } from '../../services/encuestaConfig';
 import CulqiCustomCheckout from '../CulqiCustomCheckout';
 import TarjetaDeProducto from '../producto/TarjetaDeProducto';
 import { consultaProducto } from '../regalar/regaloDeLista';
@@ -203,6 +204,12 @@ export default function DetallePedidoDeCuenta() {
     // Recién al abrir la hoja (antes, al entrar a cualquier pedido con deuda).
     enabled: pagando && Boolean(pedido?.conDeuda),
   });
+  // "¿Cómo te fue con este pedido?": si el admin la tiene prendida y con cuántas monedas.
+  const { data: encuestaEntrega } = useQuery({
+    queryKey: ['encuesta-entrega-config'],
+    queryFn: async () => configEntregaPanel((await leerSurveyConfig()).data?.entregaPanel),
+    staleTime: 600_000,
+  });
   const { data: fx } = useQuery({ queryKey: ['fx'], queryFn: getFx, enabled: pagando, staleTime: 600_000 });
   const abrirPago = useCallback(() => {
     setPagando(true);
@@ -373,6 +380,7 @@ export default function DetallePedidoDeCuenta() {
         pagos={pagos}
         onPagar={deuda > 0 ? abrirPago : undefined}
         whatsapp={whatsapp}
+        opinar={completado && encuestaEntrega?.activo ? { url: `/opinar/${encodeURIComponent(codigo)}`, monedas: encuestaEntrega.monedas } : undefined}
         recomendados={(reco || []).filter((p) => p && p.visible !== false && !idsProducto.includes(String(p.id))).slice(0, 8)}
         tarjeta={Tarjeta}
         onVerAbajo={verAbajo}

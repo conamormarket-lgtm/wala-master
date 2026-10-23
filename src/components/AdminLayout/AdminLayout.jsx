@@ -375,6 +375,12 @@ const AdminLayout = () => {
                 📋 Respuestas de la encuesta
               </NavLink>
               <NavLink
+                to="/admin/encuesta-entregas"
+                className={({ isActive }) => getLinkClass(isActive, 'clientes')}
+              >
+                ⭐ Encuesta de entregas
+              </NavLink>
+              <NavLink
                 to="/admin/popups"
                 className={({ isActive }) => getLinkClass(isActive, 'clientes')}
               >

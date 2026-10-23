@@ -53,6 +53,13 @@ export const DEFAULT_SURVEY_CONFIG = {
         options: ['Para regalar', 'Para mí', 'Las dos']
       },
       {
+        id: 'como_nos_conociste',
+        label: '¿Cómo nos conociste?',
+        type: 'select',
+        required: false,
+        options: ['Instagram', 'TikTok', 'Facebook', 'Un amigo o familiar', 'Google', 'Otro']
+      },
+      {
         id: 'preferencia_compra',
         enEncuesta: false,
         label: '¿Dónde prefieres comprar?',
@@ -149,7 +156,9 @@ export const DEFAULT_SURVEY_CONFIG = {
   completionPanel: {
     title: '¡Muchas gracias!',
     message: 'Hemos guardado tus preferencias con éxito. Ahora tu experiencia será mucho más personalizada.',
-    buttonText: 'Ir a la Tienda'
+    buttonText: 'Ir a la Tienda',
+    // Antes de terminar: "¿Te avisamos de promociones por WhatsApp?" (marketingConsent.whatsapp).
+    askWhatsapp: true
   },
 
   // Diseño General
@@ -158,6 +167,20 @@ export const DEFAULT_SURVEY_CONFIG = {
     backgroundColor: '#ffffff',
     textColor: '#1f2937'
   }
+};
+
+// Encuesta de la entrega ("¿Cómo te fue con tu pedido?"): entregaPanel, igual
+// que configEntrega de functions/encuestaEntregaLogic.js (el servidor manda).
+export const OPCIONES_MEJORAR_ENTREGA = ['Tiempo de entrega', 'Calidad del producto', 'Empaque', 'Atención', 'Precio', 'Todo estuvo bien'];
+export const configEntregaPanel = (raw) => {
+  const c = raw && typeof raw === 'object' ? raw : {};
+  const monedas = Number(c.monedas);
+  const opciones = Array.isArray(c.opcionesMejorar) ? c.opcionesMejorar.map((o) => String(o || '').trim()).filter(Boolean) : [];
+  return {
+    activo: c.activo !== false,
+    monedas: Number.isFinite(monedas) ? Math.max(0, Math.min(50, Math.round(monedas))) : 5,
+    opcionesMejorar: opciones.length ? opciones : OPCIONES_MEJORAR_ENTREGA,
+  };
 };
 
 export const getSurveyConfig = async () => {

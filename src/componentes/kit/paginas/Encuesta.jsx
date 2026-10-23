@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Gift, UserRound, Users, UsersRound, Heart, Baby, House, Smile, Handshake, Plus, ArrowLeft, ArrowRight,
-  Check, CalendarHeart, LogIn, RotateCcw,
+  Check, CalendarHeart, LogIn, RotateCcw, MessageCircle,
 } from 'lucide-react';
 import Boton from '../Boton';
 import { Aviso, EstadoVacio } from '../Feedback';
@@ -130,6 +130,9 @@ function Acciones({ children, centro = false }) {
  *    llamas?" (se guarda igual en las respuestas). El cumpleaños solo se
  *    pregunta si no viene en inicial; sin nada que preguntar, el paso
  *    "Un poco sobre ti" se salta.
+ *  - pedirWhatsapp: al final, "¿Te avisamos de promociones por WhatsApp?"
+ *    (si dice que no, "¿Estás seguro?"); la respuesta sale en onTerminar
+ *    como whatsapp: true | false (sin el paso, undefined)
  *  - Lo que decide el admin (encuestaDesdeConfig): las preguntas con
  *    enEncuesta: false no salen (lo respondido antes se conserva);
  *    config.persona: { presupuesto, familia } en la hoja de cada persona;
@@ -139,7 +142,7 @@ export function PaginaEncuesta({
   config = CONFIG_ENCUESTA, conjuntos = [], inicial = {}, recompensa = { base: 15, porFecha: 5, tope: 50 },
   sesion = true, completada = false, cargando = false,
   urlLogin = '/login', urlRegistro = '/registro', urlFechas = '/cuenta/fechas-importantes', urlTienda = '/',
-  onOmitir, onTerminar, onSubirFoto, onAgregarIdea, onEmpezar, nombreCuenta = '',
+  onOmitir, onTerminar, onSubirFoto, onAgregarIdea, onEmpezar, nombreCuenta = '', pedirWhatsapp = false,
 }) {
   const portada = unir(CONFIG_ENCUESTA.portada, config.portada);
   const sobreTi = unir(CONFIG_ENCUESTA.sobreTi, config.sobreTi);
@@ -231,12 +234,12 @@ export function PaginaEncuesta({
     ir(2);
   };
 
-  const terminar = async () => {
+  const terminar = async (whatsapp) => {
     setGuardando(true);
     setAviso(null);
     try {
       const listas = personas.filter((p) => !validarPersona(p));
-      const r = await onTerminar?.({ respuestas, cumpleanos, grupos, personas: listas, quitadas });
+      const r = await onTerminar?.({ respuestas, cumpleanos, grupos, personas: listas, quitadas, whatsapp });
       setFin({ monedas: r?.monedas || 0, ideas: r?.ideas || [] });
       ir(4);
     } catch {
@@ -246,12 +249,20 @@ export function PaginaEncuesta({
     }
   };
 
+  // Al final, la pregunta de WhatsApp (si toca); si no, se guarda de una vez.
+  const alFinal = () => (pedirWhatsapp ? ir(3.5) : terminar());
+  const noWhatsapp = () => setAviso({
+    tipo: 'aviso',
+    texto: '¿Estás seguro? Te perderías descuentos exclusivos y los avisos de productos nuevos.',
+    accion: <Boton tamano="sm" variante="contorno" onClick={() => terminar(false)} cargando={guardando}><Texto>Sí, estoy seguro</Texto></Boton>,
+  });
+
   const seguirGrupos = () => {
     if (!orden.length) {
       setAviso({
         tipo: 'info',
         texto: 'Elige al menos un grupo. Si por ahora no le regalas a nadie, puedes terminar igual.',
-        accion: <Boton tamano="sm" variante="contorno" onClick={terminar} cargando={guardando}><Texto>Terminar sin personas</Texto></Boton>,
+        accion: <Boton tamano="sm" variante="contorno" onClick={alFinal} cargando={guardando}><Texto>Terminar sin personas</Texto></Boton>,
       });
       return;
     }
@@ -281,7 +292,7 @@ export function PaginaEncuesta({
       setAviso(null);
       setIndice(indice + 1);
     } else {
-      terminar();
+      alFinal();
     }
   };
 
@@ -415,6 +426,24 @@ export function PaginaEncuesta({
           <Boton iconoFin={!ultimo && <ArrowRight aria-hidden="true" />} icono={ultimo && <Check aria-hidden="true" />} cargando={guardando} onClick={() => siguienteGrupo()}>
             <Texto>{ultimo ? 'Terminar encuesta' : 'Siguiente grupo'}</Texto>
           </Boton>
+        </Acciones>
+      </>
+    );
+  } else if (paso === 3.5) {
+    cuerpo = (
+      <>
+        <CabezaPaso
+          Icono={MessageCircle}
+          tono="menta"
+          titulo="¿Te avisamos de promociones por WhatsApp?"
+          subtitulo="Descuentos y novedades directo a tu celular. Puedes desactivarlo cuando quieras en Mi perfil."
+        />
+        <div className={s.opcionesWhatsapp}>
+          <Boton bloque icono={<Check aria-hidden="true" />} onClick={() => terminar(true)} cargando={guardando}><Texto>Sí, quiero recibirlas</Texto></Boton>
+          <Boton bloque variante="contorno" onClick={noWhatsapp} disabled={guardando}><Texto>No, gracias</Texto></Boton>
+        </div>
+        <Acciones>
+          <Boton variante="fantasma" icono={<ArrowLeft aria-hidden="true" />} onClick={() => ir(orden.length ? 3 : 2, true)}><Texto>Atrás</Texto></Boton>
         </Acciones>
       </>
     );

@@ -14,6 +14,7 @@
  *  - personPanel: { budget, familySet } → presupuesto y Conjunto familia en
  *    la hoja de cada persona
  *  - introPanel.description → el texto de la portada
+ *  - completionPanel.askWhatsapp: false → no pregunta por WhatsApp al final
  */
 export const encuestaDesdeConfig = (c = {}, sugerencias) => ({
   config: {
@@ -31,6 +32,7 @@ export const encuestaDesdeConfig = (c = {}, sugerencias) => ({
         id: f.id, etiqueta: f.label, tipo: f.type === 'select' ? 'opciones' : 'texto', opciones: f.options || [], requerido: Boolean(f.required), enEncuesta: f.enEncuesta !== false,
       })),
     },
+    whatsapp: c.completionPanel?.askWhatsapp !== false,
     persona: {
       presupuesto: Boolean(c.personPanel?.budget),
       familia: Boolean(c.personPanel?.familySet),

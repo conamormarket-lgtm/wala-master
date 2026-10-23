@@ -464,6 +464,14 @@ const AdminEncuestas = () => {
             <label>Texto del Botón Final</label>
             <input type="text" className={styles.input} value={config.completionPanel.buttonText} onChange={e => handleCompletionChange('buttonText', e.target.value)} />
           </div>
+          <div className={styles.ligarCategorias}>
+            <h4>Antes de terminar</h4>
+            <p>Solo a quien no lo tiene activado. Si dice que no, se le pregunta "¿Estás seguro?". Se guarda en el mismo lugar que el interruptor "Ofertas por WhatsApp" de Mi perfil.</p>
+            <label className={styles.checkPersona}>
+              <input type="checkbox" checked={config.completionPanel.askWhatsapp !== false} onChange={e => handleCompletionChange('askWhatsapp', e.target.checked)} />
+              Preguntar si quiere recibir promociones por WhatsApp
+            </label>
+          </div>
         </div>
       )}
 

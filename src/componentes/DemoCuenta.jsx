@@ -623,6 +623,7 @@ const SOBRE_TI = [
   { id: 'familia', enEncuesta: false, etiqueta: '¿Tienes familia?', tipo: 'opciones', opciones: ['Vivo solo/a', 'Vivo en pareja', 'Tengo hijos', 'Vivo con mis padres/familiares'] },
   { id: 'frecuencia_ropa', enEncuesta: false, etiqueta: '¿Con qué frecuencia sueles comprar ropa?', tipo: 'opciones', opciones: ['Cada semana', 'Al menos una vez al mes', 'Solo en ocasiones especiales o cambios de temporada', 'Casi nunca'] },
   { id: 'para_quien', etiqueta: '¿Para quién compras en Walá?', tipo: 'opciones', opciones: ['Para regalar', 'Para mí', 'Las dos'] },
+  { id: 'como_nos_conociste', etiqueta: '¿Cómo nos conociste?', tipo: 'opciones', opciones: ['Instagram', 'TikTok', 'Facebook', 'Un amigo o familiar', 'Google', 'Otro'] },
   { id: 'preferencia_compra', enEncuesta: false, etiqueta: '¿Dónde prefieres comprar?', tipo: 'opciones', opciones: ['Prefiero ir a la tienda física', 'Prefiero comprar 100% online', 'Me gustan ambas opciones'] },
 ];
 
@@ -639,6 +640,7 @@ export function EncuestaDemo({ sesion, usuario, estados = [], fotos = [], onMone
       config={{ sobreTi: { campos: SOBRE_TI } }}
       conjuntos={CONJUNTOS_ENCUESTA}
       nombreCuenta={usuario?.nombre || ''}
+      pedirWhatsapp
       sesion={sesion}
       completada={estados.includes('completada')}
       cargando={estados.includes('cargando')}

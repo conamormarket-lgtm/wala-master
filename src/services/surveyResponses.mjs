@@ -174,6 +174,11 @@ export function resumenEncuesta(usuarios, config) {
     clientes: completas.length,
     personas: personas.length,
     conCumpleanos: completas.filter((u) => u.birthDate).length,
+    // Ofertas por WhatsApp (marketingConsent.whatsapp, el de Mi perfil y el final de la encuesta).
+    whatsapp: {
+      si: completas.filter((u) => u.marketingConsent && u.marketingConsent.whatsapp === true).length,
+      no: completas.filter((u) => u.marketingConsent && u.marketingConsent.whatsapp === false).length,
+    },
     conPresupuesto: personas.filter((p) => p.budget).length,
     // Casilla del admin de Encuestas (personPanel.budget): apagada = ya no se pregunta.
     presupuestoRetirado: !(config && config.personPanel && config.personPanel.budget),

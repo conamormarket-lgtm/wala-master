@@ -110,7 +110,7 @@ export default function EncuestaDeTienda() {
     navigate('/', { replace: true });
   };
 
-  const terminar = async ({ respuestas, cumpleanos, grupos, personas, quitadas }) => {
+  const terminar = async ({ respuestas, cumpleanos, grupos, personas, quitadas, whatsapp }) => {
     // Sin el perfil real no se guarda: la fusión pisaría a las personas que no se ven.
     if (!perfilListo) throw new Error('Tu perfil aún se está cargando. Inténtalo de nuevo en unos segundos.');
     const porId = new Map(previos.map((r) => [r.id, r]));
@@ -125,6 +125,10 @@ export default function EncuestaDeTienda() {
     };
     // Opcional: solo si hay fecha, para no borrar una guardada.
     if (cumpleanos) cambios.birthDate = cumpleanos;
+    // Ofertas por WhatsApp: el mismo campo que el interruptor de Mi perfil (con fecha y de dónde vino).
+    if (typeof whatsapp === 'boolean') {
+      cambios.marketingConsent = { ...(userProfile?.marketingConsent || {}), whatsapp, updatedAt: new Date().toISOString(), origen: 'encuesta' };
+    }
     const { error } = await updateUserProfile(cambios);
     if (error) throw new Error(error);
     registrarConversionPopup('encuesta', { uid: user?.uid || null, email: user?.email || null });
@@ -172,6 +176,8 @@ export default function EncuestaDeTienda() {
         conjuntos={conjuntos}
         inicial={inicial}
         nombreCuenta={userProfile?.displayName || user?.displayName || ''}
+        // Solo a quien no lo tiene activado (y si el admin no lo apagó).
+        pedirWhatsapp={config.whatsapp !== false && userProfile?.marketingConsent?.whatsapp !== true}
         recompensa={{ base: 15, porFecha: 5, tope: 50 }}
         sesion={tieneCuenta(user)}
         completada={Boolean(userProfile?.hasCompletedSurvey)}
