@@ -7,6 +7,9 @@ const { recordatoriosDeHoy, eventosValidos, diasHastaProxima } = require("./fech
 const { hitoDeEstadoErp, hitoDeEstadoWala, debeAvisar, textoHito } = require("./ordersLogic");
 const { agruparInteres, elegirProducto } = require("./productViewLogic");
 const { recomendarRegalos } = require("./giftLogic");
+const {
+  avisoQueToca: avisoQueTocaEncuesta, MAX_DIAS: MAX_DIAS_ENCUESTA, DIA_MS,
+} = require("./encuestaRecordatorioLogic");
 const { puedeUsarPuente } = require("./adminAuth");
 const {
   avisosFestivosDeHoy, festivasDesdeDoc, recordatorioPersonalDesdeDoc, proximaFecha, armarAvisoFestivo,
@@ -42,6 +45,7 @@ const HORARIO_POR_DEFECTO = {
   promos: ["10:00", "20:00"],
   orders: ["08:00", "21:00"],
   product_views: ["11:00", "20:00"],
+  survey: ["10:00", "20:00"],
 };
 function categoriaEncendida(settings, categoria) {
   return !(settings.categories && settings.categories[categoria] === false);
@@ -1026,3 +1030,108 @@ async function avisosProductoVisto(settings, { forzar = false } = {}) {
   return { enviados };
 }
 exports._avisosProductoVisto = avisosProductoVisto; // para pruebas en el emulador
+
+// ── Aviso "Encuesta pendiente" (categoría survey) ───────────────────────────
+// Una vez al día, en la primera vuelta dentro del horario de la categoría: a
+// quien creó su cuenta (no anónima) y no respondió la encuesta le llega un
+// recordatorio a los 3 días y otro a los 10 (ver encuestaRecordatorioLogic).
+// La fecha de creación sale de Firebase Auth: el perfil no siempre la guarda.
+const SURVEY_STATE_DOC = "notification_state/survey";
+const SURVEY_LOG_COLLECTION = "survey_reminders";
+const SURVEY_TITULO = "📝 Tu encuesta te espera";
+const SURVEY_TEXTOS_POR_DEFECTO = {
+  survey_3d: "Responde tu encuesta y te regalamos 15 monedas 🪙",
+  survey_10d: "Tu encuesta sigue pendiente. Respóndela y llévate 15 monedas 🎁",
+};
+
+// Cuentas con correo/Google/teléfono creadas hace menos de MAX_DIAS.
+async function cuentasRecientes(now) {
+  const desde = now - MAX_DIAS_ENCUESTA * DIA_MS;
+  const out = [];
+  let pageToken;
+  do {
+    const page = await admin.auth().listUsers(1000, pageToken);
+    page.users.forEach((u) => {
+      if (!u.providerData || u.providerData.length === 0) return; // anónima
+      const creadaMs = Date.parse(u.metadata && u.metadata.creationTime);
+      if (creadaMs >= desde) out.push({ uid: u.uid, creadaMs });
+    });
+    pageToken = page.pageToken;
+  } while (pageToken);
+  return out;
+}
+
+async function avisosEncuesta(settings, { forzar = false } = {}) {
+  if (!forzar && !categoriaActiva(settings, "survey")) return { omitido: "fuera_de_horario" };
+
+  const hoy = limaTodayStr();
+  const stateRef = db.doc(SURVEY_STATE_DOC);
+  const yaCorrio = await db.runTransaction(async (t) => {
+    const snap = await t.get(stateRef);
+    if (!forzar && snap.exists && snap.data().lastRunDate === hoy) return true;
+    t.set(stateRef, { lastRunDate: hoy, startedAt: new Date().toISOString() }, { merge: true });
+    return false;
+  });
+  if (yaCorrio) return { omitido: "ya_corrio_hoy" };
+
+  const now = Date.now();
+  let enviados = 0;
+  for (const { uid, creadaMs } of await cuentasRecientes(now)) {
+    const logRef = db.collection(SURVEY_LOG_COLLECTION).doc(uid);
+    const logSnap = await logRef.get();
+    const type = avisoQueTocaEncuesta({ creadaMs, ahoraMs: now, enviados: logSnap.exists ? logSnap.data() : {} });
+    if (!type) continue;
+
+    const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) continue;
+    const user = userSnap.data();
+    if (user.hasCompletedSurvey) continue;
+
+    const vars = {
+      nombre: user.displayName ? user.displayName.split(" ")[0] : "",
+      monedas: user.monedas || 0,
+    };
+    const { text, variante } = copyDe(settings, type, uid, vars, SURVEY_TEXTOS_POR_DEFECTO[type]);
+    const payload = { title: SURVEY_TITULO, body: text, type, link: "/encuesta-suscripcion", variante };
+
+    // Campanita siempre (también web); push si tiene la app y no pasó el tope diario.
+    const ref = db.collection(`users/${uid}/notifications`).doc();
+    await ref.set(docInApp(payload));
+    await contar(type, variante, "sent");
+    const tokens = user.fcmTokens || [];
+    if (tokens.length > 0 && canSendPush(user, type)) {
+      try {
+        const response = await messaging.sendEachForMulticast(mensajeFcm(tokens, { ...payload, notifId: ref.id }));
+        await removeInvalidTokens(userRef, tokens, response);
+        if (response.successCount > 0) {
+          const nuevoLog = [...(user.antiSpamLog || []), { date: new Date().toISOString(), type }];
+          await userRef.update({ antiSpamLog: nuevoLog.slice(-20) });
+        }
+      } catch (e) {
+        console.warn(`avisosEncuesta: push a ${uid} falló:`, e.message);
+      }
+    }
+    await logRef.set({ [type]: new Date().toISOString() }, { merge: true });
+    enviados++;
+  }
+
+  await stateRef.set({ finishedAt: new Date().toISOString(), enviados }, { merge: true });
+  console.log(`avisosEncuesta: ${enviados} avisos (${hoy}).`);
+  return { enviados };
+}
+exports._avisosEncuesta = avisosEncuesta; // para pruebas en el emulador
+
+// Función aparte del motor de cada hora: recorre las cuentas de Auth y no
+// debe quitarle tiempo al resto de avisos.
+exports.surveyReminderEngine = onSchedule({
+  schedule: "15 * * * *", // Cada hora; envía solo una vez al día
+  timeZone: "America/Lima",
+  timeoutSeconds: 300,
+}, async () => {
+  try {
+    await avisosEncuesta(await leerSettings());
+  } catch (e) {
+    console.error("Error en avisos de encuesta:", e);
+  }
+});

@@ -10,6 +10,7 @@ const defaultSettings = {
   categories: {
     cart_abandoned: true,
     retention: true,
+    survey: true,
     orders: true,
     product_views: true,
     promos: true
@@ -17,6 +18,7 @@ const defaultSettings = {
   schedules: {
     cart_abandoned: { start: '09:00', end: '21:00' },
     retention: { start: '09:00', end: '21:00' },
+    survey: { start: '10:00', end: '20:00' },
     orders: { start: '08:00', end: '21:00' },
     product_views: { start: '11:00', end: '20:00' },
     promos: { start: '10:00', end: '20:00' }
@@ -27,7 +29,9 @@ const defaultSettings = {
     cart_48h: { a: { text: "Última oportunidad. Tu carrito se vacía mañana.", emoji: "⏳", cta: "¿Lo completamos?" }, b: null },
     retention_7d: { a: { text: "Kapi te extraña mucho. Lleva varios días sin verte", emoji: "😢", cta: "Abre la app" }, b: null },
     retention_14d: { a: { text: "Tienes {monedas} monedas que se van a perder. Y Kapi está triste...", emoji: "💔", cta: "Sálvalas" }, b: null },
-    product_view: { a: { text: "¿Te quedaste pensando en {producto}?", emoji: "👀", cta: "Sigue disponible" }, b: null }
+    product_view: { a: { text: "¿Te quedaste pensando en {producto}?", emoji: "👀", cta: "Sigue disponible" }, b: null },
+    survey_3d: { a: { text: "Responde tu encuesta y te regalamos 15 monedas", emoji: "🪙", cta: "" }, b: null },
+    survey_10d: { a: { text: "Tu encuesta sigue pendiente. Respóndela y llévate 15 monedas", emoji: "🎁", cta: "" }, b: null }
   }
 };
 
@@ -40,6 +44,7 @@ const promoVacia = {
 const CATEGORIAS = {
   cart_abandoned: { nombre: 'Carrito abandonado', detalle: 'Avisa a la 1 h, 24 h y 48 h a quien dejó productos en el carrito. Solo a quien tiene la app.' },
   retention: { nombre: 'Kapi te extraña', detalle: 'Avisa a quien no abre la app hace 7 o 14 días. Solo a quien tiene la app.' },
+  survey: { nombre: 'Encuesta pendiente', detalle: 'Una vez al día, dentro de este horario: a quien creó su cuenta y no respondió la encuesta le recuerda a los 3 días y a los 10 días. Después no insiste más. Llega a la campanita y, si tiene la app, al celular.' },
   product_views: { nombre: 'Producto que estuvo mirando', detalle: 'Una vez al día, dentro de este horario: a quien miró un producto 3 veces o más (o más de 2 minutos) y no lo compró, le recuerda ese producto. Llega a la campanita y, si tiene la app, al celular.' },
   orders: { nombre: 'Pedidos', detalle: 'Avisa cuando se confirma el pago, entra a producción, sale a reparto y se entrega. Fuera de horario queda en la campanita y la push no sale.' },
   promos: { nombre: 'Ofertas programadas', detalle: 'Las ofertas programadas solo salen dentro de este horario. Apagado: quedan en espera. "Enviar ahora" fuera de horario pide confirmación.' },
@@ -74,6 +79,14 @@ const GRUPOS_AVISOS = [
       { key: 'retention_14d', nombre: 'Después de 14 días', cuando: 'Sale cuando lleva 14 días sin abrir la app.', titulo: 'Kapi te extraña' },
     ],
   },
+  {
+    nombre: '📝 Encuesta pendiente',
+    detalle: 'Para quien creó su cuenta y todavía no respondió la encuesta. Lleva a /encuesta-suscripcion.',
+    avisos: [
+      { key: 'survey_3d', nombre: 'A los 3 días', cuando: 'Sale 3 días después de crear la cuenta, si no respondió.', titulo: '📝 Tu encuesta te espera' },
+      { key: 'survey_10d', nombre: 'A los 10 días', cuando: 'Sale 10 días después de crear la cuenta, si sigue sin responder. Es el último.', titulo: '📝 Tu encuesta te espera' },
+    ],
+  },
 ];
 
 // Vista previa: arma el mensaje igual que el motor (texto + frase final +
@@ -90,6 +103,7 @@ const vistaPrevia = (v) => [v?.text, v?.cta, v?.emoji]
 const NOMBRES_AVISO = {
   cart_1h: 'Carrito 1 h', cart_24h: 'Carrito 24 h', cart_48h: 'Carrito 48 h',
   retention_7d: 'Kapi 7 días', retention_14d: 'Kapi 14 días',
+  survey_3d: 'Encuesta 3 días', survey_10d: 'Encuesta 10 días',
   orders: 'Pedidos', product_view: 'Producto que estuvo mirando', fecha_recordatorio: 'Fechas importantes', fecha_festiva: 'Fechas festivas (Día de la Madre…)', manual_promo: 'Ofertas (campañas)',
 };
 
