@@ -78,7 +78,8 @@ const datosDelCobro = ({ cobro, enlace, pedido }) => {
 // cobro (opcional, en vez de pedido/enlace): { id, monto, moneda, email,
 // titulo, descripcion, metadata } — el ticket de un sorteo. El servidor
 // recalcula el monto desde la metadata; aquí no se dispara el píxel de compra.
-const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen, autoOpen = false, reopenKey = 0, buttonLabel, title: tituloModal, renderBoton }) => {
+// conYape: la ventana ofrece también Yape (el saldo de un pedido; en soles).
+const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen, autoOpen = false, reopenKey = 0, buttonLabel, title: tituloModal, renderBoton, conYape = false }) => {
   const toast = useGlobalToast();
   const [isReady, setIsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -171,6 +172,13 @@ const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen
         lang: 'es',
         installments: false,
         modal: true,
+        // Yape (código de aprobación) da un token como la tarjeta: lo cobra el
+        // mismo processCulqiPayment. Billeteras y banca móvil piden una orden de
+        // Culqi creada antes, que no hacemos: apagadas.
+        ...(conYape && {
+          paymentMethods: { tarjeta: true, yape: true, billetera: false, bancaMovil: false, agente: false, cuotealo: false },
+          paymentMethodsSort: ['tarjeta', 'yape'],
+        }),
       },
       appearance: {
         theme: 'default',
@@ -198,7 +206,8 @@ const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen
         resolvedRef.current = true; // hubo pago: cerrar el modal NO es abandono
         if (closePollRef.current) { clearInterval(closePollRef.current); closePollRef.current = null; }
         const token = culqiInstance.token.id;
-        const email = culqiInstance.token.email;
+        // El token de Yape no trae correo: el servidor pone el de la cuenta.
+        const email = culqiInstance.token.email || '';
         culqiInstance.close();
         bloquearScrollDeFondo(false);
 
@@ -268,7 +277,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen
     // Si estuvieran aquí, la instancia de Culqi se recrearía en cada render del
     // padre (arrows inline) y el modal "saltaría dos veces".
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isReady, pedido, enlace, cobro, tituloModal]);
+  }, [isReady, pedido, enlace, cobro, tituloModal, conYape]);
 
   const handleOpenCheckout = () => {
     if (!isReady) {

@@ -195,12 +195,25 @@ function crearMovimientoAbono({
 
 const USUARIO_PORTAL = "portal-web@wala.pe";
 
+// Id del movimiento: estable por cobro (el cobro y el webhook pueden llegar los
+// dos y no deben duplicarlo). Mismo prefijo que los del ERP.
+function txIdPagoOnline(coleccion, pedidoId, metodo, pagoId) {
+  const huella = JSON.stringify([coleccion, String(pedidoId), "pasarela", metodo, String(pagoId)]);
+  return `cobro_${require("crypto").createHash("sha256").update(huella).digest("hex")}`;
+}
+
+const nombreMetodo = (metodo, medio) => (metodo === "paypal" ? "PayPal"
+  : medio && medio.tipo === "yape" ? "Yape vía Culqi" : "Culqi");
+
+// La pasarela del cobro; `medio` solo si se sabe (Firestore no acepta undefined).
+const pasarelaDe = (p) => ({ metodo: p.metodo, id: String(p.pagoId), ...(p.medio && p.medio.tipo && { medio: p.medio.tipo }) });
+
 /**
  * Un pago online que salda (o abona) un pedido del ERP, como planificarPago del ERP
  * (cobranza-payment.ts) para un pago sin comprobante: la pasarela es el respaldo.
  *
  * @param {object} pedido  doc de `pedidos`, leído en la transacción
- * @param {object} p       { pedidoId, coleccion, montoPagado (lo cobrado, soles), metodo, pagoId,
+ * @param {object} p       { pedidoId, coleccion, montoPagado (lo cobrado, soles), metodo, medio?, pagoId,
  *                           txId, accountId, autoHabilitar, now }
  * @returns {{ updates, movimiento, nuevoSaldo }}
  */
@@ -228,7 +241,7 @@ function planificarPagoOnline(pedido, p) {
   historial.push({
     monto: montoPedido, fecha: fechaPago, hora, timestamp: fecha.toISOString(), usuarioEmail: USUARIO_PORTAL,
     paymentId: p.txId, operationNumber, accountId: p.accountId || null, comprobanteHashes: [],
-    pasarela: { metodo: p.metodo, id: String(p.pagoId) },
+    pasarela: pasarelaDe(p),
   });
   let cobranza = { ...(pedido.cobranza || {}), historialPagos: historial, fechaUltimoPago: fecha };
   const nuevoSaldo = Math.max(0, calcularSaldoTotal({ ...pedido, cobranza }));
@@ -241,7 +254,7 @@ function planificarPagoOnline(pedido, p) {
   const total = parseMontoRobust(pedido.montoTotal) || 0;
   const pagado = (parseMontoRobust(pedido.montoAdelanto) || 0) +
     cobranza.historialPagos.reduce((s, h) => s + (parseMontoRobust(h.monto) || 0), 0);
-  const metodoTexto = p.metodo === "paypal" ? "PayPal" : "Culqi";
+  const metodoTexto = nombreMetodo(p.metodo, p.medio);
   const updates = {
     cobranza,
     montoPendiente: nuevoSaldo,
@@ -269,7 +282,7 @@ function planificarPagoOnline(pedido, p) {
     paymentId: p.txId,
     sourceCollection: p.coleccion,
     comprobanteHashes: [],
-    pasarela: { metodo: p.metodo, id: String(p.pagoId) },
+    pasarela: pasarelaDe(p),
     ...camposDeposito(ultimo),
   };
   return { updates, movimiento, nuevoSaldo, montoPedido };
@@ -286,6 +299,8 @@ function cuentaDePasarela(cuentas, metodo) {
 
 module.exports = {
   USUARIO_PORTAL,
+  txIdPagoOnline,
+  nombreMetodo,
   parseMontoRobust,
   calcularSaldoTotal,
   deliveryPendiente,

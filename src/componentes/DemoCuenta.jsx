@@ -379,10 +379,8 @@ export function CuentaDemo({
           abierta={Boolean(pagar)}
           onCerrar={() => setPagar(null)}
           monto={pagar?.deuda || pagar?.total || 0}
-          tarjeta={<Boton bloque onClick={() => avisar('En la tienda', 'Aquí va el formulario de Culqi o PayPal', 'info')}>Pagar con tarjeta</Boton>}
-          yape={{ numero: '987 654 321', nombre: 'Walá Perú' }}
-          plin={{ numero: '912 345 678', nombre: 'Walá Perú' }}
-          urlComprobante={enlaceWhatsApp(empresa.whatsapp, `Hola, quiero pagar mi saldo pendiente del pedido #${pagar?.codigo}. Adjunto mi comprobante.`)}
+          tarjeta={<Boton bloque onClick={() => avisar('En la tienda', 'Aquí va el formulario de Culqi o PayPal', 'info')}>Pagar con tarjeta o Yape</Boton>}
+          urlAyuda={enlaceWhatsApp(empresa.whatsapp, `Hola, tengo un problema para pagar el saldo de mi pedido #${pagar?.codigo}.`)}
         />
       </>
     );
@@ -408,10 +406,8 @@ export function CuentaDemo({
           abierta={Boolean(pagar)}
           onCerrar={() => setPagar(null)}
           monto={pagar?.deuda || pagar?.total || 0}
-          tarjeta={<Boton bloque onClick={() => avisar('En la tienda', 'Aquí va el formulario de Culqi o PayPal', 'info')}>Pagar con tarjeta</Boton>}
-          yape={{ numero: '987 654 321', nombre: 'Walá Perú' }}
-          plin={{ numero: '912 345 678', nombre: 'Walá Perú' }}
-          urlComprobante={enlaceWhatsApp(empresa.whatsapp, `Hola, quiero pagar el pedido #${pagar?.codigo}. Adjunto mi comprobante.`)}
+          tarjeta={<Boton bloque onClick={() => avisar('En la tienda', 'Aquí va el formulario de Culqi o PayPal', 'info')}>Pagar con tarjeta o Yape</Boton>}
+          urlAyuda={enlaceWhatsApp(empresa.whatsapp, `Hola, tengo un problema para pagar el pedido #${pagar?.codigo}.`)}
         />
       </>
     );

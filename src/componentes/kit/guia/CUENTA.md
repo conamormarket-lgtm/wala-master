@@ -670,14 +670,17 @@ Paso 7, segunda parte: con esto, Mis pedidos queda entero en el kit.
     (antes calculaba con 3.8 fijo y sin margen: S/ 80 decía $21.05 y se
     cobraban $21.89). Se muestra recién con el tipo de cambio leído.
   - "Pagar" solo con deuda (`conDeuda`); nunca "Pagar total".
-  - El comprobante por WhatsApp: el mismo mensaje (`whatsapp_text_pagos`,
-    con el id del pedido y el monto de la deuda).
+  - Desde el 2026-10-23 no se manda comprobante: Yape va dentro de la ventana
+    de Culqi (`conYape`, código de aprobación) y cada pago queda en el ERP con
+    su constancia en imagen (`functions/constanciaPago.js`). Los números de
+    Yape/Plin y "Enviar comprobante" salieron; queda "¿Problemas para pagar?"
+    al WhatsApp de pagos (`whatsapp_number_pagos`).
   - Al pagar se cierra la hoja y se recarga el pedido: la deuda vieja no se
     queda en pantalla (antes seguía hasta recargar y un segundo intento lo
     rechazaba el servidor).
   - Al abrir la hoja se despiertan `processCulqiPayment` y los de PayPal
-    (`precalentarFunciones`), y recién ahí se leen los números de Yape,
-    Plin y WhatsApp (antes, al entrar a cualquier pedido con deuda).
+    (`precalentarFunciones`), y recién ahí se lee el WhatsApp de pagos
+    (antes, al entrar a cualquier pedido con deuda).
 - **Lo que no se pierde (en el kit):**
   - El aviso del taller "STOP… TIENES UNA DEUDA PENDIENTE…" se abre solo al
     entrar (impresión con deuda) y lleva a pagar (`pedido.avisoDeuda`).
@@ -792,7 +795,7 @@ componente o su forma de recibir datos.
 | `porVerificar` | `{ pendientes: data.pendientes (fecha ya legible y fase con ETIQUETA_FASE), correoVerificado: data.emailVerificado, onEnviarVerificacion: enviarVerificacionCorreo, onYaVerifique: refrescarVerificacionCorreo + recargar, onVincular: vincularPedido }`; los servicios devuelven `{ error }` y el kit espera promesas que fallan: el conector lanza `new Error(mensaje)` |
 | `PaginaDetallePedido.pedido` | el pedido de la lista (`_raw` de `usePedidos`, con `conDeuda`/`montoDeuda` del servidor; ya no se lee por id) y `getCodigoPedido`, `getNumeroProduccion`, `derivarEstadoCompra` (estado y `paymentLabel`), `fechas` → `fechasPasos`, líneas de `getProductosPedido`, dirección y montos como hoy |
 | `pagos` | `historialPagos` → `historial`; `onBoletas`: `listFilesInFolder('00'+id)`; `onFotosEnvio`: `reparto.boletasEnvio` o Storage; `monedas`: `claimMonedas(id, 10)` y `monedasReclamadas` |
-| `onPagar` → `HojaPagarSaldo` | `tarjeta`: `CulqiCustomCheckout` con `renderBoton` (`PagoTarjeta`) + `PaypalCheckout` con `amountUsd={penToUsd(deuda, fx)}`; al pagar, `recargar()`; `yape`, `plin`: `getMessage('yape_number')`…; `urlComprobante`: `whatsapp_number_pagos` con `whatsapp_text_pagos` |
+| `onPagar` → `HojaPagarSaldo` | `tarjeta`: `CulqiCustomCheckout` con `renderBoton` (`PagoTarjeta`) + `PaypalCheckout` con `amountUsd={penToUsd(deuda, fx)}`; `CulqiCustomCheckout` con `conYape`; al pagar, `recargar()`; `urlAyuda`: `whatsapp_number_pagos` ("¿Problemas para pagar?") |
 | `ranking` | `getTopReferrersOfMonth()` → `{ codigo: referrerCode, compras: count, monedas: coins }` |
 | `comunidadPara(c)` | con `usePuedePublicar(design)`: `{ estado: design.comunidad, onPublicar: publicarEnComunidad, onActualizar: publicarEnComunidad, onRetirar: retirarDeComunidad }` |
 | `onAgregarTodo`, `onCompartir` | `handleAddAll` (devolver `{ texto, tipo }`), copiar `/wishlist/{referralCode}` (con `origenPublico`) |

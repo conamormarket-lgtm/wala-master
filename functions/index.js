@@ -36,6 +36,7 @@ const { totalEsperadoCheckout, toleranciaCheckout } = require("./checkoutTotals"
 const { puedeUsarPuente, tieneClaimAdmin } = require("./adminAuth");
 const pagos = require("./pagosLogic");
 const erpCobranza = require("./erpCobranzaLogic");
+const constancia = require("./constanciaPago");
 const referidos = require("./referidosLogic");
 const bolitas = require("./bolitasLogic");
 
@@ -2097,12 +2098,24 @@ async function objetivoEnlace(enlaceId) {
 // con su historial y la recalcula al guardar, así que la deuda volvía y el
 // ingreso no llegaba a Finanzas. Reglas en ./erpCobranzaLogic.js.
 const FP_TRANSACTIONS_COLLECTION = "fp_transactions";
+const { txIdPagoOnline } = erpCobranza;
 
-// Id del movimiento: estable por cobro (el cobro y el webhook pueden llegar los
-// dos y no deben duplicarlo). Mismo prefijo que los del ERP.
-function txIdPagoOnline(coleccion, pedidoId, metodo, pagoId) {
-  const huella = JSON.stringify([coleccion, String(pedidoId), "pasarela", metodo, String(pagoId)]);
-  return `cobro_${crypto.createHash("sha256").update(huella).digest("hex")}`;
+// La constancia del cobro como comprobante del pago (./constanciaPago.js). El
+// pago ya quedó registrado: si esto falla no se deshace nada, queda en
+// pagos_anomalias y el siguiente aviso del mismo cobro (webhook) lo reintenta.
+async function constanciaDelPago({ coleccion, pedidoId, pago }) {
+  try {
+    await constancia.asegurarConstancia({
+      db: getErpDb(), bucket: admin.storage().bucket(), FieldValue, coleccion, pedidoId, pago,
+      txId: txIdPagoOnline(coleccion, pedidoId, pago.metodo, pago.id),
+    });
+  } catch (e) {
+    console.error(`constanciaDelPago: sin constancia para ${coleccion}/${pedidoId} (${pago.metodo} ${pago.id}):`, e);
+    await registrarAnomaliaPago(`constancia_${pago.metodo}_${pago.id}`, {
+      motivo: "constancia_no_generada", coleccion, pedidoId: String(pedidoId), metodo: pago.metodo,
+      pagoId: String(pago.id), error: String(e.message || e),
+    });
+  }
 }
 
 // Cuenta de Finanzas por la que entra el dinero de la pasarela (la única llamada
@@ -2216,6 +2229,7 @@ async function registrarPagoSaldo({ coleccion, pedidoId, pago, payment = {} }) {
       }, { merge: true });
     });
     if (payload) await registrarMovimientoWeb({ orderId: String(pedidoId), payload, pago });
+    await constanciaDelPago({ coleccion, pedidoId, pago });
     return;
   }
 
@@ -2231,7 +2245,7 @@ async function registrarPagoSaldo({ coleccion, pedidoId, pago, payment = {} }) {
     if (!snap.exists) throw new Error(`El pedido ${coleccion}/${pedidoId} ya no existe.`);
     const pedido = snap.data() || {};
     const plan = erpCobranza.planificarPagoOnline(pedido, {
-      pedidoId: String(pedidoId), coleccion, montoPagado: pago.montoPen, metodo: pago.metodo, pagoId: pago.id,
+      pedidoId: String(pedidoId), coleccion, montoPagado: pago.montoPen, metodo: pago.metodo, medio: pago.medio, pagoId: pago.id,
       txId, accountId, autoHabilitar: erpCobranza.permiteAutoHabilitado(pedido, limaSinAuto),
     });
     const previos = Array.isArray(pedido.pagosOnline) ? pedido.pagosOnline : [];
@@ -2255,6 +2269,7 @@ async function registrarPagoSaldo({ coleccion, pedidoId, pago, payment = {} }) {
       pagoId: String(pago.id), montoPen: pago.montoPen, registrado: resultado.montoPedido,
     });
   }
+  await constanciaDelPago({ coleccion, pedidoId, pago });
 }
 
 async function marcarEnlacePagado({ enlaceId, pago, payment = {} }) {
@@ -2280,7 +2295,11 @@ exports.processCulqiPayment = functions
   .runWith({ secrets: ["CULQI_SECRET_KEY"] })
   .https.onCall(async (data, context) => {
   if (esPrecalentamiento(data)) return precalentar();
-  const { amount, currency, email, tokenId, description } = data || {};
+  const { amount, currency, tokenId, description } = data || {};
+  // El token de Yape no trae correo (el de tarjeta sí): va el de la cuenta, y si
+  // no hay, el del portal. Culqi lo exige para el cargo.
+  const email = String((data && data.email) || (context.auth && context.auth.token && context.auth.token.email) || "").trim() ||
+    erpCobranza.USUARIO_PORTAL;
   const metadata = data && data.metadata && typeof data.metadata === "object" ? data.metadata : {};
   // El enlace de pago (pago rápido) se paga sin cuenta: el asesor lo manda por
   // el chat y basta con tener el link. Lo demás (checkout, saldo, sorteo) pide
@@ -2407,7 +2426,7 @@ exports.processCulqiPayment = functions
     if (previo.uid !== uid || previo.objetivo !== objetivo.clave) {
       console.warn(`processCulqiPayment: token ${tokenId} reusado para ${objetivo.clave} (era ${previo.objetivo})`);
       throw new functions.https.HttpsError("failed-precondition",
-        "Este pago ya se usó. Vuelve a ingresar los datos de tu tarjeta.");
+        "Este pago ya se usó. Vuelve a intentarlo desde el principio.");
     }
     if (previo.status === "succeeded") {
       // Reintento de la MISMA llamada (red cortada después del cobro).
@@ -2426,10 +2445,10 @@ exports.processCulqiPayment = functions
     }
     if (previo.status === "failed") {
       throw new functions.https.HttpsError("failed-precondition",
-        "Este pago ya fue intentado y no se completó. Vuelve a ingresar los datos de tu tarjeta.");
+        "Este pago ya fue intentado y no se completó. Vuelve a intentarlo desde el principio.");
     }
     throw new functions.https.HttpsError("already-exists",
-      "El pago con esta tarjeta ya se está procesando. Espera unos segundos antes de reintentar.");
+      "Este pago ya se está procesando. Espera unos segundos antes de reintentar.");
   }
 
   const marcarToken = (campos) => lockRef.set({ ...campos, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
@@ -2484,7 +2503,7 @@ exports.processCulqiPayment = functions
     console.error("Error de Culqi:", result);
     await marcarToken({ status: "failed", error: result.user_message || "rechazo de Culqi" });
     await liberar();
-    throw new functions.https.HttpsError("internal", result.user_message || "Error al procesar la tarjeta con Culqi.");
+    throw new functions.https.HttpsError("internal", result.user_message || "Culqi no pudo procesar el pago.");
   }
 
   const chargeId = String(result.id);
@@ -2493,7 +2512,10 @@ exports.processCulqiPayment = functions
   // ── 5) Registrar lo pagado. El cobro YA ocurrió: un fallo aquí no se le
   // devuelve como error a la persona, queda en pagos_anomalias y el webhook lo
   // vuelve a intentar.
-  const pago = { metodo: "culqi", id: chargeId, montoPen: chargeAmount / 100, moneda: "PEN" };
+  const pago = {
+    metodo: "culqi", id: chargeId, montoPen: chargeAmount / 100, moneda: "PEN",
+    medio: constancia.medioDeCargoCulqi(result, tokenId),
+  };
   const payment = { culqiChargeId: chargeId, montoPagado: chargeAmount };
   let createdPedidoWebId = null;
   try {
@@ -5880,7 +5902,7 @@ exports.culqiWebhook = functions
       receivedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
 
-    const pago = { metodo: "culqi", id: chargeId, montoPen: montoCentimos / 100, moneda };
+    const pago = { metodo: "culqi", id: chargeId, montoPen: montoCentimos / 100, moneda, medio: constancia.medioDeCargoCulqi(charge) };
     const payment = { culqiChargeId: chargeId, montoPagado: montoCentimos };
     const anomalia = (motivo, extra = {}) => registrarAnomaliaPago(`culqi_${chargeId}`, {
       motivo, metodo: "culqi", chargeId, montoCentimos, moneda, metadata: meta, origen: "webhook", ...extra,

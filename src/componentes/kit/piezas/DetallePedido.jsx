@@ -166,16 +166,14 @@ export function PagosPedido({ total = 0, abonado, deuda = 0, pagado = false, est
 }
 
 /**
- * Pagar el saldo de un pedido: con tarjeta (el formulario de Culqi o PayPal
- * entra como `tarjeta`) o por transferencia (Yape, Plin) mandando el
- * comprobante por WhatsApp.
+ * Pagar el saldo de un pedido. Todo pasa por Culqi (tarjeta o Yape) o PayPal:
+ * el cobro se confirma al instante y queda registrado con su constancia, sin
+ * mandar comprobantes. El formulario de pago entra como `tarjeta`.
  *  - abierta, onCerrar · monto · tarjeta: nodo
- *  - yape, plin: { numero, nombre } · urlComprobante: wa.me con el mensaje
- *    (sin él, "Enviar comprobante" se ve apagado: falta el número de pagos)
+ *  - urlAyuda: wa.me para "¿Problemas para pagar?" (sin él, no se muestra)
  *  - cargando: aún no llegan los datos de pago
  */
-export function HojaPagarSaldo({ abierta, onCerrar, monto = 0, tarjeta, yape, plin, urlComprobante, cargando = false }) {
-  const cuentas = [yape && { ...yape, metodo: 'Yape' }, plin && { ...plin, metodo: 'Plin' }].filter(Boolean);
+export function HojaPagarSaldo({ abierta, onCerrar, monto = 0, tarjeta, urlAyuda, cargando = false }) {
   return (
     <HojaInferior abierta={abierta} onCerrar={onCerrar} titulo="Pagar el saldo">
       <div className={s.pagar}>
@@ -184,24 +182,18 @@ export function HojaPagarSaldo({ abierta, onCerrar, monto = 0, tarjeta, yape, pl
           <>
             {tarjeta && (
               <section className={s.metodo}>
-                <h4><CreditCard aria-hidden="true" /> <Texto>Con tarjeta</Texto> <span><Texto>Recomendado</Texto></span></h4>
-                <p><Texto>Se aprueba al instante; no necesitas enviar comprobante.</Texto></p>
+                <h4><CreditCard aria-hidden="true" /> <Texto>Con tarjeta o Yape</Texto> <span><Texto>Al instante</Texto></span></h4>
+                <p className={s.marcasPago}>
+                  <span className={`${s.marcaPago} ${s.marcaTarjeta}`}><Texto>Tarjeta</Texto></span>
+                  <span className={`${s.marcaPago} ${s.marcaYape}`}>Yape</span>
+                </p>
+                <p><Texto>El pago se confirma al momento y queda registrado en tu pedido. No necesitas enviar comprobante.</Texto></p>
                 {tarjeta}
               </section>
             )}
-            <p className={s.separador}><span><Texto>o por transferencia</Texto></span></p>
-            {cuentas.length ? (
-              <ul className={s.cuentasPago}>
-                {cuentas.map((c) => (
-                  <li key={c.metodo}>
-                    <span className={`${s.marcaPago} ${s[`marca${c.metodo}`]}`}>{c.metodo}</span>
-                    <span className={s.cuentaTextos}><strong>{c.numero}</strong>{c.nombre && <small><Texto>A nombre de</Texto> {c.nombre}</small>}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : <p className={s.estadoHoja}><Texto>Las transferencias no están disponibles ahora.</Texto></p>}
-            {/* Como antes: siempre está; sin número de pagos, apagado. */}
-            <Boton to={urlComprobante || undefined} disabled={!urlComprobante} bloque icono={<Send aria-hidden="true" />}><Texto>Enviar comprobante por WhatsApp</Texto></Boton>
+            {urlAyuda && (
+              <Boton to={urlAyuda} variante="fantasma" bloque icono={<Send aria-hidden="true" />}><Texto>¿Problemas para pagar? Escríbenos</Texto></Boton>
+            )}
             <p className={s.notaMonedas}><Moneda /> <Texto>Al entregarse tu pedido, reclamas tus monedas aquí mismo.</Texto></p>
           </>
         )}
