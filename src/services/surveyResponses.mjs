@@ -125,8 +125,10 @@ export function resumenEncuesta(usuarios, config) {
     .filter((f) => f.type === 'select')
     .map((f) => {
       const valores = completas.map((u) => u.surveyBasicData && u.surveyBasicData[f.id]).filter(Boolean);
-      return { id: f.id, label: f.label, respondieron: valores.length, opciones: contarOpciones(valores, f.options) };
-    });
+      return { id: f.id, label: f.label, retirada: f.enEncuesta === false, respondieron: valores.length, opciones: contarOpciones(valores, f.options) };
+    })
+    // Las que ya no se preguntan (enEncuesta: false en el admin) van al final.
+    .sort((a, b) => Number(a.retirada) - Number(b.retirada));
 
   const aQuien = Object.entries(ROLES).map(([k, label]) => ({
     valor: label,
@@ -144,10 +146,11 @@ export function resumenEncuesta(usuarios, config) {
         return {
           id: f.id,
           label: f.label,
+          retirada: f.enEncuesta === false,
           respondieron: valores.length,
           top: f.type === 'select' ? contarOpciones(valores, f.options).filter((x) => x.total > 0) : contarTexto(valores),
         };
-      }),
+      }).sort((a, b) => Number(a.retirada) - Number(b.retirada)),
     };
   });
 
@@ -161,6 +164,8 @@ export function resumenEncuesta(usuarios, config) {
     personas: personas.length,
     conCumpleanos: completas.filter((u) => u.birthDate).length,
     conPresupuesto: personas.filter((p) => p.budget).length,
+    // Casilla del admin de Encuestas (personPanel.budget): apagada = ya no se pregunta.
+    presupuestoRetirado: !(config && config.personPanel && config.personPanel.budget),
     basicos,
     aQuien,
     gustos,

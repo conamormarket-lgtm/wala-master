@@ -42,6 +42,14 @@ const Barras = ({ items, max = 8, base }) => {
 };
 
 // ── Rango de fechas ─────────────────────────────────────────────────────────
+// Marca de una pregunta que el admin quitó de la encuesta (enEncuesta: false
+// o la casilla del presupuesto apagada): sus respuestas son de antes.
+const Retirada = () => (
+  <span className={styles.retirada} title="Ya no sale en la encuesta. Las respuestas son de antes de quitarla.">
+    Ya no se pregunta
+  </span>
+);
+
 const RANGOS = [
   { id: 'todo', label: 'Todo' },
   { id: 'hoy', label: 'Hoy' },
@@ -118,6 +126,9 @@ const AdminRespuestasEncuesta = () => {
     [data, rango.desde, rango.hasta],
   );
   const resumen = useMemo(() => (data ? resumenEncuesta(enRango, data.config) : null), [data, enRango]);
+  const hayRetiradas = Boolean(resumen && (resumen.presupuestoRetirado
+    || resumen.basicos.some((b) => b.retirada)
+    || resumen.gustos.some((g) => g.preguntas.some((q) => q.retirada))));
 
   const fechas = useMemo(() => {
     if (!data) return null;
@@ -219,7 +230,7 @@ const AdminRespuestasEncuesta = () => {
             </div>
             <div className={styles.kpi}><span>{resumen.personas}</span>personas cargadas para regalar</div>
             <div className={styles.kpi}><span>{resumen.conCumpleanos}</span>clientes dieron su cumpleaños</div>
-            <div className={styles.kpi}><span>{resumen.conPresupuesto}</span>personas con presupuesto</div>
+            <div className={styles.kpi}><span>{resumen.conPresupuesto}</span>personas con presupuesto{resumen.presupuestoRetirado && ' (ya no se pregunta)'}</div>
           </section>
 
           <article className={styles.card}>
@@ -232,9 +243,17 @@ const AdminRespuestasEncuesta = () => {
               : <Barras items={fechas.periodos} max={fechas.periodos.length} />}
           </article>
 
+          {hayRetiradas && (
+            <p className={styles.avisoRetiradas}>
+              <Retirada /> Las preguntas con esta marca ya no salen en la encuesta: sus respuestas son de antes de quitarlas.
+              Se vuelven a preguntar desde <Link to="/admin/encuestas">Editar la encuesta</Link>.
+            </p>
+          )}
+
           <section className={styles.grid}>
             {resumen.basicos.map((b) => (
-              <article key={b.id} className={styles.card}>
+              <article key={b.id} className={`${styles.card} ${b.retirada ? styles.cardRetirada : ''}`}>
+                {b.retirada && <Retirada />}
                 <h3>{b.label}</h3>
                 <p className={styles.nota}>{b.respondieron} respuestas</p>
                 <Barras items={b.opciones} base={b.respondieron || 1} />
@@ -245,7 +264,8 @@ const AdminRespuestasEncuesta = () => {
               <p className={styles.nota}>Clientes que marcaron cada grupo</p>
               <Barras items={resumen.aQuien} base={resumen.clientes || 1} />
             </article>
-            <article className={styles.card}>
+            <article className={`${styles.card} ${resumen.presupuestoRetirado ? styles.cardRetirada : ''}`}>
+              {resumen.presupuestoRetirado && <Retirada />}
               <h3>¿Cuánto suelen gastar por regalo?</h3>
               <p className={styles.nota}>{resumen.conPresupuesto} de {resumen.personas} personas tienen presupuesto</p>
               <Barras items={resumen.presupuesto} />
@@ -259,7 +279,8 @@ const AdminRespuestasEncuesta = () => {
                 <h3>{g.nombre}</h3>
                 <p className={styles.nota}>{g.personas} personas con este conjunto</p>
                 {g.preguntas.map((q) => (
-                  <div key={q.id} className={styles.pregunta}>
+                  <div key={q.id} className={`${styles.pregunta} ${q.retirada ? styles.preguntaRetirada : ''}`}>
+                    {q.retirada && <Retirada />}
                     <p className={styles.preguntaTitulo}>{q.label} <span>({q.respondieron})</span></p>
                     <Barras items={q.top} max={10} />
                   </div>

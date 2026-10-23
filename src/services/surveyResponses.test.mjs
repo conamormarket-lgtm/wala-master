@@ -94,3 +94,18 @@ test('fecha de la encuesta: filtro por rango, conteo por periodo y texto', () =>
   assert.equal(textoFechaEncuesta(lista[0]), '31/08/2026 23:05');
   assert.equal(textoFechaEncuesta(lista[3]), 'Fecha desconocida');
 });
+
+test('marca las preguntas que el admin quitó de la encuesta', () => {
+  const conRetiradas = {
+    ...config,
+    basicDataPanel: { fields: config.basicDataPanel.fields.map((f) => (f.id === 'familia' ? { ...f, enEncuesta: false } : f)) },
+    brandsPanel: { categories: config.brandsPanel.categories.map((c) => (c.id === 'cat_bel' ? { ...c, fields: c.fields.map((f) => ({ ...f, enEncuesta: false })) } : c)) },
+  };
+  const r = resumenEncuesta(usuarios, conRetiradas);
+  assert.equal(r.basicos.find((b) => b.id === 'familia').retirada, true);
+  assert.equal(r.gustos.find((g) => g.id === 'cat_bel').preguntas[0].retirada, true);
+  assert.equal(r.gustos.find((g) => g.id === 'cat_dep').preguntas[0].retirada, false);
+  // Sin la casilla del presupuesto prendida, el presupuesto ya no se pregunta.
+  assert.equal(r.presupuestoRetirado, true);
+  assert.equal(resumenEncuesta(usuarios, { ...config, personPanel: { budget: true } }).presupuestoRetirado, false);
+});

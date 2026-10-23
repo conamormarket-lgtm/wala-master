@@ -397,3 +397,34 @@
 :global([data-theme='dark']) .kpiDestacado span {
   color: #c4b5fd;
 }
+
+/* Preguntas que el admin quitó de la encuesta: se ven atenuadas y con marca. */
+.retirada {
+  align-self: flex-start;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cardRetirada {
+  border-style: dashed;
+  background: var(--color-surface-2, #f8fafc);
+}
+
+.preguntaRetirada .preguntaTitulo {
+  color: var(--color-text-muted, #475569);
+}
+
+.avisoRetiradas {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted, #475569);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
