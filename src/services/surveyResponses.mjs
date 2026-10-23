@@ -174,12 +174,6 @@ export function resumenEncuesta(usuarios, config) {
     clientes: completas.length,
     personas: personas.length,
     conCumpleanos: completas.filter((u) => u.birthDate).length,
-    // De dónde sale su nombre: la cuenta (obligatorio al registrarse o al
-    // completar el perfil) o, si no lo tenía, lo que escribió en la encuesta.
-    nombre: {
-      cuenta: completas.filter((u) => String(u.displayName || '').trim()).length,
-      encuesta: completas.filter((u) => !String(u.displayName || '').trim() && String((u.surveyBasicData && u.surveyBasicData.nombres) || '').trim()).length,
-    },
     conPresupuesto: personas.filter((p) => p.budget).length,
     // Casilla del admin de Encuestas (personPanel.budget): apagada = ya no se pregunta.
     presupuestoRetirado: !(config && config.personPanel && config.personPanel.budget),

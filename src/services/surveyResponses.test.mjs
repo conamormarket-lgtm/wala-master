@@ -110,11 +110,3 @@ test('marca las preguntas que el admin quitó de la encuesta', () => {
   assert.equal(resumenEncuesta(usuarios, { ...config, personPanel: { budget: true } }).presupuestoRetirado, false);
 });
 
-test('de dónde sale el nombre: la cuenta o lo escrito en la encuesta', () => {
-  const r = resumenEncuesta([
-    { hasCompletedSurvey: true, displayName: 'Ana' },
-    { hasCompletedSurvey: true, displayName: ' ', surveyBasicData: { nombres: 'Beto' } },
-    { hasCompletedSurvey: true },
-  ], config);
-  assert.deepEqual(r.nombre, { cuenta: 1, encuesta: 1 });
-});
