@@ -336,6 +336,22 @@
   color: #059669;
 }
 
+.constancia {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+  color: var(--primary-color);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.constancia svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
 .estadoHoja {
   display: flex;
   align-items: center;

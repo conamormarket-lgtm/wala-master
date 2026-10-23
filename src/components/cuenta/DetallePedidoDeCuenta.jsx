@@ -53,6 +53,15 @@ const normalizarWhatsapp = (num) => {
   if (limpio && !limpio.startsWith('51') && limpio.length <= 9) limpio = `51${limpio}`;
   return limpio;
 };
+/** Con qué se pagó: el de la pasarela en un pago online (Yape, Tarjeta, PayPal). */
+const metodoDePago = (h) => {
+  const p = h?.pasarela;
+  if (p?.medio === 'yape') return 'Yape';
+  if (p?.metodo === 'paypal') return 'PayPal';
+  if (p?.metodo) return 'Tarjeta';
+  return h?.metodo || h?.metodoPago || undefined;
+};
+
 const enlaceConsulta = (numero, codigo, numeroProduccion) => {
   const n = normalizarWhatsapp(numero);
   if (!n) return null;
@@ -299,7 +308,10 @@ export default function DetallePedidoDeCuenta() {
     monto: num(h?.monto),
     fecha: h?.fecha ? (fechaLarga(h.fecha) || String(h.fecha)) : null,
     hora: h?.hora || undefined,
-    metodo: h?.metodo || h?.metodoPago || undefined,
+    metodo: metodoDePago(h),
+    // Solo la constancia de un pago online (la arma el servidor); las capturas
+    // que sube Cobranza se quedan en el ERP.
+    constancia: typeof h?.comprobanteUrl === 'string' && /\/constancia_/.test(h?.comprobantePath || '') ? h.comprobanteUrl : undefined,
   }));
   const estadoKey = estadoToKey(pedido.estadoGeneral);
   const completado = COMPLETADOS.includes(estadoKey);

@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Check, CheckCircle2, AlertTriangle, Receipt, FileText, Camera, Coins, CreditCard, Send, Loader2, ImageOff } from 'lucide-react';
 import Boton from '../Boton';
+import { Enlace } from '../Enlace';
 import { HojaInferior } from '../Feedback';
 import { Moneda } from '../Etiquetas';
 import { soles } from '../TarjetaProducto';
@@ -68,8 +69,9 @@ function Galeria({ estado, imagenes, vacio, nombre = 'Imagen' }) {
  * pagar, el historial de pagos, las boletas y las fotos de envío (cada una en
  * su hoja) y, entregado, reclamar las monedas del pedido.
  *  - total · abonado · deuda · pagado · estadoPago: "Por validar (Yape/Plin)"
- *  - onPagar · historial: [{ monto, fecha, hora }] (el más nuevo primero;
- *    sin fecha dice "Sin fecha")
+ *  - onPagar · historial: [{ monto, fecha, hora, metodo?, constancia? }] (el
+ *    más nuevo primero; sin fecha dice "Sin fecha"; constancia: URL de la
+ *    imagen del pago online, se abre en otra pestaña)
  *  - onBoletas(), onFotosEnvio(): promesas → [url] (se piden al abrir la
  *    primera vez; si fallan, se vuelven a pedir al abrir otra vez)
  *  - monedas: { cantidad, reclamadas, onReclamar(boton) promesa } (pedido
@@ -150,7 +152,13 @@ export function PagosPedido({ total = 0, abonado, deuda = 0, pagado = false, est
         {historial.length ? (
           <ul className={s.movimientos}>
             {historial.map((h, i) => (
-              <li key={i}><span>{h.fecha ? [h.fecha, h.hora].filter(Boolean).join(' · ') : <Texto>Sin fecha</Texto>}{h.metodo && <small> · {h.metodo}</small>}</span><strong>+{soles(h.monto)}</strong></li>
+              <li key={i}>
+                <span>
+                  {h.fecha ? [h.fecha, h.hora].filter(Boolean).join(' · ') : <Texto>Sin fecha</Texto>}{h.metodo && <small> · {h.metodo}</small>}
+                  {h.constancia && <Enlace to={h.constancia} className={s.constancia}><FileText aria-hidden="true" /> <Texto>Ver constancia</Texto></Enlace>}
+                </span>
+                <strong>+{soles(h.monto)}</strong>
+              </li>
             ))}
           </ul>
         ) : <p className={s.estadoHoja}><Texto>Aún no hay pagos registrados para este pedido.</Texto></p>}
