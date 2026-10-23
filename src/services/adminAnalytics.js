@@ -660,28 +660,24 @@ export async function getUserAnalytics(uid, email) {
 export async function getRealtimeBlock() {
   const realtimeThreshold = Date.now() - REALTIME_WINDOW_MS;
 
-  const [usersResult, realtimeSessionsResult] = await Promise.all([
-    getUsersBaseList(GLOBAL_USERS_LIMIT),
-    getCollection(
-      ANALYTICS_COLLECTIONS.SESSIONS,
-      [{ field: 'lastSeenAtClientMs', operator: '>=', value: realtimeThreshold }],
-      { field: 'lastSeenAtClientMs', direction: 'desc' },
-      GLOBAL_REALTIME_SESSIONS_LIMIT
-    ),
-  ]);
-
-  const existingUserUids = new Set(
-    (usersResult.data || []).map((u) => u.uid).filter(Boolean)
+  // Antes bajaba 400 perfiles completos de clientes en cada apertura del panel
+  // solo para saber quién tiene cuenta: ahora lo dice la propia sesión (uid y
+  // correo). Fuera también bots y el panel admin (mismo criterio que la suma diaria).
+  const realtimeSessionsResult = await getCollection(
+    ANALYTICS_COLLECTIONS.SESSIONS,
+    [{ field: 'lastSeenAtClientMs', operator: '>=', value: realtimeThreshold }],
+    { field: 'lastSeenAtClientMs', direction: 'desc' },
+    GLOBAL_REALTIME_SESSIONS_LIMIT
   );
-  const realtimeBlock = computeRealtimeBlock(
-    realtimeSessionsResult.data || [],
-    realtimeThreshold,
-    existingUserUids
-  );
+  const BOT_UA = /bot|crawl|spider|slurp|headless|lighthouse|facebookexternalhit|preview|pingdom|uptime/i;
+  const sesiones = (realtimeSessionsResult.data || []).filter((s) => !BOT_UA.test(String(s.userAgent || ''))
+    && !String(s.lastPath || '').startsWith('/admin'));
+  const existingUserUids = new Set(sesiones.filter((s) => s.uid && s.email).map((s) => s.uid));
+  const realtimeBlock = computeRealtimeBlock(sesiones, realtimeThreshold, existingUserUids);
 
   return {
     data: realtimeBlock,
-    error: usersResult.error || realtimeSessionsResult.error || null,
+    error: realtimeSessionsResult.error || null,
   };
 }
 

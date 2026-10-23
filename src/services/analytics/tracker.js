@@ -19,13 +19,29 @@ const BOT_UA = /bot|crawl|spider|slurp|headless|lighthouse|facebookexternalhit|p
 // Tope de una permanencia: una pestaña olvidada no suma horas.
 const DWELL_MAX_MS = 30 * 60 * 1000;
 let esAdminAnalitica = false;
+// El dispositivo de un admin queda marcado (localStorage): no se registra ni
+// después de cerrar sesión. La suma diaria hace lo mismo con analytics_config/admin.
+const CLAVE_ADMIN = 'wala_analitica_admin';
+const dispositivoAdmin = () => {
+  try { return window.localStorage.getItem(CLAVE_ADMIN) === '1'; } catch { return false; }
+};
 /** Lo llama RouteTracker con isAdmin: lo que navega un admin no se registra. */
 export function marcarAdminAnalitica(esAdmin) {
   esAdminAnalitica = Boolean(esAdmin);
+  if (esAdmin) {
+    try { window.localStorage.setItem(CLAVE_ADMIN, '1'); } catch { /* sin storage */ }
+  }
 }
 export function debeRegistrarAnalitica() {
   if (typeof window === 'undefined') return false;
-  if (esAdminAnalitica || String(window.location?.pathname || '').startsWith('/admin')) return false;
+  // Solo la tienda real: wala.pe o la app (Capacitor sirve desde localhost).
+  const host = String(window.location?.hostname || '');
+  if (!window.Capacitor?.isNativePlatform?.() && !/(^|\.)wala\.pe$/.test(host)) return false;
+  if (String(window.location?.pathname || '').startsWith('/admin')) {
+    try { window.localStorage.setItem(CLAVE_ADMIN, '1'); } catch { /* sin storage */ }
+    return false;
+  }
+  if (esAdminAnalitica || dispositivoAdmin()) return false;
   const nav = window.navigator || {};
   return !nav.webdriver && !BOT_UA.test(String(nav.userAgent || ''));
 }

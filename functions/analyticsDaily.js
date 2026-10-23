@@ -21,7 +21,9 @@ const admin = require("firebase-admin");
 const { FieldValue } = require("firebase-admin/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { buildDailyDoc, ANALYTICS_EVENT_TYPES, safeNumber } = require("./analyticsAggregations");
-const { filtrarTraficoReal, sesionesFaltantes } = require("./analyticsTraficoReal");
+const {
+  filtrarTraficoReal, sesionesFaltantes, idsAdminDelDia, armarVisitas, resumenVisitas,
+} = require("./analyticsTraficoReal");
 
 const db = admin.firestore();
 
@@ -401,6 +403,18 @@ async function uidsAdmin() {
   return uids;
 }
 
+// Dispositivos y cuentas que abrieron /admin alguna vez: así quedan fuera
+// también los días en que no abren el panel. Solo servidor (sin reglas).
+const ADMIN_IDS_REF = () => db.collection("analytics_config").doc("admin");
+async function idsAdminGuardados() {
+  const snap = await ADMIN_IDS_REF().get();
+  return new Set((snap.exists && snap.data().ids) || []);
+}
+async function guardarIdsAdmin(nuevos) {
+  if (!nuevos.length) return;
+  await ADMIN_IDS_REF().set({ ids: FieldValue.arrayUnion(...nuevos), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+}
+
 // Sesiones que empezaron otro día pero tienen eventos en este: solo para saber
 // si eran bots o del admin (no se cuentan como sesiones del día).
 async function leerSesiones(ids) {
@@ -432,18 +446,39 @@ async function procesarDia(dayKey) {
 
   // Solo tráfico real: sin bots, sin el admin y con las permanencias recortadas
   // (ver analyticsTraficoReal.js). Lo descartado queda contado en traficoReal.
-  const [adminUids, sesionesExtra] = await Promise.all([
+  const [adminUids, adminIds, sesionesExtra] = await Promise.all([
     uidsAdmin(),
+    idsAdminGuardados(),
     leerSesiones(sesionesFaltantes(eventosCrudos, sesionesCrudas)),
   ]);
-  const { events, sessions, descarte } = filtrarTraficoReal(eventosCrudos, sesionesCrudas, { adminUids, sesionesExtra });
+  const nuevosAdmin = [...idsAdminDelDia(eventosCrudos)].filter((id) => !adminIds.has(id));
+  await guardarIdsAdmin(nuevosAdmin);
+  nuevosAdmin.forEach((id) => adminIds.add(id));
+  const filtrado = filtrarTraficoReal(eventosCrudos, sesionesCrudas, { adminUids, adminIds, sesionesExtra });
+  const descarte = filtrado.descarte;
+
+  // VISITAS (como Google Analytics): al menos una página vista; las pestañas del
+  // mismo dispositivo con menos de 30 min entre sí son una visita. Lo que sigue
+  // (sessions, devices, utm, geo del doc) cuenta visitas, no pestañas.
+  const v = armarVisitas(filtrado.events, filtrado.sessions);
+  const events = v.events;
+  const sessions = v.representantes;
 
   // Ensamblar el doc del CONTRATO con las funciones puras compartidas.
   const doc = buildDailyDoc(dayKey, events, sessions);
   // Campos ADITIVOS (Parte 2): desgloses de sesión, identidades, embudo completo
   // y top identidades. No pisan ningún campo existente de buildDailyDoc.
   Object.assign(doc, buildDailyExtras(events, sessions));
-  doc.traficoReal = { version: 1, ...descarte };
+  const { visitas, canales } = resumenVisitas(v.visitas);
+  doc.visitas = visitas;
+  doc.canales = canales;
+  // Quiénes visitaron (id del dispositivo o cuenta), por app/web: el panel une
+  // los de varios días para contar PERSONAS ÚNICAS del rango, no sumar días.
+  const personasIds = { app: new Set(), web: new Set() };
+  v.visitas.forEach((x) => personasIds[x.clientType === "APP" ? "app" : "web"].add(x.quien));
+  doc.personasIds = { app: [...personasIds.app], web: [...personasIds.web] };
+  // Qué se registró y qué se descartó (recuadro "Calidad de los datos").
+  doc.traficoReal = { version: 2, sesionesRegistradas: sesionesCrudas.length, ...descarte, ...v.calidad };
   doc.generatedAt = FieldValue.serverTimestamp();
 
   // .set() sin merge: idempotente, reescribe el doc completo del día.
@@ -491,6 +526,26 @@ exports.aggregateAnalyticsDaily = onSchedule(
       console.error(`aggregateAnalyticsDaily: error agregando ${dayKey}:`, e);
       throw e;
     }
+  }
+);
+
+// ════════════════════════════════════════════════════════════════════════════
+// CF onSchedule: el día EN CURSO cada 30 min, con la misma lógica. Así el panel
+// no baja miles de eventos de hoy al abrirse: lee este doc como cualquier otro.
+// El de las 00:20 deja el día anterior cerrado.
+// ════════════════════════════════════════════════════════════════════════════
+exports.aggregateAnalyticsToday = onSchedule(
+  {
+    schedule: "*/30 * * * *",
+    timeZone: "America/Lima",
+    retryCount: 0,
+    memory: "512MiB",
+    timeoutSeconds: 300,
+  },
+  async () => {
+    const dayKey = limaDayKey(Date.now());
+    const res = await procesarDia(dayKey);
+    console.log(`aggregateAnalyticsToday: ${dayKey} OK. visitas=${res.sessionCount}.`);
   }
 );
 

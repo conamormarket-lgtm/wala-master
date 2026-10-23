@@ -157,3 +157,100 @@
     gap: 0.9rem;
   }
 }
+
+/* ── Origen de las visitas y calidad de los datos ── */
+.dosColumnas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.tablaCanales {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.tablaCanales th,
+.tablaCanales td {
+  padding: 0.45rem 0.4rem;
+  text-align: right;
+  border-bottom: 1px solid var(--color-border, rgba(148, 163, 184, 0.25));
+  white-space: nowrap;
+}
+
+.tablaCanales th:first-child,
+.tablaCanales td:first-child {
+  text-align: left;
+}
+
+.tablaCanales th {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-muted, #64748b);
+}
+
+.botonCanal {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--primary-color, #6d28d9);
+  cursor: pointer;
+  text-align: left;
+}
+
+.botonCanal:hover,
+.botonCanal:focus-visible {
+  text-decoration: underline;
+}
+
+.filaActiva td {
+  background: rgba(109, 40, 217, 0.08);
+}
+
+.pct {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #64748b);
+}
+
+.notaCanal {
+  margin: 0.75rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--color-text-muted, #64748b);
+}
+
+.listaCalidad {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+.listaCalidad li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px dashed var(--color-border, rgba(148, 163, 184, 0.25));
+}
+
+.totalCalidad {
+  font-weight: 700;
+  color: var(--primary-color, #6d28d9);
+}
+
+.quitarFiltro {
+  border: 0;
+  background: rgba(109, 40, 217, 0.12);
+  color: inherit;
+  border-radius: 999px;
+  padding: 0 0.4rem;
+  cursor: pointer;
+  font: inherit;
+}

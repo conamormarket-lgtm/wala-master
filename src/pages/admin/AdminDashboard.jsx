@@ -97,12 +97,16 @@ const NAV_CARDS = [
 
 /* ---- Leyendas honestas de los KPIs (ⓘ): qué cuenta (y qué NO) cada número ---- */
 const INFO_SESIONES =
-  'Visitas a la tienda: se cuenta una por pestaña del navegador. ' +
-  'Si la persona cierra y vuelve más tarde, cuenta como otra sesión.';
+  'Una visita es alguien que entra a la tienda y ve al menos una página. Varias pestañas ' +
+  'o recargas del mismo dispositivo con menos de 30 min entre sí cuentan como UNA visita ' +
+  '(como Google Analytics). No cuenta bots ni al equipo admin.';
 const INFO_IDENTIDADES =
-  'Navegadores/dispositivos únicos: un ID guardado en el navegador, más tu cuenta ' +
-  'si inicias sesión. Es un techo de personas, no personas exactas: la misma persona ' +
-  'en 2 dispositivos cuenta 2 veces. "Logueados" = con email/cuenta.';
+  'Personas aproximadas: dispositivos o navegadores distintos (y la cuenta, si inició ' +
+  'sesión). La misma persona en el celular y en la computadora cuenta 2. "Con cuenta" = ' +
+  'navegó con su sesión iniciada.';
+const INFO_TIEMPO =
+  'Suma del tiempo que las visitas pasan en cada página. Cada página cuenta hasta 30 min: ' +
+  'una pestaña olvidada abierta no suma horas.';
 const INFO_LOGUEADOS =
   'Identidades que navegaron con sesión iniciada (email/cuenta) en el rango. ' +
   'Solo cuenta los días con la medición nueva de identidades.';
@@ -131,6 +135,10 @@ export default function AdminDashboard() {
     data, isLoading, isFetching, error, refetch, dataUpdatedAt,
     anterior, anteriorQuery,
   } = useDashboardAnalytics(filtros);
+
+  // Filtro por canal de origen (tabla "De dónde vienen las visitas").
+  const [canal, setCanal] = useState('');
+  const canalSel = canal ? (data?.canales || []).find((c) => c.canal === canal) || null : null;
 
   // Clave del corte activo ('total' | 'app' | 'web') según el filtro de origen.
   const segKey = origen === 'todos' ? 'total' : origen;
@@ -281,13 +289,14 @@ export default function AdminDashboard() {
     // KPIs de conteo base; se intercambian según la métrica elegida.
     const kpiSesiones = () => {
       const c = conCorte(data?.totalSessions, INFO_SESIONES);
-      return { label: 'Sesiones', ...c, ...conDelta(c.value, anterior?.sessions) };
+      return { label: 'Visitas', ...c, ...conDelta(c.value, anterior?.sessions) };
     };
     const kpiIdentidades = () => {
-      const c = conCorte(data?.activeIdentities, INFO_IDENTIDADES);
+      // Personas únicas del rango (une los días); sin la medición nueva, la suma de días.
+      const c = conCorte(data?.personas || data?.activeIdentities, INFO_IDENTIDADES);
       // Delta suprimido para este rango: nota corta y honesta en la leyenda ⓘ.
       if (hayAnterior && !hayAnteriorNoAditivo) c.info = `${c.info} ${NOTA_SIN_COMPARACION}`;
-      return { label: 'Identidades activas', ...c, ...conDeltaNoAditivo(c.value, anterior?.identities) };
+      return { label: 'Personas', ...c, ...conDeltaNoAditivo(c.value, anterior?.personas || anterior?.identities) };
     };
     const kpiLogueados = () => {
       const taw = leerIdentidades(data?.identities, 'logueados');
@@ -295,7 +304,7 @@ export default function AdminDashboard() {
         // HONESTO: el rango no trae este desglose (días previos al despliegue
         // de la medición de identidades) → "Sin datos", nunca un 0 engañoso.
         return {
-          label: 'Solo logueados',
+          label: 'Con cuenta',
           value: 0,
           format: () => 'Sin datos',
           info:
@@ -307,7 +316,7 @@ export default function AdminDashboard() {
       // Igual que identidades: métrica NO aditiva → delta solo con pre-agregado.
       if (hayAnterior && !hayAnteriorNoAditivo) c.info = `${c.info} ${NOTA_SIN_COMPARACION}`;
       const tawPrev = leerIdentidades(anterior?.identitiesBreakdown, 'logueados');
-      return { label: 'Solo logueados', ...c, ...conDeltaNoAditivo(c.value, tawPrev) };
+      return { label: 'Con cuenta', ...c, ...conDeltaNoAditivo(c.value, tawPrev) };
     };
 
     // KPI principal según el conmutador de métrica base; el complementario
@@ -318,9 +327,9 @@ export default function AdminDashboard() {
           : kpiSesiones();
     const complementario = metrica === 'sesiones' ? kpiIdentidades() : kpiSesiones();
 
-    const tiempo = conCorte(data?.totalDwellMs, '');
+    const tiempo = conCorte(data?.totalDwellMs, INFO_TIEMPO);
 
-    return [
+    const base = [
       { ...principal, accent: '#6D28D9', sparkData: spark },
       { ...complementario, accent: '#8B5CF6', sparkData: spark },
       {
@@ -351,9 +360,24 @@ export default function AdminDashboard() {
           : null) || {}),
       },
     ];
+    // Filtro por CANAL (de dónde vino la visita): Visitas, Page views, Tiempo y
+    // Conversión pasan a ser solo de ese canal. Personas no tiene ese corte.
+    if (!canalSel) return base;
+    const nota = `Solo visitas de "${canalSel.canal}" (sin corte APP/WEB ni comparación).`;
+    const soloCanal = (k, value, extraInfo = '') => {
+      const { delta, deltaPositive, sparkData, ...resto } = k;
+      return { ...resto, value, info: `${k.info || ''} ${nota}${extraInfo}`.trim() };
+    };
+    return base.map((k) => {
+      if (k.label === 'Visitas') return soloCanal(k, canalSel.visitas);
+      if (k.label === 'Page views') return soloCanal(k, canalSel.paginas);
+      if (k.label === 'Tiempo navegado') return soloCanal(k, canalSel.dwellMs);
+      if (k.label === 'Conversión') return soloCanal(k, canalSel.visitas ? Math.round((canalSel.pedidos / canalSel.visitas) * 1000) / 10 : 0);
+      return { ...k, info: `${k.info || ''} Sin corte por canal: muestra todas.`.trim() };
+    });
   }, [
     data, trafficByDay, trafficTotals, conversion, conversionAnterior,
-    origen, segKey, metrica, hayAnterior, hayAnteriorNoAditivo, anterior,
+    origen, segKey, metrica, hayAnterior, hayAnteriorNoAditivo, anterior, canalSel,
   ]);
 
   const liveSessions = data?.realtimeSessionsDetails || [];
@@ -381,7 +405,15 @@ export default function AdminDashboard() {
             <p className={styles.subtitle}>
               Resumen · {rangeLabel}
               {origen !== 'todos' ? ` · solo ${origen.toUpperCase()}` : ''}
-              {lastUpdated ? ` · actualizado ${lastUpdated}` : ''}
+              {data?.actualizadoEnMs
+                ? ` · datos al ${fmtTime(data.actualizadoEnMs)} (hoy se actualiza cada 30 min)`
+                : (lastUpdated ? ` · actualizado ${lastUpdated}` : '')}
+              {canalSel && (
+                <>
+                  {' · canal: '}<strong>{canalSel.canal}</strong>{' '}
+                  <button type="button" className={extra.quitarFiltro} onClick={() => setCanal('')} aria-label="Quitar el filtro de canal">✕</button>
+                </>
+              )}
             </p>
             {compare && (
               /* Nota HONESTA de la comparación: contra qué periodo se compara y,
@@ -432,6 +464,72 @@ export default function AdminDashboard() {
         {/* (1) Fila de KPIs (sistema de diseño: KpiRow con sparklines) */}
         <Reveal>
           <KpiRow items={kpis} />
+        </Reveal>
+
+        <Reveal delay={0.03}>
+          <div className={extra.dosColumnas}>
+            <GlassCard
+              title="De dónde vienen las visitas"
+              subtitle="Toca un canal para ver los indicadores solo de ese canal"
+            >
+              {(data?.canales || []).length === 0 ? (
+                <p className={extra.notaCanal}>Sin datos de canal en este rango (se mide desde el 23/10/2026).</p>
+              ) : (
+                <table className={extra.tablaCanales}>
+                  <thead>
+                    <tr><th>Canal</th><th>Visitas</th><th>Con interacción</th><th>Pedidos</th><th>Conversión</th></tr>
+                  </thead>
+                  <tbody>
+                    {data.canales.map((c) => {
+                      const total = data.visitas?.total?.total || 1;
+                      const activo = canal === c.canal;
+                      return (
+                        <tr key={c.canal} className={activo ? extra.filaActiva : ''}>
+                          <td>
+                            <button type="button" className={extra.botonCanal} aria-pressed={activo} onClick={() => setCanal(activo ? '' : c.canal)}>
+                              {c.canal}
+                            </button>
+                          </td>
+                          <td>{fmtInt(c.visitas)} <span className={extra.pct}>{Math.round((c.visitas / total) * 100)}%</span></td>
+                          <td>{c.visitas ? Math.round((c.conInteraccion / c.visitas) * 100) : 0}%</td>
+                          <td>{fmtInt(c.pedidos)}</td>
+                          <td>{c.visitas ? (Math.round((c.pedidos / c.visitas) * 1000) / 10).toLocaleString('es-PE') : 0}%</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+              <p className={extra.notaCanal}>
+                <strong>Directo o sin dato:</strong> escribieron wala.pe, usaron un favorito o vinieron de una app que
+                oculta el origen (Instagram y WhatsApp suelen hacerlo). Para saber de qué publicación vienen, comparte
+                los enlaces con <code>?utm_source=instagram</code> (o tiktok, facebook, whatsapp).
+              </p>
+            </GlassCard>
+
+            <GlassCard title="Calidad de los datos" subtitle="Qué se registró, qué se descartó y cómo se mide">
+              {data?.calidad?.diasMedidos > 0 ? (
+                <ul className={extra.listaCalidad}>
+                  <li><span>Pestañas registradas</span><strong>{fmtInt(data.calidad.sesionesRegistradas)}</strong></li>
+                  <li><span>− Bots (buscadores y navegadores automáticos)</span><strong>{fmtInt(data.calidad.sesionesBot)}</strong></li>
+                  <li><span>− Equipo admin (panel y lo que navega en la tienda)</span><strong>{fmtInt(data.calidad.sesionesAdmin)}</strong></li>
+                  <li><span>− Sin ninguna página vista</span><strong>{fmtInt(data.calidad.sinPaginas)}</strong></li>
+                  <li><span>− Otra pestaña de la misma visita (menos de 30 min)</span><strong>{fmtInt(data.calidad.unidas)}</strong></li>
+                  <li className={extra.totalCalidad}><span>= Visitas reales</span><strong>{fmtInt(data.visitas?.total?.total)}</strong></li>
+                  <li><span>Visitas con interacción (2+ páginas, 10 s o un pedido)</span><strong>{data.visitas?.total?.total ? Math.round((data.visitas.conInteraccion.total / data.visitas.total.total) * 100) : 0}%</strong></li>
+                </ul>
+              ) : (
+                <p className={extra.notaCanal}>Este rango es anterior a la medición nueva.</p>
+              )}
+              {data?.calidad?.diasMedidos > 0 && data.calidad.diasMedidos < (data?.extendedCoverage?.closedDocs || 0) && (
+                <p className={extra.notaCanal}>Solo {data.calidad.diasMedidos} días del rango tienen la medición nueva.</p>
+              )}
+              <p className={extra.notaCanal}>
+                Fuente: los eventos que registra la tienda (web y app). Cada día se suma de madrugada y el día de hoy
+                cada 30 minutos, con las mismas reglas. Un pedido cuenta al enviarse, aunque esté pendiente de pago.
+              </p>
+            </GlassCard>
+          </div>
         </Reveal>
 
         {/* (2) Gráfico grande de tendencia de tráfico.

@@ -93,6 +93,32 @@ function buildDayKeys(days) {
   return keys;
 }
 
+// Personas ÚNICAS de un rango: une los ids de cada día (personasIds del doc,
+// desde la medición de visitas). null si ningún día los trae.
+export function personasUnicas(docs = []) {
+  const app = new Set();
+  const web = new Set();
+  let conIds = 0;
+  docs.forEach((d) => {
+    if (!d?.personasIds) return;
+    conIds += 1;
+    (d.personasIds.app || []).forEach((x) => app.add(x));
+    (d.personasIds.web || []).forEach((x) => web.add(x));
+  });
+  if (!conIds) return null;
+  return { total: new Set([...app, ...web]).size, app: app.size, web: web.size };
+}
+
+// Claves de día entre dos instantes (rango personalizado), ascendentes.
+function buildDayKeysBetween(desdeMs, hastaMs) {
+  const dayMs = 24 * 60 * 60 * 1000;
+  const inicio = dayKeyToStartMs(dayKeyFromMs(desdeMs));
+  const fin = dayKeyToStartMs(dayKeyFromMs(hastaMs));
+  const keys = [];
+  for (let ms = inicio; ms <= fin && keys.length < 400; ms += dayMs) keys.push({ key: dayKeyFromMs(ms), startMs: ms });
+  return keys;
+}
+
 // Inicio (00:00 Lima) del día de hoy en ms. El día "en curso" es
 // [todayStartMs, ahora]; el resto del rango son días ya cerrados con doc.
 function todayStartMs() {
@@ -471,12 +497,16 @@ export function limpiarEventosHoy(events = []) {
  *
  * @returns {Promise<object|null>} mismo shape que getGlobalAnalytics().data, o null.
  */
-export async function getAnalyticsDailyRange({ days = 30 } = {}) {
-  const dayList = buildDayKeys(days);
+export async function getAnalyticsDailyRange({ days = 30, desdeMs, hastaMs } = {}) {
+  // Rango personalizado (también pasado): los mismos docs diarios, nunca los
+  // eventos crudos del rango.
+  const dayList = desdeMs != null && hastaMs != null ? buildDayKeysBetween(desdeMs, hastaMs) : buildDayKeys(days);
   const todayKey = dayKeyFromMs(Date.now());
 
-  // Días CERRADOS (todos menos hoy): 1 getDoc por día, en paralelo.
-  const closedDays = dayList.filter((d) => d.key !== todayKey);
+  // Todos los días del rango, HOY incluido: la CF aggregateAnalyticsToday lo
+  // recalcula cada 30 min con la misma lógica (visitas, sin bots ni admin).
+  // 1 getDoc por día, en paralelo.
+  const closedDays = dayList;
 
   const docResults = await Promise.all(
     closedDays.map((d) => getDocument(ANALYTICS_COLLECTIONS.DAILY, d.key))
@@ -499,9 +529,11 @@ export async function getAnalyticsDailyRange({ days = 30 } = {}) {
     return null;
   }
 
-  // Día en curso EN VIVO (query pequeña de los eventos de hoy).
+  // Respaldo: si el doc de HOY todavía no existe (minutos después de las 00:00),
+  // se arma en vivo con los eventos de hoy, como antes.
   let todayDoc = null;
-  try {
+  const hayHoy = dailyDocs.some((d) => d.day === todayKey);
+  if (!hayHoy && dayList.some((d) => d.key === todayKey)) try {
     const startMs = todayStartMs();
     const { data: todayEvents, error } = await getCollection(
       ANALYTICS_COLLECTIONS.EVENTS,
@@ -559,6 +591,12 @@ function combineDailyDocs(docs, dayList) {
   const banners = new Map();
   const categories = new Map(); // total simple
   const collections = new Map();
+
+  // --- visitas, canales de origen y calidad (docs con traficoReal v2) ---
+  const visitas = { total: emptyTAW(), conInteraccion: emptyTAW(), paginas: emptyTAW(), dwellMs: emptyTAW(), pedidos: emptyTAW() };
+  const canales = new Map();
+  const calidad = { sesionesRegistradas: 0, sesionesBot: 0, sesionesAdmin: 0, sinPaginas: 0, unidas: 0, diasMedidos: 0 };
+  let actualizadoEnMs = 0;
 
   // --- devices/utm/geo (count maps) ---
   const byDevice = new Map(), byBrowser = new Map(), byOS = new Map();
@@ -630,6 +668,21 @@ function combineDailyDocs(docs, dayList) {
     addTAW(sessions, doc.sessions);
     addTAW(dwellMs, doc.dwellMs);
     addTAW(activeIdentities, doc.activeIdentities);
+
+    // Visitas (como Google Analytics), canal de origen y lo que se descartó.
+    if (doc.visitas) Object.keys(visitas).forEach((k) => addTAW(visitas[k], doc.visitas[k]));
+    Object.entries(doc.canales || {}).forEach(([canal, c]) => {
+      const x = canales.get(canal) || { canal, visitas: 0, conInteraccion: 0, paginas: 0, dwellMs: 0, pedidos: 0 };
+      ['visitas', 'conInteraccion', 'paginas', 'dwellMs', 'pedidos'].forEach((k) => { x[k] += safeNumber(c?.[k]); });
+      canales.set(canal, x);
+    });
+    if (doc.traficoReal?.version >= 2) {
+      calidad.diasMedidos += 1;
+      ['sesionesRegistradas', 'sesionesBot', 'sesionesAdmin', 'sinPaginas', 'unidas'].forEach((k) => { calidad[k] += safeNumber(doc.traficoReal[k]); });
+    }
+    const g = doc.generatedAt;
+    const gMs = typeof g?.toMillis === 'function' ? g.toMillis() : safeNumber(g?.seconds) * 1000;
+    if (gMs > actualizadoEnMs) actualizadoEnMs = gMs;
 
     // Embudo.
     const fe = doc.funnel?.events || {};
@@ -890,11 +943,20 @@ function combineDailyDocs(docs, dayList) {
     // barata y siempre fresca). Aquí dejamos vacíos seguros por si se lee directo.
     realtimeActiveSessions: emptyTAW(),
     realtimeSessionsDetails: [],
+    // Visitas, de dónde vienen y qué se descartó (recuadros del panel).
+    visitas,
+    personas: personasUnicas(docs),
+    canales: [...canales.values()].sort((a, b) => b.visitas - a.visitas),
+    calidad,
+    actualizadoEnMs,
     // Metadato para diagnóstico/UX (no lo consumen los charts).
     pageViews,
     __source: 'analytics_daily',
   };
 }
+
+// Para probar la combinación con docs reales (sin leer Firestore).
+export { combineDailyDocs as _combinarDocsDiarios };
 
 /* -------------------------------------------------------------------------- */
 /* Normalizadores de filas top-N del doc de la CF                              */

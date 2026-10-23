@@ -2,7 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getGlobalAnalytics, getRealtimeBlock } from '../../../services/adminAnalytics';
-import { getAnalyticsDailyRange } from '../../../services/analyticsDaily';
+import { getAnalyticsDailyRange, personasUnicas } from '../../../services/analyticsDaily';
 import { getDocument } from '../../../services/firebase/firestore';
 import { ANALYTICS_COLLECTIONS, safeNumber } from '../../../services/analytics/schema';
 import { AuroraBackground, GlassButton } from '../../../components/ui';
@@ -192,9 +192,9 @@ export const ORIGENES = [
 
 /** Opciones del conmutador de MÉTRICA BASE del KPI principal. */
 export const METRICAS = [
-  { value: 'sesiones', label: 'Sesiones' },
-  { value: 'identidades', label: 'Identidades' },
-  { value: 'logueados', label: 'Logueados' },
+  { value: 'sesiones', label: 'Visitas' },
+  { value: 'identidades', label: 'Personas' },
+  { value: 'logueados', label: 'Con cuenta' },
 ];
 
 const PRESET_DAYS = new Set(RANGES.map((r) => r.days));
@@ -592,8 +592,19 @@ async function fetchDashboardGlobal(dateRange, backfill = {}) {
   }
   } // fin if(terminaHoy)
 
-  // FALLBACK (y camino de los rangos personalizados PASADOS): lectura legacy,
-  // filtrada por {startDateMs,endDateMs} con su caché de 30s y sus límites.
+  // Rangos personalizados PASADOS: los mismos docs diarios del rango (livianos
+  // y con el mismo filtro de tráfico real), no los eventos crudos.
+  if (!terminaHoy && dateRange?.startDateMs != null && dateRange?.endDateMs != null) {
+    try {
+      const daily = await getAnalyticsDailyRange({ desdeMs: dateRange.startDateMs, hastaMs: dateRange.endDateMs });
+      if (daily) return ensureExtendedAnalytics(daily);
+    } catch (e) {
+      if (typeof console !== 'undefined') console.warn('[analytics] rango pasado desde analytics_daily falló:', e?.message || e);
+    }
+  }
+
+  // FALLBACK: lectura legacy, filtrada por {startDateMs,endDateMs} con su caché
+  // de 30s y sus límites.
   const res = await getGlobalAnalytics(dateRange);
   if (res.error) throw new Error(res.error);
   // Cacheamos el resultado legacy (sin coste extra) para que futuras cargas
@@ -723,9 +734,13 @@ async function fetchCompareKpis(prevDateRange) {
     acumularIdentidades(identitiesBreakdown, doc);
   });
 
+  // Personas únicas del periodo anterior (mismo criterio que el actual).
+  const personas = personasUnicas(docs);
+
   return {
     daysTotal: keys.length,
     daysWithData: docs.length,
+    personas,
     desdeKey: keys[0] || null,
     hastaKey: keys[keys.length - 1] || null,
     sessions,
@@ -1016,7 +1031,7 @@ export function OrigenPicker({ origen, setOrigen }) {
   );
 }
 
-/** MetricaPicker — métrica base del KPI principal: Sesiones / Identidades / Logueados. */
+/** MetricaPicker — métrica base del KPI principal: Visitas / Personas / Con cuenta. */
 export function MetricaPicker({ metrica, setMetrica }) {
   return (
     <SegmentedPicker

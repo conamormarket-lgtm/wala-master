@@ -5791,6 +5791,7 @@ exports.resultadosEncuestaEntrega = require('./encuestaEntrega').resultadosEncue
 // solo-admin. La lógica vive en ./analyticsDaily (+ ./analyticsAggregations puras).
 exports.aggregateAnalyticsDaily = require('./analyticsDaily').aggregateAnalyticsDaily;
 exports.aggregateAnalyticsDailyBackfill = require('./analyticsDaily').aggregateAnalyticsDailyBackfill;
+exports.aggregateAnalyticsToday = require('./analyticsDaily').aggregateAnalyticsToday;
 
 // ── Diseños de la comunidad ───────────────────────────────────────────────────
 // Los admins publican creaciones suyas; cualquiera las ve (sin sesión) y las
