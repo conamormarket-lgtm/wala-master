@@ -112,16 +112,48 @@ const svgAPng = async (archivo) => {
 };
 
 const NO_SE_LEE = 'No pudimos leer esa imagen. Prueba con un PNG o JPG.';
+const NO_SE_ABRE = 'No pudimos abrir ese archivo. Si está solo en la nube (Google Fotos, Drive), descárgalo al dispositivo y vuelve a elegirlo.';
+
+/** Los bytes del archivo, con FileReader si el navegador no tiene arrayBuffer(). */
+const leerBytes = (archivo) => (typeof archivo.arrayBuffer === 'function'
+  ? archivo.arrayBuffer()
+  : new Promise((resolve, reject) => {
+    const lector = new FileReader();
+    lector.onload = () => resolve(lector.result);
+    lector.onerror = () => reject(lector.error);
+    lector.readAsArrayBuffer(archivo);
+  }));
+
+/** Queda registrado (analytics_events, como los demás errores del cliente) para ver qué foto falló y por qué. */
+const avisarFallo = (archivo, paso, formato) => {
+  const detalle = { nombre: archivo?.name, tipo: archivo?.type, tamano: archivo?.size, formato, paso };
+  console.warn('[Crear] No se pudo leer la imagen:', detalle);
+  import('./observability/errorReporter')
+    .then(({ reportClientError }) => reportClientError({ source: 'crear-imagen', message: `No se pudo leer la imagen (${paso}): ${JSON.stringify(detalle)}` }))
+    .catch(() => {});
+};
 
 /**
  * La imagen lista para usar: { img, url, archivo } (archivo puede cambiar: un
  * SVG o un formato raro pasan a PNG/JPG). Si el navegador no la abre con
  * <img>, se intenta con createImageBitmap y se pasa a PNG.
  */
-const decodificar = async (archivo) => {
-  if (!archivo.size) {
-    throw new Error('No pudimos abrir ese archivo. Si está solo en la nube (Google Fotos, Drive), descárgalo al dispositivo y vuelve a elegirlo.');
+const decodificar = async (elegido) => {
+  // Primero se copia entera a memoria. En la app de Android la foto que da el
+  // selector (Google Fotos) se lee recién cuando se usa, y en algunas esa
+  // lectura tardía fallaba ("No pudimos leer esa imagen" con un JPG normal).
+  let bytes;
+  try {
+    bytes = await leerBytes(elegido);
+  } catch {
+    avisarFallo(elegido, 'leer');
+    throw new Error(NO_SE_ABRE);
   }
+  if (!bytes?.byteLength) {
+    avisarFallo(elegido, 'vacío');
+    throw new Error(NO_SE_ABRE);
+  }
+  const archivo = new File([bytes], elegido.name || 'imagen', { type: elegido.type || '' });
   const formato = await leerFormato(archivo);
   let fuente = archivo;
   if (formato === 'svg' || /svg/i.test(archivo.type)) {
@@ -131,7 +163,7 @@ const decodificar = async (archivo) => {
   }
   try {
     const { img, url } = await decodificarConImagen(fuente);
-    return { img, url, archivo: fuente };
+    return { img, url, archivo: fuente, formato: fuente === archivo ? formato : 'png' };
   } catch { /* se intenta de otra forma */ }
   if (typeof createImageBitmap === 'function') {
     try {
@@ -139,14 +171,14 @@ const decodificar = async (archivo) => {
       const png = await aArchivo(mapa, mapa.width, mapa.height, 'image/png');
       mapa.close?.();
       const { img, url } = await decodificarConImagen(png);
-      return { img, url, archivo: png };
+      return { img, url, archivo: png, formato: 'png' };
     } catch { /* tampoco */ }
   }
+  avisarFallo(archivo, 'decodificar', formato);
   if (formato === 'heic') {
     throw new Error('Esa foto está en formato HEIC y no la podemos leer. Guárdala como JPG (o en la cámara elige JPG en vez de "Alta eficiencia") y vuelve a subirla.');
   }
   if (formato === 'gif' || formato === 'avif') throw new Error(`No pudimos leer esa imagen ${formato.toUpperCase()}. Prueba con un PNG o JPG.`);
-  console.warn('[Crear] No se pudo leer la imagen:', { nombre: archivo.name, tipo: archivo.type, tamano: archivo.size, formato });
   throw new Error(NO_SE_LEE);
 };
 
@@ -210,11 +242,10 @@ export const prepararImagenCliente = async (original) => {
   if (original.size > TAMANO_MAXIMO_MB * 1024 * 1024) {
     throw new Error(`La imagen pesa más de ${TAMANO_MAXIMO_MB} MB.`);
   }
-  const { img, url, archivo } = await decodificar(original);
+  // formato: el de verdad (por sus bytes); de eso depende si puede tener transparencia.
+  const { img, url, archivo, formato } = await decodificar(original);
   const ancho = img.naturalWidth;
   const alto = img.naturalHeight;
-  // El tipo de verdad (por sus bytes): de eso depende si puede tener transparencia.
-  const formato = archivo === original ? await leerFormato(archivo) : 'png';
   const conTransparencia = formato !== 'jpg';
   // Solo PNG, JPG y WebP se suben tal cual; lo demás (GIF, AVIF…) pasa a PNG.
   const subeTalCual = formato === 'png' || formato === 'jpg' || formato === 'webp';

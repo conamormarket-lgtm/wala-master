@@ -2,6 +2,7 @@ import { firmaDiseno, firmaBorrador, capasParaGuardar, archivosVigentes } from '
 import { capasEnOtraPrenda } from '../../pages/Crear/zonasEquivalentes';
 import { generarArchivosCreacion } from '../../pages/Crear/generarArchivosCreacion';
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fabric } from 'fabric';
@@ -3582,7 +3583,10 @@ const EstudioDeTienda = () => {
         />
       )}
     >
-      {procesando && <CapaCargando texto={<Texto>{sinPuntos(procesando)}</Texto>} />}
+      {/* Guardar, comprar o preparar los archivos: tapa toda la pantalla (en
+          <body>, como EsperaPantalla). Dentro del estudio solo cubría su caja y
+          en la tablet se veía cortada y la página se podía mover. */}
+      {procesando && createPortal(<CapaCargando pantallaCompleta texto={<Texto>{sinPuntos(procesando)}</Texto>} />, document.body)}
       <HojasEstudio prenda={prenda.name} color={color.nombre} precio={total}
         tallas={tallas} talla={tallaCompra} onTalla={setTallaCompra}
         pidiendoTalla={pidiendoTalla} onCerrarTalla={() => setPidiendoTalla(false)} onComprar={() => comprar(tallaCompra)}
@@ -3595,7 +3599,7 @@ const EstudioDeTienda = () => {
         <AtajosEstudio lados={cfg.vistas.map((v) => v.nombre)} />
       </HojaInferior>
       {menu && <MenuContextual abierto x={menu.x} y={menu.y} items={opcionesMenu().map((opcion) => opcion === 'separador' ? opcion : { ...opcion, Icono: opcion.icono })} onCerrar={cerrarMenu} />}
-      <Suspense fallback={<CapaCargando texto={<Texto>Preparando la herramienta</Texto>} />}>
+      <Suspense fallback={createPortal(<CapaCargando pantallaCompleta texto={<Texto>Preparando la herramienta</Texto>} />, document.body)}>
         {recortando && capaSel?.id === recortando && capaSel.type === 'image' && <RecortarFoto abierta forma="libre" src={srcDe(capaSel)} onCancelar={() => setRecortando(null)}
           onListo={async (blob, { corte, natural }) => {
             if (blob && corte) {
