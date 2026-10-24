@@ -337,8 +337,13 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
       setForm(newForm);
       setInitialFormState(JSON.stringify(newForm));
 
-      // Siempre activar la primera variante si existe
-      if (firstVariantId) setActiveGalleryTabId(firstVariantId);
+      // Abrir en la variante principal (👑), no en la primera: si no, la foto
+      // que se sube sin cambiar de pestaña cae en otro color (le pasó a
+      // Rodar Contigo: la nueva quedó en Blanco y la tienda seguía en Negro).
+      const pestanaInicial = mappedVariants.some(v => v.id === productData.defaultVariantId)
+        ? productData.defaultVariantId
+        : firstVariantId;
+      if (pestanaInicial) setActiveGalleryTabId(pestanaInicial);
       return; // No cargamos draft si estamos editando uno oficial directamente sin draftId
     }
 
@@ -350,7 +355,8 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         setForm(draft.form);
         setInitialFormState(JSON.stringify(draft.form));
         if (draft.form.variants?.length > 0) {
-          setActiveGalleryTabId(draft.form.variants[0].id);
+          const principal = draft.form.variants.find(v => v.id === draft.form.defaultVariantId);
+          setActiveGalleryTabId((principal || draft.form.variants[0]).id);
         }
       } else {
         // Fallback si no encuentra el draft
