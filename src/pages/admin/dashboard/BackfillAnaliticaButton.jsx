@@ -12,7 +12,8 @@ import styles from './BackfillAnaliticaButton.module.css';
  * Llama a la Cloud Function callable 'aggregateAnalyticsDailyBackfill'
  * (functions/analyticsDaily.js), que re-agrega los eventos crudos de cada día
  * en su doc diario. Acepta:
- *    - { fromDay, toDay }  (rango, ambos 'YYYY-MM-DD', tope 120 días)
+ *    - { fromDay, toDay }  (rango, ambos 'YYYY-MM-DD', tope 120 días por llamada;
+ *                           aquí se manda por tramos de 10 días)
  *    - { day }             (un único día)
  * y exige el claim admin === true (mismo gating que <AdminRoute>), así que este
  * control SOLO tiene sentido bajo el panel de admin.
@@ -42,8 +43,9 @@ const presetUltimosDias = (n) => {
   return { fromDay: toDayKey(desde), toDay: toDayKey(hoy) };
 };
 
-// Tope de seguridad espejo del de la Cloud Function (MAX_DAYS = 120).
-const MAX_DIAS = 120;
+// Tope del rango: lo más largo que muestra Resultados (365 días). Va por tramos,
+// así que no choca con el tope de 120 días por llamada de la Cloud Function.
+const MAX_DIAS = 365;
 
 // Valida el formato de clave de día (mismo contrato que isValidDayKey en server).
 const esDiaValido = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
@@ -60,13 +62,34 @@ const diasEnRango = (fromDay, toDay) => {
 };
 
 // Invoca la callable y normaliza a { error, data } (mismo estilo que callFn de loyalty.js).
+// El navegador espera hasta 9 min (lo mismo que la función): con el tope por
+// defecto (70 s) avisaba "deadline-exceeded" aunque el servidor terminara bien.
 const llamarBackfill = async (payload) => {
   try {
-    const res = await httpsCallable(getFunctions(), 'aggregateAnalyticsDailyBackfill')(payload);
+    const res = await httpsCallable(getFunctions(), 'aggregateAnalyticsDailyBackfill', { timeout: 540000 })(payload);
     return { error: null, data: res.data };
   } catch (e) {
     return { error: e?.message || 'Error en el servidor', data: null };
   }
+};
+
+// Se reconstruye por tramos de pocos días: cada llamada termina rápido y se
+// ve el avance (90 días de una sola vez tardaban más de 3 minutos).
+const DIAS_POR_TRAMO = 10;
+
+// Parte [fromDay, toDay] en tramos consecutivos de hasta DIAS_POR_TRAMO días.
+const tramosDe = (fromDay, toDay) => {
+  const tramos = [];
+  const cursor = new Date(`${fromDay}T00:00:00`);
+  const fin = new Date(`${toDay}T00:00:00`);
+  while (cursor <= fin) {
+    const desde = toDayKey(cursor);
+    cursor.setDate(cursor.getDate() + DIAS_POR_TRAMO - 1);
+    const hasta = cursor < fin ? toDayKey(cursor) : toDay;
+    tramos.push({ fromDay: desde, toDay: hasta });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return tramos;
 };
 
 export default function BackfillAnaliticaButton() {
@@ -76,26 +99,40 @@ export default function BackfillAnaliticaButton() {
   const [toDay, setToDay] = useState(inicial.toDay);
 
   const [cargando, setCargando] = useState(false);
-  const [resultado, setResultado] = useState(null); // { processed, ok, results }
+  const [avance, setAvance] = useState(null); // { hechos, total } en días
+  const [resultado, setResultado] = useState(null); // { processed, ok }
   const [error, setError] = useState('');
 
-  // Nº de días del rango actual y validación local (espejo del server: tope 120).
+  // Nº de días del rango actual y validación local (tope MAX_DIAS).
   const dias = useMemo(() => diasEnRango(fromDay, toDay), [fromDay, toDay]);
   const rangoValido = dias !== null && dias >= 1 && dias <= MAX_DIAS;
 
   // Lanza el backfill con un payload ya resuelto. Centraliza estado de carga,
   // limpieza de mensajes y mapeo de error/resultado para presets y rango manual.
+  // Va tramo por tramo; si uno falla se detiene y dice hasta dónde llegó (lo
+  // ya reconstruido queda guardado).
   const ejecutar = async (payload) => {
     if (cargando) return;
+    const tramos = tramosDe(payload.fromDay, payload.toDay);
+    const total = diasEnRango(payload.fromDay, payload.toDay) || 0;
     setCargando(true);
     setError('');
     setResultado(null);
-    const { error: err, data } = await llamarBackfill(payload);
-    if (err) {
-      setError(err);
-    } else {
-      setResultado(data);
+    let processed = 0;
+    let ok = 0;
+    setAvance({ hechos: 0, total });
+    for (const tramo of tramos) {
+      const { error: err, data } = await llamarBackfill(tramo);
+      if (err) {
+        setError(`${err}. Quedaron reconstruidos ${processed} de ${total} días (hasta antes del ${tramo.fromDay}).`);
+        break;
+      }
+      processed += data?.processed ?? 0;
+      ok += data?.ok ?? 0;
+      setAvance({ hechos: processed, total });
     }
+    if (processed > 0) setResultado({ processed, ok });
+    setAvance(null);
     setCargando(false);
   };
 
@@ -185,6 +222,12 @@ export default function BackfillAnaliticaButton() {
         <p className={`${styles.hint} ${!rangoValido && dias !== null ? styles.hintError : ''}`}>
           {hint}
         </p>
+
+        {avance && (
+          <p className={styles.hint} role="status">
+            Reconstruyendo… {avance.hechos} de {avance.total} días. Puedes seguir usando el panel, pero no cierres esta página.
+          </p>
+        )}
 
         {/* Resultado / error (no bloquea la página). */}
         {error && (
