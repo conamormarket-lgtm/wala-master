@@ -15,7 +15,7 @@ import useWhatsAppDeLaRuta from '../../components/marco/useWhatsAppDeLaRuta';
 import TarjetaDeProducto from '../../components/producto/TarjetaDeProducto';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLayoutContext } from '../../contexts/LayoutContext';
-import { trackBannerClick } from '../../services/analytics/tracker';
+import { trackBannerClick, trackCollectionView, trackCategoryView } from '../../services/analytics/tracker';
 import { Plus } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueries, useInfiniteQuery, keepPreviousData, useIsFetching, useQueryClient } from '@tanstack/react-query';
@@ -1005,6 +1005,13 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   const categoriaPropia = categoriaKit.clave === claveCategoriaUrl ? categoriaKit.valor : (categoryId || null);
   const categoriaCatalogo = hasCategoriesNav ? navCategoryId : categoriaPropia;
   const elegirFiltroKit = (grupo, valor) => {
+    if (valor && (grupo === 'coleccion' || grupo === 'temporada')) {
+      const nombre = (coleccionesKit || []).find((c) => c.id === valor)?.name || null;
+      trackCollectionView({ collectionId: valor, collectionName: nombre, grupo }, user || {}).catch(() => {});
+    } else if (valor && grupo === 'categoria') {
+      const nombre = (categoriesData || []).find((c) => c.id === valor)?.name || null;
+      trackCategoryView({ categoryId: valor, categoryName: nombre }, user || {}).catch(() => {});
+    }
     if (grupo !== 'categoria') cambiarFiltrosKit({ sel: { ...filtrosActuales.sel, [grupo]: valor } });
     else if (hasCategoriesNav) setNavCategoryId(valor ?? null);
     else setCategoriaKit({ clave: claveCategoriaUrl, valor: valor ?? null });
@@ -1033,6 +1040,28 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     productos: fuenteDeFiltros,
     marcaActual: pageBrandId || undefined,
   }) : []), [fuenteDeFiltros, categoriesData, coleccionesKit, marcasKit, tiposKit, etiquetasKit, personajesKit, pageBrandId]);
+
+  // ?coleccion= (enlaces del menú "Colección › Categoría"): se aplica una vez
+  // por página y valor, cuando ya están los grupos; después manda lo que elija
+  // quien compra. Cae en Temporadas o Colecciones según dónde esté.
+  const coleccionUrl = searchParams.get('coleccion');
+  const coleccionUrlAplicada = useRef({ clave: null, grupo: null });
+  useEffect(() => {
+    const clave = `${pageId}|${coleccionUrl || ''}`;
+    if (!coleccionUrl || coleccionUrlAplicada.current.clave === clave || !gruposKit.length) return;
+    const grupo = gruposKit.find((g) => (g.id === 'temporada' || g.id === 'coleccion')
+      && g.opciones.some((o) => o.valor === coleccionUrl));
+    // Otro enlace de colección en la misma página reemplaza al anterior.
+    const anterior = coleccionUrlAplicada.current;
+    const sel = { ...filtrosActuales.sel };
+    if (anterior.grupo && anterior.clave?.startsWith(`${pageId}|`)) delete sel[anterior.grupo];
+    coleccionUrlAplicada.current = { clave, grupo: grupo?.id || null };
+    if (!grupo) return;
+    cambiarFiltrosKit({ sel: { ...sel, [grupo.id]: coleccionUrl } });
+    const nombre = (coleccionesKit || []).find((c) => c.id === coleccionUrl)?.name || null;
+    trackCollectionView({ collectionId: coleccionUrl, collectionName: nombre, grupo: grupo.id }, user || {}).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageId, coleccionUrl, gruposKit]);
 
   // Buscador de la marca: busca en TODOS sus productos (no solo en lo cargado)
   // y, mientras hay texto, no hay "más" que cargar.

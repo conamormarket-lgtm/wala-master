@@ -4,6 +4,7 @@ import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
+import { trackEditorOpen } from '../../services/analytics/tracker';
 import { getComboCrear } from '../../services/combosCrear';
 import { getPrendaBase } from '../../services/prendasBase';
 import { getDesignById, getDesignsByUser } from '../../services/designs';
@@ -31,6 +32,11 @@ import { tallasPara, useFotosDePiezas } from '../../pages/Crear/fotosCombo';
  *    (crearDesdePlantilla), el combo entra al carrito como una sola línea
  *    (itemDeCombo) y se va al carrito
  */
+
+// Combos ya registrados como abiertos en esta pestaña: se vuelve al combo
+// después de diseñar cada prenda y eso no es otra apertura.
+const combosRegistrados = new Set();
+
 export default function useComboCrear() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -57,6 +63,13 @@ export default function useComboCrear() {
   });
   const combo = comboQ.data;
   const piezasCombo = combo?.piezas || [];
+
+  useEffect(() => {
+    if (!combo || combosRegistrados.has(id)) return;
+    combosRegistrados.add(id);
+    trackEditorOpen({ productId: id, editorType: 'combo', comboId: id, plantilla: plantillaParam || null }, user || {}).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [combo, id]);
 
   const prendasQ = useQueries({
     queries: piezasCombo.map((p) => ({

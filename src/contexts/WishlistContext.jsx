@@ -3,6 +3,7 @@ import { variantesDeImagen } from '../services/products';
 import { useAuth } from './AuthContext';
 import { getWishlistByUserId, addWishlistItem, removeWishlistItem, createWishlist, syncWishlistUserCode } from '../services/wishlist';
 import { recordMissionAction } from '../services/loyalty';
+import { trackWishlist } from '../services/analytics/tracker';
 
 const WishlistContext = createContext();
 
@@ -127,6 +128,7 @@ export const WishlistProvider = ({ children }) => {
         updateItems(prev => [...prev, { productId: product.id, productName: product.name }]);
         return { error };
       }
+      trackWishlist({ action: 'remove', productId: product.id }, user).catch(() => {});
     } else {
       // Agregar (Optimistic UI update)
       const imagenWishlist = product.mainImage || product.images?.[0] || '';
@@ -167,6 +169,12 @@ export const WishlistProvider = ({ children }) => {
       // verdad (no que le dio clic a "Completar" sin hacer nada). Mismo
       // criterio fire-and-forget que el hook de arriba.
       recordMissionAction('add_wishlist').catch(() => {});
+      trackWishlist({
+        action: 'add',
+        productId: product.id,
+        categoryId: product.categoryId || product.category || null,
+        name: product.name || null,
+      }, user).catch(() => {});
     }
 
     return { success: true };

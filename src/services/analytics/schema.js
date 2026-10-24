@@ -31,6 +31,13 @@ export const ANALYTICS_EVENT_TYPES = {
   MINIGAME_COMPLETE: 'minigame_complete',
   MISSION_COMPLETE: 'mission_complete',
   WISHLIST_ADD: 'wishlist_add',
+  WISHLIST_REMOVE: 'wishlist_remove',
+  // Cobros que NO son un pedido de la tienda: ticket de sorteo, suscripción al
+  // sorteo, pago del saldo de un pedido y enlace de pago rápido. eventData lleva
+  // { source: 'sorteo'|'suscripcion'|'saldo'|'pago_rapido', amountCents,
+  // currency, referenceId }. Va aparte de purchase_complete para que ningún
+  // contador de pedidos ni la conversión lo sume ("Otros cobros" en Resultados).
+  PAYMENT_COMPLETE: 'payment_complete',
   // Observabilidad (Fase 4): errores de cliente y Web Vitals.
   // Se registran fire-and-forget; no contienen PII (solo message/stack/url/ua).
   CLIENT_ERROR: 'client_error',

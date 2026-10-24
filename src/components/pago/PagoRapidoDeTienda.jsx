@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getDocument } from '../../services/firebase/firestore';
 import { getMessage } from '../../services/messages';
+import { useAuth } from '../../contexts/AuthContext';
+import { trackPaymentComplete } from '../../services/analytics/tracker';
 import CulqiCustomCheckout from '../CulqiCustomCheckout';
 import { PaginaPagoRapido } from '../../componentes/kit/paginas/PagoRapido';
 import { enlacePagoDesde } from '../../componentes/kit/adaptadores';
@@ -27,6 +29,7 @@ const limpiarNumero = (n) => {
  */
 export default function PagoRapidoDeTienda() {
   const { id } = useParams();
+  const { user } = useAuth();
   // undefined: cargando · null: no existe
   const [doc, setDoc] = useState(undefined);
   // El pago recién hecho en esta visita (el documento lo marca el servidor).
@@ -69,6 +72,18 @@ export default function PagoRapidoDeTienda() {
     />
   );
 
+  // Un enlace de pago no es un pedido de la tienda: va a "Otros cobros".
+  const pagoHecho = (metodo, transaccion) => {
+    trackPaymentComplete({
+      source: 'pago_rapido',
+      amountCents: Math.round((Number(enlace.monto) || 0) * 100),
+      currency: enlace.moneda || 'USD',
+      referenceId: enlace.id || id || null,
+      method: metodo,
+    }, user || {}).catch(() => {});
+    setPagadoAhora({ transaccion });
+  };
+
   // Sin poder pagar todavía (cargando, pagado, vencido): solo la página.
   if (cargando || !doc || estado || listo) return pagina();
 
@@ -83,7 +98,7 @@ export default function PagoRapidoDeTienda() {
             soloBotones
             onProcesando={(procesando) => setPaypal((p) => ({ ...p, procesando }))}
             onError={(error) => setPaypal((p) => ({ ...p, error }))}
-            onSuccess={(detalle) => setPagadoAhora({ transaccion: detalle?.id })}
+            onSuccess={(detalle) => pagoHecho('paypal', detalle?.id)}
           />
         </Suspense>
       ),
@@ -94,7 +109,7 @@ export default function PagoRapidoDeTienda() {
   return (
     <CulqiCustomCheckout
       enlace={doc}
-      onSuccess={(resultado) => setPagadoAhora({ transaccion: resultado?.charge_id })}
+      onSuccess={(resultado) => pagoHecho('culqi', resultado?.charge_id)}
       renderBoton={({ abrir, procesando }) => pagina({ onTarjeta: abrir, tarjeta: { procesando } })}
     />
   );

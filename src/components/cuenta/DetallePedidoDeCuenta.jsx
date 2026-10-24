@@ -14,6 +14,7 @@ import { getFeaturedProducts, getProductsByCategory, getCategories } from '../..
 import { listFilesInFolder } from '../../services/firebase/storage';
 import { precalentarFunciones } from '../../services/checkoutPayment';
 import { getFx, penToUsd } from '../../services/fx';
+import { trackPaymentComplete } from '../../services/analytics/tracker';
 import { leerSurveyConfig, configEntregaPanel } from '../../services/encuestaConfig';
 import CulqiCustomCheckout from '../CulqiCustomCheckout';
 import TarjetaDeProducto from '../producto/TarjetaDeProducto';
@@ -236,6 +237,17 @@ export default function DetallePedidoDeCuenta() {
   const vista = normalizarPedidoParaVista(pedido) || {};
   const produccion = Object.keys(vista.fechas || {}).length > 0;
   const deuda = pedido.conDeuda ? num(pedido.montoDeuda) : 0;
+  // Pagar el saldo no es un pedido nuevo: va a "Otros cobros", no a ventas.
+  const pagadoSaldo = (metodo) => {
+    trackPaymentComplete({
+      source: 'saldo',
+      amountCents: Math.round(deuda * 100),
+      currency: 'PEN',
+      referenceId: pedido.id || null,
+      method: metodo,
+    }, user || {}).catch(() => {});
+    pagado();
+  };
 
   let pasos;
   let paso;
@@ -399,13 +411,13 @@ export default function DetallePedidoDeCuenta() {
               <CulqiCustomCheckout
                 pedido={pedido}
                 conYape
-                onSuccess={pagado}
+                onSuccess={() => pagadoSaldo('culqi')}
                 renderBoton={({ abrir, procesando }) => <PagoTarjeta monto={deuda} procesando={procesando} onPagar={abrir} />}
               />
               {/* Con el tipo de cambio ya leído: el monto que se ve es el que cobra el servidor. */}
               {fx && (
                 <Suspense fallback={null}>
-                  <PaypalCheckout pedido={pedido} amountUsd={penToUsd(deuda, fx)} onSuccess={pagado} />
+                  <PaypalCheckout pedido={pedido} amountUsd={penToUsd(deuda, fx)} onSuccess={() => pagadoSaldo('paypal')} />
                 </Suspense>
               )}
             </>

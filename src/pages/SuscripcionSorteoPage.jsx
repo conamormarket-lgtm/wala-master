@@ -25,7 +25,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { useGlobalToast } from '../contexts/ToastContext';
 import { signInWithGoogle } from '../services/firebase/auth';
-import { getClientType } from '../services/analytics/tracker';
+import { getClientType, trackPaymentComplete } from '../services/analytics/tracker';
 import { GlassCard, GlassButton, GlassModal, Badge } from '../components/ui';
 import {
   getCampaignBySlug,
@@ -756,11 +756,20 @@ function ModalSuscripcion({ campaign, plan, origenApp, onClose, onSuscrito }) {
     setEnPago(true); // avanza al paso de método de pago
   };
 
-  const onOkPago = useCallback((data) => {
-    void data;
+  const onOkPago = useCallback((data, metodo) => {
+    // Primer cobro de la suscripción (en soles, aunque PayPal cobre en USD).
+    trackPaymentComplete({
+      source: 'suscripcion',
+      amountCents: Number(plan?.precioCentimos) || 0,
+      currency: 'PEN',
+      referenceId: data?.subscriptionId || data?.id || null,
+      campaignId: campaign?.id || null,
+      planId: plan?.id || null,
+      method: metodo,
+    }, user || {}).catch(() => {});
     toast.success('¡Suscripción activada! Ya participas en los sorteos. 🎉');
     if (onSuscrito) onSuscrito();
-  }, [toast, onSuscrito]);
+  }, [toast, onSuscrito, plan, campaign, user]);
 
   const onErrorPago = useCallback((msg) => {
     setError(msg || 'No se pudo completar la suscripción.');
@@ -874,7 +883,7 @@ function ModalSuscripcion({ campaign, plan, origenApp, onClose, onSuscrito }) {
               email={correo}
               datos={datosPayload}
               origenApp={origenApp}
-              onOk={onOkPago}
+              onOk={(data) => onOkPago(data, 'culqi')}
               onError={onErrorPago}
             />
             <div className={styles.divisor}><T>o paga desde el extranjero</T></div>
@@ -882,7 +891,7 @@ function ModalSuscripcion({ campaign, plan, origenApp, onClose, onSuscrito }) {
               campaignId={campaign.id}
               plan={plan}
               datos={datosPayload}
-              onOk={onOkPago}
+              onOk={(data) => onOkPago(data, 'paypal')}
               onError={onErrorPago}
               onPendiente={onPendientePago}
             />

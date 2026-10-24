@@ -7,7 +7,7 @@ import {
   getSorteoActivo, getSorteoBySlug, getMiParticipacion, getContadorSorteo,
   participarGratis, comprarTicketSorteo, sumarChanceCompartir, claimRaffleReferral,
 } from '../../services/sorteos';
-import { getClientType } from '../../services/analytics/tracker';
+import { getClientType, trackPaymentComplete } from '../../services/analytics/tracker';
 import { origenPublico } from '../../services/referrals';
 import { getFx, penToUsd } from '../../services/fx';
 import { COUNTRIES } from '../../constants/countries';
@@ -146,7 +146,17 @@ export default function SorteoDeTienda() {
     correo: userProfile?.email || user?.email || '',
   }), [userProfile, user]);
 
-  const listoPago = () => {
+  const listoPago = (compra, metodo) => {
+    if (compra) {
+      trackPaymentComplete({
+        source: 'sorteo',
+        amountCents: Math.round((Number(compra.monto) || 0) * 100),
+        currency: compra.moneda || 'PEN',
+        referenceId: compra.ticketId || null,
+        sorteoId: sorteoId || null,
+        method: metodo,
+      }, user || {}).catch(() => {});
+    }
     setPagado((n) => n + 1);
     refrescar();
     toast.success('¡Tus tickets ya están registrados!');
@@ -264,7 +274,7 @@ export default function SorteoDeTienda() {
       botonTarjeta={(compra) => (
         <CulqiCustomCheckout
           cobro={cobroDe(compra)}
-          onSuccess={listoPago}
+          onSuccess={() => listoPago(compra, 'culqi')}
           renderBoton={({ abrir, procesando }) => (
             <PagoTarjeta monto={compra.monto} moneda={compra.moneda} onPagar={abrir} procesando={procesando} />
           )}
@@ -275,7 +285,7 @@ export default function SorteoDeTienda() {
           <PaypalTicketSorteo
             sorteoId={sorteoId}
             ticketId={compra.ticketId}
-            onPagado={listoPago}
+            onPagado={() => listoPago(compra, 'paypal')}
             onProcesando={(v) => setPaypal((p) => ({ ...p, procesando: v }))}
             onError={(texto) => setPaypal((p) => ({ ...p, error: texto }))}
           />

@@ -591,12 +591,15 @@ export async function trackMissionComplete(missionInfo = {}, userCtx = {}) {
   });
 }
 
+// action 'remove' se registra como wishlist_remove; cualquier otra, como agregado.
 export async function trackWishlist(wishlistInfo = {}, userCtx = {}) {
   const now = Date.now();
   const anonymousId = getAnonymousId();
   const sessionId = await ensureAnalyticsSession(userCtx);
   await registrarEvento({
-    type: ANALYTICS_EVENT_TYPES.WISHLIST_ADD,
+    type: wishlistInfo?.action === 'remove'
+      ? ANALYTICS_EVENT_TYPES.WISHLIST_REMOVE
+      : ANALYTICS_EVENT_TYPES.WISHLIST_ADD,
     path: window.location.pathname || '/',
     uid: userCtx?.uid || null,
     email: userCtx?.email || null,
@@ -606,6 +609,25 @@ export async function trackWishlist(wishlistInfo = {}, userCtx = {}) {
     clientTsMs: now,
     clientType: getClientType(),
     eventData: wishlistInfo // Esperado: { action, productId, categoryId }
+  });
+}
+
+// Cobro que no es un pedido de la tienda (ver PAYMENT_COMPLETE en schema.js).
+export async function trackPaymentComplete(paymentInfo = {}, userCtx = {}) {
+  const now = Date.now();
+  const anonymousId = getAnonymousId();
+  const sessionId = await ensureAnalyticsSession(userCtx);
+  await registrarEvento({
+    type: ANALYTICS_EVENT_TYPES.PAYMENT_COMPLETE,
+    path: window.location.pathname || '/',
+    uid: userCtx?.uid || null,
+    email: userCtx?.email || null,
+    displayName: userCtx?.displayName || null,
+    anonymousId,
+    sessionId: sessionId || null,
+    clientTsMs: now,
+    clientType: getClientType(),
+    eventData: paymentInfo // Esperado: { source, amountCents, currency, referenceId }
   });
 }
 

@@ -12,6 +12,7 @@ import { ImagePlus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDown
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
+import { trackEditorOpen, trackEditorSave } from '../../services/analytics/tracker';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getPrendaBase } from '../../services/prendasBase';
 import { getDesignById, saveDesign, guardarTallaCreacion, renombrarCreacion, urlsDeDiseno } from '../../services/designs';
@@ -127,6 +128,10 @@ const estilizarGrupo = (sel) => {
   sel.set({ lockRotation: true, borderDashArray: [6, 4] });
   sel.setControlsVisibility({ mtr: false });
 };
+
+// Aperturas del estudio ya registradas en esta pestaña (prenda|diseño|combo):
+// volver del combo o del carrito a la misma prenda no cuenta otra vez.
+const aperturasRegistradas = new Set();
 
 const EstudioDeTienda = () => {
   const { id } = useParams();
@@ -255,6 +260,22 @@ const EstudioDeTienda = () => {
   const primerDibujoRef = useRef(true);
   const [version, setVersion] = useState(0);
   const [listo, setListo] = useState(false);
+  // Analítica: una apertura del estudio por prenda/diseño/combo y pestaña,
+  // cuando el lienzo ya está listo (no cuenta si se va antes de que cargue).
+  useEffect(() => {
+    if (!listo) return;
+    const clave = `${id}|${designIdParam || ''}|${comboParam || ''}`;
+    if (aperturasRegistradas.has(clave)) return;
+    aperturasRegistradas.add(clave);
+    trackEditorOpen({
+      productId: id,
+      editorType: 'crear',
+      designId: designIdParam || null,
+      plantilla: plantillaParam || null,
+      comboId: comboParam || null,
+    }, user || {}).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listo, id, designIdParam, comboParam]);
   const [anchoLienzo, setAnchoLienzo] = useState(0);
   const [altoVentana, setAltoVentana] = useState(() => (typeof window === 'undefined' ? 800 : window.innerHeight));
   const [altoDisponibleLienzo, setAltoDisponibleLienzo] = useState(0);
@@ -2951,6 +2972,7 @@ const EstudioDeTienda = () => {
     setProcesando('Preparando tu creación…');
     try {
       const creacion = await guardarCreacion(nombreFinal);
+      trackEditorSave({ productId: id, editorType: 'crear', designId: creacion.id || null }, user || {}).catch(() => {});
       // Dentro de un combo, guardar también la deja puesta en su pieza.
       if (enCombo) {
         await ponerEnCombo(creacion.id);
