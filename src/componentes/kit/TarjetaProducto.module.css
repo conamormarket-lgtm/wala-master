@@ -119,6 +119,12 @@
   opacity: 0;
 }
 
+/* Portada de combo con otra proporción (cuadrada, apaisada): llena el mismo
+   hueco con aire en vez de quedar chica con bandas arriba y abajo. */
+.imgLlena {
+  object-fit: cover;
+}
+
 /* Combo sin foto propia: las piezas como cartas con filo blanco, un poco
    giradas (como los favoritos de la cabecera). Deja libre abajo para el
    sello de la marca y el botón. 3 piezas: una grande y dos a la derecha. */

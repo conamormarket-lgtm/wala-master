@@ -22,12 +22,28 @@ const INCLINACION = 4; // grados máximos, suave
 const recorteValido = (r) => Boolean(r && r.width > 0 && r.height > 0);
 
 /**
+ * Proporción (ancho / alto) del hueco de la foto: el marco 4:5 menos el 7% de
+ * aire por lado. Las fotos de producto (3:4, como las poleras) caben casi justo.
+ */
+const PROPORCION_HUECO = 0.86 / 1.11;
+
+/** Si una foto con esa proporción se ve chica o con bandas dentro del hueco. */
+const noEncaja = (ancho, alto) => {
+  if (!ancho || !alto) return false;
+  const diferencia = (ancho / alto) / PROPORCION_HUECO;
+  return diferencia < 0.9 || diferencia > 1.1;
+};
+
+/**
  * Foto de la tarjeta. Con `recorte` (el encuadre que fijó el admin, en %) se
  * ve solo esa parte, dentro del mismo hueco con aire de siempre. Si la foto
- * falla, prueba con `respaldo` (otra URL) una vez.
+ * falla, prueba con `respaldo` (otra URL) una vez. Con `encajar` (la portada
+ * de un combo), si su proporción no es la de siempre llena el hueco en vez de
+ * quedar chica con bandas; con la proporción de siempre se ve igual que antes.
  */
-function FotoTarjeta({ src, srcSet, sizes, recorte, respaldo, prioridad = false, className }) {
+function FotoTarjeta({ src, srcSet, sizes, recorte, respaldo, prioridad = false, encajar = false, className }) {
   const [fallo, setFallo] = useState(false);
+  const [llenar, setLlenar] = useState(false);
   // Sin copias propias (la portada de un combo), las pide a Cloudinary.
   const porFetch = srcSet ? null : fuentesPorFetch(src, sizes);
   const copias = srcSet || porFetch?.srcSet;
@@ -38,7 +54,7 @@ function FotoTarjeta({ src, srcSet, sizes, recorte, respaldo, prioridad = false,
       srcSet={fallo ? undefined : copias}
       sizes={!fallo && copias ? (sizes || porFetch?.sizes) : undefined}
       alt=""
-      className={recorteValido(recorte) ? s.imgRecortada : className}
+      className={recorteValido(recorte) ? s.imgRecortada : [className, llenar && s.imgLlena].filter(Boolean).join(' ')}
       style={recorteValido(recorte) ? {
         top: `${-(recorte.y / recorte.height) * 100}%`,
         left: `${-(recorte.x / recorte.width) * 100}%`,
@@ -49,6 +65,7 @@ function FotoTarjeta({ src, srcSet, sizes, recorte, respaldo, prioridad = false,
       // En minúsculas: React 18 no conoce fetchPriority y lo dejaba como aviso.
       {...(prioridad ? { fetchpriority: 'high' } : {})}
       decoding="async"
+      onLoad={encajar ? (e) => setLlenar(noEncaja(e.currentTarget.naturalWidth, e.currentTarget.naturalHeight)) : undefined}
       onError={siFallaDeVerdad(() => { if (!fallo && respaldo && respaldo !== src) setFallo(true); })}
     />
   );
@@ -272,7 +289,7 @@ export default function TarjetaProducto({
       <span className={s.bordeLuz} aria-hidden="true" />
       <div className={s.media} style={estiloFondo(fondo)}>
         <Enlace to={url} className={s.enlaceImagen} aria-label={nombre}>
-          {imagen && <FotoTarjeta src={imagen} srcSet={srcSet} sizes={sizes} recorte={recorte} respaldo={respaldo} prioridad={prioridad} className={s.img} />}
+          {imagen && <FotoTarjeta src={imagen} srcSet={srcSet} sizes={sizes} recorte={recorte} respaldo={respaldo} prioridad={prioridad} encajar={esCombo} className={s.img} />}
           {imagen && imagenHover && <FotoTarjeta src={imagenHover} srcSet={srcSetHover} sizes={sizes} recorte={recorteHover} className={`${s.img} ${s.imgHover}`} />}
           {collage.length > 0 && (
             <span className={[s.collage, collage.length === 3 && s.collageTres].filter(Boolean).join(' ')} style={{ '--piezas': collage.length }}>
