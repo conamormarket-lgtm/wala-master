@@ -21,6 +21,7 @@ const admin = require("firebase-admin");
 const { FieldValue } = require("firebase-admin/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { buildDailyDoc, ANALYTICS_EVENT_TYPES, safeNumber } = require("./analyticsAggregations");
+const { buildResultadosDelDia } = require("./analyticsResultados");
 const {
   filtrarTraficoReal, sesionesFaltantes, idsAdminDelDia, armarVisitas, resumenVisitas,
 } = require("./analyticsTraficoReal");
@@ -472,6 +473,10 @@ async function procesarDia(dayKey) {
   const { visitas, canales } = resumenVisitas(v.visitas);
   doc.visitas = visitas;
   doc.canales = canales;
+  // Resultados (ventas, otros cobros, carritos, interés, deseos, Crear): sobre
+  // el tráfico real completo, no solo lo que entró a una visita, para no
+  // perder un pedido o un carrito de una sesión que empezó el día anterior.
+  Object.assign(doc, buildResultadosDelDia(filtrado.events));
   // Quiénes visitaron (id del dispositivo o cuenta), por app/web: el panel une
   // los de varios días para contar PERSONAS ÚNICAS del rango, no sumar días.
   const personasIds = { app: new Set(), web: new Set() };

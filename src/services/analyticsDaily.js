@@ -571,6 +571,129 @@ function normalizeRows(rows, valueKey) {
   });
 }
 
+/* -------------------------------------------------------------------------- */
+/* Resultados: ventas, otros cobros, carritos, interés, deseos y Crear          */
+/* (functions/analyticsResultados.js). Docs anteriores al 2026-10-24 no traen  */
+/* estos campos y no aportan nada: la UI dice "sin datos" en vez de un cero.   */
+/* -------------------------------------------------------------------------- */
+
+const TOP_VENDIDOS_RANGO = 50;
+const TOP_CARRITOS_RANGO = 50;
+const TOP_PARES_INTERES_RANGO = 150;
+const TOP_PRODUCTOS_INTERES_RANGO = 25;
+const TOP_DESEOS_RANGO = 25;
+
+function nuevosResultados() {
+  return {
+    dias: 0,
+    ventas: { pedidos: emptyTAW(), ingresosCents: emptyTAW(), unidades: emptyTAW() },
+    vendidos: new Map(),
+    otrosCobros: {},
+    carritos: { cantidad: emptyTAW(), valorCents: emptyTAW(), lista: new Map() },
+    interesPares: new Map(),
+    interesProductos: new Map(),
+    deseos: { agregados: emptyTAW(), quitados: emptyTAW(), productos: new Map() },
+    crear: { aperturas: emptyTAW(), aperturasCombo: emptyTAW(), guardados: emptyTAW() },
+  };
+}
+
+function acumularResultados(acc, doc) {
+  if (!doc?.ventas) return;
+  acc.dias += 1;
+  Object.keys(acc.ventas).forEach((k) => addTAW(acc.ventas[k], doc.ventas[k]));
+  (doc.topVendidos || []).forEach((p) => {
+    if (!p?.productId) return;
+    const x = acc.vendidos.get(p.productId) || { productId: p.productId, unidades: 0, ingresosCents: 0, pedidos: 0, linea: null };
+    x.unidades += safeNumber(p.unidades);
+    x.ingresosCents += safeNumber(p.ingresosCents);
+    x.pedidos += safeNumber(p.pedidos);
+    x.linea = x.linea || p.linea || null;
+    acc.vendidos.set(p.productId, x);
+  });
+  Object.entries(doc.otrosCobros || {}).forEach(([fuente, c]) => {
+    const x = acc.otrosCobros[fuente] || (acc.otrosCobros[fuente] = { cantidad: 0, porMoneda: {} });
+    x.cantidad += safeNumber(c?.cantidad);
+    Object.entries(c?.porMoneda || {}).forEach(([m, cents]) => { x.porMoneda[m] = (x.porMoneda[m] || 0) + safeNumber(cents); });
+  });
+  const ca = doc.carritosAbandonados || {};
+  addTAW(acc.carritos.cantidad, ca.cantidad);
+  addTAW(acc.carritos.valorCents, ca.valorCents);
+  (ca.lista || []).forEach((c) => { if (c?.sessionId) acc.carritos.lista.set(c.sessionId, c); });
+  (doc.interes?.pares || []).forEach((p) => {
+    const clave = `${p.uid}|${p.productId}`;
+    const x = acc.interesPares.get(clave) || { uid: p.uid, productId: p.productId, nombre: null, dwellMs: 0, visitas: 0, ultimaMs: 0 };
+    x.dwellMs += safeNumber(p.dwellMs);
+    x.visitas += safeNumber(p.visitas);
+    x.ultimaMs = Math.max(x.ultimaMs, safeNumber(p.ultimaMs));
+    x.nombre = x.nombre || p.nombre || null;
+    acc.interesPares.set(clave, x);
+  });
+  (doc.interes?.productos || []).forEach((p) => {
+    const x = acc.interesProductos.get(p.productId) || { productId: p.productId, dwellMs: 0, personas: 0, anonimos: 0 };
+    x.dwellMs += safeNumber(p.dwellMs);
+    x.personas += safeNumber(p.personas); // suma de días: aproximación
+    x.anonimos += safeNumber(p.anonimos);
+    acc.interesProductos.set(p.productId, x);
+  });
+  addTAW(acc.deseos.agregados, doc.deseos?.agregados);
+  addTAW(acc.deseos.quitados, doc.deseos?.quitados);
+  (doc.deseos?.topProductos || []).forEach((p) => {
+    const x = acc.deseos.productos.get(p.productId) || { productId: p.productId, nombre: null, agregados: 0 };
+    x.agregados += safeNumber(p.agregados);
+    x.nombre = x.nombre || p.nombre || null;
+    acc.deseos.productos.set(p.productId, x);
+  });
+  Object.keys(acc.crear).forEach((k) => addTAW(acc.crear[k], doc.crear?.[k]));
+}
+
+function cerrarResultados(acc) {
+  const carritos = [...acc.carritos.lista.values()]
+    .sort((a, b) => (Number(Boolean(b.uid)) - Number(Boolean(a.uid))) || (safeNumber(b.ts) - safeNumber(a.ts)))
+    .slice(0, TOP_CARRITOS_RANGO);
+  return {
+    // Días del rango que ya traen estos campos (0 = sin datos todavía).
+    diasConResultados: acc.dias,
+    ventas: acc.ventas,
+    topVendidos: [...acc.vendidos.values()]
+      .sort((a, b) => (b.ingresosCents - a.ingresosCents) || (b.unidades - a.unidades))
+      .slice(0, TOP_VENDIDOS_RANGO),
+    otrosCobros: acc.otrosCobros,
+    carritosAbandonados: { cantidad: acc.carritos.cantidad, valorCents: acc.carritos.valorCents, lista: carritos },
+    // Mismo formato que el cálculo viejo (aggregateAbandonedCarts), para las
+    // pantallas que ya lo usan.
+    abandonedCarts: carritos.map((c) => ({
+      id: c.sessionId,
+      uid: c.uid || null,
+      hasAccount: Boolean(c.uid),
+      displayName: c.nombre || null,
+      email: c.email || null,
+      clientType: c.clientType || 'WEB',
+      lastCartValue: safeNumber(c.valorCents),
+      abandonedAtMs: safeNumber(c.ts),
+    })),
+    interes: {
+      pares: [...acc.interesPares.values()].sort((a, b) => b.dwellMs - a.dwellMs).slice(0, TOP_PARES_INTERES_RANGO),
+      productos: [...acc.interesProductos.values()].sort((a, b) => b.dwellMs - a.dwellMs).slice(0, TOP_PRODUCTOS_INTERES_RANGO),
+    },
+    deseos: {
+      agregados: acc.deseos.agregados,
+      quitados: acc.deseos.quitados,
+      topProductos: [...acc.deseos.productos.values()].sort((a, b) => b.agregados - a.agregados).slice(0, TOP_DESEOS_RANGO),
+    },
+    crear: acc.crear,
+  };
+}
+
+// "Se fueron sin hacer nada" = visitas sin interacción (sin 2+ páginas, 10 s
+// ni pedido), en %. Mismo criterio que el recuadro de calidad del panel.
+function reboteDesdeVisitas(visitas) {
+  const pct = (k) => {
+    const total = safeNumber(visitas?.total?.[k]);
+    return total > 0 ? Math.round(((total - safeNumber(visitas?.conInteraccion?.[k])) / total) * 100) : 0;
+  };
+  return { total: pct('total'), app: pct('app'), web: pct('web') };
+}
+
 function combineDailyDocs(docs, dayList) {
   // --- contadores aditivos {total,app,web} ---
   const pageViews = emptyTAW();
@@ -597,6 +720,7 @@ function combineDailyDocs(docs, dayList) {
   const canales = new Map();
   const calidad = { sesionesRegistradas: 0, sesionesBot: 0, sesionesAdmin: 0, sinPaginas: 0, unidas: 0, diasMedidos: 0 };
   let actualizadoEnMs = 0;
+  const resultados = nuevosResultados();
 
   // --- devices/utm/geo (count maps) ---
   const byDevice = new Map(), byBrowser = new Map(), byOS = new Map();
@@ -683,6 +807,7 @@ function combineDailyDocs(docs, dayList) {
     const g = doc.generatedAt;
     const gMs = typeof g?.toMillis === 'function' ? g.toMillis() : safeNumber(g?.seconds) * 1000;
     if (gMs > actualizadoEnMs) actualizadoEnMs = gMs;
+    acumularResultados(resultados, doc);
 
     // Embudo.
     const fe = doc.funnel?.events || {};
@@ -889,6 +1014,7 @@ function combineDailyDocs(docs, dayList) {
   // serie temporal salga IDÉNTICA. (add_to_cart por producto solo del día en
   // vivo; los días cerrados no lo desglosan por producto en el doc diario.)
   const eventsForCharts = buildSyntheticPageViewEvents(seriesByDay);
+  const resultadosRango = cerrarResultados(resultados);
 
   return {
     // mismo shape que getGlobalAnalytics().data (parte pesada/cacheable).
@@ -899,7 +1025,7 @@ function combineDailyDocs(docs, dayList) {
     totalDwellMs: dwellMs,
     avgDwellPerSessionMs,
     funnelStats: { events: funnelEvents, users: funnelUsers },
-    abandonedCarts: [], // requiere sesiones+eventos crudos; no se pre-agrega aquí.
+    abandonedCarts: resultadosRango.abandonedCarts,
     topRoutesByViews,
     topRoutesByDwell,
     mostTimeRoute,
@@ -911,7 +1037,7 @@ function combineDailyDocs(docs, dayList) {
     bannerClicks,
     orderTracking,
     scrollDepth,
-    bounceRate: { total: 0, app: 0, web: 0 }, // requiere cruzar sesiones+eventos crudos.
+    bounceRate: reboteDesdeVisitas(visitas),
     deviceStats,
     utmStats,
     geographyStats,
@@ -949,6 +1075,9 @@ function combineDailyDocs(docs, dayList) {
     canales: [...canales.values()].sort((a, b) => b.visitas - a.visitas),
     calidad,
     actualizadoEnMs,
+    // Resultados: ventas, topVendidos, otrosCobros, carritosAbandonados,
+    // interes, deseos, crear y diasConResultados.
+    ...resultadosRango,
     // Metadato para diagnóstico/UX (no lo consumen los charts).
     pageViews,
     __source: 'analytics_daily',

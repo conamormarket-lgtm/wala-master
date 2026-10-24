@@ -6,6 +6,7 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 const { buildDailyDoc } = require("../analyticsAggregations");
 const { armarVisitas, resumenVisitas } = require("../analyticsTraficoReal");
+const { buildResultadosDelDia } = require("../analyticsResultados");
 
 function fixture() {
   const reads = [];
@@ -56,6 +57,7 @@ test("daily aggregation starts both reads together and preserves persisted metri
   const expected = { ...buildDailyDoc(date, v.events, v.representantes),
     ...api.buildDailyExtras(v.events, v.representantes),
     ...resumenVisitas(v.visitas),
+    ...buildResultadosDelDia(events),
     personasIds: { app: [], web: ["user"] },
     traficoReal: { version: 2, sesionesRegistradas: 1, sesionesBot: 0, sesionesAdmin: 0, eventos: 0, dwellRecortados: 0, sinPaginas: 0, unidas: 0 },
     generatedAt: "SERVER_TIME" };

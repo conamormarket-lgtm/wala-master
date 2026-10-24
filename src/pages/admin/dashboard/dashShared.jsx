@@ -429,15 +429,13 @@ function pickRealtime(globalData = {}) {
   return out;
 }
 
-// FIX 3: métricas que la lectura PRE-AGREGADA (analytics_daily) NO puede derivar
-// porque requieren cruzar sesiones+eventos crudos que el doc diario no desglosa.
-// combineDailyDocs las deja en su valor neutro (bounceRate=0, abandonedCarts=[],
-// totalRegisteredUsers=0). En el legacy SÍ tienen valor, así que dejarlas en 0
-// tras desplegar la CF sería una REGRESIÓN visible. Las rellenamos, SIN queries
-// extra caras, desde el ÚLTIMO resultado legacy (getGlobalAnalytics) que el flujo
-// ya obtuvo y dejó cacheado en react-query para este mismo rango, copiando SOLO
-// estos campos si el snapshot existe.
-const LEGACY_BACKFILL_FIELDS = ['bounceRate', 'abandonedCarts', 'totalRegisteredUsers'];
+// FIX 3: métricas que la lectura PRE-AGREGADA (analytics_daily) no deriva. Hoy
+// solo totalRegisteredUsers (combineDailyDocs la deja en 0): se rellena, SIN
+// queries extra, desde el ÚLTIMO resultado legacy (getGlobalAnalytics) que el
+// flujo ya dejó cacheado en react-query para este mismo rango, si existe.
+// bounceRate y abandonedCarts ya salen del doc diario (visitas y
+// carritosAbandonados, desde el 2026-10-24).
+const LEGACY_BACKFILL_FIELDS = ['totalRegisteredUsers'];
 
 function pickLegacyBackfill(globalData = {}) {
   const out = {};
@@ -562,14 +560,9 @@ async function fetchDashboardGlobal(dateRange, backfill = {}) {
         realtime = {};
       }
 
-      // FIX 3: bounceRate/abandonedCarts/totalRegisteredUsers NO se pueden derivar
-      // de los docs diarios (requieren cruzar sesiones+eventos crudos), y la lectura
-      // LIGERA realtime tampoco los trae; combineDailyDocs los deja neutros (0/[]).
-      // Para no introducir una REGRESIÓN visible (en el legacy SÍ tienen valor), los
-      // rellenamos SIN queries extra caras desde el ÚLTIMO resultado legacy que ya
-      // se obtuvo y quedó cacheado por react-query para este mismo rango (p. ej. tras
-      // un fallback previo). Si no hay snapshot legacy disponible, se conservan los
-      // valores neutros de la pre-agregada (no rompe nada).
+      // FIX 3: totalRegisteredUsers no sale de los docs diarios ni de la lectura
+      // realtime; se rellena desde el ÚLTIMO resultado legacy cacheado para este
+      // rango (ver LEGACY_BACKFILL_FIELDS). Sin snapshot, queda el valor neutro.
       let legacyBackfill = {};
       if (typeof getLegacySnapshot === 'function') {
         const snap = getLegacySnapshot();

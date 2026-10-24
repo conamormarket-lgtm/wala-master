@@ -37,6 +37,8 @@ const ANALYTICS_EVENT_TYPES = {
   MINIGAME_COMPLETE: "minigame_complete",
   MISSION_COMPLETE: "mission_complete",
   WISHLIST_ADD: "wishlist_add",
+  WISHLIST_REMOVE: "wishlist_remove",
+  PAYMENT_COMPLETE: "payment_complete",
 };
 
 // Top-N para los rankings del doc diario. Se sube a 25 (el cliente legacy usaba
