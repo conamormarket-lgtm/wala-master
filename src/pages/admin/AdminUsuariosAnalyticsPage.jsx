@@ -8,7 +8,7 @@ import { useProducts } from '../../hooks/useProducts';
 import { recomendarSimilares } from '../../services/analytics/productInterest.mjs';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import { getPerfilesPorUid } from '../../services/adminProductInterest';
-import { urlWhatsApp, telefonoDePerfil, aceptoWhatsApp } from '../../utils/whatsappLink';
+import ContactoCarrito from './resultados/ContactoCarrito';
 import styles from './AdminUsuariosAnalyticsPage.module.css';
 
 function fmtNumber(value) {
@@ -49,38 +49,6 @@ function MetricCard3Way({ label, metric, isDuration }) {
         <span>WEB: <strong>{valWeb}</strong></span>
       </div>
     </div>
-  );
-}
-
-// Sin emojis: WhatsApp de escritorio (Windows) los rompe al abrir un link wa.me.
-function mensajeCarrito(nombre) {
-  const primerNombre = String(nombre || '').trim().split(' ')[0];
-  return [
-    `¡Hola${primerNombre ? ` ${primerNombre}` : ''}!`,
-    'Vimos que dejaste productos en tu carrito de Walá. Siguen esperándote:',
-    `${window.location.origin}/carrito`,
-    '¿Te ayudamos a terminar tu pedido?',
-  ].join('\n');
-}
-
-// Botón de WhatsApp de un carrito abandonado: solo con el número del cliente y
-// solo si aceptó recibir mensajes por WhatsApp en "Mi perfil".
-function ContactoCarrito({ cart, perfil, cargando }) {
-  if (!cart.uid) return <span className={styles.meta}>Sin cuenta</span>;
-  if (cargando) return <span className={styles.meta}>…</span>;
-  const telefono = telefonoDePerfil(perfil);
-  if (!telefono) return <span className={styles.meta}>Sin teléfono</span>;
-  if (!aceptoWhatsApp(perfil)) return <span className={styles.meta}>No aceptó WhatsApp</span>;
-  const nombre = perfil?.displayName || cart.displayName;
-  return (
-    <a
-      href={urlWhatsApp(telefono, mensajeCarrito(nombre))}
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{ color: 'green', textDecoration: 'none', fontWeight: 'bold' }}
-    >
-      Contactar (WhatsApp)
-    </a>
   );
 }
 
@@ -599,6 +567,7 @@ const AdminUsuariosAnalyticsPage = () => {
                             cart={cart}
                             perfil={perfilesCarritos.data?.get(cart.uid)}
                             cargando={perfilesCarritos.isLoading}
+                            claseNota={styles.meta}
                           />
                         </td>
                       </tr>

@@ -5815,6 +5815,12 @@ exports.aggregateAnalyticsDaily = require('./analyticsDaily').aggregateAnalytics
 exports.aggregateAnalyticsDailyBackfill = require('./analyticsDaily').aggregateAnalyticsDailyBackfill;
 exports.aggregateAnalyticsToday = require('./analyticsDaily').aggregateAnalyticsToday;
 
+// ── Búsqueda de clientes (Resultados › Clientes) ──────────────────────────────
+// Guarda en cada perfil los comienzos de nombre/correo/DNI/teléfono para buscar
+// entre todos los clientes. Ver ./clientesBusqueda.js.
+exports.indexarBusquedaCliente = require('./clientesBusqueda').indexarBusquedaCliente;
+exports.reindexarBusquedaClientes = require('./clientesBusqueda').reindexarBusquedaClientes;
+
 // ── Diseños de la comunidad ───────────────────────────────────────────────────
 // Los admins publican creaciones suyas; cualquiera las ve (sin sesión) y las
 // usa de plantilla en el estudio. Ver ./comunidad.js y ./comunidadLogic.js.

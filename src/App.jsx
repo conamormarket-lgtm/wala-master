@@ -170,6 +170,7 @@ const ResultadosLayout = lazy(() => import('./pages/admin/resultados/ResultadosL
 const ResultadosResumen = lazy(() => import('./pages/admin/resultados/Resumen'));
 const ResultadosProductos = lazy(() => import('./pages/admin/resultados/Productos'));
 const ResultadosVisitantes = lazy(() => import('./pages/admin/resultados/Visitantes'));
+const ResultadosClientes = lazy(() => import('./pages/admin/resultados/Clientes'));
 const DashHeatmap = lazy(() => import('./pages/admin/dashboard/DashHeatmap'));
 const DashProductos = lazy(() => import('./pages/admin/dashboard/DashProductos'));
 const DashOrigen = lazy(() => import('./pages/admin/dashboard/DashOrigen'));
@@ -495,6 +496,7 @@ function App() {
                                         <Route index element={<ResultadosResumen />} />
                                         <Route path="productos" element={<ResultadosProductos />} />
                                         <Route path="visitantes" element={<ResultadosVisitantes />} />
+                                        <Route path="clientes" element={<ResultadosClientes />} />
                                       </Route>
                                       <Route path="dashboard" element={<AdminDashboardAnalytics />} />
                                       <Route path="dashboard/heatmap" element={<DashHeatmap />} />

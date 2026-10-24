@@ -43,7 +43,7 @@
 // cargada: la búsqueda solo encuentra usuarios dentro de la página actual.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { getDocument, getCollectionPaginated } from './firebase/firestore';
+import { getDocument, getCollection, getCollectionPaginated } from './firebase/firestore';
 import { toMillis } from './analytics/schema';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 
@@ -332,6 +332,46 @@ export async function listUsers({ search = '', pageSize = 25, cursor = null } = 
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// (1b) buscarClientes — búsqueda entre TODOS los perfiles
+// ─────────────────────────────────────────────────────────────────────────────
+// MANTENER EN SYNC con normalizarBusqueda de functions/clientesBusqueda.js.
+export function normalizarBusqueda(texto) {
+  return String(texto || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+/**
+ * Busca clientes por el comienzo de su nombre, correo, DNI o teléfono, en toda
+ * la colección: cada perfil guarda `busqueda` (functions/clientesBusqueda.js).
+ * Una sola consulta con la palabra más larga (hasta 20 letras); las demás
+ * palabras se exigen en el navegador. Perfiles que aún no tienen `busqueda`
+ * (antes de "Preparar la búsqueda") no aparecen.
+ *
+ * @returns {Promise<{data: Array, error: string|null}>}
+ */
+export async function buscarClientes(texto, max = 25) {
+  const palabras = normalizarBusqueda(texto).split(/\s+/).filter((p) => p.length >= 2);
+  if (!palabras.length) return { data: [], error: null };
+  const principal = [...palabras].sort((a, b) => b.length - a.length)[0].slice(0, 20);
+  const { data, error } = await getCollection(
+    PORTAL_USERS_COLLECTION,
+    [{ field: 'busqueda', operator: 'array-contains', value: principal }],
+    null,
+    max * 2
+  );
+  if (error) return { data: [], error };
+  const resto = palabras.filter((p) => p !== principal);
+  const filas = (data || [])
+    .filter((d) => resto.every((p) => (d.busqueda || []).includes(p.slice(0, 20))))
+    .slice(0, max)
+    .map(perfilARow);
+  return { data: filas, error: null };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // (2) getUserFicha — ficha completa de UN usuario (perfil + carrito + wishlist)
 // ─────────────────────────────────────────────────────────────────────────────
 /**
@@ -397,6 +437,9 @@ export async function getUserFicha(uid) {
         dni: dniDe(u),
         tipoDocumento: asText(u?.tipoDocumento) || null,
         phone: asText(u?.phone) || null,
+        phoneIntl: u?.phoneIntl?.full ? { full: asText(u.phoneIntl.full) } : null,
+        // Permiso de WhatsApp de "Mi perfil" (utils/whatsappLink.aceptoWhatsApp).
+        marketingConsent: { whatsapp: u?.marketingConsent?.whatsapp === true },
         country: asText(u?.country) || null,
         birthday,                                  // 'YYYY-MM-DD' | null
         birthdayLegible: fechaLegible(birthday),   // "15 de marzo de 1990" | null

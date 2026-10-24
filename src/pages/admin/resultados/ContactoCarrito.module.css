@@ -1,0 +1,25 @@
+.boton {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: #fff;
+  background: #15803d;
+  transition: background 0.15s ease;
+}
+
+.boton:hover {
+  background: #166534;
+}
+
+.boton:focus-visible {
+  outline: 3px solid var(--violet-300, #c4b5fd);
+  outline-offset: 2px;
+}
+
+.nota {
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #475569);
+}

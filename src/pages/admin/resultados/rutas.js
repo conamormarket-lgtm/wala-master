@@ -8,11 +8,12 @@ export const PESTANAS = [
   { to: BASE_RESULTADOS, label: 'Resumen', end: true },
   { to: `${BASE_RESULTADOS}/productos`, label: 'Productos' },
   { to: `${BASE_RESULTADOS}/visitantes`, label: 'Visitantes' },
+  { to: `${BASE_RESULTADOS}/clientes`, label: 'Clientes' },
 ];
 
 export const DESTINOS = {
   productos: `${BASE_RESULTADOS}/productos`,
   visitantes: `${BASE_RESULTADOS}/visitantes`,
-  clientes: '/admin/usuarios-analytics',
+  clientes: `${BASE_RESULTADOS}/clientes`,
   enlaces: '#enlaces',
 };
