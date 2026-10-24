@@ -1,0 +1,189 @@
+/* Resultados: cabecera única + pestañas. Plano y liviano: sin fondos animados
+   ni desenfoques; el violeta de marca solo en lo activo. Colores de tema
+   (--color-*) para que el modo noche funcione solo. */
+
+.pagina {
+  display: grid;
+  gap: 1.1rem;
+  max-width: var(--container-default, 1200px);
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+
+.cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.titulo {
+  margin: 0;
+  font-size: 1.7rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--color-text, #0f172a);
+}
+
+.subtitulo {
+  margin: 0.2rem 0 0;
+  color: var(--color-text-muted, #475569);
+  font-size: 0.9rem;
+}
+
+.controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+}
+
+.periodo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.segmentos {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 12px;
+  background: var(--color-hover, #f1f5f9);
+  border: 1px solid var(--color-border, #e2e8f0);
+}
+
+.seg,
+.segActivo {
+  border: 0;
+  border-radius: 9px;
+  padding: 0.4rem 0.75rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: transparent;
+  color: var(--color-text-muted, #475569);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.seg:hover {
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #0f172a);
+}
+
+.segActivo {
+  background: var(--primary-color, #6d28d9);
+  color: #fff;
+}
+
+.seg:focus-visible,
+.segActivo:focus-visible,
+.actualizar:focus-visible,
+.pestana:focus-visible,
+.pestanaActiva:focus-visible {
+  outline: 3px solid var(--violet-300, #c4b5fd);
+  outline-offset: 2px;
+}
+
+.fechas {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.fechas label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #475569);
+}
+
+.fechas input {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.45rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #0f172a);
+  color-scheme: light dark;
+}
+
+.comparar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--color-text, #0f172a);
+  cursor: pointer;
+}
+
+.comparar input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--primary-color, #6d28d9);
+}
+
+.actualizar {
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 0.45rem 0.9rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #0f172a);
+  transition: background 0.15s ease;
+}
+
+.actualizar:hover:not(:disabled) {
+  background: var(--color-hover, #f1f5f9);
+}
+
+.actualizar:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.pestanas {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+}
+
+.pestana,
+.pestanaActiva {
+  flex: none;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--color-text-muted, #475569);
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+}
+
+.pestana:hover {
+  color: var(--color-text, #0f172a);
+}
+
+.pestanaActiva {
+  color: var(--primary-color, #6d28d9);
+  border-bottom-color: var(--primary-color, #6d28d9);
+}
+
+@media (max-width: 640px) {
+  .pagina {
+    padding: 1rem;
+  }
+  .controles {
+    width: 100%;
+  }
+}

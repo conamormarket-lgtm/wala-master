@@ -713,8 +713,20 @@ async function fetchCompareKpis(prevDateRange) {
     views: tawVacio(), adds: tawVacio(), checkouts: tawVacio(), purchases: tawVacio(),
   };
   const identitiesBreakdown = {};
+  // Resultados: visitas reales y pedidos/ventas de la tienda (docs que los traen).
+  const visitas = tawVacio();
+  const pedidos = tawVacio();
+  const ingresosCents = tawVacio();
+  let diasConVisitas = 0;
+  let diasConVentas = 0;
 
   docs.forEach((doc) => {
+    if (doc.visitas) { diasConVisitas += 1; sumarTAW(visitas, doc.visitas.total); }
+    if (doc.ventas) {
+      diasConVentas += 1;
+      sumarTAW(pedidos, doc.ventas.pedidos);
+      sumarTAW(ingresosCents, doc.ventas.ingresosCents);
+    }
     sumarTAW(sessions, doc.sessions);
     sumarTAW(identities, doc.activeIdentities);
     sumarTAW(pageViews, doc.pageViews);
@@ -742,6 +754,11 @@ async function fetchCompareKpis(prevDateRange) {
     dwellMs,
     funnelEvents,
     identitiesBreakdown,
+    visitas,
+    pedidos,
+    ingresosCents,
+    diasConVisitas,
+    diasConVentas,
   };
 }
 

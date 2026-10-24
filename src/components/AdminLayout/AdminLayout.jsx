@@ -79,6 +79,14 @@ const AdminLayout = () => {
               >
                 Panel Principal
               </NavLink>
+              {/* Resultados: el panel nuevo (reemplaza al Dashboard Analítica y
+                  a las demás pantallas de métricas a medida que se completa). */}
+              <NavLink
+                to="/admin/resultados"
+                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
+              >
+                📈 Resultados (nuevo)
+              </NavLink>
               <NavLink
                 to="/admin/dashboard"
                 className={({ isActive }) => getLinkClass(isActive, 'diseno')}

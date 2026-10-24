@@ -166,6 +166,8 @@ const EditorPage = lazy(() => withEditorFonts(import('./pages/EditorPage')));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminDashboardAnalytics = lazy(() => import('./pages/admin/AdminDashboard'));
+const ResultadosLayout = lazy(() => import('./pages/admin/resultados/ResultadosLayout'));
+const ResultadosResumen = lazy(() => import('./pages/admin/resultados/Resumen'));
 const DashHeatmap = lazy(() => import('./pages/admin/dashboard/DashHeatmap'));
 const DashProductos = lazy(() => import('./pages/admin/dashboard/DashProductos'));
 const DashOrigen = lazy(() => import('./pages/admin/dashboard/DashOrigen'));
@@ -487,6 +489,9 @@ function App() {
                                     <Route element={<AdminLayout />}>
                                       <Route index element={<AdminDashboard />} />
 
+                                      <Route path="resultados" element={<ResultadosLayout />}>
+                                        <Route index element={<ResultadosResumen />} />
+                                      </Route>
                                       <Route path="dashboard" element={<AdminDashboardAnalytics />} />
                                       <Route path="dashboard/heatmap" element={<DashHeatmap />} />
                                       <Route path="dashboard/productos" element={<DashProductos />} />

@@ -763,6 +763,8 @@ function combineDailyDocs(docs, dayList) {
 
   // --- serie por día para los charts (page_views por día) ---
   const seriesByDay = new Map();
+  // --- visitas reales por día (docs con traficoReal v2) ---
+  const visitasPorDia = new Map();
 
   const accCategories = (list) => {
     (list || []).forEach((c) => {
@@ -908,6 +910,13 @@ function combineDailyDocs(docs, dayList) {
 
     // Serie por día: page_views del día (para reconstruir eventsForCharts).
     const dKey = doc.day || doc.__day;
+    if (dKey && doc.visitas?.total) {
+      visitasPorDia.set(dKey, {
+        total: safeNumber(doc.visitas.total.total),
+        app: safeNumber(doc.visitas.total.app),
+        web: safeNumber(doc.visitas.total.web),
+      });
+    }
     if (dKey) {
       seriesByDay.set(dKey, {
         total: safeNumber(doc.pageViews?.total),
@@ -1071,6 +1080,8 @@ function combineDailyDocs(docs, dayList) {
     realtimeSessionsDetails: [],
     // Visitas, de dónde vienen y qué se descartó (recuadros del panel).
     visitas,
+    // [{ day:'YYYY-MM-DD', total, app, web }] en orden; días sin el dato no salen.
+    visitasPorDia: [...visitasPorDia.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([day, v]) => ({ day, ...v })),
     personas: personasUnicas(docs),
     canales: [...canales.values()].sort((a, b) => b.visitas - a.visitas),
     calidad,
