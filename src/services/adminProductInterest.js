@@ -12,6 +12,17 @@ import { productIdFromPath } from './analytics/productInterest.mjs';
 const EVENTS_LIMIT = 4000;
 const MAX_LEADS = 80;
 
+// Perfiles (nombre, teléfono, permiso de WhatsApp) de una lista de uids: una
+// lectura por uid distinto. Devuelve Map uid -> perfil; los que no existen faltan.
+export async function getPerfilesPorUid(uids = []) {
+  const perfiles = new Map();
+  await Promise.all([...new Set(uids.filter(Boolean))].map(async (uid) => {
+    const { data } = await getDocument(PORTAL_USERS_COLLECTION, uid);
+    if (data) perfiles.set(uid, data);
+  }));
+  return perfiles;
+}
+
 export async function getProductInterestLeads({ days = 7, minMs = 60000 } = {}) {
   const since = Date.now() - days * 24 * 60 * 60 * 1000;
   const { data: events, error } = await getCollection(
@@ -57,12 +68,7 @@ export async function getProductInterestLeads({ days = 7, minMs = 60000 } = {}) 
 
   // Un perfil por usuario (no por par): varios productos del mismo cliente
   // comparten la misma lectura.
-  const uids = [...new Set(leads.map((l) => l.uid))];
-  const perfiles = new Map();
-  await Promise.all(uids.map(async (uid) => {
-    const { data } = await getDocument(PORTAL_USERS_COLLECTION, uid);
-    if (data) perfiles.set(uid, data);
-  }));
+  const perfiles = await getPerfilesPorUid(leads.map((l) => l.uid));
 
   const ranking = [...porProducto.values()]
     .map((p) => ({ productId: p.productId, dwellMs: p.dwellMs, users: p.users.size, anon: p.anon }))

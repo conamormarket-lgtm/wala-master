@@ -7,6 +7,8 @@ import { rebuildHistoricalAnalyticsSummary } from '../../services/adminAnalytics
 import { useProducts } from '../../hooks/useProducts';
 import { recomendarSimilares } from '../../services/analytics/productInterest.mjs';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
+import { getPerfilesPorUid } from '../../services/adminProductInterest';
+import { urlWhatsApp, telefonoDePerfil, aceptoWhatsApp } from '../../utils/whatsappLink';
 import styles from './AdminUsuariosAnalyticsPage.module.css';
 
 function fmtNumber(value) {
@@ -50,6 +52,38 @@ function MetricCard3Way({ label, metric, isDuration }) {
   );
 }
 
+// Sin emojis: WhatsApp de escritorio (Windows) los rompe al abrir un link wa.me.
+function mensajeCarrito(nombre) {
+  const primerNombre = String(nombre || '').trim().split(' ')[0];
+  return [
+    `¡Hola${primerNombre ? ` ${primerNombre}` : ''}!`,
+    'Vimos que dejaste productos en tu carrito de Walá. Siguen esperándote:',
+    `${window.location.origin}/carrito`,
+    '¿Te ayudamos a terminar tu pedido?',
+  ].join('\n');
+}
+
+// Botón de WhatsApp de un carrito abandonado: solo con el número del cliente y
+// solo si aceptó recibir mensajes por WhatsApp en "Mi perfil".
+function ContactoCarrito({ cart, perfil, cargando }) {
+  if (!cart.uid) return <span className={styles.meta}>Sin cuenta</span>;
+  if (cargando) return <span className={styles.meta}>…</span>;
+  const telefono = telefonoDePerfil(perfil);
+  if (!telefono) return <span className={styles.meta}>Sin teléfono</span>;
+  if (!aceptoWhatsApp(perfil)) return <span className={styles.meta}>No aceptó WhatsApp</span>;
+  const nombre = perfil?.displayName || cart.displayName;
+  return (
+    <a
+      href={urlWhatsApp(telefono, mensajeCarrito(nombre))}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ color: 'green', textDecoration: 'none', fontWeight: 'bold' }}
+    >
+      Contactar (WhatsApp)
+    </a>
+  );
+}
+
 const AdminUsuariosAnalyticsPage = () => {
   const [tab, setTab] = useState('usuarios');
   const [search, setSearch] = useState('');
@@ -83,6 +117,19 @@ const AdminUsuariosAnalyticsPage = () => {
     refetchIntervalInBackground: false,
     // Evita refetch redundante al re-montar/enfocar dentro de la ventana de frescura.
     staleTime: 60000,
+  });
+
+  // Teléfono y permiso de WhatsApp de quienes dejaron el carrito (solo los que
+  // tienen cuenta): se pide al abrir la pestaña Ventas, una lectura por cliente.
+  const uidsCarritos = useMemo(
+    () => [...new Set((globalQuery.data?.abandonedCarts || []).map((c) => c.uid).filter(Boolean))].sort(),
+    [globalQuery.data?.abandonedCarts]
+  );
+  const perfilesCarritos = useQuery({
+    queryKey: ['admin-carritos-perfiles', uidsCarritos],
+    queryFn: () => getPerfilesPorUid(uidsCarritos),
+    enabled: tab === 'ventas' && uidsCarritos.length > 0,
+    staleTime: 5 * 60 * 1000,
   });
 
   const userInfoQuery = useQuery({
@@ -548,18 +595,11 @@ const AdminUsuariosAnalyticsPage = () => {
                         <td>{fmtCurrency(cart.lastCartValue / 100)}</td>
                         <td>{fmtDate(cart.abandonedAtMs)}</td>
                         <td>
-                          {cart.hasAccount && cart.displayName ? (
-                             <a 
-                               href={`https://wa.me/?text=Hola%20${encodeURIComponent(cart.displayName)},%20notamos%20que%20dejaste%20algo%20en%20tu%20carrito.%20Te%20regalamos%20un%20cup%C3%B3n!`} 
-                               target="_blank" 
-                               rel="noopener noreferrer"
-                               style={{ color: 'green', textDecoration: 'none', fontWeight: 'bold' }}
-                             >
-                               Contactar (WhatsApp)
-                             </a>
-                          ) : (
-                             <span className={styles.meta}>Sin cuenta</span>
-                          )}
+                          <ContactoCarrito
+                            cart={cart}
+                            perfil={perfilesCarritos.data?.get(cart.uid)}
+                            cargando={perfilesCarritos.isLoading}
+                          />
                         </td>
                       </tr>
                     ))}
