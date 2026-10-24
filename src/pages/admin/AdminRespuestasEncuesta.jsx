@@ -94,9 +94,12 @@ const etiquetaPeriodo = (valor, unidad) => {
   return `${MESES[Number(m) - 1]} ${y}`;
 };
 
-const AdminRespuestasEncuesta = () => {
+// embebido: dentro de Resultados › Opiniones, sin título propio y con el periodo
+// de Resultados (desde/hasta 'YYYY-MM-DD') en vez de su propio selector.
+const AdminRespuestasEncuesta = ({ embebido = false, desde = '', hasta = '' } = {}) => {
   const [rangoId, setRangoId] = useState('todo');
-  const [rango, setRango] = useState({ desde: '', hasta: '' });
+  const [rangoPropio, setRango] = useState({ desde: '', hasta: '' });
+  const rango = embebido ? { desde, hasta } : rangoPropio;
   const elegirRango = (id) => {
     setRangoId(id);
     setRango(calcularRango(id));
@@ -250,7 +253,7 @@ const AdminRespuestasEncuesta = () => {
   return (
     <div className={styles.pagina}>
       <header className={styles.encabezado}>
-        <div>
+        <div style={embebido ? { display: 'none' } : undefined}>
           <h1 className={styles.titulo}>📋 Respuestas de la encuesta</h1>
           <p className={styles.subtitulo}>
             Lo que contestaron los clientes: sus datos, a quiénes regalan y los gustos de cada persona.
@@ -272,7 +275,7 @@ const AdminRespuestasEncuesta = () => {
       {isLoading && <p className={styles.vacio}>Cargando respuestas…</p>}
 
       {data && (
-        <section className={styles.rango} aria-label="Rango de fechas">
+        <section className={styles.rango} aria-label="Rango de fechas" style={embebido ? { display: 'none' } : undefined}>
           <div className={styles.rangoBotones}>
             {RANGOS.map((r) => (
               <button

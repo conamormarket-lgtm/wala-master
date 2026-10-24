@@ -129,7 +129,7 @@ export default function Productos() {
     <div className={styles.pagina}>
       {sinResultados && (
         <p className={styles.nota}>
-          Ventas, interés, deseos y Crear se suman desde el 24/10/2026. Para los días anteriores, usa "Reconstruir histórico".
+          Ventas, interés, deseos y Crear se suman desde el 24/10/2026. Para los días anteriores, usa "Reconstruir el resumen diario" en Detalle técnico.
         </p>
       )}
 

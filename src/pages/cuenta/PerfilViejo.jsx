@@ -165,7 +165,7 @@ const PerfilViejo = () => {
 
   // Permiso para ofertas por WhatsApp. Se guarda al tocarlo (sin pasar por
   // "Editar"): el admin solo ve el botón de WhatsApp destacado para quien lo
-  // aceptó (ver /admin/interes-productos). Se guarda la fecha del cambio como
+  // aceptó (ver Resultados › Productos). Se guarda la fecha del cambio como
   // constancia del consentimiento.
   const aceptaWhatsApp = userProfile?.marketingConsent?.whatsapp === true;
   const handleToggleWhatsApp = async (e) => {

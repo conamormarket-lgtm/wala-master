@@ -6,6 +6,7 @@ import {
   limaHoyKey,
   fmtTime,
 } from '../dashboard/dashShared';
+import { useAuth } from '../../../contexts/AuthContext';
 import { PESTANAS } from './rutas';
 import styles from './ResultadosLayout.module.css';
 
@@ -94,6 +95,9 @@ function SelectorPeriodo({ filtros }) {
 }
 
 export default function ResultadosLayout() {
+  const { adminPermissions } = useAuth();
+  const conClientes = adminPermissions?.includes('superadmin') || adminPermissions?.includes('manage_clients');
+  const pestanas = PESTANAS.filter((p) => !p.soloClientes || conClientes);
   const filtros = useDashboardFilters(30);
   const analitica = useDashboardAnalytics(filtros);
   const { data, isFetching, refetch, dataUpdatedAt } = analitica;
@@ -131,9 +135,9 @@ export default function ResultadosLayout() {
         </div>
       </header>
 
-      {PESTANAS.length > 1 && (
+      {pestanas.length > 1 && (
         <nav className={styles.pestanas} aria-label="Secciones de Resultados">
-          {PESTANAS.map((p) => (
+          {pestanas.map((p) => (
             <NavLink
               key={p.to}
               to={{ pathname: p.to, search: filtros.filtersSearch }}

@@ -70,7 +70,7 @@
   color: var(--gris-texto-principal, #0f172a);
 }
 
-/* ---------- Enlace "← Volver al resumen" (sub-páginas) ---------- */
+/* ---------- Enlace "← Volver a Detalle técnico" (sub-páginas) ---------- */
 .backLink {
   display: inline-flex;
   align-items: center;

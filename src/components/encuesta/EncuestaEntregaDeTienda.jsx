@@ -11,7 +11,7 @@ import { volarMonedasGanadas } from '../../utils/animations';
  * /opinar/:codigo: "¿Cómo te fue con tu pedido?" (PaginaEncuestaEntrega del
  * kit). Todo pasa por el servidor (functions/encuestaEntrega.js): si el pedido
  * es suyo y está entregado, si ya respondió, las opciones y las monedas que
- * configura el admin en /admin/encuesta-entregas.
+ * configura el admin en Resultados › Opiniones (Editar encuesta).
  */
 export default function EncuestaEntregaDeTienda() {
   const { codigo = '' } = useParams();

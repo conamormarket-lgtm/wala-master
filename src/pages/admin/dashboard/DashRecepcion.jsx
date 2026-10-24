@@ -5,12 +5,10 @@ import { DashBackground, DashHeader, containerVariants, itemVariants } from './d
 import styles from '../AdminDashboard.module.css';
 
 /**
- * DashRecepcion — sub-página DEDICADA de "Recepción de Pedidos" (/admin/dashboard/recepcion).
+ * DashRecepcion — sub-página DEDICADA de "Recepción de Pedidos" (/admin/recepcion-pedidos).
  *
- * Reusa el componente RecepcionPedidos (la MISMA sección que va embebida bajo el
- * dashboard de analítica) pero en su propia página con fondo de marca + cabecera
- * con "Volver al resumen". La sección ya trae su propio encabezado interno, así
- * que aquí el DashHeader es opcional/contextual: ofrece la navegación de vuelta.
+ * Reusa el componente RecepcionPedidos en su propia página con fondo de marca y
+ * cabecera, sin enlace de volver: es una entrada del menú, no cuelga de Resultados.
  *
  * SOLO-LECTURA (capa adminOrders.js → ERP). No toca carrito/precios/cobro.
  */
@@ -29,6 +27,7 @@ export default function DashRecepcion() {
             title="Recepción de Pedidos"
             subtitle="Organiza los envíos del portal WALA"
             showRange={false}
+            conVolver={false}
           />
         </motion.div>
 

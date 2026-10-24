@@ -165,17 +165,16 @@ const AdminLayout = lazy(() => import('./components/AdminLayout/AdminLayout'));
 const EditorPage = lazy(() => withEditorFonts(import('./pages/EditorPage')));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
-const AdminDashboardAnalytics = lazy(() => import('./pages/admin/AdminDashboard'));
 const ResultadosLayout = lazy(() => import('./pages/admin/resultados/ResultadosLayout'));
 const ResultadosResumen = lazy(() => import('./pages/admin/resultados/Resumen'));
 const ResultadosProductos = lazy(() => import('./pages/admin/resultados/Productos'));
 const ResultadosVisitantes = lazy(() => import('./pages/admin/resultados/Visitantes'));
 const ResultadosClientes = lazy(() => import('./pages/admin/resultados/Clientes'));
+const ResultadosOpiniones = lazy(() => import('./pages/admin/resultados/Opiniones'));
+const ResultadosTecnico = lazy(() => import('./pages/admin/resultados/DetalleTecnico'));
 const DashHeatmap = lazy(() => import('./pages/admin/dashboard/DashHeatmap'));
-const DashProductos = lazy(() => import('./pages/admin/dashboard/DashProductos'));
 const DashOrigen = lazy(() => import('./pages/admin/dashboard/DashOrigen'));
 const DashPaginas = lazy(() => import('./pages/admin/dashboard/DashPaginas'));
-const DashCategorias = lazy(() => import('./pages/admin/dashboard/DashCategorias'));
 const DashUso = lazy(() => import('./pages/admin/dashboard/DashUso'));
 const DashRecepcion = lazy(() => import('./pages/admin/dashboard/DashRecepcion'));
 
@@ -209,14 +208,7 @@ const AdminConfiguracion = lazy(() => import('./pages/admin/AdminConfiguracion')
 const AdminCrearCuentasPedidos = lazy(() => import('./pages/admin/AdminCrearCuentasPedidos'));
 const AdminRetos = lazy(() => import('./pages/admin/AdminRetos'));
 const AdminMisiones = lazy(() => import('./pages/admin/AdminMisiones'));
-const AdminUsuariosAnalyticsPage = lazy(() => import('./pages/admin/AdminUsuariosAnalyticsPage'));
-
-// Panel "Ver qué hacen los usuarios": wishlists, carritos y fechas (solo-admin).
-const AdminUsuariosComportamiento = lazy(() => import('./pages/admin/AdminUsuariosComportamiento'));
-const AdminInteresProductos = lazy(() => import('./pages/admin/AdminInteresProductos'));
 const AdminPublicoProductos = lazy(() => import('./pages/admin/AdminPublicoProductos'));
-const AdminRespuestasEncuesta = lazy(() => import('./pages/admin/AdminRespuestasEncuesta'));
-const AdminEncuestaEntregas = lazy(() => import('./pages/admin/AdminEncuestaEntregas'));
 const AdminWordlePage = lazy(() => import('./pages/admin/AdminWordlePage'));
 
 // El panel del editor visual son 230 KB de codigo (mas react-easy-crop y el
@@ -247,8 +239,6 @@ const AdminLibroReclamaciones = lazy(() => import('./pages/admin/AdminLibroRecla
 // Gestión de Pagos (unifica Métodos de Pago + Generador de Enlaces + historial/analíticas).
 const AdminGestionPagos = lazy(() => import('./pages/admin/AdminGestionPagos'));
 
-// Usuarios de la App: uso de la app por usuario identificado (sesiones/pantallas APP/WEB).
-const AdminUsuariosApp = lazy(() => import('./pages/admin/AdminUsuariosApp'));
 
 const AppRedirect = lazy(() => import('./pages/AppRedirect'));
 // Una dirección que no existe (GENERALES.md P22).
@@ -497,15 +487,30 @@ function App() {
                                         <Route path="productos" element={<ResultadosProductos />} />
                                         <Route path="visitantes" element={<ResultadosVisitantes />} />
                                         <Route path="clientes" element={<ResultadosClientes />} />
+                                        <Route path="opiniones" element={<ResultadosOpiniones />} />
+                                        <Route path="tecnico" element={<ResultadosTecnico />} />
                                       </Route>
-                                      <Route path="dashboard" element={<AdminDashboardAnalytics />} />
-                                      <Route path="dashboard/heatmap" element={<DashHeatmap />} />
-                                      <Route path="dashboard/productos" element={<DashProductos />} />
-                                      <Route path="dashboard/origen" element={<DashOrigen />} />
-                                      <Route path="dashboard/paginas" element={<DashPaginas />} />
-                                      <Route path="dashboard/categorias" element={<DashCategorias />} />
-                                      <Route path="dashboard/uso" element={<DashUso />} />
-                                      <Route path="dashboard/recepcion" element={<DashRecepcion />} />
+                                      {/* Pantallas técnicas de Resultados (con su propia cabecera). */}
+                                      <Route path="resultados/tecnico/mapa-de-calor" element={<DashHeatmap />} />
+                                      <Route path="resultados/tecnico/paginas" element={<DashPaginas />} />
+                                      <Route path="resultados/tecnico/uso" element={<DashUso />} />
+                                      <Route path="resultados/tecnico/navegador" element={<DashOrigen />} />
+                                      <Route path="recepcion-pedidos" element={<DashRecepcion />} />
+                                      {/* Direcciones de antes de Resultados (2026-10-24): llevan a su lugar nuevo. */}
+                                      <Route path="dashboard" element={<Navigate to="/admin/resultados" replace />} />
+                                      <Route path="dashboard/heatmap" element={<Navigate to="/admin/resultados/tecnico/mapa-de-calor" replace />} />
+                                      <Route path="dashboard/productos" element={<Navigate to="/admin/resultados/productos" replace />} />
+                                      <Route path="dashboard/origen" element={<Navigate to="/admin/resultados/visitantes" replace />} />
+                                      <Route path="dashboard/paginas" element={<Navigate to="/admin/resultados/tecnico/paginas" replace />} />
+                                      <Route path="dashboard/categorias" element={<Navigate to="/admin/resultados/productos" replace />} />
+                                      <Route path="dashboard/uso" element={<Navigate to="/admin/resultados/tecnico/uso" replace />} />
+                                      <Route path="dashboard/recepcion" element={<Navigate to="/admin/recepcion-pedidos" replace />} />
+                                      <Route path="usuarios-app" element={<Navigate to="/admin/resultados/clientes" replace />} />
+                                      <Route path="usuarios-analytics" element={<Navigate to="/admin/resultados/clientes" replace />} />
+                                      <Route path="usuarios-comportamiento" element={<Navigate to="/admin/resultados/clientes" replace />} />
+                                      <Route path="interes-productos" element={<Navigate to="/admin/resultados/productos" replace />} />
+                                      <Route path="respuestas-encuesta" element={<Navigate to="/admin/resultados/opiniones" replace />} />
+                                      <Route path="encuesta-entregas" element={<Navigate to="/admin/resultados/opiniones" replace />} />
 
                                       <Route path="productos" element={<AdminProductos />} />
                                       <Route path="combos-crear" element={<AdminCombosCrear />} />
@@ -527,8 +532,6 @@ function App() {
                                       {/* Gestión de Pagos: módulo unificado (config + generar + historial). */}
                                       <Route path="gestion-pagos" element={<AdminGestionPagos />} />
 
-                                      {/* Usuarios de la App: uso de la app por usuario. */}
-                                      <Route path="usuarios-app" element={<AdminUsuariosApp />} />
 
                                       <Route path="libro-reclamaciones" element={<AdminLibroReclamaciones />} />
                                       <Route path="retos" element={<AdminRetos />} />
@@ -549,12 +552,7 @@ function App() {
                                       <Route path="cliparts" element={<AdminCliparts />} />
                                       <Route path="mascota" element={<AdminMascota />} />
                                       <Route path="crear-cuentas-pedidos" element={<AdminCrearCuentasPedidos />} />
-                                      <Route path="usuarios-analytics" element={<AdminUsuariosAnalyticsPage />} />
-                                      <Route path="usuarios-comportamiento" element={<AdminUsuariosComportamiento />} />
-                                      <Route path="interes-productos" element={<AdminInteresProductos />} />
                                       <Route path="publico-productos" element={<AdminPublicoProductos />} />
-                                      <Route path="respuestas-encuesta" element={<AdminRespuestasEncuesta />} />
-                                      <Route path="encuesta-entregas" element={<AdminEncuestaEntregas />} />
                                       <Route path="wordle" element={<AdminWordlePage />} />
                                       <Route path="notificaciones" element={<AdminNotifications />} />
                                       <Route path="marcas" element={<AdminMarcas />} />

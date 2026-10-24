@@ -1,0 +1,9 @@
+.pagina {
+  display: grid;
+  gap: 1rem;
+  justify-items: start;
+}
+
+.pagina > :not(:first-child) {
+  width: 100%;
+}

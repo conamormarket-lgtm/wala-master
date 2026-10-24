@@ -1,7 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 
 // ¿Esta página se está mostrando como VISTA PREVIA del mapa de calor?
-// (dentro del <iframe> de HeatmapViewer, en /admin/dashboard/...)
+// (dentro del <iframe> de HeatmapViewer, en Resultados › Detalle técnico)
 //
 // En la vista previa la página tiene que verse como la vio el visitante: sin
 // la barra de admin (empujaba todo ~45px y los clics quedaban desplazados) y
@@ -9,7 +9,8 @@ import { Capacitor } from '@capacitor/core';
 export function esVistaPreviaMapaCalor() {
   if (typeof window === 'undefined' || window.self === window.top) return false;
   try {
-    return window.top.location.pathname.startsWith('/admin/dashboard');
+    const ruta = window.top.location.pathname;
+    return ruta.startsWith('/admin/resultados/tecnico') || ruta.startsWith('/admin/dashboard');
   } catch {
     // Marco de otro origen: no es nuestra vista previa.
     return false;

@@ -1042,8 +1042,8 @@ const AdminEnlaceEditor = () => {
             </div>
 
             {/* Enlace al dashboard global (métricas del portal completas). */}
-            <Link to="/admin/dashboard" className={styles.detailLink}>
-              Ver métricas globales del portal →
+            <Link to="/admin/resultados" className={styles.detailLink}>
+              Ver los resultados de toda la tienda →
             </Link>
           </section>
         </div>

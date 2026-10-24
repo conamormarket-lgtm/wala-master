@@ -185,7 +185,7 @@ export default function Resumen() {
       {sinVentasTodavia && (
         <p className={styles.nota}>
           Los pedidos y las ventas de este periodo todavía no están sumados. Se cuentan desde el 24/10/2026;
-          para los días anteriores, usa "Reconstruir histórico".
+          para los días anteriores, usa "Reconstruir el resumen diario" en Detalle técnico.
         </p>
       )}
       {filtros.compare && !hayAnterior && (

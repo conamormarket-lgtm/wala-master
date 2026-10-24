@@ -125,8 +125,8 @@ export default function BackfillAnaliticaButton() {
 
   return (
     <GlassCard
-      title="Reconstruir histórico de analítica"
-      subtitle="Re-agrega los eventos crudos en los resúmenes diarios (analytics_daily)."
+      title="Reconstruir el resumen diario"
+      subtitle="Vuelve a sumar los días elegidos con lo que registró la tienda."
       className={styles.card}
     >
       <div className={styles.body}>
@@ -178,7 +178,7 @@ export default function BackfillAnaliticaButton() {
             disabled={cargando || !rangoValido}
             className={styles.cta}
           >
-            Reconstruir histórico
+            Reconstruir
           </GlassButton>
         </div>
 

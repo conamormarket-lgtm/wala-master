@@ -22,7 +22,7 @@ import styles from './RecepcionPedidos.module.css';
  * NO toca carrito/precios/cobro: solo muestra el estado ya derivado.
  *
  * Se embebe DEBAJO del dashboard de analítica (src/pages/admin/AdminDashboard.jsx)
- * y, opcionalmente, se monta también en su propia ruta /admin/dashboard/recepcion.
+ * y, opcionalmente, se monta también en su propia ruta /admin/recepcion-pedidos.
  * ========================================================================== */
 
 // Formateador de soles (es-PE). Tolerante a no-números.

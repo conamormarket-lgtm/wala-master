@@ -26,10 +26,25 @@ const AdminLayout = () => {
   const showCatalogGroup = canProducts || canInventory || canLandingPages;
 
   const [openGroups, setOpenGroups] = useState({
+    resultados: true,
     diseno: true,
     catalogo: true,
     clientes: true
   });
+
+  // Resultados: lo que ve el dueño (métricas en un solo lugar). Clientes y
+  // Opiniones muestran datos personales: solo con permiso de clientes.
+  const showResultados = canDesign || canClients;
+  const linksResultados = [
+    { to: '/admin/resultados', label: 'Resumen', end: true },
+    { to: '/admin/resultados/productos', label: 'Productos' },
+    { to: '/admin/resultados/visitantes', label: 'Visitantes' },
+    ...(canClients ? [
+      { to: '/admin/resultados/clientes', label: 'Clientes' },
+      { to: '/admin/resultados/opiniones', label: 'Opiniones' },
+    ] : []),
+    { to: '/admin/resultados/tecnico', label: 'Detalle técnico' },
+  ];
 
   const toggleGroup = (key) => {
     setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -66,6 +81,25 @@ const AdminLayout = () => {
             </>
           )}
 
+          {showResultados && (
+            <>
+              <h3 className={styles.sidebarGroupTitle} onClick={() => toggleGroup('resultados')}>
+                <span>Resultados</span>
+                <ChevronIcon open={openGroups.resultados} />
+              </h3>
+              {linksResultados.map((l) => (
+                <NavLink
+                  key={l.to}
+                  to={l.to}
+                  end={l.end}
+                  className={({ isActive }) => getLinkClass(isActive, 'resultados')}
+                >
+                  {l.label}
+                </NavLink>
+              ))}
+            </>
+          )}
+
           {canDesign && (
             <>
               <h3 className={styles.sidebarGroupTitle} onClick={() => toggleGroup('diseno')}>
@@ -79,22 +113,10 @@ const AdminLayout = () => {
               >
                 Panel Principal
               </NavLink>
-              {/* Resultados: el panel nuevo (reemplaza al Dashboard Analítica y
-                  a las demás pantallas de métricas a medida que se completa). */}
+              {/* Las métricas viven en el grupo Resultados (arriba). Recepción de
+                  pedidos es trabajo del día a día: queda aquí, una sola entrada. */}
               <NavLink
-                to="/admin/resultados"
-                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
-              >
-                📈 Resultados (nuevo)
-              </NavLink>
-              <NavLink
-                to="/admin/dashboard"
-                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
-              >
-                📊 Dashboard Analítica
-              </NavLink>
-              <NavLink
-                to="/admin/dashboard/recepcion"
+                to="/admin/recepcion-pedidos"
                 className={({ isActive }) => getLinkClass(isActive, 'diseno')}
               >
                 📦 Recepción de Pedidos
@@ -124,20 +146,6 @@ const AdminLayout = () => {
               >
                 🔗 Enlaces útiles
               </NavLink>
-              {/* Panel de comportamiento: wishlists, carritos y fechas de los usuarios. */}
-              <NavLink
-                to="/admin/usuarios-comportamiento"
-                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
-              >
-                👥 Ver qué hacen los usuarios
-              </NavLink>
-              {/* Quién pasó tiempo mirando qué producto + WhatsApp con ese producto. */}
-              <NavLink
-                to="/admin/interes-productos"
-                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
-              >
-                🔥 Interés por producto
-              </NavLink>
               {/* Ofertas y novedades por push + campanita (la página existía,
                   pero no tenía entrada en el menú: solo se llegaba por URL). */}
               <NavLink
@@ -154,19 +162,12 @@ const AdminLayout = () => {
                 🎯 Datos para recomendar
               </NavLink>
               {/* Gestión de Pagos (unifica Métodos de Pago + Generador de Enlaces
-                  + historial/analíticas): JUSTO DEBAJO de "Ver qué hacen los usuarios". */}
+                  + historial/analíticas). */}
               <NavLink
                 to="/admin/gestion-pagos"
                 className={({ isActive }) => getLinkClass(isActive, 'diseno')}
               >
                 💳 Gestión de Pagos
-              </NavLink>
-              {/* Usuarios de la App: quién usa la app, sesiones, pantallas, APP/WEB. */}
-              <NavLink
-                to="/admin/usuarios-app"
-                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
-              >
-                📱 Usuarios de la App
               </NavLink>
               <a
                 href="/tienda"
@@ -343,9 +344,8 @@ const AdminLayout = () => {
                 <ChevronIcon open={openGroups.clientes} />
               </h3>
               {/* "Métodos de Pago" y "Generador de Enlaces" se unificaron en
-                  "💳 Gestión de Pagos" (grupo Diseño de Tienda, bajo "Ver qué hacen
-                  los usuarios"). Sus rutas viejas /admin/pagos y /admin/generador-pagos
-                  se quitaron. */}
+                  "💳 Gestión de Pagos" (grupo Diseño de Tienda). Sus rutas viejas
+                  /admin/pagos y /admin/generador-pagos se quitaron. */}
               <NavLink
                 to="/admin/libro-reclamaciones"
                 className={({ isActive }) => getLinkClass(isActive, 'clientes')}
@@ -364,29 +364,13 @@ const AdminLayout = () => {
               >
                 Crear cuentas de pedidos
               </NavLink>
-              <NavLink
-                to="/admin/usuarios-analytics"
-                className={({ isActive }) => getLinkClass(isActive, 'clientes')}
-              >
-                Usuarios y métricas
-              </NavLink>
+              {/* Las respuestas de las encuestas están en Resultados › Opiniones;
+                  aquí queda editar la encuesta de suscripción. */}
               <NavLink
                 to="/admin/encuestas"
                 className={({ isActive }) => getLinkClass(isActive, 'clientes')}
               >
                 Encuesta de Suscripción
-              </NavLink>
-              <NavLink
-                to="/admin/respuestas-encuesta"
-                className={({ isActive }) => getLinkClass(isActive, 'clientes')}
-              >
-                📋 Respuestas de la encuesta
-              </NavLink>
-              <NavLink
-                to="/admin/encuesta-entregas"
-                className={({ isActive }) => getLinkClass(isActive, 'clientes')}
-              >
-                ⭐ Encuesta de entregas
               </NavLink>
               <NavLink
                 to="/admin/popups"

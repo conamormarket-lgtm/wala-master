@@ -12,11 +12,29 @@
 Al entrar a `/admin` se ve una **barra lateral izquierda** (el menú) y, a la derecha, el contenido de la sección que elijas. El menú está dividido en **grupos plegables** (puedes abrir/cerrar cada grupo haciendo clic en su título):
 
 1. **Ajustes** — solo para Super Admin.
-2. **Diseño de Tienda** — apariencia de la tienda, analítica, **Recepción de Pedidos** y juegos.
-3. **Catálogo** — productos, inventario, vendedores, envíos, ofertas, etc.
-4. **Clientes y Pagos** — usuarios, métodos de pago, reclamos, referidos, etc.
+2. **Resultados** — todas las métricas en un solo lugar (desde 2026-10-24, ver abajo).
+3. **Diseño de Tienda** — apariencia de la tienda, **Recepción de Pedidos** y juegos.
+4. **Catálogo** — productos, inventario, vendedores, envíos, ofertas, etc.
+5. **Clientes y Pagos** — métodos de pago, reclamos, referidos, encuestas, etc.
 
-> En el grupo *Diseño de Tienda*, justo **debajo de "📊 Dashboard Analítica"**, aparece el enlace **"📦 Recepción de Pedidos"** (`/admin/dashboard/recepcion`) para organizar los envíos del portal; **debajo de este**, el enlace **"🎨 Elementos con diseño"** (`/admin/elementos-diseno`) para editar las piezas visuales de cada marca (hoy: el nav de categorías); **debajo**, el enlace **"🎁 Raffles"** (`/admin/sorteos`) — sorteos y rifas; **debajo de Raffles**, el enlace **"🔗 Enlaces útiles"** (`/admin/enlaces`) — el constructor de páginas tipo Linktree; y **debajo**, el enlace **"👥 Ver qué hacen los usuarios"** (`/admin/usuarios-comportamiento`) — el panel de comportamiento (wishlists, carritos y fechas de los usuarios, sesión 2026-07-02).
+### Resultados (desde 2026-10-24)
+
+Reemplaza al Dashboard Analítica y a las pantallas sueltas de métricas ("Ver qué hacen los usuarios", "Interés por producto", "Usuarios de la App", "Usuarios y métricas", "Respuestas de la encuesta", "Encuesta de entregas"). Sus direcciones viejas **redirigen** a su lugar nuevo. Una sola cabecera para todas las pestañas: periodo (Hoy, 7, 30, 90 días o fechas), comparar con el periodo anterior y Actualizar. Todo sale del resumen diario `analytics_daily` (Cloud Functions `aggregateAnalyticsDaily` / `aggregateAnalyticsToday`, campos de `functions/analyticsResultados.js`), no de leer evento por evento. Código en `src/pages/admin/resultados/`.
+
+| Pestaña | Ruta | Qué tiene |
+|---|---|---|
+| Resumen | `/admin/resultados` | Visitas, Pedidos, Ventas y "de cada 100 visitas compran" (con ▲/▼); **Otros cobros** aparte (sorteos, suscripción, saldos, pago rápido: no cuentan como pedido); **Cosas por mejorar** (`cosasPorMejorar.mjs`); visitas por día; los 3 canales principales; quién está ahora; enlaces rotos con "Redirigir". |
+| Productos | `/admin/resultados/productos` | Más vistos y más vendidos (soles o unidades); los que más miran y quién (WhatsApp solo a quien lo aceptó); líneas; colecciones; búsquedas; lista de deseos; Crear. |
+| Visitantes | `/admin/resultados/visitantes` | Visitas, personas distintas, canal por canal, país, dispositivo, app o web. |
+| Clientes *(permiso clientes)* | `/admin/resultados/clientes` | Carritos abandonados con WhatsApp; una sola lista con ficha por cliente; búsqueda entre todos (campo `busqueda`, `functions/clientesBusqueda.js`; botón "Preparar la búsqueda" para los perfiles viejos); próximos cumpleaños. |
+| Opiniones *(permiso clientes)* | `/admin/resultados/opiniones` | Encuesta de entregas (ajustes en "Editar encuesta") y encuesta de regalos (descargar CSV, por cliente). |
+| Detalle técnico | `/admin/resultados/tecnico` | Calidad de los datos; mapa de calor, páginas, uso y navegador (`/admin/resultados/tecnico/...`); "Reconstruir el resumen diario" y "Recalcular compras de antes de medir". |
+
+**Recepción de Pedidos** pasó a `/admin/recepcion-pedidos` (una sola entrada, en *Diseño de Tienda*).
+
+> Las secciones de abajo sobre Dashboard Analítica, Ver qué hacen los usuarios, Usuarios de la App y Usuarios y métricas quedan como historial.
+
+> En el grupo *Diseño de Tienda* aparece el enlace **"📦 Recepción de Pedidos"** (`/admin/recepcion-pedidos`) para organizar los envíos del portal; **debajo**, el enlace **"🎁 Raffles"** (`/admin/sorteos`) — sorteos y rifas; y el enlace **"🔗 Enlaces útiles"** (`/admin/enlaces`) — el constructor de páginas tipo Linktree.
 
 ### Quién ve qué (permisos)
 

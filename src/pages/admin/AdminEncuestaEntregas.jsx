@@ -45,8 +45,11 @@ const RANGOS = [
 
 const fecha = (ms) => (ms ? new Date(ms).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '');
 
-const AdminEncuestaEntregas = () => {
+// embebido: dentro de Resultados › Opiniones, sin título propio, con el periodo
+// de Resultados (desdeMs/hastaMs) y los ajustes detrás de "Editar encuesta".
+const AdminEncuestaEntregas = ({ embebido = false, desdeMs = null, hastaMs = null } = {}) => {
   const toast = useGlobalToast();
+  const [verAjustes, setVerAjustes] = useState(!embebido);
 
   // ── Config ──
   const [cfg, setCfg] = useState(null);
@@ -82,16 +85,17 @@ const AdminEncuestaEntregas = () => {
   const [rango, setRango] = useState('todo');
   const [verTodos, setVerTodos] = useState(20);
   const enRango = useMemo(() => {
-    const dias = RANGOS.find((r) => r.id === rango)?.dias || 0;
     const lista = data?.respuestas || [];
+    if (embebido) return lista.filter((r) => (desdeMs == null || r.fecha >= desdeMs) && (hastaMs == null || r.fecha <= hastaMs));
+    const dias = RANGOS.find((r) => r.id === rango)?.dias || 0;
     return dias ? lista.filter((r) => r.fecha >= Date.now() - dias * 86400000) : lista;
-  }, [data, rango]);
+  }, [data, rango, embebido, desdeMs, hastaMs]);
   const resumen = useMemo(() => resumenEntregas(enRango, cfg?.opcionesMejorar || []), [enRango, cfg]);
 
   return (
     <div className={styles.pagina}>
       <header className={styles.encabezado}>
-        <div>
+        <div style={embebido ? { display: 'none' } : undefined}>
           <h1 className={styles.titulo}>⭐ Encuesta de entregas</h1>
           <p className={styles.subtitulo}>
             &quot;¿Cómo te fue con tu pedido?&quot;: llega con el aviso de pedido entregado y está en el detalle de
@@ -99,13 +103,18 @@ const AdminEncuestaEntregas = () => {
           </p>
         </div>
         <div className={styles.acciones}>
+          {embebido && (
+            <button type="button" className={styles.btnSecundario} onClick={() => setVerAjustes((v) => !v)} aria-expanded={verAjustes}>
+              {verAjustes ? 'Cerrar ajustes' : 'Editar encuesta'}
+            </button>
+          )}
           <button type="button" className={styles.btnSecundario} onClick={() => refetch()} disabled={isFetching}>
             {isFetching ? 'Actualizando…' : '⟳ Actualizar'}
           </button>
         </div>
       </header>
 
-      {cfg && (
+      {cfg && verAjustes && (
         <article className={styles.card}>
           <h3>Configuración</h3>
           <label className={styles.nota}>
@@ -133,7 +142,7 @@ const AdminEncuestaEntregas = () => {
 
       {data && (
         <>
-          <div className={styles.pestanas} role="group" aria-label="Rango de fechas">
+          <div className={styles.pestanas} role="group" aria-label="Rango de fechas" style={embebido ? { display: 'none' } : undefined}>
             {RANGOS.map((r) => (
               <button key={r.id} type="button" className={rango === r.id ? styles.chipActivo : styles.chip} aria-pressed={rango === r.id} onClick={() => setRango(r.id)}>
                 {r.label}

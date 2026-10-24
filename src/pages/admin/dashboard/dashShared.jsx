@@ -14,7 +14,7 @@ import extra from './dashShared.extra.module.css';
  *
  * Centraliza: formateadores, helpers de ruta, selector de rango (7/30/90 +
  * personalizado), el hook de datos globales (react-query, refresco SOLO manual,
- * staleTime alto) y un header reutilizable con título + "← Volver al resumen".
+ * staleTime alto) y un header reutilizable con título + "← Volver a Detalle técnico".
  *
  * FILTROS GLOBALES (contrato para el hub y las sub-páginas):
  *   - useDashboardFilters()  → rango (presets + personalizado), comparación con
@@ -1102,7 +1102,7 @@ export function RefreshButton({ onClick, isFetching }) {
 
 /**
  * DashHeader — encabezado estándar de sub-página:
- *   enlace "← Volver al resumen" + título + subtítulo,
+ *   enlace "← Volver a Detalle técnico" (salvo conVolver=false) + título + subtítulo,
  *   y a la derecha el selector de rango (opcional) + botón Actualizar.
  *
  * Los props rangeDays/setRangeDays se mantienen (retrocompatibles); los extras
@@ -1120,20 +1120,23 @@ export function DashHeader({
   onRefresh,
   isFetching,
   lastUpdated,
+  conVolver = true, // false en páginas que no cuelgan de Detalle técnico (Recepción de pedidos)
 }) {
   const { customStart, customEnd, setCustomRange, filtersSearch } = useDashboardFilters();
   return (
     <header className={`${styles.header} ${extra.header}`}>
       <div className={extra.headerMain}>
-        <Link
-          to={{ pathname: '/admin/dashboard', search: filtersSearch }}
-          className={`${styles.backLink} ${extra.backLink}`}
-        >
-          <span className={extra.backArrow} aria-hidden="true">
-            ←
-          </span>
-          Volver al resumen
-        </Link>
+        {conVolver && (
+          <Link
+            to={{ pathname: '/admin/resultados/tecnico', search: filtersSearch }}
+            className={`${styles.backLink} ${extra.backLink}`}
+          >
+            <span className={extra.backArrow} aria-hidden="true">
+              ←
+            </span>
+            Volver a Detalle técnico
+          </Link>
+        )}
         <h1 className={`${styles.title} ${extra.title}`}>{title}</h1>
         {subtitle && (
           <p className={`${styles.subtitle} ${extra.subtitle}`}>

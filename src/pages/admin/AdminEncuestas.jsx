@@ -290,7 +290,7 @@ const AdminEncuestas = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1>Configuración de Encuesta</h1>
-        <Link to="/admin/respuestas-encuesta" className={styles.verRespuestas}>📋 Ver respuestas</Link>
+        <Link to="/admin/resultados/opiniones" className={styles.verRespuestas}>📋 Ver respuestas</Link>
         <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
           <Save size={18} /> {saving ? 'Guardando...' : 'Guardar Cambios'}
         </button>
