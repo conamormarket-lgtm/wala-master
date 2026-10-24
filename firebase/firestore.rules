@@ -21,6 +21,8 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Supervision uses server-only, tenant-scoped summary endpoints.
     function notSupervision() {
       return request.auth == null || request.auth.token.get('metricsOnly', false) != true;
     }
@@ -623,8 +625,10 @@ service cloud.firestore {
     match /{collection}/{document=**} {
       allow read: if notSupervision() && (request.auth != null && !esSoloWala(collection) && !collection.matches('supervision_.*'));
       allow write: if notSupervision() && (request.auth != null
+        && !collection.matches('readModels_.*')
         && !esSoloWala(collection) && !collection.matches('supervision_.*')
         && !collection.matches('stockReview_.*')
+        && !collection.matches('financeMetrics_.*')
         && !(changesStockState(collection) && serverOwnsStockTransition()));
     }
   }
