@@ -154,7 +154,7 @@ pie en la tienda" al final): el marco entero está en el kit.
 |---|---|
 | `secciones` | `loadStorefrontPage('home')` / `getStorefrontConfig` (`pages/home`), ya en React Query (`storefront-config`) |
 | `productos.destacados` | `getFeaturedProducts(marca)` (query `featured-products`) |
-| `productos.nuevos` | `getStoreProductsPage({ sort: 'newest', pageSize: 12 })` (como `ProductQueryCarousel`) |
+| `productos.nuevos` | `getNewestStoreProducts()`: páginas de `getStoreProductsPage({ sort: 'newest' })` hasta 12 visibles (como `ProductQueryCarousel`) |
 | `productos.ofertas` | `getOnSaleProducts(marca)` |
 | `productos.porCategoria` / `porColeccion` | las mismas consultas de `ProductQueryCarousel` / `CollectionCarousel` |
 | `categorias` | `getCategories()` + cuenta de productos (lo que hoy arma `automaticCategoryProducts`, ~450) |

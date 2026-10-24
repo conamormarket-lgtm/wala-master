@@ -55,6 +55,7 @@ import {
   getProductsByCollection,
   getFeaturedProducts,
   getStoreProductsPage,
+  getNewestStoreProducts,
   getOnSaleProducts,
   idsDeCategoriaDe,
   STORE_PAGE_SIZE,
@@ -940,10 +941,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   const marcaDeCarrusel = pageBrandId || null;
   const { data: nuevosKit = [] } = useQuery({
     queryKey: ['query-carousel', 'newest', null, marcaDeCarrusel],
-    queryFn: async () => {
-      const res = await getStoreProductsPage({ facet: marcaDeCarrusel ? { type: 'brand', value: marcaDeCarrusel } : null, sort: 'newest', pageSize: 12 });
-      return res?.items || [];
-    },
+    queryFn: () => getNewestStoreProducts({ facet: marcaDeCarrusel ? { type: 'brand', value: marcaDeCarrusel } : null }),
     enabled: conTipoDelKit('new_arrivals_carousel'),
     staleTime: 5 * 60 * 1000,
   });

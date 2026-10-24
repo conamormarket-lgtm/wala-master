@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getStoreProductsPage, getProductsByCategory, getOnSaleProducts } from '../../../../services/products';
+import { getNewestStoreProducts, getProductsByCategory, getOnSaleProducts } from '../../../../services/products';
 import FeaturedCarousel from '../FeaturedCarousel/FeaturedCarousel';
 
 /**
@@ -47,8 +47,7 @@ const ProductQueryCarousel = ({
         return data || [];
       }
       // newest (por defecto): más recientes primero.
-      const res = await getStoreProductsPage({ facet, sort: 'newest', pageSize: 12 });
-      return res?.items || [];
+      return getNewestStoreProducts({ facet });
     },
     enabled: source !== 'category' || !!categoryId,
     staleTime: 5 * 60 * 1000,

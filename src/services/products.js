@@ -584,6 +584,26 @@ export const getStoreProductsPage = async ({ facet = null, sort = 'newest', curs
 };
 
 /**
+ * Los `cantidad` productos de tienda más nuevos (filas "Recién llegaron").
+ *
+ * Una sola página de 12 no alcanzaba: los ocultos (piezas de combo, combos de
+ * Crear, borradores) cuentan para el límite y se descartan después, así que la
+ * fila salía con 3 o 4 productos. Se siguen pidiendo páginas hasta juntar
+ * `cantidad` visibles o leer `maxPaginas`.
+ */
+export const getNewestStoreProducts = async ({ facet = null, cantidad = 12, maxPaginas = 4 } = {}) => {
+  const items = [];
+  let cursor = null;
+  for (let i = 0; i < maxPaginas && items.length < cantidad; i += 1) {
+    const res = await getStoreProductsPage({ facet, sort: 'newest', cursor, pageSize: STORE_PAGE_SIZE });
+    items.push(...(res?.items || []));
+    if (!res?.hasMore || !res.lastDoc) break;
+    cursor = res.lastDoc;
+  }
+  return items.slice(0, cantidad);
+};
+
+/**
  * Buscar productos por tÃ©rmino
  */
 /**
