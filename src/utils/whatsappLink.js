@@ -19,3 +19,18 @@ export function telefonoDePerfil(perfil) {
 export function aceptoWhatsApp(perfil) {
   return perfil?.marketingConsent?.whatsapp === true;
 }
+
+// Mensaje para quien pasó tiempo mirando un producto. Sin emojis: WhatsApp de
+// escritorio (Windows) los rompe al abrir un link wa.me y llegan como "�"; las
+// negritas con *...* sí funcionan.
+export function mensajeProductoVisto(nombre, producto) {
+  const primerNombre = String(nombre || '').trim().split(' ')[0];
+  const url = `${window.location.origin}/producto/${producto.id}`;
+  const precio = producto.salePrice || producto.price;
+  return [
+    `¡Hola${primerNombre ? ` ${primerNombre}` : ''}!`,
+    `Vimos que te gustó *${producto.name}*${precio ? ` (S/ ${precio})` : ''}. ¡Todavía está disponible!`,
+    url,
+    '¿Te ayudamos con tu pedido?',
+  ].join('\n');
+}

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getProductInterestLeads } from '../../services/adminProductInterest';
 import { useProducts } from '../../hooks/useProducts';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
-import { urlWhatsApp, telefonoDePerfil, aceptoWhatsApp } from '../../utils/whatsappLink';
+import { urlWhatsApp, telefonoDePerfil, aceptoWhatsApp, mensajeProductoVisto } from '../../utils/whatsappLink';
 import { GlassCard, GlassButton, Badge } from '../../components/ui';
 import styles from './AdminInteresProductos.module.css';
 
@@ -42,19 +42,6 @@ const fmtDuracion = (ms) => {
 };
 const fmtFecha = (ms) => (ms ? new Date(ms).toLocaleString('es-PE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—');
 
-const mensajeWhatsApp = (nombre, producto) => {
-  const primerNombre = String(nombre || '').trim().split(' ')[0];
-  const url = `${window.location.origin}/producto/${producto.id}`;
-  const precio = producto.salePrice || producto.price;
-  return [
-    // Sin emojis: WhatsApp de escritorio (Windows) los rompe al abrir un link
-    // wa.me y llegan como "�". Las negritas con *...* sí funcionan.
-    `¡Hola${primerNombre ? ` ${primerNombre}` : ''}!`,
-    `Vimos que te gustó *${producto.name}*${precio ? ` (S/ ${precio})` : ''}. ¡Todavía está disponible!`,
-    url,
-    '¿Te ayudamos con tu pedido?',
-  ].join('\n');
-};
 
 const AdminInteresProductos = () => {
   const [dias, setDias] = useState(7);
@@ -184,7 +171,7 @@ const AdminInteresProductos = () => {
                   const nombre = l.perfil?.displayName || l.displayName || 'Cliente';
                   const telefono = telefonoDePerfil(l.perfil);
                   const permiso = aceptoWhatsApp(l.perfil);
-                  const url = p && telefono ? urlWhatsApp(telefono, mensajeWhatsApp(nombre, p)) : null;
+                  const url = p && telefono ? urlWhatsApp(telefono, mensajeProductoVisto(nombre, p)) : null;
                   return (
                     <li key={`${l.uid}|${l.productId}`} className={styles.lead}>
                       <img src={p?.images?.[0] || PLACEHOLDER_IMG} alt="" className={styles.miniatura} loading="lazy" onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMG; }} />

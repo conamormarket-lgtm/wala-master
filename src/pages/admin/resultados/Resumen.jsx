@@ -9,6 +9,7 @@ import EnlacesRotos, { CLAVE_ENLACES_ROTOS } from '../dashboard/EnlacesRotos';
 import { fmtInt, fmtTime, prettyRouteName, calcularDelta, calcularDeltaPuntos } from '../dashboard/dashShared';
 import { cosasPorMejorar } from './cosasPorMejorar.mjs';
 import { DESTINOS } from './rutas';
+import { Tarjeta, Columnas, Vacio } from './piezas';
 import styles from './Resumen.module.css';
 
 /*
@@ -191,20 +192,18 @@ export default function Resumen() {
         <p className={styles.nota}>El periodo anterior todavía no tiene pedidos ni ventas sumados: no se puede comparar.</p>
       )}
 
-      <div className={styles.dosColumnas}>
-        <section className={styles.tarjeta} aria-labelledby="mejorar">
-          <h2 id="mejorar" className={styles.tituloTarjeta}>Cosas por mejorar</h2>
+      <Columnas>
+        <Tarjeta id="mejorar" titulo="Cosas por mejorar">
           {avisos.length ? (
             <ul className={styles.avisos}>
               {avisos.map((a) => <Aviso key={a.id} aviso={a} />)}
             </ul>
           ) : (
-            <p className={styles.vacio}>Nada urgente en este periodo. Sigue así.</p>
+            <Vacio>Nada urgente en este periodo. Sigue así.</Vacio>
           )}
-        </section>
+        </Tarjeta>
 
-        <section className={styles.tarjeta} aria-labelledby="visitas-dia">
-          <h2 id="visitas-dia" className={styles.tituloTarjeta}>Visitas por día</h2>
+        <Tarjeta id="visitas-dia" titulo="Visitas por día">
           <TrendChart
             data={serie}
             series={[{ key: 'total', name: 'Visitas', color: '#6D28D9' }]}
@@ -213,15 +212,18 @@ export default function Resumen() {
             formatY={(v) => fmtInt(v)}
             emptyText="Sin visitas en este periodo."
           />
-        </section>
-      </div>
+        </Tarjeta>
+      </Columnas>
 
-      <div className={styles.dosColumnas}>
-        <section className={styles.tarjeta} aria-labelledby="canales">
-          <h2 id="canales" className={styles.tituloTarjeta}>De dónde vienen</h2>
-          <p className={styles.ayuda}>Toca un canal para ver los números solo de ahí.</p>
+      <Columnas>
+        <Tarjeta
+          id="canales"
+          titulo="De dónde vienen"
+          ayuda="Los 3 canales con más visitas. Toca uno para ver los números solo de ahí."
+          acciones={<Link to={{ pathname: DESTINOS.visitantes, search: filtros.filtersSearch }} className={styles.verMas}>Ver todos</Link>}
+        >
           {(data?.canales || []).length === 0 ? (
-            <p className={styles.vacio}>Sin datos de origen en este periodo.</p>
+            <Vacio>Sin datos de origen en este periodo.</Vacio>
           ) : (
             <div className={styles.tablaScroll}>
               <table className={styles.tabla}>
@@ -229,7 +231,7 @@ export default function Resumen() {
                   <tr><th>Canal</th><th>Visitas</th><th>Pedidos</th><th>De cada 100 compran</th></tr>
                 </thead>
                 <tbody>
-                  {data.canales.map((c) => {
+                  {data.canales.slice(0, 3).map((c) => {
                     const activo = canal === c.canal;
                     return (
                       <tr key={c.canal} className={activo ? styles.filaActiva : ''}>
@@ -248,16 +250,9 @@ export default function Resumen() {
               </table>
             </div>
           )}
-          <p className={styles.ayuda}>
-            "Directo o sin dato": escribieron la dirección o vinieron de una app que no dice de dónde (Instagram y
-            WhatsApp suelen ocultarlo). Para saberlo, comparte los enlaces con ?utm_source=instagram.
-          </p>
-        </section>
+        </Tarjeta>
 
-        <section className={styles.tarjeta} aria-labelledby="en-vivo">
-          <h2 id="en-vivo" className={styles.tituloTarjeta}>
-            Ahora en la tienda <span className={styles.contador}>{fmtInt(enVivo.length)}</span>
-          </h2>
+        <Tarjeta id="en-vivo" titulo={<>Ahora en la tienda <span className={styles.contador}>{fmtInt(enVivo.length)}</span></>}>
           {enVivo.length ? (
             <ul className={styles.vivo}>
               {enVivo.slice(0, 10).map((s) => (
@@ -271,10 +266,10 @@ export default function Resumen() {
               ))}
             </ul>
           ) : (
-            <p className={styles.vacio}>Nadie navegando en este momento.</p>
+            <Vacio>Nadie navegando en este momento.</Vacio>
           )}
-        </section>
-      </div>
+        </Tarjeta>
+      </Columnas>
 
       {enlacesRotos > 0 && (
         <div id="enlaces">
