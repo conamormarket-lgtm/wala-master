@@ -6,11 +6,12 @@ import { createServer } from 'vite';
 
 let servidor;
 let tarjetaDesdeProducto;
+let fichaProductoDesde;
 let TarjetaProducto;
 let TarjetaCreacion;
 before(async () => {
   servidor = await createServer({ configFile: false, server: { middlewareMode: true }, appType: 'custom' });
-  ({ tarjetaDesdeProducto } = await servidor.ssrLoadModule('/src/componentes/kit/adaptadores.js'));
+  ({ tarjetaDesdeProducto, fichaProductoDesde } = await servidor.ssrLoadModule('/src/componentes/kit/adaptadores.js'));
   ({ default: TarjetaProducto } = await servidor.ssrLoadModule('/src/componentes/kit/TarjetaProducto.jsx'));
   ({ TarjetaCreacion } = await servidor.ssrLoadModule('/src/componentes/kit/piezas/Creaciones.jsx'));
 });
@@ -77,4 +78,25 @@ test('los productos sueltos conservan portada, hover y miniatura elegida', () =>
   assert.equal(props.imagenHover, '/espalda.png');
   assert.equal(props.piezas.length, 0);
   assert.equal(tarjetaDesdeProducto(producto, { imagen: '/miniatura.png' }).imagen, '/miniatura.png');
+});
+
+test('la ficha sin portada solo incluye fotos reales de sus prendas, sin miniatura de relleno', () => {
+  const ficha = fichaProductoDesde(combo, { subproductos: {
+    ella: { id: 'ella', mainImage: '/images/placeholder.svg', images: ['/ella-actual.png', '/images/placeholder.svg'] },
+    el: { id: 'el', hasVariants: true, variants: [{ id: 'negro', name: 'Negro', imageUrl: '/el-actual.png', images: ['/images/placeholder.svg'] }] },
+  } });
+  assert.equal(ficha.fotos.combo.portada.length, 0);
+  assert.equal(ficha.fotos.combo.producto.length, 0);
+  assert.doesNotMatch(JSON.stringify(ficha.fotos), /placeholder/);
+  assert.ok(ficha.fotos.base.some((f) => f.url === '/ella-antigua.png'));
+  assert.ok(ficha.fotos.combo.piezas[0].general.includes('/ella-actual.png'));
+  assert.ok(ficha.fotos.combo.piezas[1].porColor.Negro.includes('/el-actual.png'));
+});
+
+test('la ficha conserva una portada real y sus fotos adicionales', () => {
+  const ficha = fichaProductoDesde({ ...combo, comboPreviewImage: '/portada.png', images: ['/images/placeholder.svg', '/detalle.png'] });
+  assert.equal(ficha.fotos.base[0].url, '/portada.png');
+  assert.deepEqual(ficha.fotos.combo.portada, ['/portada.png']);
+  assert.deepEqual(ficha.fotos.combo.producto, ['/detalle.png']);
+  assert.doesNotMatch(JSON.stringify(ficha.fotos), /placeholder/);
 });

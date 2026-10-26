@@ -1139,12 +1139,13 @@ export function fichaProductoDesde(p = {}, { catalogo = {}, subproductos = {} } 
   const m = p.brandId ? marcas.find((x) => x.id === p.brandId) : null;
   const cat = (p.categories || []).map((id) => categorias.find((c) => (c.categoryId || c.id) === id)).find(Boolean);
   const delProducto = [p.mainImage, ...(p.images || [])];
+  // El relleno que recibe un combo sin portada no es una foto de la galería.
+  const urls = (lista) => [...new Set(lista.filter((u) => !esRelleno(u)))];
   const base = p.isComboProduct
-    ? fotosGaleria([portadaDeCombo(p), ...(p.comboItems || []).map((it) => it.imageUrl), ...delProducto], Object.fromEntries((p.comboItems || []).map((it) => [it.imageUrl, it.name])))
+    ? fotosGaleria(urls([portadaDeCombo(p), ...(p.comboItems || []).map((it) => it.imageUrl), ...delProducto]), Object.fromEntries((p.comboItems || []).map((it) => [it.imageUrl, it.name])))
     : fotosGaleria(delProducto);
   const fotos = { base };
   if (p.isComboProduct) {
-    const urls = (lista) => [...new Set(lista.filter(Boolean))];
     fotos.combo = {
       portada: urls([portadaDeCombo(p)]),
       piezas: (p.comboItems || []).map((it) => {
