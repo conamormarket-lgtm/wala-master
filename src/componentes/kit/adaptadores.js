@@ -10,6 +10,7 @@ import { limaTodayStr, felicidadKapiHoy } from '../../utils/fechaLima';
 import { getFallbackHex } from '../../utils/colors';
 import { fotosGenerales } from '../../utils/fotosDeColor';
 import { proximaOcurrencia, textoFechaEvento } from '../../utils/fechaEvento.mjs';
+import { esYoryoPersonalizable, rutaPersonalizarYoryo, faltaPersonalizacionYoryo } from '../../utils/yoryoPersonalizacion.mjs';
 import { hoyLocal } from '../../utils/fechasFestivas.mjs';
 import {
   leerPrendaBase, colorDisponible, fondoMuestra, precioPersonalizado, tallasDeColor,
@@ -51,6 +52,7 @@ const coloresDePieza = (sub, it) => variantesDePieza(sub, it).map((v) => {
  *  - 'agregar': sin opciones (taza, llavero, producto con una sola variante)
  */
 export function accionDeProducto(p) {
+  if (p?.personalizacionYoryo) return 'crear';
   if (p?.esPrendaBase) return 'crear';
   if (p?.isComboProduct && p.comboItems?.length) return 'elegir';
   const vs = variantesDe(p);
@@ -104,7 +106,7 @@ export function tarjetaDesdeProducto(p, { imagen, catalogo = {} } = {}) {
   // Las generales, sin las de otro color (al pasar el mouse no sale otro color).
   const fotos = [portadaDeCombo(p), principal?.imageUrl, ...(principal?.images || []), ...fotosGenerales(p, principal)].filter(Boolean);
   return {
-    url: p.esPrendaBase ? `/crear/${p.id}` : `/producto/${p.id}`,
+    url: p.personalizacionYoryo ? `${p.personalizacionYoryo.pack ? '/combo/' : '/crear/'}${p.id}` : p.esPrendaBase ? `/crear/${p.id}` : `/producto/${p.id}`,
     imagen: imagen || fotos[0],
     imagenHover: fotos.find((f) => f !== (imagen || fotos[0])),
     nombre: p.name,
@@ -1038,6 +1040,9 @@ const esRelleno = (u) => !u || String(u).includes('placeholder');
 export function itemCarritoDesde(item = {}, { catalogo = new Map(), falta } = {}) {
   const custom = item.customization || null;
   const piezasCrear = custom?.tipo === 'comboCrear' ? custom.piezas || [] : null;
+  const yoryo = esYoryoPersonalizable({ id: item.productId });
+  const urlYoryo = yoryo ? `${rutaPersonalizarYoryo({ id: item.productId })}?carrito=${encodeURIComponent(item.id)}` : undefined;
+  const avisoYoryo = faltaPersonalizacionYoryo(item);
   let url = `/producto/${item.productId}`;
   if (piezasCrear) url = `/combo/${item.productId}${custom.miComboId ? `?mio=${custom.miComboId}` : ''}`;
   else if (custom?.tipo === 'crear' && custom.designId) url = `/creacion/${custom.designId}`;
@@ -1064,10 +1069,11 @@ export function itemCarritoDesde(item = {}, { catalogo = new Map(), falta } = {}
 
   let piezas = [];
   if (piezasCrear) {
-    piezas = piezasCrear.map((p) => ({
+    piezas = piezasCrear.map((p, i) => ({
       texto: [p.prendaNombre, p.color?.nombre, p.talla && `Talla ${p.talla}`].filter(Boolean).join(' · ')
         + (p.nombre && !String(p.nombre).toLowerCase().includes(String(p.prendaNombre || '').toLowerCase()) ? ` · “${p.nombre}”` : ''),
       hex: p.color?.hex,
+      ...(p.datosYoryo && { texto: `${p.prendaNombre} · ${p.produccionYoryo?.tecnica === 'laser' ? 'Grabado láser' : 'Impresión'} · ${p.datosYoryo.nombre}`, imagen: p.imageURL, urlEditar: `${urlYoryo}&pieza=${i}` }),
     }));
   } else if (item.isComboProduct) {
     // Cada prenda con su nombre (antes "Producto 1: …"), su color y la talla.
@@ -1088,12 +1094,14 @@ export function itemCarritoDesde(item = {}, { catalogo = new Map(), falta } = {}
     cantidad: item.quantity || 1,
     seleccionado: item.selected !== false,
     url,
+    urlEditar: urlYoryo,
+    avisoPersonalizacion: avisoYoryo || undefined,
     detalles,
     combo: Boolean(item.isComboProduct || piezasCrear),
     piezas,
     personalizado: Boolean(custom) && !piezasCrear,
-    incompleto: falta?.length ? falta.join(' y ') : undefined,
-    urlElegir: falta?.length ? url : undefined,
+    incompleto: avisoYoryo ? 'personalización' : falta?.length ? falta.join(' y ') : undefined,
+    urlElegir: avisoYoryo ? urlYoryo : falta?.length ? url : undefined,
   };
 }
 

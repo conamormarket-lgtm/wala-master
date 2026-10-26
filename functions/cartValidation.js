@@ -2,6 +2,7 @@
 
 const { precioDeCatalogo } = require("./catalogPricing");
 const { topeMonedasCheckout, pctMonedasDeMarca } = require("./checkoutTotals");
+const { config: yoryo, validarDisenoYoryo, esSvgLaser, leerVectorProduccion } = require('./yoryoProduccion');
 
 // Prendas del apartado "Crear" (esPrendaBase): a diferencia del resto de
 // personalizados, su precio SÍ se puede reconstruir aquí. Es el de catálogo,
@@ -42,13 +43,14 @@ async function validarCombos(grupos, { db, reader, HttpsError }) {
   const ids = [...new Set(grupos.map((g) => g.comboId).filter(Boolean))];
   const snapshots = ids.length
     ? await reader.getAll(...ids.map((id) => db.collection("productos_wala").doc(id)), {
-      fieldMask: ["price", "salePrice", "deleted", "esComboCrear", "comboCrear", "brandId"],
+      fieldMask: ["price", "salePrice", "deleted", "esComboCrear", "comboCrear", "brandId", ...(ids.includes(yoryo.packId) ? ['visible'] : [])],
     })
     : [];
   const byId = new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
   for (const grupo of grupos) {
     const snapshot = byId.get(grupo.comboId);
-    const combo = snapshot && snapshot.exists ? snapshot.data() || {} : null;
+    let combo = snapshot && snapshot.exists ? snapshot.data() || {} : null;
+    if (combo && grupo.comboId === yoryo.packId) combo = { ...combo, esComboCrear: true, comboCrear: { publicado: combo.visible !== false && combo.comboCrear?.publicado !== false, piezas: yoryo.piezas.map((p) => ({ prendaId: p.id })) } };
     const nombre = grupo.nombre;
     if (!combo || combo.esComboCrear !== true || combo.deleted === true || !combo.comboCrear || combo.comboCrear.publicado !== true) {
       throw new HttpsError("failed-precondition", `"${nombre}" ya no está disponible. Actualiza tu carrito.`);
@@ -89,8 +91,8 @@ async function validarCombos(grupos, { db, reader, HttpsError }) {
 //   - otros personalizados: el que manda el cliente (el diseño se cobra aparte
 //     y aquí no se puede reconstruir), pero nunca por debajo del de catálogo.
 //   - líneas sin producto: solo pueden sumar (nunca precio negativo).
-function createCartValidator({ db, HttpsError }) {
-  return async function verificarPreciosYStock(productos, transaction) {
+function createCartValidator({ db, HttpsError, leerVector = leerVectorProduccion }) {
+  return async function verificarPreciosYStock(productos, transaction, uid = null) {
     const items = productos && typeof productos === "object" ? Object.values(productos) : [];
     const quantities = new Map();
     for (const item of items) {
@@ -135,7 +137,7 @@ function createCartValidator({ db, HttpsError }) {
     }
     const refs = ids.map((id) => db.collection("productos_wala").doc(id));
     const snapshots = await reader.getAll(...refs, {
-      fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "prendaBase", "brandId"],
+      fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "prendaBase", "brandId", ...(ids.some((id) => yoryo.piezas.some((p) => p.id === id)) ? ['produccionYoryo'] : [])],
     });
     const byId = new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
 
@@ -148,6 +150,36 @@ function createCartValidator({ db, HttpsError }) {
       if (!product || product.deleted === true || product.visible === false) {
         throw new HttpsError("failed-precondition", `"${nombre}" ya no está disponible. Actualiza tu carrito.`);
       }
+      if (id === yoryo.packId && !item.comboCrear) throw new HttpsError('failed-precondition', 'Personaliza las tres piezas del pack antes de comprar.');
+      const piezaYoryo = yoryo.piezas.find((p) => p.id === id);
+      if (piezaYoryo) {
+        if (!item.designId) throw new HttpsError('failed-precondition', 'Personaliza este producto antes de comprar.');
+        const [d] = await reader.getAll(db.collection('designs').doc(item.designId));
+        const diseno = d?.exists ? d.data() : null;
+        if (!uid || diseno?.userId !== uid) throw new HttpsError('permission-denied', 'Inicia sesión con la cuenta que personalizó este producto.');
+        const problema = validarDisenoYoryo(diseno, product, piezaYoryo);
+        if (problema) throw new HttpsError('failed-precondition', problema);
+        if (item.produccionYoryo?.revision !== diseno.produccionYoryo.revision) throw new HttpsError('failed-precondition', 'El diseño cambió. Actualiza la personalización del carrito.');
+        if (piezaYoryo.tecnica === 'laser') {
+          const archivo = diseno.archivosProduccion[0];
+          let texto;
+          try { texto = await leerVector(archivo.url, diseno.userId); } catch { throw new HttpsError('failed-precondition', 'No pudimos comprobar el archivo vectorial del grabado.'); }
+          if (!esSvgLaser(texto, archivo.anchoMm, archivo.altoMm)) throw new HttpsError('failed-precondition', 'El grabado requiere un SVG vectorial con textos trazados y medidas válidas.');
+        }
+        item.archivosProduccion = diseno.archivosProduccion;
+        item.produccionYoryo = diseno.produccionYoryo;
+        item.datosYoryo = diseno.datosYoryo;
+        item.urlImagenPersonalizada = diseno.vistasPrevias[0].url;
+        const archivo = diseno.archivosProduccion[0];
+        item.disenoVistas = { frente: {
+          vistaPrevia: diseno.vistasPrevias[0].url,
+          [piezaYoryo.tecnica === 'laser' ? 'archivoVectorial' : 'archivoImpresion']: archivo.url,
+          tecnicaProduccion: piezaYoryo.tecnica,
+          medida: `${archivo.anchoMm} x ${archivo.altoMm} mm`,
+          textos: [diseno.datosYoryo.nombre],
+          imagenes: (diseno.datosYoryo.fotos || []).map((f) => f.url).filter(Boolean),
+        } };
+      }
       const stock = Number(product.inStock);
       if (Number.isFinite(stock) && stock < quantities.get(id)) {
         throw new HttpsError("failed-precondition",
@@ -156,7 +188,7 @@ function createCartValidator({ db, HttpsError }) {
       // Las piezas de un combo se cobran juntas, al precio del combo (abajo).
       if (item.comboCrear) continue;
       const clientPrice = Number(item.precio);
-      if (item.personalizado && product.esPrendaBase === true) {
+      if (item.personalizado && (product.esPrendaBase === true || piezaYoryo)) {
         const price = precioDePrendaPersonalizada(product);
         if (price !== null && Number.isFinite(clientPrice) && Math.abs(price - clientPrice) > 0.01) {
           throw new HttpsError("failed-precondition",

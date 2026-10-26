@@ -9,6 +9,7 @@ import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 import { trackAddToCart } from '../services/analytics/tracker';
 import { nombreConCreacion } from '../utils/nombreCreacion';
 import { fotosGenerales } from '../utils/fotosDeColor';
+import { esYoryoPersonalizable, reemplazarDisenoCarrito } from '../utils/yoryoPersonalizacion.mjs';
 
 const CartContext = createContext();
 
@@ -491,6 +492,10 @@ export const CartProvider = ({ children }) => {
   }, []);
 
   const addToCart = React.useCallback((product, variant = {}, customization = null, quantity = 1, comboData = null, options = {}) => {
+    if (esYoryoPersonalizable(product) && !customization?.datosYoryo && !(customization?.piezas?.length === 3 && customization.piezas.every((p) => p.datosYoryo))) {
+      avisar(`personalizar-${product.id}`, 'info', 'Personaliza este producto antes de agregarlo al carrito.');
+      return false;
+    }
     // Producto con UNA sola variante (un sérum, un reloj): no hay nada que
     // elegir, así que se usa esa. Sin esto, los "agregar" rápidos (ideas de
     // regalo, lista de deseos…) lo dejaban en el carrito con "Falta elegir
@@ -741,9 +746,17 @@ export const CartProvider = ({ children }) => {
     }, 0);
   }, [items]);
 
+  const actualizarPersonalizacion = React.useCallback((itemId, productoId, nueva, firmaAnterior) => {
+    const actual = itemsRef.current.find((i) => i.id === itemId && i.productId === productoId);
+    if (!actual || firmaAnterior && JSON.stringify(actual.customization) !== firmaAnterior) return false;
+    setItems((prev) => reemplazarDisenoCarrito(prev, itemId, productoId, nueva));
+    return true;
+  }, []);
+
   const value = React.useMemo(() => ({
     items,
     addToCart,
+    actualizarPersonalizacion,
     removeFromCart,
     updateQuantity,
     clearCart,
@@ -755,7 +768,7 @@ export const CartProvider = ({ children }) => {
     getTotalItems,
     getTotalPrice,
     isEmpty: items.length === 0
-  }), [items, addToCart, removeFromCart, updateQuantity, clearCart, toggleItemSelected, selectAllItems, setAllItemsSelected, removeSelectedItems, clearSelectedItems, getTotalItems, getTotalPrice]);
+  }), [items, addToCart, actualizarPersonalizacion, removeFromCart, updateQuantity, clearCart, toggleItemSelected, selectAllItems, setAllItemsSelected, removeSelectedItems, clearSelectedItems, getTotalItems, getTotalPrice]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };

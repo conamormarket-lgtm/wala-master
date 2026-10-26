@@ -18,6 +18,7 @@ export const prendaCrearDesdeProducto = (prenda = {}) => {
   return {
     id: prenda.id,
     nombre: prenda.name,
+    accesorio: Boolean(prenda.personalizacionYoryo),
     imagen: vistas[0]?.imagen,
     imagenHover: vistas[1]?.imagen,
     categoria: [prenda.visible === false && 'Borrador', lados].filter(Boolean).join(' · '),
@@ -46,6 +47,7 @@ export const comboCrearDesde = (combo = {}, prendaPorId = new Map()) => {
   return {
     id: combo.id,
     cantidad: prendas.length,
+    accesorio: Boolean(combo.personalizacionYoryo),
     conjunto: new Set((combo.piezas || []).map((p) => p.prendaId)).size > 1,
     nombre: combo.name,
     categoria: [!combo.publicado && 'Borrador', 'Cada una con su diseño'].filter(Boolean).join(' · '),

@@ -5,6 +5,7 @@ node_modules
 *.log
 .git
 backend
-functions
+functions/*
+!functions/yoryoProductos.json
 android
 Portal Clientes

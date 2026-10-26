@@ -110,7 +110,7 @@ export const getDesignById = async (designId) => {
 export const saveDesign = async (userId, payload) => {
   if (!userId) return { id: null, error: 'Usuario no autenticado' };
 
-  const { designId, productId, productName, layers, layersByView, variant, name, comboItemCustomization, isUserComboDesign, tipo, previewUrl, color, archivosImpresion, vistasPrevias, imagenConjunta, estado, miniatura, miniaturas, basadoEn, combo } = payload || {};
+  const { designId, productId, productName, layers, layersByView, variant, name, comboItemCustomization, isUserComboDesign, tipo, previewUrl, color, archivosImpresion, vistasPrevias, imagenConjunta, estado, miniatura, miniaturas, basadoEn, combo, datosYoryo, produccionYoryo, archivosProduccion, firmaYoryo } = payload || {};
 
   // Formar una vista estandar del root layersByView (hacia atrás para compatibilidad)
   const sanitizedLayersByView = sanitizeLayersByViewMap(layersByView);
@@ -158,6 +158,7 @@ export const saveDesign = async (userId, payload) => {
       previewUrl: previewUrl || '',
       color: color || null,
       ...(Array.isArray(archivosImpresion) && { archivosImpresion }),
+      ...(datosYoryo && { datosYoryo, produccionYoryo, archivosProduccion, firmaYoryo }),
       ...(Array.isArray(vistasPrevias) && { vistasPrevias }),
       ...(imagenConjunta && { imagenConjunta }),
       // Diseño de la comunidad del que partió (comunidad_disenos/{id}).
@@ -194,6 +195,9 @@ export const urlsDeDiseno = (d) => {
   agregar(d?.imagenConjunta);
   (d?.vistasPrevias || []).forEach((p) => agregar(p?.url));
   (d?.archivosImpresion || []).forEach((a) => agregar(a?.url));
+  (d?.archivosProduccion || []).forEach((a) => agregar(a?.url));
+  agregar(d?.datosYoryo?.vector?.url);
+  (d?.datosYoryo?.fotos || []).forEach((f) => agregar(f?.url));
   // "Mi combo" guarda la foto de cada prenda: también está en uso.
   (d?.piezas || []).forEach((p) => { agregar(p?.frente); agregar(p?.espalda); });
   (d?.previas || []).forEach(agregar);

@@ -53,10 +53,11 @@ export function PaginaCrear({
 }) {
   // 1 son las prendas sueltas; 2, 3… los tamaños de combo que hay.
   const tamanos = [...new Set(combos.map((c) => c.cantidad))].sort((a, b) => a - b);
+  const conAccesorios = prendas.some((p) => p.accesorio) || combos.some((p) => p.accesorio);
   const opciones = [1, ...tamanos].map((n) => {
     const deN = combos.filter((c) => c.cantidad === n);
     const conjunto = n > 1 && deN.length > 0 && deN.every((c) => c.conjunto);
-    return { valor: n, texto: textoPara(n, conjunto), grupo: n > 1 && !conjunto };
+    return { valor: n, texto: deN.some((c) => c.accesorio) ? `${n} piezas` : textoPara(n, conjunto), grupo: n > 1 && !conjunto };
   });
   const elegido = opciones.some((o) => o.valor === para) ? para : 1;
   const combosDePara = combos.filter((c) => c.cantidad === elegido);
@@ -67,13 +68,13 @@ export function PaginaCrear({
   const t = {
     verTodas: `Ver todas${nCreaciones > 1 ? ` (${nCreaciones})` : ''}`,
     verTodos: `Ver todos${nComunidad > 1 ? ` (${nComunidad})` : ''}`,
-    para: useTexto('¿Para cuántas personas?'),
+    para: useTexto(conAccesorios ? 'Elige tu formato' : '¿Para cuántas personas?'),
   };
 
   return (
     <>
       <BloqueSeccion ajustes={{ paddingTop: '1.25rem', paddingBottom: '0.75rem' }}>
-        <PortadaCrear {...portada} />
+        <PortadaCrear {...(conAccesorios && { titulo: 'Crea tu producto', texto: 'Elige una prenda o un accesorio y personalízalo con tu diseño.' })} {...portada} />
       </BloqueSeccion>
 
       {borradores.length > 0 && (
@@ -109,7 +110,7 @@ export function PaginaCrear({
           {(hayAlgoArriba || opciones.length > 1) && (
             <TituloSeccion
               titulo="Empieza una nueva"
-              subtitulo={elegido === 1 ? 'Elige la prenda que quieres diseñar.' : 'Cada prenda con su propio diseño, color y talla, a precio de combo.'}
+              subtitulo={conAccesorios ? elegido === 1 ? 'Elige el producto que quieres personalizar.' : 'Cada pieza con su propio diseño, a precio de combo.' : elegido === 1 ? 'Elige la prenda que quieres diseñar.' : 'Cada prenda con su propio diseño, color y talla, a precio de combo.'}
               subrayado
             />
           )}

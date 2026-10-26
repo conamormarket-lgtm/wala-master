@@ -21,6 +21,8 @@ import AdminComboEditor from '../components/AdminComboEditor/AdminComboEditor';
 import GenerarFrenteEspalda from './GenerarFrenteEspalda';
 import YoryoPersonalizado from '../../../components/YoryoPersonalizado/YoryoPersonalizado';
 import PersonalizacionPrenda, { prendaBaseInicial, prendaBaseParaGuardar } from '../../admin/prendasCrear/PersonalizacionPrenda';
+import ConfiguracionYoryo from '../../../components/crear/ConfiguracionYoryo';
+import { esYoryoPersonalizable } from '../../../utils/yoryoPersonalizacion.mjs';
 import { fabric } from 'fabric';
 import '../../../fabricPatch'; // parche de renderAll: viaja con fabric, ya no en el entry
 import ReactQuill, { Quill } from 'react-quill';
@@ -277,7 +279,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         navigate(`/admin/prendas-crear/${id}`, { replace: true });
         return;
       }
-      if (!esModoPrenda && productData.esComboCrear === true) {
+      if (!esModoPrenda && productData.esComboCrear === true && !esYoryoPersonalizable(productData)) {
         navigate('/admin/combos-crear', { replace: true });
         return;
       }
@@ -1892,6 +1894,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
           </>
           )}
 
+          {id && <ConfiguracionYoryo id={id} />}
           {(esModoPrenda || personalizableViejo) && (
           <div className={styles.card} style={{ marginTop: '1.5rem' }}>
             <div className={styles.cardHeaderFlex} style={{ borderBottom: 'none', paddingBottom: 0 }}>

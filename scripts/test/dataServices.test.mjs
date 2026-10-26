@@ -16,6 +16,9 @@ async function loadService(file, mocks, globals = {}) {
       module = new vm.SyntheticModule(Object.keys(values), function () {
         for (const [key, value] of Object.entries(values)) this.setExport(key, value);
       }, { context, identifier: id });
+    } else if (id.endsWith('.json')) {
+      const value = JSON.parse(await readFile(id, 'utf8'));
+      module = new vm.SyntheticModule(['default'], function () { this.setExport('default', value); }, { context, identifier: id });
     } else {
       module = new vm.SourceTextModule(await readFile(id, 'utf8'), {
         context, identifier: id,
@@ -43,6 +46,24 @@ async function loadService(file, mocks, globals = {}) {
 }
 
 const unused = () => { throw Error('Unexpected SDK call'); };
+
+test('guardar una creación Yoryo conserva el vector, los datos editables y su revisión', async () => {
+  let escrito;
+  const api = await loadService('src/services/designs.js', {
+    './firebase/firestore': { getCollection: unused, getDocument: unused, updateDocument: unused, deleteDocument: unused, createDocument: async (_collection, data) => { escrito = data; return { id: 'creacion-yoryo', error: null }; } },
+    './firebase/config': { obtenerStorage: unused },
+  });
+  const datosYoryo = { nombre: 'Daniel', vector: { url: 'https://ejemplo.test/escudo.svg' }, fotos: [{ url: 'https://ejemplo.test/foto.png' }] };
+  const archivosProduccion = [{ formato: 'svg', url: 'https://ejemplo.test/grabado.svg', revision: 'v1' }];
+  await api.saveDesign('cliente', { productId: 'termo', tipo: 'crear', datosYoryo, archivosProduccion, produccionYoryo: { revision: 'v1' }, firmaYoryo: 'firma' });
+  assert.equal(escrito.datosYoryo.nombre, 'Daniel');
+  assert.equal(escrito.archivosProduccion[0].formato, 'svg');
+  assert.equal(escrito.produccionYoryo.revision, 'v1');
+  assert.equal(escrito.firmaYoryo, 'firma');
+  assert.ok(api.urlsDeDiseno(escrito).has(datosYoryo.vector.url));
+  assert.ok(api.urlsDeDiseno(escrito).has(archivosProduccion[0].url));
+  assert.ok(api.urlsDeDiseno(escrito).has(datosYoryo.fotos[0].url));
+});
 const sdk = {
   collection: (db, name) => ({ db, name }),
   query: (collection, ...constraints) => ({ ...collection, constraints }),
@@ -193,6 +214,8 @@ test('storefront consumes the HTML response once and later refreshes use current
   let sdkReads = 0, migrations = 0;
   const precargadas = [];
   const api = await loadService('src/pages/Tienda/services/startup.js', {
+    '../../../hooks/useLoViejo': { forzadoLocal: () => false },
+    './seccionesDelKit': { TIPOS_DEL_KIT: new Set() },
     './storefront': {
       getStorefrontConfig: async () => { sdkReads++; return { sections: current }; },
       migrateHomeCategoryGrid: sections => { migrations++; return sections; },
@@ -216,6 +239,8 @@ test('failed public bootstrap falls back to the existing Firestore reader', asyn
   const reads = [];
   const sections = [{ type: 'header' }];
   const api = await loadService('src/pages/Tienda/services/startup.js', {
+    '../../../hooks/useLoViejo': { forzadoLocal: () => false },
+    './seccionesDelKit': { TIPOS_DEL_KIT: new Set() },
     './storefront': {
       getStorefrontConfig: async id => { reads.push(id); return { sections }; },
       migrateHomeCategoryGrid: unused,

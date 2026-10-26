@@ -4,6 +4,7 @@ import { db } from './firebase/config';
 import { DEFAULT_VENDOR_ID, DEFAULT_NICHE_ID, normalizeFulfillmentType } from '../constants/marketplace';
 import { PLACEHOLDER_IMG } from '../constants/placeholder';
 import { createInFlightReads } from './shared/inFlightReads.mjs';
+import { productoConYoryo } from '../utils/yoryoPersonalizacion.mjs';
 
 const COLLECTION = 'productos_wala';
 const productReads = createInFlightReads();
@@ -257,6 +258,7 @@ export const variantesDeImagen = (producto, url) => {
  */
 export function normalizeProductForRead(doc) {
   if (!doc || typeof doc !== 'object') return doc;
+  doc = productoConYoryo(doc);
   const customizationViews = Array.isArray(doc.customizationViews)
     ? doc.customizationViews.map(normalizeCustomizationView).filter(Boolean)
     : [];

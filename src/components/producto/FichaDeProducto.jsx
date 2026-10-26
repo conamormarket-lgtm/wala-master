@@ -23,6 +23,7 @@ import TarjetaDeProducto from './TarjetaDeProducto';
 import usePiezasDelCombo from './usePiezasDelCombo';
 import { argumentosDelCarrito, rutaDelEditor } from './eleccionCarrito';
 import useLoViejo from '../../hooks/useLoViejo';
+import { esYoryoPersonalizable, rutaPersonalizarYoryo } from '../../utils/yoryoPersonalizacion.mjs';
 
 // El personalizador de Yoryo y su historial se quedan en la tienda (fuera del
 // kit) y bajan solo al tocar "Personalizable".
@@ -219,6 +220,7 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
   // El toast de "agregado" lo muestra CartContext (antes salían dos) y el
   // botón dice "¡Agregado!".
   const alAgregar = async (eleccion) => {
+    if (esYoryoPersonalizable(product)) { navigate(rutaPersonalizarYoryo(product)); return false; }
     if (avisarComboCargando()) return false;
     const { variant, cantidad, combo } = argumentosDelCarrito(product, eleccion, comboProd);
     addToCart(productoParaCarrito, variant, null, cantidad, combo, regaloActivo ? { silent: true } : {});
@@ -232,6 +234,7 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
 
   // Agrega ESTE producto como el único elegido y va directo a pagar.
   const alComprar = async (eleccion) => {
+    if (esYoryoPersonalizable(product)) { navigate(rutaPersonalizarYoryo(product)); return false; }
     if (!product.inStock) return false;
     if (avisarComboCargando()) return false;
     const { variant, cantidad, combo } = argumentosDelCarrito(product, eleccion, comboProd);
@@ -273,6 +276,7 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
   // Yoryo (para las esclavas, la descripción invita a pedirla por WhatsApp).
   const personalizableViejo = useLoViejo('personalizable');
   const alPersonalizar = (eleccion) => {
+    if (esYoryoPersonalizable(product)) { navigate(rutaPersonalizarYoryo(product)); return; }
     if (product.YoryoPersonalizado) { abrirYoryo(eleccion); return; }
     navigate(rutaDelEditor(product, eleccion, comboProd));
   };
@@ -298,13 +302,13 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
     return <PaginaProducto estado={estado || 'cargando'} onReintentar={onReintentar} />;
   }
 
-  const textoPersonalizar = product.YoryoPersonalizado ? 'Personalizable' : 'Personalizar';
+  const textoPersonalizar = product.personalizacionYoryo?.pack ? 'Personalizar pack' : product.YoryoPersonalizado ? 'Personalizable' : 'Personalizar';
   return (
     <>
       <PaginaProducto
         key={id}
         {...ficha}
-        producto={{ ...ficha.producto, personalizable: personalizableViejo && Boolean(product.customizable || product.YoryoPersonalizado) }}
+        producto={{ ...ficha.producto, requierePersonalizacion: esYoryoPersonalizable(product), personalizable: esYoryoPersonalizable(product) || personalizableViejo && Boolean(product.customizable || product.YoryoPersonalizado) }}
         fuentes={fuentes}
         piezasCargando={esCombo && !comboPedido}
         opiniones={opiniones}

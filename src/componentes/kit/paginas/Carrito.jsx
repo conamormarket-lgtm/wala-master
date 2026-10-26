@@ -73,7 +73,7 @@ export function PaginaCarrito({
   const todos = elegidos.length === items.length;
   const faltan = elegidos.filter((it) => it.incompleto);
   const textoFalta = faltan.length ? (new Set(faltan.map((it) => it.incompleto)).size > 1 ? 'color o talla' : faltan[0].incompleto) : '';
-  const conArticulo = { color: 'el color', talla: 'la talla' }[textoFalta] || 'el color o la talla';
+  const conArticulo = { color: 'el color', talla: 'la talla', personalización: 'la personalización' }[textoFalta] || 'el color o la talla';
   let textoBoton = `Ir a pagar (${elegidos.length})`;
   if (pendiente) textoBoton = 'Esperando la confirmación…';
   else if (!elegidos.length) textoBoton = 'Elige algún producto';
@@ -128,7 +128,7 @@ export function PaginaCarrito({
               )}
               {faltan.length > 0 && (
                 <Aviso tipo="error" compacto>
-                  {`${faltan.length === 1 ? `A un producto le falta ${conArticulo}.` : `A ${faltan.length} productos les falta ${conArticulo}.`} Ábrelo y elígelo para poder pagar.`}
+                  {textoFalta === 'personalización' ? 'Hay una personalización pendiente. Revísala antes de pagar.' : `${faltan.length === 1 ? `A un producto le falta ${conArticulo}.` : `A ${faltan.length} productos les falta ${conArticulo}.`} Ábrelo y elígelo para poder pagar.`}
                 </Aviso>
               )}
               <BarraEnvioGratis actual={cuentas.neto} meta={metaEnvio} estricto />

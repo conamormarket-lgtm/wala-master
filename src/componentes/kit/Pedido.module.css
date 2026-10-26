@@ -614,6 +614,8 @@
   vertical-align: -1px;
 }
 
+.piezaMiniatura { width: 32px; height: 32px; object-fit: contain; border-radius: 6px; vertical-align: middle; margin-right: 0.35rem; }
+
 .itemPiezas {
   display: grid;
   gap: 0.15rem;

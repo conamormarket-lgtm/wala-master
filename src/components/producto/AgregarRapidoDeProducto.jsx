@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { esYoryoPersonalizable, rutaPersonalizarYoryo } from '../../utils/yoryoPersonalizacion.mjs';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
@@ -36,6 +37,7 @@ export default function AgregarRapidoDeProducto({ product, abierto, onCerrar }) 
   const principal = (product?.variants || []).find((v) => String(v.id) === String(product.defaultVariantId));
 
   const alConfirmar = (eleccion) => {
+    if (esYoryoPersonalizable(product)) { onCerrar?.(); navigate(rutaPersonalizarYoryo(product)); return; }
     if (!listas) {
       if (terminado) toast.error('No pudimos cargar las prendas del combo. Recarga la página e inténtalo de nuevo.');
       else toast.info('Un momento: estamos cargando las prendas del combo.');

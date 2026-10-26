@@ -14,6 +14,7 @@ import { fuentesDeImagen, SIZES_TARJETA_PRODUCTO } from '../common/OptimizedImag
 import PremiumProductCard from '../../pages/Tienda/components/PremiumProductCard/PremiumProductCard';
 import TarjetaProducto from '../../componentes/kit/TarjetaProducto';
 import { tarjetaDesdeProducto, portadaDeCombo } from '../../componentes/kit/adaptadores';
+import { esYoryoPersonalizable, rutaPersonalizarYoryo } from '../../utils/yoryoPersonalizacion.mjs';
 
 // La hoja "Agregar rápido" baja aparte, la primera vez que alguien la abre.
 const AgregarRapidoDeProducto = lazy(() => import('./AgregarRapidoDeProducto'));
@@ -110,6 +111,7 @@ function TarjetaNueva({
   }, [toggleFavorite, product, addToast, deseado]);
 
   const alAgregar = () => {
+    if (esYoryoPersonalizable(product)) { navigate(rutaPersonalizarYoryo(product)); return false; }
     if (necesitaElegir) {
       if (fichaVieja) navigate(`/producto/${product.id}`);
       else setHoja(true);
@@ -139,8 +141,9 @@ function TarjetaNueva({
       fondo={marca && (marca.bgColor || marca.bgImage) ? { color: marca.bgColor, imagen: marca.bgImage, opacidad: marca.bgOpacity ?? 100 } : undefined}
       nuevo={showNewBadge && base.nuevo}
       stock={showStockBadge ? base.stock : undefined}
-      accion={necesitaElegir ? 'elegir' : 'agregar'}
-      textoAccion={necesitaElegir ? textoElegir(product) : undefined}
+      accion={esYoryoPersonalizable(product) ? 'crear' : necesitaElegir ? 'elegir' : 'agregar'}
+      url={esYoryoPersonalizable(product) ? rutaPersonalizarYoryo(product) : base.url}
+      textoAccion={esYoryoPersonalizable(product) ? product.personalizacionYoryo?.pack ? 'Personalizar pack' : 'Personalizar' : necesitaElegir ? textoElegir(product) : undefined}
       sinAccion={!showQuickAdd}
       onAgregar={alAgregar}
       deseado={deseado}

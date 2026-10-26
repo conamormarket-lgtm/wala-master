@@ -1,4 +1,5 @@
 import { getCachedProducts } from '../services/products';
+import { faltaPersonalizacionYoryo } from './yoryoPersonalizacion.mjs';
 
 /**
  * Detecta artículos del carrito a los que les falta el color o la talla.
@@ -59,6 +60,7 @@ const productoDe = (item, porId) => {
 export const idsDeItemsIncompletos = (items = [], porId = catalogoPorId()) => {
   const incompletos = new Set();
   if (!Array.isArray(items) || items.length === 0) return incompletos;
+  items.forEach((item) => { if (faltaPersonalizacionYoryo(item)) incompletos.add(item.id); });
   if (!porId || porId.size === 0) return incompletos;
 
   for (const item of items) {

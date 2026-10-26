@@ -215,7 +215,7 @@ export function SeguimientoPedido({
  */
 export function ItemCarrito({
   imagen, srcSet, nombre: nombreOriginal, variante, precio, precioAntes, personalizado = false, url, detalles = [], combo = false, piezas = [],
-  seleccionado, onSeleccionar, incompleto, urlElegir,
+  seleccionado, onSeleccionar, incompleto, urlElegir, urlEditar, avisoPersonalizacion,
   cantidad: cantidadControlada, onCantidad, onQuitar, cantidadInicial = 1,
 }) {
   const nombre = useTexto(nombreOriginal);
@@ -251,11 +251,13 @@ export function ItemCarrito({
         )}
         {piezas.length > 0 && (
           <ul className={s.itemPiezas}>
-            {piezas.map((p, i) => <li key={i}>{p.hex && <i style={{ background: p.hex }} aria-hidden="true" />}<Texto>{p.texto}</Texto></li>)}
+            {piezas.map((p, i) => <li key={i}>{p.imagen && <img className={s.piezaMiniatura} src={p.imagen} alt="" />}{p.hex && <i style={{ background: p.hex }} aria-hidden="true" />}<Texto>{p.texto}</Texto>{p.urlEditar && <> · <Enlace to={p.urlEditar}><Texto>Editar</Texto></Enlace></>}</li>)}
           </ul>
         )}
         {personalizado && <Etiqueta tono="violeta" icono={<Sparkles aria-hidden="true" />}><Texto>Con tu diseño</Texto></Etiqueta>}
-        {incompleto && (
+        {avisoPersonalizacion && <p className={s.itemFalta}><Texto>{avisoPersonalizacion}</Texto></p>}
+        {urlEditar && <Boton to={urlEditar} variante="fantasma" tamano="sm"><Texto>Editar personalización</Texto></Boton>}
+        {incompleto && !avisoPersonalizacion && (
           <p className={s.itemFalta}><AlertTriangle aria-hidden="true" /> <Texto>{`Falta elegir ${incompleto}`}</Texto>{urlElegir && <> · <Enlace to={urlElegir}><Texto>Elegir ahora</Texto></Enlace></>}</p>
         )}
         {seleccionado === false && <p className={s.itemVariante}><Texto>No se cobra en esta compra.</Texto></p>}

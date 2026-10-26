@@ -1,5 +1,6 @@
 import { getCollection, getDocument, createDocument, updateDocument } from './firebase/firestore';
 import { clearProductCaches } from './products';
+import { productoConYoryo, YORYO_PACK_ID } from '../utils/yoryoPersonalizacion.mjs';
 
 // Combos de Crear ("Pareja", "Trío"...): un doc de productos_wala con
 // esComboCrear y su precio de paquete. Cada pieza es una prenda de Crear que
@@ -32,7 +33,9 @@ export const getCombosCrear = async ({ incluirBorradores = false } = {}) => {
     { field: 'esComboCrear', operator: '==', value: true },
   ]);
   if (error) return { data: [], error };
-  const combos = data
+  const pack = await getDocument(COLLECTION, YORYO_PACK_ID);
+  const lista = pack.data && !data.some((p) => p.id === YORYO_PACK_ID) ? [...data, { ...pack.data, id: YORYO_PACK_ID }] : data;
+  const combos = lista.map(productoConYoryo)
     .map(leerCombo)
     .filter((c) => c.deleted !== true && c.piezas.length >= MIN_PIEZAS && (incluirBorradores || c.publicado))
     .sort((a, b) => a.piezas.length - b.piezas.length || String(a.name).localeCompare(String(b.name)));
@@ -43,12 +46,14 @@ export const getComboCrear = async (id) => {
   const { data, error } = await getDocument(COLLECTION, id);
   // Un fallo de red no es "no existe": se distingue para poder reintentar.
   if (error) return { data: null, error, noEncontrado: false };
-  if (!data || data.esComboCrear !== true) return { data: null, error: 'No encontrado', noEncontrado: true };
-  return { data: leerCombo({ id, ...data }), error: null };
+  const producto = data && productoConYoryo({ ...data, id });
+  if (!producto || producto.esComboCrear !== true && id !== YORYO_PACK_ID) return { data: null, error: 'No encontrado', noEncontrado: true };
+  return { data: leerCombo(producto), error: null };
 };
 
 /** Crea o actualiza un combo desde el admin. Devuelve su id. */
 export const guardarComboCrear = async (id, form) => {
+  const anterior = id === YORYO_PACK_ID ? await getDocument(COLLECTION, id) : null;
   const datos = {
     name: String(form.name || '').trim(),
     description: String(form.description || '').trim(),
@@ -58,7 +63,7 @@ export const guardarComboCrear = async (id, form) => {
     mainImage: String(form.mainImage || '').trim(),
     esComboCrear: true,
     // Nunca en los listados de la tienda: se arma en /combo/:id.
-    visible: false,
+    visible: id === YORYO_PACK_ID ? anterior?.data?.visible !== false : false,
     comboCrear: {
       publicado: form.publicado === true,
       piezas: (form.piezas || []).filter((p) => p?.prendaId).map((p) => ({ prendaId: p.prendaId })),

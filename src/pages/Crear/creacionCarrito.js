@@ -1,4 +1,5 @@
 import { leerPrendaBase, listarZonas, precioPersonalizado, vistasDelColor } from '../../utils/prendaBase';
+import { personalizacionYoryoLista } from '../../utils/yoryoPersonalizacion.mjs';
 
 /**
  * Arma lo que addToCart necesita para una creación del apartado Crear: la
@@ -39,6 +40,7 @@ export const itemDeCreacion = ({ prenda, creacion, talla }) => {
         return { id: zId, nombre: z ? `${z.vistaNombre} · ${z.nombre}` : zId };
       }),
       archivosImpresion: creacion.archivosImpresion || [],
+      ...(creacion.datosYoryo && { datosYoryo: creacion.datosYoryo, produccionYoryo: creacion.produccionYoryo, archivosProduccion: creacion.archivosProduccion, firmaYoryo: creacion.firmaYoryo }),
       vistasPrevias,
       color,
       variant: { size: talla, color: color.nombre },
@@ -53,6 +55,6 @@ export const itemDeCreacion = ({ prenda, creacion, talla }) => {
 };
 
 /** ¿La creación ya tiene sus archivos para imprimir? (las guardadas antes no). */
-export const creacionLista = (creacion) =>
+export const creacionLista = (creacion) => creacion?.datosYoryo ? personalizacionYoryoLista(creacion) :
   Array.isArray(creacion?.archivosImpresion) && creacion.archivosImpresion.length > 0
   && Array.isArray(creacion?.vistasPrevias) && creacion.vistasPrevias.length > 0;

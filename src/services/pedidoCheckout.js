@@ -63,6 +63,13 @@ export const getDesignReferences = (item) => {
       if (archivo.nombre) views[archivo.vista].zona = archivo.nombre;
     }
   });
+  (item?.customization?.archivosProduccion || []).forEach((archivo) => {
+    const vista = views.frente || (views.frente = {});
+    if (archivo.tecnica === 'laser') vista.archivoVectorial = archivo.url;
+    else vista.archivoImpresion = archivo.url;
+    vista.tecnicaProduccion = archivo.tecnica;
+    if (archivo.anchoMm && archivo.altoMm) vista.medida = `${archivo.anchoMm} x ${archivo.altoMm} mm`;
+  });
 
   (item?.customization?.comboItemCustomization || []).forEach((customization) => {
     addLayers(customization?.layersByView);
@@ -269,6 +276,7 @@ export function armarPedidoWeb({
             urlImagenPersonalizada: pieza.imageURL || '',
             disenoVistas: refs.views,
             designId: pieza.designId || '',
+            ...(pieza.datosYoryo && { datosYoryo: pieza.datosYoryo, produccionYoryo: pieza.produccionYoryo, archivosProduccion: pieza.archivosProduccion }),
             vistasPersonalizadas: pieza.vistasUsadas || [],
             colorPrenda: pieza.color?.nombre || '',
           };
@@ -474,6 +482,7 @@ export function armarPedidoWeb({
           disenoVistas: designReferences.views,
           designId: item.customization?.designId || '',
           // Prendas de Crear: zonas con diseño (el servidor revalida el precio).
+          ...(item.customization?.datosYoryo && { datosYoryo: item.customization.datosYoryo, produccionYoryo: item.customization.produccionYoryo, archivosProduccion: item.customization.archivosProduccion }),
           ...(item.customization?.tipo === 'crear' && {
             vistasPersonalizadas: item.customization.vistasUsadas || [],
             colorPrenda: item.customization.color?.nombre || '',

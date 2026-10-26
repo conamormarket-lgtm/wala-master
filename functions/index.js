@@ -391,12 +391,12 @@ exports.verDisenoCompartido = functions.https.onCall(async (data) => {
   return disenoCompartido(db, ids);
 });
 
-exports.validateCartPricingSecure = functions.https.onCall(async (data) => {
+exports.validateCartPricingSecure = functions.https.onCall(async (data, context) => {
   const productos = data && data.productos;
   if (!productos || typeof productos !== "object") {
     throw new functions.https.HttpsError("invalid-argument", "Faltan los productos a verificar.");
   }
-  await verificarPreciosYStock(productos, null);
+  await verificarPreciosYStock(productos, null, context.auth?.uid || null);
   return { ok: true };
 });
 
@@ -473,7 +473,7 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
       return;
     }
 
-    const { subtotal, topeMonedas } = await verificarPreciosYStock(orderPayload.productos, t);
+    const { subtotal, topeMonedas } = await verificarPreciosYStock(orderPayload.productos, t, uid);
     const userSnap = userRef ? await t.get(userRef) : null;
     const u = userSnap && userSnap.exists ? userSnap.data() : {};
     const anteriorSnap = anteriorRef ? await t.get(anteriorRef) : null;
