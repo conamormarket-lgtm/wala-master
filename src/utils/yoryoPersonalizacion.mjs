@@ -1,5 +1,6 @@
 import productos from '../../functions/yoryoProductos.json' with { type: 'json' };
 import { nombreConCreacion } from './nombreCreacion.js';
+import { distribucionRecomendada } from './distribucionYoryo.mjs';
 
 export const YORYO_PACK_ID = productos.packId;
 export const YORYO_PIEZAS = productos.piezas;
@@ -29,7 +30,7 @@ export function productoConYoryo(p) {
   };
 }
 
-export const datosYoryoVacios = () => ({ plantilla: 'nombre', tipografia: 'Clásica', nombre: '', frase: '', equipo: '', fecha: '', fotos: [], vector: null });
+export const datosYoryoVacios = () => ({ plantilla: 'nombre', tipografia: 'Clásica', nombre: '', frase: '', equipo: '', fecha: '', fotos: [], vector: null, distribucion: distribucionRecomendada() });
 
 export function validarDatosYoryo(datos, tecnica) {
   if (!String(datos?.nombre || '').trim()) return 'Escribe el nombre o los nombres del diseño.';

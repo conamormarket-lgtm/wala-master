@@ -1,4 +1,7 @@
 import { medidasConfirmadas } from '../../utils/yoryoPersonalizacion.mjs';
+import { FUENTES_YORYO, ajusteSeccion, esDistribucionEditable, seccionesYoryo, vistaYoryo } from '../../utils/distribucionYoryo.mjs';
+import { componerEditableYoryo } from './componerYoryo.mjs';
+import { serializarTrazos } from './trazosYoryo.mjs';
 
 const escape = (s) => String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
 const ETIQUETAS = new Set(['svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon']);
@@ -58,11 +61,17 @@ export function validarVectorSvg(texto) {
 
 const fuentes = new Map();
 export async function cargarFuenteYoryo(estilo = 'Clásica') {
-  const archivo = { 'Clásica': 'segoeui.ttf', Fuerte: 'BebasNeue Bold.ttf', Manuscrita: 'BRUSHSCI.TTF' }[estilo] || 'segoeui.ttf';
+  const archivo = FUENTES_YORYO.find((f) => f.id === estilo)?.archivo || 'segoeui.ttf';
   if (!fuentes.has(archivo)) fuentes.set(archivo, Promise.all([import('opentype.js'), fetch(`/fonts/${encodeURIComponent(archivo)}`).then((r) => { if (!r.ok) throw new Error('No pudimos cargar la fuente del diseño.'); return r.arrayBuffer(); })])
     .then(([mod, bytes]) => (mod.parse || mod.default.parse)(bytes))
     .catch((e) => { fuentes.delete(archivo); throw e; }));
   return fuentes.get(archivo);
+}
+
+export async function cargarFuentesYoryo(datos, config) {
+  if (!esDistribucionEditable(datos)) return { general: await cargarFuenteYoryo(datos.tipografia) };
+  const pares = await Promise.all(seccionesYoryo(datos, config).filter((s) => s.fuente).map(async (s) => [s.id, await cargarFuenteYoryo(ajusteSeccion(datos, s).fuente)]));
+  return Object.fromEntries(pares);
 }
 
 function textoTrazado(fuente, texto, x, y, tamano, maximo, color = '#000000') {
@@ -71,14 +80,14 @@ function textoTrazado(fuente, texto, x, y, tamano, maximo, color = '#000000') {
   if ([...texto].some((c) => !fuente.charToGlyph(c).index && !/\s/.test(c))) throw new Error('Uno de los caracteres no está disponible en la fuente del grabado.');
   const ancho = fuente.getAdvanceWidth(texto, tamano);
   const escala = Math.min(1, maximo / Math.max(1, ancho));
-  const path = fuente.getPath(texto, 0, 0, tamano).toPathData(3);
+  const path = serializarTrazos(fuente.getPath(texto, 0, 0, tamano));
   return `<g transform="translate(${x - ancho * escala / 2} ${y}) scale(${escala})"><path fill="${color}" d="${path}"/></g>`;
 }
 
 const foto = (url, x, y, w, h, id) => !url ? `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#DED9D0"/>` : `<defs><clipPath id="${id}"><rect x="${x}" y="${y}" width="${w}" height="${h}"/></clipPath></defs><image href="${escape(url)}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${id})"/>`;
 
 /** El mismo arte alimenta la vista previa y el archivo final. Láser: solo trazos. */
-export function crearArteYoryo({ datos, config, fuente, fotos = [] }) {
+function crearArteLegacy({ datos, config, fuente, fotos = [] }) {
   const w = 1000, h = Math.round(w * config.proporcion);
   const t = (s, x, y, size, max = 850, color) => textoTrazado(fuente, s, x, y, size, max, color);
   let contenido = '';
@@ -113,6 +122,11 @@ export function crearArteYoryo({ datos, config, fuente, fotos = [] }) {
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"${dimensiones} viewBox="0 0 ${w} ${h}">${contenido}</svg>`;
 }
 
+export const componerArteYoryo = (opciones) => esDistribucionEditable(opciones.datos)
+  ? componerEditableYoryo(opciones)
+  : { svg: crearArteLegacy({ ...opciones, fuente: opciones.fuentes?.general || opciones.fuente }), elementos: [] };
+export const crearArteYoryo = (opciones) => componerArteYoryo(opciones).svg;
+
 export const svgComoUrl = (svg) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 export const svgMetalico = (svg) => svg.replace(/((?:fill|stroke)=")#000000"/g, '$1#DAC9A8"').replace(/((?:fill|stroke)=")#FFFFFF"/g, '$1#171717"').replace(/(<svg\b[^>]*>)/, '$1<g fill="#DAC9A8">').replace('</svg>', '</g></svg>');
 export const archivoComoDataUrl = (blob) => new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => reject(new Error('No pudimos abrir la imagen.')); r.readAsDataURL(blob); });
@@ -131,7 +145,7 @@ export async function svgComoPng(svg, ancho = 1800, alto) {
 }
 
 /** Simulación sobre la foto real. Sus coordenadas visuales no son medidas de fabricación. */
-export async function vistaProductoYoryo(producto, arte) {
+export async function vistaProductoYoryo(producto, arte, datos) {
   const config = producto.personalizacionYoryo;
   const url = producto.variants?.[0]?.imageUrl || producto.mainImage || producto.images?.[0];
   if (!url || !config.vista) return svgComoPng(arte, 1000, Math.round(1000 * config.proporcion));
@@ -142,7 +156,7 @@ export async function vistaProductoYoryo(producto, arte) {
   const canvas = document.createElement('canvas');
   canvas.width = 1000; canvas.height = Math.round(1000 * fondo.naturalHeight / fondo.naturalWidth);
   const ctx = canvas.getContext('2d'); ctx.drawImage(fondo, 0, 0, canvas.width, canvas.height);
-  const { x, y, w, h } = config.vista;
+  const { x, y, w, h } = vistaYoryo(config, datos);
   const zonaW = w * canvas.width, zonaH = h * canvas.height;
   const escala = Math.min(zonaW / dibujo.naturalWidth, zonaH / dibujo.naturalHeight);
   const ancho = dibujo.naturalWidth * escala, alto = dibujo.naturalHeight * escala;

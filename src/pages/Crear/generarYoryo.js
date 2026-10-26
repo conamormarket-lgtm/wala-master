@@ -1,29 +1,36 @@
 import { subirArchivoImpresion, subirVectorYoryo, subirVistaPrevia } from '../../services/crearArchivos';
-import { cargarFuenteYoryo, crearArteYoryo, archivoComoDataUrl, svgComoPng, validarVectorSvg, vistaProductoYoryo } from './arteYoryo.mjs';
+import { cargarFuentesYoryo, crearArteYoryo, archivoComoDataUrl, svgComoPng, validarVectorSvg, vistaProductoYoryo } from './arteYoryo.mjs';
 import { medidasConfirmadas, validarDatosYoryo } from '../../utils/yoryoPersonalizacion.mjs';
 
+const originales = new Map();
+const cargarOriginal = (url, tipo) => {
+  const key = `${tipo}:${url}`;
+  if (!originales.has(key)) {
+    if (originales.size >= 24) originales.delete(originales.keys().next().value);
+    originales.set(key, (async () => {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('No pudimos cargar un archivo del diseño.');
+      return tipo === 'svg' ? validarVectorSvg(await r.text()) : archivoComoDataUrl(await r.blob());
+    })().catch((e) => { originales.delete(key); throw e; }));
+  }
+  return originales.get(key);
+};
 export async function fotosInlineYoryo(datos) {
-  return Promise.all((datos.fotos || []).map(async (f) => {
-    const r = await fetch(f.url);
-    if (!r.ok) throw new Error('No pudimos cargar una de las fotos del diseño.');
-    return archivoComoDataUrl(await r.blob());
-  }));
+  return Promise.all((datos.fotos || []).map((f) => cargarOriginal(f.url, 'imagen')));
 }
 
 export async function resolverVectorYoryo(datos) {
   if (!datos.vector?.url || datos.plantilla !== 'escudo') return datos;
-  const r = await fetch(datos.vector.url);
-  if (!r.ok) throw new Error('No pudimos cargar el vector del escudo.');
-  return { ...datos, vector: { ...datos.vector, ...validarVectorSvg(await r.text()) } };
+  return { ...datos, vector: { ...datos.vector, ...await cargarOriginal(datos.vector.url, 'svg') } };
 }
 
 export async function generarYoryo({ uid, producto, datos }) {
   const config = producto.personalizacionYoryo;
   const error = validarDatosYoryo(datos, config.tecnica);
   if (error) throw new Error(error);
-  const fuente = await cargarFuenteYoryo(datos.tipografia);
+  const fuentes = await cargarFuentesYoryo(datos, config);
   const fotos = config.tecnica === 'laser' ? [] : await fotosInlineYoryo(datos);
-  const svg = crearArteYoryo({ datos: await resolverVectorYoryo(datos), config, fuente, fotos });
+  const svg = crearArteYoryo({ datos: await resolverVectorYoryo(datos), config, fuentes, fotos });
   const revision = crypto.randomUUID();
   const medidas = config.produccion || {};
   const lista = medidasConfirmadas(medidas);
@@ -36,7 +43,7 @@ export async function generarYoryo({ uid, producto, datos }) {
     if (ancho * alto > 16000000) throw new Error('El área de impresión supera el tamaño admitido. Revisa sus medidas.');
     archivo.url = await subirArchivoImpresion(uid, await svgComoPng(svg, ancho, alto), 'frente');
   }
-  const previaBlob = await vistaProductoYoryo(producto, svg);
+  const previaBlob = await vistaProductoYoryo(producto, svg, datos);
   const previa = await subirVistaPrevia(uid, previaBlob, 'frente');
   return {
     tipo: 'crear', estado: 'guardada', productId: producto.id, productName: producto.name,

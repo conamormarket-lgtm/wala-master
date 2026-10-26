@@ -12,8 +12,11 @@ import { prepararImagenCliente, subirImagenCliente, subirVectorYoryo } from '../
 import { itemDeCreacion } from '../../pages/Crear/creacionCarrito';
 import { itemDeCombo, leerArmado, olvidarArmado } from '../../pages/Crear/comboCrear';
 import { generarYoryo, fotosInlineYoryo, resolverVectorYoryo } from '../../pages/Crear/generarYoryo';
-import { cargarFuenteYoryo, crearArteYoryo, svgComoUrl, validarVectorSvg } from '../../pages/Crear/arteYoryo.mjs';
+import { cargarFuentesYoryo, componerArteYoryo, validarVectorSvg } from '../../pages/Crear/arteYoryo.mjs';
 import { YORYO_PACK_ID, YORYO_PIEZAS, datosYoryoVacios, validarDatosYoryo, medidasConfirmadas } from '../../utils/yoryoPersonalizacion.mjs';
+import { cambiarSeccion, distribucionRecomendada, esDistribucionEditable, seccionesYoryo } from '../../utils/distribucionYoryo.mjs';
+import SeccionesYoryo from './SeccionesYoryo';
+import LienzoYoryo from './LienzoYoryo';
 import Boton from '../../componentes/kit/Boton';
 import { Campo } from '../../componentes/kit/Formulario';
 import { Aviso, EstadoVacio } from '../../componentes/kit/Feedback';
@@ -82,11 +85,18 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
     }
     const guardado = nuevo ? null : leer(clave);
     if (Array.isArray(guardado) && guardado.length === productos.length) return guardado;
-    return productos.map((_, i) => ({ ...datosYoryoVacios(), ...(originales[i]?.datosYoryo || {}) }));
+    return productos.map((_, i) => {
+      const anterior = originales[i]?.datosYoryo;
+      const inicial = { ...datosYoryoVacios(), ...(anterior || {}) };
+      if (anterior && !anterior.distribucion) delete inicial.distribucion;
+      return inicial;
+    });
   });
   const [indice, setIndice] = useState(indiceInicial);
   const [modoVista, setModoVista] = useState('producto');
-  const [arte, setArte] = useState('');
+  const [composicion, setComposicion] = useState({ svg: '', elementos: [] });
+  const arte = composicion.svg;
+  const [seccion, setSeccion] = useState('nombre');
   const [indiceArte, setIndiceArte] = useState(-1);
   const [error, setError] = useState('');
   const [errorArte, setErrorArte] = useState('');
@@ -98,8 +108,12 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
   const config = producto.personalizacionYoryo;
   const actual = datos[indice];
   const laser = config.tecnica === 'laser';
+  const editable = esDistribucionEditable(actual);
+  const seccionActual = seccionesYoryo(actual, config).some((e) => e.id === seccion) ? seccion : 'nombre';
   const completos = productos.map((p, i) => !validarDatosYoryo(datos[i], p.personalizacionYoryo.tecnica));
   const cambiar = (campo, valor) => { setDatos((prev) => prev.map((d, i) => i === indice ? { ...d, [campo]: valor } : d)); setError(''); };
+  const cambiarParte = (id, cambio) => { setDatos((prev) => prev.map((d, i) => i === indice ? cambiarSeccion(d, id, cambio) : d)); setError(''); };
+  const recomendar = () => { cambiar('distribucion', distribucionRecomendada()); setSeccion('nombre'); };
   const elegirEquipo = (equipo) => {
     const vector = laser && config.produccion?.vectoresPorEquipo?.[equipo];
     setDatos((prev) => prev.map((d, i) => i === indice ? { ...d, equipo, ...(vector ? { vector, plantilla: 'escudo' } : { vector: null, ...(d.plantilla === 'escudo' && { plantilla: 'nombre' }) }) } : d));
@@ -110,11 +124,11 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
     let vigente = true;
     const timer = setTimeout(async () => {
       try {
-        const [fuente, fotos, resueltos] = await Promise.all([cargarFuenteYoryo(actual.tipografia), laser ? [] : fotosInlineYoryo(actual), resolverVectorYoryo(actual)]);
-        const svg = crearArteYoryo({ datos: { ...resueltos, nombre: actual.nombre || 'Tu nombre' }, config, fuente, fotos });
-        if (vigente) { setArte(svg); setIndiceArte(indice); setErrorArte(''); }
-      } catch (e) { if (vigente) { setArte(''); setErrorArte(e.message); } }
-    }, 180);
+        const [fuentes, fotos, resueltos] = await Promise.all([cargarFuentesYoryo(actual, config), laser ? [] : fotosInlineYoryo(actual), resolverVectorYoryo(actual)]);
+        const nueva = componerArteYoryo({ datos: { ...resueltos, nombre: actual.nombre || 'Tu nombre' }, config, fuentes, fotos });
+        if (vigente) { setComposicion(nueva); setIndiceArte(indice); setErrorArte(''); }
+      } catch (e) { if (vigente) { setComposicion({ svg: '', elementos: [] }); setErrorArte(e.message); } }
+    }, 16);
     return () => { vigente = false; clearTimeout(timer); };
   }, [actual, config, laser, indice]);
 
@@ -205,6 +219,12 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
   const claves = laser ? ['nombre', 'iniciales', 'escudo'] : config.nombre === 'Mousepad' ? ['nombre', 'equipo'] : ['nombre', 'equipo', 'aniversario', 'collage'];
   const subiendo = Boolean(ocupado);
   const faltanMedidas = productos.some((p) => !medidasConfirmadas(p.personalizacionYoryo.produccion));
+  const campoNombre = <Campo etiqueta={laser ? 'Nombre para grabar' : 'Nombre o nombres'} value={actual.nombre} maxLength={60} disabled={subiendo} onChange={(e) => cambiar('nombre', e.target.value)} placeholder="Ej. Daniel" />;
+  const campoEquipo = (laser && actual.plantilla !== 'iniciales' || actual.plantilla === 'equipo') && <Campo etiqueta="Equipo (opcional)" opciones={[{ valor: '', texto: 'Sin equipo' }, ...EQUIPOS.map((v) => ({ valor: v, texto: v }))]} value={actual.equipo} disabled={subiendo} onChange={(e) => elegirEquipo(e.target.value)} />;
+  const campoFrase = <Campo etiqueta={laser ? 'Frase para grabar (opcional)' : 'Dedicatoria (opcional)'} value={actual.frase} maxLength={160} disabled={subiendo} multilinea onChange={(e) => cambiar('frase', e.target.value)} />;
+  const campoFecha = !laser && ['aniversario', 'collage'].includes(actual.plantilla) && <Campo etiqueta="Fecha o años juntos (opcional)" value={actual.fecha} maxLength={40} disabled={subiendo} onChange={(e) => cambiar('fecha', e.target.value)} placeholder="Ej. 24.10.2021" />;
+  const campoVector = laser && actual.plantilla === 'escudo' && <><input ref={inputVector} type="file" accept=".svg,image/svg+xml" hidden onChange={(e) => { vector(e.target.files?.[0]); e.target.value = ''; }} /><Boton variante="contorno" icono={<ImagePlus />} cargando={ocupado === 'vector'} disabled={subiendo} onClick={() => inputVector.current?.click()}><Texto>{actual.vector ? 'Cambiar escudo SVG' : 'Subir escudo SVG'}</Texto></Boton>{!config.produccion?.vectoresPorEquipo?.[actual.equipo] && <p className={s.nota}><Texto>Para un escudo propio, sube un SVG con sus textos convertidos a trazos.</Texto></p>}</>;
+  const campoFotos = !laser && <><input ref={inputFotos} type="file" accept="image/*" multiple={actual.plantilla === 'collage'} hidden onChange={(e) => { fotos(e.target.files); e.target.value = ''; }} /><Boton variante="contorno" icono={<ImagePlus />} cargando={ocupado === 'fotos'} disabled={subiendo} onClick={() => inputFotos.current?.click()}><Texto>{actual.plantilla === 'collage' ? 'Elegir tres fotos' : actual.fotos.length ? 'Cambiar foto o diseño' : 'Subir foto o diseño'}</Texto></Boton>{actual.fotos.length > 0 && <p className={s.nota}><Texto>{`${actual.fotos.length} ${actual.fotos.length === 1 ? 'foto cargada' : 'fotos cargadas'}. El encuadre se centra para llenar cada espacio.`}</Texto></p>}{actual.fotos.map((f, i) => <Boton key={`${i}:${f.url}`} variante="fantasma" tamano="sm" disabled={subiendo} onClick={() => setRecorte({ src: f.url, foto: i, pieza: indice })}><Texto>{`Recortar foto ${i + 1}`}</Texto></Boton>)}</>;
   return <MarcoEstudio
     nombre={esPack ? main.name : producto.name}
     color={{ nombre: laser ? 'Grabado láser' : 'Impresión', hex: '#7C3AED' }}
@@ -214,27 +234,20 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
     lienzo={<section className={s.escena} aria-label="Vista previa de la personalización">
       {esPack && <Pestanas etiqueta="Pieza del pack" opciones={productos.map((p, i) => ({ id: String(i), texto: p.personalizacionYoryo.nombre, cuenta: completos[i] ? '✓' : undefined }))} valor={String(indice)} onChange={(v) => { setIndice(Number(v)); setError(''); }} />}
       <Pestanas etiqueta="Vista del diseño" opciones={[{ id: 'producto', texto: 'En el producto' }, { id: 'plano', texto: 'Diseño plano' }]} valor={modoVista} onChange={setModoVista} />
-      {modoVista === 'producto' ? <div className={s.modelo}>
-        <img className={s.base} src={producto.variants?.[0]?.imageUrl || producto.mainImage || producto.images?.[0]} alt={producto.name} />
-        {arte && indiceArte === indice && <img className={`${s.sobreProducto} ${laser ? s.grabado : ''}`} src={svgComoUrl(arte)} alt={`Diseño de ${config.nombre} para ${actual.nombre || 'personalizar'}`} style={{ left: `${config.vista.x * 100}%`, top: `${config.vista.y * 100}%`, width: `${config.vista.w * 100}%`, height: `${config.vista.h * 100}%` }} />}
-      </div> : <div className={`${s.arte} ${laser ? s.laser : s.impresion}`} style={{ aspectRatio: 1 / config.proporcion }}>
-        {arte && indiceArte === indice ? <img src={svgComoUrl(arte)} alt={`Diseño de ${config.nombre} para ${actual.nombre || 'personalizar'}`} /> : <span>Preparando vista previa…</span>}
-      </div>}
+      <LienzoYoryo producto={producto} datos={actual} svg={indiceArte === indice ? arte : ''} elementos={indiceArte === indice ? composicion.elementos : []} modo={modoVista} activa={seccionActual} onActiva={setSeccion} onMover={cambiarParte} disabled={subiendo} />
       <p className={s.nota}><Texto>{laser ? 'Vista del grabado. El acabado metálico depende del tomatodo.' : 'La vista previa muestra tu diseño; el marco y el borde no se imprimen.'}</Texto></p>
       {esPack && <div className={s.resumen}>{productos.map((p, i) => <button key={p.id} type="button" className={s.pieza} onClick={() => setIndice(i)} disabled={subiendo}>
         <img src={p.variants?.[0]?.imageUrl || p.mainImage || p.images?.[0]} alt="" /><span><strong>{p.personalizacionYoryo.nombre}</strong><small><Texto>{completos[i] ? 'Listo para guardar' : 'Sin personalizar'}</Texto></small></span>{completos[i] && <Check size={16} />}
       </button>)}</div>}
     </section>}
     panel={<div className={s.campos}>
-      <ElegirUno etiqueta="Elige una plantilla" opciones={plantillas} valor={plantillas[claves.indexOf(actual.plantilla)] || plantillas[0]} onCambiar={(v) => cambiar('plantilla', claves[plantillas.indexOf(v)] || 'nombre')} />
-      <Campo etiqueta={laser ? 'Nombre para grabar' : 'Nombre o nombres'} value={actual.nombre} maxLength={60} disabled={subiendo} onChange={(e) => cambiar('nombre', e.target.value)} placeholder="Ej. Daniel" />
-      <Campo etiqueta="Estilo de letra" opciones={['Clásica', 'Fuerte', 'Manuscrita'].map((v) => ({ valor: v, texto: v }))} value={actual.tipografia || 'Clásica'} disabled={subiendo} onChange={(e) => cambiar('tipografia', e.target.value)} />
-      {(laser && actual.plantilla !== 'iniciales' || actual.plantilla === 'equipo') && <Campo etiqueta="Equipo (opcional)" opciones={[{ valor: '', texto: 'Sin equipo' }, ...EQUIPOS.map((v) => ({ valor: v, texto: v }))]} value={actual.equipo} disabled={subiendo} onChange={(e) => elegirEquipo(e.target.value)} />}
-      <Campo etiqueta={laser ? 'Frase para grabar (opcional)' : 'Dedicatoria (opcional)'} value={actual.frase} maxLength={160} disabled={subiendo} multilinea onChange={(e) => cambiar('frase', e.target.value)} />
-      {!laser && ['aniversario', 'collage'].includes(actual.plantilla) && <Campo etiqueta="Fecha o años juntos (opcional)" value={actual.fecha} maxLength={40} disabled={subiendo} onChange={(e) => cambiar('fecha', e.target.value)} placeholder="Ej. 24.10.2021" />}
-      {laser && actual.plantilla === 'escudo' && <><input ref={inputVector} type="file" accept=".svg,image/svg+xml" hidden onChange={(e) => { vector(e.target.files?.[0]); e.target.value = ''; }} /><Boton variante="contorno" icono={<ImagePlus />} cargando={ocupado === 'vector'} disabled={subiendo} onClick={() => inputVector.current?.click()}><Texto>{actual.vector ? 'Cambiar escudo SVG' : 'Subir escudo SVG'}</Texto></Boton>{!config.produccion?.vectoresPorEquipo?.[actual.equipo] && <p className={s.nota}><Texto>Para un escudo propio, sube un SVG con sus textos convertidos a trazos.</Texto></p>}</>}
-      {!laser && <><input ref={inputFotos} type="file" accept="image/*" multiple={actual.plantilla === 'collage'} hidden onChange={(e) => { fotos(e.target.files); e.target.value = ''; }} /><Boton variante="contorno" icono={<ImagePlus />} cargando={ocupado === 'fotos'} disabled={subiendo} onClick={() => inputFotos.current?.click()}><Texto>{actual.plantilla === 'collage' ? 'Elegir tres fotos' : actual.fotos.length ? 'Cambiar foto o diseño' : 'Subir foto o diseño'}</Texto></Boton>{actual.fotos.length > 0 && <p className={s.nota}><Texto>{`${actual.fotos.length} ${actual.fotos.length === 1 ? 'foto cargada' : 'fotos cargadas'}. El encuadre se centra para llenar cada espacio.`}</Texto></p>}</>}
-      {!laser && actual.fotos.map((f, i) => <Boton key={`${i}:${f.url}`} variante="fantasma" tamano="sm" disabled={subiendo} onClick={() => setRecorte({ src: f.url, foto: i, pieza: indice })}><Texto>{`Recortar foto ${i + 1}`}</Texto></Boton>)}
+      <ElegirUno etiqueta="Elige una plantilla" opciones={plantillas} valor={plantillas[claves.indexOf(actual.plantilla)] || plantillas[0]} onCambiar={(v) => { const plantilla = claves[plantillas.indexOf(v)] || 'nombre'; cambiar('plantilla', plantilla); setSeccion(laser ? ['escudo', 'iniciales'].includes(plantilla) ? 'escudo' : 'nombre' : 'foto'); }} />
+      {editable ? <SeccionesYoryo datos={actual} config={config} elementos={indiceArte === indice ? composicion.elementos : []} activa={seccionActual} onActiva={setSeccion} onCambiar={cambiarParte} onRestablecer={recomendar} disabled={subiendo} contenidos={{ escudo: <>{campoEquipo}{campoVector}</>, nombre: campoNombre, frase: campoFrase, foto: campoFotos, fecha: actual.plantilla === 'equipo' ? campoEquipo : campoFecha }} /> : <>
+        <Aviso tipo="info" compacto>Este diseño conserva sus proporciones anteriores. Puedes aplicar la distribución recomendada para ajustar cada sección.</Aviso>
+        <Boton variante="contorno" onClick={recomendar} disabled={subiendo}><Texto>Usar distribución recomendada</Texto></Boton>
+        {campoNombre}<Campo etiqueta="Estilo de letra" opciones={['Clásica', 'Fuerte', 'Manuscrita'].map((v) => ({ valor: v, texto: v }))} value={actual.tipografia || 'Clásica'} disabled={subiendo} onChange={(e) => cambiar('tipografia', e.target.value)} />
+        {campoEquipo}{campoFrase}{campoFecha}{campoVector}{campoFotos}
+      </>}
       {recorte && <Suspense fallback={null}><RecortarFoto abierta forma="libre" src={recorte.src} titulo="Recorta tu foto" onCancelar={() => setRecorte(null)} onListo={async (blob) => {
         if (!blob) { setRecorte(null); return; }
         const url = await subirImagenCliente(user.uid, blob);

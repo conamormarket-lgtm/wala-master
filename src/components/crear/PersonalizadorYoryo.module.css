@@ -5,7 +5,6 @@
 .laser img { filter: invert(83%) sepia(15%) saturate(409%) hue-rotate(358deg); }
 .modelo { position: relative; width: min(100%, 540px); margin: 0 auto; aspect-ratio: 3 / 4; overflow: hidden; border: 1px solid var(--color-border); border-radius: 16px; background: #FFFFFF; }
 .base { width: 100%; height: 100%; object-fit: fill; display: block; }
-.sobreProducto { position: absolute; object-fit: contain; }
 .grabado { filter: invert(83%) sepia(15%) saturate(409%) hue-rotate(358deg); }
 .impresion { border: 14px solid #242424; background: var(--color-surface); }
 .campos { display: grid; gap: 1rem; }
@@ -17,3 +16,24 @@
 .pieza small { color: var(--color-text-muted); }
 .compra { display: grid; gap: 0.65rem; padding: 1rem; border-top: 1px solid var(--color-border); }
 .configuracion { margin-top: 1.5rem; padding: 1.5rem; border: 1px solid var(--color-border); border-radius: 16px; background: var(--color-surface); color: var(--color-text); }
+.plano { position: relative; display: block; }
+.zonaPersonalizable { position: absolute; }
+.dibujo { display: block; width: 100%; height: 100%; pointer-events: none; user-select: none; }
+.conGuias { outline: 1px dashed #A78BFA; outline-offset: 3px; }
+.rotuloArea { position: absolute; top: -1.6rem; left: 50%; transform: translateX(-50%); padding: .15rem .4rem; border-radius: 5px; background: var(--color-surface, #FFFFFF); color: var(--primary-color); white-space: nowrap; font-size: .65rem; pointer-events: none; }
+.elementoMovible { position: absolute; min-height: 12px; padding: 0; background: transparent; border: 1px solid transparent; cursor: grab; touch-action: none; border-radius: 3px; }
+.elementoMovible:active { cursor: grabbing; }
+.elementoMovible:focus-visible, .elementoActivo { border-color: #A78BFA; outline: 1px solid #A78BFA; outline-offset: 2px; }
+.nombreElemento { position: absolute; left: 0; top: -.95rem; color: #FFFFFF; background: #6D28D9; border-radius: 3px; padding: 1px 4px; font: 500 .6rem/1.3 sans-serif; opacity: 0; pointer-events: none; }
+.elementoActivo .nombreElemento, .elementoMovible:focus-visible .nombreElemento { opacity: 1; }
+.secciones { display: grid; gap: 1rem; min-width: 0; }
+.tituloSecciones { margin: 0 0 .4rem; font-size: 1rem; }
+.tamanos { display: flex; gap: .4rem; flex-wrap: wrap; }
+.tamanos button { flex: 1; padding: .5rem .65rem; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); color: var(--color-text); font: inherit; font-size: .75rem; cursor: pointer; }
+.tamanos .tamanoActivo { border-color: var(--primary-color); background: var(--violet-50); color: var(--primary-color); }
+.accionesSeccion { display: flex; gap: .4rem; flex-wrap: wrap; }
+.muestraFuente { font-size: 1.35rem; min-width: 2.2rem; line-height: 1.4; }
+@font-face { font-family: 'Yoryo Elegante'; src: url('/fonts/Cinzel-Bold.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Yoryo Clasica'; src: url('/fonts/segoeui.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Yoryo Fuerte'; src: url('/fonts/BebasNeue%20Bold.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Yoryo Manuscrita'; src: url('/fonts/BRUSHSCI.TTF') format('truetype'); font-display: swap; }
