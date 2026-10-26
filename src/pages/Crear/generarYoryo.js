@@ -2,6 +2,7 @@ import { subirArchivoImpresion, subirVectorYoryo, subirVistaPrevia } from '../..
 import { cargarFuentesYoryo, crearArteYoryo, archivoComoDataUrl, svgComoPng, validarVectorSvg, vistaProductoYoryo } from './arteYoryo.mjs';
 import { medidasConfirmadas, validarDatosYoryo } from '../../utils/yoryoPersonalizacion.mjs';
 import { fijarDistribucion, firmaDeDisenoYoryo } from '../../utils/distribucionYoryo.mjs';
+import { plantillaImpresionYoryo } from '../../utils/plantillasYoryo.mjs';
 
 const originales = new Map();
 const cargarOriginal = (url, tipo) => {
@@ -17,7 +18,26 @@ const cargarOriginal = (url, tipo) => {
   return originales.get(key);
 };
 export async function fotosInlineYoryo(datos) {
-  return Promise.all((datos.fotos || []).map((f) => cargarOriginal(f.url, 'imagen')));
+  return Promise.all((datos.fotos || []).map((f) => f?.url ? cargarOriginal(f.url, 'imagen') : ''));
+}
+
+export async function cargarPlantillaYoryo(datos) {
+  const p = plantillaImpresionYoryo(datos);
+  if (!p) return {};
+  const [fondo, superposicion] = await Promise.all([p.fondo ? cargarOriginal(p.fondo, 'imagen') : '', p.superposicion ? cargarOriginal(p.superposicion, 'imagen') : '']);
+  return { fondo, superposicion };
+}
+
+export async function generarBorradorYoryo({ uid, producto, datos }) {
+  const config = producto.personalizacionYoryo;
+  datos = fijarDistribucion(datos, config);
+  const [fuentes, fotos, plantilla, resueltos] = await Promise.all([cargarFuentesYoryo(datos, config), config.tecnica === 'laser' ? [] : fotosInlineYoryo(datos), config.tecnica === 'laser' ? {} : cargarPlantillaYoryo(datos), resolverVectorYoryo(datos)]);
+  const arte = crearArteYoryo({ datos: { ...resueltos, nombre: datos.nombre || 'Tu nombre' }, config, fuentes, fotos, plantilla });
+  const miniatura = await subirVistaPrevia(uid, await vistaProductoYoryo(producto, arte, datos), 'borrador');
+  return { tipo: 'crear', estado: 'borrador', productId: producto.id, productName: producto.name,
+    name: `${config.nombre} · ${datos.nombre || 'En preparación'}`, datosYoryo: datos, firmaYoryo: firmaDeDisenoYoryo(datos, config.produccion || {}),
+    produccionYoryo: { tecnica: config.tecnica, lista: false }, archivosProduccion: [], archivosImpresion: [], vistasPrevias: [], layersByView: {}, miniatura,
+  };
 }
 
 export async function resolverVectorYoryo(datos) {
@@ -32,7 +52,8 @@ export async function generarYoryo({ uid, producto, datos }) {
   if (error) throw new Error(error);
   const fuentes = await cargarFuentesYoryo(datos, config);
   const fotos = config.tecnica === 'laser' ? [] : await fotosInlineYoryo(datos);
-  const svg = crearArteYoryo({ datos: await resolverVectorYoryo(datos), config, fuentes, fotos });
+  const plantilla = config.tecnica === 'laser' ? {} : await cargarPlantillaYoryo(datos);
+  const svg = crearArteYoryo({ datos: await resolverVectorYoryo(datos), config, fuentes, fotos, plantilla });
   const revision = crypto.randomUUID();
   const medidas = config.produccion || {};
   const lista = medidasConfirmadas(medidas);

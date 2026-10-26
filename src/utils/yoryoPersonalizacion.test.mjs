@@ -64,7 +64,8 @@ test('editar el carrito reemplaza solo el diseño de esa fila, conserva cantidad
 });
 
 test('un pack incompleto o pendiente de producción no queda listo para pagar', () => {
-  assert.match(faltaPersonalizacionYoryo({ productId: YORYO_PACK_ID }), /Completa/);
+  assert.equal(faltaPersonalizacionYoryo({ productId: YORYO_PACK_ID }), '');
+  assert.match(faltaPersonalizacionYoryo({ productId: YORYO_PACK_ID, customization: { tipo: 'comboCrear' } }), /Completa/);
   const piezas = YORYO_PIEZAS.map((p) => ({ prendaId: p.id, datosYoryo: { nombre: 'Daniel' }, produccionYoryo: { lista: true, revision: 'v1', tecnica: p.tecnica }, archivosProduccion: [{ url: 'archivo', lista: true, revision: 'v1', tecnica: p.tecnica, formato: p.tecnica === 'laser' ? 'svg' : 'png' }], vistasPrevias: [{ url: 'previa', revision: 'v1' }] }));
   const item = { productId: YORYO_PACK_ID, customization: { piezas } };
   assert.equal(faltaPersonalizacionYoryo(item), '');

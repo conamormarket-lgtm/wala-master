@@ -11,7 +11,7 @@ export const rutaPersonalizarYoryo = (p) => `${p?.id === YORYO_PACK_ID ? '/combo
 // se guarda aparte; nunca se inventan las medidas del área de producción.
 export function productoConYoryo(p) {
   if (!esYoryoPersonalizable(p)) return p;
-  const description = String(p.description || '').replace(/Después de tu compra,[^<]*?WhatsApp[^<.]*\./gi, 'Personaliza tu diseño antes de agregarlo al carrito.');
+  const description = String(p.description || '').replace(/Después de tu compra,[^<]*?WhatsApp[^<.]*\./gi, 'Puedes comprar este producto o elegir Personalizar para crear tu propio diseño.');
   if (p.id === YORYO_PACK_ID) return {
     ...p, description, personalizacionYoryo: { pack: true },
     comboCrear: { publicado: p.visible !== false && p.comboCrear?.publicado !== false, piezas: YORYO_PIEZAS.map((x) => ({ prendaId: x.id })) },
@@ -35,6 +35,7 @@ export const datosYoryoVacios = () => ({ plantilla: 'nombre', tipografia: 'Clás
 export function validarDatosYoryo(datos, tecnica) {
   if (!String(datos?.nombre || '').trim()) return 'Escribe el nombre o los nombres del diseño.';
   if (String(datos.nombre).length > 60 || String(datos.frase || '').length > 160) return 'Acorta el nombre o la frase para que entren en el diseño.';
+  if (String(datos.titulo || '').length > 100 || String(datos.dedicatoria || '').length > 160 || String(datos.fecha || '').length > 40) return 'Acorta el título, la fecha o la dedicatoria para que entren en el diseño.';
   if (tecnica === 'laser' && datos.plantilla === 'escudo' && !datos.vector?.url) return 'Sube el escudo en SVG con sus textos convertidos a trazos.';
   const fotos = (datos.fotos || []).filter((f) => f?.url);
   if (tecnica !== 'laser' && fotos.length < (datos.plantilla === 'collage' ? 3 : 1)) return datos.plantilla === 'collage' ? 'Agrega las tres fotos del collage.' : 'Agrega tu foto o diseño.';
@@ -50,6 +51,7 @@ export const personalizacionYoryoLista = (p) => {
 export function faltaPersonalizacionYoryo(item) {
   if (!esYoryoPersonalizable({ id: item?.productId })) return '';
   const c = item.customization;
+  if (!c) return '';
   const piezas = item.productId === YORYO_PACK_ID ? c?.piezas || [] : [c];
   const ids = item.productId === YORYO_PACK_ID ? YORYO_PIEZAS.map((p) => p.id) : [item.productId];
   if (piezas.length !== ids.length || piezas.some((p, i) => (p?.prendaId || item.productId) !== ids[i] || !p?.datosYoryo)) return 'Completa la personalización.';

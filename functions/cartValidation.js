@@ -150,9 +150,10 @@ function createCartValidator({ db, HttpsError, leerVector = leerVectorProduccion
       if (!product || product.deleted === true || product.visible === false) {
         throw new HttpsError("failed-precondition", `"${nombre}" ya no está disponible. Actualiza tu carrito.`);
       }
-      if (id === yoryo.packId && !item.comboCrear) throw new HttpsError('failed-precondition', 'Personaliza las tres piezas del pack antes de comprar.');
       const piezaYoryo = yoryo.piezas.find((p) => p.id === id);
-      if (piezaYoryo) {
+      if (id === yoryo.packId && !item.comboCrear && (item.personalizado || item.designId || item.datosYoryo || item.produccionYoryo)) throw new HttpsError('failed-precondition', 'Personaliza las tres piezas del pack antes de comprar.');
+      if (piezaYoryo && (item.personalizado || item.designId || item.datosYoryo || item.produccionYoryo || item.comboCrear)) {
+        if (!item.designId) throw new HttpsError('failed-precondition', 'Personaliza este producto antes de comprar.');
         if (!item.designId) throw new HttpsError('failed-precondition', 'Personaliza este producto antes de comprar.');
         const [d] = await reader.getAll(db.collection('designs').doc(item.designId));
         const diseno = d?.exists ? d.data() : null;

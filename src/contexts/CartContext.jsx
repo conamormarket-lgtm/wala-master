@@ -9,7 +9,7 @@ import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 import { trackAddToCart } from '../services/analytics/tracker';
 import { nombreConCreacion } from '../utils/nombreCreacion';
 import { fotosGenerales } from '../utils/fotosDeColor';
-import { esYoryoPersonalizable, reemplazarDisenoCarrito } from '../utils/yoryoPersonalizacion.mjs';
+import { reemplazarDisenoCarrito } from '../utils/yoryoPersonalizacion.mjs';
 
 const CartContext = createContext();
 
@@ -492,10 +492,6 @@ export const CartProvider = ({ children }) => {
   }, []);
 
   const addToCart = React.useCallback((product, variant = {}, customization = null, quantity = 1, comboData = null, options = {}) => {
-    if (esYoryoPersonalizable(product) && !customization?.datosYoryo && !(customization?.piezas?.length === 3 && customization.piezas.every((p) => p.datosYoryo))) {
-      avisar(`personalizar-${product.id}`, 'info', 'Personaliza este producto antes de agregarlo al carrito.');
-      return false;
-    }
     // Producto con UNA sola variante (un sérum, un reloj): no hay nada que
     // elegir, así que se usa esa. Sin esto, los "agregar" rápidos (ideas de
     // regalo, lista de deseos…) lo dejaban en el carrito con "Falta elegir

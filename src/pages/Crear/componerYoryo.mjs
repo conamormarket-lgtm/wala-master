@@ -48,31 +48,36 @@ function textoEnCaja(texto, fuente, ancho, alto, multilinea) {
   return mejor;
 }
 
-const foto = (url, x, y, w, h, id) => !url ? `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#DED9D0"/>` : `<defs><clipPath id="${id}"><rect x="${x}" y="${y}" width="${w}" height="${h}"/></clipPath></defs><image href="${escape(url)}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${id})"/>`;
+const foto = (url, x, y, w, h, id, encaje) => !url ? `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#DED9D0"/>` : `<defs><clipPath id="${id}"><rect x="${x}" y="${y}" width="${w}" height="${h}"/></clipPath></defs><image href="${escape(url)}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="${encaje === 'completa' ? 'xMidYMid meet' : 'xMidYMid slice'}" clip-path="url(#${id})"/>`;
 
-export function componerEditableYoryo({ datos, config, fuente, fuentes = {}, fotos = [] }) {
+export function componerEditableYoryo({ datos, config, fuente, fuentes = {}, fotos = [], plantilla = {} }) {
   const w = 1000, h = Math.round(w * config.proporcion);
   const laser = config.tecnica === 'laser';
   const equipo = datos.plantilla === 'equipo';
   const tinta = !laser && equipo ? '#FFFFFF' : laser ? '#000000' : '#26342B';
   const fondo = laser ? '' : equipo ? datos.equipo === 'Universitario' ? '#801B22' : '#14294A' : '#F6EFE5';
   let contenido = fondo ? `<rect width="${w}" height="${h}" fill="${fondo}"/>` : '';
+  const imagenCompleta = (url) => url ? `<image href="${escape(url)}" width="${w}" height="${h}" preserveAspectRatio="none"/>` : '';
+  contenido += imagenCompleta(plantilla.fondo);
+  const baseSvg = contenido, superposicionSvg = imagenCompleta(plantilla.superposicion);
+  let decoracionPendiente = superposicionSvg;
   const elementos = [];
   const registrar = (seccion, caja, svg) => {
     contenido += `<g data-yoryo-elemento="${seccion.id}" transform="translate(${caja.x * w} ${caja.y * h})">${svg}</g>`;
-    elementos.push({ id: seccion.id, nombre: seccion.nombre, ...caja, fragmento: svg, anchoSvg: caja.w * w, altoSvg: caja.h * h });
+    elementos.push({ id: seccion.id, nombre: seccion.nombre, orden: seccion.orden || 3, ...caja, fragmento: svg, anchoSvg: caja.w * w, altoSvg: caja.h * h });
   };
   for (const seccion of seccionesYoryo(datos, config)) {
+    if (seccion.indiceFoto === undefined && decoracionPendiente) { contenido += decoracionPendiente; decoracionPendiente = ''; }
     const a = ajusteSeccion(datos, seccion);
     const maxW = limitar(a.w * a.escala / 100, .01, .96), maxH = limitar(a.h * a.escala / 100, .01, .96);
-    if (a.id === 'foto') {
+    if (a.id === 'foto' || a.indiceFoto !== undefined) {
       const caja = cajaSeccion(a, maxW, maxH), x = 0, y = 0, ancho = caja.w * w, alto = caja.h * h;
       const separacion = 12;
-      const svg = datos.plantilla === 'collage'
+      const svg = a.indiceFoto !== undefined ? foto(fotos[a.indiceFoto], x, y, ancho, alto, a.id, datos.fotos?.[a.indiceFoto]?.encaje) : datos.plantilla === 'collage'
         ? foto(fotos[0], x, y, (ancho - separacion) / 2, (alto - separacion) / 2, 'foto0')
           + foto(fotos[1], x, y + (alto + separacion) / 2, (ancho - separacion) / 2, (alto - separacion) / 2, 'foto1')
           + foto(fotos[2], x + (ancho + separacion) / 2, y, (ancho - separacion) / 2, alto, 'foto2')
-        : foto(fotos[0], x, y, ancho, alto, 'foto0');
+        : foto(fotos[0], x, y, ancho, alto, 'foto0', datos.fotos?.[0]?.encaje);
       registrar(a, caja, svg); continue;
     }
     if (a.id === 'escudo' && datos.plantilla === 'escudo' && datos.vector?.svg) {
@@ -87,12 +92,12 @@ export function componerEditableYoryo({ datos, config, fuente, fuentes = {}, fot
     if (!texto) continue;
     if (a.mayusculas) texto = texto.toLocaleUpperCase('es');
     const tipografia = fuentes[a.id] || fuente;
-    const bloque = textoEnCaja(texto, tipografia, maxW * w, maxH * h, a.id === 'frase');
+    const bloque = textoEnCaja(texto, tipografia, maxW * w, maxH * h, ['frase', 'titulo', 'dedicatoria'].includes(a.id));
     const caja = cajaSeccion(a, bloque.w * bloque.escala / w, bloque.h * bloque.escala / h);
-    const rutas = bloque.rutas.map((p, i) => `<g transform="translate(${(bloque.w - p.caja.x2 + p.caja.x1) / 2 - p.caja.x1} ${i * (bloque.altura + 16) - p.caja.y1})"><path fill="${tinta}" d="${p.d}"/></g>`).join('');
+    const rutas = bloque.rutas.map((p, i) => `<g transform="translate(${(bloque.w - p.caja.x2 + p.caja.x1) / 2 - p.caja.x1} ${i * (bloque.altura + 16) - p.caja.y1})"><path fill="${a.color || tinta}" d="${p.d}"/></g>`).join('');
     registrar(a, caja, `<g transform="scale(${bloque.escala})">${rutas}</g>`);
   }
   const medidas = config.produccion || {};
   const dimensiones = medidasConfirmadas(medidas) ? ` width="${Number(medidas.anchoMm)}mm" height="${Number(medidas.altoMm)}mm"` : '';
-  return { svg: `<svg xmlns="http://www.w3.org/2000/svg"${dimensiones} viewBox="0 0 ${w} ${h}">${contenido}</svg>`, elementos, fondo };
+  return { svg: `<svg xmlns="http://www.w3.org/2000/svg"${dimensiones} viewBox="0 0 ${w} ${h}">${contenido}${decoracionPendiente}</svg>`, elementos, fondo, baseSvg, superposicionSvg, anchoSvg: w, altoSvg: h };
 }

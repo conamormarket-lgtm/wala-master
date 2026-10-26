@@ -1,10 +1,9 @@
 import React, { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Undo2, Redo2, ZoomIn, ZoomOut, Maximize2, Keyboard, MoveDiagonal2 } from 'lucide-react';
+import { MoveDiagonal2 } from 'lucide-react';
 import { Casilla } from '../../componentes/kit/Formulario';
 import { Texto } from '../../componentes/kit/Traduccion';
-import Boton from '../../componentes/kit/Boton';
 import { HojaInferior } from '../../componentes/kit/Feedback';
-import { AtajosEstudio, MOD_ESTUDIO as MOD } from '../../componentes/kit/piezas/Estudio';
+import { AtajosEstudio, BarraLienzo, MOD_ESTUDIO as MOD } from '../../componentes/kit/piezas/Estudio';
 import { ajusteSeccion, areaVistaYoryo, esDistribucionEditable, seccionesYoryo } from '../../utils/distribucionYoryo.mjs';
 import { limitarCamaraYoryo, transformarSeccionYoryo, zoomCamaraYoryo } from '../../utils/gestosYoryo.mjs';
 import { svgComoUrl } from '../../pages/Crear/arteYoryo.mjs';
@@ -108,7 +107,7 @@ export default function LienzoYoryo(props) {
       if (mod && ['+', '=', '-', '0'].includes(tecla)) { e.preventDefault(); if (tecla === '0') a.pintarCamara({ z: 1, x: 0, y: 0 }); else a.acercar(tecla === '-' ? 1 / 1.2 : 1.2); return; } if (mod) return;
       if (tecla === '?') { e.preventDefault(); a.setAyuda(true); return; } if (e.code === 'Space') { e.preventDefault(); espacio.current = true; return; }
       const secciones = seccionesYoryo(a.datos, p.producto.personalizacionYoryo);
-      if (/^[1-4]$/.test(tecla) && secciones[Number(tecla) - 1]) { e.preventDefault(); a.onActiva(secciones[Number(tecla) - 1].id); return; }
+      if (/^[1-9]$/.test(tecla) && secciones[Number(tecla) - 1]) { e.preventDefault(); a.onActiva(secciones[Number(tecla) - 1].id); return; }
       const elegido = a.elementos.find((x) => x.id === a.activa), seccion = secciones.find((x) => x.id === a.activa); if (!elegido || !seccion) return;
       const ajuste = ajusteSeccion(a.datos, seccion), flechas = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
       if (flechas[e.key]) { e.preventDefault(); const [x, y] = flechas[e.key], paso = e.shiftKey ? .05 : .01; const c = transformarSeccionYoryo(elegido, { dx: x * paso, dy: y * paso, escala: ajuste.escala, iman: 0 }); a.onMover(elegido.id, { x: c.centroX, y: c.centroY }, `flechas:${elegido.id}`); }
@@ -124,20 +123,15 @@ export default function LienzoYoryo(props) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <>
-    <div className={s.barraExperiencia} role="toolbar" aria-label="Herramientas del diseño">
-      <Boton variante="fantasma" tamano="sm" soloIcono icono={<Undo2 />} aria-label="Deshacer" title={`${MOD}+Z`} disabled={disabled || Boolean(gesto.current) || !puedeDeshacer} onClick={props.onDeshacer} />
-      <Boton variante="fantasma" tamano="sm" soloIcono icono={<Redo2 />} aria-label="Rehacer" title={`${MOD}+Shift+Z`} disabled={disabled || Boolean(gesto.current) || !puedeRehacer} onClick={props.onRehacer} />
-      <span className={s.separadorBarra} /><Boton variante="fantasma" tamano="sm" soloIcono icono={<ZoomOut />} aria-label="Alejar vista" disabled={zoom <= 100} onClick={() => acercar(1 / 1.2)} /><span className={s.porcentajeZoom}>{zoom}%</span>
-      <Boton variante="fantasma" tamano="sm" soloIcono icono={<ZoomIn />} aria-label="Acercar vista" disabled={zoom >= 300} onClick={() => acercar(1.2)} /><Boton variante="fantasma" tamano="sm" soloIcono icono={<Maximize2 />} aria-label="Ver producto completo" onClick={() => pintarCamara({ z: 1, x: 0, y: 0 })} />
-      <Boton variante="fantasma" tamano="sm" icono={<Keyboard />} onClick={() => setAyuda(true)}><Texto>Atajos y gestos</Texto></Boton>
-    </div>
     <div ref={visorRef} className={`${modo === 'producto' ? s.modelo : `${s.arte} ${s.plano} ${laser ? s.laser : s.impresion}`} ${s.visorInteractivo}`} style={modo === 'plano' ? { aspectRatio: 1 / config.proporcion } : undefined} onPointerDown={(e) => empezar(e, null)} onPointerMove={mover} onPointerUp={soltar} onPointerCancel={cancelar}>
       <div ref={mundoRef} className={s.mundoYoryo}>
         {modo === 'producto' && <img className={s.base} src={producto.variants?.[0]?.imageUrl || producto.mainImage || producto.images?.[0]} alt={producto.name} draggable={false} />}
         <div ref={zonaRef} data-yoryo-arte={svg} aria-label={`Diseño de ${config.nombre} para ${datos.nombre || 'personalizar'}`} className={`${s.zonaPersonalizable} ${editable && guias ? s.conGuias : ''}`} style={{ left: `${area.x * 100}%`, top: `${area.y * 100}%`, width: `${area.w * 100}%`, height: `${area.h * 100}%`, background: editable && fondo || undefined }}>
           {!editable && svg && <img className={`${s.dibujo} ${laser ? s.grabado : ''}`} src={svgComoUrl(svg)} alt={`Diseño de ${config.nombre}`} draggable={false} />}
+          {editable && props.baseSvg && <div className={s.capaFija} style={{ zIndex: 0 }}><ImagenSeccion fragmento={props.baseSvg} anchoSvg={props.anchoSvg} altoSvg={props.altoSvg} /></div>}
+          {editable && props.superposicionSvg && <div className={s.capaFija} style={{ zIndex: 20 }}><ImagenSeccion fragmento={props.superposicionSvg} anchoSvg={props.anchoSvg} altoSvg={props.altoSvg} /></div>}
           {editable && guias && <span className={s.rotuloArea}><Texto>{laser ? 'Área de grabado' : 'Área de impresión'}</Texto></span>}<span ref={imanRef} className={s.guiaIman} hidden />
-          {editable && elementos.map((el) => <div key={el.id} ref={(n) => { if (n) nodos.current.set(el.id, n); else nodos.current.delete(el.id); }} className={s.capaEnVivo} style={{ left: `${el.x * 100}%`, top: `${el.y * 100}%`, width: `${el.w * 100}%`, height: `${el.h * 100}%`, zIndex: activa === el.id ? 2 : 1 }}>
+          {editable && elementos.map((el) => <div key={el.id} ref={(n) => { if (n) nodos.current.set(el.id, n); else nodos.current.delete(el.id); }} className={s.capaEnVivo} style={{ left: `${el.x * 100}%`, top: `${el.y * 100}%`, width: `${el.w * 100}%`, height: `${el.h * 100}%`, zIndex: (el.orden || 3) * 10 + (activa === el.id ? 1 : 0) }}>
             <ImagenSeccion fragmento={el.fragmento} anchoSvg={el.anchoSvg} altoSvg={el.altoSvg} laser={laser} />
             <button type="button" aria-label={`Mover ${el.nombre.toLowerCase()}`} aria-pressed={activa === el.id} disabled={disabled} className={`${s.elementoMovible} ${activa === el.id && guias ? s.elementoActivo : ''}`} onClick={(e) => { if (e.detail === 0) onActiva(el.id); }} onDoubleClick={() => editarContenido(el.id)} onPointerDown={(e) => empezar(e, el)}><span className={s.nombreElemento}>{el.nombre}</span></button>
             {activa === el.id && guias && <button type="button" className={s.controlTamano} aria-label={`Cambiar tamaño de ${el.nombre.toLowerCase()}`} disabled={disabled} onPointerDown={(e) => empezar(e, el, 'tamano')}><MoveDiagonal2 aria-hidden="true" /></button>}
@@ -145,6 +139,12 @@ export default function LienzoYoryo(props) {
         </div>
       </div>
     </div>
+    <BarraLienzo puedeDeshacer={puedeDeshacer} puedeRehacer={puedeRehacer} onDeshacer={props.onDeshacer} onRehacer={props.onRehacer}
+      disabled={disabled || Boolean(gesto.current)} elegido={editable && elementos.some((e) => e.id === activa)}
+      onAchicar={() => onMover(activa, { escala: Math.max(40, ajusteSeccion(datos, seccionesYoryo(datos, config).find((e) => e.id === activa)).escala - 5) })}
+      onAgrandar={() => onMover(activa, { escala: Math.min(160, ajusteSeccion(datos, seccionesYoryo(datos, config).find((e) => e.id === activa)).escala + 5) })}
+      onCentrar={() => onMover(activa, { x: .5 })} onImagen={props.onImagen} onTexto={() => editarContenido('nombre')} onEditar={() => editarContenido(activa)}
+      zoom={zoom / 100} zoomMaximo={3} ayudaEnMovil onZoom={(z) => pintarCamara(zoomCamaraYoryo(camara.current, z / camara.current.z, visorRef.current.clientWidth, visorRef.current.clientHeight))} onAtajos={() => setAyuda(true)} />
     {editable && <Casilla etiqueta="Mostrar área y selección" activo={guias} onChange={setGuias} />}
     <HojaInferior abierta={ayuda} onCerrar={() => setAyuda(false)} titulo="Atajos y gestos"><p className={s.nota}><Texto>Arrastra para mover. Usa la esquina o dos dedos para cambiar el tamaño. Los cambios siempre quedan dentro del área marcada. La vista ampliada no cambia el tamaño del grabado.</Texto></p><AtajosEstudio grupos={gruposAyuda} /></HojaInferior>
   </>;

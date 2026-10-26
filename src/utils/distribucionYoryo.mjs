@@ -1,5 +1,7 @@
 // Coordenadas relativas al área útil. Los tamaños de los elementos y sus
 // posiciones se guardan con el diseño, nunca en píxeles de la pantalla.
+import { seccionesPlantillaYoryo } from './plantillasYoryo.mjs';
+
 export const FUENTES_YORYO = [
   { id: 'Elegante', archivo: 'Cinzel-Bold.ttf', familia: 'Yoryo Elegante', detalle: 'Serif · ideal para nombres' },
   { id: 'Clásica', archivo: 'segoeui.ttf', familia: 'Yoryo Clasica', detalle: 'Clara y sencilla' },
@@ -11,6 +13,10 @@ export const esDistribucionEditable = (datos) => [2, 3].includes(datos?.distribu
 export const limitar = (valor, min, max) => Math.min(max, Math.max(min, Number(valor) || 0));
 
 export function seccionesYoryo(datos, config) {
+  if (config.tecnica !== 'laser') {
+    const secciones = seccionesPlantillaYoryo(datos);
+    if (secciones) return secciones;
+  }
   const soloTexto = datos.plantilla === 'nombre' && !datos.equipo;
   const anterior = datos.distribucion?.version === 2;
   if (config.tecnica === 'laser') return [

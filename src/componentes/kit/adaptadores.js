@@ -52,7 +52,6 @@ const coloresDePieza = (sub, it) => variantesDePieza(sub, it).map((v) => {
  *  - 'agregar': sin opciones (taza, llavero, producto con una sola variante)
  */
 export function accionDeProducto(p) {
-  if (p?.personalizacionYoryo) return 'crear';
   if (p?.esPrendaBase) return 'crear';
   if (p?.isComboProduct && p.comboItems?.length) return 'elegir';
   const vs = variantesDe(p);
@@ -120,7 +119,7 @@ export function tarjetaDesdeProducto(p, { imagen, catalogo = {}, subproductos = 
     ? [portadaDeCombo(p)].filter(Boolean)
     : [principal?.imageUrl, ...(principal?.images || []), ...fotosGenerales(p, principal)].filter(Boolean);
   return {
-    url: p.personalizacionYoryo ? `${p.personalizacionYoryo.pack ? '/combo/' : '/crear/'}${p.id}` : p.esPrendaBase ? `/crear/${p.id}` : `/producto/${p.id}`,
+    url: p.esPrendaBase ? `/crear/${p.id}` : `/producto/${p.id}`,
     imagen: imagen || fotos[0],
     imagenHover: fotos.find((f) => f !== (imagen || fotos[0])),
     nombre: p.name,
@@ -1060,7 +1059,7 @@ const esRelleno = (u) => !u || String(u).includes('placeholder');
 export function itemCarritoDesde(item = {}, { catalogo = new Map(), falta } = {}) {
   const custom = item.customization || null;
   const piezasCrear = custom?.tipo === 'comboCrear' ? custom.piezas || [] : null;
-  const yoryo = esYoryoPersonalizable({ id: item.productId });
+  const yoryo = esYoryoPersonalizable({ id: item.productId }) && Boolean(custom?.tipo === 'crear' || piezasCrear);
   const urlYoryo = yoryo ? `${rutaPersonalizarYoryo({ id: item.productId })}?carrito=${encodeURIComponent(item.id)}` : undefined;
   const avisoYoryo = faltaPersonalizacionYoryo(item);
   let url = `/producto/${item.productId}`;

@@ -7,6 +7,7 @@ import { Texto } from '../../componentes/kit/Traduccion';
 import { Aviso } from '../../componentes/kit/Feedback';
 import { FUENTES_YORYO, ajusteSeccion, seccionesYoryo } from '../../utils/distribucionYoryo.mjs';
 import s from './PersonalizadorYoryo.module.css';
+import e from '../../componentes/kit/piezas/Estudio.module.css';
 
 export default function SeccionesYoryo({ datos, config, elementos = [], activa, onActiva, onCambiar, onRestablecer, contenidos, disabled }) {
   const secciones = seccionesYoryo(datos, config);
@@ -16,8 +17,8 @@ export default function SeccionesYoryo({ datos, config, elementos = [], activa, 
   const esTexto = seccion.fuente && !(seccion.id === 'escudo' && datos.plantilla === 'escudo');
   const elegido = elementos.find((e) => e.id === seccion.id);
   const superpuesto = config.tecnica === 'laser' && elegido && elementos.find((e) => e.id !== elegido.id && Math.max(0, Math.min(e.x + e.w, elegido.x + elegido.w) - Math.max(e.x, elegido.x)) * Math.max(0, Math.min(e.y + e.h, elegido.y + elegido.h) - Math.max(e.y, elegido.y)) > Math.min(e.w * e.h, elegido.w * elegido.h) * .08);
-  return <section className={s.secciones} aria-label="Personaliza por secciones">
-    <div><h2 className={s.tituloSecciones}><Texto>Personaliza por secciones</Texto></h2><p className={s.nota}><Texto>Elige una sección o tócala en el producto. Puedes arrastrarla dentro del área marcada.</Texto></p></div>
+  return <section className={e.panelCapa} aria-label="Personaliza por secciones">
+    <div className={e.panelCabeza}><div><h2 className={e.panelTitulo}><Texto>{seccion.nombre}</Texto></h2><p className={e.panelAyuda}><Texto>Elige una sección o tócala en el producto. Los cambios se ven al instante.</Texto></p></div></div>
     <Pestanas etiqueta="Sección del diseño" opciones={secciones.map((e) => ({ id: e.id, texto: e.nombre }))} valor={seccion.id} onChange={onActiva} />
     <div className={s.campos} key={seccion.id}>
       {contenidos[seccion.id]}

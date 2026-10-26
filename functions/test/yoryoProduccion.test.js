@@ -19,7 +19,7 @@ test('el taller recibe un vector con medidas y la misma revisión que la vista p
   assert.equal(esSvgLaser(svg, 90, 100), false);
 });
 
-test('checkout comprueba el diseño persistido y rechaza compras sin personalización', async () => {
+test('checkout comprueba el diseño persistido de una compra personalizada', async () => {
   const producto = { price: 120, inStock: 4, visible: true, produccionYoryo: medidas };
   const reader = { getAll: async (...refs) => refs.filter((r) => r.id).map((r) => ({ id: r.id, exists: true, data: () => r.collection === 'designs' ? diseno : producto })) };
   const db = { ...reader, collection: (collection) => ({ doc: (id) => ({ id, collection }) }) };
@@ -37,6 +37,21 @@ test('checkout comprueba el diseño persistido y rechaza compras sin personaliza
   await assert.rejects(validate([{ ...item, produccionYoryo: { revision: 'vieja' } }]), /cambió/);
   vector = svg.replace('</svg>', '<image href="foto.png"/></svg>');
   await assert.rejects(validate([item]), /vectorial/);
+});
+
+test('la compra normal de Yoryo conserva precio y stock sin pedir diseños; la personalizada sigue validándose', async () => {
+  const lecturas = [];
+  const productos = new Map([...config.piezas.map((p) => [p.id, { price: 59, inStock: 4, visible: true }]), [config.packId, { price: 149, inStock: 4, visible: true }]]);
+  const db = { collection: (collection) => ({ doc: (id) => ({ id, collection }) }), getAll: async (...refs) => refs.filter((r) => r.id).map((r) => { lecturas.push(r.collection); return { id: r.id, exists: true, data: () => productos.get(r.id) }; }) };
+  class HttpsError extends Error { constructor(code, mensaje) { super(mensaje); this.code = code; } }
+  const validar = createCartValidator({ db, HttpsError });
+  const normal = { productoId: config.piezas[1].id, precio: 59, cantidad: 2, personalizado: false };
+  assert.equal((await validar([normal])).subtotal, 118);
+  assert.equal((await validar([{ productoId: config.packId, precio: 149, cantidad: 1, personalizado: false }])).subtotal, 149);
+  assert.ok(lecturas.every((c) => c === 'productos_wala'));
+  await assert.rejects(validar([{ ...normal, precio: 1 }]), /precio/);
+  await assert.rejects(validar([{ ...normal, cantidad: 5 }]), /stock/);
+  await assert.rejects(validar([{ ...normal, personalizado: true }]), /Personaliza/);
 });
 
 test('el pack del catálogo conserva sus tres piezas y cobra S/149 por unidad', async () => {

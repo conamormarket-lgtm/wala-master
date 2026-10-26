@@ -1,7 +1,7 @@
 import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Download, ImagePlus, Check, Save, ShoppingBag } from 'lucide-react';
+import { ImagePlus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
@@ -11,7 +11,7 @@ import { guardarMiCombo } from '../../services/misCombos';
 import { prepararImagenCliente, subirImagenCliente, subirVectorYoryo } from '../../services/crearArchivos';
 import { itemDeCreacion } from '../../pages/Crear/creacionCarrito';
 import { itemDeCombo, leerArmado, olvidarArmado } from '../../pages/Crear/comboCrear';
-import { generarYoryo, fotosInlineYoryo, resolverVectorYoryo } from '../../pages/Crear/generarYoryo';
+import { generarYoryo, generarBorradorYoryo, fotosInlineYoryo, resolverVectorYoryo, cargarPlantillaYoryo } from '../../pages/Crear/generarYoryo';
 import { cargarFuentesYoryo, componerArteYoryo, validarVectorSvg } from '../../pages/Crear/arteYoryo.mjs';
 import { YORYO_PACK_ID, YORYO_PIEZAS, datosYoryoVacios, validarDatosYoryo, medidasConfirmadas } from '../../utils/yoryoPersonalizacion.mjs';
 import { cambiarSeccion, distribucionRecomendada, esDistribucionEditable, fijarDistribucion, firmaDeDisenoYoryo, normalizarFirmaYoryo, seccionesYoryo } from '../../utils/distribucionYoryo.mjs';
@@ -24,12 +24,16 @@ import { Aviso, EstadoVacio } from '../../componentes/kit/Feedback';
 import { ElegirUno } from '../../componentes/kit/piezas/Encuesta';
 import { Pestanas } from '../../componentes/kit/Navegacion';
 import { EsqueletoPagina } from '../../componentes/kit/Esqueletos';
-import { MarcoEstudio } from '../../componentes/kit/paginas/MarcoEstudio';
+import { MarcoEstudio, EscenaEstudio } from '../../componentes/kit/paginas/MarcoEstudio';
+import { CompraEstudio } from '../../componentes/kit/piezas/CompraEstudio';
+import { EstadoEdicion, PasoEstudio } from '../../componentes/kit/piezas/Estudio';
 import { Texto } from '../../componentes/kit/Traduccion';
-import { soles } from '../../componentes/kit/TarjetaProducto';
+import { PLANTILLAS_CUADRO } from '../../utils/plantillasYoryo.mjs';
+import estudio from './EstudioDeTienda.module.css';
 import s from './PersonalizadorYoryo.module.css';
 
 const RecortarFoto = lazy(() => import('../../componentes/kit/piezas/RecortarFoto').then((m) => ({ default: m.RecortarFoto })));
+const QuitarFondo = lazy(() => import('./QuitarFondoDeEstudio'));
 
 const leer = (key) => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } };
 const EQUIPOS = ['Alianza Lima', 'Universitario', 'Sporting Cristal', 'Sport Boys', 'Barcelona', 'Real Madrid'];
@@ -77,8 +81,8 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
   const clave = `wala:yoryo:${user?.uid || 'invitado'}:${main.id}:${item?.id || mio || creacion?.id || 'nuevo'}`;
   const originales = item ? (esPack ? item.customization?.piezas || [] : [item.customization]) : creacionesCuenta.length ? creacionesCuenta : creacion ? [creacion] : [];
   const originalesRef = useRef(originales);
-  const idsGuardadosRef = useRef({});
-  const miGuardadoRef = useRef('');
+  const idsGuardadosRef = useRef(Object.fromEntries(originales.flatMap((d, i) => !item && d.estado === 'borrador' && d.id ? [[i, d.id]] : [])));
+  const miGuardadoRef = useRef(!item && originales.some((d) => d.estado === 'borrador') ? mio : '');
   const firmaCarritoRef = useRef(item ? JSON.stringify(item.customization) : '');
   const [datos, setDatos, historial] = useHistorialYoryo(() => {
     if (user && !originales.length) {
@@ -88,7 +92,7 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
     if (Array.isArray(guardado) && guardado.length === productos.length) return guardado;
     return productos.map((_, i) => {
       const anterior = originales[i]?.datosYoryo;
-      const inicial = { ...datosYoryoVacios(), ...(anterior || {}) };
+      const inicial = { ...datosYoryoVacios(), ...(!anterior && productos[i].personalizacionYoryo.nombre === 'Cuadro' ? { plantillaVisual: 'dorado' } : {}), ...(anterior || {}) };
       if (anterior && !anterior.distribucion) delete inicial.distribucion;
       return inicial;
     });
@@ -106,7 +110,11 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
   const [errorArte, setErrorArte] = useState('');
   const [ocupado, setOcupado] = useState('');
   const [recorte, setRecorte] = useState(null);
+  const [quitandoFondo, setQuitandoFondo] = useState(null);
   const [enGesto, setEnGesto] = useState(false);
+  const [firmaGuardada, setFirmaGuardada] = useState(() => !item && originales.length ? firmaDeDisenoYoryo(originales.map((d) => ({ ...datosYoryoVacios(), ...d.datosYoryo })), {}) : null);
+  const [guardadoComoBorrador, setGuardadoComoBorrador] = useState(creacion?.estado === 'borrador' || creacionesCuenta.some((d) => d.estado === 'borrador'));
+  const panelRef = useRef(null);
   const inputFotos = useRef(null);
   const inputVector = useRef(null);
   const producto = productos[indice];
@@ -116,7 +124,7 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
   const editable = esDistribucionEditable(actual);
   const seccionActual = seccionesYoryo(actual, config).some((e) => e.id === seccion) ? seccion : 'nombre';
   const completos = productos.map((p, i) => !validarDatosYoryo(datos[i], p.personalizacionYoryo.tecnica));
-  const cambiar = (campo, valor) => { setDatos((prev) => prev.map((d, i) => i === indice ? { ...d, [campo]: valor } : d), ['nombre', 'frase', 'fecha'].includes(campo) ? `${indice}:${campo}` : ''); setError(''); };
+  const cambiar = (campo, valor) => { setDatos((prev) => prev.map((d, i) => i === indice ? { ...d, [campo]: valor } : d), ['nombre', 'frase', 'fecha', 'titulo', 'dedicatoria', 'acento'].includes(campo) ? `${indice}:${campo}` : ''); setError(''); };
   const cambiarParte = (id, cambio, grupo = '') => { setDatos((prev) => prev.map((d, i) => i === indice ? cambiarSeccion(d, id, cambio) : d), grupo ? `${indice}:${grupo}` : Object.keys(cambio).length === 1 && 'escala' in cambio ? `${indice}:tamano:${id}` : ''); setError(''); };
   const restaurarHistoria = (accion) => {
     const restaurados = historial[accion]();
@@ -147,8 +155,8 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
     let vigente = true;
     const timer = setTimeout(async () => {
       try {
-        const [fuentes, fotos, resueltos] = await Promise.all([cargarFuentesYoryo(actual, config), laser ? [] : fotosInlineYoryo(actual), resolverVectorYoryo(actual)]);
-        const nueva = componerArteYoryo({ datos: { ...resueltos, nombre: actual.nombre || 'Tu nombre' }, config, fuentes, fotos });
+        const [fuentes, fotos, resueltos, plantilla] = await Promise.all([cargarFuentesYoryo(actual, config), laser ? [] : fotosInlineYoryo(actual), resolverVectorYoryo(actual), laser ? {} : cargarPlantillaYoryo(actual)]);
+        const nueva = componerArteYoryo({ datos: { ...resueltos, nombre: actual.nombre || 'Tu nombre' }, config, fuentes, fotos, plantilla });
         if (vigente) { setComposicion(nueva); setIndiceArte(indice); setErrorArte(''); }
       } catch (e) { if (vigente) { setComposicion({ svg: '', elementos: [] }); setErrorArte(e.message); } }
     }, 16);
@@ -175,7 +183,10 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
         try { lista.push({ url: await subirImagenCliente(user.uid, preparada.blob) }); }
         finally { URL.revokeObjectURL(preparada.urlLocal); }
       }
-      if (lista.length) cambiar('fotos', lista);
+      if (lista.length) {
+        if (actual.plantillaVisual && actual.plantilla === 'collage' && lista.length === 1) { const posicion = seccion === 'foto2' ? 1 : seccion === 'foto3' ? 2 : 0; const fotos = Array.from({ length: 3 }, (_, i) => actual.fotos[i] || {}); fotos[posicion] = lista[0]; cambiar('fotos', fotos); }
+        else cambiar('fotos', lista);
+      }
     } catch (e) { setError(e.message); } finally { setOcupado(''); }
   };
   const vector = async (file) => {
@@ -203,9 +214,8 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
         const datosGuardar = fijarDistribucion(datos[i], p.personalizacionYoryo);
         const firma = firmaDeDisenoYoryo(datosGuardar, p.personalizacionYoryo.produccion || {});
         const anterior = originalesRef.current[i];
-        if (normalizarFirmaYoryo(anterior?.firmaYoryo) === firma && (anterior?.archivosProduccion?.length || !alCarrito && anterior.estado === 'borrador')) { creaciones.push({ ...anterior, id: anterior.id || anterior.designId }); continue; }
-        const incompleta = validarDatosYoryo(datos[i], p.personalizacionYoryo.tecnica);
-        const nueva = incompleta ? { tipo: 'crear', estado: 'borrador', productId: p.id, productName: p.name, name: `${p.personalizacionYoryo.nombre} · En preparación`, datosYoryo: datosGuardar, firmaYoryo: firma, produccionYoryo: { tecnica: p.personalizacionYoryo.tecnica, lista: false }, archivosProduccion: [], archivosImpresion: [], vistasPrevias: [], layersByView: {} } : await generarYoryo({ uid: user.uid, producto: p, datos: datosGuardar });
+        if (normalizarFirmaYoryo(anterior?.firmaYoryo) === firma && (alCarrito ? anterior?.archivosProduccion?.length && anterior.estado !== 'borrador' : anterior?.estado === 'borrador')) { creaciones.push({ ...anterior, id: anterior.id || anterior.designId }); continue; }
+        const nueva = await (alCarrito ? generarYoryo : generarBorradorYoryo)({ uid: user.uid, producto: p, datos: datosGuardar });
         const r = await saveDesign(user.uid, { ...nueva, ...(idsGuardadosRef.current[i] && { designId: idsGuardadosRef.current[i] }), ...(esPack && { combo: { id: main.id, nombre: main.name, pieza: i } }) });
         if (r.error || !r.id) throw new Error(r.error || 'No pudimos guardar el diseño.');
         idsGuardadosRef.current[i] = r.id;
@@ -227,9 +237,10 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
         borradorDescartado.current = true;
         localStorage.removeItem(clave);
         navigate('/carrito');
-      } else { originalesRef.current = creaciones; toast.success('Avance guardado en tu cuenta.'); }
+      } else { originalesRef.current = creaciones; setFirmaGuardada(firmaDeDisenoYoryo(datos, {})); setGuardadoComoBorrador(true); toast.success('Borrador guardado en tu cuenta.'); }
       queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'] });
       queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'] });
+      queryClient.invalidateQueries({ queryKey: ['mis-creaciones-cuenta'] });
     } catch (e) { setError(e.message || 'No pudimos guardar la personalización.'); }
     finally { setOcupado(''); }
   };
@@ -245,33 +256,68 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
   const subiendo = Boolean(ocupado);
   const bloqueado = subiendo || enGesto;
   const faltanMedidas = productos.some((p) => !medidasConfirmadas(p.personalizacionYoryo.produccion));
-  const campoNombre = <Campo etiqueta={laser ? 'Nombre para grabar' : 'Nombre o nombres'} value={actual.nombre} maxLength={60} disabled={subiendo} onChange={(e) => cambiar('nombre', e.target.value)} placeholder="Ej. Daniel" />;
-  const campoEquipo = (laser && actual.plantilla !== 'iniciales' || actual.plantilla === 'equipo') && <Campo etiqueta="Equipo (opcional)" opciones={[{ valor: '', texto: 'Sin equipo' }, ...EQUIPOS.map((v) => ({ valor: v, texto: v }))]} value={actual.equipo} disabled={subiendo} onChange={(e) => elegirEquipo(e.target.value)} />;
-  const campoFrase = <Campo etiqueta={laser ? 'Frase para grabar (opcional)' : 'Dedicatoria (opcional)'} value={actual.frase} maxLength={160} disabled={subiendo} multilinea onChange={(e) => cambiar('frase', e.target.value)} />;
-  const campoFecha = !laser && ['aniversario', 'collage'].includes(actual.plantilla) && <Campo etiqueta="Fecha o años juntos (opcional)" value={actual.fecha} maxLength={40} disabled={subiendo} onChange={(e) => cambiar('fecha', e.target.value)} placeholder="Ej. 24.10.2021" />;
-  const campoVector = laser && actual.plantilla === 'escudo' && <><input ref={inputVector} type="file" accept=".svg,image/svg+xml" hidden onChange={(e) => { vector(e.target.files?.[0]); e.target.value = ''; }} /><Boton variante="contorno" icono={<ImagePlus />} cargando={ocupado === 'vector'} disabled={subiendo} onClick={() => inputVector.current?.click()}><Texto>{actual.vector ? 'Cambiar escudo SVG' : 'Subir escudo SVG'}</Texto></Boton>{!config.produccion?.vectoresPorEquipo?.[actual.equipo] && <p className={s.nota}><Texto>Para un escudo propio, sube un SVG con sus textos convertidos a trazos.</Texto></p>}</>;
-  const campoFotos = !laser && <><input ref={inputFotos} type="file" accept="image/*" multiple={actual.plantilla === 'collage'} hidden onChange={(e) => { fotos(e.target.files); e.target.value = ''; }} /><Boton variante="contorno" icono={<ImagePlus />} cargando={ocupado === 'fotos'} disabled={subiendo} onClick={() => inputFotos.current?.click()}><Texto>{actual.plantilla === 'collage' ? 'Elegir tres fotos' : actual.fotos.length ? 'Cambiar foto o diseño' : 'Subir foto o diseño'}</Texto></Boton>{actual.fotos.length > 0 && <p className={s.nota}><Texto>{`${actual.fotos.length} ${actual.fotos.length === 1 ? 'foto cargada' : 'fotos cargadas'}. El encuadre se centra para llenar cada espacio.`}</Texto></p>}{actual.fotos.map((f, i) => <Boton key={`${i}:${f.url}`} variante="fantasma" tamano="sm" disabled={subiendo} onClick={() => setRecorte({ src: f.url, foto: i, pieza: indice })}><Texto>{`Recortar foto ${i + 1}`}</Texto></Boton>)}</>;
+  const campoNombre = <Campo etiqueta={laser ? 'Nombre para grabar' : 'Nombre o nombres'} value={actual.nombre} maxLength={60} disabled={bloqueado} onChange={(e) => cambiar('nombre', e.target.value)} placeholder="Ej. Daniel" />;
+  const campoEquipo = (laser && actual.plantilla !== 'iniciales' || actual.plantilla === 'equipo') && <Campo etiqueta="Equipo (opcional)" opciones={[{ valor: '', texto: 'Sin equipo' }, ...EQUIPOS.map((v) => ({ valor: v, texto: v }))]} value={actual.equipo} disabled={bloqueado} onChange={(e) => elegirEquipo(e.target.value)} />;
+  const campoFrase = <Campo etiqueta={laser ? 'Frase para grabar (opcional)' : 'Dedicatoria (opcional)'} value={actual.frase} maxLength={160} disabled={bloqueado} multilinea onChange={(e) => cambiar('frase', e.target.value)} />;
+  const campoFecha = !laser && ['aniversario', 'collage'].includes(actual.plantilla) && <Campo etiqueta="Fecha o años juntos (opcional)" value={actual.fecha} maxLength={40} disabled={bloqueado} onChange={(e) => cambiar('fecha', e.target.value)} placeholder="Ej. 24.10.2021" />;
+  const campoVector = laser && actual.plantilla === 'escudo' && <><input ref={inputVector} type="file" accept=".svg,image/svg+xml" hidden onChange={(e) => { vector(e.target.files?.[0]); e.target.value = ''; }} /><Boton variante="contorno" icono={<ImagePlus />} cargando={ocupado === 'vector'} disabled={bloqueado} onClick={() => inputVector.current?.click()}><Texto>{actual.vector ? 'Cambiar escudo SVG' : 'Subir escudo SVG'}</Texto></Boton>{!config.produccion?.vectoresPorEquipo?.[actual.equipo] && <p className={s.nota}><Texto>Para un escudo propio, sube un SVG con sus textos convertidos a trazos.</Texto></p>}</>;
+  const campoFotos = !laser && <>
+    <input ref={inputFotos} type="file" accept="image/*" multiple={actual.plantilla === 'collage'} hidden onChange={(e) => { fotos(e.target.files); e.target.value = ''; }} />
+    <Boton variante="contorno" icono={<ImagePlus />} cargando={ocupado === 'fotos'} disabled={bloqueado} onClick={() => inputFotos.current?.click()}><Texto>{actual.plantilla === 'collage' ? 'Elegir fotos' : actual.fotos.some((f) => f?.url) ? 'Cambiar foto o diseño' : 'Subir foto o diseño'}</Texto></Boton>
+    {actual.fotos.some((f) => f?.url) && <p className={s.nota}><Texto>{`${actual.fotos.filter((f) => f?.url).length} foto${actual.fotos.filter((f) => f?.url).length === 1 ? '' : 's'} cargada${actual.fotos.filter((f) => f?.url).length === 1 ? '' : 's'}. Puedes recortar o quitar el fondo como en tus prendas.`}</Texto></p>}
+    {actual.fotos.map((f, i) => f?.url && <React.Fragment key={`${i}:${f.url}`}>
+      <div className={s.accionesSeccion}>
+        <Boton variante="contorno" tamano="sm" disabled={bloqueado} onClick={() => setRecorte({ src: f.url, foto: i, pieza: indice })}><Texto>{`Recortar foto ${i + 1}`}</Texto></Boton>
+        <Boton variante="contorno" tamano="sm" disabled={bloqueado} onClick={() => setQuitandoFondo({ src: f.url, foto: i, pieza: indice })}><Texto>{`Quitar fondo de foto ${i + 1}`}</Texto></Boton>
+      </div>
+      <Campo etiqueta={`Encuadre de foto ${i + 1}`} opciones={[{ valor: 'llenar', texto: 'Llenar el espacio' }, { valor: 'completa', texto: 'Ver la imagen completa' }]} value={f.encaje || 'llenar'} disabled={bloqueado} onChange={(e) => cambiar('fotos', actual.fotos.map((foto, k) => k === i ? { ...foto, encaje: e.target.value } : foto))} />
+    </React.Fragment>)}
+  </>;
+
+  const elegirPlantilla = (visual) => {
+    const plantilla = PLANTILLAS_CUADRO.find((p) => p.id === visual);
+    setDatos((prev) => prev.map((d, i) => i === indice ? { ...d, plantillaVisual: visual, plantilla: plantilla?.tipo || 'nombre',
+      ...(visual === 'floral' && !d.titulo ? { titulo: 'Mi lugar favorito es', acento: 'Contigo.' } : {}),
+      ...(visual === 'deportivo' && !d.equipo ? { equipo: 'Alianza Lima' } : {}), distribucion: distribucionRecomendada() } : d));
+    setSeccion('nombre'); setError('');
+  };
+  const precio = Number(main.salePrice) > 0 ? main.salePrice : main.price;
+  const hayCambios = firmaGuardada !== firmaDeDisenoYoryo(datos, {});
   return <MarcoEstudio
-    nombre={esPack ? main.name : producto.name}
-    color={{ nombre: laser ? 'Grabado láser' : 'Impresión', hex: '#7C3AED' }}
-    precio={Number(main.salePrice) > 0 ? main.salePrice : main.price} sesion={Boolean(user)}
+    nombre={esPack ? main.name : producto.name} color={{ nombre: laser ? 'Grabado láser' : 'Impresión', hex: '#7C3AED' }}
+    precio={precio} sesion={Boolean(user)} panelRef={panelRef}
+    className={`${estudio.studio} ${s.studioYoryo}`} claseCuerpo={`${estudio.cuerpo} ${s.cuerpoYoryo}`} clasePanel={`${estudio.panel} ${s.panelYoryo}`} clasePanelContenido={estudio.panelContenido}
     urlVolver={item ? '/carrito' : `/producto/${main.id}`} etiquetaVolver={item ? 'Volver al carrito' : 'Volver al producto'}
-    avisos={faltanMedidas && isAdmin ? <Aviso tipo="info" compacto>Vista previa habilitada. Confirma el área real de producción en la ficha de cada producto antes de habilitar el pago.</Aviso> : undefined}
-    lienzo={<section className={s.escena} aria-label="Vista previa de la personalización">
+    avisos={<>
+      {guardadoComoBorrador && !hayCambios ? <EstadoEdicion esBorrador nombre={actual.nombre} /> : <Aviso tipo="info" compacto>Tu borrador se conserva en este dispositivo. Usa Guardar borrador para continuarlo desde tu cuenta.</Aviso>}
+      {faltanMedidas && isAdmin && <Aviso tipo="info" compacto>Vista previa habilitada. Confirma el área real de producción en la ficha de cada producto antes de habilitar el pago.</Aviso>}
+    </>}
+    lienzo={<EscenaEstudio className={`${estudio.escena} ${s.escena}`}>
       {esPack && <Pestanas etiqueta="Pieza del pack" opciones={productos.map((p, i) => ({ id: String(i), texto: p.personalizacionYoryo.nombre, cuenta: completos[i] ? '✓' : undefined }))} valor={String(indice)} onChange={(v) => { setIndice(Number(v)); setError(''); }} />}
       <Pestanas etiqueta="Vista del diseño" opciones={[{ id: 'producto', texto: 'En el producto' }, { id: 'plano', texto: 'Diseño plano' }]} valor={modoVista} onChange={setModoVista} />
-      <LienzoYoryo key={`${producto.id}:${modoVista}`} producto={producto} datos={actual} svg={indiceArte === indice ? arte : ''} elementos={indiceArte === indice ? composicion.elementos : []} fondo={composicion.fondo} modo={modoVista} activa={seccionActual} onActiva={setSeccion} onMover={cambiarParte} onInteractuando={setEnGesto} onDeshacer={() => restaurarHistoria('deshacer')} onRehacer={() => restaurarHistoria('rehacer')} puedeDeshacer={historial.puedeDeshacer} puedeRehacer={historial.puedeRehacer} onGuardar={() => guardar(false)} disabled={subiendo} />
+      <LienzoYoryo key={`${producto.id}:${modoVista}`} {...composicion} producto={producto} datos={actual} svg={indiceArte === indice ? arte : ''} elementos={indiceArte === indice ? composicion.elementos : []}
+        modo={modoVista} activa={seccionActual} onActiva={setSeccion} onMover={cambiarParte} onInteractuando={setEnGesto}
+        onDeshacer={() => restaurarHistoria('deshacer')} onRehacer={() => restaurarHistoria('rehacer')} puedeDeshacer={historial.puedeDeshacer} puedeRehacer={historial.puedeRehacer}
+        onGuardar={() => guardar(false)} disabled={subiendo} onImagen={!laser || actual.plantilla === 'escudo' ? () => { setSeccion(laser ? 'escudo' : 'foto'); requestAnimationFrame(() => (laser ? inputVector : inputFotos).current?.click()); } : undefined} />
       <p className={s.nota}><Texto>{laser ? 'Vista del grabado. El acabado metálico depende del tomatodo.' : 'La vista previa muestra tu diseño; el marco y el borde no se imprimen.'}</Texto></p>
-      {esPack && <div className={s.resumen}>{productos.map((p, i) => <button key={p.id} type="button" className={s.pieza} onClick={() => setIndice(i)} disabled={subiendo}>
-        <img src={p.variants?.[0]?.imageUrl || p.mainImage || p.images?.[0]} alt="" /><span><strong>{p.personalizacionYoryo.nombre}</strong><small><Texto>{completos[i] ? 'Listo para guardar' : 'Sin personalizar'}</Texto></small></span>{completos[i] && <Check size={16} />}
-      </button>)}</div>}
-    </section>}
+    </EscenaEstudio>}
     panel={<div className={s.campos}>
-      <ElegirUno etiqueta="Elige una plantilla" opciones={plantillas} valor={plantillas[claves.indexOf(actual.plantilla)] || plantillas[0]} onCambiar={(v) => { const plantilla = claves[plantillas.indexOf(v)] || 'nombre'; setDatos((prev) => prev.map((d, i) => i === indice ? { ...d, plantilla, ...(esDistribucionEditable(d) && plantilla !== d.plantilla && { distribucion: distribucionRecomendada() }) } : d)); setError(''); setSeccion(laser ? ['escudo', 'iniciales'].includes(plantilla) ? 'escudo' : 'nombre' : 'foto'); }} />
-      {editable ? <SeccionesYoryo datos={actual} config={config} elementos={indiceArte === indice ? composicion.elementos : []} activa={seccionActual} onActiva={setSeccion} onCambiar={cambiarParte} onRestablecer={recomendar} disabled={bloqueado} contenidos={{ escudo: <>{campoEquipo}{campoVector}</>, nombre: campoNombre, frase: campoFrase, foto: campoFotos, fecha: actual.plantilla === 'equipo' ? campoEquipo : campoFecha }} /> : <>
+      <PasoEstudio numero={1} titulo="Elige tu diseño" hecho={Boolean(actual.nombre)}>
+        {!laser && config.nombre === 'Cuadro' ? <Campo etiqueta="Plantilla para el cuadro" disabled={bloqueado} value={actual.plantillaVisual || ''} opciones={[{ valor: '', texto: 'Diseño libre' }, ...PLANTILLAS_CUADRO.map((p) => ({ valor: p.id, texto: p.nombre }))]} onChange={(e) => elegirPlantilla(e.target.value)} />
+          : <ElegirUno etiqueta="Elige una plantilla" opciones={plantillas} valor={plantillas[claves.indexOf(actual.plantilla)] || plantillas[0]} onCambiar={(v) => {
+            if (bloqueado) return; const plantilla = claves[plantillas.indexOf(v)] || 'nombre';
+            setDatos((prev) => prev.map((d, i) => i === indice ? { ...d, plantilla, ...(!laser ? { plantillaVisual: plantilla === 'equipo' ? 'deportivo' : '' } : {}), ...(esDistribucionEditable(d) && plantilla !== d.plantilla && { distribucion: distribucionRecomendada() }) } : d)); setError(''); setSeccion(laser ? ['escudo', 'iniciales'].includes(plantilla) ? 'escudo' : 'nombre' : 'foto');
+          }} />}
+        {!laser && campoEquipo}
+      </PasoEstudio>
+      {editable ? <SeccionesYoryo datos={actual} config={config} elementos={indiceArte === indice ? composicion.elementos : []} activa={seccionActual} onActiva={setSeccion} onCambiar={cambiarParte} onRestablecer={recomendar} disabled={bloqueado}
+        contenidos={{ escudo: <>{campoEquipo}{campoVector}</>, nombre: campoNombre, frase: campoFrase, foto: campoFotos, foto2: campoFotos, foto3: campoFotos, fecha: actual.plantilla === 'equipo' ? campoEquipo : campoFecha,
+          titulo: <Campo etiqueta="Título" value={actual.titulo || ''} maxLength={100} multilinea disabled={bloqueado} onChange={(e) => cambiar('titulo', e.target.value)} />,
+          acento: <Campo etiqueta="Texto destacado" value={actual.acento || ''} maxLength={60} disabled={bloqueado} onChange={(e) => cambiar('acento', e.target.value)} />,
+          dedicatoria: <Campo etiqueta="Dedicatoria" value={actual.dedicatoria || ''} maxLength={160} multilinea disabled={bloqueado} onChange={(e) => cambiar('dedicatoria', e.target.value)} /> }} /> : <>
         <Aviso tipo="info" compacto>Este diseño conserva sus proporciones anteriores. Puedes aplicar la distribución recomendada para ajustar cada sección.</Aviso>
-        <Boton variante="contorno" onClick={recomendar} disabled={subiendo}><Texto>Usar distribución recomendada</Texto></Boton>
-        {campoNombre}<Campo etiqueta="Estilo de letra" opciones={['Clásica', 'Fuerte', 'Manuscrita'].map((v) => ({ valor: v, texto: v }))} value={actual.tipografia || 'Clásica'} disabled={subiendo} onChange={(e) => cambiar('tipografia', e.target.value)} />
+        <Boton variante="contorno" onClick={recomendar} disabled={bloqueado}><Texto>Usar distribución recomendada</Texto></Boton>
+        {campoNombre}<Campo etiqueta="Estilo de letra" opciones={['Clásica', 'Fuerte', 'Manuscrita'].map((v) => ({ valor: v, texto: v }))} value={actual.tipografia || 'Clásica'} disabled={bloqueado} onChange={(e) => cambiar('tipografia', e.target.value)} />
         {campoEquipo}{campoFrase}{campoFecha}{campoVector}{campoFotos}
       </>}
       {recorte && <Suspense fallback={null}><RecortarFoto abierta forma="libre" src={recorte.src} titulo="Recorta tu foto" onCancelar={() => setRecorte(null)} onListo={async (blob) => {
@@ -281,12 +327,16 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
         setRecorte(null);
       }} /></Suspense>}
       {(error || errorArte) && <Aviso tipo="error" compacto>{error || errorArte}</Aviso>}
+      {quitandoFondo && <Suspense fallback={null}><QuitarFondo abierta src={quitandoFondo.src} onCancelar={() => setQuitandoFondo(null)} onAplicar={async (resultado) => {
+        if (!resultado?.blob) { setQuitandoFondo(null); return; }
+        const { foto, pieza } = quitandoFondo; setOcupado('fotos');
+        try { const url = await subirImagenCliente(user.uid, resultado.blob); setDatos((prev) => prev.map((d, i) => i === pieza ? { ...d, fotos: d.fotos.map((f, k) => k === foto ? { url, encaje: 'completa' } : f) } : d)); setQuitandoFondo(null); }
+        catch (e) { setError(e.message); } finally { setOcupado(''); }
+      }} /></Suspense>}
     </div>}
-    compra={<div className={s.compra}>
-      <strong>{esPack ? 'Precio del pack' : 'Total'} · {soles(Number(main.salePrice) > 0 ? main.salePrice : main.price)}</strong>
-      <Boton bloque icono={item ? <Save /> : <ShoppingBag />} cargando={ocupado === 'guardando'} disabled={subiendo || enGesto} onClick={() => guardar(true)}><Texto>{!user ? 'Iniciar sesión para guardar' : item ? 'Guardar cambios en el carrito' : esPack ? 'Agregar pack al carrito' : 'Agregar al carrito'}</Texto></Boton>
-      {user && <Boton variante="contorno" tamano="sm" disabled={subiendo || enGesto} onClick={() => guardar(false)}><Texto>Guardar avance</Texto></Boton>}
-      <Boton variante="fantasma" tamano="sm" icono={<Download />} disabled={!arte || subiendo || enGesto} onClick={descargar}><Texto>Descargar vista previa</Texto></Boton>
-    </div>}
+    compra={<CompraEstudio precio={precio} vacio={false} ocupado={enGesto ? 'moviendo' : ocupado ? ocupado === 'guardando' ? 'guardando' : ocupado : null}
+      hayCambios={hayCambios} yaGuardada={firmaGuardada !== null} permitirBorradorVacio etiquetaGuardar="Guardar borrador"
+      etiquetaAgregar={!user ? 'Iniciar sesión para guardar' : item ? 'Guardar cambios en el carrito' : esPack ? 'Agregar pack al carrito' : 'Agregar al carrito'}
+      onGuardar={() => guardar(false)} onAgregar={() => guardar(true)} onDescargar={descargar} className={estudio.acciones} />}
   />;
 }

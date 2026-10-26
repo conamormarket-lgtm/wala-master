@@ -220,7 +220,6 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
   // El toast de "agregado" lo muestra CartContext (antes salían dos) y el
   // botón dice "¡Agregado!".
   const alAgregar = async (eleccion) => {
-    if (esYoryoPersonalizable(product)) { navigate(rutaPersonalizarYoryo(product)); return false; }
     if (avisarComboCargando()) return false;
     const { variant, cantidad, combo } = argumentosDelCarrito(product, eleccion, comboProd);
     addToCart(productoParaCarrito, variant, null, cantidad, combo, regaloActivo ? { silent: true } : {});
@@ -234,7 +233,6 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
 
   // Agrega ESTE producto como el único elegido y va directo a pagar.
   const alComprar = async (eleccion) => {
-    if (esYoryoPersonalizable(product)) { navigate(rutaPersonalizarYoryo(product)); return false; }
     if (!product.inStock) return false;
     if (avisarComboCargando()) return false;
     const { variant, cantidad, combo } = argumentosDelCarrito(product, eleccion, comboProd);
@@ -308,7 +306,7 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
       <PaginaProducto
         key={id}
         {...ficha}
-        producto={{ ...ficha.producto, requierePersonalizacion: esYoryoPersonalizable(product), personalizable: esYoryoPersonalizable(product) || personalizableViejo && Boolean(product.customizable || product.YoryoPersonalizado) }}
+        producto={{ ...ficha.producto, personalizable: esYoryoPersonalizable(product) || personalizableViejo && Boolean(product.customizable || product.YoryoPersonalizado) }}
         fuentes={fuentes}
         piezasCargando={esCombo && !comboPedido}
         opiniones={opiniones}

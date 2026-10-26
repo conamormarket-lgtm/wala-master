@@ -36,14 +36,20 @@
 .visorInteractivo { user-select: none; -webkit-user-select: none; touch-action: pan-y; }
 .mundoYoryo { position: absolute; inset: 0; transform-origin: center; will-change: transform; }
 .capaEnVivo { position: absolute; transform-origin: top left; will-change: transform; }
+.capaFija { position: absolute; inset: 0; pointer-events: none; }
+.capaFija > .dibujo { position: absolute; inset: 0; }
 .capaEnVivo > .dibujo { position: absolute; inset: 0; }
 .controlTamano { position: absolute; right: -11px; bottom: -11px; width: 24px; height: 24px; padding: 3px; border: 2px solid #FFFFFF; background: #6D28D9; color: #FFFFFF; border-radius: 6px; cursor: nwse-resize; touch-action: none; }
 .controlTamano svg { width: 100%; height: 100%; }
-.guiaIman { position: absolute; left: 50%; top: 0; height: 100%; border-left: 1px solid #F472B6; z-index: 5; pointer-events: none; }
-.barraExperiencia { display: flex; align-items: center; gap: .1rem; flex-wrap: wrap; padding: .25rem; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); }
-.separadorBarra { width: 1px; height: 22px; background: var(--color-border); margin: 0 .35rem; }
-.porcentajeZoom { font-size: .75rem; font-variant-numeric: tabular-nums; min-width: 3rem; text-align: center; }
+.guiaIman { position: absolute; left: 50%; top: 0; height: 100%; border-left: 1px solid #F472B6; z-index: 50; pointer-events: none; }
 @font-face { font-family: 'Yoryo Elegante'; src: url('/fonts/Cinzel-Bold.ttf') format('truetype'); font-display: swap; }
+@media (max-width: 768px) {
+  .modelo { width: min(100%, calc(38dvh * .75)); }
+  .panelYoryo.panelYoryo { position: relative; z-index: 4; background: var(--color-bg); }
+  .escena.escena.escena { position: static; }
+  .cuerpoYoryo { scroll-padding-block: 6rem; }
+  .studioYoryo.studioYoryo:has(textarea:focus) [data-compra-fija], .studioYoryo.studioYoryo:has(input:focus) [data-compra-fija] { display: flex; }
+}
 @font-face { font-family: 'Yoryo Clasica'; src: url('/fonts/segoeui.ttf') format('truetype'); font-display: swap; }
 @font-face { font-family: 'Yoryo Fuerte'; src: url('/fonts/BebasNeue%20Bold.ttf') format('truetype'); font-display: swap; }
 @font-face { font-family: 'Yoryo Manuscrita'; src: url('/fonts/BRUSHSCI.TTF') format('truetype'); font-display: swap; }

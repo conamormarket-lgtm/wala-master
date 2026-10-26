@@ -998,9 +998,9 @@ export const zoomVecino = (zoom, sube) => (sube
 export function BarraLienzo({
   puedeDeshacer, puedeRehacer, onDeshacer, onRehacer, elegido = false,
   onAchicar, onAgrandar, onCentrar, onQuitar, onImagen, onTexto, zoom = 1, onZoom, onAtajos, onEditar,
-  completa = false, onVerCompleta,
+  completa = false, onVerCompleta, disabled = false, zoomMaximo = NIVELES_ZOOM[NIVELES_ZOOM.length - 1], ayudaEnMovil = false,
 }) {
-  const B = (props) => <BotonEstudio variante="fantasma" tamano="sm" soloIcono {...props} />;
+  const B = (props) => <BotonEstudio variante="fantasma" tamano="sm" soloIcono {...props} disabled={disabled || props.disabled} />;
   const nombreBarra = useTexto('Herramientas del lienzo');
   const verCompleta = useTexto('Ver la prenda completa (Shift+1)');
   return (
@@ -1014,7 +1014,7 @@ export function BarraLienzo({
           <B aria-label="Achicar" icono={<Minus aria-hidden="true" />} onClick={onAchicar} />
           <B aria-label="Agrandar" icono={<Plus aria-hidden="true" />} onClick={onAgrandar} />
           <B aria-label="Centrar" icono={<Crosshair aria-hidden="true" />} onClick={onCentrar} />
-          <BotonEstudio variante="fantasma" tamano="sm" soloIcono aria-label="Quitar" icono={<Trash2 aria-hidden="true" />} onClick={onQuitar} className={s.peligro} />
+          {onQuitar && <BotonEstudio variante="fantasma" tamano="sm" soloIcono aria-label="Quitar" icono={<Trash2 aria-hidden="true" />} onClick={onQuitar} className={s.peligro} />}
           {/* En el celular el panel queda debajo de la prenda: "Editar" baja hasta él. */}
           {onEditar && <BotonEstudio variante="secundario" tamano="sm" icono={<Pencil aria-hidden="true" />} onClick={onEditar} className={s.soloCelular}><Texto>{"Editar"}</Texto></BotonEstudio>}
           {/* En el teléfono, lo elegido acerca su zona: esto muestra la prenda entera (y vuelve). */}
@@ -1030,14 +1030,15 @@ export function BarraLienzo({
         </span>
       )}
       <span className={s.grupoBarra}>
-        <BotonEstudio variante="contorno" tamano="sm" icono={<ImagePlus aria-hidden="true" />} onClick={onImagen}><Texto>{"Imagen"}</Texto></BotonEstudio>
-        <BotonEstudio variante="contorno" tamano="sm" icono={<Type aria-hidden="true" />} onClick={onTexto}><Texto>{"Texto"}</Texto></BotonEstudio>
+        {onImagen && <BotonEstudio variante="contorno" tamano="sm" icono={<ImagePlus aria-hidden="true" />} disabled={disabled} onClick={onImagen}><Texto>{"Imagen"}</Texto></BotonEstudio>}
+        {onTexto && <BotonEstudio variante="contorno" tamano="sm" icono={<Type aria-hidden="true" />} disabled={disabled} onClick={onTexto}><Texto>{"Texto"}</Texto></BotonEstudio>}
       </span>
       {/* En el celular se acerca con los dedos: el zoom queda para el ratón. */}
+      {ayudaEnMovil && onAtajos && <BotonEstudio variante="fantasma" tamano="sm" icono={<Keyboard aria-hidden="true" />} onClick={onAtajos} className={s.soloCelular}><Texto>Atajos y gestos</Texto></BotonEstudio>}
       <span className={[s.grupoBarra, s.grupoZoom].join(' ')}>
         <B aria-label="Alejar (Ctrl −)" icono={<ZoomOut aria-hidden="true" />} disabled={zoom <= 1} onClick={() => onZoom?.(zoomVecino(zoom, false))} />
-        <button type="button" className={s.zoomValor} onClick={() => onZoom?.(1)} title={verCompleta}>{Math.round(zoom * 100)}%</button>
-        <B aria-label="Acercar (Ctrl +)" icono={<ZoomIn aria-hidden="true" />} disabled={zoom >= NIVELES_ZOOM[NIVELES_ZOOM.length - 1]} onClick={() => onZoom?.(zoomVecino(zoom, true))} />
+        <button type="button" className={s.zoomValor} disabled={disabled} onClick={() => onZoom?.(1)} title={verCompleta}>{Math.round(zoom * 100)}%</button>
+        <B aria-label="Acercar (Ctrl +)" icono={<ZoomIn aria-hidden="true" />} disabled={zoom >= zoomMaximo} onClick={() => onZoom?.(Math.min(zoomMaximo, zoomVecino(zoom, true)))} />
         {onAtajos && <B aria-label="Atajos de teclado" icono={<Keyboard aria-hidden="true" />} onClick={onAtajos} className={s.soloRaton} />}
       </span>
     </div>

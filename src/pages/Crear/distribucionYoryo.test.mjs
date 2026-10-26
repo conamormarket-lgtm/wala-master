@@ -7,6 +7,7 @@ import { componerArteYoryo } from './arteYoryo.mjs';
 import { datosYoryoVacios } from '../../utils/yoryoPersonalizacion.mjs';
 import { FUENTES_YORYO, areaVistaYoryo, cambiarSeccion, distribucionRecomendada, fijarDistribucion, firmaDeDisenoYoryo, normalizarFirmaYoryo, seccionesYoryo, vistaYoryo } from '../../utils/distribucionYoryo.mjs';
 import { serializarTrazos } from './trazosYoryo.mjs';
+import { PLANTILLAS_CUADRO, plantillaImpresionYoryo } from '../../utils/plantillasYoryo.mjs';
 
 const fuentes = {};
 for (const f of FUENTES_YORYO) {
@@ -16,6 +17,30 @@ for (const f of FUENTES_YORYO) {
 const config = { tecnica: 'laser', proporcion: 1.25, vista: { x: .32, y: .27, w: .29, h: .30 }, produccion: { anchoMm: 80, altoMm: 100, medidasConfirmadas: true } };
 const datos = { ...datosYoryoVacios(), plantilla: 'escudo', nombre: 'Daniel', frase: 'Blanquiazul\nde corazón', vector: { svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 140"><path d="M0 0H100V140H0Z"/></svg>', viewBox: [0, 0, 100, 140] } };
 const componer = (d, c = config) => componerArteYoryo({ datos: d, config: c, fuentes: { escudo: fuentes.Fuerte, nombre: fuentes[d.distribucion?.elementos?.nombre?.fuente || 'Elegante'], frase: fuentes.Manuscrita, fecha: fuentes.Clásica }, fuente: fuentes.Clásica });
+
+test('las plantillas imprimen fondo, fotos, decoración y textos en ese orden', () => {
+  const d = { ...datosYoryoVacios(), plantilla: 'equipo', plantillaVisual: 'deportivo', equipo: 'Alianza Lima', nombre: 'Daniel', frase: 'Blanquiazul', dedicatoria: 'Con amor' };
+  const { svg, elementos } = componerArteYoryo({ datos: d, config: { tecnica: 'impresion', proporcion: .8 }, fuente: fuentes.Clásica, fotos: ['foto-cliente.png'], plantilla: { fondo: 'fondo-estadio.png', superposicion: 'escudo-delante.png' } });
+  assert.ok(svg.indexOf('fondo-estadio.png') < svg.indexOf('foto-cliente.png'));
+  assert.ok(svg.indexOf('foto-cliente.png') < svg.indexOf('escudo-delante.png'));
+  assert.ok(svg.indexOf('escudo-delante.png') < svg.indexOf('data-yoryo-elemento="nombre"'));
+  assert.equal(elementos[0].orden, 1); assert.equal(elementos.at(-1).orden, 3);
+  assert.equal(plantillaImpresionYoryo(d).fondo, '/yoryo/cuadros/equipos/alianza_lima_fondo.png');
+});
+
+test('cada foto del collage se ajusta y persiste por separado; todas las plantillas conservan posiciones al reabrir', async () => {
+  const c = { tecnica: 'impresion', proporcion: .8 };
+  for (const p of PLANTILLAS_CUADRO) {
+    const d = { ...datosYoryoVacios(), plantilla: p.tipo, plantillaVisual: p.id, nombre: 'Daniel', fecha: '2026', equipo: 'Alianza Lima', fotos: [{ url: 'uno' }, { url: 'dos' }, { url: 'tres' }] };
+    let ajustado = cambiarSeccion(d, 'nombre', { x: .64, y: .6, escala: 73, fuente: 'Manuscrita' });
+    if (p.id === 'botanico') ajustado = cambiarSeccion(ajustado, 'foto2', { x: .23, y: .56, escala: 85 });
+    const guardado = fijarDistribucion(ajustado, c), reabierto = JSON.parse(JSON.stringify(guardado));
+    assert.deepEqual(componer(guardado, c).elementos, componer(reabierto, c).elementos);
+    if (p.id === 'botanico') { assert.equal(seccionesYoryo(guardado, c).filter((s) => s.indiceFoto !== undefined).length, 3); assert.equal(guardado.distribucion.elementos.foto2.escala, 85); assert.equal(guardado.distribucion.elementos.foto.escala, 100); }
+    const imagen = p.id === 'deportivo' ? plantillaImpresionYoryo(d).fondo : p.imagen;
+    assert.ok((await readFile(new URL(`../../../public${imagen}`, import.meta.url))).length > 1000);
+  }
+});
 
 test('la distribución recomendada aprovecha el área y da letras independientes al nombre y la frase', () => {
   const { svg, elementos } = componer(datos);
