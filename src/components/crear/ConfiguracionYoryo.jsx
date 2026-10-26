@@ -8,6 +8,7 @@ import { Aviso } from '../../componentes/kit/Feedback';
 import s from './PersonalizadorYoryo.module.css';
 import { subirPlantillaVectorYoryo } from '../../services/crearArchivos';
 import { validarVectorSvg } from '../../pages/Crear/arteYoryo.mjs';
+import { vectorLaserDeEquipo } from '../../utils/vectoresLaserYoryo.mjs';
 
 export default function ConfiguracionYoryo({ id }) {
   const pieza = YORYO_PIEZAS.find((p) => p.id === id);
@@ -57,10 +58,10 @@ function Configuracion({ producto }) {
       <Casilla etiqueta="Confirmo las medidas útiles con el taller" activo={valor.medidasConfirmadas} onChange={(v) => setValor((p) => ({ ...p, medidasConfirmadas: v }))} />
       {producto.personalizacionYoryo.tecnica === 'laser' && <>
         <h3>Escudos vectoriales del tomatodo</h3>
-        <p>Registra cada SVG original una vez. El cliente podrá elegir el equipo y escribir su nombre.</p>
+        <p>Los seis escudos originales de la marca ya están disponibles. Puedes reemplazar un escudo; el cliente podrá elegirlo y escribir su nombre.</p>
         <Campo etiqueta="Equipo de la plantilla" opciones={['Alianza Lima', 'Universitario', 'Sporting Cristal', 'Sport Boys', 'Barcelona', 'Real Madrid'].map((v) => ({ valor: v, texto: v }))} value={equipo} onChange={(e) => setEquipo(e.target.value)} disabled={ocupado} />
         <input ref={archivoRef} type="file" accept=".svg,image/svg+xml" hidden onChange={(e) => { subirEscudo(e.target.files?.[0]); e.target.value = ''; }} />
-        <Boton variante="contorno" onClick={() => archivoRef.current?.click()} disabled={ocupado}>{valor.vectoresPorEquipo?.[equipo] ? 'Reemplazar SVG del equipo' : 'Cargar SVG del equipo'}</Boton>
+        <Boton variante="contorno" onClick={() => archivoRef.current?.click()} disabled={ocupado}>{vectorLaserDeEquipo(equipo, { tecnica: 'laser', produccion: valor }) ? 'Reemplazar SVG del equipo' : 'Cargar SVG del equipo'}</Boton>
       </>}
       <Boton onClick={guardar} cargando={ocupado}>Guardar configuración de producción</Boton>
       {error && <Aviso tipo="error" compacto>{error}</Aviso>}

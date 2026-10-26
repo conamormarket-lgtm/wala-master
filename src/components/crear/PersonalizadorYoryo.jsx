@@ -29,6 +29,7 @@ import { CompraEstudio } from '../../componentes/kit/piezas/CompraEstudio';
 import { EstadoEdicion, PasoEstudio } from '../../componentes/kit/piezas/Estudio';
 import { Texto } from '../../componentes/kit/Traduccion';
 import { PLANTILLAS_CUADRO } from '../../utils/plantillasYoryo.mjs';
+import { vectorLaserDeEquipo } from '../../utils/vectoresLaserYoryo.mjs';
 import estudio from './EstudioDeTienda.module.css';
 import s from './PersonalizadorYoryo.module.css';
 
@@ -134,10 +135,10 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
   };
   const recomendar = () => { cambiar('distribucion', distribucionRecomendada()); setSeccion('nombre'); };
   const elegirEquipo = (equipo) => {
-    const vector = laser && config.produccion?.vectoresPorEquipo?.[equipo];
+    const vector = vectorLaserDeEquipo(equipo, config);
     setDatos((prev) => prev.map((d, i) => {
       if (i !== indice) return d;
-      const plantilla = vector ? 'escudo' : d.plantilla === 'escudo' ? 'nombre' : d.plantilla;
+      const plantilla = vector ? 'escudo' : d.plantilla;
       return { ...d, equipo, vector: vector || null, plantilla, ...(plantilla !== d.plantilla && esDistribucionEditable(d) && { distribucion: distribucionRecomendada() }) };
     }));
     setError('');
@@ -260,7 +261,7 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
   const campoEquipo = (laser && actual.plantilla !== 'iniciales' || actual.plantilla === 'equipo') && <Campo etiqueta="Equipo (opcional)" opciones={[{ valor: '', texto: 'Sin equipo' }, ...EQUIPOS.map((v) => ({ valor: v, texto: v }))]} value={actual.equipo} disabled={bloqueado} onChange={(e) => elegirEquipo(e.target.value)} />;
   const campoFrase = <Campo etiqueta={laser ? 'Frase para grabar (opcional)' : 'Dedicatoria (opcional)'} value={actual.frase} maxLength={160} disabled={bloqueado} multilinea onChange={(e) => cambiar('frase', e.target.value)} />;
   const campoFecha = !laser && ['aniversario', 'collage'].includes(actual.plantilla) && <Campo etiqueta="Fecha o años juntos (opcional)" value={actual.fecha} maxLength={40} disabled={bloqueado} onChange={(e) => cambiar('fecha', e.target.value)} placeholder="Ej. 24.10.2021" />;
-  const campoVector = laser && actual.plantilla === 'escudo' && <><input ref={inputVector} type="file" accept=".svg,image/svg+xml" hidden onChange={(e) => { vector(e.target.files?.[0]); e.target.value = ''; }} /><Boton variante="contorno" icono={<ImagePlus />} cargando={ocupado === 'vector'} disabled={bloqueado} onClick={() => inputVector.current?.click()}><Texto>{actual.vector ? 'Cambiar escudo SVG' : 'Subir escudo SVG'}</Texto></Boton>{!config.produccion?.vectoresPorEquipo?.[actual.equipo] && <p className={s.nota}><Texto>Para un escudo propio, sube un SVG con sus textos convertidos a trazos.</Texto></p>}</>;
+  const campoVector = laser && actual.plantilla === 'escudo' && <><input ref={inputVector} type="file" accept=".svg,image/svg+xml" hidden onChange={(e) => { vector(e.target.files?.[0]); e.target.value = ''; }} /><Boton variante="contorno" icono={<ImagePlus />} cargando={ocupado === 'vector'} disabled={bloqueado} onClick={() => inputVector.current?.click()}><Texto>{actual.vector ? 'Cambiar escudo SVG' : 'Subir escudo SVG'}</Texto></Boton>{<p className={s.nota}><Texto>{actual.vector?.url && actual.vector.url === vectorLaserDeEquipo(actual.equipo, config)?.url ? `Escudo de ${actual.equipo} listo para grabar. Puedes subir tu propio SVG si prefieres otro diseño.` : 'Para un escudo propio, sube un SVG con sus textos convertidos a trazos.'}</Texto></p>}</>;
   const campoFotos = !laser && <>
     <input ref={inputFotos} type="file" accept="image/*" multiple={actual.plantilla === 'collage'} hidden onChange={(e) => { fotos(e.target.files); e.target.value = ''; }} />
     <Boton variante="contorno" icono={<ImagePlus />} cargando={ocupado === 'fotos'} disabled={bloqueado} onClick={() => inputFotos.current?.click()}><Texto>{actual.plantilla === 'collage' ? 'Elegir fotos' : actual.fotos.some((f) => f?.url) ? 'Cambiar foto o diseño' : 'Subir foto o diseño'}</Texto></Boton>

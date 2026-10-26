@@ -3,12 +3,34 @@ import assert from 'node:assert/strict';
 import { DOMParser, XMLSerializer } from '@xmldom/xmldom';
 import { validarVectorSvg, crearArteYoryo } from './arteYoryo.mjs';
 import { createRequire } from 'node:module';
+import { readFile } from 'node:fs/promises';
+import { ESCUDOS_LASER_YORYO, vectorLaserDeEquipo } from '../../utils/vectoresLaserYoryo.mjs';
 
 const { esSvgLaser } = createRequire(import.meta.url)('../../../functions/yoryoProduccion.js');
 globalThis.DOMParser = DOMParser;
 globalThis.XMLSerializer = XMLSerializer;
 const svg = (contenido, atributos = '') => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="10 20 100 150" ${atributos}>${contenido}</svg>`;
 const trazo = '<path d="M10 20H110V170H10Z"/>';
+
+test('los seis originales de Laser conservan su geometría y producen un maestro vectorial aceptado por el taller', async () => {
+  assert.equal(Object.keys(ESCUDOS_LASER_YORYO).length, 6);
+  for (const [equipo, original] of Object.entries(ESCUDOS_LASER_YORYO)) {
+    const archivo = await readFile(new URL(`../../../public${original.url}`, import.meta.url), 'utf8');
+    const vector = validarVectorSvg(archivo);
+    assert.deepEqual(vector.viewBox, original.viewBox, equipo);
+    assert.doesNotMatch(vector.svg, /<(?:image|text|tspan)\b|href=/);
+    const arte = crearArteYoryo({ datos: { plantilla: 'escudo', nombre: '', frase: '', equipo, vector }, config: { tecnica: 'laser', proporcion: 1.25, produccion: { medidasConfirmadas: true, anchoMm: 80, altoMm: 100 } } });
+    assert.equal(esSvgLaser(arte, 80, 100), true, equipo);
+    assert.equal(vectorLaserDeEquipo(equipo, { tecnica: 'laser' }), original);
+  }
+});
+
+test('la impresión conserva sus propias imágenes y una plantilla administrada puede reemplazar un escudo de catálogo', () => {
+  assert.equal(vectorLaserDeEquipo('Alianza Lima', { tecnica: 'impresion' }), null);
+  assert.equal(vectorLaserDeEquipo('', { tecnica: 'laser' }), null);
+  const propio = { url: 'https://ejemplo.test/escudo-nuevo.svg' };
+  assert.equal(vectorLaserDeEquipo('Alianza Lima', { tecnica: 'laser', produccion: { vectoresPorEquipo: { 'Alianza Lima': propio } } }), propio);
+});
 
 test('importa escudos con metadatos, defs sin uso y datos de procedencia sin grabarlos', () => {
   const limpio = validarVectorSvg(svg(`<metadata xmlns:fl="https://ejemplo.test">Procedencia</metadata><title>Escudo</title><desc>Vector</desc><defs><path d="M999 999H1000"/></defs>${trazo.replace('/>', ' data-source="https://ejemplo.test"/>')}`, 'fill="#000"'));
