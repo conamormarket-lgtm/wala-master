@@ -235,7 +235,7 @@ export function PaginaListaDeseos({
  * Fechas importantes: a quién le regalas y cuándo, con ideas a su medida.
  *  - personas: [{ id, nombre, relacion, relacionTexto, genero, foto, presupuesto,
  *    gustos, eventos: [{ id, tipo, nombre, fecha }], festivas, paquetes, ideas,
- *    ideasGenerales, sinIdeas }] (personaDesdeRecipient + useGiftCatalog)
+ *    ideasGenerales }] (personaDesdeRecipient + useGiftCatalog)
  *  - festivas: fechas que se acercan, props de AvisoFestiva
  *  - encuesta: { monedas, url } banner del perfil de regalos (sin encuesta hecha)
  *  - ganadas: monedas que acaba de ganar (aviso) · conjuntos: gustos que se pueden marcar

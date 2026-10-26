@@ -15,6 +15,7 @@
 //                            = fecha desconocida (la llenó antes y no se guardó).
 
 import { textoFechaEvento } from '../utils/fechaEvento.mjs';
+import { configConOrigenCompra } from './encuestaOrigen.mjs';
 
 export const ROLES = {
   pareja: 'Pareja', hijos: 'Hijos', padres: 'Padres', hermanos: 'Hermanos',
@@ -123,7 +124,7 @@ const historial = (x) => ({
  */
 export function resumenEncuesta(usuarios, config) {
   const completas = (usuarios || []).filter((u) => u.hasCompletedSurvey);
-  const camposBasicos = (config && config.basicDataPanel && config.basicDataPanel.fields) || [];
+  const camposBasicos = configConOrigenCompra(config || {}).basicDataPanel?.fields || [];
   const conjuntos = (config && config.brandsPanel && config.brandsPanel.categories) || [];
   const personas = completas.flatMap((u) => (Array.isArray(u.giftRecipients) ? u.giftRecipients : []));
 
@@ -225,7 +226,7 @@ export function embudoEncuesta(eventos = []) {
 
 /** Ficha legible de un cliente (para el detalle). */
 export function fichaCliente(u, config) {
-  const camposBasicos = (config && config.basicDataPanel && config.basicDataPanel.fields) || [];
+  const camposBasicos = configConOrigenCompra(config || {}).basicDataPanel?.fields || [];
   const conjuntos = (config && config.brandsPanel && config.brandsPanel.categories) || [];
   return {
     uid: u.id || u.uid,
@@ -267,7 +268,7 @@ const celda = (v) => {
  * Separador ";" y BOM para que Excel en español lo abra con tildes y columnas.
  */
 export function csvRespuestas(usuarios, config) {
-  const camposBasicos = (config && config.basicDataPanel && config.basicDataPanel.fields) || [];
+  const camposBasicos = configConOrigenCompra(config || {}).basicDataPanel?.fields || [];
   const conjuntos = (config && config.brandsPanel && config.brandsPanel.categories) || [];
   const columnasGustos = conjuntos.flatMap((c) => (c.fields || []).map((f) => ({ c, f })));
   const cabecera = [

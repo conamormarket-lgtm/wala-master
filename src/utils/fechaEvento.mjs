@@ -34,6 +34,14 @@ export function armarFechaEvento({ dia, mes, anio }) {
   return `${conAnio ? a : ANIO_DESCONOCIDO}-${dos(m)}-${dos(d)}`;
 }
 
+/** Editar solo día y mes conserva el año histórico si la fecha sigue existiendo. */
+export function cambiarDiaMesEvento(iso, anterior = '') {
+  const partes = partesFechaEvento(iso);
+  if (!partes) return '';
+  const anio = partesFechaEvento(anterior)?.anio;
+  return armarFechaEvento({ ...partes, anio }) || armarFechaEvento({ ...partes, anio: null });
+}
+
 /** "27 de julio de 2005" / "27 de julio" (sin año o con conAnio: false). */
 export function textoFechaEvento(iso, { conAnio = true } = {}) {
   const p = partesFechaEvento(iso);

@@ -1,10 +1,11 @@
 import { db } from './firebase/config';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { configConOrigenCompra } from './encuestaOrigen.mjs';
 
 const COLLECTION_NAME = 'tienda_encuesta_config';
 const GLOBAL_DOC_ID = 'global';
 
-export const DEFAULT_SURVEY_CONFIG = {
+export const DEFAULT_SURVEY_CONFIG = configConOrigenCompra({
   // Panel 0: Hook / Intro
   introPanel: {
     title: '¡Queremos conocerte mejor!',
@@ -167,7 +168,7 @@ export const DEFAULT_SURVEY_CONFIG = {
     backgroundColor: '#ffffff',
     textColor: '#1f2937'
   }
-};
+});
 
 // Encuesta de la entrega ("¿Cómo te fue con tu pedido?"): entregaPanel, igual
 // que configEntrega de functions/encuestaEntregaLogic.js (el servidor manda).
@@ -189,7 +190,7 @@ export const getSurveyConfig = async () => {
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-      return { data: docSnap.data(), error: null };
+      return { data: configConOrigenCompra(docSnap.data()), error: null };
     } else {
       // Si no existe, creamos el documento inicial con el default
       await setDoc(docRef, DEFAULT_SURVEY_CONFIG);
@@ -209,7 +210,7 @@ export const getSurveyConfig = async () => {
 export const leerSurveyConfig = async () => {
   try {
     const docSnap = await getDoc(doc(db, COLLECTION_NAME, GLOBAL_DOC_ID));
-    return { data: docSnap.exists() ? docSnap.data() : DEFAULT_SURVEY_CONFIG, error: null };
+    return { data: docSnap.exists() ? configConOrigenCompra(docSnap.data()) : DEFAULT_SURVEY_CONFIG, error: null };
   } catch (error) {
     console.warn('No se pudo leer la config de la encuesta:', error);
     return { data: null, error: error.message };

@@ -263,13 +263,14 @@ function useFormularioPersona({ inicial, conjuntos = [], onGuardar, onCerrar, on
                   <Campo etiqueta="¿Qué se celebra?" value={e.nombre || ''} onChange={(ev) => ponerEvento(i, 'nombre', ev.target.value)} placeholder="Ej. Bautizo" />
                 )}
                 <CampoFecha
-                  etiqueta={cumple ? 'Fecha de su cumpleaños' : 'Fecha'}
+                  etiqueta={cumple ? 'Fecha de nacimiento' : 'Fecha'}
                   valor={e.fecha}
                   onCambiar={(iso) => ponerEvento(i, 'fecha', iso)}
-                  anioOpcional
-                  vistaInicial={cumple ? 'anios' : 'dias'}
+                  anioOpcional={cumple}
+                  soloDiaMes={!cumple}
+                  vistaInicial={cumple ? 'anios' : 'meses'}
                   max={cumple ? new Date().toISOString().slice(0, 10) : undefined}
-                  ayuda={cumple ? 'Si no sabes en qué año nació, marca «No sé el año».' : undefined}
+                  ayuda={cumple ? 'El año es opcional. Si no lo sabes, marca «No sé el año».' : undefined}
                 />
               </div>
             );

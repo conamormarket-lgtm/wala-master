@@ -192,6 +192,7 @@ const AdminEncuestas = () => {
           <select
             className={styles.input}
             value={field.type}
+            disabled={field.fuente === 'marcas'}
             onChange={e => onUpdate(index, 'type', e.target.value)}
           >
             <option value="text">Texto corto</option>
@@ -246,7 +247,12 @@ const AdminEncuestas = () => {
           No sale en la encuesta. Se guarda para ver las respuestas de antes (y, si es de un interés, sigue en Fechas importantes).
         </p>
       )}
-      {field.type === 'select' && (
+      {field.fuente === 'marcas' && (
+        <p className={styles.notaCampo}>
+          Solo se muestra al elegir «Ya compré en una de sus marcas». Las opciones se toman de las marcas de la tienda.
+        </p>
+      )}
+      {field.type === 'select' && field.fuente !== 'marcas' && (
         <div className={styles.fieldGroup}>
           <label>Opciones (separadas por comas)</label>
           <input

@@ -30,6 +30,7 @@ export const encuestaDesdeConfig = (c = {}, sugerencias) => ({
       subtitulo: c.basicDataPanel?.subtitle,
       campos: (c.basicDataPanel?.fields || []).map((f) => ({
         id: f.id, etiqueta: f.label, tipo: f.type === 'select' ? 'opciones' : 'texto', opciones: f.options || [], requerido: Boolean(f.required), enEncuesta: f.enEncuesta !== false,
+        mostrarSi: f.mostrarSi, fuente: f.fuente,
       })),
     },
     whatsapp: c.completionPanel?.askWhatsapp !== false,

@@ -18,6 +18,7 @@ import { Hueso, EsqueletoFormulario } from '../Esqueletos';
 import { CARAS_KAPI } from '../piezas/Flotantes';
 import { TextoResaltado } from '../piezas/TextoResaltado';
 import { Texto, useTexto } from '../Traduccion';
+import { preguntaVisible, cambiarRespuestaEncuesta } from '../../../services/encuestaOrigen.mjs';
 import s from './Encuesta.module.css';
 
 /*
@@ -85,6 +86,21 @@ function CabezaPaso({ Icono, tono, titulo, subtitulo, trazo = false }) {
 /** Una pregunta de "Un poco sobre ti" (Campo traduce la etiqueta y el error; las opciones van traducidas). */
 function PreguntaSobreTi({ campo, valor, error, onCambiar }) {
   const elige = useTexto('Elige…');
+  if (campo.fuente === 'marcas') {
+    const opciones = [...new Set([...(campo.opciones || []), ...(valor ? [valor] : [])])];
+    return (
+      <Campo
+        id={`encuesta-${campo.id}`}
+        etiqueta={campo.etiqueta}
+        opciones={[{ valor: '', texto: elige, deshabilitada: true }, ...opciones.map((o) => ({ valor: o, texto: o }))]}
+        value={valor || ''}
+        onChange={(e) => onCambiar(e.target.value)}
+        disabled={!opciones.length}
+        ayuda={!opciones.length ? 'No hay marcas disponibles por ahora. Puedes continuar sin elegir una.' : undefined}
+        error={error && <Texto>{error}</Texto>}
+      />
+    );
+  }
   // Las de opción se responden con un toque.
   if (campo.tipo === 'opciones') {
     return (
@@ -161,7 +177,7 @@ export function PaginaEncuesta({
   // Qué se pregunta en "Un poco sobre ti" se decide al abrir: no cambia a mitad.
   const [pedir] = useState(() => ({ nombre: !String(nombreCuenta).trim(), cumple: !inicial.cumpleanos }));
   const camposSobreTi = (sobreTi.campos || [])
-    .filter((c) => c.enEncuesta !== false && (c.id !== 'nombres' || pedir.nombre));
+    .filter((c) => preguntaVisible(c, respuestas, sobreTi.campos) && (c.id !== 'nombres' || pedir.nombre));
   // Cada gusto con solo las preguntas que el admin deja en la encuesta.
   const gustos = conjuntos.map((c) => ({ ...c, campos: (c.campos || []).filter((f) => f.enEncuesta !== false) }));
   const conSobreTi = camposSobreTi.length > 0 || pedir.cumple;
@@ -235,7 +251,10 @@ export function PaginaEncuesta({
 
   const seguirSobreTi = () => {
     const faltan = {};
-    camposSobreTi.forEach((c) => { if (c.requerido && !String(respuestas[c.id] || '').trim()) faltan[c.id] = 'Completa este dato para seguir.'; });
+    camposSobreTi.forEach((c) => {
+      if (c.fuente === 'marcas' && !c.opciones?.length) return;
+      if (c.requerido && !String(respuestas[c.id] || '').trim()) faltan[c.id] = 'Completa este dato para seguir.';
+    });
     setErrores(faltan);
     if (Object.keys(faltan).length) return;
     ir(2);
@@ -363,13 +382,13 @@ export function PaginaEncuesta({
               campo={c}
               valor={respuestas[c.id]}
               error={errores[c.id]}
-              onCambiar={(v) => { setRespuestas((r) => ({ ...r, [c.id]: v })); setErrores((x) => ({ ...x, [c.id]: undefined })); }}
+              onCambiar={(v) => { setRespuestas((r) => cambiarRespuestaEncuesta(r, c.id, v)); setErrores((x) => ({ ...x, [c.id]: undefined })); }}
             />
           ))}
           {pedir.cumple && (
             <CampoFecha
               id="encuesta-cumpleanos"
-              etiqueta="Tu cumpleaños"
+              etiqueta="Fecha de nacimiento"
               ayuda="Opcional."
               valor={cumpleanos}
               onCambiar={setCumpleanos}

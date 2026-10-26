@@ -5,6 +5,8 @@ import { useGlobalToast } from '../contexts/ToastContext';
 import { useConfirmar } from '../componentes/kit/Feedback';
 import { Gift, UserCircle, Users, CheckCircle, Heart, UserPlus, Plus, Trash2, ArrowLeft, AlertCircle } from 'lucide-react';
 import { getSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../services/encuestaConfig';
+import { getBrands } from '../services/brands';
+import { configConOrigenCompra, preguntaVisible, cambiarRespuestaEncuesta } from '../services/encuestaOrigen.mjs';
 import { registrarConversionPopup } from '../services/popups';
 import { volarMonedasGanadas } from '../utils/animations';
 import { useGiftCatalog } from '../hooks/useGiftCatalog';
@@ -79,8 +81,8 @@ const SubscriptionSurveyViejo = () => {
 
   useEffect(() => {
     const fetchConfig = async () => {
-      const { data } = await getSurveyConfig();
-      if (data) setConfig({ ...DEFAULT_SURVEY_CONFIG, ...data });
+      const [{ data }, marcas] = await Promise.all([getSurveyConfig(), getBrands()]);
+      setConfig(configConOrigenCompra({ ...DEFAULT_SURVEY_CONFIG, ...(data || {}) }, marcas.data || []));
       setConfigLoading(false);
     };
     fetchConfig();
@@ -173,7 +175,7 @@ const SubscriptionSurveyViejo = () => {
   };
 
   const goToNextStep = () => {
-    if (currentStep === 1 && !validateFields(config.basicDataPanel.fields, basicAnswers)) return;
+    if (currentStep === 1 && !validateFields(config.basicDataPanel.fields.filter((f) => preguntaVisible(f, basicAnswers, config.basicDataPanel.fields)), basicAnswers)) return;
 
     if (currentStep === 2) {
       const selectedKeys = Object.keys(ROLES_MAP).filter(key => selectedRoles[key]);
@@ -453,12 +455,12 @@ const SubscriptionSurveyViejo = () => {
               <h1 className={styles.title}>{config.basicDataPanel.title}</h1>
               <h2 className={styles.subtitle}>{config.basicDataPanel.subtitle}</h2>
               <div className={styles.form}>
-                {config.basicDataPanel.fields.map(f => (
+                {config.basicDataPanel.fields.filter((f) => preguntaVisible(f, basicAnswers, config.basicDataPanel.fields)).map(f => (
                   <div key={f.id} className={styles.fieldGroup}>
                     <label>{f.label} {f.required && '*'}</label>
-                    {f.type === 'text' && <input type="text" className={styles.input} value={basicAnswers[f.id] || ''} onChange={e => setBasicAnswers(p => ({...p, [f.id]: e.target.value}))} required={f.required} />}
+                    {f.type === 'text' && <input type="text" className={styles.input} value={basicAnswers[f.id] || ''} onChange={e => setBasicAnswers(p => cambiarRespuestaEncuesta(p, f.id, e.target.value))} required={f.required} />}
                     {f.type === 'select' && (
-                      <select className={styles.input} value={basicAnswers[f.id] || ''} onChange={e => setBasicAnswers(p => ({...p, [f.id]: e.target.value}))} required={f.required}>
+                      <select className={styles.input} value={basicAnswers[f.id] || ''} onChange={e => setBasicAnswers(p => cambiarRespuestaEncuesta(p, f.id, e.target.value))} required={f.required}>
                         <option value="">Seleccionar...</option>
                         {f.options?.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
                       </select>

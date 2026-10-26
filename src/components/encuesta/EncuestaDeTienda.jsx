@@ -6,6 +6,8 @@ import { useCart } from '../../contexts/CartContext';
 import { useGiftCatalog } from '../../hooks/useGiftCatalog';
 import useLoViejo from '../../hooks/useLoViejo';
 import { leerSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../../services/encuestaConfig';
+import { getBrands } from '../../services/brands';
+import { configConOrigenCompra } from '../../services/encuestaOrigen.mjs';
 import { registrarConversionPopup } from '../../services/popups';
 import { trackSurveyStep } from '../../services/analytics/tracker';
 import { uploadFile } from '../../services/firebase/storage';
@@ -71,9 +73,20 @@ export default function EncuestaDeTienda() {
   const [empezo, setEmpezo] = useState(false);
   const { recomendar, sugerenciasCampo } = useGiftCatalog({ activo: empezo });
 
+  const { data: marcas = [], isLoading: cargandoMarcas } = useQuery({
+    queryKey: ['brands'],
+    queryFn: async () => {
+      const { data, error } = await getBrands();
+      if (error) throw new Error(error);
+      return data || [];
+    },
+    staleTime: 10 * 60 * 1000,
+    retry: 1,
+  });
+
   const { config, conjuntos } = useMemo(
-    () => encuestaDesdeConfig({ ...DEFAULT_SURVEY_CONFIG, ...(configGuardada || {}) }, sugerenciasCampo),
-    [configGuardada, sugerenciasCampo],
+    () => encuestaDesdeConfig(configConOrigenCompra({ ...DEFAULT_SURVEY_CONFIG, ...(configGuardada || {}) }, marcas), sugerenciasCampo),
+    [configGuardada, marcas, sugerenciasCampo],
   );
 
   const previos = useMemo(() => (Array.isArray(userProfile?.giftRecipients) ? userProfile.giftRecipients : []), [userProfile?.giftRecipients]);
@@ -172,7 +185,7 @@ export default function EncuestaDeTienda() {
     setIdeasAgregadas((prev) => new Set([...prev, idea.id]));
   };
 
-  const cargando = loading || cargandoConfig || (tieneCuenta(user) && !perfilListo);
+  const cargando = loading || cargandoConfig || cargandoMarcas || (tieneCuenta(user) && !perfilListo);
 
   return (
     <>

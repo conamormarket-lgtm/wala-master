@@ -7,7 +7,6 @@ import { useGlobalToast } from '../../contexts/ToastContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useGiftCatalog } from '../../hooks/useGiftCatalog';
 import useLoViejo from '../../hooks/useLoViejo';
-import { respuestasDe } from '../../utils/giftRecommender.mjs';
 import { getUserSuggestedPackages } from '../../services/fechasImportantes';
 import { useFechasFestivas, useRecordatorioPersonal } from '../../services/fechasFestivas';
 import { proximasFestivas, hoyLocal, DIAS_ANTICIPACION, textoDiasAviso, RECORDATORIO_PERSONAL_DEFAULT } from '../../utils/fechasFestivas.mjs';
@@ -144,7 +143,6 @@ export default function FechasDeCuenta() {
       paquetes: cargandoCatalogo ? [] : paquetesRec.map(paqueteDe),
       ideas: crudas.map(ideaDe),
       ideasGenerales: crudas.length > 0 && crudas.every((i) => i.tipo === 'general'),
-      sinIdeas: respuestasDe(rec).length > 0,
       buscando: cargandoIdeas,
     };
   });

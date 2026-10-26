@@ -190,7 +190,7 @@ function PaqueteEquipo({ total, productos = [], quitados = 0, agregado = false, 
  *    necesitaOpciones }], quitados, agregado }] (los que armó el equipo; antes
  *    `paquete`, uno solo: se sigue aceptando)
  *  - ideas: props de IdeaRegalo · ideasGenerales: aún no sabemos qué le gusta
- *  - sinIdeas: tiene gustos pero no hay productos de eso · buscando: las ideas
+ *  - buscando: las ideas
  *    todavía se están armando ("Buscando ideas…")
  *  - id: la tarjeta queda en #persona-{id} (la agenda lleva ahí)
  *  - onEditar, onEliminar (pide confirmar en la tarjeta), onAgregarPaquete(idPaquete),
@@ -198,7 +198,7 @@ function PaqueteEquipo({ total, productos = [], quitados = 0, agregado = false, 
  *    lo que pide talla o color · urlTienda · hoy (para "En N días")
  */
 export function TarjetaPersonaRegalo({
-  id, nombre, relacion, foto, eventos = [], festivas = [], paquetes, paquete, ideas = [], ideasGenerales = false, sinIdeas = false, buscando = false,
+  id, nombre, relacion, foto, eventos = [], festivas = [], paquetes, paquete, ideas = [], ideasGenerales = false, buscando = false,
   onEditar, onEliminar, onAgregarPaquete, onAgregarIdea, onAgregarIdeas, onElegir, urlTienda = '/tienda', hoy,
 }) {
   const [confirmar, setConfirmar] = useState(false);
@@ -275,7 +275,7 @@ export function TarjetaPersonaRegalo({
         />
       ))}
 
-      <section className={s.ideas}>
+      {(buscando || ideas.length > 0) && <section className={s.ideas}>
         <h4><Gift aria-hidden="true" /> <Texto>{`Ideas de regalo para ${nombre}`}</Texto></h4>
         {ideasGenerales && ideas.length > 0 && (
           <p className={s.nota}>
@@ -286,16 +286,10 @@ export function TarjetaPersonaRegalo({
             )}
           </p>
         )}
-        {buscando ? <p className={s.nota} role="status"><Texto>Buscando ideas…</Texto></p> : ideas.length > 0 ? (
+        {buscando ? <p className={s.nota} role="status"><Texto>Buscando ideas…</Texto></p> : (
           <ul className={s.ideasLista}>
             {ideas.map((i) => <IdeaRegalo key={i.id || i.nombre} {...i} onAgregar={() => onAgregarIdea?.(i)} onElegir={onElegir && (() => onElegir(i))} />)}
           </ul>
-        ) : (
-          <p className={s.nota}>
-            <Texto>{sinIdeas
-              ? `Todavía no tenemos productos de lo que le gusta a ${nombre}. Preferimos no recomendarte algo que no le va.`
-              : `Cuéntanos qué le gusta (equipo, anime, personaje…) editando a ${nombre} y te recomendamos regalos a su medida.`}</Texto>
-          </p>
         )}
         {directas.length >= 2 && onAgregarIdeas && (
           <Boton variante="contorno" tamano="sm" bloque icono={<Plus aria-hidden="true" />} onClick={onAgregarIdeas}>
@@ -306,7 +300,7 @@ export function TarjetaPersonaRegalo({
           <p className={s.nota}><Texto>{conTalla === 1 ? 'Una idea pide elegir talla o color: toca «Elegir».' : `${conTalla} ideas piden elegir talla o color: toca «Elegir».`}</Texto></p>
         )}
         <Enlace to={urlTienda} className={s.masRegalos}><Texto>Ver más regalos en la tienda</Texto> <ArrowRight aria-hidden="true" /></Enlace>
-      </section>
+      </section>}
     </article>
   );
 }

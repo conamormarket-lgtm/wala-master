@@ -3,6 +3,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-rea
 import { Campo, Casilla } from './Formulario';
 import { PanelFlotante } from './PanelFlotante';
 import { useTexto } from './Traduccion';
+import { cambiarDiaMesEvento } from '../../utils/fechaEvento.mjs';
 import s from './Fecha.module.css';
 
 /*
@@ -217,20 +218,21 @@ export function Calendario({ valor, onElegir, min, max, sinAnio = false, vistaIn
  *  - valor ('AAAA-MM-DD'; año 0000 = sin año) · onCambiar(iso)
  *  - min, max · vistaInicial ('anios' para cumpleaños)
  *  - anioOpcional: casilla "No sé el año" (fechas de otras personas)
+ *  - soloDiaMes: no muestra ni pide año; conserva el que ya estuviera guardado
  *  - disabled: mientras se guarda
  */
 export function CampoFecha({
-  etiqueta, ayuda, error, placeholder = 'Elige una fecha', valor = '', onCambiar, min, max, vistaInicial = 'dias', anioOpcional = false, id, disabled = false,
+  etiqueta, ayuda, error, placeholder = 'Elige una fecha', valor = '', onCambiar, min, max, vistaInicial = 'dias', anioOpcional = false, soloDiaMes = false, id, disabled = false,
 }) {
   const disparador = useRef(null);
   const [abierto, setAbierto] = useState(false);
   const [clave, setClave] = useState(0);
   // "No sé el año": sale de la fecha (año 0000) o, sin fecha todavía, de la casilla.
   const [sinAnioSuelto, setSinAnioSuelto] = useState(false);
-  const sinAnio = anioOpcional && (valor ? String(valor).startsWith('0000') : sinAnioSuelto);
-  const texto = useTexto(fechaEnTexto(valor) || undefined);
+  const sinAnio = soloDiaMes || (anioOpcional && (valor ? String(valor).startsWith('0000') : sinAnioSuelto));
+  const texto = useTexto(fechaEnTexto(soloDiaMes && valor ? `0000${valor.slice(4)}` : valor) || undefined);
   const marcador = useTexto(placeholder);
-  const elegir = (iso) => { onCambiar?.(iso); setAbierto(false); window.setTimeout(() => disparador.current?.focus({ preventScroll: true }), 0); };
+  const elegir = (iso) => { onCambiar?.(soloDiaMes ? cambiarDiaMesEvento(iso, valor) : iso); setAbierto(false); window.setTimeout(() => disparador.current?.focus({ preventScroll: true }), 0); };
   const alternarAnio = (sin) => {
     const f = partir(valor);
     setSinAnioSuelto(sin);
@@ -238,7 +240,7 @@ export function CampoFecha({
     else if (f) onCambiar?.(aIso(new Date().getFullYear(), f.m, f.d));
     setClave((k) => k + 1);
   };
-  const casilla = anioOpcional && <Casilla etiqueta="No sé el año" activo={sinAnio} onChange={alternarAnio} />;
+  const casilla = anioOpcional && !soloDiaMes && <Casilla etiqueta="No sé el año" activo={sinAnio} onChange={alternarAnio} />;
   return (
     <>
       <Campo

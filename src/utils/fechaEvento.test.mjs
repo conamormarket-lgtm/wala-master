@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { armarFechaEvento, partesFechaEvento, textoFechaEvento, proximaOcurrencia, ANIO_DESCONOCIDO } from './fechaEvento.mjs';
+import { armarFechaEvento, partesFechaEvento, textoFechaEvento, proximaOcurrencia, cambiarDiaMesEvento, ANIO_DESCONOCIDO } from './fechaEvento.mjs';
 import { edadDe } from './giftRecommender.mjs';
 
 test('armar: año opcional y fechas imposibles', () => {
@@ -30,4 +30,14 @@ test('próxima ocurrencia (para entregas): nunca el año de nacimiento', () => {
 test('sin año no hay edad (y no se toma como un anciano de 2026 años)', () => {
   assert.equal(edadDe({ events: [{ type: 'Cumpleaños', date: '0000-07-27' }] }, new Date(2026, 9, 6)), null);
   assert.equal(edadDe({ events: [{ type: 'Cumpleaños', date: '2018-07-27' }] }, new Date(2026, 9, 6)), 8);
+});
+
+test('editar aniversarios sin pedir año conserva fechas históricas válidas', () => {
+  assert.equal(cambiarDiaMesEvento('0000-04-22'), '0000-04-22');
+  assert.equal(cambiarDiaMesEvento('0000-04-22', '2016-04-20'), '2016-04-22');
+  assert.equal(cambiarDiaMesEvento('0000-02-29', '2024-06-10'), '2024-02-29');
+  assert.equal(cambiarDiaMesEvento('0000-02-29', '2023-06-10'), '0000-02-29');
+  assert.equal(cambiarDiaMesEvento('0000-04-31', '2016-04-20'), '');
+  assert.equal(cambiarDiaMesEvento('invalida', '2016-04-20'), '');
+  assert.equal(proximaOcurrencia(cambiarDiaMesEvento('0000-04-22'), '2026-10-26'), '2027-04-22');
 });
