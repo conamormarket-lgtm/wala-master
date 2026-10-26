@@ -14,7 +14,7 @@ export const limitar = (valor, min, max) => Math.min(max, Math.max(min, Number(v
 
 export function seccionesYoryo(datos, config) {
   if (config.tecnica !== 'laser') {
-    const secciones = seccionesPlantillaYoryo(datos);
+    const secciones = seccionesPlantillaYoryo(datos, config);
     if (secciones) return secciones;
   }
   const soloTexto = datos.plantilla === 'nombre' && !datos.equipo;
@@ -38,10 +38,10 @@ export function ajusteSeccion(datos, seccion) {
   const cambio = datos.distribucion?.elementos?.[seccion.id] || {};
   return {
     ...seccion,
-    w: limitar(cambio.w ?? seccion.w, .01, .96),
-    h: limitar(cambio.h ?? seccion.h, .01, .96),
-    x: limitar(cambio.x ?? seccion.x, .02, .98),
-    y: limitar(cambio.y ?? seccion.y, .02, .98),
+    w: limitar(cambio.w ?? seccion.w, .01, 1 - 2 * (seccion.margen ?? .02)),
+    h: limitar(cambio.h ?? seccion.h, .01, 1 - 2 * (seccion.margen ?? .02)),
+    x: limitar(cambio.x ?? seccion.x, seccion.margen ?? .02, 1 - (seccion.margen ?? .02)),
+    y: limitar(cambio.y ?? seccion.y, seccion.margen ?? .02, 1 - (seccion.margen ?? .02)),
     escala: limitar(cambio.escala ?? 100, 40, 160),
     fuente: FUENTES_YORYO.some((f) => f.id === cambio.fuente) ? cambio.fuente : seccion.fuente,
     mayusculas: cambio.mayusculas ?? seccion.mayusculas,
@@ -69,10 +69,10 @@ export function cambiarSeccion(datos, id, cambio) {
   return { ...datos, distribucion: { ...distribucion, elementos: { ...distribucion.elementos, [id]: { ...distribucion.elementos[id], ...cambio } } } };
 }
 
-export function cajaSeccion(ajuste, ancho = ajuste.w, alto = ajuste.h) {
-  const w = limitar(ancho, .001, .96), h = limitar(alto, .001, .96);
-  const x = limitar(ajuste.x, .02 + w / 2, .98 - w / 2);
-  const y = limitar(ajuste.y, .02 + h / 2, .98 - h / 2);
+export function cajaSeccion(ajuste, ancho = ajuste.w, alto = ajuste.h, margen = .02) {
+  const w = limitar(ancho, .001, 1 - 2 * margen), h = limitar(alto, .001, 1 - 2 * margen);
+  const x = limitar(ajuste.x, margen + w / 2, 1 - margen - w / 2);
+  const y = limitar(ajuste.y, margen + h / 2, 1 - margen - h / 2);
   return { x: x - w / 2, y: y - h / 2, w, h, centroX: x, centroY: y };
 }
 

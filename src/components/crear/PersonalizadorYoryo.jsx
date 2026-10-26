@@ -28,7 +28,7 @@ import { MarcoEstudio, EscenaEstudio } from '../../componentes/kit/paginas/Marco
 import { CompraEstudio } from '../../componentes/kit/piezas/CompraEstudio';
 import { EstadoEdicion, PasoEstudio } from '../../componentes/kit/piezas/Estudio';
 import { Texto } from '../../componentes/kit/Traduccion';
-import { PLANTILLAS_CUADRO } from '../../utils/plantillasYoryo.mjs';
+import { PLANTILLAS_IMPRESION_YORYO, adaptarPlantillaYoryo } from '../../utils/plantillasYoryo.mjs';
 import { vectorLaserDeEquipo } from '../../utils/vectoresLaserYoryo.mjs';
 import estudio from './EstudioDeTienda.module.css';
 import s from './PersonalizadorYoryo.module.css';
@@ -86,16 +86,17 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
   const miGuardadoRef = useRef(!item && originales.some((d) => d.estado === 'borrador') ? mio : '');
   const firmaCarritoRef = useRef(item ? JSON.stringify(item.customization) : '');
   const [datos, setDatos, historial] = useHistorialYoryo(() => {
+    const adaptar = (lista) => lista.map((d, i) => adaptarPlantillaYoryo(d, productos[i].personalizacionYoryo));
     if (user && !originales.length) {
-      try { const pendiente = JSON.parse(sessionStorage.getItem(`wala:yoryo:login:${main.id}`) || 'null'); if (Array.isArray(pendiente) && pendiente.length === productos.length) return pendiente; } catch {}
+      try { const pendiente = JSON.parse(sessionStorage.getItem(`wala:yoryo:login:${main.id}`) || 'null'); if (Array.isArray(pendiente) && pendiente.length === productos.length) return adaptar(pendiente); } catch {}
     }
     const guardado = nuevo ? null : leer(clave);
-    if (Array.isArray(guardado) && guardado.length === productos.length) return guardado;
+    if (Array.isArray(guardado) && guardado.length === productos.length) return adaptar(guardado);
     return productos.map((_, i) => {
       const anterior = originales[i]?.datosYoryo;
-      const inicial = { ...datosYoryoVacios(), ...(!anterior && productos[i].personalizacionYoryo.nombre === 'Cuadro' ? { plantillaVisual: 'dorado' } : {}), ...(anterior || {}) };
+      const inicial = { ...datosYoryoVacios(), ...(!anterior && productos[i].personalizacionYoryo.tecnica === 'impresion' ? { plantillaVisual: 'dorado', formatoPlantilla: 2 } : {}), ...(anterior || {}) };
       if (anterior && !anterior.distribucion) delete inicial.distribucion;
-      return inicial;
+      return adaptarPlantillaYoryo(inicial, productos[i].personalizacionYoryo);
     });
   });
   const datosRef = useRef(datos);
@@ -276,8 +277,8 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
   </>;
 
   const elegirPlantilla = (visual) => {
-    const plantilla = PLANTILLAS_CUADRO.find((p) => p.id === visual);
-    setDatos((prev) => prev.map((d, i) => i === indice ? { ...d, plantillaVisual: visual, plantilla: plantilla?.tipo || 'nombre',
+    const plantilla = PLANTILLAS_IMPRESION_YORYO.find((p) => p.id === visual);
+    setDatos((prev) => prev.map((d, i) => i === indice ? { ...d, plantillaVisual: visual, formatoPlantilla: 2, plantilla: plantilla?.tipo || 'nombre',
       ...(visual === 'floral' && !d.titulo ? { titulo: 'Mi lugar favorito es', acento: 'Contigo.' } : {}),
       ...(visual === 'deportivo' && !d.equipo ? { equipo: 'Alianza Lima' } : {}), distribucion: distribucionRecomendada() } : d));
     setSeccion('nombre'); setError('');
@@ -304,7 +305,7 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
     </EscenaEstudio>}
     panel={<div className={s.campos}>
       <PasoEstudio numero={1} titulo="Elige tu diseño" hecho={Boolean(actual.nombre)}>
-        {!laser && config.nombre === 'Cuadro' ? <Campo etiqueta="Plantilla para el cuadro" disabled={bloqueado} value={actual.plantillaVisual || ''} opciones={[{ valor: '', texto: 'Diseño libre' }, ...PLANTILLAS_CUADRO.map((p) => ({ valor: p.id, texto: p.nombre }))]} onChange={(e) => elegirPlantilla(e.target.value)} />
+        {!laser ? <Campo etiqueta={`Plantilla para el ${config.nombre.toLowerCase()}`} disabled={bloqueado} value={actual.plantillaVisual || ''} opciones={[{ valor: '', texto: 'Diseño libre' }, ...PLANTILLAS_IMPRESION_YORYO.map((p) => ({ valor: p.id, texto: p.nombre }))]} onChange={(e) => elegirPlantilla(e.target.value)} />
           : <ElegirUno etiqueta="Elige una plantilla" opciones={plantillas} valor={plantillas[claves.indexOf(actual.plantilla)] || plantillas[0]} onCambiar={(v) => {
             if (bloqueado) return; const plantilla = claves[plantillas.indexOf(v)] || 'nombre';
             setDatos((prev) => prev.map((d, i) => i === indice ? { ...d, plantilla, ...(!laser ? { plantillaVisual: plantilla === 'equipo' ? 'deportivo' : '' } : {}), ...(esDistribucionEditable(d) && plantilla !== d.plantilla && { distribucion: distribucionRecomendada() }) } : d)); setError(''); setSeccion(laser ? ['escudo', 'iniciales'].includes(plantilla) ? 'escudo' : 'nombre' : 'foto');

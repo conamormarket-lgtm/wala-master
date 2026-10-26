@@ -47,6 +47,13 @@ test('el zoom y el recorrido de la vista no permiten dejar el producto fuera de 
   assert.equal(limitarCamaraYoryo({ z: 8 }, 400, 600).z, 3);
 });
 
+test('una foto a sangre llega al borde sin deformarse ni cambiar de tamaño al soltar el gesto', () => {
+  const foto = { x: 0, y: 0, w: 1, h: .72, centroX: .5, centroY: .36, margen: 0 };
+  const resultado = transformarSeccionYoryo(foto, { factor: 1.5 });
+  assert.equal(resultado.w, 1); assert.equal(resultado.h, .72); assert.equal(resultado.escala, 100);
+  assert.equal(resultado.x, 0); assert.equal(resultado.y, 0);
+});
+
 test('el zoom conserva el punto bajo el cursor y volver al 100% centra el producto', () => {
   const camara = { z: 1.5, x: 20, y: -30 }, punto = { x: 60, y: 80 };
   const ampliada = zoomCamaraYoryo(camara, 1.2, 400, 600, punto);

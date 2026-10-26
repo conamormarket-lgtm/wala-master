@@ -7,7 +7,7 @@ import { componerArteYoryo } from './arteYoryo.mjs';
 import { datosYoryoVacios } from '../../utils/yoryoPersonalizacion.mjs';
 import { FUENTES_YORYO, areaVistaYoryo, cambiarSeccion, distribucionRecomendada, fijarDistribucion, firmaDeDisenoYoryo, normalizarFirmaYoryo, seccionesYoryo, vistaYoryo } from '../../utils/distribucionYoryo.mjs';
 import { serializarTrazos } from './trazosYoryo.mjs';
-import { PLANTILLAS_CUADRO, plantillaImpresionYoryo } from '../../utils/plantillasYoryo.mjs';
+import { PLANTILLAS_CUADRO, plantillaImpresionYoryo, encajePlantillaYoryo, adaptarPlantillaYoryo, EQUIPOS_YORYO } from '../../utils/plantillasYoryo.mjs';
 
 const fuentes = {};
 for (const f of FUENTES_YORYO) {
@@ -17,6 +17,45 @@ for (const f of FUENTES_YORYO) {
 const config = { tecnica: 'laser', proporcion: 1.25, vista: { x: .32, y: .27, w: .29, h: .30 }, produccion: { anchoMm: 80, altoMm: 100, medidasConfirmadas: true } };
 const datos = { ...datosYoryoVacios(), plantilla: 'escudo', nombre: 'Daniel', frase: 'Blanquiazul\nde corazón', vector: { svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 140"><path d="M0 0H100V140H0Z"/></svg>', viewBox: [0, 0, 100, 140] } };
 const componer = (d, c = config) => componerArteYoryo({ datos: d, config: c, fuentes: { escudo: fuentes.Fuerte, nombre: fuentes[d.distribucion?.elementos?.nombre?.fuente || 'Elegante'], frase: fuentes.Manuscrita, fecha: fuentes.Clásica }, fuente: fuentes.Clásica });
+
+test('cuadro y mousepad encajan las plantillas con una sola escala, sin estirar escudos ni decoración', () => {
+  for (const proporcion of [25 / 31, 19.5 / 23.5]) for (const [equipo] of EQUIPOS_YORYO) {
+    const d = { ...datosYoryoVacios(), plantilla: 'equipo', plantillaVisual: 'deportivo', formatoPlantilla: 2, equipo, nombre: 'Daniel' }, c = { tecnica: 'impresion', proporcion };
+    const medidas = { 'Alianza Lima': [1536, 1024], Universitario: [1527, 1030], 'Sporting Cristal': [1525, 1031], 'Sport Boys': [1536, 1024], Barcelona: [1551, 1014], 'Real Madrid': [1526, 1031] }[equipo];
+    const e = encajePlantillaYoryo(d, c);
+    assert.ok(Math.abs(e.w / medidas[0] - e.h * proporcion / medidas[1]) < 1e-10);
+    assert.equal(e.preserveAspectRatio, 'xMidYMid meet');
+    assert.ok(e.x >= 0 && e.y >= 0 && e.x + e.w <= 1.00001 && e.y + e.h <= 1.00001);
+    const arte = componerArteYoryo({ datos: d, config: c, fuente: fuentes.Clásica, plantilla: { superposicion: 'logo.png' } });
+    assert.match(arte.superposicionSvg, /preserveAspectRatio="xMidYMid meet"/);
+    assert.doesNotMatch(arte.superposicionSvg, /preserveAspectRatio="none"/);
+    const foto = arte.elementos.find((s) => s.id === 'foto'); assert.ok(foto.x + foto.w <= 1.00001);
+    assert.ok(foto.x >= .51); // La foto permanece a la derecha del escudo.
+  }
+});
+
+test('las fotos cubren las ventanas transparentes y los textos mantienen su margen al adaptar la plantilla', () => {
+  const c = { tecnica: 'impresion', proporcion: 25 / 31 };
+  for (const p of PLANTILLAS_CUADRO) {
+    const d = { ...datosYoryoVacios(), plantilla: p.tipo, plantillaVisual: p.id, formatoPlantilla: 2, equipo: 'Alianza Lima', nombre: 'Daniel' };
+    const { elementos } = componer(d, c);
+    for (const e of elementos) { const margen = e.margen; assert.ok(e.x >= margen - 1e-8 && e.y >= margen - 1e-8); assert.ok(e.x + e.w <= 1 - margen + 1e-8 && e.y + e.h <= 1 - margen + 1e-8); }
+    if (p.id === 'dorado') { const foto = elementos.find((s) => s.id === 'foto'); assert.equal(foto.x, 0); assert.equal(foto.w, 1); assert.ok(foto.y > 0); }
+    if (p.id === 'floral') { const foto = elementos.find((s) => s.id === 'foto'); assert.ok(foto.y > 0); assert.equal(foto.x, 0); assert.ok(foto.h < 1); }
+  }
+});
+
+test('un borrador anterior se adapta una sola vez, preserva contenido y tamaños, y se reabre igual tras guardar', () => {
+  const c = { tecnica: 'impresion', proporcion: 25 / 31 };
+  const viejo = { ...datosYoryoVacios(), plantilla: 'collage', plantillaVisual: 'botanico', nombre: 'Ana y Luis', fotos: [{ url: 'foto-original' }], distribucion: { version: 3, elementos: { nombre: { x: .55, y: .85, escala: 73, fuente: 'Manuscrita' }, foto2: { x: .28, y: .625, w: .42, h: .36, escala: 85 } } } };
+  const antes = JSON.stringify(viejo), nuevo = adaptarPlantillaYoryo(viejo, c);
+  assert.equal(JSON.stringify(viejo), antes); assert.equal(nuevo.formatoPlantilla, 2); assert.equal(nuevo.nombre, viejo.nombre); assert.equal(nuevo.fotos, viejo.fotos);
+  assert.equal(nuevo.distribucion.elementos.nombre.escala, 73); assert.equal(nuevo.distribucion.elementos.nombre.fuente, 'Manuscrita'); assert.equal(nuevo.distribucion.elementos.foto2.escala, 85);
+  assert.equal(adaptarPlantillaYoryo(nuevo, c), nuevo);
+  const guardado = fijarDistribucion(nuevo, c), reabierto = adaptarPlantillaYoryo(JSON.parse(JSON.stringify(guardado)), c);
+  assert.equal(componer(guardado, c).svg, componer(reabierto, c).svg);
+  assert.equal(adaptarPlantillaYoryo(datos, config), datos);
+});
 
 test('las plantillas imprimen fondo, fotos, decoración y textos en ese orden', () => {
   const d = { ...datosYoryoVacios(), plantilla: 'equipo', plantillaVisual: 'deportivo', equipo: 'Alianza Lima', nombre: 'Daniel', frase: 'Blanquiazul', dedicatoria: 'Con amor' };

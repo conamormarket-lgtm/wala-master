@@ -1,6 +1,7 @@
 import { ajusteSeccion, cajaSeccion, limitar, seccionesYoryo } from '../../utils/distribucionYoryo.mjs';
 import { medidasConfirmadas } from '../../utils/yoryoPersonalizacion.mjs';
 import { serializarTrazos } from './trazosYoryo.mjs';
+import { encajePlantillaYoryo } from '../../utils/plantillasYoryo.mjs';
 
 const escape = (s) => String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
 const textoLimpio = (s) => String(s || '').replace(/[^\S\n]+/g, ' ').trim();
@@ -55,23 +56,26 @@ export function componerEditableYoryo({ datos, config, fuente, fuentes = {}, fot
   const laser = config.tecnica === 'laser';
   const equipo = datos.plantilla === 'equipo';
   const tinta = !laser && equipo ? '#FFFFFF' : laser ? '#000000' : '#26342B';
-  const fondo = laser ? '' : equipo ? datos.equipo === 'Universitario' ? '#801B22' : '#14294A' : '#F6EFE5';
+  const fondo = laser ? '' : equipo ? datos.equipo === 'Universitario' ? '#801B22' : '#14294A' : datos.formatoPlantilla === 2 && datos.plantillaVisual === 'dorado' ? '#171717' : '#F6EFE5';
   let contenido = fondo ? `<rect width="${w}" height="${h}" fill="${fondo}"/>` : '';
-  const imagenCompleta = (url) => url ? `<image href="${escape(url)}" width="${w}" height="${h}" preserveAspectRatio="none"/>` : '';
-  contenido += imagenCompleta(plantilla.fondo);
+  const encaje = datos.formatoPlantilla === 2 ? encajePlantillaYoryo(datos, config).preserveAspectRatio : 'none';
+  const imagenCompleta = (url, ajuste = encaje) => url ? `<image href="${escape(url)}" width="${w}" height="${h}" preserveAspectRatio="${ajuste}"/>` : '';
+  contenido += imagenCompleta(plantilla.fondo, datos.formatoPlantilla === 2 ? 'xMidYMid slice' : encaje);
   const baseSvg = contenido, superposicionSvg = imagenCompleta(plantilla.superposicion);
   let decoracionPendiente = superposicionSvg;
   const elementos = [];
   const registrar = (seccion, caja, svg) => {
     contenido += `<g data-yoryo-elemento="${seccion.id}" transform="translate(${caja.x * w} ${caja.y * h})">${svg}</g>`;
-    elementos.push({ id: seccion.id, nombre: seccion.nombre, orden: seccion.orden || 3, ...caja, fragmento: svg, anchoSvg: caja.w * w, altoSvg: caja.h * h });
+    elementos.push({ id: seccion.id, nombre: seccion.nombre, orden: seccion.orden || 3, margen: seccion.margen ?? .02, ...caja, fragmento: svg, anchoSvg: caja.w * w, altoSvg: caja.h * h });
   };
   for (const seccion of seccionesYoryo(datos, config)) {
     if (seccion.indiceFoto === undefined && decoracionPendiente) { contenido += decoracionPendiente; decoracionPendiente = ''; }
     const a = ajusteSeccion(datos, seccion);
-    const maxW = limitar(a.w * a.escala / 100, .01, .96), maxH = limitar(a.h * a.escala / 100, .01, .96);
+    const margen = a.margen ?? .02, limite = 1 - 2 * margen;
+    const factor = margen === 0 ? Math.min(a.escala / 100, limite / a.w, limite / a.h) : a.escala / 100;
+    const maxW = limitar(a.w * factor, .01, limite), maxH = limitar(a.h * factor, .01, limite);
     if (a.id === 'foto' || a.indiceFoto !== undefined) {
-      const caja = cajaSeccion(a, maxW, maxH), x = 0, y = 0, ancho = caja.w * w, alto = caja.h * h;
+      const caja = cajaSeccion(a, maxW, maxH, margen), x = 0, y = 0, ancho = caja.w * w, alto = caja.h * h;
       const separacion = 12;
       const svg = a.indiceFoto !== undefined ? foto(fotos[a.indiceFoto], x, y, ancho, alto, a.id, datos.fotos?.[a.indiceFoto]?.encaje) : datos.plantilla === 'collage'
         ? foto(fotos[0], x, y, (ancho - separacion) / 2, (alto - separacion) / 2, 'foto0')
