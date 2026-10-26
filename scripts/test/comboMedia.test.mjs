@@ -100,3 +100,34 @@ test('la ficha conserva una portada real y sus fotos adicionales', () => {
   assert.deepEqual(ficha.fotos.combo.producto, ['/detalle.png']);
   assert.doesNotMatch(JSON.stringify(ficha.fotos), /placeholder/);
 });
+
+test('mientras se leen las prendas no se muestra ninguna foto antigua del combo', () => {
+  const props = tarjetaDesdeProducto(combo, { piezasCargando: true });
+  assert.equal(props.piezas.length, 2);
+  assert.ok(props.piezas.every((p) => !p.imagen));
+  const html = render(TarjetaProducto, props);
+  assert.match(html, /data-componente="FotosCombo"/);
+  assert.doesNotMatch(html, /ella-antigua.png|\/el.png/);
+});
+
+test('las prendas llegan por separado sin usar la foto antigua de la que todavía carga', () => {
+  const props = tarjetaDesdeProducto(combo, { piezasCargando: true, subproductos: {
+    ella: { id: 'ella', mainImage: '/ella-actual.png' },
+  } });
+  const html = render(TarjetaProducto, props);
+  assert.match(html, /ella-actual.png/);
+  assert.doesNotMatch(html, /ella-antigua.png|\/el.png/);
+});
+
+test('al terminar la carga se muestran las fotos actuales y se permite respaldo si alguna lectura falló', () => {
+  const props = tarjetaDesdeProducto(combo, { piezasCargando: false, subproductos: {
+    ella: { id: 'ella', mainImage: '/ella-actual.png' },
+    el: { id: 'el', mainImage: '/el-actual.png' },
+  } });
+  const html = render(TarjetaProducto, props);
+  assert.match(html, /ella-actual.png/);
+  assert.match(html, /el-actual.png/);
+  assert.doesNotMatch(html, /ella-antigua.png|src="\/el.png"/);
+  const respaldo = tarjetaDesdeProducto(combo, { piezasCargando: false });
+  assert.equal(respaldo.piezas[0].imagen, '/ella-antigua.png');
+});

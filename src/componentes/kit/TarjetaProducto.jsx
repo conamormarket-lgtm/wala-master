@@ -8,7 +8,7 @@ import { FotoProducto } from './piezas/FotoProducto';
 import { FotosCombo } from './piezas/FotosCombo';
 import { LogoMarca } from './piezas/LogoMarca';
 import { iniciales } from './piezas/Avatar';
-import { EsqueletoProducto } from './Esqueletos';
+import { EsqueletoProducto, Hueso } from './Esqueletos';
 import { tarjetaDesdeProducto } from './adaptadores';
 import { fuentesPorFetch, siFallaDeVerdad, urlDeFondo } from '../../components/common/OptimizedImage/OptimizedImage';
 import s from './TarjetaProducto.module.css';
@@ -166,6 +166,7 @@ export default function TarjetaProducto({
   marca,
   stock,
   piezas = [],
+  piezasCargando = false,
   inclinar = true,
   url = '#producto',
   accion = 'agregar',
@@ -293,7 +294,11 @@ export default function TarjetaProducto({
           {imagen && <FotoTarjeta src={imagen} srcSet={srcSet} sizes={sizes} recorte={recorte} respaldo={respaldo} prioridad={prioridad} encajar={esCombo} className={s.img} />}
           {imagen && imagenHover && <FotoTarjeta src={imagenHover} srcSet={srcSetHover} sizes={sizes} recorte={recorteHover} className={`${s.img} ${s.imgHover}`} />}
           {collage.length > 0 && (
-            <FotosCombo imagenes={collage.map((pz) => pz.imagen)} vertical />
+            <FotosCombo
+              imagenes={collage.map((pz) => pz.imagen)}
+              respaldo={piezasCargando ? <Hueso forma="bloque" ancho="100%" alto="100%" /> : undefined}
+              vertical
+            />
           )}
         </Enlace>
         <span className={s.barrido} aria-hidden="true" />
@@ -320,7 +325,7 @@ export default function TarjetaProducto({
                 <ul className={s.incluyeFotos}>
                   {piezas.slice(0, 4).map((pz, i) => (
                     <li key={`${i}-${pz.nombre || ''}`}>
-                      <FotoProducto className={s.incluyeFoto} src={pz.imagen} respaldo={iniciales(pz.nombre, 1) || '?'} />
+                      <FotoProducto className={s.incluyeFoto} src={pz.imagen} respaldo={piezasCargando ? <Hueso forma="bloque" ancho="100%" alto="100%" /> : iniciales(pz.nombre, 1) || '?'} />
                     </li>
                   ))}
                   {piezas.length > 4 && <li><span className={`${s.incluyeFoto} ${s.incluyeMas}`}>+{piezas.length - 4}</span></li>}
@@ -331,7 +336,7 @@ export default function TarjetaProducto({
               <ul>
                 {piezas.map((pz, i) => (
                   <li key={`${i}-${pz.nombre || ''}`}>
-                    <FotoProducto className={s.incluyeFoto} src={pz.imagen} respaldo={iniciales(pz.nombre, 1) || '?'} />
+                    <FotoProducto className={s.incluyeFoto} src={pz.imagen} respaldo={piezasCargando ? <Hueso forma="bloque" ancho="100%" alto="100%" /> : iniciales(pz.nombre, 1) || '?'} />
                     <span className={s.incluyeNombre}><Texto>{pz.nombre}</Texto></span>
                   </li>
                 ))}

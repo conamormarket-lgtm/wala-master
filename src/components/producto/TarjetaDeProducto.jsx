@@ -67,7 +67,7 @@ function TarjetaNueva({
   // null: la hoja nunca se abrió (no se monta ni baja su código).
   const [hoja, setHoja] = useState(null);
   const [piezasVisibles, setPiezasVisibles] = useState(isAboveFold);
-  const { porId: subproductos } = usePiezasDelCombo(product, piezasVisibles);
+  const { porId: subproductos, terminado: piezasPedidas } = usePiezasDelCombo(product, piezasVisibles);
 
   const { data: marcas } = useQuery({
     queryKey: ['brands'],
@@ -105,6 +105,7 @@ function TarjetaNueva({
     imagen: esCombo ? (portadaDeCombo(product) || undefined) : foto.src,
     catalogo: { marcas: marcas || [], marcaActual: currentBrandId },
     subproductos,
+    piezasCargando: !piezasVisibles || !piezasPedidas,
   });
 
   const deseado = isFavorite(product.id);

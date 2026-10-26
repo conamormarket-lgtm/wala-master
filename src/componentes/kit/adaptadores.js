@@ -108,7 +108,7 @@ export function piezaDeCombo(it, sub) {
   };
 }
 
-export function tarjetaDesdeProducto(p, { imagen, catalogo = {}, subproductos = {} } = {}) {
+export function tarjetaDesdeProducto(p, { imagen, catalogo = {}, subproductos = {}, piezasCargando = false } = {}) {
   const vs = variantesDe(p);
   const { marcas = [], categorias = [], marcaActual = null } = catalogo;
   const m = !marcaActual && p.brandId ? marcas.find((x) => x.id === p.brandId) : null;
@@ -133,7 +133,13 @@ export function tarjetaDesdeProducto(p, { imagen, catalogo = {}, subproductos = 
     stock: typeof p.inStock === 'number' ? p.inStock : undefined,
     nuevo: esNuevo(p),
     marca: m?.logoUrl ? { nombre: m.name, logo: m.logoUrl } : undefined,
-    piezas: p.isComboProduct ? (p.comboItems || []).map((it) => piezaDeCombo(it, subproductos[it.productId])) : [],
+    piezas: p.isComboProduct ? (p.comboItems || []).map((it) => {
+      const sub = subproductos[it.productId];
+      const pieza = piezaDeCombo(it, sub);
+      // La copia del combo puede ser antigua: solo es respaldo si la lectura falla.
+      return piezasCargando && !sub ? { ...pieza, imagen: undefined } : pieza;
+    }) : [],
+    piezasCargando,
     // Con una sola variante (la "Principal" que crea el admin por defecto) no
     // hay colores que mostrar.
     colores: vs.length > 1 ? vs.filter((v) => v.colorHex).map((v) => v.colorHex) : [],
