@@ -52,15 +52,15 @@ function textoEnCaja(texto, fuente, ancho, alto, multilinea) {
 const foto = (url, x, y, w, h, id, encaje) => !url ? `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#DED9D0"/>` : `<defs><clipPath id="${id}"><rect x="${x}" y="${y}" width="${w}" height="${h}"/></clipPath></defs><image href="${escape(url)}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="${encaje === 'completa' ? 'xMidYMid meet' : 'xMidYMid slice'}" clip-path="url(#${id})"/>`;
 
 export function componerEditableYoryo({ datos, config, fuente, fuentes = {}, fotos = [], plantilla = {} }) {
-  const w = 1000, h = Math.round(w * config.proporcion);
+  const w = 1000, h = datos.formatoPlantilla === 3 ? w * config.proporcion : Math.round(w * config.proporcion);
   const laser = config.tecnica === 'laser';
   const equipo = datos.plantilla === 'equipo';
   const tinta = !laser && equipo ? '#FFFFFF' : laser ? '#000000' : '#26342B';
-  const fondo = laser ? '' : equipo ? datos.equipo === 'Universitario' ? '#801B22' : '#14294A' : datos.formatoPlantilla === 2 && datos.plantillaVisual === 'dorado' ? '#171717' : '#F6EFE5';
+  const fondo = laser ? '' : equipo ? datos.equipo === 'Universitario' ? '#801B22' : '#14294A' : datos.formatoPlantilla >= 2 && datos.plantillaVisual === 'dorado' ? '#171717' : '#F6EFE5';
   let contenido = fondo ? `<rect width="${w}" height="${h}" fill="${fondo}"/>` : '';
-  const encaje = datos.formatoPlantilla === 2 ? encajePlantillaYoryo(datos, config).preserveAspectRatio : 'none';
+  const encaje = datos.formatoPlantilla >= 2 ? encajePlantillaYoryo(datos, config).preserveAspectRatio : 'none';
   const imagenCompleta = (url, ajuste = encaje) => url ? `<image href="${escape(url)}" width="${w}" height="${h}" preserveAspectRatio="${ajuste}"/>` : '';
-  contenido += imagenCompleta(plantilla.fondo, datos.formatoPlantilla === 2 ? 'xMidYMid slice' : encaje);
+  contenido += imagenCompleta(plantilla.fondo, datos.formatoPlantilla >= 2 ? 'xMidYMid slice' : encaje);
   const baseSvg = contenido, superposicionSvg = imagenCompleta(plantilla.superposicion);
   let decoracionPendiente = superposicionSvg;
   const elementos = [];

@@ -6,7 +6,7 @@ export const ESCUDOS_LASER_YORYO = {
   'Sporting Cristal': { url: '/yoryo/laser/sporting-cristal-v1.svg', viewBox: [61.84, 18.3, 126.05, 212.6] },
   'Sport Boys': { url: '/yoryo/laser/sport-boys-v1.svg', viewBox: [0, 0, 300, 300] },
   Barcelona: { url: '/yoryo/laser/barcelona-v1.svg', viewBox: [28.79, 24.98, 1195.46, 1211.01] },
-  'Real Madrid': { url: '/yoryo/laser/real-madrid-v1.svg', viewBox: [1.37, -19.21, 405.02, 566] },
+  'Real Madrid': { url: '/yoryo/laser/real-madrid-v1.svg', viewBox: [221.1, 130, 408.2, 578.3] },
 };
 
 export function vectorLaserDeEquipo(equipo, config) {

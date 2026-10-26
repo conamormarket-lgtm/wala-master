@@ -7,6 +7,7 @@ import { AtajosEstudio, BarraLienzo, MOD_ESTUDIO as MOD } from '../../componente
 import { ajusteSeccion, areaVistaYoryo, esDistribucionEditable, seccionesYoryo } from '../../utils/distribucionYoryo.mjs';
 import { limitarCamaraYoryo, transformarSeccionYoryo, zoomCamaraYoryo } from '../../utils/gestosYoryo.mjs';
 import { svgComoUrl } from '../../pages/Crear/arteYoryo.mjs';
+import { configurarDisenoYoryo } from '../../utils/mockupYoryo.mjs';
 import s from './PersonalizadorYoryo.module.css';
 
 const gruposAyuda = [
@@ -22,12 +23,12 @@ const ImagenSeccion = memo(function ImagenSeccion({ fragmento, anchoSvg, altoSvg
 
 export default function LienzoYoryo(props) {
   const { producto, datos, svg, elementos, fondo, modo, activa, onActiva, onMover, onInteractuando, disabled, puedeDeshacer, puedeRehacer } = props;
-  const config = producto.personalizacionYoryo, laser = config.tecnica === 'laser', editable = esDistribucionEditable(datos);
+  const config = configurarDisenoYoryo(producto.personalizacionYoryo, datos), laser = config.tecnica === 'laser', editable = esDistribucionEditable(datos);
   const [guias, setGuias] = useState(true), [ayuda, setAyuda] = useState(false), [zoom, setZoom] = useState(100);
   const visorRef = useRef(null), mundoRef = useRef(null), zonaRef = useRef(null), imanRef = useRef(null);
   const nodos = useRef(new Map()), cajas = useRef(new Map()), punteros = useRef(new Map());
   const gesto = useRef(null), frame = useRef(0), camara = useRef({ z: 1, x: 0, y: 0 }), espacio = useRef(false), ultimoToque = useRef(null), acciones = useRef(null);
-  const area = modo === 'producto' ? areaVistaYoryo(config, datos) : { x: 0, y: 0, w: 1, h: 1 };
+  const area = modo === 'producto' && laser ? areaVistaYoryo(config, datos) : { x: 0, y: 0, w: 1, h: 1 };
   const restaurarNodos = () => { nodos.current.forEach((n) => { if (n) n.style.transform = ''; }); if (imanRef.current) imanRef.current.hidden = true; };
   useLayoutEffect(() => { cajas.current = new Map(elementos.map((e) => [e.id, e])); if (!gesto.current) restaurarNodos(); }, [elementos]);
 
@@ -96,7 +97,7 @@ export default function LienzoYoryo(props) {
     const teclear = (e) => {
       const a = acciones.current, p = a.props, el = document.activeElement;
       if (a.ayuda) { if (e.key === '?' || e.key === 'Escape') { e.preventDefault(); a.setAyuda(false); } return; }
-      if (e.defaultPrevented || e.isComposing || p.disabled || e.altKey || el?.closest('[role="dialog"], [role="listbox"]')) return;
+      if (e.defaultPrevented || e.isComposing || p.disabled || e.altKey || el?.closest('[role="dialog"], [role="listbox"]') || document.querySelector('[role="listbox"]')) return;
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(el?.tagName) || el?.isContentEditable) { if (e.key === 'Escape') el.blur(); return; }
       const marco = visorRef.current?.closest('[data-componente="PaginaEstudio"]'); if (el !== document.body && !marco?.contains(el)) return;
       const mod = e.ctrlKey || e.metaKey, tecla = e.key.toLowerCase();
@@ -122,21 +123,25 @@ export default function LienzoYoryo(props) {
     return () => { if (frame.current) cancelAnimationFrame(frame.current); onInteractuando?.(false); window.removeEventListener('pointerup', alSoltar); window.removeEventListener('pointercancel', alCancelar); window.removeEventListener('blur', alCancelar); document.removeEventListener('keydown', teclear); document.removeEventListener('keyup', subirTecla); visor.removeEventListener('wheel', rueda); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <>
-    <div ref={visorRef} className={`${modo === 'producto' ? s.modelo : `${s.arte} ${s.plano} ${laser ? s.laser : s.impresion}`} ${s.visorInteractivo}`} style={modo === 'plano' ? { aspectRatio: 1 / config.proporcion } : undefined} onPointerDown={(e) => empezar(e, null)} onPointerMove={mover} onPointerUp={soltar} onPointerCancel={cancelar}>
-      <div ref={mundoRef} className={s.mundoYoryo}>
-        {modo === 'producto' && <img className={s.base} src={producto.variants?.[0]?.imageUrl || producto.mainImage || producto.images?.[0]} alt={producto.name} draggable={false} />}
-        <div ref={zonaRef} data-yoryo-arte={svg} aria-label={`Diseño de ${config.nombre} para ${datos.nombre || 'personalizar'}`} className={`${s.zonaPersonalizable} ${editable && guias ? s.conGuias : ''}`} style={{ left: `${area.x * 100}%`, top: `${area.y * 100}%`, width: `${area.w * 100}%`, height: `${area.h * 100}%`, background: editable && fondo || undefined }}>
+  const diseno = <div ref={zonaRef} data-yoryo-arte={svg} aria-label={`Diseño de ${config.nombre} para ${datos.nombre || 'personalizar'}`} className={`${s.zonaPersonalizable} ${editable && guias ? s.conGuias : ''}`} style={{ left: `${area.x * 100}%`, top: `${area.y * 100}%`, width: `${area.w * 100}%`, height: `${area.h * 100}%`, background: editable && fondo || undefined }}>
           {!editable && svg && <img className={`${s.dibujo} ${laser ? s.grabado : ''}`} src={svgComoUrl(svg)} alt={`Diseño de ${config.nombre}`} draggable={false} />}
           {editable && props.baseSvg && <div className={s.capaFija} style={{ zIndex: 0 }}><ImagenSeccion fragmento={props.baseSvg} anchoSvg={props.anchoSvg} altoSvg={props.altoSvg} /></div>}
           {editable && props.superposicionSvg && <div className={s.capaFija} style={{ zIndex: 20 }}><ImagenSeccion fragmento={props.superposicionSvg} anchoSvg={props.anchoSvg} altoSvg={props.altoSvg} /></div>}
-          {editable && guias && <span className={s.rotuloArea}><Texto>{laser ? 'Área de grabado' : 'Área de impresión'}</Texto></span>}<span ref={imanRef} className={s.guiaIman} hidden />
+          {editable && guias && (laser || modo === 'plano') && <span className={s.rotuloArea}><Texto>{laser ? 'Área de grabado' : 'Área de impresión'}</Texto></span>}<span ref={imanRef} className={s.guiaIman} hidden />
           {editable && elementos.map((el) => <div key={el.id} ref={(n) => { if (n) nodos.current.set(el.id, n); else nodos.current.delete(el.id); }} className={s.capaEnVivo} style={{ left: `${el.x * 100}%`, top: `${el.y * 100}%`, width: `${el.w * 100}%`, height: `${el.h * 100}%`, zIndex: (el.orden || 3) * 10 + (activa === el.id ? 1 : 0) }}>
             <ImagenSeccion fragmento={el.fragmento} anchoSvg={el.anchoSvg} altoSvg={el.altoSvg} laser={laser} />
             <button type="button" aria-label={`Mover ${el.nombre.toLowerCase()}`} aria-pressed={activa === el.id} disabled={disabled} className={`${s.elementoMovible} ${activa === el.id && guias ? s.elementoActivo : ''}`} onClick={(e) => { if (e.detail === 0) onActiva(el.id); }} onDoubleClick={() => editarContenido(el.id)} onPointerDown={(e) => empezar(e, el)}><span className={s.nombreElemento}>{el.nombre}</span></button>
             {activa === el.id && guias && <button type="button" className={s.controlTamano} aria-label={`Cambiar tamaño de ${el.nombre.toLowerCase()}`} disabled={disabled} onPointerDown={(e) => empezar(e, el, 'tamano')}><MoveDiagonal2 aria-hidden="true" /></button>}
           </div>)}
-        </div>
+        </div>;
+  return <>
+    {!laser && modo === 'producto' && editable && guias && <p className={s.etiquetaSoporte}><Texto>Área de impresión</Texto></p>}
+    <div ref={visorRef} className={`${modo === 'producto' ? laser ? s.modelo : s.soporteImpresion : `${s.arte} ${s.plano} ${laser ? s.laser : s.impresion}`} ${s.visorInteractivo}`} style={modo === 'plano' ? { aspectRatio: 1 / config.proporcion } : undefined} onPointerDown={(e) => empezar(e, null)} onPointerMove={mover} onPointerUp={soltar} onPointerCancel={cancelar}>
+      <div ref={mundoRef} className={!laser && modo === 'producto' ? s.mundoImpresion : s.mundoYoryo}>
+        {modo === 'producto' && laser && <img className={s.base} src={producto.variants?.[0]?.imageUrl || producto.mainImage || producto.images?.[0]} alt={producto.name} draggable={false} />}
+        {!laser && modo === 'producto' ? <div className={`${s.productoImpreso} ${config.nombre === 'Mousepad' ? s.mousepadCss : s.cuadroCss}`} data-mockup-yoryo={config.nombre}>
+          <div className={s.superficieImpresion} style={{ aspectRatio: 1 / config.proporcion }}>{diseno}</div>
+        </div> : diseno}
       </div>
     </div>
     <BarraLienzo puedeDeshacer={puedeDeshacer} puedeRehacer={puedeRehacer} onDeshacer={props.onDeshacer} onRehacer={props.onRehacer}

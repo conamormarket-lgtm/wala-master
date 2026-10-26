@@ -3,6 +3,7 @@ import { cargarFuentesYoryo, crearArteYoryo, archivoComoDataUrl, svgComoPng, val
 import { medidasConfirmadas, validarDatosYoryo } from '../../utils/yoryoPersonalizacion.mjs';
 import { fijarDistribucion, firmaDeDisenoYoryo } from '../../utils/distribucionYoryo.mjs';
 import { plantillaImpresionYoryo } from '../../utils/plantillasYoryo.mjs';
+import { configurarDisenoYoryo } from '../../utils/mockupYoryo.mjs';
 
 const originales = new Map();
 const cargarOriginal = (url, tipo) => {
@@ -29,7 +30,7 @@ export async function cargarPlantillaYoryo(datos) {
 }
 
 export async function generarBorradorYoryo({ uid, producto, datos }) {
-  const config = producto.personalizacionYoryo;
+  const config = configurarDisenoYoryo(producto.personalizacionYoryo, datos);
   datos = fijarDistribucion(datos, config);
   const [fuentes, fotos, plantilla, resueltos] = await Promise.all([cargarFuentesYoryo(datos, config), config.tecnica === 'laser' ? [] : fotosInlineYoryo(datos), config.tecnica === 'laser' ? {} : cargarPlantillaYoryo(datos), resolverVectorYoryo(datos)]);
   const arte = crearArteYoryo({ datos: { ...resueltos, nombre: datos.nombre || 'Tu nombre' }, config, fuentes, fotos, plantilla });
@@ -46,7 +47,7 @@ export async function resolverVectorYoryo(datos) {
 }
 
 export async function generarYoryo({ uid, producto, datos }) {
-  const config = producto.personalizacionYoryo;
+  const config = configurarDisenoYoryo(producto.personalizacionYoryo, datos);
   datos = fijarDistribucion(datos, config);
   const error = validarDatosYoryo(datos, config.tecnica);
   if (error) throw new Error(error);

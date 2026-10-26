@@ -2,6 +2,7 @@ import { medidasConfirmadas } from '../../utils/yoryoPersonalizacion.mjs';
 import { FUENTES_YORYO, ajusteSeccion, esDistribucionEditable, seccionesYoryo, vistaYoryo } from '../../utils/distribucionYoryo.mjs';
 import { componerEditableYoryo } from './componerYoryo.mjs';
 import { serializarTrazos } from './trazosYoryo.mjs';
+import { configurarDisenoYoryo, medidasMockupYoryo } from '../../utils/mockupYoryo.mjs';
 
 const escape = (s) => String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
 const ETIQUETAS = new Set(['svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon']);
@@ -122,9 +123,11 @@ function crearArteLegacy({ datos, config, fuente, fotos = [] }) {
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"${dimensiones} viewBox="0 0 ${w} ${h}">${contenido}</svg>`;
 }
 
-export const componerArteYoryo = (opciones) => esDistribucionEditable(opciones.datos)
-  ? componerEditableYoryo(opciones)
-  : { svg: crearArteLegacy({ ...opciones, fuente: opciones.fuentes?.general || opciones.fuente }), elementos: [] };
+export const componerArteYoryo = (opciones) => {
+  opciones = { ...opciones, config: configurarDisenoYoryo(opciones.config, opciones.datos) };
+  return esDistribucionEditable(opciones.datos) ? componerEditableYoryo(opciones)
+    : { svg: crearArteLegacy({ ...opciones, fuente: opciones.fuentes?.general || opciones.fuente }), elementos: [] };
+};
 export const crearArteYoryo = (opciones) => componerArteYoryo(opciones).svg;
 
 export const svgComoUrl = (svg) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
@@ -146,7 +149,27 @@ export async function svgComoPng(svg, ancho = 1800, alto) {
 
 /** Simulación sobre la foto real. Sus coordenadas visuales no son medidas de fabricación. */
 export async function vistaProductoYoryo(producto, arte, datos) {
-  const config = producto.personalizacionYoryo;
+  const config = configurarDisenoYoryo(producto.personalizacionYoryo, datos);
+  if (config.tecnica === 'impresion') {
+    const dibujo = new Image(); dibujo.src = svgComoUrl(arte); await dibujo.decode();
+    const m = medidasMockupYoryo(config), canvas = document.createElement('canvas');
+    canvas.width = m.ancho; canvas.height = m.alto;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#F7F8FC'; ctx.fillRect(0, 0, m.ancho, m.alto);
+    ctx.shadowColor = '#00000038'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 5;
+    ctx.fillStyle = '#202124'; ctx.beginPath(); ctx.roundRect(m.margen, m.margen, m.w + 2 * m.borde, m.h + 2 * m.borde, m.radio); ctx.fill();
+    ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    if (!m.mousepad) {
+      ctx.strokeStyle = '#55565A'; ctx.lineWidth = 3; ctx.strokeRect(m.margen + 3, m.margen + 3, m.w + 2 * m.borde - 6, m.h + 2 * m.borde - 6);
+      ctx.strokeStyle = '#0B0B0C'; ctx.lineWidth = 4; ctx.strokeRect(m.x - 2, m.y - 2, m.w + 4, m.h + 4);
+    }
+    ctx.save(); ctx.beginPath(); ctx.roundRect(m.x, m.y, m.w, m.h, Math.max(0, m.radio - m.borde)); ctx.clip();
+    ctx.drawImage(dibujo, m.x, m.y, m.w, m.h); ctx.restore();
+    if (m.mousepad) { ctx.strokeStyle = '#777'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.roundRect(m.margen + m.borde / 2, m.margen + m.borde / 2, m.w + m.borde, m.h + m.borde, m.radio - m.borde / 2); ctx.stroke(); }
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', .9));
+    if (!blob) throw new Error('No pudimos preparar la vista del producto.');
+    return blob;
+  }
   const url = producto.variants?.[0]?.imageUrl || producto.mainImage || producto.images?.[0];
   if (!url || !config.vista) return svgComoPng(arte, 1000, Math.round(1000 * config.proporcion));
   const r = await fetch(url);

@@ -15,6 +15,12 @@ const medidasEquipos = {
   'Sport Boys': [1536, 1024], Barcelona: [1551, 1014], 'Real Madrid': [1526, 1031],
 };
 
+export function proporcionPlantillaYoryo(datos) {
+  if (!plantillaImpresionYoryo(datos)) return null;
+  const [ancho, alto] = datos.plantillaVisual === 'deportivo' ? medidasEquipos[datos.equipo] || [1536, 1024] : [1536, 1024];
+  return alto / ancho;
+}
+
 /** Un único ajuste proporcional para la decoración y todas sus ventanas. */
 export function encajePlantillaYoryo(datos, config) {
   const [ancho, alto] = datos.plantillaVisual === 'deportivo' ? medidasEquipos[datos.equipo] || [1536, 1024] : [1536, 1024];
@@ -60,7 +66,7 @@ export function plantillaImpresionYoryo(datos) {
 // detrás de la decoración; los textos siempre por delante.
 export function seccionesPlantillaYoryo(datos, config) {
   const originales = seccionesOriginales(datos);
-  if (!originales || datos.formatoPlantilla !== 2) return originales;
+  if (!originales || ![2, 3].includes(datos.formatoPlantilla)) return originales;
   const encaje = encajePlantillaYoryo(datos, config);
   return originales.map((s) => encajarSeccion(s, encaje));
 }
@@ -70,7 +76,7 @@ function seccionesOriginales(datos) {
   const texto = (id, nombre, x, y, w, h, fuente = 'Elegante', color = '#26342B') => ({ id, nombre, x, y, w, h, fuente, color, mayusculas: false, orden: 3 });
   const foto = (id, nombre, x, y, w, h, indiceFoto = 0) => ({ id, nombre, x, y, w, h, indiceFoto, orden: 1 });
   const ventana = (id, nombre, x, y, w, h, indice = 0) => foto(id, nombre, (x + w / 2) / 1536, (y + h / 2) / 1024, w / 1536, h / 1024, indice);
-  const proporcional = datos.formatoPlantilla === 2;
+  const proporcional = [2, 3].includes(datos.formatoPlantilla);
   switch (datos.plantillaVisual) {
     case 'floral': return [proporcional ? ventana('foto', 'Foto o diseño', 0, 0, 1004, 1024) : foto('foto', 'Foto o diseño', .29, .50, .56, .96), texto('titulo', 'Título', .815, .255, .30, .22), texto('acento', 'Texto destacado', .815, .43, .30, .10, 'Manuscrita', '#BC6049'), texto('nombre', 'Nombre', .815, .66, .30, .09), texto('fecha', 'Fecha', .815, .745, .27, .045, 'Clásica'), texto('frase', 'Dedicatoria', .815, .88, .28, .12, 'Manuscrita')];
     case 'botanico': return [...(proporcional ? [ventana('foto', 'Foto 1', 110, 54, 650, 389), ventana('foto2', 'Foto 2', 110, 455, 650, 372, 1), ventana('foto3', 'Foto 3', 780, 54, 670, 773, 2)] : [foto('foto', 'Foto 1', .28, .24, .42, .38), foto('foto2', 'Foto 2', .28, .625, .42, .36, 1), foto('foto3', 'Foto 3', .725, .43, .43, .76, 2)]), texto('nombre', 'Nombre', .50, .87, .65, .07), texto('fecha', 'Fecha', .50, .925, .40, .035, 'Clásica'), texto('frase', 'Dedicatoria', .50, .965, .65, .028, 'Manuscrita')];
