@@ -1658,11 +1658,11 @@ function LineaGesto({ icono, fuerte, texto }) {
 const TECLAS_IGUALES = new Set(['Ctrl', 'Shift', 'Esc', '⌘']);
 const Tecla = ({ tecla }) => <kbd>{tecla.length > 1 && !TECLAS_IGUALES.has(tecla) ? <Texto>{tecla}</Texto> : tecla}</kbd>;
 
-export function AtajosEstudio({ lados = [] }) {
+export function AtajosEstudio({ lados = [], grupos = gruposAtajos(lados) }) {
   return (
     <div className={s.atajos} data-componente="AtajosEstudio">
       <div className={s.atajosGrupos}>
-        {gruposAtajos(lados).map((g) => (
+        {grupos.map((g) => (
           <section key={g.titulo} className={s.atajosGrupo}>
             <h3 className={s.rotulo}><Texto>{g.titulo}</Texto></h3>
             <dl className={s.atajosLista}>

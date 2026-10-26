@@ -17,6 +17,7 @@ import { YORYO_PACK_ID, YORYO_PIEZAS, datosYoryoVacios, validarDatosYoryo, medid
 import { cambiarSeccion, distribucionRecomendada, esDistribucionEditable, fijarDistribucion, firmaDeDisenoYoryo, normalizarFirmaYoryo, seccionesYoryo } from '../../utils/distribucionYoryo.mjs';
 import SeccionesYoryo from './SeccionesYoryo';
 import LienzoYoryo from './LienzoYoryo';
+import { useHistorialYoryo } from './useHistorialYoryo';
 import Boton from '../../componentes/kit/Boton';
 import { Campo } from '../../componentes/kit/Formulario';
 import { Aviso, EstadoVacio } from '../../componentes/kit/Feedback';
@@ -79,7 +80,7 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
   const idsGuardadosRef = useRef({});
   const miGuardadoRef = useRef('');
   const firmaCarritoRef = useRef(item ? JSON.stringify(item.customization) : '');
-  const [datos, setDatos] = useState(() => {
+  const [datos, setDatos, historial] = useHistorialYoryo(() => {
     if (user && !originales.length) {
       try { const pendiente = JSON.parse(sessionStorage.getItem(`wala:yoryo:login:${main.id}`) || 'null'); if (Array.isArray(pendiente) && pendiente.length === productos.length) return pendiente; } catch {}
     }
@@ -92,6 +93,9 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
       return inicial;
     });
   });
+  const datosRef = useRef(datos);
+  datosRef.current = datos;
+  const borradorDescartado = useRef(false);
   const [indice, setIndice] = useState(indiceInicial);
   const [modoVista, setModoVista] = useState('producto');
   const [composicion, setComposicion] = useState({ svg: '', elementos: [] });
@@ -102,6 +106,7 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
   const [errorArte, setErrorArte] = useState('');
   const [ocupado, setOcupado] = useState('');
   const [recorte, setRecorte] = useState(null);
+  const [enGesto, setEnGesto] = useState(false);
   const inputFotos = useRef(null);
   const inputVector = useRef(null);
   const producto = productos[indice];
@@ -111,8 +116,14 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
   const editable = esDistribucionEditable(actual);
   const seccionActual = seccionesYoryo(actual, config).some((e) => e.id === seccion) ? seccion : 'nombre';
   const completos = productos.map((p, i) => !validarDatosYoryo(datos[i], p.personalizacionYoryo.tecnica));
-  const cambiar = (campo, valor) => { setDatos((prev) => prev.map((d, i) => i === indice ? { ...d, [campo]: valor } : d)); setError(''); };
-  const cambiarParte = (id, cambio) => { setDatos((prev) => prev.map((d, i) => i === indice ? cambiarSeccion(d, id, cambio) : d)); setError(''); };
+  const cambiar = (campo, valor) => { setDatos((prev) => prev.map((d, i) => i === indice ? { ...d, [campo]: valor } : d), ['nombre', 'frase', 'fecha'].includes(campo) ? `${indice}:${campo}` : ''); setError(''); };
+  const cambiarParte = (id, cambio, grupo = '') => { setDatos((prev) => prev.map((d, i) => i === indice ? cambiarSeccion(d, id, cambio) : d), grupo ? `${indice}:${grupo}` : Object.keys(cambio).length === 1 && 'escala' in cambio ? `${indice}:tamano:${id}` : ''); setError(''); };
+  const restaurarHistoria = (accion) => {
+    const restaurados = historial[accion]();
+    const cambiado = restaurados.findIndex((d, i) => JSON.stringify(d) !== JSON.stringify(datos[i]));
+    if (cambiado >= 0) setIndice(cambiado);
+    setError('');
+  };
   const recomendar = () => { cambiar('distribucion', distribucionRecomendada()); setSeccion('nombre'); };
   const elegirEquipo = (equipo) => {
     const vector = laser && config.produccion?.vectoresPorEquipo?.[equipo];
@@ -123,7 +134,15 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
     }));
     setError('');
   };
-  useEffect(() => { try { localStorage.setItem(clave, JSON.stringify(datos)); } catch {} }, [clave, datos]);
+  useEffect(() => {
+    const timer = setTimeout(() => { if (!borradorDescartado.current) try { localStorage.setItem(clave, JSON.stringify(datos)); } catch {} }, 250);
+    return () => clearTimeout(timer);
+  }, [clave, datos]);
+  useEffect(() => {
+    const escribir = () => { if (!borradorDescartado.current) try { localStorage.setItem(clave, JSON.stringify(datosRef.current)); } catch {} };
+    window.addEventListener('pagehide', escribir);
+    return () => { window.removeEventListener('pagehide', escribir); escribir(); };
+  }, [clave]);
   useEffect(() => {
     let vigente = true;
     const timer = setTimeout(async () => {
@@ -205,6 +224,7 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
           if (!actualizarPersonalizacion(item.id, main.id, args[2], firmaCarritoRef.current)) throw new Error('El carrito cambió mientras guardabas. Vuelve a abrir su personalización.');
         } else addToCart(...args);
         if (esPack && !item) olvidarArmado(main.id);
+        borradorDescartado.current = true;
         localStorage.removeItem(clave);
         navigate('/carrito');
       } else { originalesRef.current = creaciones; toast.success('Avance guardado en tu cuenta.'); }
@@ -223,6 +243,7 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
   const plantillas = laser ? ['Nombre y frase', 'Iniciales', 'Escudo y nombre'] : config.nombre === 'Mousepad' ? ['Foto y texto', 'Equipo'] : ['Foto y texto', 'Equipo', 'Aniversario', 'Collage'];
   const claves = laser ? ['nombre', 'iniciales', 'escudo'] : config.nombre === 'Mousepad' ? ['nombre', 'equipo'] : ['nombre', 'equipo', 'aniversario', 'collage'];
   const subiendo = Boolean(ocupado);
+  const bloqueado = subiendo || enGesto;
   const faltanMedidas = productos.some((p) => !medidasConfirmadas(p.personalizacionYoryo.produccion));
   const campoNombre = <Campo etiqueta={laser ? 'Nombre para grabar' : 'Nombre o nombres'} value={actual.nombre} maxLength={60} disabled={subiendo} onChange={(e) => cambiar('nombre', e.target.value)} placeholder="Ej. Daniel" />;
   const campoEquipo = (laser && actual.plantilla !== 'iniciales' || actual.plantilla === 'equipo') && <Campo etiqueta="Equipo (opcional)" opciones={[{ valor: '', texto: 'Sin equipo' }, ...EQUIPOS.map((v) => ({ valor: v, texto: v }))]} value={actual.equipo} disabled={subiendo} onChange={(e) => elegirEquipo(e.target.value)} />;
@@ -239,7 +260,7 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
     lienzo={<section className={s.escena} aria-label="Vista previa de la personalización">
       {esPack && <Pestanas etiqueta="Pieza del pack" opciones={productos.map((p, i) => ({ id: String(i), texto: p.personalizacionYoryo.nombre, cuenta: completos[i] ? '✓' : undefined }))} valor={String(indice)} onChange={(v) => { setIndice(Number(v)); setError(''); }} />}
       <Pestanas etiqueta="Vista del diseño" opciones={[{ id: 'producto', texto: 'En el producto' }, { id: 'plano', texto: 'Diseño plano' }]} valor={modoVista} onChange={setModoVista} />
-      <LienzoYoryo producto={producto} datos={actual} svg={indiceArte === indice ? arte : ''} elementos={indiceArte === indice ? composicion.elementos : []} modo={modoVista} activa={seccionActual} onActiva={setSeccion} onMover={cambiarParte} disabled={subiendo} />
+      <LienzoYoryo key={`${producto.id}:${modoVista}`} producto={producto} datos={actual} svg={indiceArte === indice ? arte : ''} elementos={indiceArte === indice ? composicion.elementos : []} fondo={composicion.fondo} modo={modoVista} activa={seccionActual} onActiva={setSeccion} onMover={cambiarParte} onInteractuando={setEnGesto} onDeshacer={() => restaurarHistoria('deshacer')} onRehacer={() => restaurarHistoria('rehacer')} puedeDeshacer={historial.puedeDeshacer} puedeRehacer={historial.puedeRehacer} onGuardar={() => guardar(false)} disabled={subiendo} />
       <p className={s.nota}><Texto>{laser ? 'Vista del grabado. El acabado metálico depende del tomatodo.' : 'La vista previa muestra tu diseño; el marco y el borde no se imprimen.'}</Texto></p>
       {esPack && <div className={s.resumen}>{productos.map((p, i) => <button key={p.id} type="button" className={s.pieza} onClick={() => setIndice(i)} disabled={subiendo}>
         <img src={p.variants?.[0]?.imageUrl || p.mainImage || p.images?.[0]} alt="" /><span><strong>{p.personalizacionYoryo.nombre}</strong><small><Texto>{completos[i] ? 'Listo para guardar' : 'Sin personalizar'}</Texto></small></span>{completos[i] && <Check size={16} />}
@@ -247,7 +268,7 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
     </section>}
     panel={<div className={s.campos}>
       <ElegirUno etiqueta="Elige una plantilla" opciones={plantillas} valor={plantillas[claves.indexOf(actual.plantilla)] || plantillas[0]} onCambiar={(v) => { const plantilla = claves[plantillas.indexOf(v)] || 'nombre'; setDatos((prev) => prev.map((d, i) => i === indice ? { ...d, plantilla, ...(esDistribucionEditable(d) && plantilla !== d.plantilla && { distribucion: distribucionRecomendada() }) } : d)); setError(''); setSeccion(laser ? ['escudo', 'iniciales'].includes(plantilla) ? 'escudo' : 'nombre' : 'foto'); }} />
-      {editable ? <SeccionesYoryo datos={actual} config={config} elementos={indiceArte === indice ? composicion.elementos : []} activa={seccionActual} onActiva={setSeccion} onCambiar={cambiarParte} onRestablecer={recomendar} disabled={subiendo} contenidos={{ escudo: <>{campoEquipo}{campoVector}</>, nombre: campoNombre, frase: campoFrase, foto: campoFotos, fecha: actual.plantilla === 'equipo' ? campoEquipo : campoFecha }} /> : <>
+      {editable ? <SeccionesYoryo datos={actual} config={config} elementos={indiceArte === indice ? composicion.elementos : []} activa={seccionActual} onActiva={setSeccion} onCambiar={cambiarParte} onRestablecer={recomendar} disabled={bloqueado} contenidos={{ escudo: <>{campoEquipo}{campoVector}</>, nombre: campoNombre, frase: campoFrase, foto: campoFotos, fecha: actual.plantilla === 'equipo' ? campoEquipo : campoFecha }} /> : <>
         <Aviso tipo="info" compacto>Este diseño conserva sus proporciones anteriores. Puedes aplicar la distribución recomendada para ajustar cada sección.</Aviso>
         <Boton variante="contorno" onClick={recomendar} disabled={subiendo}><Texto>Usar distribución recomendada</Texto></Boton>
         {campoNombre}<Campo etiqueta="Estilo de letra" opciones={['Clásica', 'Fuerte', 'Manuscrita'].map((v) => ({ valor: v, texto: v }))} value={actual.tipografia || 'Clásica'} disabled={subiendo} onChange={(e) => cambiar('tipografia', e.target.value)} />
@@ -263,9 +284,9 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
     </div>}
     compra={<div className={s.compra}>
       <strong>{esPack ? 'Precio del pack' : 'Total'} · {soles(Number(main.salePrice) > 0 ? main.salePrice : main.price)}</strong>
-      <Boton bloque icono={item ? <Save /> : <ShoppingBag />} cargando={ocupado === 'guardando'} disabled={subiendo} onClick={() => guardar(true)}><Texto>{!user ? 'Iniciar sesión para guardar' : item ? 'Guardar cambios en el carrito' : esPack ? 'Agregar pack al carrito' : 'Agregar al carrito'}</Texto></Boton>
-      {user && <Boton variante="contorno" tamano="sm" disabled={subiendo} onClick={() => guardar(false)}><Texto>Guardar avance</Texto></Boton>}
-      <Boton variante="fantasma" tamano="sm" icono={<Download />} disabled={!arte || subiendo} onClick={descargar}><Texto>Descargar vista previa</Texto></Boton>
+      <Boton bloque icono={item ? <Save /> : <ShoppingBag />} cargando={ocupado === 'guardando'} disabled={subiendo || enGesto} onClick={() => guardar(true)}><Texto>{!user ? 'Iniciar sesión para guardar' : item ? 'Guardar cambios en el carrito' : esPack ? 'Agregar pack al carrito' : 'Agregar al carrito'}</Texto></Boton>
+      {user && <Boton variante="contorno" tamano="sm" disabled={subiendo || enGesto} onClick={() => guardar(false)}><Texto>Guardar avance</Texto></Boton>}
+      <Boton variante="fantasma" tamano="sm" icono={<Download />} disabled={!arte || subiendo || enGesto} onClick={descargar}><Texto>Descargar vista previa</Texto></Boton>
     </div>}
   />;
 }

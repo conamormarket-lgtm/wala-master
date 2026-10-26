@@ -25,7 +25,7 @@ export default function SeccionesYoryo({ datos, config, elementos = [], activa, 
         <Campo etiqueta={`Letra ${sujeto}`} opciones={FUENTES_YORYO.map((f) => ({ valor: f.id, texto: f.id, detalle: f.detalle, icono: <span aria-hidden="true" className={s.muestraFuente} style={{ fontFamily: `'${f.familia}'` }}>Aa</span> }))} value={ajuste.fuente} disabled={disabled} onChange={(e) => onCambiar(seccion.id, { fuente: e.target.value })} />
         <Casilla etiqueta="Usar mayúsculas" activo={ajuste.mayusculas} disabled={disabled} onChange={(mayusculas) => onCambiar(seccion.id, { mayusculas })} />
       </>}
-      <Deslizador etiqueta={`Tamaño ${sujeto}`} valor={ajuste.escala} min={40} max={160} paso={5} formato={(v) => `${v}%`} disabled={disabled} onChange={(escala) => onCambiar(seccion.id, { escala })} />
+      <Deslizador etiqueta={`Tamaño ${sujeto}`} valor={ajuste.escala} min={40} max={160} paso={1} formato={(v) => `${v}%`} disabled={disabled} onChange={(escala) => onCambiar(seccion.id, { escala })} />
       <div className={s.tamanos} role="group" aria-label="Tamaños rápidos">
         {[['Pequeño', 70], ['Equilibrado', 100], ['Grande', 125]].map(([nombre, escala]) => <button key={nombre} type="button" className={ajuste.escala === escala ? s.tamanoActivo : undefined} aria-pressed={ajuste.escala === escala} disabled={disabled} onClick={() => onCambiar(seccion.id, { escala })}>{nombre}</button>)}
       </div>

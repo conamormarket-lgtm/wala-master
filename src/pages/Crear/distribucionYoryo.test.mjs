@@ -91,3 +91,17 @@ test('todas las letras conservan sus contornos, incluso con errores de precisió
   }
   assert.equal(serializarTrazos({ commands: [{ type: 'M', x: 80.00000000000001, y: -1 }] }), 'M80 -1');
 });
+
+test('mover una sección reutiliza sus trazos y solo cambia la posición del maestro', () => {
+  const original = fuentes.Elegante.getPath;
+  let llamadas = 0;
+  fuentes.Elegante.getPath = function (...args) { llamadas++; return original.apply(this, args); };
+  try {
+    const inicio = { ...datos, nombre: 'Valentina' }, antes = componer(inicio), trasTrazar = llamadas;
+    assert.ok(trasTrazar > 0);
+    const despues = componer(cambiarSeccion(inicio, 'nombre', { x: .48, y: .6 }));
+    assert.equal(llamadas, trasTrazar);
+    assert.equal(antes.elementos.find((e) => e.id === 'nombre').fragmento, despues.elementos.find((e) => e.id === 'nombre').fragmento);
+    assert.notEqual(antes.svg, despues.svg);
+  } finally { fuentes.Elegante.getPath = original; }
+});

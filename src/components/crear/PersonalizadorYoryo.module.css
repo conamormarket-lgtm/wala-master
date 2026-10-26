@@ -21,7 +21,7 @@
 .dibujo { display: block; width: 100%; height: 100%; pointer-events: none; user-select: none; }
 .conGuias { outline: 1px dashed #A78BFA; outline-offset: 3px; }
 .rotuloArea { position: absolute; top: -1.6rem; left: 50%; transform: translateX(-50%); padding: .15rem .4rem; border-radius: 5px; background: var(--color-surface, #FFFFFF); color: var(--primary-color); white-space: nowrap; font-size: .65rem; pointer-events: none; }
-.elementoMovible { position: absolute; min-height: 12px; padding: 0; background: transparent; border: 1px solid transparent; cursor: grab; touch-action: none; border-radius: 3px; }
+.elementoMovible { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 12px; padding: 0; background: transparent; border: 1px solid transparent; cursor: grab; touch-action: none; border-radius: 3px; }
 .elementoMovible:active { cursor: grabbing; }
 .elementoMovible:focus-visible, .elementoActivo { border-color: #A78BFA; outline: 1px solid #A78BFA; outline-offset: 2px; }
 .nombreElemento { position: absolute; left: 0; top: -.95rem; color: #FFFFFF; background: #6D28D9; border-radius: 3px; padding: 1px 4px; font: 500 .6rem/1.3 sans-serif; opacity: 0; pointer-events: none; }
@@ -33,6 +33,16 @@
 .tamanos .tamanoActivo { border-color: var(--primary-color); background: var(--violet-50); color: var(--primary-color); }
 .accionesSeccion { display: flex; gap: .4rem; flex-wrap: wrap; }
 .muestraFuente { font-size: 1.35rem; min-width: 2.2rem; line-height: 1.4; }
+.visorInteractivo { user-select: none; -webkit-user-select: none; touch-action: pan-y; }
+.mundoYoryo { position: absolute; inset: 0; transform-origin: center; will-change: transform; }
+.capaEnVivo { position: absolute; transform-origin: top left; will-change: transform; }
+.capaEnVivo > .dibujo { position: absolute; inset: 0; }
+.controlTamano { position: absolute; right: -11px; bottom: -11px; width: 24px; height: 24px; padding: 3px; border: 2px solid #FFFFFF; background: #6D28D9; color: #FFFFFF; border-radius: 6px; cursor: nwse-resize; touch-action: none; }
+.controlTamano svg { width: 100%; height: 100%; }
+.guiaIman { position: absolute; left: 50%; top: 0; height: 100%; border-left: 1px solid #F472B6; z-index: 5; pointer-events: none; }
+.barraExperiencia { display: flex; align-items: center; gap: .1rem; flex-wrap: wrap; padding: .25rem; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); }
+.separadorBarra { width: 1px; height: 22px; background: var(--color-border); margin: 0 .35rem; }
+.porcentajeZoom { font-size: .75rem; font-variant-numeric: tabular-nums; min-width: 3rem; text-align: center; }
 @font-face { font-family: 'Yoryo Elegante'; src: url('/fonts/Cinzel-Bold.ttf') format('truetype'); font-display: swap; }
 @font-face { font-family: 'Yoryo Clasica'; src: url('/fonts/segoeui.ttf') format('truetype'); font-display: swap; }
 @font-face { font-family: 'Yoryo Fuerte'; src: url('/fonts/BebasNeue%20Bold.ttf') format('truetype'); font-display: swap; }

@@ -19,7 +19,11 @@ function partir(texto, cantidad, fuente) {
 }
 
 /** Encaja por la tinta real de los glifos, no por el ancho nominal de la fuente. */
+const bloques = new WeakMap();
 function textoEnCaja(texto, fuente, ancho, alto, multilinea) {
+  if (!bloques.has(fuente)) bloques.set(fuente, new Map());
+  const cache = bloques.get(fuente), clave = JSON.stringify([texto, ancho, alto, multilinea]);
+  if (cache.has(clave)) return cache.get(clave);
   if ([...texto].some((c) => !fuente.charToGlyph(c).index && !/\s/.test(c))) throw new Error('Uno de los caracteres no está disponible en esta letra. Elige otro estilo.');
   const explicitas = texto.includes('\n') ? texto.split('\n') : null;
   const maxLineas = multilinea ? Math.min(3, texto.split(/\s+/).length) : 1;
@@ -39,6 +43,8 @@ function textoEnCaja(texto, fuente, ancho, alto, multilinea) {
     // Ante tamaños casi iguales, conserva menos saltos de línea.
     if (!mejor || escala > mejor.escala * 1.04) mejor = { rutas, w, h, altura, escala };
   }
+  if (cache.size >= 64) cache.delete(cache.keys().next().value);
+  cache.set(clave, mejor);
   return mejor;
 }
 
@@ -49,17 +55,18 @@ export function componerEditableYoryo({ datos, config, fuente, fuentes = {}, fot
   const laser = config.tecnica === 'laser';
   const equipo = datos.plantilla === 'equipo';
   const tinta = !laser && equipo ? '#FFFFFF' : laser ? '#000000' : '#26342B';
-  let contenido = laser ? '' : `<rect width="${w}" height="${h}" fill="${equipo ? datos.equipo === 'Universitario' ? '#801B22' : '#14294A' : '#F6EFE5'}"/>`;
+  const fondo = laser ? '' : equipo ? datos.equipo === 'Universitario' ? '#801B22' : '#14294A' : '#F6EFE5';
+  let contenido = fondo ? `<rect width="${w}" height="${h}" fill="${fondo}"/>` : '';
   const elementos = [];
   const registrar = (seccion, caja, svg) => {
-    contenido += `<g data-yoryo-elemento="${seccion.id}">${svg}</g>`;
-    elementos.push({ id: seccion.id, nombre: seccion.nombre, ...caja });
+    contenido += `<g data-yoryo-elemento="${seccion.id}" transform="translate(${caja.x * w} ${caja.y * h})">${svg}</g>`;
+    elementos.push({ id: seccion.id, nombre: seccion.nombre, ...caja, fragmento: svg, anchoSvg: caja.w * w, altoSvg: caja.h * h });
   };
   for (const seccion of seccionesYoryo(datos, config)) {
     const a = ajusteSeccion(datos, seccion);
     const maxW = limitar(a.w * a.escala / 100, .01, .96), maxH = limitar(a.h * a.escala / 100, .01, .96);
     if (a.id === 'foto') {
-      const caja = cajaSeccion(a, maxW, maxH), x = caja.x * w, y = caja.y * h, ancho = caja.w * w, alto = caja.h * h;
+      const caja = cajaSeccion(a, maxW, maxH), x = 0, y = 0, ancho = caja.w * w, alto = caja.h * h;
       const separacion = 12;
       const svg = datos.plantilla === 'collage'
         ? foto(fotos[0], x, y, (ancho - separacion) / 2, (alto - separacion) / 2, 'foto0')
@@ -73,7 +80,7 @@ export function componerEditableYoryo({ datos, config, fuente, fuentes = {}, fot
       const escala = Math.min(maxW * w / vw, maxH * h / vh);
       const caja = cajaSeccion(a, vw * escala / w, vh * escala / h);
       const interior = datos.vector.svg.replace(/^<svg\b[^>]*>/, '').replace(/<\/svg>\s*$/, '');
-      registrar(a, caja, `<g transform="translate(${caja.x * w} ${caja.y * h}) scale(${escala}) translate(${-vx} ${-vy})">${interior}</g>`); continue;
+      registrar(a, caja, `<g transform="scale(${escala}) translate(${-vx} ${-vy})">${interior}</g>`); continue;
     }
     let texto = a.id === 'escudo' ? datos.plantilla === 'iniciales' ? String(datos.nombre || '').trim().split(/\s+/).map((p) => p[0]).slice(0, 3).join('') : datos.equipo : a.id === 'fecha' ? datos.plantilla === 'equipo' ? datos.equipo : datos.fecha : datos[a.id];
     texto = textoLimpio(texto);
@@ -83,9 +90,9 @@ export function componerEditableYoryo({ datos, config, fuente, fuentes = {}, fot
     const bloque = textoEnCaja(texto, tipografia, maxW * w, maxH * h, a.id === 'frase');
     const caja = cajaSeccion(a, bloque.w * bloque.escala / w, bloque.h * bloque.escala / h);
     const rutas = bloque.rutas.map((p, i) => `<g transform="translate(${(bloque.w - p.caja.x2 + p.caja.x1) / 2 - p.caja.x1} ${i * (bloque.altura + 16) - p.caja.y1})"><path fill="${tinta}" d="${p.d}"/></g>`).join('');
-    registrar(a, caja, `<g transform="translate(${caja.x * w} ${caja.y * h}) scale(${bloque.escala})">${rutas}</g>`);
+    registrar(a, caja, `<g transform="scale(${bloque.escala})">${rutas}</g>`);
   }
   const medidas = config.produccion || {};
   const dimensiones = medidasConfirmadas(medidas) ? ` width="${Number(medidas.anchoMm)}mm" height="${Number(medidas.altoMm)}mm"` : '';
-  return { svg: `<svg xmlns="http://www.w3.org/2000/svg"${dimensiones} viewBox="0 0 ${w} ${h}">${contenido}</svg>`, elementos };
+  return { svg: `<svg xmlns="http://www.w3.org/2000/svg"${dimensiones} viewBox="0 0 ${w} ${h}">${contenido}</svg>`, elementos, fondo };
 }
