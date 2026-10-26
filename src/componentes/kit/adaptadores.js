@@ -96,7 +96,19 @@ export function portadaDeCombo(p = {}) {
   return url;
 }
 
-export function tarjetaDesdeProducto(p, { imagen, catalogo = {} } = {}) {
+/** La foto actual de la pieza en el color del combo; la copia guardada es respaldo. */
+export function piezaDeCombo(it, sub) {
+  const vs = variantesDePieza(sub, it);
+  const variante = vs.find((v) => mismoColor(v.name, it.variantMapping?.color))
+    || vs.find((v) => String(v.id) === String(sub?.defaultVariantId)) || vs[0];
+  const fotos = [variante?.imageUrl, ...(variante?.images || []), ...(variante?.galleryImages || []), ...fotosGenerales(sub, variante), it.imageUrl];
+  return {
+    nombre: sub?.name || it.name,
+    imagen: fotos.find((u) => u && !String(u).toLowerCase().includes('placeholder')),
+  };
+}
+
+export function tarjetaDesdeProducto(p, { imagen, catalogo = {}, subproductos = {} } = {}) {
   const vs = variantesDe(p);
   const { marcas = [], categorias = [], marcaActual = null } = catalogo;
   const m = !marcaActual && p.brandId ? marcas.find((x) => x.id === p.brandId) : null;
@@ -104,7 +116,9 @@ export function tarjetaDesdeProducto(p, { imagen, catalogo = {} } = {}) {
   const principal = vs.find((v) => String(v.id) === String(p.defaultVariantId)) || vs[0];
   // Un combo con portada se ve con ella (como en la tienda); sin portada, con sus piezas.
   // Las generales, sin las de otro color (al pasar el mouse no sale otro color).
-  const fotos = [portadaDeCombo(p), principal?.imageUrl, ...(principal?.images || []), ...fotosGenerales(p, principal)].filter(Boolean);
+  const fotos = p.isComboProduct
+    ? [portadaDeCombo(p)].filter(Boolean)
+    : [principal?.imageUrl, ...(principal?.images || []), ...fotosGenerales(p, principal)].filter(Boolean);
   return {
     url: p.personalizacionYoryo ? `${p.personalizacionYoryo.pack ? '/combo/' : '/crear/'}${p.id}` : p.esPrendaBase ? `/crear/${p.id}` : `/producto/${p.id}`,
     imagen: imagen || fotos[0],
@@ -119,7 +133,7 @@ export function tarjetaDesdeProducto(p, { imagen, catalogo = {} } = {}) {
     stock: typeof p.inStock === 'number' ? p.inStock : undefined,
     nuevo: esNuevo(p),
     marca: m?.logoUrl ? { nombre: m.name, logo: m.logoUrl } : undefined,
-    piezas: p.isComboProduct ? (p.comboItems || []).map((it) => ({ nombre: it.name, imagen: it.imageUrl })) : [],
+    piezas: p.isComboProduct ? (p.comboItems || []).map((it) => piezaDeCombo(it, subproductos[it.productId])) : [],
     // Con una sola variante (la "Principal" que crea el admin por defecto) no
     // hay colores que mostrar.
     colores: vs.length > 1 ? vs.filter((v) => v.colorHex).map((v) => v.colorHex) : [],

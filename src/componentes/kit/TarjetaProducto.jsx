@@ -5,6 +5,7 @@ import { Estallido } from './Efectos';
 import { Enlace } from './Enlace';
 import { Texto, useTexto } from './Traduccion';
 import { FotoProducto } from './piezas/FotoProducto';
+import { FotosCombo } from './piezas/FotosCombo';
 import { LogoMarca } from './piezas/LogoMarca';
 import { iniciales } from './piezas/Avatar';
 import { EsqueletoProducto } from './Esqueletos';
@@ -240,7 +241,7 @@ export default function TarjetaProducto({
   const nuevoEnLinea = nuevo && descuento > 0 && esCombo;
   // Combo sin foto propia: sus piezas juntas (la tienda compone una imagen
   // con ellas; aquí van como cartas, cada una sobre su escenario).
-  const collage = imagen ? [] : piezas.filter((pz) => pz.imagen).slice(0, 3);
+  const collage = imagen ? [] : piezas;
 
   const mover = (e) => {
     if (e.pointerType !== 'mouse' || !inclinar) return;
@@ -292,9 +293,7 @@ export default function TarjetaProducto({
           {imagen && <FotoTarjeta src={imagen} srcSet={srcSet} sizes={sizes} recorte={recorte} respaldo={respaldo} prioridad={prioridad} encajar={esCombo} className={s.img} />}
           {imagen && imagenHover && <FotoTarjeta src={imagenHover} srcSet={srcSetHover} sizes={sizes} recorte={recorteHover} className={`${s.img} ${s.imgHover}`} />}
           {collage.length > 0 && (
-            <span className={[s.collage, collage.length === 3 && s.collageTres].filter(Boolean).join(' ')} style={{ '--piezas': collage.length }}>
-              {collage.map((pz, i) => <FotoProducto key={`${i}-${pz.nombre || ''}`} className={s.collagePieza} src={pz.imagen} relleno="6%" />)}
-            </span>
+            <FotosCombo imagenes={collage.map((pz) => pz.imagen)} vertical />
           )}
         </Enlace>
         <span className={s.barrido} aria-hidden="true" />

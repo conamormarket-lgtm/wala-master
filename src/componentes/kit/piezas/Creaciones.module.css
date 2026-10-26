@@ -74,11 +74,11 @@
 
 /* Con ratón: la espalda al pasar por la tarjeta. */
 @media (hover: hover) and (pointer: fine) {
-  .creacion:hover .conEspalda .espalda {
+  :where(article:hover) .conEspalda .espalda {
     opacity: 1;
   }
 
-  .creacion:hover .conEspalda > img:not(.espalda) {
+  :where(article:hover) .conEspalda > img:not(.espalda) {
     opacity: 0;
   }
 
@@ -692,7 +692,7 @@
     transition: transform 0.55s var(--ease-signature);
   }
 
-  .creacion:hover .prenda {
+  :where(article:hover) .prenda {
     transform: translateY(-4px) rotate(calc((var(--i) - 0.5) * 14deg)) scale(1.04);
   }
 
@@ -760,7 +760,8 @@
   padding-top: 0.4rem;
 }
 
-.vertical .foto {
+.vertical .foto,
+.fotoComboVertical {
   aspect-ratio: 4 / 5;
 }
 
@@ -770,7 +771,8 @@
 }
 
 /* En el recuadro 4:5 las prendas de un combo crecen a lo alto. */
-.vertical .fotoCombo .prenda {
+.vertical .fotoCombo .prenda,
+.fotoComboVertical .prenda {
   aspect-ratio: 5 / 7;
 }
 

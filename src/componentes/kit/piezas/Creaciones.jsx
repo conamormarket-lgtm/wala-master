@@ -8,6 +8,7 @@ import { Etiqueta } from '../Etiquetas';
 import { soles } from '../TarjetaProducto';
 import { Sello } from '../Marca';
 import { FotoProducto } from './FotoProducto';
+import { FotosCombo } from './FotosCombo';
 import s from './Creaciones.module.css';
 
 /* Lo que se pregunta antes de cada acción de la comunidad (AccionesComunidad). */
@@ -167,22 +168,12 @@ export function TarjetaCreacion({
       <div className={s.caja}>
         <div className={s.fotoMarco}>
           {fotosCombo ? (
-            <div className={`${s.foto} ${s.fotoCombo}`}>
-              <div className={s.prendas} style={{ '--n': fotosCombo.length }}>
-                {fotosCombo.map((src, i) => (
-                  <FotoProducto
-                    key={`${i}-${src}`}
-                    className={[s.prenda, src && espaldasCombo[i] && s.conEspalda, src && espaldasCombo[i] && espalda && s.verEspalda].filter(Boolean).join(' ')}
-                    src={src || undefined}
-                    relleno="6%"
-                    style={{ '--i': i }}
-                    respaldo={<span className={s.porDisenar} title={tPorDisenar}><Paintbrush aria-hidden="true" /></span>}
-                  >
-                    {src && espaldasCombo[i] && <img className={s.espalda} src={espaldasCombo[i]} alt="" loading="lazy" draggable={false} />}
-                  </FotoProducto>
-                ))}
-              </div>
-            </div>
+            <FotosCombo
+              imagenes={fotosCombo}
+              imagenesEspalda={espaldasCombo}
+              verEspalda={espalda}
+              respaldo={<span className={s.porDisenar} title={tPorDisenar}><Paintbrush aria-hidden="true" /></span>}
+            />
           ) : (
             foto ? <div className={s.foto}>{foto}</div> : <FotoProducto
               className={[s.foto, imagenEspalda && s.conEspalda, espalda && s.verEspalda].filter(Boolean).join(' ')}

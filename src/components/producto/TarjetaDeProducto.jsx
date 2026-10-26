@@ -15,6 +15,7 @@ import PremiumProductCard from '../../pages/Tienda/components/PremiumProductCard
 import TarjetaProducto from '../../componentes/kit/TarjetaProducto';
 import { tarjetaDesdeProducto, portadaDeCombo } from '../../componentes/kit/adaptadores';
 import { esYoryoPersonalizable, rutaPersonalizarYoryo } from '../../utils/yoryoPersonalizacion.mjs';
+import usePiezasDelCombo from './usePiezasDelCombo';
 
 // La hoja "Agregar rápido" baja aparte, la primera vez que alguien la abre.
 const AgregarRapidoDeProducto = lazy(() => import('./AgregarRapidoDeProducto'));
@@ -65,6 +66,8 @@ function TarjetaNueva({
   const fichaVieja = useLoViejo('ficha');
   // null: la hoja nunca se abrió (no se monta ni baja su código).
   const [hoja, setHoja] = useState(null);
+  const [piezasVisibles, setPiezasVisibles] = useState(isAboveFold);
+  const { porId: subproductos } = usePiezasDelCombo(product, piezasVisibles);
 
   const { data: marcas } = useQuery({
     queryKey: ['brands'],
@@ -101,6 +104,7 @@ function TarjetaNueva({
     // Un combo se ve con su portada o, sin ella, con sus piezas (el kit).
     imagen: esCombo ? (portadaDeCombo(product) || undefined) : foto.src,
     catalogo: { marcas: marcas || [], marcaActual: currentBrandId },
+    subproductos,
   });
 
   const deseado = isFavorite(product.id);
@@ -122,8 +126,14 @@ function TarjetaNueva({
   };
 
   const precargar = useCallback(() => {
+    setPiezasVisibles(true);
     queryClient.setQueryData(['product', product.id], product);
   }, [queryClient, product]);
+
+  const alVer = () => {
+    setPiezasVisibles(true);
+    recordImpression();
+  };
 
   return (
     <>
@@ -148,7 +158,7 @@ function TarjetaNueva({
       onAgregar={alAgregar}
       deseado={deseado}
       onDeseo={alDesear}
-      onVisible={recordImpression}
+      onVisible={alVer}
       onAcercar={precargar}
       onMenu={sinMenu}
     />
