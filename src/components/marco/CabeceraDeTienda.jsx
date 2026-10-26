@@ -25,7 +25,7 @@ import EditableSection from '../admin/EditableSection';
 import CustomFontsInjector from '../common/CustomFontsInjector/CustomFontsInjector';
 import { MONEDA_SRC } from '../common/Moneda';
 import { Cabecera } from '../../componentes/kit/Navegacion';
-import { rutaDeMarca, sugerenciasDesdeBusqueda } from '../../componentes/kit/adaptadores';
+import { navDeMarca, rutaDeMarca, sugerenciasDesdeBusqueda } from '../../componentes/kit/adaptadores';
 import s from './CabeceraDeTienda.module.css';
 
 // La cabecera de antes, solo con el interruptor cabeceraVieja (guia/ELIMINAR.md).
@@ -257,10 +257,9 @@ function CabeceraConDatos() {
   const categoriasDelMenu = useMemo(() => {
     const conProducto = (id) => idsConProductos?.has(id);
     if (marcaActual) {
-      return (Array.isArray(marcaActual.categoryNav) ? marcaActual.categoryNav : [])
-        .filter((it) => it?.categoryId && conProducto(it.categoryId))
-        .slice()
-        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      // La misma fuente que las burbujas: sin copia manual, las categorías
+      // de /admin/categorias que usan los productos de esta marca.
+      return navDeMarca(marcaActual, { productos: productosDelMenu || [], categorias: categorias || [] }).items
         .slice(0, 10)
         .map((it) => ({
           id: it.categoryId,
@@ -270,7 +269,7 @@ function CabeceraConDatos() {
     }
     return (categorias || []).filter((c) => conProducto(c.id)).slice(0, 10)
       .map((c) => ({ id: c.id, nombre: c.name, url: `/tienda?categoria=${c.id}` }));
-  }, [marcaActual, slugMarca, categorias, idsConProductos]);
+  }, [marcaActual, slugMarca, categorias, idsConProductos, productosDelMenu]);
 
   const marcasDelMenu = useMemo(() => (marcas || [])
     .filter((b) => b?.name && b.active !== false && b.visible !== false)

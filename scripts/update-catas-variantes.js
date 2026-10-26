@@ -90,7 +90,6 @@ async function main() {
   fs.writeFileSync(backup, JSON.stringify({ project: PROJECT, date: new Date().toISOString(), documents: [...docs, brand].map(doc => ({ path: doc.ref.path, data: doc.data() })) }, null, 2));
   console.log('Respaldo:', backup);
   const batch = db.batch();
-  const nav = (brand.data().categoryNav || []).map(c => ({ ...c }));
   for (const { p, doc, data } of pending) {
     const uploads = [];
     for (const file of [p.regular, p.extra].filter(Boolean)) {
@@ -131,14 +130,7 @@ async function main() {
       updatedAt: FV.serverTimestamp(),
     };
     batch.update(doc.ref, patch, { lastUpdateTime: doc.updateTime });
-    if (p.id === 'catas-jogger-blanco') {
-      const item = nav.find(c => data.categories.includes(c.categoryId));
-      if (item) item.imageUrl = defaultVariant.imageUrl;
-    }
     console.log('Listo para guardar:', p.name, variants.length, 'colores');
-  }
-  if (JSON.stringify(nav) !== JSON.stringify(brand.data().categoryNav)) {
-    batch.update(brand.ref, { categoryNav: nav, updatedAt: FV.serverTimestamp() }, { lastUpdateTime: brand.updateTime });
   }
   await batch.commit();
   const after = await db.getAll(...docs.map(d => d.ref));

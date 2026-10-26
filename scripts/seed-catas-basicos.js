@@ -138,7 +138,6 @@ async function main() {
     } });
     return `https://firebasestorage.googleapis.com/v0/b/${BUCKET}/o/${encodeURIComponent(destination)}?alt=media&token=${token}`;
   }
-  const covers = {};
   for (const p of PRODUCTS) {
     const photos = [];
     const imagesVariantes = {};
@@ -155,7 +154,6 @@ async function main() {
       photos.push(url);
       imagesVariantes[url] = copies;
     }
-    covers[p.category] = photos[0];
     const gallery = photos.slice(1);
     const data = {
       name: p.name, nameLower: normalize(p.name), searchTokens: searchTokens(p.name, BRAND, productType),
@@ -176,7 +174,8 @@ async function main() {
     batch.create(db.collection('productos_wala').doc(p.id), data);
     console.log('Imágenes listas:', p.name);
   }
-  batch.update(brand.ref, { categoryNav: PRODUCTS.map((p, order) => ({ categoryId: categoryIds[p.category], name: p.category, imageUrl: covers[p.category], order })), updatedAt: FV.serverTimestamp() }, { lastUpdateTime: brand.updateTime });
+  // Las burbujas se derivan de tienda_categories y de los productos de Catas.
+  // No guardar copias de nombre, imagen u orden en la marca.
   for (const id of OLD) {
     const old = all.docs.find(d => d.id === id);
     batch.update(old.ref, { visible: false, deleted: true, deletedAt: new Date().toISOString(), searchTokens: [], updatedAt: FV.serverTimestamp() }, { lastUpdateTime: old.updateTime });

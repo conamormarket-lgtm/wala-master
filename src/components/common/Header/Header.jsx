@@ -25,6 +25,7 @@ import FlagIcon from '../../i18n/FlagIcon';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import { T } from '../../../i18n/useTranslatedText';
 import { registrarTextosSinTraducir } from '../../../services/textosSinTraducir';
+import { navDeMarca } from '../../../componentes/kit/adaptadores';
 import Moneda, { MONEDA_SRC } from '../Moneda';
 
 // La imagen de la moneda se pide en cuanto carga la app, no cuando se pinta el
@@ -391,11 +392,7 @@ const Header = () => {
   const categoriasDelMenu = useMemo(() => {
     const conProducto = (id) => idsConProductos?.has(id);
     if (brandActual) {
-      const nav = Array.isArray(brandActual.categoryNav) ? brandActual.categoryNav : [];
-      return nav
-        .filter((it) => it && it.categoryId && conProducto(it.categoryId))
-        .slice()
-        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      return navDeMarca(brandActual, { productos: productosParaCategorias || [], categorias: categoriesData || [] }).items
         .map((it) => ({
           id: it.categoryId,
           // El nombre puede venir vacio en la burbuja; se cae al de la categoria.
@@ -412,7 +409,7 @@ const Header = () => {
         name: c.name,
         url: `/tienda?categoria=${c.id}`,
       }));
-  }, [brandActual, brandSlug, categoriesData, idsConProductos]);
+  }, [brandActual, brandSlug, categoriesData, idsConProductos, productosParaCategorias]);
 
   const accountPopup = activeConfig?.accountPopup || {
     title: 'Mi cuenta',
