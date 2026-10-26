@@ -14,7 +14,7 @@ import { itemDeCombo, leerArmado, olvidarArmado } from '../../pages/Crear/comboC
 import { generarYoryo, fotosInlineYoryo, resolverVectorYoryo } from '../../pages/Crear/generarYoryo';
 import { cargarFuentesYoryo, componerArteYoryo, validarVectorSvg } from '../../pages/Crear/arteYoryo.mjs';
 import { YORYO_PACK_ID, YORYO_PIEZAS, datosYoryoVacios, validarDatosYoryo, medidasConfirmadas } from '../../utils/yoryoPersonalizacion.mjs';
-import { cambiarSeccion, distribucionRecomendada, esDistribucionEditable, seccionesYoryo } from '../../utils/distribucionYoryo.mjs';
+import { cambiarSeccion, distribucionRecomendada, esDistribucionEditable, fijarDistribucion, firmaDeDisenoYoryo, normalizarFirmaYoryo, seccionesYoryo } from '../../utils/distribucionYoryo.mjs';
 import SeccionesYoryo from './SeccionesYoryo';
 import LienzoYoryo from './LienzoYoryo';
 import Boton from '../../componentes/kit/Boton';
@@ -116,7 +116,11 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
   const recomendar = () => { cambiar('distribucion', distribucionRecomendada()); setSeccion('nombre'); };
   const elegirEquipo = (equipo) => {
     const vector = laser && config.produccion?.vectoresPorEquipo?.[equipo];
-    setDatos((prev) => prev.map((d, i) => i === indice ? { ...d, equipo, ...(vector ? { vector, plantilla: 'escudo' } : { vector: null, ...(d.plantilla === 'escudo' && { plantilla: 'nombre' }) }) } : d));
+    setDatos((prev) => prev.map((d, i) => {
+      if (i !== indice) return d;
+      const plantilla = vector ? 'escudo' : d.plantilla === 'escudo' ? 'nombre' : d.plantilla;
+      return { ...d, equipo, vector: vector || null, plantilla, ...(plantilla !== d.plantilla && esDistribucionEditable(d) && { distribucion: distribucionRecomendada() }) };
+    }));
     setError('');
   };
   useEffect(() => { try { localStorage.setItem(clave, JSON.stringify(datos)); } catch {} }, [clave, datos]);
@@ -177,11 +181,12 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
       const creaciones = [];
       for (let i = 0; i < productos.length; i++) {
         const p = productos[i];
-        const firma = JSON.stringify({ datos: datos[i], medidas: p.personalizacionYoryo.produccion || {} });
+        const datosGuardar = fijarDistribucion(datos[i], p.personalizacionYoryo);
+        const firma = firmaDeDisenoYoryo(datosGuardar, p.personalizacionYoryo.produccion || {});
         const anterior = originalesRef.current[i];
-        if (anterior?.firmaYoryo === firma && (anterior?.archivosProduccion?.length || !alCarrito && anterior.estado === 'borrador')) { creaciones.push({ ...anterior, id: anterior.id || anterior.designId }); continue; }
+        if (normalizarFirmaYoryo(anterior?.firmaYoryo) === firma && (anterior?.archivosProduccion?.length || !alCarrito && anterior.estado === 'borrador')) { creaciones.push({ ...anterior, id: anterior.id || anterior.designId }); continue; }
         const incompleta = validarDatosYoryo(datos[i], p.personalizacionYoryo.tecnica);
-        const nueva = incompleta ? { tipo: 'crear', estado: 'borrador', productId: p.id, productName: p.name, name: `${p.personalizacionYoryo.nombre} · En preparación`, datosYoryo: datos[i], firmaYoryo: firma, produccionYoryo: { tecnica: p.personalizacionYoryo.tecnica, lista: false }, archivosProduccion: [], archivosImpresion: [], vistasPrevias: [], layersByView: {} } : await generarYoryo({ uid: user.uid, producto: p, datos: datos[i] });
+        const nueva = incompleta ? { tipo: 'crear', estado: 'borrador', productId: p.id, productName: p.name, name: `${p.personalizacionYoryo.nombre} · En preparación`, datosYoryo: datosGuardar, firmaYoryo: firma, produccionYoryo: { tecnica: p.personalizacionYoryo.tecnica, lista: false }, archivosProduccion: [], archivosImpresion: [], vistasPrevias: [], layersByView: {} } : await generarYoryo({ uid: user.uid, producto: p, datos: datosGuardar });
         const r = await saveDesign(user.uid, { ...nueva, ...(idsGuardadosRef.current[i] && { designId: idsGuardadosRef.current[i] }), ...(esPack && { combo: { id: main.id, nombre: main.name, pieza: i } }) });
         if (r.error || !r.id) throw new Error(r.error || 'No pudimos guardar el diseño.');
         idsGuardadosRef.current[i] = r.id;
@@ -241,7 +246,7 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
       </button>)}</div>}
     </section>}
     panel={<div className={s.campos}>
-      <ElegirUno etiqueta="Elige una plantilla" opciones={plantillas} valor={plantillas[claves.indexOf(actual.plantilla)] || plantillas[0]} onCambiar={(v) => { const plantilla = claves[plantillas.indexOf(v)] || 'nombre'; cambiar('plantilla', plantilla); setSeccion(laser ? ['escudo', 'iniciales'].includes(plantilla) ? 'escudo' : 'nombre' : 'foto'); }} />
+      <ElegirUno etiqueta="Elige una plantilla" opciones={plantillas} valor={plantillas[claves.indexOf(actual.plantilla)] || plantillas[0]} onCambiar={(v) => { const plantilla = claves[plantillas.indexOf(v)] || 'nombre'; setDatos((prev) => prev.map((d, i) => i === indice ? { ...d, plantilla, ...(esDistribucionEditable(d) && plantilla !== d.plantilla && { distribucion: distribucionRecomendada() }) } : d)); setError(''); setSeccion(laser ? ['escudo', 'iniciales'].includes(plantilla) ? 'escudo' : 'nombre' : 'foto'); }} />
       {editable ? <SeccionesYoryo datos={actual} config={config} elementos={indiceArte === indice ? composicion.elementos : []} activa={seccionActual} onActiva={setSeccion} onCambiar={cambiarParte} onRestablecer={recomendar} disabled={subiendo} contenidos={{ escudo: <>{campoEquipo}{campoVector}</>, nombre: campoNombre, frase: campoFrase, foto: campoFotos, fecha: actual.plantilla === 'equipo' ? campoEquipo : campoFecha }} /> : <>
         <Aviso tipo="info" compacto>Este diseño conserva sus proporciones anteriores. Puedes aplicar la distribución recomendada para ajustar cada sección.</Aviso>
         <Boton variante="contorno" onClick={recomendar} disabled={subiendo}><Texto>Usar distribución recomendada</Texto></Boton>

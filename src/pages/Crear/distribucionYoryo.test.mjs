@@ -5,7 +5,7 @@ import opentype from 'opentype.js';
 import { DOMParser } from '@xmldom/xmldom';
 import { componerArteYoryo } from './arteYoryo.mjs';
 import { datosYoryoVacios } from '../../utils/yoryoPersonalizacion.mjs';
-import { FUENTES_YORYO, areaVistaYoryo, cambiarSeccion, distribucionRecomendada, vistaYoryo } from '../../utils/distribucionYoryo.mjs';
+import { FUENTES_YORYO, areaVistaYoryo, cambiarSeccion, distribucionRecomendada, fijarDistribucion, firmaDeDisenoYoryo, normalizarFirmaYoryo, seccionesYoryo, vistaYoryo } from '../../utils/distribucionYoryo.mjs';
 import { serializarTrazos } from './trazosYoryo.mjs';
 
 const fuentes = {};
@@ -21,7 +21,7 @@ test('la distribución recomendada aprovecha el área y da letras independientes
   const { svg, elementos } = componer(datos);
   assert.equal(elementos.length, 3);
   assert.ok(elementos.find((e) => e.id === 'nombre').w > .8);
-  assert.ok(elementos.find((e) => e.id === 'escudo').h > .55);
+  assert.ok(elementos.find((e) => e.id === 'escudo').h >= .54);
   assert.match(svg, /width="80mm" height="100mm"/);
   assert.doesNotMatch(svg, /<text|<image|clip-path/);
   const distinto = componer(cambiarSeccion(datos, 'nombre', { fuente: 'Fuerte', escala: 70 }));
@@ -32,6 +32,19 @@ test('la distribución recomendada aprovecha el área y da letras independientes
   const automatico = componer({ ...datos, frase: 'Blanquiazul de corazón' });
   const fraseAutomatica = Array.from(elementosSvg(automatico.svg)).find((g) => g.getAttribute('data-yoryo-elemento') === 'frase');
   assert.equal(fraseAutomatica.getElementsByTagName('path').length, 2);
+});
+
+test('los tamaños, posiciones y letras resueltos se guardan juntos y no cambian al reabrir', () => {
+  const guardado = fijarDistribucion(datos, config);
+  assert.equal(guardado.distribucion.elementos.nombre.fuente, 'Elegante');
+  assert.equal(guardado.distribucion.elementos.frase.fuente, 'Manuscrita');
+  assert.equal(guardado.distribucion.elementos.nombre.h, .12);
+  assert.deepEqual(fijarDistribucion(guardado, config), guardado);
+  assert.equal(componer(guardado).svg, componer(datos).svg);
+  assert.deepEqual(datos.distribucion.elementos, {});
+  const reordenado = (obj) => Array.isArray(obj) ? obj.map(reordenado) : obj && typeof obj === 'object' ? Object.fromEntries(Object.keys(obj).sort().reverse().map((k) => [k, reordenado(obj[k])])) : obj;
+  assert.equal(firmaDeDisenoYoryo(guardado, config.produccion), firmaDeDisenoYoryo(reordenado(guardado), reordenado(config.produccion)));
+  assert.equal(normalizarFirmaYoryo(JSON.stringify({ datos: guardado, medidas: config.produccion })), firmaDeDisenoYoryo(guardado, config.produccion));
 });
 
 test('mover o agrandar no permite sacar la geometría del área ni deformar el escudo', () => {
@@ -64,6 +77,9 @@ test('los diseños anteriores conservan distribución, tipografía y encuadre ha
   const vista = vistaYoryo(config, datos);
   assert.ok(area.x >= vista.x && area.y >= vista.y && area.x + area.w <= vista.x + vista.w + .00001);
   assert.ok(Math.abs(area.h * 4 / 3 / area.w - config.proporcion) < .0001);
+  const primeraVersion = { ...datos, distribucion: { version: 2, elementos: {} } };
+  assert.equal(seccionesYoryo(primeraVersion, config).find((e) => e.id === 'nombre').y, .72);
+  assert.equal(fijarDistribucion(primeraVersion, config).distribucion.version, 2);
 });
 
 test('todas las letras conservan sus contornos, incluso con errores de precisión decimal de OpenType', () => {

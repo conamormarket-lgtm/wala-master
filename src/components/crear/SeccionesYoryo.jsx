@@ -31,7 +31,7 @@ export default function SeccionesYoryo({ datos, config, elementos = [], activa, 
       </div>
       <div className={s.accionesSeccion}>
         <Boton variante="contorno" tamano="sm" icono={<AlignCenter />} disabled={disabled} onClick={() => onCambiar(seccion.id, { x: .5 })}><Texto>Centrar sección</Texto></Boton>
-        <Boton variante="fantasma" tamano="sm" icono={<RotateCcw />} disabled={disabled} onClick={() => onCambiar(seccion.id, { x: seccion.x, y: seccion.y, escala: 100, fuente: seccion.fuente || '', mayusculas: seccion.mayusculas ?? false })}><Texto>Restablecer sección</Texto></Boton>
+        <Boton variante="fantasma" tamano="sm" icono={<RotateCcw />} disabled={disabled} onClick={() => onCambiar(seccion.id, { x: seccion.x, y: seccion.y, w: seccion.w, h: seccion.h, escala: 100, fuente: seccion.fuente || '', mayusculas: seccion.mayusculas ?? false })}><Texto>Restablecer sección</Texto></Boton>
       </div>
       <p className={s.nota}><Texto>El tamaño se adapta al texto y al espacio disponible para mantenerlo dentro del área.</Texto></p>
       {superpuesto && <Aviso tipo="aviso" compacto>{`${seccion.nombre} se superpone con ${superpuesto.nombre.toLowerCase()}. Mueve o reduce la sección, o aplica la distribución recomendada.`}</Aviso>}

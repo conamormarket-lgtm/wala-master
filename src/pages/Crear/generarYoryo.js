@@ -1,6 +1,7 @@
 import { subirArchivoImpresion, subirVectorYoryo, subirVistaPrevia } from '../../services/crearArchivos';
 import { cargarFuentesYoryo, crearArteYoryo, archivoComoDataUrl, svgComoPng, validarVectorSvg, vistaProductoYoryo } from './arteYoryo.mjs';
 import { medidasConfirmadas, validarDatosYoryo } from '../../utils/yoryoPersonalizacion.mjs';
+import { fijarDistribucion, firmaDeDisenoYoryo } from '../../utils/distribucionYoryo.mjs';
 
 const originales = new Map();
 const cargarOriginal = (url, tipo) => {
@@ -26,6 +27,7 @@ export async function resolverVectorYoryo(datos) {
 
 export async function generarYoryo({ uid, producto, datos }) {
   const config = producto.personalizacionYoryo;
+  datos = fijarDistribucion(datos, config);
   const error = validarDatosYoryo(datos, config.tecnica);
   if (error) throw new Error(error);
   const fuentes = await cargarFuentesYoryo(datos, config);
@@ -47,7 +49,7 @@ export async function generarYoryo({ uid, producto, datos }) {
   const previa = await subirVistaPrevia(uid, previaBlob, 'frente');
   return {
     tipo: 'crear', estado: 'guardada', productId: producto.id, productName: producto.name,
-    name: `${config.nombre} · ${datos.nombre}`, datosYoryo: datos, firmaYoryo: JSON.stringify({ datos, medidas }),
+    name: `${config.nombre} · ${datos.nombre}`, datosYoryo: datos, firmaYoryo: firmaDeDisenoYoryo(datos, medidas),
     produccionYoryo: { tecnica: config.tecnica, lista, revision }, archivosProduccion: [archivo],
     // Compatibilidad con la consulta y la representación de creaciones actuales.
     archivosImpresion: config.tecnica === 'laser' ? [] : [{ ...archivo, vista: 'frente', nombre: 'Frente' }],
