@@ -2,28 +2,58 @@ import { medidasConfirmadas } from '../../utils/yoryoPersonalizacion.mjs';
 
 const escape = (s) => String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
 const ETIQUETAS = new Set(['svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon']);
-const ATRIBUTOS = new Set(['d', 'x', 'y', 'width', 'height', 'cx', 'cy', 'r', 'rx', 'ry', 'x1', 'x2', 'y1', 'y2', 'points', 'transform', 'fill', 'stroke', 'stroke-width', 'fill-rule', 'stroke-linecap', 'stroke-linejoin', 'viewBox', 'xmlns']);
+const PRESENTACION = new Set(['fill', 'stroke', 'stroke-width', 'fill-rule', 'clip-rule', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit']);
+const ATRIBUTOS = new Set(['d', 'x', 'y', 'width', 'height', 'cx', 'cy', 'r', 'rx', 'ry', 'x1', 'x2', 'y1', 'y2', 'points', 'transform', ...PRESENTACION, 'viewBox', 'xmlns']);
+const AUXILIAR = /^(?:id|class|version|role|aria-[\w-]+|data-[\w-]+|xmlns:[\w-]+|(?:inkscape|sodipodi):[\w-]+)$/;
 
 /** SVG geométrico autocontenido. No acepta fotos incrustadas ni texto dependiente de fuentes. */
 export function validarVectorSvg(texto) {
   if (texto.length > 1024 * 1024 || /<!DOCTYPE|<!ENTITY/i.test(texto)) throw new Error('El SVG no es válido o pesa más de 1 MB.');
   const doc = new DOMParser().parseFromString(texto, 'image/svg+xml');
-  if (doc.querySelector('parsererror') || doc.documentElement.localName !== 'svg') throw new Error('No pudimos leer el SVG.');
+  if (doc.getElementsByTagName('parsererror').length || doc.documentElement.localName !== 'svg') throw new Error('No pudimos leer el SVG.');
+  // Estos nodos no se dibujan. Un path de defs sin referencias tampoco debe
+  // convertirse accidentalmente en parte del escudo al quitar su contenedor.
+  for (const el of Array.from(doc.getElementsByTagName('*'))) {
+    if (['metadata', 'title', 'desc', 'defs'].includes(el.localName)) el.parentNode?.removeChild(el);
+  }
   let formas = 0;
-  for (const el of [doc.documentElement, ...doc.documentElement.querySelectorAll('*')]) {
+  for (const el of Array.from(doc.getElementsByTagName('*'))) {
+    if (el.localName === 'image') throw new Error('Este SVG contiene una imagen incrustada. Para el grabado, usa el escudo formado por trazos vectoriales.');
+    if (el.localName === 'text' || el.localName === 'tspan') throw new Error('El SVG contiene texto editable. Convierte sus textos a trazos y vuelve a subirlo.');
     if (!ETIQUETAS.has(el.localName)) throw new Error('Usa un SVG vectorial con textos convertidos a trazos, sin imágenes ni efectos.');
     if (!['svg', 'g'].includes(el.localName)) formas++;
-    for (const a of [...el.attributes]) {
+    // Los exportadores guardan rellenos y líneas en style; se convierten a
+    // atributos para que el archivo final no dependa de hojas de estilo.
+    if (el.hasAttribute('style')) {
+      for (const declaracion of el.getAttribute('style').split(';').filter((v) => v.trim())) {
+        const separador = declaracion.indexOf(':');
+        const propiedad = declaracion.slice(0, separador).trim().toLowerCase();
+        if (separador < 0 || !PRESENTACION.has(propiedad)) throw new Error('El SVG contiene estilos o efectos que no sirven para este grabado.');
+        el.setAttribute(propiedad, declaracion.slice(separador + 1).trim().replace(/\s*!important\s*$/i, ''));
+      }
+      el.removeAttribute('style');
+    }
+    for (const a of Array.from(el.attributes)) {
+      if (AUXILIAR.test(a.name)) { el.removeAttribute(a.name); continue; }
       if (!ATRIBUTOS.has(a.name) || /url\s*\(|javascript:|data:|https?:/i.test(a.value) && a.name !== 'xmlns') throw new Error('El SVG contiene referencias o efectos que no sirven para este grabado.');
       if (a.name === 'fill' || a.name === 'stroke') el.setAttribute(a.name, a.value === 'none' ? 'none' : /^(white|#fff|#ffffff)$/i.test(a.value) ? '#FFFFFF' : '#000000');
     }
-    if ([...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) throw new Error('Convierte los textos del SVG a trazos.');
+    if (Array.from(el.childNodes).some((n) => n.nodeType === 3 && n.textContent.trim())) throw new Error('Convierte los textos del SVG a trazos.');
   }
   const raiz = doc.documentElement;
   const caja = (raiz.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
   if (caja.length !== 4 || !caja.every(Number.isFinite) || caja[2] <= 0 || caja[3] <= 0 || !formas) throw new Error('El SVG necesita un viewBox válido y trazos visibles.');
-  raiz.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-  return { svg: new XMLSerializer().serializeToString(raiz), viewBox: caja };
+  // Al colocar el escudo se retira su svg exterior. Conserva en un grupo el
+  // relleno, trazo y transformaciones heredados de esa raíz.
+  const limpia = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  limpia.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  limpia.setAttribute('viewBox', caja.join(' '));
+  const grupo = doc.createElementNS('http://www.w3.org/2000/svg', 'g');
+  for (const a of Array.from(raiz.attributes)) if (PRESENTACION.has(a.name) || a.name === 'transform') grupo.setAttribute(a.name, a.value);
+  const destino = grupo.attributes.length ? grupo : limpia;
+  while (raiz.firstChild) destino.appendChild(raiz.firstChild);
+  if (destino === grupo) limpia.appendChild(grupo);
+  return { svg: new XMLSerializer().serializeToString(limpia), viewBox: caja };
 }
 
 const fuentes = new Map();
