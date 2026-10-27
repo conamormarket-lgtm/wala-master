@@ -23,6 +23,11 @@ export default function SeccionesYoryo({ datos, config, elementos = [], activa, 
     <div className={s.campos} key={seccion.id}>
       {contenidos[seccion.id]}
       {esTexto && <>
+        {config.tecnica !== 'laser' && <>
+          <label>Color del texto <input type="color" aria-label="Color del texto" value={ajuste.color || '#26342B'} disabled={disabled} onChange={(e) => onCambiar(seccion.id, { color: e.target.value })} /></label>
+          <Campo etiqueta="Alineación" opciones={[{ valor: 'izquierda', texto: 'Izquierda' }, { valor: 'centro', texto: 'Centro' }, { valor: 'derecha', texto: 'Derecha' }]} value={ajuste.alineacion || 'centro'} disabled={disabled} onChange={(e) => onCambiar(seccion.id, { alineacion: e.target.value })} />
+          <Deslizador etiqueta="Ancho máximo del texto" valor={Math.round(ajuste.w * 100)} min={5} max={96} paso={1} formato={(v) => `${v}%`} disabled={disabled} onChange={(v) => onCambiar(seccion.id, { w: v / 100 })} />
+        </>}
         <Campo etiqueta={`Letra ${sujeto}`} opciones={FUENTES_YORYO.map((f) => ({ valor: f.id, texto: f.id, detalle: f.detalle, icono: <span aria-hidden="true" className={s.muestraFuente} style={{ fontFamily: `'${f.familia}'` }}>Aa</span> }))} value={ajuste.fuente} disabled={disabled} onChange={(e) => onCambiar(seccion.id, { fuente: e.target.value })} />
         <Casilla etiqueta="Usar mayúsculas" activo={ajuste.mayusculas} disabled={disabled} onChange={(mayusculas) => onCambiar(seccion.id, { mayusculas })} />
       </>}
@@ -32,7 +37,7 @@ export default function SeccionesYoryo({ datos, config, elementos = [], activa, 
       </div>
       <div className={s.accionesSeccion}>
         <Boton variante="contorno" tamano="sm" icono={<AlignCenter />} disabled={disabled} onClick={() => onCambiar(seccion.id, { x: .5 })}><Texto>Centrar sección</Texto></Boton>
-        <Boton variante="fantasma" tamano="sm" icono={<RotateCcw />} disabled={disabled} onClick={() => onCambiar(seccion.id, { x: seccion.x, y: seccion.y, w: seccion.w, h: seccion.h, escala: 100, fuente: seccion.fuente || '', mayusculas: seccion.mayusculas ?? false })}><Texto>Restablecer sección</Texto></Boton>
+        <Boton variante="fantasma" tamano="sm" icono={<RotateCcw />} disabled={disabled} onClick={() => onCambiar(seccion.id, { x: seccion.x, y: seccion.y, w: seccion.w, h: seccion.h, escala: seccion.escala || 100, fuente: seccion.fuente || '', mayusculas: seccion.mayusculas ?? false, color: seccion.color || '', alineacion: seccion.alineacion || 'centro', orden: seccion.orden ?? 3 })}><Texto>Restablecer sección</Texto></Boton>
       </div>
       <p className={s.nota}><Texto>El tamaño se adapta al texto y al espacio disponible para mantenerlo dentro del área.</Texto></p>
       {superpuesto && <Aviso tipo="aviso" compacto>{`${seccion.nombre} se superpone con ${superpuesto.nombre.toLowerCase()}. Mueve o reduce la sección, o aplica la distribución recomendada.`}</Aviso>}

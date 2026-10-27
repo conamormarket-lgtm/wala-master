@@ -3,6 +3,7 @@ import { FUENTES_YORYO, ajusteSeccion, esDistribucionEditable, seccionesYoryo, v
 import { componerEditableYoryo } from './componerYoryo.mjs';
 import { serializarTrazos } from './trazosYoryo.mjs';
 import { configurarDisenoYoryo, medidasMockupYoryo } from '../../utils/mockupYoryo.mjs';
+import { establecerPppPng } from '../../utils/resolucionPng.mjs';
 
 const escape = (s) => String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
 const ETIQUETAS = new Set(['svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon']);
@@ -144,7 +145,7 @@ export async function svgComoPng(svg, ancho = 1800, alto) {
   canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   if (!blob) throw new Error('No pudimos preparar la imagen.');
-  return blob;
+  return establecerPppPng(blob);
 }
 
 /** Simulación sobre la foto real. Sus coordenadas visuales no son medidas de fabricación. */

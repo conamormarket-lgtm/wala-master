@@ -12,7 +12,7 @@ import { prepararImagenCliente, subirImagenCliente, subirVectorYoryo } from '../
 import { itemDeCreacion } from '../../pages/Crear/creacionCarrito';
 import { itemDeCombo, leerArmado, olvidarArmado } from '../../pages/Crear/comboCrear';
 import { generarYoryo, generarBorradorYoryo, fotosInlineYoryo, resolverVectorYoryo, cargarPlantillaYoryo } from '../../pages/Crear/generarYoryo';
-import { cargarFuentesYoryo, componerArteYoryo, validarVectorSvg } from '../../pages/Crear/arteYoryo.mjs';
+import { cargarFuentesYoryo, componerArteYoryo, validarVectorSvg, svgComoPng } from '../../pages/Crear/arteYoryo.mjs';
 import { YORYO_PACK_ID, YORYO_PIEZAS, datosYoryoVacios, validarDatosYoryo, medidasConfirmadas } from '../../utils/yoryoPersonalizacion.mjs';
 import { cambiarSeccion, distribucionRecomendada, esDistribucionEditable, fijarDistribucion, firmaDeDisenoYoryo, normalizarFirmaYoryo, seccionesYoryo } from '../../utils/distribucionYoryo.mjs';
 import SeccionesYoryo from './SeccionesYoryo';
@@ -31,6 +31,8 @@ import { Texto } from '../../componentes/kit/Traduccion';
 import { PLANTILLAS_IMPRESION_YORYO } from '../../utils/plantillasYoryo.mjs';
 import { configurarDisenoYoryo, prepararMockupYoryo } from '../../utils/mockupYoryo.mjs';
 import { vectorLaserDeEquipo } from '../../utils/vectoresLaserYoryo.mjs';
+import { aplicarPresetYoryo, dimensionesExportacionYoryo, resolucionFondoYoryo, usaCapasYoryo } from '../../utils/capasYoryo.mjs';
+import { obtenerPlantillasYoryo } from '../../services/plantillasYoryo';
 import estudio from './EstudioDeTienda.module.css';
 import s from './PersonalizadorYoryo.module.css';
 
@@ -50,6 +52,8 @@ export default function PersonalizadorYoryo() {
   const item = cartId ? items.find((i) => i.id === cartId && i.productId === id) : null;
   const ids = esPack ? [id, ...YORYO_PIEZAS.map((p) => p.id)] : [id];
   const queries = useQueries({ queries: ids.map((pid) => ({ queryKey: ['product', pid], queryFn: async () => { const r = await getProduct(pid); if (r.error || !r.data) throw new Error('No pudimos cargar el producto.'); return r.data; } })) });
+  const necesitaPlantillas = queries.some((q) => q.data?.personalizacionYoryo?.tecnica === 'impresion');
+  const plantillasAdmin = useQuery({ queryKey: ['plantillas-yoryo'], queryFn: obtenerPlantillasYoryo, enabled: necesitaPlantillas });
   const designId = params.get('designId');
   const diseno = useQuery({ queryKey: ['creacion', designId, user?.uid], enabled: Boolean(designId && user), queryFn: async () => { const r = await getDesignById(designId); return r.data ? { ...r.data, id: designId } : null; } });
   const mio = esPack ? params.get('mio') || '' : '';
@@ -62,7 +66,8 @@ export default function PersonalizadorYoryo() {
     const r = await getDesignById(p.designId);
     return r.data?.userId === user.uid && r.data.productId === YORYO_PIEZAS[i].id ? { ...r.data, id: p.designId } : null;
   })) });
-  if (loading || queries.some((q) => q.isLoading) || diseno.isLoading && designId && user || miCombo.isLoading && mio && user || anteriores.some((q) => q.isLoading) || traslado.isLoading && user && armado.some((p) => p.designId)) return <EsqueletoPagina forma="estudio" />;
+  if (loading || necesitaPlantillas && plantillasAdmin.isLoading || queries.some((q) => q.isLoading) || diseno.isLoading && designId && user || miCombo.isLoading && mio && user || anteriores.some((q) => q.isLoading) || traslado.isLoading && user && armado.some((p) => p.designId)) return <EsqueletoPagina forma="estudio" />;
+  if (necesitaPlantillas && plantillasAdmin.isError) return <><EstadoVacio titulo="No pudimos cargar las plantillas" texto="Revisa tu conexión y vuelve a intentarlo." /><Boton onClick={() => plantillasAdmin.refetch()}>Reintentar</Boton></>;
   if (queries.some((q) => q.isError || q.data?.deleted || q.data?.visible === false)) return <EstadoVacio titulo="No pudimos abrir este producto" texto="Vuelve a la tienda e inténtalo de nuevo." />;
   if (cartId && !item) return <EstadoVacio titulo="Este artículo ya no está en tu carrito" texto="Regresa al carrito para elegir el producto que quieres editar." />;
   if (designId && (!user || !diseno.data || diseno.data.userId !== user.uid || diseno.data.productId !== id)) return <EstadoVacio titulo="No pudimos abrir este diseño" texto="Inicia sesión con la cuenta que lo creó." />;
@@ -70,10 +75,10 @@ export default function PersonalizadorYoryo() {
   const main = queries[0].data;
   const productos = esPack ? queries.slice(1).map((q) => q.data) : [main];
   const piezaInicial = Number(params.get('pieza'));
-  return <FormularioYoryo key={`${id}:${user?.uid || 'invitado'}:${cartId}:${designId || mio}`} main={main} productos={productos} item={item} creacion={diseno.data} creacionesCuenta={cuentaValida ? anteriores.map((q) => q.data) : traslado.data || []} mio={mio} nuevo={params.has('nuevo')} esPack={esPack} indiceInicial={Number.isInteger(piezaInicial) && piezaInicial >= 0 && piezaInicial < productos.length ? piezaInicial : 0} />;
+  return <FormularioYoryo key={`${id}:${user?.uid || 'invitado'}:${cartId}:${designId || mio}`} presets={plantillasAdmin.data} main={main} productos={productos} item={item} creacion={diseno.data} creacionesCuenta={cuentaValida ? anteriores.map((q) => q.data) : traslado.data || []} mio={mio} nuevo={params.has('nuevo')} esPack={esPack} indiceInicial={Number.isInteger(piezaInicial) && piezaInicial >= 0 && piezaInicial < productos.length ? piezaInicial : 0} />;
 }
 
-function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [], mio, nuevo = false, esPack, indiceInicial = 0 }) {
+function FormularioYoryo({ main, productos, presets = {}, item, creacion, creacionesCuenta = [], mio, nuevo = false, esPack, indiceInicial = 0 }) {
   const { user, isAdmin } = useAuth();
   const { addToCart, actualizarPersonalizacion, items } = useCart();
   const toast = useGlobalToast();
@@ -87,7 +92,7 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
   const miGuardadoRef = useRef(!item && originales.some((d) => d.estado === 'borrador') ? mio : '');
   const firmaCarritoRef = useRef(item ? JSON.stringify(item.customization) : '');
   const [datos, setDatos, historial] = useHistorialYoryo(() => {
-    const adaptar = (lista) => lista.map((d, i) => prepararMockupYoryo(d, productos[i].personalizacionYoryo));
+    const adaptar = (lista) => lista.map((d, i) => aplicarPresetYoryo(prepararMockupYoryo(d, productos[i].personalizacionYoryo), productos[i].personalizacionYoryo, presets));
     if (user && !originales.length) {
       try { const pendiente = JSON.parse(sessionStorage.getItem(`wala:yoryo:login:${main.id}`) || 'null'); if (Array.isArray(pendiente) && pendiente.length === productos.length) return adaptar(pendiente); } catch {}
     }
@@ -97,7 +102,7 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
       const anterior = originales[i]?.datosYoryo;
       const inicial = { ...datosYoryoVacios(), ...(!anterior && productos[i].personalizacionYoryo.tecnica === 'impresion' ? { plantillaVisual: 'dorado', formatoPlantilla: 2 } : {}), ...(anterior || {}) };
       if (anterior && !anterior.distribucion) delete inicial.distribucion;
-      return prepararMockupYoryo(inicial, productos[i].personalizacionYoryo);
+      return aplicarPresetYoryo(prepararMockupYoryo(inicial, productos[i].personalizacionYoryo), productos[i].personalizacionYoryo, presets);
     });
   });
   const datosRef = useRef(datos);
@@ -122,7 +127,7 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
   const inputVector = useRef(null);
   const producto = productos[indice];
   const actual = datos[indice];
-  const config = useMemo(() => configurarDisenoYoryo(producto.personalizacionYoryo, actual), [producto.personalizacionYoryo, actual.formatoPlantilla, actual.plantillaVisual, actual.equipo]); // eslint-disable-line react-hooks/exhaustive-deps
+  const config = useMemo(() => configurarDisenoYoryo(producto.personalizacionYoryo, actual), [producto.personalizacionYoryo, actual.formatoPlantilla, actual.plantillaVisual, actual.equipo, actual.plantillaConfig]); // eslint-disable-line react-hooks/exhaustive-deps
   const laser = config.tecnica === 'laser';
   const editable = esDistribucionEditable(actual);
   const seccionActual = seccionesYoryo(actual, config).some((e) => e.id === seccion) ? seccion : 'nombre';
@@ -141,7 +146,8 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
     setDatos((prev) => prev.map((d, i) => {
       if (i !== indice) return d;
       const plantilla = vector ? 'escudo' : d.plantilla;
-      return { ...d, equipo, vector: vector || null, plantilla, ...(plantilla !== d.plantilla && esDistribucionEditable(d) && { distribucion: distribucionRecomendada() }) };
+      const siguiente = { ...d, equipo, vector: vector || null, plantilla, ...(d.plantillaVisual === 'deportivo' && { plantillaConfig: null, distribucion: distribucionRecomendada() }), ...(plantilla !== d.plantilla && esDistribucionEditable(d) && { distribucion: distribucionRecomendada() }) };
+      return aplicarPresetYoryo(siguiente, producto.personalizacionYoryo, presets);
     }));
     setError('');
   };
@@ -183,7 +189,7 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
       const cantidad = actual.plantilla === 'collage' ? 3 : 1;
       for (const file of Array.from(files || []).slice(0, cantidad)) {
         const preparada = await prepararImagenCliente(file);
-        try { lista.push({ url: await subirImagenCliente(user.uid, preparada.blob) }); }
+        try { lista.push({ url: await subirImagenCliente(user.uid, preparada.blob), ancho: preparada.ancho, alto: preparada.alto, ...(usaCapasYoryo(actual) && { encaje: 'completa' }) }); }
         finally { URL.revokeObjectURL(preparada.urlLocal); }
       }
       if (lista.length) {
@@ -248,11 +254,17 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
     finally { setOcupado(''); }
   };
 
-  const descargar = () => {
-    if (!arte) return;
-    const url = URL.createObjectURL(new Blob([arte], { type: 'image/svg+xml' }));
-    const a = document.createElement('a'); a.href = url; a.download = `${config.nombre.toLowerCase()}-vista-previa.svg`; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const descargar = async () => {
+    setOcupado('descargando'); setError('');
+    try {
+      const [fuentes, fotos, plantilla, resueltos] = await Promise.all([cargarFuentesYoryo(actual, config), laser ? [] : fotosInlineYoryo(actual), laser ? {} : cargarPlantillaYoryo(actual), resolverVectorYoryo(actual)]);
+      const svg = componerArteYoryo({ datos: resueltos, config, fuentes, fotos, plantilla }).svg;
+      const { ancho, alto } = dimensionesExportacionYoryo(actual, config);
+      const blob = laser ? new Blob([svg], { type: 'image/svg+xml' }) : await svgComoPng(svg, ancho, alto);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `${config.nombre.toLowerCase()}-${laser ? 'grabado.svg' : `${ancho}x${alto}.png`}`; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) { setError(e.message); } finally { setOcupado(''); }
   };
   const plantillas = laser ? ['Nombre y frase', 'Iniciales', 'Escudo y nombre'] : config.nombre === 'Mousepad' ? ['Foto y texto', 'Equipo'] : ['Foto y texto', 'Equipo', 'Aniversario', 'Collage'];
   const claves = laser ? ['nombre', 'iniciales', 'escudo'] : config.nombre === 'Mousepad' ? ['nombre', 'equipo'] : ['nombre', 'equipo', 'aniversario', 'collage'];
@@ -260,8 +272,8 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
   const bloqueado = subiendo || enGesto;
   const faltanMedidas = productos.some((p) => !medidasConfirmadas(p.personalizacionYoryo.produccion));
   const campoNombre = <Campo etiqueta={laser ? 'Nombre para grabar' : 'Nombre o nombres'} value={actual.nombre} maxLength={60} disabled={bloqueado} onChange={(e) => cambiar('nombre', e.target.value)} placeholder="Ej. Daniel" />;
-  const campoEquipo = (laser && actual.plantilla !== 'iniciales' || actual.plantilla === 'equipo') && <Campo etiqueta="Equipo (opcional)" opciones={[{ valor: '', texto: 'Sin equipo' }, ...EQUIPOS.map((v) => ({ valor: v, texto: v }))]} value={actual.equipo} disabled={bloqueado} onChange={(e) => elegirEquipo(e.target.value)} />;
-  const campoFrase = <Campo etiqueta={laser ? 'Frase para grabar (opcional)' : 'Dedicatoria (opcional)'} value={actual.frase} maxLength={160} disabled={bloqueado} multilinea onChange={(e) => cambiar('frase', e.target.value)} />;
+  const campoEquipo = (laser && actual.plantilla !== 'iniciales' || actual.plantilla === 'equipo') && <Campo etiqueta={usaCapasYoryo(actual) ? 'Equipo' : 'Equipo (opcional)'} opciones={[...(!usaCapasYoryo(actual) ? [{ valor: '', texto: 'Sin equipo' }] : []), ...EQUIPOS.map((v) => ({ valor: v, texto: v }))]} value={actual.equipo} disabled={bloqueado} onChange={(e) => elegirEquipo(e.target.value)} />;
+  const campoFrase = <Campo etiqueta={laser ? 'Frase para grabar (opcional)' : usaCapasYoryo(actual) ? 'Frase (opcional)' : 'Dedicatoria (opcional)'} value={actual.frase} maxLength={160} disabled={bloqueado} multilinea onChange={(e) => cambiar('frase', e.target.value)} />;
   const campoFecha = !laser && ['aniversario', 'collage'].includes(actual.plantilla) && <Campo etiqueta="Fecha o años juntos (opcional)" value={actual.fecha} maxLength={40} disabled={bloqueado} onChange={(e) => cambiar('fecha', e.target.value)} placeholder="Ej. 24.10.2021" />;
   const campoVector = laser && actual.plantilla === 'escudo' && <><input ref={inputVector} type="file" accept=".svg,image/svg+xml" hidden onChange={(e) => { vector(e.target.files?.[0]); e.target.value = ''; }} /><Boton variante="contorno" icono={<ImagePlus />} cargando={ocupado === 'vector'} disabled={bloqueado} onClick={() => inputVector.current?.click()}><Texto>{actual.vector ? 'Cambiar escudo SVG' : 'Subir escudo SVG'}</Texto></Boton>{<p className={s.nota}><Texto>{actual.vector?.url && actual.vector.url === vectorLaserDeEquipo(actual.equipo, config)?.url ? `Escudo de ${actual.equipo} listo para grabar. Puedes subir tu propio SVG si prefieres otro diseño.` : 'Para un escudo propio, sube un SVG con sus textos convertidos a trazos.'}</Texto></p>}</>;
   const campoFotos = !laser && <>
@@ -279,12 +291,13 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
 
   const elegirPlantilla = (visual) => {
     const plantilla = PLANTILLAS_IMPRESION_YORYO.find((p) => p.id === visual);
-    setDatos((prev) => prev.map((d, i) => i === indice ? { ...d, plantillaVisual: visual, formatoPlantilla: 3, plantilla: plantilla?.tipo || 'nombre',
+    setDatos((prev) => prev.map((d, i) => i === indice ? aplicarPresetYoryo({ ...d, plantillaConfig: null, plantillaVisual: visual, formatoPlantilla: visual === 'deportivo' ? 4 : 3, plantilla: plantilla?.tipo || 'nombre',
       ...(visual === 'floral' && !d.titulo ? { titulo: 'Mi lugar favorito es', acento: 'Contigo.' } : {}),
-      ...(visual === 'deportivo' && !d.equipo ? { equipo: 'Alianza Lima' } : {}), distribucion: distribucionRecomendada() } : d));
+      ...(visual === 'deportivo' && !d.equipo ? { equipo: 'Alianza Lima' } : {}), distribucion: distribucionRecomendada() }, producto.personalizacionYoryo, presets) : d));
     setSeccion('nombre'); setError('');
   };
   const precio = Number(main.salePrice) > 0 ? main.salePrice : main.price;
+  const fondoPpp = usaCapasYoryo(actual) ? resolucionFondoYoryo(actual, { ...config, produccion: { anchoMm: config.nombre === 'Mousepad' ? 235 : 310, altoMm: config.nombre === 'Mousepad' ? 195 : 250 } }) : null;
   const hayCambios = firmaGuardada !== firmaDeDisenoYoryo(datos, {});
   return <MarcoEstudio
     nombre={esPack ? main.name : producto.name} color={{ nombre: laser ? 'Grabado láser' : 'Impresión', hex: '#7C3AED' }}
@@ -294,6 +307,7 @@ function FormularioYoryo({ main, productos, item, creacion, creacionesCuenta = [
     avisos={<>
       {guardadoComoBorrador && !hayCambios ? <EstadoEdicion esBorrador nombre={actual.nombre} /> : <Aviso tipo="info" compacto>Tu borrador se conserva en este dispositivo. Usa Guardar borrador para continuarlo desde tu cuenta.</Aviso>}
       {faltanMedidas && isAdmin && <Aviso tipo="info" compacto>Vista previa habilitada. Confirma el área real de producción en la ficha de cada producto antes de habilitar el pago.</Aviso>}
+      {fondoPpp && fondoPpp < 300 && <Aviso tipo="aviso" compacto>{`El fondo original tiene aproximadamente ${fondoPpp} ppp efectivos. El PNG se exporta a 300 ppp, pero ampliarlo no recupera detalle.`}</Aviso>}
     </>}
     lienzo={<EscenaEstudio className={`${estudio.escena} ${s.escena}`}>
       {esPack && <Pestanas etiqueta="Pieza del pack" opciones={productos.map((p, i) => ({ id: String(i), texto: p.personalizacionYoryo.nombre, cuenta: completos[i] ? '✓' : undefined }))} valor={String(indice)} onChange={(v) => { setIndice(Number(v)); setError(''); }} />}

@@ -4,6 +4,7 @@ import { medidasConfirmadas, validarDatosYoryo } from '../../utils/yoryoPersonal
 import { fijarDistribucion, firmaDeDisenoYoryo } from '../../utils/distribucionYoryo.mjs';
 import { plantillaImpresionYoryo } from '../../utils/plantillasYoryo.mjs';
 import { configurarDisenoYoryo } from '../../utils/mockupYoryo.mjs';
+import { dimensionesExportacionYoryo, usaCapasYoryo } from '../../utils/capasYoryo.mjs';
 
 const originales = new Map();
 const cargarOriginal = (url, tipo) => {
@@ -25,6 +26,7 @@ export async function fotosInlineYoryo(datos) {
 export async function cargarPlantillaYoryo(datos) {
   const p = plantillaImpresionYoryo(datos);
   if (!p) return {};
+  if (p.capas) return { capas: Object.fromEntries(await Promise.all(Object.entries(p.capas).map(async ([id, r]) => [id, { ...r, url: await cargarOriginal(r.url, 'imagen') }]))) };
   const [fondo, superposicion] = await Promise.all([p.fondo ? cargarOriginal(p.fondo, 'imagen') : '', p.superposicion ? cargarOriginal(p.superposicion, 'imagen') : '']);
   return { fondo, superposicion };
 }
@@ -57,13 +59,13 @@ export async function generarYoryo({ uid, producto, datos }) {
   const svg = crearArteYoryo({ datos: await resolverVectorYoryo(datos), config, fuentes, fotos, plantilla });
   const revision = crypto.randomUUID();
   const medidas = config.produccion || {};
-  const lista = medidasConfirmadas(medidas);
+  const dimensiones = dimensionesExportacionYoryo(datos, config);
+  const lista = medidasConfirmadas(medidas) && (!usaCapasYoryo(datos) || Number(medidas.anchoMm) === dimensiones.anchoMm && Number(medidas.altoMm) === dimensiones.altoMm);
   const archivo = { tecnica: config.tecnica, formato: config.tecnica === 'laser' ? 'svg' : 'png', revision, lista,
     ...(lista && { anchoMm: Number(medidas.anchoMm), altoMm: Number(medidas.altoMm) }) };
   if (config.tecnica === 'laser') archivo.url = await subirVectorYoryo(uid, svg);
   else {
-    const ancho = lista ? Math.round(Number(medidas.anchoMm) * 300 / 25.4) : 2400;
-    const alto = lista ? Math.round(Number(medidas.altoMm) * 300 / 25.4) : Math.round(ancho * config.proporcion);
+    const { ancho, alto } = dimensiones;
     if (ancho * alto > 16000000) throw new Error('El área de impresión supera el tamaño admitido. Revisa sus medidas.');
     archivo.url = await subirArchivoImpresion(uid, await svgComoPng(svg, ancho, alto), 'frente');
   }

@@ -1,3 +1,4 @@
+import { usaCapasYoryo } from './capasYoryo.mjs';
 const raiz = '/yoryo/cuadros';
 export const EQUIPOS_YORYO = [
   ['Alianza Lima', 'alianza_lima'], ['Universitario', 'u'], ['Sporting Cristal', 'sporting_cristall'],
@@ -7,7 +8,7 @@ export const PLANTILLAS_IMPRESION_YORYO = [
   { id: 'dorado', nombre: 'Banda dorada', tipo: 'nombre', imagen: `${raiz}/parejas/dorado.png` },
   { id: 'floral', nombre: 'Mi lugar favorito', tipo: 'aniversario', imagen: `${raiz}/parejas/floral.png` },
   { id: 'botanico', nombre: 'Nuestra historia', tipo: 'collage', imagen: `${raiz}/parejas/collage.png` },
-  { id: 'deportivo', nombre: 'Equipos', tipo: 'equipo', imagen: `${raiz}/equipos/alianza_lima_fondo.png` },
+  { id: 'deportivo', nombre: 'Equipos', tipo: 'equipo', imagen: '/yoryo/capas/equipos/alianza_lima/01_FONDO.png' },
 ];
 export const PLANTILLAS_CUADRO = PLANTILLAS_IMPRESION_YORYO;
 const medidasEquipos = {
@@ -43,7 +44,7 @@ function encajarSeccion(seccion, encaje) {
 // Se aplica solo al abrir un diseño para editar. Los archivos de pedidos y
 // sus vistas previas anteriores se conservan. Mantiene texto, fotos y ajustes.
 export function adaptarPlantillaYoryo(datos, config) {
-  if (config?.tecnica !== 'impresion' || !plantillaImpresionYoryo(datos) || datos.formatoPlantilla === 2) return datos;
+  if (config?.tecnica !== 'impresion' || !plantillaImpresionYoryo(datos) || datos.formatoPlantilla >= 2) return datos;
   const encaje = encajePlantillaYoryo(datos, config), bases = seccionesOriginales(datos), nuevas = seccionesOriginales({ ...datos, formatoPlantilla: 2 });
   const elementos = Object.fromEntries(Object.entries(datos.distribucion?.elementos || {}).map(([id, cambio]) => {
     const base = bases.find((s) => s.id === id);
@@ -58,6 +59,8 @@ export function adaptarPlantillaYoryo(datos, config) {
 export function plantillaImpresionYoryo(datos) {
   const p = PLANTILLAS_CUADRO.find((p) => p.id === datos.plantillaVisual);
   if (!p) return null;
+  if (usaCapasYoryo(datos)) return { ...p, capas: datos.plantillaConfig?.recursos || {} };
+  if (datos.plantillaConfig?.recursos) return { ...p, capas: datos.plantillaConfig.recursos };
   if (p.id !== 'deportivo') return { ...p, superposicion: p.imagen };
   const equipo = EQUIPOS_YORYO.find(([nombre]) => nombre === datos.equipo)?.[1];
   return equipo ? { ...p, fondo: `${raiz}/equipos/${equipo}_fondo.png`, superposicion: `${raiz}/equipos/${equipo}_logo.png` } : p;
@@ -65,6 +68,7 @@ export function plantillaImpresionYoryo(datos) {
 // Las ventanas corresponden a los PNG transparentes originales. Las fotos van
 // detrás de la decoración; los textos siempre por delante.
 export function seccionesPlantillaYoryo(datos, config) {
+  if (datos.plantillaConfig?.elementos) return datos.plantillaConfig.elementos;
   const originales = seccionesOriginales(datos);
   if (!originales || ![2, 3].includes(datos.formatoPlantilla)) return originales;
   const encaje = encajePlantillaYoryo(datos, config);

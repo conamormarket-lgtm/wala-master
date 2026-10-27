@@ -291,6 +291,9 @@ export const subirVectorYoryo = (uid, svg) =>
 export const subirPlantillaVectorYoryo = (svg) =>
   subir(new Blob([svg], { type: 'image/svg+xml' }), `productos/yoryo/plantillas/${marca()}.svg`);
 
+export const subirRecursoPlantillaYoryo = (blob, tipo) =>
+  subir(blob, `productos/yoryo/capas/${marca()}_${tipo}.png`);
+
 /** Vista previa (prenda teñida + diseño) de una vista. */
 export const subirVistaPrevia = (uid, blob, vistaId) =>
   subir(blob, `designs/${uid}/crear/previas/${marca()}_${vistaId}.jpg`);

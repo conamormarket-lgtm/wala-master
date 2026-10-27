@@ -42,9 +42,12 @@ export function ajusteSeccion(datos, seccion) {
     h: limitar(cambio.h ?? seccion.h, .01, 1 - 2 * (seccion.margen ?? .02)),
     x: limitar(cambio.x ?? seccion.x, seccion.margen ?? .02, 1 - (seccion.margen ?? .02)),
     y: limitar(cambio.y ?? seccion.y, seccion.margen ?? .02, 1 - (seccion.margen ?? .02)),
-    escala: limitar(cambio.escala ?? 100, 40, 160),
+    escala: limitar(cambio.escala ?? seccion.escala ?? 100, 40, 160),
     fuente: FUENTES_YORYO.some((f) => f.id === cambio.fuente) ? cambio.fuente : seccion.fuente,
     mayusculas: cambio.mayusculas ?? seccion.mayusculas,
+    color: /^#[0-9a-f]{6}$/i.test(cambio.color) ? cambio.color : seccion.color,
+    alineacion: ['izquierda', 'centro', 'derecha'].includes(cambio.alineacion) ? cambio.alineacion : seccion.alineacion,
+    orden: Number.isFinite(cambio.orden) ? limitar(cambio.orden, 0, 20) : seccion.orden,
   };
 }
 
@@ -54,7 +57,7 @@ export function fijarDistribucion(datos, config) {
   const elementos = { ...datos.distribucion.elementos };
   for (const seccion of seccionesYoryo(datos, config)) {
     const a = ajusteSeccion(datos, seccion);
-    elementos[a.id] = { x: a.x, y: a.y, w: a.w, h: a.h, escala: a.escala, ...(a.fuente && { fuente: a.fuente, mayusculas: a.mayusculas }) };
+    elementos[a.id] = { x: a.x, y: a.y, w: a.w, h: a.h, escala: a.escala, ...(Number.isFinite(a.orden) && { orden: a.orden }), ...(a.fuente && { fuente: a.fuente, mayusculas: a.mayusculas, ...(a.color && { color: a.color }), ...(a.alineacion && { alineacion: a.alineacion }) }) };
   }
   return { ...datos, distribucion: { version: datos.distribucion.version, elementos } };
 }

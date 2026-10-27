@@ -1,0 +1,30 @@
+.pagina { max-width: 1500px; margin: auto; padding: 28px; color: #202938; }
+.pagina h1 { margin: 0 0 8px; font-size: clamp(24px, 3vw, 34px); }
+.pagina p { line-height: 1.55; }
+.selectores, .acciones { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin: 20px 0; }
+.selectores label { min-width: 190px; flex: 1; }
+.pagina label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; }
+.pagina input:not([type=checkbox]):not([type=range]), .pagina select, .pagina textarea { width: 100%; padding: 10px; border: 1px solid #d5dae3; border-radius: 8px; box-sizing: border-box; background: white; color: #202938; font: inherit; }
+.pagina input[type=color] { min-height: 42px; }
+.acciones button, .capas button, .recurso button, .vista > button, .pagina > button { border: 1px solid #cdd5e0; border-radius: 8px; padding: 10px 14px; background: white; color: #243149; font: inherit; cursor: pointer; }
+.acciones button:disabled, .panel button:disabled { opacity: .55; cursor: wait; }
+.pagina .primario { background: #3339a8; color: white; border-color: #3339a8; }
+.editor { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+.vista { min-width: 0; padding: 18px; background: #f1f3f8; border: 1px solid #e1e5ed; border-radius: 14px; position: sticky; top: 16px; }
+.panel { padding: 18px; border: 1px solid #dce1ea; border-radius: 14px; background: white; }
+.panel fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 14px; min-width: 0; }
+.panel legend { margin-bottom: 12px; font-weight: 700; }
+.panel h2 { font-size: 16px; margin: 4px 0; }
+.capas { display: grid; gap: 5px; }
+.capas button { display: flex; justify-content: space-between; text-align: left; }
+.pagina .activa { border-color: #3339a8; background: #eef0ff; }
+.valores { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.recurso { display: flex; gap: 12px; align-items: center; padding: 8px; background: #f5f6fa; border-radius: 8px; }
+.recurso img { width: 80px; height: 70px; object-fit: contain; background: repeating-conic-gradient(#ddd 0 25%, white 0 50%) 0 / 16px 16px; }
+.recurso small { display: block; margin: 5px 0; }
+.pagina .casilla { flex-direction: row; align-items: center; }
+.aviso, .error, .correcto { padding: 12px 16px; border-radius: 8px; }
+.aviso { background: #fff4d5; color: #755400; }
+.error { background: #ffeded; color: #9b1c1c; }
+.correcto { background: #e7f7ee; color: #17663d; }
+@media (max-width: 1000px) { .editor { grid-template-columns: minmax(0, 1fr); } .vista { position: static; } .pagina { padding: 16px; } }
