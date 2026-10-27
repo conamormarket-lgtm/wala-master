@@ -1,0 +1,9 @@
+{
+  "contract": "mobile-v1",
+  "hashes": {
+    "src/core/errors/app-error.ts": "9b55eb7c14c7be6af2acb1cec7de2630ff9c343624da6c703f56276e6a1d060f",
+    "src/features/catalog/data/product-mapper.ts": "36a45439d36ae40f0df630aa904afe911815c16f056a2be49bd3558605176134",
+    "src/features/catalog/domain/product-selection.ts": "fdb0a612ab80cb21e351f3977291755df5cefcea7cfb52482ea8a580fdf2173d",
+    "src/features/checkout/domain/address.ts": "ac66e278701638b79516cad6ccd17a6d96f41dc203d012f0586bc11815933ba2"
+  }
+}

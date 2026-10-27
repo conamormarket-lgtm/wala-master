@@ -435,7 +435,25 @@ async function reservaCheckoutLiberable(uid, intentIdNuevo) {
 // cliente se quedaba con el descuento y con las monedas.
 exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) => {
   if (esPrecalentamiento(data)) return precalentar();
-  const orderPayload = data && data.orderPayload;
+  let mobile = null;
+  if (data && data.mobileCheckout) {
+    const uid = requireAuth(context);
+    if (context.auth.token?.firebase?.sign_in_provider === 'anonymous') throw new functions.https.HttpsError('unauthenticated', 'Inicia sesión con tu cuenta.');
+    try {
+      const key = mobileCheckout.identity(data.mobileCheckout, uid);
+      const existing = await db.collection(CHECKOUT_INTENTS_COLLECTION).doc(key.id).get();
+      if (existing.exists) {
+        const intent = existing.data();
+        if (intent.uid !== uid || intent.mobile?.requestHash !== key.hash) throw new functions.https.HttpsError('failed-precondition', 'Este intento pertenece a otros datos. Revisa tu pedido.');
+        return mobileCheckoutResponse(key.id, intent);
+      }
+      if (process.env.MOBILE_CHECKOUT_ENABLED !== 'true' || !/^pk_(test|live)_/.test(process.env.CULQI_PUBLIC_KEY || '')) {
+        throw new functions.https.HttpsError('unavailable', 'El pago móvil no está disponible por ahora.');
+      }
+      mobile = await mobileCheckout.build(data.mobileCheckout, uid, readMobileProducts);
+    } catch (error) { throw mobileCheckoutError(error); }
+  }
+  const orderPayload = mobile ? mobile.payload : data && data.orderPayload;
   if (!orderPayload || typeof orderPayload !== "object" || Array.isArray(orderPayload)) {
     throw new functions.https.HttpsError("invalid-argument", "Faltan los datos del checkout.");
   }
@@ -470,6 +488,7 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
       if (existing.uid && (!context.auth || existing.uid !== context.auth.uid)) {
         throw new functions.https.HttpsError("permission-denied", "La intención ya pertenece a otro usuario.");
       }
+      if (mobile && existing.mobile?.requestHash !== mobile.key.hash) throw new functions.https.HttpsError('failed-precondition', 'El intento ya se preparó con otros datos.');
       return;
     }
 
@@ -526,7 +545,7 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
     // ── Total ──
     const { envio, total: esperado } = totalEsperadoCheckout({
       subtotal, monedas: monedasPedidas, descuentoCupon, envioGratis,
-      envioEstandar: ENVIO_ESTANDAR, envioGratisDesde: ENVIO_GRATIS_DESDE,
+      envioEstandar: ENVIO_ESTANDAR, envioGratisDesde: mobile ? 200 : ENVIO_GRATIS_DESDE,
     });
     const unidades = Object.values(orderPayload.productos || {})
       .reduce((acc, p) => acc + Math.max(1, Number(p && p.cantidad) || 1), 0);
@@ -541,6 +560,7 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
         "Recarga la página e inténtalo de nuevo.");
     }
     if (amountPen > esperado + tolerancia) {
+      if (mobile) throw new functions.https.HttpsError('failed-precondition', 'El total cambió. Vuelve a revisar el pedido.');
       console.warn(`prepareCheckoutPayment: el cliente cobraría MÁS de lo esperado en ${intentId}`, {
         amountPen, esperado, subtotal, monedasPedidas, descuentoCupon, envioGratis,
       });
@@ -566,6 +586,7 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
     // ── Escrituras ──
     t.create(ref, {
       uid,
+      ...(mobile ? { mobile: mobile.meta } : {}),
       status: "prepared",
       amountPen,
       cobro,
@@ -605,6 +626,7 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
   });
   const guardada = await ref.get();
   const cobro = (guardada.exists && guardada.data().cobro) || null;
+  if (mobile) return mobileCheckoutResponse(intentId, guardada.data());
   return { success: true, intentId, amountPen, cobro };
 });
 
@@ -2399,12 +2421,35 @@ exports.processCulqiPayment = functions
   // culqiCharges/{tokenId} se crea ANTES de cobrar y queda atado a este usuario
   // y a este objetivo. Antes no guardaba a qué pedido pertenecía: con el token
   // de una compra ya pagada se "pagaba" cualquier otro pedido sin cobrar nada.
+  const isMobileCheckout = !!checkoutIntent?.intent?.mobile;
+  let mobileAuthentication = null;
+  const mobileDevice = isMobileCheckout ? String(data.deviceId || '') : '';
+  if (isMobileCheckout) {
+    const tokenMode = /^(?:tkn|ype)_(test|live)_[A-Za-z0-9]+$/.exec(String(tokenId));
+    const secretMode = /^sk_(test|live)_/.exec(secretKey || '');
+    if (!tokenMode || !secretMode || tokenMode[1] !== secretMode[1]) throw new functions.https.HttpsError('failed-precondition', 'El medio de pago no corresponde a este entorno.');
+    if (!/^[A-Za-z0-9_-]{8,200}$/.test(mobileDevice)) throw new functions.https.HttpsError('invalid-argument', 'No pudimos verificar el dispositivo del pago.');
+    try { mobileAuthentication = mobileCheckout.threeDS(data.authentication3DS); } catch (error) { throw mobileCheckoutError(error); }
+    if (checkoutIntent.intent.mobilePending3DS && checkoutIntent.intent.mobilePendingToken !== String(tokenId)) {
+      throw new functions.https.HttpsError('failed-precondition', 'Completa o cancela la autenticación pendiente antes de iniciar otro pago.');
+    }
+  }
   const lockRef = db.collection("culqiCharges").doc(String(tokenId));
   let previo;
   try {
     previo = await db.runTransaction(async (t) => {
       const snap = await t.get(lockRef);
-      if (snap.exists) return snap.data() || {};
+      if (snap.exists) {
+        const previous = snap.data() || {};
+        if (isMobileCheckout && previous.status === 'challenge' && mobileAuthentication
+          && previous.uid === uid && previous.objetivo === objetivo.clave && previous.deviceId === mobileDevice
+          && previous.amount === chargeAmount && previous.currency === payCurrency) {
+          t.update(lockRef, { status: 'processing', updatedAt: FieldValue.serverTimestamp() });
+          return null;
+        }
+        return previous;
+      }
+      if (isMobileCheckout && mobileAuthentication) throw new functions.https.HttpsError('failed-precondition', 'La autenticación no corresponde a este pago.');
       t.create(lockRef, {
         tokenId: String(tokenId),
         status: "processing",
@@ -2412,6 +2457,7 @@ exports.processCulqiPayment = functions
         currency: payCurrency,
         uid,
         objetivo: objetivo.clave,
+        ...(isMobileCheckout ? { deviceId: mobileDevice } : {}),
         createdAt: FieldValue.serverTimestamp(),
       });
       return null;
@@ -2454,6 +2500,16 @@ exports.processCulqiPayment = functions
   const marcarToken = (campos) => lockRef.set({ ...campos, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
     .catch((e) => console.warn("processCulqiPayment: no se pudo actualizar culqiCharges:", e.message));
 
+  if (isMobileCheckout && process.env.MOBILE_CHECKOUT_ENABLED !== 'true') {
+    await marcarToken({ status: 'failed', error: 'pago móvil desactivado' });
+    throw new functions.https.HttpsError('unavailable', 'El pago móvil no está disponible por ahora.');
+  }
+  if (isMobileCheckout) {
+    // A confirmed receipt above must remain recoverable after inventory changes.
+    try { await mobileCheckout.build(checkoutIntent.intent.mobile.input, uid, readMobileProducts); }
+    catch (error) { await marcarToken({ status: 'failed' }); throw mobileCheckoutError(error); }
+  }
+
   // ── 3) Un cobro a la vez sobre el mismo pedido ─────────────────────────────
   let cerrojo = null;
   try {
@@ -2484,6 +2540,8 @@ exports.processCulqiPayment = functions
         // Lo pone el servidor: el webhook lo lee de la API de Culqi para saber
         // qué se pagó, sin fiarse de lo que mande el navegador.
         metadata: { tipo: objetivo.tipo, uid, ...objetivo.metaCulqi },
+        ...(isMobileCheckout ? { antifraud_details: { device_finger_print_id: mobileDevice },
+          ...(mobileAuthentication ? { authentication_3DS: mobileAuthentication } : {}) } : {}),
       }),
     });
     result = await response.json();
@@ -2499,6 +2557,22 @@ exports.processCulqiPayment = functions
       "No pudimos confirmar tu pago. No vuelvas a pagar todavía: si se realizó, aparecerá en «Mis pedidos» en unos minutos. Si no, podrás intentarlo de nuevo.");
   }
 
+  if (isMobileCheckout && response.status === 201 && !(result.object === 'charge' && /^chr_/.test(String(result.id || '')))) {
+    if (mobileAuthentication) {
+      await marcarToken({ status: 'failed' }); await liberar();
+      throw new functions.https.HttpsError('failed-precondition', 'El banco no confirmó la autenticación.');
+    }
+    await marcarToken({ status: 'challenge' });
+    await checkoutIntent.ref.set({ mobilePending3DS: true, mobilePendingToken: String(tokenId) }, { merge: true });
+    await liberar();
+    return { success: false, requires3DS: true };
+  }
+
+  if (!isMobileCheckout && response.status === 201 && !(result.object === 'charge' && /^chr_/.test(String(result.id || '')))) {
+    await marcarToken({ status: 'failed', error: 'se requiere autenticación bancaria' }); await liberar();
+    throw new functions.https.HttpsError('failed-precondition', 'Tu banco solicita verificación adicional. Este intento no se completó.');
+  }
+
   if (!response.ok) {
     console.error("Error de Culqi:", result);
     await marcarToken({ status: "failed", error: result.user_message || "rechazo de Culqi" });
@@ -2506,6 +2580,12 @@ exports.processCulqiPayment = functions
     throw new functions.https.HttpsError("internal", result.user_message || "Culqi no pudo procesar el pago.");
   }
 
+  if (result.object !== 'charge' || !/^chr_/.test(String(result.id || ''))
+    || Number(result.amount) !== chargeAmount || result.currency_code !== payCurrency) {
+    // Ambiguous response: keep the payment lock. Never show paid or retry blindly.
+    await registrarAnomaliaPago(`culqi_token_${tokenId}`, { motivo: 'respuesta_no_verificable', metodo: 'culqi', uid, objetivo: objetivo.clave });
+    throw new functions.https.HttpsError('unavailable', 'Estamos comprobando tu pago. No vuelvas a pagar todavía.');
+  }
   const chargeId = String(result.id);
   await marcarToken({ status: "succeeded", charge_id: chargeId, outcome: result.outcome || null, amount: chargeAmount });
 
@@ -9837,4 +9917,50 @@ exports.adminFechasDeUsuarios = functions.https.onCall(async (data, context) => 
     });
   });
   return { fechas };
+});
+
+// Mobile customer checkout reuses the web's preparation, Culqi charge and ERP
+// materialization above. Legacy clients retain their shipping contract.
+const mobileCheckout = require('./mobileCheckout');
+async function readMobileProducts(ids) {
+  const snapshots = await db.getAll(...ids.map((id) => db.collection('productos_wala').doc(id)));
+  return new Map(snapshots.filter((snapshot) => snapshot.exists).map((snapshot) => [snapshot.id, snapshot.data()]));
+}
+function mobileCheckoutError(error) {
+  if (error instanceof functions.https.HttpsError) return error;
+  if (['validation', 'invalid-argument'].includes(error && error.code)) return new functions.https.HttpsError('failed-precondition', error.message);
+  return new functions.https.HttpsError('internal', 'No pudimos preparar este pago. Revisa tu carrito e inténtalo otra vez.');
+}
+function mobileCheckoutResponse(id, intent) {
+  return { ...mobileCheckout.view(id, intent), publicKey: process.env.CULQI_PUBLIC_KEY || null };
+}
+exports.getMobileCheckoutStatusSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  if (data?.expectedUid && data.expectedUid !== uid) throw new functions.https.HttpsError('unauthenticated', 'La sesión cambió.');
+  if (data?.capabilities) return { contract: mobileCheckout.CONTRACT,
+    enabled: process.env.MOBILE_CHECKOUT_ENABLED === 'true' && /^pk_(test|live)_/.test(process.env.CULQI_PUBLIC_KEY || '') };
+  try {
+    const { id } = mobileCheckout.identity({ contract: mobileCheckout.CONTRACT, requestId: data && data.requestId }, uid);
+    const snapshot = await db.collection(CHECKOUT_INTENTS_COLLECTION).doc(id).get();
+    if (!snapshot.exists) return null;
+    const intent = snapshot.data();
+    if (intent.uid !== uid) throw new functions.https.HttpsError('permission-denied', 'Este pago no pertenece a tu cuenta.');
+    return mobileCheckoutResponse(id, intent);
+  } catch (error) { throw mobileCheckoutError(error); }
+});
+exports.cancelMobileCheckoutSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  try {
+    const { id } = mobileCheckout.identity({ contract: mobileCheckout.CONTRACT, requestId: data && data.requestId }, uid);
+    const ref = db.collection(CHECKOUT_INTENTS_COLLECTION).doc(id);
+    await db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists) return;
+      const intent = snapshot.data();
+      if (intent.uid !== uid || !intent.mobile) throw new functions.https.HttpsError('permission-denied', 'Este pago no pertenece a tu cuenta.');
+      if (['paid_order_created', 'cobrando'].includes(intent.status)) throw new functions.https.HttpsError('failed-precondition', 'El pago está en comprobación o ya se completó. Consulta su estado antes de continuar.');
+      transaction.update(ref, { status: 'vencida', updatedAt: FieldValue.serverTimestamp() });
+    });
+    return { cancelled: true };
+  } catch (error) { throw mobileCheckoutError(error); }
 });
