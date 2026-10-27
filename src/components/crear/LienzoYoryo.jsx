@@ -141,7 +141,7 @@ export default function LienzoYoryo(props) {
         </div>;
   return <>
     {!laser && modo === 'producto' && editable && guias && <p className={s.etiquetaSoporte}><Texto>Área de impresión</Texto></p>}
-    <div className={modoAdmin ? s.mesaPlantilla : undefined}><div ref={visorRef} className={`${modo === 'producto' ? laser ? s.modelo : s.soporteImpresion : `${s.arte} ${s.plano} ${laser ? s.laser : s.impresion}`} ${s.visorInteractivo}`} style={modo === 'plano' ? { aspectRatio: 1 / config.proporcion, ...(modoAdmin && { overflow: 'visible', outline: '2px solid #6D28D9', borderRadius: 0 }) } : undefined} onPointerDown={(e) => empezar(e, null)} onPointerMove={mover} onPointerUp={soltar} onPointerCancel={cancelar}>
+    <div className={`${s.contenedorLienzo} ${modoAdmin ? s.mesaPlantilla : ''}`}><div ref={visorRef} className={`${modo === 'producto' ? laser ? s.modelo : s.soporteImpresion : `${s.arte} ${s.plano} ${laser ? s.laser : s.impresion}`} ${s.visorInteractivo}`} style={modo === 'plano' ? { aspectRatio: 1 / config.proporcion, ...(modoAdmin && { overflow: 'visible', outline: '2px solid #6D28D9', borderRadius: 0 }) } : undefined} onPointerDown={(e) => empezar(e, null)} onPointerMove={mover} onPointerUp={soltar} onPointerCancel={cancelar}>
       <div ref={mundoRef} className={!laser && modo === 'producto' ? s.mundoImpresion : s.mundoYoryo}>
         {modo === 'producto' && laser && <img className={s.base} src={producto.variants?.[0]?.imageUrl || producto.mainImage || producto.images?.[0]} alt={producto.name} draggable={false} />}
         {!laser && modo === 'producto' ? <div className={`${s.productoImpreso} ${config.nombre === 'Mousepad' ? s.mousepadCss : s.cuadroCss}`} data-mockup-yoryo={config.nombre}>
