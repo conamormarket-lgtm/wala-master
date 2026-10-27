@@ -12,6 +12,8 @@ ID determinista por UID/requestId, hash canónico de entrada, `culqiCharges`, bl
 
 El HTML/CSS/JS de `public/mobile-culqi.*` es un tokenizer aislado: no tiene Auth, secretos ni acceso al ERP. Solo pasa tokens/fingerprint/3DS a la app. Hosting aplica no-store/no-referrer/nosniff y frame-ancestors limitado a primera parte. El build web debe copiar esos archivos a `build/`; comprobarlos antes de publicar. Nunca desplegar la fixture local del repositorio móvil.
 
+Menú Culqi: igual que la web, `paymentMethods` habilita tarjeta/Yape, `paymentMethodsSort` incluye ambos y `appearance.menuType` es `sidebar`. No usar la presentación `default`, que no muestra ese selector. El pago está en PEN y Yape no se condiciona al país de entrega. En celulares el método seleccionado inicialmente es tarjeta: desplegar «Método de pago» para elegir Yape. Se comprobó el menú y sus campos con el SDK real, sin ingresar celular/código ni ejecutar un cargo.
+
 ## Configuración y activación
 
 Variables del entorno Functions (no son variables EXPO_PUBLIC):

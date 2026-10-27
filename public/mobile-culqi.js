@@ -25,8 +25,10 @@
         checkout = new window.CulqiCheckout(value.publicKey, {
           settings: { title: 'Compra en Walá', currency: 'PEN', amount: value.amount }, client: { email: value.email },
           options: { lang: 'es', installments: false, modal: true,
-            paymentMethods: { tarjeta: true, yape: value.country === 'PE', billetera: false, bancaMovil: false, agente: false, cuotealo: false } },
-          appearance: { theme: value.mode === 'dark' ? 'dark' : 'default', hiddenCulqiLogo: false },
+            // Same PEN methods/menu as the web checkout; destination is not the payer's wallet.
+            paymentMethods: { tarjeta: true, yape: true, billetera: false, bancaMovil: false, agente: false, cuotealo: false },
+            paymentMethodsSort: ['tarjeta', 'yape'] },
+          appearance: { theme: value.mode === 'dark' ? 'dark' : 'default', hiddenCulqiLogo: false, menuType: 'sidebar' },
         });
         checkout.culqi = async () => {
           if (awaiting) return;
