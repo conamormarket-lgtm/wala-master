@@ -4,7 +4,7 @@ import { medidasConfirmadas } from './yoryoPersonalizacion.mjs';
 // La proporción de una plantilla es visual, no una medida inventada del taller.
 // Cuando hay medidas confirmadas, se respetan para el lienzo y la impresión.
 export function configurarDisenoYoryo(config, datos) {
-  if (config.tecnica === 'impresion' && datos.formatoPlantilla === 4) return { ...config, proporcion: config.nombre === 'Mousepad' ? 195 / 235 : 250 / 310 };
+  if (config.tecnica === 'impresion' && (datos.formatoPlantilla === 4 || datos.plantillaConfig?.estructuraFija)) return { ...config, proporcion: config.nombre === 'Mousepad' ? 195 / 235 : 250 / 310 };
   if (config.tecnica === 'impresion' && datos.plantillaConfig?.proporcion) return { ...config, proporcion: datos.plantillaConfig.proporcion };
   if (config.tecnica !== 'impresion' || datos.formatoPlantilla !== 3 || medidasConfirmadas(config.produccion)) return config;
   const proporcion = proporcionPlantillaYoryo(datos);

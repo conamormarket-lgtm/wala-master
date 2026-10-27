@@ -27,6 +27,8 @@
 .configuracion { margin-top: 1.5rem; padding: 1.5rem; border: 1px solid var(--color-border); border-radius: 16px; background: var(--color-surface); color: var(--color-text); }
 .plano { position: relative; display: block; }
 .zonaPersonalizable { position: absolute; }
+.mesaPlantilla { padding: 56px 32px; overflow: hidden; background: repeating-conic-gradient(#e7eaf1 0 25%, #f6f7fa 0 50%) 0 / 20px 20px; border-radius: 10px; }
+.soloContenido, .soloContenido:active { cursor: text; }
 .dibujo { display: block; width: 100%; height: 100%; pointer-events: none; user-select: none; }
 .conGuias { outline: 1px dashed #A78BFA; outline-offset: 3px; }
 .rotuloArea { position: absolute; top: -1.6rem; left: 50%; transform: translateX(-50%); padding: .15rem .4rem; border-radius: 5px; background: var(--color-surface, #FFFFFF); color: var(--primary-color); white-space: nowrap; font-size: .65rem; pointer-events: none; }

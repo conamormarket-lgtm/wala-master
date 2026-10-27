@@ -3,6 +3,7 @@ import { medidasConfirmadas } from '../../utils/yoryoPersonalizacion.mjs';
 import { serializarTrazos } from './trazosYoryo.mjs';
 import { encajePlantillaYoryo } from '../../utils/plantillasYoryo.mjs';
 import { usaCapasYoryo } from '../../utils/capasYoryo.mjs';
+import { estiloTextoYoryo } from '../../utils/estilosTextoYoryo.mjs';
 
 const escape = (s) => String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
 const textoLimpio = (s) => String(s || '').replace(/[^\S\n]+/g, ' ').trim();
@@ -22,9 +23,9 @@ function partir(texto, cantidad, fuente) {
 
 /** Encaja por la tinta real de los glifos, no por el ancho nominal de la fuente. */
 const bloques = new WeakMap();
-function textoEnCaja(texto, fuente, ancho, alto, multilinea) {
+function textoEnCaja(texto, fuente, ancho, alto, multilinea, espaciado = 0) {
   if (!bloques.has(fuente)) bloques.set(fuente, new Map());
-  const cache = bloques.get(fuente), clave = JSON.stringify([texto, ancho, alto, multilinea]);
+  const cache = bloques.get(fuente), clave = JSON.stringify([texto, ancho, alto, multilinea, espaciado]);
   if (cache.has(clave)) return cache.get(clave);
   if ([...texto].some((c) => !fuente.charToGlyph(c).index && !/\s/.test(c))) throw new Error('Uno de los caracteres no está disponible en esta letra. Elige otro estilo.');
   const explicitas = texto.includes('\n') ? texto.split('\n') : null;
@@ -34,7 +35,7 @@ function textoEnCaja(texto, fuente, ancho, alto, multilinea) {
   let mejor;
   for (const lineas of opciones) {
     const rutas = lineas.map((linea) => {
-      const path = fuente.getPath(linea, 0, 0, 100);
+      const path = fuente.getPath(linea, 0, 0, 100, { tracking: espaciado });
       const d = serializarTrazos(path);
       return { d, caja: path.getBoundingBox() };
     });
@@ -68,14 +69,14 @@ export function componerEditableYoryo({ datos, config, fuente, fuentes = {}, fot
   const elementos = [];
   const registrar = (seccion, caja, svg) => {
     contenido += `<g data-yoryo-elemento="${seccion.id}" transform="translate(${caja.x * w} ${caja.y * h})">${svg}</g>`;
-    elementos.push({ id: seccion.id, nombre: seccion.nombre, orden: seccion.orden ?? 3, margen: seccion.margen ?? .02, ...caja, fragmento: svg, anchoSvg: caja.w * w, altoSvg: caja.h * h });
+    elementos.push({ id: seccion.id, nombre: seccion.nombre, orden: seccion.orden ?? 3, margen: seccion.margen ?? .02, ...(seccion.libre && { libre: true }), ...caja, fragmento: svg, anchoSvg: caja.w * w, altoSvg: caja.h * h });
   };
   const secciones = seccionesYoryo(datos, config).map((s) => ajusteSeccion(datos, s)).sort((a, b) => (a.orden ?? 3) - (b.orden ?? 3));
   for (const seccion of secciones) {
     if (seccion.indiceFoto === undefined && decoracionPendiente) { contenido += decoracionPendiente; decoracionPendiente = ''; }
     const a = ajusteSeccion(datos, seccion);
-    const margen = a.margen ?? .02, limite = 1 - 2 * margen;
-    const factor = margen === 0 ? Math.min(a.escala / 100, limite / a.w, limite / a.h) : a.escala / 100;
+    const margen = a.margen ?? .02, limite = a.libre ? 10 : 1 - 2 * margen;
+    const factor = !a.libre && margen === 0 ? Math.min(a.escala / 100, limite / a.w, limite / a.h) : a.escala / 100;
     const maxW = limitar(a.w * factor, .01, limite), maxH = limitar(a.h * factor, .01, limite);
     if (a.recurso) {
       const r = plantilla.capas?.[a.recurso];
@@ -112,15 +113,23 @@ export function componerEditableYoryo({ datos, config, fuente, fuentes = {}, fot
     if (!texto) continue;
     if (a.mayusculas) texto = texto.toLocaleUpperCase('es');
     const tipografia = fuentes[a.id] || fuente;
-    const bloque = textoEnCaja(texto, tipografia, maxW * w, maxH * h, ['frase', 'titulo', 'dedicatoria'].includes(a.id));
-    const anchoTexto = bloque.w * bloque.escala / w;
+    const estilo = estiloTextoYoryo(a);
+    const bloque = textoEnCaja(texto, tipografia, maxW * w, maxH * h, ['frase', 'titulo', 'dedicatoria'].includes(a.id), estilo.espaciado);
+    const escalaTexto = Math.min(bloque.escala, estilo.tamanoLetra > 0 ? estilo.tamanoLetra / 100 : Infinity);
+    const anchoTexto = bloque.w * escalaTexto / w;
     const anclaje = a.alineacion === 'izquierda' ? a.x - maxW / 2 + anchoTexto / 2 : a.alineacion === 'derecha' ? a.x + maxW / 2 - anchoTexto / 2 : a.x;
-    const caja = cajaSeccion({ ...a, x: anclaje }, anchoTexto, bloque.h * bloque.escala / h);
+    const caja = cajaSeccion({ ...a, x: anclaje }, anchoTexto, bloque.h * escalaTexto / h);
     const color = /^#[0-9a-f]{6}$/i.test(a.color) ? a.color : tinta;
-    const rutas = bloque.rutas.map((p, i) => { const espacio = bloque.w - p.caja.x2 + p.caja.x1; const dx = a.alineacion === 'izquierda' ? 0 : a.alineacion === 'derecha' ? espacio : espacio / 2; return `<g transform="translate(${dx - p.caja.x1} ${i * (bloque.altura + 16) - p.caja.y1})"><path fill="${color}" d="${p.d}"/></g>`; }).join('');
-    registrar(a, caja, `<g transform="scale(${bloque.escala})">${rutas}</g>`);
+    const borde = !laser && estilo.contornoAncho ? ` stroke="${estilo.contornoColor}" stroke-width="${estilo.contornoAncho / escalaTexto}" stroke-linejoin="round" paint-order="stroke fill"` : '';
+    const rutas = bloque.rutas.map((p, i) => { const espacio = bloque.w - p.caja.x2 + p.caja.x1; const dx = a.alineacion === 'izquierda' ? 0 : a.alineacion === 'derecha' ? espacio : espacio / 2; return `<g transform="translate(${dx - p.caja.x1} ${i * (bloque.altura + 16) - p.caja.y1})"><path fill="${color}"${borde} d="${p.d}"/></g>`; }).join('');
+    const grafico = `<g transform="scale(${escalaTexto})">${rutas}</g>`;
+    const sombra = !laser && estilo.sombraOpacidad > 0;
+    const padding = laser ? 0 : Math.ceil(estilo.contornoAncho / 2 + (sombra ? Math.max(Math.abs(estilo.sombraX), Math.abs(estilo.sombraY)) + estilo.sombraBlur * 3 : 0));
+    const filtro = sombra ? `<defs><filter id="sombra-${a.id}" filterUnits="userSpaceOnUse" x="${-padding}" y="${-padding}" width="${caja.w * w + 2 * padding}" height="${caja.h * h + 2 * padding}"><feDropShadow dx="${estilo.sombraX}" dy="${estilo.sombraY}" stdDeviation="${estilo.sombraBlur}" flood-color="${estilo.sombraColor}" flood-opacity="${estilo.sombraOpacidad}"/></filter></defs>` : '';
+    const cajaEfectos = padding ? { ...caja, x: caja.x - padding / w, y: caja.y - padding / h, w: caja.w + 2 * padding / w, h: caja.h + 2 * padding / h } : caja;
+    registrar(a, cajaEfectos, padding ? `${filtro}<g transform="translate(${padding} ${padding})"${sombra ? ` filter="url(#sombra-${a.id})"` : ''}>${grafico}</g>` : grafico);
   }
   const medidas = config.produccion || {};
   const dimensiones = medidasConfirmadas(medidas) ? ` width="${Number(medidas.anchoMm)}mm" height="${Number(medidas.altoMm)}mm"` : '';
-  return { svg: `<svg xmlns="http://www.w3.org/2000/svg"${dimensiones} viewBox="0 0 ${w} ${h}">${contenido}${decoracionPendiente}</svg>`, elementos, fondo, baseSvg, superposicionSvg, anchoSvg: w, altoSvg: h };
+  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" overflow="hidden"${dimensiones} viewBox="0 0 ${w} ${h}">${contenido}${decoracionPendiente}</svg>`, elementos, fondo, baseSvg, superposicionSvg, anchoSvg: w, altoSvg: h };
 }

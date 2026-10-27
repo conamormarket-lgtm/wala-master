@@ -4,7 +4,7 @@ import { medidasConfirmadas, validarDatosYoryo } from '../../utils/yoryoPersonal
 import { fijarDistribucion, firmaDeDisenoYoryo } from '../../utils/distribucionYoryo.mjs';
 import { plantillaImpresionYoryo } from '../../utils/plantillasYoryo.mjs';
 import { configurarDisenoYoryo } from '../../utils/mockupYoryo.mjs';
-import { dimensionesExportacionYoryo, usaCapasYoryo } from '../../utils/capasYoryo.mjs';
+import { dimensionesExportacionYoryo, usaCapasYoryo, estructuraFijaYoryo } from '../../utils/capasYoryo.mjs';
 
 const originales = new Map();
 const cargarOriginal = (url, tipo) => {
@@ -60,7 +60,7 @@ export async function generarYoryo({ uid, producto, datos }) {
   const revision = crypto.randomUUID();
   const medidas = config.produccion || {};
   const dimensiones = dimensionesExportacionYoryo(datos, config);
-  const lista = medidasConfirmadas(medidas) && (!usaCapasYoryo(datos) || Number(medidas.anchoMm) === dimensiones.anchoMm && Number(medidas.altoMm) === dimensiones.altoMm);
+  const lista = medidasConfirmadas(medidas) && (!(usaCapasYoryo(datos) || estructuraFijaYoryo(datos)) || Number(medidas.anchoMm) === dimensiones.anchoMm && Number(medidas.altoMm) === dimensiones.altoMm);
   const archivo = { tecnica: config.tecnica, formato: config.tecnica === 'laser' ? 'svg' : 'png', revision, lista,
     ...(lista && { anchoMm: Number(medidas.anchoMm), altoMm: Number(medidas.altoMm) }) };
   if (config.tecnica === 'laser') archivo.url = await subirVectorYoryo(uid, svg);

@@ -8,6 +8,7 @@ import { ajusteSeccion, areaVistaYoryo, esDistribucionEditable, seccionesYoryo }
 import { limitarCamaraYoryo, transformarSeccionYoryo, zoomCamaraYoryo } from '../../utils/gestosYoryo.mjs';
 import { svgComoUrl } from '../../pages/Crear/arteYoryo.mjs';
 import { configurarDisenoYoryo } from '../../utils/mockupYoryo.mjs';
+import { estructuraFijaYoryo, seccionMovibleClienteYoryo } from '../../utils/capasYoryo.mjs';
 import s from './PersonalizadorYoryo.module.css';
 
 const gruposAyuda = [
@@ -22,13 +23,15 @@ const ImagenSeccion = memo(function ImagenSeccion({ fragmento, anchoSvg, altoSvg
 });
 
 export default function LienzoYoryo(props) {
-  const { producto, datos, svg, elementos, fondo, modo, activa, onActiva, onMover, onInteractuando, disabled, puedeDeshacer, puedeRehacer } = props;
+  const { producto, datos, svg, elementos, fondo, modo, activa, onActiva, onMover, onInteractuando, disabled, puedeDeshacer, puedeRehacer, modoAdmin = false } = props;
   const config = configurarDisenoYoryo(producto.personalizacionYoryo, datos), laser = config.tecnica === 'laser', editable = esDistribucionEditable(datos);
   const [guias, setGuias] = useState(true), [ayuda, setAyuda] = useState(false), [zoom, setZoom] = useState(100);
   const visorRef = useRef(null), mundoRef = useRef(null), zonaRef = useRef(null), imanRef = useRef(null);
   const nodos = useRef(new Map()), cajas = useRef(new Map()), punteros = useRef(new Map());
   const gesto = useRef(null), frame = useRef(0), camara = useRef({ z: 1, x: 0, y: 0 }), espacio = useRef(false), ultimoToque = useRef(null), acciones = useRef(null);
   const area = modo === 'producto' && laser ? areaVistaYoryo(config, datos) : { x: 0, y: 0, w: 1, h: 1 };
+  const seleccionables = seccionesYoryo(datos, config).filter((e) => modoAdmin || !estructuraFijaYoryo(datos) || !e.recurso);
+  const movible = (id) => modoAdmin || seccionMovibleClienteYoryo(datos, seccionesYoryo(datos, config).find((s) => s.id === id));
   const restaurarNodos = () => { nodos.current.forEach((n) => { if (n) n.style.transform = ''; }); if (imanRef.current) imanRef.current.hidden = true; };
   useLayoutEffect(() => { cajas.current = new Map(elementos.map((e) => [e.id, e])); if (!gesto.current) restaurarNodos(); }, [elementos]);
 
@@ -56,6 +59,7 @@ export default function LienzoYoryo(props) {
   };
   const empezar = (e, elemento, tipo = 'mover') => {
     if (disabled || e.button > 0 && e.button !== 1) return;
+    if (elemento && !movible(elemento.id)) { e.stopPropagation(); onActiva(elemento.id); return; }
     if (e.pointerType === 'touch' || elemento || espacio.current || e.button === 1) e.preventDefault(); e.stopPropagation();
     punteros.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* el contacto ya terminó */ }
@@ -79,11 +83,11 @@ export default function LienzoYoryo(props) {
     if (g.tipo === 'pellizco') {
       if (punteros.current.size < 2) return;
       const p = [...punteros.current.values()], distancia = Math.hypot(p[1].x - p[0].x, p[1].y - p[0].y);
-      g.caja = transformarSeccionYoryo(g.base, { dx: ((p[0].x + p[1].x) / 2 - g.medio.x) / g.rect.width, dy: ((p[0].y + p[1].y) / 2 - g.medio.y) / g.rect.height, factor: distancia / Math.max(1, g.distancia), escala: g.escalaBase });
+      g.caja = transformarSeccionYoryo(g.base, { dx: ((p[0].x + p[1].x) / 2 - g.medio.x) / g.rect.width, dy: ((p[0].y + p[1].y) / 2 - g.medio.y) / g.rect.height, factor: distancia / Math.max(1, g.distancia), escala: g.escalaBase, libre: modoAdmin });
     } else if (g.tipo === 'tamano') {
       const w = g.elemento.w * g.rect.width, h = g.elemento.h * g.rect.height;
-      g.caja = transformarSeccionYoryo(g.elemento, { factor: 1 + (dx * w + dy * h) / (w * w + h * h), escala: g.escala });
-    } else g.caja = transformarSeccionYoryo(g.elemento, { dx: dx / g.rect.width, dy: dy / g.rect.height, escala: g.escala, eje: e.shiftKey, iman: e.altKey ? 0 : 6 / g.rect.width });
+      g.caja = transformarSeccionYoryo(g.elemento, { factor: 1 + (dx * w + dy * h) / (w * w + h * h), escala: g.escala, libre: modoAdmin });
+    } else g.caja = transformarSeccionYoryo(g.elemento, { dx: dx / g.rect.width, dy: dy / g.rect.height, escala: g.escala, eje: e.shiftKey, iman: e.altKey ? 0 : 6 / g.rect.width, libre: modoAdmin });
     g.movido ||= Math.hypot(dx, dy) > 2 || g.tipo === 'pellizco'; programar();
   };
   const soltar = (e) => {
@@ -107,12 +111,13 @@ export default function LienzoYoryo(props) {
       if (mod && tecla === 's') { e.preventDefault(); p.onGuardar(); return; }
       if (mod && ['+', '=', '-', '0'].includes(tecla)) { e.preventDefault(); if (tecla === '0') a.pintarCamara({ z: 1, x: 0, y: 0 }); else a.acercar(tecla === '-' ? 1 / 1.2 : 1.2); return; } if (mod) return;
       if (tecla === '?') { e.preventDefault(); a.setAyuda(true); return; } if (e.code === 'Space') { e.preventDefault(); espacio.current = true; return; }
-      const secciones = seccionesYoryo(a.datos, p.producto.personalizacionYoryo);
+      const secciones = seccionesYoryo(a.datos, p.producto.personalizacionYoryo).filter((s) => p.modoAdmin || !estructuraFijaYoryo(a.datos) || !s.recurso);
       if (/^[1-9]$/.test(tecla) && secciones[Number(tecla) - 1]) { e.preventDefault(); a.onActiva(secciones[Number(tecla) - 1].id); return; }
       const elegido = a.elementos.find((x) => x.id === a.activa), seccion = secciones.find((x) => x.id === a.activa); if (!elegido || !seccion) return;
+      if (!p.modoAdmin && !seccionMovibleClienteYoryo(a.datos, seccion)) return;
       const ajuste = ajusteSeccion(a.datos, seccion), flechas = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
-      if (flechas[e.key]) { e.preventDefault(); const [x, y] = flechas[e.key], paso = e.shiftKey ? .05 : .01; const c = transformarSeccionYoryo(elegido, { dx: x * paso, dy: y * paso, escala: ajuste.escala, iman: 0 }); a.onMover(elegido.id, { x: c.centroX, y: c.centroY }, `flechas:${elegido.id}`); }
-      else if (['+', '=', '-', '_'].includes(tecla)) { e.preventDefault(); a.onMover(elegido.id, { escala: Math.min(160, Math.max(40, ajuste.escala + (['-', '_'].includes(tecla) ? -5 : 5))) }); }
+      if (flechas[e.key]) { e.preventDefault(); const [x, y] = flechas[e.key], paso = e.shiftKey ? .05 : .01; const c = transformarSeccionYoryo(elegido, { dx: x * paso, dy: y * paso, escala: ajuste.escala, iman: 0, libre: p.modoAdmin }); a.onMover(elegido.id, { x: c.centroX, y: c.centroY }, `flechas:${elegido.id}`); }
+      else if (['+', '=', '-', '_'].includes(tecla)) { e.preventDefault(); a.onMover(elegido.id, { escala: Math.min(p.modoAdmin ? 500 : 160, Math.max(p.modoAdmin ? 5 : 40, ajuste.escala + (['-', '_'].includes(tecla) ? -5 : 5))) }); }
       else if (tecla === 'c') { e.preventDefault(); a.onMover(elegido.id, { x: .5 }); }
     };
     const subirTecla = (e) => { if (e.code === 'Space') espacio.current = false; };
@@ -128,29 +133,29 @@ export default function LienzoYoryo(props) {
           {editable && props.baseSvg && <div className={s.capaFija} style={{ zIndex: 0 }}><ImagenSeccion fragmento={props.baseSvg} anchoSvg={props.anchoSvg} altoSvg={props.altoSvg} /></div>}
           {editable && props.superposicionSvg && <div className={s.capaFija} style={{ zIndex: 20 }}><ImagenSeccion fragmento={props.superposicionSvg} anchoSvg={props.anchoSvg} altoSvg={props.altoSvg} /></div>}
           {editable && guias && (laser || modo === 'plano') && <span className={s.rotuloArea}><Texto>{laser ? 'Área de grabado' : 'Área de impresión'}</Texto></span>}<span ref={imanRef} className={s.guiaIman} hidden />
-          {editable && elementos.map((el) => <div key={el.id} ref={(n) => { if (n) nodos.current.set(el.id, n); else nodos.current.delete(el.id); }} className={s.capaEnVivo} style={{ left: `${el.x * 100}%`, top: `${el.y * 100}%`, width: `${el.w * 100}%`, height: `${el.h * 100}%`, zIndex: (el.orden ?? 3) * 10 + (activa === el.id ? 1 : 0) }}>
+          {editable && elementos.map((el) => <div key={el.id} ref={(n) => { if (n) nodos.current.set(el.id, n); else nodos.current.delete(el.id); }} className={s.capaEnVivo} style={{ left: `${el.x * 100}%`, top: `${el.y * 100}%`, width: `${el.w * 100}%`, height: `${el.h * 100}%`, zIndex: (el.orden ?? 3) * 10 + (activa === el.id ? 1 : 0), ...(!seleccionables.some((s) => s.id === el.id) && { pointerEvents: 'none' }) }}>
             <ImagenSeccion fragmento={el.fragmento} anchoSvg={el.anchoSvg} altoSvg={el.altoSvg} laser={laser} />
-            <button type="button" aria-label={`Mover ${el.nombre.toLowerCase()}`} aria-pressed={activa === el.id} disabled={disabled} className={`${s.elementoMovible} ${activa === el.id && guias ? s.elementoActivo : ''}`} onClick={(e) => { if (e.detail === 0) onActiva(el.id); }} onDoubleClick={() => editarContenido(el.id)} onPointerDown={(e) => empezar(e, el)}><span className={s.nombreElemento}>{el.nombre}</span></button>
-            {activa === el.id && guias && <button type="button" className={s.controlTamano} aria-label={`Cambiar tamaño de ${el.nombre.toLowerCase()}`} disabled={disabled} onPointerDown={(e) => empezar(e, el, 'tamano')}><MoveDiagonal2 aria-hidden="true" /></button>}
+            {seleccionables.some((s) => s.id === el.id) && <button type="button" aria-label={`${movible(el.id) ? 'Mover' : 'Editar'} ${el.nombre.toLowerCase()}`} aria-pressed={activa === el.id} disabled={disabled} className={`${s.elementoMovible} ${!movible(el.id) ? s.soloContenido : ''} ${activa === el.id && guias ? s.elementoActivo : ''}`} onClick={(e) => { if (e.detail === 0) onActiva(el.id); }} onDoubleClick={() => editarContenido(el.id)} onPointerDown={(e) => empezar(e, el)}><span className={s.nombreElemento}>{el.nombre}</span></button>}
+            {activa === el.id && guias && movible(el.id) && <button type="button" className={s.controlTamano} aria-label={`Cambiar tamaño de ${el.nombre.toLowerCase()}`} disabled={disabled} onPointerDown={(e) => empezar(e, el, 'tamano')}><MoveDiagonal2 aria-hidden="true" /></button>}
           </div>)}
         </div>;
   return <>
     {!laser && modo === 'producto' && editable && guias && <p className={s.etiquetaSoporte}><Texto>Área de impresión</Texto></p>}
-    <div ref={visorRef} className={`${modo === 'producto' ? laser ? s.modelo : s.soporteImpresion : `${s.arte} ${s.plano} ${laser ? s.laser : s.impresion}`} ${s.visorInteractivo}`} style={modo === 'plano' ? { aspectRatio: 1 / config.proporcion } : undefined} onPointerDown={(e) => empezar(e, null)} onPointerMove={mover} onPointerUp={soltar} onPointerCancel={cancelar}>
+    <div className={modoAdmin ? s.mesaPlantilla : undefined}><div ref={visorRef} className={`${modo === 'producto' ? laser ? s.modelo : s.soporteImpresion : `${s.arte} ${s.plano} ${laser ? s.laser : s.impresion}`} ${s.visorInteractivo}`} style={modo === 'plano' ? { aspectRatio: 1 / config.proporcion, ...(modoAdmin && { overflow: 'visible', outline: '2px solid #6D28D9', borderRadius: 0 }) } : undefined} onPointerDown={(e) => empezar(e, null)} onPointerMove={mover} onPointerUp={soltar} onPointerCancel={cancelar}>
       <div ref={mundoRef} className={!laser && modo === 'producto' ? s.mundoImpresion : s.mundoYoryo}>
         {modo === 'producto' && laser && <img className={s.base} src={producto.variants?.[0]?.imageUrl || producto.mainImage || producto.images?.[0]} alt={producto.name} draggable={false} />}
         {!laser && modo === 'producto' ? <div className={`${s.productoImpreso} ${config.nombre === 'Mousepad' ? s.mousepadCss : s.cuadroCss}`} data-mockup-yoryo={config.nombre}>
           <div className={s.superficieImpresion} style={{ aspectRatio: 1 / config.proporcion }}>{diseno}</div>
         </div> : diseno}
       </div>
-    </div>
+    </div></div>
     <BarraLienzo puedeDeshacer={puedeDeshacer} puedeRehacer={puedeRehacer} onDeshacer={props.onDeshacer} onRehacer={props.onRehacer}
-      disabled={disabled || Boolean(gesto.current)} elegido={editable && elementos.some((e) => e.id === activa)}
-      onAchicar={() => onMover(activa, { escala: Math.max(40, ajusteSeccion(datos, seccionesYoryo(datos, config).find((e) => e.id === activa)).escala - 5) })}
-      onAgrandar={() => onMover(activa, { escala: Math.min(160, ajusteSeccion(datos, seccionesYoryo(datos, config).find((e) => e.id === activa)).escala + 5) })}
-      onCentrar={() => onMover(activa, { x: .5 })} onImagen={props.onImagen} onTexto={() => editarContenido('nombre')} onEditar={() => editarContenido(activa)}
+      disabled={disabled || Boolean(gesto.current)} elegido={editable && elementos.some((e) => e.id === activa) && movible(activa)}
+      onAchicar={() => movible(activa) && onMover(activa, { escala: Math.max(modoAdmin ? 5 : 40, ajusteSeccion(datos, seccionesYoryo(datos, config).find((e) => e.id === activa)).escala - 5) })}
+      onAgrandar={() => movible(activa) && onMover(activa, { escala: Math.min(modoAdmin ? 500 : 160, ajusteSeccion(datos, seccionesYoryo(datos, config).find((e) => e.id === activa)).escala + 5) })}
+      onCentrar={() => movible(activa) && onMover(activa, { x: .5 })} onImagen={props.onImagen} onTexto={() => editarContenido('nombre')} onEditar={() => editarContenido(activa)}
       zoom={zoom / 100} zoomMaximo={3} ayudaEnMovil onZoom={(z) => pintarCamara(zoomCamaraYoryo(camara.current, z / camara.current.z, visorRef.current.clientWidth, visorRef.current.clientHeight))} onAtajos={() => setAyuda(true)} />
     {editable && <Casilla etiqueta="Mostrar área y selección" activo={guias} onChange={setGuias} />}
-    <HojaInferior abierta={ayuda} onCerrar={() => setAyuda(false)} titulo="Atajos y gestos"><p className={s.nota}><Texto>Arrastra para mover. Usa la esquina o dos dedos para cambiar el tamaño. Los cambios siempre quedan dentro del área marcada. La vista ampliada no cambia el tamaño del grabado.</Texto></p><AtajosEstudio grupos={gruposAyuda} /></HojaInferior>
+    <HojaInferior abierta={ayuda} onCerrar={() => setAyuda(false)} titulo="Atajos y gestos"><p className={s.nota}><Texto>{modoAdmin ? 'Arrastra las capas y usa la esquina para cambiar el tamaño. Puedes colocarlas fuera del recuadro; solo se exporta el área de impresión.' : estructuraFijaYoryo(datos) ? 'Personaliza los textos y la foto. La estructura y el estilo de la plantilla se conservan. El zoom solo cambia la vista.' : 'Arrastra para mover. Usa la esquina o dos dedos para cambiar el tamaño. Los cambios siempre quedan dentro del área marcada. La vista ampliada no cambia el tamaño del grabado.'}</Texto></p><AtajosEstudio grupos={!modoAdmin && estructuraFijaYoryo(datos) ? gruposAyuda.slice(0, 1) : gruposAyuda} /></HojaInferior>
   </>;
 }

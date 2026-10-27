@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { EQUIPOS_YORYO, PLANTILLAS_CUADRO, plantillaImpresionYoryo, seccionesPlantillaYoryo } from '../../utils/plantillasYoryo.mjs';
+import { EQUIPOS_YORYO, PLANTILLAS_CUADRO } from '../../utils/plantillasYoryo.mjs';
 import { clavePlantillaYoryo, dimensionesExportacionYoryo, plantillaCapasBaseYoryo, resolucionFondoYoryo } from '../../utils/capasYoryo.mjs';
 import { FUENTES_YORYO } from '../../utils/distribucionYoryo.mjs';
 import { obtenerPlantillasYoryo, guardarPlantillaYoryo } from '../../services/plantillasYoryo';
@@ -8,15 +8,9 @@ import { cargarRecursoPlantillaYoryo } from '../../services/recursosPlantillaYor
 import { cargarFuentesYoryo, componerArteYoryo, archivoComoDataUrl, svgComoPng } from '../Crear/arteYoryo.mjs';
 import { cargarPlantillaYoryo } from '../Crear/generarYoryo';
 import LienzoYoryo from '../../components/crear/LienzoYoryo';
+import { plantillaParejasBaseYoryo } from '../../utils/presetsParejasYoryo.mjs';
+import { estilosEquipoYoryo, estiloTextoYoryo } from '../../utils/estilosTextoYoryo.mjs';
 import s from './AdminPlantillasYoryo.module.css';
-
-function baseGeneral(datos, config) {
-  const p = plantillaImpresionYoryo(datos);
-  return { version: 3, clave: clavePlantillaYoryo(datos, config), producto: config.nombre.toLowerCase(), proporcion: config.proporcion,
-    elementos: [...seccionesPlantillaYoryo(datos, config).map((e) => ({ ...e, orden: e.orden ?? 3, ...(e.fuente && { alineacion: 'centro' }) })),
-      { id: 'decoracion', nombre: 'Decoración', recurso: 'superposicion', x: .5, y: .5, w: 1, h: 1, margen: 0, orden: 2 }],
-    recursos: { superposicion: { url: p.superposicion, size: [1536, 1024] } } };
-}
 
 export default function AdminPlantillasYoryo({ obtenerPlantillas = obtenerPlantillasYoryo, guardarPlantilla = guardarPlantillaYoryo, cargarRecurso = cargarRecursoPlantillaYoryo }) {
   const queryClient = useQueryClient();
@@ -31,10 +25,12 @@ export default function AdminPlantillasYoryo({ obtenerPlantillas = obtenerPlanti
     produccion: { anchoMm: producto === 'mousepad' ? 235 : 310, altoMm: producto === 'mousepad' ? 195 : 250, medidasConfirmadas: true } }), [producto]);
   const inicial = useMemo(() => ({ plantillaVisual: visual, plantilla: PLANTILLAS_CUADRO.find((p) => p.id === visual).tipo, equipo, formatoPlantilla: visual === 'deportivo' ? 4 : 3 }), [visual, equipo]);
   const clave = clavePlantillaYoryo(inicial, config);
-  const base = useMemo(() => visual === 'deportivo' ? plantillaCapasBaseYoryo(equipo, producto) : baseGeneral(inicial, config), [visual, equipo, producto, inicial, config]);
-  const preset = borradores[clave] || consulta.data?.[clave] || base;
+  const base = useMemo(() => visual === 'deportivo' ? plantillaCapasBaseYoryo(equipo, producto) : plantillaParejasBaseYoryo(visual, producto), [visual, equipo, producto]);
+  const origenPreset = borradores[clave] || consulta.data?.[clave] || base;
+  const preset = useMemo(() => ({ ...origenPreset, estructuraFija: true }), [origenPreset]);
   const datos = useMemo(() => ({ ...inicial, ...muestra, plantillaConfig: preset, distribucion: { version: 3, elementos: {} }, fotos: foto ? [{ url: foto, encaje: 'completa' }] : [] }), [inicial, muestra, preset, foto]);
   const seccion = preset.elementos.find((e) => e.id === activa) || preset.elementos[0];
+  const estilo = estiloTextoYoryo(seccion);
   const cambiarPreset = (nuevo) => { setBorradores((v) => ({ ...v, [clave]: nuevo })); setMensaje(''); setError(''); };
   const cambiarElemento = (id, cambio) => cambiarPreset({ ...preset, elementos: preset.elementos.map((e) => e.id === id ? { ...e, ...cambio } : e) });
   const guardar = async () => {
@@ -79,7 +75,7 @@ export default function AdminPlantillasYoryo({ obtenerPlantillas = obtenerPlanti
   const seleccionar = (fn, valor) => { fn(valor); setMensaje(''); setError(''); };
   return <main className={s.pagina}>
     <h1>Plantillas de cuadros y mousepads</h1>
-    <p>Selecciona un modelo y equipo. Arrastra los elementos en el lienzo o ajusta sus valores. Los cambios se publican al guardar.</p>
+    <p>Define la estructura que usarán los clientes. Puedes mover las capas fuera del recuadro; solo se imprime lo que queda dentro. Los cambios se aplican al guardar.</p>
     <div className={s.selectores}>
       <label>Producto<select value={producto} disabled={Boolean(ocupado)} onChange={(e) => seleccionar(setProducto, e.target.value)}><option value="cuadro">Cuadro · 31 × 25 cm</option><option value="mousepad">Mousepad · 23.5 × 19.5 cm</option></select></label>
       <label>Plantilla<select value={visual} disabled={Boolean(ocupado)} onChange={(e) => seleccionar(setVisual, e.target.value)}>{PLANTILLAS_CUADRO.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}</select></label>
@@ -95,7 +91,7 @@ export default function AdminPlantillasYoryo({ obtenerPlantillas = obtenerPlanti
     {ppp && ppp < 300 && <p className={s.aviso}>Fondo: {preset.recursos.fondo.size.join(' × ')} px · aproximadamente {ppp} ppp efectivos. El PNG final tiene 300 ppp nominales; ampliar la imagen no recupera detalle.</p>}
     <div className={s.editor}>
       <section className={s.vista} data-componente="PaginaEstudio">
-        <LienzoYoryo key={clave} {...composicion} producto={{ personalizacionYoryo: config }} datos={datos} svg={composicion.svg || ''} modo="plano" activa={seccion.id} onActiva={setActiva}
+        <LienzoYoryo modoAdmin key={clave} {...composicion} producto={{ personalizacionYoryo: config }} datos={datos} svg={composicion.svg || ''} modo="plano" activa={seccion.id} onActiva={setActiva}
           onMover={(id, cambio) => cambiarElemento(id, cambio)} disabled={Boolean(ocupado)} onGuardar={guardar} onDeshacer={() => {}} onRehacer={() => {}} onImagen={() => refFoto.current.click()} />
         <p>La foto y los textos de muestra no se guardan en la plantilla. Cada equipo y producto tiene su propia composición.</p>
         <input ref={refFoto} type="file" hidden accept="image/*" onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) { if (f.size > 25 * 1024 * 1024) { setError('La foto debe pesar menos de 25 MB.'); return; } setFoto(await archivoComoDataUrl(f)); } }} />
@@ -106,8 +102,8 @@ export default function AdminPlantillasYoryo({ obtenerPlantillas = obtenerPlanti
           <legend>Elementos del diseño</legend>
           <div className={s.capas}>{[...preset.elementos].sort((a, b) => b.orden - a.orden).map((e) => <button key={e.id} className={e.id === seccion.id ? s.activa : ''} onClick={() => setActiva(e.id)}>{e.nombre}<span>{e.orden}</span></button>)}</div>
           <h2>{seccion.nombre}</h2>
-          <div className={s.valores}>{[['x', 'Centro X'], ['y', 'Centro Y'], ['w', 'Ancho máximo'], ['h', 'Alto máximo']].map(([k, nombre]) => <label key={k}>{nombre} (%)<input type="number" min={k === 'w' || k === 'h' ? 1 : 0} max="100" step="0.1" value={Math.round(seccion[k] * 1000) / 10} onChange={(e) => { const v = Number(e.target.value); if (Number.isFinite(v)) cambiarElemento(seccion.id, { [k]: Math.max(k === 'w' || k === 'h' ? .01 : 0, Math.min(1, v / 100)) }); }} /></label>)}</div>
-          <label>Escala (%)<input type="range" min="40" max="160" value={seccion.escala || 100} onChange={(e) => cambiarElemento(seccion.id, { escala: Number(e.target.value) })} /></label>
+          <div className={s.valores}>{[['x', 'Centro X'], ['y', 'Centro Y'], ['w', 'Ancho máximo'], ['h', 'Alto máximo']].map(([k, nombre]) => <label key={k}>{nombre} (%)<input type="number" min={k === 'w' || k === 'h' ? 1 : -1000} max="1000" step="0.1" value={Math.round(seccion[k] * 1000) / 10} onChange={(e) => { const v = Number(e.target.value); if (Number.isFinite(v)) cambiarElemento(seccion.id, { [k]: Math.max(k === 'w' || k === 'h' ? .01 : -10, Math.min(10, v / 100)) }); }} /></label>)}</div>
+          <label>Escala ({seccion.escala || 100}%)<input type="range" aria-label="Escala" min="5" max="500" value={seccion.escala || 100} onChange={(e) => cambiarElemento(seccion.id, { escala: Number(e.target.value) })} /></label>
           <label>Orden (0 detrás · 20 delante)<input type="number" min="0" max="20" value={seccion.orden} onChange={(e) => cambiarElemento(seccion.id, { orden: Math.max(0, Math.min(20, Number(e.target.value))) })} /></label>
           {seccion.fuente && <>
             <label>Texto de prueba<textarea value={muestra[seccion.id] || ''} maxLength={160} onChange={(e) => setMuestra((v) => ({ ...v, [seccion.id]: e.target.value }))} /></label>
@@ -115,7 +111,17 @@ export default function AdminPlantillasYoryo({ obtenerPlantillas = obtenerPlanti
             <label>Color<input type="color" value={seccion.color || '#26342B'} onChange={(e) => cambiarElemento(seccion.id, { color: e.target.value })} /></label>
             <label>Alineación<select value={seccion.alineacion || 'centro'} onChange={(e) => cambiarElemento(seccion.id, { alineacion: e.target.value })}><option value="izquierda">Izquierda</option><option value="centro">Centro</option><option value="derecha">Derecha</option></select></label>
             <label className={s.casilla}><input type="checkbox" checked={seccion.mayusculas || false} onChange={(e) => cambiarElemento(seccion.id, { mayusculas: e.target.checked })} />Usar mayúsculas</label>
+            <label>Tamaño máximo de letra (0 = automático)<input type="number" min="0" max="400" value={estilo.tamanoLetra} onChange={(e) => cambiarElemento(seccion.id, { tamanoLetra: Number(e.target.value) })} /></label>
+            <label>Espaciado de letras<input type="number" min="-50" max="300" value={estilo.espaciado} onChange={(e) => cambiarElemento(seccion.id, { espaciado: Number(e.target.value) })} /></label>
+            <h3>Contorno</h3>
+            <div className={s.valores}><label>Color del contorno<input type="color" value={estilo.contornoColor} onChange={(e) => cambiarElemento(seccion.id, { contornoColor: e.target.value })} /></label><label>Grosor del contorno<input type="number" min="0" max="12" step="0.1" value={estilo.contornoAncho} onChange={(e) => cambiarElemento(seccion.id, { contornoAncho: Number(e.target.value) })} /></label></div>
+            <h3>Sombra</h3>
+            <label>Color de sombra<input type="color" value={estilo.sombraColor} onChange={(e) => cambiarElemento(seccion.id, { sombraColor: e.target.value })} /></label>
+            <label>Opacidad de sombra (%)<input type="number" min="0" max="100" value={Math.round(estilo.sombraOpacidad * 100)} onChange={(e) => cambiarElemento(seccion.id, { sombraOpacidad: Number(e.target.value) / 100 })} /></label>
+            <div className={s.valores}>{[['sombraX', 'Desplazamiento X'], ['sombraY', 'Desplazamiento Y'], ['sombraBlur', 'Difuminado']].map(([k, nombre]) => <label key={k}>{nombre}<input type="number" min={k === 'sombraBlur' ? 0 : -30} max={k === 'sombraBlur' ? 20 : 30} step="0.1" value={estilo[k]} onChange={(e) => cambiarElemento(seccion.id, { [k]: Number(e.target.value) })} /></label>)}</div>
+            {visual === 'deportivo' && <button onClick={() => { const estilos = estilosEquipoYoryo(equipo); const referencia = base.elementos.find((e) => e.id === seccion.id); cambiarElemento(seccion.id, { fuente: referencia.fuente, ...estiloTextoYoryo(referencia), ...estilos[seccion.id] }); }}>Aplicar estilo de la referencia</button>}
           </>}
+          {(preset.referencia || base.referencia) && <details className={s.referencia}><summary>Ver referencia de colores y letras</summary><img src={preset.referencia || base.referencia} alt={`Referencia visual de ${equipo}`} /><p>Estilos aproximados con fuentes disponibles. Esta imagen sirve como guía y no se imprime.</p></details>}
           <h2>Recursos PNG</h2>
           {Object.entries(preset.recursos).map(([tipo, r]) => <div className={s.recurso} key={tipo}><img src={r.url} alt={tipo} /><div><strong>{tipo === 'superposicion' ? 'Decoración' : tipo}</strong><small>{r.size.join(' × ')} px</small><button onClick={() => { tipoCapa.current = tipo; refCapa.current.click(); }}>Sustituir PNG</button></div></div>)}
           <input ref={refCapa} type="file" hidden accept="image/png" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; subirCapa(f); }} />

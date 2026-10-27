@@ -1,6 +1,7 @@
 // Coordenadas relativas al área útil. Los tamaños de los elementos y sus
 // posiciones se guardan con el diseño, nunca en píxeles de la pantalla.
 import { seccionesPlantillaYoryo } from './plantillasYoryo.mjs';
+import { estructuraFijaYoryo, seccionMovibleClienteYoryo } from './capasYoryo.mjs';
 
 export const FUENTES_YORYO = [
   { id: 'Elegante', archivo: 'Cinzel-Bold.ttf', familia: 'Yoryo Elegante', detalle: 'Serif · ideal para nombres' },
@@ -35,14 +36,18 @@ export function seccionesYoryo(datos, config) {
 export const distribucionRecomendada = () => ({ version: 3, elementos: {} });
 
 export function ajusteSeccion(datos, seccion) {
-  const cambio = datos.distribucion?.elementos?.[seccion.id] || {};
+  const fijo = estructuraFijaYoryo(datos);
+  const original = datos.distribucion?.elementos?.[seccion.id] || {};
+  const cambio = fijo ? seccionMovibleClienteYoryo(datos, seccion) ? Object.fromEntries(Object.entries(original).filter(([k]) => ['x', 'y', 'escala'].includes(k))) : {} : original;
+  const libre = fijo || seccion.libre;
   return {
     ...seccion,
-    w: limitar(cambio.w ?? seccion.w, .01, 1 - 2 * (seccion.margen ?? .02)),
-    h: limitar(cambio.h ?? seccion.h, .01, 1 - 2 * (seccion.margen ?? .02)),
-    x: limitar(cambio.x ?? seccion.x, seccion.margen ?? .02, 1 - (seccion.margen ?? .02)),
-    y: limitar(cambio.y ?? seccion.y, seccion.margen ?? .02, 1 - (seccion.margen ?? .02)),
-    escala: limitar(cambio.escala ?? seccion.escala ?? 100, 40, 160),
+    ...(libre && { libre: true }),
+    w: limitar(cambio.w ?? seccion.w, .01, libre ? 10 : 1 - 2 * (seccion.margen ?? .02)),
+    h: limitar(cambio.h ?? seccion.h, .01, libre ? 10 : 1 - 2 * (seccion.margen ?? .02)),
+    x: limitar(cambio.x ?? seccion.x, libre ? -10 : seccion.margen ?? .02, libre ? 10 : 1 - (seccion.margen ?? .02)),
+    y: limitar(cambio.y ?? seccion.y, libre ? -10 : seccion.margen ?? .02, libre ? 10 : 1 - (seccion.margen ?? .02)),
+    escala: limitar(cambio.escala ?? seccion.escala ?? 100, libre ? 5 : 40, libre ? 500 : 160),
     fuente: FUENTES_YORYO.some((f) => f.id === cambio.fuente) ? cambio.fuente : seccion.fuente,
     mayusculas: cambio.mayusculas ?? seccion.mayusculas,
     color: /^#[0-9a-f]{6}$/i.test(cambio.color) ? cambio.color : seccion.color,
@@ -68,11 +73,21 @@ export const firmaDeDisenoYoryo = (datos, medidas) => JSON.stringify(ordenar({ d
 export const normalizarFirmaYoryo = (firma) => { try { return JSON.stringify(ordenar(JSON.parse(firma))); } catch { return firma; } };
 
 export function cambiarSeccion(datos, id, cambio) {
+  if (estructuraFijaYoryo(datos)) {
+    const seccion = datos.plantillaConfig.elementos.find((s) => s.id === id);
+    if (!seccion || !seccionMovibleClienteYoryo(datos, seccion)) return datos;
+    cambio = Object.fromEntries(Object.entries(cambio).filter(([k]) => ['x', 'y', 'escala'].includes(k)));
+    if (!Object.keys(cambio).length) return datos;
+  }
   const distribucion = esDistribucionEditable(datos) ? datos.distribucion : distribucionRecomendada();
   return { ...datos, distribucion: { ...distribucion, elementos: { ...distribucion.elementos, [id]: { ...distribucion.elementos[id], ...cambio } } } };
 }
 
 export function cajaSeccion(ajuste, ancho = ajuste.w, alto = ajuste.h, margen = .02) {
+  if (ajuste.libre) {
+    const w = limitar(ancho, .001, 10), h = limitar(alto, .001, 10);
+    return { x: ajuste.x - w / 2, y: ajuste.y - h / 2, w, h, centroX: ajuste.x, centroY: ajuste.y };
+  }
   const w = limitar(ancho, .001, 1 - 2 * margen), h = limitar(alto, .001, 1 - 2 * margen);
   const x = limitar(ajuste.x, margen + w / 2, 1 - margen - w / 2);
   const y = limitar(ajuste.y, margen + h / 2, 1 - margen - h / 2);
