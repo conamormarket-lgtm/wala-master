@@ -24,6 +24,20 @@
     ],
     "headers": [
       {
+        "source": "/mobile-culqi.*",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-store" },
+          { "key": "Referrer-Policy", "value": "no-referrer" },
+          { "key": "X-Content-Type-Options", "value": "nosniff" }
+        ]
+      },
+      {
+        "source": "/mobile-culqi.html",
+        "headers": [
+          { "key": "Content-Security-Policy", "value": "frame-ancestors 'self' https://wala.pe; base-uri 'none'; object-src 'none'" }
+        ]
+      },
+      {
         "source": "/assets/**",
         "headers": [
           {
