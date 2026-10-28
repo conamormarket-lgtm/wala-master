@@ -175,6 +175,11 @@ export function limaHoyKey() {
   return limaDayKey(Date.now());
 }
 
+/** Clave "YYYY-MM-DD" (Lima) de AYER (Lima no tiene DST: restar 24h es exacto). */
+export function limaAyerKey() {
+  return limaDayKey(Date.now() - DAY_MS);
+}
+
 // "YYYY-MM-DD" → "DD/MM/YYYY" legible para etiquetas de rango.
 function fmtDayKeyLegible(key) {
   const [y, m, d] = String(key || '').split('-');

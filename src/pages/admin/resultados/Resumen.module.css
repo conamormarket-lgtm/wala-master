@@ -105,6 +105,12 @@
   color: var(--color-text-muted, #475569);
 }
 
+/* ---- Comparativa (hoy vs ayer / periodo anterior) ---- */
+.sube { color: #0e7f57; font-weight: 700; }
+.baja { color: #dc2626; font-weight: 700; }
+:global([data-theme="dark"]) .sube { color: #34d399; }
+:global([data-theme="dark"]) .baja { color: #f87171; }
+
 /* ---- De dónde vienen ---- */
 .tablaScroll {
   overflow-x: auto;

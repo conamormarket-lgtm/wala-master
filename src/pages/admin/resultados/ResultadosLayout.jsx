@@ -4,6 +4,7 @@ import {
   useDashboardFilters,
   useDashboardAnalytics,
   limaHoyKey,
+  limaAyerKey,
   fmtTime,
 } from '../dashboard/dashShared';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -14,7 +15,7 @@ import styles from './ResultadosLayout.module.css';
  * Resultados: el panel que ve el dueño de la tienda. Una sola cabecera para
  * todas las pestañas (periodo, comparar, actualizar) y los datos del resumen
  * diario compartidos por react-query (mismo caché que el panel anterior).
- * Las pestañas reciben { filtros, analitica } por el contexto del Outlet.
+ * Las pestañas reciben { filtros, analitica, periodo } por el contexto del Outlet.
  */
 
 const PERIODOS = [
@@ -23,27 +24,46 @@ const PERIODOS = [
   { id: 90, label: '90 días' },
 ];
 
-function SelectorPeriodo({ filtros }) {
+// Día suelto elegido con los botones Hoy/Ayer ('hoy' | 'ayer' | null).
+function diaSuelto(filtros) {
+  if (filtros.rangeDays !== 'custom' || filtros.customStart !== filtros.customEnd) return null;
+  if (filtros.customStart === limaHoyKey()) return 'hoy';
+  if (filtros.customStart === limaAyerKey()) return 'ayer';
+  return null;
+}
+
+// Con qué se compara el periodo elegido, dicho como lo diría el dueño.
+const CONTRA = { hoy: 'ayer', ayer: 'anteayer' };
+
+function SelectorPeriodo({ filtros, dia }) {
   const { rangeDays, setRangeDays, customStart, customEnd, setCustomRange } = filtros;
   const hoy = limaHoyKey();
-  const esHoy = rangeDays === 'custom' && customStart === hoy && customEnd === hoy;
-  const esFechas = rangeDays === 'custom' && !esHoy;
+  const ayer = limaAyerKey();
+  const esFechas = rangeDays === 'custom' && !dia;
   const [abiertas, setAbiertas] = useState(esFechas);
   const mostrarFechas = esFechas || abiertas;
+
+  const botonDia = (id, label, key) => {
+    const activo = dia === id && !abiertas;
+    return (
+      <button
+        type="button"
+        className={activo ? styles.segActivo : styles.seg}
+        aria-pressed={activo}
+        onClick={() => { setAbiertas(false); setCustomRange(key, key); }}
+      >
+        {label}
+      </button>
+    );
+  };
 
   return (
     <div className={styles.periodo}>
       <div className={styles.segmentos} role="group" aria-label="Periodo">
-        <button
-          type="button"
-          className={esHoy ? styles.segActivo : styles.seg}
-          aria-pressed={esHoy}
-          onClick={() => { setAbiertas(false); setCustomRange(hoy, hoy); }}
-        >
-          Hoy
-        </button>
+        {botonDia('hoy', 'Hoy', hoy)}
+        {botonDia('ayer', 'Ayer', ayer)}
         {PERIODOS.map((p) => {
-          const activo = rangeDays === p.id;
+          const activo = rangeDays === p.id && !abiertas;
           return (
             <button
               key={p.id}
@@ -102,10 +122,12 @@ export default function ResultadosLayout() {
   const analitica = useDashboardAnalytics(filtros);
   const { data, isFetching, refetch, dataUpdatedAt } = analitica;
 
-  const hoy = limaHoyKey();
-  const etiquetaPeriodo = filtros.rangeDays === 'custom' && filtros.customStart === hoy && filtros.customEnd === hoy
-    ? 'hoy'
-    : filtros.rangeLabel;
+  const dia = diaSuelto(filtros);
+  const periodo = {
+    dia,
+    etiqueta: dia || filtros.rangeLabel,
+    contra: CONTRA[dia] || 'el periodo anterior',
+  };
   const datosAl = data?.actualizadoEnMs || dataUpdatedAt;
 
   return (
@@ -114,12 +136,13 @@ export default function ResultadosLayout() {
         <div>
           <h1 className={styles.titulo}>Resultados</h1>
           <p className={styles.subtitulo}>
-            Cómo va tu tienda · {etiquetaPeriodo}
+            Cómo va tu tienda · {periodo.etiqueta}
+            {filtros.compare ? ` comparado con ${periodo.contra}` : ''}
             {datosAl ? ` · datos al ${fmtTime(datosAl)}` : ''}
           </p>
         </div>
         <div className={styles.controles}>
-          <SelectorPeriodo filtros={filtros} />
+          <SelectorPeriodo filtros={filtros} dia={dia} />
           <label className={styles.comparar}>
             <input
               id="resultados-comparar"
@@ -127,7 +150,7 @@ export default function ResultadosLayout() {
               checked={filtros.compare}
               onChange={(e) => filtros.setCompare(e.target.checked)}
             />
-            Comparar con el periodo anterior
+            Comparar con {periodo.contra}
           </label>
           <button type="button" className={styles.actualizar} onClick={() => refetch()} disabled={isFetching}>
             {isFetching ? 'Actualizando…' : 'Actualizar'}
@@ -150,7 +173,7 @@ export default function ResultadosLayout() {
         </nav>
       )}
 
-      <Outlet context={{ filtros, analitica }} />
+      <Outlet context={{ filtros, analitica, periodo }} />
     </div>
   );
 }

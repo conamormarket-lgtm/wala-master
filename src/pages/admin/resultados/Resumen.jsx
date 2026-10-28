@@ -53,6 +53,59 @@ function OtrosCobros({ cobros }) {
   );
 }
 
+const mayuscula = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : '');
+
+// Diferencia con signo en la unidad de la fila ("+12", "−S/ 30,00").
+function diferencia(actual, previo, formato) {
+  const d = (Number(actual) || 0) - (Number(previo) || 0);
+  if (d === 0) return '=';
+  return `${d > 0 ? '+' : '−'}${formato(Math.abs(d))}`;
+}
+
+/*
+ * Lado a lado: el periodo elegido contra el anterior (con "Hoy", contra ayer).
+ * Los resúmenes son por día completo, así que hoy va contra TODO el día de ayer:
+ * se avisa para que nadie lea "▼" a media mañana como una mala noticia.
+ */
+function Comparativa({ filas, periodo, desdeHasta }) {
+  const titulo = periodo.dia ? `${mayuscula(periodo.dia)} vs ${periodo.contra}` : 'Este periodo vs el anterior';
+  const colActual = periodo.dia ? mayuscula(periodo.dia) : 'Este periodo';
+  const colPrevio = periodo.dia ? mayuscula(periodo.contra) : 'Periodo anterior';
+  return (
+    <Tarjeta
+      id="comparativa"
+      titulo={titulo}
+      ayuda={periodo.dia === 'hoy'
+        ? `Hoy va hasta las ${fmtTime(Date.now())}; ayer es el día completo. Es normal que hoy vaya por debajo hasta que acabe el día.`
+        : `Periodo anterior: ${desdeHasta}.`}
+    >
+      <div className={styles.tablaScroll}>
+        <table className={styles.tabla}>
+          <thead>
+            <tr><th>Qué</th><th>{colActual}</th><th>{colPrevio}</th><th>Diferencia</th></tr>
+          </thead>
+          <tbody>
+            {filas.map((f) => (
+              <tr key={f.label}>
+                <td>{f.label}</td>
+                <td><strong>{f.formato(f.actual)}</strong></td>
+                <td>{f.formato(f.previo)}</td>
+                <td>
+                  <span className={f.cambio?.deltaPositive === false ? styles.baja : styles.sube}>
+                    {f.enPuntos
+                      ? f.cambio?.delta
+                      : `${f.diferencia}${f.cambio?.delta && f.cambio.delta !== '= 0%' ? ` (${f.cambio.delta})` : ''}`}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Tarjeta>
+  );
+}
+
 function Aviso({ aviso }) {
   const destino = DESTINOS[aviso.destino];
   const contenido = (
@@ -73,7 +126,7 @@ function Aviso({ aviso }) {
 }
 
 export default function Resumen() {
-  const { filtros, analitica } = useOutletContext();
+  const { filtros, analitica, periodo } = useOutletContext();
   const { data, anterior, isLoading, error } = analitica;
   const hayAnterior = Boolean(filtros.compare && anterior && anterior.diasConVentas > 0);
   const [canal, setCanal] = useState('');
@@ -149,6 +202,25 @@ export default function Resumen() {
     ];
   }, [visitas, pedidos, ingresos, hayAnterior, anterior, canalSel]);
 
+  const comparativa = useMemo(() => {
+    if (!hayAnterior) return [];
+    const visitasPrev = anterior.visitas?.total || 0;
+    const pedidosPrev = anterior.pedidos?.total || 0;
+    const ingresosPrev = anterior.ingresosCents?.total || 0;
+    const conv = porCien(pedidos, visitas);
+    const convPrev = porCien(pedidosPrev, visitasPrev);
+    const fila = (label, actual, previo, formato, cambio) => ({
+      label, actual, previo, formato, cambio, diferencia: diferencia(actual, previo, formato),
+    });
+    return [
+      fila('Visitas', visitas, visitasPrev, fmtInt, calcularDelta(visitas, visitasPrev)),
+      fila('Pedidos', pedidos, pedidosPrev, fmtInt, calcularDelta(pedidos, pedidosPrev)),
+      fila('Ventas', ingresos, ingresosPrev, soles, calcularDelta(ingresos, ingresosPrev)),
+      // En puntos: "▲ 1,7 pp" ya es la diferencia, no hace falta repetirla.
+      { ...fila('De cada 100 visitas compran', conv, convPrev, fmtPorCien, calcularDeltaPuntos(conv, convPrev)), enPuntos: true },
+    ];
+  }, [hayAnterior, anterior, visitas, pedidos, ingresos]);
+
   const avisos = useMemo(() => cosasPorMejorar({
     masVistos: data?.topProducts,
     topVendidos: data?.topVendidos,
@@ -189,7 +261,12 @@ export default function Resumen() {
         </p>
       )}
       {filtros.compare && !hayAnterior && (
-        <p className={styles.nota}>El periodo anterior todavía no tiene pedidos ni ventas sumados: no se puede comparar.</p>
+        <p className={styles.nota}>
+          {mayuscula(periodo.contra)} todavía no tiene pedidos ni ventas sumados: no se puede comparar.
+        </p>
+      )}
+      {comparativa.length > 0 && (
+        <Comparativa filas={comparativa} periodo={periodo} desdeHasta={filtros.prevRangeLabel} />
       )}
 
       <Columnas>
