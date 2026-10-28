@@ -16,9 +16,11 @@ export const enCelular = () => typeof window !== 'undefined' && window.matchMedi
  * (así nunca queda flotando encima de la cabecera ni cortado).
  *  - abierto · onCerrar · ancla: ref del campo
  *  - titulo: el de la hoja (y nombre del panel para lectores)
- *  - ancho: 'campo' (el del campo) o px mínimos (calendario)
+ *  - ancho: 'campo' (el del campo, con un mínimo de 220 px) o px mínimos (calendario)
  *  - pie: botones al final (solo en la hoja; en el panel van dentro)
  */
+const ANCHO_MINIMO = 220;
+
 export function PanelFlotante({ abierto, onCerrar, ancla, titulo, ancho = 'campo', alto = 320, pie, children }) {
   const [celular, setCelular] = useState(false);
   const panel = useRef(null);
@@ -37,7 +39,9 @@ export function PanelFlotante({ abierto, onCerrar, ancla, titulo, ancho = 'campo
     const ubicar = () => {
       const r = ancla.current?.getBoundingClientRect();
       if (!r) return;
-      const w = ancho === 'campo' ? r.width : Math.max(r.width, ancho);
+      // Un campo angosto (el grupo de una plantilla en el estudio) no corta
+      // sus opciones en "P…": el panel tiene un mínimo, sin pasar la pantalla.
+      const w = Math.min(Math.max(r.width, ancho === 'campo' ? ANCHO_MINIMO : ancho), window.innerWidth - 16);
       const abajo = window.innerHeight - r.bottom - 12;
       const arriba = r.top - 12;
       const haciaArriba = abajo < Math.min(alto, 240) && arriba > abajo;
