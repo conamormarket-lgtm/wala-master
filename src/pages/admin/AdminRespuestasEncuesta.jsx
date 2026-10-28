@@ -10,6 +10,7 @@ import {
   resumenEncuesta, fichaCliente, csvRespuestas,
   fechaEncuesta, filtrarPorFecha, porPeriodo, textoFechaEncuesta, diaLocal, embudoEncuesta, EMBUDO_DESDE,
 } from '../../services/surveyResponses.mjs';
+import CambioKpi from './CambioKpi';
 import styles from './AdminRespuestasEncuesta.module.css';
 
 /* ============================================================================
@@ -96,7 +97,8 @@ const etiquetaPeriodo = (valor, unidad) => {
 
 // embebido: dentro de Resultados › Opiniones, sin título propio y con el periodo
 // de Resultados (desde/hasta 'YYYY-MM-DD') en vez de su propio selector.
-const AdminRespuestasEncuesta = ({ embebido = false, desde = '', hasta = '' } = {}) => {
+// previo: { desde, hasta, contra } del periodo anterior cuando se compara.
+const AdminRespuestasEncuesta = ({ embebido = false, desde = '', hasta = '', previo = null } = {}) => {
   const [rangoId, setRangoId] = useState('todo');
   const [rangoPropio, setRango] = useState({ desde: '', hasta: '' });
   const rango = embebido ? { desde, hasta } : rangoPropio;
@@ -134,6 +136,14 @@ const AdminRespuestasEncuesta = ({ embebido = false, desde = '', hasta = '' } = 
     [data, rango.desde, rango.hasta],
   );
   const resumen = useMemo(() => (data ? resumenEncuesta(enRango, data.config) : null), [data, enRango]);
+  const prevDesde = previo?.desde;
+  const prevHasta = previo?.hasta;
+  const anterior = useMemo(() => {
+    if (!prevDesde || !data) return null;
+    const lista = filtrarPorFecha(data.usuarios, prevDesde, prevHasta);
+    return { total: lista.length, ...resumenEncuesta(lista, data.config) };
+  }, [data, prevDesde, prevHasta]);
+  const cambio = (actual, clave) => anterior && <CambioKpi actual={actual} previo={anterior[clave]} contra={previo.contra} />;
 
   // Embudo: los pasos de la encuesta (analytics_events, survey_step) en el mismo rango de fechas.
   const desdeEmbudo = rango.desde && rango.desde > EMBUDO_DESDE ? rango.desde : EMBUDO_DESDE;
@@ -307,15 +317,19 @@ const AdminRespuestasEncuesta = ({ embebido = false, desde = '', hasta = '' } = 
               <div className={`${styles.kpi} ${styles.kpiDestacado}`}>
                 <span>{enRango.length}</span>
                 la realizaron en este rango de fechas
+                {cambio(enRango.length, 'total')}
               </div>
             )}
             <div className={styles.kpi}>
               <span>{fechas.sinFecha}</span>
               con fecha desconocida (la llenaron antes del 29/06/2026)
             </div>
-            <div className={styles.kpi}><span>{resumen.personas}</span>personas cargadas para regalar</div>
-            <div className={styles.kpi}><span>{resumen.conCumpleanos}</span>clientes dieron su cumpleaños</div>
-            <div className={styles.kpi}><span>{resumen.conPresupuesto}</span>personas con presupuesto{resumen.presupuestoRetirado && ' (ya no se pregunta)'}</div>
+            <div className={styles.kpi}><span>{resumen.personas}</span>personas cargadas para regalar{cambio(resumen.personas, 'personas')}</div>
+            <div className={styles.kpi}><span>{resumen.conCumpleanos}</span>clientes dieron su cumpleaños{cambio(resumen.conCumpleanos, 'conCumpleanos')}</div>
+            <div className={styles.kpi}>
+              <span>{resumen.conPresupuesto}</span>personas con presupuesto{resumen.presupuestoRetirado && ' (ya no se pregunta)'}
+              {cambio(resumen.conPresupuesto, 'conPresupuesto')}
+            </div>
           </section>
 
           <article className={styles.card}>

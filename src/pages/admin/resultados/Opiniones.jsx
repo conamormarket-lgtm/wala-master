@@ -23,17 +23,30 @@ const ENCUESTAS = [
 ];
 
 export default function Opiniones() {
-  const { filtros } = useOutletContext();
+  const { filtros, periodo } = useOutletContext();
   const [encuesta, setEncuesta] = useState('entregas');
   const { startDateMs, endDateMs } = filtros.dateRange;
+  // Con "Comparar", cada número lleva su cambio contra el periodo anterior.
+  const previo = filtros.compare && filtros.prevDateRange ? filtros.prevDateRange : null;
+  const contra = periodo.dia ? periodo.contra : 'antes';
 
   return (
     <div className={styles.pagina}>
       <Interruptor etiqueta="Encuesta" opciones={ENCUESTAS} valor={encuesta} onChange={setEncuesta} />
       {encuesta === 'entregas' ? (
-        <AdminEncuestaEntregas embebido desdeMs={startDateMs} hastaMs={endDateMs} />
+        <AdminEncuestaEntregas
+          embebido
+          desdeMs={startDateMs}
+          hastaMs={endDateMs}
+          previo={previo && { desdeMs: previo.startDateMs, hastaMs: previo.endDateMs, contra }}
+        />
       ) : (
-        <AdminRespuestasEncuesta embebido desde={diaLocal(startDateMs)} hasta={diaLocal(endDateMs)} />
+        <AdminRespuestasEncuesta
+          embebido
+          desde={diaLocal(startDateMs)}
+          hasta={diaLocal(endDateMs)}
+          previo={previo && { desde: diaLocal(previo.startDateMs), hasta: diaLocal(previo.endDateMs), contra }}
+        />
       )}
     </div>
   );

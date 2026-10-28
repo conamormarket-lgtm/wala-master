@@ -4,6 +4,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getSurveyConfig, saveSurveyConfig, configEntregaPanel } from '../../services/encuestaConfig';
 import { resumenEntregas } from '../../services/encuestaEntrega.mjs';
 import { useGlobalToast } from '../../contexts/ToastContext';
+import CambioKpi from './CambioKpi';
 // Mismo diseño que "Respuestas de la encuesta".
 import styles from './AdminRespuestasEncuesta.module.css';
 
@@ -47,7 +48,8 @@ const fecha = (ms) => (ms ? new Date(ms).toLocaleDateString('es-PE', { day: '2-d
 
 // embebido: dentro de Resultados › Opiniones, sin título propio, con el periodo
 // de Resultados (desdeMs/hastaMs) y los ajustes detrás de "Editar encuesta".
-const AdminEncuestaEntregas = ({ embebido = false, desdeMs = null, hastaMs = null } = {}) => {
+// previo: { desdeMs, hastaMs, contra } del periodo anterior cuando se compara.
+const AdminEncuestaEntregas = ({ embebido = false, desdeMs = null, hastaMs = null, previo = null } = {}) => {
   const toast = useGlobalToast();
   const [verAjustes, setVerAjustes] = useState(!embebido);
 
@@ -91,6 +93,15 @@ const AdminEncuestaEntregas = ({ embebido = false, desdeMs = null, hastaMs = nul
     return dias ? lista.filter((r) => r.fecha >= Date.now() - dias * 86400000) : lista;
   }, [data, rango, embebido, desdeMs, hastaMs]);
   const resumen = useMemo(() => resumenEntregas(enRango, cfg?.opcionesMejorar || []), [enRango, cfg]);
+  const prevDesde = previo?.desdeMs;
+  const prevHasta = previo?.hastaMs;
+  const anterior = useMemo(() => {
+    if (prevDesde == null || !data) return null;
+    const lista = (data.respuestas || []).filter((r) => r.fecha >= prevDesde && r.fecha <= prevHasta);
+    return resumenEntregas(lista, cfg?.opcionesMejorar || []);
+  }, [data, cfg, prevDesde, prevHasta]);
+  // Promedio y % solo se comparan si los dos periodos tienen respuestas.
+  const comparable = Boolean(anterior && anterior.total && resumen.total);
 
   return (
     <div className={styles.pagina}>
@@ -151,9 +162,22 @@ const AdminEncuestaEntregas = ({ embebido = false, desdeMs = null, hastaMs = nul
           </div>
 
           <section className={styles.kpis}>
-            <div className={`${styles.kpi} ${styles.kpiDestacado}`}><span>{resumen.total}</span>respuestas</div>
-            <div className={`${styles.kpi} ${styles.kpiDestacado}`}><span>{resumen.total ? `${resumen.promedio} ★` : '—'}</span>promedio</div>
-            <div className={styles.kpi}><span>{resumen.total ? `${resumen.contentos}%` : '—'}</span>pusieron 4 o 5 estrellas</div>
+            <div className={`${styles.kpi} ${styles.kpiDestacado}`}>
+              <span>{resumen.total}</span>respuestas
+              {anterior && <CambioKpi actual={resumen.total} previo={anterior.total} contra={previo.contra} />}
+            </div>
+            <div className={`${styles.kpi} ${styles.kpiDestacado}`}>
+              <span>{resumen.total ? `${resumen.promedio} ★` : '—'}</span>promedio
+              {comparable && (
+                <CambioKpi actual={resumen.promedio} previo={anterior.promedio} contra={previo.contra} enPuntos unidad="★" formato={(v) => `${v} ★`} />
+              )}
+            </div>
+            <div className={styles.kpi}>
+              <span>{resumen.total ? `${resumen.contentos}%` : '—'}</span>pusieron 4 o 5 estrellas
+              {comparable && (
+                <CambioKpi actual={resumen.contentos} previo={anterior.contentos} contra={previo.contra} enPuntos formato={(v) => `${v}%`} />
+              )}
+            </div>
           </section>
 
           <section className={styles.grid}>
