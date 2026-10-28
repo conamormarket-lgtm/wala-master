@@ -40,6 +40,16 @@ Las imágenes de las plantillas viven en `productos_v2/{id}/plantillas/`, así l
 
 **Agregar una:** un admin la diseña en el estudio y usa **Guardar como plantilla**, debajo de los pasos.
 
+**Solo con plantillas** (`prendaBase.soloPlantillas`, en el admin del producto; el tomatodo lo trae):
+
+- un diseño nuevo empieza ya con la primera plantilla;
+- el cliente cambia de plantilla y edita sus textos;
+- no sube imágenes, no agrega textos ni mueve el diseño.
+
+**El mismo diseño en otro producto:** en los productos impresos de una sola zona (cuadro y mousepad), con un diseño en el lienzo aparece **Llevarlo al …**. El diseño se abre en el otro producto, acomodado en su zona, como borrador de la pestaña. En un combo, primero se usa en esta pieza y después se abre la otra.
+
+**Borde encima** (`vista.encima`): un PNG con lo oscuro de la foto (el borde cosido del mousepad) que se dibuja sobre el diseño en el estudio y en las vistas previas. Así se nota la orilla aunque el diseño llegue hasta ella.
+
 **Renombrar, cambiar de grupo o quitar:** en Admin → Prendas de Crear → Plantillas.
 
 ## Crear los productos (una sola vez)

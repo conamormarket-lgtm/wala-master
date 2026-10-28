@@ -1028,3 +1028,24 @@
     grid-row: span 2;
   }
 }
+
+.casilla {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+}
+
+.casilla input {
+  margin-top: 0.2rem;
+  accent-color: var(--primary-color);
+}
+
+.casilla span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.casilla small {
+  color: var(--gris-texto-secundario);
+}

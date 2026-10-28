@@ -413,6 +413,8 @@ export const renderizarImpresion = async (capas, zona, srcDe, medida = null, { l
  * compras" y la referencia visual del pedido en el ERP.
  */
 export const renderizarVistaPrevia = async ({ fuente, anchoImg, altoImg, vista, capasPorZona, srcDe, ancho = 900, laser = false }) => {
+  // El borde del producto que va encima del diseño (vista.encima), si tiene.
+  const encima = vista.encima ? await cargarImagen(vista.encima).catch(() => null) : null;
   const margen = Math.round(ancho * 0.06);
   const iw = ancho - margen * 2;
   const ih = altoImg * (iw / anchoImg);
@@ -437,6 +439,7 @@ export const renderizarVistaPrevia = async ({ fuente, anchoImg, altoImg, vista, 
         lienzo.add(obj);
       }
     }
+    if (encima) lienzo.add(new fabric.Image(encima, { left: margen, top: margen, scaleX: iw / encima.naturalWidth, scaleY: ih / encima.naturalHeight }));
     lienzo.renderAll();
     return await aBlob(lienzo.lowerCanvasEl, 'image/jpeg', 0.88);
   } finally {

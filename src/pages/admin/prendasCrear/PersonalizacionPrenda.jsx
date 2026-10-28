@@ -48,6 +48,7 @@ export const prendaBaseParaGuardar = (valor, variantes) => {
     ...(leerTipo(valor?.tipo) !== 'prenda' && { tipo: leerTipo(valor.tipo) }),
     ...(leerTecnica(valor?.tecnica) !== 'impresion' && { tecnica: leerTecnica(valor.tecnica) }),
     ...(leerPlantillas(valor?.plantillas).length && { plantillas: leerPlantillas(valor.plantillas) }),
+    ...(valor?.soloPlantillas === true && { soloPlantillas: true }),
   };
 };
 
@@ -337,6 +338,13 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
             <small>El grabado se ve en un solo tono y el taller recibe el PNG en escala de grises.</small>
           </label>
         </div>
+        <label className={styles.casilla}>
+          <input type="checkbox" checked={valor?.soloPlantillas === true} onChange={(e) => cambiar({ soloPlantillas: e.target.checked })} />
+          <span>
+            <strong>Solo con sus plantillas</strong>
+            <small>El cliente elige una plantilla y cambia sus textos; no sube imágenes ni diseña aparte (el tomatodo).</small>
+          </span>
+        </label>
       </section>
 
       {leerPlantillas(valor?.plantillas).length > 0 && (

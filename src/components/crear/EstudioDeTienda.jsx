@@ -14,7 +14,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { trackEditorOpen, trackEditorSave } from '../../services/analytics/tracker';
 import { useGlobalToast } from '../../contexts/ToastContext';
-import { getPrendaBase } from '../../services/prendasBase';
+import { getPrendaBase, getPrendasBase } from '../../services/prendasBase';
 import { getDesignById, saveDesign, guardarTallaCreacion, renombrarCreacion, urlsDeDiseno } from '../../services/designs';
 import { limpiarArchivosSobrantes } from '../../services/limpiarArchivos';
 import { obtenerDisenoComunidad, registrarUsoComunidad } from '../../services/comunidad';
@@ -43,7 +43,7 @@ import { registrarGuardado, ponerBorradorEnCache, quitarBorradorDeCache } from '
 import { cajaEnZona, imanAlMover, imanAlEscalar, enCm } from '../../pages/Crear/guiasInteligentes';
 import { palabrasEstudio } from '../../componentes/kit/piezas/sustantivoEstudio';
 import { textoEnGrises } from '../../utils/laser.mjs';
-import { BarraLienzo, PasosEstudio, GuardarComoPlantilla, PanelCapa, PanelVarios, GuiaGestos, EstadoEdicion, AtajosEstudio, CargandoLienzo, AvisoSoltarArchivo, MOD_ESTUDIO as MOD } from '../../componentes/kit/piezas/Estudio';
+import { BarraLienzo, PasosEstudio, GuardarComoPlantilla, LlevarDiseno, PanelCapa, PanelVarios, GuiaGestos, EstadoEdicion, AtajosEstudio, CargandoLienzo, AvisoSoltarArchivo, MOD_ESTUDIO as MOD } from '../../componentes/kit/piezas/Estudio';
 import { capaEstudioDesde, cambiosDePanelEstudio } from '../../componentes/kit/adaptadoresEstudio';
 import Boton from '../../componentes/kit/Boton';
 import { Aviso, EstadoVacio, HojaInferior } from '../../componentes/kit/Feedback';
@@ -236,6 +236,14 @@ const EstudioDeTienda = () => {
   const agotado = typeof prenda?.inStock === 'number' && prenda.inStock <= 0;
   // Grabado láser: el diseño se ve y se exporta en un solo tono.
   const laser = cfgPrenda?.tecnica === 'laser';
+  // Un producto (cuadro, mousepad) se ve con más aire alrededor: con su foto
+  // ajustada al borde, el marco o el borde del mousepad no se notaban.
+  const aireLienzo = cfgPrenda?.tipo === 'producto' ? 0.1 : 0.04;
+  // Solo con sus plantillas (el tomatodo): el cliente elige una y cambia sus
+  // textos; no sube imágenes, no agrega textos ni mueve el diseño.
+  const soloPlantillas = Boolean(cfgPrenda?.soloPlantillas && cfgPrenda.plantillas.length);
+  const soloPlantillasRef = useRef(soloPlantillas);
+  soloPlantillasRef.current = soloPlantillas;
   const laserRef = useRef(laser);
   laserRef.current = laser;
   // Un borrador (visible: false) solo lo ve el admin, para revisarlo antes de publicar.
@@ -519,7 +527,7 @@ const EstudioDeTienda = () => {
     }
     // Con mouse, arrastrar en vacío elige varios (también con zoom); la vista
     // se mueve con Espacio, el botón del medio o la rueda.
-    lienzo.selection = CON_MOUSE && !espacioRef.current;
+    lienzo.selection = CON_MOUSE && !espacioRef.current && !soloPlantillasRef.current;
     const fijar = (v) => {
       lienzo.setViewportTransform(v);
       lienzo.getObjects().forEach((o) => o.setCoords());
@@ -1752,6 +1760,9 @@ const EstudioDeTienda = () => {
         }
         if (token !== tokenRef.current) return;
         const fuente = fondoDeVista(img, vista, color);
+        // El borde del producto encima del diseño (el del mousepad), si tiene.
+        const encima = vista.encima ? await cargarImagen(vista.encima).catch(() => null) : null;
+        if (token !== tokenRef.current) return;
 
         const anchoImg = img.naturalWidth;
         const altoImg = img.naturalHeight;
@@ -1764,7 +1775,7 @@ const EstudioDeTienda = () => {
           : Math.min(ALTO_MAXIMO_LIENZO, Math.max(300, window.innerHeight
             - ((contenedorRef.current?.getBoundingClientRect().top || 0) + window.scrollY) - 130));
         const ancho = Math.min(anchoLienzo, Math.floor(altoMax / proporcion));
-        const margen = ancho * 0.04;
+        const margen = ancho * aireLienzo;
         const iw = ancho - margen * 2;
         const ih = iw * proporcion;
         const transforms = {};
@@ -1790,7 +1801,11 @@ const EstudioDeTienda = () => {
             obj.zonaId = z.id;
             obj.clipPath = recorteDeCapa(capa, transforms[z.id]);
             estilizar(obj);
-            if (capa.fija && !editarFijasRef.current) Object.assign(obj, { selectable: false, evented: false, hoverCursor: 'default' });
+            if (soloPlantillasRef.current) {
+              Object.assign(obj, capa.type === 'text'
+                ? { lockMovementX: true, lockMovementY: true, lockScalingX: true, lockScalingY: true, lockRotation: true, hasControls: false, hoverCursor: 'text' }
+                : { selectable: false, evented: false, hoverCursor: 'default' });
+            } else if (capa.fija && !editarFijasRef.current) Object.assign(obj, { selectable: false, evented: false, hoverCursor: 'default' });
             objetos.push(obj);
           }
         }
@@ -1832,6 +1847,12 @@ const EstudioDeTienda = () => {
         });
         transformsRef.current = transforms;
         objetos.forEach((obj) => lienzo.add(obj));
+        if (encima) {
+          lienzo.add(new fabric.Image(encima, {
+            left: margen, top: margen, scaleX: iw / encima.naturalWidth, scaleY: ih / encima.naturalHeight,
+            selectable: false, evented: false, objectCaching: false, encimaDelDiseno: true,
+          }));
+        }
         textosTrasDibujoRef.current.forEach((capaId) => {
           if (!objetoDe(capaId)) return;
           textosTrasDibujoRef.current.delete(capaId);
@@ -1871,7 +1892,7 @@ const EstudioDeTienda = () => {
       }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vista?.id, color?.id, anchoLienzo, altoVentana, altoDisponibleLienzo, version, listo, laser]);
+  }, [vista?.id, color?.id, anchoLienzo, altoVentana, altoDisponibleLienzo, version, listo, laser, aireLienzo, soloPlantillas]);
 
   // ── Acciones ─────────────────────────────────────────────────────────────
   const centroDe = (z) => ({ left: UNIDADES_ZONA / 2, top: altoEnUnidades(z) / 2 });
@@ -1893,6 +1914,7 @@ const EstudioDeTienda = () => {
    * queda listo para escribir sobre la prenda.
    */
   const agregarTexto = async (textoInicial, { zonaId: zonaDestino, punto, editar = false } = {}) => {
+    if (soloPlantillasRef.current) return;
     const destino = (zonaDestino && vista?.zonas.find((z) => z.id === zonaDestino)) || zona;
     if (!destino) return;
     // En una zona alargada (una manga) el texto va a lo largo, de costado.
@@ -1950,6 +1972,7 @@ const EstudioDeTienda = () => {
   };
 
   const elegirImagen = () => {
+    if (soloPlantillasRef.current) return;
     if (!user) {
       guardarBorrador();
       setPedirLogin(true);
@@ -1966,6 +1989,7 @@ const EstudioDeTienda = () => {
 
   /** Agrega una imagen a la zona elegida: del botón, arrastrada al lienzo o pegada. */
   const subirArchivo = async (archivo) => {
+    if (soloPlantillasRef.current) return;
     if (!zona) return;
     if (!user) {
       guardarBorrador();
@@ -2875,6 +2899,63 @@ const EstudioDeTienda = () => {
     }
   };
 
+  // Solo con plantillas: un diseño nuevo empieza ya con la primera, así el
+  // producto nunca se ve vacío.
+  useEffect(() => {
+    if (!listo || !soloPlantillas || zonasUsadas.length || partida.usando || partida.cargando) return;
+    usarDisenoDePartida(disenosDePartida[0].id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listo, soloPlantillas, zonasUsadas.length]);
+
+  // ── "El mismo diseño en otro producto" (del cuadro al mousepad y al revés) ─
+  // Parecidos: productos de Crear de una sola zona, impresos y que se diseñan
+  // libres. En un combo, solo las otras piezas del combo.
+  const parecido = (cfgX) => cfgX?.tipo === 'producto' && cfgX.tecnica !== 'laser' && !cfgX.soloPlantillas
+    && listarZonas(cfgX.vistas).length === 1;
+  const { data: prendasCrear } = useQuery({
+    queryKey: ['prendas-base-parecidas'],
+    queryFn: async () => (await getPrendasBase()).data,
+    enabled: Boolean(cfgPrenda) && parecido(cfgPrenda),
+  });
+  const destinosDiseno = useMemo(() => {
+    if (!cfgPrenda || !parecido(cfgPrenda)) return [];
+    const parecidos = (prendasCrear || []).filter((p) => p.id !== id && parecido(leerPrendaBase(p)));
+    if (!enCombo) return parecidos.map((p) => ({ id: p.id, nombre: p.name }));
+    return (comboActual?.piezas || []).map((pz, i) => ({ ...pz, i }))
+      .filter((pz) => pz.i !== piezaParam && parecidos.some((p) => p.id === pz.prendaId))
+      .map((pz) => ({ id: pz.prendaId, pieza: pz.i, nombre: parecidos.find((p) => p.id === pz.prendaId).name, detalle: `pieza ${pz.i + 1}` }));
+  }, [cfgPrenda, prendasCrear, id, enCombo, comboActual, piezaParam]);
+  const [llevando, setLlevando] = useState(null);
+
+  /**
+   * Deja el diseño como borrador de la pestaña del otro producto (el mismo
+   * que vuelve tras iniciar sesión) y lo abre. En un combo, primero se usa
+   * este en su pieza y después se va a la otra.
+   */
+  const llevarDiseno = async (destino) => {
+    setLlevando(destino.id);
+    try {
+      const { data: otra, error: err } = await getPrendaBase(destino.id);
+      if (err || !otra) throw new Error(err || 'No encontré ese producto.');
+      const zonasOtra = listarZonas(leerPrendaBase(otra).vistas);
+      const capas = capasParaGuardar(capasRef.current);
+      const todas = Object.values(capas).flat().map((c) => ({ ...c, id: nuevoId() }));
+      const porZona = zonasOtra.length === 1 ? { [zonasOtra[0].id]: todas } : capasEnOtraPrenda(capas, zonasOtra);
+      const zonaOtra = zonasOtra.find((z) => z.id === Object.keys(porZona)[0]);
+      sessionStorage.setItem(claveBorrador(destino.id), JSON.stringify({ vistaId: zonaOtra?.vistaId, zonaId: zonaOtra?.id, capasPorZona: porZona }));
+      sessionStorage.setItem(claveVolver(destino.id), '1');
+      if (enCombo && destino.pieza !== undefined) {
+        await usarEnCombo(() => `/crear/${destino.id}?combo=${encodeURIComponent(comboParam)}&pieza=${destino.pieza}${conMio()}`);
+      } else {
+        navigate(`/crear/${destino.id}`, { state: { desde: `/crear/${id}` } });
+      }
+    } catch (e) {
+      toast.error(e.message || 'No pudimos llevar tu diseño.');
+    } finally {
+      setLlevando(null);
+    }
+  };
+
   // Solo admins: el diseño del lienzo pasa a ser una plantilla de este producto.
   const [guardandoPlantilla, setGuardandoPlantilla] = useState(false);
   const guardarComoPlantilla = async ({ nombre: nombrePlantilla, grupo }) => {
@@ -3106,7 +3187,10 @@ const EstudioDeTienda = () => {
    * Pieza de un combo: guarda la creación (si cambió) y vuelve al combo con
    * ella puesta. La talla se elige allá, junto a las demás piezas.
    */
-  const usarEnCombo = async () => {
+  // `irA`: a dónde ir después (por defecto, al combo). Llega un evento si se
+  // usa directo como onClick.
+  const usarEnCombo = async (irA) => {
+    const destino = () => (typeof irA === 'function' ? irA() : urlCombo());
     if (agotado || operacionRef.current || !validar()) return;
     operacionRef.current = true;
     setProcesando('Preparando tu creación…');
@@ -3116,7 +3200,7 @@ const EstudioDeTienda = () => {
       // en una vacía sí se guarda aunque no se toque.)
       if (copiarParam && !designIdRef.current && piezaLlevaCopiar()
         && firmaBorradorRef.current === firmaBorrador(capasRef.current, color.id, talla)) {
-        navigate(urlCombo());
+        navigate(destino());
         return;
       }
       let idPieza = designIdRef.current;
@@ -3127,7 +3211,7 @@ const EstudioDeTienda = () => {
       await ponerEnCombo(idPieza);
       await sincronizarCombo();
       try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
-      navigate(urlCombo());
+      navigate(destino());
     } catch (err) {
       toast.error(`No pudimos preparar tu diseño: ${err?.message || err}`);
     } finally {
@@ -3207,6 +3291,8 @@ const EstudioDeTienda = () => {
     }
     const conMod = (e.ctrlKey || e.metaKey) && !e.getModifierState?.('AltGraph');
     const tecla = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    // Solo con plantillas: deshacer, rehacer, guardar, soltar y la ayuda.
+    if (soloPlantillas && !(conMod && ['z', 'y', 's'].includes(tecla)) && !['Escape', '?'].includes(tecla)) return;
 
     if (conMod) {
       if (tecla === 'z' && !e.shiftKey) { e.preventDefault(); deshacer(); }
@@ -3384,7 +3470,7 @@ const EstudioDeTienda = () => {
       const lienzo = fabricRef.current;
       const ev = e.e;
       const obj = e.target;
-      if (!lienzo || !ev) return;
+      if (!lienzo || !ev || soloPlantillasRef.current) return;
       if (obj?.type === 'activeSelection') {
         setMenu({ x: ev.clientX, y: ev.clientY, varios: true });
         return;
@@ -3588,10 +3674,10 @@ const EstudioDeTienda = () => {
           barra={(
             <BarraLienzo
               {...historialInfo} onDeshacer={deshacer} onRehacer={rehacer}
-              elegido={Boolean(capaSel) || multiIds.length > 1}
+              elegido={!soloPlantillas && (Boolean(capaSel) || multiIds.length > 1)}
               onAchicar={() => escalar(1 / 1.12)} onAgrandar={() => escalar(1.12)}
-              onCentrar={centrar} onQuitar={eliminar} onImagen={elegirImagen}
-              onTexto={() => agregarTexto(undefined, { editar: true })}
+              onCentrar={centrar} onQuitar={eliminar} onImagen={soloPlantillas ? undefined : elegirImagen}
+              onTexto={soloPlantillas ? undefined : () => agregarTexto(undefined, { editar: true })}
               zoom={zoomManual} onZoom={(z) => zoomHacia(z, null, true)}
               onAtajos={CON_MOUSE ? () => setVerAtajos(true) : undefined}
               onEditar={() => mostrarEditor(capaSel?.type === 'text')}
@@ -3617,7 +3703,7 @@ const EstudioDeTienda = () => {
           <div ref={contenedorRef} className={styles.lienzoCaja} aria-busy={cargandoLienzo}>
             <canvas ref={canvasElRef} />
             {cargandoLienzo && <CargandoLienzo opaco={primerDibujoRef.current} />}
-            {listo && !cargandoLienzo && !soltando && zonasUsadas.length === 0 && <InicioLienzoEstudio zona={vista.nombre + " · " + zona.nombre} onImagen={elegirImagen} onTexto={() => agregarTexto(undefined, { editar: true })} subiendo={subiendo > 0} />}
+            {listo && !cargandoLienzo && !soltando && zonasUsadas.length === 0 && !soloPlantillas && <InicioLienzoEstudio zona={vista.nombre + " · " + zona.nombre} onImagen={elegirImagen} onTexto={() => agregarTexto(undefined, { editar: true })} subiendo={subiendo > 0} />}
             {guiaGestos && <GuiaGestos onEntendido={cerrarGuiaGestos} />}
             {arrastreLado && cfg.vistas.length > 1 && (
               // Mientras se arrastra: a qué otro lado de la prenda se puede pasar.
@@ -3638,7 +3724,8 @@ const EstudioDeTienda = () => {
           {!editandoAlgo && (
             <PasosEstudio
               paraEmpezar={disenosDePartida.length ? { disenos: disenosDePartida, ...partida, onUsar: usarDisenoDePartida } : undefined}
-              fijas={hayFijas ? { activo: editarFijas, onCambiar: (activo) => { soltarSeleccion(); setEditarFijas(activo); setVersion((v) => v + 1); } } : undefined}
+              sinAgregar={soloPlantillas}
+              fijas={hayFijas && !soloPlantillas ? { activo: editarFijas, onCambiar: (activo) => { soltarSeleccion(); setEditarFijas(activo); setVersion((v) => v + 1); } } : undefined}
               colores={cfg.colores.filter((c) => !c.espejo).map((original) => {
                 const c = original.id === color.espejoDe ? color : original;
                 return { id: c.id, nombre: c.nombre, hex: fondoMuestra(c), claro: textoSobre(c.hex) !== '#FFFFFF' };
@@ -3665,6 +3752,9 @@ const EstudioDeTienda = () => {
               subiendo={subiendo > 0} donde={zonasPrenda.length > 1 ? vista.nombre + ' · ' + zona.nombre : undefined} conDiseno={zonasUsadas.length > 0}
             />
           )}
+          {!editandoAlgo && zonasUsadas.length > 0 && (
+            <LlevarDiseno destinos={destinosDiseno} onLlevar={llevarDiseno} ocupado={llevando} />
+          )}
           {!editandoAlgo && isAdmin && zonasUsadas.length > 0 && (
             <GuardarComoPlantilla grupos={[...new Set(disenosDePartida.map((p) => p.grupo).filter(Boolean))]}
               onGuardar={guardarComoPlantilla} ocupado={guardandoPlantilla} />
@@ -3676,6 +3766,7 @@ const EstudioDeTienda = () => {
                 onCentrar={conPasoHistorial(centrar)} onDuplicar={conPasoHistorial(duplicar)} onQuitar={conPasoHistorial(eliminar)} />
             ) : capaSel && (
               <PanelCapa
+                soloTexto={soloPlantillas}
                 capa={capaEstudioDesde(capaSel, UNIDADES_ZONA)} zona={zonaSel?.nombre}
                 fuentes={FUENTES.map((f) => ({ valor: f, texto: f }))}
                 onAbrirFuentes={() => FUENTES.forEach(asegurarFuente)}

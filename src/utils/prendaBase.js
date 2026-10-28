@@ -22,6 +22,8 @@
  *     tecnica: 'impresion' | 'laser',  // el láser se ve y exporta en grises
  *     plantillas: [{ id, nombre, grupo, imagen, capas: { [zonaId]: [capas] } }],
  *                                      // diseños para empezar de este producto
+ *     soloPlantillas: true,            // solo se hace con sus plantillas (el
+ *                                      // cliente cambia los textos, no diseña aparte)
  *
  * Los bicolores llevan una costura al medio, así que pueden tener sus propias
  * zonas (zonasDeVista): las de ese color, si tiene; si no, las de todos los
@@ -146,6 +148,9 @@ export const normalizarVista = (vista, i = 0) => {
     id,
     nombre,
     imagen: String(vista?.imagen || ''),
+    // Lo que va encima del diseño (el borde cosido del mousepad): un PNG del
+    // mismo tamaño que la foto, transparente donde se ve el diseño.
+    ...(vista?.encima && { encima: String(vista.encima) }),
     zonas,
     ...(referencia && { referencia }),
     ...(anchoImg > 0 && altoImg > 0 && { anchoImg, altoImg }),
@@ -390,6 +395,7 @@ export const leerPrendaBase = (producto) => {
     tipo: leerTipo(cfg.tipo),
     tecnica: leerTecnica(cfg.tecnica),
     plantillas: leerPlantillas(cfg.plantillas),
+    soloPlantillas: cfg.soloPlantillas === true,
   };
 };
 

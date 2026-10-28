@@ -418,6 +418,10 @@
   transition: box-shadow var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature);
 }
 
+.paraEmpezarFoto {
+  min-height: 72px;
+}
+
 .paraEmpezarFoto img {
   display: block;
   width: 100%;

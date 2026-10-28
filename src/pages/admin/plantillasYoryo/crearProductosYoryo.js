@@ -22,12 +22,16 @@ const PIEZAS = [
   },
   {
     clave: 'mousepad', id: 'yoryo-crear-mousepad', tiendaId: 'MOpmYdM4GyLpU9ZIO55D', nombre: 'Mousepad personalizado', tecnica: 'impresion',
+    // El diseño llega hasta la orilla y el borde cosido va encima: así se nota.
+    encima: true,
     // Toda la cara del mousepad: 23.5 × 19.5 cm.
     zona: { id: 'mousepad-cara', nombre: 'Mousepad', x: 38 / 1086, y: 304 / 1448, w: 1010 / 1086, proporcion: 19.5 / 23.5 },
     referencia: { x1: 38 / 1086, y1: 0.5, x2: 1048 / 1086, y2: 0.5, cm: 23.5 },
   },
   {
     clave: 'tomatodo', id: 'yoryo-crear-tomatodo', tiendaId: 'BDKN8114eHsDIwAD8OVc', nombre: 'Tomatodo grabado', tecnica: 'laser',
+    // Solo con sus plantillas de equipos: el cliente cambia el nombre y la frase.
+    soloPlantillas: true,
     // La cara del cuerpo que se ve de frente. El cuerpo mide unos 10 cm de
     // ancho (estimado: confirmarlo con el taller y ajustar la línea en el admin).
     zona: { id: 'tomatodo-grabado', nombre: 'Grabado', x: 315 / 1086, y: 330 / 1448, w: 395 / 1086, proporcion: 550 / 395 },
@@ -106,6 +110,34 @@ async function fotoSinFondo(src) {
   return { blob, ancho, alto, fx, fy, escala: W / ancho };
 }
 
+/**
+ * Lo oscuro de la foto (el borde cosido del mousepad) sobre transparente,
+ * para dibujarlo encima del diseño. Mismo tamaño que la foto.
+ */
+async function bordeOscuro(blob) {
+  const bitmap = await createImageBitmap(blob);
+  const lienzo = document.createElement('canvas');
+  lienzo.width = bitmap.width;
+  lienzo.height = bitmap.height;
+  const ctx = lienzo.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(bitmap, 0, 0);
+  bitmap.close?.();
+  const datos = ctx.getImageData(0, 0, lienzo.width, lienzo.height);
+  const d = datos.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if ((d[i] + d[i + 1] + d[i + 2]) / 3 > 110) d[i + 3] = 0;
+  }
+  ctx.putImageData(datos, 0, 0);
+  return new Promise((resolve, reject) => lienzo.toBlob((b) => (b ? resolve(b) : reject(new Error('No se pudo preparar el borde.'))), 'image/png'));
+}
+
+const subirBorde = async (piezaId, blob) => {
+  const archivo = new File([await bordeOscuro(blob)], 'encima.png', { type: 'image/png' });
+  const { url, error } = await uploadFile(archivo, `productos_v2/${piezaId}/crear_${Date.now()}_encima.png`);
+  if (error || !url) throw new Error(error || 'No se pudo subir el borde.');
+  return url;
+};
+
 const fotoPrincipal = (p) => {
   const v = (p.variants || []).find((x) => String(x.id) === String(p.defaultVariantId)) || p.variants?.[0];
   return v?.imageUrl || p.mainImage || '';
@@ -127,11 +159,21 @@ export async function crearProductosYoryo({ onPaso = () => {} } = {}) {
       // tocó todavía, se cambia por la de ahora.
       const vistas = existe.data.prendaBase?.vistas || [];
       const anterior = vistas[0]?.zonas?.[0];
+      const cambios = {};
       if (anterior?.id === pieza.zona.id && Math.abs(Number(anterior.proporcion) - ZONA_TOMATODO_ANTERIOR) < 0.01) {
         const { fx, fy, escala } = await fotoSinFondo(fotoPrincipal(tienda));
         const zona = { ...pieza.zona, x: fx(pieza.zona.x), y: fy(pieza.zona.y), w: pieza.zona.w * escala, angulo: 0 };
-        await updateProductField(pieza.id, { prendaBase: { ...existe.data.prendaBase, vistas: [{ ...vistas[0], zonas: [zona] }, ...vistas.slice(1)] } });
-        onPaso(`${pieza.nombre}: zona de grabado agrandada`);
+        cambios.vistas = [{ ...vistas[0], zonas: [zona] }, ...vistas.slice(1)];
+      }
+      if (pieza.soloPlantillas && existe.data.prendaBase?.soloPlantillas !== true) cambios.soloPlantillas = true;
+      const vistasHoy = cambios.vistas || vistas;
+      if (pieza.encima && vistasHoy[0]?.imagen && !vistasHoy[0].encima) {
+        const foto = await fetch(vistasHoy[0].imagen).then((r) => r.blob());
+        cambios.vistas = [{ ...vistasHoy[0], encima: await subirBorde(pieza.id, foto) }, ...vistasHoy.slice(1)];
+      }
+      if (Object.keys(cambios).length) {
+        await updateProductField(pieza.id, { prendaBase: { ...existe.data.prendaBase, ...cambios } });
+        onPaso(`${pieza.nombre}: actualizado`);
       } else onPaso(`${pieza.nombre}: ya existía`);
       continue;
     }
@@ -143,6 +185,7 @@ export async function crearProductosYoryo({ onPaso = () => {} } = {}) {
     const archivo = new File([blob], `${pieza.clave}.png`, { type: 'image/png' });
     const { url, error } = await uploadFile(archivo, `productos_v2/${pieza.id}/crear_${Date.now()}_${pieza.clave}.png`);
     if (error || !url) throw new Error(error || 'No se pudo subir la foto.');
+    const encima = pieza.encima ? await subirBorde(pieza.id, blob) : '';
     const variantes = (tienda.variants || []).map((v) => ({ id: v.id, name: v.name, colorHex: v.colorHex, imageUrl: '', images: [], sizes: [] }));
     onPaso(`${pieza.nombre}: creando…`);
     await createProduct({
@@ -163,7 +206,8 @@ export async function crearProductosYoryo({ onPaso = () => {} } = {}) {
       prendaBase: {
         tipo: 'producto',
         ...(pieza.tecnica === 'laser' && { tecnica: 'laser' }),
-        vistas: [{ id: 'frente', nombre: 'Frente', imagen: url, anchoImg: ancho, altoImg: alto, referencia, zonas: [zona] }],
+        ...(pieza.soloPlantillas && { soloPlantillas: true }),
+        vistas: [{ id: 'frente', nombre: 'Frente', imagen: url, ...(encima && { encima }), anchoImg: ancho, altoImg: alto, referencia, zonas: [zona] }],
         colores: Object.fromEntries(variantes.map((v) => [v.id, { fotos: { frente: url } }])),
       },
     }, pieza.id);

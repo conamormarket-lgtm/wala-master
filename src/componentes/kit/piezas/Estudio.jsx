@@ -4,7 +4,7 @@ import {
   Copy, ArrowUpToLine, ArrowDownToLine, RotateCw, FlipHorizontal, Crop, Eraser, Maximize2,
   AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
   AlignLeft, AlignCenter, AlignRight, LoaderCircle, CheckCircle2, AlertTriangle,
-  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter, Pencil, Hand, Sparkles, RefreshCw,
+  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter, Pencil, Hand, Sparkles, RefreshCw, ArrowRight,
 } from 'lucide-react';
 import { Texto, useTexto } from '../Traduccion';
 import Acordeon from '../Acordeon';
@@ -1131,7 +1131,7 @@ export function DisenosParaEmpezar({ disenos = [], usando, cargando, onUsar }) {
               onClick={() => onUsar?.(d.id)}
             >
               <span className={s.paraEmpezarFoto}>
-                {d.imagen && <img src={d.imagen} alt="" loading="lazy" draggable={false} />}
+                {d.imagen && <img src={d.imagen} alt="" draggable={false} />}
                 {cargando === d.id && <span className={s.paraEmpezarCargando}><Cargando texto="" tamano="sm" sobreClaro /></span>}
                 {usando === d.id && <span className={s.paraEmpezarMarca}><Check aria-hidden="true" /></span>}
               </span>
@@ -1140,6 +1140,28 @@ export function DisenosParaEmpezar({ disenos = [], usando, cargando, onUsar }) {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/**
+ * "El mismo diseño en otro producto": lleva lo que hay en el lienzo al
+ * estudio de otro producto parecido (del cuadro al mousepad y al revés), que
+ * lo acomoda en su zona. En un combo, a la otra pieza.
+ *  - destinos: [{ id, nombre, detalle? }] · onLlevar(destino) · ocupado: id
+ */
+export function LlevarDiseno({ destinos = [], onLlevar, ocupado }) {
+  if (!destinos.length) return null;
+  return (
+    <div className={s.grupoCampo} data-componente="LlevarDiseno">
+      <span className={s.rotulo}><Texto>El mismo diseño en otro producto</Texto></span>
+      <p className={s.panelAyuda}><Texto>Se abre con tu diseño ya puesto; ahí lo revisas y lo ajustas si hace falta.</Texto></p>
+      {destinos.map((d) => (
+        <BotonEstudio key={d.id} variante="contorno" tamano="sm" bloque iconoFin={<ArrowRight aria-hidden="true" />}
+          cargando={ocupado === d.id} disabled={Boolean(ocupado)} onClick={() => onLlevar?.(d)}>
+          <Texto>{`Llevarlo al ${d.nombre}${d.detalle ? ` (${d.detalle})` : ''}`}</Texto>
+        </BotonEstudio>
+      ))}
     </div>
   );
 }
@@ -1173,12 +1195,13 @@ export function GuardarComoPlantilla({ grupos = [], onGuardar, ocupado = false }
  * color y la zona solo se preguntan si hay más de una opción.
  *  - paraEmpezar: { disenos, usando, cargando, onUsar } (ver DisenosParaEmpezar)
  *  - fijas: { activo, onCambiar } si el diseño trae partes fijas (fondo, marco)
+ *  - sinAgregar: el producto solo se hace con sus plantillas (no se suben imágenes ni textos nuevos)
  *  - colores: [{ id, nombre, hex, claro }] · color (id) · onColor(id)
  *  - invertir: { activo, texto, onCambiar } (colores con versión al revés)
  *  - lados: [{ nombre, zonas: [{ id, nombre, conDiseno }] }] · zona · onZona(id)
  *  - onImagen, onTexto · subiendo · donde: "Frente · Pecho"
  */
-export function PasosEstudio({ paraEmpezar, fijas, colores = [], color, onColor, invertir, lados = [], zona, onZona, onImagen, onTexto, subiendo = false, donde, conDiseno = false }) {
+export function PasosEstudio({ paraEmpezar, fijas, sinAgregar = false, colores = [], color, onColor, invertir, lados = [], zona, onZona, onImagen, onTexto, subiendo = false, donde, conDiseno = false }) {
   const actual = colores.find((c) => c.id === color);
   const tituloConDiseno = useTexto('Con diseño');
   const p = usePalabrasEstudio();
@@ -1191,7 +1214,7 @@ export function PasosEstudio({ paraEmpezar, fijas, colores = [], color, onColor,
   return (
     <div className={s.pasos} data-componente="PasosEstudio">
       {conPartida && (
-        <PasoEstudio numero={siguiente()} titulo="Empieza con un diseño" detalle={elegido ? elegido.nombre : 'opcional'} hecho={Boolean(elegido)}>
+        <PasoEstudio numero={siguiente()} titulo={sinAgregar ? 'Elige tu diseño' : 'Empieza con un diseño'} detalle={elegido ? elegido.nombre : sinAgregar ? undefined : 'opcional'} hecho={Boolean(elegido)}>
           <DisenosParaEmpezar {...paraEmpezar} />
           {fijas && <InterruptorEstudio activo={fijas.activo} onChange={fijas.onCambiar} etiqueta="Editar el fondo y el marco"
             descripcion={fijas.activo ? 'Ahora puedes moverlos y cambiarlos. Apágalo para que se queden quietos.' : 'Están quietos para que no los muevas sin querer.'} />}
@@ -1223,13 +1246,19 @@ export function PasosEstudio({ paraEmpezar, fijas, colores = [], color, onColor,
           ))}
         </PasoEstudio>
       )}
-      <PasoEstudio numero={siguiente()} titulo="Agrega tu imagen o tu texto" hecho={conDiseno}>
-        <div className={s.agregar}>
-          <OpcionSello icono={<ImagePlus aria-hidden="true" />} titulo="Subir imagen" detalle="Una foto o un logo" onClick={onImagen} disabled={subiendo} />
-          <OpcionSello icono={<Type aria-hidden="true" />} tono="rosa" girar={6} titulo="Escribir texto" detalle="Un nombre o una frase" onClick={onTexto} />
-        </div>
-        {donde && <p className={s.donde}>{subiendo ? <Texto>Subiendo tu imagen…</Texto> : <><Texto>Se agrega en</Texto>: <strong><Texto>{donde}</Texto></strong></>}</p>}
-      </PasoEstudio>
+      {sinAgregar ? (
+        <PasoEstudio numero={siguiente()} titulo="Cambia los textos" hecho={conDiseno}>
+          <p className={s.donde}><Texto>Toca un texto del diseño para cambiarlo.</Texto></p>
+        </PasoEstudio>
+      ) : (
+        <PasoEstudio numero={siguiente()} titulo="Agrega tu imagen o tu texto" hecho={conDiseno}>
+          <div className={s.agregar}>
+            <OpcionSello icono={<ImagePlus aria-hidden="true" />} titulo="Subir imagen" detalle="Una foto o un logo" onClick={onImagen} disabled={subiendo} />
+            <OpcionSello icono={<Type aria-hidden="true" />} tono="rosa" girar={6} titulo="Escribir texto" detalle="Un nombre o una frase" onClick={onTexto} />
+          </div>
+          {donde && <p className={s.donde}>{subiendo ? <Texto>Subiendo tu imagen…</Texto> : <><Texto>Se agrega en</Texto>: <strong><Texto>{donde}</Texto></strong></>}</p>}
+        </PasoEstudio>
+      )}
     </div>
   );
 }
@@ -1412,6 +1441,7 @@ export const ALINEAR = [
  *  - onAchicar, onAgrandar, onCentrar, onAlinear(donde), onQuitar, onDuplicar,
  *    onAdelante, onAtras, onRecortar, onQuitarFondo, onLlenar
  *  - onCambiarFoto: otra imagen en el mismo lugar · fija: { activo, onCambiar } (solo admins)
+ *  - soloTexto: solo el campo del texto (productos que se hacen solo con sus plantillas)
  *  - zonas: [{ id, nombre }] · onPasarAZona(id) · sinSesion: recortar y quitar fondo apagados
  *  - anchoZonaCm: ancho real de la zona; con él, el tamaño de la letra va en
  *    cm (alto de la letra), como en la tienda · fueraDeZona: una parte queda
@@ -1423,11 +1453,30 @@ export function PanelCapa({
   onCentrar, onAlinear, onQuitar, onDuplicar, onAdelante, onAtras,
   onRecortar, onQuitarFondo, onLlenar, onCambiarFoto, fija, zonas = [], onPasarAZona, sinSesion = false,
   anchoZonaCm, fueraDeZona = false, onImagen, onTexto, subiendo = false, puntosPorZona = 100, onAbrirFuentes,
+  soloTexto = false,
 }) {
   const zonaTraducida = useTexto(zona);
   const p = usePalabrasEstudio();
   if (!capa) return null;
   const imagen = capa.tipo === 'imagen';
+  // Un producto que solo se hace con sus plantillas (el tomatodo): de un
+  // texto solo se cambia lo escrito; el diseño queda como está.
+  if (soloTexto) {
+    return (
+      <div className={s.panelCapa} data-componente="PanelCapa">
+        <div className={s.panelCabeza}>
+          <div>
+            <h2 className={s.panelTitulo}><Texto>Cambia el texto</Texto></h2>
+            <p className={s.panelAyuda}><Texto>{`El diseño queda igual; solo cambia lo escrito. Se ve en ${p.la} al instante.`}</Texto></p>
+          </div>
+          <span className={s.panelAcciones}>
+            <BotonEstudio tamano="sm" icono={<Check aria-hidden="true" />} onClick={onListo}><Texto>{"Listo"}</Texto></BotonEstudio>
+          </span>
+        </div>
+        {!imagen && <CampoEstudio etiqueta="Escribe tu texto" multilinea={2} maxLength={60} value={capa.texto || ''} onChange={(e) => onCambiar?.({ texto: e.target.value })} />}
+      </div>
+    );
+  }
   const tamano = capa.tamano ?? 0.18;
   const ancho = capa.ancho ?? 0.8;
   return (
