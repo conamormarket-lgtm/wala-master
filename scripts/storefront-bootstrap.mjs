@@ -5,6 +5,16 @@ export function storefrontBootstrap(projectId, apiKey) {
   const pageId = { '/': 'home', '/home': 'home', '/tienda': 'tienda' }[pathname];
   if (!pageId || new URLSearchParams(window.location.search).has('t') || window.__walaStorefrontBootstrap) return;
 
+  // This read happens before React/the SDK. Observe the existing response only.
+  function report(counts) {
+    try {
+      const event = { project: projectId, database: '(default)', collection: 'pages', originScreen: pathname, counts };
+      if (window.__reportBootstrapFirestoreRead) window.__reportBootstrapFirestoreRead(event);
+      else (window.__bootstrapFirestoreReads ||= []).push(event);
+    } catch { /* Never delay the storefront for diagnostics. */ }
+  }
+  report({ readCalls: 1 });
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 2500);
   function decode(value) {
@@ -19,8 +29,14 @@ export function storefrontBootstrap(projectId, apiKey) {
   }
 
   const url = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents/pages/${pageId}?mask.fieldPaths=sections&key=${encodeURIComponent(apiKey)}`;
+  let responseReceived = false;
   const promise = fetch(url, { credentials: 'omit', cache: 'no-store', signal: controller.signal })
-    .then((response) => response.ok ? response.json() : null)
+    .then((response) => {
+      responseReceived = true;
+      report(response.ok ? { successfulReadCalls: 1, serverDocuments: 1 } : response.status === 404
+        ? { successfulReadCalls: 1, missingDocumentResults: 1 } : { failedReadCalls: 1 });
+      return response.ok ? response.json() : null;
+    })
     .then((data) => {
       if (!data?.fields?.sections) return null;
       const sections = decode(data.fields.sections);
@@ -49,7 +65,7 @@ export function storefrontBootstrap(projectId, apiKey) {
       }
       return sections;
     })
-    .catch(() => null)
+    .catch(() => { if (!responseReceived) report({ failedReadCalls: 1 }); return null; })
     .finally(() => clearTimeout(timeout));
   window.__walaStorefrontBootstrap = { pageId, promise, consumed: false };
 }

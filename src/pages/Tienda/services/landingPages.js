@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, getDoc, setDoc, deleteDoc, deleteField, query, where } from 'firebase/firestore';
+import { collection, doc, getDocs, getDoc, setDoc, deleteDoc, deleteField, query, where } from '../../../services/firebase/observed.js';
 import { db } from '../../../services/firebase/config';
 
 const COLLECTION_NAME = 'landingPages';

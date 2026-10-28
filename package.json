@@ -72,7 +72,8 @@
     "test:analytics": "node --test functions/test/analyticsResultados.test.js functions/test/analyticsDailyReads.test.js functions/test/clientesBusqueda.test.js && node functions/test/analyticsTraficoReal.test.js && node functions/test/analyticsVisitas.test.js && node --experimental-vm-modules --test scripts/test/analyticsResultadosCliente.test.mjs && node --test src/pages/admin/resultados/cosasPorMejorar.test.mjs",
     "test:performance": "node --test functions/test/cartValidation.test.js functions/test/analyticsDailyReads.test.js src/services/shared/inFlightReads.test.mjs && node --experimental-vm-modules --test scripts/test/dataServices.test.mjs",
     "test:startup": "node --test src/pages/Tienda/services/startup.test.mjs scripts/test/storefrontBootstrap.test.mjs",
-    "test:mobile-checkout": "node --test functions/test/mobileCheckout.test.js functions/test/mobileCulqiFlow.test.js functions/test/checkoutTotals.test.js functions/test/cartValidation.test.js"
+    "test:mobile-checkout": "node --test functions/test/mobileCheckout.test.js functions/test/mobileCulqiFlow.test.js functions/test/checkoutTotals.test.js functions/test/cartValidation.test.js",
+    "test:read-telemetry": "node --test functions/test/clientReadMetrics.test.js scripts/test/firestoreReadRecorder.test.mjs scripts/test/firestoreReadReport.test.mjs && node --experimental-vm-modules --test scripts/test/firestoreObserved.test.mjs"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

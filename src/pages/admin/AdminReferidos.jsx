@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { collection, query, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy } from '../../services/firebase/observed.js';
 import { db } from '../../services/firebase/config';
 import { estimateReferralReward } from '../../services/referrals';
 import styles from './AdminReferidos.module.css';

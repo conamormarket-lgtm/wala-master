@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, getDocs, limit } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, limit } from '../../services/firebase/observed.js';
 import { db } from '../../services/firebase/config';
 import { setDocument } from '../../services/firebase/firestore';
 import { getInventoryLogs } from '../../services/inventoryLogs';

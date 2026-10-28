@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { variantesDeImagen } from '../services/products';
 import { useGlobalToast } from './ToastContext';
 import { useAuth } from './AuthContext';
-import { onSnapshot, doc, setDoc, getDoc } from 'firebase/firestore';
+import { onSnapshot, doc, setDoc, getDoc } from '../services/firebase/observed.js';
 import { erpDb } from '../services/erp/firebase';
 import { db, auth } from '../services/firebase/config';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot } from '../../../services/firebase/observed.js';
 import { db } from '../../../services/firebase/config';
 import { AlertCircle } from 'lucide-react';
 import './SystemAlert.css';

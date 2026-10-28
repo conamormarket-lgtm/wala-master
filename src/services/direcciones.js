@@ -1,5 +1,5 @@
 import { db } from './firebase/config';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from './firebase/observed.js';
 
 // Libreta de direcciones del cliente: un documento por cuenta (id = uid) en una
 // colección que solo su dueño puede leer (regla wala_direcciones). No va en

@@ -21,7 +21,7 @@ import {
 } from './firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from './firebase/config';
-import { collection, getDocs, query, where, limit, documentId } from 'firebase/firestore';
+import { collection, getDocs, query, where, limit, documentId } from './firebase/observed.js';
 import { ANALYTICS_COLLECTIONS, ANALYTICS_EVENT_TYPES, formatDayKey } from './analytics/schema';
 
 const COLLECTION = 'link_pages';

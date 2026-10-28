@@ -5,7 +5,7 @@
 // existente en firestore.indexes.json): son pocos, así que no hace falta
 // sumarlos en analytics_daily. Junto con las landings, para marcar las
 // direcciones que ya se resolvieron (se creó la landing o se redirigió).
-import { arrayUnion, doc, updateDoc } from 'firebase/firestore';
+import { arrayUnion, doc, updateDoc } from './firebase/observed.js';
 import { db } from './firebase/config';
 import { getCollection } from './firebase/firestore';
 import { ANALYTICS_COLLECTIONS } from './analytics/schema';

@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, setDoc, deleteDoc, addDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc, addDoc, query, where } from './firebase/observed.js';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from './firebase/config';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';

@@ -1,5 +1,5 @@
 import { getCollection, getDocument, getCollectionPaginated, createDocument, updateDocument, deleteDocument, setDocument } from './firebase/firestore';
-import { collection, doc, updateDoc, deleteField, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, updateDoc, deleteField, serverTimestamp } from './firebase/observed.js';
 import { db } from './firebase/config';
 import { DEFAULT_VENDOR_ID, DEFAULT_NICHE_ID, normalizeFulfillmentType } from '../constants/marketplace';
 import { PLACEHOLDER_IMG } from '../constants/placeholder';

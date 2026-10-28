@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, updateDoc, arrayUnion, arrayRemove, getDoc } from './firebase/observed.js';
 import { db } from './firebase/config';
 import { uploadFile } from './firebase/storage';
 

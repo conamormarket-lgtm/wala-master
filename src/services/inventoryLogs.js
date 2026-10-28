@@ -1,4 +1,4 @@
-import { collection, addDoc, query, orderBy, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, getDocs, Timestamp } from './firebase/observed.js';
 import { db } from './firebase/config';
 
 const COLLECTION = 'inventoryLogs';

@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, getDoc, setDoc, deleteDoc } from './firebase/observed.js';
 import { db } from './firebase/config';
 
 const COLLECTION_NAME = 'adminRoles';

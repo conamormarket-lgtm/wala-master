@@ -18,7 +18,7 @@ import {
   Timestamp,
   DocumentReference,
   GeoPoint
-} from 'firebase/firestore';
+} from './observed.js';
 import { db, getFirebaseConfigMessage } from './config';
 
 // Verificar si Firestore está disponible

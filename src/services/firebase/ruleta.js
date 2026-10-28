@@ -1,5 +1,5 @@
 import { db } from './config';
-import { doc, getDoc, updateDoc, setDoc, collection, getDocs, addDoc, deleteDoc, query, orderBy, limit as fsLimit } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, collection, getDocs, addDoc, deleteDoc, query, orderBy, limit as fsLimit } from './observed.js';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { limaWeekStartStr, limaDayOfWeek, limaTodayStr } from '../../utils/fechaLima';
 import { normalizarPremio, normalizarConfig, premiosDeHoy, textoPremio, CONFIG_POR_DEFECTO } from '../../utils/ruletaModel';

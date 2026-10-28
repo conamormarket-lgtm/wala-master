@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from './firebase/observed.js';
 import { db } from './firebase/config';
 
 const DOC_REF = doc(db, 'storeConfig', 'lockedPages');

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from '../services/firebase/observed.js';
 import { auth, db } from '../services/firebase/config';
 import { useLocation } from 'react-router-dom';
 // Reutiliza la MISMA sesión y el MISMO detector APP/WEB de la analítica

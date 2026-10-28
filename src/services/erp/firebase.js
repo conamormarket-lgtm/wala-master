@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from 'firebase/app';
 import portalApp, { db as portalDb, USE_EMULATORS } from '../firebase/config';
-import { getFirestore, connectFirestoreEmulator, setLogLevel } from 'firebase/firestore';
+import { getFirestore, connectFirestoreEmulator, setLogLevel } from '../firebase/observed.js';
 import {
   collection,
   doc,
@@ -13,7 +13,7 @@ import {
   limit,
   startAfter,
   serverTimestamp,
-} from 'firebase/firestore';
+} from '../firebase/observed.js';
 
 /**
  * Configuración de Firebase para el ERP (sistema de gestión)
@@ -297,8 +297,8 @@ export async function updateOrderInERP(orderId, updates) {
  * Lista pedidos del ERP con paginación para sincronización de cuentas.
  * Orden: más recientes primero. Se filtra en memoria por "tiene email válido".
  * @param {number} [limitCount=100] - Máximo de documentos a traer
- * @param {import('firebase/firestore').DocumentSnapshot | null} [startAfterDoc=null] - Cursor para siguiente página
- * @returns {Promise<{ data: Array<{ id: string } & Object>, lastDoc: import('firebase/firestore').DocumentSnapshot | null, error: string | null }>}
+ * @param {import('../firebase/observed.js').DocumentSnapshot | null} [startAfterDoc=null] - Cursor para siguiente página
+ * @returns {Promise<{ data: Array<{ id: string } & Object>, lastDoc: import('../firebase/observed.js').DocumentSnapshot | null, error: string | null }>}
  */
 export async function getPedidosForAccountSync(limitCount = 100, startAfterDoc = null) {
   if (!isErpFirestoreAvailable()) {

@@ -10,7 +10,7 @@
  * persona. Ver functions/misPedidosLogic.js.
  */
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from './firebase/observed.js';
 import { fusionarVivosYEspejo } from './erp/firebase';
 import { normalizarEspejoParaVista } from './walaOrders';
 

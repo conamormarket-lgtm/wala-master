@@ -1,6 +1,6 @@
 import { db } from './firebase/config';
 import { variantesDeImagen } from './products';
-import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs } from './firebase/observed.js';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const WISHLIST_COLLECTION = 'wishlists';

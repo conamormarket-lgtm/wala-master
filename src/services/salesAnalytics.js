@@ -6,7 +6,7 @@ import {
   orderBy,
   limit,
   Timestamp,
-} from 'firebase/firestore';
+} from './firebase/observed.js';
 import { erpDb, isErpFirestoreAvailable } from './erp/firebase';
 import { db } from './firebase/config';
 import { getProducts, getCategories } from './products';

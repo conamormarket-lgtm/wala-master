@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot } from '../../services/firebase/observed.js';
 import { db } from '../../services/firebase/config';
 import { AvisoSistema } from '../../componentes/kit/piezas/Marco';
 import { avisoDesdeEstadoApp } from '../../componentes/kit/adaptadores';

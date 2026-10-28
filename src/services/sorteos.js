@@ -17,7 +17,7 @@ import {
   deleteDocument,
 } from './firebase/firestore';
 import { db } from './firebase/config';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit } from './firebase/observed.js';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getClientType } from './analytics/tracker';
 

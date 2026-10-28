@@ -3,7 +3,7 @@ import {
   query,
   where,
   getDocs
-} from 'firebase/firestore';
+} from './firebase/observed.js';
 import { db } from './firebase/config';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 

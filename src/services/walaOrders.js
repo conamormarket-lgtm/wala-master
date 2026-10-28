@@ -24,7 +24,7 @@ import {
   query,
   orderBy,
   limit,
-} from 'firebase/firestore';
+} from './firebase/observed.js';
 import { erpDb, isErpFirestoreAvailable } from './erp/firebase';
 
 /**

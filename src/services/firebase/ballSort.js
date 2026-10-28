@@ -1,5 +1,5 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { doc, getDoc, setDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, orderBy, getDocs } from './observed.js';
 import { db } from './config';
 
 export const REWARD_AMOUNT = 2; // 2 monedas por ganar (referencia de UI)

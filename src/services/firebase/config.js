@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { initializeFirestore, persistentLocalCache, getFirestore, connectFirestoreEmulator, setLogLevel } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, getFirestore, connectFirestoreEmulator, setLogLevel } from './observed.js';
 import {
   getAuth,
   initializeAuth,
@@ -56,6 +56,8 @@ const arrancarAuth = (instancia) => {
     return getAuth(instancia);
   }
 };
+
+import { configureReadTelemetry, readRecorder } from '../../observability/firestore-read-client.mjs';
 
 let app = null;
 let db = null;
@@ -257,6 +259,18 @@ export const obtenerMessaging = () => {
   }
   return messagingPromesa;
 };
+
+if (app) configureReadTelemetry({
+  project: app.options.projectId,
+  enabled: import.meta.env.PROD && !USE_EMULATORS && import.meta.env.VITE_FIRESTORE_READ_TELEMETRY !== 'false',
+  endpoint: `https://us-central1-${app.options.projectId}.cloudfunctions.net/collectClientFirestoreReads`,
+  token: () => auth?.currentUser?.getIdToken(),
+});
+if (typeof window !== 'undefined') {
+  window.__reportBootstrapFirestoreRead = ({ counts, ...scope }) => readRecorder.observe(scope, 'rest.getDocument', counts);
+  for (const event of window.__bootstrapFirestoreReads || []) window.__reportBootstrapFirestoreRead(event);
+  delete window.__bootstrapFirestoreReads;
+}
 
 export { db, auth, getFirebaseConfigMessage };
 export default app;

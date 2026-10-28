@@ -9,7 +9,7 @@
 // =========================================================================
 
 import { db } from './firebase/config';
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy } from './firebase/observed.js';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { limaTodayStr } from '../utils/fechaLima';
 

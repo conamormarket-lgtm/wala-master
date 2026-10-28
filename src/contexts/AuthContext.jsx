@@ -4,7 +4,7 @@ import { onAuthChange } from '../services/firebase/auth';
 import { getDocument, setDocument } from '../services/firebase/firestore';
 import { getAdminRoleByEmail } from '../services/adminRoles';
 import { LEGACY_USERS_COLLECTION, PORTAL_USERS_COLLECTION } from '../constants/userCollections';
-import { doc, getDoc, onSnapshot, waitForPendingWrites } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, waitForPendingWrites } from '../services/firebase/observed.js';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../services/firebase/config';
 

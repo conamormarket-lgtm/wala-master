@@ -217,6 +217,7 @@ test('storefront consumes the HTML response once and later refreshes use current
     },
     '../../../utils/imageUrl': { toDirectImageUrl: value => value },
     './seccionesPorTipo': { precargarSecciones: async list => { precargadas.push(list); } },
+    '../../../hooks/useLoViejo': { forzadoLocal: () => false },
   }, { setTimeout: () => 0, window: {
     __walaStorefrontBootstrap: { pageId: 'home', promise: Promise.resolve(initial), consumed: false },
     matchMedia: () => ({ matches: false }),
@@ -242,6 +243,7 @@ test('failed public bootstrap falls back to the existing Firestore reader', asyn
     },
     '../../../utils/imageUrl': { toDirectImageUrl: value => value },
     './seccionesPorTipo': { precargarSecciones: async () => {} },
+    '../../../hooks/useLoViejo': { forzadoLocal: () => false },
   }, { setTimeout: () => 0, window: {
     __walaStorefrontBootstrap: { pageId: 'home', promise: Promise.resolve(null), consumed: false },
     matchMedia: () => ({ matches: false }),

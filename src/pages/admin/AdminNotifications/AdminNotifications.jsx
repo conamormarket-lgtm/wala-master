@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../services/firebase/config';
-import { doc, getDoc, setDoc, addDoc, deleteDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { doc, getDoc, setDoc, addDoc, deleteDoc, collection, getDocs, query, orderBy, limit } from '../../../services/firebase/observed.js';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useGlobalToast } from '../../../contexts/ToastContext';
 import BuscadorProducto from '../../../components/admin/BuscadorProducto/BuscadorProducto';

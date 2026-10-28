@@ -42,6 +42,16 @@ const bolitas = require("./bolitasLogic");
 
 admin.initializeApp();
 const auth = admin.auth();
+// Diagnostic batches go to Cloud Logging, not to the shared Firestore database.
+const { createMetricsHandler } = require('./clientReadMetrics');
+exports.collectClientFirestoreReads = functions.region('us-central1')
+  .runWith({ minInstances: 0, maxInstances: 2, memory: '128MB', timeoutSeconds: 15 })
+  .https.onRequest(createMetricsHandler({
+    project: process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || 'sistema-gestion-3b225',
+    verifyToken: token => auth.verifyIdToken(token),
+    log: (message, data) => functions.logger.info(message, data),
+    extraPublicOrigins: (process.env.READ_METRICS_PUBLIC_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean),
+  }));
 const db = admin.firestore();
 const PORTAL_USERS_COLLECTION = "portal_clientes_users";
 const ADMIN_USERS_COLLECTION = "adminUsers";

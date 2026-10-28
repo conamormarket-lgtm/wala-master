@@ -24,7 +24,7 @@ import {
   orderBy,
   limit,
   Timestamp,
-} from 'firebase/firestore';
+} from './firebase/observed.js';
 import { erpDb, isErpFirestoreAvailable } from './erp/firebase';
 import {
   derivarEstadoCompra,

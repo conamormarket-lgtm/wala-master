@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, setDoc, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc, query, where, orderBy, limit, getDocs } from './firebase/observed.js';
 import { db } from './firebase/config';
 import { getCurrentUser } from './firebase/auth';
 import { DAILY_WORDS, PALABRAS_FIJAS } from '../data/wordleDictionary';
@@ -98,7 +98,7 @@ export const setDailyWord = async (dateStr, word) => {
 export const deleteDailyWord = async (dateStr) => {
   try {
     // Importamos deleteDoc de manera dinámica para no recargar las importaciones de arriba
-    const { deleteDoc } = await import('firebase/firestore');
+    const { deleteDoc } = await import('./firebase/observed.js');
     await deleteDoc(doc(db, DAILY_WORDS_COLLECTION, dateStr));
     return { success: true };
   } catch (error) {

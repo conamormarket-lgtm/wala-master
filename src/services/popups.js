@@ -1,6 +1,6 @@
 // Popups de campaña: lectura/escritura en Firestore, estado local del navegador
 // y métricas. La lógica de "a quién y cuándo" está en ./popupsLogic.mjs.
-import { collection, getCountFromServer, query, where } from 'firebase/firestore';
+import { collection, getCountFromServer, query, where } from './firebase/observed.js';
 import { db } from './firebase/config';
 import { getDocument, setDocument } from './firebase/firestore';
 import { ANALYTICS_COLLECTIONS, ANALYTICS_EVENT_TYPES } from './analytics/schema';

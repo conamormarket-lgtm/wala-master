@@ -1,4 +1,4 @@
-import { collection, query, where, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, startAfter, getDocs } from './firebase/observed.js';
 import { db } from './firebase/config';
 import { getProducts, getCachedProducts, normalizeSearchText, normalizeProductForRead, esProductoDeTienda } from './products';
 

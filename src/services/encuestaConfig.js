@@ -1,5 +1,5 @@
 import { db } from './firebase/config';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from './firebase/observed.js';
 import { configConOrigenCompra } from './encuestaOrigen.mjs';
 
 const COLLECTION_NAME = 'tienda_encuesta_config';

@@ -10,7 +10,7 @@ import {
   orderBy,
   limit,
   getDocs,
-} from 'firebase/firestore';
+} from './firebase/observed.js';
 import { db } from './firebase/config';
 
 // Invoca una Cloud Function callable y normaliza la respuesta.

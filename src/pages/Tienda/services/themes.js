@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, getDoc, setDoc, deleteDoc } from '../../../services/firebase/observed.js';
 import { db } from '../../../services/firebase/config';
 
 const COLLECTION_NAME = 'tienda_themes';

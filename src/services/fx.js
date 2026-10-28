@@ -23,7 +23,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { db } from './firebase/config';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from './firebase/observed.js';
 import { getCurrency } from '../constants/currencies';
 
 // Clave y ventana de validez de la caché en localStorage.
