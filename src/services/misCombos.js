@@ -1,6 +1,5 @@
 import { createDocument, updateDocument, deleteDocument, getCollection } from './firebase/firestore';
 import { getDesignById, eliminarCreacion, saveDesign } from './designs';
-import { creacionLista } from '../pages/Crear/creacionCarrito';
 
 /**
  * "Mi combo": el combo que arma el cliente, guardado en su cuenta como UNA
@@ -42,7 +41,8 @@ export const esComboVigente = (d) => esMiCombo(d) && d.archivado !== true;
 
 /** ¿La pieza está terminada? (guardada, con vistas previas y archivos para imprimir). */
 const piezaLista = (d) => Boolean(d) && d.estado !== 'borrador'
-  && creacionLista(d);
+  && Array.isArray(d.archivosImpresion) && d.archivosImpresion.length > 0
+  && Array.isArray(d.vistasPrevias) && d.vistasPrevias.length > 0;
 
 export const imagenDe = (d) => d?.vistasPrevias?.[0]?.url || d?.imagenConjunta || d?.previewUrl || d?.miniatura || '';
 
@@ -118,7 +118,6 @@ export const copiarCreacionParaCombo = (userId, creacion, combo, pieza = 0) => s
   previewUrl: creacion.previewUrl,
   color: creacion.color,
   archivosImpresion: creacion.archivosImpresion,
-  ...(creacion.datosYoryo && { datosYoryo: creacion.datosYoryo, produccionYoryo: creacion.produccionYoryo, archivosProduccion: creacion.archivosProduccion, firmaYoryo: creacion.firmaYoryo }),
   vistasPrevias: creacion.vistasPrevias,
   imagenConjunta: creacion.imagenConjunta,
   miniatura: creacion.miniatura,

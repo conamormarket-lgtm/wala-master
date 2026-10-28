@@ -47,22 +47,17 @@ async function loadService(file, mocks, globals = {}) {
 
 const unused = () => { throw Error('Unexpected SDK call'); };
 
-test('guardar una creación Yoryo conserva el vector, los datos editables y su revisión', async () => {
-  let escrito;
+test('las creaciones del personalizador anterior conservan sus archivos en uso', async () => {
   const api = await loadService('src/services/designs.js', {
-    './firebase/firestore': { getCollection: unused, getDocument: unused, updateDocument: unused, deleteDocument: unused, createDocument: async (_collection, data) => { escrito = data; return { id: 'creacion-yoryo', error: null }; } },
+    './firebase/firestore': { getCollection: unused, getDocument: unused, updateDocument: unused, deleteDocument: unused, createDocument: unused },
     './firebase/config': { obtenerStorage: unused },
   });
   const datosYoryo = { nombre: 'Daniel', vector: { url: 'https://ejemplo.test/escudo.svg' }, fotos: [{ url: 'https://ejemplo.test/foto.png' }] };
-  const archivosProduccion = [{ formato: 'svg', url: 'https://ejemplo.test/grabado.svg', revision: 'v1' }];
-  await api.saveDesign('cliente', { productId: 'termo', tipo: 'crear', datosYoryo, archivosProduccion, produccionYoryo: { revision: 'v1' }, firmaYoryo: 'firma' });
-  assert.equal(escrito.datosYoryo.nombre, 'Daniel');
-  assert.equal(escrito.archivosProduccion[0].formato, 'svg');
-  assert.equal(escrito.produccionYoryo.revision, 'v1');
-  assert.equal(escrito.firmaYoryo, 'firma');
-  assert.ok(api.urlsDeDiseno(escrito).has(datosYoryo.vector.url));
-  assert.ok(api.urlsDeDiseno(escrito).has(archivosProduccion[0].url));
-  assert.ok(api.urlsDeDiseno(escrito).has(datosYoryo.fotos[0].url));
+  const archivosProduccion = [{ formato: 'svg', url: 'https://ejemplo.test/grabado.svg' }];
+  const urls = api.urlsDeDiseno({ datosYoryo, archivosProduccion });
+  assert.ok(urls.has(datosYoryo.vector.url));
+  assert.ok(urls.has(archivosProduccion[0].url));
+  assert.ok(urls.has(datosYoryo.fotos[0].url));
 });
 const sdk = {
   collection: (db, name) => ({ db, name }),

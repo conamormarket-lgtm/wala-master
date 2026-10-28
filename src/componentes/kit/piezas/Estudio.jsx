@@ -4,7 +4,7 @@ import {
   Copy, ArrowUpToLine, ArrowDownToLine, RotateCw, FlipHorizontal, Crop, Eraser, Maximize2,
   AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
   AlignLeft, AlignCenter, AlignRight, LoaderCircle, CheckCircle2, AlertTriangle,
-  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter, Pencil, Hand, Sparkles,
+  AlignHorizontalDistributeCenter, AlignVerticalDistributeCenter, Pencil, Hand, Sparkles, RefreshCw,
 } from 'lucide-react';
 import { Texto, useTexto } from '../Traduccion';
 import Acordeon from '../Acordeon';
@@ -17,6 +17,7 @@ import { BotonEstudio, CampoEstudio, CantidadEstudio, DeslizadorEstudio, Selecto
 import { PasoEstudio } from './PasoEstudio';
 import { TextoResaltado } from './TextoResaltado';
 import { Cargando } from '../Cargando';
+import { usePalabrasEstudio, palabrasEstudio } from './sustantivoEstudio';
 export { PasoEstudio } from './PasoEstudio';
 import s from './Estudio.module.css';
 
@@ -1002,7 +1003,11 @@ export function BarraLienzo({
 }) {
   const B = (props) => <BotonEstudio variante="fantasma" tamano="sm" soloIcono {...props} disabled={disabled || props.disabled} />;
   const nombreBarra = useTexto('Herramientas del lienzo');
-  const verCompleta = useTexto('Ver la prenda completa (Shift+1)');
+  const p = usePalabrasEstudio();
+  const textoCompleta = `Ver ${p.la} ${p.completa}`;
+  const verCompleta = useTexto(`${textoCompleta} (Shift+1)`);
+  const acercar = useTexto('Acercar a la zona');
+  const alejar = useTexto(textoCompleta);
   return (
     <div className={s.barra} role="toolbar" aria-label={nombreBarra} data-componente="BarraLienzo">
       <span className={s.grupoBarra}>
@@ -1020,8 +1025,8 @@ export function BarraLienzo({
           {/* En el teléfono, lo elegido acerca su zona: esto muestra la prenda entera (y vuelve). */}
           {onVerCompleta && (
             <B
-              aria-label={completa ? 'Acercar a la zona' : 'Ver la prenda completa'}
-              title={completa ? 'Acercar a la zona' : 'Ver la prenda completa'}
+              aria-label={completa ? acercar : alejar}
+              title={completa ? acercar : alejar}
               icono={completa ? <ZoomIn aria-hidden="true" /> : <ZoomOut aria-hidden="true" />}
               onClick={onVerCompleta}
               className={s.soloTelefono}
@@ -1056,9 +1061,9 @@ export function BarraLienzo({
  */
 // solido: borde continuo. El punteado es para "agregar algo nuevo"; en una
 // acción sobre lo elegido (Quitar fondo, Recortar) se leía como bloqueado.
-export function OpcionSello({ icono, tono, girar = -8, titulo, detalle, onClick, disabled = false, solido = false }) {
+export function OpcionSello({ icono, tono, girar = -8, titulo, detalle, onClick, disabled = false, solido = false, ancha = false }) {
   return (
-    <button type="button" className={[s.agregarOpcion, solido && s.opcionSolida].filter(Boolean).join(' ')} onClick={onClick} disabled={disabled}>
+    <button type="button" className={[s.agregarOpcion, solido && s.opcionSolida, ancha && s.opcionAncha].filter(Boolean).join(' ')} onClick={onClick} disabled={disabled}>
       <Sello tamano={42} girar={girar} tono={tono}>{icono}</Sello>
       <strong><Texto>{titulo}</Texto></strong>
       {detalle && <small><Texto>{detalle}</Texto></small>}
@@ -1096,37 +1101,93 @@ export function MedidorCalidad({ calidad, onNitida }) {
 }
 
 /**
- * Los tres pasos sin nada elegido: el color de la prenda, la zona donde va el
- * diseño (por lado) y agregar una imagen o un texto.
+ * "Empieza con un diseño": los diseños de la comunidad de esta prenda en una
+ * tira que se desliza, igual en el celular y en la computadora. Elegir uno
+ * reemplaza lo que hay (se puede deshacer).
+ *  - disenos: [{ id, nombre, imagen }] · usando: id · cargando: id · onUsar(id)
+ */
+export function DisenosParaEmpezar({ disenos = [], usando, cargando, onUsar }) {
+  const nombre = useTexto('Diseños para empezar');
+  return (
+    <ul className={s.paraEmpezar} aria-label={nombre} data-componente="DisenosParaEmpezar">
+      {disenos.map((d) => (
+        <li key={d.id}>
+          <button
+            type="button"
+            className={[s.paraEmpezarItem, usando === d.id && s.paraEmpezarActivo].filter(Boolean).join(' ')}
+            aria-pressed={usando === d.id}
+            disabled={Boolean(cargando)}
+            onClick={() => onUsar?.(d.id)}
+          >
+            <span className={s.paraEmpezarFoto}>
+              {d.imagen && <img src={d.imagen} alt="" loading="lazy" draggable={false} />}
+              {cargando === d.id && <span className={s.paraEmpezarCargando}><Cargando texto="" tamano="sm" sobreClaro /></span>}
+            </span>
+            <span className={s.paraEmpezarNombre}><Texto>{d.nombre || 'Diseño'}</Texto></span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * Los pasos sin nada elegido: un diseño para empezar (si hay), el color, la
+ * zona donde va el diseño (por lado) y agregar una imagen o un texto. El
+ * color y la zona solo se preguntan si hay más de una opción.
+ *  - paraEmpezar: { disenos, usando, cargando, onUsar } (ver DisenosParaEmpezar)
+ *  - fijas: { activo, onCambiar } si el diseño trae partes fijas (fondo, marco)
  *  - colores: [{ id, nombre, hex, claro }] · color (id) · onColor(id)
  *  - invertir: { activo, texto, onCambiar } (colores con versión al revés)
  *  - lados: [{ nombre, zonas: [{ id, nombre, conDiseno }] }] · zona · onZona(id)
  *  - onImagen, onTexto · subiendo · donde: "Frente · Pecho"
  */
-export function PasosEstudio({ colores = [], color, onColor, invertir, lados = [], zona, onZona, onImagen, onTexto, subiendo = false, donde, conDiseno = false }) {
+export function PasosEstudio({ paraEmpezar, fijas, colores = [], color, onColor, invertir, lados = [], zona, onZona, onImagen, onTexto, subiendo = false, donde, conDiseno = false }) {
   const actual = colores.find((c) => c.id === color);
   const tituloConDiseno = useTexto('Con diseño');
+  const p = usePalabrasEstudio();
+  const conPartida = paraEmpezar?.disenos?.length > 0;
+  const conColor = colores.length > 1 || Boolean(invertir);
+  const conZona = lados.reduce((n, l) => n + l.zonas.length, 0) > 1;
+  let numero = 0;
+  const siguiente = () => { numero += 1; return numero; };
+  const elegido = conPartida && paraEmpezar.disenos.find((d) => d.id === paraEmpezar.usando);
   return (
     <div className={s.pasos} data-componente="PasosEstudio">
-      <PasoEstudio numero={1} titulo="Elige el color" detalle={actual?.nombre} hecho={Boolean(actual)}>
-        <SelectorColorEstudio etiqueta="Color de la prenda" colores={colores} valor={actual?.nombre} onChange={(nombre) => onColor?.(colores.find((c) => c.nombre === nombre)?.id)} />
-        {invertir && <InterruptorEstudio activo={invertir.activo} onChange={invertir.onCambiar} etiqueta="Invertir colores" descripcion={invertir.texto} />}
-      </PasoEstudio>
-      <PasoEstudio numero={2} titulo="¿Dónde va tu diseño?" hecho={Boolean(zona)}>
-        {lados.map((l) => (
-          <div key={l.nombre} className={s.lado}>
-            <span className={s.ladoNombre}><Texto>{l.nombre}</Texto></span>
-            <div className={s.chips}>
-              {l.zonas.map((z) => (
-                <Chip key={z.id} tamano="sm" activo={z.id === zona} onClick={() => onZona?.(z.id)}>
-                  <Texto>{z.nombre}</Texto>{z.conDiseno && <span className={s.conDiseno} title={tituloConDiseno}><span className={s.oculto}>, <Texto>con diseño</Texto></span></span>}
-                </Chip>
-              ))}
+      {conPartida && (
+        <PasoEstudio numero={siguiente()} titulo="Empieza con un diseño" detalle={elegido ? elegido.nombre : 'opcional'} hecho={Boolean(elegido)}>
+          <DisenosParaEmpezar {...paraEmpezar} />
+          {fijas && <InterruptorEstudio activo={fijas.activo} onChange={fijas.onCambiar} etiqueta="Editar el fondo y el marco"
+            descripcion={fijas.activo ? 'Ahora puedes moverlos y cambiarlos. Apágalo para que se queden quietos.' : 'Están quietos para que no los muevas sin querer.'} />}
+        </PasoEstudio>
+      )}
+      {fijas && !conPartida && (
+        <InterruptorEstudio activo={fijas.activo} onChange={fijas.onCambiar} etiqueta="Editar el fondo y el marco"
+          descripcion={fijas.activo ? 'Ahora puedes moverlos y cambiarlos. Apágalo para que se queden quietos.' : 'Están quietos para que no los muevas sin querer.'} />
+      )}
+      {conColor && (
+        <PasoEstudio numero={siguiente()} titulo="Elige el color" detalle={actual?.nombre} hecho={Boolean(actual)}>
+          <SelectorColorEstudio etiqueta={`Color ${p.del}`} colores={colores} valor={actual?.nombre} onChange={(nombre) => onColor?.(colores.find((c) => c.nombre === nombre)?.id)} />
+          {invertir && <InterruptorEstudio activo={invertir.activo} onChange={invertir.onCambiar} etiqueta="Invertir colores" descripcion={invertir.texto} />}
+        </PasoEstudio>
+      )}
+      {conZona && (
+        <PasoEstudio numero={siguiente()} titulo="¿Dónde va tu diseño?" hecho={Boolean(zona)}>
+          {lados.map((l) => (
+            <div key={l.nombre} className={s.lado}>
+              <span className={s.ladoNombre}><Texto>{l.nombre}</Texto></span>
+              <div className={s.chips}>
+                {l.zonas.map((z) => (
+                  <Chip key={z.id} tamano="sm" activo={z.id === zona} onClick={() => onZona?.(z.id)}>
+                    <Texto>{z.nombre}</Texto>{z.conDiseno && <span className={s.conDiseno} title={tituloConDiseno}><span className={s.oculto}>, <Texto>con diseño</Texto></span></span>}
+                  </Chip>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-      </PasoEstudio>
-      <PasoEstudio numero={3} titulo="Agrega tu imagen o tu texto" hecho={conDiseno}>
+          ))}
+        </PasoEstudio>
+      )}
+      <PasoEstudio numero={siguiente()} titulo="Agrega tu imagen o tu texto" hecho={conDiseno}>
         <div className={s.agregar}>
           <OpcionSello icono={<ImagePlus aria-hidden="true" />} titulo="Subir imagen" detalle="Una foto o un logo" onClick={onImagen} disabled={subiendo} />
           <OpcionSello icono={<Type aria-hidden="true" />} tono="rosa" girar={6} titulo="Escribir texto" detalle="Un nombre o una frase" onClick={onTexto} />
@@ -1314,6 +1375,7 @@ export const ALINEAR = [
  *  - fuentes: [{ valor, texto, detalle (su grupo) }] · calidad: 'buena' | 'aceptable' | 'baja'
  *  - onAchicar, onAgrandar, onCentrar, onAlinear(donde), onQuitar, onDuplicar,
  *    onAdelante, onAtras, onRecortar, onQuitarFondo, onLlenar
+ *  - onCambiarFoto: otra imagen en el mismo lugar · fija: { activo, onCambiar } (solo admins)
  *  - zonas: [{ id, nombre }] · onPasarAZona(id) · sinSesion: recortar y quitar fondo apagados
  *  - anchoZonaCm: ancho real de la zona; con él, el tamaño de la letra va en
  *    cm (alto de la letra), como en la tienda · fueraDeZona: una parte queda
@@ -1323,10 +1385,11 @@ export const ALINEAR = [
 export function PanelCapa({
   capa, zona, onCambiar, onListo, fuentes = [], calidad, onNitida,
   onCentrar, onAlinear, onQuitar, onDuplicar, onAdelante, onAtras,
-  onRecortar, onQuitarFondo, onLlenar, zonas = [], onPasarAZona, sinSesion = false,
+  onRecortar, onQuitarFondo, onLlenar, onCambiarFoto, fija, zonas = [], onPasarAZona, sinSesion = false,
   anchoZonaCm, fueraDeZona = false, onImagen, onTexto, subiendo = false, puntosPorZona = 100, onAbrirFuentes,
 }) {
   const zonaTraducida = useTexto(zona);
+  const p = usePalabrasEstudio();
   if (!capa) return null;
   const imagen = capa.tipo === 'imagen';
   const tamano = capa.tamano ?? 0.18;
@@ -1336,7 +1399,7 @@ export function PanelCapa({
       <div className={s.panelCabeza}>
         <div>
           <h2 className={s.panelTitulo}><TextoResaltado resaltar={[zonaTraducida]} envolver={(x, k) => <em key={k}>{x}</em>}>{`${imagen ? 'Tu imagen' : 'Tu texto'} en ${zona}`}</TextoResaltado></h2>
-          <p className={s.panelAyuda}><Texto>{"Los cambios se ven en la prenda al instante."}</Texto></p>
+          <p className={s.panelAyuda}><Texto>{`Los cambios se ven en ${p.la} al instante.`}</Texto></p>
         </div>
         {/* Quitar, aparte y como ícono: lejos de lo que se toca seguido. */}
         <span className={s.panelAcciones}>
@@ -1418,14 +1481,22 @@ export function PanelCapa({
           <div className={s.grupoCampo}>
             <span className={s.rotulo}><Texto>{"Arreglar la imagen"}</Texto></span>
             <div className={s.agregar}>
+              {onCambiarFoto && <OpcionSello solido ancha icono={<RefreshCw aria-hidden="true" />} tono="menta" girar={-4} titulo="Cambiar foto" detalle="Pon la tuya en este mismo lugar" onClick={onCambiarFoto} disabled={sinSesion || subiendo} />}
               <OpcionSello solido icono={<Eraser aria-hidden="true" />} tono="rosa" titulo="Quitar fondo" detalle="Deja solo lo importante" onClick={onQuitarFondo} disabled={sinSesion || subiendo} />
               <OpcionSello solido icono={<Crop aria-hidden="true" />} girar={6} titulo="Recortar" detalle="Elige qué parte va" onClick={onRecortar} disabled={sinSesion || subiendo} />
             </div>
-            {sinSesion && <span className={s.nota}><Texto>{"Inicia sesión para recortar o quitar el fondo."}</Texto></span>}
+            {sinSesion && <span className={s.nota}><Texto>{onCambiarFoto ? 'Inicia sesión para cambiar la foto, recortarla o quitarle el fondo.' : 'Inicia sesión para recortar o quitar el fondo.'}</Texto></span>}
             {/* Bloqueados sin decir por qué parecían rotos (en una tablet con wifi lento la subida tarda). */}
             {!sinSesion && subiendo && <span className={s.nota} role="status"><Texto>{"Subiendo tu imagen… en un momento puedes recortarla o quitarle el fondo."}</Texto></span>}
           </div>
         </>
+      )}
+
+      {fija && (
+        <div className={s.grupoCampo}>
+          <InterruptorEstudio activo={fija.activo} onChange={fija.onCambiar} etiqueta="Parte fija de la plantilla"
+            descripcion="El cliente no la mueve sin querer: queda quieta hasta que active Editar el fondo y el marco." />
+        </div>
       )}
 
       <div className={s.grupoCampo}>
@@ -1575,7 +1646,7 @@ const MOD = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator
 export { MOD as MOD_ESTUDIO };
 
 /** Los atajos del estudio en cuatro grupos (los de Crear). `lados`: los nombres de los lados, para 1, 2… */
-const gruposAtajos = (lados = []) => [
+const gruposAtajos = (lados = [], p = palabrasEstudio('prenda')) => [
   {
     titulo: 'General',
     atajos: [
@@ -1593,8 +1664,8 @@ const gruposAtajos = (lados = []) => [
   {
     titulo: 'Zoom',
     atajos: [
-      [[[MOD, '+'], [MOD, '−']], 'Acercar / alejar la prenda'],
-      [[[MOD, '0'], ['Shift', '1']], 'Ver la prenda entera'],
+      [[[MOD, '+'], [MOD, '−']], `Acercar / alejar ${p.la}`],
+      [[[MOD, '0'], ['Shift', '1']], `Ver ${p.la} ${p.entera}`],
       [[['Shift', '2']], 'Acercar a lo elegido'],
     ],
   },
@@ -1620,7 +1691,7 @@ const gruposAtajos = (lados = []) => [
       [[['Clic derecho']], 'Más opciones'],
       [[['Shift', 'Clic'], [MOD, 'Clic']], 'Sumar o quitar de la selección'],
       [[[MOD, 'Rueda']], 'Zoom hacia el puntero (o pellizca en el trackpad)'],
-      [[['Rueda']], 'Con zoom: subir / bajar por la prenda (Shift: a los costados)'],
+      [[['Rueda']], `Con zoom: subir / bajar por ${p.la} (Shift: a los costados)`],
       [[['Espacio', 'Arrastrar'], ['Botón del medio']], 'Mover la vista (con zoom)'],
       [[['Arrastrar una imagen']], 'Desde la computadora, a la zona donde la sueltas'],
     ],
@@ -1635,6 +1706,7 @@ const gruposAtajos = (lados = []) => [
  */
 export function GuiaGestos({ onEntendido }) {
   const nombre = useTexto('Cómo editar con los dedos');
+  const p = usePalabrasEstudio();
   return (
     // Sus toques no llegan al lienzo (no eligen ni mueven nada).
     <div className={s.guiaGestos} role="dialog" aria-label={nombre} data-componente="GuiaGestos" onPointerDown={(e) => e.stopPropagation()} onPointerDownCapture={(e) => e.stopPropagation()}>
@@ -1642,7 +1714,7 @@ export function GuiaGestos({ onEntendido }) {
         <LineaGesto icono={<Hand aria-hidden="true" />} fuerte="Un dedo:" texto="arrástralo para moverlo." />
         <LineaGesto icono={<Maximize2 aria-hidden="true" />} fuerte="Dos dedos:" texto="sepáralos o júntalos para agrandar o achicar, y gíralos para girarlo." />
         <LineaGesto icono={<Type aria-hidden="true" />} fuerte="Dos toques" texto="en un texto para escribirlo." />
-        <LineaGesto icono={<ZoomIn aria-hidden="true" />} fuerte="Sin nada elegido," texto="dos dedos acercan la prenda." />
+        <LineaGesto icono={<ZoomIn aria-hidden="true" />} fuerte="Sin nada elegido," texto={`dos dedos acercan ${p.la}.`} />
       </ul>
       <BotonEstudio bloque tamano="sm" onClick={onEntendido}><Texto>{"Entendido"}</Texto></BotonEstudio>
     </div>
@@ -1659,7 +1731,9 @@ function LineaGesto({ icono, fuerte, texto }) {
 const TECLAS_IGUALES = new Set(['Ctrl', 'Shift', 'Esc', '⌘']);
 const Tecla = ({ tecla }) => <kbd>{tecla.length > 1 && !TECLAS_IGUALES.has(tecla) ? <Texto>{tecla}</Texto> : tecla}</kbd>;
 
-export function AtajosEstudio({ lados = [], grupos = gruposAtajos(lados) }) {
+export function AtajosEstudio({ lados = [], grupos: gruposDados }) {
+  const p = usePalabrasEstudio();
+  const grupos = gruposDados || gruposAtajos(lados, p);
   return (
     <div className={s.atajos} data-componente="AtajosEstudio">
       <div className={s.atajosGrupos}>
@@ -1706,9 +1780,10 @@ export function CargandoLienzo({ opaco = false }) {
 /** "Suelta tu imagen en Pecho": la pastilla mientras se arrastra un archivo sobre la prenda. */
 export function AvisoSoltarArchivo({ zona }) {
   const nombre = useTexto(zona);
+  const p = usePalabrasEstudio();
   return (
     <p className={s.soltarAviso} role="status">
-      <TextoResaltado resaltar={[nombre]}>{zona ? `Suelta tu imagen en ${zona}` : 'Suelta tu imagen en la prenda'}</TextoResaltado>
+      <TextoResaltado resaltar={[nombre]}>{zona ? `Suelta tu imagen en ${zona}` : `Suelta tu imagen en ${p.la}`}</TextoResaltado>
     </p>
   );
 }

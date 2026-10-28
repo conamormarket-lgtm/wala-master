@@ -246,10 +246,10 @@ export function PaginaProducto({
       icono={<IconoAgregar agregado={agregado} />}
       disabled={producto.agotado}
       cargando={cargando === 'agregar'}
-      onClick={() => producto.requierePersonalizacion ? onPersonalizar?.(eleccion) : accion('agregar', onAgregar)}
+      onClick={() => accion('agregar', onAgregar)}
       {...props}
     >
-      <Texto>{producto.agotado ? 'Agotado por ahora' : producto.requierePersonalizacion ? textoPersonalizar : agregado ? '¡Agregado!' : 'Agregar al carrito'}</Texto>
+      <Texto>{producto.agotado ? 'Agotado por ahora' : agregado ? '¡Agregado!' : 'Agregar al carrito'}</Texto>
     </Boton>
   );
   const detalle = [
@@ -364,11 +364,11 @@ export function PaginaProducto({
         {/* En el celular, agregar y personalizar quedan pegados abajo. */}
         <div ref={compraRef} className={s.compra} data-compra-fija="">
           {botonAgregar({ bloque: true })}
-          {producto.personalizable && !producto.requierePersonalizacion && onPersonalizar && (
+          {producto.personalizable && onPersonalizar && (
             <Boton variante="contorno" tamano="lg" icono={<Paintbrush aria-hidden="true" />} onClick={() => onPersonalizar(eleccion)}><Texto>{textoPersonalizar}</Texto></Boton>
           )}
         </div>
-        {!producto.agotado && !producto.requierePersonalizacion && (
+        {!producto.agotado && (
           <Boton bloque tamano="lg" variante="secundario" cargando={cargando === 'comprar'} onClick={() => accion('comprar', onComprar)} iconoFin={<ArrowRight aria-hidden="true" />}><Texto>Comprar ahora</Texto></Boton>
         )}
         {carrito > 0 && (

@@ -18,6 +18,7 @@ import { getPrendaBase } from '../../services/prendasBase';
 import { getDesignById, saveDesign, guardarTallaCreacion, renombrarCreacion, urlsDeDiseno } from '../../services/designs';
 import { limpiarArchivosSobrantes } from '../../services/limpiarArchivos';
 import { obtenerDisenoComunidad, registrarUsoComunidad } from '../../services/comunidad';
+import { useComunidad } from '../../pages/Comunidad/useComunidad';
 import {
   prepararImagenCliente, subirImagenCliente,
 } from '../../services/crearArchivos';
@@ -40,6 +41,8 @@ import { getComboCrear } from '../../services/combosCrear';
 import { MenuContextual } from '../../componentes/kit/piezas/MenuContextual';
 import { registrarGuardado, ponerBorradorEnCache, quitarBorradorDeCache } from '../../pages/Crear/borradoresCache';
 import { cajaEnZona, imanAlMover, imanAlEscalar, enCm } from '../../pages/Crear/guiasInteligentes';
+import { palabrasEstudio } from '../../componentes/kit/piezas/sustantivoEstudio';
+import { textoEnGrises } from '../../utils/laser.mjs';
 import { BarraLienzo, PasosEstudio, PanelCapa, PanelVarios, GuiaGestos, EstadoEdicion, AtajosEstudio, CargandoLienzo, AvisoSoltarArchivo, MOD_ESTUDIO as MOD } from '../../componentes/kit/piezas/Estudio';
 import { capaEstudioDesde, cambiosDePanelEstudio } from '../../componentes/kit/adaptadoresEstudio';
 import Boton from '../../componentes/kit/Boton';
@@ -231,6 +234,10 @@ const EstudioDeTienda = () => {
     return { ...leida, colores: listos.length ? listos : leida.colores };
   }, [prenda]);
   const agotado = typeof prenda?.inStock === 'number' && prenda.inStock <= 0;
+  // Grabado láser: el diseño se ve y se exporta en un solo tono.
+  const laser = cfgPrenda?.tecnica === 'laser';
+  const laserRef = useRef(laser);
+  laserRef.current = laser;
   // Un borrador (visible: false) solo lo ve el admin, para revisarlo antes de publicar.
   const borrador = prenda?.visible === false;
   const disponible = Boolean(prenda) && prenda.esPrendaBase === true && prenda.deleted !== true && (!borrador || isAdmin);
@@ -259,6 +266,11 @@ const EstudioDeTienda = () => {
   const [cargandoLienzo, setCargandoLienzo] = useState(true);
   const primerDibujoRef = useRef(true);
   const [version, setVersion] = useState(0);
+  // Partes fijas de una plantilla (fondo, marco): no se eligen con un toque
+  // hasta que el cliente activa "Editar el fondo y el marco".
+  const [editarFijas, setEditarFijas] = useState(false);
+  const editarFijasRef = useRef(false);
+  editarFijasRef.current = editarFijas;
   const [listo, setListo] = useState(false);
   // Analítica: una apertura del estudio por prenda/diseño/combo y pestaña,
   // cuando el lienzo ya está listo (no cuenta si se va antes de que cargue).
@@ -353,6 +365,7 @@ const EstudioDeTienda = () => {
   const tokenRef = useRef(0);
   const textosTrasDibujoRef = useRef(new Set());
   const inputArchivoRef = useRef(null);
+  const inputCambiarFotoRef = useRef(null);
   const editorRef = useRef(null);
   const animacionZoomRef = useRef(0);
   const areaLienzoRef = useRef(null);
@@ -420,6 +433,7 @@ const EstudioDeTienda = () => {
   const capaSel = capasVista.find((c) => c.id === seleccionId) || null;
   const zonaSel = capaSel ? zonaPorId(zonaDe(capaSel.id)) : null;
   const tallas = color ? tallasDeColor(color, cfg) : [];
+  const hayFijas = useMemo(() => Object.values(capasPorZona).some((capas) => capas.some((c) => c.fija)), [capasPorZona]);
   const zonasUsadas = useMemo(
     () => zonasConDiseno(capasPorZona).filter((z) => zonasPrenda.some((x) => x.id === z)),
     [zonasPrenda, capasPorZona]
@@ -862,7 +876,7 @@ const EstudioDeTienda = () => {
             return aplicar({ capasPorZona: capas, vistaId: vistaDeZona?.id, zonaId: primeraZona, colorId: colorOrigen?.id, copia: piezaLlevaCopiar() });
           }
         }
-        toast.info('Ese diseño no encaja en esta prenda. Puedes empezar desde cero.');
+        toast.info('Ese diseño no encaja aquí. Puedes empezar desde cero.');
         return aplicar(null);
       }
       if (plantillaParam && !designIdRef.current) {
@@ -1061,7 +1075,7 @@ const EstudioDeTienda = () => {
     if (!obj || !lienzo || !t) return;
     let capa = (capasRef.current[zId] || []).find((c) => c.id === capaId);
     if (capa?.type === 'text') {
-      const props = propiedadesTexto(capa);
+      const props = propiedadesTexto(laserRef.current ? textoEnGrises(capa) : capa);
       // Mientras se escribe sobre la prenda, el texto ya está en el objeto.
       if (obj.isEditing) delete props.text;
       obj.set(props);
@@ -1733,7 +1747,7 @@ const EstudioDeTienda = () => {
         try {
           img = await cargarImagen(fotoDeVista(vista, color));
         } catch {
-          if (token === tokenRef.current) toast.error('No pudimos cargar la foto de la prenda.');
+          if (token === tokenRef.current) toast.error('No pudimos cargar la foto del producto.');
           return;
         }
         if (token !== tokenRef.current) return;
@@ -1767,7 +1781,7 @@ const EstudioDeTienda = () => {
           for (const capa of capasRef.current[z.id] || []) {
             let obj;
             try {
-              obj = await crearObjeto(capa, transforms[z.id], srcDe, { editable: CON_MOUSE });
+              obj = await crearObjeto(capa, transforms[z.id], srcDe, { editable: CON_MOUSE, laser });
             } catch {
               continue;
             }
@@ -1776,6 +1790,7 @@ const EstudioDeTienda = () => {
             obj.zonaId = z.id;
             obj.clipPath = recorteDeZona(transforms[z.id]);
             estilizar(obj);
+            if (capa.fija && !editarFijasRef.current) Object.assign(obj, { selectable: false, evented: false, hoverCursor: 'default' });
             objetos.push(obj);
           }
         }
@@ -1856,7 +1871,7 @@ const EstudioDeTienda = () => {
       }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vista?.id, color?.id, anchoLienzo, altoVentana, altoDisponibleLienzo, version, listo]);
+  }, [vista?.id, color?.id, anchoLienzo, altoVentana, altoDisponibleLienzo, version, listo, laser]);
 
   // ── Acciones ─────────────────────────────────────────────────────────────
   const centroDe = (z) => ({ left: UNIDADES_ZONA / 2, top: altoEnUnidades(z) / 2 });
@@ -2429,29 +2444,33 @@ const EstudioDeTienda = () => {
    * antes. Lo que quedó conserva su tamaño y su lugar en la prenda.
    */
   const reemplazarImagen = async (capa, { blob, ancho, alto, corte, factor = 1 }) => {
+    const anchoAntes = capa.anchoNatural;
+    const altoAntes = capa.altoNatural;
+    const dx = (corte.x + corte.w / 2 - anchoAntes / 2) * capa.escalaX * (capa.flipX ? -1 : 1);
+    const dy = (corte.y + corte.h / 2 - altoAntes / 2) * capa.escalaY;
+    const giro = ((capa.angulo || 0) * Math.PI) / 180;
+    await ponerImagenEnCapa(capa, blob, {
+      anchoNatural: ancho,
+      altoNatural: alto,
+      escalaX: capa.escalaX / factor,
+      escalaY: capa.escalaY / factor,
+      left: capa.left + dx * Math.cos(giro) - dy * Math.sin(giro),
+      top: capa.top + dx * Math.sin(giro) + dy * Math.cos(giro),
+    });
+  };
+
+  /**
+   * Cambia la imagen de una capa por otra y la sube. Id nuevo: la imagen
+   * anterior sigue intacta en el historial (deshacer).
+   */
+  const ponerImagenEnCapa = async (capa, blob, cambios) => {
     const zId = zonaDe(capa.id);
     if (!zId) return;
     try {
-      const anchoAntes = capa.anchoNatural;
-      const altoAntes = capa.altoNatural;
-      const dx = (corte.x + corte.w / 2 - anchoAntes / 2) * capa.escalaX * (capa.flipX ? -1 : 1);
-      const dy = (corte.y + corte.h / 2 - altoAntes / 2) * capa.escalaY;
-      const giro = ((capa.angulo || 0) * Math.PI) / 180;
-      const cambios = {
-        anchoNatural: ancho,
-        altoNatural: alto,
-        escalaX: capa.escalaX / factor,
-        escalaY: capa.escalaY / factor,
-        left: capa.left + dx * Math.cos(giro) - dy * Math.sin(giro),
-        top: capa.top + dx * Math.sin(giro) + dy * Math.cos(giro),
-        src: '',
-        subiendo: true,
-      };
-      // Id nuevo: la imagen anterior sigue intacta en el historial (deshacer).
       const nuevaId = nuevoId();
       localSrcRef.current.set(nuevaId, URL.createObjectURL(blob));
       if (seleccionRef.current === capa.id) setSeleccionId(nuevaId);
-      modificarCapas(zId, (capas) => capas.map((c) => (c.id === capa.id ? { ...c, ...cambios, id: nuevaId } : c)), true);
+      modificarCapas(zId, (capas) => capas.map((c) => (c.id === capa.id ? { ...c, ...cambios, src: '', subiendo: true, id: nuevaId } : c)), true);
       setSubiendo((n) => n + 1);
       try {
         const url = await subirImagenCliente(user.uid, blob);
@@ -2460,6 +2479,23 @@ const EstudioDeTienda = () => {
       } finally {
         setSubiendo((n) => n - 1);
       }
+    } catch (err) {
+      toast.error(err?.message || 'No pudimos cambiar la imagen.');
+    }
+  };
+
+  /**
+   * "Cambiar foto": otra imagen en el mismo lugar, llenando el mismo espacio
+   * (centro, giro y volteo iguales). Sirve para la foto de una plantilla.
+   */
+  const cambiarFoto = async (archivo) => {
+    const capa = capaSel;
+    if (!archivo || capa?.type !== 'image') return;
+    try {
+      const { blob, urlLocal, ancho, alto } = await prepararImagenCliente(archivo);
+      URL.revokeObjectURL(urlLocal);
+      const escala = Math.max((capa.anchoNatural * Math.abs(capa.escalaX)) / ancho, (capa.altoNatural * Math.abs(capa.escalaY)) / alto);
+      await ponerImagenEnCapa(capa, blob, { anchoNatural: ancho, altoNatural: alto, escalaX: escala, escalaY: escala });
     } catch (err) {
       toast.error(err?.message || 'No pudimos cambiar la imagen.');
     }
@@ -2664,7 +2700,7 @@ const EstudioDeTienda = () => {
     const img = await cargarImagen(fotoDeVista(v, color));
     const fuente = fondoDeVista(img, v, color);
     return renderizarVistaPrevia({
-      fuente, anchoImg: img.naturalWidth, altoImg: img.naturalHeight, vista: v, capasPorZona: capas, srcDe,
+      fuente, anchoImg: img.naturalWidth, altoImg: img.naturalHeight, vista: v, capasPorZona: capas, srcDe, laser,
       ...(ancho && { ancho }),
     });
   };
@@ -2796,6 +2832,48 @@ const EstudioDeTienda = () => {
       if (!guardandoRef.current) autoguardar();
     }
     await colaBorradorRef.current;
+  };
+
+  // ── "Empieza con un diseño": los de la comunidad de esta prenda ──────────
+  const comunidadQ = useComunidad();
+  const disenosDePartida = useMemo(() => (comunidadQ.data || [])
+    .filter((d) => d.tipo !== 'combo' && d.productId === id)
+    .map((d) => ({ id: d.id, nombre: d.nombre, imagen: d.vistasPrevias?.[0]?.url || d.imagenConjunta || d.previewUrl || '' })), [comunidadQ.data, id]);
+  const [partida, setPartida] = useState({ usando: plantillaParam || null, cargando: null });
+
+  /** Pone un diseño de la comunidad en lugar del actual (es un paso: se puede deshacer). */
+  const usarDisenoDePartida = async (disenoId) => {
+    if (partida.cargando || disenoId === partida.usando) return;
+    setPartida((p) => ({ ...p, cargando: disenoId }));
+    try {
+      const fuente = await obtenerDisenoComunidad(disenoId);
+      if (!fuente || fuente.productId !== id) throw new Error('no-encaja');
+      const capas = fuente.layersByView || {};
+      await asegurarFuentesDe(capas);
+      if (!montadoRef.current) return;
+      asentarHistorial();
+      soltarSeleccion();
+      capasRef.current = capas;
+      setCapasPorZona(capas);
+      setVersion((v) => v + 1);
+      const colorPlantilla = cfg.colores.find((c) => c.id === fuente.color?.id || c.nombre === fuente.color?.nombre);
+      if (colorPlantilla) setColorId(colorPlantilla.id);
+      const primeraZona = Object.keys(capas)[0];
+      const destino = primeraZona && zonaPorId(primeraZona);
+      if (destino) {
+        if (destino.vistaId !== vista.id) cambiarVista(destino.vistaId);
+        elegirZona(destino.id);
+      }
+      if (!designIdRef.current) {
+        basadoEnRef.current = disenoId;
+        setNombre(fuente.nombre || '');
+      }
+      setPartida({ usando: disenoId, cargando: null });
+      if (zonasUsadas.length) toast.info('Cambiamos tu diseño. Si querías el anterior, toca Deshacer.');
+    } catch {
+      setPartida((p) => ({ ...p, cargando: null }));
+      toast.error('No pudimos abrir ese diseño. Inténtalo de nuevo.');
+    }
   };
 
   const empezarNuevo = async () => {
@@ -3427,10 +3505,13 @@ const EstudioDeTienda = () => {
     asentarHistorial();
     return accion(...args);
   };
+  // "la prenda" o "el producto" (cuadro, tomatodo…), según su admin.
+  const sustantivo = cfgPrenda?.tipo || 'prenda';
+  const palabras = palabrasEstudio(sustantivo);
   if (isLoading || (cfg && !listo && disponible)) return <EsqueletoPagina forma="estudio" />;
   if (error || !prenda || !disponible || !cfg?.vistas.length) {
-    return <EstadoVacio imagen={null} titulo={<Texto>{error ? 'No pudimos cargar la prenda' : 'Esta prenda no está disponible'}</Texto>}
-      texto={<Texto>Elige otra para empezar a crear.</Texto>}><Boton to="/personalizar"><Texto>Ver prendas</Texto></Boton></EstadoVacio>;
+    return <EstadoVacio imagen={null} titulo={<Texto>{error ? `No pudimos cargar ${palabras.la}` : `${palabras.La} no está disponible`}</Texto>}
+      texto={<Texto>Elige otro diseño para empezar a crear.</Texto>}><Boton to="/personalizar"><Texto>Ver Crear</Texto></Boton></EstadoVacio>;
   }
 
   const vistaSel = zonaSel ? cfg.vistas.find((v) => v.id === zonaSel.vistaId) : null;
@@ -3447,11 +3528,11 @@ const EstudioDeTienda = () => {
   const etiquetaVolver = volverA.startsWith('/cuenta')
     ? 'Volver a Mis creaciones'
     : volverA.startsWith('/creacion') ? 'Volver a tu creación'
-      : volverA.startsWith('/combo') ? 'Volver al combo' : 'Volver a las prendas';
+      : volverA.startsWith('/combo') ? 'Volver al combo' : 'Volver a Crear';
 
   return (
     <MarcoEstudio
-      nombre={prenda.name} color={{ nombre: color.nombre, hex: fondoMuestra(color) }}
+      nombre={prenda.name} color={{ nombre: color.nombre, hex: fondoMuestra(color) }} sustantivo={sustantivo}
       lados={cfg.vistas.filter((v) => v.zonas.some((z) => zonasUsadas.includes(z.id))).map((v) => v.nombre)}
       precio={total} sesion={Boolean(user)} urlVolver={volverA} etiquetaVolver={etiquetaVolver}
       className={[styles.studio, editandoAlgo && styles.enfoque].filter(Boolean).join(' ')}
@@ -3468,8 +3549,9 @@ const EstudioDeTienda = () => {
               queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'] });
               queryClient.removeQueries({ queryKey: ['creacion', designId] });
             }} />}
-          {borrador ? <Aviso compacto tipo="aviso"><Texto>Borrador: solo los administradores ven esta prenda. Publícala desde Admin → Productos para poder comprarla.</Texto></Aviso>
-            : enCombo ? <Aviso compacto tipo="info"><Texto>{'Prenda ' + (piezaParam + 1) + ' de tu combo. Al terminar, vuelve al combo con tu diseño.'}</Texto></Aviso>
+          {borrador ? <Aviso compacto tipo="aviso"><Texto>{`Borrador: solo los administradores ven ${sustantivo === 'producto' ? 'este producto' : 'esta prenda'}. Publícalo desde Admin → Prendas de Crear para poder comprarlo.`}</Texto></Aviso>
+            : enCombo ? <Aviso compacto tipo="info"><Texto>{(sustantivo === 'producto' ? 'Pieza ' : 'Prenda ') + (piezaParam + 1) + ' de tu combo. Al terminar, vuelve al combo con tu diseño.'}</Texto></Aviso>
+              : laser && !zonasUsadas.length ? <Aviso compacto tipo="info"><Texto>Este producto se graba con láser: tu diseño se verá en un solo tono. Las fotos quedan mejor sin fondo.</Texto></Aviso>
               : plantillaParam ? <Aviso compacto tipo="info"><Texto>Partes de un diseño de la comunidad. Cámbiale el nombre, la foto o lo que quieras.</Texto></Aviso>
                 : !user && !authLoading && <Aviso compacto tipo="info" accion={zonasUsadas.length ? <Boton variante="fantasma" tamano="sm" onClick={irALogin}><Texto>Iniciar sesión</Texto></Boton> : undefined}><Texto>{zonasUsadas.length ? 'Inicia sesión para guardar tu diseño como borrador y continuarlo después.' : 'Puedes diseñar sin cuenta. Para subir una imagen o guardar, inicia sesión.'}</Texto></Aviso>}
         </>
@@ -3534,6 +3616,8 @@ const EstudioDeTienda = () => {
         <>
           {!editandoAlgo && (
             <PasosEstudio
+              paraEmpezar={disenosDePartida.length ? { disenos: disenosDePartida, ...partida, onUsar: usarDisenoDePartida } : undefined}
+              fijas={hayFijas ? { activo: editarFijas, onCambiar: (activo) => { soltarSeleccion(); setEditarFijas(activo); setVersion((v) => v + 1); } } : undefined}
               colores={cfg.colores.filter((c) => !c.espejo).map((original) => {
                 const c = original.id === color.espejoDe ? color : original;
                 return { id: c.id, nombre: c.nombre, hex: fondoMuestra(c), claro: textoSobre(c.hex) !== '#FFFFFF' };
@@ -3557,7 +3641,7 @@ const EstudioDeTienda = () => {
                 elegirZona(zId);
               }}
               onImagen={elegirImagen} onTexto={() => agregarTexto(undefined, { editar: true })}
-              subiendo={subiendo > 0} donde={vista.nombre + ' · ' + zona.nombre} conDiseno={zonasUsadas.length > 0}
+              subiendo={subiendo > 0} donde={zonasPrenda.length > 1 ? vista.nombre + ' · ' + zona.nombre : undefined} conDiseno={zonasUsadas.length > 0}
             />
           )}
           <div ref={editorRef}>
@@ -3581,7 +3665,10 @@ const EstudioDeTienda = () => {
                 onCentrar={conPasoHistorial(centrar)} onAlinear={conPasoHistorial(alinear)} onQuitar={conPasoHistorial(eliminar)}
                 onDuplicar={conPasoHistorial(duplicar)} onAdelante={conPasoHistorial(() => mover(true))} onAtras={conPasoHistorial(() => mover(false))}
                 onRecortar={() => setRecortando(capaSel.id)} onQuitarFondo={() => setQuitandoFondo(capaSel.id)}
-                onLlenar={conPasoHistorial(ajustarAZona)} zonas={zonasPrenda.filter((z) => z.id !== zonaSel?.id)}
+                onLlenar={conPasoHistorial(ajustarAZona)}
+                onCambiarFoto={capaSel.type === 'image' ? () => (user ? inputCambiarFotoRef.current?.click() : elegirImagen()) : undefined}
+                fija={isAdmin ? { activo: Boolean(capaSel.fija), onCambiar: (activo) => editarCapa(capaSel.id, { fija: activo || undefined }) } : undefined}
+                zonas={zonasPrenda.filter((z) => z.id !== zonaSel?.id)}
                 onPasarAZona={conPasoHistorial((zId) => moverAZona(zonaPorId(zId)))}
                 onImagen={elegirImagen} onTexto={() => agregarTexto(undefined, { editar: true })}
               />
@@ -3589,6 +3676,7 @@ const EstudioDeTienda = () => {
           </div>
           {/* Cualquier imagen: prepararImagenCliente mira el formato de verdad y avisa claro si no sirve (en Android el tipo del archivo no siempre llega). */}
           <input ref={inputArchivoRef} type="file" accept="image/*,.svg" hidden onChange={alElegirArchivo} />
+          <input ref={inputCambiarFotoRef} type="file" accept="image/*,.svg" hidden onChange={(e) => { const archivo = e.target.files?.[0]; e.target.value = ''; conPasoHistorial(cambiarFoto)(archivo); }} />
         </>
       )}
       compra={(
@@ -3598,9 +3686,9 @@ const EstudioDeTienda = () => {
           className={styles.acciones}
           combo={enCombo ? { opciones: [
             ...(otrasIguales.length ? [{ id: 'copiar', activo: copiarALasOtras, onCambiar: setCopiarALasOtras,
-              etiqueta: 'Ponerlo también en la ' + otrasIguales.map((i) => 'prenda ' + (i + 1)).join(' y la '), descripcion: 'Luego puedes cambiarle el color o editarla aparte.' }] : []),
+              etiqueta: 'Ponerlo también en la ' + otrasIguales.map((i) => (sustantivo === 'producto' ? 'pieza ' : 'prenda ') + (i + 1)).join(' y la '), descripcion: 'Luego puedes cambiarle el color o editarla aparte.' }] : []),
             ...(otrasConOtroDiseno.length ? [{ id: 'reemplazar', activo: reemplazarOtras, onCambiar: setReemplazarOtras,
-              etiqueta: 'Usar este diseño también en la ' + otrasConOtroDiseno.map((p) => 'prenda ' + (p.i + 1)).join(' y la '), descripcion: 'Reemplaza el diseño que tiene ahora. Luego puedes cambiarle el color o editarla aparte.' }] : []),
+              etiqueta: 'Usar este diseño también en la ' + otrasConOtroDiseno.map((p) => (sustantivo === 'producto' ? 'pieza ' : 'prenda ') + (p.i + 1)).join(' y la '), descripcion: 'Reemplaza el diseño que tiene ahora. Luego puedes cambiarle el color o editarla aparte.' }] : []),
           ] } : undefined}
         />
       )}

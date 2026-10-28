@@ -10,7 +10,6 @@ import { limaTodayStr, felicidadKapiHoy } from '../../utils/fechaLima';
 import { getFallbackHex } from '../../utils/colors';
 import { fotosGenerales } from '../../utils/fotosDeColor';
 import { proximaOcurrencia, textoFechaEvento } from '../../utils/fechaEvento.mjs';
-import { esYoryoPersonalizable, rutaPersonalizarYoryo, faltaPersonalizacionYoryo } from '../../utils/yoryoPersonalizacion.mjs';
 import { hoyLocal } from '../../utils/fechasFestivas.mjs';
 import {
   leerPrendaBase, colorDisponible, fondoMuestra, precioPersonalizado, tallasDeColor,
@@ -1059,9 +1058,9 @@ const esRelleno = (u) => !u || String(u).includes('placeholder');
 export function itemCarritoDesde(item = {}, { catalogo = new Map(), falta } = {}) {
   const custom = item.customization || null;
   const piezasCrear = custom?.tipo === 'comboCrear' ? custom.piezas || [] : null;
-  const yoryo = esYoryoPersonalizable({ id: item.productId }) && Boolean(custom?.tipo === 'crear' || piezasCrear);
-  const urlYoryo = yoryo ? `${rutaPersonalizarYoryo({ id: item.productId })}?carrito=${encodeURIComponent(item.id)}` : undefined;
-  const avisoYoryo = faltaPersonalizacionYoryo(item);
+  // Un cuadro, mousepad o tomatodo hecho con el personalizador anterior (oct.
+  // 2026) ya no se puede producir: hay que volver a crearlo en Crear.
+  const editorAnterior = Boolean(custom?.datosYoryo || piezasCrear?.some((p) => p?.datosYoryo));
   let url = `/producto/${item.productId}`;
   if (piezasCrear) url = `/combo/${item.productId}${custom.miComboId ? `?mio=${custom.miComboId}` : ''}`;
   else if (custom?.tipo === 'crear' && custom.designId) url = `/creacion/${custom.designId}`;
@@ -1088,11 +1087,10 @@ export function itemCarritoDesde(item = {}, { catalogo = new Map(), falta } = {}
 
   let piezas = [];
   if (piezasCrear) {
-    piezas = piezasCrear.map((p, i) => ({
+    piezas = piezasCrear.map((p) => ({
       texto: [p.prendaNombre, p.color?.nombre, p.talla && `Talla ${p.talla}`].filter(Boolean).join(' · ')
         + (p.nombre && !String(p.nombre).toLowerCase().includes(String(p.prendaNombre || '').toLowerCase()) ? ` · “${p.nombre}”` : ''),
       hex: p.color?.hex,
-      ...(p.datosYoryo && { texto: `${p.prendaNombre} · ${p.produccionYoryo?.tecnica === 'laser' ? 'Grabado láser' : 'Impresión'} · ${p.datosYoryo.nombre}`, imagen: p.imageURL, urlEditar: `${urlYoryo}&pieza=${i}` }),
     }));
   } else if (item.isComboProduct) {
     // Cada prenda con su nombre (antes "Producto 1: …"), su color y la talla.
@@ -1113,14 +1111,13 @@ export function itemCarritoDesde(item = {}, { catalogo = new Map(), falta } = {}
     cantidad: item.quantity || 1,
     seleccionado: item.selected !== false,
     url,
-    urlEditar: urlYoryo,
-    avisoPersonalizacion: avisoYoryo || undefined,
+    avisoPersonalizacion: editorAnterior ? 'Este diseño se hizo con el editor anterior. Quítalo y vuelve a crearlo en Crear para poder pagarlo.' : undefined,
     detalles,
     combo: Boolean(item.isComboProduct || piezasCrear),
     piezas,
     personalizado: Boolean(custom) && !piezasCrear,
-    incompleto: avisoYoryo ? 'personalización' : falta?.length ? falta.join(' y ') : undefined,
-    urlElegir: avisoYoryo ? urlYoryo : falta?.length ? url : undefined,
+    incompleto: editorAnterior ? 'personalización' : falta?.length ? falta.join(' y ') : undefined,
+    urlElegir: editorAnterior ? '/personalizar' : falta?.length ? url : undefined,
   };
 }
 

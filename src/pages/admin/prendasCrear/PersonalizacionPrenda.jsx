@@ -5,6 +5,7 @@ import {
   leerPrendaBase, normalizarZona, normalizarVista, normalizarReferencia, medidaZona, zonaConMedida,
   nuevoIdZona, slug, cargarImagen, tintarImagen, voltearImagen,
   colorDisponible, fondoMuestra, PATRONES_BICOLOR, vistasDeEjemplo, COLORES_POLERA, TALLAS_POLERA,
+  leerTipo, leerTecnica,
 } from '../../../utils/prendaBase';
 import ZonaEditor from './ZonaEditor';
 import styles from './PersonalizacionPrenda.module.css';
@@ -41,7 +42,12 @@ export const prendaBaseParaGuardar = (valor, variantes) => {
       };
     }
   });
-  return { vistas: (valor?.vistas || []).map(normalizarVista), colores };
+  return {
+    vistas: (valor?.vistas || []).map(normalizarVista),
+    colores,
+    ...(leerTipo(valor?.tipo) !== 'prenda' && { tipo: leerTipo(valor.tipo) }),
+    ...(leerTecnica(valor?.tecnica) !== 'impresion' && { tecnica: leerTecnica(valor.tecnica) }),
+  };
 };
 
 /**
@@ -199,7 +205,7 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
   // Los cambios se aplican sobre el estado más reciente: dos fotos que terminan
   // de cargar casi a la vez (y avisan su tamaño) no se pisan entre sí.
   const cambiar = (cambios) => onChange((prev) => {
-    const base = { vistas: prev?.vistas || [], colores: prev?.colores || {} };
+    const base = { ...prev, vistas: prev?.vistas || [], colores: prev?.colores || {} };
     return { ...base, ...(typeof cambios === 'function' ? cambios(base) : cambios) };
   });
   const setVista = (i, cambios) => cambiar((prev) => ({
@@ -267,8 +273,30 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
     <div className={styles.contenedor}>
       <p className={styles.aviso}>
         Este producto se vende <strong>solo en Crear</strong>: no aparece en la tienda ni en el buscador. Su precio es el
-        de la prenda personalizada e incluye todos los diseños que el cliente quiera poner.
+        del producto personalizado e incluye todos los diseños que el cliente quiera poner.
       </p>
+
+      <section className={styles.bloque}>
+        <h3 className={styles.bloqueTitulo}>Qué se personaliza</h3>
+        <div className={styles.tipoYTecnica}>
+          <label className={styles.campo}>
+            <span>Tipo</span>
+            <select value={leerTipo(valor?.tipo)} onChange={(e) => cambiar({ tipo: e.target.value })}>
+              <option value="prenda">Prenda (polera, casaca, polo...)</option>
+              <option value="producto">Producto (cuadro, mousepad, tomatodo...)</option>
+            </select>
+            <small>En Crear se le llama "prenda" o "producto" según esto.</small>
+          </label>
+          <label className={styles.campo}>
+            <span>Técnica</span>
+            <select value={leerTecnica(valor?.tecnica)} onChange={(e) => cambiar({ tecnica: e.target.value })}>
+              <option value="impresion">Impresión a color</option>
+              <option value="laser">Grabado láser</option>
+            </select>
+            <small>El grabado se ve en un solo tono y el taller recibe el PNG en escala de grises.</small>
+          </label>
+        </div>
+      </section>
 
       <section className={styles.bloque}>
         <div className={styles.bloqueCabecera}>
@@ -284,6 +312,12 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
           puede tener varias zonas (pecho, mangas, bolsillo...): tócalas para elegirlas, arrástralas para moverlas y
           estíralas desde sus bordes.
         </p>
+        {leerTipo(valor?.tipo) === 'producto' && (
+          <p className={styles.ayuda}>
+            Un producto no se tiñe bien: sube su foto real en cada color (abajo, en Colores y tallas). Marca la línea
+            de referencia con el ancho útil real en cm para que el archivo salga a tamaño real a 300 ppp.
+          </p>
+        )}
 
         {colores.length > 1 && vistas.length > 0 && (
           <div className={styles.previoColor}>

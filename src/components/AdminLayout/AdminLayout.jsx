@@ -268,7 +268,7 @@ const AdminLayout = () => {
               )}
               {canProducts && (
                 <NavLink to="/admin/plantillas-yoryo" className={({ isActive }) => getLinkClass(isActive, 'catalogo')}>
-                  Plantillas de cuadros y mousepads
+                  Importar plantillas de cuadros
                 </NavLink>
               )}
               {canProducts && (

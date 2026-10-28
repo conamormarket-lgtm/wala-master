@@ -1,5 +1,4 @@
 import { getCollection, getDocument } from './firebase/firestore';
-import { productoConYoryo, YORYO_PIEZAS } from '../utils/yoryoPersonalizacion.mjs';
 
 // Las prendas de Crear son documentos del catálogo (ver utils/prendaBase.js)
 // con esPrendaBase: se crean y editan en Admin -> Prendas de Crear
@@ -12,11 +11,7 @@ export const getPrendasBase = async ({ incluirBorradores = false } = {}) => {
     { field: 'esPrendaBase', operator: '==', value: true },
   ]);
   if (error) return { data: [], error };
-  const yoryo = await Promise.all(YORYO_PIEZAS.map(async ({ id }) => {
-    const r = await getDocument(COLLECTION, id);
-    return r.data ? productoConYoryo({ ...r.data, id }) : null;
-  }));
-  const publicadas = [...data, ...yoryo.filter((p) => p && !data.some((d) => d.id === p.id))]
+  const publicadas = data
     .filter((p) => (incluirBorradores || p.visible !== false) && p.deleted !== true && Array.isArray(p.prendaBase?.vistas) && p.prendaBase.vistas.length > 0)
     .sort((a, b) => String(a.name).localeCompare(String(b.name)));
   return { data: publicadas, error: null };
@@ -37,5 +32,5 @@ export const getPrendasBaseAdmin = async () => {
 export const getPrendaBase = async (id) => {
   const { data, error } = await getDocument(COLLECTION, id);
   if (error || !data) return { data: null, error: error || 'No encontrada' };
-  return { data: productoConYoryo({ ...data, id }), error: null };
+  return { data: { id, ...data }, error: null };
 };

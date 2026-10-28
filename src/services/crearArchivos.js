@@ -283,17 +283,6 @@ export const subirImagenCliente = (uid, blob) =>
 export const subirArchivoImpresion = (uid, blob, vistaId) =>
   subir(blob, `designs/${uid}/crear/impresion/${marca()}_${vistaId}.png`);
 
-/** Arte de grabado: preserva el SVG original, sin convertirlo a una imagen. */
-export const subirVectorYoryo = (uid, svg) =>
-  subir(new Blob([svg], { type: 'image/svg+xml' }), `designs/${uid}/crear/vectores/${marca()}.svg`);
-
-/** Plantilla compartida de la marca: no pertenece a la carpeta temporal de un cliente. */
-export const subirPlantillaVectorYoryo = (svg) =>
-  subir(new Blob([svg], { type: 'image/svg+xml' }), `productos/yoryo/plantillas/${marca()}.svg`);
-
-export const subirRecursoPlantillaYoryo = (blob, tipo) =>
-  subir(blob, `productos/yoryo/capas/${marca()}_${tipo}.png`);
-
 /** Vista previa (prenda teñida + diseño) de una vista. */
 export const subirVistaPrevia = (uid, blob, vistaId) =>
   subir(blob, `designs/${uid}/crear/previas/${marca()}_${vistaId}.jpg`);

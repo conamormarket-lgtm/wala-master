@@ -4,7 +4,7 @@ import { db } from './firebase/config';
 import { DEFAULT_VENDOR_ID, DEFAULT_NICHE_ID, normalizeFulfillmentType } from '../constants/marketplace';
 import { PLACEHOLDER_IMG } from '../constants/placeholder';
 import { createInFlightReads } from './shared/inFlightReads.mjs';
-import { productoConYoryo } from '../utils/yoryoPersonalizacion.mjs';
+import { leerPersonalizarEn } from '../utils/personalizarEn';
 
 const COLLECTION = 'productos_wala';
 const productReads = createInFlightReads();
@@ -258,7 +258,6 @@ export const variantesDeImagen = (producto, url) => {
  */
 export function normalizeProductForRead(doc) {
   if (!doc || typeof doc !== 'object') return doc;
-  doc = productoConYoryo(doc);
   const customizationViews = Array.isArray(doc.customizationViews)
     ? doc.customizationViews.map(normalizeCustomizationView).filter(Boolean)
     : [];
@@ -1434,6 +1433,8 @@ function normalizeProductPayload(data) {
     // real (ver services/firebase/firestore.js updateDocument).
     comboPreviewImage: String(data.comboPreviewImage || ''),
     thumbnailWithDesignUrl: String(data.thumbnailWithDesignUrl || ''),
+    // Con qué prenda o combo de Crear se personaliza (vacío lo borra).
+    ...(data.personalizarEn !== undefined && { personalizarEn: leerPersonalizarEn(data.personalizarEn) }),
     ...(isComboProduct && Array.isArray(data.comboItemCustomization) && data.comboItemCustomization.length > 0 && {
       comboItemCustomization: data.comboItemCustomization.map((c) => ({
         productId: String(c.productId ?? ''),

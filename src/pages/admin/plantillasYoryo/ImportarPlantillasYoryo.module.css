@@ -1,0 +1,74 @@
+.pagina {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  color: var(--color-text, #1f2937);
+}
+
+.pagina h1 {
+  margin: 0;
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+}
+
+.pagina p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.destinos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.destinos label {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.destinos select {
+  padding: 0.6rem 0.75rem;
+  border: 1.5px solid var(--color-border, #d5dae3);
+  border-radius: 10px;
+  background: var(--color-surface, #fff);
+  color: inherit;
+  font: inherit;
+}
+
+.grupo h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.grupo ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.5rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.grupo li {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.grupo label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.grupo small {
+  color: var(--color-text-muted, #6b7280);
+}
+
+.grupo .error {
+  color: var(--danger, #b91c1c);
+}

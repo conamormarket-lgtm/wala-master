@@ -1,8 +1,0 @@
-{
-  "packId": "mMPc5TIGZtB4S0t247BQ",
-  "piezas": [
-    { "id": "BDKN8114eHsDIwAD8OVc", "sku": "YOR-TERMO-01", "nombre": "Tomatodo", "tecnica": "laser", "proporcion": 1.25, "vista": { "x": 0.32, "y": 0.27, "w": 0.29, "h": 0.30 } },
-    { "id": "skvYfJMys4BbuS4gI8QY", "sku": "YOR-CUADRO-01", "nombre": "Cuadro", "tecnica": "impresion", "proporcion": 0.8064516129, "vista": { "x": 0.09, "y": 0.248, "w": 0.82, "h": 0.496 } },
-    { "id": "MOpmYdM4GyLpU9ZIO55D", "sku": "YOR-MOUSE-01", "nombre": "Mousepad", "tecnica": "impresion", "proporcion": 0.829787234, "vista": { "x": 0.045, "y": 0.223, "w": 0.91, "h": 0.547 } }
-  ]
-}

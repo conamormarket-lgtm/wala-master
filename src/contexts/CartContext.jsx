@@ -9,7 +9,6 @@ import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 import { trackAddToCart } from '../services/analytics/tracker';
 import { nombreConCreacion } from '../utils/nombreCreacion';
 import { fotosGenerales } from '../utils/fotosDeColor';
-import { reemplazarDisenoCarrito } from '../utils/yoryoPersonalizacion.mjs';
 
 const CartContext = createContext();
 
@@ -742,17 +741,9 @@ export const CartProvider = ({ children }) => {
     }, 0);
   }, [items]);
 
-  const actualizarPersonalizacion = React.useCallback((itemId, productoId, nueva, firmaAnterior) => {
-    const actual = itemsRef.current.find((i) => i.id === itemId && i.productId === productoId);
-    if (!actual || firmaAnterior && JSON.stringify(actual.customization) !== firmaAnterior) return false;
-    setItems((prev) => reemplazarDisenoCarrito(prev, itemId, productoId, nueva));
-    return true;
-  }, []);
-
   const value = React.useMemo(() => ({
     items,
     addToCart,
-    actualizarPersonalizacion,
     removeFromCart,
     updateQuantity,
     clearCart,
@@ -764,7 +755,7 @@ export const CartProvider = ({ children }) => {
     getTotalItems,
     getTotalPrice,
     isEmpty: items.length === 0
-  }), [items, addToCart, actualizarPersonalizacion, removeFromCart, updateQuantity, clearCart, toggleItemSelected, selectAllItems, setAllItemsSelected, removeSelectedItems, clearSelectedItems, getTotalItems, getTotalPrice]);
+  }), [items, addToCart, removeFromCart, updateQuantity, clearCart, toggleItemSelected, selectAllItems, setAllItemsSelected, removeSelectedItems, clearSelectedItems, getTotalItems, getTotalPrice]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };

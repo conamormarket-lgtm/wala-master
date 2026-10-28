@@ -13,12 +13,13 @@ import { leerPrendaBase, colorDisponible, fondoMuestra, precioBase, precioPerson
  * tienda) y los lados que se diseñan en la línea de la categoría.
  */
 export const prendaCrearDesdeProducto = (prenda = {}) => {
-  const { vistas, colores } = leerPrendaBase(prenda);
+  const { vistas, colores, tipo } = leerPrendaBase(prenda);
   const lados = vistas.map((v) => v.nombre).filter(Boolean).join(' + ');
   return {
     id: prenda.id,
     nombre: prenda.name,
-    accesorio: Boolean(prenda.personalizacionYoryo),
+    // Un producto (cuadro, tomatodo): Crear habla de "productos" y "piezas".
+    accesorio: tipo === 'producto',
     imagen: vistas[0]?.imagen,
     imagenHover: vistas[1]?.imagen,
     categoria: [prenda.visible === false && 'Borrador', lados].filter(Boolean).join(' · '),
@@ -47,7 +48,7 @@ export const comboCrearDesde = (combo = {}, prendaPorId = new Map()) => {
   return {
     id: combo.id,
     cantidad: prendas.length,
-    accesorio: Boolean(combo.personalizacionYoryo),
+    accesorio: prendas.every((p) => leerPrendaBase(p).tipo === 'producto'),
     conjunto: new Set((combo.piezas || []).map((p) => p.prendaId)).size > 1,
     nombre: combo.name,
     categoria: [!combo.publicado && 'Borrador', 'Cada una con su diseño'].filter(Boolean).join(' · '),

@@ -1,5 +1,5 @@
 import { subirArchivoImpresion, subirVistaPrevia } from '../../services/crearArchivos';
-import { medidaZona, cargarImagen, fotoDeVista, fondoDeVista } from '../../utils/prendaBase';
+import { medidaZona, cargarImagen, fotoDeVista, fondoDeVista, leerTecnica } from '../../utils/prendaBase';
 import { asegurarFuentesDe, renderizarImpresion, renderizarVistaPrevia, componerVistas } from './renderDiseno';
 
 /**
@@ -9,11 +9,14 @@ import { asegurarFuentesDe, renderizarImpresion, renderizarVistaPrevia, componer
  */
 export async function generarArchivosCreacion({ uid, prenda, color, vistas, capas, srcDe = (c) => c.src, onPaso = () => {} }) {
   await asegurarFuentesDe(capas);
+  // Grabado láser: todo en un solo tono (escala de grises), también la vista previa.
+  const tecnica = leerTecnica(prenda?.prendaBase?.tecnica);
+  const laser = tecnica === 'laser';
   const renderVista = async (vista) => {
     const img = await cargarImagen(fotoDeVista(vista, color));
     return renderizarVistaPrevia({
       fuente: fondoDeVista(img, vista, color), anchoImg: img.naturalWidth, altoImg: img.naturalHeight,
-      vista, capasPorZona: capas, srcDe,
+      vista, capasPorZona: capas, srcDe, laser,
     });
   };
   const archivosImpresion = [];
@@ -25,10 +28,10 @@ export async function generarArchivosCreacion({ uid, prenda, color, vistas, capa
     for (const zona of zonas) {
       onPaso(`Preparando el archivo de impresión (${vista.nombre} · ${zona.nombre})…`);
       const medida = medidaZona(zona, vista);
-      const { blob, ancho, alto } = await renderizarImpresion(capas[zona.id], zona, srcDe, medida);
+      const { blob, ancho, alto } = await renderizarImpresion(capas[zona.id], zona, srcDe, medida, { laser });
       const url = await subirArchivoImpresion(uid, blob, zona.id);
       archivosImpresion.push({
-        vista: zona.id, vistaId: vista.id, nombre: `${vista.nombre} · ${zona.nombre}`, url, ancho, alto,
+        vista: zona.id, vistaId: vista.id, nombre: `${vista.nombre} · ${zona.nombre}`, url, ancho, alto, tecnica,
         ...(medida && { anchoCm: medida.anchoCm, altoCm: medida.altoCm }),
       });
     }

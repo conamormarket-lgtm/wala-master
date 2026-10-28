@@ -1,34 +1,55 @@
-# Plantillas de cuadros y mousepads
+# Cuadros, mousepads y tomatodos en Crear
 
-En **Admin → Catálogo → Plantillas de cuadros y mousepads** (`/admin/plantillas-yoryo`):
+Desde el 28-10-2026 se diseñan en el mismo estudio que las prendas (`/crear/:id`). El personalizador aparte de octubre (plantillas por formulario, `/admin/plantillas-yoryo` como editor) se quitó.
 
-1. Elegir producto, plantilla y equipo.
-2. Arrastrar elementos en el lienzo o editar centro, ancho/alto máximos, escala y orden. Las coordenadas son proporciones del lienzo; admiten valores negativos y mayores que 1 para colocar elementos fuera. El área exterior se muestra con una cuadrícula y el archivo exportado se recorta al lienzo. Las imágenes mantienen su proporción.
-3. Configurar fuente, color, alineación, mayúsculas, tamaño máximo, espaciado, contorno y sombra de cada texto. La sombra permite editar color, opacidad, desplazamiento y difuminado. La letra se reduce automáticamente para caber. Cada equipo incluye una referencia visual y un botón para aplicar su estilo aproximado con las fuentes disponibles.
-4. Sustituir los recursos PNG cuando sea necesario. Escudo y pincelada requieren transparencia real; se conservan originales y versiones normalizadas en Storage. El escudo usa un lienzo de 1000 × 1400. Solo se recorta alfa cero, sin eliminar blancos ni crema.
-5. Usar una foto transparente de prueba y exportar el PNG para revisar el resultado. Los textos y la foto de muestra no se guardan en el preset.
-6. Pulsar **Guardar plantilla** para aplicarlo a nuevas personalizaciones. Los borradores guardan una copia de la configuración para reproducir su composición al reabrirlos. Para aplicar el preset actualizado a un borrador, volver a elegir su plantilla.
+## Cómo se arma un producto
 
-Cada producto/equipo tiene su propia configuración. El documento `templates/yoryo-composiciones-v4` usa la colección existente con lectura pública y escritura de administradores; no requiere cambiar reglas. No se guardan fotografías de clientes en ese documento.
+En **Admin → Prendas de Crear**:
 
-La edición de estructura y de estilo pertenece exclusivamente a esta pantalla administrativa. El cliente no ve controles del fondo, escudo, pincelada ni decoración, y no puede cambiar la posición o el estilo de los textos. Se ignoran también ajustes antiguos de esas capas en el motor de composición. El cliente edita el contenido y carga/recorta sus fotos; en deportivos puede mover y escalar su foto. En parejas las ventanas fotográficas mantienen la ubicación definida por el administrador.
+1. Crear la prenda: nombre, precio y sus colores (variantes, sin tallas).
+2. En **Qué se personaliza**:
+   - **Tipo: Producto.** El estudio y la grilla dicen "producto" en vez de "prenda".
+   - **Técnica: Grabado láser** solo para el tomatodo. El diseño se ve en un solo tono y el taller recibe el PNG en escala de grises.
+3. Subir la foto de cada color en **Colores y tallas**. Un producto no se tiñe bien.
+4. Marcar la zona y la línea de referencia con el ancho útil real en cm:
+   - cuadro: 31 × 25 cm;
+   - mousepad: 23.5 × 19.5 cm;
+   - tomatodo: la medida del taller.
 
-La plantilla deportiva utiliza siete elementos: fondo, foto, escudo, nombre, frase, pincelada y dedicatoria. Su orden inicial coincide con esa lista. Las otras tres plantillas también permiten mover su decoración y sus ventanas de fotos/textos.
+   Así el PNG sale a tamaño real a 300 ppp.
 
-El cuadro exporta 3661 × 2953 px (31 × 25 cm); el mousepad, 2776 × 2303 px (23.5 × 19.5 cm). El PNG incorpora metadatos de 300 ppp y excluye marco, soporte y sombras del mockup. Las medidas confirmadas de la ficha de producto siguen siendo necesarias para que el checkout marque los archivos como listos para producción; para la plantilla deportiva deben coincidir con estas medidas.
+El **Pack de oficina** es un combo normal en **Admin → Combos de Crear**.
 
-Los fondos proporcionados tienen aproximadamente 114 ppp efectivos en el cuadro y 146 ppp en el mousepad. Se informa en el editor: exportar más píxeles no agrega detalle al original.
+Para que un producto de la tienda lleve a Crear, se elige la prenda o el combo en **Personalizar en Crear**, en su ficha del admin. La tienda lo sigue vendiendo tal cual.
 
-Los 18 originales proporcionados se conservan en `assets/yoryo-plantillas/originales/`; los normalizados se sirven desde `public/yoryo/capas/equipos/`. El manifiesto registra dimensiones, alfa, procedencia y límites visibles. Para repetir la preparación con Pillow:
+## Diseños para empezar
 
-```powershell
-python scripts/preparar-capas-yoryo.py 'CARPETA_ORIGEN'
-```
+El estudio muestra los diseños de la comunidad de esa prenda en el paso **Empieza con un diseño**. El cliente elige uno y lo cambia como quiera:
 
-Las tres decoraciones nuevas de parejas mantienen sus originales en `assets/yoryo-plantillas/parejas-originales/` y sus PNG de uso en `public/yoryo/capas/parejas/`. Las seis portadas deportivas se utilizan exclusivamente como referencias del admin en `public/yoryo/referencias/`; nunca se incluyen en la impresión. Para importar la carpeta que las contiene:
+- **Cambiar foto** pone la suya en el mismo lugar.
+- Los textos se editan tocándolos.
 
-```powershell
-python scripts/preparar-parejas-yoryo.py 'CARPETA_OTROS'
-```
+Las capas marcadas como **Parte fija de la plantilla** (fondo, marco) no se mueven sin querer. El cliente las suelta con **Editar el fondo y el marco**. Solo un admin ve ese interruptor en el panel de cada capa.
 
-Verificación: `npm run test:yoryo`, ESLint de los archivos modificados y `npm run build`.
+Para publicar uno nuevo:
+
+1. Diseñarlo en el estudio con la cuenta de admin.
+2. Guardarlo.
+3. Publicarlo desde Mis creaciones.
+
+## Importar las plantillas anteriores (una sola vez)
+
+**Admin → Catálogo → Importar plantillas de cuadros** (`/admin/plantillas-yoryo`) convierte las plantillas anteriores en diseños de la comunidad: 6 equipos y 3 de parejas, para el cuadro y el mousepad.
+
+- Si se editaron en la pantalla anterior, usa esas ediciones (`templates/yoryo-composiciones-v4`).
+- Sube a Storage los fondos, escudos y decoraciones de `public/yoryo/capas/` y una foto de muestra ("Tu foto").
+- Guarda cada diseño en la cuenta del admin y lo publica.
+
+El tamaño de las letras es aproximado y conviene revisarlo en el estudio.
+
+Después de importar, `public/yoryo/` y la carpeta `src/pages/admin/plantillasYoryo/` se pueden borrar. Los originales siguen en `assets/yoryo-plantillas/`.
+
+## Lo ya guardado con el editor anterior
+
+- **Carrito:** las líneas con `datosYoryo` piden volver a crearlas en Crear y no dejan pagar.
+- **Pedidos hechos:** conservan sus archivos (`designs.js` → `urlsDeDiseno` los protege de la limpieza).

@@ -286,6 +286,7 @@
 }
 
 .campo input,
+.campo select,
 .campo textarea,
 .vistaNombre,
 .colorNombre,
@@ -301,6 +302,7 @@
 }
 
 .campo input:focus,
+.campo select:focus,
 .campo textarea:focus,
 .vistaNombre:focus,
 .colorNombre:focus,
@@ -986,4 +988,10 @@
   background: var(--primary-light, #f5f3ff);
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
+}
+
+.tipoYTecnica {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
 }

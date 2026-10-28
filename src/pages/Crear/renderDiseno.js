@@ -6,6 +6,7 @@ import {
   pixelesDeImpresion,
 } from '../../utils/prendaBase';
 import { loadFontResources } from '../../services/shared/fontResources';
+import { textoEnGrises, pixelesEnGrises } from '../../utils/laser.mjs';
 
 /**
  * Dibujo de un diseño del apartado Crear. Lo usan el lienzo del estudio, la
@@ -32,7 +33,7 @@ export const FUENTES = [
   'Kanit', 'Rubik', 'Libre Baskerville',
   // Locales (public/fonts/fonts.css): se cargan del mismo sitio.
   'Back to Black', 'Franklin Gothic Heavy Italic', 'Varsity Team Bold', 'Keep on Truckin',
-  'Brush Script', 'Bernadette', 'DK Longreach', 'Rainbow Kitty',
+  'Brush Script', 'Bernadette', 'DK Longreach', 'Rainbow Kitty', 'Cinzel',
 ];
 
 const fuentesListas = new Map();
@@ -288,13 +289,14 @@ export const ubicacion = (capa, t) => {
  * `editable`, el texto se puede escribir directo sobre la prenda (estudio en
  * escritorio); las vistas previas y la impresión usan texto fijo.
  */
-export const crearObjeto = async (capa, t, srcDe = (c) => c.src, { editable = false } = {}) => {
+export const crearObjeto = async (capa, t, srcDe = (c) => c.src, { editable = false, laser = false } = {}) => {
   const comun = ubicacion(capa, t);
   if (capa.type === 'image') {
-    const img = await cargarImagen(srcDe(capa));
+    const src = srcDe(capa);
+    const img = laser ? await imagenEnGrises(src) : await cargarImagen(src);
     return new fabric.Image(img, comun);
   }
-  const props = { ...comun, ...propiedadesTexto(capa) };
+  const props = { ...comun, ...propiedadesTexto(laser ? textoEnGrises(capa) : capa) };
   const texto = editable
     ? new fabric.IText(props.text, {
       ...props,
@@ -306,6 +308,31 @@ export const crearObjeto = async (capa, t, srcDe = (c) => c.src, { editable = fa
     : new fabric.Text(props.text, props);
   texto._renderText = pintarTextoConContorno;
   return curvarTexto(texto, capa.curva);
+};
+
+/**
+ * La imagen en escala de grises (grabado láser), como un canvas que fabric
+ * dibuja igual que una imagen. Se guarda por dirección: el estudio redibuja
+ * seguido y la conversión de una foto grande tarda.
+ */
+const cacheGrises = new Map();
+const imagenEnGrises = (src) => {
+  if (!cacheGrises.has(src)) {
+    const promesa = cargarImagen(src).then((img) => {
+      const el = document.createElement('canvas');
+      el.width = img.naturalWidth;
+      el.height = img.naturalHeight;
+      const ctx = el.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0);
+      const datos = ctx.getImageData(0, 0, el.width, el.height);
+      pixelesEnGrises(datos.data);
+      ctx.putImageData(datos, 0, 0);
+      return el;
+    });
+    promesa.catch(() => cacheGrises.delete(src));
+    cacheGrises.set(src, promesa);
+  }
+  return cacheGrises.get(src);
 };
 
 /** Lee de vuelta la posición de un objeto del lienzo, en unidades de su zona. */
@@ -338,9 +365,10 @@ const aBlob = (canvasEl, tipo, calidad) =>
 /**
  * Archivo de impresión de una zona: PNG transparente con el diseño de la
  * zona, derecho (sin su giro). Con la medida real de la zona sale a tamaño
- * real (ver pixelesDeImpresion); sin ella, a una escala fija.
+ * real (ver pixelesDeImpresion); sin ella, a una escala fija. Para grabado
+ * láser (`laser`) sale en escala de grises.
  */
-export const renderizarImpresion = async (capas, zona, srcDe, medida = null) => {
+export const renderizarImpresion = async (capas, zona, srcDe, medida = null, { laser = false } = {}) => {
   const { ancho, alto } = pixelesDeImpresion(zona, medida);
   const el = document.createElement('canvas');
   const lienzo = new fabric.StaticCanvas(el, {
@@ -352,7 +380,7 @@ export const renderizarImpresion = async (capas, zona, srcDe, medida = null) => 
   try {
     const t = { k: ancho / UNIDADES_ZONA, cx: ancho / 2, cy: alto / 2, ang: 0, wu: UNIDADES_ZONA, hu: altoEnUnidades(zona) };
     for (const capa of capas) {
-      lienzo.add(await crearObjeto(capa, t, srcDe));
+      lienzo.add(await crearObjeto(capa, t, srcDe, { laser }));
     }
     lienzo.renderAll();
     const blob = await aBlob(lienzo.lowerCanvasEl, 'image/png');
@@ -367,7 +395,7 @@ export const renderizarImpresion = async (capas, zona, srcDe, medida = null) => 
  * zonas, cada uno recortado a la suya. Es la miniatura del carrito, de "Mis
  * compras" y la referencia visual del pedido en el ERP.
  */
-export const renderizarVistaPrevia = async ({ fuente, anchoImg, altoImg, vista, capasPorZona, srcDe, ancho = 900 }) => {
+export const renderizarVistaPrevia = async ({ fuente, anchoImg, altoImg, vista, capasPorZona, srcDe, ancho = 900, laser = false }) => {
   const margen = Math.round(ancho * 0.06);
   const iw = ancho - margen * 2;
   const ih = altoImg * (iw / anchoImg);
@@ -387,7 +415,7 @@ export const renderizarVistaPrevia = async ({ fuente, anchoImg, altoImg, vista, 
       if (!capas.length) continue;
       const t = transformDeZona(zona, { ox: margen, oy: margen, iw, ih, anchoImg, altoImg });
       for (const capa of capas) {
-        const obj = await crearObjeto(capa, t, srcDe);
+        const obj = await crearObjeto(capa, t, srcDe, { laser });
         obj.clipPath = recorteDeZona(t);
         lienzo.add(obj);
       }

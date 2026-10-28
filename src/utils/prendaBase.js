@@ -18,6 +18,8 @@
  *                 zonasBicolor: [zonas] }],
  *     colores: { [variantId]: { hex2, patron, fotos: { [vistaId]: url },
  *                               zonas: { [vistaId]: [zonas] } } },
+ *     tipo: 'prenda' | 'producto',     // cómo se le nombra en Crear
+ *     tecnica: 'impresion' | 'laser',  // el láser se ve y exporta en grises
  *
  * Los bicolores llevan una costura al medio, así que pueden tener sus propias
  * zonas (zonasDeVista): las de ese color, si tiene; si no, las de todos los
@@ -298,6 +300,23 @@ const ordenTallas = (tallas) => {
 };
 
 /**
+ * Lo que se personaliza: una prenda (polera, casaca...) o un producto (cuadro,
+ * mousepad, tomatodo). Solo cambia cómo se le nombra en Crear.
+ */
+export const TIPOS_PRENDA = ['prenda', 'producto'];
+export const leerTipo = (tipo) => (TIPOS_PRENDA.includes(tipo) ? tipo : 'prenda');
+
+/**
+ * Cómo se produce: impresión a color o grabado láser. El grabado se ve y se
+ * exporta en un solo tono (escala de grises).
+ */
+export const TECNICAS_PRENDA = ['impresion', 'laser'];
+export const leerTecnica = (tecnica) => (TECNICAS_PRENDA.includes(tecnica) ? tecnica : 'impresion');
+
+/** "prenda" o "producto", para los textos de Crear. */
+export const sustantivoDe = (cfg) => leerTipo(cfg?.tipo);
+
+/**
  * Configuración segura de una prenda: vistas de `prendaBase` y colores/tallas
  * de las variantes del producto. Si el producto no tiene variantes se acepta
  * el formato anterior (colores y tallas dentro de prendaBase).
@@ -351,6 +370,8 @@ export const leerPrendaBase = (producto) => {
     vistas,
     colores: colores.length ? colores : [normalizarColor({ id: 'blanco', nombre: 'Blanco', hex: '#FFFFFF' })],
     tallas,
+    tipo: leerTipo(cfg.tipo),
+    tecnica: leerTecnica(cfg.tecnica),
   };
 };
 

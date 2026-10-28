@@ -5,47 +5,54 @@ import { Pestanas } from '../Navegacion';
 import { Texto, useTexto } from '../Traduccion';
 import { TextoResaltado } from '../piezas/TextoResaltado';
 import { soles } from '../TarjetaProducto';
+import { ProveedorSustantivo, usePalabrasEstudio } from '../piezas/sustantivoEstudio';
 import s from './Estudio.module.css';
 
-/** El marco visual de P12. El lienzo y el estado llegan desde fuera. */
+/**
+ * El marco visual de P12. El lienzo y el estado llegan desde fuera.
+ * `sustantivo` ('prenda' o 'producto') nombra lo que se diseña en las piezas
+ * de adentro (ver piezas/sustantivoEstudio.js).
+ */
 export function MarcoEstudio({
   nombre, color, lados = [], precio, precioAntes, sesion,
   urlVolver = '/personalizar', etiquetaVolver = 'Volver', urlCreaciones = '/cuenta/creaciones',
   avisos, lienzo, panel, compra, children, className, claseCuerpo, clasePanel,
-  clasePanelContenido, panelRef, panelContenidoRef,
+  clasePanelContenido, panelRef, panelContenidoRef, sustantivo = 'prenda',
 }) {
   const volver = useTexto(etiquetaVolver);
   const creaciones = useTexto('Mis creaciones');
   return (
-    <div className={[s.pagina, className].filter(Boolean).join(' ')} data-componente="PaginaEstudio">
-      {/* El modo móvil de Fabric oculta los header globales: esta cabeza
-          forma parte del editor y debe seguir visible. */}
-      <div className={s.cabeza}>
-        <Boton to={urlVolver} variante="fantasma" tamano="sm" soloIcono aria-label={volver} title={volver} icono={<ArrowLeft aria-hidden="true" />} />
-        <div className={s.titulo}>
-          <h1><Texto>{nombre}</Texto></h1>
-          <span className={s.subtitulo}>
-            <span className={s.punto} style={{ background: color?.hex }} aria-hidden="true" />
-            <Texto>{color?.nombre}</Texto>
-            {lados.length > 0 && <> · <Texto>{lados.join(' + ')}</Texto></>}
+    <ProveedorSustantivo sustantivo={sustantivo}>
+      <div className={[s.pagina, className].filter(Boolean).join(' ')} data-componente="PaginaEstudio">
+        {/* El modo móvil de Fabric oculta los header globales: esta cabeza
+            forma parte del editor y debe seguir visible. */}
+        <div className={s.cabeza}>
+          <Boton to={urlVolver} variante="fantasma" tamano="sm" soloIcono aria-label={volver} title={volver} icono={<ArrowLeft aria-hidden="true" />} />
+          <div className={s.titulo}>
+            <h1><Texto>{nombre}</Texto></h1>
+            <span className={s.subtitulo}>
+              <span className={s.punto} style={{ background: color?.hex }} aria-hidden="true" />
+              <Texto>{color?.nombre}</Texto>
+              {lados.length > 0 && <> · <Texto>{lados.join(' + ')}</Texto></>}
+            </span>
+          </div>
+          <span className={s.precio}>
+            {soles(precio)}
+            {precioAntes > precio && <s>{soles(precioAntes)}</s>}
           </span>
+          {sesion && <Boton to={urlCreaciones} variante="fantasma" tamano="sm" icono={<Images aria-hidden="true" />} className={s.misCreaciones} aria-label={creaciones} title={creaciones}><Texto>Mis creaciones</Texto></Boton>}
         </div>
-        <span className={s.precio}>
-          {soles(precio)}
-          {precioAntes > precio && <s>{soles(precioAntes)}</s>}
-        </span>
-        {sesion && <Boton to={urlCreaciones} variante="fantasma" tamano="sm" icono={<Images aria-hidden="true" />} className={s.misCreaciones} aria-label={creaciones} title={creaciones}><Texto>Mis creaciones</Texto></Boton>}
+        {avisos && <div className={s.aviso} data-avisos-estudio="">{avisos}</div>}
+        <div className={[s.cuerpo, claseCuerpo].filter(Boolean).join(' ')}>
+          {lienzo}
+          <aside ref={panelRef} className={[s.panel, clasePanel].filter(Boolean).join(' ')}>
+            <div ref={panelContenidoRef} className={[s.panelCuerpo, clasePanelContenido].filter(Boolean).join(' ')}>{panel}</div>
+            {compra}
+          </aside>
+        </div>
+        {children}
       </div>
-      {avisos && <div className={s.aviso} data-avisos-estudio="">{avisos}</div>}
-      <div className={[s.cuerpo, claseCuerpo].filter(Boolean).join(' ')}>
-        {lienzo}
-        <aside ref={panelRef} className={[s.panel, clasePanel].filter(Boolean).join(' ')}>
-          <div ref={panelContenidoRef} className={[s.panelCuerpo, clasePanelContenido].filter(Boolean).join(' ')}>{panel}</div>
-          {compra}
-        </aside>
-      </div>
-      {children}
-    </div>
+    </ProveedorSustantivo>
   );
 }
 
@@ -72,12 +79,13 @@ export function InicioLienzoEstudio({ zona, onImagen, onTexto, subiendo }) {
  *  - escenaRef y el resto (soltar archivos…) van a la <section>
  */
 export function EscenaEstudio({ lados = [], lado, onLado, barra, zona, escenaRef, className, children, ...props }) {
-  const etiqueta = useTexto('Tu prenda');
+  const p = usePalabrasEstudio();
+  const etiqueta = useTexto(p.tu);
   return (
     <section ref={escenaRef} className={[s.escena, className].filter(Boolean).join(' ')} aria-label={etiqueta} {...props}>
       {lados.length > 1 && (
         <Pestanas
-          etiqueta="Lado de la prenda"
+          etiqueta={`Lado ${p.del}`}
           opciones={lados.map((l) => ({ id: l.id, texto: <Texto>{l.nombre}</Texto>, cuenta: l.cuenta || undefined }))}
           valor={lado}
           onChange={onLado}

@@ -21,8 +21,7 @@ import AdminComboEditor from '../components/AdminComboEditor/AdminComboEditor';
 import GenerarFrenteEspalda from './GenerarFrenteEspalda';
 import YoryoPersonalizado from '../../../components/YoryoPersonalizado/YoryoPersonalizado';
 import PersonalizacionPrenda, { prendaBaseInicial, prendaBaseParaGuardar } from '../../admin/prendasCrear/PersonalizacionPrenda';
-import ConfiguracionYoryo from '../../../components/crear/ConfiguracionYoryo';
-import { esYoryoPersonalizable } from '../../../utils/yoryoPersonalizacion.mjs';
+import PersonalizarEnCrear from './PersonalizarEnCrear';
 import { fabric } from 'fabric';
 import '../../../fabricPatch'; // parche de renderAll: viaja con fabric, ya no en el entry
 import ReactQuill, { Quill } from 'react-quill';
@@ -279,7 +278,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         navigate(`/admin/prendas-crear/${id}`, { replace: true });
         return;
       }
-      if (!esModoPrenda && productData.esComboCrear === true && !esYoryoPersonalizable(productData)) {
+      if (!esModoPrenda && productData.esComboCrear === true) {
         navigate('/admin/combos-crear', { replace: true });
         return;
       }
@@ -316,6 +315,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         customizable: productData.customizable || false,
         customizationViews: productData.customizable && productData.customizationViews ? productData.customizationViews : [],
         esPrendaBase: productData.esPrendaBase === true,
+        personalizarEn: productData.personalizarEn || '',
         visible: productData.visible !== false,
         prendaBase: productData.prendaBase || prendaBaseInicial(),
         isComboProduct: Boolean(productData.isComboProduct),
@@ -920,6 +920,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         customizationViews: (esPrenda || sinPersonalizacion) ? [] : form.customizationViews,
         esPrendaBase: esPrenda,
         ...(esPrenda && { prendaBase: prendaBaseParaGuardar(form.prendaBase, finalVariants) }),
+        personalizarEn: esPrenda ? '' : form.personalizarEn || '',
         whatsappEnabled: form.whatsappEnabled !== false,
         whatsappNumber: (form.whatsappNumber || '').trim(),
         whatsappMessage: (form.whatsappMessage || '').trim(),
@@ -1894,7 +1895,9 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
           </>
           )}
 
-          {id && <ConfiguracionYoryo id={id} />}
+          {!esModoPrenda && !form.esPrendaBase && (
+            <PersonalizarEnCrear valor={form.personalizarEn || ''} onChange={(personalizarEn) => setForm((f) => ({ ...f, personalizarEn }))} />
+          )}
           {(esModoPrenda || personalizableViejo) && (
           <div className={styles.card} style={{ marginTop: '1.5rem' }}>
             <div className={styles.cardHeaderFlex} style={{ borderBottom: 'none', paddingBottom: 0 }}>

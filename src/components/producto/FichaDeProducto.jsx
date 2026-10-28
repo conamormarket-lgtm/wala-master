@@ -23,7 +23,7 @@ import TarjetaDeProducto from './TarjetaDeProducto';
 import usePiezasDelCombo from './usePiezasDelCombo';
 import { argumentosDelCarrito, rutaDelEditor } from './eleccionCarrito';
 import useLoViejo from '../../hooks/useLoViejo';
-import { esYoryoPersonalizable, rutaPersonalizarYoryo } from '../../utils/yoryoPersonalizacion.mjs';
+import { leerPersonalizarEn } from '../../utils/personalizarEn';
 
 // El personalizador de Yoryo y su historial se quedan en la tienda (fuera del
 // kit) y bajan solo al tocar "Personalizable".
@@ -273,8 +273,11 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
   // Crear. Con el interruptor personalizableViejo vuelven el editor viejo y
   // Yoryo (para las esclavas, la descripción invita a pedirla por WhatsApp).
   const personalizableViejo = useLoViejo('personalizable');
+  // Un producto de la tienda puede diseñarse en Crear (personalizarEn, se
+  // elige en su admin): "Personalizar" lleva a esa prenda o combo.
+  const enCrear = leerPersonalizarEn(product?.personalizarEn);
   const alPersonalizar = (eleccion) => {
-    if (esYoryoPersonalizable(product)) { navigate(rutaPersonalizarYoryo(product)); return; }
+    if (enCrear) { navigate(enCrear); return; }
     if (product.YoryoPersonalizado) { abrirYoryo(eleccion); return; }
     navigate(rutaDelEditor(product, eleccion, comboProd));
   };
@@ -300,13 +303,13 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
     return <PaginaProducto estado={estado || 'cargando'} onReintentar={onReintentar} />;
   }
 
-  const textoPersonalizar = product.personalizacionYoryo?.pack ? 'Personalizar pack' : product.YoryoPersonalizado ? 'Personalizable' : 'Personalizar';
+  const textoPersonalizar = product.YoryoPersonalizado && !enCrear ? 'Personalizable' : 'Personalizar';
   return (
     <>
       <PaginaProducto
         key={id}
         {...ficha}
-        producto={{ ...ficha.producto, personalizable: esYoryoPersonalizable(product) || personalizableViejo && Boolean(product.customizable || product.YoryoPersonalizado) }}
+        producto={{ ...ficha.producto, personalizable: Boolean(enCrear) || personalizableViejo && Boolean(product.customizable || product.YoryoPersonalizado) }}
         fuentes={fuentes}
         piezasCargando={esCombo && !comboPedido}
         opiniones={opiniones}
