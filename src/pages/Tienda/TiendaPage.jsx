@@ -507,6 +507,15 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     initialData: pageBrandId ? undefined : getCachedFeaturedProducts()
   });
 
+  const seccionesViejo = useLoViejo('secciones');
+  const paginaConKit = !seccionesViejo;
+  const conTipoDelKit = (tipo) => paginaConKit && configuredSections.some((x) => x.type === tipo);
+  const catalogoConKit = conTipoDelKit('sidebar_catalog');
+  // Con el catálogo del kit, ?categoria= es solo la categoría elegida al
+  // entrar: el catálogo sigue siendo el de toda la tienda (si no, los filtros
+  // salían solo con esa categoría y no había cómo pasar a otra).
+  const usePaginatedCatalog = !searchTerm && (!categoryId || catalogoConKit);
+
   // ── QUERY PRINCIPAL DE PRODUCTOS ──────────────────────────────────
   // CON marca de página (pageBrandId): la vista por categoría (?categoria=ID) se
   // ACOTA a esa marca (filtro client-side en getProductsByCategory, sin índices
@@ -527,7 +536,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
 
       return ordenarEnMemoria(result.data || [], sortBy);
     },
-    enabled: needsCatalog && Boolean(categoryId || searchTerm),
+    enabled: needsCatalog && !usePaginatedCatalog,
     placeholderData: keepPreviousData,
     // Mismo motivo que en el catálogo paginado más abajo: con refetchOnMount:false
     // global (App.jsx) y sin esto, volver a una categoría o búsqueda ya vista
@@ -543,8 +552,6 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // búsqueda) se pagina con cursor de Firestore: primera página + "Cargar más" +
   // scroll incremental. Cuando hay categoryId/searchTerm en la URL se conserva el
   // comportamiento previo (productsData), que ya devuelve un conjunto acotado.
-  const usePaginatedCatalog = !categoryId && !searchTerm;
-
   // ── NAV DE CATEGORÍAS POR MARCA (Fase 3 multimarca) ───────────────
   // Cada sección 'categories_nav' apunta a UNA marca (settings.brandId). Las
   // burbujas con miniatura se leen del array `categoryNav` guardado en el doc
@@ -740,7 +747,11 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   //  · SIN marca de página: null (la elige el sidebar al pulsar una categoría, como hoy).
   // Las demás facetas siguen filtrándose en cliente. Cambiarla reinicia el cursor
   // (forma parte de la queryKey de la infinite query).
-  const [catalogSelection, setCatalogSelection] = useState({ pageId, facet: null });
+  // Entrando con ?categoria= ya se pide esa (sin una primera página de toda la tienda).
+  const [catalogSelection, setCatalogSelection] = useState(() => ({
+    pageId,
+    facet: usePaginatedCatalog && categoryId ? { type: 'category', value: categoryId } : null,
+  }));
   const catalogFacet = useMemo(() => resolveCatalogFacet(catalogSelection, pageId, pageBrandId),
     [catalogSelection, pageId, pageBrandId]);
   const setCatalogFacet = useCallback((facet) => {
@@ -928,13 +939,11 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   const catalogIsEmpty = !catalogLoadingResolved && catalogProducts.length === 0;
 
   // ── Secciones con el kit (TIPOS_DEL_KIT): el inicio, /tienda y todas las
-  // landings; con el interruptor seccionesViejo, lo de antes ──
-  const seccionesViejo = useLoViejo('secciones');
+  // landings; con el interruptor seccionesViejo, lo de antes (paginaConKit
+  // y conTipoDelKit están más arriba: los usa el catálogo) ──
   const whatsappTienda = useWhatsAppDeLaRuta();
   const { user, userProfile } = useAuth();
-  const paginaConKit = !seccionesViejo;
   const usaKit = (section) => paginaConKit && TIPOS_DEL_KIT.has(section.type);
-  const conTipoDelKit = (tipo) => paginaConKit && configuredSections.some((x) => x.type === tipo);
 
   // Los productos de "Recién llegaron" y "Ofertas": las mismas consultas (y
   // caché) que hacía ProductQueryCarousel por dentro.
@@ -969,7 +978,6 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // ── Catálogo con filtros (sidebar_catalog) con el kit ──
   // Lo que antes guardaba y pedía SidebarCatalogLayout vive aquí: las listas
   // de los filtros (mismas claves de caché), la elección y la búsqueda.
-  const catalogoConKit = conTipoDelKit('sidebar_catalog');
   const listaDe = (fn) => async () => (await fn()).data;
   const { data: coleccionesKit } = useQuery({ queryKey: ['collections'], queryFn: listaDe(getCollections), enabled: catalogoConKit });
   const { data: marcasKit } = useQuery({ queryKey: ['brands'], queryFn: listaDe(getBrands), enabled: catalogoConKit && !pageBrandId });

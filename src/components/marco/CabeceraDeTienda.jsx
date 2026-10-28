@@ -193,7 +193,7 @@ function CabeceraConDatos() {
     queryFn: async () => (await getCategories()).data || [],
     staleTime: 15 * 60 * 1000,
   });
-  const { data: marcas } = useQuery({
+  const { data: marcas, error: errorMarcas, refetch: reintentarMarcas } = useQuery({
     queryKey: ['brands'],
     queryFn: async () => (await getBrands()).data || [],
     staleTime: 15 * 60 * 1000,
@@ -300,7 +300,20 @@ function CabeceraConDatos() {
           },
         };
       }
-      if (l.isBrandAuto) return { ...base, menu: 'marcas', props: { marcas: marcasDelMenu, limite: 6, activa: marcaActual?.id } };
+      if (l.isBrandAuto) {
+        return {
+          ...base,
+          menu: 'marcas',
+          props: {
+            marcas: marcasDelMenu,
+            limite: 6,
+            activa: marcaActual?.id,
+            cargando: !marcas && !errorMarcas,
+            error: Boolean(errorMarcas) && !marcas,
+            onReintentar: () => reintentarMarcas(),
+          },
+        };
+      }
       const lista = l.autoCollectionId
         ? (categorias || []).slice(0, 10).map((c) => ({ id: c.id, nombre: c.name, url: `/tienda?coleccion=${l.autoCollectionId}&categoria=${c.id}` }))
         : (l.dropdownLinks || []).map((d) => ({ id: String(d.id), nombre: d.text, url: d.url || '/' }));

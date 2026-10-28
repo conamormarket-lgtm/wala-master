@@ -110,8 +110,9 @@ const finDeMes = () => {
  *  - activa: id de la marca de la página (resaltada; nunca queda escondida)
  *  - verTodas: { texto, url } enlace al final, solo si hay una página de
  *    marcas (hoy la tienda no tiene /marcas pública: no se pasa)
+ *  - cargando / error / onReintentar: como en MenuTienda
  */
-export function MenuMarcas({ marcas = [], limite = 0, activa, verTodas, onNavegar }) {
+export function MenuMarcas({ marcas = [], limite = 0, activa, verTodas, cargando = false, error = false, onReintentar, onNavegar }) {
   // Las que no entran se abren AQUÍ MISMO con "Ver N marcas más" (la tienda
   // usaba un panel al costado que solo salía al pasar el ratón: en el celular
   // y con teclado no se podía). La marca en la que estás nunca queda escondida.
@@ -138,6 +139,17 @@ export function MenuMarcas({ marcas = [], limite = 0, activa, verTodas, onNavega
   return (
     <div className={s.marcas}>
       <h4 className={s.titulo}><Texto>Universo Walá</Texto></h4>
+      {(cargando || error) && (
+        <p className={s.estado} role="status">
+          {error ? (
+            <button type="button" className={s.reintentar} onClick={onReintentar}>
+              <RefreshCw aria-hidden="true" /> <Texto>Reintentar cargar marcas</Texto>
+            </button>
+          ) : (
+            <><Loader2 className={s.girando} aria-hidden="true" /> <Texto>Cargando marcas…</Texto></>
+          )}
+        </p>
+      )}
       <ul className={s.listaLogos}>{primeras.map(fila)}</ul>
       {larga && todas && (
         <div className={s.masMarcas}>
