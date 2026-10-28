@@ -2984,7 +2984,9 @@ const EstudioDeTienda = () => {
       } else {
         // De vuelta al producto del que vino: a la misma creación, no a una nueva.
         const pareja = parejaRef.current?.productId === destino.id && parejaRef.current.designId;
-        navigate(`/crear/${destino.id}${pareja ? `?designId=${pareja}` : ''}`, { state: { desde: `/crear/${id}` } });
+        // La flecha de volver regresa a esta misma creación, no a una vacía.
+        const desde = `/crear/${id}${designIdRef.current ? `?designId=${designIdRef.current}` : ''}`;
+        navigate(`/crear/${destino.id}${pareja ? `?designId=${pareja}` : ''}`, { state: { desde } });
       }
     } catch (e) {
       toast.error(e.message || 'No pudimos llevar tu diseño.');

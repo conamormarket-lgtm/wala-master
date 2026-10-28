@@ -100,16 +100,42 @@ async function fotoSinFondo(src) {
   const margen = Math.round(Math.max(x1 - x0, y1 - y0) * 0.04);
   x0 = Math.max(0, x0 - margen); y0 = Math.max(0, y0 - margen);
   x1 = Math.min(W - 1, x1 + margen); y1 = Math.min(H - 1, y1 + margen);
-  const ancho = x1 - x0 + 1, alto = y1 - y0 + 1;
+  const recorte = x1 - x0 + 1, alto = y1 - y0 + 1;
+  // Un producto alto (el tomatodo) no queda más angosto que 3:4, la
+  // proporción de las fotos de la tienda: si no, sus vistas previas salen
+  // flacas y con franjas a los lados.
+  const ancho = Math.max(recorte, Math.round(alto * PROPORCION_MINIMA));
+  const relleno = (ancho - recorte) / 2;
   const recortada = document.createElement('canvas');
   recortada.width = ancho;
   recortada.height = alto;
-  recortada.getContext('2d').drawImage(lienzo, x0, y0, ancho, alto, 0, 0, ancho, alto);
+  recortada.getContext('2d').drawImage(lienzo, x0, y0, recorte, alto, relleno, 0, recorte, alto);
   const blob = await new Promise((resolve, reject) => recortada.toBlob((b) => (b ? resolve(b) : reject(new Error('No se pudo preparar la foto.'))), 'image/png'));
   // Una fracción de la foto original → la de la recortada.
-  const fx = (f) => (f * W - x0) / ancho;
+  const fx = (f) => (f * W - x0 + relleno) / ancho;
   const fy = (f) => (f * H - y0) / alto;
   return { blob, ancho, alto, fx, fy, escala: W / ancho };
+}
+
+const PROPORCION_MINIMA = 3 / 4;
+
+/**
+ * La foto ya creada con la primera versión, ensanchada a 3:4 con aire
+ * transparente a los lados. Devuelve cómo pasar una fracción horizontal.
+ */
+async function ensancharFoto(url) {
+  const bitmap = await createImageBitmap(await fetch(url).then((r) => r.blob()));
+  const W = bitmap.width;
+  const H = bitmap.height;
+  const ancho = Math.round(H * PROPORCION_MINIMA);
+  const relleno = (ancho - W) / 2;
+  const lienzo = document.createElement('canvas');
+  lienzo.width = ancho;
+  lienzo.height = H;
+  lienzo.getContext('2d').drawImage(bitmap, relleno, 0);
+  bitmap.close?.();
+  const blob = await new Promise((resolve, reject) => lienzo.toBlob((b) => (b ? resolve(b) : reject(new Error('No se pudo preparar la foto.'))), 'image/png'));
+  return { blob, ancho, alto: H, fx: (f) => (f * W + relleno) / ancho, escala: W / ancho };
 }
 
 /**
@@ -169,6 +195,22 @@ export async function crearProductosYoryo({ onPaso = () => {} } = {}) {
       }
       if (pieza.soloPlantillas && existe.data.prendaBase?.soloPlantillas !== true) cambios.soloPlantillas = true;
       let vistasHoy = cambios.vistas || vistas;
+      const v0 = vistasHoy[0];
+      if (v0?.imagen && Number(v0.anchoImg) / Number(v0.altoImg) < PROPORCION_MINIMA - 0.02) {
+        const { blob, ancho, alto, fx, escala } = await ensancharFoto(v0.imagen);
+        const archivo = new File([blob], `${pieza.clave}.png`, { type: 'image/png' });
+        const { url, error } = await uploadFile(archivo, `productos_v2/${pieza.id}/crear_${Date.now()}_${pieza.clave}.png`);
+        if (error || !url) throw new Error(error || 'No se pudo subir la foto.');
+        const r = v0.referencia;
+        vistasHoy = [{
+          ...v0, imagen: url, anchoImg: ancho, altoImg: alto,
+          zonas: (v0.zonas || []).map((z) => ({ ...z, x: fx(z.x), w: z.w * escala })),
+          ...(r && { referencia: { ...r, x1: fx(r.x1), x2: fx(r.x2) } }),
+        }, ...vistasHoy.slice(1)];
+        cambios.vistas = vistasHoy;
+        const colores = existe.data.prendaBase?.colores || {};
+        cambios.colores = Object.fromEntries(Object.entries(colores).map(([vid, c]) => [vid, { ...c, fotos: { ...(c.fotos || {}), ...(c.fotos?.[v0.id] && { [v0.id]: url }) } }]));
+      }
       const zonaHoy = vistasHoy[0]?.zonas?.[0];
       if (pieza.zona.radio && zonaHoy && !zonaHoy.radio) {
         vistasHoy = [{ ...vistasHoy[0], zonas: [{ ...zonaHoy, radio: pieza.zona.radio }, ...vistasHoy[0].zonas.slice(1)] }, ...vistasHoy.slice(1)];

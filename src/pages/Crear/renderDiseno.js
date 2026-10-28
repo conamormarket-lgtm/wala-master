@@ -174,6 +174,9 @@ export const recorteDeCapa = (capa, t) => {
   return new fabric.Rect({
     left: centro.x, top: centro.y, width: v.w * t.k, height: v.h * t.k, angle: t.ang,
     originX: 'center', originY: 'center', absolutePositioned: true,
+    // Y además la forma de la zona: en un mousepad de esquinas redondas, la
+    // foto de una ventana que llega a la orilla tampoco asoma por la esquina.
+    ...(t.r > 0 && { clipPath: recorteDeZona(t) }),
   });
 };
 
