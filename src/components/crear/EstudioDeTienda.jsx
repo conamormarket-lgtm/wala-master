@@ -2737,7 +2737,7 @@ const EstudioDeTienda = () => {
       piezas.push({ nombre: v.nombre, blob: previasHechas[v.id] || await renderizarVista(v, capas) });
     }
     // Sin la talla: no se ve en la prenda y puede cambiar en cada compra.
-    return componerVistas(piezas, { titulo: `${prenda.name} · ${color.nombre}` });
+    return componerVistas(piezas, { titulo: `${prenda.name} · ${color.nombre}`, ...(cfgPrenda?.tipo === 'producto' && { fondo: '#FFFFFF' }) });
   };
 
   const descargarImagen = async () => {
@@ -2770,6 +2770,7 @@ const EstudioDeTienda = () => {
     const fuente = fondoDeVista(img, v, color);
     return renderizarVistaPrevia({
       fuente, anchoImg: img.naturalWidth, altoImg: img.naturalHeight, vista: v, capasPorZona: capas, srcDe, laser,
+      producto: cfgPrenda?.tipo === 'producto',
       ...(ancho && { ancho }),
     });
   };

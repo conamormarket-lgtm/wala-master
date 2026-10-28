@@ -418,34 +418,39 @@ export const renderizarImpresion = async (capas, zona, srcDe, medida = null, { l
  * zonas, cada uno recortado a la suya. Es la miniatura del carrito, de "Mis
  * compras" y la referencia visual del pedido en el ERP.
  */
-export const renderizarVistaPrevia = async ({ fuente, anchoImg, altoImg, vista, capasPorZona, srcDe, ancho = 900, laser = false }) => {
+export const renderizarVistaPrevia = async ({ fuente, anchoImg, altoImg, vista, capasPorZona, srcDe, ancho = 900, laser = false, producto = false }) => {
   // El borde del producto que va encima del diseño (vista.encima), si tiene.
   const encima = vista.encima ? await cargarImagen(vista.encima).catch(() => null) : null;
   const margen = Math.round(ancho * 0.06);
   const iw = ancho - margen * 2;
   const ih = altoImg * (iw / anchoImg);
-  const alto = Math.round(ih + margen * 2);
+  // Un producto (cuadro, mousepad, tomatodo) va en 4:5, centrado y sobre
+  // blanco: las tarjetas de la tienda funden el blanco con su escenario
+  // (multiply), así no queda un recuadro lila ni se recorta el marco. Una
+  // prenda sigue sobre lila: su foto es blanca y sobre blanco se perdería.
+  const alto = producto ? Math.max(Math.round(ih + margen * 2), Math.round(ancho * 1.25)) : Math.round(ih + margen * 2);
+  const oy = Math.round((alto - ih) / 2);
   const el = document.createElement('canvas');
   const lienzo = new fabric.StaticCanvas(el, {
     width: ancho,
     height: alto,
-    backgroundColor: '#F3F1F7',
+    backgroundColor: producto ? '#FFFFFF' : '#F3F1F7',
     enableRetinaScaling: false,
     renderOnAddRemove: false,
   });
   try {
-    lienzo.add(new fabric.Image(fuente, { left: margen, top: margen, scaleX: iw / anchoImg, scaleY: ih / altoImg }));
+    lienzo.add(new fabric.Image(fuente, { left: margen, top: oy, scaleX: iw / anchoImg, scaleY: ih / altoImg }));
     for (const zona of vista.zonas) {
       const capas = capasPorZona[zona.id] || [];
       if (!capas.length) continue;
-      const t = transformDeZona(zona, { ox: margen, oy: margen, iw, ih, anchoImg, altoImg });
+      const t = transformDeZona(zona, { ox: margen, oy, iw, ih, anchoImg, altoImg });
       for (const capa of capas) {
         const obj = await crearObjeto(capa, t, srcDe, { laser });
         obj.clipPath = recorteDeCapa(capa, t);
         lienzo.add(obj);
       }
     }
-    if (encima) lienzo.add(new fabric.Image(encima, { left: margen, top: margen, scaleX: iw / encima.naturalWidth, scaleY: ih / encima.naturalHeight }));
+    if (encima) lienzo.add(new fabric.Image(encima, { left: margen, top: oy, scaleX: iw / encima.naturalWidth, scaleY: ih / encima.naturalHeight }));
     lienzo.renderAll();
     return await aBlob(lienzo.lowerCanvasEl, 'image/jpeg', 0.88);
   } finally {
@@ -479,7 +484,7 @@ const cargarLogo = () => new Promise((resolve) => {
  * Lleva el logo de Walá en la esquina inferior derecha ("Creado en wala.pe")
  * para que se sepa de dónde es el diseño cuando se comparte.
  */
-export const componerVistas = async (piezas, { titulo = '' } = {}) => {
+export const componerVistas = async (piezas, { titulo = '', fondo = '#F3F1F7' } = {}) => {
   const [cargadas, logo] = await Promise.all([
     Promise.all(piezas.map(async (p) => ({ ...p, ...(await aImagen(p.blob)) }))),
     cargarLogo(),
@@ -497,7 +502,8 @@ export const componerVistas = async (piezas, { titulo = '' } = {}) => {
     canvas.width = ancho;
     canvas.height = alto;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#F3F1F7';
+    // El de las vistas (blanco en un producto), para que no se vean recuadros.
+    ctx.fillStyle = fondo;
     ctx.fillRect(0, 0, ancho, alto);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';

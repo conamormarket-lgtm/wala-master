@@ -1,5 +1,5 @@
 import { subirArchivoImpresion, subirVistaPrevia } from '../../services/crearArchivos';
-import { medidaZona, cargarImagen, fotoDeVista, fondoDeVista, leerTecnica } from '../../utils/prendaBase';
+import { medidaZona, cargarImagen, fotoDeVista, fondoDeVista, leerTecnica, leerTipo } from '../../utils/prendaBase';
 import { asegurarFuentesDe, renderizarImpresion, renderizarVistaPrevia, componerVistas } from './renderDiseno';
 
 /**
@@ -16,7 +16,7 @@ export async function generarArchivosCreacion({ uid, prenda, color, vistas, capa
     const img = await cargarImagen(fotoDeVista(vista, color));
     return renderizarVistaPrevia({
       fuente: fondoDeVista(img, vista, color), anchoImg: img.naturalWidth, altoImg: img.naturalHeight,
-      vista, capasPorZona: capas, srcDe, laser,
+      vista, capasPorZona: capas, srcDe, laser, producto: leerTipo(prenda?.prendaBase?.tipo) === 'producto',
     });
   };
   const archivosImpresion = [];
@@ -43,6 +43,9 @@ export async function generarArchivosCreacion({ uid, prenda, color, vistas, capa
   onPaso('Uniendo las vistas…');
   const lados = [];
   for (const vista of vistas) lados.push({ nombre: vista.nombre, blob: previas[vista.id] || await renderVista(vista) });
-  const conjunta = await componerVistas(lados, { titulo: `${prenda.name} · ${color.nombre}` });
+  const conjunta = await componerVistas(lados, {
+    titulo: `${prenda.name} · ${color.nombre}`,
+    ...(leerTipo(prenda?.prendaBase?.tipo) === 'producto' && { fondo: '#FFFFFF' }),
+  });
   return { archivosImpresion, vistasPrevias, imagenConjunta: await subirVistaPrevia(uid, conjunta, 'conjunto') };
 }
