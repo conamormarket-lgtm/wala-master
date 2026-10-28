@@ -26,6 +26,8 @@ test('las capas siguen el orden de la plantilla y caen en unidades de la zona', 
   // La foto "completa" entra entera en su caja (500 × 640).
   assert.equal(retrato.escalaX, Math.min(500 / 1200, 640 / 1200));
   assert.equal(retrato.fija, undefined);
+  assert.deepEqual(retrato.ventana, { x: 500, y: 80, w: 500, h: 640 });
+  assert.equal(retrato.encaje, 'completa');
   assert.equal(escudo.fija, undefined);
   assert.equal(nombre.fuente, 'Cinzel');
   assert.equal(nombre.sombraColor, '#09203E');

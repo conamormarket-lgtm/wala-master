@@ -160,6 +160,21 @@ export const rectDeZona = (t, extra = {}) => new fabric.Rect({
 export const recorteDeZona = (t) => rectDeZona(t, { absolutePositioned: true });
 
 /**
+ * El recorte de una capa: su zona o, si es la foto de una plantilla, su
+ * ventana (`ventana: { x, y, w, h }` en unidades de la zona, sin girar). La
+ * foto se mueve y agranda por dentro, pero no se sale de su marco.
+ */
+export const recorteDeCapa = (capa, t) => {
+  const v = capa?.ventana;
+  if (!v) return recorteDeZona(t);
+  const centro = aLienzo(t, v.x + v.w / 2, v.y + v.h / 2);
+  return new fabric.Rect({
+    left: centro.x, top: centro.y, width: v.w * t.k, height: v.h * t.k, angle: t.ang,
+    originX: 'center', originY: 'center', absolutePositioned: true,
+  });
+};
+
+/**
  * Propiedades de fabric de un texto, con sus efectos:
  * - contorno: grosor visible en % del tamaño de letra (contornoColor). Se
  *   pinta detrás de la letra, así no la adelgaza. Con sinRelleno la letra
@@ -380,7 +395,9 @@ export const renderizarImpresion = async (capas, zona, srcDe, medida = null, { l
   try {
     const t = { k: ancho / UNIDADES_ZONA, cx: ancho / 2, cy: alto / 2, ang: 0, wu: UNIDADES_ZONA, hu: altoEnUnidades(zona) };
     for (const capa of capas) {
-      lienzo.add(await crearObjeto(capa, t, srcDe, { laser }));
+      const obj = await crearObjeto(capa, t, srcDe, { laser });
+      if (capa.ventana) obj.clipPath = recorteDeCapa(capa, t);
+      lienzo.add(obj);
     }
     lienzo.renderAll();
     const blob = await aBlob(lienzo.lowerCanvasEl, 'image/png');
@@ -416,7 +433,7 @@ export const renderizarVistaPrevia = async ({ fuente, anchoImg, altoImg, vista, 
       const t = transformDeZona(zona, { ox: margen, oy: margen, iw, ih, anchoImg, altoImg });
       for (const capa of capas) {
         const obj = await crearObjeto(capa, t, srcDe, { laser });
-        obj.clipPath = recorteDeZona(t);
+        obj.clipPath = recorteDeCapa(capa, t);
         lienzo.add(obj);
       }
     }

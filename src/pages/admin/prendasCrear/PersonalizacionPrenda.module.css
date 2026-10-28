@@ -995,3 +995,36 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 0.75rem;
 }
+
+.plantillas {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.plantilla {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) minmax(0, 0.7fr) auto;
+  gap: 0.6rem;
+  align-items: end;
+}
+
+.plantilla img,
+.plantillaSinFoto {
+  width: 96px;
+  aspect-ratio: 5 / 4;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--gris-borde);
+}
+
+@media (max-width: 640px) {
+  .plantilla {
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+  }
+
+  .plantilla img,
+  .plantillaSinFoto {
+    width: 72px;
+    grid-row: span 2;
+  }
+}

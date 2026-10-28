@@ -22,42 +22,48 @@ El **Pack de oficina** es un combo normal en **Admin → Combos de Crear**.
 
 Para que un producto de la tienda lleve a Crear, se elige la prenda o el combo en **Personalizar en Crear**, en su ficha del admin. La tienda lo sigue vendiendo tal cual.
 
-## Diseños para empezar
+## Plantillas del producto
 
-El estudio muestra los diseños de la comunidad de esa prenda en el paso **Empieza con un diseño**. El cliente elige uno y lo cambia como quiera:
+Cada producto de Crear puede traer sus plantillas en `prendaBase.plantillas` (`{ id, nombre, grupo, imagen, capas }`). El estudio las muestra en el paso **Empieza con un diseño**:
 
-- **Cambiar foto** pone la suya en el mismo lugar.
+- son de ese producto: no van a la comunidad ni a Mis creaciones;
+- si hay grupos (Parejas, Equipos), se muestran como pestañas;
+- cada tarjeta muestra el diseño plano. En un producto láser se ve sobre el producto, recortado alrededor del grabado.
+
+El cliente elige una y la cambia como quiera:
+
+- **Cambiar foto** pone su foto en la ventana de la plantilla. La foto tiene una `ventana`: se mueve y agranda por dentro, pero no se sale del marco (`recorteDeCapa` en `renderDiseno.js`).
 - Los textos se editan tocándolos.
+- Las capas marcadas como **Parte fija de la plantilla** (fondo, marco) no se mueven sin querer. El cliente las suelta con **Editar el fondo y el marco**.
 
-Las capas marcadas como **Parte fija de la plantilla** (fondo, marco) no se mueven sin querer. El cliente las suelta con **Editar el fondo y el marco**. Solo un admin ve ese interruptor en el panel de cada capa.
+Las imágenes de las plantillas viven en `productos_v2/{id}/plantillas/`, así la limpieza de creaciones no las toca.
 
-Para publicar uno nuevo:
+**Agregar una:** un admin la diseña en el estudio y usa **Guardar como plantilla**, debajo de los pasos.
 
-1. Diseñarlo en el estudio con la cuenta de admin.
-2. Guardarlo.
-3. Publicarlo desde Mis creaciones.
+**Renombrar, cambiar de grupo o quitar:** en Admin → Prendas de Crear → Plantillas.
 
 ## Crear los productos (una sola vez)
 
-En **Admin → Catálogo → Importar plantillas de cuadros**, el botón **Crear productos y pack**:
+En **Admin → Catálogo → Importar plantillas de cuadros** (`/admin/plantillas-yoryo`), el botón **Crear productos y pack**:
 
 - crea `yoryo-crear-cuadro`, `yoryo-crear-mousepad` y `yoryo-crear-tomatodo` con la foto de la tienda sin fondo y recortada;
 - crea el Pack de oficina como combo de Crear;
 - enlaza los productos de la tienda con "Personalizar en Crear".
 
-Lo que ya exista no se repite. Las zonas se midieron sobre las fotos de la tienda del 28-10-2026. El tomatodo queda con unos 10 cm de cuerpo estimados: se confirma con el taller y se ajusta en Prendas de Crear.
+Lo que ya exista no se repite. La única excepción es la zona del tomatodo, que se agranda si sigue como la dejó la primera versión. Las zonas se midieron sobre las fotos de la tienda del 28-10-2026. El tomatodo queda con unos 10 cm de cuerpo estimados: se confirma con el taller y se ajusta en Prendas de Crear.
 
-## Importar las plantillas anteriores (una sola vez)
+## Guardar las plantillas anteriores (una sola vez)
 
-**Admin → Catálogo → Importar plantillas de cuadros** (`/admin/plantillas-yoryo`) convierte las plantillas anteriores en diseños de la comunidad: 6 equipos y 3 de parejas, para el cuadro y el mousepad.
+**Guardar plantillas en los productos** convierte las plantillas de GPT:
 
-- Si se editaron en la pantalla anterior, usa esas ediciones (`templates/yoryo-composiciones-v4`).
-- Sube a Storage los fondos, escudos y decoraciones de `public/yoryo/capas/` y una foto de muestra ("Tu foto").
-- Guarda cada diseño en la cuenta del admin y lo publica.
+- cuadro y mousepad: 3 de Parejas y 6 de Equipos;
+- tomatodo: 6 de Equipos, con los escudos SVG de `public/yoryo/laser/` pintados en blanco.
 
-El tamaño de las letras es aproximado y conviene revisarlo en el estudio.
+Usa las ediciones de la pantalla anterior si las hay (`templates/yoryo-composiciones-v4`). Volver a guardarlas reemplaza las mismas, por id. El tamaño de las letras es aproximado.
 
-Después de importar, `public/yoryo/` y la carpeta `src/pages/admin/plantillasYoryo/` se pueden borrar. Los originales siguen en `assets/yoryo-plantillas/`.
+**Quitar copias** retira de la comunidad y borra de Mis creaciones lo que publicó la primera versión de esta pantalla.
+
+Después de guardar, `public/yoryo/` y `src/pages/admin/plantillasYoryo/` se pueden borrar. Los originales siguen en `assets/yoryo-plantillas/`.
 
 ## Lo ya guardado con el editor anterior
 

@@ -30,11 +30,13 @@ const PIEZAS = [
     clave: 'tomatodo', id: 'yoryo-crear-tomatodo', tiendaId: 'BDKN8114eHsDIwAD8OVc', nombre: 'Tomatodo grabado', tecnica: 'laser',
     // La cara del cuerpo que se ve de frente. El cuerpo mide unos 10 cm de
     // ancho (estimado: confirmarlo con el taller y ajustar la línea en el admin).
-    zona: { id: 'tomatodo-grabado', nombre: 'Grabado', x: 365 / 1086, y: 400 / 1448, w: 295 / 1086, proporcion: 360 / 295 },
+    zona: { id: 'tomatodo-grabado', nombre: 'Grabado', x: 315 / 1086, y: 330 / 1448, w: 395 / 1086, proporcion: 550 / 395 },
     referencia: { x1: 270 / 1086, y1: 600 / 1448, x2: 755 / 1086, y2: 600 / 1448, cm: 10 },
   },
 ];
 const PACK_TIENDA = 'mMPc5TIGZtB4S0t247BQ';
+// La proporción de la zona del tomatodo en la primera versión (28-10-2026).
+const ZONA_TOMATODO_ANTERIOR = 360 / 295;
 export const IDS_CREAR_YORYO = Object.fromEntries(PIEZAS.map((p) => [p.clave, p.id]));
 
 const cargar = (src) => new Promise((resolve, reject) => {
@@ -118,9 +120,21 @@ export async function crearProductosYoryo({ onPaso = () => {} } = {}) {
   for (const pieza of PIEZAS) {
     ids[pieza.clave] = pieza.id;
     const existe = await getProduct(pieza.id);
-    if (existe.data && existe.data.deleted !== true) { onPaso(`${pieza.nombre}: ya existía`); continue; }
     const { data: tienda } = await getProduct(pieza.tiendaId);
     if (!tienda) throw new Error(`No encontré el producto de la tienda de ${pieza.nombre}.`);
+    if (existe.data && existe.data.deleted !== true) {
+      // La primera versión creó la zona del tomatodo más chica: si nadie la
+      // tocó todavía, se cambia por la de ahora.
+      const vistas = existe.data.prendaBase?.vistas || [];
+      const anterior = vistas[0]?.zonas?.[0];
+      if (anterior?.id === pieza.zona.id && Math.abs(Number(anterior.proporcion) - ZONA_TOMATODO_ANTERIOR) < 0.01) {
+        const { fx, fy, escala } = await fotoSinFondo(fotoPrincipal(tienda));
+        const zona = { ...pieza.zona, x: fx(pieza.zona.x), y: fy(pieza.zona.y), w: pieza.zona.w * escala, angulo: 0 };
+        await updateProductField(pieza.id, { prendaBase: { ...existe.data.prendaBase, vistas: [{ ...vistas[0], zonas: [zona] }, ...vistas.slice(1)] } });
+        onPaso(`${pieza.nombre}: zona de grabado agrandada`);
+      } else onPaso(`${pieza.nombre}: ya existía`);
+      continue;
+    }
     onPaso(`${pieza.nombre}: preparando la foto…`);
     const { blob, ancho, alto, fx, fy, escala } = await fotoSinFondo(fotoPrincipal(tienda));
     const zona = { ...pieza.zona, x: fx(pieza.zona.x), y: fy(pieza.zona.y), w: pieza.zona.w * escala, angulo: 0 };

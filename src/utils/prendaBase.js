@@ -20,6 +20,8 @@
  *                               zonas: { [vistaId]: [zonas] } } },
  *     tipo: 'prenda' | 'producto',     // cómo se le nombra en Crear
  *     tecnica: 'impresion' | 'laser',  // el láser se ve y exporta en grises
+ *     plantillas: [{ id, nombre, grupo, imagen, capas: { [zonaId]: [capas] } }],
+ *                                      // diseños para empezar de este producto
  *
  * Los bicolores llevan una costura al medio, así que pueden tener sus propias
  * zonas (zonasDeVista): las de ese color, si tiene; si no, las de todos los
@@ -313,6 +315,21 @@ export const leerTipo = (tipo) => (TIPOS_PRENDA.includes(tipo) ? tipo : 'prenda'
 export const TECNICAS_PRENDA = ['impresion', 'laser'];
 export const leerTecnica = (tecnica) => (TECNICAS_PRENDA.includes(tecnica) ? tecnica : 'impresion');
 
+/**
+ * Plantillas del producto ("Empieza con un diseño"): diseños listos que el
+ * cliente elige y cambia. Son de este producto (no de la comunidad); el
+ * grupo (Parejas, Equipos…) las ordena en pestañas.
+ */
+export const leerPlantillas = (lista) => (Array.isArray(lista) ? lista : [])
+  .filter((p) => p && p.id && p.capas && typeof p.capas === 'object' && Object.values(p.capas).some((c) => Array.isArray(c) && c.length))
+  .map((p) => ({
+    id: String(p.id),
+    nombre: String(p.nombre || 'Diseño'),
+    grupo: String(p.grupo || '').trim(),
+    imagen: String(p.imagen || ''),
+    capas: p.capas,
+  }));
+
 /** "prenda" o "producto", para los textos de Crear. */
 export const sustantivoDe = (cfg) => leerTipo(cfg?.tipo);
 
@@ -372,6 +389,7 @@ export const leerPrendaBase = (producto) => {
     tallas,
     tipo: leerTipo(cfg.tipo),
     tecnica: leerTecnica(cfg.tecnica),
+    plantillas: leerPlantillas(cfg.plantillas),
   };
 };
 

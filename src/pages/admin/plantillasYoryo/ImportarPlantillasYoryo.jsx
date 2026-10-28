@@ -3,24 +3,24 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getPrendasBase } from '../../../services/prendasBase';
 import { getDocument } from '../../../services/firebase/firestore';
-import { subirImagenCliente } from '../../../services/crearArchivos';
-import { publicarEnComunidad } from '../../../services/comunidad';
-import { crearDesdePlantilla } from '../../Crear/crearDesdePlantilla';
-import { leerPrendaBase, colorDisponible, UNIDADES_ZONA } from '../../../utils/prendaBase';
+import { getDesignsByUser, eliminarCreacion } from '../../../services/designs';
+import { retirarDeComunidad } from '../../../services/comunidad';
+import { subirAProducto, miniaturaDePlantilla, guardarPlantillasDelProducto } from '../../Crear/plantillasProducto';
+import { leerPrendaBase, colorDisponible, UNIDADES_ZONA, slug } from '../../../utils/prendaBase';
 import { capasDePlantilla } from './plantillasACapas.mjs';
 import { crearProductosYoryo, IDS_CREAR_YORYO } from './crearProductosYoryo';
-import { plantillaCapasBaseYoryo } from './presetsEquipos.mjs';
+import { plantillaCapasBaseYoryo, plantillaTomatodoYoryo } from './presetsEquipos.mjs';
 import { plantillaParejasBaseYoryo } from './presetsParejas.mjs';
 import Boton from '../../../componentes/kit/Boton';
 import { Aviso } from '../../../componentes/kit/Feedback';
 import s from './ImportarPlantillasYoryo.module.css';
 
 /*
- * Una sola vez: las plantillas del personalizador anterior de cuadros y
- * mousepads (6 equipos y 3 de parejas) se vuelven diseños de la comunidad de
- * las prendas de Crear que se elijan aquí. Cada una se guarda como creación
- * del admin (con sus archivos y vistas previas) y se publica; el cliente la
- * ve en "Empieza con un diseño" del estudio y la cambia a su gusto.
+ * Una sola vez: el cuadro, el mousepad y el tomatodo de Yoryo en Crear, y sus
+ * plantillas (6 equipos y 3 de parejas; en el tomatodo, los 6 escudos para
+ * grabar) guardadas en cada producto (prendaBase.plantillas). Son de ese
+ * producto: no van a la comunidad ni a Mis creaciones. El cliente las ve en
+ * "Empieza con un diseño" del estudio y las cambia a su gusto.
  *
  * Las ediciones que se hicieron en la pantalla anterior (templates/
  * yoryo-composiciones-v4) mandan sobre las de fábrica.
@@ -38,17 +38,25 @@ const PAREJAS = [
   ['botanico', 'Nuestra historia', { nombre: 'Camila & Andrés', fecha: '09.06.2023', frase: 'Por todos los recuerdos que nos faltan.' }],
 ];
 
-const PRODUCTOS = [['cuadro', 'Cuadro'], ['mousepad', 'Mousepad']];
+const PRODUCTOS = [['cuadro', 'Cuadro'], ['mousepad', 'Mousepad'], ['tomatodo', 'Tomatodo']];
+const NOMBRES = new Set([...EQUIPOS.map(([e]) => e), ...PAREJAS.map(([, n]) => n)]);
 
-const plantillasDe = (producto) => [
-  ...EQUIPOS.map(([equipo, frase]) => ({
-    id: `${producto}-${equipo}`, producto, nombre: equipo, preset: () => plantillaCapasBaseYoryo(equipo, producto),
-    textos: { nombre: 'Daniel', frase, dedicatoria: DEDICATORIA },
-  })),
-  ...PAREJAS.map(([modelo, nombre, textos]) => ({ id: `${producto}-${modelo}`, producto, nombre, preset: () => plantillaParejasBaseYoryo(modelo, producto), textos })),
-];
+const plantillasDe = (producto) => (producto === 'tomatodo'
+  ? EQUIPOS.map(([equipo, frase]) => ({
+    id: `yoryo-tomatodo-${slug(equipo)}`, producto, nombre: equipo, grupo: 'Equipos',
+    preset: () => plantillaTomatodoYoryo(equipo), textos: { nombre: 'Daniel', frase },
+  }))
+  : [
+    ...PAREJAS.map(([modelo, nombre, textos]) => ({
+      id: `yoryo-${producto}-${modelo}`, producto, nombre, grupo: 'Parejas', preset: () => plantillaParejasBaseYoryo(modelo, producto), textos,
+    })),
+    ...EQUIPOS.map(([equipo, frase]) => ({
+      id: `yoryo-${producto}-${slug(equipo)}`, producto, nombre: equipo, grupo: 'Equipos', preset: () => plantillaCapasBaseYoryo(equipo, producto),
+      textos: { nombre: 'Daniel', frase, dedicatoria: DEDICATORIA },
+    })),
+  ]);
 
-const aBlob = (canvas) => new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('No se pudo crear la foto de muestra.'))), 'image/png'));
+const aBlob = (canvas) => new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('No se pudo crear la imagen.'))), 'image/png'));
 
 /** "Tu foto": la foto de muestra que el cliente cambia con "Cambiar foto". */
 async function fotoDeMuestra() {
@@ -72,15 +80,43 @@ async function fotoDeMuestra() {
   return { blob: await aBlob(c), ancho: 1200, alto: 1200 };
 }
 
-/** Sube a Storage una imagen de public/ (los recursos de la plantilla). */
-async function subirRecurso(uid, url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`No se encontró ${url}`);
+/**
+ * Un recurso de public/ como imagen de la plantilla. Un escudo para grabar
+ * (SVG, `blanco`) se pinta en blanco a 1400 px de alto: así se ve plateado
+ * sobre el tomatodo negro, como el grabado.
+ */
+async function prepararRecurso(r) {
+  const res = await fetch(r.url);
+  if (!res.ok) throw new Error(`No se encontró ${r.url}`);
   const blob = await res.blob();
-  const bitmap = await createImageBitmap(blob);
-  const medidas = { ancho: bitmap.width, alto: bitmap.height };
-  bitmap.close?.();
-  return { src: await subirImagenCliente(uid, blob), ...medidas };
+  if (!r.blanco) {
+    const bitmap = await createImageBitmap(blob);
+    const medidas = { ancho: bitmap.width, alto: bitmap.height };
+    bitmap.close?.();
+    return { blob, ...medidas };
+  }
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error(`No se pudo leer ${r.url}`));
+      i.src = url;
+    });
+    const alto = 1400;
+    const ancho = Math.round((alto * (img.naturalWidth || 1)) / (img.naturalHeight || 1));
+    const c = document.createElement('canvas');
+    c.width = ancho;
+    c.height = alto;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0, ancho, alto);
+    ctx.globalCompositeOperation = 'source-in';
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, ancho, alto);
+    return { blob: await aBlob(c), ancho, alto };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 export default function ImportarPlantillasYoryo() {
@@ -95,7 +131,7 @@ export default function ImportarPlantillasYoryo() {
     },
   });
   const [destinoElegido, setDestino] = useState({});
-  // Si ya existen el cuadro y el mousepad de Crear, se eligen solos.
+  // Si ya existen los productos de Crear, se eligen solos.
   const destino = useMemo(() => Object.fromEntries(PRODUCTOS.map(([p]) => [p,
     destinoElegido[p] ?? ((prendas.data || []).some((x) => x.id === IDS_CREAR_YORYO[p]) ? IDS_CREAR_YORYO[p] : '')])), [destinoElegido, prendas.data]);
   const [pasoProductos, setPasoProductos] = useState('');
@@ -115,72 +151,102 @@ export default function ImportarPlantillasYoryo() {
   const [elegidas, setElegidas] = useState(() => new Set(PRODUCTOS.flatMap(([p]) => plantillasDe(p).map((x) => x.id))));
   const [estado, setEstado] = useState({});
   const [trabajando, setTrabajando] = useState(false);
-  const todas = useMemo(() => PRODUCTOS.flatMap(([p]) => plantillasDe(p)), []);
 
   const importar = async () => {
     setTrabajando(true);
-    const subidas = new Map();
-    const recurso = (url) => {
-      if (!subidas.has(url)) subidas.set(url, subirRecurso(user.uid, url));
-      return subidas.get(url);
-    };
-    let foto = null;
-    try {
-      const muestra = await fotoDeMuestra();
-      foto = { src: await subirImagenCliente(user.uid, muestra.blob), ancho: muestra.ancho, alto: muestra.alto };
-    } catch (e) {
-      setEstado({ general: `No se pudo preparar la foto de muestra: ${e.message}` });
-      setTrabajando(false);
-      return;
-    }
-    for (const plantilla of todas.filter((x) => elegidas.has(x.id) && destino[x.producto])) {
-      const marcar = (texto) => setEstado((m) => ({ ...m, [plantilla.id]: texto }));
+    setEstado({});
+    const muestra = await fotoDeMuestra().catch(() => null);
+    const marcar = (id, texto) => setEstado((m) => ({ ...m, [id]: texto }));
+    for (const [producto] of PRODUCTOS) {
+      const prendaId = destino[producto];
+      const lista = plantillasDe(producto).filter((x) => elegidas.has(x.id));
+      if (!prendaId || !lista.length) continue;
       try {
-        const prenda = prendas.data.find((p) => p.id === destino[plantilla.producto]);
+        const prenda = prendas.data.find((p) => p.id === prendaId);
         const leida = leerPrendaBase(prenda);
         const vista = leida.vistas[0];
         const zona = vista?.zonas[0];
-        if (!zona) throw new Error('La prenda no tiene una zona.');
+        if (!zona) throw new Error('El producto no tiene una zona.');
         const color = leida.colores.find((c) => c.id === prenda.defaultVariantId && colorDisponible(c, leida.vistas)) || leida.colores[0];
-        const base = plantilla.preset();
-        const preset = editadas.data?.[base.clave] || base;
-        marcar('Subiendo imágenes…');
-        const recursos = {};
-        for (const [clave, r] of Object.entries(preset.recursos || {})) recursos[clave] = await recurso(r.url);
-        const capas = capasDePlantilla({ preset, proporcion: zona.proporcion, recursos, foto, textos: plantilla.textos, unidades: UNIDADES_ZONA });
-        const creacion = await crearDesdePlantilla({
-          uid: user.uid, prenda, talla: '',
-          pieza: { nombre: plantilla.nombre, color: { id: color.id, nombre: color.nombre }, layersByView: { [zona.id]: capas } },
-          onPaso: marcar,
-        });
-        marcar('Publicando…');
-        const { error } = await publicarEnComunidad(creacion.id);
-        if (error) throw new Error(error);
-        marcar('Listo');
+        // Las imágenes se suben una vez por producto, a su carpeta de plantillas.
+        const subidas = new Map();
+        const recurso = (r) => {
+          if (!subidas.has(r.url)) {
+            subidas.set(r.url, prepararRecurso(r).then(async ({ blob, ancho, alto }) => ({ src: await subirAProducto(prendaId, blob, 'recurso'), ancho, alto })));
+          }
+          return subidas.get(r.url);
+        };
+        const foto = muestra && { src: await subirAProducto(prendaId, muestra.blob, 'tu-foto'), ancho: muestra.ancho, alto: muestra.alto };
+        const hechas = [];
+        for (const plantilla of lista) {
+          try {
+            marcar(plantilla.id, 'Preparando…');
+            const base = plantilla.preset();
+            const preset = editadas.data?.[base.clave] || base;
+            const recursos = {};
+            for (const [clave, r] of Object.entries(preset.recursos || {})) recursos[clave] = await recurso({ ...base.recursos?.[clave], ...r });
+            const capas = { [zona.id]: capasDePlantilla({ preset, proporcion: zona.proporcion, recursos, foto, textos: plantilla.textos, unidades: UNIDADES_ZONA }) };
+            const miniatura = await miniaturaDePlantilla({ vista, zona, color, capas, laser: leida.tecnica === 'laser' });
+            hechas.push({ id: plantilla.id, nombre: plantilla.nombre, grupo: plantilla.grupo, imagen: await subirAProducto(prendaId, miniatura, 'miniatura'), capas });
+            marcar(plantilla.id, 'Lista');
+          } catch (e) {
+            marcar(plantilla.id, `Error: ${e.message}`);
+          }
+        }
+        if (hechas.length) {
+          await guardarPlantillasDelProducto(prendaId, hechas);
+          hechas.forEach((p) => marcar(p.id, 'Guardada en el producto'));
+        }
       } catch (e) {
-        marcar(`Error: ${e.message}`);
+        lista.forEach((x) => marcar(x.id, `Error: ${e.message}`));
       }
     }
-    queryClient.invalidateQueries({ queryKey: ['comunidad'] });
+    queryClient.invalidateQueries({ queryKey: ['prendas-base'] });
     setTrabajando(false);
+  };
+
+  // Las copias que la versión anterior de esta pantalla publicó en la
+  // comunidad (y guardó en Mis creaciones de tu cuenta): se retiran y se borran.
+  const [limpieza, setLimpieza] = useState('');
+  const limpiar = async () => {
+    setLimpieza('Buscando…');
+    try {
+      const ids = new Set(Object.values(IDS_CREAR_YORYO));
+      const { data } = await getDesignsByUser(user.uid);
+      const copias = (data || []).filter((d) => ids.has(d.productId) && NOMBRES.has(String(d.name || '').trim()));
+      let hechas = 0;
+      for (const d of copias) {
+        setLimpieza(`Quitando ${hechas + 1} de ${copias.length}…`);
+        // Si no estaba publicada, retirar no hace nada.
+        await retirarDeComunidad(d.id);
+        const { error } = await eliminarCreacion(user.uid, d);
+        if (!error) hechas += 1;
+      }
+      queryClient.invalidateQueries({ queryKey: ['comunidad'] });
+      queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'] });
+      queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'] });
+      setLimpieza(copias.length ? `Listo: se quitaron ${hechas} de ${copias.length}.` : 'No había copias.');
+    } catch (e) {
+      setLimpieza(`Error: ${e.message}`);
+    }
   };
 
   const opciones = (prendas.data || []).filter((p) => p.prendaBase?.vistas?.length);
   const listas = PRODUCTOS.some(([p]) => destino[p]);
   return (
     <div className={s.pagina}>
-      <h1>Importar plantillas de cuadros y mousepads</h1>
+      <h1>Cuadros, mousepads y tomatodos en Crear</h1>
       <p>
-        Convierte las plantillas del personalizador anterior (6 equipos y 3 de parejas) en <strong>diseños de la
-        comunidad</strong> de tus prendas de Crear. El cliente las ve en el estudio, en <em>Empieza con un diseño</em>, y
-        cambia la foto, los textos o lo que quiera. Se guardan en Mis creaciones de tu cuenta y se pueden retirar desde ahí.
+        Pone los productos de Yoryo en Crear con sus plantillas. Las plantillas son de cada producto: el cliente las ve en el
+        estudio, en <em>Empieza con un diseño</em>, separadas en Parejas y Equipos, y cambia la foto, los textos o lo que quiera.
+        No aparecen en la comunidad ni en Mis creaciones. Luego se renombran o quitan en Admin → Prendas de Crear.
       </p>
       <section className={s.grupo}>
         <h2>1. Los productos en Crear</h2>
         <p>
           Crea el cuadro (31 × 25 cm), el mousepad (23.5 × 19.5 cm) y el tomatodo grabado como productos de Crear, con la foto
           de la tienda sin fondo, y el Pack de oficina como combo. También hace que <em>Personalizar</em> de esos productos de la
-          tienda lleve a ellos. Lo que ya exista no se repite. Luego se ajustan en Admin → Prendas de Crear.
+          tienda lleve a ellos. Lo que ya exista no se repite.
         </p>
         <Boton variante="contorno" onClick={crearProductos} cargando={creandoProductos} disabled={!user || trabajando}>Crear productos y pack</Boton>
         {pasoProductos && <small className={pasoProductos.startsWith('Error') ? s.error : undefined}>{pasoProductos}</small>}
@@ -188,7 +254,7 @@ export default function ImportarPlantillasYoryo() {
 
       <h2 className={s.subtitulo}>2. Las plantillas</h2>
       <Aviso tipo="info" compacto>
-        Importa una sola vez: cada vez que se importa se publican diseños nuevos.
+        Volver a guardarlas reemplaza las mismas plantillas (no se duplican).
       </Aviso>
 
       <div className={s.destinos}>
@@ -220,7 +286,7 @@ export default function ImportarPlantillasYoryo() {
                       return sig;
                     })}
                   />
-                  {x.nombre}
+                  {x.grupo} · {x.nombre}
                 </label>
                 {estado[x.id] && <small className={estado[x.id].startsWith('Error') ? s.error : undefined}>{estado[x.id]}</small>}
               </li>
@@ -229,10 +295,19 @@ export default function ImportarPlantillasYoryo() {
         </section>
       ))}
 
-      {estado.general && <Aviso tipo="error" compacto>{estado.general}</Aviso>}
       <Boton onClick={importar} cargando={trabajando} disabled={!listas || !user || prendas.isLoading || editadas.isLoading}>
-        Importar y publicar
+        Guardar plantillas en los productos
       </Boton>
+
+      <section className={s.grupo}>
+        <h2>3. Quitar las copias de la comunidad</h2>
+        <p>
+          La versión anterior de esta pantalla publicó las plantillas en la comunidad y las guardó en tus creaciones. Esto las
+          retira de la comunidad y las borra de Mis creaciones. Las plantillas de los productos no se tocan.
+        </p>
+        <Boton variante="contorno" onClick={limpiar} disabled={!user || trabajando || limpieza.startsWith('Quitando')}>Quitar copias</Boton>
+        {limpieza && <small className={limpieza.startsWith('Error') ? s.error : undefined}>{limpieza}</small>}
+      </section>
     </div>
   );
 }

@@ -1101,33 +1101,69 @@ export function MedidorCalidad({ calidad, onNitida }) {
 }
 
 /**
- * "Empieza con un diseño": los diseños de la comunidad de esta prenda en una
- * tira que se desliza, igual en el celular y en la computadora. Elegir uno
- * reemplaza lo que hay (se puede deshacer).
- *  - disenos: [{ id, nombre, imagen }] · usando: id · cargando: id · onUsar(id)
+ * "Empieza con un diseño": las plantillas de este producto, el diseño plano
+ * (sin el marco ni la prenda) en tarjetas de dos columnas, igual en el
+ * celular y en la computadora. Si hay grupos (Parejas, Equipos…) van en
+ * pestañas. Elegir una reemplaza lo que hay (se puede deshacer).
+ *  - disenos: [{ id, nombre, imagen, grupo }] · usando: id · cargando: id · onUsar(id)
  */
 export function DisenosParaEmpezar({ disenos = [], usando, cargando, onUsar }) {
   const nombre = useTexto('Diseños para empezar');
+  const grupos = [...new Set(disenos.map((d) => d.grupo).filter(Boolean))];
+  const grupoDeUsado = disenos.find((d) => d.id === usando)?.grupo;
+  const [grupo, setGrupo] = useState(grupoDeUsado || grupos[0] || '');
+  const visibles = grupos.length > 1 ? disenos.filter((d) => d.grupo === grupo) : disenos;
   return (
-    <ul className={s.paraEmpezar} aria-label={nombre} data-componente="DisenosParaEmpezar">
-      {disenos.map((d) => (
-        <li key={d.id}>
-          <button
-            type="button"
-            className={[s.paraEmpezarItem, usando === d.id && s.paraEmpezarActivo].filter(Boolean).join(' ')}
-            aria-pressed={usando === d.id}
-            disabled={Boolean(cargando)}
-            onClick={() => onUsar?.(d.id)}
-          >
-            <span className={s.paraEmpezarFoto}>
-              {d.imagen && <img src={d.imagen} alt="" loading="lazy" draggable={false} />}
-              {cargando === d.id && <span className={s.paraEmpezarCargando}><Cargando texto="" tamano="sm" sobreClaro /></span>}
-            </span>
-            <span className={s.paraEmpezarNombre}><Texto>{d.nombre || 'Diseño'}</Texto></span>
-          </button>
-        </li>
-      ))}
-    </ul>
+    <div className={s.paraEmpezar} data-componente="DisenosParaEmpezar">
+      {grupos.length > 1 && (
+        <div className={s.chips} role="group" aria-label={nombre}>
+          {grupos.map((g) => <Chip key={g} tamano="sm" activo={g === grupo} onClick={() => setGrupo(g)}><Texto>{g}</Texto></Chip>)}
+        </div>
+      )}
+      <ul className={s.paraEmpezarLista} aria-label={nombre}>
+        {visibles.map((d) => (
+          <li key={d.id}>
+            <button
+              type="button"
+              className={[s.paraEmpezarItem, usando === d.id && s.paraEmpezarActivo].filter(Boolean).join(' ')}
+              aria-pressed={usando === d.id}
+              disabled={Boolean(cargando)}
+              onClick={() => onUsar?.(d.id)}
+            >
+              <span className={s.paraEmpezarFoto}>
+                {d.imagen && <img src={d.imagen} alt="" loading="lazy" draggable={false} />}
+                {cargando === d.id && <span className={s.paraEmpezarCargando}><Cargando texto="" tamano="sm" sobreClaro /></span>}
+                {usando === d.id && <span className={s.paraEmpezarMarca}><Check aria-hidden="true" /></span>}
+              </span>
+              <span className={s.paraEmpezarNombre}><Texto>{d.nombre || 'Diseño'}</Texto></span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * Solo admins: guarda el diseño del lienzo como plantilla de este producto
+ * (aparece en "Empieza con un diseño"). Nombre y grupo (la pestaña).
+ *  - grupos: los que ya hay (sugerencias) · onGuardar({ nombre, grupo }) · ocupado
+ */
+export function GuardarComoPlantilla({ grupos = [], onGuardar, ocupado = false }) {
+  const [nombre, setNombre] = useState('');
+  const [grupo, setGrupo] = useState(grupos[0] || '');
+  return (
+    <div className={s.grupoCampo} data-componente="GuardarComoPlantilla">
+      <span className={s.rotulo}><Texto>Guardar como plantilla</Texto></span>
+      <p className={s.panelAyuda}><Texto>Solo la ven los administradores. La plantilla aparece en "Empieza con un diseño" de este producto.</Texto></p>
+      <CampoEstudio etiqueta="Nombre" value={nombre} maxLength={60} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Alianza Lima" />
+      <CampoEstudio etiqueta="Grupo" value={grupo} maxLength={30} list="grupos-plantilla-estudio" onChange={(e) => setGrupo(e.target.value)} placeholder="Ej. Equipos" />
+      <datalist id="grupos-plantilla-estudio">{[...new Set(['Parejas', 'Equipos', ...grupos])].map((g) => <option key={g} value={g} />)}</datalist>
+      <BotonEstudio variante="contorno" tamano="sm" cargando={ocupado} disabled={!nombre.trim() || ocupado}
+        onClick={async () => { if (await onGuardar?.({ nombre: nombre.trim(), grupo: grupo.trim() })) setNombre(''); }}>
+        Guardar plantilla
+      </BotonEstudio>
+    </div>
   );
 }
 

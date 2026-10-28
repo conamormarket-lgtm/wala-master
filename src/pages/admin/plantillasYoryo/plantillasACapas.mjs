@@ -74,6 +74,11 @@ export function capasDePlantilla({ preset, proporcion, recursos, foto, textos, u
         id: nuevoId(e.id), type: 'image', src: imagen.src, anchoNatural: imagen.ancho, altoNatural: imagen.alto,
         escalaX: escala, escalaY: escala, angulo: 0, flipX: false, ...centro,
         ...(RECURSOS_FIJOS.has(e.recurso) && { fija: true }),
+        // La foto del cliente no se sale de su ventana (ver recorteDeCapa).
+        ...(e.indiceFoto !== undefined && {
+          ventana: { x: centro.left - caja.w / 2, y: centro.top - caja.h / 2, w: caja.w, h: caja.h },
+          ...(e.encaje === 'completa' && { encaje: 'completa' }),
+        }),
       });
       return;
     }

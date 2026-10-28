@@ -18,7 +18,7 @@ import { getPrendaBase } from '../../services/prendasBase';
 import { getDesignById, saveDesign, guardarTallaCreacion, renombrarCreacion, urlsDeDiseno } from '../../services/designs';
 import { limpiarArchivosSobrantes } from '../../services/limpiarArchivos';
 import { obtenerDisenoComunidad, registrarUsoComunidad } from '../../services/comunidad';
-import { useComunidad } from '../../pages/Comunidad/useComunidad';
+import { copiarImagenesAProducto, miniaturaDePlantilla, subirAProducto, guardarPlantillasDelProducto } from '../../pages/Crear/plantillasProducto';
 import {
   prepararImagenCliente, subirImagenCliente,
 } from '../../services/crearArchivos';
@@ -29,8 +29,8 @@ import {
 } from '../../utils/prendaBase';
 import {
   FUENTES, asegurarFuente, asegurarFuentesDe, altoEnUnidades, crearObjeto, leerTransformacion,
-  propiedadesTexto, renderizarVistaPrevia, componerVistas, transformDeZona, rectDeZona,
-  recorteDeZona, seSaleDeZona, ubicacion, desdeLienzo, aLienzo, curvarTexto,
+  propiedadesTexto, renderizarVistaPrevia, componerVistas, transformDeZona, rectDeZona, recorteDeCapa,
+  seSaleDeZona, ubicacion, desdeLienzo, aLienzo, curvarTexto,
 } from '../../pages/Crear/renderDiseno';
 const RecortarFoto = lazy(() => import('../../componentes/kit/piezas/RecortarFoto').then((m) => ({ default: m.RecortarFoto })));
 const QuitarFondo = lazy(() => import('./QuitarFondoDeEstudio'));
@@ -43,7 +43,7 @@ import { registrarGuardado, ponerBorradorEnCache, quitarBorradorDeCache } from '
 import { cajaEnZona, imanAlMover, imanAlEscalar, enCm } from '../../pages/Crear/guiasInteligentes';
 import { palabrasEstudio } from '../../componentes/kit/piezas/sustantivoEstudio';
 import { textoEnGrises } from '../../utils/laser.mjs';
-import { BarraLienzo, PasosEstudio, PanelCapa, PanelVarios, GuiaGestos, EstadoEdicion, AtajosEstudio, CargandoLienzo, AvisoSoltarArchivo, MOD_ESTUDIO as MOD } from '../../componentes/kit/piezas/Estudio';
+import { BarraLienzo, PasosEstudio, GuardarComoPlantilla, PanelCapa, PanelVarios, GuiaGestos, EstadoEdicion, AtajosEstudio, CargandoLienzo, AvisoSoltarArchivo, MOD_ESTUDIO as MOD } from '../../componentes/kit/piezas/Estudio';
 import { capaEstudioDesde, cambiosDePanelEstudio } from '../../componentes/kit/adaptadoresEstudio';
 import Boton from '../../componentes/kit/Boton';
 import { Aviso, EstadoVacio, HojaInferior } from '../../componentes/kit/Feedback';
@@ -1788,7 +1788,7 @@ const EstudioDeTienda = () => {
             if (token !== tokenRef.current) return;
             obj.capaId = capa.id;
             obj.zonaId = z.id;
-            obj.clipPath = recorteDeZona(transforms[z.id]);
+            obj.clipPath = recorteDeCapa(capa, transforms[z.id]);
             estilizar(obj);
             if (capa.fija && !editarFijasRef.current) Object.assign(obj, { selectable: false, evented: false, hoverCursor: 'default' });
             objetos.push(obj);
@@ -2486,7 +2486,8 @@ const EstudioDeTienda = () => {
 
   /**
    * "Cambiar foto": otra imagen en el mismo lugar, llenando el mismo espacio
-   * (centro, giro y volteo iguales). Sirve para la foto de una plantilla.
+   * (centro, giro y volteo iguales). La foto de una plantilla llena su
+   * ventana, centrada en ella.
    */
   const cambiarFoto = async (archivo) => {
     const capa = capaSel;
@@ -2494,8 +2495,14 @@ const EstudioDeTienda = () => {
     try {
       const { blob, urlLocal, ancho, alto } = await prepararImagenCliente(archivo);
       URL.revokeObjectURL(urlLocal);
-      const escala = Math.max((capa.anchoNatural * Math.abs(capa.escalaX)) / ancho, (capa.altoNatural * Math.abs(capa.escalaY)) / alto);
-      await ponerImagenEnCapa(capa, blob, { anchoNatural: ancho, altoNatural: alto, escalaX: escala, escalaY: escala });
+      const v = capa.ventana;
+      const caja = v ? { w: v.w, h: v.h } : { w: capa.anchoNatural * Math.abs(capa.escalaX), h: capa.altoNatural * Math.abs(capa.escalaY) };
+      // Una foto recortada (persona sin fondo) entra entera; las demás llenan.
+      const escala = (capa.encaje === 'completa' ? Math.min : Math.max)(caja.w / ancho, caja.h / alto);
+      await ponerImagenEnCapa(capa, blob, {
+        anchoNatural: ancho, altoNatural: alto, escalaX: escala, escalaY: escala,
+        ...(v && { left: v.x + v.w / 2, top: v.y + v.h / 2, angulo: 0 }),
+      });
     } catch (err) {
       toast.error(err?.message || 'No pudimos cambiar la imagen.');
     }
@@ -2834,21 +2841,21 @@ const EstudioDeTienda = () => {
     await colaBorradorRef.current;
   };
 
-  // ── "Empieza con un diseño": los de la comunidad de esta prenda ──────────
-  const comunidadQ = useComunidad();
-  const disenosDePartida = useMemo(() => (comunidadQ.data || [])
-    .filter((d) => d.tipo !== 'combo' && d.productId === id)
-    .map((d) => ({ id: d.id, nombre: d.nombre, imagen: d.vistasPrevias?.[0]?.url || d.imagenConjunta || d.previewUrl || '' })), [comunidadQ.data, id]);
-  const [partida, setPartida] = useState({ usando: plantillaParam || null, cargando: null });
+  // ── "Empieza con un diseño": las plantillas de este producto ─────────────
+  const disenosDePartida = cfgPrenda?.plantillas || [];
+  const [partida, setPartida] = useState({ usando: null, cargando: null });
 
-  /** Pone un diseño de la comunidad en lugar del actual (es un paso: se puede deshacer). */
-  const usarDisenoDePartida = async (disenoId) => {
-    if (partida.cargando || disenoId === partida.usando) return;
-    setPartida((p) => ({ ...p, cargando: disenoId }));
+  /** Pone una plantilla en lugar del diseño actual (es un paso: se puede deshacer). */
+  const usarDisenoDePartida = async (plantillaId) => {
+    const plantilla = disenosDePartida.find((p) => p.id === plantillaId);
+    if (!plantilla || partida.cargando || plantillaId === partida.usando) return;
+    setPartida((p) => ({ ...p, cargando: plantillaId }));
     try {
-      const fuente = await obtenerDisenoComunidad(disenoId);
-      if (!fuente || fuente.productId !== id) throw new Error('no-encaja');
-      const capas = fuente.layersByView || {};
+      // Ids nuevos: cada vez que se usa es un diseño aparte (historial, subidas).
+      const capas = Object.fromEntries(Object.entries(plantilla.capas)
+        .filter(([zId]) => zonaPorId(zId))
+        .map(([zId, lista]) => [zId, lista.map((c) => ({ ...c, id: nuevoId() }))]));
+      if (!Object.keys(capas).length) throw new Error('no-encaja');
       await asegurarFuentesDe(capas);
       if (!montadoRef.current) return;
       asentarHistorial();
@@ -2856,23 +2863,37 @@ const EstudioDeTienda = () => {
       capasRef.current = capas;
       setCapasPorZona(capas);
       setVersion((v) => v + 1);
-      const colorPlantilla = cfg.colores.find((c) => c.id === fuente.color?.id || c.nombre === fuente.color?.nombre);
-      if (colorPlantilla) setColorId(colorPlantilla.id);
-      const primeraZona = Object.keys(capas)[0];
-      const destino = primeraZona && zonaPorId(primeraZona);
-      if (destino) {
-        if (destino.vistaId !== vista.id) cambiarVista(destino.vistaId);
-        elegirZona(destino.id);
-      }
-      if (!designIdRef.current) {
-        basadoEnRef.current = disenoId;
-        setNombre(fuente.nombre || '');
-      }
-      setPartida({ usando: disenoId, cargando: null });
+      const destino = zonaPorId(Object.keys(capas)[0]);
+      if (destino.vistaId !== vista.id) cambiarVista(destino.vistaId);
+      elegirZona(destino.id);
+      if (!designIdRef.current) setNombre(plantilla.nombre);
+      setPartida({ usando: plantillaId, cargando: null });
       if (zonasUsadas.length) toast.info('Cambiamos tu diseño. Si querías el anterior, toca Deshacer.');
     } catch {
       setPartida((p) => ({ ...p, cargando: null }));
       toast.error('No pudimos abrir ese diseño. Inténtalo de nuevo.');
+    }
+  };
+
+  // Solo admins: el diseño del lienzo pasa a ser una plantilla de este producto.
+  const [guardandoPlantilla, setGuardandoPlantilla] = useState(false);
+  const guardarComoPlantilla = async ({ nombre: nombrePlantilla, grupo }) => {
+    setGuardandoPlantilla(true);
+    try {
+      const capas = await copiarImagenesAProducto(id, capasParaGuardar(capasRef.current));
+      const zonaPrincipal = zonaPorId(Object.keys(capas)[0]);
+      const vistaPrincipal = cfg.vistas.find((v) => v.id === zonaPrincipal.vistaId);
+      const miniatura = await miniaturaDePlantilla({ vista: vistaPrincipal, zona: zonaPrincipal, color, capas, laser });
+      const imagen = await subirAProducto(id, miniatura, 'miniatura');
+      await guardarPlantillasDelProducto(id, [{ id: `p${Date.now().toString(36)}`, nombre: nombrePlantilla, grupo, imagen, capas }]);
+      queryClient.invalidateQueries({ queryKey: ['prenda-base', id] });
+      toast.success('Plantilla guardada. Ya aparece en "Empieza con un diseño".');
+      return true;
+    } catch (e) {
+      toast.error(e.message || 'No se pudo guardar la plantilla.');
+      return false;
+    } finally {
+      setGuardandoPlantilla(false);
     }
   };
 
@@ -3643,6 +3664,10 @@ const EstudioDeTienda = () => {
               onImagen={elegirImagen} onTexto={() => agregarTexto(undefined, { editar: true })}
               subiendo={subiendo > 0} donde={zonasPrenda.length > 1 ? vista.nombre + ' · ' + zona.nombre : undefined} conDiseno={zonasUsadas.length > 0}
             />
+          )}
+          {!editandoAlgo && isAdmin && zonasUsadas.length > 0 && (
+            <GuardarComoPlantilla grupos={[...new Set(disenosDePartida.map((p) => p.grupo).filter(Boolean))]}
+              onGuardar={guardarComoPlantilla} ocupado={guardandoPlantilla} />
           )}
           <div ref={editorRef}>
             {multiIds.length > 1 ? (

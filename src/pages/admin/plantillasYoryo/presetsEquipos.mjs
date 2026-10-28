@@ -38,3 +38,22 @@ export function plantillaCapasBaseYoryo(equipo = 'Alianza Lima', producto = 'cua
     ],
   };
 }
+
+// Los escudos vectoriales para grabar (public/yoryo/laser/), uno por equipo.
+const LASER = { 'Alianza Lima': 'alianza-lima', Universitario: 'universitario', 'Sporting Cristal': 'sporting-cristal', 'Sport Boys': 'sport-boys', Barcelona: 'barcelona', 'Real Madrid': 'real-madrid' };
+
+/**
+ * La plantilla de equipo del tomatodo grabado: escudo arriba, el nombre y la
+ * frase debajo, todo en un tono (blanco: lo que se graba se ve plateado).
+ */
+export function plantillaTomatodoYoryo(equipo = 'Alianza Lima') {
+  return {
+    clave: `tomatodo__deportivo__${ids[equipo] || 'alianza_lima'}`, producto: 'tomatodo', equipo,
+    recursos: { escudo: { url: `/yoryo/laser/${LASER[equipo] || LASER['Alianza Lima']}.svg`, blanco: true } },
+    elementos: [
+      { id: 'escudo', nombre: 'Escudo', recurso: 'escudo', x: .5, y: .3, w: .68, h: .5, orden: 0 },
+      { id: 'nombre', nombre: 'Nombre', x: .5, y: .66, w: .92, h: .13, orden: 1, fuente: 'Elegante', color: '#FFFFFF', alineacion: 'centro', mayusculas: true },
+      { id: 'frase', nombre: 'Frase', x: .5, y: .85, w: .8, h: .2, orden: 2, fuente: 'Manuscrita', color: '#FFFFFF', alineacion: 'centro' },
+    ],
+  };
+}

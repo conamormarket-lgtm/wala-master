@@ -380,28 +380,24 @@
   }
 }
 
-/* "Empieza con un diseño": una tira de miniaturas que se desliza. */
+/* "Empieza con un diseño": pestañas por grupo y el diseño plano en tarjetas. */
 .paraEmpezar {
   display: grid;
-  grid-auto-columns: minmax(104px, 30%);
-  grid-auto-flow: column;
-  gap: 0.6rem;
-  margin: 0;
-  padding: 0.15rem 0.1rem 0.5rem;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: thin;
-  list-style: none;
+  gap: 0.7rem;
 }
 
-.paraEmpezar > li {
-  scroll-snap-align: start;
+.paraEmpezarLista {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .paraEmpezarItem {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.4rem;
   width: 100%;
   padding: 0;
   border: 0;
@@ -416,22 +412,39 @@
   position: relative;
   display: block;
   overflow: hidden;
-  aspect-ratio: 1;
-  border: 1.5px solid var(--color-border);
-  border-radius: 6px 18px 18px 18px;
-  background: #fff;
-  transition: border-color var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature);
+  border-radius: 6px 16px 16px 16px;
+  background: var(--color-surface);
+  box-shadow: 0 0 0 1px var(--color-border);
+  transition: box-shadow var(--dur-rapida) ease, transform var(--dur-media) var(--ease-signature);
 }
 
 .paraEmpezarFoto img {
+  display: block;
   width: 100%;
-  height: 100%;
-  object-fit: contain;
+  height: auto;
 }
 
 .paraEmpezarActivo .paraEmpezarFoto {
-  border-color: var(--violet-500);
-  box-shadow: 0 0 0 2px var(--violet-500);
+  box-shadow: 0 0 0 2.5px var(--violet-500);
+}
+
+/* El sello del elegido, como los pasos hechos. */
+.paraEmpezarMarca {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--violet-500);
+  color: #fff;
+}
+
+.paraEmpezarMarca svg {
+  width: 15px;
+  height: 15px;
 }
 
 .paraEmpezarCargando {
@@ -444,8 +457,8 @@
 
 .paraEmpezarNombre {
   overflow: hidden;
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 700;
   line-height: 1.25;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -463,7 +476,7 @@
 
 @media (hover: hover) and (pointer: fine) {
   .paraEmpezarItem:not(:disabled):hover .paraEmpezarFoto {
-    border-color: var(--violet-400);
+    box-shadow: 0 0 0 1.5px var(--violet-400);
     transform: translateY(-2px);
   }
 }

@@ -5,7 +5,7 @@ import {
   leerPrendaBase, normalizarZona, normalizarVista, normalizarReferencia, medidaZona, zonaConMedida,
   nuevoIdZona, slug, cargarImagen, tintarImagen, voltearImagen,
   colorDisponible, fondoMuestra, PATRONES_BICOLOR, vistasDeEjemplo, COLORES_POLERA, TALLAS_POLERA,
-  leerTipo, leerTecnica,
+  leerTipo, leerTecnica, leerPlantillas,
 } from '../../../utils/prendaBase';
 import ZonaEditor from './ZonaEditor';
 import styles from './PersonalizacionPrenda.module.css';
@@ -47,6 +47,7 @@ export const prendaBaseParaGuardar = (valor, variantes) => {
     colores,
     ...(leerTipo(valor?.tipo) !== 'prenda' && { tipo: leerTipo(valor.tipo) }),
     ...(leerTecnica(valor?.tecnica) !== 'impresion' && { tecnica: leerTecnica(valor.tecnica) }),
+    ...(leerPlantillas(valor?.plantillas).length && { plantillas: leerPlantillas(valor.plantillas) }),
   };
 };
 
@@ -179,6 +180,46 @@ const ListaZonas = ({ idLista, zonas, escala, elegida, onElegir, onCambiar, onZo
 );
 
 /**
+ * Las plantillas del producto ("Empieza con un diseño" del estudio): su
+ * nombre, su grupo (la pestaña: Parejas, Equipos…) y quitarlas. Se agregan
+ * desde el estudio con "Guardar como plantilla" (solo admins) o desde el
+ * importador de plantillas.
+ */
+const PlantillasDelProducto = ({ plantillas, onChange }) => {
+  const cambiarUna = (id, cambios) => onChange(plantillas.map((p) => (p.id === id ? { ...p, ...cambios } : p)));
+  return (
+    <section className={styles.bloque}>
+      <h3 className={styles.bloqueTitulo}>Plantillas ({plantillas.length})</h3>
+      <p className={styles.ayuda}>
+        Los diseños para empezar que el cliente ve en el estudio, agrupados en pestañas. Para agregar una, diséñala en el
+        estudio y usa <strong>Guardar como plantilla</strong>.
+      </p>
+      <datalist id="grupos-plantillas">
+        {[...new Set(['Parejas', 'Equipos', ...plantillas.map((p) => p.grupo).filter(Boolean)])].map((g) => <option key={g} value={g} />)}
+      </datalist>
+      <div className={styles.plantillas}>
+        {plantillas.map((p) => (
+          <div key={p.id} className={styles.plantilla}>
+            {p.imagen ? <img src={p.imagen} alt="" /> : <span className={styles.plantillaSinFoto} />}
+            <label className={styles.campo}>
+              <span>Nombre</span>
+              <input value={p.nombre} onChange={(e) => cambiarUna(p.id, { nombre: e.target.value })} />
+            </label>
+            <label className={styles.campo}>
+              <span>Grupo</span>
+              <input list="grupos-plantillas" value={p.grupo} onChange={(e) => cambiarUna(p.id, { grupo: e.target.value })} />
+            </label>
+            <button type="button" className={styles.iconoPeligro} onClick={() => onChange(plantillas.filter((x) => x.id !== p.id))} aria-label={`Quitar ${p.nombre}`}>
+              <X size={16} aria-hidden="true" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+};
+
+/**
  * Apartado "Producto personalizable" del formulario de productos.
  *
  * Los colores y tallas NO se cargan aquí: son las variantes del producto. Aquí
@@ -297,6 +338,10 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
           </label>
         </div>
       </section>
+
+      {leerPlantillas(valor?.plantillas).length > 0 && (
+        <PlantillasDelProducto plantillas={leerPlantillas(valor.plantillas)} onChange={(plantillas) => cambiar({ plantillas })} />
+      )}
 
       <section className={styles.bloque}>
         <div className={styles.bloqueCabecera}>
