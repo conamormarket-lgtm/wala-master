@@ -30,6 +30,8 @@ export const prendaCrearDesdeProducto = (prenda = {}) => {
     // En Crear no hay lista de deseos: es una prenda para diseñar.
     sinDeseo: true,
     url: `/crear/${prenda.id}`,
+    // Para el filtro por marca de Crear.
+    marcaId: prenda.brandId || '',
   };
 };
 
@@ -60,6 +62,8 @@ export const comboCrearDesde = (combo = {}, prendaPorId = new Map()) => {
     textoAccion: 'Armar',
     sinDeseo: true,
     url: `/combo/${combo.id}?nuevo=1`,
+    // La marca del combo o, si no tiene, la de su primera pieza.
+    marcaId: combo.brandId || prendas[0]?.brandId || '',
   };
 };
 

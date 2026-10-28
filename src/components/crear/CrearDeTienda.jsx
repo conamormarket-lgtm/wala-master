@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
 import { getPrendasBase } from '../../services/prendasBase';
 import { getCombosCrear } from '../../services/combosCrear';
+import { getBrands } from '../../services/brands';
 import { getDesignsByUser } from '../../services/designs';
 import { esMiCombo, agruparCombos } from '../../services/misCombos';
 import { useBorradoresCrear } from '../../pages/Crear/useBorradoresCrear';
@@ -59,6 +60,14 @@ export default function CrearDeTienda() {
     queryKey: ['combos-crear', Boolean(isAdmin)],
     queryFn: async () => (await getCombosCrear({ incluirBorradores: Boolean(isAdmin) })).data,
   });
+
+  // Las marcas, para filtrar Crear por marca (si hay de más de una).
+  const marcasQ = useQuery({
+    queryKey: ['brands'],
+    queryFn: async () => (await getBrands()).data,
+    staleTime: 300_000,
+  });
+  const marcas = useMemo(() => (marcasQ.data || []).map((m) => ({ id: m.id, nombre: m.name })), [marcasQ.data]);
 
   const claveCreaciones = ['mis-creaciones-crear', uid];
   const creacionesQ = useQuery({
@@ -123,6 +132,7 @@ export default function CrearDeTienda() {
       cargando={prendasQ.isLoading}
       para={para}
       onPara={elegirPara}
+      marcas={marcas}
       borradores={tarjetasBorrador.map(conAcciones)}
       creaciones={tarjetas.slice(0, 8).map(conAcciones)}
       totalCreaciones={tarjetas.length}

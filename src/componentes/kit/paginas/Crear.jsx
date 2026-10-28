@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { User, Users } from 'lucide-react';
 import Boton from '../Boton';
 import Carrusel from '../Carrusel';
@@ -41,19 +41,32 @@ function Fila({ titulo, subtitulo, accion, etiqueta, children }) {
  *  - prendas: [{ id, ...props de TarjetaProducto }] (accion "crear") · cargando
  *  - combos: [{ id, cantidad: n, conjunto, ...props de TarjetaProducto con piezas }]
  *  - para · onPara(n): "¿Para cuántos?" (en la tienda va en la dirección: ?para=2)
+ *  - marcas: [{ id, nombre }] las marcas de lo que hay (con dos o más, chips
+ *    para filtrar; cada tarjeta trae su `marcaId`)
+ *  - Con prendas y productos a la vez (tarjetas con `accesorio`), chips
+ *    "Prendas · Productos" para ver solo unos.
  *  - borradores, creaciones: [{ id, ...props de TarjetaCreacion }] (las 8
  *    más recientes) · totalCreaciones: para "Ver todas (13)"
  *  - comunidad: [{ id, ...props de TarjetaCreacion con `usar` }] · totalComunidad
  *  - urlCreaciones, urlComunidad, urlTienda · portada: props de PortadaCrear
  */
 export function PaginaCrear({
-  prendas = [], combos = [], cargando = false, para = 1, onPara,
+  prendas: todasLasPrendas = [], combos: todosLosCombos = [], cargando = false, para = 1, onPara, marcas = [],
   borradores = [], creaciones = [], totalCreaciones, comunidad = [], totalComunidad,
   urlCreaciones = '/cuenta/creaciones', urlComunidad = '/comunidad', urlTienda = '/tienda', portada,
 }) {
+  // Filtros: la marca y si son prendas o productos (cuadros, tomatodos…).
+  const [marca, setMarca] = useState(null);
+  const [clase, setClase] = useState(null); // null | 'prenda' | 'producto'
+  const deMarca = (x) => !marca || x.marcaId === marca;
+  const deClase = (x) => !clase || (clase === 'producto') === Boolean(x.accesorio);
+  const hayDeAmbos = todasLasPrendas.some((p) => p.accesorio) && todasLasPrendas.some((p) => !p.accesorio);
+  const marcasConAlgo = marcas.filter((m) => todasLasPrendas.some((p) => p.marcaId === m.id) || todosLosCombos.some((c) => c.marcaId === m.id));
+  const prendas = todasLasPrendas.filter((p) => deMarca(p) && deClase(p));
+  const combos = todosLosCombos.filter((c) => deMarca(c) && deClase(c));
   // 1 son las prendas sueltas; 2, 3… los tamaños de combo que hay.
   const tamanos = [...new Set(combos.map((c) => c.cantidad))].sort((a, b) => a - b);
-  const conAccesorios = prendas.some((p) => p.accesorio) || combos.some((p) => p.accesorio);
+  const conAccesorios = todasLasPrendas.some((p) => p.accesorio) || todosLosCombos.some((p) => p.accesorio);
   const opciones = [1, ...tamanos].map((n) => {
     const deN = combos.filter((c) => c.cantidad === n);
     const conjunto = n > 1 && deN.length > 0 && deN.every((c) => c.conjunto);
@@ -69,6 +82,8 @@ export function PaginaCrear({
     verTodas: `Ver todas${nCreaciones > 1 ? ` (${nCreaciones})` : ''}`,
     verTodos: `Ver todos${nComunidad > 1 ? ` (${nComunidad})` : ''}`,
     para: useTexto(conAccesorios ? 'Elige tu formato' : '¿Para cuántas personas?'),
+    porMarca: useTexto('Filtrar por marca'),
+    porTipo: useTexto('Prendas o productos'),
   };
 
   return (
@@ -124,9 +139,28 @@ export function PaginaCrear({
             </div>
           )}
 
+          {marcasConAlgo.length > 1 && (
+            <div className={s.para} role="group" aria-label={t.porMarca}>
+              {[null, ...marcasConAlgo].map((m) => (
+                <Chip key={m?.id || 'todas'} activo={marca === (m?.id || null)} onClick={() => setMarca(m?.id || null)}>
+                  {m ? m.nombre : <Texto>Todas las marcas</Texto>}
+                </Chip>
+              ))}
+            </div>
+          )}
+          {hayDeAmbos && (
+            <div className={s.para} role="group" aria-label={t.porTipo}>
+              {[[null, 'Todo'], ['prenda', 'Prendas'], ['producto', 'Productos']].map(([valor, texto]) => (
+                <Chip key={texto} activo={clase === valor} onClick={() => setClase(valor)}>
+                  <Texto>{texto}</Texto>
+                </Chip>
+              ))}
+            </div>
+          )}
+
           {elegido > 1 ? (
             <ul className={s.grilla} key={`para-${elegido}`}>
-              {combosDePara.map(({ id, cantidad, conjunto, ...c }, k) => <li key={id} style={{ '--k': k }}><TarjetaProducto {...c} /></li>)}
+              {combosDePara.map(({ id, cantidad, conjunto, marcaId, ...c }, k) => <li key={id} style={{ '--k': k }}><TarjetaProducto {...c} /></li>)}
             </ul>
           ) : cargando ? (
             <ul className={s.grilla} aria-busy="true">
@@ -134,7 +168,7 @@ export function PaginaCrear({
             </ul>
           ) : prendas.length > 0 ? (
             <ul className={s.grilla} key="para-1">
-              {prendas.map(({ id, ...p }, k) => <li key={id} style={{ '--k': k }}><TarjetaProducto {...p} /></li>)}
+              {prendas.map(({ id, marcaId, ...p }, k) => <li key={id} style={{ '--k': k }}><TarjetaProducto {...p} /></li>)}
             </ul>
           ) : (
             <div className={s.vacio}>
