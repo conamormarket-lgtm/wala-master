@@ -323,6 +323,20 @@ a.anuncio:hover {
   height: 100%;
 }
 
+/* Solo en el editor: la foto programada o vencida que la tienda no muestra. */
+.heroAviso {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
 .heroDiapo img {
   object-fit: cover;
 }

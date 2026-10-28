@@ -4,6 +4,7 @@ import { toDirectImageUrl } from '../../../../utils/imageUrl';
 import useIsMobile from '../../../../hooks/useIsMobile';
 import styles from './HeroCarousel.module.css';
 import { T } from '../../../../i18n/useTranslatedText';
+import { estaVigente } from '../../../../utils/vigencia.mjs';
 
 const hexToRgba = (color, opacity) => {
   if (!color || color === 'transparent') return 'transparent';
@@ -22,7 +23,7 @@ const HeroCarousel = ({ slides = [], autoPlaySpeed = 5000, config = {} }) => {
   // mobileImageUrl/altura, así ambos criterios de "es móvil" coinciden.
   const { isMobile } = useIsMobile(768);
 
-  const filteredSlides = slides.filter(s => s?.imageUrl?.trim());
+  const filteredSlides = slides.filter(s => s?.imageUrl?.trim() && estaVigente(s));
   const firstImageKey = `${filteredSlides[0]?.imageUrl || ''}|${filteredSlides[0]?.mobileImageUrl || ''}`;
   const [loadedFirstImage, setLoadedFirstImage] = useState(null);
   const firstImageReady = loadedFirstImage === firstImageKey;

@@ -63,3 +63,13 @@ test('denied, missing, malformed and offline bootstrap results preserve the SDK 
     assert.equal(result.timers.size, 0);
   }
 });
+
+test('HTML bootstrap preloads the first slide that is live today', async () => {
+  const sections = [{ type: 'hero_carousel', order: 0, settings: { slides: [
+    { imageUrl: 'https://images.example/vencida.webp', endTime: '2000-01-01T00:00:00Z' },
+    { imageUrl: 'https://images.example/futura.webp', startTime: '2999-01-01T00:00:00Z' },
+    { imageUrl: 'https://images.example/hoy.webp', startTime: '2000-01-01T00:00:00Z' },
+  ] } }];
+  const result = await run({ response: { ok: true, json: async () => ({ fields: { sections: encode(sections) } }) } });
+  assert.equal(result.links[0].href, 'https://images.example/hoy.webp');
+});

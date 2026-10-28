@@ -1193,6 +1193,8 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       });
     }
     if (section.type === 'banner_grid') datos.marcas = automaticGridBrands;
+    // En el editor también las fotos programadas o vencidas, con su aviso.
+    if (section.type === 'hero_carousel') datos.verTodas = isEditModeActive;
     // Con items puestos a mano (dataSource manual) mandan esos.
     if (section.type === 'category_grid') {
       datos.categorias = section.settings?.dataSource === 'products' ? categoriasDeGrillaKit : undefined;

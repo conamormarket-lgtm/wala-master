@@ -1,3 +1,5 @@
+import { estaVigente } from '../../../utils/vigencia.mjs';
+
 // Only the first section and header can hold the initial full-page loader.
 export function initialSectionCount(sections = []) {
   const firstContent = sections.findIndex((section) => !['header', 'announcement_bar'].includes(section.type));
@@ -9,12 +11,12 @@ export function resolveCatalogFacet(selection, pageId, brandId) {
   return selection.pageId === pageId ? selection.facet : null;
 }
 
-export function firstHeroUrl(sections = [], mobile = false) {
+export function firstHeroUrl(sections = [], mobile = false, ahora = Date.now()) {
   for (const section of [...sections].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))) {
     const settings = section.settings || {};
     if (section.type === 'hero_banner' && settings.mediaType !== 'video' && settings.mediaUrl) return settings.mediaUrl;
     if (section.type === 'hero_carousel') {
-      const first = settings.slides?.find((slide) => slide?.imageUrl?.trim());
+      const first = settings.slides?.find((slide) => slide?.imageUrl?.trim() && estaVigente(slide, ahora));
       if (first) return (mobile && first.mobileImageUrl?.trim()) || first.imageUrl;
     }
   }

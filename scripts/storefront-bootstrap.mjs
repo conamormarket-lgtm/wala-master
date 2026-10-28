@@ -48,7 +48,14 @@ export function storefrontBootstrap(projectId, apiKey) {
         const settings = section.settings || {};
         if (section.type === 'hero_banner' && settings.mediaType !== 'video') image = settings.mediaUrl || '';
         if (section.type === 'hero_carousel') {
-          const first = settings.slides?.find((slide) => slide?.imageUrl?.trim());
+          // La misma cuenta que src/utils/vigencia.mjs (aquí no se puede importar).
+          const now = Date.now();
+          const live = (slide) => {
+            const from = Date.parse(slide.startTime || '');
+            const until = Date.parse(slide.endTime || '');
+            return !(now < from) && !(now >= until);
+          };
+          const first = settings.slides?.find((slide) => slide?.imageUrl?.trim() && live(slide));
           if (first) image = (mobile && first.mobileImageUrl?.trim()) || first.imageUrl;
         }
         if (image) break;

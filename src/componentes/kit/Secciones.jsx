@@ -11,6 +11,7 @@ import { TarjetaDeCatalogo, TarjetaProductoEsqueleto } from './TarjetaProducto';
 import { Texto, useTexto } from './Traduccion';
 import { Enlace } from './Enlace';
 import { testimonioDesdeAjuste } from './adaptadores';
+import { estadoDeVigencia } from '../../utils/vigencia.mjs';
 import { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
 import { EtiquetaColgante, Destello, acento } from './Marca';
 import { IconoWala, iconoDesde } from './IconosWala';
@@ -213,12 +214,23 @@ export function BarraAnuncios({ ajustes = {} }) {
 }
 
 /* ── Carrusel principal (hero_carousel) ─────────────────── */
-export function HeroCarrusel({ ajustes = {} }) {
+const AVISO_VIGENCIA = { programada: 'Programada: aún no se ve en la tienda', vencida: 'Vencida: ya no se ve en la tienda' };
+
+/**
+ * Cada foto puede tener startTime/endTime (utils/vigencia.mjs): la tienda
+ * solo dibuja las vigentes. `verTodas` (el editor) las dibuja todas, con un
+ * aviso en las que hoy no salen, para poder revisarlas antes de su fecha.
+ */
+export function HeroCarrusel({ ajustes = {}, verTodas = false }) {
   const {
     slides = [], autoPlay = true, autoPlaySpeed = 5000, showArrows = true, showDots = true, pauseOnHover = true,
     heightDesktop = '450px', heightMobile = '350px', borderRadius = '16px',
   } = ajustes;
-  const diapos = slides.filter((d) => d.imageUrl);
+  const ahora = Date.now();
+  const diapos = slides
+    .filter((d) => d.imageUrl)
+    .map((d) => ({ ...d, vigencia: estadoDeVigencia(d, ahora) }))
+    .filter((d) => verTodas || d.vigencia === 'vigente');
   if (!diapos.length) return null;
 
   return (
@@ -243,6 +255,7 @@ export function HeroCarrusel({ ajustes = {} }) {
                 <img {...atributosDeFoto(d.imageUrl, '100vw')} alt={d.alt || d.title || ''} loading={k === 0 ? 'eager' : 'lazy'} style={{ objectPosition: d.imagePosition || 'center' }} />
               </picture>
               <span className={s.heroVelo} style={{ background: d.overlayColor || '#111827', opacity: (d.overlayOpacity ?? 20) / 100 }} />
+              {AVISO_VIGENCIA[d.vigencia] && <span className={s.heroAviso}>{AVISO_VIGENCIA[d.vigencia]}</span>}
               {(d.title || d.subtitle || d.buttonText) && (
                 <div className={s.heroTexto} style={{ alignItems: pos, justifyContent: vert, textAlign: d.contentPosition === 'center' ? 'center' : d.contentPosition === 'right' ? 'right' : 'left' }}>
                   {d.title && <h2 style={{ color: d.titleColor || '#fff' }}><Texto>{d.title}</Texto></h2>}

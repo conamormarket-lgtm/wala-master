@@ -224,12 +224,12 @@ export function ControlEnlace({ etiqueta, ayuda, valor, onCambiar, placeholder =
 }
 
 /** Fecha y hora en hora LOCAL (el editor de hoy mostraba UTC: 5 h corrida). */
-export function ControlFecha({ etiqueta, valor, onCambiar }) {
+export function ControlFecha({ etiqueta, ayuda, valor, onCambiar }) {
   const id = useId();
   const d = valor ? new Date(valor) : null;
   const local = d && !Number.isNaN(d.getTime()) ? new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
   return (
-    <Fila etiqueta={etiqueta} htmlFor={id}>
+    <Fila etiqueta={etiqueta} ayuda={ayuda} htmlFor={id}>
       <input id={id} type="datetime-local" className={s.input} value={local} onChange={(e) => onCambiar(e.target.value ? new Date(e.target.value).toISOString() : '')} />
     </Fila>
   );
@@ -614,7 +614,7 @@ function CampoEsquema({ def, ajustes, cambiar }) {
     case 'enlace': return <ControlEnlace etiqueta={def.etiqueta} ayuda={def.ayuda} placeholder={def.placeholder} valor={v} onCambiar={poner} />;
     case 'opciones': return <ControlOpciones etiqueta={def.etiqueta} ayuda={def.ayuda} opciones={def.opciones.filter((o) => !o.si || o.si(fuentes))} valor={v ?? def.porDefecto ?? def.opciones[0]?.valor} onCambiar={poner} />;
     case 'interruptor': return <ControlInterruptor etiqueta={def.etiqueta} descripcion={def.descripcion} valor={v ?? def.porDefecto ?? false} onCambiar={poner} />;
-    case 'fecha': return <ControlFecha etiqueta={def.etiqueta} valor={v} onCambiar={poner} />;
+    case 'fecha': return <ControlFecha etiqueta={def.etiqueta} ayuda={def.ayuda} valor={v} onCambiar={poner} />;
     case 'icono': return <ControlIcono etiqueta={def.etiqueta} valor={v} onCambiar={poner} ninguno={def.ninguno} />;
     case 'medida': return <ControlMedida {...def} valor={v} onCambiar={poner} />;
     case 'fuente': return <ControlFuente {...def} valor={v} onCambiar={poner} />;

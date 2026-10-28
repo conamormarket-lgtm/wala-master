@@ -83,3 +83,13 @@ test('selecting a local public font does not install the Segoe face or unrelated
   assert.ok(localFontRules(css, [], true).some(({ family }) => family === 'Segoe UI'));
   assert.equal(localFontRules(css, ['Unknown']).length, 0);
 });
+
+test('preload skips carousel slides outside their scheduled dates', () => {
+  const ahora = Date.parse('2026-11-10T12:00:00Z');
+  const sections = [{ type: 'hero_carousel', settings: { slides: [
+    { imageUrl: 'navidad.webp', startTime: '2026-12-01T05:00:00Z' },
+    { imageUrl: 'halloween.webp', endTime: '2026-11-01T05:00:00Z' },
+    { imageUrl: 'lumi.webp', startTime: '2026-11-01T05:00:00Z', endTime: '2026-11-20T05:00:00Z' },
+  ] } }];
+  assert.equal(firstHeroUrl(sections, false, ahora), 'lumi.webp');
+});

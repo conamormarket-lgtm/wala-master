@@ -3,6 +3,7 @@ import {
   Zap, MessageSquareQuote, Infinity as Cinta, Trophy, PanelBottom, MapPin, ListChecks, CircleHelp, Sparkles, Tag, Clock,
   FolderOpen, Rows3, Menu, UserRound, Heart, Search,
 } from 'lucide-react';
+import { estadoDeVigencia } from '../../../utils/vigencia.mjs';
 
 /*
  * Esquemas del editor del builder: cada tipo de sección describe UNA vez sus
@@ -111,6 +112,9 @@ export const vaEnPagina = (esquema, conMarca) => !esquema?.paraPaginas || esquem
  *  - Grande: igual, más alta
  *  - Pantalla completa: de borde a borde, casi todo el alto, sin esquinas
  */
+/** Delante del título de una foto del carrusel que hoy no se ve en la tienda. */
+const MARCA_VIGENCIA = { vigente: '', programada: 'Programada · ', vencida: 'Vencida · ' };
+
 const TAMANOS_PORTADA = [
   { valor: 'portada', texto: 'Como la portada de la marca', detalle: 'Dentro de la página, esquinas redondas', escritorio: '400px', movil: '440px', completo: false },
   { valor: 'grande', texto: 'Grande', detalle: 'Dentro de la página, más alta', escritorio: '560px', movil: '480px', completo: false },
@@ -182,7 +186,7 @@ export const ESQUEMAS = {
     descripcion: 'Varias fotos grandes que se pasan solas.',
     campos: [
       {
-        tipo: 'lista', campo: 'slides', etiqueta: 'Fotos', titulo: (d, i) => d.title || `Foto ${i + 1}`, miniatura: (d) => d.imageUrl,
+        tipo: 'lista', campo: 'slides', etiqueta: 'Fotos', titulo: (d, i) => `${MARCA_VIGENCIA[estadoDeVigencia(d)]}${d.title || `Foto ${i + 1}`}`, miniatura: (d) => d.imageUrl,
         nuevo: () => ({ id: `slide_${Date.now()}`, imageUrl: '', mobileImageUrl: '', link: '', alt: '', title: '', subtitle: '', buttonText: '', buttonLink: '', contentPosition: 'left', verticalPosition: 'center', imagePosition: 'center center', titleColor: '#ffffff', subtitleColor: '#ffffff', buttonBgColor: '#ffffff', buttonTextColor: '#111827', overlayColor: '#111827', overlayOpacity: 20 }),
         campos: [
           { tipo: 'imagen', campo: 'imageUrl', etiqueta: 'Foto (en computadora)', carpeta: 'storefront/hero-carousel' },
@@ -202,6 +206,8 @@ export const ESQUEMAS = {
           { tipo: 'color', campo: 'buttonBgColor', etiqueta: 'Fondo del botón' },
           { tipo: 'color', campo: 'buttonTextColor', etiqueta: 'Texto del botón' },
           { tipo: 'texto', campo: 'alt', etiqueta: 'Descripción de la imagen', ayuda: 'La leen los lectores de pantalla y Google.' },
+          { tipo: 'fecha', campo: 'startTime', etiqueta: 'Se muestra desde', ayuda: 'Vacío: se ve desde que publicas.' },
+          { tipo: 'fecha', campo: 'endTime', etiqueta: 'Se muestra hasta', ayuda: 'Vacío: no se quita sola.' },
         ],
       },
       tamanosDePortada((t) => ({ heightDesktop: t.escritorio, heightMobile: t.movil, fullWidth: t.completo, borderRadius: t.completo ? '0' : '28px' })),
