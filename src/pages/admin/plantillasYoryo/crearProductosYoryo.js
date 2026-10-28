@@ -351,7 +351,11 @@ export async function pasarYoryoALaTienda({ onPaso = () => {} } = {}) {
   const { data: tiendaPack } = await getProduct(PACK_TIENDA);
   onPaso('Pack de oficina: pasando a la tienda…');
   const brandId = pack.brandId || tiendaPack?.brandId || '';
+  // Dónde sale: la página de la marca va por categorías.
+  const deLaTiendaPack = Object.fromEntries(['categories', 'collections', 'tags']
+    .filter((k) => Array.isArray(tiendaPack?.[k]) && tiendaPack[k].length).map((k) => [k, tiendaPack[k]]));
   await updateProductField(pack.id, {
+    ...deLaTiendaPack,
     enTienda: true,
     brandId,
     mainImage: pack.mainImage || tiendaPack?.comboPreviewImage || tiendaPack?.mainImage || '',

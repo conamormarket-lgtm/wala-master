@@ -5,6 +5,7 @@ import { Plus, Trash2, Pencil, Eye, Loader2, Sparkles, Upload, X } from 'lucide-
 import { getCombosCrear, guardarComboCrear, archivarComboCrear, sugerirCombos, MIN_PIEZAS, MAX_PIEZAS } from '../../services/combosCrear';
 import { getPrendasBase } from '../../services/prendasBase';
 import { getBrands } from '../../services/brands';
+import { getCategories } from '../../services/products';
 import { uploadFile } from '../../services/firebase/storage';
 import { precioBase, leerPrendaBase } from '../../utils/prendaBase';
 import { useGlobalToast } from '../../contexts/ToastContext';
@@ -12,7 +13,7 @@ import styles from './AdminCombosCrear.module.css';
 
 const VACIO = {
   name: '', description: '', price: '', salePrice: '', publicado: false, tallas: 'auto', piezas: [{ prendaId: '' }, { prendaId: '' }],
-  brandId: '', mainImage: '', enTienda: false,
+  brandId: '', mainImage: '', enTienda: false, categories: [],
 };
 
 // La foto de una prenda para la tarjeta del combo en la tienda: la de la
@@ -57,6 +58,11 @@ const AdminCombosCrear = ({ embebido = false, nuevoInicial = false }) => {
   const { data: marcas = [] } = useQuery({
     queryKey: ['brands'],
     queryFn: async () => (await getBrands()).data || [],
+    staleTime: 300_000,
+  });
+  const { data: categorias = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => (await getCategories()).data || [],
     staleTime: 300_000,
   });
   const [subiendo, setSubiendo] = useState(false);
@@ -132,6 +138,7 @@ const AdminCombosCrear = ({ embebido = false, nuevoInicial = false }) => {
       brandId: combo.brandId || '',
       mainImage: combo.mainImage || '',
       enTienda: combo.enTienda === true,
+      categories: Array.isArray(combo.categories) ? combo.categories : [],
     } : { ...VACIO, piezas: VACIO.piezas.map((p) => ({ ...p })) });
   };
 
@@ -264,6 +271,16 @@ const AdminCombosCrear = ({ embebido = false, nuevoInicial = false }) => {
             <select value={form.brandId} onChange={(e) => cambiar('brandId', e.target.value)}>
               <option value="">Sin marca</option>
               {marcas.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
+          </label>
+          <label className={styles.campo}>
+            <span>Categoría (la página de la marca muestra un carrusel por categoría)</span>
+            <select value={form.categories[0] || ''} onChange={(e) => cambiar('categories', e.target.value ? [e.target.value] : [])}>
+              <option value="">Sin categoría</option>
+              {categorias
+                // Las de su marca (como la ficha de productos: brandIds de la categoría).
+                .filter((c) => !form.brandId || (Array.isArray(c.brandIds) && c.brandIds.includes(form.brandId)) || c.id === form.categories[0])
+                .map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </label>
           <div className={styles.campo}>

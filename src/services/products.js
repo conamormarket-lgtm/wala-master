@@ -133,7 +133,9 @@ export const idsDeCategoriaDe = (product) => {
 export const categoriasConProductos = (products, brandId = null) => {
   const set = new Set();
   for (const p of (products || [])) {
-    if (!p || p.visible === false || p.active === false) continue;
+    // Lo que sale en la tienda (un pack de Crear guarda visible: false, pero
+    // con "También en la tienda" sí sale; una prenda solo de Crear, no).
+    if (!p || p.active === false || !esProductoDeTienda(p)) continue;
     if (brandId && p.brandId !== brandId) continue;
     idsDeCategoriaDe(p).forEach((id) => set.add(id));
   }

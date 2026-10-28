@@ -54,6 +54,8 @@ export const getComboCrear = async (id) => {
  *    cada prenda se guardan con la pieza: la tarjeta de la tienda los muestra
  *    sin leer las prendas (se actualizan cada vez que se guarda el combo).
  *  - form.enTienda: "También en la tienda" (ver utils/enTienda.mjs).
+ *  - form.categories: [id] (sin ella el pack no sale en la página de su marca,
+ *    que va por categorías). Si no viene, no se toca.
  */
 export const guardarComboCrear = async (id, form) => {
   const name = String(form.name || '').trim();
@@ -66,6 +68,8 @@ export const guardarComboCrear = async (id, form) => {
     salePrice: Number(form.salePrice) > 0 ? Number(form.salePrice) : null,
     mainImage: String(form.mainImage || '').trim(),
     brandId,
+    // La categoría: la página de la marca muestra un carrusel por categoría.
+    ...(Array.isArray(form.categories) && { categories: form.categories.filter(Boolean) }),
     esComboCrear: true,
     // `visible` no es el interruptor de un combo (se arma en /combo/:id y se
     // ofrece con comboCrear.publicado): sale en la tienda solo con enTienda.
