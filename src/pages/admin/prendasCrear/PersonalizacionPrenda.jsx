@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Upload, X, Sparkles, Palette, AlertTriangle, Pencil } from 'lucide-react';
+import { Plus, Upload, X, Sparkles, Palette, AlertTriangle, LayoutTemplate, Loader2 } from 'lucide-react';
 import { uploadFile } from '../../../services/firebase/storage';
 import {
   leerPrendaBase, normalizarZona, normalizarVista, normalizarReferencia, medidaZona, zonaConMedida,
@@ -7,6 +7,7 @@ import {
   colorDisponible, fondoMuestra, PATRONES_BICOLOR, vistasDeEjemplo, COLORES_POLERA, TALLAS_POLERA,
   leerTipo, leerTecnica, leerPlantillas,
 } from '../../../utils/prendaBase';
+import { fotoDeTiendaConPlantilla } from '../../Crear/plantillasProducto';
 import ZonaEditor from './ZonaEditor';
 import styles from './PersonalizacionPrenda.module.css';
 
@@ -187,48 +188,65 @@ const ListaZonas = ({ idLista, zonas, escala, elegida, onElegir, onCambiar, onZo
 );
 
 /**
- * Las plantillas del producto ("Empieza con un diseño" del estudio): su
- * nombre, su grupo (la pestaña: Parejas, Equipos…) y quitarlas. Se agregan
- * desde el estudio con "Guardar como plantilla" (solo admins) o desde el
- * importador de plantillas.
+ * La foto de tienda de un color (la de su variante: la que se ve en la tienda
+ * y en la página del producto) y cómo ponerla: subirla o hacerla con una
+ * plantilla puesta en el producto. Sin ella, la tienda muestra la foto para
+ * diseñar (el producto en blanco).
  */
-const PlantillasDelProducto = ({ plantillas, prendaId, onChange }) => {
-  const cambiarUna = (id, cambios) => onChange(plantillas.map((p) => (p.id === id ? { ...p, ...cambios } : p)));
+const FotoDeTienda = ({ color, foto, vistas, plantillas, draftId, laser, onFoto }) => {
+  const [haciendo, setHaciendo] = useState(false);
+  const [eligiendo, setEligiendo] = useState(false);
+  const propia = foto && !vistas.some((v) => v.imagen === foto);
+  const conPlantilla = async (plantilla) => {
+    setEligiendo(false);
+    setHaciendo(true);
+    try {
+      onFoto(await fotoDeTiendaConPlantilla({ prendaId: draftId, cfg: { vistas, laser }, color, plantilla }));
+    } catch (e) {
+      alert(`No se pudo hacer la foto: ${e.message}`);
+    } finally {
+      setHaciendo(false);
+    }
+  };
+  const subir = async (archivo) => {
+    if (!archivo) return;
+    setHaciendo(true);
+    const { url, error } = await uploadFile(archivo, `productos_v2/${draftId || 'crear'}/tienda_${Date.now()}_${slug(archivo.name.replace(/\.[^.]+$/, ''))}`);
+    setHaciendo(false);
+    if (error || !url) alert('No se pudo subir la foto.');
+    else onFoto(url);
+  };
   return (
-    <section className={styles.bloque}>
-      <h3 className={styles.bloqueTitulo}>Plantillas ({plantillas.length})</h3>
-      <p className={styles.ayuda}>
-        Los diseños para empezar que el cliente ve en el estudio, agrupados en pestañas. Para agregar una, diséñala en el
-        estudio y usa <strong>Guardar como plantilla</strong>. Para cambiar una, <strong>Editar en el estudio</strong> la abre
-        (en otra pestaña) y <strong>Guardar cambios</strong> la reemplaza en su lugar.
-      </p>
-      <datalist id="grupos-plantillas">
-        {[...new Set(['Parejas', 'Equipos', ...plantillas.map((p) => p.grupo).filter(Boolean)])].map((g) => <option key={g} value={g} />)}
-      </datalist>
-      <div className={styles.plantillas}>
-        {plantillas.map((p) => (
-          <div key={p.id} className={styles.plantilla}>
-            {p.imagen ? <img src={p.imagen} alt="" /> : <span className={styles.plantillaSinFoto} />}
-            <label className={styles.campo}>
-              <span>Nombre</span>
-              <input value={p.nombre} onChange={(e) => cambiarUna(p.id, { nombre: e.target.value })} />
-            </label>
-            <label className={styles.campo}>
-              <span>Grupo</span>
-              <input list="grupos-plantillas" value={p.grupo} onChange={(e) => cambiarUna(p.id, { grupo: e.target.value })} />
-            </label>
-            {prendaId && (
-              <a className={styles.botonSecundario} href={`/crear/${prendaId}?editarPlantilla=${encodeURIComponent(p.id)}`} target="_blank" rel="noreferrer">
-                <Pencil size={14} aria-hidden="true" /> Editar en el estudio
-              </a>
-            )}
-            <button type="button" className={styles.iconoPeligro} onClick={() => onChange(plantillas.filter((x) => x.id !== p.id))} aria-label={`Quitar ${p.nombre}`}>
-              <X size={16} aria-hidden="true" />
-            </button>
-          </div>
-        ))}
+    <div className={styles.fotoTienda}>
+      <div className={styles.fotoTiendaFoto}>
+        {haciendo ? <Loader2 size={18} className={styles.girando} aria-hidden="true" /> : propia ? <img src={foto} alt={`Foto de tienda en ${color.nombre}`} /> : <span>Sin foto</span>}
       </div>
-    </section>
+      <div className={styles.fotoTiendaTexto}>
+        <strong>Foto de tienda</strong>
+        <small>{propia ? 'La que se ve en la tienda y en la página del producto.' : 'Sin ella, la tienda muestra el producto en blanco.'}</small>
+        <div className={styles.fotoTiendaAcciones}>
+          <label className={styles.botonMini}>
+            {propia ? 'Cambiar' : 'Subir'}
+            <input type="file" accept="image/*" hidden onChange={(e) => { subir(e.target.files?.[0]); e.target.value = ''; }} />
+          </label>
+          {plantillas.length > 0 && (
+            <button type="button" className={styles.botonMini} onClick={() => setEligiendo((x) => !x)} disabled={haciendo}>
+              <LayoutTemplate size={13} aria-hidden="true" /> Con una plantilla
+            </button>
+          )}
+        </div>
+        {eligiendo && (
+          <div className={styles.fotoTiendaPlantillas} aria-label="Elige la plantilla">
+            {plantillas.map((p) => (
+              <button key={p.id} type="button" onClick={() => conPlantilla(p)} title={p.nombre}>
+                {p.imagen ? <img src={p.imagen} alt="" /> : null}
+                <span>{p.nombre}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -238,8 +256,14 @@ const PlantillasDelProducto = ({ plantillas, prendaId, onChange }) => {
  * Los colores y tallas NO se cargan aquí: son las variantes del producto. Aquí
  * van las vistas (foto sin fondo + sus zonas de impresión de referencia) y,
  * por color, su foto propia o su segundo tono si es bicolor.
+ *  - seccion: la parte que se dibuja en cada pestaña de la ficha:
+ *    'diseno' (qué se personaliza, vistas y zonas, zonas de los bicolores) o
+ *    'colores' (bicolores, invertidos, fotos para diseñar y foto de tienda).
+ *    Sin ella, todo junto. Las plantillas van en su pestaña (PlantillasDeLaFicha).
+ *  - onFotoTienda(varianteId, url): la foto de tienda de un color
  */
-const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onChange, onAgregarVariantes }) => {
+const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onChange, onAgregarVariantes, seccion, onFotoTienda }) => {
+  const ver = (parte) => !seccion || seccion === parte;
   const [subiendo, setSubiendo] = useState(null);
   const [colorPrevio, setColorPrevio] = useState(null);
   const [zonaElegida, setZonaElegida] = useState({});
@@ -325,11 +349,15 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
 
   return (
     <div className={styles.contenedor}>
+      {ver('diseno') && (
       <p className={styles.aviso}>
-        Este producto se vende <strong>solo en Crear</strong>: no aparece en la tienda ni en el buscador. Su precio es el
-        del producto personalizado e incluye todos los diseños que el cliente quiera poner.
+        Este producto se vende <strong>solo personalizado</strong>: en Crear y, si activas <strong>También en la
+        tienda</strong> (pestaña Dónde se ve), también en la tienda. Su precio incluye todos los diseños que el cliente
+        quiera poner.
       </p>
+      )}
 
+      {ver('diseno') && (
       <section className={styles.bloque}>
         <h3 className={styles.bloqueTitulo}>Qué se personaliza</h3>
         <div className={styles.tipoYTecnica}>
@@ -358,11 +386,9 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
           </span>
         </label>
       </section>
-
-      {leerPlantillas(valor?.plantillas).length > 0 && (
-        <PlantillasDelProducto plantillas={leerPlantillas(valor.plantillas)} prendaId={draftId} onChange={(plantillas) => cambiar({ plantillas })} />
       )}
 
+      {ver('diseno') && (
       <section className={styles.bloque}>
         <div className={styles.bloqueCabecera}>
           <h3 className={styles.bloqueTitulo}>Vistas y zonas de impresión</h3>
@@ -445,6 +471,25 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
                       }}
                     />
                   </label>
+                  {/* Lo que va encima del diseño (el borde cosido del mousepad):
+                      PNG transparente del mismo tamaño que la foto. */}
+                  <div className={styles.encima}>
+                    {v.encima && <img src={v.encima} alt="Borde que va encima del diseño" />}
+                    <label className={styles.botonMini} title="PNG transparente del mismo tamaño que la foto: se dibuja encima del diseño (un borde cosido, un marco).">
+                      {subiendo === `encima-${i}` ? 'Subiendo…' : v.encima ? 'Cambiar borde encima' : 'Borde encima (opcional)'}
+                      <input
+                        type="file"
+                        accept="image/png,image/webp"
+                        hidden
+                        onChange={async (e) => {
+                          const url = await subir(e.target.files?.[0], `encima-${i}`);
+                          e.target.value = '';
+                          if (url) setVista(i, { encima: url });
+                        }}
+                      />
+                    </label>
+                    {v.encima && <button type="button" className={styles.botonMini} onClick={() => setVista(i, { encima: '' })}>Quitar</button>}
+                  </div>
                 </div>
 
                 <div className={styles.zonasLista}>
@@ -527,18 +572,21 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
           <Plus size={16} aria-hidden="true" /> Agregar vista
         </button>
       </section>
+      )}
 
+      {ver('colores') && (
       <section className={styles.bloque}>
         <div className={styles.bloqueCabecera}>
-          <h3 className={styles.bloqueTitulo}>Colores y tallas</h3>
+          <h3 className={styles.bloqueTitulo}>{seccion ? 'Colores: fotos para diseñar y foto de tienda' : 'Colores y tallas'}</h3>
           <button type="button" className={styles.botonSecundario} onClick={agregarColoresPolera}>
             <Palette size={16} aria-hidden="true" /> Agregar colores de polera (S–XL)
           </button>
         </div>
         <p className={styles.ayuda}>
-          Son las <strong>variantes</strong> del producto (arriba): su nombre, su color y sus tallas. Cada color se tiñe
-          sobre la foto blanca. Si alguno no queda bien, súbele su propia foto. Los <strong>bicolores</strong> siempre
-          necesitan su foto en cada vista; mientras no la tengan, no se ofrecen.
+          Son las <strong>variantes</strong> del producto (arriba): su nombre, su color y sus tallas. Cada color tiene
+          dos fotos: la <strong>de tienda</strong> (la que se ve al comprarlo) y las <strong>fotos para diseñar</strong>,
+          que se tiñen solas sobre la foto blanca de cada vista. Si alguna no queda bien, súbele su propia foto. Los
+          <strong> bicolores</strong> siempre necesitan su foto en cada vista; mientras no la tengan, no se ofrecen.
         </p>
         {colores.length === 0 || !variantes?.length ? (
           <p className={styles.ayuda}>Aún no hay variantes.</p>
@@ -606,6 +654,17 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
                       <AlertTriangle size={14} aria-hidden="true" /> Falta su foto en alguna vista: no se mostrará en Crear hasta tenerla.
                     </p>
                   )}
+                  {seccion && onFotoTienda && !c.espejo && (
+                    <FotoDeTienda
+                      color={c}
+                      foto={(variantes || []).find((x) => x.id === c.id)?.imageUrl}
+                      vistas={vistas.map(normalizarVista)}
+                      plantillas={leerPlantillas(valor?.plantillas)}
+                      draftId={draftId}
+                      laser={leerTecnica(valor?.tecnica) === 'laser'}
+                      onFoto={(url) => onFotoTienda(c.id, url)}
+                    />
+                  )}
                   {vistas.length > 0 && (
                     <div className={styles.miniaturas}>
                       {vistas.map((v) => (
@@ -644,11 +703,12 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
           </div>
         )}
       </section>
+      )}
 
       {/* Zonas de los bicolores (costura al medio): un juego para todos los
           bicolores de cada vista y, si hace falta, uno propio por color. Ver
           zonasDeVista en utils/prendaBase.js. */}
-      {vistas.length > 0 && colores.some((c) => c.hex2) && (() => {
+      {ver('diseno') && vistas.length > 0 && colores.some((c) => c.hex2) && (() => {
         // Los invertidos usan las zonas de su original: no se editan aparte.
         const bicolores = colores.filter((c) => c.hex2 && !c.espejo);
         const objetivo = bicolores.find((c) => c.id === objetivoBicolor) || null; // null = todos

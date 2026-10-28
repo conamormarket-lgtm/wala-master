@@ -1,8 +1,9 @@
 import { getDocument, updateDocument } from '../../services/firebase/firestore';
 import { uploadFile } from '../../services/firebase/storage';
 import { clearProductCaches } from '../../services/products';
-import { cargarImagen, fotoDeVista, fondoDeVista, medidaZona } from '../../utils/prendaBase';
+import { cargarImagen, fotoDeVista, fondoDeVista, medidaZona, listarZonas } from '../../utils/prendaBase';
 import { asegurarFuentesDe, renderizarImpresion, renderizarVistaPrevia } from './renderDiseno';
+import { capasEnOtraPrenda } from './zonasEquivalentes';
 
 /*
  * Plantillas de un producto de Crear (prendaBase.plantillas): los diseños
@@ -107,21 +108,84 @@ export async function miniaturaDePlantilla({ vista, zona, color, capas, laser = 
 }
 
 /**
- * Agrega o reemplaza (por id, en su mismo lugar de la lista) plantillas en el
- * producto. Lee el documento tal cual está para no pisar lo que el admin haya
- * cambiado en otra pestaña.
+ * Cambia la lista de plantillas del producto con `cambiar(actuales)`. Lee el
+ * documento tal cual está para no pisar lo que el admin haya cambiado en otra
+ * pestaña (o en el estudio). Devuelve la lista nueva.
  */
-export async function guardarPlantillasDelProducto(prendaId, nuevas) {
+async function escribirPlantillas(prendaId, cambiar) {
   const { data, error } = await getDocument('productos_wala', prendaId);
   if (error || !data) throw new Error(error || 'No encontré el producto.');
-  const porId = new Map(nuevas.map((p) => [p.id, p]));
-  const actuales = data.prendaBase?.plantillas || [];
-  const plantillas = [
-    ...actuales.map((p) => porId.get(p.id) || p),
-    ...nuevas.filter((p) => !actuales.some((a) => a.id === p.id)),
-  ];
+  const plantillas = cambiar(data.prendaBase?.plantillas || []);
   const r = await updateDocument('productos_wala', prendaId, { prendaBase: { ...data.prendaBase, plantillas } });
   if (r.error) throw new Error(r.error);
   clearProductCaches();
   return plantillas;
+}
+
+/** Agrega o reemplaza (por id, en su mismo lugar de la lista) plantillas en el producto. */
+export async function guardarPlantillasDelProducto(prendaId, nuevas) {
+  const porId = new Map(nuevas.map((p) => [p.id, p]));
+  return escribirPlantillas(prendaId, (actuales) => [
+    ...actuales.map((p) => porId.get(p.id) || p),
+    ...nuevas.filter((p) => !actuales.some((a) => a.id === p.id)),
+  ]);
+}
+
+/** Cambia el nombre o el grupo de una plantilla del producto. */
+export const cambiarPlantillaDelProducto = (prendaId, id, cambios) =>
+  escribirPlantillas(prendaId, (actuales) => actuales.map((p) => (p.id === id ? { ...p, ...cambios } : p)));
+
+/** Quita una plantilla del producto (sus imágenes se quedan: otra copia puede usarlas). */
+export const quitarPlantillaDelProducto = (prendaId, id) =>
+  escribirPlantillas(prendaId, (actuales) => actuales.filter((p) => p.id !== id));
+
+/** La primera zona con diseño de unas capas y su vista. */
+const zonaConDiseno = (vistas, capas) => {
+  const zonas = listarZonas(vistas);
+  const zona = zonas.find((z) => (capas[z.id] || []).length);
+  return zona ? { zona, vista: vistas.find((v) => v.id === zona.vistaId) } : null;
+};
+
+/**
+ * "Traer de otro producto": copia plantillas de `origen` (un producto de
+ * Crear) a `destinoId`. Cada zona va a la misma o a su equivalente
+ * (capasEnOtraPrenda, como "Llevar diseño"); las imágenes se copian a la
+ * carpeta del destino y la miniatura se rehace sobre él. Las que no encajan
+ * en ninguna zona se saltan. Devuelve { traidas, saltadas }.
+ *  - destino: { vistas, colores, laser } (leerPrendaBase del destino)
+ */
+export async function traerPlantillas({ destinoId, destino, plantillas }) {
+  const zonasDestino = listarZonas(destino.vistas);
+  const color = destino.colores[0];
+  const nuevas = [];
+  let saltadas = 0;
+  for (const p of plantillas) {
+    const encajadas = capasEnOtraPrenda(p.capas, zonasDestino);
+    const donde = zonaConDiseno(destino.vistas, encajadas);
+    if (!donde) { saltadas += 1; continue; }
+    const capas = await copiarImagenesAProducto(destinoId, encajadas);
+    const miniatura = await miniaturaDePlantilla({ vista: donde.vista, zona: donde.zona, color, capas, laser: destino.laser });
+    const imagen = await subirAProducto(destinoId, miniatura, 'miniatura');
+    nuevas.push({ id: `p${marca()}`, nombre: p.nombre, grupo: p.grupo || '', imagen, capas });
+  }
+  if (nuevas.length) await guardarPlantillasDelProducto(destinoId, nuevas);
+  return { traidas: nuevas.length, saltadas };
+}
+
+/**
+ * La foto de tienda de un color hecha con una plantilla: el producto en ese
+ * color con el diseño puesto, en 4:5 sobre blanco (como las vistas previas
+ * de los productos de Crear). Devuelve la URL ya subida al producto.
+ *  - cfg: { vistas, laser } · color: de leerPrendaBase · plantilla: { capas }
+ */
+export async function fotoDeTiendaConPlantilla({ prendaId, cfg, color, plantilla }) {
+  await asegurarFuentesDe(plantilla.capas);
+  const donde = zonaConDiseno(cfg.vistas, plantilla.capas) || { vista: cfg.vistas[0] };
+  const vista = donde.vista;
+  const img = await cargarImagen(fotoDeVista(vista, color));
+  const blob = await renderizarVistaPrevia({
+    fuente: fondoDeVista(img, vista, color), anchoImg: img.naturalWidth, altoImg: img.naturalHeight,
+    vista, capasPorZona: plantilla.capas, srcDe: (c) => c.src, ancho: 1200, laser: cfg.laser, producto: true,
+  });
+  return subirAProducto(prendaId, blob, 'foto-tienda');
 }

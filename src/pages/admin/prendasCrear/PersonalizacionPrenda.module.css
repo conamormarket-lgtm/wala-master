@@ -1058,3 +1058,123 @@
   text-decoration: none;
   white-space: nowrap;
 }
+
+/* El borde que va encima del diseño (vista.encima), bajo la foto de la vista. */
+.encima {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.encima img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid var(--gris-borde);
+  background: repeating-conic-gradient(#eee 0% 25%, #fff 0% 50%) 50% / 12px 12px;
+}
+
+/* La foto de tienda de un color (la de su variante). */
+.fotoTienda {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-top: 0.6rem;
+  padding: 0.6rem;
+  border-radius: 12px;
+  background: rgba(139, 92, 246, 0.07);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  color: var(--color-text);
+}
+
+.fotoTiendaFoto {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  aspect-ratio: 4 / 5;
+  border-radius: 10px;
+  background: var(--blanco);
+  border: 1px solid var(--gris-borde);
+  overflow: hidden;
+  color: var(--gris-texto-secundario);
+  font-size: 0.7rem;
+  text-align: center;
+}
+
+.fotoTiendaFoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fotoTiendaTexto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  font-size: 0.85rem;
+}
+
+.fotoTiendaTexto small {
+  color: var(--gris-texto-secundario);
+}
+
+.fotoTiendaAcciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.fotoTiendaPlantillas {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+}
+
+.fotoTiendaPlantillas button {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  width: 84px;
+  padding: 0.3rem;
+  border: 1.5px solid var(--gris-borde);
+  border-radius: 10px;
+  background: var(--blanco);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.fotoTiendaPlantillas button:hover {
+  border-color: #8b5cf6;
+}
+
+.fotoTiendaPlantillas img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.fotoTiendaPlantillas span {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.girando {
+  animation: girarFoto 0.9s linear infinite;
+}
+
+@keyframes girarFoto {
+  to { transform: rotate(360deg); }
+}

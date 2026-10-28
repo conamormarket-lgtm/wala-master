@@ -157,6 +157,9 @@ const EstudioDeTienda = () => {
   // de Crear → Plantillas → "Editar en el estudio").
   // Se toma al abrir: al guardarse el borrador la dirección pasa a ?designId=.
   const [editarPlantillaParam] = useState(() => searchParams.get('editarPlantilla'));
+  // Admin: diseñar una plantilla nueva desde la ficha del producto
+  // ("+ Nueva plantilla"): el estudio completo, vacío, y al guardarla vuelve.
+  const [nuevaPlantillaParam] = useState(() => searchParams.get('nuevaPlantilla') === '1');
   // El color elegido en la ficha de la tienda ("Personalízalo"): con él se abre.
   const [colorParam] = useState(() => searchParams.get('color'));
   // En un combo de la comunidad, qué pieza de la publicación usa esta prenda.
@@ -253,7 +256,7 @@ const EstudioDeTienda = () => {
   // Solo con sus plantillas (el tomatodo): el cliente elige una y cambia sus
   // textos; no sube imágenes, no agrega textos ni mueve el diseño.
   // Un admin que edita una plantilla tiene el estudio completo.
-  const editandoPlantilla = Boolean(isAdmin && editarPlantillaParam);
+  const editandoPlantilla = Boolean(isAdmin && (editarPlantillaParam || nuevaPlantillaParam));
   const soloPlantillas = Boolean(cfgPrenda?.soloPlantillas && cfgPrenda.plantillas.length) && !editandoPlantilla;
   const soloPlantillasRef = useRef(soloPlantillas);
   soloPlantillasRef.current = soloPlantillas;
@@ -3025,6 +3028,9 @@ const EstudioDeTienda = () => {
       await queryClient.invalidateQueries({ queryKey: ['prenda-base', id] });
       setPartida({ usando: nuevaId, cargando: null });
       toast.success(idPlantilla ? `Listo: «${nombrePlantilla}» quedó con estos cambios.` : 'Plantilla guardada. Ya aparece en "Empieza con un diseño".');
+      // Abierta desde la ficha del producto (sus plantillas): vuelve a ella.
+      const desdeFicha = location.state?.desde;
+      if (typeof desdeFicha === 'string' && desdeFicha.startsWith('/admin')) navigate(desdeFicha);
       return true;
     } catch (e) {
       toast.error(e.message || 'No se pudo guardar la plantilla.');
@@ -3716,7 +3722,9 @@ const EstudioDeTienda = () => {
             }} />}
           {borrador ? <Aviso compacto tipo="aviso"><Texto>{`Borrador: solo los administradores ven ${sustantivo === 'producto' ? 'este producto' : 'esta prenda'}. Publícalo desde Admin → Prendas de Crear para poder comprarlo.`}</Texto></Aviso>
             : enCombo ? <Aviso compacto tipo="info"><Texto>{(sustantivo === 'producto' ? 'Pieza ' : 'Prenda ') + (piezaParam + 1) + ' de tu combo. Al terminar, vuelve al combo con tu diseño.'}</Texto></Aviso>
-              : editandoPlantilla ? <Aviso compacto tipo="info"><Texto>{`Editando la plantilla «${disenosDePartida.find((p) => p.id === editarPlantillaParam)?.nombre || ''}». Al terminar, usa "Guardar cambios" debajo de los pasos.`}</Texto></Aviso>
+              : editandoPlantilla ? <Aviso compacto tipo="info"><Texto>{editarPlantillaParam
+                ? `Editando la plantilla «${disenosDePartida.find((p) => p.id === editarPlantillaParam)?.nombre || ''}». Al terminar, usa "Guardar cambios" debajo de los pasos.`
+                : 'Plantilla nueva: diséñala y usa "Guardar como plantilla" debajo de los pasos. Al guardarla vuelves al producto.'}</Texto></Aviso>
               : laser && !zonasUsadas.length ? <Aviso compacto tipo="info"><Texto>Este producto se graba con láser: tu diseño se verá en un solo tono. Las fotos quedan mejor sin fondo.</Texto></Aviso>
               : plantillaParam ? <Aviso compacto tipo="info"><Texto>Partes de un diseño de la comunidad. Cámbiale el nombre, la foto o lo que quieras.</Texto></Aviso>
                 : !user && !authLoading && <Aviso compacto tipo="info" accion={zonasUsadas.length ? <Boton variante="fantasma" tamano="sm" onClick={irALogin}><Texto>Iniciar sesión</Texto></Boton> : undefined}><Texto>{zonasUsadas.length ? 'Inicia sesión para guardar tu diseño como borrador y continuarlo después.' : 'Puedes diseñar sin cuenta. Para subir una imagen o guardar, inicia sesión.'}</Texto></Aviso>}

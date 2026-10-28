@@ -22,6 +22,9 @@ import GenerarFrenteEspalda from './GenerarFrenteEspalda';
 import YoryoPersonalizado from '../../../components/YoryoPersonalizado/YoryoPersonalizado';
 import PersonalizacionPrenda, { prendaBaseInicial, prendaBaseParaGuardar } from '../../admin/prendasCrear/PersonalizacionPrenda';
 import PersonalizarEnCrear from './PersonalizarEnCrear';
+import PlantillasDeLaFicha from '../../admin/prendasCrear/PlantillasDeLaFicha';
+import { getDocument } from '../../../services/firebase/firestore';
+import { leerPlantillas } from '../../../utils/prendaBase';
 import { fabric } from 'fabric';
 import '../../../fabricPatch'; // parche de renderAll: viaja con fabric, ya no en el entry
 import ReactQuill, { Quill } from 'react-quill';
@@ -181,6 +184,15 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
   // URL de la imagen de galería que se está encuadrando (null = ninguna).
   const [galleryCropTarget, setGalleryCropTarget] = useState(null);
   const [showBrandModal, setShowBrandModal] = useState(false);
+  // La pestaña abierta (?pestana=): así "Volver al producto" del estudio
+  // regresa a la misma (las plantillas).
+  const [pestana, setPestana] = useState(() => searchParams.get('pestana') || 'general');
+  const cambiarPestana = (nueva) => {
+    setPestana(nueva);
+    const q = new URLSearchParams(window.location.search);
+    q.set('pestana', nueva);
+    navigate({ search: q.toString() }, { replace: true });
+  };
   const [newBrandForm, setNewBrandForm] = useState({ id: null, name: '', logoUrl: '' });
   const [creatingBrand, setCreatingBrand] = useState(false);
 
@@ -849,7 +861,8 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
     if (esPrenda) {
       const vistas = form.prendaBase?.vistas || [];
       if (!vistas.length || vistas.some((v) => !v.imagen || !(v.zonas?.length || v.zona))) {
-        alert('Producto personalizable: cada vista necesita su foto y al menos una zona de impresión.');
+        cambiarPestana('diseno');
+        alert('Producto personalizable: cada vista necesita su foto y al menos una zona de impresión (pestaña Diseño).');
         return;
       }
     }
@@ -890,6 +903,15 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
 
       let currentComboPreview = form.comboPreviewImage;
 
+      // Las plantillas se guardan al momento desde su pestaña (y desde el
+      // estudio): se toman del producto tal como está, así guardar la ficha
+      // no borra una que se agregó o cambió mientras estaba abierta.
+      let plantillasActuales = form.prendaBase?.plantillas;
+      if (esPrenda && !isNew) {
+        const { data: actual } = await getDocument('productos_wala', id);
+        if (actual) plantillasActuales = actual.prendaBase?.plantillas || [];
+      }
+
       // ── CRÍTICO: Capturar la foto del lienzo unificado ANTES de armar el payload ──
       if (form.customizable && yoryoRef.current) {
         const newPreviewUrl = await yoryoRef.current.saveYoryoData();
@@ -906,7 +928,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         description: form.description,
         price: Number(form.price) || 0,
         salePrice: Number(form.salePrice) || 0,
-        inStock: esModoPrenda && form.inStock === '' ? null : Number(form.inStock) || 0,
+        inStock: esPrenda && form.inStock === '' ? null : Number(form.inStock) || 0,
         sku: form.sku,
         brandId: form.brandId,
         fulfillmentType: form.fulfillmentType || undefined,
@@ -922,7 +944,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         customizable: (esPrenda || sinPersonalizacion) ? false : form.customizable,
         customizationViews: (esPrenda || sinPersonalizacion) ? [] : form.customizationViews,
         esPrendaBase: esPrenda,
-        ...(esPrenda && { prendaBase: prendaBaseParaGuardar(form.prendaBase, finalVariants) }),
+        ...(esPrenda && { prendaBase: prendaBaseParaGuardar({ ...form.prendaBase, plantillas: plantillasActuales }, finalVariants) }),
         personalizarEn: esPrenda ? '' : form.personalizarEn || '',
         whatsappEnabled: form.whatsappEnabled !== false,
         whatsappNumber: (form.whatsappNumber || '').trim(),
@@ -951,6 +973,43 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
   };
 
   if (loadingProduct) return <div className={styles.wrapper}>Cargando...</div>;
+
+  // Un producto que se personaliza en Crear (una prenda o un cuadro, no un combo).
+  const esPersonalizable = form.esPrendaBase && !form.isComboProduct;
+  const nPlantillas = leerPlantillas(form.prendaBase?.plantillas).length;
+  const PESTANAS = esPersonalizable
+    ? [['general', 'General'], ['colores', 'Colores y fotos'], ['diseno', 'Diseño'], ['plantillas', `Plantillas (${nPlantillas})`], ['donde', 'Dónde se ve']]
+    : [['general', 'General'], ['colores', form.isComboProduct ? 'Piezas del combo' : 'Colores y tallas'], ['donde', 'Dónde se ve']];
+  const pestanaActual = PESTANAS.some(([k]) => k === pestana) ? pestana : 'general';
+  // La clase que esconde lo que no es de la pestaña abierta (no se desmonta:
+  // así no se pierde lo que se está editando).
+  const fuera = (...ps) => (ps.includes(pestanaActual) ? '' : ` ${styles.oculta}`);
+  // Al activar "También en la tienda" sin fotos de tienda, la tarjeta mostraría el producto en blanco.
+  const vistasPrenda = form.prendaBase?.vistas || [];
+  const sinFotoTienda = esPersonalizable && !form.variants.some((v) => v.imageUrl && !vistasPrenda.some((vi) => vi.imagen === v.imageUrl));
+  const propsPrenda = {
+    valor: form.prendaBase,
+    variantes: form.variants,
+    varianteDefecto: form.defaultVariantId,
+    draftId,
+    onChange: (valor) => setForm((f) => ({ ...f, prendaBase: typeof valor === 'function' ? valor(f.prendaBase) : valor })),
+    onAgregarVariantes: (nuevas) => setForm((f) => {
+      // Si el producto solo tiene la variante vacía de inicio, se reemplaza.
+      const vacia = f.variants.length === 1 && !f.variants[0].imageUrl && /^Variante 1$/.test(f.variants[0].name || '');
+      const base = vacia ? [] : f.variants;
+      const variants = [...base, ...nuevas.map((n) => ({
+        id: n.id, name: n.nombre, colorHex: n.hex, mode: 'direct',
+        mockupState: { selectedMockupId: '', selectedVariantIndex: 0 },
+        images: [], imageUrl: '', sizes: n.tallas, sizeLabel: 'Talla', showSizeConfig: true,
+      }))];
+      return { ...f, variants, defaultVariantId: vacia ? variants[0].id : f.defaultVariantId };
+    }),
+    // La foto de tienda de un color = la foto principal de su variante.
+    onFotoTienda: (varianteId, url) => setForm((f) => ({
+      ...f,
+      variants: f.variants.map((v) => (v.id === varianteId ? { ...v, imageUrl: url, mode: 'direct' } : v)),
+    })),
+  };
 
   const selectedBrand = brands?.find(b => b.id === form.brandId);
   const brandBgStyle = selectedBrand ? {
@@ -1049,13 +1108,31 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         </div>
       )}
 
-      <form className={styles.contentGrid} onSubmit={handleSubmit}>
+      <form className={styles.contentGrid} onSubmit={handleSubmit} onInvalidCapture={() => cambiarPestana('general')}>
+        <div className={styles.pestanas} role="tablist" aria-label="Partes del producto">
+          {PESTANAS.map(([clave, texto]) => (
+            <button
+              key={clave}
+              type="button"
+              role="tab"
+              aria-selected={pestanaActual === clave}
+              className={`${styles.pestana} ${pestanaActual === clave ? styles.pestanaActiva : ''}`}
+              onClick={(e) => {
+                cambiarPestana(clave);
+                // En el celular la fila se desliza: la elegida queda a la vista.
+                e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+              }}
+            >
+              {texto}
+            </button>
+          ))}
+        </div>
         
         {/* Formato de venta (distinto de la taxonomía productType del filtro).
             Una prenda de Crear es siempre una prenda suelta: en su lugar, si se
             ve en Crear o no. */}
-        {esModoPrenda ? (
-          <div className={styles.card} style={{ marginBottom: '1.5rem', padding: '1rem 1.5rem' }}>
+        {esPersonalizable ? (
+          <div className={`${styles.card}${fuera('donde')}`} style={{ marginBottom: '1.5rem', padding: '1rem 1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
               <div>
                 <h2 className={styles.cardTitle} style={{ margin: 0, padding: 0, borderBottom: 'none' }}>Publicada en Crear</h2>
@@ -1086,9 +1163,16 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
                 <span className={styles.slider}></span>
               </label>
             </div>
+            {form.enTienda && sinFotoTienda && (
+              <p className={styles.cardSubtitle} style={{ margin: '0.75rem 0 0', color: '#b45309' }}>
+                Aún no tiene fotos de tienda: la tarjeta mostraría el producto en blanco. Ponle una en
+                {' '}<button type="button" className={styles.enlaceTexto} onClick={() => cambiarPestana('colores')}>Colores y fotos</button>{' '}
+                (subida o hecha con una plantilla).
+              </p>
+            )}
           </div>
         ) : (
-        <div className={styles.card} style={{ marginBottom: '1.5rem', padding: '1rem 1.5rem' }}>
+        <div className={`${styles.card}${fuera('general')}`} style={{ marginBottom: '1.5rem', padding: '1rem 1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <h2 className={styles.cardTitle} style={{ margin: 0, padding: 0, borderBottom: 'none' }}>📦 Formato de venta</h2>
@@ -1109,7 +1193,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         )}
 
         {/* COLUMNA IZQUIERDA: Formulario */}
-        <div className={styles.leftCol}>
+        <div className={`${styles.leftCol}${fuera('general')}`}>
           <div className={styles.card}>
             <h2 className={styles.cardTitle}>Información Básica</h2>
 
@@ -1414,6 +1498,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
 
         {/* COLUMNA DERECHA: Editor de Variante / Combo */}
         <div className={styles.rightCol}>
+          <div className={fuera('colores')}>
           
           {form.isComboProduct ? (
             <>
@@ -1915,23 +2000,49 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
           </>
           )}
 
-          {!esModoPrenda && !form.esPrendaBase && (
-            <PersonalizarEnCrear valor={form.personalizarEn || ''} onChange={(personalizarEn) => setForm((f) => ({ ...f, personalizarEn }))} />
+          {esPersonalizable && (
+            <div className={styles.card} style={{ marginTop: '1.5rem' }}>
+              <PersonalizacionPrenda {...propsPrenda} seccion="colores" />
+            </div>
           )}
-          {(esModoPrenda || personalizableViejo) && (
-          <div className={styles.card} style={{ marginTop: '1.5rem' }}>
+          </div>
+
+          {esPersonalizable && (
+            <div className={`${styles.card}${fuera('diseno')}`}>
+              <PersonalizacionPrenda {...propsPrenda} seccion="diseno" />
+            </div>
+          )}
+          {esPersonalizable && (
+            <div className={`${styles.card}${fuera('plantillas')}`}>
+              <PlantillasDeLaFicha
+                prendaId={draftId}
+                guardado={!isNew}
+                plantillas={leerPlantillas(form.prendaBase?.plantillas)}
+                onPlantillas={(plantillas) => setForm((f) => ({ ...f, prendaBase: { ...f.prendaBase, plantillas } }))}
+              />
+            </div>
+          )}
+
+          {!esModoPrenda && !form.esPrendaBase && (
+            <div className={fuera('donde')}>
+              <PersonalizarEnCrear valor={form.personalizarEn || ''} onChange={(personalizarEn) => setForm((f) => ({ ...f, personalizarEn }))} />
+            </div>
+          )}
+          {!esModoPrenda && (!form.isComboProduct || personalizableViejo) && (
+          <div className={`${styles.card}${fuera('donde')}`} style={{ marginTop: '1.5rem' }}>
             <div className={styles.cardHeaderFlex} style={{ borderBottom: 'none', paddingBottom: 0 }}>
               <div>
                 <h2 className={styles.cardTitle} style={{ borderBottom: 'none', margin: 0, padding: 0 }}>
-                  {esModoPrenda ? 'Vistas, zonas, colores y tallas' : 'Producto Personalizable'}
+                  {form.isComboProduct ? 'Producto Personalizable' : 'Se personaliza en Crear'}
                 </h2>
                 <p className={styles.cardSubtitle} style={{ marginTop: '0.25rem' }}>
                   {form.isComboProduct 
                     ? <span key="combo">Permite a los clientes personalizar los productos de este paquete usando las vistas originales de cada uno.</span>
-                    : <span key="single">El cliente la diseña en <strong>Crear</strong> con sus imágenes y textos, y se imprime en las zonas que marques.</span>}
+                    : form.esPrendaBase
+                      ? <span key="si">Se vende <strong>solo personalizado</strong>: el cliente lo diseña en Crear y se imprime en las zonas que marques (pestañas Diseño y Plantillas). Deja de venderse tal cual.</span>
+                      : <span key="no">Actívalo si el cliente lo diseña en <strong>Crear</strong> con sus imágenes y textos. Si también se vende tal cual, déjalo apagado y usa <strong>Personalizar en Crear</strong> (arriba).</span>}
                 </p>
               </div>
-              {!esModoPrenda && (
               <label className={styles.toggleSwitch}>
                 <input
                   type="checkbox"
@@ -1948,28 +2059,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
                 />
                 <span className={styles.slider}></span>
               </label>
-              )}
             </div>
-            {form.esPrendaBase && !form.isComboProduct && (
-              <PersonalizacionPrenda
-                valor={form.prendaBase}
-                variantes={form.variants}
-                varianteDefecto={form.defaultVariantId}
-                draftId={draftId}
-                onChange={(valor) => setForm((f) => ({ ...f, prendaBase: typeof valor === 'function' ? valor(f.prendaBase) : valor }))}
-                onAgregarVariantes={(nuevas) => setForm((f) => {
-                  // Si el producto solo tiene la variante vacía de inicio, se reemplaza.
-                  const vacia = f.variants.length === 1 && !f.variants[0].imageUrl && /^Variante 1$/.test(f.variants[0].name || '');
-                  const base = vacia ? [] : f.variants;
-                  const variants = [...base, ...nuevas.map((n) => ({
-                    id: n.id, name: n.nombre, colorHex: n.hex, mode: 'direct',
-                    mockupState: { selectedMockupId: '', selectedVariantIndex: 0 },
-                    images: [], imageUrl: '', sizes: n.tallas, sizeLabel: 'Talla', showSizeConfig: true,
-                  }))];
-                  return { ...f, variants, defaultVariantId: vacia ? variants[0].id : f.defaultVariantId };
-                })}
-              />
-            )}
             {form.customizable && !form.isComboProduct && !form.esPrendaBase && (
               <div style={{ marginTop: '2rem' }}>
                 <AdminCustomizationViewsEditor 
@@ -1990,7 +2080,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
           )}
 
           {form.customizable && !sinPersonalizacion && (
-            <div className={styles.card} style={{ marginTop: '1.5rem' }}>
+            <div className={`${styles.card}${fuera('donde')}`} style={{ marginTop: '1.5rem' }}>
               <YoryoPersonalizado 
                 ref={yoryoRef}
                 productImage={form.isComboProduct ? form.comboPreviewImage : form.variants?.[0]?.designImage || form.variants?.[0]?.imageUrl || ''}
@@ -2002,7 +2092,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
             </div>
           )}
 
-          <div className={styles.card} style={{ marginTop: '1.5rem' }}>
+          <div className={`${styles.card}${fuera('general')}`} style={{ marginTop: '1.5rem' }}>
             <div className={styles.cardHeaderFlex} style={{ borderBottom: 'none', paddingBottom: 0 }}>
               <div>
                 <h2 className={styles.cardTitle} style={{ borderBottom: 'none', margin: 0, padding: 0 }}>Configuración</h2>
