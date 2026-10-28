@@ -84,6 +84,20 @@ function calcularRango(id) {
   }
 }
 
+// Pasos de la encuesta (analytics_events, survey_step) entre dos días 'YYYY-MM-DD'.
+// Antes de EMBUDO_DESDE no se registraban: el inicio nunca baja de esa fecha.
+async function cargarEmbudo(desde, hasta) {
+  const inicio = desde && desde > EMBUDO_DESDE ? desde : EMBUDO_DESDE;
+  const filtros = [
+    { field: 'type', operator: '==', value: 'survey_step' },
+    { field: 'clientTsMs', operator: '>=', value: new Date(`${inicio}T00:00`).getTime() },
+  ];
+  if (hasta) filtros.push({ field: 'clientTsMs', operator: '<=', value: new Date(`${hasta}T23:59:59.999`).getTime() });
+  const res = await getCollection('analytics_events', filtros);
+  if (res.error) throw new Error(res.error);
+  return embudoEncuesta(res.data || []);
+}
+
 const diasEntre = (desde, hasta) => Math.round((new Date(`${hasta}T00:00`) - new Date(`${desde}T00:00`)) / 86400000) + 1;
 
 const etiquetaPeriodo = (valor, unidad) => {
@@ -149,18 +163,18 @@ const AdminRespuestasEncuesta = ({ embebido = false, desde = '', hasta = '', pre
   const desdeEmbudo = rango.desde && rango.desde > EMBUDO_DESDE ? rango.desde : EMBUDO_DESDE;
   const { data: embudo, isLoading: cargandoEmbudo, error: errorEmbudo } = useQuery({
     queryKey: ['admin-embudo-encuesta', desdeEmbudo, rango.hasta],
-    queryFn: async () => {
-      const filtros = [
-        { field: 'type', operator: '==', value: 'survey_step' },
-        { field: 'clientTsMs', operator: '>=', value: new Date(`${desdeEmbudo}T00:00`).getTime() },
-      ];
-      if (rango.hasta) filtros.push({ field: 'clientTsMs', operator: '<=', value: new Date(`${rango.hasta}T23:59:59.999`).getTime() });
-      const res = await getCollection('analytics_events', filtros);
-      if (res.error) throw new Error(res.error);
-      return embudoEncuesta(res.data || []);
-    },
+    queryFn: () => cargarEmbudo(desdeEmbudo, rango.hasta),
     staleTime: 5 * 60 * 1000,
   });
+  // El mismo embudo en el periodo anterior, solo si ese periodo tiene días medidos.
+  const embudoPrevioMedido = Boolean(prevHasta && prevHasta >= EMBUDO_DESDE);
+  const { data: embudoPrevio } = useQuery({
+    queryKey: ['admin-embudo-encuesta', prevDesde > EMBUDO_DESDE ? prevDesde : EMBUDO_DESDE, prevHasta],
+    queryFn: () => cargarEmbudo(prevDesde, prevHasta),
+    enabled: embudoPrevioMedido,
+    staleTime: 5 * 60 * 1000,
+  });
+  const previoPaso = new Map((embudoPrevioMedido && embudoPrevio ? embudoPrevio : []).map((p) => [p.id, p.total]));
   // Pestaña "La encuesta actual" | "Cambiadas o retiradas".
   const [vista, setVista] = useState('actual');
 
@@ -337,6 +351,9 @@ const AdminRespuestasEncuesta = ({ embebido = false, desde = '', hasta = '', pre
             <p className={styles.nota}>
               Personas distintas que llegaron a cada paso, y su % sobre las que entraron. Se registra desde el{' '}
               {EMBUDO_DESDE.split('-').reverse().join('/')}: antes de esa fecha no hay datos de pasos.
+              {previo && !embudoPrevioMedido && ' Por eso el periodo anterior no tiene con qué comparar.'}
+              {previo && embudoPrevioMedido && prevDesde < EMBUDO_DESDE
+                && ` Lo de ${previo.contra} solo cuenta desde esa fecha.`}
             </p>
             {errorEmbudo && <p className={styles.error}>No se pudo cargar el embudo: {errorEmbudo.message}</p>}
             {cargandoEmbudo && <p className={styles.vacio}>Cargando el embudo…</p>}
@@ -350,7 +367,12 @@ const AdminRespuestasEncuesta = ({ embebido = false, desde = '', hasta = '', pre
                       <span className={styles.barraValor}>
                         {p.label}{p.nota && <span className={styles.embudoNota}> · {p.nota}</span>}
                       </span>
-                      <span className={styles.barraTotal}>{p.total} <span className={styles.embudoNota}>({p.porcentaje}%)</span></span>
+                      <span className={styles.barraTotal}>
+                        {p.total} <span className={styles.embudoNota}>({p.porcentaje}%)</span>
+                        {previoPaso.has(p.id) && (
+                          <> <CambioKpi actual={p.total} previo={previoPaso.get(p.id)} contra={previo.contra} /></>
+                        )}
+                      </span>
                     </span>
                     <span className={styles.barraFondo} aria-hidden="true">
                       <span className={styles.barraRelleno} style={{ width: `${p.porcentaje}%` }} />
