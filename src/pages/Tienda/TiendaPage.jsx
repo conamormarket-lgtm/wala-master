@@ -285,7 +285,7 @@ const renderBotonSeccion = (s) => {
 };
 
 const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdOverride = null }) => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
@@ -1006,10 +1006,15 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   const [filtrosKit, setFiltrosKit] = useState(filtrosVacios);
   const filtrosActuales = filtrosKit.pageId === pageId ? filtrosKit : filtrosVacios;
   const cambiarFiltrosKit = (cambio) => setFiltrosKit((prev) => ({ ...(prev.pageId === pageId ? prev : filtrosVacios), ...cambio }));
-  const claveCategoriaUrl = `${pageId}|${categoryId || ''}`;
-  const [categoriaKit, setCategoriaKit] = useState({ clave: claveCategoriaUrl, valor: categoryId || null });
-  const categoriaPropia = categoriaKit.clave === claveCategoriaUrl ? categoriaKit.valor : (categoryId || null);
-  const categoriaCatalogo = hasCategoriesNav ? navCategoryId : categoriaPropia;
+  // La categoría elegida vive en el enlace (?categoria=): al recargar o
+  // compartirlo sigue la misma (antes volvía a la de entrada).
+  const categoriaCatalogo = hasCategoriesNav ? navCategoryId : (categoryId || null);
+  const ponerCategoriaEnEnlace = (valor) => setSearchParams((prev) => {
+    const params = new URLSearchParams(prev);
+    if (valor) params.set('categoria', valor);
+    else params.delete('categoria');
+    return params;
+  }, { replace: true });
   const elegirFiltroKit = (grupo, valor) => {
     if (valor && (grupo === 'coleccion' || grupo === 'temporada')) {
       const nombre = (coleccionesKit || []).find((c) => c.id === valor)?.name || null;
@@ -1020,7 +1025,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     }
     if (grupo !== 'categoria') cambiarFiltrosKit({ sel: { ...filtrosActuales.sel, [grupo]: valor } });
     else if (hasCategoriesNav) setNavCategoryId(valor ?? null);
-    else setCategoriaKit({ clave: claveCategoriaUrl, valor: valor ?? null });
+    else ponerCategoriaEnEnlace(valor);
   };
   const seleccionKit = { ...filtrosActuales.sel, categoria: categoriaCatalogo };
 
