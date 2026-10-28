@@ -10,14 +10,14 @@ import combos from './AdminCombosCrear.module.css';
 import s from './AdminPrendasCrear.module.css';
 
 /**
- * Prendas de Crear: las que el cliente diseña en /personalizar y /crear/:id
- * (polo, polera, casaca…). Antes se editaban en Productos, mezcladas con el
- * catálogo y con el interruptor "Producto personalizable". Aquí la lista con
- * lo que hace falta para que se vean en Crear (vistas y zonas), en qué combos
- * va cada una, y su ficha (/admin/prendas-crear/:id: la de productos en modo
- * prenda).
+ * Los personalizables (prendas y productos de Crear): los que el cliente
+ * diseña en /personalizar y /crear/:id (polo, polera, cuadro…). La lista con
+ * lo que hace falta para que se vean en Crear (vistas y zonas), si también
+ * salen en la tienda, en qué packs va cada uno, y su ficha
+ * (/admin/prendas-crear/:id: la de productos en modo prenda). Se muestra
+ * dentro de Productos (chip "Personalizables"): `embebido` quita su título.
  */
-const AdminPrendasCrear = () => {
+const AdminPrendasCrear = ({ embebido = false }) => {
   const queryClient = useQueryClient();
   const toast = useGlobalToast();
 
@@ -69,15 +69,16 @@ const AdminPrendasCrear = () => {
     <div className={combos.pagina}>
       <div className={combos.cabecera}>
         <div>
-          <h1 className={combos.titulo}>Prendas de Crear</h1>
+          {!embebido && <h1 className={combos.titulo}>Personalizables</h1>}
           <p className={combos.ayuda}>
-            Las prendas que el cliente diseña en Crear: sus colores y tallas, sus vistas y las zonas donde se imprime.
-            En borrador solo las ven los admins (para probarlas). Los combos que las usan están en Combos de Crear.
+            Lo que el cliente diseña en Crear (prendas y productos): sus colores, sus vistas, las zonas donde se imprime
+            y sus plantillas. En borrador solo lo ven los admins (para probarlo). Con "También en la tienda" sale además
+            en la tienda, siempre para personalizarlo.
           </p>
         </div>
         <div className={combos.acciones}>
           <Link to="/admin/prendas-crear/nueva" className={combos.principal}>
-            <Plus size={16} aria-hidden="true" /> Nueva prenda
+            <Plus size={16} aria-hidden="true" /> Nuevo personalizable
           </Link>
         </div>
       </div>
@@ -95,7 +96,10 @@ const AdminPrendasCrear = () => {
             const publicada = p.visible !== false;
             const lista = vistas.length > 0 && zonas > 0;
             const usada = combosDe(p.id);
-            const foto = vistas[0]?.imagen || p.mainImage || '';
+            const plantillas = (p.prendaBase?.plantillas || []).length;
+            // La foto de tienda del color principal; si no tiene, la de su primera vista.
+            const principal = (p.variants || []).find((v) => v.id === p.defaultVariantId) || p.variants?.[0];
+            const foto = principal?.imageUrl || vistas[0]?.imagen || p.mainImage || '';
             return (
               <li key={p.id} className={combos.item}>
                 <span className={s.foto}>{foto ? <img src={foto} alt="" loading="lazy" /> : null}</span>
@@ -103,13 +107,17 @@ const AdminPrendasCrear = () => {
                   <strong>{p.name}</strong>
                   <span className={combos.ayuda}>
                     {colores} {colores === 1 ? 'color' : 'colores'} · {vistas.length} {vistas.length === 1 ? 'vista' : 'vistas'} · {zonas} {zonas === 1 ? 'zona' : 'zonas'}
+                    {plantillas > 0 && ` · ${plantillas} ${plantillas === 1 ? 'plantilla' : 'plantillas'}`}
                   </span>
                   {!lista && <span className={s.falta}>Le faltan vistas con zonas: no aparece en Crear.</span>}
                   {usada.length > 0 && (
                     <span className={combos.ayuda}>En {usada.map((c) => c.name).join(', ')}</span>
                   )}
                 </div>
-                <span className={publicada ? combos.publicado : combos.borrador}>{publicada ? 'Publicada' : 'Borrador'}</span>
+                <span className={combos.estados}>
+                  <span className={publicada ? combos.publicado : combos.borrador}>{publicada ? 'Publicada' : 'Borrador'}</span>
+                  {publicada && p.enTienda && <span className={combos.publicado}>En la tienda</span>}
+                </span>
                 <div className={combos.itemAcciones}>
                   <Link to={`/crear/${p.id}`} className={combos.icono} aria-label="Ver en Crear" title="Ver en Crear">
                     <Eye size={16} aria-hidden="true" />

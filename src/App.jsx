@@ -181,7 +181,6 @@ const DashRecepcion = lazy(() => import('./pages/admin/dashboard/DashRecepcion')
 // ── Admin pages ───────────────────────────────────────────────────────────────
 const AdminProductos = lazy(() => import('./pages/Tienda/admin/AdminProductos'));
 const AdminInventario = lazy(() => import('./pages/Tienda/admin/AdminInventario'));
-const AdminCombosCrear = lazy(() => import('./pages/admin/AdminCombosCrear'));
 const RutasPrendasCrear = lazy(() => import('./pages/admin/RutasPrendasCrear'));
 const AdminMockups = lazy(() => import('./pages/Tienda/admin/AdminMockups'));
 const ImportarPlantillasYoryo = lazy(() => import('./pages/admin/plantillasYoryo/ImportarPlantillasYoryo'));
@@ -514,7 +513,8 @@ function App() {
                                       <Route path="encuesta-entregas" element={<Navigate to="/admin/resultados/opiniones" replace />} />
 
                                       <Route path="productos" element={<AdminProductos />} />
-                                      <Route path="combos-crear" element={<AdminCombosCrear />} />
+                                      {/* Los packs de Crear viven ahora en Productos (chip "Packs de Crear"). */}
+                                      <Route path="combos-crear" element={<Navigate to="/admin/productos?ver=packs" replace />} />
                                       <Route path="prendas-crear/*" element={<RutasPrendasCrear />} />
                                       <Route path="inventario" element={<AdminInventario />} />
                                       <Route path="mockups" element={<AdminMockups />} />

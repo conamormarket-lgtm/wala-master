@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, Pencil, Eye, Loader2, Sparkles, Upload, X } from 'lucide-react';
@@ -31,11 +31,12 @@ const OPCIONES_TALLA = [
 const soles = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
 
 /**
- * Combos de Crear: "Pareja", "Trío"… El admin elige las prendas de cada
- * combo (pueden ser iguales o distintas) y su precio de paquete. El cliente
- * los arma en /combo/:id diseñando cada pieza.
+ * Packs (combos) de Crear: "Pareja", "Trío"… El admin elige las prendas de
+ * cada combo (pueden ser iguales o distintas) y su precio de paquete. El
+ * cliente los arma en /combo/:id diseñando cada pieza. Se muestra dentro de
+ * Productos (chip "Packs de Crear"): `embebido` quita su título.
  */
-const AdminCombosCrear = () => {
+const AdminCombosCrear = ({ embebido = false, nuevoInicial = false }) => {
   const queryClient = useQueryClient();
   const toast = useGlobalToast();
   const [editandoId, setEditandoId] = useState(null);
@@ -134,6 +135,9 @@ const AdminCombosCrear = () => {
     } : { ...VACIO, piezas: VACIO.piezas.map((p) => ({ ...p })) });
   };
 
+  // "Nuevo → Pack de Crear" en Productos abre el formulario de una vez.
+  useEffect(() => { if (nuevoInicial) abrir(null); }, [nuevoInicial]);
+
   const cambiar = (campo, valor) => setForm((f) => ({ ...f, [campo]: valor }));
   const subirPortada = async (archivo) => {
     if (!archivo) return;
@@ -161,7 +165,7 @@ const AdminCombosCrear = () => {
     <div className={styles.pagina}>
       <div className={styles.cabecera}>
         <div>
-          <h1 className={styles.titulo}>Combos de Crear</h1>
+          {!embebido && <h1 className={styles.titulo}>Packs de Crear</h1>}
           <p className={styles.ayuda}>
             Prendas que se venden juntas a un precio de paquete (pareja, trío…). El cliente diseña cada una por separado.
             Se ofrecen en Crear cuando están publicados y, con "También en la tienda", también en la tienda y en su marca.
@@ -371,8 +375,10 @@ const AdminCombosCrear = () => {
                   {c.tallas !== 'auto' && ` · ${OPCIONES_TALLA.find((o) => o.valor === c.tallas)?.titulo}`}
                 </span>
               </div>
-              <span className={c.publicado ? styles.publicado : styles.borrador}>{c.publicado ? 'Publicado' : 'Borrador'}</span>
-              {c.enTienda && c.publicado && <span className={styles.publicado}>En la tienda</span>}
+              <span className={styles.estados}>
+                <span className={c.publicado ? styles.publicado : styles.borrador}>{c.publicado ? 'Publicado' : 'Borrador'}</span>
+                {c.enTienda && c.publicado && <span className={styles.publicado}>En la tienda</span>}
+              </span>
               <div className={styles.itemAcciones}>
                 <Link to={`/combo/${c.id}`} className={styles.icono} aria-label="Ver" title="Ver"><Eye size={16} aria-hidden="true" /></Link>
                 <button type="button" className={styles.icono} aria-label="Editar" title="Editar" onClick={() => abrir(c)}><Pencil size={16} aria-hidden="true" /></button>

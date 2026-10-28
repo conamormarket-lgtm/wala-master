@@ -234,22 +234,6 @@ const AdminLayout = () => {
                   Productos
                 </NavLink>
               )}
-              {canProducts && (
-                <NavLink
-                  to="/admin/prendas-crear"
-                  className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
-                >
-                  Prendas de Crear
-                </NavLink>
-              )}
-              {canProducts && (
-                <NavLink
-                  to="/admin/combos-crear"
-                  className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
-                >
-                  Combos de Crear
-                </NavLink>
-              )}
               {canInventory && (
                 <NavLink
                   to="/admin/inventario"

@@ -102,7 +102,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
   // personalizable" (editor viejo) y Yoryo en la ficha de productos.
   const personalizableViejo = useLoViejo('personalizable');
   const sinPersonalizacion = esModoPrenda || !personalizableViejo;
-  const rutaLista = esModoPrenda ? '/admin/prendas-crear' : '/admin/productos';
+  const rutaLista = esModoPrenda ? '/admin/productos?ver=crear' : '/admin/productos';
   const { id } = useParams();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);

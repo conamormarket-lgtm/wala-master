@@ -3720,7 +3720,7 @@ const EstudioDeTienda = () => {
               queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'] });
               queryClient.removeQueries({ queryKey: ['creacion', designId] });
             }} />}
-          {borrador ? <Aviso compacto tipo="aviso"><Texto>{`Borrador: solo los administradores ven ${sustantivo === 'producto' ? 'este producto' : 'esta prenda'}. Publícalo desde Admin → Prendas de Crear para poder comprarlo.`}</Texto></Aviso>
+          {borrador ? <Aviso compacto tipo="aviso"><Texto>{`Borrador: solo los administradores ven ${sustantivo === 'producto' ? 'este producto' : 'esta prenda'}. Publícalo desde Admin → Productos → Personalizables para poder comprarlo.`}</Texto></Aviso>
             : enCombo ? <Aviso compacto tipo="info"><Texto>{(sustantivo === 'producto' ? 'Pieza ' : 'Prenda ') + (piezaParam + 1) + ' de tu combo. Al terminar, vuelve al combo con tu diseño.'}</Texto></Aviso>
               : editandoPlantilla ? <Aviso compacto tipo="info"><Texto>{editarPlantillaParam
                 ? `Editando la plantilla «${disenosDePartida.find((p) => p.id === editarPlantillaParam)?.nombre || ''}». Al terminar, usa "Guardar cambios" debajo de los pasos.`

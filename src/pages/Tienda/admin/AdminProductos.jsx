@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getProducts, getProduct, getCategories, deleteProduct, updateProduct, updateProductField, createProduct } from '../../../services/products';
 import { getBrands } from '../../../services/brands';
@@ -20,8 +20,67 @@ import { tienePersonalizacionVieja, esEsclava, quitarPersonalizacionVieja, NOTA_
 import OptimizedImage from '../../../components/common/OptimizedImage/OptimizedImage';
 import styles from './AdminProductos.module.css';
 
+// Los personalizables y los packs de Crear: sus listas de siempre, dentro de
+// Productos (bajan al abrir su chip).
+const AdminPrendasCrear = lazy(() => import('../../admin/AdminPrendasCrear'));
+const AdminCombosCrear = lazy(() => import('../../admin/AdminCombosCrear'));
+
+const VISTAS = ['tienda', 'crear', 'packs', 'todos'];
+
+/** "Todos": el catálogo entero en una lista corta, con dónde se ve cada uno y su ficha. */
+const ListaTodos = ({ productos }) => {
+  const [busqueda, setBusqueda] = useState('');
+  const q = busqueda.trim().toLowerCase();
+  const filas = productos
+    .filter((p) => p.deleted !== true && (!q || String(p.name || '').toLowerCase().includes(q)))
+    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+  const etiquetas = (p) => {
+    if (p.esComboCrear) {
+      const pub = p.comboCrear?.publicado === true;
+      return [['Pack de Crear', 'crear'], [pub ? 'En Crear' : 'Borrador', pub ? 'ok' : 'apagado'], pub && p.enTienda && ['En la tienda', 'ok']];
+    }
+    if (p.esPrendaBase) {
+      const pub = p.visible !== false;
+      return [['Personalizable', 'crear'], [pub ? 'En Crear' : 'Borrador', pub ? 'ok' : 'apagado'], pub && p.enTienda && ['En la tienda', 'ok']];
+    }
+    return [p.isComboProduct && ['Combo', 'crear'], [p.visible !== false ? 'En la tienda' : 'Oculto', p.visible !== false ? 'ok' : 'apagado']];
+  };
+  const ficha = (p) => (p.esComboCrear ? '/admin/productos?ver=packs' : p.esPrendaBase ? `/admin/prendas-crear/${p.id}` : `/admin/productos/${p.id}`);
+  return (
+    <div className={styles.todos}>
+      <input
+        type="search"
+        className={styles.searchInput}
+        placeholder="Buscar en todo el catálogo…"
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+      />
+      <ul className={styles.todosLista}>
+        {filas.map((p) => (
+          <li key={p.id}>
+            <Link to={ficha(p)} className={styles.todosFila}>
+              <strong>{p.name || 'Sin nombre'}</strong>
+              <span className={styles.todosEtiquetas}>
+                {etiquetas(p).filter(Boolean).map(([texto, tono]) => (
+                  <span key={texto} className={`${styles.etiquetaVista} ${styles[`etiqueta_${tono}`]}`}>{texto}</span>
+                ))}
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      {!filas.length && <p className={styles.subtitle}>No hay productos con ese nombre.</p>}
+    </div>
+  );
+};
+
 const AdminProductos = () => {
   const queryClient = useQueryClient();
+  // Qué se ve: la tienda (por defecto), los personalizables, los packs de Crear o todo.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const ver = VISTAS.includes(searchParams.get('ver')) ? searchParams.get('ver') : 'tienda';
+  const cambiarVista = (v) => setSearchParams(v === 'tienda' ? {} : { ver: v }, { replace: true });
+  const [menuNuevo, setMenuNuevo] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [creatingReference, setCreatingReference] = useState(false);
   const [createResult, setCreateResult] = useState(null);
@@ -501,13 +560,7 @@ const AdminProductos = () => {
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Productos</h1>
-          <p className={styles.subtitle}>Gestiona tu catálogo, precios y visibilidad en la tienda</p>
-          {(deCrear.prendas > 0 || deCrear.combos > 0) && (
-            <p className={styles.subtitle}>
-              Las prendas que el cliente diseña están en <Link to="/admin/prendas-crear">Prendas de Crear</Link> ({deCrear.prendas})
-              {' '}y sus combos en <Link to="/admin/combos-crear">Combos de Crear</Link> ({deCrear.combos}).
-            </p>
-          )}
+          <p className={styles.subtitle}>Todo el catálogo: lo que se vende tal cual, lo que el cliente personaliza en Crear y sus packs.</p>
           {conPersonalizacion.length > 0 && (
             <div className={styles.avisoPersonalizacion} role="status">
               <span>
@@ -529,11 +582,57 @@ const AdminProductos = () => {
           >
             Exportar CSV
           </Button>
-          <Link to="/admin/productos/nuevo">
-            <Button>Crear Producto</Button>
-          </Link>
+          <div className={styles.nuevo}>
+            <Button onClick={() => setMenuNuevo((x) => !x)} aria-expanded={menuNuevo}>Nuevo</Button>
+            {menuNuevo && (
+              <div className={styles.nuevoMenu} role="menu">
+                <Link role="menuitem" to="/admin/productos/nuevo">
+                  <strong>Producto de la tienda</strong>
+                  <small>Se vende tal cual (puede llevar a Crear para personalizarlo).</small>
+                </Link>
+                <Link role="menuitem" to="/admin/prendas-crear/nueva">
+                  <strong>Personalizable</strong>
+                  <small>El cliente lo diseña en Crear (prenda, cuadro, tomatodo…).</small>
+                </Link>
+                <Link role="menuitem" to="/admin/productos?ver=packs&nuevo=1" onClick={() => setMenuNuevo(false)}>
+                  <strong>Pack de Crear</strong>
+                  <small>Varios personalizables a un precio de paquete.</small>
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      <div className={styles.vistas} role="tablist" aria-label="Qué productos ver">
+        {[
+          ['tienda', `Tienda (${catalogo.filter((p) => p.deleted !== true).length})`],
+          ['crear', `Personalizables (${deCrear.prendas})`],
+          ['packs', `Packs de Crear (${deCrear.combos})`],
+          ['todos', 'Todos'],
+        ].map(([clave, texto]) => (
+          <button
+            key={clave}
+            type="button"
+            role="tab"
+            aria-selected={ver === clave}
+            className={`${styles.vista} ${ver === clave ? styles.vistaActiva : ''}`}
+            onClick={() => cambiarVista(clave)}
+          >
+            {texto}
+          </button>
+        ))}
+      </div>
+
+      {ver !== 'tienda' && (
+        <Suspense fallback={<p className={styles.subtitle}>Cargando…</p>}>
+          {ver === 'crear' && <AdminPrendasCrear embebido />}
+          {ver === 'packs' && <AdminCombosCrear embebido nuevoInicial={searchParams.get('nuevo') === '1'} />}
+          {ver === 'todos' && <ListaTodos productos={productsData || []} />}
+        </Suspense>
+      )}
+
+      {ver === 'tienda' && (<>
 
       {/* SECCIÓN BORRADORES PENDIENTES */}
       {drafts.length > 0 && (
@@ -862,6 +961,8 @@ const AdminProductos = () => {
           </div>
         </div>
       )}
+
+      </>)}
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>

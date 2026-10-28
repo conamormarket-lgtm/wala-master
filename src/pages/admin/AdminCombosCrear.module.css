@@ -335,3 +335,12 @@
   border: 1px solid var(--gris-borde);
   background: var(--blanco);
 }
+
+/* Publicado / borrador y "En la tienda", uno sobre otro. */
+.estados {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
