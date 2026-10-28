@@ -2,12 +2,28 @@
 
 Desde el 28-10-2026 se diseñan en el mismo estudio que las prendas (`/crear/:id`). El personalizador aparte de octubre (plantillas por formulario, `/admin/plantillas-yoryo` como editor) se quitó.
 
+## Un producto, una ficha (desde el 28-10-2026)
+
+Todo se administra en **Admin → Productos**, con chips **Tienda · Personalizables · Packs de Crear · Todos**. **Nuevo** ofrece: producto de la tienda, personalizable o pack de Crear. Las direcciones viejas (`/admin/prendas-crear`, `/admin/combos-crear`) llevan ahí.
+
+La ficha de un personalizable va en pestañas:
+
+- **General:** nombre, precio, marca, categoría, etiquetas, destacado.
+- **Colores y fotos:** las variantes (nombre, color, tallas, galería) y, por color, su **foto de tienda** (subida o hecha **Con una plantilla**) y sus **fotos para diseñar** (teñidas, propias, bicolor e invertido).
+- **Diseño:** qué se personaliza, vistas, zonas, borde encima y zonas de los bicolores.
+- **Plantillas:** se guardan al momento. **Nueva plantilla** abre el estudio y vuelve a la ficha al guardar; **Editar**; **Traer de otro producto** (copia sus imágenes y las pasa a la zona igual o parecida).
+- **Dónde se ve:** **Publicada en Crear** y **También en la tienda** (`enTienda`).
+
+Con **También en la tienda**, sale en la tienda y en la página de su marca con el botón **Personalízalo** (al estudio, en el color elegido). Nunca se vende en blanco: el servidor rechaza una prenda de Crear sin diseño (`functions/cartValidation.js`). Un pack de Crear tiene lo mismo en su formulario, más marca y portada.
+
+Un producto de la tienda oculto que tenga **Personalizar en Crear** lleva a ese personalizable al abrir su enlace.
+
 ## Cómo se arma un producto
 
-En **Admin → Prendas de Crear**:
+En **Admin → Productos → Nuevo → Personalizable**:
 
 1. Crear la prenda: nombre, precio y sus colores (variantes, sin tallas).
-2. En **Qué se personaliza**:
+2. En **Qué se personaliza** (pestaña Diseño):
    - **Tipo: Producto.** El estudio y la grilla dicen "producto" en vez de "prenda".
    - **Técnica: Grabado láser** solo para el tomatodo. El diseño se ve en un solo tono y el taller recibe el PNG en escala de grises.
 3. Subir la foto de cada color en **Colores y tallas**. Un producto no se tiñe bien.
@@ -18,9 +34,9 @@ En **Admin → Prendas de Crear**:
 
    Así el PNG sale a tamaño real a 300 ppp.
 
-El **Pack de oficina** es un combo normal en **Admin → Combos de Crear**.
+El **Pack de oficina** es un pack normal en **Admin → Productos → Packs de Crear**.
 
-Para que un producto de la tienda lleve a Crear, se elige la prenda o el combo en **Personalizar en Crear**, en su ficha del admin. La tienda lo sigue vendiendo tal cual.
+Para que un producto que se vende **tal cual** también lleve a Crear, se elige la prenda o el combo en **Personalizar en Crear** (pestaña Dónde se ve). Si solo se vende personalizado, no hace falta: el personalizable sale en la tienda con **También en la tienda**.
 
 ## Plantillas del producto
 
@@ -58,9 +74,9 @@ Las imágenes de las plantillas viven en `productos_v2/{id}/plantillas/`, así l
 
 **Borde encima** (`vista.encima`): un PNG con lo oscuro de la foto (el borde cosido del mousepad) que se dibuja sobre el diseño en el estudio y en las vistas previas. Así se nota la orilla aunque el diseño llegue hasta ella.
 
-**Renombrar, cambiar de grupo o quitar:** en Admin → Prendas de Crear → Plantillas.
+**Renombrar, cambiar de grupo o quitar:** en la pestaña Plantillas de su ficha.
 
-**Cambiar una plantilla:** en esa lista, **Editar en el estudio** la abre en otra pestaña (`/crear/:id?editarPlantilla=…`) con el estudio completo, aun en productos "solo con plantillas". **Guardar cambios en «…»** la reemplaza en su mismo lugar. También, si un admin parte de una plantilla en el estudio, puede guardar sus cambios en ella o guardarla como nueva.
+**Cambiar una plantilla:** en esa pestaña, **Editar** la abre (`/crear/:id?editarPlantilla=…`) con el estudio completo, aun en productos "solo con plantillas". **Guardar cambios en «…»** la reemplaza en su mismo lugar. También, si un admin parte de una plantilla en el estudio, puede guardar sus cambios en ella o guardarla como nueva.
 
 ## Crear los productos (una sola vez)
 
@@ -82,6 +98,14 @@ Lo que ya exista no se repite. La única excepción es la zona del tomatodo, que
 Usa las ediciones de la pantalla anterior si las hay (`templates/yoryo-composiciones-v4`). Volver a guardarlas reemplaza las mismas, por id. El tamaño de las letras es aproximado.
 
 **Quitar copias** retira de la comunidad y borra de Mis creaciones lo que publicó la primera versión de esta pantalla.
+
+## Pasarlos a la tienda (una sola vez)
+
+**Pasar a la tienda** (paso 4 de la misma pantalla, después de los pasos 1 y 2):
+
+- el cuadro, el mousepad y el tomatodo de Crear quedan con **También en la tienda**, y copian del producto de la tienda sus fotos por color, su descripción, su categoría, sus colecciones y sus etiquetas;
+- el Pack de oficina igual, con su portada y la foto de cada pieza;
+- los cuatro productos de la tienda de antes se ocultan; sus enlaces llevan a los nuevos.
 
 Después de guardar, `public/yoryo/` y `src/pages/admin/plantillasYoryo/` se pueden borrar. Los originales siguen en `assets/yoryo-plantillas/`.
 

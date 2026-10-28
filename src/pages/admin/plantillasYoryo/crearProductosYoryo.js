@@ -1,4 +1,4 @@
-import { createProduct, getProduct, updateProductField } from '../../../services/products';
+import { createProduct, getProduct, updateProductField, normalizeSearchText, buildSearchTokens } from '../../../services/products';
 import { uploadFile } from '../../../services/firebase/storage';
 import { getCombosCrear, guardarComboCrear } from '../../../services/combosCrear';
 
@@ -287,4 +287,77 @@ export async function crearProductosYoryo({ onPaso = () => {} } = {}) {
   await updateProductField(PACK_TIENDA, { personalizarEn: `/combo/${pack}` });
   onPaso('Listo');
   return ids;
+}
+
+// Lo de la ficha de la tienda que también sirve en el de Crear: dónde sale
+// (categoría, colecciones), cómo se encuentra (etiquetas) y las ideas de regalo.
+const CAMPOS_DE_TIENDA = ['categories', 'collections', 'tags', 'characters', 'productType', 'publico', 'equipo', 'edadMinima'];
+
+/** La foto de una prenda de Crear para la tarjeta de su pack: la de tienda o la de su vista. */
+const fotoDePieza = (p) => {
+  const v = (p?.variants || []).find((x) => String(x.id) === String(p.defaultVariantId)) || p?.variants?.[0];
+  return v?.imageUrl || p?.prendaBase?.vistas?.[0]?.imagen || '';
+};
+
+/**
+ * "Pasar a la tienda" (una vez, después de crearlos): el cuadro, el mousepad,
+ * el tomatodo y el Pack de oficina de Crear salen también en la tienda
+ * (enTienda), con las fotos, la descripción, la categoría y las etiquetas de
+ * su producto de la tienda; y esos productos de la tienda se ocultan. Su
+ * enlace sigue funcionando: lleva al de Crear (personalizarEn, ProductPage).
+ */
+export async function pasarYoryoALaTienda({ onPaso = () => {} } = {}) {
+  const prendas = {};
+  for (const pieza of PIEZAS) {
+    const { data: crear } = await getProduct(pieza.id);
+    const { data: tienda } = await getProduct(pieza.tiendaId);
+    if (!crear || crear.deleted === true) throw new Error(`Primero crea ${pieza.nombre} (paso 1).`);
+    if (!tienda) throw new Error(`No encontré el producto de la tienda de ${pieza.nombre}.`);
+    onPaso(`${pieza.nombre}: copiando sus fotos de tienda…`);
+    const deTienda = (v) => (tienda.variants || []).find((x) => String(x.id) === String(v.id))
+      || (tienda.variants || []).find((x) => String(x.name || '').trim().toLowerCase() === String(v.name || '').trim().toLowerCase());
+    const variants = (crear.variants || []).map((v) => {
+      const t = deTienda(v);
+      return t ? {
+        ...v,
+        imageUrl: t.imageUrl || v.imageUrl || '',
+        images: t.images || [],
+        imagesVariantes: t.imagesVariantes || {},
+        imagesCrops: t.imagesCrops || {},
+        thumbnailCrop: t.thumbnailCrop || null,
+      } : v;
+    });
+    const deLaTienda = Object.fromEntries(CAMPOS_DE_TIENDA.filter((k) => tienda[k] !== undefined && tienda[k] !== null).map((k) => [k, tienda[k]]));
+    await updateProductField(pieza.id, {
+      ...deLaTienda,
+      enTienda: true,
+      variants,
+      images: [variants.find((v) => v.id === crear.defaultVariantId)?.imageUrl || variants[0]?.imageUrl].filter(Boolean),
+      description: crear.description || tienda.description || '',
+      brandId: crear.brandId || tienda.brandId || '',
+    });
+    prendas[pieza.id] = { ...crear, variants };
+    await updateProductField(pieza.tiendaId, { visible: false });
+    onPaso(`${pieza.nombre}: listo en la tienda`);
+  }
+
+  const piezas = PIEZAS.map((p) => ({ prendaId: p.id }));
+  const { data: combos } = await getCombosCrear({ incluirBorradores: true });
+  const pack = (combos || []).find((c) => c.piezas?.length === 3 && piezas.every((p, i) => c.piezas[i]?.prendaId === p.prendaId));
+  if (!pack) throw new Error('Primero crea el Pack de oficina (paso 1).');
+  const { data: tiendaPack } = await getProduct(PACK_TIENDA);
+  onPaso('Pack de oficina: pasando a la tienda…');
+  const brandId = pack.brandId || tiendaPack?.brandId || '';
+  await updateProductField(pack.id, {
+    enTienda: true,
+    brandId,
+    mainImage: pack.mainImage || tiendaPack?.comboPreviewImage || tiendaPack?.mainImage || '',
+    description: pack.description || tiendaPack?.description || '',
+    nameLower: normalizeSearchText(pack.name),
+    searchTokens: buildSearchTokens(pack.name, brandId),
+    // La tarjeta de la tienda muestra cada pieza con su nombre y su foto.
+    'comboCrear.piezas': piezas.map((p) => ({ prendaId: p.prendaId, nombre: prendas[p.prendaId]?.name || '', imagen: fotoDePieza(prendas[p.prendaId]) })),
+  });
+  if (tiendaPack) await updateProductField(PACK_TIENDA, { visible: false });
+  onPaso('Listo: los cuatro salen en la tienda para personalizarlos.');
 }

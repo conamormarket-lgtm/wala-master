@@ -8,7 +8,7 @@ import { retirarDeComunidad } from '../../../services/comunidad';
 import { subirAProducto, miniaturaDePlantilla, guardarPlantillasDelProducto } from '../../Crear/plantillasProducto';
 import { leerPrendaBase, colorDisponible, UNIDADES_ZONA, slug } from '../../../utils/prendaBase';
 import { capasDePlantilla } from './plantillasACapas.mjs';
-import { crearProductosYoryo, IDS_CREAR_YORYO } from './crearProductosYoryo';
+import { crearProductosYoryo, pasarYoryoALaTienda, IDS_CREAR_YORYO } from './crearProductosYoryo';
 import { plantillaCapasBaseYoryo, plantillaTomatodoYoryo } from './presetsEquipos.mjs';
 import { plantillaParejasBaseYoryo } from './presetsParejas.mjs';
 import Boton from '../../../componentes/kit/Boton';
@@ -148,6 +148,23 @@ export default function ImportarPlantillasYoryo() {
       setCreandoProductos(false);
     }
   };
+  // 4. Pasar a la tienda: los de Crear salen en la tienda y los de antes se ocultan.
+  const [pasoTienda, setPasoTienda] = useState('');
+  const [pasandoATienda, setPasandoATienda] = useState(false);
+  const pasarATienda = async () => {
+    if (!window.confirm('¿Pasar el cuadro, el mousepad, el tomatodo y el Pack de oficina de Crear a la tienda? Sus productos de la tienda de antes se ocultan (sus enlaces llevan a los nuevos).')) return;
+    setPasandoATienda(true);
+    try {
+      await pasarYoryoALaTienda({ onPaso: setPasoTienda });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['prendas-base'] });
+    } catch (e) {
+      setPasoTienda(`Error: ${e.message}`);
+    } finally {
+      setPasandoATienda(false);
+    }
+  };
   const [elegidas, setElegidas] = useState(() => new Set(PRODUCTOS.flatMap(([p]) => plantillasDe(p).map((x) => x.id))));
   const [estado, setEstado] = useState({});
   const [trabajando, setTrabajando] = useState(false);
@@ -239,7 +256,8 @@ export default function ImportarPlantillasYoryo() {
       <p>
         Pone los productos de Yoryo en Crear con sus plantillas. Las plantillas son de cada producto: el cliente las ve en el
         estudio, en <em>Empieza con un diseño</em>, separadas en Parejas y Equipos, y cambia la foto, los textos o lo que quiera.
-        No aparecen en la comunidad ni en Mis creaciones. Luego se renombran o quitan en Admin → Prendas de Crear.
+        No aparecen en la comunidad ni en Mis creaciones. Luego se renombran o quitan en Admin → Productos → Personalizables
+        (pestaña Plantillas de cada uno).
       </p>
       <section className={s.grupo}>
         <h2>1. Los productos en Crear</h2>
@@ -307,6 +325,18 @@ export default function ImportarPlantillasYoryo() {
         </p>
         <Boton variante="contorno" onClick={limpiar} disabled={!user || trabajando || limpieza.startsWith('Quitando')}>Quitar copias</Boton>
         {limpieza && <small className={limpieza.startsWith('Error') ? s.error : undefined}>{limpieza}</small>}
+      </section>
+
+      <section className={s.grupo}>
+        <h2>4. Pasarlos a la tienda</h2>
+        <p>
+          Desde ahora cada uno es un solo producto: el de Crear sale también en la tienda y en la página de Yoryo, con las
+          fotos, la descripción, la categoría y las etiquetas del de la tienda, y su botón es <em>Personalízalo</em>. El Pack
+          de oficina igual, con su portada. Los cuatro productos de la tienda de antes se ocultan; sus enlaces llevan a los
+          nuevos. Hazlo después de los pasos 1 y 2.
+        </p>
+        <Boton variante="contorno" onClick={pasarATienda} cargando={pasandoATienda} disabled={!user || trabajando || creandoProductos}>Pasar a la tienda</Boton>
+        {pasoTienda && <small className={pasoTienda.startsWith('Error') ? s.error : undefined}>{pasoTienda}</small>}
       </section>
     </div>
   );
