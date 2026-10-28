@@ -157,6 +157,8 @@ const EstudioDeTienda = () => {
   // de Crear → Plantillas → "Editar en el estudio").
   // Se toma al abrir: al guardarse el borrador la dirección pasa a ?designId=.
   const [editarPlantillaParam] = useState(() => searchParams.get('editarPlantilla'));
+  // El color elegido en la ficha de la tienda ("Personalízalo"): con él se abre.
+  const [colorParam] = useState(() => searchParams.get('color'));
   // En un combo de la comunidad, qué pieza de la publicación usa esta prenda.
   const plantillaPiezaParam = Number(searchParams.get('plantillaPieza')) || 0;
   // Pieza de un combo (/crear/:id?combo=X&pieza=N): al terminar vuelve al
@@ -825,7 +827,9 @@ const EstudioDeTienda = () => {
       if (cancelado) return;
       capasRef.current = capas;
       setCapasPorZona(capas);
-      const principal = cfg.colores.find((c) => c.id === prenda?.defaultVariantId) || cfg.colores[0];
+      // El color que se eligió en la ficha de la tienda (?color=) o el principal.
+      const principal = cfg.colores.find((c) => c.id === colorParam)
+        || cfg.colores.find((c) => c.id === prenda?.defaultVariantId) || cfg.colores[0];
       const colorInicial = cfg.colores.some((c) => c.id === estado?.colorId) ? estado.colorId : principal?.id;
       // Las zonas son las de ese color (un bicolor puede tener otras).
       const vistasIniciales = vistasDelColor(cfg.vistas, cfg.colores.find((c) => c.id === colorInicial));
@@ -941,7 +945,7 @@ const EstudioDeTienda = () => {
       return aplicar(borrador);
     })();
     return () => { cancelado = true; };
-  }, [cfgPrenda, listo, authLoading, designIdParam, plantillaParam, plantillaPiezaParam, copiarParam, user, id, enCombo, location.state, navigate, prenda?.defaultVariantId, toast]);
+  }, [cfgPrenda, listo, authLoading, designIdParam, plantillaParam, plantillaPiezaParam, copiarParam, colorParam, user, id, enCombo, location.state, navigate, prenda?.defaultVariantId, toast]);
 
   // Solo la fuente inicial: las demás muestras se piden al enfocar el selector.
   useEffect(() => { asegurarFuente('Montserrat'); }, []);
@@ -3687,7 +3691,9 @@ const EstudioDeTienda = () => {
   const etiquetaVolver = volverA.startsWith('/cuenta')
     ? 'Volver a Mis creaciones'
     : volverA.startsWith('/creacion') ? 'Volver a tu creación'
-      : volverA.startsWith('/combo') ? 'Volver al combo' : 'Volver a Crear';
+      : volverA.startsWith('/combo') ? 'Volver al combo'
+        // La ficha de la tienda ("Personalízalo") o la del admin (sus plantillas).
+        : volverA.startsWith('/producto') || volverA.startsWith('/admin') ? 'Volver al producto' : 'Volver a Crear';
 
   return (
     <MarcoEstudio

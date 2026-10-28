@@ -5,11 +5,13 @@ import { DEFAULT_VENDOR_ID, DEFAULT_NICHE_ID, normalizeFulfillmentType } from '.
 import { PLACEHOLDER_IMG } from '../constants/placeholder';
 import { createInFlightReads } from './shared/inFlightReads.mjs';
 import { leerPersonalizarEn } from '../utils/personalizarEn';
+import { esProductoDeTienda } from '../utils/enTienda.mjs';
 
 const COLLECTION = 'productos_wala';
 const productReads = createInFlightReads();
 let productCacheGeneration = 0;
-const CACHE_VERSION = 'v2'; // Cambiar esto invalida la caché de todos los usuarios
+// v3: las prendas y combos de Crear con "También en la tienda" (enTienda).
+const CACHE_VERSION = 'v3'; // Cambiar esto invalida la caché de todos los usuarios
 const CACHE_KEYS = {
   products: `wala_products_cache_${CACHE_VERSION}`,
   featured: `wala_featured_cache_${CACHE_VERSION}`,
@@ -144,13 +146,9 @@ try {
   localStorage.removeItem('conamor_featured_cache');
   localStorage.removeItem('conamor_categories_cache');
 } catch(e) {}
-/**
- * ¿Se muestra en la tienda? Las prendas base del apartado Crear
- * (esPrendaBase) son productos de verdad -se compran, se validan y llegan al
- * ERP como cualquiera-, pero son lienzos en blanco: solo tienen sentido dentro
- * de Crear, así que ningún listado de la tienda las incluye.
- */
-export const esProductoDeTienda = (p) => p?.visible !== false && p?.esPrendaBase !== true;
+// ¿Se muestra en la tienda? Las prendas y combos de Crear, solo con "También
+// en la tienda" (ver utils/enTienda.mjs).
+export { esProductoDeTienda };
 
 export const getProducts = async (filters = [], orderBy = null, limitCount = null, options = {}) => {
   const { includeHidden = false } = options;
@@ -1406,6 +1404,9 @@ function normalizeProductPayload(data) {
     // trae: un updateProduct parcial no debe apagar la personalización.
     ...(data.esPrendaBase !== undefined && { esPrendaBase: data.esPrendaBase === true }),
     ...(data.esPrendaBase === true && data.prendaBase && typeof data.prendaBase === 'object' && { prendaBase: data.prendaBase }),
+    // "También en la tienda": una prenda de Crear sale en la tienda (solo
+    // para personalizarla). En un producto normal no significa nada.
+    ...(data.enTienda !== undefined && { enTienda: data.esPrendaBase === true && data.enTienda === true }),
     hasVariants: Boolean(hasVariants),
     mainImage: isComboProduct ? '' : mainImage,
     mainSizes: isComboProduct ? [] : mainSizes,

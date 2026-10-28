@@ -13,7 +13,7 @@ import useLoViejo from '../../hooks/useLoViejo';
 import { fuentesDeImagen, SIZES_TARJETA_PRODUCTO } from '../common/OptimizedImage/OptimizedImage';
 import PremiumProductCard from '../../pages/Tienda/components/PremiumProductCard/PremiumProductCard';
 import TarjetaProducto from '../../componentes/kit/TarjetaProducto';
-import { tarjetaDesdeProducto, portadaDeCombo } from '../../componentes/kit/adaptadores';
+import { tarjetaDesdeProducto, portadaDeCombo, rutaPersonalizar } from '../../componentes/kit/adaptadores';
 import usePiezasDelCombo from './usePiezasDelCombo';
 
 // La hoja "Agregar rápido" baja aparte, la primera vez que alguien la abre.
@@ -75,11 +75,16 @@ function TarjetaNueva({
   });
 
   const esCombo = isComboProduct(product);
-  const necesitaElegir = productNeedsVariantSelection(product);
+  // Una prenda o combo de Crear ("También en la tienda"): su botón lleva a
+  // diseñarlo, nunca agrega al carrito una pieza en blanco.
+  const deCrear = product?.esPrendaBase === true || product?.esComboCrear === true;
+  const necesitaElegir = !deCrear && productNeedsVariantSelection(product);
+  // Un combo (de la tienda o de Crear) se ve con su portada o sus piezas, no con fotos de variante.
+  const fotosDeCombo = esCombo || product?.esComboCrear === true;
   const principal = product?.variants?.find((v) => String(v.id) === String(product.defaultVariantId)) || product?.variants?.[0];
 
   const fotoUrl = thumbnailImageUrl || principal?.imageUrl || product?.mainImage || product?.images?.[0] || '';
-  const segundaUrl = !esCombo && showHoverSecondaryMedia
+  const segundaUrl = !fotosDeCombo && showHoverSecondaryMedia
     ? (principal?.images?.[0] || principal?.galleryImages?.[0] || product?.images?.[1] || null)
     : null;
   const respaldo = toThumbnailImageUrl(principal?.imageUrl || product?.mainImage || product?.images?.[0] || '');
@@ -101,7 +106,7 @@ function TarjetaNueva({
   const marca = (marcas || []).find((b) => b.id === product.brandId);
   const base = tarjetaDesdeProducto(product, {
     // Un combo se ve con su portada o, sin ella, con sus piezas (el kit).
-    imagen: esCombo ? (portadaDeCombo(product) || undefined) : foto.src,
+    imagen: esCombo ? (portadaDeCombo(product) || undefined) : product?.esComboCrear ? undefined : foto.src,
     catalogo: { marcas: marcas || [], marcaActual: currentBrandId },
     subproductos,
     piezasCargando: !piezasVisibles || !piezasPedidas,
@@ -115,6 +120,10 @@ function TarjetaNueva({
   }, [toggleFavorite, product, addToast, deseado]);
 
   const alAgregar = () => {
+    if (deCrear) {
+      navigate(rutaPersonalizar(product));
+      return false;
+    }
     if (necesitaElegir) {
       if (fichaVieja) navigate(`/producto/${product.id}`);
       else setHoja(true);
@@ -140,19 +149,19 @@ function TarjetaNueva({
       {...base}
       categoria={categoria}
       imagenHover={segunda ? segunda.src : undefined}
-      srcSet={esCombo ? undefined : foto.srcSet}
+      srcSet={fotosDeCombo ? undefined : foto.srcSet}
       srcSetHover={segunda?.srcSet}
       sizes={foto.sizes || segunda?.sizes}
-      recorte={esCombo ? undefined : principal?.thumbnailCrop?.percentages}
+      recorte={fotosDeCombo ? undefined : principal?.thumbnailCrop?.percentages}
       recorteHover={segundaUrl ? principal?.imagesCrops?.[segundaUrl]?.percentages : undefined}
-      respaldo={respaldo && respaldo !== foto.src ? respaldo : undefined}
+      respaldo={!product?.esComboCrear && respaldo && respaldo !== foto.src ? respaldo : undefined}
       prioridad={isAboveFold}
       fondo={marca && (marca.bgColor || marca.bgImage) ? { color: marca.bgColor, imagen: marca.bgImage, opacidad: marca.bgOpacity ?? 100 } : undefined}
       nuevo={showNewBadge && base.nuevo}
       stock={showStockBadge ? base.stock : undefined}
-      accion={necesitaElegir ? 'elegir' : 'agregar'}
+      accion={deCrear ? 'crear' : necesitaElegir ? 'elegir' : 'agregar'}
       url={base.url}
-      textoAccion={necesitaElegir ? textoElegir(product) : undefined}
+      textoAccion={deCrear ? base.textoAccion : necesitaElegir ? textoElegir(product) : undefined}
       sinAccion={!showQuickAdd}
       onAgregar={alAgregar}
       deseado={deseado}

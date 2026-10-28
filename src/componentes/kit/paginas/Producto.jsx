@@ -95,6 +95,8 @@ const galeriaCombo = (combo, piezas, colores) => {
  *    (en un combo cada prenda lleva su talla en `tallas`)
  *  - onPersonalizar(eleccion) (si es personalizable) · textoPersonalizar
  *    ("Personalizable" para el personalizador de Yoryo) · onCompartir() (con sesión)
+ *    Con producto.soloPersonalizar (una prenda de Crear en la tienda),
+ *    personalizar es el único botón: sin carrito, cantidad ni "Comprar ahora".
  *  - piezasCargando: las prendas de un combo todavía no llegan (sus colores
  *    van en esqueleto; al llegar, cada prenda abre con su color)
  *  - regalo: el aviso cuando se compra el regalo de una lista ("Estás
@@ -240,7 +242,21 @@ export function PaginaProducto({
       if (cual === 'agregar' && hecho !== false) marcarAgregado();
     } finally { setCargando(null); }
   };
-  const botonAgregar = (props) => (
+  // Una prenda de Crear (producto.soloPersonalizar): se compra diseñándola,
+  // así que el botón principal es "Personalízalo" y no hay carrito ni
+  // "Comprar ahora" (la talla se elige en el estudio, al agregarla).
+  const solo = Boolean(producto.soloPersonalizar && onPersonalizar);
+  const botonAgregar = (props) => (solo ? (
+    <Boton
+      tamano="lg"
+      icono={<Paintbrush aria-hidden="true" />}
+      disabled={producto.agotado}
+      onClick={() => onPersonalizar(eleccion)}
+      {...props}
+    >
+      <Texto>{producto.agotado ? 'Agotado por ahora' : textoPersonalizar}</Texto>
+    </Boton>
+  ) : (
     <Boton
       tamano="lg"
       icono={<IconoAgregar agregado={agregado} />}
@@ -251,7 +267,7 @@ export function PaginaProducto({
     >
       <Texto>{producto.agotado ? 'Agotado por ahora' : agregado ? '¡Agregado!' : 'Agregar al carrito'}</Texto>
     </Boton>
-  );
+  ));
   const detalle = [
     verVariantes(variantes) && variante?.nombre,
     piezas.length > 0 && piezas.map((_, i) => [colores[i], porPrenda && tallas[i]].filter(Boolean).join(' ')).filter(Boolean).join(' + '),
@@ -349,7 +365,7 @@ export function PaginaProducto({
           tallasPiezas={tallas}
           onTallaPieza={(i, t) => setTallas((x) => ({ ...x, [i]: t }))}
           cantidad={cantidad}
-          onCantidad={producto.agotado ? undefined : setCantidad}
+          onCantidad={producto.agotado || producto.soloPersonalizar ? undefined : setCantidad}
           falta={falta}
         />
         </div>
@@ -364,11 +380,11 @@ export function PaginaProducto({
         {/* En el celular, agregar y personalizar quedan pegados abajo. */}
         <div ref={compraRef} className={s.compra} data-compra-fija="">
           {botonAgregar({ bloque: true })}
-          {producto.personalizable && onPersonalizar && (
+          {!solo && producto.personalizable && onPersonalizar && (
             <Boton variante="contorno" tamano="lg" icono={<Paintbrush aria-hidden="true" />} onClick={() => onPersonalizar(eleccion)}><Texto>{textoPersonalizar}</Texto></Boton>
           )}
         </div>
-        {!producto.agotado && (
+        {!producto.agotado && !solo && (
           <Boton bloque tamano="lg" variante="secundario" cargando={cargando === 'comprar'} onClick={() => accion('comprar', onComprar)} iconoFin={<ArrowRight aria-hidden="true" />}><Texto>Comprar ahora</Texto></Boton>
         )}
         {carrito > 0 && (

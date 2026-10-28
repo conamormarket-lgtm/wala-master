@@ -51,12 +51,45 @@ const coloresDePieza = (sub, it) => variantesDePieza(sub, it).map((v) => {
  *  - 'agregar': sin opciones (taza, llavero, producto con una sola variante)
  */
 export function accionDeProducto(p) {
-  if (p?.esPrendaBase) return 'crear';
+  if (p?.esPrendaBase || p?.esComboCrear) return 'crear';
   if (p?.isComboProduct && p.comboItems?.length) return 'elegir';
   const vs = variantesDe(p);
   if (vs.length > 1 || vs.some((v) => v.sizes?.length) || p?.mainSizes?.length) return 'elegir';
   return 'agregar';
 }
+
+/*
+ * Prendas y combos de Crear en la tienda ("También en la tienda", ver
+ * utils/enTienda.mjs): se venden solo personalizados. Su botón lleva al
+ * estudio y su stock vacío es "sin límite" (no "agotado").
+ */
+const esDeCrear = (p) => p?.esPrendaBase === true || p?.esComboCrear === true;
+
+/** Agotado: en Crear solo con un stock cargado en 0; en la tienda, sin stock. */
+const agotadoDe = (p) => (esDeCrear(p) ? typeof p.inStock === 'number' && p.inStock <= 0 : !p?.inStock);
+
+/** Adónde lleva "Personalízalo": el estudio de la prenda (en ese color) o el combo. */
+export function rutaPersonalizar(p, colorId) {
+  if (p?.esComboCrear) return `/combo/${p.id}?nuevo=1`;
+  return `/crear/${p.id}${colorId ? `?color=${encodeURIComponent(colorId)}` : ''}`;
+}
+
+/**
+ * Los colores que se ofrecen de una prenda de Crear, como en Crear: los que
+ * se pueden pedir (un bicolor sin sus fotos no), sin la versión invertida
+ * (se elige en el estudio con "Invertir colores") y el bicolor partido en dos.
+ */
+const coloresDeCrear = (p) => {
+  const { vistas, colores } = leerPrendaBase(p);
+  return colores
+    .filter((c) => !c.espejoDe && colorDisponible(c, vistas))
+    .map((c) => ({ id: c.id, nombre: c.nombre, hex: c.hex, fondo: fondoMuestra(c) }));
+};
+
+/** Las piezas de un combo de Crear como las guarda el admin (nombre y foto). */
+const piezasDeComboCrear = (p) => (p?.comboCrear?.piezas || [])
+  .filter((pz) => pz?.prendaId)
+  .map((pz) => ({ nombre: pz.nombre || '', imagen: pz.imagen || undefined }));
 
 const DIAS_NUEVO = 30;
 
@@ -114,20 +147,27 @@ export function tarjetaDesdeProducto(p, { imagen, catalogo = {}, subproductos = 
   const principal = vs.find((v) => String(v.id) === String(p.defaultVariantId)) || vs[0];
   // Un combo con portada se ve con ella (como en la tienda); sin portada, con sus piezas.
   // Las generales, sin las de otro color (al pasar el mouse no sale otro color).
+  // Un combo de Crear se ve con su portada o, sin ella, con sus piezas.
+  const portadaCrear = p.esComboCrear && p.mainImage && !String(p.mainImage).includes('placeholder') ? p.mainImage : '';
   const fotos = p.isComboProduct
     ? [portadaDeCombo(p)].filter(Boolean)
-    : [principal?.imageUrl, ...(principal?.images || []), ...fotosGenerales(p, principal)].filter(Boolean);
+    : p.esComboCrear
+      ? [portadaCrear].filter(Boolean)
+      : [principal?.imageUrl, ...(principal?.images || []), ...fotosGenerales(p, principal)].filter(Boolean);
+  const crear = esDeCrear(p);
+  const coloresCrear = p.esPrendaBase ? coloresDeCrear(p) : [];
   return {
-    url: p.esPrendaBase ? `/crear/${p.id}` : `/producto/${p.id}`,
+    url: p.esComboCrear ? rutaPersonalizar(p) : `/producto/${p.id}`,
     imagen: imagen || fotos[0],
     imagenHover: fotos.find((f) => f !== (imagen || fotos[0])),
     nombre: p.name,
     categoria: cat?.name,
     precio: p.salePrice || p.price,
     precioAntes: p.salePrice ? p.price : undefined,
-    // Los productos de la tienda ya no se personalizan (eso es Crear).
-    personalizable: false,
-    agotado: !p.inStock,
+    // Los productos de la tienda ya no se personalizan (eso es Crear); los
+    // de Crear que salen en la tienda llevan el sello "Tu diseño".
+    personalizable: crear,
+    agotado: agotadoDe(p),
     stock: typeof p.inStock === 'number' ? p.inStock : undefined,
     nuevo: esNuevo(p),
     marca: m?.logoUrl ? { nombre: m.name, logo: m.logoUrl } : undefined,
@@ -136,12 +176,17 @@ export function tarjetaDesdeProducto(p, { imagen, catalogo = {}, subproductos = 
       const pieza = piezaDeCombo(it, sub);
       // La copia del combo puede ser antigua: solo es respaldo si la lectura falla.
       return piezasCargando && !sub ? { ...pieza, imagen: undefined } : pieza;
-    }) : [],
-    piezasCargando,
+    }) : p.esComboCrear ? piezasDeComboCrear(p) : [],
+    piezasCargando: p.esComboCrear ? false : piezasCargando,
     // Con una sola variante (la "Principal" que crea el admin por defecto) no
     // hay colores que mostrar.
-    colores: vs.length > 1 ? vs.filter((v) => v.colorHex).map((v) => v.colorHex) : [],
+    colores: p.esPrendaBase
+      ? (coloresCrear.length > 1 ? [...new Set(coloresCrear.map((c) => c.fondo))] : [])
+      : vs.length > 1 ? vs.filter((v) => v.colorHex).map((v) => v.colorHex) : [],
     accion: accionDeProducto(p),
+    // Sin lista de deseos, como en Crear: un regalo de la lista se compra
+    // tal cual, y estos solo se venden diseñados.
+    ...(crear && { textoAccion: 'Personalízalo', sinDeseo: true }),
   };
 }
 
@@ -250,11 +295,18 @@ export function opcionesDeProducto(p, { subproductos = {} } = {}) {
     // Un combo se ve con su portada o, sin ella, con la foto de una prenda (su
     // mainImage suele ser el relleno "Producto").
     producto: { nombre: p.name, imagen: portadaDeCombo(p) || [p.mainImage, ...(p.images || []), ...(p.comboItems || []).map((it) => it.imageUrl)].find((u) => u && !String(u).includes('placeholder')), precio: p.salePrice || p.price, precioAntes: p.salePrice ? p.price : undefined },
-    variantes: piezas.length ? [] : vs.map((v) => {
-      const hex = hexDeVariante(v);
-      return { id: v.id, nombre: v.name, colorHex: hex, claro: hex ? esClaro(hex) : undefined, imagen: v.imageUrl, opciones: v.sizes || [] };
-    }),
-    opciones: piezas.length ? opcionesCombo : p.mainSizes || [],
+    // Una prenda de Crear: sus colores como en Crear (el bicolor partido en
+    // dos) y sin tallas (se eligen en el estudio, al agregar).
+    variantes: piezas.length ? [] : p?.esPrendaBase
+      ? coloresDeCrear(p).map((c) => {
+        const v = vs.find((x) => String(x.id) === String(c.id));
+        return { id: c.id, nombre: c.nombre, colorHex: c.fondo, claro: esClaro(c.hex), imagen: v?.imageUrl, opciones: [] };
+      })
+      : vs.map((v) => {
+        const hex = hexDeVariante(v);
+        return { id: v.id, nombre: v.name, colorHex: hex, claro: hex ? esClaro(hex) : undefined, imagen: v.imageUrl, opciones: v.sizes || [] };
+      }),
+    opciones: piezas.length ? opcionesCombo : p?.esPrendaBase ? [] : p.mainSizes || [],
     // Los productos guardados antes de que products.js conservara sizeLabel
     // no lo tienen: dicen "Talla" hasta que se vuelvan a guardar.
     etiquetaOpcion: vs.find((v) => v.sizeLabel)?.sizeLabel || 'Talla',
@@ -1179,10 +1231,12 @@ export function fichaProductoDesde(p = {}, { catalogo = {}, subproductos = {} } 
       precio,
       precioAntes: p.salePrice && p.salePrice < p.price ? p.price : undefined,
       stock: typeof p.inStock === 'number' ? p.inStock : undefined,
-      agotado: !p.inStock,
+      agotado: agotadoDe(p),
       // Los productos de la tienda ya no se personalizan (eso es Crear); la
       // ficha lo vuelve a poner con el interruptor personalizableViejo.
-      personalizable: false,
+      personalizable: Boolean(p.esPrendaBase),
+      // Una prenda de Crear en la tienda: solo "Personalízalo" (sin carrito).
+      soloPersonalizar: Boolean(p.esPrendaBase),
       descripcion: p.description || '',
       combo: p.isComboProduct ? (p.comboItems || []).map((it) => ({ nombre: it.name || subproductos[it.productId]?.name || 'Producto', imagen: it.imageUrl })) : undefined,
     },

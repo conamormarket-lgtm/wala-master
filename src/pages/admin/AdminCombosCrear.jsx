@@ -1,14 +1,26 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Pencil, Eye, Loader2, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Pencil, Eye, Loader2, Sparkles, Upload, X } from 'lucide-react';
 import { getCombosCrear, guardarComboCrear, archivarComboCrear, sugerirCombos, MIN_PIEZAS, MAX_PIEZAS } from '../../services/combosCrear';
 import { getPrendasBase } from '../../services/prendasBase';
-import { precioBase } from '../../utils/prendaBase';
+import { getBrands } from '../../services/brands';
+import { uploadFile } from '../../services/firebase/storage';
+import { precioBase, leerPrendaBase } from '../../utils/prendaBase';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import styles from './AdminCombosCrear.module.css';
 
-const VACIO = { name: '', description: '', price: '', salePrice: '', publicado: false, tallas: 'auto', piezas: [{ prendaId: '' }, { prendaId: '' }] };
+const VACIO = {
+  name: '', description: '', price: '', salePrice: '', publicado: false, tallas: 'auto', piezas: [{ prendaId: '' }, { prendaId: '' }],
+  brandId: '', mainImage: '', enTienda: false,
+};
+
+// La foto de una prenda para la tarjeta del combo en la tienda: la de la
+// tienda de su color principal o, si no tiene, la de su primera vista.
+const fotoDePrenda = (prenda) => {
+  const principal = (prenda?.variants || []).find((v) => String(v.id) === String(prenda.defaultVariantId)) || prenda?.variants?.[0];
+  return principal?.imageUrl || leerPrendaBase(prenda).vistas[0]?.imagen || '';
+};
 
 // Cómo elige la talla el cliente (comboCrear.tallas).
 const OPCIONES_TALLA = [
@@ -41,6 +53,22 @@ const AdminCombosCrear = () => {
     queryFn: async () => (await getPrendasBase({ incluirBorradores: true })).data,
   });
   const prendaPorId = new Map(prendas.map((p) => [p.id, p]));
+  const { data: marcas = [] } = useQuery({
+    queryKey: ['brands'],
+    queryFn: async () => (await getBrands()).data || [],
+    staleTime: 300_000,
+  });
+  const [subiendo, setSubiendo] = useState(false);
+
+  // Cada pieza con el nombre y la foto de su prenda (la tarjeta de la tienda
+  // los muestra sin leer las prendas).
+  const conFotos = (datos) => ({
+    ...datos,
+    piezas: (datos.piezas || []).map((p) => {
+      const prenda = prendaPorId.get(p.prendaId);
+      return prenda ? { prendaId: p.prendaId, nombre: prenda.name, imagen: fotoDePrenda(prenda) } : p;
+    }),
+  });
 
   const refrescar = () => {
     queryClient.invalidateQueries({ queryKey: ['admin-combos-crear'] });
@@ -49,7 +77,7 @@ const AdminCombosCrear = () => {
   };
 
   const guardar = useMutation({
-    mutationFn: () => guardarComboCrear(editandoId, form),
+    mutationFn: () => guardarComboCrear(editandoId, conFotos(form)),
     onSuccess: () => {
       refrescar();
       toast.success('Combo guardado.');
@@ -70,7 +98,7 @@ const AdminCombosCrear = () => {
       const elegidos = sugeridos.filter((c) => c.elegido);
       for (const c of elegidos) {
         // Uno por uno: si uno falla, los anteriores ya quedaron creados.
-        await guardarComboCrear(null, { ...c, publicado: publicarSugeridos });
+        await guardarComboCrear(null, conFotos({ ...c, publicado: publicarSugeridos, brandId: prendaPorId.get(c.piezas[0]?.prendaId)?.brandId || '' }));
       }
       return elegidos.length;
     },
@@ -99,10 +127,22 @@ const AdminCombosCrear = () => {
       publicado: combo.publicado,
       tallas: combo.tallas || 'auto',
       piezas: combo.piezas.map((p) => ({ prendaId: p.prendaId })),
+      // Antes no se cargaban: guardar el combo borraba su portada.
+      brandId: combo.brandId || '',
+      mainImage: combo.mainImage || '',
+      enTienda: combo.enTienda === true,
     } : { ...VACIO, piezas: VACIO.piezas.map((p) => ({ ...p })) });
   };
 
   const cambiar = (campo, valor) => setForm((f) => ({ ...f, [campo]: valor }));
+  const subirPortada = async (archivo) => {
+    if (!archivo) return;
+    setSubiendo(true);
+    const { url, error } = await uploadFile(archivo, `productos_v2/combos_crear/portada_${Date.now()}_${archivo.name.replace(/[^\w.-]/g, '_')}`);
+    setSubiendo(false);
+    if (error || !url) toast.error('No se pudo subir la portada.');
+    else cambiar('mainImage', url);
+  };
   const cambiarPieza = (i, prendaId) => setForm((f) => ({ ...f, piezas: f.piezas.map((p, k) => (k === i ? { prendaId } : p)) }));
 
   const sueltas = form ? form.piezas.reduce((t, p) => t + (prendaPorId.get(p.prendaId) ? precioBase(prendaPorId.get(p.prendaId)) : 0), 0) : 0;
@@ -124,7 +164,7 @@ const AdminCombosCrear = () => {
           <h1 className={styles.titulo}>Combos de Crear</h1>
           <p className={styles.ayuda}>
             Prendas que se venden juntas a un precio de paquete (pareja, trío…). El cliente diseña cada una por separado.
-            No aparecen en la tienda: se ofrecen en Crear cuando están publicados.
+            Se ofrecen en Crear cuando están publicados y, con "También en la tienda", también en la tienda y en su marca.
           </p>
         </div>
         {!form && !sugeridos && (
@@ -215,6 +255,29 @@ const AdminCombosCrear = () => {
             <span>Descripción (opcional)</span>
             <textarea value={form.description} onChange={(e) => cambiar('description', e.target.value)} rows={2} maxLength={300} placeholder="Ej. Dos polos con el diseño que quieran, para ustedes dos." />
           </label>
+          <label className={styles.campo}>
+            <span>Marca (opcional)</span>
+            <select value={form.brandId} onChange={(e) => cambiar('brandId', e.target.value)}>
+              <option value="">Sin marca</option>
+              {marcas.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
+          </label>
+          <div className={styles.campo}>
+            <span>Portada (opcional: sin ella se ven las prendas juntas)</span>
+            <div className={styles.portada}>
+              {form.mainImage && <img src={form.mainImage} alt="" />}
+              <label className={styles.secundario}>
+                {subiendo ? <Loader2 size={15} className={styles.girando} aria-hidden="true" /> : <Upload size={15} aria-hidden="true" />}
+                {form.mainImage ? 'Cambiar portada' : 'Subir portada'}
+                <input type="file" accept="image/*" hidden onChange={(e) => { subirPortada(e.target.files?.[0]); e.target.value = ''; }} />
+              </label>
+              {form.mainImage && (
+                <button type="button" className={styles.texto} onClick={() => cambiar('mainImage', '')}>
+                  <X size={14} aria-hidden="true" /> Quitar
+                </button>
+              )}
+            </div>
+          </div>
 
           <fieldset className={styles.piezas}>
             <legend>Prendas del combo</legend>
@@ -276,6 +339,10 @@ const AdminCombosCrear = () => {
             <input type="checkbox" checked={form.publicado} onChange={(e) => cambiar('publicado', e.target.checked)} />
             <span>Publicado (se ve en Crear y se puede comprar)</span>
           </label>
+          <label className={styles.check}>
+            <input type="checkbox" checked={form.enTienda} onChange={(e) => cambiar('enTienda', e.target.checked)} />
+            <span>También en la tienda (y en la página de su marca), para armarlo{form.publicado ? '' : ' · se verá cuando esté publicado'}</span>
+          </label>
 
           <div className={styles.acciones}>
             <button type="submit" className={styles.principal} disabled={guardar.isPending}>
@@ -305,6 +372,7 @@ const AdminCombosCrear = () => {
                 </span>
               </div>
               <span className={c.publicado ? styles.publicado : styles.borrador}>{c.publicado ? 'Publicado' : 'Borrador'}</span>
+              {c.enTienda && c.publicado && <span className={styles.publicado}>En la tienda</span>}
               <div className={styles.itemAcciones}>
                 <Link to={`/combo/${c.id}`} className={styles.icono} aria-label="Ver" title="Ver"><Eye size={16} aria-hidden="true" /></Link>
                 <button type="button" className={styles.icono} aria-label="Editar" title="Editar" onClick={() => abrir(c)}><Pencil size={16} aria-hidden="true" /></button>

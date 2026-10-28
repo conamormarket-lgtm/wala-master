@@ -155,6 +155,12 @@ function createCartValidator({ db, HttpsError }) {
       }
       // Las piezas de un combo se cobran juntas, al precio del combo (abajo).
       if (item.comboCrear) continue;
+      // Una prenda de Crear se vende solo diseñada (también cuando sale en la
+      // tienda con "También en la tienda"): sin su creación es una prenda en
+      // blanco que nadie pidió.
+      if (product.esPrendaBase === true && !item.personalizado && !String(item.designId || "").trim() && !item.vistasPersonalizadas) {
+        throw new HttpsError("failed-precondition", `"${nombre}" se compra personalizado. Diséñalo en Crear y vuelve a agregarlo.`);
+      }
       const clientPrice = Number(item.precio);
       if (item.personalizado && product.esPrendaBase === true) {
         const price = precioDePrendaPersonalizada(product);

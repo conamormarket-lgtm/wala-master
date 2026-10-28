@@ -147,6 +147,8 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
     // Se ve en la tienda (o en Crear, si es una prenda). Antes el guardado
     // lo ponía siempre en true: ocultar algo duraba hasta volver a guardarlo.
     visible: true,
+    // Una prenda de Crear que también sale en la tienda (utils/enTienda.mjs).
+    enTienda: false,
     prendaBase: prendaBaseInicial(),
     characters: [],
     tags: [],
@@ -317,6 +319,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         esPrendaBase: productData.esPrendaBase === true,
         personalizarEn: productData.personalizarEn || '',
         visible: productData.visible !== false,
+        enTienda: productData.enTienda === true,
         prendaBase: productData.prendaBase || prendaBaseInicial(),
         isComboProduct: Boolean(productData.isComboProduct),
         comboItems: productData.comboItems || [],
@@ -935,6 +938,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         edadMinima: form.edadMinima,
         variants: isCombo ? [] : finalVariants,
         visible: form.visible !== false,
+        enTienda: esPrenda && form.enTienda === true,
         featured: form.featured,
         isV2: true,
       };
@@ -1063,6 +1067,22 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
               </div>
               <label className={styles.toggleSwitch}>
                 <input type="checkbox" checked={form.visible !== false} onChange={(e) => setForm(f => ({ ...f, visible: e.target.checked }))} />
+                <span className={styles.slider}></span>
+              </label>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
+              <div>
+                <h2 className={styles.cardTitle} style={{ margin: 0, padding: 0, borderBottom: 'none' }}>También en la tienda</h2>
+                <p className={styles.cardSubtitle} style={{ marginTop: '0.25rem', marginBottom: 0 }}>
+                  {!form.enTienda
+                    ? 'Solo en Crear.'
+                    : form.visible !== false
+                      ? 'Sale en la tienda y en la página de su marca, con el botón "Personalízalo" (nunca se vende en blanco).'
+                      : 'Saldrá en la tienda cuando la publiques en Crear.'}
+                </p>
+              </div>
+              <label className={styles.toggleSwitch}>
+                <input type="checkbox" checked={form.enTienda === true} onChange={(e) => setForm(f => ({ ...f, enTienda: e.target.checked }))} />
                 <span className={styles.slider}></span>
               </label>
             </div>

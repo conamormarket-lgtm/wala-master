@@ -1,11 +1,12 @@
 import { getCollection, getDocument, createDocument, updateDocument } from './firebase/firestore';
-import { clearProductCaches } from './products';
+import { clearProductCaches, normalizeSearchText, buildSearchTokens } from './products';
 
 // Combos de Crear ("Pareja", "Trío"...): un doc de productos_wala con
 // esComboCrear y su precio de paquete. Cada pieza es una prenda de Crear que
-// el cliente diseña por separado. Va oculto de la tienda (visible: false) y
-// se ofrece solo en Crear cuando comboCrear.publicado. El servidor lo valida
-// en functions/cartValidation.js (validarCombos).
+// el cliente diseña por separado. Se ofrece en Crear cuando
+// comboCrear.publicado y, si además lleva enTienda, también en la tienda y en
+// la página de su marca (siempre para armarlo, nunca tal cual). El servidor lo
+// valida en functions/cartValidation.js (validarCombos).
 const COLLECTION = 'productos_wala';
 
 export const MIN_PIEZAS = 2;
@@ -47,21 +48,39 @@ export const getComboCrear = async (id) => {
   return { data: leerCombo({ id, ...data }), error: null };
 };
 
-/** Crea o actualiza un combo desde el admin. Devuelve su id. */
+/**
+ * Crea o actualiza un combo desde el admin. Devuelve su id.
+ *  - form.piezas: [{ prendaId, nombre?, imagen? }]. El nombre y la foto de
+ *    cada prenda se guardan con la pieza: la tarjeta de la tienda los muestra
+ *    sin leer las prendas (se actualizan cada vez que se guarda el combo).
+ *  - form.enTienda: "También en la tienda" (ver utils/enTienda.mjs).
+ */
 export const guardarComboCrear = async (id, form) => {
+  const name = String(form.name || '').trim();
+  const brandId = String(form.brandId || '').trim();
   const datos = {
-    name: String(form.name || '').trim(),
+    name,
     description: String(form.description || '').trim(),
     price: Number(form.price) || 0,
     // Sin oferta = sin campo: para el servidor un salePrice de 0 es un precio de S/ 0.
     salePrice: Number(form.salePrice) > 0 ? Number(form.salePrice) : null,
     mainImage: String(form.mainImage || '').trim(),
+    brandId,
     esComboCrear: true,
-    // Nunca en los listados de la tienda: se arma en /combo/:id.
+    // `visible` no es el interruptor de un combo (se arma en /combo/:id y se
+    // ofrece con comboCrear.publicado): sale en la tienda solo con enTienda.
     visible: false,
+    enTienda: form.enTienda === true,
+    // Para encontrarlo en el buscador de la tienda (como products.js).
+    nameLower: normalizeSearchText(name),
+    searchTokens: buildSearchTokens(name, brandId),
     comboCrear: {
       publicado: form.publicado === true,
-      piezas: (form.piezas || []).filter((p) => p?.prendaId).map((p) => ({ prendaId: p.prendaId })),
+      piezas: (form.piezas || []).filter((p) => p?.prendaId).map((p) => ({
+        prendaId: p.prendaId,
+        ...(p.nombre && { nombre: String(p.nombre) }),
+        ...(p.imagen && { imagen: String(p.imagen) }),
+      })),
       tallas: MODOS_TALLA.includes(form.tallas) ? form.tallas : 'auto',
     },
   };

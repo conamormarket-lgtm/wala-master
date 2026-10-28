@@ -18,7 +18,7 @@ import { withEditorFonts } from '../../services/shared/fontResources';
 import { fuentesDeImagen } from '../common/OptimizedImage/OptimizedImage';
 import { PaginaProducto } from '../../componentes/kit/paginas/Producto';
 import { SIZES_FOTO } from '../../componentes/kit/piezas/GaleriaProducto';
-import { fichaProductoDesde, opinionesDesde } from '../../componentes/kit/adaptadores';
+import { fichaProductoDesde, opinionesDesde, rutaPersonalizar } from '../../componentes/kit/adaptadores';
 import TarjetaDeProducto from './TarjetaDeProducto';
 import usePiezasDelCombo from './usePiezasDelCombo';
 import { argumentosDelCarrito, rutaDelEditor } from './eleccionCarrito';
@@ -233,7 +233,7 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
 
   // Agrega ESTE producto como el único elegido y va directo a pagar.
   const alComprar = async (eleccion) => {
-    if (!product.inStock) return false;
+    if (ficha?.producto.agotado) return false;
     if (avisarComboCargando()) return false;
     const { variant, cantidad, combo } = argumentosDelCarrito(product, eleccion, comboProd);
     addToCart(productoParaCarrito, variant, null, cantidad, combo, { selectOnly: true, silent: true });
@@ -276,7 +276,10 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
   // Un producto de la tienda puede diseñarse en Crear (personalizarEn, se
   // elige en su admin): "Personalizar" lleva a esa prenda o combo.
   const enCrear = leerPersonalizarEn(product?.personalizarEn);
+  // Una prenda de Crear en la tienda: "Personalízalo" abre el estudio en el color elegido.
+  const esDeCrear = product?.esPrendaBase === true;
   const alPersonalizar = (eleccion) => {
+    if (esDeCrear) { navigate(rutaPersonalizar(product, eleccion?.variante?.id), { state: { desde: location.pathname } }); return; }
     if (enCrear) { navigate(enCrear); return; }
     if (product.YoryoPersonalizado) { abrirYoryo(eleccion); return; }
     navigate(rutaDelEditor(product, eleccion, comboProd));
@@ -303,13 +306,13 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
     return <PaginaProducto estado={estado || 'cargando'} onReintentar={onReintentar} />;
   }
 
-  const textoPersonalizar = product.YoryoPersonalizado && !enCrear ? 'Personalizable' : 'Personalizar';
+  const textoPersonalizar = esDeCrear ? 'Personalízalo' : product.YoryoPersonalizado && !enCrear ? 'Personalizable' : 'Personalizar';
   return (
     <>
       <PaginaProducto
         key={id}
         {...ficha}
-        producto={{ ...ficha.producto, personalizable: Boolean(enCrear) || personalizableViejo && Boolean(product.customizable || product.YoryoPersonalizado) }}
+        producto={{ ...ficha.producto, personalizable: esDeCrear || Boolean(enCrear) || personalizableViejo && Boolean(product.customizable || product.YoryoPersonalizado) }}
         fuentes={fuentes}
         piezasCargando={esCombo && !comboPedido}
         opiniones={opiniones}

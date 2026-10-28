@@ -92,7 +92,7 @@ const pieza = (i, precio, extra = {}) => ({
 
 test("combo pieces are charged together at the combo price", async () => {
   const f = fixture({ ...prendas, pareja: combo });
-  const { subtotal } = await f.validate([pieza(0, 67.5), pieza(1, 67.5), line("polo", 1, { precio: 75 })]);
+  const { subtotal } = await f.validate([pieza(0, 67.5), pieza(1, 67.5), line("polo", 1, { precio: 75, personalizado: true })]);
   assert.equal(subtotal, 210);
   assert.deepEqual(f.calls[1].ids, ["pareja"]);
 });
@@ -110,6 +110,13 @@ test("unpublished, deleted or missing combos are not sold", async () => {
     const f = fixture({ ...prendas, pareja: c });
     await assert.rejects(f.validate([pieza(0, 67.5), pieza(1, 67.5)]), /disponible/);
   }
+});
+
+test("a Crear garment is only sold designed, even when it shows in the shop", async () => {
+  const f = fixture({ polo: { ...prendas.polo, enTienda: true } });
+  await assert.rejects(f.validate([line("polo", 1, { precio: 75 })]), /se compra personalizado/);
+  await f.validate([line("polo", 1, { precio: 75, personalizado: true })]);
+  await f.validate([line("polo", 1, { precio: 75, designId: "d1" })]);
 });
 
 test("combo pieces still consume their garment stock", async () => {

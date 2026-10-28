@@ -5,6 +5,8 @@ import { useProduct } from '../hooks/useProducts';
 import useLoViejo from '../hooks/useLoViejo';
 import { getCategories } from '../services/products';
 import FichaDeProducto from '../components/producto/FichaDeProducto';
+import { leerPersonalizarEn } from '../utils/personalizarEn';
+import { esProductoDeTienda } from '../utils/enTienda.mjs';
 
 // La ficha vieja solo baja si el interruptor fichaVieja está puesto.
 const ProductDetail = lazy(() => import('./Tienda/components/ProductDetail'));
@@ -27,14 +29,20 @@ const ProductPage = () => {
   // producto oculto (visible===false). En ambos casos NO se muestra la ficha
   // comprable (nada de agregar al carrito) sino un estado limpio de "no disponible".
   const noDisponible = Boolean(product) && (product.deleted === true || product.visible === false);
+  // Un producto que ya no está pero que se personaliza en Crear (el cuadro
+  // de la tienda que pasó a su prenda de Crear): su link lleva allá.
+  const reemplazo = noDisponible ? leerPersonalizarEn(product.personalizarEn) : null;
+  if (reemplazo) return <Navigate to={reemplazo} replace />;
 
   // El recordatorio "¡Sigue disponible!" ya no lo arma el navegador mientras
   // el cliente mira el producto: lo manda el servidor al día siguiente (aviso
   // "Producto que estuvo mirando", functions/notificationsEngine.js).
 
   if (!fichaVieja) {
-    // Las prendas de Crear y sus combos no tienen ficha (ver abajo).
-    if (product?.esPrendaBase === true && !noDisponible) return <Navigate to={`/crear/${id}`} replace />;
+    // Las prendas de Crear tienen ficha solo si salen en la tienda (enTienda:
+    // la ficha ofrece "Personalízalo"); si no, y sus combos siempre, se van
+    // directo a diseñar (ver abajo).
+    if (product?.esPrendaBase === true && !noDisponible && !esProductoDeTienda(product)) return <Navigate to={`/crear/${id}`} replace />;
     if (product?.esComboCrear === true) return <Navigate to={`/combo/${id}`} replace />;
     return (
       <FichaDeProducto
