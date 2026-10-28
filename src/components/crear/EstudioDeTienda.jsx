@@ -153,6 +153,10 @@ const EstudioDeTienda = () => {
   // Diseño de la comunidad de punto de partida (/crear/:id?plantilla=X): se
   // abre como un diseño nuevo y al guardarlo es una creación propia.
   const plantillaParam = searchParams.get('plantilla');
+  // Admin: abrir una plantilla del producto para cambiarla (Admin → Prendas
+  // de Crear → Plantillas → "Editar en el estudio").
+  // Se toma al abrir: al guardarse el borrador la dirección pasa a ?designId=.
+  const [editarPlantillaParam] = useState(() => searchParams.get('editarPlantilla'));
   // En un combo de la comunidad, qué pieza de la publicación usa esta prenda.
   const plantillaPiezaParam = Number(searchParams.get('plantillaPieza')) || 0;
   // Pieza de un combo (/crear/:id?combo=X&pieza=N): al terminar vuelve al
@@ -246,7 +250,9 @@ const EstudioDeTienda = () => {
   const aireLienzo = cfgPrenda?.tipo === 'producto' ? 0.1 : 0.04;
   // Solo con sus plantillas (el tomatodo): el cliente elige una y cambia sus
   // textos; no sube imágenes, no agrega textos ni mueve el diseño.
-  const soloPlantillas = Boolean(cfgPrenda?.soloPlantillas && cfgPrenda.plantillas.length);
+  // Un admin que edita una plantilla tiene el estudio completo.
+  const editandoPlantilla = Boolean(isAdmin && editarPlantillaParam);
+  const soloPlantillas = Boolean(cfgPrenda?.soloPlantillas && cfgPrenda.plantillas.length) && !editandoPlantilla;
   const soloPlantillasRef = useRef(soloPlantillas);
   soloPlantillasRef.current = soloPlantillas;
   const laserRef = useRef(laser);
@@ -2933,11 +2939,15 @@ const EstudioDeTienda = () => {
 
   // Solo con plantillas: un diseño nuevo empieza ya con la primera, así el
   // producto nunca se ve vacío.
+  // Editando una plantilla (admin), se abre esa.
   useEffect(() => {
-    if (!listo || !soloPlantillas || zonasUsadas.length || partida.usando || partida.cargando) return;
+    if (!listo || partida.usando || partida.cargando) return;
+    const aEditar = editandoPlantilla && disenosDePartida.find((p) => p.id === editarPlantillaParam);
+    if (aEditar) { usarDisenoDePartida(aEditar.id); return; }
+    if (!soloPlantillas || zonasUsadas.length) return;
     usarDisenoDePartida(disenosDePartida[0].id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listo, soloPlantillas, zonasUsadas.length]);
+  }, [listo, soloPlantillas, zonasUsadas.length, editandoPlantilla]);
 
   // ── "El mismo diseño en otro producto" (del cuadro al mousepad y al revés) ─
   // Parecidos: productos de Crear de una sola zona, impresos y que se diseñan
@@ -2997,7 +3007,7 @@ const EstudioDeTienda = () => {
 
   // Solo admins: el diseño del lienzo pasa a ser una plantilla de este producto.
   const [guardandoPlantilla, setGuardandoPlantilla] = useState(false);
-  const guardarComoPlantilla = async ({ nombre: nombrePlantilla, grupo }) => {
+  const guardarComoPlantilla = async ({ nombre: nombrePlantilla, grupo, id: idPlantilla }) => {
     setGuardandoPlantilla(true);
     try {
       const capas = await copiarImagenesAProducto(id, capasParaGuardar(capasRef.current));
@@ -3005,9 +3015,11 @@ const EstudioDeTienda = () => {
       const vistaPrincipal = cfg.vistas.find((v) => v.id === zonaPrincipal.vistaId);
       const miniatura = await miniaturaDePlantilla({ vista: vistaPrincipal, zona: zonaPrincipal, color, capas, laser });
       const imagen = await subirAProducto(id, miniatura, 'miniatura');
-      await guardarPlantillasDelProducto(id, [{ id: `p${Date.now().toString(36)}`, nombre: nombrePlantilla, grupo, imagen, capas }]);
-      queryClient.invalidateQueries({ queryKey: ['prenda-base', id] });
-      toast.success('Plantilla guardada. Ya aparece en "Empieza con un diseño".');
+      const nuevaId = idPlantilla || `p${Date.now().toString(36)}`;
+      await guardarPlantillasDelProducto(id, [{ id: nuevaId, nombre: nombrePlantilla, grupo, imagen, capas }]);
+      await queryClient.invalidateQueries({ queryKey: ['prenda-base', id] });
+      setPartida({ usando: nuevaId, cargando: null });
+      toast.success(idPlantilla ? `Listo: «${nombrePlantilla}» quedó con estos cambios.` : 'Plantilla guardada. Ya aparece en "Empieza con un diseño".');
       return true;
     } catch (e) {
       toast.error(e.message || 'No se pudo guardar la plantilla.');
@@ -3697,6 +3709,7 @@ const EstudioDeTienda = () => {
             }} />}
           {borrador ? <Aviso compacto tipo="aviso"><Texto>{`Borrador: solo los administradores ven ${sustantivo === 'producto' ? 'este producto' : 'esta prenda'}. Publícalo desde Admin → Prendas de Crear para poder comprarlo.`}</Texto></Aviso>
             : enCombo ? <Aviso compacto tipo="info"><Texto>{(sustantivo === 'producto' ? 'Pieza ' : 'Prenda ') + (piezaParam + 1) + ' de tu combo. Al terminar, vuelve al combo con tu diseño.'}</Texto></Aviso>
+              : editandoPlantilla ? <Aviso compacto tipo="info"><Texto>{`Editando la plantilla «${disenosDePartida.find((p) => p.id === editarPlantillaParam)?.nombre || ''}». Al terminar, usa "Guardar cambios" debajo de los pasos.`}</Texto></Aviso>
               : laser && !zonasUsadas.length ? <Aviso compacto tipo="info"><Texto>Este producto se graba con láser: tu diseño se verá en un solo tono. Las fotos quedan mejor sin fondo.</Texto></Aviso>
               : plantillaParam ? <Aviso compacto tipo="info"><Texto>Partes de un diseño de la comunidad. Cámbiale el nombre, la foto o lo que quieras.</Texto></Aviso>
                 : !user && !authLoading && <Aviso compacto tipo="info" accion={zonasUsadas.length ? <Boton variante="fantasma" tamano="sm" onClick={irALogin}><Texto>Iniciar sesión</Texto></Boton> : undefined}><Texto>{zonasUsadas.length ? 'Inicia sesión para guardar tu diseño como borrador y continuarlo después.' : 'Puedes diseñar sin cuenta. Para subir una imagen o guardar, inicia sesión.'}</Texto></Aviso>}
@@ -3796,6 +3809,7 @@ const EstudioDeTienda = () => {
           )}
           {!editandoAlgo && isAdmin && zonasUsadas.length > 0 && (
             <GuardarComoPlantilla grupos={[...new Set(disenosDePartida.map((p) => p.grupo).filter(Boolean))]}
+              actual={disenosDePartida.find((p) => p.id === partida.usando)}
               onGuardar={guardarComoPlantilla} ocupado={guardandoPlantilla} />
           )}
           <div ref={editorRef}>

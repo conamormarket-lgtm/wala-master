@@ -1168,22 +1168,33 @@ export function LlevarDiseno({ destinos = [], onLlevar, ocupado }) {
 
 /**
  * Solo admins: guarda el diseño del lienzo como plantilla de este producto
- * (aparece en "Empieza con un diseño"). Nombre y grupo (la pestaña).
- *  - grupos: los que ya hay (sugerencias) · onGuardar({ nombre, grupo }) · ocupado
+ * (aparece en "Empieza con un diseño"). Nombre y grupo (la pestaña). Si se
+ * partió de una plantilla (`actual`), también la reemplaza en su lugar.
+ *  - grupos: los que ya hay (sugerencias) · onGuardar({ nombre, grupo, id? }) · ocupado
+ *  - actual: { id, nombre, grupo } la plantilla de la que se partió
  */
-export function GuardarComoPlantilla({ grupos = [], onGuardar, ocupado = false }) {
+export function GuardarComoPlantilla({ grupos = [], actual, onGuardar, ocupado = false }) {
   const [nombre, setNombre] = useState('');
   const [grupo, setGrupo] = useState(grupos[0] || '');
   return (
     <div className={s.grupoCampo} data-componente="GuardarComoPlantilla">
-      <span className={s.rotulo}><Texto>Guardar como plantilla</Texto></span>
+      <span className={s.rotulo}><Texto>{actual ? 'Plantilla' : 'Guardar como plantilla'}</Texto></span>
       <p className={s.panelAyuda}><Texto>Solo la ven los administradores. La plantilla aparece en "Empieza con un diseño" de este producto.</Texto></p>
+      {actual && (
+        <>
+          <BotonEstudio tamano="sm" bloque icono={<Check aria-hidden="true" />} cargando={ocupado} disabled={ocupado}
+            onClick={() => onGuardar?.({ id: actual.id, nombre: actual.nombre, grupo: actual.grupo })}>
+            <Texto>{`Guardar cambios en «${actual.nombre}»`}</Texto>
+          </BotonEstudio>
+          <p className={s.panelAyuda}><Texto>O guárdala como otra plantilla:</Texto></p>
+        </>
+      )}
       <CampoEstudio etiqueta="Nombre" value={nombre} maxLength={60} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Alianza Lima" />
       <CampoEstudio etiqueta="Grupo" creable opciones={[...new Set(['Parejas', 'Equipos', ...grupos])].map((g) => ({ valor: g, texto: g }))}
         value={grupo} onChange={(e) => setGrupo(e.target.value)} placeholder="Elige o escribe uno" />
       <BotonEstudio variante="contorno" tamano="sm" cargando={ocupado} disabled={!nombre.trim() || ocupado}
         onClick={async () => { if (await onGuardar?.({ nombre: nombre.trim(), grupo: grupo.trim() })) setNombre(''); }}>
-        Guardar plantilla
+        {actual ? 'Guardar como nueva' : 'Guardar plantilla'}
       </BotonEstudio>
     </div>
   );

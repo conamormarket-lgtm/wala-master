@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Upload, X, Sparkles, Palette, AlertTriangle } from 'lucide-react';
+import { Plus, Upload, X, Sparkles, Palette, AlertTriangle, Pencil } from 'lucide-react';
 import { uploadFile } from '../../../services/firebase/storage';
 import {
   leerPrendaBase, normalizarZona, normalizarVista, normalizarReferencia, medidaZona, zonaConMedida,
@@ -192,14 +192,15 @@ const ListaZonas = ({ idLista, zonas, escala, elegida, onElegir, onCambiar, onZo
  * desde el estudio con "Guardar como plantilla" (solo admins) o desde el
  * importador de plantillas.
  */
-const PlantillasDelProducto = ({ plantillas, onChange }) => {
+const PlantillasDelProducto = ({ plantillas, prendaId, onChange }) => {
   const cambiarUna = (id, cambios) => onChange(plantillas.map((p) => (p.id === id ? { ...p, ...cambios } : p)));
   return (
     <section className={styles.bloque}>
       <h3 className={styles.bloqueTitulo}>Plantillas ({plantillas.length})</h3>
       <p className={styles.ayuda}>
         Los diseños para empezar que el cliente ve en el estudio, agrupados en pestañas. Para agregar una, diséñala en el
-        estudio y usa <strong>Guardar como plantilla</strong>.
+        estudio y usa <strong>Guardar como plantilla</strong>. Para cambiar una, <strong>Editar en el estudio</strong> la abre
+        (en otra pestaña) y <strong>Guardar cambios</strong> la reemplaza en su lugar.
       </p>
       <datalist id="grupos-plantillas">
         {[...new Set(['Parejas', 'Equipos', ...plantillas.map((p) => p.grupo).filter(Boolean)])].map((g) => <option key={g} value={g} />)}
@@ -216,6 +217,11 @@ const PlantillasDelProducto = ({ plantillas, onChange }) => {
               <span>Grupo</span>
               <input list="grupos-plantillas" value={p.grupo} onChange={(e) => cambiarUna(p.id, { grupo: e.target.value })} />
             </label>
+            {prendaId && (
+              <a className={styles.botonSecundario} href={`/crear/${prendaId}?editarPlantilla=${encodeURIComponent(p.id)}`} target="_blank" rel="noreferrer">
+                <Pencil size={14} aria-hidden="true" /> Editar en el estudio
+              </a>
+            )}
             <button type="button" className={styles.iconoPeligro} onClick={() => onChange(plantillas.filter((x) => x.id !== p.id))} aria-label={`Quitar ${p.nombre}`}>
               <X size={16} aria-hidden="true" />
             </button>
@@ -354,7 +360,7 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
       </section>
 
       {leerPlantillas(valor?.plantillas).length > 0 && (
-        <PlantillasDelProducto plantillas={leerPlantillas(valor.plantillas)} onChange={(plantillas) => cambiar({ plantillas })} />
+        <PlantillasDelProducto plantillas={leerPlantillas(valor.plantillas)} prendaId={draftId} onChange={(plantillas) => cambiar({ plantillas })} />
       )}
 
       <section className={styles.bloque}>

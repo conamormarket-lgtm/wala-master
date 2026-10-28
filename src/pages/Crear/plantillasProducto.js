@@ -107,14 +107,19 @@ export async function miniaturaDePlantilla({ vista, zona, color, capas, laser = 
 }
 
 /**
- * Agrega (o reemplaza, por id) plantillas en el producto. Lee el documento
- * tal cual está para no pisar lo que el admin haya cambiado en otra pestaña.
+ * Agrega o reemplaza (por id, en su mismo lugar de la lista) plantillas en el
+ * producto. Lee el documento tal cual está para no pisar lo que el admin haya
+ * cambiado en otra pestaña.
  */
 export async function guardarPlantillasDelProducto(prendaId, nuevas) {
   const { data, error } = await getDocument('productos_wala', prendaId);
   if (error || !data) throw new Error(error || 'No encontré el producto.');
-  const ids = new Set(nuevas.map((p) => p.id));
-  const plantillas = [...(data.prendaBase?.plantillas || []).filter((p) => !ids.has(p.id)), ...nuevas];
+  const porId = new Map(nuevas.map((p) => [p.id, p]));
+  const actuales = data.prendaBase?.plantillas || [];
+  const plantillas = [
+    ...actuales.map((p) => porId.get(p.id) || p),
+    ...nuevas.filter((p) => !actuales.some((a) => a.id === p.id)),
+  ];
   const r = await updateDocument('productos_wala', prendaId, { prendaBase: { ...data.prendaBase, plantillas } });
   if (r.error) throw new Error(r.error);
   clearProductCaches();

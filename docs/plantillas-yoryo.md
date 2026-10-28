@@ -60,6 +60,8 @@ Las imágenes de las plantillas viven en `productos_v2/{id}/plantillas/`, así l
 
 **Renombrar, cambiar de grupo o quitar:** en Admin → Prendas de Crear → Plantillas.
 
+**Cambiar una plantilla:** en esa lista, **Editar en el estudio** la abre en otra pestaña (`/crear/:id?editarPlantilla=…`) con el estudio completo, aun en productos "solo con plantillas". **Guardar cambios en «…»** la reemplaza en su mismo lugar. También, si un admin parte de una plantilla en el estudio, puede guardar sus cambios en ella o guardarla como nueva.
+
 ## Crear los productos (una sola vez)
 
 En **Admin → Catálogo → Importar plantillas de cuadros** (`/admin/plantillas-yoryo`), el botón **Crear productos y pack**:

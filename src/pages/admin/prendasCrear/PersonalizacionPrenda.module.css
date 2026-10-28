@@ -1003,7 +1003,7 @@
 
 .plantilla {
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr) minmax(0, 0.7fr) auto;
+  grid-template-columns: 96px minmax(0, 1fr) minmax(0, 0.7fr) auto auto;
   gap: 0.6rem;
   align-items: end;
 }
@@ -1020,6 +1020,10 @@
 @media (max-width: 640px) {
   .plantilla {
     grid-template-columns: 72px minmax(0, 1fr) auto;
+  }
+
+  .plantilla > a {
+    grid-column: 2 / -1;
   }
 
   .plantilla img,
@@ -1048,4 +1052,9 @@
 
 .casilla small {
   color: var(--gris-texto-secundario);
+}
+
+.plantilla > a {
+  text-decoration: none;
+  white-space: nowrap;
 }
