@@ -278,7 +278,13 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
   const extras = valor?.colores || {};
   const { colores } = leerPrendaBase({ variants: variantes, prendaBase: { vistas, colores: extras } });
   const colorInicial = colores.some((c) => c.id === varianteDefecto) ? varianteDefecto : colores[0]?.id;
-  const hexPrevio = colores.find((c) => c.id === (colorPrevio || colorInicial))?.hex || '#FFFFFF';
+  const colorVista = colores.find((c) => c.id === (colorPrevio || colorInicial));
+  const hexPrevio = colorVista?.hex || '#FFFFFF';
+  // Las zonas se marcan sobre la foto que verá el cliente en ese color: la
+  // propia del color si tiene (el estudio usa esa), si no la base teñida.
+  // Antes se mostraba siempre la base, y con una foto propia de otro
+  // encuadre la zona caía corrida en el estudio.
+  const propiaDe = (v) => (colorVista && !colorVista.espejo ? colorVista.fotos?.[v.id] : '') || '';
 
   // Los cambios se aplican sobre el estado más reciente: dos fotos que terminan
   // de cargar casi a la vez (y avisan su tamaño) no se pisan entre sí.
@@ -443,17 +449,25 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
               </div>
               <div className={styles.vistaCuerpo}>
                 <div className={styles.vistaFoto}>
+                  {propiaDe(v) && propiaDe(v) !== v.imagen && (
+                    <p className={styles.ayuda}>
+                      Se ve la foto propia de <strong>{colorVista.nombre}</strong> (la que usa el estudio). Las zonas valen
+                      para todos los colores: sus fotos deben tener el mismo encuadre que esta.
+                    </p>
+                  )}
                   <ZonaEditor
-                    imagen={v.imagen}
+                    imagen={propiaDe(v) || v.imagen}
                     zonas={v.zonas}
                     seleccionada={zonaElegida[v.id] ?? 0}
-                    colorHex={hexPrevio}
+                    colorHex={propiaDe(v) ? '#FFFFFF' : hexPrevio}
                     onSeleccionar={(zi) => setZonaElegida((m) => ({ ...m, [v.id]: zi }))}
                     onChange={(zi, zona) => setZona(i, zi, zona)}
                     referencia={v.referencia}
                     onReferencia={(referencia) => setVista(i, { referencia })}
                     cuadricula={Boolean(cuadricula[v.id])}
                     onDims={(d) => {
+                      // Las medidas son las de la foto base (con la propia de un color se ve otra).
+                      if (propiaDe(v) && propiaDe(v) !== v.imagen) return;
                       if (v.anchoImg !== d.ancho || v.altoImg !== d.alto) setVista(i, { anchoImg: d.ancho, altoImg: d.alto });
                     }}
                   />
