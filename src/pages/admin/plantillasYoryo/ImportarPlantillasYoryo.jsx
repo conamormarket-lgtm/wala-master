@@ -8,6 +8,7 @@ import { publicarEnComunidad } from '../../../services/comunidad';
 import { crearDesdePlantilla } from '../../Crear/crearDesdePlantilla';
 import { leerPrendaBase, colorDisponible, UNIDADES_ZONA } from '../../../utils/prendaBase';
 import { capasDePlantilla } from './plantillasACapas.mjs';
+import { crearProductosYoryo, IDS_CREAR_YORYO } from './crearProductosYoryo';
 import { plantillaCapasBaseYoryo } from './presetsEquipos.mjs';
 import { plantillaParejasBaseYoryo } from './presetsParejas.mjs';
 import Boton from '../../../componentes/kit/Boton';
@@ -25,16 +26,26 @@ import s from './ImportarPlantillasYoryo.module.css';
  * yoryo-composiciones-v4) mandan sobre las de fábrica.
  */
 
-const EQUIPOS = ['Alianza Lima', 'Universitario', 'Sporting Cristal', 'Sport Boys', 'Barcelona', 'Real Madrid'];
-const PAREJAS = [['dorado', 'Banda dorada'], ['floral', 'Mi lugar favorito'], ['botanico', 'Nuestra historia']];
-const TEXTOS_EQUIPO = { nombre: 'Tu nombre', frase: 'Tu frase favorita', dedicatoria: 'Con todo mi cariño' };
-const TEXTOS_PAREJA = { nombre: 'Ana & Luis', fecha: '24.10.2021', frase: 'Gracias por cada momento', titulo: 'Mi lugar favorito es', acento: 'Contigo.' };
+// Los textos de muestra son los de las portadas de referencia de cada plantilla.
+const DEDICATORIA = 'Para el mejor papá. Con amor, Sofía.';
+const EQUIPOS = [
+  ['Alianza Lima', 'Blanquiazul de corazón'], ['Universitario', 'Crema de corazón'], ['Sporting Cristal', 'Celeste de corazón'],
+  ['Sport Boys', 'Rosado de corazón'], ['Barcelona', 'Culé de corazón'], ['Real Madrid', 'Madridista de corazón'],
+];
+const PAREJAS = [
+  ['dorado', 'Banda dorada', { nombre: 'Andrea & Luis', frase: 'Gracias por caminar a mi lado.' }],
+  ['floral', 'Mi lugar favorito', { titulo: 'Mi lugar favorito es', acento: 'contigo.', nombre: 'Diego & Valeria', fecha: '14.02.2022', frase: 'Gracias por hacerme sentir en casa.' }],
+  ['botanico', 'Nuestra historia', { nombre: 'Camila & Andrés', fecha: '09.06.2023', frase: 'Por todos los recuerdos que nos faltan.' }],
+];
 
 const PRODUCTOS = [['cuadro', 'Cuadro'], ['mousepad', 'Mousepad']];
 
 const plantillasDe = (producto) => [
-  ...EQUIPOS.map((equipo) => ({ id: `${producto}-${equipo}`, producto, nombre: equipo, preset: () => plantillaCapasBaseYoryo(equipo, producto), textos: TEXTOS_EQUIPO })),
-  ...PAREJAS.map(([modelo, nombre]) => ({ id: `${producto}-${modelo}`, producto, nombre, preset: () => plantillaParejasBaseYoryo(modelo, producto), textos: TEXTOS_PAREJA })),
+  ...EQUIPOS.map(([equipo, frase]) => ({
+    id: `${producto}-${equipo}`, producto, nombre: equipo, preset: () => plantillaCapasBaseYoryo(equipo, producto),
+    textos: { nombre: 'Daniel', frase, dedicatoria: DEDICATORIA },
+  })),
+  ...PAREJAS.map(([modelo, nombre, textos]) => ({ id: `${producto}-${modelo}`, producto, nombre, preset: () => plantillaParejasBaseYoryo(modelo, producto), textos })),
 ];
 
 const aBlob = (canvas) => new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('No se pudo crear la foto de muestra.'))), 'image/png'));
@@ -83,7 +94,24 @@ export default function ImportarPlantillasYoryo() {
       return r.data?.presets || {};
     },
   });
-  const [destino, setDestino] = useState({ cuadro: '', mousepad: '' });
+  const [destinoElegido, setDestino] = useState({});
+  // Si ya existen el cuadro y el mousepad de Crear, se eligen solos.
+  const destino = useMemo(() => Object.fromEntries(PRODUCTOS.map(([p]) => [p,
+    destinoElegido[p] ?? ((prendas.data || []).some((x) => x.id === IDS_CREAR_YORYO[p]) ? IDS_CREAR_YORYO[p] : '')])), [destinoElegido, prendas.data]);
+  const [pasoProductos, setPasoProductos] = useState('');
+  const [creandoProductos, setCreandoProductos] = useState(false);
+  const crearProductos = async () => {
+    setCreandoProductos(true);
+    try {
+      await crearProductosYoryo({ onPaso: setPasoProductos });
+      await prendas.refetch();
+      queryClient.invalidateQueries({ queryKey: ['prendas-base'] });
+    } catch (e) {
+      setPasoProductos(`Error: ${e.message}`);
+    } finally {
+      setCreandoProductos(false);
+    }
+  };
   const [elegidas, setElegidas] = useState(() => new Set(PRODUCTOS.flatMap(([p]) => plantillasDe(p).map((x) => x.id))));
   const [estado, setEstado] = useState({});
   const [trabajando, setTrabajando] = useState(false);
@@ -147,9 +175,20 @@ export default function ImportarPlantillasYoryo() {
         comunidad</strong> de tus prendas de Crear. El cliente las ve en el estudio, en <em>Empieza con un diseño</em>, y
         cambia la foto, los textos o lo que quiera. Se guardan en Mis creaciones de tu cuenta y se pueden retirar desde ahí.
       </p>
+      <section className={s.grupo}>
+        <h2>1. Los productos en Crear</h2>
+        <p>
+          Crea el cuadro (31 × 25 cm), el mousepad (23.5 × 19.5 cm) y el tomatodo grabado como productos de Crear, con la foto
+          de la tienda sin fondo, y el Pack de oficina como combo. También hace que <em>Personalizar</em> de esos productos de la
+          tienda lleve a ellos. Lo que ya exista no se repite. Luego se ajustan en Admin → Prendas de Crear.
+        </p>
+        <Boton variante="contorno" onClick={crearProductos} cargando={creandoProductos} disabled={!user || trabajando}>Crear productos y pack</Boton>
+        {pasoProductos && <small className={pasoProductos.startsWith('Error') ? s.error : undefined}>{pasoProductos}</small>}
+      </section>
+
+      <h2 className={s.subtitulo}>2. Las plantillas</h2>
       <Aviso tipo="info" compacto>
-        Primero crea el cuadro y el mousepad en Admin → Prendas de Crear (foto, zona y medida en cm). Importa una sola vez: cada
-        vez que se importa se publican diseños nuevos.
+        Importa una sola vez: cada vez que se importa se publican diseños nuevos.
       </Aviso>
 
       <div className={s.destinos}>

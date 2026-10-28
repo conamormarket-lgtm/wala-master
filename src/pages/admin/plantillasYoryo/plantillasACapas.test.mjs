@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { capasDePlantilla, tamanoParaCaja } from './plantillasACapas.mjs';
+import { capasDePlantilla, tamanoParaCaja, textoEnCaja } from './plantillasACapas.mjs';
 
 const recursos = { fondo: { src: 'https://x/fondo.png', ancho: 1400, alto: 1100 }, escudo: { src: 'https://x/escudo.png', ancho: 1000, alto: 1400 } };
 const foto = { src: 'https://x/foto.png', ancho: 1200, alto: 1200 };
@@ -34,6 +34,11 @@ test('las capas siguen el orden de la plantilla y caen en unidades de la zona', 
 });
 
 test('el texto de muestra cabe en su caja', () => {
-  assert.equal(tamanoParaCaja('Ana', 1000, 100), 90);
+  assert.equal(tamanoParaCaja('Ana', 1000, 100), 86);
   assert.ok(tamanoParaCaja('Una dedicatoria bastante larga', 400, 100) * 30 * 0.6 <= 400);
+});
+
+test('un texto largo en una caja alta se parte en líneas parejas', () => {
+  assert.equal(textoEnCaja('Gracias por hacerme sentir en casa.', 240, 110, 0.45), 'Gracias por\nhacerme sentir\nen casa.');
+  assert.equal(textoEnCaja('Daniel', 440, 96, 0.72), 'Daniel');
 });

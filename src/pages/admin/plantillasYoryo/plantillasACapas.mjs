@@ -27,9 +27,29 @@ const nuevoId = (base) => `capa_${base}_${Date.now().toString(36)}${(siguiente++
 
 /** Tamaño de letra (en unidades) para que `texto` entre en una caja de ancho × alto. */
 export const tamanoParaCaja = (texto, ancho, alto, anchoLetra = 0.6) => {
-  const largo = Math.max(1, String(texto || '').length);
-  return Math.max(12, Math.round(Math.min(alto * 0.9, ancho / (largo * anchoLetra))));
+  const lineas = String(texto || '').split('\n');
+  const largo = Math.max(1, ...lineas.map((l) => l.length));
+  return Math.max(12, Math.round(Math.min((alto * 0.9) / (lineas.length * 1.05), ancho / (largo * anchoLetra))));
 };
+
+/** Las palabras repartidas en `n` líneas de largo parejo. */
+const enLineas = (texto, n) => {
+  const palabras = texto.split(/\s+/);
+  if (n <= 1 || palabras.length < n) return texto;
+  const meta = texto.length / n;
+  const lineas = [''];
+  palabras.forEach((p) => {
+    const actual = lineas[lineas.length - 1];
+    if (actual && actual.length + p.length / 2 > meta && lineas.length < n) lineas.push(p);
+    else lineas[lineas.length - 1] = actual ? `${actual} ${p}` : p;
+  });
+  return lineas.join('\n');
+};
+
+/** El texto en 1, 2 o 3 líneas, las que dejen la letra más grande en su caja. */
+export const textoEnCaja = (texto, ancho, alto, anchoLetra) => [1, 2, 3]
+  .map((n) => enLineas(texto, n))
+  .reduce((mejor, t) => (tamanoParaCaja(t, ancho, alto, anchoLetra) > tamanoParaCaja(mejor, ancho, alto, anchoLetra) ? t : mejor));
 
 /**
  * Capas del estudio para una plantilla.
@@ -60,7 +80,7 @@ export function capasDePlantilla({ preset, proporcion, recursos, foto, textos, u
     const texto = textos[e.id];
     if (!texto) return;
     const letra = FUENTES[e.fuente] || FUENTES.Clásica;
-    const escrito = e.mayusculas ? texto.toLocaleUpperCase('es') : texto;
+    const escrito = textoEnCaja(e.mayusculas ? texto.toLocaleUpperCase('es') : texto, caja.w, caja.h, letra.ancho);
     const sombra = Number(e.sombraOpacidad) > 0.3;
     capas.push({
       id: nuevoId(e.id), type: 'text', text: escrito, fuente: letra.fuente,

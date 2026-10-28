@@ -37,6 +37,16 @@ Para publicar uno nuevo:
 2. Guardarlo.
 3. Publicarlo desde Mis creaciones.
 
+## Crear los productos (una sola vez)
+
+En **Admin → Catálogo → Importar plantillas de cuadros**, el botón **Crear productos y pack**:
+
+- crea `yoryo-crear-cuadro`, `yoryo-crear-mousepad` y `yoryo-crear-tomatodo` con la foto de la tienda sin fondo y recortada;
+- crea el Pack de oficina como combo de Crear;
+- enlaza los productos de la tienda con "Personalizar en Crear".
+
+Lo que ya exista no se repite. Las zonas se midieron sobre las fotos de la tienda del 28-10-2026. El tomatodo queda con unos 10 cm de cuerpo estimados: se confirma con el taller y se ajusta en Prendas de Crear.
+
 ## Importar las plantillas anteriores (una sola vez)
 
 **Admin → Catálogo → Importar plantillas de cuadros** (`/admin/plantillas-yoryo`) convierte las plantillas anteriores en diseños de la comunidad: 6 equipos y 3 de parejas, para el cuadro y el mousepad.

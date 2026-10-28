@@ -72,3 +72,12 @@
 .grupo .error {
   color: var(--danger, #b91c1c);
 }
+
+.subtitulo {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.grupo p {
+  margin: 0 0 0.75rem;
+}
