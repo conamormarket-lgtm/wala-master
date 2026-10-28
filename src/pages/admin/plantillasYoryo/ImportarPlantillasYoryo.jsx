@@ -8,7 +8,7 @@ import { retirarDeComunidad } from '../../../services/comunidad';
 import { subirAProducto, miniaturaDePlantilla, guardarPlantillasDelProducto } from '../../Crear/plantillasProducto';
 import { leerPrendaBase, colorDisponible, UNIDADES_ZONA, slug } from '../../../utils/prendaBase';
 import { capasDePlantilla } from './plantillasACapas.mjs';
-import { crearProductosYoryo, pasarYoryoALaTienda, IDS_CREAR_YORYO } from './crearProductosYoryo';
+import { crearProductosYoryo, pasarYoryoALaTienda, ajustarTomatodoAFotoNueva, IDS_CREAR_YORYO } from './crearProductosYoryo';
 import { plantillaCapasBaseYoryo, plantillaTomatodoYoryo } from './presetsEquipos.mjs';
 import { plantillaParejasBaseYoryo } from './presetsParejas.mjs';
 import Boton from '../../../componentes/kit/Boton';
@@ -163,6 +163,21 @@ export default function ImportarPlantillasYoryo() {
       setPasoTienda(`Error: ${e.message}`);
     } finally {
       setPasandoATienda(false);
+    }
+  };
+  // 5. El tomatodo sobre la foto nueva (zona, referencia y miniaturas).
+  const [pasoTomatodo, setPasoTomatodo] = useState('');
+  const [ajustandoTomatodo, setAjustandoTomatodo] = useState(false);
+  const ajustarTomatodo = async () => {
+    setAjustandoTomatodo(true);
+    try {
+      await ajustarTomatodoAFotoNueva({ onPaso: setPasoTomatodo });
+      queryClient.invalidateQueries({ queryKey: ['prenda-base'] });
+      queryClient.invalidateQueries({ queryKey: ['prendas-base'] });
+    } catch (e) {
+      setPasoTomatodo(`Error: ${e.message}`);
+    } finally {
+      setAjustandoTomatodo(false);
     }
   };
   const [elegidas, setElegidas] = useState(() => new Set(PRODUCTOS.flatMap(([p]) => plantillasDe(p).map((x) => x.id))));
@@ -337,6 +352,17 @@ export default function ImportarPlantillasYoryo() {
         </p>
         <Boton variante="contorno" onClick={pasarATienda} cargando={pasandoATienda} disabled={!user || trabajando || creandoProductos}>Pasar a la tienda</Boton>
         {pasoTienda && <small className={pasoTienda.startsWith('Error') ? s.error : undefined}>{pasoTienda}</small>}
+      </section>
+
+      <section className={s.grupo}>
+        <h2>5. El tomatodo con la foto nueva</h2>
+        <p>
+          Para el vaso negro con asa sin fondo (1086 × 1448) subido como foto propia del color: pone la zona de grabado
+          centrada en el cuerpo (sin tocar el aro ni el asa), la línea de referencia de borde a borde y esa foto como base, y
+          rehace las miniaturas de sus plantillas. Las plantillas siguen en su lugar.
+        </p>
+        <Boton variante="contorno" onClick={ajustarTomatodo} cargando={ajustandoTomatodo} disabled={!user || trabajando}>Ajustar el tomatodo</Boton>
+        {pasoTomatodo && <small className={pasoTomatodo.startsWith('Error') ? s.error : undefined}>{pasoTomatodo}</small>}
       </section>
     </div>
   );

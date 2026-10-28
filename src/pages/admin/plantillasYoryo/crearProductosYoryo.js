@@ -1,6 +1,9 @@
 import { createProduct, getProduct, updateProductField, normalizeSearchText, buildSearchTokens } from '../../../services/products';
 import { uploadFile } from '../../../services/firebase/storage';
 import { getCombosCrear, guardarComboCrear } from '../../../services/combosCrear';
+import { getDocument } from '../../../services/firebase/firestore';
+import { leerPrendaBase } from '../../../utils/prendaBase';
+import { miniaturaDePlantilla, subirAProducto } from '../../Crear/plantillasProducto';
 
 /*
  * Una sola vez: el cuadro, el mousepad y el tomatodo de Yoryo como prendas de
@@ -360,4 +363,51 @@ export async function pasarYoryoALaTienda({ onPaso = () => {} } = {}) {
   });
   if (tiendaPack) await updateProductField(PACK_TIENDA, { visible: false });
   onPaso('Listo: los cuatro salen en la tienda para personalizarlos.');
+}
+
+// El tomatodo con la foto nueva (vaso negro con asa, sin fondo, 1086 × 1448,
+// 28-10-2026). Medido sobre esa foto: el cuerpo recto va de y 312 a 890 y de
+// x 268 a 757; el asa empieza en 757. La zona va centrada en el cuerpo, sin
+// tocar el aro plateado ni donde se angosta; la línea de referencia cruza el
+// cuerpo de borde a borde (su ancho real, 10 cm estimados: confirmarlo con el
+// taller).
+const FOTO_TOMATODO = { ancho: 1086, alto: 1448 };
+const ZONA_TOMATODO = { x: 342 / 1086, y: 365 / 1448, w: 340 / 1086, proporcion: 550 / 395, angulo: 0 };
+const REFERENCIA_TOMATODO = { x1: 268 / 1086, y1: 600 / 1448, x2: 756 / 1086, y2: 600 / 1448 };
+
+/**
+ * "Ajustar el tomatodo a la foto nueva": la zona y la línea de referencia
+ * sobre la foto propia del color (la que usa el estudio), esa misma foto como
+ * base de la vista, y las miniaturas de sus plantillas rehechas sobre ella.
+ * La zona conserva su id: las plantillas siguen en su lugar.
+ */
+export async function ajustarTomatodoAFotoNueva({ onPaso = () => {} } = {}) {
+  const id = IDS_CREAR_YORYO.tomatodo;
+  const { data } = await getDocument('productos_wala', id);
+  if (!data?.prendaBase?.vistas?.length) throw new Error('No encontré el tomatodo de Crear.');
+  const pb = data.prendaBase;
+  const v0 = pb.vistas[0];
+  const colorId = data.defaultVariantId || data.variants?.[0]?.id;
+  const foto = pb.colores?.[colorId]?.fotos?.[v0.id];
+  if (!foto) throw new Error('El color del tomatodo no tiene su foto propia: súbela en Colores y fotos → Foto propia.');
+  onPaso('Revisando la foto…');
+  const img = await cargar(foto);
+  if (img.naturalWidth !== FOTO_TOMATODO.ancho || img.naturalHeight !== FOTO_TOMATODO.alto) {
+    throw new Error(`La foto propia mide ${img.naturalWidth} × ${img.naturalHeight}; las medidas son para la de 1086 × 1448. Ajusta la zona a mano en Diseño.`);
+  }
+  const zonas = (v0.zonas || []).map((z, i) => (i === 0 ? { ...z, ...ZONA_TOMATODO } : z));
+  const referencia = { ...REFERENCIA_TOMATODO, cm: Number(v0.referencia?.cm) || 10 };
+  const vistas = [{ ...v0, imagen: foto, anchoImg: FOTO_TOMATODO.ancho, altoImg: FOTO_TOMATODO.alto, zonas, referencia }, ...pb.vistas.slice(1)];
+  const cfg = leerPrendaBase({ ...data, prendaBase: { ...pb, vistas } });
+  const vista = cfg.vistas[0];
+  const color = cfg.colores.find((c) => c.id === colorId) || cfg.colores[0];
+  const plantillas = [];
+  for (const [i, p] of (pb.plantillas || []).entries()) {
+    onPaso(`Miniaturas: ${i + 1} de ${pb.plantillas.length}…`);
+    const zona = vista.zonas.find((z) => (p.capas?.[z.id] || []).length) || vista.zonas[0];
+    const miniatura = await miniaturaDePlantilla({ vista, zona, color, capas: p.capas, laser: cfg.tecnica === 'laser' });
+    plantillas.push({ ...p, imagen: await subirAProducto(id, miniatura, 'miniatura') });
+  }
+  await updateProductField(id, { prendaBase: { ...pb, vistas, ...(plantillas.length && { plantillas }) } });
+  onPaso('Listo: la zona del tomatodo quedó sobre el vaso nuevo.');
 }
