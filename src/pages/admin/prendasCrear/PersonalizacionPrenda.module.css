@@ -806,12 +806,12 @@
 }
 
 .zonaFila {
-  grid-template-columns: minmax(0, 1fr) 90px auto;
+  grid-template-columns: minmax(0, 1fr) 90px 90px auto;
 }
 
 @media (max-width: 640px) {
   .zonaFila {
-    grid-template-columns: minmax(0, 1fr) 80px auto;
+    grid-template-columns: minmax(0, 1fr) 80px 80px auto;
   }
 }
 
@@ -921,12 +921,12 @@
 }
 
 .zonaFilaCm {
-  grid-template-columns: minmax(0, 1fr) 76px 76px 76px auto;
+  grid-template-columns: minmax(0, 1fr) 76px 76px 76px 76px auto;
 }
 
 @media (max-width: 640px) {
   .zonaFilaCm {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
   }
 
   .zonaFilaCm > :first-child {

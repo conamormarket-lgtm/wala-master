@@ -25,7 +25,9 @@ const PIEZAS = [
     // El diseño llega hasta la orilla y el borde cosido va encima: así se nota.
     encima: true,
     // Toda la cara del mousepad: 23.5 × 19.5 cm.
-    zona: { id: 'mousepad-cara', nombre: 'Mousepad', x: 38 / 1086, y: 304 / 1448, w: 1010 / 1086, proporcion: 19.5 / 23.5 },
+    // Sus esquinas son redondas (unos 68 px de radio en la foto): lo que sale
+    // de ellas no se ve.
+    zona: { id: 'mousepad-cara', nombre: 'Mousepad', x: 38 / 1086, y: 304 / 1448, w: 1010 / 1086, proporcion: 19.5 / 23.5, radio: 0.065 },
     referencia: { x1: 38 / 1086, y1: 0.5, x2: 1048 / 1086, y2: 0.5, cm: 23.5 },
   },
   {
@@ -166,7 +168,12 @@ export async function crearProductosYoryo({ onPaso = () => {} } = {}) {
         cambios.vistas = [{ ...vistas[0], zonas: [zona] }, ...vistas.slice(1)];
       }
       if (pieza.soloPlantillas && existe.data.prendaBase?.soloPlantillas !== true) cambios.soloPlantillas = true;
-      const vistasHoy = cambios.vistas || vistas;
+      let vistasHoy = cambios.vistas || vistas;
+      const zonaHoy = vistasHoy[0]?.zonas?.[0];
+      if (pieza.zona.radio && zonaHoy && !zonaHoy.radio) {
+        vistasHoy = [{ ...vistasHoy[0], zonas: [{ ...zonaHoy, radio: pieza.zona.radio }, ...vistasHoy[0].zonas.slice(1)] }, ...vistasHoy.slice(1)];
+        cambios.vistas = vistasHoy;
+      }
       if (pieza.encima && vistasHoy[0]?.imagen && !vistasHoy[0].encima) {
         const foto = await fetch(vistasHoy[0].imagen).then((r) => r.blob());
         cambios.vistas = [{ ...vistasHoy[0], encima: await subirBorde(pieza.id, foto) }, ...vistasHoy.slice(1)];

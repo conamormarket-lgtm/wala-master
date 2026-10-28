@@ -48,6 +48,14 @@ Las imágenes de las plantillas viven en `productos_v2/{id}/plantillas/`, así l
 
 **El mismo diseño en otro producto:** en los productos impresos de una sola zona (cuadro y mousepad), con un diseño en el lienzo aparece **Llevarlo al …**. El diseño se abre en el otro producto, acomodado en su zona, como borrador de la pestaña. En un combo, primero se usa en esta pieza y después se abre la otra.
 
+**Ida y vuelta:** al volver al producto del que vino el diseño, se abre esa misma creación con lo traído encima. No se crea otra.
+
+**Esquinas redondeadas** (`zona.radio`, "Esquinas %" en las zonas del admin): lo que sale de la esquina no se ve. El mousepad trae 6.5 %.
+
+**Foto de muestra** (`muestra` en la capa, o `_tu-foto` en el archivo): al tocarla, el panel ofrece **Pon tu foto aquí**.
+
+**Textos de plantilla:** guardan su ancho (`anchoMax`). Si se escribe algo largo, la letra se achica; si después se acorta, vuelve a su tamaño (`escalaBase`).
+
 **Borde encima** (`vista.encima`): un PNG con lo oscuro de la foto (el borde cosido del mousepad) que se dibuja sobre el diseño en el estudio y en las vistas previas. Así se nota la orilla aunque el diseño llegue hasta ella.
 
 **Renombrar, cambiar de grupo o quitar:** en Admin → Prendas de Crear → Plantillas.

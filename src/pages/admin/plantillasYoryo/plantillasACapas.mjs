@@ -77,6 +77,8 @@ export function capasDePlantilla({ preset, proporcion, recursos, foto, textos, u
         // La foto del cliente no se sale de su ventana (ver recorteDeCapa).
         ...(e.indiceFoto !== undefined && {
           ventana: { x: centro.left - caja.w / 2, y: centro.top - caja.h / 2, w: caja.w, h: caja.h },
+          // La foto de muestra: al tocarla, el estudio ofrece poner la tuya.
+          muestra: true,
           ...(e.encaje === 'completa' && { encaje: 'completa' }),
         }),
       });
@@ -95,6 +97,8 @@ export function capasDePlantilla({ preset, proporcion, recursos, foto, textos, u
       ...(Number(e.contornoAncho) > 0 && { contorno: 2, contornoColor: e.contornoColor || '#14294A' }),
       ...(sombra && { sombra: 3, sombraColor: e.sombraColor || '#000000' }),
       escalaX: 1, escalaY: 1, angulo: 0, ...centro,
+      // Al escribir otro nombre, la letra se ajusta a este ancho (no a la zona).
+      anchoMax: Math.round(caja.w),
     });
   });
   return capas;

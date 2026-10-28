@@ -1179,8 +1179,8 @@ export function GuardarComoPlantilla({ grupos = [], onGuardar, ocupado = false }
       <span className={s.rotulo}><Texto>Guardar como plantilla</Texto></span>
       <p className={s.panelAyuda}><Texto>Solo la ven los administradores. La plantilla aparece en "Empieza con un diseño" de este producto.</Texto></p>
       <CampoEstudio etiqueta="Nombre" value={nombre} maxLength={60} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Alianza Lima" />
-      <CampoEstudio etiqueta="Grupo" value={grupo} maxLength={30} list="grupos-plantilla-estudio" onChange={(e) => setGrupo(e.target.value)} placeholder="Ej. Equipos" />
-      <datalist id="grupos-plantilla-estudio">{[...new Set(['Parejas', 'Equipos', ...grupos])].map((g) => <option key={g} value={g} />)}</datalist>
+      <CampoEstudio etiqueta="Grupo" creable opciones={[...new Set(['Parejas', 'Equipos', ...grupos])].map((g) => ({ valor: g, texto: g }))}
+        value={grupo} onChange={(e) => setGrupo(e.target.value)} placeholder="Elige o escribe uno" />
       <BotonEstudio variante="contorno" tamano="sm" cargando={ocupado} disabled={!nombre.trim() || ocupado}
         onClick={async () => { if (await onGuardar?.({ nombre: nombre.trim(), grupo: grupo.trim() })) setNombre(''); }}>
         Guardar plantilla
@@ -1442,6 +1442,7 @@ export const ALINEAR = [
  *    onAdelante, onAtras, onRecortar, onQuitarFondo, onLlenar
  *  - onCambiarFoto: otra imagen en el mismo lugar · fija: { activo, onCambiar } (solo admins)
  *  - soloTexto: solo el campo del texto (productos que se hacen solo con sus plantillas)
+ *  - muestra: es la foto de muestra de una plantilla ("Tu foto"): arriba va "Pon tu foto aquí"
  *  - zonas: [{ id, nombre }] · onPasarAZona(id) · sinSesion: recortar y quitar fondo apagados
  *  - anchoZonaCm: ancho real de la zona; con él, el tamaño de la letra va en
  *    cm (alto de la letra), como en la tienda · fueraDeZona: una parte queda
@@ -1453,7 +1454,7 @@ export function PanelCapa({
   onCentrar, onAlinear, onQuitar, onDuplicar, onAdelante, onAtras,
   onRecortar, onQuitarFondo, onLlenar, onCambiarFoto, fija, zonas = [], onPasarAZona, sinSesion = false,
   anchoZonaCm, fueraDeZona = false, onImagen, onTexto, subiendo = false, puntosPorZona = 100, onAbrirFuentes,
-  soloTexto = false,
+  soloTexto = false, muestra = false,
 }) {
   const zonaTraducida = useTexto(zona);
   const p = usePalabrasEstudio();
@@ -1493,7 +1494,14 @@ export function PanelCapa({
         </span>
       </div>
 
-      {imagen && <MedidorCalidad calidad={calidad} onNitida={onNitida} />}
+      {muestra && onCambiarFoto && (
+        <div className={s.agregar}>
+          <OpcionSello solido ancha icono={<ImagePlus aria-hidden="true" />} titulo="Pon tu foto aquí"
+            detalle={sinSesion ? 'Inicia sesión para subir tu foto.' : 'Elígela de tu celular o computadora; llena este espacio.'}
+            onClick={onCambiarFoto} disabled={subiendo} />
+        </div>
+      )}
+      {imagen && !muestra && <MedidorCalidad calidad={calidad} onNitida={onNitida} />}
       {fueraDeZona && <p className={[s.calidad, s.calidad_aviso].join(' ')}><Texto>{"Una parte queda fuera de la zona y no se imprimirá."}</Texto></p>}
 
       {!imagen && (
@@ -1566,7 +1574,7 @@ export function PanelCapa({
           <div className={s.grupoCampo}>
             <span className={s.rotulo}><Texto>{"Arreglar la imagen"}</Texto></span>
             <div className={s.agregar}>
-              {onCambiarFoto && <OpcionSello solido ancha icono={<RefreshCw aria-hidden="true" />} tono="menta" girar={-4} titulo="Cambiar foto" detalle="Pon la tuya en este mismo lugar" onClick={onCambiarFoto} disabled={sinSesion || subiendo} />}
+              {onCambiarFoto && !muestra && <OpcionSello solido ancha icono={<RefreshCw aria-hidden="true" />} tono="menta" girar={-4} titulo="Cambiar foto" detalle="Pon la tuya en este mismo lugar" onClick={onCambiarFoto} disabled={sinSesion || subiendo} />}
               <OpcionSello solido icono={<Eraser aria-hidden="true" />} tono="rosa" titulo="Quitar fondo" detalle="Deja solo lo importante" onClick={onQuitarFondo} disabled={sinSesion || subiendo} />
               <OpcionSello solido icono={<Crop aria-hidden="true" />} girar={6} titulo="Recortar" detalle="Elige qué parte va" onClick={onRecortar} disabled={sinSesion || subiendo} />
             </div>

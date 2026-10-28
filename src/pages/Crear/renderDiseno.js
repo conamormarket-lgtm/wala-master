@@ -121,6 +121,8 @@ export const transformDeZona = (zona, { ox, oy, iw, ih, anchoImg, altoImg }) => 
     hu: altoEnUnidades(zona),
     zw,
     zh,
+    // Esquinas redondeadas (el mousepad): radio en píxeles.
+    r: (zona.radio || 0) * zw,
   };
 };
 
@@ -150,6 +152,7 @@ export const rectDeZona = (t, extra = {}) => new fabric.Rect({
   left: t.cx,
   top: t.cy,
   width: t.zw,
+  ...(t.r > 0 && { rx: t.r, ry: t.r }),
   height: t.zh,
   angle: t.ang,
   originX: 'center',

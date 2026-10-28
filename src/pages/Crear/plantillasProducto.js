@@ -54,7 +54,8 @@ export async function copiarImagenesAProducto(prendaId, capasPorZona) {
 export async function miniaturaDePlantilla({ vista, zona, color, capas, laser = false, ancho = 640 }) {
   await asegurarFuentesDe(capas);
   if (laser) {
-    // Sobre el producto, recortado alrededor del grabado (con aire).
+    // Sobre el producto, en un cuadrado centrado en el grabado: se ve casi
+    // todo el tomatodo, como en la tarjeta de los borradores.
     const img = await cargarImagen(fotoDeVista(vista, color));
     const W = img.naturalWidth;
     const H = img.naturalHeight;
@@ -69,8 +70,8 @@ export async function miniaturaDePlantilla({ vista, zona, color, capas, laser = 
     const zh = zw * zona.proporcion;
     const cx = margen + zona.x * W * k + zw / 2;
     const cy = margen + zona.y * H * k + zh / 2;
-    const cw = zw * 1.6;
-    const ch = zh * 1.3;
+    const cw = Math.max(zw, zh) * 2.1;
+    const ch = cw;
     const foto = await new Promise((resolve, reject) => {
       const i = new Image();
       i.onload = () => resolve(i);

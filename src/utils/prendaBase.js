@@ -124,6 +124,9 @@ export const normalizarZona = (zona, i = 0) => {
     w: limitar(num(zona?.w, 0.4), 0.02, 1),
     proporcion: limitar(num(zona?.proporcion, deCm), 0.05, 20),
     angulo: limitar(num(zona?.angulo, 0), -180, 180),
+    // Esquinas redondeadas (un mousepad): radio en fracción del ancho. Lo
+    // que sale de la esquina no se ve en el estudio ni en las vistas previas.
+    ...(num(zona?.radio, 0) > 0 && { radio: limitar(num(zona.radio, 0), 0, 0.5) }),
   };
 };
 

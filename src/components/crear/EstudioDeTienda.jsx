@@ -69,7 +69,12 @@ const ROSA = '#EC4899';
 const ZOOM_MAX = 8;
 
 const nuevoId = () => `capa_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+// La foto de muestra de una plantilla ("Tu foto"). Las primeras plantillas no
+// traían la marca: se reconocen por el nombre del archivo.
+const esFotoDeMuestra = (capa) => capa?.type === 'image' && Boolean(capa.muestra || /_tu-foto/.test(String(capa.src || '')));
 const claveBorrador = (id) => `crear_borrador_${id}`;
+// El diseño que "Llevarlo al …" deja para el otro producto.
+const claveTraer = (id) => `crear_traer_${id}`;
 
 const aDataUrl = (blob) => new Promise((resolve, reject) => {
   const lector = new FileReader();
@@ -415,6 +420,10 @@ const EstudioDeTienda = () => {
   // StrictMode puede iniciar y cancelar la carga dos veces. Consumir la
   // marca de regreso una sola vez no debe borrar el borrador en la segunda.
   const borradorSesionRef = useRef(undefined);
+  // "Llevarlo al …": el diseño traído de otro producto y la creación de ese
+  // producto de la que vino (para volver a ella, no a una nueva).
+  const traidoRef = useRef(undefined);
+  const parejaRef = useRef(null);
   if (recargadaRef.current === null) recargadaRef.current = !estudioAbierto && recargadaEn(location.pathname);
   useEffect(() => { estudioAbierto = true; }, []);
 
@@ -791,8 +800,21 @@ const EstudioDeTienda = () => {
     const cfg = cfgPrenda;
     if (!cfg || listo || authLoading) return;
     let cancelado = false;
+    // Un diseño traído de otro producto ("Llevarlo al …"): va encima de lo
+    // que se abra (la creación de este producto que le hace pareja, si hay).
+    // Se lee una vez (si el efecto se repite antes de aplicar, no se pierde).
+    if (traidoRef.current === undefined) {
+      try {
+        traidoRef.current = JSON.parse(sessionStorage.getItem(claveTraer(id)) || 'null');
+        sessionStorage.removeItem(claveTraer(id));
+      } catch { traidoRef.current = null; }
+      if (traidoRef.current?.desde?.productId) parejaRef.current = traidoRef.current.desde;
+    }
+    const traido = traidoRef.current;
     const aplicar = async (estado) => {
-      const capas = estado?.capasPorZona || estado?.capasPorVista || {};
+      const original = estado?.capasPorZona || estado?.capasPorVista || {};
+      const capas = traido?.capasPorZona || original;
+      if (traido) estado = { ...estado, vistaId: traido.vistaId, zonaId: traido.zonaId };
       await asegurarFuentesDe(capas);
       if (cancelado) return;
       capasRef.current = capas;
@@ -811,11 +833,12 @@ const EstudioDeTienda = () => {
       // tampoco: solo se guarda como borrador nuevo si se cambia algo. Antes
       // abrirla y salir dejaba una copia igual, el combo pasaba a borrador y
       // la copia quedaba en "Versiones anteriores".
-      firmaBorradorRef.current = (designIdRef.current || estado?.copia) ? firmaBorrador(capas, colorInicial, tallaInicial) : null;
+      // Con un diseño traído se compara contra lo de antes: queda con cambios.
+      firmaBorradorRef.current = (designIdRef.current || estado?.copia) ? firmaBorrador(original, colorInicial, tallaInicial) : null;
       setColorId(colorInicial);
       setTalla(tallaInicial);
       // Una creación guardada abre "sin cambios": Guardar se activa al cambiar algo.
-      setFirmaGuardada(estado?.guardada ? firmaDiseno(capas, colorInicial) : null);
+      setFirmaGuardada(estado?.guardada ? firmaDiseno(original, colorInicial) : null);
       tallaGuardadaRef.current = estado?.guardada ? tallaInicial : null;
       setListo(true);
     };
@@ -1076,7 +1099,9 @@ const EstudioDeTienda = () => {
   const editarCapa = useCallback((capaId, cambios) => {
     const zId = zonaDe(capaId);
     if (!zId) return;
-    modificarCapas(zId, (capas) => capas.map((c) => (c.id === capaId ? { ...c, ...cambios } : c)));
+    // Cambiar el tamaño a mano fija el nuevo tamaño del texto.
+    const aMano = 'tamano' in cambios || 'escalaX' in cambios;
+    modificarCapas(zId, (capas) => capas.map((c) => (c.id === capaId ? { ...c, ...cambios, ...(aMano && { escalaBase: undefined }) } : c)));
     const obj = objetoDe(capaId);
     const lienzo = fabricRef.current;
     const t = transformsRef.current[zId];
@@ -1093,10 +1118,16 @@ const EstudioDeTienda = () => {
       // zona. Si está de costado (mangas), su largo se mide contra el alto.
       const deCostado = Math.abs(Math.round((capa.angulo || 0) / 90)) % 2 === 1;
       const [maxAncho, maxAlto] = deCostado ? [t.hu, t.wu] : [t.wu, t.hu];
-      const escalaMax = Math.min((maxAncho * 0.96) / (obj.width || 1), (maxAlto * 0.96) / (obj.height || 1));
-      if (capa.escalaX > escalaMax) {
-        modificarCapas(zId, (capas) => capas.map((c) => (c.id === capaId ? { ...c, escalaX: escalaMax, escalaY: escalaMax } : c)));
-        capa = { ...capa, escalaX: escalaMax, escalaY: escalaMax };
+      // Un texto de plantilla tiene además su ancho (anchoMax, en unidades).
+      const anchoTope = Math.min(maxAncho * 0.96, capa.anchoMax || Infinity);
+      const escalaMax = Math.min(anchoTope / (obj.width || 1), (maxAlto * 0.96) / (obj.height || 1));
+      // Al achicarse recuerda su tamaño (escalaBase); si después el texto se
+      // acorta, vuelve a crecer hasta él. Así borrar no lo deja chiquito.
+      const base = capa.escalaBase ?? capa.escalaX;
+      const nueva = Math.min(base, escalaMax);
+      if (Math.abs(nueva - capa.escalaX) > 1e-4) {
+        modificarCapas(zId, (capas) => capas.map((c) => (c.id === capaId ? { ...c, escalaX: nueva, escalaY: nueva, escalaBase: base } : c)));
+        capa = { ...capa, escalaX: nueva, escalaY: nueva, escalaBase: base };
       }
     }
     obj.set(ubicacion(capa, t));
@@ -1677,7 +1708,8 @@ const EstudioDeTienda = () => {
         }
       }
       const cambios = leerTransformacion(obj, t);
-      modificarCapas(obj.zonaId, (capas) => capas.map((c) => (c.id === obj.capaId ? { ...c, ...cambios } : c)));
+      // Un tamaño elegido a mano pasa a ser el de ese texto (ver editarCapa).
+      modificarCapas(obj.zonaId, (capas) => capas.map((c) => (c.id === obj.capaId ? { ...c, ...cambios, escalaBase: undefined } : c)));
       revisarLimites(obj);
     });
     return () => {
@@ -2524,7 +2556,7 @@ const EstudioDeTienda = () => {
       // Una foto recortada (persona sin fondo) entra entera; las demás llenan.
       const escala = (capa.encaje === 'completa' ? Math.min : Math.max)(caja.w / ancho, caja.h / alto);
       await ponerImagenEnCapa(capa, blob, {
-        anchoNatural: ancho, altoNatural: alto, escalaX: escala, escalaY: escala,
+        anchoNatural: ancho, altoNatural: alto, escalaX: escala, escalaY: escala, muestra: undefined,
         ...(v && { left: v.x + v.w / 2, top: v.y + v.h / 2, angulo: 0 }),
       });
     } catch (err) {
@@ -2942,12 +2974,17 @@ const EstudioDeTienda = () => {
       const todas = Object.values(capas).flat().map((c) => ({ ...c, id: nuevoId() }));
       const porZona = zonasOtra.length === 1 ? { [zonasOtra[0].id]: todas } : capasEnOtraPrenda(capas, zonasOtra);
       const zonaOtra = zonasOtra.find((z) => z.id === Object.keys(porZona)[0]);
-      sessionStorage.setItem(claveBorrador(destino.id), JSON.stringify({ vistaId: zonaOtra?.vistaId, zonaId: zonaOtra?.id, capasPorZona: porZona }));
-      sessionStorage.setItem(claveVolver(destino.id), '1');
+      sessionStorage.setItem(claveTraer(destino.id), JSON.stringify({
+        vistaId: zonaOtra?.vistaId, zonaId: zonaOtra?.id, capasPorZona: porZona,
+        // De dónde viene: si después se lleva de vuelta, actualiza esa creación.
+        desde: { productId: id, designId: designIdRef.current || null },
+      }));
       if (enCombo && destino.pieza !== undefined) {
         await usarEnCombo(() => `/crear/${destino.id}?combo=${encodeURIComponent(comboParam)}&pieza=${destino.pieza}${conMio()}`);
       } else {
-        navigate(`/crear/${destino.id}`, { state: { desde: `/crear/${id}` } });
+        // De vuelta al producto del que vino: a la misma creación, no a una nueva.
+        const pareja = parejaRef.current?.productId === destino.id && parejaRef.current.designId;
+        navigate(`/crear/${destino.id}${pareja ? `?designId=${pareja}` : ''}`, { state: { desde: `/crear/${id}` } });
       }
     } catch (e) {
       toast.error(e.message || 'No pudimos llevar tu diseño.');
@@ -3767,6 +3804,7 @@ const EstudioDeTienda = () => {
             ) : capaSel && (
               <PanelCapa
                 soloTexto={soloPlantillas}
+                muestra={esFotoDeMuestra(capaSel)}
                 capa={capaEstudioDesde(capaSel, UNIDADES_ZONA)} zona={zonaSel?.nombre}
                 fuentes={FUENTES.map((f) => ({ valor: f, texto: f }))}
                 onAbrirFuentes={() => FUENTES.forEach(asegurarFuente)}
@@ -3776,7 +3814,7 @@ const EstudioDeTienda = () => {
                   editarCapa(capa.id, cambiosDePanelEstudio(capa, cambios, UNIDADES_ZONA));
                 }}
                 onListo={terminarEdicion} calidad={calidad} onNitida={dejarNitida}
-                anchoZonaCm={medidaSel?.anchoCm} puntosPorZona={UNIDADES_ZONA} fueraDeZona={fueraDeZona}
+                anchoZonaCm={medidaSel?.anchoCm} puntosPorZona={UNIDADES_ZONA} fueraDeZona={fueraDeZona && !capaSel.ventana}
                 sinSesion={!user} subiendo={Boolean(capaSel.subiendo)}
                 onCentrar={conPasoHistorial(centrar)} onAlinear={conPasoHistorial(alinear)} onQuitar={conPasoHistorial(eliminar)}
                 onDuplicar={conPasoHistorial(duplicar)} onAdelante={conPasoHistorial(() => mover(true))} onAtras={conPasoHistorial(() => mover(false))}

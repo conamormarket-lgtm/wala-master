@@ -152,6 +152,12 @@ const ListaZonas = ({ idLista, zonas, escala, elegida, onElegir, onCambiar, onZo
             <span>Giro °</span>
             <input type="number" min="-180" max="180" step="1" value={z.angulo} onChange={(e) => onCambiar(zi, { ...z, angulo: e.target.value })} />
           </label>
+          <label className={styles.campo}>
+            <span>Esquinas %</span>
+            <input type="number" min="0" max="50" step="0.5" value={Math.round((Number(z.radio) || 0) * 1000) / 10}
+              title="Redondea las esquinas de la zona (un mousepad): lo que sale de la esquina no se ve."
+              onChange={(e) => onCambiar(zi, { ...z, radio: (parseFloat(e.target.value) || 0) / 100 })} />
+          </label>
           <button
             type="button"
             className={styles.iconoPeligro}
