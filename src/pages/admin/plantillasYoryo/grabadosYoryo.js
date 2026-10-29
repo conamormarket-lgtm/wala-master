@@ -15,8 +15,9 @@ import { tamanoParaCaja } from './plantillasACapas.mjs';
  * Corre con la sesión del admin, desde ImportarPlantillasYoryo.
  *
  * Las fotos para diseñar están en public/yoryo/grabados/: las transparentes
- * que mandó el dueño (la cara lisa de cada color y la esclava de frente, con
- * la placa recta), recortadas al producto. Las zonas se midieron sobre ellas. Las medidas en cm son ESTIMADAS (el taller todavía no las
+ * que mandó el dueño (la cara lisa de cada color, con el encuadre de la foto
+ * de frente; la esclava de frente, con la placa recta, recortada con aire).
+ * Las zonas se midieron sobre ellas. Las medidas en cm son ESTIMADAS (el taller todavía no las
  * confirmó): se corrigen en la ficha, pestaña Diseño, con la línea de
  * referencia.
  */
@@ -24,7 +25,7 @@ import { tamanoParaCaja } from './plantillasACapas.mjs';
 const BASE = '/yoryo/grabados';
 // Qué fotos para diseñar lleva el producto: si cambian, volver a correrlo las
 // pone (con sus zonas) en el producto que ya existe.
-const VERSION_FOTOS = 'transparentes-2026-10-29';
+const VERSION_FOTOS = 'transparentes-encuadre-2026-10-29';
 const BILLETERA_TIENDA = 'NEtavILSA0EoxJgGD7ou';
 const ESCLAVA_TIENDA = 'WAxcEpXkgODfj0JBc4qB';
 export const IDS_GRABADOS = { billetera: 'yoryo-crear-billetera', esclava: 'yoryo-crear-esclava' };
@@ -46,11 +47,12 @@ const PIEZAS = {
     },
     // La tarjeta de Crear la muestra de frente (con el cierre); se graba atrás.
     portadaDeFrente: true,
-    // Sobre la foto de 989 × 1224 (la cara va de 45,45 a 944,1179; las de los
-    // otros colores tienen el mismo encuadre): abajo a la derecha, como en las
-    // fotos de muestra. Cara de unos 9 cm de ancho (estimado).
-    zona: { id: 'billetera-grabado', nombre: 'Grabado', x: 566 / 989, y: 848 / 1224, w: 306 / 989, proporcion: 0.75, angulo: 0 },
-    referencia: { x1: 45 / 989, y1: 600 / 1224, x2: 944 / 989, y2: 600 / 1224, cm: 9 },
+    // Sobre la foto de 1086 × 1448, con el encuadre de la de frente (la cara va
+    // de 100,165 a 990,1290 en los tres colores): así la portada y la foto para
+    // diseñar se ven del mismo tamaño en la tarjeta. Abajo a la derecha, como
+    // en las fotos de muestra. Cara de unos 9 cm de ancho (estimado).
+    zona: { id: 'billetera-grabado', nombre: 'Grabado', x: 616 / 1086, y: 962 / 1448, w: 303 / 1086, proporcion: 0.75, angulo: 0 },
+    referencia: { x1: 100 / 1086, y1: 700 / 1448, x2: 990 / 1086, y2: 700 / 1448, cm: 9 },
   },
   esclava: {
     id: IDS_GRABADOS.esclava, tiendaId: ESCLAVA_TIENDA, nombre: 'Esclava Yoryo grabada',
