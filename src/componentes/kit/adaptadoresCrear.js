@@ -13,15 +13,19 @@ import { leerPrendaBase, colorDisponible, fondoMuestra, precioBase, precioPerson
  * tienda) y los lados que se diseñan en la línea de la categoría.
  */
 export const prendaCrearDesdeProducto = (prenda = {}) => {
-  const { vistas, colores, tipo } = leerPrendaBase(prenda);
+  const { vistas, colores, tipo, portadaTienda } = leerPrendaBase(prenda);
   const lados = vistas.map((v) => v.nombre).filter(Boolean).join(' + ');
+  // Con "Portada en Crear: la foto de tienda", la del color principal va
+  // adelante y la foto para diseñar al pasar el mouse.
+  const principal = (prenda.variants || []).find((v) => String(v.id) === String(prenda.defaultVariantId)) || prenda.variants?.[0];
+  const portada = portadaTienda ? principal?.imageUrl : '';
   return {
     id: prenda.id,
     nombre: prenda.name,
     // Un producto (cuadro, tomatodo): Crear habla de "productos" y "piezas".
     accesorio: tipo === 'producto',
-    imagen: vistas[0]?.imagen,
-    imagenHover: vistas[1]?.imagen,
+    imagen: portada || vistas[0]?.imagen,
+    imagenHover: portada ? vistas[0]?.imagen : vistas[1]?.imagen,
     categoria: [prenda.visible === false && 'Borrador', lados].filter(Boolean).join(' · '),
     colores: [...new Set(colores.filter((c) => colorDisponible(c, vistas)).map(fondoMuestra))],
     precio: precioBase(prenda),

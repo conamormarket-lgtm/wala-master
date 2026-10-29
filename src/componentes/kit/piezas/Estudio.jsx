@@ -1182,9 +1182,11 @@ export function GuardarComoPlantilla({ grupos = [], actual, onGuardar, ocupado =
       <p className={s.panelAyuda}><Texto>Solo la ven los administradores. La plantilla aparece en "Empieza con un diseño" de este producto.</Texto></p>
       {actual && (
         <>
+          {/* El nombre va aparte: en el botón, uno largo lo sacaba del panel. */}
+          <p className={s.panelAyuda}><Texto>{`Partiste de «${actual.nombre}».`}</Texto></p>
           <BotonEstudio tamano="sm" bloque icono={<Check aria-hidden="true" />} cargando={ocupado} disabled={ocupado}
             onClick={() => onGuardar?.({ id: actual.id, nombre: actual.nombre, grupo: actual.grupo })}>
-            <Texto>{`Guardar cambios en «${actual.nombre}»`}</Texto>
+            <Texto>Guardar cambios en esta plantilla</Texto>
           </BotonEstudio>
           <p className={s.panelAyuda}><Texto>O guárdala como otra plantilla:</Texto></p>
         </>

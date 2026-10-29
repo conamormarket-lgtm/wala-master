@@ -14,14 +14,17 @@ import { tamanoParaCaja } from './plantillasACapas.mjs';
  * a ellos. Los de la tienda se siguen vendiendo sin grabar, al mismo precio.
  * Corre con la sesión del admin, desde ImportarPlantillasYoryo.
  *
- * Las fotos para diseñar están en public/yoryo/grabados/ (la cara lisa sin
- * fondo; la esclava de frente, con la placa recta). Las zonas se midieron
- * sobre ellas. Las medidas en cm son ESTIMADAS (el taller todavía no las
+ * Las fotos para diseñar están en public/yoryo/grabados/: las transparentes
+ * que mandó el dueño (la cara lisa de cada color y la esclava de frente, con
+ * la placa recta), recortadas al producto. Las zonas se midieron sobre ellas. Las medidas en cm son ESTIMADAS (el taller todavía no las
  * confirmó): se corrigen en la ficha, pestaña Diseño, con la línea de
  * referencia.
  */
 
 const BASE = '/yoryo/grabados';
+// Qué fotos para diseñar lleva el producto: si cambian, volver a correrlo las
+// pone (con sus zonas) en el producto que ya existe.
+const VERSION_FOTOS = 'transparentes-2026-10-29';
 const BILLETERA_TIENDA = 'NEtavILSA0EoxJgGD7ou';
 const ESCLAVA_TIENDA = 'WAxcEpXkgODfj0JBc4qB';
 export const IDS_GRABADOS = { billetera: 'yoryo-crear-billetera', esclava: 'yoryo-crear-esclava' };
@@ -35,25 +38,28 @@ const PIEZAS = {
   billetera: {
     id: IDS_GRABADOS.billetera, tiendaId: BILLETERA_TIENDA, nombre: 'Billetera Yoryo Cónsul grabada',
     vista: { id: 'frente', nombre: 'Cara lisa' },
-    // Por color: su foto para diseñar y la del frente con cierre (va a la galería).
+    // Por color: su foto para diseñar y la del frente con cierre (la portada).
     fotos: {
       'Deep Blue': { diseno: 'billetera-deep-blue.webp', cierre: 'billetera-deep-blue-cierre.webp' },
       'Marrón Coñac': { diseno: 'billetera-marron-conac.webp', cierre: 'billetera-marron-conac-cierre.webp' },
       'Negro Azabache': { diseno: 'billetera-negro-azabache.webp', cierre: 'billetera-negro-azabache-cierre.webp' },
     },
-    // Sobre la foto de 977 × 1214 (la cara va de 45,45 a 932,1169): abajo a la
-    // derecha, como en las fotos de muestra. Cara de unos 9 cm de ancho (estimado).
-    zona: { id: 'billetera-grabado', nombre: 'Grabado', x: 559 / 977, y: 842 / 1214, w: 302 / 977, proporcion: 0.75, angulo: 0 },
-    referencia: { x1: 45 / 977, y1: 600 / 1214, x2: 932 / 977, y2: 600 / 1214, cm: 9 },
+    // La tarjeta de Crear la muestra de frente (con el cierre); se graba atrás.
+    portadaDeFrente: true,
+    // Sobre la foto de 989 × 1224 (la cara va de 45,45 a 944,1179; las de los
+    // otros colores tienen el mismo encuadre): abajo a la derecha, como en las
+    // fotos de muestra. Cara de unos 9 cm de ancho (estimado).
+    zona: { id: 'billetera-grabado', nombre: 'Grabado', x: 566 / 989, y: 848 / 1224, w: 306 / 989, proporcion: 0.75, angulo: 0 },
+    referencia: { x1: 45 / 989, y1: 600 / 1224, x2: 944 / 989, y2: 600 / 1224, cm: 9 },
   },
   esclava: {
     id: IDS_GRABADOS.esclava, tiendaId: ESCLAVA_TIENDA, nombre: 'Esclava Yoryo grabada',
     vista: { id: 'frente', nombre: 'Placa' },
     fotos: { 'Negro Acero': { diseno: 'esclava-negro-acero.webp' } },
-    // Sobre la foto de 1024 × 768: la placa va de x 240 a 790 y de y 360 a 540;
+    // Sobre la foto de 1024 × 768: la placa va de x 238 a 790 y de y 370 a 540;
     // la zona queda adentro, sin tocar el borde. Placa de unos 4.5 cm (estimado).
-    zona: { id: 'esclava-placa', nombre: 'Placa', x: 270 / 1024, y: 383 / 768, w: 484 / 1024, proporcion: 128 / 484, angulo: 0 },
-    referencia: { x1: 240 / 1024, y1: 447 / 768, x2: 790 / 1024, y2: 447 / 768, cm: 4.5 },
+    zona: { id: 'esclava-placa', nombre: 'Placa', x: 268 / 1024, y: 390 / 768, w: 492 / 1024, proporcion: 130 / 492, angulo: 0 },
+    referencia: { x1: 238 / 1024, y1: 455 / 768, x2: 790 / 1024, y2: 455 / 768, cm: 4.5 },
   },
 };
 
@@ -178,14 +184,8 @@ async function simboloEnColor(nombre, color) {
 
 const mismoColor = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
 
-/** Crea la pieza en Crear si falta (id fijo): fotos por color, vista, zona y referencia. */
-async function crearPieza(clave, pieza, tienda, onPaso) {
-  const existe = await getProduct(pieza.id);
-  if (existe.data && existe.data.deleted !== true) {
-    onPaso(`${pieza.nombre}: ya existía`);
-    return;
-  }
-  onPaso(`${pieza.nombre}: subiendo las fotos…`);
+/** Sube la foto para diseñar de cada color. Devuelve { colores, principal }. */
+async function subirFotosDeDiseno(clave, pieza, tienda) {
   const colores = {};
   let principal = null;
   for (const v of tienda.variants || []) {
@@ -196,6 +196,42 @@ async function crearPieza(clave, pieza, tienda, onPaso) {
     colores[v.id] = { fotos: { [pieza.vista.id]: url } };
     if (!principal || String(v.id) === String(tienda.defaultVariantId)) principal = { url, ...(await medidas(blob)) };
   }
+  return { colores, principal };
+}
+
+/**
+ * Crea la pieza en Crear si falta (id fijo): fotos por color, vista, zona y
+ * referencia. Si ya existe con otras fotos para diseñar (VERSION_FOTOS), las
+ * cambia con sus zonas y conserva los cm que haya puesto el admin.
+ */
+async function crearPieza(clave, pieza, tienda, onPaso) {
+  const existe = await getDocument('productos_wala', pieza.id);
+  if (existe.data && existe.data.deleted !== true) {
+    const pb = existe.data.prendaBase || {};
+    if (pb.versionFotos === VERSION_FOTOS) {
+      onPaso(`${pieza.nombre}: ya existía`);
+      return;
+    }
+    onPaso(`${pieza.nombre}: cambiando las fotos para diseñar…`);
+    const { colores, principal } = await subirFotosDeDiseno(clave, pieza, tienda);
+    const v0 = pb.vistas?.[0] || {};
+    const cm = Number(v0.referencia?.cm) || pieza.referencia.cm;
+    await updateProductField(pieza.id, {
+      prendaBase: {
+        ...pb,
+        vistas: [{
+          ...v0, ...pieza.vista, imagen: principal.url, anchoImg: principal.ancho, altoImg: principal.alto,
+          referencia: { ...pieza.referencia, cm }, zonas: [pieza.zona],
+        }, ...(pb.vistas || []).slice(1)],
+        colores: Object.fromEntries(Object.entries(colores).map(([vid, c]) => [vid, { ...(pb.colores?.[vid] || {}), ...c }])),
+        ...(pieza.portadaDeFrente && { portadaTienda: true }),
+        versionFotos: VERSION_FOTOS,
+      },
+    });
+    return;
+  }
+  onPaso(`${pieza.nombre}: subiendo las fotos…`);
+  const { colores, principal } = await subirFotosDeDiseno(clave, pieza, tienda);
   const variantes = (tienda.variants || []).map((v) => ({ id: v.id, name: v.name, colorHex: v.colorHex, imageUrl: '', images: [], sizes: [] }));
   onPaso(`${pieza.nombre}: creando…`);
   await createProduct({
@@ -217,6 +253,8 @@ async function crearPieza(clave, pieza, tienda, onPaso) {
       tipo: 'producto',
       tecnica: 'laser',
       soloPlantillas: true,
+      ...(pieza.portadaDeFrente && { portadaTienda: true }),
+      versionFotos: VERSION_FOTOS,
       vistas: [{
         ...pieza.vista, imagen: principal.url, anchoImg: principal.ancho, altoImg: principal.alto,
         referencia: pieza.referencia, zonas: [pieza.zona],
@@ -253,17 +291,25 @@ async function plantillasYFotos(clave, pieza, tienda, onPaso) {
   }
   await guardarPlantillasDelProducto(pieza.id, hechas);
 
+  // La foto de tienda de cada color: grabada con la primera plantilla o, en
+  // la billetera, de frente (su portada en Crear) con la grabada en la galería.
   onPaso(`${pieza.nombre}: fotos de cada color…`);
   const variants = [];
   for (const v of data.variants || []) {
     const c = cfg.colores.find((x) => String(x.id) === String(v.id));
     const deTienda = (tienda.variants || []).find((x) => String(x.id) === String(v.id));
-    const imageUrl = c ? await fotoDeTiendaConPlantilla({ prendaId: pieza.id, cfg: { vistas: cfg.vistas, laser: true }, color: c, plantilla: hechas[0] }) : v.imageUrl;
+    const grabada = c ? await fotoDeTiendaConPlantilla({ prendaId: pieza.id, cfg: { vistas: cfg.vistas, laser: true }, color: c, plantilla: hechas[0] }) : v.imageUrl;
     const cierre = Object.entries(pieza.fotos).find(([nombre]) => mismoColor(nombre, v.name))?.[1]?.cierre;
     const urlCierre = cierre ? await subir(pieza.id, await leerBlob(`${BASE}/${cierre}`), `${clave}-${v.id}-cierre`) : '';
     // Las de la tienda sin su frente con cierre (lo pone galeriaDeTienda): no se repite al volver a correrlo.
     const deLaTienda = (deTienda?.images || []).filter((u) => !String(u).includes('-cierre'));
-    variants.push({ ...v, imageUrl, images: [urlCierre, ...deLaTienda].filter(Boolean), cierre: urlCierre });
+    const deFrente = pieza.portadaDeFrente && urlCierre;
+    variants.push({
+      ...v,
+      imageUrl: deFrente ? urlCierre : grabada,
+      images: (deFrente ? [grabada, ...deLaTienda] : [urlCierre, ...deLaTienda]).filter(Boolean),
+      cierre: urlCierre,
+    });
   }
   await updateProductField(pieza.id, { variants: variants.map(({ cierre: _cierre, ...v }) => v) });
   return { cfg, variants };

@@ -50,6 +50,9 @@ export const prendaBaseParaGuardar = (valor, variantes) => {
     ...(leerTecnica(valor?.tecnica) !== 'impresion' && { tecnica: leerTecnica(valor.tecnica) }),
     ...(leerPlantillas(valor?.plantillas).length && { plantillas: leerPlantillas(valor.plantillas) }),
     ...(valor?.soloPlantillas === true && { soloPlantillas: true }),
+    ...(valor?.portadaTienda === true && { portadaTienda: true }),
+    // Lo pone el botón de una vez de Yoryo (qué fotos para diseñar tiene): se conserva.
+    ...(typeof valor?.versionFotos === 'string' && valor.versionFotos && { versionFotos: valor.versionFotos }),
   };
 };
 
@@ -389,6 +392,13 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
           <span>
             <strong>Solo con sus plantillas</strong>
             <small>El cliente elige una plantilla y cambia sus textos; no sube imágenes ni diseña aparte (el tomatodo).</small>
+          </span>
+        </label>
+        <label className={styles.casilla}>
+          <input type="checkbox" checked={valor?.portadaTienda === true} onChange={(e) => cambiar({ portadaTienda: e.target.checked })} />
+          <span>
+            <strong>Portada en Crear: la foto de tienda</strong>
+            <small>La tarjeta de Crear muestra la foto de tienda del color principal (la billetera de frente) en vez de la foto para diseñar, que se ve al pasar el mouse.</small>
           </span>
         </label>
       </section>

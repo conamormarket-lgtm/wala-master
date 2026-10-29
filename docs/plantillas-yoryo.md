@@ -76,7 +76,7 @@ Las imágenes de las plantillas viven en `productos_v2/{id}/plantillas/`, así l
 
 **Renombrar, cambiar de grupo o quitar:** en la pestaña Plantillas de su ficha.
 
-**Cambiar una plantilla:** en esa pestaña, **Editar** la abre (`/crear/:id?editarPlantilla=…`) con el estudio completo, aun en productos "solo con plantillas". **Guardar cambios en «…»** la reemplaza en su mismo lugar. También, si un admin parte de una plantilla en el estudio, puede guardar sus cambios en ella o guardarla como nueva.
+**Cambiar una plantilla:** en esa pestaña, **Editar** la abre (`/crear/:id?editarPlantilla=…`) con el estudio completo, aun en productos "solo con plantillas". **Guardar cambios en esta plantilla** la reemplaza en su mismo lugar. También, si un admin parte de una plantilla en el estudio, puede guardar sus cambios en ella o guardarla como nueva.
 
 ## Crear los productos (una sola vez)
 
@@ -124,5 +124,7 @@ En **Admin → Catálogo → Importar plantillas de cuadros**, paso 6, **Crear b
 - pone en cada color la foto de la tarjeta ya grabada y la galería: el frente con cierre y las fotos de la tienda. El frente con cierre también se agrega a la billetera de la tienda;
 - deja la esclava de la tienda a la vista (antes solo iba en los combos);
 - arma los combos Ónix, Oro y Medianoche como packs de Crear: el reloj **tal cual** en su color (pieza fija) y la billetera y la esclava para grabar, al precio del combo. El botón **Personalizar** de cada combo de la tienda lleva a su pack.
+
+La tarjeta de la billetera en Crear va de frente (con el cierre) gracias a **Portada en Crear: la foto de tienda** (pestaña Diseño, junto a *Solo con sus plantillas*); al pasar el mouse se ve la cara lisa. Volver a correr el paso pone las fotos para diseñar transparentes si el producto tenía las de antes (`prendaBase.versionFotos`), con sus zonas y sin tocar los cm.
 
 Las fotos para diseñar y los símbolos están en `public/yoryo/grabados/` y se pueden borrar después de correrlo. **Las medidas en cm son estimadas** (cara de la billetera 9 cm, placa 4.5 cm): cuando el taller las confirme, se corrigen en la ficha de cada uno, pestaña Diseño, con la línea de referencia.

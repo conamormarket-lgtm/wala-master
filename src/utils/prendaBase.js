@@ -24,6 +24,8 @@
  *                                      // diseños para empezar de este producto
  *     soloPlantillas: true,            // solo se hace con sus plantillas (el
  *                                      // cliente cambia los textos, no diseña aparte)
+ *     portadaTienda: true,             // la tarjeta de Crear lleva la foto de tienda
+ *                                      // del color principal (la billetera de frente)
  *
  * Los bicolores llevan una costura al medio, así que pueden tener sus propias
  * zonas (zonasDeVista): las de ese color, si tiene; si no, las de todos los
@@ -399,6 +401,7 @@ export const leerPrendaBase = (producto) => {
     tecnica: leerTecnica(cfg.tecnica),
     plantillas: leerPlantillas(cfg.plantillas),
     soloPlantillas: cfg.soloPlantillas === true,
+    portadaTienda: cfg.portadaTienda === true,
   };
 };
 
