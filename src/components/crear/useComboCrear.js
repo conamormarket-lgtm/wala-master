@@ -11,7 +11,7 @@ import { getDesignById, getDesignsByUser } from '../../services/designs';
 import { guardarMiCombo, copiarCreacionParaCombo, esComboVigente } from '../../services/misCombos';
 import { obtenerDisenoComunidad, registrarUsoComunidad } from '../../services/comunidad';
 import { creacionLista } from '../../pages/Crear/creacionCarrito';
-import { leerArmado, guardarArmado, olvidarArmado, preciosDeCombo, itemDeCombo, leerMetaArmado, guardarMetaArmado } from '../../pages/Crear/comboCrear';
+import { leerArmado, guardarArmado, olvidarArmado, preciosDeCombo, itemDeCombo, leerMetaArmado, guardarMetaArmado, esPiezaFija, varianteDeFija } from '../../pages/Crear/comboCrear';
 import { esperarGuardados } from '../../pages/Crear/borradoresCache';
 
 // Lo que devuelve getDocument cuando el documento no existe.
@@ -31,6 +31,8 @@ import { tallasPara, useFotosDePiezas } from '../../pages/Crear/fotosCombo';
  *  - comprar: las prendas de la comunidad se guardan antes en la cuenta
  *    (crearDesdePlantilla), el combo entra al carrito como una sola línea
  *    (itemDeCombo) y se va al carrito
+ *  - una pieza fija (el reloj de un pack de Yoryo) va tal cual en el color
+ *    del admin: siempre está lista, sin diseño ni talla
  */
 
 // Combos ya registrados como abiertos en esta pestaña: se vuelve al combo
@@ -285,14 +287,14 @@ export default function useComboCrear() {
   const miComboDoc = miCombo || mioQ.data || null;
   // Un conjunto (prendas distintas para una persona) lleva UNA talla para
   // todas. En una pareja o un trío de la misma prenda cada una lleva la suya.
-  const esConjunto = new Set(piezasCombo.map((p) => p.prendaId)).size > 1;
+  const esConjunto = new Set(piezasCombo.filter((p) => !esPiezaFija(p)).map((p) => p.prendaId)).size > 1;
   // La pieza de la comunidad que lleva cada prenda sin diseño propio.
   const plantillaDe = (i) => {
     const dePlantilla = plantillaCombo?.piezas?.[i];
-    return !armado[i]?.designId && dePlantilla?.productId === piezasCombo[i]?.prendaId ? dePlantilla : null;
+    return !esPiezaFija(piezasCombo[i]) && !armado[i]?.designId && dePlantilla?.productId === piezasCombo[i]?.prendaId ? dePlantilla : null;
   };
   // Una prenda de la comunidad tiene las tallas del color de su diseño.
-  const tallasPorPieza = armado.map((a, i) => tallasPara(prendas[i], creaciones[i] || plantillaDe(i)));
+  const tallasPorPieza = armado.map((a, i) => (esPiezaFija(piezasCombo[i]) ? [] : tallasPara(prendas[i], creaciones[i] || plantillaDe(i))));
   const tallasComunes = (() => {
     const listas = tallasPorPieza.filter((t) => t.length);
     if (!listas.length) return [];
@@ -307,6 +309,12 @@ export default function useComboCrear() {
   // La del conjunto: la que eligió el cliente (va en todas las piezas).
   const tallaConjunto = unaTalla ? (armado.find((a) => a.talla)?.talla || '') : '';
   const piezas = armado.map((a, i) => {
+    if (esPiezaFija(piezasCombo[i])) {
+      return {
+        designId: '', talla: '', i, prenda: prendas[i], creacion: null, plantilla: null, tallas: [],
+        cargando: false, respaldo: null, esperando: false, lista: Boolean(prendas[i]), fija: true, color: piezasCombo[i].color,
+      };
+    }
     const creacion = creaciones[i];
     const plantilla = plantillaDe(i);
     const tallas = tallasPorPieza[i];
@@ -331,12 +339,16 @@ export default function useComboCrear() {
   const cargando = comboQ.isLoading || prendasQ.some((q) => q.isLoading);
   const error = comboQ.isError || prendasQ.some((q) => q.isError);
   const disponible = Boolean(combo && combo.deleted !== true && (combo.publicado || isAdmin)
-    && piezasCombo.length > 0 && prendas.every((p) => p && p.deleted !== true && (p.visible !== false || isAdmin)));
+    && piezasCombo.length > 0 && prendas.every((p) => p && p.deleted !== true && (p.visible !== false || isAdmin))
+    // La pieza fija necesita su color: si el admin lo quitó del producto, el combo no se arma.
+    && piezasCombo.every((p, i) => !esPiezaFija(p) || varianteDeFija(prendas[i], p.color)));
 
   const agotada = (p) => typeof p?.inStock === 'number' && p.inStock <= 0;
   // El estudio recibe también este combo (?mio=) para guardar y volver a él.
+  // Una pieza sin diseño abre en el color que eligió el admin (Ónix: la billetera negra).
   const urlEstudio = (i, extra = '') => `/crear/${piezasCombo[i].prendaId}?combo=${id}&pieza=${i}`
-    + `${meta.miComboId ? `&mio=${meta.miComboId}` : ''}${extra}`;
+    + `${meta.miComboId ? `&mio=${meta.miComboId}` : ''}`
+    + `${piezasCombo[i].color?.id && !armado[i]?.designId ? `&color=${encodeURIComponent(piezasCombo[i].color.id)}` : ''}${extra}`;
   const estadoEstudio = { desde: `/combo/${id}${meta.miComboId ? `?mio=${meta.miComboId}` : ''}` };
   const urlPlantilla = (i) => urlEstudio(i, `&plantilla=${meta.plantilla}&plantillaPieza=${i}`);
   const sinTallaTodavia = (p) => !p.creacion && p.plantilla;

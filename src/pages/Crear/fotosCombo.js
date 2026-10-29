@@ -1,5 +1,6 @@
 import { useQueries } from '@tanstack/react-query';
 import { leerPrendaBase, tallasDeColor, fotoDeVista, fondoDeVista, cargarImagen } from '../../utils/prendaBase';
+import { fotosDeFija } from './comboCrear';
 
 /*
  * Las fotos y las tallas de las prendas de un combo de Crear (/combo/:id).
@@ -22,9 +23,12 @@ export const tallasPara = (prenda, creacion) => {
  *    borrador, sus miniaturas). Los lados sin diseño se completan con la
  *    prenda lisa en su color (useLadosLisos), renderizada igual.
  *  - 'prenda': la prenda en blanco (sin diseño todavía), foto de catálogo.
+ *  - 'fija': una pieza que va tal cual (el reloj de un pack): las fotos de la
+ *    tienda de su color.
  * Así la tarjeta las muestra al mismo tamaño y sobre el mismo fondo.
  */
 export const ladosDePieza = (p) => {
+  if (p.fija) return { origen: 'fija', lados: fotosDeFija(p.prenda, p.color).map((url) => ({ url, nombre: '' })), completa: true };
   const previas = (p.creacion?.vistasPrevias || p.plantilla?.vistasPrevias || []).filter((v) => v?.url);
   if (previas.length) return { origen: 'render', lados: previas.map((v) => ({ url: v.url, nombre: v.nombre, vista: v.vista })) };
   const conjunta = p.creacion?.imagenConjunta || p.plantilla?.imagenConjunta;
@@ -101,4 +105,4 @@ export const useFotosDePiezas = (piezas) => {
 };
 
 /** ¿La pieza todavía no tiene diseño? (su foto es la prenda en blanco, atenuada). */
-export const piezaVacia = (p) => !p.creacion && !p.plantilla && !p.respaldo?.frente;
+export const piezaVacia = (p) => !p.fija && !p.creacion && !p.plantilla && !p.respaldo?.frente;

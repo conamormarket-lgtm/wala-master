@@ -14,6 +14,7 @@ import { getDesignById, eliminarCreacion, saveDesign } from './designs';
  *
  *   { userId, tipo: 'comboCrear', estado, comboId, comboNombre, name,
  *     piezas: [{ designId, prendaId, talla, frente, espalda }],
+ *     (una pieza fija del combo va con fija: true y sin designId)
  *     previas: [imagen por pieza] }
  *
  * Cada pieza es SUYA (desde el 2026-10-20): su propia creación, hecha para
@@ -49,12 +50,25 @@ export const imagenDe = (d) => d?.vistasPrevias?.[0]?.url || d?.imagenConjunta |
 /** El otro lado con diseño de una prenda (su espalda), o '' si tiene uno solo. */
 export const espaldaDe = (d) => d?.vistasPrevias?.[1]?.url || d?.miniaturas?.[1]?.url || '';
 
+// La pieza fija de un combo (el reloj de un pack) no se diseña: siempre está
+// lista y su foto es la del producto en su color.
+const esFija = (combo, i) => combo.piezas?.[i]?.fija === true;
+
 const datos = ({ combo, piezas, creaciones }) => ({
   tipo: 'comboCrear',
-  estado: piezas.length > 0 && piezas.every((p, i) => p.designId && piezaLista(creaciones[i])) ? 'guardada' : 'borrador',
+  estado: piezas.length > 0 && piezas.every((p, i) => esFija(combo, i) || (p.designId && piezaLista(creaciones[i]))) ? 'guardada' : 'borrador',
   comboId: combo.id,
   comboNombre: combo.name || '',
-  piezas: piezas.map((p, i) => ({
+  piezas: piezas.map((p, i) => (esFija(combo, i) ? {
+    designId: '',
+    prendaId: combo.piezas[i].prendaId,
+    talla: '',
+    fija: true,
+    frente: combo.piezas[i].imagen || '',
+    espalda: '',
+    color: combo.piezas[i].color || null,
+    nombre: combo.piezas[i].nombre || '',
+  } : {
     designId: p.designId || '',
     prendaId: combo.piezas[i]?.prendaId || '',
     talla: p.talla || '',
@@ -66,7 +80,7 @@ const datos = ({ combo, piezas, creaciones }) => ({
     // Su nombre: la página del combo lo muestra mientras carga la prenda.
     nombre: creaciones[i]?.name || '',
   })),
-  previas: creaciones.map(imagenDe),
+  previas: creaciones.map((c, i) => (esFija(combo, i) ? combo.piezas[i].imagen || '' : imagenDe(c))),
 });
 
 /**

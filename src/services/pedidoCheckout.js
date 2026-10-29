@@ -88,7 +88,7 @@ export const detalleWhatsapp = (item) => {
     (item.customization.piezas || []).forEach((p) => {
       // Qué lados llevan diseño ("solo Frente"): así no se espera una espalda.
       const lados = (p.vistasPrevias || []).map((v) => v?.nombre).filter(Boolean);
-      const conDiseno = lados.length ? `diseño en ${lados.join(' y ')}` : '';
+      const conDiseno = p.fija ? 'tal cual' : lados.length ? `diseño en ${lados.join(' y ')}` : '';
       lineas.push(pieza(p.prendaNombre || 'Prenda', p.color?.nombre, p.talla, conDiseno));
     });
     return lineas;
@@ -266,9 +266,11 @@ export function armarPedidoWeb({
             colorHex: pieza.color?.hex || '',
             precio: precios[k],
             subtotal: precios[k] * (item.quantity || 1),
-            personalizado: true,
+            // La pieza fija (el reloj de un pack) va tal cual: sin diseño.
+            personalizado: !pieza.fija,
+            ...(pieza.fija && { talCual: true }),
             textoPersonalizado: '',
-            urlImagenPersonalizada: pieza.imageURL || '',
+            urlImagenPersonalizada: pieza.fija ? '' : pieza.imageURL || '',
             disenoVistas: refs.views,
             designId: pieza.designId || '',
             vistasPersonalizadas: pieza.vistasUsadas || [],

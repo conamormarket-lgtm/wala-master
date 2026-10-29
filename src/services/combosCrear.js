@@ -3,7 +3,10 @@ import { clearProductCaches, normalizeSearchText, buildSearchTokens } from './pr
 
 // Combos de Crear ("Pareja", "Trío"...): un doc de productos_wala con
 // esComboCrear y su precio de paquete. Cada pieza es una prenda de Crear que
-// el cliente diseña por separado. Se ofrece en Crear cuando
+// el cliente diseña por separado, o una pieza FIJA (`fija: true`): un
+// producto de la tienda en el color que eligió el admin, que va tal cual (el
+// reloj de un pack de Yoryo con billetera y esclava grabadas). `color` en una
+// pieza que se diseña es el color con que abre el estudio. Se ofrece en Crear cuando
 // comboCrear.publicado y, si además lleva enTienda, también en la tienda y en
 // la página de su marca (siempre para armarlo, nunca tal cual). El servidor lo
 // valida en functions/cartValidation.js (validarCombos).
@@ -84,6 +87,10 @@ export const guardarComboCrear = async (id, form) => {
         prendaId: p.prendaId,
         ...(p.nombre && { nombre: String(p.nombre) }),
         ...(p.imagen && { imagen: String(p.imagen) }),
+        ...(p.fija === true && { fija: true }),
+        ...(p.color?.nombre && {
+          color: { id: String(p.color.id || ''), nombre: String(p.color.nombre), hex: String(p.color.hex || '') },
+        }),
       })),
       tallas: MODOS_TALLA.includes(form.tallas) ? form.tallas : 'auto',
     },

@@ -344,3 +344,7 @@
   align-items: flex-end;
   gap: 0.25rem;
 }
+
+/* Se diseña / Va tal cual: angosto; en el celular la fila baja de línea. */
+.fila { flex-wrap: wrap; }
+.fila select.tipoPieza { flex: 0 0 auto; }

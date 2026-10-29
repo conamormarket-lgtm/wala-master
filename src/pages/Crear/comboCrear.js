@@ -63,6 +63,26 @@ export const olvidarArmado = (comboId) => {
   try { localStorage.removeItem(clave(comboId)); } catch { /* sin almacenamiento */ }
 };
 
+/**
+ * Pieza fija: un producto de la tienda que va tal cual, en el color que fijó
+ * el admin (services/combosCrear.js). No se diseña ni lleva talla.
+ */
+export const esPiezaFija = (pieza) => pieza?.fija === true;
+
+/** La variante del producto que lleva la pieza fija (por id o por nombre). */
+export const varianteDeFija = (producto, color) => {
+  const variantes = producto?.variants || [];
+  return variantes.find((v) => color?.id && String(v.id) === String(color.id))
+    || variantes.find((v) => color?.nombre && v.name === color.nombre) || null;
+};
+
+/** Las fotos de la pieza fija: las de su color o, si no, las del producto. */
+export const fotosDeFija = (producto, color) => {
+  const v = varianteDeFija(producto, color);
+  const fotos = v ? [v.imageUrl, ...(v.images || [])] : [producto?.mainImage, ...(producto?.images || [])];
+  return [...new Set(fotos.filter(Boolean))];
+};
+
 /** Precio del combo y cuánto costarían sus prendas sueltas. */
 export const preciosDeCombo = (combo, prendas) => {
   const precio = precioBase(combo);
@@ -84,10 +104,24 @@ export const repartirPrecio = (total, n) => {
  * Arma lo que addToCart necesita: el combo como producto y, en la
  * personalización, cada pieza con lo mismo que lleva una creación suelta
  * (vistas previas, archivos de impresión, zonas, color y talla).
- * `piezas` = [{ prenda, creacion, talla }] en el orden del combo.
+ * `piezas` = [{ prenda, creacion, talla }] en el orden del combo. Una pieza
+ * fija lleva solo su producto, su color y su foto (`fija: true`).
  */
 export const itemDeCombo = ({ combo, piezas, miComboId = '' }) => {
-  const detalle = piezas.map(({ prenda, creacion, talla }) => {
+  const detalle = piezas.map(({ prenda, creacion, talla }, i) => {
+    const pieza = combo.piezas?.[i];
+    if (esPiezaFija(pieza)) {
+      const v = varianteDeFija(prenda, pieza.color);
+      return {
+        fija: true,
+        prendaId: prenda.id,
+        prendaNombre: prenda.name,
+        color: { id: pieza.color?.id || '', nombre: pieza.color?.nombre || '', hex: v?.colorHex || pieza.color?.hex || '' },
+        imageURL: fotosDeFija(prenda, pieza.color)[0] || pieza.imagen || '',
+        talla: '',
+        designId: '',
+      };
+    }
     const [, , personalizacion] = itemDeCreacion({ prenda, creacion, talla });
     return {
       ...personalizacion,
@@ -96,7 +130,8 @@ export const itemDeCombo = ({ combo, piezas, miComboId = '' }) => {
       talla,
     };
   });
-  const imagen = detalle[0]?.imageURL || combo.mainImage || '';
+  // La foto de la línea: la primera pieza con diseño (el reloj fijo no dice qué se personalizó).
+  const imagen = detalle.find((d) => !d.fija)?.imageURL || detalle[0]?.imageURL || combo.mainImage || '';
   return [
     { ...combo, id: combo.id, variants: [], hasVariants: false, mainImage: imagen },
     {},
@@ -131,5 +166,5 @@ export const disenosEnCarrito = (items) => new Set((items || []).flatMap((i) => 
 
 /** "Polo clásico/Negro (M) + Polo clásico/Blanco (S)", para el resumen del pedido. */
 export const resumenPiezas = (item) => (item?.customization?.piezas || [])
-  .map((p) => `${p.prendaNombre}${p.color?.nombre ? `/${p.color.nombre}` : ''}${p.talla ? ` (${p.talla})` : ''}`)
+  .map((p) => `${p.prendaNombre}${p.color?.nombre ? `/${p.color.nombre}` : ''}${p.talla ? ` (${p.talla})` : ''}${p.fija ? ' (tal cual)' : ''}`)
   .join(' + ');

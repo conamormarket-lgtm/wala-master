@@ -22,7 +22,9 @@ const redondear = (n) => Math.round(n * 100) / 100;
 // comboCrear: { comboId, grupo, pieza, de }. El precio de las piezas de un
 // mismo grupo suma el del combo; cada pieza sigue consumiendo el stock de su
 // prenda. El combo está oculto de la tienda (visible: false): se vende solo si
-// comboCrear.publicado.
+// comboCrear.publicado. Una pieza fija (`fija: true`, el reloj de un pack) es
+// un producto de la tienda que va tal cual en el color del admin: llega sin
+// diseño y en ese color.
 function gruposDeCombo(items) {
   const grupos = new Map();
   for (const item of items) {
@@ -34,6 +36,12 @@ function gruposDeCombo(items) {
     grupos.get(clave).piezas.push(item);
   }
   return [...grupos.values()];
+}
+
+function piezaFijaCoincide(item, esperada) {
+  const color = String((esperada.color && esperada.color.nombre) || "").trim();
+  return !item.personalizado && !String(item.designId || "").trim()
+    && (!color || String(item.color || "").trim() === color);
 }
 
 async function validarCombos(grupos, { db, reader, HttpsError }) {
@@ -59,7 +67,8 @@ async function validarCombos(grupos, { db, reader, HttpsError }) {
     const coinciden = piezas.length === esperadas.length
       && piezas.every((p, i) => String(p.productoId || "").trim() === String(esperadas[i] && esperadas[i].prendaId)
         && Number(p.comboCrear.pieza) === i
-        && Math.max(1, Number(p.cantidad) || 1) === cantidad);
+        && Math.max(1, Number(p.cantidad) || 1) === cantidad
+        && (!esperadas[i].fija || piezaFijaCoincide(p, esperadas[i])));
     if (!coinciden) {
       throw new HttpsError("failed-precondition", `"${nombre}" cambió. Vuelve a armarlo y agrégalo al carrito.`);
     }

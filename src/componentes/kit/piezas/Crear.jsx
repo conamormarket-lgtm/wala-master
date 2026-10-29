@@ -102,6 +102,8 @@ export const textoPara = (n, conjunto) => {
  *  - disenada: su nombre (se renombra ahí), color y lados con diseño, su
  *    talla (si cada prenda lleva la suya) · Editar · Usar en las demás · Quitar
  *  - borrador / vieja: lo mismo, con el aviso de que falta guardarla
+ *  - fija: un producto que va tal cual (el reloj de un pack), con su color y
+ *    sin botones; siempre está lista
  * Props: i, prenda, foto, fotoEspalda (al pasar el mouse), estado, nombre, color: { nombre, fondo }, lados,
  * lista, agotada, tallas, talla, onTalla(t), urlDisenar, urlEditar,
  * copiarDe: { numero, url }, estadoEnlaces (el state con que el estudio
@@ -154,6 +156,11 @@ export function FilaPiezaCombo({
               {onUsarEnLasDemas && lista && <Boton tamano="sm" variante="fantasma" icono={<Copy aria-hidden="true" />} onClick={onUsarEnLasDemas}><Texto>{`Usar en ${usarEnLasDemas || 'las demás'}`}</Texto></Boton>}
               {onQuitar && <Boton tamano="sm" variante="fantasma" icono={<X aria-hidden="true" />} onClick={onQuitar}><Texto>Quitar</Texto></Boton>}
             </div>
+          </>
+        ) : estado === 'fija' ? (
+          <>
+            {color?.nombre && <span className={s.piezaDatos}><span className={s.piezaColor} style={{ background: color.fondo }} aria-hidden="true" /> <Texto>{color.nombre}</Texto></span>}
+            <p className={s.piezaAyuda}><Texto>Va tal cual, sin personalizar.</Texto></p>
           </>
         ) : estado === 'plantilla' ? (
           <>

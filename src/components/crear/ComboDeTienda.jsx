@@ -60,6 +60,18 @@ export default function ComboDeTienda() {
   };
 
   const piezasKit = piezas.map((p, k) => {
+    // Pieza fija (el reloj de un pack): va tal cual, sin botones.
+    if (p.fija) {
+      return {
+        i: p.i,
+        prenda: p.prenda?.name,
+        foto: fotos[k]?.lados[0]?.url,
+        estado: 'fija',
+        color: p.color?.nombre ? { nombre: p.color.nombre, fondo: p.color.hex } : undefined,
+        lista: p.lista,
+        agotada: c.agotada(p.prenda),
+      };
+    }
     // De qué otra prenda se puede copiar: una con diseño que encaje en esta
     // (en un conjunto, pecho con pecho; del polo al jogger no hay nada).
     const zonasDestino = listarZonas(p.prenda?.prendaBase?.vistas || []);
@@ -123,7 +135,9 @@ export default function ComboDeTienda() {
 
   // "Mi combo": se renombra y, si es admin, se publica en la comunidad.
   const puedePublicar = Boolean(miCombo && user && isAdmin && (adminPermissions || []).some((x) => PERMISOS.includes(x))
-    && miCombo.tipo === 'comboCrear' && miCombo.userId === uid && miCombo.estado !== 'borrador');
+    && miCombo.tipo === 'comboCrear' && miCombo.userId === uid && miCombo.estado !== 'borrador'
+    // La comunidad publica un diseño por pieza: un combo con pieza fija no se publica.
+    && !piezas.some((p) => p.fija));
   const enComunidad = async (accion) => {
     const { error } = accion === 'retirar' ? await retirarDeComunidad(miCombo.id) : await publicarEnComunidad(miCombo.id);
     if (error) {

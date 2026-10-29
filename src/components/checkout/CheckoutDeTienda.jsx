@@ -273,7 +273,7 @@ export default function CheckoutDeTienda() {
     if (esComboCrear(it)) {
       const piezas = it.customization.piezas || [];
       const precios = repartirPrecio(it.customization?.finalPrice || it.price || 0, piezas.length);
-      return piezas.map((p, k) => ({ productId: p.prendaId || '', qty: it.quantity || 1, precio: precios[k], personalizado: true }));
+      return piezas.map((p, k) => ({ productId: p.prendaId || '', qty: it.quantity || 1, precio: precios[k], personalizado: !p.fija }));
     }
     return [{
       productId: it.productId || '',

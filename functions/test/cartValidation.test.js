@@ -119,6 +119,28 @@ test("a Crear garment is only sold designed, even when it shows in the shop", as
   await f.validate([line("polo", 1, { precio: 75, designId: "d1" })]);
 });
 
+// Pack de Yoryo: el reloj va tal cual (pieza fija) y la billetera se graba.
+const pack = { price: 290, salePrice: 240, esComboCrear: true, visible: false,
+  comboCrear: { publicado: true, piezas: [
+    { prendaId: "reloj", fija: true, color: { id: "v1", nombre: "Acero Ónix" } }, { prendaId: "billetera" },
+  ] } };
+const delPack = { reloj: { price: 120, inStock: 2 }, billetera: { price: 120, inStock: 5, esPrendaBase: true, prendaBase: { vistas: [] } } };
+const piezaPack = (i, extra = {}) => ({
+  productoId: i === 0 ? "reloj" : "billetera", cantidad: 1, precio: 120, combo: "Ónix",
+  ...(i === 0 ? { personalizado: false, color: "Acero Ónix" } : { personalizado: true, designId: "d1" }),
+  comboCrear: { comboId: "pack", grupo: 0, pieza: i, de: 2 }, ...extra,
+});
+
+test("a fixed combo piece goes as is, in the admin's color", async () => {
+  const f = fixture({ ...delPack, pack });
+  const { subtotal } = await f.validate([piezaPack(0), piezaPack(1)]);
+  assert.equal(subtotal, 240);
+  await assert.rejects(f.validate([piezaPack(0, { color: "Oro Imperial" }), piezaPack(1)]), /cambió/);
+  await assert.rejects(f.validate([piezaPack(0, { personalizado: true }), piezaPack(1)]), /cambió/);
+  await assert.rejects(f.validate([piezaPack(0, { designId: "x" }), piezaPack(1)]), /cambió/);
+  await assert.rejects(f.validate([piezaPack(0, { cantidad: 3 }), piezaPack(1, { cantidad: 3 })]), /stock suficiente/);
+});
+
 test("combo pieces still consume their garment stock", async () => {
   const f = fixture({ polo: { ...prendas.polo, inStock: 3 }, pareja: combo });
   await assert.rejects(f.validate([pieza(0, 67.5, { cantidad: 2 }), pieza(1, 67.5, { cantidad: 2 })]), /stock suficiente/);

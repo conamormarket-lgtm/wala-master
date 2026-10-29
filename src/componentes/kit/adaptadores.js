@@ -887,7 +887,7 @@ export const creacionDesdeDiseno = (d = {}, extra = {}) => {
       // La espalda de cada prenda (la tarjeta la muestra al pasar el mouse).
       imagenesEspalda: piezas.some((p) => p.frente) ? piezas.map((p) => p.espalda || '') : undefined,
       subtitulo: borrador
-        ? `${piezas.filter((p) => p.designId).length} de ${piezas.length} prendas con diseño · sin terminar`
+        ? `${piezas.filter((p) => p.designId).length} de ${piezas.filter((p) => !p.fija).length} prendas con diseño · sin terminar`
         : (d.comboNombre || 'Combo'),
       combo: String(piezas.length),
       fecha: haceCuanto(fecha, borrador ? 'Editado' : 'Guardada', { fino: borrador }),

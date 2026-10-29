@@ -5,7 +5,7 @@ import { Plus, Trash2, Pencil, Eye, Loader2, Sparkles, Upload, X } from 'lucide-
 import { getCombosCrear, guardarComboCrear, archivarComboCrear, sugerirCombos, MIN_PIEZAS, MAX_PIEZAS } from '../../services/combosCrear';
 import { getPrendasBase } from '../../services/prendasBase';
 import { getBrands } from '../../services/brands';
-import { getCategories } from '../../services/products';
+import { getCategories, getProducts } from '../../services/products';
 import { uploadFile } from '../../services/firebase/storage';
 import { precioBase, leerPrendaBase } from '../../utils/prendaBase';
 import { useGlobalToast } from '../../contexts/ToastContext';
@@ -31,6 +31,12 @@ const OPCIONES_TALLA = [
 ];
 const soles = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
 
+// Un producto de la tienda que puede ir tal cual en un pack (pieza fija): con
+// colores, ni prenda de Crear ni combo.
+const sirveTalCual = (p) => p && p.deleted !== true && p.esPrendaBase !== true && !p.isComboProduct
+  && p.esComboCrear !== true && (p.variants || []).length > 0;
+const colorDeVariante = (v) => ({ id: String(v.id), nombre: v.name || '', hex: v.colorHex || '' });
+
 /**
  * Packs (combos) de Crear: "Pareja", "Trío"… El admin elige las prendas de
  * cada combo (pueden ser iguales o distintas) y su precio de paquete. El
@@ -55,6 +61,18 @@ const AdminCombosCrear = ({ embebido = false, nuevoInicial = false }) => {
     queryFn: async () => (await getPrendasBase({ incluirBorradores: true })).data,
   });
   const prendaPorId = new Map(prendas.map((p) => [p.id, p]));
+  // Los productos de la tienda, para las piezas que van tal cual (misma lista que Productos).
+  const { data: productosTienda = [] } = useQuery({
+    queryKey: ['admin-products'],
+    queryFn: async () => {
+      const { data, error } = await getProducts([], null, null, { includeHidden: true });
+      if (error) throw new Error(error);
+      return data;
+    },
+  });
+  const talCualPorId = new Map(productosTienda.filter(sirveTalCual).map((p) => [p.id, p]));
+  // El producto de una pieza: la prenda de Crear o, si va tal cual, el de la tienda.
+  const productoDe = (p) => (p.fija ? talCualPorId.get(p.prendaId) : prendaPorId.get(p.prendaId));
   const { data: marcas = [] } = useQuery({
     queryKey: ['brands'],
     queryFn: async () => (await getBrands()).data || [],
@@ -72,8 +90,15 @@ const AdminCombosCrear = ({ embebido = false, nuevoInicial = false }) => {
   const conFotos = (datos) => ({
     ...datos,
     piezas: (datos.piezas || []).map((p) => {
+      if (p.fija) {
+        const producto = talCualPorId.get(p.prendaId);
+        const v = (producto?.variants || []).find((x) => String(x.id) === String(p.color?.id));
+        return producto && v
+          ? { prendaId: p.prendaId, fija: true, color: colorDeVariante(v), nombre: producto.name, imagen: v.imageUrl || producto.mainImage || '' }
+          : p;
+      }
       const prenda = prendaPorId.get(p.prendaId);
-      return prenda ? { prendaId: p.prendaId, nombre: prenda.name, imagen: fotoDePrenda(prenda) } : p;
+      return prenda ? { prendaId: p.prendaId, nombre: prenda.name, imagen: fotoDePrenda(prenda), ...(p.color && { color: p.color }) } : p;
     }),
   });
 
@@ -133,7 +158,7 @@ const AdminCombosCrear = ({ embebido = false, nuevoInicial = false }) => {
       salePrice: combo.salePrice ?? '',
       publicado: combo.publicado,
       tallas: combo.tallas || 'auto',
-      piezas: combo.piezas.map((p) => ({ prendaId: p.prendaId })),
+      piezas: combo.piezas.map((p) => ({ prendaId: p.prendaId, ...(p.fija && { fija: true }), ...(p.color && { color: p.color }) })),
       // Antes no se cargaban: guardar el combo borraba su portada.
       brandId: combo.brandId || '',
       mainImage: combo.mainImage || '',
@@ -154,16 +179,37 @@ const AdminCombosCrear = ({ embebido = false, nuevoInicial = false }) => {
     if (error || !url) toast.error('No se pudo subir la portada.');
     else cambiar('mainImage', url);
   };
-  const cambiarPieza = (i, prendaId) => setForm((f) => ({ ...f, piezas: f.piezas.map((p, k) => (k === i ? { prendaId } : p)) }));
+  const cambiarPieza = (i, cambios) => setForm((f) => ({ ...f, piezas: f.piezas.map((p, k) => (k === i ? cambios : p)) }));
+  // Al elegir un producto tal cual se pone su primer color (siempre lleva uno).
+  const elegirProducto = (i, p, prendaId) => {
+    if (!p.fija) return cambiarPieza(i, { prendaId });
+    const v = talCualPorId.get(prendaId)?.variants?.[0];
+    return cambiarPieza(i, { prendaId, fija: true, ...(v && { color: colorDeVariante(v) }) });
+  };
+  // Los colores de la pieza: los de la prenda (el estudio abre en ese) o los del producto tal cual.
+  const coloresDe = (p) => {
+    const producto = productoDe(p);
+    if (!producto) return [];
+    return p.fija ? producto.variants.map(colorDeVariante) : leerPrendaBase(producto).colores.map((c) => ({ id: c.id, nombre: c.nombre, hex: c.hex || '' }));
+  };
+  const elegirColor = (i, p, colorId) => {
+    const color = coloresDe(p).find((c) => c.id === colorId);
+    const { color: _sinColor, ...resto } = p;
+    cambiarPieza(i, color ? { ...resto, color } : resto);
+  };
 
-  const sueltas = form ? form.piezas.reduce((t, p) => t + (prendaPorId.get(p.prendaId) ? precioBase(prendaPorId.get(p.prendaId)) : 0), 0) : 0;
+  const sueltas = form ? form.piezas.reduce((t, p) => t + (productoDe(p) ? precioBase(productoDe(p)) : 0), 0) : 0;
   const precioCombo = form ? precioBase({ price: form.price, salePrice: form.salePrice }) : 0;
-  const completas = form ? form.piezas.filter((p) => p.prendaId).length : 0;
+  const completas = form ? form.piezas.filter((p) => p.prendaId && (!p.fija || p.color)).length : 0;
+  const talCualOrdenados = [...talCualPorId.values()]
+    // Primero los de la marca del pack.
+    .sort((a, b) => (b.brandId === form?.brandId) - (a.brandId === form?.brandId) || String(a.name).localeCompare(String(b.name)));
 
   const enviar = (e) => {
     e.preventDefault();
     if (!form.name.trim()) return toast.info('Ponle un nombre al combo.');
-    if (completas < MIN_PIEZAS || completas !== form.piezas.length) return toast.info(`Elige la prenda de cada pieza (mínimo ${MIN_PIEZAS}).`);
+    if (completas < MIN_PIEZAS || completas !== form.piezas.length) return toast.info(`Elige la prenda de cada pieza y el color de las que van tal cual (mínimo ${MIN_PIEZAS}).`);
+    if (form.piezas.every((p) => p.fija)) return toast.info('Al menos una pieza tiene que diseñarse: si todo va tal cual, es un combo de la tienda.');
     if (!(Number(form.price) > 0)) return toast.info('Ponle un precio al combo.');
     return guardar.mutate();
   };
@@ -302,17 +348,32 @@ const AdminCombosCrear = ({ embebido = false, nuevoInicial = false }) => {
 
           <fieldset className={styles.piezas}>
             <legend>Prendas del combo</legend>
+            <p className={styles.ayuda}>
+              Cada pieza se diseña en Crear o va tal cual: un producto de la tienda en el color que elijas (el reloj de un pack
+              con billetera y esclava grabadas). En una que se diseña, el color es con el que abre el estudio.
+            </p>
             {form.piezas.map((p, i) => (
               <div key={i} className={styles.fila}>
                 <span className={styles.numero}>{i + 1}</span>
-                <select value={p.prendaId} onChange={(e) => cambiarPieza(i, e.target.value)}>
-                  <option value="">Elige una prenda…</option>
-                  {prendas.map((pr) => (
+                <select className={styles.tipoPieza} value={p.fija ? 'fija' : 'disena'} aria-label={`Cómo va la pieza ${i + 1}`}
+                  onChange={(e) => cambiarPieza(i, e.target.value === 'fija' ? { prendaId: '', fija: true } : { prendaId: '' })}>
+                  <option value="disena">Se diseña</option>
+                  <option value="fija">Va tal cual</option>
+                </select>
+                <select value={p.prendaId} onChange={(e) => elegirProducto(i, p, e.target.value)} aria-label={`Producto de la pieza ${i + 1}`}>
+                  <option value="">{p.fija ? 'Elige un producto de la tienda…' : 'Elige una prenda…'}</option>
+                  {(p.fija ? talCualOrdenados : prendas).map((pr) => (
                     <option key={pr.id} value={pr.id}>
-                      {pr.name} · {soles(precioBase(pr))}{pr.visible === false ? ' (borrador)' : ''}
+                      {pr.name} · {soles(precioBase(pr))}{pr.visible === false ? (p.fija ? ' (oculto)' : ' (borrador)') : ''}
                     </option>
                   ))}
                 </select>
+                {p.prendaId && coloresDe(p).length > 0 && (
+                  <select value={p.color?.id || ''} onChange={(e) => elegirColor(i, p, e.target.value)} aria-label={`Color de la pieza ${i + 1}`}>
+                    {!p.fija && <option value="">El que elija el cliente</option>}
+                    {coloresDe(p).map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  </select>
+                )}
                 {form.piezas.length > MIN_PIEZAS && (
                   <button type="button" className={styles.icono} aria-label={`Quitar la prenda ${i + 1}`}
                     onClick={() => setForm((f) => ({ ...f, piezas: f.piezas.filter((_, k) => k !== i) }))}>
@@ -323,7 +384,10 @@ const AdminCombosCrear = ({ embebido = false, nuevoInicial = false }) => {
             ))}
             {form.piezas.length < MAX_PIEZAS && (
               <button type="button" className={styles.secundario}
-                onClick={() => setForm((f) => ({ ...f, piezas: [...f.piezas, { prendaId: f.piezas[f.piezas.length - 1]?.prendaId || '' }] }))}>
+                onClick={() => setForm((f) => {
+                  const ultima = f.piezas[f.piezas.length - 1];
+                  return { ...f, piezas: [...f.piezas, ultima?.fija ? { prendaId: '' } : { prendaId: ultima?.prendaId || '' }] };
+                })}>
                 <Plus size={15} aria-hidden="true" /> Agregar prenda
               </button>
             )}
@@ -385,7 +449,9 @@ const AdminCombosCrear = ({ embebido = false, nuevoInicial = false }) => {
               <div className={styles.itemInfo}>
                 <strong>{c.name}</strong>
                 <span className={styles.ayuda}>
-                  {c.piezas.map((p) => prendaPorId.get(p.prendaId)?.name || 'Prenda no encontrada').join(' + ')}
+                  {c.piezas.map((p) => (p.fija
+                    ? `${talCualPorId.get(p.prendaId)?.name || p.nombre || 'Producto no encontrado'}${p.color?.nombre ? ` · ${p.color.nombre}` : ''} (tal cual)`
+                    : prendaPorId.get(p.prendaId)?.name || 'Prenda no encontrada')).join(' + ')}
                 </span>
                 <span className={styles.ayuda}>
                   {soles(precioBase(c))}
