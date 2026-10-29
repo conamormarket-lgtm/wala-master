@@ -280,7 +280,13 @@ export default function FichaDeProducto({ product, cargando, error, noDisponible
   const esDeCrear = product?.esPrendaBase === true;
   const alPersonalizar = (eleccion) => {
     if (esDeCrear) { navigate(rutaPersonalizar(product, eleccion?.variante?.id), { state: { desde: location.pathname } }); return; }
-    if (enCrear) { navigate(enCrear); return; }
+    // Al estudio en el color elegido (la versión de Crear copia los ids de los
+    // colores de la tienda: la billetera de Yoryo). A un combo, tal cual.
+    if (enCrear) {
+      const colorId = eleccion?.variante?.id;
+      navigate(colorId && enCrear.startsWith('/crear/') ? `${enCrear}${enCrear.includes('?') ? '&' : '?'}color=${encodeURIComponent(colorId)}` : enCrear);
+      return;
+    }
     if (product.YoryoPersonalizado) { abrirYoryo(eleccion); return; }
     navigate(rutaDelEditor(product, eleccion, comboProd));
   };

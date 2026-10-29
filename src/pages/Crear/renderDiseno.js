@@ -30,7 +30,7 @@ import { textoEnGrises, pixelesEnGrises } from '../../utils/laser.mjs';
 export const FUENTES = [
   'Montserrat', 'Bebas Neue', 'Anton', 'Oswald', 'Playfair Display', 'Righteous',
   'Pacifico', 'Lobster', 'Dancing Script', 'Great Vibes', 'Permanent Marker', 'Caveat',
-  'Kanit', 'Rubik', 'Libre Baskerville',
+  'Kanit', 'Rubik', 'Libre Baskerville', 'Crimson Pro',
   // Locales (public/fonts/fonts.css): se cargan del mismo sitio.
   'Back to Black', 'Franklin Gothic Heavy Italic', 'Varsity Team Bold', 'Keep on Truckin',
   'Brush Script', 'Bernadette', 'DK Longreach', 'Rainbow Kitty', 'Cinzel',

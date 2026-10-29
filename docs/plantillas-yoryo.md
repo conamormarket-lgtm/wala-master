@@ -113,3 +113,16 @@ Después de guardar, `public/yoryo/` y `src/pages/admin/plantillasYoryo/` se pue
 
 - **Carrito:** las líneas con `datosYoryo` piden volver a crearlas en Crear y no dejan pagar.
 - **Pedidos hechos:** conservan sus archivos (`designs.js` → `urlsDeDiseno` los protege de la limpieza).
+
+## Billetera y esclava grabadas (29-10-2026)
+
+La billetera Cónsul y la esclava se venden **tal cual** en la tienda y también **grabadas con láser** en Crear, al mismo precio. El botón **Personalizar** del producto de la tienda lleva a la versión grabada, en el color elegido (los colores de las dos versiones usan los mismos ids).
+
+En **Admin → Catálogo → Importar plantillas de cuadros**, paso 6, **Crear billetera, esclava y packs** (una vez; volver a correrlo rehace las plantillas y las fotos sin duplicar nada):
+
+- crea `yoryo-crear-billetera` (cara lisa, grabado abajo a la derecha) y `yoryo-crear-esclava` (la placa), solo con plantillas: iniciales o nombre con flecha, infinito, estrella, corazón, rayo o montaña, con fecha, solo el texto o en letra escrita (Crimson Pro y Back to Black);
+- pone en cada color la foto de la tarjeta ya grabada y la galería: el frente con cierre y las fotos de la tienda. El frente con cierre también se agrega a la billetera de la tienda;
+- deja la esclava de la tienda a la vista (antes solo iba en los combos);
+- arma los combos Ónix, Oro y Medianoche como packs de Crear: el reloj **tal cual** en su color (pieza fija) y la billetera y la esclava para grabar, al precio del combo. El botón **Personalizar** de cada combo de la tienda lleva a su pack.
+
+Las fotos para diseñar y los símbolos están en `public/yoryo/grabados/` y se pueden borrar después de correrlo. **Las medidas en cm son estimadas** (cara de la billetera 9 cm, placa 4.5 cm): cuando el taller las confirme, se corrigen en la ficha de cada uno, pestaña Diseño, con la línea de referencia.

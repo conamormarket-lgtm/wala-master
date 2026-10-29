@@ -9,7 +9,7 @@ const GRUPOS = [
   { nombre: 'Simples', fuentes: ['Montserrat', 'Rubik', 'Kanit'] },
   { nombre: 'Gruesas', fuentes: ['Bebas Neue', 'Anton', 'Oswald', 'Righteous', 'Franklin Gothic Heavy Italic', 'DK Longreach'] },
   { nombre: 'Deportivas y retro', fuentes: ['Varsity Team Bold', 'Keep on Truckin'] },
-  { nombre: 'Elegantes', fuentes: ['Playfair Display', 'Libre Baskerville'] },
+  { nombre: 'Elegantes', fuentes: ['Playfair Display', 'Libre Baskerville', 'Crimson Pro'] },
   { nombre: 'Escritas a mano', fuentes: ['Pacifico', 'Lobster', 'Dancing Script', 'Great Vibes', 'Permanent Marker', 'Caveat', 'Back to Black', 'Brush Script', 'Bernadette', 'Rainbow Kitty'] },
 ];
 

@@ -9,6 +9,7 @@ import { subirAProducto, miniaturaDePlantilla, guardarPlantillasDelProducto } fr
 import { leerPrendaBase, colorDisponible, UNIDADES_ZONA, slug } from '../../../utils/prendaBase';
 import { capasDePlantilla } from './plantillasACapas.mjs';
 import { crearProductosYoryo, pasarYoryoALaTienda, ajustarTomatodoAFotoNueva, IDS_CREAR_YORYO } from './crearProductosYoryo';
+import { crearGrabadosYoryo } from './grabadosYoryo';
 import { plantillaCapasBaseYoryo, plantillaTomatodoYoryo } from './presetsEquipos.mjs';
 import { plantillaParejasBaseYoryo } from './presetsParejas.mjs';
 import Boton from '../../../componentes/kit/Boton';
@@ -178,6 +179,24 @@ export default function ImportarPlantillasYoryo() {
       setPasoTomatodo(`Error: ${e.message}`);
     } finally {
       setAjustandoTomatodo(false);
+    }
+  };
+  // 6. La billetera y la esclava grabadas, y los packs con el reloj tal cual.
+  const [pasoGrabados, setPasoGrabados] = useState('');
+  const [creandoGrabados, setCreandoGrabados] = useState(false);
+  const crearGrabados = async () => {
+    setCreandoGrabados(true);
+    try {
+      await crearGrabadosYoryo({ onPaso: setPasoGrabados });
+      queryClient.invalidateQueries({ queryKey: ['prendas-base'] });
+      queryClient.invalidateQueries({ queryKey: ['prenda-base'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-combos-crear'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    } catch (e) {
+      setPasoGrabados(`Error: ${e.message}`);
+    } finally {
+      setCreandoGrabados(false);
     }
   };
   const [elegidas, setElegidas] = useState(() => new Set(PRODUCTOS.flatMap(([p]) => plantillasDe(p).map((x) => x.id))));
@@ -363,6 +382,20 @@ export default function ImportarPlantillasYoryo() {
         </p>
         <Boton variante="contorno" onClick={ajustarTomatodo} cargando={ajustandoTomatodo} disabled={!user || trabajando}>Ajustar el tomatodo</Boton>
         {pasoTomatodo && <small className={pasoTomatodo.startsWith('Error') ? s.error : undefined}>{pasoTomatodo}</small>}
+      </section>
+
+      <section className={s.grupo}>
+        <h2>6. Billetera y esclava grabadas</h2>
+        <p>
+          Crea la billetera Cónsul y la esclava grabadas con láser como productos de Crear, con sus plantillas: iniciales o
+          nombre con un símbolo (flecha, infinito, estrella, corazón, rayo o montaña), con fecha, solo el texto o en letra
+          escrita. También arma los combos Ónix, Oro y Medianoche como packs de Crear con el reloj tal cual. Los productos de la
+          tienda se siguen vendiendo sin grabar, al mismo precio: su botón <em>Personalizar</em> lleva a la versión grabada.
+          La esclava pasa a verse en la tienda. Las medidas en cm son estimadas: corrígelas en la ficha (pestaña Diseño) cuando
+          el taller las confirme. Lo que ya exista no se repite; las plantillas y las fotos se rehacen.
+        </p>
+        <Boton variante="contorno" onClick={crearGrabados} cargando={creandoGrabados} disabled={!user || trabajando}>Crear billetera, esclava y packs</Boton>
+        {pasoGrabados && <small className={pasoGrabados.startsWith('Error') ? s.error : undefined}>{pasoGrabados}</small>}
       </section>
     </div>
   );
