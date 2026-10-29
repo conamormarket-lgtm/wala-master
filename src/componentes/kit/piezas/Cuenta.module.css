@@ -95,6 +95,12 @@
   border-bottom: 1px dashed var(--color-border);
 }
 
+/* Solo la cabeza (una tarjeta de pago guardada): sin la línea que la separa de nada. */
+.tarjeta > .cabeza:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
 /* En la página más angosta (320px), las tarjetas con menos relleno. */
 @container pagina (max-width: 300px) {
   .tarjeta {

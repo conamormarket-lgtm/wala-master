@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, IdCard, LogIn, LogOut, MapPin, Pencil, Plus, Settings, User, Moon, Languages, Gift } from 'lucide-react';
+import { ArrowLeft, IdCard, LogIn, LogOut, MapPin, Pencil, Plus, Settings, User, Moon, Languages, Gift, CreditCard } from 'lucide-react';
 import Boton from '../Boton';
 import { Enlace } from '../Enlace';
 import { Aviso, EstadoVacio, HojaInferior } from '../Feedback';
@@ -545,6 +545,69 @@ export function PaginaDirecciones({
           </form>
         )}
       </HojaInferior>
+    </>
+  );
+}
+
+/* ── Mis tarjetas (/cuenta/tarjetas) ───────────────────── */
+
+/**
+ * Mis tarjetas: las guardadas al pagar (las guarda Culqi; Walá solo ve la
+ * marca y los últimos 4 números) y quitarlas. Se agregan en el checkout.
+ *  - tarjetas: [{ id, marca, ultimos4, tipo, banco }] · cargando
+ *  - onQuitar(id): promesa · quitando: el id que se está quitando
+ *  - puede: false si la cuenta no puede guardar tarjetas (sesión sin correo)
+ *  - error · onReintentar
+ */
+export function PaginaTarjetas({ tarjetas = [], cargando = false, onQuitar, quitando = null, puede = true, error, onReintentar }) {
+  const etiquetaQuitar = useTexto('Quitar');
+  return (
+    <>
+      <CabezaCuenta
+        icono={<CreditCard />}
+        titulo={<Texto>Mis tarjetas</Texto>}
+        subtitulo={<Texto>Las que guardaste al pagar. Las guarda Culqi: Walá solo ve la marca y los últimos 4 números.</Texto>}
+      />
+      {error ? (
+        <Aviso
+          tipo="error"
+          titulo="No pudimos cargar tus tarjetas"
+          accion={onReintentar && <Boton tamano="sm" variante="contorno" onClick={onReintentar}><Texto>Reintentar</Texto></Boton>}
+        >
+          Revisa tu conexión e inténtalo de nuevo.
+        </Aviso>
+      ) : cargando ? (
+        <ul className={s.direcciones} aria-busy="true">
+          <li><EsqueletoTarjeta lineas={2} alto={96} /></li>
+        </ul>
+      ) : !puede ? (
+        <Aviso tipo="info">Para guardar tarjetas entra con tu correo o con Google.</Aviso>
+      ) : tarjetas.length === 0 ? (
+        <EstadoVacio
+          imagen={null}
+          icono={<CreditCard />}
+          titulo={<Texto>Aún no tienes tarjetas guardadas</Texto>}
+          texto={<Texto>Al pagar con tarjeta, marca «Guardar esta tarjeta» y la próxima vez pagas sin escribirla.</Texto>}
+        />
+      ) : (
+        <ul className={s.direcciones}>
+          {tarjetas.map((t) => (
+            <li key={t.id}>
+              <TarjetaCuenta
+                icono={<CreditCard />}
+                tono="suave"
+                titulo={`${t.marca || 'Tarjeta'} •••• ${t.ultimos4 || ''}`}
+                subtitulo={[t.tipo, t.banco].filter(Boolean).join(' · ') || undefined}
+                accion={onQuitar && (
+                  <Boton tamano="sm" variante="contorno" cargando={quitando === t.id} disabled={Boolean(quitando)} onClick={() => onQuitar(t.id)} aria-label={`${etiquetaQuitar} ${t.marca || ''} ${t.ultimos4 || ''}`}>
+                    <Texto>Quitar</Texto>
+                  </Boton>
+                )}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
     </>
   );
 }

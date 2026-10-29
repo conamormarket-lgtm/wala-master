@@ -166,6 +166,11 @@ la tarjeta, WhatsApp y PayPal esperan y avisan.
   `PagoTarjeta` controlado; se abre solo al llegar al pago, como antes) por
   `pago.botonTarjeta`; cerrar la ventana sin pagar → `pago.tarjetaFallo`.
   Al cobrar, la tienda pone `listo`.
+- **Tarjetas guardadas (2026-10-29):** con una cuenta con correo,
+  `PagoTarjeta` muestra las guardadas (`misTarjetasSecure`) y la casilla
+  "Guardar esta tarjeta"; la ventana de Culqi ya no se abre sola (primero se
+  elige). Una guardada se cobra con `pagarConGuardada` de `renderBoton`, sin
+  ventana. Las guarda Culqi; ver `functions/tarjetasGuardadas.js`.
 - **PayPal:** `PaypalCheckout` con `soloBotones` (nueva, opcional: sin ella,
   todo igual) por `pago.botonesPaypal`; baja solo si se paga desde otro país.
 - **WhatsApp:** la pestaña se abre en el clic con `htmlAbriendoWhatsApp` del

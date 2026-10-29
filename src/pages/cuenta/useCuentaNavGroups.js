@@ -11,6 +11,7 @@ import {
   Calendar,
   Settings,
   MapPin,
+  CreditCard,
 } from 'lucide-react';
 
 // Fuente única de "todas las opciones a donde se quiere dirigir" dentro de
@@ -31,6 +32,7 @@ export const useCuentaNavGroups = () => {
         // repite 2 veces lo mismo"-. Se unificaron en uno solo.
         { to: '/cuenta/pedidos', labelKey: 'account.misPedidos', label: 'Mis Pedidos', icon: Package },
         { to: '/cuenta/direcciones', labelKey: 'account.misDirecciones', label: 'Mis Direcciones', icon: MapPin },
+        { to: '/cuenta/tarjetas', labelKey: 'account.misTarjetas', label: 'Mis Tarjetas', icon: CreditCard },
         { to: '/cuenta/ajustes', labelKey: 'account.ajustes', label: 'Ajustes', icon: Settings },
       ],
     },

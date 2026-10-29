@@ -12,6 +12,7 @@ import { validarCupon } from '../../services/cupones';
 import { detectCountry } from '../../services/geo';
 import { getFx, penToUsd, penToLocal } from '../../services/fx';
 import { obtenerDirecciones, agregarDireccion, actualizarDireccion } from '../../services/direcciones';
+import { misTarjetas } from '../../services/tarjetasGuardadas';
 import { trackCheckoutStart, trackPurchaseComplete } from '../../services/analytics/tracker';
 import {
   armarPedidoWeb, armarWhatsapp, aplicarEfectosDeCompra, completarPerfilDesdeCheckout, formatDeliveryDate, businessDaysUntil,
@@ -479,6 +480,17 @@ export default function CheckoutDeTienda() {
   };
 
   const [tarjetaFallo, setTarjetaFallo] = useState(false);
+  // Las tarjetas guardadas (Culqi). Con una cuenta que puede guardarlas, la
+  // ventana de Culqi no se abre sola: primero se elige la tarjeta o se marca
+  // "Guardar esta tarjeta".
+  const [tarjetas, setTarjetas] = useState(null);
+  const [guardarTarjeta, setGuardarTarjeta] = useState(false);
+  useEffect(() => {
+    if (!sesion || !user?.uid) { setTarjetas({ puede: false, tarjetas: [] }); return undefined; }
+    let vivo = true;
+    misTarjetas().then((t) => { if (vivo) setTarjetas(t); });
+    return () => { vivo = false; };
+  }, [sesion, user?.uid]);
   const [paypal, setPaypal] = useState({ procesando: false, error: '' });
 
   /* ── Sin cuenta: guardar lo llenado antes de ir a entrar (vuelve con ?redirect=) ── */
@@ -536,12 +548,23 @@ export default function CheckoutDeTienda() {
     botonTarjeta: preparado.esPeru ? (
       <CulqiCustomCheckout
         pedido={preparado}
-        autoOpen={!preparado.sinAbrir}
+        autoOpen={!preparado.sinAbrir && tarjetas !== null && !tarjetas.puede}
         title="Compra en Walá"
+        guardarTarjeta={Boolean(tarjetas?.puede) && guardarTarjeta}
         onSuccess={(r) => terminarPasarela('culqi', r)}
         onOpen={() => setTarjetaFallo(false)}
         onClose={() => setTarjetaFallo(true)}
-        renderBoton={({ abrir, procesando }) => <PagoTarjeta monto={Number(preparado.montoDeuda || 0)} procesando={procesando} onPagar={abrir} />}
+        renderBoton={({ abrir, procesando, pagarConGuardada }) => (
+          <PagoTarjeta
+            monto={Number(preparado.montoDeuda || 0)}
+            procesando={procesando}
+            onPagar={abrir}
+            tarjetas={tarjetas?.tarjetas || []}
+            onPagarGuardada={pagarConGuardada}
+            guardar={guardarTarjeta}
+            onGuardar={tarjetas?.puede && (tarjetas.tarjetas.length < tarjetas.maximo) ? setGuardarTarjeta : undefined}
+          />
+        )}
       />
     ) : undefined,
     botonesPaypal: !preparado.esPeru ? (

@@ -79,7 +79,10 @@ const datosDelCobro = ({ cobro, enlace, pedido }) => {
 // titulo, descripcion, metadata } — el ticket de un sorteo. El servidor
 // recalcula el monto desde la metadata; aquí no se dispara el píxel de compra.
 // conYape: la ventana ofrece también Yape (el saldo de un pedido; en soles).
-const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen, autoOpen = false, reopenKey = 0, buttonLabel, title: tituloModal, renderBoton, conYape = false }) => {
+// guardarTarjeta: el servidor guarda la tarjeta de la ventana antes de cobrar
+// (se lee al cobrar, no recrea la ventana). renderBoton recibe además
+// pagarConGuardada(id): cobra con una tarjeta guardada, sin abrir la ventana.
+const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen, autoOpen = false, reopenKey = 0, buttonLabel, title: tituloModal, renderBoton, conYape = false, guardarTarjeta = false }) => {
   const toast = useGlobalToast();
   const [isReady, setIsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -112,6 +115,10 @@ const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen
   // "salte dos veces"). Los guardamos en refs y los actualizamos en un effect
   // aparte, sin tocar la instancia. Así el handler `culqi` siempre invoca la
   // versión más reciente del callback sin recrear nada.
+  const guardarRef = useRef(guardarTarjeta);
+  guardarRef.current = guardarTarjeta;
+  // El cobro (lo arma el effect de abajo con el monto y el pedido de ahora).
+  const cobrarRef = useRef(null);
   const onSuccessRef = useRef(onSuccess);
   const onCloseRef = useRef(onClose);
   const onOpenRef = useRef(onOpen);
@@ -197,6 +204,53 @@ const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen
     const culqiInstance = getOrCreateCulqi(orderKey, publicKey, config);
     culqiRef.current = culqiInstance;
 
+    // fuente: { tokenId, email, guardarTarjeta } (la ventana) o { tarjetaId, intentoId } (una guardada).
+    cobrarRef.current = async (fuente) => {
+      setIsProcessing(true);
+      setPantalla('cobrando');
+      let aprobado = false;
+
+      try {
+        const functions = getFunctions();
+        const processCulqiPayment = httpsCallable(functions, 'processCulqiPayment');
+        
+        const result = await processCulqiPayment({
+          ...fuente,
+          amount: amountInt,
+          currency: currency,
+          description: cobro?.descripcion || title,
+          checkoutIntentId: cobro ? '' : (pedido?.checkoutIntentId || ''),
+          metadata: cobro ? cobro.metadata : {
+            pedidoId: pedido?.id || '',
+            checkoutIntentId: pedido?.checkoutIntentId || '',
+            enlaceId: enlace?.id || ''
+          }
+        });
+
+        if (result.data && result.data.success) {
+          aprobado = true;
+          setPantalla('aprobado');
+          // Por si el padre no navega (p. ej. pago de saldo): no dejarla puesta.
+          setTimeout(() => setPantalla(null), 5000);
+          if (!cobro) trackCulqiPurchase(result.data, currency, pedido);
+          toast.success('¡Pago procesado exitosamente!');
+          // Usa la versión más reciente del callback (ref estable): NO depende
+          // de la identidad del arrow inline del padre, así que la instancia
+          // de Culqi no se recrea ni el modal se reabre.
+          if (onSuccessRef.current) onSuccessRef.current(result.data);
+        } else {
+          toast.error(result.data?.message || 'Error al procesar el pago en el servidor.');
+        }
+      } catch (error) {
+        console.error("Error processCulqiPayment:", error);
+        toast.error(error.message || 'Error de comunicación con el servidor.');
+      } finally {
+        if (!aprobado) setPantalla(null);
+        setIsProcessing(false);
+        processingRef.current = false; // libera el guard (permite reintento si falló)
+      }
+    };
+
     // Manejador de acciones (reemplaza a window.culqi = ...)
     culqiInstance.culqi = async () => {
       if (culqiInstance.token) {
@@ -210,52 +264,8 @@ const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen
         const email = culqiInstance.token.email || '';
         culqiInstance.close();
         bloquearScrollDeFondo(false);
+        await cobrarRef.current({ tokenId: token, email, guardarTarjeta: guardarRef.current });
 
-        setIsProcessing(true);
-        setPantalla('cobrando');
-        let aprobado = false;
-
-        try {
-          const functions = getFunctions();
-          const processCulqiPayment = httpsCallable(functions, 'processCulqiPayment');
-          
-          const result = await processCulqiPayment({
-            tokenId: token,
-            amount: amountInt,
-            currency: currency,
-            email: email,
-            description: cobro?.descripcion || title,
-            checkoutIntentId: cobro ? '' : (pedido?.checkoutIntentId || ''),
-            metadata: cobro ? cobro.metadata : {
-              pedidoId: pedido?.id || '',
-              checkoutIntentId: pedido?.checkoutIntentId || '',
-              enlaceId: enlace?.id || ''
-            }
-          });
-
-          if (result.data && result.data.success) {
-            aprobado = true;
-            setPantalla('aprobado');
-            // Por si el padre no navega (p. ej. pago de saldo): no dejarla puesta.
-            setTimeout(() => setPantalla(null), 5000);
-            if (!cobro) trackCulqiPurchase(result.data, currency, pedido);
-            toast.success('¡Pago procesado exitosamente!');
-            // Usa la versión más reciente del callback (ref estable): NO depende
-            // de la identidad del arrow inline del padre, así que la instancia
-            // de Culqi no se recrea ni el modal se reabre.
-            if (onSuccessRef.current) onSuccessRef.current(result.data);
-          } else {
-            toast.error(result.data?.message || 'Error al procesar el pago en el servidor.');
-          }
-        } catch (error) {
-          console.error("Error processCulqiPayment:", error);
-          toast.error(error.message || 'Error de comunicación con el servidor.');
-        } finally {
-          if (!aprobado) setPantalla(null);
-          setIsProcessing(false);
-          processingRef.current = false; // libera el guard (permite reintento si falló)
-        }
-        
       } else if (culqiInstance.error) {
          resolvedRef.current = true; // error manejado: cerrar el modal NO es abandono
          if (closePollRef.current) { clearInterval(closePollRef.current); closePollRef.current = null; }
@@ -278,6 +288,15 @@ const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen
     // padre (arrows inline) y el modal "saltaría dos veces".
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReady, pedido, enlace, cobro, tituloModal, conYape]);
+
+  // Una tarjeta guardada: se cobra sin abrir la ventana de Culqi.
+  const pagarConGuardada = async (tarjetaId) => {
+    if (!cobrarRef.current) { toast.error('El sistema de pagos no está listo aún. Espera unos segundos.'); return; }
+    if (processingRef.current || isProcessing) { toast.warning('Ya hay un pago procesándose.'); return; }
+    processingRef.current = true;
+    const intentoId = (window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`).replace(/[^A-Za-z0-9_-]/g, '');
+    await cobrarRef.current({ tarjetaId, intentoId });
+  };
 
   const handleOpenCheckout = () => {
     if (!isReady) {
@@ -392,7 +411,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, cobro, onSuccess, onClose, onOpen
 
   return (
     <div className={renderBoton ? undefined : styles.wrap}>
-      {renderBoton ? renderBoton({ abrir: handleOpenCheckout, procesando: isProcessing }) : (
+      {renderBoton ? renderBoton({ abrir: handleOpenCheckout, procesando: isProcessing, pagarConGuardada }) : (
         <>
           <button
             type="button"

@@ -85,8 +85,10 @@ const textoInvitacion = ({ nombre, aceptada }) => {
  *    marcas: [{ id, nombre, cantidad }] (más de una: un envío por marca),
  *    usd(total), local(total, pais) (el equivalente en la moneda del país, texto),
  *    botonesPaypal (los del SDK de PayPal), botonTarjeta (el botón de la
- *    tienda: la ventana de Culqi con PagoTarjeta), tarjetaFallo } — promesas;
- *    la de la tarjeta falla si no se cobró
+ *    tienda: la ventana de Culqi con PagoTarjeta), tarjetaFallo,
+ *    tarjetas: las guardadas [{ id, marca, ultimos4, tipo, banco }] ·
+ *    onTarjetaGuardada(id, total) · onGuardarTarjeta (con él, la casilla
+ *    "Guardar esta tarjeta") } — promesas; la de la tarjeta falla si no se cobró
  *  - listo: { metodo, numero } la tienda avisa que ya se pagó (la tarjeta, que
  *    cobra después de cerrar su ventana) · onListo(metodo): al mostrar "listo"
  *  - onPaso(n): al cambiar de paso (0 envío, 1 pago, 2 listo)
@@ -136,6 +138,7 @@ export function PaginaCheckout({
   const [pedido, setPedido] = useState(null);
   const [ocupado, setOcupado] = useState(null);
   const [tarjetaFallo, setTarjetaFallo] = useState(false);
+  const [guardarTarjeta, setGuardarTarjeta] = useState(false);
   const [enviadas, setEnviadas] = useState([]);
   const [resumenAbierto, setResumenAbierto] = useState(false);
   const raiz = useRef(null);
@@ -503,7 +506,16 @@ export function PaginaCheckout({
                     {fallo && (
                       <Aviso tipo="aviso" compacto titulo="No se completó el pago con tarjeta">Puedes intentarlo otra vez o pagar con Yape, Plin o transferencia por WhatsApp.</Aviso>
                     )}
-                    {pago.botonTarjeta || <PagoTarjeta monto={cuentas.total} onPagar={() => { setError(''); return pagar('tarjeta', pago.onTarjeta, cuentas.total); }} />}
+                    {pago.botonTarjeta || (
+                      <PagoTarjeta
+                        monto={cuentas.total}
+                        onPagar={() => { setError(''); return pagar('tarjeta', pago.onTarjeta, cuentas.total, { guardar: guardarTarjeta }); }}
+                        tarjetas={pago.tarjetas}
+                        onPagarGuardada={pago.onTarjetaGuardada && ((id) => { setError(''); return pagar('tarjeta', pago.onTarjetaGuardada, id, cuentas.total); })}
+                        guardar={guardarTarjeta}
+                        onGuardar={pago.onGuardarTarjeta ? setGuardarTarjeta : undefined}
+                      />
+                    )}
                   </MetodoPago>
                 )}
 

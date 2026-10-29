@@ -39,6 +39,7 @@ const erpCobranza = require("./erpCobranzaLogic");
 const constancia = require("./constanciaPago");
 const referidos = require("./referidosLogic");
 const bolitas = require("./bolitasLogic");
+const tarjetas = require("./tarjetasGuardadas");
 
 admin.initializeApp();
 const auth = admin.auth();
@@ -2060,6 +2061,79 @@ const CULQI_API = "https://api.culqi.com/v2";
 
 const formatoSoles = (centimos) => `S/ ${(Number(centimos) / 100).toFixed(2)}`;
 
+async function culqiApi(secretKey, ruta, { method = "GET", body } = {}) {
+  const resp = await fetch(`${CULQI_API}${ruta}`, {
+    method,
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${secretKey}` },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  const json = await resp.json().catch(() => ({}));
+  return { ok: resp.ok, status: resp.status, json };
+}
+
+// ── Tarjetas guardadas (ver tarjetasGuardadas.js) ────────────────────────────
+const refTarjetas = (uid) => db.collection("culqiCharges").doc(tarjetas.docTarjetas(uid));
+
+// El cliente de Culqi de esta cuenta: uno por cuenta, se crea al guardar la primera tarjeta.
+async function clienteCulqiDe({ uid, email, secretKey }) {
+  const ref = refTarjetas(uid);
+  const snap = await ref.get();
+  if (snap.exists && snap.data().culqiCustomerId) return snap.data().culqiCustomerId;
+  const perfilSnap = await db.collection(PORTAL_USERS_COLLECTION).doc(uid).get();
+  const perfil = perfilSnap.exists ? perfilSnap.data() || {} : {};
+  const nombre = String(perfil.displayName || perfil.nombre || "").trim().split(/\s+/).filter(Boolean);
+  const telefono = String(perfil.phone || "").replace(/\D/g, "").slice(-9);
+  const r = await culqiApi(secretKey, "/customers", {
+    method: "POST",
+    body: {
+      first_name: (nombre[0] || "Cliente").slice(0, 50),
+      last_name: (nombre.slice(1).join(" ") || "Wala").slice(0, 50),
+      email,
+      address: "Lima",
+      address_city: "Lima",
+      country_code: "PE",
+      phone_number: telefono.length === 9 ? telefono : "999999999",
+    },
+  });
+  let id = r.ok && r.json.id ? String(r.json.id) : "";
+  if (!id) {
+    // Culqi no repite correos: si ya tiene un cliente con este (el de la
+    // suscripción de sorteos, por ejemplo), se usa ese.
+    const b = await culqiApi(secretKey, `/customers?email=${encodeURIComponent(email)}&limit=1`);
+    const lista = b.ok && Array.isArray(b.json.data) ? b.json.data : [];
+    id = lista[0] && lista[0].id ? String(lista[0].id) : "";
+  }
+  if (!id) {
+    console.error("clienteCulqiDe: Culqi rechazó el cliente:", r.status, r.json);
+    throw new functions.https.HttpsError("internal", "No pudimos guardar tu tarjeta. Paga sin guardarla.");
+  }
+  await ref.set({ uid, culqiCustomerId: id, email, actualizadoAt: FieldValue.serverTimestamp() }, { merge: true });
+  return id;
+}
+
+// Guarda la tarjeta del token en Culqi. Devuelve { culqiCardId, tarjeta }, o
+// { omitida } cuando no hace falta (ya estaba, o se llegó al máximo): entonces
+// se cobra con el token, como siempre. Si Culqi no la guarda, lanza: el token
+// pudo quedar usado y se paga desde el principio.
+async function guardarTarjetaCulqi({ uid, email, tokenId, secretKey }) {
+  const col = refTarjetas(uid).collection("guardadas");
+  const guardadas = (await col.get()).docs.map((d) => d.data());
+  if (guardadas.length >= tarjetas.MAX_TARJETAS) return { omitida: "maximo" };
+  const tk = await culqiApi(secretKey, `/tokens/${encodeURIComponent(tokenId)}`);
+  if (tk.ok && tarjetas.yaGuardada(guardadas, tarjetas.datosDeTarjeta({ source: tk.json }))) return { omitida: "repetida" };
+  const customerId = await clienteCulqiDe({ uid, email, secretKey });
+  const r = await culqiApi(secretKey, "/cards", { method: "POST", body: { customer_id: customerId, token_id: tokenId } });
+  if (!tarjetas.esTarjetaCulqi(r.json)) {
+    console.error("guardarTarjetaCulqi: Culqi no guardó la tarjeta:", r.status, r.json);
+    throw new functions.https.HttpsError("failed-precondition", r.ok
+      ? "Tu banco pide una verificación adicional para guardar la tarjeta. Vuelve a pagar sin marcar «Guardar esta tarjeta»."
+      : `${r.json.user_message || "No pudimos guardar tu tarjeta."} No se te cobró nada.`);
+  }
+  const tarjeta = tarjetas.datosDeTarjeta(r.json);
+  await col.doc(tarjeta.culqiCardId).set({ ...tarjeta, culqiCustomerId: customerId, creadaAt: FieldValue.serverTimestamp() });
+  return { culqiCardId: tarjeta.culqiCardId, tarjeta };
+}
+
 // Saldo de un pedido, para pagarlo desde "Mis pedidos". Solo pedidos que ya
 // validó el ERP (pedidos) o que creó el servidor tras un pago online (pedidos_web
 // con pagoOnline: una landing con adelanto). Las solicitudes que arma el
@@ -2343,7 +2417,28 @@ exports.processCulqiPayment = functions
   }
   const uid = context.auth ? context.auth.uid : "invitado";
 
-  if (!amount || !email || !tokenId) {
+  // Tarjeta guardada: en vez del token, su id (crd_...) y un id de este intento
+  // (el cerrojo). guardarTarjeta: guarda la del token antes de cobrar.
+  const tarjetaId = data && data.tarjetaId ? String(data.tarjetaId) : "";
+  const guardarTarjeta = Boolean(data && data.guardarTarjeta) && !tarjetaId && !/^ype_/.test(String(tokenId || ""));
+  if ((tarjetaId || guardarTarjeta) && !tarjetas.puedeGuardarTarjetas(context.auth)) {
+    throw new functions.https.HttpsError("permission-denied", "Para usar tarjetas guardadas entra con tu correo o con Google.");
+  }
+  let tarjetaGuardada = null;
+  if (tarjetaId) {
+    if (!tarjetas.tarjetaIdValido(tarjetaId) || !tarjetas.intentoValido(data.intentoId)) {
+      throw new functions.https.HttpsError("invalid-argument", "Faltan datos de la tarjeta guardada.");
+    }
+    // Solo las de esta cuenta: se busca en las suyas, no en las de nadie más.
+    const tSnap = await refTarjetas(uid).collection("guardadas").doc(tarjetaId).get();
+    if (!tSnap.exists) {
+      throw new functions.https.HttpsError("not-found", "Esa tarjeta ya no está guardada. Elige otra o paga con una nueva.");
+    }
+    tarjetaGuardada = tSnap.data() || {};
+  }
+  const claveCerrojo = tarjetaId ? `tarjeta_${uid}_${data.intentoId}` : String(tokenId || "");
+
+  if (!amount || !email || !claveCerrojo) {
     throw new functions.https.HttpsError("invalid-argument", "Faltan datos requeridos para el pago.");
   }
   if (!Number.isInteger(amount) || amount <= 0) {
@@ -2434,6 +2529,9 @@ exports.processCulqiPayment = functions
   const isMobileCheckout = !!checkoutIntent?.intent?.mobile;
   let mobileAuthentication = null;
   const mobileDevice = isMobileCheckout ? String(data.deviceId || '') : '';
+  if (isMobileCheckout && (tarjetaId || guardarTarjeta)) {
+    throw new functions.https.HttpsError('failed-precondition', 'Las tarjetas guardadas no están disponibles en este pago.');
+  }
   if (isMobileCheckout) {
     const tokenMode = /^(?:tkn|ype)_(test|live)_[A-Za-z0-9]+$/.exec(String(tokenId));
     const secretMode = /^sk_(test|live)_/.exec(secretKey || '');
@@ -2444,7 +2542,7 @@ exports.processCulqiPayment = functions
       throw new functions.https.HttpsError('failed-precondition', 'Completa o cancela la autenticación pendiente antes de iniciar otro pago.');
     }
   }
-  const lockRef = db.collection("culqiCharges").doc(String(tokenId));
+  const lockRef = db.collection("culqiCharges").doc(claveCerrojo);
   let previo;
   try {
     previo = await db.runTransaction(async (t) => {
@@ -2461,7 +2559,8 @@ exports.processCulqiPayment = functions
       }
       if (isMobileCheckout && mobileAuthentication) throw new functions.https.HttpsError('failed-precondition', 'La autenticación no corresponde a este pago.');
       t.create(lockRef, {
-        tokenId: String(tokenId),
+        tokenId: tarjetaId ? null : String(tokenId),
+        ...(tarjetaId ? { tarjetaId } : {}),
         status: "processing",
         amount: chargeAmount,
         currency: payCurrency,
@@ -2534,6 +2633,26 @@ exports.processCulqiPayment = functions
   }
   const liberar = () => (checkoutIntent ? liberarCobroIntencion(checkoutIntent.ref) : liberarCobroGenerico(cerrojo));
 
+  // Guardar la tarjeta nueva: Culqi la guarda con el token y se cobra con ella.
+  // Si ya estaba guardada (o hay 5), se cobra con el token como siempre.
+  let sourceId = tarjetaGuardada ? tarjetaGuardada.culqiCardId : tokenId;
+  let tarjetaNueva = null;
+  if (guardarTarjeta) {
+    try {
+      const g = await guardarTarjetaCulqi({ uid, email: String(context.auth.token.email).trim(), tokenId, secretKey });
+      if (g.culqiCardId) {
+        sourceId = g.culqiCardId;
+        tarjetaNueva = g.tarjeta;
+      }
+    } catch (e) {
+      await marcarToken({ status: "failed", error: e.message || "no se guardó la tarjeta" });
+      await liberar();
+      if (e instanceof functions.https.HttpsError) throw e;
+      console.error("processCulqiPayment: no se pudo guardar la tarjeta:", e);
+      throw new functions.https.HttpsError("internal", "No pudimos guardar tu tarjeta. No se te cobró nada; paga sin guardarla.");
+    }
+  }
+
   // ── 4) El cobro ────────────────────────────────────────────────────────────
   let response;
   let result;
@@ -2545,7 +2664,7 @@ exports.processCulqiPayment = functions
         amount: chargeAmount,
         currency_code: payCurrency,
         email,
-        source_id: tokenId,
+        source_id: sourceId,
         description: description || "Pago en Walá",
         // Lo pone el servidor: el webhook lo lee de la API de Culqi para saber
         // qué se pagó, sin fiarse de lo que mande el navegador.
@@ -2560,7 +2679,7 @@ exports.processCulqiPayment = functions
     // webhook lo registra; si no, se podrá reintentar pasados unos minutos.
     console.error("processCulqiPayment: respuesta de Culqi perdida:", err);
     await marcarToken({ status: "failed", error: err.message || "respuesta perdida" });
-    await registrarAnomaliaPago(`culqi_token_${tokenId}`, {
+    await registrarAnomaliaPago(`culqi_token_${claveCerrojo}`, {
       motivo: "respuesta_perdida", metodo: "culqi", objetivo: objetivo.clave, uid, montoCentimos: chargeAmount,
     });
     throw new functions.https.HttpsError("unavailable",
@@ -2593,7 +2712,7 @@ exports.processCulqiPayment = functions
   if (result.object !== 'charge' || !/^chr_/.test(String(result.id || ''))
     || Number(result.amount) !== chargeAmount || result.currency_code !== payCurrency) {
     // Ambiguous response: keep the payment lock. Never show paid or retry blindly.
-    await registrarAnomaliaPago(`culqi_token_${tokenId}`, { motivo: 'respuesta_no_verificable', metodo: 'culqi', uid, objetivo: objetivo.clave });
+    await registrarAnomaliaPago(`culqi_token_${claveCerrojo}`, { motivo: 'respuesta_no_verificable', metodo: 'culqi', uid, objetivo: objetivo.clave });
     throw new functions.https.HttpsError('unavailable', 'Estamos comprobando tu pago. No vuelvas a pagar todavía.');
   }
   const chargeId = String(result.id);
@@ -2604,8 +2723,13 @@ exports.processCulqiPayment = functions
   // vuelve a intentar.
   const pago = {
     metodo: "culqi", id: chargeId, montoPen: chargeAmount / 100, moneda: "PEN",
-    medio: constancia.medioDeCargoCulqi(result, tokenId),
+    medio: constancia.medioDeCargoCulqi(result, tarjetaId ? "" : tokenId),
   };
+  // Con una tarjeta guardada, Culqi puede no repetir la marca y los 4 dígitos en el cargo.
+  const conocida = tarjetaGuardada || tarjetaNueva;
+  if (conocida && pago.medio.tipo === "tarjeta" && !pago.medio.ultimos && conocida.ultimos4) {
+    pago.medio = { tipo: "tarjeta", marca: conocida.marca || pago.medio.marca, ultimos: conocida.ultimos4 };
+  }
   const payment = { culqiChargeId: chargeId, montoPagado: chargeAmount };
   let createdPedidoWebId = null;
   try {
@@ -2636,7 +2760,45 @@ exports.processCulqiPayment = functions
     outcome: result.outcome,
     amount: chargeAmount,
     pedidoWebId: createdPedidoWebId,
+    tarjetaGuardada: tarjetaNueva ? tarjetas.tarjetaParaCliente(tarjetaNueva.culqiCardId, tarjetaNueva) : null,
   };
+});
+
+/**
+ * Callable: las tarjetas guardadas de la cuenta (marca y últimos 4; el número
+ * lo tiene Culqi). `puede`: si la cuenta puede guardar tarjetas.
+ */
+exports.misTarjetasSecure = functions.https.onCall(async (data, context) => {
+  if (esPrecalentamiento(data)) return precalentar();
+  const uid = requireAuth(context);
+  if (!tarjetas.puedeGuardarTarjetas(context.auth)) return { puede: false, tarjetas: [] };
+  const snap = await refTarjetas(uid).collection("guardadas").orderBy("creadaAt", "desc").get();
+  return {
+    puede: true,
+    maximo: tarjetas.MAX_TARJETAS,
+    tarjetas: snap.docs.map((d) => tarjetas.tarjetaParaCliente(d.id, d.data() || {})),
+  };
+});
+
+/** Callable: borra una tarjeta guardada, en Culqi y aquí. */
+exports.borrarTarjetaSecure = functions
+  .runWith({ secrets: ["CULQI_SECRET_KEY"] })
+  .https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const id = data && data.id;
+  if (!tarjetas.tarjetaIdValido(id)) throw new functions.https.HttpsError("invalid-argument", "Tarjeta no válida.");
+  const ref = refTarjetas(uid).collection("guardadas").doc(id);
+  if (!(await ref.get()).exists) return { ok: true };
+  const secretKey = process.env.CULQI_SECRET_KEY;
+  if (!secretKey) throw new functions.https.HttpsError("failed-precondition", "No disponible temporalmente.");
+  const r = await culqiApi(secretKey, `/cards/${encodeURIComponent(id)}`, { method: "DELETE" });
+  // Si Culqi ya no la tiene (404), igual se quita de la lista.
+  if (!r.ok && r.status !== 404) {
+    console.error("borrarTarjetaSecure: Culqi no la borró:", r.status, r.json);
+    throw new functions.https.HttpsError("internal", "No pudimos quitar la tarjeta. Inténtalo de nuevo.");
+  }
+  await ref.delete();
+  return { ok: true };
 });
 
 /**

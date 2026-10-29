@@ -652,7 +652,7 @@ export default function DemoTienda({ marcas = [], usuario, tema, cambiarTema, no
   }[pagina] || 'productos';
   // /cuenta/… → su módulo (el detalle de una compra usa el de pedidos).
   const moduloEsqueleto = {
-    '/cuenta': 'resumen', '/cuenta/perfil': 'perfil', '/cuenta/direcciones': 'direcciones', '/cuenta/ajustes': 'ajustes',
+    '/cuenta': 'resumen', '/cuenta/perfil': 'perfil', '/cuenta/direcciones': 'direcciones', '/cuenta/tarjetas': 'direcciones', '/cuenta/ajustes': 'ajustes',
     '/cuenta/catalogo': 'catalogo', '/cuenta/cupones': 'cupones', '/cuenta/misiones': 'misiones', '/cuenta/referidos': 'referidos',
     '/cuenta/creaciones': 'creaciones', '/cuenta/wishlist': 'deseos', '/cuenta/fechas-importantes': 'fechas',
   }[rutaCuenta] || (rutaCuenta.startsWith('/cuenta/pedidos') ? 'pedidos' : 'resumen');

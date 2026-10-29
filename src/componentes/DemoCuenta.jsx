@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { User, Package, MapPin, Settings, Gift, Ticket, Trophy, Users, Sparkles, Heart, Calendar } from 'lucide-react';
+import { User, Package, MapPin, Settings, Gift, Ticket, Trophy, Users, Sparkles, Heart, Calendar, CreditCard } from 'lucide-react';
 import {
-  MarcoCuenta, PaginaCuentaInvitado, PaginaResumenCuenta, PaginaPerfil, PaginaDirecciones, PaginaAjustes, PaginaPedidos,
+  MarcoCuenta, PaginaCuentaInvitado, PaginaResumenCuenta, PaginaPerfil, PaginaDirecciones, PaginaTarjetas, PaginaAjustes, PaginaPedidos,
   PaginaCatalogo, PaginaCupones, PaginaMisiones, PaginaReferidos, PaginaCreaciones, PaginaListaDeseos, PaginaFechas,
   PaginaDetallePedido, HojaPagarSaldo, Boton, enlaceWhatsApp, PaginaEncuesta,
   PaginaLogin, PaginaRegistro, PaginaRecuperar, PaginaCompletarPerfil, PaginaCrear, PaginaComunidad, PaginaCreacion, PaginaVerDiseno, PaginaCombo, PaginaEstudio,
@@ -24,12 +24,19 @@ import * as motorFondo from '../pages/Crear/fondoPixeles';
  * tienda (constants/peruUbigeo y utils/ubicacionErp).
  */
 
+/** Tarjetas guardadas de prueba (en la tienda las guarda Culqi). */
+export const TARJETAS = [
+  { id: 'crd_test_visa', marca: 'Visa', ultimos4: '1111', tipo: 'Crédito', banco: 'BCP' },
+  { id: 'crd_test_mc', marca: 'Mastercard', ultimos4: '5454', tipo: 'Débito', banco: 'Interbank' },
+];
+
 /* Los mismos accesos que useCuentaNavGroups, con el tono del sello por grupo. */
 export const GRUPOS_CUENTA_COMPLETO = [
   { titulo: 'Cuenta', tono: 'degradado', items: [
     { to: '/cuenta/perfil', texto: 'Mi perfil', Icono: User },
     { to: '/cuenta/pedidos', texto: 'Mis pedidos', Icono: Package },
     { to: '/cuenta/direcciones', texto: 'Mis direcciones', Icono: MapPin },
+    { to: '/cuenta/tarjetas', texto: 'Mis tarjetas', Icono: CreditCard },
     { to: '/cuenta/ajustes', texto: 'Ajustes', Icono: Settings },
   ] },
   { titulo: 'Recompensas', tono: 'oro', items: [
@@ -52,6 +59,7 @@ export const MODULOS_CUENTA = [
   { ruta: '/cuenta/pedidos', texto: 'Mis pedidos', n: 'C3', componente: 'PaginaPedidos (P2)' },
   { ruta: '/cuenta/pedidos/PD-20455', texto: 'Detalle de compra', n: 'C3·d', componente: 'PaginaDetallePedido' },
   { ruta: '/cuenta/direcciones', texto: 'Mis direcciones', n: 'C4', componente: 'PaginaDirecciones' },
+  { ruta: '/cuenta/tarjetas', texto: 'Mis tarjetas', n: 'C4·t', componente: 'PaginaTarjetas' },
   { ruta: '/cuenta/ajustes', texto: 'Ajustes', n: 'C5', componente: 'PaginaAjustes' },
   { ruta: '/cuenta/catalogo', texto: 'Catálogo', n: 'C6', componente: 'PaginaCatalogo' },
   { ruta: '/cuenta/cupones', texto: 'Mis cupones', n: 'C7', componente: 'PaginaCupones' },
@@ -282,6 +290,8 @@ export function CuentaDemo({
   const [whatsapp, setWhatsapp] = useState(false);
   const [subiendo, setSubiendo] = useState(false);
   const [direcciones, setDirecciones] = useState(DIRECCIONES);
+  const [tarjetasDemo, setTarjetasDemo] = useState(TARJETAS);
+  const [quitandoTarjeta, setQuitandoTarjeta] = useState(null);
   const [idioma, setIdioma] = useState('es');
   const perfilVisto = incompleto ? { ...perfil, documento: '', telefono: '' } : perfil;
   const vacio = estados.includes('vacio');
@@ -430,6 +440,23 @@ export function CuentaDemo({
             return quedan;
           });
           avisar('Dirección eliminada', undefined, 'info');
+        }}
+      />
+    );
+  } else if (ruta === '/cuenta/tarjetas') {
+    pagina = (
+      <PaginaTarjetas
+        tarjetas={vacio ? [] : tarjetasDemo}
+        cargando={cargando}
+        error={conError}
+        onReintentar={() => avisar('Volvería a leer tus tarjetas', undefined, 'info')}
+        quitando={quitandoTarjeta}
+        onQuitar={async (id) => {
+          setQuitandoTarjeta(id);
+          await espera(700);
+          setTarjetasDemo((l) => l.filter((t) => t.id !== id));
+          setQuitandoTarjeta(null);
+          avisar('Tarjeta quitada', undefined, 'info');
         }}
       />
     );

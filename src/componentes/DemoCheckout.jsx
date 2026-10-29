@@ -2,7 +2,7 @@ import React from 'react';
 import { PaginaCheckout, PantallaAbriendoWhatsApp, BloqueSeccion } from './kit';
 import { COUNTRIES } from '../constants/countries';
 import { ENVIO_ESTANDAR, ENVIO_GRATIS_DESDE } from '../constants/envio';
-import { LUGARES, DIRECCIONES } from './DemoCuenta';
+import { LUGARES, DIRECCIONES, TARJETAS } from './DemoCuenta';
 
 /*
  * El checkout (/checkout) en la Tienda de prueba, con lo que hay en el
@@ -19,6 +19,7 @@ export const ESTADOS_CHECKOUT = [
   ['vacio', 'Carrito vacío'],
   ['sinDirecciones', 'Sin direcciones guardadas'],
   ['tarjetaFalla', 'La tarjeta falla'],
+  ['tarjetasGuardadas', 'Tarjetas guardadas'],
   ['variasMarcas', 'Varias marcas'],
   ['regalo', 'Regalo programado'],
   ['invitacion', 'Con invitación'],
@@ -78,11 +79,18 @@ export function CheckoutDemo({ items = [], sesion, usuario, monedas = 0, estados
         // El equivalente en la moneda del país (de ejemplo: pesos chilenos).
         local: (total, pais) => (pais === 'CL' ? `$ ${Math.round(total * 250).toLocaleString('es-CL')} CLP` : null),
         marcas: estados.includes('variasMarcas') ? [{ id: 'm1', nombre: 'Con Amor Geeks', cantidad: 1 }, { id: 'm2', nombre: 'Mussa Beauty', cantidad: 1 }] : undefined,
-        onTarjeta: async () => {
+        onTarjeta: async (total, { guardar } = {}) => {
           await espera(1800);
           if (estados.includes('tarjetaFalla')) throw new Error('Tu banco rechazó el pago. Revisa los datos o prueba con otra tarjeta.');
-          avisar('¡Pago procesado!', 'En la tienda irías a Mis pedidos.');
+          avisar('¡Pago procesado!', guardar ? 'Y la tarjeta quedó guardada para la próxima.' : 'En la tienda irías a Mis pedidos.');
         },
+        tarjetas: sesion && estados.includes('tarjetasGuardadas') ? TARJETAS : [],
+        onTarjetaGuardada: async () => {
+          await espera(1500);
+          if (estados.includes('tarjetaFalla')) throw new Error('Tu banco rechazó el pago. Prueba con otra tarjeta.');
+          avisar('¡Pago procesado!', 'Con tu tarjeta guardada, sin escribirla.');
+        },
+        onGuardarTarjeta: sesion ? true : undefined,
         onWhatsApp: async (marca) => {
           await espera(900);
           avisar('Se abriría WhatsApp', marca ? 'Con la parte de esa marca del pedido.' : 'Con el detalle del pedido para el asesor.', 'info');

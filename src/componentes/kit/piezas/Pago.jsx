@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Lock, Globe2 } from 'lucide-react';
+import { Lock, Globe2, CreditCard, Plus } from 'lucide-react';
 import Boton from '../Boton';
 import { Aviso } from '../Feedback';
+import { Casilla } from '../Formulario';
+import { ListaEleccion } from './Cuenta';
 import { CapaCargando } from '../Cargando';
 import { Texto } from '../Traduccion';
 import { TextoResaltado } from './TextoResaltado';
@@ -28,20 +30,29 @@ const importe = (monto, moneda) => `${moneda === 'USD' ? 'US$' : 'S/'} ${Number(
  *    llama a onPagar (abre la ventana de Culqi, que cobra después) y la capa
  *    "Confirmando tu pago" la dibuja la tienda: si no, quedaría encima de la
  *    ventana mientras se escribe la tarjeta. · error: el de la tienda
+ *  - tarjetas: las guardadas [{ id, marca, ultimos4, tipo, banco }] ·
+ *    onPagarGuardada(id): cobra con una de ellas, sin abrir la ventana
+ *  - guardar · onGuardar(marcada): la casilla "Guardar esta tarjeta" (solo
+ *    con onGuardar; se ve al pagar con una tarjeta nueva)
  */
-export function PagoTarjeta({ monto = 0, moneda = 'PEN', onPagar, texto, minimo, procesando, error: errorProp }) {
+export function PagoTarjeta({ monto = 0, moneda = 'PEN', onPagar, texto, minimo, procesando, error: errorProp, tarjetas = [], onPagarGuardada, guardar = false, onGuardar }) {
   const [cobrandoPropio, setCobrando] = useState(false);
   const [errorPropio, setError] = useState('');
+  // La guardada elegida, o 'nueva'. Si la elegida se borra, vuelve a la primera.
+  const [elegida, setElegida] = useState(null);
+  const conGuardadas = tarjetas.length > 0 && Boolean(onPagarGuardada);
+  const actual = !conGuardadas ? 'nueva' : elegida === 'nueva' || tarjetas.some((t) => t.id === elegida) ? elegida : tarjetas[0].id;
   const controlado = procesando !== undefined;
   const cobrando = controlado ? procesando : cobrandoPropio;
   const error = errorProp || errorPropio;
   const min = minimo ?? (moneda === 'USD' ? 1 : 3);
   const pagar = async () => {
     setError('');
-    if (controlado) { onPagar?.(); return; }
+    const cobrar = actual === 'nueva' ? onPagar : () => onPagarGuardada(actual);
+    if (controlado) { cobrar?.(); return; }
     setCobrando(true);
     try {
-      await onPagar?.();
+      await cobrar?.();
     } catch (err) {
       setError(err?.message || 'El pago no pudo completarse.');
     } finally {
@@ -53,6 +64,25 @@ export function PagoTarjeta({ monto = 0, moneda = 'PEN', onPagar, texto, minimo,
   }
   return (
     <div className={s.pago} data-componente="PagoTarjeta">
+      {conGuardadas && (
+        <ListaEleccion
+          etiqueta="Tus tarjetas"
+          valor={actual}
+          onElegir={setElegida}
+          opciones={[
+            ...tarjetas.map((t) => ({
+              valor: t.id,
+              texto: `${t.marca || 'Tarjeta'} •••• ${t.ultimos4 || ''}`,
+              detalle: [t.tipo, t.banco].filter(Boolean).join(' · ') || undefined,
+              icono: <CreditCard aria-hidden="true" />,
+            })),
+            { valor: 'nueva', texto: <Texto>Usar otra tarjeta</Texto>, icono: <Plus aria-hidden="true" /> },
+          ]}
+        />
+      )}
+      {onGuardar && actual === 'nueva' && (
+        <Casilla activo={guardar} onChange={onGuardar} etiqueta="Guardar esta tarjeta para mis próximas compras" descripcion="La guarda Culqi. Walá solo ve la marca y los últimos 4 números." />
+      )}
       <Boton bloque tamano="lg" icono={<Lock aria-hidden="true" />} cargando={cobrando} onClick={pagar}>
         {cobrando ? <Texto>Procesando tu pago…</Texto> : texto ? <Texto>{texto}</Texto> : <><Texto>Pagar</Texto> {importe(monto, moneda)}</>}
       </Boton>
