@@ -24,7 +24,11 @@ function fixture(diseno, { enPedido = false } = {}) {
       docs.set(key, next);
     },
   });
-  const db = { collection: (c) => ({ doc: (id) => ref(`${c}/${id}`) }), runTransaction: async (fn) => fn({ get: (r) => r.get(), update: (r, p) => r.update(p) }) };
+  const db = { collection: (c) => ({ doc: (id) => ref(`${c}/${id}`),
+    // designs del cliente (para no borrar archivos que otro diseño comparte).
+    where: (campo, _op, valor) => ({ async get() { return { forEach: (fn) => [...docs].filter(([k, d]) => k.startsWith(`${c}/`) && d[campo] === valor)
+      .forEach(([k, d]) => fn({ id: k.slice(c.length + 1), data: () => d })) }; } }) }),
+    runTransaction: async (fn) => fn({ get: (r) => r.get(), update: (r, p) => r.update(p) }) };
   const files = new Map([['designs/u1/fotos/a.png', png(200, 100, '#22C55E')], ['designs/u1/crear/impresion/1_pecho.png', png(1, 1, '#000')]]);
   const borrados = [];
   const bucket = { name: BUCKET, file: (ruta) => ({
@@ -80,6 +84,32 @@ test('acepta las imágenes de las plantillas del mismo producto (la flecha de la
   await assert.rejects(generarArchivosCreacion({ uid: 'u1', designId: 'd1', deps: g.deps, fail: g.fail }), /no es tuya/);
 });
 
+test('no borra los archivos que otro diseño comparte (una copia en un combo)', async () => {
+  const f = fixture({ layersByView: capas });
+  f.docs.set('designs/copia', { userId: 'u1', tipo: 'crear', combo: { id: 'c1', pieza: 0 }, imagenConjunta: url('designs/u1/crear/previas/1_conjunto.jpg') });
+  f.docs.set('designs/ajeno', { userId: 'u2', archivosImpresion: [{ url: url('designs/u1/crear/impresion/1_pecho.png') }] });
+  await generarArchivosCreacion({ uid: 'u1', designId: 'd1', deps: f.deps, fail: f.fail });
+  assert.deepEqual(f.borrados, ['designs/u1/crear/impresion/1_pecho.png']);
+});
+
+test('dibuja una prenda de combo si es una pieza que se diseña de ese combo, y las fotos de su diseño de la comunidad', async () => {
+  const pub = url('comunidad/pub1/foto.png');
+  const conCombo = (piezas) => {
+    const f = fixture({ layersByView: { pecho: [{ ...capas.pecho[0], src: pub }] }, combo: { id: 'c1', nombre: 'Pareja', pieza: 1 }, basadoEn: 'pub1' });
+    f.docs.set('productos_wala/c1', { esComboCrear: true, comboCrear: { publicado: true, piezas } });
+    f.files.set('comunidad/pub1/foto.png', png(200, 100, '#EC4899'));
+    return f;
+  };
+  const ok = conCombo([{ prendaId: 'otra' }, { prendaId: 'polera' }]);
+  const out = await generarArchivosCreacion({ uid: 'u1', designId: 'd1', deps: ok.deps, fail: ok.fail });
+  assert.equal(out.vistasPrevias.length, 1);
+  assert.deepEqual(ok.descargas, ['https://x.test/prenda.png']);
+  for (const piezas of [[{ prendaId: 'otra' }, { prendaId: 'polera', fija: true }], [{ prendaId: 'polera' }, { prendaId: 'otra' }]]) {
+    const mal = conCombo(piezas);
+    await assert.rejects(generarArchivosCreacion({ uid: 'u1', designId: 'd1', deps: mal.deps, fail: mal.fail }), /ese combo/);
+  }
+});
+
 test('en un pedido conserva los archivos anteriores', async () => {
   const f = fixture({ layersByView: capas }, { enPedido: true });
   await generarArchivosCreacion({ uid: 'u1', designId: 'd1', deps: f.deps, fail: f.fail });
@@ -95,7 +125,9 @@ test('rechaza otra cuenta, fotos ajenas o de otra web, zonas inventadas, textos 
     [{ layersByView: { manga: capas.pecho } }, 'u1', /zona/],
     [{ layersByView: { pecho: [{ ...capas.pecho[1], text: 'x'.repeat(121) }] } }, 'u1', /texto/],
     [{ layersByView: {} }, 'u1', /Agrega/],
-    [{ layersByView: capas, combo: { id: 'c' } }, 'u1', /wala\.pe/],
+    [{ layersByView: capas, combo: { id: 'c' } }, 'u1', /combo válido/],
+    [{ layersByView: capas, combo: { id: 'nohay', pieza: 0 } }, 'u1', /ese combo/],
+    [{ layersByView: { pecho: [{ ...capas.pecho[0], src: url('comunidad/otra/a.png') }] }, basadoEn: 'pub1' }, 'u1', /no es tuya/],
     [{ layersByView: capas, generandoDesde: 1_800_000_000_000 - 1000 }, 'u1', 'resource-exhausted'],
   ];
   for (const [diseno, uid, esperado] of casos) {

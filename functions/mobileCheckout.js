@@ -101,14 +101,90 @@ async function creationLines(rows, uid, read, readDesigns) {
   });
 }
 
+// ── Combos de Crear ("Mi combo") ────────────────────────────────────────────────
+// El celular manda { comboId, miComboId, quantity, piezas: [{ designId, size } | { fija: true }] } en el orden de
+// comboCrear.piezas. Aquí se lee el combo publicado, el "Mi combo" del cliente y cada creación (suya, terminada, de la
+// prenda de esa pieza, con sus archivos), y se arma cada pieza como la parte pedidoCheckout.js de la web (comboCrear
+// { comboId, grupo, pieza, de, miComboId } y el precio repartido en céntimos), así validarCombos, congelarDisenos y
+// marcarCreacionesDelPedido funcionan igual que con un pedido de la web.
+const varianteDeFija = (prenda, color) => (prenda.variants || []).find((v) => v && color && (String(v.id) === String(color.id) || (color.nombre && v.name === color.nombre))) || null;
+function repartirPrecio(total, n) {
+  const totalCents = cents(total); const base = Math.floor(totalCents / n);
+  return Array.from({ length: n }, (_, i) => (i === n - 1 ? totalCents - base * (n - 1) : base) / 100);
+}
+async function comboLines(rows, uid, read, readDesigns) {
+  if (!rows.length) return [];
+  if (rows.length > 20) fail('Revisa los combos del carrito.');
+  for (const row of rows) {
+    if (!validDesignId(row && row.comboId) || !validDesignId(row.miComboId) || !Array.isArray(row.piezas) || row.piezas.length < 2 || row.piezas.length > 4
+      || row.piezas.some((p) => !p || typeof p !== 'object')) fail('Revisa los combos del carrito.');
+    if (!Number.isInteger(row.quantity) || row.quantity < 1 || row.quantity > 99) fail('Revisa las cantidades del carrito.');
+  }
+  const combos = await read([...new Set(rows.map((row) => row.comboId))]);
+  const designIds = [...new Set(rows.flatMap((row) => [row.miComboId, ...row.piezas.filter((p) => !p.fija).map((p) => p.designId)]))];
+  if (designIds.some((id) => !validDesignId(id))) fail('Revisa las piezas de tu combo.');
+  const designs = await readDesigns(designIds);
+  const prendaIds = [...new Set([...combos.values()].flatMap((c) => (c && c.comboCrear && Array.isArray(c.comboCrear.piezas) ? c.comboCrear.piezas : []).map((p) => p && p.prendaId)).filter(validId))];
+  const prendas = prendaIds.length ? await read(prendaIds) : new Map();
+  const seen = new Set();
+  return rows.map((row) => {
+    const raw = combos.get(row.comboId);
+    const esperadas = raw && raw.comboCrear && Array.isArray(raw.comboCrear.piezas) ? raw.comboCrear.piezas : [];
+    if (!raw || raw.esComboCrear !== true || raw.deleted === true || raw.comboCrear.publicado !== true || esperadas.length !== row.piezas.length) {
+      fail('Un combo del carrito ya no está disponible. Actualiza tu carrito.');
+    }
+    const mio = designs.get(row.miComboId);
+    if (!mio || mio.userId !== uid || mio.tipo !== 'comboCrear' || mio.comboId !== row.comboId || mio.archivado === true) fail('Tu combo ya no está disponible. Ábrelo y vuelve a agregarlo.');
+    const usados = new Set();
+    const piezas = esperadas.map((esperada, i) => {
+      const fila = row.piezas[i];
+      const prenda = prendas.get(esperada && esperada.prendaId);
+      if (!prenda || prenda.deleted === true || prenda.visible === false) fail('Una prenda de un combo ya no está disponible.');
+      if (esperada.fija) {
+        if (fila.fija !== true || fila.designId) fail('Revisa las piezas de tu combo.');
+        const variant = varianteDeFija(prenda, esperada.color);
+        if (!variant) fail('Un producto de un combo ya no está disponible en su color.');
+        return { fija: true, esperada, prenda, variant, size: '' };
+      }
+      if (fila.fija || !validDesignId(fila.designId) || usados.has(fila.designId)) fail('Revisa las piezas de tu combo.');
+      usados.add(fila.designId);
+      const miPieza = Array.isArray(mio.piezas) ? mio.piezas[i] : null;
+      if (!miPieza || miPieza.designId !== fila.designId) fail('Tu combo cambió. Ábrelo y vuelve a agregarlo.');
+      const d = designs.get(fila.designId);
+      if (!d || d.userId !== uid || d.tipo !== 'crear' || d.productId !== esperada.prendaId || (d.combo && d.combo.id !== row.comboId)) fail('Una prenda de tu combo ya no está disponible.');
+      if (d.estado === 'borrador') fail('Una prenda de tu combo está sin terminar: ábrela y guárdala.');
+      const archivos = Array.isArray(d.archivosImpresion) ? d.archivosImpresion.filter((a) => a && a.url) : [];
+      if (!archivos.length || !archivos.every((a) => esArchivoPropio(a.url, uid)) || !(d.vistasPrevias || []).some((v) => v && v.url)) {
+        fail('Una prenda de tu combo no tiene sus archivos de impresión. Ábrela y vuelve a guardarla.');
+      }
+      if (prenda.esPrendaBase !== true) fail('Una prenda de un combo ya no se puede diseñar.');
+      const colorId = d.color && d.color.id != null ? String(d.color.id) : '';
+      const variant = (prenda.variants || []).find((v) => String(v && v.id) === colorId) || null;
+      const sizes = Array.isArray(variant && variant.sizes) ? variant.sizes.map(String) : [];
+      const size = typeof fila.size === 'string' ? fila.size.trim() : '';
+      if (sizes.length ? !sizes.includes(size) : size) fail('Elige una talla de las que hay para cada prenda de tu combo.');
+      const preview = (d.vistasPrevias || []).find((v) => v && v.url)?.url || d.previewUrl || d.imagenConjunta || '';
+      return { fija: false, esperada, prenda, design: d, designId: fila.designId, size, preview,
+        vistasUsadas: Object.keys(d.layersByView || {}).filter((zona) => Array.isArray(d.layersByView[zona]) && d.layersByView[zona].length) };
+    });
+    const key = JSON.stringify([row.comboId, piezas.map((p) => [p.designId || '', p.size])]);
+    if (seen.has(key)) fail('El carrito tiene el mismo combo repetido. Actualízalo.');
+    seen.add(key);
+    const price = precioBase(raw);
+    if (!(price > 0)) fail('Un combo del carrito no tiene precio.');
+    return { comboId: row.comboId, miComboId: row.miComboId, raw, quantity: row.quantity, piezas, price, precios: repartirPrecio(price, piezas.length) };
+  });
+}
+
 async function build(input, uid, read, readDesigns = async () => new Map()) {
   const key = identity(input, uid);
   if (!Array.isArray(input.items) || !input.items.length || input.items.length > 100) fail('Revisa los productos del carrito.');
   const address = cleanAddress(input.address || {}); const email = String(input.email || '').trim();
   assertAddress(address, email);
   const coupon = couponCode(input);
-  const designRows = input.items.filter((item) => item && item.designId);
-  const catalogRows = input.items.filter((item) => !(item && item.designId));
+  const comboRows = input.items.filter((item) => item && item.comboId);
+  const designRows = input.items.filter((item) => item && !item.comboId && item.designId);
+  const catalogRows = input.items.filter((item) => !(item && (item.designId || item.comboId)));
   const ids = [...new Set(catalogRows.map((item) => item && item.productId))];
   if (ids.some((id) => !validId(id))) fail('Un producto no es válido.');
   const roots = ids.length ? await read(ids) : new Map();
@@ -136,8 +212,10 @@ async function build(input, uid, read, readDesigns = async () => new Map()) {
   });
   for (const [id, quantity] of quantities) if (products.get(id).stock !== null && quantity > products.get(id).stock) fail('El stock cambió. Actualiza tu carrito.');
   const creations = await creationLines(designRows, uid, read, readDesigns);
+  const combos = await comboLines(comboRows, uid, read, readDesigns);
   const subtotal = (items.reduce((sum, line) => sum + cents(line.product.price) * line.quantity, 0)
-    + creations.reduce((sum, line) => sum + cents(line.price) * line.quantity, 0)) / 100;
+    + creations.reduce((sum, line) => sum + cents(line.price) * line.quantity, 0)
+    + combos.reduce((sum, line) => sum + cents(line.price) * line.quantity, 0)) / 100;
   const envio = shipping(subtotal); const total = (cents(subtotal) + cents(envio)) / 100;
   if (!Number.isFinite(input.expectedTotal) || cents(total) !== cents(input.expectedTotal)) fail('El importe cambió. Vuelve a revisar el pedido antes de pagar.');
   if (cents(total) < 300 || cents(total) > 999900) fail('El importe está fuera del rango permitido para este pago con Culqi.');
@@ -167,6 +245,29 @@ async function build(input, uid, read, readDesigns = async () => new Map()) {
       urlImagenPersonalizada: d.previewUrl || line.preview, disenoVistas: refs.views, designId: line.designId,
       vistasPersonalizadas: line.vistasUsadas, colorPrenda: (d.color && d.color.nombre) || '', prendaNombre: line.raw.name || d.productName || '' };
   });
+  combos.forEach((line, n) => {
+    const grupo = items.length + creations.length + n;
+    const nombre = line.raw.name || 'Combo';
+    const variasPrendas = new Set(line.piezas.map((p) => p.esperada.prendaId)).size > 1;
+    line.piezas.forEach((pieza, k) => {
+      const prendaNombre = pieza.prenda.name || pieza.esperada.nombre || '';
+      const base = { productoId: pieza.esperada.prendaId, producto: variasPrendas ? `${nombre} · ${prendaNombre} (${k + 1} de ${line.piezas.length})` : `${nombre} (${k + 1} de ${line.piezas.length})`,
+        prendaNombre, combo: nombre, comboCrear: { comboId: line.comboId, grupo, pieza: k, de: line.piezas.length, miComboId: line.miComboId },
+        brandId: pieza.prenda.brandId || null, cantidad: line.quantity, precio: line.precios[k], subtotal: cents(line.precios[k]) * line.quantity / 100, imagenesPorLado: [] };
+      if (pieza.fija) {
+        const imagen = (pieza.variant.images || [])[0] || pieza.esperada.imagen || pieza.prenda.mainImage || '';
+        productos[`item_${grupo}_${k}`] = { ...base, urlImagen: imagen, imagenReferencial: imagen, imagenesReferencia: imagen ? [imagen] : [], talla: '',
+          color: (pieza.esperada.color && pieza.esperada.color.nombre) || pieza.variant.name || '', colorHex: pieza.variant.colorHex || (pieza.esperada.color && pieza.esperada.color.hex) || '',
+          personalizado: false, talCual: true, textoPersonalizado: '', urlImagenPersonalizada: '', designId: '' };
+        return;
+      }
+      const d = pieza.design; const refs = referenciasDeDiseno(d);
+      productos[`item_${grupo}_${k}`] = { ...base, urlImagen: pieza.preview, imagenReferencial: pieza.preview, imagenesReferencia: refs.images,
+        talla: pieza.size, color: (d.color && d.color.nombre) || '', colorHex: (d.color && d.color.hex) || '', personalizado: true, textoPersonalizado: '',
+        urlImagenPersonalizada: d.previewUrl || pieza.preview, disenoVistas: refs.views, designId: pieza.designId, vistasPersonalizadas: pieza.vistasUsadas,
+        colorPrenda: (d.color && d.color.nombre) || '' };
+    });
+  });
   const payload = {
     numeroPedido: key.id, portalPseudoOrderId: key.id, checkoutContract: CONTRACT,
     userId: uid, dni: address.dni, country: address.country,
@@ -179,20 +280,28 @@ async function build(input, uid, read, readDesigns = async () => new Map()) {
     envioEsProvincia: !isPeru || address.city === 'Provincias' ? 'Sí' : 'No', tipoEnvio: isPeru && address.city !== 'Provincias' ? 'delivery' : 'agencia',
     canalVenta: 'Portal Web', web: true, activador: 'portal_web', vendedor: 'Portal Web', origen: 'wala_mobile',
     montoTotal: total, montoAdelanto: 0, montoPendiente: total, costoEnvio: envio,
-    estadoGeneral: 'Nuevo', status: 'Nuevo', cantidad: [...items, ...creations].reduce((sum, line) => sum + line.quantity, 0), productos,
+    estadoGeneral: 'Nuevo', status: 'Nuevo', cantidad: [...items, ...creations, ...combos].reduce((sum, line) => sum + line.quantity, 0), productos,
     prendas: [...items.map((line) => `${line.product.name} x${line.quantity}`),
-      ...creations.map((line) => `${line.raw.name || line.design.productName || 'Personalizado'} x${line.quantity}`)].join(', '),
-    esPersonalizado: creations.length > 0, esMostacero: false, esPrioridad: false, importado: false,
+      ...creations.map((line) => `${line.raw.name || line.design.productName || 'Personalizado'} x${line.quantity}`),
+      ...combos.map((line) => `[COMBO] ${line.raw.name || 'Combo'}: ${line.piezas.map((p) => p.prenda.name || p.esperada.nombre || '').join(' + ')} x${line.quantity}`)].join(', '),
+    esPersonalizado: creations.length > 0 || combos.some((line) => line.piezas.some((p) => !p.fija)), esMostacero: false, esPrioridad: false, importado: false,
     // prepareCheckoutPayment lo revalida con el cupón de la cuenta y descuenta en el servidor.
     ...(coupon ? { cuponCode: coupon } : {}),
   };
   return { key, payload, meta: { contract: CONTRACT, requestId: input.requestId, requestHash: key.hash,
     input: { contract: CONTRACT, requestId: input.requestId, expectedTotal: total, address, email, ...(coupon ? { couponCode: coupon } : {}),
       items: [...items.map((line) => ({ productId: line.product.id, quantity: line.quantity, selection: selectionFromChosen(line.selection) })),
-        ...creations.map((line) => ({ designId: line.designId, quantity: line.quantity, size: line.size }))] },
+        ...creations.map((line) => ({ designId: line.designId, quantity: line.quantity, size: line.size })),
+        ...combos.map((line) => ({ comboId: line.comboId, miComboId: line.miComboId, quantity: line.quantity,
+          piezas: line.piezas.map((p) => (p.fija ? { fija: true } : { designId: p.designId, size: p.size })) }))] },
     summary: { address, email, items, creations: creations.map((line) => ({ designId: line.designId, productId: line.design.productId,
       name: line.design.name || line.raw.name || 'Mi creación', productName: line.raw.name || '', imageUrl: line.preview, size: line.size,
       color: (line.design.color && line.design.color.nombre) || '', price: line.price, quantity: line.quantity })),
+    combos: combos.map((line) => ({ comboId: line.comboId, miComboId: line.miComboId, name: line.raw.name || 'Combo', price: line.price, quantity: line.quantity,
+      imageUrl: (line.piezas.find((p) => !p.fija) || {}).preview || line.raw.mainImage || '',
+      piezas: line.piezas.map((p) => ({ fija: p.fija, designId: p.designId || '', productId: p.esperada.prendaId, productName: p.prenda.name || p.esperada.nombre || '',
+        name: (p.design && p.design.name) || p.prenda.name || '', color: p.fija ? ((p.esperada.color && p.esperada.color.nombre) || '') : ((p.design.color && p.design.color.nombre) || ''),
+        size: p.size, imageUrl: p.fija ? ((p.variant.images || [])[0] || p.esperada.imagen || '') : p.preview })) })),
     totals: { subtotal, shipping: envio, total }, currency: 'PEN' } } };
 }
 function view(id, intent) {
@@ -213,4 +322,4 @@ function threeDS(data) {
   }
   return out;
 }
-module.exports = { CONTRACT, identity, build, shipping, view, threeDS, couponCode };
+module.exports = { CONTRACT, identity, build, shipping, view, threeDS, couponCode, repartirPrecio };
