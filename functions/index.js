@@ -5047,6 +5047,19 @@ exports.generarMiniaturasBorradorSecure = functions
       deps: { db, bucket: admin.storage().bucket(), render, descargar: descargarFotoPrenda } });
   });
 
+// Mis creaciones desde la app: borrar una creación o un "Mi combo" y "Llevar en combo" (crearCuenta.js).
+exports.eliminarCreacionSecure = functions.https.onCall(async (data, context) => {
+  const { eliminarCreacion } = require("./crearCuenta");
+  const fail = (message, code = "failed-precondition") => { throw new functions.https.HttpsError(code, message); };
+  return eliminarCreacion({ uid: context.auth && context.auth.uid, designId: data && data.designId, fail,
+    deps: { db, bucket: admin.storage().bucket(), FieldValue } });
+});
+exports.llevarEnComboSecure = functions.https.onCall(async (data, context) => {
+  const { llevarEnCombo } = require("./crearCuenta");
+  const fail = (message, code = "failed-precondition") => { throw new functions.https.HttpsError(code, message); };
+  return llevarEnCombo({ uid: context.auth && context.auth.uid, designId: data && data.designId, comboId: data && data.comboId, fail, deps: { db, FieldValue } });
+});
+
 exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
   const rewardId = data && data.rewardId;
