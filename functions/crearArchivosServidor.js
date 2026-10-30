@@ -186,4 +186,55 @@ async function generarArchivosCreacion({ uid, designId, deps, fail }) {
   }
 }
 
-module.exports = { generarArchivosCreacion, rutaPropia, validarCapas, urlsDeDiseno };
+/**
+ * generarMiniaturasBorradorSecure: las miniaturas de un borrador de la app (la web las dibuja en el navegador al
+ * autoguardar). Se dibujan con el mismo código de las vistas previas, a 420 px, y se guardan como la web: `miniatura` y
+ * `miniaturas[{vista, nombre, url}]` con la imagen dentro (data URL). Solo el dueño y solo borradores; si el diseño
+ * cambió mientras se dibujaba, no se escriben (la próxima llamada las pone al día).
+ */
+async function generarMiniaturasBorrador({ uid, designId, deps, fail }) {
+  if (!uid) fail('Inicia sesión para guardar tu borrador.', 'unauthenticated');
+  if (!validId(designId)) fail('No encontramos ese borrador.');
+  const { db, bucket, render, descargar, convertir = aPng } = deps;
+  const ref = db.collection('designs').doc(designId);
+  const snap = await ref.get();
+  const diseno = snap.exists ? snap.data() : null;
+  if (!diseno || diseno.userId !== uid) fail('No encontramos ese borrador.', 'not-found');
+  if (diseno.tipo !== 'crear' || diseno.estado !== 'borrador') return { miniaturas: [] };
+  const productoSnap = await db.collection('productos_wala').doc(String(diseno.productId || '')).get();
+  const producto = productoSnap.exists ? productoSnap.data() : null;
+  if (!producto || producto.esPrendaBase !== true || producto.deleted === true) fail('La prenda de este borrador ya no está disponible.');
+  const colorId = diseno.color && diseno.color.id != null ? String(diseno.color.id) : '';
+  const { vistas, color } = render.leerPrenda(producto, colorId);
+  if (!color) fail('El color de este borrador ya no está disponible.');
+  const zonas = new Set(vistas.flatMap((v) => v.zonas.map((z) => z.id)));
+  const capasGuardadas = diseno.layersByView && typeof diseno.layersByView === 'object' ? diseno.layersByView : {};
+  const hayCapas = Object.values(capasGuardadas).some((lista) => Array.isArray(lista) && lista.length);
+  const dePlantillas = imagenesDePlantillas(producto);
+  const basadoEn = typeof diseno.basadoEn === 'string' ? diseno.basadoEn : null;
+  const capas = hayCapas ? validarCapas(capasGuardadas, zonas, uid, bucket.name, fail, dePlantillas, basadoEn) : {};
+  const fotosPrenda = new Set([...vistas.flatMap((v) => [color.fotos[v.id], v.imagen, v.encima].filter(Boolean)), ...dePlantillas]);
+  const cargar = async (src) => {
+    const ruta = rutaPropia(src, uid, bucket.name) || rutaComunidad(src, basadoEn, bucket.name);
+    if (ruta) {
+      const [buffer] = await bucket.file(ruta).download();
+      if (buffer.length > MAX_IMAGEN) fail('Una foto del diseño pesa demasiado.');
+      return paraCanvas(buffer, convertir);
+    }
+    if (!fotosPrenda.has(src)) fail('Una imagen del diseño no es válida.');
+    return paraCanvas(await descargar(src), convertir);
+  };
+  const dibujos = await render.generarMiniaturas({ producto, colorId, capas, cargar });
+  const miniaturas = dibujos.map((m) => ({ vista: m.vistaId, nombre: m.nombre, url: `data:image/jpeg;base64,${m.buffer.toString('base64')}` }));
+  const firma = JSON.stringify(capasGuardadas);
+  const escritas = await db.runTransaction(async (tx) => {
+    const ahora = await tx.get(ref);
+    const d = ahora.exists ? ahora.data() : null;
+    if (!d || d.userId !== uid || d.estado !== 'borrador' || JSON.stringify(d.layersByView || {}) !== firma) return false;
+    tx.update(ref, { miniatura: miniaturas[0] ? miniaturas[0].url : '', miniaturas });
+    return true;
+  });
+  return { miniaturas: escritas ? miniaturas.map(({ vista, nombre }) => ({ vista, nombre })) : [] };
+}
+
+module.exports = { generarArchivosCreacion, generarMiniaturasBorrador, rutaPropia, validarCapas, urlsDeDiseno };

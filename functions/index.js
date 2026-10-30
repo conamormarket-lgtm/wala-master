@@ -5036,6 +5036,17 @@ exports.generarArchivosCreacionSecure = functions
       deps: { db, bucket: admin.storage().bucket(), FieldValue, render, descargar: descargarFotoPrenda } });
   });
 
+// Las miniaturas de un borrador de la app, con el mismo dibujo (crearRender.js), como las del autoguardado de la web.
+exports.generarMiniaturasBorradorSecure = functions
+  .runWith({ memory: "1GB", timeoutSeconds: 60, maxInstances: 5 })
+  .https.onCall(async (data, context) => {
+    const { generarMiniaturasBorrador } = require("./crearArchivosServidor");
+    const render = require("./crearRender");
+    const fail = (message, code = "failed-precondition") => { throw new functions.https.HttpsError(code, message); };
+    return generarMiniaturasBorrador({ uid: context.auth && context.auth.uid, designId: data && data.designId, fail,
+      deps: { db, bucket: admin.storage().bucket(), render, descargar: descargarFotoPrenda } });
+  });
+
 exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
   const rewardId = data && data.rewardId;

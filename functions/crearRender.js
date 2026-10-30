@@ -416,7 +416,8 @@ async function componerVistas(piezas, { titulo = '', fondo = '#F3F1F7', logo = n
  * generarArchivosCreacion de la web, sin subir: devuelve los PNG por zona, las vistas previas por lado y la conjunta.
  * `cargar(src)` trae una imagen (Buffer) de una URL de confianza: la de la prenda o un archivo del propio cliente.
  */
-async function generarArchivos({ producto, colorId, capas, cargar }) {
+/** Lo común a dibujar una creación: la prenda en su color, las imágenes del diseño cargadas una vez y cada lado. */
+async function prepararDibujo({ producto, colorId, capas, cargar }) {
   registrarFuentes();
   const { vistas, color, tipo, tecnica } = leerPrenda(producto, colorId);
   if (!color) throw new Error('color');
@@ -432,15 +433,31 @@ async function generarArchivos({ producto, colorId, capas, cargar }) {
   const listas = new Map();
   for (const [src, promesa] of imagenes) listas.set(src, await promesa);
   const imagenDe = (capa) => listas.get(capa.src);
-  const logoArchivo = path.join(__dirname, 'assets', 'logo-wala-192.png');
-  const logo = fs.existsSync(logoArchivo) ? await loadImage(fs.readFileSync(logoArchivo)) : null;
-
-  const renderVista = async (vista) => {
+  const renderVista = async (vista, ancho = 900) => {
     const img = await loadImage(await cargar(fotoDeVista(vista, color)));
     const encima = vista.encima ? await loadImage(await cargar(vista.encima)).catch(() => null) : null;
     return renderizarVistaPrevia({ fuente: fondoDeVista(img, vista, color), anchoImg: img.width, altoImg: img.height, vista,
-      capasPorZona: capas, imagenDe, encima, laser, producto: esProducto });
+      capasPorZona: capas, imagenDe, encima, laser, producto: esProducto, ancho });
   };
+  return { vistas, color, tipo, tecnica, laser, esProducto, imagenDe, renderVista };
+}
+
+/**
+ * Las miniaturas de un borrador, como las del autoguardado de la web (renderizarVista a 420 px): un JPEG por cada lado
+ * con diseño (o el primero si todavía no tiene nada).
+ */
+async function generarMiniaturas({ producto, colorId, capas, cargar, ancho = 420 }) {
+  const { vistas, renderVista } = await prepararDibujo({ producto, colorId, capas, cargar });
+  const conDiseno = vistas.filter((vista) => vista.zonas.some((zona) => capas[zona.id]?.length));
+  const miniaturas = [];
+  for (const vista of conDiseno.length ? conDiseno : vistas.slice(0, 1)) miniaturas.push({ vistaId: vista.id, nombre: vista.nombre, buffer: await renderVista(vista, ancho) });
+  return miniaturas;
+}
+
+async function generarArchivos({ producto, colorId, capas, cargar }) {
+  const { vistas, color, tecnica, laser, esProducto, imagenDe, renderVista } = await prepararDibujo({ producto, colorId, capas, cargar });
+  const logoArchivo = path.join(__dirname, 'assets', 'logo-wala-192.png');
+  const logo = fs.existsSync(logoArchivo) ? await loadImage(fs.readFileSync(logoArchivo)) : null;
   const impresion = [];
   const previas = [];
   const porVista = new Map();
@@ -463,4 +480,4 @@ async function generarArchivos({ producto, colorId, capas, cargar }) {
   return { impresion, previas, conjunta, color, vistas };
 }
 
-module.exports = { generarArchivos, leerPrenda, pixelesDeImpresion, medidaZona, propiedadesTexto, UNIDADES_ZONA, registrarFuentes, familiasDisponibles };
+module.exports = { generarArchivos, generarMiniaturas, leerPrenda, pixelesDeImpresion, medidaZona, propiedadesTexto, UNIDADES_ZONA, registrarFuentes, familiasDisponibles };
