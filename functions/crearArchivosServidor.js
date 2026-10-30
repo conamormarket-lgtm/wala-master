@@ -16,6 +16,21 @@ const BLOQUEO_MS = 3 * 60 * 1000;
 const validId = (id) => typeof id === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(id);
 const finito = (n) => typeof n === 'number' && Number.isFinite(n);
 
+/**
+ * node-canvas solo lee PNG y JPEG: una foto en otro formato (las de productos_v2 son WebP; también AVIF, GIF, TIFF)
+ * pasa a PNG con sharp antes de dibujar. Un PNG o JPEG va tal cual.
+ */
+const esPngOJpeg = (b) => b.length > 3 && ((b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) || (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff));
+async function paraCanvas(buffer, convertir) {
+  if (esPngOJpeg(buffer)) return buffer;
+  try {
+    return await convertir(buffer);
+  } catch {
+    return buffer;
+  }
+}
+const aPng = (buffer) => require('sharp')(buffer, { limitInputPixels: 40_000_000 }).png().toBuffer();
+
 /** La ruta en el bucket de una URL de descarga de Storage, solo si es del propio cliente. */
 function rutaPropia(url, uid, bucket) {
   const m = /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/([^/]+)\/o\/([^?]+)(\?.*)?$/.exec(String(url || ''));
@@ -24,8 +39,18 @@ function rutaPropia(url, uid, bucket) {
   return ruta.startsWith(`designs/${uid}/`) && !ruta.includes('..') ? ruta : null;
 }
 
-/** Capas que se pueden dibujar: zonas de la prenda, tipos conocidos, números finitos, fotos propias. */
-function validarCapas(capas, zonasValidas, uid, bucket, fail) {
+/** Las imágenes de las plantillas del producto ("Empieza con un diseño": la flecha de la esclava, un marco): las pone el admin. */
+function imagenesDePlantillas(producto) {
+  const plantillas = Array.isArray(producto?.prendaBase?.plantillas) ? producto.prendaBase.plantillas : [];
+  const srcs = new Set();
+  for (const p of plantillas) for (const lista of Object.values(p?.capas || {})) {
+    if (Array.isArray(lista)) for (const c of lista) if (c?.type === 'image' && typeof c.src === 'string' && /^https:\/\//.test(c.src)) srcs.add(c.src);
+  }
+  return srcs;
+}
+
+/** Capas que se pueden dibujar: zonas de la prenda, tipos conocidos, números finitos, fotos propias o de las plantillas del producto. */
+function validarCapas(capas, zonasValidas, uid, bucket, fail, deProducto = new Set()) {
   if (!capas || typeof capas !== 'object' || Array.isArray(capas)) fail('El diseño no tiene capas.');
   let total = 0;
   const limpias = {};
@@ -38,7 +63,7 @@ function validarCapas(capas, zonasValidas, uid, bucket, fail) {
       if (!capa || typeof capa !== 'object' || !['left', 'top', 'escalaX', 'escalaY'].every((k) => finito(capa[k]))
         || (capa.angulo != null && !finito(capa.angulo)) || Math.abs(capa.escalaX) > 1000 || Math.abs(capa.escalaY) > 1000) fail('Una capa del diseño no es válida.');
       if (capa.type === 'image') {
-        if (!rutaPropia(capa.src, uid, bucket) || !(capa.anchoNatural > 0) || !(capa.altoNatural > 0)) fail('Una foto del diseño no es tuya o no terminó de subirse.');
+        if (!(rutaPropia(capa.src, uid, bucket) || deProducto.has(capa.src)) || !(capa.anchoNatural > 0) || !(capa.altoNatural > 0)) fail('Una foto del diseño no es tuya o no terminó de subirse.');
         return capa;
       }
       if (capa.type === 'text') {
@@ -53,13 +78,13 @@ function validarCapas(capas, zonasValidas, uid, bucket, fail) {
 }
 
 /**
- * deps: { db, bucket, FieldValue, render (crearRender), descargar(url) → Buffer, ahora() }.
+ * deps: { db, bucket, FieldValue, render (crearRender), descargar(url) → Buffer, ahora(), convertir(buffer) → PNG (sharp) }.
  * Devuelve lo que se guardó en el diseño.
  */
 async function generarArchivosCreacion({ uid, designId, deps, fail }) {
   if (!uid) fail('Inicia sesión para guardar tu creación.', 'unauthenticated');
   if (!validId(designId)) fail('No encontramos esa creación.');
-  const { db, bucket, FieldValue, render, descargar, ahora = Date.now } = deps;
+  const { db, bucket, FieldValue, render, descargar, ahora = Date.now, convertir = aPng } = deps;
   const ref = db.collection('designs').doc(designId);
   // Un dibujo a la vez por creación (es pesado): se marca y se suelta al terminar.
   const diseno = await db.runTransaction(async (tx) => {
@@ -79,17 +104,18 @@ async function generarArchivosCreacion({ uid, designId, deps, fail }) {
     const { vistas, color } = render.leerPrenda(producto, colorId);
     if (!color) fail('El color de esta creación ya no está disponible. Elige otro y vuelve a guardar.');
     const zonas = new Set(vistas.flatMap((v) => v.zonas.map((z) => z.id)));
-    const capas = validarCapas(diseno.layersByView, zonas, uid, bucket.name, fail);
-    const fotosPrenda = new Set(vistas.flatMap((v) => [color.fotos[v.id], v.imagen, v.encima].filter(Boolean)));
+    const dePlantillas = imagenesDePlantillas(producto);
+    const capas = validarCapas(diseno.layersByView, zonas, uid, bucket.name, fail, dePlantillas);
+    const fotosPrenda = new Set([...vistas.flatMap((v) => [color.fotos[v.id], v.imagen, v.encima].filter(Boolean)), ...dePlantillas]);
     const cargar = async (src) => {
       const ruta = rutaPropia(src, uid, bucket.name);
       if (ruta) {
         const [buffer] = await bucket.file(ruta).download();
         if (buffer.length > MAX_IMAGEN) fail('Una foto del diseño pesa demasiado.');
-        return buffer;
+        return paraCanvas(buffer, convertir);
       }
       if (!fotosPrenda.has(src)) fail('Una imagen del diseño no es válida.');
-      return descargar(src);
+      return paraCanvas(await descargar(src), convertir);
     };
     const out = await render.generarArchivos({ producto, colorId, capas, cargar });
 
