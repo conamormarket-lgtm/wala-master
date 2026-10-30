@@ -46,12 +46,13 @@ const coloresDePieza = (sub, it) => variantesDePieza(sub, it).map((v) => {
 /**
  * Qué hace el botón de la tarjeta. Misma regla que productNeedsVariantSelection
  * (src/utils/comboProductUtils.js) más las prendas base del estudio Crear.
- *  - 'crear':   esPrendaBase → se diseña en /crear/:id
+ *  - 'crear':   esPrendaBase → se diseña en /crear/:id (salvo que también se
+ *    venda tal cual: entonces como cualquier producto)
  *  - 'elegir':  combo, más de una variante, variantes con opciones o mainSizes
  *  - 'agregar': sin opciones (taza, llavero, producto con una sola variante)
  */
 export function accionDeProducto(p) {
-  if (p?.esPrendaBase || p?.esComboCrear) return 'crear';
+  if ((p?.esPrendaBase && !seVendeTalCual(p)) || p?.esComboCrear) return 'crear';
   if (p?.isComboProduct && p.comboItems?.length) return 'elegir';
   const vs = variantesDe(p);
   if (vs.length > 1 || vs.some((v) => v.sizes?.length) || p?.mainSizes?.length) return 'elegir';
@@ -64,6 +65,9 @@ export function accionDeProducto(p) {
  * estudio y su stock vacío es "sin límite" (no "agotado").
  */
 const esDeCrear = (p) => p?.esPrendaBase === true || p?.esComboCrear === true;
+
+/** Una prenda de Crear que también se vende sin personalizar ("Agregar al carrito" y "Personalízalo"). */
+const seVendeTalCual = (p) => p?.esPrendaBase === true && p.seVendeTalCual === true;
 
 /** Agotado: en Crear solo con un stock cargado en 0; en la tienda, sin stock. */
 const agotadoDe = (p) => (esDeCrear(p) ? typeof p.inStock === 'number' && p.inStock <= 0 : !p?.inStock);
@@ -186,7 +190,7 @@ export function tarjetaDesdeProducto(p, { imagen, catalogo = {}, subproductos = 
     accion: accionDeProducto(p),
     // Sin lista de deseos, como en Crear: un regalo de la lista se compra
     // tal cual, y estos solo se venden diseñados.
-    ...(crear && { textoAccion: 'Personalízalo', sinDeseo: true }),
+    ...(crear && !seVendeTalCual(p) && { textoAccion: 'Personalízalo', sinDeseo: true }),
   };
 }
 
@@ -1235,8 +1239,9 @@ export function fichaProductoDesde(p = {}, { catalogo = {}, subproductos = {} } 
       // Los productos de la tienda ya no se personalizan (eso es Crear); la
       // ficha lo vuelve a poner con el interruptor personalizableViejo.
       personalizable: Boolean(p.esPrendaBase),
-      // Una prenda de Crear en la tienda: solo "Personalízalo" (sin carrito).
-      soloPersonalizar: Boolean(p.esPrendaBase),
+      // Una prenda de Crear en la tienda: solo "Personalízalo" (sin carrito),
+      // salvo que también se venda tal cual.
+      soloPersonalizar: Boolean(p.esPrendaBase) && !seVendeTalCual(p),
       descripcion: p.description || '',
       combo: p.isComboProduct ? (p.comboItems || []).map((it) => ({ nombre: it.name || subproductos[it.productId]?.name || 'Producto', imagen: it.imageUrl })) : undefined,
     },

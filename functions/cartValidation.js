@@ -144,7 +144,7 @@ function createCartValidator({ db, HttpsError }) {
     }
     const refs = ids.map((id) => db.collection("productos_wala").doc(id));
     const snapshots = await reader.getAll(...refs, {
-      fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "prendaBase", "brandId"],
+      fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "seVendeTalCual", "prendaBase", "brandId"],
     });
     const byId = new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
 
@@ -166,8 +166,9 @@ function createCartValidator({ db, HttpsError }) {
       if (item.comboCrear) continue;
       // Una prenda de Crear se vende solo diseñada (también cuando sale en la
       // tienda con "También en la tienda"): sin su creación es una prenda en
-      // blanco que nadie pidió.
-      if (product.esPrendaBase === true && !item.personalizado && !String(item.designId || "").trim() && !item.vistasPersonalizadas) {
+      // blanco que nadie pidió. Salvo que el admin la venda también tal cual
+      // ("También se vende sin personalizar": la billetera de Yoryo).
+      if (product.esPrendaBase === true && product.seVendeTalCual !== true && !item.personalizado && !String(item.designId || "").trim() && !item.vistasPersonalizadas) {
         throw new HttpsError("failed-precondition", `"${nombre}" se compra personalizado. Diséñalo en Crear y vuelve a agregarlo.`);
       }
       const clientPrice = Number(item.precio);

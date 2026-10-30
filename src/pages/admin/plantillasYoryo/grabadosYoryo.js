@@ -1,4 +1,4 @@
-import { createProduct, getProduct, getProducts, updateProductField } from '../../../services/products';
+import { createProduct, getProduct, getProducts, updateProductField, normalizeSearchText, buildSearchTokens } from '../../../services/products';
 import { uploadFile } from '../../../services/firebase/storage';
 import { getDocument } from '../../../services/firebase/firestore';
 import { getCombosCrear, guardarComboCrear } from '../../../services/combosCrear';
@@ -314,7 +314,8 @@ async function plantillasYFotos(clave, pieza, tienda, onPaso) {
     const cierre = Object.entries(pieza.fotos).find(([nombre]) => mismoColor(nombre, v.name))?.[1]?.cierre;
     const urlCierre = cierre ? await subir(pieza.id, await leerBlob(`${BASE}/${cierre}`), `${clave}-${v.id}-cierre`) : '';
     // Las de la tienda sin su frente con cierre (lo pone galeriaDeTienda): no se repite al volver a correrlo.
-    const deLaTienda = (deTienda?.images || []).filter((u) => !String(u).includes('-cierre'));
+    // También su foto principal: desde que es una sola ficha, es la galería de la tienda.
+    const deLaTienda = [...new Set([deTienda?.imageUrl, ...(deTienda?.images || [])])].filter((u) => u && !String(u).includes('-cierre'));
     const deFrente = pieza.portadaDeFrente && urlCierre;
     variants.push({
       ...v,
@@ -422,13 +423,64 @@ export async function crearGrabadosYoryo({ onPaso = () => {} } = {}) {
       // La esclava se vendía solo en los combos: ahora también sola.
       ...(clave === 'esclava' && {
         visible: true,
-        description: '<p>Esclava de cuero trenzado negro con placa de acero pulido.</p><p>¿La quieres con un nombre? Tócala en <strong>Personalizar</strong> y grábasela, al mismo precio.</p>',
+        description: '<p>Esclava de cuero trenzado negro con placa de acero pulido.</p><p>¿La quieres con un nombre? Tócala en <strong>Personalízalo</strong> y grábasela, al mismo precio.</p>',
       }),
     });
+    await unaSolaFicha(pieza, onPaso);
     prendas[clave] = (await getProduct(pieza.id)).data;
-    onPaso(`${pieza.nombre}: lista`);
+    onPaso(`${prendas[clave].name}: lista`);
   }
   const packs = await packsDeCombos(prendas, onPaso);
-  onPaso(`Listo: billetera y esclava grabadas, y ${packs.length} ${packs.length === 1 ? 'pack' : 'packs'} con el reloj tal cual.`);
+  await nombresEnPacks(packs.map((p) => p.pack), prendas);
+  onPaso(`Listo: billetera y esclava en una sola ficha (tal cual y grabadas), y ${packs.length} ${packs.length === 1 ? 'pack' : 'packs'} con el reloj tal cual.`);
   return { ...IDS_GRABADOS, packs };
+}
+
+// Lo de la ficha de la tienda que pasa a la única ficha: dónde sale, cómo se
+// encuentra y cómo se destaca.
+const CAMPOS_DE_TIENDA = ['categories', 'collections', 'tags', 'characters', 'productType', 'publico', 'edadMinima', 'featured', 'featuredOrder', 'nicheId', 'vendorId'];
+
+/**
+ * Una sola ficha: la prenda de Crear pasa a ser EL producto (sale en la
+ * tienda, se vende tal cual y se personaliza) con el nombre, la descripción,
+ * el precio, el stock y la categoría del de la tienda. Eso se copia una vez
+ * (después lo maneja el admin en la ficha). El de la tienda queda con
+ * `reemplazadoPor`: la web lleva a la prenda, y la app de Android (que no
+ * muestra prendas de Crear) y los combos lo siguen usando.
+ */
+async function unaSolaFicha(pieza, onPaso) {
+  const { data: crear } = await getDocument('productos_wala', pieza.id);
+  const { data: tienda } = await getDocument('productos_wala', pieza.tiendaId);
+  if (!crear || !tienda) throw new Error(`No encontré las dos fichas de ${pieza.nombre}.`);
+  if (crear.seVendeTalCual !== true) {
+    onPaso(`${tienda.name}: juntando las dos fichas…`);
+    const copia = Object.fromEntries(CAMPOS_DE_TIENDA.filter((k) => tienda[k] !== undefined && tienda[k] !== null).map((k) => [k, tienda[k]]));
+    const brandId = tienda.brandId || crear.brandId || '';
+    await updateProductField(pieza.id, {
+      ...copia,
+      name: tienda.name,
+      nameLower: normalizeSearchText(tienda.name),
+      searchTokens: buildSearchTokens(tienda.name, brandId),
+      description: tienda.description || crear.description || '',
+      price: tienda.price,
+      salePrice: tienda.salePrice || 0,
+      inStock: typeof tienda.inStock === 'number' ? tienda.inStock : null,
+      ...(tienda.sku && { sku: tienda.sku }),
+      brandId,
+      enTienda: true,
+      seVendeTalCual: true,
+    });
+  }
+  if (tienda.reemplazadoPor !== pieza.id) await updateProductField(pieza.tiendaId, { reemplazadoPor: pieza.id });
+}
+
+/** Los packs nombran sus piezas con el nombre de la ficha única. */
+async function nombresEnPacks(ids, prendas) {
+  const porId = Object.fromEntries(Object.values(prendas).map((p) => [p.id, p.name]));
+  for (const id of ids) {
+    const { data } = await getDocument('productos_wala', id);
+    const piezas = data?.comboCrear?.piezas || [];
+    if (!piezas.some((p) => porId[p.prendaId] && p.nombre !== porId[p.prendaId])) continue;
+    await updateProductField(id, { 'comboCrear.piezas': piezas.map((p) => (porId[p.prendaId] ? { ...p, nombre: porId[p.prendaId] } : p)) });
+  }
 }

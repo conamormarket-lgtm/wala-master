@@ -43,6 +43,8 @@ const ListaTodos = ({ productos }) => {
       const pub = p.visible !== false;
       return [['Personalizable', 'crear'], [pub ? 'En Crear' : 'Borrador', pub ? 'ok' : 'apagado'], pub && p.enTienda && ['En la tienda', 'ok']];
     }
+    // Reemplazado por su personalizable: la web ya no lo muestra (la app y los combos sí).
+    if (p.reemplazadoPor) return [p.isComboProduct && ['Combo', 'crear'], ['Reemplazado por su personalizable', 'apagado']];
     return [p.isComboProduct && ['Combo', 'crear'], [p.visible !== false ? 'En la tienda' : 'Oculto', p.visible !== false ? 'ok' : 'apagado']];
   };
   const ficha = (p) => (p.esComboCrear ? '/admin/productos?ver=packs' : p.esPrendaBase ? `/admin/prendas-crear/${p.id}` : `/admin/productos/${p.id}`);
@@ -281,8 +283,11 @@ const AdminProductos = () => {
     prendas: (productsData || []).filter((p) => p.esPrendaBase === true && p.deleted !== true).length,
     combos: (productsData || []).filter((p) => p.esComboCrear === true && p.deleted !== true).length,
   }), [productsData]);
+  // La tienda: lo de siempre, más los personalizables que salen en ella (su
+  // ficha tiene todo); sin los reemplazados por uno de esos (siguen en Todos).
   const catalogo = useMemo(
-    () => (productsData || []).filter((p) => p.esPrendaBase !== true && p.esComboCrear !== true),
+    () => (productsData || []).filter((p) => !p.reemplazadoPor && p.esComboCrear !== true
+      && (p.esPrendaBase !== true || p.enTienda === true)),
     [productsData],
   );
 
@@ -886,9 +891,9 @@ const AdminProductos = () => {
                     {p.isComboPiece && (
                       <span className={styles.badgeCombo}>Pieza de combo</span>
                     )}
-                    {/* Solo se vende en Crear (no en la tienda): se diseña antes de comprarla. */}
+                    {/* Un personalizable que sale en la tienda: su ficha tiene el diseño y las plantillas. */}
                     {p.esPrendaBase === true && (
-                      <span className={styles.badgeCombo}>Crear</span>
+                      <span className={styles.badgeCombo}>{p.seVendeTalCual ? 'Tal cual y personalizable' : 'Personalizable'}</span>
                     )}
                     {p.esComboCrear === true && (
                       <span className={styles.badgeCombo}>Combo de Crear</span>

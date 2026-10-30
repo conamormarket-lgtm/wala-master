@@ -1409,6 +1409,8 @@ function normalizeProductPayload(data) {
     // "También en la tienda": una prenda de Crear sale en la tienda (solo
     // para personalizarla). En un producto normal no significa nada.
     ...(data.enTienda !== undefined && { enTienda: data.esPrendaBase === true && data.enTienda === true }),
+    // "También se vende sin personalizar": la misma prenda, tal cual y con su stock.
+    ...(data.seVendeTalCual !== undefined && { seVendeTalCual: data.esPrendaBase === true && data.seVendeTalCual === true }),
     hasVariants: Boolean(hasVariants),
     mainImage: isComboProduct ? '' : mainImage,
     mainSizes: isComboProduct ? [] : mainSizes,

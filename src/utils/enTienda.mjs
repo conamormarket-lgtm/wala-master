@@ -10,9 +10,16 @@
  * `visible` no sirve de interruptor para ellos: en una prenda significa
  * "publicada en Crear" (false = borrador) y un combo de Crear lo guarda
  * siempre en false; el suyo es comboCrear.publicado.
+ *
+ * Una prenda con `seVendeTalCual` también se vende sin personalizar. Si
+ * reemplaza a un producto de la tienda, ese lleva `reemplazadoPor` (el id
+ * de la prenda): la web ya no lo muestra y su enlace lleva a la prenda, pero
+ * sigue visible para la app de Android, que no muestra prendas de Crear, y
+ * para los combos que lo usan.
  */
 export const esProductoDeTienda = (p) => {
   if (!p || p.deleted === true) return false;
+  if (p.reemplazadoPor) return false;
   if (p.esComboCrear === true) return p.enTienda === true && p.comboCrear?.publicado === true;
   if (p.esPrendaBase === true) return p.enTienda === true && p.visible !== false;
   return p.visible !== false;

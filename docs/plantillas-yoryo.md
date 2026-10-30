@@ -128,3 +128,11 @@ En **Admin → Catálogo → Importar plantillas de cuadros**, paso 6, **Crear b
 La tarjeta de la billetera en Crear va de frente (con el cierre) gracias a **Portada en Crear: la foto de tienda** (pestaña Diseño, junto a *Solo con sus plantillas*); al pasar el mouse se ve la cara lisa. Volver a correr el paso pone las fotos para diseñar transparentes si el producto tenía las de antes (`prendaBase.versionFotos`), con sus zonas y sin tocar los cm.
 
 Las fotos para diseñar y los símbolos están en `public/yoryo/grabados/` y se pueden borrar después de correrlo. **Las medidas en cm son estimadas** (cara de la billetera 9 cm, placa 4.5 cm): cuando el taller las confirme, se corrigen en la ficha de cada uno, pestaña Diseño, con la línea de referencia.
+
+## Una sola ficha: tal cual y personalizado (30-10-2026)
+
+Un personalizable puede venderse **también sin personalizar**: en su ficha, pestaña **Dónde se ve**, con **También en la tienda** prendido aparece **También se vende sin personalizar** (`seVendeTalCual`). La página de la tienda muestra entonces **Agregar al carrito** (tal cual, al precio y con el stock de la ficha) y **Personalízalo**. El servidor acepta la compra sin diseño solo con ese interruptor (`functions/cartValidation.js`).
+
+La billetera Cónsul y la esclava son así desde el paso 6: una sola ficha (la de Crear) con el nombre, la descripción, el precio, el stock y la categoría de la tienda. La ficha de tienda de antes lleva `reemplazadoPor`: la web no la muestra y su enlace lleva a la nueva, pero sigue visible para la **app de Android** (que todavía no muestra personalizables) y para los combos de la tienda que la usan como pieza. Ojo: mientras tanto hay dos stocks, el de la ficha nueva (web) y el de la vieja (app y combos).
+
+El tomatodo se vende tal cual prendiendo ese mismo interruptor en su ficha.

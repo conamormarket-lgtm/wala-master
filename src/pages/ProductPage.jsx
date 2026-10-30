@@ -33,6 +33,11 @@ const ProductPage = () => {
   // de la tienda que pasó a su prenda de Crear): su link lleva allá.
   const reemplazo = noDisponible ? leerPersonalizarEn(product.personalizarEn) : null;
   if (reemplazo) return <Navigate to={reemplazo} replace />;
+  // Un producto de la tienda que pasó a su prenda de Crear, que también se
+  // vende tal cual (la billetera de Yoryo): una sola ficha, la de la prenda.
+  if (/^[A-Za-z0-9_-]{1,64}$/.test(String(product?.reemplazadoPor || ''))) {
+    return <Navigate to={`/producto/${product.reemplazadoPor}`} replace />;
+  }
 
   // El recordatorio "¡Sigue disponible!" ya no lo arma el navegador mientras
   // el cliente mira el producto: lo manda el servidor al día siguiente (aviso

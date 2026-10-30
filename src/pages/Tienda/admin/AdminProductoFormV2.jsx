@@ -152,6 +152,8 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
     visible: true,
     // Una prenda de Crear que también sale en la tienda (utils/enTienda.mjs).
     enTienda: false,
+    // Y además se vende sin personalizar, con "Agregar al carrito" (la billetera de Yoryo).
+    seVendeTalCual: false,
     prendaBase: prendaBaseInicial(),
     characters: [],
     tags: [],
@@ -332,6 +334,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         personalizarEn: productData.personalizarEn || '',
         visible: productData.visible !== false,
         enTienda: productData.enTienda === true,
+        seVendeTalCual: productData.seVendeTalCual === true,
         prendaBase: productData.prendaBase || prendaBaseInicial(),
         isComboProduct: Boolean(productData.isComboProduct),
         comboItems: productData.comboItems || [],
@@ -961,6 +964,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         variants: isCombo ? [] : finalVariants,
         visible: form.visible !== false,
         enTienda: esPrenda && form.enTienda === true,
+        seVendeTalCual: esPrenda && form.enTienda === true && form.seVendeTalCual === true,
         featured: form.featured,
         isV2: true,
       };
@@ -1154,7 +1158,9 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
                   {!form.enTienda
                     ? 'Solo en Crear.'
                     : form.visible !== false
-                      ? 'Sale en la tienda y en la página de su marca, con el botón "Personalízalo" (nunca se vende en blanco).'
+                      ? (form.seVendeTalCual
+                        ? 'Sale en la tienda y en la página de su marca, con "Agregar al carrito" y "Personalízalo".'
+                        : 'Sale en la tienda y en la página de su marca, con el botón "Personalízalo" (nunca se vende en blanco).')
                       : 'Saldrá en la tienda cuando la publiques en Crear.'}
                 </p>
               </div>
@@ -1163,6 +1169,22 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
                 <span className={styles.slider}></span>
               </label>
             </div>
+            {form.enTienda && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
+                <div>
+                  <h2 className={styles.cardTitle} style={{ margin: 0, padding: 0, borderBottom: 'none' }}>También se vende sin personalizar</h2>
+                  <p className={styles.cardSubtitle} style={{ marginTop: '0.25rem', marginBottom: 0 }}>
+                    {form.seVendeTalCual
+                      ? 'Al mismo precio, tal cual, con el stock de la pestaña General. Quien quiera lo personaliza.'
+                      : 'Solo se vende personalizado.'}
+                  </p>
+                </div>
+                <label className={styles.toggleSwitch}>
+                  <input type="checkbox" checked={form.seVendeTalCual === true} onChange={(e) => setForm(f => ({ ...f, seVendeTalCual: e.target.checked }))} />
+                  <span className={styles.slider}></span>
+                </label>
+              </div>
+            )}
             {form.enTienda && sinFotoTienda && (
               <p className={styles.cardSubtitle} style={{ margin: '0.75rem 0 0', color: '#b45309' }}>
                 Aún no tiene fotos de tienda: la tarjeta mostraría el producto en blanco. Ponle una en

@@ -389,10 +389,12 @@ export default function ImportarPlantillasYoryo() {
         <p>
           Crea la billetera Cónsul y la esclava grabadas con láser como productos de Crear, con sus plantillas: iniciales o
           nombre con un símbolo (flecha, infinito, estrella, corazón, rayo o montaña), con fecha, solo el texto o en letra
-          escrita. También arma los combos Ónix, Oro y Medianoche como packs de Crear con el reloj tal cual. Los productos de la
-          tienda se siguen vendiendo sin grabar, al mismo precio: su botón <em>Personalizar</em> lleva a la versión grabada.
-          La esclava pasa a verse en la tienda. Las medidas en cm son estimadas: corrígelas en la ficha (pestaña Diseño) cuando
-          el taller las confirme. Lo que ya exista no se repite; las plantillas y las fotos se rehacen.
+          escrita. Después junta cada uno con su ficha de la tienda en <strong>una sola ficha</strong>: sale en la tienda con
+          <em> Agregar al carrito</em> (tal cual, al mismo precio) y <em>Personalízalo</em>, con el nombre, la descripción, el
+          precio, el stock y la categoría de la tienda. La ficha de tienda de antes queda como reemplazada: la web lleva a la
+          nueva, y la app de Android y los combos la siguen usando. También arma los combos Ónix, Oro y Medianoche como packs de
+          Crear con el reloj tal cual. Las medidas en cm son estimadas: corrígelas en la ficha (pestaña Diseño) cuando el taller
+          las confirme. Lo que ya exista no se repite; las plantillas y las fotos se rehacen.
         </p>
         <Boton variante="contorno" onClick={crearGrabados} cargando={creandoGrabados} disabled={!user || trabajando}>Crear billetera, esclava y packs</Boton>
         {pasoGrabados && <small className={pasoGrabados.startsWith('Error') ? s.error : undefined}>{pasoGrabados}</small>}

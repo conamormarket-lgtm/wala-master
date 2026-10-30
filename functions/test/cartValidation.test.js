@@ -27,7 +27,7 @@ test("checkout batches unique catalog documents and projects only validation fie
   const f = fixture({ a: { price: 45, inStock: 10 }, b: { price: 30, inStock: 2 } });
   await f.validate([line("a"), line("a", 2), line("b", 1, { precio: 30 })]);
   assert.deepEqual(f.calls, [{ ids: ["a", "b"], options: {
-    fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "prendaBase", "brandId"],
+    fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "seVendeTalCual", "prendaBase", "brandId"],
   } }]);
 });
 
@@ -117,6 +117,14 @@ test("a Crear garment is only sold designed, even when it shows in the shop", as
   await assert.rejects(f.validate([line("polo", 1, { precio: 75 })]), /se compra personalizado/);
   await f.validate([line("polo", 1, { precio: 75, personalizado: true })]);
   await f.validate([line("polo", 1, { precio: 75, designId: "d1" })]);
+});
+
+test("a Crear garment that is also sold as is can be bought without a design, at catalog price", async () => {
+  const f = fixture({ billetera: { price: 120, inStock: 4, esPrendaBase: true, seVendeTalCual: true, prendaBase: { vistas: [] } } });
+  const { subtotal } = await f.validate([line("billetera", 1, { precio: 120 })]);
+  assert.equal(subtotal, 120);
+  await assert.rejects(f.validate([line("billetera", 1, { precio: 1 })]), /precio.*cambió/);
+  await assert.rejects(f.validate([line("billetera", 5, { precio: 120 })]), /stock suficiente/);
 });
 
 // Pack de Yoryo: el reloj va tal cual (pieza fija) y la billetera se graba.
