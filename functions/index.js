@@ -10126,7 +10126,8 @@ function mobileCheckoutResponse(id, intent) {
 exports.getMobileCheckoutStatusSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
   if (data?.expectedUid && data.expectedUid !== uid) throw new functions.https.HttpsError('unauthenticated', 'La sesión cambió.');
-  if (data?.capabilities) return { contract: mobileCheckout.CONTRACT,
+  // coupons: este servidor ya revalida y descuenta el cupón del pago móvil (la app solo ofrece el campo entonces).
+  if (data?.capabilities) return { contract: mobileCheckout.CONTRACT, coupons: true,
     enabled: process.env.MOBILE_CHECKOUT_ENABLED === 'true' && /^pk_(test|live)_/.test(process.env.CULQI_PUBLIC_KEY || '') };
   try {
     const { id } = mobileCheckout.identity({ contract: mobileCheckout.CONTRACT, requestId: data && data.requestId }, uid);
