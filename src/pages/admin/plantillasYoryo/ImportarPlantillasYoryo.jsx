@@ -420,8 +420,9 @@ export default function ImportarPlantillasYoryo() {
       <section className={s.grupo}>
         <h2>7. Cómodas de Daida Hogar</h2>
         <p>
-          Sube la cómoda de 4 cajones (S/ 450) y la de 8 cajones (S/ 590) a la marca Daida Hogar, con stock 4 cada una y tres
-          colores (blanco, nogal y blanco, roble y blanco), con su foto en ángulo y de frente. Crea la categoría
+          Sube la cómoda de 4 cajones (S/ 450) y las dos de 8 cajones, de 140 cm y de 120 cm de ancho (S/ 590 cada una), a la
+          marca Daida Hogar, con stock 4 cada una y tres colores (blanco, nogal y blanco, roble y blanco), con su foto en ángulo
+          y de frente. La de 8 cajones que ya estaba pasa a llamarse «Cómoda de 8 cajones · 140 cm». Crea la categoría
           <em> Cómodas</em> de la marca y el tipo <em>Mueble</em> si no existen. Lo que ya exista no se repite; después se
           edita en Admin → Productos como cualquier producto.
         </p>

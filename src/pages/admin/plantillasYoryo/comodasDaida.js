@@ -1,11 +1,12 @@
-import { createProduct, getProduct } from '../../../services/products';
+import { createProduct, getProduct, updateProductField, normalizeSearchText, buildSearchTokens } from '../../../services/products';
 import { getBrands } from '../../../services/brands';
 import { getCategories, createCategory, updateCategory } from '../../../services/categories';
 import { getProductTypes, createProductType } from '../../../services/productTypes';
 import { uploadFile } from '../../../services/firebase/storage';
 
 /*
- * Una sola vez (30-10-2026): las dos cómodas de Daida Hogar en la tienda, cada
+ * Una sola vez (30-10-2026): las cómodas de Daida Hogar en la tienda (la de 4
+ * cajones y las dos de 8: 140 cm y 120 cm de ancho), cada
  * una con sus tres colores (blanco, nogal y blanco, roble y blanco) y dos
  * fotos por color: en ángulo (la principal) y de frente. Crea lo que falte:
  * la categoría "Cómodas" de la marca y el tipo "Mueble". Lo que ya existe no
@@ -36,9 +37,15 @@ const PRODUCTOS = [
     id: 'daida-comoda-4-cajones', foto: '4', name: 'Cómoda de 4 cajones', sku: 'DAI-COM-4C', price: 450,
     medidas: { cajones: 4, ancho: 80, alto: 100, fondo: 42 },
   },
+  // Hay dos de 8 cajones: el nombre lleva el ancho para que no se confundan.
+  // `antes`: el nombre con que se creó, que se cambia si sigue igual.
   {
-    id: 'daida-comoda-8-cajones', foto: '8', name: 'Cómoda de 8 cajones', sku: 'DAI-COM-8C', price: 590,
+    id: 'daida-comoda-8-cajones', foto: '8', name: 'Cómoda de 8 cajones · 140 cm', antes: 'Cómoda de 8 cajones', sku: 'DAI-COM-8C', price: 590,
     medidas: { cajones: 8, ancho: 140, alto: 90, fondo: 42 },
+  },
+  {
+    id: 'daida-comoda-8-cajones-120', foto: '8b', name: 'Cómoda de 8 cajones · 120 cm', sku: 'DAI-COM-8C-120', price: 590,
+    medidas: { cajones: 8, ancho: 120, alto: 100, fondo: 42 },
   },
 ];
 const STOCK = 4;
@@ -114,7 +121,10 @@ export async function crearComodasDaida({ onPaso = () => {} } = {}) {
   for (const p of PRODUCTOS) {
     const { data: existe } = await getProduct(p.id);
     if (existe && existe.deleted !== true) {
-      onPaso(`${p.name}: ya existía`);
+      if (p.antes && existe.name === p.antes) {
+        await updateProductField(p.id, { name: p.name, nameLower: normalizeSearchText(p.name), searchTokens: buildSearchTokens(p.name, existe.brandId, existe.productType) });
+        onPaso(`${p.antes}: ahora se llama ${p.name}`);
+      } else onPaso(`${p.name}: ya existía`);
       hechos.push(p.id);
       continue;
     }
