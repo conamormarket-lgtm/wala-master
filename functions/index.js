@@ -5015,6 +5015,27 @@ function generateCouponCode() {
 // Lee rewardsCatalog/{rewardId}; valida active y que el usuario tenga monedas
 // suficientes (>= cost); descuenta con applyDebit; escribe ledger type 'spend';
 // crea un cupón en userCoupons con un code aleatorio 'WALA-XXXXXX'.
+// Crear desde la app (wala-mobile): el servidor dibuja los archivos de impresión, las vistas previas y la imagen
+// conjunta de una creación con el mismo fabric que la web (crearRender.js) y la deja guardada. canvas y fabric se
+// cargan solo aquí, para no hacer más lento el arranque del resto de funciones.
+async function descargarFotoPrenda(url) {
+  if (!/^https:\/\//i.test(String(url || ''))) throw new functions.https.HttpsError("failed-precondition", "Una foto de la prenda no es válida.");
+  const respuesta = await fetch(url, { signal: AbortSignal.timeout(20000) });
+  if (!respuesta.ok) throw new functions.https.HttpsError("unavailable", "No pudimos leer la foto de la prenda. Reintenta.");
+  const buffer = Buffer.from(await respuesta.arrayBuffer());
+  if (buffer.length > 25 * 1024 * 1024) throw new functions.https.HttpsError("failed-precondition", "La foto de la prenda pesa demasiado.");
+  return buffer;
+}
+exports.generarArchivosCreacionSecure = functions
+  .runWith({ memory: "2GB", timeoutSeconds: 300, maxInstances: 5 })
+  .https.onCall(async (data, context) => {
+    const { generarArchivosCreacion } = require("./crearArchivosServidor");
+    const render = require("./crearRender");
+    const fail = (message, code = "failed-precondition") => { throw new functions.https.HttpsError(code, message); };
+    return generarArchivosCreacion({ uid: context.auth && context.auth.uid, designId: data && data.designId, fail,
+      deps: { db, bucket: admin.storage().bucket(), FieldValue, render, descargar: descargarFotoPrenda } });
+  });
+
 exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
   const rewardId = data && data.rewardId;

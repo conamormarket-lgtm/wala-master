@@ -1,0 +1,272 @@
+[
+  {
+    "familia": "Back to Black",
+    "archivo": "BackToBlack.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Bernadette",
+    "archivo": "Bernadette.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Brush Script",
+    "archivo": "BrushScript.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "DK Longreach",
+    "archivo": "DKLongreach.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Franklin Gothic Heavy Italic",
+    "archivo": "FranklinGothicHeavyItalic.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Keep on Truckin",
+    "archivo": "KeepOnTruckin.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Rainbow Kitty",
+    "archivo": "RainbowKitty.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Cinzel",
+    "archivo": "Cinzel.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Varsity Team Bold",
+    "archivo": "VarsityTeamBold.otf",
+    "peso": "bold",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Montserrat",
+    "archivo": "Montserrat_400Regular.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Montserrat",
+    "archivo": "Montserrat_700Bold.ttf",
+    "peso": "bold",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Montserrat",
+    "archivo": "Montserrat_400Regular_Italic.ttf",
+    "peso": "normal",
+    "estilo": "italic"
+  },
+  {
+    "familia": "Montserrat",
+    "archivo": "Montserrat_700Bold_Italic.ttf",
+    "peso": "bold",
+    "estilo": "italic"
+  },
+  {
+    "familia": "Bebas Neue",
+    "archivo": "BebasNeue_400Regular.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Anton",
+    "archivo": "Anton_400Regular.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Oswald",
+    "archivo": "Oswald_400Regular.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Oswald",
+    "archivo": "Oswald_700Bold.ttf",
+    "peso": "bold",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Playfair Display",
+    "archivo": "PlayfairDisplay_400Regular.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Playfair Display",
+    "archivo": "PlayfairDisplay_700Bold.ttf",
+    "peso": "bold",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Playfair Display",
+    "archivo": "PlayfairDisplay_400Regular_Italic.ttf",
+    "peso": "normal",
+    "estilo": "italic"
+  },
+  {
+    "familia": "Playfair Display",
+    "archivo": "PlayfairDisplay_700Bold_Italic.ttf",
+    "peso": "bold",
+    "estilo": "italic"
+  },
+  {
+    "familia": "Righteous",
+    "archivo": "Righteous_400Regular.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Pacifico",
+    "archivo": "Pacifico_400Regular.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Lobster",
+    "archivo": "Lobster_400Regular.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Dancing Script",
+    "archivo": "DancingScript_400Regular.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Dancing Script",
+    "archivo": "DancingScript_700Bold.ttf",
+    "peso": "bold",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Great Vibes",
+    "archivo": "GreatVibes_400Regular.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Permanent Marker",
+    "archivo": "PermanentMarker_400Regular.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Caveat",
+    "archivo": "Caveat_400Regular.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Caveat",
+    "archivo": "Caveat_700Bold.ttf",
+    "peso": "bold",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Kanit",
+    "archivo": "Kanit_400Regular.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Kanit",
+    "archivo": "Kanit_700Bold.ttf",
+    "peso": "bold",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Kanit",
+    "archivo": "Kanit_400Regular_Italic.ttf",
+    "peso": "normal",
+    "estilo": "italic"
+  },
+  {
+    "familia": "Kanit",
+    "archivo": "Kanit_700Bold_Italic.ttf",
+    "peso": "bold",
+    "estilo": "italic"
+  },
+  {
+    "familia": "Rubik",
+    "archivo": "Rubik_400Regular.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Rubik",
+    "archivo": "Rubik_700Bold.ttf",
+    "peso": "bold",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Rubik",
+    "archivo": "Rubik_400Regular_Italic.ttf",
+    "peso": "normal",
+    "estilo": "italic"
+  },
+  {
+    "familia": "Rubik",
+    "archivo": "Rubik_700Bold_Italic.ttf",
+    "peso": "bold",
+    "estilo": "italic"
+  },
+  {
+    "familia": "Libre Baskerville",
+    "archivo": "LibreBaskerville_400Regular.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Libre Baskerville",
+    "archivo": "LibreBaskerville_700Bold.ttf",
+    "peso": "bold",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Libre Baskerville",
+    "archivo": "LibreBaskerville_400Regular_Italic.ttf",
+    "peso": "normal",
+    "estilo": "italic"
+  },
+  {
+    "familia": "Crimson Pro",
+    "archivo": "CrimsonPro_400Regular.ttf",
+    "peso": "normal",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Crimson Pro",
+    "archivo": "CrimsonPro_700Bold.ttf",
+    "peso": "bold",
+    "estilo": "normal"
+  },
+  {
+    "familia": "Crimson Pro",
+    "archivo": "CrimsonPro_400Regular_Italic.ttf",
+    "peso": "normal",
+    "estilo": "italic"
+  },
+  {
+    "familia": "Crimson Pro",
+    "archivo": "CrimsonPro_700Bold_Italic.ttf",
+    "peso": "bold",
+    "estilo": "italic"
+  }
+]
