@@ -512,7 +512,10 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
     let envioGratis = false;
     if (uid && cuponCode) {
       const encontrado = await buscarCupon(uid, cuponCode, t);
-      if (!motivoRechazo(encontrado && encontrado.cupon)) {
+      const motivoCupon = motivoRechazo(encontrado && encontrado.cupon);
+      // En la app el cupón se pide a propósito: si no sirve, se dice por qué (no se cobra sin descuento en silencio).
+      if (motivoCupon && mobile) throw new functions.https.HttpsError("failed-precondition", motivoCupon);
+      if (!motivoCupon) {
         // Todas las líneas como "no valorables": la base del descuento es el
         // subtotal que ya calculó el servidor, no el del navegador.
         const items = Object.values(orderPayload.productos || {}).map((p) => ({
@@ -570,7 +573,10 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
         `El total de tu pedido no coincide con los precios actuales (S/ ${esperado.toFixed(2)}). ` +
         "Recarga la página e inténtalo de nuevo.");
     }
-    if (amountPen > esperado + tolerancia) {
+    // App con cupón: el total que manda es el de antes del descuento (el que valida mobileCheckout.build); se cobra el
+    // que calculó el servidor con el cupón revalidado, nunca uno del celular.
+    const cuponMovil = Boolean(mobile && cuponCode && (descuentoCupon > 0 || envioGratis));
+    if (amountPen > esperado + tolerancia && !cuponMovil) {
       if (mobile) throw new functions.https.HttpsError('failed-precondition', 'El total cambió. Vuelve a revisar el pedido.');
       console.warn(`prepareCheckoutPayment: el cliente cobraría MÁS de lo esperado en ${intentId}`, {
         amountPen, esperado, subtotal, monedasPedidas, descuentoCupon, envioGratis,
@@ -578,7 +584,8 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
     }
 
     // Lo que se cobra ahora: el total. Nunca lo que diga el navegador.
-    const cobro = { modalidad: "completo", cobroPen: pagos.redondear(amountPen), saldoPen: 0 };
+    const montoCobro = cuponMovil ? esperado : amountPen;
+    const cobro = { modalidad: "completo", cobroPen: pagos.redondear(montoCobro), saldoPen: 0 };
 
     // El pedido que se guarda es el del navegador SIN campos de pago (los pone el
     // servidor al confirmar el cobro) y con la cuenta real de quien compra. El
@@ -589,17 +596,21 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
       ...payloadCliente,
       ...(referido ? { referido } : {}),
       ...(uid ? { userId: uid } : {}),
+      ...(cuponMovil ? { montoTotal: cobro.cobroPen, costoEnvio: envio, descuentoCupon } : {}),
       modalidadPago: cobro.modalidad,
       montoAdelanto: 0,
       montoPendiente: cobro.cobroPen,
     };
+    // Lo que la app muestra antes de pagar: los totales del servidor, con el cupón.
+    const mobileMeta = mobile && cuponMovil ? { ...mobile.meta, summary: { ...mobile.meta.summary,
+      totals: { ...mobile.meta.summary.totals, shipping: envio, discount: descuentoCupon, couponCode: cuponCode, total: cobro.cobroPen } } } : mobile && mobile.meta;
 
     // ── Escrituras ──
     t.create(ref, {
       uid,
-      ...(mobile ? { mobile: mobile.meta } : {}),
+      ...(mobile ? { mobile: mobileMeta } : {}),
       status: "prepared",
-      amountPen,
+      amountPen: montoCobro,
       cobro,
       orderPayload: payloadGuardado,
       totalesServidor: { subtotal, monedas: monedasPedidas, descuentoCupon, envioGratis, envio, esperado },
@@ -844,9 +855,12 @@ async function createPaidWebOrderFromIntent({ intentId, context, pago, payment =
   // cobro duplicado: no se toca el pedido y queda para devolver el dinero.
   let yaCreado = false;
   let duplicadoDe = null;
+  // El cupón de un pedido de la app se marca usado al registrar su cobro (en la web lo hace el navegador al final).
+  const cuponMovil = checkout.intent && checkout.intent.mobile && checkout.intent.uid && payload.cuponCode ? payload.cuponCode : "";
   await db.runTransaction(async (t) => {
     const snap = await t.get(checkout.ref);
     const actual = snap.data() || {};
+    const cupon = cuponMovil ? await buscarCupon(checkout.intent.uid, cuponMovil, t) : null;
     const pagoPrevio = actual.pago && actual.pago.id ? String(actual.pago.id) : "";
     if (actual.status === "paid_order_created" && pagoPrevio && pagoId && pagoPrevio !== pagoId) {
       duplicadoDe = pagoPrevio;
@@ -855,6 +869,9 @@ async function createPaidWebOrderFromIntent({ intentId, context, pago, payment =
     if (actual.status === "paid_order_created" && actual.pedidoCreado === true) {
       yaCreado = true;
       return;
+    }
+    if (cupon && cupon.cupon.status !== "used" && !cupon.cupon.orderId) {
+      t.update(cupon.ref, { status: "used", orderId, descuentoAplicado: Number(payload.descuentoCupon) || 0, usadoAt: FieldValue.serverTimestamp() });
     }
     t.set(checkout.ref, {
       status: "paid_order_created",

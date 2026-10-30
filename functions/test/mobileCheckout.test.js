@@ -43,3 +43,18 @@ test('3DS solo deja pasar los campos documentados, sin dar por válido un objeto
   assert.throws(() => mobile.threeDS({}));
   assert.deepEqual(mobile.threeDS({ eci: '05', xid: 'id', cavv: 'value', protocolVersion: '2.1.0', extra: 'drop' }), { eci: '05', xid: 'id', cavv: 'value', protocolVersion: '2.1.0' });
 });
+test('el cupón cuenta para el intento y llega al pedido como cuponCode, sin cambiar los intentos sin cupón', async () => {
+  const plain = mobile.identity(input(), 'a');
+  assert.deepEqual(mobile.identity({ ...input(), couponCode: '' }, 'a'), plain);
+  const withCoupon = mobile.identity({ ...input(), couponCode: ' wala-10 ' }, 'a');
+  assert.equal(withCoupon.id, plain.id);
+  assert.notEqual(withCoupon.hash, plain.hash);
+  assert.deepEqual(mobile.identity({ ...input(), couponCode: 'WALA-10' }, 'a'), withCoupon);
+  const built = await mobile.build({ ...input(), couponCode: 'wala-10' }, 'a', read());
+  assert.equal(built.payload.cuponCode, 'WALA-10');
+  assert.equal(built.payload.montoTotal, 164.7);
+  assert.equal(built.meta.input.couponCode, 'WALA-10');
+  assert.equal((await mobile.build(input(), 'a', read())).payload.cuponCode, undefined);
+  assert.throws(() => mobile.identity({ ...input(), couponCode: 'x; drop' }, 'a'));
+});
+
