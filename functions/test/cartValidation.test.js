@@ -27,7 +27,7 @@ test("checkout batches unique catalog documents and projects only validation fie
   const f = fixture({ a: { price: 45, inStock: 10 }, b: { price: 30, inStock: 2 } });
   await f.validate([line("a"), line("a", 2), line("b", 1, { precio: 30 })]);
   assert.deepEqual(f.calls, [{ ids: ["a", "b"], options: {
-    fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "seVendeTalCual", "prendaBase", "brandId"],
+    fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "seVendeTalCual", "prendaBase", "variants", "mainSizes", "brandId"],
   } }]);
 });
 
@@ -125,6 +125,20 @@ test("a Crear garment that is also sold as is can be bought without a design, at
   assert.equal(subtotal, 120);
   await assert.rejects(f.validate([line("billetera", 1, { precio: 1 })]), /precio.*cambió/);
   await assert.rejects(f.validate([line("billetera", 5, { precio: 120 })]), /stock suficiente/);
+});
+
+test("a garment sold as is needs one of its color's sizes; without sizes it needs none", async () => {
+  const polo = { price: 75, inStock: 10, esPrendaBase: true, seVendeTalCual: true, prendaBase: { vistas: [] },
+    variants: [{ name: "Negro", sizes: ["S", "M", "L"] }, { name: "Blanco", sizes: [] }], mainSizes: [] };
+  const f = fixture({ polo });
+  await f.validate([line("polo", 1, { precio: 75, color: "Negro", talla: "M" })]);
+  await assert.rejects(f.validate([line("polo", 1, { precio: 75, color: "Negro" })]), /Elige la talla/);
+  await assert.rejects(f.validate([line("polo", 1, { precio: 75, color: "Negro", talla: "XXL" })]), /Elige la talla/);
+  // Un color sin tallas propias usa las de la prenda.
+  await assert.rejects(f.validate([line("polo", 1, { precio: 75, color: "Blanco" })]), /Elige la talla/);
+  await f.validate([line("polo", 1, { precio: 75, color: "Blanco", talla: "S" })]);
+  // Personalizado, la talla la lleva su creación (no se exige aquí).
+  await f.validate([line("polo", 1, { precio: 75, personalizado: true, designId: "d1" })]);
 });
 
 // Pack de Yoryo: el reloj va tal cual (pieza fija) y la billetera se graba.

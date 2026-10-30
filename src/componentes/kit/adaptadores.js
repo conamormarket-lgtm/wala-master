@@ -300,11 +300,14 @@ export function opcionesDeProducto(p, { subproductos = {} } = {}) {
     // mainImage suele ser el relleno "Producto").
     producto: { nombre: p.name, imagen: portadaDeCombo(p) || [p.mainImage, ...(p.images || []), ...(p.comboItems || []).map((it) => it.imageUrl)].find((u) => u && !String(u).includes('placeholder')), precio: p.salePrice || p.price, precioAntes: p.salePrice ? p.price : undefined },
     // Una prenda de Crear: sus colores como en Crear (el bicolor partido en
-    // dos) y sin tallas (se eligen en el estudio, al agregar).
+    // dos) y sin tallas (se eligen en el estudio, al agregar). Si también se
+    // vende tal cual, cada color trae sus tallas: el polo liso se pide con talla.
     variantes: piezas.length ? [] : p?.esPrendaBase
       ? coloresDeCrear(p).map((c) => {
         const v = vs.find((x) => String(x.id) === String(c.id));
-        return { id: c.id, nombre: c.nombre, colorHex: c.fondo, claro: esClaro(c.hex), imagen: v?.imageUrl, opciones: [] };
+        const cfg = seVendeTalCual(p) ? leerPrendaBase(p) : null;
+        const opciones = cfg ? tallasDeColor(cfg.colores.find((x) => x.id === c.id), cfg) : [];
+        return { id: c.id, nombre: c.nombre, colorHex: c.fondo, claro: esClaro(c.hex), imagen: v?.imageUrl, opciones };
       })
       : vs.map((v) => {
         const hex = hexDeVariante(v);

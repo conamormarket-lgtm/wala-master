@@ -136,3 +136,5 @@ Un personalizable puede venderse **también sin personalizar**: en su ficha, pes
 La billetera Cónsul y la esclava son así desde el paso 6: una sola ficha (la de Crear) con el nombre, la descripción, el precio, el stock y la categoría de la tienda. La ficha de tienda de antes lleva `reemplazadoPor`: la web no la muestra y su enlace lleva a la nueva, pero sigue visible para la **app de Android** (que todavía no muestra personalizables) y para los combos de la tienda que la usan como pieza. Ojo: mientras tanto hay dos stocks, el de la ficha nueva (web) y el de la vieja (app y combos).
 
 El tomatodo se vende tal cual prendiendo ese mismo interruptor en su ficha.
+
+**Prendas con tallas** (polo, casaca, jogger): con el interruptor, la página pide la talla del color elegido (las de Crear) antes de agregar, y el servidor rechaza una prenda tal cual sin una talla de su color. Personalizada, la talla sigue eligiéndose en el estudio.

@@ -15,6 +15,21 @@ function precioDePrendaPersonalizada(product) {
 
 const redondear = (n) => Math.round(n * 100) / 100;
 
+const textos = (lista) => (Array.isArray(lista) ? lista : []).map((t) => String(t == null ? "" : t).trim()).filter(Boolean);
+
+// Las tallas que se pueden pedir de una prenda de Crear en un color: las de
+// ese color o, si no tiene, las de la prenda (como tallasDeColor en
+// src/utils/prendaBase.js).
+function tallasDePrenda(product, color) {
+  const variantes = Array.isArray(product.variants) ? product.variants : [];
+  const normal = (t) => String(t == null ? "" : t).trim().toLowerCase();
+  const delColor = variantes.find((v) => v && normal(v.name) === normal(color));
+  const suyas = textos(delColor && delColor.sizes);
+  if (suyas.length) return suyas;
+  const prendaBase = product.prendaBase && typeof product.prendaBase === "object" ? product.prendaBase : {};
+  return [...new Set([...variantes.flatMap((v) => textos(v && v.sizes)), ...textos(prendaBase.tallas), ...textos(product.mainSizes)])];
+}
+
 // Combos de Crear (esComboCrear): "Pareja", "Trío"... Un combo es un doc de
 // productos_wala con su precio de paquete y sus piezas (comboCrear.piezas,
 // una prenda de Crear cada una). En el pedido llega como una línea por pieza
@@ -144,7 +159,7 @@ function createCartValidator({ db, HttpsError }) {
     }
     const refs = ids.map((id) => db.collection("productos_wala").doc(id));
     const snapshots = await reader.getAll(...refs, {
-      fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "seVendeTalCual", "prendaBase", "brandId"],
+      fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "seVendeTalCual", "prendaBase", "variants", "mainSizes", "brandId"],
     });
     const byId = new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
 
@@ -170,6 +185,13 @@ function createCartValidator({ db, HttpsError }) {
       // ("También se vende sin personalizar": la billetera de Yoryo).
       if (product.esPrendaBase === true && product.seVendeTalCual !== true && !item.personalizado && !String(item.designId || "").trim() && !item.vistasPersonalizadas) {
         throw new HttpsError("failed-precondition", `"${nombre}" se compra personalizado. Diséñalo en Crear y vuelve a agregarlo.`);
+      }
+      // La misma prenda tal cual (un polo liso): con una talla de su color.
+      if (product.esPrendaBase === true && !item.personalizado && !String(item.designId || "").trim()) {
+        const tallas = tallasDePrenda(product, item.color);
+        if (tallas.length && !tallas.includes(String(item.talla || "").trim())) {
+          throw new HttpsError("failed-precondition", `Elige la talla de "${nombre}" y vuelve a agregarlo al carrito.`);
+        }
       }
       const clientPrice = Number(item.precio);
       if (item.personalizado && product.esPrendaBase === true) {
