@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createCanvas } = require('canvas');
 const render = require('../crearRender');
-const { generarArchivosCreacion, rutaPropia } = require('../crearArchivosServidor');
+const { generarArchivosCreacion, generarMiniaturasBorrador, rutaPropia } = require('../crearArchivosServidor');
 
 const BUCKET = 'demo.appspot.com';
 const png = (w, h, color) => { const c = createCanvas(w, h); const ctx = c.getContext('2d'); ctx.fillStyle = color; ctx.fillRect(0, 0, w, h); return c.toBuffer('image/png'); };
@@ -108,6 +108,24 @@ test('dibuja una prenda de combo si es una pieza que se diseña de ese combo, y 
     const mal = conCombo(piezas);
     await assert.rejects(generarArchivosCreacion({ uid: 'u1', designId: 'd1', deps: mal.deps, fail: mal.fail }), /ese combo/);
   }
+});
+
+test('dibuja las miniaturas de un borrador como la web (420 px, dentro del documento) y no toca una creación guardada', async () => {
+  const f = fixture({ layersByView: capas });
+  const out = await generarMiniaturasBorrador({ uid: 'u1', designId: 'd1', deps: f.deps, fail: f.fail });
+  assert.deepEqual(out.miniaturas, [{ vista: 'frente', nombre: 'Frente' }]);
+  const d = f.docs.get('designs/d1');
+  assert.match(d.miniatura, /^data:image\/jpeg;base64,/);
+  assert.equal(d.miniaturas[0].url, d.miniatura);
+  const { loadImage } = require('canvas');
+  assert.equal((await loadImage(Buffer.from(d.miniatura.split(',')[1], 'base64'))).width, 420);
+  assert.equal(d.estado, 'borrador');
+  const vacio = fixture({ layersByView: {} });
+  assert.equal((await generarMiniaturasBorrador({ uid: 'u1', designId: 'd1', deps: vacio.deps, fail: vacio.fail })).miniaturas.length, 1);
+  const guardada = fixture({ layersByView: capas, estado: 'guardada' });
+  assert.deepEqual(await generarMiniaturasBorrador({ uid: 'u1', designId: 'd1', deps: guardada.deps, fail: guardada.fail }), { miniaturas: [] });
+  assert.equal(guardada.docs.get('designs/d1').miniatura, undefined);
+  await assert.rejects(generarMiniaturasBorrador({ uid: 'u2', designId: 'd1', deps: f.deps, fail: f.fail }), (e) => e.code === 'not-found');
 });
 
 test('en un pedido conserva los archivos anteriores', async () => {
