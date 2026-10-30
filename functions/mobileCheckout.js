@@ -11,11 +11,21 @@ const fail = (message) => { const error = new Error(message); error.code = 'inva
 const cents = (amount) => Math.round(amount * 100);
 const stable = (value) => Array.isArray(value) ? value.map(stable) : value && typeof value === 'object'
   ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, stable(value[key])])) : value;
+// El código de un cupón de userCoupons (mayúsculas, como buscarCupon); vacío si no se mandó.
+function couponCode(input) {
+  if (input?.couponCode == null || input.couponCode === '') return '';
+  const code = String(input.couponCode).trim().toUpperCase();
+  if (!/^[A-Z0-9_-]{3,40}$/.test(code)) fail('Revisa el código del cupón.');
+  return code;
+}
 function identity(input, uid) {
   if (!uid) fail('Inicia sesión para preparar el pago.');
   if (!input || !/^[A-Za-z0-9_-]{16,80}$/.test(input.requestId || '') || input.contract !== CONTRACT) fail('El intento de pago no es válido.');
   if (input.expectedUid !== undefined && input.expectedUid !== uid) fail('La sesión cambió. Vuelve a preparar el pago desde tu cuenta actual.');
-  const body = JSON.stringify(stable({ items: input.items, address: input.address, email: input.email, expectedTotal: input.expectedTotal }));
+  // Sin cupón el cuerpo es el de siempre: los intentos ya preparados conservan su huella.
+  const coupon = couponCode(input);
+  const body = JSON.stringify(stable({ items: input.items, address: input.address, email: input.email, expectedTotal: input.expectedTotal,
+    ...(coupon ? { couponCode: coupon } : {}) }));
   if (!body || body.length > 128_000) fail('El pedido supera el tamaño permitido.');
   return { id: `MC-${createHash('sha256').update(`${uid}:${input.requestId}`).digest('hex').slice(0, 28)}`,
     hash: createHash('sha256').update(body).digest('hex') };
@@ -29,6 +39,7 @@ async function build(input, uid, read) {
   if (!Array.isArray(input.items) || !input.items.length || input.items.length > 100) fail('Revisa los productos del carrito.');
   const address = cleanAddress(input.address || {}); const email = String(input.email || '').trim();
   assertAddress(address, email);
+  const coupon = couponCode(input);
   const ids = [...new Set(input.items.map((item) => item && item.productId))];
   if (ids.some((id) => !validId(id))) fail('Un producto no es válido.');
   const roots = await read(ids);
@@ -90,9 +101,11 @@ async function build(input, uid, read) {
     estadoGeneral: 'Nuevo', status: 'Nuevo', cantidad: items.reduce((sum, line) => sum + line.quantity, 0), productos,
     prendas: items.map((line) => `${line.product.name} x${line.quantity}`).join(', '),
     esPersonalizado: false, esMostacero: false, esPrioridad: false, importado: false,
+    // prepareCheckoutPayment lo revalida con el cupón de la cuenta y descuenta en el servidor.
+    ...(coupon ? { cuponCode: coupon } : {}),
   };
   return { key, payload, meta: { contract: CONTRACT, requestId: input.requestId, requestHash: key.hash,
-    input: { contract: CONTRACT, requestId: input.requestId, expectedTotal: total, address, email,
+    input: { contract: CONTRACT, requestId: input.requestId, expectedTotal: total, address, email, ...(coupon ? { couponCode: coupon } : {}),
       items: items.map((line) => ({ productId: line.product.id, quantity: line.quantity, selection: selectionFromChosen(line.selection) })) },
     summary: { address, email, items, totals: { subtotal, shipping: envio, total }, currency: 'PEN' } } };
 }
@@ -114,4 +127,4 @@ function threeDS(data) {
   }
   return out;
 }
-module.exports = { CONTRACT, identity, build, shipping, view, threeDS };
+module.exports = { CONTRACT, identity, build, shipping, view, threeDS, couponCode };
