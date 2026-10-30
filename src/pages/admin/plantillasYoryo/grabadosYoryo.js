@@ -25,7 +25,7 @@ import { tamanoParaCaja } from './plantillasACapas.mjs';
 const BASE = '/yoryo/grabados';
 // Qué fotos para diseñar lleva el producto: si cambian, volver a correrlo las
 // pone (con sus zonas) en el producto que ya existe.
-const VERSION_FOTOS = 'transparentes-encuadre-2026-10-29';
+const VERSION_FOTOS = 'transparentes-encuadre-2-2026-10-30';
 const BILLETERA_TIENDA = 'NEtavILSA0EoxJgGD7ou';
 const ESCLAVA_TIENDA = 'WAxcEpXkgODfj0JBc4qB';
 export const IDS_GRABADOS = { billetera: 'yoryo-crear-billetera', esclava: 'yoryo-crear-esclava' };
@@ -47,6 +47,8 @@ const PIEZAS = {
     },
     // La tarjeta de Crear la muestra de frente (con el cierre); se graba atrás.
     portadaDeFrente: true,
+    // El tamaño de las fotos para diseñar: la zona se midió sobre él.
+    medida: { ancho: 1086, alto: 1448 },
     // Sobre la foto de 1086 × 1448, con el encuadre de la de frente (la cara va
     // de 100,165 a 990,1290 en los tres colores): así la portada y la foto para
     // diseñar se ven del mismo tamaño en la tarjeta. Abajo a la derecha, como
@@ -58,6 +60,7 @@ const PIEZAS = {
     id: IDS_GRABADOS.esclava, tiendaId: ESCLAVA_TIENDA, nombre: 'Esclava Yoryo grabada',
     vista: { id: 'frente', nombre: 'Placa' },
     fotos: { 'Negro Acero': { diseno: 'esclava-negro-acero.webp' } },
+    medida: { ancho: 1024, alto: 768 },
     // Sobre la foto de 1024 × 768: la placa va de x 238 a 790 y de y 370 a 540;
     // la zona queda adentro, sin tocar el borde. Placa de unos 4.5 cm (estimado).
     zona: { id: 'esclava-placa', nombre: 'Placa', x: 268 / 1024, y: 390 / 768, w: 492 / 1024, proporcion: 130 / 492, angulo: 0 },
@@ -136,8 +139,10 @@ function plantillasDe(clave, proporcion, simbolos) {
   ];
 }
 
+// Siempre del servidor: las fotos de public/ quedan un día en la caché (y en
+// la del service worker) y con el mismo nombre se leía la versión anterior.
 const leerBlob = async (url) => {
-  const r = await fetch(url);
+  const r = await fetch(`${url}${url.includes('?') ? '&' : '?'}v=${VERSION_FOTOS}`, { cache: 'no-store' });
   if (!r.ok) throw new Error(`No se encontró ${url}`);
   return r.blob();
 };
@@ -196,7 +201,12 @@ async function subirFotosDeDiseno(clave, pieza, tienda) {
     const blob = await leerBlob(`${BASE}/${fotos.diseno}`);
     const url = await subir(pieza.id, blob, `${clave}-${v.id}`);
     colores[v.id] = { fotos: { [pieza.vista.id]: url } };
-    if (!principal || String(v.id) === String(tienda.defaultVariantId)) principal = { url, ...(await medidas(blob)) };
+    const tamano = await medidas(blob);
+    // La zona se midió sobre fotos de este tamaño: otra (una vieja en caché) la descuadra.
+    if (tamano.ancho !== pieza.medida.ancho || tamano.alto !== pieza.medida.alto) {
+      throw new Error(`La foto de ${pieza.nombre} en ${v.name} llegó de ${tamano.ancho} × ${tamano.alto} y debe ser de ${pieza.medida.ancho} × ${pieza.medida.alto}. Recarga con Ctrl + F5 y vuelve a correrlo.`);
+    }
+    if (!principal || String(v.id) === String(tienda.defaultVariantId)) principal = { url, ...tamano };
   }
   return { colores, principal };
 }
