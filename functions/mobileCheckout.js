@@ -34,15 +34,84 @@ function shipping(subtotal) { return cents(subtotal) > 20_000 ? 0 : 15; }
 const validId = (id) => typeof id === 'string' && id.length > 0 && id.length <= 200 && !id.includes('/');
 const chosenId = (id, s) => JSON.stringify([id, s.variantId, s.size, s.pieces.map((p) => [p.key, p.productId, p.variantId, p.size])]);
 
-async function build(input, uid, read) {
+// ── Creaciones de Crear (prendas base con el diseño del cliente) ───────────────
+// El celular solo manda { designId, quantity, size }. Todo lo demás (precio, archivos, vistas) se lee aquí del
+// diseño guardado y de la prenda, como lo arma pedidoCheckout.js en la web.
+const validDesignId = (id) => typeof id === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(id);
+const precioBase = (p) => { const price = Number(p && p.price); const sale = Number(p && p.salePrice);
+  return Number.isFinite(sale) && sale > 0 && sale < price ? sale : Number.isFinite(price) ? price : 0; };
+const urlsUnicas = (urls) => [...new Set((urls || []).filter((u) => typeof u === 'string' && /^https:\/\//i.test(u.trim())).map((u) => u.trim()))];
+// Solo archivos del propio comprador (los copia congelarDisenos al crear el pedido).
+const esArchivoPropio = (url, uid) => typeof url === 'string' && url.includes(`designs%2F${encodeURIComponent(uid)}%2F`);
+// getDesignReferences de la web: imágenes, textos, vista previa, archivo de impresión y medida por zona.
+function referenciasDeDiseno(d) {
+  const refs = [d.previewUrl, d.imagenConjunta];
+  const views = {};
+  Object.entries(d.layersByView || {}).forEach(([zona, capas]) => {
+    if (!Array.isArray(capas) || !capas.length) return;
+    const imagenes = urlsUnicas(capas.filter((c) => c && c.type === 'image').map((c) => c.src));
+    refs.push(...imagenes);
+    views[zona] = { imagenes, textos: capas.filter((c) => c && c.type === 'text' && c.text).map((c) => String(c.text)) };
+  });
+  (d.vistasPrevias || []).forEach((previa) => {
+    refs.push(previa && previa.url);
+    (Array.isArray(previa && previa.zonas) ? previa.zonas : [previa && previa.vista]).forEach((zona) => {
+      if (views[zona]) views[zona].vistaPrevia = (previa && previa.url) || '';
+    });
+  });
+  (d.archivosImpresion || []).forEach((archivo) => {
+    refs.push(archivo && archivo.url);
+    if (!archivo || !views[archivo.vista]) return;
+    views[archivo.vista].archivoImpresion = archivo.url || '';
+    views[archivo.vista].medida = archivo.anchoCm ? `${archivo.anchoCm} x ${archivo.altoCm} cm` : `${archivo.ancho} x ${archivo.alto} px`;
+    if (archivo.nombre) views[archivo.vista].zona = archivo.nombre;
+    if (archivo.tecnica === 'laser') views[archivo.vista].tecnicaProduccion = 'laser';
+  });
+  return { images: urlsUnicas(refs), views };
+}
+async function creationLines(rows, uid, read, readDesigns) {
+  if (!rows.length) return [];
+  if (rows.length > 20 || rows.some((row) => !validDesignId(row && row.designId))) fail('Revisa tus creaciones del carrito.');
+  const designs = await readDesigns([...new Set(rows.map((row) => row.designId))]);
+  const productIds = [...new Set([...designs.values()].map((d) => d && d.productId).filter(validId))];
+  const roots = productIds.length ? await read(productIds) : new Map();
+  const seen = new Set();
+  return rows.map((row) => {
+    const d = designs.get(row.designId);
+    if (!d || d.userId !== uid || d.tipo !== 'crear' || d.combo) fail('Una creación del carrito ya no está disponible. Actualiza tu carrito.');
+    if (d.estado === 'borrador') fail('Una creación del carrito está como borrador: termínala antes de pagar.');
+    const archivos = Array.isArray(d.archivosImpresion) ? d.archivosImpresion.filter((a) => a && a.url) : [];
+    if (!archivos.length || !archivos.every((a) => esArchivoPropio(a.url, uid))) fail('Una creación no tiene sus archivos de impresión. Ábrela y vuelve a guardarla.');
+    const raw = roots.get(d.productId);
+    if (!raw || raw.esPrendaBase !== true || raw.deleted === true || raw.visible === false) fail('La prenda de una creación ya no está disponible.');
+    if (!Number.isInteger(row.quantity) || row.quantity < 1 || row.quantity > 99) fail('Revisa las cantidades del carrito.');
+    const colorId = d.color && d.color.id != null ? String(d.color.id) : '';
+    const variant = (raw.variants || []).find((v) => String(v && v.id) === colorId) || null;
+    const sizes = Array.isArray(variant && variant.sizes) ? variant.sizes.map(String) : [];
+    const size = typeof row.size === 'string' ? row.size.trim() : '';
+    if (sizes.length ? !sizes.includes(size) : size) fail('Elige una talla de las que hay para el color de tu creación.');
+    const key = `${row.designId}:${size}`;
+    if (seen.has(key)) fail('El carrito tiene la misma creación repetida. Actualízalo.');
+    seen.add(key);
+    const price = precioBase(raw);
+    if (!(price > 0)) fail('La prenda de una creación no tiene precio.');
+    const preview = (d.vistasPrevias || []).find((v) => v && v.url)?.url || d.previewUrl || d.imagenConjunta || '';
+    return { designId: row.designId, design: d, raw, size, quantity: row.quantity, price, preview,
+      vistasUsadas: Object.keys(d.layersByView || {}).filter((zona) => Array.isArray(d.layersByView[zona]) && d.layersByView[zona].length) };
+  });
+}
+
+async function build(input, uid, read, readDesigns = async () => new Map()) {
   const key = identity(input, uid);
   if (!Array.isArray(input.items) || !input.items.length || input.items.length > 100) fail('Revisa los productos del carrito.');
   const address = cleanAddress(input.address || {}); const email = String(input.email || '').trim();
   assertAddress(address, email);
   const coupon = couponCode(input);
-  const ids = [...new Set(input.items.map((item) => item && item.productId))];
+  const designRows = input.items.filter((item) => item && item.designId);
+  const catalogRows = input.items.filter((item) => !(item && item.designId));
+  const ids = [...new Set(catalogRows.map((item) => item && item.productId))];
   if (ids.some((id) => !validId(id))) fail('Un producto no es válido.');
-  const roots = await read(ids);
+  const roots = ids.length ? await read(ids) : new Map();
   const products = new Map(ids.map((id) => [id, roots.get(id) ? mapProduct(id, roots.get(id)) : null]));
   const componentIds = [...new Set([...products.values()].flatMap((p) => p?.combo?.pieces.map((piece) => piece.productId) || []))];
   if (componentIds.length > 200 || componentIds.some((id) => !validId(id))) fail('Revisa las piezas del pedido.');
@@ -52,7 +121,7 @@ async function build(input, uid, read) {
       product: rawComponents.get(piece.productId) ? mapProduct(piece.productId, rawComponents.get(piece.productId), { component: true }) : null }));
   }
   const quantities = new Map(); const lineIds = new Set();
-  const items = input.items.map((row) => {
+  const items = catalogRows.map((row) => {
     const product = products.get(row.productId);
     if (!product?.available || product.configurationIssue) fail('Un producto ya no está disponible. Actualiza tu carrito.');
     if (!Number.isInteger(row.quantity) || row.quantity < 1 || row.quantity > 99) fail('Revisa las cantidades del carrito.');
@@ -66,7 +135,9 @@ async function build(input, uid, read) {
       quantity: row.quantity, selection, status: 'valid', message: null, maxQuantity: Math.min(99, product.stock ?? 99) };
   });
   for (const [id, quantity] of quantities) if (products.get(id).stock !== null && quantity > products.get(id).stock) fail('El stock cambió. Actualiza tu carrito.');
-  const subtotal = items.reduce((sum, line) => sum + cents(line.product.price) * line.quantity, 0) / 100;
+  const creations = await creationLines(designRows, uid, read, readDesigns);
+  const subtotal = (items.reduce((sum, line) => sum + cents(line.product.price) * line.quantity, 0)
+    + creations.reduce((sum, line) => sum + cents(line.price) * line.quantity, 0)) / 100;
   const envio = shipping(subtotal); const total = (cents(subtotal) + cents(envio)) / 100;
   if (!Number.isFinite(input.expectedTotal) || cents(total) !== cents(input.expectedTotal)) fail('El importe cambió. Vuelve a revisar el pedido antes de pagar.');
   if (cents(total) < 300 || cents(total) > 999900) fail('El importe está fuera del rango permitido para este pago con Culqi.');
@@ -86,6 +157,16 @@ async function build(input, uid, read) {
       subtotal: cents(line.product.price) * line.quantity / 100, personalizado: false,
       ...(line.selection.pieces.length ? { esCombo: true, combo: line.product.name, subProductos } : {}) }];
   }));
+  creations.forEach((line, index) => {
+    const d = line.design;
+    const refs = referenciasDeDiseno(d);
+    productos[`item_${items.length + index}`] = { productoId: d.productId, producto: line.raw.name || d.productName || '', brandId: line.raw.brandId || null,
+      urlImagen: line.preview, imagenReferencial: line.preview, imagenesReferencia: refs.images, imagenesPorLado: [],
+      cantidad: line.quantity, talla: line.size, color: (d.color && d.color.nombre) || '', colorHex: (d.color && d.color.hex) || '',
+      precio: line.price, subtotal: cents(line.price) * line.quantity / 100, personalizado: true, textoPersonalizado: '',
+      urlImagenPersonalizada: d.previewUrl || line.preview, disenoVistas: refs.views, designId: line.designId,
+      vistasPersonalizadas: line.vistasUsadas, colorPrenda: (d.color && d.color.nombre) || '', prendaNombre: line.raw.name || d.productName || '' };
+  });
   const payload = {
     numeroPedido: key.id, portalPseudoOrderId: key.id, checkoutContract: CONTRACT,
     userId: uid, dni: address.dni, country: address.country,
@@ -100,14 +181,18 @@ async function build(input, uid, read) {
     montoTotal: total, montoAdelanto: 0, montoPendiente: total, costoEnvio: envio,
     estadoGeneral: 'Nuevo', status: 'Nuevo', cantidad: items.reduce((sum, line) => sum + line.quantity, 0), productos,
     prendas: items.map((line) => `${line.product.name} x${line.quantity}`).join(', '),
-    esPersonalizado: false, esMostacero: false, esPrioridad: false, importado: false,
+    esPersonalizado: creations.length > 0, esMostacero: false, esPrioridad: false, importado: false,
     // prepareCheckoutPayment lo revalida con el cupón de la cuenta y descuenta en el servidor.
     ...(coupon ? { cuponCode: coupon } : {}),
   };
   return { key, payload, meta: { contract: CONTRACT, requestId: input.requestId, requestHash: key.hash,
     input: { contract: CONTRACT, requestId: input.requestId, expectedTotal: total, address, email, ...(coupon ? { couponCode: coupon } : {}),
-      items: items.map((line) => ({ productId: line.product.id, quantity: line.quantity, selection: selectionFromChosen(line.selection) })) },
-    summary: { address, email, items, totals: { subtotal, shipping: envio, total }, currency: 'PEN' } } };
+      items: [...items.map((line) => ({ productId: line.product.id, quantity: line.quantity, selection: selectionFromChosen(line.selection) })),
+        ...creations.map((line) => ({ designId: line.designId, quantity: line.quantity, size: line.size }))] },
+    summary: { address, email, items, creations: creations.map((line) => ({ designId: line.designId, productId: line.design.productId,
+      name: line.design.name || line.raw.name || 'Mi creación', productName: line.raw.name || '', imageUrl: line.preview, size: line.size,
+      color: (line.design.color && line.design.color.nombre) || '', price: line.price, quantity: line.quantity })),
+    totals: { subtotal, shipping: envio, total }, currency: 'PEN' } } };
 }
 function view(id, intent) {
   if (!intent?.mobile || intent.mobile.contract !== CONTRACT) fail('Este pago no pertenece a la app.');
