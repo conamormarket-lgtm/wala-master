@@ -19,9 +19,11 @@ assert.equal(precioDeCatalogo({ price: 45, salePrice: " 35 " }), 35);
 assert.equal(precioDeCatalogo({ price: 45, salePrice: 45 }), 45);
 assert.equal(precioDeCatalogo({ price: 45, salePrice: 60 }), 45);
 
-// No confundir una oferta explícita de cero con ausencia de oferta.
-assert.equal(precioDeCatalogo({ price: 45, salePrice: 0 }), 0);
-assert.equal(precioDeCatalogo({ price: 45, salePrice: "0" }), 0);
+// Una oferta de cero es "sin oferta": el admin la guarda así al dejarla vacía
+// y la tienda muestra el precio normal (antes el pago fallaba con S/ 0.00).
+assert.equal(precioDeCatalogo({ price: 45, salePrice: 0 }), 45);
+assert.equal(precioDeCatalogo({ price: 45, salePrice: "0" }), 45);
+assert.equal(precioDeCatalogo({ price: 45, salePrice: -5 }), 45);
 assert.equal(precioDeCatalogo({ price: 0, salePrice: null }), 0);
 
 // Datos no numéricos no deben convertirse accidentalmente en una oferta.
