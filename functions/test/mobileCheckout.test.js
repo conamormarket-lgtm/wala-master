@@ -90,3 +90,43 @@ test('una creación propia y guardada entra al pedido con sus archivos y el prec
   await assert.rejects(mobile.build({ ...onlyCreation, items: [creation, creation], expectedTotal: 79.9 * 2 + 15 }, 'a', readP, readD()));
   await assert.rejects(mobile.build({ ...onlyCreation, expectedTotal: 1 }, 'a', readP, readD()));
 });
+
+test('cobra un "Mi combo" como la web: cada pieza en su línea, el precio repartido y la pieza fija tal cual', async () => {
+  const archivo = 'https://firebasestorage.googleapis.com/v0/b/b/o/designs%2Fa%2Fcrear%2Fimpresion%2F1_pecho.png?alt=media';
+  const productos = { c1: { name: 'Pack Yoryo', price: 220, salePrice: 199.99, esComboCrear: true, visible: false,
+      comboCrear: { publicado: true, piezas: [{ prendaId: 'polera' }, { prendaId: 'reloj', fija: true, color: { id: 'oro', nombre: 'Oro', hex: '#D4AF37' } }] } },
+    polera: { name: 'Polera', price: 129, esPrendaBase: true, variants: [{ id: 'negro', name: 'Negro', sizes: ['S', 'M'] }] },
+    reloj: { name: 'Reloj', price: 120, variants: [{ id: 'oro', name: 'Oro', colorHex: '#D4AF37', images: ['https://x.test/reloj.png'] }] } };
+  const disenos = { m1: { userId: 'a', tipo: 'comboCrear', comboId: 'c1', piezas: [{ designId: 'p1' }, { fija: true }] },
+    p1: { userId: 'a', tipo: 'crear', estado: 'guardada', name: 'Mi polera', productId: 'polera', combo: { id: 'c1', pieza: 0 }, color: { id: 'negro', nombre: 'Negro', hex: '#111111' },
+      archivosImpresion: [{ url: archivo, vista: 'pecho', ancho: 10, alto: 10 }], vistasPrevias: [{ url: 'https://x.test/p.jpg', vista: 'frente', zonas: ['pecho'] }],
+      layersByView: { pecho: [{ type: 'text', text: 'Hola' }] } } };
+  const leer = (fuente) => async (ids) => new Map(ids.filter((id) => fuente[id]).map((id) => [id, fuente[id]]));
+  const fila = { comboId: 'c1', miComboId: 'm1', quantity: 2, piezas: [{ designId: 'p1', size: 'M' }, { fija: true }] };
+  const pedido = (cambios = {}, d = disenos) => mobile.build({ ...input(), items: [{ ...fila, ...cambios }], expectedTotal: 399.98 + mobile.shipping(399.98) }, 'a', leer(productos), leer(d));
+  const { payload, meta } = await pedido();
+  const [polera, reloj] = [payload.productos.item_0_0, payload.productos.item_0_1];
+  assert.deepEqual(polera.comboCrear, { comboId: 'c1', grupo: 0, pieza: 0, de: 2, miComboId: 'm1' });
+  assert.equal(polera.precio + reloj.precio, 199.99);
+  assert.deepEqual(mobile.repartirPrecio(199.99, 2), [99.99, 100]);
+  assert.equal(polera.personalizado, true); assert.equal(polera.designId, 'p1'); assert.equal(polera.talla, 'M'); assert.equal(polera.cantidad, 2);
+  assert.equal(polera.disenoVistas.pecho.archivoImpresion, archivo);
+  assert.equal(reloj.personalizado, false); assert.equal(reloj.talCual, true); assert.equal(reloj.color, 'Oro'); assert.equal(reloj.urlImagen, 'https://x.test/reloj.png');
+  assert.equal(payload.montoTotal, 399.98); assert.equal(payload.esPersonalizado, true); assert.match(payload.prendas, /\[COMBO\] Pack Yoryo: Polera \+ Reloj x2/);
+  assert.deepEqual(meta.input.items, [{ comboId: 'c1', miComboId: 'm1', quantity: 2, piezas: [{ designId: 'p1', size: 'M' }, { fija: true }] }]);
+  assert.equal(meta.summary.combos[0].piezas[0].name, 'Mi polera');
+  // Las líneas pasan la misma validación de combos del servidor que un pedido de la web (validarCombos).
+  const { createCartValidator } = require('../cartValidation');
+  const db = { collection: () => ({ doc: (id) => ({ id }) }),
+    getAll: async (...refs) => { refs.pop(); return refs.map((ref) => ({ id: ref.id, exists: !!productos[ref.id], data: () => productos[ref.id] })); } };
+  const validar = createCartValidator({ db, HttpsError: class extends Error { constructor(code, message) { super(message); this.code = code; } } });
+  assert.equal((await validar(payload.productos, null)).subtotal, 399.98);
+  // Otra cuenta, borrador, talla que no existe, piezas en otro orden, el "Mi combo" que no la tiene o un combo retirado.
+  await assert.rejects(pedido({}, { ...disenos, m1: { ...disenos.m1, userId: 'b' } }), /ya no está disponible/);
+  await assert.rejects(pedido({}, { ...disenos, p1: { ...disenos.p1, estado: 'borrador' } }), /sin terminar/);
+  await assert.rejects(pedido({ piezas: [{ designId: 'p1', size: 'XL' }, { fija: true }] }), /talla/);
+  await assert.rejects(pedido({ piezas: [{ fija: true }, { designId: 'p1', size: 'M' }] }), /Revisa las piezas/);
+  await assert.rejects(pedido({}, { ...disenos, m1: { ...disenos.m1, piezas: [{ designId: 'otra' }, { fija: true }] } }), /cambió/);
+  productos.c1.comboCrear.publicado = false;
+  await assert.rejects(pedido(), /ya no está disponible/);
+});
