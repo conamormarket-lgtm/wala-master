@@ -59,6 +59,27 @@ test('dibuja, sube a las rutas de la web y deja la creación guardada con sus ar
   assert.deepEqual(f.borrados.sort(), ['designs/u1/crear/impresion/1_pecho.png', 'designs/u1/crear/previas/1_conjunto.jpg']);
 });
 
+test('una prenda con fotos WebP (productos_v2) se pasa a PNG antes de dibujar', async () => {
+  const f = fixture({ layersByView: capas });
+  const webp = await require('sharp')(png(800, 1000, '#F2F2F2')).webp().toBuffer();
+  assert.equal(webp.subarray(8, 12).toString(), 'WEBP');
+  f.deps.descargar = async () => webp;
+  const out = await generarArchivosCreacion({ uid: 'u1', designId: 'd1', deps: f.deps, fail: f.fail });
+  assert.equal(out.vistasPrevias.length, 1);
+  assert.equal(f.docs.get('designs/d1').estado, 'guardada');
+});
+
+test('acepta las imágenes de las plantillas del mismo producto (la flecha de la esclava), no las de otro', async () => {
+  const flecha = 'https://x.test/plantillas/flecha.png';
+  const f = fixture({ layersByView: { pecho: [{ ...capas.pecho[0], src: flecha }] } });
+  const producto = f.docs.get('productos_wala/polera');
+  f.docs.set('productos_wala/polera', { ...producto, prendaBase: { ...producto.prendaBase, plantillas: [{ id: 'p1', capas: { pecho: [{ type: 'image', src: flecha }] } }] } });
+  await generarArchivosCreacion({ uid: 'u1', designId: 'd1', deps: f.deps, fail: f.fail });
+  assert.ok(f.descargas.includes(flecha));
+  const g = fixture({ layersByView: { pecho: [{ ...capas.pecho[0], src: 'https://x.test/plantillas/otra.png' }] } });
+  await assert.rejects(generarArchivosCreacion({ uid: 'u1', designId: 'd1', deps: g.deps, fail: g.fail }), /no es tuya/);
+});
+
 test('en un pedido conserva los archivos anteriores', async () => {
   const f = fixture({ layersByView: capas }, { enPedido: true });
   await generarArchivosCreacion({ uid: 'u1', designId: 'd1', deps: f.deps, fail: f.fail });
