@@ -461,7 +461,7 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
       if (process.env.MOBILE_CHECKOUT_ENABLED !== 'true' || !/^pk_(test|live)_/.test(process.env.CULQI_PUBLIC_KEY || '')) {
         throw new functions.https.HttpsError('unavailable', 'El pago móvil no está disponible por ahora.');
       }
-      mobile = await mobileCheckout.build(data.mobileCheckout, uid, readMobileProducts);
+      mobile = await mobileCheckout.build(data.mobileCheckout, uid, readMobileProducts, readMobileDesigns);
     } catch (error) { throw mobileCheckoutError(error); }
   }
   const orderPayload = mobile ? mobile.payload : data && data.orderPayload;
@@ -2632,7 +2632,7 @@ exports.processCulqiPayment = functions
   }
   if (isMobileCheckout) {
     // A confirmed receipt above must remain recoverable after inventory changes.
-    try { await mobileCheckout.build(checkoutIntent.intent.mobile.input, uid, readMobileProducts); }
+    try { await mobileCheckout.build(checkoutIntent.intent.mobile.input, uid, readMobileProducts, readMobileDesigns); }
     catch (error) { await marcarToken({ status: 'failed' }); throw mobileCheckoutError(error); }
   }
 
@@ -10111,6 +10111,11 @@ exports.adminFechasDeUsuarios = functions.https.onCall(async (data, context) => 
 // Mobile customer checkout reuses the web's preparation, Culqi charge and ERP
 // materialization above. Legacy clients retain their shipping contract.
 const mobileCheckout = require('./mobileCheckout');
+// Las creaciones del carrito móvil: se leen del servidor (dueño, estado y archivos los valida mobileCheckout).
+async function readMobileDesigns(ids) {
+  const snapshots = await db.getAll(...ids.map((id) => db.collection('designs').doc(id)));
+  return new Map(snapshots.filter((snapshot) => snapshot.exists).map((snapshot) => [snapshot.id, snapshot.data()]));
+}
 async function readMobileProducts(ids) {
   const snapshots = await db.getAll(...ids.map((id) => db.collection('productos_wala').doc(id)));
   return new Map(snapshots.filter((snapshot) => snapshot.exists).map((snapshot) => [snapshot.id, snapshot.data()]));
@@ -10127,7 +10132,7 @@ exports.getMobileCheckoutStatusSecure = functions.https.onCall(async (data, cont
   const uid = requireAuth(context);
   if (data?.expectedUid && data.expectedUid !== uid) throw new functions.https.HttpsError('unauthenticated', 'La sesión cambió.');
   // coupons: este servidor ya revalida y descuenta el cupón del pago móvil (la app solo ofrece el campo entonces).
-  if (data?.capabilities) return { contract: mobileCheckout.CONTRACT, coupons: true,
+  if (data?.capabilities) return { contract: mobileCheckout.CONTRACT, coupons: true, creations: true,
     enabled: process.env.MOBILE_CHECKOUT_ENABLED === 'true' && /^pk_(test|live)_/.test(process.env.CULQI_PUBLIC_KEY || '') };
   try {
     const { id } = mobileCheckout.identity({ contract: mobileCheckout.CONTRACT, requestId: data && data.requestId }, uid);

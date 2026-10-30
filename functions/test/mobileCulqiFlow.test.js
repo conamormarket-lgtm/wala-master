@@ -33,7 +33,7 @@ async function fixture(provider) {
     functions: { https: { HttpsError } }, process: { env: { CULQI_SECRET_KEY: 'sk_test_fixture', CULQI_PUBLIC_KEY: 'pk_test_fixture', MOBILE_CHECKOUT_ENABLED: 'true' } },
     console: { warn() {}, error() {} }, esPrecalentamiento: () => false, precalentar() {},
     erpCobranza: { USUARIO_PORTAL: 'test@wala.test' }, CULQI_API: 'https://fake.invalid', mobileCheckout: mobile,
-    mobileCheckoutError: (error) => new HttpsError('failed-precondition', error.message), readMobileProducts: async () => raw,
+    mobileCheckoutError: (error) => new HttpsError('failed-precondition', error.message), readMobileProducts: async () => raw, readMobileDesigns: async () => new Map(),
     readCheckoutIntent: async (id, ctx) => { if (ctx.auth.uid !== intent.uid) throw new HttpsError('permission-denied', 'owner'); return { id, intent: { ...intent }, ref }; },
     pagos: { cobroDeIntencion: (i) => i.amountPen, aCentimos: (n) => Math.round(n * 100), coincideMonto: (a, b) => a === b },
     formatoSoles: (n) => String(n), FieldValue: { serverTimestamp: () => 1 },
