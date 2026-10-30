@@ -76,7 +76,6 @@ El menú **se adapta al permiso** de cada administrador. Los permisos se asignan
 | **Ruleta Semanal** | `/admin/ruleta` | Premios de la ruleta y sus probabilidades. |
 | **Productos** | `/admin/productos` | Lista de productos: crear, editar, duplicar, ocultar/mostrar, **eliminar (= archivar, soft-delete desde 2026-07-01: no borra el doc ni las fotos; el historial del cliente no se rompe)**, acciones masivas, exportar. |
 | **Inventario** | `/admin/inventario` | Tabla rápida para editar el stock de muchos productos a la vez. |
-| **Mockups Base** | `/admin/mockups` | Plantillas/mockups base de prendas (con variantes) para los productos personalizables. |
 | **Categorías** | `/admin/categorias` | Categorías del catálogo (con imagen y orden). |
 | **Colecciones** | `/admin/colecciones` | Colecciones del catálogo (con imagen y orden). |
 | **Nichos** | `/admin/nichos` | Nichos/tiendas temáticas (slug, comisión, imagen). |

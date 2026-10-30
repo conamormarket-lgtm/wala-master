@@ -3,7 +3,6 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import useLoViejo from '../../../hooks/useLoViejo';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createProduct, updateProduct, getProduct, generateProductId } from '../../../services/products';
-import { getMockups } from '../../../services/mockups';
 import { getBrands, createBrand, updateBrand } from '../../../services/brands';
 import { getCategories, createCategory } from '../../../services/categories';
 import { getCollections, createCollection } from '../../../services/collections';
@@ -12,7 +11,7 @@ import { getCharacters, createCharacter } from '../../../services/characters';
 import { getProductTypes, createProductType } from '../../../services/productTypes';
 import { uploadFile, deleteFile } from '../../../services/firebase/storage';
 import CreatableSelect from 'react-select/creatable';
-import { ImagePlus, Save, ArrowLeft, Loader2, Shirt, Image as ImageIcon, Trash2, Camera, Star, X, Edit2 } from 'lucide-react';
+import { ImagePlus, Save, ArrowLeft, Loader2, Image as ImageIcon, Trash2, Star, X, Edit2 } from 'lucide-react';
 import Button from '../../../components/common/Button';
 import ProductImageContainer from '../components/ProductImageContainer/ProductImageContainer';
 import ThumbnailCropEditor from '../../../components/admin/ThumbnailCropEditor/ThumbnailCropEditor';
@@ -25,8 +24,6 @@ import PersonalizarEnCrear from './PersonalizarEnCrear';
 import PlantillasDeLaFicha from '../../admin/prendasCrear/PlantillasDeLaFicha';
 import { getDocument } from '../../../services/firebase/firestore';
 import { leerPlantillas } from '../../../utils/prendaBase';
-import { fabric } from 'fabric';
-import '../../../fabricPatch'; // parche de renderAll: viaja con fabric, ya no en el entry
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import styles from './AdminProductoFormV2.module.css';
@@ -40,18 +37,6 @@ const Font = Quill.import('attributors/style/font');
 Font.whitelist = ['arial', 'courier', 'garamond', 'tahoma', 'times-new-roman', 'verdana', 'impact', 'roboto', 'open-sans', 'montserrat', 'lato'];
 Quill.register(Font, true);
 
-// Helper to convert dataURL to Blob
-const dataURLtoBlob = (dataurl) => {
-  const arr = dataurl.split(',');
-  const mime = arr[0].match(/:(.*?);/)[1];
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-  while (n--) {
-    u8arr[n] = bstr.charCodeAt(n);
-  }
-  return new Blob([u8arr], { type: mime });
-}
 
 const TagInput = ({ tags, setTags, placeholder }) => {
   const [input, setInput] = useState('');
@@ -179,7 +164,6 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
   const [initialLoading, setInitialLoading] = useState(true);
   const [designUrlInput, setDesignUrlInput] = useState('');
   const [uploading, setUploading] = useState(false);
-  const canvasElRef = useRef(null);
 
   // Editor inline de encuadre (crop no destructivo) de la portada de la variante activa.
   const [cropEditing, setCropEditing] = useState(false);
@@ -210,11 +194,8 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
     ],
   };
 
-  const [fabricCanvas, setFabricCanvas] = useState(null);
-  const [hasActiveObject, setHasActiveObject] = useState(false);
 
   // Consultas de datos
-  const { data: mockups } = useQuery({ queryKey: ['admin-mockups'], queryFn: async () => (await getMockups()).data });
   const { data: brands } = useQuery({ queryKey: ['admin-brands'], queryFn: async () => (await getBrands()).data });
   const { data: categories } = useQuery({ queryKey: ['admin-categories'], queryFn: async () => (await getCategories()).data });
   const { data: collections } = useQuery({ queryKey: ['admin-collections'], queryFn: async () => (await getCollections()).data });
@@ -257,8 +238,6 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
     if (!isNew && productData) {
       let mappedVariants = (productData.variants || []).map(v => ({
         ...v,
-        mode: v.imageUrl ? 'direct' : 'mockup',
-        mockupState: { selectedMockupId: '', selectedVariantIndex: 0 },
         // Asegurar que images y sizes siempre sean arrays
         images: Array.isArray(v.images) ? v.images : [],
         sizes: Array.isArray(v.sizes) ? v.sizes : [],
@@ -275,7 +254,6 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
           id: syntheticId,
           name: 'Principal',
           colorHex: '#cccccc',
-          mode: productData.mainImage ? 'direct' : 'mockup',
           imageUrl: productData.mainImage || '',
           images: Array.isArray(productData.images) ? productData.images.filter(u => u !== productData.mainImage) : [],
           sizes: Array.isArray(productData.mainSizes) ? productData.mainSizes : [],
@@ -283,7 +261,6 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
           showSizeConfig: Array.isArray(productData.mainSizes) && productData.mainSizes.length > 0,
           thumbnailCrop: productData.thumbnailCrop || null,
           imagesCrops: productData.imagesCrops || {},
-          mockupState: { selectedMockupId: '', selectedVariantIndex: 0 },
         }];
       }
 
@@ -400,7 +377,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         // Marca preseleccionada (si se abrió con ?brandId=...); si no, conserva lo que hubiera.
         brandId: urlBrandId || f.brandId || '',
         defaultVariantId: initialVariantId,
-        variants: [{ id: initialVariantId, name: 'Variante 1', colorHex: '#cccccc', mode: 'mockup', mockupState: { selectedMockupId: '', selectedVariantIndex: 0 }, images: [], imageUrl: '', sizes: [], sizeLabel: 'Talla', showSizeConfig: false }],
+        variants: [{ id: initialVariantId, name: 'Variante 1', colorHex: '#cccccc', images: [], imageUrl: '', sizes: [], sizeLabel: 'Talla', showSizeConfig: false }],
         customizable: false,
         customizationViews: [],
         esPrendaBase: esModoPrenda,
@@ -449,53 +426,6 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
 
   const activeVariant = form.variants.find(v => v.id === activeGalleryTabId);
 
-  // Init Fabric Canvas ONLY when active variant is in mockup mode and HAS NO IMAGE YET
-  useEffect(() => {
-    const shouldShowCanvas = activeVariant && activeVariant.mode === 'mockup' && !activeVariant.imageUrl;
-
-    if (shouldShowCanvas && canvasElRef.current && !fabricCanvas) {
-      const canvas = new fabric.Canvas(canvasElRef.current, {
-        width: 300,
-        height: 400,
-        preserveObjectStacking: true,
-      });
-
-      canvas.on('selection:created', () => setHasActiveObject(true));
-      canvas.on('selection:updated', () => setHasActiveObject(true));
-      canvas.on('selection:cleared', () => setHasActiveObject(false));
-
-      setFabricCanvas(canvas);
-    } else if (!shouldShowCanvas && fabricCanvas) {
-      fabricCanvas.dispose();
-      setFabricCanvas(null);
-    }
-
-    return () => {
-      // Cleanup handled via strict deps
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeVariant?.mode, activeVariant?.imageUrl, activeGalleryTabId]);
-
-  // Draw background image when mockup state changes
-  useEffect(() => {
-    if (fabricCanvas && activeVariant?.mode === 'mockup') {
-      const mockup = mockups?.find(m => m.id === activeVariant.mockupState.selectedMockupId);
-      const baseImgUrl = mockup?.variants?.[activeVariant.mockupState.selectedVariantIndex]?.imageUrl || mockup?.baseImageUrl || '';
-
-      if (baseImgUrl) {
-        fabric.Image.fromURL(baseImgUrl, (img) => {
-          const scale = Math.min(300 / img.width, 400 / img.height);
-          img.set({ originX: 'center', originY: 'center', left: 150, top: 200, scaleX: scale, scaleY: scale, selectable: false, evented: false });
-          fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas));
-        }, { crossOrigin: 'anonymous' });
-      } else {
-        fabricCanvas.clear();
-        fabricCanvas.setBackgroundColor('', fabricCanvas.renderAll.bind(fabricCanvas));
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeVariant?.mockupState.selectedMockupId, activeVariant?.mockupState.selectedVariantIndex, fabricCanvas, mockups]);
-
   const updateActiveVariant = (updates) => {
     setForm(f => ({
       ...f,
@@ -515,44 +445,6 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         return { ...v, imagesCrops: next };
       })
     }));
-  };
-
-  const handleDesignUpload = (e) => {
-    const file = e.target.files[0];
-    if (file && fabricCanvas) {
-      const url = URL.createObjectURL(file);
-      fabric.Image.fromURL(url, (img) => {
-        img.scaleToWidth(120);
-        img.set({
-          originX: 'center', originY: 'center', left: 150, top: 150,
-          transparentCorners: false, cornerColor: '#111', borderColor: '#111', cornerSize: 10, padding: 5
-        });
-        fabricCanvas.add(img);
-        fabricCanvas.setActiveObject(img);
-        fabricCanvas.renderAll();
-      });
-    }
-    e.target.value = ''; 
-  };
-
-  const handleDesignUrlSubmit = () => {
-    if (!designUrlInput.trim() || !fabricCanvas) return;
-    const url = designUrlInput.trim();
-    fabric.Image.fromURL(url, (img) => {
-      if (!img) {
-        alert("No se pudo cargar la imagen desde la URL. Asegúrate de que sea pública o válida.");
-        return;
-      }
-      img.scaleToWidth(120);
-      img.set({
-        originX: 'center', originY: 'center', left: 150, top: 150,
-        transparentCorners: false, cornerColor: '#111', borderColor: '#111', cornerSize: 10, padding: 5
-      });
-      fabricCanvas.add(img);
-      fabricCanvas.setActiveObject(img);
-      fabricCanvas.renderAll();
-      setDesignUrlInput('');
-    }, { crossOrigin: 'anonymous' });
   };
 
   // ── Protección de historial (P0): imágenes ya PERSISTIDAS en Firestore ──
@@ -586,26 +478,6 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
     try { await deleteFile(url); } catch(e) { console.warn('Could not delete old image', e); }
   };
 
-  const handleCaptureMockup = async () => {
-    if (!fabricCanvas || !activeVariant) return;
-    setUploading(true);
-    try {
-      fabricCanvas.discardActiveObject();
-      fabricCanvas.renderAll();
-      const dataURL = fabricCanvas.toDataURL({ format: 'png', multiplier: 2 });
-      const blob = dataURLtoBlob(dataURL);
-      
-      const path = `productos_v2/${draftId}/main_${activeVariant.id}_${Date.now()}.png`;
-      const { url, variantes } = await uploadFile(blob, path);
-      if (url) {
-        await safelyDeleteOldImage(activeVariant.imageUrl);
-        updateActiveVariant({ imageUrl: url, ...conVariantes(url, variantes) });
-      }
-    } finally {
-      setUploading(false);
-    }
-  };
-
   /**
    * Añade al mapa de la variante activa las copias pequeñas que devolvió
    * uploadFile, con la URL principal como clave (mismo patrón que imagesCrops).
@@ -617,12 +489,6 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
     return { imagesVariantes: { ...(activeVariant?.imagesVariantes || {}), [url]: variantes } };
   };
 
-  const handleRedoMockup = () => {
-    // Si queremos ser exquisitos, podríamos borrar la URL actual de Firebase aquí.
-    // Por simplicidad, la sobreescribiremos (dejando un archivo huérfano que se borrará si descartan el draft).
-    updateActiveVariant({ imageUrl: '' });
-  };
-
   // Deja la variante sin foto principal (el producto puede guardarse sin foto).
   // Al guardar, mainImage/images vacíos se borran del documento (updateDocument).
   const handleRemoveMainImage = async () => {
@@ -632,16 +498,6 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
     updateActiveVariant({ imageUrl: '', thumbnailCrop: null });
     setCropEditing(false);
     await safelyDeleteOldImage(url);
-  };
-
-  const handleDeleteActiveDesign = () => {
-    if (!fabricCanvas) return;
-    const activeObjects = fabricCanvas.getActiveObjects();
-    if (activeObjects.length) {
-      activeObjects.forEach(obj => fabricCanvas.remove(obj));
-      fabricCanvas.discardActiveObject();
-      fabricCanvas.renderAll();
-    }
   };
 
   const handleDirectImageUpload = async (e) => {
@@ -743,7 +599,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
     const newId = `var_${Date.now()}`;
     setForm(f => ({
       ...f,
-      variants: [...f.variants, { id: newId, name: 'Nueva Variante', colorHex: '#cccccc', mode: 'mockup', mockupState: { selectedMockupId: '', selectedVariantIndex: 0 }, images: [], imageUrl: '' }]
+      variants: [...f.variants, { id: newId, name: 'Nueva Variante', colorHex: '#cccccc', images: [], imageUrl: '' }]
     }));
     setActiveGalleryTabId(newId);
   };
@@ -780,12 +636,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
         const defaultVariant = f.variants.find(v => v.id === f.defaultVariantId) || f.variants[0];
         
         if (defaultVariant) {
-          if (defaultVariant.mode === 'mockup' && defaultVariant.mockupState?.selectedMockupId) {
-            const mockup = mockups?.find(m => m.id === defaultVariant.mockupState.selectedMockupId);
-            baseImageUrl = mockup?.variants?.[defaultVariant.mockupState.selectedVariantIndex]?.imageUrl || mockup?.baseImageUrl || '';
-          } else {
-            baseImageUrl = defaultVariant.imageUrl || '';
-          }
+          baseImageUrl = defaultVariant.imageUrl || '';
         }
 
         const newView = {
@@ -1002,8 +853,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
       const vacia = f.variants.length === 1 && !f.variants[0].imageUrl && /^Variante 1$/.test(f.variants[0].name || '');
       const base = vacia ? [] : f.variants;
       const variants = [...base, ...nuevas.map((n) => ({
-        id: n.id, name: n.nombre, colorHex: n.hex, mode: 'direct',
-        mockupState: { selectedMockupId: '', selectedVariantIndex: 0 },
+        id: n.id, name: n.nombre, colorHex: n.hex,
         images: [], imageUrl: '', sizes: n.tallas, sizeLabel: 'Talla', showSizeConfig: true,
       }))];
       return { ...f, variants, defaultVariantId: vacia ? variants[0].id : f.defaultVariantId };
@@ -1011,7 +861,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
     // La foto de tienda de un color = la foto principal de su variante.
     onFotoTienda: (varianteId, url) => setForm((f) => ({
       ...f,
-      variants: f.variants.map((v) => (v.id === varianteId ? { ...v, imageUrl: url, mode: 'direct' } : v)),
+      variants: f.variants.map((v) => (v.id === varianteId ? { ...v, imageUrl: url } : v)),
     })),
   };
 
@@ -1049,7 +899,7 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
             {isNew && <span style={{ color: '#f59f00', fontWeight: 'bold', marginRight: '8px' }}>[Autoguardado Activo]</span>}
             {esModoPrenda
               ? 'La prenda que el cliente diseña en Crear: sus colores y tallas, sus vistas y las zonas donde se imprime.'
-              : 'Crea productos configurando mockups o imágenes independientes por cada variante.'}
+              : 'Crea productos con imágenes independientes por cada variante.'}
           </p>
         </div>
       </div>
@@ -1726,138 +1576,8 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
 
                 <hr style={{ border: 'none', borderTop: '1px solid #f0f0f0', margin: '2rem 0' }} />
 
-                <h3 className={styles.sectionHeading}>1. Imagen Principal (Mockup / Directo)</h3>
+                <h3 className={styles.sectionHeading}>1. Imagen Principal</h3>
 
-                <div className={styles.modeToggle}>
-                  <button
-                    type="button"
-                    className={`${styles.modeBtn} ${activeVariant.mode === 'mockup' ? styles.modeActive : ''}`}
-                    onClick={() => updateActiveVariant({ mode: 'mockup' })}
-                  >
-                    <Shirt size={18} /> Usar Mockup
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.modeBtn} ${activeVariant.mode === 'direct' ? styles.modeActive : ''}`}
-                    onClick={() => updateActiveVariant({ mode: 'direct' })}
-                  >
-                    <ImageIcon size={18} /> Subir Foto
-                  </button>
-                </div>
-
-                {activeVariant.mode === 'mockup' ? (
-                  <div className={styles.mockupWorkspace}>
-                    
-                    {activeVariant.imageUrl ? (
-                      // SHOW PREVIEW IF CAPTURED
-                      <div className={styles.capturedPreviewContainer}>
-                        <ProductImageContainer 
-                          imageUrl={activeVariant.imageUrl} 
-                          style={brandBgStyle} 
-                        />
-                        <button type="button" onClick={handleRedoMockup} className={styles.redoBtn}>
-                          Rehacer Diseño (Volver al Canvas)
-                        </button>
-                      </div>
-                    ) : (
-                      // SHOW CANVAS
-                      <>
-                        <div className={styles.field}>
-                          <label className={styles.label}>Elige una prenda base (Mockup)</label>
-                          <select
-                            className={styles.input}
-                            value={activeVariant.mockupState.selectedMockupId}
-                            onChange={e => updateActiveVariant({ mockupState: { ...activeVariant.mockupState, selectedMockupId: e.target.value, selectedVariantIndex: 0 } })}
-                          >
-                            <option value="">-- Selecciona un Mockup --</option>
-                            {mockups?.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                          </select>
-                        </div>
-
-                        {activeVariant.mockupState.selectedMockupId && mockups?.find(m => m.id === activeVariant.mockupState.selectedMockupId)?.variants?.length > 0 && (
-                          <div className={styles.colorSelector}>
-                            <label className={styles.label}>Selecciona el Color Base</label>
-                            <div className={styles.colorDots}>
-                              {mockups.find(m => m.id === activeVariant.mockupState.selectedMockupId).variants.map((v, idx) => (
-                                <button
-                                  key={idx}
-                                  type="button"
-                                  className={`${styles.colorDot} ${activeVariant.mockupState.selectedVariantIndex === idx ? styles.colorDotActive : ''}`}
-                                  style={{ backgroundColor: v.colorHex || '#ddd' }}
-                                  title={v.colorName}
-                                  onClick={() => updateActiveVariant({ mockupState: { ...activeVariant.mockupState, selectedVariantIndex: idx } })}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {activeVariant.mockupState.selectedMockupId && (
-                          <div className={styles.designTools}>
-                            <label className={styles.designUploadBtn}>
-                              <ImagePlus size={16} /> Agregar Diseño (PNG)
-                              <input type="file" accept="image/png" hidden onChange={handleDesignUpload} />
-                            </label>
-                            {hasActiveObject && (
-                              <button type="button" className={styles.deleteDesignBtn} onClick={handleDeleteActiveDesign}>
-                                <Trash2 size={16} /> Quitar
-                              </button>
-                            )}
-                          </div>
-                        )}
-
-                        <ProductImageContainer style={brandBgStyle}>
-                          {!activeVariant.mockupState.selectedMockupId && (
-                            <div className={styles.emptyPreviewOverlay}>
-                              <Shirt size={48} opacity={0.2} />
-                              <span>Selecciona un mockup para empezar a editar</span>
-                            </div>
-                          )}
-                          <div>
-                            <canvas ref={canvasElRef} className={styles.fabricCanvasEl} />
-                          </div>
-                        </ProductImageContainer>
-
-                        {activeVariant.mockupState.selectedMockupId && (
-                          <>
-                            <button type="button" onClick={handleCaptureMockup} className={styles.captureBtn} disabled={uploading}>
-                              {uploading ? <Loader2 className="animate-spin" size={20} /> : <Camera size={20} />} 
-                              {uploading ? <span key="uploading">Capturando...</span> : <span key="default">Capturar y Fijar Imagen</span>}
-                            </button>
-                            
-                            <div style={{ marginTop: '15px', padding: '10px', background: '#f8f9fa', borderRadius: '6px', border: '1px solid #ddd' }}>
-                              <span style={{ fontSize: '0.85rem', color: '#666', display: 'block', marginBottom: '8px' }}>O pega un enlace de diseño:</span>
-                              <div style={{ display: 'flex', gap: '8px' }}>
-                                <input 
-                                  type="text" 
-                                  placeholder="https://..." 
-                                  value={designUrlInput}
-                                  onChange={(e) => setDesignUrlInput(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault();
-                                      handleDesignUrlSubmit();
-                                    }
-                                  }}
-                                  style={{ flex: 1, padding: '6px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '0.85rem' }}
-                                />
-                                <button 
-                                  type="button"
-                                  onClick={handleDesignUrlSubmit}
-                                  disabled={!designUrlInput.trim()}
-                                  style={{ padding: '6px 12px', background: '#e5e7eb', border: 'none', borderRadius: '4px', cursor: designUrlInput.trim() ? 'pointer' : 'not-allowed' }}
-                                >
-                                  Cargar
-                                </button>
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </>
-                    )}
-
-                  </div>
-                ) : (
                   <div className={styles.directWorkspace}>
                     {cropEditing && activeVariant.imageUrl ? (
                       <ThumbnailCropEditor
@@ -1945,7 +1665,6 @@ const AdminProductoFormV2 = ({ modo = 'producto' }) => {
                       </div>
                     </div>
                   </div>
-                )}
 
                 <hr style={{ border: 'none', borderTop: '1px solid #f0f0f0', margin: '2rem 0' }} />
 

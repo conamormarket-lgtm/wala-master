@@ -182,7 +182,6 @@ const DashRecepcion = lazy(() => import('./pages/admin/dashboard/DashRecepcion')
 const AdminProductos = lazy(() => import('./pages/Tienda/admin/AdminProductos'));
 const AdminInventario = lazy(() => import('./pages/Tienda/admin/AdminInventario'));
 const RutasPrendasCrear = lazy(() => import('./pages/admin/RutasPrendasCrear'));
-const AdminMockups = lazy(() => import('./pages/Tienda/admin/AdminMockups'));
 const ImportarPlantillasYoryo = lazy(() => import('./pages/admin/plantillasYoryo/ImportarPlantillasYoryo'));
 const AdminReferidos = lazy(() => import('./pages/admin/AdminReferidos'));
 const AdminProductoFormV2 = lazy(() => import('./pages/Tienda/admin/AdminProductoFormV2'));
@@ -519,7 +518,6 @@ function App() {
                                       <Route path="combos-crear" element={<Navigate to="/admin/productos?ver=packs" replace />} />
                                       <Route path="prendas-crear/*" element={<RutasPrendasCrear />} />
                                       <Route path="inventario" element={<AdminInventario />} />
-                                      <Route path="mockups" element={<AdminMockups />} />
                                       <Route path="plantillas-yoryo" element={<ImportarPlantillasYoryo />} />
                                       <Route path="productos/nuevo" element={<AdminProductoFormV2 />} />
                                       <Route path="productos/:id" element={<AdminProductoFormV2 />} />

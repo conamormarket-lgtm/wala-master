@@ -243,14 +243,6 @@ const AdminLayout = () => {
                 </NavLink>
               )}
               {canProducts && (
-                <NavLink
-                  to="/admin/mockups"
-                  className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
-                >
-                  Mockups Base
-                </NavLink>
-              )}
-              {canProducts && (
                 <NavLink to="/admin/plantillas-yoryo" className={({ isActive }) => getLinkClass(isActive, 'catalogo')}>
                   Importar plantillas de cuadros
                 </NavLink>
