@@ -10,6 +10,7 @@ import { leerPrendaBase, colorDisponible, UNIDADES_ZONA, slug } from '../../../u
 import { capasDePlantilla } from './plantillasACapas.mjs';
 import { crearProductosYoryo, pasarYoryoALaTienda, ajustarTomatodoAFotoNueva, IDS_CREAR_YORYO } from './crearProductosYoryo';
 import { crearGrabadosYoryo } from './grabadosYoryo';
+import { crearComodasDaida } from './comodasDaida';
 import { plantillaCapasBaseYoryo, plantillaTomatodoYoryo } from './presetsEquipos.mjs';
 import { plantillaParejasBaseYoryo } from './presetsParejas.mjs';
 import Boton from '../../../componentes/kit/Boton';
@@ -197,6 +198,22 @@ export default function ImportarPlantillasYoryo() {
       setPasoGrabados(`Error: ${e.message}`);
     } finally {
       setCreandoGrabados(false);
+    }
+  };
+  // 7. Las cómodas de Daida Hogar.
+  const [pasoDaida, setPasoDaida] = useState('');
+  const [creandoDaida, setCreandoDaida] = useState(false);
+  const crearDaida = async () => {
+    setCreandoDaida(true);
+    try {
+      await crearComodasDaida({ onPaso: setPasoDaida });
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+    } catch (e) {
+      setPasoDaida(`Error: ${e.message}`);
+    } finally {
+      setCreandoDaida(false);
     }
   };
   const [elegidas, setElegidas] = useState(() => new Set(PRODUCTOS.flatMap(([p]) => plantillasDe(p).map((x) => x.id))));
@@ -398,6 +415,18 @@ export default function ImportarPlantillasYoryo() {
         </p>
         <Boton variante="contorno" onClick={crearGrabados} cargando={creandoGrabados} disabled={!user || trabajando}>Crear billetera, esclava y packs</Boton>
         {pasoGrabados && <small className={pasoGrabados.startsWith('Error') ? s.error : undefined}>{pasoGrabados}</small>}
+      </section>
+
+      <section className={s.grupo}>
+        <h2>7. Cómodas de Daida Hogar</h2>
+        <p>
+          Sube la cómoda de 4 cajones (S/ 450) y la de 8 cajones (S/ 590) a la marca Daida Hogar, con stock 4 cada una y tres
+          colores (blanco, nogal y blanco, roble y blanco), con su foto en ángulo y de frente. Crea la categoría
+          <em> Cómodas</em> de la marca y el tipo <em>Mueble</em> si no existen. Lo que ya exista no se repite; después se
+          edita en Admin → Productos como cualquier producto.
+        </p>
+        <Boton variante="contorno" onClick={crearDaida} cargando={creandoDaida} disabled={!user || trabajando}>Subir las cómodas</Boton>
+        {pasoDaida && <small className={pasoDaida.startsWith('Error') ? s.error : undefined}>{pasoDaida}</small>}
       </section>
     </div>
   );
