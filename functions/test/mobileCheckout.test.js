@@ -75,6 +75,7 @@ test('una creación propia y guardada entra al pedido con sus archivos y el prec
   assert.equal(line.disenoVistas.pecho.archivoImpresion, file(1)); assert.equal(line.disenoVistas.pecho.medida, '25 x 25 cm');
   assert.deepEqual(line.disenoVistas.pecho.textos, ['Hola']); assert.deepEqual(line.vistasPersonalizadas, ['pecho']);
   assert.equal(built.payload.montoTotal, 94.9); assert.equal(built.payload.esPersonalizado, true);
+  assert.equal(built.payload.cantidad, 1); assert.match(built.payload.prendas, /x1/);
   assert.deepEqual(built.meta.input.items, [{ designId: 'd1', quantity: 1, size: 'M' }]);
   assert.equal(built.meta.summary.creations[0].name, 'Mi polera');
   // Junto con un producto del catálogo.

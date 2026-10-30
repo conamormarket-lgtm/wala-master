@@ -179,8 +179,9 @@ async function build(input, uid, read, readDesigns = async () => new Map()) {
     envioEsProvincia: !isPeru || address.city === 'Provincias' ? 'Sí' : 'No', tipoEnvio: isPeru && address.city !== 'Provincias' ? 'delivery' : 'agencia',
     canalVenta: 'Portal Web', web: true, activador: 'portal_web', vendedor: 'Portal Web', origen: 'wala_mobile',
     montoTotal: total, montoAdelanto: 0, montoPendiente: total, costoEnvio: envio,
-    estadoGeneral: 'Nuevo', status: 'Nuevo', cantidad: items.reduce((sum, line) => sum + line.quantity, 0), productos,
-    prendas: items.map((line) => `${line.product.name} x${line.quantity}`).join(', '),
+    estadoGeneral: 'Nuevo', status: 'Nuevo', cantidad: [...items, ...creations].reduce((sum, line) => sum + line.quantity, 0), productos,
+    prendas: [...items.map((line) => `${line.product.name} x${line.quantity}`),
+      ...creations.map((line) => `${line.raw.name || line.design.productName || 'Personalizado'} x${line.quantity}`)].join(', '),
     esPersonalizado: creations.length > 0, esMostacero: false, esPrioridad: false, importado: false,
     // prepareCheckoutPayment lo revalida con el cupón de la cuenta y descuenta en el servidor.
     ...(coupon ? { cuponCode: coupon } : {}),
