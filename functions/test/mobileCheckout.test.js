@@ -150,3 +150,24 @@ test('monedas: enteras y positivas; cambian la huella del intento, pero sin ella
   assert.equal(mobile.identity({ ...input(), coins: 0 }, 'a').hash, plain.hash);
   assert.notEqual(mobile.identity({ ...input(), coins: 10 }, 'a').hash, plain.hash);
 });
+test('regalo: para quién, mensaje y sticker llegan al pedido como giftDetails, como la web', async () => {
+  const gift = { recipientName: '  María   José ', message: '¡Feliz cumpleaños!', sticker: 'kapi-party' };
+  const result = await mobile.build({ ...input(), gift }, 'a', read());
+  assert.deepEqual(result.payload.giftDetails, { isGift: true, recipientName: 'María José', message: '¡Feliz cumpleaños!', sticker: 'kapi-party' });
+  assert.deepEqual(result.meta.input.gift, { recipientName: 'María José', message: '¡Feliz cumpleaños!', sticker: 'kapi-party' });
+  assert.equal(result.meta.summary.gift.recipientName, 'María José');
+  assert.equal(result.payload.montoTotal, 164.7);
+  assert.equal((await mobile.build(input(), 'a', read())).payload.giftDetails, undefined);
+});
+test('regalo: rechaza datos incompletos, largos o un sticker inventado; cambia la huella solo si se manda', () => {
+  const ok = { recipientName: 'María', message: 'Hola', sticker: 'kapi-love' };
+  for (const gift of ['sí', [], { ...ok, recipientName: ' ' }, { ...ok, recipientName: 'a'.repeat(61) }, { ...ok, message: '' },
+    { ...ok, message: 'a'.repeat(201) }, { ...ok, sticker: 'kapi-happy' }, { ...ok, sticker: undefined }]) {
+    assert.throws(() => mobile.giftOf({ gift }));
+  }
+  assert.equal(mobile.giftOf({}), null);
+  assert.equal(mobile.giftOf({ gift: { ...ok, message: 'a'.repeat(200) } }).message.length, 200);
+  const plain = mobile.identity(input(), 'a');
+  assert.equal(mobile.identity({ ...input(), gift: null }, 'a').hash, plain.hash);
+  assert.notEqual(mobile.identity({ ...input(), gift: ok }, 'a').hash, plain.hash);
+});
