@@ -7,6 +7,7 @@ import {
   PaginaPersonalizables, PaginaPacks, personalizableDesde, packDesdeFirestore,
   PaginaBlueprints, PaginaPlantillasYoryo, blueprintDesdeFirestore, blueprintAFirestore, PaginaRecepcion,
   PaginaPagos, configPagosDesde, PaginaCuentasDePedidos, PaginaReclamos, reclamoDesdeFirestore,
+  MarcoResultados, PaginaResumenResultados,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -54,6 +55,7 @@ const ESTADOS = [
 /* Las páginas que ya están, para los chips de "Ir a". */
 const HECHAS = [
   ['/admin', 'Inicio'],
+  ['/admin/resultados', 'Resultados'],
   ['/admin/recepcion-pedidos', 'Recepción'],
   ['/admin/gestion-pagos', 'Pagos'],
   ['/admin/libro-reclamaciones', 'Reclamos'],
@@ -237,6 +239,55 @@ const RECLAMOS_DEMO = [
     respondidoEn: respuesta ? new Date(creado.getTime() + 3 * 86400000).toISOString() : null,
   });
 });
+// D4a: un resumen de Resultados de ejemplo con la forma de useDashboardAnalytics (30 días).
+const diaKey = (atras) => { const d = new Date(); d.setDate(d.getDate() - atras); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const DIAS_RESULTADOS = { hoy: 1, ayer: 1, 7: 7, 30: 30, 90: 90 };
+function resultadosDemo(dias) {
+  const visitasPorDia = Array.from({ length: dias }, (_, i) => ({ day: diaKey(dias - 1 - i), total: Math.round(140 + 60 * Math.sin(i / 3) + (i % 7 === 5 ? 90 : 0) + i * 1.5) }));
+  const visitas = visitasPorDia.reduce((a, d) => a + d.total, 0);
+  const pedidos = Math.round(visitas * 0.021);
+  return {
+    datos: {
+      visitas: { total: { total: visitas } },
+      ventas: { pedidos: { total: pedidos }, ingresosCents: { total: pedidos * 8650 } },
+      diasConResultados: dias,
+      visitasPorDia,
+      canales: [
+        { canal: 'Instagram', visitas: Math.round(visitas * 0.41), pedidos: Math.round(pedidos * 0.46) },
+        { canal: 'Google', visitas: Math.round(visitas * 0.27), pedidos: Math.round(pedidos * 0.3) },
+        { canal: 'Directo', visitas: Math.round(visitas * 0.18), pedidos: Math.round(pedidos * 0.16) },
+        { canal: 'TikTok', visitas: Math.round(visitas * 0.1), pedidos: Math.round(pedidos * 0.06) },
+      ],
+      otrosCobros: { sorteo: { cantidad: 6, porMoneda: { PEN: 6 * 1000 } }, saldo: { cantidad: 2, porMoneda: { PEN: 9000 } } },
+      realtimeSessionsDetails: [
+        { id: 's1', hasAccount: true, displayName: 'Valeria Quispe', lastPath: '/producto/polo-clasico', lastSeenAtMs: Date.now() - 60000 },
+        { id: 's2', hasAccount: false, lastPath: '/tienda', lastSeenAtMs: Date.now() - 120000 },
+        { id: 's3', hasAccount: false, lastPath: '/personalizar', lastSeenAtMs: Date.now() - 240000 },
+        { id: 's4', hasAccount: true, email: 'diego@correo.pe', lastPath: '/carrito', lastSeenAtMs: Date.now() - 30000 },
+      ],
+    },
+    anterior: { visitas: { total: Math.round(visitas * 0.88) }, pedidos: { total: Math.round(pedidos * 1.05) }, ingresosCents: { total: Math.round(pedidos * 1.05) * 8200 }, diasConVentas: dias },
+  };
+}
+const AVISOS_RESULTADOS = [
+  { id: 'carritos', nivel: 'alta', titulo: '4 carritos abandonados con contacto', texto: 'Dejaron productos en el carrito y tienen WhatsApp: escríbeles hoy.', to: '/admin/resultados?ver=clientes' },
+  { id: 'vistos-sin-venta', nivel: 'media', titulo: 'El Polo clásico se mira mucho y se vende poco', texto: '320 vistas y 2 ventas: revisa la foto, el precio o las tallas.', to: '/admin/resultados?ver=productos' },
+  { id: 'busqueda', nivel: 'media', titulo: 'Buscan «tomatodo azul» y no hay', texto: '14 búsquedas sin resultado en este periodo.', to: '/admin/resultados?ver=productos' },
+  { id: 'enlaces', nivel: 'baja', titulo: '2 enlaces rotos', texto: 'Gente que llegó a una dirección que no existe.', to: '#enlaces' },
+];
+const ENLACES_ROTOS_DEMO = {
+  visitas: 23,
+  enlaces: [
+    { direccion: '/cyber-wala', slug: 'cyber-wala', visitas: 15, personas: 11, ultimaMs: Date.now() - 3600000 * 5, origenes: [{ origen: 'Instagram', visitas: 9 }, { origen: 'QR', visitas: 4 }, { origen: 'Directo', visitas: 2 }] },
+    { direccion: '/producto/polo-viejo-123', slug: null, visitas: 6, personas: 5, ultimaMs: Date.now() - 86400000, origenes: [{ origen: 'Google', visitas: 6 }] },
+    { direccion: '/navidad', slug: 'navidad', resueltaA: 'navidad-2026', visitas: 2, personas: 2, ultimaMs: Date.now() - 86400000 * 3, origenes: [{ origen: 'WhatsApp', visitas: 2 }] },
+  ],
+  landings: [{ id: 'l1', title: 'Navidad 2026', slug: 'navidad-2026' }, { id: 'l2', title: 'Día de la Madre', slug: 'dia-de-la-madre' }],
+};
+const PESTANAS_RESULTADOS = [
+  { id: 'resumen', texto: 'Resumen' }, { id: 'productos', texto: 'Productos' }, { id: 'visitantes', texto: 'Visitantes' },
+  { id: 'clientes', texto: 'Clientes', soloClientes: true }, { id: 'opiniones', texto: 'Opiniones', soloClientes: true }, { id: 'tecnico', texto: 'Detalle técnico' },
+];
 const PACKS_CRUDOS = CREAR.combos.map((c) => ({ ...c, esComboCrear: true, comboCrear: { publicado: c.publicado, piezas: c.piezas, tallas: 'auto' } }));
 const opcionDePrenda = (p) => ({ id: p.id, nombre: p.name, foto: (p.variants || [])[0]?.imageUrl || p.prendaBase?.vistas?.[0]?.imagen || '', precio: Number(p.salePrice) > 0 ? p.salePrice : p.price, colores: (p.variants || []).map((v) => ({ id: String(v.id), nombre: v.name, hex: v.colorHex })) });
 const TAL_CUAL = TIENDA.productos.filter((p) => (p.variants || []).length && !p.isComboProduct).map(opcionDePrenda);
@@ -301,6 +352,11 @@ function PanelDePrueba() {
   const [configPagos, setConfigPagos] = useState(CONFIG_PAGOS_DEMO);
   const [reclamos, setReclamos] = useState(RECLAMOS_DEMO);
   const [pedidosCuentas, setPedidosCuentas] = useState({ cargados: 0, unicos: 0 });
+  const [resPeriodo, setResPeriodo] = useState('30');
+  const [resFechas, setResFechas] = useState({ desde: diaKey(13), hasta: diaKey(0) });
+  const [resComparar, setResComparar] = useState(true);
+  const [resPestana, setResPestana] = useState('resumen');
+  const [rotos, setRotos] = useState(ENLACES_ROTOS_DEMO);
   const [atributos, setAtributos] = useState(ATRIBUTOS_DEMO);
   const [productos, setProductos] = useState(PRODUCTOS);
   const [whatsapp, setWhatsapp] = useState(WHATSAPP);
@@ -665,6 +721,55 @@ function PanelDePrueba() {
         cargandoConfig={con('cargando')}
         onGuardarConfig={async (c) => { await espera(700); fallar(); setConfigPagos(c); }}
       />
+    );
+  } else if (ruta === '/admin/resultados') {
+    const dias = resPeriodo === 'fechas' ? Math.max(1, Math.round((Date.parse(resFechas.hasta) - Date.parse(resFechas.desde)) / 86400000) + 1) : DIAS_RESULTADOS[resPeriodo];
+    const { datos: datosRes, anterior } = resultadosDemo(dias);
+    const dia = resPeriodo === 'hoy' || resPeriodo === 'ayer' ? resPeriodo : null;
+    const conClientes = p.permisos.includes('superadmin') || p.permisos.includes('manage_clients');
+    pagina = (
+      <MarcoResultados
+        periodo={{ id: resPeriodo, etiqueta: dia || (resPeriodo === 'fechas' ? `del ${resFechas.desde} al ${resFechas.hasta}` : `${resPeriodo} días`), contra: dia === 'hoy' ? 'ayer' : dia === 'ayer' ? 'anteayer' : 'el periodo anterior' }}
+        onPeriodo={setResPeriodo}
+        desde={resFechas.desde}
+        hasta={resFechas.hasta}
+        onFechas={(desde, hasta) => setResFechas({ desde, hasta })}
+        hoy={diaKey(0)}
+        comparar={resComparar}
+        onComparar={setResComparar}
+        datosAl={Date.now() - 4 * 60000}
+        actualizando={actualizando}
+        onActualizar={async () => { setActualizando(true); await espera(900); setActualizando(false); setEstados((e) => e.filter((x) => x !== 'error')); }}
+        pestanas={PESTANAS_RESULTADOS.filter((x) => !x.soloClientes || conClientes)}
+        pestana={resPestana}
+        onPestana={setResPestana}
+      >
+        {resPestana === 'resumen' ? (
+          <PaginaResumenResultados
+            datos={vacio || con('cargando') ? null : datosRes}
+            anterior={anterior}
+            comparar={resComparar}
+            periodo={{ dia, contra: dia === 'hoy' ? 'ayer' : dia === 'ayer' ? 'anteayer' : 'el periodo anterior', anteriorTexto: `los ${dias} días de antes` }}
+            cargando={con('cargando')}
+            error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+            avisos={vacio ? [] : AVISOS_RESULTADOS}
+            nombrePagina={(path) => ({ '/tienda': 'Tienda', '/personalizar': 'Crear', '/carrito': 'Carrito' }[path] || (path.startsWith('/producto/') ? 'Un producto' : path))}
+            verCanales="/admin/resultados?ver=visitantes"
+            enlacesRotos={{
+              ...rotos,
+              crearLandingDe: (slug) => `/admin/landing-pages?nueva=${encodeURIComponent(slug)}`,
+              onRedirigir: async (landingId, slug) => {
+                await espera(700);
+                fallar();
+                const l = rotos.landings.find((x) => x.id === landingId);
+                setRotos((r) => ({ ...r, enlaces: r.enlaces.map((e) => (e.slug === slug ? { ...e, resueltaA: l.slug } : e)) }));
+              },
+            }}
+          />
+        ) : (
+          <EstadoVacio imagen="/assets/kapi/3d/kapi-hambre-256.webp" titulo="Esta pestaña todavía no está en el kit" texto={`Se arma en ${{ productos: 'D4b', visitantes: 'D4b', clientes: 'D4c', opiniones: 'D4c', tecnico: 'D4d' }[resPestana]} (guia/ADMIN.md).`} />
+        )}
+      </MarcoResultados>
     );
   } else if (ruta === '/admin/libro-reclamaciones') {
     pagina = (

@@ -92,7 +92,9 @@ export { PaginaFichaProducto } from './paginas/admin/Ficha';
 export { PaginaPersonalizables, PaginaPacks } from './paginas/admin/Crear';
 export { PaginaBlueprints, PaginaPlantillasYoryo } from './paginas/admin/Herramientas';
 export { PasoAdmin } from './piezas/admin/Pasos';
-export { Cifra, FilaCifras } from './piezas/admin/Metricas';
+export { Cifra, FilaCifras, BloqueMetrica, ColumnasMetricas, SinDatos, SelectorPeriodo } from './piezas/admin/Metricas';
+export { ListaAvisos, TablaComparativa, ListaEnVivo, TarjetaEnlacesRotos } from './piezas/admin/Resultados';
+export { MarcoResultados, PaginaResumenResultados } from './paginas/admin/Resultados';
 export { TarjetaEnvio, EsqueletoEnvio } from './piezas/admin/Pedidos';
 export { PaginaRecepcion } from './paginas/admin/Pedidos';
 export { PaginaPagos } from './paginas/admin/Pagos';
@@ -115,4 +117,5 @@ export {
   PERIODOS_PAGOS, rangoDePeriodo, enlaceEnFiltro, resumenEnlaces, serieDiariaEnlaces, duracionCorta, enlaceNuevo,
   MENSAJE_PAGOS_POR_DEFECTO, configPagosDesde, configPagosAMensajes,
   reclamoDesdeFirestore, respuestaDeReclamo, diasHabilesEntre, plazoDeReclamo, textoDeReclamo, filasMigracion,
+  porCienVisitas, cambioPorcentual, cambioEnPuntos, cifrasDelResumen, otrosCobrosDe, serieDeVisitas, PERIODOS_RESULTADOS,
 } from './adaptadoresAdmin';

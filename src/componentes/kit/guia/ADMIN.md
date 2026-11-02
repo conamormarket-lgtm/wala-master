@@ -194,8 +194,8 @@ Estado: **·** por hacer · **kit** hecha en el kit · **admin** ya en el panel.
 
 | Pieza | Qué hace | Estado |
 |---|---|---|
-| `Cifra` | Una cifra con su nombre y ▲/▼ frente al periodo anterior (reemplaza `KpiCard` y la de `resultados/piezas`) | kit (2026-11-02, con `FilaCifras`; el ▲/▼ llega en D4) |
-| `SelectorPeriodo` | Hoy, 7, 30, 90 días, fechas y "comparar" | · |
+| `Cifra` | Una cifra con su nombre y ▲/▼ frente al periodo anterior (reemplaza `KpiCard` y la de `resultados/piezas`) | kit (2026-11-02, con `FilaCifras`; el ▲/▼ y la explicación desde D4a) |
+| `SelectorPeriodo` | Hoy, 7, 30, 90 días, fechas y "comparar" | kit (2026-11-02) |
 | `GraficoTendencia`, `GraficoBarras`, `GraficoDona`, `GraficoComparar` | Los de `components/dashboard/charts` y `resultados/piezas` en una sola versión | `GraficoTendencia` kit (2026-11-02, líneas o barras); el resto en D4 |
 | `RankingConFotos` | `RankingConMiniaturas` del dashboard | · |
 
@@ -230,7 +230,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D1 | Catálogo base | `categorias`, `colecciones`, `atributos-catalogo`, `marcas` (+ productos de la marca), `envios`, `cliparts`, `destacados` | Lista | hecho (2026-11-02) | · |
 | D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | hecho (2026-11-02) | · |
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | · |
-| D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | · | · |
+| D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | en marcha (D4a, 2026-11-02) | · |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | · | · |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | · | · |
 | D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | · | · |
@@ -960,6 +960,94 @@ Adaptadores (con pruebas): `reclamoDesdeFirestore`, `respuestaDeReclamo`
 - Las rutas siguen siendo `/admin/crear-cuentas-pedidos` y
   `/admin/libro-reclamaciones`.
 
+## D4 · Resultados (en marcha: D4a hecho en el kit el 2026-11-02)
+
+Seis pestañas de hoy (1.660 líneas en `pages/admin/resultados/`) y cuatro
+pantallas técnicas en `dashboard/` (otras 2.000). Se hace por tramos; el
+apartado se une entero cuando estén los cuatro.
+
+| Tramo | Qué | Páginas de hoy | Kit |
+|---|---|---|---|
+| D4a | El marco (periodo, comparar, actualizar y las pestañas) y el Resumen: cifras con su cambio, la comparativa, cosas por mejorar, visitas por día, de dónde vienen, quién está ahora y los enlaces rotos | `ResultadosLayout.jsx`, `Resumen.jsx`, `piezas.jsx`, `dashboard/EnlacesRotos.jsx` | hecho (2026-11-02) |
+| D4b | Productos y Visitantes (rankings con fotos y barras, búsquedas, canales, aparatos) | `Productos.jsx`, `Visitantes.jsx` | · |
+| D4c | Clientes con su ficha, el contacto de un carrito y Opiniones | `Clientes.jsx`, `FichaCliente.jsx`, `ContactoCarrito.jsx`, `Opiniones.jsx` | · |
+| D4d | Detalle técnico y sus pantallas (mapa de calor, páginas, uso, navegador) | `DetalleTecnico.jsx`, `dashboard/DashHeatmap`, `DashPaginas`, `DashUso`, `DashOrigen`, `dashShared` | · |
+
+### D4a: el marco y el Resumen (en el kit desde el 2026-11-02)
+
+| Computadora | Celular |
+|---|---|
+| ![Resultados: el periodo en botones con «Comparar», las pestañas, las cuatro cifras con su cambio y la comparativa con el periodo anterior](admin-resultados-escritorio.webp) | ![La comparativa en el celular: cada fila apilada con este periodo, el anterior y la diferencia](admin-resultados-celular.webp) |
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| El marco | `MarcoResultados` | `paginas/admin/Resultados.jsx` | Cabecera "Resultados" con "Cómo va tu tienda · 30 días comparado con el periodo anterior · datos al 14:52" y Actualizar; el periodo; las pestañas (ya filtradas por permiso: Clientes y Opiniones solo con `manage_clients`); la pestaña va adentro (`children`) |
+| El periodo | `SelectorPeriodo` | `piezas/admin/Metricas.jsx` | Hoy, Ayer, 7, 30, 90 días y Fechas (dos `CampoFecha`, hasta hoy), en botones que se deslizan en el celular, y el interruptor "Comparar con…" |
+| El Resumen | `PaginaResumenResultados` | `paginas/admin/Resultados.jsx` | Las cuatro cifras (visitas, pedidos, ventas, de cada 100 visitas compran) con su cambio y **su explicación con la "i"**; "Otros cobros" aparte; los avisos de días sin sumar y de "no se puede comparar"; la comparativa; cosas por mejorar; visitas por día (`GraficoTendencia` en líneas); de dónde vienen (los 3 primeros canales; **tocar uno pasa las cifras a ese canal**); ahora en la tienda; los enlaces rotos si hay sin resolver. Esqueleto mientras carga, error y vacío |
+| Una cifra | `Cifra` (D3a) | `piezas/admin/Metricas.jsx` | Ahora con `cambio` ("▲ 13.6%" en verde, "▼ 4.9%" en rojo, siempre con su flecha) y `explicacion` (se abre con la "i") |
+| Bloques | `BloqueMetrica`, `ColumnasMetricas`, `SinDatos` | `piezas/admin/Metricas.jsx` | La tarjeta con título, ayuda y acciones; dos lado a lado si hay ancho |
+| Comparativa | `TablaComparativa` | `piezas/admin/Resultados.jsx` | Qué, este periodo, el anterior y la diferencia; **en el celular, cada fila apilada** con sus rótulos (antes se deslizaba de lado y la diferencia quedaba fuera) |
+| Cosas por mejorar | `ListaAvisos` | `piezas/admin/Resultados.jsx` | Cada aviso con su urgencia en texto (Urgente · Importante · Cuando puedas), su rayita de color y la flecha si lleva a otra parte |
+| Ahora en la tienda | `ListaEnVivo` | `piezas/admin/Resultados.jsx` | Quién (cliente o visitante), en qué página y desde qué hora |
+| Enlaces rotos | `TarjetaEnlacesRotos` | `piezas/admin/Resultados.jsx` | La dirección, visitas, personas, la última vez, de dónde venían; "Crear landing" o "Llevar a…" una que existe, **con pregunta** (antes `window.confirm`); "Ver los N" |
+
+Adaptadores (con pruebas): `cambioPorcentual` y `cambioEnPuntos` (los de
+`calcularDelta` y `calcularDeltaPuntos`), `porCienVisitas`,
+`cifrasDelResumen` (las cifras, la comparativa y si hay con qué comparar),
+`otrosCobrosDe`, `serieDeVisitas` y `PERIODOS_RESULTADOS`. "Cosas por
+mejorar" se sigue calculando con `cosasPorMejorar.mjs` en el conector.
+
+### Diferencias a propósito (D4a)
+
+- **La explicación de cada cifra con la "i"** (antes, un `title` que no se
+  ve en el celular).
+- **Comparar es un interruptor** y el periodo usa los campos de fecha del
+  kit; Actualizar va en la cabecera.
+- La comparativa **se apila en el celular**; "De dónde vienen" son botones
+  con el canal arriba y sus tres números (antes, una tabla con un botón en
+  la primera columna).
+- Las urgencias de "Cosas por mejorar" se dicen con palabras, no solo con
+  el color.
+- Redirigir un enlace roto pregunta con `Confirmar`.
+
+### Qué se probó (2026-11-02, demo en localhost, 1280 px y 375 px)
+
+- 30 días de ejemplo con la forma de `useDashboardAnalytics`: 5,555 ▲ 13.6% ·
+  117 ▼ 4.9% · S/ 10,120.50 ▲ 0.3% · 2.1 ▼ 0.4 pp, y la comparativa con
+  +667, −6, +S/ 34.50 y ▼ 0.4 pp.
+- Tocar Instagram → las cifras pasan a 2,278 · 54 · 2.4 sin cambios y el
+  aviso "Mostrando solo las visitas de Instagram" con "Ver todas".
+- "Hoy" → "hoy comparado con ayer", "Hoy contra ayer", "Hoy va hasta las…"
+  y las columnas Hoy / Ayer; "Fechas" abre los dos campos; apagar Comparar
+  quita los cambios y la comparativa.
+- Enlaces rotos: elegir "Navidad 2026" → la pregunta "¿Llevar /cyber-wala a
+  /navidad-2026?" → "Ya lleva a /navidad-2026".
+- Cargando (cuatro cifras en hueso), error y sin datos; las pestañas que
+  faltan dicen en qué tramo se harán.
+- A 375 px nada se sale del ancho. Sin errores en la consola.
+
+### Cómo se une D4a
+
+- `ResultadosDelPanel.jsx` (el marco, en lugar de `ResultadosLayout`):
+  `useDashboardFilters(30)` y `useDashboardAnalytics(filtros)` como hoy.
+  - `periodo.id`: 'hoy' / 'ayer' si el rango es ese día suelto
+    (`diaSuelto`), `'fechas'` si es otro rango propio, si no `rangeDays`;
+    `onPeriodo`: hoy y ayer → `setCustomRange(key, key)`, 7/30/90 →
+    `setRangeDays(n)`, fechas → abre los campos (`desde`/`hasta` =
+    `customStart`/`customEnd`, `onFechas` = `setCustomRange`, `hoy` =
+    `limaHoyKey()`).
+  - `comparar` / `onComparar` = `filtros.compare` / `setCompare`;
+    `datosAl` = `data.actualizadoEnMs || dataUpdatedAt`; `onActualizar` = `refetch`.
+  - Las pestañas siguen siendo rutas (`rutas.js`): `pestana` sale de la ruta
+    y `onPestana` navega con `filtros.filtersSearch`.
+- `ResumenDelPanel.jsx`: `datos`, `anterior`, `comparar`, `periodo`
+  (`dia`, `contra`, `anteriorTexto = filtros.prevRangeLabel`), `avisos` =
+  `cosasPorMejorar({...})` con `to` = `DESTINOS[destino]` (y el
+  `filtersSearch`); `nombrePagina` = `prettyRouteName`; `enlacesRotos` con la
+  consulta de hoy (`CLAVE_ENLACES_ROTOS`, `getEnlacesRotos`),
+  `crearLandingDe` = `/admin/landing-pages?nueva=…` y `onRedirigir` =
+  `redirigirALanding` + invalidar.
+
 ## Reemplazos: qué sale y qué entra
 
 La misma tabla que las fichas de la tienda (CUENTA.md, "Reemplazos"): qué
@@ -1028,6 +1116,18 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D3c · Cuentas desde pedidos | `pages/admin/AdminCrearCuentasPedidos.jsx` + `.module.css` (`common/Button`, `common/Modal`) | `PaginaCuentasDePedidos` (`PasoAdmin`) | `CuentasDePedidosDelPanel.jsx` |
 | D3c · Libro de reclamaciones | `pages/admin/AdminLibroReclamaciones.jsx` (estilos en línea, `alert()`) | `PaginaReclamos` (`TablaAdmin`, `HojaEdicion`) | `ReclamosDelPanel.jsx` |
 
+### D4 · Resultados
+
+| Parte | Hoy en el admin | Pasa a (kit) | Conector |
+|---|---|---|---|
+| D4a · El marco | `pages/admin/resultados/ResultadosLayout.jsx` + `.module.css` (`SelectorPeriodo` propio, `NavLink`) | `MarcoResultados`, `SelectorPeriodo` | `ResultadosDelPanel.jsx` (con `<Outlet>` adentro) |
+| D4a · Resumen | `pages/admin/resultados/Resumen.jsx` + `.module.css` (KpiRow, TrendChart, `Comparativa`, `Aviso`, `OtrosCobros`) | `PaginaResumenResultados` | `ResumenDelPanel.jsx` |
+| D4a · Tarjetas y cifras | `resultados/piezas.jsx` (`Tarjeta`, `Columnas`, `Vacio`, `Cifras`) | `BloqueMetrica`, `ColumnasMetricas`, `SinDatos`, `Cifra` | las páginas |
+| D4a · Enlaces rotos | `pages/admin/dashboard/EnlacesRotos.jsx` + `.module.css` (`GlassCard`, `window.confirm`) | `TarjetaEnlacesRotos` | el Resumen (y Páginas, en D4d) |
+| D4b · Productos, Visitantes | `Productos.jsx`, `Visitantes.jsx` (+ `Barras`, `Interruptor` de `piezas.jsx`) | por hacer | `ProductosResultadosDelPanel.jsx`, `VisitantesDelPanel.jsx` |
+| D4c · Clientes, ficha, carrito, Opiniones | `Clientes.jsx`, `FichaCliente.jsx`, `ContactoCarrito.jsx`, `Opiniones.jsx` | por hacer | por tramo |
+| D4d · Detalle técnico | `DetalleTecnico.jsx`, `dashboard/DashHeatmap`, `DashPaginas`, `DashUso`, `DashOrigen`, `dashShared` | por hacer | por tramo |
+
 ## Cómo se une un apartado (la misma lógica que clientes)
 
 1. El apartado está **completo en el kit**: todas sus páginas en el Panel de
@@ -1068,6 +1168,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |
 | 2026-11-02 | Reemplazos de D0 a D2 (qué sale, qué entra y el conector) y la sección «Panel administrativo» de ELIMINAR.md con quién importa hoy cada pieza vieja | `guia/ADMIN.md`, `guia/ELIMINAR.md` |
+| 2026-11-02 | D4 dividido en tramos (a: marco y Resumen, b: productos y visitantes, c: clientes y opiniones, d: detalle técnico). D4a en el kit: `MarcoResultados`, `SelectorPeriodo`, `PaginaResumenResultados`, `BloqueMetrica`, `TablaComparativa`, `ListaAvisos`, `ListaEnVivo`, `TarjetaEnlacesRotos`; `Cifra` con su cambio y su explicación; adaptadores con pruebas | `paginas/admin/Resultados.jsx`, `piezas/admin/Resultados.jsx`, `piezas/admin/Metricas.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D3c en el kit: `PaginaCuentasDePedidos` (cuatro pasos, uno a la vez) y `PaginaReclamos` (con el plazo en días hábiles); `PasoAdmin` termina a medias y `HojaEdicion` sirve para solo mirar; adaptadores con pruebas. **D3 completo en el kit** | `paginas/admin/Cuentas.jsx`, `paginas/admin/Reclamos.jsx`, `piezas/admin/Pasos.jsx`, `piezas/admin/Formularios.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D3b en el kit: `PaginaPagos` (historial, nuevo enlace, ajustes) y `GraficoTendencia` (líneas o barras, teclado, tabla oculta, colores validados); adaptadores de pagos con pruebas | `paginas/admin/Pagos.jsx`, `piezas/admin/Grafico.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D3 dividido en tramos (a: recepción, b: pagos, c: cuentas y reclamos). D3a en el kit: `PaginaRecepcion`, `Cifra` / `FilaCifras`, `TarjetaEnvio`; adaptadores de recepción con pruebas | `paginas/admin/Pedidos.jsx`, `piezas/admin/Metricas.jsx`, `piezas/admin/Pedidos.jsx`, `adaptadoresAdmin.js` |

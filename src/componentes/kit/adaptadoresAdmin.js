@@ -1086,3 +1086,109 @@ export function filasMigracion(d = {}) {
     : [fila('Migrados', d.migrated), fila('Borrados de la vieja', d.deletedFromLegacy), fila('Borrados (ya migrados antes)', d.deletedAlreadyMigrated)];
   return [...comunes.slice(0, 1), ...propias, ...comunes.slice(1)].filter(Boolean);
 }
+
+/* ── Resultados (D4) ───────────────────────────────────── */
+
+/*
+ * Los datos llegan como los arma useDashboardAnalytics (dashboard/dashShared):
+ * data.visitas.total.total, data.ventas.pedidos.total, data.ventas.ingresosCents.total
+ * (céntimos), data.canales, data.visitasPorDia, data.otrosCobros…, y `anterior`
+ * con el periodo de antes ({ visitas, pedidos, ingresosCents, diasConVentas }).
+ * Las cuentas son las de antes (calcularDelta y calcularDeltaPuntos).
+ */
+const enteroPE = (n) => new Intl.NumberFormat('es-PE').format(Math.round(Number(n) || 0));
+const solesDeCentimos = (c) => `S/ ${((Number(c) || 0) / 100).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const decimal = (v) => (Number(v) || 0).toLocaleString('es-PE', { maximumFractionDigits: 1 });
+
+/** De cada 100 visitas, cuántas compran (un decimal). */
+export const porCienVisitas = (pedidos, visitas) => (visitas > 0 ? Math.round((pedidos / visitas) * 1000) / 10 : 0);
+
+/** El cambio en % contra el periodo anterior: { texto: '▲ 12%', bueno } (sin base previa, '▲ nuevo'). */
+export function cambioPorcentual(actual, previo) {
+  if (actual == null || previo == null) return null;
+  const a = Number(actual) || 0;
+  const b = Number(previo) || 0;
+  if (b === 0) return a === 0 ? { texto: '= 0%', bueno: true } : { texto: '▲ nuevo', bueno: true };
+  const pct = ((a - b) / b) * 100;
+  if (Math.round(pct * 10) === 0) return { texto: '= 0%', bueno: true };
+  return { texto: `${pct > 0 ? '▲' : '▼'} ${decimal(Math.abs(pct))}%`, bueno: pct > 0 };
+}
+
+/** El cambio de algo que ya es un porcentaje, en puntos: { texto: '▲ 0.4 pp', bueno }. */
+export function cambioEnPuntos(actual, previo) {
+  if (actual == null || previo == null) return null;
+  const d = Math.round(((Number(actual) || 0) - (Number(previo) || 0)) * 10) / 10;
+  if (d === 0) return { texto: '= 0 pp', bueno: true };
+  return { texto: `${d > 0 ? '▲' : '▼'} ${decimal(Math.abs(d))} pp`, bueno: d > 0 };
+}
+
+const diferenciaCon = (actual, previo, formato) => {
+  const d = (Number(actual) || 0) - (Number(previo) || 0);
+  return d === 0 ? '=' : `${d > 0 ? '+' : '−'}${formato(Math.abs(d))}`;
+};
+
+/**
+ * Las cuatro cifras del Resumen y la comparativa con el periodo anterior.
+ *  - datos · anterior · comparar · canal: { canal, visitas, pedidos } (solo ese canal)
+ *  → { cifras: [{ id, nombre, valor, cambio, explicacion }], comparativa: [{ nombre, actual, previo, diferencia, cambio }], hayAnterior }
+ */
+export function cifrasDelResumen({ datos, anterior, comparar = false, canal = null } = {}) {
+  const visitas = datos?.visitas?.total?.total || 0;
+  const pedidos = datos?.ventas?.pedidos?.total || 0;
+  const ventas = datos?.ventas?.ingresosCents?.total || 0;
+  const hayAnterior = Boolean(comparar && anterior && anterior.diasConVentas > 0);
+  const vPrev = anterior?.visitas?.total || 0;
+  const pPrev = anterior?.pedidos?.total || 0;
+  const iPrev = anterior?.ingresosCents?.total || 0;
+  const conv = porCienVisitas(pedidos, visitas);
+  const convPrev = porCienVisitas(pPrev, vPrev);
+  const con = (c) => (hayAnterior && !canal ? c : null);
+  const nota = canal ? ` Solo visitas de ${canal.canal}.` : '';
+  const cifras = [
+    { id: 'visitas', nombre: 'Visitas', valor: enteroPE(canal ? canal.visitas : visitas), cambio: con(cambioPorcentual(visitas, vPrev)), explicacion: `Personas que entraron a la tienda o a la app. Si alguien vuelve antes de 30 minutos, es la misma visita. No cuenta robots ni al equipo.${nota}` },
+    { id: 'pedidos', nombre: 'Pedidos', valor: enteroPE(canal ? canal.pedidos : pedidos), cambio: con(cambioPorcentual(pedidos, pPrev)), explicacion: `Pedidos enviados desde la tienda o la app, aunque todavía no estén pagados.${nota}` },
+    { id: 'ventas', nombre: 'Ventas', valor: solesDeCentimos(ventas), cambio: con(cambioPorcentual(ventas, iPrev)), explicacion: `Suma de lo que llevan esos pedidos (precio por cantidad). No incluye sorteos, suscripciones ni pagos de saldo.${canal ? ' Las ventas no se separan por canal: es el total.' : ''}` },
+    { id: 'conversion', nombre: 'De cada 100 visitas compran', valor: decimal(canal ? porCienVisitas(canal.pedidos, canal.visitas) : conv), cambio: con(cambioEnPuntos(conv, convPrev)), explicacion: `Pedidos ÷ visitas × 100.${nota}` },
+  ];
+  const comparativa = hayAnterior ? [
+    { nombre: 'Visitas', actual: enteroPE(visitas), previo: enteroPE(vPrev), diferencia: diferenciaCon(visitas, vPrev, enteroPE), cambio: cambioPorcentual(visitas, vPrev) },
+    { nombre: 'Pedidos', actual: enteroPE(pedidos), previo: enteroPE(pPrev), diferencia: diferenciaCon(pedidos, pPrev, enteroPE), cambio: cambioPorcentual(pedidos, pPrev) },
+    { nombre: 'Ventas', actual: solesDeCentimos(ventas), previo: solesDeCentimos(iPrev), diferencia: diferenciaCon(ventas, iPrev, solesDeCentimos), cambio: cambioPorcentual(ventas, iPrev) },
+    // En puntos el cambio ya es la diferencia: no se repite.
+    { nombre: 'De cada 100 visitas compran', actual: decimal(conv), previo: decimal(convPrev), diferencia: null, cambio: cambioEnPuntos(conv, convPrev) },
+  ] : [];
+  return { cifras, comparativa, hayAnterior };
+}
+
+const NOMBRES_COBRO = {
+  sorteo: ['ticket de sorteo', 'tickets de sorteo'],
+  suscripcion: ['suscripción', 'suscripciones'],
+  saldo: ['pago de saldo', 'pagos de saldo'],
+  pago_rapido: ['pago rápido', 'pagos rápidos'],
+  otro: ['otro cobro', 'otros cobros'],
+};
+
+/** "Otros cobros" (no son pedidos de la tienda): { montos: 'S/ 120.00 + USD 20.00', detalle: '3 tickets de sorteo · 1 pago de saldo' } o null. */
+export function otrosCobrosDe(cobros = {}) {
+  const fuentes = Object.entries(cobros || {}).filter(([, c]) => c?.cantidad > 0);
+  if (!fuentes.length) return null;
+  const porMoneda = {};
+  fuentes.forEach(([, c]) => Object.entries(c.porMoneda || {}).forEach(([m, cents]) => { porMoneda[m] = (porMoneda[m] || 0) + cents; }));
+  return {
+    montos: Object.entries(porMoneda).map(([m, c]) => (m === 'PEN' ? solesDeCentimos(c) : `${m} ${((Number(c) || 0) / 100).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`)).join(' + '),
+    detalle: fuentes.map(([f, c]) => `${enteroPE(c.cantidad)} ${(NOMBRES_COBRO[f] || NOMBRES_COBRO.otro)[c.cantidad === 1 ? 0 : 1]}`).join(' · '),
+  };
+}
+
+/** Visitas por día para GraficoTendencia: [{ etiqueta: 'DD/MM', valores: { visitas } }]. */
+export const serieDeVisitas = (porDia = []) => lista(porDia).map((d) => ({ etiqueta: d.day ? `${d.day.slice(8, 10)}/${d.day.slice(5, 7)}` : '', valores: { visitas: Number(d.total) || 0 } }));
+
+/** Los periodos de Resultados: hoy, ayer, 7, 30, 90 días o fechas. */
+export const PERIODOS_RESULTADOS = [
+  { id: 'hoy', texto: 'Hoy' },
+  { id: 'ayer', texto: 'Ayer' },
+  { id: '7', texto: '7 días' },
+  { id: '30', texto: '30 días' },
+  { id: '90', texto: '90 días' },
+  { id: 'fechas', texto: 'Fechas' },
+];

@@ -418,7 +418,10 @@ su apartado se una y su interruptor se retire.
 | `pages/admin/AdminCrearCuentasPedidos.jsx` + `.module.css` | `App.jsx` | `PaginaCuentasDePedidos` (D3c) | nadie más; **`services/accountFromOrder.js` no**: lo usa el conector (y el alta de cuentas) | al retirar `adminPedidosViejo` |
 | `pages/admin/AdminLibroReclamaciones.jsx` | `App.jsx` | `PaginaReclamos` (D3c) | nadie más | al retirar `adminPedidosViejo` |
 | `components/dashboard/charts/TrendChart` | AdminGestionPagos | `GraficoTendencia` (D3b) | `DashPaginas`, `resultados/Resumen` (D4) | cuando migre Resultados |
-| `components/dashboard/KpiRow` | RecepcionPedidos, AdminGestionPagos | `Cifra`, `FilaCifras` (D3a) | `dashShared`, `DashOrigen`, `DashPaginas`, `DashUso`, `resultados/Resumen` (D4) | cuando migren D3 y Resultados |
+| `components/dashboard/KpiRow` | RecepcionPedidos, AdminGestionPagos, `resultados/Resumen` | `Cifra`, `FilaCifras` (D3a, D4a) | `dashShared`, `DashOrigen`, `DashPaginas`, `DashUso` (D4d) | cuando migren D3 y Resultados |
+| `pages/admin/resultados/ResultadosLayout.jsx`, `Resumen.jsx` + sus `.module.css` | `App.jsx` | `MarcoResultados`, `PaginaResumenResultados` (D4a) | nadie más | al retirar `adminResultadosViejo` |
+| `pages/admin/resultados/piezas.jsx` + `.module.css` | Resumen y las demás pestañas | `BloqueMetrica`, `Cifra`… (D4a); `Barras` e `Interruptor` en D4b | Clientes, DetalleTecnico, FichaCliente, Opiniones, Productos, Visitantes | cuando estén D4b, D4c y D4d |
+| `pages/admin/dashboard/EnlacesRotos.jsx` + `.module.css` | Resumen | `TarjetaEnlacesRotos` (D4a) | `DashPaginas` (D4d) | cuando migre D4d; **`services/adminEnlacesRotos` no**: lo usa el conector |
 | `pages/Tienda/admin/GenerarFrenteEspalda.jsx` | AdminProductoFormV2 | **no se borra**: la ficha nueva lo usa por `extraGaleria` | — | — |
 | La personalización de antes: `AdminCustomizationViewsEditor`, `YoryoPersonalizado`, `AdminViewEditor`, `PrintAreasEditor`, `ShapeSelector`, `ShapeCreator` | AdminProductoFormV2 (con `personalizableViejo`), `EditorPage` (`/editor/:id`) | nada: no se rehacen (decidido el 2026-11-02) | `EditorPage`, el interruptor `personalizableViejo` | cuando ningún producto conserve esa personalización (el aviso de la lista lo cuenta) y se retire el interruptor |
 

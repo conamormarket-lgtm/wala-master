@@ -1,4 +1,4 @@
-/* ── Cifras (D3, también para Resultados en D4) ─────────────── */
+/* ── Cifras y bloques de números (D3, D4) ───────────────────── */
 .fila {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr));
@@ -115,4 +115,200 @@
     transition: none;
     transform: none;
   }
+}
+
+/* ── D4: el cambio, la explicación, bloques y el periodo ───── */
+.linea {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.45rem;
+  min-width: 0;
+}
+
+.sube,
+.baja {
+  font-size: 0.74rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.sube {
+  color: var(--verde-exito-hover, #059669);
+}
+
+.baja {
+  color: var(--danger-hover);
+}
+
+.info {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.info svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.info:hover,
+.info[aria-expanded='true'] {
+  background: var(--violet-50);
+  color: var(--primary-color);
+}
+
+.info:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 1px;
+}
+
+/* Con la "i", el nombre usa hasta dos líneas en vez de cortarse. */
+.cifra:has(.info) .nombre {
+  display: -webkit-box;
+  padding-right: 1.6rem;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.explicacion {
+  margin-top: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.bloque {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.bloqueCabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+}
+
+.bloqueTitulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-family: var(--fuente-marca);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.bloqueAyuda {
+  margin: -0.25rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.columnas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  align-items: start;
+  gap: 0.9rem;
+}
+
+.sinDatos {
+  margin: 0;
+  padding: 1.2rem 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  text-align: center;
+}
+
+.periodo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  min-width: 0;
+}
+
+.segmentos {
+  display: flex;
+  gap: 0.2rem;
+  max-width: 100%;
+  padding: 0.2rem;
+  overflow-x: auto;
+  border-radius: 14px;
+  background: var(--color-bg, var(--gris-fondo));
+  scrollbar-width: none;
+}
+
+.segmentos::-webkit-scrollbar {
+  display: none;
+}
+
+.seg,
+.segActivo {
+  flex: none;
+  min-height: 36px;
+  padding: 0 0.8rem;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.seg:hover {
+  color: var(--color-text);
+}
+
+.segActivo {
+  background: var(--color-surface);
+  box-shadow: 0 1px 3px rgba(30, 27, 46, 0.12);
+  color: var(--primary-color);
+}
+
+.seg:focus-visible,
+.segActivo:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 1px;
+}
+
+.fechas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 12rem));
+  gap: 0.6rem;
+}
+
+@container pagina-admin (max-width: 560px) {
+  .fechas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+}
+
+:global([data-theme='dark']) .info:hover,
+:global([data-theme='dark']) .info[aria-expanded='true'] {
+  background: rgba(139, 92, 246, 0.14);
 }

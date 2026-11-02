@@ -327,3 +327,27 @@ test('reclamos: el documento, responder, el plazo en días hábiles y la migraci
   assert.deepEqual(m2.filasMigracion({ dryRun: true, candidateUserIds: 4, wouldMigrate: 3, alreadyInTarget: 1 }).map((f) => f.texto), ['Candidatos', 'Se migrarían', 'Ya estaban en la colección nueva']);
   assert.deepEqual(m2.filasMigracion({ dryRun: false, migrated: 2 }).map((f) => [f.texto, f.valor]), [['Migrados', 2]]);
 });
+
+test('resultados: cambios, cifras del resumen, comparativa y otros cobros', () => {
+  assert.deepEqual(m2.cambioPorcentual(120, 100), { texto: '▲ 20%', bueno: true });
+  assert.deepEqual(m2.cambioPorcentual(80, 100), { texto: '▼ 20%', bueno: false });
+  assert.deepEqual(m2.cambioPorcentual(5, 0), { texto: '▲ nuevo', bueno: true });
+  assert.deepEqual(m2.cambioPorcentual(0, 0), { texto: '= 0%', bueno: true });
+  assert.equal(m2.cambioPorcentual(1, null), null);
+  assert.deepEqual(m2.cambioEnPuntos(2.5, 2.1), { texto: '▲ 0.4 pp', bueno: true });
+  const datos = { visitas: { total: { total: 1200 } }, ventas: { pedidos: { total: 30 }, ingresosCents: { total: 450000 } } };
+  const anterior = { visitas: { total: 1000 }, pedidos: { total: 30 }, ingresosCents: { total: 500000 }, diasConVentas: 7 };
+  const r = m2.cifrasDelResumen({ datos, anterior, comparar: true });
+  assert.deepEqual(r.cifras.map((c) => c.valor), ['1,200', '30', 'S/ 4,500.00', '2.5']);
+  assert.deepEqual(r.cifras.map((c) => c.cambio?.texto), ['▲ 20%', '= 0%', '▼ 10%', '▼ 0.5 pp']);
+  assert.equal(r.comparativa[2].diferencia, '−S/ 500.00');
+  assert.equal(r.comparativa[3].diferencia, null);
+  // Sin comparar o con un canal elegido, sin cambios; el canal manda en visitas y pedidos.
+  assert.equal(m2.cifrasDelResumen({ datos, anterior }).cifras[0].cambio, null);
+  const c = m2.cifrasDelResumen({ datos, anterior, comparar: true, canal: { canal: 'Instagram', visitas: 300, pedidos: 9 } });
+  assert.deepEqual(c.cifras.map((x) => x.valor), ['300', '9', 'S/ 4,500.00', '3']);
+  assert.equal(c.cifras[0].cambio, null);
+  assert.deepEqual(m2.otrosCobrosDe({ sorteo: { cantidad: 3, porMoneda: { PEN: 3000 } }, saldo: { cantidad: 1, porMoneda: { PEN: 4500, USD: 2000 } } }), { montos: 'S/ 75.00 + USD 20.00', detalle: '3 tickets de sorteo · 1 pago de saldo' });
+  assert.equal(m2.otrosCobrosDe({}), null);
+  assert.deepEqual(m2.serieDeVisitas([{ day: '2026-10-03', total: 4 }]), [{ etiqueta: '03/10', valores: { visitas: 4 } }]);
+});

@@ -1,0 +1,109 @@
+/* ── D4 · Resultados ───────────────────────────────────────── */
+.pagina,
+.resumen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+.pagina > header {
+  margin-bottom: 0;
+}
+
+.controles {
+  min-width: 0;
+}
+
+.pestanas {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pestanas::-webkit-scrollbar {
+  display: none;
+}
+
+.nota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.nota strong {
+  color: var(--color-text);
+}
+
+.canales {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.canal,
+.canalActivo {
+  display: grid;
+  /* El canal arriba y sus tres números debajo (en una fila no entran). */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.8rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.canal b,
+.canalActivo b {
+  color: var(--color-text);
+}
+
+.canal:hover {
+  border-color: var(--violet-300);
+}
+
+.canalActivo {
+  border-color: var(--primary-color);
+  background: var(--violet-50);
+}
+
+.canal:focus-visible,
+.canalActivo:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.canalNombre {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: var(--color-text);
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contador {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--verde-exito, #10b981);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.78rem;
+}
+
+:global([data-theme='dark']) .canalActivo {
+  background: rgba(139, 92, 246, 0.14);
+}
