@@ -25,14 +25,28 @@ function coinsOf(input) {
   if (!Number.isInteger(input.coins) || input.coins < 0 || input.coins > 1_000_000) fail('Revisa las monedas que quieres usar.');
   return input.coins;
 }
+// "Es un regalo" (regalo del checkout web → giftDetails del pedido, que lee obtenerRegaloSecure en /regalo/:orderId):
+// para quién, un mensaje de hasta 200 letras y uno de los stickers de Kapi. null si no se mandó.
+const GIFT_STICKERS = ['kapi-love', 'kapi-party', 'kapi-smile'];
+function giftOf(input) {
+  if (input?.gift == null) return null;
+  const gift = input.gift;
+  if (typeof gift !== 'object' || Array.isArray(gift)) fail('Revisa los datos del regalo.');
+  const text = (value) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '');
+  const recipientName = text(gift.recipientName); const message = typeof gift.message === 'string' ? gift.message.trim() : '';
+  if (!recipientName || recipientName.length > 60) fail('Escribe para quién es el regalo.');
+  if (!message || message.length > 200) fail('Escribe un mensaje de hasta 200 letras para el regalo.');
+  if (!GIFT_STICKERS.includes(gift.sticker)) fail('Elige cómo te acompaña Kapi en el regalo.');
+  return { recipientName, message, sticker: gift.sticker };
+}
 function identity(input, uid) {
   if (!uid) fail('Inicia sesión para preparar el pago.');
   if (!input || !/^[A-Za-z0-9_-]{16,80}$/.test(input.requestId || '') || input.contract !== CONTRACT) fail('El intento de pago no es válido.');
   if (input.expectedUid !== undefined && input.expectedUid !== uid) fail('La sesión cambió. Vuelve a preparar el pago desde tu cuenta actual.');
   // Sin cupón ni monedas el cuerpo es el de siempre: los intentos ya preparados conservan su huella.
-  const coupon = couponCode(input); const coins = coinsOf(input);
+  const coupon = couponCode(input); const coins = coinsOf(input); const gift = giftOf(input);
   const body = JSON.stringify(stable({ items: input.items, address: input.address, email: input.email, expectedTotal: input.expectedTotal,
-    ...(coupon ? { couponCode: coupon } : {}), ...(coins ? { coins } : {}) }));
+    ...(coupon ? { couponCode: coupon } : {}), ...(coins ? { coins } : {}), ...(gift ? { gift } : {}) }));
   if (!body || body.length > 128_000) fail('El pedido supera el tamaño permitido.');
   return { id: `MC-${createHash('sha256').update(`${uid}:${input.requestId}`).digest('hex').slice(0, 28)}`,
     hash: createHash('sha256').update(body).digest('hex') };
@@ -188,7 +202,7 @@ async function build(input, uid, read, readDesigns = async () => new Map()) {
   if (!Array.isArray(input.items) || !input.items.length || input.items.length > 100) fail('Revisa los productos del carrito.');
   const address = cleanAddress(input.address || {}); const email = String(input.email || '').trim();
   assertAddress(address, email);
-  const coupon = couponCode(input); const coins = coinsOf(input);
+  const coupon = couponCode(input); const coins = coinsOf(input); const gift = giftOf(input);
   const comboRows = input.items.filter((item) => item && item.comboId);
   const designRows = input.items.filter((item) => item && !item.comboId && item.designId);
   const catalogRows = input.items.filter((item) => !(item && (item.designId || item.comboId)));
@@ -289,6 +303,7 @@ async function build(input, uid, read, readDesigns = async () => new Map()) {
     canalVenta: 'Portal Web', web: true, activador: 'portal_web', vendedor: 'Portal Web', origen: 'wala_mobile',
     montoTotal: total, montoAdelanto: 0, montoPendiente: total, costoEnvio: envio,
     ...(coins ? { descuentoMonedas: coins, monedasEnEspera: coins } : {}),
+    ...(gift ? { giftDetails: { isGift: true, ...gift } } : {}),
     estadoGeneral: 'Nuevo', status: 'Nuevo', cantidad: [...items, ...creations, ...combos].reduce((sum, line) => sum + line.quantity, 0), productos,
     prendas: [...items.map((line) => `${line.product.name} x${line.quantity}`),
       ...creations.map((line) => `${line.raw.name || line.design.productName || 'Personalizado'} x${line.quantity}`),
@@ -298,12 +313,12 @@ async function build(input, uid, read, readDesigns = async () => new Map()) {
     ...(coupon ? { cuponCode: coupon } : {}),
   };
   return { key, payload, meta: { contract: CONTRACT, requestId: input.requestId, requestHash: key.hash,
-    input: { contract: CONTRACT, requestId: input.requestId, expectedTotal: total, address, email, ...(coupon ? { couponCode: coupon } : {}), ...(coins ? { coins } : {}),
+    input: { contract: CONTRACT, requestId: input.requestId, expectedTotal: total, address, email, ...(coupon ? { couponCode: coupon } : {}), ...(coins ? { coins } : {}), ...(gift ? { gift } : {}),
       items: [...items.map((line) => ({ productId: line.product.id, quantity: line.quantity, selection: selectionFromChosen(line.selection) })),
         ...creations.map((line) => ({ designId: line.designId, quantity: line.quantity, size: line.size })),
         ...combos.map((line) => ({ comboId: line.comboId, miComboId: line.miComboId, quantity: line.quantity,
           piezas: line.piezas.map((p) => (p.fija ? { fija: true } : { designId: p.designId, size: p.size })) }))] },
-    summary: { address, email, items, creations: creations.map((line) => ({ designId: line.designId, productId: line.design.productId,
+    summary: { address, email, items, ...(gift ? { gift } : {}), creations: creations.map((line) => ({ designId: line.designId, productId: line.design.productId,
       name: line.design.name || line.raw.name || 'Mi creación', productName: line.raw.name || '', imageUrl: line.preview, size: line.size,
       color: (line.design.color && line.design.color.nombre) || '', price: line.price, quantity: line.quantity })),
     combos: combos.map((line) => ({ comboId: line.comboId, miComboId: line.miComboId, name: line.raw.name || 'Combo', price: line.price, quantity: line.quantity,
@@ -331,4 +346,4 @@ function threeDS(data) {
   }
   return out;
 }
-module.exports = { CONTRACT, identity, build, shipping, view, threeDS, couponCode, coinsOf, repartirPrecio };
+module.exports = { CONTRACT, identity, build, shipping, view, threeDS, couponCode, coinsOf, giftOf, GIFT_STICKERS, repartirPrecio };

@@ -176,3 +176,10 @@ test('preparación REAL con monedas: tope de la marca y saldo del servidor, se r
   await f.cancel(withCoins.requestId);
   assert.equal(f.ledger.get('a').monedas, 30);
 });
+test('preparación REAL con regalo: el pedido guardado lleva giftDetails y la app ve para quién es', async () => {
+  const f = await fixture(approved);
+  const gift = { recipientName: 'María', message: '¡Feliz cumpleaños!', sticker: 'kapi-love' };
+  const session = await f.prepare({ mobileCheckout: { ...f.input, requestId: 'regaloregaloregalo01', gift } });
+  assert.equal(session.gift.recipientName, 'María'); assert.equal(session.totals.total, 164.7);
+  assert.equal(JSON.stringify(f.ledger.get(session.intentId).orderPayload.giftDetails), JSON.stringify({ isGift: true, ...gift }));
+});
