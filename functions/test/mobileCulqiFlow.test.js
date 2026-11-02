@@ -8,7 +8,7 @@ const parser = require('@babel/parser');
 const mobile = require('../mobileCheckout');
 const source = fs.readFileSync(require.resolve('../index'), 'utf8');
 const ast = parser.parse(source, { sourceType: 'script' });
-let handlerSource; let prepareSource; let cancelSource;
+let handlerSource; let prepareSource; let cancelSource; let whatsappSource;
 for (const statement of ast.program.body) {
   const node = statement.expression;
   if (node?.type === 'AssignmentExpression' && node.left?.object?.name === 'exports' && node.left?.property?.name === 'processCulqiPayment') {
@@ -16,6 +16,9 @@ for (const statement of ast.program.body) {
   }
   if (node?.type === 'AssignmentExpression' && node.left?.object?.name === 'exports' && node.left?.property?.name === 'prepareCheckoutPayment') {
     const handler = node.right.arguments[0]; prepareSource = source.slice(handler.start, handler.end);
+  }
+  if (node?.type === 'AssignmentExpression' && node.left?.object?.name === 'exports' && node.left?.property?.name === 'crearSolicitudWhatsappSecure') {
+    const handler = node.right.arguments[0]; whatsappSource = source.slice(handler.start, handler.end);
   }
   if (node?.type === 'AssignmentExpression' && node.left?.object?.name === 'exports' && node.left?.property?.name === 'cancelMobileCheckoutSecure') {
     const handler = node.right.arguments[0]; cancelSource = source.slice(handler.start, handler.end);
@@ -227,4 +230,41 @@ test('la vuelta de la verificación del banco no vuelve a guardar la tarjeta', a
     deviceId: 'device_test0001', amount: 16470, currency: 'PEN' });
   assert.equal((await f.pay({ guardarTarjeta: true, authentication3DS: { eci: '05', xid: 'x', cavv: 'c', protocolVersion: '2.1.0' } })).success, true);
   assert.equal(f.newCards.length, 0); assert.equal(f.counts().calls, 1);
+});
+test('un pedido de la app pedido por WhatsApp ya no se cancela (sus monedas siguen reservadas) y la app lo ve', async () => {
+  const f = await fixture(approved);
+  const session = await f.prepare({ mobileCheckout: { ...f.input, requestId: 'whatsappwhatsapp0001' } });
+  f.ledger.set(session.intentId, { ...f.ledger.get(session.intentId), whatsappSolicitado: true });
+  await assert.rejects(f.cancel('whatsappwhatsapp0001'), /WhatsApp/);
+  assert.equal(f.ledger.get(session.intentId).status, 'prepared');
+  assert.equal(mobile.view(session.intentId, f.ledger.get(session.intentId)).whatsappRequested, true);
+  assert.equal(mobile.view(session.intentId, { ...f.ledger.get(session.intentId), whatsappSolicitado: false }).whatsappRequested, undefined);
+});
+test('pedir por WhatsApp desde la app marca el cupón usado una sola vez; el de la web lo sigue canjeando el navegador', async () => {
+  const run = async (intent) => {
+    const coupons = new Map([['c1', { status: 'active', code: 'WALA-10' }]]); const erp = new Map(); const writes = [];
+    const ref = { id: 'MC-intento', set: async (data) => writes.push(data) };
+    const context = {
+      functions: { https: { HttpsError } }, esPrecalentamiento: () => false, precalentar() {}, console: { warn() {}, error() {} },
+      INTENCION_NO_COBRABLE: new Set(['reemplazada', 'vencida']), checkoutOrderId: (p) => p.numeroPedido, FieldValue: { serverTimestamp: () => 1 },
+      readCheckoutIntent: async () => ({ id: 'MC-intento', ref, intent, orderPayload: intent.orderPayload }),
+      getErpDb: () => ({ collection: () => ({ doc: (id) => ({ id, get: async () => ({ exists: erp.has(id) }), set: async (d) => erp.set(id, d) }) }),
+        runTransaction: async (fn) => fn({ get: async (r) => ({ exists: erp.has(r.id) }), set: (r, d) => erp.set(r.id, { ...erp.get(r.id), ...d }) }) }),
+      congelarDisenos: async (p) => p, camposErpWala: async () => ({}), ERP_CANAL_WALA: 'WALA', WALA_ORDERS_COLLECTION: 'wala_pedidos', sanearWalaDocId: (x) => x,
+      pagos: { resumirProductos: () => [] }, marcarCreacionesDelPedido: async () => {}, vincularCompraReferido: async () => {},
+      buscarCupon: async (_uid, code) => { const [id, cupon] = [...coupons].find(([, c]) => c.code === code) || []; return id ? { ref: { id }, cupon } : null; },
+      db: { runTransaction: async (fn) => fn({ update: (r, d) => coupons.set(r.id, { ...coupons.get(r.id), ...d }) }) },
+    };
+    const handler = vm.runInNewContext(`(${whatsappSource})`, context);
+    const result = await handler({ intentId: 'MC-intento' }, { auth: { uid: 'a' } });
+    await handler({ intentId: 'MC-intento' }, { auth: { uid: 'a' } });
+    return { result, coupon: coupons.get('c1'), erp, writes };
+  };
+  const payload = { numeroPedido: 'MC-intento', cuponCode: 'WALA-10', descuentoCupon: 10, productos: {} };
+  const app = await run({ uid: 'a', status: 'prepared', mobile: { contract: 'mobile-v1' }, orderPayload: payload });
+  assert.equal(app.result.id, 'MC-intento'); assert.equal(app.coupon.status, 'used'); assert.equal(app.coupon.orderId, 'MC-intento');
+  assert.equal(app.coupon.descuentoAplicado, 10); assert.equal(app.erp.get('MC-intento').metodoPago, 'whatsapp');
+  assert.equal(app.writes.every((w) => w.whatsappSolicitado === true), true);
+  const web = await run({ uid: 'a', status: 'prepared', orderPayload: payload });
+  assert.equal(web.coupon.status, 'active');
 });

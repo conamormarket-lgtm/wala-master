@@ -1035,6 +1035,16 @@ exports.crearSolicitudWhatsappSecure = functions.https.onCall(async (data, conte
       console.warn(`crearSolicitudWhatsappSecure: espejo de ${orderId} no escrito:`, e.message);
     }
   }
+  // El cupón de un pedido de la app se marca usado aquí (en la web lo canjea el navegador después con canjearCuponSecure).
+  const cuponMovil = checkout.intent.mobile && uid && payload.cuponCode ? payload.cuponCode : "";
+  if (cuponMovil) {
+    await db.runTransaction(async (t) => {
+      const cupon = await buscarCupon(uid, cuponMovil, t);
+      if (cupon && cupon.cupon.status !== "used" && !cupon.cupon.orderId) {
+        t.update(cupon.ref, { status: "used", orderId, descuentoAplicado: Number(payload.descuentoCupon) || 0, usadoAt: FieldValue.serverTimestamp() });
+      }
+    }).catch((e) => console.error(`crearSolicitudWhatsappSecure: no se marcó el cupón de ${orderId}:`, e));
+  }
   await marcarCreacionesDelPedido(db, payload, uid);
   await vincularCompraReferido(orderId, payload);
   await checkout.ref.set({ whatsappSolicitado: true, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
@@ -10193,7 +10203,8 @@ exports.getMobileCheckoutStatusSecure = functions.https.onCall(async (data, cont
   // coins: acepta monedas en el pago móvil (las reserva al preparar y las devuelve al cancelar).
   // gifts: acepta "Es un regalo" (giftDetails del pedido, el que abre /regalo/:orderId).
   // savedCards: cobra con una tarjeta guardada y guarda la nueva ("Guardar esta tarjeta"), sin 3DS, como la web.
-  if (data?.capabilities) return { contract: mobileCheckout.CONTRACT, coupons: true, creations: true, combos: true, coins: true, gifts: true, savedCards: true,
+  // whatsapp: el pedido de la app se puede terminar por WhatsApp (crearSolicitudWhatsappSecure) y ya no se cancela.
+  if (data?.capabilities) return { contract: mobileCheckout.CONTRACT, coupons: true, creations: true, combos: true, coins: true, gifts: true, savedCards: true, whatsapp: true,
     enabled: process.env.MOBILE_CHECKOUT_ENABLED === 'true' && /^pk_(test|live)_/.test(process.env.CULQI_PUBLIC_KEY || '') };
   try {
     const { id } = mobileCheckout.identity({ contract: mobileCheckout.CONTRACT, requestId: data && data.requestId }, uid);
@@ -10216,6 +10227,8 @@ exports.cancelMobileCheckoutSecure = functions.https.onCall(async (data, context
       const intent = snapshot.data();
       if (intent.uid !== uid || !intent.mobile) throw new functions.https.HttpsError('permission-denied', 'Este pago no pertenece a tu cuenta.');
       if (['paid_order_created', 'cobrando'].includes(intent.status)) throw new functions.https.HttpsError('failed-precondition', 'El pago está en comprobación o ya se completó. Consulta su estado antes de continuar.');
+      // Pedido por WhatsApp: ya está en el ERP con sus monedas reservadas; cancelar aquí las devolvería.
+      if (intent.whatsappSolicitado === true) throw new functions.https.HttpsError('failed-precondition', 'Ya pediste este pedido por WhatsApp. Si quieres anularlo, escríbele al asesor.');
       // Las monedas que reservó este intento vuelven ya: una intención vencida no la libera reconciliarMonedasEnEspera
       // (solo mira las que siguen "prepared") ni el siguiente checkout (reservaCheckoutLiberable, tampoco).
       const reserva = intent.status === 'prepared' && Number(intent.totalesServidor?.monedas) > 0 ? await transaction.get(userRef) : null;
