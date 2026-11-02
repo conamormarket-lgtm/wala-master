@@ -2309,3 +2309,114 @@ export function configConPregunta(config = {}, que = {}) {
   }
   return config;
 }
+
+/* ── D6a · Sorteos ────────────────────────────────────── */
+
+/** Como slugifySorteo (services/sorteos): minúsculas, sin tildes, guiones, hasta 60. */
+export const slugDeSorteo = (texto) => String(texto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
+
+export const ESTADOS_SORTEO = {
+  borrador: { texto: 'Borrador', tono: 'neutro' },
+  activo: { texto: 'Activo', tono: 'exito' },
+  cerrado: { texto: 'Cerrado', tono: 'violeta' },
+  finalizado: { texto: 'Cerrado', tono: 'violeta' },
+};
+
+export const REQUISITOS_APP = [
+  { valor: 'ninguno', texto: 'Sin requisito' },
+  { valor: 'recomendado', texto: 'Recomienda usar la app' },
+  { valor: 'obligatorio', texto: 'Solo desde la app' },
+];
+
+/** Un sorteo de Firestore → el admin. */
+export function sorteoDesdeFirestore(s = {}) {
+  return {
+    id: s.id,
+    nombre: s.titulo || '',
+    slug: s.slug || '',
+    descripcion: s.descripcion || '',
+    tipo: s.tipo === 'pagado' ? 'pagado' : 'gratis',
+    precioTicket: Number(s.precioTicket) || 0,
+    requisitoApp: REQUISITOS_APP.some((r) => r.valor === s.requisitoApp) ? s.requisitoApp : 'ninguno',
+    numGanadores: Number(s.numGanadores) || 1,
+    premioNombre: s.premio?.nombre || '',
+    premioImagen: s.premio?.imagenUrl || '',
+    premioValor: Number(s.premio?.valor) || 0,
+    portada: s.heroImagenUrl || '',
+    inicio: s.fechaInicio || '',
+    fin: s.fechaFin || '',
+    estado: ESTADOS_SORTEO[s.estado] ? (s.estado === 'finalizado' ? 'cerrado' : s.estado) : 'borrador',
+    chanceCompartir: Boolean(s.chanceExtraCompartir),
+    chanceReferido: Boolean(s.chanceExtraReferido),
+    participantes: Number.isFinite(Number(s.contadorParticipantes)) ? Number(s.contadorParticipantes) : null,
+    ganadores: (Array.isArray(s.ganadores) ? s.ganadores : []).map((g) => ({ uid: g.uid || '', nombre: g.nombre || '', correo: g.correo || '', telefono: g.telefono || '' })),
+    drawId: s.drawId || '',
+  };
+}
+
+/** Lo que espera createSorteo / updateSorteo (sus nombres de formulario: el servicio arma el documento). */
+export function sorteoAFormulario(d = {}) {
+  return {
+    titulo: String(d.nombre || '').trim(),
+    slug: slugDeSorteo(d.slug || d.nombre),
+    descripcion: String(d.descripcion || '').trim(),
+    tipo: d.tipo === 'pagado' ? 'pagado' : 'gratis',
+    precioTicket: d.tipo === 'pagado' ? Number(d.precioTicket) || 0 : 0,
+    requisitoApp: d.requisitoApp || 'ninguno',
+    numGanadores: Math.max(1, Math.round(Number(d.numGanadores) || 1)),
+    premioNombre: String(d.premioNombre || '').trim(),
+    premioImagenUrl: d.premioImagen || '',
+    premioValor: Number(d.premioValor) || 0,
+    heroImagenUrl: d.portada || '',
+    fechaInicio: d.inicio || '',
+    fechaFin: d.fin || '',
+    estado: d.estado || 'borrador',
+    chanceExtraCompartir: Boolean(d.chanceCompartir),
+    chanceExtraReferido: Boolean(d.chanceReferido),
+  };
+}
+
+/** Los errores del formulario (como antes, y las fechas en orden). */
+export function erroresDeSorteo(d = {}) {
+  return {
+    nombre: String(d.nombre || '').trim() ? undefined : 'Escribe el título del sorteo.',
+    precioTicket: d.tipo === 'pagado' && !(Number(d.precioTicket) > 0) ? 'Una rifa necesita un precio de ticket mayor a 0.' : undefined,
+    numGanadores: Number(d.numGanadores) >= 1 ? undefined : 'Al menos un ganador.',
+    fin: d.inicio && d.fin && d.fin < d.inicio ? 'Termina antes de empezar.' : undefined,
+  };
+}
+
+/** "Gratis" · "Rifa · S/ 5". */
+export const tipoDeSorteo = (s = {}) => (s.tipo === 'pagado' ? `Rifa · S/ ${Number(s.precioTicket) || 0}` : 'Gratis');
+
+/** Un participante (sorteos/{id}/participantes). */
+export function participanteDesde(p = {}) {
+  return {
+    id: p.id,
+    nombre: p.nombre || '',
+    correo: p.correo || '',
+    telefono: p.telefono || '',
+    dni: p.dni || '',
+    tickets: Number(p.tickets) || 0,
+    pagados: Number(p.ticketsPagados) || 0,
+    chances: Number(p.chancesTotal) || 0,
+    estado: p.estado || '',
+    app: Boolean(p.origenApp),
+  };
+}
+
+/** Lo que se manda al servidor para identificar a quién (sin vacíos). */
+export const identificadorDe = (d = {}) => Object.fromEntries(['correo', 'telefono', 'dni']
+  .map((k) => [k, String(d[k] || '').trim()]).filter(([, v]) => v));
+
+/** Errores de "Sumar tickets" (cantidad > 0) o "Dar o quitar chances" (entero distinto de 0). */
+export function erroresDeAjuste(d = {}, tipo = 'tickets') {
+  const sinQuien = !Object.keys(identificadorDe(d)).length;
+  const n = Number(tipo === 'tickets' ? d.cantidad : d.chances);
+  return {
+    correo: sinQuien ? 'Escribe su correo, teléfono o DNI.' : undefined,
+    cantidad: tipo === 'tickets' && !(Number.isInteger(n) && n > 0) ? 'Un número entero mayor a 0.' : undefined,
+    chances: tipo === 'chances' && !(Number.isInteger(n) && n !== 0) ? 'Un entero distinto de 0 (negativo resta).' : undefined,
+  };
+}

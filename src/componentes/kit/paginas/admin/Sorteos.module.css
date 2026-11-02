@@ -1,0 +1,196 @@
+/* ── D6a · Sorteos ─────────────────────────────────────── */
+.pagina {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+.pagina > header {
+  margin-bottom: 0;
+}
+
+.nota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.dos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: 0.75rem;
+}
+
+/* La vista previa del sorteo en la hoja */
+.muestra {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.muestraPortada,
+.muestraSinPortada {
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  object-fit: cover;
+}
+
+.muestraSinPortada {
+  display: grid;
+  place-items: center;
+  background: var(--color-surface-2, #f6f3fb);
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.muestraCuerpo {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.8rem 0.95rem;
+}
+
+.muestraEtiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.premio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.premio svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--gold-600, #d97706);
+}
+
+/* El detalle */
+.ganadores {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ganadores li {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.puesto {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  background: var(--violet-50);
+  color: var(--violet-700);
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+}
+
+.ganadorTexto {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.sortear {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.sortear > :first-child {
+  flex: 1 1 11rem;
+}
+
+.ajustes {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.plegable {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+}
+
+.plegable > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.plegable > summary svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--violet-600);
+}
+
+.plegable[open] > summary {
+  margin-bottom: 0.65rem;
+}
+
+.ajuste {
+  display: grid;
+  justify-items: stretch;
+  gap: 0.6rem;
+}
+
+.ajuste > button {
+  justify-self: start;
+}
+
+.resultado {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+.evidencia {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.evidencia div {
+  display: grid;
+  grid-template-columns: minmax(6rem, 9rem) minmax(0, 1fr);
+  gap: 0.6rem;
+  font-size: 0.86rem;
+}
+
+.evidencia dt {
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.evidencia dd {
+  margin: 0;
+}
+
+.codigo {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}

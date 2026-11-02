@@ -104,6 +104,7 @@ export { PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, PaginaReco
 export { PaginaFechasAdmin } from './paginas/admin/Fechas';
 export { PaginaNotificacionesAdmin } from './paginas/admin/Notificaciones';
 export { PaginaEncuestaAdmin, RespuestasEntregas, RespuestasEncuesta } from './paginas/admin/Encuestas';
+export { PaginaSorteosAdmin, PaginaSorteoAdmin } from './paginas/admin/Sorteos';
 export { TarjetaEnvio, EsqueletoEnvio } from './piezas/admin/Pedidos';
 export { PaginaRecepcion } from './paginas/admin/Pedidos';
 export { PaginaPagos } from './paginas/admin/Pagos';
@@ -139,4 +140,6 @@ export {
   ESTADOS_CAMPANA, tasaTexto, campanaDesde, ofertaAFirestore, ofertaDeProducto, programadaIso, erroresDeOferta, NOMBRES_AVISO, filaDeEstadistica,
   TIPOS_PREGUNTA, preguntaNueva, separarPreguntas, conOpcion, OPCIONES_MEJORAR_ENTREGA, entregaPanelDesde, cambioEstrellas, estrellasTexto,
   unidadDeRango, etiquetaDePeriodo, fechaDeDia, configConPregunta,
+  slugDeSorteo, ESTADOS_SORTEO, REQUISITOS_APP, sorteoDesdeFirestore, sorteoAFormulario, erroresDeSorteo, tipoDeSorteo, participanteDesde,
+  identificadorDe, erroresDeAjuste,
 } from './adaptadoresAdmin';

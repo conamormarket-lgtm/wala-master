@@ -13,6 +13,7 @@ import {
   retoDesdeFirestore, retoAFirestore, retoActivoDesde, evidenciaDesde, PaginaRecompensasAdmin, recompensaAdminDesdeFirestore, recompensaAdminAFirestore,
   PaginaFechasAdmin, fechaClienteDesde, paqueteDesdeFirestore, paquetesDeFecha, cambiosAlElegir, siguienteElegido,
   PaginaNotificacionesAdmin, configNotificacionesDesde, campanaDesde, PaginaEncuestaAdmin, RespuestasEntregas, RespuestasEncuesta, configConPregunta,
+  PaginaSorteosAdmin, PaginaSorteoAdmin, sorteoDesdeFirestore, sorteoAFormulario, participanteDesde,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -72,6 +73,7 @@ const HECHAS = [
   ['/admin/fechas-importantes', 'Fechas'],
   ['/admin/notificaciones', 'Notificaciones'],
   ['/admin/encuestas', 'Encuesta'],
+  ['/admin/sorteos', 'Sorteos'],
   ['/admin/crear-cuentas-pedidos', 'Cuentas'],
   ['/admin/categorias', 'Categorías'],
   ['/admin/colecciones', 'Colecciones'],
@@ -514,6 +516,21 @@ const ENTREGAS_DEMO = [
   [4, [], 'Todo bien.', 40, 'WL-0950', 'Ana Torres'],
   [5, ['Todo estuvo bien'], 'Lo volvería a pedir.', 45, 'WL-0941', 'Rosa Díaz'],
 ].map(([estrellas, mejorar, comentario, dias, codigo, nombre], i) => ({ id: `ent-${i}`, estrellas, mejorar, comentario, fecha: msAtras(dias, 11), codigo, nombre, email: '' }));
+// D6a: sorteos de ejemplo y los participantes de uno.
+const fotoTienda = (i) => TIENDA.productos[i].mainImage || TIENDA.productos[i].images?.[0] || '';
+const SORTEOS_DEMO = [
+  { id: 'sor-1', titulo: 'Gran sorteo de Navidad', slug: 'gran-sorteo-de-navidad', descripcion: 'Participa gratis y gana un conjunto pareja.', tipo: 'gratis', numGanadores: 2, premio: { nombre: 'Conjunto Pareja', valor: 189, imagenUrl: fotoTienda(3) }, heroImagenUrl: fotoTienda(0), fechaInicio: diaKey(10), fechaFin: diaKey(-20), estado: 'activo', chanceExtraCompartir: true, chanceExtraReferido: true, contadorParticipantes: 214 },
+  { id: 'sor-2', titulo: 'Rifa de la casaca One Piece', slug: 'rifa-casaca-one-piece', tipo: 'pagado', precioTicket: 5, numGanadores: 1, premio: { nombre: 'Casaca One Piece', valor: 109, imagenUrl: fotoTienda(8) }, fechaInicio: diaKey(3), fechaFin: diaKey(-11), estado: 'activo', requisitoApp: 'recomendado', contadorParticipantes: 58 },
+  { id: 'sor-3', titulo: 'Sorteo de aniversario', slug: 'sorteo-de-aniversario', tipo: 'gratis', numGanadores: 1, premio: { nombre: 'Pack de stickers' }, fechaInicio: diaKey(60), fechaFin: diaKey(30), estado: 'cerrado', contadorParticipantes: 132, ganadores: [{ uid: 'u9', nombre: 'Rosa Díaz', correo: 'rosa.diaz@gmail.com' }], drawId: 'draw_8f2c' },
+  { id: 'sor-4', titulo: 'Día de la Madre', tipo: 'gratis', numGanadores: 3, estado: 'borrador' },
+].map(sorteoDesdeFirestore);
+const PARTICIPANTES_DEMO = [
+  ['Valeria Quispe', 'valeria.quispe@gmail.com', '987654321', '', 3, 0, 5, true],
+  ['Luis Mendoza', 'luis.mendoza@hotmail.com', '', '45678912', 1, 0, 1, false],
+  ['Carla Rojas', 'carla.rojas@gmail.com', '912345678', '', 2, 0, 4, true],
+  ['Jorge Salas', '', '998877665', '41234567', 1, 0, 1, false],
+  ['Mafer Díaz', 'mafer.diaz@gmail.com', '', '', 1, 0, 2, true],
+].map(([nombre, correo, telefono, dni, tickets, ticketsPagados, chancesTotal, origenApp], i) => participanteDesde({ id: `par-${i}`, nombre, correo, telefono, dni, tickets, ticketsPagados, chancesTotal, origenApp, estado: 'elegible' }));
 const RECOMPENSAS_DEMO = [
   { title: 'Pack de stickers Kapi', description: 'Seis stickers para tu laptop o celular.', cost: 120, tipo: 'manual', value: 'Sale del cajón de mercancía', imageUrl: '/assets/kapi/kapi-happy.webp' },
   { title: '10% en tu pedido', description: 'Hasta S/ 20 de descuento.', cost: 300, tipo: 'descuento', descuentoPct: 10, topeDescuento: 20, vigenciaDias: 30 },
@@ -649,6 +666,8 @@ function PanelDePrueba() {
   const [misiones, guardarMisionCruda, eliminarMision] = useListaDemo(MISIONES_DEMO, falla);
   const [fechasPestana, setFechasPestana] = useState('calendario');
   const [notifPestana, setNotifPestana] = useState('automaticos');
+  const [sorteos, guardarSorteoCrudo, eliminarSorteo, setSorteos] = useListaDemo(SORTEOS_DEMO, falla);
+  const [participantes, setParticipantes] = useState(PARTICIPANTES_DEMO);
   const [encuesta, setEncuesta] = useState(ENCUESTA_DEMO);
   const [encuestaPestana, setEncuestaPestana] = useState('portada');
   const [configNotif, setConfigNotif] = useState(CONFIG_NOTIF_DEMO);
@@ -1227,6 +1246,59 @@ function PanelDePrueba() {
         subirImagen={subir}
         onGuardar={(datos, id) => guardarRecompensaCruda(recompensaAdminDesdeFirestore({ id, ...recompensaAdminAFirestore(datos) }), id)}
         onEliminar={eliminarRecompensa}
+      />
+    );
+  } else if (rutaSola === '/admin/sorteos') {
+    pagina = (
+      <PaginaSorteosAdmin
+        {...comunes}
+        sorteos={vacio ? [] : sorteos}
+        subirImagen={subir}
+        onGuardar={(datos, id) => {
+          const f = sorteoAFormulario(datos);
+          const previo = sorteos.find((x) => x.id === id) || {};
+          return guardarSorteoCrudo(sorteoDesdeFirestore({ ...f, id, premio: { nombre: f.premioNombre, imagenUrl: f.premioImagenUrl, valor: f.premioValor }, contadorParticipantes: previo.participantes ?? 0, ganadores: previo.ganadores }), id);
+        }}
+        onEliminar={eliminarSorteo}
+        onDetalle={(x) => navegar.current(`/admin/sorteos/${x.id}`)}
+      />
+    );
+  } else if (rutaSola.startsWith('/admin/sorteos/')) {
+    const sorteo = sorteos.find((x) => x.id === rutaSola.split('/')[3]);
+    const buscar = (d) => participantes.find((p) => (d.correo && p.correo === d.correo) || (d.telefono && p.telefono === d.telefono) || (d.dni && p.dni === d.dni));
+    pagina = (
+      <PaginaSorteoAdmin
+        sorteo={sorteo}
+        participantes={vacio ? [] : participantes}
+        cargando={con('cargando')}
+        error={!sorteo ? 'Ese sorteo no existe.' : con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+        onReintentar={comunes.onReintentar}
+        urlPublica={(x) => `/sorteos/${x.slug}`}
+        onSumarTickets={async (d) => {
+          await espera(700);
+          fallar('asignarTicketsManual no respondió (es una prueba).');
+          const p = buscar(d);
+          if (!p) throw new Error('No encontramos a nadie con esos datos en el sorteo.');
+          setParticipantes((ps) => ps.map((x) => (x.id === p.id ? { ...x, tickets: x.tickets + d.cantidad, chances: x.chances + d.cantidad } : x)));
+        }}
+        onDarChances={async (d) => {
+          await espera(700);
+          fallar('grantRaffleChancesSecure no respondió (es una prueba).');
+          const p = buscar(d);
+          if (!p) throw new Error('No encontramos a nadie con esos datos en el sorteo.');
+          const total = Math.max(0, p.chances + d.chances);
+          setParticipantes((ps) => ps.map((x) => (x.id === p.id ? { ...x, chances: total } : x)));
+          return { chancesTotal: total };
+        }}
+        onDecidirGanadores={async ({ numGanadores, excluirUids = [] }) => {
+          await espera(1100);
+          fallar('decidirGanadoresSorteo no respondió (es una prueba).');
+          const n = numGanadores || sorteo.numGanadores;
+          const pool = participantes.filter((p) => !excluirUids.includes(p.id));
+          const ganadores = [...pool].sort((a, b) => b.chances - a.chances || a.nombre.localeCompare(b.nombre)).slice(0, n).map((p) => ({ uid: p.id, nombre: p.nombre, correo: p.correo, telefono: p.telefono, pesoUsado: p.chances }));
+          setSorteos((l) => l.map((x) => (x.id === sorteo.id ? { ...x, ganadores, estado: 'cerrado' } : x)));
+          return { ganadores, drawId: `draw_${Date.now().toString(36)}`, seed: '9c1f4e7a2b8d3c6f0e5a1b9d7c3f2e8a', poolHash: 'sha256:4be1…77ad', totalElegibles: pool.length };
+        }}
       />
     );
   } else if (ruta === '/admin/encuestas') {

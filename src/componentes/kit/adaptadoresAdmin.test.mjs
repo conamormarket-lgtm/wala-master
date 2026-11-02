@@ -609,3 +609,20 @@ test('encuestas: preguntas, la de entregas y volver a preguntar', () => {
   assert.equal(m2.configConPregunta(cfg, { tipo: 'presupuesto' }).personPanel.budget, true);
   assert.equal(cfg.basicDataPanel.fields[0].enEncuesta, false);
 });
+
+test('sorteos: ida y vuelta, errores y participantes', () => {
+  assert.equal(m2.slugDeSorteo('  Gran Sorteo de Aniversario ¡2026! '), 'gran-sorteo-de-aniversario-2026');
+  const s = m2.sorteoDesdeFirestore({ id: 's', titulo: 'Navidad', tipo: 'pagado', precioTicket: 5, premio: { nombre: 'Taza', valor: 30 }, estado: 'finalizado', contadorParticipantes: 12, requisitoApp: 'raro' });
+  assert.deepEqual([s.estado, s.requisitoApp, s.participantes, s.premioNombre, m2.tipoDeSorteo(s)], ['cerrado', 'ninguno', 12, 'Taza', 'Rifa · S/ 5']);
+  assert.equal(m2.sorteoDesdeFirestore({}).participantes, null);
+  const f = m2.sorteoAFormulario({ ...s, nombre: ' Navidad Walá ', slug: '', tipo: 'gratis', numGanadores: 0 });
+  assert.deepEqual([f.titulo, f.slug, f.precioTicket, f.numGanadores, f.premioNombre], ['Navidad Walá', 'navidad-wala', 0, 1, 'Taza']);
+  const e = m2.erroresDeSorteo({ nombre: '', tipo: 'pagado', precioTicket: 0, numGanadores: 1, inicio: '2026-12-10', fin: '2026-12-01' });
+  assert.deepEqual(Object.entries(e).filter(([, v]) => v).map(([k]) => k), ['nombre', 'precioTicket', 'fin']);
+  assert.deepEqual(m2.participanteDesde({ id: 'p', ticketsPagados: '2', origenApp: 1 }).pagados, 2);
+  assert.deepEqual(m2.identificadorDe({ correo: ' a@b.pe ', telefono: '', dni: '1' }), { correo: 'a@b.pe', dni: '1' });
+  assert.equal(m2.erroresDeAjuste({ cantidad: 2 }).correo, 'Escribe su correo, teléfono o DNI.');
+  assert.equal(m2.erroresDeAjuste({ dni: '1', cantidad: 1.5 }).cantidad, 'Un número entero mayor a 0.');
+  assert.equal(m2.erroresDeAjuste({ dni: '1', chances: -2 }, 'chances').chances, undefined);
+  assert.equal(m2.erroresDeAjuste({ dni: '1', chances: 0 }, 'chances').chances, 'Un entero distinto de 0 (negativo resta).');
+});

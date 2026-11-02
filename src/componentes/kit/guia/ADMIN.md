@@ -232,7 +232,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | · |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | · |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | hecho (2026-11-02) | · |
-| D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | · | · |
+| D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | en marcha (D6a, 2026-11-02) | · |
 | D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | · | · |
 | D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | · | · |
 
@@ -1582,6 +1582,76 @@ del embudo o "1 estrella" en 0 también dice algo).
     `saveSurveyConfig(configConHistorial(configConPregunta(actual, que), actual))`
     y volver a leer.
 
+## D6 · Campañas (en marcha: D6a hecho en el kit el 2026-11-02)
+
+Nueve pantallas de hoy (unas 5.500 líneas), en cuatro tramos; el apartado se
+une entero cuando estén los cuatro.
+
+| Tramo | Qué | Páginas de hoy | Kit |
+|---|---|---|---|
+| D6a | Sorteos y rifas: la lista con su formulario y el detalle (participantes, tickets y chances a mano, los ganadores con su evidencia) | `AdminSorteos.jsx` (603 líneas), `AdminSorteoDetalle.jsx` (676) | hecho (2026-11-02) |
+| D6b | Sorteos de suscripción y su detalle | `AdminSuscripcionSorteos.jsx` (1.249), `AdminSuscripcionDetalle.jsx` (573) | · |
+| D6c | Enlaces (los de bio y campañas) y su editor | `AdminEnlaces.jsx` (253), `AdminEnlaceEditor.jsx` (1.138) | · |
+| D6d | Popups, landing pages y temas | `AdminPopups.jsx` (445), `Tienda/admin/AdminLandingPages.jsx` (307), `Tienda/admin/AdminThemes.jsx` (268) | · |
+
+### D6a: Sorteos y rifas (en el kit desde el 2026-11-02)
+
+| Un sorteo (computadora) | La hoja de un sorteo (celular) |
+|---|---|
+| ![Las cuatro cifras, los ganadores con «Volver a elegir» y «Sortear sin estos», y los tickets y chances a mano](admin-sorteo-escritorio.webp) | ![Cómo se participa: gratis o rifa, la app, cuántos ganadores, las fechas y las chances de más; y el premio](admin-sorteos-celular.webp) |
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| Sorteos | `PaginaSorteosAdmin` | `paginas/admin/Sorteos.jsx` | Sobre `PaginaListaAdmin`: la foto, el sorteo y su premio, el tipo ("Rifa · S/ 5"), las fechas, cuántos participan y cuántos ganan, el estado; filtros por estado y tipo; en "⋯", **Participantes y ganadores** y **Ver la página**. No deja eliminar uno activo con participantes. La hoja: título, el enlace (`wala.pe/sorteos/…`, sale del título), descripción; gratis o rifa (`ElegirUno`) con su precio (`CampoDinero`), la app, los ganadores, las fechas (`CampoFecha`), las dos chances de más; el premio (qué, cuánto vale, su foto) y la imagen principal (`CampoImagen`); el estado con lo que significa y **la vista previa** |
+| Un sorteo | `PaginaSorteoAdmin` | ídem | `/admin/sorteos/:id`: cuatro cifras (participan, tickets, chances, desde la app); **los ganadores** con "Elegir ganadores" / "Volver a elegir" y "Sortear sin estos" (los dos preguntan con `Confirmar`) y el resultado en una hoja con su evidencia (el sorteo, cuántos podían ganar, la semilla y la huella); **a mano**: "Sumar tickets" y "Dar o quitar chances" (correo, teléfono o DNI); los participantes con buscador y, en "⋯", sumarle tickets o darle chances (llena el formulario) |
+
+Adaptadores (con pruebas): `slugDeSorteo` (como `slugifySorteo`),
+`ESTADOS_SORTEO`, `REQUISITOS_APP`, `sorteoDesdeFirestore`,
+`sorteoAFormulario` (los nombres que esperan `createSorteo` y
+`updateSorteo`, que arman el documento y aseguran el enlace único),
+`erroresDeSorteo`, `tipoDeSorteo`, `participanteDesde`, `identificadorDe` y
+`erroresDeAjuste`.
+
+### Diferencias a propósito (D6a)
+
+- La lista y la hoja al costado (antes, el formulario fijo a la izquierda y
+  la vista previa debajo): la vista previa va al final de la hoja.
+- Elegir ganadores **pregunta antes**, diciendo cuántos y si reemplaza a los
+  de ahora; el resultado se puede volver a abrir ("Ver la evidencia").
+- Desde un participante se llenan los formularios de tickets o chances.
+- Las fechas no pueden ir al revés y "Termina" no deja elegir antes de
+  "Empieza".
+- Palabras de la tienda: "Huella de la lista" (hash del pool), "Podían
+  ganar" (elegibles), "Sorteo" (draw ID).
+
+### Qué se probó (2026-11-02, demo en localhost, 1280 px y 375 px)
+
+- Cuatro sorteos: dos activos (uno rifa a S/ 5), uno cerrado con su
+  ganador y un borrador sin fechas.
+- Nuevo: "Rifa del Día del Padre" → el enlace `wala.pe/sorteos/rifa-del-dia-del-padre`;
+  "Rifa pagada" sin precio → "Una rifa necesita un precio de ticket mayor a
+  0"; con S/ 3 → creado como borrador.
+- Navidad: 214 participan, 8 tickets entre los 5 que se ven. Sumar tickets
+  a alguien que no está → el error del servidor; elegir 2 ganadores → la
+  pregunta → Valeria y Carla con su evidencia; "Sortear sin estos" → Mafer y
+  Jorge; desde Luis, "Darle o quitarle chances" → el formulario con su
+  correo → "Ahora tiene 2 chances".
+- 375 px: la lista, la hoja y el detalle sin salirse del ancho.
+
+### Cómo se une D6a
+
+- `SorteosDelPanel.jsx`: `getSorteos` (`['admin-sorteos']`) →
+  `sorteoDesdeFirestore`; guardar con `createSorteo` / `updateSorteo(id, …)`
+  de `sorteoAFormulario(datos)` (el `error` que devuelven se lanza);
+  eliminar `deleteSorteo`; `subirImagen` → `uploadFile(blob, 'sorteos/{premios|hero}/{ms}.jpg')`;
+  `onDetalle(s)` → `/admin/sorteos/{id}`.
+- `SorteoDelPanel.jsx`: `getSorteoById` (`['admin-sorteo', id]`) y
+  `getParticipantes` (`['admin-sorteo-participantes', id]`, tope 200) →
+  `participanteDesde`; `onSumarTickets` = `asignarTicketsManual({ sorteoId, ... })`,
+  `onDarChances` = `grantRaffleChancesSecure` (devuelve `chancesTotal`),
+  `onDecidirGanadores` = `decidirGanadoresSorteo`; tras cada uno, invalidar
+  las dos `queryKey`.
+
 ## Reemplazos: qué sale y qué entra
 
 La misma tabla que las fichas de la tienda (CUENTA.md, "Reemplazos"): qué
@@ -1680,6 +1750,11 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D5c · Fechas importantes | `pages/admin/AdminFechasImportantesPage.jsx` + `.module.css`, `components/admin/fechas/*` (`GlobalCalendarView`, `FechasFestivasView`, `UsuariosView`, `PackageCreatorModal` y sus CSS) | `PaginaFechasAdmin` (`PaginaListaAdmin`, `TablaAdmin`, `HojaEdicion`, `SelectorProductos`, `ElegirUno`, `Confirmar`) | `FechasDelPanel.jsx` |
 | D5d · Notificaciones | `pages/admin/AdminNotifications/AdminNotifications.jsx` + `.module.css` (`BuscadorProducto`, `useGlobalToast`, `window.confirm`) | `PaginaNotificacionesAdmin` (`TablaAdmin`, `SelectorProductos`, `CampoImagen`, `CampoFecha`, `ElegirUno`, `Confirmar`) | `NotificacionesDelPanel.jsx` |
 | D5e · Encuestas | `pages/admin/AdminEncuestas.jsx` + `.module.css`, `AdminEncuestaEntregas.jsx`, `AdminRespuestasEncuesta.jsx` + `.module.css`, `CambioKpi.jsx` (`alert`, `window.confirm`, `useGlobalToast`) | `PaginaEncuestaAdmin`, `RespuestasEntregas`, `RespuestasEncuesta`, `BarraGuardar` | `EncuestaDelPanel.jsx`, `OpinionesDelPanel.jsx` |
+| D6a · Sorteos | `pages/admin/AdminSorteos.jsx` + `.module.css` (`common/Button`, su propio modal, la subida a mano) | `PaginaSorteosAdmin` (`PaginaListaAdmin`, `CampoImagen`, `CampoFecha`, `CampoDinero`) | `SorteosDelPanel.jsx` |
+| D6a · Un sorteo | `pages/admin/AdminSorteoDetalle.jsx` + `.module.css` (su propio modal) | `PaginaSorteoAdmin` (`TablaAdmin`, `HojaEdicion`, `Confirmar`) | `SorteoDelPanel.jsx` |
+| D6b · Sorteos de suscripción | `AdminSuscripcionSorteos.jsx`, `AdminSuscripcionDetalle.jsx` | por hacer | por pantalla |
+| D6c · Enlaces | `AdminEnlaces.jsx`, `AdminEnlaceEditor.jsx` | por hacer | por pantalla |
+| D6d · Popups, landing pages y temas | `AdminPopups.jsx`, `Tienda/admin/AdminLandingPages.jsx`, `Tienda/admin/AdminThemes.jsx` | por hacer | por pantalla |
 
 ## Cómo se une un apartado (la misma lógica que clientes)
 
@@ -1721,6 +1796,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |
 | 2026-11-02 | Reemplazos de D0 a D2 (qué sale, qué entra y el conector) y la sección «Panel administrativo» de ELIMINAR.md con quién importa hoy cada pieza vieja | `guia/ADMIN.md`, `guia/ELIMINAR.md` |
+| 2026-11-02 | D6 dividido en tramos (a: sorteos; b: sorteos de suscripción; c: enlaces; d: popups, landing pages y temas). D6a en el kit: `PaginaSorteosAdmin`, `PaginaSorteoAdmin`; adaptadores con pruebas | `paginas/admin/Sorteos.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D5e en el kit y **D5 completo**: `PaginaEncuestaAdmin` (las opciones como chips), `RespuestasEntregas` y `RespuestasEncuesta` para Opiniones, `BarraGuardar` (también en Notificaciones), `ListaBarras` con `conCeros`; adaptadores con pruebas | `paginas/admin/Encuestas.jsx`, `piezas/admin/Formularios.jsx`, `piezas/admin/Metricas.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D5d en el kit: `PaginaNotificacionesAdmin` (automáticos con sus horarios y textos A/B, ofertas con guardadas y envío que pregunta, historial con la comparación); adaptadores con pruebas | `paginas/admin/Notificaciones.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D5c en el kit: `PaginaFechasAdmin` (calendario con agenda en el celular, fechas festivas y sus avisos, fechas de clientes por cercanía con sus paquetes); adaptadores con pruebas | `paginas/admin/Fechas.jsx`, `adaptadoresAdmin.js` |
