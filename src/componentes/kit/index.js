@@ -109,6 +109,7 @@ export { PaginaSuscripcionesAdmin, PaginaSuscripcionAdmin } from './paginas/admi
 export { PaginaEnlacesAdmin, PaginaEnlaceAdmin } from './paginas/admin/Enlaces';
 export { PaginaPopupsAdmin } from './paginas/admin/Popups';
 export { PaginaLandingsAdmin, PaginaTemasAdmin } from './paginas/admin/Paginas';
+export { PaginaKapiAdmin, PaginaPalabraAdmin, PaginaBolitasAdmin } from './paginas/admin/Juegos';
 export { TarjetaEnvio, EsqueletoEnvio } from './piezas/admin/Pedidos';
 export { PaginaRecepcion } from './paginas/admin/Pedidos';
 export { PaginaPagos } from './paginas/admin/Pagos';
@@ -150,4 +151,6 @@ export {
   erroresDeCampanaSuscripcion, textoDePlanes, ESTADOS_SUSCRIPTOR, suscriptorDesde, beneficioDesde, beneficioAFirestore, ganadorGaleriaDesde, ganadorGaleriaAFirestore,
   DISENO_ENLACES, TIPOS_RED, disenoDeEnlaces, paginaEnlacesDesde, paginaEnlacesAFirestore, botonEnlaceNuevo, redNueva, erroresDeEnlaces, clicsDeEnlaces,
   cuandoPopup, erroresDePopup, slugDeLanding, landingDesde, erroresDeLanding, landingAFirestore, temaDesde, temaAFirestore, temaDesdeCss, pesoTexto,
+  palabraLimpia, palabraDiaDesde, erroresDePalabra, CUPON_JUEGO_VACIO, modoDeCupon, cuponConModo, textoCuponJuego, erroresDeCupon, patrocinioDesde,
+  erroresDePatrocinio, premiosBolitasDesde, premiosBolitasAFirestore, nuevoPuesto, erroresDePremios, metricasBolitas,
 } from './adaptadoresAdmin';

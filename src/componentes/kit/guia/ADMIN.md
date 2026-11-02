@@ -233,7 +233,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | · |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | hecho (2026-11-02) | · |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | hecho (2026-11-02) | · |
-| D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | · | · |
+| D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | en marcha (D7a, 2026-11-02) | · |
 | D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | · | · |
 
 El orden: D0 con las piezas base (tabla, hoja de edición, campo de imagen,
@@ -1845,6 +1845,85 @@ guardan como los lee la tienda: la página normaliza con
   `style.css` de arriba → `temaDesdeCss({ principal, todos, archivo })` →
   `saveTheme(null, temaAFirestore(t))`.
 
+## D7 · Juegos y Kapi (en marcha: D7a hecho en el kit el 2026-11-02)
+
+Cuatro pantallas de hoy (unas 1.640 líneas), en dos tramos; el apartado se
+une entero cuando estén los dos.
+
+| Tramo | Qué | Páginas de hoy | Kit |
+|---|---|---|---|
+| D7a | Kapi (su imagen), La Palabra del día y Las Bolitas de Kapi (retos patrocinados, mundos, premios del ranking y cifras) | `AdminMascota.jsx` (171), `AdminWordlePage.jsx` (164), `AdminBolitasPage.jsx` (426) | hecho (2026-11-02) |
+| D7b | La Ruleta semanal | `AdminRuletaPage.jsx` (880) | · |
+
+### D7a: Kapi, La Palabra del día y Las Bolitas (en el kit desde el 2026-11-02)
+
+| Las Bolitas: cifras (computadora) | Kapi (celular) |
+|---|---|
+| ![Las seis cifras del juego y las partidas y retos por día en barras](admin-bolitas-escritorio.webp) | ![La imagen de Kapi con Cambiar, Enlace y Quitar, y cómo se ve en Mi cuenta](admin-kapi-celular.webp) |
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| Kapi | `PaginaKapiAdmin` | `paginas/admin/Juegos.jsx` | La imagen con `CampoImagen` (subir o pegar un enlace; se guarda al elegirla) y **cómo se ve en Mi cuenta** sobre el fondo de marca, con el aviso si el enlace no carga; quitar pregunta antes |
+| La Palabra del día | `PaginaPalabraAdmin` | ídem | Sobre `PaginaListaAdmin`: el día (con su nombre), **la palabra en casillas como en el juego** y si es hoy, programada o ya pasó; filtro por cuándo. La hoja: el día (`CampoFecha`, desde hoy) y la palabra (de 5 a 8 letras, sin tildes), con sus casillas; avisa si ese día ya tiene una |
+| Las Bolitas de Kapi | `PaginaBolitasAdmin` | ídem | Cuatro pestañas. **Retos**: los patrocinados desde hoy (`PaginaListaAdmin`) con la marca, el cupón, entregados de cuántos (con su barrita) y el estado; la hoja con el día, la marca, el cupo, Activo y el cupón. **Mundos**: el orden de las marcas (`ListaOrdenable`) y agregar una. **Premios**: entregar cada lunes, cada premio con sus puestos, la marca y el cupón, y premiar una semana a mano (pregunta antes). **Cifras**: 7, 14 o 30 días; seis cifras, partidas y retos por día (`GraficoTendencia` en barras), dónde se traban y los toques hacia la tienda por marca (`ListaBarras`). El cupón (% o S/ de descuento o envío gratis, su tope y cuándo vence) dice "El cliente recibe: …". Mundos y Premios guardan con `BarraGuardar` |
+
+Adaptadores (con pruebas): `palabraLimpia`, `palabraDiaDesde`,
+`erroresDePalabra`, `CUPON_JUEGO_VACIO`, `modoDeCupon`, `cuponConModo`,
+`textoCuponJuego`, `erroresDeCupon` (los topes del servidor: 1 a 50 %, S/ 1 a
+S/ 100, 1 a 90 días), `patrocinioDesde`, `erroresDePatrocinio`,
+`premiosBolitasDesde` / `premiosBolitasAFirestore`, `nuevoPuesto`,
+`erroresDePremios` (puestos al revés o que se pisan) y `metricasBolitas`. La
+vista previa de Kapi usa `utils/mascotaImage` (los enlaces de Drive).
+
+### Diferencias a propósito (D7a)
+
+- Kapi se guarda al elegir la imagen (antes, subir guardaba pero pegar un
+  enlace pedía "Guardar URL").
+- La Palabra: la lista y la hoja al costado; el día no deja elegir uno que
+  pasó; avisa si ese día ya tiene palabra (antes la pisaba sin decir).
+- Las Bolitas en pestañas (antes, las cuatro partes una debajo de otra); los
+  `alert` y `window.confirm` pasan a avisos y `Confirmar`; los topes del
+  cupón y los premios que se pisan se avisan antes de llamar al servidor; las
+  cifras por día en un gráfico en vez de una tabla.
+- En el celular las cuatro pestañas de las Bolitas van con menos relleno, y
+  la última se llama "Cifras": "Resultados" no cabía.
+
+### Qué se probó (2026-11-02, demo en localhost, 1280 px y 375 px)
+
+- Kapi: la imagen y su vista en Mi cuenta; "Quitar" → la pregunta → "Imagen
+  quitada" y "Sin imagen".
+- La Palabra: cuatro (una pasada, la de hoy, dos programadas); nueva con
+  "feliz dia" → "Solo letras, sin espacios" y, para hoy, "Ese día ya tiene
+  palabra"; "Canción" → casillas CANCION; editar NAVIDAD a "Regalós" →
+  REGALOS.
+- Bolitas: dos retos (hoy 31 de 50); el de hoy al 60 % → "De 1 a 50 %";
+  envío gratis → "El cliente recibe: Envío gratis · 15 días" y guardado con
+  sus 31 entregados. Mundos: bajar una marca → la barra → "Mundos guardados".
+  Premios: el primero hasta el puesto 3 → "Los premios 1 y 2 se pisan" y
+  Guardar apagado. Cifras: 693 partidas en 14 días, 328 en 7.
+- 375 px: las tres páginas, las cuatro pestañas y las hojas sin salirse del
+  ancho.
+
+### Cómo se une D7a
+
+- `KapiDelPanel.jsx`: `getMessage('mascota_kap_image_url')`
+  (`['admin-mascota-url']`); `onGuardar(url)` = `setMessage(…, url)` e
+  invalidar también `['mascota-image-url']`; `subirImagen` →
+  `uploadFile(blob, 'config/mascota_kap.png')`.
+- `PalabraDelPanel.jsx`: `getAllDailyWords` (`['admin-wordle-words']`) →
+  `palabraDiaDesde(x, limaTodayStr())`; `onGuardar({ fecha, palabra }, id)` =
+  `setDailyWord(fecha, palabra)` y, si cambió el día, `deleteDailyWord(id)`;
+  `onEliminar` = `deleteDailyWord`.
+- `BolitasDelPanel.jsx`: `getBrands` (activas y visibles) → `marcas`;
+  `listarPatrociniosBolitas(hoy)` → `patrocinioDesde`; guardar con
+  `adminBolitas('guardarPatrocinio', { fecha, patrocinio })` (si cambió el
+  día, `borrarPatrocinio` del anterior), quitar con `borrarPatrocinio`;
+  `leerMundosBolitas` / `guardarMundos`; `leerPremiosBolitas` →
+  `premiosBolitasDesde`, guardar `guardarPremios` con
+  `premiosBolitasAFirestore(p, marcas)`, `premiarSemana`;
+  `adminBolitas('metricas', { dias })` → `metricas`. Cada uno con su
+  `queryKey` de hoy.
+
 ## Reemplazos: qué sale y qué entra
 
 La misma tabla que las fichas de la tienda (CUENTA.md, "Reemplazos"): qué
@@ -1952,6 +2031,10 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D6d · Popups | `pages/admin/AdminPopups.jsx` + `.module.css` (`window.confirm`) | `PaginaPopupsAdmin` (`PaginaListaAdmin`, `VentanaCampana`, `CampoLista`, `CampoImagen`, `CampoFecha`) | `PopupsDelPanel.jsx` |
 | D6d · Páginas | `pages/Tienda/admin/AdminLandingPages.jsx` + `pages/admin/AdminLandingPages.module.css` (`common/Button`) | `PaginaLandingsAdmin` (`PaginaListaAdmin` con `nuevoCon`) | `PaginasDelPanel.jsx` |
 | D6d · Temas | `pages/Tienda/admin/AdminThemes.jsx` + `.module.css` (`alert`, `window.confirm`, su modal) | `PaginaTemasAdmin` (`PaginaListaAdmin`) | `TemasDelPanel.jsx` |
+| D7a · Kapi | `pages/admin/AdminMascota.jsx` (usa `AdminTiendaTextos.module.css`, estilos en línea, `alert`, `window.confirm`) | `PaginaKapiAdmin` (`CampoImagen`) | `KapiDelPanel.jsx` |
+| D7a · La Palabra del día | `pages/admin/AdminWordlePage.jsx` + `.module.css` (`alert`, `window.confirm`) | `PaginaPalabraAdmin` (`PaginaListaAdmin`, `CampoFecha`) | `PalabraDelPanel.jsx` |
+| D7a · Las Bolitas | `pages/admin/AdminBolitasPage.jsx` + `.module.css` (`alert`, `window.confirm`) | `PaginaBolitasAdmin` (`PaginaListaAdmin`, `ListaOrdenable`, `GraficoTendencia`, `ListaBarras`, `BarraGuardar`) | `BolitasDelPanel.jsx` |
+| D7b · La Ruleta | `pages/admin/AdminRuletaPage.jsx` + `.module.css` | por hacer | `RuletaDelPanel.jsx` |
 
 ## Cómo se une un apartado (la misma lógica que clientes)
 
@@ -1993,6 +2076,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |
 | 2026-11-02 | Reemplazos de D0 a D2 (qué sale, qué entra y el conector) y la sección «Panel administrativo» de ELIMINAR.md con quién importa hoy cada pieza vieja | `guia/ADMIN.md`, `guia/ELIMINAR.md` |
+| 2026-11-02 | D7 dividido en tramos (a: Kapi, la palabra y las bolitas; b: la ruleta). D7a en el kit: `PaginaKapiAdmin`, `PaginaPalabraAdmin`, `PaginaBolitasAdmin`; adaptadores con pruebas | `paginas/admin/Juegos.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D6d en el kit y **D6 completo**: `PaginaPopupsAdmin`, `PaginaLandingsAdmin`, `PaginaTemasAdmin`; `PaginaListaAdmin` con `nuevoCon`; adaptadores con pruebas | `paginas/admin/Popups.jsx`, `paginas/admin/Paginas.jsx`, `paginas/admin/Lista.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D6c en el kit: `PaginaEnlacesAdmin`, `PaginaEnlaceAdmin` (el constructor en pestañas con la vista previa de `linkThemes`); adaptadores con pruebas | `paginas/admin/Enlaces.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D6b en el kit: `PaginaSuscripcionesAdmin`, `PaginaSuscripcionAdmin` (beneficios y galería en el detalle); `GanadoresSorteo` y `AjusteSorteo` compartidos con D6a; `CampoLista` (también en Encuestas); adaptadores con pruebas | `paginas/admin/Suscripciones.jsx`, `paginas/admin/Sorteos.jsx`, `piezas/admin/Formularios.jsx`, `adaptadoresAdmin.js` |

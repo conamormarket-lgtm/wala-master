@@ -1,0 +1,188 @@
+/* ── D7a · Kapi, La Palabra del día y Las Bolitas ─────── */
+.pagina {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+.pagina > header {
+  margin-bottom: 0;
+}
+
+.nota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.etiqueta {
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.pestanas {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pestanas::-webkit-scrollbar {
+  display: none;
+}
+
+/* Cuatro pestañas en el celular: un poco menos de relleno para que entren. */
+@media (max-width: 420px) {
+  .pestanas [role='tab'] {
+    padding: 0 0.7rem;
+  }
+}
+
+.dos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: 0.6rem;
+}
+
+/* Kapi */
+.kapi {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.kapiVista {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.kapiFondo {
+  display: grid;
+  place-items: center;
+  min-height: 14rem;
+  padding: 1rem;
+  border-radius: 22px;
+  background: var(--gradient-brand, linear-gradient(135deg, #7c3aed, #c026d3));
+  text-align: center;
+}
+
+.kapiFondo img {
+  max-width: 11rem;
+  max-height: 12rem;
+  object-fit: contain;
+}
+
+.kapiFondo .nota {
+  max-width: 16rem;
+  color: #fff;
+}
+
+/* La palabra en casillas, como en el juego */
+.casillas {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+}
+
+.casillas span {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.9rem;
+  border-radius: 7px;
+  background: var(--violet-600);
+  color: #fff;
+  font-family: var(--fuente-marca);
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+/* Las Bolitas */
+.cupon {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.muestra {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  background: var(--violet-50);
+  font-size: 0.86rem;
+}
+
+.muestra span {
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+:global([data-theme='dark']) .muestra {
+  background: rgba(139, 92, 246, 0.12);
+}
+
+.barrita {
+  display: block;
+  width: 100%;
+  height: 5px;
+  margin-top: 0.3rem;
+  border-radius: 999px;
+  background: var(--color-surface-2, #eee);
+  overflow: hidden;
+}
+
+.barrita span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--violet-500);
+}
+
+.mundo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.8rem;
+  min-width: 0;
+}
+
+.mundo > span:first-child {
+  display: grid;
+}
+
+.mundoMarca {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.agregar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.agregar > :first-child {
+  flex: 1 1 12rem;
+}
+
+.premio {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+
+.premioCabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.periodo {
+  display: flex;
+}

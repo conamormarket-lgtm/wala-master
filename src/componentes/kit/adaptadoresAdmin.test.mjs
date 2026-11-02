@@ -684,3 +684,32 @@ test('popups, páginas y temas', () => {
   assert.equal(m2.pesoTexto('a'.repeat(2048)), '2.0 KB');
   assert.deepEqual(m2.temaAFirestore({ nombre: 'Oscuro', css: 'body{}' }), { name: 'Oscuro', author: 'Custom', type: 'custom_css', cssContent: 'body{}', version: '1.0' });
 });
+
+test('juegos: la palabra del día y las bolitas', () => {
+  assert.equal(m2.palabraLimpia(' Regaló '), 'REGALO');
+  assert.deepEqual(['2026-11-01', '2026-11-02', '2026-11-09'].map((id) => m2.palabraDiaDesde({ id }, '2026-11-02').estado), ['paso', 'hoy', 'programada']);
+  const lista = [{ id: '2026-11-09' }];
+  assert.equal(m2.erroresDePalabra({ fecha: '2026-11-09', palabra: 'KAPI' }, lista).fecha, 'Ese día ya tiene palabra: edítala en la lista.');
+  assert.equal(m2.erroresDePalabra({ fecha: '2026-11-09', palabra: 'KAPI' }, lista, '2026-11-09').palabra, 'De 5 a 8 letras.');
+  assert.equal(m2.erroresDePalabra({ fecha: 'x', palabra: 'feliz dia' }).palabra, 'Solo letras, sin espacios.');
+  assert.equal(m2.erroresDePalabra({ fecha: 'x', palabra: 'Canción' }).palabra, undefined);
+
+  assert.equal(m2.modoDeCupon({ tipo: 'descuento', descuentoMonto: 10 }), 'monto');
+  assert.deepEqual(m2.cuponConModo(m2.CUPON_JUEGO_VACIO, 'monto').descuentoMonto, 10);
+  assert.equal(m2.textoCuponJuego({ tipo: 'descuento', descuentoPct: 10, topeDescuento: 20, vigenciaDias: 15 }), '10 % (tope S/ 20) · 15 días');
+  assert.equal(m2.erroresDeCupon({ tipo: 'descuento', descuentoPct: 60, vigenciaDias: 15 }).valor, 'De 1 a 50 %.');
+  const e = m2.erroresDePatrocinio({ fecha: '2026-11-01', marcaId: '', cupo: 0, cupon: m2.CUPON_JUEGO_VACIO }, [], null, '2026-11-02');
+  assert.deepEqual(Object.entries(e).filter(([, v]) => v).map(([k]) => k), ['fecha', 'marcaId', 'cupo']);
+  assert.equal(m2.patrocinioDesde({ fecha: '2026-11-02', cupo: 50 }, '2026-11-02').hoy, true);
+
+  const pr = m2.premiosBolitasDesde({ puestos: [{ desde: 1, hasta: 3, cupon: { descuentoPct: 20 } }] });
+  assert.deepEqual([pr.activo, pr.puestos[0].cupon.vigenciaDias], [true, 15]);
+  assert.equal(m2.premiosBolitasDesde(null).activo, false);
+  assert.deepEqual(m2.nuevoPuesto(pr.puestos).desde, 4);
+  assert.equal(m2.erroresDePremios({ puestos: [...pr.puestos, { desde: 3, hasta: 5, cupon: m2.CUPON_JUEGO_VACIO }] }), 'Los premios 1 y 2 se pisan en los puestos.');
+  assert.equal(m2.erroresDePremios({ puestos: [{ desde: 4, hasta: 2, cupon: m2.CUPON_JUEGO_VACIO }] }), 'El premio 1: «hasta» no puede ser menor que «desde».');
+  assert.equal(m2.premiosBolitasAFirestore(pr, [{ id: 'm', name: 'Kapi' }]).puestos[0].marcaId, null);
+
+  const m = m2.metricasBolitas({ porDia: [{ fecha: '2026-11-02', partidas: 5, retos: 2, clics: 1, clicsPorMarca: { a: 1 } }, { fecha: '2026-11-01', partidas: 3, niveles: { 4: 2 } }], jugadores: { jugadores: 40, vuelven: { cantidad: 10, base: 40 }, trabados: { 12: 3, 7: 5 } } });
+  assert.deepEqual([m.partidas, m.retos, m.vuelven, m.siguen7, m.trabados[0].nivel, m.porDia[0].fecha, m.clicsMarca.a], [8, 2, 25, null, '7', '2026-11-01', 1]);
+});

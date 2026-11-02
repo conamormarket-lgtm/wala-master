@@ -17,6 +17,7 @@ import {
   PaginaSuscripcionesAdmin, PaginaSuscripcionAdmin, campanaSuscripcionDesde, campanaSuscripcionAFormulario, suscriptorDesde, beneficioDesde, ganadorGaleriaDesde,
   PaginaEnlacesAdmin, PaginaEnlaceAdmin, paginaEnlacesDesde, paginaEnlacesAFirestore,
   PaginaPopupsAdmin, PaginaLandingsAdmin, PaginaTemasAdmin, landingDesde, landingAFirestore, temaDesde, temaAFirestore, temaDesdeCss,
+  PaginaKapiAdmin, PaginaPalabraAdmin, PaginaBolitasAdmin, palabraDiaDesde, patrocinioDesde, premiosBolitasDesde,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -83,6 +84,9 @@ const HECHAS = [
   ['/admin/popups', 'Popups'],
   ['/admin/landing-pages', 'Landings'],
   ['/admin/temas', 'Temas'],
+  ['/admin/mascota', 'Kapi'],
+  ['/admin/wordle', 'Palabra'],
+  ['/admin/bolitas', 'Bolitas'],
   ['/admin/crear-cuentas-pedidos', 'Cuentas'],
   ['/admin/categorias', 'Categorías'],
   ['/admin/colecciones', 'Colecciones'],
@@ -592,6 +596,17 @@ const TEMAS_DEMO = [
   { id: 't1', name: 'Oscuro', author: 'Walá', type: 'custom_css', version: '1.0', cssContent: '.landing { background: #0f1020; color: #fff; }\n.landing h1 { font-weight: 900; }' },
   { id: 't2', name: 'Astra', author: 'Brainstorm Force', type: 'wordpress_import', version: '4.1', cssContent: 'body{margin:0}'.repeat(900) },
 ].map(temaDesde);
+// D7a: la palabra del día, los retos patrocinados, los mundos, los premios y las métricas de las Bolitas.
+const PALABRAS_DEMO = [['REGALO', -1], ['FELIZ', 0], ['NAVIDAD', 3], ['PAREJA', 9]].map(([word, d]) => ({ id: diaKey(-d), word }));
+const PATROCINIOS_DEMO = [
+  { fecha: diaKey(0), marcaId: MARCAS_PAGINAS[0]?.id, marcaNombre: MARCAS_PAGINAS[0]?.name, cupo: 50, entregados: 31, activo: true, cupon: { tipo: 'descuento', descuentoPct: 15, topeDescuento: 30, vigenciaDias: 15 } },
+  { fecha: diaKey(-4), marcaId: MARCAS_PAGINAS[1]?.id, marcaNombre: MARCAS_PAGINAS[1]?.name, cupo: 100, entregados: 0, activo: true, cupon: { tipo: 'envio_gratis', vigenciaDias: 7 } },
+];
+const PREMIOS_BOLITAS_DEMO = premiosBolitasDesde({ activo: true, puestos: [{ desde: 1, hasta: 1, cupon: { tipo: 'descuento', descuentoMonto: 30, vigenciaDias: 30 } }, { desde: 2, hasta: 5, marcaId: MARCAS_PAGINAS[0]?.id, cupon: { tipo: 'descuento', descuentoPct: 20, topeDescuento: 40, vigenciaDias: 15 } }] });
+const metricasBolitasDemo = (dias) => ({
+  porDia: Array.from({ length: dias }, (_, i) => ({ fecha: diaKey(i), partidas: 40 + ((i * 13) % 25), retos: 12 + ((i * 7) % 9), clics: 3 + (i % 5), niveles: {}, clicsPorMarca: { [MARCAS_PAGINAS[0]?.id]: 2 + (i % 3), [MARCAS_PAGINAS[1]?.id]: i % 2 } })),
+  jugadores: { jugadores: 412, vuelven: { cantidad: 190, base: 412 }, siguen7: { cantidad: 96, base: 380 }, trabados: { 18: 22, 7: 41, 33: 9, 12: 30 } },
+});
 const RECOMPENSAS_DEMO = [
   { title: 'Pack de stickers Kapi', description: 'Seis stickers para tu laptop o celular.', cost: 120, tipo: 'manual', value: 'Sale del cajón de mercancía', imageUrl: '/assets/kapi/kapi-happy.webp' },
   { title: '10% en tu pedido', description: 'Hasta S/ 20 de descuento.', cost: 300, tipo: 'descuento', descuentoPct: 10, topeDescuento: 20, vigenciaDias: 30 },
@@ -737,6 +752,13 @@ function PanelDePrueba() {
   const [paginasEnlaces, guardarPaginaEnlacesCruda, eliminarPaginaEnlaces, setPaginasEnlaces] = useListaDemo(PAGINAS_ENLACES_DEMO, falla);
   const [enlacePestana, setEnlacePestana] = useState('contenido');
   const [popups, setPopups] = useState(POPUPS_DEMO);
+  const [kapi, setKapi] = useState('/assets/kapi/kapi-happy.webp');
+  const [palabras, setPalabras] = useState(PALABRAS_DEMO);
+  const [patrocinios, setPatrocinios] = useState(PATROCINIOS_DEMO);
+  const [mundosBolitas, setMundosBolitas] = useState(MARCAS_PAGINAS.slice(0, 2).map((m) => ({ id: m.id, nombre: m.name })));
+  const [premiosBolitas, setPremiosBolitas] = useState(PREMIOS_BOLITAS_DEMO);
+  const [bolitasPestana, setBolitasPestana] = useState('patrocinios');
+  const [diasBolitas, setDiasBolitas] = useState(14);
   const [landings, guardarLandingCruda, eliminarLanding] = useListaDemo(LANDINGS_DEMO, falla);
   const [temas, guardarTemaCrudo, eliminarTema, setTemas] = useListaDemo(TEMAS_DEMO, falla);
   const [encuesta, setEncuesta] = useState(ENCUESTA_DEMO);
@@ -1317,6 +1339,51 @@ function PanelDePrueba() {
         subirImagen={subir}
         onGuardar={(datos, id) => guardarRecompensaCruda(recompensaAdminDesdeFirestore({ id, ...recompensaAdminAFirestore(datos) }), id)}
         onEliminar={eliminarRecompensa}
+      />
+    );
+  } else if (rutaSola === '/admin/mascota') {
+    pagina = (
+      <PaginaKapiAdmin
+        imagen={vacio ? '' : kapi}
+        cargando={con('cargando')}
+        error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+        onReintentar={comunes.onReintentar}
+        onGuardar={async (url) => { await espera(600); fallar(); setKapi(url); }}
+        subirImagen={subir}
+      />
+    );
+  } else if (rutaSola === '/admin/wordle') {
+    pagina = (
+      <PaginaPalabraAdmin
+        {...comunes}
+        palabras={vacio ? [] : palabras.map((x) => palabraDiaDesde(x, diaKey(0)))}
+        hoy={diaKey(0)}
+        onGuardar={async ({ fecha, palabra }, id) => { await espera(600); fallar(); setPalabras((l) => [...l.filter((x) => x.id !== id && x.id !== fecha), { id: fecha, word: palabra }]); }}
+        onEliminar={async (id) => { await espera(500); fallar(); setPalabras((l) => l.filter((x) => x.id !== id)); }}
+      />
+    );
+  } else if (rutaSola === '/admin/bolitas') {
+    pagina = (
+      <PaginaBolitasAdmin
+        pestana={bolitasPestana}
+        onPestana={setBolitasPestana}
+        marcas={MARCAS_PAGINAS.map((m) => ({ valor: m.id, texto: m.name }))}
+        hoy={diaKey(0)}
+        cargando={con('cargando')}
+        error={con('error') ? 'adminBolitasSecure no respondió (es una prueba).' : undefined}
+        onReintentar={comunes.onReintentar}
+        patrocinios={vacio ? [] : patrocinios.map((p) => patrocinioDesde(p, diaKey(0))).sort((a, b) => (a.fecha < b.fecha ? -1 : 1))}
+        onGuardarPatrocinio={async (d, id) => { await espera(600); fallar(); setPatrocinios((l) => [...l.filter((x) => x.fecha !== id && x.fecha !== d.fecha), { ...d, entregados: l.find((x) => x.fecha === id)?.entregados || 0 }]); }}
+        onQuitarPatrocinio={async (id) => { await espera(500); fallar(); setPatrocinios((l) => l.filter((x) => x.fecha !== id)); }}
+        mundos={mundosBolitas}
+        onGuardarMundos={async (lista) => { await espera(600); fallar(); setMundosBolitas(lista); }}
+        premios={premiosBolitas}
+        onGuardarPremios={async (p) => { await espera(600); fallar(); setPremiosBolitas(p); }}
+        onPremiarSemana={async () => { await espera(900); fallar(); return { entregados: 5 }; }}
+        metricas={vacio ? { porDia: [] } : metricasBolitasDemo(diasBolitas)}
+        dias={diasBolitas}
+        onDias={setDiasBolitas}
+        cargandoMetricas={con('cargando')}
       />
     );
   } else if (rutaSola === '/admin/popups') {

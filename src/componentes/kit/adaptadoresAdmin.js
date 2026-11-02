@@ -2733,3 +2733,136 @@ export function temaDesdeCss({ principal = '', todos = [], archivo = 'tema.zip' 
 
 /** "12.4 KB" (para decir cuánto CSS tiene un tema). */
 export const pesoTexto = (texto = '') => { const b = new TextEncoder().encode(texto).length; return b < 1024 ? `${b} B` : `${(b / 1024).toFixed(1)} KB`; };
+
+/* ── D7a · La Palabra del día y Las Bolitas ───────────── */
+
+/** "Regalo" → "REGALO" (sin tildes, como la guarda el juego). */
+export const palabraLimpia = (w = '') => String(w).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+
+/** Una palabra programada (daily_words/{YYYY-MM-DD}) → el admin, con si ya pasó. */
+export function palabraDiaDesde(x = {}, hoy = '') {
+  const fecha = x.id || '';
+  return { id: fecha, fecha, palabra: x.word || '', estado: fecha === hoy ? 'hoy' : fecha < hoy ? 'paso' : 'programada' };
+}
+
+/** Los errores (como antes: 5 a 8 letras, solo letras) y que ese día no tenga ya otra. */
+export function erroresDePalabra(d = {}, lista = [], id = null) {
+  const w = String(d.palabra || '').trim();
+  return {
+    fecha: !d.fecha ? 'Elige el día.' : lista.some((x) => x.id === d.fecha && x.id !== id) ? 'Ese día ya tiene palabra: edítala en la lista.' : undefined,
+    palabra: !w ? 'Escribe la palabra.' : !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+$/.test(w) ? 'Solo letras, sin espacios.' : w.length < 5 || w.length > 8 ? 'De 5 a 8 letras.' : undefined,
+  };
+}
+
+/* Las Bolitas: los cupones los topa el servidor (50 % o S/ 100, 1000 por día). */
+export const CUPON_JUEGO_VACIO = { tipo: 'descuento', descuentoPct: 10, descuentoMonto: 0, topeDescuento: 0, vigenciaDias: 15 };
+
+/** 'pct' | 'monto' | 'envio' (como el formulario de antes). */
+export function modoDeCupon(c = CUPON_JUEGO_VACIO) {
+  if (c.tipo === 'envio_gratis') return 'envio';
+  return Number(c.descuentoMonto) > 0 && !Number(c.descuentoPct) ? 'monto' : 'pct';
+}
+
+export function cuponConModo(c = CUPON_JUEGO_VACIO, modo) {
+  if (modo === 'envio') return { ...c, tipo: 'envio_gratis' };
+  if (modo === 'pct') return { ...c, tipo: 'descuento', descuentoPct: Number(c.descuentoPct) || 10, descuentoMonto: 0 };
+  return { ...c, tipo: 'descuento', descuentoPct: 0, descuentoMonto: Number(c.descuentoMonto) || 10 };
+}
+
+/** "10 % (tope S/ 20) · 15 días" · "S/ 10 · 7 días" · "Envío gratis · 15 días". */
+export function textoCuponJuego(c) {
+  if (!c) return '—';
+  if (c.tipo === 'envio_gratis') return `Envío gratis · ${c.vigenciaDias} días`;
+  const valor = Number(c.descuentoPct) > 0 ? `${c.descuentoPct} %${Number(c.topeDescuento) ? ` (tope S/ ${c.topeDescuento})` : ''}` : `S/ ${c.descuentoMonto}`;
+  return `${valor} · ${c.vigenciaDias} días`;
+}
+
+/** Los topes del servidor, dichos antes de guardar. */
+export function erroresDeCupon(c = {}) {
+  const modo = modoDeCupon(c);
+  const v = Number(c.vigenciaDias);
+  return {
+    valor: modo === 'pct' && !(Number(c.descuentoPct) >= 1 && Number(c.descuentoPct) <= 50) ? 'De 1 a 50 %.'
+      : modo === 'monto' && !(Number(c.descuentoMonto) >= 1 && Number(c.descuentoMonto) <= 100) ? 'De S/ 1 a S/ 100.' : undefined,
+    vigencia: v >= 1 && v <= 90 ? undefined : 'De 1 a 90 días.',
+  };
+}
+
+/** Un reto patrocinado (por día) → el admin. */
+export function patrocinioDesde(p = {}, hoy = '') {
+  return {
+    id: p.fecha, fecha: p.fecha || '', marcaId: p.marcaId || '', marcaNombre: p.marcaNombre || '', cupo: Number(p.cupo) || 0,
+    entregados: Number(p.entregados) || 0, activo: p.activo !== false, cupon: { ...CUPON_JUEGO_VACIO, ...(p.cupon || {}) }, hoy: p.fecha === hoy,
+  };
+}
+
+export function erroresDePatrocinio(d = {}, lista = [], id = null, hoy = '') {
+  const cupon = erroresDeCupon(d.cupon);
+  return {
+    fecha: !d.fecha ? 'Elige el día.' : d.fecha < hoy ? 'Ese día ya pasó.' : lista.some((x) => x.id === d.fecha && x.id !== id) ? 'Ese día ya tiene patrocinio: edítalo en la lista.' : undefined,
+    marcaId: d.marcaId ? undefined : 'Elige la marca.',
+    cupo: Number(d.cupo) >= 1 && Number(d.cupo) <= 1000 ? undefined : 'De 1 a 1000 cupones.',
+    cuponValor: cupon.valor,
+    cuponVigencia: cupon.vigencia,
+  };
+}
+
+/** Los premios del ranking semanal (config del servidor) → el admin. */
+export function premiosBolitasDesde(doc) {
+  return {
+    activo: Boolean(doc) && doc.activo !== false,
+    puestos: (doc?.puestos || []).map((x) => ({ desde: Number(x.desde) || 1, hasta: Number(x.hasta) || Number(x.desde) || 1, marcaId: x.marcaId || '', cupon: { ...CUPON_JUEGO_VACIO, ...(x.cupon || {}) } })),
+  };
+}
+
+export function premiosBolitasAFirestore(p = {}, marcas = []) {
+  return {
+    activo: Boolean(p.activo),
+    puestos: (p.puestos || []).map((x) => ({ desde: Number(x.desde), hasta: Number(x.hasta), marcaId: x.marcaId || null, marcaNombre: marcas.find((m) => m.id === x.marcaId)?.name || null, cupon: x.cupon })),
+  };
+}
+
+export const nuevoPuesto = (puestos = []) => { const desde = puestos.length ? Number(puestos[puestos.length - 1].hasta) + 1 : 1; return { desde, hasta: desde, marcaId: '', cupon: { ...CUPON_JUEGO_VACIO } }; };
+
+/** Lo que está mal en los puestos: al revés o que se pisan (con su número de premio). */
+export function erroresDePremios(p = {}) {
+  const puestos = p.puestos || [];
+  for (let i = 0; i < puestos.length; i += 1) {
+    const a = puestos[i];
+    if (!(Number(a.desde) >= 1) || Number(a.hasta) < Number(a.desde)) return `El premio ${i + 1}: «hasta» no puede ser menor que «desde».`;
+    const cupon = erroresDeCupon(a.cupon);
+    if (cupon.valor || cupon.vigencia) return `El premio ${i + 1}: ${cupon.valor || cupon.vigencia}`;
+    for (let j = 0; j < i; j += 1) {
+      const b = puestos[j];
+      if (Number(a.desde) <= Number(b.hasta) && Number(b.desde) <= Number(a.hasta)) return `Los premios ${j + 1} y ${i + 1} se pisan en los puestos.`;
+    }
+  }
+  return '';
+}
+
+/** Lo que devuelve adminBolitas('metricas'), sumado para las cifras y las listas. */
+export function metricasBolitas(data = {}) {
+  const porDia = data?.porDia || [];
+  const niveles = {};
+  const clicsMarca = {};
+  let partidas = 0;
+  let retos = 0;
+  let clics = 0;
+  porDia.forEach((d) => {
+    partidas += Number(d.partidas) || 0;
+    retos += Number(d.retos) || 0;
+    clics += Number(d.clics) || 0;
+    Object.entries(d.niveles || {}).forEach(([n, c]) => { niveles[n] = (niveles[n] || 0) + c; });
+    Object.entries(d.clicsPorMarca || {}).forEach(([id, c]) => { clicsMarca[id] = (clicsMarca[id] || 0) + c; });
+  });
+  const j = data?.jugadores || {};
+  const parte = (x = {}) => (x.base ? Math.round((x.cantidad / x.base) * 100) : null);
+  return {
+    partidas, retos, clics, clicsMarca,
+    jugadores: Number(j.jugadores) || 0,
+    vuelven: parte(j.vuelven),
+    siguen7: parte(j.siguen7),
+    trabados: Object.entries(j.trabados || {}).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([nivel, n]) => ({ nivel, n })),
+    porDia: [...porDia].sort((a, b) => (a.fecha < b.fecha ? -1 : 1)).map((d) => ({ fecha: d.fecha, partidas: Number(d.partidas) || 0, retos: Number(d.retos) || 0, clics: Number(d.clics) || 0 })),
+  };
+}
