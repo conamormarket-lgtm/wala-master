@@ -14,6 +14,7 @@ import {
   PaginaFechasAdmin, fechaClienteDesde, paqueteDesdeFirestore, paquetesDeFecha, cambiosAlElegir, siguienteElegido,
   PaginaNotificacionesAdmin, configNotificacionesDesde, campanaDesde, PaginaEncuestaAdmin, RespuestasEntregas, RespuestasEncuesta, configConPregunta,
   PaginaSorteosAdmin, PaginaSorteoAdmin, sorteoDesdeFirestore, sorteoAFormulario, participanteDesde,
+  PaginaSuscripcionesAdmin, PaginaSuscripcionAdmin, campanaSuscripcionDesde, campanaSuscripcionAFormulario, suscriptorDesde, beneficioDesde, ganadorGaleriaDesde,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -74,6 +75,7 @@ const HECHAS = [
   ['/admin/notificaciones', 'Notificaciones'],
   ['/admin/encuestas', 'Encuesta'],
   ['/admin/sorteos', 'Sorteos'],
+  ['/admin/sorteos-suscripcion', 'Suscripción'],
   ['/admin/crear-cuentas-pedidos', 'Cuentas'],
   ['/admin/categorias', 'Categorías'],
   ['/admin/colecciones', 'Colecciones'],
@@ -531,6 +533,27 @@ const PARTICIPANTES_DEMO = [
   ['Jorge Salas', '', '998877665', '41234567', 1, 0, 1, false],
   ['Mafer Díaz', 'mafer.diaz@gmail.com', '', '', 1, 0, 2, true],
 ].map(([nombre, correo, telefono, dni, tickets, ticketsPagados, chancesTotal, origenApp], i) => participanteDesde({ id: `par-${i}`, nombre, correo, telefono, dni, tickets, ticketsPagados, chancesTotal, origenApp, estado: 'elegible' }));
+// D6b: campañas de suscripción, sus suscriptores, beneficios y galería.
+const CAMPANAS_SUS_DEMO = [
+  { id: 'sus-1', titulo: 'No hay sin suerte', slug: 'no-hay-sin-suerte', descripcion: 'Suscríbete y entra cada mes al sorteo de una casaca.', estado: 'activo', numGanadores: 1, heroImagenUrl: fotoTienda(8), colores: { primario: '#5b21b6', fondo: '#faf7ff', texto: '#1e1033', acento: '#7c3aed' }, premios: [{ nombre: 'Casaca One Piece', imagenUrl: fotoTienda(8) }], contadorSuscriptores: 86,
+    planes: [{ id: 'p-m', nombre: 'Mensual', intervalo: 'mensual', precioCentimos: 1990, precioUsd: 5.5, beneficios: ['Envío gratis'] }, { id: 'p-t', nombre: 'Trimestral', intervalo: 'trimestral', precioCentimos: 4990, chancesPorCiclo: 4, beneficios: ['Envío gratis', '10 % en tu pedido'], destacado: true }] },
+  { id: 'sus-2', titulo: 'Club Kapi', slug: 'club-kapi', estado: 'borrador', numGanadores: 3, planes: [{ id: 'p-a', nombre: 'Anual', intervalo: 'anual', precioCentimos: 0 }] },
+].map(campanaSuscripcionDesde);
+const SUSCRIPTORES_DEMO = [
+  ['Valeria Quispe', 'valeria.quispe@gmail.com', 'p-t', 'activo', 40, 8, 'culqi'],
+  ['Luis Mendoza', 'luis.mendoza@hotmail.com', 'p-m', 'activo', 12, 3, 'paypal'],
+  ['Carla Rojas', 'carla.rojas@gmail.com', 'p-m', 'pendiente_pago', 2, 2, 'culqi'],
+  ['Jorge Salas', 'jorge.salas@outlook.com', 'p-m', 'vencido', -15, 1, 'culqi'],
+  ['Mafer Díaz', 'mafer.diaz@gmail.com', 'p-t', 'cancelado', 20, 4, 'culqi'],
+].map(([nombre, correo, planId, estado, dias, chancesTotal, metodoPago], i) => suscriptorDesde({ id: `ss-${i}`, nombre, correo, planId, estado, vigenciaHasta: Date.now() + dias * 86400000, chancesTotal, metodoPago }, CAMPANAS_SUS_DEMO[0].planes));
+const BENEFICIOS_DEMO = [
+  { id: 'b1', marca: 'Kapi Café', titulo: 'En todas las bebidas', descuento: '20 %', categoria: 'Cafetería', ubicacion: 'Miraflores', orden: 0 },
+  { id: 'b2', marca: 'Daida Hogar', titulo: 'En cómodas', descuento: 'S/ 50', categoria: 'Muebles', orden: 1 },
+].map(beneficioDesde);
+const GALERIA_DEMO = [
+  { id: 'g1', nombre: 'Rosa D.', premio: 'Casaca One Piece', fecha: 'Setiembre 2026', orden: 0 },
+  { id: 'g2', nombre: 'Andrés P.', premio: 'Conjunto Pareja', fecha: 'Octubre 2026', orden: 1 },
+].map(ganadorGaleriaDesde);
 const RECOMPENSAS_DEMO = [
   { title: 'Pack de stickers Kapi', description: 'Seis stickers para tu laptop o celular.', cost: 120, tipo: 'manual', value: 'Sale del cajón de mercancía', imageUrl: '/assets/kapi/kapi-happy.webp' },
   { title: '10% en tu pedido', description: 'Hasta S/ 20 de descuento.', cost: 300, tipo: 'descuento', descuentoPct: 10, topeDescuento: 20, vigenciaDias: 30 },
@@ -668,6 +691,11 @@ function PanelDePrueba() {
   const [notifPestana, setNotifPestana] = useState('automaticos');
   const [sorteos, guardarSorteoCrudo, eliminarSorteo, setSorteos] = useListaDemo(SORTEOS_DEMO, falla);
   const [participantes, setParticipantes] = useState(PARTICIPANTES_DEMO);
+  const [campanasSus, guardarCampanaSusCruda, eliminarCampanaSus, setCampanasSus] = useListaDemo(CAMPANAS_SUS_DEMO, falla);
+  const [suscriptores, setSuscriptores] = useState(SUSCRIPTORES_DEMO);
+  const [beneficiosSus, guardarBeneficioSus, eliminarBeneficioSus] = useListaDemo(BENEFICIOS_DEMO, falla);
+  const [galeriaSus, guardarGanadorSus, eliminarGanadorSus] = useListaDemo(GALERIA_DEMO, falla);
+  const [susPestana, setSusPestana] = useState('suscriptores');
   const [encuesta, setEncuesta] = useState(ENCUESTA_DEMO);
   const [encuestaPestana, setEncuestaPestana] = useState('portada');
   const [configNotif, setConfigNotif] = useState(CONFIG_NOTIF_DEMO);
@@ -1246,6 +1274,60 @@ function PanelDePrueba() {
         subirImagen={subir}
         onGuardar={(datos, id) => guardarRecompensaCruda(recompensaAdminDesdeFirestore({ id, ...recompensaAdminAFirestore(datos) }), id)}
         onEliminar={eliminarRecompensa}
+      />
+    );
+  } else if (rutaSola === '/admin/sorteos-suscripcion') {
+    pagina = (
+      <PaginaSuscripcionesAdmin
+        {...comunes}
+        campanas={vacio ? [] : campanasSus}
+        subirImagen={subir}
+        onGuardar={(datos, id) => {
+          const f = campanaSuscripcionAFormulario(datos);
+          const previa = campanasSus.find((x) => x.id === id) || {};
+          return guardarCampanaSusCruda(campanaSuscripcionDesde({ ...f, id, premios: f.premios, contadorSuscriptores: previa.suscriptores ?? 0, ganadores: previa.ganadores }), id);
+        }}
+        onEliminar={eliminarCampanaSus}
+        onDetalle={(c, p) => { setSusPestana(p || 'suscriptores'); navegar.current(`/admin/sorteos-suscripcion/${c.id}`); }}
+      />
+    );
+  } else if (rutaSola.startsWith('/admin/sorteos-suscripcion/')) {
+    const campana = campanasSus.find((x) => x.id === rutaSola.split('/')[3]);
+    pagina = (
+      <PaginaSuscripcionAdmin
+        campana={campana}
+        contador={campana?.suscriptores}
+        cargando={con('cargando')}
+        error={!campana ? 'Esa campaña no existe.' : con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+        onReintentar={comunes.onReintentar}
+        pestana={susPestana}
+        onPestana={setSusPestana}
+        urlPublica={(c) => `/suscrito-sorteo/${c.slug}`}
+        suscriptores={vacio ? [] : suscriptores}
+        onDarChances={async (d) => {
+          await espera(700);
+          fallar('grantChancesSuscripcion no respondió (es una prueba).');
+          const x = suscriptores.find((y) => (d.correo && y.correo === d.correo) || (d.telefono && y.telefono === d.telefono));
+          if (!x) throw new Error('No encontramos a ese suscriptor en la campaña.');
+          const total = Math.max(0, x.chances + d.chances);
+          setSuscriptores((l) => l.map((y) => (y.id === x.id ? { ...y, chances: total } : y)));
+          return { chancesTotal: total };
+        }}
+        onDecidirGanadores={async ({ numGanadores, excluirUids = [] }) => {
+          await espera(1100);
+          fallar('decidirGanadoresSuscripcion no respondió (es una prueba).');
+          const pool = suscriptores.filter((y) => y.estado === 'activo' && !excluirUids.includes(y.id));
+          const ganadores = pool.sort((a, b) => b.chances - a.chances).slice(0, numGanadores || campana.numGanadores).map((y) => ({ uid: y.id, nombre: y.nombre, correo: y.correo, pesoUsado: y.chances }));
+          setCampanasSus((l) => l.map((y) => (y.id === campana.id ? { ...y, ganadores } : y)));
+          return { ganadores, drawId: `draw_${Date.now().toString(36)}`, seed: '2f7a9c1e4b6d8f0a3c5e7b9d1f2a4c6e', poolHash: 'sha256:91ce…0b3f', totalElegibles: pool.length };
+        }}
+        beneficios={vacio ? [] : beneficiosSus}
+        onGuardarBeneficio={guardarBeneficioSus}
+        onEliminarBeneficio={eliminarBeneficioSus}
+        galeria={vacio ? [] : galeriaSus}
+        onGuardarGanador={guardarGanadorSus}
+        onEliminarGanador={eliminarGanadorSus}
+        subirImagen={subir}
       />
     );
   } else if (rutaSola === '/admin/sorteos') {

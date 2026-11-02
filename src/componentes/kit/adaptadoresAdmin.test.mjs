@@ -626,3 +626,21 @@ test('sorteos: ida y vuelta, errores y participantes', () => {
   assert.equal(m2.erroresDeAjuste({ dni: '1', chances: -2 }, 'chances').chances, undefined);
   assert.equal(m2.erroresDeAjuste({ dni: '1', chances: 0 }, 'chances').chances, 'Un entero distinto de 0 (negativo resta).');
 });
+
+test('sorteos de suscripción: campañas, planes y suscriptores', () => {
+  const c = m2.campanaSuscripcionDesde({ id: 'c', titulo: 'No Hay Sin Suerte', colores: { acento: '#7c3aed' }, planes: [{ id: 'p1', nombre: 'Mensual', intervalo: 'mensual', precioCentimos: 1990 }, { nombre: 'Anual', intervalo: 'anual', precioCentimos: 19900, chancesPorCiclo: 15 }] });
+  assert.deepEqual([c.colores.acento, c.colores.fondo, c.planes[0].precio, c.planes[0].chances, c.planes[1].id, c.planes[1].chances], ['#7c3aed', '#ffffff', 19.9, 1, 'plan_1', 15]);
+  assert.equal(m2.textoDePlanes(c.planes), '2 planes · desde S/ 19.90');
+  assert.equal(m2.textoDePlanes([]), 'Sin planes');
+  const f = m2.campanaSuscripcionAFormulario({ ...c, nombre: ' No Hay Sin Suerte ', premios: [{ nombre: '', imagen: '' }, { nombre: 'Casaca', imagen: 'u' }] });
+  assert.deepEqual([f.titulo, f.slug, f.planes[0].precioCentimos, f.planes[1].meses, f.premios.length], ['No Hay Sin Suerte', 'no-hay-sin-suerte', 1990, 12, 1]);
+  const pl = m2.planConIntervalo({ ...m2.planNuevo(1), chances: 1, meses: 1 }, 'trimestral');
+  assert.deepEqual([pl.meses, pl.chances], [3, 3]);
+  assert.equal(m2.planConIntervalo({ meses: 1, chances: 5 }, 'anual').chances, 5);
+  assert.equal(m2.erroresDeCampanaSuscripcion({ nombre: 'x', numGanadores: 1, estado: 'activo', planes: [{ precio: 0 }] }).planes, 'Para activarla, agrega un plan con precio (S/ o USD) mayor a 0.');
+  assert.equal(m2.erroresDeCampanaSuscripcion({ nombre: 'x', numGanadores: 1, estado: 'activo', planes: [{ precioUsd: 5 }] }).planes, undefined);
+  const s = m2.suscriptorDesde({ id: 's', nombres: 'Ana', planId: 'p1', estado: 'activo', vigenciaHasta: { seconds: 10 }, chancesTotal: 3 }, c.planes);
+  assert.deepEqual([s.nombre, s.plan, s.precio, s.vigenciaMs, s.chances], ['Ana', 'Mensual', 19.9, 10000, 3]);
+  assert.deepEqual(m2.beneficioAFirestore(m2.beneficioDesde({ id: 'b', marca: 'Kapi', titulo: 'Tazas', descuento: '20%' })), { marca: 'Kapi', titulo: 'Tazas', descuento: '20%', imagenUrl: '', categoria: '', ubicacion: '', url: '', orden: 0 });
+  assert.equal(m2.ganadorGaleriaAFirestore({ nombre: ' Rosa ', foto: 'f' }).fotoUrl, 'f');
+});

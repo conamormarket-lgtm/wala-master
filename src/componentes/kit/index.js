@@ -79,7 +79,7 @@ export { prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaC
 // Panel administrativo (guia/ADMIN.md): la tienda no importa este índice.
 export { MarcoAdmin, BarraInferiorAdmin, CabezaAdmin, SinPermiso, useMarcoAdmin } from './piezas/admin/Marco';
 export { TablaAdmin, InsigniaEstado, ESTADOS_ADMIN, BarraFiltros, AccionesLote, CargarMas, ListaOrdenable, SelectorProductos, NumeroEnLinea } from './piezas/admin/Datos';
-export { HojaEdicion, GrupoCampos, CampoImagen, CampoDinero, CampoColor, ElegirUno, BarraGuardar } from './piezas/admin/Formularios';
+export { HojaEdicion, GrupoCampos, CampoImagen, CampoDinero, CampoColor, ElegirUno, BarraGuardar, CampoLista } from './piezas/admin/Formularios';
 export { ICONOS_ADMIN, iconoAdmin } from './piezas/admin/iconosAdmin';
 export { PaginaInicioAdmin } from './paginas/admin/Inicio';
 export { PaginaListaAdmin } from './paginas/admin/Lista';
@@ -104,7 +104,8 @@ export { PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, PaginaReco
 export { PaginaFechasAdmin } from './paginas/admin/Fechas';
 export { PaginaNotificacionesAdmin } from './paginas/admin/Notificaciones';
 export { PaginaEncuestaAdmin, RespuestasEntregas, RespuestasEncuesta } from './paginas/admin/Encuestas';
-export { PaginaSorteosAdmin, PaginaSorteoAdmin } from './paginas/admin/Sorteos';
+export { PaginaSorteosAdmin, PaginaSorteoAdmin, GanadoresSorteo, AjusteSorteo } from './paginas/admin/Sorteos';
+export { PaginaSuscripcionesAdmin, PaginaSuscripcionAdmin } from './paginas/admin/Suscripciones';
 export { TarjetaEnvio, EsqueletoEnvio } from './piezas/admin/Pedidos';
 export { PaginaRecepcion } from './paginas/admin/Pedidos';
 export { PaginaPagos } from './paginas/admin/Pagos';
@@ -142,4 +143,6 @@ export {
   unidadDeRango, etiquetaDePeriodo, fechaDeDia, configConPregunta,
   slugDeSorteo, ESTADOS_SORTEO, REQUISITOS_APP, sorteoDesdeFirestore, sorteoAFormulario, erroresDeSorteo, tipoDeSorteo, participanteDesde,
   identificadorDe, erroresDeAjuste,
+  INTERVALOS_PLAN, mesesDeIntervalo, COLORES_CAMPANA, campanaSuscripcionDesde, campanaSuscripcionAFormulario, planNuevo, planConIntervalo,
+  erroresDeCampanaSuscripcion, textoDePlanes, ESTADOS_SUSCRIPTOR, suscriptorDesde, beneficioDesde, beneficioAFirestore, ganadorGaleriaDesde, ganadorGaleriaAFirestore,
 } from './adaptadoresAdmin';

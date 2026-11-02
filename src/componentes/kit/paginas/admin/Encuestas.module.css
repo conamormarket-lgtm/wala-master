@@ -82,17 +82,6 @@
   gap: 0.45rem;
 }
 
-.sumar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 0.5rem;
-}
-
-.sumar > :first-child {
-  flex: 1 1 12rem;
-}
-
 .retiradas {
   padding: 0.6rem 0.8rem;
   border: 1px dashed var(--color-border);

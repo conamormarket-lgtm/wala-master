@@ -232,7 +232,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | · |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | · |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | hecho (2026-11-02) | · |
-| D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | en marcha (D6a, 2026-11-02) | · |
+| D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | en marcha (D6a y D6b, 2026-11-02) | · |
 | D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | · | · |
 | D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | · | · |
 
@@ -1582,7 +1582,7 @@ del embudo o "1 estrella" en 0 también dice algo).
     `saveSurveyConfig(configConHistorial(configConPregunta(actual, que), actual))`
     y volver a leer.
 
-## D6 · Campañas (en marcha: D6a hecho en el kit el 2026-11-02)
+## D6 · Campañas (en marcha: D6a y D6b hechos en el kit el 2026-11-02)
 
 Nueve pantallas de hoy (unas 5.500 líneas), en cuatro tramos; el apartado se
 une entero cuando estén los cuatro.
@@ -1590,7 +1590,7 @@ une entero cuando estén los cuatro.
 | Tramo | Qué | Páginas de hoy | Kit |
 |---|---|---|---|
 | D6a | Sorteos y rifas: la lista con su formulario y el detalle (participantes, tickets y chances a mano, los ganadores con su evidencia) | `AdminSorteos.jsx` (603 líneas), `AdminSorteoDetalle.jsx` (676) | hecho (2026-11-02) |
-| D6b | Sorteos de suscripción y su detalle | `AdminSuscripcionSorteos.jsx` (1.249), `AdminSuscripcionDetalle.jsx` (573) | · |
+| D6b | Sorteos de suscripción y su detalle | `AdminSuscripcionSorteos.jsx` (1.249), `AdminSuscripcionDetalle.jsx` (573) | hecho (2026-11-02) |
 | D6c | Enlaces (los de bio y campañas) y su editor | `AdminEnlaces.jsx` (253), `AdminEnlaceEditor.jsx` (1.138) | · |
 | D6d | Popups, landing pages y temas | `AdminPopups.jsx` (445), `Tienda/admin/AdminLandingPages.jsx` (307), `Tienda/admin/AdminThemes.jsx` (268) | · |
 
@@ -1651,6 +1651,73 @@ Adaptadores (con pruebas): `slugDeSorteo` (como `slugifySorteo`),
   `onDarChances` = `grantRaffleChancesSecure` (devuelve `chancesTotal`),
   `onDecidirGanadores` = `decidirGanadoresSorteo`; tras cada uno, invalidar
   las dos `queryKey`.
+
+### D6b: Sorteos por suscripción (en el kit desde el 2026-11-02)
+
+| Una campaña (computadora) | Un plan en la hoja (celular) |
+|---|---|
+| ![Las pestañas Sorteo, Beneficios y Galería, las cuatro cifras, el ganador y «Dar o quitar chances»](admin-suscripcion-escritorio.webp) | ![Un plan: nombre, cada cuánto se cobra, chances por cobro y los precios en soles y en dólares](admin-suscripcion-plan-celular.webp) |
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| Campañas | `PaginaSuscripcionesAdmin` | `paginas/admin/Suscripciones.jsx` | Sobre `PaginaListaAdmin`: la foto, la campaña y sus premios, los planes ("2 planes · desde S/ 19.90"), suscriptores y ganadores, el estado; en "⋯", **Suscriptores y ganadores**, **Beneficios y galería** y **Ver la página**. No deja eliminar una activa con suscriptores. La hoja: título, enlace (`wala.pe/suscrito-sorteo/…`), descripción, ganadores y estado; **los planes** (cada uno: nombre, cada cuánto se cobra, chances por cobro que siguen al ciclo, precio en soles y en dólares, beneficios como chips con `CampoLista`, destacado); los premios con su foto; imagen principal, logo, los cuatro colores (`CampoColor`) y **la vista previa con esos colores y los planes** |
+| Una campaña | `PaginaSuscripcionAdmin` | ídem | Tres pestañas: **Sorteo** (cuatro cifras: suscriptores, al día, chances en juego y cobros por ciclo; `GanadoresSorteo` entre los suscriptores al día; `AjusteSorteo` para dar o quitar chances; los suscriptores con su plan y precio, hasta cuándo están al día, chances y estado, y en "⋯" darle chances), **Beneficios** (las marcas y descuentos, sobre `PaginaListaAdmin`) y **Galería** (los ganadores de antes con su foto) |
+| Ganadores y ajustes | `GanadoresSorteo`, `AjusteSorteo` | `paginas/admin/Sorteos.jsx` | Sacados del detalle de D6a para que los usen los dos sorteos |
+| Una lista de textos | `CampoLista` | `piezas/admin/Formularios.jsx` | Nueva pieza, sacada de las opciones de Encuestas (D5e): chips que se quitan y un campo para sumar otro. La usan las preguntas de la encuesta, sus opciones de entrega y los beneficios de un plan |
+
+Adaptadores (con pruebas): `INTERVALOS_PLAN`, `mesesDeIntervalo`,
+`COLORES_CAMPANA`, `campanaSuscripcionDesde`, `campanaSuscripcionAFormulario`
+(los soles pasan a céntimos; los premios vacíos no se guardan), `planNuevo`,
+`planConIntervalo`, `erroresDeCampanaSuscripcion` (para activarla hace falta
+un plan con precio), `textoDePlanes`, `ESTADOS_SUSCRIPTOR`, `suscriptorDesde`,
+`beneficioDesde` / `beneficioAFirestore` y `ganadorGaleriaDesde` /
+`ganadorGaleriaAFirestore`. (Con "Suscripcion" en el nombre: `campanaDesde`
+ya es de las ofertas de D5d.)
+
+### Diferencias a propósito (D6b)
+
+- **Los beneficios y la galería pasan al detalle**, en sus pestañas (antes
+  iban debajo del formulario y solo al editar): la hoja queda para la
+  campaña.
+- Los beneficios de un plan son chips (antes, un texto con uno por línea).
+- La vista previa usa los colores y muestra los planes con su precio, como
+  la página.
+- Elegir ganadores pregunta antes (igual que D6a) y el suscriptor de una fila
+  llena "Dar o quitar chances".
+- La pestaña del sorteo se llama "Sorteo": "Suscriptores" no cabía con las
+  otras dos en el celular.
+
+### Qué se probó (2026-11-02, demo en localhost, 1280 px y 375 px)
+
+- Dos campañas: "No hay sin suerte" activa con 86 suscriptores y dos planes
+  (el trimestral destacado), y "Club Kapi" en borrador con un plan sin
+  precio.
+- Club Kapi → Activa → guardar → "Para activarla, agrega un plan con precio
+  (S/ o USD) mayor a 0"; precio S/ 99 y el beneficio "Un sticker al mes" con
+  Enter → guardada: "1 plan · desde S/ 99.00 · Activa".
+- No hay sin suerte: 86 suscriptores, 2 al día entre los 5 que se ven, 11
+  chances, S/ 69.80 por ciclo; elegir 1 ganador → la pregunta "entre los
+  suscriptores al día" → Valeria. Beneficios: sin marca ni título → el
+  error; "Walá Tienda" → agregado. Galería: los dos de antes.
+- D6a sigue igual con las piezas compartidas (Rosa ganadora, sus botones).
+- 375 px: la lista, la hoja (los planes), las tres pestañas y sus listas sin
+  salirse del ancho.
+
+### Cómo se une D6b
+
+- `SuscripcionesDelPanel.jsx`: `getCampaigns` (`['admin-suscripcion-campaigns']`)
+  → `campanaSuscripcionDesde`; guardar con `createCampaign` / `updateCampaign`
+  de `campanaSuscripcionAFormulario(datos)`; eliminar `deleteCampaign`;
+  `subirImagen` → `uploadFile(blob, 'sorteos_suscripcion/{hero|logo|premios}/{ms}.jpg')`;
+  `onDetalle(c, pestana)` → `/admin/sorteos-suscripcion/{id}?ver={pestana}`.
+- `SuscripcionDelPanel.jsx`: `getCampaignById`, `getContadorSuscriptores`
+  → `contador`, `getSuscriptores` (tope 200) → `suscriptorDesde(s, campana.planes)`;
+  `onDarChances` = `grantChancesSuscripcion`, `onDecidirGanadores` =
+  `decidirGanadoresSuscripcion`; beneficios con `getBeneficios` /
+  `createBeneficio` / `updateBeneficio` / `deleteBeneficio`
+  (`beneficioAFirestore`) y la galería con `getGanadoresGaleria` /
+  `createGanadorGaleria` / `updateGanadorGaleria` / `deleteGanadorGaleria`
+  (`ganadorGaleriaAFirestore`), cada una con su `queryKey` de hoy.
 
 ## Reemplazos: qué sale y qué entra
 
@@ -1752,7 +1819,8 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D5e · Encuestas | `pages/admin/AdminEncuestas.jsx` + `.module.css`, `AdminEncuestaEntregas.jsx`, `AdminRespuestasEncuesta.jsx` + `.module.css`, `CambioKpi.jsx` (`alert`, `window.confirm`, `useGlobalToast`) | `PaginaEncuestaAdmin`, `RespuestasEntregas`, `RespuestasEncuesta`, `BarraGuardar` | `EncuestaDelPanel.jsx`, `OpinionesDelPanel.jsx` |
 | D6a · Sorteos | `pages/admin/AdminSorteos.jsx` + `.module.css` (`common/Button`, su propio modal, la subida a mano) | `PaginaSorteosAdmin` (`PaginaListaAdmin`, `CampoImagen`, `CampoFecha`, `CampoDinero`) | `SorteosDelPanel.jsx` |
 | D6a · Un sorteo | `pages/admin/AdminSorteoDetalle.jsx` + `.module.css` (su propio modal) | `PaginaSorteoAdmin` (`TablaAdmin`, `HojaEdicion`, `Confirmar`) | `SorteoDelPanel.jsx` |
-| D6b · Sorteos de suscripción | `AdminSuscripcionSorteos.jsx`, `AdminSuscripcionDetalle.jsx` | por hacer | por pantalla |
+| D6b · Sorteos por suscripción | `pages/admin/AdminSuscripcionSorteos.jsx` + `.module.css` (con `BeneficiosEditor` y `GaleriaEditor` adentro; `common/Button`, su modal, la subida a mano) | `PaginaSuscripcionesAdmin` (`PaginaListaAdmin`, `CampoLista`, `CampoColor`, `CampoImagen`) | `SuscripcionesDelPanel.jsx` |
+| D6b · Una campaña | `pages/admin/AdminSuscripcionDetalle.jsx` + `.module.css` | `PaginaSuscripcionAdmin` (`GanadoresSorteo`, `AjusteSorteo`, `PaginaListaAdmin` en Beneficios y Galería) | `SuscripcionDelPanel.jsx` |
 | D6c · Enlaces | `AdminEnlaces.jsx`, `AdminEnlaceEditor.jsx` | por hacer | por pantalla |
 | D6d · Popups, landing pages y temas | `AdminPopups.jsx`, `Tienda/admin/AdminLandingPages.jsx`, `Tienda/admin/AdminThemes.jsx` | por hacer | por pantalla |
 
@@ -1796,6 +1864,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |
 | 2026-11-02 | Reemplazos de D0 a D2 (qué sale, qué entra y el conector) y la sección «Panel administrativo» de ELIMINAR.md con quién importa hoy cada pieza vieja | `guia/ADMIN.md`, `guia/ELIMINAR.md` |
+| 2026-11-02 | D6b en el kit: `PaginaSuscripcionesAdmin`, `PaginaSuscripcionAdmin` (beneficios y galería en el detalle); `GanadoresSorteo` y `AjusteSorteo` compartidos con D6a; `CampoLista` (también en Encuestas); adaptadores con pruebas | `paginas/admin/Suscripciones.jsx`, `paginas/admin/Sorteos.jsx`, `piezas/admin/Formularios.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D6 dividido en tramos (a: sorteos; b: sorteos de suscripción; c: enlaces; d: popups, landing pages y temas). D6a en el kit: `PaginaSorteosAdmin`, `PaginaSorteoAdmin`; adaptadores con pruebas | `paginas/admin/Sorteos.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D5e en el kit y **D5 completo**: `PaginaEncuestaAdmin` (las opciones como chips), `RespuestasEntregas` y `RespuestasEncuesta` para Opiniones, `BarraGuardar` (también en Notificaciones), `ListaBarras` con `conCeros`; adaptadores con pruebas | `paginas/admin/Encuestas.jsx`, `piezas/admin/Formularios.jsx`, `piezas/admin/Metricas.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D5d en el kit: `PaginaNotificacionesAdmin` (automáticos con sus horarios y textos A/B, ofertas con guardadas y envío que pregunta, historial con la comparación); adaptadores con pruebas | `paginas/admin/Notificaciones.jsx`, `adaptadoresAdmin.js` |

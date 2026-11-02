@@ -139,12 +139,17 @@ export function PaginaSorteosAdmin({ sorteos = [], cargando, error, onReintentar
   );
 }
 
-/* ── El detalle de un sorteo ───────────────────────────── */
+/* ── Piezas del detalle (también las usa el sorteo de suscripción) ── */
 
 const AJUSTE_VACIO = { correo: '', telefono: '', dni: '', cantidad: 1, chances: 1, motivo: '' };
 
-/** Sumar tickets o dar/quitar chances a una persona. */
-function Ajuste({ tipo, inicial, onEnviar }) {
+/**
+ * Sumar tickets (`tipo` 'tickets') o dar/quitar chances ('chances') a una
+ * persona, por correo, teléfono o DNI. `inicial`: los datos ya puestos (desde
+ * una fila); se vuelve a montar con otra `key` para cambiarlos.
+ *  - onEnviar({ correo?, telefono?, dni?, cantidad | chances, motivo? }) → promesa ({ chancesTotal })
+ */
+export function AjusteSorteo({ tipo, inicial, onEnviar }) {
   const toast = useToast();
   const [d, setD] = useState(inicial || AJUSTE_VACIO);
   const [errores, setErrores] = useState({});
@@ -184,6 +189,87 @@ function Ajuste({ tipo, inicial, onEnviar }) {
   );
 }
 
+const ListaGanadores = ({ ganadores, conPeso = false }) => (
+  <ol className={s.ganadores}>
+    {ganadores.map((g, i) => (
+      <li key={g.uid || i}>
+        <span className={s.puesto}>{i + 1}</span>
+        <span className={s.ganadorTexto}><strong>{g.nombre || g.uid || '—'}</strong><span className={s.nota}>{[g.correo, g.telefono].filter(Boolean).join(' · ') || 'Sin contacto'}</span></span>
+        {conPeso && typeof g.pesoUsado === 'number' && <span className={s.nota} title="Sus chances en el sorteo">{entero(g.pesoUsado)} chances</span>}
+      </li>
+    ))}
+  </ol>
+);
+
+/**
+ * Los ganadores de un sorteo: los de ahora, cuántos elegir, "Elegir
+ * ganadores" / "Volver a elegir" y "Sortear sin estos" (los dos preguntan),
+ * y el resultado con su evidencia en una hoja. Lo elige el servidor.
+ *  - ganadores: los guardados · numGanadores (los del sorteo) · cargando
+ *  - onDecidir({ numGanadores?, excluirUids? }) → { ganadores, drawId, seed, poolHash, totalElegibles }
+ *  - quienes: entre quiénes ("todos los que cumplen las reglas")
+ */
+export function GanadoresSorteo({ ganadores: guardados = [], numGanadores = 1, onDecidir, cargando = false, quienes = 'todos los que cumplen las reglas', ayuda }) {
+  const toast = useToast();
+  const [cuantos, setCuantos] = useState('');
+  const [preguntar, setPreguntar] = useState(null); // { excluir }
+  const [resultado, setResultado] = useState(null);
+  const ganadores = resultado?.ganadores || guardados;
+  const n = Number(cuantos) > 0 ? Math.round(Number(cuantos)) : numGanadores || 1;
+  const sortear = async (excluir) => {
+    try {
+      const r = await onDecidir?.({ numGanadores: Number(cuantos) > 0 ? n : undefined, excluirUids: excluir ? ganadores.map((g) => g.uid).filter(Boolean) : undefined });
+      setResultado({ ganadores: [], ...r, abierto: true });
+    } catch (err) {
+      toast({ tipo: 'error', titulo: 'No se pudo sortear', texto: errorDe(err) });
+    } finally {
+      setPreguntar(null);
+    }
+  };
+  return (
+    <BloqueMetrica titulo="Los ganadores" ayuda={ayuda || `Los elige el servidor al azar entre ${quienes}, con más probabilidad para quien tiene más chances. Queda una evidencia para revisarlo.`}>
+      {ganadores.length > 0 && <ListaGanadores ganadores={ganadores} />}
+      <div className={s.sortear}>
+        <Campo etiqueta="Cuántos ganadores" type="number" inputMode="numeric" min={1} placeholder={`${numGanadores || 1} (los del sorteo)`} value={cuantos} onChange={(e) => setCuantos(e.target.value)} />
+        <Boton icono={<Trophy aria-hidden="true" />} disabled={!onDecidir || cargando} onClick={() => setPreguntar({ excluir: false })}>{ganadores.length ? 'Volver a elegir' : 'Elegir ganadores'}</Boton>
+        {ganadores.length > 0 && <Boton variante="secundario" icono={<RefreshCw aria-hidden="true" />} onClick={() => setPreguntar({ excluir: true })}>Sortear sin estos</Boton>}
+      </div>
+      {resultado && <Boton tamano="sm" variante="fantasma" icono={<ShieldCheck aria-hidden="true" />} onClick={() => setResultado({ ...resultado, abierto: true })}>Ver la evidencia</Boton>}
+      <Confirmar
+        abierta={Boolean(preguntar)}
+        titulo={preguntar?.excluir ? '¿Sortear de nuevo sin estos ganadores?' : ganadores.length ? '¿Volver a elegir ganadores?' : '¿Elegir los ganadores?'}
+        texto={preguntar?.excluir
+          ? `Se eligen ${n} ${n === 1 ? 'ganador nuevo' : 'ganadores nuevos'} entre los demás; los de ahora quedan fuera.`
+          : `El servidor elige ${n} ${n === 1 ? 'ganador' : 'ganadores'} entre ${quienes}${ganadores.length ? ' y reemplaza a los de ahora' : ''}.`}
+        confirmar={preguntar?.excluir ? 'Sortear sin estos' : 'Elegir ganadores'}
+        onCancelar={() => setPreguntar(null)}
+        onConfirmar={() => sortear(Boolean(preguntar?.excluir))}
+      />
+      <HojaEdicion abierta={Boolean(resultado?.abierto)} titulo="Ganadores del sorteo" subtitulo="Elegidos por el servidor" onCerrar={() => setResultado((r) => (r ? { ...r, abierto: false } : r))}>
+        {resultado && (
+          <div className={s.resultado}>
+            {resultado.ganadores?.length ? <ListaGanadores ganadores={resultado.ganadores} conPeso /> : <Aviso tipo="aviso" compacto>El servidor no devolvió ganadores: ¿nadie cumplía las reglas?</Aviso>}
+            <GrupoCampos titulo="La evidencia" ayuda="Con la semilla y la huella de la lista, cualquiera puede comprobar el resultado.">
+              <dl className={s.evidencia}>
+                <div><dt>Sorteo</dt><dd className={s.codigo}>{resultado.drawId || '—'}</dd></div>
+                <div><dt>Podían ganar</dt><dd>{Number.isFinite(Number(resultado.totalElegibles)) ? entero(resultado.totalElegibles) : '—'}</dd></div>
+                <div><dt>Semilla</dt><dd className={s.codigo}>{resultado.seed || '—'}</dd></div>
+                {(resultado.poolHash || resultado.hashPool || resultado.hash) && <div><dt>Huella de la lista</dt><dd className={s.codigo}>{resultado.poolHash || resultado.hashPool || resultado.hash}</dd></div>}
+              </dl>
+            </GrupoCampos>
+            {resultado.ganadores?.length > 0 && <Boton variante="secundario" icono={<RefreshCw aria-hidden="true" />} onClick={() => setPreguntar({ excluir: true })}>Sortear sin estos</Boton>}
+          </div>
+        )}
+      </HojaEdicion>
+    </BloqueMetrica>
+  );
+}
+
+/** Lo que llena un formulario desde una fila: el correo, o si no el teléfono, o el DNI. */
+export const datosDeAjuste = (p) => ({ ...AJUSTE_VACIO, correo: p.correo, telefono: p.correo ? '' : p.telefono, dni: p.correo || p.telefono ? '' : p.dni });
+
+/* ── El detalle de un sorteo ───────────────────────────── */
+
 /**
  * Un sorteo (/admin/sorteos/:id): participantes, tickets y chances a mano y los ganadores.
  *  - sorteo: sorteoDesdeFirestore · participantes: [participanteDesde] (los primeros 200)
@@ -192,32 +278,15 @@ function Ajuste({ tipo, inicial, onEnviar }) {
  *  - onDecidirGanadores({ numGanadores?, excluirUids? }) → { ganadores, drawId, seed, poolHash, totalElegibles }
  */
 export function PaginaSorteoAdmin({ sorteo, participantes = [], cargando = false, error, onReintentar, urlLista = '/admin/sorteos', urlPublica, onSumarTickets, onDarChances, onDecidirGanadores }) {
-  const toast = useToast();
   const [busqueda, setBusqueda] = useState('');
-  const [cuantos, setCuantos] = useState('');
-  const [preguntar, setPreguntar] = useState(null); // { excluir }
-  const [resultado, setResultado] = useState(null);
   const [ajuste, setAjuste] = useState({ tickets: 0, chances: 0, inicial: null });
   const filtrados = useMemo(() => {
     const q = normalizarBusqueda(busqueda);
     return participantes.filter((p) => !q || normalizarBusqueda(`${p.nombre} ${p.correo} ${p.telefono} ${p.dni}`).includes(q));
   }, [participantes, busqueda]);
   const totales = useMemo(() => participantes.reduce((t, p) => ({ tickets: t.tickets + p.tickets, chances: t.chances + p.chances, app: t.app + (p.app ? 1 : 0) }), { tickets: 0, chances: 0, app: 0 }), [participantes]);
-  const ganadores = resultado?.ganadores || sorteo?.ganadores || [];
   const total = sorteo?.participantes ?? participantes.length;
-  const n = Number(cuantos) > 0 ? Math.round(Number(cuantos)) : sorteo?.numGanadores || 1;
-
-  const sortear = async (excluir) => {
-    try {
-      const r = await onDecidirGanadores?.({ numGanadores: Number(cuantos) > 0 ? n : undefined, excluirUids: excluir ? ganadores.map((g) => g.uid).filter(Boolean) : undefined });
-      setResultado(r || { ganadores: [] });
-    } catch (err) {
-      toast({ tipo: 'error', titulo: 'No se pudo sortear', texto: errorDe(err) });
-    } finally {
-      setPreguntar(null);
-    }
-  };
-  const prellenar = (p, tipo) => setAjuste((a) => ({ ...a, [tipo]: a[tipo] + 1, inicial: { ...AJUSTE_VACIO, correo: p.correo, telefono: p.correo ? '' : p.telefono, dni: p.correo || p.telefono ? '' : p.dni } }));
+  const prellenar = (p, tipo) => setAjuste((a) => ({ ...a, [tipo]: a[tipo] + 1, inicial: datosDeAjuste(p) }));
 
   const cabeza = (
     <CabezaAdmin
@@ -249,30 +318,16 @@ export function PaginaSorteoAdmin({ sorteo, participantes = [], cargando = false
       </FilaCifras>
 
       <ColumnasMetricas>
-        <BloqueMetrica titulo="Los ganadores" ayuda="Los elige el servidor al azar, con más probabilidad para quien tiene más chances y solo entre quienes cumplen las reglas. Queda una evidencia para revisarlo.">
-          {ganadores.length > 0 && (
-            <ol className={s.ganadores}>
-              {ganadores.map((g, i) => (
-                <li key={g.uid || i}><span className={s.puesto}>{i + 1}</span><span className={s.ganadorTexto}><strong>{g.nombre || g.uid || '—'}</strong><span className={s.nota}>{[g.correo, g.telefono].filter(Boolean).join(' · ') || 'Sin contacto'}</span></span></li>
-              ))}
-            </ol>
-          )}
-          <div className={s.sortear}>
-            <Campo etiqueta="Cuántos ganadores" type="number" inputMode="numeric" min={1} placeholder={`${sorteo?.numGanadores || 1} (los del sorteo)`} value={cuantos} onChange={(e) => setCuantos(e.target.value)} />
-            <Boton icono={<Trophy aria-hidden="true" />} disabled={!onDecidirGanadores || cargando} onClick={() => setPreguntar({ excluir: false })}>{ganadores.length ? 'Volver a elegir' : 'Elegir ganadores'}</Boton>
-            {ganadores.length > 0 && <Boton variante="secundario" icono={<RefreshCw aria-hidden="true" />} onClick={() => setPreguntar({ excluir: true })}>Sortear sin estos</Boton>}
-          </div>
-          {resultado && <Boton tamano="sm" variante="fantasma" icono={<ShieldCheck aria-hidden="true" />} onClick={() => setResultado({ ...resultado, abierto: true })}>Ver la evidencia</Boton>}
-        </BloqueMetrica>
+        <GanadoresSorteo ganadores={sorteo?.ganadores} numGanadores={sorteo?.numGanadores} onDecidir={onDecidirGanadores} cargando={cargando} />
         <BloqueMetrica titulo="A mano" ayuda="Busca a la persona por correo, teléfono o DNI. Lo aplica el servidor.">
           <div className={s.ajustes}>
             <details open className={s.plegable}>
               <summary><Ticket aria-hidden="true" /> Sumar tickets</summary>
-              <Ajuste key={`t${ajuste.tickets}`} tipo="tickets" inicial={ajuste.inicial} onEnviar={onSumarTickets} />
+              <AjusteSorteo key={`t${ajuste.tickets}`} tipo="tickets" inicial={ajuste.inicial} onEnviar={onSumarTickets} />
             </details>
             <details className={s.plegable} open={ajuste.chances > 0 || undefined}>
               <summary><Sparkles aria-hidden="true" /> Dar o quitar chances</summary>
-              <Ajuste key={`c${ajuste.chances}`} tipo="chances" inicial={ajuste.inicial} onEnviar={onDarChances} />
+              <AjusteSorteo key={`c${ajuste.chances}`} tipo="chances" inicial={ajuste.inicial} onEnviar={onDarChances} />
             </details>
           </div>
         </BloqueMetrica>
@@ -299,43 +354,6 @@ export function PaginaSorteoAdmin({ sorteo, participantes = [], cargando = false
           ]}
         />
       </BloqueMetrica>
-
-      <Confirmar
-        abierta={Boolean(preguntar)}
-        titulo={preguntar?.excluir ? '¿Sortear de nuevo sin estos ganadores?' : ganadores.length ? '¿Volver a elegir ganadores?' : '¿Elegir los ganadores?'}
-        texto={preguntar?.excluir
-          ? `Se eligen ${n} ${n === 1 ? 'ganador nuevo' : 'ganadores nuevos'} entre los demás; los de ahora quedan fuera.`
-          : `El servidor elige ${n} ${n === 1 ? 'ganador' : 'ganadores'} entre todos los que cumplen las reglas${ganadores.length ? ' y reemplaza a los de ahora' : ''}.`}
-        confirmar={preguntar?.excluir ? 'Sortear sin estos' : 'Elegir ganadores'}
-        onCancelar={() => setPreguntar(null)}
-        onConfirmar={() => sortear(Boolean(preguntar?.excluir))}
-      />
-      <HojaEdicion abierta={Boolean(resultado) && resultado.abierto !== false} titulo="Ganadores del sorteo" subtitulo="Elegidos por el servidor" onCerrar={() => setResultado((r) => (r ? { ...r, abierto: false } : r))}>
-        {resultado && (
-          <div className={s.resultado}>
-            {resultado.ganadores?.length ? (
-              <ol className={s.ganadores}>
-                {resultado.ganadores.map((g, i) => (
-                  <li key={g.uid || i}>
-                    <span className={s.puesto}>{i + 1}</span>
-                    <span className={s.ganadorTexto}><strong>{g.nombre || g.uid || '—'}</strong><span className={s.nota}>{[g.correo, g.telefono].filter(Boolean).join(' · ') || 'Sin contacto'}</span></span>
-                    {typeof g.pesoUsado === 'number' && <span className={s.nota} title="Sus chances en el sorteo">{entero(g.pesoUsado)} chances</span>}
-                  </li>
-                ))}
-              </ol>
-            ) : <Aviso tipo="aviso" compacto>El servidor no devolvió ganadores: ¿nadie cumplía las reglas?</Aviso>}
-            <GrupoCampos titulo="La evidencia" ayuda="Con la semilla y la huella de la lista, cualquiera puede comprobar el resultado.">
-              <dl className={s.evidencia}>
-                <div><dt>Sorteo</dt><dd className={s.codigo}>{resultado.drawId || '—'}</dd></div>
-                <div><dt>Podían ganar</dt><dd>{Number.isFinite(Number(resultado.totalElegibles)) ? entero(resultado.totalElegibles) : '—'}</dd></div>
-                <div><dt>Semilla</dt><dd className={s.codigo}>{resultado.seed || '—'}</dd></div>
-                {(resultado.poolHash || resultado.hashPool || resultado.hash) && <div><dt>Huella de la lista</dt><dd className={s.codigo}>{resultado.poolHash || resultado.hashPool || resultado.hash}</dd></div>}
-              </dl>
-            </GrupoCampos>
-            {resultado.ganadores?.length > 0 && <Boton variante="secundario" icono={<RefreshCw aria-hidden="true" />} onClick={() => setPreguntar({ excluir: true })}>Sortear sin estos</Boton>}
-          </div>
-        )}
-      </HojaEdicion>
     </div>
   );
 }

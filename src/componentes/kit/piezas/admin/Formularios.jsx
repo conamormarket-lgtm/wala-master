@@ -1,10 +1,12 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertCircle, ImagePlus, Link2, RefreshCw, Save, Trash2, Upload, X } from 'lucide-react';
+import { AlertCircle, ImagePlus, Link2, Plus, RefreshCw, Save, Trash2, Upload, X } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, Confirmar } from '../../Feedback';
 import { Campo } from '../../Formulario';
+import { Chip } from '../../Etiquetas';
+import { conOpcion } from '../../adaptadoresAdmin';
 import { useBloquearScroll, useCerrarConAtras } from '../../Efectos';
 import { RecortarFoto } from '../RecortarFoto';
 import campo from '../../Formulario.module.css';
@@ -432,6 +434,34 @@ export function BarraGuardar({ visible, texto = 'Tienes cambios sin guardar.', o
       <span>{texto}</span>
       {onDescartar && <Boton tamano="sm" variante="fantasma" onClick={onDescartar} disabled={guardando}>Descartar</Boton>}
       <Boton tamano="sm" icono={<Save aria-hidden="true" />} cargando={guardando} disabled={!puedeGuardar} onClick={onGuardar}>{textoGuardar}</Boton>
+    </div>
+  );
+}
+
+/* ── Una lista de textos ───────────────────────────────── */
+
+/**
+ * Varios textos cortos que escribe el admin (las opciones de una pregunta,
+ * los beneficios de un plan): chips que se quitan y un campo para sumar otro
+ * (Enter o "Agregar"). Sin vacíos ni repetidos.
+ *  - etiqueta · ayuda · valores: [texto] · onCambiar(valores) · placeholder · textoCampo
+ */
+export function CampoLista({ etiqueta, ayuda, valores = [], onCambiar, placeholder, textoCampo = 'Agregar otro' }) {
+  const [nuevo, setNuevo] = useState('');
+  const sumar = () => { onCambiar?.(conOpcion(valores, nuevo)); setNuevo(''); };
+  return (
+    <div className={s.lista} data-componente="CampoLista">
+      {etiqueta && <span className={s.listaEtiqueta}>{etiqueta}</span>}
+      {ayuda && <span className={s.listaAyuda}>{ayuda}</span>}
+      {valores.length > 0 && (
+        <span className={s.listaChips}>
+          {valores.map((v) => <Chip key={v} tamano="sm" onQuitar={() => onCambiar?.(valores.filter((x) => x !== v))}>{v}</Chip>)}
+        </span>
+      )}
+      <span className={s.listaSumar}>
+        <Campo etiqueta={textoCampo} placeholder={placeholder} value={nuevo} onChange={(e) => setNuevo(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); sumar(); } }} />
+        <Boton tamano="sm" variante="secundario" icono={<Plus aria-hidden="true" />} disabled={!nuevo.trim()} onClick={sumar}>Agregar</Boton>
+      </span>
     </div>
   );
 }

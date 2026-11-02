@@ -7,14 +7,14 @@ import { Chip } from '../../Etiquetas';
 import { Pestanas } from '../../Navegacion';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
 import { TablaAdmin, BarraFiltros, CargarMas } from '../../piezas/admin/Datos';
-import { HojaEdicion, GrupoCampos, CampoColor, BarraGuardar } from '../../piezas/admin/Formularios';
+import { HojaEdicion, GrupoCampos, CampoColor, BarraGuardar, CampoLista } from '../../piezas/admin/Formularios';
 import { Cifra, FilaCifras, BloqueMetrica, ColumnasMetricas, ListaBarras, SinDatos } from '../../piezas/admin/Metricas';
 import { resumenEntregas } from '../../../../services/encuestaEntrega.mjs';
 import {
   resumenEncuesta, fichaCliente, csvRespuestas, fechaEncuesta, filtrarPorFecha, porPeriodo, textoFechaEncuesta, diaLocal, EMBUDO_DESDE,
 } from '../../../../services/surveyResponses.mjs';
 import {
-  TIPOS_PREGUNTA, preguntaNueva, separarPreguntas, conOpcion, entregaPanelDesde, cambioPorcentual, cambioEnPuntos, cambioEstrellas,
+  TIPOS_PREGUNTA, preguntaNueva, separarPreguntas, entregaPanelDesde, cambioPorcentual, cambioEnPuntos, cambioEstrellas,
   estrellasTexto, unidadDeRango, etiquetaDePeriodo, fechaDeDia, normalizarBusqueda,
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
@@ -44,25 +44,10 @@ const PESTANAS_EDITOR = [
   { id: 'final', texto: 'Final' },
 ];
 
-/** Las opciones de una pregunta: chips que se quitan y un campo para sumar otra. */
-function OpcionesPregunta({ opciones = [], onCambiar }) {
-  const [nueva, setNueva] = useState('');
-  const sumar = () => { onCambiar(conOpcion(opciones, nueva)); setNueva(''); };
-  return (
-    <div className={s.opciones}>
-      <span className={s.etiqueta}>Opciones</span>
-      {opciones.length > 0 && (
-        <span className={s.chips}>
-          {opciones.map((o) => <Chip key={o} tamano="sm" onQuitar={() => onCambiar(opciones.filter((x) => x !== o))}>{o}</Chip>)}
-        </span>
-      )}
-      <span className={s.sumar}>
-        <Campo etiqueta="Agregar una opción" placeholder="Ej. Vivo en pareja" value={nueva} onChange={(e) => setNueva(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); sumar(); } }} />
-        <Boton tamano="sm" variante="secundario" icono={<Plus aria-hidden="true" />} disabled={!nueva.trim()} onClick={sumar}>Agregar</Boton>
-      </span>
-    </div>
-  );
-}
+/** Las opciones de una pregunta (CampoLista). */
+const OpcionesPregunta = ({ opciones = [], onCambiar }) => (
+  <CampoLista etiqueta="Opciones" valores={opciones} onCambiar={onCambiar} textoCampo="Agregar una opción" placeholder="Ej. Vivo en pareja" />
+);
 
 /** Una pregunta de la encuesta. `conRefina`: las de un interés, que pueden solo ordenar las ideas. */
 function EditorPregunta({ pregunta: f, numero, onCambiar, onQuitar, conRefina = false }) {

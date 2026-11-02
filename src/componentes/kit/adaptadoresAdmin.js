@@ -2420,3 +2420,135 @@ export function erroresDeAjuste(d = {}, tipo = 'tickets') {
     chances: tipo === 'chances' && !(Number.isInteger(n) && n !== 0) ? 'Un entero distinto de 0 (negativo resta).' : undefined,
   };
 }
+
+/* ── D6b · Sorteos de suscripción ─────────────────────── */
+
+export const INTERVALOS_PLAN = [
+  { valor: 'mensual', texto: 'Mensual (1 mes)', meses: 1 },
+  { valor: 'trimestral', texto: 'Trimestral (3 meses)', meses: 3 },
+  { valor: 'semestral', texto: 'Semestral (6 meses)', meses: 6 },
+  { valor: 'anual', texto: 'Anual (12 meses)', meses: 12 },
+];
+export const mesesDeIntervalo = (v) => INTERVALOS_PLAN.find((i) => i.valor === v)?.meses || 1;
+export const COLORES_CAMPANA = { primario: '#111111', fondo: '#ffffff', texto: '#111111', acento: '#e60023' };
+
+const planDesde = (p = {}, i = 0) => {
+  const meses = Number(p.meses) || mesesDeIntervalo(p.intervalo);
+  return {
+    id: p.id || `plan_${i}`,
+    nombre: p.nombre || '',
+    intervalo: INTERVALOS_PLAN.some((x) => x.valor === p.intervalo) ? p.intervalo : 'mensual',
+    meses,
+    precio: (Number(p.precioCentimos) || 0) / 100,
+    precioUsd: Number(p.precioUsd) || 0,
+    chances: Number(p.chancesPorCiclo) || meses,
+    beneficios: Array.isArray(p.beneficios) ? p.beneficios.filter(Boolean) : [],
+    destacado: Boolean(p.destacado),
+    orden: Number(p.orden) || i,
+  };
+};
+
+/** Una campaña de sorteos_suscripcion → el admin. */
+export function campanaSuscripcionDesde(c = {}) {
+  return {
+    id: c.id,
+    nombre: c.titulo || '',
+    slug: c.slug || '',
+    descripcion: c.descripcion || '',
+    estado: ['borrador', 'activo', 'cerrado'].includes(c.estado) ? c.estado : 'borrador',
+    numGanadores: Number(c.numGanadores) || 1,
+    portada: c.heroImagenUrl || '',
+    logo: c.logoUrl || '',
+    colores: { ...COLORES_CAMPANA, ...(c.colores || {}) },
+    premios: (Array.isArray(c.premios) ? c.premios : []).map((x) => ({ nombre: x.nombre || '', imagen: x.imagenUrl || '' })),
+    planes: (Array.isArray(c.planes) ? c.planes : []).map(planDesde),
+    suscriptores: Number.isFinite(Number(c.contadorSuscriptores)) ? Number(c.contadorSuscriptores) : null,
+    ganadores: (Array.isArray(c.ganadores) ? c.ganadores : []).map((g) => ({ uid: g.uid || '', nombre: g.nombre || '', correo: g.correo || '', telefono: g.telefono || '' })),
+  };
+}
+
+/** Lo que esperan createCampaign / updateCampaign (los soles pasan a céntimos). */
+export function campanaSuscripcionAFormulario(d = {}) {
+  return {
+    titulo: String(d.nombre || '').trim(),
+    slug: slugDeSorteo(d.slug || d.nombre),
+    descripcion: String(d.descripcion || '').trim(),
+    estado: d.estado || 'borrador',
+    numGanadores: Math.max(1, Math.round(Number(d.numGanadores) || 1)),
+    heroImagenUrl: d.portada || '',
+    logoUrl: d.logo || '',
+    colores: { ...COLORES_CAMPANA, ...(d.colores || {}) },
+    premios: (d.premios || []).filter((x) => String(x.nombre || '').trim() || x.imagen).map((x) => ({ nombre: String(x.nombre || '').trim(), imagenUrl: x.imagen || '' })),
+    planes: (d.planes || []).map((x, i) => ({
+      id: x.id || `plan_${i}`,
+      nombre: String(x.nombre || '').trim(),
+      intervalo: x.intervalo || 'mensual',
+      meses: mesesDeIntervalo(x.intervalo),
+      precioCentimos: Math.round((Number(x.precio) || 0) * 100),
+      precioUsd: Number(x.precioUsd) || 0,
+      chancesPorCiclo: Number(x.chances) || mesesDeIntervalo(x.intervalo),
+      beneficios: (x.beneficios || []).filter(Boolean),
+      destacado: Boolean(x.destacado),
+      orden: i,
+    })),
+  };
+}
+
+export const planNuevo = (ms = Date.now()) => ({ id: `plan_${ms}`, nombre: '', intervalo: 'mensual', meses: 1, precio: 0, precioUsd: 0, chances: 1, beneficios: [], destacado: false, orden: 0 });
+
+/** Cambiar el ciclo: los meses van con él y las chances también, si seguían "una por mes". */
+export function planConIntervalo(plan = {}, intervalo) {
+  const meses = mesesDeIntervalo(intervalo);
+  return { ...plan, intervalo, meses, chances: Number(plan.chances) === Number(plan.meses) ? meses : plan.chances };
+}
+
+/** Los errores (como antes: para activarla hace falta un plan con precio). */
+export function erroresDeCampanaSuscripcion(d = {}) {
+  const conPrecio = (d.planes || []).some((x) => Number(x.precio) > 0 || Number(x.precioUsd) > 0);
+  return {
+    nombre: String(d.nombre || '').trim() ? undefined : 'Escribe el título de la campaña.',
+    numGanadores: Number(d.numGanadores) >= 1 ? undefined : 'Al menos un ganador.',
+    planes: d.estado === 'activo' && !conPrecio ? 'Para activarla, agrega un plan con precio (S/ o USD) mayor a 0.' : undefined,
+  };
+}
+
+/** "2 planes · desde S/ 19.90" · "Sin planes". */
+export function textoDePlanes(planes = []) {
+  if (!planes.length) return 'Sin planes';
+  const precios = planes.map((x) => Number(x.precio) || 0).filter((x) => x > 0);
+  return `${planes.length} ${planes.length === 1 ? 'plan' : 'planes'}${precios.length ? ` · desde S/ ${Math.min(...precios).toFixed(2)}` : ''}`;
+}
+
+export const ESTADOS_SUSCRIPTOR = {
+  activo: { texto: 'Vigente', tono: 'exito' },
+  pendiente_pago: { texto: 'Pago pendiente', tono: 'aviso' },
+  vencido: { texto: 'Vencido', tono: 'neutro' },
+  cancelado: { texto: 'Cancelado', tono: 'peligro' },
+};
+
+/** Un suscriptor (con el nombre y el precio de su plan). */
+export function suscriptorDesde(s = {}, planes = []) {
+  const plan = planes.find((x) => x.id === s.planId);
+  const v = s.vigenciaHasta;
+  return {
+    id: s.id,
+    nombre: s.nombre || s.nombres || '',
+    correo: s.correo || '',
+    telefono: s.telefono || '',
+    dni: s.dni || '',
+    plan: plan?.nombre || s.planId || '',
+    precio: plan ? plan.precio : 0,
+    estado: s.estado || '',
+    vigenciaMs: v?.toMillis ? v.toMillis() : v?.seconds ? v.seconds * 1000 : typeof v === 'number' ? v : (Date.parse(v) || 0),
+    chances: Number(s.chancesTotal) || 0,
+    pago: s.metodoPago || '',
+  };
+}
+
+/** Un beneficio (marcas y descuentos) → el admin, y de vuelta. */
+export const beneficioDesde = (b = {}) => ({ id: b.id, marca: b.marca || '', nombre: b.titulo || '', descuento: b.descuento || '', imagen: b.imagenUrl || '', categoria: b.categoria || '', ubicacion: b.ubicacion || '', url: b.url || '', orden: Number(b.orden) || 0 });
+export const beneficioAFirestore = (d = {}) => ({ marca: String(d.marca || '').trim(), titulo: String(d.nombre || '').trim(), descuento: String(d.descuento || '').trim(), imagenUrl: d.imagen || '', categoria: String(d.categoria || '').trim(), ubicacion: String(d.ubicacion || '').trim(), url: String(d.url || '').trim(), orden: Number(d.orden) || 0 });
+
+/** Un ganador de antes (la galería de la página) → el admin, y de vuelta. */
+export const ganadorGaleriaDesde = (g = {}) => ({ id: g.id, nombre: g.nombre || '', premio: g.premio || '', foto: g.fotoUrl || '', fecha: g.fecha || '', orden: Number(g.orden) || 0 });
+export const ganadorGaleriaAFirestore = (d = {}) => ({ nombre: String(d.nombre || '').trim(), premio: String(d.premio || '').trim(), fotoUrl: d.foto || '', fecha: String(d.fecha || '').trim(), orden: Number(d.orden) || 0 });

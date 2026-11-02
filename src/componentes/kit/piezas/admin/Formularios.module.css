@@ -470,3 +470,37 @@
   font-size: 0.88rem;
   font-weight: 700;
 }
+
+/* Una lista de textos (CampoLista) */
+.lista {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.listaEtiqueta {
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.listaAyuda {
+  margin-top: -0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.listaChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.listaSumar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.listaSumar > :first-child {
+  flex: 1 1 12rem;
+}
