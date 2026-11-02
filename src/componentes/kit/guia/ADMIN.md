@@ -175,7 +175,7 @@ Estado: **·** por hacer · **kit** hecha en el kit · **admin** ya en el panel.
 | `FilaRecurso` | Foto, nombre, datos y acciones: categorías, colecciones, marcas, cliparts | · |
 | `ListaOrdenable` | Reordenar arrastrando, con subir/bajar como alternativa (en vez del número `order` escrito a mano) | kit (2026-11-02) |
 | `SelectorProductos` | Buscar y elegir productos con su foto (reemplaza `components/admin/BuscadorProducto`) | kit (2026-11-02) |
-| `PasoAdmin` | Un paso de una herramienta de una vez: número en sello, botón, pregunta, cómo va, resultado o error | kit (2026-11-02) |
+| `PasoAdmin` | Un paso de una herramienta de una vez: número en sello, botón, pregunta, cómo va, resultado, a medias o error | kit (2026-11-02) |
 
 ### Formularios
 
@@ -229,7 +229,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D0 | Marco | el menú (`AdminLayout`), la cabecera de cada página, el inicio (`/admin`, `AdminDashboard`) | — | hecho (2026-11-02) | · |
 | D1 | Catálogo base | `categorias`, `colecciones`, `atributos-catalogo`, `marcas` (+ productos de la marca), `envios`, `cliparts`, `destacados` | Lista | hecho (2026-11-02) | · |
 | D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | hecho (2026-11-02) | · |
-| D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | en marcha (D3a y D3b, 2026-11-02) | · |
+| D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | · |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | · | · |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | · | · |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | · | · |
@@ -753,23 +753,23 @@ plantillas de hoy; el kit solo pone cómo se ve y cómo avisa.
   `plantillasDe`, `importar` (paso 2, con la miniatura y la subida) y
   `limpiar` (paso 3).
 
-## D3 · Pedidos y pagos (en marcha: D3a y D3b hechos en el kit el 2026-11-02)
+## D3 · Pedidos y pagos (en el kit desde el 2026-11-02: los tres tramos)
 
 Cuatro pantallas de hoy, en tres tramos; el apartado se une entero cuando
-estén los tres.
+estén los tres (ya están: falta unirlo).
 
 | Tramo | Qué | Páginas de hoy | Kit |
 |---|---|---|---|
 | D3a | Recepción de pedidos: las cifras, los filtros y un pedido por tarjeta con lo del envío primero | `pages/admin/dashboard/DashRecepcion.jsx` + `RecepcionPedidos.jsx` (`useAdminWalaOrders` → `services/adminOrders.js`, solo lectura del ERP) | hecho (2026-11-02) |
 | D3b | Gestión de pagos: historial y cifras de los enlaces (con su gráfico por día), generar un enlace y la configuración de Yape, Plin y WhatsApp | `pages/admin/AdminGestionPagos.jsx` (KpiRow, TrendChart, `enlacesPago.js`, `messages`) | hecho (2026-11-02) |
-| D3c | Crear cuentas desde pedidos (tres pasos con `PasoAdmin`, uno con simulación) y el Libro de reclamaciones (responder) | `pages/admin/AdminCrearCuentasPedidos.jsx`, `AdminLibroReclamaciones.jsx` | · |
+| D3c | Crear cuentas desde pedidos (tres pasos con `PasoAdmin`, uno con simulación) y el Libro de reclamaciones (responder) | `pages/admin/AdminCrearCuentasPedidos.jsx`, `AdminLibroReclamaciones.jsx` | hecho (2026-11-02) |
 
 **Para D3b y D3c**
 - El gráfico de pagos necesita un `GraficoTendencia` (de Métricas): se
   hace en D3b y Resultados (D4) lo reusa. **Hecho** (abajo).
 - El Libro de reclamaciones tiene trabajo en pausa (correo y código,
   LEGALES.md paso 3): el kit no cambia qué guarda ni cuándo; solo la
-  pantalla para responder.
+  pantalla para responder. **Hecho así** (abajo).
 
 ### D3a: Recepción de pedidos (en el kit desde el 2026-11-02)
 
@@ -894,6 +894,72 @@ Adaptadores (con pruebas): `PERIODOS_PAGOS`, `rangoDePeriodo`,
 - La ruta sigue siendo `/admin/gestion-pagos`; la pestaña puede ir en
   `?ver=` si hace falta enlazarla.
 
+### D3c: Cuentas desde pedidos y Libro de reclamaciones (en el kit desde el 2026-11-02)
+
+| Libro de reclamaciones (computadora) | Cuentas desde pedidos (celular) |
+|---|---|
+| ![Un reclamo respondido abierto al costado: el consumidor, el producto, el reclamo y la respuesta en verde con su fecha](admin-reclamos-escritorio.webp) | ![El paso 2 terminado a medias: creadas, ya existían, errores y la lista de errores abierta](admin-cuentas-celular.webp) |
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| Cuentas desde pedidos | `PaginaCuentasDePedidos` | `paginas/admin/Cuentas.jsx` | Cuatro `PasoAdmin`, **uno a la vez**: 1 cargar pedidos (cuántos y cuántos con correo; "Cargar 100 más" si hay), 2 crear las cuentas que faltan (pregunta antes; cómo va, "Creando cuentas… 45 de 129"; creadas, ya existían, errores y "Ver los errores"), 3 simular la migración (sin cambios) y 4 migrar de verdad (pregunta). La simulación y la de verdad quedan las dos a la vista para compararlas |
+| Libro de reclamaciones | `PaginaReclamos` | `paginas/admin/Reclamos.jsx` | Las cifras que filtran (pendientes, **urgentes**: 3 días hábiles o menos o fuera de plazo, respondidos, total); un aviso si alguno pasó el plazo; buscar por código, nombre, documento, correo o pedido; estado y tipo (reclamo o queja); la lista con el **plazo de cada pendiente** ("Quedan 9 días hábiles", "Pasó el plazo hace 2 días hábiles"), los que menos plazo tienen arriba. Tocar uno abre la hoja con todo (consumidor, menor de edad y apoderado, el producto o servicio, el detalle, lo que pide) y la respuesta; uno respondido se abre solo para mirar |
+| Un paso | `PasoAdmin` (D2d) | `piezas/admin/Pasos.jsx` | Ahora también termina **a medias**: `{ texto, aviso: true }` sale en ámbar y el sello no se pone verde (el paso 2 cuando hubo errores) |
+| La hoja | `HojaEdicion` (D0) | `piezas/admin/Formularios.jsx` | Sin `onGuardar` es solo para mirar: el pie dice "Cerrar" |
+
+Adaptadores (con pruebas): `reclamoDesdeFirestore`, `respuestaDeReclamo`
+(lo mismo que se guardaba: `estado`, `respuestaProveedor`, `respondidoEn`),
+`diasHabilesEntre` (lunes a viernes; **los feriados no se descuentan**),
+`plazoDeReclamo`, `textoDeReclamo` y `filasMigracion`.
+
+### Diferencias a propósito (D3c)
+
+- **El plazo a la vista**: cada pendiente dice cuántos días hábiles le
+  quedan de los 15 (`config/empresa.js`), los urgentes van arriba y hay un
+  aviso si alguno ya pasó. Antes solo se contaban los pendientes.
+- Responder va en la hoja, con todo el reclamo a la vista; sin texto el
+  botón está apagado (antes, `alert()`). Al responder, dice que ya no se
+  puede cambiar.
+- En Cuentas, el paso 3 de antes (dos botones: simular y migrar) son ahora
+  los pasos 3 y 4; crear cuentas también pregunta antes (antes, solo la
+  migración); un paso a la vez (antes se podía cargar mientras se creaban).
+- "Terminó con 2 errores" sale en ámbar, no como si todo hubiera ido bien.
+
+### Qué se probó (2026-11-02, demo en localhost, 1280 px y 375 px)
+
+- Libro: 7 reclamos de ejemplo con fechas desde hoy → 5 pendientes, 2
+  urgentes (1 fuera de plazo, con su aviso), 2 respondidos. "Ver los
+  urgentes" → 2; otra vez la cifra → 7; respondidos → 3 después de
+  responder uno. Abrir un pendiente: "Quedan 9 días hábiles", el botón
+  apagado hasta escribir; responder → se cierra y pasa a respondidos. Un
+  respondido se abre con la respuesta en verde y solo "Cerrar".
+- Cuentas: cargar → 100 · 68; "Cargar 100 más" → 200 · 129; mientras corre
+  un paso, los demás esperan; crear → la pregunta, el avance y 52 · 75 · 2
+  con los dos errores; simular y migrar → las dos tablas a la vez; con
+  "Guardar y subir fallan", el paso 1 muestra el error del ERP.
+- A 375 px nada se sale del ancho; la hoja del reclamo ocupa la pantalla y
+  los datos van en una columna. Sin errores en la consola.
+
+### Cómo se une D3c
+
+- `CuentasDePedidosDelPanel.jsx`: guarda los pedidos y el `lastDoc` como hoy;
+  `onCargar({ mas })` → `getPedidosForAccountSync(100, mas ? lastDoc : null)`;
+  `cargados`, `unicos` (los de correo válido, uno por correo, con
+  `extraerDatosClienteDesdePedido`), `hayMas={Boolean(lastDoc)}`;
+  `onCrearCuentas(avisar)` → el mismo recorrido de a 15 con 400 ms entre
+  tandas y `ensureAccountFromOrderData(pedido, { linkOrderId: true })`,
+  llamando a `avisar('Creando cuentas… N de M')`; devuelve
+  `{ creadas, existian, errores, detalles }`; `onMigrar({ simulacion })` →
+  `migrateLegacyAutoCreatedUsers({ maxPedidos: 5000, dryRun: simulacion })`
+  (si trae `error`, lanzarlo).
+- `ReclamosDelPanel.jsx`: `getCollection('libro_reclamaciones', [], { field: 'createdAt', direction: 'desc' })`
+  → `reclamoDesdeFirestore`; `plazo={empresa.plazoRespuestaDiasHabiles}`;
+  `onResponder(id, datos)` → `updateDocument('libro_reclamaciones', id, datos)`
+  y volver a leer. Cuando se retome el correo del libro (LEGALES.md paso 3),
+  el aviso al consumidor sale de esa escritura, no de la pantalla.
+- Las rutas siguen siendo `/admin/crear-cuentas-pedidos` y
+  `/admin/libro-reclamaciones`.
+
 ## Reemplazos: qué sale y qué entra
 
 La misma tabla que las fichas de la tienda (CUENTA.md, "Reemplazos"): qué
@@ -959,8 +1025,8 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D3b · Gestión de pagos | `pages/admin/AdminGestionPagos.jsx` + `.module.css` (`SeccionHistorial`, `SeccionGenerar`, `SeccionConfig`; `GlassCard`, `GlassInput`, `Badge`) | `PaginaPagos` | `PagosDelPanel.jsx` |
 | D3b · Gráfico por día | `components/dashboard/charts/TrendChart` (recharts; aquí) | `GraficoTendencia` (`forma='barras'`) | la página |
 | D3b · Las cifras | `KpiRow` (aquí) | `Cifra`, `FilaCifras` | la página |
-| D3c · Cuentas desde pedidos | `pages/admin/AdminCrearCuentasPedidos.jsx` + `.module.css` (`common/Button`, `common/Modal`) | por hacer (`PasoAdmin`) | `CuentasDePedidosDelPanel.jsx` |
-| D3c · Libro de reclamaciones | `pages/admin/AdminLibroReclamaciones.jsx` (estilos en línea, `alert()`) | por hacer | `ReclamosDelPanel.jsx` |
+| D3c · Cuentas desde pedidos | `pages/admin/AdminCrearCuentasPedidos.jsx` + `.module.css` (`common/Button`, `common/Modal`) | `PaginaCuentasDePedidos` (`PasoAdmin`) | `CuentasDePedidosDelPanel.jsx` |
+| D3c · Libro de reclamaciones | `pages/admin/AdminLibroReclamaciones.jsx` (estilos en línea, `alert()`) | `PaginaReclamos` (`TablaAdmin`, `HojaEdicion`) | `ReclamosDelPanel.jsx` |
 
 ## Cómo se une un apartado (la misma lógica que clientes)
 
@@ -1002,6 +1068,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |
 | 2026-11-02 | Reemplazos de D0 a D2 (qué sale, qué entra y el conector) y la sección «Panel administrativo» de ELIMINAR.md con quién importa hoy cada pieza vieja | `guia/ADMIN.md`, `guia/ELIMINAR.md` |
+| 2026-11-02 | D3c en el kit: `PaginaCuentasDePedidos` (cuatro pasos, uno a la vez) y `PaginaReclamos` (con el plazo en días hábiles); `PasoAdmin` termina a medias y `HojaEdicion` sirve para solo mirar; adaptadores con pruebas. **D3 completo en el kit** | `paginas/admin/Cuentas.jsx`, `paginas/admin/Reclamos.jsx`, `piezas/admin/Pasos.jsx`, `piezas/admin/Formularios.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D3b en el kit: `PaginaPagos` (historial, nuevo enlace, ajustes) y `GraficoTendencia` (líneas o barras, teclado, tabla oculta, colores validados); adaptadores de pagos con pruebas | `paginas/admin/Pagos.jsx`, `piezas/admin/Grafico.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D3 dividido en tramos (a: recepción, b: pagos, c: cuentas y reclamos). D3a en el kit: `PaginaRecepcion`, `Cifra` / `FilaCifras`, `TarjetaEnvio`; adaptadores de recepción con pruebas | `paginas/admin/Pedidos.jsx`, `piezas/admin/Metricas.jsx`, `piezas/admin/Pedidos.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2d en el kit: `PaginaBlueprints`, `PasoAdmin` y `PaginaPlantillasYoryo` (siete pasos, uno a la vez); adaptadores de blueprints con pruebas. **D2 completo en el kit** | `paginas/admin/Herramientas.jsx`, `piezas/admin/Pasos.jsx`, `adaptadoresAdmin.js` |

@@ -991,3 +991,98 @@ export function configPagosAMensajes(c = {}) {
     whatsapp_text_pagos: c.mensaje || '',
   };
 }
+
+/*
+ * Libro de reclamaciones (D3c): el documento de `libro_reclamaciones` que
+ * guarda ReclamacionesDeTienda (código, estado, consumidor, bien, reclamo,
+ * respuestaProveedor) y el plazo para responder (config/empresa.js:
+ * plazoRespuestaDiasHabiles).
+ */
+const msDe = (v) => {
+  if (v == null) return null;
+  if (typeof v?.toMillis === 'function') return v.toMillis();
+  if (typeof v?.toDate === 'function') return v.toDate().getTime();
+  if (typeof v?.seconds === 'number') return v.seconds * 1000;
+  const n = typeof v === 'string' ? Date.parse(v) : Number(v);
+  return Number.isNaN(n) ? null : n;
+};
+
+/** Un reclamo como lo usa la página. */
+export function reclamoDesdeFirestore(doc = {}) {
+  const c = doc.consumidor || {};
+  const b = doc.bien || {};
+  const r = doc.reclamo || {};
+  return {
+    id: doc.id,
+    codigo: doc.codigo || doc.id || '',
+    creadoMs: msDe(doc.createdAt),
+    estado: doc.estado === 'respondido' ? 'respondido' : 'pendiente',
+    tipo: r.tipo === 'queja' ? 'queja' : 'reclamo',
+    consumidor: {
+      nombre: c.nombre || '',
+      documento: [c.tipoDocumento, c.numeroDocumento].filter(Boolean).join(' '),
+      email: c.email || '',
+      telefono: c.telefono || '',
+      domicilio: c.domicilio || '',
+      esMenor: Boolean(c.esMenor),
+      apoderado: c.apoderado || '',
+    },
+    bien: { tipo: b.tipo === 'servicio' ? 'servicio' : 'producto', descripcion: b.descripcion || '', monto: b.montoReclamado == null ? null : Number(b.montoReclamado) },
+    detalle: r.detalle || '',
+    pedido: r.pedido || '',
+    respuesta: doc.respuestaProveedor || '',
+    respondidoMs: msDe(doc.respondidoEn),
+  };
+}
+
+/** Lo que se guarda al responder (como antes); sin texto, el error. */
+export function respuestaDeReclamo(texto, ahora = new Date()) {
+  const t = String(texto || '').trim();
+  if (!t) return { error: 'Escribe la respuesta antes de marcarlo como respondido.' };
+  return { datos: { estado: 'respondido', respuestaProveedor: t, respondidoEn: ahora.toISOString() } };
+}
+
+/** Días hábiles (lunes a viernes; los feriados no se descuentan) entre dos fechas, sin contar el primero. */
+export function diasHabilesEntre(desdeMs, hastaMs) {
+  if (desdeMs == null || hastaMs == null || hastaMs <= desdeMs) return 0;
+  const d = new Date(desdeMs);
+  d.setHours(0, 0, 0, 0);
+  const fin = new Date(hastaMs);
+  fin.setHours(0, 0, 0, 0);
+  let n = 0;
+  while (d < fin) {
+    d.setDate(d.getDate() + 1);
+    const dia = d.getDay();
+    if (dia !== 0 && dia !== 6) n += 1;
+  }
+  return n;
+}
+
+/**
+ * Cómo va un reclamo pendiente frente al plazo: { dias, quedan, estado }
+ * con estado 'a_tiempo' | 'por_vencer' (3 días hábiles o menos) | 'vencido';
+ * los respondidos, null.
+ */
+export function plazoDeReclamo(r, plazo = 15, ahora = Date.now()) {
+  if (!r || r.estado === 'respondido' || r.creadoMs == null) return null;
+  const dias = diasHabilesEntre(r.creadoMs, ahora);
+  const quedan = plazo - dias;
+  return { dias, quedan, estado: quedan < 0 ? 'vencido' : quedan <= 3 ? 'por_vencer' : 'a_tiempo' };
+}
+
+/** Lo que se busca en un reclamo: código, nombre, documento, correo y pedido. */
+export const textoDeReclamo = (r) => [r.codigo, r.consumidor?.nombre, r.consumidor?.documento, r.consumidor?.email, r.pedido].filter(Boolean).join(' ');
+
+/*
+ * Crear cuentas desde pedidos (D3c): lo que devuelve
+ * migrateLegacyAutoCreatedUsers, en filas con su nombre. En la simulación
+ * salen los "se harían"; en la de verdad, los hechos.
+ */
+export function filasMigracion(d = {}) {
+  const fila = (texto, valor) => (valor == null ? null : { texto, valor: Number(valor) || 0 });
+  const comunes = [fila('Candidatos', d.candidateUserIds), fila('Ya estaban en la colección nueva', d.alreadyInTarget), fila('No estaban en la colección vieja', d.notFoundInLegacy)];
+  const propias = d.dryRun
+    ? [fila('Se migrarían', d.wouldMigrate), fila('Se borrarían de la vieja', d.wouldDeleteFromLegacy), fila('Se borrarían (ya migrados antes)', d.wouldDeleteAlreadyMigrated)]
+    : [fila('Migrados', d.migrated), fila('Borrados de la vieja', d.deletedFromLegacy), fila('Borrados (ya migrados antes)', d.deletedAlreadyMigrated)];
+  return [...comunes.slice(0, 1), ...propias, ...comunes.slice(1)].filter(Boolean);
+}

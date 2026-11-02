@@ -6,7 +6,7 @@ import {
   PaginaProductos, PaginaInventario, PaginaRecomendar, PaginaFichaProducto, fichaDesdeProducto, fichaAProducto,
   PaginaPersonalizables, PaginaPacks, personalizableDesde, packDesdeFirestore,
   PaginaBlueprints, PaginaPlantillasYoryo, blueprintDesdeFirestore, blueprintAFirestore, PaginaRecepcion,
-  PaginaPagos, configPagosDesde,
+  PaginaPagos, configPagosDesde, PaginaCuentasDePedidos, PaginaReclamos, reclamoDesdeFirestore,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -56,6 +56,8 @@ const HECHAS = [
   ['/admin', 'Inicio'],
   ['/admin/recepcion-pedidos', 'Recepción'],
   ['/admin/gestion-pagos', 'Pagos'],
+  ['/admin/libro-reclamaciones', 'Reclamos'],
+  ['/admin/crear-cuentas-pedidos', 'Cuentas'],
   ['/admin/categorias', 'Categorías'],
   ['/admin/colecciones', 'Colecciones'],
   ['/admin/marcas', 'Marcas'],
@@ -211,6 +213,30 @@ const ENLACES_DEMO = Array.from({ length: 34 }, (_, i) => {
   };
 });
 const CONFIG_PAGOS_DEMO = configPagosDesde({ yape_number: '987 654 321', yape_name: 'Walá Perú SAC', whatsapp_number_cuenta: '+51 999 888 777' });
+// D3c: reclamos de ejemplo (nombres inventados) con fechas relativas a hoy, para ver el plazo.
+const RECLAMOS_DEMO = [
+  [26, 'Rosa Huamán', 'reclamo', 'producto', 'Polo clásico talla M', 79.9, 'El polo llegó con una mancha en la manga.', 'Que me lo cambien por uno nuevo.', null],
+  [19, 'Carlos Ñique', 'queja', 'servicio', 'Atención por WhatsApp', null, 'Escribí tres veces y nadie me respondió en dos días.', 'Que mejoren el tiempo de respuesta.', null],
+  [9, 'Milagros Soto', 'reclamo', 'producto', 'Cuadro personalizado', 75, 'El diseño salió cortado por un costado.', 'Que lo vuelvan a imprimir.', null],
+  [3, 'Kevin Ramos', 'reclamo', 'producto', 'Pack de oficina personalizado', 120, 'Me llegó sin el mousepad.\nEl pedido era WALA-01790.', 'Que me envíen la pieza que falta.', null],
+  [1, 'Ana Lucía Prado', 'queja', 'servicio', 'Entrega', null, 'El repartidor dejó el paquete en portería sin avisar.', 'Que avisen antes de dejarlo.', null],
+  [40, 'José Paredes', 'reclamo', 'producto', 'Casaca clásica talla L', 159.9, 'La casaca vino en talla S.', 'Cambio de talla.', 'Hola José, ya te enviamos la talla L sin costo. Disculpa las molestias.'],
+  [33, 'Fiorella Díaz', 'queja', 'servicio', 'Pago con Yape', null, 'Me cobraron dos veces.', 'Que me devuelvan un pago.', 'Hola Fiorella, devolvimos el segundo cobro el mismo día. Ya debería verse en tu Yape.'],
+].map(([dias, nombre, tipo, bien, descripcion, monto, detalle, pedido, respuesta], i) => {
+  const hoy = new Date();
+  const creado = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - dias, 10 + i, 15);
+  return reclamoDesdeFirestore({
+    id: `demo-reclamo-${i + 1}`,
+    codigo: `WALA-${creado.getFullYear()}${String(creado.getMonth() + 1).padStart(2, '0')}${String(creado.getDate()).padStart(2, '0')}-${String(i + 1).padStart(4, '0')}`,
+    createdAt: creado.getTime(),
+    estado: respuesta ? 'respondido' : 'pendiente',
+    consumidor: { nombre, tipoDocumento: 'DNI', numeroDocumento: `4${String(5612340 + i * 731).slice(0, 7)}`, email: `${nombre.split(' ')[0].toLowerCase()}@correo.pe`, telefono: `9${String(87654320 + i * 13)}`.slice(0, 9), domicilio: i % 2 ? 'Av. Los Álamos 345, Surco' : '', esMenor: i === 4, apoderado: i === 4 ? 'Lucía Prado' : null },
+    bien: { tipo: bien, descripcion, montoReclamado: monto },
+    reclamo: { tipo, detalle, pedido },
+    respuestaProveedor: respuesta,
+    respondidoEn: respuesta ? new Date(creado.getTime() + 3 * 86400000).toISOString() : null,
+  });
+});
 const PACKS_CRUDOS = CREAR.combos.map((c) => ({ ...c, esComboCrear: true, comboCrear: { publicado: c.publicado, piezas: c.piezas, tallas: 'auto' } }));
 const opcionDePrenda = (p) => ({ id: p.id, nombre: p.name, foto: (p.variants || [])[0]?.imageUrl || p.prendaBase?.vistas?.[0]?.imagen || '', precio: Number(p.salePrice) > 0 ? p.salePrice : p.price, colores: (p.variants || []).map((v) => ({ id: String(v.id), nombre: v.name, hex: v.colorHex })) });
 const TAL_CUAL = TIENDA.productos.filter((p) => (p.variants || []).length && !p.isComboProduct).map(opcionDePrenda);
@@ -273,6 +299,8 @@ function PanelDePrueba() {
   const [actualizando, setActualizando] = useState(false);
   const [enlaces, setEnlaces] = useState(ENLACES_DEMO);
   const [configPagos, setConfigPagos] = useState(CONFIG_PAGOS_DEMO);
+  const [reclamos, setReclamos] = useState(RECLAMOS_DEMO);
+  const [pedidosCuentas, setPedidosCuentas] = useState({ cargados: 0, unicos: 0 });
   const [atributos, setAtributos] = useState(ATRIBUTOS_DEMO);
   const [productos, setProductos] = useState(PRODUCTOS);
   const [whatsapp, setWhatsapp] = useState(WHATSAPP);
@@ -636,6 +664,49 @@ function PanelDePrueba() {
         config={configPagos}
         cargandoConfig={con('cargando')}
         onGuardarConfig={async (c) => { await espera(700); fallar(); setConfigPagos(c); }}
+      />
+    );
+  } else if (ruta === '/admin/libro-reclamaciones') {
+    pagina = (
+      <PaginaReclamos
+        reclamos={vacio ? [] : reclamos}
+        plazo={15}
+        cargando={con('cargando')}
+        error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+        actualizando={actualizando}
+        onActualizar={async () => { setActualizando(true); await espera(900); setActualizando(false); setEstados((e) => e.filter((x) => x !== 'error')); }}
+        onResponder={async (id, datos) => {
+          await espera(700);
+          fallar();
+          setReclamos((l) => l.map((x) => (x.id === id ? { ...x, estado: 'respondido', respuesta: datos.respuestaProveedor, respondidoMs: Date.parse(datos.respondidoEn) } : x)));
+        }}
+      />
+    );
+  } else if (ruta === '/admin/crear-cuentas-pedidos') {
+    pagina = (
+      <PaginaCuentasDePedidos
+        cargados={pedidosCuentas.cargados}
+        unicos={pedidosCuentas.unicos}
+        hayMas={pedidosCuentas.cargados > 0 && pedidosCuentas.cargados < 300}
+        onCargar={async ({ mas }) => {
+          await espera(800);
+          fallar('El ERP no respondió (es una prueba).');
+          setPedidosCuentas((p) => (mas ? { cargados: p.cargados + 100, unicos: p.unicos + 61 } : { cargados: 100, unicos: 68 }));
+        }}
+        onCrearCuentas={async (avisar) => {
+          const total = pedidosCuentas.unicos;
+          for (let i = 15; i < total + 15; i += 15) { avisar(`Creando cuentas… ${Math.min(i, total)} de ${total}`); await espera(350); }
+          fallar('Firebase cortó la conexión (es una prueba).');
+          const errores = 2;
+          return { creadas: Math.round(total * 0.4), existian: total - Math.round(total * 0.4) - errores, errores, detalles: ['rosa.h@correo.pe: el DNI no tiene 8 dígitos', '#PED-44120: el correo ya está en uso por otra cuenta'] };
+        }}
+        onMigrar={async ({ simulacion }) => {
+          await espera(1100);
+          fallar();
+          return simulacion
+            ? { candidateUserIds: 37, wouldMigrate: 29, alreadyInTarget: 6, wouldDeleteFromLegacy: 29, wouldDeleteAlreadyMigrated: 6, notFoundInLegacy: 2 }
+            : { candidateUserIds: 37, migrated: 29, alreadyInTarget: 6, deletedFromLegacy: 29, deletedAlreadyMigrated: 6, notFoundInLegacy: 2 };
+        }}
       />
     );
   } else if (ruta === '/admin/blueprints') {

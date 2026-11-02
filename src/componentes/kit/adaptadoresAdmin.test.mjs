@@ -305,3 +305,25 @@ test('pagos: filtros, cifras, serie por día, enlace nuevo y configuración', ()
   assert.equal(m2.configPagosAMensajes(c).yape_number, '987');
   assert.equal(m2.configPagosAMensajes(c).whatsapp_number_pagos, '+51 999');
 });
+
+test('reclamos: el documento, responder, el plazo en días hábiles y la migración', () => {
+  const r = m2.reclamoDesdeFirestore({
+    id: 'x', codigo: 'WALA-20261030-0001', estado: 'pendiente', createdAt: { seconds: new Date(2026, 9, 30, 10).getTime() / 1000 },
+    consumidor: { nombre: 'Ana', tipoDocumento: 'DNI', numeroDocumento: '71234567', email: 'a@b.pe' },
+    bien: { tipo: 'producto', montoReclamado: '89.9', descripcion: 'Polo' }, reclamo: { tipo: 'queja', detalle: 'Llegó tarde', pedido: 'Que me devuelvan el envío' },
+  });
+  assert.equal(r.tipo, 'queja');
+  assert.equal(r.consumidor.documento, 'DNI 71234567');
+  assert.equal(r.bien.monto, 89.9);
+  assert.equal(m2.respuestaDeReclamo('  ').error, 'Escribe la respuesta antes de marcarlo como respondido.');
+  assert.deepEqual(m2.respuestaDeReclamo(' Listo ', new Date('2026-11-02T15:00:00Z')).datos, { estado: 'respondido', respuestaProveedor: 'Listo', respondidoEn: '2026-11-02T15:00:00.000Z' });
+  // Viernes 30/10 → lunes 2/11: un día hábil; → viernes 6/11: cinco.
+  assert.equal(m2.diasHabilesEntre(new Date(2026, 9, 30, 10).getTime(), new Date(2026, 10, 2, 9).getTime()), 1);
+  assert.equal(m2.diasHabilesEntre(new Date(2026, 9, 30, 10).getTime(), new Date(2026, 10, 6, 9).getTime()), 5);
+  assert.deepEqual(m2.plazoDeReclamo(r, 15, new Date(2026, 10, 2, 9).getTime()), { dias: 1, quedan: 14, estado: 'a_tiempo' });
+  assert.equal(m2.plazoDeReclamo(r, 15, new Date(2026, 10, 17, 9).getTime()).estado, 'por_vencer');
+  assert.equal(m2.plazoDeReclamo(r, 15, new Date(2026, 10, 23, 9).getTime()).estado, 'vencido');
+  assert.equal(m2.plazoDeReclamo({ ...r, estado: 'respondido' }), null);
+  assert.deepEqual(m2.filasMigracion({ dryRun: true, candidateUserIds: 4, wouldMigrate: 3, alreadyInTarget: 1 }).map((f) => f.texto), ['Candidatos', 'Se migrarían', 'Ya estaban en la colección nueva']);
+  assert.deepEqual(m2.filasMigracion({ dryRun: false, migrated: 2 }).map((f) => [f.texto, f.valor]), [['Migrados', 2]]);
+});

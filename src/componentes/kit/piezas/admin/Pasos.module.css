@@ -80,6 +80,7 @@
 }
 
 .ok,
+.aviso,
 .error {
   display: inline-flex;
   align-items: center;
@@ -92,6 +93,14 @@
 
 .error {
   color: var(--danger-hover);
+}
+
+.aviso {
+  color: #b45309;
+}
+
+:global([data-theme='dark']) .aviso {
+  color: #fbbf24;
 }
 
 .girar {

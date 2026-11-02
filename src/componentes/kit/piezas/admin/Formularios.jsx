@@ -26,7 +26,8 @@ const enEscritorio = () => typeof window !== 'undefined' && window.matchMedia('(
  *  - abierta · titulo · subtitulo · onCerrar
  *  - onGuardar(): promesa. Mientras dura, la hoja no se cierra y el botón
  *    carga; si falla, el motivo queda arriba. Al terminar bien, quien la
- *    usa la cierra (o la deja abierta para seguir).
+ *    usa la cierra (o la deja abierta para seguir). Sin onGuardar, la hoja
+ *    es solo para mirar: el pie tiene "Cerrar".
  *  - sucio: hay cambios sin guardar → cerrar pregunta antes (también con Esc,
  *    tocando afuera y con el atrás de Android)
  *  - textoGuardar ('Guardar') · puedeGuardar (false: el botón apagado)
@@ -147,8 +148,14 @@ export function HojaEdicion({ abierta, titulo, subtitulo, onCerrar, onGuardar, s
             <footer className={s.pie}>
               {extra && <div className={s.pieExtra}>{extra}</div>}
               <span className={s.pieEstado} aria-live="polite">{sucio && !guardando ? 'Cambios sin guardar' : ''}</span>
-              <Boton variante="fantasma" onClick={pedirCierre} disabled={guardando}>Cancelar</Boton>
-              <Boton type="submit" cargando={guardando} disabled={!puedeGuardar}>{guardando ? 'Guardando…' : textoGuardar}</Boton>
+              {onGuardar ? (
+                <>
+                  <Boton variante="fantasma" onClick={pedirCierre} disabled={guardando}>Cancelar</Boton>
+                  <Boton type="submit" cargando={guardando} disabled={!puedeGuardar}>{guardando ? 'Guardando…' : textoGuardar}</Boton>
+                </>
+              ) : (
+                <Boton variante="secundario" onClick={pedirCierre}>Cerrar</Boton>
+              )}
             </footer>
           </motion.form>
         </motion.div>
