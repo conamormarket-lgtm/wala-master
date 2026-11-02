@@ -227,7 +227,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 |---|---|---|---|---|---|
 | D0 | Marco | el menú (`AdminLayout`), la cabecera de cada página, el inicio (`/admin`, `AdminDashboard`) | — | hecho (2026-11-02) | · |
 | D1 | Catálogo base | `categorias`, `colecciones`, `atributos-catalogo`, `marcas` (+ productos de la marca), `envios`, `cliparts`, `destacados` | Lista | hecho (2026-11-02) | · |
-| D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | en marcha (D2a, 2026-11-02) | · |
+| D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | en marcha (D2a y D2b, 2026-11-02) | · |
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | · | · |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | · | · |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | · | · |
@@ -432,7 +432,7 @@ mismo de `utils/topeMonedas` (y su espejo en `functions/checkoutTotals.js`);
 eliminar una marca borra su landing (`deleteBrand`); `storeTitle` y
 `storeSubtitle` no se escriben (se conservan).
 
-## D2 · Productos (en marcha: D2a hecho en el kit el 2026-11-02)
+## D2 · Productos (en marcha: D2a y D2b hechos en el kit el 2026-11-02)
 
 D2 es el apartado más grande (la ficha sola tiene 1.881 líneas y se apoya
 en editores de otras 3.000). Se hace por tramos; el apartado se une entero
@@ -441,18 +441,18 @@ cuando estén los cuatro.
 | Tramo | Qué | Páginas de hoy | Kit |
 |---|---|---|---|
 | D2a | La lista, el inventario y los datos para recomendar | `pages/Tienda/admin/AdminProductos.jsx` (vistas Tienda y Todos), `ProductTable`, `BulkActions`, `pages/Tienda/admin/AdminInventario.jsx`, `pages/admin/AdminPublicoProductos.jsx` | hecho (2026-11-02) |
-| D2b | La ficha de un producto: general (precio, stock, descripción, organización, WhatsApp, destacado), colores y tallas (variantes con sus fotos, el encuadre 3:4, la galería, frente y espalda), un combo (sus piezas y su portada) y "Dónde se ve" (personalizar en Crear) | `pages/Tienda/admin/AdminProductoFormV2.jsx`, `AdminComboEditor`, `ThumbnailCropEditor`, `GenerarFrenteEspalda`, `PersonalizarEnCrear` | · |
+| D2b | La ficha de un producto: general (precio, stock, descripción, organización, WhatsApp, destacado), colores y tallas (variantes con sus fotos, el encuadre 3:4, la galería, frente y espalda), un combo (sus piezas y su portada) y "Dónde se ve" (personalizar en Crear) | `pages/Tienda/admin/AdminProductoFormV2.jsx`, `AdminComboEditor`, `ThumbnailCropEditor`, `GenerarFrenteEspalda`, `PersonalizarEnCrear` | hecho (2026-11-02) |
 | D2c | Crear: la lista de personalizables, su ficha (colores, diseño con vistas y zonas, plantillas, dónde se ve) y los packs (lista, formulario y "Sugerir combos") | `pages/admin/AdminPrendasCrear.jsx`, `prendasCrear/PersonalizacionPrenda.jsx`, `ZonaEditor.jsx`, `PlantillasDeLaFicha.jsx`, `AdminCombosCrear.jsx` | · |
 | D2d | Blueprints (una lista más, sobre la plantilla) y decidir qué pasa con las herramientas de una vez y lo viejo (abajo) | `pages/admin/AdminBlueprints.jsx`, `plantillasYoryo/ImportarPlantillasYoryo.jsx` | · |
 
-**Por decidir (D2d)**
-- **La personalización de antes no se rehace en el kit**: `AdminCustomizationViewsEditor`,
+**Para D2d**
+- **Decidido (2026-11-02): la personalización de antes no se rehace en el kit**: `AdminCustomizationViewsEditor`,
   `YoryoPersonalizado`, `AdminViewEditor` + `PrintAreasEditor` + `ShapeSelector`
   (y `ShapeCreator`, que ya no se importa en ningún lado) solo salen con el
   interruptor `personalizableViejo` y en `/editor/:id`. La tienda no los usa
-  desde el 2026-10-20. Propuesta: dejarlos fuera del kit y, cuando no quede
-  ningún producto con esa personalización (el aviso de D2a lo dice), pasarlos
-  a [ELIMINAR.md](ELIMINAR.md).
+  desde el 2026-10-20. Quedan fuera del kit y, cuando no quede ningún
+  producto con esa personalización (el aviso de D2a lo dice), pasan a
+  [ELIMINAR.md](ELIMINAR.md).
 - **Plantillas de cuadros** (`/admin/plantillas-yoryo`) son siete pasos de
   una sola vez (crear los productos de Yoryo, sus plantillas, la billetera,
   las cómodas de Daida…). Propuesta: una página del kit con los pasos en
@@ -518,6 +518,93 @@ los datos para recomendar, con la foto de la lista como AdminProductos;
 | Inventario | `getProducts(… includeHidden)` sin los `deleted`, y las seis listas de filtros | `updateProductField(id, { inStock })` y `logInventoryChange(id, nombre, antes, ahora, email)` |
 | Recomendar | `getProducts(… includeHidden)`, `getCategories`; `sugerenciaDe` con `publicoDe`, `edadMinimaDe` y `equipoDe` de `utils/giftRecommender.mjs`; los equipos de sus SINONIMOS | `updateDocument('productos_wala', id, campos)` (null borra el campo); en lote, de a 20; invalida `['products']` y `['gift-catalog-dicts']` |
 
+### D2b: la ficha de un producto (en el kit desde el 2026-11-02)
+
+| Escritorio | Celular |
+|---|---|
+| ![La ficha en escritorio: pestañas, los colores en chips, el color con su muestra y la foto con "Así en la tarjeta"](admin-ficha-escritorio.webp) | ![La ficha en el celular: el color principal con su corona y Guardar pegado sobre la barra](admin-ficha-celular.webp) |
+
+`PaginaFichaProducto` (`paginas/admin/Ficha.jsx`), para un producto de la
+tienda o un combo (los personalizables tienen su ficha en D2c). Pestañas
+General · Colores y tallas (o Piezas del combo) · Dónde se ve; la que tiene
+un error lleva un punto. **Guardar está siempre a mano**, pegado abajo
+(sobre la barra del celular), con "Cambios sin guardar" o "Todo guardado";
+salir con cambios pregunta. Uno nuevo se va guardando en el aparato
+(`onBorrador`).
+
+| Parte | Qué tiene |
+|---|---|
+| General | Cómo se vende (individual o combo); nombre, precio y oferta (`CampoDinero`, con el % que se ahorra; si no es menor que el precio, avisa antes de guardar en vez de perderla), SKU, stock, descripción (el editor con formato llega por `descripcion`; sin él, un texto largo); la marca con su logo (`ElegirMarca`); categoría y tipo (elegir o crear ahí); colecciones, personajes y etiquetas (`ElegirVarios`, con crear); cómo se prepara (`fulfillmentType`); para quién, la edad y el equipo; WhatsApp (activo, número propio con el de la marca de ejemplo, mensaje con `{url}`); destacado |
+| Colores y tallas | Los colores en chips con su punto y la corona del principal, "+ Color"; por color: nombre, `CampoColor`, "Hacerlo el principal", quitar (pregunta; queda al menos uno); la foto de la tarjeta (subir o pegar enlace) con **"Así en la tarjeta"** y el encuadre 3:4 (`EncuadreFoto`: arrastrar, zoom, flechas; "Toda la foto" lo quita; no corta la foto); las tallas (`CampoTallas`: Enter o coma, sin repetir, "Poner S a XL") y cómo se llaman; la galería (`GaleriaFotos`: subir varias, ← →, encuadrar, quitar; la primera es la del mouse) y lo que se agregue abajo (`extraGaleria`: frente y espalda) |
+| Piezas del combo | Tallas (cada prenda con la suya o una para todo); las piezas en una `ListaOrdenable` con su nombre en el combo y su color (el que ya no existe se marca); buscar para agregar (sin combos ni lo de Crear); la portada |
+| Dónde se ve | Se ve en la tienda; se personaliza en (una prenda o un pack de Crear; uno que ya no existe se marca); "Pasarla a Crear" (pregunta; con cambios, pide guardar primero) |
+
+Adaptadores (con pruebas): `fichaDesdeProducto` (lo que cargaba el
+formulario, con la variante "Principal" para los productos de antes sin
+variantes), `fichaAProducto` (el mismo payload que armaba
+AdminProductoFormV2: `mainImage` del principal, `mainSizes: []`,
+`hasVariants`, `isV2`, `customizable: false`; conserva las copias chicas
+de las fotos que siguen y, en un combo, lo que la ficha no muestra de cada
+pieza, como su escala o su Yoryo), `erroresDeFicha` y `CUMPLIMIENTOS`.
+
+### Diferencias a propósito (D2b)
+
+- **Avisa en vez de perder**: una oferta que no es menor que el precio ya
+  no se guarda en silencio como vacía; el combo sin piezas, el nombre y el
+  precio vacíos llevan a su campo (antes, `alert` o nada).
+- **Guardar no sale de la ficha**: avisa y se queda (antes volvía a la
+  lista); salir con cambios pregunta (antes no había aviso).
+- **"Crear marca" no está en la ficha**: las marcas se crean en Marcas
+  (antes había una ventana con nombre y logo).
+- **Sin la personalización de antes**: el "Producto personalizable" de los
+  combos, el editor de vistas y Yoryo no vuelven (D2d). "Se personaliza en
+  Crear" del producto pasa a "Pasarla a Crear" (abre su ficha de Crear).
+- La foto principal también acepta un enlace (antes, "Fijar URL" aparte).
+- El encuadre se hace con el recuadro de Walá (antes, react-image-crop);
+  guarda lo mismo: `{ percentages: { x, y, width, height } }`.
+
+### Qué se probó (2026-11-02, demo en localhost)
+
+- Abrir "Casaca One Piece · Luffy 9 Viñetas" desde la lista: sus 9 colores
+  con el principal, precio 119, stock 10; cambiar el nombre → "Cambios sin
+  guardar"; oferta 500 → al guardar, la pestaña General con su punto, el
+  foco en la oferta y el aviso; vaciarla → se guarda.
+- El encuadre: el recuadro 3:4 se mueve con las flechas y el zoom, y "Así
+  en la tarjeta" lo muestra igual que la tienda.
+- Salir con cambios → "¿Salir sin guardar?"; un combo con sus dos piezas,
+  buscar "casaca" y agregarla con su primer color, guardar; uno nuevo sin
+  datos → el foco en el nombre.
+- Etiquetas: elegir "Alianza Lima" de las 74. Nada se sale del ancho a
+  375 px y Guardar queda sobre la barra del celular. Sin errores en la consola.
+
+### Cómo se une D2b
+
+`inicial` cambia solo cuando llega otro producto (con `useMemo` por id: si
+cambia en cada render, la ficha vuelve a empezar). El conector hace lo que
+hacía AdminProductoFormV2:
+
+- **Lee** `getProduct(id)`, las listas (`getBrands`, `getCategories`,
+  `getCollections`, `getProductTypes`, `getCharacters`, `getTags`, con sus
+  `brandIds` como `marcas`), el catálogo para las piezas y sus colores, y
+  `getPrendasBase` + `getCombosCrear({ incluirBorradores: true })` para
+  "Se personaliza en". Redirige como antes: un `esPrendaBase` a
+  `/admin/prendas-crear/:id`, un `esComboCrear` a los packs.
+- **Guarda** `createProduct(fichaAProducto(datos), draftId)` o
+  `updateProduct(id, fichaAProducto(datos, producto))`, borra el borrador
+  de `wala_drafts`, refresca `admin-products` y `admin-product,id` e
+  invalida `products`, `products-infinite`, `product,id`,
+  `featured-products` y `collection-products` (el comentario de
+  `products-infinite` en FormV2 dice por qué).
+- **Sube** a `productos_v2/{draftId}/` con el nombre de siempre según
+  `carpeta` (`main_…`, `gallery_…`, `combo_preview_…`) y guarda las copias
+  de `uploadFile` en `variante.copias` (`imagesVariantes`); nunca borra de
+  Storage una foto que ya estaba en el producto (`safelyDeleteOldImage`).
+- `descripcion`: el ReactQuill de siempre (las mismas fuentes y tamaños);
+  `extraGaleria`: `GenerarFrenteEspalda` (el nombre `_frente-espalda.` del
+  archivo importa: lo busca la página del combo).
+- `?brandId=` elige la marca solo en uno nuevo; `?pestana=` va por
+  `pestanaInicial` / `onPestana`.
+
 ## Cómo se une un apartado (la misma lógica que clientes)
 
 1. El apartado está **completo en el kit**: todas sus páginas en el Panel de
@@ -555,3 +642,4 @@ los datos para recomendar, con la foto de la lista como AdminProductos;
 | 2026-11-02 | D0 en el kit: marco, barra del celular, cabecera, sin permiso, inicio, tabla, filtros, estados, lo elegido, hoja de edición, bloques, campo de imagen y el menú con permisos (con pruebas); Categorías como primera página; vista **Admin** en `/componentes.html` | `piezas/admin/`, `paginas/admin/`, `adaptadoresAdmin.js`, `DemoAdmin.jsx` |
 | 2026-11-02 | D1 en el kit: `PaginaListaAdmin` (Categorías pasó a ella), Colecciones, Atributos, Zonas de envío, Cliparts, Marcas con sus productos y Destacados; `ListaOrdenable`, `SelectorProductos`, `CargarMas`, `CampoDinero`, `CampoColor`; capturas en `guia/admin-*.webp` y el modo noche revisado | `paginas/admin/`, `piezas/admin/`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2 dividido en tramos (a: lista, b: ficha, c: Crear, d: blueprints y lo viejo). D2a en el kit: `PaginaProductos`, `PaginaInventario`, `PaginaRecomendar`; `NumeroEnLinea`, `ElegirUno`, controles en las tarjetas de `TablaAdmin` | `paginas/admin/Productos.jsx`, `piezas/admin/`, `adaptadoresAdmin.js` |
+| 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |

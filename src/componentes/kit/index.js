@@ -88,6 +88,8 @@ export { PaginaColecciones, PaginaAtributos, PaginaEnvios, PaginaCliparts } from
 export { PaginaMarcas, PaginaProductosMarca } from './paginas/admin/Marcas';
 export { PaginaDestacados } from './paginas/admin/Destacados';
 export { PaginaProductos, PaginaInventario, PaginaRecomendar, PUBLICOS, EDADES } from './paginas/admin/Productos';
+export { PaginaFichaProducto } from './paginas/admin/Ficha';
+export { EncuadreFoto, FotoEncuadrada, GaleriaFotos, CampoTallas, ElegirVarios, ElegirMarca } from './piezas/admin/Producto';
 export {
   MENU_ADMIN, menuAdminPara, accesosAdminPara, puedeVer, esRutaActiva, opcionActiva,
   categoriaDesdeFirestore, categoriaAFirestore, marcaAdminDesdeFirestore, normalizarBusqueda, mismoNombre,
@@ -95,4 +97,5 @@ export {
   zonaDesdeFirestore, zonaAFirestore, clipartDesdeFirestore, clipartAFirestore,
   slugDeMarca, topeMonedasDe, TOPE_MONEDAS_POR_DEFECTO, marcaDesdeFirestore, marcaAFirestore, productoAdminDesde,
   esDeLaTienda, piezasDeCombos, etiquetasDeProducto, rutaAdminDeProducto, estadoDeStock,
+  CUMPLIMIENTOS, fichaDesdeProducto, fichaAProducto, erroresDeFicha,
 } from './adaptadoresAdmin';

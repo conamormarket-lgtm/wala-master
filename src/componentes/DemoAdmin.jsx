@@ -3,7 +3,7 @@ import { Archive, Eye, EyeOff, Trash2 } from 'lucide-react';
 import {
   MarcoAdmin, SinPermiso, CabezaAdmin, PaginaInicioAdmin, PaginaCategorias, InsigniaEstado, ESTADOS_ADMIN, AccionesLote,
   PaginaColecciones, PaginaAtributos, PaginaEnvios, PaginaCliparts, PaginaMarcas, PaginaProductosMarca, PaginaDestacados,
-  PaginaProductos, PaginaInventario, PaginaRecomendar,
+  PaginaProductos, PaginaInventario, PaginaRecomendar, PaginaFichaProducto, fichaDesdeProducto, fichaAProducto,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -114,6 +114,14 @@ const PRODUCTOS = TIENDA.productos.map((p, i) => productoAdminDesde({
 const TIPOS = TIENDA.tipos.map((x) => ({ id: x.id, nombre: x.name }));
 const CATEGORIAS_CORTAS = TIENDA.categorias.map((x) => ({ id: x.id, nombre: x.name }));
 const COLECCIONES_CORTAS = TIENDA.colecciones.map((x) => ({ id: x.id, nombre: x.name }));
+// La ficha: los productos crudos (como en Firestore) por id, para abrirla y guardarla.
+const CRUDOS = Object.fromEntries(TIENDA.productos.map((p) => [p.id, p]));
+const coloresDemo = (id) => (CRUDOS[id]?.variants || []).map((v) => ({ nombre: v.name, foto: v.imageUrl }));
+const DESTINOS_CREAR = [
+  { valor: '/crear/polo-kapi', texto: 'Polo Kapi · Crear' },
+  { valor: '/combo/pareja-kapi', texto: 'Pareja Kapi · pack de Crear' },
+];
+const conMarcas = (lista) => lista.map((x) => ({ id: x.id, nombre: x.nombre, marcas: x.marcas || [] }));
 const BORRADORES = [{ id: 'borrador-1', nombre: 'Polo Kapi edición Navidad', fecha: 'Hace 2 días' }];
 // Lo que deduciría giftRecommender, a grandes rasgos (solo para la demo).
 const sugerenciaDemo = (p) => {
@@ -172,6 +180,8 @@ function PanelDePrueba() {
   const [productos, setProductos] = useState(PRODUCTOS);
   const [whatsapp, setWhatsapp] = useState(WHATSAPP);
   const [borradores, setBorradores] = useState(BORRADORES);
+  const [crudos, setCrudos] = useState(CRUDOS);
+  const [creados, setCreados] = useState({ categoria: [], coleccion: [], tipo: [], personaje: [], etiqueta: [] });
 
   const navegar = useRef(null);
   navegar.current = (to) => {
@@ -218,6 +228,12 @@ function PanelDePrueba() {
 
   const actual = opcionActiva(grupos, rutaSola);
   const dePaso = opcionActiva(menuAdminPara(['superadmin']), rutaSola);
+  const fichaDeRuta = rutaSola.match(/^\/admin\/productos\/([^/]+)$/)?.[1];
+  // La ficha se arma una vez por producto (si no, cada render la volvería a empezar).
+  const inicialFicha = useMemo(
+    () => (fichaDeRuta ? fichaDesdeProducto(fichaDeRuta === 'nuevo' ? null : crudos[fichaDeRuta], { marcaId: new URLSearchParams(ruta.split('?')[1] || '').get('brandId') || '' }) : null),
+    [fichaDeRuta], // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const marcaDeRuta = ruta.match(/^\/admin\/marcas\/([^/]+)\/productos$/)?.[1];
   let pagina;
   if (!actual) {
@@ -300,6 +316,52 @@ function PanelDePrueba() {
         onQuitar={(ids) => cambiarProductos(ids, () => ({ marcaId: '' }))}
       />
     );
+  } else if (fichaDeRuta) {
+    const listas = {
+      categoria: [...conMarcas(CATEGORIAS), ...creados.categoria],
+      coleccion: [...conMarcas(COLECCIONES), ...creados.coleccion],
+      tipo: [...TIPOS, ...creados.tipo],
+      personaje: [...conMarcas(ATRIBUTOS_DEMO.personajes), ...creados.personaje],
+      etiqueta: [...conMarcas(ATRIBUTOS_DEMO.etiquetas), ...creados.etiqueta],
+    };
+    pagina = (
+      <PaginaFichaProducto
+        key={fichaDeRuta}
+        inicial={inicialFicha}
+        nuevo={fichaDeRuta === 'nuevo'}
+        cargando={con('cargando')}
+        error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+        onReintentar={comunes.onReintentar}
+        marcas={MARCAS.map((m) => ({ id: m.id, nombre: m.nombre, logo: m.logo, whatsapp: m.whatsapp }))}
+        categorias={listas.categoria}
+        colecciones={listas.coleccion}
+        tipos={listas.tipo}
+        personajes={listas.personaje}
+        etiquetas={listas.etiqueta}
+        onCrear={async (lista, { nombre, marcaId }) => {
+          await espera(400);
+          fallar();
+          const nuevoItem = { id: `nuevo-${Date.now()}`, nombre, marcas: marcaId && lista !== 'tipo' ? [marcaId] : [] };
+          setCreados((c) => ({ ...c, [lista]: [...c[lista], nuevoItem] }));
+          return nuevoItem;
+        }}
+        productos={productos}
+        coloresDe={coloresDemo}
+        destinosCrear={DESTINOS_CREAR}
+        subirImagen={subir}
+        onGuardar={async (datos) => {
+          await espera(900);
+          fallar('Sin conexión con el servidor (es una prueba). Lo escrito sigue aquí.');
+          const id = fichaDeRuta === 'nuevo' ? `nuevo-${Date.now()}` : fichaDeRuta;
+          const crudo = { ...(crudos[id] || {}), ...fichaAProducto(datos, crudos[id] || {}), id };
+          setCrudos((c) => ({ ...c, [id]: crudo }));
+          setProductos((ps) => (ps.some((x) => x.id === id) ? ps.map((x) => (x.id === id ? { ...x, ...productoAdminDesde(crudo) } : x)) : [...ps, productoAdminDesde(crudo)]));
+        }}
+        onVolver={() => navegar.current('/admin/productos')}
+        onPasarACrear={() => toast({ tipo: 'info', titulo: 'Abriría su ficha de Crear (D2c)', duracion: 2200 })}
+        onBorrador={() => {}}
+      />
+    );
   } else if (rutaSola === '/admin/productos') {
     pagina = (
       <PaginaProductos
@@ -309,7 +371,8 @@ function PanelDePrueba() {
         marcas={MARCAS_CORTAS}
         vista={verDeRuta}
         onVista={(v) => navegar.current(v === 'tienda' ? '/admin/productos' : `/admin/productos?ver=${v}`)}
-        onAbrir={(x) => toast({ tipo: 'info', titulo: 'Abriría su ficha (tramo D2b)', texto: x.nombre, duracion: 2200 })}
+        onAbrir={(x) => (x.personalizable || x.pack ? toast({ tipo: 'info', titulo: 'Su ficha es de Crear (D2c)', texto: x.nombre, duracion: 2200 }) : navegar.current(`/admin/productos/${x.id}`))}
+        urlNuevo="/admin/productos/nuevo"
         onIr={(to) => toast({ tipo: 'info', titulo: 'Iría a', texto: to, duracion: 2000 })}
         onVisible={async (id, visible) => { await espera(500); fallar(); setProductos((ps) => ps.map((x) => (x.id === id ? { ...x, oculto: !visible } : x))); }}
         onVarios={(ids, visible) => cambiarProductos(ids, () => ({ oculto: !visible }))}

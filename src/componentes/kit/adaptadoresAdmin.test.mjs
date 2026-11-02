@@ -140,6 +140,62 @@ test('productos: personalización de antes y la foto', () => {
   assert.equal(m2.estadoDeStock(4), 'disponible');
 });
 
+test('ficha: un producto de antes sin variantes arma la Principal', () => {
+  const f = m2.fichaDesdeProducto({ id: 'p', name: 'Polo', price: 50, mainImage: 'm', images: ['m', 'g1'], mainSizes: ['S', 'M'], thumbnailCrop: { percentages: { x: 1 } } });
+  assert.equal(f.variantes.length, 1);
+  assert.equal(f.variantes[0].nombre, 'Principal');
+  assert.equal(f.variantes[0].foto, 'm');
+  assert.deepEqual(f.variantes[0].galeria, ['g1']);
+  assert.deepEqual(f.variantes[0].tallas, ['S', 'M']);
+  assert.equal(f.principal, f.variantes[0].id);
+});
+
+test('ficha: de vuelta, con las mismas reglas del formulario', () => {
+  const original = {
+    id: 'p', name: 'Polo', price: 50, salePrice: 40, isComboProduct: false, defaultVariantId: 'v2',
+    variants: [
+      { id: 'v1', name: 'Negro', colorHex: '#000', imageUrl: 'a', images: ['b'], sizes: ['S'], imagesVariantes: { a: { 160: 'a160' }, z: { 160: 'z160' } } },
+      { id: 'v2', name: 'Blanco', colorHex: '#fff', imageUrl: 'c', images: [], sizes: [] },
+    ],
+  };
+  const f = m2.fichaDesdeProducto(original);
+  assert.equal(f.principal, 'v2');
+  assert.equal(f.oferta, 40);
+  const p = m2.fichaAProducto({ ...f, nombre: ' Polo nuevo ' }, original);
+  assert.equal(p.name, 'Polo nuevo');
+  assert.equal(p.mainImage, 'c');
+  assert.equal(p.defaultVariantId, 'v2');
+  assert.equal(p.hasVariants, true);
+  assert.deepEqual(p.mainSizes, []);
+  assert.deepEqual(p.variants[0].imagesVariantes, { a: { 160: 'a160' } });
+  assert.equal(p.variants[0].showSizeConfig, true);
+  assert.equal(p.customizable, false);
+  assert.equal(p.isV2, true);
+});
+
+test('ficha: un combo guarda sus piezas sin perder lo que la ficha no muestra', () => {
+  const original = { id: 'c', name: 'Pareja', price: 99, isComboProduct: true, comboItems: [{ productId: 'a', name: 'Ella', imageUrl: 'x', scale: 0.8, YoryoPersonalizado: { z: 1 }, variantMapping: { allowedColors: ['Negro'], color: 'Negro' } }] };
+  const f = m2.fichaDesdeProducto(original);
+  assert.equal(f.variantes.length, 0);
+  f.combo.piezas[0].color = 'Blanco';
+  const p = m2.fichaAProducto(f, original);
+  assert.deepEqual(p.variants, []);
+  assert.equal(p.hasVariants, false);
+  assert.equal(p.comboItems[0].scale, 0.8);
+  assert.deepEqual(p.comboItems[0].YoryoPersonalizado, { z: 1 });
+  assert.deepEqual(p.comboItems[0].variantMapping, { allowedColors: ['Negro'], color: 'Blanco' });
+});
+
+test('ficha: lo que falta antes de guardar', () => {
+  const f = m2.fichaDesdeProducto(null, { marcaId: 'm' });
+  assert.equal(f.marcaId, 'm');
+  const e = m2.erroresDeFicha(f);
+  assert.ok(e.nombre && e.precio);
+  assert.equal(m2.erroresDeFicha({ ...f, nombre: 'x', precio: 10, oferta: 12 }).oferta.pestana, 'general');
+  assert.equal(m2.erroresDeFicha({ ...f, nombre: 'x', precio: 0 }).precio, undefined);
+  assert.equal(m2.erroresDeFicha({ ...f, nombre: 'x', precio: 10, esCombo: true }).piezas.pestana, 'colores');
+});
+
 test('productos: oculto, archivado y precio de oferta', () => {
   assert.equal(m2.productoAdminDesde({ id: 'p', deleted: true }), null);
   const p = m2.productoAdminDesde({ id: 'p', name: 'Polo', price: 50, salePrice: 40, visible: false, images: ['i'] });

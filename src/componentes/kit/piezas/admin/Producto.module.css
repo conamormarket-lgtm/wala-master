@@ -1,0 +1,314 @@
+/* ── Piezas de la ficha de un producto (D2b) ───────────────── */
+
+/* Encuadre 3:4 */
+.ayudaEncuadre {
+  margin: 0 0 0.75rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.encuadre {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 14px;
+  background: repeating-conic-gradient(#ece9f3 0 25%, #fff 0 50%) 0 0 / 16px 16px;
+}
+
+.encuadreCaja {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+  touch-action: none;
+  user-select: none;
+}
+
+.encuadreCaja img {
+  max-width: 100%;
+  max-height: min(55vh, 460px);
+  pointer-events: none;
+}
+
+.recuadro {
+  position: absolute;
+  border: 2px solid #fff;
+  border-radius: 6px;
+  box-shadow: 0 0 0 9999px rgba(20, 18, 28, 0.5), 0 0 0 1px var(--violet-500);
+  cursor: grab;
+  touch-action: none;
+}
+
+.recuadro:active {
+  cursor: grabbing;
+}
+
+.recuadro:focus-visible {
+  outline: 3px solid var(--violet-400);
+  outline-offset: 2px;
+}
+
+.fotoEncuadrada {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  aspect-ratio: 3 / 4;
+  border-radius: 10px;
+  background: var(--escenario-foto, #fff);
+  color: var(--color-text-muted);
+}
+
+.fotoEncuadrada img {
+  max-width: none;
+}
+
+.fotoEntera {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.fotoEncuadrada > svg {
+  width: 30%;
+  height: 30%;
+}
+
+/* Galería */
+.galeria {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.galeriaLista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.galeriaFoto {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.galeriaImagen {
+  width: 100%;
+}
+
+.galeriaNumero {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galeriaAcciones {
+  display: flex;
+  justify-content: space-between;
+}
+
+.galeriaAcciones button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.galeriaAcciones button:hover:not(:disabled) {
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.galeriaAcciones button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.galeriaAcciones svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.galeriaQuitar:hover:not(:disabled) {
+  background: var(--danger-soft) !important;
+  color: var(--danger-hover) !important;
+}
+
+.galeriaAgregar {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  height: 100%;
+  min-height: 150px;
+  border: 1.5px dashed var(--color-border);
+  border-radius: 14px;
+  background: var(--color-bg, var(--gris-fondo));
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.galeriaAgregar:hover:not(:disabled) {
+  border-color: var(--violet-400);
+}
+
+.galeriaAgregar svg {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.girar {
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
+/* Tallas */
+.tallas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 48px;
+  padding: 0.4rem 0.55rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.tallas:focus-within {
+  border-color: var(--violet-400);
+}
+
+.tallasCampo {
+  flex: 1 1 6rem;
+  min-width: 4rem;
+  height: 34px;
+  border: 0;
+  background: transparent !important;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 16px;
+}
+
+.tallasCampo:focus {
+  outline: none;
+}
+
+.atajo {
+  margin-left: 0.4rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-color);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Elegir varios */
+.varios {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.variosChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+/* Elegir marca */
+.marcas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 0.45rem;
+}
+
+.marca {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 0.6rem 0.4rem 0.5rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.marca:hover {
+  border-color: var(--violet-300);
+}
+
+.marcaElegida,
+.marcaElegida:hover {
+  border-color: var(--primary-color);
+  background: var(--primary-light);
+}
+
+.marcaLogo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--escenario-foto, #fff);
+  color: var(--primary-color);
+  font-weight: 800;
+  overflow: hidden;
+}
+
+.marcaLogo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.marcaNombre {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marcaVisto {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .girar {
+    animation-duration: 2s;
+  }
+}

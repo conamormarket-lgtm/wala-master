@@ -1,0 +1,264 @@
+/* ── Ficha de un producto (D2b) ────────────────────────────── */
+.ficha {
+  padding-bottom: 0.5rem;
+}
+
+.pestanas {
+  margin-bottom: 1rem;
+}
+
+.aviso {
+  margin-bottom: 1rem;
+}
+
+.pestana {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+  max-width: 860px;
+}
+
+.pestana[hidden] {
+  display: none;
+}
+
+.bloque {
+  padding: 1rem 1.1rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.dos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+@container pagina-admin (min-width: 560px) {
+  .dos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.etiqueta {
+  color: var(--color-text);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.fila {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.descripcion {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.cargando {
+  display: grid;
+  gap: 0.8rem;
+  max-width: 860px;
+}
+
+/* Colores */
+.colores {
+  display: flex;
+  gap: 0.4rem;
+  padding-bottom: 0.1rem;
+}
+
+.color,
+.colorAgregar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0 0.85rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.colorActivo {
+  border-color: var(--primary-color);
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.colorAgregar {
+  border-style: dashed;
+  color: var(--primary-color);
+}
+
+.colorAgregar svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.colorPunto {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--borde-muestra, var(--color-border));
+  border-radius: 50%;
+}
+
+.corona {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--gold-600, #d97706);
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.principal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.principal svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--gold-600, #d97706);
+}
+
+.portada {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+@container pagina-admin (min-width: 640px) {
+  .portada {
+    grid-template-columns: minmax(0, 1fr) 170px;
+    align-items: start;
+  }
+}
+
+.tarjetaVista {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+}
+
+.tarjetaFoto {
+  width: 150px;
+  border: 1px solid var(--color-border);
+}
+
+/* Combo */
+.pieza {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.piezaFoto {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+}
+
+.piezaCampos {
+  display: grid;
+  flex: 1;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.piezaNombre,
+.piezaColor {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 0 0.55rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.88rem;
+  box-sizing: border-box;
+}
+
+.piezaNombre {
+  font-weight: 700;
+}
+
+.piezaNombre:focus,
+.piezaColor:focus {
+  border-color: var(--violet-400);
+  outline: none;
+}
+
+/* Dónde se ve */
+.crear {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.crear > svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  color: var(--primary-color);
+}
+
+.crear > div {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.crear p {
+  margin: 0.15rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+/* Guardar */
+.guardar {
+  position: sticky;
+  bottom: calc(var(--admin-abajo, 0px) + 0.75rem);
+  z-index: 15;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 860px;
+  margin-top: 1rem;
+  padding: 0.55rem 0.6rem 0.55rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 14px 30px -18px rgba(20, 18, 28, 0.45);
+  box-sizing: border-box;
+}
+
+.guardarEstado {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}

@@ -433,6 +433,198 @@ export function rutaAdminDeProducto(p) {
   return `/admin/productos/${p.id}`;
 }
 
+/* ── La ficha de un producto (D2b) ─────────────────────── */
+
+/* Los tipos de cumplimiento (fulfillmentType); '' = que lo decida la tienda. */
+export const CUMPLIMIENTOS = [
+  { valor: '', texto: 'Automático' },
+  { valor: 'stock', texto: 'Stock propio' },
+  { valor: 'print_on_demand', texto: 'Se imprime al pedirlo' },
+  { valor: 'made_to_order', texto: 'Se fabrica al pedirlo' },
+  { valor: 'dropship', texto: 'Lo envía el proveedor' },
+];
+
+const lista = (v) => (Array.isArray(v) ? v : []);
+const idDe = (v) => (v && typeof v === 'object' ? v.id || '' : v || '');
+
+/**
+ * Un producto de `productos_wala` → los datos de la ficha (lo mismo que
+ * cargaba AdminProductoFormV2). Sin variantes y sin ser combo (los de
+ * antes), se arma una "Principal" con su foto, su galería y sus tallas.
+ * `nuevo`: { marcaId } para uno nuevo (la marca de ?brandId=).
+ */
+export function fichaDesdeProducto(p, nuevo = {}) {
+  if (!p) {
+    const id = `var_${Date.now()}`;
+    return {
+      nombre: '', precio: '', oferta: '', sku: '', stock: 0, descripcion: '',
+      esCombo: false, cumplimiento: '', marcaId: nuevo.marcaId || '', categoria: '', colecciones: [], tipo: '', personajes: [], etiquetas: [],
+      publico: '', edadMinima: null, equipo: '',
+      whatsappActivo: true, whatsappNumero: '', whatsappMensaje: '',
+      destacado: false, visible: true, personalizarEn: '',
+      variantes: [{ id, nombre: 'Variante 1', color: '#cccccc', foto: '', encuadre: null, galeria: [], encuadres: {}, etiquetaTalla: 'Talla', tallas: [] }],
+      principal: id,
+      combo: { tallas: 'porPrenda', piezas: [], portada: '' },
+    };
+  }
+  let variantes = lista(p.variants).map((v) => ({
+    id: v.id,
+    nombre: v.name || '',
+    color: v.colorHex || '#cccccc',
+    foto: v.imageUrl || '',
+    encuadre: v.thumbnailCrop || null,
+    galeria: lista(v.images),
+    encuadres: v.imagesCrops && typeof v.imagesCrops === 'object' ? v.imagesCrops : {},
+    etiquetaTalla: v.sizeLabel || 'Talla',
+    tallas: lista(v.sizes),
+  }));
+  if (!variantes.length && !p.isComboProduct) {
+    variantes = [{
+      id: p.defaultVariantId || `var_${Date.now()}`,
+      nombre: 'Principal',
+      color: '#cccccc',
+      foto: p.mainImage || '',
+      encuadre: p.thumbnailCrop || null,
+      galeria: lista(p.images).filter((u) => u !== p.mainImage),
+      encuadres: p.imagesCrops || {},
+      etiquetaTalla: 'Talla',
+      tallas: lista(p.mainSizes),
+    }];
+  }
+  const principal = variantes.some((v) => v.id === p.defaultVariantId) ? p.defaultVariantId : variantes[0]?.id || '';
+  return {
+    nombre: p.name || '',
+    precio: p.price ?? '',
+    oferta: Number(p.salePrice) > 0 ? p.salePrice : '',
+    sku: p.sku || '',
+    stock: Number.isFinite(Number(p.inStock)) ? Number(p.inStock) : 0,
+    descripcion: p.description || '',
+    esCombo: p.isComboProduct === true,
+    cumplimiento: p.fulfillmentType || '',
+    marcaId: p.brandId || '',
+    categoria: lista(p.categories)[0] || p.categoryId || '',
+    colecciones: lista(p.collections),
+    tipo: idDe(p.productType),
+    personajes: lista(p.characters).map(idDe).filter(Boolean),
+    etiquetas: lista(p.tags).map(idDe).filter(Boolean),
+    publico: p.publico || '',
+    edadMinima: p.edadMinima ?? null,
+    equipo: p.equipo || '',
+    whatsappActivo: p.whatsappEnabled !== false,
+    whatsappNumero: p.whatsappNumber || '',
+    whatsappMensaje: p.whatsappMessage || '',
+    destacado: p.featured === true,
+    visible: p.visible !== false,
+    personalizarEn: p.personalizarEn || '',
+    variantes,
+    principal,
+    combo: {
+      tallas: p.comboTallas || 'porPrenda',
+      piezas: lista(p.comboItems).map((it, i) => ({
+        uid: `${it.productId || 'pieza'}-${i}`,
+        productoId: it.productId || '',
+        nombre: it.name || '',
+        foto: it.imageUrl || '',
+        color: it.variantMapping?.color || '',
+      })),
+      portada: p.comboPreviewImage || '',
+    },
+  };
+}
+
+/**
+ * Los datos de la ficha → lo que AdminProductoFormV2 le pasaba a
+ * createProduct / updateProduct (el servicio normaliza después). `original`:
+ * el producto tal como estaba, para no perder lo que la ficha no muestra
+ * (las copias chicas de cada foto, la configuración de Yoryo de una pieza).
+ */
+export function fichaAProducto(f, original = {}) {
+  const viejas = new Map(lista(original.variants).map((v) => [v.id, v]));
+  const variantes = f.esCombo ? [] : f.variantes.map((v) => {
+    const antes = viejas.get(v.id) || {};
+    const fotos = new Set([v.foto, ...v.galeria].filter(Boolean));
+    return {
+      id: v.id,
+      name: String(v.nombre || '').trim(),
+      colorHex: v.color || '#cccccc',
+      imageUrl: v.foto || '',
+      images: [...v.galeria],
+      sizes: [...v.tallas],
+      sizeLabel: String(v.etiquetaTalla || '').trim() || 'Talla',
+      showSizeConfig: v.tallas.length > 0,
+      thumbnailCrop: v.encuadre || null,
+      // Solo los encuadres y las copias de fotos que siguen en la variante.
+      imagesCrops: Object.fromEntries(Object.entries(v.encuadres || {}).filter(([url]) => fotos.has(url))),
+      imagesVariantes: Object.fromEntries(Object.entries({ ...(antes.imagesVariantes || {}), ...(v.copias || {}) }).filter(([url]) => fotos.has(url))),
+    };
+  });
+  const principal = variantes.find((v) => v.id === f.principal) || variantes[0];
+  const piezasAntes = lista(original.comboItems);
+  return {
+    name: String(f.nombre || '').trim(),
+    description: f.descripcion || '',
+    price: Number(f.precio) || 0,
+    salePrice: Number(f.oferta) || 0,
+    inStock: Number(f.stock) || 0,
+    sku: String(f.sku || '').trim(),
+    brandId: f.marcaId || '',
+    fulfillmentType: f.cumplimiento || undefined,
+    productType: f.tipo || '',
+    categories: f.categoria ? [f.categoria] : [],
+    collections: [...f.colecciones],
+    mainImage: principal?.imageUrl || '',
+    thumbnailWithDesignUrl: '',
+    mainSizes: [],
+    defaultVariantId: principal?.id || '',
+    hasVariants: !f.esCombo && variantes.length > 0,
+    customizable: false,
+    customizationViews: [],
+    esPrendaBase: false,
+    personalizarEn: f.personalizarEn || '',
+    whatsappEnabled: f.whatsappActivo !== false,
+    whatsappNumber: String(f.whatsappNumero || '').trim(),
+    whatsappMessage: String(f.whatsappMensaje || '').trim(),
+    isComboProduct: f.esCombo === true,
+    comboItems: f.esCombo ? f.combo.piezas.map((pz, i) => {
+      const antes = piezasAntes.find((it) => it.productId === pz.productoId) || {};
+      return {
+        ...antes,
+        productId: pz.productoId,
+        name: String(pz.nombre || '').trim(),
+        imageUrl: pz.foto || '',
+        position: i,
+        scale: antes.scale ?? 1,
+        variantMapping: { ...(antes.variantMapping || {}), color: pz.color || '' },
+      };
+    }) : [],
+    comboTallas: f.combo.tallas,
+    comboPreviewImage: f.esCombo ? f.combo.portada || '' : '',
+    characters: [...f.personajes],
+    tags: [...f.etiquetas],
+    publico: f.publico || '',
+    equipo: String(f.equipo || '').trim(),
+    edadMinima: f.edadMinima,
+    variants: variantes,
+    visible: f.visible !== false,
+    enTienda: false,
+    seVendeTalCual: false,
+    featured: f.destacado === true,
+    isV2: true,
+  };
+}
+
+/** Lo que falta en la ficha antes de guardar: { campo: mensaje } y en qué pestaña está. */
+export function erroresDeFicha(f) {
+  const e = {};
+  if (!String(f.nombre || '').trim()) e.nombre = { texto: 'Escribe el nombre del producto.', pestana: 'general' };
+  if (f.precio === '' || f.precio === null || !(Number(f.precio) >= 0)) e.precio = { texto: 'Escribe el precio (puede ser 0).', pestana: 'general' };
+  if (f.oferta !== '' && Number(f.oferta) > 0 && Number(f.oferta) >= Number(f.precio)) e.oferta = { texto: 'La oferta tiene que ser menor que el precio (si no, no se guarda).', pestana: 'general' };
+  if (Number(f.stock) < 0) e.stock = { texto: 'El stock no puede ser negativo.', pestana: 'general' };
+  if (f.esCombo && !f.combo.piezas.length) e.piezas = { texto: 'Agrega al menos un producto al combo.', pestana: 'colores' };
+  if (!f.esCombo && !f.variantes.length) e.variantes = { texto: 'Tiene que quedar al menos un color.', pestana: 'colores' };
+  return e;
+}
+
 /** El estado del stock (Inventario): 0 agotado, hasta 3 últimas, más disponible. */
 export const estadoDeStock = (n) => (n <= 0 ? 'agotado' : n <= 3 ? 'ultimas' : 'disponible');
 
