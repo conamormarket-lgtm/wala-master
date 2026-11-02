@@ -2005,3 +2005,209 @@ export function idDeFestiva(nombre, usados = []) {
   while (usados.includes(id)) id = `${base}_${i++}`;
   return id;
 }
+
+/* ── D5d · Notificaciones y ofertas ───────────────────── */
+
+/*
+ * notification_settings/global: qué avisos automáticos salen, en qué horario
+ * (hora de Lima) y con qué texto (dos textos = prueba A/B). Lo lee el motor
+ * del servidor (functions/notificationsEngine.js): las claves no cambian.
+ */
+export const CATEGORIAS_NOTIF = [
+  { clave: 'cart_abandoned', nombre: 'Carrito abandonado', detalle: 'Avisa a la 1 h, 24 h y 48 h a quien dejó productos en el carrito. Solo a quien tiene la app.', desde: '09:00', hasta: '21:00' },
+  { clave: 'retention', nombre: 'Kapi te extraña', detalle: 'Avisa a quien no abre la app hace 7 o 14 días. Solo a quien tiene la app.', desde: '09:00', hasta: '21:00' },
+  { clave: 'survey', nombre: 'Encuesta pendiente', detalle: 'Una vez al día: a quien creó su cuenta y no respondió la encuesta le recuerda a los 3 y a los 10 días. Después no insiste.', desde: '10:00', hasta: '20:00' },
+  { clave: 'orders', nombre: 'Pedidos', detalle: 'Cuando se confirma el pago, entra a producción, sale a reparto y se entrega. Fuera de horario queda en la campanita y la push no sale.', desde: '08:00', hasta: '21:00' },
+  { clave: 'product_views', nombre: 'Producto que estuvo mirando', detalle: 'Una vez al día: a quien miró un producto 3 veces o más (o más de 2 minutos) y no lo compró.', desde: '11:00', hasta: '20:00' },
+  { clave: 'promos', nombre: 'Ofertas programadas', detalle: 'Las ofertas programadas solo salen en este horario; apagado, quedan en espera. «Enviar ahora» fuera de horario pide confirmación.', desde: '10:00', hasta: '20:00' },
+];
+
+const TEXTOS_NOTIF = {
+  cart_1h: ['Tu regalo te está esperando.', '📦', '¿Terminamos?'],
+  cart_24h: ['El box que elegiste sigue en tu carrito.', '🎁', '¿Terminamos de armarlo?'],
+  cart_48h: ['Última oportunidad. Tu carrito se vacía mañana.', '⏳', '¿Lo completamos?'],
+  retention_7d: ['Kapi te extraña mucho. Lleva varios días sin verte', '😢', 'Abre la app'],
+  retention_14d: ['Tienes {monedas} monedas que se van a perder. Y Kapi está triste...', '💔', 'Sálvalas'],
+  product_view: ['¿Te quedaste pensando en {producto}?', '👀', 'Sigue disponible'],
+  survey_3d: ['Responde tu encuesta y te regalamos 15 monedas', '🪙', ''],
+  survey_10d: ['Tu encuesta sigue pendiente. Respóndela y llévate 15 monedas', '🎁', ''],
+};
+
+/** Los avisos automáticos con texto editable, agrupados como los piensa el negocio. `titulo` lo pone el motor. */
+export const GRUPOS_AVISOS = [
+  { id: 'carrito', nombre: 'Carrito abandonado', detalle: 'Para quien agregó productos al carrito y no terminó de comprar.', avisos: [
+    { clave: 'cart_1h', nombre: '1 hora después', cuando: 'Sale 1 hora después de que dejó el carrito.', titulo: '🛒 Tu Carrito' },
+    { clave: 'cart_24h', nombre: 'Al día siguiente', cuando: 'Sale a las 24 horas, si todavía no compró.', titulo: '🛒 Tu Carrito' },
+    { clave: 'cart_48h', nombre: 'Último aviso', cuando: 'Sale a las 48 horas: el último recordatorio del carrito.', titulo: '🛒 Tu Carrito' },
+  ] },
+  { id: 'mirando', nombre: 'Producto que estuvo mirando', detalle: 'Para quien miró un producto varias veces y no lo compró.', avisos: [
+    { clave: 'product_view', nombre: 'Al día siguiente', cuando: 'Una vez al día a quien lo miró 3+ veces o más de 2 minutos. El mismo producto no se repite en 14 días.', titulo: '👀 Lo que estuviste viendo', conProducto: true },
+  ] },
+  { id: 'kapi', nombre: 'Kapi te extraña', detalle: 'Para quien dejó de abrir la app (Kapi es la mascota virtual).', avisos: [
+    { clave: 'retention_7d', nombre: 'Después de 7 días', cuando: 'Sale cuando lleva 7 días sin abrir la app.', titulo: 'Mascota Hambrienta' },
+    { clave: 'retention_14d', nombre: 'Después de 14 días', cuando: 'Sale cuando lleva 14 días sin abrir la app.', titulo: 'Kapi te extraña' },
+  ] },
+  { id: 'encuesta', nombre: 'Encuesta pendiente', detalle: 'Para quien creó su cuenta y no respondió la encuesta. Lleva a /encuesta-suscripcion.', avisos: [
+    { clave: 'survey_3d', nombre: 'A los 3 días', cuando: 'Sale 3 días después de crear la cuenta, si no respondió.', titulo: '📝 Tu encuesta te espera', probable: true },
+    { clave: 'survey_10d', nombre: 'A los 10 días', cuando: 'Sale a los 10 días, si sigue sin responder. Es el último.', titulo: '📝 Tu encuesta te espera', probable: true },
+  ] },
+];
+
+const textoAviso = (v) => (v ? { texto: v.text || '', emoji: v.emoji || '', frase: v.cta || '' } : null);
+
+/** notification_settings/global → { activos, horarios, textos } (lo que falta sale de los valores de siempre). */
+export function configNotificacionesDesde(doc = {}) {
+  const d = doc || {};
+  const activos = {};
+  const horarios = {};
+  CATEGORIAS_NOTIF.forEach((c) => {
+    activos[c.clave] = d.categories?.[c.clave] !== false;
+    const h = d.schedules?.[c.clave] || {};
+    horarios[c.clave] = { desde: h.start || c.desde, hasta: h.end || c.hasta };
+  });
+  const textos = {};
+  Object.entries(TEXTOS_NOTIF).forEach(([clave, [texto, emoji, frase]]) => {
+    const g = d.copys?.[clave];
+    textos[clave] = { a: textoAviso(g?.a) || { texto, emoji, frase }, b: textoAviso(g?.b) };
+  });
+  return { activos, horarios, textos };
+}
+
+/** Lo que se guarda en notification_settings/global (las mismas claves del motor). */
+export function configNotificacionesAFirestore(c = {}) {
+  const deTexto = (v) => (v ? { text: String(v.texto || '').trim(), emoji: String(v.emoji || '').trim(), cta: String(v.frase || '').trim() } : null);
+  const categories = {};
+  const schedules = {};
+  CATEGORIAS_NOTIF.forEach(({ clave }) => {
+    categories[clave] = c.activos?.[clave] !== false;
+    schedules[clave] = { start: c.horarios?.[clave]?.desde, end: c.horarios?.[clave]?.hasta };
+  });
+  const copys = {};
+  Object.entries(c.textos || {}).forEach(([clave, v]) => { copys[clave] = { a: deTexto(v.a), b: deTexto(v.b) }; });
+  return { categories, schedules, copys };
+}
+
+/** El mensaje como lo arma el motor (texto + frase + emoji), con datos de ejemplo. */
+export function vistaPreviaAviso(v) {
+  return [v?.texto, v?.frase, v?.emoji].map((x) => String(x || '').trim()).filter(Boolean).join(' ')
+    .replace(/\{nombre\}/g, 'María').replace(/\{monedas\}/g, '25').replace(/\{producto\}/g, 'Casaca Dragon Ball · Gohan Beast');
+}
+
+/** Agrega {dato} al final del texto, con un espacio si hace falta. */
+export const conDato = (texto = '', dato) => `${texto}${texto && !texto.endsWith(' ') ? ' ' : ''}{${dato}}`;
+
+/** A quién le llega una oferta (lo filtra el servidor). */
+export const SEGMENTOS_NOTIF = [
+  { valor: 'all', texto: 'Todos', detalle: 'Todos los clientes' },
+  { valor: 'vip', texto: 'VIP', detalle: 'Con 50 monedas o más' },
+  { valor: 'inactive', texto: 'Inactivos', detalle: 'Sin abrir en 30 días o más' },
+  { valor: 'cart', texto: 'Con carrito', detalle: 'Con productos en el carrito' },
+  { valor: 'dates', texto: 'Con fechas', detalle: 'Con fechas importantes anotadas' },
+];
+
+export const ESTADOS_CAMPANA = {
+  sent: { texto: 'Enviada', tono: 'exito' },
+  scheduled: { texto: 'Programada', tono: 'violeta' },
+  sending: { texto: 'Enviando', tono: 'aviso' },
+  error: { texto: 'Con error', tono: 'peligro' },
+  cancelled: { texto: 'Cancelada', tono: 'neutro' },
+};
+
+export const tasaTexto = (abiertos, enviados) => (enviados > 0 ? `${Math.round((abiertos / enviados) * 100)} %` : '—');
+
+const msDeFecha = (v) => {
+  if (!v) return 0;
+  if (typeof v === 'number') return v;
+  if (typeof v.toMillis === 'function') return v.toMillis();
+  if (typeof v.seconds === 'number') return v.seconds * 1000;
+  const n = Date.parse(v);
+  return Number.isFinite(n) ? n : 0;
+};
+
+/** Una campaña (notification_campaigns) o una guardada (notification_drafts) → el admin. */
+export function campanaDesde(c = {}) {
+  const campanita = Number(c.inAppUsers) || 0;
+  const abiertas = Number(c.opened) || 0;
+  return {
+    id: c.id,
+    titulo: c.title || '',
+    mensaje: c.body || '',
+    enlace: c.link || '',
+    imagen: c.image || '',
+    segmento: SEGMENTOS_NOTIF.some((s) => s.valor === c.segment) ? c.segment : 'all',
+    productoId: c.productId || '',
+    productoNombre: c.productName || '',
+    estado: c.status || '',
+    fechaMs: msDeFecha(c.sentAt) || msDeFecha(c.scheduledAt) || msDeFecha(c.updatedAt) || msDeFecha(c.createdAt),
+    push: c.pushUsers ?? null,
+    campanita: c.inAppUsers ?? null,
+    abiertas: c.status === 'sent' ? abiertas : null,
+    tasa: c.status === 'sent' ? tasaTexto(abiertas, campanita) : '—',
+  };
+}
+
+/** Lo que se guarda o se envía de una oferta (sin el cuándo). */
+export function ofertaAFirestore(d = {}) {
+  return {
+    title: String(d.titulo || '').trim(),
+    body: String(d.mensaje || '').trim(),
+    link: String(d.enlace || '').trim(),
+    image: d.imagen || '',
+    segment: d.segmento || 'all',
+    productId: d.productoId || '',
+    productName: d.productoNombre || '',
+  };
+}
+
+/** "Anunciar un producto" (productoAdminDesde): con oferta lo dice; si no, es una novedad. */
+export function ofertaDeProducto(p = {}) {
+  const s = (n) => (Number(n) || 0).toFixed(2).replace(/\.00$/, '');
+  return {
+    productoId: p.id,
+    productoNombre: p.nombre,
+    titulo: p.conOferta ? `🔥 Oferta: ${p.nombre}` : `✨ Nuevo: ${p.nombre}`,
+    mensaje: p.conOferta ? `Ahora a S/ ${s(p.precio)} (antes S/ ${s(p.precioLista)}). Solo por tiempo limitado.` : `Llegó ${p.nombre}. Míralo antes de que se agote.`,
+    enlace: `/producto/${p.id}`,
+    ...(p.imagen ? { imagen: p.imagen } : {}),
+  };
+}
+
+/** 'YYYY-MM-DD' + hora (0-23) en la hora del navegador → ISO (o '' si falta). */
+export function programadaIso(dia, hora) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dia || ''));
+  if (!m || hora === '' || hora == null) return '';
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(hora), 0, 0).toISOString();
+}
+
+/** Los errores de una oferta antes de enviarla (o de guardarla: `paraGuardar`). */
+export function erroresDeOferta(d = {}, ahoraMs = Date.now(), paraGuardar = false) {
+  const iso = d.cuando === 'programar' ? programadaIso(d.dia, d.hora) : '';
+  return {
+    titulo: String(d.titulo || '').trim() ? undefined : 'Escribe el título.',
+    mensaje: String(d.mensaje || '').trim() ? undefined : 'Escribe el mensaje.',
+    dia: paraGuardar || d.cuando !== 'programar' ? undefined
+      : !iso ? 'Elige el día y la hora del envío.'
+        : Date.parse(iso) <= ahoraMs ? 'Esa hora ya pasó: elige una que venga.' : undefined,
+  };
+}
+
+/** Los nombres de los avisos en la tabla de "¿qué texto funciona mejor?". */
+export const NOMBRES_AVISO = {
+  cart_1h: 'Carrito 1 h', cart_24h: 'Carrito 24 h', cart_48h: 'Carrito 48 h',
+  retention_7d: 'Kapi 7 días', retention_14d: 'Kapi 14 días',
+  survey_3d: 'Encuesta 3 días', survey_10d: 'Encuesta 10 días',
+  orders: 'Pedidos', product_view: 'Producto que estuvo mirando', fecha_recordatorio: 'Fechas importantes',
+  fecha_festiva: 'Fechas festivas', manual_promo: 'Ofertas (campañas)',
+};
+
+/** Un doc de notification_stats → la fila de la comparación (con 50 envíos por texto ya se compara). */
+export function filaDeEstadistica(st = {}) {
+  const lado = (x = {}) => ({ enviados: Number(x.sent) || 0, abiertos: Number(x.opened) || 0, tasa: tasaTexto(Number(x.opened) || 0, Number(x.sent) || 0) });
+  const a = lado(st.a);
+  const b = lado(st.b);
+  const ta = a.enviados ? a.abiertos / a.enviados : 0;
+  const tb = b.enviados ? b.abiertos / b.enviados : 0;
+  let mejor = '';
+  if (b.enviados) mejor = a.enviados >= 50 && b.enviados >= 50 ? (ta === tb ? 'Empate' : ta > tb ? 'Texto 1' : 'Texto 2') : 'Faltan envíos';
+  return { id: st.id, nombre: NOMBRES_AVISO[st.id] || st.id, a, b: b.enviados ? b : null, mejor };
+}

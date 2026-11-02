@@ -231,7 +231,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | hecho (2026-11-02) | · |
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | · |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | · |
-| D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | en marcha (D5a a D5c, 2026-11-02) | · |
+| D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | en marcha (D5a a D5d, 2026-11-02) | · |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | · | · |
 | D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | · | · |
 | D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | · | · |
@@ -1253,7 +1253,7 @@ El kit pone su marco (filtros, avisos); el visor va en el hueco tal cual.
   `anchos` desde `ANCHOS_PANTALLA`; de `children`, `<HeatmapViewer data loading error emptyMessage ancho origen versionesPorRuta soloDisenoActual onCambiarDiseno />`
   como hoy.
 
-## D5 · Clientes y fidelidad (en marcha: D5a a D5c hechos en el kit el 2026-11-02)
+## D5 · Clientes y fidelidad (en marcha: D5a a D5d hechos en el kit el 2026-11-02)
 
 Siete pantallas de hoy (unas 4.900 líneas con las de Fechas importantes),
 en cinco tramos; el apartado se une entero cuando estén los cinco.
@@ -1263,7 +1263,7 @@ en cinco tramos; el apartado se une entero cuando estén los cinco.
 | D5a | Referidos (seguimiento), Misiones diarias y Retos semanales (catálogo, evidencias, reto activo) | `AdminReferidos.jsx`, `AdminMisiones.jsx`, `AdminRetos.jsx` | hecho (2026-11-02) |
 | D5b | Recompensas (el catálogo de canje) | `AdminRecompensas.jsx` (603 líneas) | hecho (2026-11-02) |
 | D5c | Fechas importantes: el calendario, los avisos y fechas festivas, las fechas de los clientes y los paquetes | `AdminFechasImportantesPage.jsx` + `components/admin/fechas/*` (1.345 líneas) | hecho (2026-11-02) |
-| D5d | Notificaciones y ofertas | `AdminNotifications/AdminNotifications.jsx` (755 líneas) | · |
+| D5d | Notificaciones y ofertas | `AdminNotifications/AdminNotifications.jsx` (755 líneas) | hecho (2026-11-02) |
 | D5e | Encuestas: el editor de la de suscripción y las dos pantallas de respuestas que hoy van embebidas en Opiniones (D4c) | `AdminEncuestas.jsx`, `AdminEncuestaEntregas.jsx`, `AdminRespuestasEncuesta.jsx` | · |
 
 ### D5a: Referidos, Misiones y Retos (en el kit desde el 2026-11-02)
@@ -1446,6 +1446,75 @@ página usa `utils/fechasFestivas.mjs`, la misma que el servidor
     `useGiftCatalog().recomendar(persona, { ocasion: evento, limite: 3 })`
     con la persona armada como en `PackageCreatorModal`.
 
+### D5d: Notificaciones y ofertas (en el kit desde el 2026-11-02)
+
+| Ofertas (computadora) | Un aviso con dos textos (celular) |
+|---|---|
+| ![Las guardadas arriba, el formulario y a la derecha la vista previa con los botones de prueba, guardar y enviar](admin-notificaciones-escritorio.webp) | ![El aviso del carrito al día siguiente con su texto 1, los botones para poner el nombre o las monedas, la frase final y el emoji](admin-notificaciones-celular.webp) |
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| Notificaciones | `PaginaNotificacionesAdmin` | `paginas/admin/Notificaciones.jsx` | Tres pestañas (Automáticos · Ofertas · Historial); "Nueva oferta" arriba. La oferta a medio escribir se queda al cambiar de pestaña |
+| Automáticos | (dentro) | ídem | Cada categoría con su interruptor, qué hace y su horario (Desde/Hasta; avisa si termina antes de empezar). Los textos por grupo (un grupo apagado lo dice): mensaje con "+ Nombre", "+ Monedas" (y "+ Producto"), frase final, emoji y la vista previa como llega al celular; "Probar un segundo texto" (A/B) y "Enviarme una prueba" en las encuestas. **Guardar aparece solo con cambios**, en una barra fija con "Descartar" |
+| Ofertas | (dentro) | ídem | Las guardadas (usar o borrar con `Confirmar`), "Anunciar un producto" (`SelectorProductos`: llena título, mensaje, enlace y foto; si está en oferta lo dice), título, mensaje, enlace, imagen (`CampoImagen`: subir o pegar un enlace), a quién le llega y cuándo: ahora o un día (`CampoFecha`) y una hora en punto, con aviso si cae fuera del horario de ofertas. Al costado, la vista previa y los tres botones. **Enviar siempre pregunta antes**; si el horario de ofertas no la deja salir, pregunta "¿Enviarla igual?" |
+| Historial | (dentro) | ídem | "¿Qué texto funciona mejor?" (`TablaAdmin`: abiertos de enviados por texto y cuál gana; con 50 envíos por texto), y las ofertas enviadas y programadas con su foto, cuándo, para quién, a cuántos llegó, abiertas y el estado; en "⋯", volver a usar y cancelar el envío (`Confirmar`) |
+
+Adaptadores (con pruebas): `CATEGORIAS_NOTIF`, `GRUPOS_AVISOS`,
+`configNotificacionesDesde` / `configNotificacionesAFirestore` (mezcla con los
+valores de siempre, como antes, con las claves del motor), `vistaPreviaAviso`,
+`conDato`, `SEGMENTOS_NOTIF`, `ESTADOS_CAMPANA`, `tasaTexto`, `campanaDesde`,
+`ofertaAFirestore`, `ofertaDeProducto`, `programadaIso`, `erroresDeOferta` (la
+hora programada no puede haber pasado), `NOMBRES_AVISO` y `filaDeEstadistica`.
+
+### Diferencias a propósito (D5d)
+
+- "Enviar ahora" pregunta antes, con a quién le llega y "No se puede
+  deshacer" (antes salía con un clic); los `window.confirm` pasan a
+  `Confirmar`.
+- La hora programada va en punto (el motor corre cada hora en punto) y no
+  puede ser una que ya pasó; si cae fuera del horario de ofertas, lo dice
+  antes de enviar.
+- La imagen se sube o se pega (antes solo una URL escrita a mano).
+- Los estados y la comparación con texto y color (antes emojis "✅ 🕒 🏆").
+- Guardar los automáticos aparece solo con cambios, y se puede descartar.
+- La opción de cuándo dice "Ahora" / "Un día y hora": con "Enviar ahora" en
+  la opción y en el botón, el clic iba a la opción.
+
+### Qué se probó (2026-11-02, demo en localhost, 1280 px y 375 px)
+
+- Automáticos: encender "Kapi te extraña" → aparece la barra; "+ Nombre" en
+  el carrito de 1 h → "Tu regalo te está esperando. María ¿Terminamos? 📦";
+  el de 24 h con sus dos textos; guardar → "Configuración guardada".
+- Ofertas: enviar vacía → los errores; buscar "casaca" → "Anunciar este" →
+  "🔥 Oferta: … Ahora a S/ 109 (antes S/ 119)"; enviar → la pregunta →
+  "Oferta enviada: 380 por push y 1,790 en la campanita".
+- Con el horario de ofertas desde las 17:00 (a las 16:00): "¿Enviarla
+  igual?"; programar sin día → "Elige el día y la hora del envío" y el aviso
+  de fuera de horario; "Guardar para después" → arriba como "En uso".
+- Historial: la comparación (Carrito 24 h: gana el texto 2; Encuesta: faltan
+  envíos) y cancelar la programada → "Cancelada".
+- 375 px: las tres pestañas sin salirse del ancho.
+
+### Cómo se une D5d
+
+- `NotificacionesDelPanel.jsx`:
+  - `getDoc(notification_settings/global)` → `configNotificacionesDesde`
+    (si falla, la pestaña no deja guardar); guardar con
+    `setDoc(…, { ...docLeido, ...configNotificacionesAFirestore(c) })` para
+    no perder otros campos.
+  - `onProbarAutomatico` = `probarAvisoAutomatico({ type, copy })` (con
+    `copy` en las claves del motor: `{ text, emoji, cta }`).
+  - Guardadas: `notification_drafts` (orden `updatedAt`, 50) →
+    `campanaDesde`; guardar `addDoc` / `setDoc(merge)` con
+    `ofertaAFirestore` + `updatedAt`; borrar `deleteDoc`.
+  - `onProbarOferta` = `sendManualPromoNotification({ ...ofertaAFirestore(d), prueba: true })`;
+    `onEnviarOferta` = la misma con `scheduledAt` y `forzar`; el error trae
+    `details.motivo`.
+  - Historial: `notification_campaigns` (orden `createdAt`, 50) →
+    `campanaDesde`; `notification_stats` crudo; cancelar con
+    `cancelPromoCampaign({ campaignId })`.
+  - `subirImagen` → `uploadFile(blob, 'notifications/{ms}.jpg')`.
+
 ## Reemplazos: qué sale y qué entra
 
 La misma tabla que las fichas de la tienda (CUENTA.md, "Reemplazos"): qué
@@ -1542,7 +1611,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D5a · Retos | `pages/admin/AdminRetos.jsx` + `.module.css` (`window.confirm`, `alert()`) | `PaginaRetosAdmin` | `RetosDelPanel.jsx` |
 | D5b · Recompensas | `pages/admin/AdminRecompensas.jsx` + `.module.css` (`AdminImageCropper`, `BuscadorProducto`, `common/Button`, su propio modal) | `PaginaRecompensasAdmin` (`PaginaListaAdmin`, `CampoImagen`, `SelectorProductos`) | `RecompensasDelPanel.jsx` |
 | D5c · Fechas importantes | `pages/admin/AdminFechasImportantesPage.jsx` + `.module.css`, `components/admin/fechas/*` (`GlobalCalendarView`, `FechasFestivasView`, `UsuariosView`, `PackageCreatorModal` y sus CSS) | `PaginaFechasAdmin` (`PaginaListaAdmin`, `TablaAdmin`, `HojaEdicion`, `SelectorProductos`, `ElegirUno`, `Confirmar`) | `FechasDelPanel.jsx` |
-| D5d · Notificaciones | `pages/admin/AdminNotifications/*` | por hacer | `NotificacionesDelPanel.jsx` |
+| D5d · Notificaciones | `pages/admin/AdminNotifications/AdminNotifications.jsx` + `.module.css` (`BuscadorProducto`, `useGlobalToast`, `window.confirm`) | `PaginaNotificacionesAdmin` (`TablaAdmin`, `SelectorProductos`, `CampoImagen`, `CampoFecha`, `ElegirUno`, `Confirmar`) | `NotificacionesDelPanel.jsx` |
 | D5e · Encuestas | `AdminEncuestas.jsx`, `AdminEncuestaEntregas.jsx`, `AdminRespuestasEncuesta.jsx` | por hacer | por pantalla |
 
 ## Cómo se une un apartado (la misma lógica que clientes)
@@ -1585,6 +1654,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |
 | 2026-11-02 | Reemplazos de D0 a D2 (qué sale, qué entra y el conector) y la sección «Panel administrativo» de ELIMINAR.md con quién importa hoy cada pieza vieja | `guia/ADMIN.md`, `guia/ELIMINAR.md` |
+| 2026-11-02 | D5d en el kit: `PaginaNotificacionesAdmin` (automáticos con sus horarios y textos A/B, ofertas con guardadas y envío que pregunta, historial con la comparación); adaptadores con pruebas | `paginas/admin/Notificaciones.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D5c en el kit: `PaginaFechasAdmin` (calendario con agenda en el celular, fechas festivas y sus avisos, fechas de clientes por cercanía con sus paquetes); adaptadores con pruebas | `paginas/admin/Fechas.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D5b en el kit: `PaginaRecompensasAdmin`; adaptadores con pruebas; las tarjetas de `TablaAdmin` ya no se salen del ancho en el celular | `paginas/admin/Fidelidad.jsx`, `piezas/admin/Datos.module.css`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D5 dividido en tramos (a: referidos, misiones y retos; b: recompensas; c: fechas importantes; d: notificaciones; e: encuestas). D5a en el kit: `PaginaReferidosAdmin`, `PaginaMisionesAdmin`, `PaginaRetosAdmin`; adaptadores con pruebas | `paginas/admin/Fidelidad.jsx`, `adaptadoresAdmin.js` |

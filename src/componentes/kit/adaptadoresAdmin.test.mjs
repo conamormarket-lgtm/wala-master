@@ -538,3 +538,43 @@ test('fechas importantes: el mes, las fechas de clientes y los paquetes', () => 
   assert.deepEqual(m2.diasDesdeTexto('0, 1', 0), [1, 0]);
   assert.equal(m2.idDeFestiva('Día del Abuelo', ['dia_del_abuelo']), 'dia_del_abuelo_2');
 });
+
+test('notificaciones: la configuración, las campañas y la comparación', () => {
+  const c = m2.configNotificacionesDesde({ categories: { promos: false }, schedules: { orders: { start: '07:00', end: '22:00' } }, copys: { cart_1h: { a: { text: 'Hola {nombre}', emoji: '👋', cta: 'Vuelve' }, b: { text: 'Otro' } } } });
+  assert.equal(c.activos.promos, false);
+  assert.equal(c.activos.survey, true);
+  assert.deepEqual(c.horarios.orders, { desde: '07:00', hasta: '22:00' });
+  assert.deepEqual(c.horarios.survey, { desde: '10:00', hasta: '20:00' });
+  assert.equal(c.textos.cart_1h.b.texto, 'Otro');
+  assert.equal(c.textos.cart_24h.b, null);
+  assert.equal(m2.vistaPreviaAviso(c.textos.cart_1h.a), 'Hola María Vuelve 👋');
+  const g = m2.configNotificacionesAFirestore(c);
+  assert.equal(g.categories.promos, false);
+  assert.deepEqual(g.schedules.orders, { start: '07:00', end: '22:00' });
+  assert.deepEqual(g.copys.cart_1h.a, { text: 'Hola {nombre}', emoji: '👋', cta: 'Vuelve' });
+  assert.equal(g.copys.cart_24h.b, null);
+  assert.equal(m2.conDato('Tienes', 'monedas'), 'Tienes {monedas}');
+  assert.equal(m2.conDato('', 'nombre'), '{nombre}');
+
+  const camp = m2.campanaDesde({ id: 'k', title: 'Hoy 2x1', body: 'b', segment: 'raro', status: 'sent', inAppUsers: 200, opened: 30, sentAt: '2026-11-01T15:00:00Z' });
+  assert.deepEqual([camp.segmento, camp.tasa, camp.abiertas, camp.fechaMs], ['all', '15 %', 30, Date.parse('2026-11-01T15:00:00Z')]);
+  assert.equal(m2.campanaDesde({ status: 'scheduled' }).abiertas, null);
+  assert.deepEqual(m2.ofertaAFirestore({ titulo: ' A ', mensaje: 'B', segmento: 'vip' }), { title: 'A', body: 'B', link: '', image: '', segment: 'vip', productId: '', productName: '' });
+  const o = m2.ofertaDeProducto({ id: 'p', nombre: 'Taza', precio: 25, precioLista: 35.5, conOferta: true, imagen: 'i' });
+  assert.equal(o.mensaje, 'Ahora a S/ 25 (antes S/ 35.50). Solo por tiempo limitado.');
+  assert.equal(o.enlace, '/producto/p');
+  assert.equal(m2.ofertaDeProducto({ id: 'p', nombre: 'Taza' }).titulo, '✨ Nuevo: Taza');
+
+  const ahora = new Date(2026, 10, 2, 12).getTime();
+  assert.equal(m2.programadaIso('2026-11-03', 10), new Date(2026, 10, 3, 10).toISOString());
+  assert.equal(m2.programadaIso('', 10), '');
+  const e1 = m2.erroresDeOferta({ titulo: '', mensaje: 'x', cuando: 'programar', dia: '2026-11-02', hora: 9 }, ahora);
+  assert.deepEqual([e1.titulo, e1.dia], ['Escribe el título.', 'Esa hora ya pasó: elige una que venga.']);
+  assert.equal(m2.erroresDeOferta({ titulo: 'a', mensaje: 'b', cuando: 'programar' }, ahora).dia, 'Elige el día y la hora del envío.');
+  assert.equal(m2.erroresDeOferta({ titulo: 'a', mensaje: 'b', cuando: 'programar' }, ahora, true).dia, undefined);
+
+  assert.deepEqual(m2.filaDeEstadistica({ id: 'cart_1h', a: { sent: 60, opened: 12 }, b: { sent: 55, opened: 20 } }).mejor, 'Texto 2');
+  assert.equal(m2.filaDeEstadistica({ id: 'cart_1h', a: { sent: 10, opened: 1 }, b: { sent: 5 } }).mejor, 'Faltan envíos');
+  const solo = m2.filaDeEstadistica({ id: 'orders', a: { sent: 8, opened: 2 } });
+  assert.deepEqual([solo.nombre, solo.b, solo.mejor, solo.a.tasa], ['Pedidos', null, '', '25 %']);
+});

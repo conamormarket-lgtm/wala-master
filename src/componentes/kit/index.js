@@ -102,6 +102,7 @@ export { FichaCliente, ListaCumpleanos } from './piezas/admin/Clientes';
 export { PaginaPaginasTecnica, PaginaUsoTecnica, PaginaNavegadorTecnica, PaginaMapaDeCalor, ORIGENES_TECNICOS } from './paginas/admin/Tecnico';
 export { PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, PaginaRecompensasAdmin } from './paginas/admin/Fidelidad';
 export { PaginaFechasAdmin } from './paginas/admin/Fechas';
+export { PaginaNotificacionesAdmin } from './paginas/admin/Notificaciones';
 export { TarjetaEnvio, EsqueletoEnvio } from './piezas/admin/Pedidos';
 export { PaginaRecepcion } from './paginas/admin/Pedidos';
 export { PaginaPagos } from './paginas/admin/Pagos';
@@ -133,4 +134,6 @@ export {
   TIPOS_RECOMPENSA, RECOMPENSA_CON_PRODUCTO, RECOMPENSA_CON_VIGENCIA, beneficioDeRecompensa, recompensaAdminDesdeFirestore, recompensaAdminAFirestore, erroresDeRecompensa,
   semanasDelMes, mesVecino, fechaClienteDesde, cuandoFecha, FILTROS_FECHAS_CLIENTES, fechaEnVentana, paqueteDesdeFirestore, paqueteAFirestore,
   paquetesDeFecha, cambiosAlElegir, siguienteElegido, estadoDePaquetes, diasDesdeTexto, idDeFestiva,
+  CATEGORIAS_NOTIF, GRUPOS_AVISOS, configNotificacionesDesde, configNotificacionesAFirestore, vistaPreviaAviso, conDato, SEGMENTOS_NOTIF,
+  ESTADOS_CAMPANA, tasaTexto, campanaDesde, ofertaAFirestore, ofertaDeProducto, programadaIso, erroresDeOferta, NOMBRES_AVISO, filaDeEstadistica,
 } from './adaptadoresAdmin';

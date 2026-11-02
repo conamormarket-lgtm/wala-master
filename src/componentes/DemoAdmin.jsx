@@ -12,6 +12,7 @@ import {
   PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, referidoDesdeFirestore, misionDesdeFirestore, misionAFirestore,
   retoDesdeFirestore, retoAFirestore, retoActivoDesde, evidenciaDesde, PaginaRecompensasAdmin, recompensaAdminDesdeFirestore, recompensaAdminAFirestore,
   PaginaFechasAdmin, fechaClienteDesde, paqueteDesdeFirestore, paquetesDeFecha, cambiosAlElegir, siguienteElegido,
+  PaginaNotificacionesAdmin, configNotificacionesDesde, campanaDesde,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -69,6 +70,7 @@ const HECHAS = [
   ['/admin/retos', 'Retos'],
   ['/admin/recompensas', 'Recompensas'],
   ['/admin/fechas-importantes', 'Fechas'],
+  ['/admin/notificaciones', 'Notificaciones'],
   ['/admin/crear-cuentas-pedidos', 'Cuentas'],
   ['/admin/categorias', 'Categorías'],
   ['/admin/colecciones', 'Colecciones'],
@@ -429,6 +431,29 @@ const FESTIVAS_DEMO = FESTIVAS_DEFAULT.map(normalizarFestiva).concat(normalizarF
 }), normalizarFestiva({
   id: 'black_friday', nombre: 'Black Friday', emoji: '🛍️', regla: { tipo: 'movil', mes: 11, diaSemana: 5, ordinal: 4 }, avisarDias: [7, 1], avisarATodos: true,
 }));
+// D5d: la configuración guardada (con un texto 2 en el carrito), guardadas, campañas y su comparación.
+const CONFIG_NOTIF_DEMO = configNotificacionesDesde({
+  categories: { promos: true, retention: false },
+  copys: { cart_24h: { a: { text: 'El box que elegiste sigue en tu carrito.', emoji: '🎁', cta: '¿Terminamos de armarlo?' }, b: { text: '{nombre}, tu carrito te extraña.', emoji: '🛒', cta: 'Vuelve por él' } } },
+});
+const HORA_MS = 3600000;
+const GUARDADAS_DEMO = [
+  { id: 'bor1', title: '🎄 Navidad: envío gratis', body: 'Del 15 al 24 de diciembre, envío gratis en Lima. Pide con tiempo.', segment: 'all', link: '/tienda', updatedAt: Date.now() - 86400000 * 3 },
+  { id: 'bor2', title: '💜 Solo para VIP', body: 'Tienes 20 % en tu próxima compra por tener más de 50 monedas.', segment: 'vip', image: TIENDA.productos[2].mainImage || TIENDA.productos[2].images?.[0] || '', updatedAt: Date.now() - 86400000 * 9 },
+].map(campanaDesde);
+const CAMPANAS_DEMO = [
+  { id: 'c1', title: '🔥 2x1 en cajas de regalo', body: 'Solo hoy: lleva dos y paga una.', segment: 'all', status: 'sent', pushUsers: 412, inAppUsers: 1830, opened: 214, sentAt: Date.now() - 86400000 * 2, image: TIENDA.productos[0].mainImage || TIENDA.productos[0].images?.[0] || '' },
+  { id: 'c2', title: '✨ Nuevo: Casaca One Piece', body: 'Llegó la casaca de Luffy. Míralo antes de que se agote.', segment: 'cart', status: 'scheduled', scheduledAt: Date.now() + HORA_MS * 26, link: '/producto/x' },
+  { id: 'c3', title: 'Te extrañamos', body: 'Vuelve y recibe 10 monedas.', segment: 'inactive', status: 'cancelled', scheduledAt: Date.now() - 86400000 * 6 },
+  { id: 'c4', title: 'Black Friday', body: 'Todo con 30 %.', segment: 'all', status: 'error', createdAt: Date.now() - 86400000 * 12 },
+].map(campanaDesde);
+const ESTADISTICAS_DEMO = [
+  { id: 'cart_1h', a: { sent: 320, opened: 61 } },
+  { id: 'cart_24h', a: { sent: 140, opened: 18 }, b: { sent: 152, opened: 31 } },
+  { id: 'survey_3d', a: { sent: 40, opened: 9 }, b: { sent: 38, opened: 7 } },
+  { id: 'orders', a: { sent: 980, opened: 540 } },
+  { id: 'manual_promo', a: { sent: 1830, opened: 214 } },
+];
 const RECOMPENSAS_DEMO = [
   { title: 'Pack de stickers Kapi', description: 'Seis stickers para tu laptop o celular.', cost: 120, tipo: 'manual', value: 'Sale del cajón de mercancía', imageUrl: '/assets/kapi/kapi-happy.webp' },
   { title: '10% en tu pedido', description: 'Hasta S/ 20 de descuento.', cost: 300, tipo: 'descuento', descuentoPct: 10, topeDescuento: 20, vigenciaDias: 30 },
@@ -563,6 +588,10 @@ function PanelDePrueba() {
   const [resSinOrigen, setResSinOrigen] = useState(true);
   const [misiones, guardarMisionCruda, eliminarMision] = useListaDemo(MISIONES_DEMO, falla);
   const [fechasPestana, setFechasPestana] = useState('calendario');
+  const [notifPestana, setNotifPestana] = useState('automaticos');
+  const [configNotif, setConfigNotif] = useState(CONFIG_NOTIF_DEMO);
+  const [guardadasNotif, setGuardadasNotif] = useState(GUARDADAS_DEMO);
+  const [campanas, setCampanas] = useState(CAMPANAS_DEMO);
   const [festivas, setFestivas] = useState(FESTIVAS_DEMO);
   const [diasAviso, setDiasAviso] = useState([7, 1]);
   const [paquetes, setPaquetes] = useState(PAQUETES_DEMO);
@@ -1106,6 +1135,52 @@ function PanelDePrueba() {
         subirImagen={subir}
         onGuardar={(datos, id) => guardarRecompensaCruda(recompensaAdminDesdeFirestore({ id, ...recompensaAdminAFirestore(datos) }), id)}
         onEliminar={eliminarRecompensa}
+      />
+    );
+  } else if (ruta === '/admin/notificaciones') {
+    const sinRed = con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined;
+    pagina = (
+      <PaginaNotificacionesAdmin
+        pestana={notifPestana}
+        onPestana={setNotifPestana}
+        config={configNotif}
+        cargandoConfig={con('cargando')}
+        errorConfig={sinRed}
+        onReintentarConfig={comunes.onReintentar}
+        onGuardarConfig={async (c) => { await espera(700); fallar(); setConfigNotif(c); }}
+        onProbarAutomatico={async () => { await espera(900); fallar('La función probarAvisoAutomatico no respondió (es una prueba).'); return { push: 1, tieneApp: true }; }}
+        guardadas={vacio ? [] : guardadasNotif}
+        onGuardarBorrador={async (d, id) => {
+          await espera(600);
+          fallar();
+          const nuevo = id || `bor-${Date.now()}`;
+          const fila = { id: nuevo, titulo: d.titulo, mensaje: d.mensaje, enlace: d.enlace, imagen: d.imagen, segmento: d.segmento, productoId: d.productoId, productoNombre: d.productoNombre, fechaMs: Date.now() };
+          setGuardadasNotif((g) => (id ? g.map((x) => (x.id === id ? { ...x, ...fila } : x)) : [fila, ...g]));
+          return nuevo;
+        }}
+        onEliminarBorrador={async (id) => { await espera(500); fallar(); setGuardadasNotif((g) => g.filter((x) => x.id !== id)); }}
+        productos={PRODUCTOS}
+        subirImagen={subir}
+        onProbarOferta={async () => { await espera(800); fallar(); return { tieneApp: false }; }}
+        onEnviarOferta={async (d, { programadaIso: cuando, forzar }) => {
+          await espera(900);
+          fallar('sendManualPromoNotification no respondió (es una prueba).');
+          const hora = new Date().getHours();
+          const { desde, hasta } = configNotif.horarios.promos;
+          const hh = `${String(hora).padStart(2, '0')}:00`;
+          if (!cuando && !forzar && (!configNotif.activos.promos || hh < desde || hh >= hasta)) {
+            throw Object.assign(new Error('Fuera del horario de ofertas.'), { motivo: configNotif.activos.promos ? 'promos_fuera_horario' : 'promos_apagado' });
+          }
+          const fila = campanaDesde({ id: `c-${Date.now()}`, title: d.titulo, body: d.mensaje, image: d.imagen, segment: d.segmento, link: d.enlace, status: cuando ? 'scheduled' : 'sent', scheduledAt: cuando || undefined, sentAt: cuando ? undefined : Date.now(), pushUsers: cuando ? undefined : 380, inAppUsers: cuando ? undefined : 1790, opened: 0 });
+          setCampanas((c) => [fila, ...c]);
+          return cuando ? { programada: true, cuandoMs: Date.parse(cuando) } : { programada: false, push: 380, campanita: 1790 };
+        }}
+        campanas={vacio ? [] : campanas}
+        estadisticas={vacio ? [] : ESTADISTICAS_DEMO}
+        cargandoHistorial={con('cargando') || actualizando}
+        errorHistorial={sinRed}
+        onActualizarHistorial={async () => { setActualizando(true); await espera(800); setActualizando(false); setEstados((e) => e.filter((x) => x !== 'error')); }}
+        onCancelarCampana={async (id) => { await espera(600); fallar(); setCampanas((c) => c.map((x) => (x.id === id ? { ...x, estado: 'cancelled' } : x))); }}
       />
     );
   } else if (ruta === '/admin/fechas-importantes') {

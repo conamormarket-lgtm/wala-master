@@ -1,0 +1,343 @@
+/* ── D5d · Notificaciones ──────────────────────────────── */
+.pagina {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+  container: notificaciones / inline-size;
+}
+
+.pagina > header {
+  margin-bottom: 0;
+}
+
+.pestanas {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pestanas::-webkit-scrollbar {
+  display: none;
+}
+
+.seccion {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+}
+
+.subtitulo {
+  margin: 0;
+  font-family: var(--fuente-marca);
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.nota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+}
+
+.dos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: 0.75rem;
+}
+
+/* ── Qué sale y en qué horario ── */
+.categorias {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.categoria {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+
+.apagada {
+  background: var(--color-surface-2, #faf8fd);
+}
+
+.horas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+@container notificaciones (min-width: 720px) {
+  .categoria {
+    grid-template-columns: minmax(0, 1fr) 16rem;
+    align-items: center;
+  }
+}
+
+/* ── Los textos ── */
+.grupo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.55rem;
+  margin-top: 0.4rem;
+}
+
+.grupoTitulo {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.apagadoTexto {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.aviso {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.7rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+
+.avisoCabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.avisoCabeza > span {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1 1 14rem;
+}
+
+.variante {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.variante + .variante {
+  padding-top: 0.7rem;
+  border-top: 1px dashed var(--color-border);
+}
+
+.varianteNombre {
+  color: var(--violet-700);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+@container notificaciones (min-width: 720px) {
+  .editor {
+    grid-template-columns: minmax(0, 1fr) 18rem;
+    align-items: start;
+  }
+}
+
+.campos {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.datosBtns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: -0.2rem;
+}
+
+.fraseEmoji {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5.5rem;
+  gap: 0.6rem;
+}
+
+.previa {
+  display: grid;
+  justify-items: start;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+/* Cómo llega al celular */
+.notif {
+  display: grid;
+  gap: 0.35rem;
+  width: min(100%, 22rem);
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-bg, #fff);
+  box-shadow: 0 6px 18px rgba(30, 16, 60, 0.08);
+}
+
+.notifApp {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.notifApp img {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+}
+
+.notifCuerpo {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.notifCuerpo > span {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.notifCuerpo img {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+/* Guardar (aparece con cambios) */
+.barraGuardar {
+  position: sticky;
+  bottom: 0.75rem;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem 0.6rem 1rem;
+  border: 1px solid var(--violet-200);
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 10px 28px rgba(30, 16, 60, 0.14);
+}
+
+.barraGuardar > span {
+  flex: 1 1 12rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+/* ── Ofertas ── */
+.guardadas {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guardada {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.guardadaActiva {
+  border-color: var(--violet-500);
+  box-shadow: inset 3px 0 0 var(--violet-500);
+}
+
+.guardadaTexto {
+  display: grid;
+  flex: 1 1 12rem;
+  min-width: 0;
+  font-size: 0.86rem;
+}
+
+.guardadaTexto > span:first-of-type {
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.guardadaAcciones {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.oferta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.ofertaCampos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.ofertaLado {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.ofertaAcciones {
+  display: grid;
+  gap: 0.45rem;
+}
+
+@container notificaciones (min-width: 760px) {
+  .oferta {
+    grid-template-columns: minmax(0, 1fr) 20rem;
+  }
+
+  .ofertaLado {
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+.producto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+}
