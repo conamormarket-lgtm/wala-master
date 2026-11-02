@@ -107,6 +107,8 @@ export { PaginaEncuestaAdmin, RespuestasEntregas, RespuestasEncuesta } from './p
 export { PaginaSorteosAdmin, PaginaSorteoAdmin, GanadoresSorteo, AjusteSorteo } from './paginas/admin/Sorteos';
 export { PaginaSuscripcionesAdmin, PaginaSuscripcionAdmin } from './paginas/admin/Suscripciones';
 export { PaginaEnlacesAdmin, PaginaEnlaceAdmin } from './paginas/admin/Enlaces';
+export { PaginaPopupsAdmin } from './paginas/admin/Popups';
+export { PaginaLandingsAdmin, PaginaTemasAdmin } from './paginas/admin/Paginas';
 export { TarjetaEnvio, EsqueletoEnvio } from './piezas/admin/Pedidos';
 export { PaginaRecepcion } from './paginas/admin/Pedidos';
 export { PaginaPagos } from './paginas/admin/Pagos';
@@ -147,4 +149,5 @@ export {
   INTERVALOS_PLAN, mesesDeIntervalo, COLORES_CAMPANA, campanaSuscripcionDesde, campanaSuscripcionAFormulario, planNuevo, planConIntervalo,
   erroresDeCampanaSuscripcion, textoDePlanes, ESTADOS_SUSCRIPTOR, suscriptorDesde, beneficioDesde, beneficioAFirestore, ganadorGaleriaDesde, ganadorGaleriaAFirestore,
   DISENO_ENLACES, TIPOS_RED, disenoDeEnlaces, paginaEnlacesDesde, paginaEnlacesAFirestore, botonEnlaceNuevo, redNueva, erroresDeEnlaces, clicsDeEnlaces,
+  cuandoPopup, erroresDePopup, slugDeLanding, landingDesde, erroresDeLanding, landingAFirestore, temaDesde, temaAFirestore, temaDesdeCss, pesoTexto,
 } from './adaptadoresAdmin';

@@ -91,7 +91,7 @@ function EditorPlan({ plan: p, numero, onCambiar, onQuitar }) {
 export function PaginaSuscripcionesAdmin({ campanas = [], cargando, error, onReintentar, onGuardar, onEliminar, subirImagen, onDetalle, urlPublica = (c) => `/suscrito-sorteo/${c.slug}`, dominio = 'wala.pe' }) {
   return (
     <PaginaListaAdmin
-      cabeza={{ icono: 'sorteos', tono: 'rosa', titulo: 'Sorteos por suscripción', subtitulo: 'Campañas con pago automático: solo los suscriptores al día participan y a más meses, más chances.' }}
+      cabeza={{ icono: 'suscripcion', tono: 'rosa', titulo: 'Sorteos por suscripción', subtitulo: 'Campañas con pago automático: solo los suscriptores al día participan y a más meses, más chances.' }}
       registros={campanas}
       cargando={cargando}
       error={error}

@@ -661,3 +661,26 @@ test('enlaces: la página, su diseño, el enlace único y los clics', () => {
   assert.deepEqual(c.filas.map((f) => f.texto), ['3 · 38 %', '1 · 13 %', '4 · 50 %']);
   assert.equal(c.filas[2].nombre, 'Red: Otra');
 });
+
+test('popups, páginas y temas', () => {
+  assert.equal(m2.cuandoPopup({ disparador: 'scroll', scrollPct: 40 }), 'al bajar 40 %');
+  assert.equal(m2.cuandoPopup({ disparador: 'tiempo', segundos: 0 }), 'apenas entra');
+  const e = m2.erroresDePopup({ formato: 'imagen', titulo: '', objetivo: 'enlace', botonUrl: '', paginas: 'elegidas', rutas: [] });
+  assert.deepEqual(Object.entries(e).filter(([, v]) => v).map(([k]) => k), ['titulo', 'imagenUrl', 'botonUrl', 'rutas']);
+  assert.equal(m2.erroresDePopup({ formato: 'tarjeta', titulo: 'a', botonTexto: '', objetivo: 'encuesta' }).botonTexto, 'Escribe el texto del botón.');
+
+  assert.equal(m2.slugDeLanding('/Promo Navidad '), 'promo-navidad');
+  const marcas = [{ id: 'm1', slug: 'Daida', name: 'Daida Hogar' }];
+  const de = m2.landingDesde({ id: 'daida', slug: 'Daida', brandId: 'm1', title: 'Daida' }, marcas);
+  assert.deepEqual([de.deMarca, de.marcaNombre], [true, 'Daida Hogar']);
+  assert.equal(m2.landingDesde({ id: 'x', slug: 'promo', brandId: 'm1' }, marcas).deMarca, false);
+  assert.equal(m2.erroresDeLanding({ id: 'n', nombre: 'Otra', slug: 'Promo' }, [{ id: 'p', slug: 'promo' }]).slug, 'Ya hay una página con esa dirección: escoge otra.');
+  assert.deepEqual(m2.landingAFirestore({ nombre: ' Promo ', slug: 'promo-2', marcaId: '' }, { slug: 'promo', slugsAnteriores: ['promo-2', 'vieja'] }), { title: 'Promo', brandId: '', slug: 'promo-2', slugsAnteriores: ['vieja', 'promo'] });
+  assert.equal(m2.landingAFirestore({ nombre: 'Daida', slug: 'Daida', deMarca: true }).slug, 'Daida');
+
+  const tz = m2.temaDesdeCss({ principal: '/*\nTheme Name: Astra\nAuthor: Brainstorm\nVersion: 4.1\n*/', todos: ['a{}', 'b{}'], archivo: 'astra.zip' });
+  assert.deepEqual([tz.nombre, tz.autor, tz.version, tz.css.includes('Siguiente Archivo')], ['Astra', 'Brainstorm', '4.1', true]);
+  assert.equal(m2.temaDesdeCss({ todos: ['x{}'], archivo: 'mio.zip' }).nombre, 'mio');
+  assert.equal(m2.pesoTexto('a'.repeat(2048)), '2.0 KB');
+  assert.deepEqual(m2.temaAFirestore({ nombre: 'Oscuro', css: 'body{}' }), { name: 'Oscuro', author: 'Custom', type: 'custom_css', cssContent: 'body{}', version: '1.0' });
+});

@@ -2648,3 +2648,88 @@ export function clicsDeEnlaces(clics = {}, botones = [], redes = []) {
   const total = Object.values(clics || {}).reduce((n, v) => n + (Number(v) || 0), 0);
   return { filas: filas.map((f) => ({ ...f, texto: `${f.valor} · ${total ? Math.round((f.valor / total) * 100) : 0} %` })), total };
 }
+
+/* ── D6d · Popups, páginas y temas ────────────────────── */
+
+/*
+ * Popups: storeConfig/popups se edita tal cual (lo lee la tienda con
+ * services/popupsLogic.mjs, que la página también usa para normalizar).
+ */
+/** "a los 10 s" · "al bajar 40 %" · "al intentar salir" · "apenas entra". */
+export function cuandoPopup(p = {}) {
+  if (p.disparador === 'scroll') return `al bajar ${p.scrollPct} %`;
+  if (p.disparador === 'salida') return 'al intentar salir';
+  return Number(p.segundos) > 0 ? `a los ${p.segundos} s` : 'apenas entra';
+}
+
+/** Errores (como antes): el título; la imagen si es "solo imagen", el texto del botón si es tarjeta; el enlace si lleva a uno. */
+export function erroresDePopup(p = {}) {
+  const imagen = p.formato === 'imagen';
+  return {
+    titulo: String(p.titulo || '').trim() ? undefined : imagen ? 'Describe lo que dice la imagen.' : 'Escribe el título.',
+    imagenUrl: imagen && !String(p.imagenUrl || '').trim() ? 'Sube la imagen o pega su enlace.' : undefined,
+    botonTexto: !imagen && !String(p.botonTexto || '').trim() ? 'Escribe el texto del botón.' : undefined,
+    botonUrl: p.objetivo === 'enlace' && !String(p.botonUrl || '').trim() ? 'Escribe a dónde lleva.' : undefined,
+    rutas: p.paginas === 'elegidas' && !(p.rutas || []).length ? 'Elige al menos una página o no saldrá en ninguna.' : undefined,
+    hasta: p.desde && p.hasta && p.hasta < p.desde ? 'Termina antes de empezar.' : undefined,
+  };
+}
+
+/* Páginas (landing pages): solo nombre, dirección y marca; el diseño, en la página con el editor. */
+
+/** "/Promo Navidad " → "promo-navidad" (como antes: sin barra, minúsculas y guiones). */
+export const slugDeLanding = (v) => String(v || '').replace(/^\/+/, '').toLowerCase().trim().replace(/\s+/g, '-');
+const llaveSlug = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/** Una landing (con `marcas` para saber si es la página de una marca, que se cambia en Marcas). */
+export function landingDesde(p = {}, marcas = []) {
+  const marca = p.brandId ? marcas.find((m) => m.id === p.brandId) : null;
+  const deMarca = Boolean(marca && llaveSlug(marca.slug) === llaveSlug(p.slug || p.id));
+  return {
+    id: p.id,
+    nombre: p.title || p.slug || '',
+    slug: p.slug || '',
+    marcaId: p.brandId || '',
+    marcaNombre: marca?.name || '',
+    deMarca,
+    slugsAnteriores: Array.isArray(p.slugsAnteriores) ? p.slugsAnteriores : [],
+    temaId: p.themeId || '',
+  };
+}
+
+export function erroresDeLanding(d = {}, paginas = []) {
+  const slug = d.deMarca ? d.slug : slugDeLanding(d.slug);
+  return {
+    nombre: String(d.nombre || '').trim() ? undefined : 'Escribe el nombre.',
+    slug: !slug ? 'Escribe la dirección.' : paginas.some((p) => p.id !== d.id && p.slug === slug) ? 'Ya hay una página con esa dirección: escoge otra.' : undefined,
+  };
+}
+
+/** Lo que se guarda: con la dirección vieja anotada para redirigir (el diseño lo mueve el conector). */
+export function landingAFirestore(d = {}, previa = null) {
+  const slug = d.deMarca ? d.slug : slugDeLanding(d.slug);
+  const vieja = previa?.slug || '';
+  let anteriores = previa?.slugsAnteriores || [];
+  if (vieja && vieja !== slug) anteriores = [...new Set([...anteriores, vieja])];
+  return { title: String(d.nombre || '').trim(), brandId: d.marcaId || '', slug, slugsAnteriores: anteriores.filter((x) => x !== slug) };
+}
+
+/* Temas: CSS propio o importado de un tema de WordPress (.zip). */
+export const temaDesde = (t = {}) => ({ id: t.id, nombre: t.name || '', autor: t.author || '', version: t.version || '1.0', tipo: t.type === 'wordpress_import' ? 'wordpress_import' : 'custom_css', css: t.cssContent || '' });
+export const temaAFirestore = (d = {}) => ({ name: String(d.nombre || '').trim(), author: String(d.autor || '').trim() || 'Custom', type: d.tipo || 'custom_css', cssContent: d.css || '', version: d.version || '1.0' });
+
+/** Del CSS de un .zip: el nombre, autor y versión salen de la cabecera del style.css (o del primero). */
+export function temaDesdeCss({ principal = '', todos = [], archivo = 'tema.zip' } = {}) {
+  const fuente = principal || todos[0] || '';
+  const de = (campo) => new RegExp(`${campo}:\\s*(.*)`, 'i').exec(fuente)?.[1].trim();
+  return {
+    nombre: de('Theme Name') || String(archivo).replace(/\.zip$/i, ''),
+    autor: de('Author') || 'Desconocido',
+    version: de('Version') || '1.0',
+    tipo: 'wordpress_import',
+    css: todos.join('\n\n/* --- Siguiente Archivo --- */\n\n'),
+  };
+}
+
+/** "12.4 KB" (para decir cuánto CSS tiene un tema). */
+export const pesoTexto = (texto = '') => { const b = new TextEncoder().encode(texto).length; return b < 1024 ? `${b} B` : `${(b / 1024).toFixed(1)} KB`; };

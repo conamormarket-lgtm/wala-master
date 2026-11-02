@@ -1,4 +1,4 @@
-import React, { useId, useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useState } from 'react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import Boton from '../../Boton';
 import { Confirmar, useToast } from '../../Feedback';
@@ -43,11 +43,13 @@ const PASO = 50;
  *  - onGuardar(datos, id?) → promesa · onEliminar(id) → promesa (sin él, no se elimina)
  *  - eliminar: { texto(r), bloqueado(r) → motivo | null } (bloqueado: no pregunta, avisa)
  *  - textos: { creado, guardado, eliminado } (los toasts)
+ *  - nuevoCon: datos para abrir la hoja de uno nuevo ya llena (al cambiar,
+ *    se abre; p. ej. una dirección que llega por la URL)
  */
 export function PaginaListaAdmin({
   cabeza = {}, registros = [], cargando = false, error, onReintentar, nombreDe = (r) => r.nombre,
   columnas = [], ordenes = {}, ordenInicial, buscarEn, placeholder = 'Buscar…', filtros = [], unidad = ['registro', 'registros'], femenino = false,
-  vacio, antes, masAcciones, formulario, onGuardar, onEliminar, eliminar = {}, textos = {},
+  vacio, antes, masAcciones, formulario, onGuardar, onEliminar, eliminar = {}, textos = {}, nuevoCon,
 }) {
   const toast = useToast();
   const uid = useId();
@@ -74,13 +76,14 @@ export function PaginaListaAdmin({
     return [...lista].sort((a, b) => signo * comparar(a, b));
   }, [registros, buscar, valores, filtros, orden, ordenes, buscarEn]);
 
-  const abrir = (r) => {
+  const abrir = (r, extra) => {
     if (!formulario) return;
-    const inicial = r ? formulario.desde(r) : formulario.vacio({ registros, filtros: valores });
+    const inicial = r ? formulario.desde(r) : { ...formulario.vacio({ registros, filtros: valores }), ...extra };
     setDatos(inicial);
     setErrores({});
     setEditando({ id: r?.id || null, inicial, registro: r || null });
   };
+  useEffect(() => { if (nuevoCon && formulario) abrir(null, nuevoCon); }, [nuevoCon]); // eslint-disable-line react-hooks/exhaustive-deps
   const cerrar = () => setEditando(null);
   const cambiar = (campo, valor) => {
     setDatos((d) => ({ ...d, [campo]: valor }));

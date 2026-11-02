@@ -232,7 +232,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | · |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | · |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | hecho (2026-11-02) | · |
-| D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | en marcha (D6a a D6c, 2026-11-02) | · |
+| D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | hecho (2026-11-02) | · |
 | D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | · | · |
 | D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | · | · |
 
@@ -1582,7 +1582,7 @@ del embudo o "1 estrella" en 0 también dice algo).
     `saveSurveyConfig(configConHistorial(configConPregunta(actual, que), actual))`
     y volver a leer.
 
-## D6 · Campañas (en marcha: D6a a D6c hechos en el kit el 2026-11-02)
+## D6 · Campañas (en el kit desde el 2026-11-02: los cuatro tramos)
 
 Nueve pantallas de hoy (unas 5.500 líneas), en cuatro tramos; el apartado se
 une entero cuando estén los cuatro.
@@ -1592,7 +1592,7 @@ une entero cuando estén los cuatro.
 | D6a | Sorteos y rifas: la lista con su formulario y el detalle (participantes, tickets y chances a mano, los ganadores con su evidencia) | `AdminSorteos.jsx` (603 líneas), `AdminSorteoDetalle.jsx` (676) | hecho (2026-11-02) |
 | D6b | Sorteos de suscripción y su detalle | `AdminSuscripcionSorteos.jsx` (1.249), `AdminSuscripcionDetalle.jsx` (573) | hecho (2026-11-02) |
 | D6c | Enlaces (los de bio y campañas) y su editor | `AdminEnlaces.jsx` (253), `AdminEnlaceEditor.jsx` (1.138) | hecho (2026-11-02) |
-| D6d | Popups, landing pages y temas | `AdminPopups.jsx` (445), `Tienda/admin/AdminLandingPages.jsx` (307), `Tienda/admin/AdminThemes.jsx` (268) | · |
+| D6d | Popups, landing pages y temas | `AdminPopups.jsx` (445), `Tienda/admin/AdminLandingPages.jsx` (307), `Tienda/admin/AdminThemes.jsx` (268) | hecho (2026-11-02) |
 
 ### D6a: Sorteos y rifas (en el kit desde el 2026-11-02)
 
@@ -1777,6 +1777,74 @@ página pública).
   invalidar las dos `queryKey`; `subirImagen` →
   `uploadFile(blob, 'link_pages/{avatars|thumbnails|redes|backgrounds}/{id}/{ms}.jpg')`.
 
+### D6d: Popups, páginas y temas (en el kit desde el 2026-11-02)
+
+| Popups con la vista previa (computadora) | Las páginas (celular) |
+|---|---|
+| ![La lista de popups con a quién, dónde y cuándo salen, sus vistas y clics, y la ventana de prueba abierta encima](admin-popups-escritorio.webp) | ![El inicio y la tienda con «Diseñar», y las páginas de campaña y de marca con su dirección y su tipo](admin-landings-celular.webp) |
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| Popups | `PaginaPopupsAdmin` | `paginas/admin/Popups.jsx` | Sobre `PaginaListaAdmin`: la foto, el popup y para qué es, a quién, dónde y cuándo sale, **vistas · clics con su parte y cuántos cumplen**, el estado; filtros por estado y para qué; en "⋯", **ver cómo se ve** (la misma `VentanaCampana` de la tienda) y encender o apagar. La hoja: el nombre para ti, el formato (`ElegirUno`), lo que dice, la imagen (`CampoImagen`: subir o pegar), el botón y a dónde lleva, a quién, en qué aparato y en qué páginas (las de siempre como chips y otras con `CampoLista`), cuándo aparece, no repetir, las fechas (`CampoFecha`), la prioridad, Activo y "Ver cómo se ve". "Volver a verlos aquí" en la cabecera |
+| Páginas | `PaginaLandingsAdmin` | `paginas/admin/Paginas.jsx` | El inicio y la tienda arriba (siempre están, con "Diseñar"); la lista de las de marca y de campaña con su dirección, dónde estaban antes, su marca y su tipo; en "⋯", diseñar y ver. La hoja: nombre, dirección (si cambia, la vieja lleva a la nueva) y marca; la de una marca no cambia su dirección ni se borra aquí. **El atajo "Crear landing" de Enlaces rotos abre la hoja con la dirección puesta** (`nuevoCon`) |
+| Temas | `PaginaTemasAdmin` | ídem | El tema, su autor y versión, cuánto CSS tiene y de dónde viene; "Importar de WordPress (.zip)" en la cabecera; la hoja con el CSS en letra de código |
+| Abrir una nueva ya llena | `PaginaListaAdmin` (`nuevoCon`) | `paginas/admin/Lista.jsx` | Nueva prop: con datos, abre la hoja de "nuevo" con ellos |
+
+Adaptadores (con pruebas): `cuandoPopup`, `erroresDePopup` (como antes, y las
+páginas elegidas y las fechas en orden), `slugDeLanding`, `landingDesde` (sabe
+si es la de una marca), `erroresDeLanding`, `landingAFirestore` (anota la
+dirección vieja), `temaDesde` / `temaAFirestore`, `temaDesdeCss` (el nombre,
+autor y versión de la cabecera del `style.css`) y `pesoTexto`. Los popups se
+guardan como los lee la tienda: la página normaliza con
+`services/popupsLogic.mjs`.
+
+### Diferencias a propósito (D6d)
+
+- Popups: la lista y la hoja al costado (antes, el formulario arriba de la
+  lista); las métricas van en la misma fila; no
+  deja guardar con "las páginas que elija" vacías (antes salía en ninguna sin
+  avisar) ni fechas al revés.
+- Páginas: la dirección va bajo el nombre (en el celular la vieja no cabía al
+  costado); los mensajes con `useToast` y `Confirmar` del kit.
+- Temas: los `alert` y el `window.confirm` pasan a avisos y `Confirmar`; el
+  CSS se ve en letra de código y dice cuánto pesa.
+
+### Qué se probó (2026-11-02, demo en localhost, 1280 px y 375 px)
+
+- Popups: tres (la encuesta con 4,120 vistas, 15 % tocan y 233 cumplen; el
+  Live del viernes, solo imagen, al bajar 50 %; uno apagado). "Ver cómo se
+  ve" del de crear cuenta → la tarjeta con "Crear mi cuenta" y "Ahora no";
+  en el Live, otra página con `https://wala.pe/alianza-lima?x=1` → queda
+  `/alianza-lima` y se guarda; nuevo "solo imagen" vacío → "Describe lo que
+  dice la imagen" y "Sube la imagen o pega su enlace", y la vista previa
+  apagada.
+- Páginas: la de la marca no se deja eliminar ("se borra con la marca");
+  Promo Navidad a "Navidad 2026" → `/navidad-2026` con "antes /navidad-2025,
+  /promo-navidad"; desde Enlaces rotos, "Crear landing" de `cyber-wala` → la
+  hoja nueva con esa dirección.
+- Temas: importar `astra-child.zip` → "Tema importado"; vaciar el CSS → "Escribe
+  el CSS".
+- 375 px: las tres listas y sus hojas sin salirse del ancho.
+
+### Cómo se une D6d
+
+- `PopupsDelPanel.jsx`: `getPopups` (`['admin-popups']`; si falla, no deja
+  guardar) → `popups`; `onGuardarPopups` = `savePopups(lista)`, poner la lista
+  en la caché e invalidar `['popups-config']`; `estadisticas` con
+  `getEstadisticasPopup(id)` de cada uno (`['admin-popup-stats', id]`);
+  `onReiniciarLocal` = `reiniciarEstadoLocal`; `subirImagen` →
+  `uploadFile(blob, 'config/popups/{ms}.jpg')`.
+- `PaginasDelPanel.jsx`: `getLandingPages` y `getBrands` → `landingDesde(p, marcas)`;
+  guardar: si cambia la dirección, `moverDisenoDeLanding(vieja, nueva)` antes
+  y luego `saveLandingPage(id, landingAFirestore(datos, previa))`; eliminar
+  `deleteLandingPage(id, slug)`; `onDisenar(ruta)` → `navigate(`${ruta}?editar`)`;
+  `nuevaDireccion` del `?nueva=` de la URL (y borrarlo).
+- `TemasDelPanel.jsx`: `getThemes` → `temaDesde`; `saveTheme(id, temaAFirestore(d))`,
+  `deleteTheme`; `onImportarZip(archivo)` = JSZip (import dinámico, como hoy)
+  saca los `.css` (sin `__MACOSX`, `vendor` ni `node_modules`) y el
+  `style.css` de arriba → `temaDesdeCss({ principal, todos, archivo })` →
+  `saveTheme(null, temaAFirestore(t))`.
+
 ## Reemplazos: qué sale y qué entra
 
 La misma tabla que las fichas de la tienda (CUENTA.md, "Reemplazos"): qué
@@ -1881,7 +1949,9 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D6b · Una campaña | `pages/admin/AdminSuscripcionDetalle.jsx` + `.module.css` | `PaginaSuscripcionAdmin` (`GanadoresSorteo`, `AjusteSorteo`, `PaginaListaAdmin` en Beneficios y Galería) | `SuscripcionDelPanel.jsx` |
 | D6c · Enlaces | `pages/admin/AdminEnlaces.jsx` + `.module.css` (`common/Button`, su modal, `window.alert`) | `PaginaEnlacesAdmin` (`TablaAdmin`, `HojaEdicion`, `Confirmar`) | `EnlacesDelPanel.jsx` |
 | D6c · El constructor | `pages/admin/AdminEnlaceEditor.jsx` + `.module.css` (arrastrar con HTML5, la subida a mano) | `PaginaEnlaceAdmin` (`ListaOrdenable`, `CampoImagen`, `CampoColor`, `ElegirUno`, `BarraGuardar`, `ListaBarras`) | `EnlaceDelPanel.jsx` |
-| D6d · Popups, landing pages y temas | `AdminPopups.jsx`, `Tienda/admin/AdminLandingPages.jsx`, `Tienda/admin/AdminThemes.jsx` | por hacer | por pantalla |
+| D6d · Popups | `pages/admin/AdminPopups.jsx` + `.module.css` (`window.confirm`) | `PaginaPopupsAdmin` (`PaginaListaAdmin`, `VentanaCampana`, `CampoLista`, `CampoImagen`, `CampoFecha`) | `PopupsDelPanel.jsx` |
+| D6d · Páginas | `pages/Tienda/admin/AdminLandingPages.jsx` + `pages/admin/AdminLandingPages.module.css` (`common/Button`) | `PaginaLandingsAdmin` (`PaginaListaAdmin` con `nuevoCon`) | `PaginasDelPanel.jsx` |
+| D6d · Temas | `pages/Tienda/admin/AdminThemes.jsx` + `.module.css` (`alert`, `window.confirm`, su modal) | `PaginaTemasAdmin` (`PaginaListaAdmin`) | `TemasDelPanel.jsx` |
 
 ## Cómo se une un apartado (la misma lógica que clientes)
 
@@ -1923,6 +1993,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |
 | 2026-11-02 | Reemplazos de D0 a D2 (qué sale, qué entra y el conector) y la sección «Panel administrativo» de ELIMINAR.md con quién importa hoy cada pieza vieja | `guia/ADMIN.md`, `guia/ELIMINAR.md` |
+| 2026-11-02 | D6d en el kit y **D6 completo**: `PaginaPopupsAdmin`, `PaginaLandingsAdmin`, `PaginaTemasAdmin`; `PaginaListaAdmin` con `nuevoCon`; adaptadores con pruebas | `paginas/admin/Popups.jsx`, `paginas/admin/Paginas.jsx`, `paginas/admin/Lista.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D6c en el kit: `PaginaEnlacesAdmin`, `PaginaEnlaceAdmin` (el constructor en pestañas con la vista previa de `linkThemes`); adaptadores con pruebas | `paginas/admin/Enlaces.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D6b en el kit: `PaginaSuscripcionesAdmin`, `PaginaSuscripcionAdmin` (beneficios y galería en el detalle); `GanadoresSorteo` y `AjusteSorteo` compartidos con D6a; `CampoLista` (también en Encuestas); adaptadores con pruebas | `paginas/admin/Suscripciones.jsx`, `paginas/admin/Sorteos.jsx`, `piezas/admin/Formularios.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D6 dividido en tramos (a: sorteos; b: sorteos de suscripción; c: enlaces; d: popups, landing pages y temas). D6a en el kit: `PaginaSorteosAdmin`, `PaginaSorteoAdmin`; adaptadores con pruebas | `paginas/admin/Sorteos.jsx`, `adaptadoresAdmin.js` |

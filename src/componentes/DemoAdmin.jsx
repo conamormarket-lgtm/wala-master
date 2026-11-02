@@ -16,6 +16,7 @@ import {
   PaginaSorteosAdmin, PaginaSorteoAdmin, sorteoDesdeFirestore, sorteoAFormulario, participanteDesde,
   PaginaSuscripcionesAdmin, PaginaSuscripcionAdmin, campanaSuscripcionDesde, campanaSuscripcionAFormulario, suscriptorDesde, beneficioDesde, ganadorGaleriaDesde,
   PaginaEnlacesAdmin, PaginaEnlaceAdmin, paginaEnlacesDesde, paginaEnlacesAFirestore,
+  PaginaPopupsAdmin, PaginaLandingsAdmin, PaginaTemasAdmin, landingDesde, landingAFirestore, temaDesde, temaAFirestore, temaDesdeCss,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -25,6 +26,7 @@ import TIENDA from './demo/tienda.json';
 import CREAR from './demo/crear.json';
 import { leerPlantillas, prendaBaseParaGuardar } from '../utils/prendaBase';
 import { FESTIVAS_DEFAULT, normalizarFestiva, hoyLocal } from '../utils/fechasFestivas.mjs';
+import { normalizarPopup, POPUP_ENCUESTA_DEFAULT } from '../services/popupsLogic.mjs';
 import MARCAS_TIENDA from './demo/marcas.json';
 import cs from './ComponentesPage.module.css';
 import s from './DemoAdmin.module.css';
@@ -78,6 +80,9 @@ const HECHAS = [
   ['/admin/sorteos', 'Sorteos'],
   ['/admin/sorteos-suscripcion', 'Suscripción'],
   ['/admin/enlaces', 'Enlaces'],
+  ['/admin/popups', 'Popups'],
+  ['/admin/landing-pages', 'Landings'],
+  ['/admin/temas', 'Temas'],
   ['/admin/crear-cuentas-pedidos', 'Cuentas'],
   ['/admin/categorias', 'Categorías'],
   ['/admin/colecciones', 'Colecciones'],
@@ -570,6 +575,23 @@ const ANALITICA_ENLACES_DEMO = {
   porDispositivo: [{ key: 'Celular', visitas: 1080, clics: 549 }, { key: 'Computadora', visitas: 160, clics: 70 }],
   porDia: Array.from({ length: 7 }, (_, i) => ({ dia: diaKey(i), visitas: 40 + ((i * 17) % 30), clics: 18 + ((i * 11) % 15) })),
 };
+// D6d: popups, páginas del editor y temas.
+const POPUPS_DEMO = [
+  normalizarPopup({ ...POPUP_ENCUESTA_DEFAULT, activo: true }),
+  normalizarPopup({ id: 'live-viernes', nombre: 'Live del viernes', activo: true, formato: 'imagen', objetivo: 'enlace', titulo: 'Este viernes a las 8 p. m. sorteamos en vivo', imagenUrl: fotoTienda(2), botonUrl: '/sorteos', audiencia: 'todos', paginas: 'elegidas', rutas: ['/', '/tienda', '/producto/*'], disparador: 'scroll', scrollPct: 50, cooldownDias: 2, prioridad: 5, desde: diaKey(3), hasta: diaKey(-4) }),
+  normalizarPopup({ id: 'registro', nombre: 'Crea tu cuenta', activo: false, formato: 'tarjeta', objetivo: 'registro', titulo: '10 monedas por crear tu cuenta', texto: 'Y guarda tus diseños para pedirlos cuando quieras.', botonTexto: 'Crear mi cuenta', audiencia: 'anonimos', disparador: 'salida', segundos: 20 }),
+];
+const ESTADISTICAS_POPUPS_DEMO = { [POPUPS_DEMO[0].id]: { vistas: 4120, clics: 610, cierres: 3200, conversiones: 233 }, 'live-viernes': { vistas: 880, clics: 142, cierres: 690, conversiones: 0 } };
+const MARCAS_PAGINAS = MARCAS_TIENDA.slice(0, 3).map((m) => ({ id: m.id, slug: m.slug, name: m.name }));
+const LANDINGS_DEMO = [
+  { id: 'promo-navidad', title: 'Promo Navidad 2026', slug: 'promo-navidad', slugsAnteriores: ['navidad-2025'] },
+  ...(MARCAS_PAGINAS[0] ? [{ id: MARCAS_PAGINAS[0].slug, title: MARCAS_PAGINAS[0].name, slug: MARCAS_PAGINAS[0].slug, brandId: MARCAS_PAGINAS[0].id }] : []),
+  { id: 'dia-padre', title: 'Día del Padre', slug: 'dia-del-padre', brandId: MARCAS_PAGINAS[1]?.id || '' },
+].map((p) => landingDesde(p, MARCAS_PAGINAS));
+const TEMAS_DEMO = [
+  { id: 't1', name: 'Oscuro', author: 'Walá', type: 'custom_css', version: '1.0', cssContent: '.landing { background: #0f1020; color: #fff; }\n.landing h1 { font-weight: 900; }' },
+  { id: 't2', name: 'Astra', author: 'Brainstorm Force', type: 'wordpress_import', version: '4.1', cssContent: 'body{margin:0}'.repeat(900) },
+].map(temaDesde);
 const RECOMPENSAS_DEMO = [
   { title: 'Pack de stickers Kapi', description: 'Seis stickers para tu laptop o celular.', cost: 120, tipo: 'manual', value: 'Sale del cajón de mercancía', imageUrl: '/assets/kapi/kapi-happy.webp' },
   { title: '10% en tu pedido', description: 'Hasta S/ 20 de descuento.', cost: 300, tipo: 'descuento', descuentoPct: 10, topeDescuento: 20, vigenciaDias: 30 },
@@ -714,6 +736,9 @@ function PanelDePrueba() {
   const [susPestana, setSusPestana] = useState('suscriptores');
   const [paginasEnlaces, guardarPaginaEnlacesCruda, eliminarPaginaEnlaces, setPaginasEnlaces] = useListaDemo(PAGINAS_ENLACES_DEMO, falla);
   const [enlacePestana, setEnlacePestana] = useState('contenido');
+  const [popups, setPopups] = useState(POPUPS_DEMO);
+  const [landings, guardarLandingCruda, eliminarLanding] = useListaDemo(LANDINGS_DEMO, falla);
+  const [temas, guardarTemaCrudo, eliminarTema, setTemas] = useListaDemo(TEMAS_DEMO, falla);
   const [encuesta, setEncuesta] = useState(ENCUESTA_DEMO);
   const [encuestaPestana, setEncuestaPestana] = useState('portada');
   const [configNotif, setConfigNotif] = useState(CONFIG_NOTIF_DEMO);
@@ -1292,6 +1317,49 @@ function PanelDePrueba() {
         subirImagen={subir}
         onGuardar={(datos, id) => guardarRecompensaCruda(recompensaAdminDesdeFirestore({ id, ...recompensaAdminAFirestore(datos) }), id)}
         onEliminar={eliminarRecompensa}
+      />
+    );
+  } else if (rutaSola === '/admin/popups') {
+    pagina = (
+      <PaginaPopupsAdmin
+        {...comunes}
+        popups={vacio ? [] : popups}
+        onGuardarPopups={async (lista) => { await espera(600); fallar(); setPopups(lista); }}
+        subirImagen={subir}
+        estadisticas={ESTADISTICAS_POPUPS_DEMO}
+        onReiniciarLocal={() => {}}
+      />
+    );
+  } else if (rutaSola === '/admin/landing-pages') {
+    pagina = (
+      <PaginaLandingsAdmin
+        {...comunes}
+        paginas={vacio ? [] : landings}
+        marcas={MARCAS_PAGINAS.map((m) => ({ valor: m.id, texto: m.name }))}
+        onGuardar={(d, id) => {
+          const previa = landings.find((x) => x.id === id);
+          const f = landingAFirestore(d, previa);
+          return guardarLandingCruda(landingDesde({ id: id || f.slug, ...f }, MARCAS_PAGINAS), id);
+        }}
+        onEliminar={eliminarLanding}
+        onDisenar={(ruta) => toast({ tipo: 'info', titulo: 'En el admin abriría la página con el editor', texto: `${ruta}?editar`, duracion: 2400 })}
+        nuevaDireccion={new URLSearchParams(ruta.split('?')[1] || '').get('nueva') || undefined}
+      />
+    );
+  } else if (rutaSola === '/admin/temas') {
+    pagina = (
+      <PaginaTemasAdmin
+        {...comunes}
+        temas={vacio ? [] : temas}
+        onGuardar={(d, id) => guardarTemaCrudo(temaDesde({ id, ...temaAFirestore(d) }), id)}
+        onEliminar={eliminarTema}
+        onImportarZip={async (archivo) => {
+          await espera(1000);
+          fallar('No se pudo leer el .zip (es una prueba).');
+          const t = temaDesde({ id: `t-${Date.now()}`, ...temaAFirestore(temaDesdeCss({ principal: '/* Theme Name: Importado de prueba\nAuthor: WordPress\nVersion: 2.0 */', todos: ['body{}', 'h1{}'], archivo: archivo.name })) });
+          setTemas((l) => [...l, t]);
+          return t;
+        }}
       />
     );
   } else if (rutaSola === '/admin/enlaces') {

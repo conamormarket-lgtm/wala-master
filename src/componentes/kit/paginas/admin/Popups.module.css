@@ -1,0 +1,34 @@
+/* ── D6d · Popups ──────────────────────────────────────── */
+.nota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.dos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: 0.6rem;
+}
+
+.paginas {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.paginas:focus {
+  outline: none;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.error {
+  margin: 0;
+  color: var(--danger-hover);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
