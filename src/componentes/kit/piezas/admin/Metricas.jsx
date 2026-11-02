@@ -94,10 +94,11 @@ export const SinDatos = ({ children }) => <p className={s.sinDatos}>{children}</
  *  - filas: [{ id, nombre, valor (número), texto (ya con formato), sub, imagen }]
  *    (con `imagen` en la fila, sale su foto, aunque esté vacía)
  *  - max (10) · tono: 'violeta' | 'menta' · vacio (texto)
+ *  - conCeros: también las filas en 0 (los pasos de un embudo, las estrellas)
  */
-export function ListaBarras({ filas = [], max = 10, tono = 'violeta', vacio = 'Sin datos en este periodo.' }) {
-  const visibles = filas.filter((f) => Number(f.valor) > 0).slice(0, max);
-  if (!visibles.length) return <SinDatos>{vacio}</SinDatos>;
+export function ListaBarras({ filas = [], max = 10, tono = 'violeta', vacio = 'Sin datos en este periodo.', conCeros = false }) {
+  const visibles = filas.filter((f) => conCeros || Number(f.valor) > 0).slice(0, max);
+  if (!visibles.length || !visibles.some((f) => Number(f.valor) > 0)) return <SinDatos>{vacio}</SinDatos>;
   const tope = Math.max(...visibles.map((f) => Number(f.valor) || 0)) || 1;
   return (
     <ol className={`${s.barras} ${s[`barras_${tono}`] || ''}`} data-componente="ListaBarras">
@@ -112,7 +113,7 @@ export function ListaBarras({ filas = [], max = 10, tono = 'violeta', vacio = 'S
               <span className={s.barraValor}>{f.texto ?? f.valor}</span>
             </span>
             <span className={s.pista} aria-hidden="true">
-              <span className={s.relleno} style={{ width: `${Math.max(3, Math.round(((Number(f.valor) || 0) / tope) * 100))}%` }} />
+              <span className={s.relleno} style={{ width: `${Number(f.valor) > 0 ? Math.max(3, Math.round(((Number(f.valor) || 0) / tope) * 100)) : 0}%` }} />
             </span>
             {f.sub && <span className={s.barraSub}>{f.sub}</span>}
           </span>

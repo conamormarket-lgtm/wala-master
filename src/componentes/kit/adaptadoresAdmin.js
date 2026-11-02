@@ -2211,3 +2211,101 @@ export function filaDeEstadistica(st = {}) {
   if (b.enviados) mejor = a.enviados >= 50 && b.enviados >= 50 ? (ta === tb ? 'Empate' : ta > tb ? 'Texto 1' : 'Texto 2') : 'Faltan envíos';
   return { id: st.id, nombre: NOMBRES_AVISO[st.id] || st.id, a, b: b.enviados ? b : null, mejor };
 }
+
+/* ── D5e · Encuestas ──────────────────────────────────── */
+
+/*
+ * tienda_encuesta_config/global se edita TAL CUAL (la lee la encuesta del
+ * cliente y el buscador de regalos): el kit no le cambia los nombres. Las
+ * cuentas de las respuestas están en services/surveyResponses.mjs y
+ * services/encuestaEntrega.mjs (puros): la página los usa de ahí.
+ */
+export const TIPOS_PREGUNTA = [
+  { valor: 'text', texto: 'Texto corto' },
+  { valor: 'textarea', texto: 'Texto largo' },
+  { valor: 'select', texto: 'Opciones (botones de un toque)' },
+];
+
+/** Una pregunta nueva (`prefijo`: 'field' en Sobre ti, 'brandField' en un interés). */
+export const preguntaNueva = (prefijo = 'field', ms = Date.now()) => ({ id: `${prefijo}_${ms}`, label: 'Nueva pregunta', type: 'text', required: false, options: [] });
+
+/**
+ * Las preguntas que salen y las que ya no, según lo GUARDADO: una que se
+ * apaga no salta de lugar hasta guardar. Cada una con su índice real.
+ */
+export function separarPreguntas(campos = [], guardadas = []) {
+  const retirada = (f) => (guardadas || []).some((g) => g.id === f.id && g.enEncuesta === false);
+  const conIndice = (campos || []).map((f, i) => ({ pregunta: f, indice: i }));
+  return { activas: conIndice.filter((x) => !retirada(x.pregunta)), retiradas: conIndice.filter((x) => retirada(x.pregunta)) };
+}
+
+/** Agrega una opción a una pregunta (sin vacías ni repetidas). */
+export function conOpcion(opciones = [], nueva = '') {
+  const t = String(nueva).trim();
+  if (!t || opciones.some((o) => o.toLowerCase() === t.toLowerCase())) return opciones;
+  return [...opciones, t];
+}
+
+export const OPCIONES_MEJORAR_ENTREGA = ['Tiempo de entrega', 'Calidad del producto', 'Empaque', 'Atención', 'Precio', 'Todo estuvo bien'];
+
+/** entregaPanel ("¿Cómo te fue con tu pedido?"), como configEntregaPanel: monedas de 0 a 50 (5 si falta). */
+export function entregaPanelDesde(raw) {
+  const c = raw && typeof raw === 'object' ? raw : {};
+  const monedas = Number(c.monedas);
+  const opciones = Array.isArray(c.opcionesMejorar) ? c.opcionesMejorar.map((o) => String(o || '').trim()).filter(Boolean) : [];
+  return {
+    activo: c.activo !== false,
+    monedas: c.monedas != null && Number.isFinite(monedas) ? Math.max(0, Math.min(50, Math.round(monedas))) : 5,
+    opcionesMejorar: opciones.length ? opciones : OPCIONES_MEJORAR_ENTREGA,
+  };
+}
+
+/** El cambio del promedio de estrellas: "▲ 0.3 ★". */
+export function cambioEstrellas(actual, previo) {
+  if (actual == null || previo == null) return null;
+  const d = Math.round(((Number(actual) || 0) - (Number(previo) || 0)) * 10) / 10;
+  if (d === 0) return { texto: '= 0 ★', bueno: true };
+  return { texto: `${d > 0 ? '▲' : '▼'} ${Math.abs(d)} ★`, bueno: d > 0 };
+}
+
+/** "★★★★☆" (con lo que falta en vacías). */
+export const estrellasTexto = (n) => { const e = Math.max(0, Math.min(5, Math.round(Number(n) || 0))); return '★'.repeat(e) + '☆'.repeat(5 - e); };
+
+/** Por día si el rango es corto (62 días o menos), si no por mes. Fechas 'YYYY-MM-DD'. */
+export function unidadDeRango(desde, hasta) {
+  if (!desde || !hasta) return 'mes';
+  const d = (s) => Date.UTC(Number(s.slice(0, 4)), Number(s.slice(5, 7)) - 1, Number(s.slice(8, 10)));
+  return Math.round((d(hasta) - d(desde)) / 86400000) + 1 <= 62 ? 'dia' : 'mes';
+}
+
+const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'set', 'oct', 'nov', 'dic'];
+/** '2026-11-02' → '02/11' (día) · '2026-11' → 'nov 2026' (mes). */
+export function etiquetaDePeriodo(valor = '', unidad = 'mes') {
+  if (unidad === 'dia') { const [, m, d] = valor.split('-'); return `${d}/${m}`; }
+  const [y, m] = valor.split('-');
+  return `${MESES_CORTOS[Number(m) - 1]} ${y}`;
+}
+
+/** '2026-10-23' → '23/10/2026' ('' si no es una fecha). */
+export const fechaDeDia = (dia) => (/^\d{4}-\d{2}-\d{2}/.test(dia || '') ? dia.slice(0, 10).split('-').reverse().join('/') : '');
+
+/**
+ * "Volver a preguntarla": la config con esa pregunta en la encuesta otra vez.
+ *  - que: { tipo: 'basico', id } | { tipo: 'gusto', categoriaId, id } | { tipo: 'presupuesto' }
+ * (el conector guarda el resultado con configConHistorial, que borra la fecha de retiro).
+ */
+export function configConPregunta(config = {}, que = {}) {
+  const activar = (f) => (f.id === que.id ? { ...f, enEncuesta: true } : f);
+  if (que.tipo === 'presupuesto') return { ...config, personPanel: { ...config.personPanel, budget: true } };
+  if (que.tipo === 'basico') return { ...config, basicDataPanel: { ...config.basicDataPanel, fields: (config.basicDataPanel?.fields || []).map(activar) } };
+  if (que.tipo === 'gusto') {
+    return {
+      ...config,
+      brandsPanel: {
+        ...config.brandsPanel,
+        categories: (config.brandsPanel?.categories || []).map((c) => (c.id === que.categoriaId ? { ...c, fields: (c.fields || []).map(activar) } : c)),
+      },
+    };
+  }
+  return config;
+}

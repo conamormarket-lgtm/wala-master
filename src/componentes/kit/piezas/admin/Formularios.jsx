@@ -1,7 +1,7 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertCircle, ImagePlus, Link2, RefreshCw, Trash2, Upload, X } from 'lucide-react';
+import { AlertCircle, ImagePlus, Link2, RefreshCw, Save, Trash2, Upload, X } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, Confirmar } from '../../Feedback';
 import { Campo } from '../../Formulario';
@@ -413,5 +413,25 @@ export function ElegirUno({ opciones = [], valor, sugerido, onElegir, etiqueta, 
         );
       })}
     </span>
+  );
+}
+
+/* ── Cambios sin guardar ───────────────────────────────── */
+
+/**
+ * Para las páginas que se editan enteras (los avisos automáticos, la
+ * encuesta): aparece fija abajo solo cuando hay cambios, con Descartar y
+ * Guardar. Sin cambios, no hay nada que guardar ni botón.
+ *  - visible · texto ('Tienes cambios sin guardar.') · onDescartar ·
+ *    onGuardar · guardando · puedeGuardar (false: Guardar apagado; `texto` dice por qué)
+ */
+export function BarraGuardar({ visible, texto = 'Tienes cambios sin guardar.', onDescartar, onGuardar, guardando = false, puedeGuardar = true, textoGuardar = 'Guardar cambios' }) {
+  if (!visible) return null;
+  return (
+    <div className={s.barraGuardar} role="region" aria-label="Cambios sin guardar" data-componente="BarraGuardar">
+      <span>{texto}</span>
+      {onDescartar && <Boton tamano="sm" variante="fantasma" onClick={onDescartar} disabled={guardando}>Descartar</Boton>}
+      <Boton tamano="sm" icono={<Save aria-hidden="true" />} cargando={guardando} disabled={!puedeGuardar} onClick={onGuardar}>{textoGuardar}</Boton>
+    </div>
   );
 }

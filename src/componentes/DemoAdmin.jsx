@@ -12,7 +12,7 @@ import {
   PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, referidoDesdeFirestore, misionDesdeFirestore, misionAFirestore,
   retoDesdeFirestore, retoAFirestore, retoActivoDesde, evidenciaDesde, PaginaRecompensasAdmin, recompensaAdminDesdeFirestore, recompensaAdminAFirestore,
   PaginaFechasAdmin, fechaClienteDesde, paqueteDesdeFirestore, paquetesDeFecha, cambiosAlElegir, siguienteElegido,
-  PaginaNotificacionesAdmin, configNotificacionesDesde, campanaDesde,
+  PaginaNotificacionesAdmin, configNotificacionesDesde, campanaDesde, PaginaEncuestaAdmin, RespuestasEntregas, RespuestasEncuesta, configConPregunta,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -71,6 +71,7 @@ const HECHAS = [
   ['/admin/recompensas', 'Recompensas'],
   ['/admin/fechas-importantes', 'Fechas'],
   ['/admin/notificaciones', 'Notificaciones'],
+  ['/admin/encuestas', 'Encuesta'],
   ['/admin/crear-cuentas-pedidos', 'Cuentas'],
   ['/admin/categorias', 'Categorías'],
   ['/admin/colecciones', 'Colecciones'],
@@ -454,6 +455,65 @@ const ESTADISTICAS_DEMO = [
   { id: 'orders', a: { sent: 980, opened: 540 } },
   { id: 'manual_promo', a: { sent: 1830, opened: 214 } },
 ];
+// D5e: una encuesta parecida a la real (con una pregunta retirada y una que cambió de texto) y sus respuestas.
+const ENCUESTA_DEMO = {
+  introPanel: { title: '¡Queremos conocerte mejor!', subtitle: 'Tus respuestas nos ayudan a darte ideas a la medida.', description: 'Cuéntanos a quiénes regalas y te damos 15 monedas. Toma unos 2 minutos.', continueButtonText: 'Empezar', skipButtonText: 'No, gracias' },
+  basicDataPanel: {
+    title: 'Un poco sobre ti', subtitle: 'Para conocerte',
+    fields: [
+      { id: 'nombres', label: '¿Cómo te llamas?', type: 'text', required: true, options: [] },
+      { id: 'familia', label: '¿Tienes familia?', type: 'select', required: false, enEncuesta: false, retiradaEl: '2026-09-14', options: ['Vivo solo/a', 'Vivo en pareja', 'Tengo hijos'] },
+      { id: 'como_nos_conociste', label: '¿Cómo nos conociste?', type: 'select', required: false, antes: [{ label: '¿Dónde nos viste?', hasta: '2026-08-01' }], options: ['Instagram', 'TikTok', 'Un amigo', 'Ya compré en una de sus marcas'] },
+    ],
+  },
+  personPanel: { budget: true, familySet: false },
+  brandsPanel: {
+    title: '¿Le gusta algo de esto?', subtitle: 'Toca lo que le gusta',
+    categories: [
+      { id: 'futbol', name: 'Fútbol', tiendaCategorias: ['polos'], fields: [{ id: 'equipo', label: '¿De qué equipo es?', type: 'text', required: false, options: [] }] },
+      { id: 'anime', name: 'Anime', tiendaCategorias: [], fields: [{ id: 'serie', label: '¿Qué anime le gusta?', type: 'text', required: false, options: [] }, { id: 'personaje', label: '¿Personaje favorito?', type: 'text', refina: true, required: false, options: [] }] },
+      { id: 'kapi', name: 'Kapi y tazas', fields: [] },
+    ],
+  },
+  completionPanel: { title: '¡Listo!', message: 'Ya tienes tus 15 monedas.', buttonText: 'Ir a la tienda', askWhatsapp: true },
+  design: { primaryColor: '#8b5cf6' },
+  entregaPanel: { activo: true, monedas: 5 },
+};
+const CATEGORIAS_TIENDA_DEMO = [{ valor: 'polos', texto: 'Polos' }, { valor: 'casacas', texto: 'Casacas' }, { valor: 'tazas', texto: 'Tazas' }, { valor: 'joyas', texto: 'Joyas' }, { valor: 'skincare', texto: 'Skincare' }];
+const msAtras = (dias, hora = 15) => { const d = new Date(); d.setDate(d.getDate() - dias); d.setHours(hora, 20, 0, 0); return d.getTime(); };
+const USUARIOS_ENCUESTA = [
+  ['Valeria Quispe', 'valeria.quispe@gmail.com', 1, { como_nos_conociste: 'Instagram' }, { pareja: true, padres: true }, [['Diego', 'pareja', 'Pareja', 'Masculino', '50a100', ['futbol'], { futbol: { equipo: 'Alianza Lima' } }], ['Lucía', 'padres', 'Mamá', 'Femenino', 'hasta50', ['kapi'], {}]], true, '1994-03-02'],
+  ['Luis Mendoza', 'luis.mendoza@hotmail.com', 3, { como_nos_conociste: 'TikTok' }, { pareja: true }, [['Andrea', 'pareja', 'Pareja', 'Femenino', '100a200', ['anime'], { anime: { serie: 'One Piece', personaje: 'Luffy' } }]], false, ''],
+  ['Carla Rojas', 'carla.rojas@gmail.com', 6, { como_nos_conociste: 'Un amigo', familia: 'Tengo hijos' }, { hijos: true, amigos: true }, [['Martín', 'hijos', 'Hijos', 'Masculino', 'hasta50', ['anime'], { anime: { serie: 'one piece' } }], ['Rosa', 'amigos', 'Amigos', 'Femenino', '', [], {}]], true, '1990-07-11'],
+  ['Jorge Salas', 'jorge.salas@outlook.com', 12, { como_nos_conociste: 'Instagram' }, { padres: true }, [['Papá Jorge', 'padres', 'Padres', 'Masculino', 'mas200', ['futbol'], { futbol: { equipo: 'alianza lima' } }]], null, ''],
+  ['Mafer Díaz', 'mafer.diaz@gmail.com', 20, { como_nos_conociste: 'Ya compré en una de sus marcas' }, { hermanos: true }, [['Sofía', 'hermanos', 'Hermanos', 'Femenino', '50a100', ['kapi', 'anime'], { anime: { serie: 'Dragon Ball' } }]], true, '1998-12-01'],
+  ['Pedro Huamán', 'pedro.h@gmail.com', 45, { familia: 'Vivo en pareja' }, { pareja: true }, [], false, ''],
+  ['Ana Torres', 'ana.torres@gmail.com', null, {}, { amigos: true }, [['Gaby', 'amigos', 'Amigos', 'Femenino', '', [], {}]], null, ''],
+].map(([displayName, email, dias, surveyBasicData, giftRoles, personas, whatsapp, birthDate], i) => ({
+  id: `enc-${i}`, displayName, email, hasCompletedSurvey: true, surveyCompletedAt: dias == null ? undefined : msAtras(dias), surveyBasicData, giftRoles, birthDate,
+  marketingConsent: whatsapp == null ? undefined : { whatsapp }, phone: i % 2 ? '' : '+51 987 654 32' + i,
+  giftRecipients: personas.map(([name, roleKey, roleDisplay, gender, budget, selectedCategories, categoryAnswers], j) => ({ id: `p${i}-${j}`, name, roleKey, roleDisplay, gender, budget, selectedCategories, categoryAnswers, events: [{ id: 'e', type: 'Cumpleaños', date: '0000-11-0' + (j + 3) }] })),
+}));
+const EMBUDO_DEMO = [
+  { id: 'entraron', label: 'Entraron', total: 120, porcentaje: 100 },
+  { id: 'no_gracias', label: 'Dijeron "No, gracias"', total: 18, porcentaje: 15, aparte: true },
+  { id: 'empezaron', label: 'Empezaron', total: 96, porcentaje: 80 },
+  { id: 'sobre_ti', label: 'Sobre ti', total: 40, porcentaje: 33, nota: 'solo a quien le falta algo por responder' },
+  { id: 'grupos', label: '¿A quiénes sueles regalar?', total: 90, porcentaje: 75 },
+  { id: 'personas', label: 'Cada persona', total: 71, porcentaje: 59, nota: 'solo si eligió algún grupo' },
+  { id: 'whatsapp', label: 'Promociones por WhatsApp', total: 33, porcentaje: 28, nota: 'solo a quien no lo tenía activado' },
+  { id: 'terminaron', label: 'Terminaron', total: 64, porcentaje: 53 },
+];
+const ENTREGAS_DEMO = [
+  [5, ['Todo estuvo bien'], 'Llegó rapidísimo y el empaque precioso.', 1, 'WL-1042', 'Valeria Quispe'],
+  [4, ['Tiempo de entrega'], 'Muy bonito, pero tardó un día más.', 2, 'WL-1038', 'Luis Mendoza'],
+  [5, [], '', 3, 'WL-1031', 'Carla Rojas'],
+  [3, ['Empaque', 'Precio'], 'La caja llegó un poco golpeada.', 5, 'WL-1020', 'Jorge Salas'],
+  [5, ['Todo estuvo bien'], '', 8, 'WL-1011', 'Mafer Díaz'],
+  [2, ['Atención', 'Tiempo de entrega'], 'Nadie respondía el WhatsApp.', 12, 'WL-0999', 'Pedro Huamán'],
+  [4, [], 'Todo bien.', 40, 'WL-0950', 'Ana Torres'],
+  [5, ['Todo estuvo bien'], 'Lo volvería a pedir.', 45, 'WL-0941', 'Rosa Díaz'],
+].map(([estrellas, mejorar, comentario, dias, codigo, nombre], i) => ({ id: `ent-${i}`, estrellas, mejorar, comentario, fecha: msAtras(dias, 11), codigo, nombre, email: '' }));
 const RECOMPENSAS_DEMO = [
   { title: 'Pack de stickers Kapi', description: 'Seis stickers para tu laptop o celular.', cost: 120, tipo: 'manual', value: 'Sale del cajón de mercancía', imageUrl: '/assets/kapi/kapi-happy.webp' },
   { title: '10% en tu pedido', description: 'Hasta S/ 20 de descuento.', cost: 300, tipo: 'descuento', descuentoPct: 10, topeDescuento: 20, vigenciaDias: 30 },
@@ -589,6 +649,8 @@ function PanelDePrueba() {
   const [misiones, guardarMisionCruda, eliminarMision] = useListaDemo(MISIONES_DEMO, falla);
   const [fechasPestana, setFechasPestana] = useState('calendario');
   const [notifPestana, setNotifPestana] = useState('automaticos');
+  const [encuesta, setEncuesta] = useState(ENCUESTA_DEMO);
+  const [encuestaPestana, setEncuestaPestana] = useState('portada');
   const [configNotif, setConfigNotif] = useState(CONFIG_NOTIF_DEMO);
   const [guardadasNotif, setGuardadasNotif] = useState(GUARDADAS_DEMO);
   const [campanas, setCampanas] = useState(CAMPANAS_DEMO);
@@ -1054,7 +1116,37 @@ function PanelDePrueba() {
           />
         ) : resPestana === 'opiniones' ? (
           <PaginaOpinionesResultados encuesta={resEncuesta} onEncuesta={setResEncuesta}>
-            <EstadoVacio imagen="/assets/kapi/3d/kapi-hambre-256.webp" titulo={resEncuesta === 'entregas' ? 'Aquí va «Cómo les fue con su pedido»' : 'Aquí va la encuesta de regalos'} texto="En el admin, mientras tanto, es la pantalla de hoy embebida (AdminEncuestaEntregas o AdminRespuestasEncuesta). Se rehace en el kit en D5." />
+            {resEncuesta === 'entregas' ? (
+              <RespuestasEntregas
+                config={encuesta.entregaPanel}
+                onGuardarConfig={async (e) => { await espera(600); fallar(); setEncuesta((c) => ({ ...c, entregaPanel: e })); }}
+                respuestas={con('vacio') ? [] : ENTREGAS_DEMO}
+                cargando={con('cargando')}
+                error={con('error') ? 'resultadosEncuestaEntrega no respondió (es una prueba).' : undefined}
+                onActualizar={async () => { setActualizando(true); await espera(800); setActualizando(false); setEstados((e) => e.filter((x) => x !== 'error')); }}
+                actualizando={actualizando}
+                desdeMs={new Date(`${diaKey(dias - 1)}T00:00`).getTime()}
+                hastaMs={Date.now()}
+                previo={resComparar ? { desdeMs: new Date(`${diaKey(2 * dias - 1)}T00:00`).getTime(), hastaMs: new Date(`${diaKey(dias - 1)}T00:00`).getTime() - 1, contra: dia === 'hoy' ? 'ayer' : 'el periodo anterior' } : null}
+              />
+            ) : (
+              <RespuestasEncuesta
+                usuarios={con('vacio') ? [] : USUARIOS_ENCUESTA}
+                config={encuesta}
+                cargando={con('cargando')}
+                error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+                onActualizar={async () => { setActualizando(true); await espera(800); setActualizando(false); setEstados((e) => e.filter((x) => x !== 'error')); }}
+                actualizando={actualizando}
+                desde={diaKey(dias - 1)}
+                hasta={diaKey(0)}
+                previo={resComparar ? { desde: diaKey(2 * dias - 1), hasta: diaKey(dias), contra: dia === 'hoy' ? 'ayer' : 'el periodo anterior' } : null}
+                embudo={EMBUDO_DEMO}
+                embudoPrevio={resComparar ? EMBUDO_DEMO.map((p) => ({ ...p, total: Math.round(p.total * 0.8) })) : undefined}
+                onVolverAPreguntar={async (que) => { await espera(700); fallar(); setEncuesta((c) => configConPregunta(c, que)); }}
+                urlEditar="/admin/encuestas"
+                hoy={diaKey(0)}
+              />
+            )}
           </PaginaOpinionesResultados>
         ) : tecnica === 'paginas' ? (
           <PaginaPaginasTecnica
@@ -1135,6 +1227,20 @@ function PanelDePrueba() {
         subirImagen={subir}
         onGuardar={(datos, id) => guardarRecompensaCruda(recompensaAdminDesdeFirestore({ id, ...recompensaAdminAFirestore(datos) }), id)}
         onEliminar={eliminarRecompensa}
+      />
+    );
+  } else if (ruta === '/admin/encuestas') {
+    pagina = (
+      <PaginaEncuestaAdmin
+        config={encuesta}
+        guardada={encuesta}
+        categoriasTienda={CATEGORIAS_TIENDA_DEMO}
+        cargando={con('cargando')}
+        error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+        onReintentar={comunes.onReintentar}
+        onGuardar={async (c) => { await espera(700); fallar(); setEncuesta(c); }}
+        pestana={encuestaPestana}
+        onPestana={setEncuestaPestana}
       />
     );
   } else if (ruta === '/admin/notificaciones') {

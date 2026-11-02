@@ -578,3 +578,34 @@ test('notificaciones: la configuración, las campañas y la comparación', () =>
   const solo = m2.filaDeEstadistica({ id: 'orders', a: { sent: 8, opened: 2 } });
   assert.deepEqual([solo.nombre, solo.b, solo.mejor, solo.a.tasa], ['Pedidos', null, '', '25 %']);
 });
+
+test('encuestas: preguntas, la de entregas y volver a preguntar', () => {
+  assert.deepEqual(m2.preguntaNueva('brandField', 5), { id: 'brandField_5', label: 'Nueva pregunta', type: 'text', required: false, options: [] });
+  const campos = [{ id: 'a' }, { id: 'b', enEncuesta: false }, { id: 'c', enEncuesta: false }];
+  const sep = m2.separarPreguntas(campos, [{ id: 'b', enEncuesta: false }, { id: 'c' }]);
+  assert.deepEqual(sep.activas.map((x) => [x.pregunta.id, x.indice]), [['a', 0], ['c', 2]]);
+  assert.deepEqual(sep.retiradas.map((x) => x.indice), [1]);
+  assert.deepEqual(m2.conOpcion(['Sí'], ' sí '), ['Sí']);
+  assert.deepEqual(m2.conOpcion(['Sí'], 'No'), ['Sí', 'No']);
+  assert.deepEqual(m2.conOpcion(['Sí'], '  '), ['Sí']);
+
+  assert.deepEqual(m2.entregaPanelDesde(null), { activo: true, monedas: 5, opcionesMejorar: m2.OPCIONES_MEJORAR_ENTREGA });
+  assert.deepEqual(m2.entregaPanelDesde({ activo: false, monedas: 80, opcionesMejorar: [' Empaque ', ''] }), { activo: false, monedas: 50, opcionesMejorar: ['Empaque'] });
+  assert.equal(m2.entregaPanelDesde({ monedas: 0 }).monedas, 0);
+  assert.deepEqual(m2.cambioEstrellas(4.6, 4.3), { texto: '▲ 0.3 ★', bueno: true });
+  assert.equal(m2.cambioEstrellas(4, 4).texto, '= 0 ★');
+  assert.equal(m2.estrellasTexto(4), '★★★★☆');
+
+  assert.equal(m2.unidadDeRango('2026-10-01', '2026-11-02'), 'dia');
+  assert.equal(m2.unidadDeRango('2026-01-01', '2026-11-02'), 'mes');
+  assert.equal(m2.unidadDeRango('', ''), 'mes');
+  assert.equal(m2.etiquetaDePeriodo('2026-11-02', 'dia'), '02/11');
+  assert.equal(m2.etiquetaDePeriodo('2026-09', 'mes'), 'set 2026');
+  assert.equal(m2.fechaDeDia('2026-10-23'), '23/10/2026');
+
+  const cfg = { personPanel: { budget: false }, basicDataPanel: { fields: [{ id: 'x', enEncuesta: false }] }, brandsPanel: { categories: [{ id: 'fut', fields: [{ id: 'eq', enEncuesta: false }] }] } };
+  assert.equal(m2.configConPregunta(cfg, { tipo: 'basico', id: 'x' }).basicDataPanel.fields[0].enEncuesta, true);
+  assert.equal(m2.configConPregunta(cfg, { tipo: 'gusto', categoriaId: 'fut', id: 'eq' }).brandsPanel.categories[0].fields[0].enEncuesta, true);
+  assert.equal(m2.configConPregunta(cfg, { tipo: 'presupuesto' }).personPanel.budget, true);
+  assert.equal(cfg.basicDataPanel.fields[0].enEncuesta, false);
+});

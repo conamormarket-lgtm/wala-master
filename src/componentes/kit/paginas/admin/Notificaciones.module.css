@@ -229,28 +229,6 @@
   object-fit: cover;
 }
 
-/* Guardar (aparece con cambios) */
-.barraGuardar {
-  position: sticky;
-  bottom: 0.75rem;
-  z-index: 3;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 0.75rem 0.6rem 1rem;
-  border: 1px solid var(--violet-200);
-  border-radius: 16px;
-  background: var(--color-surface);
-  box-shadow: 0 10px 28px rgba(30, 16, 60, 0.14);
-}
-
-.barraGuardar > span {
-  flex: 1 1 12rem;
-  font-size: 0.88rem;
-  font-weight: 700;
-}
-
 /* ── Ofertas ── */
 .guardadas {
   display: grid;

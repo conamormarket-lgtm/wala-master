@@ -231,7 +231,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | hecho (2026-11-02) | · |
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | · |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | · |
-| D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | en marcha (D5a a D5d, 2026-11-02) | · |
+| D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | hecho (2026-11-02) | · |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | · | · |
 | D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | · | · |
 | D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | · | · |
@@ -1253,7 +1253,7 @@ El kit pone su marco (filtros, avisos); el visor va en el hueco tal cual.
   `anchos` desde `ANCHOS_PANTALLA`; de `children`, `<HeatmapViewer data loading error emptyMessage ancho origen versionesPorRuta soloDisenoActual onCambiarDiseno />`
   como hoy.
 
-## D5 · Clientes y fidelidad (en marcha: D5a a D5d hechos en el kit el 2026-11-02)
+## D5 · Clientes y fidelidad (en el kit desde el 2026-11-02: los cinco tramos)
 
 Siete pantallas de hoy (unas 4.900 líneas con las de Fechas importantes),
 en cinco tramos; el apartado se une entero cuando estén los cinco.
@@ -1264,7 +1264,7 @@ en cinco tramos; el apartado se une entero cuando estén los cinco.
 | D5b | Recompensas (el catálogo de canje) | `AdminRecompensas.jsx` (603 líneas) | hecho (2026-11-02) |
 | D5c | Fechas importantes: el calendario, los avisos y fechas festivas, las fechas de los clientes y los paquetes | `AdminFechasImportantesPage.jsx` + `components/admin/fechas/*` (1.345 líneas) | hecho (2026-11-02) |
 | D5d | Notificaciones y ofertas | `AdminNotifications/AdminNotifications.jsx` (755 líneas) | hecho (2026-11-02) |
-| D5e | Encuestas: el editor de la de suscripción y las dos pantallas de respuestas que hoy van embebidas en Opiniones (D4c) | `AdminEncuestas.jsx`, `AdminEncuestaEntregas.jsx`, `AdminRespuestasEncuesta.jsx` | · |
+| D5e | Encuestas: el editor de la de suscripción y las dos pantallas de respuestas que hoy van embebidas en Opiniones (D4c) | `AdminEncuestas.jsx`, `AdminEncuestaEntregas.jsx`, `AdminRespuestasEncuesta.jsx` | hecho (2026-11-02) |
 
 ### D5a: Referidos, Misiones y Retos (en el kit desde el 2026-11-02)
 
@@ -1515,6 +1515,73 @@ hora programada no puede haber pasado), `NOMBRES_AVISO` y `filaDeEstadistica`.
     `cancelPromoCampaign({ campaignId })`.
   - `subirImagen` → `uploadFile(blob, 'notifications/{ms}.jpg')`.
 
+### D5e: Encuestas (en el kit desde el 2026-11-02)
+
+| Las respuestas de la encuesta de regalos, dentro de Opiniones (computadora) | Una pregunta en el editor (celular) |
+|---|---|
+| ![Las cuatro cifras con su cambio, hasta dónde llegan en la encuesta y cuántos la llenaron por día](admin-encuesta-respuestas-escritorio.webp) | ![Una pregunta de opciones: el texto, cómo se responde, si sale y si es obligatoria, y sus opciones como chips que se quitan](admin-encuesta-celular.webp) |
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| El editor | `PaginaEncuestaAdmin` | `paginas/admin/Encuestas.jsx` | `/admin/encuestas`, en cuatro pestañas: **Inicio** (títulos, el mensaje y los dos botones), **Sobre ti** (sus preguntas), **Gustos** (el presupuesto y el Conjunto familia, el paso y cada interés con sus categorías de la tienda como chips y sus preguntas) y **Final** (el agradecimiento, la pregunta de WhatsApp y el color, con una muestra). Cada pregunta: el texto, cómo se responde, «Sale en la encuesta», «Obligatoria», «Busca productos por sí sola» (en un interés) y **las opciones como chips** que se quitan, con un campo para sumar otra. Las que ya no salen, plegadas abajo (según lo guardado). Eliminar pregunta o interés pregunta antes (`Confirmar`). `BarraGuardar` aparece solo con cambios |
+| Cómo les fue con su pedido | `RespuestasEntregas` | ídem | Dentro de Opiniones, con el periodo de Resultados: respuestas, promedio y «4 o 5 estrellas» con su cambio; las estrellas y «¿Qué podemos mejorar?» (`ListaBarras`), los comentarios con «Cargar más». «Editar la encuesta» abre una hoja: prendida, monedas (0 a 50) y las opciones como chips |
+| La encuesta de regalos | `RespuestasEncuesta` | ídem | Dentro de Opiniones: cuatro cifras con su cambio, hasta dónde llegan (el embudo, con su cambio por paso) y por día o mes; las preguntas en el orden de la encuesta o «Cambios» (las retiradas con **«Volver a preguntarla»**, que pregunta antes, y las que cambiaron de texto); «Por cliente» con buscador y `TablaAdmin` (la ficha en una hoja); «Descargar Excel» |
+| Barra de cambios | `BarraGuardar` | `piezas/admin/Formularios.jsx` | Nueva pieza, sacada de Notificaciones (D5d): fija abajo, solo con cambios, con Descartar y Guardar. La usan los avisos automáticos y el editor de la encuesta |
+
+Adaptadores (con pruebas): `TIPOS_PREGUNTA`, `preguntaNueva`,
+`separarPreguntas`, `conOpcion`, `OPCIONES_MEJORAR_ENTREGA` /
+`entregaPanelDesde` (como `configEntregaPanel`, que vive junto a Firebase),
+`cambioEstrellas`, `estrellasTexto`, `unidadDeRango`, `etiquetaDePeriodo`,
+`fechaDeDia` y `configConPregunta` ("Volver a preguntarla"). La config se
+edita tal cual (la lee la encuesta del cliente y el buscador de regalos) y
+las cuentas no se copiaron: las páginas usan `services/surveyResponses.mjs` y
+`services/encuestaEntrega.mjs`, puros. `ListaBarras` ganó `conCeros` (un paso
+del embudo o "1 estrella" en 0 también dice algo).
+
+### Diferencias a propósito (D5e)
+
+- Cuatro pestañas en vez de cinco (Diseño, que era solo el color, va en
+  Final): en el celular caben; Portada se llama Inicio e Intereses, Gustos.
+- **Las opciones son chips**: antes eran un texto separado por comas que se
+  reescribía al teclear y no dejaba escribir la coma de la segunda opción.
+- Los «¿Es obligatorio?» y «¿Se pregunta?» de Sí/No pasan a interruptores.
+- Guardar aparece solo con cambios, con Descartar (antes, `alert`).
+- Las dos pantallas de respuestas son piezas de Opiniones: sin su propio
+  título ni periodo (usan el de Resultados) y la ficha del cliente en una
+  hoja en vez de abrirse dentro de la lista.
+
+### Qué se probó (2026-11-02, demo en localhost, 1280 px y 375 px)
+
+- Editor: en Sobre ti, agregar «Facebook» con Enter → chip; la barra →
+  guardar → «Encuesta guardada»; «¿Tienes familia?» plegada en «Ya no se
+  preguntan (1)». Gustos: Anime con sus dos preguntas y «Busca productos por
+  sí sola» apagado en la que solo ordena.
+- Cómo les fue: 6 respuestas (▲ 200 %), 4 ★ (▼ 0.5 ★), 67 % (▼ 33 pp); las
+  cinco estrellas (también la de 0) y lo que mejorar; los comentarios.
+- Encuesta de regalos: 5 en el periodo de 7 en total; el embudo con su cambio;
+  por día; «Cambios» → «Volver a preguntarla» en «¿Tienes familia?» → la
+  pregunta → «Listo» y queda «Cambios (1)»; la ficha de Valeria con sus dos
+  personas y sus gustos.
+- 375 px: las cuatro pestañas caben; nada se sale del ancho.
+
+### Cómo se une D5e
+
+- `EncuestaDelPanel.jsx` (`/admin/encuestas`): `getSurveyConfig` →
+  `config = { ...DEFAULT_SURVEY_CONFIG, ...data }`, `guardada = data`;
+  `getCategories` → `categoriasTienda` (`{ valor: id, texto: name }`);
+  `onGuardar(c)` = `saveSurveyConfig(configConHistorial(c, guardada))`.
+- `OpinionesDelPanel.jsx`: en vez de las pantallas viejas embebidas,
+  - entregas: `resultadosEncuestaEntrega` (`['admin-encuesta-entregas']`) →
+    `respuestas`; `config` = `entregaPanel` de la encuesta;
+    `onGuardarConfig(e)` = `saveSurveyConfig({ entregaPanel: e })`;
+    `desdeMs`/`hastaMs`/`previo` del marco, como hoy;
+  - regalos: `getCollection(usuarios, hasCompletedSurvey == true)` y la config
+    (`['admin-respuestas-encuesta']`); el embudo con `cargarEmbudo` de hoy
+    (`analytics_events`, `survey_step`) → `embudoEncuesta` para el periodo y el
+    anterior; `onVolverAPreguntar(que)` = leer la config,
+    `saveSurveyConfig(configConHistorial(configConPregunta(actual, que), actual))`
+    y volver a leer.
+
 ## Reemplazos: qué sale y qué entra
 
 La misma tabla que las fichas de la tienda (CUENTA.md, "Reemplazos"): qué
@@ -1597,7 +1664,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D4c · Clientes | `pages/admin/resultados/Clientes.jsx` + `.module.css` (`ListaClientes`, la tabla de carritos, `window.confirm`) | `PaginaClientesResultados` | `ClientesResultadosDelPanel.jsx` |
 | D4c · La ficha | `pages/admin/resultados/FichaCliente.jsx` + `.module.css` (dentro de la lista) | `FichaCliente` (en `HojaEdicion`) | el mismo conector |
 | D4c · Contacto del carrito | `pages/admin/resultados/ContactoCarrito.jsx` + `.module.css` | la columna "Escribirle" de la página (`mensajeCarrito` en `utils/whatsappLink`) | la página |
-| D4c · Opiniones | `pages/admin/resultados/Opiniones.jsx` + `.module.css` | `PaginaOpinionesResultados` (las encuestas siguen embebidas hasta D5) | `OpinionesDelPanel.jsx` |
+| D4c · Opiniones | `pages/admin/resultados/Opiniones.jsx` + `.module.css` | `PaginaOpinionesResultados` con `RespuestasEntregas` o `RespuestasEncuesta` (D5e) | `OpinionesDelPanel.jsx` |
 | D4d · Detalle técnico | `pages/admin/resultados/DetalleTecnico.jsx` + `.module.css`, `dashboard/BackfillAnaliticaButton.jsx` + `.module.css` (`GlassCard`, `GlassInput`) | `PaginaDetalleTecnico` (`PasoAdmin`) | `DetalleTecnicoDelPanel.jsx` |
 | D4d · Páginas, Uso, Navegador | `dashboard/DashPaginas.jsx`, `DashUso.jsx`, `DashOrigen.jsx` + sus css (`DashHeader`, `KpiRow`, `TrendChart`, `CompareBars`, `Donut`, `RankingConMiniaturas`, recharts) | `PaginaPaginasTecnica`, `PaginaUsoTecnica`, `PaginaNavegadorTecnica` (en `MarcoResultados`) | un conector por pantalla |
 | D4d · Mapa de calor | `dashboard/DashHeatmap.jsx` + css (cabecera, filtros, avisos) | `PaginaMapaDeCalor` (**`HeatmapViewer` se queda**, de `children`) | `MapaDeCalorDelPanel.jsx` |
@@ -1612,7 +1679,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D5b · Recompensas | `pages/admin/AdminRecompensas.jsx` + `.module.css` (`AdminImageCropper`, `BuscadorProducto`, `common/Button`, su propio modal) | `PaginaRecompensasAdmin` (`PaginaListaAdmin`, `CampoImagen`, `SelectorProductos`) | `RecompensasDelPanel.jsx` |
 | D5c · Fechas importantes | `pages/admin/AdminFechasImportantesPage.jsx` + `.module.css`, `components/admin/fechas/*` (`GlobalCalendarView`, `FechasFestivasView`, `UsuariosView`, `PackageCreatorModal` y sus CSS) | `PaginaFechasAdmin` (`PaginaListaAdmin`, `TablaAdmin`, `HojaEdicion`, `SelectorProductos`, `ElegirUno`, `Confirmar`) | `FechasDelPanel.jsx` |
 | D5d · Notificaciones | `pages/admin/AdminNotifications/AdminNotifications.jsx` + `.module.css` (`BuscadorProducto`, `useGlobalToast`, `window.confirm`) | `PaginaNotificacionesAdmin` (`TablaAdmin`, `SelectorProductos`, `CampoImagen`, `CampoFecha`, `ElegirUno`, `Confirmar`) | `NotificacionesDelPanel.jsx` |
-| D5e · Encuestas | `AdminEncuestas.jsx`, `AdminEncuestaEntregas.jsx`, `AdminRespuestasEncuesta.jsx` | por hacer | por pantalla |
+| D5e · Encuestas | `pages/admin/AdminEncuestas.jsx` + `.module.css`, `AdminEncuestaEntregas.jsx`, `AdminRespuestasEncuesta.jsx` + `.module.css`, `CambioKpi.jsx` (`alert`, `window.confirm`, `useGlobalToast`) | `PaginaEncuestaAdmin`, `RespuestasEntregas`, `RespuestasEncuesta`, `BarraGuardar` | `EncuestaDelPanel.jsx`, `OpinionesDelPanel.jsx` |
 
 ## Cómo se une un apartado (la misma lógica que clientes)
 
@@ -1654,6 +1721,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |
 | 2026-11-02 | Reemplazos de D0 a D2 (qué sale, qué entra y el conector) y la sección «Panel administrativo» de ELIMINAR.md con quién importa hoy cada pieza vieja | `guia/ADMIN.md`, `guia/ELIMINAR.md` |
+| 2026-11-02 | D5e en el kit y **D5 completo**: `PaginaEncuestaAdmin` (las opciones como chips), `RespuestasEntregas` y `RespuestasEncuesta` para Opiniones, `BarraGuardar` (también en Notificaciones), `ListaBarras` con `conCeros`; adaptadores con pruebas | `paginas/admin/Encuestas.jsx`, `piezas/admin/Formularios.jsx`, `piezas/admin/Metricas.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D5d en el kit: `PaginaNotificacionesAdmin` (automáticos con sus horarios y textos A/B, ofertas con guardadas y envío que pregunta, historial con la comparación); adaptadores con pruebas | `paginas/admin/Notificaciones.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D5c en el kit: `PaginaFechasAdmin` (calendario con agenda en el celular, fechas festivas y sus avisos, fechas de clientes por cercanía con sus paquetes); adaptadores con pruebas | `paginas/admin/Fechas.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D5b en el kit: `PaginaRecompensasAdmin`; adaptadores con pruebas; las tarjetas de `TablaAdmin` ya no se salen del ancho en el celular | `paginas/admin/Fidelidad.jsx`, `piezas/admin/Datos.module.css`, `adaptadoresAdmin.js` |

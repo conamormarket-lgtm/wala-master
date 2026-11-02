@@ -1,0 +1,307 @@
+/* ── D5e · Encuestas ──────────────────────────────────── */
+.pagina,
+.respuestas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+.pagina > header {
+  margin-bottom: 0;
+}
+
+.pestanas {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pestanas::-webkit-scrollbar {
+  display: none;
+}
+
+.nota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+}
+
+.etiqueta {
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.dos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 0.75rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+/* ── El editor ── */
+.preguntas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+}
+
+.pregunta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.65rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+
+.preguntaRetirada {
+  background: var(--color-surface-2, #faf8fd);
+}
+
+.preguntaCabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.interruptores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 0.5rem 1rem;
+}
+
+.opciones {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.sumar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.sumar > :first-child {
+  flex: 1 1 12rem;
+}
+
+.retiradas {
+  padding: 0.6rem 0.8rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 14px;
+}
+
+.retiradas > summary {
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.retiradas[open] > summary {
+  margin-bottom: 0.6rem;
+}
+
+.interes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--violet-500);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.interesCabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.interesCabeza > :first-child {
+  flex: 1 1 14rem;
+}
+
+.muestraColor {
+  display: grid;
+  justify-items: start;
+  gap: 0.6rem;
+  padding: 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+}
+
+.muestraBoton {
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  background: var(--acento);
+  color: #fff;
+  font-weight: 800;
+}
+
+.muestraBarra {
+  width: min(100%, 16rem);
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-surface-2, #eee);
+  overflow: hidden;
+}
+
+.muestraBarra > span {
+  display: block;
+  width: 60%;
+  height: 100%;
+  background: var(--acento);
+}
+
+/* ── Las respuestas ── */
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.barra > p {
+  flex: 1 1 18rem;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.paso {
+  margin: 0.4rem 0 0;
+  font-family: var(--fuente-marca);
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  gap: 0.75rem;
+}
+
+.subpregunta {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.subpregunta + .subpregunta {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--color-border);
+}
+
+.subTitulo {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.ordena,
+.retiradaMarca {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: var(--color-surface-2, #f2eff8);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.retiradaMarca {
+  margin-left: 0;
+  justify-self: start;
+}
+
+.cambiadas,
+.comentarios {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cambiadas li,
+.comentario {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  overflow-wrap: anywhere;
+}
+
+.comentario p {
+  margin: 0;
+}
+
+.comentarioCabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.estrellas {
+  color: var(--gold-600, #d97706);
+  letter-spacing: 0.08em;
+}
+
+.ficha {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.8rem;
+}
+
+.datos {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.datos div {
+  display: grid;
+  grid-template-columns: minmax(6rem, 9rem) minmax(0, 1fr);
+  gap: 0.6rem;
+  font-size: 0.88rem;
+}
+
+.datos dt {
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.datos dd {
+  margin: 0;
+}
+
+.persona {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  font-size: 0.88rem;
+}
+
+.gusto {
+  overflow-wrap: anywhere;
+}

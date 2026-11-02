@@ -7,7 +7,7 @@ import { CampoFecha } from '../../Fecha';
 import { Pestanas } from '../../Navegacion';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
 import { TablaAdmin, InsigniaEstado, SelectorProductos } from '../../piezas/admin/Datos';
-import { GrupoCampos, CampoImagen, ElegirUno } from '../../piezas/admin/Formularios';
+import { GrupoCampos, CampoImagen, ElegirUno, BarraGuardar } from '../../piezas/admin/Formularios';
 import { FotoCelda } from './celdas';
 import {
   CATEGORIAS_NOTIF, GRUPOS_AVISOS, vistaPreviaAviso, conDato, SEGMENTOS_NOTIF, ESTADOS_CAMPANA,
@@ -245,13 +245,14 @@ function Automaticos({ config, cargando, error, onReintentar, onGuardar, onProba
         })}
       </section>
 
-      {sucio && (
-        <div className={s.barraGuardar} role="region" aria-label="Cambios sin guardar">
-          <span>{malHorario.length ? 'Revisa los horarios: uno termina antes de empezar.' : 'Tienes cambios sin guardar.'}</span>
-          <Boton tamano="sm" variante="fantasma" onClick={() => setDatos(config)} disabled={guardando}>Descartar</Boton>
-          <Boton tamano="sm" icono={<Save aria-hidden="true" />} cargando={guardando} disabled={malHorario.length > 0} onClick={guardar}>Guardar cambios</Boton>
-        </div>
-      )}
+      <BarraGuardar
+        visible={sucio}
+        texto={malHorario.length ? 'Revisa los horarios: uno termina antes de empezar.' : undefined}
+        onDescartar={() => setDatos(config)}
+        onGuardar={guardar}
+        guardando={guardando}
+        puedeGuardar={malHorario.length === 0}
+      />
     </>
   );
 }

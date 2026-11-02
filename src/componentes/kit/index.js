@@ -79,7 +79,7 @@ export { prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaC
 // Panel administrativo (guia/ADMIN.md): la tienda no importa este índice.
 export { MarcoAdmin, BarraInferiorAdmin, CabezaAdmin, SinPermiso, useMarcoAdmin } from './piezas/admin/Marco';
 export { TablaAdmin, InsigniaEstado, ESTADOS_ADMIN, BarraFiltros, AccionesLote, CargarMas, ListaOrdenable, SelectorProductos, NumeroEnLinea } from './piezas/admin/Datos';
-export { HojaEdicion, GrupoCampos, CampoImagen, CampoDinero, CampoColor, ElegirUno } from './piezas/admin/Formularios';
+export { HojaEdicion, GrupoCampos, CampoImagen, CampoDinero, CampoColor, ElegirUno, BarraGuardar } from './piezas/admin/Formularios';
 export { ICONOS_ADMIN, iconoAdmin } from './piezas/admin/iconosAdmin';
 export { PaginaInicioAdmin } from './paginas/admin/Inicio';
 export { PaginaListaAdmin } from './paginas/admin/Lista';
@@ -103,6 +103,7 @@ export { PaginaPaginasTecnica, PaginaUsoTecnica, PaginaNavegadorTecnica, PaginaM
 export { PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, PaginaRecompensasAdmin } from './paginas/admin/Fidelidad';
 export { PaginaFechasAdmin } from './paginas/admin/Fechas';
 export { PaginaNotificacionesAdmin } from './paginas/admin/Notificaciones';
+export { PaginaEncuestaAdmin, RespuestasEntregas, RespuestasEncuesta } from './paginas/admin/Encuestas';
 export { TarjetaEnvio, EsqueletoEnvio } from './piezas/admin/Pedidos';
 export { PaginaRecepcion } from './paginas/admin/Pedidos';
 export { PaginaPagos } from './paginas/admin/Pagos';
@@ -136,4 +137,6 @@ export {
   paquetesDeFecha, cambiosAlElegir, siguienteElegido, estadoDePaquetes, diasDesdeTexto, idDeFestiva,
   CATEGORIAS_NOTIF, GRUPOS_AVISOS, configNotificacionesDesde, configNotificacionesAFirestore, vistaPreviaAviso, conDato, SEGMENTOS_NOTIF,
   ESTADOS_CAMPANA, tasaTexto, campanaDesde, ofertaAFirestore, ofertaDeProducto, programadaIso, erroresDeOferta, NOMBRES_AVISO, filaDeEstadistica,
+  TIPOS_PREGUNTA, preguntaNueva, separarPreguntas, conOpcion, OPCIONES_MEJORAR_ENTREGA, entregaPanelDesde, cambioEstrellas, estrellasTexto,
+  unidadDeRango, etiquetaDePeriodo, fechaDeDia, configConPregunta,
 } from './adaptadoresAdmin';
