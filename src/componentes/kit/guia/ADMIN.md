@@ -233,7 +233,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | · |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | hecho (2026-11-02) | · |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | hecho (2026-11-02) | · |
-| D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | en marcha (D7a, 2026-11-02) | · |
+| D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | hecho (2026-11-02) | · |
 | D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | · | · |
 
 El orden: D0 con las piezas base (tabla, hoja de edición, campo de imagen,
@@ -1845,7 +1845,7 @@ guardan como los lee la tienda: la página normaliza con
   `style.css` de arriba → `temaDesdeCss({ principal, todos, archivo })` →
   `saveTheme(null, temaAFirestore(t))`.
 
-## D7 · Juegos y Kapi (en marcha: D7a hecho en el kit el 2026-11-02)
+## D7 · Juegos y Kapi (en el kit desde el 2026-11-02: los dos tramos)
 
 Cuatro pantallas de hoy (unas 1.640 líneas), en dos tramos; el apartado se
 une entero cuando estén los dos.
@@ -1853,7 +1853,7 @@ une entero cuando estén los dos.
 | Tramo | Qué | Páginas de hoy | Kit |
 |---|---|---|---|
 | D7a | Kapi (su imagen), La Palabra del día y Las Bolitas de Kapi (retos patrocinados, mundos, premios del ranking y cifras) | `AdminMascota.jsx` (171), `AdminWordlePage.jsx` (164), `AdminBolitasPage.jsx` (426) | hecho (2026-11-02) |
-| D7b | La Ruleta semanal | `AdminRuletaPage.jsx` (880) | · |
+| D7b | La Ruleta semanal (premios, cómo se ve y entregas) | `AdminRuletaPage.jsx` (880) | hecho (2026-11-02) |
 
 ### D7a: Kapi, La Palabra del día y Las Bolitas (en el kit desde el 2026-11-02)
 
@@ -1903,6 +1903,69 @@ vista previa de Kapi usa `utils/mascotaImage` (los enlaces de Drive).
   Guardar apagado. Cifras: 693 partidas en 14 días, 328 en 7.
 - 375 px: las tres páginas, las cuatro pestañas y las hojas sin salirse del
   ancho.
+
+### D7b: La Ruleta semanal (en el kit desde el 2026-11-02)
+
+| Cómo se ve (computadora) | Premios (celular) |
+|---|---|
+| ![La apariencia de la ruleta con la paleta Caramelo y la rueda de hoy al costado](admin-ruleta-escritorio.webp) | ![Las tarjetas de premios con su probabilidad, sus días y si salen hoy](admin-ruleta-celular.webp) |
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| La Ruleta | `PaginaRuletaAdmin` | `paginas/admin/Ruleta.jsx` | Tres pestañas. **Premios** (`PaginaListaAdmin`): cuánto suman las probabilidades (aviso si no da 100 %) y cuántos pueden salir hoy; cada premio con su color, qué gana, la probabilidad, qué días, cuántas veces salió y **por qué no sale hoy** (apagado, agotado, todavía no empieza, ya terminó, hoy no es su día); filtros por hoy y por tipo; reiniciar el contador (pregunta antes). La hoja: emoji, nombre y texto del gajo, qué gana (monedas, descuento con su tope, producto con `SelectorProductos`, envío gratis, a mano o nada), cuándo vence el cupón, **"El cliente verá: …"**, la probabilidad con lo que suman todos, los días en chips, desde/hasta con `CampoFecha`, cupo total y por persona, Activo y el color. **Cómo se ve**: abierta o cerrada, cómo se gana el giro, la semana de gracia, vueltas y duración, las cuatro paletas, los gajos uno por uno, el aro, el puntero y la imagen del centro (`CampoImagen`), con **la rueda de hoy** (`RuedaRuleta`, la misma del cliente) al costado; guarda con `BarraGuardar`. **Entregas**: los premios ganados con quién, el cupón y la semana; los premios a mano se marcan entregados (y se pueden desmarcar); "Solo lo que falta entregar" |
+
+Adaptadores (con pruebas): `DIAS_RULETA`, `textoDiasRuleta`,
+`TIPOS_PREMIO_RULETA`, `PREMIO_RULETA_CON_PRODUCTO`,
+`PREMIO_RULETA_CON_CUPON`, `premioRuletaAFormulario`,
+`premioRuletaAFirestore` (los vacíos como null, sin `stockUsado` ni `id`),
+`erroresDePremioRuleta` (los de antes y las fechas al revés),
+`motivoRuletaHoy` (lo que mira el servidor al sortear, en palabras) y
+`ganadoRuletaDesde`. La página usa también `utils/ruletaModel`
+(`normalizarPremio`, `premiosDeHoy`, `sumaProbabilidades`, `textoPremio`,
+`PRESETS_TEMA`), el mismo que lee la rueda del cliente.
+
+### Diferencias a propósito (D7b)
+
+- La hoja al costado en vez del formulario arriba de la lista; los errores
+  van junto a su campo (antes, un aviso suelto) y eliminar usa `Confirmar`
+  (antes, `window.confirm`).
+- Cada premio dice si sale hoy y, si no, por qué (antes había que
+  deducirlo); "El cliente verá" y "Con este, suman X %" se ven mientras se
+  edita.
+- "Cómo se ve" guarda con la barra (antes, cada cambio se guardaba solo, uno
+  por uno); se puede descartar.
+- El buscador de productos dentro de la hoja ya no la envía con Enter
+  (`Buscador` corta el submit: ahora vale para todas las hojas con
+  `SelectorProductos`).
+
+### Qué se probó (2026-11-02, demo en localhost, 1280 px y 375 px)
+
+- Seis premios que suman 99 %: el aviso; envío gratis "Hoy no es su día"
+  (solo viernes) y el peluche "Agotado" (5 de 5). "Sigue intentando" al 13 % →
+  "Con este, suman 100.0 %" y, guardado, "Perfecto".
+- Nuevo premio de producto sin elegirlo → "Elige el producto del premio"; con
+  la casaca → "El cliente verá: Casaca … gratis". Enter en el buscador no
+  guarda la hoja; cerrarla con cambios pregunta antes.
+- Cómo se ve: la paleta Caramelo → la barra → "Ruleta guardada"; la rueda
+  cabe en su columna.
+- Entregas: "Falta 1" → marcar el peluche de Valeria → "No falta entregar
+  nada"; sin el filtro, los cuatro con su semana.
+- 375 px: las tres pestañas y la hoja sin salirse del ancho.
+
+### Cómo se une D7b
+
+- `RuletaDelPanel.jsx`: `getRuletaPrizes` (`normalizarPremio`) y
+  `getRuletaConfig` (`normalizarConfig`) al abrir, cada uno con su
+  `queryKey`; `hoy` = `limaTodayStr()`, `diaSemana` = `limaDayOfWeek()`;
+  `onGuardarPremio(d, id)` = `saveRuletaPrize(premioRuletaAFirestore(d), id)`,
+  `onEliminarPremio` = `deleteRuletaPrize`, `onReiniciarContador` =
+  `resetStockPremio`, `onGuardarConfig` = `saveRuletaConfig`; cada uno
+  devuelve `{ success, error }`: si no, lanzar el error.
+- Las entregas solo se leen al abrir su pestaña (como hoy):
+  `getRuletaWins(200)` → `ganadoRuletaDesde`; `onMarcarEntregado(id, v)` =
+  `marcarPremioEntregado(id, v)`.
+- `productos`: los del catálogo, como en D5b; `subirImagen` → `uploadFile`
+  en `config/ruleta/`.
 
 ### Cómo se une D7a
 
@@ -2034,7 +2097,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D7a · Kapi | `pages/admin/AdminMascota.jsx` (usa `AdminTiendaTextos.module.css`, estilos en línea, `alert`, `window.confirm`) | `PaginaKapiAdmin` (`CampoImagen`) | `KapiDelPanel.jsx` |
 | D7a · La Palabra del día | `pages/admin/AdminWordlePage.jsx` + `.module.css` (`alert`, `window.confirm`) | `PaginaPalabraAdmin` (`PaginaListaAdmin`, `CampoFecha`) | `PalabraDelPanel.jsx` |
 | D7a · Las Bolitas | `pages/admin/AdminBolitasPage.jsx` + `.module.css` (`alert`, `window.confirm`) | `PaginaBolitasAdmin` (`PaginaListaAdmin`, `ListaOrdenable`, `GraficoTendencia`, `ListaBarras`, `BarraGuardar`) | `BolitasDelPanel.jsx` |
-| D7b · La Ruleta | `pages/admin/AdminRuletaPage.jsx` + `.module.css` | por hacer | `RuletaDelPanel.jsx` |
+| D7b · La Ruleta | `pages/admin/AdminRuletaPage.jsx` + `.module.css` (`BuscadorProducto`, `useGlobalToast`, `window.confirm`) | `PaginaRuletaAdmin` (`PaginaListaAdmin`, `SelectorProductos`, `CampoFecha`, `CampoColor`, `CampoImagen`, `BarraGuardar`, `RuedaRuleta`) | `RuletaDelPanel.jsx` |
 
 ## Cómo se une un apartado (la misma lógica que clientes)
 
@@ -2076,6 +2139,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |
 | 2026-11-02 | Reemplazos de D0 a D2 (qué sale, qué entra y el conector) y la sección «Panel administrativo» de ELIMINAR.md con quién importa hoy cada pieza vieja | `guia/ADMIN.md`, `guia/ELIMINAR.md` |
+| 2026-11-02 | D7b en el kit y **D7 completo**: `PaginaRuletaAdmin` (premios con por qué no salen hoy, cómo se ve con la rueda, entregas); adaptadores con pruebas. `Buscador` ya no envía la hoja que lo contiene | `paginas/admin/Ruleta.jsx`, `adaptadoresAdmin.js`, `Formulario.jsx` |
 | 2026-11-02 | D7 dividido en tramos (a: Kapi, la palabra y las bolitas; b: la ruleta). D7a en el kit: `PaginaKapiAdmin`, `PaginaPalabraAdmin`, `PaginaBolitasAdmin`; adaptadores con pruebas | `paginas/admin/Juegos.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D6d en el kit y **D6 completo**: `PaginaPopupsAdmin`, `PaginaLandingsAdmin`, `PaginaTemasAdmin`; `PaginaListaAdmin` con `nuevoCon`; adaptadores con pruebas | `paginas/admin/Popups.jsx`, `paginas/admin/Paginas.jsx`, `paginas/admin/Lista.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D6c en el kit: `PaginaEnlacesAdmin`, `PaginaEnlaceAdmin` (el constructor en pestañas con la vista previa de `linkThemes`); adaptadores con pruebas | `paginas/admin/Enlaces.jsx`, `adaptadoresAdmin.js` |

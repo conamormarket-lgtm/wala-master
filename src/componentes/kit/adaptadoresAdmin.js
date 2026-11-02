@@ -2866,3 +2866,89 @@ export function metricasBolitas(data = {}) {
     porDia: [...porDia].sort((a, b) => (a.fecha < b.fecha ? -1 : 1)).map((d) => ({ fecha: d.fecha, partidas: Number(d.partidas) || 0, retos: Number(d.retos) || 0, clics: Number(d.clics) || 0 })),
   };
 }
+
+/* ── D7b · La Ruleta semanal ──────────────────────────── */
+
+/*
+ * Los premios se editan con los nombres de utils/ruletaModel (normalizarPremio):
+ * lo leen el servidor al sortear y la rueda del cliente.
+ */
+export const DIAS_RULETA = [
+  { valor: 1, corto: 'L', largo: 'lunes' }, { valor: 2, corto: 'M', largo: 'martes' }, { valor: 3, corto: 'X', largo: 'miércoles' },
+  { valor: 4, corto: 'J', largo: 'jueves' }, { valor: 5, corto: 'V', largo: 'viernes' }, { valor: 6, corto: 'S', largo: 'sábado' }, { valor: 0, corto: 'D', largo: 'domingo' },
+];
+
+/** "Todos los días" · "Solo lunes y viernes" (vacío o los siete = todos). */
+export function textoDiasRuleta(dias = []) {
+  if (!dias.length || dias.length === 7) return 'Todos los días';
+  const n = DIAS_RULETA.filter((d) => dias.includes(d.valor)).map((d) => d.largo);
+  return `Solo ${n.length === 1 ? n[0] : `${n.slice(0, -1).join(', ')} y ${n[n.length - 1]}`}`;
+}
+
+export const TIPOS_PREMIO_RULETA = [
+  { valor: 'monedas', texto: 'Monedas (se acreditan solas)' },
+  { valor: 'descuento', texto: 'Descuento en el pedido (cupón)' },
+  { valor: 'producto_descuento', texto: 'Descuento en un producto (cupón)' },
+  { valor: 'producto_gratis', texto: 'Producto gratis (cupón)' },
+  { valor: 'envio_gratis', texto: 'Envío gratis (cupón)' },
+  { valor: 'manual', texto: 'Un premio que entregas a mano' },
+  { valor: 'nada', texto: 'Sin premio («sigue intentando»)' },
+];
+export const PREMIO_RULETA_CON_PRODUCTO = ['producto_descuento', 'producto_gratis'];
+export const PREMIO_RULETA_CON_CUPON = ['descuento', 'producto_descuento', 'producto_gratis', 'envio_gratis'];
+
+/** Un premio normalizado → la hoja (los nulos vuelven a texto vacío). */
+export const premioRuletaAFormulario = (p = {}) => ({
+  ...p, color: p.color || '', desde: p.desde || '', hasta: p.hasta || '', productId: p.productId || '',
+  stockTotal: p.stockTotal ?? '', maxPorUsuario: p.maxPorUsuario ?? '', dias: p.dias || [],
+});
+
+/** Lo que se guarda (saveRuletaPrize): vacíos como null, como antes. */
+export function premioRuletaAFirestore(d = {}) {
+  const { stockUsado, id, ...resto } = d;
+  return {
+    ...resto,
+    nombre: String(d.nombre || '').trim(),
+    etiqueta: String(d.etiqueta || '').trim(),
+    probabilidad: Number(d.probabilidad) || 0,
+    stockTotal: d.stockTotal === '' || d.stockTotal == null ? null : Number(d.stockTotal),
+    maxPorUsuario: d.maxPorUsuario === '' || d.maxPorUsuario == null ? null : Number(d.maxPorUsuario),
+    desde: d.desde || null,
+    hasta: d.hasta || null,
+    color: d.color || null,
+    productId: PREMIO_RULETA_CON_PRODUCTO.includes(d.tipo) ? d.productId || null : null,
+    productName: PREMIO_RULETA_CON_PRODUCTO.includes(d.tipo) ? d.productName || '' : '',
+  };
+}
+
+/** Los errores (como antes, y las fechas en orden). */
+export function erroresDePremioRuleta(d = {}) {
+  return {
+    nombre: String(d.nombre || '').trim() ? undefined : 'Escribe el nombre del premio.',
+    probabilidad: Number(d.probabilidad) > 0 ? undefined : 'Tiene que ser mayor que cero.',
+    productId: PREMIO_RULETA_CON_PRODUCTO.includes(d.tipo) && !d.productId ? 'Elige el producto del premio.' : undefined,
+    topeDescuento: d.tipo === 'descuento' && Number(d.descuentoPct) > 0 && !(Number(d.topeDescuento) > 0) ? 'Pon un tope en soles para el descuento por porcentaje.' : undefined,
+    descuentoPct: Number(d.descuentoPct) > 100 ? 'El porcentaje va de 0 a 100.' : undefined,
+    hasta: d.desde && d.hasta && d.hasta < d.desde ? 'Termina antes de empezar.' : undefined,
+  };
+}
+
+/** Por qué un premio no sale hoy ('' si sale): lo mismo que mira el servidor, dicho en palabras. */
+export function motivoRuletaHoy(p = {}, hoy = '', diaSemana = 0) {
+  if (!p.activo) return 'Apagado';
+  if (!(Number(p.probabilidad) > 0)) return 'Sin probabilidad';
+  if (p.stockTotal != null && p.stockUsado >= p.stockTotal) return 'Agotado';
+  if (p.desde && hoy < p.desde) return 'Todavía no empieza';
+  if (p.hasta && hoy > p.hasta) return 'Ya terminó';
+  if ((p.dias || []).length && !p.dias.includes(diaSemana)) return 'Hoy no es su día';
+  return '';
+}
+
+/** Un premio ganado (ruletaWins) → la lista de entregas. */
+export function ganadoRuletaDesde(g = {}) {
+  const tipo = g.tipo || g.type || '';
+  return {
+    id: g.id, quien: g.displayName || '', correo: g.email || g.uid || '', premio: g.texto || g.name || '', tipo,
+    cupon: g.cuponCode || '', semana: g.weekStart || '', entregado: Boolean(g.entregado), manual: tipo === 'manual',
+  };
+}

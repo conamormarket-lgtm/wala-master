@@ -110,6 +110,7 @@ export { PaginaEnlacesAdmin, PaginaEnlaceAdmin } from './paginas/admin/Enlaces';
 export { PaginaPopupsAdmin } from './paginas/admin/Popups';
 export { PaginaLandingsAdmin, PaginaTemasAdmin } from './paginas/admin/Paginas';
 export { PaginaKapiAdmin, PaginaPalabraAdmin, PaginaBolitasAdmin } from './paginas/admin/Juegos';
+export { PaginaRuletaAdmin } from './paginas/admin/Ruleta';
 export { TarjetaEnvio, EsqueletoEnvio } from './piezas/admin/Pedidos';
 export { PaginaRecepcion } from './paginas/admin/Pedidos';
 export { PaginaPagos } from './paginas/admin/Pagos';
@@ -153,4 +154,6 @@ export {
   cuandoPopup, erroresDePopup, slugDeLanding, landingDesde, erroresDeLanding, landingAFirestore, temaDesde, temaAFirestore, temaDesdeCss, pesoTexto,
   palabraLimpia, palabraDiaDesde, erroresDePalabra, CUPON_JUEGO_VACIO, modoDeCupon, cuponConModo, textoCuponJuego, erroresDeCupon, patrocinioDesde,
   erroresDePatrocinio, premiosBolitasDesde, premiosBolitasAFirestore, nuevoPuesto, erroresDePremios, metricasBolitas,
+  DIAS_RULETA, textoDiasRuleta, TIPOS_PREMIO_RULETA, PREMIO_RULETA_CON_PRODUCTO, PREMIO_RULETA_CON_CUPON, premioRuletaAFormulario, premioRuletaAFirestore,
+  erroresDePremioRuleta, motivoRuletaHoy, ganadoRuletaDesde,
 } from './adaptadoresAdmin';

@@ -713,3 +713,22 @@ test('juegos: la palabra del día y las bolitas', () => {
   const m = m2.metricasBolitas({ porDia: [{ fecha: '2026-11-02', partidas: 5, retos: 2, clics: 1, clicsPorMarca: { a: 1 } }, { fecha: '2026-11-01', partidas: 3, niveles: { 4: 2 } }], jugadores: { jugadores: 40, vuelven: { cantidad: 10, base: 40 }, trabados: { 12: 3, 7: 5 } } });
   assert.deepEqual([m.partidas, m.retos, m.vuelven, m.siguen7, m.trabados[0].nivel, m.porDia[0].fecha, m.clicsMarca.a], [8, 2, 25, null, '7', '2026-11-01', 1]);
 });
+
+test('la ruleta: días, premios, por qué no sale hoy y entregas', () => {
+  assert.equal(m2.textoDiasRuleta([]), 'Todos los días');
+  assert.equal(m2.textoDiasRuleta([5, 1]), 'Solo lunes y viernes');
+  assert.equal(m2.textoDiasRuleta([0]), 'Solo domingo');
+  const f = m2.premioRuletaAFormulario({ id: 'p', nombre: 'Taza', stockTotal: null, color: null, dias: [1] });
+  assert.deepEqual([f.stockTotal, f.color, f.desde], ['', '', '']);
+  const g = m2.premioRuletaAFirestore({ ...f, nombre: ' Taza ', tipo: 'monedas', productId: 'x', stockTotal: '5', stockUsado: 3 });
+  assert.deepEqual([g.nombre, g.stockTotal, g.maxPorUsuario, g.productId, g.color, 'stockUsado' in g, 'id' in g], ['Taza', 5, null, null, null, false, false]);
+  const e = m2.erroresDePremioRuleta({ nombre: '', probabilidad: 0, tipo: 'descuento', descuentoPct: 10, topeDescuento: 0, desde: '2026-11-10', hasta: '2026-11-01' });
+  assert.deepEqual(Object.entries(e).filter(([, v]) => v).map(([k]) => k), ['nombre', 'probabilidad', 'topeDescuento', 'hasta']);
+  assert.equal(m2.erroresDePremioRuleta({ nombre: 'a', probabilidad: 5, tipo: 'producto_gratis' }).productId, 'Elige el producto del premio.');
+  const base = { activo: true, probabilidad: 10, stockTotal: null, stockUsado: 0, dias: [] };
+  assert.equal(m2.motivoRuletaHoy(base, '2026-11-02', 1), '');
+  assert.equal(m2.motivoRuletaHoy({ ...base, stockTotal: 2, stockUsado: 2 }, '2026-11-02', 1), 'Agotado');
+  assert.equal(m2.motivoRuletaHoy({ ...base, dias: [5] }, '2026-11-02', 1), 'Hoy no es su día');
+  assert.equal(m2.motivoRuletaHoy({ ...base, hasta: '2026-11-01' }, '2026-11-02', 1), 'Ya terminó');
+  assert.deepEqual(m2.ganadoRuletaDesde({ id: 'w', type: 'manual', name: 'Peluche', uid: 'u' }), { id: 'w', quien: '', correo: 'u', premio: 'Peluche', tipo: 'manual', cupon: '', semana: '', entregado: false, manual: true });
+});

@@ -1,0 +1,244 @@
+/* ── D7b · La Ruleta semanal ───────────────────────────── */
+.pagina {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+  container: ruleta / inline-size;
+}
+
+.pagina > header {
+  margin-bottom: 0;
+}
+
+.nota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.etiqueta {
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.error {
+  margin: 0;
+  color: var(--danger-hover);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.pestanas {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pestanas::-webkit-scrollbar {
+  display: none;
+}
+
+.dos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: 0.6rem;
+}
+
+/* La lista de premios */
+.premio {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.premio > span:last-child {
+  display: grid;
+  min-width: 0;
+  white-space: normal;
+}
+
+.color {
+  flex: none;
+  width: 0.9rem;
+  height: 2.2rem;
+  border-radius: 6px;
+}
+
+/* La hoja de un premio */
+.nombreIcono {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  gap: 0.6rem;
+}
+
+.producto {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.producto:focus {
+  outline: none;
+}
+
+.muestra {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  background: var(--violet-50);
+  font-size: 0.86rem;
+}
+
+.muestra span {
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+:global([data-theme='dark']) .muestra {
+  background: rgba(139, 92, 246, 0.12);
+}
+
+.dias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+/* Cómo se ve */
+.apariencia {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.campos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.vista {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  order: -1;
+}
+
+.rueda {
+  width: min(100%, 18rem);
+}
+
+/* La rueda del cliente mide según la pantalla; aquí, según su columna. */
+.rueda > div {
+  width: 100%;
+}
+
+@container ruleta (min-width: 780px) {
+  .apariencia {
+    grid-template-columns: minmax(0, 1fr) 20rem;
+  }
+
+  .vista {
+    position: sticky;
+    top: 1rem;
+    order: 0;
+  }
+}
+
+.rango {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+}
+
+.rango input {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--violet-600);
+}
+
+.paletas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.paleta {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.paleta[aria-pressed='true'] {
+  border-color: var(--violet-600);
+  box-shadow: 0 0 0 2px var(--violet-200);
+}
+
+.paletaMuestras {
+  display: flex;
+  gap: 2px;
+}
+
+.paletaMuestras span {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 4px;
+}
+
+.gajos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.gajo {
+  position: relative;
+}
+
+.gajo input {
+  width: 2.6rem;
+  height: 2.6rem;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: none;
+  cursor: pointer;
+}
+
+.gajo button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-text);
+  color: var(--color-surface);
+  cursor: pointer;
+}
+
+.gajo button svg {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.codigo {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}

@@ -18,6 +18,7 @@ import {
   PaginaEnlacesAdmin, PaginaEnlaceAdmin, paginaEnlacesDesde, paginaEnlacesAFirestore,
   PaginaPopupsAdmin, PaginaLandingsAdmin, PaginaTemasAdmin, landingDesde, landingAFirestore, temaDesde, temaAFirestore, temaDesdeCss,
   PaginaKapiAdmin, PaginaPalabraAdmin, PaginaBolitasAdmin, palabraDiaDesde, patrocinioDesde, premiosBolitasDesde,
+  PaginaRuletaAdmin, premioRuletaAFirestore, ganadoRuletaDesde,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -28,6 +29,7 @@ import CREAR from './demo/crear.json';
 import { leerPlantillas, prendaBaseParaGuardar } from '../utils/prendaBase';
 import { FESTIVAS_DEFAULT, normalizarFestiva, hoyLocal } from '../utils/fechasFestivas.mjs';
 import { normalizarPopup, POPUP_ENCUESTA_DEFAULT } from '../services/popupsLogic.mjs';
+import { normalizarPremio, normalizarConfig } from '../utils/ruletaModel';
 import MARCAS_TIENDA from './demo/marcas.json';
 import cs from './ComponentesPage.module.css';
 import s from './DemoAdmin.module.css';
@@ -87,6 +89,7 @@ const HECHAS = [
   ['/admin/mascota', 'Kapi'],
   ['/admin/wordle', 'Palabra'],
   ['/admin/bolitas', 'Bolitas'],
+  ['/admin/ruleta', 'Ruleta'],
   ['/admin/crear-cuentas-pedidos', 'Cuentas'],
   ['/admin/categorias', 'Categorías'],
   ['/admin/colecciones', 'Colecciones'],
@@ -607,6 +610,21 @@ const metricasBolitasDemo = (dias) => ({
   porDia: Array.from({ length: dias }, (_, i) => ({ fecha: diaKey(i), partidas: 40 + ((i * 13) % 25), retos: 12 + ((i * 7) % 9), clics: 3 + (i % 5), niveles: {}, clicsPorMarca: { [MARCAS_PAGINAS[0]?.id]: 2 + (i % 3), [MARCAS_PAGINAS[1]?.id]: i % 2 } })),
   jugadores: { jugadores: 412, vuelven: { cantidad: 190, base: 412 }, siguen7: { cantidad: 96, base: 380 }, trabados: { 18: 22, 7: 41, 33: 9, 12: 30 } },
 });
+// D7b: los premios de la ruleta (uno solo los viernes, uno agotado), su config y lo que se ganó.
+const PREMIOS_RULETA_DEMO = [
+  { id: 'r1', nombre: '10 monedas', icono: '🪙', tipo: 'monedas', monedas: 10, probabilidad: 40, stockUsado: 120 },
+  { id: 'r2', nombre: '20 monedas', icono: '💰', tipo: 'monedas', monedas: 20, probabilidad: 20, stockUsado: 48 },
+  { id: 'r3', nombre: '10 % en tu pedido', etiqueta: '10 %', icono: '🎟️', tipo: 'descuento', descuentoPct: 10, topeDescuento: 20, probabilidad: 15, stockUsado: 9 },
+  { id: 'r4', nombre: 'Envío gratis', icono: '🚚', tipo: 'envio_gratis', probabilidad: 10, dias: [5], stockUsado: 3 },
+  { id: 'r5', nombre: 'Peluche de Kapi', etiqueta: 'Peluche', icono: '🧸', tipo: 'manual', probabilidad: 2, stockTotal: 5, stockUsado: 5, color: '#e04f8f' },
+  { id: 'r6', nombre: 'Sigue intentando', etiqueta: 'Otra vez', icono: '🍀', tipo: 'nada', probabilidad: 12 },
+].map(normalizarPremio);
+const GANADOS_RULETA_DEMO = [
+  { id: 'g1', displayName: 'Valeria Quispe', email: 'valeria.quispe@gmail.com', texto: 'Peluche de Kapi', tipo: 'manual', weekStart: diaKey(7), entregado: false },
+  { id: 'g2', displayName: 'Luis Mendoza', email: 'luis.mendoza@hotmail.com', texto: '10 % en tu pedido', tipo: 'descuento', cuponCode: 'RUL-8KQ2', weekStart: diaKey(7) },
+  { id: 'g3', displayName: 'Carla Rojas', email: 'carla.rojas@gmail.com', texto: 'Peluche de Kapi', tipo: 'manual', weekStart: diaKey(14), entregado: true },
+  { id: 'g4', displayName: 'Jorge Salas', email: 'jorge.salas@outlook.com', texto: '20 monedas', tipo: 'monedas', weekStart: diaKey(14) },
+].map(ganadoRuletaDesde);
 const RECOMPENSAS_DEMO = [
   { title: 'Pack de stickers Kapi', description: 'Seis stickers para tu laptop o celular.', cost: 120, tipo: 'manual', value: 'Sale del cajón de mercancía', imageUrl: '/assets/kapi/kapi-happy.webp' },
   { title: '10% en tu pedido', description: 'Hasta S/ 20 de descuento.', cost: 300, tipo: 'descuento', descuentoPct: 10, topeDescuento: 20, vigenciaDias: 30 },
@@ -759,6 +777,10 @@ function PanelDePrueba() {
   const [premiosBolitas, setPremiosBolitas] = useState(PREMIOS_BOLITAS_DEMO);
   const [bolitasPestana, setBolitasPestana] = useState('patrocinios');
   const [diasBolitas, setDiasBolitas] = useState(14);
+  const [premiosRuleta, setPremiosRuleta] = useState(PREMIOS_RULETA_DEMO);
+  const [configRuleta, setConfigRuleta] = useState(() => normalizarConfig({}));
+  const [ganadosRuleta, setGanadosRuleta] = useState(GANADOS_RULETA_DEMO);
+  const [ruletaPestana, setRuletaPestana] = useState('premios');
   const [landings, guardarLandingCruda, eliminarLanding] = useListaDemo(LANDINGS_DEMO, falla);
   const [temas, guardarTemaCrudo, eliminarTema, setTemas] = useListaDemo(TEMAS_DEMO, falla);
   const [encuesta, setEncuesta] = useState(ENCUESTA_DEMO);
@@ -1339,6 +1361,37 @@ function PanelDePrueba() {
         subirImagen={subir}
         onGuardar={(datos, id) => guardarRecompensaCruda(recompensaAdminDesdeFirestore({ id, ...recompensaAdminAFirestore(datos) }), id)}
         onEliminar={eliminarRecompensa}
+      />
+    );
+  } else if (rutaSola === '/admin/ruleta') {
+    pagina = (
+      <PaginaRuletaAdmin
+        pestana={ruletaPestana}
+        onPestana={setRuletaPestana}
+        hoy={diaKey(0)}
+        diaSemana={new Date().getDay()}
+        cargando={con('cargando')}
+        error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+        onReintentar={comunes.onReintentar}
+        premios={vacio ? [] : premiosRuleta}
+        onGuardarPremio={async (d, id) => {
+          await espera(600);
+          fallar();
+          const previo = premiosRuleta.find((x) => x.id === id);
+          const p = normalizarPremio({ ...premioRuletaAFirestore(d), id: id || `r-${Date.now()}`, stockUsado: previo?.stockUsado || 0 });
+          setPremiosRuleta((l) => (id ? l.map((x) => (x.id === id ? p : x)) : [...l, p]));
+        }}
+        onEliminarPremio={async (id) => { await espera(500); fallar(); setPremiosRuleta((l) => l.filter((x) => x.id !== id)); }}
+        onReiniciarContador={async (id) => { await espera(500); fallar(); setPremiosRuleta((l) => l.map((x) => (x.id === id ? { ...x, stockUsado: 0 } : x))); }}
+        productos={PRODUCTOS}
+        subirImagen={subir}
+        config={configRuleta}
+        onGuardarConfig={async (c) => { await espera(600); fallar(); setConfigRuleta(c); }}
+        ganados={vacio ? [] : ganadosRuleta}
+        cargandoGanados={con('cargando')}
+        errorGanados={con('error') ? 'No se pudieron leer los premios ganados (es una prueba).' : undefined}
+        onReintentarGanados={comunes.onReintentar}
+        onMarcarEntregado={async (id, v) => { await espera(500); fallar(); setGanadosRuleta((l) => l.map((x) => (x.id === id ? { ...x, entregado: v } : x))); }}
       />
     );
   } else if (rutaSola === '/admin/mascota') {

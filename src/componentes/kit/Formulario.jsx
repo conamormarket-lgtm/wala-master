@@ -497,7 +497,8 @@ export function Buscador({ placeholder = 'Buscar…', atajo = '/', onBuscar, def
     <form
       role="search"
       className={[s.buscador, grande && s.buscadorGrande, className].filter(Boolean).join(' ')}
-      onSubmit={(e) => { e.preventDefault(); onBuscar?.(ref.current.value.trim()); }}
+      // stopPropagation: dentro de una hoja (SelectorProductos), Enter al buscar no guarda la hoja.
+      onSubmit={(e) => { e.preventDefault(); e.stopPropagation(); onBuscar?.(ref.current.value.trim()); }}
     >
       <Search aria-hidden="true" />
       <input
