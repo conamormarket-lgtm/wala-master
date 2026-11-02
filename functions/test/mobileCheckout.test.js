@@ -130,3 +130,23 @@ test('cobra un "Mi combo" como la web: cada pieza en su línea, el precio repart
   productos.c1.comboCrear.publicado = false;
   await assert.rejects(pedido(), /ya no está disponible/);
 });
+test('monedas: bajan los productos, el envío sigue midiéndose sobre el subtotal y quedan en el pedido', async () => {
+  const withCoins = { ...input(), coins: 20, expectedTotal: 149.7 - 20 + 15 };
+  const result = await mobile.build(withCoins, 'a', read());
+  assert.equal(result.payload.montoTotal, 144.7);
+  assert.equal(result.payload.descuentoMonedas, 20); assert.equal(result.payload.monedasEnEspera, 20);
+  assert.deepEqual(result.meta.summary.totals, { subtotal: 149.7, shipping: 15, coins: 20, total: 144.7 });
+  assert.equal(result.meta.input.coins, 20);
+  // La misma cuenta que revisa prepareCheckoutPayment.
+  assert.equal(totalEsperadoCheckout({ subtotal: 149.7, monedas: 20, envioEstandar: 15, envioGratisDesde: 200 }).total, 144.7);
+  // El total sin descontarlas ya no coincide: el celular manda lo que mostró.
+  await assert.rejects(mobile.build({ ...withCoins, expectedTotal: 164.7 }, 'a', read()));
+  assert.equal((await mobile.build(input(), 'a', read())).payload.descuentoMonedas, undefined);
+});
+test('monedas: enteras y positivas; cambian la huella del intento, pero sin ellas es la de siempre', () => {
+  for (const coins of [1.5, -1, '5', 2_000_000]) assert.throws(() => mobile.coinsOf({ coins }));
+  assert.equal(mobile.coinsOf({}), 0); assert.equal(mobile.coinsOf({ coins: 0 }), 0);
+  const plain = mobile.identity(input(), 'a');
+  assert.equal(mobile.identity({ ...input(), coins: 0 }, 'a').hash, plain.hash);
+  assert.notEqual(mobile.identity({ ...input(), coins: 10 }, 'a').hash, plain.hash);
+});
