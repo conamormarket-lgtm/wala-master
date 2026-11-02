@@ -5,7 +5,7 @@ import {
   PaginaColecciones, PaginaAtributos, PaginaEnvios, PaginaCliparts, PaginaMarcas, PaginaProductosMarca, PaginaDestacados,
   PaginaProductos, PaginaInventario, PaginaRecomendar, PaginaFichaProducto, fichaDesdeProducto, fichaAProducto,
   PaginaPersonalizables, PaginaPacks, personalizableDesde, packDesdeFirestore,
-  PaginaBlueprints, PaginaPlantillasYoryo, blueprintDesdeFirestore, blueprintAFirestore,
+  PaginaBlueprints, PaginaPlantillasYoryo, blueprintDesdeFirestore, blueprintAFirestore, PaginaRecepcion,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -53,6 +53,7 @@ const ESTADOS = [
 /* Las páginas que ya están, para los chips de "Ir a". */
 const HECHAS = [
   ['/admin', 'Inicio'],
+  ['/admin/recepcion-pedidos', 'Recepción'],
   ['/admin/categorias', 'Categorías'],
   ['/admin/colecciones', 'Colecciones'],
   ['/admin/marcas', 'Marcas'],
@@ -149,6 +150,43 @@ const PLANTILLAS_YORYO = Object.fromEntries(PRODUCTOS_YORYO.map(({ id }) => [id,
   ...(id === 'tomatodo' ? [] : PAREJAS_YORYO.map((n) => ({ id: `${id}-${n}`, grupo: 'Parejas', nombre: n }))),
   ...EQUIPOS_YORYO.map((n) => ({ id: `${id}-${n}`, grupo: 'Equipos', nombre: n })),
 ]]));
+// D3a: pedidos de ejemplo con la forma de normalizarPedidoRecepcion (nombres inventados).
+const ESTADO_DEMO = {
+  por_confirmar_pago: { label: 'Por confirmar pago', paid: false },
+  pago_confirmado: { label: 'Pago confirmado', paid: true },
+  en_preparacion: { label: 'En preparación', paid: true },
+  entregado: { label: 'Entregado', paid: true },
+  anulado: { label: 'Anulado', paid: false },
+};
+const PEDIDOS_RECEPCION = [
+  ['Valeria Quispe', '987654321', 'Av. Benavides 1520, dpto. 302', 'Miraflores', 'Lima', 'en_preparacion', [[1, 'Polo clásico personalizado', 'Negro', 'M', true], [1, 'Taza Kapi', '', '', false]], 89.9, 10],
+  ['Diego Fernández', '956112233', 'Jr. Las Begonias 455', 'San Isidro', 'Lima', 'por_confirmar_pago', [[2, 'Casaca clásica', 'Azul', 'L', false]], 259.8, 12],
+  ['Camila Rojas', '', 'Calle Los Pinos 230', 'Cayma', 'Arequipa', 'pago_confirmado', [[1, 'Cuadro personalizado', '', '', true]], 75, 18, { destinatario: 'Andrés Rojas', mensaje: 'Feliz aniversario, mi amor.', fecha: '2026-11-14' }],
+  ['Luis Mendoza', '944556677', 'Mz. B Lt. 12, Urb. Santa Rosa', 'Trujillo', 'La Libertad', 'entregado', [[3, 'Polera clásica', 'Gris', 'S', false]], 297, 15],
+  ['Sofía Ramírez', '933221144', 'Av. La Marina 2355', 'San Miguel', 'Lima', 'en_preparacion', [[1, 'Pack de oficina personalizado', '', '', true], [1, 'Mousepad personalizado', '', '', true]], 120, 10],
+  ['Mateo Vargas', '912345678', 'Av. Arequipa 3120', 'Lince', 'Lima', 'anulado', [[1, 'Jogger clásico', 'Negro', 'M', false]], 79.9, 10],
+  ['Andrea Castillo', '+34 611 222 333', 'Calle Mayor 14, 3º B', 'Madrid', 'España', 'por_confirmar_pago', [[2, 'Polo clásico', 'Blanco', 'S', true]], 139.8, 95],
+  ['Jorge Salazar', '987001122', 'Av. Javier Prado Este 4200', 'Surco', 'Lima', 'pago_confirmado', [[1, 'Billetera grabada', 'Café', '', true]], 69.9, 10],
+  ['Lucía Torres', '976543210', 'Jr. Puno 345', 'Cusco', 'Cusco', 'entregado', [[1, 'Tomatodo grabado', 'Negro', '', true]], 59.9, 18],
+  ['Renzo Paredes', '965432109', '', '', '', 'por_confirmar_pago', [], 45, 0],
+].map(([nombre, tel, direccion, distrito, departamento, key, productos, monto, envio, regalo], i) => ({
+  id: `demo-pedido-${i + 1}`,
+  codigo: `WALA-${String(1820 - i * 7).padStart(5, '0')}`,
+  fechaCompraLabel: `${String(30 - i * 2).padStart(2, '0')} de octubre de 2026`,
+  clienteNombre: nombre,
+  clienteContacto: tel,
+  clienteDocumento: i % 3 === 0 ? `7${String(1234567 + i * 1111).slice(0, 7)}` : '',
+  entrega: { direccion, distrito, departamento },
+  productos: productos.map(([cantidad, n, color, talla, personalizado]) => ({ cantidad, nombre: n, color, talla, personalizado })),
+  cantidadTotal: productos.reduce((a, [c]) => a + c, 0),
+  montoTotal: monto,
+  costoEnvio: envio,
+  estado: { key, ...ESTADO_DEMO[key] },
+  esRegalo: !!regalo,
+  regalo: regalo ? { destinatario: regalo.destinatario, mensaje: regalo.mensaje } : {},
+  deliveryDate: regalo?.fecha || null,
+  _procesadoErp: i === 3,
+}));
 const PACKS_CRUDOS = CREAR.combos.map((c) => ({ ...c, esComboCrear: true, comboCrear: { publicado: c.publicado, piezas: c.piezas, tallas: 'auto' } }));
 const opcionDePrenda = (p) => ({ id: p.id, nombre: p.name, foto: (p.variants || [])[0]?.imageUrl || p.prendaBase?.vistas?.[0]?.imagen || '', precio: Number(p.salePrice) > 0 ? p.salePrice : p.price, colores: (p.variants || []).map((v) => ({ id: String(v.id), nombre: v.name, hex: v.colorHex })) });
 const TAL_CUAL = TIENDA.productos.filter((p) => (p.variants || []).length && !p.isComboProduct).map(opcionDePrenda);
@@ -208,6 +246,7 @@ function PanelDePrueba() {
   const [marcas, guardarMarca, eliminarMarca] = useListaDemo(MARCAS, falla);
   const [blueprints, guardarBlueprintCrudo, eliminarBlueprint] = useListaDemo(BLUEPRINTS, falla);
   const [yoryoCreados, setYoryoCreados] = useState(false);
+  const [actualizando, setActualizando] = useState(false);
   const [atributos, setAtributos] = useState(ATRIBUTOS_DEMO);
   const [productos, setProductos] = useState(PRODUCTOS);
   const [whatsapp, setWhatsapp] = useState(WHATSAPP);
@@ -539,6 +578,17 @@ function PanelDePrueba() {
         onGuardar={async (id, campos) => { await espera(300); fallar(); setProductos((ps) => ps.map((x) => (x.id === id ? { ...x, ...Object.fromEntries(Object.entries(campos).map(([k, v]) => [k, v ?? (k === 'edadMinima' ? null : '')])) } : x))); }}
         onAceptarSugerencias={async () => { await espera(700); fallar(); }}
         onMarcarTodos={async () => { await espera(700); fallar(); }}
+      />
+    );
+  } else if (ruta === '/admin/recepcion-pedidos') {
+    pagina = (
+      <PaginaRecepcion
+        pedidos={vacio ? [] : PEDIDOS_RECEPCION}
+        cargando={con('cargando')}
+        error={con('error') ? 'No hay conexión con el ERP (es una prueba).' : undefined}
+        actualizando={actualizando}
+        onActualizar={async () => { setActualizando(true); await espera(900); setActualizando(false); setEstados((e) => e.filter((x) => x !== 'error')); }}
+        detalleDe={(p) => `/cuenta/pedidos/${p.id}`}
       />
     );
   } else if (ruta === '/admin/blueprints') {

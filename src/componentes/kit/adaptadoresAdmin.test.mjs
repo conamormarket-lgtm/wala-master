@@ -258,3 +258,19 @@ test('productos: oculto, archivado y precio de oferta', () => {
   assert.equal(p.imagen, 'i');
   assert.equal(m2.productoAdminDesde({ id: 'q', price: 50, salePrice: 0 }).precio, 50);
 });
+
+test('recepción: filtros, cifras y la dirección para copiar', () => {
+  const pedidos = [
+    { id: 'a', montoTotal: 100.005, estado: { key: 'por_confirmar_pago', paid: false } },
+    { id: 'b', montoTotal: 50, estado: { key: 'en_preparacion', paid: true } },
+    { id: 'c', montoTotal: 80, estado: { key: 'entregado', paid: true } },
+    { id: 'd', montoTotal: 0, estado: { key: 'anulado', paid: false } },
+  ];
+  assert.deepEqual(pedidos.filter((p) => m2.pedidoEnFiltro(p, 'por_entregar')).map((p) => p.id), ['a', 'b']);
+  assert.deepEqual(pedidos.filter((p) => m2.pedidoEnFiltro(p, '')).length, 4);
+  assert.deepEqual(m2.resumenRecepcion(pedidos), { total: 4, porEntregar: 2, pendientesPago: 1, enProduccion: 1, entregados: 1, montoTotal: 230.01 });
+  assert.equal(m2.direccionParaCopiar({
+    clienteNombre: 'Ana', clienteContacto: '987654321', esRegalo: true, regalo: { destinatario: 'Luis' },
+    entrega: { direccion: 'Av. Sol 123', distrito: 'Surco', departamento: 'Lima' },
+  }), 'Av. Sol 123, Surco, Lima\nLuis · 987654321');
+});

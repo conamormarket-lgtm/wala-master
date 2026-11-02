@@ -785,3 +785,71 @@ export const estadoDeStock = (n) => (n <= 0 ? 'agotado' : n <= 3 ? 'ultimas' : '
 export function normalizarBusqueda(t) {
   return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 }
+
+/* ── Pedidos y pagos (D3) ──────────────────────────────── */
+
+/*
+ * Recepción de pedidos: los pedidos ya llegan como los deja
+ * normalizarPedidoRecepcion (services/adminOrders.js, solo lectura del ERP);
+ * aquí solo el estado para la insignia, los filtros, las cifras y la
+ * dirección para copiar (el enlace de WhatsApp es utils/whatsappLink).
+ */
+export const ESTADOS_RECEPCION = {
+  por_confirmar_pago: { texto: 'Por confirmar pago', tono: 'aviso' },
+  pago_confirmado: { texto: 'Pago confirmado', tono: 'violeta' },
+  en_preparacion: { texto: 'En producción', tono: 'violeta' },
+  entregado: { texto: 'Entregado', tono: 'exito' },
+  anulado: { texto: 'Anulado', tono: 'neutro' },
+};
+
+/* Los filtros de antes: "Por entregar" es todo lo que no está entregado ni anulado. */
+export const FILTROS_RECEPCION = [
+  { valor: 'por_entregar', texto: 'Por entregar' },
+  { valor: 'en_preparacion', texto: 'En producción' },
+  { valor: 'por_confirmar_pago', texto: 'Pago pendiente' },
+  { valor: 'entregado', texto: 'Entregados' },
+];
+
+const porEntregar = (p) => p.estado?.key !== 'entregado' && p.estado?.key !== 'anulado';
+
+/** ¿Entra el pedido en el filtro de estado? ('' = todos) */
+export function pedidoEnFiltro(p, filtro) {
+  if (!filtro) return true;
+  if (filtro === 'por_entregar') return porEntregar(p);
+  return p.estado?.key === filtro;
+}
+
+/** Los campos donde busca la recepción (código, cliente, teléfono, documento, dirección). */
+export const textoDePedido = (p) => [
+  p.codigo, p.clienteNombre, p.clienteContacto, p.clienteDocumento,
+  p.entrega?.direccion, p.entrega?.distrito, p.entrega?.departamento,
+].filter(Boolean).join(' ');
+
+/**
+ * Las cifras de arriba, como las calcula adminOrders, salvo "pendientes de
+ * pago": sin los anulados (antes contaba todo lo no pagado y no cuadraba con
+ * su filtro, "Pago pendiente").
+ */
+export function resumenRecepcion(pedidos = []) {
+  const r = { total: 0, porEntregar: 0, pendientesPago: 0, enProduccion: 0, entregados: 0, montoTotal: 0 };
+  for (const p of lista(pedidos)) {
+    r.total += 1;
+    r.montoTotal += Number(p.montoTotal) || 0;
+    if (p.estado?.key === 'entregado') r.entregados += 1;
+    if (p.estado?.key === 'en_preparacion') r.enProduccion += 1;
+    if (!p.estado?.paid && p.estado?.key !== 'anulado') r.pendientesPago += 1;
+    if (porEntregar(p)) r.porEntregar += 1;
+  }
+  r.montoTotal = Math.round(r.montoTotal * 100) / 100;
+  return r;
+}
+
+/** La dirección para copiar y pegar en la agencia: dirección, distrito, departamento y a quién. */
+export function direccionParaCopiar(p = {}) {
+  const e = p.entrega || {};
+  const para = p.esRegalo && p.regalo?.destinatario ? p.regalo.destinatario : p.clienteNombre;
+  return [
+    [e.direccion, e.distrito, e.departamento].filter(Boolean).join(', '),
+    [para, p.clienteContacto].filter(Boolean).join(' · '),
+  ].filter(Boolean).join('\n');
+}

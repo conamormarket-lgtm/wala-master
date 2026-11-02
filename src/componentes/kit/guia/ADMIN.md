@@ -194,7 +194,7 @@ Estado: **·** por hacer · **kit** hecha en el kit · **admin** ya en el panel.
 
 | Pieza | Qué hace | Estado |
 |---|---|---|
-| `Cifra` | Una cifra con su nombre y ▲/▼ frente al periodo anterior (reemplaza `KpiCard` y la de `resultados/piezas`) | · |
+| `Cifra` | Una cifra con su nombre y ▲/▼ frente al periodo anterior (reemplaza `KpiCard` y la de `resultados/piezas`) | kit (2026-11-02, con `FilaCifras`; el ▲/▼ llega en D4) |
 | `SelectorPeriodo` | Hoy, 7, 30, 90 días, fechas y "comparar" | · |
 | `GraficoTendencia`, `GraficoBarras`, `GraficoDona`, `GraficoComparar` | Los de `components/dashboard/charts` y `resultados/piezas` en una sola versión | · |
 | `RankingConFotos` | `RankingConMiniaturas` del dashboard | · |
@@ -229,7 +229,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D0 | Marco | el menú (`AdminLayout`), la cabecera de cada página, el inicio (`/admin`, `AdminDashboard`) | — | hecho (2026-11-02) | · |
 | D1 | Catálogo base | `categorias`, `colecciones`, `atributos-catalogo`, `marcas` (+ productos de la marca), `envios`, `cliparts`, `destacados` | Lista | hecho (2026-11-02) | · |
 | D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | hecho (2026-11-02) | · |
-| D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | · | · |
+| D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | en marcha (D3a, 2026-11-02) | · |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | · | · |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | · | · |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | · | · |
@@ -753,6 +753,82 @@ plantillas de hoy; el kit solo pone cómo se ve y cómo avisa.
   `plantillasDe`, `importar` (paso 2, con la miniatura y la subida) y
   `limpiar` (paso 3).
 
+## D3 · Pedidos y pagos (en marcha: D3a hecho en el kit el 2026-11-02)
+
+Cuatro pantallas de hoy, en tres tramos; el apartado se une entero cuando
+estén los tres.
+
+| Tramo | Qué | Páginas de hoy | Kit |
+|---|---|---|---|
+| D3a | Recepción de pedidos: las cifras, los filtros y un pedido por tarjeta con lo del envío primero | `pages/admin/dashboard/DashRecepcion.jsx` + `RecepcionPedidos.jsx` (`useAdminWalaOrders` → `services/adminOrders.js`, solo lectura del ERP) | hecho (2026-11-02) |
+| D3b | Gestión de pagos: historial y cifras de los enlaces (con su gráfico por día), generar un enlace y la configuración de Yape, Plin y WhatsApp | `pages/admin/AdminGestionPagos.jsx` (KpiRow, TrendChart, `enlacesPago.js`, `messages`) | · |
+| D3c | Crear cuentas desde pedidos (tres pasos con `PasoAdmin`, uno con simulación) y el Libro de reclamaciones (responder) | `pages/admin/AdminCrearCuentasPedidos.jsx`, `AdminLibroReclamaciones.jsx` | · |
+
+**Para D3b y D3c**
+- El gráfico de pagos necesita un `GraficoTendencia` (de Métricas): se
+  hace en D3b y Resultados (D4) lo reusa.
+- El Libro de reclamaciones tiene trabajo en pausa (correo y código,
+  LEGALES.md paso 3): el kit no cambia qué guarda ni cuándo; solo la
+  pantalla para responder.
+
+### D3a: Recepción de pedidos (en el kit desde el 2026-11-02)
+
+| Computadora | Celular |
+|---|---|
+| ![Recepción de pedidos: tarjetas en dos columnas con la dirección de entrega resaltada, el cliente, lo que lleva, el total y WhatsApp](admin-recepcion-escritorio.webp) | ![Una tarjeta en el celular: código y estado, la dirección con su botón de copiar, el cliente y los productos](admin-recepcion-celular.webp) |
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| La página | `PaginaRecepcion` | `paginas/admin/Pedidos.jsx` | Cabecera con "Actualizar"; las cifras (Por entregar, Pagos pendientes, En producción, Entregados, Monto total) **que filtran al tocarlas**; buscar por nombre, código, teléfono, documento o dirección y el filtro de estado (`BarraFiltros`); las tarjetas de a 30 (`CargarMas`); esqueletos, error con Reintentar y los dos vacíos (no hay pedidos · ninguno coincide, con "Quitar filtros") |
+| Las cifras | `Cifra`, `FilaCifras` | `piezas/admin/Metricas.jsx` | La cifra en letra de marca con su rayita de color, su nombre y una línea; si se toca, es un botón con `aria-pressed`. De a dos en el celular (la última sola, a todo el ancho). Reemplazan `KpiRow` y servirán a Resultados (D4) |
+| Un pedido | `TarjetaEnvio`, `EsqueletoEnvio` | `piezas/admin/Pedidos.jsx` | Código, fecha y estado (`ESTADOS_RECEPCION`); "Procesado en ERP" (la copia de respaldo); **la dirección de entrega resaltada con "Copiar"** (dirección, distrito, departamento y a quién con su teléfono, para la agencia); regalo: para quién, cuándo entregar y el mensaje; el cliente con teléfono y documento; lo que lleva (cantidad, nombre, color / talla, personalizado); total, envío y unidades; WhatsApp (`utils/whatsappLink`) y "Ver detalle" |
+
+Adaptadores (con pruebas): `ESTADOS_RECEPCION`, `FILTROS_RECEPCION`,
+`pedidoEnFiltro`, `textoDePedido`, `resumenRecepcion` y
+`direccionParaCopiar`. Los pedidos llegan **ya normalizados**
+(`normalizarPedidoRecepcion`): el kit no lee el ERP ni recalcula estados.
+
+### Diferencias a propósito (D3a)
+
+- **Las cifras filtran**: tocar "Por entregar" deja solo esos (otra vez,
+  todos). Antes eran solo de mirar.
+- **"Pagos pendientes" ya no cuenta los anulados**: antes contaba todo lo
+  no pagado y no cuadraba con su filtro "Pago pendiente".
+- **Copiar la dirección** para la agencia (nuevo); la búsqueda no distingue
+  tildes; las tarjetas salen de a 30.
+- **La fecha de entrega de un regalo** ("2026-11-14") se lee como ese día
+  aquí: antes salía un día antes (se leía a medianoche UTC).
+- Sin emojis (📍👤🎁✨💬): íconos de lucide; el estado con su texto y su
+  punto, como el resto del admin.
+
+### Qué se probó (2026-11-02, demo en localhost, 1280 px y 375 px)
+
+- 10 pedidos de ejemplo con la forma de `normalizarPedidoRecepcion` (uno
+  sin teléfono, uno sin dirección ni productos, un regalo, uno de España,
+  uno "Procesado en ERP", uno anulado): las cifras dan 7 · 3 · 2 · 2 ·
+  S/ 1,236.20.
+- Tocar "Pagos pendientes" → 3 tarjetas y la cifra marcada; otra vez → 10.
+  Buscar "surco" → 1; "zzz" → "Ningún pedido coincide" → Quitar filtros → 10.
+- WhatsApp: 51 delante de los 9 dígitos, el de España tal cual (34…), sin
+  teléfono el botón queda apagado; sin dirección, "Copiar" apagado.
+- Cargando (6 esqueletos y las cifras en hueso), error (sin cifras, con
+  Reintentar, que vuelve a cargar), sin datos (Kapi y el texto).
+- A 375 px nada se sale del ancho (el monto, que se cortaba, va a todo el
+  ancho); el modo noche con la entrega en lila oscuro. Sin errores en la consola.
+
+### Cómo se une D3a
+
+- `RecepcionDelPanel.jsx`: `useAdminWalaOrders()` → `pedidos={data.pedidos}`,
+  `cargando={isLoading}`, `actualizando={isFetching}`,
+  `error={isError || data.available === false ? (data.error || 'No se pudieron cargar los pedidos del ERP en este momento.') : undefined}`,
+  `onActualizar={refetch}`. El resumen ya no hace falta del servicio (la
+  página lo saca de los pedidos con `resumenRecepcion`).
+- `detalleDe={(p) => `/cuenta/pedidos/${p.id}`}` como hoy (ver si hace falta
+  una ficha del pedido para el admin: hoy abre la del cliente).
+- La ruta sigue siendo `/admin/recepcion-pedidos`; `/admin/dashboard/recepcion`
+  sigue redirigiendo.
+- Interruptor del apartado: `adminPedidosViejo` (las cuatro pantallas de D3 juntas).
+
 ## Reemplazos: qué sale y qué entra
 
 La misma tabla que las fichas de la tienda (CUENTA.md, "Reemplazos"): qué
@@ -808,6 +884,17 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D2d · Plantillas de cuadros | `pages/admin/plantillasYoryo/ImportarPlantillasYoryo.jsx` | `PaginaPlantillasYoryo` (`PasoAdmin` por paso) | `PlantillasYoryoDelPanel.jsx` (los mismos scripts de `plantillasYoryo/`) |
 | Fuera del kit (decidido) | `AdminCustomizationViewsEditor`, `YoryoPersonalizado`, `AdminViewEditor`, `PrintAreasEditor`, `ShapeSelector`, `ShapeCreator` | — (no se rehacen) | — |
 
+### D3 · Pedidos y pagos
+
+| Parte | Hoy en el admin | Pasa a (kit) | Conector |
+|---|---|---|---|
+| D3a · Recepción | `pages/admin/dashboard/DashRecepcion.jsx` (la página con `DashHeader`) + `RecepcionPedidos.jsx` + `.module.css` | `PaginaRecepcion` | `RecepcionDelPanel.jsx` (`useAdminWalaOrders`) |
+| D3a · Las cifras | `components/dashboard/KpiRow` (aquí) | `Cifra`, `FilaCifras` | la página |
+| D3a · Un pedido | `TarjetaPedido` y `TarjetaSkeleton` (dentro de RecepcionPedidos) | `TarjetaEnvio`, `EsqueletoEnvio` | la página |
+| D3b · Gestión de pagos | `pages/admin/AdminGestionPagos.jsx` + `.module.css` (KpiRow, TrendChart) | por hacer | `PagosDelPanel.jsx` |
+| D3c · Cuentas desde pedidos | `pages/admin/AdminCrearCuentasPedidos.jsx` + `.module.css` (`common/Button`, `common/Modal`) | por hacer (`PasoAdmin`) | `CuentasDePedidosDelPanel.jsx` |
+| D3c · Libro de reclamaciones | `pages/admin/AdminLibroReclamaciones.jsx` (estilos en línea, `alert()`) | por hacer | `ReclamosDelPanel.jsx` |
+
 ## Cómo se une un apartado (la misma lógica que clientes)
 
 1. El apartado está **completo en el kit**: todas sus páginas en el Panel de
@@ -848,4 +935,5 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |
 | 2026-11-02 | Reemplazos de D0 a D2 (qué sale, qué entra y el conector) y la sección «Panel administrativo» de ELIMINAR.md con quién importa hoy cada pieza vieja | `guia/ADMIN.md`, `guia/ELIMINAR.md` |
+| 2026-11-02 | D3 dividido en tramos (a: recepción, b: pagos, c: cuentas y reclamos). D3a en el kit: `PaginaRecepcion`, `Cifra` / `FilaCifras`, `TarjetaEnvio`; adaptadores de recepción con pruebas | `paginas/admin/Pedidos.jsx`, `piezas/admin/Metricas.jsx`, `piezas/admin/Pedidos.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2d en el kit: `PaginaBlueprints`, `PasoAdmin` y `PaginaPlantillasYoryo` (siete pasos, uno a la vez); adaptadores de blueprints con pruebas. **D2 completo en el kit** | `paginas/admin/Herramientas.jsx`, `piezas/admin/Pasos.jsx`, `adaptadoresAdmin.js` |

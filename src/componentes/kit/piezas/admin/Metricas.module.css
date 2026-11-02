@@ -1,0 +1,118 @@
+/* ── Cifras (D3, también para Resultados en D4) ─────────────── */
+.fila {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr));
+  gap: 0.6rem;
+}
+
+@container pagina-admin (max-width: 560px) {
+  .fila {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cifra {
+    padding: 0.6rem 0.7rem 0.55rem 0.9rem;
+  }
+
+  .valor {
+    font-size: 1.25rem;
+  }
+
+  /* La última, si queda sola, a todo el ancho (el monto no se corta). */
+  .fila > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+.cifra {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 0.2rem;
+  min-width: 0;
+  padding: 0.8rem 0.9rem 0.75rem 1.05rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+}
+
+/* La rayita de color a la izquierda. */
+.cifra::before {
+  content: '';
+  position: absolute;
+  inset: 0.7rem auto 0.7rem 0;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--tono);
+}
+
+.violeta { --tono: var(--primary-color); }
+.exito { --tono: var(--verde-exito, #10b981); }
+.aviso { --tono: #f59e0b; }
+.peligro { --tono: var(--danger, #ef4444); }
+.cielo { --tono: #0ea5e9; }
+.neutro { --tono: var(--color-border); }
+
+.nombre {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.valor {
+  overflow: hidden;
+  font-family: var(--fuente-marca);
+  font-size: 1.45rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ayuda {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.tocable {
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.tocable:hover {
+  border-color: var(--violet-300, #c4b5fd);
+}
+
+.tocable:active {
+  transform: scale(0.98);
+}
+
+.tocable:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.activa {
+  border-color: var(--primary-color);
+  background: var(--violet-50, #f5f3ff);
+}
+
+:global([data-theme='dark']) .activa {
+  background: rgba(139, 92, 246, 0.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tocable,
+  .tocable:active {
+    transition: none;
+    transform: none;
+  }
+}
