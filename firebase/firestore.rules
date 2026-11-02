@@ -625,6 +625,7 @@ service cloud.firestore {
       allow write: if notSupervision() && (request.auth != null
         && !esSoloWala(collection) && !collection.matches('supervision_.*')
         && !collection.matches('stockReview_.*')
+        && !collection.matches('financeMetrics_.*')
         && !(changesStockState(collection) && serverOwnsStockTransition()));
     }
   }
