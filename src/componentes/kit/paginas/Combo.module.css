@@ -10,6 +10,52 @@
   font-size: 0.9rem;
 }
 
+/* La descripción del combo (HTML del editor del admin). */
+.textoRico {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.textoRico p {
+  margin: 0 0 0.4rem;
+}
+
+.textoRico > :last-child {
+  margin-bottom: 0;
+}
+
+.textoRico p:empty,
+.textoRico p:has(> br:only-child) {
+  display: none;
+}
+
+.textoRico strong {
+  color: var(--color-text);
+}
+
+.textoRico :is(ul, ol) {
+  margin: 0 0 0.4rem;
+  padding-left: 1.2rem;
+}
+
+.textoRico li {
+  margin-bottom: 0.2rem;
+}
+
+.textoRico li::marker {
+  color: var(--violet-500);
+}
+
+.textoRico a {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+:global([data-theme='dark']) .textoRico a {
+  color: var(--violet-300);
+}
+
 .borrador {
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
