@@ -398,7 +398,7 @@ su apartado se una y su interruptor se retire.
 |---|---|---|---|---|
 | `components/AdminLayout/AdminLayout.jsx` + `.module.css` | `App.jsx` | `MarcoAdmin` (D0) | nadie más | al retirar `adminViejo` |
 | `pages/AdminDashboard.jsx` (la página) | `App.jsx` | `PaginaInicioAdmin` (D0) | — | al retirar `adminViejo`; **su `AdminDashboard.module.css` no**: lo importan las pantallas del dashboard (`dashShared`, `DashHeatmap`, `DashOrigen`, `DashPaginas`, `DashUso`, `DashRecepcion`, `EnlacesRotos`, `RecepcionPedidos`) hasta D3/D4 |
-| `components/admin/AdminImageCropper` | AdminCategorias, AdminColecciones, AdminMarcas | `CampoImagen` + `RecortarFoto` | `AdminRecompensas` (D5), `components/admin/CategoryNavEditor` | cuando migre Recompensas y se confirme que nadie usa `CategoryNavEditor` |
+| `components/admin/AdminImageCropper` | AdminCategorias, AdminColecciones, AdminMarcas, AdminRecompensas | `CampoImagen` + `RecortarFoto` (D1, D5b) | `components/admin/CategoryNavEditor` | cuando se confirme que nadie usa `CategoryNavEditor` |
 | `components/admin/ThumbnailCropEditor` | AdminProductoFormV2 | `EncuadreFoto` (D2b) | nadie más | al unir D2 |
 | `components/admin/ProductTable` | AdminProductos | `TablaAdmin` (D2a) | nadie más | al unir D2 |
 | `components/admin/BulkActions` | AdminProductos | `AccionesLote` (D2a) | nadie más | al unir D2 |
@@ -426,6 +426,7 @@ su apartado se una y su interruptor se retire.
 | `pages/admin/resultados/ResultadosLayout.jsx`, `Resumen.jsx` + sus `.module.css` | `App.jsx` | `MarcoResultados`, `PaginaResumenResultados` (D4a) | nadie más | al retirar `adminResultadosViejo` |
 | `pages/admin/resultados/Productos.jsx`, `Visitantes.jsx` + sus `.module.css` | `App.jsx` | `PaginaProductosResultados`, `PaginaVisitantesResultados` (D4b) | nadie más | al retirar `adminResultadosViejo` |
 | `pages/admin/resultados/Clientes.jsx`, `FichaCliente.jsx`, `ContactoCarrito.jsx`, `Opiniones.jsx` + sus `.module.css` | `App.jsx` (Clientes y Opiniones); FichaCliente y ContactoCarrito desde Clientes | `PaginaClientesResultados`, `FichaCliente`, `PaginaOpinionesResultados` (D4c) | nadie más; **`mensajeCarrito` ya vive en `utils/whatsappLink.js`** (ContactoCarrito solo lo reexporta) | al retirar `adminResultadosViejo` |
+| `pages/admin/AdminRecompensas.jsx` + `.module.css` | `App.jsx` | `PaginaRecompensasAdmin` (D5b) | nadie más; **`services/rewardsCatalog` no**: lo usan el conector y la tienda | al retirar `adminFidelidadViejo` |
 | `pages/admin/AdminReferidos.jsx`, `AdminMisiones.jsx`, `AdminRetos.jsx` + sus `.module.css` | `App.jsx` | `PaginaReferidosAdmin`, `PaginaMisionesAdmin`, `PaginaRetosAdmin` (D5a) | nadie más; **`services/referrals`, `services/missions` y `constants/missionActions` no**: los usan los conectores y la tienda | al retirar `adminFidelidadViejo` |
 | `pages/admin/AdminEncuestaEntregas.jsx`, `AdminRespuestasEncuesta.jsx` | `resultados/Opiniones.jsx` (y el conector de Opiniones, embebidas) | las encuestas de D5 | — | cuando se rehagan en D5 |
 | `pages/admin/resultados/piezas.jsx` + `.module.css` | Resumen y las demás pestañas | `BloqueMetrica`, `Cifra`… (D4a); `ListaBarras`, `Pestanas` (D4b) | nadie más (D4 completo en el kit) | al retirar `adminResultadosViejo` |

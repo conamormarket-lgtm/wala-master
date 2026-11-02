@@ -10,7 +10,7 @@ import {
   MarcoResultados, PaginaResumenResultados, PaginaProductosResultados, PaginaVisitantesResultados, PaginaClientesResultados, PaginaOpinionesResultados,
   PaginaDetalleTecnico, PaginaPaginasTecnica, PaginaUsoTecnica, PaginaNavegadorTecnica, PaginaMapaDeCalor, ORIGENES_TECNICOS,
   PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, referidoDesdeFirestore, misionDesdeFirestore, misionAFirestore,
-  retoDesdeFirestore, retoAFirestore, retoActivoDesde, evidenciaDesde,
+  retoDesdeFirestore, retoAFirestore, retoActivoDesde, evidenciaDesde, PaginaRecompensasAdmin, recompensaAdminDesdeFirestore, recompensaAdminAFirestore,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -65,6 +65,7 @@ const HECHAS = [
   ['/admin/referidos', 'Referidos'],
   ['/admin/misiones', 'Misiones'],
   ['/admin/retos', 'Retos'],
+  ['/admin/recompensas', 'Recompensas'],
   ['/admin/crear-cuentas-pedidos', 'Cuentas'],
   ['/admin/categorias', 'Categorías'],
   ['/admin/colecciones', 'Colecciones'],
@@ -393,6 +394,14 @@ const RETOS_DEMO = [
   ['Diseñador de la semana', 'Guarda 2 creaciones en el estudio.', 'save_creation', 2, 0, 'kapi_double_3d'],
   ['Foto con tu Walá', 'Sube una foto usando tu prenda.', 'upload_photo', 1, 50, 'main'],
 ].map(([title, description, actionType, goal, rewardCoins, rewardType], i) => retoDesdeFirestore({ id: `reto-${i}`, title, description, actionType, goal, rewardCoins, rewardType }));
+// D5b: recompensas de ejemplo, con productos de la copia de la tienda.
+const RECOMPENSAS_DEMO = [
+  { title: 'Pack de stickers Kapi', description: 'Seis stickers para tu laptop o celular.', cost: 120, tipo: 'manual', value: 'Sale del cajón de mercancía', imageUrl: '/assets/kapi/kapi-happy.webp' },
+  { title: '10% en tu pedido', description: 'Hasta S/ 20 de descuento.', cost: 300, tipo: 'descuento', descuentoPct: 10, topeDescuento: 20, vigenciaDias: 30 },
+  { title: 'S/ 15 de descuento', cost: 450, tipo: 'descuento', descuentoMonto: 15, vigenciaDias: 15 },
+  { title: 'Envío gratis', description: 'Para cualquier pedido en Lima.', cost: 200, tipo: 'envio_gratis', vigenciaDias: 30 },
+  { title: 'Producto de regalo', cost: 900, tipo: 'producto_gratis', productId: TIENDA.productos[3].id, productName: TIENDA.productos[3].name, vigenciaDias: 20, active: false },
+].map((r, i) => recompensaAdminDesdeFirestore({ id: `rec-${i}`, order: i, ...r }));
 const CLIENTES_RES = [
   ['u1', 'Valeria Quispe', 'valeria@correo.pe', '71234567', 2], ['u2', 'Diego Fernández', 'diego@correo.pe', '', 0], ['u3', 'Camila Rojas', 'camila@correo.pe', '72345678', 0],
   ['u4', 'Luis Mendoza', 'luis@correo.es', '', 3], ['u5', 'Rosa Huamán', 'rosa@correo.pe', '45678912', 0], ['u6', 'Kevin Ramos', 'kevin@correo.pe', '', 1],
@@ -519,6 +528,7 @@ function PanelDePrueba() {
   const [resAncho, setResAncho] = useState('todos');
   const [resSinOrigen, setResSinOrigen] = useState(true);
   const [misiones, guardarMisionCruda, eliminarMision] = useListaDemo(MISIONES_DEMO, falla);
+  const [recompensas, guardarRecompensaCruda, eliminarRecompensa] = useListaDemo(RECOMPENSAS_DEMO, falla);
   const [retos, guardarRetoCrudo, eliminarReto] = useListaDemo(RETOS_DEMO, falla);
   const [retoActivo, setRetoActivo] = useState(() => retoActivoDesde(RETOS_DEMO[0], new Date(Date.now() - 86400000 * 2)));
   const [evidencias, setEvidencias] = useState(() => [
@@ -1049,6 +1059,17 @@ function PanelDePrueba() {
     );
   } else if (ruta === '/admin/referidos') {
     pagina = <PaginaReferidosAdmin referidos={vacio ? [] : REFERIDOS_DEMO} cargando={con('cargando')} error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined} onReintentar={() => setEstados((e) => e.filter((x) => x !== 'error'))} />;
+  } else if (ruta === '/admin/recompensas') {
+    pagina = (
+      <PaginaRecompensasAdmin
+        {...comunes}
+        recompensas={vacio ? [] : recompensas}
+        productos={PRODUCTOS}
+        subirImagen={subir}
+        onGuardar={(datos, id) => guardarRecompensaCruda(recompensaAdminDesdeFirestore({ id, ...recompensaAdminAFirestore(datos) }), id)}
+        onEliminar={eliminarRecompensa}
+      />
+    );
   } else if (ruta === '/admin/misiones') {
     pagina = (
       <PaginaMisionesAdmin

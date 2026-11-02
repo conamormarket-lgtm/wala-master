@@ -481,3 +481,20 @@ test('fidelidad: referidos, misiones y retos', () => {
   assert.deepEqual([ev.reto, ev.tipo, ev.monedas], ['Tres deseos', 'imagen', 20]);
   assert.equal(m2.evidenciaDesde({ id: 'e2', challengeId: 'zz' }, [re], act).reto, 'Tres deseos');
 });
+
+test('recompensas: lo que da, lo que se guarda y sus errores', () => {
+  assert.equal(m2.beneficioDeRecompensa({ tipo: 'descuento', descuentoPct: 10, topeDescuento: 20 }), '10% de descuento (hasta S/ 20.00)');
+  assert.equal(m2.beneficioDeRecompensa({ tipo: 'descuento', descuentoMonto: 15 }), 'S/ 15.00 de descuento');
+  assert.equal(m2.beneficioDeRecompensa({ tipo: 'producto_gratis', productoNombre: 'Taza Kapi' }), 'Taza Kapi gratis');
+  assert.equal(m2.beneficioDeRecompensa({ tipo: 'manual' }), '');
+  const r = m2.recompensaAdminDesdeFirestore({ id: 'x', title: 'Stickers', cost: '120', tipo: 'raro' });
+  assert.equal(r.tipo, 'manual');
+  assert.equal(r.vigenciaDias, 30);
+  const g = m2.recompensaAdminAFirestore({ ...r, nombre: ' Taza ', tipo: 'envio_gratis', productoId: 'p1', productoNombre: 'Taza' });
+  assert.equal(g.title, 'Taza');
+  assert.equal(g.productId, '');
+  assert.equal(m2.recompensaAdminAFirestore({ ...r, tipo: 'producto_gratis', productoId: 'p1', productoNombre: 'Taza' }).productName, 'Taza');
+  assert.deepEqual(Object.entries(m2.erroresDeRecompensa({ nombre: '', tipo: 'producto_gratis' })).filter(([, v]) => v).map(([k]) => k), ['nombre', 'productoId']);
+  assert.equal(m2.erroresDeRecompensa({ nombre: 'a', tipo: 'descuento', descuentoPct: 10 }).topeDescuento, 'Pon un tope en soles para el descuento por porcentaje.');
+  assert.equal(m2.erroresDeRecompensa({ nombre: 'a', tipo: 'descuento', descuentoPct: 120, topeDescuento: 5 }).descuentoPct, 'El porcentaje va de 0 a 100.');
+});

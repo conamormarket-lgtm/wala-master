@@ -5,13 +5,14 @@ import { Aviso, Confirmar, EstadoVacio, useToast } from '../../Feedback';
 import { Campo, Interruptor } from '../../Formulario';
 import { Pestanas } from '../../Navegacion';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
-import { TablaAdmin, BarraFiltros, CargarMas, InsigniaEstado } from '../../piezas/admin/Datos';
-import { GrupoCampos } from '../../piezas/admin/Formularios';
+import { TablaAdmin, BarraFiltros, CargarMas, InsigniaEstado, SelectorProductos } from '../../piezas/admin/Datos';
+import { GrupoCampos, CampoImagen, CampoDinero } from '../../piezas/admin/Formularios';
 import { Cifra, FilaCifras } from '../../piezas/admin/Metricas';
 import { PaginaListaAdmin } from './Lista';
 import { FotoCelda, porOrden } from './celdas';
 import {
   ESTADOS_REFERIDO, resumenReferidos, RECOMPENSAS_RETO, recompensaDeReto, normalizarBusqueda,
+  TIPOS_RECOMPENSA, RECOMPENSA_CON_PRODUCTO, RECOMPENSA_CON_VIGENCIA, beneficioDeRecompensa, erroresDeRecompensa,
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
 import s from './Fidelidad.module.css';
@@ -351,5 +352,115 @@ export function PaginaRetosAdmin({ retos = [], activo, evidencias = [], cargando
       />
       {confirmarActivar}
     </div>
+  );
+}
+
+/* ── Recompensas (D5b) ─────────────────────────────────── */
+
+/**
+ * Recompensas (/admin/recompensas): el catálogo que el cliente canjea con
+ * sus monedas en «Mi cuenta». Cada una se entrega a mano o como un cupón.
+ *  - recompensas: [recompensaDesdeFirestore] · productos: [productoAdminDesde] (para elegir uno)
+ *  - subirImagen(blob, { alAvanzar }) → url · cargando · error · onReintentar
+ *  - onGuardar(datos, id?) · onEliminar(id)
+ */
+export function PaginaRecompensasAdmin({ recompensas = [], productos = [], subirImagen, cargando, error, onReintentar, onGuardar, onEliminar }) {
+  const tipoTexto = (v) => TIPOS_RECOMPENSA.find((x) => x.valor === v)?.texto || v;
+  return (
+    <PaginaListaAdmin
+      cabeza={{ icono: 'recompensas', tono: 'rosa', titulo: 'Recompensas', subtitulo: 'Lo que tus clientes canjean con sus monedas en «Mi cuenta».' }}
+      registros={recompensas}
+      cargando={cargando}
+      error={error}
+      onReintentar={onReintentar}
+      femenino
+      unidad={['recompensa', 'recompensas']}
+      buscarEn={(r) => `${r.nombre} ${r.descripcion} ${r.productoNombre}`}
+      placeholder="Buscar una recompensa"
+      filtros={[
+        { id: 'estado', etiqueta: 'Estado', todos: 'Activas e inactivas', opciones: [{ valor: 'si', texto: 'Solo activas' }, { valor: 'no', texto: 'Solo inactivas' }], filtrar: (r, v) => (v === 'si' ? r.activa : !r.activa) },
+        { id: 'tipo', etiqueta: 'Qué da', todos: 'Todo', opciones: TIPOS_RECOMPENSA, filtrar: (r, v) => r.tipo === v },
+      ]}
+      columnas={[
+        { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (r) => <FotoCelda src={r.imagen} /> },
+        { id: 'nombre', titulo: 'Recompensa', tarjeta: 'titulo', celda: (r) => <>{r.nombre}{r.descripcion && <span className={l.sub}>{r.descripcion}</span>}</> },
+        // Lo que cuesta se dice con su palabra: un número de monedas solo se lee como lo que se gana.
+        { id: 'cuesta', titulo: 'Cuesta', ancho: 130, alinear: 'fin', tarjeta: 'detalle', celda: (r) => <span className={l.numero}>{entero(r.cuesta)} monedas</span> },
+        { id: 'da', titulo: 'Da', tarjeta: 'detalle', celda: (r) => <>{beneficioDeRecompensa(r) || tipoTexto(r.tipo)}{r.tipo === 'manual' && r.nota && <span className={l.sub}>Nota: {r.nota}</span>}</> },
+        { id: 'orden', titulo: 'Orden', ancho: 80, alinear: 'fin', ordenable: true, celda: (r) => r.orden },
+        { id: 'estado', titulo: 'Estado', ancho: 110, tarjeta: 'estado', celda: (r) => <InsigniaEstado estado={r.activa ? 'activo' : 'oculto'}>{r.activa ? 'Activa' : 'Inactiva'}</InsigniaEstado> },
+      ]}
+      ordenes={{ orden: porOrden }}
+      ordenInicial={{ por: 'orden', dir: 'asc' }}
+      vacio={{ titulo: 'Todavía no hay recompensas', texto: 'El catálogo que ven tus clientes en «Mi cuenta» se llena con las que actives aquí.' }}
+      textos={{ creado: 'Recompensa creada', guardado: 'Recompensa guardada', eliminado: 'Recompensa eliminada' }}
+      eliminar={{ texto: (r) => `Se borra «${r.nombre}» del catálogo. Los cupones que ya se canjearon siguen valiendo.` }}
+      onGuardar={onGuardar}
+      onEliminar={onEliminar}
+      formulario={{
+        nuevo: 'Nueva recompensa',
+        titulos: { nuevo: 'Nueva recompensa', editar: 'Editar recompensa' },
+        textoGuardar: { nuevo: 'Crear recompensa' },
+        vacio: ({ registros }) => ({
+          nombre: '', descripcion: '', cuesta: 0, nota: '', orden: registros.length, activa: true, tipo: 'manual',
+          descuentoPct: 0, descuentoMonto: 0, topeDescuento: 0, productoId: '', productoNombre: '', vigenciaDias: 30, imagen: '',
+        }),
+        desde: (r) => ({ ...r }),
+        validar: (d) => erroresDeRecompensa(d),
+        campos: ({ datos, cambiar, errores, idDe }) => {
+          const beneficio = beneficioDeRecompensa(datos);
+          const conDescuento = datos.tipo === 'descuento' || datos.tipo === 'producto_descuento';
+          const pct = Number(datos.descuentoPct) > 0;
+          return (
+            <>
+              <GrupoCampos titulo="La recompensa">
+                <Campo id={idDe('nombre')} etiqueta="Título" placeholder="Ej. Pack de stickers" value={datos.nombre} error={errores.nombre} onChange={(e) => cambiar('nombre', e.target.value)} />
+                <Campo etiqueta="Descripción" multilinea={3} placeholder="Una línea de qué es" value={datos.descripcion} onChange={(e) => cambiar('descripcion', e.target.value)} />
+                <CampoImagen etiqueta="Imagen (opcional)" valor={datos.imagen} onCambiar={(url) => cambiar('imagen', url)} subir={subirImagen} recorte="cuadrado" forma="cuadro" />
+              </GrupoCampos>
+              <GrupoCampos titulo="Cuánto cuesta" columnas={2}>
+                <Campo etiqueta="Cuesta" type="number" inputMode="numeric" min={0} sufijo="monedas" value={datos.cuesta} onChange={(e) => cambiar('cuesta', e.target.value)} />
+                <Campo etiqueta="Orden" type="number" inputMode="numeric" min={0} value={datos.orden} onChange={(e) => cambiar('orden', e.target.value)} />
+              </GrupoCampos>
+              <GrupoCampos titulo="Qué da" ayuda={datos.tipo === 'manual' ? 'El cliente recibe un código y lo canjea con un asesor (envíos, algo físico…).' : 'Al canjearla se genera un cupón que el cliente aplica solo, en el carrito.'}>
+                <Campo etiqueta="Tipo" opciones={TIPOS_RECOMPENSA} value={datos.tipo} onChange={(e) => cambiar('tipo', e.target.value)} />
+                {RECOMPENSA_CON_PRODUCTO.includes(datos.tipo) && (
+                  <div className={s.producto}>
+                    <span id={idDe('productoId')} tabIndex={-1} className={s.productoElegido}>
+                      {datos.productoId ? <>Producto: <strong>{datos.productoNombre || datos.productoId}</strong></> : 'Todavía no elegiste el producto.'}
+                    </span>
+                    {errores.productoId && <p className={s.error}>{errores.productoId}</p>}
+                    <SelectorProductos
+                      productos={productos}
+                      yaEstan={datos.productoId ? [datos.productoId] : []}
+                      accion={datos.productoId ? 'Cambiar a este' : 'Elegir este'}
+                      accionHecha="Es este"
+                      limite={6}
+                      onElegir={async (p) => { cambiar('productoId', p.id); cambiar('productoNombre', p.nombre); }}
+                    />
+                  </div>
+                )}
+                {conDescuento && (
+                  <div className={s.dos}>
+                    <Campo id={idDe('descuentoPct')} etiqueta="Descuento" type="number" inputMode="decimal" min={0} max={100} sufijo="%" value={datos.descuentoPct} error={errores.descuentoPct} onChange={(e) => cambiar('descuentoPct', e.target.value)} />
+                    {datos.tipo === 'descuento' && (pct
+                      ? <CampoDinero id={idDe('topeDescuento')} etiqueta="Hasta (tope)" value={datos.topeDescuento} error={errores.topeDescuento} onChange={(e) => cambiar('topeDescuento', e.target.value)} />
+                      : <CampoDinero etiqueta="O un monto fijo" value={datos.descuentoMonto} onChange={(e) => cambiar('descuentoMonto', e.target.value)} />)}
+                  </div>
+                )}
+                {RECOMPENSA_CON_VIGENCIA.includes(datos.tipo) && (
+                  <Campo etiqueta="El cupón vence en" type="number" inputMode="numeric" min={1} sufijo="días" value={datos.vigenciaDias} onChange={(e) => cambiar('vigenciaDias', e.target.value)} />
+                )}
+                {beneficio && <p className={s.muestra}><span>El cliente verá:</span> {beneficio}</p>}
+              </GrupoCampos>
+              <GrupoCampos titulo="Para el equipo">
+                <Campo etiqueta="Nota interna (opcional)" ayuda="Solo la ve el admin, no el cliente." placeholder="Ej. accesorio físico, código para el asesor…" value={datos.nota} onChange={(e) => cambiar('nota', e.target.value)} />
+                <Interruptor etiqueta="Activa" descripcion="Apagada no se puede canjear (no se borra)." activo={datos.activa} onChange={(v) => cambiar('activa', v)} />
+              </GrupoCampos>
+            </>
+          );
+        },
+      }}
+    />
   );
 }

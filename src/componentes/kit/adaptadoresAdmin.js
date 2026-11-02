@@ -1751,3 +1751,88 @@ export function evidenciaDesde(doc = {}, retos = [], activo = null) {
     tipoRecompensa: ref ? ref.tipo : 'main',
   };
 }
+
+/*
+ * Recompensas (D5b): el catálogo `rewards` que el cliente canjea con sus
+ * monedas. Lo que da cada una es un tipo: a mano (un código para el asesor)
+ * o un cupón automático (descuento, en un producto, producto gratis, envío gratis).
+ */
+export const TIPOS_RECOMPENSA = [
+  { valor: 'manual', texto: 'Se entrega a mano' },
+  { valor: 'descuento', texto: 'Descuento en el pedido' },
+  { valor: 'producto_descuento', texto: 'Descuento en un producto' },
+  { valor: 'producto_gratis', texto: 'Producto gratis' },
+  { valor: 'envio_gratis', texto: 'Envío gratis' },
+];
+export const RECOMPENSA_CON_PRODUCTO = ['producto_descuento', 'producto_gratis'];
+export const RECOMPENSA_CON_VIGENCIA = ['descuento', 'producto_descuento', 'producto_gratis', 'envio_gratis'];
+
+/** Lo que ve el cliente que gana (textoPremio de utils/ruletaModel para estos tipos); a mano, ''. */
+export function beneficioDeRecompensa(r = {}) {
+  const pct = Number(r.descuentoPct) || 0;
+  const tope = Number(r.topeDescuento) || 0;
+  switch (r.tipo) {
+    case 'descuento':
+      return pct > 0 ? `${pct}% de descuento${tope > 0 ? ` (hasta S/ ${tope.toFixed(2)})` : ''}` : `S/ ${(Number(r.descuentoMonto) || 0).toFixed(2)} de descuento`;
+    case 'producto_descuento':
+      return `${pct}% en ${r.productoNombre || r.productName || 'un producto'}`;
+    case 'producto_gratis':
+      return `${r.productoNombre || r.productName || 'Un producto'} gratis`;
+    case 'envio_gratis':
+      return 'Envío gratis';
+    default:
+      return '';
+  }
+}
+
+export function recompensaAdminDesdeFirestore(doc = {}) {
+  return {
+    id: doc.id,
+    nombre: doc.title || '',
+    descripcion: doc.description || '',
+    cuesta: Number(doc.cost) || 0,
+    nota: doc.value || '',
+    orden: Number(doc.order) || 0,
+    activa: doc.active !== false,
+    tipo: TIPOS_RECOMPENSA.some((t) => t.valor === doc.tipo) ? doc.tipo : 'manual',
+    descuentoPct: Number(doc.descuentoPct) || 0,
+    descuentoMonto: Number(doc.descuentoMonto) || 0,
+    topeDescuento: Number(doc.topeDescuento) || 0,
+    productoId: doc.productId || '',
+    productoNombre: doc.productName || '',
+    vigenciaDias: Number(doc.vigenciaDias) || 30,
+    imagen: doc.imageUrl || '',
+  };
+}
+
+/** Lo que se guarda (como antes: sin producto si el tipo no lo pide). */
+export function recompensaAdminAFirestore(r = {}) {
+  const conProducto = RECOMPENSA_CON_PRODUCTO.includes(r.tipo);
+  return {
+    title: String(r.nombre || '').trim(),
+    description: String(r.descripcion || '').trim(),
+    cost: Number(r.cuesta) || 0,
+    value: String(r.nota || '').trim(),
+    order: Number(r.orden) || 0,
+    active: r.activa !== false,
+    tipo: r.tipo || 'manual',
+    descuentoPct: Number(r.descuentoPct) || 0,
+    descuentoMonto: Number(r.descuentoMonto) || 0,
+    topeDescuento: Number(r.topeDescuento) || 0,
+    productId: conProducto ? r.productoId || '' : '',
+    productName: conProducto ? r.productoNombre || '' : '',
+    vigenciaDias: Number(r.vigenciaDias) || 30,
+    imageUrl: r.imagen || '',
+  };
+}
+
+/** Los errores del formulario (como antes, y el porcentaje no pasa de 100). */
+export function erroresDeRecompensa(r = {}) {
+  const pct = Number(r.descuentoPct) || 0;
+  return {
+    nombre: String(r.nombre || '').trim() ? undefined : 'Escribe el título de la recompensa.',
+    productoId: RECOMPENSA_CON_PRODUCTO.includes(r.tipo) && !r.productoId ? 'Elige el producto de la recompensa.' : undefined,
+    topeDescuento: r.tipo === 'descuento' && pct > 0 && !(Number(r.topeDescuento) > 0) ? 'Pon un tope en soles para el descuento por porcentaje.' : undefined,
+    descuentoPct: (r.tipo === 'descuento' || r.tipo === 'producto_descuento') && (pct < 0 || pct > 100) ? 'El porcentaje va de 0 a 100.' : undefined,
+  };
+}

@@ -100,7 +100,7 @@ export {
 } from './paginas/admin/Resultados';
 export { FichaCliente, ListaCumpleanos } from './piezas/admin/Clientes';
 export { PaginaPaginasTecnica, PaginaUsoTecnica, PaginaNavegadorTecnica, PaginaMapaDeCalor, ORIGENES_TECNICOS } from './paginas/admin/Tecnico';
-export { PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin } from './paginas/admin/Fidelidad';
+export { PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, PaginaRecompensasAdmin } from './paginas/admin/Fidelidad';
 export { TarjetaEnvio, EsqueletoEnvio } from './piezas/admin/Pedidos';
 export { PaginaRecepcion } from './paginas/admin/Pedidos';
 export { PaginaPagos } from './paginas/admin/Pagos';
@@ -129,4 +129,5 @@ export {
   segunOrigen, traficoPorDia, seguimientoDePedidos, listasDePaginas, claveAnonimaCorta, listasDeUso, nombreDePais, listasDeNavegador,
   ESTADOS_REFERIDO, referidoDesdeFirestore, resumenReferidos, misionDesdeFirestore, misionAFirestore,
   RECOMPENSAS_RETO, recompensaDeReto, retoDesdeFirestore, retoAFirestore, retoActivoDesde, evidenciaDesde,
+  TIPOS_RECOMPENSA, RECOMPENSA_CON_PRODUCTO, RECOMPENSA_CON_VIGENCIA, beneficioDeRecompensa, recompensaAdminDesdeFirestore, recompensaAdminAFirestore, erroresDeRecompensa,
 } from './adaptadoresAdmin';
