@@ -644,3 +644,20 @@ test('sorteos de suscripción: campañas, planes y suscriptores', () => {
   assert.deepEqual(m2.beneficioAFirestore(m2.beneficioDesde({ id: 'b', marca: 'Kapi', titulo: 'Tazas', descuento: '20%' })), { marca: 'Kapi', titulo: 'Tazas', descuento: '20%', imagenUrl: '', categoria: '', ubicacion: '', url: '', orden: 0 });
   assert.equal(m2.ganadorGaleriaAFirestore({ nombre: ' Rosa ', foto: 'f' }).fotoUrl, 'f');
 });
+
+test('enlaces: la página, su diseño, el enlace único y los clics', () => {
+  const p = m2.paginaEnlacesDesde({ id: 'a', titulo: 'Mis redes', slug: 'mis-redes', visitas: 9, diseno: { buttonTextColor: '#eeeeee' }, botones: [{ id: 'b2', titulo: 'Tienda', order: 1 }, { id: 'b1', titulo: 'WhatsApp', order: 0 }], redes: [{ id: 'r1', tipo: 'raro' }] });
+  assert.deepEqual(p.botones.map((b) => b.id), ['b1', 'b2']);
+  assert.deepEqual([p.diseno.titleColor, p.diseno.buttonColor, p.diseno.background.type, p.redes[0].tipo, p.estado], ['#eeeeee', '#111827', 'color', 'custom', 'activo']);
+  const g = m2.paginaEnlacesAFirestore({ ...p, nombre: ' Mis redes ', slug: 'Mis Redes!', botones: [p.botones[1], p.botones[0]] });
+  assert.deepEqual([g.titulo, g.slug, g.botones[0].id, g.botones[0].order, g.botones[1].thumbnailUrl], ['Mis redes', 'mis-redes', 'b2', 0, '']);
+  assert.match(m2.botonEnlaceNuevo(5).id, /^btn_5_/);
+  const otras = [{ id: 'z', slug: 'catalogo' }];
+  assert.equal(m2.erroresDeEnlaces({ id: 'a', nombre: 'Catálogo', slug: '' }, otras).slug, 'Ya hay otra página en /l/catalogo: elige otro.');
+  assert.equal(m2.erroresDeEnlaces({ id: 'z', nombre: 'Catálogo' }, otras).slug, undefined);
+  assert.equal(m2.erroresDeEnlaces({ nombre: '' }).nombre, 'Escribe el título de la página.');
+  const c = m2.clicsDeEnlaces({ b1: 3, b2: 1, r1: 4 }, p.botones, p.redes);
+  assert.equal(c.total, 8);
+  assert.deepEqual(c.filas.map((f) => f.texto), ['3 · 38 %', '1 · 13 %', '4 · 50 %']);
+  assert.equal(c.filas[2].nombre, 'Red: Otra');
+});

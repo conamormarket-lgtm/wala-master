@@ -232,7 +232,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | · |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | · |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | hecho (2026-11-02) | · |
-| D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | en marcha (D6a y D6b, 2026-11-02) | · |
+| D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | en marcha (D6a a D6c, 2026-11-02) | · |
 | D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | · | · |
 | D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | · | · |
 
@@ -1582,7 +1582,7 @@ del embudo o "1 estrella" en 0 también dice algo).
     `saveSurveyConfig(configConHistorial(configConPregunta(actual, que), actual))`
     y volver a leer.
 
-## D6 · Campañas (en marcha: D6a y D6b hechos en el kit el 2026-11-02)
+## D6 · Campañas (en marcha: D6a a D6c hechos en el kit el 2026-11-02)
 
 Nueve pantallas de hoy (unas 5.500 líneas), en cuatro tramos; el apartado se
 une entero cuando estén los cuatro.
@@ -1591,7 +1591,7 @@ une entero cuando estén los cuatro.
 |---|---|---|---|
 | D6a | Sorteos y rifas: la lista con su formulario y el detalle (participantes, tickets y chances a mano, los ganadores con su evidencia) | `AdminSorteos.jsx` (603 líneas), `AdminSorteoDetalle.jsx` (676) | hecho (2026-11-02) |
 | D6b | Sorteos de suscripción y su detalle | `AdminSuscripcionSorteos.jsx` (1.249), `AdminSuscripcionDetalle.jsx` (573) | hecho (2026-11-02) |
-| D6c | Enlaces (los de bio y campañas) y su editor | `AdminEnlaces.jsx` (253), `AdminEnlaceEditor.jsx` (1.138) | · |
+| D6c | Enlaces (los de bio y campañas) y su editor | `AdminEnlaces.jsx` (253), `AdminEnlaceEditor.jsx` (1.138) | hecho (2026-11-02) |
 | D6d | Popups, landing pages y temas | `AdminPopups.jsx` (445), `Tienda/admin/AdminLandingPages.jsx` (307), `Tienda/admin/AdminThemes.jsx` (268) | · |
 
 ### D6a: Sorteos y rifas (en el kit desde el 2026-11-02)
@@ -1719,6 +1719,64 @@ ya es de las ofertas de D5d.)
   `createGanadorGaleria` / `updateGanadorGaleria` / `deleteGanadorGaleria`
   (`ganadorGaleriaAFirestore`), cada una con su `queryKey` de hoy.
 
+### D6c: Enlaces (en el kit desde el 2026-11-02)
+
+| El diseño con la vista previa (computadora) | Los botones (celular) |
+|---|---|
+| ![Los temas, el estilo y la sombra de los botones y las esquinas, con el celular de la vista previa al lado](admin-enlace-escritorio.webp) | ![Cada botón con su texto, a dónde lleva, la miniatura y sus clics, con el asa y las flechas para ordenarlo](admin-enlace-celular.webp) |
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| Enlaces | `PaginaEnlacesAdmin` | `paginas/admin/Enlaces.jsx` | Dos cifras (páginas y visitas), buscador y `TablaAdmin`: la foto, la página y su `/l/…`, cuántos botones y redes, visitas y estado; tocar una abre el constructor; en "⋯", ver la página y eliminar (`Confirmar`). "Nueva página" abre una hoja con el título y el enlace (sale del título; no deja repetir uno) y al crearla **entra al constructor** |
+| El constructor | `PaginaEnlaceAdmin` | ídem | Tres pestañas. **Contenido**: la foto (`CampoImagen` en círculo), título, enlace, descripción, estado; los botones y las redes con `ListaOrdenable` (arrastrar o flechas), cada uno con sus clics, su miniatura o ícono propio plegados y "Quitar". **Diseño**: los temas, el estilo, la sombra y las esquinas de los botones, sus colores, los del título y el texto, la alineación, la letra y el fondo (color, degradado, textura o imagen). **Resultados**: visitas y clics, los clics por botón y red, de qué país, desde qué aparato y los últimos días (`ListaBarras`). **La vista previa** al lado (en el celular, con "Ver cómo se ve") usa `services/linkThemes` como la página pública. `BarraGuardar` aparece con cambios y no deja guardar un enlace que ya usa otra página |
+
+Adaptadores (con pruebas): `DISENO_ENLACES`, `TIPOS_RED`, `disenoDeEnlaces`
+(como la hidratación de antes: las páginas viejas toman el título y el texto
+del color del texto del botón), `paginaEnlacesDesde`, `paginaEnlacesAFirestore`
+(el orden es el de la lista), `botonEnlaceNuevo`, `redNueva`,
+`erroresDeEnlaces` (título, enlace y que no lo use otra página) y
+`clicsDeEnlaces`. El diseño se guarda con los nombres de siempre (lo lee la
+página pública).
+
+### Diferencias a propósito (D6c)
+
+- Ordenar se puede también con flechas (antes solo arrastrando, que en el
+  celular no funcionaba).
+- El editor en pestañas (Contenido · Diseño · Resultados) y la vista previa
+  fija al lado; en el celular se abre con "Ver cómo se ve".
+- Guardar aparece solo con cambios; el enlace repetido se avisa en el campo,
+  antes de llamar al servidor.
+- La miniatura de un botón y el ícono propio de una red van plegados.
+- Palabras de la tienda: "Lleno · Vidrio · Solo borde", "Textura" (patrón),
+  "Letra" (tipografía).
+
+### Qué se probó (2026-11-02, demo en localhost, 1280 px y 375 px)
+
+- Dos páginas: "Walá · Regalos" activa (3 botones, 2 redes, 1,240 visitas) y
+  "Catálogo de Navidad" en borrador.
+- Bajar "Escríbenos por WhatsApp" con la flecha → la vista previa cambia de
+  orden y aparece la barra; el tema Noche → el fondo de la vista previa;
+  enlace "navidad" → "Ya hay otra página en /l/navidad"; "wala-regalos" →
+  guardado.
+- Resultados: 1,240 visitas, 619 clics (50 %), los clics por botón y red, y
+  por país, aparato y día.
+- "Nueva página" → "Catálogo de Navidad" → `/l/catalogo-de-navidad` → creada
+  y abierta en el constructor.
+- 375 px: la lista, las tres pestañas y la vista previa sin salirse del ancho
+  (la barra de las esquinas se pasaba 2 px por el margen del navegador).
+
+### Cómo se une D6c
+
+- `EnlacesDelPanel.jsx`: `getLinkPages` (`['admin-link-pages']`) →
+  `paginaEnlacesDesde`; `onCrear` = `createLinkPage({ titulo, slug })` → su
+  `id`; `onAbrir(p)` → `/admin/enlaces/{id}`; `onEliminar` = `deleteLinkPage`.
+- `EnlaceDelPanel.jsx`: `getLinkPage(id)` (`['admin-link-page', id]`),
+  `getLinkPages` para `paginas`, `getClicsDeLinkPage` → `clics`,
+  `getAnaliticaEnlace` → `analitica`; `onGuardar(d)` =
+  `updateLinkPage(id, paginaEnlacesAFirestore(d))` (lanzar su `error`) e
+  invalidar las dos `queryKey`; `subirImagen` →
+  `uploadFile(blob, 'link_pages/{avatars|thumbnails|redes|backgrounds}/{id}/{ms}.jpg')`.
+
 ## Reemplazos: qué sale y qué entra
 
 La misma tabla que las fichas de la tienda (CUENTA.md, "Reemplazos"): qué
@@ -1821,7 +1879,8 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D6a · Un sorteo | `pages/admin/AdminSorteoDetalle.jsx` + `.module.css` (su propio modal) | `PaginaSorteoAdmin` (`TablaAdmin`, `HojaEdicion`, `Confirmar`) | `SorteoDelPanel.jsx` |
 | D6b · Sorteos por suscripción | `pages/admin/AdminSuscripcionSorteos.jsx` + `.module.css` (con `BeneficiosEditor` y `GaleriaEditor` adentro; `common/Button`, su modal, la subida a mano) | `PaginaSuscripcionesAdmin` (`PaginaListaAdmin`, `CampoLista`, `CampoColor`, `CampoImagen`) | `SuscripcionesDelPanel.jsx` |
 | D6b · Una campaña | `pages/admin/AdminSuscripcionDetalle.jsx` + `.module.css` | `PaginaSuscripcionAdmin` (`GanadoresSorteo`, `AjusteSorteo`, `PaginaListaAdmin` en Beneficios y Galería) | `SuscripcionDelPanel.jsx` |
-| D6c · Enlaces | `AdminEnlaces.jsx`, `AdminEnlaceEditor.jsx` | por hacer | por pantalla |
+| D6c · Enlaces | `pages/admin/AdminEnlaces.jsx` + `.module.css` (`common/Button`, su modal, `window.alert`) | `PaginaEnlacesAdmin` (`TablaAdmin`, `HojaEdicion`, `Confirmar`) | `EnlacesDelPanel.jsx` |
+| D6c · El constructor | `pages/admin/AdminEnlaceEditor.jsx` + `.module.css` (arrastrar con HTML5, la subida a mano) | `PaginaEnlaceAdmin` (`ListaOrdenable`, `CampoImagen`, `CampoColor`, `ElegirUno`, `BarraGuardar`, `ListaBarras`) | `EnlaceDelPanel.jsx` |
 | D6d · Popups, landing pages y temas | `AdminPopups.jsx`, `Tienda/admin/AdminLandingPages.jsx`, `Tienda/admin/AdminThemes.jsx` | por hacer | por pantalla |
 
 ## Cómo se une un apartado (la misma lógica que clientes)
@@ -1864,6 +1923,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |
 | 2026-11-02 | Reemplazos de D0 a D2 (qué sale, qué entra y el conector) y la sección «Panel administrativo» de ELIMINAR.md con quién importa hoy cada pieza vieja | `guia/ADMIN.md`, `guia/ELIMINAR.md` |
+| 2026-11-02 | D6c en el kit: `PaginaEnlacesAdmin`, `PaginaEnlaceAdmin` (el constructor en pestañas con la vista previa de `linkThemes`); adaptadores con pruebas | `paginas/admin/Enlaces.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D6b en el kit: `PaginaSuscripcionesAdmin`, `PaginaSuscripcionAdmin` (beneficios y galería en el detalle); `GanadoresSorteo` y `AjusteSorteo` compartidos con D6a; `CampoLista` (también en Encuestas); adaptadores con pruebas | `paginas/admin/Suscripciones.jsx`, `paginas/admin/Sorteos.jsx`, `piezas/admin/Formularios.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D6 dividido en tramos (a: sorteos; b: sorteos de suscripción; c: enlaces; d: popups, landing pages y temas). D6a en el kit: `PaginaSorteosAdmin`, `PaginaSorteoAdmin`; adaptadores con pruebas | `paginas/admin/Sorteos.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D5e en el kit y **D5 completo**: `PaginaEncuestaAdmin` (las opciones como chips), `RespuestasEntregas` y `RespuestasEncuesta` para Opiniones, `BarraGuardar` (también en Notificaciones), `ListaBarras` con `conCeros`; adaptadores con pruebas | `paginas/admin/Encuestas.jsx`, `piezas/admin/Formularios.jsx`, `piezas/admin/Metricas.jsx`, `adaptadoresAdmin.js` |

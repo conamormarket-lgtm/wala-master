@@ -15,6 +15,7 @@ import {
   PaginaNotificacionesAdmin, configNotificacionesDesde, campanaDesde, PaginaEncuestaAdmin, RespuestasEntregas, RespuestasEncuesta, configConPregunta,
   PaginaSorteosAdmin, PaginaSorteoAdmin, sorteoDesdeFirestore, sorteoAFormulario, participanteDesde,
   PaginaSuscripcionesAdmin, PaginaSuscripcionAdmin, campanaSuscripcionDesde, campanaSuscripcionAFormulario, suscriptorDesde, beneficioDesde, ganadorGaleriaDesde,
+  PaginaEnlacesAdmin, PaginaEnlaceAdmin, paginaEnlacesDesde, paginaEnlacesAFirestore,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -76,6 +77,7 @@ const HECHAS = [
   ['/admin/encuestas', 'Encuesta'],
   ['/admin/sorteos', 'Sorteos'],
   ['/admin/sorteos-suscripcion', 'Suscripción'],
+  ['/admin/enlaces', 'Enlaces'],
   ['/admin/crear-cuentas-pedidos', 'Cuentas'],
   ['/admin/categorias', 'Categorías'],
   ['/admin/colecciones', 'Colecciones'],
@@ -554,6 +556,20 @@ const GALERIA_DEMO = [
   { id: 'g1', nombre: 'Rosa D.', premio: 'Casaca One Piece', fecha: 'Setiembre 2026', orden: 0 },
   { id: 'g2', nombre: 'Andrés P.', premio: 'Conjunto Pareja', fecha: 'Octubre 2026', orden: 1 },
 ].map(ganadorGaleriaDesde);
+// D6c: páginas de enlaces con sus clics y de dónde llegan.
+const PAGINAS_ENLACES_DEMO = [
+  { id: 'enl-1', titulo: 'Walá · Regalos', slug: 'wala', descripcion: 'Regalos personalizados en Lima. Pide por WhatsApp o en la tienda.', avatarUrl: '/assets/kapi/kapi-happy.webp', visitas: 1240, estado: 'activo',
+    diseno: { buttonStyle: 'solid', cornerRoundness: 18, buttonShadow: 'soft', buttonColor: '#ffffff', buttonTextColor: '#4c1d95', titleColor: '#ffffff', textColor: '#ede9fe', background: { type: 'gradient', value: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }, fontFamily: "'Poppins', sans-serif" },
+    botones: [{ id: 'b-wsp', titulo: 'Escríbenos por WhatsApp', url: 'https://wa.me/51924426791', order: 0 }, { id: 'b-tienda', titulo: 'La tienda', url: 'https://wala.pe/tienda', order: 1, thumbnailUrl: fotoTienda(0) }, { id: 'b-crear', titulo: 'Diseña tu polo', url: 'https://wala.pe/crear', order: 2 }],
+    redes: [{ id: 'r-ig', tipo: 'instagram', nombre: '@wala.pe', url: 'https://instagram.com/wala.pe', order: 0 }, { id: 'r-tt', tipo: 'tiktok', nombre: '@wala', url: 'https://tiktok.com/@wala', order: 1 }] },
+  { id: 'enl-2', titulo: 'Catálogo de Navidad', slug: 'navidad', estado: 'borrador', visitas: 0, botones: [], redes: [] },
+].map(paginaEnlacesDesde);
+const CLICS_DEMO = { 'b-wsp': 312, 'b-tienda': 190, 'b-crear': 64, 'r-ig': 41, 'r-tt': 12 };
+const ANALITICA_ENLACES_DEMO = {
+  porPais: [{ key: 'Perú', visitas: 1102, clics: 560 }, { key: 'Chile', visitas: 61, clics: 22 }, { key: 'Estados Unidos', visitas: 40, clics: 9 }],
+  porDispositivo: [{ key: 'Celular', visitas: 1080, clics: 549 }, { key: 'Computadora', visitas: 160, clics: 70 }],
+  porDia: Array.from({ length: 7 }, (_, i) => ({ dia: diaKey(i), visitas: 40 + ((i * 17) % 30), clics: 18 + ((i * 11) % 15) })),
+};
 const RECOMPENSAS_DEMO = [
   { title: 'Pack de stickers Kapi', description: 'Seis stickers para tu laptop o celular.', cost: 120, tipo: 'manual', value: 'Sale del cajón de mercancía', imageUrl: '/assets/kapi/kapi-happy.webp' },
   { title: '10% en tu pedido', description: 'Hasta S/ 20 de descuento.', cost: 300, tipo: 'descuento', descuentoPct: 10, topeDescuento: 20, vigenciaDias: 30 },
@@ -696,6 +712,8 @@ function PanelDePrueba() {
   const [beneficiosSus, guardarBeneficioSus, eliminarBeneficioSus] = useListaDemo(BENEFICIOS_DEMO, falla);
   const [galeriaSus, guardarGanadorSus, eliminarGanadorSus] = useListaDemo(GALERIA_DEMO, falla);
   const [susPestana, setSusPestana] = useState('suscriptores');
+  const [paginasEnlaces, guardarPaginaEnlacesCruda, eliminarPaginaEnlaces, setPaginasEnlaces] = useListaDemo(PAGINAS_ENLACES_DEMO, falla);
+  const [enlacePestana, setEnlacePestana] = useState('contenido');
   const [encuesta, setEncuesta] = useState(ENCUESTA_DEMO);
   const [encuestaPestana, setEncuestaPestana] = useState('portada');
   const [configNotif, setConfigNotif] = useState(CONFIG_NOTIF_DEMO);
@@ -1274,6 +1292,39 @@ function PanelDePrueba() {
         subirImagen={subir}
         onGuardar={(datos, id) => guardarRecompensaCruda(recompensaAdminDesdeFirestore({ id, ...recompensaAdminAFirestore(datos) }), id)}
         onEliminar={eliminarRecompensa}
+      />
+    );
+  } else if (rutaSola === '/admin/enlaces') {
+    pagina = (
+      <PaginaEnlacesAdmin
+        {...comunes}
+        paginas={vacio ? [] : paginasEnlaces}
+        onCrear={async ({ titulo, slug }) => {
+          await espera(600);
+          fallar();
+          const id = `enl-${Date.now()}`;
+          setPaginasEnlaces((l) => [...l, paginaEnlacesDesde({ id, titulo, slug, estado: 'activo' })]);
+          return id;
+        }}
+        onAbrir={(p) => { setEnlacePestana('contenido'); navegar.current(`/admin/enlaces/${p.id}`); }}
+        onEliminar={eliminarPaginaEnlaces}
+      />
+    );
+  } else if (rutaSola.startsWith('/admin/enlaces/')) {
+    const pag = paginasEnlaces.find((x) => x.id === rutaSola.split('/')[3]);
+    pagina = (
+      <PaginaEnlaceAdmin
+        pagina={pag}
+        paginas={paginasEnlaces}
+        cargando={con('cargando')}
+        error={!pag ? 'Esa página no existe.' : con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+        onReintentar={comunes.onReintentar}
+        onGuardar={(d) => guardarPaginaEnlacesCruda(paginaEnlacesDesde({ ...paginaEnlacesAFirestore(d), id: pag.id, visitas: pag.visitas }), pag.id)}
+        subirImagen={subir}
+        clics={vacio ? {} : CLICS_DEMO}
+        analitica={vacio ? undefined : ANALITICA_ENLACES_DEMO}
+        pestana={enlacePestana}
+        onPestana={setEnlacePestana}
       />
     );
   } else if (rutaSola === '/admin/sorteos-suscripcion') {

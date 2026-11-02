@@ -2552,3 +2552,99 @@ export const beneficioAFirestore = (d = {}) => ({ marca: String(d.marca || '').t
 /** Un ganador de antes (la galería de la página) → el admin, y de vuelta. */
 export const ganadorGaleriaDesde = (g = {}) => ({ id: g.id, nombre: g.nombre || '', premio: g.premio || '', foto: g.fotoUrl || '', fecha: g.fecha || '', orden: Number(g.orden) || 0 });
 export const ganadorGaleriaAFirestore = (d = {}) => ({ nombre: String(d.nombre || '').trim(), premio: String(d.premio || '').trim(), fotoUrl: d.foto || '', fecha: String(d.fecha || '').trim(), orden: Number(d.orden) || 0 });
+
+/* ── D6c · Enlaces (link in bio) ──────────────────────── */
+
+/*
+ * Las páginas de /l/{slug}. El diseño se guarda con los nombres de siempre
+ * (los lee la página pública con services/linkThemes, igual que la vista
+ * previa del kit): solo los botones y las redes cambian de nombre aquí.
+ */
+export const DISENO_ENLACES = {
+  buttonStyle: 'solid', cornerRoundness: 12, buttonShadow: 'soft', buttonColor: '#111827', buttonTextColor: '#ffffff',
+  titleColor: '#111827', textColor: '#374151', textAlign: 'center', background: { type: 'color', value: '#f3f4f6', color: '#4B0055' }, fontFamily: '',
+};
+
+export const TIPOS_RED = [
+  { valor: 'instagram', texto: 'Instagram' },
+  { valor: 'facebook', texto: 'Facebook' },
+  { valor: 'tiktok', texto: 'TikTok' },
+  { valor: 'whatsapp', texto: 'WhatsApp' },
+  { valor: 'custom', texto: 'Otra' },
+];
+
+const porOrdenDe = (lista) => (Array.isArray(lista) ? [...lista].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) : []);
+
+/** Como la hidratación del editor: lo que falta sale de los valores de siempre (y el título y el texto, del texto del botón en las viejas). */
+export function disenoDeEnlaces(d = {}) {
+  const x = d || {};
+  return {
+    buttonStyle: x.buttonStyle || DISENO_ENLACES.buttonStyle,
+    cornerRoundness: typeof x.cornerRoundness === 'number' ? x.cornerRoundness : DISENO_ENLACES.cornerRoundness,
+    buttonShadow: x.buttonShadow || DISENO_ENLACES.buttonShadow,
+    buttonColor: x.buttonColor || DISENO_ENLACES.buttonColor,
+    buttonTextColor: x.buttonTextColor || DISENO_ENLACES.buttonTextColor,
+    titleColor: x.titleColor || x.buttonTextColor || DISENO_ENLACES.titleColor,
+    textColor: x.textColor || x.buttonTextColor || DISENO_ENLACES.textColor,
+    textAlign: ['left', 'center', 'right', 'justify'].includes(x.textAlign) ? x.textAlign : 'center',
+    background: {
+      type: x.background?.type || 'color',
+      value: x.background?.value ?? DISENO_ENLACES.background.value,
+      color: x.background?.color || DISENO_ENLACES.background.color,
+    },
+    fontFamily: x.fontFamily || '',
+  };
+}
+
+/** Una página de enlaces (link_pages) → el admin. */
+export function paginaEnlacesDesde(p = {}) {
+  return {
+    id: p.id,
+    nombre: p.titulo || '',
+    slug: p.slug || '',
+    descripcion: p.descripcion || '',
+    avatar: p.avatarUrl || '',
+    estado: p.estado === 'borrador' ? 'borrador' : 'activo',
+    visitas: Number(p.visitas) || 0,
+    diseno: disenoDeEnlaces(p.diseno),
+    botones: porOrdenDe(p.botones).map((b, i) => ({ id: b.id || `btn_${i}`, titulo: b.titulo || '', url: b.url || '', miniatura: b.thumbnailUrl || '' })),
+    redes: porOrdenDe(p.redes).map((r, i) => ({ id: r.id || `red_${i}`, tipo: TIPOS_RED.some((x) => x.valor === r.tipo) ? r.tipo : 'custom', nombre: r.nombre || '', url: r.url || '', icono: r.iconUrl || '' })),
+  };
+}
+
+/** Lo que se guarda (updateLinkPage normaliza el resto): el orden es el de la lista. */
+export function paginaEnlacesAFirestore(d = {}) {
+  return {
+    titulo: String(d.nombre || '').trim(),
+    slug: slugDeSorteo(d.slug || d.nombre),
+    descripcion: d.descripcion || '',
+    avatarUrl: d.avatar || '',
+    estado: d.estado === 'borrador' ? 'borrador' : 'activo',
+    diseno: d.diseno,
+    botones: (d.botones || []).map((b, i) => ({ id: b.id, titulo: b.titulo || '', url: String(b.url || '').trim(), thumbnailUrl: b.miniatura || '', order: i })),
+    redes: (d.redes || []).map((r, i) => ({ id: r.id, tipo: r.tipo || 'custom', nombre: r.nombre || '', url: String(r.url || '').trim(), iconUrl: r.icono || '', order: i })),
+  };
+}
+
+const idEnlace = (prefijo, ms) => `${prefijo}_${ms}_${Math.random().toString(36).slice(2, 6)}`;
+export const botonEnlaceNuevo = (ms = Date.now()) => ({ id: idEnlace('btn', ms), titulo: '', url: '', miniatura: '' });
+export const redNueva = (ms = Date.now()) => ({ id: idEnlace('red', ms), tipo: 'instagram', nombre: '', url: '', icono: '' });
+
+/** Errores: título, enlace y que ninguna OTRA página use el mismo enlace. */
+export function erroresDeEnlaces(d = {}, otras = []) {
+  const slug = slugDeSorteo(d.slug || d.nombre);
+  return {
+    nombre: String(d.nombre || '').trim() ? undefined : 'Escribe el título de la página.',
+    slug: !slug ? 'Escribe el enlace.' : otras.some((p) => p.id !== d.id && String(p.slug || '').toLowerCase() === slug) ? `Ya hay otra página en /l/${slug}: elige otro.` : undefined,
+  };
+}
+
+/** Los clics de cada botón y red, para la lista de Resultados. */
+export function clicsDeEnlaces(clics = {}, botones = [], redes = []) {
+  const filas = [
+    ...botones.map((b) => ({ id: b.id, nombre: b.titulo || 'Botón sin título', valor: Number(clics[b.id]) || 0 })),
+    ...redes.map((r) => ({ id: r.id, nombre: `Red: ${r.nombre || TIPOS_RED.find((x) => x.valor === r.tipo)?.texto || 'sin nombre'}`, valor: Number(clics[r.id]) || 0 })),
+  ];
+  const total = Object.values(clics || {}).reduce((n, v) => n + (Number(v) || 0), 0);
+  return { filas: filas.map((f) => ({ ...f, texto: `${f.valor} · ${total ? Math.round((f.valor / total) * 100) : 0} %` })), total };
+}

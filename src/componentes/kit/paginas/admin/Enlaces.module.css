@@ -1,0 +1,289 @@
+/* ── D6c · Enlaces ─────────────────────────────────────── */
+.pagina {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+  container: enlaces / inline-size;
+}
+
+.pagina > header {
+  margin-bottom: 0;
+}
+
+.nota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+}
+
+.pestanas {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pestanas::-webkit-scrollbar {
+  display: none;
+}
+
+.dos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: 0.6rem;
+}
+
+/* El constructor: el editor y, al lado, el celular */
+.constructor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.lado {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  order: -1;
+}
+
+.vista {
+  display: none;
+  width: 100%;
+}
+
+.ladoAbierto .vista {
+  display: block;
+}
+
+@container enlaces (min-width: 820px) {
+  .constructor {
+    grid-template-columns: minmax(0, 1fr) 19rem;
+  }
+
+  .lado {
+    position: sticky;
+    top: 1rem;
+    order: 0;
+  }
+
+  .verVista {
+    display: none;
+  }
+
+  .vista {
+    display: block;
+  }
+}
+
+.item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.item > button {
+  justify-self: start;
+}
+
+.mas > summary {
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mas[open] > summary {
+  margin-bottom: 0.5rem;
+}
+
+/* Diseño */
+.temas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.tema {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  font: inherit;
+  cursor: pointer;
+}
+
+.tema:hover,
+.tema:focus-visible {
+  border-color: var(--violet-500);
+  outline: none;
+}
+
+.temaMuestra {
+  display: grid;
+  place-items: center;
+  gap: 0.35rem;
+  height: 4rem;
+  padding: 0.5rem;
+  border-radius: 10px;
+}
+
+.temaPunto {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+}
+
+.temaBarra {
+  width: 80%;
+  height: 0.8rem;
+}
+
+.temaNombre {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.rango {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+}
+
+.rango input {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--violet-600);
+}
+
+.muestras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.muestra {
+  width: 2.6rem;
+  height: 2.6rem;
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.muestra[aria-pressed='true'] {
+  border-color: var(--violet-600);
+  box-shadow: 0 0 0 2px var(--violet-200);
+}
+
+/* El celular de la vista previa */
+.telefono {
+  width: min(100%, 18rem);
+  margin: 0 auto;
+  padding: 0.55rem;
+  border-radius: 2.2rem;
+  background: #16121f;
+  box-shadow: 0 14px 34px rgba(30, 16, 60, 0.22);
+}
+
+.pantalla {
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+  min-height: 30rem;
+  max-height: 34rem;
+  padding: 1.6rem 1rem 1.2rem;
+  border-radius: 1.75rem;
+  overflow-y: auto;
+}
+
+.pvCabeza {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pvAvatar,
+.pvSinAvatar {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.pvSinAvatar {
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.6);
+  color: #1e1033;
+  font-size: 1.6rem;
+  font-weight: 900;
+}
+
+.pvTitulo {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.pvTexto {
+  font-size: 0.82rem;
+}
+
+.pvRedes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.pvRed {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1.5px solid;
+  border-radius: 50%;
+}
+
+.pvRed svg,
+.pvRed img {
+  width: 1rem;
+  height: 1rem;
+  object-fit: contain;
+}
+
+.pvBotones {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.pvBoton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.8rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.pvBoton > span {
+  flex: 1;
+  text-align: center;
+}
+
+.pvMiniatura {
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 8px;
+  object-fit: cover;
+}

@@ -106,6 +106,7 @@ export { PaginaNotificacionesAdmin } from './paginas/admin/Notificaciones';
 export { PaginaEncuestaAdmin, RespuestasEntregas, RespuestasEncuesta } from './paginas/admin/Encuestas';
 export { PaginaSorteosAdmin, PaginaSorteoAdmin, GanadoresSorteo, AjusteSorteo } from './paginas/admin/Sorteos';
 export { PaginaSuscripcionesAdmin, PaginaSuscripcionAdmin } from './paginas/admin/Suscripciones';
+export { PaginaEnlacesAdmin, PaginaEnlaceAdmin } from './paginas/admin/Enlaces';
 export { TarjetaEnvio, EsqueletoEnvio } from './piezas/admin/Pedidos';
 export { PaginaRecepcion } from './paginas/admin/Pedidos';
 export { PaginaPagos } from './paginas/admin/Pagos';
@@ -145,4 +146,5 @@ export {
   identificadorDe, erroresDeAjuste,
   INTERVALOS_PLAN, mesesDeIntervalo, COLORES_CAMPANA, campanaSuscripcionDesde, campanaSuscripcionAFormulario, planNuevo, planConIntervalo,
   erroresDeCampanaSuscripcion, textoDePlanes, ESTADOS_SUSCRIPTOR, suscriptorDesde, beneficioDesde, beneficioAFirestore, ganadorGaleriaDesde, ganadorGaleriaAFirestore,
+  DISENO_ENLACES, TIPOS_RED, disenoDeEnlaces, paginaEnlacesDesde, paginaEnlacesAFirestore, botonEnlaceNuevo, redNueva, erroresDeEnlaces, clicsDeEnlaces,
 } from './adaptadoresAdmin';
