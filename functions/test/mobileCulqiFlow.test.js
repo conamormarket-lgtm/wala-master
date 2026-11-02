@@ -8,7 +8,7 @@ const parser = require('@babel/parser');
 const mobile = require('../mobileCheckout');
 const source = fs.readFileSync(require.resolve('../index'), 'utf8');
 const ast = parser.parse(source, { sourceType: 'script' });
-let handlerSource; let prepareSource;
+let handlerSource; let prepareSource; let cancelSource;
 for (const statement of ast.program.body) {
   const node = statement.expression;
   if (node?.type === 'AssignmentExpression' && node.left?.object?.name === 'exports' && node.left?.property?.name === 'processCulqiPayment') {
@@ -17,8 +17,19 @@ for (const statement of ast.program.body) {
   if (node?.type === 'AssignmentExpression' && node.left?.object?.name === 'exports' && node.left?.property?.name === 'prepareCheckoutPayment') {
     const handler = node.right.arguments[0]; prepareSource = source.slice(handler.start, handler.end);
   }
+  if (node?.type === 'AssignmentExpression' && node.left?.object?.name === 'exports' && node.left?.property?.name === 'cancelMobileCheckoutSecure') {
+    const handler = node.right.arguments[0]; cancelSource = source.slice(handler.start, handler.end);
+  }
 }
 assert.ok(handlerSource, 'charge handler must exist');
+// Una escritura con los valores especiales de FieldValue (sumar, borrar) del fixture.
+const merge = (before = {}, data) => { const out = { ...before };
+  for (const [key, value] of Object.entries(data)) {
+    if (value && value.delete === true) delete out[key];
+    else if (value && typeof value.increment === 'number') out[key] = (Number(out[key]) || 0) + value.increment;
+    else out[key] = value;
+  }
+  return out; };
 class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
 async function fixture(provider) {
   const raw = new Map([['polo', { name: 'Polo', price: 149.7, inStock: 5 }]]);
@@ -36,11 +47,12 @@ async function fixture(provider) {
     mobileCheckoutError: (error) => new HttpsError('failed-precondition', error.message), readMobileProducts: async () => raw, readMobileDesigns: async () => new Map(),
     readCheckoutIntent: async (id, ctx) => { if (ctx.auth.uid !== intent.uid) throw new HttpsError('permission-denied', 'owner'); return { id, intent: { ...intent }, ref }; },
     pagos: { cobroDeIntencion: (i) => i.amountPen, aCentimos: (n) => Math.round(n * 100), coincideMonto: (a, b) => a === b },
-    formatoSoles: (n) => String(n), FieldValue: { serverTimestamp: () => 1 },
+    formatoSoles: (n) => String(n), FieldValue: { serverTimestamp: () => 1, increment: (n) => ({ increment: n }), delete: () => ({ delete: true }) },
+    applyDebit: require('../economyLogic').applyDebit,
     db: { collection: (name) => ({ doc: (id) => ({ name, id, async get() { return { exists: ledger.has(id), data: () => ledger.get(id) }; }, async set(data) { ledger.set(id, { ...ledger.get(id), ...data }); } }) }),
       runTransaction(action) { const run = tail.then(() => action({
         get: async (r) => ({ exists: ledger.has(r.id), data: () => ledger.get(r.id) }),
-        create: (r, data) => ledger.set(r.id, data), update: (r, data) => ledger.set(r.id, { ...ledger.get(r.id), ...data }),
+        create: (r, data) => ledger.set(r.id, data), update: (r, data) => ledger.set(r.id, merge(ledger.get(r.id), data)),
       })); tail = run.catch(() => {}); return run; } },
     reservarCobroIntencion: async () => { if (intent.status !== 'prepared') throw new HttpsError('already-exists', 'locked'); intent.status = 'cobrando'; },
     liberarCobroIntencion: async () => { intent.status = 'prepared'; },
@@ -59,9 +71,11 @@ async function fixture(provider) {
   context.pagos.redondear = (amount) => Math.round(amount * 100) / 100;
   const handler = vm.runInNewContext(`(${handlerSource})`, context);
   const prepareHandler = vm.runInNewContext(`(${prepareSource})`, context);
+  const cancelHandler = vm.runInNewContext(`(${cancelSource})`, context);
   const data = { tokenId: 'tkn_test_token0001', amount: 16470, currency: 'PEN', email: input.email, checkoutIntentId: prepared.key.id, deviceId: 'device_test0001' };
   return { pay: (extra = {}, uid = 'a') => handler({ ...data, ...extra }, { auth: { uid, token: { email: input.email } } }), intent, ledger,
     prepare: (data) => prepareHandler(data, { auth: { uid: 'a', token: { email: input.email } } }), input, context,
+    cancel: (requestId) => cancelHandler({ requestId }, { auth: { uid: 'a', token: { email: input.email } } }),
     counts: () => ({ calls, orders, anomalies }) };
 }
 const approved = (body) => ({ ok: true, status: 200, json: async () => ({ object: 'charge', id: 'chr_test_charge0001', amount: body.amount, currency_code: body.currency_code, outcome: { type: 'venta_exitosa' } }) });
@@ -136,4 +150,29 @@ test('un JSON ambiguo o un monto distinto nunca se marca pagado', async () => {
 test('rechazo explícito no crea pedido y permite cancelar la intención', async () => {
   const f = await fixture(() => ({ ok: false, status: 400, json: async () => ({ object: 'error', user_message: 'rechazado' }) }));
   await assert.rejects(f.pay()); assert.equal(f.counts().orders, 0); assert.equal(f.intent.status, 'prepared');
+});
+test('preparación REAL con monedas: tope de la marca y saldo del servidor, se reservan y vuelven al cancelar', async () => {
+  const f = await fixture(approved);
+  f.context.verificarPreciosYStock = async () => ({ subtotal: 149.7, topeMonedas: 74 });
+  f.ledger.set('a', { monedas: 30, monedasEnEspera: 0, historialMonedasEspera: [] });
+  const withCoins = { ...f.input, requestId: 'monedasmonedas000001', coins: 30, expectedTotal: 134.7 };
+  const session = await f.prepare({ mobileCheckout: withCoins });
+  assert.equal(session.totals.coins, 30); assert.equal(session.totals.total, 134.7);
+  assert.equal(f.ledger.get(session.intentId).amountPen, 134.7); assert.equal(f.ledger.get(session.intentId).totalesServidor.monedas, 30);
+  assert.equal(f.ledger.get('a').monedas, 0); assert.equal(f.ledger.get('a').monedasEnEspera, 30);
+  assert.equal(JSON.stringify(f.ledger.get('a').reservaMonedasCheckout), JSON.stringify({ intentId: session.intentId, amount: 30 }));
+  // Más de las que tiene, o más que el tope de sus marcas: no se prepara nada.
+  await assert.rejects(f.prepare({ mobileCheckout: { ...withCoins, requestId: 'monedasmonedas000002', coins: 31, expectedTotal: 133.7 } }), /monedas/);
+  f.context.verificarPreciosYStock = async () => ({ subtotal: 149.7, topeMonedas: 10 });
+  f.ledger.set('a', { ...f.ledger.get('a'), monedas: 50 });
+  await assert.rejects(f.prepare({ mobileCheckout: { ...withCoins, requestId: 'monedasmonedas000003', coins: 20, expectedTotal: 144.7 } }), /hasta 10 monedas/);
+  f.ledger.set('a', { ...f.ledger.get('a'), monedas: 0 });
+  // Cancelar devuelve las 30 una sola vez.
+  assert.equal((await f.cancel(withCoins.requestId)).cancelled, true);
+  assert.equal(f.ledger.get(session.intentId).status, 'vencida');
+  assert.equal(f.ledger.get('a').monedas, 30); assert.equal(f.ledger.get('a').monedasEnEspera, 0);
+  assert.equal(f.ledger.get('a').reservaMonedasCheckout, undefined);
+  assert.equal(f.ledger.get('a').historialMonedasEspera[0].status, 'released');
+  await f.cancel(withCoins.requestId);
+  assert.equal(f.ledger.get('a').monedas, 30);
 });

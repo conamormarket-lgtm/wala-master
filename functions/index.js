@@ -407,8 +407,10 @@ exports.validateCartPricingSecure = functions.https.onCall(async (data) => {
   if (!productos || typeof productos !== "object") {
     throw new functions.https.HttpsError("invalid-argument", "Faltan los productos a verificar.");
   }
-  await verificarPreciosYStock(productos, null);
-  return { ok: true };
+  // El subtotal y el tope de monedas del servidor (el % de la marca de cada producto): la app los usa para ofrecer
+  // "Usar N monedas" con la misma cuenta que después revisa prepareCheckoutPayment.
+  const { subtotal, topeMonedas } = await verificarPreciosYStock(productos, null);
+  return { ok: true, subtotal, topeMonedas };
 });
 
 // Reserva de monedas de un checkout anterior de este usuario que se puede
@@ -10177,7 +10179,8 @@ exports.getMobileCheckoutStatusSecure = functions.https.onCall(async (data, cont
   const uid = requireAuth(context);
   if (data?.expectedUid && data.expectedUid !== uid) throw new functions.https.HttpsError('unauthenticated', 'La sesión cambió.');
   // coupons: este servidor ya revalida y descuenta el cupón del pago móvil (la app solo ofrece el campo entonces).
-  if (data?.capabilities) return { contract: mobileCheckout.CONTRACT, coupons: true, creations: true, combos: true,
+  // coins: acepta monedas en el pago móvil (las reserva al preparar y las devuelve al cancelar).
+  if (data?.capabilities) return { contract: mobileCheckout.CONTRACT, coupons: true, creations: true, combos: true, coins: true,
     enabled: process.env.MOBILE_CHECKOUT_ENABLED === 'true' && /^pk_(test|live)_/.test(process.env.CULQI_PUBLIC_KEY || '') };
   try {
     const { id } = mobileCheckout.identity({ contract: mobileCheckout.CONTRACT, requestId: data && data.requestId }, uid);
@@ -10193,13 +10196,34 @@ exports.cancelMobileCheckoutSecure = functions.https.onCall(async (data, context
   try {
     const { id } = mobileCheckout.identity({ contract: mobileCheckout.CONTRACT, requestId: data && data.requestId }, uid);
     const ref = db.collection(CHECKOUT_INTENTS_COLLECTION).doc(id);
+    const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
     await db.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(ref);
       if (!snapshot.exists) return;
       const intent = snapshot.data();
       if (intent.uid !== uid || !intent.mobile) throw new functions.https.HttpsError('permission-denied', 'Este pago no pertenece a tu cuenta.');
       if (['paid_order_created', 'cobrando'].includes(intent.status)) throw new functions.https.HttpsError('failed-precondition', 'El pago está en comprobación o ya se completó. Consulta su estado antes de continuar.');
+      // Las monedas que reservó este intento vuelven ya: una intención vencida no la libera reconciliarMonedasEnEspera
+      // (solo mira las que siguen "prepared") ni el siguiente checkout (reservaCheckoutLiberable, tampoco).
+      const reserva = intent.status === 'prepared' && Number(intent.totalesServidor?.monedas) > 0 ? await transaction.get(userRef) : null;
+      const u = reserva && reserva.exists ? reserva.data() : null;
+      const historial = Array.isArray(u?.historialMonedasEspera) ? [...u.historialMonedasEspera] : [];
+      let devolver = 0;
+      historial.forEach((entry, i) => {
+        if (entry && entry.status === 'pending' && String(entry.orderId) === id) {
+          devolver += Number(entry.amount) || 0;
+          historial[i] = { ...entry, status: 'released', resolvedAt: new Date().toISOString(), motivo: 'cancelada' };
+        }
+      });
       transaction.update(ref, { status: 'vencida', updatedAt: FieldValue.serverTimestamp() });
+      if (devolver > 0) {
+        transaction.update(userRef, {
+          monedas: FieldValue.increment(devolver),
+          monedasEnEspera: Math.max(0, (Number(u.monedasEnEspera) || 0) - devolver),
+          historialMonedasEspera: historial,
+          ...(u.reservaMonedasCheckout && String(u.reservaMonedasCheckout.intentId) === id ? { reservaMonedasCheckout: FieldValue.delete() } : {}),
+        });
+      }
     });
     return { cancelled: true };
   } catch (error) { throw mobileCheckoutError(error); }
