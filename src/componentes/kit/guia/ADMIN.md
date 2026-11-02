@@ -234,7 +234,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | hecho (2026-11-02) | · |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | hecho (2026-11-02) | · |
 | D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | hecho (2026-11-02) | · |
-| D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | en marcha (D8a, 2026-11-02) | · |
+| D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | hecho (2026-11-02) | · |
 
 El orden: D0 con las piezas base (tabla, hoja de edición, campo de imagen,
 estado), probadas en **Categorías**, que es un CRUD simple con foto y toca
@@ -1987,7 +1987,7 @@ Adaptadores (con pruebas): `DIAS_RULETA`, `textoDiasRuleta`,
   `adminBolitas('metricas', { dias })` → `metricas`. Cada uno con su
   `queryKey` de hoy.
 
-## D8 · Ajustes (en marcha: D8a hecho en el kit el 2026-11-02)
+## D8 · Ajustes (en el kit desde el 2026-11-02: los dos tramos)
 
 Tres pantallas de hoy (unas 1.050 líneas), en dos tramos; el apartado se
 une entero cuando estén los dos.
@@ -1995,7 +1995,7 @@ une entero cuando estén los dos.
 | Tramo | Qué | Páginas de hoy | Kit |
 |---|---|---|---|
 | D8a | Configuración: el equipo y sus permisos, las páginas bloqueadas, pasar imágenes a WebP y publicar traducciones | `AdminConfiguracion.jsx` (618) | hecho (2026-11-02) |
-| D8b | WhatsApp y el historial (diseño de la tienda e inventario) | `AdminWhatsApp.jsx` (247), `AdminBackups.jsx` (191) | · |
+| D8b | WhatsApp y el historial (diseño de la tienda e inventario) | `AdminWhatsApp.jsx` (247), `AdminBackups.jsx` (191) | hecho (2026-11-02) |
 
 ### D8a: Configuración (en el kit desde el 2026-11-02)
 
@@ -2043,6 +2043,75 @@ Adaptadores (con pruebas): `PERMISOS_ADMIN`, `adminDesdeFirestore`,
   inglés y 3 en portugués → "17 traducciones publicadas" y la lista vacía.
 - Con permisos de Catálogo, el marco no abre la página.
 - 375 px: las tres pestañas y la hoja sin salirse del ancho.
+
+### D8b: WhatsApp y el historial (en el kit desde el 2026-11-02)
+
+| WhatsApp (computadora) | El historial del diseño (celular) |
+|---|---|
+| ![Los números de la tienda y de Crear, con el mensaje del pedido como globo de chat](admin-whatsapp-escritorio.webp) | ![Las copias de cada página, cuál está puesta y Restaurar en las anteriores](admin-historial-celular.webp) |
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| WhatsApp | `PaginaWhatsAppAdmin` | `paginas/admin/Ajustes.jsx` | Un grupo por sección (la tienda y el checkout, Crear, Mi cuenta) con dónde se usa, el número (vacío: el de la tienda) y **a qué número escriben de verdad** con "Probar" (abre wa.me). El mensaje al confirmar un pedido con su **globo de chat** ({id} cambiado por un código de ejemplo) y el aviso si falta {id}. El botón en iniciar sesión y registro. Guarda con `BarraGuardar`; los números mal escritos se marcan en su campo |
+| Historial | `PaginaHistorialAdmin` | ídem | Dos pestañas. **Diseño de la tienda** (`PaginaListaAdmin`): cada copia del editor con su página, cuándo (y hace cuánto) y si es **la puesta** (la más nueva de cada página) o anterior; filtro por página; "Restaurar" en las anteriores, con la pregunta. **Inventario**: cada cambio de stock con el producto, quién, cuándo, "12 → 10" y "Bajó −2" (en palabras, no solo color); buscar, filtro sube/baja, ordenar por fecha y **Descargar CSV** (con la hora de Lima y tildes que Excel lee) |
+
+Adaptadores (con pruebas): `MENSAJE_PEDIDO_POR_DEFECTO`,
+`SECCIONES_WHATSAPP`, `whatsappDesdeMensajes` / `whatsappAMensajes` (el
+general sigue al de la tienda), `telefonoEscrito`, `erroresDeWhatsApp`,
+`mensajePedidoDeEjemplo`, `cambioDisenoDesde`, `conVersionActual`,
+`nombreDePaginaGuardada`, `movimientoInventarioDesde`, `textoCambioStock` y
+`csvInventario`. El número final lo arma `numeroWhatsApp` (el mismo del
+botón flotante).
+
+### Diferencias a propósito (D8b)
+
+- **Los mensajes de Crear y Mi cuenta ya no se muestran**: no los lee nadie
+  (el botón flotante manda uno fijo; solo el checkout usa el de la tienda).
+  Lo guardado en `whatsapp_text_crear` / `_cuenta` no se toca.
+- Un número vacío ya no "llena" los otros al abrir la página (antes, el
+  general se copiaba en Crear y Mi cuenta y se guardaba así); vacío dice
+  "usa el de la tienda", que es lo que hace el botón. La tienda no puede ir
+  vacía: es la que usa el checkout.
+- La nota de antes ("si dejas un número vacío, el botón no aparecerá") no
+  era cierta: vacío usa el general.
+- Historial: la copia puesta de cada página se marca y no se restaura (antes
+  todas decían "Restaurar"); los `alert` y `window.confirm` pasan a
+  `Confirmar` y avisos; el autor no se muestra (el editor solo anota
+  "Admin").
+- **Restaurar arreglado en el conector**: antes solo escribía
+  `storeConfig/homePage` (el documento viejo), pero el editor guarda cada
+  página con `saveStorefrontConfig`: restaurar no cambiaba la tienda de hoy.
+  Ver abajo.
+
+### Qué se probó (2026-11-02, demo en localhost, 1280 px y 375 px)
+
+- WhatsApp: tienda +51 987 654 321, Crear vacío ("el de la tienda"), Mi
+  cuenta +51 912 345 678. Crear "98765abc" → queda "98765" → Guardar →
+  "Revisa el número: tiene 5 dígitos" y el foco ahí. El mensaje sin {id} →
+  el aviso. Arreglado → "WhatsApp guardado" y "Escriben a +51 951 222 333".
+- Historial: cinco copias (home tres veces, promo-navidad y la tienda; las
+  tres más nuevas de cada página, "Puesta"). Restaurar la de home de ayer →
+  la pregunta → una copia nueva arriba ("Restaurada hace un momento",
+  puesta) y la de hace 2 horas pasa a anterior.
+- Inventario: seis cambios (subió, bajó y uno igual); el CSV
+  `inventario_2026-11-02.csv` con la hora de Lima y las comillas bien.
+- 375 px: las dos páginas y las dos pestañas sin salirse del ancho.
+
+### Cómo se une D8b
+
+- `WhatsAppDelPanel.jsx`: los seis `getMessage` de hoy más
+  `whatsapp_number` (`['admin-whatsapp-numbers']`) →
+  `whatsappDesdeMensajes`; `onGuardar(c)` = `setMessage` de cada clave de
+  `whatsappAMensajes(c)` e invalidar `['admin-whatsapp-numbers']` y
+  `['whatsapp-numbers-config']` (y la del botón flotante).
+- `HistorialDelPanel.jsx`: `storeConfigLogs` por `timestamp` desc, 50 →
+  `conVersionActual(map(cambioDisenoDesde))`; `getInventoryLogs` →
+  `movimientoInventarioDesde`. `onRestaurar(x)` hace lo mismo que guardar en
+  el editor (`VisualEditorContext`): `setDocument('storeConfig', 'homePage',
+  x.config)` **y** `saveStorefrontConfig(x.config.sections || [],
+  x.pagina)`, invalida la config de esa página y anota su propia copia en
+  `storeConfigLogs` ("Restaurada desde el historial"), así la más nueva
+  sigue siendo la puesta.
 
 ### Cómo se une D8a
 
@@ -2172,7 +2241,8 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D7a · Las Bolitas | `pages/admin/AdminBolitasPage.jsx` + `.module.css` (`alert`, `window.confirm`) | `PaginaBolitasAdmin` (`PaginaListaAdmin`, `ListaOrdenable`, `GraficoTendencia`, `ListaBarras`, `BarraGuardar`) | `BolitasDelPanel.jsx` |
 | D7b · La Ruleta | `pages/admin/AdminRuletaPage.jsx` + `.module.css` (`BuscadorProducto`, `useGlobalToast`, `window.confirm`) | `PaginaRuletaAdmin` (`PaginaListaAdmin`, `SelectorProductos`, `CampoFecha`, `CampoColor`, `CampoImagen`, `BarraGuardar`, `RuedaRuleta`) | `RuletaDelPanel.jsx` |
 | D8a · Configuración | `pages/admin/AdminConfiguracion.jsx` + `.module.css` (`common/Button`, estilos en línea, `alert`, `window.confirm`) | `PaginaConfiguracionAdmin` (`PaginaListaAdmin`, `Casilla`, `TablaAdmin`, `ElegirUno`, `Cifra`, `BarraProgreso`, `Confirmar`) | `ConfiguracionDelPanel.jsx` |
-| D8b · WhatsApp e historial | `pages/admin/AdminWhatsApp.jsx`, `AdminBackups.jsx` + `.module.css` | por hacer | `WhatsAppDelPanel.jsx`, `HistorialDelPanel.jsx` |
+| D8b · WhatsApp | `pages/admin/AdminWhatsApp.jsx` (usa `AdminTiendaTextos.module.css`, estilos en línea) | `PaginaWhatsAppAdmin` (`GrupoCampos`, `BarraGuardar`) | `WhatsAppDelPanel.jsx` |
+| D8b · Historial | `pages/admin/AdminBackups.jsx` + `.module.css` (`alert`, `window.confirm`) | `PaginaHistorialAdmin` (`PaginaListaAdmin`, `Confirmar`) | `HistorialDelPanel.jsx` |
 
 ## Cómo se une un apartado (la misma lógica que clientes)
 
@@ -2214,6 +2284,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |
 | 2026-11-02 | Reemplazos de D0 a D2 (qué sale, qué entra y el conector) y la sección «Panel administrativo» de ELIMINAR.md con quién importa hoy cada pieza vieja | `guia/ADMIN.md`, `guia/ELIMINAR.md` |
+| 2026-11-02 | D8b en el kit y **D8 completo** (todos los apartados en el kit): `PaginaWhatsAppAdmin` (a qué número escriben y el globo del mensaje), `PaginaHistorialAdmin` (la copia puesta de cada página, el stock y su CSV); adaptadores con pruebas. Restaurar debe escribir también la página nueva | `paginas/admin/Ajustes.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D8 dividido en tramos (a: configuración; b: WhatsApp e historial). D8a en el kit: `PaginaConfiguracionAdmin` (equipo con lo que ve cada uno, bloqueos, optimizar); adaptadores con pruebas. El menú dice «Configuración» | `paginas/admin/Configuracion.jsx`, `adaptadoresAdmin.js`, `piezas/admin/Marco.jsx` |
 | 2026-11-02 | D7b en el kit y **D7 completo**: `PaginaRuletaAdmin` (premios con por qué no salen hoy, cómo se ve con la rueda, entregas); adaptadores con pruebas. `Buscador` ya no envía la hoja que lo contiene | `paginas/admin/Ruleta.jsx`, `adaptadoresAdmin.js`, `Formulario.jsx` |
 | 2026-11-02 | D7 dividido en tramos (a: Kapi, la palabra y las bolitas; b: la ruleta). D7a en el kit: `PaginaKapiAdmin`, `PaginaPalabraAdmin`, `PaginaBolitasAdmin`; adaptadores con pruebas | `paginas/admin/Juegos.jsx`, `adaptadoresAdmin.js` |

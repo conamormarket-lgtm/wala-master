@@ -1,0 +1,115 @@
+/* ── D8b · WhatsApp y el historial ────────────────────── */
+.pagina {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+.pagina > header {
+  margin-bottom: 0;
+}
+
+.nota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.etiqueta {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.pestanas {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pestanas::-webkit-scrollbar {
+  display: none;
+}
+
+/* WhatsApp */
+.whatsapp {
+  display: grid;
+  gap: 1rem;
+  max-width: 44rem;
+}
+
+.enlace {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+}
+
+/* El mensaje como globo de chat: verde suave, como lo ve quien lo recibe. */
+.burbuja {
+  display: grid;
+  gap: 0.25rem;
+  justify-self: start;
+  max-width: min(100%, 26rem);
+  padding: 0.6rem 0.8rem;
+  border-radius: 14px 14px 14px 4px;
+  background: #dcf8c6;
+  color: #111b21;
+}
+
+.burbuja .etiqueta {
+  color: #3b6b2a;
+}
+
+.burbuja p {
+  margin: 0;
+  font-size: 0.88rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+:global([data-theme='dark']) .burbuja {
+  background: #005c4b;
+  color: #e9edef;
+}
+
+:global([data-theme='dark']) .burbuja .etiqueta {
+  color: #a7e3c4;
+}
+
+/* El historial */
+.cuando {
+  display: grid;
+}
+
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sube,
+.baja,
+.igual {
+  font-size: 0.84rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sube {
+  color: var(--verde-exito-hover);
+}
+
+.baja {
+  color: var(--danger-hover);
+}
+
+.igual {
+  color: var(--color-text-muted);
+}

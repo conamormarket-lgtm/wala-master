@@ -754,3 +754,30 @@ test('configuración: el equipo, los bloqueos, las imágenes y los idiomas', () 
   assert.equal(m2.textoResultadoImagenes({ convertidas: 4, documentos: 2, saltadas: 1 }), '4 imágenes convertidas en 2 documentos; 1 se dejó como estaba (ya estaba bien o el WebP no la mejoraba).');
   assert.deepEqual(m2.traduccionesPorIdioma({ en: 12, pt: 0, fr: 2 }), [{ idioma: 'en', nombre: 'Inglés', cuantas: 12 }, { idioma: 'fr', nombre: 'FR', cuantas: 2 }]);
 });
+
+test('whatsapp: los números, el general, los errores y el mensaje del pedido', () => {
+  const c = m2.whatsappDesdeMensajes({ whatsapp_number: '+51 900 000 001', whatsapp_number_crear: ' 987 654 321 ', whatsapp_mostrar_en_acceso: 'si' });
+  assert.deepEqual(c, { tienda: '+51 900 000 001', crear: '987 654 321', cuenta: '', mensajePedido: m2.MENSAJE_PEDIDO_POR_DEFECTO, enAcceso: true });
+  const g = m2.whatsappAMensajes({ ...c, enAcceso: false });
+  assert.deepEqual([g.whatsapp_number, g.whatsapp_number_tienda, g.whatsapp_mostrar_en_acceso, 'whatsapp_text_crear' in g], ['+51 900 000 001', '+51 900 000 001', 'no', false]);
+  assert.equal(m2.telefonoEscrito('+51 (987) abc-654'), '+51 (987) -654');
+  const e = m2.erroresDeWhatsApp({ tienda: '', crear: '98765', cuenta: '' });
+  assert.deepEqual([Boolean(e.tienda), e.crear, e.cuenta], [true, 'Revisa el número: tiene 5 dígitos.', undefined]);
+  assert.equal(m2.mensajePedidoDeEjemplo('Pedido {id} y {id}', 'X'), 'Pedido X y X');
+});
+
+test('historial: la versión actual de cada página, el stock y el CSV', () => {
+  const cambios = [
+    { id: 'a', timestamp: '2026-11-02T15:00:00.000Z', description: 'Guardado desde el Editor Visual (Página: tienda)', config: {} },
+    { id: 'b', timestamp: '2026-11-01T15:00:00.000Z', pageId: 'home' },
+    { id: 'c', timestamp: '2026-10-30T15:00:00.000Z', pageId: 'tienda' },
+  ].map(m2.cambioDisenoDesde);
+  assert.equal(cambios[0].pagina, 'tienda');
+  assert.equal(cambios[0].cuando, Date.parse('2026-11-02T15:00:00.000Z'));
+  assert.deepEqual(m2.conVersionActual(cambios).map((x) => x.actual), [true, true, false]);
+  assert.equal(m2.nombreDePaginaGuardada('home'), 'Página principal');
+  assert.equal(m2.nombreDePaginaGuardada('promo-navidad'), '/promo-navidad');
+  const mov = m2.movimientoInventarioDesde({ id: 'i', timestamp: Date.parse('2026-11-02T20:05:00Z'), productName: 'Polo "Kapi", talla M', oldStock: 5, newStock: 2 });
+  assert.deepEqual([mov.cambio, mov.quien, m2.textoCambioStock(mov.cambio), m2.textoCambioStock(3)], [-3, 'Desconocido', '−3', '+3']);
+  assert.equal(m2.csvInventario([mov]).split('\n')[1], '02/11/2026,15:05,Desconocido,"Polo ""Kapi"", talla M",5,2,-3');
+});

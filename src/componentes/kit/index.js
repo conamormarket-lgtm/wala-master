@@ -112,6 +112,7 @@ export { PaginaLandingsAdmin, PaginaTemasAdmin } from './paginas/admin/Paginas';
 export { PaginaKapiAdmin, PaginaPalabraAdmin, PaginaBolitasAdmin } from './paginas/admin/Juegos';
 export { PaginaRuletaAdmin } from './paginas/admin/Ruleta';
 export { PaginaConfiguracionAdmin } from './paginas/admin/Configuracion';
+export { PaginaWhatsAppAdmin, PaginaHistorialAdmin } from './paginas/admin/Ajustes';
 export { TarjetaEnvio, EsqueletoEnvio } from './piezas/admin/Pedidos';
 export { PaginaRecepcion } from './paginas/admin/Pedidos';
 export { PaginaPagos } from './paginas/admin/Pagos';
@@ -159,4 +160,6 @@ export {
   erroresDePremioRuleta, motivoRuletaHoy, ganadoRuletaDesde,
   PERMISOS_ADMIN, adminDesdeFirestore, adminAFirestore, erroresDeAdmin, textoPermisos, PAGINAS_FIJAS, paginasBloqueables, conBloqueo,
   textoConteoImagenes, textoResultadoImagenes, NOMBRES_IDIOMA, traduccionesPorIdioma,
+  MENSAJE_PEDIDO_POR_DEFECTO, SECCIONES_WHATSAPP, whatsappDesdeMensajes, whatsappAMensajes, telefonoEscrito, erroresDeWhatsApp, mensajePedidoDeEjemplo,
+  cambioDisenoDesde, conVersionActual, nombreDePaginaGuardada, movimientoInventarioDesde, textoCambioStock, csvInventario,
 } from './adaptadoresAdmin';

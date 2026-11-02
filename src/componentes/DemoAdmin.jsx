@@ -20,6 +20,7 @@ import {
   PaginaKapiAdmin, PaginaPalabraAdmin, PaginaBolitasAdmin, palabraDiaDesde, patrocinioDesde, premiosBolitasDesde,
   PaginaRuletaAdmin, premioRuletaAFirestore, ganadoRuletaDesde,
   PaginaConfiguracionAdmin, adminDesdeFirestore, adminAFirestore, paginasBloqueables, conBloqueo,
+  PaginaWhatsAppAdmin, PaginaHistorialAdmin, whatsappDesdeMensajes, whatsappAMensajes, cambioDisenoDesde, conVersionActual, movimientoInventarioDesde,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -92,6 +93,8 @@ const HECHAS = [
   ['/admin/bolitas', 'Bolitas'],
   ['/admin/ruleta', 'Ruleta'],
   ['/admin/configuracion', 'Configuración'],
+  ['/admin/whatsapp', 'WhatsApp'],
+  ['/admin/backups', 'Historial'],
   ['/admin/crear-cuentas-pedidos', 'Cuentas'],
   ['/admin/categorias', 'Categorías'],
   ['/admin/colecciones', 'Colecciones'],
@@ -635,6 +638,23 @@ const ADMINS_DEMO = [
   { id: 'diego.ramos@gmail.com', email: 'diego.ramos@gmail.com', name: 'Diego Ramos', permissions: ['manage_products', 'manage_inventory', 'manage_landing_pages'] },
   { id: 'almacen.wala@gmail.com', email: 'almacen.wala@gmail.com', permissions: ['manage_inventory'] },
 ].map(adminDesdeFirestore);
+// D8b: los números guardados (Crear vacío: usa el de la tienda), las copias del editor y los cambios de stock.
+const WHATSAPP_DEMO = whatsappDesdeMensajes({ whatsapp_number_tienda: '987 654 321', whatsapp_number_cuenta: '+51 912 345 678', whatsapp_mostrar_en_acceso: 'no' });
+const horasAtras = (h) => new Date(Date.now() - h * 3600000).toISOString();
+const COPIAS_DEMO = [
+  { id: 'log1', timestamp: horasAtras(2), pageId: 'home', user: 'Admin', description: 'Guardado desde el Editor Visual (Página: home)', config: { sections: [] } },
+  { id: 'log2', timestamp: horasAtras(26), pageId: 'promo-navidad', user: 'Admin', description: 'Guardado desde el Editor Visual (Página: promo-navidad)', config: { sections: [] } },
+  { id: 'log3', timestamp: horasAtras(30), pageId: 'home', user: 'Admin', description: 'Guardado desde el Editor Visual (Página: home)', config: { sections: [] } },
+  { id: 'log4', timestamp: horasAtras(75), pageId: 'tienda', user: 'Admin', description: 'Guardado desde el Editor Visual (Página: tienda)', config: { sections: [] } },
+  { id: 'log5', timestamp: horasAtras(170), pageId: 'home', user: 'Admin', description: 'Guardado desde el Editor Visual (Página: home)', config: { sections: [] } },
+].map(cambioDisenoDesde);
+const MOVIMIENTOS_DEMO = [
+  [1, 12, 10, 'diego.ramos@gmail.com'], [3, 0, 24, 'almacen.wala@gmail.com'], [6, 5, 4, 'diego.ramos@gmail.com'],
+  [30, 8, 15, 'almacen.wala@gmail.com'], [52, 3, 1, 'mariela.torres@gmail.com'], [80, 20, 20, 'diego.ramos@gmail.com'],
+].map(([h, antes, despues, quien], i) => movimientoInventarioDesde({
+  id: `inv${i}`, timestamp: Date.now() - h * 3600000, productId: TIENDA.productos[i % TIENDA.productos.length].id,
+  productName: TIENDA.productos[i % TIENDA.productos.length].name, oldStock: antes, newStock: despues, userEmail: quien,
+}));
 const IMAGENES_DEMO = { diseno: { imagenes: 4, documentos: 3, apariciones: 6 }, productos: { imagenes: 37, documentos: 21, apariciones: 37 } };
 const RECOMPENSAS_DEMO = [
   { title: 'Pack de stickers Kapi', description: 'Seis stickers para tu laptop o celular.', cost: 120, tipo: 'manual', value: 'Sale del cajón de mercancía', imageUrl: '/assets/kapi/kapi-happy.webp' },
@@ -797,6 +817,9 @@ function PanelDePrueba() {
   const imagenesPendientes = useRef(IMAGENES_DEMO); // un ref: revisar justo después de convertir lee lo nuevo
   const traduccionesDemo = useRef({ en: 14, pt: 3 });
   const [configPestana, setConfigPestana] = useState('equipo');
+  const [whatsappDemo, setWhatsappDemo] = useState(WHATSAPP_DEMO);
+  const [copias, setCopias] = useState(COPIAS_DEMO);
+  const [historialPestana, setHistorialPestana] = useState('diseno');
   const [landings, guardarLandingCruda, eliminarLanding] = useListaDemo(LANDINGS_DEMO, falla);
   const [temas, guardarTemaCrudo, eliminarTema, setTemas] = useListaDemo(TEMAS_DEMO, falla);
   const [encuesta, setEncuesta] = useState(ENCUESTA_DEMO);
@@ -1377,6 +1400,37 @@ function PanelDePrueba() {
         subirImagen={subir}
         onGuardar={(datos, id) => guardarRecompensaCruda(recompensaAdminDesdeFirestore({ id, ...recompensaAdminAFirestore(datos) }), id)}
         onEliminar={eliminarRecompensa}
+      />
+    );
+  } else if (rutaSola === '/admin/whatsapp') {
+    pagina = (
+      <PaginaWhatsAppAdmin
+        cargando={con('cargando')}
+        error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+        onReintentar={comunes.onReintentar}
+        config={whatsappDemo}
+        onGuardar={async (c) => { await espera(600); fallar(); setWhatsappDemo(whatsappDesdeMensajes(whatsappAMensajes(c))); }}
+      />
+    );
+  } else if (rutaSola === '/admin/backups') {
+    pagina = (
+      <PaginaHistorialAdmin
+        pestana={historialPestana}
+        onPestana={setHistorialPestana}
+        cambios={vacio ? [] : conVersionActual(copias)}
+        cargando={con('cargando')}
+        error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+        onReintentar={comunes.onReintentar}
+        onRestaurar={async (x) => {
+          await espera(700);
+          fallar();
+          // Como el conector: restaurar deja su propia copia, así la de arriba sigue siendo la puesta.
+          setCopias((l) => [cambioDisenoDesde({ id: `log-${Date.now()}`, timestamp: new Date().toISOString(), pageId: x.pagina, user: 'Admin', description: 'Restaurada desde el historial', config: x.config }), ...l]);
+        }}
+        movimientos={vacio ? [] : MOVIMIENTOS_DEMO}
+        cargandoMovimientos={con('cargando')}
+        errorMovimientos={con('error') ? 'No se pudieron leer los cambios de stock (es una prueba).' : undefined}
+        onReintentarMovimientos={comunes.onReintentar}
       />
     );
   } else if (rutaSola === '/admin/configuracion') {

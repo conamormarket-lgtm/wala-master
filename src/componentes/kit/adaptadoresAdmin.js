@@ -3037,3 +3037,112 @@ export const NOMBRES_IDIOMA = { en: 'Inglés', pt: 'Portugués', es: 'Español' 
 export const traduccionesPorIdioma = (pendientes = {}) => Object.entries(pendientes)
   .filter(([, n]) => Number(n) > 0)
   .map(([idioma, n]) => ({ idioma, nombre: NOMBRES_IDIOMA[idioma] || idioma.toUpperCase(), cuantas: Number(n) }));
+
+/* ── D8b · WhatsApp y el historial ────────────────────── */
+
+/*
+ * Los números de WhatsApp (messages). El botón flotante usa el de su
+ * sección o, vacío, el general (whatsapp_number, que es el de la tienda); las
+ * marcas y los productos con número propio mandan sobre estos. El checkout
+ * usa el de la tienda y su mensaje con {id}. Los mensajes de Crear y Mi
+ * cuenta (whatsapp_text_crear / _cuenta) ya no los lee nadie: no se tocan.
+ */
+export const MENSAJE_PEDIDO_POR_DEFECTO = 'Solicitud de Pedido\n\nHola! Vengo de la tienda virtual y quiero confirmar mi pedido con código {id}.';
+
+export const SECCIONES_WHATSAPP = [
+  { clave: 'tienda', titulo: 'La tienda y el checkout', donde: 'La tienda, las fichas de producto y la confirmación del pedido.' },
+  { clave: 'crear', titulo: 'Crear', donde: 'Personalizar y el editor de diseños.' },
+  { clave: 'cuenta', titulo: 'Mi cuenta', donde: 'Mi cuenta, mis pedidos y el carrito.' },
+];
+
+/** Los mensajes guardados → la página. */
+export function whatsappDesdeMensajes(m = {}) {
+  const t = (k) => String(m[k] ?? '').trim();
+  return {
+    tienda: t('whatsapp_number_tienda') || t('whatsapp_number'),
+    crear: t('whatsapp_number_crear'),
+    cuenta: t('whatsapp_number_cuenta'),
+    mensajePedido: m.whatsapp_text_tienda || MENSAJE_PEDIDO_POR_DEFECTO,
+    enAcceso: m.whatsapp_mostrar_en_acceso === 'si',
+  };
+}
+
+/** La página → los mensajes (las claves de antes; el general sigue al de la tienda). */
+export function whatsappAMensajes(c = {}) {
+  const t = (v) => String(v ?? '').trim();
+  return {
+    whatsapp_number_tienda: t(c.tienda),
+    whatsapp_number_crear: t(c.crear),
+    whatsapp_number_cuenta: t(c.cuenta),
+    whatsapp_text_tienda: c.mensajePedido || '',
+    whatsapp_mostrar_en_acceso: c.enAcceso ? 'si' : 'no',
+    whatsapp_number: t(c.tienda),
+  };
+}
+
+/** Mientras se escribe: solo números, espacios, +, - y paréntesis. */
+export const telefonoEscrito = (v) => String(v || '').replace(/[^\d\s\-()+]/g, '');
+
+/** Los errores: un número tiene de 9 a 15 dígitos (o va vacío); la tienda no puede ir vacía. */
+export function erroresDeWhatsApp(c = {}) {
+  const revisar = (v, obligatorio) => {
+    const n = String(v || '').replace(/\D/g, '').length;
+    if (!n) return obligatorio ? 'La tienda necesita un número: es el que usan el checkout y las demás secciones vacías.' : undefined;
+    return n < 9 || n > 15 ? `Revisa el número: tiene ${n} dígito${n === 1 ? '' : 's'}.` : undefined;
+  };
+  return { tienda: revisar(c.tienda, true), crear: revisar(c.crear), cuenta: revisar(c.cuenta) };
+}
+
+/** El mensaje del pedido como lo verá el cliente (con un código de ejemplo). */
+export const mensajePedidoDeEjemplo = (texto, id = 'WL-48213') => String(texto || '').replaceAll('{id}', id);
+
+/*
+ * El historial del diseño (storeConfigLogs): el editor guarda una copia en
+ * cada guardado, así que la más nueva de cada página es la que está puesta.
+ */
+export function cambioDisenoDesde(log = {}) {
+  const ms = typeof log.timestamp === 'number' ? log.timestamp : Date.parse(log.timestamp) || 0;
+  const pagina = log.pageId || String(log.description || '').match(/Página: ([^)]+)\)/)?.[1] || 'home';
+  return { id: log.id, cuando: ms, quien: log.user || 'Admin', pagina, descripcion: log.description || 'Guardado', config: log.config || null };
+}
+
+/** Marca la más nueva de cada página (`actual`); llegan de la más nueva a la más vieja. */
+export function conVersionActual(cambios = []) {
+  const vistas = new Set();
+  return cambios.map((c) => {
+    const actual = !vistas.has(c.pagina);
+    vistas.add(c.pagina);
+    return { ...c, actual };
+  });
+}
+
+/** "Página principal" · "La tienda" · el slug de una landing. */
+export const nombreDePaginaGuardada = (id) => PAGINAS_FIJAS.find((p) => p.id === id)?.nombre || `/${id}`;
+
+/** Un cambio de stock (inventoryLogs) → la lista. */
+export function movimientoInventarioDesde(log = {}) {
+  const antes = Number(log.oldStock) || 0;
+  const despues = Number(log.newStock) || 0;
+  return {
+    id: log.id, cuando: Number(log.timestamp) || 0, quien: log.userEmail || 'Desconocido',
+    producto: log.productName || 'Producto', productoId: log.productId || '', antes, despues, cambio: despues - antes,
+  };
+}
+
+/** "+3" · "−2" · "0". */
+export const textoCambioStock = (n) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : '0');
+
+/** Los movimientos en CSV (con la hora de Lima; las comillas, escapadas). */
+export function csvInventario(movimientos = []) {
+  const celda = (v) => {
+    const s = String(v ?? '');
+    return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const fecha = (ms, opciones) => new Date(ms).toLocaleString('es-PE', { timeZone: 'America/Lima', ...opciones });
+  const filas = movimientos.map((m) => [
+    fecha(m.cuando, { year: 'numeric', month: '2-digit', day: '2-digit' }),
+    fecha(m.cuando, { hour: '2-digit', minute: '2-digit', hour12: false }),
+    m.quien, m.producto, m.antes, m.despues, m.cambio,
+  ].map(celda).join(','));
+  return [['Fecha', 'Hora', 'Usuario', 'Producto', 'Stock anterior', 'Stock nuevo', 'Cambio'].join(','), ...filas].join('\n');
+}
