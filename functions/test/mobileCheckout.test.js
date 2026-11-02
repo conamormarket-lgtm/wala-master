@@ -171,3 +171,19 @@ test('regalo: rechaza datos incompletos, largos o un sticker inventado; cambia l
   assert.equal(mobile.identity({ ...input(), gift: null }, 'a').hash, plain.hash);
   assert.notEqual(mobile.identity({ ...input(), gift: ok }, 'a').hash, plain.hash);
 });
+test('tal cual: una prenda con seVendeTalCual en la tienda se compra con la talla de su color; sin eso sigue siendo solo de Crear', async () => {
+  const prenda = { name: 'Billetera', price: 59.9, esPrendaBase: true, seVendeTalCual: true, enTienda: true, brandId: 'yoryo',
+    variants: [{ id: 'negro', name: 'Negro', sizes: [] }, { id: 'cafe', name: 'Café', sizes: ['Única'] }], prendaBase: { tallas: ['S', 'M'] } };
+  const readRaw = (extra = {}) => async (ids) => new Map(ids.map((id) => [id, { ...prenda, ...extra }]));
+  const order = (variantId, size) => ({ ...input(), items: [{ productId: 'billetera', quantity: 1, selection: { variantId, size, pieces: {} } }], expectedTotal: 74.9 });
+  const result = await mobile.build(order('negro', 'M'), 'a', readRaw());
+  assert.equal(result.payload.productos.item_0.color, 'Negro'); assert.equal(result.payload.productos.item_0.talla, 'M');
+  assert.equal(result.payload.productos.item_0.personalizado, false); assert.equal(result.payload.productos.item_0.brandId, 'yoryo');
+  assert.equal((await mobile.build(order('cafe', 'Única'), 'a', readRaw())).payload.montoTotal, 74.9);
+  await assert.rejects(mobile.build(order('cafe', 'M'), 'a', readRaw()));
+  await assert.rejects(mobile.build(order('negro', 'M'), 'a', readRaw({ seVendeTalCual: false })));
+  await assert.rejects(mobile.build(order('negro', 'M'), 'a', readRaw({ enTienda: false })));
+  await assert.rejects(mobile.build(order('negro', 'M'), 'a', readRaw({ inStock: 0 })));
+  assert.equal(mobile.talCual({ ...prenda, inStock: '' }).inStock, true);
+  assert.deepEqual(mobile.talCual(prenda).variants[0].sizes, ['Única', 'S', 'M']);
+});

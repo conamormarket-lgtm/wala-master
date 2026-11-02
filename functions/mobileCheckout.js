@@ -197,6 +197,21 @@ async function comboLines(rows, uid, read, readDesigns) {
   });
 }
 
+// Una prenda de Crear que también se vende tal cual (seVendeTalCual con "También en la tienda", como la billetera de
+// Yoryo): se compra como un producto de la tienda, con la talla de su color. Se lee con la forma de uno (mapProduct no
+// vende prendas) y con las reglas de Crear: un stock vacío es "sin límite" y un color sin tallas usa las de la prenda,
+// como tallasDePrenda de cartValidation.js, que es quien revisa la línea al preparar el pago.
+function talCual(raw) {
+  if (!raw || raw.esPrendaBase !== true || raw.seVendeTalCual !== true || raw.enTienda !== true || raw.visible === false || raw.deleted === true) return raw;
+  const textos = (list) => (Array.isArray(list) ? list : []).map((t) => String(t == null ? '' : t).trim()).filter(Boolean);
+  const variants = Array.isArray(raw.variants) ? raw.variants : [];
+  const prenda = raw.prendaBase && typeof raw.prendaBase === 'object' ? raw.prendaBase : {};
+  const todas = [...new Set([...variants.flatMap((v) => textos(v && v.sizes)), ...textos(prenda.tallas), ...textos(raw.mainSizes)])];
+  return { ...raw, esPrendaBase: false, hasVariants: variants.length > 0,
+    inStock: raw.inStock == null || raw.inStock === '' ? true : raw.inStock,
+    variants: variants.map((v) => (v && textos(v.sizes).length ? v : { ...v, sizes: todas })) };
+}
+
 async function build(input, uid, read, readDesigns = async () => new Map()) {
   const key = identity(input, uid);
   if (!Array.isArray(input.items) || !input.items.length || input.items.length > 100) fail('Revisa los productos del carrito.');
@@ -209,7 +224,7 @@ async function build(input, uid, read, readDesigns = async () => new Map()) {
   const ids = [...new Set(catalogRows.map((item) => item && item.productId))];
   if (ids.some((id) => !validId(id))) fail('Un producto no es válido.');
   const roots = ids.length ? await read(ids) : new Map();
-  const products = new Map(ids.map((id) => [id, roots.get(id) ? mapProduct(id, roots.get(id)) : null]));
+  const products = new Map(ids.map((id) => [id, roots.get(id) ? mapProduct(id, talCual(roots.get(id))) : null]));
   const componentIds = [...new Set([...products.values()].flatMap((p) => p?.combo?.pieces.map((piece) => piece.productId) || []))];
   if (componentIds.length > 200 || componentIds.some((id) => !validId(id))) fail('Revisa las piezas del pedido.');
   const rawComponents = componentIds.length ? await read(componentIds) : new Map();
@@ -348,4 +363,4 @@ function threeDS(data) {
   }
   return out;
 }
-module.exports = { CONTRACT, identity, build, shipping, view, threeDS, couponCode, coinsOf, giftOf, GIFT_STICKERS, repartirPrecio };
+module.exports = { CONTRACT, identity, build, shipping, view, threeDS, couponCode, coinsOf, giftOf, GIFT_STICKERS, repartirPrecio, talCual };
