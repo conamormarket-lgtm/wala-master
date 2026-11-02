@@ -196,6 +196,50 @@ test('ficha: lo que falta antes de guardar', () => {
   assert.equal(m2.erroresDeFicha({ ...f, nombre: 'x', precio: 10, esCombo: true }).piezas.pestana, 'colores');
 });
 
+test('crear: un personalizable con sus cuentas y los packs que lo usan', () => {
+  const prenda = {
+    id: 'h', name: 'Hoodie', variants: [{ id: 'v1', imageUrl: '' }, { id: 'v2' }], defaultVariantId: 'v1', enTienda: true, seVendeTalCual: true,
+    prendaBase: { vistas: [{ id: 'f', imagen: 'f.png', zonas: [{}, {}] }, { id: 'e', imagen: '', zona: {} }], plantillas: [{ id: 'p', capas: { f: [{}] } }, { id: 'vacia', capas: {} }] },
+  };
+  const packs = [{ id: 'c1', name: 'Pareja', comboCrear: { publicado: true, piezas: [{ prendaId: 'h' }, { prendaId: 'h' }] } }, { id: 'c2', deleted: true, comboCrear: { piezas: [{ prendaId: 'h' }] } }];
+  const r = m2.personalizableDesde(prenda, packs);
+  assert.equal(r.foto, 'f.png');
+  assert.deepEqual([r.colores, r.vistas, r.zonas, r.plantillas], [2, 2, 3, 1]);
+  assert.equal(r.faltanZonas, true);
+  assert.equal(r.talCual, true);
+  assert.deepEqual(r.packs, [{ id: 'c1', nombre: 'Pareja', publicado: true }]);
+});
+
+test('crear: un pack de ida y vuelta, y lo que le falta', () => {
+  const doc = { id: 'c', name: 'Trío', price: 150, salePrice: 0, brandId: 'm', categories: ['k'], mainImage: 'img', enTienda: true, comboCrear: { publicado: true, tallas: 'una', piezas: [{ prendaId: 'a', nombre: 'Polo', imagen: 'x' }, { prendaId: 'b', fija: true, color: { id: '1', nombre: 'Negro', hex: '#000' } }] } };
+  const k = m2.packDesdeFirestore(doc);
+  assert.equal(k.tallas, 'una');
+  assert.equal(k.oferta, '');
+  assert.deepEqual(m2.packAGuardar(k).piezas, [{ prendaId: 'a' }, { prendaId: 'b', fija: true, color: { id: '1', nombre: 'Negro', hex: '#000' } }]);
+  assert.equal(m2.packAGuardar(k).salePrice, '');
+  assert.deepEqual(Object.keys(m2.erroresDePack(k)), []);
+  assert.ok(m2.erroresDePack({ ...k, piezas: [k.piezas[1], k.piezas[1]] }).piezas.includes('diseñarse'));
+  assert.ok(m2.erroresDePack({ ...k, piezas: [k.piezas[0]] }).piezas.includes('al menos'));
+  assert.ok(m2.erroresDePack({ ...k, piezas: [k.piezas[0], { prendaId: 'b', fija: true, color: null }] }).piezas.includes('color'));
+});
+
+test('crear: la ficha de un personalizable guarda su prendaBase y su stock sin límite', () => {
+  const original = { id: 'h', name: 'Hoodie', price: 90, esPrendaBase: true, inStock: null, enTienda: true, seVendeTalCual: false, variants: [{ id: 'v1', name: 'Negro', imageUrl: '' }], prendaBase: { vistas: [{ id: 'f', imagen: 'f.png', zonas: [{ id: 'z' }] }], colores: {} } };
+  const f = m2.fichaDesdeProducto(original);
+  assert.equal(f.esPrenda, true);
+  assert.equal(f.stock, '');
+  const p = m2.fichaAProducto(f, original, { prendaBaseParaGuardar: (pb, vs) => ({ limpia: true, vistas: pb.vistas.length, colores: vs.length }) });
+  assert.equal(p.esPrendaBase, true);
+  assert.deepEqual(p.prendaBase, { limpia: true, vistas: 1, colores: 1 });
+  assert.equal(p.inStock, null);
+  assert.equal(p.variants[0].imageUrl, 'f.png');
+  assert.equal(p.personalizarEn, '');
+  assert.equal(p.enTienda, true);
+  assert.equal(p.seVendeTalCual, false);
+  assert.equal(m2.erroresDeFicha({ ...f, prenda: { vistas: [{ id: 'f', imagen: '', zonas: [] }] } }).vistas.pestana, 'diseno');
+  assert.equal(m2.erroresDeFicha(f).vistas, undefined);
+});
+
 test('productos: oculto, archivado y precio de oferta', () => {
   assert.equal(m2.productoAdminDesde({ id: 'p', deleted: true }), null);
   const p = m2.productoAdminDesde({ id: 'p', name: 'Polo', price: 50, salePrice: 40, visible: false, images: ['i'] });

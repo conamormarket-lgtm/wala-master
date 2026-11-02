@@ -227,7 +227,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 |---|---|---|---|---|---|
 | D0 | Marco | el menú (`AdminLayout`), la cabecera de cada página, el inicio (`/admin`, `AdminDashboard`) | — | hecho (2026-11-02) | · |
 | D1 | Catálogo base | `categorias`, `colecciones`, `atributos-catalogo`, `marcas` (+ productos de la marca), `envios`, `cliparts`, `destacados` | Lista | hecho (2026-11-02) | · |
-| D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | en marcha (D2a y D2b, 2026-11-02) | · |
+| D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | en marcha (D2a, D2b y D2c, 2026-11-02) | · |
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | · | · |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | · | · |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | · | · |
@@ -432,7 +432,7 @@ mismo de `utils/topeMonedas` (y su espejo en `functions/checkoutTotals.js`);
 eliminar una marca borra su landing (`deleteBrand`); `storeTitle` y
 `storeSubtitle` no se escriben (se conservan).
 
-## D2 · Productos (en marcha: D2a y D2b hechos en el kit el 2026-11-02)
+## D2 · Productos (en marcha: D2a, D2b y D2c hechos en el kit el 2026-11-02)
 
 D2 es el apartado más grande (la ficha sola tiene 1.881 líneas y se apoya
 en editores de otras 3.000). Se hace por tramos; el apartado se une entero
@@ -442,7 +442,7 @@ cuando estén los cuatro.
 |---|---|---|---|
 | D2a | La lista, el inventario y los datos para recomendar | `pages/Tienda/admin/AdminProductos.jsx` (vistas Tienda y Todos), `ProductTable`, `BulkActions`, `pages/Tienda/admin/AdminInventario.jsx`, `pages/admin/AdminPublicoProductos.jsx` | hecho (2026-11-02) |
 | D2b | La ficha de un producto: general (precio, stock, descripción, organización, WhatsApp, destacado), colores y tallas (variantes con sus fotos, el encuadre 3:4, la galería, frente y espalda), un combo (sus piezas y su portada) y "Dónde se ve" (personalizar en Crear) | `pages/Tienda/admin/AdminProductoFormV2.jsx`, `AdminComboEditor`, `ThumbnailCropEditor`, `GenerarFrenteEspalda`, `PersonalizarEnCrear` | hecho (2026-11-02) |
-| D2c | Crear: la lista de personalizables, su ficha (colores, diseño con vistas y zonas, plantillas, dónde se ve) y los packs (lista, formulario y "Sugerir combos") | `pages/admin/AdminPrendasCrear.jsx`, `prendasCrear/PersonalizacionPrenda.jsx`, `ZonaEditor.jsx`, `PlantillasDeLaFicha.jsx`, `AdminCombosCrear.jsx` | · |
+| D2c | Crear: la lista de personalizables, su ficha (colores, diseño con vistas y zonas, plantillas, dónde se ve) y los packs (lista, formulario y "Sugerir combos") | `pages/admin/AdminPrendasCrear.jsx`, `prendasCrear/PersonalizacionPrenda.jsx`, `ZonaEditor.jsx`, `PlantillasDeLaFicha.jsx`, `AdminCombosCrear.jsx` | hecho (2026-11-02) |
 | D2d | Blueprints (una lista más, sobre la plantilla) y decidir qué pasa con las herramientas de una vez y lo viejo (abajo) | `pages/admin/AdminBlueprints.jsx`, `plantillasYoryo/ImportarPlantillasYoryo.jsx` | · |
 
 **Para D2d**
@@ -605,6 +605,83 @@ hacía AdminProductoFormV2:
 - `?brandId=` elige la marca solo en uno nuevo; `?pestana=` va por
   `pestanaInicial` / `onPestana`.
 
+### D2c: Crear (en el kit desde el 2026-11-02)
+
+![La pestaña Diseño de un personalizable: la prenda teñida con sus zonas, la línea de 58 cm y la lista de zonas en cm](admin-crear-diseno.webp)
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| Personalizables | `PaginaPersonalizables` | `paginas/admin/Crear.jsx` | La pestaña de Productos (`embebido`): Todos · Publicados · Borradores; foto, cuántos colores, vistas, zonas y plantillas, "Le faltan vistas con zonas", en qué packs está, En Crear / Borrador y En la tienda; Editar, Verlo en Crear, Publicar / Volver a borrador (al momento, vuelve si falla), Archivar (pregunta y dice qué packs publicados la usan) |
+| Packs | `PaginaPacks` | `paginas/admin/Crear.jsx` | La lista (piezas, precio, tallas, estado) y la hoja: nombre, descripción, marca, categoría (de esa marca), portada; 2 a 4 piezas, cada una "Se diseña" (una prenda de Crear y el color en que abre) o "Va tal cual" (un producto de la tienda y su color); "Agregar prenda" copia la última; las tallas (Automático · Una por prenda · Una para todas, con su explicación); precio y oferta con **lo que cuestan por separado y lo que se ahorra**; publicado y en la tienda. "Sugerir packs": pareja y trío de cada prenda, con nombre y precio editables, cuáles crear y "Publicarlos de una vez" |
+| Ficha de un personalizable | `PaginaFichaProducto` con `datos.esPrenda` | `paginas/admin/Ficha.jsx` | General (sin "Cómo se vende"; stock vacío = sin límite) · Colores y fotos · Diseño · Plantillas · Dónde se ve (publicado en Crear, también en la tienda, también tal cual, el aviso si su color principal no tiene foto de tienda) |
+| Diseño | `DisenoPrenda` | `piezas/admin/Crear.jsx` | Prenda o producto, impresión o láser, solo con plantillas, portada en Crear; "Ver en" un color; cada vista con su nombre, foto, borde encima, la medida de referencia (cm y cuadrícula de 5 cm) y sus zonas (`EditorZonas` + `ListaZonas`); "Agregar vista" (Frente, Espalda…); "Usar el hoodie de ejemplo"; las zonas de los bicolores (de todos y propias de un color, copiar las heredadas o volver a ellas) |
+| El editor de zonas | `EditorZonas`, `ListaZonas` | `piezas/admin/Crear.jsx` | El de `ZonaEditor`: la foto teñida en un lienzo, mover, estirar por el borde derecho, el de abajo o la esquina (sobre los ejes de una zona girada), la línea naranja con Shift, la medida en cm de la zona elegida; **ahora también con las flechas**. La lista: nombre con sugerencias, ancho y alto en cm (si hay escala, se confirman al salir), giro, esquinas, quitar, agregar |
+| Colores | `ColoresPrenda` | `piezas/admin/Crear.jsx` | "Colores de polera (S–XL)"; por color: bicolor (segundo tono con `CampoColor`, cómo se reparten), "Agregar versión invertida" (fotos en espejo), el aviso si le falta la foto en una vista, la foto de tienda (subir o "Con una plantilla") y la foto propia de cada vista con su miniatura teñida |
+| Plantillas | `PlantillasPrenda` | `piezas/admin/Crear.jsx` | Se guardan al momento (como antes): por grupo, renombrar, cambiar de grupo (elegir o escribir uno), editar en el estudio, quitar (pregunta), "Nueva plantilla" y "Traer de otro" (elegir el producto y cuáles); sin guardar el producto, avisa que primero hay que guardarlo |
+
+Las reglas son las de `utils/prendaBase` (normalizar zonas y vistas,
+medir en cm, teñir, `leerPrendaBase`, `colorDisponible`): el kit las
+importa, no las copia. **`prendaBaseParaGuardar` pasó de
+`PersonalizacionPrenda.jsx` a `utils/prendaBase.js`** (el archivo viejo la
+reexporta: AdminProductoFormV2 no cambió) para que el kit la use sin cargar
+Firebase. Adaptadores (con pruebas): `personalizableDesde`,
+`packDesdeFirestore`, `packAGuardar`, `erroresDePack`, `MODOS_TALLA_PACK`;
+`fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` saben de
+personalizables (prendaBase, stock sin límite, la foto de la primera vista
+para un color sin foto, `enTienda` y `seVendeTalCual`, "cada vista necesita
+su foto y una zona" en la pestaña Diseño).
+
+### Diferencias a propósito (D2c)
+
+- **Quitar una vista pregunta** (antes se iba con un toque); quitar las
+  zonas de un bicolor usa `Confirmar` (antes `window.confirm`); los errores
+  de subida y de la foto con plantilla salen en toasts (antes `alert`).
+- Las zonas se mueven también con las flechas (Shift, más rápido).
+- El grupo de una plantilla se elige con la lista de Walá (antes
+  react-select).
+- "Sugerir packs" se abre en una hoja; el resto del flujo es el mismo.
+
+### Qué se probó (2026-11-02, demo en localhost)
+
+- Personalizables: las 4 prendas de la copia con sus cuentas y sus packs;
+  la Polera clásica abre con sus 14 colores, el stock "Sin límite" y las
+  cinco pestañas.
+- Diseño: las dos vistas teñidas con sus zonas, la línea de 58 cm y las
+  zonas de los bicolores (cuatro editores); mover una zona con la flecha
+  marca "Cambios sin guardar".
+- Colores: "Agregar versión invertida" de Panda crea "Panda (al revés)";
+  guardar → "Cambios guardados".
+- Plantillas: traer las dos de la casaca (de ejemplo) → "Plantillas · 2"
+  sin marcar cambios sin guardar.
+- Packs: crear vacío → los tres avisos; un trío de Polera con precio 250 →
+  "Por separado: S/ 387.00 · el cliente ahorra S/ 137.00 (35 %)" → creado;
+  "Sugerir packs" → 8 → creados.
+- Nada se sale del ancho a 375 px en ninguna pestaña. Sin errores en la consola.
+
+### Cómo se une D2c
+
+- **Personalizables**: `getPrendasBaseAdmin` + `getCombosCrear({ incluirBorradores: true })`
+  (`refetchOnMount: 'always'`); publicar: `updateProductField(id, { visible })`;
+  archivar: `deleteProduct`.
+- **Ficha**: `/admin/prendas-crear/nueva` y `/:id` (RutasPrendasCrear) con
+  `fichaDesdeProducto(producto, { prenda: true })`; al guardar, **releer
+  las plantillas del producto** (`getDocument`) y pasar
+  `fichaAProducto(datos, producto, { prendaBaseParaGuardar })` con esas
+  plantillas (así guardar no borra una que se agregó en el estudio); las
+  subidas como antes (`crear_…png`, `tienda_…`); `fotoConPlantilla` →
+  `fotoDeTiendaConPlantilla`; las plantillas, `cambiarPlantillaDelProducto`,
+  `quitarPlantillaDelProducto`, `traerPlantillas` y releer
+  (`plantillas` = `leerPlantillas`); `urlNueva`/`urlEditar` con
+  `state.desde` para volver a `?pestana=plantillas`. Invalida además
+  `prenda-base`, `prendas-base` y `admin-prendas-crear`.
+- **Packs**: `getCombosCrear`, `getPrendasBase({ incluirBorradores: true })`,
+  los productos que sirven tal cual (`sirveTalCual`), marcas y categorías;
+  guardar: `guardarComboCrear(id, conFotos(packAGuardar(datos)))` (el
+  nombre y la foto de cada pieza); archivar: `archivarComboCrear`;
+  sugerir: `sugerirCombos(prendasPublicadas, combos, precioBase)` y crear
+  uno por uno; invalida `admin-combos-crear`, `combos-crear`, `combo-crear`.
+- El menú: las fichas de Crear marcan "Productos" (`activo`).
+
 ## Cómo se une un apartado (la misma lógica que clientes)
 
 1. El apartado está **completo en el kit**: todas sus páginas en el Panel de
@@ -643,3 +720,4 @@ hacía AdminProductoFormV2:
 | 2026-11-02 | D1 en el kit: `PaginaListaAdmin` (Categorías pasó a ella), Colecciones, Atributos, Zonas de envío, Cliparts, Marcas con sus productos y Destacados; `ListaOrdenable`, `SelectorProductos`, `CargarMas`, `CampoDinero`, `CampoColor`; capturas en `guia/admin-*.webp` y el modo noche revisado | `paginas/admin/`, `piezas/admin/`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2 dividido en tramos (a: lista, b: ficha, c: Crear, d: blueprints y lo viejo). D2a en el kit: `PaginaProductos`, `PaginaInventario`, `PaginaRecomendar`; `NumeroEnLinea`, `ElegirUno`, controles en las tarjetas de `TablaAdmin` | `paginas/admin/Productos.jsx`, `piezas/admin/`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
+| 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |

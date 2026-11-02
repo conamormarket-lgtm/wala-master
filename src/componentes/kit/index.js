@@ -89,6 +89,8 @@ export { PaginaMarcas, PaginaProductosMarca } from './paginas/admin/Marcas';
 export { PaginaDestacados } from './paginas/admin/Destacados';
 export { PaginaProductos, PaginaInventario, PaginaRecomendar, PUBLICOS, EDADES } from './paginas/admin/Productos';
 export { PaginaFichaProducto } from './paginas/admin/Ficha';
+export { PaginaPersonalizables, PaginaPacks } from './paginas/admin/Crear';
+export { EditorZonas, ListaZonas, DisenoPrenda, ColoresPrenda, PlantillasPrenda, variantesCrudas } from './piezas/admin/Crear';
 export { EncuadreFoto, FotoEncuadrada, GaleriaFotos, CampoTallas, ElegirVarios, ElegirMarca } from './piezas/admin/Producto';
 export {
   MENU_ADMIN, menuAdminPara, accesosAdminPara, puedeVer, esRutaActiva, opcionActiva,
@@ -98,4 +100,5 @@ export {
   slugDeMarca, topeMonedasDe, TOPE_MONEDAS_POR_DEFECTO, marcaDesdeFirestore, marcaAFirestore, productoAdminDesde,
   esDeLaTienda, piezasDeCombos, etiquetasDeProducto, rutaAdminDeProducto, estadoDeStock,
   CUMPLIMIENTOS, fichaDesdeProducto, fichaAProducto, erroresDeFicha,
+  personalizableDesde, packDesdeFirestore, packAGuardar, erroresDePack, MODOS_TALLA_PACK, MIN_PIEZAS_PACK, MAX_PIEZAS_PACK,
 } from './adaptadoresAdmin';

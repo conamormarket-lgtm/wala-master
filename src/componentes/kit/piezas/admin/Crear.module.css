@@ -1,0 +1,651 @@
+/* ── Crear en la ficha (D2c) ───────────────────────────────── */
+.diseno {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+.bloque {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.cabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.titulo {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ayuda {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.etiqueta {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.dos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+@container pagina-admin (min-width: 640px) {
+  .dos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.fila {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.botones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pestanas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.girar {
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
+/* Ver en un color */
+.verEn {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.punto {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--borde-muestra, var(--color-border));
+  cursor: pointer;
+}
+
+.puntoActivo {
+  box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+/* Una vista */
+.vista {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-bg, var(--gris-fondo));
+}
+
+.nombreVista {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.nombreVista:hover,
+.nombreVista:focus {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  outline: none;
+}
+
+.vistaCuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+@container pagina-admin (min-width: 760px) {
+  .vistaCuerpo {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.vistaFoto,
+.vistaZonas {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.escala {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.escalaFila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+}
+
+.escalaFila > svg {
+  width: 1rem;
+  height: 1rem;
+  color: #f97316;
+}
+
+/* El editor de zonas */
+.editor {
+  min-width: 0;
+}
+
+.caja {
+  position: relative;
+  border-radius: 12px;
+  background: repeating-conic-gradient(#ece9f3 0 25%, #fff 0 50%) 0 0 / 16px 16px;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+
+.foto {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.zonaVacia,
+.zonaError {
+  margin: 0;
+  padding: 2rem 1rem;
+  border: 1.5px dashed var(--color-border);
+  border-radius: 12px;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.cuadricula {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(249, 115, 22, 0.35) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(249, 115, 22, 0.35) 1px, transparent 1px);
+  pointer-events: none;
+}
+
+.zona {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px dashed rgba(124, 58, 237, 0.85);
+  background: rgba(124, 58, 237, 0.1);
+  cursor: grab;
+  touch-action: none;
+}
+
+.zona:focus-visible {
+  outline: 3px solid var(--violet-400);
+  outline-offset: 2px;
+}
+
+.zonaActiva {
+  border-style: solid;
+  border-color: var(--primary-color);
+  background: rgba(124, 58, 237, 0.18);
+  cursor: grabbing;
+}
+
+.zonaNombre {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  max-width: calc(100% - 8px);
+  overflow: hidden;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.zonaMedida {
+  position: absolute;
+  bottom: -1.4rem;
+  left: 50%;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(20, 18, 28, 0.85);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.borde {
+  position: absolute;
+  background: transparent;
+}
+
+.bordeDerecho {
+  top: 15%;
+  right: -7px;
+  width: 14px;
+  height: 70%;
+  cursor: ew-resize;
+}
+
+.bordeAbajo {
+  left: 15%;
+  bottom: -7px;
+  width: 70%;
+  height: 14px;
+  cursor: ns-resize;
+}
+
+.asaEsquina {
+  position: absolute;
+  right: -9px;
+  bottom: -9px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--primary-color);
+  box-shadow: 0 1px 4px rgba(20, 18, 28, 0.4);
+  cursor: nwse-resize;
+}
+
+.regla {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.regla line {
+  stroke: #f97316;
+  stroke-width: 3;
+}
+
+.reglaTexto {
+  position: absolute;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: #f97316;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+  transform: translate(-50%, -140%);
+  pointer-events: none;
+}
+
+.reglaPunto {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #f97316;
+  box-shadow: 0 1px 4px rgba(20, 18, 28, 0.4);
+  transform: translate(-50%, -50%);
+  cursor: move;
+  touch-action: none;
+}
+
+/* La lista de zonas */
+.listaZonas {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.filaZona {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.filaZonaActiva {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.campoChico {
+  display: grid;
+  gap: 0.2rem;
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.campoChico:first-child {
+  flex: 1 1 8rem;
+}
+
+.texto,
+.numero {
+  min-width: 0;
+  height: 36px;
+  padding: 0 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.88rem;
+  box-sizing: border-box;
+}
+
+.texto {
+  width: 100%;
+}
+
+.numero {
+  width: 4.6rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.texto:focus,
+.numero:focus {
+  border-color: var(--violet-400);
+  outline: none;
+}
+
+.quitar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.quitar:hover {
+  background: var(--danger-soft);
+  color: var(--danger-hover);
+}
+
+.quitar svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.heredadas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Colores */
+.colores {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.color {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-bg, var(--gris-fondo));
+}
+
+.colorCabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.muestra {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--borde-muestra, var(--color-border));
+}
+
+.bicolor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+}
+
+@container pagina-admin (min-width: 640px) {
+  .bicolor {
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+    align-items: end;
+  }
+}
+
+.falta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--warning, #b45309);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.falta svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.porVista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.5rem;
+}
+
+.porVistaFoto {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.miniatura {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: var(--escenario-foto, #fff);
+  overflow: hidden;
+}
+
+.miniatura img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.tienda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.tiendaFoto {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--escenario-foto, #fff);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  overflow: hidden;
+}
+
+.tiendaFoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.tiendaTextos {
+  display: grid;
+  flex: 1 1 12rem;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.tiendaPlantillas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 0.4rem;
+}
+
+.tiendaPlantillas button {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.3rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.tiendaPlantillas img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+/* Plantillas */
+.plantillas {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plantilla {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-bg, var(--gris-fondo));
+}
+
+.plantilla > :nth-child(n + 3) {
+  grid-column: 1 / -1;
+}
+
+@container pagina-admin (min-width: 760px) {
+  .plantilla {
+    grid-template-columns: 64px minmax(0, 1fr) 12rem auto;
+  }
+
+  .plantilla > :nth-child(n + 3) {
+    grid-column: auto;
+  }
+}
+
+.plantillaFoto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  background: var(--escenario-foto, #fff);
+  color: var(--color-text-muted);
+  overflow: hidden;
+}
+
+.plantillaFoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.traer {
+  display: grid;
+  gap: 0.6rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .girar {
+    animation-duration: 2s;
+  }
+}

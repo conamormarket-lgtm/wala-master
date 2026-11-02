@@ -465,6 +465,12 @@ export function fichaDesdeProducto(p, nuevo = {}) {
       variantes: [{ id, nombre: 'Variante 1', color: '#cccccc', foto: '', encuadre: null, galeria: [], encuadres: {}, etiquetaTalla: 'Talla', tallas: [] }],
       principal: id,
       combo: { tallas: 'porPrenda', piezas: [], portada: '' },
+      // Un personalizable de Crear (D2c): su prendaBase tal cual se edita.
+      esPrenda: nuevo.prenda === true,
+      prenda: { vistas: [], colores: {} },
+      enTienda: false,
+      talCual: false,
+      ...(nuevo.prenda === true && { stock: '', visible: false }),
     };
   }
   let variantes = lista(p.variants).map((v) => ({
@@ -497,7 +503,8 @@ export function fichaDesdeProducto(p, nuevo = {}) {
     precio: p.price ?? '',
     oferta: Number(p.salePrice) > 0 ? p.salePrice : '',
     sku: p.sku || '',
-    stock: Number.isFinite(Number(p.inStock)) ? Number(p.inStock) : 0,
+    // Un personalizable puede no tener stock (sin límite): vacío.
+    stock: p.esPrendaBase === true && (p.inStock === null || p.inStock === undefined || p.inStock === '') ? '' : (Number.isFinite(Number(p.inStock)) ? Number(p.inStock) : 0),
     descripcion: p.description || '',
     esCombo: p.isComboProduct === true,
     cumplimiento: p.fulfillmentType || '',
@@ -529,6 +536,10 @@ export function fichaDesdeProducto(p, nuevo = {}) {
       })),
       portada: p.comboPreviewImage || '',
     },
+    esPrenda: p.esPrendaBase === true && p.isComboProduct !== true,
+    prenda: p.prendaBase && typeof p.prendaBase === 'object' ? { vistas: [], colores: {}, ...p.prendaBase } : { vistas: [], colores: {} },
+    enTienda: p.enTienda === true,
+    talCual: p.seVendeTalCual === true,
   };
 }
 
@@ -537,8 +548,12 @@ export function fichaDesdeProducto(p, nuevo = {}) {
  * createProduct / updateProduct (el servicio normaliza después). `original`:
  * el producto tal como estaba, para no perder lo que la ficha no muestra
  * (las copias chicas de cada foto, la configuración de Yoryo de una pieza).
+ * Un personalizable lleva su prendaBase: `prendaBaseParaGuardar` (la de
+ * PersonalizacionPrenda / utils) la limpia; sin ella va tal cual.
  */
-export function fichaAProducto(f, original = {}) {
+export function fichaAProducto(f, original = {}, { prendaBaseParaGuardar } = {}) {
+  const prenda = f.esPrenda === true && !f.esCombo;
+  const fotoPrenda = prenda ? String(lista(f.prenda?.vistas)[0]?.imagen || '') : '';
   const viejas = new Map(lista(original.variants).map((v) => [v.id, v]));
   const variantes = f.esCombo ? [] : f.variantes.map((v) => {
     const antes = viejas.get(v.id) || {};
@@ -547,7 +562,8 @@ export function fichaAProducto(f, original = {}) {
       id: v.id,
       name: String(v.nombre || '').trim(),
       colorHex: v.color || '#cccccc',
-      imageUrl: v.foto || '',
+      // Un personalizable sin foto de tienda en un color usa la de su primera vista.
+      imageUrl: v.foto || fotoPrenda,
       images: [...v.galeria],
       sizes: [...v.tallas],
       sizeLabel: String(v.etiquetaTalla || '').trim() || 'Talla',
@@ -565,7 +581,7 @@ export function fichaAProducto(f, original = {}) {
     description: f.descripcion || '',
     price: Number(f.precio) || 0,
     salePrice: Number(f.oferta) || 0,
-    inStock: Number(f.stock) || 0,
+    inStock: prenda && f.stock === '' ? null : Number(f.stock) || 0,
     sku: String(f.sku || '').trim(),
     brandId: f.marcaId || '',
     fulfillmentType: f.cumplimiento || undefined,
@@ -579,8 +595,9 @@ export function fichaAProducto(f, original = {}) {
     hasVariants: !f.esCombo && variantes.length > 0,
     customizable: false,
     customizationViews: [],
-    esPrendaBase: false,
-    personalizarEn: f.personalizarEn || '',
+    esPrendaBase: prenda,
+    ...(prenda && { prendaBase: prendaBaseParaGuardar ? prendaBaseParaGuardar(f.prenda, variantes) : f.prenda }),
+    personalizarEn: prenda ? '' : f.personalizarEn || '',
     whatsappEnabled: f.whatsappActivo !== false,
     whatsappNumber: String(f.whatsappNumero || '').trim(),
     whatsappMessage: String(f.whatsappMensaje || '').trim(),
@@ -606,8 +623,8 @@ export function fichaAProducto(f, original = {}) {
     edadMinima: f.edadMinima,
     variants: variantes,
     visible: f.visible !== false,
-    enTienda: false,
-    seVendeTalCual: false,
+    enTienda: prenda && f.enTienda === true,
+    seVendeTalCual: prenda && f.enTienda === true && f.talCual === true,
     featured: f.destacado === true,
     isV2: true,
   };
@@ -622,6 +639,108 @@ export function erroresDeFicha(f) {
   if (Number(f.stock) < 0) e.stock = { texto: 'El stock no puede ser negativo.', pestana: 'general' };
   if (f.esCombo && !f.combo.piezas.length) e.piezas = { texto: 'Agrega al menos un producto al combo.', pestana: 'colores' };
   if (!f.esCombo && !f.variantes.length) e.variantes = { texto: 'Tiene que quedar al menos un color.', pestana: 'colores' };
+  if (f.esPrenda && !f.esCombo) {
+    const vistas = lista(f.prenda?.vistas);
+    if (!vistas.length || vistas.some((v) => !v?.imagen || !(lista(v.zonas).length || v.zona))) {
+      e.vistas = { texto: 'Cada vista necesita su foto y al menos una zona de impresión.', pestana: 'diseno' };
+    }
+  }
+  return e;
+}
+
+/* ── Crear: personalizables y packs (D2c) ──────────────── */
+
+const zonasDeVistaCruda = (v) => (Array.isArray(v?.zonas) && v.zonas.length ? v.zonas.length : v?.zona ? 1 : 0);
+const plantillasValidas = (lista) => (Array.isArray(lista) ? lista : [])
+  .filter((p) => p && p.id && p.capas && typeof p.capas === 'object' && Object.values(p.capas).some((c) => Array.isArray(c) && c.length));
+
+/**
+ * Un personalizable (esPrendaBase) para la lista de Crear: cuántos colores,
+ * vistas, zonas y plantillas tiene, si le faltan vistas con foto y zonas, y
+ * en qué packs está (como AdminPrendasCrear).
+ *  - packs: los combos de Crear (getCombosCrear), para saber cuáles la usan
+ */
+export function personalizableDesde(p = {}, packs = []) {
+  const variantes = lista(p.variants);
+  const principal = variantes.find((v) => String(v.id) === String(p.defaultVariantId)) || variantes[0];
+  const vistas = lista(p.prendaBase?.vistas);
+  const usan = lista(packs).filter((c) => c.deleted !== true && lista(c.comboCrear?.piezas || c.piezas).some((pz) => pz?.prendaId === p.id));
+  return {
+    id: p.id,
+    nombre: p.name || 'Sin nombre',
+    foto: principal?.imageUrl || vistas[0]?.imagen || p.mainImage || '',
+    colores: variantes.length,
+    vistas: vistas.length,
+    zonas: vistas.reduce((t, v) => t + zonasDeVistaCruda(v), 0),
+    plantillas: plantillasValidas(p.prendaBase?.plantillas).length,
+    faltanZonas: !vistas.length || vistas.some((v) => !v?.imagen || !zonasDeVistaCruda(v)),
+    publicada: p.visible !== false,
+    enTienda: p.enTienda === true,
+    talCual: p.enTienda === true && p.seVendeTalCual === true,
+    packs: usan.map((c) => ({ id: c.id, nombre: c.name || 'Pack', publicado: (c.comboCrear?.publicado ?? c.publicado) === true })),
+  };
+}
+
+export const MODOS_TALLA_PACK = [
+  { valor: 'auto', texto: 'Automático', ayuda: 'Prendas distintas (el conjunto de una persona): una talla. La misma prenda repetida (pareja, trío): una por prenda.' },
+  { valor: 'porPrenda', texto: 'Una por prenda', ayuda: 'Cada prenda elige la suya: él y ella pueden ser de tallas distintas.' },
+  { valor: 'una', texto: 'Una para todas', ayuda: 'Una sola talla que se aplica a todas las prendas.' },
+];
+export const MIN_PIEZAS_PACK = 2;
+export const MAX_PIEZAS_PACK = 4;
+
+/** Un pack de Crear (esComboCrear) → lo que edita el admin. */
+export function packDesdeFirestore(c = {}) {
+  const cc = c.comboCrear || {};
+  return {
+    id: c.id,
+    nombre: c.name || '',
+    descripcion: c.description || '',
+    marcaId: c.brandId || '',
+    categoria: lista(c.categories)[0] || '',
+    portada: c.mainImage || '',
+    precio: c.price ?? '',
+    oferta: Number(c.salePrice) > 0 ? c.salePrice : '',
+    publicado: (cc.publicado ?? c.publicado) === true,
+    enTienda: c.enTienda === true,
+    tallas: ['auto', 'una', 'porPrenda'].includes(cc.tallas) ? cc.tallas : 'auto',
+    piezas: lista(cc.piezas || c.piezas).map((pz) => ({
+      prendaId: pz?.prendaId || '',
+      fija: pz?.fija === true,
+      color: pz?.color ? { id: String(pz.color.id || ''), nombre: pz.color.nombre || '', hex: pz.color.hex || '' } : null,
+      nombre: pz?.nombre || '',
+      imagen: pz?.imagen || '',
+    })),
+  };
+}
+
+/** Lo del pack → lo que recibe guardarComboCrear (el formulario de AdminCombosCrear). */
+export function packAGuardar(k = {}) {
+  return {
+    name: String(k.nombre || '').trim(),
+    description: String(k.descripcion || '').trim(),
+    price: Number(k.precio) || 0,
+    salePrice: Number(k.oferta) > 0 ? Number(k.oferta) : '',
+    publicado: k.publicado === true,
+    enTienda: k.enTienda === true,
+    tallas: k.tallas || 'auto',
+    brandId: k.marcaId || '',
+    mainImage: k.portada || '',
+    categories: k.categoria ? [k.categoria] : [],
+    piezas: lista(k.piezas).map((pz) => ({ prendaId: pz.prendaId, ...(pz.fija && { fija: true }), ...(pz.color && { color: pz.color }) })),
+  };
+}
+
+/** Lo que falta en un pack (las reglas de AdminCombosCrear). */
+export function erroresDePack(k) {
+  const e = {};
+  if (!String(k.nombre || '').trim()) e.nombre = 'Escribe el nombre del pack.';
+  if (!(Number(k.precio) > 0)) e.precio = 'Escribe el precio del pack.';
+  if (Number(k.oferta) > 0 && Number(k.oferta) >= Number(k.precio)) e.oferta = 'La oferta tiene que ser menor que el precio.';
+  const piezas = lista(k.piezas);
+  if (piezas.length < MIN_PIEZAS_PACK) e.piezas = `Un pack lleva al menos ${MIN_PIEZAS_PACK} piezas.`;
+  else if (piezas.some((pz) => !pz.prendaId || (pz.fija && !pz.color))) e.piezas = 'Completa cada pieza (la que va tal cual necesita su color).';
+  else if (!piezas.some((pz) => !pz.fija)) e.piezas = 'Al menos una pieza tiene que diseñarse.';
   return e;
 }
 

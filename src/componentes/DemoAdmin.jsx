@@ -4,12 +4,15 @@ import {
   MarcoAdmin, SinPermiso, CabezaAdmin, PaginaInicioAdmin, PaginaCategorias, InsigniaEstado, ESTADOS_ADMIN, AccionesLote,
   PaginaColecciones, PaginaAtributos, PaginaEnvios, PaginaCliparts, PaginaMarcas, PaginaProductosMarca, PaginaDestacados,
   PaginaProductos, PaginaInventario, PaginaRecomendar, PaginaFichaProducto, fichaDesdeProducto, fichaAProducto,
+  PaginaPersonalizables, PaginaPacks, personalizableDesde, packDesdeFirestore,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
   productoAdminDesde, tarjetaDesdeProducto,
 } from './kit';
 import TIENDA from './demo/tienda.json';
+import CREAR from './demo/crear.json';
+import { leerPlantillas, prendaBaseParaGuardar } from '../utils/prendaBase';
 import MARCAS_TIENDA from './demo/marcas.json';
 import cs from './ComponentesPage.module.css';
 import s from './DemoAdmin.module.css';
@@ -122,6 +125,16 @@ const DESTINOS_CREAR = [
   { valor: '/combo/pareja-kapi', texto: 'Pareja Kapi · pack de Crear' },
 ];
 const conMarcas = (lista) => lista.map((x) => ({ id: x.id, nombre: x.nombre, marcas: x.marcas || [] }));
+// Crear: las 4 prendas y los 2 packs de la copia (demo/crear.json).
+// La copia no trae plantillas: dos de ejemplo en la casaca, para probar "Traer de otro".
+const PLANTILLAS_DEMO = [
+  { id: 'demo-corazones', nombre: 'Corazones', grupo: 'Parejas', imagen: '/assets/kapi/kapi-happy.webp', capas: { frente: [{ tipo: 'texto', texto: 'Te amo' }] } },
+  { id: 'demo-escudo', nombre: 'Escudo', grupo: 'Equipos', imagen: '/assets/marca/splash-etiqueta-w.webp', capas: { frente: [{ tipo: 'imagen' }] } },
+];
+const PRENDAS_CRUDAS = Object.fromEntries(CREAR.prendas.map((p, i) => [p.id, { ...p, inStock: p.inStock ?? null, ...(i === 0 && { prendaBase: { ...p.prendaBase, plantillas: PLANTILLAS_DEMO } }) }]));
+const PACKS_CRUDOS = CREAR.combos.map((c) => ({ ...c, esComboCrear: true, comboCrear: { publicado: c.publicado, piezas: c.piezas, tallas: 'auto' } }));
+const opcionDePrenda = (p) => ({ id: p.id, nombre: p.name, foto: (p.variants || [])[0]?.imageUrl || p.prendaBase?.vistas?.[0]?.imagen || '', precio: Number(p.salePrice) > 0 ? p.salePrice : p.price, colores: (p.variants || []).map((v) => ({ id: String(v.id), nombre: v.name, hex: v.colorHex })) });
+const TAL_CUAL = TIENDA.productos.filter((p) => (p.variants || []).length && !p.isComboProduct).map(opcionDePrenda);
 const BORRADORES = [{ id: 'borrador-1', nombre: 'Polo Kapi edición Navidad', fecha: 'Hace 2 días' }];
 // Lo que deduciría giftRecommender, a grandes rasgos (solo para la demo).
 const sugerenciaDemo = (p) => {
@@ -181,6 +194,8 @@ function PanelDePrueba() {
   const [whatsapp, setWhatsapp] = useState(WHATSAPP);
   const [borradores, setBorradores] = useState(BORRADORES);
   const [crudos, setCrudos] = useState(CRUDOS);
+  const [prendasCrudas, setPrendasCrudas] = useState(PRENDAS_CRUDAS);
+  const [packsCrudos, setPacksCrudos] = useState(PACKS_CRUDOS);
   const [creados, setCreados] = useState({ categoria: [], coleccion: [], tipo: [], personaje: [], etiqueta: [] });
 
   const navegar = useRef(null);
@@ -226,8 +241,21 @@ function PanelDePrueba() {
   };
   const vacio = con('vacio');
 
-  const actual = opcionActiva(grupos, rutaSola);
-  const dePaso = opcionActiva(menuAdminPara(['superadmin']), rutaSola);
+  // Las fichas de Crear viven bajo Productos en el menú.
+  const rutaMenu = rutaSola.startsWith('/admin/prendas-crear') ? '/admin/productos' : rutaSola;
+  const actual = opcionActiva(grupos, rutaMenu);
+  const dePaso = opcionActiva(menuAdminPara(['superadmin']), rutaMenu);
+  const prendaDeRuta = rutaSola.match(/^\/admin\/prendas-crear\/([^/]+)$/)?.[1];
+  const inicialPrenda = useMemo(
+    () => (prendaDeRuta ? fichaDesdeProducto(prendaDeRuta === 'nueva' ? null : prendasCrudas[prendaDeRuta], { prenda: true }) : null),
+    [prendaDeRuta], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const plantillasPrenda = prendaDeRuta && prendaDeRuta !== 'nueva' ? leerPlantillas(prendasCrudas[prendaDeRuta]?.prendaBase?.plantillas) : undefined;
+  const cambiarPlantillas = async (fn) => {
+    await espera(400);
+    fallar();
+    setPrendasCrudas((m) => { const p = m[prendaDeRuta]; return { ...m, [prendaDeRuta]: { ...p, prendaBase: { ...p.prendaBase, plantillas: fn(p.prendaBase?.plantillas || []) } } }; });
+  };
   const fichaDeRuta = rutaSola.match(/^\/admin\/productos\/([^/]+)$/)?.[1];
   // La ficha se arma una vez por producto (si no, cada render la volvería a empezar).
   const inicialFicha = useMemo(
@@ -316,6 +344,50 @@ function PanelDePrueba() {
         onQuitar={(ids) => cambiarProductos(ids, () => ({ marcaId: '' }))}
       />
     );
+  } else if (prendaDeRuta) {
+    const listasP = {
+      categoria: [...conMarcas(CATEGORIAS), ...creados.categoria],
+      coleccion: [...conMarcas(COLECCIONES), ...creados.coleccion],
+      tipo: [...TIPOS, ...creados.tipo],
+      personaje: [...conMarcas(ATRIBUTOS_DEMO.personajes), ...creados.personaje],
+      etiqueta: [...conMarcas(ATRIBUTOS_DEMO.etiquetas), ...creados.etiqueta],
+    };
+    pagina = (
+      <PaginaFichaProducto
+        key={prendaDeRuta}
+        inicial={inicialPrenda}
+        nuevo={prendaDeRuta === 'nueva'}
+        cargando={con('cargando')}
+        error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+        onReintentar={comunes.onReintentar}
+        marcas={MARCAS.map((m) => ({ id: m.id, nombre: m.nombre, logo: m.logo, whatsapp: m.whatsapp }))}
+        categorias={listasP.categoria}
+        colecciones={listasP.coleccion}
+        tipos={listasP.tipo}
+        personajes={listasP.personaje}
+        etiquetas={listasP.etiqueta}
+        subirImagen={subir}
+        fotoConPlantilla={async () => { await espera(900); fallar(); return '/assets/kapi/kapi-happy.webp'; }}
+        plantillas={plantillasPrenda}
+        accionesPlantillas={{
+          onRenombrar: (id, nombre) => cambiarPlantillas((l) => l.map((x) => (x.id === id ? { ...x, nombre } : x))),
+          onGrupo: (id, grupo) => cambiarPlantillas((l) => l.map((x) => (x.id === id ? { ...x, grupo } : x))),
+          onQuitar: (id) => cambiarPlantillas((l) => l.filter((x) => x.id !== id)),
+          otras: Object.values(prendasCrudas).filter((p) => p.id !== prendaDeRuta && leerPlantillas(p.prendaBase?.plantillas).length).map((p) => ({ id: p.id, nombre: p.name, plantillas: leerPlantillas(p.prendaBase.plantillas) })),
+          onTraer: (origenId, ids) => cambiarPlantillas((l) => [...l, ...leerPlantillas(prendasCrudas[origenId]?.prendaBase?.plantillas).filter((x) => ids.includes(x.id)).map((x) => ({ ...x, id: `${x.id}-copia-${Date.now()}` }))]),
+          urlNueva: `/crear/${prendaDeRuta}?nuevaPlantilla=1`,
+          urlEditar: (id) => `/crear/${prendaDeRuta}?editarPlantilla=${id}`,
+        }}
+        onGuardar={async (datos) => {
+          await espera(900);
+          fallar('Sin conexión con el servidor (es una prueba). Lo escrito sigue aquí.');
+          const id = prendaDeRuta === 'nueva' ? `prenda-${Date.now()}` : prendaDeRuta;
+          const antes = prendasCrudas[id] || {};
+          setPrendasCrudas((m) => ({ ...m, [id]: { ...antes, ...fichaAProducto(datos, antes, { prendaBaseParaGuardar }), id } }));
+        }}
+        onVolver={() => navegar.current('/admin/productos?ver=crear')}
+      />
+    );
   } else if (fichaDeRuta) {
     const listas = {
       categoria: [...conMarcas(CATEGORIAS), ...creados.categoria],
@@ -381,6 +453,46 @@ function PanelDePrueba() {
         onExportar={() => {}}
         onQuitarPersonalizacionVieja={(ids) => cambiarProductos(ids, () => ({ personalizacionVieja: false }))}
         borradores={borradores}
+        cuentas={{ crear: Object.values(prendasCrudas).filter((p) => !p.deleted).length, packs: packsCrudos.filter((c) => !c.deleted).length }}
+        personalizables={(
+          <PaginaPersonalizables
+            embebido
+            {...comunes}
+            prendas={vacio ? [] : Object.values(prendasCrudas).filter((p) => !p.deleted).map((p) => personalizableDesde(p, packsCrudos))}
+            onAbrir={(x) => navegar.current(`/admin/prendas-crear/${x.id}`)}
+            onVer={(x) => toast({ tipo: 'info', titulo: 'Abriría Crear', texto: `/crear/${x.id}`, duracion: 2000 })}
+            onPublicar={async (id, publicada) => { await espera(500); fallar(); setPrendasCrudas((m) => ({ ...m, [id]: { ...m[id], visible: publicada } })); }}
+            onArchivar={async (id) => { await espera(600); fallar(); setPrendasCrudas((m) => ({ ...m, [id]: { ...m[id], deleted: true } })); }}
+          />
+        )}
+        packs={(
+          <PaginaPacks
+            embebido
+            {...comunes}
+            packs={vacio ? [] : packsCrudos.filter((c) => !c.deleted).map(packDesdeFirestore)}
+            prendas={Object.values(prendasCrudas).filter((p) => !p.deleted).map(opcionDePrenda)}
+            talCual={TAL_CUAL}
+            marcas={MARCAS_CORTAS}
+            categorias={CATEGORIAS.map((c) => ({ id: c.id, nombre: c.nombre, marcas: c.marcas }))}
+            subirImagen={subir}
+            nuevoInicial={new URLSearchParams(ruta.split('?')[1] || '').get('nuevo') === '1'}
+            onVer={(k) => toast({ tipo: 'info', titulo: 'Abriría el pack', texto: `/combo/${k.id}`, duracion: 2000 })}
+            onGuardar={async (datos, id) => {
+              await espera(700);
+              fallar();
+              const doc = { id: id || `pack-${Date.now()}`, name: datos.nombre, description: datos.descripcion, price: Number(datos.precio), salePrice: Number(datos.oferta) || 0, brandId: datos.marcaId, categories: datos.categoria ? [datos.categoria] : [], mainImage: datos.portada, enTienda: datos.enTienda, esComboCrear: true, comboCrear: { publicado: datos.publicado, tallas: datos.tallas, piezas: datos.piezas } };
+              setPacksCrudos((l) => (id ? l.map((c) => (c.id === id ? doc : c)) : [...l, doc]));
+            }}
+            onArchivar={async (id) => { await espera(500); fallar(); setPacksCrudos((l) => l.map((c) => (c.id === id ? { ...c, deleted: true } : c))); }}
+            onSugerir={() => Object.values(prendasCrudas).filter((p) => p.visible !== false && !p.deleted).flatMap((p) => [2, 3].map((n) => ({ clave: `${p.id}-${n}`, nombre: `${n === 2 ? 'Pareja' : 'Trío'} · ${p.name}`, precio: Math.floor((Number(p.price) * n * (n === 2 ? 0.9 : 0.85)) / 5) * 5, piezas: Array.from({ length: n }, () => ({ prendaId: p.id })) })))}
+            onCrearSugeridos={async (lista, publicar) => {
+              await espera(900);
+              fallar();
+              setPacksCrudos((l) => [...l, ...lista.map((c, i) => ({ id: `sug-${Date.now()}-${i}`, name: c.nombre, price: Number(c.precio), esComboCrear: true, comboCrear: { publicado: publicar, tallas: 'auto', piezas: c.piezas } }))]);
+              return lista.length;
+            }}
+          />
+        )}
         urlBorrador={(id) => `/admin/productos/nuevo?draftId=${id}`}
         onDescartarBorrador={async (id) => { await espera(400); setBorradores((b) => b.filter((x) => x.id !== id)); }}
       />

@@ -69,6 +69,7 @@ const ESTADOS_LISTA = [
  *  - onVisible(id, visible) → promesa · onVarios(ids, visible) → promesa con { ok, fallaron }
  *  - onArchivar(ids) → promesa con { ok, fallaron } · onDuplicar(producto) → promesa
  *  - onExportar(ids | null) (CSV) · onQuitarPersonalizacionVieja(ids) → promesa con { ok, fallaron }
+ *  - cuentas: { crear, packs } (sin ellas, se cuentan de `productos`)
  *  - borradores: [{ id, nombre, fecha }] (los guardados en este aparato) · urlBorrador(id) · onDescartarBorrador(id) → promesa
  */
 export function PaginaProductos({
@@ -76,7 +77,7 @@ export function PaginaProductos({
   vista = 'tienda', onVista, personalizables, packs,
   onAbrir, onIr, urlNuevo = '/admin/productos/nuevo', urlNuevoPersonalizable = '/admin/prendas-crear/nueva', urlNuevoPack = '/admin/productos?ver=packs&nuevo=1',
   onVisible, onVarios, onArchivar, onDuplicar, onExportar, onQuitarPersonalizacionVieja,
-  borradores = [], urlBorrador, onDescartarBorrador,
+  borradores = [], urlBorrador, onDescartarBorrador, cuentas: cuentasCrear,
 }) {
   const toast = useToast();
   const [estado, setEstado] = useState('visibles');
@@ -100,7 +101,7 @@ export function PaginaProductos({
     piezas: tienda.filter((p) => piezas.has(p.id)).length,
     todos: tienda.length,
   };
-  const deCrear = { crear: productos.filter((p) => p.personalizable).length, packs: productos.filter((p) => p.pack).length };
+  const deCrear = cuentasCrear || { crear: productos.filter((p) => p.personalizable).length, packs: productos.filter((p) => p.pack).length };
   const viejos = tienda.filter((p) => p.personalizacionVieja);
 
   const q = normalizarBusqueda(buscar);

@@ -10,6 +10,7 @@ import { CabezaAdmin } from '../../piezas/admin/Marco';
 import { ListaOrdenable, SelectorProductos } from '../../piezas/admin/Datos';
 import { GrupoCampos, CampoImagen, CampoDinero, CampoColor, ElegirUno } from '../../piezas/admin/Formularios';
 import { EncuadreFoto, FotoEncuadrada, GaleriaFotos, CampoTallas, ElegirVarios, ElegirMarca } from '../../piezas/admin/Producto';
+import { DisenoPrenda, ColoresPrenda, PlantillasPrenda } from '../../piezas/admin/Crear';
 import { CUMPLIMIENTOS, erroresDeFicha } from '../../adaptadoresAdmin';
 import { PUBLICOS, EDADES } from './Productos';
 import l from './Lista.module.css';
@@ -28,8 +29,8 @@ const nuevoId = () => `var_${Date.now()}`;
 const deMarca = (marcaId, estricto) => (x) => (!marcaId ? true : (x.marcas || []).length === 0 ? !estricto : x.marcas.includes(marcaId));
 
 /* Una tarjeta de la ficha: un bloque de campos con su borde. */
-function Bloque({ children }) {
-  return <section className={s.bloque}>{children}</section>;
+function Bloque({ children, hidden = false }) {
+  return <section className={s.bloque} hidden={hidden}>{children}</section>;
 }
 
 /**
@@ -46,14 +47,19 @@ function Bloque({ children }) {
  *  - onBorrador(datos): mientras se escribe uno nuevo (el admin lo guarda en el aparato)
  *  - descripcion(valor, onCambiar) → nodo: el editor de texto con formato (sin él, un texto largo)
  *  - extraGaleria(variante, agregar(url)) → nodo: algo más bajo la galería (frente y espalda)
- *  - pestanaInicial ('general' | 'colores' | 'donde') · onPestana (en el admin, ?pestana=)
+ *  - pestanaInicial ('general' | 'colores' | 'diseno' | 'plantillas' | 'donde') · onPestana (en el admin, ?pestana=)
+ * Un personalizable de Crear (datos.esPrenda, D2c) suma Diseño (vistas y
+ * zonas) y Plantillas, y sus colores llevan fotos para diseñar y de tienda:
+ *  - fotoConPlantilla(color, plantilla) → promesa con la url
+ *  - plantillas: las de ahora (se guardan al momento: llegan de afuera) ·
+ *    accionesPlantillas: { onRenombrar, onGrupo, onQuitar, onTraer, otras, urlNueva, urlEditar }
  */
 export function PaginaFichaProducto({
   inicial, nuevo = false, cargando, error, onReintentar,
   marcas = [], categorias = [], colecciones = [], tipos = [], personajes = [], etiquetas = [], onCrear,
   productos = [], coloresDe = () => [], destinosCrear = [], subirImagen,
   onGuardar, onVolver, onPasarACrear, onBorrador, descripcion, extraGaleria,
-  pestanaInicial = 'general', onPestana,
+  pestanaInicial = 'general', onPestana, fotoConPlantilla, plantillas: plantillasVivas, accionesPlantillas = {},
 }) {
   const toast = useToast();
   const [datos, setDatos] = useState(inicial);
@@ -70,6 +76,13 @@ export function PaginaFichaProducto({
 
   // Llega el producto (o se recarga): se empieza de ahí.
   useEffect(() => { if (inicial) { setDatos(inicial); setBase(inicial); setActiva(inicial.principal); setErrores({}); } }, [inicial]);
+  // Las plantillas se guardan al momento: lo que llega de afuera entra sin marcar cambios.
+  useEffect(() => {
+    if (!plantillasVivas) return;
+    const poner = (d) => (d ? { ...d, prenda: { ...(d.prenda || {}), plantillas: plantillasVivas } } : d);
+    setDatos(poner);
+    setBase(poner);
+  }, [plantillasVivas]);
 
   const sucio = Boolean(datos && base) && !mismo(datos, base);
   // Uno nuevo se va guardando en el aparato mientras se escribe.
@@ -101,6 +114,20 @@ export function PaginaFichaProducto({
     setErrores((e) => (e[campo] ? { ...e, [campo]: undefined } : e));
   };
   const cambiarCombo = (campo, valor) => setDatos((d) => ({ ...d, combo: { ...d.combo, [campo]: valor } }));
+  const cambiarPrenda = (c) => setDatos((d) => {
+    const prev = d.prenda || {};
+    return { ...d, prenda: { ...prev, ...(typeof c === 'function' ? c(prev) : c) } };
+  });
+  const agregarVariantes = (lista) => setDatos((d) => ({
+    ...d,
+    variantes: [...d.variantes, ...lista.map((v) => ({ id: v.id, nombre: v.nombre, color: v.color, foto: '', encuadre: null, galeria: [], encuadres: {}, etiquetaTalla: 'Talla', tallas: v.tallas || [] }))],
+  }));
+  const fotoTienda = (id, url) => setDatos((d) => ({ ...d, variantes: d.variantes.map((v) => (v.id === id ? { ...v, foto: url } : v)) }));
+  const esPrenda = datos.esPrenda === true && !datos.esCombo;
+  const vistasPrenda = datos.prenda?.vistas || [];
+  const fotoPrincipal = (datos.variantes.find((v) => v.id === datos.principal) || datos.variantes[0])?.foto;
+  const sinFotoTienda = esPrenda && (!fotoPrincipal || vistasPrenda.some((v) => v.imagen === fotoPrincipal));
+  const numPlantillas = (plantillasVivas || datos.prenda?.plantillas || []).length;
   const variante = datos.variantes.find((v) => v.id === activa) || datos.variantes[0];
   const cambiarVariante = (campo, valor) => setDatos((d) => ({ ...d, variantes: d.variantes.map((v) => (v.id === variante.id ? { ...v, [campo]: valor } : v)) }));
 
@@ -149,11 +176,17 @@ export function PaginaFichaProducto({
   };
 
   const conError = (p) => Object.entries(erroresDeFicha(datos)).some(([k, v]) => errores[k] && v.pestana === p);
-  const PESTANAS = [
+  const PESTANAS = (esPrenda ? [
+    { id: 'general', texto: 'General' },
+    { id: 'colores', texto: `Colores y fotos · ${datos.variantes.length}` },
+    { id: 'diseno', texto: `Diseño · ${vistasPrenda.length} vistas` },
+    { id: 'plantillas', texto: `Plantillas · ${numPlantillas}` },
+    { id: 'donde', texto: 'Dónde se ve' },
+  ] : [
     { id: 'general', texto: 'General' },
     { id: 'colores', texto: datos.esCombo ? 'Piezas del combo' : `Colores y tallas · ${datos.variantes.length}` },
     { id: 'donde', texto: 'Dónde se ve' },
-  ].map((p) => ({ ...p, texto: conError(p.id) ? `${p.texto} •` : p.texto }));
+  ]).map((p) => ({ ...p, texto: conError(p.id) ? `${p.texto} •` : p.texto }));
 
   const subirEn = (carpeta) => subirImagen && ((b, o) => subirImagen(b, { ...o, carpeta }));
 
@@ -161,8 +194,10 @@ export function PaginaFichaProducto({
     <div className={s.ficha} data-componente="PaginaFichaProducto">
       <CabezaAdmin
         icono="productos"
-        titulo={nuevo ? 'Nuevo producto' : datos.nombre || 'Producto'}
-        subtitulo={nuevo ? 'Se guarda en este aparato mientras escribes; se publica al tocar "Crear producto".' : (datos.visible ? 'Se ve en la tienda.' : 'Oculto en la tienda.')}
+        titulo={nuevo ? (esPrenda ? 'Nuevo personalizable' : 'Nuevo producto') : datos.nombre || 'Producto'}
+        subtitulo={nuevo ? 'Se guarda en este aparato mientras escribes; se publica al tocar "Crear".'
+          : esPrenda ? `${datos.visible ? 'Publicado en Crear' : 'Borrador en Crear'}${datos.enTienda ? ' · también en la tienda' : ''}.`
+            : (datos.visible ? 'Se ve en la tienda.' : 'Oculto en la tienda.')}
         acciones={<Boton variante="secundario" icono={<ArrowLeft aria-hidden="true" />} onClick={volver}>Productos</Boton>}
       />
 
@@ -174,7 +209,7 @@ export function PaginaFichaProducto({
 
       {/* ── General ── */}
       <div hidden={pestana !== 'general'} className={s.pestana}>
-        <Bloque>
+        <Bloque hidden={esPrenda}>
           <GrupoCampos titulo="Cómo se vende">
             <ElegirUno
               etiqueta="Cómo se vende"
@@ -200,7 +235,7 @@ export function PaginaFichaProducto({
                 onChange={(e) => cambiar('oferta', e.target.value)}
               />
               <Campo id={idCampo('sku')} etiqueta="SKU" value={datos.sku} placeholder="Opcional" onChange={(e) => cambiar('sku', e.target.value)} />
-              <Campo id={idCampo('stock')} etiqueta="Stock" type="number" inputMode="numeric" min={0} value={datos.stock} error={errores.stock} ayuda="Se cambia también en Inventario." onChange={(e) => cambiar('stock', e.target.value)} />
+              <Campo id={idCampo('stock')} etiqueta="Stock" type="number" inputMode="numeric" min={0} value={datos.stock} error={errores.stock} placeholder={esPrenda ? 'Sin límite' : undefined} ayuda={esPrenda ? 'Vacío: sin límite (se hace al pedirlo).' : 'Se cambia también en Inventario.'} onChange={(e) => cambiar('stock', e.target.value)} />
             </div>
             {descripcion ? (
               <div className={s.descripcion}>
@@ -360,6 +395,24 @@ export function PaginaFichaProducto({
             </Bloque>
           </>
         )}
+        {esPrenda && (
+          <ColoresPrenda prenda={datos.prenda} onPrenda={cambiarPrenda} variantes={datos.variantes} onAgregarVariantes={agregarVariantes} onFotoTienda={fotoTienda} subirImagen={subirImagen} fotoConPlantilla={fotoConPlantilla} />
+        )}
+      </div>
+
+      {/* ── Diseño y plantillas de un personalizable ── */}
+      <div hidden={pestana !== 'diseno' || !esPrenda} className={s.pestana}>
+        {errores.vistas && <span id={idCampo('vistas')} tabIndex={-1}><Aviso tipo="error" titulo={errores.vistas} /></span>}
+        {esPrenda && <DisenoPrenda prenda={datos.prenda} onPrenda={cambiarPrenda} variantes={datos.variantes} principal={datos.principal} subirImagen={subirImagen} />}
+      </div>
+      <div hidden={pestana !== 'plantillas' || !esPrenda} className={s.pestana}>
+        {esPrenda && (
+          <PlantillasPrenda
+            guardado={!nuevo}
+            plantillas={(plantillasVivas || datos.prenda?.plantillas || []).filter((p) => p && p.id)}
+            {...accionesPlantillas}
+          />
+        )}
       </div>
 
       {/* ── Piezas del combo ── */}
@@ -437,10 +490,21 @@ export function PaginaFichaProducto({
 
       {/* ── Dónde se ve ── */}
       <div hidden={pestana !== 'donde'} className={s.pestana}>
+        {esPrenda ? (
+          <Bloque>
+            <GrupoCampos titulo="Dónde se ve">
+              <Interruptor etiqueta="Publicado en Crear" descripcion="Apagado: es un borrador; solo lo ve el admin." activo={datos.visible} onChange={(v) => cambiar('visible', v)} />
+              <Interruptor etiqueta="También en la tienda" descripcion="Sale entre los productos, con «Personalizar»." activo={datos.enTienda} onChange={(v) => cambiar('enTienda', v)} />
+              {datos.enTienda && <Interruptor etiqueta="También se vende sin personalizar" descripcion="Se puede comprar tal cual, además de diseñarlo." activo={datos.talCual} onChange={(v) => cambiar('talCual', v)} />}
+              {datos.enTienda && sinFotoTienda && <Aviso tipo="aviso" titulo="Su color principal no tiene foto de tienda">En la tienda se verá la foto para diseñar (el producto en blanco). Súbela en «Colores y fotos».</Aviso>}
+            </GrupoCampos>
+          </Bloque>
+        ) : (
         <Bloque>
           <Interruptor etiqueta="Se ve en la tienda" descripcion="Apagado: queda oculto (no se borra). También se cambia desde la lista." activo={datos.visible} onChange={(v) => cambiar('visible', v)} />
         </Bloque>
-        <Bloque>
+        )}
+        <Bloque hidden={esPrenda}>
           <GrupoCampos titulo="¿Se personaliza?" ayuda="El botón «Personalizar» de su página lleva a una prenda o un pack de Crear.">
             <Campo
               id={idCampo('personalizarEn')}
@@ -452,7 +516,7 @@ export function PaginaFichaProducto({
             />
           </GrupoCampos>
         </Bloque>
-        {onPasarACrear && !datos.esCombo && !nuevo && (
+        {onPasarACrear && !datos.esCombo && !nuevo && !esPrenda && (
           <Bloque>
             <div className={s.crear}>
               <Sparkles aria-hidden="true" />
@@ -470,7 +534,7 @@ export function PaginaFichaProducto({
       <div className={s.guardar}>
         <span className={s.guardarEstado} aria-live="polite">{guardando ? 'Guardando…' : sucio ? 'Cambios sin guardar' : nuevo ? '' : 'Todo guardado'}</span>
         <Boton variante="fantasma" onClick={volver} disabled={guardando}>Salir</Boton>
-        <Boton onClick={guardar} cargando={guardando} disabled={!sucio && !nuevo}>{nuevo ? 'Crear producto' : 'Guardar'}</Boton>
+        <Boton onClick={guardar} cargando={guardando} disabled={!sucio && !nuevo}>{nuevo ? (esPrenda ? 'Crear personalizable' : 'Crear producto') : 'Guardar'}</Boton>
       </div>
 
       <EncuadreFoto
