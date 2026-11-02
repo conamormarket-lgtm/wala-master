@@ -10204,7 +10204,10 @@ exports.getMobileCheckoutStatusSecure = functions.https.onCall(async (data, cont
   // gifts: acepta "Es un regalo" (giftDetails del pedido, el que abre /regalo/:orderId).
   // savedCards: cobra con una tarjeta guardada y guarda la nueva ("Guardar esta tarjeta"), sin 3DS, como la web.
   // whatsapp: el pedido de la app se puede terminar por WhatsApp (crearSolicitudWhatsappSecure) y ya no se cancela.
+  // balance + publicKey: la app paga el saldo de un pedido con el formulario de Culqi (processCulqiPayment con
+  // metadata.pedidoId, como la web: sin 3DS); la llave pública es la misma del checkout.
   if (data?.capabilities) return { contract: mobileCheckout.CONTRACT, coupons: true, creations: true, combos: true, coins: true, gifts: true, savedCards: true, whatsapp: true,
+    balance: true, publicKey: /^pk_(test|live)_/.test(process.env.CULQI_PUBLIC_KEY || '') ? process.env.CULQI_PUBLIC_KEY : null,
     enabled: process.env.MOBILE_CHECKOUT_ENABLED === 'true' && /^pk_(test|live)_/.test(process.env.CULQI_PUBLIC_KEY || '') };
   try {
     const { id } = mobileCheckout.identity({ contract: mobileCheckout.CONTRACT, requestId: data && data.requestId }, uid);
