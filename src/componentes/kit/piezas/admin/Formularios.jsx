@@ -1,9 +1,10 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertCircle, ImagePlus, RefreshCw, Trash2, Upload, X } from 'lucide-react';
+import { AlertCircle, ImagePlus, Link2, RefreshCw, Trash2, Upload, X } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, Confirmar } from '../../Feedback';
+import { Campo } from '../../Formulario';
 import { useBloquearScroll, useCerrarConAtras } from '../../Efectos';
 import { RecortarFoto } from '../RecortarFoto';
 import campo from '../../Formulario.module.css';
@@ -196,9 +197,11 @@ export function GrupoCampos({ titulo, ayuda, columnas = 1, children }) {
  *  - recorte: 'circulo' | 'cuadrado' (antes de subir, con RecortarFoto) o null
  *    (tal cual) · tamanoRecorte: px del JPG (600)
  *  - forma: cómo se ve: 'circulo' (burbujas) | 'cuadro' | 'ancho' (banners)
+ *    · contener: la imagen entera, sin recortarla en la vista (logos, cliparts)
+ *  - conEnlace: también se puede pegar un enlace (Drive, otra web)
  */
 export function CampoImagen({
-  etiqueta, ayuda, error, valor = '', onCambiar, subir, recorte = null, tamanoRecorte = 600, forma = 'cuadro', acepta = 'image/*',
+  etiqueta, ayuda, error, valor = '', onCambiar, subir, recorte = null, tamanoRecorte = 600, forma = 'cuadro', acepta = 'image/*', contener = false, conEnlace = false,
 }) {
   const id = useId();
   const entrada = useRef(null);
@@ -206,6 +209,7 @@ export function CampoImagen({
   const [subiendo, setSubiendo] = useState(null); // { progreso } mientras sube
   const [fallo, setFallo] = useState(null); // { mensaje, archivo }
   const [encima, setEncima] = useState(false);
+  const [pegando, setPegando] = useState(false);
 
   useEffect(() => () => { if (recortando) URL.revokeObjectURL(recortando); }, [recortando]);
 
@@ -248,7 +252,7 @@ export function CampoImagen({
     <div className={campo.campo}>
       {etiqueta && <span id={`${id}-etiqueta`} className={campo.etiqueta}>{etiqueta}</span>}
       <div
-        className={[s.imagen, s[`imagen_${forma}`], valor && s.imagenLlena, encima && s.imagenEncima, mensaje && s.imagenError].filter(Boolean).join(' ')}
+        className={[s.imagen, s[`imagen_${forma}`], contener && s.imagenContener, valor && s.imagenLlena, encima && s.imagenEncima, mensaje && s.imagenError].filter(Boolean).join(' ')}
         onDragOver={(e) => { if (subir) { e.preventDefault(); setEncima(true); } }}
         onDragLeave={() => setEncima(false)}
         onDrop={soltar}
@@ -281,10 +285,24 @@ export function CampoImagen({
               {valor ? 'Cambiar' : 'Elegir'}
             </Boton>
           )}
+          {conEnlace && (
+            <Boton tamano="sm" variante="fantasma" icono={<Link2 aria-hidden="true" />} onClick={() => setPegando((v) => !v)} aria-expanded={pegando}>Enlace</Boton>
+          )}
           {valor && (
             <Boton tamano="sm" variante="fantasma" icono={<Trash2 aria-hidden="true" />} onClick={() => onCambiar?.('')} disabled={Boolean(subiendo)}>Quitar</Boton>
           )}
         </div>
+        {conEnlace && pegando && (
+          <input
+            className={s.enlace}
+            value={valor}
+            placeholder="https://… (también un enlace de Drive)"
+            inputMode="url"
+            spellCheck={false}
+            aria-label={`${etiqueta || 'Imagen'}: enlace`}
+            onChange={(e) => onCambiar?.(e.target.value)}
+          />
+        )}
         <input
           ref={entrada}
           type="file"
@@ -315,5 +333,46 @@ export function CampoImagen({
         />
       )}
     </div>
+  );
+}
+
+/**
+ * Un monto en soles: "S/" delante, teclado de números con decimales en el
+ * celular. Guarda lo escrito (texto); quien guarda lo pasa a número.
+ *  - los de Campo (etiqueta, ayuda, error, id, value, onChange…) · moneda ('S/')
+ */
+export function CampoDinero({ moneda = 'S/', ...campoProps }) {
+  return <Campo icono={<span className={s.moneda}>{moneda}</span>} type="number" inputMode="decimal" min={0} step="0.1" {...campoProps} />;
+}
+
+const hexValido = (v) => {
+  const t = String(v || '').trim();
+  if (/^#[0-9a-f]{6}$/i.test(t)) return t;
+  if (/^#[0-9a-f]{3}$/i.test(t)) return `#${[...t.slice(1)].map((c) => c + c).join('')}`;
+  return null;
+};
+
+/**
+ * Un color: la muestra (abre el selector del sistema) y su código para
+ * escribirlo o pegarlo (#ffffff).
+ *  - etiqueta · ayuda · error · id · valor · onCambiar(hex)
+ */
+export function CampoColor({ etiqueta, ayuda, error, id, valor = '', onCambiar }) {
+  const hex = hexValido(valor) || '#ffffff';
+  return (
+    <Campo
+      id={id}
+      etiqueta={etiqueta}
+      ayuda={ayuda}
+      error={error}
+      control={(aria) => (
+        <>
+          <label className={s.muestra} style={{ '--muestra': hex }} title="Elegir color">
+            <input type="color" value={hex} onChange={(e) => onCambiar?.(e.target.value)} aria-label={`${etiqueta || 'Color'}: elegir`} />
+          </label>
+          <input {...aria} className={campo.input} value={valor} placeholder="#ffffff" spellCheck={false} maxLength={7} onChange={(e) => onCambiar?.(e.target.value.trim())} />
+        </>
+      )}
+    />
   );
 }

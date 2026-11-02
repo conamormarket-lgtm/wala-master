@@ -1,4 +1,4 @@
-# Panel administrativo (`/admin`): el kit del admin (en marcha: D0 hecho en el kit)
+# Panel administrativo (`/admin`): el kit del admin (en marcha: D0 y D1 hechos en el kit)
 
 Lo mismo que se hizo con la tienda, ahora con el panel: **primero todo en el
 kit**, con datos de ejemplo en `/componentes.html`; **cuando un apartado está
@@ -170,11 +170,11 @@ Estado: **·** por hacer · **kit** hecha en el kit · **admin** ya en el panel.
 | `TablaAdmin` | Columnas, ordenar, elegir filas, acciones por fila, esqueleto, vacío, error; tarjetas en el celular | kit (2026-11-02) |
 | `BarraFiltros` | Buscador, chips de filtros, `Selector`, rango de fechas; en el celular los filtros en hoja | kit (2026-11-02) |
 | `AccionesLote` | La barra de "N elegidos" (reemplaza `components/admin/BulkActions`) | kit (2026-11-02) |
-| `CargarMas` | "Cargar más" / paginación con cuántos hay | · |
+| `CargarMas` | "Cargar más" / paginación con cuántos hay | kit (2026-11-02) |
 | `InsigniaEstado` | Un estado con texto y color desde un mapa (borrador, activo, cerrado, pagado, pendiente, anulado…) | kit (2026-11-02) |
 | `FilaRecurso` | Foto, nombre, datos y acciones: categorías, colecciones, marcas, cliparts | · |
-| `ListaOrdenable` | Reordenar arrastrando, con subir/bajar como alternativa (en vez del número `order` escrito a mano) | · |
-| `SelectorProductos` | Buscar y elegir productos con su foto (reemplaza `components/admin/BuscadorProducto`) | · |
+| `ListaOrdenable` | Reordenar arrastrando, con subir/bajar como alternativa (en vez del número `order` escrito a mano) | kit (2026-11-02) |
+| `SelectorProductos` | Buscar y elegir productos con su foto (reemplaza `components/admin/BuscadorProducto`) | kit (2026-11-02) |
 
 ### Formularios
 
@@ -184,7 +184,8 @@ Estado: **·** por hacer · **kit** hecha en el kit · **admin** ya en el panel.
 | `GrupoCampos` | Un bloque de campos con su título y ayuda (hoy 19 versiones de `fieldGroup`/`formSection`) | kit (2026-11-02) |
 | `CampoImagen` | Soltar o elegir, recortar (`RecortarFoto`), avance de la subida, cambiar y quitar. La subida llega por props | kit (2026-11-02) |
 | `CampoFechaHora` | `CampoFecha` + la hora (sorteos, ofertas, popups) | · |
-| `CampoDinero`, `CampoPorcentaje` | Soles (o céntimos guardados), dólares, comisión | · |
+| `CampoDinero`, `CampoPorcentaje` | Soles (o céntimos guardados), dólares, comisión | `CampoDinero` kit (2026-11-02) |
+| `CampoColor` | La muestra del color sobre un damero y su código (#ffffff) | kit (2026-11-02) |
 | `EstadoGuardado` | "Sin guardar · Guardando… · Guardado" en la cabecera del formulario | · |
 | `VistaPrevia` | El marco "Así se ve en la tienda" con celular/escritorio; en el celular, pestaña "Ver" | · |
 
@@ -204,7 +205,7 @@ Casi todo el admin entra en cinco formas. Se hacen como páginas del kit
 
 | Plantilla | Forma | Páginas que cubre |
 |---|---|---|
-| `PaginaListaAdmin` | `CabezaAdmin` + `BarraFiltros` + `TablaAdmin` + `HojaEdicion` | Categorías, Colecciones, Atributos, Marcas, Cliparts, Envíos, Recompensas, Misiones, Retos, Popups, Sorteos, Enlaces, Landing pages, Temas, Referidos, Libro de reclamaciones… |
+| `PaginaListaAdmin` (kit, 2026-11-02) | `CabezaAdmin` + `BarraFiltros` + `TablaAdmin` + `HojaEdicion` | Categorías, Colecciones, Atributos, Marcas, Cliparts, Envíos, Recompensas, Misiones, Retos, Popups, Sorteos, Enlaces, Landing pages, Temas, Referidos, Libro de reclamaciones… |
 | `PaginaDetalleAdmin` | Cabeza con estado + `Pestanas` + tablas y acciones | Detalle de sorteo, de suscripción, ficha de cliente, un pedido |
 | `PaginaEditorAdmin` | Formulario + `VistaPrevia` | Editor de enlaces, Popups, Ruleta, Encuestas, Palabra, Mascota |
 | `PaginaResultadosAdmin` | `SelectorPeriodo` + `Cifra` + tarjetas con gráficos | Las pestañas de Resultados, el historial de pagos |
@@ -225,7 +226,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | # | Apartado | Páginas (ruta `/admin/…`) | Plantilla | Kit | Admin |
 |---|---|---|---|---|---|
 | D0 | Marco | el menú (`AdminLayout`), la cabecera de cada página, el inicio (`/admin`, `AdminDashboard`) | — | hecho (2026-11-02) | · |
-| D1 | Catálogo base | `categorias` (en el kit desde el 2026-11-02, como prueba de D0), `colecciones`, `atributos-catalogo`, `marcas` (+ productos de la marca), `envios`, `cliparts`, `destacados` | Lista | · | · |
+| D1 | Catálogo base | `categorias`, `colecciones`, `atributos-catalogo`, `marcas` (+ productos de la marca), `envios`, `cliparts`, `destacados` | Lista | hecho (2026-11-02) | · |
 | D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | · | · |
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | · | · |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | · | · |
@@ -311,21 +312,125 @@ quedan "sin marca").
 - En el celular: "Más" abre el menú en una hoja, buscar "ruleta" la
   encuentra y tocarla navega y cierra la hoja; la subida de una foto
   (recorte en círculo, avance, falla con Reintentar).
-- Sin errores en la consola. **No se pudo mirar en pantalla**: el panel del
-  navegador estaba oculto (no dibujaba), así que lo visual de la hoja, el
-  menú en el celular y el modo noche falta revisarlo a ojo; tampoco hay
-  capturas en `guia/` todavía.
+- Sin errores en la consola. Ese día el panel del navegador estaba oculto
+  (no dibujaba): lo visual se revisó a ojo con D1 (abajo).
 
 ### Pendiente de D0
 
-- Las capturas numeradas (`admin-*.webp`) y revisar a ojo el modo noche.
-- Con algo elegido en el celular, `AccionesLote` y el botón de la página
-  quedan uno encima del otro: decidir cuál se esconde cuando hay selección
-  (ninguna página de D0 usa casillas todavía).
-- `PaginaListaAdmin` (la plantilla) se saca cuando haya una segunda lista
-  (Colecciones, D1): hoy Categorías arma las piezas a mano.
+- ~~Las capturas y el modo noche~~: hechas con D1 (abajo); el modo noche se
+  revisó a ojo el 2026-11-02 (la barra de lo elegido se perdía de noche:
+  ahora violeta oscuro con borde).
+- ~~`AccionesLote` encima del botón de la página~~: mientras hay algo
+  elegido, el botón se esconde (`useMarcoAdmin().setConLote`).
+- ~~`PaginaListaAdmin`~~: salió con D1.
 - Al unir: el inicio de hoy (`AdminDashboard.jsx`) trae además un editor
   viejo de secciones por zonas; ver si alguien lo usa antes de retirarlo.
+
+## D1 · Catálogo base (en el kit desde el 2026-11-02)
+
+Cómo verlo: **Admin** → Panel de prueba → "Ir a" (Categorías, Colecciones,
+Marcas, Atributos, Envíos, Cliparts, Destacados) o el menú. Datos: la copia
+real de `categories`, `collections`, `tags`, `characters`, `productTypes`,
+35 productos (`demo/tienda.json`) y `tienda_brands` (`demo/marcas.json`);
+las zonas de envío y los cliparts son de ejemplo (no hay copia).
+
+| Escritorio | Celular |
+|---|---|
+| ![Categorías en escritorio: menú lateral, aviso de las que no tienen marca, filtros y la tabla](admin-categorias-escritorio.webp) | ![Categorías en el celular: cabecera, tarjetas, el botón Nueva categoría sobre la barra](admin-categorias-celular.webp) |
+| ![Editar una marca: la hoja al costado con dirección, logo, monedas y el fondo de sus tarjetas](admin-marca-editar.webp) | ![El menú del panel en una hoja, con buscador y grupos](admin-menu-celular.webp) |
+| ![Destacados: la lista que se ordena a mano, buscar para destacar y lo más vendido](admin-destacados.webp) | ![El panel de noche](admin-noche.webp) |
+
+### La plantilla: `PaginaListaAdmin` (`paginas/admin/Lista.jsx`)
+
+Toda lista con su hoja: `CabezaAdmin` + `antes` (un aviso, pestañas) +
+`BarraFiltros` + `TablaAdmin` (de a 50, con `CargarMas`) + `HojaEdicion` +
+la pregunta de eliminar + los toasts. Cada página da sus columnas, sus
+filtros (`filtrar(r, valor)`), sus órdenes, y un `formulario` con `vacio`,
+`desde`, `validar` (el primer campo con error recibe el foco), `limpiar` y
+`campos`. `eliminar.bloqueado(r)` no pregunta: avisa por qué no se puede.
+Lo que se repite en las celdas está en `paginas/admin/celdas.jsx`
+(`FotoCelda`, `MarcasCelda`, `NumeroCelda`, `ElegirMarcas`, `porNombre`,
+`porOrden`). Categorías pasó a la plantilla.
+
+### Las páginas
+
+| Página | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| Categorías | `PaginaCategorias` | `paginas/admin/Categorias.jsx` | (D0) sobre la plantilla |
+| Colecciones | `PaginaColecciones` | `paginas/admin/Catalogo.jsx` | Nombre, orden y el banner (ancho, sin recorte); no repite nombres |
+| Atributos | `PaginaAtributos` | `paginas/admin/Catalogo.jsx` | Pestañas Tipos · Etiquetas · Personajes con su cuenta; etiquetas y personajes con marcas (sin ninguna: de todas); cuántos productos usa cada uno; **no deja eliminar uno en uso** (como antes) y dice en cuántos está |
+| Zonas de envío | `PaginaEnvios` | `paginas/admin/Catalogo.jsx` | Zona y departamento, costo (`CampoDinero`; 0 = gratis), días, orden y activa (`Interruptor`); filtro activas/inactivas |
+| Cliparts | `PaginaCliparts` | `paginas/admin/Catalogo.jsx` | Nombre, categoría (elegir o escribir una nueva), la imagen (PNG/SVG, sin recorte, también por enlace) |
+| Marcas | `PaginaMarcas` | `paginas/admin/Marcas.jsx` | Arriba, "Pedidos por WhatsApp" (número principal y multimarca, en su hoja). La lista: logo, dirección, WhatsApp del asesor, tope de monedas. La hoja: nombre, dirección (`wala.pe/…`, **no deja repetir la de otra marca**), orden, logo, WhatsApp del asesor, mensaje sin productos, tope de monedas con el ejemplo de S/ 100, el fondo de sus tarjetas (`CampoColor`, textura, cuánto se ve) y la **vista previa de la tarjeta** con uno de sus productos. Menú "Páginas": aplicar la plantilla de página (pregunta) y quitar páginas repetidas. Por fila: sus productos y diseñar página |
+| Productos de una marca | `PaginaProductosMarca` | `paginas/admin/Marcas.jsx` | Pestañas "En la marca · N" y "Agregar productos", buscar, casillas, `AccionesLote` (Quitar de la marca / Pasar a …), de a 50; "Crear producto en …" (`/admin/productos/nuevo?brandId=`) |
+| Destacados | `PaginaDestacados` | `paginas/admin/Destacados.jsx` | Los de la portada en una `ListaOrdenable` (arrastrar o flechas; "Guardar orden" / "Deshacer" pegados abajo), quitar, `SelectorProductos` para destacar otro y lo más vendido de 30 días con Destacar / Quitar |
+
+Piezas nuevas en D1: `ListaOrdenable`, `SelectorProductos`, `CargarMas`
+(`piezas/admin/Datos.jsx`), `CampoDinero`, `CampoColor` y `conEnlace` /
+`contener` en `CampoImagen` (`piezas/admin/Formularios.jsx`). Adaptadores
+nuevos (con pruebas): colecciones, atributos (`ATRIBUTOS`,
+`usosDeAtributo`), zonas, cliparts, marcas (`slugDeMarca`, `topeMonedasDe`),
+`productoAdminDesde` y `mismoNombre`.
+
+### Diferencias a propósito (D1)
+
+- Colecciones, zonas y atributos **no dejan dos con el mismo nombre** (sin
+  tildes ni mayúsculas); los atributos ya lo hacían.
+- Una marca **no puede tomar la dirección de otra** (antes lo decía el
+  servidor al guardar).
+- **Destacar uno lo pone al final** (antes, con orden 0: al principio y
+  empatado con otros). El orden se guarda de una vez para todos, con su
+  posición (`featuredOrder` 0, 1, 2…); antes, uno por uno con un número.
+- El WhatsApp de "Pedidos por WhatsApp" se cambia en su hoja, con el
+  resto de la página quieta.
+- "Aplicar plantilla" y "Quitar páginas repetidas" van en el menú
+  "Páginas" (antes, dos botones grandes arriba); el resultado sale en un toast.
+- "Gestionar productos" es una página con su dirección (en la demo,
+  `/admin/marcas/:id/productos`); antes reemplazaba la lista sin cambiar
+  la dirección (atrás salía de Marcas).
+
+### Qué se probó (2026-11-02, demo en localhost, con el navegador dibujando)
+
+- Las siete páginas cargan con sus datos; en el celular (375 px) nada se
+  sale del ancho (las pestañas de Atributos y la lista de Destacados se
+  salían: pestañas más cortas, que se deslizan si no entran, y el número
+  de la lista y el texto "Quitar" se van en angosto).
+- Destacados: bajar el primero con la flecha → aparece "Guardar orden" →
+  guardar → toast y se va el aviso; buscar "conjunto" → los ya destacados
+  dicen "Destacado" → destacar otro → queda al final; quitar → se va.
+- Atributos: las tres pestañas con su cuenta; eliminar una etiqueta en uso
+  → no pregunta y avisa "Está en 1 producto…".
+- Marcas → "Sus productos" de MUSSA → "Agregar productos" → elegir dos →
+  el botón de la página se esconde → "Pasar a MUSSA" → toast y la cuenta
+  pasa de 11 a 13.
+- Editar una marca: la hoja con la vista previa de la tarjeta; el color
+  con su muestra (el `ControlColor` del editor no se veía fuera del editor:
+  por eso `CampoColor`).
+- Modo noche a ojo (Categorías y las piezas sueltas). Sin errores en la consola.
+
+### Cómo se une D1 (cuando se decida)
+
+Un conector por página en `src/components/panel/` con los servicios de hoy
+y sus mismas `queryKey` (las de la tienda también: `['categories']`,
+`['collections']`, `['brands']`, `['tags']`, `['characters']`,
+`['productTypes']`, `['shipping-zones']`, `['cliparts']`,
+`['featured-products']`, `['products']`…):
+
+| Página | Lee | Escribe |
+|---|---|---|
+| Categorías | `getCategories`, `getBrands` | `createCategory` / `updateCategory` / `deleteCategory` con `categoriaAFirestore`; `uploadFile` en `categories/` |
+| Colecciones | `getCollections` | `create/update/deleteCollection` con `coleccionAFirestore`; `uploadFile` en `collections/` |
+| Atributos | `getProductTypes`, `getTags`, `getCharacters`, `getBrands`, `getProducts([], null, null, { includeHidden: true })` para `usosDeAtributo` | `create/update/delete` de cada uno con `atributoAFirestore(datos, tipo)` |
+| Envíos | `getShippingZones` | `create/update/deleteShippingZone` con `zonaAFirestore` |
+| Cliparts | `getCliparts` | `create/update/deleteClipart` con `clipartAFirestore(datos, toDirectImageUrl)`; `uploadFile` en `cliparts/` |
+| Marcas | `getBrands`, `getMessage('whatsapp_number_principal' \| 'whatsapp_multimarca')`, `getProductsByBrand` (la muestra) | `create/update/deleteBrand` con `marcaAFirestore` (si `updateBrand` devuelve error, se lanza: la hoja lo muestra); `setMessage` ×2; `ensureAllBrandLandings({ force: false })` y `dedupeBrandLandings` con su texto de resultado; logo en `brands/logos/`, textura en `brands/backgrounds/` (`opciones.carpeta`) |
+| Productos de una marca | `getProducts(… includeHidden)` con `productoAdminDesde` | `setProductBrand(id, brandId)` (vacío para quitar) uno por uno, contando los que fallan |
+| Destacados | `getProducts(… includeHidden)`, `getTopSellingWala({ days: 30, topLimit: 10 })` (staleTime 15 min) | `updateProductField(id, { featured: true, featuredOrder: último + 1 })`, `{ featured: false, featuredOrder: 0 }` y el orden `{ featured: true, featuredOrder: i }` |
+
+Interruptor: `adminCatalogoViejo`. No se pierde: el tope de monedas es el
+mismo de `utils/topeMonedas` (y su espejo en `functions/checkoutTotals.js`);
+eliminar una marca borra su landing (`deleteBrand`); `storeTitle` y
+`storeSubtitle` no se escriben (se conservan).
 
 ## Cómo se une un apartado (la misma lógica que clientes)
 
@@ -362,3 +467,4 @@ quedan "sin marca").
 |---|---|---|
 | 2026-11-02 | Paso 0: el mapa del admin y este plan | `guia/ADMIN.md` |
 | 2026-11-02 | D0 en el kit: marco, barra del celular, cabecera, sin permiso, inicio, tabla, filtros, estados, lo elegido, hoja de edición, bloques, campo de imagen y el menú con permisos (con pruebas); Categorías como primera página; vista **Admin** en `/componentes.html` | `piezas/admin/`, `paginas/admin/`, `adaptadoresAdmin.js`, `DemoAdmin.jsx` |
+| 2026-11-02 | D1 en el kit: `PaginaListaAdmin` (Categorías pasó a ella), Colecciones, Atributos, Zonas de envío, Cliparts, Marcas con sus productos y Destacados; `ListaOrdenable`, `SelectorProductos`, `CargarMas`, `CampoDinero`, `CampoColor`; capturas en `guia/admin-*.webp` y el modo noche revisado | `paginas/admin/`, `piezas/admin/`, `adaptadoresAdmin.js` |

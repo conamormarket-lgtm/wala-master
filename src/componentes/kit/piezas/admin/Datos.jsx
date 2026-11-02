@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { ArrowDown, ArrowUp, ArrowUpDown, MoreHorizontal, RefreshCw, SlidersHorizontal, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Reorder, useDragControls } from 'framer-motion';
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, GripVertical, MoreHorizontal, RefreshCw, SlidersHorizontal, X } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, EstadoVacio, HojaInferior } from '../../Feedback';
 import { Buscador, Campo } from '../../Formulario';
@@ -7,6 +8,9 @@ import { Chip, Etiqueta } from '../../Etiquetas';
 import { EsqueletoFila } from '../../Esqueletos';
 import { Visto } from '../../Marca';
 import { MenuContextual } from '../MenuContextual';
+import { FotoProducto } from '../FotoProducto';
+import { useMarcoAdmin } from './Marco';
+import { normalizarBusqueda } from '../../adaptadoresAdmin';
 import s from './Datos.module.css';
 
 /*
@@ -334,13 +338,23 @@ export function BarraFiltros({ busqueda = '', onBusqueda, placeholder = 'Buscar�
  * todos a la vez y "quitar la selección". Se pega abajo (sobre la barra
  * del celular) mientras hay algo elegido.
  *  - cantidad · acciones: [{ id, texto, Icono, peligro, onClick, cargando }] · onLimpiar
+ *  - unidad: ['elegida', 'elegidas'] ("3 elegidos" para productos)
  */
-export function AccionesLote({ cantidad = 0, acciones = [], onLimpiar }) {
+export function AccionesLote({ cantidad = 0, acciones = [], onLimpiar, unidad = ['elegida', 'elegidas'] }) {
+  const marco = useMarcoAdmin();
+  const hay = cantidad > 0;
+  // Mientras hay algo elegido, el botón de la página (sobre la barra del
+  // celular) se esconde: irían uno encima del otro.
+  useEffect(() => {
+    if (!marco) return undefined;
+    marco.setConLote(hay);
+    return () => marco.setConLote(false);
+  }, [marco, hay]);
   if (!cantidad) return null;
   return (
     <div className={s.lote} role="region" aria-label="Lo elegido" data-componente="AccionesLote">
       <button type="button" className={s.loteLimpiar} onClick={onLimpiar} aria-label="Quitar la selección"><X aria-hidden="true" /></button>
-      <strong className={s.loteCuantos}>{cantidad} {cantidad === 1 ? 'elegida' : 'elegidas'}</strong>
+      <strong className={s.loteCuantos}>{cantidad} {cantidad === 1 ? unidad[0] : unidad[1]}</strong>
       <div className={s.loteAcciones}>
         {acciones.map((a) => (
           <Boton
@@ -355,6 +369,122 @@ export function AccionesLote({ cantidad = 0, acciones = [], onLimpiar }) {
           </Boton>
         ))}
       </div>
+    </div>
+  );
+}
+
+/* ── Ver más ──────────────────────────────────────────── */
+
+/**
+ * Una lista larga se muestra de a tramos: cuántos se ven y "Ver N más".
+ *  - visibles · total · onMas · paso (cuántos suma) · unidad: ['producto', 'productos']
+ */
+export function CargarMas({ visibles, total, onMas, paso = 50, unidad = ['resultado', 'resultados'] }) {
+  if (!total || visibles >= total) return null;
+  const faltan = Math.min(paso, total - visibles);
+  return (
+    <div className={s.mas} data-componente="CargarMas">
+      <span>Ves {visibles} de {total} {total === 1 ? unidad[0] : unidad[1]}</span>
+      <Boton variante="secundario" onClick={onMas}>Ver {faltan} más</Boton>
+    </div>
+  );
+}
+
+/* ── Ordenar a mano ───────────────────────────────────── */
+
+function FilaOrdenable({ item, indice, total, nombre, render, onMover }) {
+  const controles = useDragControls();
+  return (
+    <Reorder.Item as="li" value={item} dragListener={false} dragControls={controles} className={s.ordenFila}>
+      <button
+        type="button"
+        className={s.asa}
+        onPointerDown={(e) => { e.preventDefault(); controles.start(e); }}
+        aria-label={`Arrastrar ${nombre}`}
+        title="Arrastrar"
+      >
+        <GripVertical aria-hidden="true" />
+      </button>
+      <span className={s.ordenNumero} aria-hidden="true">{indice + 1}</span>
+      <div className={s.ordenCuerpo}>{render(item, indice)}</div>
+      <span className={s.ordenFlechas}>
+        <button type="button" disabled={indice === 0} onClick={() => onMover(indice, -1)} aria-label={`Subir ${nombre}`}><ArrowUp aria-hidden="true" /></button>
+        <button type="button" disabled={indice === total - 1} onClick={() => onMover(indice, 1)} aria-label={`Bajar ${nombre}`}><ArrowDown aria-hidden="true" /></button>
+      </span>
+    </Reorder.Item>
+  );
+}
+
+/**
+ * Ordenar una lista a mano: arrastrando desde el asa o con las flechas
+ * (en el celular y con teclado). El orden nuevo sale por onCambiar; guardar
+ * lo decide la página.
+ *  - items · idDe(item) (item.id) · nombreDe(item) · render(item, indice) → el contenido de la fila
+ *  - onCambiar(items) · etiqueta (para los lectores)
+ */
+export function ListaOrdenable({ items = [], idDe = (x) => x.id, nombreDe = (x) => String(x.id), render, onCambiar, etiqueta = 'Orden' }) {
+  const mover = (i, d) => {
+    const j = i + d;
+    if (j < 0 || j >= items.length) return;
+    const n = [...items];
+    [n[i], n[j]] = [n[j], n[i]];
+    onCambiar(n);
+  };
+  return (
+    <Reorder.Group as="ol" axis="y" values={items} onReorder={onCambiar} className={s.ordenable} aria-label={etiqueta} data-componente="ListaOrdenable">
+      {items.map((it, i) => (
+        <FilaOrdenable key={idDe(it)} item={it} indice={i} total={items.length} nombre={nombreDe(it)} render={render} onMover={mover} />
+      ))}
+    </Reorder.Group>
+  );
+}
+
+/* ── Elegir productos ─────────────────────────────────── */
+
+const soles = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
+
+/**
+ * Buscar un producto del catálogo y hacer algo con él (destacarlo,
+ * agregarlo a un combo…). Los resultados salen al escribir.
+ *  - productos: [{ id, nombre, imagen, precio, oculto }] (productoAdminDesde)
+ *  - yaEstan: [ids] (salen con `accionHecha`, sin botón)
+ *  - onElegir(producto) → promesa (mientras, el botón carga)
+ *  - accion ('Agregar') · accionHecha ('Ya está') · placeholder · limite (8)
+ */
+export function SelectorProductos({ productos = [], yaEstan = [], onElegir, accion = 'Agregar', accionHecha = 'Ya está', placeholder = 'Buscar un producto por nombre', limite = 8 }) {
+  const [buscar, setBuscar] = useState('');
+  const [cargando, setCargando] = useState(null);
+  const q = normalizarBusqueda(buscar);
+  const hay = new Set(yaEstan);
+  const resultados = q ? productos.filter((p) => normalizarBusqueda(p.nombre).includes(q)) : [];
+  const elegir = async (p) => {
+    setCargando(p.id);
+    try { await onElegir?.(p); } finally { setCargando(null); }
+  };
+  return (
+    <div className={s.selector} data-componente="SelectorProductos">
+      <Buscador placeholder={placeholder} value={buscar} onChange={(e) => setBuscar(e.target.value)} onBuscar={setBuscar} atajo={null} className={s.selectorBuscar} />
+      {q && (resultados.length ? (
+        <ul className={s.selectorLista}>
+          {resultados.slice(0, limite).map((p) => (
+            <li key={p.id} className={s.selectorFila}>
+              <FotoProducto src={p.imagen} className={s.selectorFoto} />
+              <span className={s.selectorTextos}>
+                <strong>{p.nombre}</strong>
+                <span>{soles(p.precio)}{p.oculto ? ' · Oculto en la tienda' : ''}</span>
+              </span>
+              {hay.has(p.id) ? (
+                <span className={s.selectorHecho}><Check aria-hidden="true" /> {accionHecha}</span>
+              ) : (
+                <Boton tamano="sm" variante="secundario" cargando={cargando === p.id} disabled={Boolean(cargando)} onClick={() => elegir(p)}>{accion}</Boton>
+              )}
+            </li>
+          ))}
+          {resultados.length > limite && <li className={s.selectorMas}>Y {resultados.length - limite} más: escribe un poco más del nombre.</li>}
+        </ul>
+      ) : (
+        <p className={s.selectorNada}>Ningún producto se llama así.</p>
+      ))}
     </div>
   );
 }

@@ -1,0 +1,142 @@
+/* ── Destacados del admin (D1) ─────────────────────────────── */
+.pagina {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.75rem;
+}
+
+.pagina > header {
+  margin-bottom: -0.65rem;
+}
+
+.bloque {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.65rem;
+}
+
+.bloqueCabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.75rem;
+}
+
+.bloqueTitulo {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.bloqueAyuda {
+  margin: -0.3rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.cambiado {
+  color: var(--warning, #f59e0b);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.producto {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.foto {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+}
+
+.textos {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.textos strong {
+  /* Hasta dos líneas: en el celular, en una sola no se reconoce el producto. */
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.9rem;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.textos span {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+/* Guardar el orden: pegado abajo mientras haya cambios (sobre la barra del celular). */
+.guardar {
+  position: sticky;
+  bottom: calc(var(--admin-abajo, 0px) + 0.75rem);
+  z-index: 15;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 14px 30px -18px rgba(20, 18, 28, 0.45);
+}
+
+.vendidos {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vendidos li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+
+.vendidos li > .producto {
+  flex: 1;
+}
+
+.puesto {
+  flex: none;
+  min-width: 1.6rem;
+  color: var(--gold-text, #b45309);
+  font-family: var(--fuente-marca);
+  font-size: 1rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.esqueleto {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.vacio {
+  padding: 1rem 0;
+  border: 1px dashed var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}

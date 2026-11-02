@@ -27,6 +27,9 @@ import s from './Marco.module.css';
 
 const MarcoCtx = createContext(null);
 
+/** El marco, para las piezas que lo necesitan (AccionesLote esconde el botón de la página). null fuera de él. */
+export const useMarcoAdmin = () => useContext(MarcoCtx);
+
 /**
  * El marco de toda página de /admin.
  *  - grupos: [{ id, titulo, icono, tono, suelto, items: [{ to, texto, icono, exacto, cuenta, fuera }] }]
@@ -39,8 +42,9 @@ const MarcoCtx = createContext(null);
 export function MarcoAdmin({ grupos = [], activo = '', accesos = [], usuario, onCerrarSesion, urlTienda = '/', onNavegar, children }) {
   const [menu, setMenu] = useState(false);
   const [principal, setPrincipal] = useState(null);
+  const [conLote, setConLote] = useState(false);
   const actual = useMemo(() => opcionActiva(grupos, activo), [grupos, activo]);
-  const ctx = useMemo(() => ({ setPrincipal }), []);
+  const ctx = useMemo(() => ({ setPrincipal, setConLote }), []);
   const navegar = (to) => { setMenu(false); onNavegar?.(to); };
   const Icono = actual ? iconoAdmin(actual.item.icono, actual.grupo.icono) : null;
 
@@ -64,7 +68,7 @@ export function MarcoAdmin({ grupos = [], activo = '', accesos = [], usuario, on
             </header>
             <main className={s.contenido}>{children}</main>
             <div className={s.abajo}>
-              {principal && (
+              {principal && !conLote && (
                 <Boton
                   className={s.flotante}
                   to={principal.to}
@@ -310,7 +314,7 @@ export function CabezaAdmin({ icono, tono = 'degradado', titulo, subtitulo, miga
         </nav>
       )}
       <div className={s.cabezaFila}>
-        {icono && <Sello tamano={42} tono={tono}>{Icono ? <Icono /> : icono}</Sello>}
+        {icono && <Sello tamano={42} tono={tono} className={ctx ? s.selloCabeza : undefined}>{Icono ? <Icono /> : icono}</Sello>}
         <div className={s.cabezaTextos}>
           <h1 className={s.cabezaTitulo}>{titulo}</h1>
           {subtitulo && <p className={s.cabezaSub}>{subtitulo}</p>}

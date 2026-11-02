@@ -193,6 +193,177 @@ export function marcaAdminDesdeFirestore(doc = {}) {
   return { id: doc.id, nombre: doc.name || 'Sin nombre', logo: doc.logoUrl || '' };
 }
 
+/** Mismo nombre sin tildes, mayúsculas ni espacios de más (para no repetir). */
+export const mismoNombre = (a, b) => normalizarBusqueda(a) === normalizarBusqueda(b);
+
+/* ── Colecciones ───────────────────────────────────────── */
+
+export function coleccionDesdeFirestore(doc = {}) {
+  return {
+    id: doc.id,
+    nombre: doc.name || '',
+    imagen: doc.imageUrl || '',
+    orden: Number.isFinite(Number(doc.order)) ? Number(doc.order) : 0,
+  };
+}
+
+/** Los campos de `collections` (los mismos de AdminColecciones). */
+export function coleccionAFirestore(c = {}) {
+  return { name: String(c.nombre || '').trim(), order: Number(c.orden) || 0, imageUrl: c.imagen || '' };
+}
+
+/* ── Atributos del catálogo ────────────────────────────── */
+
+/*
+ * Tres listas con la misma forma: tipos de producto (`productTypes`, sin
+ * marcas), etiquetas (`tags`) y personajes (`characters`), con marcas (sin
+ * ninguna: de todas). `campo`: dónde los guarda un producto.
+ */
+export const ATRIBUTOS = {
+  tipos: { titulo: 'Tipos de producto', singular: 'tipo de producto', plural: 'tipos de producto', campo: 'productType', conMarcas: false, ejemplo: 'Accesorio', ayuda: 'El filtro «Tipo de producto» de la tienda.' },
+  etiquetas: { titulo: 'Etiquetas', singular: 'etiqueta', plural: 'etiquetas', campo: 'tags', conMarcas: true, ejemplo: 'Dragon Ball', ayuda: 'Palabras temáticas para clasificar y filtrar.' },
+  personajes: { titulo: 'Personajes', singular: 'personaje', plural: 'personajes', campo: 'characters', conMarcas: true, ejemplo: 'Goku', ayuda: 'Los protagonistas de cada diseño.' },
+};
+
+const idDeValor = (v) => (v && typeof v === 'object' ? (v.id || v.slug || v.name || '') : v);
+
+/** Cuántos productos usan cada valor de un atributo ({ id: n }). Cuenta también los ocultos. */
+export function usosDeAtributo(productos = [], tipo) {
+  const campo = ATRIBUTOS[tipo]?.campo;
+  const usos = {};
+  if (!campo) return usos;
+  productos.forEach((p) => {
+    const crudo = p?.[campo];
+    const ids = new Set((Array.isArray(crudo) ? crudo : [crudo]).map(idDeValor).filter(Boolean));
+    ids.forEach((id) => { usos[id] = (usos[id] || 0) + 1; });
+  });
+  return usos;
+}
+
+export function atributoDesdeFirestore(doc = {}, usos = {}) {
+  return {
+    id: doc.id,
+    nombre: doc.name || doc.id || '',
+    marcas: Array.isArray(doc.brandIds) ? doc.brandIds : [],
+    usos: usos[doc.id] || 0,
+  };
+}
+
+/** Tipos: solo el nombre; etiquetas y personajes, también sus marcas. */
+export function atributoAFirestore(a = {}, tipo) {
+  const name = String(a.nombre || '').trim();
+  return ATRIBUTOS[tipo]?.conMarcas ? { name, brandIds: Array.isArray(a.marcas) ? [...new Set(a.marcas)] : [] } : { name };
+}
+
+/* ── Zonas de envío ────────────────────────────────────── */
+
+export function zonaDesdeFirestore(doc = {}) {
+  return {
+    id: doc.id,
+    nombre: doc.name || '',
+    departamento: doc.departamento || '',
+    costo: Number(doc.cost) || 0,
+    dias: Number(doc.etaDays) || 0,
+    orden: Number(doc.order) || 0,
+    activa: doc.active !== false,
+  };
+}
+
+/** Los campos de `shippingZones` (los mismos de AdminEnviosZonas). */
+export function zonaAFirestore(z = {}) {
+  return {
+    name: String(z.nombre || '').trim(),
+    departamento: String(z.departamento || '').trim(),
+    cost: Number(z.costo) || 0,
+    etaDays: Number(z.dias) || 0,
+    order: Number(z.orden) || 0,
+    active: z.activa !== false,
+  };
+}
+
+/* ── Cliparts ──────────────────────────────────────────── */
+
+export function clipartDesdeFirestore(doc = {}) {
+  return { id: doc.id, nombre: doc.name || '', imagen: doc.url || '', categoria: doc.category || '' };
+}
+
+/** `directa`: la que convierte un enlace de Drive en imagen (utils/imageUrl, toDirectImageUrl). */
+export function clipartAFirestore(c = {}, directa = (u) => u) {
+  const url = String(c.imagen || '').trim();
+  return { name: String(c.nombre || '').trim(), url: url ? directa(url) : '', category: String(c.categoria || '').trim() };
+}
+
+/* ── Marcas ────────────────────────────────────────────── */
+
+/** La parte de la dirección de una marca (wala.pe/<esto>): como brands.js y la cabecera. */
+export function slugDeMarca(texto) {
+  return String(texto || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '');
+}
+
+export const TOPE_MONEDAS_POR_DEFECTO = 50;
+
+/** El % de monedas de una marca (como utils/topeMonedas: vacío o raro = 50; entre 0 y 100). */
+export function topeMonedasDe(crudo) {
+  if (crudo === null || crudo === undefined || crudo === '') return TOPE_MONEDAS_POR_DEFECTO;
+  const n = Number(crudo);
+  return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : TOPE_MONEDAS_POR_DEFECTO;
+}
+
+export function marcaDesdeFirestore(doc = {}) {
+  return {
+    id: doc.id,
+    nombre: doc.name || '',
+    slug: doc.slug || '',
+    logo: doc.logoUrl || '',
+    orden: Number(doc.order) || 0,
+    whatsapp: doc.whatsappNumber || '',
+    mensajeVacio: doc.storeEmpty || '',
+    topeMonedas: topeMonedasDe(doc.topeMonedasPct),
+    fondo: doc.bgColor || '#ffffff',
+    textura: doc.bgImage || '',
+    opacidad: doc.bgOpacity ?? 100,
+  };
+}
+
+/**
+ * Los campos de `tienda_brands` que edita el admin (los mismos de
+ * AdminMarcas). storeTitle y storeSubtitle no van: se conservan en el doc
+ * (updateBrand solo escribe lo que llega) pero ya no se ven en la tienda.
+ */
+export function marcaAFirestore(m = {}) {
+  return {
+    name: String(m.nombre || '').trim(),
+    slug: String(m.slug || '').trim(),
+    logoUrl: String(m.logo || '').trim(),
+    order: Number(m.orden) || 0,
+    bgColor: m.fondo || '#ffffff',
+    bgImage: String(m.textura || '').trim(),
+    bgOpacity: Number(m.opacidad ?? 100),
+    whatsappNumber: String(m.whatsapp || '').trim(),
+    storeEmpty: String(m.mensajeVacio || '').trim(),
+    topeMonedasPct: topeMonedasDe(m.topeMonedas),
+  };
+}
+
+/* ── Productos (lo justo para elegirlos en el admin) ───── */
+
+/** Un producto de `productos_wala` para las listas del admin. Los archivados (deleted) no se listan: null. */
+export function productoAdminDesde(p = {}) {
+  if (!p || p.deleted === true) return null;
+  const precio = Number(p.price) || 0;
+  const oferta = Number(p.salePrice) || 0;
+  return {
+    id: p.id,
+    nombre: p.name || 'Sin nombre',
+    imagen: p.mainImage || (Array.isArray(p.images) && p.images[0]) || '',
+    precio: oferta > 0 && oferta < precio ? oferta : precio,
+    oculto: p.visible === false,
+    marcaId: p.brandId || '',
+    destacado: p.featured === true,
+    ordenDestacado: Number(p.featuredOrder) || 0,
+  };
+}
+
 /** Busca sin tildes ni mayúsculas. */
 export function normalizarBusqueda(t) {
   return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();

@@ -162,6 +162,11 @@
   .principalCabeza {
     display: none !important;
   }
+
+  /* La cabecera del celular ya lleva el sello de la sección: no dos iguales seguidos. */
+  .selloCabeza {
+    display: none;
+  }
 }
 
 /* ── El menú (al costado o en la hoja) ── */
@@ -570,7 +575,8 @@
 .cabezaFila {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  /* Arriba: con una ayuda larga (el celular), el sello no queda flotando a media altura. */
+  align-items: flex-start;
   gap: 0.75rem 0.85rem;
 }
 

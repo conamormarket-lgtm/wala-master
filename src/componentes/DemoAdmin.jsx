@@ -2,8 +2,11 @@ import React, { forwardRef, useCallback, useMemo, useRef, useState } from 'react
 import { Archive, Eye, EyeOff, Trash2 } from 'lucide-react';
 import {
   MarcoAdmin, SinPermiso, CabezaAdmin, PaginaInicioAdmin, PaginaCategorias, InsigniaEstado, ESTADOS_ADMIN, AccionesLote,
+  PaginaColecciones, PaginaAtributos, PaginaEnvios, PaginaCliparts, PaginaMarcas, PaginaProductosMarca, PaginaDestacados,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
+  coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
+  productoAdminDesde, tarjetaDesdeProducto,
 } from './kit';
 import TIENDA from './demo/tienda.json';
 import MARCAS_TIENDA from './demo/marcas.json';
@@ -13,11 +16,13 @@ import s from './DemoAdmin.module.css';
 /*
  * El panel administrativo armado solo con el kit (guía: kit/guia/ADMIN.md).
  *  - Panel de prueba: MarcoAdmin con el menú real filtrado por permiso; los
- *    enlaces navegan. Hecho: el inicio y Categorías (con la copia real de
- *    categories y tienda_brands); el resto de las secciones dice en qué
- *    apartado se hará.
+ *    enlaces navegan. Hechos: el inicio (D0) y el catálogo base (D1):
+ *    categorías, colecciones, marcas y sus productos, atributos, zonas de
+ *    envío, cliparts y destacados, con la copia real de la tienda
+ *    (demo/tienda.json y demo/marcas.json; las zonas y los cliparts son de
+ *    ejemplo). El resto de las secciones dice en qué apartado se hará.
  *  - Piezas del admin: las piezas sueltas con sus estados.
- * Guardar, eliminar y subir se simulan (con "Que falle" para ver el error).
+ * Guardar, eliminar y subir se simulan ("Guardar y subir fallan" para ver el error).
  */
 
 const PERFILES = [
@@ -39,23 +44,82 @@ const ESTADOS = [
   ['falla', 'Guardar y subir fallan'],
 ];
 
+/* Las páginas que ya están, para los chips de "Ir a". */
+const HECHAS = [
+  ['/admin', 'Inicio'],
+  ['/admin/categorias', 'Categorías'],
+  ['/admin/colecciones', 'Colecciones'],
+  ['/admin/marcas', 'Marcas'],
+  ['/admin/atributos-catalogo', 'Atributos'],
+  ['/admin/envios', 'Envíos'],
+  ['/admin/cliparts', 'Cliparts'],
+  ['/admin/destacados', 'Destacados'],
+];
+
 /* El apartado de ADMIN.md donde se hará cada sección que todavía no está. */
 const APARTADOS = {
-  pedidos: 'D3 · Pedidos y pagos', catalogo: 'D1 · Catálogo base', resultados: 'D4 · Resultados', clientes: 'D5 · Clientes y fidelidad',
+  pedidos: 'D3 · Pedidos y pagos', catalogo: 'D2 · Productos', resultados: 'D4 · Resultados', clientes: 'D5 · Clientes y fidelidad',
   campanas: 'D6 · Campañas', diseno: 'D7 · Juegos y Kapi', ajustes: 'D8 · Ajustes',
 };
-const PRODUCTOS = ['/admin/productos', '/admin/inventario', '/admin/plantillas-yoryo', '/admin/blueprints', '/admin/publico-productos'];
 
-// La copia real: categories (tienda.json) y tienda_brands (marcas.json); las
-// marcas de cada categoría salen de su categoryNav.
-const MARCAS = MARCAS_TIENDA.map(marcaAdminDesdeFirestore);
+// La copia real: categories, collections, tags, characters, productTypes y
+// 35 productos (tienda.json) y tienda_brands (marcas.json); las marcas de
+// cada categoría salen de su categoryNav.
+const MARCAS_CORTAS = MARCAS_TIENDA.map(marcaAdminDesdeFirestore);
+const MARCAS = MARCAS_TIENDA.map(marcaDesdeFirestore);
 const CATEGORIAS = (() => {
   const de = {};
   MARCAS_TIENDA.forEach((b) => (b.categoryNav || []).forEach((n) => { (de[n.categoryId] ||= []).push(b.id); }));
   return TIENDA.categorias.map((c, i) => categoriaDesdeFirestore({ ...c, order: c.order ?? i, brandIds: c.brandIds || de[c.id] || [] }));
 })();
+const COLECCIONES = TIENDA.colecciones.map((c, i) => coleccionDesdeFirestore({ ...c, order: c.order ?? i }));
+const ATRIBUTOS_DEMO = {
+  tipos: TIENDA.tipos.map((d) => atributoDesdeFirestore(d, usosDeAtributo(TIENDA.productos, 'tipos'))),
+  etiquetas: TIENDA.etiquetas.map((d) => atributoDesdeFirestore(d, usosDeAtributo(TIENDA.productos, 'etiquetas'))),
+  personajes: TIENDA.personajes.map((d) => atributoDesdeFirestore(d, usosDeAtributo(TIENDA.productos, 'personajes'))),
+};
+// De ejemplo (no hay copia de shippingZones ni de cliparts).
+const ZONAS = [
+  { id: 'z1', name: 'Lima Metropolitana', departamento: 'Lima', cost: 10, etaDays: 2, order: 0 },
+  { id: 'z2', name: 'Callao', departamento: 'Callao', cost: 10, etaDays: 2, order: 1 },
+  { id: 'z3', name: 'Arequipa', departamento: 'Arequipa', cost: 18, etaDays: 4, order: 2 },
+  { id: 'z4', name: 'Cusco', departamento: 'Cusco', cost: 20, etaDays: 5, order: 3 },
+  { id: 'z5', name: 'Trujillo', departamento: 'La Libertad', cost: 18, etaDays: 4, order: 4, active: false },
+].map(zonaDesdeFirestore);
+const CLIPARTS = [
+  { id: 'k1', name: 'Kapi feliz', url: '/assets/kapi/kapi-happy.webp', category: 'Kapi' },
+  { id: 'k2', name: 'Kapi con hambre', url: '/assets/kapi/kapi-hungry.webp', category: 'Kapi' },
+  { id: 'k3', name: 'Kapi triste', url: '/assets/kapi/kapi-sad.webp', category: 'Kapi' },
+  { id: 'k4', name: 'Etiqueta Walá', url: '/assets/marca/splash-etiqueta-w.webp', category: 'Marca' },
+  { id: 'k5', name: 'Logo Walá', url: '/assets/marca/logo-header-v2.webp', category: 'Marca' },
+].map(clipartDesdeFirestore);
+// Los productos, con cinco destacados de ejemplo.
+const PRODUCTOS = TIENDA.productos.map((p, i) => productoAdminDesde({ ...p, featured: i < 5, featuredOrder: i }));
+const MAS_VENDIDOS = [3, 8, 12, 0, 20, 15].map((i, k) => ({ id: TIENDA.productos[i].id, unidades: [41, 33, 27, 19, 12, 7][k] }));
+const MUESTRAS = (() => {
+  const m = {};
+  TIENDA.productos.forEach((p) => { if (p.brandId && !m[p.brandId] && p.mainImage) m[p.brandId] = tarjetaDesdeProducto(p); });
+  return m;
+})();
+const WHATSAPP = { principal: '', multimarca: false, fabrica: '+51924426791' };
 
 const espera = (ms) => new Promise((r) => { window.setTimeout(r, ms); });
+
+/* Una lista de la demo con su guardar y eliminar simulados. */
+function useListaDemo(inicial, falla) {
+  const [lista, setLista] = useState(inicial);
+  const guardar = useCallback(async (datos, id) => {
+    await espera(700);
+    if (falla) throw new Error('Sin conexión con el servidor (es una prueba). Lo escrito sigue aquí.');
+    setLista((l) => (id ? l.map((x) => (x.id === id ? { ...x, ...datos } : x)) : [...l, { ...datos, id: `nuevo-${Date.now()}` }]));
+  }, [falla]);
+  const eliminar = useCallback(async (id) => {
+    await espera(600);
+    if (falla) throw new Error('Sin conexión con el servidor (es una prueba).');
+    setLista((l) => l.filter((x) => x.id !== id));
+  }, [falla]);
+  return [lista, guardar, eliminar, setLista];
+}
 
 function PanelDePrueba() {
   const toast = useToast();
@@ -63,13 +127,21 @@ function PanelDePrueba() {
   const [tamano, setTamano] = useState('ancho');
   const [estados, setEstados] = useState([]);
   const [ruta, setRuta] = useState('/admin/categorias');
-  const [categorias, setCategorias] = useState(CATEGORIAS);
   const marco = useRef(null);
   const p = PERFILES.find((x) => x.id === perfil);
   const grupos = useMemo(() => menuAdminPara(p.permisos), [p]);
   const accesos = useMemo(() => accesosAdminPara(p.permisos), [p]);
   const con = (e) => estados.includes(e);
   const falla = con('falla');
+
+  const [categorias, guardarCategoria, eliminarCategoria, setCategorias] = useListaDemo(CATEGORIAS, falla);
+  const [colecciones, guardarColeccion, eliminarColeccion] = useListaDemo(COLECCIONES, falla);
+  const [zonas, guardarZona, eliminarZona] = useListaDemo(ZONAS, falla);
+  const [cliparts, guardarClipart, eliminarClipart] = useListaDemo(CLIPARTS, falla);
+  const [marcas, guardarMarca, eliminarMarca] = useListaDemo(MARCAS, falla);
+  const [atributos, setAtributos] = useState(ATRIBUTOS_DEMO);
+  const [productos, setProductos] = useState(PRODUCTOS);
+  const [whatsapp, setWhatsapp] = useState(WHATSAPP);
 
   const navegar = useRef(null);
   navegar.current = (to) => {
@@ -88,16 +160,6 @@ function PanelDePrueba() {
     );
   }), []);
 
-  const guardar = useCallback(async (datos, id) => {
-    await espera(800);
-    if (falla) throw new Error('Sin conexión con el servidor (es una prueba). Lo escrito sigue aquí.');
-    setCategorias((cs2) => (id ? cs2.map((c) => (c.id === id ? { ...c, ...datos } : c)) : [...cs2, { ...datos, id: `nueva-${Date.now()}` }]));
-  }, [falla]);
-  const eliminar = useCallback(async (id) => {
-    await espera(700);
-    if (falla) throw new Error('Sin conexión con el servidor (es una prueba).');
-    setCategorias((cs2) => cs2.filter((c) => c.id !== id));
-  }, [falla]);
   const subir = useCallback((blob, { alAvanzar } = {}) => new Promise((resolver, rechazar) => {
     let n = 0;
     const t = window.setInterval(() => {
@@ -107,22 +169,37 @@ function PanelDePrueba() {
       if (n >= 100) { window.clearInterval(t); resolver(URL.createObjectURL(blob)); }
     }, 220);
   }), [falla]);
+  const fallar = (texto = 'Sin conexión con el servidor (es una prueba).') => { if (falla) throw new Error(texto); };
+  const cambiarProductos = async (ids, cambio) => {
+    await espera(700);
+    fallar();
+    setProductos((ps) => ps.map((x) => (ids.includes(x.id) ? { ...x, ...cambio(x) } : x)));
+    return { ok: ids.length, fallaron: 0 };
+  };
+
+  const comunes = {
+    cargando: con('cargando'),
+    error: con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined,
+    onReintentar: () => setEstados((e) => e.filter((x) => x !== 'error')),
+  };
+  const vacio = con('vacio');
 
   const actual = opcionActiva(grupos, ruta);
   const dePaso = opcionActiva(menuAdminPara(['superadmin']), ruta);
+  const marcaDeRuta = ruta.match(/^\/admin\/marcas\/([^/]+)\/productos$/)?.[1];
   let pagina;
   if (!actual) {
-    pagina = <SinPermiso permiso={ruta === '/admin/categorias' ? 'Catálogo de productos' : undefined} />;
+    pagina = <SinPermiso permiso={dePaso?.grupo.id === 'catalogo' ? 'Catálogo de productos' : undefined} />;
   } else if (ruta === '/admin') {
     pagina = (
       <PaginaInicioAdmin
         usuario={{ nombre: 'Isaac Castro' }}
         cargando={con('cargando')}
         pendientes={[
-          { id: 'pedidos', texto: 'Pedidos por recibir', detalle: 'Pagados y sin organizar el envío', cuenta: con('vacio') ? 0 : 7, to: '/admin/recepcion-pedidos', icono: 'pedidos', tono: 'menta', permiso: ['manage_design'] },
-          { id: 'reclamos', texto: 'Reclamos sin responder', detalle: 'El plazo legal es de 15 días hábiles', cuenta: con('vacio') ? 0 : 2, to: '/admin/libro-reclamaciones', icono: 'reclamos', tono: 'rosa', permiso: ['manage_clients'] },
+          { id: 'pedidos', texto: 'Pedidos por recibir', detalle: 'Pagados y sin organizar el envío', cuenta: vacio ? 0 : 7, to: '/admin/recepcion-pedidos', icono: 'pedidos', tono: 'menta', permiso: ['manage_design'] },
+          { id: 'reclamos', texto: 'Reclamos sin responder', detalle: 'El plazo legal es de 15 días hábiles', cuenta: vacio ? 0 : 2, to: '/admin/libro-reclamaciones', icono: 'reclamos', tono: 'rosa', permiso: ['manage_clients'] },
           { id: 'referidos', texto: 'Referidos por aprobar', detalle: 'Monedas esperando que las liberes', cuenta: 0, to: '/admin/referidos', icono: 'referidos', tono: 'oro', permiso: ['manage_clients'] },
-          { id: 'retos', texto: 'Evidencias de retos', detalle: 'Fotos que mandaron los clientes', cuenta: con('vacio') ? 0 : 4, to: '/admin/retos', icono: 'retos', tono: 'oro', permiso: ['manage_clients'] },
+          { id: 'retos', texto: 'Evidencias de retos', detalle: 'Fotos que mandaron los clientes', cuenta: vacio ? 0 : 4, to: '/admin/retos', icono: 'retos', tono: 'oro', permiso: ['manage_clients'] },
         ].filter((x) => puedeVer(x, p.permisos))}
         atajos={[
           { to: '/admin/productos', texto: 'Productos', detalle: 'Crear, editar y ocultar', icono: 'productos', tono: 'degradado', permiso: ['manage_products'] },
@@ -135,20 +212,83 @@ function PanelDePrueba() {
       />
     );
   } else if (ruta === '/admin/categorias') {
+    pagina = <PaginaCategorias {...comunes} categorias={vacio ? [] : categorias} marcas={MARCAS_CORTAS} onGuardar={guardarCategoria} onEliminar={eliminarCategoria} subirImagen={subir} />;
+  } else if (ruta === '/admin/colecciones') {
+    pagina = <PaginaColecciones {...comunes} colecciones={vacio ? [] : colecciones} onGuardar={guardarColeccion} onEliminar={eliminarColeccion} subirImagen={subir} />;
+  } else if (ruta === '/admin/atributos-catalogo') {
     pagina = (
-      <PaginaCategorias
-        categorias={con('vacio') ? [] : categorias}
-        marcas={MARCAS}
-        cargando={con('cargando')}
-        error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
-        onReintentar={() => setEstados((e) => e.filter((x) => x !== 'error'))}
-        onGuardar={guardar}
-        onEliminar={eliminar}
+      <PaginaAtributos
+        {...comunes}
+        atributos={vacio ? {} : atributos}
+        marcas={MARCAS_CORTAS}
+        onGuardar={async (tipo, datos, id) => {
+          await espera(600);
+          fallar();
+          setAtributos((a) => ({ ...a, [tipo]: id ? a[tipo].map((x) => (x.id === id ? { ...x, ...datos } : x)) : [...a[tipo], { ...datos, id: `nuevo-${Date.now()}`, usos: 0 }] }));
+        }}
+        onEliminar={async (tipo, id) => {
+          await espera(600);
+          fallar();
+          setAtributos((a) => ({ ...a, [tipo]: a[tipo].filter((x) => x.id !== id) }));
+        }}
+      />
+    );
+  } else if (ruta === '/admin/envios') {
+    pagina = <PaginaEnvios {...comunes} zonas={vacio ? [] : zonas} onGuardar={guardarZona} onEliminar={eliminarZona} />;
+  } else if (ruta === '/admin/cliparts') {
+    pagina = <PaginaCliparts {...comunes} cliparts={vacio ? [] : cliparts} onGuardar={guardarClipart} onEliminar={eliminarClipart} subirImagen={subir} />;
+  } else if (ruta === '/admin/marcas') {
+    pagina = (
+      <PaginaMarcas
+        {...comunes}
+        marcas={vacio ? [] : marcas}
+        onGuardar={guardarMarca}
+        onEliminar={eliminarMarca}
         subirImagen={subir}
+        muestraDe={(id) => MUESTRAS[id] || null}
+        whatsapp={whatsapp}
+        onGuardarWhatsapp={async (c) => { await espera(600); fallar(); setWhatsapp((w) => ({ ...w, ...c })); }}
+        onProductos={(m) => navegar.current(`/admin/marcas/${m.id}/productos`)}
+        onDisenar={(m) => toast({ tipo: 'info', titulo: 'En el admin abriría su página con el editor', texto: `/${m.slug}?editar`, duracion: 2500 })}
+        onAplicarPlantilla={async () => { await espera(1200); fallar(); return '8 conservadas por estar editadas a mano, 0 creadas.'; }}
+        onQuitarRepetidas={async () => { await espera(900); fallar(); return 'No había páginas repetidas.'; }}
+      />
+    );
+  } else if (marcaDeRuta) {
+    const m = marcas.find((x) => x.id === marcaDeRuta) || marcas[0];
+    pagina = (
+      <PaginaProductosMarca
+        {...comunes}
+        marca={m}
+        marcas={MARCAS_CORTAS}
+        productos={vacio ? [] : productos}
+        urlCrear={`/admin/productos/nuevo?brandId=${m.id}`}
+        onDisenar={(x) => toast({ tipo: 'info', titulo: 'En el admin abriría su página con el editor', texto: `/${x.slug}?editar`, duracion: 2500 })}
+        onAsignar={(ids) => cambiarProductos(ids, () => ({ marcaId: m.id }))}
+        onQuitar={(ids) => cambiarProductos(ids, () => ({ marcaId: '' }))}
+      />
+    );
+  } else if (ruta === '/admin/destacados') {
+    pagina = (
+      <PaginaDestacados
+        {...comunes}
+        productos={vacio ? [] : productos}
+        masVendidos={{ filas: MAS_VENDIDOS, disponible: !vacio, cargando: con('cargando') }}
+        onDestacar={async (id) => {
+          await espera(500);
+          fallar();
+          setProductos((ps) => {
+            const ultimo = ps.filter((x) => x.destacado).reduce((m2, x) => Math.max(m2, x.ordenDestacado + 1), 0);
+            return ps.map((x) => (x.id === id ? { ...x, destacado: true, ordenDestacado: ultimo } : x));
+          });
+        }}
+        onQuitar={async (id) => { await espera(500); fallar(); setProductos((ps) => ps.map((x) => (x.id === id ? { ...x, destacado: false, ordenDestacado: 0 } : x))); }}
+        onGuardarOrden={async (ids) => { await espera(700); fallar(); setProductos((ps) => ps.map((x) => (ids.includes(x.id) ? { ...x, ordenDestacado: ids.indexOf(x.id) } : x))); }}
       />
     );
   } else {
-    const grupo = PRODUCTOS.includes(dePaso?.item.to) ? 'D2 · Productos' : APARTADOS[dePaso?.grupo.id];
+    const productosD2 = ['/admin/productos', '/admin/inventario', '/admin/plantillas-yoryo', '/admin/blueprints', '/admin/publico-productos'];
+    const grupo = productosD2.includes(dePaso?.item.to) ? 'D2 · Productos' : APARTADOS[dePaso?.grupo.id];
     pagina = (
       <>
         <CabezaAdmin icono={dePaso?.item.icono} tono={dePaso?.grupo.tono} titulo={dePaso?.item.texto || 'Sección'} migas={[{ texto: 'Inicio', to: '/admin' }, { texto: dePaso?.item.texto }]} />
@@ -183,9 +323,10 @@ function PanelDePrueba() {
         <div>
           <span className={cs.controlesTitulo}>Ir a</span>
           <div className={cs.controlesChips}>
-            <Chip tamano="sm" activo={ruta === '/admin'} onClick={() => navegar.current('/admin')}>Inicio</Chip>
-            <Chip tamano="sm" activo={ruta === '/admin/categorias'} onClick={() => navegar.current('/admin/categorias')}>Categorías</Chip>
-            <Chip tamano="sm" onClick={() => setCategorias(CATEGORIAS)}>Restaurar categorías</Chip>
+            {HECHAS.map(([to, texto]) => (
+              <Chip key={to} tamano="sm" activo={ruta === to} onClick={() => navegar.current(to)}>{texto}</Chip>
+            ))}
+            <Chip tamano="sm" onClick={() => { setCategorias(CATEGORIAS); setProductos(PRODUCTOS); }}>Restaurar datos</Chip>
           </div>
         </div>
       </div>
@@ -193,7 +334,7 @@ function PanelDePrueba() {
         <ProveedorEnlaces componente={EnlaceAdmin}>
           <MarcoAdmin
             grupos={grupos}
-            activo={ruta}
+            activo={marcaDeRuta ? '/admin/marcas' : ruta}
             accesos={accesos}
             usuario={{ nombre: 'Isaac Castro', email: 'isaac@correo.com', rol: p.rol }}
             onCerrarSesion={() => toast({ tipo: 'info', titulo: 'En el admin cerraría la sesión', duracion: 2000 })}
