@@ -408,3 +408,53 @@ test('resultados: carritos, cumpleaños y la ficha de un cliente', () => {
   assert.equal(l.personas[0].fechas, 'Cumpleaños: 14 de noviembre');
   assert.equal(l.cumpleanos, 'No registró su cumpleaños.');
 });
+
+test('detalle técnico: rangos, tramos de 10 días y la calidad de los datos', () => {
+  assert.deepEqual(m2.ultimosDias(30, new Date(2026, 10, 2)), { desde: '2026-10-04', hasta: '2026-11-02' });
+  assert.equal(m2.diasEntreClaves('2026-10-04', '2026-11-02'), 30);
+  assert.equal(m2.diasEntreClaves('2026-11-02', '2026-10-04'), null);
+  const t = m2.tramosDeDias('2026-10-04', '2026-11-02');
+  assert.deepEqual(t.map((x) => [x.fromDay, x.toDay]), [['2026-10-04', '2026-10-13'], ['2026-10-14', '2026-10-23'], ['2026-10-24', '2026-11-02']]);
+  assert.deepEqual(m2.tramosDeDias('2026-11-02', '2026-11-02'), [{ fromDay: '2026-11-02', toDay: '2026-11-02' }]);
+  assert.equal(m2.ayudaDeRango('2026-10-04', '2026-11-02').texto, 'Se reconstruirán 30 días.');
+  assert.equal(m2.ayudaDeRango('2025-01-01', '2026-11-02').valido, false);
+  assert.equal(m2.filasDeCalidad({ diasMedidos: 0 }), null);
+  const f = m2.filasDeCalidad({ diasMedidos: 7, sesionesRegistradas: 1500, sesionesBot: 200, sesionesAdmin: 40, sinPaginas: 60, unidas: 100 }, { total: { total: 1100 } });
+  assert.deepEqual(f.map((x) => x.valor), ['1,500', '200', '40', '60', '100', '1,100']);
+  assert.equal(f[5].total, true);
+});
+
+test('pantallas técnicas: origen, tráfico por día, seguimiento, uso y navegador', () => {
+  assert.deepEqual(m2.segunOrigen({ total: 10, app: 3, web: 7 }, 'app'), { valor: 3, sinDesglose: false });
+  assert.deepEqual(m2.segunOrigen({ total: 10 }, 'web'), { valor: 10, sinDesglose: true });
+  assert.deepEqual(m2.segunOrigen(5), { valor: 5, sinDesglose: false });
+  const d1 = new Date(2026, 9, 1, 10).getTime();
+  const d2 = new Date(2026, 9, 2, 10).getTime();
+  const t = m2.traficoPorDia([{ type: 'page_view', clientTsMs: d2, clientType: 'APP' }, { type: 'page_view', clientTsMs: d1 }, { type: 'route_dwell', clientTsMs: d1 }, { type: 'page_view', createdAt: { seconds: d1 / 1000 } }]);
+  assert.deepEqual(t.map((x) => [x.etiqueta, x.valores.total, x.valores.app, x.valores.web]), [['01/10', 2, 0, 2], ['02/10', 1, 1, 0]]);
+  assert.deepEqual(m2.seguimientoDePedidos({ eventsForCharts: [
+    { type: 'page_view', path: '/cuenta/pedidos?x=1', uid: 'a' }, { type: 'route_dwell', path: '/cuenta/pedidos/9', dwellMs: 4000, uid: 'a' },
+    { type: 'route_dwell', path: '/cuenta/pedidos', dwellMs: 2000, anonymousId: 'b' }, { type: 'page_view', path: '/cuenta/pedidosx' },
+  ] }), { views: 1, uniqueUsers: 2, totalDwellMs: 6000, avgDwellMs: 3000 });
+  assert.equal(m2.claveAnonimaCorta('anon_3f9a1b2c'), 'anon_3f9a1b');
+  const u = m2.listasDeUso({
+    origen: 'app',
+    datos: { __source: 'analytics_daily', totalSessions: { total: 100, app: 30, web: 70 }, pageViews: { total: 400 }, scrollDepth: { avgTotal: 52, avgApp: 61 }, avgDwellPerSessionMs: { total: 90000, app: 120000 },
+      topIdentities: [{ clave: 'anon_x1', views: 3 }, { clave: 'u', logueado: true, nombre: 'Ana', views: 9, dwellMs: 60000 }],
+      topRoutesByViews: [{ path: '/tienda', views: { total: 40, app: 0 } }, { path: '/', views: { total: 90, app: 12 } }] },
+  });
+  assert.equal(u.sinDesglose, true);
+  assert.deepEqual(u.cifras.map((c) => c.valor), ['30', '400', '61%', '2m 0s']);
+  assert.deepEqual(u.visitantes.map((v) => v.nombre), ['Ana', 'Visitante anónimo (anon_x1)']);
+  assert.deepEqual(u.rutasVistas.map((r) => [r.id, r.valor]), [['/', 12]]);
+  assert.equal(m2.nombreDePais('unknown'), 'Sin identificar');
+  assert.equal(m2.nombreDePais('PE'), 'Perú');
+  const n = m2.listasDeNavegador({
+    comparar: true, anterior: { daysWithData: 5, sessions: { app: 10, web: 100 } },
+    datos: { byClientType: [{ name: 'APP', count: 15 }, { name: 'WEB', count: 85 }], byDevice: [{ name: 'Mobile', count: 3 }, { name: 'Desktop', count: 1 }], extendedCoverage: { closedDocs: 30, docsWithBreakdowns: 26 } },
+  });
+  assert.deepEqual(n.cambioTipo.app, { texto: '▲ 50%', bueno: true });
+  assert.deepEqual(n.tipos.map((x) => [x.nombre, x.texto]), [['App (instalada)', '15%'], ['Web (navegador)', '85%']]);
+  assert.equal(n.cifras[1].valor, '4');
+  assert.equal(n.diasSinPais, 4);
+});

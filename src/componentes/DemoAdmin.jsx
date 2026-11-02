@@ -8,6 +8,7 @@ import {
   PaginaBlueprints, PaginaPlantillasYoryo, blueprintDesdeFirestore, blueprintAFirestore, PaginaRecepcion,
   PaginaPagos, configPagosDesde, PaginaCuentasDePedidos, PaginaReclamos, reclamoDesdeFirestore,
   MarcoResultados, PaginaResumenResultados, PaginaProductosResultados, PaginaVisitantesResultados, PaginaClientesResultados, PaginaOpinionesResultados,
+  PaginaDetalleTecnico, PaginaPaginasTecnica, PaginaUsoTecnica, PaginaNavegadorTecnica, PaginaMapaDeCalor, ORIGENES_TECNICOS,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -260,7 +261,7 @@ function resultadosDemo(dias) {
       ],
       otrosCobros: { sorteo: { cantidad: 6, porMoneda: { PEN: 6 * 1000 } }, saldo: { cantidad: 2, porMoneda: { PEN: 9000 } } },
       // D4b: lo de Productos y Visitantes, con productos de la copia de la tienda.
-      ...productosResultadosDemo(visitas, pedidos, dias),
+      ...productosResultadosDemo(visitas, pedidos, dias, visitasPorDia),
       realtimeSessionsDetails: [
         { id: 's1', hasAccount: true, displayName: 'Valeria Quispe', lastPath: '/producto/polo-clasico', lastSeenAtMs: Date.now() - 60000 },
         { id: 's2', hasAccount: false, lastPath: '/tienda', lastSeenAtMs: Date.now() - 120000 },
@@ -272,7 +273,7 @@ function resultadosDemo(dias) {
   };
 }
 const PRODUCTOS_RES = TIENDA.productos.slice(0, 12);
-function productosResultadosDemo(visitas, pedidos, dias) {
+function productosResultadosDemo(visitas, pedidos, dias, visitasPorDia) {
   const k = dias / 30;
   return {
     topProducts: PRODUCTOS_RES.map((p, i) => ({ productId: p.id, total: Math.round((420 - i * 31) * k) })),
@@ -300,6 +301,10 @@ function productosResultadosDemo(visitas, pedidos, dias) {
       { id: 'c4', uid: 'u4', displayName: 'Luis Mendoza', lastCartValue: 23950, abandonedAtMs: Date.now() - 86400000 * 4 },
     ],
     carritosAbandonados: { cantidad: { total: 4 }, valorCents: { total: 54910 } },
+    // D4d: lo de las pantallas técnicas.
+    ...tecnicoDemo(visitas, visitasPorDia),
+    // D4d: de las pestañas registradas a las visitas.
+    calidad: { diasMedidos: dias, sesionesRegistradas: Math.round(visitas * 1.62), sesionesBot: Math.round(visitas * 0.31), sesionesAdmin: Math.round(visitas * 0.04), sinPaginas: Math.round(visitas * 0.09), unidas: Math.round(visitas * 1.62) - Math.round(visitas * 0.31) - Math.round(visitas * 0.04) - Math.round(visitas * 0.09) - visitas },
     byCountry: [{ name: 'Perú', code: 'PE', count: Math.round(visitas * 0.9) }, { name: 'España', code: 'ES', count: Math.round(visitas * 0.04) }, { name: 'Chile', code: 'CL', count: Math.round(visitas * 0.03) }, { name: 'unknown', count: Math.round(visitas * 0.03) }],
     byDevice: [{ name: 'Mobile', count: Math.round(visitas * 0.78) }, { name: 'Desktop', count: Math.round(visitas * 0.19) }, { name: 'Tablet', count: Math.round(visitas * 0.03) }],
     byClientType: [{ name: 'WEB', count: Math.round(visitas * 0.83) }, { name: 'APP', count: Math.round(visitas * 0.17) }],
@@ -315,6 +320,50 @@ const PERFILES_DEMO = new Map([
 const CATALOGO_RES = new Map(TIENDA.productos.map((p) => [String(p.id), p]));
 const productoDeDemo = (id, nombre) => { const p = CATALOGO_RES.get(String(id)); return { nombre: p?.name || nombre, imagen: p?.mainImage || p?.images?.[0] || '', producto: p }; };
 const nombreCategoriaDemo = (id) => TIENDA.categorias.find((c) => String(c.id) === String(id))?.name || id;
+const RUTAS_RES = [['/', 1820], ['/tienda', 1310], ['/personalizar', 640], ['/producto/polo-clasico', 520], ['/carrito', 310], ['/cuenta/pedidos', 190], ['/combo/pareja-kapi', 150], ['/minijuegos', 120], ['/buscar', 95], ['/checkout', 80]];
+function tecnicoDemo(visitas, visitasPorDia) {
+  const k = visitas / 5555;
+  const taw = (n, app = 0.17) => ({ total: Math.round(n), app: Math.round(n * app), web: Math.round(n) - Math.round(n * app) });
+  const eventos = visitasPorDia.flatMap((d) => {
+    const [y, m, dd] = d.day.split('-').map(Number);
+    const ts = new Date(y, m - 1, dd, 12).getTime();
+    return Array.from({ length: Math.max(1, Math.round(d.total / 20)) }, (_, i) => ({ type: 'page_view', clientTsMs: ts + i, clientType: i % 6 === 0 ? 'APP' : 'WEB', path: '/tienda' }));
+  });
+  return {
+    __source: 'analytics_daily',
+    eventsForCharts: eventos,
+    totalEvents: { total: eventos.length, app: eventos.filter((e) => e.clientType === 'APP').length },
+    topRoutesByViews: RUTAS_RES.map(([path, n]) => ({ path, views: taw(n * k) })),
+    topRoutesByDwell: RUTAS_RES.slice(0, 8).map(([path, n], i) => ({ path, dwellMs: taw((n * 1400 + (i === 2 ? 900000 : 0)) * k) })).sort((a, b) => b.dwellMs.total - a.dwellMs.total),
+    totalSessions: taw(visitas * 1.08),
+    pageViews: taw(visitas * 3.4),
+    scrollDepth: { avgTotal: 54, avgApp: 63, avgWeb: 52 },
+    avgDwellPerSessionMs: taw(142000),
+    topIdentities: [
+      { clave: 'u1', logueado: true, nombre: 'Valeria Quispe', views: 84, dwellMs: 2400000 },
+      { clave: 'anon_7f3a91c2', logueado: false, views: 61, dwellMs: 1300000 },
+      { clave: 'u4', logueado: true, nombre: 'anónimo', views: 47, dwellMs: 980000 },
+      { clave: 'anon_b2c4d6e8', logueado: false, views: 33, dwellMs: 600000 },
+    ],
+    featureUsage: [{ area: 'editor', total: Math.round(310 * k) }, { area: 'busqueda', total: Math.round(260 * k) }, { area: 'wishlist', total: Math.round(140 * k) }, { area: 'minijuegos', total: Math.round(90 * k) }, { area: 'misiones', total: Math.round(40 * k) }],
+    extendedCoverage: { closedDocs: visitasPorDia.length, docsWithBreakdowns: Math.max(0, visitasPorDia.length - 3), firstBreakdownDay: visitasPorDia[3]?.day, docsWithTopIdentities: visitasPorDia.length },
+    byBrowser: [{ name: 'Chrome', count: Math.round(visitas * 0.58) }, { name: 'Safari', count: Math.round(visitas * 0.27) }, { name: 'Instagram', count: Math.round(visitas * 0.09) }, { name: 'Edge', count: Math.round(visitas * 0.06) }],
+    byOS: [{ name: 'Android', count: Math.round(visitas * 0.52) }, { name: 'iOS', count: Math.round(visitas * 0.29) }, { name: 'Windows', count: Math.round(visitas * 0.15) }, { name: 'macOS', count: Math.round(visitas * 0.04) }],
+    byCountryAprox: [{ code: 'PE', count: Math.round(120 * k) }, { code: 'unknown', count: Math.round(8 * k) }],
+    utmStats: { topSources: [{ name: 'instagram', value: Math.round(visitas * 0.3) }, { name: 'google', value: Math.round(visitas * 0.2) }, { name: 'tiktok', value: Math.round(visitas * 0.07) }], topCampaigns: [{ name: 'cyber-wala', count: Math.round(410 * k) }, { name: 'navidad-2026', count: Math.round(180 * k) }] },
+    geographyStats: { topRegions: [{ name: 'Lima', count: Math.round(visitas * 0.61) }, { name: 'Arequipa', count: Math.round(visitas * 0.08) }, { name: 'La Libertad', count: Math.round(visitas * 0.06) }] },
+    realtimeActiveSessions: { total: 4, app: 1, web: 3 },
+    orderTracking: { views: Math.round(190 * k), uniqueUsers: Math.round(122 * k), totalDwellMs: Math.round(190 * k) * 48000, avgDwellMs: 48000 },
+  };
+}
+const AREAS_DEMO = [['Tienda', 34], ['Inicio', 26], ['Producto', 14], ['Editor', 9], ['Carrito', 6], ['Mi cuenta', 5], ['Minijuegos', 3], ['Búsqueda', 2], ['Checkout', 1]];
+const ANCHOS_DEMO = [{ id: 'todos', texto: 'Todos' }, { id: 'movil', texto: 'Móvil' }, { id: 'tablet', texto: 'Tablet' }, { id: 'escritorio', texto: 'Computadora' }];
+const TITULOS_TECNICOS = {
+  'mapa-de-calor': ['Mapa de calor', 'Dónde hacen clic tus visitantes'],
+  paginas: ['Páginas y tiempo', 'Tráfico por página y búsquedas'],
+  uso: ['Uso y permanencia', 'Actividad, áreas y permanencia'],
+  navegador: ['Navegador y sistema', 'Aparatos, países, fuentes y regiones'],
+};
 const CLIENTES_RES = [
   ['u1', 'Valeria Quispe', 'valeria@correo.pe', '71234567', 2], ['u2', 'Diego Fernández', 'diego@correo.pe', '', 0], ['u3', 'Camila Rojas', 'camila@correo.pe', '72345678', 0],
   ['u4', 'Luis Mendoza', 'luis@correo.es', '', 3], ['u5', 'Rosa Huamán', 'rosa@correo.pe', '45678912', 0], ['u6', 'Kevin Ramos', 'kevin@correo.pe', '', 1],
@@ -436,6 +485,10 @@ function PanelDePrueba() {
   const [resFicha, setResFicha] = useState('resumen');
   const [resVisibles, setResVisibles] = useState(4);
   const [resEncuesta, setResEncuesta] = useState('entregas');
+  const [resOrigen, setResOrigen] = useState('todos');
+  const [resDiseno, setResDiseno] = useState('todos');
+  const [resAncho, setResAncho] = useState('todos');
+  const [resSinOrigen, setResSinOrigen] = useState(true);
   const [atributos, setAtributos] = useState(ATRIBUTOS_DEMO);
   const [productos, setProductos] = useState(PRODUCTOS);
   const [whatsapp, setWhatsapp] = useState(WHATSAPP);
@@ -804,6 +857,8 @@ function PanelDePrueba() {
   } else if (rutaSola === '/admin/resultados' || rutaSola.startsWith('/admin/resultados/')) {
     // Cada pestaña es su ruta, como en el admin (el menú las lista por separado).
     const resPestana = rutaSola.split('/')[3] || 'resumen';
+    // Las pantallas técnicas van en el mismo marco, sin pestañas.
+    const tecnica = resPestana === 'tecnico' ? rutaSola.split('/')[4] : null;
     const dias = resPeriodo === 'fechas' ? Math.max(1, Math.round((Date.parse(resFechas.hasta) - Date.parse(resFechas.desde)) / 86400000) + 1) : DIAS_RESULTADOS[resPeriodo];
     const { datos: datosRes, anterior } = resultadosDemo(dias);
     const dia = resPeriodo === 'hoy' || resPeriodo === 'ayer' ? resPeriodo : null;
@@ -821,7 +876,11 @@ function PanelDePrueba() {
         datosAl={Date.now() - 4 * 60000}
         actualizando={actualizando}
         onActualizar={async () => { setActualizando(true); await espera(900); setActualizando(false); setEstados((e) => e.filter((x) => x !== 'error')); }}
-        pestanas={PESTANAS_RESULTADOS.filter((x) => !x.soloClientes || conClientes)}
+        pestanas={tecnica ? [] : PESTANAS_RESULTADOS.filter((x) => !x.soloClientes || conClientes)}
+        titulo={tecnica ? TITULOS_TECNICOS[tecnica]?.[0] : undefined}
+        queHace={tecnica ? TITULOS_TECNICOS[tecnica]?.[1] : undefined}
+        migas={tecnica ? [{ texto: 'Resultados', to: '/admin/resultados' }, { texto: 'Detalle técnico', to: '/admin/resultados/tecnico' }, { texto: TITULOS_TECNICOS[tecnica]?.[0] }] : undefined}
+        controles={tecnica === 'uso' ? <Pestanas etiqueta="Origen" opciones={ORIGENES_TECNICOS} valor={resOrigen} onChange={setResOrigen} /> : null}
         pestana={resPestana}
         onPestana={(id) => setRuta(id === 'resumen' ? '/admin/resultados' : `/admin/resultados/${id}`)}
       >
@@ -884,6 +943,63 @@ function PanelDePrueba() {
           <PaginaOpinionesResultados encuesta={resEncuesta} onEncuesta={setResEncuesta}>
             <EstadoVacio imagen="/assets/kapi/3d/kapi-hambre-256.webp" titulo={resEncuesta === 'entregas' ? 'Aquí va «Cómo les fue con su pedido»' : 'Aquí va la encuesta de regalos'} texto="En el admin, mientras tanto, es la pantalla de hoy embebida (AdminEncuestaEntregas o AdminRespuestasEncuesta). Se rehace en el kit en D5." />
           </PaginaOpinionesResultados>
+        ) : tecnica === 'paginas' ? (
+          <PaginaPaginasTecnica
+            datos={vacio || con('cargando') ? null : datosRes}
+            cargando={con('cargando')}
+            error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+            nombrePagina={(path) => ({ '/': 'Inicio', '/tienda': 'Tienda', '/personalizar': 'Crear', '/carrito': 'Carrito', '/cuenta/pedidos': 'Mis pedidos', '/minijuegos': 'Minijuegos', '/buscar': 'Buscar', '/checkout': 'Pagar' }[path] || (path.startsWith('/producto/') ? 'Producto · Polo clásico' : path.startsWith('/combo/') ? 'Combo · Pareja Kapi' : path))}
+            rutaCorta={(path) => path}
+            enlacesRotos={{ ...rotos, crearLandingDe: (slug) => `/admin/landing-pages?nueva=${encodeURIComponent(slug)}`, onRedirigir: async () => { await espera(600); fallar(); } }}
+          />
+        ) : tecnica === 'uso' ? (
+          <PaginaUsoTecnica
+            datos={vacio || con('cargando') ? null : datosRes}
+            origen={resOrigen}
+            comparar={resComparar}
+            cargando={con('cargando')}
+            error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+            areas={AREAS_DEMO.map(([area, pct]) => ({ area, pct, views: Math.round(pct * 180) }))}
+            nombrePagina={(path) => ({ '/': 'Inicio', '/tienda': 'Tienda', '/personalizar': 'Crear', '/carrito': 'Carrito', '/cuenta/pedidos': 'Mis pedidos' }[path] || path)}
+            rutaCorta={(path) => path}
+          />
+        ) : tecnica === 'navegador' ? (
+          <PaginaNavegadorTecnica
+            datos={vacio || con('cargando') ? null : datosRes}
+            anterior={{ daysWithData: dias, sessions: { app: Math.round((datosRes.byClientType?.[1]?.count || 0) * 0.8), web: Math.round((datosRes.byClientType?.[0]?.count || 0) * 1.05) } }}
+            comparar={resComparar}
+            cargando={con('cargando')}
+            error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+            nombrePagina={(path) => ({ '/tienda': 'Tienda', '/personalizar': 'Crear', '/carrito': 'Carrito' }[path] || path)}
+            periodoAnterior={`los ${dias} días de antes`}
+          />
+        ) : tecnica === 'mapa-de-calor' ? (
+          <PaginaMapaDeCalor
+            origen={resOrigen}
+            onOrigen={(o) => { setResOrigen(o); if (o === 'app' && resAncho === 'escritorio') setResAncho('todos'); }}
+            diseno={resDiseno}
+            onDiseno={setResDiseno}
+            ancho={resAncho}
+            onAncho={setResAncho}
+            anchos={resOrigen === 'app' ? ANCHOS_DEMO.filter((a) => a.id !== 'escritorio') : ANCHOS_DEMO}
+            clics={vacio ? 0 : 18430}
+            lotes={vacio ? 0 : 212}
+            rango={resPeriodo === 'fechas' ? `del ${resFechas.desde} al ${resFechas.hasta}` : `últimos ${dias} días`}
+            truncado={resPeriodo === '90'}
+            maxDocs={300}
+            sinOrigen={1240}
+            incluirSinOrigen={resSinOrigen}
+            onIncluirSinOrigen={setResSinOrigen}
+          >
+            <EstadoVacio imagen="/assets/kapi/3d/kapi-hambre-256.webp" titulo="Aquí va el visor del mapa de calor" texto="Es HeatmapViewer tal cual (la página real en una vista previa, el calor encima y los elementos más clicados): en el admin se pone en este hueco." />
+          </PaginaMapaDeCalor>
+        ) : resPestana === 'tecnico' && !tecnica ? (
+          <PaginaDetalleTecnico
+            datos={vacio ? {} : datosRes}
+            rutaDe={(id) => `/admin/resultados/tecnico/${id}`}
+            onReconstruirTramo={async () => { await espera(450); fallar('El servidor tardó demasiado (es una prueba).'); return { processed: 10, ok: 10 }; }}
+            onRecalcular={async () => { await espera(900); fallar(); }}
+          />
         ) : resPestana === 'visitantes' ? (
           <PaginaVisitantesResultados
             datos={vacio || con('cargando') ? null : datosRes}

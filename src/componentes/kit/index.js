@@ -96,8 +96,10 @@ export { Cifra, FilaCifras, BloqueMetrica, ColumnasMetricas, SinDatos, SelectorP
 export { ListaAvisos, TablaComparativa, ListaEnVivo, TarjetaEnlacesRotos, ListaInteresados } from './piezas/admin/Resultados';
 export {
   MarcoResultados, PaginaResumenResultados, PaginaProductosResultados, PaginaVisitantesResultados, PaginaClientesResultados, PaginaOpinionesResultados,
+  PaginaDetalleTecnico, PANTALLAS_TECNICAS,
 } from './paginas/admin/Resultados';
 export { FichaCliente, ListaCumpleanos } from './piezas/admin/Clientes';
+export { PaginaPaginasTecnica, PaginaUsoTecnica, PaginaNavegadorTecnica, PaginaMapaDeCalor, ORIGENES_TECNICOS } from './paginas/admin/Tecnico';
 export { TarjetaEnvio, EsqueletoEnvio } from './piezas/admin/Pedidos';
 export { PaginaRecepcion } from './paginas/admin/Pedidos';
 export { PaginaPagos } from './paginas/admin/Pagos';
@@ -122,4 +124,6 @@ export {
   reclamoDesdeFirestore, respuestaDeReclamo, diasHabilesEntre, plazoDeReclamo, textoDeReclamo, filasMigracion,
   porCienVisitas, cambioPorcentual, cambioEnPuntos, cifrasDelResumen, otrosCobrosDe, serieDeVisitas, PERIODOS_RESULTADOS,
   listasDeProductos, listasDeVisitantes, enDiasTexto, quienDelCarrito, cumpleanosDe, resumenDeFicha, listasDeFicha,
+  MAX_DIAS_RECONSTRUIR, ultimosDias, diasEntreClaves, tramosDeDias, ayudaDeRango, filasDeCalidad,
+  segunOrigen, traficoPorDia, seguimientoDePedidos, listasDePaginas, claveAnonimaCorta, listasDeUso, nombreDePais, listasDeNavegador,
 } from './adaptadoresAdmin';

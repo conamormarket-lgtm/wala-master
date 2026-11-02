@@ -196,7 +196,7 @@ Estado: **·** por hacer · **kit** hecha en el kit · **admin** ya en el panel.
 |---|---|---|
 | `Cifra` | Una cifra con su nombre y ▲/▼ frente al periodo anterior (reemplaza `KpiCard` y la de `resultados/piezas`) | kit (2026-11-02, con `FilaCifras`; el ▲/▼ y la explicación desde D4a) |
 | `SelectorPeriodo` | Hoy, 7, 30, 90 días, fechas y "comparar" | kit (2026-11-02) |
-| `GraficoTendencia`, `GraficoBarras`, `GraficoDona`, `GraficoComparar` | Los de `components/dashboard/charts` y `resultados/piezas` en una sola versión | `GraficoTendencia` kit (2026-11-02, líneas o barras); el resto en D4 |
+| `GraficoTendencia`, `GraficoBarras`, `GraficoDona`, `GraficoComparar` | Los de `components/dashboard/charts` y `resultados/piezas` en una sola versión | `GraficoTendencia` kit (2026-11-02, líneas o barras); las barras y las donas de Resultados pasaron a `ListaBarras` (D4b, D4d): no hacen falta otros |
 | `RankingConFotos` | `RankingConMiniaturas` del dashboard | `ListaBarras` kit (2026-11-02, con foto opcional) |
 
 ## Plantillas de página
@@ -230,7 +230,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D1 | Catálogo base | `categorias`, `colecciones`, `atributos-catalogo`, `marcas` (+ productos de la marca), `envios`, `cliparts`, `destacados` | Lista | hecho (2026-11-02) | · |
 | D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | hecho (2026-11-02) | · |
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | · |
-| D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | en marcha (D4a, D4b y D4c, 2026-11-02) | · |
+| D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | · |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | · | · |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | · | · |
 | D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | · | · |
@@ -960,18 +960,18 @@ Adaptadores (con pruebas): `reclamoDesdeFirestore`, `respuestaDeReclamo`
 - Las rutas siguen siendo `/admin/crear-cuentas-pedidos` y
   `/admin/libro-reclamaciones`.
 
-## D4 · Resultados (en marcha: D4a, D4b y D4c hechos en el kit el 2026-11-02)
+## D4 · Resultados (en el kit desde el 2026-11-02: los cuatro tramos)
 
 Seis pestañas de hoy (1.660 líneas en `pages/admin/resultados/`) y cuatro
 pantallas técnicas en `dashboard/` (otras 2.000). Se hace por tramos; el
-apartado se une entero cuando estén los cuatro.
+apartado se une entero cuando estén los cuatro (ya están: falta unirlo).
 
 | Tramo | Qué | Páginas de hoy | Kit |
 |---|---|---|---|
 | D4a | El marco (periodo, comparar, actualizar y las pestañas) y el Resumen: cifras con su cambio, la comparativa, cosas por mejorar, visitas por día, de dónde vienen, quién está ahora y los enlaces rotos | `ResultadosLayout.jsx`, `Resumen.jsx`, `piezas.jsx`, `dashboard/EnlacesRotos.jsx` | hecho (2026-11-02) |
 | D4b | Productos y Visitantes (rankings con fotos y barras, búsquedas, canales, aparatos) | `Productos.jsx`, `Visitantes.jsx` | hecho (2026-11-02) |
 | D4c | Clientes con su ficha, el contacto de un carrito y Opiniones (el selector; las dos encuestas, en D5) | `Clientes.jsx`, `FichaCliente.jsx`, `ContactoCarrito.jsx`, `Opiniones.jsx` | hecho (2026-11-02) |
-| D4d | Detalle técnico y sus pantallas (mapa de calor, páginas, uso, navegador) | `DetalleTecnico.jsx`, `dashboard/DashHeatmap`, `DashPaginas`, `DashUso`, `DashOrigen`, `dashShared` | · |
+| D4d | Detalle técnico y sus pantallas (mapa de calor, páginas, uso, navegador; el visor del mapa sigue siendo `HeatmapViewer`) | `DetalleTecnico.jsx`, `dashboard/DashHeatmap`, `DashPaginas`, `DashUso`, `DashOrigen`, `dashShared` | hecho (2026-11-02) |
 
 ### D4a: el marco y el Resumen (en el kit desde el 2026-11-02)
 
@@ -1168,6 +1168,91 @@ se puede unir entero.
   `AdminEncuestaEntregas` o `AdminRespuestasEncuesta` (`embebido`, `desde`/`hasta`
   y `previo` como hoy) de `children`, hasta D5.
 
+### D4d: Detalle técnico y sus pantallas (en el kit desde el 2026-11-02)
+
+| Detalle técnico (computadora) | Navegador y sistema (celular) |
+|---|---|
+| ![La calidad de los datos, de las pestañas registradas a las visitas, y las cuatro pantallas técnicas con su flecha](admin-tecnico-escritorio.webp) | ![App o web con su parte y el cambio contra el periodo anterior, y de dónde llegan](admin-tecnico-navegador-celular.webp) |
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| Detalle técnico | `PaginaDetalleTecnico` | `paginas/admin/Resultados.jsx` | La calidad de los datos (de las pestañas registradas a las visitas); las cuatro pantallas técnicas con su flecha; **dos `PasoAdmin`**: reconstruir el resumen diario (atajos 30/90 días que eligen las fechas, dos `CampoFecha`, tope 365, de a 10 días con "Reconstruyendo… N de M días", y si un tramo falla dice hasta dónde llegó) y recalcular las compras de antes de medir |
+| El marco | `MarcoResultados` (D4a) | `paginas/admin/Resultados.jsx` | **Las pantallas técnicas van en el mismo marco** (antes, cada una con su cabecera y su propio selector de rango): `titulo`, `queHace`, `migas` (Resultados › Detalle técnico › …) y `controles` (el origen en Uso), sin pestañas |
+| Páginas y tiempo | `PaginaPaginasTecnica` | `paginas/admin/Tecnico.jsx` | Cuatro cifras (páginas vistas, días con tráfico, ruta líder, búsquedas); páginas vistas por día (todas, app o web); **las páginas más vistas** (antes salían dos veces: en barras y en ranking); búsquedas; los enlaces rotos (`TarjetaEnlacesRotos`); el seguimiento de pedidos (visitas al estado, personas distintas, tiempo promedio) |
+| Uso y permanencia | `PaginaUsoTecnica` | `paginas/admin/Tecnico.jsx` | El aviso del origen; cuatro cifras por origen (sesiones, páginas vistas, scroll medio, tiempo por sesión); quién vio más páginas (con cuenta o sin cuenta, y su permanencia) con sus notas honestas; áreas y funciones más usadas; rutas más visitadas y con más tiempo; búsquedas |
+| Navegador y sistema | `PaginaNavegadorTecnica` | `paginas/admin/Tecnico.jsx` | Cuatro cifras (en vivo, muestras, fuente y región líderes); aparatos, navegador y sistema **en barras con su parte** (antes, tres donas); país confiable y el aproximado por la hora, con los días sin dato; app o web con su cambio contra el periodo anterior; fuentes, campañas y regiones; ahora en la tienda; búsquedas |
+| Mapa de calor | `PaginaMapaDeCalor` | `paginas/admin/Tecnico.jsx` | Los filtros (origen, diseño de la página, aparato; sin "Computadora" con la app), cuántos clics y lotes, el aviso de demasiados lotes y el de clics sin origen con "Incluirlos" / "Dejarlos fuera"; **el visor va de `children`** |
+
+Adaptadores (con pruebas): `ultimosDias`, `diasEntreClaves`, `tramosDeDias`,
+`ayudaDeRango`, `MAX_DIAS_RECONSTRUIR`, `filasDeCalidad`, `segunOrigen` (el
+`segTAW` de antes), `traficoPorDia`, `seguimientoDePedidos` (con el respaldo
+sobre `/cuenta/pedidos`), `listasDePaginas`, `claveAnonimaCorta`,
+`listasDeUso`, `nombreDePais` y `listasDeNavegador`.
+
+**Decidido (2026-11-02): `HeatmapViewer` no se rehace en el kit.** Son 1.580
+líneas de herramienta, no de pantalla: carga la página real de la tienda en
+un iframe con la sesión del admin, mide dónde quedó cada botón, dibuja el
+calor en dos canvas y ubica cada clic por su sección, su selector o su
+texto. Funciona y no tiene nada de la interfaz vieja del admin que cambiar.
+El kit pone su marco (filtros, avisos); el visor va en el hueco tal cual.
+
+### Diferencias a propósito (D4d)
+
+- Las cuatro pantallas van **dentro del marco de Resultados**: el mismo
+  periodo (con Hoy y Ayer), comparar y actualizar; las migas llevan de
+  vuelta a Detalle técnico.
+- "Páginas y tiempo" ya no repite las rutas en dos tarjetas.
+- **Barras en vez de donas** para aparatos, navegador, sistema y app o web:
+  con más de tres partes se comparan mejor (dataviz).
+- En Navegador ya no hay filtro de origen: antes estaba pero no filtraba
+  nada (la nota lo decía). App o web tiene su propia tarjeta.
+- "Reconstruir": los atajos eligen el rango y hay que tocar Reconstruir
+  (antes arrancaban solos con 30 o 90 días).
+- Sin emojis en las cifras (👁️📅🏆🔎📦👤⏱️👥📄📜🟢🖥️🌐📍💡⚠️).
+
+### Qué se probó (2026-11-02, demo en localhost, 1280 px y 375 px)
+
+- Detalle técnico: 8,999 − 1,722 − 222 − 500 − 1,000 = 5,555 visitas; los
+  cuatro enlaces abren sus pantallas; "Últimos 90 días" → "Se reconstruirán
+  90 días"; reconstruir 30 → "Reconstruyendo… 10 de 30 días" → "Listo. Días
+  procesados: 30 · correctos: 30."; con falla, "Quedaron reconstruidos 0 de
+  30 días (hasta antes del …)".
+- Páginas: título, migas y cifras; "App" → "Páginas vistas · App".
+- Uso: en "App" sale el aviso y las cifras pasan al corte de la app; quién
+  vio más con "Visitante anónimo (anon_7f3a91)".
+- Navegador: "App ▲ 25% · Web ▼ 4.8%" contra el periodo anterior y "No hay
+  país antes del 07/10/2026: 3 días del rango no lo incluyen".
+- Mapa de calor: con "App" se va "Computadora"; el aviso de clics sin origen
+  cambia con "Dejarlos fuera".
+- A 375 px nada se sale del ancho. Sin errores de carga.
+
+### Cómo se une D4d
+
+- `DetalleTecnicoDelPanel.jsx`: `datos` del marco; `rutaDe(id)` =
+  `/admin/resultados/tecnico/${id}` con el `filtersSearch`;
+  `onReconstruirTramo(tramo)` → `httpsCallable(getFunctions(), 'aggregateAnalyticsDailyBackfill', { timeout: 540000 })(tramo)`
+  → `res.data` (`{ processed, ok }`); `onRecalcular` →
+  `rebuildHistoricalAnalyticsSummary()` (si trae error, lanzarlo) e invalidar
+  `['admin-analytics-user-detail']`.
+- Las cuatro rutas técnicas pasan a ser hijas del marco de Resultados
+  (`<Route path="tecnico/mapa-de-calor" …>` dentro de `resultados`), con
+  `titulo`, `queHace` y `migas`, y sin pestañas.
+- `PaginasTecnicaDelPanel.jsx`: `useGlobalAnalytics(filtros.dateRange)` →
+  `datos`; `nombrePagina` = `prettyRouteName`, `rutaCorta` = `shortPath`; los
+  enlaces rotos como en el Resumen (y Actualizar invalida
+  `CLAVE_ENLACES_ROTOS`).
+- `UsoTecnicaDelPanel.jsx`: `useDashboardAnalytics(filtros)`; `origen` /
+  `setOrigen` en `controles`; `areas` = `deriveAppUsage(topRoutesByViews con
+  las vistas por origen)`.
+- `NavegadorTecnicaDelPanel.jsx`: `datos`, `anterior`, `comparar` y
+  `periodoAnterior = filtros.prevRangeLabel`.
+- `MapaDeCalorDelPanel.jsx`: las dos consultas de hoy
+  (`['admin-heatmap-paginas-builder']` → `versionesDesdePaginas`,
+  `['admin-heatmap-batches', …]` → `fetchHeatmapBatches`),
+  `aggregateHeatmapBatches(docs, { origen, ancho, incluirSinMeta, versionesPorRuta, soloDisenoActual })`;
+  `anchos` desde `ANCHOS_PANTALLA`; de `children`, `<HeatmapViewer data loading error emptyMessage ancho origen versionesPorRuta soloDisenoActual onCambiarDiseno />`
+  como hoy.
+
 ## Reemplazos: qué sale y qué entra
 
 La misma tabla que las fichas de la tienda (CUENTA.md, "Reemplazos"): qué
@@ -1251,7 +1336,9 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D4c · La ficha | `pages/admin/resultados/FichaCliente.jsx` + `.module.css` (dentro de la lista) | `FichaCliente` (en `HojaEdicion`) | el mismo conector |
 | D4c · Contacto del carrito | `pages/admin/resultados/ContactoCarrito.jsx` + `.module.css` | la columna "Escribirle" de la página (`mensajeCarrito` en `utils/whatsappLink`) | la página |
 | D4c · Opiniones | `pages/admin/resultados/Opiniones.jsx` + `.module.css` | `PaginaOpinionesResultados` (las encuestas siguen embebidas hasta D5) | `OpinionesDelPanel.jsx` |
-| D4d · Detalle técnico | `DetalleTecnico.jsx`, `dashboard/DashHeatmap`, `DashPaginas`, `DashUso`, `DashOrigen`, `dashShared` | por hacer | por tramo |
+| D4d · Detalle técnico | `pages/admin/resultados/DetalleTecnico.jsx` + `.module.css`, `dashboard/BackfillAnaliticaButton.jsx` + `.module.css` (`GlassCard`, `GlassInput`) | `PaginaDetalleTecnico` (`PasoAdmin`) | `DetalleTecnicoDelPanel.jsx` |
+| D4d · Páginas, Uso, Navegador | `dashboard/DashPaginas.jsx`, `DashUso.jsx`, `DashOrigen.jsx` + sus css (`DashHeader`, `KpiRow`, `TrendChart`, `CompareBars`, `Donut`, `RankingConMiniaturas`, recharts) | `PaginaPaginasTecnica`, `PaginaUsoTecnica`, `PaginaNavegadorTecnica` (en `MarcoResultados`) | un conector por pantalla |
+| D4d · Mapa de calor | `dashboard/DashHeatmap.jsx` + css (cabecera, filtros, avisos) | `PaginaMapaDeCalor` (**`HeatmapViewer` se queda**, de `children`) | `MapaDeCalorDelPanel.jsx` |
 
 ## Cómo se une un apartado (la misma lógica que clientes)
 
@@ -1293,6 +1380,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |
 | 2026-11-02 | Reemplazos de D0 a D2 (qué sale, qué entra y el conector) y la sección «Panel administrativo» de ELIMINAR.md con quién importa hoy cada pieza vieja | `guia/ADMIN.md`, `guia/ELIMINAR.md` |
+| 2026-11-02 | D4d en el kit: `PaginaDetalleTecnico` (reconstruir por tramos con `PasoAdmin`), `PaginaPaginasTecnica`, `PaginaUsoTecnica`, `PaginaNavegadorTecnica` y el marco de `PaginaMapaDeCalor` (`HeatmapViewer` se queda); las cuatro dentro de `MarcoResultados`; adaptadores con pruebas. **D4 completo en el kit** | `paginas/admin/Tecnico.jsx`, `paginas/admin/Resultados.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D4c en el kit: `PaginaClientesResultados`, `FichaCliente` (en una hoja), `ListaCumpleanos`, `PaginaOpinionesResultados`; `mensajeCarrito` pasó a `utils/whatsappLink.js`; las dos encuestas quedan para D5; adaptadores con pruebas | `paginas/admin/Resultados.jsx`, `piezas/admin/Clientes.jsx`, `adaptadoresAdmin.js`, `utils/whatsappLink.js` |
 | 2026-11-02 | D4b en el kit: `PaginaProductosResultados`, `PaginaVisitantesResultados`, `ListaBarras`, `ListaInteresados`; adaptadores con pruebas; en la demo, cada pestaña de Resultados es su ruta | `paginas/admin/Resultados.jsx`, `piezas/admin/Metricas.jsx`, `piezas/admin/Resultados.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D4 dividido en tramos (a: marco y Resumen, b: productos y visitantes, c: clientes y opiniones, d: detalle técnico). D4a en el kit: `MarcoResultados`, `SelectorPeriodo`, `PaginaResumenResultados`, `BloqueMetrica`, `TablaComparativa`, `ListaAvisos`, `ListaEnVivo`, `TarjetaEnlacesRotos`; `Cifra` con su cambio y su explicación; adaptadores con pruebas | `paginas/admin/Resultados.jsx`, `piezas/admin/Resultados.jsx`, `piezas/admin/Metricas.jsx`, `adaptadoresAdmin.js` |

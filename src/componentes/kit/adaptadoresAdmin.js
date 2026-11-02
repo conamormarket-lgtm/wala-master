@@ -1372,3 +1372,242 @@ export function listasDeFicha(ficha = {}, actividad = null, productoDe = () => n
     cumpleanos: f.birthdayLegible ? `Su cumpleaños: ${f.birthdayLegible}` : 'No registró su cumpleaños.',
   };
 }
+
+/*
+ * Detalle técnico de Resultados (D4d): la calidad de los datos y la
+ * reconstrucción del resumen diario por tramos (BackfillAnaliticaButton:
+ * aggregateAnalyticsDailyBackfill acepta hasta 120 días por llamada; se manda
+ * de a 10 para ver el avance; el tope de la pantalla es 365).
+ */
+export const MAX_DIAS_RECONSTRUIR = 365;
+const claveDia = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const esClaveDia = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
+
+/** Los últimos n días hasta hoy (incluido): { desde, hasta } en 'AAAA-MM-DD'. */
+export function ultimosDias(n, hoy = new Date()) {
+  const desde = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - (n - 1));
+  return { desde: claveDia(desde), hasta: claveDia(hoy) };
+}
+
+/** Cuántos días hay entre dos claves, las dos incluidas (null si no se puede). */
+export function diasEntreClaves(desde, hasta) {
+  if (!esClaveDia(desde) || !esClaveDia(hasta)) return null;
+  const a = new Date(`${desde}T00:00:00`);
+  const b = new Date(`${hasta}T00:00:00`);
+  if (b < a) return null;
+  return Math.round((b - a) / DIA_MS) + 1;
+}
+
+/** El rango partido en tramos seguidos de hasta `dias` días: [{ fromDay, toDay }]. */
+export function tramosDeDias(desde, hasta, dias = 10) {
+  const tramos = [];
+  if (diasEntreClaves(desde, hasta) == null) return tramos;
+  const cursor = new Date(`${desde}T00:00:00`);
+  const fin = new Date(`${hasta}T00:00:00`);
+  while (cursor <= fin) {
+    const ini = claveDia(cursor);
+    cursor.setDate(cursor.getDate() + dias - 1);
+    tramos.push({ fromDay: ini, toDay: cursor < fin ? claveDia(cursor) : hasta });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return tramos;
+}
+
+/** La ayuda bajo las fechas de "Reconstruir": qué va a pasar o qué está mal. */
+export function ayudaDeRango(desde, hasta) {
+  const n = diasEntreClaves(desde, hasta);
+  if (n == null) return { valido: false, texto: 'Elige las dos fechas, y que «Desde» no sea después de «Hasta».' };
+  if (n > MAX_DIAS_RECONSTRUIR) return { valido: false, texto: `El rango (${n} días) supera el máximo de ${MAX_DIAS_RECONSTRUIR}. Divídelo en partes.` };
+  return { valido: true, dias: n, texto: `Se reconstruirán ${n} ${n === 1 ? 'día' : 'días'}.` };
+}
+
+/** Las filas de "Calidad de los datos": de las pestañas registradas a las visitas. null si el periodo no se midió así. */
+export function filasDeCalidad(calidad, visitas) {
+  if (!(calidad?.diasMedidos > 0)) return null;
+  return [
+    { id: 'registradas', texto: 'Pestañas registradas', valor: enteroPE(calidad.sesionesRegistradas) },
+    { id: 'robots', texto: '− Robots (buscadores y navegadores automáticos)', valor: enteroPE(calidad.sesionesBot) },
+    { id: 'equipo', texto: '− Equipo admin', valor: enteroPE(calidad.sesionesAdmin) },
+    { id: 'sinPaginas', texto: '− Sin ninguna página vista', valor: enteroPE(calidad.sinPaginas) },
+    { id: 'unidas', texto: '− Otra pestaña de la misma visita (menos de 30 min)', valor: enteroPE(calidad.unidas) },
+    { id: 'visitas', texto: '= Visitas', valor: enteroPE(visitas?.total?.total), total: true },
+  ];
+}
+
+/*
+ * Las pantallas técnicas (D4d): Páginas y tiempo, Uso y permanencia,
+ * Navegador y sistema, sobre el mismo `data` de useDashboardAnalytics /
+ * useGlobalAnalytics. Muchos números llegan como TAW ({ total, app, web }).
+ * nombrePagina (prettyRouteName) y rutaCorta (shortPath) los pone el conector.
+ */
+const totalTAW = (v) => (typeof v === 'number' ? v : Number(v?.total) || 0);
+const msDeTs = (v) => {
+  if (v == null) return null;
+  if (typeof v?.toMillis === 'function') return v.toMillis();
+  if (typeof v?.seconds === 'number') return v.seconds * 1000;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+/**
+ * Un TAW según el origen ('todos' | 'app' | 'web'), como segTAW: si el dato
+ * no trae el corte, el total y sinDesglose. → { valor, sinDesglose }
+ */
+export function segunOrigen(taw, origen = 'todos') {
+  if (origen !== 'app' && origen !== 'web') return { valor: totalTAW(taw), sinDesglose: false };
+  const v = taw && typeof taw === 'object' ? taw[origen] : undefined;
+  return v == null ? { valor: totalTAW(taw), sinDesglose: true } : { valor: Number(v) || 0, sinDesglose: false };
+}
+
+/** Las páginas vistas por día desde eventsForCharts: [{ etiqueta 'DD/MM', valores: { total, app, web } }] en orden. */
+export function traficoPorDia(eventos = []) {
+  const dias = new Map();
+  for (const e of lista(eventos)) {
+    if (e?.type !== 'page_view') continue;
+    const ms = Number(e.clientTsMs) || msDeTs(e.createdAt);
+    if (!ms) continue;
+    const d = new Date(ms);
+    const clave = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const x = dias.get(clave) || { etiqueta: clave, ts: new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(), valores: { total: 0, app: 0, web: 0 } };
+    x.valores.total += 1;
+    x.valores[e.clientType === 'APP' ? 'app' : 'web'] += 1;
+    dias.set(clave, x);
+  }
+  return [...dias.values()].sort((a, b) => a.ts - b.ts);
+}
+
+/** El seguimiento de pedidos: orderTracking o, si no llegó, contado en eventsForCharts sobre /cuenta/pedidos (como antes). */
+export function seguimientoDePedidos(datos = {}) {
+  if (datos?.orderTracking) return datos.orderTracking;
+  let views = 0;
+  let totalDwellMs = 0;
+  let conTiempo = 0;
+  const personas = new Set();
+  for (const e of lista(datos?.eventsForCharts)) {
+    const ruta = typeof e.path === 'string' ? e.path.split('?')[0].split('#')[0] : '';
+    if (ruta !== '/cuenta/pedidos' && !ruta.startsWith('/cuenta/pedidos/')) continue;
+    if (e.type === 'page_view') views += 1;
+    if (e.type === 'route_dwell') { totalDwellMs += Number(e.dwellMs) || 0; conTiempo += 1; }
+    const quien = e.uid || e.anonymousId || e.email;
+    if (quien) personas.add(quien);
+  }
+  return { views, uniqueUsers: personas.size, totalDwellMs, avgDwellMs: conTiempo ? Math.round(totalDwellMs / conTiempo) : 0 };
+}
+
+/** Páginas y tiempo: las rutas más vistas y lo más buscado como filas de ListaBarras, y el total de búsquedas. */
+export function listasDePaginas(datos = {}, { nombrePagina = (p) => p, rutaCorta = (p) => p } = {}) {
+  const rutas = lista(datos?.topRoutesByViews).map((r) => ({ id: r.path, nombre: nombrePagina(r.path), valor: totalTAW(r.views), texto: cuentaDe(totalTAW(r.views), 'vista', 'vistas'), sub: rutaCorta(r.path) }));
+  const busquedas = lista(datos?.topSearches).map((x) => ({ id: x.query, nombre: x.query, valor: x.total, texto: enteroPE(x.total) }));
+  return { rutas, busquedas, totalBusquedas: busquedas.reduce((a, b) => a + (Number(b.valor) || 0), 0) };
+}
+
+/** "anon_3f9a1b": la clave de un visitante sin cuenta, corta. */
+export function claveAnonimaCorta(clave) {
+  const s = String(clave || '');
+  const partes = s.split('_');
+  return `anon_${(partes[partes.length - 1] || s).slice(0, 6)}`;
+}
+
+/**
+ * Uso y permanencia: las cuatro cifras cortadas por origen y las listas.
+ *  - datos · origen · nombrePagina · rutaCorta · areas ([{ area, views }] de deriveAppUsage, del conector)
+ */
+export function listasDeUso({ datos = {}, origen = 'todos', nombrePagina = (p) => p, rutaCorta = (p) => p, areas = [] } = {}) {
+  const d = datos || {};
+  const sesiones = segunOrigen(d.totalSessions, origen);
+  const paginas = d.__source === 'analytics_daily' ? segunOrigen(d.pageViews, origen) : (() => {
+    const vistas = lista(d.eventsForCharts).filter((e) => e.type === 'page_view');
+    const app = vistas.filter((e) => e.clientType === 'APP').length;
+    return { valor: origen === 'app' ? app : origen === 'web' ? vistas.length - app : vistas.length, sinDesglose: false };
+  })();
+  const sd = d.scrollDepth || {};
+  const scroll = origen === 'app' && sd.avgApp != null ? sd.avgApp : origen === 'web' && sd.avgWeb != null ? sd.avgWeb : sd.avgTotal;
+  const tiempo = segunOrigen(d.avgDwellPerSessionMs, origen);
+  const conRutas = (filas, campo, formato) => lista(filas)
+    .map((r) => ({ id: r.path, nombre: nombrePagina(r.path), sub: rutaCorta(r.path), valor: segunOrigen(r[campo], origen).valor }))
+    .filter((r) => origen === 'todos' || r.valor > 0)
+    .sort((a, b) => b.valor - a.valor)
+    .map((r) => ({ ...r, texto: formato(r.valor) }));
+  const NOMBRES_FUNCION = { editor: 'Editor de prendas', minijuegos: 'Minijuegos', misiones: 'Misiones', wishlist: 'Lista de deseos', busqueda: 'Búsqueda' };
+  return {
+    sinDesglose: sesiones.sinDesglose || paginas.sinDesglose || tiempo.sinDesglose,
+    cifras: [
+      { id: 'sesiones', nombre: 'Sesiones', valor: enteroPE(sesiones.valor) },
+      { id: 'paginas', nombre: 'Páginas vistas', valor: enteroPE(paginas.valor) },
+      { id: 'scroll', nombre: 'Scroll medio', valor: `${enteroPE(scroll)}%` },
+      { id: 'tiempo', nombre: 'Tiempo medio por sesión', valor: duracionCorta(tiempo.valor) },
+    ],
+    visitantes: [...lista(d.topIdentities)]
+      .sort((a, b) => (Number(b.views) || 0) - (Number(a.views) || 0) || (Number(b.dwellMs) || 0) - (Number(a.dwellMs) || 0))
+      .slice(0, 10)
+      .map((v) => ({
+        id: v.clave,
+        nombre: v.logueado ? (v.nombre && v.nombre !== 'anónimo' ? v.nombre : 'Cliente logueado') : `Visitante anónimo (${claveAnonimaCorta(v.clave)})`,
+        valor: Number(v.views) || 0,
+        texto: cuentaDe(v.views, 'página', 'páginas'),
+        sub: `${v.logueado ? 'Con cuenta' : 'Sin cuenta'} · ${duracionCorta(Number(v.dwellMs) || 0)} de permanencia`,
+      })),
+    areas: lista(areas).map((a) => ({ id: a.area, nombre: a.area, valor: a.views, texto: a.pct != null ? `${Math.round(a.pct)}%` : enteroPE(a.views), sub: cuentaDe(a.views, 'vista', 'vistas') })),
+    funciones: lista(d.featureUsage).map((f) => ({ id: f.area, nombre: NOMBRES_FUNCION[f.area] || f.area, valor: f.total, texto: enteroPE(f.total) })),
+    rutasVistas: conRutas(d.topRoutesByViews, 'views', (v) => cuentaDe(v, 'vista', 'vistas')),
+    rutasTiempo: conRutas(d.topRoutesByDwell, 'dwellMs', duracionCorta),
+    busquedas: lista(d.topSearches).map((x) => ({ id: x.query, nombre: x.query, valor: x.total, texto: enteroPE(x.total) })),
+  };
+}
+
+/** El nombre de un país por su código (como DashOrigen): 'Perú', 'Sin identificar', 'Otros'. */
+export function nombreDePais(code, guardado) {
+  const c = String(code || '').toUpperCase();
+  if (!c || c === 'UNKNOWN') return 'Sin identificar';
+  if (c === 'OTROS') return 'Otros';
+  if (guardado && guardado !== code) return guardado;
+  try {
+    const n = new Intl.DisplayNames(['es'], { type: 'region' }).of(c);
+    if (n && n !== c) return n;
+  } catch {
+    // Un código que no es ISO: queda tal cual.
+  }
+  return c;
+}
+
+/* Filas con su parte del total: "41%" y debajo cuántos. */
+const conParte = (filas, nombreDe, unidad = ['sesión', 'sesiones']) => {
+  const suma = filas.reduce((a, x) => a + (Number(x.count) || 0), 0);
+  return filas.map((x) => ({ id: x.code || x.name, nombre: nombreDe(x), valor: Number(x.count) || 0, texto: `${pctDe(x.count, suma)}%`, sub: cuentaDe(x.count, unidad[0], unidad[1]) }));
+};
+
+/** Navegador y sistema: cifras, aparatos, navegadores, sistemas, país (confiable y aproximado), app o web con su cambio, fuentes, campañas y regiones. */
+export function listasDeNavegador({ datos = {}, anterior = null, comparar = false } = {}) {
+  const d = datos || {};
+  const fuente = lista(d.utmStats?.topSources)[0];
+  const region = lista(d.geographyStats?.topRegions)[0];
+  const app = lista(d.byClientType).find((x) => x.name === 'APP')?.count || 0;
+  const web = lista(d.byClientType).find((x) => x.name === 'WEB')?.count || 0;
+  const NOMBRES_TIPO = { APP: 'App (instalada)', WEB: 'Web (navegador)' };
+  const cov = d.extendedCoverage || {};
+  const sinDesglose = Math.max(0, (Number(cov.closedDocs) || 0) - (Number(cov.docsWithBreakdowns) || 0));
+  let cambioTipo = null;
+  if (comparar && anterior) {
+    cambioTipo = anterior.daysWithData === 0 ? { sinDatos: true } : { app: cambioPorcentual(app, anterior.sessions?.app), web: cambioPorcentual(web, anterior.sessions?.web) };
+  }
+  return {
+    cifras: [
+      { id: 'vivo', nombre: 'Sesiones en vivo', valor: enteroPE(totalTAW(d.realtimeActiveSessions)) },
+      { id: 'muestras', nombre: 'Muestras de dispositivo', valor: enteroPE(lista(d.byDevice).reduce((a, x) => a + (Number(x.count) || 0), 0)) },
+      { id: 'fuente', nombre: fuente ? `Fuente líder · ${fuente.name}` : 'Fuente líder', valor: fuente ? enteroPE(fuente.value) : '—' },
+      { id: 'region', nombre: region ? `Región líder · ${region.name}` : 'Región líder', valor: region ? enteroPE(region.count) : '—' },
+    ],
+    dispositivos: conParte(lista(d.byDevice), (x) => x.name),
+    navegadores: conParte(lista(d.byBrowser), (x) => x.name),
+    sistemas: conParte(lista(d.byOS), (x) => x.name),
+    paises: conParte(lista(d.byCountry), (x) => nombreDePais(x.code, x.name)),
+    paisesAprox: conParte(lista(d.byCountryAprox), (x) => nombreDePais(x.code, x.name)),
+    diasSinPais: sinDesglose,
+    primerDiaPais: cov.firstBreakdownDay || null,
+    tipos: conParte(lista(d.byClientType), (x) => NOMBRES_TIPO[x.name] || x.name),
+    cambioTipo,
+    fuentes: lista(d.utmStats?.topSources).slice(0, 6).map((x) => ({ id: x.name, nombre: x.name, valor: x.value, texto: enteroPE(x.value) })),
+    campanas: lista(d.utmStats?.topCampaigns).slice(0, 5).map((x) => ({ id: x.name, nombre: x.name, valor: x.count, texto: enteroPE(x.count) })),
+    regiones: lista(d.geographyStats?.topRegions).slice(0, 6).map((x) => ({ id: x.name, nombre: x.name, valor: x.count, texto: enteroPE(x.count) })),
+  };
+}

@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { ChevronRight, RefreshCw } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, Confirmar, EstadoVacio } from '../../Feedback';
 import { Buscador, Interruptor } from '../../Formulario';
 import { Pestanas } from '../../Navegacion';
 import { Hueso } from '../../Esqueletos';
+import { CampoFecha } from '../../Fecha';
+import { Enlace } from '../../Enlace';
+import { PasoAdmin } from '../../piezas/admin/Pasos';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
 import { TablaAdmin } from '../../piezas/admin/Datos';
 import { HojaEdicion } from '../../piezas/admin/Formularios';
@@ -14,7 +17,7 @@ import { GraficoTendencia } from '../../piezas/admin/Grafico';
 import { ListaAvisos, TablaComparativa, ListaEnVivo, TarjetaEnlacesRotos, ListaInteresados } from '../../piezas/admin/Resultados';
 import {
   cifrasDelResumen, otrosCobrosDe, serieDeVisitas, porCienVisitas, PERIODOS_RESULTADOS, listasDeProductos, listasDeVisitantes, duracionCorta,
-  quienDelCarrito, cumpleanosDe,
+  quienDelCarrito, cumpleanosDe, filasDeCalidad, ultimosDias, tramosDeDias, ayudaDeRango, diasEntreClaves,
 } from '../../adaptadoresAdmin';
 import { urlWhatsApp, telefonoDePerfil, aceptoWhatsApp, mensajeProductoVisto, mensajeCarrito } from '../../../../utils/whatsappLink';
 import l from './Lista.module.css';
@@ -36,22 +39,26 @@ const mayuscula = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : '');
  *  - onPeriodo(id) · desde · hasta · onFechas(desde, hasta) · hoy ('AAAA-MM-DD', el tope)
  *  - comparar · onComparar(si) · datosAl (ms) · actualizando · onActualizar()
  *  - pestanas: [{ id, texto }] (ya filtradas por permiso) · pestana · onPestana(id) · children
+ *  - las pantallas técnicas (D4d) van en el mismo marco, sin pestañas: titulo · queHace (la primera
+ *    parte del subtítulo) · migas: [{ texto, to }] · controles (un nodo más junto al periodo, como el origen)
  */
 export function MarcoResultados({
   periodo = {}, onPeriodo, desde, hasta, onFechas, hoy, comparar = false, onComparar, datosAl, actualizando = false, onActualizar,
-  pestanas = [], pestana, onPestana, children,
+  pestanas = [], pestana, onPestana, titulo = 'Resultados', queHace = 'Cómo va tu tienda', migas, controles, children,
 }) {
-  const subtitulo = ['Cómo va tu tienda', `${periodo.etiqueta || ''}${comparar ? ` comparado con ${periodo.contra}` : ''}`, datosAl && `datos al ${hora(datosAl)}`].filter(Boolean).join(' · ');
+  const subtitulo = [queHace, `${periodo.etiqueta || ''}${comparar ? ` comparado con ${periodo.contra}` : ''}`, datosAl && `datos al ${hora(datosAl)}`].filter(Boolean).join(' · ');
   return (
     <div className={s.pagina} data-componente="MarcoResultados">
       <CabezaAdmin
         icono="resultados"
         tono="oro"
-        titulo="Resultados"
+        titulo={titulo}
         subtitulo={subtitulo}
+        migas={migas}
         acciones={onActualizar && <Boton tamano="sm" variante="secundario" icono={<RefreshCw aria-hidden="true" />} cargando={actualizando} onClick={onActualizar}>Actualizar</Boton>}
       />
       <div className={s.controles}>
+        {controles}
         <SelectorPeriodo
           opciones={PERIODOS_RESULTADOS}
           valor={periodo.id}
@@ -484,6 +491,105 @@ export function PaginaOpinionesResultados({ encuesta = 'entregas', onEncuesta, c
     <div className={s.resumen} data-componente="PaginaOpinionesResultados">
       <div className={s.pestanas}><Pestanas etiqueta="Encuesta" opciones={ENCUESTAS} valor={encuesta} onChange={onEncuesta} /></div>
       {children}
+    </div>
+  );
+}
+
+/* ── D4d · Detalle técnico ────────────────────────────── */
+
+export const PANTALLAS_TECNICAS = [
+  { id: 'mapa-de-calor', titulo: 'Mapa de calor', texto: 'Dónde hacen clic, página por página.' },
+  { id: 'paginas', titulo: 'Páginas y tiempo', texto: 'Las páginas más vistas, por día, y el seguimiento de pedidos.' },
+  { id: 'uso', titulo: 'Uso y permanencia', texto: 'Funciones más usadas, cuánto bajan en cada página y dónde se quedan más.' },
+  { id: 'navegador', titulo: 'Navegador y sistema', texto: 'Chrome, Safari…, Android, iPhone, Windows y regiones.' },
+];
+
+/**
+ * Detalle técnico (solo admin): la calidad de los datos, las pantallas
+ * técnicas y las dos reconstrucciones.
+ *  - datos (useDashboardAnalytics: calidad, visitas) · rutaDe(id) → to de cada pantalla
+ *  - onReconstruirTramo({ fromDay, toDay }) → { processed, ok } (aggregateAnalyticsDailyBackfill)
+ *  - onRecalcular() → promesa (rebuildHistoricalAnalyticsSummary) · hoy (Date, para las pruebas)
+ */
+export function PaginaDetalleTecnico({ datos, rutaDe = (id) => id, onReconstruirTramo, onRecalcular, hoy }) {
+  const [inicio] = useState(() => hoy || new Date());
+  const [rango, setRango] = useState(() => ultimosDias(30, inicio));
+  const filas = filasDeCalidad(datos?.calidad, datos?.visitas);
+  const ayuda = ayudaDeRango(rango.desde, rango.hasta);
+
+  // Tramo por tramo; si uno falla se detiene y dice hasta dónde llegó (lo ya hecho queda guardado).
+  const reconstruir = async (avisar) => {
+    const total = diasEntreClaves(rango.desde, rango.hasta) || 0;
+    let procesados = 0;
+    let correctos = 0;
+    avisar(`Reconstruyendo… 0 de ${total} días. Puedes seguir usando el panel, pero no cierres esta página.`);
+    for (const tramo of tramosDeDias(rango.desde, rango.hasta)) {
+      let r;
+      try {
+        r = await onReconstruirTramo?.(tramo);
+      } catch (err) {
+        throw new Error(`${String(err?.message || 'Error en el servidor').replace(/\.$/, '')}. Quedaron reconstruidos ${procesados} de ${total} días (hasta antes del ${tramo.fromDay}).`);
+      }
+      procesados += r?.processed ?? 0;
+      correctos += r?.ok ?? 0;
+      avisar(`Reconstruyendo… ${procesados} de ${total} días. Puedes seguir usando el panel, pero no cierres esta página.`);
+    }
+    const texto = `Listo. Días procesados: ${procesados} · correctos: ${correctos}`;
+    return correctos < procesados ? { texto: `${texto} (${procesados - correctos} con error; revisa la consola del servidor).`, aviso: true } : `${texto}.`;
+  };
+
+  return (
+    <div className={s.resumen} data-componente="PaginaDetalleTecnico">
+      <ColumnasMetricas>
+        <BloqueMetrica titulo="Calidad de los datos" ayuda="Qué se registró, qué se descartó y cómo se cuentan las visitas.">
+          {filas ? (
+            <ul className={s.calidad}>
+              {filas.map((f) => <li key={f.id} className={f.total ? s.calidadTotal : undefined}><span>{f.texto}</span><strong>{f.valor}</strong></li>)}
+            </ul>
+          ) : <SinDatos>Este periodo es anterior a la medición nueva.</SinDatos>}
+          <p className={s.nota}>Cada día se suma de madrugada y el de hoy cada 30 minutos. Un pedido cuenta al enviarse, aunque esté pendiente de pago.</p>
+        </BloqueMetrica>
+        <BloqueMetrica titulo="Pantallas técnicas">
+          <ul className={s.pantallas}>
+            {PANTALLAS_TECNICAS.map((x) => (
+              <li key={x.id}>
+                <Enlace to={rutaDe(x.id)} className={s.pantalla}>
+                  <span><strong>{x.titulo}</strong><span>{x.texto}</span></span>
+                  <ChevronRight aria-hidden="true" />
+                </Enlace>
+              </li>
+            ))}
+          </ul>
+        </BloqueMetrica>
+      </ColumnasMetricas>
+
+      <PasoAdmin
+        numero={1}
+        titulo="Reconstruir el resumen diario"
+        boton={{ texto: 'Reconstruir' }}
+        onEjecutar={reconstruir}
+        deshabilitado={!ayuda.valido}
+        motivo={ayuda.valido ? undefined : ayuda.texto}
+        contenido={(
+          <div className={s.reconstruir}>
+            <div className={s.atajos} role="group" aria-label="Atajos de rango">
+              <Boton tamano="sm" variante="contorno" onClick={() => setRango(ultimosDias(30, inicio))}>Últimos 30 días</Boton>
+              <Boton tamano="sm" variante="contorno" onClick={() => setRango(ultimosDias(90, inicio))}>Últimos 90 días</Boton>
+            </div>
+            <div className={s.fechasDos}>
+              <CampoFecha etiqueta="Desde" valor={rango.desde} max={rango.hasta} onCambiar={(v) => setRango((r) => ({ ...r, desde: v }))} />
+              <CampoFecha etiqueta="Hasta" valor={rango.hasta} min={rango.desde} max={ultimosDias(1, inicio).hasta} onCambiar={(v) => setRango((r) => ({ ...r, hasta: v }))} />
+            </div>
+            {ayuda.valido && <span className={s.nota}>{ayuda.texto}</span>}
+          </div>
+        )}
+      >
+        Vuelve a sumar los días elegidos con lo que registró la tienda (después de un cambio en cómo se mide). Solo reconstruye la analítica: no toca pedidos ni precios.
+      </PasoAdmin>
+
+      <PasoAdmin numero={2} titulo="Recalcular compras de antes de medir" boton={{ texto: 'Recalcular' }} onEjecutar={async () => { await onRecalcular?.(); return 'Listo.'; }}>
+        Estima, con los pedidos del ERP, lo que compró cada cliente antes de que la tienda midiera (sale en su ficha).
+      </PasoAdmin>
     </div>
   );
 }
