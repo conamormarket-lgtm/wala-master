@@ -11,6 +11,7 @@ import {
   PaginaDetalleTecnico, PaginaPaginasTecnica, PaginaUsoTecnica, PaginaNavegadorTecnica, PaginaMapaDeCalor, ORIGENES_TECNICOS,
   PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, referidoDesdeFirestore, misionDesdeFirestore, misionAFirestore,
   retoDesdeFirestore, retoAFirestore, retoActivoDesde, evidenciaDesde, PaginaRecompensasAdmin, recompensaAdminDesdeFirestore, recompensaAdminAFirestore,
+  PaginaFechasAdmin, fechaClienteDesde, paqueteDesdeFirestore, paquetesDeFecha, cambiosAlElegir, siguienteElegido,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -19,6 +20,7 @@ import {
 import TIENDA from './demo/tienda.json';
 import CREAR from './demo/crear.json';
 import { leerPlantillas, prendaBaseParaGuardar } from '../utils/prendaBase';
+import { FESTIVAS_DEFAULT, normalizarFestiva, hoyLocal } from '../utils/fechasFestivas.mjs';
 import MARCAS_TIENDA from './demo/marcas.json';
 import cs from './ComponentesPage.module.css';
 import s from './DemoAdmin.module.css';
@@ -66,6 +68,7 @@ const HECHAS = [
   ['/admin/misiones', 'Misiones'],
   ['/admin/retos', 'Retos'],
   ['/admin/recompensas', 'Recompensas'],
+  ['/admin/fechas-importantes', 'Fechas'],
   ['/admin/crear-cuentas-pedidos', 'Cuentas'],
   ['/admin/categorias', 'Categorías'],
   ['/admin/colecciones', 'Colecciones'],
@@ -395,6 +398,37 @@ const RETOS_DEMO = [
   ['Foto con tu Walá', 'Sube una foto usando tu prenda.', 'upload_photo', 1, 50, 'main'],
 ].map(([title, description, actionType, goal, rewardCoins, rewardType], i) => retoDesdeFirestore({ id: `reto-${i}`, title, description, actionType, goal, rewardCoins, rewardType }));
 // D5b: recompensas de ejemplo, con productos de la copia de la tienda.
+// D5c: fechas de clientes alrededor de hoy (algunas sin año) y sus paquetes.
+const HOY_DEMO = hoyLocal();
+const enDias = (n, anio) => {
+  const d = new Date(); d.setDate(d.getDate() + n);
+  return `${anio}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const FECHAS_CRUDAS = [
+  ['u1', 'valeria.quispe@gmail.com', 'r1', 'Lucía', 'Mamá', 'padres', 'Femenino', 'Cumpleaños', enDias(1, 1968), ['Plantas', 'Café'], 'S/ 50 a S/ 100'],
+  ['u1', 'valeria.quispe@gmail.com', 'r2', 'Diego', 'Pareja', 'pareja', 'Masculino', 'Aniversario', enDias(5, 2019), ['Fútbol', 'Anime'], 'Hasta S/ 150'],
+  ['u2', 'luis.mendoza@hotmail.com', 'r3', 'Andrea', 'Pareja', 'pareja', 'Femenino', 'Cumpleaños', enDias(12, 1995), ['Kapi', 'Tazas'], ''],
+  ['u3', 'carla.rojas@gmail.com', 'r4', 'Martín', 'Hijos', 'hijos', 'Masculino', 'Cumpleaños', enDias(0, 2016), ['Dinosaurios'], 'Hasta S/ 60'],
+  ['u3', 'carla.rojas@gmail.com', 'r5', 'Rosa', 'Amigos', 'amigos', 'Femenino', 'Cumpleaños', enDias(22, 0), [], ''],
+  ['u4', 'jorge.salas@outlook.com', 'r6', 'Papá Jorge', 'Padres', 'padres', 'Masculino', 'Cumpleaños', enDias(40, 1960), ['Polos'], ''],
+  ['u5', 'mafer.diaz@gmail.com', 'r7', 'Sofía', 'Hermanos', 'hermanos', 'Femenino', 'Graduación', enDias(9, 2026), ['Joyas'], 'S/ 100 a S/ 200'],
+  ['u5', 'mafer.diaz@gmail.com', 'r8', 'Tío Beto', 'Otros', 'otros', 'Masculino', 'Cumpleaños', enDias(-20, 0), [], ''],
+].map(([userId, userEmail, recipientId, recipientName, recipientRole, recipientRoleKey, recipientGender, eventType, fecha, selectedCategories, recipientBudget], i) => ({
+  userId, userEmail, recipientId, recipientName, recipientRole, recipientRoleKey, recipientGender, eventType, selectedCategories, recipientBudget,
+  eventId: `ev${i}`, eventDate: fecha.startsWith('0-') ? `0000${fecha.slice(1)}` : fecha,
+}));
+const FECHAS_DEMO = FECHAS_CRUDAS.map((f) => fechaClienteDesde(f, HOY_DEMO));
+const productoDePaquete = (p) => ({ id: p.id, name: p.name, price: p.salePrice || p.price, image: p.mainImage || p.images?.[0] || '' });
+const PAQUETES_DEMO = [
+  { id: 'paq1', userId: 'u1', recipientId: 'r1', eventId: 'ev0', eventType: 'Cumpleaños', isSelected: true, products: TIENDA.productos.slice(0, 2).map(productoDePaquete) },
+  { id: 'paq2', userId: 'u1', recipientId: 'r1', eventId: 'ev0', eventType: 'Cumpleaños', isSelected: false, products: TIENDA.productos.slice(4, 7).map(productoDePaquete) },
+  { id: 'paq3', userId: 'u2', recipientId: 'r3', eventId: 'ev2', eventType: 'Cumpleaños', isSelected: false, products: TIENDA.productos.slice(8, 9).map(productoDePaquete) },
+].map(paqueteDesdeFirestore);
+const FESTIVAS_DEMO = FESTIVAS_DEFAULT.map(normalizarFestiva).concat(normalizarFestiva({
+  id: 'dia_cancion_criolla', nombre: 'Día de la Canción Criolla', emoji: '🎸', regla: { tipo: 'fija', mes: 10, dia: 31 }, avisarDias: [], activo: false,
+}), normalizarFestiva({
+  id: 'black_friday', nombre: 'Black Friday', emoji: '🛍️', regla: { tipo: 'movil', mes: 11, diaSemana: 5, ordinal: 4 }, avisarDias: [7, 1], avisarATodos: true,
+}));
 const RECOMPENSAS_DEMO = [
   { title: 'Pack de stickers Kapi', description: 'Seis stickers para tu laptop o celular.', cost: 120, tipo: 'manual', value: 'Sale del cajón de mercancía', imageUrl: '/assets/kapi/kapi-happy.webp' },
   { title: '10% en tu pedido', description: 'Hasta S/ 20 de descuento.', cost: 300, tipo: 'descuento', descuentoPct: 10, topeDescuento: 20, vigenciaDias: 30 },
@@ -528,6 +562,10 @@ function PanelDePrueba() {
   const [resAncho, setResAncho] = useState('todos');
   const [resSinOrigen, setResSinOrigen] = useState(true);
   const [misiones, guardarMisionCruda, eliminarMision] = useListaDemo(MISIONES_DEMO, falla);
+  const [fechasPestana, setFechasPestana] = useState('calendario');
+  const [festivas, setFestivas] = useState(FESTIVAS_DEMO);
+  const [diasAviso, setDiasAviso] = useState([7, 1]);
+  const [paquetes, setPaquetes] = useState(PAQUETES_DEMO);
   const [recompensas, guardarRecompensaCruda, eliminarRecompensa] = useListaDemo(RECOMPENSAS_DEMO, falla);
   const [retos, guardarRetoCrudo, eliminarReto] = useListaDemo(RETOS_DEMO, falla);
   const [retoActivo, setRetoActivo] = useState(() => retoActivoDesde(RETOS_DEMO[0], new Date(Date.now() - 86400000 * 2)));
@@ -1068,6 +1106,65 @@ function PanelDePrueba() {
         subirImagen={subir}
         onGuardar={(datos, id) => guardarRecompensaCruda(recompensaAdminDesdeFirestore({ id, ...recompensaAdminAFirestore(datos) }), id)}
         onEliminar={eliminarRecompensa}
+      />
+    );
+  } else if (ruta === '/admin/fechas-importantes') {
+    const sinRed = con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined;
+    pagina = (
+      <PaginaFechasAdmin
+        pestana={fechasPestana}
+        onPestana={setFechasPestana}
+        hoy={HOY_DEMO}
+        festivas={vacio ? [] : festivas}
+        cargandoFestivas={con('cargando')}
+        errorFestivas={sinRed}
+        onReintentarFestivas={comunes.onReintentar}
+        onGuardarFestivas={async (lista) => { await espera(600); fallar(); setFestivas(lista); }}
+        diasAviso={diasAviso}
+        cargandoDiasAviso={con('cargando')}
+        onGuardarDiasAviso={async (d) => { await espera(600); fallar(); setDiasAviso(d); }}
+        onProbarAviso={async (id) => {
+          await espera(900);
+          fallar('La función probarAvisoFechas no respondió (es una prueba).');
+          const f = festivas.find((x) => x.id === id);
+          return f
+            ? { titulo: `${f.emoji} ${f.nombre} en 7 días`, cuerpo: 'Te armamos ideas de regalo para Lucía. Pide con tiempo y llega perfecto.', imagen: PRODUCTOS[0].imagen, tieneApp: true, push: 1 }
+            : { titulo: '🎂 Mañana es el cumpleaños de Lucía', cuerpo: 'Mira esta idea de regalo para ella: llega a tiempo si pides hoy.', imagen: PRODUCTOS[1].imagen, tieneApp: false, push: 0 };
+        }}
+        fechas={vacio ? [] : FECHAS_DEMO}
+        paquetes={paquetes}
+        cargandoFechas={con('cargando')}
+        errorFechas={sinRed}
+        onReintentarFechas={comunes.onReintentar}
+        productos={PRODUCTOS}
+        sugerirProductos={async (f) => {
+          await espera(500);
+          const gustos = f.gustos.map((g) => g.toLowerCase().slice(0, 4));
+          return gustos.length ? PRODUCTOS.filter((p, i) => gustos.some((g) => p.nombre.toLowerCase().includes(g)) || i % 9 === gustos.length).slice(0, 3) : [];
+        }}
+        onGuardarPaquete={async (productosPaquete, f, id) => {
+          await espera(700);
+          fallar();
+          setPaquetes((ps) => (id
+            ? ps.map((p) => (p.id === id ? { ...p, productos: productosPaquete } : p))
+            : [...ps, { id: `paq-${Date.now()}`, clienteId: f.clienteId, personaId: f.personaId, eventoId: f.eventoId, evento: f.evento, estado: 'pending_notification', elegido: paquetesDeFecha(ps, f).length === 0, productos: productosPaquete }]));
+        }}
+        onElegirPaquete={async (paquete, f) => {
+          await espera(500);
+          fallar();
+          setPaquetes((ps) => {
+            const cambios = cambiosAlElegir(paquetesDeFecha(ps, f), paquete.id);
+            return ps.map((p) => { const c = cambios.find((x) => x.id === p.id); return c ? { ...p, elegido: c.elegido } : p; });
+          });
+        }}
+        onEliminarPaquete={async (paquete, f) => {
+          await espera(500);
+          fallar();
+          setPaquetes((ps) => {
+            const siguiente = siguienteElegido(paquetesDeFecha(ps, f), paquete);
+            return ps.filter((p) => p.id !== paquete.id).map((p) => (p.id === siguiente ? { ...p, elegido: true } : p));
+          });
+        }}
       />
     );
   } else if (ruta === '/admin/misiones') {

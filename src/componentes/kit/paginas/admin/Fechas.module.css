@@ -1,0 +1,529 @@
+/* ── D5c · Fechas importantes ──────────────────────────── */
+.pagina {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+.pagina > header {
+  margin-bottom: 0;
+}
+
+.pestanas {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pestanas::-webkit-scrollbar {
+  display: none;
+}
+
+.subtitulo {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-family: var(--fuente-marca);
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.subtitulo svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--violet-600);
+}
+
+.nota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+}
+
+.muestra {
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 12px;
+  background: var(--violet-50);
+  font-size: 0.86rem;
+}
+
+.muestra span {
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.tarjeta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: 0.6rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.tarjeta > * {
+  max-width: 100%;
+}
+
+.filaAviso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+
+.filaAviso > :first-child {
+  flex: 1 1 12rem;
+  max-width: 18rem;
+}
+
+/* Lo que se ve de la notificación de prueba */
+.notif {
+  display: grid;
+  gap: 0.4rem;
+  width: min(100%, 24rem);
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-bg, #fff);
+  box-shadow: 0 6px 18px rgba(30, 16, 60, 0.08);
+}
+
+.notifApp {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.notifApp img {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+}
+
+.notifCuerpo {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.86rem;
+}
+
+.notifCuerpo > span {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.notifCuerpo img {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+/* ── El calendario ── */
+.calendario {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  container: calendario / inline-size;
+}
+
+.mesBarra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mesTitulo {
+  min-width: 10rem;
+  margin: 0;
+  font-family: var(--fuente-marca);
+  font-size: 1.15rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-left: auto;
+  font-size: 0.78rem;
+}
+
+.leyendaFestiva,
+.leyendaCliente {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.leyendaFestiva,
+.festiva {
+  background: var(--violet-50);
+  color: var(--violet-700, #5b21b6);
+}
+
+.leyendaCliente,
+.cliente {
+  background: var(--color-surface-2, #f6f3fb);
+  color: var(--color-text);
+  border: 1px dashed var(--color-border);
+}
+
+.leyendaCliente svg,
+.cliente svg {
+  flex: none;
+  width: 0.85rem;
+  height: 0.85rem;
+  color: var(--rosa-500, #e04f8f);
+}
+
+.rejilla {
+  display: grid;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.semana {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.semana + .semana {
+  border-top: 1px solid var(--color-border);
+}
+
+.diaNombre {
+  padding: 0.45rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.dia {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 6.2rem;
+  min-width: 0;
+  padding: 0.4rem;
+}
+
+.dia + .dia {
+  border-left: 1px solid var(--color-border);
+}
+
+.fuera {
+  background: var(--color-surface-2, #faf8fd);
+}
+
+.fuera .numero {
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+.numero {
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.hoy .numero {
+  color: var(--violet-600);
+}
+
+.hoyTexto {
+  font-weight: 700;
+}
+
+.dia.hoy {
+  box-shadow: inset 0 0 0 2px var(--violet-500);
+}
+
+.festiva,
+.cliente {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.2rem 0.45rem;
+  border: 0;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cliente {
+  border: 1px dashed var(--color-border);
+  font-weight: 600;
+}
+
+.festiva:hover,
+.cliente:hover {
+  filter: brightness(0.96);
+}
+
+.festiva:focus-visible,
+.cliente:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 1px;
+}
+
+/* La agenda: lo del mes, día por día (en el celular reemplaza a la rejilla) */
+.agenda {
+  display: none;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agendaDia {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: start;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.agendaDia.hoy {
+  border-color: var(--violet-500);
+}
+
+.agendaFecha {
+  display: grid;
+  justify-items: center;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
+
+.agendaFecha strong {
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.agendaCosas {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.agendaCosas .cliente {
+  white-space: normal;
+}
+
+.agendaVacia {
+  padding: 1rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+@container calendario (max-width: 639.98px) {
+  .rejilla {
+    display: none;
+  }
+
+  .agenda {
+    display: grid;
+  }
+
+  .leyenda {
+    margin-left: 0;
+  }
+}
+
+/* ── El formulario de una fecha festiva ── */
+.emojiNombre {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.dos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: 0.75rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+/* ── Fechas de clientes ── */
+.correo {
+  overflow-wrap: anywhere;
+}
+
+.ficha {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+.datos {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.datos div {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, 7rem) minmax(0, 1fr);
+  gap: 0.6rem;
+  font-size: 0.88rem;
+}
+
+.datos dt {
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.datos dd {
+  margin: 0;
+}
+
+.paquetesCabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.paquetes {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.paquete {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.paqueteElegido {
+  border-color: var(--success, #0f9f6e);
+  box-shadow: inset 3px 0 0 var(--success, #0f9f6e);
+}
+
+.paqueteCabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.paqueteTotal {
+  margin-left: auto;
+  font-weight: 800;
+}
+
+.miniaturas {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.miniaturas li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  font-size: 0.84rem;
+}
+
+.miniaturas li span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.paqueteAcciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.productos {
+  display: grid;
+  gap: 0.4rem;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.productos li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.productoTexto {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.84rem;
+}
+
+.productoTexto strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.productos .total {
+  justify-content: flex-end;
+  font-size: 0.88rem;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+:global([data-theme='dark']) .muestra,
+:global([data-theme='dark']) .festiva,
+:global([data-theme='dark']) .leyendaFestiva {
+  background: rgba(139, 92, 246, 0.16);
+  color: var(--violet-200, #ddd0fe);
+}

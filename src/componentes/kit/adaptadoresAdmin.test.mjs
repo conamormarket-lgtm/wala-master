@@ -498,3 +498,43 @@ test('recompensas: lo que da, lo que se guarda y sus errores', () => {
   assert.equal(m2.erroresDeRecompensa({ nombre: 'a', tipo: 'descuento', descuentoPct: 10 }).topeDescuento, 'Pon un tope en soles para el descuento por porcentaje.');
   assert.equal(m2.erroresDeRecompensa({ nombre: 'a', tipo: 'descuento', descuentoPct: 120, topeDescuento: 5 }).descuentoPct, 'El porcentaje va de 0 a 100.');
 });
+
+test('fechas importantes: el mes, las fechas de clientes y los paquetes', () => {
+  const nov = m2.semanasDelMes(2026, 11, '2026-11-02');
+  assert.equal(nov.titulo, 'noviembre de 2026');
+  assert.equal(nov.semanas[0][0].iso, '2026-10-26');
+  assert.equal(nov.semanas.flat().find((d) => d.hoy).iso, '2026-11-02');
+  assert.equal(nov.semanas[0].at(-1).iso, '2026-11-01');
+  assert.ok(nov.semanas.every((s) => s.length === 7));
+  assert.equal(nov.semanas.at(-1).at(-1).iso, '2026-12-06');
+  assert.deepEqual(m2.mesVecino(2026, 12, 1), { anio: 2027, mes: 1 });
+  assert.deepEqual(m2.mesVecino(2026, 1, -1), { anio: 2025, mes: 12 });
+
+  const f = m2.fechaClienteDesde({ userId: 'u', userEmail: 'a@b.pe', recipientId: 'r', recipientName: 'Lucía', eventId: 'e', eventType: 'Cumpleaños', eventDate: '1990-11-03' }, '2026-11-02');
+  assert.deepEqual([f.id, f.dias, f.proxima, f.fecha, f.cumple], ['u_r_e', 1, '2026-11-03', '3 de noviembre de 1990', 36]);
+  assert.equal(m2.cuandoFecha(f.dias), 'Mañana');
+  const pasada = m2.fechaClienteDesde({ eventDate: '0000-10-01' }, '2026-11-02');
+  assert.deepEqual([pasada.proxima, pasada.cumple, pasada.fecha], ['2027-10-01', null, '1 de octubre']);
+  assert.equal(m2.fechaClienteDesde({ eventDate: '2000-02-29' }, '2027-02-01').proxima, '2027-02-28');
+  assert.equal(m2.fechaClienteDesde({}, '2026-11-02').dias, null);
+  assert.equal(m2.fechaEnVentana(f, '1'), true);
+  assert.equal(m2.fechaEnVentana(pasada, '30'), false);
+
+  const ps = [
+    m2.paqueteDesdeFirestore({ id: 'a', userId: 'u', recipientId: 'r', eventType: 'Cumpleaños', isSelected: true, products: [{ id: 'p', name: 'Taza', price: 30 }] }),
+    m2.paqueteDesdeFirestore({ id: 'b', userId: 'u', recipientId: 'r', eventType: 'Cumpleaños' }),
+    m2.paqueteDesdeFirestore({ id: 'c', userId: 'u', recipientId: 'otra', eventType: 'Cumpleaños' }),
+  ];
+  const deF = m2.paquetesDeFecha(ps, f);
+  assert.deepEqual(deF.map((p) => p.id), ['a', 'b']);
+  assert.deepEqual(m2.cambiosAlElegir(deF, 'b'), [{ id: 'a', elegido: false }, { id: 'b', elegido: true }]);
+  assert.equal(m2.siguienteElegido(deF, deF[0]), 'b');
+  assert.equal(m2.siguienteElegido(deF, deF[1]), null);
+  assert.equal(m2.estadoDePaquetes(deF).texto, 'Elegido (de 2)');
+  assert.equal(m2.estadoDePaquetes([deF[1]]).texto, '1 borrador');
+  assert.deepEqual(m2.paqueteAFirestore(deF[0].productos, f, true), { userId: 'u', recipientId: 'r', eventId: 'e', eventType: 'Cumpleaños', products: [{ id: 'p', name: 'Taza', price: 30, image: '' }], status: 'pending_notification', isSelected: true });
+
+  assert.deepEqual(m2.diasDesdeTexto('7, 14 7 0 x'), [14, 7]);
+  assert.deepEqual(m2.diasDesdeTexto('0, 1', 0), [1, 0]);
+  assert.equal(m2.idDeFestiva('Día del Abuelo', ['dia_del_abuelo']), 'dia_del_abuelo_2');
+});

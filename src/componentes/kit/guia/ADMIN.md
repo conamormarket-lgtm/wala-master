@@ -231,7 +231,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | hecho (2026-11-02) | · |
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | · |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | · |
-| D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | en marcha (D5a y D5b, 2026-11-02) | · |
+| D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | en marcha (D5a a D5c, 2026-11-02) | · |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | · | · |
 | D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | · | · |
 | D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | · | · |
@@ -1253,7 +1253,7 @@ El kit pone su marco (filtros, avisos); el visor va en el hueco tal cual.
   `anchos` desde `ANCHOS_PANTALLA`; de `children`, `<HeatmapViewer data loading error emptyMessage ancho origen versionesPorRuta soloDisenoActual onCambiarDiseno />`
   como hoy.
 
-## D5 · Clientes y fidelidad (en marcha: D5a y D5b hechos en el kit el 2026-11-02)
+## D5 · Clientes y fidelidad (en marcha: D5a a D5c hechos en el kit el 2026-11-02)
 
 Siete pantallas de hoy (unas 4.900 líneas con las de Fechas importantes),
 en cinco tramos; el apartado se une entero cuando estén los cinco.
@@ -1262,7 +1262,7 @@ en cinco tramos; el apartado se une entero cuando estén los cinco.
 |---|---|---|---|
 | D5a | Referidos (seguimiento), Misiones diarias y Retos semanales (catálogo, evidencias, reto activo) | `AdminReferidos.jsx`, `AdminMisiones.jsx`, `AdminRetos.jsx` | hecho (2026-11-02) |
 | D5b | Recompensas (el catálogo de canje) | `AdminRecompensas.jsx` (603 líneas) | hecho (2026-11-02) |
-| D5c | Fechas importantes: el calendario, los avisos y fechas festivas, las fechas de los clientes y los paquetes | `AdminFechasImportantesPage.jsx` + `components/admin/fechas/*` (1.345 líneas) | · |
+| D5c | Fechas importantes: el calendario, los avisos y fechas festivas, las fechas de los clientes y los paquetes | `AdminFechasImportantesPage.jsx` + `components/admin/fechas/*` (1.345 líneas) | hecho (2026-11-02) |
 | D5d | Notificaciones y ofertas | `AdminNotifications/AdminNotifications.jsx` (755 líneas) | · |
 | D5e | Encuestas: el editor de la de suscripción y las dos pantallas de respuestas que hoy van embebidas en Opiniones (D4c) | `AdminEncuestas.jsx`, `AdminEncuestaEntregas.jsx`, `AdminRespuestasEncuesta.jsx` | · |
 
@@ -1372,6 +1372,80 @@ Adaptadores (con pruebas): `TIPOS_RECOMPENSA`, `RECOMPENSA_CON_PRODUCTO`,
   `['admin-rewards']` y `['rewards']`; `productos` del catálogo
   (`productoAdminDesde`); `subirImagen` → `uploadFile(blob, 'rewards/{ms}_cropped.jpg')`.
 
+### D5c: Fechas importantes (en el kit desde el 2026-11-02)
+
+| Fechas de clientes (computadora) | El calendario (celular) |
+|---|---|
+| ![Las fechas que anotaron los clientes, de la más cercana a la más lejana, con cuánto falta y si tienen paquete](admin-fechas-escritorio.webp) | ![El mes como agenda: cada día con sus fechas festivas y las personas que cumplen](admin-fechas-celular.webp) |
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| Fechas importantes | `PaginaFechasAdmin` | `paginas/admin/Fechas.jsx` | Tres pestañas (Calendario · Festivas · Clientes) con la misma cabecera |
+| Calendario | (dentro) | ídem | El mes con lunes primero, el día de hoy marcado, las fechas festivas activas y **las fechas de los clientes** (antes no salían); anterior, siguiente y "Hoy". Con menos de 640 px de caja, la rejilla pasa a una **agenda** (solo los días con algo). Tocar una fecha lleva a su pestaña |
+| Festivas | (dentro, sobre `PaginaListaAdmin`) | ídem | Arriba, los avisos de las fechas de cada persona (los días, "El cliente verá: «Te avisamos…»", Guardar y "Enviarme una prueba") y la vista previa de la notificación. La lista: la fecha y su regla, la próxima vez y cuánto falta, a quién le toca, los avisos y el estado; en "⋯", probar y apagar o encender. La hoja: emoji y nombre, cómo cae (`ElegirUno`) con "cae el … y el …", la relación (chips) y el género, los días de aviso con su texto, avisar a todos y Activa. "Fechas de Perú" pregunta antes (`Confirmar`) |
+| Clientes | (dentro) | ídem | Tres cifras que filtran (anotadas, próximos 7 días, en 30 días sin paquete), buscar y filtrar por cuándo y por paquete; **una fila por fecha**, la más cercana primero, con cuánto falta, los años que cumple y el estado del paquete. La hoja de una fecha: el cliente, la relación, sus gustos y sus paquetes (elegido o borrador, los productos y el total; elegir, editar, usar de base, eliminar). El paquete se arma en la misma hoja: "Sugerir con sus gustos", quitar productos, `SelectorProductos` y el total |
+
+Adaptadores (con pruebas): `semanasDelMes`, `mesVecino`, `fechaClienteDesde`
+(la próxima vez que se celebra, un 29 de febrero cae el 28; los años que
+cumple), `cuandoFecha`, `FILTROS_FECHAS_CLIENTES` / `fechaEnVentana`,
+`paqueteDesdeFirestore` / `paqueteAFirestore`, `paquetesDeFecha`,
+`cambiosAlElegir`, `siguienteElegido`, `estadoDePaquetes`, `diasDesdeTexto` e
+`idDeFestiva`. Las reglas de cuándo cae una fecha festiva no se copiaron: la
+página usa `utils/fechasFestivas.mjs`, la misma que el servidor
+(`adaptadoresAdmin.js` sigue sin imports para probarse solo).
+
+### Diferencias a propósito (D5c)
+
+- Pestañas en vez del menú lateral de la página (en el celular el menú
+  lateral se comía la pantalla).
+- El calendario muestra también las fechas de los clientes, y en el celular
+  es una agenda.
+- Las fechas de los clientes van **una por fila, por cercanía**, no
+  agrupadas por correo con filas que se abren: lo urgente queda arriba. Cada
+  fila dice si tiene paquete; "En 30 días sin paquete" junta lo que falta
+  armar.
+- El paquete se arma en la hoja de la fecha (antes, un modal aparte con dos
+  pasos); los botones de solo ícono pasan a tener texto ("Elegir este",
+  "Usar de base").
+- Se pregunta antes de borrar con `Confirmar` (antes `window.confirm`) y los
+  errores salen como aviso, no en la consola.
+- Sin paginación con selector: "Cargar más" de 50 en 50.
+
+### Qué se probó (2026-11-02, demo en localhost, 1280 px y 375 px)
+
+- Calendario de noviembre con Black Friday (4.º viernes) y seis personas;
+  hoy marcado; en el celular, la agenda con "hoy".
+- Nueva fecha sin nombre → "Escribe el nombre de la fecha"; "Día del Abuelo",
+  "Cambia cada año", Padres → creada: "2.º domingo de enero · 10 de enero ·
+  En 69 días · Padres · 7 y 2 días antes".
+- Avisos personales "3, 0" → "Te avisamos 3 días antes y el mismo día" y
+  guardado; "Enviarme una prueba" → la vista previa con su texto de dónde
+  llegó.
+- Clientes: Lucía (mañana, cumple 58, elegido de 2): "Elegir este" en el
+  segundo → cambia el elegido; eliminar el elegido → el otro pasa a elegido.
+  Diego (aniversario, "7 años"): "Crear paquete" → "Sugerir con sus gustos" →
+  creado y elegido por ser el primero.
+- 375 px: las tres pestañas, la lista, la hoja y el editor de paquete sin
+  salirse del ancho.
+
+### Cómo se une D5c
+
+- `FechasDelPanel.jsx`, por pestaña (`/admin/fechas-importantes?ver=…`):
+  - Festivas: `getFechasFestivas` (`['admin-fechas-festivas']`; si falla,
+    no se deja editar) → `onGuardarFestivas` = `saveFechasFestivas(lista)` e
+    invalidar `FESTIVAS_QUERY_KEY`; `getRecordatorioPersonal` /
+    `saveRecordatorioPersonal` e invalidar `RECORDATORIO_QUERY_KEY`;
+    `onProbarAviso` = `probarAvisoFechas(id)` → `{ titulo, cuerpo, imagen: image, tieneApp, push }`.
+  - Clientes: `getUserDates` → `fechaClienteDesde(f, hoyLocal())`;
+    `getSuggestedPackages` → `paqueteDesdeFirestore`; crear con
+    `saveSuggestedPackage(paqueteAFirestore(productos, fecha, primero))`,
+    editar con `updateSuggestedPackage(id, { products })`, elegir con
+    `cambiosAlElegir` (un `updateSuggestedPackage` por cambio), eliminar con
+    `deleteSuggestedPackage` y `siguienteElegido`.
+  - `productos` del catálogo (`productoAdminDesde`); `sugerirProductos` =
+    `useGiftCatalog().recomendar(persona, { ocasion: evento, limite: 3 })`
+    con la persona armada como en `PackageCreatorModal`.
+
 ## Reemplazos: qué sale y qué entra
 
 La misma tabla que las fichas de la tienda (CUENTA.md, "Reemplazos"): qué
@@ -1467,7 +1541,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D5a · Misiones | `pages/admin/AdminMisiones.jsx` + `.module.css` (`common/Button`, su propio modal) | `PaginaMisionesAdmin` (`PaginaListaAdmin`) | `MisionesDelPanel.jsx` |
 | D5a · Retos | `pages/admin/AdminRetos.jsx` + `.module.css` (`window.confirm`, `alert()`) | `PaginaRetosAdmin` | `RetosDelPanel.jsx` |
 | D5b · Recompensas | `pages/admin/AdminRecompensas.jsx` + `.module.css` (`AdminImageCropper`, `BuscadorProducto`, `common/Button`, su propio modal) | `PaginaRecompensasAdmin` (`PaginaListaAdmin`, `CampoImagen`, `SelectorProductos`) | `RecompensasDelPanel.jsx` |
-| D5c · Fechas importantes | `pages/admin/AdminFechasImportantesPage.jsx` + `components/admin/fechas/*` | por hacer | por vista |
+| D5c · Fechas importantes | `pages/admin/AdminFechasImportantesPage.jsx` + `.module.css`, `components/admin/fechas/*` (`GlobalCalendarView`, `FechasFestivasView`, `UsuariosView`, `PackageCreatorModal` y sus CSS) | `PaginaFechasAdmin` (`PaginaListaAdmin`, `TablaAdmin`, `HojaEdicion`, `SelectorProductos`, `ElegirUno`, `Confirmar`) | `FechasDelPanel.jsx` |
 | D5d · Notificaciones | `pages/admin/AdminNotifications/*` | por hacer | `NotificacionesDelPanel.jsx` |
 | D5e · Encuestas | `AdminEncuestas.jsx`, `AdminEncuestaEntregas.jsx`, `AdminRespuestasEncuesta.jsx` | por hacer | por pantalla |
 
@@ -1511,6 +1585,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |
 | 2026-11-02 | Reemplazos de D0 a D2 (qué sale, qué entra y el conector) y la sección «Panel administrativo» de ELIMINAR.md con quién importa hoy cada pieza vieja | `guia/ADMIN.md`, `guia/ELIMINAR.md` |
+| 2026-11-02 | D5c en el kit: `PaginaFechasAdmin` (calendario con agenda en el celular, fechas festivas y sus avisos, fechas de clientes por cercanía con sus paquetes); adaptadores con pruebas | `paginas/admin/Fechas.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D5b en el kit: `PaginaRecompensasAdmin`; adaptadores con pruebas; las tarjetas de `TablaAdmin` ya no se salen del ancho en el celular | `paginas/admin/Fidelidad.jsx`, `piezas/admin/Datos.module.css`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D5 dividido en tramos (a: referidos, misiones y retos; b: recompensas; c: fechas importantes; d: notificaciones; e: encuestas). D5a en el kit: `PaginaReferidosAdmin`, `PaginaMisionesAdmin`, `PaginaRetosAdmin`; adaptadores con pruebas | `paginas/admin/Fidelidad.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D4d en el kit: `PaginaDetalleTecnico` (reconstruir por tramos con `PasoAdmin`), `PaginaPaginasTecnica`, `PaginaUsoTecnica`, `PaginaNavegadorTecnica` y el marco de `PaginaMapaDeCalor` (`HeatmapViewer` se queda); las cuatro dentro de `MarcoResultados`; adaptadores con pruebas. **D4 completo en el kit** | `paginas/admin/Tecnico.jsx`, `paginas/admin/Resultados.jsx`, `adaptadoresAdmin.js` |

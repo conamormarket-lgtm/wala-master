@@ -1836,3 +1836,172 @@ export function erroresDeRecompensa(r = {}) {
     descuentoPct: (r.tipo === 'descuento' || r.tipo === 'producto_descuento') && (pct < 0 || pct > 100) ? 'El porcentaje va de 0 a 100.' : undefined,
   };
 }
+
+/* ── D5c · Fechas importantes ─────────────────────────── */
+
+/*
+ * Las reglas de las fechas festivas (cuándo caen, a quién le tocan) viven en
+ * utils/fechasFestivas.mjs: la página las usa de ahí. Aquí va lo que el
+ * admin necesita aparte: el mes del calendario, las fechas que anotaron los
+ * clientes y sus paquetes de regalo.
+ */
+const DIA_FECHAS_MS = 24 * 60 * 60 * 1000;
+const dosCifras = (n) => String(n).padStart(2, '0');
+const isoDeUtc = (t) => {
+  const d = new Date(t);
+  return `${d.getUTCFullYear()}-${dosCifras(d.getUTCMonth() + 1)}-${dosCifras(d.getUTCDate())}`;
+};
+const utcDeIso = (iso) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+  return m ? Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+};
+const MESES_FECHAS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+/**
+ * Las semanas de un mes (lunes primero) para el calendario.
+ *  - anio · mes (1-12) · hoy ('YYYY-MM-DD')
+ * → { titulo: 'noviembre de 2026', semanas: [[{ iso, dia, delMes, hoy }]] }
+ */
+export function semanasDelMes(anio, mes, hoy = '') {
+  const primero = Date.UTC(anio, mes - 1, 1);
+  const ultimo = Date.UTC(anio, mes, 0);
+  const atras = (new Date(primero).getUTCDay() + 6) % 7;
+  const adelante = (7 - new Date(ultimo).getUTCDay()) % 7;
+  const semanas = [];
+  for (let t = primero - atras * DIA_FECHAS_MS; t <= ultimo + adelante * DIA_FECHAS_MS; t += DIA_FECHAS_MS) {
+    if (!semanas.length || semanas[semanas.length - 1].length === 7) semanas.push([]);
+    const d = new Date(t);
+    const iso = isoDeUtc(t);
+    semanas[semanas.length - 1].push({ iso, dia: d.getUTCDate(), delMes: d.getUTCMonth() === mes - 1, hoy: iso === hoy });
+  }
+  return { titulo: `${MESES_FECHAS[mes - 1]} de ${anio}`, semanas };
+}
+
+/** El mes de al lado: (2026, 12, +1) → { anio: 2027, mes: 1 }. */
+export function mesVecino(anio, mes, paso) {
+  const i = anio * 12 + (mes - 1) + paso;
+  return { anio: Math.floor(i / 12), mes: (i % 12) + 1 };
+}
+
+/**
+ * Una fecha que anotó un cliente (una fila de adminFechasDeUsuarios /
+ * getUserDates) → lo que muestra el admin. `proxima` es la próxima vez que
+ * se celebra (hoy cuenta; un 29 de febrero cae el 28 si el año no es bisiesto).
+ */
+export function fechaClienteDesde(f = {}, hoy = '') {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(f.eventDate || ''));
+  const mes = m ? Number(m[2]) : 0;
+  const dia = m ? Number(m[3]) : 0;
+  let proxima = '';
+  let dias = null;
+  const base = utcDeIso(hoy);
+  if (m && base != null) {
+    const enAnio = (a) => Date.UTC(a, mes - 1, Math.min(dia, new Date(Date.UTC(a, mes, 0)).getUTCDate()));
+    const anio = new Date(base).getUTCFullYear();
+    let t = enAnio(anio);
+    if (t < base) t = enAnio(anio + 1);
+    proxima = isoDeUtc(t);
+    dias = Math.round((t - base) / DIA_FECHAS_MS);
+  }
+  const anioNacio = m && m[1] !== '0000' ? Number(m[1]) : null;
+  return {
+    id: `${f.userId}_${f.recipientId}_${f.eventId || f.eventType}`,
+    clienteId: f.userId || '',
+    cliente: f.userEmail || 'Sin correo',
+    personaId: f.recipientId || '',
+    persona: f.recipientName || 'Sin nombre',
+    relacion: f.recipientRole || 'Otro',
+    rolClave: f.recipientRoleKey || 'otros',
+    genero: f.recipientGender || '',
+    presupuesto: f.recipientBudget || '',
+    gustos: Array.isArray(f.selectedCategories) ? f.selectedCategories : [],
+    respuestas: f.categoryAnswers || {},
+    eventoId: f.eventId || '',
+    evento: f.eventType || 'Fecha',
+    fecha: m ? `${dia} de ${MESES_FECHAS[mes - 1]}${anioNacio ? ` de ${anioNacio}` : ''}` : 'Sin fecha',
+    mesDia: m ? `${m[2]}-${m[3]}` : '',
+    proxima,
+    dias,
+    cumple: anioNacio && proxima ? Number(proxima.slice(0, 4)) - anioNacio : null,
+  };
+}
+
+/** "Hoy", "Mañana", "En 12 días" (o '' sin fecha). */
+export function cuandoFecha(dias) {
+  if (dias == null) return '';
+  if (dias === 0) return 'Hoy';
+  if (dias === 1) return 'Mañana';
+  return `En ${dias} días`;
+}
+
+/** Los filtros de las fechas de clientes: ventanas desde hoy (hoy cuenta). */
+export const FILTROS_FECHAS_CLIENTES = [
+  { valor: '1', texto: 'Hoy y mañana' },
+  { valor: '7', texto: 'Próximos 7 días' },
+  { valor: '30', texto: 'Próximos 30 días' },
+];
+export const fechaEnVentana = (f, ventana) => !ventana || (f.dias != null && f.dias <= Number(ventana));
+
+/** Un paquete de suggestedPackages → el admin. */
+export function paqueteDesdeFirestore(p = {}) {
+  return {
+    id: p.id,
+    clienteId: p.userId || '',
+    personaId: p.recipientId || '',
+    eventoId: p.eventId || '',
+    evento: p.eventType || '',
+    elegido: p.isSelected === true,
+    estado: p.status || '',
+    productos: (Array.isArray(p.products) ? p.products : []).map((x) => ({ id: x.id, nombre: x.name || 'Producto', precio: Number(x.price) || 0, imagen: x.image || '' })),
+  };
+}
+
+/** Lo que se guarda de un paquete nuevo (el primero de una fecha sale ya elegido). */
+export function paqueteAFirestore(productos = [], fecha = {}, primero = false) {
+  return {
+    userId: fecha.clienteId,
+    recipientId: fecha.personaId,
+    eventId: fecha.eventoId,
+    eventType: fecha.evento,
+    products: productos.map((x) => ({ id: x.id, name: x.nombre, price: Number(x.precio) || 0, image: x.imagen || '' })),
+    status: 'pending_notification',
+    isSelected: primero,
+  };
+}
+
+/** Los paquetes de una fecha (mismo cliente, persona y tipo de fecha, como antes). */
+export const paquetesDeFecha = (paquetes = [], f = {}) => paquetes.filter((p) => p.clienteId === f.clienteId && p.personaId === f.personaId && p.evento === f.evento);
+
+/** Elegir uno como la oferta: los cambios que hay que guardar ([{ id, elegido }]). */
+export function cambiosAlElegir(paquetes = [], id) {
+  return paquetes.filter((p) => (p.id === id) !== p.elegido).map((p) => ({ id: p.id, elegido: p.id === id }));
+}
+
+/** Al borrar el elegido, el siguiente de la misma fecha pasa a elegido (id o null). */
+export function siguienteElegido(paquetes = [], borrado = {}) {
+  if (!borrado.elegido) return null;
+  return paquetes.find((p) => p.id !== borrado.id)?.id || null;
+}
+
+/** "Paquete elegido" · "2 borradores" · "Sin paquete". */
+export function estadoDePaquetes(paquetes = []) {
+  if (!paquetes.length) return { estado: 'sin', texto: 'Sin paquete' };
+  if (paquetes.some((p) => p.elegido)) return { estado: 'elegido', texto: paquetes.length > 1 ? `Elegido (de ${paquetes.length})` : 'Paquete elegido' };
+  return { estado: 'borrador', texto: paquetes.length === 1 ? '1 borrador' : `${paquetes.length} borradores` };
+}
+
+/** "14, 7 2" → [14, 7, 2] (de mayor a menor, sin repetir; `min` 0 deja "el mismo día"). */
+export function diasDesdeTexto(texto = '', min = 1) {
+  return [...new Set(String(texto).split(/[,\s]+/).filter(Boolean).map(Number)
+    .filter((n) => Number.isInteger(n) && n >= min && n <= 60))].sort((a, b) => b - a);
+}
+
+/** Un id para una fecha festiva nueva, a partir del nombre ("Día del Abuelo" → dia_del_abuelo). */
+export function idDeFestiva(nombre, usados = []) {
+  const base = String(nombre || 'fecha').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 30) || 'fecha';
+  let id = base;
+  let i = 2;
+  while (usados.includes(id)) id = `${base}_${i++}`;
+  return id;
+}
