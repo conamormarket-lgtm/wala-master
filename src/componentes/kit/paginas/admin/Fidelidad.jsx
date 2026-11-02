@@ -1,0 +1,355 @@
+import React, { useMemo, useState } from 'react';
+import { Check, ExternalLink, Rocket, X } from 'lucide-react';
+import Boton from '../../Boton';
+import { Aviso, Confirmar, EstadoVacio, useToast } from '../../Feedback';
+import { Campo, Interruptor } from '../../Formulario';
+import { Pestanas } from '../../Navegacion';
+import { CabezaAdmin } from '../../piezas/admin/Marco';
+import { TablaAdmin, BarraFiltros, CargarMas, InsigniaEstado } from '../../piezas/admin/Datos';
+import { GrupoCampos } from '../../piezas/admin/Formularios';
+import { Cifra, FilaCifras } from '../../piezas/admin/Metricas';
+import { PaginaListaAdmin } from './Lista';
+import { FotoCelda, porOrden } from './celdas';
+import {
+  ESTADOS_REFERIDO, resumenReferidos, RECOMPENSAS_RETO, recompensaDeReto, normalizarBusqueda,
+} from '../../adaptadoresAdmin';
+import l from './Lista.module.css';
+import s from './Fidelidad.module.css';
+
+/*
+ * D5 · Clientes y fidelidad. D5a: Referidos (seguimiento), Misiones diarias
+ * y Retos semanales (catálogo, evidencias y el reto activo).
+ */
+
+const PASO = 50;
+const entero = (n) => new Intl.NumberFormat('es-PE').format(Math.round(Number(n) || 0));
+const fecha = (ms) => (ms ? new Date(ms).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+const fechaHora = (ms) => (ms ? new Date(ms).toLocaleString('es-PE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—');
+
+/* ── Referidos ─────────────────────────────────────────── */
+
+/**
+ * Referidos (/admin/referidos): los enlaces y las compras que salieron de
+ * ellos. Nadie aprueba nada: quien refirió reclama sus monedas cuando el
+ * pedido queda Finalizado en el ERP (5 %, 10 % si pasa de S/ 200); un Anulado no paga.
+ *  - referidos: [referidoDesdeFirestore] · cargando · error · onReintentar
+ */
+export function PaginaReferidosAdmin({ referidos = [], cargando = false, error, onReintentar }) {
+  const [busqueda, setBusqueda] = useState('');
+  const [estado, setEstado] = useState('');
+  const [visibles, setVisibles] = useState(PASO);
+  const r = useMemo(() => resumenReferidos(referidos), [referidos]);
+  const filtrados = useMemo(() => {
+    const q = normalizarBusqueda(busqueda);
+    return referidos.filter((x) => (!estado || x.estado === estado) && (!q || normalizarBusqueda(`${x.codigo} ${x.quien} ${x.pedido}`).includes(q)));
+  }, [referidos, busqueda, estado]);
+
+  return (
+    <div className={s.pagina} data-componente="PaginaReferidosAdmin">
+      <CabezaAdmin icono="referidos" tono="rosa" titulo="Referidos" subtitulo="Los enlaces de referido y las compras que salieron de ellos." />
+      <Aviso tipo="info" compacto>
+        No hace falta aprobar nada: quien refirió reclama sus monedas cuando el pedido queda Finalizado en el ERP (5 % del total, 10 % si pasa de S/ 200). Un pedido Anulado no paga.
+      </Aviso>
+      <FilaCifras etiqueta="Resumen de referidos">
+        <Cifra nombre="Enlaces" valor={entero(r.enlaces)} ayuda={`${entero(r.entraron)} los abrieron`} tono="violeta" cargando={cargando} />
+        <Cifra nombre="Compraron" valor={entero(r.compraron)} tono="exito" cargando={cargando} />
+        <Cifra nombre="Monedas pagadas" valor={entero(r.pagadas)} ayuda="Ya reclamadas" tono="aviso" cargando={cargando} />
+        <Cifra nombre="Monedas por pagar" valor={entero(r.porPagar)} ayuda="Estimado, cuando se entreguen" tono="neutro" cargando={cargando} />
+      </FilaCifras>
+      <BarraFiltros
+        busqueda={busqueda}
+        onBusqueda={(t) => { setBusqueda(t); setVisibles(PASO); }}
+        placeholder="Buscar por código, quién entró o pedido"
+        filtros={[{ id: 'estado', etiqueta: 'Estado', todos: 'Todos', opciones: Object.entries(ESTADOS_REFERIDO).map(([valor, e]) => ({ valor, texto: e.texto })), valor: estado }]}
+        onFiltro={(_, v) => { setEstado(v); setVisibles(PASO); }}
+        total={cargando || error ? undefined : filtrados.length}
+        unidad={['referido', 'referidos']}
+      />
+      <TablaAdmin
+        etiqueta="Referidos"
+        filas={filtrados.slice(0, visibles)}
+        nombreDe={(x) => x.codigo}
+        cargando={cargando}
+        error={error}
+        onReintentar={onReintentar}
+        vacio={referidos.length ? { titulo: 'Ningún referido coincide', texto: 'Prueba con otro estado o busca otra cosa.' } : { titulo: 'Todavía no hay referidos', texto: 'Cuando alguien comparta su enlace, aparece aquí.' }}
+        columnas={[
+          { id: 'codigo', titulo: 'Quién refirió', tarjeta: 'titulo', celda: (x) => <>{x.codigo || '—'}<span className={l.sub}>{fecha(x.creadoMs)}</span></> },
+          { id: 'enlace', titulo: 'Enlace', tarjeta: 'detalle', celda: (x) => x.enlace },
+          { id: 'quien', titulo: 'Quién entró', tarjeta: 'detalle', celda: (x) => x.quien || <span className={l.sub}>—</span> },
+          { id: 'pedido', titulo: 'Pedido', tarjeta: 'detalle', celda: (x) => (x.pedido ? <>{x.pedido}<span className={l.sub}>S/ {x.venta.toFixed(2)}</span></> : <span className={l.sub}>—</span>) },
+          { id: 'monedas', titulo: 'Monedas', alinear: 'fin', ancho: 130, tarjeta: 'detalle', celda: (x) => (x.monedas == null ? <span className={l.sub}>—</span> : <span className={l.numero}>{entero(x.monedas)}{x.estimado && <span className={l.sub}>estimado</span>}</span>) },
+          { id: 'estado', titulo: 'Estado', ancho: 170, tarjeta: 'estado', celda: (x) => <InsigniaEstado estado={x.estado} estados={ESTADOS_REFERIDO} /> },
+        ]}
+      />
+      <CargarMas visibles={Math.min(visibles, filtrados.length)} total={filtrados.length} paso={PASO} onMas={() => setVisibles((v) => v + PASO)} unidad={['referido', 'referidos']} />
+    </div>
+  );
+}
+
+/* ── Misiones diarias ──────────────────────────────────── */
+
+/**
+ * Misiones diarias (/admin/misiones): tareas cortas que el cliente completa
+ * cada día a cambio de monedas.
+ *  - misiones: [misionDesdeFirestore] · verificaciones: [{ valor, texto }] (MISSION_ACTIONS)
+ *  - cargando · error · onReintentar · onGuardar(datos, id?) · onEliminar(id)
+ */
+export function PaginaMisionesAdmin({ misiones = [], verificaciones = [], cargando, error, onReintentar, onGuardar, onEliminar }) {
+  const textoVerificacion = (v) => verificaciones.find((x) => x.valor === v)?.texto || v;
+  return (
+    <PaginaListaAdmin
+      cabeza={{ icono: 'misiones', tono: 'rosa', titulo: 'Misiones diarias', subtitulo: 'Tareas cortas que el cliente completa cada día a cambio de monedas.' }}
+      registros={misiones}
+      cargando={cargando}
+      error={error}
+      onReintentar={onReintentar}
+      femenino
+      unidad={['misión', 'misiones']}
+      buscarEn={(m) => `${m.nombre} ${m.descripcion}`}
+      placeholder="Buscar una misión"
+      filtros={[{ id: 'estado', etiqueta: 'Estado', todos: 'Activas e inactivas', opciones: [{ valor: 'si', texto: 'Solo activas' }, { valor: 'no', texto: 'Solo inactivas' }], filtrar: (m, v) => (v === 'si' ? m.activa : !m.activa) }]}
+      columnas={[
+        { id: 'nombre', titulo: 'Misión', tarjeta: 'titulo', celda: (m) => <>{m.nombre}{m.descripcion && <span className={l.sub}>{m.descripcion}</span>}</> },
+        { id: 'monedas', titulo: 'Da', ancho: 120, alinear: 'fin', tarjeta: 'detalle', celda: (m) => <span className={l.numero}>{entero(m.monedas)} monedas</span> },
+        { id: 'verificacion', titulo: 'Cómo se comprueba', tarjeta: 'detalle', celda: (m) => (m.verificacion ? textoVerificacion(m.verificacion) : <span className={l.sub}>La marca el cliente</span>) },
+        { id: 'orden', titulo: 'Orden', ancho: 80, alinear: 'fin', ordenable: true, celda: (m) => m.orden },
+        { id: 'estado', titulo: 'Estado', ancho: 110, tarjeta: 'estado', celda: (m) => <InsigniaEstado estado={m.activa ? 'activo' : 'oculto'}>{m.activa ? 'Activa' : 'Inactiva'}</InsigniaEstado> },
+      ]}
+      ordenes={{ orden: porOrden }}
+      ordenInicial={{ por: 'orden', dir: 'asc' }}
+      vacio={{ titulo: 'Todavía no hay misiones', texto: 'La lista que ven tus clientes en «Mi cuenta › Misiones» se llena con las que actives aquí.' }}
+      textos={{ creado: 'Misión creada', guardado: 'Misión guardada', eliminado: 'Misión eliminada' }}
+      eliminar={{ texto: (m) => `Se borra «${m.nombre}». No se puede deshacer.` }}
+      onGuardar={onGuardar}
+      onEliminar={onEliminar}
+      formulario={{
+        nuevo: 'Nueva misión',
+        titulos: { nuevo: 'Nueva misión', editar: 'Editar misión' },
+        textoGuardar: { nuevo: 'Crear misión' },
+        vacio: ({ registros }) => ({ nombre: '', descripcion: '', monedas: 0, orden: registros.length, activa: true, verificacion: '' }),
+        desde: (m) => ({ ...m }),
+        validar: (d) => ({ nombre: String(d.nombre).trim() ? undefined : 'Escribe el título de la misión.' }),
+        campos: ({ datos, cambiar, errores, idDe }) => (
+          <>
+            <GrupoCampos titulo="La misión">
+              <Campo id={idDe('nombre')} etiqueta="Título" placeholder="Ej. Visita el Catálogo de Recompensas" value={datos.nombre} error={errores.nombre} onChange={(e) => cambiar('nombre', e.target.value)} />
+              <Campo etiqueta="Descripción" multilinea={3} placeholder="Una línea de qué tiene que hacer" value={datos.descripcion} onChange={(e) => cambiar('descripcion', e.target.value)} />
+            </GrupoCampos>
+            <GrupoCampos titulo="Lo que da y dónde va" columnas={2}>
+              <Campo etiqueta="Monedas" type="number" inputMode="numeric" min={0} sufijo="monedas" value={datos.monedas} onChange={(e) => cambiar('monedas', e.target.value)} />
+              <Campo etiqueta="Orden" type="number" inputMode="numeric" min={0} value={datos.orden} onChange={(e) => cambiar('orden', e.target.value)} />
+            </GrupoCampos>
+            <GrupoCampos titulo="Cómo se comprueba">
+              <Campo
+                etiqueta="Verificación"
+                opciones={[{ valor: '', texto: 'Ninguna: la marca el cliente' }, ...verificaciones]}
+                value={datos.verificacion}
+                onChange={(e) => cambiar('verificacion', e.target.value)}
+              />
+              <Aviso tipo={datos.verificacion ? 'info' : 'aviso'} compacto>
+                {datos.verificacion
+                  ? 'El servidor comprueba que el cliente de verdad lo hizo antes de darle las monedas.'
+                  : 'Sin verificación, el cliente toca «Completar» y se le paga sin comprobar nada: úsalo solo para lo que no se puede verificar (como compartir en redes).'}
+              </Aviso>
+            </GrupoCampos>
+            <GrupoCampos titulo="Estado">
+              <Interruptor etiqueta="Activa" descripcion="Apagada no sale en «Mis misiones» (no se borra)." activo={datos.activa} onChange={(v) => cambiar('activa', v)} />
+            </GrupoCampos>
+          </>
+        ),
+      }}
+    />
+  );
+}
+
+/* ── Retos semanales ───────────────────────────────────── */
+
+const PESTANAS_RETOS = [{ id: 'catalogo', texto: 'Catálogo' }, { id: 'evidencias', texto: 'Evidencias' }, { id: 'activo', texto: 'Reto activo' }];
+
+/**
+ * Retos semanales (/admin/retos): el catálogo, las evidencias por revisar
+ * y el reto de esta semana.
+ *  - retos: [retoDesdeFirestore] · activo (globals/activeChallenge) · evidencias: [evidenciaDesde]
+ *  - cargando · error · onReintentar · onGuardar(datos, id?) · onEliminar(id)
+ *  - onActivar(reto) · onAprobar(evidencia) · onRechazar(evidencia) → promesas
+ *  - ahora (para las pruebas)
+ */
+export function PaginaRetosAdmin({ retos = [], activo, evidencias = [], cargando, error, onReintentar, onGuardar, onEliminar, onActivar, onAprobar, onRechazar, ahora: ahoraFuera }) {
+  const toast = useToast();
+  const [pestana, setPestana] = useState('catalogo');
+  const [activando, setActivando] = useState(null);
+  const [rechazando, setRechazando] = useState(null);
+  const [trabajando, setTrabajando] = useState(null);
+  const pestanas = (
+    <div className={s.pestanas}>
+      <Pestanas
+        etiqueta="Secciones de retos"
+        opciones={PESTANAS_RETOS.map((p) => ({ ...p, texto: p.id === 'evidencias' && evidencias.length ? `${p.texto} · ${evidencias.length}` : p.texto }))}
+        valor={pestana}
+        onChange={setPestana}
+      />
+    </div>
+  );
+  const cabeza = { icono: 'retos', tono: 'rosa', titulo: 'Retos semanales', subtitulo: 'Un reto por semana para todos, y las evidencias que mandan los clientes.' };
+
+  const activar = async () => {
+    const r = activando;
+    setActivando(null);
+    try {
+      await onActivar?.(r);
+      toast({ tipo: 'exito', titulo: 'Reto activado', texto: `«${r.nombre}» es el reto de esta semana.` });
+    } catch (err) {
+      toast({ tipo: 'error', titulo: 'No se activó', texto: err?.message });
+    }
+  };
+  const procesar = async (ev, aprobar) => {
+    setRechazando(null);
+    setTrabajando(ev.id);
+    try {
+      await (aprobar ? onAprobar : onRechazar)?.(ev);
+      toast({ tipo: aprobar ? 'exito' : 'info', titulo: aprobar ? 'Evidencia aprobada' : 'Evidencia rechazada', texto: `${ev.quien} · ${ev.reto}` });
+    } catch (err) {
+      toast({ tipo: 'error', titulo: 'No se pudo', texto: err?.message });
+    } finally {
+      setTrabajando(null);
+    }
+  };
+
+  const confirmarActivar = (
+    <Confirmar
+      abierta={Boolean(activando)}
+      titulo={activando ? `¿Activar «${activando.nombre}» como el reto de esta semana?` : ''}
+      texto="Lo ven todos los clientes desde ahora y por siete días; reemplaza al reto activo."
+      confirmar="Activar"
+      onConfirmar={activar}
+      onCancelar={() => setActivando(null)}
+    />
+  );
+
+  if (pestana === 'catalogo') {
+    return (
+      <>
+        <PaginaListaAdmin
+          cabeza={cabeza}
+          antes={pestanas}
+          registros={retos}
+          cargando={cargando}
+          error={error}
+          onReintentar={onReintentar}
+          unidad={['reto', 'retos']}
+          buscarEn={(r) => `${r.nombre} ${r.accion}`}
+          placeholder="Buscar un reto"
+          columnas={[
+            { id: 'nombre', titulo: 'Reto', tarjeta: 'titulo', celda: (r) => <>{r.nombre}{activo?.challengeId === r.id && <span className={l.sub}>Es el de esta semana</span>}</> },
+            { id: 'accion', titulo: 'Qué cuenta', tarjeta: 'detalle', celda: (r) => <code className={s.codigo}>{r.accion}</code> },
+            { id: 'meta', titulo: 'Meta', ancho: 80, alinear: 'fin', tarjeta: 'detalle', celda: (r) => r.meta },
+            { id: 'recompensa', titulo: 'Da', tarjeta: 'detalle', celda: (r) => recompensaDeReto(r) },
+          ]}
+          vacio={{ titulo: 'Todavía no hay retos', texto: 'Crea el primero y actívalo para esta semana.' }}
+          textos={{ creado: 'Reto creado', guardado: 'Reto guardado', eliminado: 'Reto eliminado' }}
+          eliminar={{ texto: (r) => `Se borra «${r.nombre}» del catálogo.${activo?.challengeId === r.id ? ' El reto activo sigue hasta que venza.' : ''}` }}
+          masAcciones={(r) => [{ id: 'activar', etiqueta: 'Activar esta semana', Icono: Rocket, accion: () => setActivando(r) }]}
+          onGuardar={onGuardar}
+          onEliminar={onEliminar}
+          formulario={{
+            nuevo: 'Nuevo reto',
+            titulos: { nuevo: 'Nuevo reto', editar: 'Editar reto' },
+            textoGuardar: { nuevo: 'Crear reto' },
+            vacio: () => ({ nombre: '', descripcion: '', accion: '', meta: 1, monedas: 10, tipo: 'main' }),
+            desde: (r) => ({ ...r }),
+            validar: (d) => ({
+              nombre: String(d.nombre).trim() ? undefined : 'Escribe el título del reto.',
+              accion: String(d.accion).trim() ? undefined : 'Escribe qué acción cuenta (su id, como add_wishlist).',
+              descripcion: String(d.descripcion).trim() ? undefined : 'Escribe una descripción corta.',
+            }),
+            campos: ({ datos, cambiar, errores, idDe }) => (
+              <>
+                <GrupoCampos titulo="El reto">
+                  <Campo id={idDe('nombre')} etiqueta="Título" placeholder="Ej. Agrega 3 productos a tus deseos" value={datos.nombre} error={errores.nombre} onChange={(e) => cambiar('nombre', e.target.value)} />
+                  <Campo id={idDe('descripcion')} etiqueta="Descripción corta" multilinea={3} value={datos.descripcion} error={errores.descripcion} onChange={(e) => cambiar('descripcion', e.target.value)} />
+                </GrupoCampos>
+                <GrupoCampos titulo="Qué cuenta" columnas={2}>
+                  <Campo id={idDe('accion')} etiqueta="Acción (id)" placeholder="Ej. add_wishlist" value={datos.accion} error={errores.accion} onChange={(e) => cambiar('accion', e.target.value)} />
+                  <Campo etiqueta="Meta (cuántas veces)" type="number" inputMode="numeric" min={1} value={datos.meta} onChange={(e) => cambiar('meta', e.target.value)} />
+                </GrupoCampos>
+                <GrupoCampos titulo="Lo que da" columnas={2}>
+                  <Campo etiqueta="Recompensa" opciones={RECOMPENSAS_RETO} value={datos.tipo} onChange={(e) => cambiar('tipo', e.target.value)} />
+                  {datos.tipo === 'main' && <Campo etiqueta="Monedas" type="number" inputMode="numeric" min={0} sufijo="monedas" value={datos.monedas} onChange={(e) => cambiar('monedas', e.target.value)} />}
+                </GrupoCampos>
+              </>
+            ),
+          }}
+        />
+        {confirmarActivar}
+      </>
+    );
+  }
+
+  // Al momento de mirar (no desde que se abrió la página): un reto de 7 días no dice "quedan 8".
+  const faltaMs = activo?.expiresAt ? Date.parse(activo.expiresAt) - (ahoraFuera ?? Date.now()) : null;
+  const dias = faltaMs == null ? null : Math.ceil(faltaMs / 86400000);
+  const quedan = faltaMs == null ? '' : faltaMs <= 0 ? 'Ya venció' : faltaMs < 86400000 ? 'Vence en menos de un día' : `Quedan ${dias} días`;
+  return (
+    <div className={s.pagina} data-componente="PaginaRetosAdmin">
+      <CabezaAdmin {...cabeza} />
+      {pestanas}
+      {pestana === 'evidencias' && (
+        <TablaAdmin
+          etiqueta="Evidencias por revisar"
+          filas={evidencias}
+          nombreDe={(e) => `${e.quien} · ${e.reto}`}
+          cargando={cargando}
+          error={error}
+          onReintentar={onReintentar}
+          vacio={{ titulo: 'Nada por revisar', texto: 'Cuando un cliente mande su evidencia, aparece aquí.' }}
+          columnas={[
+            { id: 'foto', titulo: 'Evidencia', ancho: 72, tarjeta: 'foto', celda: (e) => (e.tipo === 'imagen' ? <FotoCelda src={e.url} /> : <FotoCelda />) },
+            { id: 'quien', titulo: 'Cliente', tarjeta: 'titulo', celda: (e) => <>{e.quien}<span className={l.sub}>{e.reto}</span></> },
+            { id: 'enviada', titulo: 'Enviada', ancho: 150, tarjeta: 'detalle', celda: (e) => fechaHora(e.enviadaMs) },
+            { id: 'da', titulo: 'Si se aprueba', tarjeta: 'detalle', celda: (e) => recompensaDeReto({ tipo: e.tipoRecompensa, monedas: e.monedas }) },
+            {
+              id: 'acciones', titulo: 'Revisar', ancho: 300, tarjeta: 'control',
+              celda: (e) => (
+                <span className={s.revisar}>
+                  {e.url && <Boton tamano="sm" variante="fantasma" icono={<ExternalLink aria-hidden="true" />} to={e.url}>{e.tipo === 'imagen' ? 'Ver foto' : 'Ver enlace'}</Boton>}
+                  <Boton tamano="sm" variante="primario" icono={<Check aria-hidden="true" />} cargando={trabajando === e.id} disabled={Boolean(trabajando)} onClick={(ev) => { ev.stopPropagation(); procesar(e, true); }}>Aprobar</Boton>
+                  <Boton tamano="sm" variante="contorno" icono={<X aria-hidden="true" />} disabled={Boolean(trabajando)} onClick={(ev) => { ev.stopPropagation(); setRechazando(e); }}>Rechazar</Boton>
+                </span>
+              ),
+            },
+          ]}
+        />
+      )}
+      {pestana === 'activo' && (
+        activo ? (
+          <section className={s.activo}>
+            <h2>{activo.title}</h2>
+            {activo.description && <p>{activo.description}</p>}
+            <dl className={s.datos}>
+              <div><dt>Qué cuenta</dt><dd><code className={s.codigo}>{activo.actionType}</code> · meta {activo.goal}</dd></div>
+              <div><dt>Da</dt><dd>{recompensaDeReto(activo)}</dd></div>
+              <div><dt>Empezó</dt><dd>{fechaHora(Date.parse(activo.startedAt))}</dd></div>
+              <div><dt>Vence</dt><dd>{fechaHora(Date.parse(activo.expiresAt))}{quedan && <span className={l.sub}>{quedan}</span>}</dd></div>
+            </dl>
+            <Boton variante="secundario" onClick={() => setPestana('catalogo')}>Cambiar de reto</Boton>
+          </section>
+        ) : (
+          <EstadoVacio titulo="No hay un reto activo" texto="Elige uno del catálogo con «Activar esta semana».">
+            <Boton variante="secundario" onClick={() => setPestana('catalogo')}>Ir al catálogo</Boton>
+          </EstadoVacio>
+        )
+      )}
+      <Confirmar
+        abierta={Boolean(rechazando)}
+        titulo={rechazando ? `¿Rechazar la evidencia de ${rechazando.quien}?` : ''}
+        texto="No recibe la recompensa por esta evidencia."
+        confirmar="Rechazar"
+        peligro
+        onConfirmar={() => procesar(rechazando, false)}
+        onCancelar={() => setRechazando(null)}
+      />
+      {confirmarActivar}
+    </div>
+  );
+}

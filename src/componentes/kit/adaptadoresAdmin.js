@@ -1611,3 +1611,143 @@ export function listasDeNavegador({ datos = {}, anterior = null, comparar = fals
     regiones: lista(d.geographyStats?.topRegions).slice(0, 6).map((x) => ({ id: x.name, nombre: x.name, valor: x.count, texto: enteroPE(x.count) })),
   };
 }
+
+/* ── Clientes y fidelidad (D5) ─────────────────────────── */
+
+/*
+ * Referidos (D5a): solo seguimiento. claimReferralSecure paga cuando el
+ * pedido queda Finalizado en el ERP; aquí nadie aprueba nada.
+ */
+export const ESTADOS_REFERIDO = {
+  sent: { texto: 'Enlace creado', tono: 'neutro', ayuda: 'Nadie lo abrió todavía' },
+  clicked: { texto: 'Abrió el enlace', tono: 'neutro' },
+  registered: { texto: 'Creó su cuenta', tono: 'violeta', ayuda: 'Por invitación' },
+  purchased: { texto: 'Compró', tono: 'aviso', ayuda: 'Esperando la entrega' },
+  completed: { texto: 'Aprobado', tono: 'exito', ayuda: 'Sistema anterior' },
+  claimed: { texto: 'Monedas reclamadas', tono: 'exito' },
+  ineligible: { texto: 'No califica', tono: 'peligro' },
+};
+
+/**
+ * Un referido para la lista. estimar(total, referido) → monedas
+ * (estimateReferralReward de services/referrals, la misma fórmula que paga el servidor).
+ */
+export function referidoDesdeFirestore(doc = {}, estimar = () => 0) {
+  const ms = msDeTs(doc.createdAt);
+  const conPedido = Boolean(doc.orderId);
+  const reclamado = doc.status === 'claimed';
+  return {
+    id: doc.id,
+    creadoMs: ms,
+    codigo: doc.referrerCode || '',
+    enlace: doc.tipo === 'invitacion' ? 'Invitación' : doc.productId ? `Producto ${doc.productId}` : doc.linkId || !doc.tipo ? 'Enlace anterior' : 'Tienda',
+    quien: doc.status === 'sent' ? '' : (doc.visitanteNombre || 'Visitante sin cuenta'),
+    pedido: doc.orderId || '',
+    venta: Number(doc.orderTotal) || 0,
+    monedas: conPedido ? (reclamado ? Number(doc.earnedCoins) || 0 : estimar(doc.orderTotal, doc)) : null,
+    estimado: conPedido && !reclamado,
+    estado: ESTADOS_REFERIDO[doc.status] ? doc.status : 'sent',
+  };
+}
+
+/** Las cifras de arriba: enlaces, cuántos compraron, monedas ya pagadas y por pagar (estimadas). */
+export function resumenReferidos(referidos = []) {
+  const l = lista(referidos);
+  return {
+    enlaces: l.length,
+    entraron: l.filter((r) => r.estado !== 'sent').length,
+    compraron: l.filter((r) => r.pedido).length,
+    pagadas: l.filter((r) => r.estado === 'claimed').reduce((a, r) => a + (r.monedas || 0), 0),
+    porPagar: l.filter((r) => r.estimado && r.estado !== 'ineligible').reduce((a, r) => a + (r.monedas || 0), 0),
+  };
+}
+
+/*
+ * Misiones diarias (D5a): `missions` con su verificación (actionKey de
+ * constants/missionActions; sin ella, el cliente la marca él mismo).
+ */
+export function misionDesdeFirestore(doc = {}) {
+  return {
+    id: doc.id,
+    nombre: doc.title || '',
+    descripcion: doc.description || '',
+    monedas: Number(doc.rewardPoints) || 0,
+    orden: Number(doc.order) || 0,
+    activa: doc.active !== false,
+    verificacion: doc.actionKey || '',
+  };
+}
+
+/** Lo que se guarda (como antes: textos recortados y números). */
+export function misionAFirestore(m = {}) {
+  return {
+    title: String(m.nombre || '').trim(),
+    description: String(m.descripcion || '').trim(),
+    rewardPoints: Number(m.monedas) || 0,
+    order: Number(m.orden) || 0,
+    active: m.activa !== false,
+    actionKey: m.verificacion || '',
+  };
+}
+
+/*
+ * Retos semanales (D5a): el catálogo `weeklyChallenges`, el reto activo
+ * (`globals/activeChallenge`, siete días) y las evidencias pendientes.
+ */
+export const RECOMPENSAS_RETO = [
+  { valor: 'main', texto: 'Monedas' },
+  { valor: 'kapi_double_3d', texto: 'Doble monedas al alimentar a Kapi (3 días)' },
+];
+
+export const recompensaDeReto = (r = {}) => (r.tipo === 'kapi_double_3d' || r.rewardType === 'kapi_double_3d'
+  ? 'Doble monedas al alimentar a Kapi (3 días)'
+  : `${enteroPE(r.monedas ?? r.rewardCoins)} monedas`);
+
+export function retoDesdeFirestore(doc = {}) {
+  return {
+    id: doc.id,
+    nombre: doc.title || '',
+    descripcion: doc.description || '',
+    accion: doc.actionType || '',
+    meta: Number(doc.goal) || 1,
+    monedas: Number(doc.rewardCoins) || 0,
+    tipo: doc.rewardType === 'kapi_double_3d' ? 'kapi_double_3d' : 'main',
+  };
+}
+
+export function retoAFirestore(r = {}) {
+  return {
+    title: String(r.nombre || '').trim(),
+    description: String(r.descripcion || '').trim(),
+    actionType: String(r.accion || '').trim(),
+    goal: Math.max(1, Number(r.meta) || 1),
+    rewardCoins: r.tipo === 'kapi_double_3d' ? 0 : Number(r.monedas) || 0,
+    rewardType: r.tipo === 'kapi_double_3d' ? 'kapi_double_3d' : 'main',
+  };
+}
+
+/** El documento de `globals/activeChallenge` para activar un reto desde ahora por siete días (como antes). */
+export function retoActivoDesde(r = {}, ahora = new Date()) {
+  const g = retoAFirestore(r);
+  return {
+    challengeId: r.id, title: g.title, description: g.description, actionType: g.actionType, goal: g.goal,
+    rewardCoins: g.rewardCoins, rewardType: g.rewardType,
+    startedAt: ahora.toISOString(), expiresAt: new Date(ahora.getTime() + 7 * DIA_MS).toISOString(),
+  };
+}
+
+/** Una evidencia pendiente con la recompensa de su reto (la del catálogo o la del activo). */
+export function evidenciaDesde(doc = {}, retos = [], activo = null) {
+  const ref = lista(retos).find((r) => r.id === doc.challengeId) || (activo ? retoDesdeFirestore({ ...activo, id: activo.challengeId }) : null);
+  return {
+    id: doc.id,
+    quien: doc.userName || 'Cliente',
+    uid: doc.userId || '',
+    reto: ref?.nombre || doc.challengeId || '',
+    tipo: doc.evidenceType === 'image' ? 'imagen' : 'enlace',
+    url: doc.evidenceUrl || '',
+    enviadaMs: msDeTs(doc.submittedAt),
+    monedas: ref ? ref.monedas : 0,
+    tipoRecompensa: ref ? ref.tipo : 'main',
+  };
+}

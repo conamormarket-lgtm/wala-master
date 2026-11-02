@@ -458,3 +458,26 @@ test('pantallas técnicas: origen, tráfico por día, seguimiento, uso y navegad
   assert.equal(n.cifras[1].valor, '4');
   assert.equal(n.diasSinPais, 4);
 });
+
+test('fidelidad: referidos, misiones y retos', () => {
+  const estimar = (total) => Math.round(total * (total > 200 ? 0.1 : 0.05));
+  const r = [
+    m2.referidoDesdeFirestore({ id: 'a', status: 'sent', referrerCode: 'ANA1' }, estimar),
+    m2.referidoDesdeFirestore({ id: 'b', status: 'purchased', referrerCode: 'ANA1', tipo: 'invitacion', orderId: 'P1', orderTotal: 300, visitanteNombre: 'Luis' }, estimar),
+    m2.referidoDesdeFirestore({ id: 'c', status: 'claimed', referrerCode: 'ANA1', productId: 'x', orderId: 'P2', orderTotal: 100, earnedCoins: 7 }, estimar),
+  ];
+  assert.deepEqual(r.map((x) => [x.enlace, x.quien, x.monedas, x.estimado]), [['Enlace anterior', '', null, false], ['Invitación', 'Luis', 30, true], ['Producto x', 'Visitante sin cuenta', 7, false]]);
+  assert.deepEqual(m2.resumenReferidos(r), { enlaces: 3, entraron: 2, compraron: 2, pagadas: 7, porPagar: 30 });
+  const mi = m2.misionDesdeFirestore({ id: 'm', title: 'Visita', rewardPoints: '5', active: false });
+  assert.equal(mi.activa, false);
+  assert.deepEqual(m2.misionAFirestore({ ...mi, nombre: ' Visita ', monedas: '8' }), { title: 'Visita', description: '', rewardPoints: 8, order: 0, active: false, actionKey: '' });
+  const re = m2.retoDesdeFirestore({ id: 'r', title: 'Tres deseos', actionType: 'add_wishlist', goal: 3, rewardCoins: 20 });
+  assert.equal(m2.recompensaDeReto(re), '20 monedas');
+  assert.deepEqual(m2.retoAFirestore({ ...re, tipo: 'kapi_double_3d', meta: 0 }), { title: 'Tres deseos', description: '', actionType: 'add_wishlist', goal: 1, rewardCoins: 0, rewardType: 'kapi_double_3d' });
+  const act = m2.retoActivoDesde(re, new Date('2026-11-02T10:00:00Z'));
+  assert.equal(act.challengeId, 'r');
+  assert.equal(act.expiresAt, '2026-11-09T10:00:00.000Z');
+  const ev = m2.evidenciaDesde({ id: 'e', challengeId: 'r', userName: 'Ana', evidenceType: 'image', evidenceUrl: 'u' }, [re]);
+  assert.deepEqual([ev.reto, ev.tipo, ev.monedas], ['Tres deseos', 'imagen', 20]);
+  assert.equal(m2.evidenciaDesde({ id: 'e2', challengeId: 'zz' }, [re], act).reto, 'Tres deseos');
+});

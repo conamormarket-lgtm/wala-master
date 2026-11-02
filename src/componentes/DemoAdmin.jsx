@@ -9,6 +9,8 @@ import {
   PaginaPagos, configPagosDesde, PaginaCuentasDePedidos, PaginaReclamos, reclamoDesdeFirestore,
   MarcoResultados, PaginaResumenResultados, PaginaProductosResultados, PaginaVisitantesResultados, PaginaClientesResultados, PaginaOpinionesResultados,
   PaginaDetalleTecnico, PaginaPaginasTecnica, PaginaUsoTecnica, PaginaNavegadorTecnica, PaginaMapaDeCalor, ORIGENES_TECNICOS,
+  PaginaReferidosAdmin, PaginaMisionesAdmin, PaginaRetosAdmin, referidoDesdeFirestore, misionDesdeFirestore, misionAFirestore,
+  retoDesdeFirestore, retoAFirestore, retoActivoDesde, evidenciaDesde,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -60,6 +62,9 @@ const HECHAS = [
   ['/admin/recepcion-pedidos', 'Recepción'],
   ['/admin/gestion-pagos', 'Pagos'],
   ['/admin/libro-reclamaciones', 'Reclamos'],
+  ['/admin/referidos', 'Referidos'],
+  ['/admin/misiones', 'Misiones'],
+  ['/admin/retos', 'Retos'],
   ['/admin/crear-cuentas-pedidos', 'Cuentas'],
   ['/admin/categorias', 'Categorías'],
   ['/admin/colecciones', 'Colecciones'],
@@ -364,6 +369,30 @@ const TITULOS_TECNICOS = {
   uso: ['Uso y permanencia', 'Actividad, áreas y permanencia'],
   navegador: ['Navegador y sistema', 'Aparatos, países, fuentes y regiones'],
 };
+// D5a: referidos, misiones y retos de ejemplo (nombres inventados).
+const estimarDemo = (total, r) => { const n = Number(total) || 0; const p = Math.round(n * (n > 200 ? 0.1 : 0.05)); return r?.tipo === 'invitacion' && r?.invitadoUid ? Math.max(20, p) : p; };
+const REFERIDOS_DEMO = [
+  ['ANA2026', 'sent', null], ['ANA2026', 'clicked', null], ['LUIS77', 'registered', { tipo: 'invitacion', visitanteNombre: 'Kevin Ramos' }],
+  ['LUIS77', 'purchased', { tipo: 'invitacion', invitadoUid: 'k', visitanteNombre: 'Kevin Ramos', orderId: 'WALA-01814', orderTotal: 129.8 }],
+  ['VALE', 'claimed', { productId: 'polo-clasico', visitanteNombre: 'Rosa Huamán', orderId: 'WALA-01790', orderTotal: 259.8, earnedCoins: 26 }],
+  ['VALE', 'purchased', { visitanteNombre: 'Diego Fernández', orderId: 'WALA-01806', orderTotal: 75 }],
+  ['ANA2026', 'ineligible', { linkId: 'x', visitanteNombre: 'Ana Pérez', orderId: 'WALA-01760', orderTotal: 60 }],
+].map(([referrerCode, status, extra], i) => referidoDesdeFirestore({ id: `ref-${i}`, referrerCode, status, createdAt: Date.now() - 86400000 * (i * 3 + 1), tipo: 'tienda', ...(extra || {}) }, estimarDemo));
+const VERIFICACIONES_DEMO = [
+  { valor: 'visit_catalogo_recompensas', texto: 'Visitó el Catálogo de Recompensas' }, { valor: 'visit_mis_cupones', texto: 'Visitó Mis Cupones' },
+  { valor: 'visit_minijuegos', texto: 'Visitó Minijuegos' }, { valor: 'add_wishlist', texto: 'Agregó un favorito' }, { valor: 'bolitas_nivel', texto: 'Pasó un nivel de las Bolitas de Kapi' },
+];
+const MISIONES_DEMO = [
+  ['Visita el Catálogo de Recompensas', 'Mira qué puedes canjear con tus monedas.', 5, 'visit_catalogo_recompensas', true],
+  ['Agrega un favorito', 'Guarda un producto en tu lista de deseos.', 10, 'add_wishlist', true],
+  ['Juega una partida', 'Pasa un nivel en las Bolitas de Kapi.', 15, 'bolitas_nivel', true],
+  ['Comparte Walá en tus redes', 'Sube una historia mencionándonos.', 20, '', false],
+].map(([title, description, rewardPoints, actionKey, active], i) => misionDesdeFirestore({ id: `mis-${i}`, title, description, rewardPoints, actionKey, active, order: i }));
+const RETOS_DEMO = [
+  ['Tres deseos', 'Agrega 3 productos a tu lista de deseos.', 'add_wishlist', 3, 20, 'main'],
+  ['Diseñador de la semana', 'Guarda 2 creaciones en el estudio.', 'save_creation', 2, 0, 'kapi_double_3d'],
+  ['Foto con tu Walá', 'Sube una foto usando tu prenda.', 'upload_photo', 1, 50, 'main'],
+].map(([title, description, actionType, goal, rewardCoins, rewardType], i) => retoDesdeFirestore({ id: `reto-${i}`, title, description, actionType, goal, rewardCoins, rewardType }));
 const CLIENTES_RES = [
   ['u1', 'Valeria Quispe', 'valeria@correo.pe', '71234567', 2], ['u2', 'Diego Fernández', 'diego@correo.pe', '', 0], ['u3', 'Camila Rojas', 'camila@correo.pe', '72345678', 0],
   ['u4', 'Luis Mendoza', 'luis@correo.es', '', 3], ['u5', 'Rosa Huamán', 'rosa@correo.pe', '45678912', 0], ['u6', 'Kevin Ramos', 'kevin@correo.pe', '', 1],
@@ -489,6 +518,13 @@ function PanelDePrueba() {
   const [resDiseno, setResDiseno] = useState('todos');
   const [resAncho, setResAncho] = useState('todos');
   const [resSinOrigen, setResSinOrigen] = useState(true);
+  const [misiones, guardarMisionCruda, eliminarMision] = useListaDemo(MISIONES_DEMO, falla);
+  const [retos, guardarRetoCrudo, eliminarReto] = useListaDemo(RETOS_DEMO, falla);
+  const [retoActivo, setRetoActivo] = useState(() => retoActivoDesde(RETOS_DEMO[0], new Date(Date.now() - 86400000 * 2)));
+  const [evidencias, setEvidencias] = useState(() => [
+    { id: 'ev1', challengeId: 'reto-2', userName: 'Valeria Quispe', userId: 'u1', evidenceType: 'image', evidenceUrl: TIENDA.productos[0].mainImage || TIENDA.productos[0].images?.[0] || TIENDA.productos[2].mainImage, submittedAt: Date.now() - 3600000 * 5 },
+    { id: 'ev2', challengeId: 'reto-0', userName: 'Luis Mendoza', userId: 'u4', evidenceType: 'link', evidenceUrl: 'https://instagram.com/p/demo', submittedAt: Date.now() - 86400000 },
+  ]);
   const [atributos, setAtributos] = useState(ATRIBUTOS_DEMO);
   const [productos, setProductos] = useState(PRODUCTOS);
   const [whatsapp, setWhatsapp] = useState(WHATSAPP);
@@ -1010,6 +1046,33 @@ function PanelDePrueba() {
           <EstadoVacio imagen="/assets/kapi/3d/kapi-hambre-256.webp" titulo="Esta pestaña todavía no está en el kit" texto={`Se arma en ${{ tecnico: 'D4d' }[resPestana] || 'D4'} (guia/ADMIN.md).`} />
         )}
       </MarcoResultados>
+    );
+  } else if (ruta === '/admin/referidos') {
+    pagina = <PaginaReferidosAdmin referidos={vacio ? [] : REFERIDOS_DEMO} cargando={con('cargando')} error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined} onReintentar={() => setEstados((e) => e.filter((x) => x !== 'error'))} />;
+  } else if (ruta === '/admin/misiones') {
+    pagina = (
+      <PaginaMisionesAdmin
+        {...comunes}
+        misiones={vacio ? [] : misiones}
+        verificaciones={VERIFICACIONES_DEMO}
+        onGuardar={(datos, id) => guardarMisionCruda(misionDesdeFirestore({ id, ...misionAFirestore(datos) }), id)}
+        onEliminar={eliminarMision}
+      />
+    );
+  } else if (ruta === '/admin/retos') {
+    const evs = evidencias.map((e) => evidenciaDesde(e, retos, retoActivo));
+    pagina = (
+      <PaginaRetosAdmin
+        {...comunes}
+        retos={vacio ? [] : retos}
+        activo={vacio ? null : retoActivo}
+        evidencias={vacio ? [] : evs}
+        onGuardar={(datos, id) => guardarRetoCrudo(retoDesdeFirestore({ id, ...retoAFirestore(datos) }), id)}
+        onEliminar={eliminarReto}
+        onActivar={async (r) => { await espera(600); fallar(); setRetoActivo(retoActivoDesde(r)); }}
+        onAprobar={async (e) => { await espera(700); fallar(); setEvidencias((l) => l.filter((x) => x.id !== e.id)); }}
+        onRechazar={async (e) => { await espera(700); fallar(); setEvidencias((l) => l.filter((x) => x.id !== e.id)); }}
+      />
     );
   } else if (ruta === '/admin/libro-reclamaciones') {
     pagina = (

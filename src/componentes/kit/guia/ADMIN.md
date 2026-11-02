@@ -231,7 +231,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | hecho (2026-11-02) | · |
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | · |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | · |
-| D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | · | · |
+| D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | en marcha (D5a, 2026-11-02) | · |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | · | · |
 | D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | · | · |
 | D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | · | · |
@@ -1253,6 +1253,78 @@ El kit pone su marco (filtros, avisos); el visor va en el hueco tal cual.
   `anchos` desde `ANCHOS_PANTALLA`; de `children`, `<HeatmapViewer data loading error emptyMessage ancho origen versionesPorRuta soloDisenoActual onCambiarDiseno />`
   como hoy.
 
+## D5 · Clientes y fidelidad (en marcha: D5a hecho en el kit el 2026-11-02)
+
+Siete pantallas de hoy (unas 4.900 líneas con las de Fechas importantes),
+en cinco tramos; el apartado se une entero cuando estén los cinco.
+
+| Tramo | Qué | Páginas de hoy | Kit |
+|---|---|---|---|
+| D5a | Referidos (seguimiento), Misiones diarias y Retos semanales (catálogo, evidencias, reto activo) | `AdminReferidos.jsx`, `AdminMisiones.jsx`, `AdminRetos.jsx` | hecho (2026-11-02) |
+| D5b | Recompensas (el catálogo de canje) | `AdminRecompensas.jsx` (603 líneas) | · |
+| D5c | Fechas importantes: el calendario, los avisos y fechas festivas, las fechas de los clientes y los paquetes | `AdminFechasImportantesPage.jsx` + `components/admin/fechas/*` (1.345 líneas) | · |
+| D5d | Notificaciones y ofertas | `AdminNotifications/AdminNotifications.jsx` (755 líneas) | · |
+| D5e | Encuestas: el editor de la de suscripción y las dos pantallas de respuestas que hoy van embebidas en Opiniones (D4c) | `AdminEncuestas.jsx`, `AdminEncuestaEntregas.jsx`, `AdminRespuestasEncuesta.jsx` | · |
+
+### D5a: Referidos, Misiones y Retos (en el kit desde el 2026-11-02)
+
+| Misiones (computadora) | Evidencias de un reto (celular) |
+|---|---|
+| ![La lista de misiones: lo que da, cómo se comprueba, el orden y si está activa](admin-misiones-escritorio.webp) | ![Las evidencias por revisar en tarjetas: quién, qué reto, cuándo, lo que da y Ver foto, Aprobar, Rechazar](admin-retos-celular.webp) |
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| Referidos | `PaginaReferidosAdmin` | `paginas/admin/Fidelidad.jsx` | El aviso de que no se aprueba nada; cuatro cifras (enlaces y cuántos los abrieron, compraron, monedas pagadas, **monedas por pagar** estimadas); buscar por código, quién entró o pedido; el filtro de estado; la lista (`TablaAdmin`, tarjetas en el celular) con quién refirió, el enlace, quién entró, el pedido con su venta, las monedas (pagadas o "estimado") y el estado |
+| Misiones diarias | `PaginaMisionesAdmin` | `paginas/admin/Fidelidad.jsx` | Sobre `PaginaListaAdmin`: la misión con su descripción, lo que da, **cómo se comprueba** (o "La marca el cliente"), el orden y el estado; la hoja con título, descripción, monedas, orden, la verificación con su aviso (qué pasa sin ella) y Activa |
+| Retos semanales | `PaginaRetosAdmin` | `paginas/admin/Fidelidad.jsx` | Tres pestañas: **Catálogo** (sobre `PaginaListaAdmin`; "Es el de esta semana" en el activo; "Activar esta semana" en el menú de cada fila, **con pregunta**), **Evidencias · N** (la foto o el enlace, quién, qué reto, cuándo, lo que da; Aprobar y Rechazar, que pregunta) y **Reto activo** (qué cuenta, lo que da, cuándo empezó y vence, cuántos días quedan) |
+
+Adaptadores (con pruebas): `ESTADOS_REFERIDO`, `referidoDesdeFirestore`
+(con `estimateReferralReward` del conector), `resumenReferidos`,
+`misionDesdeFirestore` / `misionAFirestore`, `RECOMPENSAS_RETO`,
+`recompensaDeReto`, `retoDesdeFirestore` / `retoAFirestore`,
+`retoActivoDesde` (`globals/activeChallenge` por siete días, como antes) y
+`evidenciaDesde`. Las tres páginas llevan "Admin" al final del nombre: el kit
+ya tiene `PaginaReferidos` y `PaginaMisiones` del cliente.
+
+### Diferencias a propósito (D5a)
+
+- Referidos: **cifras arriba** (antes, solo la tabla), buscar y filtrar por
+  estado, de a 50; en el celular, tarjetas.
+- Misiones: la lista y la hoja al costado (antes el formulario fijo a la
+  izquierda y la lista partida en activas e inactivas; ahora un filtro).
+- Retos: el formulario va en la hoja; activar, aprobar y rechazar avisan con
+  toasts y preguntan con `Confirmar` (antes `window.confirm` y `alert()`);
+  "Quedan N días" en el reto activo. Sin emojis en los botones (✏️🗑️🚀✅❌).
+- Las monedas se dicen con su palabra ("20 monedas"), no con el ícono solo.
+
+### Qué se probó (2026-11-02, demo en localhost, 1280 px y 375 px)
+
+- Referidos: 7 · 4 · 26 pagadas · 24 por pagar (el que no califica no
+  cuenta); "Invitación", "Enlace anterior", "Producto …"; el estimado de
+  Kevin (20, por invitación).
+- Misiones: crear vacía → "Escribe el título de la misión"; con título →
+  creada; sin verificación, el aviso de auto-reporte.
+- Retos: "Activar esta semana" → la pregunta → "Es el de esta semana" pasa a
+  ese reto y Reto activo dice "Quedan 7 días"; rechazar pregunta; aprobar y
+  rechazar vacían la lista ("Nada por revisar").
+- A 375 px nada se sale del ancho. Sin errores de carga.
+
+### Cómo se une D5a
+
+- `ReferidosDelPanel.jsx`: `getDocs(query(collection(db, 'referrals'), orderBy('createdAt', 'desc')))`
+  (`['adminReferrals']`) → `referidoDesdeFirestore(doc, estimateReferralReward)`.
+- `MisionesDelPanel.jsx`: `getMissions` (`['admin-missions']`) →
+  `misionDesdeFirestore`; guardar `createMission` / `updateMission` con
+  `misionAFirestore`; eliminar `deleteMission`; `verificaciones` desde
+  `MISSION_ACTIONS` (`{ valor: clave, texto: adminLabel }`).
+- `RetosDelPanel.jsx`: `getCollection('weeklyChallenges')`,
+  `getDocument('globals', 'activeChallenge')`,
+  `getCollection('challengeEvidences', [status == 'pending'])`; guardar
+  `createDocument` / `updateDocument` con `retoAFirestore`; `onActivar` →
+  `setDocument('globals', 'activeChallenge', retoActivoDesde(reto))`;
+  `onAprobar` / `onRechazar` → `httpsCallable('approveChallengeEvidence')({ evidenceId, action, rewardCoins, rewardType })`
+  y volver a leer.
+
 ## Reemplazos: qué sale y qué entra
 
 La misma tabla que las fichas de la tienda (CUENTA.md, "Reemplazos"): qué
@@ -1340,6 +1412,18 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D4d · Páginas, Uso, Navegador | `dashboard/DashPaginas.jsx`, `DashUso.jsx`, `DashOrigen.jsx` + sus css (`DashHeader`, `KpiRow`, `TrendChart`, `CompareBars`, `Donut`, `RankingConMiniaturas`, recharts) | `PaginaPaginasTecnica`, `PaginaUsoTecnica`, `PaginaNavegadorTecnica` (en `MarcoResultados`) | un conector por pantalla |
 | D4d · Mapa de calor | `dashboard/DashHeatmap.jsx` + css (cabecera, filtros, avisos) | `PaginaMapaDeCalor` (**`HeatmapViewer` se queda**, de `children`) | `MapaDeCalorDelPanel.jsx` |
 
+### D5 · Clientes y fidelidad
+
+| Parte | Hoy en el admin | Pasa a (kit) | Conector |
+|---|---|---|---|
+| D5a · Referidos | `pages/admin/AdminReferidos.jsx` + `.module.css` (estilos en línea) | `PaginaReferidosAdmin` | `ReferidosDelPanel.jsx` |
+| D5a · Misiones | `pages/admin/AdminMisiones.jsx` + `.module.css` (`common/Button`, su propio modal) | `PaginaMisionesAdmin` (`PaginaListaAdmin`) | `MisionesDelPanel.jsx` |
+| D5a · Retos | `pages/admin/AdminRetos.jsx` + `.module.css` (`window.confirm`, `alert()`) | `PaginaRetosAdmin` | `RetosDelPanel.jsx` |
+| D5b · Recompensas | `pages/admin/AdminRecompensas.jsx` + `.module.css` | por hacer | `RecompensasDelPanel.jsx` |
+| D5c · Fechas importantes | `pages/admin/AdminFechasImportantesPage.jsx` + `components/admin/fechas/*` | por hacer | por vista |
+| D5d · Notificaciones | `pages/admin/AdminNotifications/*` | por hacer | `NotificacionesDelPanel.jsx` |
+| D5e · Encuestas | `AdminEncuestas.jsx`, `AdminEncuestaEntregas.jsx`, `AdminRespuestasEncuesta.jsx` | por hacer | por pantalla |
+
 ## Cómo se une un apartado (la misma lógica que clientes)
 
 1. El apartado está **completo en el kit**: todas sus páginas en el Panel de
@@ -1380,6 +1464,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |
 | 2026-11-02 | Reemplazos de D0 a D2 (qué sale, qué entra y el conector) y la sección «Panel administrativo» de ELIMINAR.md con quién importa hoy cada pieza vieja | `guia/ADMIN.md`, `guia/ELIMINAR.md` |
+| 2026-11-02 | D5 dividido en tramos (a: referidos, misiones y retos; b: recompensas; c: fechas importantes; d: notificaciones; e: encuestas). D5a en el kit: `PaginaReferidosAdmin`, `PaginaMisionesAdmin`, `PaginaRetosAdmin`; adaptadores con pruebas | `paginas/admin/Fidelidad.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D4d en el kit: `PaginaDetalleTecnico` (reconstruir por tramos con `PasoAdmin`), `PaginaPaginasTecnica`, `PaginaUsoTecnica`, `PaginaNavegadorTecnica` y el marco de `PaginaMapaDeCalor` (`HeatmapViewer` se queda); las cuatro dentro de `MarcoResultados`; adaptadores con pruebas. **D4 completo en el kit** | `paginas/admin/Tecnico.jsx`, `paginas/admin/Resultados.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D4c en el kit: `PaginaClientesResultados`, `FichaCliente` (en una hoja), `ListaCumpleanos`, `PaginaOpinionesResultados`; `mensajeCarrito` pasó a `utils/whatsappLink.js`; las dos encuestas quedan para D5; adaptadores con pruebas | `paginas/admin/Resultados.jsx`, `piezas/admin/Clientes.jsx`, `adaptadoresAdmin.js`, `utils/whatsappLink.js` |
 | 2026-11-02 | D4b en el kit: `PaginaProductosResultados`, `PaginaVisitantesResultados`, `ListaBarras`, `ListaInteresados`; adaptadores con pruebas; en la demo, cada pestaña de Resultados es su ruta | `paginas/admin/Resultados.jsx`, `piezas/admin/Metricas.jsx`, `piezas/admin/Resultados.jsx`, `adaptadoresAdmin.js` |
