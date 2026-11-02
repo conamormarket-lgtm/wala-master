@@ -385,3 +385,38 @@ Se quedan: `useBorradoresCrear`, `useComunidad`, `useVersionesReemplazadas`,
 | `components/YoryoPersonalizadoCliente/*` y `components/YoryoPersonalizado/*` (con su copia `WALA_Editor_Export`) | "Personalizable" de las esclavas (ficha y admin) | la nota de la descripción: pedirla por WhatsApp | `FichaDeProducto.jsx`, `AdminProductoFormV2.jsx` (solo con `personalizableViejo`) | al retirar `personalizableViejo` |
 | `AdminCustomizationViewsEditor` y la tarjeta "Producto personalizable" de la ficha de productos | `customizable` / `customizationViews` | Prendas de Crear (`/admin/prendas-crear`) | `AdminProductoFormV2.jsx` (solo con `personalizableViejo`) | al retirar `personalizableViejo` |
 | `services/personalizacionVieja.js` y el aviso "Quitar la personalización vieja" de Productos | pasar los datos viejos a normales | — | `AdminProductos.jsx` | cuando en producción ya no quede ninguno (el aviso desaparece solo) |
+
+## Panel administrativo (todavía no unido)
+
+El admin se arma primero en el kit ([ADMIN.md](ADMIN.md)) y después se une
+por apartado. Esta lista anota desde ya lo que va a quedar sin uso y **quién
+lo importa hoy** (revisado el 2026-11-02), para que al unir se sepa qué
+esperar. Ninguna fila está lista para borrar: todas siguen en uso hasta que
+su apartado se una y su interruptor se retire.
+
+| Qué | Lo usa hoy | Se reemplaza con (kit) | Quién más lo importa | Cuándo se puede borrar |
+|---|---|---|---|---|
+| `components/AdminLayout/AdminLayout.jsx` + `.module.css` | `App.jsx` | `MarcoAdmin` (D0) | nadie más | al retirar `adminViejo` |
+| `pages/AdminDashboard.jsx` (la página) | `App.jsx` | `PaginaInicioAdmin` (D0) | — | al retirar `adminViejo`; **su `AdminDashboard.module.css` no**: lo importan las pantallas del dashboard (`dashShared`, `DashHeatmap`, `DashOrigen`, `DashPaginas`, `DashUso`, `DashRecepcion`, `EnlacesRotos`, `RecepcionPedidos`) hasta D3/D4 |
+| `components/admin/AdminImageCropper` | AdminCategorias, AdminColecciones, AdminMarcas | `CampoImagen` + `RecortarFoto` | `AdminRecompensas` (D5), `components/admin/CategoryNavEditor` | cuando migre Recompensas y se confirme que nadie usa `CategoryNavEditor` |
+| `components/admin/ThumbnailCropEditor` | AdminProductoFormV2 | `EncuadreFoto` (D2b) | nadie más | al unir D2 |
+| `components/admin/ProductTable` | AdminProductos | `TablaAdmin` (D2a) | nadie más | al unir D2 |
+| `components/admin/BulkActions` | AdminProductos | `AccionesLote` (D2a) | nadie más | al unir D2 |
+| `components/admin/BuscadorProducto` | — | `SelectorProductos` (D1) | AdminNotifications, AdminRecompensas (D5), AdminRuletaPage (D7) | cuando migren esas tres |
+| `components/common/Toggle` | AdminProductos, ProductTable | `Interruptor` | nadie más | al unir D2 |
+| `pages/admin/AdminCategorias.jsx`, `AdminColecciones.jsx`, `AdminCatalogAttributes.jsx`, `AdminEnviosZonas.jsx`, `AdminCliparts.jsx`, `AdminDestacados.jsx` + sus `.module.css` | `App.jsx` | las páginas de D1 | nadie más | al retirar `adminCatalogoViejo` |
+| `pages/admin/AdminMarcas.jsx` + `AdminMarcaProductos.jsx` + sus `.module.css` | `App.jsx` (AdminMarcaProductos, dentro de AdminMarcas) | `PaginaMarcas`, `PaginaProductosMarca` (D1) | nadie más | al retirar `adminCatalogoViejo` |
+| `pages/Tienda/admin/AdminProductos.jsx`, `AdminInventario.jsx`, `pages/admin/AdminPublicoProductos.jsx` + sus `.module.css` | `App.jsx` | las páginas de D2a | nadie más | al retirar `adminProductosViejo` |
+| `pages/Tienda/admin/AdminProductoFormV2.jsx` + `.module.css` | `App.jsx`, `RutasPrendasCrear.jsx`, `PersonalizarEnCrear.jsx` | `PaginaFichaProducto` (D2b, D2c) | — | al retirar `adminProductosViejo` |
+| `pages/Tienda/components/AdminComboEditor`, `pages/Tienda/admin/PersonalizarEnCrear.jsx` | AdminProductoFormV2 | la ficha (D2b) | nadie más | con la ficha |
+| `pages/admin/AdminPrendasCrear.jsx`, `AdminCombosCrear.jsx` + sus `.module.css` | AdminProductos (`?ver=crear`, `?ver=packs`) | `PaginaPersonalizables`, `PaginaPacks` (D2c) | AdminCombosCrear también desde AdminPrendasCrear | con la lista de productos |
+| `pages/admin/prendasCrear/PersonalizacionPrenda.jsx`, `ZonaEditor.jsx`, `PlantillasDeLaFicha.jsx` + sus `.module.css` | AdminProductoFormV2 | `DisenoPrenda`, `ColoresPrenda`, `EditorZonas`, `PlantillasPrenda` (D2c) | entre ellos; **`prendaBaseParaGuardar` ya vive en `utils/prendaBase.js`** (PersonalizacionPrenda solo la reexporta) | con la ficha |
+| `pages/admin/AdminBlueprints.jsx` + `.module.css` | `App.jsx` | `PaginaBlueprints` (D2d) | nadie más | al retirar `adminProductosViejo` |
+| `pages/admin/plantillasYoryo/ImportarPlantillasYoryo.jsx` + `.module.css` (**solo la pantalla**) | `App.jsx` | `PaginaPlantillasYoryo` (D2d) | — | al retirar `adminProductosViejo`, después de sacar `plantillasDe`, `importar` y `limpiar` a `pasosYoryo.js`; **los pasos no**: `crearProductosYoryo`, `grabadosYoryo`, `comodasDaida`, `presets*`, `recursos*` y `plantillasACapas` los sigue usando el conector |
+| `pages/Tienda/admin/GenerarFrenteEspalda.jsx` | AdminProductoFormV2 | **no se borra**: la ficha nueva lo usa por `extraGaleria` | — | — |
+| La personalización de antes: `AdminCustomizationViewsEditor`, `YoryoPersonalizado`, `AdminViewEditor`, `PrintAreasEditor`, `ShapeSelector`, `ShapeCreator` | AdminProductoFormV2 (con `personalizableViejo`), `EditorPage` (`/editor/:id`) | nada: no se rehacen (decidido el 2026-11-02) | `EditorPage`, el interruptor `personalizableViejo` | cuando ningún producto conserve esa personalización (el aviso de la lista lo cuenta) y se retire el interruptor |
+
+`components/ui` (los `Glass*`), `components/common/Button` y
+`contexts/ToastContext` **no entran aquí todavía**: los usan también
+páginas de la tienda y de otros apartados del admin. Se anotan cuando su
+último consumidor migre.

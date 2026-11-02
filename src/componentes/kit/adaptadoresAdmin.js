@@ -744,6 +744,40 @@ export function erroresDePack(k) {
   return e;
 }
 
+/* ── Blueprints (D2d) ──────────────────────────────────── */
+
+/** Un área de impresión por defecto (como AdminBlueprints: cm y dpi de imprenta). */
+export const areaVacia = () => ({ nombre: '', ancho: 30, alto: 40, dpi: 300 });
+
+export function blueprintDesdeFirestore(doc = {}) {
+  const areas = lista(doc.printAreas).map((a) => ({ nombre: a?.name || '', ancho: Number(a?.widthCm) || 0, alto: Number(a?.heightCm) || 0, dpi: Number(a?.dpi) || 300 }));
+  return {
+    id: doc.id,
+    nombre: doc.name || '',
+    prenda: doc.baseGarment || '',
+    costo: Number(doc.basePrintCost) || 0,
+    orden: Number(doc.order) || 0,
+    activo: doc.active !== false,
+    metodos: lista(doc.decorationMethods).map((m) => String(m).trim()).filter(Boolean),
+    areas: areas.length ? areas : [areaVacia()],
+  };
+}
+
+/** Los campos de `blueprints`; las áreas sin nombre no se guardan (como antes). */
+export function blueprintAFirestore(b = {}) {
+  return {
+    name: String(b.nombre || '').trim(),
+    baseGarment: String(b.prenda || '').trim(),
+    basePrintCost: Number(b.costo) || 0,
+    order: Number(b.orden) || 0,
+    active: b.activo !== false,
+    decorationMethods: [...new Set(lista(b.metodos).map((m) => String(m).trim()).filter(Boolean))],
+    printAreas: lista(b.areas).filter((a) => String(a?.nombre || '').trim()).map((a) => ({
+      name: String(a.nombre).trim(), widthCm: Number(a.ancho) || 0, heightCm: Number(a.alto) || 0, dpi: Number(a.dpi) || 300,
+    })),
+  };
+}
+
 /** El estado del stock (Inventario): 0 agotado, hasta 3 últimas, más disponible. */
 export const estadoDeStock = (n) => (n <= 0 ? 'agotado' : n <= 3 ? 'ultimas' : 'disponible');
 

@@ -90,6 +90,8 @@ export { PaginaDestacados } from './paginas/admin/Destacados';
 export { PaginaProductos, PaginaInventario, PaginaRecomendar, PUBLICOS, EDADES } from './paginas/admin/Productos';
 export { PaginaFichaProducto } from './paginas/admin/Ficha';
 export { PaginaPersonalizables, PaginaPacks } from './paginas/admin/Crear';
+export { PaginaBlueprints, PaginaPlantillasYoryo } from './paginas/admin/Herramientas';
+export { PasoAdmin } from './piezas/admin/Pasos';
 export { EditorZonas, ListaZonas, DisenoPrenda, ColoresPrenda, PlantillasPrenda, variantesCrudas } from './piezas/admin/Crear';
 export { EncuadreFoto, FotoEncuadrada, GaleriaFotos, CampoTallas, ElegirVarios, ElegirMarca } from './piezas/admin/Producto';
 export {
@@ -101,4 +103,5 @@ export {
   esDeLaTienda, piezasDeCombos, etiquetasDeProducto, rutaAdminDeProducto, estadoDeStock,
   CUMPLIMIENTOS, fichaDesdeProducto, fichaAProducto, erroresDeFicha,
   personalizableDesde, packDesdeFirestore, packAGuardar, erroresDePack, MODOS_TALLA_PACK, MIN_PIEZAS_PACK, MAX_PIEZAS_PACK,
+  areaVacia, blueprintDesdeFirestore, blueprintAFirestore,
 } from './adaptadoresAdmin';

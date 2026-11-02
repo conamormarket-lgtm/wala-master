@@ -5,6 +5,7 @@ import {
   PaginaColecciones, PaginaAtributos, PaginaEnvios, PaginaCliparts, PaginaMarcas, PaginaProductosMarca, PaginaDestacados,
   PaginaProductos, PaginaInventario, PaginaRecomendar, PaginaFichaProducto, fichaDesdeProducto, fichaAProducto,
   PaginaPersonalizables, PaginaPacks, personalizableDesde, packDesdeFirestore,
+  PaginaBlueprints, PaginaPlantillasYoryo, blueprintDesdeFirestore, blueprintAFirestore,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -62,6 +63,8 @@ const HECHAS = [
   ['/admin/productos', 'Productos'],
   ['/admin/inventario', 'Inventario'],
   ['/admin/publico-productos', 'Recomendar'],
+  ['/admin/blueprints', 'Blueprints'],
+  ['/admin/plantillas-yoryo', 'Plantillas de cuadros'],
 ];
 
 /* El apartado de ADMIN.md donde se hará cada sección que todavía no está. */
@@ -132,6 +135,20 @@ const PLANTILLAS_DEMO = [
   { id: 'demo-escudo', nombre: 'Escudo', grupo: 'Equipos', imagen: '/assets/marca/splash-etiqueta-w.webp', capas: { frente: [{ tipo: 'imagen' }] } },
 ];
 const PRENDAS_CRUDAS = Object.fromEntries(CREAR.prendas.map((p, i) => [p.id, { ...p, inStock: p.inStock ?? null, ...(i === 0 && { prendaBase: { ...p.prendaBase, plantillas: PLANTILLAS_DEMO } }) }]));
+// D2d: blueprints de ejemplo (en Firestore casi no hay) y las plantillas de Yoryo
+// con sus nombres reales (pages/admin/plantillasYoryo); los pasos se simulan.
+const BLUEPRINTS = [
+  { id: 'bp-polo', name: 'Polo unisex algodón', baseGarment: 'polo', basePrintCost: 12, order: 0, active: true, decorationMethods: ['DTG', 'DTF'], printAreas: [{ name: 'Frente', widthCm: 30, heightCm: 40, dpi: 300 }, { name: 'Espalda', widthCm: 30, heightCm: 40, dpi: 300 }] },
+  { id: 'bp-hoodie', name: 'Hoodie french terry', baseGarment: 'hoodie', basePrintCost: 18.5, order: 1, active: true, decorationMethods: ['DTF', 'Bordado'], printAreas: [{ name: 'Pecho', widthCm: 10, heightCm: 10, dpi: 300 }] },
+  { id: 'bp-taza', name: 'Taza blanca 11 oz', baseGarment: 'taza', basePrintCost: 6, order: 2, active: false, decorationMethods: ['Sublimación'], printAreas: [{ name: 'Vuelta', widthCm: 20, heightCm: 8.5, dpi: 300 }] },
+].map(blueprintDesdeFirestore);
+const EQUIPOS_YORYO = ['Alianza Lima', 'Universitario', 'Sporting Cristal', 'Sport Boys', 'Barcelona', 'Real Madrid'];
+const PAREJAS_YORYO = ['Banda dorada', 'Mi lugar favorito', 'Nuestra historia'];
+const PRODUCTOS_YORYO = [{ id: 'cuadro', nombre: 'Cuadro' }, { id: 'mousepad', nombre: 'Mousepad' }, { id: 'tomatodo', nombre: 'Tomatodo' }];
+const PLANTILLAS_YORYO = Object.fromEntries(PRODUCTOS_YORYO.map(({ id }) => [id, [
+  ...(id === 'tomatodo' ? [] : PAREJAS_YORYO.map((n) => ({ id: `${id}-${n}`, grupo: 'Parejas', nombre: n }))),
+  ...EQUIPOS_YORYO.map((n) => ({ id: `${id}-${n}`, grupo: 'Equipos', nombre: n })),
+]]));
 const PACKS_CRUDOS = CREAR.combos.map((c) => ({ ...c, esComboCrear: true, comboCrear: { publicado: c.publicado, piezas: c.piezas, tallas: 'auto' } }));
 const opcionDePrenda = (p) => ({ id: p.id, nombre: p.name, foto: (p.variants || [])[0]?.imageUrl || p.prendaBase?.vistas?.[0]?.imagen || '', precio: Number(p.salePrice) > 0 ? p.salePrice : p.price, colores: (p.variants || []).map((v) => ({ id: String(v.id), nombre: v.name, hex: v.colorHex })) });
 const TAL_CUAL = TIENDA.productos.filter((p) => (p.variants || []).length && !p.isComboProduct).map(opcionDePrenda);
@@ -189,6 +206,8 @@ function PanelDePrueba() {
   const [zonas, guardarZona, eliminarZona] = useListaDemo(ZONAS, falla);
   const [cliparts, guardarClipart, eliminarClipart] = useListaDemo(CLIPARTS, falla);
   const [marcas, guardarMarca, eliminarMarca] = useListaDemo(MARCAS, falla);
+  const [blueprints, guardarBlueprintCrudo, eliminarBlueprint] = useListaDemo(BLUEPRINTS, falla);
+  const [yoryoCreados, setYoryoCreados] = useState(false);
   const [atributos, setAtributos] = useState(ATRIBUTOS_DEMO);
   const [productos, setProductos] = useState(PRODUCTOS);
   const [whatsapp, setWhatsapp] = useState(WHATSAPP);
@@ -520,6 +539,51 @@ function PanelDePrueba() {
         onGuardar={async (id, campos) => { await espera(300); fallar(); setProductos((ps) => ps.map((x) => (x.id === id ? { ...x, ...Object.fromEntries(Object.entries(campos).map(([k, v]) => [k, v ?? (k === 'edadMinima' ? null : '')])) } : x))); }}
         onAceptarSugerencias={async () => { await espera(700); fallar(); }}
         onMarcarTodos={async () => { await espera(700); fallar(); }}
+      />
+    );
+  } else if (ruta === '/admin/blueprints') {
+    pagina = (
+      <PaginaBlueprints
+        {...comunes}
+        blueprints={vacio ? [] : blueprints}
+        // Ida y vuelta por el adaptador, como pasará con Firestore.
+        onGuardar={(datos, id) => guardarBlueprintCrudo(blueprintDesdeFirestore({ id, ...blueprintAFirestore(datos) }), id)}
+        onEliminar={eliminarBlueprint}
+      />
+    );
+  } else if (ruta === '/admin/plantillas-yoryo') {
+    const paso = (textos, fin) => async (avisar) => {
+      for (const texto of textos) { avisar(texto); await espera(600); }
+      fallar('Firestore rechazó el cambio (es una prueba).');
+      return fin;
+    };
+    const prendasYoryo = [
+      ...(yoryoCreados ? PRODUCTOS_YORYO.map((x) => ({ id: `yoryo-crear-${x.id}`, nombre: `${x.nombre} personalizado`, borrador: true })) : []),
+      ...Object.values(prendasCrudas).map((x) => ({ id: x.id, nombre: x.name, borrador: x.visible === false })),
+    ];
+    pagina = (
+      <PaginaPlantillasYoryo
+        productos={PRODUCTOS_YORYO}
+        prendas={prendasYoryo}
+        destinosIniciales={yoryoCreados ? Object.fromEntries(PRODUCTOS_YORYO.map((x) => [x.id, `yoryo-crear-${x.id}`])) : {}}
+        plantillas={PLANTILLAS_YORYO}
+        cargando={con('cargando')}
+        onCrearProductos={async (avisar) => {
+          const r = await paso(['Subiendo la foto del cuadro…', 'Creando el mousepad…', 'Creando el tomatodo…', 'Armando el Pack de oficina…'], 'Listo: 3 productos y el Pack de oficina, en borrador.')(avisar);
+          setYoryoCreados(true);
+          return r;
+        }}
+        onGuardarPlantillas={async ({ destinos, elegidas }, marcar) => {
+          const lista = PRODUCTOS_YORYO.filter((x) => destinos[x.id]).flatMap((x) => PLANTILLAS_YORYO[x.id]).filter((x) => elegidas.includes(x.id));
+          for (const x of lista) { marcar(x.id, 'Guardando…'); await espera(180); marcar(x.id, falla ? 'Error: sin conexión' : 'Guardada'); }
+          fallar('Algunas plantillas no se guardaron (es una prueba).');
+          return `${lista.length} plantillas guardadas en sus productos.`;
+        }}
+        onQuitarCopias={paso(['Buscando copias en la comunidad…'], 'Se retiraron 27 copias y se borraron de Mis creaciones.')}
+        onPasarATienda={paso(['Ocultando los productos de antes…', 'Copiando fotos y descripción…'], 'Los 4 están en la tienda; los enlaces de antes llevan a ellos.')}
+        onAjustarTomatodo={paso(['Rehaciendo las miniaturas…'], 'Tomatodo ajustado: zona, medida y 6 miniaturas.')}
+        onCrearGrabados={paso(['Billetera…', 'Esclava…', 'Packs con el reloj…'], 'Billetera, esclava y 2 packs listos.')}
+        onCrearComodas={paso(['Categoría y tipo…', 'Las 3 cómodas…'], '3 cómodas en Daida Hogar.')}
       />
     );
   } else if (ruta === '/admin/destacados') {

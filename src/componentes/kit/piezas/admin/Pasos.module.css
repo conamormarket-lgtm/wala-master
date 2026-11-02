@@ -1,0 +1,110 @@
+/* ── Un paso de una herramienta (D2d) ──────────────────────── */
+.paso {
+  display: flex;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.numero {
+  color: #fff;
+  font-family: var(--fuente-marca);
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  flex: 1;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.titulo {
+  margin: 0;
+  font-family: var(--fuente-marca);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.texto {
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.texto p {
+  margin: 0 0 0.4rem;
+}
+
+.contenido {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.85rem;
+}
+
+.pie > button {
+  max-width: 100%;
+}
+
+.motivo {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.estado svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
+
+.ok,
+.error {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ok {
+  color: var(--verde-exito-hover, #059669);
+}
+
+.error {
+  color: var(--danger-hover);
+}
+
+.girar {
+  color: var(--primary-color);
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .girar {
+    animation-duration: 2s;
+  }
+}
