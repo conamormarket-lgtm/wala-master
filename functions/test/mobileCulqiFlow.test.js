@@ -268,3 +268,23 @@ test('pedir por WhatsApp desde la app marca el cupón usado una sola vez; el de 
   const web = await run({ uid: 'a', status: 'prepared', orderPayload: payload });
   assert.equal(web.coupon.status, 'active');
 });
+test('saldo de un pedido desde la app: el token del formulario cobra el saldo del servidor, sin 3DS como la web', async () => {
+  let body; let registered = 0;
+  const f = await fixture((sent) => { body = sent; return approved(sent); });
+  Object.assign(f.context, {
+    objetivoSaldoPedido: async (id) => ({ tipo: 'saldo', clave: `saldo:pedidos/${id}`, coleccion: 'pedidos', pedidoId: id, montoCentimos: 3500, moneda: 'PEN' }),
+    reservarCobroGenerico: async () => 'cerrojo', liberarCobroGenerico: async () => {},
+    registrarPagoSaldo: async () => { registered++; }, marcarWalaPedidoPagado: async () => {},
+  });
+  const handler = vm.runInNewContext(`(${handlerSource})`, f.context);
+  const pay = (extra) => handler({ tokenId: 'tkn_test_saldo0001', amount: 3500, currency: 'PEN', email: 'cliente@wala.test', description: 'Pago de saldo en Walá',
+    metadata: { pedidoId: 'PED-1' }, ...extra }, { auth: { uid: 'a', token: { email: 'cliente@wala.test' } } });
+  assert.equal((await pay()).success, true);
+  assert.equal(body.amount, 3500); assert.equal(body.source_id, 'tkn_test_saldo0001'); assert.equal(body.antifraud_details, undefined); assert.equal(registered, 1);
+  await assert.rejects(pay({ tokenId: 'tkn_test_saldo0002', amount: 3000 }), /S\/ 35|35\.00|3500/);
+  const g = await fixture(() => ({ ok: true, status: 201, json: async () => ({ object: 'error', action_code: '3DS_VALIDATION_NEEDED' }) }));
+  Object.assign(g.context, f.context, { fetch: g.context.fetch });
+  const challenge = vm.runInNewContext(`(${handlerSource})`, g.context);
+  await assert.rejects(challenge({ tokenId: 'tkn_test_saldo0003', amount: 3500, currency: 'PEN', email: 'cliente@wala.test', metadata: { pedidoId: 'PED-1' } },
+    { auth: { uid: 'a', token: { email: 'cliente@wala.test' } } }), /verificación adicional/);
+});
