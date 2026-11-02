@@ -1,17 +1,9 @@
 import React from 'react';
-import { urlWhatsApp, telefonoDePerfil, aceptoWhatsApp } from '../../../utils/whatsappLink';
+import { urlWhatsApp, telefonoDePerfil, aceptoWhatsApp, mensajeCarrito } from '../../../utils/whatsappLink';
 import styles from './ContactoCarrito.module.css';
 
-// Sin emojis: WhatsApp de escritorio (Windows) los rompe al abrir un link wa.me.
-export function mensajeCarrito(nombre) {
-  const primerNombre = String(nombre || '').trim().split(' ')[0];
-  return [
-    `¡Hola${primerNombre ? ` ${primerNombre}` : ''}!`,
-    'Vimos que dejaste productos en tu carrito de Walá. Siguen esperándote:',
-    `${window.location.origin}/carrito`,
-    '¿Te ayudamos a terminar tu pedido?',
-  ].join('\n');
-}
+// El mensaje vive en utils/whatsappLink (lo usa también el kit del admin).
+export { mensajeCarrito };
 
 /**
  * Botón de WhatsApp de un carrito abandonado: solo con el número del cliente y

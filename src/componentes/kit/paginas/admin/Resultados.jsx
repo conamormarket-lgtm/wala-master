@@ -1,19 +1,22 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import Boton from '../../Boton';
-import { Aviso, EstadoVacio } from '../../Feedback';
-import { Interruptor } from '../../Formulario';
+import { Aviso, Confirmar, EstadoVacio } from '../../Feedback';
+import { Buscador, Interruptor } from '../../Formulario';
 import { Pestanas } from '../../Navegacion';
 import { Hueso } from '../../Esqueletos';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
 import { TablaAdmin } from '../../piezas/admin/Datos';
+import { HojaEdicion } from '../../piezas/admin/Formularios';
+import { FichaCliente, ListaCumpleanos } from '../../piezas/admin/Clientes';
 import { Cifra, FilaCifras, BloqueMetrica, ColumnasMetricas, SinDatos, SelectorPeriodo, ListaBarras } from '../../piezas/admin/Metricas';
 import { GraficoTendencia } from '../../piezas/admin/Grafico';
 import { ListaAvisos, TablaComparativa, ListaEnVivo, TarjetaEnlacesRotos, ListaInteresados } from '../../piezas/admin/Resultados';
 import {
   cifrasDelResumen, otrosCobrosDe, serieDeVisitas, porCienVisitas, PERIODOS_RESULTADOS, listasDeProductos, listasDeVisitantes, duracionCorta,
+  quienDelCarrito, cumpleanosDe,
 } from '../../adaptadoresAdmin';
-import { urlWhatsApp, telefonoDePerfil, aceptoWhatsApp, mensajeProductoVisto } from '../../../../utils/whatsappLink';
+import { urlWhatsApp, telefonoDePerfil, aceptoWhatsApp, mensajeProductoVisto, mensajeCarrito } from '../../../../utils/whatsappLink';
 import l from './Lista.module.css';
 import s from './Resultados.module.css';
 
@@ -317,6 +320,170 @@ export function PaginaVisitantesResultados({ datos, cargando = false, error }) {
           <ListaBarras filas={v.clientes} tono="menta" vacio="Sin datos de app o web en este periodo." />
         </BloqueMetrica>
       </ColumnasMetricas>
+    </div>
+  );
+}
+
+/* ── D4c · Clientes y Opiniones ───────────────────────── */
+
+const solesCentimos = (c) => `S/ ${((Number(c) || 0) / 100).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const fechaHoraCorta = (ms) => (ms ? new Date(ms).toLocaleString('es-PE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—');
+
+/* Escribirle a quien dejó su carrito: solo con su número y si aceptó WhatsApp; si no, por qué. */
+function contactoDelCarrito(c, perfil, cargando) {
+  if (!c.uid) return { motivo: 'Sin cuenta' };
+  if (cargando) return { motivo: 'Cargando…' };
+  const telefono = telefonoDePerfil(perfil);
+  if (!telefono) return { motivo: 'Sin teléfono' };
+  if (!aceptoWhatsApp(perfil)) return { motivo: 'No aceptó WhatsApp' };
+  return { whatsapp: urlWhatsApp(telefono, mensajeCarrito(perfil?.displayName || c.displayName)) };
+}
+
+/**
+ * Clientes: carritos abandonados con WhatsApp a quien lo aceptó, la lista
+ * de clientes (buscar entre todos y abrir su ficha al costado) y los próximos cumpleaños.
+ *  - datos (useDashboardAnalytics: abandonedCarts, carritosAbandonados, personas)
+ *  - perfiles: Map uid → perfil de los carritos · cargandoPerfiles
+ *  - cumpleanos (getDatosPersonalesAggregate: { proximosCumpleanos, truncated, docsLeidos }) · cargandoCumpleanos
+ *  - clientes: [{ uid, nombre, email, dni, cartCount, cartUnits }] · cargandoClientes · errorClientes
+ *  - hayMas · onMas() · cargandoMas · onBuscar(texto) (ya esperó a que deje de escribir; '' = la lista)
+ *  - onPrepararBusqueda() → { revisados, actualizados } (reindexarBusquedaClientes)
+ *  - ficha: las props de FichaCliente del abierto · onAbrir(cliente | null) · onPestanaFicha(id) · pestanaFicha
+ *  - fechasImportantes (to)
+ */
+export function PaginaClientesResultados({
+  datos, perfiles, cargandoPerfiles = false, cumpleanos, cargandoCumpleanos = false,
+  clientes = [], cargandoClientes = false, errorClientes, hayMas = false, onMas, cargandoMas = false, onBuscar, onPrepararBusqueda,
+  ficha = {}, onAbrir, pestanaFicha = 'resumen', onPestanaFicha, fechasImportantes,
+}) {
+  const [texto, setTexto] = useState('');
+  const [abierto, setAbierto] = useState(null);
+  const [preguntando, setPreguntando] = useState(false);
+  const [preparando, setPreparando] = useState('');
+  const buscando = texto.trim().length >= 2;
+
+  // Espera a que deje de escribir antes de buscar (una consulta, no una por letra).
+  useEffect(() => {
+    const t = window.setTimeout(() => onBuscar?.(texto.trim().length >= 2 ? texto.trim() : ''), 400);
+    return () => window.clearTimeout(t);
+  }, [texto]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const carritos = useMemo(() => (datos?.abandonedCarts || []).map((c) => ({
+    id: c.id, quien: quienDelCarrito(c, perfiles?.get?.(c.uid)), valor: solesCentimos(c.lastCartValue), cuando: fechaHoraCorta(c.abandonedAtMs),
+    ...contactoDelCarrito(c, perfiles?.get?.(c.uid), cargandoPerfiles),
+  })), [datos?.abandonedCarts, perfiles, cargandoPerfiles]);
+  const cumples = useMemo(() => cumpleanosDe(cumpleanos?.proximosCumpleanos), [cumpleanos]);
+  const entero = (n) => new Intl.NumberFormat('es-PE').format(Math.round(Number(n) || 0));
+
+  const abrir = (c) => { setAbierto(c); onAbrir?.(c); };
+  const preparar = async () => {
+    setPreguntando(false);
+    setPreparando('Preparando…');
+    try {
+      const r = await onPrepararBusqueda?.();
+      setPreparando(`Listo: ${entero(r?.revisados)} perfiles revisados, ${entero(r?.actualizados)} actualizados.`);
+      onBuscar?.(texto.trim());
+    } catch (err) {
+      setPreparando(`No se pudo: ${err?.message || err}`);
+    }
+  };
+
+  return (
+    <div className={s.resumen} data-componente="PaginaClientesResultados">
+      <FilaCifras etiqueta="Clientes">
+        <Cifra nombre="Carritos abandonados" valor={entero(datos?.carritosAbandonados?.cantidad?.total)} ayuda={solesCentimos(datos?.carritosAbandonados?.valorCents?.total)} tono="aviso" />
+        <Cifra nombre="Cumpleaños en 30 días" valor={cumpleanos ? entero(cumples.length) : '—'} tono="violeta" cargando={cargandoCumpleanos} />
+        <Cifra nombre="Usaron la app" valor={datos?.personas ? entero(datos.personas.app) : '—'} ayuda="Personas en el periodo" tono="cielo" />
+      </FilaCifras>
+
+      <BloqueMetrica titulo="Carritos abandonados" ayuda="Agregaron productos y no terminaron el pedido. El botón abre WhatsApp con el mensaje listo; lo envías tú.">
+        <TablaAdmin
+          etiqueta="Carritos abandonados"
+          filas={carritos}
+          nombreDe={(c) => c.quien}
+          vacio={{ titulo: 'Ningún carrito abandonado', texto: 'Nadie dejó su carrito en este periodo.' }}
+          columnas={[
+            { id: 'quien', titulo: 'Cliente', tarjeta: 'titulo', celda: (c) => c.quien },
+            { id: 'valor', titulo: 'Valor', alinear: 'fin', ancho: 120, tarjeta: 'detalle', celda: (c) => <span className={l.numero}>{c.valor}</span> },
+            { id: 'cuando', titulo: 'Cuándo', ancho: 160, tarjeta: 'detalle', celda: (c) => c.cuando },
+            {
+              id: 'escribir', titulo: 'Escribirle', ancho: 150, tarjeta: 'control',
+              celda: (c) => (c.whatsapp
+                ? <Boton tamano="sm" variante="secundario" to={c.whatsapp}>WhatsApp</Boton>
+                : <span className={l.sub}>{c.motivo}</span>),
+            },
+          ]}
+        />
+      </BloqueMetrica>
+
+      <ColumnasMetricas>
+        <BloqueMetrica titulo="Clientes" ayuda="Toca un cliente para ver su ficha: lo que mira, su carrito, su lista de deseos y sus fechas.">
+          <Buscador placeholder="Buscar por nombre, correo, DNI o teléfono" value={texto} onChange={(e) => setTexto(e.target.value)} onBuscar={(v) => setTexto(v)} />
+          {buscando && !cargandoClientes && !clientes.length && onPrepararBusqueda && (
+            <p className={s.nota}>
+              Nadie coincide con «{texto.trim()}».{' '}
+              <Boton tamano="sm" variante="fantasma" disabled={preparando === 'Preparando…'} onClick={() => setPreguntando(true)}>¿Falta alguien? Preparar la búsqueda</Boton>
+            </p>
+          )}
+          {preparando && <p className={s.nota} aria-live="polite">{preparando}</p>}
+          {cargandoClientes ? <SinDatos>Cargando clientes…</SinDatos> : errorClientes ? <SinDatos>No se pudieron cargar: {errorClientes}</SinDatos> : !clientes.length ? (
+            !buscando && <SinDatos>Todavía no hay clientes.</SinDatos>
+          ) : (
+            <ul className={s.clientes}>
+              {clientes.map((c) => (
+                <li key={c.uid}>
+                  <button type="button" className={abierto?.uid === c.uid ? s.clienteActivo : s.cliente} onClick={() => abrir(c)}>
+                    <span className={s.clienteNombre}>{c.nombre || 'Sin nombre'}</span>
+                    <span className={s.clienteDetalle}>{[c.email, c.dni].filter(Boolean).join(' · ')}{c.cartCount > 0 ? ` · ${entero(c.cartUnits)} en el carrito` : ''}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {!buscando && hayMas && <Boton tamano="sm" variante="secundario" cargando={cargandoMas} onClick={onMas}>Ver más clientes</Boton>}
+        </BloqueMetrica>
+
+        <BloqueMetrica
+          titulo="Próximos cumpleaños"
+          ayuda="De tus clientes y de las personas que agendaron, en los próximos 30 días."
+          acciones={fechasImportantes && <Boton tamano="sm" variante="fantasma" to={fechasImportantes}>Fechas importantes</Boton>}
+        >
+          {cargandoCumpleanos ? <SinDatos>Cargando…</SinDatos> : <ListaCumpleanos cumpleanos={cumples} />}
+          {cumpleanos?.truncated && <p className={s.nota}>Se revisaron los primeros {entero(cumpleanos.docsLeidos)} perfiles.</p>}
+        </BloqueMetrica>
+      </ColumnasMetricas>
+
+      <HojaEdicion abierta={Boolean(abierto)} titulo={abierto?.nombre || 'Cliente'} subtitulo={abierto?.email} onCerrar={() => abrir(null)}>
+        {abierto && <FichaCliente {...ficha} pestana={pestanaFicha} onPestana={onPestanaFicha} />}
+      </HojaEdicion>
+      <Confirmar
+        abierta={preguntando}
+        titulo="¿Preparar la búsqueda de clientes?"
+        texto="Revisa todos los perfiles de clientes y les agrega lo necesario para buscarlos. Puede tardar un poco."
+        confirmar="Preparar"
+        onConfirmar={preparar}
+        onCancelar={() => setPreguntando(false)}
+      />
+    </div>
+  );
+}
+
+const ENCUESTAS = [
+  { id: 'entregas', texto: 'Cómo les fue con su pedido' },
+  { id: 'suscripcion', texto: 'Encuesta de regalos' },
+];
+
+/**
+ * Opiniones: elegir la encuesta y, debajo, su pantalla (children). Las dos
+ * encuestas se rehacen en el kit en D5 ("encuestas"); hasta entonces el
+ * conector pone las de hoy (AdminEncuestaEntregas, AdminRespuestasEncuesta) embebidas.
+ *  - encuesta ('entregas' | 'suscripcion') · onEncuesta(id) · children
+ */
+export function PaginaOpinionesResultados({ encuesta = 'entregas', onEncuesta, children }) {
+  return (
+    <div className={s.resumen} data-componente="PaginaOpinionesResultados">
+      <div className={s.pestanas}><Pestanas etiqueta="Encuesta" opciones={ENCUESTAS} valor={encuesta} onChange={onEncuesta} /></div>
+      {children}
     </div>
   );
 }

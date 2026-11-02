@@ -230,7 +230,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D1 | Catálogo base | `categorias`, `colecciones`, `atributos-catalogo`, `marcas` (+ productos de la marca), `envios`, `cliparts`, `destacados` | Lista | hecho (2026-11-02) | · |
 | D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | hecho (2026-11-02) | · |
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | · |
-| D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | en marcha (D4a y D4b, 2026-11-02) | · |
+| D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | en marcha (D4a, D4b y D4c, 2026-11-02) | · |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | · | · |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | · | · |
 | D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | · | · |
@@ -960,7 +960,7 @@ Adaptadores (con pruebas): `reclamoDesdeFirestore`, `respuestaDeReclamo`
 - Las rutas siguen siendo `/admin/crear-cuentas-pedidos` y
   `/admin/libro-reclamaciones`.
 
-## D4 · Resultados (en marcha: D4a y D4b hechos en el kit el 2026-11-02)
+## D4 · Resultados (en marcha: D4a, D4b y D4c hechos en el kit el 2026-11-02)
 
 Seis pestañas de hoy (1.660 líneas en `pages/admin/resultados/`) y cuatro
 pantallas técnicas en `dashboard/` (otras 2.000). Se hace por tramos; el
@@ -970,7 +970,7 @@ apartado se une entero cuando estén los cuatro.
 |---|---|---|---|
 | D4a | El marco (periodo, comparar, actualizar y las pestañas) y el Resumen: cifras con su cambio, la comparativa, cosas por mejorar, visitas por día, de dónde vienen, quién está ahora y los enlaces rotos | `ResultadosLayout.jsx`, `Resumen.jsx`, `piezas.jsx`, `dashboard/EnlacesRotos.jsx` | hecho (2026-11-02) |
 | D4b | Productos y Visitantes (rankings con fotos y barras, búsquedas, canales, aparatos) | `Productos.jsx`, `Visitantes.jsx` | hecho (2026-11-02) |
-| D4c | Clientes con su ficha, el contacto de un carrito y Opiniones | `Clientes.jsx`, `FichaCliente.jsx`, `ContactoCarrito.jsx`, `Opiniones.jsx` | · |
+| D4c | Clientes con su ficha, el contacto de un carrito y Opiniones (el selector; las dos encuestas, en D5) | `Clientes.jsx`, `FichaCliente.jsx`, `ContactoCarrito.jsx`, `Opiniones.jsx` | hecho (2026-11-02) |
 | D4d | Detalle técnico y sus pantallas (mapa de calor, páginas, uso, navegador) | `DetalleTecnico.jsx`, `dashboard/DashHeatmap`, `DashPaginas`, `DashUso`, `DashOrigen`, `dashShared` | · |
 
 ### D4a: el marco y el Resumen (en el kit desde el 2026-11-02)
@@ -1100,6 +1100,74 @@ el país o el aproximado, aparatos y app o web). Las duraciones usan
   `['resultados-perfiles-interes', uids]`) → `perfiles`, `cargandoPerfiles`.
 - `VisitantesDelPanel.jsx`: solo `datos`, `cargando` y `error` del marco.
 
+### D4c: Clientes y Opiniones (en el kit desde el 2026-11-02)
+
+| La ficha de un cliente (computadora) | Su carrito (celular) |
+|---|---|
+| ![La ficha al costado: contacto, monedas, encuesta y WhatsApp, las pestañas y sus seis cifras de actividad](admin-resultados-ficha.webp) | ![El carrito en la ficha: cuánto lleva, cada producto con su cuenta y «Lo dejó para después» debajo](admin-resultados-ficha-celular.webp) |
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| Clientes | `PaginaClientesResultados` | `paginas/admin/Resultados.jsx` | Tres cifras (carritos abandonados con su valor, cumpleaños en 30 días, usaron la app); los carritos abandonados en `TablaAdmin` (**tarjetas en el celular**) con WhatsApp o por qué no ("Sin cuenta", "Sin teléfono", "No aceptó WhatsApp"); la lista de clientes con buscador (espera a que dejes de escribir), "Ver más clientes" y, si nadie coincide, "¿Falta alguien? Preparar la búsqueda" **con pregunta** (antes `window.confirm`); los próximos cumpleaños con el enlace a Fechas importantes |
+| La ficha | `FichaCliente` | `piezas/admin/Clientes.jsx` | **En una hoja al costado** (en el celular, la pantalla entera; antes se abría dentro de la lista): contacto, monedas, encuesta, si acepta WhatsApp y "Escribir por WhatsApp"; pestañas Resumen (seis cifras y la cuenta, el carrito y las compras de antes estimadas), Interés (dónde pasa más tiempo y para recomendarle), Deseos, Carrito y Fechas |
+| Cumpleaños | `ListaCumpleanos` | `piezas/admin/Clientes.jsx` | Cuándo ("Hoy", "En 3 días"; los de esta semana resaltados), de quién y si lo agendó otro cliente |
+| Opiniones | `PaginaOpinionesResultados` | `paginas/admin/Resultados.jsx` | El selector de encuesta ("Cómo les fue con su pedido" · "Encuesta de regalos") y la encuesta debajo (`children`) |
+
+Adaptadores (con pruebas): `enDiasTexto`, `quienDelCarrito`,
+`cumpleanosDe`, `resumenDeFicha` (contacto, chips, cifras y notas) y
+`listasDeFicha` (lo que mira, deseos, carrito, personas y su cumpleaños).
+**`mensajeCarrito` pasó de `ContactoCarrito.jsx` a `utils/whatsappLink.js`**
+(el archivo viejo lo reexporta) para que el kit lo use sin importar la página.
+
+**Decidido (2026-11-02): las dos encuestas no se rehacen en D4.** Son
+`AdminEncuestaEntregas` (222 líneas) y `AdminRespuestasEncuesta` (626), que
+ya solo se abren dentro de Opiniones; pertenecen a "encuestas" de D5. Hasta
+entonces, el conector de Opiniones las pone embebidas (`embebido`, con el
+periodo y el anterior como hoy) dentro de `PaginaOpinionesResultados`, y D4
+se puede unir entero.
+
+### Diferencias a propósito (D4c)
+
+- La ficha va en una hoja al costado en vez de abrirse dentro de la lista:
+  la lista no salta y en el celular es una pantalla.
+- "Lo que mira" se llama "Interés" (las cinco pestañas caben mejor en el
+  celular); "Lo dejó para después" y "Ya se lo regalaron" van debajo del
+  producto, no al costado.
+- Preparar la búsqueda pregunta con `Confirmar`.
+- Los nombres de todas las `Cifra` usan hasta dos líneas (antes se cortaban
+  con puntos suspensivos en el celular).
+
+### Qué se probó (2026-11-02, demo en localhost, 1280 px y 375 px)
+
+- Cifras 4 · S/ 549.10, 4 cumpleaños, 667 en la app. Carritos: Valeria con
+  WhatsApp, Diego "No aceptó WhatsApp", un visitante "Sin cuenta", Luis con
+  WhatsApp. Cumpleaños de hoy, en 3, 12 y 26 días ("lo agendó Valeria").
+- Clientes: 4 → "Ver más clientes" → 6; buscar "luis" → 1; "zzz" → "Nadie
+  coincide" → Preparar → la pregunta → "Listo: 812 perfiles revisados, 37
+  actualizados".
+- La ficha de Valeria: su contacto, 1,500 monedas, "Escribir por WhatsApp";
+  Resumen con 20 visitas, 30m 40s y "Usa la app: Sí"; Carrito con "Lo dejó
+  para después"; Fechas con su cumpleaños y Andrés (Pareja); solo "Cerrar".
+- Opiniones cambia de encuesta. A 375 px nada se sale del ancho (las
+  pestañas de la ficha se deslizan, como las de la tienda).
+
+### Cómo se une D4c
+
+- `ClientesResultadosDelPanel.jsx`: `datos` del marco; `getPerfilesPorUid`
+  de los uid de `abandonedCarts` (`['admin-carritos-perfiles', uids]`);
+  `getDatosPersonalesAggregate({ maxDocs: 800 })` → `cumpleanos`; la lista
+  con `useInfiniteQuery(['adminUserInsights', 'users', 25], listUsers)` →
+  `clientes`, `hayMas`, `onMas`; `onBuscar(texto)` → `buscarClientes(texto, 25)`
+  (`['resultados-buscar-clientes', texto]`; con texto, `clientes` son los
+  encontrados); `onPrepararBusqueda` → `httpsCallable('reindexarBusquedaClientes')`.
+- La ficha: `onAbrir(cliente)` guarda el uid; `getUserFicha(uid)` →
+  `ficha.ficha`; `getUserAnalytics(uid, email)` solo con la pestaña Resumen o
+  Interés → `ficha.actividad`; `recomendarSimilares(actividad.productInterest, catálogo, 6)`
+  → `ficha.recomendados`; `productoDe` del catálogo.
+- `OpinionesDelPanel.jsx`: `PaginaOpinionesResultados` con
+  `AdminEncuestaEntregas` o `AdminRespuestasEncuesta` (`embebido`, `desde`/`hasta`
+  y `previo` como hoy) de `children`, hasta D5.
+
 ## Reemplazos: qué sale y qué entra
 
 La misma tabla que las fichas de la tienda (CUENTA.md, "Reemplazos"): qué
@@ -1179,7 +1247,10 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D4b · Productos | `pages/admin/resultados/Productos.jsx` + `.module.css` | `PaginaProductosResultados` (`ListaBarras`, `ListaInteresados`) | `ProductosResultadosDelPanel.jsx` |
 | D4b · Visitantes | `pages/admin/resultados/Visitantes.jsx` + `.module.css` | `PaginaVisitantesResultados` (`TablaAdmin`, `ListaBarras`) | `VisitantesDelPanel.jsx` |
 | D4b · Rankings | `Barras` e `Interruptor` de `resultados/piezas.jsx` | `ListaBarras`, `Pestanas` | las páginas |
-| D4c · Clientes, ficha, carrito, Opiniones | `Clientes.jsx`, `FichaCliente.jsx`, `ContactoCarrito.jsx`, `Opiniones.jsx` | por hacer | por tramo |
+| D4c · Clientes | `pages/admin/resultados/Clientes.jsx` + `.module.css` (`ListaClientes`, la tabla de carritos, `window.confirm`) | `PaginaClientesResultados` | `ClientesResultadosDelPanel.jsx` |
+| D4c · La ficha | `pages/admin/resultados/FichaCliente.jsx` + `.module.css` (dentro de la lista) | `FichaCliente` (en `HojaEdicion`) | el mismo conector |
+| D4c · Contacto del carrito | `pages/admin/resultados/ContactoCarrito.jsx` + `.module.css` | la columna "Escribirle" de la página (`mensajeCarrito` en `utils/whatsappLink`) | la página |
+| D4c · Opiniones | `pages/admin/resultados/Opiniones.jsx` + `.module.css` | `PaginaOpinionesResultados` (las encuestas siguen embebidas hasta D5) | `OpinionesDelPanel.jsx` |
 | D4d · Detalle técnico | `DetalleTecnico.jsx`, `dashboard/DashHeatmap`, `DashPaginas`, `DashUso`, `DashOrigen`, `dashShared` | por hacer | por tramo |
 
 ## Cómo se une un apartado (la misma lógica que clientes)
@@ -1222,6 +1293,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |
 | 2026-11-02 | Reemplazos de D0 a D2 (qué sale, qué entra y el conector) y la sección «Panel administrativo» de ELIMINAR.md con quién importa hoy cada pieza vieja | `guia/ADMIN.md`, `guia/ELIMINAR.md` |
+| 2026-11-02 | D4c en el kit: `PaginaClientesResultados`, `FichaCliente` (en una hoja), `ListaCumpleanos`, `PaginaOpinionesResultados`; `mensajeCarrito` pasó a `utils/whatsappLink.js`; las dos encuestas quedan para D5; adaptadores con pruebas | `paginas/admin/Resultados.jsx`, `piezas/admin/Clientes.jsx`, `adaptadoresAdmin.js`, `utils/whatsappLink.js` |
 | 2026-11-02 | D4b en el kit: `PaginaProductosResultados`, `PaginaVisitantesResultados`, `ListaBarras`, `ListaInteresados`; adaptadores con pruebas; en la demo, cada pestaña de Resultados es su ruta | `paginas/admin/Resultados.jsx`, `piezas/admin/Metricas.jsx`, `piezas/admin/Resultados.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D4 dividido en tramos (a: marco y Resumen, b: productos y visitantes, c: clientes y opiniones, d: detalle técnico). D4a en el kit: `MarcoResultados`, `SelectorPeriodo`, `PaginaResumenResultados`, `BloqueMetrica`, `TablaComparativa`, `ListaAvisos`, `ListaEnVivo`, `TarjetaEnlacesRotos`; `Cifra` con su cambio y su explicación; adaptadores con pruebas | `paginas/admin/Resultados.jsx`, `piezas/admin/Resultados.jsx`, `piezas/admin/Metricas.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D3c en el kit: `PaginaCuentasDePedidos` (cuatro pasos, uno a la vez) y `PaginaReclamos` (con el plazo en días hábiles); `PasoAdmin` termina a medias y `HojaEdicion` sirve para solo mirar; adaptadores con pruebas. **D3 completo en el kit** | `paginas/admin/Cuentas.jsx`, `paginas/admin/Reclamos.jsx`, `piezas/admin/Pasos.jsx`, `piezas/admin/Formularios.jsx`, `adaptadoresAdmin.js` |

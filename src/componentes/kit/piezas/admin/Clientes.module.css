@@ -1,0 +1,174 @@
+/* ── Clientes de Resultados (D4c) ──────────────────────────── */
+.ficha {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+.cabeza {
+  display: grid;
+  justify-items: start;
+  gap: 0.45rem;
+}
+
+.contacto {
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  overflow-wrap: anywhere;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.pestanas {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pestanas::-webkit-scrollbar {
+  display: none;
+}
+
+.panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+}
+
+.subtitulo {
+  margin: 0.3rem 0 0;
+  font-family: var(--fuente-marca);
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.nota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.productos,
+.personas,
+.cumples {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.productos li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.foto {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--color-bg, var(--gris-fondo));
+  color: var(--color-text-muted);
+}
+
+.foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.foto svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.productoTextos {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.productoNombre {
+  overflow: hidden;
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marca {
+  margin-top: 0.2rem;
+}
+
+.productoDetalle {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.personas li {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.persona {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+}
+
+.cumples li {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.dias,
+.pronto {
+  flex: none;
+  min-width: 5.2rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-bg, var(--gris-fondo));
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.pronto {
+  background: var(--violet-50);
+  color: var(--primary-color);
+}
+
+.cumpleTextos {
+  display: grid;
+  min-width: 0;
+  font-size: 0.86rem;
+}
+
+.cumpleTextos span {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+:global([data-theme='dark']) .pronto {
+  background: rgba(139, 92, 246, 0.16);
+}

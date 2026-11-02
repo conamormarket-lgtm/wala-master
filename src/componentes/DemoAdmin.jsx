@@ -7,7 +7,7 @@ import {
   PaginaPersonalizables, PaginaPacks, personalizableDesde, packDesdeFirestore,
   PaginaBlueprints, PaginaPlantillasYoryo, blueprintDesdeFirestore, blueprintAFirestore, PaginaRecepcion,
   PaginaPagos, configPagosDesde, PaginaCuentasDePedidos, PaginaReclamos, reclamoDesdeFirestore,
-  MarcoResultados, PaginaResumenResultados, PaginaProductosResultados, PaginaVisitantesResultados,
+  MarcoResultados, PaginaResumenResultados, PaginaProductosResultados, PaginaVisitantesResultados, PaginaClientesResultados, PaginaOpinionesResultados,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -291,7 +291,15 @@ function productosResultadosDemo(visitas, pedidos, dias) {
     topSearches: [['polo personalizado', 48], ['tomatodo azul', 14], ['cuadro pareja', 12], ['hoodie', 9], ['taza', 6]].map(([query, total]) => ({ query, total: Math.round(total * k) || 1 })),
     deseos: { agregados: { total: Math.round(64 * k) }, quitados: { total: Math.round(11 * k) }, topProductos: PRODUCTOS_RES.slice(2, 7).map((p, i) => ({ productId: p.id, agregados: Math.round((12 - i * 2) * k) || 1 })) },
     crear: { aperturas: { total: Math.round(310 * k) }, aperturasCombo: { total: Math.round(42 * k) }, guardados: { total: Math.round(57 * k) } },
-    personas: { total: Math.round(visitas * 0.72) },
+    personas: { total: Math.round(visitas * 0.72), app: Math.round(visitas * 0.12) },
+    // D4c: carritos abandonados (los uid son los de PERFILES_DEMO).
+    abandonedCarts: [
+      { id: 'c1', uid: 'u1', displayName: 'Valeria Quispe', lastCartValue: 15980, abandonedAtMs: Date.now() - 3600000 * 3 },
+      { id: 'c2', uid: 'u2', lastCartValue: 8990, abandonedAtMs: Date.now() - 3600000 * 20 },
+      { id: 'c3', uid: null, lastCartValue: 5990, abandonedAtMs: Date.now() - 86400000 * 2 },
+      { id: 'c4', uid: 'u4', displayName: 'Luis Mendoza', lastCartValue: 23950, abandonedAtMs: Date.now() - 86400000 * 4 },
+    ],
+    carritosAbandonados: { cantidad: { total: 4 }, valorCents: { total: 54910 } },
     byCountry: [{ name: 'Perú', code: 'PE', count: Math.round(visitas * 0.9) }, { name: 'España', code: 'ES', count: Math.round(visitas * 0.04) }, { name: 'Chile', code: 'CL', count: Math.round(visitas * 0.03) }, { name: 'unknown', count: Math.round(visitas * 0.03) }],
     byDevice: [{ name: 'Mobile', count: Math.round(visitas * 0.78) }, { name: 'Desktop', count: Math.round(visitas * 0.19) }, { name: 'Tablet', count: Math.round(visitas * 0.03) }],
     byClientType: [{ name: 'WEB', count: Math.round(visitas * 0.83) }, { name: 'APP', count: Math.round(visitas * 0.17) }],
@@ -307,6 +315,35 @@ const PERFILES_DEMO = new Map([
 const CATALOGO_RES = new Map(TIENDA.productos.map((p) => [String(p.id), p]));
 const productoDeDemo = (id, nombre) => { const p = CATALOGO_RES.get(String(id)); return { nombre: p?.name || nombre, imagen: p?.mainImage || p?.images?.[0] || '', producto: p }; };
 const nombreCategoriaDemo = (id) => TIENDA.categorias.find((c) => String(c.id) === String(id))?.name || id;
+const CLIENTES_RES = [
+  ['u1', 'Valeria Quispe', 'valeria@correo.pe', '71234567', 2], ['u2', 'Diego Fernández', 'diego@correo.pe', '', 0], ['u3', 'Camila Rojas', 'camila@correo.pe', '72345678', 0],
+  ['u4', 'Luis Mendoza', 'luis@correo.es', '', 3], ['u5', 'Rosa Huamán', 'rosa@correo.pe', '45678912', 0], ['u6', 'Kevin Ramos', 'kevin@correo.pe', '', 1],
+].map(([uid, nombre, email, dni, cartUnits]) => ({ uid, nombre, email, dni, cartCount: cartUnits ? 1 : 0, cartUnits }));
+function fichaDemo(c) {
+  const p = TIENDA.productos;
+  return {
+    nombre: c.nombre, email: c.email, dni: c.dni, tipoDocumento: c.dni ? 'DNI' : '', phone: c.uid === 'u3' ? '' : '987654321', monedas: 1200 + c.cartUnits * 150, hasCompletedSurvey: c.uid !== 'u2',
+    marketingConsent: { whatsapp: c.uid !== 'u2' }, createdAtMs: Date.now() - 86400000 * 120, birthdayLegible: c.uid === 'u1' ? '14 de noviembre' : '',
+    wishlist: { count: 2, items: [{ productId: p[2].id, productName: p[2].name, productImage: p[2].mainImage, price: p[2].salePrice || p[2].price, addedAt: Date.now() - 86400000 * 9 }, { productId: p[4].id, productName: p[4].name, productImage: p[4].mainImage, price: p[4].price, isGifted: true, giftedBy: 'Luis' }] },
+    cart: c.cartUnits ? { count: 1, unidades: c.cartUnits, totalEstimado: c.cartUnits * (p[0].salePrice || p[0].price), items: [{ productId: p[0].id, productName: p[0].name, productImage: p[0].mainImage, quantity: c.cartUnits, price: p[0].salePrice || p[0].price, subtotal: c.cartUnits * (p[0].salePrice || p[0].price), selected: true }, { productId: p[1].id, productName: p[1].name, productImage: p[1].mainImage, quantity: 1, price: p[1].price, subtotal: p[1].price, selected: false }] } : { count: 0, unidades: 0, totalEstimado: 0, items: [] },
+    giftRecipients: c.uid === 'u1' ? [{ id: 'g1', name: 'Andrés', roleDisplay: 'Pareja', events: [{ label: 'Cumpleaños', dateLegible: '3 de diciembre' }, { label: 'Aniversario', dateLegible: '14 de febrero' }] }] : [],
+  };
+}
+const actividadDemo = (c) => ({
+  metrics: { totalSessions: 14 + c.cartUnits * 3, totalPageViews: 61, totalDwellMs: 1840000, activeDays: 9, lastAccessAtMs: Date.now() - 3600000 * 5 },
+  sessions: c.uid === 'u1' ? [{ clientType: 'APP' }, { clientType: 'APP' }, { clientType: 'WEB' }] : [{ clientType: 'WEB' }],
+  estimatedSummary: c.uid === 'u4' ? { isEstimated: true, orderCount: 3, totalSpent: 389.7, firstOrderAtMs: Date.now() - 86400000 * 400, lastOrderAtMs: Date.now() - 86400000 * 200 } : null,
+  productInterest: TIENDA.productos.slice(0, 4).map((p, i) => ({ productId: p.id, dwellMs: (300 - i * 60) * 1000, views: 4 - i })),
+});
+const CUMPLES_DEMO = {
+  proximosCumpleanos: [
+    { uid: 'u5', nombre: 'Rosa Huamán', esTitular: true, fecha: '11-02', fechaLegible: '2 de noviembre', enDias: 0 },
+    { uid: 'u1', nombre: 'Valeria Quispe', esTitular: true, fecha: '11-14', fechaLegible: '14 de noviembre', enDias: 12 },
+    { uid: 'u1', nombre: 'Valeria Quispe', dePersona: 'Andrés', esTitular: false, fecha: '11-05', fechaLegible: '5 de noviembre', enDias: 3 },
+    { uid: 'u6', nombre: 'Kevin Ramos', dePersona: 'Su mamá', esTitular: false, fecha: '11-28', fechaLegible: '28 de noviembre', enDias: 26 },
+  ].sort((a, b) => a.enDias - b.enDias),
+  truncated: false,
+};
 const AVISOS_RESULTADOS = [
   { id: 'carritos', nivel: 'alta', titulo: '4 carritos abandonados con contacto', texto: 'Dejaron productos en el carrito y tienen WhatsApp: escríbeles hoy.', to: '/admin/resultados/clientes' },
   { id: 'vistos-sin-venta', nivel: 'media', titulo: 'El Polo clásico se mira mucho y se vende poco', texto: '320 vistas y 2 ventas: revisa la foto, el precio o las tallas.', to: '/admin/resultados/productos' },
@@ -394,6 +431,11 @@ function PanelDePrueba() {
   const [resFechas, setResFechas] = useState({ desde: diaKey(13), hasta: diaKey(0) });
   const [resComparar, setResComparar] = useState(true);
   const [rotos, setRotos] = useState(ENLACES_ROTOS_DEMO);
+  const [resBusqueda, setResBusqueda] = useState('');
+  const [resCliente, setResCliente] = useState(null);
+  const [resFicha, setResFicha] = useState('resumen');
+  const [resVisibles, setResVisibles] = useState(4);
+  const [resEncuesta, setResEncuesta] = useState('entregas');
   const [atributos, setAtributos] = useState(ATRIBUTOS_DEMO);
   const [productos, setProductos] = useState(PRODUCTOS);
   const [whatsapp, setWhatsapp] = useState(WHATSAPP);
@@ -814,6 +856,34 @@ function PanelDePrueba() {
             nombreCategoria={nombreCategoriaDemo}
             perfiles={PERFILES_DEMO}
           />
+        ) : resPestana === 'clientes' ? (
+          <PaginaClientesResultados
+            datos={vacio ? {} : datosRes}
+            perfiles={PERFILES_DEMO}
+            cumpleanos={vacio ? { proximosCumpleanos: [] } : CUMPLES_DEMO}
+            cargandoCumpleanos={con('cargando')}
+            clientes={(resBusqueda ? CLIENTES_RES.filter((c) => `${c.nombre} ${c.email} ${c.dni}`.toLowerCase().includes(resBusqueda.toLowerCase())) : CLIENTES_RES.slice(0, resVisibles))}
+            cargandoClientes={con('cargando')}
+            errorClientes={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+            hayMas={!resBusqueda && resVisibles < CLIENTES_RES.length}
+            onMas={() => setResVisibles((n) => n + 4)}
+            onBuscar={setResBusqueda}
+            onPrepararBusqueda={async () => { await espera(1200); fallar(); return { revisados: 812, actualizados: 37 }; }}
+            onAbrir={(c) => { setResCliente(c); setResFicha('resumen'); }}
+            pestanaFicha={resFicha}
+            onPestanaFicha={setResFicha}
+            ficha={resCliente ? {
+              ficha: fichaDemo(resCliente),
+              actividad: actividadDemo(resCliente),
+              productoDe: productoDeDemo,
+              recomendados: TIENDA.productos.slice(6, 9).map((p) => ({ id: p.id, nombre: p.name, imagen: p.mainImage, detalle: `S/ ${p.salePrice || p.price}` })),
+            } : {}}
+            fechasImportantes="/admin/fechas-importantes"
+          />
+        ) : resPestana === 'opiniones' ? (
+          <PaginaOpinionesResultados encuesta={resEncuesta} onEncuesta={setResEncuesta}>
+            <EstadoVacio imagen="/assets/kapi/3d/kapi-hambre-256.webp" titulo={resEncuesta === 'entregas' ? 'Aquí va «Cómo les fue con su pedido»' : 'Aquí va la encuesta de regalos'} texto="En el admin, mientras tanto, es la pantalla de hoy embebida (AdminEncuestaEntregas o AdminRespuestasEncuesta). Se rehace en el kit en D5." />
+          </PaginaOpinionesResultados>
         ) : resPestana === 'visitantes' ? (
           <PaginaVisitantesResultados
             datos={vacio || con('cargando') ? null : datosRes}
@@ -821,7 +891,7 @@ function PanelDePrueba() {
             error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
           />
         ) : (
-          <EstadoVacio imagen="/assets/kapi/3d/kapi-hambre-256.webp" titulo="Esta pestaña todavía no está en el kit" texto={`Se arma en ${{ productos: 'D4b', visitantes: 'D4b', clientes: 'D4c', opiniones: 'D4c', tecnico: 'D4d' }[resPestana]} (guia/ADMIN.md).`} />
+          <EstadoVacio imagen="/assets/kapi/3d/kapi-hambre-256.webp" titulo="Esta pestaña todavía no está en el kit" texto={`Se arma en ${{ tecnico: 'D4d' }[resPestana] || 'D4'} (guia/ADMIN.md).`} />
         )}
       </MarcoResultados>
     );

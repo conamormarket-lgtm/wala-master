@@ -57,13 +57,15 @@
 .cielo { --tono: #0ea5e9; }
 .neutro { --tono: var(--color-border); }
 
+/* Hasta dos líneas: "Cumpleaños en 30 días" no se corta en el celular. */
 .nombre {
+  display: -webkit-box;
   overflow: hidden;
   color: var(--color-text-muted);
   font-size: 0.74rem;
   font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .valor {
@@ -173,13 +175,9 @@
   outline-offset: 1px;
 }
 
-/* Con la "i", el nombre usa hasta dos líneas en vez de cortarse. */
+/* Con la "i", el nombre deja lugar al botón. */
 .cifra:has(.info) .nombre {
-  display: -webkit-box;
   padding-right: 1.6rem;
-  white-space: normal;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 
 .explicacion {

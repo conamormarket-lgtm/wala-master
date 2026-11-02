@@ -34,3 +34,15 @@ export function mensajeProductoVisto(nombre, producto) {
     '¿Te ayudamos con tu pedido?',
   ].join('\n');
 }
+
+// Mensaje para quien dejó su carrito (Resultados › Clientes). Sin emojis, por
+// lo mismo que arriba.
+export function mensajeCarrito(nombre) {
+  const primerNombre = String(nombre || '').trim().split(' ')[0];
+  return [
+    `¡Hola${primerNombre ? ` ${primerNombre}` : ''}!`,
+    'Vimos que dejaste productos en tu carrito de Walá. Siguen esperándote:',
+    `${window.location.origin}/carrito`,
+    '¿Te ayudamos a terminar tu pedido?',
+  ].join('\n');
+}

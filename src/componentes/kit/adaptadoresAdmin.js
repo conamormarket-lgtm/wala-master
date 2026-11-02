@@ -1279,3 +1279,96 @@ export function listasDeVisitantes(datos = {}) {
     clientes: conPorcentaje(d.byClientType, NOMBRES_CLIENTE),
   };
 }
+
+/*
+ * Clientes de Resultados (D4c): los carritos abandonados (abandonedCarts del
+ * resumen), los cumpleaños (getDatosPersonalesAggregate) y la ficha de un
+ * cliente (getUserFicha + getUserAnalytics), como los usaba la pestaña de antes.
+ */
+const fechaCorta = (v) => {
+  if (!v) return null;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+const solesDe = (v) => `S/ ${(Number(v) || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+/** "Hoy", "Mañana", "En 5 días". */
+export const enDiasTexto = (n) => (n === 0 ? 'Hoy' : n === 1 ? 'Mañana' : `En ${n} días`);
+
+/** Quién dejó un carrito: su nombre, el del perfil, su correo o "Visitante sin cuenta". */
+export function quienDelCarrito(c = {}, perfil = null) {
+  return c.displayName || perfil?.displayName || c.email || perfil?.email || (c.uid ? 'Cliente' : 'Visitante sin cuenta');
+}
+
+/** Los próximos cumpleaños: [{ id, enDias, cuando, pronto, quien, detalle }]. */
+export function cumpleanosDe(lista_ = []) {
+  return lista(lista_).map((c, i) => ({
+    id: `${c.uid}-${c.fecha}-${c.dePersona}-${i}`,
+    enDias: c.enDias,
+    cuando: enDiasTexto(c.enDias),
+    pronto: c.enDias <= 7,
+    quien: c.esTitular ? c.nombre : c.dePersona,
+    detalle: `${c.fechaLegible || c.fecha}${c.esTitular ? '' : ` · lo agendó ${c.nombre}`}`,
+  }));
+}
+
+/**
+ * Lo de arriba de la ficha y su resumen.
+ *  - ficha (getUserFicha) · actividad (getUserAnalytics, puede faltar)
+ *  → { contacto, chips: [texto], cifras: [{ nombre, valor, ayuda }], notas: [texto] }
+ */
+export function resumenDeFicha(ficha = {}, actividad = null) {
+  const f = ficha || {};
+  const m = actividad?.metrics || {};
+  const telefono = f.phoneIntl?.full || f.phone || '';
+  const sesionesApp = lista(actividad?.sessions).filter((x) => x.clientType === 'APP').length;
+  const historico = actividad?.estimatedSummary?.isEstimated ? actividad.estimatedSummary : null;
+  return {
+    contacto: [f.email, f.dni && `${f.tipoDocumento || 'Doc.'} ${f.dni}`, telefono, f.country].filter(Boolean).join(' · ') || 'Sin datos de contacto',
+    chips: [`${enteroPE(f.monedas)} monedas`, f.hasCompletedSurvey ? 'Completó la encuesta' : 'Sin encuesta', f.marketingConsent?.whatsapp === true ? 'Acepta WhatsApp' : 'No aceptó WhatsApp'],
+    cifras: actividad ? [
+      { nombre: 'Visitas', valor: enteroPE(m.totalSessions) },
+      { nombre: 'Páginas vistas', valor: enteroPE(m.totalPageViews) },
+      { nombre: 'Tiempo en la tienda', valor: duracionCorta(m.totalDwellMs || 0) },
+      { nombre: 'Días que entró', valor: enteroPE(m.activeDays) },
+      { nombre: 'Última vez', valor: fechaCorta(m.lastAccessAtMs) || '—' },
+      { nombre: 'Usa la app', valor: sesionesApp ? 'Sí' : 'No', ayuda: sesionesApp ? `${enteroPE(sesionesApp)} ${sesionesApp === 1 ? 'visita' : 'visitas'} desde la app` : undefined },
+    ] : [],
+    notas: [
+      [
+        fechaCorta(f.createdAtMs) && `Cuenta creada el ${fechaCorta(f.createdAtMs)}`,
+        `${enteroPE(f.wishlist?.count)} en su lista de deseos`,
+        `${enteroPE(f.cart?.count)} en su carrito`,
+        `${enteroPE(lista(f.giftRecipients).length)} personas agendadas`,
+      ].filter(Boolean).join(' · '),
+      historico && `Compras de antes de medir (estimado con los pedidos del ERP): ${enteroPE(historico.orderCount)} pedidos por ${solesDe(historico.totalSpent)}, del ${fechaCorta(historico.firstOrderAtMs) || '—'} al ${fechaCorta(historico.lastOrderAtMs) || '—'}.`,
+    ].filter(Boolean),
+  };
+}
+
+/** Las listas de la ficha: lo que mira, deseos, carrito y personas, listas para mostrar. */
+export function listasDeFicha(ficha = {}, actividad = null, productoDe = () => null) {
+  const f = ficha || {};
+  return {
+    mira: lista(actividad?.productInterest).slice(0, 8).map((r) => {
+      const p = productoDe(r.productId) || {};
+      return { id: r.productId, nombre: p.nombre || r.name || 'Producto', imagen: p.imagen || '', detalle: `${duracionCorta(r.dwellMs)} · ${enteroPE(r.views)} ${r.views === 1 ? 'vista' : 'vistas'}` };
+    }),
+    deseos: lista(f.wishlist?.items).map((it, i) => ({
+      id: `${it.productId || 'p'}-${i}`, nombre: it.productName, imagen: it.productImage || '',
+      detalle: [it.price > 0 ? solesDe(it.price) : null, fechaCorta(it.addedAt) && `agregado el ${fechaCorta(it.addedAt)}`].filter(Boolean).join(' · '),
+      marca: it.isGifted ? `Ya se lo regalaron${it.giftedBy ? ` (${it.giftedBy})` : ''}` : null,
+    })),
+    carrito: lista(f.cart?.items).map((it, i) => ({
+      id: `${it.productId || 'p'}-${i}`, nombre: it.productName, imagen: it.productImage || '',
+      detalle: `${enteroPE(it.quantity)} × ${solesDe(it.price)} = ${solesDe(it.subtotal)}`,
+      marca: it.selected === false ? 'Lo dejó para después' : null,
+    })),
+    carritoResumen: lista(f.cart?.items).length ? `${enteroPE(f.cart?.unidades)} unidades por unos ${solesDe(f.cart?.totalEstimado)}. Es lo que tiene ahora: cambia cada vez que navega o compra.` : '',
+    personas: lista(f.giftRecipients).map((p, i) => ({
+      id: p.id || `persona-${i}`, nombre: p.name, rol: p.roleDisplay,
+      fechas: lista(p.events).length ? p.events.map((ev) => `${ev.label}: ${ev.dateLegible || ev.date || 'sin fecha'}`).join(' · ') : 'Sin fechas',
+    })),
+    cumpleanos: f.birthdayLegible ? `Su cumpleaños: ${f.birthdayLegible}` : 'No registró su cumpleaños.',
+  };
+}

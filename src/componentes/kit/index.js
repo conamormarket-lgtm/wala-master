@@ -94,7 +94,10 @@ export { PaginaBlueprints, PaginaPlantillasYoryo } from './paginas/admin/Herrami
 export { PasoAdmin } from './piezas/admin/Pasos';
 export { Cifra, FilaCifras, BloqueMetrica, ColumnasMetricas, SinDatos, SelectorPeriodo, ListaBarras } from './piezas/admin/Metricas';
 export { ListaAvisos, TablaComparativa, ListaEnVivo, TarjetaEnlacesRotos, ListaInteresados } from './piezas/admin/Resultados';
-export { MarcoResultados, PaginaResumenResultados, PaginaProductosResultados, PaginaVisitantesResultados } from './paginas/admin/Resultados';
+export {
+  MarcoResultados, PaginaResumenResultados, PaginaProductosResultados, PaginaVisitantesResultados, PaginaClientesResultados, PaginaOpinionesResultados,
+} from './paginas/admin/Resultados';
+export { FichaCliente, ListaCumpleanos } from './piezas/admin/Clientes';
 export { TarjetaEnvio, EsqueletoEnvio } from './piezas/admin/Pedidos';
 export { PaginaRecepcion } from './paginas/admin/Pedidos';
 export { PaginaPagos } from './paginas/admin/Pagos';
@@ -118,5 +121,5 @@ export {
   MENSAJE_PAGOS_POR_DEFECTO, configPagosDesde, configPagosAMensajes,
   reclamoDesdeFirestore, respuestaDeReclamo, diasHabilesEntre, plazoDeReclamo, textoDeReclamo, filasMigracion,
   porCienVisitas, cambioPorcentual, cambioEnPuntos, cifrasDelResumen, otrosCobrosDe, serieDeVisitas, PERIODOS_RESULTADOS,
-  listasDeProductos, listasDeVisitantes,
+  listasDeProductos, listasDeVisitantes, enDiasTexto, quienDelCarrito, cumpleanosDe, resumenDeFicha, listasDeFicha,
 } from './adaptadoresAdmin';

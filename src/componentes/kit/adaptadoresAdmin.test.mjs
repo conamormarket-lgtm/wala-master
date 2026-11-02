@@ -381,3 +381,30 @@ test('resultados: las listas de Productos y de Visitantes', () => {
   assert.deepEqual(v.paises.map((p) => [p.nombre, p.texto]), [['Perú', '75%'], ['No se sabe', '25%']]);
   assert.deepEqual(v.dispositivos.map((p) => p.nombre), ['Celular', 'Computadora']);
 });
+
+test('resultados: carritos, cumpleaños y la ficha de un cliente', () => {
+  assert.equal(m2.quienDelCarrito({ uid: 'u' }, { displayName: 'Ana' }), 'Ana');
+  assert.equal(m2.quienDelCarrito({}), 'Visitante sin cuenta');
+  assert.equal(m2.quienDelCarrito({ uid: 'u' }), 'Cliente');
+  assert.deepEqual(m2.cumpleanosDe([{ uid: 'u', nombre: 'Ana', dePersona: 'Luis', esTitular: false, fecha: '11-14', fechaLegible: '14 de noviembre', enDias: 5 }])[0],
+    { id: 'u-11-14-Luis-0', enDias: 5, cuando: 'En 5 días', pronto: true, quien: 'Luis', detalle: '14 de noviembre · lo agendó Ana' });
+  const ficha = {
+    nombre: 'Ana Pérez', email: 'ana@correo.pe', dni: '71234567', phone: '987654321', monedas: 1200, hasCompletedSurvey: true, marketingConsent: { whatsapp: true },
+    wishlist: { count: 1, items: [{ productId: 'p1', productName: 'Polo', price: 59.9, isGifted: true, giftedBy: 'Luis' }] },
+    cart: { count: 1, unidades: 2, totalEstimado: 119.8, items: [{ productId: 'p1', productName: 'Polo', quantity: 2, price: 59.9, subtotal: 119.8, selected: false }] },
+    giftRecipients: [{ id: 'g', name: 'Luis', roleDisplay: 'Pareja', events: [{ label: 'Cumpleaños', dateLegible: '14 de noviembre' }] }],
+  };
+  const r = m2.resumenDeFicha(ficha, { metrics: { totalSessions: 12, totalDwellMs: 125000 }, sessions: [{ clientType: 'APP' }, { clientType: 'WEB' }] });
+  assert.equal(r.contacto, 'ana@correo.pe · Doc. 71234567 · 987654321');
+  assert.deepEqual(r.chips, ['1,200 monedas', 'Completó la encuesta', 'Acepta WhatsApp']);
+  assert.deepEqual(r.cifras.map((c) => c.valor), ['12', '0', '2m 5s', '0', '—', 'Sí']);
+  assert.equal(r.notas[0], '1 en su lista de deseos · 1 en su carrito · 1 personas agendadas');
+  assert.deepEqual(m2.resumenDeFicha(ficha, null).cifras, []);
+  const l = m2.listasDeFicha(ficha, { productInterest: [{ productId: 'p1', dwellMs: 61000, views: 1 }] }, () => ({ nombre: 'Polo clásico', imagen: 'i' }));
+  assert.equal(l.mira[0].detalle, '1m 1s · 1 vista');
+  assert.equal(l.deseos[0].marca, 'Ya se lo regalaron (Luis)');
+  assert.equal(l.carrito[0].detalle, '2 × S/ 59.90 = S/ 119.80');
+  assert.equal(l.carrito[0].marca, 'Lo dejó para después');
+  assert.equal(l.personas[0].fechas, 'Cumpleaños: 14 de noviembre');
+  assert.equal(l.cumpleanos, 'No registró su cumpleaños.');
+});
