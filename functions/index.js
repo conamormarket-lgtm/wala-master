@@ -10206,7 +10206,8 @@ exports.getMobileCheckoutStatusSecure = functions.https.onCall(async (data, cont
   // whatsapp: el pedido de la app se puede terminar por WhatsApp (crearSolicitudWhatsappSecure) y ya no se cancela.
   // balance + publicKey: la app paga el saldo de un pedido con el formulario de Culqi (processCulqiPayment con
   // metadata.pedidoId, como la web: sin 3DS); la llave pública es la misma del checkout.
-  if (data?.capabilities) return { contract: mobileCheckout.CONTRACT, coupons: true, creations: true, combos: true, coins: true, gifts: true, savedCards: true, whatsapp: true,
+  // talCual: vende las prendas de Crear con seVendeTalCual como un producto de la tienda (con la talla de su color).
+  if (data?.capabilities) return { contract: mobileCheckout.CONTRACT, coupons: true, creations: true, combos: true, coins: true, gifts: true, savedCards: true, whatsapp: true, talCual: true,
     balance: true, publicKey: /^pk_(test|live)_/.test(process.env.CULQI_PUBLIC_KEY || '') ? process.env.CULQI_PUBLIC_KEY : null,
     enabled: process.env.MOBILE_CHECKOUT_ENABLED === 'true' && /^pk_(test|live)_/.test(process.env.CULQI_PUBLIC_KEY || '') };
   try {
