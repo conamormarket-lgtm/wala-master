@@ -39,6 +39,8 @@ async function fixture(provider) {
   const prepared = await mobile.build(input, 'a', async () => raw);
   const intent = { uid: 'a', status: 'prepared', amountPen: 164.7, mobile: prepared.meta, orderPayload: prepared.payload };
   const ledger = new Map(); let tail = Promise.resolve(); let calls = 0; let orders = 0; let anomalies = 0;
+  // Las tarjetas guardadas de la cuenta "a" (tarjetas_a/guardadas) y las que se guardan al pagar.
+  const savedCards = new Map([['crd_test_guardada01', { culqiCardId: 'crd_test_guardada01', marca: 'Visa', ultimos4: '4242' }]]); const newCards = [];
   const ref = { async set(data) { Object.assign(intent, data); } };
   const context = {
     functions: { https: { HttpsError } }, process: { env: { CULQI_SECRET_KEY: 'sk_test_fixture', CULQI_PUBLIC_KEY: 'pk_test_fixture', MOBILE_CHECKOUT_ENABLED: 'true' } },
@@ -49,6 +51,10 @@ async function fixture(provider) {
     pagos: { cobroDeIntencion: (i) => i.amountPen, aCentimos: (n) => Math.round(n * 100), coincideMonto: (a, b) => a === b },
     formatoSoles: (n) => String(n), FieldValue: { serverTimestamp: () => 1, increment: (n) => ({ increment: n }), delete: () => ({ delete: true }) },
     applyDebit: require('../economyLogic').applyDebit,
+    tarjetas: require('../tarjetasGuardadas'),
+    refTarjetas: (owner) => ({ collection: () => ({ doc: (id) => ({ get: async () => ({ exists: owner === 'a' && savedCards.has(id), data: () => savedCards.get(id) }) }) }) }),
+    guardarTarjetaCulqi: async ({ tokenId }) => { const tarjeta = { culqiCardId: 'crd_test_nueva00001', marca: 'Mastercard', ultimos4: '5555' };
+      newCards.push(tokenId); return { culqiCardId: tarjeta.culqiCardId, tarjeta }; },
     db: { collection: (name) => ({ doc: (id) => ({ name, id, async get() { return { exists: ledger.has(id), data: () => ledger.get(id) }; }, async set(data) { ledger.set(id, { ...ledger.get(id), ...data }); } }) }),
       runTransaction(action) { const run = tail.then(() => action({
         get: async (r) => ({ exists: ledger.has(r.id), data: () => ledger.get(r.id) }),
@@ -73,7 +79,7 @@ async function fixture(provider) {
   const prepareHandler = vm.runInNewContext(`(${prepareSource})`, context);
   const cancelHandler = vm.runInNewContext(`(${cancelSource})`, context);
   const data = { tokenId: 'tkn_test_token0001', amount: 16470, currency: 'PEN', email: input.email, checkoutIntentId: prepared.key.id, deviceId: 'device_test0001' };
-  return { pay: (extra = {}, uid = 'a') => handler({ ...data, ...extra }, { auth: { uid, token: { email: input.email } } }), intent, ledger,
+  return { pay: (extra = {}, uid = 'a') => handler({ ...data, ...extra }, { auth: { uid, token: { email: input.email, firebase: { sign_in_provider: 'password' } } } }), intent, ledger, newCards,
     prepare: (data) => prepareHandler(data, { auth: { uid: 'a', token: { email: input.email } } }), input, context,
     cancel: (requestId) => cancelHandler({ requestId }, { auth: { uid: 'a', token: { email: input.email } } }),
     counts: () => ({ calls, orders, anomalies }) };
@@ -182,4 +188,43 @@ test('preparación REAL con regalo: el pedido guardado lleva giftDetails y la ap
   const session = await f.prepare({ mobileCheckout: { ...f.input, requestId: 'regaloregaloregalo01', gift } });
   assert.equal(session.gift.recipientName, 'María'); assert.equal(session.totals.total, 164.7);
   assert.equal(JSON.stringify(f.ledger.get(session.intentId).orderPayload.giftDetails), JSON.stringify({ isGift: true, ...gift }));
+});
+const savedCard = { tokenId: undefined, deviceId: undefined, tarjetaId: 'crd_test_guardada01', intentoId: 'intentotarjeta0001' };
+const challenge = () => ({ ok: true, status: 201, json: async () => ({ object: 'error', action_code: '3DS_VALIDATION_NEEDED' }) });
+test('tarjeta guardada en la app: se cobra con su id, sin formulario ni dispositivo, y crea un solo pedido', async () => {
+  let body;
+  const f = await fixture((sent) => { body = sent; return approved(sent); });
+  assert.equal((await f.pay(savedCard)).success, true);
+  assert.equal(body.source_id, 'crd_test_guardada01'); assert.equal(body.antifraud_details, undefined); assert.equal(body.authentication_3DS, undefined);
+  assert.deepEqual(f.counts(), { calls: 1, orders: 1, anomalies: 0 });
+});
+test('tarjeta guardada en la app: si el banco pide verificación se corta como en la web, sin cobrar y con el pago libre', async () => {
+  const f = await fixture(challenge);
+  await assert.rejects(f.pay(savedCard), /tarjeta nueva/);
+  assert.equal(f.intent.status, 'prepared'); assert.equal(f.intent.mobilePending3DS, undefined); assert.equal(f.counts().orders, 0);
+  assert.equal(f.ledger.get('tarjeta_a_intentotarjeta0001').status, 'failed');
+});
+test('tarjeta guardada en la app: ajena, de otro entorno o con verificación inventada no llega a Culqi', async () => {
+  const f = await fixture(approved);
+  await assert.rejects(f.pay({ ...savedCard, tarjetaId: 'crd_test_ajena00001' }), /ya no está guardada/);
+  await assert.rejects(f.pay({ ...savedCard, tarjetaId: 'crd_live_guardada01' }));
+  await assert.rejects(f.pay({ ...savedCard, intentoId: 'intentotarjeta0002', authentication3DS: { eci: '05', xid: 'x', cavv: 'c', protocolVersion: '2.1.0' } }), /verificación/);
+  assert.equal(f.counts().calls, 0);
+});
+test('guardar esta tarjeta en la app: se guarda antes de cobrar y se cobra con ella; con verificación se corta y queda guardada', async () => {
+  let body;
+  const f = await fixture((sent) => { body = sent; return approved(sent); });
+  const paid = await f.pay({ guardarTarjeta: true });
+  assert.equal(paid.success, true); assert.equal(body.source_id, 'crd_test_nueva00001'); assert.equal(paid.tarjetaGuardada.ultimos4, '5555');
+  assert.equal(body.antifraud_details.device_finger_print_id, 'device_test0001');
+  const g = await fixture(challenge);
+  await assert.rejects(g.pay({ guardarTarjeta: true }), /quedó guardada/);
+  assert.equal(g.intent.mobilePending3DS, undefined); assert.equal(g.counts().orders, 0); assert.equal(g.newCards.length, 1);
+});
+test('la vuelta de la verificación del banco no vuelve a guardar la tarjeta', async () => {
+  const f = await fixture(approved);
+  f.ledger.set('tkn_test_token0001', { status: 'challenge', uid: 'a', objetivo: `checkout:${mobile.identity(f.input, 'a').id}`,
+    deviceId: 'device_test0001', amount: 16470, currency: 'PEN' });
+  assert.equal((await f.pay({ guardarTarjeta: true, authentication3DS: { eci: '05', xid: 'x', cavv: 'c', protocolVersion: '2.1.0' } })).success, true);
+  assert.equal(f.newCards.length, 0); assert.equal(f.counts().calls, 1);
 });

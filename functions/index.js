@@ -2439,7 +2439,8 @@ exports.processCulqiPayment = functions
   // Tarjeta guardada: en vez del token, su id (crd_...) y un id de este intento
   // (el cerrojo). guardarTarjeta: guarda la del token antes de cobrar.
   const tarjetaId = data && data.tarjetaId ? String(data.tarjetaId) : "";
-  const guardarTarjeta = Boolean(data && data.guardarTarjeta) && !tarjetaId && !/^ype_/.test(String(tokenId || ""));
+  // En la vuelta de la verificación del banco (authentication3DS) no se vuelve a guardar: ya se intentó en la primera.
+  const guardarTarjeta = Boolean(data && data.guardarTarjeta) && !tarjetaId && !/^ype_/.test(String(tokenId || "")) && !(data && data.authentication3DS);
   if ((tarjetaId || guardarTarjeta) && !tarjetas.puedeGuardarTarjetas(context.auth)) {
     throw new functions.https.HttpsError("permission-denied", "Para usar tarjetas guardadas entra con tu correo o con Google.");
   }
@@ -2548,14 +2549,16 @@ exports.processCulqiPayment = functions
   const isMobileCheckout = !!checkoutIntent?.intent?.mobile;
   let mobileAuthentication = null;
   const mobileDevice = isMobileCheckout ? String(data.deviceId || '') : '';
-  if (isMobileCheckout && (tarjetaId || guardarTarjeta)) {
-    throw new functions.https.HttpsError('failed-precondition', 'Las tarjetas guardadas no están disponibles en este pago.');
-  }
   if (isMobileCheckout) {
-    const tokenMode = /^(?:tkn|ype)_(test|live)_[A-Za-z0-9]+$/.exec(String(tokenId));
+    // Una tarjeta guardada se cobra como en la web: sin el formulario de Culqi (sin dispositivo) y sin verificación del
+    // banco; si el banco la pide, el pago se corta abajo. Un token nuevo sigue con su dispositivo y su 3DS.
+    const sourceMode = /^(?:tkn|ype|crd)_(test|live)_[A-Za-z0-9]+$/.exec(tarjetaId || String(tokenId));
     const secretMode = /^sk_(test|live)_/.exec(secretKey || '');
-    if (!tokenMode || !secretMode || tokenMode[1] !== secretMode[1]) throw new functions.https.HttpsError('failed-precondition', 'El medio de pago no corresponde a este entorno.');
-    if (!/^[A-Za-z0-9_-]{8,200}$/.test(mobileDevice)) throw new functions.https.HttpsError('invalid-argument', 'No pudimos verificar el dispositivo del pago.');
+    if (!sourceMode || !secretMode || sourceMode[1] !== secretMode[1]) throw new functions.https.HttpsError('failed-precondition', 'El medio de pago no corresponde a este entorno.');
+    if (tarjetaId ? mobileDevice && !/^[A-Za-z0-9_-]{8,200}$/.test(mobileDevice) : !/^[A-Za-z0-9_-]{8,200}$/.test(mobileDevice)) {
+      throw new functions.https.HttpsError('invalid-argument', 'No pudimos verificar el dispositivo del pago.');
+    }
+    if (tarjetaId && data.authentication3DS != null) throw new functions.https.HttpsError('invalid-argument', 'Una tarjeta guardada no lleva verificación del banco.');
     try { mobileAuthentication = mobileCheckout.threeDS(data.authentication3DS); } catch (error) { throw mobileCheckoutError(error); }
     if (checkoutIntent.intent.mobilePending3DS && checkoutIntent.intent.mobilePendingToken !== String(tokenId)) {
       throw new functions.https.HttpsError('failed-precondition', 'Completa o cancela la autenticación pendiente antes de iniciar otro pago.');
@@ -2688,8 +2691,8 @@ exports.processCulqiPayment = functions
         // Lo pone el servidor: el webhook lo lee de la API de Culqi para saber
         // qué se pagó, sin fiarse de lo que mande el navegador.
         metadata: { tipo: objetivo.tipo, uid, ...objetivo.metaCulqi },
-        ...(isMobileCheckout ? { antifraud_details: { device_finger_print_id: mobileDevice },
-          ...(mobileAuthentication ? { authentication_3DS: mobileAuthentication } : {}) } : {}),
+        ...(isMobileCheckout && mobileDevice ? { antifraud_details: { device_finger_print_id: mobileDevice } } : {}),
+        ...(isMobileCheckout && mobileAuthentication ? { authentication_3DS: mobileAuthentication } : {}),
       }),
     });
     result = await response.json();
@@ -2705,6 +2708,14 @@ exports.processCulqiPayment = functions
       "No pudimos confirmar tu pago. No vuelvas a pagar todavía: si se realizó, aparecerá en «Mis pedidos» en unos minutos. Si no, podrás intentarlo de nuevo.");
   }
 
+  // Con una tarjeta guardada (o la que se acaba de guardar) no se abre la verificación en la app: como en la web, el
+  // pago se corta y no se cobra nada.
+  if (isMobileCheckout && /^crd_/.test(String(sourceId)) && response.status === 201 && !(result.object === 'charge' && /^chr_/.test(String(result.id || '')))) {
+    await marcarToken({ status: 'failed', error: 'se requiere autenticación bancaria' }); await liberar();
+    throw new functions.https.HttpsError('failed-precondition', tarjetaNueva
+      ? 'Tu banco pide una verificación adicional. No se te cobró nada; tu tarjeta quedó guardada. Vuelve a pagar con la tarjeta nueva sin guardarla.'
+      : 'Tu banco pide una verificación adicional para esta tarjeta. No se te cobró nada; paga con una tarjeta nueva.');
+  }
   if (isMobileCheckout && response.status === 201 && !(result.object === 'charge' && /^chr_/.test(String(result.id || '')))) {
     if (mobileAuthentication) {
       await marcarToken({ status: 'failed' }); await liberar();
@@ -10181,7 +10192,8 @@ exports.getMobileCheckoutStatusSecure = functions.https.onCall(async (data, cont
   // coupons: este servidor ya revalida y descuenta el cupón del pago móvil (la app solo ofrece el campo entonces).
   // coins: acepta monedas en el pago móvil (las reserva al preparar y las devuelve al cancelar).
   // gifts: acepta "Es un regalo" (giftDetails del pedido, el que abre /regalo/:orderId).
-  if (data?.capabilities) return { contract: mobileCheckout.CONTRACT, coupons: true, creations: true, combos: true, coins: true, gifts: true,
+  // savedCards: cobra con una tarjeta guardada y guarda la nueva ("Guardar esta tarjeta"), sin 3DS, como la web.
+  if (data?.capabilities) return { contract: mobileCheckout.CONTRACT, coupons: true, creations: true, combos: true, coins: true, gifts: true, savedCards: true,
     enabled: process.env.MOBILE_CHECKOUT_ENABLED === 'true' && /^pk_(test|live)_/.test(process.env.CULQI_PUBLIC_KEY || '') };
   try {
     const { id } = mobileCheckout.identity({ contract: mobileCheckout.CONTRACT, requestId: data && data.requestId }, uid);
