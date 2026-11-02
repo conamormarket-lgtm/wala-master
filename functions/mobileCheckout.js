@@ -334,7 +334,9 @@ function view(id, intent) {
     : intent.status === 'cobrando' ? 'processing' : ['vencida', 'reemplazada'].includes(intent.status) ? 'expired'
       : intent.mobilePending3DS ? 'challenge' : 'ready';
   return { intentId: id, requestId: intent.mobile.requestId, contract: CONTRACT, state,
-    orderId: state === 'paid' ? intent.pedidoWebId || id : null, ...intent.mobile.summary };
+    orderId: state === 'paid' ? intent.pedidoWebId || id : null, ...intent.mobile.summary,
+    // Se pidió por WhatsApp (crearSolicitudWhatsappSecure): el pedido ya está en el ERP, sin pagar.
+    ...(intent.whatsappSolicitado === true ? { whatsappRequested: true } : {}) };
 }
 function threeDS(data) {
   if (data == null) return null;
