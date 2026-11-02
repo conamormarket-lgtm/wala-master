@@ -347,22 +347,94 @@ export function marcaAFirestore(m = {}) {
 
 /* ── Productos (lo justo para elegirlos en el admin) ───── */
 
-/** Un producto de `productos_wala` para las listas del admin. Los archivados (deleted) no se listan: null. */
+/*
+ * La personalización de antes (el editor viejo y Yoryo) que todavía tiene
+ * un producto de la tienda: como tienePersonalizacionVieja de AdminProductos.
+ */
+function conPersonalizacionVieja(p) {
+  if (p.esPrendaBase === true || p.deleted === true) return false;
+  const items = Array.isArray(p.comboItems) ? p.comboItems : [];
+  return p.customizable === true
+    || (Array.isArray(p.customizationViews) && p.customizationViews.length > 0)
+    || Boolean(p.YoryoPersonalizado)
+    || items.some((it) => it?.customizable === true || Boolean(it?.YoryoPersonalizado));
+}
+
+/* La foto de la tarjeta del admin: la de la lista, la de su color principal, la principal o la primera. */
+function fotoDeProducto(p) {
+  const variantes = Array.isArray(p.variants) ? p.variants : [];
+  const principal = variantes.find((v) => v.id === p.defaultVariantId) || variantes[0];
+  return p.thumbnailImageUrl || principal?.imageUrl || p.mainImage || (Array.isArray(p.images) && p.images[0]) || '';
+}
+
+/**
+ * Un producto de `productos_wala` para las listas del admin. Los
+ * archivados (deleted) no se listan: null.
+ */
 export function productoAdminDesde(p = {}) {
   if (!p || p.deleted === true) return null;
-  const precio = Number(p.price) || 0;
+  const precioLista = Number(p.price) || 0;
   const oferta = Number(p.salePrice) || 0;
+  const conOferta = oferta > 0 && oferta < precioLista;
   return {
     id: p.id,
     nombre: p.name || 'Sin nombre',
-    imagen: p.mainImage || (Array.isArray(p.images) && p.images[0]) || '',
-    precio: oferta > 0 && oferta < precio ? oferta : precio,
+    imagen: fotoDeProducto(p),
+    precio: conOferta ? oferta : precioLista,
+    precioLista,
+    conOferta,
     oculto: p.visible === false,
     marcaId: p.brandId || '',
     destacado: p.featured === true,
     ordenDestacado: Number(p.featuredOrder) || 0,
+    stock: Number.isFinite(Number(p.inStock)) ? Number(p.inStock) : 0,
+    sku: p.sku || '',
+    categorias: Array.isArray(p.categories) ? p.categories : (p.categoryId ? [p.categoryId] : []),
+    colecciones: Array.isArray(p.collections) ? p.collections : [],
+    tipo: (p.productType && typeof p.productType === 'object' ? p.productType.id : p.productType) || '',
+    esCombo: p.isComboProduct === true,
+    piezas: p.isComboProduct === true && Array.isArray(p.comboItems) ? p.comboItems.map((it) => it?.productId).filter(Boolean) : [],
+    // Crear: una prenda personalizable, un pack de Crear y lo que reemplazó un personalizable.
+    personalizable: p.esPrendaBase === true,
+    talCual: p.seVendeTalCual === true,
+    enTienda: p.enTienda === true,
+    pack: p.esComboCrear === true,
+    packPublicado: p.comboCrear?.publicado === true,
+    reemplazado: Boolean(p.reemplazadoPor),
+    personalizacionVieja: conPersonalizacionVieja(p),
+    publico: p.publico || '',
+    edadMinima: p.edadMinima ?? null,
+    equipo: p.equipo || '',
   };
 }
+
+/*
+ * Lo que se lista en "Tienda" (como `catalogo` de AdminProductos): sin lo
+ * que reemplazó un personalizable, sin los packs de Crear y, de las
+ * prendas personalizables, solo las que también se venden en la tienda.
+ */
+export const esDeLaTienda = (p) => p && !p.reemplazado && !p.pack && (!p.personalizable || p.enTienda);
+
+/** Los ids que son pieza de algún combo de la lista. */
+export const piezasDeCombos = (productos = []) => new Set(productos.filter((p) => p.esCombo).flatMap((p) => p.piezas));
+
+/** Las etiquetas de la vista "Todos" (las mismas de ListaTodos). */
+export function etiquetasDeProducto(p) {
+  if (p.pack) return ['Pack de Crear', p.packPublicado ? 'En Crear' : 'Borrador', ...(p.packPublicado && p.enTienda ? ['En la tienda'] : [])];
+  if (p.personalizable) return ['Personalizable', p.oculto ? 'Borrador' : 'En Crear', ...(!p.oculto && p.enTienda ? ['En la tienda'] : [])];
+  if (p.reemplazado) return [...(p.esCombo ? ['Combo'] : []), 'Reemplazado por su personalizable'];
+  return [...(p.esCombo ? ['Combo'] : []), p.oculto ? 'Oculto' : 'En la tienda'];
+}
+
+/** A dónde lleva un producto de "Todos": los packs a su lista, las prendas a su ficha de Crear, el resto a la ficha. */
+export function rutaAdminDeProducto(p) {
+  if (p.pack) return '/admin/productos?ver=packs';
+  if (p.personalizable) return `/admin/prendas-crear/${p.id}`;
+  return `/admin/productos/${p.id}`;
+}
+
+/** El estado del stock (Inventario): 0 agotado, hasta 3 últimas, más disponible. */
+export const estadoDeStock = (n) => (n <= 0 ? 'agotado' : n <= 3 ? 'ultimas' : 'disponible');
 
 /** Busca sin tildes ni mayúsculas. */
 export function normalizarBusqueda(t) {

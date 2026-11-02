@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Reorder, useDragControls } from 'framer-motion';
-import { ArrowDown, ArrowUp, ArrowUpDown, Check, GripVertical, MoreHorizontal, RefreshCw, SlidersHorizontal, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, GripVertical, Loader2, MoreHorizontal, RefreshCw, SlidersHorizontal, X } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, EstadoVacio, HojaInferior } from '../../Feedback';
 import { Buscador, Campo } from '../../Formulario';
@@ -68,8 +68,9 @@ const esControl = (el) => Boolean(el.closest('button, a, input, label, [role="me
  * foto, el título, dos o tres datos y el estado (container query: la misma
  * pieza sirve al costado de otra o en el celular).
  *  - columnas: [{ id, titulo, celda(fila) → nodo, ancho, alinear: 'fin' | 'centro',
- *    ordenable, tarjeta: 'foto' | 'titulo' | 'detalle' | 'estado' }] (sin
- *    `tarjeta` no sale en la tarjeta)
+ *    ordenable, tarjeta: 'foto' | 'titulo' | 'detalle' | 'estado' | 'control' }] (sin
+ *    `tarjeta` no sale en la tarjeta; 'control': algo que se toca, como el
+ *    stock o unas opciones, va debajo de la tarjeta, a todo el ancho)
  *  - filas · idDe(fila) (fila.id) · nombreDe(fila): para los textos de ayuda
  *  - cargando · error (texto) + onReintentar · vacio: { titulo, texto, icono, accion }
  *  - onFila(fila): tocar la fila o la tarjeta (casi siempre, editar)
@@ -202,10 +203,13 @@ export function TablaAdmin({
           const foto = porTarjeta('foto')[0];
           const titulo = porTarjeta('titulo')[0];
           const estado = porTarjeta('estado')[0];
+          const controles = porTarjeta('control');
+          // Sin onFila no es un botón: dentro puede haber algo que se toca.
+          const Cuerpo = onFila ? 'button' : 'div';
           return (
-            <li key={id} className={[s.tarjeta, elegida && s.filaElegida].filter(Boolean).join(' ')}>
+            <li key={id} className={[s.tarjeta, elegida && s.filaElegida, controles.length && s.tarjetaConControles].filter(Boolean).join(' ')}>
               {elegibles && <CasillaFila activo={elegida} onChange={(si) => alternar(id, si)} etiqueta={`Elegir ${nombreDe(f)}`} />}
-              <button type="button" className={s.tarjetaCuerpo} onClick={onFila ? () => onFila(f) : undefined} disabled={!onFila} aria-label={onFila ? `Editar ${nombreDe(f)}` : undefined}>
+              <Cuerpo {...(onFila ? { type: 'button', onClick: () => onFila(f), 'aria-label': `Editar ${nombreDe(f)}` } : {})} className={[s.tarjetaCuerpo, !onFila && s.tarjetaQuieta].filter(Boolean).join(' ')}>
                 {foto && <span className={s.tarjetaFoto}>{foto.celda(f)}</span>}
                 <span className={s.tarjetaTextos}>
                   {titulo && <strong className={s.tarjetaTitulo}>{titulo.celda(f)}</strong>}
@@ -214,11 +218,21 @@ export function TablaAdmin({
                   </span>
                 </span>
                 {estado && <span className={s.tarjetaEstado}>{estado.celda(f)}</span>}
-              </button>
+              </Cuerpo>
               {acciones && (
                 <button type="button" className={s.masBoton} onClick={(e) => abrirMenu(f, e)} aria-label={`Opciones de ${nombreDe(f)}`} aria-haspopup="menu">
                   <MoreHorizontal aria-hidden="true" />
                 </button>
+              )}
+              {controles.length > 0 && (
+                <div className={s.tarjetaControles}>
+                  {controles.map((c) => (
+                    <div key={c.id} className={s.tarjetaControl}>
+                      <span className={s.tarjetaControlNombre}>{c.titulo}</span>
+                      {c.celda(f)}
+                    </div>
+                  ))}
+                </div>
               )}
             </li>
           );
@@ -486,5 +500,87 @@ export function SelectorProductos({ productos = [], yaEstan = [], onElegir, acci
         <p className={s.selectorNada}>Ningún producto se llama así.</p>
       ))}
     </div>
+  );
+}
+
+/* ── Un número que se edita en la fila ─────────────────── */
+
+/**
+ * Un número que se cambia ahí mismo (el stock del inventario): se guarda
+ * solo, un momento después de dejar de escribir, y muestra guardando,
+ * guardado o el error con Reintentar. Lo negativo o vacío no se guarda.
+ *  - valor · onGuardar(nuevo, anterior) → promesa · etiqueta (para lectores)
+ *  - espera: ms antes de guardar (1000) · min (0) · sufijo ("uds")
+ */
+export function NumeroEnLinea({ valor = 0, onGuardar, etiqueta, espera = 1000, min = 0, sufijo }) {
+  const [texto, setTextoEstado] = useState(String(valor ?? 0));
+  // Lo escrito también en una referencia: dos toques seguidos en "+" suman dos.
+  const textoRef = useRef(String(valor ?? 0));
+  const setTexto = (v) => { textoRef.current = v; setTextoEstado(v); };
+  const [estado, setEstado] = useState(null); // 'guardando' | 'guardado' | { error }
+  const guardado = useRef(Number(valor) || 0);
+  const reloj = useRef(null);
+  const listo = useRef(null);
+
+  // Llega otro valor de afuera (al recargar) y aquí no hay nada pendiente.
+  useEffect(() => {
+    if (!reloj.current && estado !== 'guardando') {
+      setTexto(String(valor ?? 0));
+      guardado.current = Number(valor) || 0;
+    }
+  }, [valor]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => { window.clearTimeout(reloj.current); window.clearTimeout(listo.current); }, []);
+
+  const guardar = async (n) => {
+    const anterior = guardado.current;
+    if (n === anterior) return;
+    setEstado('guardando');
+    try {
+      await onGuardar?.(n, anterior);
+      guardado.current = n;
+      setEstado('guardado');
+      window.clearTimeout(listo.current);
+      listo.current = window.setTimeout(() => setEstado(null), 2000);
+    } catch (err) {
+      setEstado({ error: err?.message || 'No se guardó' });
+    }
+  };
+  const cambiar = (t) => {
+    setTexto(t);
+    window.clearTimeout(reloj.current);
+    reloj.current = null;
+    const n = Number.parseInt(t, 10);
+    if (!Number.isFinite(n) || n < min) return;
+    reloj.current = window.setTimeout(() => { reloj.current = null; guardar(n); }, espera);
+  };
+  const actual = () => Number.parseInt(textoRef.current, 10) || 0;
+  const error = estado && typeof estado === 'object' ? estado.error : null;
+  return (
+    <span className={s.enLinea} data-componente="NumeroEnLinea">
+      <span className={[s.enLineaCaja, error && s.enLineaError].filter(Boolean).join(' ')}>
+        <button type="button" onClick={() => cambiar(String(Math.max(min, actual() - 1)))} aria-label={`Restar uno: ${etiqueta}`}>−</button>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={min}
+          value={texto}
+          aria-label={etiqueta}
+          aria-invalid={error ? true : undefined}
+          onChange={(e) => cambiar(e.target.value)}
+          onBlur={() => { const n = Number.parseInt(texto, 10); if (!Number.isFinite(n) || n < min) setTexto(String(guardado.current)); }}
+        />
+        <button type="button" onClick={() => cambiar(String(actual() + 1))} aria-label={`Sumar uno: ${etiqueta}`}>+</button>
+      </span>
+      {sufijo && <span className={s.enLineaSufijo}>{sufijo}</span>}
+      <span className={s.enLineaEstado} aria-live="polite">
+        {estado === 'guardando' && <Loader2 className={s.girar} aria-label="Guardando" />}
+        {estado === 'guardado' && <Check className={s.enLineaListo} aria-label="Guardado" />}
+        {error && (
+          <button type="button" className={s.enLineaReintentar} onClick={() => guardar(actual())} title={error}>
+            <RefreshCw aria-hidden="true" /> Reintentar
+          </button>
+        )}
+      </span>
+    </span>
   );
 }

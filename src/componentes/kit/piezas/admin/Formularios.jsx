@@ -376,3 +376,35 @@ export function CampoColor({ etiqueta, ayuda, error, id, valor = '', onCambiar }
     />
   );
 }
+
+/**
+ * Elegir una opción con un toque (para quién es, la edad): botones en fila.
+ * La elegida va llena; la sugerida (lo que se deduce, sin guardar) con
+ * borde punteado. Tocar la elegida la quita (vuelve a la sugerencia).
+ *  - opciones: [{ valor, texto }] · valor · sugerido · onElegir(valor | null)
+ *  - etiqueta (para lectores) · disabled
+ */
+export function ElegirUno({ opciones = [], valor, sugerido, onElegir, etiqueta, disabled = false }) {
+  const hay = valor !== null && valor !== undefined && valor !== '';
+  return (
+    <span className={s.elegirUno} role="group" aria-label={etiqueta} data-componente="ElegirUno">
+      {opciones.map((o) => {
+        const elegida = hay && String(valor) === String(o.valor);
+        const sugerida = !hay && sugerido !== null && sugerido !== undefined && String(sugerido) === String(o.valor);
+        return (
+          <button
+            key={o.valor}
+            type="button"
+            className={[s.opcionUno, elegida && s.opcionElegida, sugerida && s.opcionSugerida].filter(Boolean).join(' ')}
+            aria-pressed={elegida}
+            title={sugerida ? 'Sugerido: tócalo para guardarlo' : elegida ? 'Tócalo otra vez para quitarlo' : undefined}
+            disabled={disabled}
+            onClick={() => onElegir?.(elegida ? null : o.valor)}
+          >
+            {o.texto}
+          </button>
+        );
+      })}
+    </span>
+  );
+}

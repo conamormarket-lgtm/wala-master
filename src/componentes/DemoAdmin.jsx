@@ -3,6 +3,7 @@ import { Archive, Eye, EyeOff, Trash2 } from 'lucide-react';
 import {
   MarcoAdmin, SinPermiso, CabezaAdmin, PaginaInicioAdmin, PaginaCategorias, InsigniaEstado, ESTADOS_ADMIN, AccionesLote,
   PaginaColecciones, PaginaAtributos, PaginaEnvios, PaginaCliparts, PaginaMarcas, PaginaProductosMarca, PaginaDestacados,
+  PaginaProductos, PaginaInventario, PaginaRecomendar,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -18,7 +19,8 @@ import s from './DemoAdmin.module.css';
  *  - Panel de prueba: MarcoAdmin con el menú real filtrado por permiso; los
  *    enlaces navegan. Hechos: el inicio (D0) y el catálogo base (D1):
  *    categorías, colecciones, marcas y sus productos, atributos, zonas de
- *    envío, cliparts y destacados, con la copia real de la tienda
+ *    envío, cliparts y destacados; y de D2a, productos, inventario y
+ *    datos para recomendar, con la copia real de la tienda
  *    (demo/tienda.json y demo/marcas.json; las zonas y los cliparts son de
  *    ejemplo). El resto de las secciones dice en qué apartado se hará.
  *  - Piezas del admin: las piezas sueltas con sus estados.
@@ -54,6 +56,9 @@ const HECHAS = [
   ['/admin/envios', 'Envíos'],
   ['/admin/cliparts', 'Cliparts'],
   ['/admin/destacados', 'Destacados'],
+  ['/admin/productos', 'Productos'],
+  ['/admin/inventario', 'Inventario'],
+  ['/admin/publico-productos', 'Recomendar'],
 ];
 
 /* El apartado de ADMIN.md donde se hará cada sección que todavía no está. */
@@ -93,8 +98,32 @@ const CLIPARTS = [
   { id: 'k4', name: 'Etiqueta Walá', url: '/assets/marca/splash-etiqueta-w.webp', category: 'Marca' },
   { id: 'k5', name: 'Logo Walá', url: '/assets/marca/logo-header-v2.webp', category: 'Marca' },
 ].map(clipartDesdeFirestore);
-// Los productos, con cinco destacados de ejemplo.
-const PRODUCTOS = TIENDA.productos.map((p, i) => productoAdminDesde({ ...p, featured: i < 5, featuredOrder: i }));
+// Los productos, con cinco destacados, algunos ocultos, el stock variado y
+// dos con la personalización de antes (de ejemplo).
+const PRODUCTOS = TIENDA.productos.map((p, i) => productoAdminDesde({
+  ...p,
+  featured: i < 5,
+  featuredOrder: i,
+  visible: i % 9 === 4 ? false : p.visible,
+  inStock: [0, 2, 12, 40, 3, 25, 0, 8][i % 8],
+  sku: i % 3 === 0 ? `WL-${1000 + i}` : '',
+  customizable: i === 6 || i === 13 ? true : p.customizable,
+  publico: i % 4 === 0 ? 'unisex' : undefined,
+  edadMinima: i % 4 === 0 ? 0 : undefined,
+}));
+const TIPOS = TIENDA.tipos.map((x) => ({ id: x.id, nombre: x.name }));
+const CATEGORIAS_CORTAS = TIENDA.categorias.map((x) => ({ id: x.id, nombre: x.name }));
+const COLECCIONES_CORTAS = TIENDA.colecciones.map((x) => ({ id: x.id, nombre: x.name }));
+const BORRADORES = [{ id: 'borrador-1', nombre: 'Polo Kapi edición Navidad', fecha: 'Hace 2 días' }];
+// Lo que deduciría giftRecommender, a grandes rasgos (solo para la demo).
+const sugerenciaDemo = (p) => {
+  const n = p.nombre.toLowerCase();
+  return {
+    publico: /ella|mujer|collagen|mask|cream|balm/.test(n) ? 'mujer' : /él |hombre/.test(n) ? 'hombre' : /pareja|conjunto/.test(n) ? 'unisex' : null,
+    edadMinima: 0,
+    equipo: /alianza/.test(n) ? 'Alianza Lima' : /universitario/.test(n) ? 'Universitario' : null,
+  };
+};
 const MAS_VENDIDOS = [3, 8, 12, 0, 20, 15].map((i, k) => ({ id: TIENDA.productos[i].id, unidades: [41, 33, 27, 19, 12, 7][k] }));
 const MUESTRAS = (() => {
   const m = {};
@@ -142,6 +171,7 @@ function PanelDePrueba() {
   const [atributos, setAtributos] = useState(ATRIBUTOS_DEMO);
   const [productos, setProductos] = useState(PRODUCTOS);
   const [whatsapp, setWhatsapp] = useState(WHATSAPP);
+  const [borradores, setBorradores] = useState(BORRADORES);
 
   const navegar = useRef(null);
   navegar.current = (to) => {
@@ -152,6 +182,8 @@ function PanelDePrueba() {
     setRuta(to);
     if (marco.current) marco.current.scrollTop = 0;
   };
+  const rutaSola = ruta.split('?')[0];
+  const verDeRuta = new URLSearchParams(ruta.split('?')[1] || '').get('ver') || 'tienda';
   const EnlaceAdmin = useMemo(() => forwardRef(function EnlaceAdmin({ to, onClick, children, ...rest }, ref) {
     return (
       <a ref={ref} href={to} {...rest} onClick={(e) => { onClick?.(e); if (e.defaultPrevented) return; e.preventDefault(); navegar.current(to); }}>
@@ -184,8 +216,8 @@ function PanelDePrueba() {
   };
   const vacio = con('vacio');
 
-  const actual = opcionActiva(grupos, ruta);
-  const dePaso = opcionActiva(menuAdminPara(['superadmin']), ruta);
+  const actual = opcionActiva(grupos, rutaSola);
+  const dePaso = opcionActiva(menuAdminPara(['superadmin']), rutaSola);
   const marcaDeRuta = ruta.match(/^\/admin\/marcas\/([^/]+)\/productos$/)?.[1];
   let pagina;
   if (!actual) {
@@ -268,6 +300,53 @@ function PanelDePrueba() {
         onQuitar={(ids) => cambiarProductos(ids, () => ({ marcaId: '' }))}
       />
     );
+  } else if (rutaSola === '/admin/productos') {
+    pagina = (
+      <PaginaProductos
+        {...comunes}
+        productos={vacio ? [] : productos}
+        categorias={CATEGORIAS_CORTAS}
+        marcas={MARCAS_CORTAS}
+        vista={verDeRuta}
+        onVista={(v) => navegar.current(v === 'tienda' ? '/admin/productos' : `/admin/productos?ver=${v}`)}
+        onAbrir={(x) => toast({ tipo: 'info', titulo: 'Abriría su ficha (tramo D2b)', texto: x.nombre, duracion: 2200 })}
+        onIr={(to) => toast({ tipo: 'info', titulo: 'Iría a', texto: to, duracion: 2000 })}
+        onVisible={async (id, visible) => { await espera(500); fallar(); setProductos((ps) => ps.map((x) => (x.id === id ? { ...x, oculto: !visible } : x))); }}
+        onVarios={(ids, visible) => cambiarProductos(ids, () => ({ oculto: !visible }))}
+        onArchivar={async (ids) => { await espera(700); fallar(); setProductos((ps) => ps.filter((x) => !ids.includes(x.id))); return { ok: ids.length, fallaron: 0 }; }}
+        onDuplicar={async (x) => { await espera(600); fallar(); setProductos((ps) => [...ps, { ...x, id: `copia-${Date.now()}`, nombre: `${x.nombre} (Copia)`, oculto: true, destacado: false }]); }}
+        onExportar={() => {}}
+        onQuitarPersonalizacionVieja={(ids) => cambiarProductos(ids, () => ({ personalizacionVieja: false }))}
+        borradores={borradores}
+        urlBorrador={(id) => `/admin/productos/nuevo?draftId=${id}`}
+        onDescartarBorrador={async (id) => { await espera(400); setBorradores((b) => b.filter((x) => x.id !== id)); }}
+      />
+    );
+  } else if (rutaSola === '/admin/inventario') {
+    pagina = (
+      <PaginaInventario
+        {...comunes}
+        productos={vacio ? [] : productos}
+        categorias={CATEGORIAS_CORTAS}
+        colecciones={COLECCIONES_CORTAS}
+        marcas={MARCAS_CORTAS}
+        tipos={TIPOS}
+        onGuardarStock={async (id, n) => { await espera(500); fallar('No se guardó el stock (es una prueba).'); setProductos((ps) => ps.map((x) => (x.id === id ? { ...x, stock: n } : x))); }}
+      />
+    );
+  } else if (rutaSola === '/admin/publico-productos') {
+    pagina = (
+      <PaginaRecomendar
+        {...comunes}
+        productos={vacio ? [] : productos}
+        categorias={CATEGORIAS_CORTAS}
+        sugerenciaDe={sugerenciaDemo}
+        equipos={['Alianza Lima', 'Universitario', 'Sporting Cristal']}
+        onGuardar={async (id, campos) => { await espera(300); fallar(); setProductos((ps) => ps.map((x) => (x.id === id ? { ...x, ...Object.fromEntries(Object.entries(campos).map(([k, v]) => [k, v ?? (k === 'edadMinima' ? null : '')])) } : x))); }}
+        onAceptarSugerencias={async () => { await espera(700); fallar(); }}
+        onMarcarTodos={async () => { await espera(700); fallar(); }}
+      />
+    );
   } else if (ruta === '/admin/destacados') {
     pagina = (
       <PaginaDestacados
@@ -324,7 +403,7 @@ function PanelDePrueba() {
           <span className={cs.controlesTitulo}>Ir a</span>
           <div className={cs.controlesChips}>
             {HECHAS.map(([to, texto]) => (
-              <Chip key={to} tamano="sm" activo={ruta === to} onClick={() => navegar.current(to)}>{texto}</Chip>
+              <Chip key={to} tamano="sm" activo={rutaSola === to} onClick={() => navegar.current(to)}>{texto}</Chip>
             ))}
             <Chip tamano="sm" onClick={() => { setCategorias(CATEGORIAS); setProductos(PRODUCTOS); }}>Restaurar datos</Chip>
           </div>
@@ -334,7 +413,7 @@ function PanelDePrueba() {
         <ProveedorEnlaces componente={EnlaceAdmin}>
           <MarcoAdmin
             grupos={grupos}
-            activo={marcaDeRuta ? '/admin/marcas' : ruta}
+            activo={marcaDeRuta ? '/admin/marcas' : rutaSola}
             accesos={accesos}
             usuario={{ nombre: 'Isaac Castro', email: 'isaac@correo.com', rol: p.rol }}
             onCerrarSesion={() => toast({ tipo: 'info', titulo: 'En el admin cerraría la sesión', duracion: 2000 })}

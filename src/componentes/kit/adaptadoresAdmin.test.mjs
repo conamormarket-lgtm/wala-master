@@ -112,6 +112,34 @@ test('marcas: la dirección y el tope de monedas como la tienda', () => {
   });
 });
 
+test('productos: qué sale en Tienda, las piezas y las etiquetas de Todos', () => {
+  const de = (x) => m2.productoAdminDesde({ id: 'x', ...x });
+  assert.equal(m2.esDeLaTienda(de({})), true);
+  assert.equal(m2.esDeLaTienda(de({ reemplazadoPor: 'y' })), false);
+  assert.equal(m2.esDeLaTienda(de({ esComboCrear: true })), false);
+  assert.equal(m2.esDeLaTienda(de({ esPrendaBase: true })), false);
+  assert.equal(m2.esDeLaTienda(de({ esPrendaBase: true, enTienda: true })), true);
+  const piezas = m2.piezasDeCombos([de({ isComboProduct: true, comboItems: [{ productId: 'a' }, { productId: 'b' }] }), de({ comboItems: [{ productId: 'c' }] })]);
+  assert.deepEqual([...piezas], ['a', 'b']);
+  assert.deepEqual(m2.etiquetasDeProducto(de({ esComboCrear: true, comboCrear: { publicado: true }, enTienda: true })), ['Pack de Crear', 'En Crear', 'En la tienda']);
+  assert.deepEqual(m2.etiquetasDeProducto(de({ esPrendaBase: true, visible: false })), ['Personalizable', 'Borrador']);
+  assert.deepEqual(m2.etiquetasDeProducto(de({ isComboProduct: true, reemplazadoPor: 'y' })), ['Combo', 'Reemplazado por su personalizable']);
+  assert.deepEqual(m2.etiquetasDeProducto(de({ visible: false })), ['Oculto']);
+  assert.equal(m2.rutaAdminDeProducto(de({ esPrendaBase: true })), '/admin/prendas-crear/x');
+});
+
+test('productos: personalización de antes y la foto', () => {
+  const de = (x) => m2.productoAdminDesde({ id: 'x', ...x });
+  assert.equal(de({ customizable: true }).personalizacionVieja, true);
+  assert.equal(de({ comboItems: [{ YoryoPersonalizado: {} }] }).personalizacionVieja, true);
+  assert.equal(de({ customizable: true, esPrendaBase: true }).personalizacionVieja, false);
+  assert.equal(de({ variants: [{ id: 'v1', imageUrl: 'v1' }, { id: 'v2', imageUrl: 'v2' }], defaultVariantId: 'v2', mainImage: 'm' }).imagen, 'v2');
+  assert.equal(de({ thumbnailImageUrl: 't', mainImage: 'm' }).imagen, 't');
+  assert.equal(m2.estadoDeStock(0), 'agotado');
+  assert.equal(m2.estadoDeStock(3), 'ultimas');
+  assert.equal(m2.estadoDeStock(4), 'disponible');
+});
+
 test('productos: oculto, archivado y precio de oferta', () => {
   assert.equal(m2.productoAdminDesde({ id: 'p', deleted: true }), null);
   const p = m2.productoAdminDesde({ id: 'p', name: 'Polo', price: 50, salePrice: 40, visible: false, images: ['i'] });

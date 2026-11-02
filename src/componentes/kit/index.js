@@ -78,8 +78,8 @@ export { prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaC
 
 // Panel administrativo (guia/ADMIN.md): la tienda no importa este índice.
 export { MarcoAdmin, BarraInferiorAdmin, CabezaAdmin, SinPermiso, useMarcoAdmin } from './piezas/admin/Marco';
-export { TablaAdmin, InsigniaEstado, ESTADOS_ADMIN, BarraFiltros, AccionesLote, CargarMas, ListaOrdenable, SelectorProductos } from './piezas/admin/Datos';
-export { HojaEdicion, GrupoCampos, CampoImagen, CampoDinero, CampoColor } from './piezas/admin/Formularios';
+export { TablaAdmin, InsigniaEstado, ESTADOS_ADMIN, BarraFiltros, AccionesLote, CargarMas, ListaOrdenable, SelectorProductos, NumeroEnLinea } from './piezas/admin/Datos';
+export { HojaEdicion, GrupoCampos, CampoImagen, CampoDinero, CampoColor, ElegirUno } from './piezas/admin/Formularios';
 export { ICONOS_ADMIN, iconoAdmin } from './piezas/admin/iconosAdmin';
 export { PaginaInicioAdmin } from './paginas/admin/Inicio';
 export { PaginaListaAdmin } from './paginas/admin/Lista';
@@ -87,10 +87,12 @@ export { PaginaCategorias } from './paginas/admin/Categorias';
 export { PaginaColecciones, PaginaAtributos, PaginaEnvios, PaginaCliparts } from './paginas/admin/Catalogo';
 export { PaginaMarcas, PaginaProductosMarca } from './paginas/admin/Marcas';
 export { PaginaDestacados } from './paginas/admin/Destacados';
+export { PaginaProductos, PaginaInventario, PaginaRecomendar, PUBLICOS, EDADES } from './paginas/admin/Productos';
 export {
   MENU_ADMIN, menuAdminPara, accesosAdminPara, puedeVer, esRutaActiva, opcionActiva,
   categoriaDesdeFirestore, categoriaAFirestore, marcaAdminDesdeFirestore, normalizarBusqueda, mismoNombre,
   coleccionDesdeFirestore, coleccionAFirestore, ATRIBUTOS, usosDeAtributo, atributoDesdeFirestore, atributoAFirestore,
   zonaDesdeFirestore, zonaAFirestore, clipartDesdeFirestore, clipartAFirestore,
   slugDeMarca, topeMonedasDe, TOPE_MONEDAS_POR_DEFECTO, marcaDesdeFirestore, marcaAFirestore, productoAdminDesde,
+  esDeLaTienda, piezasDeCombos, etiquetasDeProducto, rutaAdminDeProducto, estadoDeStock,
 } from './adaptadoresAdmin';

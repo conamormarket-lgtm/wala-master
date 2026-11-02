@@ -326,6 +326,7 @@
 
 .filtrosFila {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
 }
@@ -334,6 +335,14 @@
   flex: 1 1 0;
   min-width: 0;
   max-width: 28rem;
+}
+
+/* Con varios filtros (ancha), el buscador no se aplasta: los filtros bajan. */
+@container filtros (min-width: 720px) {
+  .filtrosBuscar {
+    flex: 1 1 16rem;
+    min-width: 14rem;
+  }
 }
 
 /* El input trae su ancho del navegador (~20 letras): que se encoja. */
@@ -347,7 +356,7 @@
 }
 
 .filtroCampo {
-  min-width: 13rem;
+  min-width: 11rem;
 }
 
 /* El campo con su etiqueta: en la fila, la etiqueta queda solo para lectores. */
@@ -410,6 +419,7 @@
 @container filtros (min-width: 720px) {
   .filtrosAncho {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
   }
 
@@ -681,4 +691,153 @@
 :global([data-theme='dark']) .lote {
   border: 1px solid var(--violet-700, #6d28d9);
   background: var(--violet-900, #2e1065);
+}
+
+/* ── Controles en la tarjeta ── */
+.tarjetaConControles {
+  flex-wrap: wrap;
+}
+
+.tarjetaQuieta {
+  cursor: default;
+}
+
+.tarjetaControles {
+  display: grid;
+  flex-basis: 100%;
+  gap: 0.5rem;
+  padding: 0.35rem 0.4rem 0.4rem;
+  border-top: 1px dashed var(--color-border);
+}
+
+.tarjetaControl {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+}
+
+.tarjetaControlNombre {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── Número en la fila ── */
+.enLinea {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.enLineaCaja {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.enLineaCaja:focus-within {
+  border-color: var(--violet-400);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.enLineaError {
+  border-color: var(--danger);
+}
+
+.enLineaCaja button {
+  width: 36px;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.enLineaCaja button:hover {
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.enLineaCaja input {
+  width: 3.6rem;
+  height: 100%;
+  border: 0;
+  background: transparent !important;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+
+.enLineaCaja input::-webkit-outer-spin-button,
+.enLineaCaja input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.enLineaCaja input:focus {
+  outline: none;
+}
+
+.enLineaSufijo {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.enLineaEstado {
+  display: inline-flex;
+  align-items: center;
+  min-width: 1.2rem;
+}
+
+.enLineaEstado svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.girar {
+  color: var(--primary-color);
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
+.enLineaListo {
+  color: var(--verde-exito-hover, #059669);
+}
+
+.enLineaReintentar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--danger-hover);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .girar {
+    animation-duration: 2s;
+  }
 }

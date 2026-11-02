@@ -1,4 +1,4 @@
-# Panel administrativo (`/admin`): el kit del admin (en marcha: D0 y D1 hechos en el kit)
+# Panel administrativo (`/admin`): el kit del admin (en marcha: D0 y D1 hechos en el kit, D2 por tramos)
 
 Lo mismo que se hizo con la tienda, ahora con el panel: **primero todo en el
 kit**, con datos de ejemplo en `/componentes.html`; **cuando un apartado está
@@ -227,7 +227,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 |---|---|---|---|---|---|
 | D0 | Marco | el menú (`AdminLayout`), la cabecera de cada página, el inicio (`/admin`, `AdminDashboard`) | — | hecho (2026-11-02) | · |
 | D1 | Catálogo base | `categorias`, `colecciones`, `atributos-catalogo`, `marcas` (+ productos de la marca), `envios`, `cliparts`, `destacados` | Lista | hecho (2026-11-02) | · |
-| D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | · | · |
+| D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | en marcha (D2a, 2026-11-02) | · |
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | · | · |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | · | · |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | · | · |
@@ -432,6 +432,92 @@ mismo de `utils/topeMonedas` (y su espejo en `functions/checkoutTotals.js`);
 eliminar una marca borra su landing (`deleteBrand`); `storeTitle` y
 `storeSubtitle` no se escriben (se conservan).
 
+## D2 · Productos (en marcha: D2a hecho en el kit el 2026-11-02)
+
+D2 es el apartado más grande (la ficha sola tiene 1.881 líneas y se apoya
+en editores de otras 3.000). Se hace por tramos; el apartado se une entero
+cuando estén los cuatro.
+
+| Tramo | Qué | Páginas de hoy | Kit |
+|---|---|---|---|
+| D2a | La lista, el inventario y los datos para recomendar | `pages/Tienda/admin/AdminProductos.jsx` (vistas Tienda y Todos), `ProductTable`, `BulkActions`, `pages/Tienda/admin/AdminInventario.jsx`, `pages/admin/AdminPublicoProductos.jsx` | hecho (2026-11-02) |
+| D2b | La ficha de un producto: general (precio, stock, descripción, organización, WhatsApp, destacado), colores y tallas (variantes con sus fotos, el encuadre 3:4, la galería, frente y espalda), un combo (sus piezas y su portada) y "Dónde se ve" (personalizar en Crear) | `pages/Tienda/admin/AdminProductoFormV2.jsx`, `AdminComboEditor`, `ThumbnailCropEditor`, `GenerarFrenteEspalda`, `PersonalizarEnCrear` | · |
+| D2c | Crear: la lista de personalizables, su ficha (colores, diseño con vistas y zonas, plantillas, dónde se ve) y los packs (lista, formulario y "Sugerir combos") | `pages/admin/AdminPrendasCrear.jsx`, `prendasCrear/PersonalizacionPrenda.jsx`, `ZonaEditor.jsx`, `PlantillasDeLaFicha.jsx`, `AdminCombosCrear.jsx` | · |
+| D2d | Blueprints (una lista más, sobre la plantilla) y decidir qué pasa con las herramientas de una vez y lo viejo (abajo) | `pages/admin/AdminBlueprints.jsx`, `plantillasYoryo/ImportarPlantillasYoryo.jsx` | · |
+
+**Por decidir (D2d)**
+- **La personalización de antes no se rehace en el kit**: `AdminCustomizationViewsEditor`,
+  `YoryoPersonalizado`, `AdminViewEditor` + `PrintAreasEditor` + `ShapeSelector`
+  (y `ShapeCreator`, que ya no se importa en ningún lado) solo salen con el
+  interruptor `personalizableViejo` y en `/editor/:id`. La tienda no los usa
+  desde el 2026-10-20. Propuesta: dejarlos fuera del kit y, cuando no quede
+  ningún producto con esa personalización (el aviso de D2a lo dice), pasarlos
+  a [ELIMINAR.md](ELIMINAR.md).
+- **Plantillas de cuadros** (`/admin/plantillas-yoryo`) son siete pasos de
+  una sola vez (crear los productos de Yoryo, sus plantillas, la billetera,
+  las cómodas de Daida…). Propuesta: una página del kit con los pasos en
+  sellos y su estado, sin cambiar lo que hace cada paso.
+
+### D2a: lo que hay
+
+| Escritorio | Celular |
+|---|---|
+| ![Inventario en escritorio: el aviso de agotados, los filtros que bajan de línea y el stock que se cambia ahí](admin-inventario-escritorio.webp) | ![Productos en el celular: las pestañas, el borrador sin terminar y el aviso de la personalización de antes](admin-productos-celular.webp) |
+
+| Página | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| Productos | `PaginaProductos` | `paginas/admin/Productos.jsx` | Pestañas Tienda · N, Personalizables · N, Packs de Crear · N (lo que ponga D2c; hoy, un aviso) y Todos. En Tienda: los borradores sin terminar de este aparato (Continuar · Descartar), el aviso de la personalización de antes (con la lista y "Quitarla"), Visibles · Ocultos · Piezas de combo · Todos con su cuenta, buscar (nombre, categoría o precio), filtrar por categoría y marca, ordenar por nombre, precio o stock; en cada fila, Destacado, Combo, Pieza de combo, Personalizable; mostrar u ocultar con un toque (al momento, y vuelve si falla); menú Editar · Mostrar/Ocultar · Duplicar · Archivar; casillas con Mostrar · Ocultar · CSV · Archivar; "Exportar CSV"; "Nuevo producto" y "Crear otro" (un personalizable o un pack). Todos: qué es cada uno (Pack de Crear, En Crear, Borrador, Reemplazado…) |
+| Inventario | `PaginaInventario` | `paginas/admin/Productos.jsx` | Aviso de agotados con "Verlos"; buscar por nombre o SKU; filtros de stock (agotados, últimas, disponibles), categoría, colección, marca y tipo; el estado con su color; el stock con − / + que se guarda solo (un segundo después), con guardando, guardado o Reintentar. La fila no se mueve al guardar (el orden y el filtro usan el stock con que llegó) |
+| Datos para recomendar | `PaginaRecomendar` | `paginas/admin/Productos.jsx` | Faltan datos · Todos · De un equipo · No para niños con su cuenta; para quién y la edad con un toque (`ElegirUno`: lo deducido punteado; tocar lo guardado lo quita); el equipo con sugerencias y "Usar"; "Aceptar sugerencias" y "Marcar los N como…" |
+
+Piezas nuevas: `NumeroEnLinea` y `tarjeta: 'control'` en `TablaAdmin`
+(lo que se toca va debajo de la tarjeta, nunca dentro de su botón) en
+`piezas/admin/Datos.jsx`; `ElegirUno` en `piezas/admin/Formularios.jsx`.
+Adaptadores: `productoAdminDesde` ahora trae stock, SKU, categorías,
+colecciones, tipo, si es combo y sus piezas, lo de Crear (personalizable,
+tal cual, en la tienda, pack, reemplazado), la personalización de antes y
+los datos para recomendar, con la foto de la lista como AdminProductos;
+`esDeLaTienda`, `piezasDeCombos`, `etiquetasDeProducto`,
+`rutaAdminDeProducto` y `estadoDeStock` (con pruebas). Los filtros
+(`BarraFiltros`) bajan de línea cuando no entran (Inventario tiene cinco).
+
+### Diferencias a propósito (D2a)
+
+- **Sin el cambio tarjetas / tabla**: la misma lista es tabla o tarjetas
+  según el ancho (antes se elegía y se guardaba en el aparato).
+- **Todo lo que pregunta usa `Confirmar`** (antes `window.confirm` en
+  mostrar, ocultar y archivar varios, descartar un borrador y la
+  personalización de antes) y los errores salen en toasts (antes `alert`
+  en el inventario).
+- **Inventario no lista los archivados** (antes sí, por no filtrar
+  `deleted`), suma el filtro por stock y −/+ junto al número.
+- Duplicar deja la copia en la lista (oculta) en vez de abrir su ficha a
+  la fuerza; el conector decide si la abre.
+- "Crear productos de referencia" no vuelve: no tenía botón.
+
+### Qué se probó (2026-11-02, demo en localhost, escritorio y 375 px)
+
+- Productos: las cuatro pestañas con su cuenta; ocultar con un toque
+  cambia las cuentas (Visibles 31 → 30, Ocultos 4 → 5) y avisa; elegir dos
+  y archivarlos con la pregunta; Todos muestra qué es cada uno; el aviso
+  de la personalización de antes cuenta 2. En el celular, el botón de
+  visible quedaba dentro del botón de la tarjeta (y se salía): ahora va
+  abajo; los chips de estado no se parten.
+- Inventario: − / + guarda solo y el estado pasa de Agotado a Últimas
+  unidades; con "Guardar y subir fallan", Reintentar; reintentar sin la
+  falla guarda. Dos toques rápidos en + contaban uno: arreglado.
+- Recomendar: lo deducido sale punteado y tocarlo lo guarda; "Aceptar
+  sugerencias" ya no se sale de la fila en el celular.
+- Sin errores en la consola; nada se sale del ancho a 375 px.
+
+### Cómo se une D2a (cuando D2 esté entero)
+
+| Página | Lee | Escribe |
+|---|---|---|
+| Productos | `getProducts([], null, null, { includeHidden: true })` (`['admin-products']`), `getCategories`, `getBrands`; los borradores de `localStorage.wala_drafts` | Mostrar/ocultar: `updateProduct(id, { ...producto, visible })` y, si estaba `deleted`, `updateProductField(id, { visible: true, deleted: false })` (el arreglo anti-zombi de AdminProductos); archivar: `deleteProduct` (uno por uno, contando fallas); duplicar: `createProduct({ ...sin id ni createdAt, name: 'X (Copia)', visible: false })`; CSV: `exportProducts(productos, categorias, ids)`; la personalización de antes: `quitarPersonalizacionVieja` uno por uno; descartar un borrador: borra sus fotos de Storage **solo si nunca se publicó** (la regla P0 de AdminProductos) e invalida `admin-products`, `products`, `featured-products`, `collection-products` |
+| Inventario | `getProducts(… includeHidden)` sin los `deleted`, y las seis listas de filtros | `updateProductField(id, { inStock })` y `logInventoryChange(id, nombre, antes, ahora, email)` |
+| Recomendar | `getProducts(… includeHidden)`, `getCategories`; `sugerenciaDe` con `publicoDe`, `edadMinimaDe` y `equipoDe` de `utils/giftRecommender.mjs`; los equipos de sus SINONIMOS | `updateDocument('productos_wala', id, campos)` (null borra el campo); en lote, de a 20; invalida `['products']` y `['gift-catalog-dicts']` |
+
 ## Cómo se une un apartado (la misma lógica que clientes)
 
 1. El apartado está **completo en el kit**: todas sus páginas en el Panel de
@@ -468,3 +554,4 @@ eliminar una marca borra su landing (`deleteBrand`); `storeTitle` y
 | 2026-11-02 | Paso 0: el mapa del admin y este plan | `guia/ADMIN.md` |
 | 2026-11-02 | D0 en el kit: marco, barra del celular, cabecera, sin permiso, inicio, tabla, filtros, estados, lo elegido, hoja de edición, bloques, campo de imagen y el menú con permisos (con pruebas); Categorías como primera página; vista **Admin** en `/componentes.html` | `piezas/admin/`, `paginas/admin/`, `adaptadoresAdmin.js`, `DemoAdmin.jsx` |
 | 2026-11-02 | D1 en el kit: `PaginaListaAdmin` (Categorías pasó a ella), Colecciones, Atributos, Zonas de envío, Cliparts, Marcas con sus productos y Destacados; `ListaOrdenable`, `SelectorProductos`, `CargarMas`, `CampoDinero`, `CampoColor`; capturas en `guia/admin-*.webp` y el modo noche revisado | `paginas/admin/`, `piezas/admin/`, `adaptadoresAdmin.js` |
+| 2026-11-02 | D2 dividido en tramos (a: lista, b: ficha, c: Crear, d: blueprints y lo viejo). D2a en el kit: `PaginaProductos`, `PaginaInventario`, `PaginaRecomendar`; `NumeroEnLinea`, `ElegirUno`, controles en las tarjetas de `TablaAdmin` | `paginas/admin/Productos.jsx`, `piezas/admin/`, `adaptadoresAdmin.js` |

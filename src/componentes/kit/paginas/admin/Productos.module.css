@@ -1,0 +1,198 @@
+/* ── Productos del admin (D2a) ─────────────────────────────── */
+.vistas,
+.estados {
+  margin-bottom: 1rem;
+}
+
+.estados {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.aviso {
+  margin-bottom: 1rem;
+}
+
+.precio {
+  display: inline-grid;
+  justify-items: end;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.precio s {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.marcas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.visible {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 36px;
+  padding: 0 0.4rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.visible:hover {
+  background: var(--primary-light);
+}
+
+.visible svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.borradores {
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px dashed var(--violet-300);
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+
+.borradores h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.borradores h2 svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--primary-color);
+}
+
+.borradores ul {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.borradores li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+}
+
+.borradorTextos {
+  display: grid;
+  flex: 1 1 12rem;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.borradorTextos strong {
+  font-size: 0.9rem;
+}
+
+.borradorTextos span {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.listaPregunta {
+  max-height: 12rem;
+  margin: 0;
+  padding-left: 1.1rem;
+  overflow-y: auto;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.pronto {
+  padding: 1rem 0;
+  border: 1px dashed var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+/* ── Datos para recomendar ── */
+.equipo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.equipoCampo {
+  width: 9rem;
+  min-width: 0;
+  height: 36px;
+  padding: 0 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 16px;
+}
+
+.equipoCampo:focus {
+  border-color: var(--violet-400);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.usar {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.loteRecomendar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: -0.35rem 0 1rem;
+}
+
+.marcarTodos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.marcarTodos button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-color);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Los chips no se encogen: si no entran, la fila se desliza. */
+.estados > * {
+  flex: none;
+  white-space: nowrap;
+}
