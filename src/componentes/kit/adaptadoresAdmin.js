@@ -853,3 +853,141 @@ export function direccionParaCopiar(p = {}) {
     [para, p.clienteContacto].filter(Boolean).join(' · '),
   ].filter(Boolean).join('\n');
 }
+
+/*
+ * Gestión de pagos (D3b): los enlaces llegan como los deja normalizarEnlace
+ * (services/enlacesPago.js): { id, concepto, moneda 'PEN'|'USD'|null, monto,
+ * estado 'pendiente'|'pagado', createdMs, pagadoMs, metodo, tiempoPagoMs }.
+ */
+const DIA_MS = 86400000;
+
+/** Los periodos del historial; 'fechas' usa desde/hasta ('AAAA-MM-DD'). */
+export const PERIODOS_PAGOS = [
+  { valor: '7', texto: 'Últimos 7 días' },
+  { valor: '30', texto: 'Últimos 30 días' },
+  { valor: '90', texto: 'Últimos 90 días' },
+  { valor: 'fechas', texto: 'Elegir fechas' },
+];
+
+/** El rango [desdeMs, hastaMs] de un periodo (hasta incluye el día entero; null = sin tope). */
+export function rangoDePeriodo(periodo, { desde, hasta } = {}, ahora = Date.now()) {
+  const diaLocal = (iso, fin) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+    if (!m) return null;
+    return fin ? new Date(+m[1], m[2] - 1, +m[3], 23, 59, 59, 999).getTime() : new Date(+m[1], m[2] - 1, +m[3]).getTime();
+  };
+  if (periodo === 'fechas') return [diaLocal(desde, false), diaLocal(hasta, true)];
+  const n = Number(periodo);
+  if (!n) return [null, null];
+  const hoy = new Date(ahora);
+  return [new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - (n - 1)).getTime(), null];
+}
+
+/** ¿Entra el enlace? { estado, metodo, rango: [desde, hasta], q } ('' = todos). */
+export function enlaceEnFiltro(e, { estado = '', metodo = '', rango = [null, null], q = '' } = {}) {
+  if (estado && e.estado !== estado) return false;
+  if (metodo && e.metodo !== metodo) return false;
+  const [desde, hasta] = rango;
+  if (desde != null && (e.createdMs == null || e.createdMs < desde)) return false;
+  if (hasta != null && (e.createdMs == null || e.createdMs > hasta)) return false;
+  return !q || normalizarBusqueda(e.concepto).includes(normalizarBusqueda(q));
+}
+
+/** Las cifras del historial (sobre lo filtrado), como antes: lo cobrado separado por moneda. */
+export function resumenEnlaces(enlaces = []) {
+  const todos = lista(enlaces);
+  const pagados = todos.filter((e) => e.estado === 'pagado');
+  const suma = (moneda) => Math.round(pagados.filter((e) => e.moneda === moneda && e.monto != null).reduce((a, e) => a + e.monto, 0) * 100) / 100;
+  const tiempos = pagados.map((e) => e.tiempoPagoMs).filter((t) => t != null);
+  return {
+    generados: todos.length,
+    pagados: pagados.length,
+    conversion: todos.length ? (pagados.length / todos.length) * 100 : 0,
+    cobradoPEN: suma('PEN'),
+    cobradoUSD: suma('USD'),
+    tiempoPromedio: tiempos.length ? tiempos.reduce((a, b) => a + b, 0) / tiempos.length : null,
+  };
+}
+
+/**
+ * Generados y pagados por día, **con los días sin nada en cero** (antes el
+ * gráfico saltaba los días vacíos y juntaba fechas lejanas). Un pagado
+ * cuenta el día en que se pagó. Hasta `maxDias` hacia atrás desde el último.
+ */
+export function serieDiariaEnlaces(enlaces = [], maxDias = 120) {
+  const dia = (ms) => { const d = new Date(ms); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); };
+  const generados = new Map();
+  const pagados = new Map();
+  const sumar = (m, k) => m.set(k, (m.get(k) || 0) + 1);
+  for (const e of lista(enlaces)) {
+    if (e.createdMs != null) sumar(generados, dia(e.createdMs));
+    if (e.estado === 'pagado' && (e.pagadoMs ?? e.createdMs) != null) sumar(pagados, dia(e.pagadoMs ?? e.createdMs));
+  }
+  const dias = [...generados.keys(), ...pagados.keys()];
+  if (!dias.length) return [];
+  const fin = Math.max(...dias);
+  const inicio = Math.max(Math.min(...dias), fin - (maxDias - 1) * DIA_MS);
+  const serie = [];
+  for (let d = new Date(inicio); d.getTime() <= fin; d.setDate(d.getDate() + 1)) {
+    const k = d.getTime();
+    serie.push({
+      dia: k,
+      etiqueta: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`,
+      valores: { generados: generados.get(k) || 0, pagados: pagados.get(k) || 0 },
+    });
+  }
+  return serie;
+}
+
+/** "2d 4h", "3h 10m", "5m 2s", "40s" (como antes); null → '—'. */
+export function duracionCorta(ms) {
+  if (ms == null) return '—';
+  const t = Math.max(0, Math.round(ms / 1000));
+  const d = Math.floor(t / 86400);
+  const h = Math.floor((t % 86400) / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  if (d) return `${d}d ${h}h`;
+  if (h) return `${h}h ${m}m`;
+  if (m) return `${m}m ${t % 60}s`;
+  return `${t}s`;
+}
+
+/** Lo que se guarda en `enlaces_pago` (como antes), o los errores del formulario. */
+export function enlaceNuevo({ concepto = '', moneda = 'PEN', monto = '' } = {}) {
+  const n = Number(String(monto).replace(',', '.'));
+  const errores = {
+    concepto: String(concepto).trim() ? undefined : 'Escribe qué se está cobrando.',
+    monto: Number.isFinite(n) && n > 0 ? undefined : 'Pon un monto mayor a 0.',
+  };
+  if (errores.concepto || errores.monto) return { errores };
+  const m = Math.round(n * 100) / 100;
+  return { datos: { concepto: String(concepto).trim(), moneda, monto: m, ...(moneda === 'USD' ? { montoUSD: m } : { montoPEN: m }), estado: 'pendiente' } };
+}
+
+export const MENSAJE_PAGOS_POR_DEFECTO = 'Hola, quiero pagar mi saldo pendiente del pedido *#{id}*. Adjunto mi comprobante por S/ *{monto}*.';
+
+/** La configuración de pagos desde los mensajes (`messages`); sin WhatsApp de pagos, el de la cuenta. */
+export function configPagosDesde(m = {}) {
+  const t = (k) => String(m[k] ?? '').trim();
+  return {
+    yapeNumero: t('yape_number'),
+    yapeTitular: t('yape_name'),
+    plinNumero: t('plin_number'),
+    plinTitular: t('plin_name'),
+    whatsapp: t('whatsapp_number_pagos') || t('whatsapp_number_cuenta'),
+    mensaje: m.whatsapp_text_pagos || MENSAJE_PAGOS_POR_DEFECTO,
+  };
+}
+
+/** Los mensajes que se guardan (las mismas claves de antes). */
+export function configPagosAMensajes(c = {}) {
+  const t = (v) => String(v ?? '').trim();
+  return {
+    yape_number: t(c.yapeNumero),
+    yape_name: t(c.yapeTitular),
+    plin_number: t(c.plinNumero),
+    plin_name: t(c.plinTitular),
+    whatsapp_number_pagos: t(c.whatsapp),
+    whatsapp_text_pagos: c.mensaje || '',
+  };
+}

@@ -196,7 +196,7 @@ Estado: **·** por hacer · **kit** hecha en el kit · **admin** ya en el panel.
 |---|---|---|
 | `Cifra` | Una cifra con su nombre y ▲/▼ frente al periodo anterior (reemplaza `KpiCard` y la de `resultados/piezas`) | kit (2026-11-02, con `FilaCifras`; el ▲/▼ llega en D4) |
 | `SelectorPeriodo` | Hoy, 7, 30, 90 días, fechas y "comparar" | · |
-| `GraficoTendencia`, `GraficoBarras`, `GraficoDona`, `GraficoComparar` | Los de `components/dashboard/charts` y `resultados/piezas` en una sola versión | · |
+| `GraficoTendencia`, `GraficoBarras`, `GraficoDona`, `GraficoComparar` | Los de `components/dashboard/charts` y `resultados/piezas` en una sola versión | `GraficoTendencia` kit (2026-11-02, líneas o barras); el resto en D4 |
 | `RankingConFotos` | `RankingConMiniaturas` del dashboard | · |
 
 ## Plantillas de página
@@ -229,7 +229,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D0 | Marco | el menú (`AdminLayout`), la cabecera de cada página, el inicio (`/admin`, `AdminDashboard`) | — | hecho (2026-11-02) | · |
 | D1 | Catálogo base | `categorias`, `colecciones`, `atributos-catalogo`, `marcas` (+ productos de la marca), `envios`, `cliparts`, `destacados` | Lista | hecho (2026-11-02) | · |
 | D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | hecho (2026-11-02) | · |
-| D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | en marcha (D3a, 2026-11-02) | · |
+| D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | en marcha (D3a y D3b, 2026-11-02) | · |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | · | · |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | · | · |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | · | · |
@@ -753,7 +753,7 @@ plantillas de hoy; el kit solo pone cómo se ve y cómo avisa.
   `plantillasDe`, `importar` (paso 2, con la miniatura y la subida) y
   `limpiar` (paso 3).
 
-## D3 · Pedidos y pagos (en marcha: D3a hecho en el kit el 2026-11-02)
+## D3 · Pedidos y pagos (en marcha: D3a y D3b hechos en el kit el 2026-11-02)
 
 Cuatro pantallas de hoy, en tres tramos; el apartado se une entero cuando
 estén los tres.
@@ -761,12 +761,12 @@ estén los tres.
 | Tramo | Qué | Páginas de hoy | Kit |
 |---|---|---|---|
 | D3a | Recepción de pedidos: las cifras, los filtros y un pedido por tarjeta con lo del envío primero | `pages/admin/dashboard/DashRecepcion.jsx` + `RecepcionPedidos.jsx` (`useAdminWalaOrders` → `services/adminOrders.js`, solo lectura del ERP) | hecho (2026-11-02) |
-| D3b | Gestión de pagos: historial y cifras de los enlaces (con su gráfico por día), generar un enlace y la configuración de Yape, Plin y WhatsApp | `pages/admin/AdminGestionPagos.jsx` (KpiRow, TrendChart, `enlacesPago.js`, `messages`) | · |
+| D3b | Gestión de pagos: historial y cifras de los enlaces (con su gráfico por día), generar un enlace y la configuración de Yape, Plin y WhatsApp | `pages/admin/AdminGestionPagos.jsx` (KpiRow, TrendChart, `enlacesPago.js`, `messages`) | hecho (2026-11-02) |
 | D3c | Crear cuentas desde pedidos (tres pasos con `PasoAdmin`, uno con simulación) y el Libro de reclamaciones (responder) | `pages/admin/AdminCrearCuentasPedidos.jsx`, `AdminLibroReclamaciones.jsx` | · |
 
 **Para D3b y D3c**
 - El gráfico de pagos necesita un `GraficoTendencia` (de Métricas): se
-  hace en D3b y Resultados (D4) lo reusa.
+  hace en D3b y Resultados (D4) lo reusa. **Hecho** (abajo).
 - El Libro de reclamaciones tiene trabajo en pausa (correo y código,
   LEGALES.md paso 3): el kit no cambia qué guarda ni cuándo; solo la
   pantalla para responder.
@@ -828,6 +828,71 @@ Adaptadores (con pruebas): `ESTADOS_RECEPCION`, `FILTROS_RECEPCION`,
 - La ruta sigue siendo `/admin/recepcion-pedidos`; `/admin/dashboard/recepcion`
   sigue redirigiendo.
 - Interruptor del apartado: `adminPedidosViejo` (las cuatro pantallas de D3 juntas).
+
+### D3b: Gestión de pagos (en el kit desde el 2026-11-02)
+
+| Computadora | Celular |
+|---|---|
+| ![El historial: las cifras, los filtros y el gráfico de barras por día con generados y pagados, y la tabla de enlaces](admin-pagos-escritorio.webp) | ![Ajustes en el celular: el mensaje de WhatsApp y "Así le llega" con las negritas](admin-pagos-celular.webp) |
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| La página | `PaginaPagos` | `paginas/admin/Pagos.jsx` | Tres pestañas: **Historial**, **Nuevo enlace** y **Ajustes** (la pestaña puede venir de afuera: `pestana` / `onPestana`). En el celular, "Generar enlace" es el botón flotante del historial |
+| Historial | (dentro de la página) | `paginas/admin/Pagos.jsx` | Las cifras sobre lo filtrado (generados, pagados con cuántos pendientes, conversión, cobrado en soles y en dólares por separado, tiempo promedio hasta el pago); buscar el concepto; estado, método y **periodo** (7, 30, 90 días o "Elegir fechas" con dos `CampoFecha`); el gráfico; la tabla (`TablaAdmin`: concepto con la fecha, monto, método, estado, cuándo se pagó y en cuánto, "Copiar"; en "⋯", copiar o abrir la página de pago) de a 50 |
+| El gráfico | `GraficoTendencia` | `piezas/admin/Grafico.jsx` | SVG propio (sin recharts): una escala con marcas redondas, `forma` `'lineas'` o `'barras'` (con las puntas de arriba redondeadas), la leyenda con el total de cada serie, la franja o la guía y el recuadro al pasar, **las flechas del teclado** para recorrer los días, una tabla oculta para lectores de pantalla; si las barras no caben (muchos días en un celular), las junta de a 2 o más días y lo dice. Colores validados con el validador de paletas: clara #7c3aed / #0f9f6e, noche #9b7bf5 / #1fa774. Reemplaza `TrendChart` y servirá a Resultados (D4) |
+| Nuevo enlace | (dentro de la página) | `paginas/admin/Pagos.jsx` | Concepto, moneda (soles por Culqi, dólares por PayPal) y monto (`CampoDinero` con su símbolo); los avisos en cada campo; listo: el enlace con Copiar y Abrir, y "Ver en el historial" |
+| Ajustes | (dentro de la página) | `paginas/admin/Pagos.jsx` | Yape y Plin (número y titular), el WhatsApp de los comprobantes y su mensaje con `{id}` y `{monto}`; **"Así le llega"** con un pedido de ejemplo y las negritas de WhatsApp; Guardar solo con cambios |
+
+Adaptadores (con pruebas): `PERIODOS_PAGOS`, `rangoDePeriodo`,
+`enlaceEnFiltro`, `resumenEnlaces`, `serieDiariaEnlaces`, `duracionCorta`,
+`enlaceNuevo` (lo que se guarda en `enlaces_pago`, igual que antes),
+`MENSAJE_PAGOS_POR_DEFECTO`, `configPagosDesde` y `configPagosAMensajes`
+(las mismas claves de `messages`). Los enlaces llegan **ya normalizados**
+(`normalizarEnlace` de `services/enlacesPago.js`).
+
+### Diferencias a propósito (D3b)
+
+- **El gráfico cuenta todos los días** (los vacíos en cero) y va en
+  **barras**: antes saltaba los días sin enlaces y juntaba fechas lejanas
+  en una línea que subía y bajaba. Con pocos datos por día, las barras se
+  leen mejor.
+- **Periodos rápidos** (7, 30, 90 días) además de las fechas a mano.
+- La pestaña se llama "Nuevo enlace" (cabe en el celular); "pendientes"
+  va en la cifra de pagados.
+- Ajustes muestra **cómo le llega el mensaje** al cliente y no deja
+  guardar sin cambios; los avisos de guardado son toasts (antes, un texto
+  al lado del botón).
+- Sin emojis en las pestañas (💳📊🔗⚙️).
+
+### Qué se probó (2026-11-02, demo en localhost, 1280 px y 375 px)
+
+- 34 enlaces de ejemplo en seis semanas: 34 · 25 · 73.5 % · S/ 987.50 y
+  $ 108.00 · 7h 40m. Filtrar "Pendientes" → 9 y las cifras se recalculan;
+  "Elegir fechas" muestra los dos campos. Las flechas recorren el gráfico
+  ("19/10: Generados 2, Pagados 2") y el recuadro sale al pasar.
+- Nuevo enlace vacío → los dos avisos; "Envío a Chile", 48.50 → el enlace
+  `…/pago-rapido/{id}` y queda primero en el historial (10 pendientes).
+- Ajustes: Guardar apagado sin cambios; con un número de Plin, guarda; con
+  "Guardar y subir fallan", el aviso de error y lo escrito sigue ahí.
+- Cargando (cifras en hueso, sin gráfico), error (la tabla con Reintentar,
+  sin gráfico), sin datos (el vacío de la tabla y el del gráfico).
+- A 375 px nada se sale del ancho (las pestañas, que se cortaban, ya
+  entran); las barras se juntan de a 2 días. Sin errores en la consola.
+
+### Cómo se une D3b
+
+- `PagosDelPanel.jsx`:
+  - **Historial**: `useQuery(['enlaces-pago', { max: 300 }], getEnlacesPago)`
+    (los mismos `staleTime` 5 min y `gcTime` 30 min) → `enlaces`,
+    `cargando`, `actualizando={isFetching}`, `error`, `onActualizar={refetch}`;
+    `urlDe={(id) => `${window.location.origin}/pago-rapido/${id}`}`.
+  - **Nuevo enlace**: `onGenerar={async (datos) => { const { id, error } = await createDocument('enlaces_pago', datos); if (error) throw new Error(error); invalidar ['enlaces-pago']; return id; }}`.
+  - **Ajustes**: `useQuery(['admin-pagos-config'])` con los `getMessage` de
+    hoy (más `whatsapp_number_cuenta` de respaldo) → `configPagosDesde`;
+    guardar: `setMessage` por cada clave de `configPagosAMensajes(config)`
+    e invalidar `admin-pagos-config` y `user-pagos-config`.
+- La ruta sigue siendo `/admin/gestion-pagos`; la pestaña puede ir en
+  `?ver=` si hace falta enlazarla.
 
 ## Reemplazos: qué sale y qué entra
 
@@ -891,7 +956,9 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D3a · Recepción | `pages/admin/dashboard/DashRecepcion.jsx` (la página con `DashHeader`) + `RecepcionPedidos.jsx` + `.module.css` | `PaginaRecepcion` | `RecepcionDelPanel.jsx` (`useAdminWalaOrders`) |
 | D3a · Las cifras | `components/dashboard/KpiRow` (aquí) | `Cifra`, `FilaCifras` | la página |
 | D3a · Un pedido | `TarjetaPedido` y `TarjetaSkeleton` (dentro de RecepcionPedidos) | `TarjetaEnvio`, `EsqueletoEnvio` | la página |
-| D3b · Gestión de pagos | `pages/admin/AdminGestionPagos.jsx` + `.module.css` (KpiRow, TrendChart) | por hacer | `PagosDelPanel.jsx` |
+| D3b · Gestión de pagos | `pages/admin/AdminGestionPagos.jsx` + `.module.css` (`SeccionHistorial`, `SeccionGenerar`, `SeccionConfig`; `GlassCard`, `GlassInput`, `Badge`) | `PaginaPagos` | `PagosDelPanel.jsx` |
+| D3b · Gráfico por día | `components/dashboard/charts/TrendChart` (recharts; aquí) | `GraficoTendencia` (`forma='barras'`) | la página |
+| D3b · Las cifras | `KpiRow` (aquí) | `Cifra`, `FilaCifras` | la página |
 | D3c · Cuentas desde pedidos | `pages/admin/AdminCrearCuentasPedidos.jsx` + `.module.css` (`common/Button`, `common/Modal`) | por hacer (`PasoAdmin`) | `CuentasDePedidosDelPanel.jsx` |
 | D3c · Libro de reclamaciones | `pages/admin/AdminLibroReclamaciones.jsx` (estilos en línea, `alert()`) | por hacer | `ReclamosDelPanel.jsx` |
 
@@ -935,5 +1002,6 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |
 | 2026-11-02 | Reemplazos de D0 a D2 (qué sale, qué entra y el conector) y la sección «Panel administrativo» de ELIMINAR.md con quién importa hoy cada pieza vieja | `guia/ADMIN.md`, `guia/ELIMINAR.md` |
+| 2026-11-02 | D3b en el kit: `PaginaPagos` (historial, nuevo enlace, ajustes) y `GraficoTendencia` (líneas o barras, teclado, tabla oculta, colores validados); adaptadores de pagos con pruebas | `paginas/admin/Pagos.jsx`, `piezas/admin/Grafico.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D3 dividido en tramos (a: recepción, b: pagos, c: cuentas y reclamos). D3a en el kit: `PaginaRecepcion`, `Cifra` / `FilaCifras`, `TarjetaEnvio`; adaptadores de recepción con pruebas | `paginas/admin/Pedidos.jsx`, `piezas/admin/Metricas.jsx`, `piezas/admin/Pedidos.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2d en el kit: `PaginaBlueprints`, `PasoAdmin` y `PaginaPlantillasYoryo` (siete pasos, uno a la vez); adaptadores de blueprints con pruebas. **D2 completo en el kit** | `paginas/admin/Herramientas.jsx`, `piezas/admin/Pasos.jsx`, `adaptadoresAdmin.js` |

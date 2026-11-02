@@ -6,6 +6,7 @@ import {
   PaginaProductos, PaginaInventario, PaginaRecomendar, PaginaFichaProducto, fichaDesdeProducto, fichaAProducto,
   PaginaPersonalizables, PaginaPacks, personalizableDesde, packDesdeFirestore,
   PaginaBlueprints, PaginaPlantillasYoryo, blueprintDesdeFirestore, blueprintAFirestore, PaginaRecepcion,
+  PaginaPagos, configPagosDesde,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -54,6 +55,7 @@ const ESTADOS = [
 const HECHAS = [
   ['/admin', 'Inicio'],
   ['/admin/recepcion-pedidos', 'Recepción'],
+  ['/admin/gestion-pagos', 'Pagos'],
   ['/admin/categorias', 'Categorías'],
   ['/admin/colecciones', 'Colecciones'],
   ['/admin/marcas', 'Marcas'],
@@ -187,6 +189,28 @@ const PEDIDOS_RECEPCION = [
   deliveryDate: regalo?.fecha || null,
   _procesadoErp: i === 3,
 }));
+// D3b: enlaces de pago de ejemplo con la forma de normalizarEnlace, en las últimas seis semanas.
+const CONCEPTOS_PAGO = ['Diferencia de envío a España', 'Saldo del pedido WALA-01790', 'Envío a Arequipa', 'Polo extra para el pack', 'Saldo del pedido WALA-01802', 'Envío internacional a Chile', 'Reposición de taza', 'Bordado adicional'];
+const ENLACES_DEMO = Array.from({ length: 34 }, (_, i) => {
+  const hoy = new Date();
+  const dia = [0, 1, 1, 2, 4, 5, 5, 5, 7, 8, 10, 11, 13, 14, 14, 16, 18, 19, 21, 22, 22, 24, 26, 27, 28, 30, 31, 33, 35, 36, 38, 39, 40, 41][i];
+  const createdMs = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - dia, 9 + (i % 9), (i * 17) % 60).getTime();
+  const usd = i % 6 === 2;
+  const pagado = i % 3 !== 0 || dia > 30;
+  const espera = [40, 300, 3600, 7200, 86400 * 1.5, 900][i % 6] * 1000;
+  return {
+    id: `demo-enlace-${i + 1}`,
+    concepto: CONCEPTOS_PAGO[i % CONCEPTOS_PAGO.length],
+    moneda: usd ? 'USD' : 'PEN',
+    monto: usd ? [25, 40, 18][i % 3] : [15, 35, 60, 120, 22.5][i % 5],
+    estado: pagado ? 'pagado' : 'pendiente',
+    createdMs,
+    pagadoMs: pagado ? createdMs + espera : null,
+    metodo: usd ? 'paypal' : 'culqi',
+    tiempoPagoMs: pagado ? espera : null,
+  };
+});
+const CONFIG_PAGOS_DEMO = configPagosDesde({ yape_number: '987 654 321', yape_name: 'Walá Perú SAC', whatsapp_number_cuenta: '+51 999 888 777' });
 const PACKS_CRUDOS = CREAR.combos.map((c) => ({ ...c, esComboCrear: true, comboCrear: { publicado: c.publicado, piezas: c.piezas, tallas: 'auto' } }));
 const opcionDePrenda = (p) => ({ id: p.id, nombre: p.name, foto: (p.variants || [])[0]?.imageUrl || p.prendaBase?.vistas?.[0]?.imagen || '', precio: Number(p.salePrice) > 0 ? p.salePrice : p.price, colores: (p.variants || []).map((v) => ({ id: String(v.id), nombre: v.name, hex: v.colorHex })) });
 const TAL_CUAL = TIENDA.productos.filter((p) => (p.variants || []).length && !p.isComboProduct).map(opcionDePrenda);
@@ -247,6 +271,8 @@ function PanelDePrueba() {
   const [blueprints, guardarBlueprintCrudo, eliminarBlueprint] = useListaDemo(BLUEPRINTS, falla);
   const [yoryoCreados, setYoryoCreados] = useState(false);
   const [actualizando, setActualizando] = useState(false);
+  const [enlaces, setEnlaces] = useState(ENLACES_DEMO);
+  const [configPagos, setConfigPagos] = useState(CONFIG_PAGOS_DEMO);
   const [atributos, setAtributos] = useState(ATRIBUTOS_DEMO);
   const [productos, setProductos] = useState(PRODUCTOS);
   const [whatsapp, setWhatsapp] = useState(WHATSAPP);
@@ -589,6 +615,27 @@ function PanelDePrueba() {
         actualizando={actualizando}
         onActualizar={async () => { setActualizando(true); await espera(900); setActualizando(false); setEstados((e) => e.filter((x) => x !== 'error')); }}
         detalleDe={(p) => `/cuenta/pedidos/${p.id}`}
+      />
+    );
+  } else if (ruta === '/admin/gestion-pagos') {
+    pagina = (
+      <PaginaPagos
+        enlaces={vacio ? [] : enlaces}
+        cargando={con('cargando')}
+        error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+        actualizando={actualizando}
+        onActualizar={async () => { setActualizando(true); await espera(900); setActualizando(false); setEstados((e) => e.filter((x) => x !== 'error')); }}
+        urlDe={(id) => `${window.location.origin}/pago-rapido/${id}`}
+        onGenerar={async (datos) => {
+          await espera(700);
+          fallar('Firestore rechazó el enlace (es una prueba).');
+          const id = `demo-enlace-${Date.now()}`;
+          setEnlaces((l) => [{ id, concepto: datos.concepto, moneda: datos.moneda, monto: datos.monto, estado: 'pendiente', createdMs: Date.now(), pagadoMs: null, metodo: datos.moneda === 'USD' ? 'paypal' : 'culqi', tiempoPagoMs: null }, ...l]);
+          return id;
+        }}
+        config={configPagos}
+        cargandoConfig={con('cargando')}
+        onGuardarConfig={async (c) => { await espera(700); fallar(); setConfigPagos(c); }}
       />
     );
   } else if (ruta === '/admin/blueprints') {

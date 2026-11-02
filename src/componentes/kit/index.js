@@ -95,6 +95,8 @@ export { PasoAdmin } from './piezas/admin/Pasos';
 export { Cifra, FilaCifras } from './piezas/admin/Metricas';
 export { TarjetaEnvio, EsqueletoEnvio } from './piezas/admin/Pedidos';
 export { PaginaRecepcion } from './paginas/admin/Pedidos';
+export { PaginaPagos } from './paginas/admin/Pagos';
+export { GraficoTendencia } from './piezas/admin/Grafico';
 export { EditorZonas, ListaZonas, DisenoPrenda, ColoresPrenda, PlantillasPrenda, variantesCrudas } from './piezas/admin/Crear';
 export { EncuadreFoto, FotoEncuadrada, GaleriaFotos, CampoTallas, ElegirVarios, ElegirMarca } from './piezas/admin/Producto';
 export {
@@ -108,4 +110,6 @@ export {
   personalizableDesde, packDesdeFirestore, packAGuardar, erroresDePack, MODOS_TALLA_PACK, MIN_PIEZAS_PACK, MAX_PIEZAS_PACK,
   areaVacia, blueprintDesdeFirestore, blueprintAFirestore,
   ESTADOS_RECEPCION, FILTROS_RECEPCION, pedidoEnFiltro, textoDePedido, resumenRecepcion, direccionParaCopiar,
+  PERIODOS_PAGOS, rangoDePeriodo, enlaceEnFiltro, resumenEnlaces, serieDiariaEnlaces, duracionCorta, enlaceNuevo,
+  MENSAJE_PAGOS_POR_DEFECTO, configPagosDesde, configPagosAMensajes,
 } from './adaptadoresAdmin';

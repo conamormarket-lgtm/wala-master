@@ -274,3 +274,34 @@ test('recepción: filtros, cifras y la dirección para copiar', () => {
     entrega: { direccion: 'Av. Sol 123', distrito: 'Surco', departamento: 'Lima' },
   }), 'Av. Sol 123, Surco, Lima\nLuis · 987654321');
 });
+
+test('pagos: filtros, cifras, serie por día, enlace nuevo y configuración', () => {
+  const d = (dia, h = 10) => new Date(2026, 9, dia, h).getTime();
+  const enlaces = [
+    { id: 'a', concepto: 'Envío a España', moneda: 'PEN', monto: 40, estado: 'pagado', metodo: 'culqi', createdMs: d(1), pagadoMs: d(3), tiempoPagoMs: d(3) - d(1) },
+    { id: 'b', concepto: 'Saldo', moneda: 'USD', monto: 20, estado: 'pagado', metodo: 'paypal', createdMs: d(3), pagadoMs: d(3, 12), tiempoPagoMs: 7200000 },
+    { id: 'c', concepto: 'Saldo extra', moneda: 'PEN', monto: 15, estado: 'pendiente', metodo: 'culqi', createdMs: d(4), pagadoMs: null, tiempoPagoMs: null },
+  ];
+  assert.deepEqual(enlaces.filter((e) => m2.enlaceEnFiltro(e, { q: 'envio' })).map((e) => e.id), ['a']);
+  assert.deepEqual(enlaces.filter((e) => m2.enlaceEnFiltro(e, { metodo: 'culqi', estado: 'pagado' })).map((e) => e.id), ['a']);
+  assert.deepEqual(enlaces.filter((e) => m2.enlaceEnFiltro(e, { rango: m2.rangoDePeriodo('fechas', { desde: '2026-10-03', hasta: '2026-10-03' }) })).map((e) => e.id), ['b']);
+  assert.deepEqual(m2.rangoDePeriodo('7', {}, d(10)), [new Date(2026, 9, 4).getTime(), null]);
+  const r = m2.resumenEnlaces(enlaces);
+  assert.equal(r.pagados, 2);
+  assert.equal(r.cobradoPEN, 40);
+  assert.equal(r.cobradoUSD, 20);
+  assert.equal(Math.round(r.conversion), 67);
+  const serie = m2.serieDiariaEnlaces(enlaces);
+  assert.deepEqual(serie.map((x) => x.etiqueta), ['01/10', '02/10', '03/10', '04/10']);
+  assert.deepEqual(serie.map((x) => x.valores.pagados), [0, 0, 2, 0]);
+  assert.deepEqual(serie.map((x) => x.valores.generados), [1, 0, 1, 1]);
+  assert.equal(m2.duracionCorta(7200000), '2h 0m');
+  assert.equal(m2.duracionCorta(null), '—');
+  assert.deepEqual(m2.enlaceNuevo({ concepto: ' ', monto: '0' }).errores, { concepto: 'Escribe qué se está cobrando.', monto: 'Pon un monto mayor a 0.' });
+  assert.deepEqual(m2.enlaceNuevo({ concepto: 'Envío', moneda: 'USD', monto: '12,5' }).datos, { concepto: 'Envío', moneda: 'USD', monto: 12.5, montoUSD: 12.5, estado: 'pendiente' });
+  const c = m2.configPagosDesde({ yape_number: ' 987 ', whatsapp_number_cuenta: '+51 999' });
+  assert.equal(c.whatsapp, '+51 999');
+  assert.equal(c.mensaje, m2.MENSAJE_PAGOS_POR_DEFECTO);
+  assert.equal(m2.configPagosAMensajes(c).yape_number, '987');
+  assert.equal(m2.configPagosAMensajes(c).whatsapp_number_pagos, '+51 999');
+});

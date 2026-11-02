@@ -1,0 +1,182 @@
+/* ── Gráfico de tendencia (D3b; Resultados en D4) ──────────────
+ * Colores validados (validate_palette, 2026-11-02): clara #7c3aed / #0f9f6e
+ * sobre #ffffff; noche #9b7bf5 / #1fa774 sobre #1e1b2e. */
+.grafico {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.9rem 1rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.violeta { --serie: #7c3aed; }
+.menta { --serie: #0f9f6e; }
+
+:global([data-theme='dark']) .violeta { --serie: #9b7bf5; }
+:global([data-theme='dark']) .menta { --serie: #1fa774; }
+
+.cabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+}
+
+.cabeza > span {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.titulo {
+  font-family: var(--fuente-marca);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.subtitulo {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.leyenda li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.leyenda b {
+  color: var(--color-text);
+}
+
+.marca {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--serie);
+}
+
+.area {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  touch-action: pan-y;
+}
+
+.area:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.area svg {
+  display: block;
+}
+
+.rejilla {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.ejeY,
+.ejeX {
+  fill: var(--color-text-muted);
+  font-family: inherit;
+  font-size: 10.5px;
+}
+
+.ejeY {
+  text-anchor: end;
+}
+
+.guia {
+  stroke: var(--color-text-muted);
+  stroke-dasharray: 3 3;
+  stroke-width: 1;
+}
+
+.linea {
+  fill: none;
+  stroke: var(--serie);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.barra {
+  fill: var(--serie);
+}
+
+.franja {
+  fill: var(--color-text-muted);
+  opacity: 0.1;
+}
+
+/* El punto con un anillo del color de la superficie (se separa de la línea de al lado). */
+.punto {
+  fill: var(--serie);
+  stroke: var(--color-surface);
+  stroke-width: 2;
+}
+
+.recuadro {
+  position: absolute;
+  top: 6px;
+  display: grid;
+  gap: 0.2rem;
+  min-width: 9rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: 0 6px 18px rgba(30, 27, 46, 0.12);
+  font-size: 0.78rem;
+  pointer-events: none;
+}
+
+.recuadro > span {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-text-muted);
+}
+
+.recuadro b {
+  margin-left: auto;
+  padding-left: 0.6rem;
+  color: var(--color-text);
+}
+
+.vacio {
+  margin: 0;
+  padding: 2.2rem 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  text-align: center;
+}
+
+.vivo,
+.oculta {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
