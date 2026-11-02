@@ -25,6 +25,7 @@ página), **A** = las páginas de acceso (A1-A4).
 
 | Página | Ficha | Estado |
 |---|---|---|
+| Panel administrativo (`/admin`) | [ADMIN.md](ADMIN.md) | en marcha (2026-11-02): el mapa del admin y el plan, primero todo en el kit y después cada apartado (D0-D8) unido entero, como la tienda; numeración **D** |
 | Lo viejo que se borra al final | [ELIMINAR.md](ELIMINAR.md) | una fila por archivo o componente viejo: qué lo reemplazó, quién lo importa todavía y cuándo se puede borrar |
 | Secciones del builder (paso 5) | [MIGRACION.md](MIGRACION.md) (paso 5), [INICIO.md](INICIO.md), [TIENDA.md](TIENDA.md) y [NAVEGAR.md](NAVEGAR.md) | hecho: el inicio, `/tienda` (catálogo con filtros) y las páginas de marca desde el 2026-10-16, las landings sin marca y los tipos restantes desde el 2026-10-17 (`SeccionDelKit` en `TiendaPage`); el cacherito (K-CHERO) se retiró el 2026-10-19; interruptor `seccionesViejo` |
 | Tarjeta de producto (paso 4) | [MIGRACION.md](MIGRACION.md) (paso 4) e [INICIO.md](INICIO.md) | en la tienda desde el 2026-10-16 en carruseles y grillas (`TarjetaDeProducto`); interruptor `tarjetasViejo` |

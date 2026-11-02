@@ -75,6 +75,10 @@ capturas numeradas y en qué archivo se cambia el diseño de cada parte
 (empieza por `guia/README.md`). En `/componentes.html` → Páginas → Tienda de
 prueba, **Ver componentes** muestra esos mismos números sobre la página.
 
+El panel administrativo se arma con este mismo kit (piezas en
+`piezas/admin/`, páginas en `paginas/admin/`, vista **Admin** en
+`/componentes.html`): el plan y cada avance están en `guia/ADMIN.md`.
+
 ## Reglas del kit
 
 - **Los datos entran por props.** Ningún componente lee Firestore, AuthContext
