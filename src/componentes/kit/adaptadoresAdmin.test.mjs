@@ -732,3 +732,25 @@ test('la ruleta: días, premios, por qué no sale hoy y entregas', () => {
   assert.equal(m2.motivoRuletaHoy({ ...base, hasta: '2026-11-01' }, '2026-11-02', 1), 'Ya terminó');
   assert.deepEqual(m2.ganadoRuletaDesde({ id: 'w', type: 'manual', name: 'Peluche', uid: 'u' }), { id: 'w', quien: '', correo: 'u', premio: 'Peluche', tipo: 'manual', cupon: '', semana: '', entregado: false, manual: true });
 });
+
+test('configuración: el equipo, los bloqueos, las imágenes y los idiomas', () => {
+  const a = m2.adminDesdeFirestore({ id: 'ana@gmail.com', email: 'Ana@Gmail.com', permissions: ['manage_products'] });
+  assert.deepEqual(a, { id: 'ana@gmail.com', correo: 'ana@gmail.com', nombre: 'ana', permisos: ['manage_products'] });
+  assert.deepEqual(m2.adminAFirestore({ correo: ' Luis@X.pe ', nombre: '', permisos: ['manage_inventory', 'superadmin'] }), { correo: 'luis@x.pe', datos: { name: 'luis', permissions: ['superadmin'] } });
+  assert.deepEqual(m2.adminAFirestore({ correo: 'a@b.c', nombre: 'A', permisos: ['manage_clients', 'manage_design'] }).datos.permissions, ['manage_design', 'manage_clients']);
+  const reg = [a];
+  assert.equal(m2.erroresDeAdmin({ correo: 'ana@gmail.com', permisos: ['x'] }, { registros: reg }).correo, 'Ya está en el equipo: edítalo en la lista.');
+  assert.equal(m2.erroresDeAdmin({ correo: 'ana@gmail.com', permisos: ['x'] }, { id: 'ana@gmail.com', registros: reg }).correo, undefined);
+  assert.equal(m2.erroresDeAdmin({ correo: 'ana@', permisos: [] }).correo, 'Ese correo no está bien escrito.');
+  assert.equal(m2.erroresDeAdmin({ correo: 'yo@w.pe', permisos: ['manage_design'] }, { id: 'yo@w.pe', yo: 'Yo@w.pe' }).permisos, 'Te quitarías el acceso a esta página: deja Super Admin.');
+  assert.equal(m2.textoPermisos(['manage_inventory', 'manage_products']), 'Catálogo · Inventario');
+  assert.equal(m2.textoPermisos(['superadmin', 'manage_products']), 'Super Admin');
+  const pags = m2.paginasBloqueables([{ id: 'l1', title: 'Navidad', slug: 'navidad' }], ['tienda', 'l1']);
+  assert.deepEqual(pags.map((p) => [p.id, p.bloqueada, p.tipo]), [['home', false, 'fija'], ['tienda', true, 'fija'], ['footer', false, 'fija'], ['l1', true, 'landing']]);
+  assert.deepEqual(m2.conBloqueo(['home'], 'home', true), ['home']);
+  assert.deepEqual(m2.conBloqueo(['home', 'x'], 'home', false), ['x']);
+  assert.equal(m2.textoConteoImagenes({ imagenes: 0 }), 'No queda ninguna imagen por convertir.');
+  assert.equal(m2.textoConteoImagenes({ imagenes: 1, documentos: 1, apariciones: 3 }), 'Hay 1 imagen por revisar en 1 documento (aparecen 3 veces: una misma puede estar en varios sitios). Solo se reescriben las que lo necesitan.');
+  assert.equal(m2.textoResultadoImagenes({ convertidas: 4, documentos: 2, saltadas: 1 }), '4 imágenes convertidas en 2 documentos; 1 se dejó como estaba (ya estaba bien o el WebP no la mejoraba).');
+  assert.deepEqual(m2.traduccionesPorIdioma({ en: 12, pt: 0, fr: 2 }), [{ idioma: 'en', nombre: 'Inglés', cuantas: 12 }, { idioma: 'fr', nombre: 'FR', cuantas: 2 }]);
+});

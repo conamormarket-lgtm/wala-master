@@ -353,7 +353,7 @@ export function SinPermiso({ permiso, urlInicio = '/admin' }) {
         imagen={null}
         icono={<Lock aria-hidden="true" />}
         titulo="Esta sección no está abierta para tu cuenta"
-        texto={permiso ? `Pide a un Super Admin el permiso «${permiso}» en Ajustes › Administradores.` : 'Pide a un Super Admin que te dé el permiso en Ajustes › Administradores.'}
+        texto={permiso ? `Pide a un Super Admin el permiso «${permiso}» en Ajustes › Configuración.` : 'Pide a un Super Admin que te dé el permiso en Ajustes › Configuración.'}
       >
         <Boton to={urlInicio} variante="secundario">Volver al inicio</Boton>
       </EstadoVacio>

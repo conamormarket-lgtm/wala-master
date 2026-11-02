@@ -19,6 +19,7 @@ import {
   PaginaPopupsAdmin, PaginaLandingsAdmin, PaginaTemasAdmin, landingDesde, landingAFirestore, temaDesde, temaAFirestore, temaDesdeCss,
   PaginaKapiAdmin, PaginaPalabraAdmin, PaginaBolitasAdmin, palabraDiaDesde, patrocinioDesde, premiosBolitasDesde,
   PaginaRuletaAdmin, premioRuletaAFirestore, ganadoRuletaDesde,
+  PaginaConfiguracionAdmin, adminDesdeFirestore, adminAFirestore, paginasBloqueables, conBloqueo,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -90,6 +91,7 @@ const HECHAS = [
   ['/admin/wordle', 'Palabra'],
   ['/admin/bolitas', 'Bolitas'],
   ['/admin/ruleta', 'Ruleta'],
+  ['/admin/configuracion', 'Configuración'],
   ['/admin/crear-cuentas-pedidos', 'Cuentas'],
   ['/admin/categorias', 'Categorías'],
   ['/admin/colecciones', 'Colecciones'],
@@ -625,6 +627,15 @@ const GANADOS_RULETA_DEMO = [
   { id: 'g3', displayName: 'Carla Rojas', email: 'carla.rojas@gmail.com', texto: 'Peluche de Kapi', tipo: 'manual', weekStart: diaKey(14), entregado: true },
   { id: 'g4', displayName: 'Jorge Salas', email: 'jorge.salas@outlook.com', texto: '20 monedas', tipo: 'monedas', weekStart: diaKey(14) },
 ].map(ganadoRuletaDesde);
+// D8a: el equipo (el primero es quien mira), lo que queda por pasar a WebP y las traducciones juntadas.
+const YO_DEMO = 'isaac.castro@gmail.com';
+const ADMINS_DEMO = [
+  { id: YO_DEMO, email: YO_DEMO, name: 'Isaac Castro', permissions: ['superadmin'] },
+  { id: 'mariela.torres@gmail.com', email: 'mariela.torres@gmail.com', name: 'Mariela Torres', permissions: ['manage_design', 'manage_clients'] },
+  { id: 'diego.ramos@gmail.com', email: 'diego.ramos@gmail.com', name: 'Diego Ramos', permissions: ['manage_products', 'manage_inventory', 'manage_landing_pages'] },
+  { id: 'almacen.wala@gmail.com', email: 'almacen.wala@gmail.com', permissions: ['manage_inventory'] },
+].map(adminDesdeFirestore);
+const IMAGENES_DEMO = { diseno: { imagenes: 4, documentos: 3, apariciones: 6 }, productos: { imagenes: 37, documentos: 21, apariciones: 37 } };
 const RECOMPENSAS_DEMO = [
   { title: 'Pack de stickers Kapi', description: 'Seis stickers para tu laptop o celular.', cost: 120, tipo: 'manual', value: 'Sale del cajón de mercancía', imageUrl: '/assets/kapi/kapi-happy.webp' },
   { title: '10% en tu pedido', description: 'Hasta S/ 20 de descuento.', cost: 300, tipo: 'descuento', descuentoPct: 10, topeDescuento: 20, vigenciaDias: 30 },
@@ -781,6 +792,11 @@ function PanelDePrueba() {
   const [configRuleta, setConfigRuleta] = useState(() => normalizarConfig({}));
   const [ganadosRuleta, setGanadosRuleta] = useState(GANADOS_RULETA_DEMO);
   const [ruletaPestana, setRuletaPestana] = useState('premios');
+  const [admins, setAdmins] = useState(ADMINS_DEMO);
+  const [bloqueadas, setBloqueadas] = useState(['footer']);
+  const imagenesPendientes = useRef(IMAGENES_DEMO); // un ref: revisar justo después de convertir lee lo nuevo
+  const traduccionesDemo = useRef({ en: 14, pt: 3 });
+  const [configPestana, setConfigPestana] = useState('equipo');
   const [landings, guardarLandingCruda, eliminarLanding] = useListaDemo(LANDINGS_DEMO, falla);
   const [temas, guardarTemaCrudo, eliminarTema, setTemas] = useListaDemo(TEMAS_DEMO, falla);
   const [encuesta, setEncuesta] = useState(ENCUESTA_DEMO);
@@ -1361,6 +1377,52 @@ function PanelDePrueba() {
         subirImagen={subir}
         onGuardar={(datos, id) => guardarRecompensaCruda(recompensaAdminDesdeFirestore({ id, ...recompensaAdminAFirestore(datos) }), id)}
         onEliminar={eliminarRecompensa}
+      />
+    );
+  } else if (rutaSola === '/admin/configuracion') {
+    pagina = (
+      <PaginaConfiguracionAdmin
+        esSuperadmin={p.permisos.includes('superadmin')}
+        yo={YO_DEMO}
+        pestana={configPestana}
+        onPestana={setConfigPestana}
+        admins={vacio ? [] : admins}
+        cargando={con('cargando')}
+        error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+        onReintentar={comunes.onReintentar}
+        onGuardarAdmin={async (d, id) => {
+          await espera(600);
+          fallar();
+          const { correo, datos } = adminAFirestore(d);
+          const a = adminDesdeFirestore({ id: correo, email: correo, ...datos });
+          setAdmins((l) => (id ? l.map((x) => (x.id === id ? a : x)) : [...l, a]));
+        }}
+        onEliminarAdmin={async (id) => { await espera(500); fallar(); setAdmins((l) => l.filter((x) => x.id !== id)); }}
+        paginas={paginasBloqueables(landings.map((x) => ({ id: x.id, title: x.nombre, slug: x.slug })), bloqueadas)}
+        cargandoPaginas={con('cargando')}
+        errorPaginas={con('error') ? 'No se pudieron leer las páginas (es una prueba).' : undefined}
+        onReintentarPaginas={comunes.onReintentar}
+        onBloquear={async (id, si) => { await espera(400); fallar(); setBloqueadas((b) => conBloqueo(b, id, si)); }}
+        onRevisarImagenes={async (ambito) => { await espera(700); fallar('No se pudieron leer los documentos (es una prueba).'); return imagenesPendientes.current[ambito]; }}
+        onConvertirImagenes={async (ambito, { alAvanzar }) => {
+          const c = imagenesPendientes.current[ambito];
+          for (let i = 1; i <= c.apariciones; i += 1) {
+            await espera(ambito === 'productos' ? 60 : 300);
+            alAvanzar?.({ hechas: i, total: c.apariciones, actual: ambito === 'productos' ? `producto-${i}.jpg` : `banner-${i}.png` });
+          }
+          imagenesPendientes.current = { ...imagenesPendientes.current, [ambito]: { imagenes: 0, documentos: 0, apariciones: 0 } };
+          return ambito === 'productos'
+            ? { convertidas: c.imagenes - 2, documentos: c.documentos, saltadas: 1, errores: ['producto-12.jpg: no se pudo descargar (es una prueba).'] }
+            : { convertidas: c.imagenes, documentos: c.documentos, saltadas: 0, errores: [] };
+        }}
+        onRevisarTraducciones={async () => { await espera(300); return traduccionesDemo.current; }}
+        onPublicarTraducciones={async () => {
+          await espera(800);
+          fallar();
+          const guardadas = Object.values(traduccionesDemo.current).reduce((t, n) => t + n, 0);
+          traduccionesDemo.current = {};
+          return { guardadas };
+        }}
       />
     );
   } else if (rutaSola === '/admin/ruleta') {

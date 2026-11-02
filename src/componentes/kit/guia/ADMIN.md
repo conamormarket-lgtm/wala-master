@@ -234,7 +234,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | hecho (2026-11-02) | · |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | hecho (2026-11-02) | · |
 | D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | hecho (2026-11-02) | · |
-| D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | · | · |
+| D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | en marcha (D8a, 2026-11-02) | · |
 
 El orden: D0 con las piezas base (tabla, hoja de edición, campo de imagen,
 estado), probadas en **Categorías**, que es un CRUD simple con foto y toca
@@ -1987,6 +1987,79 @@ Adaptadores (con pruebas): `DIAS_RULETA`, `textoDiasRuleta`,
   `adminBolitas('metricas', { dias })` → `metricas`. Cada uno con su
   `queryKey` de hoy.
 
+## D8 · Ajustes (en marcha: D8a hecho en el kit el 2026-11-02)
+
+Tres pantallas de hoy (unas 1.050 líneas), en dos tramos; el apartado se
+une entero cuando estén los dos.
+
+| Tramo | Qué | Páginas de hoy | Kit |
+|---|---|---|---|
+| D8a | Configuración: el equipo y sus permisos, las páginas bloqueadas, pasar imágenes a WebP y publicar traducciones | `AdminConfiguracion.jsx` (618) | hecho (2026-11-02) |
+| D8b | WhatsApp y el historial (diseño de la tienda e inventario) | `AdminWhatsApp.jsx` (247), `AdminBackups.jsx` (191) | · |
+
+### D8a: Configuración (en el kit desde el 2026-11-02)
+
+| Los permisos de una persona (computadora) | El equipo (celular) |
+|---|---|
+| ![La hoja de Diego con sus permisos marcados y lo que ve con ellos](admin-configuracion-escritorio.webp) | ![Las tarjetas del equipo con sus permisos y cuántas secciones ve cada uno](admin-configuracion-celular.webp) |
+
+| Parte | Componente | Archivo | Qué tiene |
+|---|---|---|---|
+| Configuración | `PaginaConfiguracionAdmin` | `paginas/admin/Configuracion.jsx` | Solo Super Admin (si no, lo dice). Tres pestañas. **Equipo** (`PaginaListaAdmin`): cada persona con su correo, "Tú" en la propia, sus permisos y **cuántas secciones ve**; filtro por permiso. La hoja: el correo (fijo al editar: es la llave), el nombre y los seis permisos en casillas (con Super Admin, los demás van incluidos) y **"Con estos permisos ve: …"**, el menú real agrupado (`menuAdminPara`). No deja agregar a alguien que ya está, quitarse a uno mismo ni quitarse Super Admin. **Bloqueos**: las tres páginas fijas y las landing pages, cuántas bloqueadas y un botón por página para bloquear o abrir. **Optimizar**: las imágenes viejas a WebP (diseño de tienda o productos: el recuento con `Cifra`, la pregunta, la barra con el archivo que va, el resultado y los que fallaron) y publicar las traducciones juntadas (cuántas por idioma) |
+
+Adaptadores (con pruebas): `PERMISOS_ADMIN`, `adminDesdeFirestore`,
+`adminAFirestore` (Super Admin va solo; los demás en orden),
+`erroresDeAdmin`, `textoPermisos`, `PAGINAS_FIJAS`, `paginasBloqueables`,
+`conBloqueo`, `textoConteoImagenes`, `textoResultadoImagenes`,
+`NOMBRES_IDIOMA` y `traduccionesPorIdioma`.
+
+### Diferencias a propósito (D8a)
+
+- La hoja al costado en vez del formulario arriba de la tabla; los `alert` y
+  `window.confirm` pasan a errores junto al campo, avisos y `Confirmar`.
+- Cada permiso dice qué abre y la hoja muestra el menú que verá esa persona
+  (antes, solo los nombres de los permisos).
+- Quitarse Super Admin a uno mismo ya no se puede (antes se guardaba y uno
+  perdía la página); agregar un correo que ya está avisa en vez de pisarlo.
+- Imágenes e idiomas van juntos en **Optimizar** (como antes, en
+  "Optimización de imágenes"): con cuatro pestañas la última no cabía en el
+  celular, ni con "Mantenimiento".
+- El menú dice **Configuración** (antes, "Administradores y bloqueos"), como
+  la página; el aviso de "sin permiso" del marco apunta ahí.
+
+### Qué se probó (2026-11-02, demo en localhost, 1280 px y 375 px)
+
+- Equipo: cuatro personas (Isaac con "Tú", Super Admin, "Todo"; Mariela,
+  "Diseño y pedidos · Clientes", 29 secciones). Agregar a Mariela otra vez →
+  "Ya está en el equipo"; a Rocío con Clientes → 14 secciones. Editarse uno
+  y dejar solo Catálogo → "Te quitarías el acceso…"; eliminarse → "No puedes
+  quitarte a ti mismo". Con Super Admin, las otras cinco casillas marcadas y
+  apagadas, "Ve todo el panel".
+- Bloqueos: seis páginas, el pie bloqueado; bloquear Promo Navidad → "2
+  bloqueadas" y el toast.
+- Optimizar: diseño (4 imágenes, 6 veces) → la pregunta → la barra → "4
+  imágenes convertidas" y "No queda ninguna". Productos: 37 → 35 convertidas,
+  1 se dejó y 1 falló (en "1 no se pudo convertir"). Traducciones: 14 en
+  inglés y 3 en portugués → "17 traducciones publicadas" y la lista vacía.
+- Con permisos de Catálogo, el marco no abre la página.
+- 375 px: las tres pestañas y la hoja sin salirse del ancho.
+
+### Cómo se une D8a
+
+- `ConfiguracionDelPanel.jsx`: `esSuperadmin` y `yo` de `useAuth()`
+  (`adminPermissions`, `user.email`); `getAdminRoles` → `adminDesdeFirestore`
+  (`['admin-roles']`); `onGuardarAdmin(d)` = `adminAFirestore(d)` →
+  `setAdminRole(correo, datos)`, `onEliminarAdmin` = `deleteAdminRole`
+  (los dos devuelven `{ error }`: lanzarlo).
+- Bloqueos: `getLockedPages` y `getLandingPages` → `paginasBloqueables`;
+  `onBloquear(id, si)` = `saveLockedPages(conBloqueo(bloqueadas, id, si))`.
+- Optimizar: `onRevisarImagenes(a)` = `contarImagenesPorConvertir({
+  colecciones })` con `AMBITO_DISENO` o `AMBITO_PRODUCTOS`;
+  `onConvertirImagenes(a, { alAvanzar })` = `reconvertirImagenesAWebp({
+  colecciones, onProgreso: alAvanzar })`; `onRevisarTraducciones` =
+  `traduccionesPendientes`, `onPublicarTraducciones` =
+  `guardarTraduccionesEnNube`.
+
 ## Reemplazos: qué sale y qué entra
 
 La misma tabla que las fichas de la tienda (CUENTA.md, "Reemplazos"): qué
@@ -2098,6 +2171,8 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D7a · La Palabra del día | `pages/admin/AdminWordlePage.jsx` + `.module.css` (`alert`, `window.confirm`) | `PaginaPalabraAdmin` (`PaginaListaAdmin`, `CampoFecha`) | `PalabraDelPanel.jsx` |
 | D7a · Las Bolitas | `pages/admin/AdminBolitasPage.jsx` + `.module.css` (`alert`, `window.confirm`) | `PaginaBolitasAdmin` (`PaginaListaAdmin`, `ListaOrdenable`, `GraficoTendencia`, `ListaBarras`, `BarraGuardar`) | `BolitasDelPanel.jsx` |
 | D7b · La Ruleta | `pages/admin/AdminRuletaPage.jsx` + `.module.css` (`BuscadorProducto`, `useGlobalToast`, `window.confirm`) | `PaginaRuletaAdmin` (`PaginaListaAdmin`, `SelectorProductos`, `CampoFecha`, `CampoColor`, `CampoImagen`, `BarraGuardar`, `RuedaRuleta`) | `RuletaDelPanel.jsx` |
+| D8a · Configuración | `pages/admin/AdminConfiguracion.jsx` + `.module.css` (`common/Button`, estilos en línea, `alert`, `window.confirm`) | `PaginaConfiguracionAdmin` (`PaginaListaAdmin`, `Casilla`, `TablaAdmin`, `ElegirUno`, `Cifra`, `BarraProgreso`, `Confirmar`) | `ConfiguracionDelPanel.jsx` |
+| D8b · WhatsApp e historial | `pages/admin/AdminWhatsApp.jsx`, `AdminBackups.jsx` + `.module.css` | por hacer | `WhatsAppDelPanel.jsx`, `HistorialDelPanel.jsx` |
 
 ## Cómo se une un apartado (la misma lógica que clientes)
 
@@ -2139,6 +2214,7 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | 2026-11-02 | D2b en el kit: `PaginaFichaProducto` (general, colores y tallas, piezas del combo, dónde se ve) con `EncuadreFoto`, `FotoEncuadrada`, `GaleriaFotos`, `CampoTallas`, `ElegirVarios`, `ElegirMarca`; `fichaDesdeProducto` / `fichaAProducto` / `erroresDeFicha` con pruebas | `paginas/admin/Ficha.jsx`, `piezas/admin/Producto.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D2c en el kit: `PaginaPersonalizables`, `PaginaPacks` (con Sugerir), la ficha de un personalizable (`DisenoPrenda` con `EditorZonas` y `ListaZonas`, `ColoresPrenda`, `PlantillasPrenda`); `prendaBaseParaGuardar` pasó a `utils/prendaBase.js`; adaptadores de Crear con pruebas | `paginas/admin/Crear.jsx`, `piezas/admin/Crear.jsx`, `paginas/admin/Ficha.jsx`, `adaptadoresAdmin.js`, `utils/prendaBase.js` |
 | 2026-11-02 | Reemplazos de D0 a D2 (qué sale, qué entra y el conector) y la sección «Panel administrativo» de ELIMINAR.md con quién importa hoy cada pieza vieja | `guia/ADMIN.md`, `guia/ELIMINAR.md` |
+| 2026-11-02 | D8 dividido en tramos (a: configuración; b: WhatsApp e historial). D8a en el kit: `PaginaConfiguracionAdmin` (equipo con lo que ve cada uno, bloqueos, optimizar); adaptadores con pruebas. El menú dice «Configuración» | `paginas/admin/Configuracion.jsx`, `adaptadoresAdmin.js`, `piezas/admin/Marco.jsx` |
 | 2026-11-02 | D7b en el kit y **D7 completo**: `PaginaRuletaAdmin` (premios con por qué no salen hoy, cómo se ve con la rueda, entregas); adaptadores con pruebas. `Buscador` ya no envía la hoja que lo contiene | `paginas/admin/Ruleta.jsx`, `adaptadoresAdmin.js`, `Formulario.jsx` |
 | 2026-11-02 | D7 dividido en tramos (a: Kapi, la palabra y las bolitas; b: la ruleta). D7a en el kit: `PaginaKapiAdmin`, `PaginaPalabraAdmin`, `PaginaBolitasAdmin`; adaptadores con pruebas | `paginas/admin/Juegos.jsx`, `adaptadoresAdmin.js` |
 | 2026-11-02 | D6d en el kit y **D6 completo**: `PaginaPopupsAdmin`, `PaginaLandingsAdmin`, `PaginaTemasAdmin`; `PaginaListaAdmin` con `nuevoCon`; adaptadores con pruebas | `paginas/admin/Popups.jsx`, `paginas/admin/Paginas.jsx`, `paginas/admin/Lista.jsx`, `adaptadoresAdmin.js` |

@@ -107,7 +107,7 @@ export const MENU_ADMIN = [
   {
     id: 'ajustes', titulo: 'Ajustes', icono: 'ajustes', tono: 'plata',
     items: [
-      { to: '/admin/configuracion', texto: 'Administradores y bloqueos', icono: 'admins', permiso: [] },
+      { to: '/admin/configuracion', texto: 'Configuración', icono: 'admins', permiso: [] },
       { to: '/admin/whatsapp', texto: 'WhatsApp', icono: 'whatsapp', permiso: DISENO },
       { to: '/admin/backups', texto: 'Historial y backups', icono: 'historial', permiso: DISENO },
     ],
@@ -2952,3 +2952,88 @@ export function ganadoRuletaDesde(g = {}) {
     cupon: g.cuponCode || '', semana: g.weekStart || '', entregado: Boolean(g.entregado), manual: tipo === 'manual',
   };
 }
+
+/* ── D8a · Configuración: el equipo, los bloqueos, las imágenes y los idiomas ── */
+
+/** Los permisos de adminRoles (los mismos ids de siempre; el menú los lee con puedeVer). */
+export const PERMISOS_ADMIN = [
+  { valor: 'superadmin', texto: 'Super Admin', detalle: 'Todo, también el equipo y esta página.' },
+  { valor: 'manage_design', texto: 'Diseño y pedidos', detalle: 'Pedidos y pagos, la tienda, campañas, WhatsApp y los juegos.' },
+  { valor: 'manage_products', texto: 'Catálogo', detalle: 'Productos, categorías, marcas, cliparts y recompensas.' },
+  { valor: 'manage_inventory', texto: 'Inventario', detalle: 'La tabla de inventario.' },
+  { valor: 'manage_clients', texto: 'Clientes', detalle: 'Reclamos, referidos, la encuesta, popups, fechas, retos y misiones.' },
+  { valor: 'manage_landing_pages', texto: 'Landing pages', detalle: 'Con Catálogo: las landing pages y los temas.' },
+];
+
+const correoLimpio = (c) => String(c || '').trim().toLowerCase();
+
+/** Un doc de adminRoles (el id es el correo) → la lista. */
+export function adminDesdeFirestore(doc = {}) {
+  const correo = correoLimpio(doc.email || doc.id);
+  return { id: doc.id || correo, correo, nombre: String(doc.name || '').trim() || correo.split('@')[0], permisos: Array.isArray(doc.permissions) ? doc.permissions : [] };
+}
+
+/** La hoja → setAdminRole(correo, datos). Super Admin va solo: ya lo abre todo. */
+export function adminAFirestore(d = {}) {
+  const correo = correoLimpio(d.correo);
+  const permisos = (d.permisos || []).includes('superadmin') ? ['superadmin'] : PERMISOS_ADMIN.map((x) => x.valor).filter((v) => (d.permisos || []).includes(v));
+  return { correo, datos: { name: String(d.nombre || '').trim() || correo.split('@')[0], permissions: permisos } };
+}
+
+/** Los errores: el correo, al menos un permiso, no repetir a alguien y no quitarse el acceso a uno mismo. */
+export function erroresDeAdmin(d = {}, { id, registros = [], yo = '' } = {}) {
+  const correo = correoLimpio(d.correo);
+  const valido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
+  const repetido = !id && registros.some((r) => r.correo === correo);
+  const esYo = Boolean(yo) && correo === correoLimpio(yo);
+  return {
+    correo: !correo ? 'Escribe el correo de Google de la persona.' : !valido ? 'Ese correo no está bien escrito.' : repetido ? 'Ya está en el equipo: edítalo en la lista.' : undefined,
+    permisos: !(d.permisos || []).length ? 'Elige al menos un permiso.' : esYo && !d.permisos.includes('superadmin') ? 'Te quitarías el acceso a esta página: deja Super Admin.' : undefined,
+  };
+}
+
+/** "Super Admin" · "Catálogo · Inventario" (con puntos: "Diseño y pedidos" ya lleva una "y") · "Sin permisos". */
+export function textoPermisos(permisos = []) {
+  if (permisos.includes('superadmin')) return 'Super Admin';
+  const n = PERMISOS_ADMIN.filter((p) => permisos.includes(p.valor)).map((p) => p.texto);
+  return n.length ? n.join(' · ') : 'Sin permisos';
+}
+
+/** Las páginas que se pueden bloquear en el editor: las tres fijas y las landing pages. */
+export const PAGINAS_FIJAS = [
+  { id: 'home', nombre: 'Página principal', ruta: '/' },
+  { id: 'tienda', nombre: 'La tienda', ruta: '/tienda' },
+  { id: 'footer', nombre: 'El pie de página', ruta: 'en todas las páginas' },
+];
+
+export function paginasBloqueables(landings = [], bloqueadas = []) {
+  return [
+    ...PAGINAS_FIJAS.map((p) => ({ ...p, tipo: 'fija' })),
+    ...landings.map((l) => ({ id: l.id, nombre: l.title || l.nombre || l.slug || l.id, ruta: `/${l.slug || l.id}`, tipo: 'landing' })),
+  ].map((p) => ({ ...p, bloqueada: bloqueadas.includes(p.id) }));
+}
+
+/** Bloquear o abrir una → la lista nueva (sin repetir; las que ya no existen se quedan). */
+export const conBloqueo = (bloqueadas = [], id, bloquear) => (bloquear ? [...new Set([...bloqueadas, id])] : bloqueadas.filter((x) => x !== id));
+
+const plural = (n, uno, varios) => `${new Intl.NumberFormat('es-PE').format(n)} ${n === 1 ? uno : varios}`;
+
+/** El recuento de contarImagenesPorConvertir, en una frase. */
+export function textoConteoImagenes(c = {}) {
+  if (!c.imagenes) return 'No queda ninguna imagen por convertir.';
+  const veces = c.apariciones && c.apariciones !== c.imagenes ? ` (aparecen ${plural(c.apariciones, 'vez', 'veces')}: una misma puede estar en varios sitios)` : '';
+  return `Hay ${plural(c.imagenes, 'imagen', 'imágenes')} por revisar en ${plural(c.documentos || 0, 'documento', 'documentos')}${veces}. Solo se reescriben las que lo necesitan.`;
+}
+
+/** Lo que devolvió reconvertirImagenesAWebp, en una frase. */
+export function textoResultadoImagenes(r = {}) {
+  const base = `${plural(r.convertidas || 0, 'imagen convertida', 'imágenes convertidas')} en ${plural(r.documentos || 0, 'documento', 'documentos')}`;
+  return r.saltadas ? `${base}; ${plural(r.saltadas, 'se dejó', 'se dejaron')} como estaba${r.saltadas === 1 ? '' : 'n'} (ya estaba${r.saltadas === 1 ? '' : 'n'} bien o el WebP no la${r.saltadas === 1 ? '' : 's'} mejoraba).` : `${base}.`;
+}
+
+export const NOMBRES_IDIOMA = { en: 'Inglés', pt: 'Portugués', es: 'Español' };
+
+/** { en: 12, pt: 0 } → [{ idioma, nombre, cuantas }] (solo los que tienen algo). */
+export const traduccionesPorIdioma = (pendientes = {}) => Object.entries(pendientes)
+  .filter(([, n]) => Number(n) > 0)
+  .map(([idioma, n]) => ({ idioma, nombre: NOMBRES_IDIOMA[idioma] || idioma.toUpperCase(), cuantas: Number(n) }));
