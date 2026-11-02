@@ -351,3 +351,33 @@ test('resultados: cambios, cifras del resumen, comparativa y otros cobros', () =
   assert.equal(m2.otrosCobrosDe({}), null);
   assert.deepEqual(m2.serieDeVisitas([{ day: '2026-10-03', total: 4 }]), [{ etiqueta: '03/10', valores: { visitas: 4 } }]);
 });
+
+test('resultados: las listas de Productos y de Visitantes', () => {
+  const catalogo = { p1: { nombre: 'Polo clásico', imagen: 'polo.webp' } };
+  const productoDe = (id) => catalogo[id];
+  const datos = {
+    topProducts: [{ productId: 'p1', total: 320 }, { productId: 'zz', name: 'Retirado', total: 1 }],
+    topVendidos: [{ productId: 'p1', ingresosCents: 5000, unidades: 1, pedidos: 1, linea: 'polos' }, { productId: 'p2', ingresosCents: 3000, unidades: 4, pedidos: 2, linea: 'polos' }],
+    interes: { productos: [{ productId: 'p1', dwellMs: 125000, personas: 0 }] },
+    topSearches: [{ query: 'tomatodo azul', total: 14 }],
+  };
+  const l = m2.listasDeProductos({ datos, productoDe, nombreCategoria: (id) => ({ polos: 'Polos' }[id] || id) });
+  assert.deepEqual(l.vistos.map((x) => [x.nombre, x.texto, x.imagen]), [['Polo clásico', '320 vistas', 'polo.webp'], ['Retirado', '1 vista', '']]);
+  assert.deepEqual(l.vendidos.map((x) => x.id), ['p1', 'p2']);
+  assert.deepEqual(m2.listasDeProductos({ datos, productoDe, medida: 'unidades' }).vendidos.map((x) => [x.id, x.texto]), [['p2', '4 u.'], ['p1', '1 u.']]);
+  assert.deepEqual(l.lineasVendidas, [{ id: 'polos', nombre: 'Polos', valor: 8000, texto: 'S/ 80.00', sub: '5 u.' }]);
+  assert.equal(l.masMirados[0].texto, '2m 5s');
+  assert.equal(l.masMirados[0].sub, 'Solo visitantes sin cuenta');
+  assert.equal(l.busquedas[0].nombre, '«tomatodo azul»');
+  const v = m2.listasDeVisitantes({
+    visitas: { total: { total: 200 }, conInteraccion: { total: 50 }, paginas: { total: 500 }, dwellMs: { total: 200 * 90000 } },
+    canales: [{ canal: 'Instagram', visitas: 80, conInteraccion: 20, pedidos: 2 }],
+    byCountryAprox: [{ name: 'Perú', count: 150 }, { name: 'unknown', count: 50 }],
+    byDevice: [{ name: 'Mobile', count: 3 }, { name: 'Desktop', count: 1 }],
+  });
+  assert.deepEqual(v.cifras.map((c) => c.valor), ['200', '—', '25%', '2.5', '1m 30s']);
+  assert.deepEqual(v.canales[0], { id: 'Instagram', canal: 'Instagram', visitas: '80', parte: '40%', interaccion: '25%', pedidos: '2', conversion: '2.5' });
+  assert.equal(v.paisAproximado, true);
+  assert.deepEqual(v.paises.map((p) => [p.nombre, p.texto]), [['Perú', '75%'], ['No se sabe', '25%']]);
+  assert.deepEqual(v.dispositivos.map((p) => p.nombre), ['Celular', 'Computadora']);
+});

@@ -7,7 +7,7 @@ import {
   PaginaPersonalizables, PaginaPacks, personalizableDesde, packDesdeFirestore,
   PaginaBlueprints, PaginaPlantillasYoryo, blueprintDesdeFirestore, blueprintAFirestore, PaginaRecepcion,
   PaginaPagos, configPagosDesde, PaginaCuentasDePedidos, PaginaReclamos, reclamoDesdeFirestore,
-  MarcoResultados, PaginaResumenResultados,
+  MarcoResultados, PaginaResumenResultados, PaginaProductosResultados, PaginaVisitantesResultados,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
   coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
@@ -248,17 +248,19 @@ function resultadosDemo(dias) {
   const pedidos = Math.round(visitas * 0.021);
   return {
     datos: {
-      visitas: { total: { total: visitas } },
+      visitas: { total: { total: visitas }, conInteraccion: { total: Math.round(visitas * 0.46) }, paginas: { total: Math.round(visitas * 3.4) }, dwellMs: { total: visitas * 142000 } },
       ventas: { pedidos: { total: pedidos }, ingresosCents: { total: pedidos * 8650 } },
       diasConResultados: dias,
       visitasPorDia,
       canales: [
-        { canal: 'Instagram', visitas: Math.round(visitas * 0.41), pedidos: Math.round(pedidos * 0.46) },
-        { canal: 'Google', visitas: Math.round(visitas * 0.27), pedidos: Math.round(pedidos * 0.3) },
-        { canal: 'Directo', visitas: Math.round(visitas * 0.18), pedidos: Math.round(pedidos * 0.16) },
-        { canal: 'TikTok', visitas: Math.round(visitas * 0.1), pedidos: Math.round(pedidos * 0.06) },
+        { canal: 'Instagram', visitas: Math.round(visitas * 0.41), conInteraccion: Math.round(visitas * 0.2), pedidos: Math.round(pedidos * 0.46) },
+        { canal: 'Google', visitas: Math.round(visitas * 0.27), conInteraccion: Math.round(visitas * 0.14), pedidos: Math.round(pedidos * 0.3) },
+        { canal: 'Directo o sin dato', visitas: Math.round(visitas * 0.18), conInteraccion: Math.round(visitas * 0.07), pedidos: Math.round(pedidos * 0.16) },
+        { canal: 'TikTok', visitas: Math.round(visitas * 0.1), conInteraccion: Math.round(visitas * 0.03), pedidos: Math.round(pedidos * 0.06) },
       ],
       otrosCobros: { sorteo: { cantidad: 6, porMoneda: { PEN: 6 * 1000 } }, saldo: { cantidad: 2, porMoneda: { PEN: 9000 } } },
+      // D4b: lo de Productos y Visitantes, con productos de la copia de la tienda.
+      ...productosResultadosDemo(visitas, pedidos, dias),
       realtimeSessionsDetails: [
         { id: 's1', hasAccount: true, displayName: 'Valeria Quispe', lastPath: '/producto/polo-clasico', lastSeenAtMs: Date.now() - 60000 },
         { id: 's2', hasAccount: false, lastPath: '/tienda', lastSeenAtMs: Date.now() - 120000 },
@@ -269,10 +271,46 @@ function resultadosDemo(dias) {
     anterior: { visitas: { total: Math.round(visitas * 0.88) }, pedidos: { total: Math.round(pedidos * 1.05) }, ingresosCents: { total: Math.round(pedidos * 1.05) * 8200 }, diasConVentas: dias },
   };
 }
+const PRODUCTOS_RES = TIENDA.productos.slice(0, 12);
+function productosResultadosDemo(visitas, pedidos, dias) {
+  const k = dias / 30;
+  return {
+    topProducts: PRODUCTOS_RES.map((p, i) => ({ productId: p.id, total: Math.round((420 - i * 31) * k) })),
+    topVendidos: PRODUCTOS_RES.slice(0, 8).map((p, i) => ({ productId: p.id, unidades: Math.round((14 - i) * k) || 1, pedidos: Math.round((11 - i) * k) || 1, ingresosCents: Math.round((14 - i) * k) * (p.salePrice || p.price || 50) * 100, linea: p.categories?.[0] || null })),
+    interes: {
+      productos: PRODUCTOS_RES.slice(0, 6).map((p, i) => ({ productId: p.id, dwellMs: (900 - i * 120) * 1000, personas: 6 - i })),
+      pares: [
+        { uid: 'u1', productId: PRODUCTOS_RES[0].id, nombre: 'Valeria', dwellMs: 185000, ultimaMs: Date.now() - 3600000 },
+        { uid: 'u2', productId: PRODUCTOS_RES[1].id, nombre: 'Diego', dwellMs: 96000, ultimaMs: Date.now() - 7200000 },
+        { uid: 'u3', productId: PRODUCTOS_RES[0].id, nombre: 'Camila', dwellMs: 64000, ultimaMs: Date.now() - 86400000 },
+        { uid: 'u4', productId: PRODUCTOS_RES[3].id, nombre: 'Luis', dwellMs: 41000, ultimaMs: Date.now() - 86400000 * 2 },
+      ],
+    },
+    topCategoriesByViews: TIENDA.categorias.slice(0, 6).map((c, i) => ({ id: c.id, name: c.name, total: Math.round((800 - i * 110) * k) })),
+    topCollectionsByViews: (TIENDA.colecciones || []).slice(0, 4).map((c, i) => ({ id: c.id, name: c.name, total: Math.round((140 - i * 30) * k) })),
+    topSearches: [['polo personalizado', 48], ['tomatodo azul', 14], ['cuadro pareja', 12], ['hoodie', 9], ['taza', 6]].map(([query, total]) => ({ query, total: Math.round(total * k) || 1 })),
+    deseos: { agregados: { total: Math.round(64 * k) }, quitados: { total: Math.round(11 * k) }, topProductos: PRODUCTOS_RES.slice(2, 7).map((p, i) => ({ productId: p.id, agregados: Math.round((12 - i * 2) * k) || 1 })) },
+    crear: { aperturas: { total: Math.round(310 * k) }, aperturasCombo: { total: Math.round(42 * k) }, guardados: { total: Math.round(57 * k) } },
+    personas: { total: Math.round(visitas * 0.72) },
+    byCountry: [{ name: 'Perú', code: 'PE', count: Math.round(visitas * 0.9) }, { name: 'España', code: 'ES', count: Math.round(visitas * 0.04) }, { name: 'Chile', code: 'CL', count: Math.round(visitas * 0.03) }, { name: 'unknown', count: Math.round(visitas * 0.03) }],
+    byDevice: [{ name: 'Mobile', count: Math.round(visitas * 0.78) }, { name: 'Desktop', count: Math.round(visitas * 0.19) }, { name: 'Tablet', count: Math.round(visitas * 0.03) }],
+    byClientType: [{ name: 'WEB', count: Math.round(visitas * 0.83) }, { name: 'APP', count: Math.round(visitas * 0.17) }],
+    pedidosTotal: pedidos,
+  };
+}
+const PERFILES_DEMO = new Map([
+  ['u1', { displayName: 'Valeria Quispe', phone: '987654321', marketingConsent: { whatsapp: true } }],
+  ['u2', { displayName: 'Diego Fernández', phone: '956112233', marketingConsent: { whatsapp: false } }],
+  ['u3', { displayName: 'Camila Rojas', marketingConsent: { whatsapp: true } }],
+  ['u4', { displayName: 'Luis Mendoza', phoneIntl: { full: '+34600111222' }, marketingConsent: { whatsapp: true } }],
+]);
+const CATALOGO_RES = new Map(TIENDA.productos.map((p) => [String(p.id), p]));
+const productoDeDemo = (id, nombre) => { const p = CATALOGO_RES.get(String(id)); return { nombre: p?.name || nombre, imagen: p?.mainImage || p?.images?.[0] || '', producto: p }; };
+const nombreCategoriaDemo = (id) => TIENDA.categorias.find((c) => String(c.id) === String(id))?.name || id;
 const AVISOS_RESULTADOS = [
-  { id: 'carritos', nivel: 'alta', titulo: '4 carritos abandonados con contacto', texto: 'Dejaron productos en el carrito y tienen WhatsApp: escríbeles hoy.', to: '/admin/resultados?ver=clientes' },
-  { id: 'vistos-sin-venta', nivel: 'media', titulo: 'El Polo clásico se mira mucho y se vende poco', texto: '320 vistas y 2 ventas: revisa la foto, el precio o las tallas.', to: '/admin/resultados?ver=productos' },
-  { id: 'busqueda', nivel: 'media', titulo: 'Buscan «tomatodo azul» y no hay', texto: '14 búsquedas sin resultado en este periodo.', to: '/admin/resultados?ver=productos' },
+  { id: 'carritos', nivel: 'alta', titulo: '4 carritos abandonados con contacto', texto: 'Dejaron productos en el carrito y tienen WhatsApp: escríbeles hoy.', to: '/admin/resultados/clientes' },
+  { id: 'vistos-sin-venta', nivel: 'media', titulo: 'El Polo clásico se mira mucho y se vende poco', texto: '320 vistas y 2 ventas: revisa la foto, el precio o las tallas.', to: '/admin/resultados/productos' },
+  { id: 'busqueda', nivel: 'media', titulo: 'Buscan «tomatodo azul» y no hay', texto: '14 búsquedas sin resultado en este periodo.', to: '/admin/resultados/productos' },
   { id: 'enlaces', nivel: 'baja', titulo: '2 enlaces rotos', texto: 'Gente que llegó a una dirección que no existe.', to: '#enlaces' },
 ];
 const ENLACES_ROTOS_DEMO = {
@@ -355,7 +393,6 @@ function PanelDePrueba() {
   const [resPeriodo, setResPeriodo] = useState('30');
   const [resFechas, setResFechas] = useState({ desde: diaKey(13), hasta: diaKey(0) });
   const [resComparar, setResComparar] = useState(true);
-  const [resPestana, setResPestana] = useState('resumen');
   const [rotos, setRotos] = useState(ENLACES_ROTOS_DEMO);
   const [atributos, setAtributos] = useState(ATRIBUTOS_DEMO);
   const [productos, setProductos] = useState(PRODUCTOS);
@@ -722,7 +759,9 @@ function PanelDePrueba() {
         onGuardarConfig={async (c) => { await espera(700); fallar(); setConfigPagos(c); }}
       />
     );
-  } else if (ruta === '/admin/resultados') {
+  } else if (rutaSola === '/admin/resultados' || rutaSola.startsWith('/admin/resultados/')) {
+    // Cada pestaña es su ruta, como en el admin (el menú las lista por separado).
+    const resPestana = rutaSola.split('/')[3] || 'resumen';
     const dias = resPeriodo === 'fechas' ? Math.max(1, Math.round((Date.parse(resFechas.hasta) - Date.parse(resFechas.desde)) / 86400000) + 1) : DIAS_RESULTADOS[resPeriodo];
     const { datos: datosRes, anterior } = resultadosDemo(dias);
     const dia = resPeriodo === 'hoy' || resPeriodo === 'ayer' ? resPeriodo : null;
@@ -742,7 +781,7 @@ function PanelDePrueba() {
         onActualizar={async () => { setActualizando(true); await espera(900); setActualizando(false); setEstados((e) => e.filter((x) => x !== 'error')); }}
         pestanas={PESTANAS_RESULTADOS.filter((x) => !x.soloClientes || conClientes)}
         pestana={resPestana}
-        onPestana={setResPestana}
+        onPestana={(id) => setRuta(id === 'resumen' ? '/admin/resultados' : `/admin/resultados/${id}`)}
       >
         {resPestana === 'resumen' ? (
           <PaginaResumenResultados
@@ -754,7 +793,7 @@ function PanelDePrueba() {
             error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
             avisos={vacio ? [] : AVISOS_RESULTADOS}
             nombrePagina={(path) => ({ '/tienda': 'Tienda', '/personalizar': 'Crear', '/carrito': 'Carrito' }[path] || (path.startsWith('/producto/') ? 'Un producto' : path))}
-            verCanales="/admin/resultados?ver=visitantes"
+            verCanales="/admin/resultados/visitantes"
             enlacesRotos={{
               ...rotos,
               crearLandingDe: (slug) => `/admin/landing-pages?nueva=${encodeURIComponent(slug)}`,
@@ -765,6 +804,21 @@ function PanelDePrueba() {
                 setRotos((r) => ({ ...r, enlaces: r.enlaces.map((e) => (e.slug === slug ? { ...e, resueltaA: l.slug } : e)) }));
               },
             }}
+          />
+        ) : resPestana === 'productos' ? (
+          <PaginaProductosResultados
+            datos={vacio || con('cargando') ? null : datosRes}
+            cargando={con('cargando')}
+            error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
+            productoDe={productoDeDemo}
+            nombreCategoria={nombreCategoriaDemo}
+            perfiles={PERFILES_DEMO}
+          />
+        ) : resPestana === 'visitantes' ? (
+          <PaginaVisitantesResultados
+            datos={vacio || con('cargando') ? null : datosRes}
+            cargando={con('cargando')}
+            error={con('error') ? 'No hay conexión con Firestore (es una prueba).' : undefined}
           />
         ) : (
           <EstadoVacio imagen="/assets/kapi/3d/kapi-hambre-256.webp" titulo="Esta pestaña todavía no está en el kit" texto={`Se arma en ${{ productos: 'D4b', visitantes: 'D4b', clientes: 'D4c', opiniones: 'D4c', tecnico: 'D4d' }[resPestana]} (guia/ADMIN.md).`} />

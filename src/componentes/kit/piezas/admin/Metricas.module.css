@@ -312,3 +312,104 @@
 :global([data-theme='dark']) .info[aria-expanded='true'] {
   background: rgba(139, 92, 246, 0.14);
 }
+
+/* ── D4b: rankings con barra ───────────────────────────────── */
+.barras {
+  --barra: #7c3aed;
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.barras_menta {
+  --barra: #0f9f6e;
+}
+
+:global([data-theme='dark']) .barras {
+  --barra: #9b7bf5;
+}
+
+:global([data-theme='dark']) .barras_menta {
+  --barra: #1fa774;
+}
+
+.barraFila {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.miniatura {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--color-bg, var(--gris-fondo));
+  color: var(--color-text-muted);
+}
+
+.miniatura img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.miniatura svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.barraCuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  flex: 1;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.barraTexto {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.84rem;
+}
+
+.barraNombre {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barraValor {
+  flex: none;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.pista {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-bg, var(--gris-fondo));
+}
+
+.relleno {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--barra);
+}
+
+.barraSub {
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+}

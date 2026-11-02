@@ -288,3 +288,46 @@ a.avisoEnlace:focus-visible {
 :global([data-theme='dark']) .direccion {
   background: rgba(139, 92, 246, 0.14);
 }
+
+.interesados {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.interesados li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.interesadoTextos {
+  display: grid;
+  flex: 1 1 12rem;
+  min-width: 0;
+  font-size: 0.84rem;
+}
+
+.interesadoTextos span {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.interesadoTextos .cuando {
+  overflow: visible;
+  white-space: normal;
+}
+
+.sinBoton {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+}

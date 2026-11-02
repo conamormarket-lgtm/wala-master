@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronRight, ExternalLink } from 'lucide-react';
+import { ChevronRight, ExternalLink, MessageCircle } from 'lucide-react';
 import Boton from '../../Boton';
 import { Confirmar } from '../../Feedback';
 import { Campo } from '../../Formulario';
@@ -91,6 +91,32 @@ export function ListaEnVivo({ personas = [], max = 10 }) {
           <span className={p.conCuenta ? s.conCuenta : s.visitante}>{p.conCuenta ? (p.quien || 'Cliente') : 'Visitante'}</span>
           <span className={s.vivoPagina}>{p.pagina}</span>
           <span className={s.vivoHora}>{hora(p.vistoMs)}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * Quién se quedó mirando un producto (30 segundos o más), para escribirle
+ * mientras lo tiene en mente.
+ *  - personas: [{ id, nombre, producto, tiempo ('2m 5s'), vistoMs, whatsapp (url) | motivo ('Sin teléfono') }]
+ *  - vacio (texto)
+ */
+export function ListaInteresados({ personas = [], vacio = 'Nadie con cuenta se quedó mirando un producto.' }) {
+  if (!personas.length) return <SinDatos>{vacio}</SinDatos>;
+  return (
+    <ul className={s.interesados} data-componente="ListaInteresados">
+      {personas.map((p) => (
+        <li key={p.id}>
+          <span className={s.interesadoTextos}>
+            <strong>{p.nombre}</strong>
+            <span>{p.producto}</span>
+            <span className={s.cuando}>{p.tiempo} mirando · {fechaHora(p.vistoMs)}</span>
+          </span>
+          {p.whatsapp
+            ? <Boton tamano="sm" variante="secundario" icono={<MessageCircle aria-hidden="true" />} to={p.whatsapp}>WhatsApp</Boton>
+            : <span className={s.sinBoton}>{p.motivo || '—'}</span>}
         </li>
       ))}
     </ul>

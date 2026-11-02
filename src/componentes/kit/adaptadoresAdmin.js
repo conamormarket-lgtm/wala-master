@@ -1192,3 +1192,90 @@ export const PERIODOS_RESULTADOS = [
   { id: '90', texto: '90 días' },
   { id: 'fechas', texto: 'Fechas' },
 ];
+
+/*
+ * Productos y Visitantes de Resultados (D4b): las filas de cada ranking
+ * ({ id, nombre, valor, texto, sub, imagen }) para ListaBarras, desde el
+ * mismo resumen diario. productoDe(id, nombre) → { nombre, imagen } (del
+ * catálogo, con los ocultos) y nombreCategoria(id) → nombre los pone el conector.
+ */
+const cuentaDe = (n, uno, varios) => `${enteroPE(n)} ${Number(n) === 1 ? uno : varios}`;
+const pctDe = (parte, total) => (total > 0 ? Math.round((parte / total) * 100) : 0);
+
+/** Las listas de la pestaña Productos. medida: 'ingresos' | 'unidades' (cómo se ordenan los vendidos). */
+export function listasDeProductos({ datos = {}, productoDe = (id, n) => ({ nombre: n || 'Producto sin nombre', imagen: '' }), nombreCategoria = (id) => id, medida = 'ingresos' } = {}) {
+  const d = datos || {};
+  const producto = (id, n) => {
+    const p = productoDe(id, n) || {};
+    return { nombre: p.nombre || n || 'Producto sin nombre', imagen: p.imagen || '' };
+  };
+  const vistos = lista(d.topProducts).map((p) => ({ id: p.productId || p.name, ...producto(p.productId, p.name), valor: p.total, texto: cuentaDe(p.total, 'vista', 'vistas') }));
+  const vendidos = lista(d.topVendidos).map((p) => ({
+    id: p.productId,
+    ...producto(p.productId),
+    valor: medida === 'ingresos' ? p.ingresosCents : p.unidades,
+    texto: medida === 'ingresos' ? solesDeCentimos(p.ingresosCents) : `${enteroPE(p.unidades)} u.`,
+    sub: cuentaDe(p.pedidos, 'pedido', 'pedidos'),
+  })).sort((a, b) => b.valor - a.valor);
+  const masMirados = lista(d.interes?.productos).map((p) => ({
+    id: p.productId, ...producto(p.productId), valor: p.dwellMs, texto: duracionCorta(p.dwellMs),
+    sub: p.personas ? `${cuentaDe(p.personas, 'persona', 'personas')} con cuenta` : 'Solo visitantes sin cuenta',
+  }));
+  const lineasVistas = lista(d.topCategoriesByViews).map((c) => ({ id: c.id || c.name, nombre: c.name || nombreCategoria(c.id), valor: c.total, texto: cuentaDe(c.total, 'vista', 'vistas') }));
+  const porLinea = new Map();
+  lista(d.topVendidos).forEach((p) => {
+    const k = p.linea || 'Sin línea';
+    const x = porLinea.get(k) || { cents: 0, unidades: 0 };
+    x.cents += Number(p.ingresosCents) || 0;
+    x.unidades += Number(p.unidades) || 0;
+    porLinea.set(k, x);
+  });
+  const lineasVendidas = [...porLinea.entries()]
+    .map(([k, x]) => ({ id: k, nombre: k === 'Sin línea' ? k : nombreCategoria(k), valor: x.cents, texto: solesDeCentimos(x.cents), sub: `${enteroPE(x.unidades)} u.` }))
+    .sort((a, b) => b.valor - a.valor);
+  const colecciones = lista(d.topCollectionsByViews).map((c) => ({ id: c.id || c.name, nombre: c.name || c.id, valor: c.total, texto: cuentaDe(c.total, 'vista', 'vistas') }));
+  const busquedas = lista(d.topSearches).map((x) => ({ id: x.query, nombre: `«${x.query}»`, valor: x.total, texto: cuentaDe(x.total, 'vez', 'veces') }));
+  const deseos = lista(d.deseos?.topProductos).map((p) => ({ id: p.productId, ...producto(p.productId, p.nombre), valor: p.agregados, texto: cuentaDe(p.agregados, 'vez', 'veces') }));
+  return { vistos, vendidos, masMirados, lineasVistas, lineasVendidas, colecciones, busquedas, deseos };
+}
+
+const NOMBRES_DISPOSITIVO = { Mobile: 'Celular', Desktop: 'Computadora', Tablet: 'Tablet', Desconocido: 'No se sabe' };
+const NOMBRES_CLIENTE = { APP: 'App Walá', WEB: 'Web (wala.pe)' };
+
+/* Una lista con su parte del total: "41%" y "2,278 visitas" debajo. */
+function conPorcentaje(filas = [], nombres = {}) {
+  const suma = lista(filas).reduce((a, x) => a + (Number(x.count) || 0), 0);
+  return lista(filas).map((x) => ({
+    id: x.code || x.name,
+    nombre: nombres[x.name] || (!x.name || /^(unknown|desconocido)$/i.test(x.name) ? 'No se sabe' : x.name),
+    valor: x.count,
+    texto: `${pctDe(x.count, suma)}%`,
+    sub: cuentaDe(x.count, 'visita', 'visitas'),
+  }));
+}
+
+/** La pestaña Visitantes: cifras, canal por canal, país (o el aproximado) y con qué entran. */
+export function listasDeVisitantes(datos = {}) {
+  const d = datos || {};
+  const v = d.visitas || {};
+  const visitas = v.total?.total || 0;
+  const paises = conPorcentaje(d.byCountry);
+  const aprox = paises.length ? [] : conPorcentaje(d.byCountryAprox);
+  return {
+    cifras: [
+      { id: 'visitas', nombre: 'Visitas', valor: enteroPE(visitas) },
+      { id: 'personas', nombre: 'Personas distintas', valor: d.personas ? enteroPE(d.personas.total) : '—', ayuda: 'Mismo celular o computadora = 1' },
+      { id: 'interaccion', nombre: 'Hicieron algo', valor: `${pctDe(v.conInteraccion?.total || 0, visitas)}%`, ayuda: 'Vieron 2+ páginas, 10 s o pidieron' },
+      { id: 'paginas', nombre: 'Páginas por visita', valor: visitas ? decimal((v.paginas?.total || 0) / visitas) : '—' },
+      { id: 'tiempo', nombre: 'Tiempo por visita', valor: visitas ? duracionCorta(Math.round((v.dwellMs?.total || 0) / visitas)) : '—' },
+    ],
+    canales: lista(d.canales).map((c) => ({
+      id: c.canal, canal: c.canal, visitas: enteroPE(c.visitas), parte: `${pctDe(c.visitas, visitas)}%`,
+      interaccion: `${pctDe(c.conInteraccion, c.visitas)}%`, pedidos: enteroPE(c.pedidos), conversion: decimal(porCienVisitas(c.pedidos, c.visitas)),
+    })),
+    paises: paises.length ? paises : aprox,
+    paisAproximado: !paises.length && aprox.length > 0,
+    dispositivos: conPorcentaje(d.byDevice, NOMBRES_DISPOSITIVO),
+    clientes: conPorcentaje(d.byClientType, NOMBRES_CLIENTE),
+  };
+}

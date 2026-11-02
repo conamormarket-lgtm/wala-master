@@ -2,13 +2,19 @@ import React, { useMemo, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import Boton from '../../Boton';
 import { Aviso, EstadoVacio } from '../../Feedback';
+import { Interruptor } from '../../Formulario';
 import { Pestanas } from '../../Navegacion';
 import { Hueso } from '../../Esqueletos';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
-import { Cifra, FilaCifras, BloqueMetrica, ColumnasMetricas, SinDatos, SelectorPeriodo } from '../../piezas/admin/Metricas';
+import { TablaAdmin } from '../../piezas/admin/Datos';
+import { Cifra, FilaCifras, BloqueMetrica, ColumnasMetricas, SinDatos, SelectorPeriodo, ListaBarras } from '../../piezas/admin/Metricas';
 import { GraficoTendencia } from '../../piezas/admin/Grafico';
-import { ListaAvisos, TablaComparativa, ListaEnVivo, TarjetaEnlacesRotos } from '../../piezas/admin/Resultados';
-import { cifrasDelResumen, otrosCobrosDe, serieDeVisitas, porCienVisitas, PERIODOS_RESULTADOS } from '../../adaptadoresAdmin';
+import { ListaAvisos, TablaComparativa, ListaEnVivo, TarjetaEnlacesRotos, ListaInteresados } from '../../piezas/admin/Resultados';
+import {
+  cifrasDelResumen, otrosCobrosDe, serieDeVisitas, porCienVisitas, PERIODOS_RESULTADOS, listasDeProductos, listasDeVisitantes, duracionCorta,
+} from '../../adaptadoresAdmin';
+import { urlWhatsApp, telefonoDePerfil, aceptoWhatsApp, mensajeProductoVisto } from '../../../../utils/whatsappLink';
+import l from './Lista.module.css';
 import s from './Resultados.module.css';
 
 /*
@@ -162,6 +168,155 @@ export function PaginaResumenResultados({
       </ColumnasMetricas>
 
       {rotosSinResolver > 0 && <div id="enlaces"><TarjetaEnlacesRotos {...enlacesRotos} /></div>}
+    </div>
+  );
+}
+
+/* ── D4b · Productos y Visitantes ─────────────────────── */
+
+/* Lo que se muestra mientras carga o si no se pudo, igual en las pestañas. */
+function EstadoDePestana({ cargando, error, datos }) {
+  if (error) return <Aviso tipo="error" titulo="No se pudieron cargar los datos">{error}</Aviso>;
+  if (cargando && !datos) {
+    return <ColumnasMetricas><Hueso forma="bloque" alto={260} /><Hueso forma="bloque" alto={260} /></ColumnasMetricas>;
+  }
+  if (!datos) return <EstadoVacio titulo="Sin resultados todavía" texto="Cuando la tienda tenga visitas, aquí aparecen sus números." />;
+  return null;
+}
+
+const MAX_INTERESADOS = 20;
+
+/**
+ * Productos: qué se mira y qué se vende, quién se queda mirando (con su
+ * WhatsApp si lo aceptó), líneas, colecciones, búsquedas, deseos y Crear.
+ *  - datos (useDashboardAnalytics) · cargando · error
+ *  - productoDe(id, nombre) → { nombre, imagen, producto } (del catálogo, con los ocultos; producto es el crudo, para el mensaje)
+ *  - nombreCategoria(id) → nombre · perfiles: Map uid → perfil (getPerfilesPorUid) · cargandoPerfiles
+ */
+export function PaginaProductosResultados({ datos, cargando = false, error, productoDe, nombreCategoria, perfiles, cargandoPerfiles = false }) {
+  const [medida, setMedida] = useState('ingresos');
+  const [soloConPermiso, setSoloConPermiso] = useState(false);
+  const listas = useMemo(() => listasDeProductos({ datos, productoDe, nombreCategoria, medida }), [datos, productoDe, nombreCategoria, medida]);
+  const interesados = useMemo(() => (datos?.interes?.pares || []).slice(0, 60)
+    .map((par) => ({ ...par, perfil: perfiles?.get?.(par.uid) || null }))
+    .filter((par) => !soloConPermiso || aceptoWhatsApp(par.perfil))
+    .slice(0, MAX_INTERESADOS)
+    .map((par) => {
+      const crudo = productoDe?.(par.productId)?.producto;
+      const nombre = par.perfil?.displayName || par.nombre || 'Cliente';
+      const telefono = telefonoDePerfil(par.perfil);
+      const permiso = aceptoWhatsApp(par.perfil);
+      return {
+        id: `${par.uid}|${par.productId}`,
+        nombre,
+        producto: crudo?.name || productoDe?.(par.productId)?.nombre || 'Producto',
+        tiempo: duracionCorta(par.dwellMs),
+        vistoMs: par.ultimaMs,
+        whatsapp: crudo && telefono && permiso ? urlWhatsApp(telefono, mensajeProductoVisto(nombre, crudo)) : null,
+        motivo: cargandoPerfiles ? 'Cargando…' : !telefono ? 'Sin teléfono' : !permiso ? 'No aceptó WhatsApp' : '—',
+      };
+    }), [datos?.interes?.pares, perfiles, soloConPermiso, productoDe, cargandoPerfiles]);
+
+  const estado = EstadoDePestana({ cargando, error, datos });
+  if (estado) return estado;
+  const entero = (n) => new Intl.NumberFormat('es-PE').format(Math.round(Number(n) || 0));
+
+  return (
+    <div className={s.resumen} data-componente="PaginaProductosResultados">
+      {!datos.diasConResultados && (
+        <Aviso tipo="aviso" compacto>Ventas, interés, deseos y Crear se suman desde el 24/10/2026. Para los días anteriores, usa «Reconstruir el resumen diario» en Detalle técnico.</Aviso>
+      )}
+      <ColumnasMetricas>
+        <BloqueMetrica titulo="Más vistos" ayuda="Veces que abrieron la ficha del producto.">
+          <ListaBarras filas={listas.vistos} vacio="Nadie abrió fichas de producto en este periodo." />
+        </BloqueMetrica>
+        <BloqueMetrica
+          titulo="Más vendidos"
+          ayuda="De los pedidos enviados desde la tienda y la app."
+          acciones={<Pestanas etiqueta="Ordenar las ventas por" opciones={[{ id: 'ingresos', texto: 'Soles' }, { id: 'unidades', texto: 'Unidades' }]} valor={medida} onChange={setMedida} />}
+        >
+          <ListaBarras filas={listas.vendidos} tono="menta" vacio="Sin pedidos en este periodo." />
+        </BloqueMetrica>
+      </ColumnasMetricas>
+
+      <BloqueMetrica titulo="Los que más miran" ayuda="Tiempo en la ficha de cada producto y quién se quedó mirando al menos 30 segundos. Escríbeles mientras lo tienen en mente.">
+        <ColumnasMetricas>
+          <ListaBarras filas={listas.masMirados} vacio="Sin tiempo registrado en fichas de producto." />
+          <div className={s.interesados}>
+            <Interruptor etiqueta="Solo quienes aceptaron WhatsApp" activo={soloConPermiso} onChange={setSoloConPermiso} />
+            <ListaInteresados personas={interesados} vacio={soloConPermiso ? 'Nadie de este periodo aceptó recibir mensajes por WhatsApp.' : 'Nadie con cuenta se quedó mirando un producto.'} />
+          </div>
+        </ColumnasMetricas>
+      </BloqueMetrica>
+
+      <ColumnasMetricas>
+        <BloqueMetrica titulo="Líneas más vistas"><ListaBarras filas={listas.lineasVistas} vacio="Los productos vistos no tienen línea asignada." /></BloqueMetrica>
+        <BloqueMetrica titulo="Líneas más vendidas"><ListaBarras filas={listas.lineasVendidas} tono="menta" vacio="Sin pedidos en este periodo." /></BloqueMetrica>
+      </ColumnasMetricas>
+      <ColumnasMetricas>
+        <BloqueMetrica titulo="Colecciones más vistas" ayuda="Cuando filtran la tienda por una colección o temporada."><ListaBarras filas={listas.colecciones} vacio="Nadie filtró por colección en este periodo." /></BloqueMetrica>
+        <BloqueMetrica titulo="Lo más buscado" ayuda="Si algo se busca mucho y no lo tienes, es una idea de producto."><ListaBarras filas={listas.busquedas} vacio="Sin búsquedas en este periodo." /></BloqueMetrica>
+      </ColumnasMetricas>
+      <ColumnasMetricas>
+        <BloqueMetrica titulo="Lista de deseos">
+          <FilaCifras etiqueta="Lista de deseos">
+            <Cifra nombre="Agregados" valor={entero(datos.deseos?.agregados?.total)} tono="violeta" />
+            <Cifra nombre="Quitados" valor={entero(datos.deseos?.quitados?.total)} tono="neutro" />
+          </FilaCifras>
+          <ListaBarras filas={listas.deseos} vacio="Nadie agregó productos a su lista en este periodo." />
+        </BloqueMetrica>
+        <BloqueMetrica titulo="Crear" ayuda="El estudio donde diseñan su prenda.">
+          <FilaCifras etiqueta="Crear">
+            <Cifra nombre="Abrieron Crear" valor={entero(datos.crear?.aperturas?.total)} tono="violeta" />
+            <Cifra nombre="Abrieron un combo" valor={entero(datos.crear?.aperturasCombo?.total)} tono="cielo" />
+            <Cifra nombre="Creaciones guardadas" valor={entero(datos.crear?.guardados?.total)} tono="exito" />
+          </FilaCifras>
+        </BloqueMetrica>
+      </ColumnasMetricas>
+    </div>
+  );
+}
+
+/**
+ * Visitantes: quién viene y de dónde, canal por canal, país y con qué entran.
+ *  - datos (useDashboardAnalytics) · cargando · error
+ */
+export function PaginaVisitantesResultados({ datos, cargando = false, error }) {
+  const v = useMemo(() => listasDeVisitantes(datos), [datos]);
+  const estado = EstadoDePestana({ cargando, error, datos });
+  if (estado) return estado;
+  return (
+    <div className={s.resumen} data-componente="PaginaVisitantesResultados">
+      <FilaCifras etiqueta="Visitantes">
+        {v.cifras.map((c, i) => <Cifra key={c.id} nombre={c.nombre} valor={c.valor} ayuda={c.ayuda} tono={['violeta', 'cielo', 'exito', 'neutro', 'aviso'][i]} />)}
+      </FilaCifras>
+      <BloqueMetrica
+        titulo="Canal por canal"
+        ayuda="«Directo o sin dato»: escribieron la dirección, usaron un favorito o vinieron de una app que no dice de dónde (Instagram y WhatsApp suelen ocultarlo). Comparte tus enlaces con ?utm_source=instagram para saberlo."
+      >
+        <TablaAdmin
+          etiqueta="Canales"
+          filas={v.canales}
+          nombreDe={(c) => c.canal}
+          vacio={{ titulo: 'Sin datos de origen', texto: 'No hay visitas con su canal en este periodo.' }}
+          columnas={[
+            { id: 'canal', titulo: 'Canal', tarjeta: 'titulo', celda: (c) => c.canal },
+            { id: 'visitas', titulo: 'Visitas', alinear: 'fin', tarjeta: 'detalle', celda: (c) => <span className={l.numero}>{c.visitas} <span className={l.sub}>{c.parte}</span></span> },
+            { id: 'interaccion', titulo: 'Hicieron algo', alinear: 'fin', tarjeta: 'detalle', celda: (c) => c.interaccion },
+            { id: 'pedidos', titulo: 'Pedidos', alinear: 'fin', tarjeta: 'detalle', celda: (c) => c.pedidos },
+            { id: 'conversion', titulo: 'De cada 100 compran', alinear: 'fin', tarjeta: 'detalle', celda: (c) => c.conversion },
+          ]}
+        />
+      </BloqueMetrica>
+      <ColumnasMetricas>
+        <BloqueMetrica titulo="País" ayuda={v.paisAproximado ? 'Aproximado por la hora del dispositivo (días anteriores a medir el país).' : undefined}>
+          <ListaBarras filas={v.paises} vacio="Sin datos de país en este periodo." />
+        </BloqueMetrica>
+        <BloqueMetrica titulo="Con qué entran">
+          <ListaBarras filas={v.dispositivos} vacio="Sin datos de dispositivo en este periodo." />
+          <ListaBarras filas={v.clientes} tono="menta" vacio="Sin datos de app o web en este periodo." />
+        </BloqueMetrica>
+      </ColumnasMetricas>
     </div>
   );
 }

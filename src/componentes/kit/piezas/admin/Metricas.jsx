@@ -1,5 +1,5 @@
 import React, { useId, useState } from 'react';
-import { Info } from 'lucide-react';
+import { ImageOff, Info } from 'lucide-react';
 import { Hueso } from '../../Esqueletos';
 import { CampoFecha } from '../../Fecha';
 import { Interruptor } from '../../Formulario';
@@ -87,6 +87,40 @@ export function ColumnasMetricas({ children }) {
 
 /** Un texto de "no hay datos" dentro de un bloque. */
 export const SinDatos = ({ children }) => <p className={s.sinDatos}>{children}</p>;
+
+/**
+ * Un ranking: cada fila con su nombre, su valor y una barra del largo que le
+ * toca frente a la primera (reemplaza Barras de resultados/piezas).
+ *  - filas: [{ id, nombre, valor (número), texto (ya con formato), sub, imagen }]
+ *    (con `imagen` en la fila, sale su foto, aunque esté vacía)
+ *  - max (10) · tono: 'violeta' | 'menta' · vacio (texto)
+ */
+export function ListaBarras({ filas = [], max = 10, tono = 'violeta', vacio = 'Sin datos en este periodo.' }) {
+  const visibles = filas.filter((f) => Number(f.valor) > 0).slice(0, max);
+  if (!visibles.length) return <SinDatos>{vacio}</SinDatos>;
+  const tope = Math.max(...visibles.map((f) => Number(f.valor) || 0)) || 1;
+  return (
+    <ol className={`${s.barras} ${s[`barras_${tono}`] || ''}`} data-componente="ListaBarras">
+      {visibles.map((f) => (
+        <li key={f.id ?? f.nombre} className={s.barraFila}>
+          {f.imagen !== undefined && (
+            <span className={s.miniatura}>{f.imagen ? <img src={f.imagen} alt="" loading="lazy" /> : <ImageOff aria-hidden="true" />}</span>
+          )}
+          <span className={s.barraCuerpo}>
+            <span className={s.barraTexto}>
+              <span className={s.barraNombre} title={f.nombre}>{f.nombre}</span>
+              <span className={s.barraValor}>{f.texto ?? f.valor}</span>
+            </span>
+            <span className={s.pista} aria-hidden="true">
+              <span className={s.relleno} style={{ width: `${Math.max(3, Math.round(((Number(f.valor) || 0) / tope) * 100))}%` }} />
+            </span>
+            {f.sub && <span className={s.barraSub}>{f.sub}</span>}
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
 
 /**
  * Elegir el periodo: botones en fila (se desliza en el celular) y, con
