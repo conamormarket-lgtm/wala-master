@@ -37,7 +37,15 @@ function giftOf(input) {
   if (!recipientName || recipientName.length > 60) fail('Escribe para quién es el regalo.');
   if (!message || message.length > 200) fail('Escribe un mensaje de hasta 200 letras para el regalo.');
   if (!GIFT_STICKERS.includes(gift.sticker)) fail('Elige cómo te acompaña Kapi en el regalo.');
-  return { recipientName, message, sticker: gift.sticker };
+  // Regalo de una lista de deseos con fecha (/regalar/:código de la web): cuándo entregarlo, la ocasión y de qué lista es
+  // (giftDetails.deliveryDate, deliveryEventLabel y wishlistUserCode, que lee el ERP para saber qué día entregar).
+  const deliveryDate = gift.deliveryDate == null || gift.deliveryDate === '' ? '' : String(gift.deliveryDate);
+  if (deliveryDate && !/^\d{4}-\d{2}-\d{2}$/.test(deliveryDate)) fail('Revisa la fecha de entrega del regalo.');
+  const deliveryEventLabel = deliveryDate ? text(gift.deliveryEventLabel).slice(0, 80) : '';
+  const wishlistUserCode = gift.wishlistUserCode == null || gift.wishlistUserCode === '' ? '' : String(gift.wishlistUserCode).trim().toUpperCase();
+  if (wishlistUserCode && !/^[A-Z0-9_-]{3,40}$/.test(wishlistUserCode)) fail('Revisa la lista de deseos del regalo.');
+  return { recipientName, message, sticker: gift.sticker, ...(deliveryDate ? { deliveryDate } : {}),
+    ...(deliveryEventLabel ? { deliveryEventLabel } : {}), ...(wishlistUserCode ? { wishlistUserCode } : {}) };
 }
 function identity(input, uid) {
   if (!uid) fail('Inicia sesión para preparar el pago.');

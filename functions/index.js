@@ -10207,7 +10207,8 @@ exports.getMobileCheckoutStatusSecure = functions.https.onCall(async (data, cont
   // balance + publicKey: la app paga el saldo de un pedido con el formulario de Culqi (processCulqiPayment con
   // metadata.pedidoId, como la web: sin 3DS); la llave pública es la misma del checkout.
   // talCual: vende las prendas de Crear con seVendeTalCual como un producto de la tienda (con la talla de su color).
-  if (data?.capabilities) return { contract: mobileCheckout.CONTRACT, coupons: true, creations: true, combos: true, coins: true, gifts: true, savedCards: true, whatsapp: true, talCual: true,
+  // giftDelivery: el regalo de una lista de deseos lleva su fecha de entrega, la ocasión y el código de la lista.
+  if (data?.capabilities) return { contract: mobileCheckout.CONTRACT, coupons: true, creations: true, combos: true, coins: true, gifts: true, savedCards: true, whatsapp: true, talCual: true, giftDelivery: true,
     balance: true, publicKey: /^pk_(test|live)_/.test(process.env.CULQI_PUBLIC_KEY || '') ? process.env.CULQI_PUBLIC_KEY : null,
     enabled: process.env.MOBILE_CHECKOUT_ENABLED === 'true' && /^pk_(test|live)_/.test(process.env.CULQI_PUBLIC_KEY || '') };
   try {

@@ -187,3 +187,13 @@ test('tal cual: una prenda con seVendeTalCual en la tienda se compra con la tall
   assert.equal(mobile.talCual({ ...prenda, inStock: '' }).inStock, true);
   assert.deepEqual(mobile.talCual(prenda).variants[0].sizes, ['Única', 'S', 'M']);
 });
+test('regalo de una lista: la fecha de entrega, la ocasión y el código llegan a giftDetails; sin ellos, el regalo de siempre', async () => {
+  const gift = { recipientName: 'Ana', message: '¡Feliz cumple!', sticker: 'kapi-party', deliveryDate: '2026-12-05', deliveryEventLabel: 'Cumpleaños de Ana', wishlistUserCode: 'ana123' };
+  const result = await mobile.build({ ...input(), gift }, 'a', read());
+  assert.deepEqual(result.payload.giftDetails, { isGift: true, recipientName: 'Ana', message: '¡Feliz cumple!', sticker: 'kapi-party',
+    deliveryDate: '2026-12-05', deliveryEventLabel: 'Cumpleaños de Ana', wishlistUserCode: 'ANA123' });
+  const ok = { recipientName: 'Ana', message: 'Hola', sticker: 'kapi-love' };
+  assert.deepEqual(mobile.giftOf({ gift: ok }), ok);
+  assert.equal(mobile.giftOf({ gift: { ...ok, deliveryEventLabel: 'sin fecha' } }).deliveryEventLabel, undefined);
+  for (const bad of [{ deliveryDate: '05/12/2026' }, { wishlistUserCode: 'a b' }, { wishlistUserCode: '../x' }]) assert.throws(() => mobile.giftOf({ gift: { ...ok, ...bad } }));
+});
