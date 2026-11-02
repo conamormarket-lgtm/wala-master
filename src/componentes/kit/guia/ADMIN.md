@@ -1,4 +1,4 @@
-# Panel administrativo (`/admin`): el kit del admin (en marcha: paso 0, el plan)
+# Panel administrativo (`/admin`): el kit del admin (en marcha: D0 hecho en el kit)
 
 Lo mismo que se hizo con la tienda, ahora con el panel: **primero todo en el
 kit**, con datos de ejemplo en `/componentes.html`; **cuando un apartado está
@@ -158,20 +158,20 @@ Estado: **·** por hacer · **kit** hecha en el kit · **admin** ya en el panel.
 
 | Pieza | Qué hace | Estado |
 |---|---|---|
-| `MarcoAdmin` | Menú lateral con grupos plegables (el abierto se recuerda), buscador de secciones, sello por grupo; en el celular, cabecera + hoja + `BarraInferiorAdmin`. Recibe `grupos` ya filtrados por permiso | · |
-| `BarraInferiorAdmin` | Los 4 accesos fijos + "Más" en el celular | · |
-| `CabezaAdmin` | Sello, título, una línea de ayuda, migas, acciones ("Nuevo", "Exportar") y, en el celular, la acción principal como botón fijo | · |
-| `SinPermiso` | Lo que ve un admin sin el permiso de esa sección | · |
+| `MarcoAdmin` | Menú lateral con grupos plegables (el abierto se recuerda), buscador de secciones, sello por grupo; en el celular, cabecera + hoja + `BarraInferiorAdmin`. Recibe `grupos` ya filtrados por permiso | kit (2026-11-02) |
+| `BarraInferiorAdmin` | Los 4 accesos fijos + "Más" en el celular | kit (2026-11-02) |
+| `CabezaAdmin` | Sello, título, una línea de ayuda, migas, acciones ("Nuevo", "Exportar") y, en el celular, la acción principal como botón fijo | kit (2026-11-02) |
+| `SinPermiso` | Lo que ve un admin sin el permiso de esa sección | kit (2026-11-02) |
 
 ### Datos
 
 | Pieza | Qué hace | Estado |
 |---|---|---|
-| `TablaAdmin` | Columnas, ordenar, elegir filas, acciones por fila, esqueleto, vacío, error; tarjetas en el celular | · |
-| `BarraFiltros` | Buscador, chips de filtros, `Selector`, rango de fechas; en el celular los filtros en hoja | · |
-| `AccionesLote` | La barra de "N elegidos" (reemplaza `components/admin/BulkActions`) | · |
+| `TablaAdmin` | Columnas, ordenar, elegir filas, acciones por fila, esqueleto, vacío, error; tarjetas en el celular | kit (2026-11-02) |
+| `BarraFiltros` | Buscador, chips de filtros, `Selector`, rango de fechas; en el celular los filtros en hoja | kit (2026-11-02) |
+| `AccionesLote` | La barra de "N elegidos" (reemplaza `components/admin/BulkActions`) | kit (2026-11-02) |
 | `CargarMas` | "Cargar más" / paginación con cuántos hay | · |
-| `InsigniaEstado` | Un estado con texto y color desde un mapa (borrador, activo, cerrado, pagado, pendiente, anulado…) | · |
+| `InsigniaEstado` | Un estado con texto y color desde un mapa (borrador, activo, cerrado, pagado, pendiente, anulado…) | kit (2026-11-02) |
 | `FilaRecurso` | Foto, nombre, datos y acciones: categorías, colecciones, marcas, cliparts | · |
 | `ListaOrdenable` | Reordenar arrastrando, con subir/bajar como alternativa (en vez del número `order` escrito a mano) | · |
 | `SelectorProductos` | Buscar y elegir productos con su foto (reemplaza `components/admin/BuscadorProducto`) | · |
@@ -180,9 +180,9 @@ Estado: **·** por hacer · **kit** hecha en el kit · **admin** ya en el panel.
 
 | Pieza | Qué hace | Estado |
 |---|---|---|
-| `HojaEdicion` | Crear/editar: panel lateral o pantalla completa en el celular; Guardar/Cancelar; aviso de cambios sin guardar; bloqueada mientras guarda | · |
-| `GrupoCampos` | Un bloque de campos con su título y ayuda (hoy 19 versiones de `fieldGroup`/`formSection`) | · |
-| `CampoImagen` | Soltar o elegir, recortar (`RecortarFoto`), avance de la subida, cambiar y quitar. La subida llega por props | · |
+| `HojaEdicion` | Crear/editar: panel lateral o pantalla completa en el celular; Guardar/Cancelar; aviso de cambios sin guardar; bloqueada mientras guarda | kit (2026-11-02) |
+| `GrupoCampos` | Un bloque de campos con su título y ayuda (hoy 19 versiones de `fieldGroup`/`formSection`) | kit (2026-11-02) |
+| `CampoImagen` | Soltar o elegir, recortar (`RecortarFoto`), avance de la subida, cambiar y quitar. La subida llega por props | kit (2026-11-02) |
 | `CampoFechaHora` | `CampoFecha` + la hora (sorteos, ofertas, popups) | · |
 | `CampoDinero`, `CampoPorcentaje` | Soles (o céntimos guardados), dólares, comisión | · |
 | `EstadoGuardado` | "Sin guardar · Guardando… · Guardado" en la cabecera del formulario | · |
@@ -224,8 +224,8 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 
 | # | Apartado | Páginas (ruta `/admin/…`) | Plantilla | Kit | Admin |
 |---|---|---|---|---|---|
-| D0 | Marco | el menú (`AdminLayout`), la cabecera de cada página, el inicio (`/admin`, `AdminDashboard`) | — | · | · |
-| D1 | Catálogo base | `categorias`, `colecciones`, `atributos-catalogo`, `marcas` (+ productos de la marca), `envios`, `cliparts`, `destacados` | Lista | · | · |
+| D0 | Marco | el menú (`AdminLayout`), la cabecera de cada página, el inicio (`/admin`, `AdminDashboard`) | — | hecho (2026-11-02) | · |
+| D1 | Catálogo base | `categorias` (en el kit desde el 2026-11-02, como prueba de D0), `colecciones`, `atributos-catalogo`, `marcas` (+ productos de la marca), `envios`, `cliparts`, `destacados` | Lista | · | · |
 | D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | · | · |
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | · | · |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | · | · |
@@ -238,6 +238,94 @@ El orden: D0 con las piezas base (tabla, hoja de edición, campo de imagen,
 estado), probadas en **Categorías**, que es un CRUD simple con foto y toca
 casi todo. Después el resto de D1, y así hacia abajo. D2 (la ficha de
 producto) puede ir después de D3 si hace falta: es la más grande.
+
+## D0 · El marco y las piezas base (en el kit desde el 2026-11-02)
+
+Cómo verlo: `npm run dev` → http://localhost:3000/componentes.html → **Admin**.
+**Panel de prueba**: el marco con el menú real; **Ver como** cambia los
+permisos (Super Admin, Catálogo, Solo inventario, Clientes) y el menú, la
+barra del celular y lo que se puede abrir cambian solos; **Tamaño**
+Computadora · Celular; **Estado**: cargando, error al cargar, sin datos y
+"Guardar y subir fallan". **Piezas del admin**: `InsigniaEstado`, una tabla
+con casillas y `AccionesLote`, y `CampoImagen` con sus estados.
+
+| Parte | Componente | Archivo | Qué hace |
+|---|---|---|---|
+| D0·1 Menú | `MarcoAdmin` | `piezas/admin/Marco.jsx` | Menú lateral (marco de 960 px o más, container query `admin`): logo con "Panel", buscador de secciones (sin tildes), Inicio suelto y los grupos plegables con su sello; el grupo de la sección actual se abre solo; abajo, quién eres, "Ver la tienda" y "Salir". En el celular: cabecera con el título de la sección y el botón del menú, el menú en una hoja |
+| D0·2 Barra del celular | `BarraInferiorAdmin` | `piezas/admin/Marco.jsx` (dibujo de `BarraInferior.module.css`, sin blur) | Cuatro accesos que el admin puede abrir y "Más" (el menú) |
+| D0·3 Cabecera de página | `CabezaAdmin` | `piezas/admin/Marco.jsx` | Migas, sello, título con la letra del logo, ayuda, acciones; `principal` ("Nueva categoría") baja en el celular a un botón sobre la barra (el marco lo recibe por contexto) |
+| D0·4 Sin permiso | `SinPermiso` | `piezas/admin/Marco.jsx` | Qué permiso pedir y "Volver al inicio" |
+| D0·5 Inicio | `PaginaInicioAdmin` | `paginas/admin/Inicio.jsx` | Saludo con la fecha y Kapi (con hambre si algo espera, feliz si todo está al día), "Para hoy" (lo que espera respuesta, con su cuenta o "Al día") y atajos |
+| Tabla | `TablaAdmin` | `piezas/admin/Datos.jsx` | Tabla con cabecera pegada, ordenar, casillas, "⋯" y clic derecho (`MenuContextual`); a menos de 720 px de caja, tarjetas (foto, título, datos, estado); cargando, error con Reintentar y vacío |
+| Filtros | `BarraFiltros` | `piezas/admin/Datos.jsx` | Buscador y filtros en una fila; angosta, "Filtros" abre una hoja y los puestos quedan como chips; cuántos quedan |
+| Estado | `InsigniaEstado`, `ESTADOS_ADMIN` | `piezas/admin/Datos.jsx` | `Etiqueta` con punto y texto, desde un mapa |
+| Lo elegido | `AccionesLote` | `piezas/admin/Datos.jsx` | Barra noche pegada abajo (sobre la barra del celular: `--admin-abajo`) |
+| Editar | `HojaEdicion` | `piezas/admin/Formularios.jsx` | Panel derecho de 520 px en escritorio, pantalla entera en el celular; Guardar fijo; el error de guardar queda arriba; con cambios, cerrar (X, Cancelar, Esc, afuera o atrás) pregunta "¿Salir sin guardar?" |
+| Bloques | `GrupoCampos` | `piezas/admin/Formularios.jsx` | Título en versalitas, ayuda, una o dos columnas |
+| Imagen | `CampoImagen` | `piezas/admin/Formularios.jsx` | Elegir o soltar, `RecortarFoto` (círculo o cuadrado), avance de la subida, Cambiar, Quitar, error con Reintentar |
+| Datos | `MENU_ADMIN`, `menuAdminPara`, `accesosAdminPara`, `opcionActiva`, `categoriaDesdeFirestore` / `categoriaAFirestore`, `marcaAdminDesdeFirestore` | `adaptadoresAdmin.js` (con pruebas: `npm run test:admin`) | El menú con el permiso de cada opción (las mismas reglas de `AdminLayout`), la barra del celular y las categorías |
+
+La prueba de las piezas: **Categorías** (`paginas/admin/Categorias.jsx`,
+`PaginaCategorias`; es de D1, se armó primero porque toca casi todo):
+aviso de las que no tienen marca con "Verlas", buscar, filtrar por marca
+(o "Sin marca"), ordenar por nombre u orden, crear y editar en la hoja
+(nombre, orden, marcas con "Todas · Ninguna", la foto de la burbuja en
+círculo) y eliminar con su pregunta. Datos de la demo: la copia real de
+`categories` (`demo/tienda.json`) y `tienda_brands` (`demo/marcas.json`;
+las marcas de cada categoría salen de su `categoryNav`, por eso varias
+quedan "sin marca").
+
+### Diferencias a propósito (no "corregirlas" al unir)
+
+- **El menú se ordena por tarea**, no por permiso: Inicio · Pedidos y pagos ·
+  Catálogo · Resultados · Clientes · Campañas · Diseño y juegos · Ajustes.
+  Cada opción conserva su permiso de hoy (`adaptadoresAdmin.js`); un grupo
+  sin opciones no sale. **Inicio lo ve cualquier admin** (antes su enlace
+  estaba en el grupo de diseño, aunque `/admin` ya abría para todos).
+- Sin emojis en el menú: cada opción tiene su ícono (`iconosAdmin.js`).
+- **Categorías no deja dos con el mismo nombre** (sin tildes ni
+  mayúsculas): propone sumarle marcas a la que ya existe.
+- La orden de una categoría nueva es la mayor + 1 (antes, cuántas había).
+- Guardar cierra la hoja y avisa con un toast; antes el formulario quedaba
+  arriba de la lista y subía la página.
+- `useCerrarConAtras` (`Efectos.jsx`) ganó `alBloquear`: con "atrás"
+  bloqueado, avisa (la hoja de edición pregunta antes de salir). Lo de
+  antes no cambia.
+
+### Qué se probó (2026-11-02, demo en localhost)
+
+- Escritorio (1180 px) y celular (375 px; también el tamaño Celular de la
+  demo): el menú lateral o la cabecera + barra, la tabla o las tarjetas, el
+  botón "Nueva categoría" sobre la barra; nada se sale del ancho a 375 px
+  (el buscador de los filtros empujaba "Filtros": corregido).
+- Crear sin nombre → el error en el campo y el foco ahí; crear con marca →
+  toast y la fila nueva; editar → guardar falla ("Guardar y subir fallan")
+  → el motivo arriba y lo escrito se queda → guardar bien.
+- Con cambios: Esc → pregunta; "Seguir editando" → sigue la hoja; atrás →
+  pregunta; atrás otra vez → solo se va la pregunta; "Salir sin guardar"
+  → se cierra sin salir de la página.
+- "⋯" → Editar · Eliminar → la pregunta → la fila se va y el toast.
+- Permisos: "Solo inventario" ve Inicio e Inventario y Categorías dice qué
+  permiso pedir; "Clientes" ve Pedidos y pagos, Resultados, Clientes y
+  Campañas (solo Popups).
+- En el celular: "Más" abre el menú en una hoja, buscar "ruleta" la
+  encuentra y tocarla navega y cierra la hoja; la subida de una foto
+  (recorte en círculo, avance, falla con Reintentar).
+- Sin errores en la consola. **No se pudo mirar en pantalla**: el panel del
+  navegador estaba oculto (no dibujaba), así que lo visual de la hoja, el
+  menú en el celular y el modo noche falta revisarlo a ojo; tampoco hay
+  capturas en `guia/` todavía.
+
+### Pendiente de D0
+
+- Las capturas numeradas (`admin-*.webp`) y revisar a ojo el modo noche.
+- Con algo elegido en el celular, `AccionesLote` y el botón de la página
+  quedan uno encima del otro: decidir cuál se esconde cuando hay selección
+  (ninguna página de D0 usa casillas todavía).
+- `PaginaListaAdmin` (la plantilla) se saca cuando haya una segunda lista
+  (Colecciones, D1): hoy Categorías arma las piezas a mano.
+- Al unir: el inicio de hoy (`AdminDashboard.jsx`) trae además un editor
+  viejo de secciones por zonas; ver si alguien lo usa antes de retirarlo.
 
 ## Cómo se une un apartado (la misma lógica que clientes)
 
@@ -273,3 +361,4 @@ producto) puede ir después de D3 si hace falta: es la más grande.
 | Fecha | Qué | Dónde |
 |---|---|---|
 | 2026-11-02 | Paso 0: el mapa del admin y este plan | `guia/ADMIN.md` |
+| 2026-11-02 | D0 en el kit: marco, barra del celular, cabecera, sin permiso, inicio, tabla, filtros, estados, lo elegido, hoja de edición, bloques, campo de imagen y el menú con permisos (con pruebas); Categorías como primera página; vista **Admin** en `/componentes.html` | `piezas/admin/`, `paginas/admin/`, `adaptadoresAdmin.js`, `DemoAdmin.jsx` |

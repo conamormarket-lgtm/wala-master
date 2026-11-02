@@ -75,3 +75,15 @@ export { PaginaSuscripciones, PaginaInvitacion, PaginaEnlaces } from './paginas/
 export { encuestaDesdeConfig } from './adaptadoresEncuesta';
 export { juegosDelArcade, BANNERS_ARCADE } from './adaptadoresArcade';
 export { prendaCrearDesdeProducto, comboCrearDesde, disenoComunidadDesde, fichaCreacionDesde } from './adaptadoresCrear';
+
+// Panel administrativo (guia/ADMIN.md): la tienda no importa este índice.
+export { MarcoAdmin, BarraInferiorAdmin, CabezaAdmin, SinPermiso } from './piezas/admin/Marco';
+export { TablaAdmin, InsigniaEstado, ESTADOS_ADMIN, BarraFiltros, AccionesLote } from './piezas/admin/Datos';
+export { HojaEdicion, GrupoCampos, CampoImagen } from './piezas/admin/Formularios';
+export { ICONOS_ADMIN, iconoAdmin } from './piezas/admin/iconosAdmin';
+export { PaginaInicioAdmin } from './paginas/admin/Inicio';
+export { PaginaCategorias } from './paginas/admin/Categorias';
+export {
+  MENU_ADMIN, menuAdminPara, accesosAdminPara, puedeVer, esRutaActiva, opcionActiva,
+  categoriaDesdeFirestore, categoriaAFirestore, marcaAdminDesdeFirestore, normalizarBusqueda,
+} from './adaptadoresAdmin';

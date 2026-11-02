@@ -1,0 +1,475 @@
+/* ── Tabla del admin (D0) ─────────────────────────────────── */
+/* "tabla": 720 px o más es tabla; menos, tarjetas. */
+.tabla {
+  container: tabla / inline-size;
+  position: relative;
+}
+
+.ancha {
+  display: none;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--color-surface);
+  font-size: 0.88rem;
+}
+
+/* Sin overflow (dejaría de pegarse la cabecera): las esquinas, a mano. */
+.ancha thead th:first-child {
+  border-top-left-radius: 18px;
+}
+
+.ancha thead th:last-child {
+  border-top-right-radius: 18px;
+}
+
+.ancha tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 18px;
+}
+
+.ancha tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 18px;
+}
+
+.ancha thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 42px;
+  padding: 0 0.85rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-2, var(--color-bg));
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ancha tbody td {
+  height: 56px;
+  padding: 0.4rem 0.85rem;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.ancha tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.filaTocable {
+  cursor: pointer;
+}
+
+.filaTocable:hover td {
+  background: var(--color-hover, var(--gris-hover));
+}
+
+.filaElegida td,
+.filaElegida:hover td {
+  background: var(--primary-light);
+}
+
+.alinear_fin {
+  text-align: right !important;
+}
+
+.alinear_centro {
+  text-align: center !important;
+}
+
+.colCasilla {
+  width: 48px;
+  padding-right: 0 !important;
+}
+
+.colAcciones {
+  width: 56px;
+  padding: 0 0.5rem !important;
+  text-align: right !important;
+}
+
+.oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.ordenar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.ordenar svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  opacity: 0.55;
+}
+
+.ordenar:hover,
+.ordenarActual {
+  color: var(--primary-color);
+}
+
+.ordenarActual svg {
+  opacity: 1;
+}
+
+/* El título de la fila es un botón (teclado y lectores); se ve como texto. */
+.tituloBoton {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tituloBoton:hover {
+  color: var(--primary-color);
+}
+
+.casilla {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: -11px;
+  cursor: pointer;
+}
+
+.casilla input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.casilla input:focus-visible + span {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+/* Algunas elegidas: el visto apagado (ni todo ni nada). */
+.mixto {
+  opacity: 0.55;
+}
+
+.masBoton {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.masBoton:hover,
+.masBoton[aria-expanded='true'] {
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.masBoton svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+/* ── Tarjetas (angosta) ── */
+.tarjetas {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tarjeta {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.3rem 0.35rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+
+.tarjeta > .casilla {
+  margin: 0 -0.35rem 0 -0.2rem;
+}
+
+.tarjetaCuerpo {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  min-height: 60px;
+  padding: 0.3rem 0.35rem;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tarjetaCuerpo:disabled {
+  cursor: default;
+}
+
+.tarjetaCuerpo:not(:disabled):active {
+  background: var(--color-hover, var(--gris-hover));
+}
+
+.tarjetaFoto {
+  display: inline-flex;
+  flex: none;
+}
+
+.tarjetaTextos {
+  display: grid;
+  flex: 1;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.tarjetaTitulo {
+  overflow: hidden;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tarjetaDetalles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.6rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.tarjetaDetalle {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.tarjetaEstado {
+  flex: none;
+}
+
+.esqueleto {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.vacio {
+  padding: 1.5rem 0;
+  border: 1px dashed var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+@container tabla (min-width: 720px) {
+  .ancha {
+    display: table;
+  }
+
+  .tarjetas {
+    display: none;
+  }
+}
+
+/* ── Filtros ── */
+.filtros {
+  container: filtros / inline-size;
+  display: grid;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.filtrosFila {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filtrosBuscar {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 28rem;
+}
+
+/* El input trae su ancho del navegador (~20 letras): que se encoja. */
+.filtrosBuscar input {
+  width: 100%;
+  min-width: 0;
+}
+
+.filtrosAncho {
+  display: none;
+}
+
+.filtroCampo {
+  min-width: 13rem;
+}
+
+/* El campo con su etiqueta: en la fila, la etiqueta queda solo para lectores. */
+.filtroCampo label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.filtroCampo > * {
+  margin: 0;
+}
+
+.filtrosBoton {
+  flex: none;
+}
+
+.filtrosCuenta {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.filtrosResumen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.total {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.chipsPuestos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.filtrosHoja {
+  display: grid;
+  gap: 1rem;
+}
+
+@container filtros (min-width: 720px) {
+  .filtrosAncho {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .filtrosBoton {
+    display: none;
+  }
+
+  /* En la fila los filtros ya se ven: los chips sobran. */
+  .chipsPuestos {
+    display: none;
+  }
+}
+
+/* ── Lo elegido ── */
+.lote {
+  position: sticky;
+  bottom: calc(var(--admin-abajo, 0px) + 0.75rem);
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.85rem;
+  padding: 0.45rem 0.6rem 0.45rem 0.4rem;
+  border-radius: 16px;
+  background: var(--noche-wala, #14121c);
+  color: #fff;
+  box-shadow: 0 14px 30px -16px rgba(20, 18, 28, 0.7);
+}
+
+.loteLimpiar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.loteLimpiar:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.loteLimpiar svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.loteCuantos {
+  flex: 1;
+  font-size: 0.9rem;
+}
+
+.loteAcciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}

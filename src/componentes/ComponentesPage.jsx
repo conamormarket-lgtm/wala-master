@@ -21,6 +21,7 @@ import DemoSecciones, { GRUPOS_CATALOGO } from './DemoSecciones';
 import DemoPiezas from './DemoPiezas';
 import DemoPiezasCuenta from './DemoPiezasCuenta';
 import DemoEsqueletos from './DemoEsqueletos';
+import { PanelDePrueba, PiezasAdmin } from './DemoAdmin';
 // La mayoría de productos reales vienen con fondo blanco: estas fotos lo simulan.
 import FRENTE_BLANCO from './demo/polera-fondo-blanco.jpg';
 import ESPALDA_BLANCO from './demo/polera-fondo-blanco-espalda.jpg';
@@ -46,6 +47,7 @@ const VISTAS = [
   ['piezas', 'Piezas'],
   ['secciones', 'Secciones'],
   ['paginas', 'Páginas'],
+  ['admin', 'Admin'],
 ];
 
 const INDICES = {
@@ -65,6 +67,10 @@ const INDICES = {
   secciones: GRUPOS_CATALOGO,
   paginas: [
     ['tienda', 'Tienda de prueba'],
+  ],
+  admin: [
+    ['panel', 'Panel de prueba'],
+    ['piezas-admin', 'Piezas del admin'],
   ],
 };
 
@@ -563,11 +569,13 @@ function Contenido({ tema, cambiarTema }) {
         {vista === 'piezas' && <Portada tema={tema} cambiarTema={cambiarTema} manejarAgregar={manejarAgregar} />}
         {vista !== 'piezas' && (
           <header id="inicio" className={s.cabezaVista}>
-            <h1>{vista === 'secciones' ? 'Secciones del builder' : 'Páginas'}</h1>
+            <h1>{vista === 'secciones' ? 'Secciones del builder' : vista === 'admin' ? 'Panel administrativo' : 'Páginas'}</h1>
             <p>
               {vista === 'secciones'
                 ? 'Cada sección que se puede añadir en el editor, por separado y con sus variantes. Los ajustes son los mismos campos que guarda Firestore.'
-                : 'Las piezas y secciones ya armadas: una landing completa, el editor del builder, el carrito y Mis pedidos.'}
+                : vista === 'admin'
+                  ? 'El admin armado con el mismo kit de la tienda: primero todo aquí y después cada apartado entero al panel real (guía: kit/guia/ADMIN.md).'
+                  : 'Las piezas y secciones ya armadas: una landing completa, el editor del builder, el carrito y Mis pedidos.'}
             </p>
           </header>
         )}
@@ -926,6 +934,26 @@ function Contenido({ tema, cambiarTema }) {
             onAgregar={manejarAgregar}
             toast={toast}
           />
+        </Seccion>
+        </>)}
+
+        {vista === 'admin' && (<>
+        {/* ── PANEL DE PRUEBA ── */}
+        <Seccion
+          id="panel" numero="01" titulo="Panel de prueba"
+          descripcion="El marco del admin con el menú real, filtrado por permiso: cambia «Ver como» y el menú, la barra del celular y lo que se puede abrir cambian solos. Ya están el inicio y Categorías (con la copia real de categorías y marcas); las demás secciones dicen en qué apartado se harán. Guardar, eliminar y subir se simulan."
+          mejoras={['Un menú con buscador y grupos por tarea', 'En el celular: barra con los accesos y el menú en una hoja', 'La lista es tabla o tarjetas según el ancho', 'Editar al costado, sin perder la lista', 'Pregunta antes de perder cambios', 'Nada de alert() ni confirm()']}
+        >
+          <HechaCon piezas={['MarcoAdmin', 'BarraInferiorAdmin', 'CabezaAdmin', 'SinPermiso', 'PaginaInicioAdmin', 'PaginaCategorias', 'TablaAdmin', 'BarraFiltros', 'HojaEdicion', 'GrupoCampos', 'CampoImagen', 'InsigniaEstado', 'Confirmar', 'useToast']} />
+          <PanelDePrueba />
+        </Seccion>
+
+        {/* ── PIEZAS DEL ADMIN ── */}
+        <Seccion
+          id="piezas-admin" numero="02" titulo="Piezas del admin"
+          descripcion="Las piezas sueltas con sus estados. Todas reciben los datos y las acciones por props: ninguna lee Firestore ni los permisos."
+        >
+          <PiezasAdmin />
         </Seccion>
         </>)}
 

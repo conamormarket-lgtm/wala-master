@@ -1,0 +1,319 @@
+import React, { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { AlertCircle, ImagePlus, RefreshCw, Trash2, Upload, X } from 'lucide-react';
+import Boton from '../../Boton';
+import { Aviso, Confirmar } from '../../Feedback';
+import { useBloquearScroll, useCerrarConAtras } from '../../Efectos';
+import { RecortarFoto } from '../RecortarFoto';
+import campo from '../../Formulario.module.css';
+import s from './Formularios.module.css';
+
+/*
+ * Formularios del admin (guía: guia/ADMIN.md, D0): la hoja para crear o
+ * editar, los bloques de campos y el campo de imagen. Guardar y subir llegan
+ * por props como promesas: la pieza pone sola el cargando y el error.
+ */
+
+const ENFOCABLES = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const enEscritorio = () => typeof window !== 'undefined' && window.matchMedia('(min-width: 720px)').matches;
+
+/**
+ * Crear o editar un registro. En escritorio, un panel al costado derecho
+ * (la lista sigue a la vista); en el celular, la pantalla entera, con
+ * Guardar fijo abajo.
+ *  - abierta · titulo · subtitulo · onCerrar
+ *  - onGuardar(): promesa. Mientras dura, la hoja no se cierra y el botón
+ *    carga; si falla, el motivo queda arriba. Al terminar bien, quien la
+ *    usa la cierra (o la deja abierta para seguir).
+ *  - sucio: hay cambios sin guardar → cerrar pregunta antes (también con Esc,
+ *    tocando afuera y con el atrás de Android)
+ *  - textoGuardar ('Guardar') · puedeGuardar (false: el botón apagado)
+ *  - extra: un nodo a la izquierda del pie (Eliminar)
+ *  - children: los campos (GrupoCampos)
+ */
+export function HojaEdicion({ abierta, titulo, subtitulo, onCerrar, onGuardar, sucio = false, textoGuardar = 'Guardar', puedeGuardar = true, extra, children }) {
+  const panel = useRef(null);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState('');
+  const [preguntando, setPreguntando] = useState(false);
+  const [escritorio, setEscritorio] = useState(enEscritorio);
+  const idTitulo = useId();
+
+  const estado = useRef({});
+  estado.current = { sucio, guardando, onCerrar };
+  const pedirCierre = () => {
+    const e = estado.current;
+    if (e.guardando) return;
+    if (e.sucio) setPreguntando(true);
+    else e.onCerrar?.();
+  };
+
+  useEffect(() => {
+    if (!abierta) return;
+    setError('');
+    setPreguntando(false);
+    setEscritorio(enEscritorio());
+  }, [abierta]);
+
+  useBloquearScroll(abierta);
+  // Con cambios, "atrás" no cierra: pregunta (la pregunta apila su propio
+  // atrás encima, así que el siguiente "atrás" solo la cierra a ella).
+  useCerrarConAtras(abierta, pedirCierre, guardando || sucio, () => { if (!estado.current.guardando) setPreguntando(true); });
+
+  useEffect(() => {
+    if (!abierta) return undefined;
+    const previo = document.activeElement;
+    const t = window.setTimeout(() => {
+      const primero = panel.current?.querySelector('input:not([type="hidden"]), textarea');
+      (primero || panel.current)?.focus({ preventScroll: true });
+    }, 60);
+    const onKey = (e) => {
+      const p = panel.current;
+      const foco = document.activeElement;
+      // Otra ventana encima (una lista abierta desde un campo, la pregunta): sus teclas.
+      if (foco && foco !== document.body && !p?.contains(foco)) return;
+      if (e.key === 'Escape') { e.preventDefault(); pedirCierre(); return; }
+      if (e.key !== 'Tab' || !p) return;
+      const lista = [...p.querySelectorAll(ENFOCABLES)].filter((el) => el.offsetParent !== null);
+      if (!lista.length) return;
+      const primero = lista[0];
+      const ultimo = lista[lista.length - 1];
+      if (e.shiftKey && (foco === primero || foco === p)) { e.preventDefault(); ultimo.focus(); }
+      else if (!e.shiftKey && foco === ultimo) { e.preventDefault(); primero.focus(); }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      window.clearTimeout(t);
+      document.removeEventListener('keydown', onKey);
+      previo?.focus?.({ preventScroll: true });
+    };
+  }, [abierta]);
+
+  const guardar = async (e) => {
+    e.preventDefault();
+    if (guardando || !puedeGuardar) return;
+    setGuardando(true);
+    setError('');
+    try {
+      await onGuardar?.();
+    } catch (err) {
+      setError(err?.message || 'No se pudo guardar. Revisa tu conexión y vuelve a intentar.');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const entra = escritorio ? { x: '100%' } : { y: '100%' };
+  const hoja = (
+    <AnimatePresence>
+      {abierta && (
+        <motion.div key="hoja" className={s.fondo} initial={{ opacity: 1 }} animate={{ opacity: 1 }} exit={{ opacity: 1, transition: { duration: 0.24 } }}>
+          <motion.div
+            className={s.velo}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1, transition: { duration: 0.25 } }}
+            exit={{ opacity: 0, transition: { duration: 0.2 } }}
+            onClick={pedirCierre}
+          />
+          <motion.form
+            ref={panel}
+            className={s.panel}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={idTitulo}
+            aria-busy={guardando || undefined}
+            tabIndex={-1}
+            onSubmit={guardar}
+            noValidate
+            initial={entra}
+            animate={{ x: 0, y: 0, transition: { duration: 0.32, ease: [0.16, 1, 0.3, 1] } }}
+            exit={{ ...entra, transition: { duration: 0.22, ease: [0.4, 0, 1, 1] } }}
+          >
+            <header className={s.cabeza}>
+              <div className={s.cabezaTextos}>
+                <h2 id={idTitulo}>{titulo}</h2>
+                {subtitulo && <p>{subtitulo}</p>}
+              </div>
+              <button type="button" className={s.cerrar} onClick={pedirCierre} disabled={guardando} aria-label="Cerrar">
+                <X aria-hidden="true" />
+              </button>
+            </header>
+            <div className={s.cuerpo}>
+              {error && <Aviso tipo="error" titulo="No se guardó">{error}</Aviso>}
+              {children}
+            </div>
+            <footer className={s.pie}>
+              {extra && <div className={s.pieExtra}>{extra}</div>}
+              <span className={s.pieEstado} aria-live="polite">{sucio && !guardando ? 'Cambios sin guardar' : ''}</span>
+              <Boton variante="fantasma" onClick={pedirCierre} disabled={guardando}>Cancelar</Boton>
+              <Boton type="submit" cargando={guardando} disabled={!puedeGuardar}>{guardando ? 'Guardando…' : textoGuardar}</Boton>
+            </footer>
+          </motion.form>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
+  return (
+    <>
+      {typeof document === 'undefined' ? hoja : createPortal(hoja, document.body)}
+      <Confirmar
+        abierta={preguntando}
+        titulo="¿Salir sin guardar?"
+        texto="Los cambios que hiciste se pierden."
+        confirmar="Salir sin guardar"
+        cancelar="Seguir editando"
+        peligro
+        onConfirmar={() => { setPreguntando(false); onCerrar?.(); }}
+        onCancelar={() => setPreguntando(false)}
+      />
+    </>
+  );
+}
+
+/**
+ * Un bloque de campos con su título y una línea de ayuda.
+ *  - titulo · ayuda · columnas (2: dos por fila cuando hay ancho) · children
+ */
+export function GrupoCampos({ titulo, ayuda, columnas = 1, children }) {
+  return (
+    <fieldset className={s.grupo}>
+      {titulo && <legend className={s.grupoTitulo}>{titulo}</legend>}
+      {ayuda && <p className={s.grupoAyuda}>{ayuda}</p>}
+      <div className={[s.grupoCampos, columnas > 1 && s.grupoDos].filter(Boolean).join(' ')}>{children}</div>
+    </fieldset>
+  );
+}
+
+/**
+ * Subir una imagen: elegirla o soltarla, recortarla (si hace falta) y
+ * subirla, con su avance. Después se ve, se cambia o se quita.
+ *  - etiqueta · ayuda · error
+ *  - valor (url) · onCambiar(url | '')
+ *  - subir(blob | archivo, { alAvanzar(0-100) }) → promesa con la url (o
+ *    { url }). Sin `subir`, no se puede elegir.
+ *  - recorte: 'circulo' | 'cuadrado' (antes de subir, con RecortarFoto) o null
+ *    (tal cual) · tamanoRecorte: px del JPG (600)
+ *  - forma: cómo se ve: 'circulo' (burbujas) | 'cuadro' | 'ancho' (banners)
+ */
+export function CampoImagen({
+  etiqueta, ayuda, error, valor = '', onCambiar, subir, recorte = null, tamanoRecorte = 600, forma = 'cuadro', acepta = 'image/*',
+}) {
+  const id = useId();
+  const entrada = useRef(null);
+  const [recortando, setRecortando] = useState(null);
+  const [subiendo, setSubiendo] = useState(null); // { progreso } mientras sube
+  const [fallo, setFallo] = useState(null); // { mensaje, archivo }
+  const [encima, setEncima] = useState(false);
+
+  useEffect(() => () => { if (recortando) URL.revokeObjectURL(recortando); }, [recortando]);
+
+  const enviar = async (archivo) => {
+    setFallo(null);
+    setSubiendo({ progreso: null });
+    try {
+      const r = await subir(archivo, { alAvanzar: (p) => setSubiendo({ progreso: Math.max(0, Math.min(100, Math.round(p))) }) });
+      const url = typeof r === 'string' ? r : r?.url;
+      if (!url) throw new Error(r?.error || 'No se pudo subir la imagen.');
+      onCambiar?.(url);
+    } catch (err) {
+      setFallo({ mensaje: err?.message || 'No se pudo subir la imagen.', archivo });
+    } finally {
+      setSubiendo(null);
+    }
+  };
+
+  const recibir = (archivo) => {
+    if (!archivo || !subir) return;
+    if (!archivo.type.startsWith('image/')) {
+      setFallo({ mensaje: 'Ese archivo no es una imagen (JPG, PNG o WEBP).' });
+      return;
+    }
+    if (recorte) setRecortando(URL.createObjectURL(archivo));
+    else enviar(archivo);
+  };
+
+  const soltar = (e) => {
+    e.preventDefault();
+    setEncima(false);
+    recibir(e.dataTransfer.files?.[0]);
+  };
+
+  const elegir = () => entrada.current?.click();
+  const mensaje = error || fallo?.mensaje;
+  const ayudaId = `${id}-ayuda`;
+
+  return (
+    <div className={campo.campo}>
+      {etiqueta && <span id={`${id}-etiqueta`} className={campo.etiqueta}>{etiqueta}</span>}
+      <div
+        className={[s.imagen, s[`imagen_${forma}`], valor && s.imagenLlena, encima && s.imagenEncima, mensaje && s.imagenError].filter(Boolean).join(' ')}
+        onDragOver={(e) => { if (subir) { e.preventDefault(); setEncima(true); } }}
+        onDragLeave={() => setEncima(false)}
+        onDrop={soltar}
+      >
+        <button
+          type="button"
+          className={s.imagenVista}
+          onClick={elegir}
+          disabled={!subir || Boolean(subiendo)}
+          aria-labelledby={etiqueta ? `${id}-etiqueta` : undefined}
+          aria-describedby={mensaje || ayuda ? ayudaId : undefined}
+          aria-label={etiqueta ? undefined : (valor ? 'Cambiar imagen' : 'Elegir imagen')}
+        >
+          {valor ? <img src={valor} alt="" /> : (
+            <span className={s.imagenInvita}>
+              <ImagePlus aria-hidden="true" />
+              <span>{subir ? 'Elegir o soltar una imagen' : 'Sin imagen'}</span>
+            </span>
+          )}
+          {subiendo && (
+            <span className={s.subiendo} role="status">
+              <span className={s.subiendoBarra}><span style={{ width: `${subiendo.progreso ?? 35}%` }} className={subiendo.progreso == null ? s.subiendoSinFin : undefined} /></span>
+              <span>{subiendo.progreso == null ? 'Subiendo…' : `Subiendo ${subiendo.progreso}%`}</span>
+            </span>
+          )}
+        </button>
+        <div className={s.imagenAcciones}>
+          {subir && (
+            <Boton tamano="sm" variante="secundario" icono={<Upload aria-hidden="true" />} onClick={elegir} disabled={Boolean(subiendo)}>
+              {valor ? 'Cambiar' : 'Elegir'}
+            </Boton>
+          )}
+          {valor && (
+            <Boton tamano="sm" variante="fantasma" icono={<Trash2 aria-hidden="true" />} onClick={() => onCambiar?.('')} disabled={Boolean(subiendo)}>Quitar</Boton>
+          )}
+        </div>
+        <input
+          ref={entrada}
+          type="file"
+          accept={acepta}
+          hidden
+          onChange={(e) => { const a = e.target.files?.[0]; e.target.value = ''; recibir(a); }}
+        />
+      </div>
+      {mensaje ? (
+        <p id={ayudaId} className={campo.error}>
+          <AlertCircle aria-hidden="true" />{mensaje}
+          {fallo?.archivo && (
+            <button type="button" className={s.reintentar} onClick={() => enviar(fallo.archivo)}><RefreshCw aria-hidden="true" /> Reintentar</button>
+          )}
+        </p>
+      ) : ayuda ? <p id={ayudaId} className={campo.ayuda}>{ayuda}</p> : null}
+
+      {recorte && (
+        <RecortarFoto
+          abierta={Boolean(recortando)}
+          src={recortando}
+          forma={recorte}
+          tamano={tamanoRecorte}
+          titulo="Recorta la imagen"
+          texto={recorte === 'circulo' ? 'Arrastra y usa el zoom: así se verá en la burbuja.' : 'Arrastra y usa el zoom para elegir qué se ve.'}
+          onCancelar={() => setRecortando(null)}
+          onListo={async (blob) => { setRecortando(null); await enviar(blob); }}
+        />
+      )}
+    </div>
+  );
+}
