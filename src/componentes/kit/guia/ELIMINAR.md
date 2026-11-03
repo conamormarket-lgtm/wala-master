@@ -386,7 +386,7 @@ Se quedan: `useBorradoresCrear`, `useComunidad`, `useVersionesReemplazadas`,
 | `AdminCustomizationViewsEditor` y la tarjeta "Producto personalizable" de la ficha de productos | `customizable` / `customizationViews` | Prendas de Crear (`/admin/prendas-crear`) | `AdminProductoFormV2.jsx` (solo con `personalizableViejo`) | al retirar `personalizableViejo` |
 | `services/personalizacionVieja.js` y el aviso "Quitar la personalización vieja" de Productos | pasar los datos viejos a normales | — | `AdminProductos.jsx` | cuando en producción ya no quede ninguno (el aviso desaparece solo) |
 
-## Panel administrativo (todavía no unido)
+## Panel administrativo (D0 y D1 unidos el 2026-11-03; lo demás todavía no)
 
 El admin se arma primero en el kit ([ADMIN.md](ADMIN.md)) y después se une
 por apartado. Esta lista anota desde ya lo que va a quedar sin uso y **quién
@@ -396,16 +396,16 @@ su apartado se una y su interruptor se retire.
 
 | Qué | Lo usa hoy | Se reemplaza con (kit) | Quién más lo importa | Cuándo se puede borrar |
 |---|---|---|---|---|
-| `components/AdminLayout/AdminLayout.jsx` + `.module.css` | `App.jsx` | `MarcoAdmin` (D0) | nadie más | al retirar `adminViejo` |
-| `pages/AdminDashboard.jsx` (la página) | `App.jsx` | `PaginaInicioAdmin` (D0) | — | al retirar `adminViejo`; **su `AdminDashboard.module.css` no**: lo importan las pantallas del dashboard (`dashShared`, `DashHeatmap`, `DashOrigen`, `DashPaginas`, `DashUso`, `DashRecepcion`, `EnlacesRotos`, `RecepcionPedidos`) hasta D3/D4 |
+| `components/AdminLayout/AdminLayoutViejo.jsx` + `AdminLayout.module.css` (desde el 2026-11-03 `AdminLayout.jsx` solo elige entre `MarcoDelPanel` y este) | `AdminLayout.jsx`, solo con `adminViejo` | `MarcoAdmin` por `components/panel/MarcoDelPanel.jsx` (D0) | nadie más | al retirar `adminViejo` |
+| `pages/AdminDashboardViejo.jsx` (la página; `AdminDashboard.jsx` ya solo elige) | `AdminDashboard.jsx`, solo con `adminViejo` | `PaginaInicioAdmin` por `components/panel/InicioDelPanel.jsx` (D0) | — | al retirar `adminViejo`; **su `AdminDashboard.module.css` no**: lo importan las pantallas del dashboard (`dashShared`, `DashHeatmap`, `DashOrigen`, `DashPaginas`, `DashUso`, `DashRecepcion`, `EnlacesRotos`, `RecepcionPedidos`) hasta D3/D4 |
 | `components/admin/AdminImageCropper` | AdminCategorias, AdminColecciones, AdminMarcas, AdminRecompensas | `CampoImagen` + `RecortarFoto` (D1, D5b) | `components/admin/CategoryNavEditor` | cuando se confirme que nadie usa `CategoryNavEditor` |
 | `components/admin/ThumbnailCropEditor` | AdminProductoFormV2 | `EncuadreFoto` (D2b) | nadie más | al unir D2 |
 | `components/admin/ProductTable` | AdminProductos | `TablaAdmin` (D2a) | nadie más | al unir D2 |
 | `components/admin/BulkActions` | AdminProductos | `AccionesLote` (D2a) | nadie más | al unir D2 |
 | `components/admin/BuscadorProducto` | — | `SelectorProductos` (D1) | AdminRuletaPage, AdminRecompensas y AdminNotifications: las tres ya tienen reemplazo (D7b, D5b, D5d) | cuando se retiren las tres páginas viejas |
 | `components/common/Toggle` | AdminProductos, ProductTable | `Interruptor` | nadie más | al unir D2 |
-| `pages/admin/AdminCategorias.jsx`, `AdminColecciones.jsx`, `AdminCatalogAttributes.jsx`, `AdminEnviosZonas.jsx`, `AdminCliparts.jsx`, `AdminDestacados.jsx` + sus `.module.css` | `App.jsx` | las páginas de D1 | nadie más | al retirar `adminCatalogoViejo` |
-| `pages/admin/AdminMarcas.jsx` + `AdminMarcaProductos.jsx` + sus `.module.css` | `App.jsx` (AdminMarcaProductos, dentro de AdminMarcas) | `PaginaMarcas`, `PaginaProductosMarca` (D1) | nadie más | al retirar `adminCatalogoViejo` |
+| `pages/admin/AdminCategoriasViejo.jsx`, `AdminColeccionesViejo.jsx`, `AdminCatalogAttributesViejo.jsx`, `AdminEnviosZonasViejo.jsx`, `AdminClipartsViejo.jsx`, `AdminDestacadosViejo.jsx` + sus `.module.css` (los `.jsx` sin «Viejo» ya solo eligen) | cada `.jsx` sin «Viejo», solo con `adminCatalogoViejo` | las páginas de D1 por `components/panel/` (`CategoriasDelPanel`, `CatalogoDelPanel`, `DestacadosDelPanel`) | nadie más | al retirar `adminCatalogoViejo` |
+| `pages/admin/AdminMarcasViejo.jsx` + `AdminMarcaProductos.jsx` + sus `.module.css` | `AdminMarcas.jsx`, solo con `adminCatalogoViejo` (AdminMarcaProductos, dentro de AdminMarcasViejo) | `PaginaMarcas`, `PaginaProductosMarca` por `components/panel/MarcasDelPanel.jsx` (D1) | nadie más | al retirar `adminCatalogoViejo` |
 | `pages/Tienda/admin/AdminProductos.jsx`, `AdminInventario.jsx`, `pages/admin/AdminPublicoProductos.jsx` + sus `.module.css` | `App.jsx` | las páginas de D2a | nadie más | al retirar `adminProductosViejo` |
 | `pages/Tienda/admin/AdminProductoFormV2.jsx` + `.module.css` | `App.jsx`, `RutasPrendasCrear.jsx`, `PersonalizarEnCrear.jsx` | `PaginaFichaProducto` (D2b, D2c) | — | al retirar `adminProductosViejo` |
 | `pages/Tienda/components/AdminComboEditor`, `pages/Tienda/admin/PersonalizarEnCrear.jsx` | AdminProductoFormV2 | la ficha (D2b) | nadie más | con la ficha |

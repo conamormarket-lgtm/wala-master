@@ -222,6 +222,7 @@ const EditorVisual = lazy(() => import('./components/constructor/EditorVisual'))
 // se usa en /admin/notificaciones. lazy() lo devuelve a su propio chunk.
 const AdminNotifications = lazy(() => import('./pages/admin/AdminNotifications/AdminNotifications'));
 const AdminMarcas = lazy(() => import('./pages/admin/AdminMarcas'));
+const AdminMarcaProductosRuta = lazy(() => import('./pages/admin/AdminMarcaProductosRuta'));
 
 // Enlaces útiles (constructor tipo Linktree / link-in-bio).
 const AdminEnlaces = lazy(() => import('./pages/admin/AdminEnlaces'));
@@ -558,6 +559,7 @@ function App() {
                                       <Route path="wordle" element={<AdminWordlePage />} />
                                       <Route path="notificaciones" element={<AdminNotifications />} />
                                       <Route path="marcas" element={<AdminMarcas />} />
+                                      <Route path="marcas/:id/productos" element={<AdminMarcaProductosRuta />} />
                                       {/* "Elementos con diseño" solo editaba las burbujas de categorías: ahora van en el editor de cada página. */}
                                       <Route path="elementos-diseno/*" element={<Navigate to="/admin/landing-pages" replace />} />
                                       <Route path="landing-pages" element={<AdminLandingPages />} />

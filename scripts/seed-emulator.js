@@ -82,7 +82,19 @@ async function ensureUser(uid, email, password, claims) {
   // ── Usuarios (Auth + perfil) ──────────────────────────────────────────────────
   await ensureUser("admin-uid", "admin@wala.test", "wala1234", { admin: true, role: "superadmin" });
   await setDoc("adminUsers", "admin-uid", { role: "admin", email: "admin@wala.test" });
-  await setDoc("portal_clientes_users", "admin-uid", { email: "admin@wala.test", displayName: "Admin Demo", role: "admin", referralCode: "KS-ADMIN1", monedas: 100 });
+  await setDoc("portal_clientes_users", "admin-uid", { email: "admin@wala.test", displayName: "Admin Demo", dni: "11223344", phone: "999000111", role: "admin", referralCode: "KS-ADMIN1", monedas: 100 });
+
+  // Admins con un solo permiso (adminRoles por correo, sin claim): para probar el
+  // menú del panel y SinPermiso (guia/ADMIN.md, D0). Misma contraseña.
+  for (const [uid, email, nombre, permisos] of [
+    ["catalogo-uid", "catalogo@wala.test", "Admin Catálogo", ["manage_products"]],
+    ["inventario-uid", "inventario@wala.test", "Admin Inventario", ["manage_inventory"]],
+    ["clientes-uid", "clientes@wala.test", "Admin Clientes", ["manage_clients"]],
+  ]) {
+    await ensureUser(uid, email, "wala1234", null);
+    await setDoc("adminRoles", email, { email, name: nombre, permissions: permisos });
+    await setDoc("portal_clientes_users", uid, { email, displayName: nombre, dni: "87654321", phone: "999111222", referralCode: `KS-${uid.slice(0, 4).toUpperCase()}`, monedas: 0 });
+  }
 
   await ensureUser("cliente-uid", "cliente@wala.test", "wala1234", null);
   await setDoc("portal_clientes_users", "cliente-uid", { email: "cliente@wala.test", displayName: "Cliente Demo", dni: "12345678", phone: "999888777", referralCode: "KS-CLI001", monedas: 50, kapiCoins: 3 });

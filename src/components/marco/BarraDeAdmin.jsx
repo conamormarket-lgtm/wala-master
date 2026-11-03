@@ -6,13 +6,16 @@ import { useVisualEditor } from '../../pages/Tienda/contexts/VisualEditorContext
 import { EN_VISTA_PREVIA_CALOR } from '../../utils/vistaPreviaCalor';
 import { BarraAdmin } from '../../componentes/kit/piezas/Marco';
 import { useConfirmar } from '../../componentes/kit/Feedback';
+import useLoViejo from '../../hooks/useLoViejo';
 
 /*
  * Barra de admin (M3) con el kit. Mismas reglas que AdminBar:
  *  - Solo admins, y nunca en la vista previa del mapa de calor (la página
  *    tiene que verse como la vio el visitante).
  *  - En la ficha de un producto: "Editar este producto" → su página del panel.
- *  - En el panel, el login y el registro: solo el acceso al panel.
+ *  - En el login y el registro: solo el acceso al panel. En el panel, nada:
+ *    su marco (MarcoDelPanel) trae el menú y "Ver la tienda" (con el
+ *    interruptor adminViejo vuelve la barra, como antes).
  *  - En el resto: el panel y el editor visual. En las páginas que arma el
  *    builder (inicio, /tienda, marcas y landings) edita la página; en las
  *    demás (carrito, cuenta, Crear…) solo la cabecera, el pie y lo de toda la
@@ -28,6 +31,7 @@ export default function BarraDeAdmin() {
   const navigate = useNavigate();
   const { isEditModeActive, toggleEditMode, sinGuardar, paginaDelBuilder } = useVisualEditor();
   const confirmar = useConfirmar();
+  const adminViejo = useLoViejo('admin');
   const pideEditor = new URLSearchParams(search).has('editar');
   useEffect(() => {
     if (!pideEditor || !isAdmin) return;
@@ -49,6 +53,8 @@ export default function BarraDeAdmin() {
     const id = pathname.split('/')[2];
     return <BarraAdmin fija editarEn={`/admin/productos/${id}`} textoEditor="Editar este producto" />;
   }
+
+  if (pathname.startsWith('/admin') && !adminViejo) return null;
 
   if (['/admin', '/login', '/registro'].some((r) => pathname.startsWith(r))) {
     return <BarraAdmin fija />;

@@ -101,6 +101,7 @@ export function PaginaMarcas({
   const toast = useToast();
   const [menu, setMenu] = useState(null);
   const [preguntaPlantilla, setPreguntaPlantilla] = useState(false);
+  const [preguntaRepetidas, setPreguntaRepetidas] = useState(false);
 
   const correr = async (fn, titulo) => {
     try {
@@ -113,7 +114,7 @@ export function PaginaMarcas({
 
   const masAcciones = [
     ...(onAplicarPlantilla ? [{ id: 'plantilla', etiqueta: 'Aplicar la plantilla de página', Icono: Sparkles, accion: () => setPreguntaPlantilla(true) }] : []),
-    ...(onQuitarRepetidas ? [{ id: 'repetidas', etiqueta: 'Quitar páginas repetidas', Icono: Trash2, accion: () => correr(onQuitarRepetidas, 'Páginas revisadas') }] : []),
+    ...(onQuitarRepetidas ? [{ id: 'repetidas', etiqueta: 'Quitar páginas repetidas', Icono: Trash2, accion: () => setPreguntaRepetidas(true) }] : []),
   ];
 
   return (
@@ -188,6 +189,16 @@ export function PaginaMarcas({
         confirmar="Aplicar"
         onConfirmar={async () => { setPreguntaPlantilla(false); await correr(onAplicarPlantilla, 'Plantilla aplicada'); }}
         onCancelar={() => setPreguntaPlantilla(false)}
+      />
+      {/* Borra páginas (no se deshace): pregunta antes, como AdminMarcas. */}
+      <Confirmar
+        abierta={preguntaRepetidas}
+        titulo="¿Quitar las páginas repetidas?"
+        texto="Son repetidas las de una misma marca con la misma dirección salvo mayúsculas o guiones (/ConAmor y /conamor). Se queda la que tiene el diseño editado y las otras direcciones llevan a ella. Las páginas de campaña con otra dirección no se tocan. No cambia marcas ni productos."
+        confirmar="Quitar repetidas"
+        peligro
+        onConfirmar={async () => { setPreguntaRepetidas(false); await correr(onQuitarRepetidas, 'Páginas revisadas'); }}
+        onCancelar={() => setPreguntaRepetidas(false)}
       />
     </>
   );

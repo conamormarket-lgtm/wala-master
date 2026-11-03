@@ -1,4 +1,4 @@
-# Panel administrativo (`/admin`): el kit del admin (D0-D8 hechos en el kit; falta unirlos)
+# Panel administrativo (`/admin`): el kit del admin (D0-D8 hechos en el kit; D0 y D1 unidos al admin)
 
 Lo mismo que se hizo con la tienda, ahora con el panel: **primero todo en el
 kit**, con datos de ejemplo en `/componentes.html`; **cuando un apartado está
@@ -226,8 +226,8 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 
 | # | Apartado | Páginas (ruta `/admin/…`) | Plantilla | Kit | Admin |
 |---|---|---|---|---|---|
-| D0 | Marco | el menú (`AdminLayout`), la cabecera de cada página, el inicio (`/admin`, `AdminDashboard`) | — | hecho (2026-11-02) | · |
-| D1 | Catálogo base | `categorias`, `colecciones`, `atributos-catalogo`, `marcas` (+ productos de la marca), `envios`, `cliparts`, `destacados` | Lista | hecho (2026-11-02) | · |
+| D0 | Marco | el menú (`AdminLayout`), la cabecera de cada página, el inicio (`/admin`, `AdminDashboard`) | — | hecho (2026-11-02) | hecho (2026-11-03) |
+| D1 | Catálogo base | `categorias`, `colecciones`, `atributos-catalogo`, `marcas` (+ productos de la marca), `envios`, `cliparts`, `destacados` | Lista | hecho (2026-11-02) | hecho (2026-11-03) |
 | D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | hecho (2026-11-02) | · |
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | · |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | · |
@@ -324,8 +324,41 @@ quedan "sin marca").
 - ~~`AccionesLote` encima del botón de la página~~: mientras hay algo
   elegido, el botón se esconde (`useMarcoAdmin().setConLote`).
 - ~~`PaginaListaAdmin`~~: salió con D1.
-- Al unir: el inicio de hoy (`AdminDashboard.jsx`) trae además un editor
-  viejo de secciones por zonas; ver si alguien lo usa antes de retirarlo.
+- ~~Al unir: el editor viejo de secciones por zonas de `AdminDashboard`~~:
+  queda en `AdminDashboardViejo.jsx` y solo vuelve con `adminViejo`. Se
+  borra con él.
+
+### D0 unido al admin (2026-11-03)
+
+| Parte | Conector | Qué hace |
+|---|---|---|
+| El marco | `components/panel/MarcoDelPanel.jsx` (por `AdminLayout.jsx`) | `MarcoAdmin` con `menuAdminPara(adminPermissions)` y `accesosAdminPara`; quién eres con el nombre y la foto de la cabecera y `textoPermisos`; "Salir" sale del panel y después cierra la sesión (si no, `AdminRoute` mandaba al login). Esconde la cabecera, el pie y la barra de la tienda (`LayoutContext`) mientras está montado; la barra «Modo administrador» tampoco sale en `/admin` (`BarraDeAdmin`) |
+| Sin permiso | el mismo | Una ruta del menú que no está en el de este admin muestra `SinPermiso` con el permiso que falta. Las que no están en el menú (direcciones viejas que redirigen, el detalle de un sorteo…) abren como antes: `AdminRoute` sigue decidiendo la entrada. Las fichas de Crear (`/admin/prendas-crear/…`) cuentan como Productos |
+| El inicio | `components/panel/InicioDelPanel.jsx` (por `pages/AdminDashboard.jsx`) | "Para hoy": pedidos por entregar (`useAdminWalaOrders` con los parámetros de Recepción: comparten la caché), reclamos sin responder y evidencias de retos (`getCountFromServer`, sin bajar los documentos), cada uno solo con su permiso; atajos filtrados con `puedeVer` |
+
+Interruptor `adminViejo` (`useLoViejo('admin')`): vuelven `AdminLayoutViejo`,
+`AdminDashboardViejo`, la cabecera, el pie, la barra de la tienda y la barra
+«Modo administrador».
+
+**Diferencias con la demo**: "Referidos por aprobar" no va en el inicio (con
+el modelo de hoy las monedas se liberan solas; no hay nada que aprobar), y
+"Pedidos por recibir" se llama "Pedidos por entregar" (es la cifra de
+Recepción). **Lo que ya pasaba**: las páginas que todavía no se unieron
+(D2-D8) se ven dentro del marco nuevo tal como eran; algunas tienen el título
+en negro fijo y de noche no se lee (también con el marco viejo): se arregla
+al unir cada una.
+
+**Qué se probó** (localhost con los emuladores; admins de prueba sembrados
+en `scripts/seed-emulator.js`: Super Admin, solo Catálogo, solo Inventario,
+solo Clientes): el inicio con sus tres pendientes "Al día" y los seis
+atajos; el marco a 1280 px y a 375 px (cabecera del celular y barra del
+panel, sin la de la tienda, nada se sale del ancho) con una página vieja
+(Productos) adentro; "Salir" lleva a la tienda; con solo Catálogo el menú
+muestra Catálogo y Clientes, el inicio solo los atajos de Productos y
+Categorías, y `/admin/destacados` dice que falta «Diseño y pedidos»; con
+`localStorage.wala_kit_viejo = "admin,adminCatalogo"` vuelve todo lo de
+antes. Sin errores en la consola. El build no mete el panel en el paquete
+principal de la tienda.
 
 ## D1 · Catálogo base (en el kit desde el 2026-11-02)
 
@@ -409,7 +442,7 @@ nuevos (con pruebas): colecciones, atributos (`ATRIBUTOS`,
   por eso `CampoColor`).
 - Modo noche a ojo (Categorías y las piezas sueltas). Sin errores en la consola.
 
-### Cómo se une D1 (cuando se decida)
+### Cómo se une D1 (unido el 2026-11-03: ver abajo)
 
 Un conector por página en `src/components/panel/` con los servicios de hoy
 y sus mismas `queryKey` (las de la tienda también: `['categories']`,
@@ -432,6 +465,36 @@ Interruptor: `adminCatalogoViejo`. No se pierde: el tope de monedas es el
 mismo de `utils/topeMonedas` (y su espejo en `functions/checkoutTotals.js`);
 eliminar una marca borra su landing (`deleteBrand`); `storeTitle` y
 `storeSubtitle` no se escriben (se conservan).
+
+### D1 unido al admin (2026-11-03)
+
+Un conector por página en `components/panel/` con lo de la tabla de arriba
+y `comun.js` (`useLectura` sobre los servicios `{ data, error }`, `sinError`,
+`useInvalidar` y `subirA(carpeta)` para `CampoImagen` con el mismo
+`uploadFile`). Cada página vieja pasó a `…Viejo.jsx`; el `.jsx` de siempre
+elige con `conInterruptor('adminCatalogo', …)`:
+
+| Página | Conector |
+|---|---|
+| Categorías | `CategoriasDelPanel.jsx` |
+| Colecciones, Atributos, Zonas de envío, Cliparts | `CatalogoDelPanel.jsx` (`ColeccionesDelPanel`, `AtributosDelPanel`, `EnviosDelPanel`, `ClipartsDelPanel`) |
+| Marcas | `MarcasDelPanel.jsx` (la vista previa pide un producto de la marca al abrir su hoja) |
+| Productos de una marca | `ProductosDeMarcaDelPanel` en `MarcasDelPanel.jsx`, en la **ruta nueva** `/admin/marcas/:id/productos` (`pages/admin/AdminMarcaProductosRuta.jsx`; con el interruptor vuelve a Marcas) |
+| Destacados | `DestacadosDelPanel.jsx` |
+
+Interruptor `adminCatalogoViejo` (`useLoViejo('adminCatalogo')`).
+
+**Cambios del kit al unir**: "Quitar páginas repetidas" (Marcas) ahora
+pregunta antes, como la página de antes: borra páginas y no se deshace.
+
+**Qué se probó** (localhost con los emuladores): Categorías crear → el
+documento en `tienda_categories` con `name`, `order` (número), `brandIds`
+(lista) y `createdAt` como antes → editar el nombre → eliminar con su
+pregunta; Marcas crear → "Sus productos" abre la ruta nueva → "Agregar
+productos" → elegir dos → "Pasar a…" → "En la marca · 2"; Destacados con los
+4 del sembrado → quitar uno → "En la portada · 3"; Colecciones, Atributos,
+Zonas (2), Cliparts abren sin errores. No se probó subir una imagen (el
+recorte necesita elegir un archivo a mano).
 
 ## D2 · Productos (en el kit desde el 2026-11-02: los cuatro tramos)
 
@@ -2144,26 +2207,26 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 
 | Parte | Hoy en el admin | Pasa a (kit) | Conector |
 |---|---|---|---|
-| Menú y permisos | `components/AdminLayout/AdminLayout.jsx` + `.module.css` (grupos a mano, `NavLink`, emojis, permisos con `adminPermissions`) | `MarcoAdmin` + `menuAdminPara` / `accesosAdminPara` (`adaptadoresAdmin.js`) | `MarcoDelPanel.jsx` (lee `useAuth().adminPermissions` y la ruta; `<Outlet>` adentro) |
-| Barra del celular | — (no había) | `BarraInferiorAdmin` (dentro de `MarcoAdmin`) | el mismo |
-| Cabecera de cada página | `<h1>`/`styles.header` propios en cada página | `CabezaAdmin` | cada conector |
-| Sin permiso | lo decide `AdminRoute` (no hay pantalla) | `SinPermiso` | `MarcoDelPanel.jsx` |
-| Inicio | `pages/AdminDashboard.jsx` (accesos sueltos + un editor viejo de secciones por zonas: ver si se usa) | `PaginaInicioAdmin` | `InicioDelPanel.jsx` (cuentas de reclamos, pedidos, referidos, retos) |
-| Avisos y preguntas | `alert()`, `window.confirm`, `ToastContext` (`useGlobalToast`) | `useToast`, `Confirmar` / `useConfirmar` | cada conector |
-| Botones y campos | `components/common/Button`, `components/ui` (`GlassButton`, `GlassInput`, `GlassModal`), `<select>`, `common/Toggle` | `Boton`, `Campo`, `Interruptor`, `Casilla`, `HojaInferior` / `HojaEdicion` | cada página del kit |
+| Menú y permisos ✓ | `components/AdminLayout/AdminLayout.jsx` + `.module.css` (grupos a mano, `NavLink`, emojis, permisos con `adminPermissions`) | `MarcoAdmin` + `menuAdminPara` / `accesosAdminPara` (`adaptadoresAdmin.js`) | `MarcoDelPanel.jsx` (lee `useAuth().adminPermissions` y la ruta; `<Outlet>` adentro) |
+| Barra del celular ✓ | — (no había) | `BarraInferiorAdmin` (dentro de `MarcoAdmin`) | el mismo |
+| Cabecera de cada página (D1 ✓; el resto al unir cada apartado) | `<h1>`/`styles.header` propios en cada página | `CabezaAdmin` | cada conector |
+| Sin permiso ✓ | lo decide `AdminRoute` (no hay pantalla) | `SinPermiso` | `MarcoDelPanel.jsx` |
+| Inicio ✓ | `pages/AdminDashboard.jsx` (accesos sueltos + un editor viejo de secciones por zonas: ver si se usa) | `PaginaInicioAdmin` | `InicioDelPanel.jsx` (cuentas de reclamos, pedidos, referidos, retos) |
+| Avisos y preguntas (D1 ✓; el resto al unir cada apartado) | `alert()`, `window.confirm`, `ToastContext` (`useGlobalToast`) | `useToast`, `Confirmar` / `useConfirmar` | cada conector |
+| Botones y campos (D1 ✓; el resto al unir cada apartado) | `components/common/Button`, `components/ui` (`GlassButton`, `GlassInput`, `GlassModal`), `<select>`, `common/Toggle` | `Boton`, `Campo`, `Interruptor`, `Casilla`, `HojaInferior` / `HojaEdicion` | cada página del kit |
 
 ### D1 · Catálogo base
 
 | Parte | Hoy en el admin | Pasa a (kit) | Conector |
 |---|---|---|---|
-| Categorías | `pages/admin/AdminCategorias.jsx` + `.module.css`; `AdminImageCropper` | `PaginaCategorias` (`PaginaListaAdmin`, `CampoImagen` con `RecortarFoto`) | `CategoriasDelPanel.jsx` |
-| Colecciones | `pages/admin/AdminColecciones.jsx` + `.module.css`; `AdminImageCropper` | `PaginaColecciones` | `ColeccionesDelPanel.jsx` |
-| Atributos | `pages/admin/AdminCatalogAttributes.jsx` + `.module.css` | `PaginaAtributos` | `AtributosDelPanel.jsx` |
-| Zonas de envío | `pages/admin/AdminEnviosZonas.jsx` + `.module.css` | `PaginaEnvios` | `EnviosDelPanel.jsx` |
-| Cliparts | `pages/admin/AdminCliparts.jsx` + `.module.css` | `PaginaCliparts` | `ClipartsDelPanel.jsx` |
-| Marcas | `pages/admin/AdminMarcas.jsx` + `.module.css` (con la tarjeta de WhatsApp, `TarjetaProducto` del kit y `AdminImageCropper`) | `PaginaMarcas` | `MarcasDelPanel.jsx` |
-| Productos de una marca | `pages/admin/AdminMarcaProductos.jsx` + `.module.css` (dentro de AdminMarcas, sin ruta) | `PaginaProductosMarca` | `ProductosDeMarcaDelPanel.jsx` en una ruta nueva (`/admin/marcas/:id/productos`) |
-| Destacados | `pages/admin/AdminDestacados.jsx` + `.module.css` | `PaginaDestacados` (`ListaOrdenable`, `SelectorProductos`) | `DestacadosDelPanel.jsx` |
+| Categorías ✓ | `pages/admin/AdminCategorias.jsx` + `.module.css`; `AdminImageCropper` | `PaginaCategorias` (`PaginaListaAdmin`, `CampoImagen` con `RecortarFoto`) | `CategoriasDelPanel.jsx` |
+| Colecciones ✓ | `pages/admin/AdminColecciones.jsx` + `.module.css`; `AdminImageCropper` | `PaginaColecciones` | `ColeccionesDelPanel.jsx` |
+| Atributos ✓ | `pages/admin/AdminCatalogAttributes.jsx` + `.module.css` | `PaginaAtributos` | `AtributosDelPanel.jsx` |
+| Zonas de envío ✓ | `pages/admin/AdminEnviosZonas.jsx` + `.module.css` | `PaginaEnvios` | `EnviosDelPanel.jsx` |
+| Cliparts ✓ | `pages/admin/AdminCliparts.jsx` + `.module.css` | `PaginaCliparts` | `ClipartsDelPanel.jsx` |
+| Marcas ✓ | `pages/admin/AdminMarcas.jsx` + `.module.css` (con la tarjeta de WhatsApp, `TarjetaProducto` del kit y `AdminImageCropper`) | `PaginaMarcas` | `MarcasDelPanel.jsx` |
+| Productos de una marca ✓ | `pages/admin/AdminMarcaProductos.jsx` + `.module.css` (dentro de AdminMarcas, sin ruta) | `PaginaProductosMarca` | `ProductosDeMarcaDelPanel.jsx` en una ruta nueva (`/admin/marcas/:id/productos`) |
+| Destacados ✓ | `pages/admin/AdminDestacados.jsx` + `.module.css` | `PaginaDestacados` (`ListaOrdenable`, `SelectorProductos`) | `DestacadosDelPanel.jsx` |
 
 ### D2 · Productos
 
@@ -2321,6 +2384,7 @@ bloquea de verdad); en Inventario, un personalizable sin límite de stock
 
 | Fecha | Qué | Dónde |
 |---|---|---|
+| 2026-11-03 | **D0 y D1 unidos al admin**: el marco, sin permiso y el inicio (`MarcoDelPanel`, `InicioDelPanel`, interruptor `adminViejo`) y las ocho páginas del catálogo base (`components/panel/`, interruptor `adminCatalogoViejo`, la ruta `/admin/marcas/:id/productos`); la barra «Modo administrador» ya no sale en el panel; "Quitar páginas repetidas" pregunta; admins de prueba por permiso en el sembrado del emulador | `components/panel/`, `components/AdminLayout/`, `pages/AdminDashboard.jsx`, `pages/admin/`, `components/marco/BarraDeAdmin.jsx`, `App.jsx`, `scripts/seed-emulator.js` |
 | 2026-11-03 | Revisión antes de unir: lo que guardaría el kit frente a la tienda, `functions/` y la app. Corregido en el kit: la ficha conserva `featuredOrder`; los sorteos conservan «+1 chance desde la app» (`chanceExtra`, ahora una opción más); "Mi cuenta" vacío en WhatsApp se guarda con el número de la tienda; un `/l/…` de enlaces ya no se corta a 60 (`slugDeEnlace`); las monedas `null` de la encuesta de entregas son 0, como el servidor; un pack sin tocar su categoría conserva todas. Lo que depende de cada conector, en «Lo que cada conector tiene que cuidar» | `adaptadoresAdmin.js`, `paginas/admin/Enlaces.jsx`, `guia/ADMIN.md` |
 | 2026-11-02 | Paso 0: el mapa del admin y este plan | `guia/ADMIN.md` |
 | 2026-11-02 | D0 en el kit: marco, barra del celular, cabecera, sin permiso, inicio, tabla, filtros, estados, lo elegido, hoja de edición, bloques, campo de imagen y el menú con permisos (con pruebas); Categorías como primera página; vista **Admin** en `/componentes.html` | `piezas/admin/`, `paginas/admin/`, `adaptadoresAdmin.js`, `DemoAdmin.jsx` |
