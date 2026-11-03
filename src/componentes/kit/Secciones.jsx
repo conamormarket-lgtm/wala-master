@@ -568,9 +568,11 @@ export function GrillaCategorias({ ajustes = {}, categorias, rutaCategoria = '' 
  * en el celular, una fila que se desliza. Tocar una abre el catálogo
  * filtrado por ella (?coleccion=, que TiendaPage ya aplica).
  *  - categorias: las automáticas (categoriasDeGrilla con las colecciones y
- *    p.collections; categoryId es el id de la colección), con sortMode, limit
- *    e imageSource como GrillaCategorias. Sin ellas, los items puestos a mano
+ *    p.collections; categoryId es el id de la colección), con sortMode y limit
+ *    como GrillaCategorias. Sin ellas, los items puestos a mano
  *    ({ collectionId, name, imageUrl, backgroundColor }), todos.
+ *  - La foto es solo la de la colección: sin ella, el degradado de su color
+ *    (nunca la de un producto, que en un banner ancho se veía cortada).
  *  - rutaCategoria: adónde lleva ('' = la misma página, o '/tienda')
  */
 export function GrillaColecciones({ ajustes = {}, categorias, rutaCategoria = '' }) {
@@ -580,9 +582,6 @@ export function GrillaColecciones({ ajustes = {}, categorias, rutaCategoria = ''
   const lista = auto ? base.slice(0, Math.min(12, Math.max(2, Number(ajustes.limit) || 6))) : base;
   if (!lista.length) return null;
   const columnas = Math.min(4, Math.max(1, Number(ajustes.columns) || 3));
-  // La foto de la colección (lo normal: es su banner); si falta, la de un producto.
-  const deProducto = ajustes.imageSource === 'product';
-  const fotoDe = (c) => (auto && deProducto ? c.imagenProducto || c.imageUrl : c.imageUrl || c.imagenProducto);
   return (
     <>
       <TituloSeccion {...tituloDesdeAjustes(ajustes)} />
@@ -591,7 +590,7 @@ export function GrillaColecciones({ ajustes = {}, categorias, rutaCategoria = ''
           <li key={c.categoryId || c.name}>
             <TarjetaColeccion
               nombre={c.name}
-              imagen={fotoDe(c)}
+              imagen={c.imageUrl}
               url={c.url || `${rutaCategoria}?coleccion=${encodeURIComponent(c.categoryId)}`}
               cuenta={auto && ajustes.showProductCount ? c.cuenta : undefined}
               fondo={c.backgroundColor || ajustes.tileBackgroundColor}

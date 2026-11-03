@@ -435,13 +435,12 @@ export const ESQUEMAS = {
     nombre: 'Colecciones con foto', icono: LibraryBig, grupo: 'Navegación', descripcion: 'Anime, Navidad, Parejas… con su foto; abre sus productos.',
     campos: [
       { tipo: 'opciones', campo: 'dataSource', etiqueta: 'Contenido', porDefecto: 'manual', opciones: [{ valor: 'products', texto: 'Automático' }, { valor: 'manual', texto: 'A mano' }] },
-      { tipo: 'nota', texto: 'Se arma sola con las colecciones que tienen productos (en una marca, las de sus productos).', si: categoriasAuto },
+      { tipo: 'nota', texto: 'Se arma sola con las colecciones que tienen productos (en una marca, las de sus productos). Va la foto de cada colección; sin foto, sus colores.', si: categoriasAuto },
       { tipo: 'numero', campo: 'columns', etiqueta: 'Por fila (en computadora)', min: 1, max: 4 },
       { tipo: 'nota', texto: 'En el celular van en una fila que se desliza.' },
       titulo(),
       estiloTexto('title', 'Estilo del título'),
       { tipo: 'numero', campo: 'limit', etiqueta: 'Máximo de colecciones', min: 2, max: 12, si: categoriasAuto },
-      { tipo: 'opciones', campo: 'imageSource', etiqueta: 'Foto', opciones: [{ valor: 'category', texto: 'La de la colección' }, { valor: 'product', texto: 'De un producto' }], si: categoriasAuto },
       { tipo: 'opciones', campo: 'sortMode', etiqueta: 'Orden', opciones: [{ valor: 'admin', texto: 'El que pusiste en Colecciones' }, { valor: 'products', texto: 'Más productos primero' }, { valor: 'alphabetical', texto: 'Alfabético' }], si: categoriasAuto },
       {
         tipo: 'lista', campo: 'items', etiqueta: 'Colecciones', si: (a) => !categoriasAuto(a), titulo: (c) => c.name || 'Colección', miniatura: (c) => c.imageUrl,
@@ -457,7 +456,7 @@ export const ESQUEMAS = {
       { tipo: 'color', campo: 'tileBackgroundColor', etiqueta: 'Color detrás de las fotos', automatico: true, pestana: 'diseno' },
       ...pieComun(),
     ],
-    inicial: { title: 'Explora nuestras colecciones', dataSource: 'products', imageSource: 'category', items: [], columns: 3, limit: 6, sortMode: 'admin', paddingTop: '0.75rem', paddingBottom: '0.75rem' },
+    inicial: { title: 'Explora nuestras colecciones', dataSource: 'products', items: [], columns: 3, limit: 6, sortMode: 'admin', paddingTop: '0.75rem', paddingBottom: '0.75rem' },
   },
   categories_nav: {
     nombre: 'Botones de categorías', icono: Navigation, grupo: 'Navegación', descripcion: 'Burbujas redondas que filtran los productos de la página.', porMarca: true,

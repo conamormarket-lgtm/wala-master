@@ -12,7 +12,7 @@ import s from './TarjetaColeccion.module.css';
  * la letra del logo abajo, sobre una sombra, con cuántos productos y una
  * flecha. A propósito distinta de TarjetaCategoria (cuadros y círculos).
  *
- *  - nombre, imagen (ancha; sin ella, el degradado del acento), url
+ *  - nombre, imagen (la de la colección, ancha; sin ella, el degradado del acento), url
  *  - cuenta: cuántos productos (opcional)
  *  - acento: color del degradado sin foto y del filo de abajo
  *  - fondo: color propio detrás de la foto (tileBackgroundColor del builder)

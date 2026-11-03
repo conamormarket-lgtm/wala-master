@@ -147,7 +147,7 @@ export function getDefaultSettings(type) {
         titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '' };
     case 'collection_grid':
       // «Colecciones con foto» (solo el kit): banners anchos con la foto de la colección.
-      return { title: 'Explora nuestras colecciones', dataSource: 'products', imageSource: 'category', items: [], columns: 3, limit: 6, sortMode: 'admin', showProductCount: false, tileBackgroundColor: '', backgroundColor: 'transparent', paddingTop: '0.75rem', paddingBottom: '0.75rem',
+      return { title: 'Explora nuestras colecciones', dataSource: 'products', items: [], columns: 3, limit: 6, sortMode: 'admin', showProductCount: false, tileBackgroundColor: '', backgroundColor: 'transparent', paddingTop: '0.75rem', paddingBottom: '0.75rem',
         titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '' };
     case 'banner_grid':
       return {
