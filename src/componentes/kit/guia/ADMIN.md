@@ -1,4 +1,4 @@
-# Panel administrativo (`/admin`): el kit del admin (D0-D8 hechos en el kit; D0 a D6 unidos al admin)
+# Panel administrativo (`/admin`): el kit del admin (D0-D8 hechos en el kit; D0 a D7 unidos al admin)
 
 Lo mismo que se hizo con la tienda, ahora con el panel: **primero todo en el
 kit**, con datos de ejemplo en `/componentes.html`; **cuando un apartado está
@@ -233,7 +233,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | hecho (2026-11-03) |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | hecho (2026-11-02) | hecho (2026-11-03) |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | hecho (2026-11-02) | hecho (2026-11-03) |
-| D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | hecho (2026-11-02) | · |
+| D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | hecho (2026-11-02) | hecho (2026-11-03) |
 | D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | hecho (2026-11-02) | · |
 
 El orden: D0 con las piezas base (tabla, hoja de edición, campo de imagen,
@@ -2239,6 +2239,50 @@ Adaptadores (con pruebas): `DIAS_RULETA`, `textoDiasRuleta`,
   `adminBolitas('metricas', { dias })` → `metricas`. Cada uno con su
   `queryKey` de hoy.
 
+### D7 unido al admin (2026-11-03)
+
+Todo el apartado a la vez con `adminJuegosViejo`
+(`useLoViejo('adminJuegos')`). Las páginas viejas pasaron a `…Viejo.jsx`
+(`AdminMascota`, `AdminWordlePage`, `AdminBolitasPage`, `AdminRuletaPage`);
+el `.jsx` de siempre elige. Los conectores:
+
+| Pantalla | Conector (`components/panel/`) |
+|---|---|
+| Kapi, La Palabra del día, Las Bolitas | `JuegosDelPanel.jsx` (`KapiDelPanel`, `PalabraDelPanel`, `BolitasDelPanel`) |
+| La Ruleta | `RuletaDelPanel.jsx` |
+
+- **Cambio del kit al unir**: en las Bolitas, Mundos y Premios dicen
+  "Cargando…" mientras llegan (antes se veía el editor vacío y lo editado en
+  ese momento se perdía al llegar los datos). `cargando` y `error` son los de
+  la pestaña abierta; si las cifras fallan, sale el aviso con Reintentar.
+- Las claves de la ruleta (`admin-ruleta-*`) son nuevas (la página vieja no
+  usaba React Query) y se releen al entrar; las entregas, al abrir su
+  pestaña. La tienda no guarda la ruleta en caché: no hay nada suyo que
+  invalidar.
+- **Cambios que quedaron** (de los conectores): un premio de la ruleta que
+  no es de producto guarda `productId: null` y `productName: ''` (antes
+  arrastraba el producto si se cambiaba de tipo); la imagen del centro se
+  puede subir (`config/ruleta/`); editar una palabra o un reto patrocinado
+  cambiando el día quita el del día anterior (antes quedaban los dos); los
+  puestos de los premios de las Bolitas se guardan solo con sus campos
+  (`desde`, `hasta`, `marcaId`, `marcaNombre`, `cupon`) y el cupón completo
+  con sus valores de casa; si no cargan Kapi o las marcas, ahora se avisa
+  (antes salía vacío); borrar o reiniciar un premio avisa si falla.
+
+**Qué se probó** (localhost con los emuladores): las cuatro páginas abren;
+Kapi con un enlace → "Kapi guardado" y `messages/mascota_kap_image_url`
+con ese enlace; una palabra nueva para hoy "Canción" →
+`wordle_daily_words/2026-11-03` con `word: 'CANCION'`; las Bolitas: Retos,
+Mundos y Premios abren, Cifras sin el emulador de functions → el aviso con
+Reintentar; la ruleta: editar un premio (emoji, nombre y solo domingo) →
+`ruletaPrizes/r3` con los campos nuevos y el espejo viejo (`name`, `type`,
+`probability`) y "Hoy no es su día"; Cómo se ve y Entregas abren; con
+`adminJuegosViejo` vuelve La Palabra de antes. No se probaron (son
+callables o subidas): guardar retos, mundos y premios de las Bolitas,
+premiar una semana, las cifras, subir imágenes, guardar "Cómo se ve".
+La semilla del emulador usa `prize` en los premios (ni la página vieja ni la
+nueva lo leen): por eso salen sin nombre al editarlos.
+
 ## D8 · Ajustes (en el kit desde el 2026-11-02: los dos tramos)
 
 Tres pantallas de hoy (unas 1.050 líneas), en dos tramos; el apartado se
@@ -2574,6 +2618,7 @@ bloquea de verdad); en Inventario, un personalizable sin límite de stock
 
 | Fecha | Qué | Dónde |
 |---|---|---|
+| 2026-11-03 | **D7 unido al admin**: Kapi, La Palabra del día, Las Bolitas y la Ruleta (`JuegosDelPanel`, `RuletaDelPanel`, interruptor `adminJuegosViejo`); en las Bolitas, Mundos y Premios esperan a sus datos | `components/panel/`, `pages/admin/`, `kit/paginas/admin/Juegos.jsx` |
 | 2026-11-03 | **D6 unido al admin**: sorteos, sorteos por suscripción, enlaces, popups, landing pages y temas (`SorteosDelPanel`, `EnlacesDelPanel`, `CampanasDelPanel`, interruptor `adminCampanasViejo`); los `CampoImagen` de Sorteos, Suscripciones y Enlaces dicen su carpeta | `components/panel/`, `pages/admin/`, `pages/Tienda/admin/`, `kit/paginas/admin/` |
 | 2026-11-03 | **D5 unido al admin**: referidos, misiones, retos, recompensas, fechas importantes, notificaciones y la encuesta (`FidelidadDelPanel`, `FechasDelPanel`, `AvisosDelPanel`, interruptor `adminClientesViejo`); Opiniones pasa a las respuestas del kit. Corregido: `updateDocument` ya borraba los campos vaciados de primer nivel (desde `e402bf3c`) | `components/panel/`, `pages/admin/` |
 | 2026-11-03 | **D4 unido al admin**: el marco de Resultados, sus seis pestañas y las cuatro pantallas técnicas (`ResultadosDelPanel`, `ResultadosClientesDelPanel`, `ResultadosTecnicoDelPanel`, interruptor `adminResultadosViejo`); las técnicas siguen en sus rutas | `components/panel/`, `pages/admin/resultados/`, `pages/admin/dashboard/` |

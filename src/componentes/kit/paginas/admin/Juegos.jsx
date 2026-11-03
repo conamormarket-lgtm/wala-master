@@ -296,6 +296,7 @@ function Premios({ guardados, marcas = [], onGuardar, onPremiarSemana }) {
 /**
  * Las Bolitas de Kapi con las marcas (/admin/bolitas).
  *  - pestana + onPestana · marcas: [{ valor, texto }] · hoy · cargando · error · onReintentar
+ *    (los de la pestaña abierta; en Cifras, `cargando` no tapa: usa cargandoMetricas)
  *  - patrocinios: [patrocinioDesde] (desde hoy) · onGuardarPatrocinio(datos, id?) · onQuitarPatrocinio(id)
  *  - mundos: [{ id, nombre }] · onGuardarMundos(lista)
  *  - premios: premiosBolitasDesde · onGuardarPremios(premios) · onPremiarSemana(lunes) → { ya, sinPremios, entregados }
@@ -371,6 +372,9 @@ export function PaginaBolitasAdmin({
       {secciones}
       {error ? (
         <Aviso tipo="error" titulo="No pudimos cargar las Bolitas" accion={onReintentar && <Boton tamano="sm" variante="contorno" icono={<RefreshCw aria-hidden="true" />} onClick={onReintentar}>Reintentar</Boton>}>{error}</Aviso>
+      ) : cargando && pestana !== 'resultados' ? (
+        // Mundos y Premios copian lo guardado al llegar: sin esto, lo editado mientras carga se pierde.
+        <p className={s.nota} aria-busy="true">Cargando…</p>
       ) : pestana === 'mundos' ? (
         <Mundos guardados={mundos} marcas={marcas} onGuardar={onGuardarMundos} />
       ) : pestana === 'premios' ? (
