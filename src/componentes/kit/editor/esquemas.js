@@ -1,7 +1,7 @@
 import {
   Image, Images, Megaphone, Heading, Type, Video, Star, LayoutGrid, Layers, Navigation, Grid3x3, Store, ShieldCheck,
   Zap, MessageSquareQuote, Infinity as Cinta, Trophy, PanelBottom, MapPin, ListChecks, CircleHelp, Sparkles, Tag, Clock,
-  FolderOpen, Rows3, Menu, UserRound, Heart, Search,
+  FolderOpen, Rows3, Menu, UserRound, Heart, Search, LibraryBig,
 } from 'lucide-react';
 import { estadoDeVigencia } from '../../../utils/vigencia.mjs';
 
@@ -427,6 +427,36 @@ export const ESQUEMAS = {
       ...pieComun(),
     ],
     inicial: { title: '¿Qué estás buscando?', dataSource: 'products', imageSource: 'product', items: [], columns: 6, limit: 6, sortMode: 'admin', cardStyle: 'compact', paddingTop: '0.75rem', paddingBottom: '0.75rem' },
+  },
+  // Como «Categorías con foto», con las colecciones (la foto que se sube en
+  // Admin › Colecciones). Tocar una abre el catálogo filtrado (?coleccion=).
+  collection_grid: {
+    nombre: 'Colecciones con foto', icono: LibraryBig, grupo: 'Navegación', descripcion: 'Anime, Navidad, Parejas… con su foto; abre sus productos.',
+    campos: [
+      { tipo: 'opciones', campo: 'dataSource', etiqueta: 'Contenido', porDefecto: 'manual', opciones: [{ valor: 'products', texto: 'Automático' }, { valor: 'manual', texto: 'A mano' }] },
+      { tipo: 'nota', texto: 'Se arma sola con las colecciones que tienen productos (en una marca, las de sus productos).', si: categoriasAuto },
+      { tipo: 'opciones', campo: 'cardStyle', etiqueta: 'Estilo', porDefecto: 'compact', opciones: [{ valor: 'compact', texto: 'Cuadros' }, { valor: 'round', texto: 'Círculos' }, { valor: 'bubble', texto: 'Burbujas' }] },
+      { tipo: 'numero', campo: 'columns', etiqueta: 'Por fila (en computadora)', min: 2, max: 6 },
+      titulo(),
+      estiloTexto('title', 'Estilo del título'),
+      { tipo: 'numero', campo: 'limit', etiqueta: 'Máximo de colecciones', min: 2, max: 12, si: categoriasAuto },
+      { tipo: 'opciones', campo: 'imageSource', etiqueta: 'Foto', opciones: [{ valor: 'category', texto: 'La de la colección' }, { valor: 'product', texto: 'De un producto' }], si: categoriasAuto },
+      { tipo: 'opciones', campo: 'sortMode', etiqueta: 'Orden', opciones: [{ valor: 'admin', texto: 'El que pusiste en Colecciones' }, { valor: 'products', texto: 'Más productos primero' }, { valor: 'alphabetical', texto: 'Alfabético' }], si: categoriasAuto },
+      {
+        tipo: 'lista', campo: 'items', etiqueta: 'Colecciones', si: (a) => !categoriasAuto(a), titulo: (c) => c.name || 'Colección', miniatura: (c) => c.imageUrl,
+        desde: { datos: 'colecciones', etiqueta: 'Añadir una colección', crear: (c) => ({ collectionId: c.id, name: c.name || '', imageUrl: c.imageUrl || '' }), clave: 'collectionId', nota: (c) => (c.imageUrl ? '' : 'sin foto'), todas: { etiqueta: 'Añadir todas las colecciones' } },
+        nuevo: () => ({ collectionId: '', name: 'Nueva colección', imageUrl: '' }),
+        campos: [
+          { tipo: 'texto', campo: 'name', etiqueta: 'Nombre a mostrar' },
+          { tipo: 'imagen', campo: 'imageUrl', etiqueta: 'Foto' },
+          { tipo: 'color', campo: 'backgroundColor', etiqueta: 'Color del cuadro', automatico: true, vacio: 'El general' },
+        ],
+      },
+      { tipo: 'interruptor', campo: 'showProductCount', etiqueta: 'Mostrar cuántos productos hay', pestana: 'diseno', si: categoriasAuto },
+      { tipo: 'color', campo: 'tileBackgroundColor', etiqueta: 'Color de los cuadros', automatico: true, pestana: 'diseno' },
+      ...pieComun(),
+    ],
+    inicial: { title: 'Explora nuestras colecciones', dataSource: 'products', imageSource: 'category', items: [], columns: 6, limit: 6, sortMode: 'admin', cardStyle: 'round', paddingTop: '0.75rem', paddingBottom: '0.75rem' },
   },
   categories_nav: {
     nombre: 'Botones de categorías', icono: Navigation, grupo: 'Navegación', descripcion: 'Burbujas redondas que filtran los productos de la página.', porMarca: true,

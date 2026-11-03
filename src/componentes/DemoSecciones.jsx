@@ -5,6 +5,9 @@ import INICIO from './demo/inicio.json';
 
 /* Las 6 primeras categorías reales de la tienda, con su cantidad de productos. */
 const CATEGORIAS_REALES = INICIO.categorias.slice(0, 6);
+// «Colecciones con foto»: las mismas fotos con nombres de colección (las colecciones de la demo no tienen foto).
+const COLECCIONES_DEMO = ['Anime', 'Navidad', 'Parejas', 'Fútbol peruano', 'Calaveras', 'Cómics']
+  .map((name, k) => ({ collectionId: `col-${k}`, name, imageUrl: CATEGORIAS_REALES[k]?.imageUrl || '' }));
 
 /*
  * Catálogo de secciones del builder: cada tipo por separado, con su nombre,
@@ -87,6 +90,10 @@ const ejemplos = (img, logos = []) => ({
   category_grid: [
     ['Cuadros', { title: '¿Qué estás buscando?', dataSource: 'manual', columns: 6, cardStyle: 'compact', showProductCount: true, items: CATEGORIAS_REALES }],
     ['Círculos', { title: '¿Qué estás buscando?', dataSource: 'manual', columns: 6, cardStyle: 'round', showProductCount: true, items: CATEGORIAS_REALES }],
+  ],
+  collection_grid: [
+    ['Círculos', { title: 'Explora nuestras colecciones', dataSource: 'manual', columns: 6, cardStyle: 'round', items: COLECCIONES_DEMO }],
+    ['Cuadros', { title: 'Explora nuestras colecciones', dataSource: 'manual', columns: 6, cardStyle: 'compact', items: COLECCIONES_DEMO }],
   ],
   categories_nav: [['Burbujas', { brandId: 'conamor', align: 'center' }], ['Cinta', { brandId: 'conamor', animation: 'slider' }]],
   banner_grid: [
@@ -178,6 +185,7 @@ const PIEZAS_DE = {
   product_grid: ['TituloSeccion', 'TarjetaProducto', 'Boton'],
   sidebar_catalog: ['TituloSeccion', 'Acordeon', 'OpcionesFiltro', 'Chip', 'Campo', 'Buscador', 'HojaInferior', 'TarjetaProducto'],
   category_grid: ['TituloSeccion', 'TarjetaCategoria'],
+  collection_grid: ['TituloSeccion', 'TarjetaCategoria'],
   categories_nav: ['TarjetaCategoria', 'Marquesina'],
   banner_grid: ['TituloSeccion', 'Carrusel', 'TarjetaMarca'],
   trust_badges: ['Beneficio', 'IconoWala'],
@@ -210,7 +218,7 @@ function Ficha({ tipo, variantes, datos }) {
     if (sec.type === 'sale_carousel') return datos.productos.filter((p) => p.salePrice);
     return datos.productos;
   };
-  const categoriasPara = (sec) => (sec.type === 'category_grid' ? undefined : datos.categorias);
+  const categoriasPara = (sec) => (sec.type === 'category_grid' || sec.type === 'collection_grid' ? undefined : datos.categorias);
 
   return (
     <article id={`t-${tipo}`} className={s.ficha}>

@@ -22,14 +22,24 @@ const soles = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
 /* ── Colecciones ───────────────────────────────────────── */
 
 /**
- * Colecciones del catálogo (/admin/colecciones): nombre, orden y su banner.
+ * Colecciones del catálogo (/admin/colecciones): nombre, foto y orden.
+ * La foto sale en la sección «Colecciones con foto» del builder, como la de
+ * una categoría en «Categorías con foto».
  *  - colecciones: [{ id, nombre, imagen, orden }] (coleccionDesdeFirestore)
  *  - cargando · error · onReintentar · onGuardar(datos, id?) · onEliminar(id) · subirImagen
+ *  - onGuardarOrden(ids) → promesa: todas, en el orden nuevo. Con él, la lista
+ *    se arrastra (como Categorías) y una nueva va al final sola
  */
-export function PaginaColecciones({ colecciones = [], cargando, error, onReintentar, onGuardar, onEliminar, subirImagen }) {
+export function PaginaColecciones({ colecciones = [], cargando, error, onReintentar, onGuardar, onEliminar, onGuardarOrden, subirImagen }) {
   return (
     <PaginaListaAdmin
-      cabeza={{ icono: 'colecciones', titulo: 'Colecciones', subtitulo: 'Grupos de productos con su banner: Anime, Navidad, Parejas…' }}
+      cabeza={{
+        icono: 'colecciones',
+        titulo: 'Colecciones',
+        subtitulo: onGuardarOrden
+          ? 'Grupos de productos (Anime, Navidad, Parejas…), en este orden: arrástralas para cambiarlo. Su foto sale en «Colecciones con foto».'
+          : 'Grupos de productos: Anime, Navidad, Parejas… Su foto sale en «Colecciones con foto».',
+      }}
       registros={colecciones}
       cargando={cargando}
       error={error}
@@ -39,12 +49,22 @@ export function PaginaColecciones({ colecciones = [], cargando, error, onReinten
       buscarEn={(c) => c.nombre}
       placeholder="Buscar una colección"
       columnas={[
-        { id: 'banner', titulo: 'Banner', ancho: 128, tarjeta: 'foto', celda: (c) => <FotoCelda src={c.imagen} forma="ancha" /> },
+        { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (c) => <FotoCelda src={c.imagen} forma="circulo" /> },
         { id: 'nombre', titulo: 'Nombre', ordenable: true, tarjeta: 'titulo', celda: (c) => c.nombre },
-        { id: 'orden', titulo: 'Orden', ordenable: true, ancho: 96, alinear: 'fin', tarjeta: 'detalle', celda: (c) => <NumeroCelda nombre="Orden" valor={c.orden} /> },
+        ...(onGuardarOrden ? [] : [{ id: 'orden', titulo: 'Orden', ordenable: true, ancho: 96, alinear: 'fin', tarjeta: 'detalle', celda: (c) => <NumeroCelda nombre="Orden" valor={c.orden} /> }]),
       ]}
       ordenes={{ nombre: porNombre, orden: porOrden }}
       ordenInicial={{ por: 'orden', dir: 'asc' }}
+      ordenable={onGuardarOrden ? {
+        etiqueta: 'Orden de las colecciones',
+        onGuardar: onGuardarOrden,
+        fila: (c) => (
+          <span className={s.ordenFila}>
+            <FotoCelda src={c.imagen} forma="circulo" tamano={40} />
+            <span className={s.ordenNombre}>{c.nombre}</span>
+          </span>
+        ),
+      } : undefined}
       vacio={{ texto: 'Crea la primera y después elígela en cada producto.' }}
       textos={{ creado: 'Colección creada', guardado: 'Colección guardada', eliminado: 'Colección eliminada' }}
       eliminar={{ texto: () => 'Deja de salir en la tienda y en sus filtros. Los productos no se borran.' }}
@@ -54,6 +74,7 @@ export function PaginaColecciones({ colecciones = [], cargando, error, onReinten
         nuevo: 'Nueva colección',
         titulos: { nuevo: 'Nueva colección', editar: 'Editar colección' },
         textoGuardar: { nuevo: 'Crear colección' },
+        // Una nueva va al final: el número siguiente al más alto.
         vacio: ({ registros }) => ({ nombre: '', orden: siguienteOrden(registros), imagen: '' }),
         desde: (c) => ({ nombre: c.nombre, orden: c.orden, imagen: c.imagen }),
         validar: (d, { id, registros }) => {
@@ -65,10 +86,11 @@ export function PaginaColecciones({ colecciones = [], cargando, error, onReinten
           <>
             <GrupoCampos titulo="Datos">
               <Campo id={idDe('nombre')} etiqueta="Nombre" placeholder="Ej. Navidad 2026" value={datos.nombre} error={errores.nombre} maxLength={60} onChange={(e) => cambiar('nombre', e.target.value)} />
-              <Campo id={idDe('orden')} etiqueta="Orden" type="number" inputMode="numeric" min={0} value={datos.orden} ayuda="Las de número más bajo salen primero." onChange={(e) => cambiar('orden', e.target.value)} />
+              {/* Con la lista para arrastrar, el orden no se escribe: una nueva va al final. */}
+              {!onGuardarOrden && <Campo id={idDe('orden')} etiqueta="Orden" type="number" inputMode="numeric" min={0} value={datos.orden} ayuda="Las de número más bajo salen primero." onChange={(e) => cambiar('orden', e.target.value)} />}
             </GrupoCampos>
-            <GrupoCampos titulo="Banner">
-              <CampoImagen etiqueta="Imagen del banner" ayuda="Se sube tal cual: ancha, como se ve en la tienda." valor={datos.imagen} onCambiar={(url) => cambiar('imagen', url)} subir={subirImagen} forma="ancho" />
+            <GrupoCampos titulo="Imagen">
+              <CampoImagen etiqueta="Foto de la colección" ayuda="Sale en «Colecciones con foto»: se recorta en círculo, como las categorías." valor={datos.imagen} onCambiar={(url) => cambiar('imagen', url)} subir={subirImagen} recorte="circulo" forma="circulo" />
             </GrupoCampos>
           </>
         ),

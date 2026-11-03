@@ -40,6 +40,13 @@ export function ColeccionesDelPanel() {
         await refrescar();
       }}
       onEliminar={async (id) => { await sinError(deleteCollection(id)); await refrescar(); }}
+      // Ordenar: se numeran 1, 2, 3… y solo se escriben las que cambian de número.
+      onGuardarOrden={async (ids) => {
+        const antes = new Map((colecciones.datos || []).map((c) => [c.id, c.order]));
+        const cambian = ids.map((id, i) => [id, i + 1]).filter(([id, n]) => antes.get(id) !== n);
+        await Promise.all(cambian.map(([id, order]) => sinError(updateCollection(id, { order }))));
+        await refrescar();
+      }}
       subirImagen={subirColeccion}
     />
   );

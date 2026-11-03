@@ -30,7 +30,7 @@ export { default as Acordeon } from './Acordeon';
 export { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
 export {
   BarraAnuncios, HeroCarrusel, InsigniasConfianza, CarruselProductos, OfertaRelampago,
-  Testimonios, PreguntasFrecuentes, MarcasMarquesina, GrillaCategorias, REGISTRO_SECCIONES, RenderSecciones, SeccionDelKit,
+  Testimonios, PreguntasFrecuentes, MarcasMarquesina, GrillaCategorias, GrillaColecciones, REGISTRO_SECCIONES, RenderSecciones, SeccionDelKit,
 } from './Secciones';
 export { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados, videoIncrustado } from './SeccionesContenido';
 export { BannerPrincipal, PortadaDeMarca, ListaBeneficios, Ubicacion, urlDeMapa, NavCategorias, GrillaProductos, CatalogoConFiltros } from './SeccionesExtra';

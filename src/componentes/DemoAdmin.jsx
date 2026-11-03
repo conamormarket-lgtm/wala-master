@@ -765,7 +765,7 @@ function PanelDePrueba() {
   const falla = con('falla');
 
   const [categorias, guardarCategoria, eliminarCategoria, setCategorias] = useListaDemo(CATEGORIAS, falla);
-  const [colecciones, guardarColeccion, eliminarColeccion] = useListaDemo(COLECCIONES, falla);
+  const [colecciones, guardarColeccion, eliminarColeccion, setColecciones] = useListaDemo(COLECCIONES, falla);
   const [zonas, guardarZona, eliminarZona] = useListaDemo(ZONAS, falla);
   const [cliparts, guardarClipart, eliminarClipart] = useListaDemo(CLIPARTS, falla);
   const [marcas, guardarMarca, eliminarMarca] = useListaDemo(MARCAS, falla);
@@ -952,7 +952,20 @@ function PanelDePrueba() {
       />
     );
   } else if (ruta === '/admin/colecciones') {
-    pagina = <PaginaColecciones {...comunes} colecciones={vacio ? [] : colecciones} onGuardar={guardarColeccion} onEliminar={eliminarColeccion} subirImagen={subir} />;
+    pagina = (
+      <PaginaColecciones
+        {...comunes}
+        colecciones={vacio ? [] : colecciones}
+        onGuardar={guardarColeccion}
+        onEliminar={eliminarColeccion}
+        onGuardarOrden={async (ids) => {
+          await espera(600);
+          fallar();
+          setColecciones((l) => l.map((c) => ({ ...c, orden: ids.indexOf(c.id) + 1 })));
+        }}
+        subirImagen={subir}
+      />
+    );
   } else if (ruta === '/admin/atributos-catalogo') {
     pagina = (
       <PaginaAtributos

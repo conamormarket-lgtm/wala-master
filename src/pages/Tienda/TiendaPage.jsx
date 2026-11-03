@@ -368,9 +368,11 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   const usesAutomaticCategoryGrid = useMemo(() => {
     const sections = activeSections;
     return sections.some(
-      (section) => section?.type === 'category_grid' && section?.settings?.dataSource === 'products'
+      (section) => (section?.type === 'category_grid' || section?.type === 'collection_grid') && section?.settings?.dataSource === 'products'
     );
   }, [activeSections]);
+  // «Colecciones con foto» (collection_grid): necesita la lista de colecciones.
+  const usaGrillaColecciones = useMemo(() => activeSections.some((section) => section?.type === 'collection_grid'), [activeSections]);
 
   // queryKey ['brands']: MISMA clave que usa Header.jsx (menu "Marcas"),
   // PremiumProductCard y SidebarCatalogLayout — antes esta seccion tenia su
@@ -979,7 +981,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // Lo que antes guardaba y pedía SidebarCatalogLayout vive aquí: las listas
   // de los filtros (mismas claves de caché), la elección y la búsqueda.
   const listaDe = (fn) => async () => (await fn()).data;
-  const { data: coleccionesKit } = useQuery({ queryKey: ['collections'], queryFn: listaDe(getCollections), enabled: catalogoConKit });
+  const { data: coleccionesKit } = useQuery({ queryKey: ['collections'], queryFn: listaDe(getCollections), enabled: catalogoConKit || usaGrillaColecciones });
   const { data: marcasKit } = useQuery({ queryKey: ['brands'], queryFn: listaDe(getBrands), enabled: catalogoConKit && !pageBrandId });
   const { data: etiquetasKit } = useQuery({ queryKey: ['tags'], queryFn: listaDe(getTags), enabled: catalogoConKit });
   const { data: personajesKit } = useQuery({ queryKey: ['characters'], queryFn: listaDe(getCharacters), enabled: catalogoConKit });
@@ -1145,6 +1147,12 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     () => categoriasDeGrilla(categoriesData || [], automaticCategoryProducts, { idsDe: idsDeCategoriaDe }),
     [categoriesData, automaticCategoryProducts],
   );
+  // Las colecciones con productos, con la misma cuenta (p.collections): la
+  // forma de categoriasDeGrilla, con el id de la colección en categoryId.
+  const coleccionesDeGrillaKit = useMemo(
+    () => categoriasDeGrilla(coleccionesKit || [], automaticCategoryProducts, { idsDe: (p) => p?.collections || [] }),
+    [coleccionesKit, automaticCategoryProducts],
+  );
   const seccionDelKit = (section) => {
     // Lo de la primera pantalla carga ya (como antes, sin esperar a bajar).
     const indice = configuredSections.findIndex((x) => x.id === section.id);
@@ -1201,6 +1209,11 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       // Sin catálogo en la página (el inicio), la categoría abre la tienda
       // filtrada. Se miran todas las secciones, no solo las ya cargadas.
       if (!configuredSections.some((x) => x.type === 'product_grid' || x.type === 'sidebar_catalog')) datos.rutaCategoria = '/tienda';
+    }
+    if (section.type === 'collection_grid') {
+      datos.categorias = section.settings?.dataSource === 'products' ? coleccionesDeGrillaKit : undefined;
+      // ?coleccion= lo aplica el catálogo con filtros: sin él en la página, a /tienda.
+      if (!configuredSections.some((x) => x.type === 'sidebar_catalog')) datos.rutaCategoria = '/tienda';
     }
     if (section.type === 'hero_banner') {
       // Lo que no trae la sección sale del banner global (como antes).

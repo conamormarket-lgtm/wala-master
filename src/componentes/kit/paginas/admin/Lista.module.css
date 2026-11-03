@@ -184,3 +184,20 @@
   font-size: 0.88rem;
   font-weight: 700;
 }
+
+/* Una fila de la lista para arrastrar: la foto y el nombre (Colecciones). */
+.ordenFila {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.ordenNombre {
+  flex: 1 1 8rem;
+  overflow: hidden;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
