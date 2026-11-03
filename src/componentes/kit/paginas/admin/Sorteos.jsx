@@ -53,7 +53,7 @@ function MuestraSorteo({ d }) {
 /**
  * Sorteos (/admin/sorteos).
  *  - sorteos: [sorteoDesdeFirestore] · cargando · error · onReintentar
- *  - onGuardar(datos, id?) · onEliminar(id) · subirImagen(blob, { alAvanzar }) → url
+ *  - onGuardar(datos, id?) · onEliminar(id) · subirImagen(blob, { alAvanzar, carpeta: 'premios' | 'hero' }) → url
  *  - onDetalle(sorteo): participantes y ganadores · urlPublica(sorteo) ('/sorteos/{slug}') · dominio ('wala.pe')
  */
 export function PaginaSorteosAdmin({ sorteos = [], cargando, error, onReintentar, onGuardar, onEliminar, subirImagen, onDetalle, urlPublica = (x) => `/sorteos/${x.slug}`, dominio = 'wala.pe' }) {
@@ -124,8 +124,8 @@ export function PaginaSorteosAdmin({ sorteos = [], cargando, error, onReintentar
                 <Campo etiqueta="Qué se gana" placeholder="Ej. Casaca de tu anime favorito" value={d.premioNombre} onChange={(e) => cambiar('premioNombre', e.target.value)} />
                 <CampoDinero etiqueta="Cuánto vale" value={d.premioValor} onChange={(e) => cambiar('premioValor', e.target.value)} />
               </div>
-              <CampoImagen etiqueta="Foto del premio" valor={d.premioImagen} onCambiar={(url) => cambiar('premioImagen', url)} subir={subirImagen} recorte="cuadrado" forma="cuadro" />
-              <CampoImagen etiqueta="Imagen principal" ayuda="Arriba de la página del sorteo." valor={d.portada} onCambiar={(url) => cambiar('portada', url)} subir={subirImagen} forma="ancho" />
+              <CampoImagen etiqueta="Foto del premio" valor={d.premioImagen} onCambiar={(url) => cambiar('premioImagen', url)} subir={subirImagen && ((b, o) => subirImagen(b, { ...o, carpeta: 'premios' }))} recorte="cuadrado" forma="cuadro" />
+              <CampoImagen etiqueta="Imagen principal" ayuda="Arriba de la página del sorteo." valor={d.portada} onCambiar={(url) => cambiar('portada', url)} subir={subirImagen && ((b, o) => subirImagen(b, { ...o, carpeta: 'hero' }))} forma="ancho" />
             </GrupoCampos>
             <GrupoCampos titulo="Estado">
               <ElegirUno etiqueta="Estado" opciones={[{ valor: 'borrador', texto: 'Borrador' }, { valor: 'activo', texto: 'Activo' }, { valor: 'cerrado', texto: 'Cerrado' }]} valor={d.estado} onElegir={(v) => v && cambiar('estado', v)} />

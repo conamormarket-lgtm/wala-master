@@ -85,7 +85,7 @@ function EditorPlan({ plan: p, numero, onCambiar, onQuitar }) {
 /**
  * Sorteos por suscripción (/admin/sorteos-suscripcion).
  *  - campanas: [campanaSuscripcionDesde] · cargando · error · onReintentar
- *  - onGuardar(datos, id?) · onEliminar(id) · subirImagen(blob, { alAvanzar }) → url
+ *  - onGuardar(datos, id?) · onEliminar(id) · subirImagen(blob, { alAvanzar, carpeta: 'premios' | 'hero' | 'logo' }) → url
  *  - onDetalle(campana, pestana?) ('suscriptores' | 'beneficios' | 'galeria') · urlPublica(campana) · dominio
  */
 export function PaginaSuscripcionesAdmin({ campanas = [], cargando, error, onReintentar, onGuardar, onEliminar, subirImagen, onDetalle, urlPublica = (c) => `/suscrito-sorteo/${c.slug}`, dominio = 'wala.pe' }) {
@@ -153,15 +153,15 @@ export function PaginaSuscripcionesAdmin({ campanas = [], cargando, error, onRei
               {d.premios.map((x, i) => (
                 <div key={i} className={u.premio}>
                   <Campo etiqueta={`Premio ${i + 1}`} placeholder="Ej. Casaca de tu anime favorito" value={x.nombre} onChange={(e) => cambiar('premios', d.premios.map((y, j) => (j === i ? { ...y, nombre: e.target.value } : y)))} />
-                  <CampoImagen etiqueta="Su foto" valor={x.imagen} onCambiar={(url) => cambiar('premios', d.premios.map((y, j) => (j === i ? { ...y, imagen: url } : y)))} subir={subirImagen} recorte="cuadrado" forma="cuadro" />
+                  <CampoImagen etiqueta="Su foto" valor={x.imagen} onCambiar={(url) => cambiar('premios', d.premios.map((y, j) => (j === i ? { ...y, imagen: url } : y)))} subir={subirImagen && ((b, o) => subirImagen(b, { ...o, carpeta: 'premios' }))} recorte="cuadrado" forma="cuadro" />
                   <Boton tamano="sm" variante="fantasma" icono={<Trash2 aria-hidden="true" />} onClick={() => cambiar('premios', d.premios.filter((_, j) => j !== i))}>Quitar el premio</Boton>
                 </div>
               ))}
               <Boton variante="secundario" icono={<Plus aria-hidden="true" />} onClick={() => cambiar('premios', [...d.premios, { nombre: '', imagen: '' }])}>Agregar un premio</Boton>
             </GrupoCampos>
             <GrupoCampos titulo="Cómo se ve">
-              <CampoImagen etiqueta="Imagen principal" valor={d.portada} onCambiar={(url) => cambiar('portada', url)} subir={subirImagen} forma="ancho" />
-              <CampoImagen etiqueta="Logo" valor={d.logo} onCambiar={(url) => cambiar('logo', url)} subir={subirImagen} forma="cuadro" contener />
+              <CampoImagen etiqueta="Imagen principal" valor={d.portada} onCambiar={(url) => cambiar('portada', url)} subir={subirImagen && ((b, o) => subirImagen(b, { ...o, carpeta: 'hero' }))} forma="ancho" />
+              <CampoImagen etiqueta="Logo" valor={d.logo} onCambiar={(url) => cambiar('logo', url)} subir={subirImagen && ((b, o) => subirImagen(b, { ...o, carpeta: 'logo' }))} forma="cuadro" contener />
               <div className={s.dos}>
                 {COLORES.map(([k, t]) => <CampoColor key={k} etiqueta={t} valor={d.colores[k]} onCambiar={(v) => cambiar('colores', { ...d.colores, [k]: v })} />)}
               </div>

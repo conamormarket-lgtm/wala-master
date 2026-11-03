@@ -1,4 +1,4 @@
-# Panel administrativo (`/admin`): el kit del admin (D0-D8 hechos en el kit; D0 a D5 unidos al admin)
+# Panel administrativo (`/admin`): el kit del admin (D0-D8 hechos en el kit; D0 a D6 unidos al admin)
 
 Lo mismo que se hizo con la tienda, ahora con el panel: **primero todo en el
 kit**, con datos de ejemplo en `/componentes.html`; **cuando un apartado está
@@ -232,7 +232,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | hecho (2026-11-03) |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | hecho (2026-11-03) |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | hecho (2026-11-02) | hecho (2026-11-03) |
-| D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | hecho (2026-11-02) | · |
+| D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | hecho (2026-11-02) | hecho (2026-11-03) |
 | D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | hecho (2026-11-02) | · |
 | D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | hecho (2026-11-02) | · |
 
@@ -2059,6 +2059,44 @@ guardan como los lee la tienda: la página normaliza con
   `style.css` de arriba → `temaDesdeCss({ principal, todos, archivo })` →
   `saveTheme(null, temaAFirestore(t))`.
 
+### D6 unido al admin (2026-11-03)
+
+Todo el apartado a la vez con `adminCampanasViejo`
+(`useLoViejo('adminCampanas')`). Las páginas viejas pasaron a `…Viejo.jsx`
+(`AdminSorteos`, `AdminSorteoDetalle`, `AdminSuscripcionSorteos`,
+`AdminSuscripcionDetalle`, `AdminEnlaces`, `AdminEnlaceEditor`,
+`AdminPopups`, `Tienda/admin/AdminLandingPages`, `Tienda/admin/AdminThemes`);
+el `.jsx` de siempre elige. Los conectores:
+
+| Pantalla | Conector (`components/panel/`) |
+|---|---|
+| Sorteos y su detalle, sorteos por suscripción y su detalle (beneficios y galería) | `SorteosDelPanel.jsx` |
+| Enlaces y su constructor | `EnlacesDelPanel.jsx` |
+| Popups, Páginas (landing pages), Temas | `CampanasDelPanel.jsx` |
+
+- **Cambio del kit al unir**: cada `CampoImagen` de Sorteos, Suscripciones y
+  Enlaces pasa su carpeta a `subirImagen` (`premios`, `hero`, `logo`,
+  `avatars`, `thumbnails`, `redes`, `backgrounds`), como ya hacía Marcas:
+  las fotos caen en las carpetas de antes (el nombre del archivo cambia).
+- `?nueva=<dirección>` en Páginas (lo usa la tarjeta de enlaces rotos) abre
+  "Nueva" con esa dirección y se quita de la URL.
+- Guardar una landing también refresca el editor y los enlaces rotos.
+- **Cambios que quedaron** (de los conectores): el enlace `/l/…` ya no cambia
+  solo al editar el título (antes se rehacía si no se tocaba el campo); al
+  editar un beneficio o un ganador se guarda el documento limpio (antes se
+  colaba su `id`); un tema de WordPress editado a mano conserva su tipo y
+  versión; si no se leen las marcas, Páginas no deja trabajar (antes una
+  página de marca parecía de campaña y se podía borrar); las métricas de un
+  popup que no cargan salen "—"; errores que antes se callaban ahora avisan.
+
+**Qué se probó** (localhost con los emuladores): las seis listas abren sin
+errores (1 popup y 1 página sembrados); crear un sorteo → el documento en
+`sorteos` con `titulo`, `slug`, `tipo`, `requisitoApp`, `numGanadores` y
+`estado: 'borrador'` → su detalle en `/admin/sorteos/:id`; crear una página
+de enlaces → `link_pages` con `slug: 'mis-redes-prueba'` → abre su
+constructor; con `adminCampanasViejo` vuelve Temas de antes. No se probaron:
+elegir ganadores ni chances (callables), subidas de fotos, importar un tema.
+
 ## D7 · Juegos y Kapi (en el kit desde el 2026-11-02: los dos tramos)
 
 Cuatro pantallas de hoy (unas 1.640 líneas), en dos tramos; el apartado se
@@ -2441,15 +2479,15 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D5c · Fechas importantes ✓ | `pages/admin/AdminFechasImportantesPage.jsx` + `.module.css`, `components/admin/fechas/*` (`GlobalCalendarView`, `FechasFestivasView`, `UsuariosView`, `PackageCreatorModal` y sus CSS) | `PaginaFechasAdmin` (`PaginaListaAdmin`, `TablaAdmin`, `HojaEdicion`, `SelectorProductos`, `ElegirUno`, `Confirmar`) | `FechasDelPanel.jsx` |
 | D5d · Notificaciones ✓ | `pages/admin/AdminNotifications/AdminNotifications.jsx` + `.module.css` (`BuscadorProducto`, `useGlobalToast`, `window.confirm`) | `PaginaNotificacionesAdmin` (`TablaAdmin`, `SelectorProductos`, `CampoImagen`, `CampoFecha`, `ElegirUno`, `Confirmar`) | `NotificacionesDelPanel.jsx` |
 | D5e · Encuestas ✓ | `pages/admin/AdminEncuestas.jsx` + `.module.css`, `AdminEncuestaEntregas.jsx`, `AdminRespuestasEncuesta.jsx` + `.module.css`, `CambioKpi.jsx` (`alert`, `window.confirm`, `useGlobalToast`) | `PaginaEncuestaAdmin`, `RespuestasEntregas`, `RespuestasEncuesta`, `BarraGuardar` | `EncuestaDelPanel.jsx`, `OpinionesDelPanel.jsx` |
-| D6a · Sorteos | `pages/admin/AdminSorteos.jsx` + `.module.css` (`common/Button`, su propio modal, la subida a mano) | `PaginaSorteosAdmin` (`PaginaListaAdmin`, `CampoImagen`, `CampoFecha`, `CampoDinero`) | `SorteosDelPanel.jsx` |
-| D6a · Un sorteo | `pages/admin/AdminSorteoDetalle.jsx` + `.module.css` (su propio modal) | `PaginaSorteoAdmin` (`TablaAdmin`, `HojaEdicion`, `Confirmar`) | `SorteoDelPanel.jsx` |
-| D6b · Sorteos por suscripción | `pages/admin/AdminSuscripcionSorteos.jsx` + `.module.css` (con `BeneficiosEditor` y `GaleriaEditor` adentro; `common/Button`, su modal, la subida a mano) | `PaginaSuscripcionesAdmin` (`PaginaListaAdmin`, `CampoLista`, `CampoColor`, `CampoImagen`) | `SuscripcionesDelPanel.jsx` |
-| D6b · Una campaña | `pages/admin/AdminSuscripcionDetalle.jsx` + `.module.css` | `PaginaSuscripcionAdmin` (`GanadoresSorteo`, `AjusteSorteo`, `PaginaListaAdmin` en Beneficios y Galería) | `SuscripcionDelPanel.jsx` |
-| D6c · Enlaces | `pages/admin/AdminEnlaces.jsx` + `.module.css` (`common/Button`, su modal, `window.alert`) | `PaginaEnlacesAdmin` (`TablaAdmin`, `HojaEdicion`, `Confirmar`) | `EnlacesDelPanel.jsx` |
-| D6c · El constructor | `pages/admin/AdminEnlaceEditor.jsx` + `.module.css` (arrastrar con HTML5, la subida a mano) | `PaginaEnlaceAdmin` (`ListaOrdenable`, `CampoImagen`, `CampoColor`, `ElegirUno`, `BarraGuardar`, `ListaBarras`) | `EnlaceDelPanel.jsx` |
-| D6d · Popups | `pages/admin/AdminPopups.jsx` + `.module.css` (`window.confirm`) | `PaginaPopupsAdmin` (`PaginaListaAdmin`, `VentanaCampana`, `CampoLista`, `CampoImagen`, `CampoFecha`) | `PopupsDelPanel.jsx` |
-| D6d · Páginas | `pages/Tienda/admin/AdminLandingPages.jsx` + `pages/admin/AdminLandingPages.module.css` (`common/Button`) | `PaginaLandingsAdmin` (`PaginaListaAdmin` con `nuevoCon`) | `PaginasDelPanel.jsx` |
-| D6d · Temas | `pages/Tienda/admin/AdminThemes.jsx` + `.module.css` (`alert`, `window.confirm`, su modal) | `PaginaTemasAdmin` (`PaginaListaAdmin`) | `TemasDelPanel.jsx` |
+| D6a · Sorteos ✓ | `pages/admin/AdminSorteos.jsx` + `.module.css` (`common/Button`, su propio modal, la subida a mano) | `PaginaSorteosAdmin` (`PaginaListaAdmin`, `CampoImagen`, `CampoFecha`, `CampoDinero`) | `SorteosDelPanel.jsx` |
+| D6a · Un sorteo ✓ | `pages/admin/AdminSorteoDetalle.jsx` + `.module.css` (su propio modal) | `PaginaSorteoAdmin` (`TablaAdmin`, `HojaEdicion`, `Confirmar`) | `SorteoDelPanel.jsx` |
+| D6b · Sorteos por suscripción ✓ | `pages/admin/AdminSuscripcionSorteos.jsx` + `.module.css` (con `BeneficiosEditor` y `GaleriaEditor` adentro; `common/Button`, su modal, la subida a mano) | `PaginaSuscripcionesAdmin` (`PaginaListaAdmin`, `CampoLista`, `CampoColor`, `CampoImagen`) | `SuscripcionesDelPanel.jsx` |
+| D6b · Una campaña ✓ | `pages/admin/AdminSuscripcionDetalle.jsx` + `.module.css` | `PaginaSuscripcionAdmin` (`GanadoresSorteo`, `AjusteSorteo`, `PaginaListaAdmin` en Beneficios y Galería) | `SuscripcionDelPanel.jsx` |
+| D6c · Enlaces ✓ | `pages/admin/AdminEnlaces.jsx` + `.module.css` (`common/Button`, su modal, `window.alert`) | `PaginaEnlacesAdmin` (`TablaAdmin`, `HojaEdicion`, `Confirmar`) | `EnlacesDelPanel.jsx` |
+| D6c · El constructor ✓ | `pages/admin/AdminEnlaceEditor.jsx` + `.module.css` (arrastrar con HTML5, la subida a mano) | `PaginaEnlaceAdmin` (`ListaOrdenable`, `CampoImagen`, `CampoColor`, `ElegirUno`, `BarraGuardar`, `ListaBarras`) | `EnlaceDelPanel.jsx` |
+| D6d · Popups ✓ | `pages/admin/AdminPopups.jsx` + `.module.css` (`window.confirm`) | `PaginaPopupsAdmin` (`PaginaListaAdmin`, `VentanaCampana`, `CampoLista`, `CampoImagen`, `CampoFecha`) | `PopupsDelPanel.jsx` |
+| D6d · Páginas ✓ | `pages/Tienda/admin/AdminLandingPages.jsx` + `pages/admin/AdminLandingPages.module.css` (`common/Button`) | `PaginaLandingsAdmin` (`PaginaListaAdmin` con `nuevoCon`) | `PaginasDelPanel.jsx` |
+| D6d · Temas ✓ | `pages/Tienda/admin/AdminThemes.jsx` + `.module.css` (`alert`, `window.confirm`, su modal) | `PaginaTemasAdmin` (`PaginaListaAdmin`) | `TemasDelPanel.jsx` |
 | D7a · Kapi | `pages/admin/AdminMascota.jsx` (usa `AdminTiendaTextos.module.css`, estilos en línea, `alert`, `window.confirm`) | `PaginaKapiAdmin` (`CampoImagen`) | `KapiDelPanel.jsx` |
 | D7a · La Palabra del día | `pages/admin/AdminWordlePage.jsx` + `.module.css` (`alert`, `window.confirm`) | `PaginaPalabraAdmin` (`PaginaListaAdmin`, `CampoFecha`) | `PalabraDelPanel.jsx` |
 | D7a · Las Bolitas | `pages/admin/AdminBolitasPage.jsx` + `.module.css` (`alert`, `window.confirm`) | `PaginaBolitasAdmin` (`PaginaListaAdmin`, `ListaOrdenable`, `GraficoTendencia`, `ListaBarras`, `BarraGuardar`) | `BolitasDelPanel.jsx` |
@@ -2536,6 +2574,7 @@ bloquea de verdad); en Inventario, un personalizable sin límite de stock
 
 | Fecha | Qué | Dónde |
 |---|---|---|
+| 2026-11-03 | **D6 unido al admin**: sorteos, sorteos por suscripción, enlaces, popups, landing pages y temas (`SorteosDelPanel`, `EnlacesDelPanel`, `CampanasDelPanel`, interruptor `adminCampanasViejo`); los `CampoImagen` de Sorteos, Suscripciones y Enlaces dicen su carpeta | `components/panel/`, `pages/admin/`, `pages/Tienda/admin/`, `kit/paginas/admin/` |
 | 2026-11-03 | **D5 unido al admin**: referidos, misiones, retos, recompensas, fechas importantes, notificaciones y la encuesta (`FidelidadDelPanel`, `FechasDelPanel`, `AvisosDelPanel`, interruptor `adminClientesViejo`); Opiniones pasa a las respuestas del kit. Corregido: `updateDocument` ya borraba los campos vaciados de primer nivel (desde `e402bf3c`) | `components/panel/`, `pages/admin/` |
 | 2026-11-03 | **D4 unido al admin**: el marco de Resultados, sus seis pestañas y las cuatro pantallas técnicas (`ResultadosDelPanel`, `ResultadosClientesDelPanel`, `ResultadosTecnicoDelPanel`, interruptor `adminResultadosViejo`); las técnicas siguen en sus rutas | `components/panel/`, `pages/admin/resultados/`, `pages/admin/dashboard/` |
 | 2026-11-03 | **D3 unido al admin**: recepción, gestión de pagos, cuentas desde pedidos y libro de reclamaciones (`components/panel/PedidosDelPanel.jsx`, interruptor `adminPedidosViejo`) | `components/panel/`, `pages/admin/` |

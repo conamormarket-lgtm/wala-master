@@ -248,7 +248,7 @@ export function PaginaEnlaceAdmin({
           {pestana === 'contenido' && (
             <>
               <GrupoCampos titulo="La cabecera">
-                <CampoImagen etiqueta="Foto" valor={d.avatar} onCambiar={(url) => cambiar('avatar', url)} subir={subirImagen} recorte="circulo" forma="circulo" />
+                <CampoImagen etiqueta="Foto" valor={d.avatar} onCambiar={(url) => cambiar('avatar', url)} subir={subirImagen && ((b, o) => subirImagen(b, { ...o, carpeta: 'avatars' }))} recorte="circulo" forma="circulo" />
                 <Campo etiqueta="Título" placeholder="Ej. Walá · Regalos personalizados" value={d.nombre} error={errores.nombre} onChange={(e) => cambiar('nombre', e.target.value)} />
                 <Campo etiqueta="Enlace" ayuda={`wala.pe/l/${slugDeEnlace(d.slug || d.nombre) || 'tu-enlace'}`} value={d.slug} error={errores.slug} onChange={(e) => cambiar('slug', e.target.value)} />
                 <Campo etiqueta="Descripción" multilinea={2} placeholder="Una frase corta sobre ti o tu marca" value={d.descripcion} onChange={(e) => cambiar('descripcion', e.target.value)} />
@@ -269,7 +269,7 @@ export function PaginaEnlaceAdmin({
                         </div>
                         <details className={s.mas}>
                           <summary>{b.miniatura ? 'Con miniatura' : 'Agregar una miniatura'} · {entero(clics[b.id])} clics</summary>
-                          <CampoImagen etiqueta="Miniatura" valor={b.miniatura} onCambiar={(url) => cambiar('botones', d.botones.map((x, j) => (j === i ? { ...x, miniatura: url } : x)))} subir={subirImagen} recorte="cuadrado" forma="cuadro" />
+                          <CampoImagen etiqueta="Miniatura" valor={b.miniatura} onCambiar={(url) => cambiar('botones', d.botones.map((x, j) => (j === i ? { ...x, miniatura: url } : x)))} subir={subirImagen && ((b, o) => subirImagen(b, { ...o, carpeta: 'thumbnails' }))} recorte="cuadrado" forma="cuadro" />
                         </details>
                         <Boton tamano="sm" variante="fantasma" icono={<Trash2 aria-hidden="true" />} onClick={() => cambiar('botones', d.botones.filter((_, j) => j !== i))}>Quitar el botón</Boton>
                       </div>
@@ -294,7 +294,7 @@ export function PaginaEnlaceAdmin({
                         <Campo etiqueta="A dónde lleva" type="url" placeholder="https://…" value={r.url} onChange={(e) => cambiar('redes', d.redes.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)))} />
                         <details className={s.mas}>
                           <summary>{r.icono ? 'Con ícono propio' : 'Usar un ícono propio'} · {entero(clics[r.id])} clics</summary>
-                          <CampoImagen etiqueta="Ícono" valor={r.icono} onCambiar={(url) => cambiar('redes', d.redes.map((x, j) => (j === i ? { ...x, icono: url } : x)))} subir={subirImagen} recorte="cuadrado" forma="cuadro" contener />
+                          <CampoImagen etiqueta="Ícono" valor={r.icono} onCambiar={(url) => cambiar('redes', d.redes.map((x, j) => (j === i ? { ...x, icono: url } : x)))} subir={subirImagen && ((b, o) => subirImagen(b, { ...o, carpeta: 'redes' }))} recorte="cuadrado" forma="cuadro" contener />
                         </details>
                         <Boton tamano="sm" variante="fantasma" icono={<Trash2 aria-hidden="true" />} onClick={() => cambiar('redes', d.redes.filter((_, j) => j !== i))}>Quitar la red</Boton>
                       </div>
@@ -357,7 +357,7 @@ export function PaginaEnlaceAdmin({
                     </span>
                   </>
                 )}
-                {d.diseno.background.type === 'image' && <CampoImagen etiqueta="Imagen de fondo" valor={d.diseno.background.value} onCambiar={(url) => fondo({ value: url })} subir={subirImagen} forma="ancho" />}
+                {d.diseno.background.type === 'image' && <CampoImagen etiqueta="Imagen de fondo" valor={d.diseno.background.value} onCambiar={(url) => fondo({ value: url })} subir={subirImagen && ((b, o) => subirImagen(b, { ...o, carpeta: 'backgrounds' }))} forma="ancho" />}
               </GrupoCampos>
             </>
           )}
