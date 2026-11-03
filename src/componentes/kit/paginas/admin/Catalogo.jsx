@@ -13,8 +13,7 @@ import s from './Lista.module.css';
 
 /*
  * Las listas simples del catálogo (D1), sobre PaginaListaAdmin:
- * colecciones, atributos (tipos, etiquetas y personajes), zonas de envío y
- * cliparts. Categorías y Marcas tienen su propio archivo. Datos en la forma
+ * colecciones, atributos (tipos, etiquetas y personajes) y zonas de envío. Categorías y Marcas tienen su propio archivo. Datos en la forma
  * de adaptadoresAdmin.js; guardar, eliminar y subir llegan como promesas.
  */
 
@@ -321,91 +320,6 @@ export function PaginaEnvios({ zonas = [], cargando, error, onReintentar, onGuar
             </GrupoCampos>
             <GrupoCampos titulo="Estado">
               <Interruptor etiqueta="Zona activa" descripcion="Apagada, no se ofrece en el checkout (no se borra)." activo={datos.activa} onChange={(v) => cambiar('activa', v)} />
-            </GrupoCampos>
-          </>
-        ),
-      }}
-    />
-  );
-}
-
-/* ── Cliparts ──────────────────────────────────────────── */
-
-/**
- * Cliparts (/admin/cliparts): las imágenes que el cliente agrega a su diseño.
- *  - cliparts: [{ id, nombre, imagen, categoria }] (clipartDesdeFirestore)
- *  - cargando · error · onReintentar · onGuardar(datos, id?) · onEliminar(id) · subirImagen
- */
-export function PaginaCliparts({ cliparts = [], cargando, error, onReintentar, onGuardar, onEliminar, subirImagen }) {
-  const categorias = useMemo(() => [...new Set(cliparts.map((c) => c.categoria).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')), [cliparts]);
-  return (
-    <PaginaListaAdmin
-      cabeza={{ icono: 'cliparts', titulo: 'Cliparts', subtitulo: 'Las imágenes que el cliente puede sumar a su diseño.' }}
-      registros={cliparts}
-      cargando={cargando}
-      error={error}
-      onReintentar={onReintentar}
-      unidad={['clipart', 'cliparts']}
-      buscarEn={(c) => `${c.nombre} ${c.categoria}`}
-      placeholder="Buscar un clipart"
-      filtros={categorias.length ? [{
-        id: 'categoria',
-        etiqueta: 'Categoría',
-        todos: 'Todas las categorías',
-        opciones: [...categorias.map((c) => ({ valor: c, texto: c })), { valor: '__sin', texto: 'Sin categoría' }],
-        filtrar: (c, v) => (v === '__sin' ? !c.categoria : c.categoria === v),
-      }] : []}
-      columnas={[
-        { id: 'foto', titulo: 'Imagen', ancho: 72, tarjeta: 'foto', celda: (c) => <FotoCelda src={c.imagen} contener /> },
-        { id: 'nombre', titulo: 'Nombre', ordenable: true, tarjeta: 'titulo', celda: (c) => c.nombre },
-        { id: 'categoria', titulo: 'Categoría', ordenable: true, tarjeta: 'detalle', celda: (c) => c.categoria || <span className={s.sub}>Sin categoría</span> },
-      ]}
-      ordenes={{ nombre: porNombre, categoria: (a, b) => String(a.categoria).localeCompare(String(b.categoria), 'es') || porNombre(a, b) }}
-      ordenInicial={{ por: 'categoria', dir: 'asc' }}
-      vacio={{ texto: 'Sube el primero (PNG con fondo transparente o SVG).' }}
-      textos={{ creado: 'Clipart agregado', guardado: 'Clipart guardado', eliminado: 'Clipart eliminado' }}
-      eliminar={{ texto: () => 'Deja de salir para los diseños nuevos. Los diseños que ya lo usan no cambian.' }}
-      onGuardar={onGuardar}
-      onEliminar={onEliminar}
-      formulario={{
-        nuevo: 'Nuevo clipart',
-        titulos: { nuevo: 'Nuevo clipart', editar: 'Editar clipart' },
-        textoGuardar: { nuevo: 'Agregar clipart' },
-        vacio: ({ filtros }) => ({ nombre: '', imagen: '', categoria: filtros.categoria && filtros.categoria !== '__sin' ? filtros.categoria : '' }),
-        desde: (c) => ({ nombre: c.nombre, imagen: c.imagen, categoria: c.categoria }),
-        validar: (d) => ({
-          nombre: !d.nombre.trim() ? 'Escribe el nombre del clipart.' : undefined,
-          imagen: !String(d.imagen).trim() ? 'Sube la imagen o pega su enlace.' : undefined,
-        }),
-        limpiar: (d) => ({ ...d, nombre: d.nombre.trim(), categoria: d.categoria.trim(), imagen: String(d.imagen).trim() }),
-        campos: ({ datos, cambiar, errores, idDe }) => (
-          <>
-            <GrupoCampos titulo="Datos">
-              <Campo id={idDe('nombre')} etiqueta="Nombre" placeholder="Ej. Corazón neón" value={datos.nombre} error={errores.nombre} maxLength={60} onChange={(e) => cambiar('nombre', e.target.value)} />
-              <Campo
-                id={idDe('categoria')}
-                etiqueta="Categoría"
-                placeholder="Ej. Amor"
-                value={datos.categoria}
-                opciones={categorias.map((c) => ({ valor: c, texto: c }))}
-                creable
-                ayuda="Elige una o escribe una nueva."
-                onChange={(e) => cambiar('categoria', e.target.value)}
-              />
-            </GrupoCampos>
-            <GrupoCampos titulo="Imagen">
-              <span id={idDe('imagen')} tabIndex={-1} />
-              <CampoImagen
-                etiqueta="El clipart"
-                ayuda="PNG con fondo transparente o SVG. Se sube tal cual."
-                error={errores.imagen}
-                valor={datos.imagen}
-                onCambiar={(url) => cambiar('imagen', url)}
-                subir={subirImagen}
-                acepta="image/png, image/svg+xml"
-                contener
-                conEnlace
-              />
             </GrupoCampos>
           </>
         ),

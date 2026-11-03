@@ -11,7 +11,7 @@ import s from './Lista.module.css';
 
 /**
  * La foto de un registro (o el hueco sin foto).
- *  - forma: 'cuadro' | 'circulo' | 'ancha' (banners) · contener: sin recortar (logos, cliparts) · tamano (44)
+ *  - forma: 'cuadro' | 'circulo' | 'ancha' (banners) · contener: sin recortar (logos) · tamano (44)
  */
 export function FotoCelda({ src, forma = 'cuadro', contener = false, tamano = 44 }) {
   return (

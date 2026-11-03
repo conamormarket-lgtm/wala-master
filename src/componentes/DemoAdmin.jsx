@@ -2,10 +2,10 @@ import React, { forwardRef, useCallback, useMemo, useRef, useState } from 'react
 import { Archive, Eye, EyeOff, Trash2 } from 'lucide-react';
 import {
   MarcoAdmin, SinPermiso, CabezaAdmin, PaginaInicioAdmin, PaginaCategorias, InsigniaEstado, ESTADOS_ADMIN, AccionesLote,
-  PaginaColecciones, PaginaAtributos, PaginaEnvios, PaginaCliparts, PaginaMarcas, PaginaProductosMarca, PaginaDestacados,
+  PaginaColecciones, PaginaAtributos, PaginaEnvios, PaginaMarcas, PaginaProductosMarca, PaginaDestacados,
   PaginaProductos, PaginaInventario, PaginaRecomendar, PaginaFichaProducto, fichaDesdeProducto, fichaAProducto,
   PaginaPersonalizables, PaginaPacks, personalizableDesde, packDesdeFirestore,
-  PaginaBlueprints, PaginaPlantillasYoryo, blueprintDesdeFirestore, blueprintAFirestore, PaginaRecepcion,
+  PaginaPlantillasYoryo, PaginaRecepcion,
   PaginaPagos, configPagosDesde, PaginaReclamos, reclamoDesdeFirestore,
   MarcoResultados, PaginaResumenResultados, PaginaProductosResultados, PaginaVisitantesResultados, PaginaClientesResultados, PaginaOpinionesResultados,
   PaginaDetalleTecnico, PaginaPaginasTecnica, PaginaUsoTecnica, PaginaNavegadorTecnica, PaginaMapaDeCalor, ORIGENES_TECNICOS,
@@ -23,7 +23,7 @@ import {
   PaginaWhatsAppAdmin, PaginaHistorialAdmin, whatsappDesdeMensajes, whatsappAMensajes, cambioDisenoDesde, conVersionActual, movimientoInventarioDesde,
   CampoImagen, TablaAdmin, EstadoVacio, Boton, Chip, Pestanas, ProveedorEnlaces, useToast,
   menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, marcaAdminDesdeFirestore,
-  coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, clipartDesdeFirestore, marcaDesdeFirestore,
+  coleccionDesdeFirestore, atributoDesdeFirestore, usosDeAtributo, zonaDesdeFirestore, marcaDesdeFirestore,
   productoAdminDesde, tarjetaDesdeProducto,
 } from './kit';
 import TIENDA from './demo/tienda.json';
@@ -42,10 +42,9 @@ import s from './DemoAdmin.module.css';
  *  - Panel de prueba: MarcoAdmin con el menú real filtrado por permiso; los
  *    enlaces navegan. Hechos: el inicio (D0) y el catálogo base (D1):
  *    categorías, colecciones, marcas y sus productos, atributos, zonas de
- *    envío, cliparts y destacados; y de D2a, productos, inventario y
+ *    envío y destacados; y de D2a, productos, inventario y
  *    datos para recomendar, con la copia real de la tienda
- *    (demo/tienda.json y demo/marcas.json; las zonas y los cliparts son de
- *    ejemplo). El resto de las secciones dice en qué apartado se hará.
+ *    (demo/tienda.json y demo/marcas.json; las zonas son de ejemplo). El resto de las secciones dice en qué apartado se hará.
  *  - Piezas del admin: las piezas sueltas con sus estados.
  * Guardar, eliminar y subir se simulan ("Guardar y subir fallan" para ver el error).
  */
@@ -131,7 +130,7 @@ const ATRIBUTOS_DEMO = {
   etiquetas: TIENDA.etiquetas.map((d) => atributoDesdeFirestore(d, usosDeAtributo(TIENDA.productos, 'etiquetas'))),
   personajes: TIENDA.personajes.map((d) => atributoDesdeFirestore(d, usosDeAtributo(TIENDA.productos, 'personajes'))),
 };
-// De ejemplo (no hay copia de shippingZones ni de cliparts).
+// De ejemplo (no hay copia de shippingZones).
 const ZONAS = [
   { id: 'z1', name: 'Lima Metropolitana', departamento: 'Lima', cost: 10, etaDays: 2, order: 0 },
   { id: 'z2', name: 'Callao', departamento: 'Callao', cost: 10, etaDays: 2, order: 1 },
@@ -139,13 +138,6 @@ const ZONAS = [
   { id: 'z4', name: 'Cusco', departamento: 'Cusco', cost: 20, etaDays: 5, order: 3 },
   { id: 'z5', name: 'Trujillo', departamento: 'La Libertad', cost: 18, etaDays: 4, order: 4, active: false },
 ].map(zonaDesdeFirestore);
-const CLIPARTS = [
-  { id: 'k1', name: 'Kapi feliz', url: '/assets/kapi/kapi-happy.webp', category: 'Kapi' },
-  { id: 'k2', name: 'Kapi con hambre', url: '/assets/kapi/kapi-hungry.webp', category: 'Kapi' },
-  { id: 'k3', name: 'Kapi triste', url: '/assets/kapi/kapi-sad.webp', category: 'Kapi' },
-  { id: 'k4', name: 'Etiqueta Walá', url: '/assets/marca/splash-etiqueta-w.webp', category: 'Marca' },
-  { id: 'k5', name: 'Logo Walá', url: '/assets/marca/logo-header-v2.webp', category: 'Marca' },
-].map(clipartDesdeFirestore);
 // Los productos, con cinco destacados, algunos ocultos, el stock variado y
 // dos con la personalización de antes (de ejemplo).
 const PRODUCTOS = TIENDA.productos.map((p, i) => productoAdminDesde({
@@ -177,13 +169,7 @@ const PLANTILLAS_DEMO = [
   { id: 'demo-escudo', nombre: 'Escudo', grupo: 'Equipos', imagen: '/assets/marca/splash-etiqueta-w.webp', capas: { frente: [{ tipo: 'imagen' }] } },
 ];
 const PRENDAS_CRUDAS = Object.fromEntries(CREAR.prendas.map((p, i) => [p.id, { ...p, inStock: p.inStock ?? null, ...(i === 0 && { prendaBase: { ...p.prendaBase, plantillas: PLANTILLAS_DEMO } }) }]));
-// D2d: blueprints de ejemplo (en Firestore casi no hay) y las plantillas de Yoryo
-// con sus nombres reales (pages/admin/plantillasYoryo); los pasos se simulan.
-const BLUEPRINTS = [
-  { id: 'bp-polo', name: 'Polo unisex algodón', baseGarment: 'polo', basePrintCost: 12, order: 0, active: true, decorationMethods: ['DTG', 'DTF'], printAreas: [{ name: 'Frente', widthCm: 30, heightCm: 40, dpi: 300 }, { name: 'Espalda', widthCm: 30, heightCm: 40, dpi: 300 }] },
-  { id: 'bp-hoodie', name: 'Hoodie french terry', baseGarment: 'hoodie', basePrintCost: 18.5, order: 1, active: true, decorationMethods: ['DTF', 'Bordado'], printAreas: [{ name: 'Pecho', widthCm: 10, heightCm: 10, dpi: 300 }] },
-  { id: 'bp-taza', name: 'Taza blanca 11 oz', baseGarment: 'taza', basePrintCost: 6, order: 2, active: false, decorationMethods: ['Sublimación'], printAreas: [{ name: 'Vuelta', widthCm: 20, heightCm: 8.5, dpi: 300 }] },
-].map(blueprintDesdeFirestore);
+// D2d: las plantillas de Yoryo con sus nombres reales (pages/admin/plantillasYoryo); los pasos se simulan.
 const EQUIPOS_YORYO = ['Alianza Lima', 'Universitario', 'Sporting Cristal', 'Sport Boys', 'Barcelona', 'Real Madrid'];
 const PAREJAS_YORYO = ['Banda dorada', 'Mi lugar favorito', 'Nuestra historia'];
 const PRODUCTOS_YORYO = [{ id: 'cuadro', nombre: 'Cuadro' }, { id: 'mousepad', nombre: 'Mousepad' }, { id: 'tomatodo', nombre: 'Tomatodo' }];
@@ -765,9 +751,7 @@ function PanelDePrueba() {
   const [categorias, guardarCategoria, eliminarCategoria, setCategorias] = useListaDemo(CATEGORIAS, falla);
   const [colecciones, guardarColeccion, eliminarColeccion, setColecciones] = useListaDemo(COLECCIONES, falla);
   const [zonas, guardarZona, eliminarZona] = useListaDemo(ZONAS, falla);
-  const [cliparts, guardarClipart, eliminarClipart] = useListaDemo(CLIPARTS, falla);
   const [marcas, guardarMarca, eliminarMarca, setMarcas] = useListaDemo(MARCAS, falla);
-  const [blueprints, guardarBlueprintCrudo, eliminarBlueprint] = useListaDemo(BLUEPRINTS, falla);
   const [yoryoCreados, setYoryoCreados] = useState(false);
   const [actualizando, setActualizando] = useState(false);
   const [enlaces, setEnlaces] = useState(ENLACES_DEMO);
@@ -990,8 +974,6 @@ function PanelDePrueba() {
     );
   } else if (ruta === '/admin/envios') {
     pagina = <PaginaEnvios {...comunes} zonas={vacio ? [] : zonas} onGuardar={guardarZona} onEliminar={eliminarZona} />;
-  } else if (ruta === '/admin/cliparts') {
-    pagina = <PaginaCliparts {...comunes} cliparts={vacio ? [] : cliparts} onGuardar={guardarClipart} onEliminar={eliminarClipart} subirImagen={subir} />;
   } else if (ruta === '/admin/marcas') {
     pagina = (
       <PaginaMarcas
@@ -1934,16 +1916,6 @@ function PanelDePrueba() {
         }}
       />
     );
-  } else if (ruta === '/admin/blueprints') {
-    pagina = (
-      <PaginaBlueprints
-        {...comunes}
-        blueprints={vacio ? [] : blueprints}
-        // Ida y vuelta por el adaptador, como pasará con Firestore.
-        onGuardar={(datos, id) => guardarBlueprintCrudo(blueprintDesdeFirestore({ id, ...blueprintAFirestore(datos) }), id)}
-        onEliminar={eliminarBlueprint}
-      />
-    );
   } else if (ruta === '/admin/plantillas-yoryo') {
     const paso = (textos, fin) => async (avisar) => {
       for (const texto of textos) { avisar(texto); await espera(600); }
@@ -1998,7 +1970,7 @@ function PanelDePrueba() {
       />
     );
   } else {
-    const productosD2 = ['/admin/productos', '/admin/inventario', '/admin/plantillas-yoryo', '/admin/blueprints', '/admin/publico-productos'];
+    const productosD2 = ['/admin/productos', '/admin/inventario', '/admin/plantillas-yoryo', '/admin/publico-productos'];
     const grupo = productosD2.includes(dePaso?.item.to) ? 'D2 · Productos' : APARTADOS[dePaso?.grupo.id];
     pagina = (
       <>

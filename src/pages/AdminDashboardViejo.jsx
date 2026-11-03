@@ -165,7 +165,6 @@ const AdminDashboardViejo = () => {
     { to: '/admin/colecciones', label: 'Colecciones', description: 'Gestionar colecciones' },
     { to: '/admin/marcas', label: 'Marcas', description: 'Gestionar marcas de productos' },
     { to: '/admin/destacados', label: 'Destacados', description: 'Ordenar productos destacados' },
-    { to: '/admin/cliparts', label: 'Cliparts', description: 'Galería de cliparts' },
     { to: '/admin/mascota', label: 'Mascota Virtual', description: 'Configurar mascota de retención' },
     { to: '/admin/backups', label: 'Historial y Backups', description: 'Restaurar diseño de la tienda' }
   ];

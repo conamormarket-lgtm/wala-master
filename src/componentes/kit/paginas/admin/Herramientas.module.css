@@ -1,10 +1,4 @@
-/* ── D2d: blueprints y plantillas de cuadros ───────────────── */
-.areas {
-  display: grid;
-  gap: 0.5rem;
-  container-type: inline-size;
-}
-
+/* ── D2d: plantillas de cuadros ───────────────── */
 /* Una fila por área; angosto, el nombre arriba y las medidas debajo. */
 .area {
   display: grid;

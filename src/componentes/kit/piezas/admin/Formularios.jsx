@@ -207,7 +207,7 @@ export function GrupoCampos({ titulo, ayuda, columnas = 1, children }) {
  *  - recorte: 'circulo' | 'cuadrado' (antes de subir, con RecortarFoto) o null
  *    (tal cual) · tamanoRecorte: px del JPG (600)
  *  - forma: cómo se ve: 'circulo' (burbujas) | 'cuadro' | 'ancho' (banners)
- *    · contener: la imagen entera, sin recortarla en la vista (logos, cliparts)
+ *    · contener: la imagen entera, sin recortarla en la vista (logos)
  *  - conEnlace: también se puede pegar un enlace (Drive, otra web)
  */
 export function CampoImagen({

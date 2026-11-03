@@ -6,23 +6,20 @@ import { getProductTypes, createProductType, updateProductType, deleteProductTyp
 import { getTags, createTag, updateTag, deleteTag } from '../../services/tags';
 import { getCharacters, createCharacter, updateCharacter, deleteCharacter } from '../../services/characters';
 import { getShippingZones, createShippingZone, updateShippingZone, deleteShippingZone } from '../../services/shippingZones';
-import { getCliparts, createClipart, updateClipart, deleteClipart } from '../../services/cliparts';
-import { toDirectImageUrl } from '../../utils/imageUrl';
-import { PaginaColecciones, PaginaAtributos, PaginaEnvios, PaginaCliparts } from '../../componentes/kit/paginas/admin/Catalogo';
+import { PaginaColecciones, PaginaAtributos, PaginaEnvios } from '../../componentes/kit/paginas/admin/Catalogo';
 import {
   coleccionDesdeFirestore, coleccionAFirestore, usosDeAtributo, atributoDesdeFirestore, atributoAFirestore,
-  zonaDesdeFirestore, zonaAFirestore, clipartDesdeFirestore, clipartAFirestore, marcaAdminDesdeFirestore,
+  zonaDesdeFirestore, zonaAFirestore, marcaAdminDesdeFirestore,
 } from '../../componentes/kit/adaptadoresAdmin';
 import { sinError, useLectura, useInvalidar, subirA } from './comun';
 
 /*
  * Las listas simples del catálogo (D1): colecciones, atributos, zonas de
- * envío y cliparts. Los mismos servicios, claves e invalidaciones que
- * AdminColecciones, AdminCatalogAttributes, AdminEnviosZonas y AdminCliparts.
+ * envío. Los mismos servicios, claves e invalidaciones que
+ * AdminColecciones, AdminCatalogAttributes y AdminEnviosZonas.
  */
 
 const subirColeccion = subirA('collections', 'coleccion');
-const subirClipart = subirA('cliparts', 'clipart');
 
 export function ColeccionesDelPanel() {
   const colecciones = useLectura(['admin-collections'], getCollections);
@@ -126,27 +123,6 @@ export function EnviosDelPanel() {
         await refrescar();
       }}
       onEliminar={async (id) => { await sinError(deleteShippingZone(id)); await refrescar(); }}
-    />
-  );
-}
-
-export function ClipartsDelPanel() {
-  const cliparts = useLectura(['admin-cliparts'], getCliparts);
-  const invalidar = useInvalidar();
-  const refrescar = () => invalidar(['admin-cliparts'], ['cliparts']);
-  return (
-    <PaginaCliparts
-      cliparts={(cliparts.datos || []).map(clipartDesdeFirestore)}
-      cargando={cliparts.cargando}
-      error={cliparts.error}
-      onReintentar={cliparts.onReintentar}
-      onGuardar={async (datos, id) => {
-        const doc = clipartAFirestore(datos, toDirectImageUrl);
-        await sinError(id ? updateClipart(id, doc) : createClipart(doc));
-        await refrescar();
-      }}
-      onEliminar={async (id) => { await sinError(deleteClipart(id)); await refrescar(); }}
-      subirImagen={subirClipart}
     />
   );
 }

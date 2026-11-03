@@ -1,120 +1,14 @@
-import React, { useMemo, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
-import Boton from '../../Boton';
+import React, { useState } from 'react';
 import { Aviso } from '../../Feedback';
-import { Campo, Casilla, Interruptor } from '../../Formulario';
-import { InsigniaEstado } from '../../piezas/admin/Datos';
+import { Campo, Casilla } from '../../Formulario';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
-import { GrupoCampos, CampoDinero } from '../../piezas/admin/Formularios';
-import { ElegirVarios } from '../../piezas/admin/Producto';
 import { PasoAdmin } from '../../piezas/admin/Pasos';
-import { areaVacia, mismoNombre } from '../../adaptadoresAdmin';
-import { PaginaListaAdmin } from './Lista';
-import { porNombre, porOrden } from './celdas';
-import l from './Lista.module.css';
 import s from './Herramientas.module.css';
 
 /*
- * D2d: Blueprints (las plantillas de impresión bajo demanda) y la página de
- * una sola vez de los productos de Yoryo y Daida ("Plantillas de cuadros").
+ * D2d: la página de una sola vez de los productos de Yoryo y Daida
+ * ("Plantillas de cuadros"). Blueprints salió del admin el 2026-11-03.
  */
-
-const METODOS = ['DTG', 'DTF', 'Sublimación', 'Bordado', 'Serigrafía', 'Vinilo'];
-const soles = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
-
-/* Las áreas de impresión: nombre, ancho y alto en cm y dpi; siempre queda una. */
-function AreasImpresion({ areas, onCambiar, error }) {
-  const cambiar = (i, campo, valor) => onCambiar(areas.map((a, j) => (j === i ? { ...a, [campo]: valor } : a)));
-  return (
-    <div className={s.areas}>
-      {error && <p className={s.error}>{error}</p>}
-      {areas.map((a, i) => (
-        <div key={i} className={s.area}>
-          <label className={s.chico}><span>Nombre</span><input className={s.texto} value={a.nombre} placeholder="Ej. Frente" onChange={(e) => cambiar(i, 'nombre', e.target.value)} /></label>
-          <label className={s.chico}><span>Ancho cm</span><input className={s.numero} type="number" min="0" value={a.ancho} onChange={(e) => cambiar(i, 'ancho', e.target.value)} /></label>
-          <label className={s.chico}><span>Alto cm</span><input className={s.numero} type="number" min="0" value={a.alto} onChange={(e) => cambiar(i, 'alto', e.target.value)} /></label>
-          <label className={s.chico}><span>DPI</span><input className={s.numero} type="number" min="72" value={a.dpi} onChange={(e) => cambiar(i, 'dpi', e.target.value)} /></label>
-          {areas.length > 1 && <Boton soloIcono tamano="sm" variante="fantasma" icono={<Trash2 aria-hidden="true" />} aria-label={`Quitar el área ${a.nombre || i + 1}`} onClick={() => onCambiar(areas.filter((_, j) => j !== i))} />}
-        </div>
-      ))}
-      <Boton tamano="sm" variante="secundario" icono={<Plus aria-hidden="true" />} onClick={() => onCambiar([...areas, areaVacia()])}>Agregar área</Boton>
-    </div>
-  );
-}
-
-/**
- * Blueprints (/admin/blueprints): la prenda base, lo que cuesta imprimirla,
- * cómo se decora y sus áreas de impresión.
- *  - blueprints: [blueprintDesdeFirestore] · cargando · error · onReintentar · onGuardar(datos, id?) · onEliminar(id)
- */
-export function PaginaBlueprints({ blueprints = [], cargando, error, onReintentar, onGuardar, onEliminar }) {
-  const metodos = useMemo(() => [...new Set([...METODOS, ...blueprints.flatMap((b) => b.metodos)])].map((m) => ({ valor: m, texto: m })), [blueprints]);
-  return (
-    <PaginaListaAdmin
-      cabeza={{ icono: 'blueprints', titulo: 'Blueprints', subtitulo: 'Las plantillas de impresión bajo demanda: la prenda base, su costo y sus áreas.' }}
-      registros={blueprints}
-      cargando={cargando}
-      error={error}
-      onReintentar={onReintentar}
-      unidad={['blueprint', 'blueprints']}
-      buscarEn={(b) => `${b.nombre} ${b.prenda}`}
-      placeholder="Buscar un blueprint"
-      filtros={[{ id: 'estado', etiqueta: 'Estado', todos: 'Activos e inactivos', opciones: [{ valor: 'si', texto: 'Solo activos' }, { valor: 'no', texto: 'Solo inactivos' }], filtrar: (b, v) => (v === 'si' ? b.activo : !b.activo) }]}
-      columnas={[
-        { id: 'nombre', titulo: 'Blueprint', ordenable: true, tarjeta: 'titulo', celda: (b) => <>{b.nombre}{b.prenda && <span className={l.sub}>{b.prenda}</span>}</> },
-        { id: 'costo', titulo: 'Costo de impresión', ancho: 150, alinear: 'fin', tarjeta: 'detalle', celda: (b) => <span className={l.numero}>{soles(b.costo)}</span> },
-        { id: 'areas', titulo: 'Áreas', tarjeta: 'detalle', celda: (b) => b.areas.filter((a) => a.nombre).map((a) => `${a.nombre} ${a.ancho}×${a.alto} cm`).join(' · ') || <span className={l.sub}>Sin áreas</span> },
-        { id: 'metodos', titulo: 'Métodos', tarjeta: 'detalle', celda: (b) => b.metodos.join(', ') || <span className={l.sub}>—</span> },
-        { id: 'estado', titulo: 'Estado', ancho: 110, tarjeta: 'estado', celda: (b) => <InsigniaEstado estado={b.activo ? 'activo' : 'oculto'}>{b.activo ? 'Activo' : 'Inactivo'}</InsigniaEstado> },
-      ]}
-      ordenes={{ nombre: porNombre, orden: porOrden }}
-      ordenInicial={{ por: 'orden', dir: 'asc' }}
-      vacio={{ texto: 'Crea el primero con su prenda base y sus áreas de impresión.' }}
-      textos={{ creado: 'Blueprint creado', guardado: 'Blueprint guardado', eliminado: 'Blueprint eliminado' }}
-      eliminar={{ texto: () => 'Se borra del todo (no se archiva). No se puede deshacer.' }}
-      onGuardar={onGuardar}
-      onEliminar={onEliminar}
-      formulario={{
-        nuevo: 'Nuevo blueprint',
-        titulos: { nuevo: 'Nuevo blueprint', editar: 'Editar blueprint' },
-        textoGuardar: { nuevo: 'Crear blueprint' },
-        vacio: ({ registros }) => ({ nombre: '', prenda: '', costo: 0, orden: registros.reduce((m, b) => Math.max(m, b.orden + 1), 0), activo: true, metodos: ['DTG'], areas: [areaVacia()] }),
-        desde: (b) => ({ nombre: b.nombre, prenda: b.prenda, costo: b.costo, orden: b.orden, activo: b.activo, metodos: [...b.metodos], areas: b.areas.map((a) => ({ ...a })) }),
-        validar: (d, { id, registros }) => {
-          const otro = registros.find((b) => b.id !== id && mismoNombre(b.nombre, d.nombre));
-          return {
-            nombre: !d.nombre.trim() ? 'Escribe el nombre del blueprint.' : otro ? `Ya hay un blueprint «${otro.nombre}».` : undefined,
-            areas: !d.areas.some((a) => String(a.nombre).trim()) ? 'Ponle nombre al menos a un área (las que no tienen nombre no se guardan).' : undefined,
-          };
-        },
-        campos: ({ datos, cambiar, errores, idDe }) => (
-          <>
-            <GrupoCampos titulo="El blueprint">
-              <Campo id={idDe('nombre')} etiqueta="Nombre" placeholder="Ej. Polo unisex algodón" value={datos.nombre} error={errores.nombre} onChange={(e) => cambiar('nombre', e.target.value)} />
-              <Campo id={idDe('prenda')} etiqueta="Prenda base" placeholder="Ej. polo, taza, hoodie, totebag" value={datos.prenda} onChange={(e) => cambiar('prenda', e.target.value)} />
-            </GrupoCampos>
-            <GrupoCampos titulo="Costo y orden" columnas={2}>
-              <CampoDinero id={idDe('costo')} etiqueta="Costo base de impresión" value={datos.costo} onChange={(e) => cambiar('costo', e.target.value)} />
-              <Campo id={idDe('orden')} etiqueta="Orden" type="number" inputMode="numeric" min={0} value={datos.orden} onChange={(e) => cambiar('orden', e.target.value)} />
-            </GrupoCampos>
-            <GrupoCampos titulo="Cómo se decora">
-              <ElegirVarios id={idDe('metodos')} etiqueta="Métodos" opciones={metodos} valor={datos.metodos} onCambiar={(v) => cambiar('metodos', v)} onCrear={async (n) => ({ valor: n, texto: n })} placeholder="Elegir o escribir uno" />
-            </GrupoCampos>
-            <GrupoCampos titulo="Áreas de impresión" ayuda="En cm y a qué resolución se imprime (300 dpi es lo de imprenta).">
-              <span id={idDe('areas')} tabIndex={-1} />
-              <AreasImpresion areas={datos.areas} onCambiar={(v) => cambiar('areas', v)} error={errores.areas} />
-            </GrupoCampos>
-            <GrupoCampos titulo="Estado">
-              <Interruptor etiqueta="Activo" descripcion="Apagado no se ofrece (no se borra)." activo={datos.activo} onChange={(v) => cambiar('activo', v)} />
-            </GrupoCampos>
-          </>
-        ),
-      }}
-    />
-  );
-}
-
-/* ── Plantillas de cuadros (Yoryo y Daida) ─────────────── */
 
 /**
  * La página de una sola vez de /admin/plantillas-yoryo: siete pasos, cada uno

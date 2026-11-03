@@ -1,6 +1,6 @@
 import {
   Home, Package, CreditCard, BookOpen, LayoutGrid, Shirt, Boxes, Tag, Layers, Store, SlidersHorizontal,
-  Truck, Frame, Ruler, Shapes, Target, BarChart3, Eye, Users, MessageCircle, Wrench, Share2, Gift, ListChecks,
+  Truck, Frame, Target, BarChart3, Eye, Users, MessageCircle, Wrench, Share2, Gift, ListChecks,
   Trophy, Bell, CalendarHeart, ClipboardList, Megaphone, Ticket, Repeat, Link2, MessageSquare, PanelsTopLeft,
   Palette, Brush, Paintbrush, Star, PawPrint, SpellCheck, Disc3, FlaskConical, Settings, ShieldCheck,
   MessageCircleMore, History,
@@ -25,8 +25,6 @@ export const ICONOS_ADMIN = {
   atributos: SlidersHorizontal,
   envios: Truck,
   plantillas: Frame,
-  blueprints: Ruler,
-  cliparts: Shapes,
   recomendar: Target,
   resultados: BarChart3,
   visitantes: Eye,

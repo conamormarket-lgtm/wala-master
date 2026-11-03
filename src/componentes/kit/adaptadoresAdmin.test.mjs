@@ -101,11 +101,6 @@ test('zonas: activa salvo que diga lo contrario', () => {
   });
 });
 
-test('cliparts: el enlace pasa por la conversión de Drive', () => {
-  assert.equal(m2.clipartAFirestore({ nombre: 'x', imagen: 'drive' }, (u) => `directa:${u}`).url, 'directa:drive');
-  assert.equal(m2.clipartAFirestore({ nombre: 'x', imagen: '' }, () => 'no').url, '');
-});
-
 test('marcas: la dirección y el tope de monedas como la tienda', () => {
   assert.equal(m2.slugDeMarca('Con Amor Pájaros 2'), 'conamorpajaros2');
   assert.equal(m2.topeMonedasDe(''), 50);
@@ -266,16 +261,6 @@ test('crear: la ficha de un personalizable guarda su prendaBase y su stock sin l
   assert.equal(p.seVendeTalCual, false);
   assert.equal(m2.erroresDeFicha({ ...f, prenda: { vistas: [{ id: 'f', imagen: '', zonas: [] }] } }).vistas.pestana, 'diseno');
   assert.equal(m2.erroresDeFicha(f).vistas, undefined);
-});
-
-test('blueprints: las áreas sin nombre no se guardan y siempre queda una para editar', () => {
-  const b = m2.blueprintDesdeFirestore({ id: 'b', name: 'Polo', basePrintCost: '12', decorationMethods: ['DTG', ' Bordado '] });
-  assert.equal(b.areas.length, 1);
-  assert.deepEqual(b.metodos, ['DTG', 'Bordado']);
-  assert.deepEqual(m2.blueprintAFirestore({ ...b, areas: [{ nombre: ' Frente ', ancho: '30', alto: 40, dpi: '' }, { nombre: '', ancho: 1 }], metodos: ['DTG', 'DTG'] }), {
-    name: 'Polo', baseGarment: '', basePrintCost: 12, order: 0, active: true, decorationMethods: ['DTG'],
-    printAreas: [{ name: 'Frente', widthCm: 30, heightCm: 40, dpi: 300 }],
-  });
 });
 
 test('productos: oculto, archivado y precio de oferta', () => {

@@ -16,7 +16,7 @@
  *    datos para recomendar, editar la tienda, destacados, WhatsApp,
  *    backups, Kapi y los juegos
  *  - productos (manage_products): el catálogo (menos inventario), las
- *    recompensas y los cliparts; landing pages y temas piden además
+ *    y las recompensas; landing pages y temas piden además
  *    manage_landing_pages
  *  - inventario (manage_inventory) · clientes (manage_clients): reclamos,
  *    referidos, encuesta, popups, fechas, retos, misiones
@@ -289,18 +289,6 @@ export function zonaAFirestore(z = {}) {
     order: Number(z.orden) || 0,
     active: z.activa !== false,
   };
-}
-
-/* ── Cliparts ──────────────────────────────────────────── */
-
-export function clipartDesdeFirestore(doc = {}) {
-  return { id: doc.id, nombre: doc.name || '', imagen: doc.url || '', categoria: doc.category || '' };
-}
-
-/** `directa`: la que convierte un enlace de Drive en imagen (utils/imageUrl, toDirectImageUrl). */
-export function clipartAFirestore(c = {}, directa = (u) => u) {
-  const url = String(c.imagen || '').trim();
-  return { name: String(c.nombre || '').trim(), url: url ? directa(url) : '', category: String(c.categoria || '').trim() };
 }
 
 /* ── Marcas ────────────────────────────────────────────── */
@@ -784,40 +772,6 @@ export function erroresDePack(k) {
   else if (piezas.some((pz) => !pz.prendaId || (pz.fija && !pz.color))) e.piezas = 'Completa cada pieza (la que va tal cual necesita su color).';
   else if (!piezas.some((pz) => !pz.fija)) e.piezas = 'Al menos una pieza tiene que diseñarse.';
   return e;
-}
-
-/* ── Blueprints (D2d) ──────────────────────────────────── */
-
-/** Un área de impresión por defecto (como AdminBlueprints: cm y dpi de imprenta). */
-export const areaVacia = () => ({ nombre: '', ancho: 30, alto: 40, dpi: 300 });
-
-export function blueprintDesdeFirestore(doc = {}) {
-  const areas = lista(doc.printAreas).map((a) => ({ nombre: a?.name || '', ancho: Number(a?.widthCm) || 0, alto: Number(a?.heightCm) || 0, dpi: Number(a?.dpi) || 300 }));
-  return {
-    id: doc.id,
-    nombre: doc.name || '',
-    prenda: doc.baseGarment || '',
-    costo: Number(doc.basePrintCost) || 0,
-    orden: Number(doc.order) || 0,
-    activo: doc.active !== false,
-    metodos: lista(doc.decorationMethods).map((m) => String(m).trim()).filter(Boolean),
-    areas: areas.length ? areas : [areaVacia()],
-  };
-}
-
-/** Los campos de `blueprints`; las áreas sin nombre no se guardan (como antes). */
-export function blueprintAFirestore(b = {}) {
-  return {
-    name: String(b.nombre || '').trim(),
-    baseGarment: String(b.prenda || '').trim(),
-    basePrintCost: Number(b.costo) || 0,
-    order: Number(b.orden) || 0,
-    active: b.activo !== false,
-    decorationMethods: [...new Set(lista(b.metodos).map((m) => String(m).trim()).filter(Boolean))],
-    printAreas: lista(b.areas).filter((a) => String(a?.nombre || '').trim()).map((a) => ({
-      name: String(a.nombre).trim(), widthCm: Number(a.ancho) || 0, heightCm: Number(a.alto) || 0, dpi: Number(a.dpi) || 300,
-    })),
-  };
 }
 
 /** El estado del stock (Inventario): 0 agotado, hasta 3 últimas, más disponible. */
@@ -2993,7 +2947,7 @@ export function ganadoRuletaDesde(g = {}) {
 export const PERMISOS_ADMIN = [
   { valor: 'superadmin', texto: 'Super Admin', detalle: 'Todo, también el equipo y esta página.' },
   { valor: 'manage_design', texto: 'Diseño y pedidos', detalle: 'Pedidos y pagos, la tienda, campañas, WhatsApp y los juegos.' },
-  { valor: 'manage_products', texto: 'Catálogo', detalle: 'Productos, categorías, marcas, cliparts y recompensas.' },
+  { valor: 'manage_products', texto: 'Catálogo', detalle: 'Productos, categorías, marcas y recompensas.' },
   { valor: 'manage_inventory', texto: 'Inventario', detalle: 'La tabla de inventario.' },
   { valor: 'manage_clients', texto: 'Clientes', detalle: 'Reclamos, referidos, la encuesta, popups, fechas, retos y misiones.' },
   { valor: 'manage_landing_pages', texto: 'Landing pages', detalle: 'Con Catálogo: las landing pages y los temas.' },
