@@ -1,11 +1,11 @@
 import React, { useEffect, useId, useMemo, useState } from 'react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Check, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import Boton from '../../Boton';
 import { Confirmar, useToast } from '../../Feedback';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
-import { TablaAdmin, BarraFiltros, CargarMas } from '../../piezas/admin/Datos';
+import { TablaAdmin, BarraFiltros, CargarMas, ListaOrdenable } from '../../piezas/admin/Datos';
 import { HojaEdicion } from '../../piezas/admin/Formularios';
-import { normalizarBusqueda } from '../../adaptadoresAdmin';
+import { normalizarBusqueda, ordenConParte } from '../../adaptadoresAdmin';
 import s from './Lista.module.css';
 
 /*
@@ -45,11 +45,16 @@ const PASO = 50;
  *  - textos: { creado, guardado, eliminado } (los toasts)
  *  - nuevoCon: datos para abrir la hoja de uno nuevo ya llena (al cambiar,
  *    se abre; p. ej. una dirección que llega por la URL)
+ *  - ordenable: { fila(r) → el contenido de la fila, onGuardar(ids) → promesa,
+ *    etiqueta } — en vez de la tabla, la lista para arrastrar (como
+ *    Destacados), en el orden de `ordenInicial`; tocar una fila la edita. Con
+ *    un filtro o una búsqueda se ordenan solo esas y las demás no se mueven;
+ *    onGuardar recibe todos los ids en el orden final
  */
 export function PaginaListaAdmin({
   cabeza = {}, registros = [], cargando = false, error, onReintentar, nombreDe = (r) => r.nombre,
   columnas = [], ordenes = {}, ordenInicial, buscarEn, placeholder = 'Buscar…', filtros = [], unidad = ['registro', 'registros'], femenino = false,
-  vacio, antes, masAcciones, formulario, onGuardar, onEliminar, eliminar = {}, textos = {}, nuevoCon,
+  vacio, antes, masAcciones, formulario, onGuardar, onEliminar, eliminar = {}, textos = {}, nuevoCon, ordenable,
 }) {
   const toast = useToast();
   const uid = useId();
@@ -63,7 +68,10 @@ export function PaginaListaAdmin({
   const [borrar, setBorrar] = useState(null);
   const [visibles, setVisibles] = useState(PASO);
 
-  const filtrar = (id, valor) => { setValores((v) => ({ ...v, [id]: valor })); setVisibles(PASO); };
+  const [manual, setManual] = useState(null); // ids en el orden que se está armando
+  const [guardandoOrden, setGuardandoOrden] = useState(false);
+
+  const filtrar = (id, valor) => { setValores((v) => ({ ...v, [id]: valor })); setVisibles(PASO); setManual(null); };
   const filas = useMemo(() => {
     const q = normalizarBusqueda(buscar);
     const lista = registros.filter((r) => (
@@ -75,6 +83,25 @@ export function PaginaListaAdmin({
     const signo = orden.dir === 'desc' ? -1 : 1;
     return [...lista].sort((a, b) => signo * comparar(a, b));
   }, [registros, buscar, valores, filtros, orden, ordenes, buscarEn]);
+
+  // Ordenar a mano: la lista que se arma (o la de siempre) con los registros de ahora.
+  const porId = useMemo(() => new Map(registros.map((r) => [r.id, r])), [registros]);
+  const enLista = manual ? manual.map((id) => porId.get(id)).filter(Boolean) : filas;
+  const ordenCambiado = Boolean(manual) && manual.join() !== filas.map((r) => r.id).join();
+  const guardarOrden = async () => {
+    const comparar = ordenInicial && ordenes[ordenInicial.por];
+    const todos = (comparar ? [...registros].sort(comparar) : registros).map((r) => r.id);
+    setGuardandoOrden(true);
+    try {
+      await ordenable.onGuardar(ordenConParte(todos, manual));
+      setManual(null);
+      toast({ tipo: 'exito', titulo: 'Orden guardado', texto: 'Así salen en la tienda.' });
+    } catch (err) {
+      toast({ tipo: 'error', titulo: 'No se guardó el orden', texto: err?.message || 'Vuelve a intentar.' });
+    } finally {
+      setGuardandoOrden(false);
+    }
+  };
 
   const abrir = (r, extra) => {
     if (!formulario) return;
@@ -157,7 +184,7 @@ export function PaginaListaAdmin({
       {(buscarEn || filtros.length > 0) && (
         <BarraFiltros
           busqueda={buscar}
-          onBusqueda={buscarEn ? (q) => { setBuscar(q); setVisibles(PASO); } : undefined}
+          onBusqueda={buscarEn ? (q) => { setBuscar(q); setVisibles(PASO); setManual(null); } : undefined}
           placeholder={placeholder}
           filtros={filtros.map((f) => ({ ...f, valor: valores[f.id] || '' }))}
           onFiltro={filtrar}
@@ -166,21 +193,46 @@ export function PaginaListaAdmin({
         />
       )}
 
-      <TablaAdmin
-        etiqueta={cabeza.titulo}
-        columnas={columnas}
-        filas={filas.slice(0, visibles)}
-        nombreDe={nombreDe}
-        cargando={cargando}
-        error={error}
-        onReintentar={onReintentar}
-        vacio={textoVacio}
-        orden={orden}
-        onOrden={setOrden}
-        onFila={formulario ? abrir : undefined}
-        acciones={acciones}
-      />
-      <CargarMas visibles={Math.min(visibles, filas.length)} total={filas.length} onMas={() => setVisibles((v) => v + PASO)} paso={PASO} unidad={unidad} />
+      {ordenable && !cargando && !error && filas.length > 0 ? (
+        <>
+          <ListaOrdenable
+            items={enLista}
+            nombreDe={nombreDe}
+            onCambiar={(l) => setManual(l.map((r) => r.id))}
+            etiqueta={ordenable.etiqueta || `Orden de ${cabeza.titulo || 'la lista'}`}
+            render={(r) => (
+              <button type="button" className={s.filaOrdenable} onClick={formulario ? () => abrir(r) : undefined} title={formulario ? `Editar ${nombreDe(r)}` : undefined}>
+                {ordenable.fila(r)}
+              </button>
+            )}
+          />
+          {ordenCambiado && (
+            <div className={s.guardarOrden} role="region" aria-label="Orden sin guardar">
+              <span>Cambiaste el orden.</span>
+              <Boton variante="fantasma" icono={<RotateCcw aria-hidden="true" />} onClick={() => setManual(null)} disabled={guardandoOrden}>Deshacer</Boton>
+              <Boton icono={<Check aria-hidden="true" />} cargando={guardandoOrden} onClick={guardarOrden}>Guardar orden</Boton>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <TablaAdmin
+            etiqueta={cabeza.titulo}
+            columnas={columnas}
+            filas={filas.slice(0, visibles)}
+            nombreDe={nombreDe}
+            cargando={cargando}
+            error={error}
+            onReintentar={onReintentar}
+            vacio={textoVacio}
+            orden={orden}
+            onOrden={setOrden}
+            onFila={formulario ? abrir : undefined}
+            acciones={acciones}
+          />
+          <CargarMas visibles={Math.min(visibles, filas.length)} total={filas.length} onMas={() => setVisibles((v) => v + PASO)} paso={PASO} unidad={unidad} />
+        </>
+      )}
 
       {formulario && (
         <HojaEdicion
