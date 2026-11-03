@@ -1175,3 +1175,69 @@
   outline-offset: 4px;
   border-radius: 8px;
 }
+
+/* ── Números (Campo type="number") ── */
+/* Sin las flechas del navegador: blancas y diminutas, desentonaban de noche. */
+.inputNumero {
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.inputNumero::-webkit-inner-spin-button,
+.inputNumero::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* "−" y "+" del kit, pegados al borde derecho de la caja. */
+.pasos {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  margin-right: -0.35rem;
+}
+
+.pasos button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: var(--primary-light);
+  color: var(--primary-color);
+  cursor: pointer;
+  transition: background var(--dur-rapida, 0.15s) ease, transform var(--dur-rapida, 0.15s) ease;
+}
+
+.pasos button:hover:not(:disabled) {
+  background: var(--violet-200, #ddd6fe);
+}
+
+.pasos button:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.pasos button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pasos svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+/* De noche, un poco más de contraste (el violeta claro de día se perdía). */
+:global([data-theme='dark']) .pasos button {
+  background: rgba(167, 139, 250, 0.2);
+  color: #c4b5fd;
+}
+
+:global([data-theme='dark']) .pasos button:hover:not(:disabled) {
+  background: rgba(167, 139, 250, 0.32);
+}

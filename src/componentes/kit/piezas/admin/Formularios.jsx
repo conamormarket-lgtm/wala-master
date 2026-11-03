@@ -347,12 +347,14 @@ export function CampoImagen({
 }
 
 /**
- * Un monto en soles: "S/" delante, teclado de números con decimales en el
- * celular. Guarda lo escrito (texto); quien guarda lo pasa a número.
+ * Un monto en soles: "S/" delante (discreto), teclado de números con
+ * decimales en el celular, "−" y "+" de a S/ 1 y céntimos sin trabas
+ * (step any: 49.95 no se marca como inválido). Guarda lo escrito (texto);
+ * quien guarda lo pasa a número.
  *  - los de Campo (etiqueta, ayuda, error, id, value, onChange…) · moneda ('S/')
  */
 export function CampoDinero({ moneda = 'S/', ...campoProps }) {
-  return <Campo icono={<span className={s.moneda}>{moneda}</span>} type="number" inputMode="decimal" min={0} step="0.1" {...campoProps} />;
+  return <Campo icono={<span className={s.moneda}>{moneda}</span>} type="number" inputMode="decimal" min={0} step="any" paso={1} placeholder="0.00" {...campoProps} />;
 }
 
 const hexValido = (v) => {

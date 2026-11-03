@@ -371,10 +371,12 @@
   box-shadow: 0 0 0 3px var(--primary-light);
 }
 
+/* "S/" de CampoDinero: chico y apagado, que el número sea lo que se lee. */
 .moneda {
   color: var(--color-text-muted);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 /* La muestra de CampoColor: el color sobre un damero (se ve también el blanco). */

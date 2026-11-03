@@ -22,9 +22,15 @@ const conLetras = (t) => (typeof t === 'string' && /\p{L}/u.test(t) ? t : undefi
  *  - multilinea: un texto largo (<textarea>); true = 3 líneas o el número de
  *    líneas (lo mínimo: crece solo con lo escrito, sin agarradera). Con
  *    maxLength, cuenta lo escrito ("120/800") junto a la ayuda.
+ *  - type="number": sin las flechas del navegador (blancas y diminutas) y con
+ *    "−" y "+" del kit a la derecha, que respetan min y max; la rueda del
+ *    ratón ya no cambia el número sin querer. `paso`: cuánto suman los
+ *    botones (por defecto, el `step` o 1). `pasos={false}`: sin botones (los
+ *    campos angostos, como el rango de precio).
  */
-export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, opciones, nativo = false, buscable, creable, control, multilinea, ...input }) {
+export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, opciones, nativo = false, buscable, creable, control, multilinea, paso, pasos = true, ...input }) {
   const autoId = useId();
+  const numeroRef = useRef(null);
   const campoId = id || autoId;
   const ayudaId = `${campoId}-ayuda`;
   const aria = { 'aria-invalid': error ? true : undefined, 'aria-describedby': error || ayuda ? ayudaId : undefined };
@@ -62,9 +68,23 @@ export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, opciones, nat
     );
   } else if (multilinea) {
     cuerpo = <AreaTexto id={campoId} filas={multilinea === true ? 3 : multilinea} {...aria} {...input} placeholder={tPlaceholder} />;
+  } else if (input.type === 'number') {
+    cuerpo = (
+      <input
+        id={campoId}
+        ref={numeroRef}
+        className={`${s.input} ${s.inputNumero}`}
+        {...aria}
+        {...input}
+        placeholder={tPlaceholder}
+        // La rueda sobre un número enfocado lo cambiaba sin querer (al bajar por la hoja).
+        onWheel={(e) => { e.currentTarget.blur(); input.onWheel?.(e); }}
+      />
+    );
   } else {
     cuerpo = <input id={campoId} className={s.input} {...aria} {...input} placeholder={tPlaceholder} />;
   }
+  const conPasos = input.type === 'number' && pasos && !control && !opciones && !multilinea && !input.readOnly;
   const contador = multilinea && input.maxLength ? <span className={s.contador}>{String(input.value || '').length}/{input.maxLength}</span> : null;
   return (
     <div className={s.campo}>
@@ -73,6 +93,7 @@ export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, opciones, nat
         {icono && <span className={s.icono} aria-hidden="true">{icono}</span>}
         {cuerpo}
         {sufijo && <span className={s.sufijo}>{sufijo}</span>}
+        {conPasos && <PasosNumero inputRef={numeroRef} paso={paso} disabled={input.disabled} etiqueta={tEtiqueta || input['aria-label']} />}
         <span className={s.brilloFoco} aria-hidden="true" />
       </div>
       {error ? (
@@ -81,6 +102,35 @@ export function Campo({ etiqueta, ayuda, error, icono, sufijo, id, opciones, nat
         <p id={ayudaId} className={s.ayuda}>{tAyuda}{contador}</p>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * "−" y "+" de un Campo numérico. Cambian el <input> como si se hubiera
+ * escrito (el setter nativo y un evento input), así el onChange de cada
+ * página recibe e.target.value igual que siempre. Respetan min y max y no
+ * dejan decimales de más (49.9 + 1 = 50.9, no 50.900000001).
+ */
+function PasosNumero({ inputRef, paso, disabled, etiqueta }) {
+  const mover = (signo) => {
+    const el = inputRef.current;
+    if (!el) return;
+    const delta = Number(paso) || Number(el.step) || 1;
+    const min = el.min === '' ? -Infinity : Number(el.min);
+    const max = el.max === '' ? Infinity : Number(el.max);
+    const actual = el.value === '' ? (signo > 0 && Number.isFinite(min) ? min - delta : 0) : Number(el.value) || 0;
+    const decimales = Math.max(...[delta, actual].map((n) => (String(n).split('.')[1] || '').length));
+    const nuevo = Math.min(max, Math.max(min, Number((actual + signo * delta).toFixed(Math.min(decimales, 4)))));
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    setter.call(el, String(nuevo));
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  const nombre = etiqueta ? ` ${etiqueta}` : '';
+  return (
+    <span className={s.pasos}>
+      <button type="button" tabIndex={-1} disabled={disabled} onClick={() => mover(-1)} aria-label={`Bajar${nombre}`}><Minus aria-hidden="true" /></button>
+      <button type="button" tabIndex={-1} disabled={disabled} onClick={() => mover(1)} aria-label={`Subir${nombre}`}><Plus aria-hidden="true" /></button>
+    </span>
   );
 }
 

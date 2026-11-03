@@ -521,8 +521,8 @@ export function CatalogoConFiltros({
                   })}
                 </div>
                 <div className={s.precio}>
-                  <Campo type="number" inputMode="numeric" min="0" placeholder={limites ? String(limites.min) : 'Mín.'} aria-label={t.min} icono="S/" value={rango.min} onChange={(e) => cambiarPrecio({ ...rango, min: e.target.value })} />
-                  <Campo type="number" inputMode="numeric" min="0" placeholder={limites ? String(limites.max) : 'Máx.'} aria-label={t.max} icono="S/" value={rango.max} onChange={(e) => cambiarPrecio({ ...rango, max: e.target.value })} />
+                  <Campo type="number" pasos={false} inputMode="numeric" min="0" placeholder={limites ? String(limites.min) : 'Mín.'} aria-label={t.min} icono="S/" value={rango.min} onChange={(e) => cambiarPrecio({ ...rango, min: e.target.value })} />
+                  <Campo type="number" pasos={false} inputMode="numeric" min="0" placeholder={limites ? String(limites.max) : 'Máx.'} aria-label={t.max} icono="S/" value={rango.max} onChange={(e) => cambiarPrecio({ ...rango, max: e.target.value })} />
                 </div>
               </>
             ),

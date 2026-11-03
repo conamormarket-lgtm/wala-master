@@ -225,6 +225,7 @@ export function PaginaReclamaciones({
                 etiqueta="Monto reclamado (opcional)"
                 icono={<span className={s.soles}>S/</span>}
                 type="number"
+                pasos={false}
                 inputMode="decimal"
                 min="0"
                 step="0.01"
