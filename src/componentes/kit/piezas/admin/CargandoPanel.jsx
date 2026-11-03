@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { IsoWala } from '../../Marca';
 import { Hueso, EsqueletoCabeza, EsqueletoFila } from '../../Esqueletos';
 import s from './CargandoPanel.module.css';
@@ -35,10 +36,11 @@ export function EsqueletoPaginaAdmin() {
  * El panel entero mientras se confirma quién entra o baja el marco: la
  * silueta del menú (computadora) o de la cabecera (celular) con la página en
  * hueso. Tapa la cabecera y el pie de la tienda, que todavía están puestos.
- *  - fijo: por encima de todo (por defecto); false, en su lugar (la demo)
+ *  - fijo: por encima de todo (por defecto), en el body: dentro de la página
+ *    quedaba debajo de la cabecera y el pie de la tienda; false, en su lugar (la demo)
  */
 export function CargandoPanel({ fijo = true }) {
-  return (
+  const panel = (
     <div className={cx(s.marco, fijo && s.fijo)} data-componente="CargandoPanel">
       <div className={s.rejilla}>
         <aside className={s.lateral} aria-hidden="true">
@@ -72,4 +74,5 @@ export function CargandoPanel({ fijo = true }) {
       </div>
     </div>
   );
+  return fijo && typeof document !== 'undefined' ? createPortal(panel, document.body) : panel;
 }
