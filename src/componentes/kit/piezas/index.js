@@ -1,5 +1,6 @@
 /* Piezas que arman las secciones del builder (y se pueden usar sueltas). */
 export { TarjetaCategoria, TarjetaCategoriaEsqueleto } from './TarjetaCategoria';
+export { TarjetaColeccion } from './TarjetaColeccion';
 export { TarjetaTestimonio } from './TarjetaTestimonio';
 export { TarjetaMarca } from './TarjetaMarca';
 export { LogoMarca } from './LogoMarca';

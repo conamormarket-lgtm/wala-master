@@ -253,7 +253,7 @@ export const FORMA_DE_SECCION = {
   product_grid: 'grilla',
   sidebar_catalog: 'catalogo',
   category_grid: 'categorias',
-  collection_grid: 'categorias',
+  collection_grid: 'mosaico',
   categories_nav: 'categorias',
   testimonials: 'testimonios',
   faq_accordion: 'preguntas',

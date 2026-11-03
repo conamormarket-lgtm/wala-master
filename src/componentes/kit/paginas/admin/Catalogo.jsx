@@ -23,8 +23,9 @@ const soles = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
 
 /**
  * Colecciones del catálogo (/admin/colecciones): nombre, foto y orden.
- * La foto sale en la sección «Colecciones con foto» del builder, como la de
- * una categoría en «Categorías con foto».
+ * La foto es ancha (un banner): sale en las tarjetas de la sección
+ * «Colecciones con foto» del builder (TarjetaColeccion), no en círculo como
+ * las categorías.
  *  - colecciones: [{ id, nombre, imagen, orden }] (coleccionDesdeFirestore)
  *  - cargando · error · onReintentar · onGuardar(datos, id?) · onEliminar(id) · subirImagen
  *  - onGuardarOrden(ids) → promesa: todas, en el orden nuevo. Con él, la lista
@@ -49,7 +50,7 @@ export function PaginaColecciones({ colecciones = [], cargando, error, onReinten
       buscarEn={(c) => c.nombre}
       placeholder="Buscar una colección"
       columnas={[
-        { id: 'foto', titulo: 'Foto', ancho: 72, tarjeta: 'foto', celda: (c) => <FotoCelda src={c.imagen} forma="circulo" /> },
+        { id: 'foto', titulo: 'Foto', ancho: 128, tarjeta: 'foto', celda: (c) => <FotoCelda src={c.imagen} forma="ancha" /> },
         { id: 'nombre', titulo: 'Nombre', ordenable: true, tarjeta: 'titulo', celda: (c) => c.nombre },
         ...(onGuardarOrden ? [] : [{ id: 'orden', titulo: 'Orden', ordenable: true, ancho: 96, alinear: 'fin', tarjeta: 'detalle', celda: (c) => <NumeroCelda nombre="Orden" valor={c.orden} /> }]),
       ]}
@@ -60,7 +61,7 @@ export function PaginaColecciones({ colecciones = [], cargando, error, onReinten
         onGuardar: onGuardarOrden,
         fila: (c) => (
           <span className={s.ordenFila}>
-            <FotoCelda src={c.imagen} forma="circulo" tamano={40} />
+            <FotoCelda src={c.imagen} forma="ancha" tamano={36} />
             <span className={s.ordenNombre}>{c.nombre}</span>
           </span>
         ),
@@ -90,7 +91,7 @@ export function PaginaColecciones({ colecciones = [], cargando, error, onReinten
               {!onGuardarOrden && <Campo id={idDe('orden')} etiqueta="Orden" type="number" inputMode="numeric" min={0} value={datos.orden} ayuda="Las de número más bajo salen primero." onChange={(e) => cambiar('orden', e.target.value)} />}
             </GrupoCampos>
             <GrupoCampos titulo="Imagen">
-              <CampoImagen etiqueta="Foto de la colección" ayuda="Sale en «Colecciones con foto»: se recorta en círculo, como las categorías." valor={datos.imagen} onCambiar={(url) => cambiar('imagen', url)} subir={subirImagen} recorte="circulo" forma="circulo" />
+              <CampoImagen etiqueta="Foto de la colección" ayuda="Ancha, como un banner (mejor 16:9): sale como tarjeta en «Colecciones con foto»." valor={datos.imagen} onCambiar={(url) => cambiar('imagen', url)} subir={subirImagen} forma="ancho" />
             </GrupoCampos>
           </>
         ),

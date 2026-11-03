@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  TarjetaCategoria, TarjetaTestimonio, TarjetaMarca, LogoMarca, TarjetaDestacado, Beneficio, StockBajo, Chip, tarjetaDesdeMarca, acento,
+  TarjetaCategoria, TarjetaColeccion, TarjetaTestimonio, TarjetaMarca, LogoMarca, TarjetaDestacado, Beneficio, StockBajo, Chip, tarjetaDesdeMarca, acento,
   FotoProducto, Avatar, Moneda, EtiquetaColgante, OpcionesFiltro, Acordeon, TarjetaJuego, Etiqueta, GananciaMonedas,
   Aviso, CuentaRegresiva, IconoWala, BarraProgreso, RetoSemanal, VentanaKapi, Boton, PanelBusqueda, Buscador, Selector, Confirmar, HojaInferior,
   ORDENES_BUSQUEDA,
@@ -65,6 +65,13 @@ export default function DemoPiezas({ categorias, marcas, imagenes }) {
               <TarjetaCategoria key={c.categoryId} forma="burbuja" nombre={c.name} imagen={c.imageUrl} acento={acento(k)} activa={activa === c.categoryId} onClick={() => setActiva(c.categoryId)} />
             ))}
           </div>
+        </div>
+      </Ficha>
+
+      <Ficha nombre="TarjetaColeccion" usadaEn="Colecciones con foto" ancho="1 / -1">
+        <div className={s.fila}>
+          <div className={s.celda} style={{ flexBasis: 280 }}><TarjetaColeccion nombre="Anime" imagen="/assets/kapi/banners/ruleta.webp" cuenta={24} acento={acento(0)} url="/tienda" /></div>
+          <div className={s.celda} style={{ flexBasis: 280 }}><TarjetaColeccion nombre="Parejas" cuenta={9} acento={acento(1)} url="/tienda" /></div>
         </div>
       </Ficha>
 

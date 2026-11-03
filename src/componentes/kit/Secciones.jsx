@@ -19,6 +19,7 @@ import { Beneficio } from "./piezas/Beneficio";
 import { TarjetaTestimonio } from "./piezas/TarjetaTestimonio";
 import { LogoMarca } from "./piezas/LogoMarca";
 import { TarjetaCategoria } from "./piezas/TarjetaCategoria";
+import { TarjetaColeccion } from "./piezas/TarjetaColeccion";
 import { StockBajo } from "./piezas/BarraProgreso";
 import { TarjetaAyuda } from "./piezas/TarjetaAyuda";
 import { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados } from './SeccionesContenido';
@@ -520,9 +521,8 @@ const ORDEN_CATEGORIAS = {
  *    defecto) = ?categoria= en la misma página, que filtra su catálogo; una
  *    página sin catálogo (el inicio) pasa '/tienda', si no el toque solo
  *    cambiaba la URL y no pasaba nada.
- *  - parametro: el filtro de la URL ('categoria'; GrillaColecciones, 'coleccion')
  */
-export function GrillaCategorias({ ajustes = {}, categorias, rutaCategoria = '', parametro = 'categoria' }) {
+export function GrillaCategorias({ ajustes = {}, categorias, rutaCategoria = '' }) {
   const auto = Boolean(categorias);
   const base = auto ? [...categorias] : [...(ajustes.items || [])];
   if (auto && ORDEN_CATEGORIAS[ajustes.sortMode]) base.sort(ORDEN_CATEGORIAS[ajustes.sortMode]);
@@ -546,7 +546,7 @@ export function GrillaCategorias({ ajustes = {}, categorias, rutaCategoria = '',
               forma={forma}
               nombre={c.name}
               imagen={fotoDe(c)}
-              url={c.url || `${rutaCategoria}?${parametro}=${encodeURIComponent(c.categoryId)}`}
+              url={c.url || `${rutaCategoria}?categoria=${encodeURIComponent(c.categoryId)}`}
               cuenta={ajustes.showProductCount ? c.cuenta : undefined}
               detalle={c.detalle}
               fondo={c.backgroundColor || ajustes.tileBackgroundColor}
@@ -563,16 +563,45 @@ export function GrillaCategorias({ ajustes = {}, categorias, rutaCategoria = '',
 /* ── Colecciones con foto (collection_grid) ─────────────── */
 
 /**
- * Como GrillaCategorias, con las colecciones: tocar una abre el catálogo
+ * Las colecciones como banners anchos (TarjetaColeccion), a propósito
+ * distintas de GrillaCategorias: de 1 a 4 por fila (columns, 3 por defecto) y,
+ * en el celular, una fila que se desliza. Tocar una abre el catálogo
  * filtrado por ella (?coleccion=, que TiendaPage ya aplica).
  *  - categorias: las automáticas (categoriasDeGrilla con las colecciones y
- *    p.collections; categoryId es el id de la colección). Sin ellas, los items
- *    puestos a mano ({ collectionId, name, imageUrl }).
- *  - rutaCategoria: como en GrillaCategorias ('' o '/tienda')
+ *    p.collections; categoryId es el id de la colección), con sortMode, limit
+ *    e imageSource como GrillaCategorias. Sin ellas, los items puestos a mano
+ *    ({ collectionId, name, imageUrl, backgroundColor }), todos.
+ *  - rutaCategoria: adónde lleva ('' = la misma página, o '/tienda')
  */
 export function GrillaColecciones({ ajustes = {}, categorias, rutaCategoria = '' }) {
-  const items = (ajustes.items || []).map((c) => ({ ...c, categoryId: c.collectionId || c.categoryId }));
-  return <GrillaCategorias ajustes={{ ...ajustes, items }} categorias={categorias} rutaCategoria={rutaCategoria} parametro="coleccion" />;
+  const auto = Boolean(categorias);
+  const base = auto ? [...categorias] : (ajustes.items || []).map((c) => ({ ...c, categoryId: c.collectionId || c.categoryId }));
+  if (auto && ORDEN_CATEGORIAS[ajustes.sortMode]) base.sort(ORDEN_CATEGORIAS[ajustes.sortMode]);
+  const lista = auto ? base.slice(0, Math.min(12, Math.max(2, Number(ajustes.limit) || 6))) : base;
+  if (!lista.length) return null;
+  const columnas = Math.min(4, Math.max(1, Number(ajustes.columns) || 3));
+  // La foto de la colección (lo normal: es su banner); si falta, la de un producto.
+  const deProducto = ajustes.imageSource === 'product';
+  const fotoDe = (c) => (auto && deProducto ? c.imagenProducto || c.imageUrl : c.imageUrl || c.imagenProducto);
+  return (
+    <>
+      <TituloSeccion {...tituloDesdeAjustes(ajustes)} />
+      <ul className={s.colecciones} style={{ '--columnas': columnas }}>
+        {lista.map((c, k) => (
+          <li key={c.categoryId || c.name}>
+            <TarjetaColeccion
+              nombre={c.name}
+              imagen={fotoDe(c)}
+              url={c.url || `${rutaCategoria}?coleccion=${encodeURIComponent(c.categoryId)}`}
+              cuenta={auto && ajustes.showProductCount ? c.cuenta : undefined}
+              fondo={c.backgroundColor || ajustes.tileBackgroundColor}
+              acento={acento(k)}
+            />
+          </li>
+        ))}
+      </ul>
+    </>
+  );
 }
 
 /* ── Registro: tipo de sección → componente ─────────────── */
@@ -596,7 +625,7 @@ export const REGISTRO_SECCIONES = {
   faq_accordion: { Componente: PreguntasFrecuentes, nombre: 'PreguntasFrecuentes' },
   marquee: { Componente: MarcasMarquesina, nombre: 'MarcasMarquesina' },
   category_grid: { Componente: GrillaCategorias, nombre: 'GrillaCategorias', categorias: true },
-  // `categorias` lleva aquí las colecciones automáticas (la misma forma).
+  // `categorias` lleva aquí las colecciones automáticas (la misma forma que las categorías).
   collection_grid: { Componente: GrillaColecciones, nombre: 'GrillaColecciones', categorias: true },
   header: { Componente: Encabezado, nombre: 'Encabezado' },
   text: { Componente: BloqueTexto, nombre: 'BloqueTexto' },

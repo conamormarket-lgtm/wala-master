@@ -5,9 +5,11 @@ import INICIO from './demo/inicio.json';
 
 /* Las 6 primeras categorías reales de la tienda, con su cantidad de productos. */
 const CATEGORIAS_REALES = INICIO.categorias.slice(0, 6);
-// «Colecciones con foto»: las mismas fotos con nombres de colección (las colecciones de la demo no tienen foto).
-const COLECCIONES_DEMO = ['Anime', 'Navidad', 'Parejas', 'Fútbol peruano', 'Calaveras', 'Cómics']
-  .map((name, k) => ({ collectionId: `col-${k}`, name, imageUrl: CATEGORIAS_REALES[k]?.imageUrl || '' }));
+// «Colecciones con foto»: banners anchos de ejemplo (los de Kapi); dos sin foto, para ver el degradado.
+const COLECCIONES_DEMO = [
+  ['Anime', '/assets/kapi/banners/ruleta.webp'], ['Navidad', '/assets/kapi/banners/palabra.webp'], ['Parejas', ''],
+  ['Fútbol peruano', '/assets/kapi/banners/bolitas.webp'], ['Calaveras', '/assets/kapi/banners/alimenta.webp'], ['Cómics', ''],
+].map(([name, imageUrl], k) => ({ collectionId: `col-${k}`, name, imageUrl }));
 
 /*
  * Catálogo de secciones del builder: cada tipo por separado, con su nombre,
@@ -92,8 +94,8 @@ const ejemplos = (img, logos = []) => ({
     ['Círculos', { title: '¿Qué estás buscando?', dataSource: 'manual', columns: 6, cardStyle: 'round', showProductCount: true, items: CATEGORIAS_REALES }],
   ],
   collection_grid: [
-    ['Círculos', { title: 'Explora nuestras colecciones', dataSource: 'manual', columns: 6, cardStyle: 'round', items: COLECCIONES_DEMO }],
-    ['Cuadros', { title: 'Explora nuestras colecciones', dataSource: 'manual', columns: 6, cardStyle: 'compact', items: COLECCIONES_DEMO }],
+    ['Tres por fila', { title: 'Explora nuestras colecciones', dataSource: 'manual', columns: 3, items: COLECCIONES_DEMO }],
+    ['Dos por fila', { title: 'Explora nuestras colecciones', dataSource: 'manual', columns: 2, items: COLECCIONES_DEMO.slice(0, 4) }],
   ],
   categories_nav: [['Burbujas', { brandId: 'conamor', align: 'center' }], ['Cinta', { brandId: 'conamor', animation: 'slider' }]],
   banner_grid: [
@@ -185,7 +187,7 @@ const PIEZAS_DE = {
   product_grid: ['TituloSeccion', 'TarjetaProducto', 'Boton'],
   sidebar_catalog: ['TituloSeccion', 'Acordeon', 'OpcionesFiltro', 'Chip', 'Campo', 'Buscador', 'HojaInferior', 'TarjetaProducto'],
   category_grid: ['TituloSeccion', 'TarjetaCategoria'],
-  collection_grid: ['TituloSeccion', 'TarjetaCategoria'],
+  collection_grid: ['TituloSeccion', 'TarjetaColeccion'],
   categories_nav: ['TarjetaCategoria', 'Marquesina'],
   banner_grid: ['TituloSeccion', 'Carrusel', 'TarjetaMarca'],
   trust_badges: ['Beneficio', 'IconoWala'],
