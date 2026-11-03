@@ -177,8 +177,8 @@ const marcado = (v) => v != null && v !== '';
  * /admin/publico-productos (D2a): para quién es cada producto, desde qué
  * edad y de qué equipo (las ideas de regalo). Lo que no está marcado se
  * sugiere con giftRecommender. Guardar escribe solo esos campos; null los
- * quita de verdad (deleteField: con updateDocument solo, un null no se
- * guardaba). En lote, de a 20.
+ * quita (deleteField, lo mismo que ya hace updateDocument con un campo
+ * vaciado). En lote, de a 20.
  */
 export function RecomendarDelPanel() {
   const productos = useLectura(['admin-publico-productos'], productosConOcultos, { staleTime: 60 * 1000 });

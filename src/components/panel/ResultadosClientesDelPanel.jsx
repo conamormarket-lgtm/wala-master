@@ -1,15 +1,26 @@
-import React, { useMemo, useState } from 'react';
+import React, { lazy, Suspense, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { listUsers, buscarClientes, getDatosPersonalesAggregate, getUserFicha } from '../../services/adminUserInsights';
 import { getPerfilesPorUid } from '../../services/adminProductInterest';
 import { getUserAnalytics } from '../../services/adminAnalytics';
 import { recomendarSimilares } from '../../services/analytics/productInterest.mjs';
 import { useProducts } from '../../hooks/useProducts';
-import AdminEncuestaEntregas from '../../pages/admin/AdminEncuestaEntregas';
-import AdminRespuestasEncuesta from '../../pages/admin/AdminRespuestasEncuesta';
+import { getCollection } from '../../services/firebase/firestore';
+import { PORTAL_USERS_COLLECTION } from '../../constants/userCollections';
+import { getSurveyConfig, saveSurveyConfig, configEntregaPanel, DEFAULT_SURVEY_CONFIG } from '../../services/encuestaConfig';
+import { configConHistorial } from '../../services/encuestaHistorial.mjs';
+import { embudoEncuesta, EMBUDO_DESDE } from '../../services/surveyResponses.mjs';
 import { PaginaClientesResultados, PaginaOpinionesResultados } from '../../componentes/kit/paginas/admin/Resultados';
+import { RespuestasEntregas, RespuestasEncuesta } from '../../componentes/kit/paginas/admin/Encuestas';
+import { configConPregunta } from '../../componentes/kit/adaptadoresAdmin';
+import useLoViejo from '../../hooks/useLoViejo';
+import { sinError } from './comun';
+
+// Las respuestas de antes (D5e): solo bajan con el interruptor adminClientesViejo.
+const EntregasViejo = lazy(() => import('../../pages/admin/AdminEncuestaEntregas'));
+const RegalosViejo = lazy(() => import('../../pages/admin/AdminRespuestasEncuesta'));
 
 /*
  * Resultados (D4c): Clientes (carritos abandonados, la lista con su ficha
@@ -164,16 +175,142 @@ export function ClientesResultadosDelPanel() {
   );
 }
 
-// El día 'AAAA-MM-DD' en la hora del aparato, como lo pide AdminRespuestasEncuesta.
+// El día 'AAAA-MM-DD' en la hora del aparato, como lo piden RespuestasEncuesta y AdminRespuestasEncuesta.
 const pad = (n) => String(n).padStart(2, '0');
 const diaLocal = (ms) => {
   const d = new Date(ms);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 
+const CINCO_MIN = 5 * 60 * 1000;
+// La config de la encuesta tal cual (getSurveyConfig): la misma clave que el
+// editor de /admin/encuestas (EncuestaDelPanel, en AvisosDelPanel.jsx).
+const CLAVE_CONFIG_ENCUESTA = ['admin-encuesta-config'];
+
 /**
- * Opiniones: el selector de encuesta y, debajo, la de hoy embebida con el
- * periodo de Resultados (las dos se rehacen en el kit en D5).
+ * "Cómo les fue con su pedido" (D5e), como AdminEncuestaEntregas: las
+ * respuestas las da el servidor (resultadosEncuestaEntrega: la colección no
+ * tiene reglas para el navegador) y la config es entregaPanel de la encuesta,
+ * leída al entrar. Sin config leída no se ofrece editarla: se guardarían los
+ * valores de siempre encima.
+ */
+function EntregasDelPanel({ desdeMs, hastaMs, previo }) {
+  const queryClient = useQueryClient();
+  const respuestas = useQuery({
+    queryKey: ['admin-encuesta-entregas'],
+    queryFn: async () => (await httpsCallable(getFunctions(), 'resultadosEncuestaEntrega')()).data,
+    staleTime: CINCO_MIN,
+  });
+  const config = useQuery({
+    queryKey: CLAVE_CONFIG_ENCUESTA,
+    queryFn: () => sinError(getSurveyConfig()),
+    staleTime: 0,
+    refetchOnMount: true,
+  });
+
+  return (
+    <RespuestasEntregas
+      config={config.data?.entregaPanel}
+      onGuardarConfig={config.data ? async (e) => {
+        const entregaPanel = configEntregaPanel(e);
+        await sinError(saveSurveyConfig({ entregaPanel }));
+        queryClient.setQueryData(CLAVE_CONFIG_ENCUESTA, (antes) => (antes ? { ...antes, entregaPanel } : antes));
+        queryClient.invalidateQueries({ queryKey: ['encuesta-entrega-config'] });
+      } : undefined}
+      respuestas={respuestas.data?.respuestas || []}
+      cargando={respuestas.isLoading}
+      error={respuestas.error ? respuestas.error.message || 'No se pudieron cargar las respuestas.' : undefined}
+      onActualizar={() => respuestas.refetch()}
+      actualizando={respuestas.isFetching && !respuestas.isLoading}
+      desdeMs={desdeMs}
+      hastaMs={hastaMs}
+      previo={previo}
+    />
+  );
+}
+
+// Pasos de la encuesta (analytics_events, survey_step) entre dos días 'YYYY-MM-DD',
+// como cargarEmbudo de AdminRespuestasEncuesta: antes de EMBUDO_DESDE no se registraban.
+async function cargarEmbudo(desde, hasta) {
+  const inicio = desde && desde > EMBUDO_DESDE ? desde : EMBUDO_DESDE;
+  const filtros = [
+    { field: 'type', operator: '==', value: 'survey_step' },
+    { field: 'clientTsMs', operator: '>=', value: new Date(`${inicio}T00:00`).getTime() },
+  ];
+  if (hasta) filtros.push({ field: 'clientTsMs', operator: '<=', value: new Date(`${hasta}T23:59:59.999`).getTime() });
+  const res = await getCollection('analytics_events', filtros);
+  if (res.error) throw new Error(res.error);
+  return embudoEncuesta(res.data || []);
+}
+
+/**
+ * La encuesta de regalos (D5e), como AdminRespuestasEncuesta: los perfiles
+ * con la encuesta completa y la config en una sola consulta, el embudo del
+ * periodo y, si se compara y ese periodo tiene días medidos, el del anterior.
+ */
+function EncuestaRegalosDelPanel({ desde, hasta, previo }) {
+  const datos = useQuery({
+    queryKey: ['admin-respuestas-encuesta'],
+    queryFn: async () => {
+      const [usuariosRes, configRes] = await Promise.all([
+        getCollection(PORTAL_USERS_COLLECTION, [{ field: 'hasCompletedSurvey', operator: '==', value: true }]),
+        getSurveyConfig(),
+      ]);
+      if (usuariosRes.error) throw new Error(usuariosRes.error);
+      return {
+        usuarios: usuariosRes.data || [],
+        config: { ...DEFAULT_SURVEY_CONFIG, ...(configRes.data || {}) },
+      };
+    },
+    staleTime: CINCO_MIN,
+  });
+
+  const desdeEmbudo = desde && desde > EMBUDO_DESDE ? desde : EMBUDO_DESDE;
+  const embudo = useQuery({
+    queryKey: ['admin-embudo-encuesta', desdeEmbudo, hasta],
+    queryFn: () => cargarEmbudo(desdeEmbudo, hasta),
+    staleTime: CINCO_MIN,
+  });
+  const prevDesde = previo?.desde;
+  const prevHasta = previo?.hasta;
+  const embudoPrevioMedido = Boolean(prevHasta && prevHasta >= EMBUDO_DESDE);
+  const embudoPrevio = useQuery({
+    queryKey: ['admin-embudo-encuesta', prevDesde > EMBUDO_DESDE ? prevDesde : EMBUDO_DESDE, prevHasta],
+    queryFn: () => cargarEmbudo(prevDesde, prevHasta),
+    enabled: embudoPrevioMedido,
+    staleTime: CINCO_MIN,
+  });
+
+  return (
+    <RespuestasEncuesta
+      usuarios={datos.data?.usuarios || []}
+      config={datos.data?.config}
+      cargando={datos.isLoading}
+      error={datos.error ? datos.error.message || 'No se pudieron cargar las respuestas.' : undefined}
+      onActualizar={() => datos.refetch()}
+      actualizando={datos.isFetching && !datos.isLoading}
+      desde={desde}
+      hasta={hasta}
+      previo={previo}
+      embudo={embudo.data}
+      embudoPrevio={embudoPrevioMedido ? embudoPrevio.data : undefined}
+      cargandoEmbudo={embudo.isLoading}
+      errorEmbudo={embudo.error ? embudo.error.message || 'No se pudo cargar.' : undefined}
+      onVolverAPreguntar={async (que) => {
+        // Sobre la config guardada de ahora (no la de la pantalla), con el historial: se borra la fecha de retiro.
+        const { data: actual, error } = await getSurveyConfig();
+        if (error || !actual) throw new Error(error || 'No se encontró la encuesta.');
+        await sinError(saveSurveyConfig(configConHistorial(configConPregunta(actual, que), actual)));
+        await datos.refetch();
+      }}
+    />
+  );
+}
+
+/**
+ * Opiniones: el selector de encuesta y, debajo, la elegida con el periodo
+ * de Resultados (D5e). Cada encuesta lee sus datos solo mientras se ve,
+ * como las pantallas de antes.
  */
 export function OpinionesDelPanel() {
   const { filtros, periodo } = useOutletContext();
@@ -182,19 +319,32 @@ export function OpinionesDelPanel() {
   // Con "Comparar", cada número lleva su cambio contra el periodo anterior.
   const previo = filtros.compare && filtros.prevDateRange ? filtros.prevDateRange : null;
   const contra = periodo.dia ? periodo.contra : 'antes';
+  const viejas = useLoViejo('adminClientes');
+
+  if (viejas) {
+    return (
+      <PaginaOpinionesResultados encuesta={encuesta} onEncuesta={setEncuesta}>
+        <Suspense fallback={null}>
+          {encuesta === 'entregas' ? (
+            <EntregasViejo embebido desdeMs={startDateMs} hastaMs={endDateMs} previo={previo && { desdeMs: previo.startDateMs, hastaMs: previo.endDateMs, contra }} />
+          ) : (
+            <RegalosViejo embebido desde={diaLocal(startDateMs)} hasta={diaLocal(endDateMs)} previo={previo && { desde: diaLocal(previo.startDateMs), hasta: diaLocal(previo.endDateMs), contra }} />
+          )}
+        </Suspense>
+      </PaginaOpinionesResultados>
+    );
+  }
 
   return (
     <PaginaOpinionesResultados encuesta={encuesta} onEncuesta={setEncuesta}>
       {encuesta === 'entregas' ? (
-        <AdminEncuestaEntregas
-          embebido
+        <EntregasDelPanel
           desdeMs={startDateMs}
           hastaMs={endDateMs}
           previo={previo && { desdeMs: previo.startDateMs, hastaMs: previo.endDateMs, contra }}
         />
       ) : (
-        <AdminRespuestasEncuesta
-          embebido
+        <EncuestaRegalosDelPanel
           desde={diaLocal(startDateMs)}
           hasta={diaLocal(endDateMs)}
           previo={previo && { desde: diaLocal(previo.startDateMs), hasta: diaLocal(previo.endDateMs), contra }}

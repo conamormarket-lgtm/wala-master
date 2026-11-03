@@ -1,4 +1,4 @@
-# Panel administrativo (`/admin`): el kit del admin (D0-D8 hechos en el kit; D0 a D4 unidos al admin)
+# Panel administrativo (`/admin`): el kit del admin (D0-D8 hechos en el kit; D0 a D5 unidos al admin)
 
 Lo mismo que se hizo con la tienda, ahora con el panel: **primero todo en el
 kit**, con datos de ejemplo en `/componentes.html`; **cuando un apartado está
@@ -231,7 +231,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | hecho (2026-11-02) | hecho (2026-11-03) |
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | hecho (2026-11-03) |
 | D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | hecho (2026-11-03) |
-| D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | hecho (2026-11-02) | · |
+| D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | hecho (2026-11-02) | hecho (2026-11-03) |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | hecho (2026-11-02) | · |
 | D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | hecho (2026-11-02) | · |
 | D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | hecho (2026-11-02) | · |
@@ -841,8 +841,8 @@ Los cuatro tramos a la vez, con el interruptor `adminProductosViejo`
   esa pestaña (`PlantillasPrenda` ganó `estadoEnlace`); la foto de tienda
   con una plantilla recibe las vistas y si es láser (`fotoConPlantilla`
   ganó un tercer argumento).
-- **Datos para recomendar**: quitar un dato lo borra de verdad
-  (`deleteField`); antes un `null` no se guardaba.
+- **Datos para recomendar**: quitar un dato lo borra (`deleteField`, lo
+  mismo que ya hacía `updateDocument` con un campo vaciado).
 - **Pendiente: "Pasarla a Crear"** no está conectado. Pasar un producto de
   la tienda a Crear lo saca de la app de Android (no muestra prendas de
   Crear) y la ficha de antes además lo sacaba de la tienda; hay que decidir
@@ -1759,6 +1759,43 @@ del embudo o "1 estrella" en 0 también dice algo).
     `saveSurveyConfig(configConHistorial(configConPregunta(actual, que), actual))`
     y volver a leer.
 
+### D5 unido al admin (2026-11-03)
+
+Todo el apartado a la vez con `adminClientesViejo`
+(`useLoViejo('adminClientes')`). Las páginas viejas pasaron a `…Viejo.jsx`
+(`AdminReferidos`, `AdminMisiones`, `AdminRetos`, `AdminRecompensas`,
+`AdminFechasImportantesPage`, `AdminNotifications/AdminNotifications`,
+`AdminEncuestas`); el `.jsx` de siempre elige. Los conectores:
+
+| Pantalla | Conector (`components/panel/`) |
+|---|---|
+| Referidos, Misiones, Retos (con las evidencias), Recompensas | `FidelidadDelPanel.jsx` |
+| Fechas importantes | `FechasDelPanel.jsx` |
+| Notificaciones y ofertas, Encuesta de suscripción | `AvisosDelPanel.jsx` |
+| Opiniones (en Resultados) | `RespuestasEntregas` / `RespuestasEncuesta` del kit dentro de `OpinionesDelPanel` (`ResultadosClientesDelPanel.jsx`); con `adminClientesViejo`, ahí vuelven `AdminEncuestaEntregas` y `AdminRespuestasEncuesta` |
+
+- Aprobar o rechazar una evidencia refresca la cuenta del inicio; guardar
+  la encuesta refresca también la de la tienda (`encuesta-config`,
+  `encuesta-entrega-config`), cosa que antes no pasaba.
+- Ofertas guardadas con `createdAt`/`updatedAt` en texto ISO; los ajustes
+  de notificaciones se leen con `getDoc(...).data()`; si no se pueden leer,
+  no se deja guardar (antes se podía pisar el documento).
+- **Cambios que quedaron** (de los conectores): Retos y Fechas leen con
+  claves nuevas de React Query (las viejas no usaban React Query); editar un
+  reto ya no escribe su `id` adentro; activar un reto de tipo Kapi guarda
+  `rewardCoins: 0`; Retos y Fechas ahora avisan si algo falla; elegir o
+  eliminar un paquete ya no es optimista (guarda y vuelve a leer); un
+  paquete conserva la foto de sus productos al editarlo (antes la perdía);
+  la imagen de una oferta va a `notifications/{ms}_oferta.jpg`; la pestaña
+  de Notificaciones no va en la dirección (tampoco antes).
+
+**Qué se probó** (localhost con los emuladores): las siete páginas y
+Opiniones abren sin errores con lo sembrado (3 misiones, 1 reto, 4
+recompensas); editar el título de una misión → el documento conserva
+`actionKey`, monedas y orden; con `adminClientesViejo` vuelve Misiones de
+antes. No se probaron: aprobar evidencias, enviar notificaciones u ofertas
+(son callables) ni los paquetes con fechas reales.
+
 ## D6 · Campañas (en el kit desde el 2026-11-02: los cuatro tramos)
 
 Nueve pantallas de hoy (unas 5.500 líneas), en cuatro tramos; el apartado se
@@ -2397,13 +2434,13 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 
 | Parte | Hoy en el admin | Pasa a (kit) | Conector |
 |---|---|---|---|
-| D5a · Referidos | `pages/admin/AdminReferidos.jsx` + `.module.css` (estilos en línea) | `PaginaReferidosAdmin` | `ReferidosDelPanel.jsx` |
-| D5a · Misiones | `pages/admin/AdminMisiones.jsx` + `.module.css` (`common/Button`, su propio modal) | `PaginaMisionesAdmin` (`PaginaListaAdmin`) | `MisionesDelPanel.jsx` |
-| D5a · Retos | `pages/admin/AdminRetos.jsx` + `.module.css` (`window.confirm`, `alert()`) | `PaginaRetosAdmin` | `RetosDelPanel.jsx` |
-| D5b · Recompensas | `pages/admin/AdminRecompensas.jsx` + `.module.css` (`AdminImageCropper`, `BuscadorProducto`, `common/Button`, su propio modal) | `PaginaRecompensasAdmin` (`PaginaListaAdmin`, `CampoImagen`, `SelectorProductos`) | `RecompensasDelPanel.jsx` |
-| D5c · Fechas importantes | `pages/admin/AdminFechasImportantesPage.jsx` + `.module.css`, `components/admin/fechas/*` (`GlobalCalendarView`, `FechasFestivasView`, `UsuariosView`, `PackageCreatorModal` y sus CSS) | `PaginaFechasAdmin` (`PaginaListaAdmin`, `TablaAdmin`, `HojaEdicion`, `SelectorProductos`, `ElegirUno`, `Confirmar`) | `FechasDelPanel.jsx` |
-| D5d · Notificaciones | `pages/admin/AdminNotifications/AdminNotifications.jsx` + `.module.css` (`BuscadorProducto`, `useGlobalToast`, `window.confirm`) | `PaginaNotificacionesAdmin` (`TablaAdmin`, `SelectorProductos`, `CampoImagen`, `CampoFecha`, `ElegirUno`, `Confirmar`) | `NotificacionesDelPanel.jsx` |
-| D5e · Encuestas | `pages/admin/AdminEncuestas.jsx` + `.module.css`, `AdminEncuestaEntregas.jsx`, `AdminRespuestasEncuesta.jsx` + `.module.css`, `CambioKpi.jsx` (`alert`, `window.confirm`, `useGlobalToast`) | `PaginaEncuestaAdmin`, `RespuestasEntregas`, `RespuestasEncuesta`, `BarraGuardar` | `EncuestaDelPanel.jsx`, `OpinionesDelPanel.jsx` |
+| D5a · Referidos ✓ | `pages/admin/AdminReferidos.jsx` + `.module.css` (estilos en línea) | `PaginaReferidosAdmin` | `ReferidosDelPanel.jsx` |
+| D5a · Misiones ✓ | `pages/admin/AdminMisiones.jsx` + `.module.css` (`common/Button`, su propio modal) | `PaginaMisionesAdmin` (`PaginaListaAdmin`) | `MisionesDelPanel.jsx` |
+| D5a · Retos ✓ | `pages/admin/AdminRetos.jsx` + `.module.css` (`window.confirm`, `alert()`) | `PaginaRetosAdmin` | `RetosDelPanel.jsx` |
+| D5b · Recompensas ✓ | `pages/admin/AdminRecompensas.jsx` + `.module.css` (`AdminImageCropper`, `BuscadorProducto`, `common/Button`, su propio modal) | `PaginaRecompensasAdmin` (`PaginaListaAdmin`, `CampoImagen`, `SelectorProductos`) | `RecompensasDelPanel.jsx` |
+| D5c · Fechas importantes ✓ | `pages/admin/AdminFechasImportantesPage.jsx` + `.module.css`, `components/admin/fechas/*` (`GlobalCalendarView`, `FechasFestivasView`, `UsuariosView`, `PackageCreatorModal` y sus CSS) | `PaginaFechasAdmin` (`PaginaListaAdmin`, `TablaAdmin`, `HojaEdicion`, `SelectorProductos`, `ElegirUno`, `Confirmar`) | `FechasDelPanel.jsx` |
+| D5d · Notificaciones ✓ | `pages/admin/AdminNotifications/AdminNotifications.jsx` + `.module.css` (`BuscadorProducto`, `useGlobalToast`, `window.confirm`) | `PaginaNotificacionesAdmin` (`TablaAdmin`, `SelectorProductos`, `CampoImagen`, `CampoFecha`, `ElegirUno`, `Confirmar`) | `NotificacionesDelPanel.jsx` |
+| D5e · Encuestas ✓ | `pages/admin/AdminEncuestas.jsx` + `.module.css`, `AdminEncuestaEntregas.jsx`, `AdminRespuestasEncuesta.jsx` + `.module.css`, `CambioKpi.jsx` (`alert`, `window.confirm`, `useGlobalToast`) | `PaginaEncuestaAdmin`, `RespuestasEntregas`, `RespuestasEncuesta`, `BarraGuardar` | `EncuestaDelPanel.jsx`, `OpinionesDelPanel.jsx` |
 | D6a · Sorteos | `pages/admin/AdminSorteos.jsx` + `.module.css` (`common/Button`, su propio modal, la subida a mano) | `PaginaSorteosAdmin` (`PaginaListaAdmin`, `CampoImagen`, `CampoFecha`, `CampoDinero`) | `SorteosDelPanel.jsx` |
 | D6a · Un sorteo | `pages/admin/AdminSorteoDetalle.jsx` + `.module.css` (su propio modal) | `PaginaSorteoAdmin` (`TablaAdmin`, `HojaEdicion`, `Confirmar`) | `SorteoDelPanel.jsx` |
 | D6b · Sorteos por suscripción | `pages/admin/AdminSuscripcionSorteos.jsx` + `.module.css` (con `BeneficiosEditor` y `GaleriaEditor` adentro; `common/Button`, su modal, la subida a mano) | `PaginaSuscripcionesAdmin` (`PaginaListaAdmin`, `CampoLista`, `CampoColor`, `CampoImagen`) | `SuscripcionesDelPanel.jsx` |
@@ -2468,10 +2505,13 @@ depende de cómo se escriba cada conector:
   archivados después). Antes de unir, contar en producción cuántos productos
   tienen `featured: true` (con ocultos, archivados y copias): si pasan de 24,
   el recién destacado no saldría en la portada de la app.
-- **D5a/D5b · Borrar un valor**: `updateDocument` quita `''` y `null`, así que
-  vaciar `actionKey` de una misión o la foto / el producto de una recompensa
-  no se guarda (ya pasaba con las páginas viejas). El conector manda
-  `deleteField()` para esas llaves.
+- **D5a/D5b · Borrar un valor**: ~~no se guardaba~~ (corregido el
+  2026-11-03): desde `e402bf3c`, `updateDocument` ya convierte en
+  `deleteField()` todo campo de primer nivel que llega como `''`, `null`,
+  `[]` o `{}`, así que vaciar `actionKey` o la foto de una recompensa sí se
+  guardaba. Los conectores igual mandan `deleteField()` explícito. (Un campo
+  vaciado **dentro** de un objeto o lista sí se pierde: ver la memoria de
+  Firestore y los vacíos.)
 - **D5c · Editar un paquete**: `updateSuggestedPackage(id, { products })` con
   las claves de antes (`id`, `name`, `price`, `image`), no las del kit.
 - **D5d · Ajustes de notificaciones**: leer con `getDoc(...).data()`, no con
@@ -2496,6 +2536,7 @@ bloquea de verdad); en Inventario, un personalizable sin límite de stock
 
 | Fecha | Qué | Dónde |
 |---|---|---|
+| 2026-11-03 | **D5 unido al admin**: referidos, misiones, retos, recompensas, fechas importantes, notificaciones y la encuesta (`FidelidadDelPanel`, `FechasDelPanel`, `AvisosDelPanel`, interruptor `adminClientesViejo`); Opiniones pasa a las respuestas del kit. Corregido: `updateDocument` ya borraba los campos vaciados de primer nivel (desde `e402bf3c`) | `components/panel/`, `pages/admin/` |
 | 2026-11-03 | **D4 unido al admin**: el marco de Resultados, sus seis pestañas y las cuatro pantallas técnicas (`ResultadosDelPanel`, `ResultadosClientesDelPanel`, `ResultadosTecnicoDelPanel`, interruptor `adminResultadosViejo`); las técnicas siguen en sus rutas | `components/panel/`, `pages/admin/resultados/`, `pages/admin/dashboard/` |
 | 2026-11-03 | **D3 unido al admin**: recepción, gestión de pagos, cuentas desde pedidos y libro de reclamaciones (`components/panel/PedidosDelPanel.jsx`, interruptor `adminPedidosViejo`) | `components/panel/`, `pages/admin/` |
 | 2026-11-03 | **D2 unido al admin**: lista, inventario, datos para recomendar, la ficha (producto, combo y personalizable), personalizables, packs, blueprints y plantillas de cuadros (`components/panel/`, interruptor `adminProductosViejo`); `pasosYoryo.js` sale de la pantalla; `PlantillasPrenda` con `estadoEnlace` y `fotoConPlantilla` con las vistas; "Pasarla a Crear" queda pendiente | `components/panel/`, `pages/Tienda/admin/`, `pages/admin/`, `kit/piezas/admin/Crear.jsx` |

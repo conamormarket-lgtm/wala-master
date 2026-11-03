@@ -386,7 +386,9 @@ Se quedan: `useBorradoresCrear`, `useComunidad`, `useVersionesReemplazadas`,
 | `AdminCustomizationViewsEditor` y la tarjeta "Producto personalizable" de la ficha de productos | `customizable` / `customizationViews` | Prendas de Crear (`/admin/prendas-crear`) | `AdminProductoFormV2.jsx` (solo con `personalizableViejo`) | al retirar `personalizableViejo` |
 | `services/personalizacionVieja.js` y el aviso "Quitar la personalización vieja" de Productos | pasar los datos viejos a normales | — | `AdminProductos.jsx` | cuando en producción ya no quede ninguno (el aviso desaparece solo) |
 
-## Panel administrativo (D0 a D4 unidos el 2026-11-03; lo demás todavía no)
+## Panel administrativo (D0 a D5 unidos el 2026-11-03; lo demás todavía no)
+
+D5 (2026-11-03): `AdminReferidos`, `AdminMisiones`, `AdminRetos`, `AdminRecompensas`, `AdminFechasImportantesPage`, `AdminNotifications/AdminNotifications` y `AdminEncuestas` ya se llaman `…Viejo.jsx` y solo los carga su `.jsx` sin «Viejo» con `adminClientesViejo`; `AdminEncuestaEntregas` y `AdminRespuestasEncuesta` solo los carga `OpinionesDelPanel` con ese mismo interruptor. Donde una fila de D5 dice `App.jsx`, léase ese `.jsx`.
 
 D4 (2026-11-03): las pantallas de Resultados de las filas de abajo ya se llaman `…Viejo.jsx` (`resultados/ResultadosLayoutViejo`, `ResumenViejo`, `ProductosViejo`, `VisitantesViejo`, `ClientesViejo`, `OpinionesViejo`, `DetalleTecnicoViejo`, `dashboard/DashPaginasViejo`, `DashUsoViejo`, `DashOrigenViejo`, `DashHeatmapViejo`) y solo las carga su `.jsx` sin «Viejo» con `adminResultadosViejo`; donde la fila dice `App.jsx`, léase ese `.jsx`. `FichaCliente.jsx` y `ContactoCarrito.jsx` siguen con su nombre (los usa `ClientesViejo`; `mensajeCarrito` vive en `utils/whatsappLink.js`).
 
