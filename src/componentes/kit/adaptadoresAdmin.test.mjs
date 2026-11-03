@@ -117,7 +117,20 @@ test('marcas: la dirección y el tope de monedas como la tienda', () => {
   assert.equal(m.topeMonedas, 20);
   assert.deepEqual(m2.marcaAFirestore(m), {
     name: 'MUSSA', slug: 'mussa', logoUrl: 'l', order: 3, bgColor: '#000', bgImage: '', bgOpacity: 100, whatsappNumber: '+51 9', storeEmpty: '', topeMonedasPct: 20,
+    topeMonedasTipo: 'pct', topeMonedasCantidad: '',
   });
+  assert.equal(m.tipoTope, 'pct');
+  assert.equal(m2.textoTopeMonedas(m), 'Hasta 20 %');
+  // Monedas por producto: se guarda la cantidad entera y el % se conserva.
+  const fija = m2.marcaDesdeFirestore({ ...doc, topeMonedasTipo: 'monedas', topeMonedasCantidad: 10 });
+  assert.deepEqual([fija.tipoTope, fija.monedasPorProducto], ['monedas', 10]);
+  assert.equal(m2.textoTopeMonedas(fija), '10 por producto');
+  assert.deepEqual(m2.marcaAFirestore({ ...fija, monedasPorProducto: '7.8' }), {
+    ...m2.marcaAFirestore(m), topeMonedasTipo: 'monedas', topeMonedasCantidad: 7,
+  });
+  assert.equal(m2.textoTopeMonedas({ tipoTope: 'monedas', monedasPorProducto: 0 }), null);
+  assert.equal(m2.textoTopeMonedas({ tipoTope: 'monedas', monedasPorProducto: '', topeMonedas: 30 }), 'Hasta 30 %');
+  assert.equal(m2.textoTopeMonedas({ topeMonedas: 0 }), null);
 });
 
 test('productos: qué sale en Tienda, las piezas y las etiquetas de Todos', () => {

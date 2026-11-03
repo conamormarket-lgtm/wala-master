@@ -79,6 +79,13 @@ export default function MarcasDelPanel() {
         await refrescar();
       }}
       onEliminar={async (id) => { await sinError(deleteBrand(id)); await refrescar(); }}
+      // Ordenar: se numeran 1, 2, 3… y solo se escriben las que cambian (updateBrand solo con order no toca la dirección).
+      onGuardarOrden={async (ids) => {
+        const antes = new Map((marcas.datos || []).map((m) => [m.id, m.order]));
+        const cambian = ids.map((id, i) => [id, i + 1]).filter(([id, n]) => antes.get(id) !== n);
+        await Promise.all(cambian.map(([id, order]) => sinError(updateBrand(id, { order }))));
+        await refrescar();
+      }}
       subirImagen={subirImagen}
       muestraDe={muestraDe}
       whatsapp={whatsapp.data || { principal: '', multimarca: false, fabrica: WHATSAPP_FABRICA }}

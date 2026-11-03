@@ -38,9 +38,10 @@ const STICKERS = [
 /** Las cuentas del resumen (con o sin las monedas). */
 const cuentasDe = ({ items, usar, saldo, cupon, reglaEnvio }) => {
   const subtotal = items.reduce((tot, it) => tot + it.precio * it.cantidad, 0);
-  // Tope de monedas: el % de la marca de cada producto (topeMonedas, 0-100;
-  // sin él, la mitad). La misma cuenta que hace el servidor al preparar el pago.
-  const maximo = topeMonedasCheckout(items.map((it) => ({ importe: it.precio * it.cantidad, pct: it.topeMonedas })));
+  // Tope de monedas: el de la marca de cada producto (topeMonedas: un % o
+  // monedas por producto; sin él, la mitad). La misma cuenta que hace el
+  // servidor al preparar el pago.
+  const maximo = topeMonedasCheckout(items.map((it) => ({ importe: it.precio * it.cantidad, cantidad: it.cantidad, tope: it.topeMonedas })));
   const descuentoMonedas = usar ? Math.min(saldo || 0, maximo) : 0;
   const descuentoCupon = cupon?.envioGratis ? 0 : cupon?.descuento || 0;
   const envioBase = subtotal > reglaEnvio.gratisDesde ? 0 : reglaEnvio.costo;
@@ -64,8 +65,9 @@ const textoInvitacion = ({ nombre, aceptada }) => {
 /**
  * La página.
  *  - items: los elegidos del carrito [{ id, imagen, nombre, variante, precio,
- *    cantidad, topeMonedas }] (topeMonedas: el % del precio que se puede pagar
- *    con monedas, el de su marca; sin él, la mitad) · incompletos: nombres de los que no tienen color o talla
+ *    cantidad, topeMonedas }] (topeMonedas: lo que se puede pagar con monedas,
+ *    el de su marca: { tipo: 'pct' | 'monedas', valor } o un número = %; sin
+ *    él, la mitad) · incompletos: nombres de los que no tienen color o talla
  *  - sesion · perfil: { nombre, tipoDocumento, documento, telefono, email, pais }
  *  - direcciones: las guardadas (direccionDesdeFirestore) · lugares · paises
  *    ([{ valor, texto, prefijo }]: con prefijo, el teléfono va con el del país)

@@ -17,9 +17,13 @@ function totalEsperadoCheckout({
 }
 
 // ── Tope de monedas por marca ────────────────────────────────────────────────
-// Cada marca elige en Admin → Marcas qué parte del precio de SUS productos se
-// puede pagar con monedas (tienda_brands.topeMonedasPct, 0-100). Sin marca o
-// sin configurar: la mitad, la regla de siempre. Espejo de src/utils/topeMonedas.js.
+// Cada marca elige en Admin → Marcas cuánto del precio de SUS productos se
+// puede pagar con monedas, de una de dos formas (tienda_brands.topeMonedasTipo):
+//  - "pct" (o sin decir): un porcentaje del precio (topeMonedasPct, 0-100);
+//  - "monedas": una cantidad fija por cada producto (topeMonedasCantidad),
+//    nunca más que su precio.
+// Sin marca o sin configurar: la mitad, la regla de siempre. Espejo de
+// src/utils/topeMonedas.js.
 const TOPE_MONEDAS_PCT_POR_DEFECTO = 50;
 
 function pctMonedasDeMarca(marca) {
@@ -30,18 +34,48 @@ function pctMonedasDeMarca(marca) {
   return Math.max(0, Math.min(100, pct));
 }
 
-// `lineas`: [{ importe (precio × cantidad), pct }]. Un número suelto es un
-// subtotal sin marcas (la mitad). Se suma todo y se redondea hacia abajo una
-// sola vez; el 1e-9 evita que 22,4999999 (error de coma flotante) quede en 22.
+// Monedas por producto de una marca con tope fijo; null si no es un número válido.
+function cantidadMonedasDeMarca(marca) {
+  const crudo = marca && marca.topeMonedasCantidad;
+  if (crudo === null || crudo === undefined || crudo === "") return null;
+  const n = Number(crudo);
+  return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : null;
+}
+
+// { tipo: "pct", valor } o { tipo: "monedas", valor }. Con "monedas" pero sin
+// una cantidad válida, vale el porcentaje (como si no lo hubiera elegido).
+function topeDeMarca(marca) {
+  if (marca && marca.topeMonedasTipo === "monedas") {
+    const cantidad = cantidadMonedasDeMarca(marca);
+    if (cantidad !== null) return { tipo: "monedas", valor: cantidad };
+  }
+  return { tipo: "pct", valor: pctMonedasDeMarca(marca) };
+}
+
+// Las monedas que admite una línea: el % de su importe o la cantidad fija por
+// unidad (sin pasar del importe).
+function monedasDeLinea(l) {
+  const importe = Math.max(0, Number(l && l.importe) || 0);
+  const tope = l && l.tope;
+  if (tope && tope.tipo === "monedas" && Number.isFinite(Number(tope.valor))) {
+    const cantidad = Math.max(1, Number(l.cantidad) || 1);
+    return Math.min(importe, Math.max(0, Number(tope.valor)) * cantidad);
+  }
+  // Un número suelto en `tope` es un %.
+  const crudo = typeof tope === "number" ? tope : tope && tope.tipo === "pct" ? tope.valor : l && l.pct;
+  const pct = Number.isFinite(Number(crudo)) ? Math.max(0, Math.min(100, Number(crudo))) : TOPE_MONEDAS_PCT_POR_DEFECTO;
+  return (importe * pct) / 100;
+}
+
+// `lineas`: [{ importe (precio × cantidad), cantidad, tope }] (o { importe,
+// pct }). Un número suelto es un subtotal sin marcas (la mitad). Se suma todo
+// y se redondea hacia abajo una sola vez; el 1e-9 evita que 22,4999999 (error
+// de coma flotante) quede en 22.
 function topeMonedasCheckout(lineas) {
   const lista = Array.isArray(lineas)
     ? lineas
     : [{ importe: lineas, pct: TOPE_MONEDAS_PCT_POR_DEFECTO }];
-  const suma = lista.reduce((tot, l) => {
-    const importe = Math.max(0, Number(l && l.importe) || 0);
-    const pct = l && Number.isFinite(Number(l.pct)) ? Math.max(0, Math.min(100, Number(l.pct))) : TOPE_MONEDAS_PCT_POR_DEFECTO;
-    return tot + (importe * pct) / 100;
-  }, 0);
+  const suma = lista.reduce((tot, l) => tot + monedasDeLinea(l), 0);
   return Math.floor(suma + 1e-9);
 }
 
@@ -50,5 +84,5 @@ function topeMonedasCheckout(lineas) {
 const toleranciaCheckout = (unidades) => 0.05 + 0.01 * Math.max(0, Number(unidades) || 0);
 
 module.exports = {
-  totalEsperadoCheckout, topeMonedasCheckout, pctMonedasDeMarca, TOPE_MONEDAS_PCT_POR_DEFECTO, toleranciaCheckout,
+  totalEsperadoCheckout, topeMonedasCheckout, pctMonedasDeMarca, topeDeMarca, TOPE_MONEDAS_PCT_POR_DEFECTO, toleranciaCheckout,
 };

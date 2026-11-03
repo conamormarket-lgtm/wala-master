@@ -768,7 +768,7 @@ function PanelDePrueba() {
   const [colecciones, guardarColeccion, eliminarColeccion, setColecciones] = useListaDemo(COLECCIONES, falla);
   const [zonas, guardarZona, eliminarZona] = useListaDemo(ZONAS, falla);
   const [cliparts, guardarClipart, eliminarClipart] = useListaDemo(CLIPARTS, falla);
-  const [marcas, guardarMarca, eliminarMarca] = useListaDemo(MARCAS, falla);
+  const [marcas, guardarMarca, eliminarMarca, setMarcas] = useListaDemo(MARCAS, falla);
   const [blueprints, guardarBlueprintCrudo, eliminarBlueprint] = useListaDemo(BLUEPRINTS, falla);
   const [yoryoCreados, setYoryoCreados] = useState(false);
   const [actualizando, setActualizando] = useState(false);
@@ -995,6 +995,11 @@ function PanelDePrueba() {
         marcas={vacio ? [] : marcas}
         onGuardar={guardarMarca}
         onEliminar={eliminarMarca}
+        onGuardarOrden={async (ids) => {
+          await espera(600);
+          fallar();
+          setMarcas((l) => l.map((m) => ({ ...m, orden: ids.indexOf(m.id) + 1 })));
+        }}
         subirImagen={subir}
         muestraDe={(id) => MUESTRAS[id] || null}
         whatsapp={whatsapp}

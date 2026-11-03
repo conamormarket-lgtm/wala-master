@@ -31,7 +31,7 @@ import { PaginaCheckout } from '../../componentes/kit/paginas/Checkout';
 import { PagoTarjeta } from '../../componentes/kit/piezas/Pago';
 import { htmlAbriendoWhatsApp } from '../../componentes/kit/piezas/AbriendoWhatsApp';
 import { itemCarritoDesde, direccionDesdeFirestore } from '../../componentes/kit/adaptadores';
-import { pctMonedasDeProducto } from '../../utils/topeMonedas';
+import { topeDeProducto } from '../../utils/topeMonedas';
 
 // PayPal (su SDK) baja solo si se paga desde otro país.
 const PaypalCheckout = lazy(() => import('../PaypalCheckout/PaypalCheckout'));
@@ -148,8 +148,8 @@ export default function CheckoutDeTienda() {
       variante: varianteDe(fila),
       precio: fila.precio,
       cantidad: fila.cantidad,
-      // Qué parte de su precio se paga con monedas: lo decide su marca.
-      topeMonedas: pctMonedasDeProducto(catalogo.get(item.productId)?.brandId || item.brandId, marcas),
+      // Cuánto de su precio se paga con monedas (un % o monedas por producto): lo decide su marca.
+      topeMonedas: topeDeProducto(catalogo.get(item.productId)?.brandId || item.brandId, marcas),
     };
   }), [itemsCompra, catalogo, marcas]);
   const incompletos = useMemo(() => {

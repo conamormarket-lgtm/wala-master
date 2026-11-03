@@ -191,6 +191,20 @@ test("coin cap uses each product's brand percentage (default half)", async () =>
   assert.deepEqual(brandRead.ids.sort(), ["m0", "m20", "sinConfig"]);
 });
 
+test("a brand can cap coins per product instead of a percentage", async () => {
+  const f = fixture({
+    a: { price: 40, inStock: 10, brandId: "fija" },
+    b: { price: 6, inStock: 10, brandId: "fija" },
+    fija: { topeMonedasTipo: "monedas", topeMonedasCantidad: 10, topeMonedasPct: 80 },
+  });
+  const r = await f.validate([line("a", 3, { precio: 40 }), line("b", 1, { precio: 6 })]);
+  // 10 por cada uno de los 3 de S/ 40 (30) + el de S/ 6 entero (6, no 10) → 36; el 80 % no cuenta.
+  assert.equal(r.subtotal, 126);
+  assert.equal(r.topeMonedas, 36);
+  const brandRead = f.calls.find((c) => c.options.fieldMask.includes("topeMonedasTipo"));
+  assert.ok(brandRead.options.fieldMask.includes("topeMonedasCantidad"));
+});
+
 test("carts without brands do not read brands and keep the half rule", async () => {
   const f = fixture({ a: { price: 45, inStock: 10 } });
   const r = await f.validate([line("a")]);

@@ -321,6 +321,26 @@ export function topeMonedasDe(crudo) {
   return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : TOPE_MONEDAS_POR_DEFECTO;
 }
 
+/** Monedas por producto (entero, 0 o más); '' si no hay un número. */
+export function monedasPorProductoDe(crudo) {
+  if (crudo === null || crudo === undefined || crudo === '') return '';
+  const n = Number(crudo);
+  return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : '';
+}
+
+/**
+ * El tope de una marca en palabras (la lista del admin): "Hasta 50 %",
+ * "10 por producto" o null si no se puede pagar con monedas. Con 'monedas'
+ * sin cantidad vale el % (como utils/topeMonedas).
+ */
+export function textoTopeMonedas({ tipoTope, topeMonedas, monedasPorProducto } = {}) {
+  if (tipoTope === 'monedas' && monedasPorProducto !== '' && monedasPorProducto != null) {
+    return Number(monedasPorProducto) > 0 ? `${monedasPorProducto} por producto` : null;
+  }
+  const pct = topeMonedasDe(topeMonedas);
+  return pct > 0 ? `Hasta ${pct} %` : null;
+}
+
 export function marcaDesdeFirestore(doc = {}) {
   return {
     id: doc.id,
@@ -331,6 +351,9 @@ export function marcaDesdeFirestore(doc = {}) {
     whatsapp: doc.whatsappNumber || '',
     mensajeVacio: doc.storeEmpty || '',
     topeMonedas: topeMonedasDe(doc.topeMonedasPct),
+    // Cómo se cuenta el tope: un % del precio o monedas por producto (topeMonedasTipo).
+    tipoTope: doc.topeMonedasTipo === 'monedas' ? 'monedas' : 'pct',
+    monedasPorProducto: monedasPorProductoDe(doc.topeMonedasCantidad),
     fondo: doc.bgColor || '#ffffff',
     textura: doc.bgImage || '',
     opacidad: doc.bgOpacity ?? 100,
@@ -354,6 +377,9 @@ export function marcaAFirestore(m = {}) {
     whatsappNumber: String(m.whatsapp || '').trim(),
     storeEmpty: String(m.mensajeVacio || '').trim(),
     topeMonedasPct: topeMonedasDe(m.topeMonedas),
+    // Con el %, la cantidad se borra ('' → updateDocument quita el campo).
+    topeMonedasTipo: m.tipoTope === 'monedas' ? 'monedas' : 'pct',
+    topeMonedasCantidad: m.tipoTope === 'monedas' ? monedasPorProductoDe(m.monedasPorProducto) : '',
   };
 }
 

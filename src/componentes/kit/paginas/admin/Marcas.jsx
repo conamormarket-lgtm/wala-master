@@ -9,8 +9,8 @@ import { MenuContextual } from '../../piezas/MenuContextual';
 import { Sello } from '../../Marca';
 import { CabezaAdmin } from '../../piezas/admin/Marco';
 import { TablaAdmin, BarraFiltros, AccionesLote, CargarMas, InsigniaEstado } from '../../piezas/admin/Datos';
-import { HojaEdicion, GrupoCampos, CampoImagen, CampoColor } from '../../piezas/admin/Formularios';
-import { normalizarBusqueda, slugDeMarca, topeMonedasDe, TOPE_MONEDAS_POR_DEFECTO } from '../../adaptadoresAdmin';
+import { HojaEdicion, GrupoCampos, CampoImagen, CampoColor, ElegirUno } from '../../piezas/admin/Formularios';
+import { normalizarBusqueda, slugDeMarca, topeMonedasDe, monedasPorProductoDe, textoTopeMonedas, TOPE_MONEDAS_POR_DEFECTO } from '../../adaptadoresAdmin';
 import { PaginaListaAdmin } from './Lista';
 import { FotoCelda, NumeroCelda, porNombre, porOrden } from './celdas';
 import l from './Lista.module.css';
@@ -27,7 +27,7 @@ import s from './Marcas.module.css';
 const soloTelefono = (t) => String(t || '').replace(/[^\d\s\-()+]/g, '');
 /* +51924426791 → +51 924 426 791 (solo para leerlo). */
 const telefonoLegible = (t) => String(t || '').replace(/^\+51(\d{3})(\d{3})(\d{3})$/, '+51 $1 $2 $3');
-const VACIA = { nombre: '', slug: '', logo: '', orden: 0, whatsapp: '', mensajeVacio: '', topeMonedas: TOPE_MONEDAS_POR_DEFECTO, fondo: '#ffffff', textura: '', opacidad: 100 };
+const VACIA = { nombre: '', slug: '', logo: '', orden: 0, whatsapp: '', mensajeVacio: '', topeMonedas: TOPE_MONEDAS_POR_DEFECTO, tipoTope: 'pct', monedasPorProducto: '', fondo: '#ffffff', textura: '', opacidad: 100 };
 
 /* Pedidos por WhatsApp: el número de toda la tienda y si cada marca recibe los suyos. */
 function TarjetaWhatsApp({ config, cargando, onGuardar }) {
@@ -86,8 +86,10 @@ function TarjetaWhatsApp({ config, cargando, onGuardar }) {
 
 /**
  * La lista de marcas con su hoja de edición.
- *  - marcas: [{ id, nombre, slug, logo, orden, whatsapp, mensajeVacio, topeMonedas, fondo, textura, opacidad }] (marcaDesdeFirestore)
+ *  - marcas: [{ id, nombre, slug, logo, orden, whatsapp, mensajeVacio, topeMonedas, tipoTope, monedasPorProducto, fondo, textura, opacidad }] (marcaDesdeFirestore)
  *  - cargando · error · onReintentar · onGuardar(datos, id?) · onEliminar(id) · subirImagen
+ *  - onGuardarOrden(ids) → promesa: todas, en el orden nuevo. Con él, la lista
+ *    se arrastra (como Categorías) y una nueva va al final sola
  *  - muestraDe(marcaId) → props de TarjetaProducto de uno de sus productos (la vista previa) o null
  *  - whatsapp: { principal, multimarca, fabrica } · cargandoWhatsapp · onGuardarWhatsapp(config)
  *  - onProductos(marca) (sus productos) · onDisenar(marca) (su página con el editor)
@@ -96,7 +98,7 @@ function TarjetaWhatsApp({ config, cargando, onGuardar }) {
 export function PaginaMarcas({
   marcas = [], cargando, error, onReintentar, onGuardar, onEliminar, subirImagen, muestraDe,
   whatsapp = { principal: '', multimarca: false, fabrica: '' }, cargandoWhatsapp, onGuardarWhatsapp,
-  onProductos, onDisenar, onAplicarPlantilla, onQuitarRepetidas,
+  onProductos, onDisenar, onAplicarPlantilla, onQuitarRepetidas, onGuardarOrden,
 }) {
   const toast = useToast();
   const [menu, setMenu] = useState(null);
@@ -123,7 +125,9 @@ export function PaginaMarcas({
         cabeza={{
           icono: 'marcas',
           titulo: 'Marcas',
-          subtitulo: 'Los datos de cada marca que usa toda la tienda. Su página se arma con «Diseñar página».',
+          subtitulo: onGuardarOrden
+            ? 'Los datos de cada marca que usa toda la tienda, en el orden del menú de marcas: arrástralas para cambiarlo. Su página se arma con «Diseñar página».'
+            : 'Los datos de cada marca que usa toda la tienda. Su página se arma con «Diseñar página».',
           acciones: masAcciones.length ? (
             <Boton
               variante="secundario"
@@ -148,9 +152,23 @@ export function PaginaMarcas({
           { id: 'logo', titulo: 'Logo', ancho: 72, tarjeta: 'foto', celda: (m) => <FotoCelda src={m.logo} forma="circulo" /> },
           { id: 'nombre', titulo: 'Marca', ordenable: true, tarjeta: 'titulo', celda: (m) => <>{m.nombre}<span className={l.sub}>wala.pe/{m.slug || slugDeMarca(m.nombre)}</span></> },
           { id: 'whatsapp', titulo: 'WhatsApp del asesor', tarjeta: 'detalle', celda: (m) => (m.whatsapp ? <span className={l.numero}>{m.whatsapp}</span> : <span className={l.sub}>El general</span>) },
-          { id: 'monedas', titulo: 'Monedas', ancho: 120, alinear: 'fin', tarjeta: 'detalle', celda: (m) => (m.topeMonedas ? <span className={l.numero}>Hasta {m.topeMonedas} %</span> : <InsigniaEstado estado="oculto">Sin monedas</InsigniaEstado>) },
-          { id: 'orden', titulo: 'Orden', ordenable: true, ancho: 90, alinear: 'fin', celda: (m) => <NumeroCelda nombre="Orden" valor={m.orden} /> },
+          { id: 'monedas', titulo: 'Monedas', ancho: 140, alinear: 'fin', tarjeta: 'detalle', celda: (m) => <TopeMonedas marca={m} /> },
+          ...(onGuardarOrden ? [] : [{ id: 'orden', titulo: 'Orden', ordenable: true, ancho: 90, alinear: 'fin', celda: (m) => <NumeroCelda nombre="Orden" valor={m.orden} /> }]),
         ]}
+        ordenable={onGuardarOrden ? {
+          etiqueta: 'Orden de las marcas',
+          onGuardar: onGuardarOrden,
+          fila: (m) => (
+            <span className={s.fila}>
+              <FotoCelda src={m.logo} forma="circulo" tamano={40} />
+              <span className={s.filaTextos}>
+                <strong>{m.nombre}</strong>
+                <span className={l.sub}>wala.pe/{m.slug || slugDeMarca(m.nombre)}</span>
+              </span>
+              <span className={s.filaMonedas}><TopeMonedas marca={m} /></span>
+            </span>
+          ),
+        } : undefined}
         ordenes={{ nombre: porNombre, orden: porOrden }}
         ordenInicial={{ por: 'orden', dir: 'asc' }}
         vacio={{ texto: 'Crea la primera: su logo, su dirección y el fondo de sus productos.' }}
@@ -174,10 +192,14 @@ export function PaginaMarcas({
             return {
               nombre: !d.nombre.trim() ? 'Escribe el nombre de la marca.' : undefined,
               slug: slug && duena ? `wala.pe/${slug} ya es de «${duena.nombre}». Elige otra.` : undefined,
+              monedasPorProducto: d.tipoTope === 'monedas' && monedasPorProductoDe(d.monedasPorProducto) === '' ? 'Escribe cuántas monedas por producto (0: ninguna).' : undefined,
             };
           },
-          limpiar: ({ id: _id, ...d }) => ({ ...d, nombre: d.nombre.trim(), slug: d.slug.trim(), orden: Number(d.orden) || 0, topeMonedas: topeMonedasDe(d.topeMonedas) }),
-          campos: (ctx) => <CamposMarca {...ctx} subirImagen={subirImagen} muestraDe={muestraDe} />,
+          limpiar: ({ id: _id, ...d }) => ({
+            ...d, nombre: d.nombre.trim(), slug: d.slug.trim(), orden: Number(d.orden) || 0, topeMonedas: topeMonedasDe(d.topeMonedas),
+            tipoTope: d.tipoTope === 'monedas' ? 'monedas' : 'pct', monedasPorProducto: monedasPorProductoDe(d.monedasPorProducto),
+          }),
+          campos: (ctx) => <CamposMarca {...ctx} subirImagen={subirImagen} muestraDe={muestraDe} conOrden={!onGuardarOrden} />,
         }}
       />
 
@@ -204,10 +226,17 @@ export function PaginaMarcas({
   );
 }
 
-/* Los campos de una marca, con la vista previa de su tarjeta. */
-function CamposMarca({ datos, cambiar, errores, idDe, id, subirImagen, muestraDe }) {
+/** Cuánto se paga con monedas, en la lista: "Hasta 50 %", "10 por producto" o "Sin monedas". */
+function TopeMonedas({ marca }) {
+  const texto = textoTopeMonedas(marca);
+  return texto ? <span className={l.numero}>{texto}</span> : <InsigniaEstado estado="oculto">Sin monedas</InsigniaEstado>;
+}
+
+/* Los campos de una marca, con la vista previa de su tarjeta. conOrden: el campo Orden (sin la lista para arrastrar). */
+function CamposMarca({ datos, cambiar, errores, idDe, id, subirImagen, muestraDe, conOrden = true }) {
   const slug = slugDeMarca(datos.slug) || slugDeMarca(datos.nombre);
   const tope = topeMonedasDe(datos.topeMonedas);
+  const cantidad = monedasPorProductoDe(datos.monedasPorProducto);
   const muestra = (id && muestraDe?.(id)) || null;
   return (
     <>
@@ -223,7 +252,7 @@ function CamposMarca({ datos, cambiar, errores, idDe, id, subirImagen, muestraDe
           ayuda={slug ? `Su página: wala.pe/${slug}. Vacío: se arma con el nombre.` : 'Vacío: se arma con el nombre.'}
           onChange={(e) => cambiar('slug', e.target.value)}
         />
-        <Campo id={idDe('orden')} etiqueta="Orden" type="number" inputMode="numeric" min={0} value={datos.orden} ayuda="Las de número más bajo salen primero en el menú de marcas." onChange={(e) => cambiar('orden', e.target.value)} />
+        {conOrden && <Campo id={idDe('orden')} etiqueta="Orden" type="number" inputMode="numeric" min={0} value={datos.orden} ayuda="Las de número más bajo salen primero en el menú de marcas." onChange={(e) => cambiar('orden', e.target.value)} />}
       </GrupoCampos>
 
       <GrupoCampos titulo="Logo">
@@ -250,22 +279,46 @@ function CamposMarca({ datos, cambiar, errores, idDe, id, subirImagen, muestraDe
         />
       </GrupoCampos>
 
-      <GrupoCampos titulo="Monedas">
-        <Campo
-          id={idDe('topeMonedas')}
-          etiqueta="Máximo a pagar con monedas"
-          type="number"
-          inputMode="numeric"
-          min={0}
-          max={100}
-          step="1"
-          sufijo="%"
-          value={datos.topeMonedas}
-          ayuda={tope === 0
-            ? 'Sus productos no se pueden pagar con monedas.'
-            : `En un producto de S/ 100, el cliente paga con monedas hasta ${tope} (S/ ${tope}). Vacío: ${TOPE_MONEDAS_POR_DEFECTO} %, la regla de siempre.`}
-          onChange={(e) => cambiar('topeMonedas', e.target.value === '' ? '' : Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0))))}
+      <GrupoCampos titulo="Monedas" ayuda="Cuánto del precio de sus productos se puede pagar con monedas.">
+        <ElegirUno
+          etiqueta="Cómo se cuenta"
+          opciones={[{ valor: 'pct', texto: 'Un porcentaje' }, { valor: 'monedas', texto: 'Monedas por producto' }]}
+          valor={datos.tipoTope}
+          onElegir={(v) => v && cambiar('tipoTope', v)}
         />
+        {datos.tipoTope === 'monedas' ? (
+          <Campo
+            id={idDe('monedasPorProducto')}
+            etiqueta="Máximo por producto"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            step="1"
+            sufijo="monedas"
+            value={datos.monedasPorProducto}
+            error={errores.monedasPorProducto}
+            ayuda={cantidad === 0
+              ? 'Sus productos no se pueden pagar con monedas.'
+              : `Por cada producto, hasta ${cantidad === '' ? 'esas' : cantidad} monedas (S/ 1 cada una): si lleva 3, el triple. Nunca más que su precio.`}
+            onChange={(e) => cambiar('monedasPorProducto', e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+          />
+        ) : (
+          <Campo
+            id={idDe('topeMonedas')}
+            etiqueta="Máximo a pagar con monedas"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={100}
+            step="1"
+            sufijo="%"
+            value={datos.topeMonedas}
+            ayuda={tope === 0
+              ? 'Sus productos no se pueden pagar con monedas.'
+              : `En un producto de S/ 100, el cliente paga con monedas hasta ${tope} (S/ ${tope}). Vacío: ${TOPE_MONEDAS_POR_DEFECTO} %, la regla de siempre.`}
+            onChange={(e) => cambiar('topeMonedas', e.target.value === '' ? '' : Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0))))}
+          />
+        )}
       </GrupoCampos>
 
       <GrupoCampos titulo="Tarjetas de producto" ayuda="El fondo detrás de la foto de sus productos y de su mosaico en el inicio (no la portada de su página).">
