@@ -145,7 +145,7 @@ export function PaginaMarcas({
         buscarEn={(m) => `${m.nombre} ${m.slug}`}
         placeholder="Buscar una marca"
         columnas={[
-          { id: 'logo', titulo: 'Logo', ancho: 72, tarjeta: 'foto', celda: (m) => <FotoCelda src={m.logo} forma="circulo" contener /> },
+          { id: 'logo', titulo: 'Logo', ancho: 72, tarjeta: 'foto', celda: (m) => <FotoCelda src={m.logo} forma="circulo" /> },
           { id: 'nombre', titulo: 'Marca', ordenable: true, tarjeta: 'titulo', celda: (m) => <>{m.nombre}<span className={l.sub}>wala.pe/{m.slug || slugDeMarca(m.nombre)}</span></> },
           { id: 'whatsapp', titulo: 'WhatsApp del asesor', tarjeta: 'detalle', celda: (m) => (m.whatsapp ? <span className={l.numero}>{m.whatsapp}</span> : <span className={l.sub}>El general</span>) },
           { id: 'monedas', titulo: 'Monedas', ancho: 120, alinear: 'fin', tarjeta: 'detalle', celda: (m) => (m.topeMonedas ? <span className={l.numero}>Hasta {m.topeMonedas} %</span> : <InsigniaEstado estado="oculto">Sin monedas</InsigniaEstado>) },
@@ -227,7 +227,7 @@ function CamposMarca({ datos, cambiar, errores, idDe, id, subirImagen, muestraDe
       </GrupoCampos>
 
       <GrupoCampos titulo="Logo">
-        <CampoImagen etiqueta="Logo de la marca" ayuda="PNG con fondo transparente. Se sube tal cual." valor={datos.logo} onCambiar={(url) => cambiar('logo', url)} subir={subirImagen && ((b, o) => subirImagen(b, { ...o, carpeta: 'logos' }))} forma="circulo" contener />
+        <CampoImagen etiqueta="Logo de la marca" ayuda="PNG con fondo transparente. Se sube tal cual." valor={datos.logo} onCambiar={(url) => cambiar('logo', url)} subir={subirImagen && ((b, o) => subirImagen(b, { ...o, carpeta: 'logos' }))} forma="circulo" />
       </GrupoCampos>
 
       <GrupoCampos titulo="Atención">
