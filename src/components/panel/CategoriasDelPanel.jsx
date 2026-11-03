@@ -33,6 +33,13 @@ export default function CategoriasDelPanel() {
         await sinError(deleteCategory(id));
         await refrescar();
       }}
+      // Ordenar: se numeran 1, 2, 3… y solo se escriben las que cambian de número.
+      onGuardarOrden={async (ids) => {
+        const antes = new Map((categorias.datos || []).map((c) => [c.id, c.order]));
+        const cambian = ids.map((id, i) => [id, i + 1]).filter(([id, n]) => antes.get(id) !== n);
+        await Promise.all(cambian.map(([id, order]) => sinError(updateCategory(id, { order }))));
+        await refrescar();
+      }}
       subirImagen={subirImagen}
     />
   );

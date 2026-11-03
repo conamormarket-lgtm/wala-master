@@ -122,7 +122,7 @@ export { EditorZonas, ListaZonas, DisenoPrenda, ColoresPrenda, PlantillasPrenda,
 export { EncuadreFoto, FotoEncuadrada, GaleriaFotos, CampoTallas, ElegirVarios, ElegirMarca } from './piezas/admin/Producto';
 export {
   MENU_ADMIN, menuAdminPara, accesosAdminPara, puedeVer, esRutaActiva, opcionActiva,
-  categoriaDesdeFirestore, categoriaAFirestore, marcaAdminDesdeFirestore, normalizarBusqueda, mismoNombre,
+  categoriaDesdeFirestore, categoriaAFirestore, ordenConParte, marcaAdminDesdeFirestore, normalizarBusqueda, mismoNombre,
   coleccionDesdeFirestore, coleccionAFirestore, ATRIBUTOS, usosDeAtributo, atributoDesdeFirestore, atributoAFirestore,
   zonaDesdeFirestore, zonaAFirestore, clipartDesdeFirestore, clipartAFirestore,
   slugDeMarca, topeMonedasDe, TOPE_MONEDAS_POR_DEFECTO, marcaDesdeFirestore, marcaAFirestore, productoAdminDesde,

@@ -1,0 +1,20 @@
+/* Categorías: la fila de la hoja «Ordenar» (dentro de ListaOrdenable). */
+.fila {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.nombre {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nota {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+}

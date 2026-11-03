@@ -936,7 +936,21 @@ function PanelDePrueba() {
       />
     );
   } else if (ruta === '/admin/categorias') {
-    pagina = <PaginaCategorias {...comunes} categorias={vacio ? [] : categorias} marcas={MARCAS_CORTAS} onGuardar={guardarCategoria} onEliminar={eliminarCategoria} subirImagen={subir} />;
+    pagina = (
+      <PaginaCategorias
+        {...comunes}
+        categorias={vacio ? [] : categorias}
+        marcas={MARCAS_CORTAS}
+        onGuardar={guardarCategoria}
+        onEliminar={eliminarCategoria}
+        onGuardarOrden={async (ids) => {
+          await espera(600);
+          fallar();
+          setCategorias((l) => l.map((c) => ({ ...c, orden: ids.indexOf(c.id) + 1 })));
+        }}
+        subirImagen={subir}
+      />
+    );
   } else if (ruta === '/admin/colecciones') {
     pagina = <PaginaColecciones {...comunes} colecciones={vacio ? [] : colecciones} onGuardar={guardarColeccion} onEliminar={eliminarColeccion} subirImagen={subir} />;
   } else if (ruta === '/admin/atributos-catalogo') {

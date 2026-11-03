@@ -187,6 +187,19 @@ export function categoriaAFirestore(c = {}) {
   };
 }
 
+/**
+ * Reordenar una parte de la lista sin mover lo demás (las categorías de una
+ * marca entre todas): los lugares que ocupan los de `parte` en `todos` (ids,
+ * ya en su orden) se llenan con `parte` en su orden nuevo. Devuelve todos los
+ * ids en el orden final (si `parte` no está entera en `todos`, sin cambios).
+ */
+export function ordenConParte(todos = [], parte = []) {
+  const enParte = new Set(parte);
+  const cola = todos.filter((id) => enParte.has(id)).length === parte.length ? [...parte] : null;
+  if (!cola) return [...todos];
+  return todos.map((id) => (enParte.has(id) ? cola.shift() : id));
+}
+
 /** Una marca de `tienda_brands` → lo justo para elegirla en el admin. */
 export function marcaAdminDesdeFirestore(doc = {}) {
   return { id: doc.id, nombre: doc.name || 'Sin nombre', logo: doc.logoUrl || '' };

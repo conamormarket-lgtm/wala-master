@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 const fuente = await readFile(new URL('./adaptadoresAdmin.js', import.meta.url), 'utf8');
 const {
-  menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, categoriaAFirestore, normalizarBusqueda,
+  menuAdminPara, accesosAdminPara, puedeVer, opcionActiva, categoriaDesdeFirestore, categoriaAFirestore, ordenConParte, normalizarBusqueda,
 } = await import(`data:text/javascript;base64,${Buffer.from(fuente).toString('base64')}`);
 
 const rutas = (menu) => menu.flatMap((g) => g.items.map((it) => it.to));
@@ -62,6 +62,14 @@ test('categorías: de Firestore y de vuelta, con los mismos campos', () => {
     name: 'Hoodies', order: 3, imageUrl: 'u', brandIds: ['a', 'b'],
   });
   assert.deepEqual(categoriaDesdeFirestore({ id: 'y' }), { id: 'y', nombre: '', imagen: '', orden: 0, marcas: [] });
+});
+
+test('ordenar una parte sin mover lo demás', () => {
+  // b y d son de la marca: se cambian entre ellas y a, c, e se quedan donde estaban.
+  assert.deepEqual(ordenConParte(['a', 'b', 'c', 'd', 'e'], ['d', 'b']), ['a', 'd', 'c', 'b', 'e']);
+  assert.deepEqual(ordenConParte(['a', 'b', 'c'], ['c', 'a', 'b']), ['c', 'a', 'b']);
+  // Una parte que no está entera en la lista no cambia nada.
+  assert.deepEqual(ordenConParte(['a', 'b'], ['b', 'z']), ['a', 'b']);
 });
 
 test('buscar sin tildes', () => {
