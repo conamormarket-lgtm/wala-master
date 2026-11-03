@@ -1,4 +1,4 @@
-# Panel administrativo (`/admin`): el kit del admin (D0-D8 hechos en el kit; D0 a D7 unidos al admin)
+# Panel administrativo (`/admin`): el kit del admin (D0-D8 hechos en el kit y unidos al admin)
 
 Lo mismo que se hizo con la tienda, ahora con el panel: **primero todo en el
 kit**, con datos de ejemplo en `/componentes.html`; **cuando un apartado está
@@ -234,7 +234,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | hecho (2026-11-02) | hecho (2026-11-03) |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | hecho (2026-11-02) | hecho (2026-11-03) |
 | D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | hecho (2026-11-02) | hecho (2026-11-03) |
-| D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | hecho (2026-11-02) | · |
+| D8 | Ajustes | `configuracion` (admins, permisos, bloqueos), `whatsapp`, `backups` | Ajustes · Lista | hecho (2026-11-02) | hecho (2026-11-03) |
 
 El orden: D0 con las piezas base (tabla, hoja de edición, campo de imagen,
 estado), probadas en **Categorías**, que es un CRUD simple con foto y toca
@@ -2425,11 +2425,59 @@ botón flotante).
   `traduccionesPendientes`, `onPublicarTraducciones` =
   `guardarTraduccionesEnNube`.
 
+### D8 unido al admin (2026-11-03)
+
+Todo el apartado a la vez con `adminAjustesViejo`
+(`useLoViejo('adminAjustes')`). Las páginas viejas pasaron a `…Viejo.jsx`
+(`AdminConfiguracion`, `AdminWhatsApp`, `AdminBackups`); el `.jsx` de
+siempre elige. Con D8, **todo el admin está unido**. Los conectores:
+
+| Pantalla | Conector (`components/panel/`) |
+|---|---|
+| Configuración (equipo, bloqueos, optimizar) | `ConfiguracionDelPanel.jsx` |
+| WhatsApp, Historial | `AjustesDelPanel.jsx` (`WhatsAppDelPanel`, `HistorialDelPanel`) |
+
+- **Cambios del kit al unir**: `BarraGuardar` queda sobre la barra inferior
+  del celular (`--admin-abajo`, como las demás barras fijas del admin; antes
+  quedaba debajo y "Guardar cambios" no se podía tocar en el celular: lo
+  arrastraban todas las páginas con esa barra desde D5). La pregunta de
+  Restaurar avisa que también vuelven el menú, la cuenta y el buscador.
+- **Restaurar** hace lo mismo que el editor: mira si la página está
+  bloqueada, escribe `storeConfig/homePage` y la página
+  (`saveStorefrontConfig`, solo si la copia trae `sections`), anota su copia
+  "Restaurada desde el historial (Página: …)" e invalida
+  `['storefront-config', página]` y `['store-config-custom']`.
+- WhatsApp invalida también lo que lee la tienda: el botón flotante, el
+  checkout (`['whatsapp-config-checkout']`) y Mi cuenta
+  (`['whatsapp_number_cuenta']`).
+- **Cambios que quedaron** (de los conectores): con Super Admin se guarda
+  solo `['superadmin']` y los demás permisos van en orden (los desconocidos
+  se descartan); el correo y el nombre se guardan recortados; si falla
+  bloquear una página, se avisa y se vuelve a leer (antes la pantalla
+  quedaba con lo no guardado); si no se leen los números de WhatsApp, se
+  avisa (antes salían los de por defecto y se podían guardar encima); el
+  inventario del Historial se lee al abrir su pestaña.
+- **Lo que ya pasaba y sigue**: `getAdminRoles`, `getLockedPages` y
+  `getLandingPages` dan `[]` si fallan; si falla la lectura de bloqueos,
+  bloquear una página guardaría solo esa (igual que antes).
+
+**Qué se probó** (localhost con los emuladores, 375 px): WhatsApp, la tienda
+951222333 → "WhatsApp guardado", en `messages` la tienda y el general con
+ese número, Crear vacío y Mi cuenta con el de la tienda. Configuración:
+agregar `Prueba@wala.test` con Clientes → `adminRoles/prueba@wala.test` con
+`manage_clients` y "14 secciones"; eliminarlo → la pregunta → 3 personas;
+bloquear La tienda → `storeConfig/lockedPages` con `tienda`, y abrirla otra
+vez. Historial: dos copias de la tienda sembradas (la más nueva "Puesta");
+restaurar la de ayer → la pregunta con el aviso → una copia nueva puesta y
+`pages/tienda` con las secciones de ayer. Con `adminAjustesViejo` vuelve el
+Historial de antes. No se probaron: convertir imágenes, publicar
+traducciones, el inventario con datos.
+
 ## Reemplazos: qué sale y qué entra
 
 La misma tabla que las fichas de la tienda (CUENTA.md, "Reemplazos"): qué
 hay hoy en el admin, qué pieza del kit entra y el conector que la une
-(`src/components/panel/`, todavía no existe). Al unir un apartado, la
+(`src/components/panel/`). Al unir un apartado, la
 página vieja se renombra `…Viejo.jsx` (vuelve con su interruptor), la fila
 se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 ("Panel administrativo"). Nada se borra al unir.
@@ -2532,13 +2580,13 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 | D6d · Popups ✓ | `pages/admin/AdminPopups.jsx` + `.module.css` (`window.confirm`) | `PaginaPopupsAdmin` (`PaginaListaAdmin`, `VentanaCampana`, `CampoLista`, `CampoImagen`, `CampoFecha`) | `PopupsDelPanel.jsx` |
 | D6d · Páginas ✓ | `pages/Tienda/admin/AdminLandingPages.jsx` + `pages/admin/AdminLandingPages.module.css` (`common/Button`) | `PaginaLandingsAdmin` (`PaginaListaAdmin` con `nuevoCon`) | `PaginasDelPanel.jsx` |
 | D6d · Temas ✓ | `pages/Tienda/admin/AdminThemes.jsx` + `.module.css` (`alert`, `window.confirm`, su modal) | `PaginaTemasAdmin` (`PaginaListaAdmin`) | `TemasDelPanel.jsx` |
-| D7a · Kapi | `pages/admin/AdminMascota.jsx` (usa `AdminTiendaTextos.module.css`, estilos en línea, `alert`, `window.confirm`) | `PaginaKapiAdmin` (`CampoImagen`) | `KapiDelPanel.jsx` |
-| D7a · La Palabra del día | `pages/admin/AdminWordlePage.jsx` + `.module.css` (`alert`, `window.confirm`) | `PaginaPalabraAdmin` (`PaginaListaAdmin`, `CampoFecha`) | `PalabraDelPanel.jsx` |
-| D7a · Las Bolitas | `pages/admin/AdminBolitasPage.jsx` + `.module.css` (`alert`, `window.confirm`) | `PaginaBolitasAdmin` (`PaginaListaAdmin`, `ListaOrdenable`, `GraficoTendencia`, `ListaBarras`, `BarraGuardar`) | `BolitasDelPanel.jsx` |
-| D7b · La Ruleta | `pages/admin/AdminRuletaPage.jsx` + `.module.css` (`BuscadorProducto`, `useGlobalToast`, `window.confirm`) | `PaginaRuletaAdmin` (`PaginaListaAdmin`, `SelectorProductos`, `CampoFecha`, `CampoColor`, `CampoImagen`, `BarraGuardar`, `RuedaRuleta`) | `RuletaDelPanel.jsx` |
-| D8a · Configuración | `pages/admin/AdminConfiguracion.jsx` + `.module.css` (`common/Button`, estilos en línea, `alert`, `window.confirm`) | `PaginaConfiguracionAdmin` (`PaginaListaAdmin`, `Casilla`, `TablaAdmin`, `ElegirUno`, `Cifra`, `BarraProgreso`, `Confirmar`) | `ConfiguracionDelPanel.jsx` |
-| D8b · WhatsApp | `pages/admin/AdminWhatsApp.jsx` (usa `AdminTiendaTextos.module.css`, estilos en línea) | `PaginaWhatsAppAdmin` (`GrupoCampos`, `BarraGuardar`) | `WhatsAppDelPanel.jsx` |
-| D8b · Historial | `pages/admin/AdminBackups.jsx` + `.module.css` (`alert`, `window.confirm`) | `PaginaHistorialAdmin` (`PaginaListaAdmin`, `Confirmar`) | `HistorialDelPanel.jsx` |
+| D7a · Kapi ✓ | `pages/admin/AdminMascota.jsx` (usa `AdminTiendaTextos.module.css`, estilos en línea, `alert`, `window.confirm`) | `PaginaKapiAdmin` (`CampoImagen`) | `JuegosDelPanel.jsx` (`KapiDelPanel`) |
+| D7a · La Palabra del día ✓ | `pages/admin/AdminWordlePage.jsx` + `.module.css` (`alert`, `window.confirm`) | `PaginaPalabraAdmin` (`PaginaListaAdmin`, `CampoFecha`) | `JuegosDelPanel.jsx` (`PalabraDelPanel`) |
+| D7a · Las Bolitas ✓ | `pages/admin/AdminBolitasPage.jsx` + `.module.css` (`alert`, `window.confirm`) | `PaginaBolitasAdmin` (`PaginaListaAdmin`, `ListaOrdenable`, `GraficoTendencia`, `ListaBarras`, `BarraGuardar`) | `JuegosDelPanel.jsx` (`BolitasDelPanel`) |
+| D7b · La Ruleta ✓ | `pages/admin/AdminRuletaPage.jsx` + `.module.css` (`BuscadorProducto`, `useGlobalToast`, `window.confirm`) | `PaginaRuletaAdmin` (`PaginaListaAdmin`, `SelectorProductos`, `CampoFecha`, `CampoColor`, `CampoImagen`, `BarraGuardar`, `RuedaRuleta`) | `RuletaDelPanel.jsx` |
+| D8a · Configuración ✓ | `pages/admin/AdminConfiguracion.jsx` + `.module.css` (`common/Button`, estilos en línea, `alert`, `window.confirm`) | `PaginaConfiguracionAdmin` (`PaginaListaAdmin`, `Casilla`, `TablaAdmin`, `ElegirUno`, `Cifra`, `BarraProgreso`, `Confirmar`) | `ConfiguracionDelPanel.jsx` |
+| D8b · WhatsApp ✓ | `pages/admin/AdminWhatsApp.jsx` (usa `AdminTiendaTextos.module.css`, estilos en línea) | `PaginaWhatsAppAdmin` (`GrupoCampos`, `BarraGuardar`) | `AjustesDelPanel.jsx` (`WhatsAppDelPanel`) |
+| D8b · Historial ✓ | `pages/admin/AdminBackups.jsx` + `.module.css` (`alert`, `window.confirm`) | `PaginaHistorialAdmin` (`PaginaListaAdmin`, `Confirmar`) | `AjustesDelPanel.jsx` (`HistorialDelPanel`) |
 
 ## Cómo se une un apartado (la misma lógica que clientes)
 
@@ -2618,6 +2666,7 @@ bloquea de verdad); en Inventario, un personalizable sin límite de stock
 
 | Fecha | Qué | Dónde |
 |---|---|---|
+| 2026-11-03 | **D8 unido al admin, y con él todo el admin**: Configuración, WhatsApp e Historial (`ConfiguracionDelPanel`, `AjustesDelPanel`, interruptor `adminAjustesViejo`); `BarraGuardar` sobre la barra inferior del celular; Restaurar pone la copia en la tienda de verdad | `components/panel/`, `pages/admin/`, `kit/piezas/admin/Formularios.module.css`, `kit/paginas/admin/Ajustes.jsx` |
 | 2026-11-03 | **D7 unido al admin**: Kapi, La Palabra del día, Las Bolitas y la Ruleta (`JuegosDelPanel`, `RuletaDelPanel`, interruptor `adminJuegosViejo`); en las Bolitas, Mundos y Premios esperan a sus datos | `components/panel/`, `pages/admin/`, `kit/paginas/admin/Juegos.jsx` |
 | 2026-11-03 | **D6 unido al admin**: sorteos, sorteos por suscripción, enlaces, popups, landing pages y temas (`SorteosDelPanel`, `EnlacesDelPanel`, `CampanasDelPanel`, interruptor `adminCampanasViejo`); los `CampoImagen` de Sorteos, Suscripciones y Enlaces dicen su carpeta | `components/panel/`, `pages/admin/`, `pages/Tienda/admin/`, `kit/paginas/admin/` |
 | 2026-11-03 | **D5 unido al admin**: referidos, misiones, retos, recompensas, fechas importantes, notificaciones y la encuesta (`FidelidadDelPanel`, `FechasDelPanel`, `AvisosDelPanel`, interruptor `adminClientesViejo`); Opiniones pasa a las respuestas del kit. Corregido: `updateDocument` ya borraba los campos vaciados de primer nivel (desde `e402bf3c`) | `components/panel/`, `pages/admin/` |

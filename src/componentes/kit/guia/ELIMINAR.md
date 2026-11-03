@@ -386,7 +386,9 @@ Se quedan: `useBorradoresCrear`, `useComunidad`, `useVersionesReemplazadas`,
 | `AdminCustomizationViewsEditor` y la tarjeta "Producto personalizable" de la ficha de productos | `customizable` / `customizationViews` | Prendas de Crear (`/admin/prendas-crear`) | `AdminProductoFormV2.jsx` (solo con `personalizableViejo`) | al retirar `personalizableViejo` |
 | `services/personalizacionVieja.js` y el aviso "Quitar la personalización vieja" de Productos | pasar los datos viejos a normales | — | `AdminProductos.jsx` | cuando en producción ya no quede ninguno (el aviso desaparece solo) |
 
-## Panel administrativo (D0 a D7 unidos el 2026-11-03; lo demás todavía no)
+## Panel administrativo (D0 a D8 unidos el 2026-11-03: todo el admin)
+
+D8 (2026-11-03): `AdminConfiguracion`, `AdminWhatsApp` y `AdminBackups` ya se llaman `…Viejo.jsx` y solo los carga su `.jsx` sin «Viejo» con `adminAjustesViejo`. Donde una fila de D8 dice `App.jsx`, léase ese `.jsx`; `AdminTiendaTextos.module.css` lo usan `AdminWhatsAppViejo` y `AdminMascotaViejo`.
 
 D7 (2026-11-03): `AdminMascota`, `AdminWordlePage`, `AdminBolitasPage` y `AdminRuletaPage` ya se llaman `…Viejo.jsx` y solo los carga su `.jsx` sin «Viejo» con `adminJuegosViejo`. Donde una fila de D7 dice `App.jsx`, léase ese `.jsx`; `AdminRuletaPageViejo` es quien todavía usa `kapi-happy.webp` y `BuscadorProducto`.
 

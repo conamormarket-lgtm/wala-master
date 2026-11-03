@@ -237,7 +237,7 @@ export function PaginaHistorialAdmin({
           <Confirmar
             abierta={Boolean(restaurar)}
             titulo={restaurar ? `¿Restaurar esta copia de «${nombreDePaginaGuardada(restaurar.pagina)}»?` : ''}
-            texto={restaurar ? `Se pone la copia del ${fechaHora(restaurar.cuando)} en lugar de la que está ahora. La de ahora queda en el historial: puedes volver a ella.` : ''}
+            texto={restaurar ? `Se pone la copia del ${fechaHora(restaurar.cuando)} en lugar de la que está ahora. La de ahora queda en el historial: puedes volver a ella. También vuelven el menú, la ventana de la cuenta y el buscador de esa copia (son de toda la tienda).` : ''}
             confirmar="Restaurar"
             onConfirmar={confirmarRestaurar}
             onCancelar={() => setRestaurar(null)}

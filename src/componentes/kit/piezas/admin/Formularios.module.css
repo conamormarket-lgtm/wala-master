@@ -452,7 +452,8 @@
 /* La barra de cambios sin guardar (BarraGuardar) */
 .barraGuardar {
   position: sticky;
-  bottom: 0.75rem;
+  /* Sobre la barra inferior del celular, como las demás barras del admin. */
+  bottom: calc(var(--admin-abajo, 0px) + 0.75rem);
   z-index: 3;
   display: flex;
   flex-wrap: wrap;
