@@ -73,7 +73,9 @@ export function ProductoDemo({ ruta = ABRIR_PRODUCTO[0][1], sesion, estados = []
   const catalogo = { marcas, categorias: TIENDA.categorias };
   // "Combo: prendas cargando": las prendas todavía no llegan (como en la tienda al entrar).
   const subproductos = estados.includes('piezasCargando') ? {} : Object.fromEntries((p.comboItems || []).map((it) => [it.productId, TODOS.get(it.productId)]).filter(([, x]) => x));
-  const ficha = fichaProductoDesde(p, { catalogo, subproductos });
+  const fichaBase = fichaProductoDesde(p, { catalogo, subproductos });
+  // Como FichaDeProducto: el botón Personalizar sale con "Se personaliza en" (o el Yoryo de antes).
+  const ficha = p.customizable ? { ...fichaBase, producto: { ...fichaBase.producto, personalizable: true } } : fichaBase;
   const [resenas, setResenas] = useState(() => opinionesDe(p));
   const opiniones = useMemo(() => (estados.includes('opinionesCargando')
     ? { ...opinionesDesde([]), cargando: true }

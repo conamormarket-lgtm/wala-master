@@ -191,6 +191,24 @@
   flex: 1;
 }
 
+/* "Personalizar": al lado de agregar si caben los dos (desde 480 px);
+   en un celular angosto, debajo y a lo ancho, fuera de la barra pegada.
+   La clase doble le gana al display de .boton (Boton.module.css), cargue
+   antes o después. */
+.personalizarSuelto.personalizarSuelto {
+  display: none;
+}
+
+@media (max-width: 479px) {
+  .personalizarFijo.personalizarFijo {
+    display: none;
+  }
+
+  .personalizarSuelto.personalizarSuelto {
+    display: inline-flex;
+  }
+}
+
 .opciones {
   min-width: 0;
   scroll-margin: 6rem 0;
