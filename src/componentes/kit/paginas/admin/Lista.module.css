@@ -187,7 +187,9 @@
 
 /* Una fila de la lista para arrastrar: la foto y el nombre (Colecciones). */
 .ordenFila {
-  display: flex;
+  display: grid;
+  /* La foto ancha de FotoCelda (36 px de alto × 2,2) y el nombre; la cabecera usa la misma rejilla. */
+  grid-template-columns: 80px minmax(0, 1fr);
   align-items: center;
   gap: 0.75rem;
   width: 100%;
@@ -195,7 +197,6 @@
 }
 
 .ordenNombre {
-  flex: 1 1 8rem;
   overflow: hidden;
   font-weight: 800;
   text-overflow: ellipsis;

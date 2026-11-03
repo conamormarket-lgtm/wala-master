@@ -1,6 +1,9 @@
-/* Categorías: una fila de la lista para arrastrar (la foto, el nombre y sus marcas). */
+/* Categorías: una fila de la lista para arrastrar, en columnas como la tabla
+   (la foto, el nombre y sus marcas). La cabecera (ordenable.cabecera) usa la
+   misma rejilla. */
 .fila {
-  display: flex;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1.2fr) minmax(0, 1fr);
   align-items: center;
   gap: 0.75rem;
   width: 100%;
@@ -8,7 +11,6 @@
 }
 
 .nombre {
-  flex: 1 1 8rem;
   overflow: hidden;
   font-weight: 800;
   text-overflow: ellipsis;
@@ -16,20 +18,22 @@
 }
 
 .marcas {
-  flex: 0 1 auto;
   min-width: 0;
   font-size: 0.88rem;
 }
 
-/* En el celular las marcas bajan debajo del nombre. */
-@container pagina-admin (max-width: 560px) {
+/* En el celular (sin cabecera) las marcas bajan debajo del nombre. */
+@container pagina-admin (max-width: 720px) {
   .fila {
-    flex-wrap: wrap;
-    row-gap: 0.25rem;
+    grid-template-columns: 40px minmax(0, 1fr);
+    row-gap: 0.2rem;
+  }
+
+  .fila > :first-child {
+    grid-row: 1 / span 2;
   }
 
   .marcas {
-    flex-basis: 100%;
-    padding-left: calc(40px + 0.75rem);
+    grid-column: 2;
   }
 }

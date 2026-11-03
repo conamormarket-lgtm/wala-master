@@ -74,6 +74,7 @@ export function PaginaCategorias({ categorias = [], marcas = [], cargando = fals
       ordenable={onGuardarOrden ? {
         etiqueta: 'Orden de las categorías',
         onGuardar: onGuardarOrden,
+        cabecera: <span className={s.fila}><span>Foto</span><span>Nombre</span><span>Marcas</span></span>,
         fila: (c) => (
           <span className={s.fila}>
             <FotoCelda src={c.imagen} forma="circulo" tamano={40} />

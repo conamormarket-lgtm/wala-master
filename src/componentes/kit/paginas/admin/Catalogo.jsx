@@ -59,6 +59,7 @@ export function PaginaColecciones({ colecciones = [], cargando, error, onReinten
       ordenable={onGuardarOrden ? {
         etiqueta: 'Orden de las colecciones',
         onGuardar: onGuardarOrden,
+        cabecera: <span className={s.ordenFila}><span>Foto</span><span>Nombre</span></span>,
         fila: (c) => (
           <span className={s.ordenFila}>
             <FotoCelda src={c.imagen} forma="ancha" tamano={36} />
