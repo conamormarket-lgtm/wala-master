@@ -94,6 +94,18 @@ export function AtributosDelPanel() {
         await sinError(SERVICIOS_ATRIBUTO[tipo].eliminar(id));
         await refrescar(tipo);
       }}
+      // Los que no están en ningún producto, de a uno (con el mismo eliminar) y refrescando una sola vez al final.
+      onQuitarSinUsar={async (tipo, ids) => {
+        const nombreDe = new Map((atributos[tipo] || []).map((r) => [r.id, r.nombre]));
+        let quitados = 0;
+        const fallaron = [];
+        for (const id of ids) {
+          const { error: fallo } = await SERVICIOS_ATRIBUTO[tipo].eliminar(id);
+          if (fallo) fallaron.push(nombreDe.get(id) || id); else quitados += 1;
+        }
+        await refrescar(tipo);
+        return { quitados, fallaron };
+      }}
     />
   );
 }

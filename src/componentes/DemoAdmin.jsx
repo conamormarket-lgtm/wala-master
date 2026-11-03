@@ -982,6 +982,12 @@ function PanelDePrueba() {
           fallar();
           setAtributos((a) => ({ ...a, [tipo]: a[tipo].filter((x) => x.id !== id) }));
         }}
+        onQuitarSinUsar={async (tipo, ids) => {
+          await espera(900);
+          fallar();
+          setAtributos((a) => ({ ...a, [tipo]: a[tipo].filter((x) => !ids.includes(x.id)) }));
+          return { quitados: ids.length, fallaron: [] };
+        }}
       />
     );
   } else if (ruta === '/admin/envios') {

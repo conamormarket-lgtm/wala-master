@@ -1,5 +1,8 @@
 import React, { useMemo, useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import { Pestanas } from '../../Navegacion';
+import Boton from '../../Boton';
+import { Aviso, Confirmar, useToast } from '../../Feedback';
 import { Campo, Interruptor } from '../../Formulario';
 import { InsigniaEstado } from '../../piezas/admin/Datos';
 import { GrupoCampos, CampoImagen, CampoDinero } from '../../piezas/admin/Formularios';
@@ -114,19 +117,61 @@ const PESTANAS_ATRIBUTOS = [{ id: 'tipos', texto: 'Tipos' }, { id: 'etiquetas', 
  *    [{ id, nombre, marcas, usos }] (atributoDesdeFirestore)
  *  - marcas · cargando (de la lista o de los usos) · error · onReintentar
  *  - onGuardar(tipo, datos, id?) · onEliminar(tipo, id)
+ *  - onQuitarSinUsar(tipo, ids) → promesa con { quitados, fallaron }: los que
+ *    no están en ningún producto de una vez (pregunta antes, con sus nombres).
+ *    Solo con la lista y los usos ya leídos: mientras cargan, todo parece "sin usar"
  *  - tipoInicial ('tipos')
  */
-export function PaginaAtributos({ atributos = {}, marcas = [], cargando, error, onReintentar, onGuardar, onEliminar, tipoInicial = 'tipos' }) {
+export function PaginaAtributos({ atributos = {}, marcas = [], cargando, error, onReintentar, onGuardar, onEliminar, onQuitarSinUsar, tipoInicial = 'tipos' }) {
+  const toast = useToast();
   const [tipo, setTipo] = useState(tipoInicial);
+  const [preguntar, setPreguntar] = useState(false);
   const a = ATRIBUTOS[tipo];
   const registros = atributos[tipo] || [];
+  const sinUsar = !cargando && !error ? registros.filter((r) => !r.usos) : [];
+  const nombres = sinUsar.map((r) => r.nombre).sort((x, y) => x.localeCompare(y, 'es'));
+  const quitar = async () => {
+    setPreguntar(false);
+    try {
+      const { quitados = 0, fallaron = [] } = (await onQuitarSinUsar(tipo, sinUsar.map((r) => r.id))) || {};
+      // Etiquetas en femenino (como la lista).
+      const hecho = (n) => `${tipo === 'etiquetas' ? 'quitada' : 'quitado'}${n === 1 ? '' : 's'}`;
+      toast(fallaron.length
+        ? { tipo: 'aviso', titulo: `${quitados} ${hecho(quitados)}; ${fallaron.length} no se pudieron`, texto: fallaron.join(', '), duracion: 7000 }
+        : { tipo: 'exito', titulo: `${quitados} ${quitados === 1 ? a.singular : a.plural} sin usar ${hecho(quitados)}` });
+    } catch (err) {
+      toast({ tipo: 'error', titulo: 'No se pudieron quitar', texto: err?.message || 'Vuelve a intentar.' });
+    }
+  };
   const opcionesMarca = useMemo(() => [...marcas.map((m) => ({ valor: m.id, texto: m.nombre })), { valor: '__todas', texto: 'De todas las marcas' }], [marcas]);
   const pestanas = PESTANAS_ATRIBUTOS.map((p) => ({ ...p, texto: `${p.texto}${atributos[p.id] ? ` · ${atributos[p.id].length}` : ''}` }));
   return (
     <PaginaListaAdmin
       key={tipo}
       cabeza={{ icono: 'atributos', titulo: 'Atributos del catálogo', subtitulo: 'Las listas que se eligen en cada producto y salen como filtros en la tienda.' }}
-      antes={<div className={s.desliza}><Pestanas opciones={pestanas} valor={tipo} onChange={setTipo} etiqueta="Qué lista" /></div>}
+      antes={(
+        <>
+          <div className={s.desliza}><Pestanas opciones={pestanas} valor={tipo} onChange={setTipo} etiqueta="Qué lista" /></div>
+          {onQuitarSinUsar && sinUsar.length > 0 && (
+            <Aviso
+              tipo="info"
+              titulo={sinUsar.length === 1 ? `1 ${a.singular} no está en ningún producto` : `${sinUsar.length} ${a.plural} no están en ningún producto`}
+              accion={<Boton tamano="sm" variante="contorno" icono={<Trash2 aria-hidden="true" />} onClick={() => setPreguntar(true)}>Quitar los sin usar</Boton>}
+            >
+              No salen en ningún filtro de la tienda. {tipo === 'etiquetas' ? 'Quitarlas' : 'Quitarlos'} deja la lista más corta para elegir en cada producto.
+            </Aviso>
+          )}
+          <Confirmar
+            abierta={preguntar}
+            titulo={`¿Quitar ${sinUsar.length} ${sinUsar.length === 1 ? a.singular : a.plural} sin usar?`}
+            texto={`${nombres.slice(0, 15).join(', ')}${nombres.length > 15 ? ` y ${nombres.length - 15} más` : ''}. No están en ningún producto (ni oculto ni borrado). No se puede deshacer.`}
+            confirmar="Quitar"
+            peligro
+            onConfirmar={quitar}
+            onCancelar={() => setPreguntar(false)}
+          />
+        </>
+      )}
       registros={registros}
       cargando={cargando}
       error={error}
