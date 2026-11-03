@@ -201,3 +201,21 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Los títulos de las columnas sobre la lista para arrastrar: con el mismo
+   corrimiento que el asa y el número de cada fila (y las flechas a la derecha),
+   así quedan encima de su columna, como en la tabla. */
+.ordenCabecera {
+  padding: 0 calc(0.4rem + 1px + 80px + 0.5rem) 0.4rem calc(0.4rem + 1px + 36px + 0.5rem + 1.6rem + 0.5rem);
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@container pagina-admin (max-width: 720px) {
+  .ordenCabecera {
+    display: none;
+  }
+}

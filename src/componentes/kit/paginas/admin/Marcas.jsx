@@ -158,6 +158,15 @@ export function PaginaMarcas({
         ordenable={onGuardarOrden ? {
           etiqueta: 'Orden de las marcas',
           onGuardar: onGuardarOrden,
+          // Las mismas columnas que la tabla (logo, marca, WhatsApp y monedas).
+          cabecera: (
+            <span className={s.fila}>
+              <span>Logo</span>
+              <span>Marca</span>
+              <span className={s.filaWhatsapp}>WhatsApp del asesor</span>
+              <span className={s.filaMonedas}>Monedas</span>
+            </span>
+          ),
           fila: (m) => (
             <span className={s.fila}>
               <FotoCelda src={m.logo} forma="circulo" tamano={40} />
@@ -165,6 +174,7 @@ export function PaginaMarcas({
                 <strong>{m.nombre}</strong>
                 <span className={l.sub}>wala.pe/{m.slug || slugDeMarca(m.nombre)}</span>
               </span>
+              <span className={s.filaWhatsapp}>{m.whatsapp ? <span className={l.numero}>{m.whatsapp}</span> : <span className={l.sub}>El general</span>}</span>
               <span className={s.filaMonedas}><TopeMonedas marca={m} /></span>
             </span>
           ),

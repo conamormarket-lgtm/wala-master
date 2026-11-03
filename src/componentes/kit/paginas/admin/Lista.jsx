@@ -46,10 +46,12 @@ const PASO = 50;
  *  - nuevoCon: datos para abrir la hoja de uno nuevo ya llena (al cambiar,
  *    se abre; p. ej. una dirección que llega por la URL)
  *  - ordenable: { fila(r) → el contenido de la fila, onGuardar(ids) → promesa,
- *    etiqueta } — en vez de la tabla, la lista para arrastrar (como
+ *    etiqueta, cabecera } — en vez de la tabla, la lista para arrastrar (como
  *    Destacados), en el orden de `ordenInicial`; tocar una fila la edita. Con
  *    un filtro o una búsqueda se ordenan solo esas y las demás no se mueven;
- *    onGuardar recibe todos los ids en el orden final
+ *    onGuardar recibe todos los ids en el orden final. `cabecera`: los títulos
+ *    de las columnas de `fila` (como los de la tabla), alineados con ellas;
+ *    en el celular no se ve
  */
 export function PaginaListaAdmin({
   cabeza = {}, registros = [], cargando = false, error, onReintentar, nombreDe = (r) => r.nombre,
@@ -197,6 +199,7 @@ export function PaginaListaAdmin({
 
       {ordenable && !cargando && !error && filas.length > 0 ? (
         <>
+          {ordenable.cabecera && <div className={s.ordenCabecera} aria-hidden="true">{ordenable.cabecera}</div>}
           <ListaOrdenable
             items={enLista}
             nombreDe={nombreDe}

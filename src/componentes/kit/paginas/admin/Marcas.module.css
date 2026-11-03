@@ -57,9 +57,12 @@
   margin-bottom: 1rem;
 }
 
-/* Una marca en la lista para arrastrar: el logo, su nombre y dirección, y las monedas. */
+/* Una marca en la lista para arrastrar, en columnas como la tabla: el logo,
+   su nombre y dirección, el WhatsApp del asesor y las monedas. La cabecera
+   (PaginaListaAdmin `ordenable.cabecera`) usa la misma rejilla. */
 .fila {
-  display: flex;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1.4fr) minmax(0, 1fr) 140px;
   align-items: center;
   gap: 0.75rem;
   width: 100%;
@@ -68,7 +71,6 @@
 
 .filaTextos {
   display: grid;
-  flex: 1 1 10rem;
   min-width: 0;
   line-height: 1.25;
 }
@@ -80,20 +82,36 @@
   white-space: nowrap;
 }
 
-.filaMonedas {
-  flex: none;
-  font-size: 0.88rem;
+.filaWhatsapp {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* En el celular, las monedas bajan debajo del nombre. */
-@container pagina-admin (max-width: 560px) {
+.filaMonedas {
+  font-size: 0.88rem;
+  text-align: right;
+}
+
+/* En el celular: el logo a la izquierda y, en renglones, el nombre, el
+   WhatsApp y las monedas (en una columna de 4 no entraban: se cortaban). */
+@container pagina-admin (max-width: 720px) {
   .fila {
-    flex-wrap: wrap;
-    row-gap: 0.2rem;
+    grid-template-columns: 40px minmax(0, 1fr);
+    row-gap: 0.15rem;
   }
 
+  .fila > :first-child {
+    grid-row: 1 / span 3;
+    align-self: start;
+  }
+
+  .filaWhatsapp,
   .filaMonedas {
-    flex-basis: 100%;
-    padding-left: calc(40px + 0.75rem);
+    grid-column: 2;
+    font-size: 0.82rem;
+    text-align: left;
   }
 }
