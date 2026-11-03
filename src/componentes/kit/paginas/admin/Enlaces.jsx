@@ -11,7 +11,7 @@ import { Cifra, FilaCifras, BloqueMetrica, ColumnasMetricas, ListaBarras } from 
 import { FotoCelda } from './celdas';
 import { TEMAS, GRADIENTES, PATRONES, construirFondoStyle, estiloBotonStyle } from '../../../../services/linkThemes';
 import {
-  slugDeSorteo, TIPOS_RED, botonEnlaceNuevo, redNueva, erroresDeEnlaces, clicsDeEnlaces, normalizarBusqueda,
+  slugDeEnlace, TIPOS_RED, botonEnlaceNuevo, redNueva, erroresDeEnlaces, clicsDeEnlaces, normalizarBusqueda,
 } from '../../adaptadoresAdmin';
 import l from './Lista.module.css';
 import s from './Enlaces.module.css';
@@ -50,7 +50,7 @@ export function PaginaEnlacesAdmin({ paginas = [], cargando = false, error, onRe
   const crear = async () => {
     const e = erroresDeEnlaces(nueva, paginas);
     if (Object.values(e).some(Boolean)) { setErrores(e); throw new Error(e.nombre || e.slug); }
-    const id = await onCrear?.({ titulo: nueva.nombre.trim(), slug: slugDeSorteo(nueva.slug || nueva.nombre) });
+    const id = await onCrear?.({ titulo: nueva.nombre.trim(), slug: slugDeEnlace(nueva.slug || nueva.nombre) });
     toast({ tipo: 'exito', titulo: 'Página creada', texto: 'Ahora arma sus botones y su diseño.' });
     setNueva(null);
     if (id) onAbrir?.({ id });
@@ -98,7 +98,7 @@ export function PaginaEnlacesAdmin({ paginas = [], cargando = false, error, onRe
         {nueva && (
           <GrupoCampos titulo="La página">
             <Campo etiqueta="Título" placeholder="Ej. Mis redes, Catálogo" value={nueva.nombre} error={errores.nombre} onChange={(e) => { setNueva((x) => ({ ...x, nombre: e.target.value })); setErrores({}); }} />
-            <Campo etiqueta="Enlace" ayuda={`wala.pe/l/${slugDeSorteo(nueva.slug || nueva.nombre) || 'tu-enlace'} · sale del título; puedes cambiarlo.`} placeholder={slugDeSorteo(nueva.nombre) || 'sale-del-titulo'} value={nueva.slug} error={errores.slug} onChange={(e) => { setNueva((x) => ({ ...x, slug: e.target.value })); setErrores({}); }} />
+            <Campo etiqueta="Enlace" ayuda={`wala.pe/l/${slugDeEnlace(nueva.slug || nueva.nombre) || 'tu-enlace'} · sale del título; puedes cambiarlo.`} placeholder={slugDeEnlace(nueva.nombre) || 'sale-del-titulo'} value={nueva.slug} error={errores.slug} onChange={(e) => { setNueva((x) => ({ ...x, slug: e.target.value })); setErrores({}); }} />
           </GrupoCampos>
         )}
       </HojaEdicion>
@@ -206,8 +206,8 @@ export function PaginaEnlaceAdmin({
     if (Object.values(e).some(Boolean)) { setErrores(e); ir('contenido'); return; }
     setGuardando(true);
     try {
-      await onGuardar?.({ ...d, slug: slugDeSorteo(d.slug || d.nombre) });
-      toast({ tipo: 'exito', titulo: 'Página guardada', texto: `wala.pe/l/${slugDeSorteo(d.slug || d.nombre)}` });
+      await onGuardar?.({ ...d, slug: slugDeEnlace(d.slug || d.nombre) });
+      toast({ tipo: 'exito', titulo: 'Página guardada', texto: `wala.pe/l/${slugDeEnlace(d.slug || d.nombre)}` });
     } catch (err) {
       toast({ tipo: 'error', titulo: 'No se pudo guardar', texto: errorDe(err) });
     } finally {
@@ -250,7 +250,7 @@ export function PaginaEnlaceAdmin({
               <GrupoCampos titulo="La cabecera">
                 <CampoImagen etiqueta="Foto" valor={d.avatar} onCambiar={(url) => cambiar('avatar', url)} subir={subirImagen} recorte="circulo" forma="circulo" />
                 <Campo etiqueta="Título" placeholder="Ej. Walá · Regalos personalizados" value={d.nombre} error={errores.nombre} onChange={(e) => cambiar('nombre', e.target.value)} />
-                <Campo etiqueta="Enlace" ayuda={`wala.pe/l/${slugDeSorteo(d.slug || d.nombre) || 'tu-enlace'}`} value={d.slug} error={errores.slug} onChange={(e) => cambiar('slug', e.target.value)} />
+                <Campo etiqueta="Enlace" ayuda={`wala.pe/l/${slugDeEnlace(d.slug || d.nombre) || 'tu-enlace'}`} value={d.slug} error={errores.slug} onChange={(e) => cambiar('slug', e.target.value)} />
                 <Campo etiqueta="Descripción" multilinea={2} placeholder="Una frase corta sobre ti o tu marca" value={d.descripcion} onChange={(e) => cambiar('descripcion', e.target.value)} />
                 <ElegirUno etiqueta="Estado" opciones={[{ valor: 'activo', texto: 'Activa' }, { valor: 'borrador', texto: 'Borrador' }]} valor={d.estado} onElegir={(v) => v && cambiar('estado', v)} />
               </GrupoCampos>

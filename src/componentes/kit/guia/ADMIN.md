@@ -1,4 +1,4 @@
-# Panel administrativo (`/admin`): el kit del admin (en marcha: D0 y D1 hechos en el kit, D2 por tramos)
+# Panel administrativo (`/admin`): el kit del admin (D0-D8 hechos en el kit; falta unirlos)
 
 Lo mismo que se hizo con la tienda, ahora con el panel: **primero todo en el
 kit**, con datos de ejemplo en `/componentes.html`; **cuando un apartado está
@@ -515,7 +515,7 @@ los datos para recomendar, con la foto de la lista como AdminProductos;
 
 | Página | Lee | Escribe |
 |---|---|---|
-| Productos | `getProducts([], null, null, { includeHidden: true })` (`['admin-products']`), `getCategories`, `getBrands`; los borradores de `localStorage.wala_drafts` | Mostrar/ocultar: `updateProduct(id, { ...producto, visible })` y, si estaba `deleted`, `updateProductField(id, { visible: true, deleted: false })` (el arreglo anti-zombi de AdminProductos); archivar: `deleteProduct` (uno por uno, contando fallas); duplicar: `createProduct({ ...sin id ni createdAt, name: 'X (Copia)', visible: false })`; CSV: `exportProducts(productos, categorias, ids)`; la personalización de antes: `quitarPersonalizacionVieja` uno por uno; descartar un borrador: borra sus fotos de Storage **solo si nunca se publicó** (la regla P0 de AdminProductos) e invalida `admin-products`, `products`, `featured-products`, `collection-products` |
+| Productos | `getProducts([], null, null, { includeHidden: true })` (`['admin-products']`), `getCategories`, `getBrands`; los borradores de `localStorage.wala_drafts` | Mostrar/ocultar: `updateProductField(id, { visible })` (**nunca** `updateProduct` con la fila de la tabla: tiene las claves en español y el servicio guardaría precio 0, sin variantes ni fotos; el kit no lista archivados, así que el arreglo anti-zombi de AdminProductos ya no hace falta); archivar: `deleteProduct` (uno por uno, contando fallas); duplicar: `createProduct({ ...sin id ni createdAt, name: 'X (Copia)', visible: false })`; CSV: `exportProducts(productos, categorias, ids)`; la personalización de antes: `quitarPersonalizacionVieja` uno por uno; descartar un borrador: borra sus fotos de Storage **solo si nunca se publicó** (la regla P0 de AdminProductos) e invalida `admin-products`, `products`, `featured-products`, `collection-products` |
 | Inventario | `getProducts(… includeHidden)` sin los `deleted`, y las seis listas de filtros | `updateProductField(id, { inStock })` y `logInventoryChange(id, nombre, antes, ahora, email)` |
 | Recomendar | `getProducts(… includeHidden)`, `getCategories`; `sugerenciaDe` con `publicoDe`, `edadMinimaDe` y `equipoDe` de `utils/giftRecommender.mjs`; los equipos de sus SINONIMOS | `updateDocument('productos_wala', id, campos)` (null borra el campo); en lote, de a 20; invalida `['products']` y `['gift-catalog-dicts']` |
 
@@ -1506,7 +1506,9 @@ hora programada no puede haber pasado), `NOMBRES_AVISO` y `filaDeEstadistica`.
     `copy` en las claves del motor: `{ text, emoji, cta }`).
   - Guardadas: `notification_drafts` (orden `updatedAt`, 50) →
     `campanaDesde`; guardar `addDoc` / `setDoc(merge)` con
-    `ofertaAFirestore` + `updatedAt`; borrar `deleteDoc`.
+    `ofertaAFirestore` + `createdAt` (al crear) y `updatedAt` **como texto
+    ISO**, igual que AdminNotifications: con un Timestamp, `orderBy('updatedAt')`
+    las manda después de las viejas y quedan fuera de las 50; borrar `deleteDoc`.
   - `onProbarOferta` = `sendManualPromoNotification({ ...ofertaAFirestore(d), prueba: true })`;
     `onEnviarOferta` = la misma con `scheduledAt` y `forzar`; el error trae
     `details.motivo`.
@@ -2273,10 +2275,53 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 - Las reglas de Firestore no se tocan en esta migración (solo con el ok del
   dueño; ver [MIGRACION.md](MIGRACION.md) y la memoria de reglas).
 
+### Lo que cada conector tiene que cuidar (revisión del 2026-11-03)
+
+Se comparó, apartado por apartado, lo que guardaría el kit con lo que guarda
+la página vieja y con lo que leen la tienda, `functions/` y la app
+(`wala-mobile`). Lo que era del kit ya se corrigió (ver el Registro); esto
+depende de cómo se escriba cada conector:
+
+- **D2a · Mostrar u ocultar un producto**: `updateProductField(id, { visible })`,
+  nunca `updateProduct` con la fila de `TablaAdmin` (ver "Cómo se une D2a").
+- **D2b/D2c · Guardar la ficha de un personalizable**: releer las plantillas
+  (`plantillasProducto.js`) y ponerlas en `datos.prenda.plantillas` antes de
+  `fichaAProducto`; si no, se pisan las que se cambiaron en el estudio, y la
+  app las lee (`wala-mobile/src/…/garment.ts`).
+- **D1 · Destacados**: destacar pone el producto al final (`último + 1`). La
+  app pide solo 24 (`featured == true` por `featuredOrder`, y quita ocultos y
+  archivados después). Antes de unir, contar en producción cuántos productos
+  tienen `featured: true` (con ocultos, archivados y copias): si pasan de 24,
+  el recién destacado no saldría en la portada de la app.
+- **D5a/D5b · Borrar un valor**: `updateDocument` quita `''` y `null`, así que
+  vaciar `actionKey` de una misión o la foto / el producto de una recompensa
+  no se guarda (ya pasaba con las páginas viejas). El conector manda
+  `deleteField()` para esas llaves.
+- **D5c · Editar un paquete**: `updateSuggestedPackage(id, { products })` con
+  las claves de antes (`id`, `name`, `price`, `image`), no las del kit.
+- **D5d · Ajustes de notificaciones**: leer con `getDoc(...).data()`, no con
+  `getDocument` (agrega `id` y se escribiría en el documento). Ofertas con
+  fechas ISO (ver "Cómo se une D5d").
+- **D8b · Restaurar en el Historial**:
+  - antes de escribir, `getLockedPages()`: una página bloqueada no se restaura
+    (el editor tampoco deja guardarla);
+  - si la copia no trae `sections` como lista (copias de antes de `pages`),
+    no llamar a `saveStorefrontConfig`: vaciaría la página;
+  - la copia nueva en `storeConfigLogs` lleva `timestamp` como texto ISO y
+    `pageId`, como el editor; si no, otra copia queda marcada como puesta;
+  - la pregunta de Restaurar avisa que también vuelven el menú, la cuenta y
+    el buscador (viven en `storeConfig/homePage`, también para la app).
+
+Lo que ya pasaba antes y el kit hereda (para arreglar aparte, no al unir):
+el bloqueo de una landing `lp_…` compara el id y el editor el slug (no la
+bloquea de verdad); en Inventario, un personalizable sin límite de stock
+(`inStock` null) sale como agotado y "+" le pone 1.
+
 ## Registro
 
 | Fecha | Qué | Dónde |
 |---|---|---|
+| 2026-11-03 | Revisión antes de unir: lo que guardaría el kit frente a la tienda, `functions/` y la app. Corregido en el kit: la ficha conserva `featuredOrder`; los sorteos conservan «+1 chance desde la app» (`chanceExtra`, ahora una opción más); "Mi cuenta" vacío en WhatsApp se guarda con el número de la tienda; un `/l/…` de enlaces ya no se corta a 60 (`slugDeEnlace`); las monedas `null` de la encuesta de entregas son 0, como el servidor; un pack sin tocar su categoría conserva todas. Lo que depende de cada conector, en «Lo que cada conector tiene que cuidar» | `adaptadoresAdmin.js`, `paginas/admin/Enlaces.jsx`, `guia/ADMIN.md` |
 | 2026-11-02 | Paso 0: el mapa del admin y este plan | `guia/ADMIN.md` |
 | 2026-11-02 | D0 en el kit: marco, barra del celular, cabecera, sin permiso, inicio, tabla, filtros, estados, lo elegido, hoja de edición, bloques, campo de imagen y el menú con permisos (con pruebas); Categorías como primera página; vista **Admin** en `/componentes.html` | `piezas/admin/`, `paginas/admin/`, `adaptadoresAdmin.js`, `DemoAdmin.jsx` |
 | 2026-11-02 | D1 en el kit: `PaginaListaAdmin` (Categorías pasó a ella), Colecciones, Atributos, Zonas de envío, Cliparts, Marcas con sus productos y Destacados; `ListaOrdenable`, `SelectorProductos`, `CargarMas`, `CampoDinero`, `CampoColor`; capturas en `guia/admin-*.webp` y el modo noche revisado | `paginas/admin/`, `piezas/admin/`, `adaptadoresAdmin.js` |

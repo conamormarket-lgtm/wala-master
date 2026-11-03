@@ -152,7 +152,7 @@ export {
   identificadorDe, erroresDeAjuste,
   INTERVALOS_PLAN, mesesDeIntervalo, COLORES_CAMPANA, campanaSuscripcionDesde, campanaSuscripcionAFormulario, planNuevo, planConIntervalo,
   erroresDeCampanaSuscripcion, textoDePlanes, ESTADOS_SUSCRIPTOR, suscriptorDesde, beneficioDesde, beneficioAFirestore, ganadorGaleriaDesde, ganadorGaleriaAFirestore,
-  DISENO_ENLACES, TIPOS_RED, disenoDeEnlaces, paginaEnlacesDesde, paginaEnlacesAFirestore, botonEnlaceNuevo, redNueva, erroresDeEnlaces, clicsDeEnlaces,
+  DISENO_ENLACES, TIPOS_RED, disenoDeEnlaces, slugDeEnlace, paginaEnlacesDesde, paginaEnlacesAFirestore, botonEnlaceNuevo, redNueva, erroresDeEnlaces, clicsDeEnlaces,
   cuandoPopup, erroresDePopup, slugDeLanding, landingDesde, erroresDeLanding, landingAFirestore, temaDesde, temaAFirestore, temaDesdeCss, pesoTexto,
   palabraLimpia, palabraDiaDesde, erroresDePalabra, CUPON_JUEGO_VACIO, modoDeCupon, cuponConModo, textoCuponJuego, erroresDeCupon, patrocinioDesde,
   erroresDePatrocinio, premiosBolitasDesde, premiosBolitasAFirestore, nuevoPuesto, erroresDePremios, metricasBolitas,

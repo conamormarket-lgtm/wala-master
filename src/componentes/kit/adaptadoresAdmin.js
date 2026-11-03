@@ -626,6 +626,9 @@ export function fichaAProducto(f, original = {}, { prendaBaseParaGuardar } = {})
     enTienda: prenda && f.enTienda === true,
     seVendeTalCual: prenda && f.enTienda === true && f.talCual === true,
     featured: f.destacado === true,
+    // El orden de Destacados lo pone su página: sin esto, el servicio lo deja en 0
+    // y guardar la ficha sube el producto al primer lugar (web y app ordenan por él).
+    featuredOrder: Number(original.featuredOrder) || 0,
     isV2: true,
   };
 }
@@ -698,6 +701,8 @@ export function packDesdeFirestore(c = {}) {
     descripcion: c.description || '',
     marcaId: c.brandId || '',
     categoria: lista(c.categories)[0] || '',
+    // Todas las que tenía: si no se cambia la categoría, se guardan tal cual.
+    categorias: lista(c.categories),
     portada: c.mainImage || '',
     precio: c.price ?? '',
     oferta: Number(c.salePrice) > 0 ? c.salePrice : '',
@@ -726,7 +731,8 @@ export function packAGuardar(k = {}) {
     tallas: k.tallas || 'auto',
     brandId: k.marcaId || '',
     mainImage: k.portada || '',
-    categories: k.categoria ? [k.categoria] : [],
+    // Como AdminCombosCrear: sin tocar la categoría, el pack conserva todas las suyas.
+    categories: !k.categoria ? [] : lista(k.categorias)[0] === k.categoria ? [...k.categorias] : [k.categoria],
     piezas: lista(k.piezas).map((pz) => ({ prendaId: pz.prendaId, ...(pz.fija && { fija: true }), ...(pz.color && { color: pz.color }) })),
   };
 }
@@ -2255,7 +2261,8 @@ export function entregaPanelDesde(raw) {
   const opciones = Array.isArray(c.opcionesMejorar) ? c.opcionesMejorar.map((o) => String(o || '').trim()).filter(Boolean) : [];
   return {
     activo: c.activo !== false,
-    monedas: c.monedas != null && Number.isFinite(monedas) ? Math.max(0, Math.min(50, Math.round(monedas))) : 5,
+    // Igual que el servidor: null cuenta como 0 (Number(null)); solo si falta son 5.
+    monedas: Number.isFinite(monedas) ? Math.max(0, Math.min(50, Math.round(monedas))) : 5,
     opcionesMejorar: opciones.length ? opciones : OPCIONES_MEJORAR_ENTREGA,
   };
 }
@@ -2312,9 +2319,12 @@ export function configConPregunta(config = {}, que = {}) {
 
 /* ── D6a · Sorteos ────────────────────────────────────── */
 
-/** Como slugifySorteo (services/sorteos): minúsculas, sin tildes, guiones, hasta 60. */
-export const slugDeSorteo = (texto) => String(texto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
+/** Como slugify de AdminEnlaceEditor: minúsculas, sin tildes, guiones; sin cortar (un /l/… largo ya compartido no cambia). */
+export const slugDeEnlace = (texto) => String(texto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+/** Como slugifySorteo (services/sorteos): el mismo, hasta 60. */
+export const slugDeSorteo = (texto) => slugDeEnlace(texto).slice(0, 60);
 
 export const ESTADOS_SORTEO = {
   borrador: { texto: 'Borrador', tono: 'neutro' },
@@ -2327,6 +2337,8 @@ export const REQUISITOS_APP = [
   { valor: 'ninguno', texto: 'Sin requisito' },
   { valor: 'recomendado', texto: 'Recomienda usar la app' },
   { valor: 'obligatorio', texto: 'Solo desde la app' },
+  // El servidor da +1 chance a quien entra desde la app y la tienda lo anuncia.
+  { valor: 'chanceExtra', texto: '+1 chance desde la app' },
 ];
 
 /** Un sorteo de Firestore → el admin. */
@@ -2616,7 +2628,7 @@ export function paginaEnlacesDesde(p = {}) {
 export function paginaEnlacesAFirestore(d = {}) {
   return {
     titulo: String(d.nombre || '').trim(),
-    slug: slugDeSorteo(d.slug || d.nombre),
+    slug: slugDeEnlace(d.slug || d.nombre),
     descripcion: d.descripcion || '',
     avatarUrl: d.avatar || '',
     estado: d.estado === 'borrador' ? 'borrador' : 'activo',
@@ -2632,7 +2644,7 @@ export const redNueva = (ms = Date.now()) => ({ id: idEnlace('red', ms), tipo: '
 
 /** Errores: título, enlace y que ninguna OTRA página use el mismo enlace. */
 export function erroresDeEnlaces(d = {}, otras = []) {
-  const slug = slugDeSorteo(d.slug || d.nombre);
+  const slug = slugDeEnlace(d.slug || d.nombre);
   return {
     nombre: String(d.nombre || '').trim() ? undefined : 'Escribe el título de la página.',
     slug: !slug ? 'Escribe el enlace.' : otras.some((p) => p.id !== d.id && String(p.slug || '').toLowerCase() === slug) ? `Ya hay otra página en /l/${slug}: elige otro.` : undefined,
@@ -3073,7 +3085,9 @@ export function whatsappAMensajes(c = {}) {
   return {
     whatsapp_number_tienda: t(c.tienda),
     whatsapp_number_crear: t(c.crear),
-    whatsapp_number_cuenta: t(c.cuenta),
+    // Vacío no se guarda vacío (como la página vieja): "¿Problemas para pagar?" de
+    // Mi cuenta usa este número de respaldo y no cae al general.
+    whatsapp_number_cuenta: t(c.cuenta) || t(c.tienda),
     whatsapp_text_tienda: c.mensajePedido || '',
     whatsapp_mostrar_en_acceso: c.enAcceso ? 'si' : 'no',
     whatsapp_number: t(c.tienda),

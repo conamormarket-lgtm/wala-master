@@ -168,6 +168,9 @@ test('ficha: de vuelta, con las mismas reglas del formulario', () => {
   assert.equal(p.hasVariants, true);
   assert.deepEqual(p.mainSizes, []);
   assert.deepEqual(p.variants[0].imagesVariantes, { a: { 160: 'a160' } });
+  // Guardar la ficha no mueve el producto en Destacados.
+  assert.equal(m2.fichaAProducto(f, { ...original, featured: true, featuredOrder: 7 }).featuredOrder, 7);
+  assert.equal(p.featuredOrder, 0);
   assert.equal(p.variants[0].showSizeConfig, true);
   assert.equal(p.customizable, false);
   assert.equal(p.isV2, true);
@@ -217,6 +220,10 @@ test('crear: un pack de ida y vuelta, y lo que le falta', () => {
   assert.equal(k.oferta, '');
   assert.deepEqual(m2.packAGuardar(k).piezas, [{ prendaId: 'a' }, { prendaId: 'b', fija: true, color: { id: '1', nombre: 'Negro', hex: '#000' } }]);
   assert.equal(m2.packAGuardar(k).salePrice, '');
+  // Sin tocar la categoría conserva todas; cambiada, solo la nueva.
+  assert.deepEqual(m2.packAGuardar({ ...k, categorias: ['k', 'z'] }).categories, ['k', 'z']);
+  assert.deepEqual(m2.packAGuardar({ ...k, categorias: ['k', 'z'], categoria: 'w' }).categories, ['w']);
+  assert.deepEqual(m2.packAGuardar({ ...k, categoria: '' }).categories, []);
   assert.deepEqual(Object.keys(m2.erroresDePack(k)), []);
   assert.ok(m2.erroresDePack({ ...k, piezas: [k.piezas[1], k.piezas[1]] }).piezas.includes('diseñarse'));
   assert.ok(m2.erroresDePack({ ...k, piezas: [k.piezas[0]] }).piezas.includes('al menos'));
@@ -592,6 +599,8 @@ test('encuestas: preguntas, la de entregas y volver a preguntar', () => {
   assert.deepEqual(m2.entregaPanelDesde(null), { activo: true, monedas: 5, opcionesMejorar: m2.OPCIONES_MEJORAR_ENTREGA });
   assert.deepEqual(m2.entregaPanelDesde({ activo: false, monedas: 80, opcionesMejorar: [' Empaque ', ''] }), { activo: false, monedas: 50, opcionesMejorar: ['Empaque'] });
   assert.equal(m2.entregaPanelDesde({ monedas: 0 }).monedas, 0);
+  // Como configEntregaPanel del servidor: null es 0, no 5.
+  assert.equal(m2.entregaPanelDesde({ monedas: null }).monedas, 0);
   assert.deepEqual(m2.cambioEstrellas(4.6, 4.3), { texto: '▲ 0.3 ★', bueno: true });
   assert.equal(m2.cambioEstrellas(4, 4).texto, '= 0 ★');
   assert.equal(m2.estrellasTexto(4), '★★★★☆');
@@ -615,6 +624,8 @@ test('sorteos: ida y vuelta, errores y participantes', () => {
   const s = m2.sorteoDesdeFirestore({ id: 's', titulo: 'Navidad', tipo: 'pagado', precioTicket: 5, premio: { nombre: 'Taza', valor: 30 }, estado: 'finalizado', contadorParticipantes: 12, requisitoApp: 'raro' });
   assert.deepEqual([s.estado, s.requisitoApp, s.participantes, s.premioNombre, m2.tipoDeSorteo(s)], ['cerrado', 'ninguno', 12, 'Taza', 'Rifa · S/ 5']);
   assert.equal(m2.sorteoDesdeFirestore({}).participantes, null);
+  // La chance extra desde la app (la da el servidor) no se pierde al guardar.
+  assert.equal(m2.sorteoDesdeFirestore({ requisitoApp: 'chanceExtra' }).requisitoApp, 'chanceExtra');
   const f = m2.sorteoAFormulario({ ...s, nombre: ' Navidad Walá ', slug: '', tipo: 'gratis', numGanadores: 0 });
   assert.deepEqual([f.titulo, f.slug, f.precioTicket, f.numGanadores, f.premioNombre], ['Navidad Walá', 'navidad-wala', 0, 1, 'Taza']);
   const e = m2.erroresDeSorteo({ nombre: '', tipo: 'pagado', precioTicket: 0, numGanadores: 1, inicio: '2026-12-10', fin: '2026-12-01' });
@@ -646,6 +657,10 @@ test('sorteos de suscripción: campañas, planes y suscriptores', () => {
 });
 
 test('enlaces: la página, su diseño, el enlace único y los clics', () => {
+  // Un /l/… largo ya compartido no se corta (los sorteos sí, a 60).
+  const largo = 'a'.repeat(70);
+  assert.equal(m2.paginaEnlacesAFirestore({ slug: largo }).slug, largo);
+  assert.equal(m2.slugDeSorteo(largo).length, 60);
   const p = m2.paginaEnlacesDesde({ id: 'a', titulo: 'Mis redes', slug: 'mis-redes', visitas: 9, diseno: { buttonTextColor: '#eeeeee' }, botones: [{ id: 'b2', titulo: 'Tienda', order: 1 }, { id: 'b1', titulo: 'WhatsApp', order: 0 }], redes: [{ id: 'r1', tipo: 'raro' }] });
   assert.deepEqual(p.botones.map((b) => b.id), ['b1', 'b2']);
   assert.deepEqual([p.diseno.titleColor, p.diseno.buttonColor, p.diseno.background.type, p.redes[0].tipo, p.estado], ['#eeeeee', '#111827', 'color', 'custom', 'activo']);
@@ -760,6 +775,9 @@ test('whatsapp: los números, el general, los errores y el mensaje del pedido', 
   assert.deepEqual(c, { tienda: '+51 900 000 001', crear: '987 654 321', cuenta: '', mensajePedido: m2.MENSAJE_PEDIDO_POR_DEFECTO, enAcceso: true });
   const g = m2.whatsappAMensajes({ ...c, enAcceso: false });
   assert.deepEqual([g.whatsapp_number, g.whatsapp_number_tienda, g.whatsapp_mostrar_en_acceso, 'whatsapp_text_crear' in g], ['+51 900 000 001', '+51 900 000 001', 'no', false]);
+  // Mi cuenta vacío se guarda con el de la tienda (respaldo de "¿Problemas para pagar?").
+  assert.equal(g.whatsapp_number_cuenta, '+51 900 000 001');
+  assert.equal(m2.whatsappAMensajes({ ...c, cuenta: ' 911 222 333 ' }).whatsapp_number_cuenta, '911 222 333');
   assert.equal(m2.telefonoEscrito('+51 (987) abc-654'), '+51 (987) -654');
   const e = m2.erroresDeWhatsApp({ tienda: '', crear: '98765', cuenta: '' });
   assert.deepEqual([Boolean(e.tienda), e.crear, e.cuenta], [true, 'Revisa el número: tiene 5 dígitos.', undefined]);
