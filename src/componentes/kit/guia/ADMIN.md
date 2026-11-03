@@ -1,4 +1,4 @@
-# Panel administrativo (`/admin`): el kit del admin (D0-D8 hechos en el kit; D0 a D3 unidos al admin)
+# Panel administrativo (`/admin`): el kit del admin (D0-D8 hechos en el kit; D0 a D4 unidos al admin)
 
 Lo mismo que se hizo con la tienda, ahora con el panel: **primero todo en el
 kit**, con datos de ejemplo en `/componentes.html`; **cuando un apartado está
@@ -230,7 +230,7 @@ une** al admin. Columna "Kit" / "Admin": **·** por hacer, **en marcha**,
 | D1 | Catálogo base | `categorias`, `colecciones`, `atributos-catalogo`, `marcas` (+ productos de la marca), `envios`, `cliparts`, `destacados` | Lista | hecho (2026-11-02) | hecho (2026-11-03) |
 | D2 | Productos | `productos` (lista, packs), `inventario`, `productos/:id` (la ficha), `plantillas-yoryo`, personalizables y combos de Crear, `blueprints`, `publico-productos` | Lista + herramientas propias | hecho (2026-11-02) | hecho (2026-11-03) |
 | D3 | Pedidos y pagos | `recepcion-pedidos`, `gestion-pagos` (configuración, generar enlace, historial), `crear-cuentas-pedidos`, `libro-reclamaciones` | Lista · Detalle · Ajustes | hecho (2026-11-02) | hecho (2026-11-03) |
-| D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | · |
+| D4 | Resultados | `resultados` (Resumen, Productos, Visitantes, Clientes con la ficha, Opiniones, Detalle técnico y sus pantallas) | Resultados · Detalle | hecho (2026-11-02) | hecho (2026-11-03) |
 | D5 | Clientes y fidelidad | `referidos`, `recompensas`, `misiones`, `retos`, `notificaciones`, `fechas-importantes`, `encuestas` | Lista · Editor | hecho (2026-11-02) | · |
 | D6 | Campañas | `sorteos` (+ detalle), `sorteos-suscripcion` (+ detalle), `enlaces` (+ editor), `popups`, `landing-pages`, `temas` | Lista · Detalle · Editor | hecho (2026-11-02) | · |
 | D7 | Juegos y Kapi | `wordle`, `ruleta`, `bolitas`, `mascota` | Editor | hecho (2026-11-02) | · |
@@ -1393,6 +1393,41 @@ El kit pone su marco (filtros, avisos); el visor va en el hueco tal cual.
   `anchos` desde `ANCHOS_PANTALLA`; de `children`, `<HeatmapViewer data loading error emptyMessage ancho origen versionesPorRuta soloDisenoActual onCambiarDiseno />`
   como hoy.
 
+### D4 unido al admin (2026-11-03)
+
+Todo Resultados a la vez con `adminResultadosViejo`
+(`useLoViejo('adminResultados')`). Cada pantalla vieja pasó a `…Viejo.jsx`
+(`ResultadosLayout`, `Resumen`, `Productos`, `Visitantes`, `Clientes`,
+`Opiniones`, `DetalleTecnico` y `dashboard/DashPaginas`, `DashUso`,
+`DashOrigen`, `DashHeatmap`); el `.jsx` de siempre elige. Los conectores:
+
+| Pantalla | Conector (`components/panel/`) |
+|---|---|
+| El marco, Resumen, Productos, Visitantes | `ResultadosDelPanel.jsx` (también `useMarcoResultados` y `useEnlacesRotos`, compartidos) |
+| Clientes (con la ficha) y Opiniones | `ResultadosClientesDelPanel.jsx` |
+| Detalle técnico y sus cuatro pantallas | `ResultadosTecnicoDelPanel.jsx` |
+
+- **El marco** da a las pestañas lo mismo que `ResultadosLayout`
+  (`{ filtros, analitica, periodo }` por el Outlet): las de antes también
+  funcionan dentro de él. El periodo sigue en la dirección (`?rango=…`).
+- **Diferencia con el plan**: las cuatro pantallas técnicas **siguen en sus
+  rutas de antes**, fuera del marco de pestañas: cada una arma su cabecera
+  con `useMarcoResultados` (sin pestañas, con migas Resultados › Detalle
+  técnico). Así el interruptor vuelve a las viejas sin tocar `App.jsx`.
+- **Cambios que quedaron** (de los conectores): en Navegador, "Ahora en la
+  tienda" dice el nombre de la página (antes la ruta) y ya no tiene el
+  filtro de origen que no filtraba nada; el Mapa de calor muestra "datos al"
+  y el periodo trae Hoy, Ayer y comparar; en Reconstruir, los atajos de 30 y
+  90 días eligen las fechas y hay que tocar Reconstruir (antes arrancaban
+  solos); la ficha de un cliente se abre en una hoja.
+
+**Qué se probó** (localhost con los emuladores, sin analítica sembrada): las
+seis pestañas y las cuatro pantallas técnicas abren con su título y sin
+errores; "7 días" → "últimos 7 días" y "Hoy" → `?rango=custom&desde=…` con
+"hoy" en la cabecera; con `adminResultadosViejo` vuelve la pantalla de
+Páginas de antes. No se probaron con datos reales (cifras, la ficha de un
+cliente, reconstruir, el mapa de calor con clics).
+
 ## D5 · Clientes y fidelidad (en el kit desde el 2026-11-02: los cinco tramos)
 
 Siete pantallas de hoy (unas 4.900 líneas con las de Fechas importantes),
@@ -2343,20 +2378,20 @@ se marca ✓ y lo que queda sin uso pasa a [ELIMINAR.md](ELIMINAR.md)
 
 | Parte | Hoy en el admin | Pasa a (kit) | Conector |
 |---|---|---|---|
-| D4a · El marco | `pages/admin/resultados/ResultadosLayout.jsx` + `.module.css` (`SelectorPeriodo` propio, `NavLink`) | `MarcoResultados`, `SelectorPeriodo` | `ResultadosDelPanel.jsx` (con `<Outlet>` adentro) |
-| D4a · Resumen | `pages/admin/resultados/Resumen.jsx` + `.module.css` (KpiRow, TrendChart, `Comparativa`, `Aviso`, `OtrosCobros`) | `PaginaResumenResultados` | `ResumenDelPanel.jsx` |
-| D4a · Tarjetas y cifras | `resultados/piezas.jsx` (`Tarjeta`, `Columnas`, `Vacio`, `Cifras`) | `BloqueMetrica`, `ColumnasMetricas`, `SinDatos`, `Cifra` | las páginas |
-| D4a · Enlaces rotos | `pages/admin/dashboard/EnlacesRotos.jsx` + `.module.css` (`GlassCard`, `window.confirm`) | `TarjetaEnlacesRotos` | el Resumen (y Páginas, en D4d) |
-| D4b · Productos | `pages/admin/resultados/Productos.jsx` + `.module.css` | `PaginaProductosResultados` (`ListaBarras`, `ListaInteresados`) | `ProductosResultadosDelPanel.jsx` |
-| D4b · Visitantes | `pages/admin/resultados/Visitantes.jsx` + `.module.css` | `PaginaVisitantesResultados` (`TablaAdmin`, `ListaBarras`) | `VisitantesDelPanel.jsx` |
-| D4b · Rankings | `Barras` e `Interruptor` de `resultados/piezas.jsx` | `ListaBarras`, `Pestanas` | las páginas |
-| D4c · Clientes | `pages/admin/resultados/Clientes.jsx` + `.module.css` (`ListaClientes`, la tabla de carritos, `window.confirm`) | `PaginaClientesResultados` | `ClientesResultadosDelPanel.jsx` |
-| D4c · La ficha | `pages/admin/resultados/FichaCliente.jsx` + `.module.css` (dentro de la lista) | `FichaCliente` (en `HojaEdicion`) | el mismo conector |
-| D4c · Contacto del carrito | `pages/admin/resultados/ContactoCarrito.jsx` + `.module.css` | la columna "Escribirle" de la página (`mensajeCarrito` en `utils/whatsappLink`) | la página |
-| D4c · Opiniones | `pages/admin/resultados/Opiniones.jsx` + `.module.css` | `PaginaOpinionesResultados` con `RespuestasEntregas` o `RespuestasEncuesta` (D5e) | `OpinionesDelPanel.jsx` |
-| D4d · Detalle técnico | `pages/admin/resultados/DetalleTecnico.jsx` + `.module.css`, `dashboard/BackfillAnaliticaButton.jsx` + `.module.css` (`GlassCard`, `GlassInput`) | `PaginaDetalleTecnico` (`PasoAdmin`) | `DetalleTecnicoDelPanel.jsx` |
-| D4d · Páginas, Uso, Navegador | `dashboard/DashPaginas.jsx`, `DashUso.jsx`, `DashOrigen.jsx` + sus css (`DashHeader`, `KpiRow`, `TrendChart`, `CompareBars`, `Donut`, `RankingConMiniaturas`, recharts) | `PaginaPaginasTecnica`, `PaginaUsoTecnica`, `PaginaNavegadorTecnica` (en `MarcoResultados`) | un conector por pantalla |
-| D4d · Mapa de calor | `dashboard/DashHeatmap.jsx` + css (cabecera, filtros, avisos) | `PaginaMapaDeCalor` (**`HeatmapViewer` se queda**, de `children`) | `MapaDeCalorDelPanel.jsx` |
+| D4a · El marco ✓ | `pages/admin/resultados/ResultadosLayout.jsx` + `.module.css` (`SelectorPeriodo` propio, `NavLink`) | `MarcoResultados`, `SelectorPeriodo` | `ResultadosDelPanel.jsx` (con `<Outlet>` adentro) |
+| D4a · Resumen ✓ | `pages/admin/resultados/Resumen.jsx` + `.module.css` (KpiRow, TrendChart, `Comparativa`, `Aviso`, `OtrosCobros`) | `PaginaResumenResultados` | `ResumenDelPanel.jsx` |
+| D4a · Tarjetas y cifras ✓ | `resultados/piezas.jsx` (`Tarjeta`, `Columnas`, `Vacio`, `Cifras`) | `BloqueMetrica`, `ColumnasMetricas`, `SinDatos`, `Cifra` | las páginas |
+| D4a · Enlaces rotos ✓ | `pages/admin/dashboard/EnlacesRotos.jsx` + `.module.css` (`GlassCard`, `window.confirm`) | `TarjetaEnlacesRotos` | el Resumen (y Páginas, en D4d) |
+| D4b · Productos ✓ | `pages/admin/resultados/Productos.jsx` + `.module.css` | `PaginaProductosResultados` (`ListaBarras`, `ListaInteresados`) | `ProductosResultadosDelPanel.jsx` |
+| D4b · Visitantes ✓ | `pages/admin/resultados/Visitantes.jsx` + `.module.css` | `PaginaVisitantesResultados` (`TablaAdmin`, `ListaBarras`) | `VisitantesDelPanel.jsx` |
+| D4b · Rankings ✓ | `Barras` e `Interruptor` de `resultados/piezas.jsx` | `ListaBarras`, `Pestanas` | las páginas |
+| D4c · Clientes ✓ | `pages/admin/resultados/Clientes.jsx` + `.module.css` (`ListaClientes`, la tabla de carritos, `window.confirm`) | `PaginaClientesResultados` | `ClientesResultadosDelPanel.jsx` |
+| D4c · La ficha ✓ | `pages/admin/resultados/FichaCliente.jsx` + `.module.css` (dentro de la lista) | `FichaCliente` (en `HojaEdicion`) | el mismo conector |
+| D4c · Contacto del carrito ✓ | `pages/admin/resultados/ContactoCarrito.jsx` + `.module.css` | la columna "Escribirle" de la página (`mensajeCarrito` en `utils/whatsappLink`) | la página |
+| D4c · Opiniones ✓ | `pages/admin/resultados/Opiniones.jsx` + `.module.css` | `PaginaOpinionesResultados` con `RespuestasEntregas` o `RespuestasEncuesta` (D5e) | `OpinionesDelPanel.jsx` |
+| D4d · Detalle técnico ✓ | `pages/admin/resultados/DetalleTecnico.jsx` + `.module.css`, `dashboard/BackfillAnaliticaButton.jsx` + `.module.css` (`GlassCard`, `GlassInput`) | `PaginaDetalleTecnico` (`PasoAdmin`) | `DetalleTecnicoDelPanel.jsx` |
+| D4d · Páginas, Uso, Navegador ✓ | `dashboard/DashPaginas.jsx`, `DashUso.jsx`, `DashOrigen.jsx` + sus css (`DashHeader`, `KpiRow`, `TrendChart`, `CompareBars`, `Donut`, `RankingConMiniaturas`, recharts) | `PaginaPaginasTecnica`, `PaginaUsoTecnica`, `PaginaNavegadorTecnica` (en `MarcoResultados`) | un conector por pantalla |
+| D4d · Mapa de calor ✓ | `dashboard/DashHeatmap.jsx` + css (cabecera, filtros, avisos) | `PaginaMapaDeCalor` (**`HeatmapViewer` se queda**, de `children`) | `MapaDeCalorDelPanel.jsx` |
 
 ### D5 · Clientes y fidelidad
 
@@ -2461,6 +2496,7 @@ bloquea de verdad); en Inventario, un personalizable sin límite de stock
 
 | Fecha | Qué | Dónde |
 |---|---|---|
+| 2026-11-03 | **D4 unido al admin**: el marco de Resultados, sus seis pestañas y las cuatro pantallas técnicas (`ResultadosDelPanel`, `ResultadosClientesDelPanel`, `ResultadosTecnicoDelPanel`, interruptor `adminResultadosViejo`); las técnicas siguen en sus rutas | `components/panel/`, `pages/admin/resultados/`, `pages/admin/dashboard/` |
 | 2026-11-03 | **D3 unido al admin**: recepción, gestión de pagos, cuentas desde pedidos y libro de reclamaciones (`components/panel/PedidosDelPanel.jsx`, interruptor `adminPedidosViejo`) | `components/panel/`, `pages/admin/` |
 | 2026-11-03 | **D2 unido al admin**: lista, inventario, datos para recomendar, la ficha (producto, combo y personalizable), personalizables, packs, blueprints y plantillas de cuadros (`components/panel/`, interruptor `adminProductosViejo`); `pasosYoryo.js` sale de la pantalla; `PlantillasPrenda` con `estadoEnlace` y `fotoConPlantilla` con las vistas; "Pasarla a Crear" queda pendiente | `components/panel/`, `pages/Tienda/admin/`, `pages/admin/`, `kit/piezas/admin/Crear.jsx` |
 | 2026-11-03 | **D0 y D1 unidos al admin**: el marco, sin permiso y el inicio (`MarcoDelPanel`, `InicioDelPanel`, interruptor `adminViejo`) y las ocho páginas del catálogo base (`components/panel/`, interruptor `adminCatalogoViejo`, la ruta `/admin/marcas/:id/productos`); la barra «Modo administrador» ya no sale en el panel; "Quitar páginas repetidas" pregunta; admins de prueba por permiso en el sembrado del emulador | `components/panel/`, `components/AdminLayout/`, `pages/AdminDashboard.jsx`, `pages/admin/`, `components/marco/BarraDeAdmin.jsx`, `App.jsx`, `scripts/seed-emulator.js` |
