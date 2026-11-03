@@ -97,7 +97,6 @@ const HECHAS = [
   ['/admin/configuracion', 'Configuración'],
   ['/admin/whatsapp', 'WhatsApp'],
   ['/admin/backups', 'Historial'],
-  ['/admin/crear-cuentas-pedidos', 'Cuentas'],
   ['/admin/categorias', 'Categorías'],
   ['/admin/colecciones', 'Colecciones'],
   ['/admin/marcas', 'Marcas'],

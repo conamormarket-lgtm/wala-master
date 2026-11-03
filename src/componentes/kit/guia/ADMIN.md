@@ -1013,6 +1013,11 @@ Adaptadores (con pruebas): `PERIODOS_PAGOS`, `rangoDePeriodo`,
 
 ### D3c: Cuentas desde pedidos y Libro de reclamaciones (en el kit desde el 2026-11-02)
 
+> **Cuentas desde pedidos salió del admin el 2026-11-03** (sin menú ni ruta;
+> lo que queda, en [ELIMINAR.md](ELIMINAR.md)): "Mis pedidos" ya encuentra
+> los pedidos del ERP solo, y crear cuentas desde el navegador cambiaba la
+> sesión del admin por la del cliente.
+
 | Libro de reclamaciones (computadora) | Cuentas desde pedidos (celular) |
 |---|---|
 | ![Un reclamo respondido abierto al costado: el consumidor, el producto, el reclamo y la respuesta en verde con su fecha](admin-reclamos-escritorio.webp) | ![El paso 2 terminado a medias: creadas, ya existían, errores y la lista de errores abierta](admin-cuentas-celular.webp) |
@@ -2667,6 +2672,7 @@ bloquea de verdad); en Inventario, un personalizable sin límite de stock
 
 | Fecha | Qué | Dónde |
 |---|---|---|
+| 2026-11-03 | **Cuentas desde pedidos fuera del admin**: sin menú ni ruta (no hace falta: Mis pedidos encuentra los pedidos solo; crear cuentas cambiaba la sesión del admin); lo demás, listo para borrar en ELIMINAR.md | `adaptadoresAdmin.js`, `App.jsx`, `DemoAdmin.jsx` |
 | 2026-11-03 | **El admin mientras carga, con el kit**: `CargandoPanel` en vez de "Verificando acceso…" y la grilla de productos de la tienda; `EsqueletoPaginaAdmin` dentro del marco mientras baja cada página | `kit/piezas/admin/CargandoPanel.jsx`, `AdminRoute`, `CargandoRuta`, `MarcoDelPanel`, `DemoAdmin.jsx` |
 | 2026-11-03 | **D8 unido al admin, y con él todo el admin**: Configuración, WhatsApp e Historial (`ConfiguracionDelPanel`, `AjustesDelPanel`, interruptor `adminAjustesViejo`); `BarraGuardar` sobre la barra inferior del celular; Restaurar pone la copia en la tienda de verdad | `components/panel/`, `pages/admin/`, `kit/piezas/admin/Formularios.module.css`, `kit/paginas/admin/Ajustes.jsx` |
 | 2026-11-03 | **D7 unido al admin**: Kapi, La Palabra del día, Las Bolitas y la Ruleta (`JuegosDelPanel`, `RuletaDelPanel`, interruptor `adminJuegosViejo`); en las Bolitas, Mundos y Premios esperan a sus datos | `components/panel/`, `pages/admin/`, `kit/paginas/admin/Juegos.jsx` |

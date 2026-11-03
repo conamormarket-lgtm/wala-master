@@ -204,7 +204,6 @@ const AdminCliparts = lazy(() => import('./pages/admin/AdminCliparts'));
 const AdminMascota = lazy(() => import('./pages/admin/AdminMascota'));
 const AdminBackups = lazy(() => import('./pages/admin/AdminBackups'));
 const AdminConfiguracion = lazy(() => import('./pages/admin/AdminConfiguracion'));
-const AdminCrearCuentasPedidos = lazy(() => import('./pages/admin/AdminCrearCuentasPedidos'));
 const AdminRetos = lazy(() => import('./pages/admin/AdminRetos'));
 const AdminMisiones = lazy(() => import('./pages/admin/AdminMisiones'));
 const AdminPublicoProductos = lazy(() => import('./pages/admin/AdminPublicoProductos'));
@@ -554,7 +553,6 @@ function App() {
                                       <Route path="zonas" element={<Navigate to="/admin" replace />} />
                                       <Route path="cliparts" element={<AdminCliparts />} />
                                       <Route path="mascota" element={<AdminMascota />} />
-                                      <Route path="crear-cuentas-pedidos" element={<AdminCrearCuentasPedidos />} />
                                       <Route path="publico-productos" element={<AdminPublicoProductos />} />
                                       <Route path="wordle" element={<AdminWordlePage />} />
                                       <Route path="notificaciones" element={<AdminNotifications />} />
