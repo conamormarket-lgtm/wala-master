@@ -102,12 +102,10 @@ const HECHAS = [
   ['/admin/marcas', 'Marcas'],
   ['/admin/atributos-catalogo', 'Atributos'],
   ['/admin/envios', 'Envíos'],
-  ['/admin/cliparts', 'Cliparts'],
   ['/admin/destacados', 'Destacados'],
   ['/admin/productos', 'Productos'],
   ['/admin/inventario', 'Inventario'],
   ['/admin/publico-productos', 'Recomendar'],
-  ['/admin/blueprints', 'Blueprints'],
   ['/admin/plantillas-yoryo', 'Plantillas de cuadros'],
 ];
 

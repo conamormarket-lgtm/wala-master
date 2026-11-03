@@ -190,7 +190,6 @@ const AdminColecciones = lazy(() => import('./pages/admin/AdminColecciones'));
 const AdminCatalogAttributes = lazy(() => import('./pages/admin/AdminCatalogAttributes'));
 const AdminRecompensas = lazy(() => import('./pages/admin/AdminRecompensas'));
 const AdminEnviosZonas = lazy(() => import('./pages/admin/AdminEnviosZonas'));
-const AdminBlueprints = lazy(() => import('./pages/admin/AdminBlueprints'));
 const AdminSorteos = lazy(() => import('./pages/admin/AdminSorteos'));
 const AdminSorteoDetalle = lazy(() => import('./pages/admin/AdminSorteoDetalle'));
 
@@ -200,7 +199,6 @@ const AdminSuscripcionDetalle = lazy(() => import('./pages/admin/AdminSuscripcio
 
 const AdminWhatsApp = lazy(() => import('./pages/admin/AdminWhatsApp'));
 const AdminDestacados = lazy(() => import('./pages/admin/AdminDestacados'));
-const AdminCliparts = lazy(() => import('./pages/admin/AdminCliparts'));
 const AdminMascota = lazy(() => import('./pages/admin/AdminMascota'));
 const AdminBackups = lazy(() => import('./pages/admin/AdminBackups'));
 const AdminConfiguracion = lazy(() => import('./pages/admin/AdminConfiguracion'));
@@ -526,7 +524,6 @@ function App() {
                                       <Route path="atributos-catalogo" element={<AdminCatalogAttributes />} />
                                       <Route path="recompensas" element={<AdminRecompensas />} />
                                       <Route path="envios" element={<AdminEnviosZonas />} />
-                                      <Route path="blueprints" element={<AdminBlueprints />} />
 
                                       <Route path="whatsapp" element={<AdminWhatsApp />} />
                                       <Route path="referidos" element={<AdminReferidos />} />
@@ -551,7 +548,6 @@ function App() {
 
                                       <Route path="destacados" element={<AdminDestacados />} />
                                       <Route path="zonas" element={<Navigate to="/admin" replace />} />
-                                      <Route path="cliparts" element={<AdminCliparts />} />
                                       <Route path="mascota" element={<AdminMascota />} />
                                       <Route path="publico-productos" element={<AdminPublicoProductos />} />
                                       <Route path="wordle" element={<AdminWordlePage />} />

@@ -268,12 +268,6 @@ const AdminLayoutViejo = () => {
                     Atributos del catálogo
                   </NavLink>
                   <NavLink
-                    to="/admin/blueprints"
-                    className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
-                  >
-                    Blueprints (POD)
-                  </NavLink>
-                  <NavLink
                     to="/admin/recompensas"
                     className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
                   >
@@ -307,12 +301,6 @@ const AdminLayoutViejo = () => {
                       </NavLink>
                     </>
                   )}
-                  <NavLink
-                    to="/admin/cliparts"
-                    className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
-                  >
-                    Cliparts
-                  </NavLink>
                 </>
               )}
             </>
